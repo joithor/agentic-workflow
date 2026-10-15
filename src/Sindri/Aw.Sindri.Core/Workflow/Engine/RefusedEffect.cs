@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 
@@ -11,4 +12,5 @@ namespace Aw.Sindri.Core.Workflow.Engine;
 /// <param name="Kind">The effect block ('effect.notify.desk', 'effect.claim.ref').</param>
 /// <param name="Identity">Its stable identity: a re-emission keeps it.</param>
 /// <param name="With">Its arguments, as the recipe gave them.</param>
-public sealed record RefusedEffect(BlockId Kind, EffectIdentity Identity, IReadOnlyDictionary<string, WithValue> With);
+/// <param name="Origin">Who emitted it: a re-send keeps it, so an engine notice is re-sent as the engine's (interrupt class, its own text, no reply) and a recipe's effect is checked again like any recipe effect.</param>
+public sealed record RefusedEffect(BlockId Kind, EffectIdentity Identity, IReadOnlyDictionary<string, WithValue> With, CommandOrigin Origin = CommandOrigin.Recipe);

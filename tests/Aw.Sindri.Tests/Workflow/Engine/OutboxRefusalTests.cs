@@ -109,6 +109,32 @@ public sealed class OutboxRefusalTests
         Assert.Equal(earlier.With, effect.With);
     }
 
+    /// <summary>An engine notice refused at run time (SND-WF-015 after exhaustion) and resumed is re-sent as the engine's, not as a recipe effect (PR 232 review run 2, I3).</summary>
+    [Fact, Trait("Lane", "unit")]
+    public void An_engine_origin_effect_is_resent_with_engine_origin_after_the_resume()
+    {
+        var notice = new RefusedEffect(
+            BlockId.From("effect.notify.desk"), new EffectIdentity(Id, Entry: 3, Index: 5), new Dictionary<string, WithValue>(StringComparer.Ordinal), CommandOrigin.Engine);
+        var parked = Parked(Decide(Claimed(), Item, new OutboxRefused(Dispatcher, notice, "SND-WF-015", Sequence: 94), rules: EngineRules.Default));
+
+        var resumed = Assert.IsType<Applied>(Decide(parked, Item, Resume(), rules: EngineRules.Default));
+
+        Assert.Equal(CommandOrigin.Engine, Assert.Single(resumed.Effects).Origin);
+    }
+
+    /// <summary>The same holds for the effect a drift park re-sends on the re-approval.</summary>
+    [Fact, Trait("Lane", "unit")]
+    public void An_engine_origin_effect_refused_for_drift_is_resent_with_engine_origin_on_the_approval()
+    {
+        var notice = new RefusedEffect(
+            BlockId.From("effect.notify.desk"), new EffectIdentity(Id, Entry: 3, Index: 5), new Dictionary<string, WithValue>(StringComparer.Ordinal), CommandOrigin.Engine);
+        var drifted = Parked(Decide(Claimed(), Item, new OutboxRefused(Dispatcher, notice, "SND-RECIPE-006", Sequence: 94), rules: EngineRules.Default));
+
+        var approved = Assert.IsType<Applied>(Decide(drifted, Item, new RecipeWake("service:engine", RecipeWakeKind.Approved, 8), rules: EngineRules.Default));
+
+        Assert.Equal(CommandOrigin.Engine, Assert.Single(approved.Effects).Origin);
+    }
+
     private static WorkflowInstance Claimed() => At(Item, "claimed", entry: 3);
 
     private static OutboxRefused Refused(string code, long sequence = 91) => new(Dispatcher, _claimRef, code, sequence);
