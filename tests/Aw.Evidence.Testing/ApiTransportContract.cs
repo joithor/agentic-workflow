@@ -1,6 +1,6 @@
-using Xunit;
 using Aw.Evidence.Core;
 using Aw.Evidence.Core.Data;
+using Xunit;
 
 namespace Aw.Evidence.Testing;
 

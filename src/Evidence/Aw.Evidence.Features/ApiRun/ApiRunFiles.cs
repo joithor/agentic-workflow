@@ -14,6 +14,13 @@ internal sealed class ApiRunFiles(IRunFiles files, ITextScrubber scrubber, JsonS
 
     internal ValueTask<Result<byte[]>> ReadAsync(string path, CancellationToken cancellationToken) => files.ReadAsync(path, cancellationToken);
 
+    internal Result<ApiScript> Parse(string path, ReadOnlySpan<byte> bytes) =>
+        ApiScriptReader.Read(bytes, json).Match<Result<ApiScript>>(script => script, error => error with { Message = $"script {path}: {error.Message}" });
+
+    internal Collected NewCollected() => new(scrubber);
+
+    internal string Safe(string text, int limit) => RecordedText.Of(scrubber, text, limit);
+
     // A run that stops early must not leave an earlier run's summary behind as if it were this run's evidence.
     internal async ValueTask<Result<Unit>> PrepareRunDirectoryAsync(string runDirectory, CancellationToken cancellationToken)
     {

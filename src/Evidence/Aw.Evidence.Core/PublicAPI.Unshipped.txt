@@ -1892,3 +1892,4 @@ Aw.Evidence.Core.Data.ApiFailure.ApiFailure(int Step, string? Location, string! 
 Aw.Evidence.Core.Data.ApiFailure.Deconstruct(out int Step, out string? Location, out string! Expected, out string! Actual) -> void
 Aw.Evidence.Core.Data.ApiFailure.Location.get -> string?
 Aw.Evidence.Core.Data.ApiFailure.Location.init -> void
+Aw.Evidence.Core.Data.ApiFailure.Describe() -> string!
