@@ -1,8 +1,10 @@
+using Aw.Kernel;
 using Aw.Kernel.Ids;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Features.ReadLedger;
@@ -52,6 +54,23 @@ public sealed class ReadLedgerTests
         }
 
         Assert.Equal([1L, 2L, 3L, 4L, 5L], seen);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_full_page_names_a_next_cursor_even_when_appends_made_the_head_it_read_stale()
+    {
+        var grant = await _h.HoldLease();
+        for (var i = 1; i <= 4; i++)
+        {
+            await Heartbeat(grant, i);
+        }
+
+        var service = new ReadLedgerService(new StaleHead(_h.Store, 2), StreamEventsServices.View(_h, new PassThroughScrubber()), new NoItems(), StreamEventsServices.Repos(_h), _h.Callers);   // the head read before 3 and 4 committed
+
+        var page = (await service.Handle(A.ReadLedgerRequest().After(0).WithMax(2).Build(), TestContext.Current.CancellationToken)).Value;
+
+        Assert.Equal([1L, 2L], page.Events.Select(e => e.Sequence));
+        Assert.Equal(2L, page.Next);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -159,6 +178,18 @@ public sealed class ReadLedgerTests
 
     private async Task Append<TPayload>(LeaseGrant grant, string type, TPayload payload, string key, string? item = null) =>
         _ = await _h.Store.Append(_h.Events.Entry(type, payload, key, item), grant, TestContext.Current.CancellationToken);
+
+    /// <summary>A ledger whose head is fixed, as one read before later appends committed.</summary>
+    private sealed class StaleHead(ILedgerReader inner, long head) : ILedgerReader
+    {
+        public ValueTask<Result<IReadOnlyList<LedgerEvent>>> ReadAfter(long sequence, int max, CancellationToken cancellationToken) => inner.ReadAfter(sequence, max, cancellationToken);
+
+        public ValueTask<Result<LedgerScan>> Scan(long sequence, int max, LedgerFilter filter, CancellationToken cancellationToken) => inner.Scan(sequence, max, filter, cancellationToken);
+
+        public ValueTask<Result<LedgerEvent?>> Latest(string type, CancellationToken cancellationToken) => inner.Latest(type, cancellationToken);
+
+        public ValueTask<Result<long>> Head(CancellationToken cancellationToken) => ValueTask.FromResult<Result<long>>(head);
+    }
 
     private sealed class MaskScrubber : ITextScrubber
     {

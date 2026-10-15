@@ -35,8 +35,14 @@ internal sealed class ReadLedgerService(ILedgerReader ledger, CallerEventView vi
         var (filter, head) = checkedInput.Value;
         var human = callers.Current?.Class == CallerClass.Human;
         var page = await view.Read(new EventQuery(request.After, request.Max, filter, human), cancellationToken).ConfigureAwait(false);
-        return page.IsError ? page.Error : new LedgerPage(page.Value.Events, page.Value.ScannedTo < head ? page.Value.ScannedTo : null);
+        return page.IsError ? page.Error : new LedgerPage(page.Value.Events, MoreAfter(page.Value, request.Max, head) ? page.Value.ScannedTo : null);
     }
+
+    /// <summary>
+    /// Whether the ledger may have more past the page: always after a full page (appends since the head was read may be past it), else when the read
+    /// stopped short of that head.
+    /// </summary>
+    private static bool MoreAfter(ViewedPage page, int max, long head) => page.Events.Count >= max || page.ScannedTo < head;
 
     /// <summary>The ledger filter the request names and the head it reads against, or the 400 / 404 for a request that can't be served.</summary>
     private async ValueTask<Result<(LedgerFilter Filter, long Head)>> Check(ReadLedgerRequest request, CancellationToken cancellationToken)
