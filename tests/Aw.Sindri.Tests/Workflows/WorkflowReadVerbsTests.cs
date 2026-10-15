@@ -21,7 +21,7 @@ public sealed class WorkflowReadVerbsTests : IDisposable
     public async Task Status_list_and_events_show_a_started_instance_and_its_desk_task()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var env = await WorkflowsHarness.StartDevServer();
+        await using var env = await WorkflowsHarness.StartDevServer(ct: TestContext.Current.CancellationToken);
         await using var served = await ApplyCommand.Served.Start(_harness.Home, env);   // the read verbs are clients of serve's routes
         var sindri = served.Sindri;
         {
@@ -66,7 +66,7 @@ public sealed class WorkflowReadVerbsTests : IDisposable
     [Fact(Timeout = 120_000)]
     public async Task Status_of_an_unknown_instance_is_SND_WF_001_and_exit_2()
     {
-        await using var env = await WorkflowsHarness.StartDevServer();
+        await using var env = await WorkflowsHarness.StartDevServer(ct: TestContext.Current.CancellationToken);
         await using var served = await ApplyCommand.Served.Start(_harness.Home, env);
 
         var (exit, stdout, stderr) = await WorkflowsHarness.Cli(served.Sindri, "status", "T-9/step/1");
@@ -75,7 +75,7 @@ public sealed class WorkflowReadVerbsTests : IDisposable
         Assert.StartsWith("SND-WF-001 T-9/step/1 isn't an instance", stderr, StringComparison.Ordinal);
     }
 
-    [Theory(Timeout = 120_000)]
+    [Theory]
     [InlineData("list", "--needs-me", "--item", "T-1")]
     [InlineData("list", "--colour", "blue")]
     [InlineData("status")]

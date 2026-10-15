@@ -46,7 +46,7 @@ public sealed class ResumeDeadlineTests(TimeSkippingServer server) : IClassFixtu
             var parked = await desk.Until(static v => v.State == "parked");
             var resume = new AnswerGiven("human:cli", new CommandStamp(CommandNonce.From(new string('a', 32)), new string('b', 64)), AnswerVariant.Resume, Text: null, Amount: null, Forwarded: null);
 
-            var resumed = await handle.ExecuteUpdateAsync(wf => wf.AnswerAsync(resume), new WorkflowUpdateOptions(new string('a', 32))).WaitAsync(TimeSpan.FromSeconds(30));
+            var resumed = await handle.ExecuteUpdateAsync(wf => wf.AnswerAsync(resume), new WorkflowUpdateOptions(new string('a', 32))).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
             await env.DelayAsync(TimeSpan.FromDays(1), ct);
             var waiting = await desk.Until(static v => v.Task is not null);
             await env.DelayAsync(TimeSpan.FromDays(2), ct);

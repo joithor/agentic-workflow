@@ -25,7 +25,7 @@ public sealed class RecipeWorkflowTests : IDisposable
     public async Task Start_opens_the_produce_desk_task_1_1_with_its_declared_outcomes_and_replays()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var env = await WorkflowsHarness.StartDevServer();
+        await using var env = await WorkflowsHarness.StartDevServer(ct: TestContext.Current.CancellationToken);
         await using var sindri = _harness.Sindri();
         await WorkflowsHarness.HoldLease(sindri, ct);
         using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
@@ -61,7 +61,7 @@ public sealed class RecipeWorkflowTests : IDisposable
     public async Task Serve_worker_mirrors_the_start_into_the_ledger_and_lists_the_instance()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var env = await WorkflowsHarness.StartDevServer();
+        await using var env = await WorkflowsHarness.StartDevServer(ct: TestContext.Current.CancellationToken);
         await using var served = await ApplyCommand.Served.Start(_harness.Home, env);   // 'workflow list' is a client of serve's route
         var sindri = served.Sindri;
         var handle = await WorkflowsHarness.Start(env.Client, await WorkflowsHarness.StepStart(sindri, "T-1", ct));

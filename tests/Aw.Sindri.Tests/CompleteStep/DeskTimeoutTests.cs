@@ -44,7 +44,7 @@ public sealed class DeskTimeoutTests(TimeSkippingServer server) : IClassFixture<
             _ = await desk.Until(static v => v.Task is not null);
             var output = new FactValue("fact:sha256:" + new string('e', 64), new string('e', 64), HeadSha: null);
             var report = new StepCompleted("human:cli", RunToken.From("1.1"), OutcomeName.From("done"), new Dictionary<FactKey, FactValue> { [FactKey.From("fact:output")] = output }, Tokens: 0, StepRuntime.Desk, new string('f', 64));
-            var done = await handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(new string('a', 32))).WaitAsync(TimeSpan.FromSeconds(30));
+            var done = await handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(new string('a', 32))).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
             Assert.Equal("-> checks", done.Happened);   // 'checks': timeout { after: 30m, then: retry }
 
             await env.DelayAsync(TimeSpan.FromHours(1), ct);

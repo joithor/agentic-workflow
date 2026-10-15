@@ -73,7 +73,7 @@ public sealed class InterpreterStateLoopTests(SindriTimeSkippingServer server) :
 
             var routed = new WaitSatisfied("service:workflow.events", new EventWaitSource(EventKind.From("item.routed"), 1), OutcomeName.From("notStartable"), new Dictionary<FactKey, FactValue>());
             await handle.SignalAsync(wf => wf.EventAsync(routed));
-            var result = await handle.GetResultAsync().WaitAsync(TimeSpan.FromSeconds(30));
+            var result = await handle.GetResultAsync().WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
             var after = await Attributes(handle, static a => a.Get(SindriTemporal.StateKey) == "dropped");
 
             Assert.Null(waiting.Task);
@@ -145,8 +145,8 @@ public sealed class InterpreterStateLoopTests(SindriTimeSkippingServer server) :
             var cancel = new CancelRequested("human:cli", CancelOrigin.Command, new CommandStamp(nonce, new string('0', 64)), Sequence: null, Parent: null);
 
             // why: the desk wait (unit (c)) must wake for an Update unit (a)'s loop takes, or a cancel waits out the desk timeout
-            var result = await handle.ExecuteUpdateAsync(wf => wf.CancelAsync(cancel), new WorkflowUpdateOptions(nonce.Value)).WaitAsync(TimeSpan.FromSeconds(30));
-            var ended = await handle.GetResultAsync().WaitAsync(TimeSpan.FromSeconds(30));
+            var result = await handle.ExecuteUpdateAsync(wf => wf.CancelAsync(cancel), new WorkflowUpdateOptions(nonce.Value)).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+            var ended = await handle.GetResultAsync().WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
             var rows = (await sindri.GetRequiredService<ILedgerStore>().ReadAfter(0, 100, ct)).Value
                 .Where(static e => e.Envelope.Type.StartsWith("workflow.", StringComparison.Ordinal)).ToList();
 

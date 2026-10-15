@@ -26,7 +26,7 @@ public sealed class DeadTemporalTests
     {
         var ct = TestContext.Current.CancellationToken;
         using var home = new TempHome();
-        var environment = await WorkflowsHarness.StartDevServer();
+        var environment = await WorkflowsHarness.StartDevServer(ct: TestContext.Current.CancellationToken);
         var settings = new TemporalSettings(home.Path, PinnedTemporal.Path());
         using var frontend = new TemporalFrontend(new LiveEndpoint(WorkflowsHarness.PortOf(environment)), settings);
         var runtime = new TemporalInstanceRuntime(frontend, new TemporalDeskReports(frontend), new TemporalCommands(frontend), settings, new KnownInstances());

@@ -37,12 +37,12 @@ public sealed class TemporalNamesTests : IDisposable
         Assert.Equal(("sindri", "sindri"), (empty.Namespace, empty.TaskQueue));
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     [Lane(TestLane.Integration)]
     public async Task An_instance_runs_on_a_non_default_namespace_and_task_queue()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var server = await WorkflowsHarness.StartDevServer("team-a");   // no 'sindri' namespace on this server
+        await using var server = await WorkflowsHarness.StartDevServer("team-a", ct);   // no 'sindri' namespace on this server
         await using var served = await Served.Start(_harness.Home, server, static name => name switch
         {
             "AW_SINDRI_TEMPORAL_NAMESPACE" => "team-a",
