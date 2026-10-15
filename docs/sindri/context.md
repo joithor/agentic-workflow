@@ -364,9 +364,11 @@ $SINDRI context map export [<name-or-path>] [--json]
 - **Sessions** (with `context.sessions.enabled: true`) see only the nodes their repo implements: the targets of
   `implements` edges whose file evidence is `repo:<their X-Sindri-Repo>/…`, and the edges between those nodes, plus
   the intent linked to those nodes (owner decision 2026-10-15: B): the decisions that `decide` one, the records that
-  `mention` one and the records those decisions quote, with their quotes fenced and scrubbed. A record or decision
-  linked only to nodes outside the repo answers `SND-CONTEXT-003`. A repo that implements nothing in the map answers
-  `SND-CONTEXT-003`.
+  `mention` one and the records those decisions quote. Record titles and decision quotes reach a session inside the
+  `<untrusted>` fence, and every text is scrubbed in the read answers. A record or decision linked only to nodes
+  outside the repo answers `SND-CONTEXT-003`. A repo that implements nothing in the map answers `SND-CONTEXT-003`.
+  The deny globs of every profile repo apply to a session too, not only its own repo's. A session can't export the
+  map (`SND-CONTEXT-020`): the file is not scrubbed and now holds the linked work text.
 - No map yet: `SND-CONTEXT-030` (fix: `sindri context map import <file>`).
 
 ### Doctor and the purge
@@ -427,8 +429,10 @@ in the profile (0–4, default 2), and `--depth` overrides it. Each affected nod
 evidence in its `X-Sindri-Repo`), the code files those edges start from, and the edges among them (so `lenses` shows its code band and
 `query --symbol <file>` resolves its files), so its cascade, neighbors and paths stay inside that set. It also sees the
 records that mention those nodes and the decisions that decide them (and the records those decisions quote) in the lenses'
-intent band and the query's `decisions` section, fenced and scrubbed like every session text (owner decision 2026-10-15: B;
-no wait for `context.repoTeams`). A record whose only links lead outside that set stays invisible; anything else is
+intent band and the query's `decisions` section, and by `show`, `neighbors` and `path` (owner decision 2026-10-15: B; no
+wait for `context.repoTeams`). Record titles and decision quotes arrive inside the `<untrusted>` fence; a person's decision
+wording is trusted and unfenced, as before; everything is scrubbed. A record whose only links lead outside that set stays
+invisible, and so does a `supersedes` conflict whose superseded decision is linked only outside that set; anything else is
 `SND-CONTEXT-003`.
 
 ### Text questions find anchors too
@@ -728,9 +732,10 @@ answer `SND-CONTEXT-011`. A query doesn't check Onyx's version: version drift is
 (`055`, naming both versions), and a query keeps using an Onyx that reports another version as long as its replies
 read; a reply that doesn't degrades onyx (`010`, cause `051`).
 
-Agent sessions don't read the onyx source yet: a session sees intent records only from the Linear teams the profile
-maps to its repo (`context.repoTeams`, a later stage), so until then onyx answers humans and services only. A caller
-whose scope maps no repo gets no source at all, onyx included.
+Agent sessions don't search the onyx source yet: until the profile maps Linear teams to a repo (`context.repoTeams`, a
+later stage), a session searches repo-docs sources only, so onyx answers humans and services only. A session still sees
+the map's records and decisions linked to its repo's nodes (owner decision 2026-10-15: B). A caller whose scope maps no
+repo gets no source at all, onyx included.
 
 `sindri context sources status` shows an `onyx` row: `ok`, `degraded` (the key is an admin key of a person's account,
 `SND-CONTEXT-053`) or `unavailable` (no answer, `SND-CONTEXT-010`; another version, `055`; key refused, `050`; pointer

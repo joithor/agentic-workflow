@@ -50,7 +50,8 @@ public static class ScopeRules
     /// <summary>
     /// Whether <paramref name="caller"/> may read <paramref name="source"/> at all. A session reads no intent source
     /// until the profile maps Linear teams to its repo ('context.repoTeams', spec §3, a later stage): without that map
-    /// no intent record is reachable from its repo.
+    /// no intent source can be searched for its repo. The records and decisions linked to its repo's nodes are in the map, not a source, and
+    /// a session sees them regardless (owner decision 2026-10-15, B; <see cref="Graph.RepoScope.WithLinkedIntent"/>).
     /// </summary>
     /// <param name="caller">The caller.</param>
     /// <param name="source">The source.</param>
