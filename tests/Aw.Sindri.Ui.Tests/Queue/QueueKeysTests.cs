@@ -307,6 +307,20 @@ public sealed class QueueKeysTests
 
     private static string Q(int n) => "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a30" + n.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
+    // What the gated polite region said: each text set while it was live (flag first, then the text).
+    private static List<string> Gated(QueueViewModel queue)
+    {
+        var said = new List<string>();
+        queue.PropertyChanged += (_, e) =>
+        {
+            if (string.Equals(e.PropertyName, nameof(QueueViewModel.Announcement), StringComparison.Ordinal) && queue.IsAnnouncing)
+            {
+                said.Add(queue.Announcement);
+            }
+        };
+        return said;
+    }
+
     private static List<string> FocusAsked(QueueViewModel queue)
     {
         var asked = new List<string>();
@@ -413,10 +427,12 @@ public sealed class QueueKeysTests
         Assert.Equal(Running(1), queue.SelectedId);
         var asked = new List<FocusRequestedEventArgs>();
         queue.FocusRequested += (_, e) => asked.Add(e);
+        var gated = Gated(queue);
 
         _server.QueueView = Regrouped("extra-p11-running", Running(1), "waitingOnYou");
         await queue.Refresh(_api, Token);
 
+        Assert.Equal([Labels.Cleared(Running(1))], gated);
         var drawn = queue.RunningRows.Concat(queue.QueuedRows).Select(r => r.Id).ToList();
         Assert.Contains(queue.SelectedId!, drawn, StringComparer.Ordinal);
         Assert.NotEqual(Running(1), queue.SelectedId, StringComparer.Ordinal);
@@ -439,10 +455,12 @@ public sealed class QueueKeysTests
         var last = queue.RunningRows[^1].Id;
         Assert.Equal(last, queue.SelectedId);
         var asked = FocusAsked(queue);
+        var gated = Gated(queue);
 
         _server.QueueView = Regrouped("extra-p11-running", string.Empty, "withYou", clones: 5);
         await queue.Refresh(_api, Token);
 
+        Assert.Equal([Labels.Cleared(last)], gated);
         var drawn = queue.RunningRows.Concat(queue.QueuedRows).Select(r => r.Id).ToList();
         Assert.DoesNotContain(last, drawn, StringComparer.Ordinal);
         Assert.Contains(queue.SelectedId!, drawn, StringComparer.Ordinal);
@@ -461,10 +479,12 @@ public sealed class QueueKeysTests
         queue.Move(1, QueueScope.Page);
         Assert.Equal(Running(2), queue.SelectedId);
         var asked = FocusAsked(queue);
+        var gated = Gated(queue);
 
         _server.QueueView = Regrouped("extra-p11-running", Running(2), "withYou");
         await queue.Refresh(_api, Token);
 
+        Assert.Equal([Labels.Cleared(Running(2))], gated);
         var shown = queue.Groups.Where(g => g.IsVisible).SelectMany(g => g.Rows).Select(r => r.Id).ToList();
         Assert.Contains(queue.SelectedId!, shown, StringComparer.Ordinal);
         Assert.NotEqual(Running(2), queue.SelectedId, StringComparer.Ordinal);

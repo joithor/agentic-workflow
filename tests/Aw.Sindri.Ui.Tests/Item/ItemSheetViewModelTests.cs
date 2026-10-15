@@ -297,30 +297,39 @@ public sealed class ItemSheetViewModelTests
 
     private static Task<T> WithinResult<T>(Task<T> task) => task.WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
 
-    // corr-2: a Load more still in flight for the item the sheet has left must not stop Load more on the item now open.
+    // corr-2: a Load more still in flight for the item the sheet has left must not stop Load more on the item now open; and
+    // when the old one lands (first), its guarded finally must not clear the flag the new item's Load more set.
     [Fact]
-    public async Task A_load_more_in_flight_for_the_previous_item_does_not_block_the_next_items()
+    public async Task A_load_more_in_flight_for_the_previous_item_does_not_block_or_unblock_the_next_items()
     {
         var sheet = await Sheet();
         await sheet.Open(_api, A.NewItem, Token);
         _server.IgnoreCancellation = true;
-        var gate = _server.TimelineGates[(A.NewItem, 151)] = Gate();
-        bool landed;
+        var gateA = _server.TimelineGates[(A.NewItem, 151)] = Gate();
+        var gateB = _server.TimelineGates[(A.DecisionItem, 151)] = Gate();
+        bool oldOne, firstOnNew, secondOnNew;
         try
         {
             var stuck = sheet.LoadMore(Token);
             await Within(sheet.Open(_api, A.DecisionItem, Token));
+            var onNew = sheet.LoadMore(Token);
+            var calls = _server.TimelineCalls;
 
-            landed = await WithinResult(sheet.LoadMore(Token));
-            gate.SetResult();
-            Assert.False(await WithinResult(stuck));
+            gateA.SetResult();
+            oldOne = await WithinResult(stuck);
+            secondOnNew = await WithinResult(sheet.LoadMore(Token));   // the new item's is still in flight: refused, not sent twice
+            Assert.Equal(calls, _server.TimelineCalls);
+
+            gateB.SetResult();
+            firstOnNew = await WithinResult(onNew);
         }
         finally
         {
-            _ = gate.TrySetResult();
+            _ = gateA.TrySetResult();
+            _ = gateB.TrySetResult();
         }
 
-        Assert.Equal((true, 101), (landed, sheet.Timeline.Count));
+        Assert.Equal((false, true, false, 101), (oldOne, firstOnNew, secondOnNew, sheet.Timeline.Count));
     }
 
     // testing-2: a page that lands after the sheet moved to another item is not that item's: no row of the old item's page is

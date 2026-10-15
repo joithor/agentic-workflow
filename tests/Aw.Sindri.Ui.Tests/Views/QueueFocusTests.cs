@@ -146,9 +146,9 @@ public sealed class QueueFocusTests : IDisposable
         var (window, shell) = await Connected();
         shell.GoTo(PageId.Queue);
         Settle(window);
-        var gone = Rows(window)[1].ItemId;
         Assert.True(Named<Border>(Rows(window)[1], "RowFrame").Focus(NavigationMethod.Tab));
-        shell.Queue.Select(gone, ViewModels.Queue.QueueScope.Page);
+        var gone = ((ViewModels.Queue.ItemRowViewModel)Focused(window)!.DataContext!).Id;   // the focused row, and focus selected it
+        Assert.Equal(gone, shell.Queue.SelectedId);
         var live = Named<TextBlock>(window, "QueueLive");
         Assert.Equal(Labels.Sindri, live.Text);
 
