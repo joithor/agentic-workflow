@@ -6,8 +6,8 @@ namespace Aw.Context.Core.Eval;
 public sealed record ProbeRun(ProbeReport Report, string? Path)
 {
     /// <summary>True when a probe's query failed: nothing was saved and the run is neither a regression nor a baseline.</summary>
-    public bool Incomplete => Report is null;   // red stub
+    public bool Incomplete => Report.Incomplete;
 
     /// <summary>The ids of the probes whose query failed, in file order.</summary>
-    public IReadOnlyList<string> Failed => Report is null ? ["?"] : [];   // red stub
+    public IReadOnlyList<string> Failed => [.. Report.Probes.Where(p => p.Error is not null).Select(p => p.Id.Value)];
 }

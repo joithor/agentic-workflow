@@ -10,14 +10,14 @@ internal sealed class EvalProbesService(IProbeFileReader files, IProbeReportStor
     public async ValueTask<Result<ProbeRun>> Handle(EvalProbesRequest request, CancellationToken cancellationToken)
     {
         var file = await files.Read(request.File, cancellationToken).ConfigureAwait(false);
-        var previous = await file.BindAsync(f => reports.Latest(f.Hash, cancellationToken)).ConfigureAwait(false);
-        if (previous.IsError)
+        var baseline = await file.BindAsync(f => reports.Baseline(f.Hash, cancellationToken)).ConfigureAwait(false);
+        if (baseline.IsError)
         {
-            return previous.Error;
+            return baseline.Error;
         }
 
         var runAt = clock.GetUtcNow();
-        var report = await ProbeRunner.Run(file.Value, request.Ask, previous.Value, runAt, cancellationToken).ConfigureAwait(false);
+        var report = await ProbeRunner.Run(file.Value, request.Ask, baseline.Value, runAt, cancellationToken).ConfigureAwait(false);
         if (report.IsError || report.Value.Incomplete)
         {
             return report.IsError ? report.Error : new ProbeRun(report.Value, Path: null);   // an incomplete run is never saved, so it can't become a baseline

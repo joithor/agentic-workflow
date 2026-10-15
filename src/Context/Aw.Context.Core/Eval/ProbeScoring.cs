@@ -9,7 +9,7 @@ public static partial class ProbeScoring
     /// <summary>How many of the answer's keys are scored.</summary>
     public const int K = 5;
 
-    /// <summary>The keys an answer names, in order, as scoring reads them: each item's node ('code:P' as 'file:P'), the nodes on an affects item's path, then its citations' keys ('repo:&lt;repo&gt;/P' as 'file:P'). Duplicates are dropped.</summary>
+    /// <summary>The keys an answer names, in order, as scoring reads them: each item's node ('code:P' as 'file:P'), the nodes on an affects item's path, then its citations' keys ('repo:&lt;repo&gt;/P' as 'file:P'); the map citation 'map:&lt;repo&gt;/vN' changes with every map version, so it is not a key. Duplicates are dropped.</summary>
     /// <param name="result">The answer.</param>
     /// <returns>The keys.</returns>
     public static IReadOnlyList<string> Keys(ContextResult result)
@@ -25,7 +25,7 @@ public static partial class ProbeScoring
             }
 
             named.AddRange((item.Path ?? []).Skip(1).Select(step => step[(step.IndexOf(' ', StringComparison.Ordinal) + 1)..]));
-            named.AddRange(item.Cites.Where(result.Cites.ContainsKey).Select(m => result.Cites[m].Key.Value));
+            named.AddRange(item.Cites.Where(result.Cites.ContainsKey).Select(m => result.Cites[m].Key.Value).Where(k => !k.StartsWith("map:", StringComparison.Ordinal)));
             keys.AddRange(named.Select(Normalized).Where(k => !keys.Contains(k, StringComparer.Ordinal)).Distinct(StringComparer.Ordinal));
         }
 

@@ -7,7 +7,7 @@ namespace Aw.Context.Core.Eval;
 
 /// <summary>
 /// Runs a probe file (spec §9.2 item 3, Phase 3): asks each question through a delegate (in Sindri, the CLI's GET
-/// /sindri/context/query), scores the answers, and compares the means with the previous run of the same file.
+/// /sindri/context/query), scores the answers, and compares the means with the baseline of the same file (its newest complete run that did not regress).
 /// </summary>
 public static partial class ProbeRunner
 {
@@ -16,24 +16,22 @@ public static partial class ProbeRunner
     /// <summary>Runs <paramref name="file"/>.</summary>
     /// <param name="file">The checked probe file.</param>
     /// <param name="ask">Answers one probe's question; an error is scored 0 for that probe and makes the run incomplete (never a regression, never a baseline).</param>
-    /// <param name="previous">The previous run of the same file, or null.</param>
+    /// <param name="baseline">The baseline of the same file (<see cref="IProbeReportStore.Baseline"/>), or null.</param>
     /// <param name="runAt">The time now.</param>
     /// <param name="cancellationToken">Cancels the run.</param>
-    /// <returns>The report (<see cref="ProbeReport.Incomplete"/> when any probe failed); the first error when every probe failed with one.</returns>
-    public static async ValueTask<Result<ProbeReport>> Run(ProbeFile file, Func<ProbeCase, CancellationToken, ValueTask<Result<ContextResult>>> ask, ProbeReport? previous,
+    /// <returns>The report (<see cref="ProbeReport.Incomplete"/> when any probe failed, every probe included).</returns>
+    public static async ValueTask<Result<ProbeReport>> Run(ProbeFile file, Func<ProbeCase, CancellationToken, ValueTask<Result<ContextResult>>> ask, ProbeReport? baseline,
         DateTimeOffset runAt, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(file);
         ArgumentNullException.ThrowIfNull(ask);
         var scores = new List<ProbeScore>();
-        Error? firstError = null;
         string? mapVersion = null;
         foreach (var probe in file.Set.Probes)
         {
             var answer = await ask(probe, cancellationToken).ConfigureAwait(false);
             if (answer.IsError)
             {
-                firstError ??= answer.Error;
                 scores.Add(new ProbeScore(probe.Id, 0, 0, [], [], [], answer.Error.Code));
                 continue;
             }
@@ -42,20 +40,19 @@ public static partial class ProbeRunner
             scores.Add(ProbeScoring.Score(probe, answer.Value));
         }
 
-        if (firstError is not null && scores.TrueForAll(s => s.Error is not null))
-        {
-            return firstError;
-        }
-
         var totals = new ProbeTotals(ProbeScoring.Round(scores.Average(s => s.PrecisionAt5)), ProbeScoring.Round(scores.Average(s => s.CitationCorrectness)), scores.Count, runAt,
             scores.Sum(s => s.AbsentReturned.Count));
-        var before = previous?.Totals;
+        var before = baseline?.Totals;
         var report = new ProbeReport(ProbeReport.CurrentSchemaVersion, file.Path, file.Hash, mapVersion, scores, totals, before, Regressed: false);
-        return report.Incomplete || before is null ? report : report with { Regressed = Worse(totals, before) };
+        return report.Incomplete || baseline is null ? report : report with { Regressed = Worse(report, baseline) };
     }
 
-    private static bool Worse(ProbeTotals now, ProbeTotals before) =>
-        now.PrecisionAt5 < before.PrecisionAt5 || now.CitationCorrectness < before.CitationCorrectness || now.AbsentReturned > before.AbsentReturned;
+    /// <summary>Lower means than the baseline's, or a probe naming more absent nodes than the same probe did there (a baseline without per-probe scores compares the totals).</summary>
+    private static bool Worse(ProbeReport now, ProbeReport before) =>
+        now.Totals.PrecisionAt5 < before.Totals.PrecisionAt5 || now.Totals.CitationCorrectness < before.Totals.CitationCorrectness
+        || (before.Probes.Count == 0
+            ? now.Totals.AbsentReturned > before.Totals.AbsentReturned
+            : now.Probes.Any(p => before.Probes.FirstOrDefault(b => b.Id == p.Id) is { } was && p.AbsentReturned.Count > was.AbsentReturned.Count));
 
     /// <summary>Checks a probe file's content: at least one probe, ids unique slugs, questions 1 to 2000 characters, schema version 1.</summary>
     /// <param name="set">The parsed file.</param>

@@ -92,7 +92,7 @@ public sealed class ContextCliTests
     {
         var at = new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
         ProbeScore[] probes = [new ProbeScore(ProbeId.From("one"), 0, 0, [], [], [], failedProbe ? "SND-CONTEXT-011" : null)];
-        var report = new ProbeReport(1, "/p/probes.json", "h", "v1", probes, new ProbeTotals(0.6, 1, 1, at), Previous: null, regressed);
+        var report = new ProbeReport(1, "/p/probes.json", "h", "v1", probes, new ProbeTotals(0.6, 1, 1, at), Baseline: null, regressed);
 
         Assert.Equal(exit, ContextEvalVerbs.Exit(new ProbeRun(report, failedProbe ? null : "/p/r.json")));
     }
@@ -102,7 +102,7 @@ public sealed class ContextCliTests
     {
         var at = new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
         ProbeScore Score(string id, string? error) => new(ProbeId.From(id), 0, 0, [], [], [], error);
-        ProbeReport Report(params ProbeScore[] probes) => new(1, "/p/probes.json", "h", "v1", probes, new ProbeTotals(0, 0, probes.Length, at), Previous: null, Regressed: false);
+        ProbeReport Report(params ProbeScore[] probes) => new(1, "/p/probes.json", "h", "v1", probes, new ProbeTotals(0, 0, probes.Length, at), Baseline: null, Regressed: false);
 
         var complete = System.Text.Json.JsonDocument.Parse(Kernel.Json.AwJson.Serialize(new ProbeRun(Report(Score("one", error: null)), "/p/r.json"), SliceHarness.Json)).RootElement;
         var incomplete = System.Text.Json.JsonDocument.Parse(Kernel.Json.AwJson.Serialize(new ProbeRun(Report(Score("one", "SND-CONTEXT-020"), Score("two", "SND-CONTEXT-020")), Path: null),
@@ -121,7 +121,7 @@ public sealed class ContextCliTests
     {
         var at = new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
         var report = new ProbeReport(1, "/p/probes.json", "h", "v1", [new ProbeScore(ProbeId.From("orientation-cascade"), 0, 0, [], [], [], "SND-CONTEXT-011")],
-            new ProbeTotals(0, 0, 1, at), Previous: null, Regressed: false);
+            new ProbeTotals(0, 0, 1, at), Baseline: null, Regressed: false);
 
         var text = ContextEvalText.Report(report, path: null);
 

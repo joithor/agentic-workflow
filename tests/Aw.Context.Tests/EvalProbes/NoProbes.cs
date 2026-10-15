@@ -10,7 +10,7 @@ internal sealed class NoProbes : IProbeFileReader, IProbeReportStore
     public ValueTask<Result<ProbeFile>> Read(string? path, CancellationToken cancellationToken) =>
         ValueTask.FromResult<Result<ProbeFile>>(ContextErrors.NoProbeFile.With("this test world has no probe file"));
 
-    public ValueTask<Result<ProbeReport?>> Latest(string probeFileHash, CancellationToken cancellationToken) =>
+    public ValueTask<Result<ProbeReport?>> Baseline(string probeFileHash, CancellationToken cancellationToken) =>
         ValueTask.FromResult<Result<ProbeReport?>>((ProbeReport?)null);
 
     public ValueTask<Result<string>> Write(ProbeReport report, DateTimeOffset runAt, CancellationToken cancellationToken) =>

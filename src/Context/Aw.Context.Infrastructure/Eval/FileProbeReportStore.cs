@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Aw.Context.Core;
 using Aw.Context.Core.Eval;
 using Aw.Context.Infrastructure.Store;
@@ -15,7 +16,7 @@ namespace Aw.Context.Infrastructure.Eval;
 /// </summary>
 internal sealed class FileProbeReportStore(ContextStoreSettings settings, JsonSerializerOptions options) : IProbeReportStore
 {
-    public async ValueTask<Result<ProbeReport?>> Latest(string probeFileHash, CancellationToken cancellationToken)
+    public async ValueTask<Result<ProbeReport?>> Baseline(string probeFileHash, CancellationToken cancellationToken)
     {
         var folder = settings.ProbesDirectory;
         if (!Directory.Exists(folder))
@@ -27,7 +28,7 @@ internal sealed class FileProbeReportStore(ContextStoreSettings settings, JsonSe
         {
             foreach (var file in Directory.EnumerateFiles(folder, "probes-*.json").Order(StringComparer.Ordinal).Reverse())
             {
-                var read = AwJson.Deserialize<ProbeReport>(await File.ReadAllBytesAsync(file, cancellationToken).ConfigureAwait(false), options);
+                var read = AwJson.Deserialize<ProbeReport>(WithBaselineName(await File.ReadAllBytesAsync(file, cancellationToken).ConfigureAwait(false)), options);
                 if (read.IsSuccess && read.Value.IsBaseline && string.Equals(read.Value.ProbeFileHash, probeFileHash, StringComparison.Ordinal))
                 {
                     return read.Value;
@@ -40,6 +41,25 @@ internal sealed class FileProbeReportStore(ContextStoreSettings settings, JsonSe
         {
             return ContextErrors.StoreUnavailable.With($"{folder} can't be read: {e.Message}");
         }
+    }
+
+    /// <summary>A report written before 'previous' was renamed 'baseline' reads as the new name.</summary>
+    private static byte[] WithBaselineName(byte[] bytes)
+    {
+        try
+        {
+            if (JsonNode.Parse(bytes) is JsonObject report && !report.ContainsKey("baseline") && report.Remove("previous", out var legacy))
+            {
+                report["baseline"] = legacy;
+                return System.Text.Encoding.UTF8.GetBytes(report.ToJsonString());
+            }
+        }
+        catch (JsonException)
+        {
+            // not JSON: the deserializer below reports it
+        }
+
+        return bytes;
     }
 
     public ValueTask<Result<string>> Write(ProbeReport report, DateTimeOffset runAt, CancellationToken cancellationToken)

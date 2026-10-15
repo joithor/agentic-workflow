@@ -78,7 +78,7 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-037: a node name (label) matches several nodes; the message lists their keys.</summary>
     public static readonly ErrorDefinition AmbiguousAnchor = new("SND-CONTEXT-037", ErrorKind.Conflict, "The name matches several nodes");
 
-    /// <summary>SND-CONTEXT-038: a probe run scored lower than the previous run of the same probe file (precision@5 or citation correctness).</summary>
+    /// <summary>SND-CONTEXT-038: a probe run scored lower than the baseline of the same probe file (its newest complete run that did not regress) in precision@5 or citation correctness, or a probe returned more absent nodes than it did there.</summary>
     public static readonly ErrorDefinition ProbesRegressed = new("SND-CONTEXT-038", ErrorKind.Conflict, "The probes regressed");
 
     /// <summary>Every Context error, for ErrorCatalogue.Validate.</summary>

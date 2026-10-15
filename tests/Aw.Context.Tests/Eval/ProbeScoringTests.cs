@@ -33,9 +33,9 @@ public sealed class ProbeScoringTests
 
         var score = ProbeScoring.Score(probe, result);
 
-        // keys: a, b, c, d, file:src/x.ts → hits a, c, file:src/x.ts
-        Assert.Equal(0.6, score.PrecisionAt5, 6);
-        Assert.Equal(["feature:a", "feature:c", "file:src/x.ts"], score.Hits);
+        // sections group the items: graph a, b, c, d, e, then code; keys a, b, c, d, e → hits a, c
+        Assert.Equal(0.4, score.PrecisionAt5, 6);
+        Assert.Equal(["feature:a", "feature:c"], score.Hits);
         Assert.Equal(5, score.Top.Count);
     }
 

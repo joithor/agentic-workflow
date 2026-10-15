@@ -20,7 +20,7 @@ public sealed class EvalProbesServiceTests
 
         var run = await world.Run(Hit);
 
-        Assert.Equal((null, false, true), (run.Value.Report.Previous, run.Value.Report.Regressed, run.Value.Report.Totals.PrecisionAt5 > 0));
+        Assert.Equal((null, false, true), (run.Value.Report.Baseline, run.Value.Report.Regressed, run.Value.Report.Totals.PrecisionAt5 > 0));
         Assert.Equal(("/probes/run-1.json", run.Value.Report), (run.Value.Path, world.Written.Single()));
     }
 
@@ -33,7 +33,7 @@ public sealed class EvalProbesServiceTests
 
         var second = await world.Run(Miss);
 
-        Assert.Equal(first.Value.Report.Totals, second.Value.Report.Previous);
+        Assert.Equal(first.Value.Report.Totals, second.Value.Report.Baseline);
         Assert.True(second.Value.Report.Regressed);
         Assert.Equal(2, world.Written.Count);
     }
@@ -60,7 +60,9 @@ public sealed class EvalProbesServiceTests
         var run = await world.Run((_, _) => ValueTask.FromResult<Result<ContextResult>>(ContextErrors.SessionsDisabled.With("off")));
 
         Assert.True(run.IsSuccess, run.IsError ? run.Error.Message : null);
-        Assert.Equal((true, ["p1", "p2"], null), (run.Value.Incomplete, run.Value.Failed, run.Value.Path));
+        Assert.True(run.Value.Incomplete);
+        Assert.Equal(["p1", "p2"], run.Value.Failed);
+        Assert.Null(run.Value.Path);
         Assert.Empty(world.Written);
     }
 
@@ -75,7 +77,7 @@ public sealed class EvalProbesServiceTests
 
         var again = await world.Run(Miss);
 
-        Assert.Equal(first.Value.Report.Totals, again.Value.Report.Previous);
+        Assert.Equal(first.Value.Report.Totals, again.Value.Report.Baseline);
         Assert.True(again.Value.Report.Regressed);
     }
 
@@ -112,8 +114,8 @@ public sealed class EvalProbesServiceTests
         public ValueTask<Result<ProbeFile>> Read(string? path, CancellationToken cancellationToken) =>
             ValueTask.FromResult(Refusal is { } refused ? (Result<ProbeFile>)refused : TwoProbes ? _two : _file);
 
-        public ValueTask<Result<ProbeReport?>> Latest(string probeFileHash, CancellationToken cancellationToken) =>
-            ValueTask.FromResult<Result<ProbeReport?>>(Written.LastOrDefault(r => r.ProbeFileHash == probeFileHash));
+        public ValueTask<Result<ProbeReport?>> Baseline(string probeFileHash, CancellationToken cancellationToken) =>
+            ValueTask.FromResult<Result<ProbeReport?>>(Written.LastOrDefault(r => r.ProbeFileHash == probeFileHash && r.IsBaseline));
 
         public ValueTask<Result<string>> Write(ProbeReport report, DateTimeOffset runAt, CancellationToken cancellationToken)
         {
