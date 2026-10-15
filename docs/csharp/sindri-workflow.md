@@ -123,9 +123,9 @@ form under its hash: `registered <id>@<hash12> (unapproved)`, or `already regist
 `recipe.registered` event per hash). Other content under a registered id and version is `SND-RECIPE-007`; any other
 failing rule is `SND-RECIPE-001`, each followed by its rule lines.
 
-`sindri recipe show <id@hash>` (a query; the hash by 8 or more digits) prints the recipe's line, then `urgency: <urgency>`, one
+`sindri recipe show <id@hash> [--json]` (a query; the hash by 8 or more digits) prints the recipe's line, then `urgency: <urgency>`, one
 `input: <key> type=<type> kind=<kind|->` line per input and one `output: <key> type=<type> from=<state>` line per output, then the approval preview;
-an unknown hash is `SND-RECIPE-002`. `sindri recipe list [--stale] [--json]` prints one line per registered recipe,
+an unknown hash is `SND-RECIPE-002`. `show --json` prints the server's body, `{"recipe":{id, version, hash, standing, via, stale, inputs, urgency, outputs},"preview":{…}}`: the recipe object has the same fields as a `recipe list --json` row, so a client reads urgency, inputs and outputs the same way from either. `sindri recipe list [--stale] [--json]` prints one line per registered recipe,
 `<id>@<hash12> <standing> (<via>)[; stale: …]`, where standing is `approved`, `unapproved` or `revoked` and stale names
 `pin-drift` (a pinned block's descriptor changed in this build) or `child-stale` (a pinned child was revoked);
 `--stale` keeps only the approved ones that are stale. `--json` prints the server's body,
