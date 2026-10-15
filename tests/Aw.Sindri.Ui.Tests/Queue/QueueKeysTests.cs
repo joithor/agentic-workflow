@@ -387,6 +387,7 @@ public sealed class QueueKeysTests
         var root = System.Text.Json.Nodes.JsonNode.Parse(GoldenFiles.SpecShaped("queue", view))!;
         var groups = root["groups"]!.AsArray();
         System.Text.Json.Nodes.JsonNode? moved = null;
+        var template = System.Text.Json.Nodes.JsonNode.Parse(groups.Single(g => g!["group"]!.GetValue<string>() == "withYou")!["items"]!.AsArray()[0]!.ToJsonString())!;
         foreach (var group in groups)
         {
             var items = group!["items"]!.AsArray();
@@ -403,7 +404,6 @@ public sealed class QueueKeysTests
             target.Add(moved);
         }
 
-        var template = groups.Single(g => g!["group"]!.GetValue<string>() == "withYou")!["items"]!.AsArray()[0] ?? moved!;
         for (var n = 0; n < clones; n++)
         {
             var copy = System.Text.Json.Nodes.JsonNode.Parse(template.ToJsonString())!;
@@ -646,6 +646,27 @@ public sealed class QueueKeysTests
         Assert.NotEqual(Running(2), queue.SelectedId, StringComparer.Ordinal);
         Assert.Equal([(queue.SelectedId!, true)], asked.Select(a => (a.ItemId, a.OnlyIfLost)));
         Assert.Equal((true, Labels.Cleared(Running(2))), (queue.IsAnnouncing, queue.Announcement));
+    }
+
+    // narrow-1: a collapsed group with no rows shows no heading; the first row to arrive in it brings the heading, so the page
+    // moves under the pointer and the row is held like any other the page draws.
+    [Fact]
+    public async Task A_new_row_in_an_empty_collapsed_group_is_held()
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
+        var queue = await Queue();
+        queue.PageShown(QueueScope.Page);
+        var withYou = queue.Groups.Single(g => g.Group == "withYou");
+        var served = withYou.Rows[0].Id;
+        withYou.IsExpanded = false;
+        _server.QueueView = Regrouped("extra-p11-running", served, "waitingOnYou");
+        await queue.Refresh(_api, Token);
+        queue.Hold(holding: true);
+
+        _server.QueueView = Regrouped("extra-p11-running", served, "waitingOnYou", clones: 1);
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal((true, "1 new"), (queue.HasHeld, queue.HeldText));
     }
 
     // R3: the pill's press asks for the rows: focus goes to the first new one, once. The selected row it pushes past Home's cap
