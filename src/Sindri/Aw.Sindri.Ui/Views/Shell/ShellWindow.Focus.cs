@@ -42,22 +42,29 @@ internal sealed partial class ShellWindow
         }
     }
 
-    // Focus already on the page region would not move on a page change, so the new page's name would go unspoken: drop
-    // focus and take it again so the region raises a fresh focus event (review run 4, a11y-2).
+    // A page change made by a navigation command (a G-chord, the palette's Go to, a nav tab) always lands focus on the new
+    // page's region, wherever focus was: the top bar, a nav item, a sheet beside the page (review run 5, a11y-0). Focus
+    // already on the region would not move, so it is dropped and taken again to raise a fresh event for the new name
+    // (run 4, a11y-2). Over a covering sheet the page is disabled and cannot take focus: the usual keep-focus rule applies.
     private void KeepFocusOrReannounce()
     {
         var page = this.Get<Border>("Page");
+        if (!page.IsEffectivelyEnabled)
+        {
+            KeepFocus();
+            return;
+        }
+
         if (ReferenceEquals(FocusManager?.GetFocusedElement(), page))
         {
             // Avalonia drops focus from an element that is disabled and has no clear call: disable and enable it, then focus again.
             var enabled = page.IsEnabled;
             page.SetCurrentValue(IsEnabledProperty, value: false);
             page.SetCurrentValue(IsEnabledProperty, enabled);
-            _ = page.Focus(Method());
-            return;
         }
 
-        KeepFocus();
+        _sheetOpener = null;
+        _ = page.Focus(Method());
     }
 
     // After a state change, a closed sheet or a change in its covering: if the focused control is gone (hidden, disabled,

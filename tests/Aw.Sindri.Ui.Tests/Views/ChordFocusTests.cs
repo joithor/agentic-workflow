@@ -130,9 +130,9 @@ public sealed class ChordFocusTests : IDisposable
     });
 
     // The palette's Go to, opened from the page region: the region is focused again once the page changes. The count of
-    // GotFocus events on the region is pinned (corr-3).
+    // GotFocus events on the region is pinned at 2: the palette closing hands focus back, then the page change re-announces (corr-3).
     [Fact]
-    public Task The_palette_Go_to_lands_focus_on_the_new_page_region_once() => OnUi(async () =>
+    public Task The_palette_Go_to_lands_focus_on_the_new_page_region_after_the_palette_hands_focus_back() => OnUi(async () =>
     {
         var (window, shell) = await Opened("region");
         var page = window.Get<Border>("Page");
@@ -154,6 +154,6 @@ public sealed class ChordFocusTests : IDisposable
 
         Assert.Equal(PageId.Workflows, shell.CurrentPage);
         AssertOnPageRegion(window, shell);
-        Assert.Equal(1, raised);
+        Assert.Equal(2, raised);   // the palette closing returns focus to the region, then the page change raises its fresh event
     });
 }
