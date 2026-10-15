@@ -1,5 +1,6 @@
 using Aw.Kernel;
 using Aw.Kernel.Testing;
+using Aw.Redaction;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
@@ -103,6 +104,65 @@ public sealed class RecordEventReplayTests
         _ = System.Text.Json.JsonDocument.Parse(stored);
     }
 
+    [Fact(Timeout = 30_000)]
+    public async Task A_blocked_scrub_stores_one_valid_json_row_without_its_detail_and_a_replay_matches_it()
+    {
+        var (activities, ledger) = await Open(redactor: new StubRedactor(static text => text.Contains("secret-reason", StringComparison.Ordinal) ? _blocked : Pass(text)));
+        var ct = TestContext.Current.CancellationToken;
+        var record = Moved("checks") with { Detail = WithReason("secret-reason") };
+
+        var first = await activities.Record(record, Key, "event:3", ct);
+        var again = await activities.Record(record, Key, "event:3", ct);
+        var rows = (await ledger.ReadAfter(0, 100, ct)).Value;
+
+        var row = Assert.Single(rows);
+        using var json = System.Text.Json.JsonDocument.Parse(row.Envelope.Payload);
+        Assert.False(json.RootElement.TryGetProperty("detail", out var detail) && detail.ValueKind != System.Text.Json.JsonValueKind.Null);
+        Assert.DoesNotContain("secret-reason", row.Envelope.Payload, StringComparison.Ordinal);
+        Assert.Equal((false, true, first.Sequence), (first.AlreadyRecorded, again.AlreadyRecorded, again.Sequence));
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task A_scrub_result_that_is_not_json_stores_the_row_without_its_detail()
+    {
+        var (activities, ledger) = await Open(redactor: new StubRedactor(static text => text.Contains("secret-reason", StringComparison.Ordinal) ? new ScrubResult("{ not json", [], ScrubOutcome.Redacted, BlockCode: null) : Pass(text)));
+        var ct = TestContext.Current.CancellationToken;
+
+        _ = await activities.Record(Moved("checks") with { Detail = WithReason("secret-reason") }, Key, "event:3", ct);
+        var row = Assert.Single((await ledger.ReadAfter(0, 100, ct)).Value);
+
+        using var json = System.Text.Json.JsonDocument.Parse(row.Envelope.Payload);
+        Assert.False(json.RootElement.TryGetProperty("detail", out var detail) && detail.ValueKind != System.Text.Json.JsonValueKind.Null);
+        Assert.DoesNotContain("secret-reason", row.Envelope.Payload, StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task A_bare_payload_that_still_cannot_be_scrubbed_throws_so_the_activity_retries_and_nothing_is_stored()
+    {
+        var (activities, ledger) = await Open(redactor: new StubRedactor(static _ => _blocked));
+        var ct = TestContext.Current.CancellationToken;
+
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() => activities.Record(Moved("checks"), Key, "event:3", ct));
+
+        Assert.Contains("can't be scrubbed", thrown.Message, StringComparison.Ordinal);
+        Assert.Empty((await ledger.ReadAfter(0, 100, ct)).Value);
+    }
+
+    private static readonly ScrubResult _blocked = new(ScrubResult.BlockedText, [], ScrubOutcome.Blocked, BlockCode: RedactionCodes.MatchTimeout);
+
+    private static ScrubResult Pass(string text) => new(text, [], ScrubOutcome.Clean, BlockCode: null);
+
+    private static WorkflowEventDetail WithReason(string reason) =>
+        WorkflowEventDetail.Of(new DeadlineFired("service:workflow.timers", 1, DeadlineKind.State), WorkflowInstanceId.Of(InstanceAddress.From("T-1/step/1")), suspension: null) with { Reason = reason };
+
+    /// <summary>A redactor that answers with the given function.</summary>
+    private sealed class StubRedactor(Func<string, ScrubResult> scrub) : IRedactor
+    {
+        public ScrubResult Scrub(string text) => scrub(text);
+
+        public bool IsSecretName(string name) => false;
+    }
+
     /// <summary>The real ledger, except that once armed its next read fails (a busy file).</summary>
     private sealed class ReadFailsOnce(ILedgerStore inner) : ILedgerStore
     {
@@ -133,7 +193,7 @@ public sealed class RecordEventReplayTests
     private static WorkflowEventRecord Moved(string to) =>
         new("T-1/step/1", EventTypes.WorkflowTransition, "T-1", "produce", to, "step.completed", "done", "1.1");
 
-    private static async Task<(RecordEventActivities Activities, ILedgerStore Ledger)> Open(Func<ILedgerStore, ILedgerStore>? wrap = null)
+    private static async Task<(RecordEventActivities Activities, ILedgerStore Ledger)> Open(Func<ILedgerStore, ILedgerStore>? wrap = null, IRedactor? redactor = null)
     {
         var clock = new FakeTimeProvider(KnownInstants.Epoch);
         var probe = new FakeProcessProbe();
@@ -142,6 +202,6 @@ public sealed class RecordEventReplayTests
         held.Hold((await store.Acquire(probe.Self(), TestContext.Current.CancellationToken)).Value);
         var ids = new SequentialIdGenerator();
         var events = new EventFactory(EventScope.ControlPlane, clock, ids, SliceHarness.Json, new AsyncLocalCallerContextAccessor(ids));
-        return (new RecordEventActivities(wrap?.Invoke(store) ?? store, held, events), store);
+        return (new RecordEventActivities(wrap?.Invoke(store) ?? store, held, events, redactor: redactor), store);
     }
 }
