@@ -28,6 +28,21 @@ internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSet
     public ValueTask<Result<IReadOnlyList<MapOverride>>> Overrides(CancellationToken cancellationToken) =>
         Query(new SqlStatement(GraphSql.SelectOverrides), GraphRows.Override, cancellationToken);
 
+    public async ValueTask<Result<MapSnapshot?>> Snapshot(bool draft, CancellationToken cancellationToken)
+    {
+        var read = await OpenRead(cancellationToken).ConfigureAwait(false);
+        if (read.IsError || read.Value is not { } session)
+        {
+            return read.IsError ? read.Error : Results.Success<MapSnapshot?>(value: null);
+        }
+
+        await using (session.ConfigureAwait(false))
+        {
+            var snapshot = await SnapshotIn(session, draft ? MapVersionStatus.Draft : MapVersionStatus.Current, cancellationToken).ConfigureAwait(false);
+            return snapshot.IsError ? ContextDatabase.Translate(snapshot.Error) : snapshot;
+        }
+    }
+
     public async ValueTask<Result<GraphSnapshot>> Read(int version, CancellationToken cancellationToken)
     {
         var read = await OpenRead(cancellationToken).ConfigureAwait(false);
@@ -72,6 +87,20 @@ internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSet
 
         await session.DisposeAsync().ConfigureAwait(false);
         return true;
+    }
+
+    /// <summary>The newest version with <paramref name="status"/>, its graph and the overrides, all read in <paramref name="session"/>.</summary>
+    private static async ValueTask<Result<MapSnapshot?>> SnapshotIn(SqliteReadSession session, MapVersionStatus status, CancellationToken cancellationToken)
+    {
+        var versions = await SqliteQueries.List(session, new SqlStatement(GraphSql.SelectVersions), GraphRows.Version, cancellationToken).ConfigureAwait(false);
+        if (versions.IsError || versions.Value.FirstOrDefault(v => v.Status == status) is not { } version)
+        {
+            return versions.IsError ? versions.Error : Results.Success<MapSnapshot?>(value: null);
+        }
+
+        var graph = await GraphReads.Version(session, version.Number, cancellationToken).ConfigureAwait(false);
+        var overrides = await SqliteQueries.List(session, new SqlStatement(GraphSql.SelectOverrides), GraphRows.Override, cancellationToken).ConfigureAwait(false);
+        return graph.IsError ? graph.Error : overrides.IsError ? overrides.Error : new MapSnapshot(version, graph.Value, overrides.Value);
     }
 
     /// <summary>A read-only session when the file exists and has the graph tables; null for 'no map yet'.</summary>
