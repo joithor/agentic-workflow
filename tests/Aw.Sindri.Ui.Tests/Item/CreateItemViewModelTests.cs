@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Testing;
@@ -71,9 +72,9 @@ public sealed class CreateItemViewModelTests
     [Fact]
     public async Task Before_p3_the_create_control_is_pending()
     {
-        var catalog = System.Text.Json.Nodes.JsonNode.Parse(GoldenFiles.Api("commands", "catalog"))!;
+        var catalog = JsonNode.Parse(GoldenFiles.Api("commands", "catalog"))!;
         catalog["rows"]!.AsArray().Single(r => (string?)r!["action"] == "CreateItem")!["ui"] = "pending:P3";
-        _server.Catalog = new RouteAnswer(System.Net.HttpStatusCode.OK, catalog.ToJsonString());
+        _server.Catalog = new RouteAnswer(HttpStatusCode.OK, catalog.ToJsonString());
         var form = await Form();
         form.Title = "Not yet";
 
