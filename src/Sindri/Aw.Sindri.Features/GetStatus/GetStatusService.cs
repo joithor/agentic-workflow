@@ -31,15 +31,15 @@ internal sealed class GetStatusService(HeldLease held, IApprovedProfile approval
         var grant = held.Current;
         var profile = Profile(approvedProfile, recorded.Value, loaded);
         var views = projector.Current;
-        var health = await Health(grant is not null, views, profile, cancellationToken).ConfigureAwait(false);
+        var health = await Health(grant is not null, views, profile, approvedProfile, cancellationToken).ConfigureAwait(false);
         var status = new GetStatusResponse(grant is not null, grant?.Holder.Pid ?? 0, grant?.Epoch ?? 0, grant?.ExpiresAt, profile, services);
         return status with { ApiVersion = SindriApi.Version, Views = views, Health = health };
     }
 
-    private async ValueTask<HealthReport> Health(bool running, ViewsStatus views, ProfileStatus profile, CancellationToken cancellationToken)
+    private async ValueTask<HealthReport> Health(bool running, ViewsStatus views, ProfileStatus profile, LoadedProfile? approved, CancellationToken cancellationToken)
     {
         var rows = await viewRows.List<ServiceRow>(ViewNames.Services, cancellationToken).ConfigureAwait(false);
-        return HealthSummary.For(running, views, rows.IsSuccess ? rows.Value : [], profile.NeedsApproval, profile.ChangedSinceApproval);
+        return HealthSummary.For(running, views, ApprovedServices.Of(rows.IsSuccess ? rows.Value : [], approved), profile.NeedsApproval, profile.ChangedSinceApproval);
     }
 
     private static ProfileStatus Profile(LoadedProfile? approved, RecordedApproval? recorded, Result<LoadedProfile> loaded)

@@ -4729,3 +4729,5 @@ virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.Equals(Aw.Sindri.Core
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.PrintMembers(System.Text.StringBuilder! builder) -> bool
 ~Aw.Sindri.Core.Ids.CommandId.ToString(string format, System.IFormatProvider provider) -> string
 ~Aw.Sindri.Core.Ids.CorrelationId.ToString(string format, System.IFormatProvider provider) -> string
+Aw.Sindri.Core.Views.ApprovedServices
+static Aw.Sindri.Core.Views.ApprovedServices.Of(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>! rows, Aw.Sindri.Core.Profile.LoadedProfile? approved) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>!

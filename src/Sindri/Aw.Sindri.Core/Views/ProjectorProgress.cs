@@ -34,7 +34,9 @@ internal sealed class ProjectorProgress(TimeProvider clock) : IProjectorStatus, 
         TaskCompletionSource pulse;
         lock (_gate)
         {
-            _current = _rebuildRequested ? status with { Rebuilding = true } : status;
+            // the head is read before the cursor moves, so mid-rebuild it can lag it ("cursor 66 of 65"): never show it behind
+            var shown = status.LedgerHead < status.Cursor ? status with { LedgerHead = status.Cursor } : status;
+            _current = _rebuildRequested ? shown with { Rebuilding = true } : shown;
             pulse = _pulse;
             _pulse = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         }

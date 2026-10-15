@@ -73,6 +73,7 @@ public sealed class StatusViewsHealthTests
     [Fact, Trait("Lane", "unit")]
     public async Task A_failed_service_and_an_unapproved_profile_degrade_it()
     {
+        _ = (await H.Profiles.Save(SliceHarness.Profile(), Token)).Value;   // heartbeat is in the approved profile; the ledger holds no approval record
         await _v.Fold(EventTypes.ServiceRan, new ServiceRan(H.Ids.New<CommandId>(), ServiceName.From("heartbeat"), H.Clock.GetUtcNow(), ServiceOutcome.Failed, "SND-SCHED-001"));
 
         var status = (await Service().Handle(new GetStatusRequest(), Token)).Value;
@@ -97,7 +98,8 @@ public sealed class StatusViewsHealthTests
     [Fact, Trait("Lane", "unit")]
     public void The_displayed_head_is_never_behind_the_cursor_mid_rebuild()
     {
-        var views = new ViewsStatus(Cursor: 66, LedgerHead: 65, ProjectedAt: null, Rebuilding: true, Stalled: false, StalledAt: null, StalledType: null);
+        _v.Progress.Publish(new ViewsStatus(Cursor: 66, LedgerHead: 65, ProjectedAt: null, Rebuilding: true, Stalled: false, StalledAt: null, StalledType: null));
+        var views = _v.Progress.Current;
 
         Assert.Equal(66, views.LedgerHead);
         Assert.Equal(EmptyText.Rebuilding(66, 66), views.Text);

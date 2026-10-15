@@ -29,7 +29,7 @@ internal sealed class ListServicesService(IApprovedProfile approvals, IViewReade
             return rows.Error;
         }
 
-        var runs = rows.Value.ToDictionary(r => r.Name.Value, StringComparer.Ordinal);
+        var runs = ApprovedServices.Of(rows.Value, approved.Value).ToDictionary(r => r.Name.Value, StringComparer.Ordinal);
         IReadOnlyList<ServiceView> services = [.. (approved.Value?.Profile.Services ?? SindriProfile.NoServices)
             .OrderBy(s => s.Key, StringComparer.Ordinal)
             .Select(s => View(s.Key, s.Value.Every, runs.GetValueOrDefault(s.Key)))];
