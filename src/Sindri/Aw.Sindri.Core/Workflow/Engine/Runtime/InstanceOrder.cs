@@ -6,13 +6,15 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// The one order of an instance list (API spec §3.8, E-20), shared by the CLI, the API and the app: each key breaks the
 /// ties of the one before. (1) unfinished before finished; (2) not parked or escalated before parked or escalated (a desk
 /// task, a taken-over instance and a running one are none of them); (3) the recipe's urgency, incident then triage then
-/// work; (4) the subject's label as the row shows it, ordinal (an instance with no subject shows its address); (5) the address, ordinal,
+/// work; (4) the subject's label as the row shows it (the same <see cref="ItemTitles"/> the row is built with), ordinal (an instance with no subject shows its address); (5) the address, ordinal,
 /// so the order is total. Never the start time, never how long it has been in its state.
 /// </summary>
-public sealed class InstanceOrder : IComparer<InstanceView>
+public sealed class InstanceOrder(ItemTitles titles) : IComparer<InstanceView>
 {
-    /// <summary>The one instance of the comparer.</summary>
-    public static InstanceOrder Instance { get; } = new();
+    private readonly ItemTitles _titles = titles ?? throw new ArgumentNullException(nameof(titles));
+
+    /// <summary>The comparer for a list with no item titles (an item is labelled by its id).</summary>
+    public static InstanceOrder Instance { get; } = new(ItemTitles.None);
 
     /// <inheritdoc/>
     public int Compare(InstanceView? x, InstanceView? y)
@@ -33,7 +35,7 @@ public sealed class InstanceOrder : IComparer<InstanceView>
             return keys;
         }
 
-        var label = string.CompareOrdinal(InstanceSummaries.SubjectOf(x, itemTitle: null).Label, InstanceSummaries.SubjectOf(y, itemTitle: null).Label);
+        var label = string.CompareOrdinal(InstanceSummaries.SubjectOf(x, _titles.For(x)).Label, InstanceSummaries.SubjectOf(y, _titles.For(y)).Label);
         return label != 0 ? label : string.CompareOrdinal(x.Address.Value, y.Address.Value);
     }
 

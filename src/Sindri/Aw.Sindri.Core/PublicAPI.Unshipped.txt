@@ -6724,7 +6724,7 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeUrgencies.UrgencyOf(Aw.Sindr
 static Aw.Sindri.Core.Workflow.Recipes.Urgencies.Word(Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency urgency) -> string!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceOrder
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceOrder.Compare(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView? x, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView? y) -> int
-Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceOrder.InstanceOrder() -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceOrder.InstanceOrder(Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles! titles) -> void
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceOrder.Instance.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceOrder!
 Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance
 Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!
@@ -6855,3 +6855,7 @@ static Aw.Sindri.Core.Profile.RepoDenyGlobs.For(Aw.Sindri.Core.Profile.SindriPro
 Aw.Sindri.Core.Profile.RepoDenyGlobs
 static Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.TypeOf(Aw.Sindri.Core.Workflow.Recipes.RecipeInput! input) -> string!
 static Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.KindOf(Aw.Sindri.Core.Workflow.Recipes.RecipeInput! input) -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles
+Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.For(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view) -> string?
+Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.ItemTitles(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! titles) -> void
+static Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.None.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles!

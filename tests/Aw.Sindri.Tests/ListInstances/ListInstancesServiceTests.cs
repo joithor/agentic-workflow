@@ -1,12 +1,14 @@
 using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ListInstances;
 using Aw.Sindri.Tests.GetInstance;
+using Aw.Sindri.Testing;
 using Microsoft.Extensions.Time.Testing;
 using RecipeUrgency = Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency;
 
@@ -30,7 +32,7 @@ public sealed class ListInstancesServiceTests
     private static async Task<(Result<ListInstancesResponse> Result, RecordingInstances Port)> Run(ListInstancesRequest request, params InstanceView[] views)
     {
         var port = new RecordingInstances([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]);
-        var service = new ListInstancesService(new NoDirectory(), port, new FixedReader(views), new FakeTimeProvider());
+        var service = new ListInstancesService(new NoDirectory(), port, new FixedReader(views), new FixedItemViews(), new FixedCaller(current: null), clock: new FakeTimeProvider());
         return (await service.Handle(request, CancellationToken.None), port);
     }
 
@@ -136,6 +138,29 @@ public sealed class ListInstancesServiceTests
             View("desk-task", "T-4/step/1", RecipeUrgency.Triage));
 
         Assert.Equal(["T-4/step/1", "T-3/step/1", "T-2/step/1", "T-1/step/1"], result.Value.Instances.Select(static v => v.Address.Value), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_row_label_and_the_sort_key_use_the_same_item_titles()
+    {
+        static InstanceView OnItem(string item, string address) =>
+            View("desk-task", address) with { ItemId = ItemKey.From(item), Subject = new SubjectRef("item", item, item, Href: null) };
+        var views = new[] { OnItem("ITM-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ITM-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/step/1"), OnItem("ITM-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "ITM-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb/step/1") };
+        var titles = new FixedItemViews(
+            new ItemRowBuilder().WithId(ItemId.From("ITM-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")).Build() with { Title = "Zeta" },
+            new ItemRowBuilder().WithId(ItemId.From("ITM-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")).Build() with { Title = "Alpha" });
+        var service = new ListInstancesService(
+            new NoDirectory(),
+            new RecordingInstances([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]),
+            new FixedReader(views),
+            titles,
+            new FixedCaller(new CallerContextBuilder().Human().Build()),
+            clock: new FakeTimeProvider());
+
+        var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
+
+        Assert.Equal(["Alpha", "Zeta"], result.Value.Rows.Select(static r => r.Subject.Label), StringComparer.Ordinal);   // by title; by id it would be Zeta, Alpha
+        Assert.Equal(["ITM-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb/step/1", "ITM-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/step/1"], result.Value.Instances.Select(static v => v.Address.Value), StringComparer.Ordinal);
     }
 
     [Fact]

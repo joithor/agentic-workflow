@@ -2,6 +2,9 @@ using System.Text.RegularExpressions;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Items;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
@@ -14,12 +17,17 @@ namespace Aw.Sindri.Features.ListInstances;
 /// Finds the instances by their search attributes (engine spec §5.1) and asks each for its view, so every line is a
 /// full status header. '--needs-me' is served here by a visibility query on 'NeedsYou = true', shaped like API's
 /// 'GET /needs-you' (Decisions, then Tasks; README X5) until API P4 builds that route, which it then reads instead.
+/// The engine has no item titles: they come from the items view (API P3), read once per list and fed to both the row and
+/// the order, so the label a row shows is the one it sorts by. An unreadable view degrades to the item's id. A child that has not
+/// run yet reads QUEUED from its starting state; nothing in this list knows a child that was never started, so engine P7 wires 'NotStarted'.
 /// </summary>
 /// <param name="directory">Resolves an address or a bare item ('address').</param>
 /// <param name="instances">The visibility query.</param>
 /// <param name="runtime">Each instance's 'GetInstance' Query; one that ended between the list and its query (SND-WF-001) is left out.</param>
+/// <param name="itemViews">The 'items' view, read once per list for the titles of the items the instances are on.</param>
+/// <param name="callers">The caller, whose repo scope decides which item titles it may see.</param>
 /// <param name="clock">The time the rows are read at: their ages and timeouts are worked out from it, not from when the workflow last ran.</param>
-internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, IInstanceReader runtime, TimeProvider clock) : IService<ListInstancesRequest, ListInstancesResponse>
+internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, IInstanceReader runtime, IViewReader itemViews, ICallerContextAccessor callers, TimeProvider clock) : IService<ListInstancesRequest, ListInstancesResponse>
 {
     public async ValueTask<Result<ListInstancesResponse>> Handle(ListInstancesRequest request, CancellationToken cancellationToken)
     {
@@ -51,7 +59,8 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             return views.Error;
         }
 
-        return Listed(needsMe, Matching(views.Value, request.Subject));
+        var titles = await Titles(cancellationToken).ConfigureAwait(false);
+        return Listed(needsMe, Matching(views.Value, request.Subject), titles);
     }
 
     /// <summary>Each row's 'GetInstance' view; one that ended between the list and its query is left out.</summary>
@@ -105,7 +114,7 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
         }
 
         var view = await runtime.Get(address.Value, cancellationToken).ConfigureAwait(false);
-        return view.IsError ? view.Error : Rows(new ListInstancesResponse([view.Value], NeedsYou: null, Empty: null));
+        return view.IsError ? view.Error : Rows(new ListInstancesResponse([view.Value], NeedsYou: null, Empty: null), await Titles(cancellationToken).ConfigureAwait(false));
     }
 
     /// <summary>The views whose subject has the key <paramref name="subject"/> or a label containing it; all of them when none is asked for. A label match can't be a search attribute (a keyword has no substring match), so it is made here.</summary>
@@ -114,23 +123,37 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             ? views
             : [.. views.Where(v => v.Subject is { } s && (string.Equals(s.Key, subject, StringComparison.Ordinal) || s.Label.Contains(subject, StringComparison.OrdinalIgnoreCase)))];
 
-    private ListInstancesResponse Listed(bool needsMe, List<InstanceView> views)
+    private ListInstancesResponse Listed(bool needsMe, List<InstanceView> views, ItemTitles titles)
     {
         if (needsMe)
         {
             var sections = NeedsYouList.Of(views);
-            return Rows(new([.. sections.Decisions, .. sections.Tasks], sections, sections.IsEmpty ? NeedsYouList.Nothing : null));
+            return Rows(new([.. sections.Decisions, .. sections.Tasks], sections, sections.IsEmpty ? NeedsYouList.Nothing : null), titles);
         }
 
-        var sorted = views.Order(InstanceOrder.Instance).ToList();   // API spec §3.8: one order on every list path
-        return Rows(new(sorted, NeedsYou: null, sorted.Count == 0 ? "no instances match" : null));
+        var sorted = views.Order(new InstanceOrder(titles)).ToList();   // API spec §3.8: one order on every list path
+        return Rows(new(sorted, NeedsYou: null, sorted.Count == 0 ? "no instances match" : null), titles);
     }
 
     /// <summary>The response with a list row per instance, each built by <see cref="InstanceSummaries.Of"/>.</summary>
-    private ListInstancesResponse Rows(ListInstancesResponse listed)
+    private ListInstancesResponse Rows(ListInstancesResponse listed, ItemTitles titles)
     {
-        var context = new InstanceSummaryContext(clock.GetUtcNow());
-        return listed with { Rows = [.. listed.Instances.Select(v => InstanceSummaries.Of(v, context))] };
+        var now = clock.GetUtcNow();
+        return listed with { Rows = [.. listed.Instances.Select(v => InstanceSummaries.Of(v, new InstanceSummaryContext(now, ItemTitle: titles.For(v))))] };
+    }
+
+    /// <summary>The titles of the items the caller may see, from the items view; none when there is no caller or the view can't be read (a row then shows the id).</summary>
+    private async ValueTask<ItemTitles> Titles(CancellationToken cancellationToken)
+    {
+        if (callers.Current is not { } caller)
+        {
+            return ItemTitles.None;
+        }
+
+        var rows = await itemViews.List<ItemRow>(ViewNames.Items, cancellationToken).ConfigureAwait(false);
+        return rows.IsError
+            ? ItemTitles.None
+            : new ItemTitles(rows.Value.Where(r => ItemScope.Visible(caller, r.Repo)).ToDictionary(static r => r.Id.Value, static r => r.Title, StringComparer.Ordinal));
     }
 
     private static Error? NotTrueOrFalse(string? value, string name, string meaning) =>

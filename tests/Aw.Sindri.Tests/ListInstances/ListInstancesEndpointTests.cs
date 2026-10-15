@@ -56,7 +56,7 @@ public sealed class ListInstancesEndpointTests
     [InlineData("?needsMe=1", "needsMe='1' isn't true or false")]
     public async Task A_value_that_is_not_true_or_false_reaches_the_service_so_the_answer_is_its_error(string query, string message)
     {
-        var service = new ListInstancesService(new NoDirectory(), new RecordingInstances([]), new FixedReader([]), new FakeTimeProvider());
+        var service = new ListInstancesService(new NoDirectory(), new RecordingInstances([]), new FixedReader([]), new FixedItemViews(), new FixedCaller(current: null), clock: new FakeTimeProvider());
         var builder = WebApplication.CreateSlimBuilder();
         _ = builder.WebHost.UseTestServer();
         _ = builder.Services.AddSingleton<IService<ListInstancesRequest, ListInstancesResponse>>(service);
