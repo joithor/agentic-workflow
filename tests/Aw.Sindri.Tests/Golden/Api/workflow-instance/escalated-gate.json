@@ -1,12 +1,12 @@
 {
   "address": "workflow/pagerduty-P-2211",
-  "id": "WFI-B71B3D84F3",
+  "id": "WFI-b71b3d84f36a597dee179eed2a4bb914",
   "parent": null,
   "itemId": null,
   "title": "PagerDuty P-2211",
   "recipe": {
-    "id": "triage.alert",
-    "hash": "d41f2a0700000000000000000000000000000000000000000000000000000000",
+    "id": "workflow.triage-alert",
+    "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
     "version": 2,
     "urgency": "triage"
   },
@@ -26,20 +26,6 @@
   "states": [
     {
       "id": "ingest",
-      "order": 0,
-      "branchOf": null,
-      "glyph": "done",
-      "badge": null,
-      "round": null,
-      "loops": [],
-      "desk": false,
-      "child": false,
-      "children": null,
-      "outcome": null,
-      "terminal": false
-    },
-    {
-      "id": "classify",
       "order": 1,
       "branchOf": null,
       "glyph": "done",
@@ -53,8 +39,22 @@
       "terminal": false
     },
     {
-      "id": "route",
+      "id": "classify",
       "order": 2,
+      "branchOf": null,
+      "glyph": "done",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "route",
+      "order": 3,
       "branchOf": null,
       "glyph": "active",
       "badge": {
@@ -71,7 +71,7 @@
     },
     {
       "id": "done",
-      "order": 3,
+      "order": 4,
       "branchOf": null,
       "glyph": "pending",
       "badge": null,
@@ -103,18 +103,18 @@
     "status": {
       "header": {
         "address": "workflow/pagerduty-P-2211",
-        "recipe": "workflow.step",
-        "hash12": "9ab2d40c0000",
-        "version": 5,
+        "recipe": "workflow.triage-alert",
+        "hash12": "d41f2a070000",
+        "version": 2,
         "state": "route",
         "detail": "escalated: gate",
-        "since": "2026-10-12T09:10:00.0000000Z",
-        "ageSeconds": 11760
+        "since": "2026-10-12T11:02:00.0000000Z",
+        "ageSeconds": 5040
       },
       "next": "Escalated: gate.severity scored 0.91, above 0.8. Accept to override it (the other checks still run before done), or reject (the Step re-runs within its loop, otherwise this parks).",
       "answer": {
         "kind": "accept",
-        "actionId": "ApplyCommand:answer",
+        "actionId": "ApplyCommand:answer-accept",
         "class": "protected",
         "cli": "sindri workflow answer workflow/pagerduty-P-2211 --accept",
         "atTerminal": true
@@ -128,27 +128,27 @@
       "commands": [
         {
           "verb": "answer",
-          "actionId": "ApplyCommand:answer",
-          "class": "desk",
+          "actionId": "ApplyCommand:answer-accept",
+          "class": "protected",
           "cli": "sindri workflow answer workflow/pagerduty-P-2211 --accept",
           "confirm": null
         },
         {
           "verb": "takeover",
           "actionId": "ApplyCommand:takeover",
-          "class": "protected",
+          "class": "pause",
           "cli": "sindri workflow takeover workflow/pagerduty-P-2211",
           "confirm": null
         },
         {
           "verb": "cancel",
           "actionId": "ApplyCommand:cancel",
-          "class": "protected",
+          "class": "desk",
           "cli": "sindri workflow cancel workflow/pagerduty-P-2211",
-          "confirm": "Cancel workflow/pagerduty-P-2211? 1 running steps stop; 0 children are cancelled."
+          "confirm": "Cancel workflow/pagerduty-P-2211? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "workflow/pagerduty-P-2211  workflow.step@9ab2d40c0000  v5  escalated: gate  since 09:10 (3h 16m)\n  next      Escalated: gate.severity scored 0.91, above 0.8. Accept to override it (the other checks still run\n            before done), or reject (the Step re-runs within its loop, otherwise this parks).\n  answer    sindri workflow answer workflow/pagerduty-P-2211 --accept     (at a terminal)\n  commands  answer, takeover, cancel\n"
+      "text": "workflow/pagerduty-P-2211  workflow.triage-alert@d41f2a070000  v2  route: escalated: gate  since 11:02 (1h 24m)\n  next      Escalated: gate.severity scored 0.91, above 0.8. Accept to override it (the other checks\n            still run before done), or reject (the Step re-runs within its loop, otherwise this\n            parks).\n  answer    sindri workflow answer workflow/pagerduty-P-2211 --accept     (at a terminal)\n  commands  answer, takeover, cancel\n"
     }
   },
   "facts": [
@@ -199,7 +199,7 @@
     "context": null
   },
   "actions": [
-    "ApplyCommand:answer",
+    "ApplyCommand:answer-accept",
     "ApplyCommand:takeover",
     "ApplyCommand:cancel"
   ],

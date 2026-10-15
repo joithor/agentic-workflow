@@ -39,32 +39,32 @@
   "states": [
     {
       "id": "intake",
-      "order": 0,
-      "branchOf": null
-    },
-    {
-      "id": "scoping",
       "order": 1,
       "branchOf": null
     },
     {
-      "id": "design",
+      "id": "scoping",
       "order": 2,
       "branchOf": null
     },
     {
-      "id": "build",
+      "id": "design",
       "order": 3,
       "branchOf": null
     },
     {
-      "id": "verify",
+      "id": "build",
       "order": 4,
       "branchOf": null
     },
     {
-      "id": "done",
+      "id": "verify",
       "order": 5,
+      "branchOf": null
+    },
+    {
+      "id": "done",
+      "order": 6,
       "branchOf": null
     }
   ],

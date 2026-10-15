@@ -1,12 +1,12 @@
 {
   "address": "workflow/sentry-8812",
-  "id": "WFI-0461AC4604",
+  "id": "WFI-0461ac4604c04a9c3696f4f6335a0868",
   "parent": null,
   "itemId": null,
   "title": "TypeError in tabs.layout",
   "recipe": {
-    "id": "triage.alert",
-    "hash": "d41f2a0700000000000000000000000000000000000000000000000000000000",
+    "id": "workflow.triage-alert",
+    "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
     "version": 2,
     "urgency": "triage"
   },
@@ -23,7 +23,7 @@
   "states": [
     {
       "id": "ingest",
-      "order": 0,
+      "order": 1,
       "branchOf": null,
       "glyph": "done",
       "badge": null,
@@ -37,7 +37,7 @@
     },
     {
       "id": "classify",
-      "order": 1,
+      "order": 2,
       "branchOf": null,
       "glyph": "active",
       "badge": null,
@@ -51,7 +51,7 @@
     },
     {
       "id": "route",
-      "order": 2,
+      "order": 3,
       "branchOf": null,
       "glyph": "pending",
       "badge": null,
@@ -65,7 +65,7 @@
     },
     {
       "id": "done",
-      "order": 3,
+      "order": 4,
       "branchOf": null,
       "glyph": "pending",
       "badge": null,
@@ -102,16 +102,16 @@
     },
     "status": {
       "header": {
-        "address": "workflow/sentry-8812/classify",
-        "recipe": "workflow.step",
-        "hash12": "9ab2d40c0000",
-        "version": 4,
+        "address": "workflow/sentry-8812",
+        "recipe": "workflow.triage-alert",
+        "hash12": "d41f2a070000",
+        "version": 2,
         "state": "classify",
         "detail": "desk task",
         "since": "2026-10-12T12:22:00.0000000Z",
         "ageSeconds": 240
       },
-      "next": "Produce the Step output for sentry-8812 (round 1/3), then run: sindri workflow complete workflow/sentry-8812/classify --run 1.1 --outcome done --output fact:severity=<text>",
+      "next": "Produce the Step output for sentry-8812 (round 1/3), then run: sindri workflow complete workflow/sentry-8812 --run 1.1 --outcome done --output fact:severity=<text>",
       "answer": null,
       "child": null,
       "drift": null,
@@ -140,27 +140,27 @@
       "commands": [
         {
           "verb": "complete",
-          "actionId": "ApplyCommand:complete",
+          "actionId": "CompleteStep",
           "class": "desk",
-          "cli": "sindri workflow complete workflow/sentry-8812/classify --run 1.1 --outcome done --output fact:severity=<text>",
+          "cli": "sindri workflow complete workflow/sentry-8812 --run 1.1 --outcome done --output fact:severity=<text>",
           "confirm": null
         },
         {
           "verb": "takeover",
           "actionId": "ApplyCommand:takeover",
-          "class": "protected",
-          "cli": "sindri workflow takeover workflow/sentry-8812/classify",
+          "class": "pause",
+          "cli": "sindri workflow takeover workflow/sentry-8812",
           "confirm": null
         },
         {
           "verb": "cancel",
           "actionId": "ApplyCommand:cancel",
-          "class": "protected",
-          "cli": "sindri workflow cancel workflow/sentry-8812/classify",
-          "confirm": "Cancel workflow/sentry-8812/classify? 1 running steps stop; 0 children are cancelled."
+          "class": "desk",
+          "cli": "sindri workflow cancel workflow/sentry-8812",
+          "confirm": "Cancel workflow/sentry-8812? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "workflow/sentry-8812/classify  workflow.step@9ab2d40c0000  v4  classify: desk task  since 12:22 (4m)\n  next      Produce the Step output for sentry-8812 (round 1/3), then run:\n            sindri workflow complete workflow/sentry-8812/classify --run 1.1 --outcome done --output fact:severity=<text>\n  inputs    fact:alert  alert.json  sha256:1c0e…\n  timeout   parks in 1d 22h 48m (desk)\n  budget    tokens 0 / 200k (state), 0 / 400k (instance)\n  commands  complete, takeover, cancel\n"
+      "text": "workflow/sentry-8812  workflow.triage-alert@d41f2a070000  v2  classify: desk task  since 12:22 (4m)\n  next      Produce the Step output for sentry-8812 (round 1/3), then run: sindri workflow complete\n            workflow/sentry-8812 --run 1.1 --outcome done --output fact:severity=<text>\n  inputs    fact:alert  alert.json  sha256:1c0e…\n  timeout   parks in 1d 21h 50m (desk)\n  budget    tokens 0 / 200k (state), 0 / 400k (instance)\n  commands  complete, takeover, cancel\n"
     }
   },
   "facts": [

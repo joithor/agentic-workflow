@@ -1,12 +1,12 @@
 {
   "address": "workflow/triage-three-state-1",
-  "id": "WFI-1DDB7BB95E",
+  "id": "WFI-1ddb7bb95ef2efc12297ee47f8d2c752",
   "parent": null,
   "itemId": null,
   "title": "Three-state triage",
   "recipe": {
     "id": "workflow.dev-triage-three-state",
-    "hash": "e2d7a5b100000000000000000000000000000000000000000000000000000000",
+    "hash": "sha256:e2d7a5b100000000000000000000000000000000000000000000000000000000",
     "version": 1,
     "urgency": "triage"
   },
@@ -23,7 +23,7 @@
   "states": [
     {
       "id": "intake",
-      "order": 0,
+      "order": 1,
       "branchOf": null,
       "glyph": "done",
       "badge": null,
@@ -37,7 +37,7 @@
     },
     {
       "id": "classify",
-      "order": 1,
+      "order": 2,
       "branchOf": null,
       "glyph": "active",
       "badge": null,
@@ -51,7 +51,7 @@
     },
     {
       "id": "done",
-      "order": 2,
+      "order": 3,
       "branchOf": null,
       "glyph": "pending",
       "badge": null,
@@ -75,65 +75,46 @@
     "desk": null,
     "status": {
       "header": {
-        "address": "workflow/sentry-8812/classify",
-        "recipe": "workflow.step",
-        "hash12": "9ab2d40c0000",
-        "version": 4,
+        "address": "workflow/triage-three-state-1",
+        "recipe": "workflow.dev-triage-three-state",
+        "hash12": "e2d7a5b10000",
+        "version": 1,
         "state": "classify",
-        "detail": "desk task",
-        "since": "2026-10-12T12:22:00.0000000Z",
-        "ageSeconds": 240
+        "detail": "running",
+        "since": "2026-10-12T12:00:00.0000000Z",
+        "ageSeconds": 1560
       },
-      "next": "Produce the Step output for sentry-8812 (round 1/3), then run: sindri workflow complete workflow/sentry-8812/classify --run 1.1 --outcome done --output fact:severity=<text>",
+      "next": "classify.rules is running.",
       "answer": null,
       "child": null,
       "drift": null,
       "inputs": [
         {
-          "key": "fact:alert",
-          "name": "alert.json",
-          "hash": "1c0e5a77"
+          "key": "fact:request",
+          "name": "request.txt",
+          "hash": "5cd0e9a2"
         }
       ],
-      "timeout": {
-        "kind": "parks",
-        "inSeconds": 165000,
-        "on": "desk"
-      },
-      "budget": {
-        "scope": "state",
-        "used": 0,
-        "limit": 200000,
-        "instance": {
-          "used": 0,
-          "limit": 400000
-        }
-      },
+      "timeout": null,
+      "budget": null,
       "paused": null,
       "commands": [
         {
-          "verb": "complete",
-          "actionId": "ApplyCommand:complete",
-          "class": "desk",
-          "cli": "sindri workflow complete workflow/sentry-8812/classify --run 1.1 --outcome done --output fact:severity=<text>",
-          "confirm": null
-        },
-        {
           "verb": "takeover",
           "actionId": "ApplyCommand:takeover",
-          "class": "protected",
-          "cli": "sindri workflow takeover workflow/sentry-8812/classify",
+          "class": "pause",
+          "cli": "sindri workflow takeover workflow/triage-three-state-1",
           "confirm": null
         },
         {
           "verb": "cancel",
           "actionId": "ApplyCommand:cancel",
-          "class": "protected",
-          "cli": "sindri workflow cancel workflow/sentry-8812/classify",
-          "confirm": "Cancel workflow/sentry-8812/classify? 1 running steps stop; 0 children are cancelled."
+          "class": "desk",
+          "cli": "sindri workflow cancel workflow/triage-three-state-1",
+          "confirm": "Cancel workflow/triage-three-state-1? 1 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "workflow/sentry-8812/classify  workflow.step@9ab2d40c0000  v4  classify: desk task  since 12:22 (4m)\n  next      Produce the Step output for sentry-8812 (round 1/3), then run:\n            sindri workflow complete workflow/sentry-8812/classify --run 1.1 --outcome done --output fact:severity=<text>\n  inputs    fact:alert  alert.json  sha256:1c0e…\n  timeout   parks in 1d 22h 48m (desk)\n  budget    tokens 0 / 200k (state), 0 / 400k (instance)\n  commands  complete, takeover, cancel\n"
+      "text": "workflow/triage-three-state-1  workflow.dev-triage-three-state@e2d7a5b10000  v1  classify: running  since 12:00 (26m)\n  next      classify.rules is running.\n  inputs    fact:request  request.txt  sha256:5cd0…\n  commands  takeover, cancel\n"
     }
   },
   "facts": [

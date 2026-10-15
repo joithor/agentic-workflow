@@ -14,33 +14,39 @@
       "label": "Severity",
       "type": "decision",
       "from": "assess"
+    },
+    {
+      "key": "postmortem",
+      "label": "Postmortem draft",
+      "type": "text",
+      "from": "resolved"
     }
   ],
   "urgency": "incident",
   "states": [
     {
       "id": "assess",
-      "order": 0,
-      "branchOf": null
-    },
-    {
-      "id": "mitigate",
       "order": 1,
       "branchOf": null
     },
     {
-      "id": "verify",
+      "id": "mitigate",
       "order": 2,
       "branchOf": null
     },
     {
-      "id": "comms",
+      "id": "verify",
       "order": 3,
       "branchOf": null
     },
     {
-      "id": "resolved",
+      "id": "comms",
       "order": 4,
+      "branchOf": null
+    },
+    {
+      "id": "resolved",
+      "order": 5,
       "branchOf": null
     }
   ],

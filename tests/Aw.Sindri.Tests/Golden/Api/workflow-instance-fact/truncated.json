@@ -1,6 +1,18 @@
 {
   "key": "alert",
   "type": "payload",
-  "body": "{\"events\":[{\"n\":1},{\"n\":2}",
+  "body": {
+    "source": "pagerduty",
+    "events": [
+      {
+        "n": 1,
+        "kind": "triggered"
+      },
+      {
+        "n": 2,
+        "kind": "acknowledged"
+      }
+    ]
+  },
   "truncated": true
 }

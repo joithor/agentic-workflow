@@ -1,12 +1,12 @@
 {
   "address": "workflow/INC-14",
-  "id": "WFI-94B6AE3D7A",
+  "id": "WFI-94b6ae3d7a1765f13f27cca4fa325c7c",
   "parent": null,
   "itemId": null,
   "title": "Outbox retry storm",
   "recipe": {
-    "id": "incident.response",
-    "hash": "5d90e1b200000000000000000000000000000000000000000000000000000000",
+    "id": "workflow.incident-response",
+    "hash": "sha256:5d90e1b200000000000000000000000000000000000000000000000000000000",
     "version": 4,
     "urgency": "incident"
   },
@@ -23,7 +23,7 @@
   "states": [
     {
       "id": "assess",
-      "order": 0,
+      "order": 1,
       "branchOf": null,
       "glyph": "done",
       "badge": null,
@@ -37,7 +37,7 @@
     },
     {
       "id": "mitigate",
-      "order": 1,
+      "order": 2,
       "branchOf": null,
       "glyph": "active",
       "badge": null,
@@ -60,7 +60,7 @@
     },
     {
       "id": "verify",
-      "order": 2,
+      "order": 3,
       "branchOf": null,
       "glyph": "pending",
       "badge": null,
@@ -80,7 +80,7 @@
     },
     {
       "id": "comms",
-      "order": 3,
+      "order": 4,
       "branchOf": null,
       "glyph": "pending",
       "badge": null,
@@ -97,7 +97,7 @@
     },
     {
       "id": "resolved",
-      "order": 4,
+      "order": 5,
       "branchOf": null,
       "glyph": "pending",
       "badge": null,
@@ -122,7 +122,7 @@
     "status": {
       "header": {
         "address": "workflow/INC-14",
-        "recipe": "incident.response",
+        "recipe": "workflow.incident-response",
         "hash12": "5d90e1b20000",
         "version": 4,
         "state": "mitigate",
@@ -134,52 +134,31 @@
       "answer": null,
       "child": null,
       "drift": null,
-      "inputs": [
-        {
-          "key": "fact:alert",
-          "name": "alert.json",
-          "hash": "1c0e5a77"
-        }
-      ],
+      "inputs": [],
       "timeout": {
         "kind": "escalates",
         "inSeconds": 3600,
         "on": "mitigate"
       },
-      "budget": {
-        "scope": "state",
-        "used": 0,
-        "limit": 200000,
-        "instance": {
-          "used": 0,
-          "limit": 400000
-        }
-      },
+      "budget": null,
       "paused": null,
       "commands": [
         {
-          "verb": "complete",
-          "actionId": "ApplyCommand:complete",
-          "class": "desk",
-          "cli": "sindri workflow complete workflow/sentry-8812/classify --run 1.1 --outcome done --output fact:severity=<text>",
-          "confirm": null
-        },
-        {
           "verb": "takeover",
           "actionId": "ApplyCommand:takeover",
-          "class": "protected",
-          "cli": "sindri workflow takeover workflow/sentry-8812/classify",
+          "class": "pause",
+          "cli": "sindri workflow takeover workflow/INC-14",
           "confirm": null
         },
         {
           "verb": "cancel",
           "actionId": "ApplyCommand:cancel",
-          "class": "protected",
-          "cli": "sindri workflow cancel workflow/sentry-8812/classify",
-          "confirm": "Cancel workflow/sentry-8812/classify? 1 running steps stop; 0 children are cancelled."
+          "class": "desk",
+          "cli": "sindri workflow cancel workflow/INC-14",
+          "confirm": "Cancel workflow/INC-14? 1 running steps stop; 1 children are cancelled."
         }
       ],
-      "text": "workflow/INC-14  incident.response@5d90e1b20000  v4  mitigate: round 1/3  since 11:02 (1h 24m)\n  next      agent rolling back in ITM-01JG2 · comms posting\n  timeout   escalates in 1h (mitigate)\n  commands  complete, takeover, cancel\n"
+      "text": "workflow/INC-14  workflow.incident-response@5d90e1b20000  v4  mitigate: round 1/3  since 11:02 (1h 24m)\n  next      agent rolling back in ITM-01JG2 · comms posting\n  timeout   escalates in 1h (mitigate)\n  commands  takeover, cancel\n"
     }
   },
   "facts": [
@@ -275,6 +254,7 @@
     "context": null
   },
   "actions": [
+    "OpenItem",
     "ApplyCommand:takeover",
     "ApplyCommand:cancel"
   ],

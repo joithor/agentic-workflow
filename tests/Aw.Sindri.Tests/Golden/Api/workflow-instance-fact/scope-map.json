@@ -2,19 +2,47 @@
   "key": "scope",
   "type": "scope-map",
   "body": {
-    "areas": [
+    "brief": "PRD-sync.md",
+    "surfaces": [
       {
         "name": "sync store",
+        "graph": "mapped",
         "files": [
           "src/sync/store.ts",
           "src/sync/outbox.ts"
+        ],
+        "items": [
+          "ITM-01JC1",
+          "ITM-01JC2"
         ]
       },
       {
         "name": "status pill",
+        "graph": "mapped",
         "files": [
           "ui/sync-pill.tsx"
+        ],
+        "items": [
+          "ITM-01JC3"
         ]
+      },
+      {
+        "name": "conflict dialog",
+        "graph": "new",
+        "files": [
+          "ui/conflict-dialog.tsx"
+        ],
+        "items": [
+          "ITM-01JC5"
+        ]
+      },
+      {
+        "name": "background sync (iOS)",
+        "graph": "unmapped",
+        "files": [
+          "ios/BackgroundSync.swift"
+        ],
+        "items": []
       }
     ]
   },

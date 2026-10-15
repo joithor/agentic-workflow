@@ -12,7 +12,7 @@
   "next": "Parked (budget): produce used 200k of 200k tokens.",
   "answer": {
     "kind": "grantTokens",
-    "actionId": "ApplyCommand:answer",
+    "actionId": "ApplyCommand:answer-grant-tokens",
     "class": "protected",
     "cli": "sindri workflow answer workflow/ITM-01JC8/step --grant-tokens 100k",
     "atTerminal": true
@@ -26,25 +26,25 @@
   "commands": [
     {
       "verb": "answer",
-      "actionId": "ApplyCommand:answer",
-      "class": "desk",
+      "actionId": "ApplyCommand:answer-grant-tokens",
+      "class": "protected",
       "cli": "sindri workflow answer workflow/ITM-01JC8/step --grant-tokens 100k",
       "confirm": null
     },
     {
       "verb": "takeover",
       "actionId": "ApplyCommand:takeover",
-      "class": "protected",
+      "class": "pause",
       "cli": "sindri workflow takeover workflow/ITM-01JC8/step",
       "confirm": null
     },
     {
       "verb": "cancel",
       "actionId": "ApplyCommand:cancel",
-      "class": "protected",
+      "class": "desk",
       "cli": "sindri workflow cancel workflow/ITM-01JC8/step",
-      "confirm": "Cancel workflow/ITM-01JC8/step? 1 running steps stop; 0 children are cancelled."
+      "confirm": "Cancel workflow/ITM-01JC8/step? 0 running steps stop; 0 children are cancelled."
     }
   ],
-  "text": "workflow/ITM-01JC8/step  workflow.step@9ab2d40c0000  v9  parked: budget  since 11:54 (32m)\n  next      Parked (budget): produce used 200k of 200k tokens.\n  answer    sindri workflow answer workflow/ITM-01JC8/step --grant-tokens 100k     (at a terminal; once per park)\n  commands  answer, takeover, cancel\n"
+  "text": "workflow/ITM-01JC8/step  workflow.step@9ab2d40c0000  v9  produce: parked: budget  since 11:54 (32m)\n  next      Parked (budget): produce used 200k of 200k tokens.\n  answer    sindri workflow answer workflow/ITM-01JC8/step --grant-tokens 100k     (at a terminal;\n            once per park)\n  commands  answer, takeover, cancel\n"
 }

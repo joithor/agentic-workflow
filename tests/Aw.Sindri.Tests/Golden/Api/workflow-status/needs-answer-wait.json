@@ -12,7 +12,7 @@
   "next": "Parked (needs-answer) in design: import the design output, then resume.",
   "answer": {
     "kind": "resume",
-    "actionId": "ApplyCommand:answer",
+    "actionId": "ApplyCommand:answer-resume",
     "class": "desk",
     "cli": "sindri workflow answer workflow/PRJ-exports --resume --text <answer>",
     "atTerminal": false
@@ -26,25 +26,25 @@
   "commands": [
     {
       "verb": "answer",
-      "actionId": "ApplyCommand:answer",
+      "actionId": "ApplyCommand:answer-resume",
       "class": "desk",
       "cli": "sindri workflow answer workflow/PRJ-exports --resume --text <answer>",
       "confirm": null
     },
     {
-      "verb": "takeover",
-      "actionId": "ApplyCommand:takeover",
-      "class": "protected",
-      "cli": "sindri workflow takeover workflow/PRJ-exports",
+      "verb": "handback",
+      "actionId": "ApplyCommand:handback",
+      "class": "desk",
+      "cli": "sindri workflow handback workflow/PRJ-exports",
       "confirm": null
     },
     {
       "verb": "cancel",
       "actionId": "ApplyCommand:cancel",
-      "class": "protected",
+      "class": "desk",
       "cli": "sindri workflow cancel workflow/PRJ-exports",
-      "confirm": "Cancel workflow/PRJ-exports? 1 running steps stop; 0 children are cancelled."
+      "confirm": "Cancel workflow/PRJ-exports? 0 running steps stop; 0 children are cancelled."
     }
   ],
-  "text": "workflow/PRJ-exports  workflow.project@a8c21e7f0000  v12  parked: needs-answer  since 10-11 16:02 (20h 24m)\n  next      Parked (needs-answer) in design: import the design output, then resume.\n  answer    sindri workflow answer workflow/PRJ-exports --resume --text <answer>\n  commands  answer, takeover, cancel\n"
+  "text": "workflow/PRJ-exports  workflow.project@a8c21e7f0000  v12  design: parked: needs-answer  since 10-11 16:02 (20h 24m)\n  next      Parked (needs-answer) in design: import the design output, then resume.\n  answer    sindri workflow answer workflow/PRJ-exports --resume --text <answer>\n  commands  answer, handback, cancel\n"
 }

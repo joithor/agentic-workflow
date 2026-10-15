@@ -2,11 +2,11 @@
   "instances": [
     {
       "address": "workflow/INC-14",
-      "id": "WFI-94B6AE3D7A",
+      "id": "WFI-94b6ae3d7a1765f13f27cca4fa325c7c",
       "itemId": null,
       "recipe": {
-        "id": "incident.response",
-        "hash": "5d90e1b200000000000000000000000000000000000000000000000000000000",
+        "id": "workflow.incident-response",
+        "hash": "sha256:5d90e1b200000000000000000000000000000000000000000000000000000000",
         "version": 4,
         "urgency": "incident"
       },
@@ -35,7 +35,7 @@
       "states": [
         {
           "id": "assess",
-          "order": 0,
+          "order": 1,
           "branchOf": null,
           "glyph": "done",
           "badge": null,
@@ -49,7 +49,7 @@
         },
         {
           "id": "mitigate",
-          "order": 1,
+          "order": 2,
           "branchOf": null,
           "glyph": "active",
           "badge": null,
@@ -72,7 +72,7 @@
         },
         {
           "id": "verify",
-          "order": 2,
+          "order": 3,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -92,7 +92,7 @@
         },
         {
           "id": "comms",
-          "order": 3,
+          "order": 4,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -109,7 +109,7 @@
         },
         {
           "id": "resolved",
-          "order": 4,
+          "order": 5,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -132,11 +132,11 @@
     },
     {
       "address": "workflow/pagerduty-P-2211",
-      "id": "WFI-B71B3D84F3",
+      "id": "WFI-b71b3d84f36a597dee179eed2a4bb914",
       "itemId": null,
       "recipe": {
-        "id": "triage.alert",
-        "hash": "d41f2a0700000000000000000000000000000000000000000000000000000000",
+        "id": "workflow.triage-alert",
+        "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
         "version": 2,
         "urgency": "triage"
       },
@@ -168,20 +168,6 @@
       "states": [
         {
           "id": "ingest",
-          "order": 0,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "classify",
           "order": 1,
           "branchOf": null,
           "glyph": "done",
@@ -195,8 +181,22 @@
           "terminal": false
         },
         {
-          "id": "route",
+          "id": "classify",
           "order": 2,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "route",
+          "order": 3,
           "branchOf": null,
           "glyph": "active",
           "badge": {
@@ -213,7 +213,7 @@
         },
         {
           "id": "done",
-          "order": 3,
+          "order": 4,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -229,24 +229,24 @@
       "now": "accept at a terminal",
       "answer": {
         "kind": "accept",
-        "actionId": "ApplyCommand:answer",
+        "actionId": "ApplyCommand:answer-accept",
         "class": "protected",
         "cli": "sindri workflow answer workflow/pagerduty-P-2211 --accept",
         "atTerminal": true
       },
       "actions": [
-        "ApplyCommand:answer",
+        "ApplyCommand:answer-accept",
         "ApplyCommand:takeover",
         "ApplyCommand:cancel"
       ]
     },
     {
       "address": "workflow/sentry-8812",
-      "id": "WFI-0461AC4604",
+      "id": "WFI-0461ac4604c04a9c3696f4f6335a0868",
       "itemId": null,
       "recipe": {
-        "id": "triage.alert",
-        "hash": "d41f2a0700000000000000000000000000000000000000000000000000000000",
+        "id": "workflow.triage-alert",
+        "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
         "version": 2,
         "urgency": "triage"
       },
@@ -275,7 +275,7 @@
       "states": [
         {
           "id": "ingest",
-          "order": 0,
+          "order": 1,
           "branchOf": null,
           "glyph": "done",
           "badge": null,
@@ -289,7 +289,7 @@
         },
         {
           "id": "classify",
-          "order": 1,
+          "order": 2,
           "branchOf": null,
           "glyph": "active",
           "badge": null,
@@ -303,7 +303,7 @@
         },
         {
           "id": "route",
-          "order": 2,
+          "order": 3,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -317,7 +317,7 @@
         },
         {
           "id": "done",
-          "order": 3,
+          "order": 4,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -340,11 +340,11 @@
     },
     {
       "address": "workflow/PRJ-exports",
-      "id": "WFI-0201CFC8B6",
+      "id": "WFI-0201cfc8b6dc47e6861bf35dd2064807",
       "itemId": null,
       "recipe": {
         "id": "workflow.project",
-        "hash": "a8c21e7f00000000000000000000000000000000000000000000000000000000",
+        "hash": "sha256:a8c21e7f00000000000000000000000000000000000000000000000000000000",
         "version": 12,
         "urgency": "work"
       },
@@ -383,20 +383,6 @@
       "states": [
         {
           "id": "intake",
-          "order": 0,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "scoping",
           "order": 1,
           "branchOf": null,
           "glyph": "done",
@@ -410,8 +396,22 @@
           "terminal": false
         },
         {
-          "id": "design",
+          "id": "scoping",
           "order": 2,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "design",
+          "order": 3,
           "branchOf": null,
           "glyph": "active",
           "badge": {
@@ -428,20 +428,6 @@
         },
         {
           "id": "build",
-          "order": 3,
-          "branchOf": null,
-          "glyph": "pending",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "verify",
           "order": 4,
           "branchOf": null,
           "glyph": "pending",
@@ -455,8 +441,22 @@
           "terminal": false
         },
         {
-          "id": "done",
+          "id": "verify",
           "order": 5,
+          "branchOf": null,
+          "glyph": "pending",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "done",
+          "order": 6,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -472,23 +472,24 @@
       "now": "with you: import the design output",
       "answer": {
         "kind": "resume",
-        "actionId": "ApplyCommand:answer",
+        "actionId": "ApplyCommand:answer-resume",
         "class": "desk",
         "cli": "sindri workflow answer workflow/PRJ-exports --resume --text <answer>",
         "atTerminal": false
       },
       "actions": [
+        "ApplyCommand:answer-resume",
         "ApplyCommand:handback",
         "ApplyCommand:cancel"
       ]
     },
     {
       "address": "workflow/PRJ-sync",
-      "id": "WFI-481A066729",
+      "id": "WFI-481a06672961bc2fd3228cddb2c4d4e3",
       "itemId": null,
       "recipe": {
         "id": "workflow.project",
-        "hash": "a8c21e7f00000000000000000000000000000000000000000000000000000000",
+        "hash": "sha256:a8c21e7f00000000000000000000000000000000000000000000000000000000",
         "version": 12,
         "urgency": "work"
       },
@@ -524,20 +525,6 @@
       "states": [
         {
           "id": "intake",
-          "order": 0,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "scoping",
           "order": 1,
           "branchOf": null,
           "glyph": "done",
@@ -551,7 +538,7 @@
           "terminal": false
         },
         {
-          "id": "design",
+          "id": "scoping",
           "order": 2,
           "branchOf": null,
           "glyph": "done",
@@ -565,8 +552,22 @@
           "terminal": false
         },
         {
-          "id": "build",
+          "id": "design",
           "order": 3,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "build",
+          "order": 4,
           "branchOf": null,
           "glyph": "active",
           "badge": null,
@@ -583,7 +584,7 @@
         },
         {
           "id": "verify",
-          "order": 4,
+          "order": 5,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -597,7 +598,7 @@
         },
         {
           "id": "done",
-          "order": 5,
+          "order": 6,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -619,11 +620,11 @@
     },
     {
       "address": "workflow/PRJ-tabs",
-      "id": "WFI-A4E936160B",
+      "id": "WFI-a4e936160bc2f8dd8eabd080cc471780",
       "itemId": null,
       "recipe": {
         "id": "workflow.project",
-        "hash": "a8c21e7f00000000000000000000000000000000000000000000000000000000",
+        "hash": "sha256:a8c21e7f00000000000000000000000000000000000000000000000000000000",
         "version": 12,
         "urgency": "work"
       },
@@ -659,7 +660,7 @@
       "states": [
         {
           "id": "intake",
-          "order": 0,
+          "order": 1,
           "branchOf": null,
           "glyph": "done",
           "badge": null,
@@ -673,7 +674,7 @@
         },
         {
           "id": "scoping",
-          "order": 1,
+          "order": 2,
           "branchOf": null,
           "glyph": "active",
           "badge": null,
@@ -696,20 +697,6 @@
         },
         {
           "id": "design",
-          "order": 2,
-          "branchOf": null,
-          "glyph": "pending",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "build",
           "order": 3,
           "branchOf": null,
           "glyph": "pending",
@@ -723,7 +710,7 @@
           "terminal": false
         },
         {
-          "id": "verify",
+          "id": "build",
           "order": 4,
           "branchOf": null,
           "glyph": "pending",
@@ -737,8 +724,22 @@
           "terminal": false
         },
         {
-          "id": "done",
+          "id": "verify",
           "order": 5,
+          "branchOf": null,
+          "glyph": "pending",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "done",
+          "order": 6,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -760,11 +761,11 @@
     },
     {
       "address": "workflow/LIN-ENG",
-      "id": "WFI-2B509939D6",
+      "id": "WFI-2b509939d6a7f6fcaed8695ab66cebab",
       "itemId": null,
       "recipe": {
-        "id": "intake.linear",
-        "hash": "0b7e44d300000000000000000000000000000000000000000000000000000000",
+        "id": "workflow.intake-linear",
+        "hash": "sha256:0b7e44d300000000000000000000000000000000000000000000000000000000",
         "version": 1,
         "urgency": "work"
       },
@@ -793,7 +794,7 @@
       "states": [
         {
           "id": "poll",
-          "order": 0,
+          "order": 1,
           "branchOf": null,
           "glyph": "active",
           "badge": null,
@@ -807,7 +808,7 @@
         },
         {
           "id": "emit",
-          "order": 1,
+          "order": 2,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -828,11 +829,11 @@
     },
     {
       "address": "workflow/LIN-APP",
-      "id": "WFI-BAA44E0633",
+      "id": "WFI-baa44e0633350bea70cd158d5da5348b",
       "itemId": null,
       "recipe": {
-        "id": "intake.linear",
-        "hash": "0b7e44d300000000000000000000000000000000000000000000000000000000",
+        "id": "workflow.intake-linear",
+        "hash": "sha256:0b7e44d300000000000000000000000000000000000000000000000000000000",
         "version": 1,
         "urgency": "work"
       },
@@ -861,7 +862,7 @@
       "states": [
         {
           "id": "poll",
-          "order": 0,
+          "order": 1,
           "branchOf": null,
           "glyph": "active",
           "badge": null,
@@ -875,7 +876,7 @@
         },
         {
           "id": "emit",
-          "order": 1,
+          "order": 2,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,

@@ -20,17 +20,17 @@
   "states": [
     {
       "id": "intake",
-      "order": 0,
-      "branchOf": null
-    },
-    {
-      "id": "classify",
       "order": 1,
       "branchOf": null
     },
     {
-      "id": "done",
+      "id": "classify",
       "order": 2,
+      "branchOf": null
+    },
+    {
+      "id": "done",
+      "order": 3,
       "branchOf": null
     }
   ],

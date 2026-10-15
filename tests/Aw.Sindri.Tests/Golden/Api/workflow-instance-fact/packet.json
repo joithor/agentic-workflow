@@ -3,22 +3,73 @@
   "type": "packet",
   "body": {
     "id": "3f1c09",
-    "tasks": [
+    "frozen": false,
+    "workstreams": [
       {
-        "id": "t1",
-        "title": "PUT /sync/changes",
-        "workstream": "ws-2",
-        "checks": [
-          "unit",
-          "contract"
+        "id": "ws-1",
+        "label": "UI",
+        "tasks": [
+          {
+            "id": "t1",
+            "title": "Sync status pill",
+            "acceptance": 3,
+            "writes": [
+              "ui/sync-pill.tsx"
+            ]
+          },
+          {
+            "id": "t2",
+            "title": "Conflict resolver dialog",
+            "acceptance": 4,
+            "writes": [
+              "ui/conflict-dialog.tsx"
+            ]
+          }
         ]
       },
       {
-        "id": "t2",
-        "title": "Outbox queue",
-        "workstream": "ws-2",
-        "checks": [
-          "unit"
+        "id": "ws-2",
+        "label": "Store",
+        "tasks": [
+          {
+            "id": "t4",
+            "title": "PUT /sync/changes",
+            "acceptance": 5,
+            "writes": [
+              "src/sync/queue.ts"
+            ]
+          },
+          {
+            "id": "t7",
+            "title": "Outbox queue",
+            "acceptance": 3,
+            "writes": [
+              "src/sync/queue.ts"
+            ]
+          }
+        ]
+      }
+    ],
+    "checks": [
+      {
+        "id": "PKT-SCHEMA-001",
+        "result": "pass",
+        "detail": null,
+        "tasks": []
+      },
+      {
+        "id": "PKT-ACCEPT-001",
+        "result": "pass",
+        "detail": null,
+        "tasks": []
+      },
+      {
+        "id": "PKT-SCOPE-002",
+        "result": "fail",
+        "detail": "t4 and t7 both write src/sync/queue.ts",
+        "tasks": [
+          "t4",
+          "t7"
         ]
       }
     ]

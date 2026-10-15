@@ -30,10 +30,10 @@
     {
       "verb": "cancel",
       "actionId": "ApplyCommand:cancel",
-      "class": "protected",
+      "class": "desk",
       "cli": "sindri workflow cancel workflow/ITM-01JA1",
-      "confirm": "Cancel workflow/ITM-01JA1? 1 running steps stop; 0 children are cancelled."
+      "confirm": "Cancel workflow/ITM-01JA1? 0 running steps stop; 0 children are cancelled."
     }
   ],
-  "text": "workflow/ITM-01JA1  workflow.dev-timeout@77aa01c30000  v3  taken-over  since 12:01 (25m)\n  next      With you since 12:01. Run `sindri workflow handback workflow/ITM-01JA1` when you're done.\n  paused    timeout 40s left\n  commands  handback, cancel\n"
+  "text": "workflow/ITM-01JA1  workflow.dev-timeout@77aa01c30000  v3  taken-over  since 12:01 (25m)\n  next      With you since 12:01. Run `sindri workflow handback workflow/ITM-01JA1` when you're\n            done.\n  paused    timeout 40s left\n  commands  handback, cancel\n"
 }
