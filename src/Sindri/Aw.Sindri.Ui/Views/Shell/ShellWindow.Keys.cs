@@ -55,6 +55,27 @@ internal sealed partial class ShellWindow
         return true;
     }
 
+    // §11.2 "Enter again (or Tab)": Tab from the last control of the selected row whose item the sheet shows (beside the page)
+    // goes into the sheet. Tab within the row is unchanged. This handler runs before the focus manager's, which ignores a handled key.
+    private bool TabOutOfOpenRow(KeyEventArgs e)
+    {
+        if (e is not { Key: Key.Tab, KeyModifiers: KeyModifiers.None } || Shell is not { IsSelectedRowOpen: true } shell || AnyLayerOpen(shell)
+            || FocusManager?.GetFocusedElement() is not Visual focused || OpenRowFrame(focused) is not { } frame)
+        {
+            return false;
+        }
+
+        var next = FocusManager.FindNextElement(NavigationDirection.Next) as Visual;
+        return (next is null || !frame.IsVisualAncestorOf(next)) && EnterIntoSheet(shell);
+    }
+
+    private static bool AnyLayerOpen(ViewModels.Shell.ShellViewModel shell) => shell.Palette.IsOpen || shell.Shortcuts.IsOpen || shell.Create.IsOpen;
+
+    // The frame of the row that the focused control is in, when that row is the one the sheet shows.
+    private Border? OpenRowFrame(Visual focused) =>
+        focused.GetSelfAndVisualAncestors().OfType<Border>().FirstOrDefault(b => string.Equals(b.Name, "RowFrame", StringComparison.Ordinal))
+            is { DataContext: ViewModels.Queue.ItemRowViewModel row } frame && string.Equals(row.Id, Shell?.Item.ItemId, StringComparison.Ordinal) ? frame : null;
+
     // §8, §11.2: keys belong to the focused region; the row keys are the page's, not the sheet's.
     private bool FocusInSheet() => FocusManager?.GetFocusedElement() is Visual focused && (SheetPanel == focused || SheetPanel.IsVisualAncestorOf(focused));
 

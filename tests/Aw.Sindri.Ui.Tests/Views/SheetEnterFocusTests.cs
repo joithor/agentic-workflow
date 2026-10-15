@@ -169,6 +169,27 @@ public sealed class SheetEnterFocusTests : IDisposable
     });
 
     [Fact]
+    public Task Tab_from_the_last_control_of_the_open_row_enters_the_sheet_and_within_the_row_stays_in_it() => OnUi(async () =>
+    {
+        var (window, shell) = await OpenSheet(width: 1400);
+        var sheet = window.Get<Border>("Sheet");
+        var focusedRows = new List<bool>();
+        for (var i = 0; i < 8 && !IsIn(sheet, window); i++)
+        {
+            window.KeyPress(Key.Tab, RawInputModifiers.None, PhysicalKey.Tab, keySymbol: null);
+            Settle(window);
+            focusedRows.Add(window.FocusManager?.GetFocusedElement() is Visual v && v.GetSelfAndVisualAncestors().OfType<Border>()
+                .Any(b => b.Name == "RowFrame" && b.DataContext is ViewModels.Queue.ItemRowViewModel r && string.Equals(r.Id, shell.Item.ItemId, StringComparison.Ordinal)));
+        }
+
+        Assert.True(IsIn(sheet, window), "Tab never reached the sheet");
+        Assert.True(focusedRows.Count <= 4 && focusedRows.Take(focusedRows.Count - 1).All(inRow => inRow), "Tab left the row's own controls early or went through other rows");
+    });
+
+    private static bool IsIn(Border sheet, Window window) =>
+        window.FocusManager?.GetFocusedElement() is Visual focused && (sheet == focused || sheet.IsVisualAncestorOf(focused));
+
+    [Fact]
     public Task The_focused_rows_ring_is_not_drawn_over_the_open_sheet() => OnUi(async () =>
     {
         var (window, _) = await OpenSheet(width: 1400);

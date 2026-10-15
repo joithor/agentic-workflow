@@ -91,7 +91,7 @@ internal sealed partial class ShellWindow : Window
     {
         e.Handled = RegionStep(e.Key, e.KeyModifiers, OperatingSystem.IsMacOS()) is { } step ? CycleRegion(back: step < 0)
             : e.Key == Key.Escape ? Escape()
-            : OpenByKey(e) || PageKey(e);
+            : TabOutOfOpenRow(e) || OpenByKey(e) || PageKey(e);
         base.OnKeyDown(e);
     }
 
