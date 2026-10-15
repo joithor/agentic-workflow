@@ -5,6 +5,7 @@ using Avalonia.Headless;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Tests.Theme;
 using Aw.Sindri.Ui.Views;
+using Aw.Sindri.Ui.Views.Components;
 using Aw.Sindri.Ui.Views.Shell;
 
 namespace Aw.Sindri.Ui.Tests.Views;
@@ -18,7 +19,7 @@ public sealed class NamedControlsTests
 {
     private static readonly XNamespace _x = "http://schemas.microsoft.com/winfx/2006/xaml";
 
-    public static TheoryData<string> Views => ["SettingsView", "Shell/ShellWindow", "Shell/TopBar", "Shell/HomePage", "Shell/HealthPage", "Shell/PlaceholderPage"];
+    public static TheoryData<string> Views => ["SettingsView", "Shell/ShellWindow", "Shell/TopBar", "Shell/HomePage", "Shell/HealthPage", "Shell/PlaceholderPage", "Components/AttachButton"];
 
     private static Control Construct(string view) => view switch
     {
@@ -28,6 +29,7 @@ public sealed class NamedControlsTests
         "Shell/HomePage" => new HomePage(),
         "Shell/HealthPage" => new HealthPage(),
         "Shell/PlaceholderPage" => new PlaceholderPage(),
+        "Components/AttachButton" => new AttachButton(),
         _ => throw new ArgumentOutOfRangeException(nameof(view), view, message: null),
     };
 
