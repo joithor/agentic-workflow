@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Xml.Linq;
 using Avalonia.Controls;
 using Avalonia.Headless;
+using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Tests.Theme;
 using Aw.Sindri.Ui.Views;
@@ -70,9 +71,9 @@ public sealed class NamedControlsTests
             .Dispatch(() => _all.SelectMany(v =>
             {
                 var control = Construct(v);
-                var window = control as Avalonia.Controls.Window ?? new Avalonia.Controls.Window { Content = control };
+                var window = control as Window ?? new Window { Content = control };
                 window.Show();
-                var found = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(window).OfType<ProtectedActionButton>()
+                var found = window.GetVisualDescendants().OfType<ProtectedActionButton>()
                     .Where(b => !b.HasPopover).Select(_ => v).ToList();
                 window.Close();
                 return found;
