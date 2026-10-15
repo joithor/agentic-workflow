@@ -131,11 +131,11 @@
         "hash12": "a8c21e7f0000",
         "version": 12,
         "state": "build",
-        "detail": "children 6 of 24",
+        "detail": null,
         "since": "2026-10-12T08:40:00.0000000Z",
         "ageSeconds": 13560
       },
-      "next": "Waiting on 24 children: 6 done · 2 running · 16 queued.",
+      "next": "Waiting on 24 children: 6 done, 2 running, 16 not started.",
       "answer": null,
       "child": null,
       "drift": null,
@@ -159,7 +159,7 @@
           "confirm": "Cancel ITM-01JKG/project/1? 0 running steps stop; 18 children are cancelled."
         }
       ],
-      "text": "ITM-01JKG/project/1  workflow.project@a8c21e7f0000  v12  build: children 6 of 24  since 08:40 (3h 46m)\n  next      Waiting on 24 children: 6 done · 2 running · 16 queued.\n  commands  takeover, cancel\n"
+      "text": "ITM-01JKG/project/1  workflow.project@a8c21e7f0000  v12  build  since 08:40 (3h 46m)\n  next      Waiting on 24 children: 6 done, 2 running, 16 not started.\n  commands  takeover, cancel\n"
     }
   },
   "facts": [

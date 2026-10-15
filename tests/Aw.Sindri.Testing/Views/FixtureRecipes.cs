@@ -36,7 +36,7 @@ public static class FixtureRecipes
         [S("assess", 1), S("mitigate", 2), S("verify", 3), S("comms", 4, child: true), S("resolved", 5, terminal: true)],
         [new ShapeLoop("remediate", "verify", "mitigate", 3)],
         [In("fact:alert", "Alert", FactType.Payload, "webhook")],
-        [Out("fact:severity", "Severity", FactType.Text, "assess"), Out("fact:postmortem", "Postmortem draft", FactType.Text, "comms")]);
+        [Out("fact:severity", "Severity", FactType.Text, "assess"), Out("fact:history", "Alert history", FactType.Payload, "assess"), Out("fact:postmortem", "Postmortem draft", FactType.Text, "comms")]);
 
     /// <summary>workflow.triage-alert (fixture-only): the classify state is a desk.</summary>
     public static RecipeShape Triage { get; } = new("workflow.triage-alert", 2, "d41f2a07", RecipeUrgency.Triage,

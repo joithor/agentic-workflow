@@ -9,14 +9,8 @@
     "since": "2026-10-12T11:50:00.0000000Z",
     "ageSeconds": 2160
   },
-  "next": "Parked (spec-conflict, drift): block step.scope.draft changed in this build. Re-approve it at a terminal, then resume.",
-  "answer": {
-    "kind": "resume",
-    "actionId": "ApplyCommand:answer-resume",
-    "class": "desk",
-    "cli": "sindri workflow answer ITM-01JKF/project/1 --resume",
-    "atTerminal": false
-  },
+  "next": "Block step.scope.draft changed since workflow.project@a8c21e7f0000 was approved. Re-approve it (`sindri recipe approve workflow.project@a8c21e7f0000`); the approval resumes this instance.",
+  "answer": null,
   "child": null,
   "drift": {
     "block": "step.scope.draft",
@@ -27,13 +21,6 @@
   "budget": null,
   "paused": null,
   "commands": [
-    {
-      "verb": "answer",
-      "actionId": "ApplyCommand:answer-resume",
-      "class": "desk",
-      "cli": "sindri workflow answer ITM-01JKF/project/1 --resume",
-      "confirm": null
-    },
     {
       "verb": "takeover",
       "actionId": "ApplyCommand:takeover",
@@ -47,7 +34,14 @@
       "class": "desk",
       "cli": "sindri workflow cancel ITM-01JKF/project/1",
       "confirm": "Cancel ITM-01JKF/project/1? 0 running steps stop; 0 children are cancelled."
+    },
+    {
+      "verb": "approve",
+      "actionId": "ApproveRecipe",
+      "class": "protected",
+      "cli": "sindri recipe approve workflow.project@a8c21e7f0000",
+      "confirm": null
     }
   ],
-  "text": "ITM-01JKF/project/1  workflow.project@a8c21e7f0000  v12  parked: spec-conflict (drift)  since 11:50 (36m)\n  next      Parked (spec-conflict, drift): block step.scope.draft changed in this build. Re-approve\n            it at a terminal, then resume.\n  drift     step.scope.draft changed since workflow.project@a8c21e7f0000 was approved; answer after\n            the re-approval: sindri recipe approve workflow.project@a8c21e7f0000\n  answer    sindri workflow answer ITM-01JKF/project/1 --resume\n  commands  answer, takeover, cancel\n"
+  "text": "ITM-01JKF/project/1  workflow.project@a8c21e7f0000  v12  parked: spec-conflict (drift)  since 11:50 (36m)\n  next      Block step.scope.draft changed since workflow.project@a8c21e7f0000 was approved.\n            Re-approve it (`sindri recipe approve workflow.project@a8c21e7f0000`); the approval\n            resumes this instance.\n  drift     step.scope.draft changed since workflow.project@a8c21e7f0000 was approved\n  answer    none (drift): sindri recipe approve workflow.project@a8c21e7f0000     (at a terminal;\n            the approval resumes it)\n  commands  takeover, cancel, approve\n"
 }

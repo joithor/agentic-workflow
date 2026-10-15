@@ -164,10 +164,10 @@
           "actionId": "ApplyCommand:cancel",
           "class": "desk",
           "cli": "sindri workflow cancel ITM-01JE7/item/1/step.1",
-          "confirm": "Cancel ITM-01JE7/item/1/step.1? 1 running steps stop; 0 children are cancelled."
+          "confirm": "Cancel ITM-01JE7/item/1/step.1? 1 running step stops; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JE7/item/1/step.1  workflow.step@1b13bd920351  v1  produce  since 11:30 (56m)\n  next      Produce the Step output for ITM-01JE7 (round 2/3).\n  inputs    fact:spec  spec.md  sha256:9d3e…\n  budget    tokens 84k / 200k (state), 84k / 400k (instance)\n  commands  takeover, cancel\n"
+      "text": "ITM-01JE7/item/1/step.1  workflow.step@1b13bd920351  v1  produce  since 11:30 (56m)\n  next      Produce the Step output for ITM-01JE7 (round 2/3).\n  inputs    fact:spec  spec.md  sha256:9d3e...\n  budget    tokens 84k / 200k (state), 84k / 400k (instance)\n  commands  takeover, cancel\n"
     }
   },
   "facts": [

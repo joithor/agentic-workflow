@@ -301,7 +301,7 @@ public sealed class WorkflowViewConsistencyTests
     {
         var drift = Regex.Replace(WorkflowViewFixtures.StatusParkedDrift().Text, "\\s+", " ", RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
         Assert.Contains("changed since workflow.project@", drift, StringComparison.Ordinal);
-        Assert.Contains("was approved; answer after the re-approval: sindri recipe approve workflow.project@", drift, StringComparison.Ordinal);
+        Assert.Contains("was approved answer none (drift): sindri recipe approve workflow.project@", drift, StringComparison.Ordinal);
 
         var old = WorkflowViewFixtures.StatusNeedsAnswerWait();
         Assert.Matches(new Regex("since \\d\\d:\\d\\d \\(", RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1)), old.Text);

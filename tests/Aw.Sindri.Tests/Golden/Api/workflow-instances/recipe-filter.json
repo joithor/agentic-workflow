@@ -116,7 +116,7 @@
       "since": "2026-10-12T11:02:00.0000000Z",
       "engineOwned": {
         "kind": "escalated",
-        "reason": "gate.severity 0.91 → INC-14 opened"
+        "reason": "gate.severity 0.62, below 0.8"
       },
       "subject": {
         "kind": "webhook",
@@ -169,7 +169,7 @@
           "glyph": "active",
           "badge": {
             "kind": "escalated",
-            "reason": "gate.severity 0.91 → INC-14 opened"
+            "reason": "gate.severity 0.62, below 0.8"
           },
           "round": null,
           "loops": [],
@@ -580,7 +580,7 @@
           "terminal": true
         }
       ],
-      "now": "done 12m → ITM-01JF0 queued",
+      "now": "done 12m → ITM-01JF0 startable",
       "answer": null,
       "actions": []
     }

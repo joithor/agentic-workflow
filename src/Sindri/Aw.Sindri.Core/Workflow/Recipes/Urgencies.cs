@@ -16,5 +16,11 @@ public static class Urgencies
     /// <param name="urgency">The word, or null.</param>
     /// <returns>The urgency.</returns>
     /// <exception cref="ArgumentException">The word is none of <see cref="All"/> (RCP-URG-001 keeps a validated recipe from it).</exception>
-    public static RecipeUrgency Parse(string? urgency) => throw new NotSupportedException();
+    public static RecipeUrgency Parse(string? urgency) => urgency switch
+    {
+        null or Default => RecipeUrgency.Work,
+        "incident" => RecipeUrgency.Incident,
+        "triage" => RecipeUrgency.Triage,
+        _ => throw new ArgumentException($"'{urgency}' is not a recipe urgency (RCP-URG-001)", nameof(urgency)),
+    };
 }

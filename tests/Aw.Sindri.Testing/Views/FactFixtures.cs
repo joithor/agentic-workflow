@@ -102,7 +102,7 @@ public static class FactFixtures
         "text" => new FactView("fact:severity", FactType.Text, Body("sev2: the outbox dispatcher retries without backoff"), Truncated: false),
         "payload" => new FactView("fact:alert", FactType.Payload, Body(new Alert("pagerduty",
             new Incident("P-2211", "Outbox retry storm", "high", "outbox-dispatcher", "triggered", "2026-10-12T11:02:00Z"), ["prod", "outbox"])), Truncated: false),
-        "truncated" => new FactView("fact:alert", FactType.Payload, Body(new EventLog("pagerduty", [new Event(1, "triggered"), new Event(2, "acknowledged")])), Truncated: true),
+        "truncated" => new FactView("fact:history", FactType.Payload, Body(new EventLog("pagerduty", [new Event(1, "triggered"), new Event(2, "acknowledged")])), Truncated: true),
         _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "no such fact scenario"),
     };
 }

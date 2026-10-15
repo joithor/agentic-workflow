@@ -59,7 +59,7 @@ public sealed class WorkflowViewFixtureTests
         }
 
         var open = view.Children.Sum(g => g.Total - g.Done);
-        var match = Regex.Match(cancel.Confirm!, @"^Cancel (?<address>\S+)\? (?<n>\d+) running steps stop; (?<m>\d+) children are cancelled\.$", RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
+        var match = Regex.Match(cancel.Confirm!, @"^Cancel (?<address>\S+)\? (?<n>\d+) running steps? stops?; (?<m>\d+) (?:children are|child is) cancelled\.$", RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
         Assert.True(match.Success, cancel.Confirm);
         Assert.Equal(view.Address.Value, match.Groups["address"].Value);
         Assert.Equal(open, int.Parse(match.Groups["m"].Value, CultureInfo.InvariantCulture));
@@ -81,7 +81,7 @@ public sealed class WorkflowViewFixtureTests
             Assert.Equal(status.Timeout is not null, HasLine(lines, "timeout"));
             Assert.Equal(status.Budget is not null, HasLine(lines, "budget"));
             Assert.Equal(status.Paused is not null, HasLine(lines, "paused"));
-            Assert.Equal(status.Answer is not null, HasLine(lines, "answer"));
+            Assert.Equal(status.Answer is not null || status.Drift is not null, HasLine(lines, "answer"));   // a drift park prints "answer  none (drift): ..."
             Assert.Equal(status.Commands.Count > 0, HasLine(lines, "commands"));
             if (status.Answer is { } answer)
             {

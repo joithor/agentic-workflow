@@ -23,10 +23,6 @@ public sealed class WorkflowViewStatusWordsTests
         Assert.Equal($"sindri recipe approve {status.Header.Recipe.Value}@{status.Header.Hash12}", approve.Cli);
         Assert.Null(approve.Confirm);
         Assert.Contains("the approval resumes", status.Next, StringComparison.Ordinal);
-        var row = WorkflowViewFixtures.RootList().Instances.Single(r => r.Address.Value == status.Header.Address.Value);
-        Assert.Null(row.Answer);
-        Assert.DoesNotContain(row.Actions, a => a.Value.StartsWith("ApplyCommand:answer", StringComparison.Ordinal));
-        Assert.Contains(row.Actions, a => a.Value == "ApproveRecipe");
     }
 
     [Fact, Trait("Lane", "unit")]

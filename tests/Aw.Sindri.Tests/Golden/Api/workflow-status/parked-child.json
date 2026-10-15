@@ -47,7 +47,7 @@
       "actionId": "ApplyCommand:cancel",
       "class": "desk",
       "cli": "sindri workflow cancel ITM-01JKD/project/1",
-      "confirm": "Cancel ITM-01JKD/project/1? 0 running steps stop; 1 children are cancelled."
+      "confirm": "Cancel ITM-01JKD/project/1? 0 running steps stop; 1 child is cancelled."
     }
   ],
   "text": "ITM-01JKD/project/1  workflow.project@a8c21e7f0000  v12  parked: no-progress (child)  since 11:54 (32m)\n  next      Parked (no-progress) in ITM-01JKD/project/1/step.1: checks failed twice with the same\n            findings. Grant more rounds at a terminal, or cancel.\n  child     ITM-01JKD/project/1/step.1  parked: no-progress\n  answer    sindri workflow answer ITM-01JKD/project/1 --grant 1     (at a terminal; forwarded to\n            the child)\n  commands  answer (forwarded), takeover, cancel\n"

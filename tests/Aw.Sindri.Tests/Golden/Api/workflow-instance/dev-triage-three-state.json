@@ -134,7 +134,7 @@
           "confirm": "Cancel ITM-01JL2/dev-triage-three-state/1? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JL2/dev-triage-three-state/1  workflow.dev-triage-three-state@88a0e8fc810f  v1  desk: desk task  since 12:00 (26m)\n  next      Write the draft for ITM-01JL2, then run: sindri workflow complete\n            ITM-01JL2/dev-triage-three-state/1 --run 1.1 --outcome done --output fact:output=<file>\n  inputs    fact:item  item.json  sha256:5cd0…\n  commands  complete, takeover, cancel\n"
+      "text": "ITM-01JL2/dev-triage-three-state/1  workflow.dev-triage-three-state@88a0e8fc810f  v1  desk: desk task  since 12:00 (26m)\n  next      Write the draft for ITM-01JL2, then run: sindri workflow complete\n            ITM-01JL2/dev-triage-three-state/1 --run 1.1 --outcome done --output fact:output=<file>\n  inputs    fact:item  item.json  sha256:5cd0...\n  commands  complete, takeover, cancel\n"
     }
   },
   "facts": [

@@ -16,6 +16,12 @@
       "from": "assess"
     },
     {
+      "key": "fact:history",
+      "label": "Alert history",
+      "type": "payload",
+      "from": "assess"
+    },
+    {
       "key": "fact:postmortem",
       "label": "Postmortem draft",
       "type": "text",

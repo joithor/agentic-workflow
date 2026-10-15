@@ -361,7 +361,7 @@
           "terminal": true
         }
       ],
-      "now": "ITM-01JD6 checks · 4 done · 1 running · 1 parked · 3 queued",
+      "now": "ITM-01JD6 checks · 4 done · 1 running · 1 parked · 3 not started",
       "answer": null,
       "actions": [
         "ApplyCommand:takeover",
@@ -835,7 +835,7 @@
       "since": "2026-10-12T11:02:00.0000000Z",
       "engineOwned": {
         "kind": "escalated",
-        "reason": "gate.severity 0.91 → INC-14 opened"
+        "reason": "gate.severity 0.62, below 0.8"
       },
       "subject": {
         "kind": "webhook",
@@ -888,7 +888,7 @@
           "glyph": "active",
           "badge": {
             "kind": "escalated",
-            "reason": "gate.severity 0.91 → INC-14 opened"
+            "reason": "gate.severity 0.62, below 0.8"
           },
           "round": null,
           "loops": [],

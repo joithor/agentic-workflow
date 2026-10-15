@@ -144,11 +144,11 @@
         "hash12": "a8c21e7f0000",
         "version": 12,
         "state": "build",
-        "detail": "children 4 of 9",
+        "detail": null,
         "since": "2026-10-12T09:14:00.0000000Z",
         "ageSeconds": 11520
       },
-      "next": "Waiting on 9 children: 4 done · 1 running · 1 parked · 3 queued.",
+      "next": "Waiting on 9 children: 4 done, 1 running, 1 parked, 3 not started.",
       "answer": null,
       "child": null,
       "drift": null,
@@ -184,7 +184,7 @@
           "confirm": "Cancel ITM-01JK3/project/1? 0 running steps stop; 5 children are cancelled."
         }
       ],
-      "text": "ITM-01JK3/project/1  workflow.project@a8c21e7f0000  v12  build: children 4 of 9  since 09:14 (3h 12m)\n  next      Waiting on 9 children: 4 done · 1 running · 1 parked · 3 queued.\n  timeout   escalates in 1d (build)\n  budget    tokens 1.2M / 4M (state), 1.9M / 6M (instance)\n  commands  takeover, cancel\n"
+      "text": "ITM-01JK3/project/1  workflow.project@a8c21e7f0000  v12  build  since 09:14 (3h 12m)\n  next      Waiting on 9 children: 4 done, 1 running, 1 parked, 3 not started.\n  timeout   escalates in 1d (build)\n  budget    tokens 1.2M / 4M (state), 1.9M / 6M (instance)\n  commands  takeover, cancel\n"
     }
   },
   "facts": [

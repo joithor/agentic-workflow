@@ -1,5 +1,5 @@
 {
-  "key": "fact:alert",
+  "key": "fact:history",
   "type": "payload",
   "body": {
     "source": "pagerduty",

@@ -54,7 +54,7 @@ public static class StatusText
 
         foreach (var input in status.Inputs)
         {
-            yield return ("inputs", $"{input.Key}  {input.Name}{(input.Hash is null ? string.Empty : $"  sha256:{(input.Hash.Length > 4 ? input.Hash[..4] : input.Hash)}…")}");
+            yield return ("inputs", $"{input.Key}  {input.Name}{(input.Hash is null ? string.Empty : $"  sha256:{(input.Hash.Length > 4 ? input.Hash[..4] : input.Hash)}...")}");
         }
     }
 
@@ -82,6 +82,10 @@ public static class StatusText
         if (status.Answer is { } answer)
         {
             yield return ("answer", answer.Cli + Suffix(status));
+        }
+        else if (status.Drift is not null)
+        {
+            yield return ("answer", $"none (drift): sindri recipe approve {Pinned(status.Header)}     (at a terminal; the approval resumes it)");
         }
 
         if (status.Commands.Count > 0)
@@ -139,14 +143,10 @@ public static class StatusText
     private static string Clock(DateTimeOffset at, DateTimeOffset now) =>
         at.UtcDateTime.ToString(now - at >= TimeSpan.FromDays(1) ? "MM-dd HH:mm" : "HH:mm", CultureInfo.InvariantCulture);
 
-    // The engine's wording (P4b InstanceWords.Drift): the block, the pinned recipe it changed under, and the re-approval to run first.
-    private static string Drift(StatusHeader header, StatusDrift drift)
-    {
-        var pinned = $"{header.Recipe.Value}@{header.Hash12}";
-        return drift.NeedsReapproval
-            ? $"{drift.Block.Value} changed since {pinned} was approved; answer after the re-approval: sindri recipe approve {pinned}"
-            : $"{drift.Block.Value} changed since {pinned} was approved";
-    }
+    private static string Pinned(StatusHeader header) => $"{header.Recipe.Value}@{header.Hash12}";
+
+    // WF section 6.4: the drift line names the block and the recipe it changed under; the answer line says how it is resolved.
+    private static string Drift(StatusHeader header, StatusDrift drift) => $"{drift.Block.Value} changed since {Pinned(header)} was approved";
 
     /// <summary>A whole-second duration the way the CLI prints it: '40s', '32m', '3h 16m', '1d 22h 48m'.</summary>
     private static string Span(long seconds)

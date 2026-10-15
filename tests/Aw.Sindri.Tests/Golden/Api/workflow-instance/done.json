@@ -166,7 +166,7 @@
       "direction": "output",
       "from": "route",
       "status": "produced",
-      "summary": "ITM-01JF0 queued",
+      "summary": "ITM-01JF0 startable",
       "at": "2026-10-12T11:58:00.0000000Z",
       "by": "step.route",
       "ref": {
