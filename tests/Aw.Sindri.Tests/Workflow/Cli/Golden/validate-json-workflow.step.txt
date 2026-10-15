@@ -3,7 +3,7 @@ exit 0
 --- stdout
 {
   "passed": true,
-  "hash": "sha256:12e030dc92a0f827d4da641c65f023d5e547e15e9c1b29a9a427a603e0f50d40",
+  "hash": "sha256:1b13bd920351e56227141fe24e59f2f90cb46bc3549e1e90f2da2af1c3be9f5c",
   "findings": [],
   "normalized": {
     "schema": 1,
@@ -11,13 +11,16 @@ exit 0
     "version": 1,
     "description": null,
     "base": null,
+    "urgency": "work",
     "inputs": [
       {
         "key": "fact:spec",
         "label": null,
-        "type": null
+        "type": null,
+        "kind": null
       }
     ],
+    "outputs": [],
     "initial": "produce",
     "states": {
       "produce": {
