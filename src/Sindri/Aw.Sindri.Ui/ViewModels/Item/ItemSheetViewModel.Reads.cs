@@ -8,7 +8,7 @@ namespace Aw.Sindri.Ui.ViewModels.Item;
 internal sealed partial class ItemSheetViewModel
 {
     private int _generation;   // bumped by every read and by a change of subject: an answer from an older one is dropped
-    private bool _loadingMore;
+    private int? _loadingMore;   // the subject (ItemSheetViewModel.Clear bumps it) a Load more is in flight for
     private CancellationTokenSource? _reads;
 
     /// <summary>Opens an item: reads it and its timeline's first page.</summary>
@@ -68,12 +68,13 @@ internal sealed partial class ItemSheetViewModel
     /// <returns>A task that completes when the page is shown: true when it was appended.</returns>
     internal async Task<bool> LoadMore(CancellationToken cancellationToken)
     {
-        if (_loadingMore || _url is not { } url || Next is not { } next)
+        if (_loadingMore == _subject || _url is not { } url || Next is not { } next)
         {
             return false;
         }
 
-        (_loadingMore, var id) = (true, ItemId);
+        (_loadingMore, var id) = (_subject, ItemId);
+        var mine = _subject;
         try
         {
             var page = await api.Timeline(url, id, next, cancellationToken).ConfigureAwait(true);
@@ -89,7 +90,10 @@ internal sealed partial class ItemSheetViewModel
         }
         finally
         {
-            _loadingMore = false;
+            if (_loadingMore == mine)
+            {
+                _loadingMore = null;   // not another item's flag, set since
+            }
         }
     }
 
