@@ -432,19 +432,19 @@ public static class WorkflowViewFixtures
 
     /// <summary>workflow.project: a Linear project input, outputs with their producing states, urgency work.</summary>
     public static RecipeView ProjectRecipe() => new(
-        [new RecipeInputView("project", "Linear project", InputType.Text, "linear-project", true), new RecipeInputView("prd", "PRD", InputType.File, null, true)],
+        [new RecipeInputView("project", "Linear project", "text", "linear-project", true), new RecipeInputView("prd", "PRD", "file", null, true)],
         [new RecipeOutputView("scope", "Scope map", FactType.ScopeMap, "scoping"), new RecipeOutputView("packet", "Packet", FactType.Packet, "design"), new RecipeOutputView("evidence", "Evidence", FactType.Evidence, "build")],
         RecipeUrgency.Work, StateViews(_projectStates), []);
 
     /// <summary>incident.response: urgency incident and the mitigate and verify loop.</summary>
     public static RecipeView IncidentRecipe() => new(
-        [new RecipeInputView("alert", "Alert", InputType.Text, "webhook", true)],
+        [new RecipeInputView("alert", "Alert", "text", "webhook", true)],
         [new RecipeOutputView("severity", "Severity", FactType.Decision, "assess")],
         RecipeUrgency.Incident, StateViews(_incidentStates), [new RecipeLoopView("remediate", "mitigate", "verify")]);
 
     /// <summary>A recipe with no outputs: 'outputs: []', and a kind on the first input only.</summary>
     public static RecipeView NoOutputsRecipe() => new(
-        [new RecipeInputView("request", "Request", InputType.Text, "text", true), new RecipeInputView("context", null, InputType.File, null, false)],
+        [new RecipeInputView("request", "Request", "text", "text", true), new RecipeInputView("context", null, "file", null, false)],
         [], RecipeUrgency.Work, StateViews(_devTriageStates), []);
 
     // ---- the facts route (GetInstanceFact) ---------------------------------------------------------------------------

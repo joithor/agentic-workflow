@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Workflow.Views;
 
@@ -13,6 +12,6 @@ namespace Aw.Sindri.Core.Workflow.Views;
 public sealed record RecipeInputView(
     string Key,
     string? Label,
-    InputType Type,
+    string Type,
     string? Kind,
     bool Required);
