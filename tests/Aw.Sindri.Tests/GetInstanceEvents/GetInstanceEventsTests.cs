@@ -1,7 +1,6 @@
 using Aw.Kernel.Services;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
-using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Features.GetInstanceEvents;
 using Aw.Sindri.Features.StreamEvents;
 using Aw.Sindri.Host.Commands;
@@ -120,7 +119,9 @@ public sealed class GetInstanceEventsTests
         using var interrupt = new CancellationTokenSource();
         var stdout = new CancelOnWrite(interrupt);
 
-        var exit = await EventsCommand.Run(["T-1/step/1", "--follow"], Services(h), new Output(stdout, new StringWriter(), SliceHarness.Json), interrupt.Token);
+        using var api = Api(h);
+
+        var exit = await EventsCommand.Run(["T-1/step/1", "--follow"], api.Desk, Services(h), new Output(stdout, new StringWriter(), SliceHarness.Json), interrupt.Token);
 
         Assert.Equal(0, exit);
         Assert.Contains("workflow.started", stdout.ToString(), StringComparison.Ordinal);
@@ -131,7 +132,9 @@ public sealed class GetInstanceEventsTests
     {
         var h = await Ledger();
 
-        var exit = await EventsCommand.Run(["T-1/step/1", "--follow", "--json"], Services(h), new Output(new ClosedPipe(), new StringWriter(), SliceHarness.Json), TestContext.Current.CancellationToken);
+        using var api = Api(h);
+
+        var exit = await EventsCommand.Run(["T-1/step/1", "--follow", "--json"], api.Desk, Services(h), new Output(new ClosedPipe(), new StringWriter(), SliceHarness.Json), TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exit);
     }
@@ -145,7 +148,9 @@ public sealed class GetInstanceEventsTests
         var stdout = new StringWriter();
         var stderr = new StringWriter();
 
-        var exit = await EventsCommand.Run(follow ? ["T-9/step/1", "--follow"] : ["T-9/step/1"], Services(h), new Output(stdout, stderr, SliceHarness.Json), TestContext.Current.CancellationToken);
+        using var api = Api(h);
+
+        var exit = await EventsCommand.Run(follow ? ["T-9/step/1", "--follow"] : ["T-9/step/1"], api.Desk, Services(h), new Output(stdout, stderr, SliceHarness.Json), TestContext.Current.CancellationToken);
 
         Assert.Equal((2, string.Empty), (exit, stdout.ToString()));
         Assert.StartsWith("SND-WF-001 ", stderr.ToString(), StringComparison.Ordinal);
@@ -167,9 +172,10 @@ public sealed class GetInstanceEventsTests
 
     private static OneInstance Instances() => new(StatusCases.View("done") with { Address = _address, Id = WorkflowInstanceId.Of(_address) });
 
+    /// <summary>The events and instance routes over this ledger and the one instance <see cref="Instances"/> holds.</summary>
+    private static ReadApi Api(SliceHarness h) => ReadApi.Over(Instances(), services => services.AddSingleton<IService<GetInstanceEventsRequest, GetInstanceEventsResponse>>(Service(h)));
+
     private static ServiceProvider Services(SliceHarness h) => new ServiceCollection()
-        .AddSingleton<IInstanceDirectory>(Instances())
-        .AddSingleton<IService<GetInstanceEventsRequest, GetInstanceEventsResponse>>(Service(h))
         .AddSingleton<TimeProvider>(h.Clock)
         .BuildServiceProvider();
 

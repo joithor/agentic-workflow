@@ -19,8 +19,9 @@ internal static class EventsCommand
 
     private const string Usage = "usage: sindri workflow events <instance> [--follow] [--json]";
 
-    internal static async Task<int> Run(string[] args, IServiceProvider services, Output output, CancellationToken ct)
+    internal static async Task<int> Run(string[] args, RecipeDesk desk, IServiceProvider services, Output output, CancellationToken ct)
     {
+        _ = desk;   // red stub: the client comes next
         var json = args.Contains("--json", StringComparer.Ordinal);
         var follow = args.Contains("--follow", StringComparer.Ordinal);
         if (args.Where(static a => a is not ("--json" or "--follow")).ToArray() is not [{ Length: > 0 } text] || text.StartsWith("--", StringComparison.Ordinal))
