@@ -33,7 +33,7 @@ internal static class ReadYourWrites
                     .WaitFor(sequence, Limit, context.RequestAborted).ConfigureAwait(false);
                 if (reached.IsError)
                 {
-                    await ApiProblems.Write(context, reached.Error.Code, StatusCodes.Status503ServiceUnavailable, reached.Error.Message).ConfigureAwait(false);
+                    await ApiProblems.Write(context, reached.Error, StatusCodes.Status503ServiceUnavailable).ConfigureAwait(false);
                     return;
                 }
             }

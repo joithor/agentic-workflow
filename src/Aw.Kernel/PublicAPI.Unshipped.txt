@@ -237,3 +237,19 @@ override Aw.Kernel.Json.StringIdJsonConverter<TId>.ReadAsPropertyName(ref System
 override Aw.Kernel.Json.StringIdJsonConverter<TId>.Write(System.Text.Json.Utf8JsonWriter! writer, TId value, System.Text.Json.JsonSerializerOptions! options) -> void
 override Aw.Kernel.Json.StringIdJsonConverter<TId>.WriteAsPropertyName(System.Text.Json.Utf8JsonWriter! writer, TId value, System.Text.Json.JsonSerializerOptions! options) -> void
 static Aw.Kernel.Ids.IdGeneratorExtensions.New<TId>(this Aw.Kernel.Ids.IIdGenerator! generator) -> TId
+Aw.Kernel.Error.Extensions.get -> Aw.Kernel.ErrorExtensions?
+Aw.Kernel.Error.Extensions.init -> void
+Aw.Kernel.Error.WithExtension(string! name, System.Text.Json.JsonElement value) -> Aw.Kernel.Error!
+Aw.Kernel.Error.WithExtension<T>(string! name, T value, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>! typeInfo) -> Aw.Kernel.Error!
+Aw.Kernel.ErrorExtensions
+Aw.Kernel.ErrorExtensions.Count.get -> int
+Aw.Kernel.ErrorExtensions.GetEnumerator() -> System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string!, System.Text.Json.JsonElement>>!
+Aw.Kernel.ErrorExtensions.this[int index].get -> System.Collections.Generic.KeyValuePair<string!, System.Text.Json.JsonElement>
+Aw.Kernel.ErrorExtensions.With(string! name, System.Text.Json.JsonElement value) -> Aw.Kernel.ErrorExtensions!
+const Aw.Kernel.ErrorExtensions.MaxNameLength = 64 -> int
+static Aw.Kernel.ErrorExtensions.Empty.get -> Aw.Kernel.ErrorExtensions!
+static Aw.Kernel.ErrorExtensions.IsValidName(string? name) -> bool
+static Aw.Kernel.ErrorExtensions.ReservedNames.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Kernel.ErrorExtensions.Equals(Aw.Kernel.ErrorExtensions? other) -> bool
+override Aw.Kernel.ErrorExtensions.Equals(object? obj) -> bool
+override Aw.Kernel.ErrorExtensions.GetHashCode() -> int

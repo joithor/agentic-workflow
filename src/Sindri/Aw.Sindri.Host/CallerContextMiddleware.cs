@@ -31,7 +31,7 @@ internal static partial class CallerContextMiddleware
         if (parsed.IsError)
         {
             LogUnknownCaller(log, method, path, parsed.Error.Message);
-            await ApiProblems.Write(context, parsed.Error.Code, StatusCodes.Status400BadRequest, parsed.Error.Message).ConfigureAwait(false);
+            await ApiProblems.Write(context, parsed.Error, StatusCodes.Status400BadRequest).ConfigureAwait(false);
             return;
         }
 
