@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "repo": "aw-split-panes",
+  "sha": "270d7c9",
+  "mapVersion": "v1",
+  "draft": false,
+  "path": "src/",
+  "entries": [
+    {
+      "name": "layout",
+      "path": "src/layout/",
+      "type": "dir",
+      "status": "unmapped",
+      "files": 1,
+      "features": [],
+      "intent": null
+    },
+    {
+      "name": "tabs",
+      "path": "src/tabs/",
+      "type": "dir",
+      "status": "unmapped",
+      "files": 3,
+      "features": [
+        {
+          "key": "action:tab-manager.restore-layout",
+          "provenance": "deterministic",
+          "confidence": null,
+          "confirmed": true,
+          "linkId": null,
+          "edge": "implements"
+        },
+        {
+          "key": "feature:tabs.tab-manager",
+          "provenance": "deterministic",
+          "confidence": null,
+          "confirmed": true,
+          "linkId": null,
+          "edge": "implements"
+        }
+      ],
+      "intent": {
+        "records": 1,
+        "decisions": 0
+      }
+    }
+  ],
+  "unmapped": [
+    {
+      "path": "src/layout/",
+      "files": 1
+    },
+    {
+      "path": "src/tabs/",
+      "files": 3
+    }
+  ],
+  "suggested": [
+    {
+      "linkId": "edge:402b8bed42f6611c",
+      "file": "src/tabs/TabGroups.ts",
+      "feature": "feature:tabs.tab-groups",
+      "confidence": 0.74,
+      "evidence": [
+        "repo:aw-split-panes/src/tabs/TabGroups.ts"
+      ]
+    }
+  ],
+  "totals": {
+    "files": 4,
+    "mapped": 1,
+    "suggested": 1,
+    "unmapped": 2
+  },
+  "symbols": {
+    "state": "unavailable",
+    "reason": "index not built",
+    "items": []
+  }
+}

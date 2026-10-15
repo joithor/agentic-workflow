@@ -1,0 +1,7 @@
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "SND-CLI-003",
+  "status": 400,
+  "detail": "'not-an-item' isn't an item id (ITM-…) or a tracker key (ENG-142)",
+  "traceId": "<trace>"
+}

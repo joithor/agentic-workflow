@@ -18,7 +18,7 @@ public sealed class CqrsRuleTests
     [Fact, Trait("Lane", "unit")]
     public void Query_handlers_take_no_write_ports()
     {
-        var violations = QueryPortRules.Check(Features, QueryPortRules.Allowlist);
+        var violations = QueryPortRules.Check(Features);
 
         Assert.True(violations.Count == 0, CatalogRules.Lines(violations));
     }
@@ -26,18 +26,25 @@ public sealed class CqrsRuleTests
     [Fact, Trait("Lane", "unit")]
     public void Query_port_rule_flags_a_query_handler_that_takes_the_ledger()
     {
-        var violation = Assert.Single(QueryPortRules.Check([typeof(LedgerReadingQueryService), typeof(LedgerWritingCommandService)], new HashSet<string>(StringComparer.Ordinal)));
+        var violation = Assert.Single(QueryPortRules.Check([typeof(LedgerReadingQueryService), typeof(LedgerWritingCommandService)]));
 
         Assert.StartsWith("ARCH-CQRS-002: LedgerReadingQueryService", violation, StringComparison.Ordinal);
         Assert.Contains("ILedgerStore", violation, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void The_query_port_allowlist_names_only_handlers_that_still_need_it()
+    public void Query_port_rule_follows_a_handler_s_own_helper()
     {
-        var offenders = QueryPortRules.Offenders(Features).Select(o => o.Handler.FullName).ToHashSet(StringComparer.Ordinal);
+        var violation = Assert.Single(QueryPortRules.Check([typeof(HelperQueryService)]));
 
-        Assert.All(QueryPortRules.Allowlist, handler => Assert.Contains(handler, offenders));   // a stale entry fails: delete it (P2, C9)
+        Assert.Contains("HelperQueryService handles a query but takes ILedgerStore", violation, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_query_port_allowlist_is_empty_and_gone()
+    {
+        Assert.Null(typeof(QueryPortRules).GetField("Allowlist"));   // P1's G1 allowlist went with C9's read ports
+        Assert.Empty(QueryPortRules.Offenders(Features));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -73,6 +80,17 @@ public sealed class CqrsRuleTests
     {
         public ValueTask<Result<long>> Handle(LedgerQuery request, CancellationToken cancellationToken) =>
             ValueTask.FromResult<Result<long>>(ledger.GetHashCode());
+    }
+
+    private sealed class LedgerHelper(ILedgerStore ledger)
+    {
+        public override string ToString() => ledger.ToString() ?? string.Empty;
+    }
+
+    private sealed class HelperQueryService(LedgerHelper helper) : IService<LedgerQuery, long>
+    {
+        public ValueTask<Result<long>> Handle(LedgerQuery request, CancellationToken cancellationToken) =>
+            ValueTask.FromResult<Result<long>>(helper.GetHashCode());
     }
 
     private sealed class LedgerWritingCommandService(ILedgerStore ledger) : IService<UnlistedCommand, CommandAccepted>

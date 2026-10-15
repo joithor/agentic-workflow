@@ -34,12 +34,20 @@ public sealed class GoldenHost : IAsyncDisposable
     public const string ProfileYaml = "schemaVersion: 1\nuser: golden\nservices:\n  heartbeat: { every: 5s }\n";
 
     private readonly TempHome _home = new();
+    private readonly List<IDisposable> _owned = [];
     private readonly TempHome? _elsewhere;
     private WebApplication? _app;
 
-    private GoldenHost(bool temporary)
+    private readonly string _profileYaml;
+    private readonly IReadOnlyDictionary<string, string>? _environment;
+    private readonly Action<IServiceCollection>? _extra;
+
+    private GoldenHost(bool temporary, string profileYaml, IReadOnlyDictionary<string, string>? environment, Action<IServiceCollection>? extra)
     {
         _elsewhere = temporary ? null : new TempHome();
+        _profileYaml = profileYaml;
+        _environment = environment;
+        _extra = extra;
     }
 
     /// <summary>The token the host holds.</summary>
@@ -57,10 +65,14 @@ public sealed class GoldenHost : IAsyncDisposable
     /// <summary>Starts a host. <paramref name="temporary"/> false points TMPDIR and AW_STATE_DIR away from its home, so the prover label is refused.</summary>
     /// <param name="temporary">Whether the home counts as temporary (honours the prover label).</param>
     /// <param name="ct">Cancellation.</param>
+    /// <param name="profileYaml">The live profile it starts with (<see cref="ProfileYaml"/> unless a test needs another).</param>
+    /// <param name="environment">More environment variables the host reads (fixture secrets behind 'env:' pointers), or null.</param>
+    /// <param name="extra">More service replacements, after the fixed ones (a test's log sink).</param>
     /// <returns>The started host.</returns>
-    public static async Task<GoldenHost> Start(bool temporary, CancellationToken ct)
+    public static async Task<GoldenHost> Start(bool temporary, CancellationToken ct, string profileYaml = ProfileYaml,
+        IReadOnlyDictionary<string, string>? environment = null, Action<IServiceCollection>? extra = null)
     {
-        var host = new GoldenHost(temporary);
+        var host = new GoldenHost(temporary, profileYaml, environment, extra);
         try
         {
             await host.Run(ct);
@@ -72,6 +84,10 @@ public sealed class GoldenHost : IAsyncDisposable
             throw;
         }
     }
+
+    /// <summary>Hands the host something to dispose after it stops (a fixture repo the profile maps).</summary>
+    /// <param name="resource">The resource.</param>
+    public void Own(IDisposable resource) => _owned.Add(resource);
 
     /// <summary>The live profile's hash.</summary>
     /// <param name="ct">Cancellation.</param>
@@ -90,14 +106,16 @@ public sealed class GoldenHost : IAsyncDisposable
 
         _home.Dispose();
         _elsewhere?.Dispose();
+        _owned.ForEach(o => o.Dispose());
     }
 
     private async Task Run(CancellationToken ct)
     {
         _ = Directory.CreateDirectory(Path.Combine(_home.Path, "profile"));
-        await File.WriteAllTextAsync(Path.Combine(_home.Path, "profile", "profile.yaml"), ProfileYaml, ct);
-        var app = LoopbackBinding.Build([], Environment, new FakeTimeProvider(KnownInstants.Epoch), static services =>
+        await File.WriteAllTextAsync(Path.Combine(_home.Path, "profile", "profile.yaml"), _profileYaml, ct);
+        var app = LoopbackBinding.Build([], Environment, new FakeTimeProvider(KnownInstants.Epoch), services =>
         {
+            _extra?.Invoke(services);
             _ = services.Replace(ServiceDescriptor.Singleton<IIdGenerator>(new SequentialIdGenerator()));
             _ = services.Replace(ServiceDescriptor.Singleton<IProcessProbe>(new FakeProcessProbe(Pid)));
             NoTemporal.Use(services);   // the Temporal side is faked: the goldens are about the API
@@ -119,8 +137,10 @@ public sealed class GoldenHost : IAsyncDisposable
     private string? Environment(string name) => name switch
     {
         "AW_SINDRI_HOME" => _home.Path,
+        "HOME" => Path.Combine(_home.Path, "provider-home"),            // doctor's provider files: never the real ones
+        "AW_SINDRI_CLAUDE_BIN" => Path.Combine(_home.Path, "no-claude"),  // mcp register --apply: never the real claude
         "TMPDIR" when _elsewhere is not null => Path.Combine(_elsewhere.Path, "tmp"),
         "AW_STATE_DIR" when _elsewhere is not null => Path.Combine(_elsewhere.Path, "state"),
-        _ => null,
+        _ => _environment is not null && _environment.TryGetValue(name, out var value) ? value : null,
     };
 }

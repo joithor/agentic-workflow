@@ -2,8 +2,12 @@ using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Registry;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Core.Registration;
@@ -13,7 +17,9 @@ public static class SindriCoreServiceCollectionExtensions
 {
     /// <summary>
     /// Adds the Sindri domain services: the control plane's event scope and factory, the caller of the code running now,
-    /// the lease and human token this process holds, and the Temporal runtime serve keeps.
+    /// the lease and human token this process holds, the Temporal runtime serve keeps, the projector's progress (status,
+    /// rebuild control and feed) and its projections, the registry's approve and revoke planners, its reader and its
+    /// event appender, and the approved recipes the engine reads over the registry.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
@@ -23,7 +29,21 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<EventFactory>()
             .AddSingleton<ICallerContextAccessor, AsyncLocalCallerContextAccessor>()
             .AddSingleton<HeldLease>()
-            .AddSingleton<HeldHumanToken>()
             .AddSingleton<TemporalRuntime>()
-            .AddSingleton<BlockCatalog>();
+            .AddSingleton<HeldHumanToken>()
+            .AddSingleton<BlockCatalog>()
+            .AddSingleton<ProjectorProgress>()
+            .AddSingleton<IProjectorStatus>(static sp => sp.GetRequiredService<ProjectorProgress>())
+            .AddSingleton<IProjectorControl>(static sp => sp.GetRequiredService<ProjectorProgress>())
+            .AddSingleton<IProjectorFeed>(static sp => sp.GetRequiredService<ProjectorProgress>())
+            .AddSingleton<IProjection, ServicesProjection>()
+            .AddSingleton<IProjection, ProfileProjection>()
+            .AddSingleton<IProjection, ItemsProjection>()
+            .AddSingleton<IProjection, ItemAliasesProjection>()
+            .AddSingleton<IProjection, ItemTimelineProjection>()
+            .AddScoped<RecipeApprovalPlanner>()
+            .AddScoped<RecipeRevokePlanner>()
+            .AddScoped<RecipeRegistryReader>()
+            .AddSingleton<RecipeEvents>()
+            .AddSingleton<IApprovedRecipes, RegistryApprovedRecipes>();
 }

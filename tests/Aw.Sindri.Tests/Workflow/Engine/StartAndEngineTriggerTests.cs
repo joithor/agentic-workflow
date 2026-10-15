@@ -17,7 +17,7 @@ public sealed class StartAndEngineTriggerTests
     [Fact, Trait("Lane", "unit")]
     public void Start_enters_the_initial_state_as_entry_one()
     {
-        var applied = Assert.IsType<Applied>(TransitionDecision.Start(Request(), Step, Context(), new FakeEngineRules()));
+        var applied = Assert.IsType<Applied>(TransitionDecision.Start(Request(), Step, EngineFixture.Context(), new FakeEngineRules()));
 
         var (row, started) = (applied.Changes[0].After, applied.Changes[0].Event);
         Assert.Equal(("produce", 1, RunToken.For(1, 1)), (row.State, row.Frame.Entry, row.Frame.Run!.Token));
@@ -30,9 +30,19 @@ public sealed class StartAndEngineTriggerTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Start_keeps_the_tenant_and_ring_of_the_workflow_input()
+    {
+        var applied = Assert.IsType<Applied>(TransitionDecision.Start(Request() with { Tenant = "acme", Ring = 2 }, Step, EngineFixture.Context(), new FakeEngineRules()));
+
+        var (row, started) = (applied.Changes[0].After, applied.Changes[0].Event);
+        Assert.Equal(("acme", 2), (row.Tenant, row.Ring));
+        Assert.Equal(("acme", 2), (started.Started!.Tenant, started.Started.Ring));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Start_on_a_revoked_recipe_is_rejected()
     {
-        var decision = TransitionDecision.Start(Request(), Step, Context() with { Approval = ApprovalCheck.Revoked }, new FakeEngineRules());
+        var decision = TransitionDecision.Start(Request(), Step, EngineFixture.Context() with { Approval = ApprovalCheck.Revoked }, new FakeEngineRules());
 
         Assert.Equal("SND-RECIPE-005", Assert.IsType<Rejected>(decision).Error.Code);
     }
@@ -40,10 +50,19 @@ public sealed class StartAndEngineTriggerTests
     [Fact, Trait("Lane", "unit")]
     public void Start_requested_taken_over_starts_taken_over()
     {
-        var applied = Assert.IsType<Applied>(TransitionDecision.Start(Request() with { TakenOver = true }, Step, Context(), new FakeEngineRules()));
+        var applied = Assert.IsType<Applied>(TransitionDecision.Start(Request() with { TakenOver = true }, Step, EngineFixture.Context(), new FakeEngineRules()));
 
         var row = applied.Changes[0].After;
         Assert.Equal((EngineStates.TakenOver, "produce"), (row.State, row.Frame.State));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Start_taken_over_records_the_callers_actor_and_only_the_takeover_is_the_engines()
+    {
+        var applied = Assert.IsType<Applied>(TransitionDecision.Start(Request() with { TakenOver = true }, Step, EngineFixture.Context(), new FakeEngineRules()));
+
+        var (row, started) = (applied.Changes[0].After, applied.Changes[0].Event);
+        Assert.Equal(("human:thor", "service:engine"), (started.Trigger.Actor, row.Suspension?.Actor));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -65,7 +84,7 @@ public sealed class StartAndEngineTriggerTests
     {
         var cancel = new CancelRequested("human:thor", CancelOrigin.Command, new CommandStamp(CommandNonce.From(new string('b', 32)), Sha("cancel")), Sequence: null, Parent: null);
 
-        var applied = Assert.IsType<Applied>(Decide(At(Step, "produce"), Step, cancel, context: Context() with { Approval = ApprovalCheck.Revoked }));
+        var applied = Assert.IsType<Applied>(Decide(At(Step, "produce"), Step, cancel, context: EngineFixture.Context() with { Approval = ApprovalCheck.Revoked }));
 
         Assert.Equal((EngineStates.Cancelled, "cancelled"), (applied.Changes[0].After.State, applied.Changes[0].After.Outcome?.Value));
     }
@@ -75,7 +94,7 @@ public sealed class StartAndEngineTriggerTests
     {
         var middle = Nested("workflow.middle", "workflow.step");
         var outer = Nested("workflow.outer", "workflow.middle");
-        var context = Context() with { Children = new InMemoryChildRecipes().With(middle).With(new ChildRecipe(Step, Step.Hash!.Value)) };
+        var context = EngineFixture.Context() with { Children = new InMemoryChildRecipes().With(middle).With(new ChildRecipe(Step, Step.Hash!.Value)) };
 
         var applied = Assert.IsType<Applied>(TransitionDecision.Start(NestedRequest(outer, middle), outer.Recipe, context));
 
@@ -98,7 +117,7 @@ public sealed class StartAndEngineTriggerTests
     {
         var middle = Nested("workflow.middle", "workflow.step");
         var outer = Nested("workflow.outer", "workflow.middle");
-        var context = Context() with { Children = new InMemoryChildRecipes().With(middle).With(new ChildRecipe(Step, Step.Hash!.Value)) };
+        var context = EngineFixture.Context() with { Children = new InMemoryChildRecipes().With(middle).With(new ChildRecipe(Step, Step.Hash!.Value)) };
         var unpinned = NestedRequest(outer, middle) with { Recipe = NestedRequest(outer, middle).Recipe with { Children = new Dictionary<RecipeId, RecipeHash>() } };
 
         var rejected = Assert.IsType<Rejected>(TransitionDecision.Start(unpinned, outer.Recipe, context));
@@ -113,7 +132,7 @@ public sealed class StartAndEngineTriggerTests
         var middle = Nested("workflow.middle", "workflow.step");
         var outer = Nested("workflow.outer", "workflow.middle");
         var drifted = new ChildRecipe(middle.Recipe, RecipeHash.From("sha256:" + new string('6', 64)));
-        var context = Context() with { Children = new InMemoryChildRecipes().With(drifted).With(new ChildRecipe(Step, Step.Hash!.Value)) };
+        var context = EngineFixture.Context() with { Children = new InMemoryChildRecipes().With(drifted).With(new ChildRecipe(Step, Step.Hash!.Value)) };
 
         var rejected = Assert.IsType<Rejected>(TransitionDecision.Start(NestedRequest(outer, middle), outer.Recipe, context));
 
@@ -170,5 +189,7 @@ public sealed class StartAndEngineTriggerTests
         Parent: null,
         new Dictionary<FactKey, FactValue> { [FactKey.From("fact:spec")] = Fact("Add a --version flag.") },
         "human:thor",
-        TakenOver: false);
+        TakenOver: false,
+        Tenant: "local",
+        Ring: 0);
 }

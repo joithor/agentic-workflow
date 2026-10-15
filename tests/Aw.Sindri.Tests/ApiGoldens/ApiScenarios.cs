@@ -21,15 +21,43 @@ internal static class ApiScenarios
         ("profile-approve", "preview"), ("profile-approve", "approved"), ("profile-approve", "already-approved"),
         ("profile-approve", "refused-session"), ("profile-approve", "refused-no-terminal"), ("profile-approve", "refused-origin"),
         ("profile-approve", "stale-hash"), ("profile-approve", "bad-body"),
+        ("workflow-recipe", "not-found"),
+        .. ContextApiScenarios.Rows,
+        .. ViewScenarios.All,
+        .. ItemScenarios.All,
     ];
 
     /// <summary>Whether the scenario's host must refuse the prover label (its home isn't temporary).</summary>
     public static bool NeedsNonTemporaryHome(string slug, string scenario) => (slug, scenario) is ("status", "prover-refused");
 
+    /// <summary>Starts the host the scenario runs on: the plain golden host, or for the context routes one over a small git repo with a map.</summary>
+    public static async Task<GoldenHost> Start(string slug, string scenario, CancellationToken ct) =>
+        ContextApiScenarios.Handles(slug)
+            ? await ContextApiScenarios.Start(slug, scenario, ct)
+            : await GoldenHost.Start(temporary: !NeedsNonTemporaryHome(slug, scenario), ct, ProfileYaml(slug, scenario));
+
+    /// <summary>The live profile the scenario's host starts with: the item scenarios need two repos.</summary>
+    public static string ProfileYaml(string slug, string scenario) => ItemScenarios.Handles(slug, scenario) ? ItemScenarios.ProfileYaml : GoldenHost.ProfileYaml;
+
     /// <summary>Runs the scenario against <paramref name="host"/> and returns the body to compare.</summary>
     public static async Task<string> Body(GoldenHost host, string slug, string scenario, CancellationToken ct)
     {
+        if (ContextApiScenarios.Handles(slug))
+        {
+            return await ContextApiScenarios.Body(host, slug, scenario, ct);
+        }
+
         var token = host.Token.Value;
+        if (ItemScenarios.Handles(slug, scenario))
+        {
+            return await ItemScenarios.Body(host, slug, scenario, ct);
+        }
+
+        if (ViewScenarios.Handles(slug, scenario))
+        {
+            return await ViewScenarios.Body(host, slug, scenario, ct);
+        }
+
         return (slug, scenario) switch
         {
             ("status", "running-unapproved") => await Ask(host, Get("/sindri/status", Human(token))),
@@ -41,6 +69,7 @@ internal static class ApiScenarios
             ("ping", "running") => await Ask(host, Get("/sindri/ping", Human(token))),
             ("commands", "catalog") => await Ask(host, Get("/sindri/commands", Human(token))),
             ("events", "process-started") => await FirstEventData(host, ct),
+            ("workflow-recipe", "not-found") => await Ask(host, Get(UnknownRecipe, Human(token))),
             ("stop", "accepted") => await Ask(host, Post("/sindri/stop", json: null, Human(token))),
             ("stop", "refused-session") => await Ask(host, Post("/sindri/stop", json: null, Session)),
             ("stop", "refused-origin") => await Ask(host, Post("/sindri/stop", json: null, [.. Human(token), Origin])),
@@ -50,24 +79,28 @@ internal static class ApiScenarios
 
     private static (string Name, string Value)[] Session => [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")];
 
+    // An unknown recipe answers the engine's SND-RECIPE-002 (WorkflowErrors.RecipeNotFound; API spec §3.8). Served today by
+    // the recipe show route (id@hash); P11 serves GET /workflow/recipes/{id} and re-records this file from that route.
+    private static string UnknownRecipe => "/sindri/workflow/recipes/workflow.unknown@" + new string('0', 64);
+
     private static (string Name, string Value) Origin => ("Origin", "http://localhost:3000");
 
     private static async Task<string> ApproveScenario(GoldenHost host, string scenario, CancellationToken ct)
     {
         var token = host.Token.Value;
         var hash = (await host.LiveHash(ct)).Value;
-        var approve = $"{{\"hash\":\"{hash}\",\"confirmed\":true}}";
+        var approve = $"{{\"hash\":\"{hash}\"}}";
         return scenario switch
         {
-            "preview" => await Ask(host, Post("/sindri/profile/approve", "{\"hash\":null,\"confirmed\":false}", Human(token))),
-            "approved" => await Ask(host, Post("/sindri/profile/approve", approve, Human(token))),
+            "preview" => await Ask(host, Post("/sindri/profile/approve", "{\"hash\":null}", Human(token))),
+            "approved" => await Ask(host, Post("/sindri/profile/approve", await Confirmed(host, hash), Human(token))),
             "already-approved" => await AfterApproval(host, () => Post("/sindri/profile/approve", approve, Human(token)), ct),
             "refused-session" => await Ask(host, Post("/sindri/profile/approve", approve, Session)),
             "refused-no-terminal" => await Ask(host, Post("/sindri/profile/approve", approve,
                 [(SindriHeaders.Caller, "human"), (SindriHeaders.Client, "cli"), (SindriHeaders.Token, token)])),
             "refused-origin" => await Ask(host, Post("/sindri/profile/approve", approve, [.. Human(token), Origin])),
             "stale-hash" => await Ask(host, Post("/sindri/profile/approve",
-                $"{{\"hash\":\"{SliceHarness.Profile("9s").Hash.Value}\",\"confirmed\":true}}", Human(token))),
+                $"{{\"hash\":\"{SliceHarness.Profile("9s").Hash.Value}\"}}", Human(token))),
             "bad-body" => await Ask(host, Post("/sindri/profile/approve", "{\"hash\":", Human(token))),
             _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "no such profile-approve scenario"),
         };
@@ -77,13 +110,27 @@ internal static class ApiScenarios
     private static async Task<string> AfterApproval(GoldenHost host, Func<HttpRequestMessage> request, CancellationToken ct)
     {
         var hash = (await host.LiveHash(ct)).Value;
-        var setup = await host.Http.Ask(Post("/sindri/profile/approve", $"{{\"hash\":\"{hash}\",\"confirmed\":true}}", Human(host.Token.Value)));
+        var setup = await host.Http.Ask(Post("/sindri/profile/approve", await Confirmed(host, hash), Human(host.Token.Value)));
         if (setup.Status != System.Net.HttpStatusCode.OK)
         {
             throw new InvalidOperationException($"the setup approval failed: {setup.Status} {setup.Body}");
         }
 
         return await Ask(host, request());
+    }
+
+    /// <summary>An approve body for <paramref name="hash"/> that answers a fresh 'approve profile &lt;hash6&gt;' challenge as the human typed it (S1-D5).</summary>
+    internal static async Task<string> Confirmed(GoldenHost host, string hash)
+    {
+        var action = "approve profile " + hash[..6];
+        var issued = await host.Http.Ask(Post("/sindri/workflow/challenges", $"{{\"action\":\"{action}\"}}", Human(host.Token.Value)));
+        if (issued.Status != System.Net.HttpStatusCode.OK)
+        {
+            throw new InvalidOperationException($"issuing '{action}' failed: {issued.Status} {issued.Body}");
+        }
+
+        var challenge = System.Text.Json.JsonDocument.Parse(issued.Body).RootElement.GetProperty("challenge").GetString();
+        return $"{{\"hash\":\"{hash}\",\"answer\":{{\"challenge\":\"{challenge}\",\"typed\":\"{action}\"}}}}";
     }
 
     private static async Task<string> Ask(GoldenHost host, HttpRequestMessage request) => (await host.Http.Ask(request)).Body;

@@ -1,15 +1,30 @@
 using Aw.Kernel.Ids;
+using Aw.Redaction;
 using Aw.Sindri.Core.Auth;
+using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Locks;
+using Aw.Sindri.Core.Mcp;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Secrets;
+using Aw.Sindri.Core.Text;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Infrastructure.Auth;
+using Aw.Sindri.Infrastructure.Challenges;
 using Aw.Sindri.Infrastructure.Control;
 using Aw.Sindri.Infrastructure.Lease;
 using Aw.Sindri.Infrastructure.Ledger;
+using Aw.Sindri.Infrastructure.Locks;
+using Aw.Sindri.Infrastructure.Mcp;
 using Aw.Sindri.Infrastructure.Profile;
+using Aw.Sindri.Infrastructure.Secrets;
+using Aw.Sindri.Infrastructure.Text;
+using Aw.Sindri.Infrastructure.Views;
 using Aw.Sindri.Infrastructure.Workflow;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -18,7 +33,7 @@ namespace Aw.Sindri.Infrastructure.Registration;
 /// <summary>Registers Aw.Sindri.Infrastructure's adapters and settings. A second technology for a port gets its own AddSindri&lt;Tech&gt;Infrastructure method.</summary>
 public static class SindriInfrastructureServiceCollectionExtensions
 {
-    /// <summary>Adds the Sindri adapters (SQLite ledger and lease, YAML profile and recipes, files, the process probe, process ancestry, git repo resolution) and their settings.</summary>
+    /// <summary>Adds the Sindri adapters (SQLite ledger, lease and views, YAML profile and recipes, files, the process probe, process ancestry, git repo resolution, secret pointers, the Aw.Redaction text scrubber, the claude CLI and the providers' MCP files) and their settings.</summary>
     /// <param name="services">The service collection.</param>
     /// <remarks>The profile and approval adapters take the package's AwJson options, which Compose registers.</remarks>
     /// <param name="environment">Reads an environment variable (Environment.GetEnvironmentVariable in Program.cs, a lambda in tests).</param>
@@ -30,9 +45,14 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IProcessProbe, PosixProcessProbe>()
             .AddSingleton<LedgerDatabase>()
             .AddSingleton<ILedgerStore, SqliteLedger>()
+            .AddSingleton<ILedgerReader, SqliteLedgerReader>()
             .AddSingleton<ILease, SqliteLease>()
+            .AddSingleton<ViewsDatabase>()
+            .AddSingleton<IViewStore, SqliteViewStore>()
+            .AddSingleton<IViewReader, SqliteViewReader>()
             .AddSingleton<IProfileSource, YamlProfileSource>()
             .AddSingleton<IApprovals, FileApprovals>()
+            .AddSingleton<IApprovedProfile>(static sp => sp.GetRequiredService<IApprovals>())
             .AddSingleton<IEndpointFile, FileEndpoint>()
             .AddSingleton<IControlPlaneProbe, HttpControlPlaneProbe>()
             .AddSingleton<IControlPlaneLauncher, ServeLauncher>()
@@ -40,6 +60,28 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton(static sp => new ProverLabel(sp.GetRequiredService<SindriSettings>().ProverLabelAllowed))
             .AddSingleton<IProcessAncestry, PosixProcessAncestry>()
             .AddSingleton<IRepoLocator, GitRepoLocator>()
+            .AddSingleton<ICommandOrigins, LedgerCommandOrigins>()   // engine P4 unit (d): the bridge's causation route
             .AddSingleton<IRecipeReader, YamlRecipeReader>()
-            .AddSingleton<IRecipeFiles, FileRecipeFiles>();
+            .AddSingleton<IRecipeFiles, FileRecipeFiles>()
+            .AddSingleton(CreateSecretPointers(environment))
+            .AddSingleton<IRecipeWake, NoOpRecipeWake>()
+            .AddSingleton<IRecipeStore, SqliteRecipeStore>()
+            .AddSingleton<IRecipeApprovals, SqliteRecipeApprovals>()
+            .AddSingleton<IChallenges, ProcessChallenges>()
+            .AddSingleton(sp => HeavyLockSettings.Read(environment, sp.GetRequiredService<SindriSettings>().StateDirectory))
+            .AddSingleton<IHeavySlots, DirectoryHeavySlots>()
+            .AddSingleton<IHarnessVersions, CommandHarnessVersions>()
+            .AddSingleton(McpSettings.Read(environment))
+            .AddSingleton<IClaudeCli, ProcessClaudeCli>()
+            .AddSingleton<IProviderFiles, ProviderConfigFiles>()
+            .AddSingleton<ITextScrubber>(new RedactingScrubber(Redactor.Default));
+
+    /// <summary>
+    /// Makes the secret-pointer resolver (env:, file:, keychain:, op:) over <paramref name="environment"/>, for Composition to
+    /// build before the container exists (context spec §4 "Secrets"); AddSindriInfrastructure registers the same kind.
+    /// </summary>
+    /// <param name="environment">Reads an env: pointer's variable. Nothing else is read from it.</param>
+    /// <returns>The resolver.</returns>
+    public static ISecretPointers CreateSecretPointers(Func<string, string?> environment)
+        => new PointerSecrets(environment, new ProcessToolRunner());
 }

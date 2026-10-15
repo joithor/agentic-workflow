@@ -1,0 +1,114 @@
+# The split-panes product map, hand-authored (stage S-3a). Synthetic, like the rest of the fixture.
+# Keys match probes.json. 'implements' edges carry file evidence in repo aw-split-panes, so a session scoped to that
+# repo sees the nodes they point at (spec §3). Pane resize's action only writes pane-layout; restore-layout reads it,
+# on the switch-tab surface of the tab manager (S-3b: the surface lets the cascade's ascend reach its feature, spec §6.1).
+schemaVersion: 1
+kind: authored
+repo: aw-split-panes
+nodes:
+  - key: feature:layout.split-pane
+    label: Split pane
+  - key: feature:layout.split-pane.orientation
+    label: Split orientation
+  - key: feature:layout.pane-resize
+    label: Pane resize
+  - key: feature:tabs.tab-manager
+    label: Tab manager
+  - key: surface:command/split-vertical
+    label: Split vertically (command)
+  - key: surface:command/toggle-orientation
+    label: Toggle split orientation (command)
+  - key: surface:keybinding/ctrl+shift+d
+    label: Ctrl+Shift+D
+  - key: surface:setting/paneResizeStep
+    label: paneResizeStep setting
+  - key: surface:command/switch-tab
+    label: Switch tab (command)
+  - key: action:split-pane.split-vertical
+    label: Split a pane vertically
+  - key: action:split-pane.toggle-orientation
+    label: Toggle the split orientation
+  - key: action:pane-resize.resize-focused
+    label: Resize the focused pane
+  - key: action:tab-manager.restore-layout
+    label: Restore a tab's pane layout
+  - key: thing:pane-layout
+    label: Pane layout
+  - key: code:src/layout/SplitPane.ts
+    label: SplitPane.ts
+    provenance: deterministic
+  - key: code:src/layout/PaneResize.ts
+    label: PaneResize.ts
+    provenance: deterministic
+  - key: code:src/tabs/TabManager.ts
+    label: TabManager.ts
+    provenance: deterministic
+  - key: feature:layout.drag-to-split
+    label: Drag to split
+    provenance: model
+    confidence: 0.4
+    evidence:
+      - key: linear:issue/0e5a1b00-0000-4000-8000-000000000106
+edges:
+  - {from: "feature:layout.split-pane.orientation", to: "feature:layout.split-pane", type: part-of}
+  - {from: "feature:layout.pane-resize", to: "feature:layout.split-pane", type: part-of}
+  - {from: "surface:command/split-vertical", to: "feature:layout.split-pane", type: part-of}
+  - {from: "surface:keybinding/ctrl+shift+d", to: "feature:layout.split-pane", type: part-of}
+  - {from: "surface:command/toggle-orientation", to: "feature:layout.split-pane.orientation", type: part-of}
+  - {from: "surface:setting/paneResizeStep", to: "feature:layout.pane-resize", type: part-of}
+  - {from: "surface:command/switch-tab", to: "feature:tabs.tab-manager", type: part-of}
+  - {from: "surface:keybinding/ctrl+shift+d", to: "surface:command/split-vertical", type: moves-to}
+  - {from: "action:split-pane.split-vertical", to: "surface:command/split-vertical", type: "on"}
+  - {from: "action:split-pane.toggle-orientation", to: "surface:command/toggle-orientation", type: "on"}
+  - {from: "action:pane-resize.resize-focused", to: "surface:setting/paneResizeStep", type: "on"}
+  - {from: "action:tab-manager.restore-layout", to: "surface:command/switch-tab", type: "on"}
+  - {from: "action:split-pane.toggle-orientation", to: "thing:pane-layout", type: writes}
+  - {from: "action:pane-resize.resize-focused", to: "thing:pane-layout", type: writes}
+  - {from: "action:tab-manager.restore-layout", to: "thing:pane-layout", type: reads}
+  - from: code:src/layout/SplitPane.ts
+    to: feature:layout.split-pane
+    type: implements
+    provenance: deterministic
+    evidence:
+      - key: repo:aw-split-panes/src/layout/SplitPane.ts
+  - from: code:src/layout/SplitPane.ts
+    to: feature:layout.split-pane.orientation
+    type: implements
+    provenance: deterministic
+    evidence:
+      - key: repo:aw-split-panes/src/layout/SplitPane.ts
+  - from: code:src/layout/PaneResize.ts
+    to: feature:layout.pane-resize
+    type: implements
+    provenance: deterministic
+    evidence:
+      - key: repo:aw-split-panes/src/layout/PaneResize.ts
+  - from: code:src/tabs/TabManager.ts
+    to: feature:tabs.tab-manager
+    type: implements
+    provenance: deterministic
+    evidence:
+      - key: repo:aw-split-panes/src/tabs/TabManager.ts
+  - from: code:src/tabs/TabManager.ts
+    to: action:tab-manager.restore-layout
+    type: implements
+    provenance: deterministic
+    evidence:
+      - key: repo:aw-split-panes/src/tabs/TabManager.ts
+aliases:
+  - {alias: "feature:layout.orientation", target: "feature:layout.split-pane.orientation"}
+decisions:
+  - record: linear:issue/0e5a1b00-0000-4000-8000-000000000103
+    quote: toggling orientation keeps the focused pane first, so the cursor never jumps
+    wording: Toggling orientation keeps focus on the first pane.
+    at: 2026-07-15T10:00:00Z
+overrides:
+  - action: reject
+    target: feature:layout.drag-to-split
+    who: avery
+    at: 2026-07-30T09:00:00Z
+  - action: rename
+    target: feature:tabs.tab-manager
+    label: Tabs
+    who: avery
+    at: 2026-07-30T09:05:00Z

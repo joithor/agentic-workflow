@@ -1,6 +1,8 @@
 using System.Reflection;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Workflow.Engine.Events;
+using Aw.Sindri.Infrastructure.Workflows;
 
 namespace Aw.Sindri.Tests.Catalog;
 
@@ -28,4 +30,24 @@ public sealed class EventCatalogTests
         Assert.Null(handled.PublicPayload);
         Assert.All(EventCatalog.All.Where(e => e.Public), e => Assert.NotNull(e.PublicPayload));
     }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(WorkflowEventType.Started, "workflow.started")]
+    [InlineData(WorkflowEventType.Transition, "workflow.transition")]
+    [InlineData(WorkflowEventType.Refused, "workflow.refused")]
+    [InlineData(WorkflowEventType.Shifted, "workflow.shifted")]
+    [InlineData(WorkflowEventType.Notified, "workflow.notified")]
+    [InlineData(WorkflowEventType.Expired, "workflow.expired")]
+    public void Every_type_the_interpreter_mirrors_is_catalogued_under_the_engines_name(WorkflowEventType type, string name)
+    {
+        var mirrored = RecipeWorkflow.TypeOf(type);
+
+        Assert.Equal(name, mirrored);
+        Assert.Contains(mirrored, EventCatalog.All.Select(e => e.Type), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_effect_refusal_is_not_mirrored_before_the_effect_phase() =>
+        // why: spec 5.7 names the dispatch refusal outbox.refused (P6); P4 has no effects, so no made-up kind is emitted
+        Assert.Throws<NotSupportedException>(() => RecipeWorkflow.TypeOf(WorkflowEventType.EffectRefused));
 }

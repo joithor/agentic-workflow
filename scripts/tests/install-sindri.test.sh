@@ -77,7 +77,7 @@ test_launchd_install_writes_and_loads_plist() {
   grep -q "$SCRATCH/bin/sindri" "$plist" || { echo "FAIL: plist lacks scratch bin path"; exit 1; }
   ! grep -qE '__HOME__|__BIN__' "$plist" || { echo "FAIL: plist has unsubstituted placeholders"; exit 1; }
   if command -v plutil >/dev/null 2>&1; then plutil -lint "$plist" >/dev/null || { echo "FAIL: generated plist invalid"; exit 1; }; fi
-  [ "$(stat -f %Lp "$SCRATCH/home/.agentic-workflow/sindri")" = 700 ] || { echo "FAIL: state dir not 0700"; exit 1; }
+  [ "$(stat -c %a "$SCRATCH/home/.agentic-workflow/sindri" 2>/dev/null || stat -f %Lp "$SCRATCH/home/.agentic-workflow/sindri")" = 700 ] || { echo "FAIL: state dir not 0700"; exit 1; }
   local first second
   first="$(sed -n 1p "$STUB_LOG")"; second="$(sed -n 2p "$STUB_LOG")"
   [[ "$first" == bootout* ]] || { echo "FAIL: first launchctl call was '$first', want bootout"; exit 1; }

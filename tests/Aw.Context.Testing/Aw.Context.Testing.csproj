@@ -2,8 +2,11 @@
   <!-- Aw.Context.Testing (stage S-FX): the split-panes fixture app with its recorded Linear and Onyx sources, the
        builder that makes the app a git repo with merged-PR history, the probe file, and fake Linear (GraphQL) and
        Onyx (HTTP) servers that replay the recordings on loopback (spec 2026-10-10 §10). Test support: only *.Tests
-       and *.Testing projects reference it. It holds no Aw.Context.Core type: S-1A adds the adapter contract base
-       (ContextSourceContract<TSource>) on top. Everything here is synthetic. -->
+       and *.Testing projects reference it. S-1A added Engine/: one fake and one contract base per Context
+       port (FakeContextEngine, FakeContextSource, FakeDocIndex, FakeScrubber, FixedSourceCatalog, FakeChangeFeed,
+       FakeModelPort; ContextEngineContract, ContextSourceContract, DocIndexContract, ScrubberContract,
+       SourceCatalogContract, ChangeFeedContract, ModelPortContract). S-3a adds Map/: the hand-authored product map and the fakes and contract
+       bases of the map ports (FakeGraphStore, FakeExportStore, FakeMapFileReader). Everything here is synthetic. -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Aw.Context.Testing</RootNamespace>
@@ -15,7 +18,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The map ports' contract bases (Fact, TestContext); they throw ContractViolationException instead of Assert,
+         as Aw.Kernel.Testing's do. -->
+    <PackageReference Include="xunit.v3.extensibility.core" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../../src/Aw.Kernel/Aw.Kernel.csproj" />
+    <ProjectReference Include="../../src/Context/Aw.Context.Core/Aw.Context.Core.csproj" />
+    <ProjectReference Include="../Aw.Kernel.Testing/Aw.Kernel.Testing.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -26,5 +37,7 @@
   <ItemGroup>
     <!-- The fixture travels inside the assembly, so a test in any project reads it without file paths. -->
     <EmbeddedResource Include="Fixtures/split-panes/**/*" LogicalName="split-panes/%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- The tabs map (S-4): a conflict, a suggested file link and an orphaned override, read by the lenses and file-map tests and imported at the head of MapTabsRepo. -->
+    <EmbeddedResource Include="Fixtures/map-tabs.json" LogicalName="map-tabs.json" />
   </ItemGroup>
 </Project>

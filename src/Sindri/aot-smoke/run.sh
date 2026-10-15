@@ -9,13 +9,16 @@
 # brings up the pinned Temporal dev server, so the temporal CLI must be installed: scripts/binaries-lock.sh fetch
 # temporal): doctor with nothing running, start headless with an unapproved profile, a second serve refused by the lease,
 # the approve preview and its non-terminal refusal, a session's typed approve refused (SND-AUTH-002), the human's typed
-# approval, status (text and --json's apiVersion), a session's stop refused, the human's stop, status and doctor again;
+# approval, status (text and --json's apiVersion), /sindri/mcp's initialize and tools/list as a stateless MCP client,
+# the views rebuild refused to a session and requested by the human, status's views and health lines, the item verbs (API P3: a human's item add, the queue and the item list, a session's item add refused, the human's item close, the done list and the queue again), a session's stop refused, the human's stop, status and doctor again (doctor with HOME on an empty scratch dir, so its
+# context:mcp-scope row never reads the real provider files);
 # then recipe validate on the shipped recipes (their hashes; workflow.item reads its child beside it) and on an invalid
 # fixture (RCP-REACH-001, exit 1). The normalized output (pids, ports, hashes, times, the host name and the temp path
 # masked) must equal expected.txt.
 # The apphost, not 'dotnet sindri.dll': start re-launches its own executable as 'serve' (Environment.ProcessPath), which
 # under 'dotnet sindri.dll' is the dotnet muxer.
-# Callers (API spec §6): the run unsets the agent variables (CLAUDECODE, AW_SINDRI_CHILD, CODEX_SANDBOX, CURSOR_AGENT)
+# Callers (API spec §6): the run unsets the agent variables (the pinned probe's markers, as sindri-prove.sh human does:
+# CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_EXECPATH, CLAUDE_CODE_SESSION_ID, CLAUDE_PID, AW_SINDRI_CHILD, CODEX_SANDBOX, CURSOR_AGENT)
 # and sets AW_SINDRI_PROVER=1, so the binary is the human; a "(human, terminal)" step runs under a pty
 # (scripts/lib/with-tty.sh: CRs and terminal control sequences stripped, stderr merged), a "(session)" step sets CLAUDECODE=1 with stdin from /dev/null.
 # Every invocation of the binary is bounded (30 s, perl's alarm); one that runs over prints 'exit 124'.
@@ -29,7 +32,7 @@ here="$(cd "$(dirname "$0")" && pwd)"
 root="$(cd "$here/../../.." && pwd)"
 # shellcheck source=../../../scripts/lib/with-tty.sh
 source "$root/scripts/lib/with-tty.sh"
-unset CLAUDECODE AW_SINDRI_CHILD CODEX_SANDBOX CURSOR_AGENT
+unset CLAUDECODE CLAUDE_CODE_ENTRYPOINT CLAUDE_CODE_EXECPATH CLAUDE_CODE_SESSION_ID CLAUDE_PID AW_SINDRI_CHILD CODEX_SANDBOX CURSOR_AGENT
 export AW_SINDRI_PROVER=1
 out="$root/artifacts/aot-sindri-smoke"
 mkdir -p "$out"
@@ -64,7 +67,7 @@ tree="$scratch/tree"
 work="$scratch/run"
 mkdir -p "$tree" "$work"
 git -C "$root" ls-files -z --cached --others --exclude-standard -- global.json nuget.config .editorconfig 'Directory.*' BannedSymbols.txt CodeMetricsConfig.txt \
-  src/Aw.Kernel src/Aw.Kernel.Data src/Aw.Kernel.Telemetry src/Redaction src/Aw.Analyzers src/Sindri | (cd "$root" && tar --null -T - -cf -) | tar -xf - -C "$tree"
+  src/Aw.Kernel src/Aw.Kernel.Data src/Aw.Kernel.Telemetry src/Redaction src/Aw.Analyzers src/Context src/Judge src/Sindri | (cd "$root" && tar --null -T - -cf -) | tar -xf - -C "$tree"
 dotnet publish "$tree/src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj" -c Release --no-self-contained -warnaserror   -o "$out/bin" </dev/null >"$out/publish.log" 2>&1 || { tail -20 "$out/publish.log" >&2; exit 1; }
 
 # Framework-dependent: the runtimeconfig names the shared framework and no runtime ships beside the host.
@@ -115,6 +118,29 @@ session() { # an agent session (CLAUDECODE set), no terminal
   CLAUDECODE=1 bounded "$bin" "$@" </dev/null 2>&1 || rc=$?
   exit_line "$rc"
 }
+doctor() { # doctor reads the providers' user-wide MCP files: point it at an empty scratch home, never the real one
+  HOME="$work/fakehome" CLAUDE_CONFIG_DIR="" CODEX_HOME="" run doctor
+}
+mcp() { # $1 = JSON-RPC method, $2 = params: one stateless /sindri/mcp call as an MCP client sends it (no Origin)
+  local url
+  url="$(jq -r '.url' "$AW_SINDRI_HOME/control.json")"
+  curl -s -m 30 -X POST "${url%/}/sindri/mcp" -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
+    -H 'X-Sindri-Repo: smoke' -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"$1\",\"params\":$2}" | sed -n 's/^data: //p'
+}
+settle() { # the projector has caught up and isn't rebuilding (it polls once a second): status's views line is then stable
+  local i
+  for i in $(seq 1 40); do
+    jq -e '.views | (.cursor == .ledgerHead and (.rebuilding | not))' <<<"$(bounded "$bin" status --json </dev/null 2>/dev/null)" >/dev/null 2>&1 && return 0
+    sleep 0.25
+  done
+}
+items_in() { # $1 = state, $2 = count: the items view lists that many in that state (the projector polls once a second)
+  local i
+  for i in $(seq 1 40); do
+    jq -e --argjson n "$2" '.items | length == $n' <<<"$(bounded "$bin" items --state "$1" --json </dev/null 2>/dev/null)" >/dev/null 2>&1 && return 0
+    sleep 0.25
+  done
+}
 session_tty() { # an agent session at a terminal (the CLI's own terminal check passes, so the server decides)
   echo "## sindri $* (session, terminal)"
   local rc=0
@@ -122,29 +148,45 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   exit_line "$rc"
 }
 {
-  run doctor
+  doctor
   human --headless </dev/null
   run serve
   human profile approve </dev/null
   hash="$({ bounded "$bin" profile validate --json </dev/null || true; } | sed -E 's/.*"hash":"([0-9a-f]{64})".*/\1/')"
   run profile approve "$hash"
-  printf '%s\n' "${hash:0:6}" | session_tty profile approve "$hash"
-  printf '%s\n' "${hash:0:6}" | human profile approve "$hash"
+  printf '%s\n' "approve profile ${hash:0:6}" | session_tty profile approve "$hash"
+  printf '%s\n' "approve profile ${hash:0:6}" | human profile approve "$hash"
+  settle
   run status
   echo "## sindri status --json | jq '{running, apiVersion}'"
   json="$({ bounded "$bin" status --json </dev/null 2>&1 || true; })"
   jq -c '{running, apiVersion}' <<<"$json" 2>/dev/null || printf '%s\n' "$json"
+  echo "## /sindri/mcp initialize, then tools/list (stateless)"
+  mcp initialize '{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"1"}}' | jq -c '.result.serverInfo.name'
+  mcp tools/list '{}' | jq -c '[.result.tools[].name]'
+  session views rebuild
+  human views rebuild </dev/null
+  settle
+  run status
+  human item add "Smoke item" </dev/null
+  items_in new 1
+  run queue
+  run items --state new
+  session item add "Refused by the desk"
+  item="$(bounded "$bin" items --json </dev/null | jq -r '.items[0].id')"
+  human item close "$item" </dev/null
+  items_in done 1
+  run items --state done
+  run queue
   session stop
   human stop </dev/null
   run status
-  run doctor
+  doctor
   run recipe validate "$root/recipes/sindri/workflow.step.yaml"
   run recipe validate "$root/recipes/sindri/workflow.item.yaml"
   run recipe validate "$root/tests/Aw.Sindri.Testing/Workflow/Recipes/invalid/RCP-REACH-001.yaml"
 } >"$out/actual.raw"
 
-sed -E -e "s#$work#WORK#g" -e "s#$root#ROOT#g" -e "s#held by $(hostname -s)[^/ ]*#held by HOST#g" -e 's/[0-9a-f]{64}/HASH/g' -e 's/hash [0-9a-f]{6}/hash HASH6/g' -e 's/(to approve it: )[0-9a-f]{6}/\1HASH6/' \
-  -e 's/pid [0-9]+/pid PID/g' -e 's#HOST/[0-9]+#HOST/PID#g' -e 's/127\.0\.0\.1:[0-9]+/127.0.0.1:PORT/g' \
-  -e 's/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}Z/TIME/g' -e 's/\(last [0-9:]{8}Z\)/(last TIME)/g' "$out/actual.raw" >"$out/actual.txt"
+bash "$here/normalize.sh" "$work" "$root" <"$out/actual.raw" >"$out/actual.txt"
 diff -u "$here/expected.txt" "$out/actual.txt"
 echo "aot-sindri-smoke: ok (framework-dependent publish, $(du -sh "$pub" | cut -f1))"

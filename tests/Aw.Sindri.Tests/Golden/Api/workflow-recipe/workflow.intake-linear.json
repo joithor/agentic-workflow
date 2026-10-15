@@ -1,0 +1,35 @@
+{
+  "id": "workflow.intake-linear",
+  "hash": "sha256:0b7e44d300000000000000000000000000000000000000000000000000000000",
+  "version": 1,
+  "inputs": [
+    {
+      "key": "fact:team",
+      "label": "Linear team",
+      "type": "text",
+      "kind": "text",
+      "required": true
+    }
+  ],
+  "outputs": [],
+  "urgency": "work",
+  "orderedBy": "path",
+  "states": [
+    {
+      "id": "poll",
+      "order": 1,
+      "branchOf": null
+    },
+    {
+      "id": "emit",
+      "order": 2,
+      "branchOf": null
+    },
+    {
+      "id": "done",
+      "order": 3,
+      "branchOf": null
+    }
+  ],
+  "loops": []
+}

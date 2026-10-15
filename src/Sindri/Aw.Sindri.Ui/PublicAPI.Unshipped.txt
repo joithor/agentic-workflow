@@ -1,0 +1,100 @@
+#nullable enable
+Aw.Sindri.Ui.Platform.IClipboard
+Aw.Sindri.Ui.Platform.IClipboard.SetText(string! text, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!
+Aw.Sindri.Ui.Platform.IEndpointRecordSource
+Aw.Sindri.Ui.Platform.IEndpointRecordSource.Location.get -> string!
+Aw.Sindri.Ui.Platform.IEndpointRecordSource.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Ui.Platform.EndpointRecordRead!>
+Aw.Sindri.Ui.Platform.IHumanTokenSource
+Aw.Sindri.Ui.Platform.IHumanTokenSource.Location.get -> string!
+Aw.Sindri.Ui.Platform.IHumanTokenSource.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<string?>
+Aw.Sindri.Ui.Platform.IMotionPreference
+Aw.Sindri.Ui.Platform.IMotionPreference.Changed -> System.EventHandler?
+Aw.Sindri.Ui.Platform.IMotionPreference.ReduceMotion.get -> bool
+Aw.Sindri.Ui.Platform.IPreferencesStore
+Aw.Sindri.Ui.Platform.IPreferencesStore.Location.get -> string!
+Aw.Sindri.Ui.Platform.IPreferencesStore.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<byte[]?>
+Aw.Sindri.Ui.Platform.IPreferencesStore.Write(byte[]! contents, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+Aw.Sindri.Ui.Platform.ISingleInstance
+Aw.Sindri.Ui.Platform.ISingleInstance.HolderProcessId() -> int?
+Aw.Sindri.Ui.Platform.ISingleInstance.Retire() -> void
+Aw.Sindri.Ui.Platform.ISingleInstance.Messages(System.Threading.CancellationToken cancellationToken) -> System.Collections.Generic.IAsyncEnumerable<Aw.Sindri.Ui.Platform.InstanceMessage!>!
+Aw.Sindri.Ui.Platform.ISingleInstance.Send(string! message, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+Aw.Sindri.Ui.Platform.ISingleInstance.TryClaim(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+Aw.Sindri.Ui.Platform.ITray
+Aw.Sindri.Ui.Platform.ITray.OpenRequested -> System.EventHandler?
+Aw.Sindri.Ui.Platform.ITray.QuitRequested -> System.EventHandler?
+Aw.Sindri.Ui.Platform.ITray.Show(Aw.Sindri.Ui.Platform.TrayView! view) -> void
+Aw.Sindri.Ui.Platform.ITray.Shown.get -> Aw.Sindri.Ui.Platform.TrayView?
+Aw.Sindri.Ui.Platform.InstanceMessage
+Aw.Sindri.Ui.Platform.InstanceMessage.InstanceMessage(string! text, System.Func<bool>! tryAct, System.Threading.CancellationToken withdrawn) -> void
+Aw.Sindri.Ui.Platform.InstanceMessage.Text.get -> string!
+Aw.Sindri.Ui.Platform.InstanceMessage.Withdrawn.get -> System.Threading.CancellationToken
+Aw.Sindri.Ui.Platform.InstanceMessages
+Aw.Sindri.Ui.Platform.SindriPlatform
+Aw.Sindri.Ui.Platform.SindriPlatform.<Clone>$() -> Aw.Sindri.Ui.Platform.SindriPlatform!
+Aw.Sindri.Ui.Platform.SindriPlatform.Deconstruct(out Aw.Sindri.Ui.Platform.IEndpointRecordSource! Records, out Aw.Sindri.Ui.Platform.IHumanTokenSource! Token, out Aw.Sindri.Ui.Platform.IPreferencesStore! Preferences, out Aw.Sindri.Ui.Platform.IMotionPreference! Motion, out Aw.Sindri.Ui.Platform.ISingleInstance! Instance, out Aw.Sindri.Ui.Platform.ITray! Tray) -> void
+Aw.Sindri.Ui.Platform.SindriPlatform.Equals(Aw.Sindri.Ui.Platform.SindriPlatform? other) -> bool
+Aw.Sindri.Ui.Platform.SindriPlatform.Instance.get -> Aw.Sindri.Ui.Platform.ISingleInstance!
+Aw.Sindri.Ui.Platform.SindriPlatform.Instance.init -> void
+Aw.Sindri.Ui.Platform.SindriPlatform.Log.get -> Microsoft.Extensions.Logging.ILogger!
+Aw.Sindri.Ui.Platform.SindriPlatform.Log.init -> void
+Aw.Sindri.Ui.Platform.SindriPlatform.Motion.get -> Aw.Sindri.Ui.Platform.IMotionPreference!
+Aw.Sindri.Ui.Platform.SindriPlatform.Motion.init -> void
+Aw.Sindri.Ui.Platform.SindriPlatform.Preferences.get -> Aw.Sindri.Ui.Platform.IPreferencesStore!
+Aw.Sindri.Ui.Platform.SindriPlatform.Preferences.init -> void
+Aw.Sindri.Ui.Platform.SindriPlatform.Records.get -> Aw.Sindri.Ui.Platform.IEndpointRecordSource!
+Aw.Sindri.Ui.Platform.SindriPlatform.Records.init -> void
+Aw.Sindri.Ui.Platform.SindriPlatform.SindriPlatform(Aw.Sindri.Ui.Platform.IEndpointRecordSource! Records, Aw.Sindri.Ui.Platform.IHumanTokenSource! Token, Aw.Sindri.Ui.Platform.IPreferencesStore! Preferences, Aw.Sindri.Ui.Platform.IMotionPreference! Motion, Aw.Sindri.Ui.Platform.ISingleInstance! Instance, Aw.Sindri.Ui.Platform.ITray! Tray) -> void
+Aw.Sindri.Ui.Platform.SindriPlatform.Token.get -> Aw.Sindri.Ui.Platform.IHumanTokenSource!
+Aw.Sindri.Ui.Platform.SindriPlatform.Token.init -> void
+Aw.Sindri.Ui.Platform.SindriPlatform.Tray.get -> Aw.Sindri.Ui.Platform.ITray!
+Aw.Sindri.Ui.Platform.SindriPlatform.Tray.init -> void
+Aw.Sindri.Ui.Platform.TrayState
+Aw.Sindri.Ui.Platform.TrayState.Neutral = 0 -> Aw.Sindri.Ui.Platform.TrayState
+Aw.Sindri.Ui.Platform.TrayState.NotRunning = 1 -> Aw.Sindri.Ui.Platform.TrayState
+Aw.Sindri.Ui.Platform.TrayState.Stale = 2 -> Aw.Sindri.Ui.Platform.TrayState
+Aw.Sindri.Ui.Platform.TrayView
+Aw.Sindri.Ui.Platform.TrayView.<Clone>$() -> Aw.Sindri.Ui.Platform.TrayView!
+Aw.Sindri.Ui.Platform.TrayView.Deconstruct(out Aw.Sindri.Ui.Platform.TrayState State, out string! Tooltip, out string! OpenLabel, out string! QuitLabel) -> void
+Aw.Sindri.Ui.Platform.TrayView.Equals(Aw.Sindri.Ui.Platform.TrayView? other) -> bool
+Aw.Sindri.Ui.Platform.TrayView.OpenLabel.get -> string!
+Aw.Sindri.Ui.Platform.TrayView.OpenLabel.init -> void
+Aw.Sindri.Ui.Platform.TrayView.QuitLabel.get -> string!
+Aw.Sindri.Ui.Platform.TrayView.QuitLabel.init -> void
+Aw.Sindri.Ui.Platform.TrayView.State.get -> Aw.Sindri.Ui.Platform.TrayState
+Aw.Sindri.Ui.Platform.TrayView.State.init -> void
+Aw.Sindri.Ui.Platform.TrayView.Tooltip.get -> string!
+Aw.Sindri.Ui.Platform.TrayView.Tooltip.init -> void
+Aw.Sindri.Ui.Platform.TrayView.TrayView(Aw.Sindri.Ui.Platform.TrayState State, string! Tooltip, string! OpenLabel, string! QuitLabel) -> void
+Aw.Sindri.Ui.Views.AppTrayIcons
+Aw.Sindri.Ui.Views.SindriApp
+Aw.Sindri.Ui.Views.SindriApp.SindriApp() -> void
+const Aw.Sindri.Ui.Platform.InstanceMessages.Focus = "focus" -> string!
+const Aw.Sindri.Ui.Platform.InstanceMessages.MaxLength = 512 -> int
+const Aw.Sindri.Ui.Views.SindriApp.FailedExitCode = 2 -> int
+override Aw.Sindri.Ui.Platform.SindriPlatform.Equals(object? obj) -> bool
+override Aw.Sindri.Ui.Platform.SindriPlatform.GetHashCode() -> int
+override Aw.Sindri.Ui.Platform.SindriPlatform.ToString() -> string!
+override Aw.Sindri.Ui.Platform.TrayView.Equals(object? obj) -> bool
+override Aw.Sindri.Ui.Platform.TrayView.GetHashCode() -> int
+override Aw.Sindri.Ui.Platform.TrayView.ToString() -> string!
+override Aw.Sindri.Ui.Views.SindriApp.Initialize() -> void
+override Aw.Sindri.Ui.Views.SindriApp.OnFrameworkInitializationCompleted() -> void
+static Aw.Sindri.Ui.Platform.SindriPlatform.operator !=(Aw.Sindri.Ui.Platform.SindriPlatform? left, Aw.Sindri.Ui.Platform.SindriPlatform? right) -> bool
+static Aw.Sindri.Ui.Platform.SindriPlatform.operator ==(Aw.Sindri.Ui.Platform.SindriPlatform? left, Aw.Sindri.Ui.Platform.SindriPlatform? right) -> bool
+static Aw.Sindri.Ui.Platform.TrayView.operator !=(Aw.Sindri.Ui.Platform.TrayView? left, Aw.Sindri.Ui.Platform.TrayView? right) -> bool
+static Aw.Sindri.Ui.Platform.TrayView.operator ==(Aw.Sindri.Ui.Platform.TrayView? left, Aw.Sindri.Ui.Platform.TrayView? right) -> bool
+static Aw.Sindri.Ui.Views.AppTrayIcons.Add(Avalonia.Controls.TrayIcon! icon) -> void
+static Aw.Sindri.Ui.Views.AppTrayIcons.Remove(Avalonia.Controls.TrayIcon! icon) -> void
+static Aw.Sindri.Ui.Views.SindriApp.Create(Aw.Sindri.Ui.Platform.SindriPlatform! platform, System.TimeProvider! clock) -> Aw.Sindri.Ui.Views.SindriApp!
+Aw.Sindri.Ui.Platform.EndpointRecordFailure
+Aw.Sindri.Ui.Platform.EndpointRecordFailure.NoPermission = 1 -> Aw.Sindri.Ui.Platform.EndpointRecordFailure
+Aw.Sindri.Ui.Platform.EndpointRecordFailure.NotAFile = 2 -> Aw.Sindri.Ui.Platform.EndpointRecordFailure
+Aw.Sindri.Ui.Platform.EndpointRecordFailure.Unreadable = 0 -> Aw.Sindri.Ui.Platform.EndpointRecordFailure
+Aw.Sindri.Ui.Platform.EndpointRecordRead
+Aw.Sindri.Ui.Platform.EndpointRecordRead.Bytes.get -> byte[]?
+Aw.Sindri.Ui.Platform.EndpointRecordRead.Failure.get -> Aw.Sindri.Ui.Platform.EndpointRecordFailure?
+static Aw.Sindri.Ui.Platform.EndpointRecordRead.Found(byte[]! bytes) -> Aw.Sindri.Ui.Platform.EndpointRecordRead!
+static Aw.Sindri.Ui.Platform.EndpointRecordRead.None.get -> Aw.Sindri.Ui.Platform.EndpointRecordRead!
+static Aw.Sindri.Ui.Platform.EndpointRecordRead.Unreadable(Aw.Sindri.Ui.Platform.EndpointRecordFailure why) -> Aw.Sindri.Ui.Platform.EndpointRecordRead!
+Aw.Sindri.Ui.Platform.InstanceMessage.TryAct() -> bool

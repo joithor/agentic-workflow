@@ -1,6 +1,7 @@
 using System.Globalization;
 using Aw.Kernel;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Profile;
 
@@ -28,21 +29,52 @@ public static class ProfileRules
             return Invalid("api.port", "must be 0 (a free port) or 1024 to 65535");
         }
 
-        foreach (var (name, settings) in profile.Services ?? SindriProfile.NoServices)
+        var invalid = Services(profile.Services) ?? Durations(profile.Workflow) ?? Globs(profile);
+        if (invalid is not null)
         {
-            if (!ServiceName.TryFrom(name, out _))
-            {
-                return Invalid($"services.{name}", "is not a service name: kebab-case, 1 to 40 characters");
-            }
-
-            if (Cadence.Parse(settings.Every) is { IsSuccess: false } bad)
-            {
-                return Invalid($"services.{name}.every", bad.Error.Message);
-            }
+            return invalid;
         }
 
         return Canonical(profile);
     }
+
+    /// <summary>The longest glob 'index.denyPaths' takes.</summary>
+    private const int MaxGlob = 300;
+
+    /// <summary>Checks every 'index.denyPaths' glob (the profile's and each repo's): relative to the repo, '/'-separated, no '..'.</summary>
+    private static Error? Globs(SindriProfile profile)
+    {
+        var lists = new List<(string Path, IReadOnlyList<string> Globs)>();
+        if (profile.Index?.DenyPaths is { } shared)
+        {
+            lists.Add(("index.denyPaths", shared));
+        }
+
+        lists.AddRange((profile.Repos ?? []).Where(r => r.Index?.DenyPaths is not null).Select(r => ($"repos.{r.Name}.index.denyPaths", r.Index!.DenyPaths!)));   // why: the filter keeps repos with a list
+        foreach (var (path, globs) in lists)
+        {
+            for (var i = 0; i < globs.Count; i++)
+            {
+                if (GlobProblem(globs[i]) is { } problem)
+                {
+                    return Invalid(string.Create(CultureInfo.InvariantCulture, $"{path}[{i}]"), problem);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static string? GlobProblem(string glob) => true switch
+    {
+        _ when string.IsNullOrWhiteSpace(glob) => "must be a non-empty glob",
+        _ when glob.Length > MaxGlob => string.Create(CultureInfo.InvariantCulture, $"is over {MaxGlob} characters"),
+        _ when glob.StartsWith('/') || glob.Contains(':', StringComparison.Ordinal) => "must be relative to the repo root (no leading '/' and no drive or scheme)",
+        _ when glob.Contains('\\', StringComparison.Ordinal) => "must use '/' separators",
+        _ when glob.Split('/').Contains("..") => "must not contain '..'",
+        _ when glob.Contains('\0', StringComparison.Ordinal) => "must not contain a NUL character",
+        _ => null,
+    };
 
     /// <summary>
     /// Whether the profile with hash <paramref name="live"/> is approved: it is the saved approval and the latest recorded
@@ -75,6 +107,39 @@ public static class ProfileRules
             (profile.Services ?? SindriProfile.NoServices).ToDictionary(StringComparer.Ordinal), StringComparer.Ordinal),
         Api = profile.Api ?? new ApiSettings(),
     };
+
+    /// <summary>Each service's name and cadence.</summary>
+    private static Error? Services(IReadOnlyDictionary<string, ServiceSettings>? services)
+    {
+        foreach (var (name, settings) in services ?? SindriProfile.NoServices)
+        {
+            if (!ServiceName.TryFrom(name, out _))
+            {
+                return Invalid($"services.{name}", "is not a service name: kebab-case, 1 to 40 characters");
+            }
+
+            if (Cadence.Parse(settings.Every) is { IsSuccess: false } bad)
+            {
+                return Invalid($"services.{name}.every", bad.Error.Message);
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>The 'workflow:' durations (S1-D11): each key that is set must be a duration such as '1m', '4h' or '2d'.</summary>
+    private static Error? Durations(WorkflowSettings? workflow)
+    {
+        foreach (var (key, value) in new[] { ("deskTimeout", workflow?.DeskTimeout), ("eventHold", workflow?.EventHold) })
+        {
+            if (value is not null && !RecipeDuration.TryFrom(value, out _))
+            {
+                return Invalid($"workflow.{key}", $"'{value}' is not a duration: a whole number and m, h or d (for example 1m, 4h, 2d)");
+            }
+        }
+
+        return null;
+    }
 
     private static Error Invalid(string keyPath, string problem) =>
         SindriErrors.ProfileInvalid.With($"{keyPath}: {problem}");

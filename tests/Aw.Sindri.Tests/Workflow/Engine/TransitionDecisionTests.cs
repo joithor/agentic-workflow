@@ -75,7 +75,7 @@ public sealed class TransitionDecisionTests
         var parked = Assert.IsType<Applied>(Decide(At(recipe, "produce"), recipe, Completed(1, "done", ("fact:output", "x")), rules: real)).Changes[0].After;
         var resume = new AnswerGiven("human:cli", new CommandStamp(CommandNonce.From(new string('c', 32)), Sha("resume")), AnswerVariant.Resume, Text: null, Amount: null, Forwarded: null);
 
-        var later = Context("step.test.agent");
+        var later = EngineFixture.Context("step.test.agent");
 
         var restarted = Assert.IsType<Applied>(Decide(parked, recipe, resume, context: later, rules: real));
         var still = Assert.IsType<Applied>(Decide(parked, recipe, resume, rules: real)).Changes[0].After;
@@ -97,7 +97,7 @@ public sealed class TransitionDecisionTests
         var parked = Assert.IsType<Applied>(Decide(At(recipe, "produce"), recipe, Completed(1, "done", ("fact:output", "x")), rules: real)).Changes[0].After;
         var resume = new AnswerGiven("human:cli", new CommandStamp(CommandNonce.From(new string('c', 32)), Sha("resume")), AnswerVariant.Resume, Text: null, Amount: null, Forwarded: null);
         var deskCatalog = new BlockCatalog([.. EngineFixture.Catalog.Blocks.Select(b => b.Id.Value == "step.test.agent" ? b with { DeskCapable = true } : b)], EngineFixture.Catalog.Events);
-        var later = Context() with { Catalog = deskCatalog };
+        var later = EngineFixture.Context() with { Catalog = deskCatalog };
 
         var restarted = Assert.IsType<Applied>(Decide(parked, recipe, resume, context: later, rules: real));
 
@@ -180,7 +180,7 @@ public sealed class TransitionDecisionTests
     [Fact, Trait("Lane", "unit")]
     public void Human_trigger_on_revoked_recipe_gets_005_and_records_nothing()
     {
-        var revoked = Context() with { Approval = ApprovalCheck.Revoked };
+        var revoked = EngineFixture.Context() with { Approval = ApprovalCheck.Revoked };
 
         var decision = Decide(At(Step, "produce"), Step, Completed(1, "done", ("fact:output", "x")), context: revoked);
 
@@ -190,7 +190,7 @@ public sealed class TransitionDecisionTests
     [Fact, Trait("Lane", "unit")]
     public void System_trigger_on_drifted_recipe_parks_spec_conflict()
     {
-        var drifted = Context() with { Approval = ApprovalCheck.Drifted };
+        var drifted = EngineFixture.Context() with { Approval = ApprovalCheck.Drifted };
 
         var applied = Assert.IsType<Applied>(Decide(At(Item, "triaged"), Item, Routed("startable"), context: drifted));
 

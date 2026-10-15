@@ -1,6 +1,10 @@
+using System.Globalization;
 using Aw.Kernel.Data;
+using Aw.Sindri.Infrastructure;
 using Aw.Sindri.Infrastructure.Ledger;
+using Aw.Sindri.Infrastructure.Workflow;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Testing.Workflow.Registry;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Time.Testing;
 
@@ -13,7 +17,7 @@ public sealed class LedgerFileTests : IDisposable
     public void Dispose() => _home.Dispose();
 
     [Fact, Trait("Lane", "integration")]
-    public async Task Each_migration_applies_on_the_previous_schema_and_the_outbox_table_is_last()
+    public async Task Each_migration_applies_on_the_previous_schema_and_the_outbox_table_is_pinned_at_version_3()
     {
         var path = Path.Combine(_home.Path, "steps.db");
         var runner = new MigrationRunner(new SqliteConnectionFactory(new SqliteOptions(path)), new FakeTimeProvider(), backupBeforeUpgrade: false);
@@ -24,8 +28,35 @@ public sealed class LedgerFileTests : IDisposable
             Assert.True(step.IsSuccess, step.IsError ? step.Error.Message : null);
         }
 
-        Assert.Equal("outbox_commands", LedgerDatabase.Migrations[^1].Name);
-        Assert.Equal(["events", "lease", "outbox_commands"], Tables(path));
+        // S1-D9 (engine spec §7.2): S1's two files, then the outbox at 3, then Sindri's own files from 4 up.
+        Assert.Equal(["1 events", "2 lease", "3 outbox_commands", "4 recipes", "5 temporal_event_id"],
+            LedgerDatabase.Migrations.Select(m => string.Create(CultureInfo.InvariantCulture, $"{m.Version} {m.Name}")), StringComparer.Ordinal);
+        Assert.Equal(SqliteOutboxSchema.CreateMigration(3).Checksum, LedgerDatabase.Migrations[2].Checksum);
+        Assert.Equal(["events", "lease", "outbox_commands", "recipe_approvals", "recipes"], Tables(path));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_copy_of_the_previous_schema_upgrades_on_the_first_write_and_keeps_its_rows()
+    {
+        // The previous schema is S1's: events, lease and the outbox at version 3 (engine spec §11).
+        var previous = Path.Combine(_home.Path, "previous.db");
+        var runner = new MigrationRunner(new SqliteConnectionFactory(new SqliteOptions(previous)), new FakeTimeProvider(), backupBeforeUpgrade: false);
+        Assert.True((await runner.Migrate(LedgerDatabase.Migrations, TestContext.Current.CancellationToken, targetVersion: 3)).IsSuccess);
+        Execute(previous, "INSERT INTO lease (id, host, pid, pid_start, boot_id, epoch, acquired_at, expires_at) " +
+            "VALUES (1, 'host-a', 42, '2026-10-10T07:05:07.0000000Z', 'boot-a', 7, '2026-10-10T07:05:07.0000000Z', '2026-10-10T07:05:37.0000000Z')");
+        var home = Path.Combine(_home.Path, "home");
+        _ = Directory.CreateDirectory(home);
+        File.Copy(previous, Path.Combine(home, "ledger.db"));
+        using var database = new LedgerDatabase(new SindriSettings(home, Path.Combine(home, "profile.yaml")), new FakeTimeProvider());
+        var store = new SqliteRecipeStore(database);
+        var recipe = RegistryData.Recipe("workflow.step");
+
+        Assert.Empty((await store.All(TestContext.Current.CancellationToken)).Value);
+        Assert.True((await store.Add(recipe, TestContext.Current.CancellationToken)).Value.Added);
+
+        Assert.True((await database.Schema(TestContext.Current.CancellationToken)).Value.IsCurrent);
+        Assert.Equal(recipe, (await store.Find(recipe.Hash, TestContext.Current.CancellationToken)).Value);
+        Assert.Equal("7", Scalar(Path.Combine(home, "ledger.db"), "SELECT epoch FROM lease WHERE id = 1"));
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -45,6 +76,24 @@ public sealed class LedgerFileTests : IDisposable
         Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute, File.GetUnixFileMode(home));
         Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(Path.Combine(home, "ledger.db")));
         Assert.True((await stores.Ledger.Schema(TestContext.Current.CancellationToken)).Value.IsCurrent);
+    }
+
+    private static void Execute(string path, string sql)
+    {
+        using var connection = new SqliteConnection($"Data Source={path};Pooling=False");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        _ = command.ExecuteNonQuery();
+    }
+
+    private static string? Scalar(string path, string sql)
+    {
+        using var connection = new SqliteConnection($"Data Source={path};Mode=ReadOnly;Pooling=False");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        return Convert.ToString(command.ExecuteScalar(), CultureInfo.InvariantCulture);
     }
 
     private static List<string> Tables(string path)

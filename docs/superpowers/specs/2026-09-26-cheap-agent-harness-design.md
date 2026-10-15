@@ -9,7 +9,7 @@
 
 ## Why
 
-Claude Code agent teams are expensive, and Joi is pulled in too often. Measured from 7 days of transcripts (`~/.claude/projects/-Users-joi-vitalize-web-app`, 78 sessions, 586 agents, to 2026-09-25):
+Claude Code agent teams are expensive, and the owner is pulled in too often. Measured from 7 days of transcripts (`~/.claude/projects/<work-repo-dir>`, 78 sessions, 586 agents, to 2026-09-25):
 
 | Signal | Value |
 |---|---|
@@ -229,8 +229,8 @@ Joi chose to repair Prism rather than remove it (2026-09-26). Measured over 14 d
 Findings:
 
 1. **False startup warning.** `config/hooks/prism-context.sh` probes `http://localhost:7180/health`, which returns 404. The dashboard itself is up (`/` returns 200). Every session starts with a spurious "unreachable" warning. Fix: probe `/`, or whatever endpoint the dashboard documents.
-2. **No Auto-Load Projects.** `~/.prism-mcp/prism-config.db` has no auto-load project set, so bootstrap loads nothing. Saves then fail, and the managed `CLAUDE.md` block forbids the only other way to load context (`session_load_context`). Fix: configure Auto-Load Projects in the dashboard, with developer name and context depth. **Project names must equal each repo's `REPO_SLUG` as the skills derive it (N4):** `vitalizecare-web-app` and `joi-fairshare-agentic-workflow`, not `agentic-workflow`. `setup.sh` ends with a check that lists the dashboard's projects next to each managed repo's slug and flags any mismatch.
-3. **Wrong repo path.** `repo_path:vitalizecare-web-app` points at `~/.agentic-workflow/vitalizecare-web-app/reviews`, not `/Users/joi/vitalize/web-app`. Fix in the dashboard.
+2. **No Auto-Load Projects.** `~/.prism-mcp/prism-config.db` has no auto-load project set, so bootstrap loads nothing. Saves then fail, and the managed `CLAUDE.md` block forbids the only other way to load context (`session_load_context`). Fix: configure Auto-Load Projects in the dashboard, with developer name and context depth. **Project names must equal each repo's `REPO_SLUG` as the skills derive it (N4):** `<work-repo>` and `joi-fairshare-agentic-workflow`, not `agentic-workflow`. `setup.sh` ends with a check that lists the dashboard's projects next to each managed repo's slug and flags any mismatch.
+3. **Wrong repo path.** `repo_path:<work-repo>` points at `~/.agentic-workflow/<work-repo>/reviews`, not `~/repos/<work-repo>`. Fix in the dashboard.
 4. **Three versions at once.**
    - The CLI is npm `prism-coder` 20.14.0 (`/opt/homebrew/bin/prism`).
    - The MCP server runs 20.18.0 from an **ephemeral npx cache path** (`~/.npm/_npx/ecf8cc3fafff496b/...`) registered in `~/.claude.json`. It breaks whenever npm cleans its cache.

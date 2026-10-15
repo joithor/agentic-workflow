@@ -24,7 +24,7 @@ public sealed class ApiGoldenTests
     public async Task Api_answer_matches_its_golden_file(string slug, string scenario)
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var host = await GoldenHost.Start(temporary: !ApiScenarios.NeedsNonTemporaryHome(slug, scenario), ct);
+        await using var host = await ApiScenarios.Start(slug, scenario, ct);
 
         var body = await ApiScenarios.Body(host, slug, scenario, ct);
 
@@ -38,7 +38,7 @@ public sealed class ApiGoldenTests
         var files = Directory.EnumerateFiles(root, "*.json", SearchOption.AllDirectories)
             .Select(f => Path.GetRelativePath(root, f).Replace(Path.DirectorySeparatorChar, '/'))
             .Order(StringComparer.Ordinal);
-        var expected = ApiScenarios.All.Select(r => $"{r.Slug}/{r.Scenario}.json").Order(StringComparer.Ordinal);
+        var expected = ApiScenarios.All.Concat(WorkflowViewGoldenTests.All).Select(r => $"{r.Slug}/{r.Scenario}.json").Order(StringComparer.Ordinal);
 
         Assert.Equal(expected, files);
     }

@@ -51,10 +51,36 @@ internal static class Production
     {
         List<(string Project, string Assembly)> list = [.. projects];
         var roots = RootsOf(list.Select(p => p.Project));
-        return Scope.Of(roots, list
+        var scope = Scope.Of(roots, list
             .Where(p => p.Project.EndsWith(".Host", StringComparison.Ordinal) || p.Project.EndsWith(".App", StringComparison.Ordinal))
             .Select(p => KeyValuePair.Create(p.Assembly, p.Project[..p.Project.LastIndexOf('.')]))
             .Where(p => roots.Contains(p.Value, StringComparer.Ordinal)));
+        return scope with { Unshaped = [.. Packages.Unshaped.Where(u => list.Exists(p => p.Project == u))] };
+    }
+
+    /// <summary>
+    /// The projects that are neither tier 0, a layer project of a shaped package (Core, Features, Infrastructure, Host,
+    /// App), nor declared unshaped: each is a misnamed project the layer rules would miss (ARCH-REG-003). A project
+    /// whose root namespace sits in its package's layer (Aw.Sindri.Workflows, root namespace
+    /// Aw.Sindri.Infrastructure.Workflows) is a layer project: the layer rules read namespaces, so they cover it.
+    /// </summary>
+    /// <param name="projectNames">Project names.</param>
+    /// <param name="declaredUnshaped">The declared unshaped projects (Packages.Unshaped).</param>
+    /// <param name="rootNamespaceOf">A project's root namespace; the project name when omitted.</param>
+    /// <returns>The undeclared ones, sorted.</returns>
+    public static IReadOnlyList<string> UndeclaredUnshaped(
+        IEnumerable<string> projectNames, IEnumerable<string> declaredUnshaped, Func<string, string>? rootNamespaceOf = null) =>
+        [.. projectNames
+            .Where(n => !TierZero.Contains(n) && !_layerProjects.Contains(n.Split('.')[^1], StringComparer.Ordinal)
+                && !InLayerNamespace(n, rootNamespaceOf?.Invoke(n) ?? n))
+            .Except(declaredUnshaped, StringComparer.Ordinal)
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)];
+
+    private static bool InLayerNamespace(string project, string rootNamespace)
+    {
+        var package = project[..project.LastIndexOf('.')];
+        return _layerProjects.Any(l => rootNamespace == $"{package}.{l}" || rootNamespace.StartsWith($"{package}.{l}.", StringComparison.Ordinal));
     }
 
     /// <summary>Whether a registered project's assembly loaded.</summary>

@@ -7,7 +7,7 @@ namespace Aw.Sindri.Tests;
 
 /// <summary>A ledger whose reads fail, as a busy or unreadable file would; appends and the schema go to <paramref name="inner"/>.</summary>
 /// <param name="inner">The ledger that holds the events.</param>
-internal sealed class ReadFailingLedger(ILedgerStore inner) : ILedgerStore
+internal sealed class ReadFailingLedger(ILedgerStore inner) : ILedgerStore, ILedgerReader
 {
     public static Error Failure { get; } = SindriErrors.LedgerUnavailable.With("ledger.db: database is locked");
 
@@ -19,6 +19,8 @@ internal sealed class ReadFailingLedger(ILedgerStore inner) : ILedgerStore
 
     public ValueTask<Result<LedgerEvent?>> Latest(string type, CancellationToken cancellationToken) =>
         ValueTask.FromResult<Result<LedgerEvent?>>(Failure);
+
+    public ValueTask<Result<long>> Head(CancellationToken cancellationToken) => ValueTask.FromResult<Result<long>>(Failure);
 
     public ValueTask<Result<SchemaStatus>> Schema(CancellationToken cancellationToken) => inner.Schema(cancellationToken);
 }

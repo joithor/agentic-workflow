@@ -34,9 +34,15 @@ internal static class InvalidFixtureCases
             [
                 "RCP-EFFECT-001: effect 'effect.repo.push' wasn't checked against an effect allowlist, since the profile has no workflow.effects at RCP-CAP-002.yaml:47:9 (transitions[2].effects[0].use); add workflow.effects to the profile; until then the effect is refused at run time [Skipped]",
             ]),
+        ["RCP-CAP-003"] = new(
+            FixtureSetup.CapabilityWithUnapprovedBase,
+            "RCP-CAP-003: base workflow.cap-base@84b1571f2b84 is registered but not approved at RCP-CAP-003.yaml:4:1 (base); approve the base at a terminal (sindri recipe approve workflow.cap-base@84b1571f2b84), or generate the recipe from an approved base",
+            [
+                "RCP-EFFECT-001: effect 'effect.repo.push' wasn't checked against an effect allowlist, since the profile has no workflow.effects at RCP-CAP-003.yaml:47:9 (transitions[2].effects[0].use); add workflow.effects to the profile; until then the effect is refused at run time [Skipped]",
+            ]),
         ["RCP-CAP-004"] = new(
             FixtureSetup.Capability,
-            "RCP-CAP-004: hand-written recipe workflow.cap-handwritten names base workflow.cap-base@5aa84cb58a5a at RCP-CAP-004.yaml:4:1 (base); remove base, which only Sindri's generator writes",
+            "RCP-CAP-004: hand-written recipe workflow.cap-handwritten names base workflow.cap-base@84b1571f2b84 at RCP-CAP-004.yaml:4:1 (base); remove base, which only Sindri's generator writes",
             []),
         ["RCP-CAP-005"] = new(
             FixtureSetup.CapabilityWithBase,
@@ -90,7 +96,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-HASH-001"] = new(
             FixtureSetup.Shipped,
-            "RCP-HASH-001: hash 000000000000 doesn't match the recipe's content, whose hash is bf21a0f792f6 at RCP-HASH-001.yaml:16:1 (hash); set hash to sha256:bf21a0f792f68562707433eb71ae250767113da2997c3d497a1b654af246c4b5, or remove it",
+            "RCP-HASH-001: hash 000000000000 doesn't match the recipe's content, whose hash is e69eeb6a8547 at RCP-HASH-001.yaml:16:1 (hash); set hash to sha256:e69eeb6a8547f69896a6b6b63f18a392b5b999cd22705e9286e461c2f7071b2c, or remove it",
             []),
         ["RCP-INIT-001"] = new(
             FixtureSetup.Shipped,
@@ -126,7 +132,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-RES-001"] = new(
             FixtureSetup.Shipped,
-            "RCP-RES-001: resource 'heavy' has no allocator in this build at RCP-RES-001.yaml:8:16 (states.queued.waitFor.resource); it parks with SND-WF-010 until the heavy-job lock port lands [Information]",
+            "RCP-RES-001: resource 'heavy' has no allocator in this build at RCP-RES-001.yaml:8:16 (states.queued.waitFor.resource); it parks with SND-WF-010 until the workflow engine's heavy allocator is wired to the heavy-job lock [Information]",
             []),
         ["RCP-SCHEMA-001"] = new(
             FixtureSetup.Shipped,
@@ -172,6 +178,14 @@ internal static class InvalidFixtureCases
             FixtureSetup.Shipped,
             "RCP-TRIG-002: verb 'cancel' is reserved for sindri workflow's own commands at RCP-TRIG-002.yaml:16:32 (transitions[1].on); choose another verb",
             []),
+        ["RCP-VERSION-001"] = new(
+            FixtureSetup.Registry,
+            "RCP-VERSION-001: workflow.version-taken version 1 is registered with hash 2bd784957be7, but this recipe's hash is 165194be5b2b at RCP-VERSION-001.yaml:3:1 (version); raise version to 2, one above the highest registered, or restore the content registered as version 1",
+            []),
+        ["RCP-VERSION-002"] = new(
+            FixtureSetup.Registry,
+            "RCP-VERSION-002: workflow.version-behind version 2 isn't registered and is below version 3, the highest registered at RCP-VERSION-002.yaml:3:1 (version); raise version to 4, one above the highest registered",
+            []),
         ["RCP-WHEN-001"] = new(
             FixtureSetup.Shipped,
             "RCP-WHEN-001: transition from 'produce' tests outcome 'finished', which step 'step.produce' doesn't report at RCP-WHEN-001.yaml:16:60 (transitions[1].when.outcome); test one of its outcomes: done",
@@ -187,6 +201,34 @@ internal static class InvalidFixtureCases
         ["RCP-WIRE-002"] = new(
             FixtureSetup.Shipped,
             "RCP-WIRE-002: transition from 'produce' produces 'fact:findings', which step 'step.produce' doesn't record at RCP-WIRE-002.yaml:15:88 (transitions[0].produces[0]); list only what it records (fact:output), or remove it",
+            []),
+        ["RCP-URG-001"] = new(
+            FixtureSetup.Shipped,
+            "RCP-URG-001: urgency 'urgent' isn't one of incident, triage, work at RCP-URG-001.yaml:4:1 (urgency); use incident, triage or work, or remove urgency (the default is work)",
+            []),
+        ["RCP-OUT-001"] = new(
+            FixtureSetup.Shipped,
+            "RCP-OUT-001: output 'fact:output' comes from state 'draft', which the recipe doesn't declare at RCP-OUT-001.yaml:5:37 (outputs[0].from); name one of its states: produce, done",
+            []),
+        ["RCP-OUT-002"] = new(
+            FixtureSetup.Shipped,
+            "RCP-OUT-002: output 'fact:report' comes from state 'produce', but nothing there records it (step 'step.produce' records fact:output) at RCP-OUT-002.yaml:5:37 (outputs[0].from); have the state's Step, a transition leaving it ('produces') or its wait record 'fact:report', or name the state that does",
+            []),
+        ["RCP-OUT-003"] = new(
+            FixtureSetup.Shipped,
+            "RCP-OUT-003: output key 'fact:output' is declared twice (first at outputs[0]) at RCP-OUT-003.yaml:6:7 (outputs[1].key); remove the duplicate, or give it its own key",
+            []),
+        ["RCP-TYPE-001"] = new(
+            FixtureSetup.Shipped,
+            "RCP-TYPE-001: output 'fact:output' has type 'document', which isn't one of text, file, item, link, scope-map, packet, evidence, decision, payload at RCP-TYPE-001.yaml:5:25 (outputs[0].type); use one of them",
+            []),
+        ["RCP-TYPE-002"] = new(
+            FixtureSetup.Shipped,
+            "RCP-TYPE-002: input 'fact:item' has kind 'ticket', which isn't one of item, linear-project, webhook, file, text at RCP-TYPE-002.yaml:5:35 (inputs[0].kind); use one of them",
+            []),
+        ["RCP-TYPE-003"] = new(
+            FixtureSetup.Shipped,
+            "RCP-TYPE-003: input 'fact:item' has kind 'item' but type 'file'; kind item pairs with type item at RCP-TYPE-003.yaml:5:35 (inputs[0].kind); set type to item, or change kind",
             []),
     };
 }

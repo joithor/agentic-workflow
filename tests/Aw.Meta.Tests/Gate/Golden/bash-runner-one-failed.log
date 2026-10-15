@@ -1,0 +1,21 @@
+PASS  par  scripts/tests/binaries-lock.test.sh  0s
+PASS  par  config/lib/tests/merge-hook.test.sh  0s
+PASS  par  config/lib/tests/locks.test.sh  6s
+PASS  par  scripts/tests/sync-rules.test.sh  2s
+FAIL  par  scripts/tests/ci-bash-tests.test.sh  0s  exit 1
+PASS  ser  config/hooks/tests/failopen.test.sh  31s
+
+FAIL  par  scripts/tests/ci-bash-tests.test.sh  (exit 1, 0s)
+      ! FAIL: serial suite is not one the runner runs: config/hooks/tests/failopen.test.sh
+      | PASS: test_lists_every_tracked_suite_except_the_excluded
+      | PASS: test_suites_outside_the_old_globs_are_listed
+      | PASS: test_every_exclusion_is_tracked_and_has_a_reason
+      | scripts/tests/ci-bash-tests.test.sh: line 48: printf: write error: Broken pipe
+      | FAIL: serial suite is not one the runner runs: config/hooks/tests/failopen.test.sh
+
+slowest suites:
+     31s  ser  config/hooks/tests/failopen.test.sh
+
+bash suites: 69 run, 1 failed, 2 excluded (10 serial, 16 jobs, 129s wall)
+  excluded: config/lib/tests/judge-cs-hook-surface.test.sh
+  excluded: config/tests/statusline-judge.test.sh

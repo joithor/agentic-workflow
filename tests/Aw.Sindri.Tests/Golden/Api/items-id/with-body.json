@@ -1,0 +1,29 @@
+{
+  "id": "ITM-0000000000000000000000000000000e",
+  "title": "Fix the login redirect",
+  "repo": "demo",
+  "state": "new",
+  "step": null,
+  "since": "2026-01-01T00:00:00.0000000Z",
+  "primaryAction": null,
+  "actions": [
+    "CloseItem:done",
+    "CloseItem:cancelled"
+  ],
+  "owner": null,
+  "version": 1,
+  "createdBy": "human:cli",
+  "waitingOn": null,
+  "instance": null,
+  "createdAt": "2026-01-01T00:00:00.0000000Z",
+  "updatedAt": "2026-01-01T00:00:00.0000000Z",
+  "body": "Users land on /home after a deep link.",
+  "link": "linear:issue/abc-123",
+  "asOf": {
+    "cursor": 6,
+    "ledgerHead": 6,
+    "projectedAt": "2026-01-01T00:00:00.0000000Z",
+    "rebuilding": false,
+    "stalled": false
+  }
+}

@@ -12,7 +12,7 @@ public sealed class SuspensionsTests
     [Fact, Trait("Lane", "unit")]
     public void Enter_opens_a_new_entry_with_its_run()
     {
-        var entered = StateEntry.Enter(Producing(), Recipe, "produce", Context());
+        var entered = StateEntry.Enter(Producing(), Recipe, "produce", FrameFixture.Context());
 
         Assert.Equal("produce", entered.State);
         Assert.Equal(new Frame("produce", 4, new OpenRun(RunToken.For(4, 1), StepRuntime.Agent, Launch: null, Task: null), Child: null), entered.Frame);
@@ -22,7 +22,7 @@ public sealed class SuspensionsTests
     [Fact, Trait("Lane", "unit")]
     public void Enter_runs_a_desk_capable_step_on_the_desk()
     {
-        var entered = StateEntry.Enter(Producing(), Recipe, "checks", Context());
+        var entered = StateEntry.Enter(Producing(), Recipe, "checks", FrameFixture.Context());
 
         Assert.Equal(new OpenRun(RunToken.For(4, 1), StepRuntime.Desk, Launch: null, "Check."), entered.Frame.Run);
     }
@@ -30,7 +30,7 @@ public sealed class SuspensionsTests
     [Fact, Trait("Lane", "unit")]
     public void Enter_a_terminal_state_sets_the_outcome_and_opens_no_run()
     {
-        var entered = StateEntry.Enter(Producing(), Recipe, "done", Context());
+        var entered = StateEntry.Enter(Producing(), Recipe, "done", FrameFixture.Context());
 
         Assert.Equal(OutcomeName.From("resolved"), entered.Outcome);
         Assert.Null(entered.Frame.Run);

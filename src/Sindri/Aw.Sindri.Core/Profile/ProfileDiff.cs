@@ -35,6 +35,16 @@ public static class ProfileDiff
             values[$"services.{name}.every"] = settings.Every;
         }
 
+        if (p.Workflow?.DeskTimeout is { } desk)
+        {
+            values["workflow.deskTimeout"] = desk;
+        }
+
+        if (p.Workflow?.EventHold is { } hold)
+        {
+            values["workflow.eventHold"] = hold;
+        }
+
         return values;
     }
 }

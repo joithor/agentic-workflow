@@ -1,0 +1,58 @@
+{
+  "header": {
+    "address": "ITM-01JH5/step/1",
+    "recipe": "workflow.step",
+    "hash12": "1b13bd920351",
+    "version": 1,
+    "state": "parked",
+    "detail": "budget",
+    "since": "2026-10-12T11:54:00.0000000Z",
+    "ageSeconds": 1920
+  },
+  "next": "Parked (budget): produce used 200k of 200k tokens.",
+  "answer": {
+    "kind": "grantTokens",
+    "actionId": "ApplyCommand:answer-grant-tokens",
+    "class": "protected",
+    "cli": "sindri workflow answer ITM-01JH5/step/1 --grant-tokens 100k",
+    "atTerminal": true
+  },
+  "child": null,
+  "drift": null,
+  "inputs": [],
+  "timeout": null,
+  "budget": {
+    "scope": "state",
+    "used": 200000,
+    "limit": 200000,
+    "instance": {
+      "used": 200000,
+      "limit": 400000
+    }
+  },
+  "paused": null,
+  "commands": [
+    {
+      "verb": "answer",
+      "actionId": "ApplyCommand:answer-grant-tokens",
+      "class": "protected",
+      "cli": "sindri workflow answer ITM-01JH5/step/1 --grant-tokens 100k",
+      "confirm": null
+    },
+    {
+      "verb": "takeover",
+      "actionId": "ApplyCommand:takeover",
+      "class": "pause",
+      "cli": "sindri workflow takeover ITM-01JH5/step/1",
+      "confirm": null
+    },
+    {
+      "verb": "cancel",
+      "actionId": "ApplyCommand:cancel",
+      "class": "desk",
+      "cli": "sindri workflow cancel ITM-01JH5/step/1",
+      "confirm": "Cancel ITM-01JH5/step/1? 0 running steps stop; 0 children are cancelled."
+    }
+  ],
+  "text": "ITM-01JH5/step/1  workflow.step@1b13bd920351  v1  parked: budget  since 11:54 (32m)\n  next      Parked (budget): produce used 200k of 200k tokens.\n  budget    tokens 200k / 200k (state), 200k / 400k (instance)\n  answer    sindri workflow answer ITM-01JH5/step/1 --grant-tokens 100k     (at a terminal; once per park)\n  commands  answer, takeover, cancel\n"
+}

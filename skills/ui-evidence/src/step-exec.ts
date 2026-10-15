@@ -21,10 +21,12 @@ export type RepairFn = (brokenSelector: string, step: string, candidates: Candid
  * ambiguous role/text target fails loudly instead of acting on the first match. An explicit `#<n>`
  * suffix picks the nth match and fails clearly when fewer than n exist.
  */
-async function locateTarget(page: Page, target: string, timeout: number): Promise<Locator> {
+async function locateTarget(page: Page, step: ScriptStep, timeout: number): Promise<Locator> {
+  const target = step.target;
   const parsed = parseStepTarget(target);
   if ("error" in parsed) throw new Error(parsed.error);
-  if (parsed.kind === "testId") return page.getByTestId(parsed.testId);
+  // A bare test id stays strict unless the step carries an explicit 0-based `index`.
+  if (parsed.kind === "testId") return step.index === undefined ? page.getByTestId(parsed.testId) : page.getByTestId(parsed.testId).nth(step.index);
   const all = parsed.kind === "role" ? page.getByRole(parsed.role as Parameters<Page["getByRole"]>[0], { name: parsed.name, exact: true }) : page.getByText(parsed.text, { exact: true });
   if (parsed.nth === undefined) return all;
   const picked = all.nth(parsed.nth - 1);
@@ -42,12 +44,33 @@ export async function performAction(page: Page, step: ScriptStep, host: string, 
     if (!isSameOriginPath(step.target)) throw new Error(`goto target must be a path on the host: ${step.target}`);
     await page.goto(`${host}${step.target}`);
   } else if (step.action === "click") {
-    await (await locateTarget(page, step.target, timeout)).click({ timeout });
+    await (await locateTarget(page, step, timeout)).click({ timeout });
   } else if (step.action === "fill") {
-    await (await locateTarget(page, step.target, timeout)).fill(step.value ?? "", { timeout });
+    await (await locateTarget(page, step, timeout)).fill(step.value ?? "", { timeout });
+  } else if (step.action === "scroll") {
+    await scrollContainer(page, step, timeout);
   } else {
     await page.getByText(step.target).locator("visible=true").first().waitFor({ state: "visible", timeout });
   }
+}
+
+const SCROLL_SETTLE_MS = 300;
+
+/** Scrolls the data-testid container (read-only), then lets lazy layout settle. A missing target throws, so the step is broken. */
+async function scrollContainer(page: Page, step: ScriptStep, timeout: number): Promise<void> {
+  if (step.target === "") throw new Error("scroll needs a data-testid target");
+  const position = step.value ?? "end";
+  const el = step.index === undefined ? page.getByTestId(step.target) : page.getByTestId(step.target).nth(step.index);
+  await el.waitFor({ state: "visible", timeout });
+  await el.evaluate((node, pos) => {
+    if (pos === "end") node.scrollLeft = node.scrollWidth;
+    else if (pos === "start") node.scrollLeft = 0;
+    else if (pos === "bottom") node.scrollTop = node.scrollHeight;
+    else if (pos === "top") node.scrollTop = 0;
+    else node.scrollLeft = Number(pos);
+  }, position);
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+  await page.waitForTimeout(SCROLL_SETTLE_MS);
 }
 
 /** Currently-visible interactive elements; `index` is the DOM-order position. */
