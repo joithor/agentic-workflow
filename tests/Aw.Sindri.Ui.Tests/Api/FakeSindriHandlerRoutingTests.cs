@@ -13,8 +13,8 @@ public sealed class FakeSindriHandlerRoutingTests
 
     [Theory]
     [InlineData("instances")]
-    [InlineData("instances/x")]
-    [InlineData("recipes/r")]
+    [InlineData("instances/WFI-b8af4435da648073ac3a2a152fab1f4b")]   // the project-build golden's id: a GET answers it, so only the method keeps a POST out
+    [InlineData("recipes/workflow.project")]
     public async Task A_post_under_the_workflow_routes_is_not_answered_as_a_read(string route)
     {
         using var http = new HttpClient(new FakeSindriHandler(new FakeSindriApi()));

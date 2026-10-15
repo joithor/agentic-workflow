@@ -106,7 +106,7 @@ internal static class WorkflowAnswers
     internal static RouteAnswer Recipe(string recipe, string? hash) =>
         ScenarioOf(recipe) is { } scenario && Served("workflow-recipe").FirstOrDefault(g => string.Equals(g.Scenario, scenario, StringComparison.Ordinal)) is { Body: { } body } && HashKnown(recipe, hash)
             ? new RouteAnswer(HttpStatusCode.OK, body.ToJsonString())
-            : RouteAnswer.Problem(HttpStatusCode.NotFound, "SND-ITEM-404", hash is null ? $"No recipe {recipe} in this repo." : $"No recipe {recipe}@{hash} in this repo.");
+            : RouteAnswer.Problem(HttpStatusCode.NotFound, "SND-ITEM-404", string.IsNullOrEmpty(hash) ? $"No recipe {recipe} in this repo." : $"No recipe {recipe}@{hash} in this repo.");
 
     private static string? ScenarioOf(string recipe) =>
         _recipeGoldens.FirstOrDefault(g => string.Equals(g.Value, recipe, StringComparison.Ordinal)).Key;
