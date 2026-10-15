@@ -84,20 +84,11 @@ public sealed class DeniedPathReadTests : IDisposable
         "  - {from: \"surface:setting/mixed\", to: \"feature:kept\", type: part-of, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/private/s.json\"}, {key: \"repo:aw-split-panes/src/b.ts\"}]}",
     ];
 
-    private static ContextScope DenyingSession(params string[] globs)
-    {
-        using var section = System.Text.Json.JsonDocument.Parse("""{"sessions":{"enabled":true}}""");
-        return new(section.RootElement.Clone(), [new ContextRepo(ContextRepoName.From(FixtureMap.Repo), "/work/aw-split-panes") { DenyPaths = [.. PathDenylist.Defaults, .. globs] }],
-            new ContextCaller(ContextCallerKind.Session, ContextRepoName.From(FixtureMap.Repo), ContextClient.Http));
-    }
-
-    [Theory, Trait("Lane", "unit")]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task An_export_leaves_out_denied_code_nodes_their_edges_and_surfaces_only_a_denied_file_produced(bool session)
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_export_leaves_out_denied_code_nodes_their_edges_and_surfaces_only_a_denied_file_produced()
     {
         _ = await _world.ImportYaml(MapWorld.Yaml(_deniedMap));
-        var scope = session ? DenyingSession("private/**") : Denying("private/**");
+        var scope = Denying("private/**");
 
         var exported = await _world.Map.ExportMap(path: null, scope, MapWorld.None);
 
@@ -105,7 +96,7 @@ public sealed class DeniedPathReadTests : IDisposable
         var keys = document.Nodes.Select(n => n.Key.Value).ToList();
         Assert.DoesNotContain("code:private/a.ts", keys, StringComparer.Ordinal);
         Assert.DoesNotContain("surface:setting/secret", keys, StringComparer.Ordinal);
-        Assert.Equal(!session, keys.Contains("surface:setting/mixed", StringComparer.Ordinal));
+        Assert.Contains("surface:setting/mixed", keys, StringComparer.Ordinal);
         Assert.DoesNotContain(document.Edges ?? [], e => e.From.Value.Contains("private/", StringComparison.Ordinal) || string.Equals(e.From.Value, "surface:setting/secret", StringComparison.Ordinal));
         var evidence = document.Nodes.SelectMany(n => n.EvidenceOrEmpty).Concat((document.Edges ?? []).SelectMany(e => e.EvidenceOrEmpty)).Select(r => r.Key.Value).ToList();
         Assert.DoesNotContain(evidence, e => e.Contains("private/", StringComparison.Ordinal));

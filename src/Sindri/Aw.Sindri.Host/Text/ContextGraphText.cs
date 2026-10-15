@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Results;
+using Aw.Context.Core.Trust;
 
 namespace Aw.Sindri.Host.Text;
 
@@ -12,17 +13,17 @@ namespace Aw.Sindri.Host.Text;
 /// </summary>
 internal static class ContextGraphText
 {
-    internal static string Node(NodeView view)
+    internal static string Node(NodeView view, bool fence)
     {
         var text = new StringBuilder(Invariant($"node {view.Node.Key.Value} · map {view.MapVersion}\n"));
-        _ = text.AppendLine(Invariant($"  {view.Node.Label} · {Kind(view.Node.Key)} · {Facts(view.Node)}"));
+        _ = text.AppendLine(Invariant($"  {Fenced(view.Node.Label, view.Node.Trust, fence)} · {Kind(view.Node.Key)} · {Facts(view.Node)}"));
         _ = text.AppendLine(view.Aliases.Count == 0 ? "aliases: none" : "aliases: " + string.Join(", ", view.Aliases.Select(a => a.Value)));
         Edges(text, "out", view.Out, e => Invariant($"{EdgeRules.Name(e.Type)} {e.To.Value}"));
         Edges(text, "in", view.In, e => Invariant($"{e.From.Value} {EdgeRules.Name(e.Type)} this"));
         return text.ToString();
     }
 
-    internal static string Neighbors(NeighborsView view)
+    internal static string Neighbors(NeighborsView view, bool fence)
     {
         var text = new StringBuilder(Invariant($"neighbors of {view.Center.Value} within {view.Depth} edge(s) · map {view.MapVersion}\n"));
         if (view.Nodes.Count <= 1)
@@ -32,14 +33,14 @@ internal static class ContextGraphText
 
         foreach (var n in view.Nodes.Skip(1))
         {
-            _ = text.AppendLine(Invariant($"  depth {n.Depth}  {n.Node.Key.Value}  {n.Node.Label}{Draft(n.Node.Confirmed)}"));
+            _ = text.AppendLine(Invariant($"  depth {n.Depth}  {n.Node.Key.Value}  {Fenced(n.Node.Label, n.Node.Trust, fence)}  {TrustWord(n.Node.Trust)}{Draft(n.Node.Confirmed)}"));
         }
 
         Edges(text, "edges", view.Edges, e => Invariant($"{e.From.Value} {EdgeRules.Name(e.Type)} {e.To.Value}"));
         return text.ToString();
     }
 
-    internal static string Path(PathView view)
+    internal static string Path(PathView view, bool fence)
     {
         var text = new StringBuilder(Invariant($"path {view.From.Value} → {view.To.Value} · map {view.MapVersion}\n"));
         if (!view.Found || view.Steps.Count == 0)
@@ -52,7 +53,7 @@ internal static class ContextGraphText
         {
             var name = EdgeRules.Name(step.Edge.Type);
             var arrow = step.Forward ? name + " →" : "← " + name;
-            _ = text.AppendLine(Invariant($"  {++i}. {arrow} {step.Node.Key.Value}  {step.Node.Label}{Draft(step.Edge.Confirmed && step.Node.Confirmed)}"));
+            _ = text.AppendLine(Invariant($"  {++i}. {arrow} {step.Node.Key.Value}  {Fenced(step.Node.Label, step.Node.Trust, fence)}  {TrustWord(step.Node.Trust)}{Draft(step.Edge.Confirmed && step.Node.Confirmed)}"));
         }
 
         return text.ToString();
@@ -68,7 +69,12 @@ internal static class ContextGraphText
     }
 
     private static string Facts(NodeFact node) =>
-        $"{Word(node.Provenance)}, {(node.Confirmed ? "confirmed" : "draft")}, {(node.Trust == Trust.Trusted ? "trusted" : "untrusted")}";
+        $"{Word(node.Provenance)}, {(node.Confirmed ? "confirmed" : "draft")}, {TrustWord(node.Trust)}";
+
+    private static string TrustWord(Trust trust) => trust == Trust.Trusted ? "trusted" : "untrusted";
+
+    private static string Fenced(string label, Trust trust, bool fence) =>
+        fence && trust == Trust.Untrusted ? UntrustedFence.Wrap("map", author: null, label) : label;
 
     private static string Draft(bool confirmed) => confirmed ? string.Empty : " (draft)";
 

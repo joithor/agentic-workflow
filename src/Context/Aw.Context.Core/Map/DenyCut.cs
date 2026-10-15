@@ -16,6 +16,7 @@ namespace Aw.Context.Core.Map;
 internal sealed class DenyCut
 {
     private readonly IReadOnlyList<ContextRepo> _repos;
+    private readonly IReadOnlyList<ContextRepo> _mapped;
     private readonly HashSet<string> _removed;
     private readonly HashSet<string> _cutLinks;
     private readonly Dictionary<string, List<GraphNode>> _origin;
@@ -24,9 +25,10 @@ internal sealed class DenyCut
     private readonly HashSet<string> _added;
     private readonly HashSet<string> _links;
 
-    private DenyCut(IReadOnlyList<ContextRepo> repos, (HashSet<string> Removed, HashSet<string> CutLinks, HashSet<string> Links) cut, (Dictionary<string, List<GraphNode>> Origin, HashSet<string> Stored, HashSet<string> Added) nodes, Dictionary<string, string> aliases, bool any)
+    private DenyCut(IReadOnlyList<ContextRepo> repos, IReadOnlyList<ContextRepo> mapped, (HashSet<string> Removed, HashSet<string> CutLinks, HashSet<string> Links) cut, (Dictionary<string, List<GraphNode>> Origin, HashSet<string> Stored, HashSet<string> Added) nodes, Dictionary<string, string> aliases, bool any)
     {
         _repos = repos;
+        _mapped = mapped;
         (_removed, _cutLinks, _links) = cut;
         (_origin, _stored, _added) = nodes;
         _aliases = aliases;
@@ -39,15 +41,16 @@ internal sealed class DenyCut
     /// <summary>Judges the stored graph and the overrides together.</summary>
     /// <param name="stored">The graph as stored, before overrides.</param>
     /// <param name="overrides">Every override, a pending proposal too: what they add or remap is judged, so the decision does not depend on which reader asks.</param>
-    /// <param name="repos">The repos whose deny globs apply.</param>
+    /// <param name="repos">Every repo of the profile: their deny globs judge record keys and evidence refs, which name their repo.</param>
+    /// <param name="mapped">The repos the map is built from: only their deny globs judge a <c xml:lang="en">code:</c> key, which names no repo (another repo's glob must not hide this repo's file).</param>
     /// <returns>The cut.</returns>
-    public static DenyCut Of(GraphSnapshot stored, IReadOnlyList<MapOverride> overrides, IReadOnlyList<ContextRepo> repos)
+    public static DenyCut Of(GraphSnapshot stored, IReadOnlyList<MapOverride> overrides, IReadOnlyList<ContextRepo> repos, IReadOnlyList<ContextRepo> mapped)
     {
         var applied = overrides.Count == 0 ? stored : OverrideApplier.Apply(stored, overrides).Graph;
         var deniedDecisions = stored.Decisions.Where(d => DeniesKey(d.Record.Value, repos)).Select(d => d.ToKey().Value).ToHashSet(StringComparer.Ordinal);
         var origin = Origin(stored, overrides);
-        var removed = origin.Where(p => IsCut(p.Value[0], deniedDecisions, repos)).Select(p => p.Key).ToHashSet(StringComparer.Ordinal);
-        removed.UnionWith(applied.Nodes.Where(n => IsDeniedKey(n.Key, repos)).Select(n => n.Key.Value));
+        var removed = origin.Where(p => IsCut(p.Value[0], deniedDecisions, repos, mapped)).Select(p => p.Key).ToHashSet(StringComparer.Ordinal);
+        removed.UnionWith(applied.Nodes.Where(n => IsDeniedKey(n.Key, repos, mapped)).Select(n => n.Key.Value));
         var edges = ReferenceEquals(applied, stored) ? stored.Edges : [.. stored.Edges, .. applied.Edges];
         removed.UnionWith(OrphanedFeatures(origin, stored, [.. edges.Where(e => IsCut(e, removed, repos))], removed));
         var cutLinks = edges.Where(e => IsCut(e, removed, repos)).Select(e => LinkIds.For(e).Value).ToHashSet(StringComparer.Ordinal);
@@ -55,7 +58,7 @@ internal sealed class DenyCut
             || origin.Values.Any(nodes => nodes.Exists(n => HasDenied(n.EvidenceOrEmpty, repos))) || stored.Edges.Any(e => HasDenied(e.EvidenceOrEmpty, repos));
         var links = edges.Select(e => LinkIds.For(e).Value).ToHashSet(StringComparer.Ordinal);
         var aliases = stored.Aliases.ToDictionary(a => a.Alias.Value, a => a.Target.Value, StringComparer.Ordinal);
-        return new DenyCut(repos, (removed, cutLinks, links), (origin, stored.Nodes.Select(n => n.Key.Value).ToHashSet(StringComparer.Ordinal), OverrideLog.Active(overrides).Where(o => o.Action == OverrideAction.Add).Select(o => o.Target.Value).ToHashSet(StringComparer.Ordinal)), aliases, any);
+        return new DenyCut(repos, mapped, (removed, cutLinks, links), (origin, stored.Nodes.Select(n => n.Key.Value).ToHashSet(StringComparer.Ordinal), OverrideLog.Active(overrides).Where(o => o.Action == OverrideAction.Add).Select(o => o.Target.Value).ToHashSet(StringComparer.Ordinal)), aliases, any);
     }
 
     /// <summary>The evidence a deny glob leaves.</summary>
@@ -77,7 +80,7 @@ internal sealed class DenyCut
         {
             Nodes = [.. graph.Nodes.Where(n => !_removed.Contains(n.Key.Value)).Select(n => n with { Evidence = Allowed(n.Evidence, _repos) })],
             Edges = [.. graph.Edges.Where(e => !_removed.Contains(e.From.Value) && !_removed.Contains(e.To.Value) && !_cutLinks.Contains(LinkIds.For(e).Value)).Select(e => e with { Evidence = Allowed(e.Evidence, _repos) })],
-            Aliases = [.. graph.Aliases.Where(a => !_removed.Contains(a.Alias.Value) && !_removed.Contains(a.Target.Value) && !IsDeniedKey(a.Alias, _repos) && !IsDeniedKey(a.Target, _repos))],
+            Aliases = [.. graph.Aliases.Where(a => !_removed.Contains(a.Alias.Value) && !_removed.Contains(a.Target.Value) && !IsDeniedKey(a.Alias, _repos, _mapped) && !IsDeniedKey(a.Target, _repos, _mapped))],
             Decisions = [.. graph.Decisions.Where(d => !DeniesKey(d.Record.Value, _repos) && !_removed.Contains(d.ToKey().Value))],
         };
     }
@@ -123,10 +126,10 @@ internal sealed class DenyCut
     private bool TakenOut(MapOverride o)
     {
         var (target, other) = (Resolve(o.Target.Value), o.Other is { } to ? Resolve(to.Value) : null);
-        bool Stored(string key) => _stored.Contains(key) && _removed.Contains(key) && !IsDeniedKey(NodeKey.From(key), _repos);
+        bool Stored(string key) => _stored.Contains(key) && _removed.Contains(key) && !IsDeniedKey(NodeKey.From(key), _repos, _mapped);
         return o.Link is { } link
-            ? _cutLinks.Contains(link.Value) && !IsDeniedKey(NodeKey.From(target), _repos)
-            : Stored(target) || (other is not null && Stored(other) && !IsDeniedKey(NodeKey.From(target), _repos));
+            ? _cutLinks.Contains(link.Value) && !IsDeniedKey(NodeKey.From(target), _repos, _mapped)
+            : Stored(target) || (other is not null && Stored(other) && !IsDeniedKey(NodeKey.From(target), _repos, _mapped));
     }
 
     private string Resolve(string key) => _aliases.TryGetValue(key, out var target) ? target : key;
@@ -160,7 +163,7 @@ internal sealed class DenyCut
             ? _links.Contains(link.Value) && !_cutLinks.Contains(link.Value)
             : Alive(row.Target) && (row.Other is not { } other || Alive(other));
 
-    private bool Alive(NodeKey key) => Known(key) && Resolve(key.Value) is var k && !_removed.Contains(k) && !IsDeniedKey(NodeKey.From(k), _repos);
+    private bool Alive(NodeKey key) => Known(key) && Resolve(key.Value) is var k && !_removed.Contains(k) && !IsDeniedKey(NodeKey.From(k), _repos, _mapped);
 
     // Every form a node was first seen in: as stored, and as each active propose row would add it. A reject names its proposal by the evidence it had then.
     private static Dictionary<string, List<GraphNode>> Origin(GraphSnapshot stored, IReadOnlyList<MapOverride> overrides)
@@ -205,18 +208,18 @@ internal sealed class DenyCut
     private bool Known(NodeKey key) => Resolve(key.Value) is var k && (_origin.ContainsKey(k) || _added.Contains(k));
 
     // Removed by the cut or denied outright, by the key or through a stored alias of it.
-    private bool Removed(NodeKey key) => _removed.Contains(key.Value) || IsDeniedKey(key, _repos) || (Resolve(key.Value) is var k && k != key.Value && (_removed.Contains(k) || IsDeniedKey(NodeKey.From(k), _repos)));
+    private bool Removed(NodeKey key) => _removed.Contains(key.Value) || IsDeniedKey(key, _repos, _mapped) || (Resolve(key.Value) is var k && k != key.Value && (_removed.Contains(k) || IsDeniedKey(NodeKey.From(k), _repos, _mapped)));
 
     // A node the globs take: a denied path's code node, a denied document's record node, a decision quoting one, or a node a model or a scan made on denied files alone
     // (a person's accept doesn't give the file back: this judges the node as it was first seen).
-    private static bool IsCut(GraphNode n, HashSet<string> deniedDecisions, IReadOnlyList<ContextRepo> repos) =>
-        IsDeniedKey(n.Key, repos) || deniedDecisions.Contains(n.Key.Value) || (n.Provenance != Provenance.Human && OnlyDenied(n.EvidenceOrEmpty, repos));
+    private static bool IsCut(GraphNode n, HashSet<string> deniedDecisions, IReadOnlyList<ContextRepo> repos, IReadOnlyList<ContextRepo> mapped) =>
+        IsDeniedKey(n.Key, repos, mapped) || deniedDecisions.Contains(n.Key.Value) || (n.Provenance != Provenance.Human && OnlyDenied(n.EvidenceOrEmpty, repos));
 
     private static bool IsCut(GraphEdge e, HashSet<string> removed, IReadOnlyList<ContextRepo> repos) =>
         removed.Contains(e.From.Value) || removed.Contains(e.To.Value) || (e.Provenance != Provenance.Human && OnlyDenied(e.EvidenceOrEmpty, repos));
 
-    private static bool IsDeniedKey(NodeKey key, IReadOnlyList<ContextRepo> repos) =>
-        (key.Kind == NodeKind.Code && repos.Any(r => r.Denies(key.Value["code:".Length..]))) || (key.Kind == NodeKind.Record && DeniesKey(key.Value["record:".Length..], repos));
+    private static bool IsDeniedKey(NodeKey key, IReadOnlyList<ContextRepo> repos, IReadOnlyList<ContextRepo> mapped) =>
+        (key.Kind == NodeKind.Code && mapped.Any(r => r.Denies(key.Value["code:".Length..]))) || (key.Kind == NodeKind.Record && DeniesKey(key.Value["record:".Length..], repos));
 
     // The model-made features left with no implementing file once the cut edges are gone, accepted or not: a person accepting a model feature doesn't give its denied file back.
     // Only stored implements edges count (a merge's remapped edge goes with the merge, which is dropped when its node is cut). A feature a person wrote stays.
