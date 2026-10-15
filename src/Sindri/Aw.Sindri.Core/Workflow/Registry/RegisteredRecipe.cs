@@ -26,9 +26,20 @@ public sealed record RegisteredRecipe(RecipeId Id, int Version, RecipeHash Hash,
     public Result<Recipe> Read(JsonSerializerOptions json)
     {
         ArgumentNullException.ThrowIfNull(json);
-        if (JsonNode.Parse(Text) is not JsonObject recipe)
+        var bytes = Encoding.UTF8.GetBytes(Text);
+        JsonNode? node;
+        try
         {
-            return AwJson.Deserialize<Recipe>(Encoding.UTF8.GetBytes(Text), json);   // why: not an object, so the typed read reports it
+            node = JsonNode.Parse(bytes);
+        }
+        catch (JsonException)
+        {
+            return AwJson.Deserialize<Recipe>(bytes, json);   // why: the typed read reports malformed text as the kernel error
+        }
+
+        if (node is not JsonObject recipe)
+        {
+            return AwJson.Deserialize<Recipe>(bytes, json);   // why: not an object, so the typed read reports it
         }
 
         _ = recipe.TryAdd("urgency", Urgencies.Default);
