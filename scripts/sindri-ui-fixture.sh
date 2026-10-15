@@ -37,7 +37,7 @@ need() { command -v "$1" >/dev/null 2>&1 || die "$1 is needed for '$verb'"; }
 # The sqlite3 CLI when there is one, else python3's sqlite3 module (a box without the CLI). Both run the statements in
 # order, stop at the first error and print each selected row with its columns joined by '|'.
 use_cli() { [ "${SINDRI_UI_FIXTURE_SQL:-}" != python ] && command -v sqlite3 >/dev/null 2>&1; }
-need_sql() { use_cli || command -v python3 >/dev/null 2>&1 || die "sqlite3 (or python3) is needed for '$verb'"; }
+need_sql() { use_cli || { command -v python3 >/dev/null 2>&1 && python3 -I -c 'import sqlite3' >/dev/null 2>&1; } || die "sqlite3 (or python3) is needed for '$verb'"; }
 
 ledger() {
   [ -f "$AW_SINDRI_HOME/ledger.db" ] || die "no ledger at $AW_SINDRI_HOME/ledger.db: run 'up' first"
