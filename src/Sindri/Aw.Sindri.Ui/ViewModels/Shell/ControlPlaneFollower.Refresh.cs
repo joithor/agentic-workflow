@@ -9,7 +9,8 @@ internal sealed partial class ControlPlaneFollower
     // Re-reads the status and the services view. "Views behind" (SND-API-011, the server's 2 s wait after an
     // X-Sindri-After) is not trouble: the last data stays and the next beat reads again. A projection that is still
     // catching up (cursor behind the ledger head) or rebuilding is read again too, since no further event need come; a
-    // stalled one won't move by itself, so it waits for an event. A failed status ends the follow.
+    // stalled one won't move by itself, so it waits for an event. A failed status ends the follow. A services read that
+    // fails for any reason but "no such route" (SND-UI-003, before P2) leaves the banner as Sindri last said it.
     private async Task<bool> Refresh(Uri url, CancellationToken cancellationToken)
     {
         _again = false;
@@ -28,6 +29,11 @@ internal sealed partial class ControlPlaneFollower
 
         health.Show(url, status.Value);
         _again = status.Value.Views is { Stalled: false } views && (views.Rebuilding || views.Cursor < views.LedgerHead);
+        if (health.Catalog.Controls.Count == 0 && await api.Commands(url, cancellationToken).ConfigureAwait(true) is { IsSuccess: true } catalog)
+        {
+            health.ShowCatalog(url, catalog.Value);   // the read on connect failed: try again, so Rebuild views shows once Sindri answers
+        }
+
         var services = await api.Services(url, cancellationToken).ConfigureAwait(true);
         if (services.IsSuccess)
         {
