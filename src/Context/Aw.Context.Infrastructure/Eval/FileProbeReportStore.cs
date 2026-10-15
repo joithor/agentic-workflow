@@ -1,14 +1,61 @@
+using System.Globalization;
 using System.Text.Json;
+using Aw.Context.Core;
 using Aw.Context.Core.Eval;
 using Aw.Context.Infrastructure.Store;
 using Aw.Kernel;
+using Aw.Kernel.Json;
 
 namespace Aw.Context.Infrastructure.Eval;
 
-/// <summary>The probe reports folder (stub).</summary>
+/// <summary>
+/// The probe reports folder, $AW_SINDRI_HOME/context/eval/probes/ (0700): one JSON file per run, 'probes-&lt;time&gt;.json',
+/// written by temp file and rename at 0600. The latest run of a probe file is the newest report carrying its hash; a
+/// report that doesn't parse is skipped.
+/// </summary>
 internal sealed class FileProbeReportStore(ContextStoreSettings settings, JsonSerializerOptions options) : IProbeReportStore
 {
-    public ValueTask<Result<ProbeReport?>> Latest(string probeFileHash, CancellationToken cancellationToken) => throw new NotSupportedException($"{settings.Home} {options.WriteIndented}");
+    public async ValueTask<Result<ProbeReport?>> Latest(string probeFileHash, CancellationToken cancellationToken)
+    {
+        var folder = settings.ProbesDirectory;
+        if (!Directory.Exists(folder))
+        {
+            return Results.Success<ProbeReport?>(value: null);
+        }
 
-    public ValueTask<Result<string>> Write(ProbeReport report, DateTimeOffset runAt, CancellationToken cancellationToken) => throw new NotSupportedException();
+        try
+        {
+            foreach (var file in Directory.EnumerateFiles(folder, "probes-*.json").Order(StringComparer.Ordinal).Reverse())
+            {
+                var read = AwJson.Deserialize<ProbeReport>(await File.ReadAllBytesAsync(file, cancellationToken).ConfigureAwait(false), options);
+                if (read.IsSuccess && string.Equals(read.Value.ProbeFileHash, probeFileHash, StringComparison.Ordinal))
+                {
+                    return read.Value;
+                }
+            }
+
+            return Results.Success<ProbeReport?>(value: null);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return ContextErrors.StoreUnavailable.With($"{folder} can't be read: {e.Message}");
+        }
+    }
+
+    public ValueTask<Result<string>> Write(ProbeReport report, DateTimeOffset runAt, CancellationToken cancellationToken)
+    {
+        var path = Path.Combine(settings.ProbesDirectory, "probes-" + runAt.UtcDateTime.ToString("yyyyMMdd'T'HHmmssfff'Z'", CultureInfo.InvariantCulture) + ".json");
+        try
+        {
+            OwnerOnly.EnsureDirectory(settings.Home);
+            OwnerOnly.EnsureDirectory(settings.EvalDirectory);
+            OwnerOnly.EnsureDirectory(settings.ProbesDirectory);
+            OwnerOnly.WriteAtomically(path, AwJson.Serialize(report, options));
+            return ValueTask.FromResult(Results.Success(path));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return ValueTask.FromResult<Result<string>>(ContextErrors.StoreUnavailable.With($"{path} can't be written: {e.Message}"));
+        }
+    }
 }
