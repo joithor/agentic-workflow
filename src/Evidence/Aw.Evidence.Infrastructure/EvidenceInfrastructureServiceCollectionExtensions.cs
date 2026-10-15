@@ -16,9 +16,11 @@ using Aw.Evidence.Infrastructure.Ids;
 using Aw.Evidence.Infrastructure.Images;
 using Aw.Evidence.Infrastructure.Judging;
 using Aw.Evidence.Infrastructure.Locks;
+using Aw.Evidence.Infrastructure.Processes;
 using Aw.Evidence.Infrastructure.Redaction;
 using Aw.Evidence.Infrastructure.Settings;
 using Aw.Evidence.Infrastructure.Stack;
+using Aw.Evidence.Infrastructure.Targets;
 using Aw.Evidence.Infrastructure.Visual;
 using Aw.Kernel.Ids;
 using Aw.Redaction;
@@ -56,6 +58,9 @@ public static class EvidenceInfrastructureServiceCollectionExtensions
             .AddSingleton<IBrowserInstaller, PlaywrightInstaller>()
             .AddSingleton<IJudge, UnavailableJudge>()
             .AddSingleton<IApiTransport>(new HttpApiTransport(TimeSpan.FromSeconds(30)))
+            .AddSingleton<ICliRunner>(new ProcessCliRunner(TimeSpan.FromMinutes(2)))
+            .AddSingleton<IExecutableLocator, FileExecutableLocator>()
+            .AddSingleton<IEvidenceTargets, FileEvidenceTargets>()
             .AddSingleton<ITextScrubber>(new RedactionScrubber(Redactor.Default))
             .AddSingleton<IIdGenerator, RandomIds>();
     }

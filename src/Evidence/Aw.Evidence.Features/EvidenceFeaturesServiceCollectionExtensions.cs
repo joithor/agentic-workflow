@@ -104,6 +104,7 @@ public static class EvidenceFeaturesServiceCollectionExtensions
             .AddScoped<ApiRunFiles>()
             .AddScoped<ApiVetting>()
             .AddScoped<RequestRunner>()
+            .AddScoped<CallRunner>()
             .AddScoped<ApiRunService>()
             .AddScoped<IValidator<ApiRunRequest>, ApiRunValidator>()
             .AddScoped<IService<ApiRunRequest, ApiRunResponse>>(static sp =>

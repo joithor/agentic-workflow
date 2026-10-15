@@ -24,6 +24,12 @@ internal sealed class ApiRunHarness
 
     internal FakeApiTransport Transport { get; } = new();
 
+    internal FakeCliRunner Cli { get; } = new();
+
+    internal FakeExecutableLocator Locator { get; } = new();
+
+    internal FakeEvidenceTargets Targets { get; } = new();
+
     internal Dictionary<string, string> Environment { get; } = new(StringComparer.Ordinal);
 
     internal FakeTextScrubber Scrubber { get; } = new();
@@ -47,8 +53,9 @@ internal sealed class ApiRunHarness
     {
         var service = new ValidatingService<ApiRunRequest, ApiRunResponse>(
             new ApiRunService(
-                new ApiRunFiles(Files, Scrubber, TestJson.Options), new ApiVetting(Settings, new FakeSecrets(Environment), new ApiRunFiles(Files, Scrubber, TestJson.Options)),
-                new RequestRunner(Transport, Scrubber), Locks, Clock, Ids), new ApiRunValidator());
+                new ApiRunFiles(Files, Scrubber, TestJson.Options),
+                new ApiVetting(Settings, new FakeSecrets(Environment), new ApiRunFiles(Files, Scrubber, TestJson.Options), Targets, Locator),
+                new RequestRunner(Transport, Scrubber), new CallRunner(Cli, Scrubber), Locks, Clock, Ids), new ApiRunValidator());
         return service.Handle(request ?? Request(), TestContext.Current.CancellationToken);
     }
 

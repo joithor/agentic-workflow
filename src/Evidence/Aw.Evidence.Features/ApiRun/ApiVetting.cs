@@ -9,8 +9,10 @@ using Aw.Kernel;
 namespace Aw.Evidence.Features.ApiRun;
 
 /// <summary>The guards that run before any lock: the host, the header variables and the golden files.</summary>
-internal sealed class ApiVetting(IEvidenceSettings settings, ISecretsSource secrets, ApiRunFiles files)
+internal sealed class ApiVetting(IEvidenceSettings settings, ISecretsSource secrets, ApiRunFiles files, IEvidenceTargets targets, IExecutableLocator locator)
 {
+    internal (IEvidenceTargets, IExecutableLocator) CliCollaborators { get; } = (targets, locator);
+
     internal async ValueTask<Result<VettedRun>> VetAsync(ApiRunRequest request, ApiScript script, CancellationToken cancellationToken)
     {
         var host = ResolveHost(request, script);

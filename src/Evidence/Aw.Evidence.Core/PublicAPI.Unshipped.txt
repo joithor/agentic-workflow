@@ -1893,3 +1893,68 @@ Aw.Evidence.Core.Data.ApiFailure.Deconstruct(out int Step, out string? Location,
 Aw.Evidence.Core.Data.ApiFailure.Location.get -> string?
 Aw.Evidence.Core.Data.ApiFailure.Location.init -> void
 Aw.Evidence.Core.Data.ApiFailure.Describe() -> string!
+Aw.Evidence.Core.Data.CliGuard
+Aw.Evidence.Core.Data.CliInvocation
+Aw.Evidence.Core.Data.CliInvocation.<Clone>$() -> Aw.Evidence.Core.Data.CliInvocation!
+Aw.Evidence.Core.Data.CliInvocation.Args.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Core.Data.CliInvocation.Args.init -> void
+Aw.Evidence.Core.Data.CliInvocation.CliInvocation(string! Executable, System.Collections.Generic.IReadOnlyList<string!>! Args, string? Stdin, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment) -> void
+Aw.Evidence.Core.Data.CliInvocation.Deconstruct(out string! Executable, out System.Collections.Generic.IReadOnlyList<string!>! Args, out string? Stdin, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment) -> void
+Aw.Evidence.Core.Data.CliInvocation.Environment.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Evidence.Core.Data.CliInvocation.Environment.init -> void
+Aw.Evidence.Core.Data.CliInvocation.Equals(Aw.Evidence.Core.Data.CliInvocation? other) -> bool
+Aw.Evidence.Core.Data.CliInvocation.Executable.get -> string!
+Aw.Evidence.Core.Data.CliInvocation.Executable.init -> void
+Aw.Evidence.Core.Data.CliInvocation.Stdin.get -> string?
+Aw.Evidence.Core.Data.CliInvocation.Stdin.init -> void
+Aw.Evidence.Core.Data.CliOutcome
+Aw.Evidence.Core.Data.CliOutcome.<Clone>$() -> Aw.Evidence.Core.Data.CliOutcome!
+Aw.Evidence.Core.Data.CliOutcome.CliOutcome(int ExitCode, string! Stdout, string! Stderr) -> void
+Aw.Evidence.Core.Data.CliOutcome.Deconstruct(out int ExitCode, out string! Stdout, out string! Stderr) -> void
+Aw.Evidence.Core.Data.CliOutcome.Equals(Aw.Evidence.Core.Data.CliOutcome? other) -> bool
+Aw.Evidence.Core.Data.CliOutcome.ExitCode.get -> int
+Aw.Evidence.Core.Data.CliOutcome.ExitCode.init -> void
+Aw.Evidence.Core.Data.CliOutcome.Stderr.get -> string!
+Aw.Evidence.Core.Data.CliOutcome.Stderr.init -> void
+Aw.Evidence.Core.Data.CliOutcome.Stdout.get -> string!
+Aw.Evidence.Core.Data.CliOutcome.Stdout.init -> void
+Aw.Evidence.Core.Data.ICliRunner
+Aw.Evidence.Core.Data.ICliRunner.RunAsync(Aw.Evidence.Core.Data.CliInvocation! invocation, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Evidence.Core.Data.CliOutcome!>!>
+Aw.Evidence.Core.Data.IEvidenceTargets
+Aw.Evidence.Core.Data.IEvidenceTargets.LoadAsync(string! repo, string? configPath, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Evidence.Core.Data.ResolvedTargets!>!>
+Aw.Evidence.Core.Data.IExecutableLocator
+Aw.Evidence.Core.Data.IExecutableLocator.RealDirectory(string! path) -> string?
+Aw.Evidence.Core.Data.IExecutableLocator.RealExecutable(string! path) -> string?
+Aw.Evidence.Core.Data.ResolvedTargets
+Aw.Evidence.Core.Data.ResolvedTargets.<Clone>$() -> Aw.Evidence.Core.Data.ResolvedTargets!
+Aw.Evidence.Core.Data.ResolvedTargets.Allow.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Core.Data.ResolvedTargets.Allow.init -> void
+Aw.Evidence.Core.Data.ResolvedTargets.AllowsNoProgram.get -> bool
+Aw.Evidence.Core.Data.ResolvedTargets.BuildOutputs.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Core.Data.ResolvedTargets.BuildOutputs.init -> void
+Aw.Evidence.Core.Data.ResolvedTargets.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! BuildOutputs, out System.Collections.Generic.IReadOnlyList<string!>! Allow, out System.Collections.Generic.IReadOnlyList<string!>! PassEnv) -> void
+Aw.Evidence.Core.Data.ResolvedTargets.Equals(Aw.Evidence.Core.Data.ResolvedTargets? other) -> bool
+Aw.Evidence.Core.Data.ResolvedTargets.PassEnv.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Core.Data.ResolvedTargets.PassEnv.init -> void
+Aw.Evidence.Core.Data.ResolvedTargets.ResolvedTargets(System.Collections.Generic.IReadOnlyList<string!>! BuildOutputs, System.Collections.Generic.IReadOnlyList<string!>! Allow, System.Collections.Generic.IReadOnlyList<string!>! PassEnv) -> void
+override Aw.Evidence.Core.Data.CliInvocation.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.CliInvocation.GetHashCode() -> int
+override Aw.Evidence.Core.Data.CliInvocation.ToString() -> string!
+override Aw.Evidence.Core.Data.CliOutcome.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.CliOutcome.GetHashCode() -> int
+override Aw.Evidence.Core.Data.CliOutcome.ToString() -> string!
+override Aw.Evidence.Core.Data.ResolvedTargets.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.ResolvedTargets.GetHashCode() -> int
+override Aw.Evidence.Core.Data.ResolvedTargets.ToString() -> string!
+static Aw.Evidence.Core.Data.CliGuard.BaseEnvironment.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Evidence.Core.Data.CliGuard.CheckPassEnv(System.Collections.Generic.IEnumerable<string!>! names) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+static Aw.Evidence.Core.Data.CliGuard.CheckWrites(Aw.Evidence.Core.Data.CliStep! call, System.Collections.Generic.IReadOnlyCollection<string!>! declaredWrites) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+static Aw.Evidence.Core.Data.CliGuard.ResolveTarget(Aw.Evidence.Core.Data.CliStep! call, string! repo, Aw.Evidence.Core.Data.ResolvedTargets! targets, Aw.Evidence.Core.Data.IExecutableLocator! locator) -> Aw.Kernel.Result<string!>!
+static Aw.Evidence.Core.Data.CliGuard.TargetText(Aw.Evidence.Core.Data.CliStep! call) -> string!
+static Aw.Evidence.Core.Data.CliInvocation.operator !=(Aw.Evidence.Core.Data.CliInvocation? left, Aw.Evidence.Core.Data.CliInvocation? right) -> bool
+static Aw.Evidence.Core.Data.CliInvocation.operator ==(Aw.Evidence.Core.Data.CliInvocation? left, Aw.Evidence.Core.Data.CliInvocation? right) -> bool
+static Aw.Evidence.Core.Data.CliOutcome.operator !=(Aw.Evidence.Core.Data.CliOutcome? left, Aw.Evidence.Core.Data.CliOutcome? right) -> bool
+static Aw.Evidence.Core.Data.CliOutcome.operator ==(Aw.Evidence.Core.Data.CliOutcome? left, Aw.Evidence.Core.Data.CliOutcome? right) -> bool
+static Aw.Evidence.Core.Data.ResolvedTargets.Empty.get -> Aw.Evidence.Core.Data.ResolvedTargets!
+static Aw.Evidence.Core.Data.ResolvedTargets.operator !=(Aw.Evidence.Core.Data.ResolvedTargets? left, Aw.Evidence.Core.Data.ResolvedTargets? right) -> bool
+static Aw.Evidence.Core.Data.ResolvedTargets.operator ==(Aw.Evidence.Core.Data.ResolvedTargets? left, Aw.Evidence.Core.Data.ResolvedTargets? right) -> bool

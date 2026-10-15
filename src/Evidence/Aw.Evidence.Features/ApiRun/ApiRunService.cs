@@ -14,7 +14,7 @@ namespace Aw.Evidence.Features.ApiRun;
 /// QA-stack and heavy-job locks while it runs the requests, and writes a scrubbed summary.json on every path once the
 /// script has been read.
 /// </summary>
-internal sealed class ApiRunService(ApiRunFiles files, ApiVetting vetting, RequestRunner requests, IMachineLocks locks, TimeProvider clock, IIdGenerator ids)
+internal sealed class ApiRunService(ApiRunFiles files, ApiVetting vetting, RequestRunner requests, CallRunner calls, IMachineLocks locks, TimeProvider clock, IIdGenerator ids)
     : IService<ApiRunRequest, ApiRunResponse>
 {
     public async ValueTask<Result<ApiRunResponse>> Handle(ApiRunRequest request, CancellationToken cancellationToken)
@@ -49,6 +49,7 @@ internal sealed class ApiRunService(ApiRunFiles files, ApiVetting vetting, Reque
         await using (lease.Value.ConfigureAwait(false))
         {
             await requests.RunAsync(vetted.Value, collected, cancellationToken).ConfigureAwait(false);
+            _ = calls;
         }
 
         return await WriteAsync(run, Finished(run, vetted.Value, collected), cancellationToken).ConfigureAwait(false);
