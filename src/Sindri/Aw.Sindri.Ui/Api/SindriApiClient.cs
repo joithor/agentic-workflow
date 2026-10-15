@@ -63,6 +63,9 @@ internal sealed partial class SindriApiClient(HttpClient http, IHumanTokenSource
     public Task<Result<RecipeView>> Recipe(Uri api, string recipe, string? hash, CancellationToken cancellationToken) =>
         Get<RecipeView>(api, WorkflowRoutes.Recipe(recipe, hash), cancellationToken);
 
+    // LANE ANCHOR U3': the U3' public reads, one method each; their routes go in a routes class of their own, like WorkflowRoutes. Insert immediately above this marker, never between the markers.
+    // LANE ANCHOR U8: the U8 public sends; the workflow reads already have their routes in WorkflowRoutes. Insert immediately below this marker, never between the markers.
+
     public async IAsyncEnumerable<EventView> Events(Uri api, long after, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var path = string.Create(CultureInfo.InvariantCulture, $"/sindri/events?after={after}");
@@ -162,7 +165,4 @@ internal sealed partial class SindriApiClient(HttpClient http, IHumanTokenSource
             return false;
         }
     }
-
-    // LANE ANCHOR U3': implement the U3' reads in SindriApiClient.Calls.cs and list their routes there.
-    // LANE ANCHOR U8: implement the U8 sends in SindriApiClient.Calls.cs; the workflow reads already have their routes in WorkflowRoutes.
 }
