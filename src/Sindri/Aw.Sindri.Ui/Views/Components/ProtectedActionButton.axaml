@@ -41,8 +41,10 @@
         </Flyout>
       </Button.Flyout>
     </Button>
-    <!-- Copied: a polite live region, in the tree from the start, live only while it speaks, never "" (Avalonia #22312). -->
+    <!-- Copied: a polite live region that joins the tree when the popover opens (so a list of lock buttons carries one only for the button in use,
+         as Attach's does), live only while it speaks, never "" (Avalonia #22312). -->
     <TextBlock x:Name="CopyAnnouncementRegion" Classes="caption live-region" Classes.live="{Binding IsAnnouncing}"
+               IsVisible="{Binding IsOpen}"
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" Text="{Binding Announcement}" />
   </StackPanel>
 </UserControl>

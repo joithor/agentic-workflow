@@ -51,8 +51,8 @@ internal sealed class ProtectedActionViewModel(ProtectedAction action, IClipboar
     /// <summary>True while the live region is live (set before its text changes): the resting label is never spoken.</summary>
     public bool IsAnnouncing { get; private set => Set(ref field, value); }
 
-    /// <summary>The polite live region's text: "Copied", else a resting text; never empty (Avalonia #22312).</summary>
-    public string Announcement { get; private set => Set(ref field, value); } = Labels.Copy;
+    /// <summary>The polite live region's text: "Copied", else the label it rests on; never empty (Avalonia #22312).</summary>
+    public string Announcement { get; private set => Set(ref field, value); } = Labels.ProtectedLabel(action.Verb);
 
     /// <summary>Open in an agent's label.</summary>
     public string OpenInAgentLabel => Labels.OpenInAgent;
