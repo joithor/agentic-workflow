@@ -6,7 +6,7 @@ namespace Aw.Context.Core.Facade;
 
 /// <summary>
 /// The graph reads of the facade (spec Phase 3, stage S-3b): one node, its neighbors, the path between two. They read
-/// the current map with its overrides applied; a session sees only the nodes its repo implements (spec §3), so nothing
+/// the current map with its overrides applied; a session sees only the nodes its repo implements and the records and decisions linked to them (spec §3; owner decision 2026-10-15, B), so nothing
 /// outside that scope resolves (SND-CONTEXT-003). IContextEngine extends it.
 /// </summary>
 public interface IContextGraph

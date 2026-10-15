@@ -7,7 +7,7 @@ namespace Aw.Context.Core.Map;
 
 /// <summary>
 /// Who may read which part of the map (spec §3): humans and services see all of it; a session only while
-/// 'context.sessions.enabled' is on (SND-CONTEXT-020), for a repo the profile maps, and only the nodes that repo implements,
+/// 'context.sessions.enabled' is on (SND-CONTEXT-020), for a repo the profile maps, and only the nodes that repo implements and the records and decisions linked to them (owner decision 2026-10-15, B),
 /// with what lies between them. A repo that implements nothing answers SND-CONTEXT-003, like any unknown anchor.
 /// </summary>
 public static class MapAccess
@@ -44,7 +44,9 @@ public static class MapAccess
             return repos.Error;
         }
 
-        var cut = DenyCut.Of(graph, overrides, repos.Value);   // every override, pending or not: what is hidden doesn't depend on which reader asks
+        // Whoever asks, every profile repo's deny globs judge record keys and evidence refs (they name their repo), not just the ones context.repos maps; a code: key names no repo, so only the mapped repos' globs judge it: the snapshot is global, so a session in repo A must not reach a document repo B denies (review #234 runs 1 and 2).
+        // The resolved repos are for the gate and the session's scope step only.
+        var cut = DenyCut.Of(graph, overrides, scope.Repos, ScopeRules.Mapped(settings.Value, scope.Repos));   // every override, pending or not: what is hidden doesn't depend on which reader asks
         var (cutGraph, cutOverrides) = (cut.Apply(graph), cut.Apply(overrides));
         var applied = OverrideApplier.Apply(cutGraph, pending ? cutOverrides : [.. cutOverrides.Where(o => o.Action != OverrideAction.Propose)]).Graph;
         var view = new MapView(cutGraph, applied, cutOverrides, cut);
@@ -59,6 +61,7 @@ public static class MapAccess
             return ContextErrors.UnknownAnchor.With("no map nodes are implemented in this session's repo (X-Sindri-Repo)");
         }
 
+        // Both scopings run the same repo scope over graphs that differ only by the overrides applied; status counts come from scopedGraph and reads from scopedApplied.
         var scopedGraph = scope.Caller.Repo is { } own ? view.Graph.ScopedTo(own) : GraphSnapshot.Empty;
         return view.Scoped(scopedGraph, scopedApplied, [.. view.Overrides.Where(o => scopedGraph.Resolve(o.Target) is not null)]);
     }
@@ -109,15 +112,17 @@ public static class MapAccess
     /// </summary>
     /// <param name="current">The current graph.</param>
     /// <param name="overrides">Every override.</param>
-    /// <param name="built">The repos whose deny globs apply.</param>
+    /// <param name="profile">Every profile repo: their deny globs judge record keys and evidence refs.</param>
+    /// <param name="mapped">The repos the map is built from: only their deny globs judge a <c xml:lang="en">code:</c> key.</param>
     /// <param name="at">When the build runs.</param>
     /// <returns>The graph itself and no rows when nothing is denied.</returns>
-    public static (GraphSnapshot Graph, IReadOnlyList<MapOverride> Undo) WithoutDenied(GraphSnapshot current, IReadOnlyList<MapOverride> overrides, IReadOnlyList<ContextRepo> built, DateTimeOffset at)
+    public static (GraphSnapshot Graph, IReadOnlyList<MapOverride> Undo) WithoutDenied(GraphSnapshot current, IReadOnlyList<MapOverride> overrides, IReadOnlyList<ContextRepo> profile, IReadOnlyList<ContextRepo> mapped, DateTimeOffset at)
     {
         ArgumentNullException.ThrowIfNull(current);
         ArgumentNullException.ThrowIfNull(overrides);
-        ArgumentNullException.ThrowIfNull(built);
-        var cut = DenyCut.Of(current, overrides, built);
+        ArgumentNullException.ThrowIfNull(profile);
+        ArgumentNullException.ThrowIfNull(mapped);
+        var cut = DenyCut.Of(current, overrides, profile, mapped);
         return (cut.Apply(current), cut.UndoRows(overrides, at));
     }
 

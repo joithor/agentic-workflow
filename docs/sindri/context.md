@@ -105,7 +105,7 @@ anything else answers `SND-CONTEXT-003`, the same as an unknown anchor.
 ### Exit codes
 
 `0` results (possibly degraded or empty) · `1` attention: not running (`SND-API-001`), an unknown or out-of-scope
-anchor (`003`), a refused question (`006`), session reads off (`020`) · `2` a tool error: invalid profile section
+anchor (`003`), a refused question (`006`), session reads off or a session's export or other human job (`020`) · `2` a tool error: invalid profile section
 (`001`), the store (`004`), every source down (`011`), a usage error or a pending verb (`SND-CLI-001`, `SND-CLI-003`).
 
 ### Where state lives
@@ -139,7 +139,7 @@ learns why. Refusals are tool errors
 
 | Code | When |
 |---|---|
-| `SND-CONTEXT-020` | Session reads are off |
+| `SND-CONTEXT-020` | Session reads are off, or a session asked for a human or service job (map import, preview, build, export) |
 | `SND-CONTEXT-003` | An anchor outside the session's repo, or unknown; also every call whose `X-Sindri-Repo` isn't a repo the profile maps (re-run `sindri mcp register` in the work repo). A header that isn't a valid repo name at all is refused before MCP, with HTTP 400 `SND-API-007` |
 | `SND-CONTEXT-006` | The question is invalid (no words, two shapes, depth or budget out of range) |
 | `SND-CONTEXT-021` | The call has no `X-Sindri-Repo` (use a registration from `sindri mcp register`) |
@@ -362,8 +362,16 @@ $SINDRI context map export [<name-or-path>] [--json]
   `services:` (`doctor` warns on `context:retention` otherwise).
 - HTTP: `GET /sindri/context/map` and `GET /sindri/context/map/export?path=…`.
 - **Sessions** (with `context.sessions.enabled: true`) see only the nodes their repo implements: the targets of
-  `implements` edges whose file evidence is `repo:<their X-Sindri-Repo>/…`, and the edges between those nodes. A repo
-  that implements nothing in the map answers `SND-CONTEXT-003`.
+  `implements` edges whose file evidence is `repo:<their X-Sindri-Repo>/…`, and the edges between those nodes, plus
+  the intent linked to those nodes (owner decision 2026-10-15: B): the decisions that `decide` one, the records that
+  `mention` one and the records those decisions quote. Record titles and decision quotes reach a session inside the
+  `<untrusted>` fence, and every text is scrubbed in the read answers. A record or decision linked only to nodes
+  outside the repo answers `SND-CONTEXT-003`. A repo that implements nothing in the map answers `SND-CONTEXT-003`.
+  The deny globs of every profile repo apply to a session too, not only its own repo's, and whatever `context.repos`
+  narrows the map to: a record key (`record:repo:<name>/…`) and an evidence ref name their repo and are judged by the
+  globs of every profile repo, but a `code:` key names no repo, so only the globs of the repos the map is built from
+  (`context.repos`, else all) judge it; another repo's glob never hides this repo's file. A session can't export the
+  map (`SND-CONTEXT-020`): the file is not scrubbed and now holds the linked work text.
 - No map yet: `SND-CONTEXT-030` (fix: `sindri context map import <file>`).
 
 ### Doctor and the purge
@@ -422,8 +430,13 @@ in the profile (0–4, default 2), and `--depth` overrides it. Each affected nod
 
 **A session sees only its repo.** A session sees only the nodes its repo implements (`implements` edges with file
 evidence in its `X-Sindri-Repo`), the code files those edges start from, and the edges among them (so `lenses` shows its code band and
-`query --symbol <file>` resolves its files), so its cascade, neighbors and paths stay inside that set;
-anything else is `SND-CONTEXT-003`.
+`query --symbol <file>` resolves its files), so its cascade, neighbors and paths stay inside that set. It also sees the
+records that mention those nodes and the decisions that decide them (and the records those decisions quote) in the lenses'
+intent band and the query's `decisions` section, and by `show`, `neighbors` and `path` (owner decision 2026-10-15: B; no
+wait for `context.repoTeams`). Record titles and decision quotes arrive inside the `<untrusted>` fence; a person's decision
+wording is trusted and unfenced, as before; everything is scrubbed. A record whose only links lead outside that set stays
+invisible, and so does a `supersedes` conflict whose superseded decision is linked only outside that set; anything else is
+`SND-CONTEXT-003`.
 
 ### Text questions find anchors too
 
@@ -633,6 +646,12 @@ $ sindri context filemap accept edge:0123456789abcdef      # or reject: one over
 - `context query --symbol <path>` resolves a file to the features it implements, with an `affects` section; an unknown file is `003`.
 - MCP: `context_lenses {anchor}` returns the lenses as `structuredContent` and a short summary (band sizes, conflicts,
   coverage). It never reads the draft. Off while `context.sessions.enabled` is false (`SND-CONTEXT-020`).
+- MCP: `context_node {key}` and `context_neighbors {key, depth?}` (S-3M) call the services behind `GET /sindri/context/node` and
+  `/neighbors` under the session caller, so `structuredContent` equals the session's HTTP answer (labels fenced). The text gives
+  counts only: for a node its key, map version and out and in edge counts; for neighbors the centre, depth and node and edge counts.
+  A missing or blank `key`, an unknown argument (there is no `draft`) or a wrong type is `SND-CONTEXT-022` with a fix hint; a key
+  outside the session's repo or unknown is `003`; a name that matches several nodes is `037`; no map yet is `030`; a depth out of
+  range (0 to 4) is the engine's `006`, as over HTTP (a whole number too large for a 32-bit integer is `022`); sessions off is `020`.
 
 ### Exit codes and errors (S-4)
 
@@ -722,9 +741,10 @@ answer `SND-CONTEXT-011`. A query doesn't check Onyx's version: version drift is
 (`055`, naming both versions), and a query keeps using an Onyx that reports another version as long as its replies
 read; a reply that doesn't degrades onyx (`010`, cause `051`).
 
-Agent sessions don't read the onyx source yet: a session sees intent records only from the Linear teams the profile
-maps to its repo (`context.repoTeams`, a later stage), so until then onyx answers humans and services only. A caller
-whose scope maps no repo gets no source at all, onyx included.
+Agent sessions don't search the onyx source yet: until the profile maps Linear teams to a repo (`context.repoTeams`, a
+later stage), a session searches repo-docs sources only, so onyx answers humans and services only. A session still sees
+the map's records and decisions linked to its repo's nodes (owner decision 2026-10-15: B). A caller whose scope maps no
+repo gets no source at all, onyx included.
 
 `sindri context sources status` shows an `onyx` row: `ok`, `degraded` (the key is an admin key of a person's account,
 `SND-CONTEXT-053`) or `unavailable` (no answer, `SND-CONTEXT-010`; another version, `055`; key refused, `050`; pointer

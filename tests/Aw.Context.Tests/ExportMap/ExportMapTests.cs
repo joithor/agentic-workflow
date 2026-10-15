@@ -101,31 +101,18 @@ public sealed class ExportMapTests : IDisposable
         Assert.Empty(_world.Exports.Documents);
     }
 
-    [Fact, Trait("Lane", "unit")]
-    public async Task A_session_export_holds_only_its_repos_nodes_and_the_edges_between_them()
-    {
-        _ = await _world.ImportFixture();
-
-        var exported = await _world.Map.ExportMap(path: null, MapWorld.Session(FixtureMap.Repo), MapWorld.None);
-
-        var document = _world.Exports.Documents[exported.Value.Path];
-        Assert.Equal(string.Join(',', FixtureMap.ScopedNodes), string.Join(',', document.Nodes.Select(n => n.Key.Value).Order(StringComparer.Ordinal)));
-        Assert.Equal(FixtureMap.ScopedEdges, document.Edges!.Count);
-        Assert.Empty(document.Decisions!);
-        _ = Assert.Single(document.Overrides!);
-    }
-
     [Theory, Trait("Lane", "unit")]
-    [InlineData("other", true, "SND-CONTEXT-003")]
-    [InlineData(null, true, "SND-CONTEXT-003")]
-    [InlineData("aw-split-panes", false, "SND-CONTEXT-020")]
-    public async Task A_session_outside_the_map_or_with_sessions_off_is_refused(string? repo, bool enabled, string code)
+    [InlineData("aw-split-panes", true)]
+    [InlineData("aw-split-panes", false)]
+    [InlineData("other", true)]
+    [InlineData(null, true)]
+    public async Task A_session_can_not_export_the_map_and_nothing_is_written(string? repo, bool enabled)
     {
         _ = await _world.ImportFixture();
 
         var exported = await _world.Map.ExportMap(path: null, MapWorld.Session(repo, enabled), MapWorld.None);
 
-        Assert.Equal(code, exported.Error.Code);
+        Assert.Equal("SND-CONTEXT-020", exported.Error.Code);   // why: spec §3, an export is a whole-map path and writes unscrubbed work text
         Assert.Empty(_world.Exports.Documents);
     }
 

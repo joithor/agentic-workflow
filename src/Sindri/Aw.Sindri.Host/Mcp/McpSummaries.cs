@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
 using Aw.Sindri.Host.Text;
@@ -50,6 +51,18 @@ internal static class McpSummaries
         _ = text.AppendLine(view.Degraded.Count == 0 ? "degraded: none" : "degraded: " + string.Join(", ", view.Degraded));
         return text.Append("The bands, their text fenced as untrusted, are in structuredContent.").ToString();
     }
+
+    /// <summary>context_node's summary: the key, the map version and the edge counts; never a label.</summary>
+    /// <param name="view">The node.</param>
+    /// <returns>The text.</returns>
+    internal static string Node(NodeView view) => string.Create(CultureInfo.InvariantCulture,
+        $"node {view.Node.Key.Value} · map {view.MapVersion}: {view.Out.Count} out and {view.In.Count} in edges\nThe node and its edges, their labels fenced as untrusted, are in structuredContent.");
+
+    /// <summary>context_neighbors' summary: the centre, the depth and the counts; never a label.</summary>
+    /// <param name="view">The neighbors.</param>
+    /// <returns>The text.</returns>
+    internal static string Neighbors(NeighborsView view) => string.Create(CultureInfo.InvariantCulture,
+        $"neighbors of {view.Center.Value} · map {view.MapVersion} · depth {view.Depth}: {view.Nodes.Count} nodes and {view.Edges.Count} edges\nThe nodes and edges, their labels fenced as untrusted, are in structuredContent.");
 
     /// <summary>context_sources' summary: which instance answered, then the sources table the CLI prints.</summary>
     /// <param name="view">The sources.</param>
