@@ -1,4 +1,32 @@
 #nullable enable
+Aw.Meta.Core.Commands.CommandRequest
+Aw.Meta.Core.Commands.CommandRequest.<Clone>$() -> Aw.Meta.Core.Commands.CommandRequest!
+Aw.Meta.Core.Commands.CommandRequest.Argv.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Commands.CommandRequest.Argv.init -> void
+Aw.Meta.Core.Commands.CommandRequest.CommandRequest(System.Collections.Generic.IReadOnlyList<string!>! Argv, System.TimeSpan Timeout) -> void
+Aw.Meta.Core.Commands.CommandRequest.Cwd.get -> string?
+Aw.Meta.Core.Commands.CommandRequest.Cwd.init -> void
+Aw.Meta.Core.Commands.CommandRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Argv, out System.TimeSpan Timeout) -> void
+Aw.Meta.Core.Commands.CommandRequest.Env.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Meta.Core.Commands.CommandRequest.Env.init -> void
+Aw.Meta.Core.Commands.CommandRequest.Equals(Aw.Meta.Core.Commands.CommandRequest? other) -> bool
+Aw.Meta.Core.Commands.CommandRequest.LogFile.get -> string?
+Aw.Meta.Core.Commands.CommandRequest.LogFile.init -> void
+Aw.Meta.Core.Commands.CommandRequest.Timeout.get -> System.TimeSpan
+Aw.Meta.Core.Commands.CommandRequest.Timeout.init -> void
+Aw.Meta.Core.Commands.CommandResult
+Aw.Meta.Core.Commands.CommandResult.<Clone>$() -> Aw.Meta.Core.Commands.CommandResult!
+Aw.Meta.Core.Commands.CommandResult.CommandResult(int ExitCode, string! Stdout, string! Stderr, bool TimedOut) -> void
+Aw.Meta.Core.Commands.CommandResult.Deconstruct(out int ExitCode, out string! Stdout, out string! Stderr, out bool TimedOut) -> void
+Aw.Meta.Core.Commands.CommandResult.Equals(Aw.Meta.Core.Commands.CommandResult? other) -> bool
+Aw.Meta.Core.Commands.CommandResult.ExitCode.get -> int
+Aw.Meta.Core.Commands.CommandResult.ExitCode.init -> void
+Aw.Meta.Core.Commands.CommandResult.Stderr.get -> string!
+Aw.Meta.Core.Commands.CommandResult.Stderr.init -> void
+Aw.Meta.Core.Commands.CommandResult.Stdout.get -> string!
+Aw.Meta.Core.Commands.CommandResult.Stdout.init -> void
+Aw.Meta.Core.Commands.CommandResult.TimedOut.get -> bool
+Aw.Meta.Core.Commands.CommandResult.TimedOut.init -> void
 Aw.Meta.Core.Config.GateConfig
 Aw.Meta.Core.Config.GateConfig.<Clone>$() -> Aw.Meta.Core.Config.GateConfig!
 Aw.Meta.Core.Config.GateConfig.Always.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -115,6 +143,19 @@ Aw.Meta.Core.Gate.RerunOutcome.Passed.get -> bool
 Aw.Meta.Core.Gate.RerunOutcome.Passed.init -> void
 Aw.Meta.Core.Gate.RerunOutcome.RerunOutcome(bool Passed, string? Failure = null) -> void
 Aw.Meta.Core.Gate.ScopePlanner
+Aw.Meta.Core.Health.HostSnapshot
+Aw.Meta.Core.Health.HostSnapshot.<Clone>$() -> Aw.Meta.Core.Health.HostSnapshot!
+Aw.Meta.Core.Health.HostSnapshot.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Processes, out long MemAvailableKb, out long SwapUsedKb, out long DiskFreeBytes) -> void
+Aw.Meta.Core.Health.HostSnapshot.DiskFreeBytes.get -> long
+Aw.Meta.Core.Health.HostSnapshot.DiskFreeBytes.init -> void
+Aw.Meta.Core.Health.HostSnapshot.Equals(Aw.Meta.Core.Health.HostSnapshot? other) -> bool
+Aw.Meta.Core.Health.HostSnapshot.HostSnapshot(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Processes, long MemAvailableKb, long SwapUsedKb, long DiskFreeBytes) -> void
+Aw.Meta.Core.Health.HostSnapshot.MemAvailableKb.get -> long
+Aw.Meta.Core.Health.HostSnapshot.MemAvailableKb.init -> void
+Aw.Meta.Core.Health.HostSnapshot.Processes.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>!
+Aw.Meta.Core.Health.HostSnapshot.Processes.init -> void
+Aw.Meta.Core.Health.HostSnapshot.SwapUsedKb.get -> long
+Aw.Meta.Core.Health.HostSnapshot.SwapUsedKb.init -> void
 Aw.Meta.Core.Health.OrphanRule
 Aw.Meta.Core.Health.ProcessInfo
 Aw.Meta.Core.Health.ProcessInfo.<Clone>$() -> Aw.Meta.Core.Health.ProcessInfo!
@@ -274,6 +315,15 @@ Aw.Meta.Core.Messages.MessageResolution.Until.init -> void
 Aw.Meta.Core.Messages.MessageResolutionKind
 Aw.Meta.Core.Messages.MessageResolutionKind.Deferred = 2 -> Aw.Meta.Core.Messages.MessageResolutionKind
 Aw.Meta.Core.Messages.MessageResolutionKind.Dismissed = 1 -> Aw.Meta.Core.Messages.MessageResolutionKind
+Aw.Meta.Core.Messages.MetaRole
+Aw.Meta.Core.Messages.MetaRole.<Clone>$() -> Aw.Meta.Core.Messages.MetaRole!
+Aw.Meta.Core.Messages.MetaRole.Deconstruct(out Aw.Meta.Core.Ids.SessionId Session, out string! Name) -> void
+Aw.Meta.Core.Messages.MetaRole.Equals(Aw.Meta.Core.Messages.MetaRole? other) -> bool
+Aw.Meta.Core.Messages.MetaRole.MetaRole(Aw.Meta.Core.Ids.SessionId Session, string! Name) -> void
+Aw.Meta.Core.Messages.MetaRole.Name.get -> string!
+Aw.Meta.Core.Messages.MetaRole.Name.init -> void
+Aw.Meta.Core.Messages.MetaRole.Session.get -> Aw.Meta.Core.Ids.SessionId
+Aw.Meta.Core.Messages.MetaRole.Session.init -> void
 Aw.Meta.Core.Messages.Outbound
 Aw.Meta.Core.Messages.Outbound.<Clone>$() -> Aw.Meta.Core.Messages.Outbound!
 Aw.Meta.Core.Messages.Outbound.At.get -> System.DateTimeOffset
@@ -302,6 +352,15 @@ Aw.Meta.Core.Messages.PeerMessage.FromName.init -> void
 Aw.Meta.Core.Messages.PeerMessage.Id.get -> Aw.Meta.Core.Ids.MessageId
 Aw.Meta.Core.Messages.PeerMessage.Id.init -> void
 Aw.Meta.Core.Messages.PeerMessage.PeerMessage(Aw.Meta.Core.Ids.MessageId Id, string! From, string! FromName, string! Body, System.DateTimeOffset At) -> void
+Aw.Meta.Core.Messages.TranscriptChunk
+Aw.Meta.Core.Messages.TranscriptChunk.<Clone>$() -> Aw.Meta.Core.Messages.TranscriptChunk!
+Aw.Meta.Core.Messages.TranscriptChunk.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Lines, out long NextOffset) -> void
+Aw.Meta.Core.Messages.TranscriptChunk.Equals(Aw.Meta.Core.Messages.TranscriptChunk? other) -> bool
+Aw.Meta.Core.Messages.TranscriptChunk.Lines.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Messages.TranscriptChunk.Lines.init -> void
+Aw.Meta.Core.Messages.TranscriptChunk.NextOffset.get -> long
+Aw.Meta.Core.Messages.TranscriptChunk.NextOffset.init -> void
+Aw.Meta.Core.Messages.TranscriptChunk.TranscriptChunk(System.Collections.Generic.IReadOnlyList<string!>! Lines, long NextOffset) -> void
 Aw.Meta.Core.Messages.TranscriptRecordParser
 Aw.Meta.Core.MetaCoreServiceCollectionExtensions
 Aw.Meta.Core.MetaErrors
@@ -372,8 +431,60 @@ Aw.Meta.Core.Obligations.OwnerAnswer.Question.get -> int
 Aw.Meta.Core.Obligations.OwnerAnswer.Question.init -> void
 Aw.Meta.Core.Obligations.OwnerAnswer.Text.get -> string!
 Aw.Meta.Core.Obligations.OwnerAnswer.Text.init -> void
+Aw.Meta.Core.Owner.OwnerQuestion
+Aw.Meta.Core.Owner.OwnerQuestion.<Clone>$() -> Aw.Meta.Core.Owner.OwnerQuestion!
+Aw.Meta.Core.Owner.OwnerQuestion.Answer.get -> string?
+Aw.Meta.Core.Owner.OwnerQuestion.Answer.init -> void
+Aw.Meta.Core.Owner.OwnerQuestion.AnsweredAt.get -> System.DateTimeOffset?
+Aw.Meta.Core.Owner.OwnerQuestion.AnsweredAt.init -> void
+Aw.Meta.Core.Owner.OwnerQuestion.AskedAt.get -> System.DateTimeOffset
+Aw.Meta.Core.Owner.OwnerQuestion.AskedAt.init -> void
+Aw.Meta.Core.Owner.OwnerQuestion.AskedBy.get -> string!
+Aw.Meta.Core.Owner.OwnerQuestion.AskedBy.init -> void
+Aw.Meta.Core.Owner.OwnerQuestion.Deconstruct(out int Number, out string! AskedBy, out string! Text, out System.DateTimeOffset AskedAt) -> void
+Aw.Meta.Core.Owner.OwnerQuestion.Equals(Aw.Meta.Core.Owner.OwnerQuestion? other) -> bool
+Aw.Meta.Core.Owner.OwnerQuestion.Number.get -> int
+Aw.Meta.Core.Owner.OwnerQuestion.Number.init -> void
+Aw.Meta.Core.Owner.OwnerQuestion.OwnerQuestion(int Number, string! AskedBy, string! Text, System.DateTimeOffset AskedAt) -> void
+Aw.Meta.Core.Owner.OwnerQuestion.Text.get -> string!
+Aw.Meta.Core.Owner.OwnerQuestion.Text.init -> void
+Aw.Meta.Core.Ports.ICommandRunner
+Aw.Meta.Core.Ports.ICommandRunner.Run(Aw.Meta.Core.Commands.CommandRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Commands.CommandResult!>!>
+Aw.Meta.Core.Ports.IGateStore
+Aw.Meta.Core.Ports.IGateStore.Classify(int pr, int run, string! step, Aw.Meta.Core.Gate.FlakeVerdict verdict, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Meta.Core.Ports.IGateStore.Latest(int pr, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Gate.GateRecord?>!>
+Aw.Meta.Core.Ports.IGateStore.LatestMerge(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Obligations.MergeRecord?>!>
+Aw.Meta.Core.Ports.IGateStore.RecordMerge(Aw.Meta.Core.Obligations.MergeRecord! merge, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Meta.Core.Ports.IGateStore.Save(Aw.Meta.Core.Gate.GateRecord! gate, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Gate.GateRecord!>!>
+Aw.Meta.Core.Ports.ILaneStore
+Aw.Meta.Core.Ports.ILaneStore.Current(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Lanes.LaneMapState!>!>
+Aw.Meta.Core.Ports.ILaneStore.Save(Aw.Meta.Core.Lanes.LaneMapState! map, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Meta.Core.Ports.IMessageStore
+Aw.Meta.Core.Ports.IMessageStore.Messages(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Messages.InboxMessage!>!>!>
+Aw.Meta.Core.Ports.IMessageStore.Offset(string! transcript, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<long>!>
+Aw.Meta.Core.Ports.IMessageStore.RecordInbound(string! transcript, long offset, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Messages.InboxMessage!>! messages, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Ids.MessageId>!>!>
+Aw.Meta.Core.Ports.IMessageStore.RecordOutbound(Aw.Meta.Core.Messages.Outbound! sent, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Meta.Core.Ports.IMessageStore.Resolve(Aw.Meta.Core.Ids.MessageId id, Aw.Meta.Core.Messages.MessageResolution! resolution, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Meta.Core.Ports.IMessageStore.Role(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Messages.MetaRole?>!>
+Aw.Meta.Core.Ports.IMessageStore.Sent(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Messages.Outbound!>!>!>
+Aw.Meta.Core.Ports.IMessageStore.SetRole(Aw.Meta.Core.Messages.MetaRole! role, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Meta.Core.Ports.IMetaConfig
+Aw.Meta.Core.Ports.IMetaConfig.Load(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Config.TeamConfig!>!>
+Aw.Meta.Core.Ports.IMetaConfig.Save(Aw.Meta.Core.Config.TeamConfig! config, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Meta.Core.Ports.IOwnerStore
+Aw.Meta.Core.Ports.IOwnerStore.Answer(int number, string! text, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Owner.OwnerQuestion!>!>
+Aw.Meta.Core.Ports.IOwnerStore.Answers(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.OwnerAnswer!>!>!>
+Aw.Meta.Core.Ports.IOwnerStore.Ask(string! askedBy, string! text, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int>!>
+Aw.Meta.Core.Ports.IOwnerStore.List(bool includeAnswered, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Owner.OwnerQuestion!>!>!>
+Aw.Meta.Core.Ports.IProcessTable
+Aw.Meta.Core.Ports.IProcessTable.Snapshot(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Health.HostSnapshot!>!>
+Aw.Meta.Core.Ports.IProcessTable.Terminate(int pid, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Meta.Core.Ports.IRunningLog
+Aw.Meta.Core.Ports.IRunningLog.Append(string! line, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Meta.Core.Ports.ISessionDirectory
+Aw.Meta.Core.Ports.ISessionDirectory.Live(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LiveSession!>!>!>
 Aw.Meta.Core.Ports.ITranscriptReader
+Aw.Meta.Core.Ports.ITranscriptReader.ReadFrom(string! path, long offset, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Messages.TranscriptChunk!>!>
 Aw.Meta.Core.Watch.PrState
 Aw.Meta.Core.Watch.PrState.Closed = 2 -> Aw.Meta.Core.Watch.PrState
 Aw.Meta.Core.Watch.PrState.Merged = 3 -> Aw.Meta.Core.Watch.PrState
@@ -445,6 +556,12 @@ Aw.Meta.Core.Watch.WatchedPr.State.get -> Aw.Meta.Core.Watch.PrState
 Aw.Meta.Core.Watch.WatchedPr.State.init -> void
 Aw.Meta.Core.Watch.WatchedPr.WatchedPr(Aw.Meta.Core.Watch.PrState State, bool IsDraft, string! Head, string? Mergeable, string? Pending, int PendingPolls) -> void
 const Aw.Meta.Core.Health.OrphanRule.MinimumAgeSeconds = 300 -> long
+override Aw.Meta.Core.Commands.CommandRequest.Equals(object? obj) -> bool
+override Aw.Meta.Core.Commands.CommandRequest.GetHashCode() -> int
+override Aw.Meta.Core.Commands.CommandRequest.ToString() -> string!
+override Aw.Meta.Core.Commands.CommandResult.Equals(object? obj) -> bool
+override Aw.Meta.Core.Commands.CommandResult.GetHashCode() -> int
+override Aw.Meta.Core.Commands.CommandResult.ToString() -> string!
 override Aw.Meta.Core.Config.GateConfig.Equals(object? obj) -> bool
 override Aw.Meta.Core.Config.GateConfig.GetHashCode() -> int
 override Aw.Meta.Core.Config.GateConfig.ToString() -> string!
@@ -469,6 +586,9 @@ override Aw.Meta.Core.Gate.GateStep.ToString() -> string!
 override Aw.Meta.Core.Gate.RerunOutcome.Equals(object? obj) -> bool
 override Aw.Meta.Core.Gate.RerunOutcome.GetHashCode() -> int
 override Aw.Meta.Core.Gate.RerunOutcome.ToString() -> string!
+override Aw.Meta.Core.Health.HostSnapshot.Equals(object? obj) -> bool
+override Aw.Meta.Core.Health.HostSnapshot.GetHashCode() -> int
+override Aw.Meta.Core.Health.HostSnapshot.ToString() -> string!
 override Aw.Meta.Core.Health.ProcessInfo.Equals(object? obj) -> bool
 override Aw.Meta.Core.Health.ProcessInfo.GetHashCode() -> int
 override Aw.Meta.Core.Health.ProcessInfo.ToString() -> string!
@@ -502,12 +622,18 @@ override Aw.Meta.Core.Messages.InboxMessage.ToString() -> string!
 override Aw.Meta.Core.Messages.MessageResolution.Equals(object? obj) -> bool
 override Aw.Meta.Core.Messages.MessageResolution.GetHashCode() -> int
 override Aw.Meta.Core.Messages.MessageResolution.ToString() -> string!
+override Aw.Meta.Core.Messages.MetaRole.Equals(object? obj) -> bool
+override Aw.Meta.Core.Messages.MetaRole.GetHashCode() -> int
+override Aw.Meta.Core.Messages.MetaRole.ToString() -> string!
 override Aw.Meta.Core.Messages.Outbound.Equals(object? obj) -> bool
 override Aw.Meta.Core.Messages.Outbound.GetHashCode() -> int
 override Aw.Meta.Core.Messages.Outbound.ToString() -> string!
 override Aw.Meta.Core.Messages.PeerMessage.Equals(object? obj) -> bool
 override Aw.Meta.Core.Messages.PeerMessage.GetHashCode() -> int
 override Aw.Meta.Core.Messages.PeerMessage.ToString() -> string!
+override Aw.Meta.Core.Messages.TranscriptChunk.Equals(object? obj) -> bool
+override Aw.Meta.Core.Messages.TranscriptChunk.GetHashCode() -> int
+override Aw.Meta.Core.Messages.TranscriptChunk.ToString() -> string!
 override Aw.Meta.Core.Obligations.MergeRecord.Equals(object? obj) -> bool
 override Aw.Meta.Core.Obligations.MergeRecord.GetHashCode() -> int
 override Aw.Meta.Core.Obligations.MergeRecord.ToString() -> string!
@@ -520,6 +646,9 @@ override Aw.Meta.Core.Obligations.ObligationFacts.ToString() -> string!
 override Aw.Meta.Core.Obligations.OwnerAnswer.Equals(object? obj) -> bool
 override Aw.Meta.Core.Obligations.OwnerAnswer.GetHashCode() -> int
 override Aw.Meta.Core.Obligations.OwnerAnswer.ToString() -> string!
+override Aw.Meta.Core.Owner.OwnerQuestion.Equals(object? obj) -> bool
+override Aw.Meta.Core.Owner.OwnerQuestion.GetHashCode() -> int
+override Aw.Meta.Core.Owner.OwnerQuestion.ToString() -> string!
 override Aw.Meta.Core.Watch.PrView.Equals(object? obj) -> bool
 override Aw.Meta.Core.Watch.PrView.GetHashCode() -> int
 override Aw.Meta.Core.Watch.PrView.ToString() -> string!
@@ -535,6 +664,10 @@ override Aw.Meta.Core.Watch.WatchStep.ToString() -> string!
 override Aw.Meta.Core.Watch.WatchedPr.Equals(object? obj) -> bool
 override Aw.Meta.Core.Watch.WatchedPr.GetHashCode() -> int
 override Aw.Meta.Core.Watch.WatchedPr.ToString() -> string!
+static Aw.Meta.Core.Commands.CommandRequest.operator !=(Aw.Meta.Core.Commands.CommandRequest? left, Aw.Meta.Core.Commands.CommandRequest? right) -> bool
+static Aw.Meta.Core.Commands.CommandRequest.operator ==(Aw.Meta.Core.Commands.CommandRequest? left, Aw.Meta.Core.Commands.CommandRequest? right) -> bool
+static Aw.Meta.Core.Commands.CommandResult.operator !=(Aw.Meta.Core.Commands.CommandResult? left, Aw.Meta.Core.Commands.CommandResult? right) -> bool
+static Aw.Meta.Core.Commands.CommandResult.operator ==(Aw.Meta.Core.Commands.CommandResult? left, Aw.Meta.Core.Commands.CommandResult? right) -> bool
 static Aw.Meta.Core.Config.GateConfig.Empty.get -> Aw.Meta.Core.Config.GateConfig!
 static Aw.Meta.Core.Config.GateConfig.operator !=(Aw.Meta.Core.Config.GateConfig? left, Aw.Meta.Core.Config.GateConfig? right) -> bool
 static Aw.Meta.Core.Config.GateConfig.operator ==(Aw.Meta.Core.Config.GateConfig? left, Aw.Meta.Core.Config.GateConfig? right) -> bool
@@ -555,6 +688,8 @@ static Aw.Meta.Core.Gate.GlobMatcher.IsMatch(string! pattern, string! path) -> b
 static Aw.Meta.Core.Gate.RerunOutcome.operator !=(Aw.Meta.Core.Gate.RerunOutcome? left, Aw.Meta.Core.Gate.RerunOutcome? right) -> bool
 static Aw.Meta.Core.Gate.RerunOutcome.operator ==(Aw.Meta.Core.Gate.RerunOutcome? left, Aw.Meta.Core.Gate.RerunOutcome? right) -> bool
 static Aw.Meta.Core.Gate.ScopePlanner.Plan(System.Collections.Generic.IReadOnlyList<string!>! changedPaths, Aw.Meta.Core.Config.GateConfig! gate) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Meta.Core.Health.HostSnapshot.operator !=(Aw.Meta.Core.Health.HostSnapshot? left, Aw.Meta.Core.Health.HostSnapshot? right) -> bool
+static Aw.Meta.Core.Health.HostSnapshot.operator ==(Aw.Meta.Core.Health.HostSnapshot? left, Aw.Meta.Core.Health.HostSnapshot? right) -> bool
 static Aw.Meta.Core.Health.OrphanRule.IsOrphan(Aw.Meta.Core.Health.ProcessInfo! process, string? parentCmdline) -> bool
 static Aw.Meta.Core.Health.ProcessInfo.operator !=(Aw.Meta.Core.Health.ProcessInfo? left, Aw.Meta.Core.Health.ProcessInfo? right) -> bool
 static Aw.Meta.Core.Health.ProcessInfo.operator ==(Aw.Meta.Core.Health.ProcessInfo? left, Aw.Meta.Core.Health.ProcessInfo? right) -> bool
@@ -591,10 +726,14 @@ static Aw.Meta.Core.Messages.InboxMessage.operator ==(Aw.Meta.Core.Messages.Inbo
 static Aw.Meta.Core.Messages.MessageClassifier.Classify(string! body) -> Aw.Meta.Core.Messages.Classification!
 static Aw.Meta.Core.Messages.MessageResolution.operator !=(Aw.Meta.Core.Messages.MessageResolution? left, Aw.Meta.Core.Messages.MessageResolution? right) -> bool
 static Aw.Meta.Core.Messages.MessageResolution.operator ==(Aw.Meta.Core.Messages.MessageResolution? left, Aw.Meta.Core.Messages.MessageResolution? right) -> bool
+static Aw.Meta.Core.Messages.MetaRole.operator !=(Aw.Meta.Core.Messages.MetaRole? left, Aw.Meta.Core.Messages.MetaRole? right) -> bool
+static Aw.Meta.Core.Messages.MetaRole.operator ==(Aw.Meta.Core.Messages.MetaRole? left, Aw.Meta.Core.Messages.MetaRole? right) -> bool
 static Aw.Meta.Core.Messages.Outbound.operator !=(Aw.Meta.Core.Messages.Outbound? left, Aw.Meta.Core.Messages.Outbound? right) -> bool
 static Aw.Meta.Core.Messages.Outbound.operator ==(Aw.Meta.Core.Messages.Outbound? left, Aw.Meta.Core.Messages.Outbound? right) -> bool
 static Aw.Meta.Core.Messages.PeerMessage.operator !=(Aw.Meta.Core.Messages.PeerMessage? left, Aw.Meta.Core.Messages.PeerMessage? right) -> bool
 static Aw.Meta.Core.Messages.PeerMessage.operator ==(Aw.Meta.Core.Messages.PeerMessage? left, Aw.Meta.Core.Messages.PeerMessage? right) -> bool
+static Aw.Meta.Core.Messages.TranscriptChunk.operator !=(Aw.Meta.Core.Messages.TranscriptChunk? left, Aw.Meta.Core.Messages.TranscriptChunk? right) -> bool
+static Aw.Meta.Core.Messages.TranscriptChunk.operator ==(Aw.Meta.Core.Messages.TranscriptChunk? left, Aw.Meta.Core.Messages.TranscriptChunk? right) -> bool
 static Aw.Meta.Core.Messages.TranscriptRecordParser.Parse(string! line, System.DateTimeOffset fallbackAt) -> Aw.Meta.Core.Messages.PeerMessage?
 static Aw.Meta.Core.MetaCoreServiceCollectionExtensions.AddMetaCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Meta.Core.MetaErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
@@ -607,6 +746,8 @@ static Aw.Meta.Core.Obligations.ObligationFacts.operator !=(Aw.Meta.Core.Obligat
 static Aw.Meta.Core.Obligations.ObligationFacts.operator ==(Aw.Meta.Core.Obligations.ObligationFacts? left, Aw.Meta.Core.Obligations.ObligationFacts? right) -> bool
 static Aw.Meta.Core.Obligations.OwnerAnswer.operator !=(Aw.Meta.Core.Obligations.OwnerAnswer? left, Aw.Meta.Core.Obligations.OwnerAnswer? right) -> bool
 static Aw.Meta.Core.Obligations.OwnerAnswer.operator ==(Aw.Meta.Core.Obligations.OwnerAnswer? left, Aw.Meta.Core.Obligations.OwnerAnswer? right) -> bool
+static Aw.Meta.Core.Owner.OwnerQuestion.operator !=(Aw.Meta.Core.Owner.OwnerQuestion? left, Aw.Meta.Core.Owner.OwnerQuestion? right) -> bool
+static Aw.Meta.Core.Owner.OwnerQuestion.operator ==(Aw.Meta.Core.Owner.OwnerQuestion? left, Aw.Meta.Core.Owner.OwnerQuestion? right) -> bool
 static Aw.Meta.Core.Watch.PrView.operator !=(Aw.Meta.Core.Watch.PrView? left, Aw.Meta.Core.Watch.PrView? right) -> bool
 static Aw.Meta.Core.Watch.PrView.operator ==(Aw.Meta.Core.Watch.PrView? left, Aw.Meta.Core.Watch.PrView? right) -> bool
 static Aw.Meta.Core.Watch.WatchDiff.Step(Aw.Meta.Core.Watch.WatchState! state, Aw.Meta.Core.Watch.WatchSnapshot! snapshot) -> Aw.Meta.Core.Watch.WatchStep!
@@ -619,4 +760,13 @@ static Aw.Meta.Core.Watch.WatchStep.operator !=(Aw.Meta.Core.Watch.WatchStep? le
 static Aw.Meta.Core.Watch.WatchStep.operator ==(Aw.Meta.Core.Watch.WatchStep? left, Aw.Meta.Core.Watch.WatchStep? right) -> bool
 static Aw.Meta.Core.Watch.WatchedPr.operator !=(Aw.Meta.Core.Watch.WatchedPr? left, Aw.Meta.Core.Watch.WatchedPr? right) -> bool
 static Aw.Meta.Core.Watch.WatchedPr.operator ==(Aw.Meta.Core.Watch.WatchedPr? left, Aw.Meta.Core.Watch.WatchedPr? right) -> bool
+static readonly Aw.Meta.Core.MetaErrors.CommandNotStarted -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Meta.Core.MetaErrors.ConfigInvalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Meta.Core.MetaErrors.GateStepNotFound -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Meta.Core.MetaErrors.HostUnreadable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.Invalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Meta.Core.MetaErrors.LogUnwritable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Meta.Core.MetaErrors.MessageNotFound -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Meta.Core.MetaErrors.NoTeamConfig -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Meta.Core.MetaErrors.QuestionNotFound -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Meta.Core.MetaErrors.TranscriptUnreadable -> Aw.Kernel.ErrorDefinition!

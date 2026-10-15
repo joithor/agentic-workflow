@@ -7,6 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- [Fact] for the contract bases; like Aw.Kernel.Testing they throw ContractViolationException, not Assert. -->
+    <PackageReference Include="xunit.v3.extensibility.core" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../../src/Meta/Aw.Meta.Core/Aw.Meta.Core.csproj" />
     <ProjectReference Include="../../src/Meta/Aw.Meta.Features/Aw.Meta.Features.csproj" />
     <ProjectReference Include="../Aw.Kernel.Testing/Aw.Kernel.Testing.csproj" />

@@ -333,7 +333,8 @@
         "dependencies": {
           "Aw.Kernel.Testing": "[1.0.0, )",
           "Aw.Meta.Core": "[1.0.0, )",
-          "Aw.Meta.Features": "[1.0.0, )"
+          "Aw.Meta.Features": "[1.0.0, )",
+          "xunit.v3.extensibility.core": "[4.0.1, 4.0.1]"
         }
       },
       "aw.redaction": {
