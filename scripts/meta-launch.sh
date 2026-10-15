@@ -25,7 +25,7 @@ config="${AW_META_CONFIG:-${AW_STATE_DIR:-$HOME/.agentic-workflow}/meta/team.jso
 team="$(jq -r '.team // empty' "$config")"
 repo="$(jq -r '.repo // empty' "$config")"
 if [ -n "$only" ]; then lanes="$only"
-else lanes="$(jq -r '[(.metaLane // "meta")] + (.lanes // []) | join(",")' "$config")"; fi
+else lanes="$(jq -r '[(.metaLane // "meta")] + (.lanes // []) | reduce .[] as $l ([]; if index([$l]) then . else . + [$l] end) | join(",")' "$config")"; fi
 IFS=, read -r -a L <<< "$lanes"
 for n in "$team" "${L[@]}"; do
   case "$n" in *[!a-z0-9-]*|"") echo "meta-launch: bad team or lane name '$n'" >&2; exit 2 ;; esac
