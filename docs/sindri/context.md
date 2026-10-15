@@ -598,7 +598,8 @@ the app and the engine's own services may call it (a `job` command run synchrono
 may not. Each surface with a key, or a kind and a name, becomes a `propose` row in the latest draft (opened as a copy of
 `current` when there is none); `current` is never written. The call is idempotent and never re-proposes what you rejected.
 `GET /sindri/context/map/proposals?run=` reports each proposed surface as `new` (only the draft has it), `mapped` (the
-current map has it: after a promote) or `unmapped` (you rejected it).
+current map has it: after a promote) or `unmapped` (you rejected it). The `POST` answers with the same per-surface list
+(`surfaces`, with each label, node key and status) beside its counts.
 
 ### Lenses and the file map
 

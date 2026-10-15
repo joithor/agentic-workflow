@@ -99,6 +99,14 @@ internal static class ContextReviewText
         return text.ToString();
     }
 
-    internal static string Proposed(ProposeContextMapResponse response) =>
-        Invariant($"Proposed into draft v{response.Result.Draft.Number}: {response.Result.Added} added, {response.Result.Existing} already mapped, {response.Result.Rejected} rejected earlier{(response.Sequence is { } seq ? Invariant($"; recorded as event {seq}") : string.Empty)}\n");
+    internal static string Proposed(ProposeContextMapResponse response)
+    {
+        var text = new StringBuilder(Invariant($"Proposed into draft v{response.Result.Draft.Number}: {response.Result.Added} added, {response.Result.Existing} already mapped, {response.Result.Rejected} rejected earlier{(response.Sequence is { } seq ? Invariant($"; recorded as event {seq}") : string.Empty)}\n"));
+        foreach (var s in response.Surfaces)
+        {
+            _ = text.AppendLine($"  {s.Status.ToString().ToLowerInvariant(),-9} {s.Surface}{(s.Node is { } node ? " → " + node.Value : string.Empty)}");
+        }
+
+        return text.ToString();
+    }
 }

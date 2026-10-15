@@ -215,13 +215,15 @@ Aw.Sindri.Features.ContextCalls.ProposeContextMapRequest.Surfaces.get -> System.
 Aw.Sindri.Features.ContextCalls.ProposeContextMapRequest.Surfaces.init -> void
 Aw.Sindri.Features.ContextCalls.ProposeContextMapResponse
 Aw.Sindri.Features.ContextCalls.ProposeContextMapResponse.<Clone>$() -> Aw.Sindri.Features.ContextCalls.ProposeContextMapResponse!
-Aw.Sindri.Features.ContextCalls.ProposeContextMapResponse.Deconstruct(out Aw.Context.Core.Proposals.ProposeResult! Result, out long? Sequence) -> void
+Aw.Sindri.Features.ContextCalls.ProposeContextMapResponse.Deconstruct(out Aw.Context.Core.Proposals.ProposeResult! Result, out long? Sequence, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Proposals.GraphStatus!>! Surfaces) -> void
 Aw.Sindri.Features.ContextCalls.ProposeContextMapResponse.Equals(Aw.Sindri.Features.ContextCalls.ProposeContextMapResponse? other) -> bool
-Aw.Sindri.Features.ContextCalls.ProposeContextMapResponse.ProposeContextMapResponse(Aw.Context.Core.Proposals.ProposeResult! Result, long? Sequence) -> void
+Aw.Sindri.Features.ContextCalls.ProposeContextMapResponse.ProposeContextMapResponse(Aw.Context.Core.Proposals.ProposeResult! Result, long? Sequence, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Proposals.GraphStatus!>! Surfaces) -> void
 Aw.Sindri.Features.ContextCalls.ProposeContextMapResponse.Result.get -> Aw.Context.Core.Proposals.ProposeResult!
 Aw.Sindri.Features.ContextCalls.ProposeContextMapResponse.Result.init -> void
 Aw.Sindri.Features.ContextCalls.ProposeContextMapResponse.Sequence.get -> long?
 Aw.Sindri.Features.ContextCalls.ProposeContextMapResponse.Sequence.init -> void
+Aw.Sindri.Features.ContextCalls.ProposeContextMapResponse.Surfaces.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Proposals.GraphStatus!>!
+Aw.Sindri.Features.ContextCalls.ProposeContextMapResponse.Surfaces.init -> void
 Aw.Sindri.Features.ContextCalls.QueryContextRequest
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.QueryContextRequest!
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Budget.get -> string?

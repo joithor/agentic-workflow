@@ -1,0 +1,33 @@
+{
+  "result": {
+    "draft": {
+      "number": 2,
+      "repo": "aw-split-panes",
+      "commit": null,
+      "keyVersion": 1,
+      "created": "2026-01-01T00:00:00.0000000Z",
+      "status": "draft"
+    },
+    "added": 1,
+    "existing": 1,
+    "rejected": 0
+  },
+  "sequence": 9,
+  "surfaces": [
+    {
+      "surface": "Tab manager",
+      "node": "feature:tabs.tab-manager",
+      "status": "mapped"
+    },
+    {
+      "surface": "Zoom",
+      "node": "feature:zoom",
+      "status": "new"
+    },
+    {
+      "surface": "Something vague",
+      "node": null,
+      "status": "unmapped"
+    }
+  ]
+}

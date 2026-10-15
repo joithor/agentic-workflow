@@ -42,9 +42,15 @@ internal sealed class ProposeContextMapService(ContextScopes scopes, IContextEng
             return proposed.Error;
         }
 
+        var standing = await engine.Proposals(proposal.Value.Run, scope.Value, cancellationToken).ConfigureAwait(false);
+        if (standing.IsError)
+        {
+            return standing.Error;
+        }
+
         return proposed.Value.Added == 0
-            ? new ProposeContextMapResponse(proposed.Value, Sequence: null)
-            : await Record(proposal.Value, proposed.Value, cancellationToken).ConfigureAwait(false);
+            ? new ProposeContextMapResponse(proposed.Value, Sequence: null, standing.Value.Surfaces)
+            : await Record(proposal.Value, proposed.Value, standing.Value.Surfaces, cancellationToken).ConfigureAwait(false);
     }
 
     private static Result<ScopeProposal> Read(ProposeContextMapRequest request)
@@ -59,7 +65,7 @@ internal sealed class ProposeContextMapService(ContextScopes scopes, IContextEng
             : ContextErrors.RepoOutsideScope.With($"'{request.Repo}' is not a repo this scope can see (fix: name a repo of the approved profile)");
     }
 
-    private async ValueTask<Result<ProposeContextMapResponse>> Record(ScopeProposal proposal, ProposeResult result, CancellationToken cancellationToken)
+    private async ValueTask<Result<ProposeContextMapResponse>> Record(ScopeProposal proposal, ProposeResult result, IReadOnlyList<GraphStatus> surfaces, CancellationToken cancellationToken)
     {
         if (held.Current is not { } grant)
         {
@@ -69,6 +75,6 @@ internal sealed class ProposeContextMapService(ContextScopes scopes, IContextEng
         var payload = new ContextMapProposed(proposal.Run, proposal.Repo.Value, result.Draft.Number, result.Added, result.Existing, result.Rejected);
         var call = callers.Current is { } caller ? caller.CorrelationId.Value.ToString("N") : Guid.NewGuid().ToString("N");
         var appended = await ledger.Append(events.Entry(EventTypes.ContextMapProposed, payload, $"{EventTypes.ContextMapProposed}:{call}"), grant, cancellationToken).ConfigureAwait(false);
-        return appended.IsError ? appended.Error : new ProposeContextMapResponse(result, appended.Value.Sequence);
+        return appended.IsError ? appended.Error : new ProposeContextMapResponse(result, appended.Value.Sequence, surfaces);
     }
 }
