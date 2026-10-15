@@ -213,7 +213,7 @@ public sealed class ProtectedActionButtonTests
             Press(window, Key.Enter, PhysicalKey.Enter);
             Settle(window);
             var cli = Named<TextBlock>((Visual)((Flyout)button.Flyout!).Content!, "ServedCli");
-            var peer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(cli);
+            var peer = ControlAutomationPeer.CreatePeerForElement(cli);
             var first = (window.FocusManager?.GetFocusedElement() == cli, peer.GetAutomationControlType(), peer.GetName());
             Press(window, Key.Escape, PhysicalKey.Escape);
             Settle(window);
@@ -223,7 +223,7 @@ public sealed class ProtectedActionButtonTests
         });
 
         Assert.True(onCli);
-        Assert.Equal(Avalonia.Automation.Peers.AutomationControlType.Text, type);
+        Assert.Equal(AutomationControlType.Text, type);
         Assert.Equal("The served command can't be shown", name);
         Assert.True(back);
     }

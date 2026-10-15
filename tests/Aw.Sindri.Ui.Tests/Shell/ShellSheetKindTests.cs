@@ -134,7 +134,7 @@ public sealed class ShellSheetKindTests
         var xaml = File.ReadAllText(Path.Combine(UiSource.Library, "Views", "Shell", "ShellWindow.axaml"));
 
         Assert.Contains("x:Name=\"Sheet\" Classes=\"sheet focus-region\" IsVisible=\"{Binding IsSheetShown}\" Focusable=\"True\"\n                AutomationProperties.Name=\"{Binding SheetName}\"", xaml.ReplaceLineEndings("\n"), StringComparison.Ordinal);
-        Assert.Contains("Text=\"{Binding SheetSubject}\" AutomationProperties.Name=\"{Binding SheetName}\"", xaml, StringComparison.Ordinal);
+        Assert.Matches(@"x:Name=""SheetTitle""[^>]*AutomationProperties\.Name=""\{Binding SheetName\}""", xaml.ReplaceLineEndings(" "));
         Assert.Contains("x:Name=\"EdgeTab\"", xaml, StringComparison.Ordinal);
         Assert.Matches(@"x:Name=""EdgeTab""[^>]*AutomationProperties\.Name=""\{Binding EdgeTabName\}""", xaml.ReplaceLineEndings(" "));
     }
