@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Testing.Views;
 
@@ -103,6 +104,7 @@ public sealed partial class WorkflowEngineInvariantsTests
             failures.Add("no DeskForm");
         }
 
+        failures.AddRange(ShippedBlockOutputs(view));
         foreach (var status in view.Statuses)
         {
             if (status.Header.Detail != "desk task")
@@ -114,6 +116,30 @@ public sealed partial class WorkflowEngineInvariantsTests
             {
                 failures.Add(M($"status commands start with '{(status.Commands.Count == 0 ? "nothing" : StatusVerbNames.Of(status.Commands[0].Verb))}', not complete"));
             }
+        }
+
+        return failures;
+    }
+
+    // A state whose Block is in the shipped catalog reports what the descriptor requires on its first outcome: the DeskForm's outputs and
+    // the complete command's --output flags both (SCR5-1; the engine refuses a report with a required output missing).
+    private static List<string> ShippedBlockOutputs(View view)
+    {
+        if (view.Detail?.Current is not { Step: { } step, Desk: { } desk } current || _catalog.Find(BlockId.From(step.Ref)) is not { } block || block.Outcomes.Count == 0)
+        {
+            return [];
+        }
+
+        var required = block.Outputs.Where(o => o.RequiredOn.Contains(block.Outcomes[0])).Select(o => o.Fact.Value).ToList();
+        var failures = new List<string>();
+        if (!required.SequenceEqual(desk.Outputs.Where(o => o.Required).Select(o => o.Key), StringComparer.Ordinal))
+        {
+            failures.Add(M($"DeskForm outputs [{string.Join(", ", desk.Outputs.Select(o => o.Key))}], the shipped {step.Ref} requires [{string.Join(", ", required)}] on '{block.Outcomes[0].Value}'"));
+        }
+
+        foreach (var cli in current.Status.Commands.Where(c => c.Verb == StatusVerb.Complete).Select(c => c.Cli))
+        {
+            failures.AddRange(required.Where(key => !cli.Contains($"--output {key}=", StringComparison.Ordinal)).Select(key => M($"the complete command lacks --output {key}=<file>: {cli}")));
         }
 
         return failures;

@@ -162,6 +162,13 @@ public static class WorkflowViewFixtures
     /// </summary>
     public static IReadOnlySet<string> FanOutPreviews { get; } = new HashSet<string>(StringComparer.Ordinal) { "ITM-01JK3/project/1", "ITM-01JKG/project/1" };
 
+    /// <summary>The addresses whose inputs preview a missing input (a future optional-input recipe schema; v1 serves every input present).</summary>
+    public static IReadOnlySet<string> MissingInputPreviews { get; } = new HashSet<string>(StringComparer.Ordinal);
+
+    /// <summary>The Workflows page preview of a missing required input (the INPUTS column's missing state).</summary>
+    /// <returns>The list.</returns>
+    public static InstanceList PreviewMissingInput() => throw new NotSupportedException("not implemented");
+
     /// <summary>The Workflows page: the 12 roots, unfinished first, the parked and escalated behind the moving ones, then by urgency and subject label (API spec section 3.8).</summary>
     public static InstanceList RootList() => Ordered(Roots());
 

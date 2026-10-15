@@ -115,4 +115,22 @@ public sealed class WorkflowViewStatusWordsTests
 
         Assert.DoesNotContain(words, w => w.Contains("queued", StringComparison.OrdinalIgnoreCase));
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_wait_park_is_answered_with_resume_and_a_step_park_with_text_and_neither_names_a_child_it_has_not_mirrored()
+    {
+        var statuses = WorkflowViewFixtures.AllStatuses();
+        var wait = Assert.Single(statuses, s => s.Answer is { Kind: AnswerKind.Resume });
+        Assert.EndsWith("--resume [--text <answer>]", wait.Answer!.Cli, StringComparison.Ordinal);
+        Assert.Equal(ActionClass.Desk, wait.Answer.Class);
+        Assert.All(statuses.Where(s => s.Child is null && s.Header.State == "parked"), s => Assert.DoesNotContain(") in ", s.Next, StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_desk_task_prints_its_timeout_as_desk_like_the_shipped_status_layout()
+    {
+        var desks = WorkflowViewFixtures.AllStatuses().Where(s => s.Commands.Any(c => c.Verb == StatusVerb.Complete) && s.Timeout is not null).ToList();
+        Assert.NotEmpty(desks);
+        Assert.All(desks, s => Assert.Matches(@"timeout   parks in [0-9dhm ]+ \(desk\)\n", s.Text));
+    }
 }

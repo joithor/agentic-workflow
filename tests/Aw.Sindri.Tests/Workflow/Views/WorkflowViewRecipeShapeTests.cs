@@ -234,9 +234,25 @@ public sealed class WorkflowViewRecipeShapeTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void The_goldens_cover_a_missing_required_input_and_a_child_group_with_more_rows()
+    public void The_goldens_cover_a_child_group_with_more_rows_and_only_a_marked_preview_misses_an_input()
     {
-        Assert.Contains(WorkflowViewFixtures.AllSummaries(), r => r.Inputs.Any(i => i.Required && !i.Present));
+        // v1 serves every input required and present (StartInstance refuses a missing one); the missing-input row is a marked preview (SCR5-2, CSC5-2).
+        var missing = WorkflowViewFixtures.AllSummaries().Where(r => r.Inputs.Any(i => !i.Present)).Select(r => r.Address.Value).ToList();
+        Assert.NotEmpty(missing);
+        Assert.All(missing, a => Assert.Contains(a, WorkflowViewFixtures.MissingInputPreviews));
+        Assert.Contains(WorkflowViewFixtures.PreviewMissingInput().Instances, r => r.Inputs.Any(i => i.Required && !i.Present));
+        Assert.All(WorkflowViewFixtures.RootList().Instances.Concat(WorkflowViewFixtures.OpenList().Instances), r => Assert.All(r.Inputs, i => Assert.True(i.Required && i.Present)));
         Assert.Contains(WorkflowViewFixtures.AllDetails().SelectMany(d => d.Children), g => g.More > 0);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_recipe_loop_is_served_with_its_cap()
+    {
+        foreach (var recipe in new[] { WorkflowViewFixtures.IncidentRecipe(), WorkflowViewFixtures.ProjectRecipe() })
+        {
+            var json = System.Text.Json.JsonSerializer.SerializeToElement(recipe);
+            var loop = json.EnumerateObject().Single(p => string.Equals(p.Name, "loops", StringComparison.OrdinalIgnoreCase)).Value.EnumerateArray().First();
+            Assert.Contains(loop.EnumerateObject(), p => string.Equals(p.Name, "cap", StringComparison.OrdinalIgnoreCase) && p.Value.GetInt32() == 3);
+        }
     }
 }
