@@ -12,7 +12,9 @@ carry the measured numbers (Phases), and P4 builds on it; a desk Step is a short
 `complete` Update (§5.3); the ledger mirror is keyed by the `RecordEvent` activity id (§5.6); the Temporal test
 findings F1–F3 are in §11. Each is marked *rev 8.1* inline. **Revision 8.2** (2026-10-13) records what P4 settled:
 a desk timeout parks with reason `timeout` (§5.3), and the `Repo` search attribute comes from `fact:item`'s `repo`
-(§5.1). Each is marked *rev 8.2* inline
+(§5.1). Each is marked *rev 8.2* inline. **Owner decisions of 2026-10-14** (PR #192) align two texts with rev 8.2: a
+held item event is re-sent only to instances that started before it, and only within 1 minute (§5.4); a desk timeout
+always parks and `then:` doesn't apply when it fires (§3.4, §3.8). Each is marked *owner, 2026-10-14* inline
 · **Date:** 2026-10-10 · **Builds:** factory addendum §17.28 (one workflow
 state machine) and §17.29.4 step 2 · **Next:** P4a (the Temporal foundation), then `/specToProvenPR` takes the Phases at
 the end to PRs.
@@ -283,7 +285,8 @@ Every state has `kind: active | wait | terminal`. State, loop and parameter (`wi
 `retry` stays in the **same frame entry**, so inbox rows and the run token stay valid. It re-arms the deadline
 (`arm + 1`) and re-emits the effects of the transition that entered the state. Each re-emitted effect gets a new
 command id but keeps its stable effect identity (§5.4), and the effect block's existence check makes the repeat
-harmless. A second timeout parks with `timeout`. In desk mode `retry` is replaced by `park` (W20). `retry` isn't
+harmless. A second timeout parks with `timeout`. In desk mode a timeout always parks with `timeout` and `then:` doesn't
+apply when it fires (W20, §5.3; *rev 8.2*, *owner, 2026-10-14*). `retry` isn't
 allowed on a `child` wait (`RCP-TIME-002`).
 
 ### 3.5 Transitions
@@ -331,14 +334,14 @@ names come from the trigger's source: a Step, an event, or a child's terminal ou
 | `parked` (`budget`) | A budget, or a `gate.budget.*` refusal | "Parked (budget): {question}. Grant tokens at a terminal, or cancel." | `answer --grant-tokens n` (protected): re-runs the Step, or re-evaluates the withheld transition. A re-run that would pass the loop's cap parks `rounds` (kind `refusal`) instead; `--grant n` is the way on (W7, §5.8, §13). `takeover`, `cancel` |
 | `parked` (`needs-answer`, Step) | A refusal without a loop, `step.failed` | "Parked (needs-answer): {question}. Answer with --text; the Step runs again with your answer." | `answer --text`: re-runs the Step with `fact:answer`. A re-run that would pass the loop's cap parks `rounds` (kind `refusal`) instead; `--grant n` is the way on (W7, §5.8, §13). `takeover`, `cancel` |
 | `parked` (`needs-answer`, wait) | A gate refused the transition out of a wait | "Parked: {gate} refused {from} -> {to} ({reasons}). Fix the cause, then resume to check again, or cancel." | `answer --resume [--text]`: re-checks every gate and evidence at the current head under the answer's key (§5.8). `takeover`, `cancel` |
-| `parked` (`timeout`) | `then: park` | "Parked (timeout): {state} ran past {after}. Resume to give it the full time again, or cancel." | `answer --resume`: back to the frame (the same run token) with a fresh deadline. `takeover`, `cancel` |
+| `parked` (`timeout`) | `then: park`, or any timeout in desk mode, whatever `then:` says (*rev 8.2*, *owner, 2026-10-14*) | "Parked (timeout): {state} ran past {after}. Resume to give it the full time again, or cancel." | `answer --resume`: back to the frame (the same run token) with a fresh deadline. `takeover`, `cancel` |
 | `parked` (`spec-conflict`: revoked) | `recipe revoke` of this instance's own recipe | "{recipe} was revoked. Cancel, then start a new attempt from an approved version." | `cancel` |
 | `parked` (`spec-conflict`: child revoked) | The child hash this recipe pins was revoked | "{child recipe} (pinned by {recipe}) was revoked. Re-approve {recipe} so it pins an approved child; the approval resumes this instance." | The parent's drift approval resumes it (§4.1). `cancel` |
 | `parked` (`spec-conflict`: drift) | A pinned block changed in this build | "{block} changed since {recipe} was approved. Re-approve it (`sindri recipe approve {recipe}`, shown as `id@hash12`); the approval resumes this instance." | The drift approval resumes every instance it lists, and re-sends any of their commands refused for the drift (§4.1). `cancel` |
 | `parked` (`spec-conflict`: dispatch) | `outbox.refused` with `SND-WF-011` (not allowlisted) | "{effect} isn't on the profile's effect allowlist. Add it and approve the profile, then resume to send it again." | `answer --resume`: re-emits the effect. `cancel` |
 | `parked` (`SND-WF-010`) | A Step or resource with no runtime | "No runtime for {block} in this build. Cancel, or resume in a build that has it." | `answer --resume`: starts the Step again (a new run), or waits for the resource again. `cancel` |
 | `escalated` (gate) | A top-rung gate below threshold or uncertain | "Escalated: {gate} scored {score}, below {threshold}. Accept to override it (the other checks still run before {to}), or reject (the Step re-runs within its loop, otherwise this parks)." | `--accept` (protected) overrides only that gate, then evaluates the remaining gates and evidence at the current head. `--reject` is a refusal. On a command's escalation, `--reject` (or an `--accept` another check refuses) pops the escalation and the command is refused with `SND-WF-004`. `cancel` |
-| `escalated` (timeout) | `then: escalate` | "Escalated: {state} ran past {after}. Resume to give it the full time again, or cancel." | `--resume`, `cancel` |
+| `escalated` (timeout) | `then: escalate`, outside desk mode (a desk timeout parks, *owner, 2026-10-14*) | "Escalated: {state} ran past {after}. Resume to give it the full time again, or cancel." | `--resume`, `cancel` |
 | `escalated` (child) | The child escalated | "Escalated in {child}: {childNext}" | The child's `answer` variants, forwarded (§5.7), and shown as the child's `allowedCommands`. `cancel` and `takeover` act on the parent |
 | `taken-over` | `takeover` (allowed on a parked or escalated instance as well) | "With you since {since}. Run `sindri workflow handback {instance}` when you're done." | `handback` (pops back to whatever it covered), `cancel` |
 | `cancelled` | `cancel` from any state, the tracker, a cancelled parent | (terminal) | outcome `cancelled` |
@@ -544,9 +547,13 @@ Registered events (`EventDescriptor`, §2) reach instances as Temporal **Signals
   through `item` and attempt, and signals it. Deliveries of engine-origin effects signal nothing, so the engine's own
   notification can never satisfy a recipe's wait. A `route: causation` event signals only the frame entry its command
   was written for; the interpreter drops it if that entry has ended.
+- **Held item events** (*owner, 2026-10-14*). The bridge re-sends an item-routed event only to instances of that item
+  that started at or before the event occurred, and only within 1 minute of its first delivery (the visibility lag of a just-started
+  instance). This replaces the rev 8.1 wording that held item events for `workflow.eventHold`.
 - **Buffering.** Signals that arrive before the matching wait are buffered by Temporal and consumed when the workflow
-  reaches the wait, so rev 7's "early row" hold is native. The interpreter discards a buffered signal older than
-  `workflow.eventHold` (default 24 h) with a `workflow.expired` ledger event.
+  reaches the wait, so rev 7's "early row" hold is native. The interpreter discards a buffered signal that doesn't fit
+  the current wait once it is older than `workflow.eventHold` (default 24 h), with a `workflow.expired` ledger event; a
+  signal that fits the wait satisfies it, however late it arrived.
 - **Signal-with-start** is how a webhook or intake source will start a standing workflow later (README follow-ups).
 
 ### 5.5 Timers, sleep, takeover
