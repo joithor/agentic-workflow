@@ -48,7 +48,14 @@ public sealed class GraphifyClusterSourceTests
         Assert.True(set.Value.Available);
         var cluster = Assert.Single(set.Value.Clusters);
         Assert.Equal(["src/a.ts", "src/b.ts"], cluster.Files);
-        Assert.True(File.Exists(stub.RanMarker));
+        var env = (await File.ReadAllTextAsync(stub.RanMarker, Ct)).Trim().Split('|');
+        Assert.Equal(env[0], env[1]);   // HOME and TMPDIR are the one private folder
+        Assert.Contains("/aw-graphify-", env[0], StringComparison.Ordinal);   // inside the snapshot, not the system temp folder itself
+        Assert.Contains(GraphifyClusterSource.PrivateFolder, env[0], StringComparison.Ordinal);
+        if (!OperatingSystem.IsWindows())
+        {
+            Assert.Equal("700", env[2]);
+        }
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -56,12 +63,23 @@ public sealed class GraphifyClusterSourceTests
     {
         using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal) { ["src/a.ts"] = "export const a = 1;\n" });
         using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
-        var source = new GraphifyClusterSource(new GitCli(), stub.Options with { Sandbox = (_, _, _) => throw new IOException("disk full") });
+        var source = new GraphifyClusterSource(new GitCli(), stub.Options with { Sandbox = (_, command, _) => command.Contains("extract", StringComparer.Ordinal) ? throw new IOException("disk full") : command });
 
         var set = await source.Clusters(repo.Repo, repo.Head, Ct);
 
         Assert.True(set.IsSuccess);
         Assert.False(set.Value.Available);
+        Assert.False(File.Exists(stub.RanMarker));   // the --version probe passed and the run itself is what threw
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_programming_error_in_the_run_is_not_swallowed_as_degraded_clusters()
+    {
+        using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal) { ["src/a.ts"] = "export const a = 1;\n" });
+        using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
+        var source = new GraphifyClusterSource(new GitCli(), stub.Options with { Sandbox = (_, command, _) => command.Contains("extract", StringComparer.Ordinal) ? throw new ArgumentNullException(nameof(command)) : command });
+
+        _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await source.Clusters(repo.Repo, repo.Head, Ct));
     }
 
     /// <summary>

@@ -81,6 +81,29 @@ public sealed class RecognizersTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_component_name_may_start_with_an_acronym_and_an_async_default_export_counts_but_a_context_schema_or_props_const_does_not()
+    {
+        const string Text = "export function UIShell() {}\nexport default async function Page() {}\nexport const QRCodeDialog = () => null;\n"
+            + "export const ThemeContext = createContext(null);\nexport const FormSchema = z.object({});\nexport const PaneProps = {};\nexport const API = 1;";
+
+        Assert.Equal(["surface:dialog/QRCodeDialog", "surface:pane/UIShell", "surface:screen/Page"], Keys("src/ui/Tabs.tsx", Text));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_settings_file_name_is_matched_in_any_case_but_dotnet_config_schemas_and_locale_files_are_not_the_apps_settings()
+    {
+        const string Text = "{\"Logging\": {}, \"title\": \"x\"}";
+
+        Assert.Equal(["surface:setting/Logging", "surface:setting/title"], Keys("src/userSettings.json", Text));
+        Assert.Equal(["surface:setting/Logging", "surface:setting/title"], Keys("Settings.json", Text));
+        Assert.Empty(Keys("appsettings.json", Text));
+        Assert.Empty(Keys("src/appsettings.Development.json", Text));
+        Assert.Empty(Keys("schemas/settings.schema.json", Text));
+        Assert.Empty(Keys("src/i18n/en/settings.json", Text));
+        Assert.Empty(Keys("src/locales/settings.json", Text));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void An_editors_or_tools_settings_file_is_not_the_apps_settings_registry()
     {
         const string Text = "{\"editor.formatOnSave\": true}";

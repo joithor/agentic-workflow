@@ -32,7 +32,7 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
         {
             return await Cluster(repo, commit, cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             return _unavailable;   // a temp folder that can't be made, a disk that fills: the build goes on, degraded: clusters
         }
