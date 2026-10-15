@@ -50,6 +50,24 @@ public sealed class EventStreamEndpointTests
         Assert.Equal((HttpStatusCode.BadRequest, "SND-CLI-003"), (answer.Status, answer.Code));
     }
 
+    [Theory(Timeout = 30_000), Trait("Lane", "integration")]
+    [InlineData("/sindri/events?after=-1", null)]
+    [InlineData("/sindri/events", "-1")]
+    [InlineData("/sindri/ledger?after=-1", null)]
+    public async Task A_negative_after_is_named_as_negative(string route, string? lastEventId)
+    {
+        await using var host = await GoldenHost.Start(temporary: true, TestContext.Current.CancellationToken);
+        using var request = Get(route, Human(host.Token.Value));
+        if (lastEventId is not null)
+        {
+            _ = request.Headers.TryAddWithoutValidation("Last-Event-ID", lastEventId);
+        }
+
+        var answer = await host.Http.Ask(request);
+
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CLI-003", true), (answer.Status, answer.Code, answer.Body.Contains("negative; a cursor is 0 or more", StringComparison.Ordinal)));
+    }
+
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task An_append_reaches_the_stream_without_waiting_for_the_poll()
     {

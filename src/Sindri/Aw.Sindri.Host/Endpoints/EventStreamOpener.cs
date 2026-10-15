@@ -110,17 +110,21 @@ internal sealed class EventStreamOpener(ILedgerReader ledger, IStreamSlots slots
     /// <summary>The first cursor (C4): Last-Event-ID when it holds a sequence, else ?after=, else 0.</summary>
     private static Result<long> Cursor(string? lastEventId, string? after)
     {
-        if (long.TryParse(lastEventId, NumberStyles.None, CultureInfo.InvariantCulture, out var last))
+        if (long.TryParse(lastEventId, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var last))
         {
-            return last;
+            return NonNegative(last);
         }
 
         return after is null || after.Length == 0
             ? 0L
-            : long.TryParse(after, NumberStyles.None, CultureInfo.InvariantCulture, out var cursor)
-                ? cursor
+            : long.TryParse(after, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var cursor)
+                ? NonNegative(cursor)
                 : SindriErrors.InvalidInput.With("after must be a ledger sequence, 0 or more (fix: ?after=0)");
     }
+
+    private static Result<long> NonNegative(long cursor) => cursor >= 0
+        ? cursor
+        : SindriErrors.InvalidInput.With(string.Create(CultureInfo.InvariantCulture, $"after {cursor} is negative; a cursor is 0 or more (fix: ?after=0, or leave it out)"));
 
     private static Result<TypeFilter?> TypeFilterOf(string? types)
     {

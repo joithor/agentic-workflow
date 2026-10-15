@@ -64,7 +64,12 @@ internal sealed class ReadLedgerService(ILedgerReader ledger, CallerEventView vi
             return head.Error;
         }
 
-        if (request.After < 0 || request.After > head.Value)
+        if (request.After < 0)
+        {
+            return SindriErrors.InvalidInput.With(string.Create(CultureInfo.InvariantCulture, $"after {request.After} is negative; a cursor is 0 or more (fix: --after 0, or leave it out)"));
+        }
+
+        if (request.After > head.Value)
         {
             return SindriErrors.InvalidInput.With(string.Create(CultureInfo.InvariantCulture, $"after {request.After} is past the ledger's head {head.Value} (fix: --after {head.Value}, or leave it out)"));
         }

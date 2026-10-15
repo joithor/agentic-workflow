@@ -128,6 +128,15 @@ public sealed class ReadLedgerTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_negative_after_is_named_as_negative()
+    {
+        var result = await Service().Handle(A.ReadLedgerRequest().After(-1).Build(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(SindriErrors.InvalidInput.Code, result.Error.Code);
+        Assert.StartsWith("after -1 is negative; a cursor is 0 or more", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_bad_type_glob_is_400()
     {
         var result = await Service().Handle(A.ReadLedgerRequest().WithType("Item.*").Build(), TestContext.Current.CancellationToken);

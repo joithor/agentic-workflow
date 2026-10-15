@@ -3,6 +3,7 @@ using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Features.StreamEvents;
 
@@ -18,7 +19,8 @@ namespace Aw.Sindri.Host.Endpoints;
 /// <param name="signal">Wakes the wait when an append commits.</param>
 /// <param name="clock">Times the idle ping and the wait.</param>
 /// <param name="json">The package's AwJson options, for the frames' data.</param>
-internal sealed class EventPump(ILedgerReader ledger, ILedgerSignal signal, TimeProvider clock, JsonSerializerOptions json)
+/// <param name="log">Where a row sent without a readable payload is logged.</param>
+internal sealed partial class EventPump(ILedgerReader ledger, ILedgerSignal signal, TimeProvider clock, JsonSerializerOptions json, ILogger<EventPump> log)
 {
     internal static readonly TimeSpan Poll = TimeSpan.FromSeconds(1);
 
@@ -48,7 +50,7 @@ internal sealed class EventPump(ILedgerReader ledger, ILedgerSignal signal, Time
                 var (page, head) = next.Value;
                 foreach (var e in page.Events)
                 {
-                    await writer.Event(e.Sequence, e.Type, Text(e), cancellationToken).ConfigureAwait(false);
+                    await Send(writer, e, cancellationToken).ConfigureAwait(false);
                     lastWrite = clock.GetTimestamp();
                 }
 
@@ -67,6 +69,16 @@ internal sealed class EventPump(ILedgerReader ledger, ILedgerSignal signal, Time
         {
             // the client's connection broke mid-write
         }
+    }
+
+    private async ValueTask Send(SseWriter writer, PublicEvent e, CancellationToken cancellationToken)
+    {
+        if (e.Payload.ValueKind == JsonValueKind.Null)
+        {
+            LogUnreadable(log, e.Sequence, e.Type);   // each row is sent once per stream, so this is once per row
+        }
+
+        await writer.Event(e.Sequence, e.Type, Text(e), cancellationToken).ConfigureAwait(false);
     }
 
     private async ValueTask<Result<(StreamEventsResponse Page, long Head)>> NextPage(IService<StreamEventsRequest, StreamEventsResponse> service, StreamEventsRequest request, CancellationToken cancellationToken)
@@ -94,6 +106,9 @@ internal sealed class EventPump(ILedgerReader ledger, ILedgerSignal signal, Time
         _ = await signal.WaitAfter(cursor, untilPing < Poll ? untilPing : Poll, cancellationToken).ConfigureAwait(false);
         return lastWrite;
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Event {Sequence} ({Type}) was sent with payload null: its stored payload doesn't read as the public record")]
+    private static partial void LogUnreadable(ILogger logger, long sequence, string type);
 
     private string Text<T>(T value) => Encoding.UTF8.GetString(AwJson.Serialize(value, json));
 }

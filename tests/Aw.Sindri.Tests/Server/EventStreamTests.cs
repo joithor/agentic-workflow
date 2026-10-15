@@ -26,8 +26,10 @@ public sealed class EventStreamTests : IDisposable
         _body.Dispose();
     }
 
+    private readonly ListLogger<EventPump> _log = new();
+
     private async Task Run(IService<StreamEventsRequest, StreamEventsResponse> read, TimeProvider clock, CancellationToken stop) =>
-        await new EventPump(_h.Store, new LedgerSignal(clock), clock, SliceHarness.Json).Run(new SseWriter(_body), read, new StreamEventsRequest(0), stop);
+        await new EventPump(_h.Store, new LedgerSignal(clock), clock, SliceHarness.Json, _log).Run(new SseWriter(_body), read, new StreamEventsRequest(0), stop);
 
     [Fact(Timeout = 5_000), Trait("Lane", "unit")]
     public async Task A_stop_during_a_ledger_read_ends_the_stream_cleanly()
@@ -63,6 +65,21 @@ public sealed class EventStreamTests : IDisposable
         await writer.Event(id: null, "error", "{\"code\":\"SND-LEDGER-002\",\"detail\":\"ledger.db: database is locked\"}", ct);
 
         Golden.Match(_body.Text, typeof(EventStreamTests).Assembly, "Golden/Api/events/framing.sse", Normalization.None);
+    }
+
+    [Fact(Timeout = 5_000), Trait("Lane", "unit")]
+    public async Task An_unreadable_row_sent_with_a_null_payload_is_logged_once_with_its_sequence_and_type()
+    {
+        var unreadable = Event(7) with { Payload = JsonDocument.Parse("null").RootElement };
+        var read = new ScriptedRead(new StreamEventsResponse([Event(6), unreadable], 7), new StreamEventsResponse([], 7));
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        stop.CancelAfter(TimeSpan.FromMilliseconds(300));
+
+        await Run(read, TimeProvider.System, stop.Token);
+
+        var line = Assert.Single(_log.Lines);
+        Assert.Contains("7", line, StringComparison.Ordinal);
+        Assert.Contains("service.heartbeat", line, StringComparison.Ordinal);
     }
 
     [Fact(Timeout = 5_000), Trait("Lane", "unit")]
