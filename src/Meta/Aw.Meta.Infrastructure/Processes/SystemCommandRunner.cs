@@ -59,7 +59,7 @@ internal sealed class SystemCommandRunner : ICommandRunner
 
     private static ProcessStartInfo StartInfo(CommandRequest request)
     {
-        var info = new ProcessStartInfo(request.Argv[0])
+        var info = new ProcessStartInfo(ProgramPath.Resolve(request.Argv[0], request.Cwd))
         {
             RedirectStandardInput = true,
             RedirectStandardOutput = true,

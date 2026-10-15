@@ -7,8 +7,8 @@ namespace Aw.Context.Core.Map;
 /// <summary>
 /// Reads the map every graph answer starts from (spec §3, §6.1), a domain service over <see cref="IGraphStore"/>: the
 /// caller's gate (001, 020, 003), one snapshot of the current version or the newest draft with its overrides (030 when
-/// there is none), the overrides applied, then a session's repo scope (only the nodes its repo implements and what lies
-/// between them, else 003). Every walk runs on this graph, so a session's cascade, neighbors and paths can't leave its scope.
+/// there is none), the overrides applied, then a session's repo scope (only the nodes its repo implements, the records and decisions linked to them
+/// (owner decision 2026-10-15, B) and what lies between them, else 003). Every walk runs on this graph, so a session's cascade, neighbors and paths can't leave its scope.
 /// </summary>
 /// <param name="store">The graph store.</param>
 public sealed class MapReader(IGraphStore store)

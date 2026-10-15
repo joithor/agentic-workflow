@@ -123,7 +123,11 @@ that graph plus rank fusion across adapters.
 - **Repo scope.** A `session` caller sees only records reachable from its `X-Sindri-Repo`: that repo's files and code,
   graph nodes the repo implements and their cascade, and intent records linked to those nodes or from the Linear teams
   the profile maps to that repo (`context.repoTeams`). Anything else answers as an unknown anchor (`SND-CONTEXT-003`),
-  never as a hint that it exists.
+  never as a hint that it exists. Owner decision 2026-10-15: B. The intent linked to the repo's nodes (a `decides` edge from a
+  decision, a `mentions` edge from a record, and the records those decisions quote) is visible to the session now (record titles and
+  quotes fenced, all text scrubbed; every profile repo's deny globs apply), without waiting for `context.repoTeams`; a record or decision linked only to nodes
+  outside the repo stays invisible (`SND-CONTEXT-003`). The source-level rule (a session queries repo-docs sources only,
+  not Onyx or Linear search) is unchanged until `context.repoTeams`.
 - **Every command writes an event.** `context.map.built`, `context.map.promoted`, `context.map.reviewed` (keyed by the first
   override id it wrote), `context.map.proposed` (keyed by the run and a hash of the propose rows the call names, not the draft: a repeat, a repeat after a promote and a return to an earlier set of surfaces write none), `context.map.imported` and
   `context.sources.synced` go to the ledger through the API chain, so the app refreshes.
@@ -481,7 +485,7 @@ error (the profile is invalid, the store can't open, every source is down); **75
 | `SND-CONTEXT-006` | The question itself is invalid (empty, two shapes, a value out of range, neighbors depth outside 0 to 4) | Fix the question |
 | `SND-CONTEXT-010` | A source is unavailable (degraded, not fatal) | `context sources status` |
 | `SND-CONTEXT-011` | **Every** source is unavailable (exit 2, not "no results") | `context sources status`; start Onyx or check the repos |
-| `SND-CONTEXT-020` | MCP is disabled (`context.sessions.enabled: false`); the `context_*` tools answer this code and `context sources status` says so | Enable it in the profile and approve |
+| `SND-CONTEXT-020` | MCP is disabled (`context.sessions.enabled: false`); the `context_*` tools answer this code and `context sources status` says so. A session's map export answers it too, whatever the setting | Enable it in the profile and approve; export the map as a human |
 | `SND-CONTEXT-030` | No map yet | `context map import <file>` (`context map build` once API P6 lands) |
 | `SND-CONTEXT-031` | The map file is invalid (schema version, shape, an unknown kind or a disallowed edge); the key path is given and nothing was written (exit 1) | Fix the file at that key path |
 | `SND-CONTEXT-032` | The map file refers to a node it doesn't define (an edge end, an alias target, a decided node); nothing was written (exit 1) | Define the node or fix the reference |
