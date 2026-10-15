@@ -7,6 +7,7 @@ using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.Theme;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Shell;
@@ -177,7 +178,7 @@ public sealed class ChordKeysTests : IDisposable
         _records.Write(A.Record());
         var (window, shell) = await Show(ShellState.Normal);
         var resources = Application.Current!.Resources;
-        Aw.Sindri.Ui.Theme.TextScale.Apply(resources, scale);
+        TextScale.Apply(resources, scale);
         try
         {
             window.Width = width;
@@ -203,7 +204,7 @@ public sealed class ChordKeysTests : IDisposable
         }
         finally
         {
-            Aw.Sindri.Ui.Theme.TextScale.Apply(resources, 1.0);
+            TextScale.Apply(resources, 1.0);
         }
     });
 

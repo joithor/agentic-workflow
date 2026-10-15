@@ -3,6 +3,7 @@ using Avalonia.Headless;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Views;
 using Aw.Sindri.Ui.Views.Controls;
 using ChipTone = Aw.Sindri.Ui.Api.Workflow.ChipTone;
 using Served = Aw.Sindri.Ui.Api.Workflow.StateChip;
@@ -49,7 +50,7 @@ public sealed class StateChipViewTests
     [Fact]
     public void The_control_is_StateChipView_and_no_control_shares_the_served_records_name()
     {
-        var views = typeof(Aw.Sindri.Ui.Views.AppLifetime).Assembly.GetTypes().Where(t => t.Namespace == "Aw.Sindri.Ui.Views.Controls").Select(t => t.Name).ToList();
+        var views = typeof(AppLifetime).Assembly.GetTypes().Where(t => t.Namespace == "Aw.Sindri.Ui.Views.Controls").Select(t => t.Name).ToList();
 
         Assert.Contains("StateChipView", views, StringComparer.Ordinal);
         Assert.DoesNotContain("StateChip", views, StringComparer.Ordinal);

@@ -2,6 +2,7 @@ using System.Net;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
 
 namespace Aw.Sindri.Ui.Tests.Api;
@@ -137,7 +138,7 @@ public sealed class SindriApiClientHeaderTests
         var client = new SindriApiClient(new HttpClient(handler), new InMemoryHumanToken("tok-1"), TimeProvider.System);
         _ = await client.RebuildViews(_api, Token);
 
-        _ = await client.Instances(_api, new Aw.Sindri.Ui.Api.Workflow.InstanceQuery(), Token);
+        _ = await client.Instances(_api, new InstanceQuery(), Token);
         _ = await client.Instance(_api, "WFI-1", Token);
         _ = await client.InstanceFact(_api, "WFI-1", "fact:a", Token);
         _ = await client.Recipe(_api, "workflow.project", hash: null, Token);
