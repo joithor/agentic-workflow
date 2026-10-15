@@ -18,6 +18,9 @@ internal static partial class Labels
     /// <summary>A ready row the app has no sender for: shown, never run (K8).</summary>
     internal const string NotInApp = "not in the app yet";
 
+    /// <summary>A ready item action that lives on the item's sheet (it needs the version the sheet shows): shown, never run from the palette.</summary>
+    internal const string OnItemSheet = "on the item's sheet";
+
     /// <summary>The palette's line when nothing matches.</summary>
     internal const string NoMatches = "Nothing matches";
 
