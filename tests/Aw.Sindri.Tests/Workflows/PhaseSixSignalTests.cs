@@ -23,7 +23,7 @@ namespace Aw.Sindri.Tests.Workflows;
 /// desk Step; its 'complete' moves 'ask -> sent' with 'effect.notify.desk'. The effect waits out the delay as
 /// 'outbox.pending', then its activity dispatches it: 'outbox list --dispatched' shows it, notifications.jsonl has its
 /// one line, and the 'notify.delivered' reply, caused by the effect's row, reaches the instance through the bridge and
-/// moves it to 'done'. Red at the P6 contract: effects are not dispatched yet (units (a)-(d)).
+/// moves it to 'done'.
 /// </summary>
 [Lane(TestLane.Integration)]
 public sealed class PhaseSixSignalTests(SindriTimeSkippingServer server) : IClassFixture<SindriTimeSkippingServer>, IDisposable

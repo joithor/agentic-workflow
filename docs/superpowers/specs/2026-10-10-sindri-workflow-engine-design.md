@@ -543,7 +543,7 @@ stays a public counter in `status` and in the CLI.
 Registered events (`EventDescriptor`, §2) reach instances as Temporal **Signals**.
 - **The bridge service** (`workflow.events`, a built-in service with its own loop, S1-D8 and S1-D10) reads
   `ledger.db` from its cursor, accepts an event only when the envelope's actor is the descriptor's `producer`,
-  resolves the target workflow id through `causation` (via the `workflow_commands` map an effect activity writes) or
+  resolves the target workflow id through `causation` (through the causing event's own payload, which names its instance; no separate `workflow_commands` map is kept) or
   through `item` and attempt, and signals it. Deliveries of engine-origin effects signal nothing, so the engine's own
   notification can never satisfy a recipe's wait. A `route: causation` event signals only the frame entry its command
   was written for; the interpreter drops it if that entry has ended.
