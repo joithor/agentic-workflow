@@ -731,7 +731,8 @@ Engine spec rev 8.1 §3.8, §5.2, §5.5, §5.8, §6.2; UI spec E-6, E-19.
 - **open-request (E-6).** `IInstanceRuntime.OpenRequest` sends the `open-request` Update with id
   `wf:{instance}:open:{launchId}`: no nonce, actor `service:engine`, past the API chain and exempt from approval. It
   takes over wherever a takeover is allowed, is a no-op (nothing recorded) when the instance is already taken over,
-  and is `SND-WF-003` on an ended instance. Temporal deduplicates the id, so a repeat applies once. The ledger row
+  and is `SND-WF-003` on an ended instance and for any actor other than `service:engine`. One that arrives while the
+  instance is still starting waits for the start, then takes over. Temporal deduplicates the id, so a repeat applies once. The ledger row
   carries the launch id as `causation`. Its sender is API P10b's launcher.
 - **Start taken over (E-19).** `StartInstance` reads the item's launches (`ILaunchRequests`); when one is still
   requested the instance starts taken over (`InstanceStart.OpenLaunch`, actor `service:engine`), with the launch as the
