@@ -228,6 +228,58 @@ public sealed class CommandPaletteViewModelTests
         Assert.Equal((true, 2), (rebuild.IsEnabled, _server.RebuildCalls));
     }
 
+    // H2 (a11y-0): while a command sends, the palette's live region never says "ready": not in the first 300 ms, not at
+    // "Sending…", and not between "Sending…" and the outcome (the order the control clears its flags in).
+    [Theory]
+    [InlineData(false, "Rebuild views: done")]
+    [InlineData(true, "SND-API-005")]
+    public async Task A_send_is_never_announced_as_ready_on_the_way_to_its_outcome(bool refused, string outcome)
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        if (refused)
+        {
+            _server.Rebuild = RouteAnswer.Problem(System.Net.HttpStatusCode.InternalServerError, "SND-API-005", "failed");
+        }
+
+        _palette.Open();
+        for (var i = 0; i < 200 && _palette.Selected?.Id != "RebuildViews"; i++)
+        {
+            _palette.Move(1);
+        }
+
+        var said = new List<string>();
+        _palette.PropertyChanged += (_, e) => said.Add(e.PropertyName == nameof(CommandPaletteViewModel.Announcement) ? _palette.Announcement : string.Empty);
+        var run = _palette.Run(_palette.Selected, Token);
+        _clock.Advance(ControlViewModel.SendingAfter);
+        _server.RebuildGate.SetResult();
+        await run;
+
+        var spoken = said.Where(t => t.Length > 0).ToList();
+        Assert.DoesNotContain(spoken, t => t.Contains("ready", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(spoken, t => t.StartsWith("Rebuild views, Sending…, ", StringComparison.Ordinal));
+        Assert.StartsWith("Rebuild views, " + outcome, spoken[^1], StringComparison.Ordinal);
+    }
+
+    // H2: nor in the first 300 ms, when the control is still silent: the status is empty then, not "ready".
+    [Fact]
+    public async Task A_send_in_its_first_300_ms_is_not_called_ready()
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        _palette.Open();
+        for (var i = 0; i < 200 && _palette.Selected?.Id != "RebuildViews"; i++)
+        {
+            _palette.Move(1);
+        }
+
+        var rebuild = _palette.Selected!;
+        var run = _palette.Run(rebuild, Token);
+
+        Assert.DoesNotContain("ready", _palette.Announcement, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(("Rebuild views", string.Empty), (rebuild.Name, rebuild.Status));
+        _server.RebuildGate.SetResult();
+        await run;
+    }
+
     // F2: a refusal shows Sindri's code as the entry's status and its detail as served; the palette stays open.
     [Fact]
     public async Task A_refused_ready_entry_shows_sindris_code_and_detail()
