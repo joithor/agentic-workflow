@@ -226,7 +226,7 @@ or for 1 s, only once it has caught up. While a rebuild runs, commands that read
 
 **Failure.** A projection that throws on an event stops the projector at that sequence:
 - it sets `stalled`, logs `SND-VIEW-001` with the sequence and event type, and retries every 30 s;
-- `GET /status` reports `views: stalled at <sequence>`;
+- `GET /status` reports `views` in the same shape as `asOf`, plus the stall: `projectedAt`, `cursor`, `head`, `rebuilding`, `stalled`, `stalledAt` and `stalledType`. It also carries `views.text`, the rebuilding or stalled sentence (§3.6), which is `null` when the views are fresh;
 - `sindri doctor` gains a `views` line, which fails with the fix `sindri views rebuild`;
 - queries answer with `asOf.stalled = true`, and the UI shows its error banner;
 - `RebuildViews` doesn't wait for the head (§2.1), so the fix always runs.
@@ -284,7 +284,7 @@ Every list view also returns `empty`, the `EmptyText` sentence (§3.6) for its c
 
 | Route | Slice | Request | Response | Phase |
 |---|---|---|---|---|
-| `GET /status` | `GetStatus` (S1) | — | S1's response, plus `apiVersion` and `views` (§2.3) | S1; extended in P1 and P2 |
+| `GET /status` | `GetStatus` (S1) | — | S1's response, plus `apiVersion` and `views` (§2.3: the `asOf`-shaped `projectedAt`, `cursor`, `head`, `rebuilding`, `stalled`, `stalledAt`, `stalledType`, and `text`, the rebuilding or stalled sentence, `null` when fresh) | S1; extended in P1 and P2 |
 | `GET /ping` | `PingProcess` (S1) | — | S1's `{pid, epoch}` | S1 |
 | `GET /commands` | `ListCommands` | — | `CommandList(rows)`. Each row: <ul><li>action id (`<Command>` or `<Command>:<variant>`);</li><li>class;</li><li>allowed callers;</li><li>whether it needs a terminal;</li><li>method and route;</li><li>CLI form;</li><li>UI status: `ready`, `pending:<phase>` or `cli-only:<reason>`.</li></ul> | P1 |
 | `GET /services` | `ListServices` | — | `ServiceList(services, empty, asOf)`. Each service: <ul><li>name;</li><li>cadence;</li><li>paused;</li><li>last run (slot, outcome, code);</li><li>next slot.</li></ul> | P2 |
