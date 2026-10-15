@@ -67,7 +67,7 @@ tree="$scratch/tree"
 work="$scratch/run"
 mkdir -p "$tree" "$work"
 git -C "$root" ls-files -z --cached --others --exclude-standard -- global.json nuget.config .editorconfig 'Directory.*' BannedSymbols.txt CodeMetricsConfig.txt \
-  src/Aw.Kernel src/Aw.Kernel.Data src/Aw.Kernel.Telemetry src/Redaction src/Aw.Analyzers src/Context src/Sindri | (cd "$root" && tar --null -T - -cf -) | tar -xf - -C "$tree"
+  src/Aw.Kernel src/Aw.Kernel.Data src/Aw.Kernel.Telemetry src/Redaction src/Aw.Analyzers src/Context src/Judge src/Sindri | (cd "$root" && tar --null -T - -cf -) | tar -xf - -C "$tree"
 dotnet publish "$tree/src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj" -c Release --no-self-contained -warnaserror   -o "$out/bin" </dev/null >"$out/publish.log" 2>&1 || { tail -20 "$out/publish.log" >&2; exit 1; }
 
 # Framework-dependent: the runtimeconfig names the shared framework and no runtime ships beside the host.
