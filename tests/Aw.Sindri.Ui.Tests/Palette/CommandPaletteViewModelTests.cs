@@ -523,7 +523,7 @@ public sealed class CommandPaletteViewModelTests
             _palette.Move(1);
         }
 
-        var rebuild = _palette.Selected!;
+        var rebuild = _palette.Selected;
         await _palette.Run(rebuild, Token);
         _server.Rebuild = RouteAnswer.SpecShaped("views-rebuild", "accepted");
         var spoken = new List<string>();
