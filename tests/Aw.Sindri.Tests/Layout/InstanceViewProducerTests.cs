@@ -339,6 +339,41 @@ public sealed class InstanceViewProducerTests
         var view = InstanceViews.Starting(InstanceAddress.From("T-3/step/1"), StatusCases.View("desk-task").Recipe, StatusCases.Now, ItemKey.From("T-3"), subject);
 
         Assert.Equal((InstanceViews.StartingState, ItemKey.From("T-3"), subject), (view.State, view.ItemId, view.Subject));
-        Assert.Equal(InstanceViews.StartingState, view.State);
+    }
+
+    [Fact]
+    public void An_output_with_no_declared_type_that_is_produced_is_a_text_row_with_no_ref()
+    {
+        var recipe = _incident with { Recipe = _incident.Recipe with { Outputs = [new RecipeOutput(_output, "Output", Type: null, "produce")] } };
+        var instance = EngineFixture.At(recipe.Recipe, "produce") with { Facts = new Dictionary<FactKey, FactValue> { [_spec] = EngineFixture.Fact("the spec"), [_output] = EngineFixture.Fact("done") } };
+
+        var view = InstanceViews.Of(instance, recipe, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
+
+        var row = Assert.Single(view.Facts, static f => f.Direction == FactDirection.Output);
+        Assert.Equal((FactType.Text, FactStatus.Produced), (row.Type, row.Status));
+        Assert.Null(row.Ref);
+    }
+
+    private static IReadOnlyList<InputPresence> Slots(params RecipeInput[] inputs)
+    {
+        var recipe = StatusCases.Recipe with { Recipe = EngineFixture.Step with { Inputs = [.. inputs] }, Inputs = new Dictionary<FactKey, InputFact>() };
+        return InputSlots.Of(EngineFixture.At(recipe.Recipe, "produce"), recipe);
+    }
+
+    [Fact]
+    public void Only_the_first_input_has_a_kind_the_subject_adapter_as_the_recipe_view_serves_it()
+    {
+        var slots = Slots(
+            new RecipeInput(FactKey.From("fact:project"), "Project", "payload", "linear-project"),
+            new RecipeInput(FactKey.From("fact:notes"), "Notes", "file", "file"));
+
+        Assert.Equal((string?[])["linear-project", null], slots.Select(static s => s.Kind), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void A_first_input_typed_link_with_no_declared_kind_has_no_kind_and_a_text_one_is_a_text_subject()
+    {
+        Assert.Null(Assert.Single(Slots(new RecipeInput(FactKey.From("fact:url"), "Url", "link", Kind: null))).Kind);
+        Assert.Equal("text", Assert.Single(Slots(new RecipeInput(FactKey.From("fact:note"), "Note", Type: null, Kind: null))).Kind);
     }
 }

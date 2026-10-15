@@ -1,7 +1,9 @@
 using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -147,6 +149,7 @@ public sealed class ListInstancesServiceTests
             View("desk-task", address) with { ItemId = ItemKey.From(item), Subject = new SubjectRef("item", item, item, Href: null) };
         var views = new[] { OnItem("ITM-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ITM-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/step/1"), OnItem("ITM-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "ITM-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb/step/1") };
         var titles = new FixedItemViews(
+            failing: false,
             new ItemRowBuilder().WithId(ItemId.From("ITM-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")).Build() with { Title = "Zeta" },
             new ItemRowBuilder().WithId(ItemId.From("ITM-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")).Build() with { Title = "Alpha" });
         var service = new ListInstancesService(
@@ -190,11 +193,7 @@ public sealed class ListInstancesServiceTests
     [Fact]
     public async Task An_instance_that_is_still_starting_is_a_queued_row_beside_the_others_not_a_failed_list()
     {
-        var address = InstanceAddress.From("T-9/step/1");
-        var starting = new InstanceView(address, StatusCases.View("desk-task").Recipe, InstanceViews.StartingState, Detail: null, StatusCases.Now, string.Empty, [], Question: null, Task: null, Run: null, Children: [], Outcome: null)
-        {
-            Id = WorkflowInstanceId.Of(address),
-        };
+        var starting = InstanceViews.Starting(InstanceAddress.From("T-9/step/1"), StatusCases.View("desk-task").Recipe, StatusCases.Now, ItemKey.From("T-9"), subject: null);
 
         var (result, _) = await Run(new ListInstancesRequest(Recipe: "workflow.step"), View("desk-task", "T-3/step/1"), starting, View("taken-over", "T-4/step/1"));
 
@@ -249,5 +248,96 @@ public sealed class ListInstancesServiceTests
         Assert.Equal(["T-1/step/1"], byLabel.Value.Instances.Select(static v => v.Address.Value), StringComparer.Ordinal);
         Assert.Equal(("no instances match", 0), (none.Value.Empty, none.Value.Instances.Count));
         Assert.Null(port.Calls[0].Filter!.Subject);
+    }
+
+    private const string ItemA = "ITM-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    private const string ItemB = "ITM-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+    private static InstanceView OnItem(string item, string address) =>
+        View("desk-task", address) with { ItemId = ItemKey.From(item), Subject = new SubjectRef("item", item, item, Href: null) };
+
+    private static ItemRow Titled(string id, string title, string? repo = null) =>
+        new ItemRowBuilder().WithId(ItemId.From(id)).InRepo(repo is null ? null : RepoName.From(repo)).Build() with { Title = title };
+
+    private static ListInstancesService Service(IReadOnlyList<InstanceView> views, FixedItemViews items, CallerContext? caller, string? directoryAddress = null) =>
+        new(
+            directoryAddress is null ? new NoDirectory() : new FixedDirectory(directoryAddress),
+            new RecordingInstances([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]),
+            new FixedReader(views),
+            items,
+            new FixedCaller(caller),
+            clock: new FakeTimeProvider());
+
+    [Fact]
+    public async Task A_subject_filter_matches_the_item_title_the_row_shows_and_still_the_id_as_the_key()
+    {
+        var views = new[] { OnItem(ItemA, $"{ItemA}/step/1"), OnItem(ItemB, $"{ItemB}/step/1") };
+        var items = new FixedItemViews(failing: false, Titled(ItemA, "Offline sync spec"), Titled(ItemB, "Dark mode"));
+        var service = Service(views, items, new CallerContextBuilder().Human().Build());
+
+        var byTitle = await service.Handle(new ListInstancesRequest(Subject: "SYNC"), CancellationToken.None);
+        var byId = await service.Handle(new ListInstancesRequest(Subject: ItemB), CancellationToken.None);
+        var byIdAsLabel = await service.Handle(new ListInstancesRequest(Subject: "ITM-aaaa"), CancellationToken.None);
+
+        Assert.Equal([$"{ItemA}/step/1"], byTitle.Value.Rows.Select(static r => r.Address.Value), StringComparer.Ordinal);
+        Assert.Equal([$"{ItemB}/step/1"], byId.Value.Rows.Select(static r => r.Address.Value), StringComparer.Ordinal);
+        Assert.Empty(byIdAsLabel.Value.Rows);   // the row shows the title, not the id, as its label: one label for display, order and filter
+    }
+
+    [Fact]
+    public async Task An_instance_with_no_subject_matches_a_subject_filter_by_the_address_its_row_shows()
+    {
+        var (result, _) = await Run(new ListInstancesRequest(Subject: "T-3/step"), View("desk-task", "T-3/step/1"), View("desk-task", "T-4/step/1"));
+
+        Assert.Equal(["T-3/step/1"], result.Value.Rows.Select(static r => r.Address.Value), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_title_view_that_cannot_be_read_leaves_the_list_working_with_the_ids_as_labels_in_id_order()
+    {
+        var views = new[] { OnItem(ItemB, $"{ItemB}/step/1"), OnItem(ItemA, $"{ItemA}/step/1") };
+        var service = Service(views, new FixedItemViews(failing: true), new CallerContextBuilder().Human().Build());
+
+        var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal([ItemA, ItemB], result.Value.Rows.Select(static r => r.Subject.Label), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_session_of_another_repo_sees_the_id_not_the_title()
+    {
+        var views = new[] { OnItem(ItemA, $"{ItemA}/step/1"), OnItem(ItemB, $"{ItemB}/step/1") };
+        var items = new FixedItemViews(failing: false, Titled(ItemA, "Mine", repo: "alpha"), Titled(ItemB, "Theirs", repo: "beta"));
+        var service = Service(views, items, new CallerContextBuilder().Session().InRepo("alpha").Build());
+
+        var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
+
+        Assert.Equal([ItemB, "Mine"], result.Value.Rows.Select(static r => r.Subject.Label), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_single_address_path_shows_the_title_too()
+    {
+        var views = new[] { OnItem(ItemA, $"{ItemA}/step/1") };
+        var service = Service(views, new FixedItemViews(failing: false, Titled(ItemA, "Offline sync spec")), new CallerContextBuilder().Human().Build(), directoryAddress: $"{ItemA}/step/1");
+
+        var result = await service.Handle(new ListInstancesRequest(Address: $"{ItemA}/step/1"), CancellationToken.None);
+
+        Assert.Equal("Offline sync spec", Assert.Single(result.Value.Rows).Subject.Label);
+    }
+
+    [Fact]
+    public async Task The_titles_are_read_by_key_once_per_distinct_item_and_not_at_all_when_no_view_has_an_item()
+    {
+        var views = new[] { OnItem(ItemA, $"{ItemA}/step/1"), OnItem(ItemA, $"{ItemA}/step/2"), OnItem(ItemB, $"{ItemB}/step/1") };
+        var items = new FixedItemViews(failing: false, Titled(ItemA, "A"), Titled(ItemB, "B"));
+        var withItems = await Service(views, items, new CallerContextBuilder().Human().Build()).Handle(new ListInstancesRequest(), CancellationToken.None);
+        var none = new FixedItemViews(failing: false);
+        var withoutItems = await Service([View("desk-task", "T-3/step/1") with { ItemId = null }], none, new CallerContextBuilder().Human().Build()).Handle(new ListInstancesRequest(), CancellationToken.None);
+
+        Assert.True(withItems.IsSuccess && withoutItems.IsSuccess);
+        Assert.Equal([ItemA, ItemB], items.Reads);
+        Assert.Empty(none.Reads);
     }
 }

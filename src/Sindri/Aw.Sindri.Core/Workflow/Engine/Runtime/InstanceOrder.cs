@@ -13,9 +13,6 @@ public sealed class InstanceOrder(ItemTitles titles) : IComparer<InstanceView>
 {
     private readonly ItemTitles _titles = titles ?? throw new ArgumentNullException(nameof(titles));
 
-    /// <summary>The comparer for a list with no item titles (an item is labelled by its id).</summary>
-    public static InstanceOrder Instance { get; } = new(ItemTitles.None);
-
     /// <inheritdoc/>
     public int Compare(InstanceView? x, InstanceView? y)
     {

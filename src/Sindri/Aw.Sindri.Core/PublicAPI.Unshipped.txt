@@ -6725,7 +6725,6 @@ static Aw.Sindri.Core.Workflow.Recipes.Urgencies.Word(Aw.Sindri.Core.Workflow.Re
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceOrder
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceOrder.Compare(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView? x, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView? y) -> int
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceOrder.InstanceOrder(Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles! titles) -> void
-static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceOrder.Instance.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceOrder!
 Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance
 Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!
 Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance.At.get -> System.DateTimeOffset

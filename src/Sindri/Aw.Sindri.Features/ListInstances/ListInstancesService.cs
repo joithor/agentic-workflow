@@ -17,14 +17,14 @@ namespace Aw.Sindri.Features.ListInstances;
 /// Finds the instances by their search attributes (engine spec §5.1) and asks each for its view, so every line is a
 /// full status header. '--needs-me' is served here by a visibility query on 'NeedsYou = true', shaped like API's
 /// 'GET /needs-you' (Decisions, then Tasks; README X5) until API P4 builds that route, which it then reads instead.
-/// The engine has no item titles: they come from the items view (API P3), read once per list and fed to both the row and
-/// the order, so the label a row shows is the one it sorts by. An unreadable view degrades to the item's id. A child that has not
+/// The engine has no item titles: they come from the items view (API P3), one keyed read per distinct item of the list, fed to the row, the order and
+/// the subject filter, so the label a row shows is the one it sorts by. An unreadable view degrades to the item's id. A child that has not
 /// run yet reads QUEUED from its starting state; nothing in this list knows a child that was never started, so engine P7 wires 'NotStarted'.
 /// </summary>
 /// <param name="directory">Resolves an address or a bare item ('address').</param>
 /// <param name="instances">The visibility query.</param>
 /// <param name="runtime">Each instance's 'GetInstance' Query; one that ended between the list and its query (SND-WF-001) is left out.</param>
-/// <param name="itemViews">The 'items' view, read once per list for the titles of the items the instances are on.</param>
+/// <param name="itemViews">The 'items' view, read by key for the titles of the items the instances are on.</param>
 /// <param name="callers">The caller, whose repo scope decides which item titles it may see.</param>
 /// <param name="clock">The time the rows are read at: their ages and timeouts are worked out from it, not from when the workflow last ran.</param>
 internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, IInstanceReader runtime, IViewReader itemViews, ICallerContextAccessor callers, TimeProvider clock) : IService<ListInstancesRequest, ListInstancesResponse>
@@ -59,8 +59,8 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             return views.Error;
         }
 
-        var titles = await Titles(cancellationToken).ConfigureAwait(false);
-        return Listed(needsMe, Matching(views.Value, request.Subject), titles);
+        var titles = await Titles(views.Value, cancellationToken).ConfigureAwait(false);
+        return Listed(needsMe, Matching(views.Value, request.Subject, titles), titles);
     }
 
     /// <summary>Each row's 'GetInstance' view; one that ended between the list and its query is left out.</summary>
@@ -114,14 +114,18 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
         }
 
         var view = await runtime.Get(address.Value, cancellationToken).ConfigureAwait(false);
-        return view.IsError ? view.Error : Rows(new ListInstancesResponse([view.Value], NeedsYou: null, Empty: null), await Titles(cancellationToken).ConfigureAwait(false));
+        return view.IsError ? view.Error : Rows(new ListInstancesResponse([view.Value], NeedsYou: null, Empty: null), await Titles([view.Value], cancellationToken).ConfigureAwait(false));
     }
 
-    /// <summary>The views whose subject has the key <paramref name="subject"/> or a label containing it; all of them when none is asked for. A label match can't be a search attribute (a keyword has no substring match), so it is made here.</summary>
-    private static List<InstanceView> Matching(List<InstanceView> views, string? subject) =>
+    /// <summary>
+    /// The views whose subject, as the row shows it (<see cref="InstanceSummaries.SubjectOf"/>: an item's title, an instance with no subject
+    /// its address), has the key <paramref name="subject"/> or a label containing it; all of them when none is asked for. A label match
+    /// can't be a search attribute (a keyword has no substring match), so it is made here.
+    /// </summary>
+    private static List<InstanceView> Matching(List<InstanceView> views, string? subject, ItemTitles titles) =>
         subject is null
             ? views
-            : [.. views.Where(v => v.Subject is { } s && (string.Equals(s.Key, subject, StringComparison.Ordinal) || s.Label.Contains(subject, StringComparison.OrdinalIgnoreCase)))];
+            : [.. views.Where(v => InstanceSummaries.SubjectOf(v, titles.For(v)) is var s && (string.Equals(s.Key, subject, StringComparison.Ordinal) || s.Label.Contains(subject, StringComparison.OrdinalIgnoreCase)))];
 
     private ListInstancesResponse Listed(bool needsMe, List<InstanceView> views, ItemTitles titles)
     {
@@ -142,18 +146,28 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
         return listed with { Rows = [.. listed.Instances.Select(v => InstanceSummaries.Of(v, new InstanceSummaryContext(now, ItemTitle: titles.For(v))))] };
     }
 
-    /// <summary>The titles of the items the caller may see, from the items view; none when there is no caller or the view can't be read (a row then shows the id).</summary>
-    private async ValueTask<ItemTitles> Titles(CancellationToken cancellationToken)
+    /// <summary>
+    /// The titles of the items <paramref name="views"/> are on that the caller may see: one keyed read of the 'items' view per distinct item
+    /// (none when no view has one). With no caller, or an item whose read fails or is out of the caller's scope, the item is labelled by its id.
+    /// </summary>
+    private async ValueTask<ItemTitles> Titles(IReadOnlyList<InstanceView> views, CancellationToken cancellationToken)
     {
         if (callers.Current is not { } caller)
         {
             return ItemTitles.None;
         }
 
-        var rows = await itemViews.List<ItemRow>(ViewNames.Items, cancellationToken).ConfigureAwait(false);
-        return rows.IsError
-            ? ItemTitles.None
-            : new ItemTitles(rows.Value.Where(r => ItemScope.Visible(caller, r.Repo)).ToDictionary(static r => r.Id.Value, static r => r.Title, StringComparer.Ordinal));
+        var titles = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var id in views.Select(static v => v.ItemId).OfType<ItemKey>().Select(static i => i.Value).Distinct(StringComparer.Ordinal))
+        {
+            var row = await itemViews.Get<ItemRow>(ViewNames.Items, id, cancellationToken).ConfigureAwait(false);
+            if (row.IsSuccess && row.Value is { } item && ItemScope.Visible(caller, item.Repo))
+            {
+                titles[id] = item.Title;
+            }
+        }
+
+        return new ItemTitles(titles);
     }
 
     private static Error? NotTrueOrFalse(string? value, string name, string meaning) =>

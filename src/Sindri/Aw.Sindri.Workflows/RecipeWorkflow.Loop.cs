@@ -232,7 +232,7 @@ internal sealed partial class RecipeWorkflow
                 (FactReadActivities a) => a.ReadSubjectAsync(fact),
                 new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(10), RetryPolicy = new RetryPolicy { MaximumAttempts = 3 } }).ConfigureAwait(true);
         }
-        catch (ActivityFailureException)
+        catch (Exception failed) when (IsActivityFailure(failed))
         {
             return null; // boundary: content that can't be read leaves the subject named by its fact key; the start goes on
         }
@@ -247,9 +247,16 @@ internal sealed partial class RecipeWorkflow
                 (FactReadActivities a) => a.ReadRepoAsync(item),
                 new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(10), RetryPolicy = new RetryPolicy { MaximumAttempts = 3 } }).ConfigureAwait(true);
         }
-        catch (ActivityFailureException)
+        catch (Exception failed) when (IsActivityFailure(failed))
         {
             return null; // boundary: a fact:item that can't be read leaves 'Repo' unset (spec §5.1); the start goes on
         }
     }
+
+    /// <summary>
+    /// Whether <paramref name="failure"/> is a local activity that ran out of attempts. The SDK raises a failed local activity as the activity's own
+    /// <see cref="ApplicationFailureException"/> (the history shows no ActivityFailure around it), a failed ordinary one as an <see cref="ActivityFailureException"/>;
+    /// a cancellation is neither, so it still ends the workflow.
+    /// </summary>
+    private static bool IsActivityFailure(Exception failure) => failure is ActivityFailureException or ApplicationFailureException;
 }

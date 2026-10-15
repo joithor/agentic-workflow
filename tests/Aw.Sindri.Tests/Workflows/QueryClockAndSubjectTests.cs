@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -75,6 +76,27 @@ public sealed class QueryClockAndSubjectTests : IDisposable
         var view = await WorkflowsHarness.Until(handle, static v => v.Task is not null);
 
         Assert.Equal(new SubjectRef("text", "fact:spec", "spec.md", Href: null), view.Subject);
+        Assert.Equal("fact:spec", (await handle.DescribeAsync()).TypedSearchAttributes.Get(SindriTemporal.SubjectKey));
+        await handle.TerminateAsync("test over");
+    }
+
+    [UnsupportedOSPlatform("windows")]
+    [Fact(Timeout = 120_000)]
+    public async Task A_first_input_whose_stored_content_cannot_be_opened_still_starts_with_the_subject_keyed_by_the_fact_key()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows() || Environment.UserName == "root", "needs a file the current user is refused (a root user opens any)");
+        var ct = TestContext.Current.CancellationToken;
+        var fact = _harness.Fact("Fix the crash on launch");
+        var stored = Path.Combine(_harness.Home, "workflow", "facts", fact.Sha256);   // a directory there reads as 'not stored' (File.Exists is false): only a file the open is refused makes the activity throw
+        File.SetUnixFileMode(stored, UnixFileMode.None);
+        await using var env = await WorkflowsHarness.StartDevServer(ct: ct);
+        await using var served = await ApplyCommand.Served.Start(_harness.Home, env, ct);
+        var started = await WorkflowsHarness.StepStart(served.Sindri, "T-1", ct);
+        var handle = await WorkflowsHarness.Start(env.Client, started with { Inputs = new Dictionary<FactKey, InputFact> { [FactKey.From("fact:spec")] = new("notes.txt", fact) } });
+
+        var view = await WorkflowsHarness.Until(handle, static v => v.Task is not null);
+
+        Assert.Equal(new SubjectRef("text", "fact:spec", "notes.txt", Href: null), view.Subject);
         Assert.Equal("fact:spec", (await handle.DescribeAsync()).TypedSearchAttributes.Get(SindriTemporal.SubjectKey));
         await handle.TerminateAsync("test over");
     }

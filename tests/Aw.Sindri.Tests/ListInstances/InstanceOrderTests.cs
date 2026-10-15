@@ -20,7 +20,7 @@ public sealed class InstanceOrderTests
         };
 
     private static string[] Sorted(params InstanceView[] views) =>
-        [.. views.Order(InstanceOrder.Instance).Select(static v => v.Address.Value)];
+        [.. views.Order(new InstanceOrder(ItemTitles.None)).Select(static v => v.Address.Value)];
 
     [Fact]
     public void Key_1_unfinished_rows_come_before_finished_ones_whatever_their_urgency() =>

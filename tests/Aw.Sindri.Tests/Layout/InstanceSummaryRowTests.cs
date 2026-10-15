@@ -146,10 +146,26 @@ public sealed partial class InstanceSummaryRowTests
         Assert.All(rows, row => Assert.True(Pattern(row.Chip).IsMatch(row.Now), $"{row.Chip}: '{row.Now}'"));
     }
 
+    [Theory]
+    [InlineData("RUNNING", "engine polling in ITM-01JKH", false)]
+    [InlineData("RUNNING", "engine waiting in ITM-01JKH", true)]
+    [InlineData("RUNNING", "agent rolling back in ITM-01JKH", true)]
+    [InlineData("RUNNING", "agent producing in T-3/step/1", true)]
+    [InlineData("RUNNING", "agent produce in ITM-01JKH", false)]
+    [InlineData("ESCALATED", "parked (rounds)", false)]
+    [InlineData("ESCALATED", "escalated (rounds)", true)]
+    [InlineData("ESCALATED", "escalated", true)]
+    [InlineData("PARKED", "parked (rounds)", true)]
+    [InlineData("PARKED", "parked", true)]
+    [InlineData("PARKED", "needs your answer", true)]
+    [InlineData("PARKED", "escalated (rounds)", false)]
+    public void The_chip_pattern_accepts_what_row_sentences_builds_and_nothing_else(string chip, string now, bool accepted) =>
+        Assert.Equal(accepted, Pattern(chip).IsMatch(now));
+
     private static Regex Pattern(string chip) => chip switch
     {
         "DECISION" => DecisionNow,
-        "PARKED" or "ESCALATED" => ParkNow,
+        "PARKED" or "ESCALATED" => ParkNow(chip),
         "WITH YOU" => WithYouNow,
         "RUNNING" => RunningNow,
         "QUEUED" => QueuedNow,
@@ -160,13 +176,14 @@ public sealed partial class InstanceSummaryRowTests
     [GeneratedRegex(@"^needs your [a-z-]+ \(desk answer\)\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex DecisionNow { get; }
 
-    [GeneratedRegex(@"^(needs your answer|parked .+)\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex ParkNow { get; }
+    /// <summary>What RowSentences builds under PARKED or ESCALATED: the answer line's sentence, else the chip's own word, lowercased, with the detail in brackets.</summary>
+    private static Regex ParkNow(string chip) =>
+        new($@"^(needs your answer|{Regex.Escape(chip.ToLowerInvariant())}( \(.+\))?)\z", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
 
     [GeneratedRegex(@"^with you: .+\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex WithYouNow { get; }
 
-    [GeneratedRegex(@"^(agent|engine) [a-z ]+ in ITM-[0-9A-Z]+\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex(@"^(engine (waiting|running)|agent [a-z]+ing( [a-z]+)*) in (ITM-[0-9A-Za-z]+|\S+/\S+/[0-9]+)\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex RunningNow { get; }
 
     [GeneratedRegex(@"^queued\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]

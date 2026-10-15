@@ -1,9 +1,9 @@
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 
 /// <summary>
-/// The titles of the items a list's instances are on, looked up once and shared by the list row and the list order, so the
-/// label a row shows is the label it sorts by. The engine has no title source: the caller (the API read service, API P11)
-/// supplies them; with none, an item is labelled by its id.
+/// The titles of the items a list's instances are on, shared by the list row, the list order and the subject filter, so the
+/// label a row shows is the label it sorts and filters by. The engine has no title source: the caller supplies them (the list
+/// service reads them from the items view by key, scoped to the caller); with none, an item is labelled by its id.
 /// </summary>
 public sealed class ItemTitles
 {
