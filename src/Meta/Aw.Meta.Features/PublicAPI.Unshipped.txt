@@ -1,4 +1,33 @@
 #nullable enable
+Aw.Meta.Features.Lanes.LanesResponse
+Aw.Meta.Features.Lanes.LanesResponse.<Clone>$() -> Aw.Meta.Features.Lanes.LanesResponse!
+Aw.Meta.Features.Lanes.LanesResponse.Announcement.get -> string!
+Aw.Meta.Features.Lanes.LanesResponse.Announcement.init -> void
+Aw.Meta.Features.Lanes.LanesResponse.Changed.get -> bool
+Aw.Meta.Features.Lanes.LanesResponse.Changed.init -> void
+Aw.Meta.Features.Lanes.LanesResponse.Deconstruct(out int Version, out bool Changed, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneAssignment!>! Entries, out System.Collections.Generic.IReadOnlyList<string!>! Unmapped, out string! Announcement) -> void
+Aw.Meta.Features.Lanes.LanesResponse.Entries.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneAssignment!>!
+Aw.Meta.Features.Lanes.LanesResponse.Entries.init -> void
+Aw.Meta.Features.Lanes.LanesResponse.Equals(Aw.Meta.Features.Lanes.LanesResponse? other) -> bool
+override Aw.Meta.Features.Lanes.LanesResponse.Equals(object? obj) -> bool
+override Aw.Meta.Features.Lanes.LanesResponse.GetHashCode() -> int
+Aw.Meta.Features.Lanes.LanesResponse.LanesResponse(int Version, bool Changed, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneAssignment!>! Entries, System.Collections.Generic.IReadOnlyList<string!>! Unmapped, string! Announcement) -> void
+override Aw.Meta.Features.Lanes.LanesResponse.ToString() -> string!
+Aw.Meta.Features.Lanes.LanesResponse.Unmapped.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Features.Lanes.LanesResponse.Unmapped.init -> void
+Aw.Meta.Features.Lanes.LanesResponse.Version.get -> int
+Aw.Meta.Features.Lanes.LanesResponse.Version.init -> void
+static Aw.Meta.Features.Lanes.LanesResponse.operator !=(Aw.Meta.Features.Lanes.LanesResponse? left, Aw.Meta.Features.Lanes.LanesResponse? right) -> bool
+static Aw.Meta.Features.Lanes.LanesResponse.operator ==(Aw.Meta.Features.Lanes.LanesResponse? left, Aw.Meta.Features.Lanes.LanesResponse? right) -> bool
+Aw.Meta.Features.Lanes.RefreshLanesRequest
+Aw.Meta.Features.Lanes.RefreshLanesRequest.<Clone>$() -> Aw.Meta.Features.Lanes.RefreshLanesRequest!
+Aw.Meta.Features.Lanes.RefreshLanesRequest.Equals(Aw.Meta.Features.Lanes.RefreshLanesRequest? other) -> bool
+override Aw.Meta.Features.Lanes.RefreshLanesRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.Lanes.RefreshLanesRequest.GetHashCode() -> int
+Aw.Meta.Features.Lanes.RefreshLanesRequest.RefreshLanesRequest() -> void
+override Aw.Meta.Features.Lanes.RefreshLanesRequest.ToString() -> string!
+static Aw.Meta.Features.Lanes.RefreshLanesRequest.operator !=(Aw.Meta.Features.Lanes.RefreshLanesRequest? left, Aw.Meta.Features.Lanes.RefreshLanesRequest? right) -> bool
+static Aw.Meta.Features.Lanes.RefreshLanesRequest.operator ==(Aw.Meta.Features.Lanes.RefreshLanesRequest? left, Aw.Meta.Features.Lanes.RefreshLanesRequest? right) -> bool
 Aw.Meta.Features.MetaFeaturesServiceCollectionExtensions
 static Aw.Meta.Features.MetaFeaturesServiceCollectionExtensions.AddMetaFeatures(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 Aw.Meta.Features.Roles.SetRoleRequest

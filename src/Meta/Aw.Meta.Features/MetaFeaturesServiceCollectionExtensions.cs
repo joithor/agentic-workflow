@@ -1,6 +1,7 @@
 using Aw.Kernel.Services;
 using Aw.Meta.Core.Config;
 using Aw.Meta.Core.Messages;
+using Aw.Meta.Features.Lanes;
 using Aw.Meta.Features.Roles;
 using Aw.Meta.Features.SyncInbox;
 using Aw.Meta.Features.Team;
@@ -28,7 +29,9 @@ public static class MetaFeaturesServiceCollectionExtensions
             .AddScoped<IValidator<TeamInitRequest>, TeamInitValidator>()
             .Validated<TeamInitService, TeamInitRequest, TeamConfig>()
             .AddScoped<TeamShowService>()
-            .Plain<TeamShowService, TeamShowRequest, TeamConfig>();
+            .Plain<TeamShowService, TeamShowRequest, TeamConfig>()
+            .AddScoped<RefreshLanesService>()
+            .Plain<RefreshLanesService, RefreshLanesRequest, LanesResponse>();
         return services;
     }
 
