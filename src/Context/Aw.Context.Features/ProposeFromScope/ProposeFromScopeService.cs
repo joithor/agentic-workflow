@@ -45,7 +45,13 @@ internal sealed class ProposeFromScopeService(IGraphStore store, IProposalRuns r
 
         var plan = ProposalPlanner.Plan(proposal, seen.Value, Who, now);
         var written = await runs.Propose(proposal, plan.Rows, cancellationToken).ConfigureAwait(false);
-        return written.IsError ? written.Error : new ProposeResult(opened.Value, written.Value, plan.Existing, plan.Rejected, RowsOf(proposal, plan.Rows, draft.Value.Overrides));
+        if (written.IsError)
+        {
+            return written.Error;
+        }
+
+        // A planned row another identical call wrote first is already there: it counts as existing, so the counts add up and none is negative.
+        return new ProposeResult(opened.Value, written.Value, plan.Existing + Math.Max(0, plan.Rows.Count - written.Value), plan.Rejected, RowsOf(proposal, plan.Rows, draft.Value.Overrides));
     }
 
     // The run's propose rows for this call's surfaces: the ones just planned and the ones the draft already held (a retry names them again).
