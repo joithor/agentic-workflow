@@ -4371,3 +4371,4 @@ static Aw.Sindri.Core.Workflow.Recipes.PathOrder.operator ==(Aw.Sindri.Core.Work
 static Aw.Sindri.Core.Workflow.Recipes.StatePathOrder.Of(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> Aw.Sindri.Core.Workflow.Recipes.PathOrder!
 static Aw.Sindri.Core.Workflow.Recipes.StatePlace.operator !=(Aw.Sindri.Core.Workflow.Recipes.StatePlace? left, Aw.Sindri.Core.Workflow.Recipes.StatePlace? right) -> bool
 static Aw.Sindri.Core.Workflow.Recipes.StatePlace.operator ==(Aw.Sindri.Core.Workflow.Recipes.StatePlace? left, Aw.Sindri.Core.Workflow.Recipes.StatePlace? right) -> bool
+const Aw.Sindri.Core.Workflow.Recipes.StatePathOrder.FirstOrder = 1 -> int
