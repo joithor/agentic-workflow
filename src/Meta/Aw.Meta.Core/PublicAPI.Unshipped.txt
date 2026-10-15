@@ -834,13 +834,15 @@ Aw.Meta.Core.Worktrees.ProcessLocation
 Aw.Meta.Core.Worktrees.ProcessLocation.<Clone>$() -> Aw.Meta.Core.Worktrees.ProcessLocation!
 Aw.Meta.Core.Worktrees.ProcessLocation.Command.get -> string!
 Aw.Meta.Core.Worktrees.ProcessLocation.Command.init -> void
-Aw.Meta.Core.Worktrees.ProcessLocation.Deconstruct(out int Pid, out string! Command, out System.Collections.Generic.IReadOnlyList<string!>! Paths) -> void
+Aw.Meta.Core.Worktrees.ProcessLocation.Deconstruct(out int Pid, out string! Command, out System.Collections.Generic.IReadOnlyList<string!>! Paths, out bool IsInvoker) -> void
 Aw.Meta.Core.Worktrees.ProcessLocation.Equals(Aw.Meta.Core.Worktrees.ProcessLocation? other) -> bool
+Aw.Meta.Core.Worktrees.ProcessLocation.IsInvoker.get -> bool
+Aw.Meta.Core.Worktrees.ProcessLocation.IsInvoker.init -> void
 Aw.Meta.Core.Worktrees.ProcessLocation.Paths.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Meta.Core.Worktrees.ProcessLocation.Paths.init -> void
 Aw.Meta.Core.Worktrees.ProcessLocation.Pid.get -> int
 Aw.Meta.Core.Worktrees.ProcessLocation.Pid.init -> void
-Aw.Meta.Core.Worktrees.ProcessLocation.ProcessLocation(int Pid, string! Command, System.Collections.Generic.IReadOnlyList<string!>! Paths) -> void
+Aw.Meta.Core.Worktrees.ProcessLocation.ProcessLocation(int Pid, string! Command, System.Collections.Generic.IReadOnlyList<string!>! Paths, bool IsInvoker = false) -> void
 Aw.Meta.Core.Worktrees.SweepMode
 Aw.Meta.Core.Worktrees.SweepMode.DryRun = 2 -> Aw.Meta.Core.Worktrees.SweepMode
 Aw.Meta.Core.Worktrees.SweepMode.Remove = 1 -> Aw.Meta.Core.Worktrees.SweepMode
@@ -862,7 +864,7 @@ Aw.Meta.Core.Worktrees.WorktreeDecision.Kept = 2 -> Aw.Meta.Core.Worktrees.Workt
 Aw.Meta.Core.Worktrees.WorktreeDecision.Removable = 1 -> Aw.Meta.Core.Worktrees.WorktreeDecision
 Aw.Meta.Core.Worktrees.WorktreeInspector
 Aw.Meta.Core.Worktrees.WorktreeInspector.Inspect(Aw.Meta.Core.Config.TeamConfig! team, Aw.Meta.Core.Worktrees.WorktreeScope! scope, bool fetch, string? onlyPath, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Worktrees.WorktreeReport!>!>!>
-Aw.Meta.Core.Worktrees.WorktreeInspector.WorktreeInspector() -> void
+Aw.Meta.Core.Worktrees.WorktreeInspector.WorktreeInspector(Aw.Meta.Core.Coordination.RepoCommands! repo, Aw.Meta.Core.Ports.IProcessLocations! processes, Aw.Meta.Core.MetaPaths! paths) -> void
 Aw.Meta.Core.Worktrees.WorktreeReport
 Aw.Meta.Core.Worktrees.WorktreeReport.<Clone>$() -> Aw.Meta.Core.Worktrees.WorktreeReport!
 Aw.Meta.Core.Worktrees.WorktreeReport.Branch.get -> string?
@@ -889,7 +891,7 @@ Aw.Meta.Core.Worktrees.WorktreeScope.Prs.get -> System.Collections.Generic.IRead
 Aw.Meta.Core.Worktrees.WorktreeSweeper
 Aw.Meta.Core.Worktrees.WorktreeSweeper.Sweep(Aw.Meta.Core.Config.TeamConfig! team, Aw.Meta.Core.Worktrees.WorktreeScope! scope, Aw.Meta.Core.Worktrees.SweepMode mode, string! trigger, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Worktrees.SweepOutcome!>!>
 Aw.Meta.Core.Worktrees.WorktreeSweeper.Triggered(Aw.Meta.Core.Config.TeamConfig! team, System.Collections.Generic.IReadOnlyCollection<int>! prs, string! trigger, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
-Aw.Meta.Core.Worktrees.WorktreeSweeper.WorktreeSweeper() -> void
+Aw.Meta.Core.Worktrees.WorktreeSweeper.WorktreeSweeper(Aw.Meta.Core.Worktrees.WorktreeInspector! inspector, Aw.Meta.Core.Coordination.RepoCommands! repo, Aw.Meta.Core.Ports.IRunningLog! log, Aw.Meta.Core.Ports.IKeyValueStore! values, System.TimeProvider! clock) -> void
 const Aw.Meta.Core.Health.HostRules.LowMemoryPercent = 10 -> int
 const Aw.Meta.Core.Health.OrphanRule.MinimumAgeSeconds = 300 -> long
 const Aw.Meta.Core.Health.ProcessGroups.Claude = "claude" -> string!
@@ -902,6 +904,8 @@ const Aw.Meta.Core.KvKeys.StopCount = "stopcheck.count" -> string!
 const Aw.Meta.Core.KvKeys.StopFingerprint = "stopcheck.fingerprint" -> string!
 const Aw.Meta.Core.KvKeys.WatchHeartbeat = "watch.heartbeat" -> string!
 const Aw.Meta.Core.KvKeys.WatchInterval = "watch.interval" -> string!
+const Aw.Meta.Core.KvKeys.WorktreesLast = "worktrees.last" -> string!
+const Aw.Meta.Core.KvKeys.WorktreesPending = "worktrees.pending-prs" -> string!
 const Aw.Meta.Core.Obligations.MergeRecord.Unknown = "unknown" -> string!
 override Aw.Meta.Core.Commands.CommandRequest.Equals(object? obj) -> bool
 override Aw.Meta.Core.Commands.CommandRequest.GetHashCode() -> int
@@ -1211,6 +1215,7 @@ static Aw.Meta.Core.Owner.OwnerQuestion.operator !=(Aw.Meta.Core.Owner.OwnerQues
 static Aw.Meta.Core.Owner.OwnerQuestion.operator ==(Aw.Meta.Core.Owner.OwnerQuestion? left, Aw.Meta.Core.Owner.OwnerQuestion? right) -> bool
 static Aw.Meta.Core.Owner.OwnerQuestionText.From(string! body) -> string!
 static Aw.Meta.Core.Registration.MetaCoreServiceCollectionExtensions.AddMetaCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Meta.Core.Watch.EndedPrs.Added(string? stored, System.Collections.Generic.IEnumerable<Aw.Meta.Core.Watch.PrView!>! prs) -> System.Collections.Generic.IReadOnlyList<int>!
 static Aw.Meta.Core.Watch.EndedPrs.Merge(string? stored, System.Collections.Generic.IEnumerable<Aw.Meta.Core.Watch.PrView!>! prs) -> string?
 static Aw.Meta.Core.Watch.EndedPrs.Parse(string? stored) -> System.Collections.Generic.IReadOnlySet<int>!
 static Aw.Meta.Core.Watch.PrView.operator !=(Aw.Meta.Core.Watch.PrView? left, Aw.Meta.Core.Watch.PrView? right) -> bool

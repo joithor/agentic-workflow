@@ -1,4 +1,4 @@
-using Aw.Meta.Core.Worktrees;
+using Aw.Meta.Infrastructure.Files;
 
 namespace Aw.Meta.Tests.Worktrees;
 

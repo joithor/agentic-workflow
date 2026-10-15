@@ -36,8 +36,8 @@ public sealed class WorktreeTriggerTests : IDisposable
         var merge = await _lab.Cli.Run("merge-run", "7");
 
         Assert.Equal(0, merge.Exit);
-        Assert.Contains("MERGED #7", merge.Out, StringComparison.Ordinal);
-        Assert.Contains("WORKTREES merge-run #7: removed 2", merge.Out, StringComparison.Ordinal);
+        Assert.True(merge.Out.Contains("MERGED #7", StringComparison.Ordinal), merge.Out + merge.Err);
+        Assert.True(merge.Out.Contains("WORKTREES merge-run #7: removed 2", StringComparison.Ordinal), merge.Out + merge.Err);
         Assert.False(Directory.Exists(_feat));
         Assert.False(Directory.Exists(gateTree));
         Assert.True(Directory.Exists(_other), "another pull request's worktree is not this trigger's business");
@@ -57,8 +57,8 @@ public sealed class WorktreeTriggerTests : IDisposable
 
         Assert.Equal(0, merge.Exit);
         Assert.True(Directory.Exists(_feat));
-        Assert.Contains("kept 1", merge.Out, StringComparison.Ordinal);
-        Assert.Contains("NOTES.md", merge.Out, StringComparison.Ordinal);
+        Assert.True(merge.Out.Contains("kept 1", StringComparison.Ordinal), merge.Out + merge.Err);
+        Assert.True(merge.Out.Contains("NOTES.md", StringComparison.Ordinal), merge.Out + merge.Err);
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -70,7 +70,7 @@ public sealed class WorktreeTriggerTests : IDisposable
         var merge = await _lab.Cli.Run("merge-run", "7");
 
         Assert.Equal(0, merge.Exit);
-        Assert.Contains("would remove", merge.Out, StringComparison.Ordinal);
+        Assert.True(merge.Out.Contains("would remove", StringComparison.Ordinal), merge.Out + merge.Err);
         Assert.True(Directory.Exists(_feat));
     }
 
@@ -85,7 +85,7 @@ public sealed class WorktreeTriggerTests : IDisposable
         var merge = await _lab.Cli.Run("merge-run", "7");
 
         Assert.Equal(0, merge.Exit);
-        Assert.Contains("MERGED #7", merge.Out, StringComparison.Ordinal);
+        Assert.True(merge.Out.Contains("MERGED #7", StringComparison.Ordinal), merge.Out + merge.Err);
         Assert.True(Directory.Exists(_feat), "a process is in it");
     }
 
@@ -99,7 +99,7 @@ public sealed class WorktreeTriggerTests : IDisposable
         var watch = await _lab.Cli.Run("watch", "--interval", "5", "--for", "5");
 
         Assert.Equal(0, watch.Exit);
-        Assert.Contains("WORKTREES watch #7: removed 1", watch.Out, StringComparison.Ordinal);
+        Assert.True(watch.Out.Contains("WORKTREES watch #7: removed 1", StringComparison.Ordinal), watch.Out + watch.Err);
         Assert.False(Directory.Exists(_feat));
         Assert.True(Directory.Exists(_other));
     }
@@ -112,7 +112,7 @@ public sealed class WorktreeTriggerTests : IDisposable
 
         var watch = await _lab.Cli.Run("watch", "--interval", "5", "--for", "5");
 
-        Assert.Contains("WORKTREES watch #8: removed 1", watch.Out, StringComparison.Ordinal);
+        Assert.True(watch.Out.Contains("WORKTREES watch #8: removed 1", StringComparison.Ordinal), watch.Out + watch.Err);
         Assert.False(Directory.Exists(_other));
         Assert.True(Directory.Exists(_feat));
     }
@@ -126,7 +126,7 @@ public sealed class WorktreeTriggerTests : IDisposable
         _ = await _lab.Cli.Run("watch", "--interval", "5", "--for", "5");
         var again = await _lab.Cli.Run("watch", "--interval", "5", "--for", "5");
 
-        Assert.DoesNotContain("WORKTREES", again.Out, StringComparison.Ordinal);
+        Assert.False(again.Out.Contains("WORKTREES", StringComparison.Ordinal), again.Out + again.Err);
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -138,7 +138,7 @@ public sealed class WorktreeTriggerTests : IDisposable
         var watch = await _lab.Cli.Run("watch", "--interval", "5", "--for", "5");
         var sweep = await _lab.Cli.Run("worktree-sweep");
 
-        Assert.DoesNotContain("WORKTREES", watch.Out, StringComparison.Ordinal);
+        Assert.False(watch.Out.Contains("WORKTREES", StringComparison.Ordinal), watch.Out + watch.Err);
         Assert.Equal(0, sweep.Exit);
         Assert.True(Directory.Exists(_feat));
         Assert.True(Directory.Exists(_other));

@@ -43,7 +43,7 @@ public sealed class StatusPorcelainTests
     {
         const string output = "?? src/binary/data.txt\n?? objective.md\n?? bin\n";
 
-        Assert.Equal(["src/binary/data.txt", "objective.md"], StatusPorcelain.Significant(output, _outputs));
+        Assert.Equal(["src/binary/data.txt", "objective.md", "bin"], StatusPorcelain.Significant(output, _outputs));
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -1,6 +1,8 @@
 using Aw.Kernel.Services;
 using Aw.Meta.Core.Config;
 using Aw.Meta.Core.Messages;
+using Aw.Meta.Core.Ports;
+using Aw.Meta.Core.Worktrees;
 using Aw.Meta.Features.CheckMerge;
 using Aw.Meta.Features.GateRerun;
 using Aw.Meta.Features.GateRun;
@@ -109,7 +111,9 @@ public static class MetaFeaturesServiceCollectionExtensions
         .Validated<CheckMergeService, CheckMergeRequest, CheckMergeResponse>()
         .AddScoped<MergeRunService>()
         .AddScoped<IValidator<MergeRunRequest>, MergeRunValidator>()
-        .Validated<MergeRunService, MergeRunRequest, MergeRunResponse>();
+        .AddScoped<IService<MergeRunRequest, MergeRunResponse>>(static sp => new ValidatingService<MergeRunRequest, MergeRunResponse>(
+            new SweepAfterMergeService(sp.GetRequiredService<MergeRunService>(), sp.GetRequiredService<IMetaConfig>(), sp.GetRequiredService<WorktreeSweeper>()),
+            sp.GetRequiredService<IValidator<MergeRunRequest>>()));
 
     private static IServiceCollection AddHostSlices(this IServiceCollection services) => services
         .AddScoped<HostProbe>()
@@ -117,6 +121,7 @@ public static class MetaFeaturesServiceCollectionExtensions
         .AddScoped<OrphanKiller>()
         .AddScoped<HealthService>()
         .Plain<HealthService, HealthRequest, HealthResponse>()
+        .AddScoped<WatchSweeper>()
         .AddScoped<WatchPoller>()
         .AddScoped<WatchService>()
         .AddScoped<IValidator<WatchRequest>, WatchValidator>()

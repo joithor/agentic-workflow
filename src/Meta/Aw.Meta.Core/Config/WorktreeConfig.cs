@@ -1,3 +1,5 @@
+using Aw.Meta.Core.Worktrees;
+
 namespace Aw.Meta.Core.Config;
 
 /// <summary>How the worktree sweep behaves; every field is optional.</summary>
@@ -17,5 +19,24 @@ public sealed record WorktreeConfig(IReadOnlyList<string>? Roots = null, IReadOn
     /// <param name="gatesDirectory">Where the gate trees live.</param>
     /// <param name="home">The home directory; empty when unknown (a "~" root is then left out).</param>
     /// <returns>Absolute directories.</returns>
-    public IReadOnlyList<string> EffectiveRoots(string repo, string gatesDirectory, string home) => throw new NotSupportedException();
+    public IReadOnlyList<string> EffectiveRoots(string repo, string gatesDirectory, string home)
+    {
+        ArgumentNullException.ThrowIfNull(repo);
+        ArgumentNullException.ThrowIfNull(gatesDirectory);
+        ArgumentNullException.ThrowIfNull(home);
+        string[] defaults = ["~/repos/aw-wt", repo + "/.claude/worktrees"];
+        var configured = Roots ?? defaults;
+        var roots = new List<string>();
+        foreach (var root in configured)
+        {
+            var expanded = root == "~" || root.StartsWith("~/", StringComparison.Ordinal) ? (home.Length > 0 ? home + root[1..] : null) : root;
+            if (expanded is not null && WorktreeRoots.Normalize(expanded) is { Length: > 1 } normalized && normalized.StartsWith('/'))
+            {
+                roots.Add(normalized);
+            }
+        }
+
+        roots.Add(WorktreeRoots.Normalize(gatesDirectory));
+        return [.. roots.Distinct(StringComparer.Ordinal)];
+    }
 }
