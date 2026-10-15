@@ -53,7 +53,7 @@ public sealed class ShellItemsTests
         _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
         _server.Push(A.Event(58, "item.created"));
 
-        await Until(() => shell.Queue.Total == 12);
+        await Until(() => shell.Queue.Total == 12 && shell.Navigation[1].Count == "12");
         Assert.Equal("12", shell.Navigation[1].Count);
     }
 
@@ -68,7 +68,7 @@ public sealed class ShellItemsTests
 
         _ = shell.Run(Token);
 
-        await Until(() => shell.State == ShellState.Normal && !shell.Queue.IsLoading);
+        await Until(() => shell.State == ShellState.Normal && !shell.Queue.IsLoading && shell.Navigation[1].Count == "0");
         Assert.Equal(("0", 0), (shell.Navigation[1].Count, shell.Queue.Total));
     }
 
@@ -79,7 +79,7 @@ public sealed class ShellItemsTests
         var shell = await Connected();
 
         shell.Navigate(new DeepLink(DeepLinkKind.Item, A.NewItem));
-        await Until(() => shell.Item.HasItem);
+        await Until(() => shell.Item.HasItem && shell.IsSheetShown && shell.IsItemSheet && shell.Item.Title == "Try the queue");
         Assert.Equal((true, true, "Try the queue"), (shell.IsSheetShown, shell.IsItemSheet, shell.Item.Title));
 
         _server.Items[A.NewItem] = RouteAnswer.SpecShaped("items-id", "after-close");
