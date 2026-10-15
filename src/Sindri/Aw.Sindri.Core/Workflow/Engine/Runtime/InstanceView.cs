@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -56,4 +57,37 @@ public sealed record InstanceView(
 
     /// <summary>What was left of the state's timeout when a takeover paused it (§6.4 'paused'; engine P5 sets it).</summary>
     public TimeSpan? Paused { get; init; }
+
+    /// <summary>The item's id ('ITM-...') when the instance is an item's; null otherwise (UI screens E-20).</summary>
+    public string? ItemId { get; init; }
+
+    /// <summary>How soon the recipe's instances need a human (E-21); <see cref="Urgency.Work"/> unless the recipe says so.</summary>
+    public Urgency Urgency { get; init; } = Urgency.Work;
+
+    /// <summary>The badge that replaces the state's glyph when the engine interrupted the instance; null otherwise.</summary>
+    public EngineBadge? EngineOwned { get; init; }
+
+    /// <summary>What the instance is about, from the recipe's first input; null when the recipe has no input.</summary>
+    public SubjectRef? Subject { get; init; }
+
+    /// <summary>The recipe's inputs, in declaration order.</summary>
+    public IReadOnlyList<InputSlot> Inputs { get; init; } = [];
+
+    /// <summary>How <see cref="States"/> is ordered: the path, or the transition list when the graph has several initial paths.</summary>
+    public OrderedBy OrderedBy { get; init; } = OrderedBy.Path;
+
+    /// <summary>Every state of the recipe, in <see cref="OrderedBy"/> order.</summary>
+    public IReadOnlyList<StateCell> States { get; init; } = [];
+
+    /// <summary>
+    /// The status layout as fields (E-23). Nullable because it has no empty value: it is null on a view the layout was
+    /// not computed for.
+    /// </summary>
+    public StatusFields? Status { get; init; }
+
+    /// <summary>One row per input and output the recipe declares, in declaration order.</summary>
+    public IReadOnlyList<FactRow> Facts { get; init; } = [];
+
+    /// <summary>The children, one group per state that declares child or runs step.children; empty until engine P7.</summary>
+    public IReadOnlyList<ChildGroup> ChildGroups { get; init; } = [];
 }
