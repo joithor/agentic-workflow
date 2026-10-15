@@ -67,6 +67,7 @@ public sealed class ShellStateTests
         var shell = await Running(ShellState.VersionMismatch);
 
         Assert.Equal((true, false, false, false, false, false), Shown(shell));
+        await Eventually(() => shell.Pill.Text == Labels.VersionMismatch);
         Assert.Equal(Labels.VersionMismatch, shell.Pill.Text);
         Assert.Equal([new HealthCell("This app", "API v1"), new HealthCell("Sindri", "API v2")], shell.Health.Detail.Versions);
     }
@@ -79,6 +80,7 @@ public sealed class ShellStateTests
 
         var shell = await Running(ShellState.Normal);
 
+        await Eventually(() => shell.Pill.Text == "Running · updated 0s ago");
         Assert.Equal((false, true, false, false, false, true), Shown(shell));
         Assert.Equal("Running · updated 0s ago", shell.Pill.Text);
     }
@@ -91,6 +93,7 @@ public sealed class ShellStateTests
 
         _clock.Advance(TimeSpan.FromSeconds(5));
 
+        await Eventually(() => shell.Pill.Text == "Running · updated 5s ago");
         Assert.Equal("Running · updated 5s ago", shell.Pill.Text);
         Assert.Equal(ShellState.Normal, shell.State);
     }
@@ -105,6 +108,7 @@ public sealed class ShellStateTests
         _server.Push(A.Event(1));
         await Eventually(() => shell.State == ShellState.Unreadable);
 
+        await Eventually(() => shell.Pill.Text == Labels.Unreadable + " · " + Labels.Stale);
         Assert.Equal((false, true, false, false, true, true), Shown(shell));
         Assert.Equal(Labels.Unreadable + " · " + Labels.Stale, shell.Pill.Text);
         Assert.Equal("pid 4242 · epoch 7", shell.Health.Lease);
@@ -126,6 +130,7 @@ public sealed class ShellStateTests
         var shell = await Running(ShellState.NotRunning);
 
         Assert.Equal(Labels.NoLease, shell.Reason);
+        await Eventually(() => shell.Pill.Text == Labels.NotRunning);
         Assert.Equal(Labels.NotRunning, shell.Pill.Text);
     }
 
@@ -195,6 +200,7 @@ public sealed class ShellStateTests
         Assert.Equal(fresh.Health.HealthLine, fresh.Health.StripName);
 
         var stale = await Stale();
+        await Eventually(() => stale.Pill.IsDataStale);
         Assert.True(stale.Pill.IsDataStale);
         Assert.Equal(stale.Health.HealthLine + " · " + Labels.Stale, stale.Health.StripName);
     }
@@ -204,6 +210,7 @@ public sealed class ShellStateTests
     {
         var shell = await Stale();
 
+        await Eventually(() => shell.Pill.Text == Labels.Stale + " · " + Labels.UpdatedAgo(ShellViewModel.StaleAfter));
         Assert.Equal((StateGlyph.Stale, Labels.Stale, Labels.UpdatedAgo(ShellViewModel.StaleAfter)), (shell.Pill.Glyph, shell.Pill.Word, shell.Pill.Age));
         Assert.Equal(Labels.Stale + " · " + Labels.UpdatedAgo(ShellViewModel.StaleAfter), shell.Pill.Text);
         Assert.True(shell.Pill.IsRefreshShown);
@@ -220,6 +227,7 @@ public sealed class ShellStateTests
 
         Assert.Equal(before + 1, _server.StatusCalls);
         Assert.Equal(ShellState.Normal, shell.State);
+        await Eventually(() => shell.Pill.Word == Labels.Running && shell.Pill.Age == Labels.UpdatedAgo(TimeSpan.Zero));
         Assert.Equal((StateGlyph.Ok, Labels.Running, Labels.UpdatedAgo(TimeSpan.Zero)), (shell.Pill.Glyph, shell.Pill.Word, shell.Pill.Age));
         Assert.False(shell.Pill.IsRefreshShown);
     }
@@ -385,6 +393,7 @@ public sealed class ShellStateTests
 
         Assert.Equal(ShellState.Stale, shell.State);
         Assert.True(shell.IsNotRespondingBanner);
+        await Eventually(() => shell.Pill.Word == Labels.Stale);
         Assert.Equal((StateGlyph.Stale, Labels.Stale), (shell.Pill.Glyph, shell.Pill.Word));
         Assert.True(shell.Pill.IsRefreshShown);
         _clock.Advance(TimeSpan.FromSeconds(1));
@@ -435,17 +444,20 @@ public sealed class ShellStateTests
         Assert.False(connecting.Pill.HasGlyph);
 
         var down = await Running(ShellState.NotRunning);
+        await Eventually(() => down.Pill.Word == Labels.NotRunning);
         Assert.Equal((StateGlyph.Down, Labels.NotRunning, string.Empty), (down.Pill.Glyph, down.Pill.Word, down.Pill.Age));
         Assert.True(down.Pill.IsDown);
 
         _records.Write(A.Record());
         _server.UnreadableStatus = true;
         var unreadable = await Running(ShellState.Unreadable);
+        await Eventually(() => unreadable.Pill.Word == Labels.Unreadable);
         Assert.Equal((StateGlyph.Down, Labels.Unreadable, Labels.Stale), (unreadable.Pill.Glyph, unreadable.Pill.Word, unreadable.Pill.Age));
         Assert.True(unreadable.Pill.IsDown);
 
         _server.UnreadableStatus = false;
         var healthy = await Running(ShellState.Normal);
+        await Eventually(() => healthy.Pill.Word == Labels.Running);
         Assert.Equal((StateGlyph.Ok, Labels.Running), (healthy.Pill.Glyph, healthy.Pill.Word));
         Assert.True(healthy.Pill.IsHealthy);
         Assert.True(healthy.Pill.HasGlyph);

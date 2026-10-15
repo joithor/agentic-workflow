@@ -21,7 +21,7 @@ public sealed partial class FreshnessTests
         _server.ServiceView = RouteAnswer.SpecShaped("services", "stalled");
 
         _server.Push(A.Event(1, "views.rebuild.started"));
-        await Until(() => _vm.Banner.IsStalled);
+        await Until(() => _vm.Banner.IsStalled && _vm.Pill.Word == "Stalled");
 
         Assert.True(_vm.Banner.IsStalled);
         Assert.Equal(("Stalled", ShellState.Normal), (_vm.Pill.Word, _vm.State));

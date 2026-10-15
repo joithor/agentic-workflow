@@ -47,6 +47,7 @@ public sealed partial class FreshnessTests : IDisposable
         }
 
         Assert.Equal(ShellState.Normal, _vm.State);
+        Assert.True(also?.Invoke() ?? true, "the awaited state was reached within 2 s");
     }
 
     private static StatusView Status(AsOfView views, HealthView health) => A.Status() with { ApiVersion = 1, Views = views, Health = health };
@@ -58,7 +59,7 @@ public sealed partial class FreshnessTests : IDisposable
         _server.Current = Status(new AsOfView(41, 41, A.Noon.AddSeconds(-12), Rebuilding: false, Stalled: false),
             new HealthView("degraded", [new HealthProblemView("SND-SCHED-001", "index failed")]));
 
-        await Connected();
+        await Connected(() => _vm.Pill.Text == "Degraded · updated 12s ago · index failed");
 
         Assert.Equal(("Degraded", "updated 12s ago", "index failed"), (_vm.Pill.Word, _vm.Pill.Age, _vm.Pill.Problems));
         Assert.Equal("Degraded · updated 12s ago · index failed", _vm.Pill.Text);
@@ -70,7 +71,7 @@ public sealed partial class FreshnessTests : IDisposable
     {
         _server.Current = Status(new AsOfView(41, 41, A.Noon, Rebuilding: false, Stalled: false), new HealthView("healthy", []));
 
-        await Connected();
+        await Connected(() => _vm.Pill.Text == "Healthy · updated 0s ago");
 
         Assert.Equal(("Healthy · updated 0s ago", StateGlyph.Ok, true), (_vm.Pill.Text, _vm.Pill.Glyph, _vm.Pill.IsHealthy));
     }
@@ -81,7 +82,7 @@ public sealed partial class FreshnessTests : IDisposable
     {
         _server.ServiceView = new RouteAnswer(HttpStatusCode.NotFound, "{}");
 
-        await Connected();
+        await Connected(() => _vm.Pill.Text == "Running · updated 0s ago");
 
         Assert.Equal(("Running · updated 0s ago", false), (_vm.Pill.Text, _vm.Banner.IsShown));
     }
@@ -190,7 +191,7 @@ public sealed partial class FreshnessTests : IDisposable
         _server.StatusError = null;
         _server.Current = Status(new AsOfView(42, 42, A.Noon, Rebuilding: false, Stalled: false), new HealthView("healthy", []));
         _server.ServiceView = RouteAnswer.SpecShaped("services", "fixture");
-        await Until(() => !_vm.Banner.IsShown, _clock);
+        await Until(() => !_vm.Banner.IsShown && _vm.Pill.Word == "Healthy", _clock);
 
         Assert.Equal(("Healthy", ShellState.Normal), (_vm.Pill.Word, _vm.State));
     }
@@ -327,7 +328,7 @@ public sealed partial class FreshnessTests : IDisposable
         var age = golden.Views!.ProjectedAt - new DateTimeOffset(2026, 1, 1, 0, 1, 0, TimeSpan.Zero);   // the golden's own "updated Ns ago" at its 00:01:00 clock
         _server.Current = golden with { Views = golden.Views with { ProjectedAt = A.Noon + age } };
 
-        await Connected();
+        await Connected(() => _vm.Pill.Text == text);
 
         Assert.Equal(text, _vm.Pill.Text);
     }
