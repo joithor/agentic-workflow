@@ -96,21 +96,41 @@ public sealed class EventBridgeFailureTests : IDisposable
         Assert.Equal(ScheduledResult.Worked, ran.Value);
     }
 
+    [Fact]
+    public async Task An_item_event_goes_to_an_instance_that_started_before_it_and_not_to_one_that_started_after_it()
+    {
+        var before = await Prepared(TimeSpan.FromSeconds(-2), Unit.Value);
+        var after = await Prepared(TimeSpan.FromSeconds(2), Unit.Value);
+
+        _ = await before.Bridge.Run(Token);
+        _ = await after.Bridge.Run(Token);
+
+        Assert.Equal((1, 0), (before.Runtime.Signals, after.Runtime.Signals));
+    }
+
     /// <summary>A bridge over the real ledger whose live instance of 'T-47' answers a signal with the given errors (the last repeats), and its event.</summary>
     private async Task<(Bridge Bridge, long Sequence, EventBridgeCursor Cursor)> Prepared(params Result<Unit>[] answers)
+    {
+        var (bridge, sequence, cursor, _) = await Prepared(TimeSpan.FromSeconds(-2), answers);
+        return (bridge, sequence, cursor);
+    }
+
+    /// <summary>The same, with the instance's start <paramref name="startedAt"/> after the event happened, and the runtime that counts the signals.</summary>
+    private async Task<(Bridge Bridge, long Sequence, EventBridgeCursor Cursor, RefusingRuntime Runtime)> Prepared(TimeSpan startedAt, params Result<Unit>[] answers)
     {
         BridgeRecipes.WriteTo(_harness);
         var sindri = _harness.Sindri();
         await WorkflowsHarness.HoldLease(sindri, Token);
         var sequence = await Append(sindri, "T-47");
         var address = InstanceAddress.Root(ItemKey.From("T-47"), RecipeId.From("workflow.relay"), 1);
-        var rows = new FakeInstances(new InstanceRow(address.Value, "routed", NeedsYou: false, StartedAt: null));
+        var rows = new FakeInstances(new InstanceRow(address.Value, "routed", NeedsYou: false, sindri.GetRequiredService<TimeProvider>().GetUtcNow() + startedAt));
         var held = new HeldItemEvents(rows, sindri.GetRequiredService<TimeProvider>());
         var cursor = sindri.GetRequiredService<EventBridgeCursor>();
+        var runtime = new RefusingRuntime(answers);
         var bridge = new EventBridge(
             sindri.GetRequiredService<ILedgerStore>(), sindri.GetRequiredService<BlockCatalog>(), held, sindri.GetRequiredService<ICommandOrigins>(),
-            new RefusingRuntime(answers), cursor, NullLogger<EventBridge>.Instance);
-        return (new Bridge(bridge, sindri.GetRequiredService<HeldLease>().Current!), sequence, cursor);
+            runtime, cursor, NullLogger<EventBridge>.Instance);
+        return (new Bridge(bridge, sindri.GetRequiredService<HeldLease>().Current!), sequence, cursor, runtime);
     }
 
     private async Task<long> Append(IServiceProvider sindri, string item)
@@ -141,6 +161,8 @@ public sealed class EventBridgeFailureTests : IDisposable
     private sealed class RefusingRuntime(Result<Unit>[] answers) : IInstanceRuntime
     {
         private int _next;
+
+        public int Signals => _next;
 
         public ValueTask<Result<Unit>> Signal(InstanceAddress address, WaitSatisfied delivered, CancellationToken cancellationToken) =>
             ValueTask.FromResult(answers[Math.Min(_next++, answers.Length - 1)]);
