@@ -131,6 +131,39 @@ public sealed class ChordKeysTests : IDisposable
         Assert.Equal(PageId.Home, shell.CurrentPage);
     });
 
+    // The palette's own TextBox would stop a chord by itself (a key typed into a field never chords); the ? sheet holds no field, so only the overlay gate can.
+    [Fact]
+    public Task The_shortcuts_sheet_open_takes_the_keys_and_chords_nothing() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(ShellState.Normal);
+        shell.Shortcuts.Open();
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(shell.Shortcuts.IsOpen);
+
+        Press(window, Key.G);
+        Press(window, Key.W);
+
+        Assert.False(shell.IsChordPending);
+        Assert.Equal(PageId.Home, shell.CurrentPage);
+    });
+
+    [Fact]
+    public Task A_version_mismatch_card_leaves_the_page_the_last_page_and_the_chord_alone() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        _server.Current = A.Status() with { ApiVersion = 2 };
+        var (window, shell) = await Show(ShellState.VersionMismatch);
+        shell.GoTo(PageId.Context);
+
+        Press(window, Key.G);
+        Press(window, Key.W);
+
+        Assert.False(shell.IsChordPending);
+        Assert.Equal(PageId.Context, shell.CurrentPage);
+        Assert.Equal("Context", (await new Preferences(_preferences).Load(Token)).LastPage);
+    });
+
     [Fact]
     public Task Not_running_leaves_the_page_and_the_last_page_alone() => OnUi(async () =>
     {
