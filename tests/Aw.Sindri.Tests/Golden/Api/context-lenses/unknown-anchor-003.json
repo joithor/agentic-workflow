@@ -3,5 +3,12 @@
   "title": "SND-CONTEXT-003",
   "status": 404,
   "detail": "no node is named 'feature:tabs.nope' (fix: try action:tab-groups.group-selected, action:tab-manager.restore-layout, decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b, decision:ef895edc359f6f847ce34baeacb3670a81a824b521e4cd14371b5dc8894ea1c2, feature:tabs.tab-groups)",
+  "suggestedAnchors": [
+    "action:tab-groups.group-selected",
+    "action:tab-manager.restore-layout",
+    "decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b",
+    "decision:ef895edc359f6f847ce34baeacb3670a81a824b521e4cd14371b5dc8894ea1c2",
+    "feature:tabs.tab-groups"
+  ],
   "traceId": "<trace>"
 }
