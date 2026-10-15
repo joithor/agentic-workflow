@@ -27,6 +27,8 @@ public sealed class AutomationPeerTests : IDisposable
     private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.SpecShaped("commands", "catalog"), QueueView = RouteAnswer.SpecShaped("queue", "extra-p4-waiting") };
     private readonly FakeTimeProvider _clock = new(A.Noon);
 
+    private static readonly string[] _homePanels = ["NeedsYouPanel", "RunningPanel", "QueuedPanel"];
+
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     public void Dispose() => _stop.Dispose();
@@ -119,5 +121,44 @@ public sealed class AutomationPeerTests : IDisposable
         Settle(window);
 
         Assert.Equal((true, AutomationControlType.Window), Peer(First(window, b => b.Name == "CreateCard")));
+    });
+
+    // testing-1: every other focusable or named Border is a control element of the type a screen reader announces.
+    [Fact]
+    public Task The_panels_the_top_bar_and_the_overlay_cards_are_control_elements() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        shell.GoTo(PageId.Home);
+        Settle(window);
+        var home = _homePanels.Select(n => Peer(First(window, b => b.Name == n))).ToList();
+        var topBar = Peer(First(window, b => b.Classes.Contains("topbar")));
+        shell.GoTo(PageId.Health);
+        Settle(window);
+        var pending = Peer(First(window, b => b.Name == "PendingLine"));
+        shell.Palette.Open();
+        Settle(window);
+        var palette = Peer(First(window, b => b.Name == "PaletteCard"));
+        shell.Palette.Close();
+        shell.Shortcuts.Open();
+        Settle(window);
+        var shortcuts = Peer(First(window, b => b.Name == "ShortcutsCard"));
+
+        Assert.All(home, p => Assert.Equal((true, AutomationControlType.Group), p));
+        Assert.Equal((true, AutomationControlType.Group), topBar);
+        Assert.Equal((true, AutomationControlType.Text), pending);
+        Assert.Equal((true, AutomationControlType.Window), palette);
+        Assert.Equal((true, AutomationControlType.Window), shortcuts);
+    });
+
+    // a11y-2: the chord hint is a visual cue; it is no live region (ungated, its name going to "" when the chord ends) and not a control.
+    [Fact]
+    public Task The_chord_hint_is_not_a_live_region_and_not_a_control_element() => OnUi(async () =>
+    {
+        var (window, _) = await Connected();
+        var hint = First(window, b => b.Name == "ChordHint");
+
+        Assert.Equal(
+            (Avalonia.Automation.AutomationLiveSetting.Off, Avalonia.Automation.AccessibilityView.Raw, string.Empty),
+            (Avalonia.Automation.AutomationProperties.GetLiveSetting(hint), Avalonia.Automation.AutomationProperties.GetAccessibilityView(hint), Avalonia.Automation.AutomationProperties.GetName(hint)));
     });
 }
