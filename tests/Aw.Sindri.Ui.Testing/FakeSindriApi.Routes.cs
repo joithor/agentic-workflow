@@ -38,10 +38,16 @@ internal sealed partial class FakeSindriApi
         return Task.FromResult(Answer<CommandList>(api, "/sindri/commands", Catalog));
     }
 
-    public Task<Result<ServiceList>> Services(Uri api, CancellationToken cancellationToken)
+    public Task<Result<ServiceList>> Services(Uri api, CancellationToken cancellationToken) => Services(api, after: null);
+
+    /// <summary>A services call that carries <paramref name="after"/> as X-Sindri-After (see <see cref="Status(Uri, long?, CancellationToken)"/>).</summary>
+    /// <param name="api">The API.</param>
+    /// <param name="after">The sequence the request carried, or null for a direct call.</param>
+    /// <returns>The answer.</returns>
+    internal Task<Result<ServiceList>> Services(Uri api, long? after)
     {
         _ = Interlocked.Increment(ref _servicesCalls);
-        var carried = TakePending();
+        var carried = Carried(after, unreachable: Down);
         return Task.FromResult(carried > 0 && Lag != ViewsLag.None ? Behind(carried) : Answer<ServiceList>(api, "/sindri/services", ServiceView));
     }
 

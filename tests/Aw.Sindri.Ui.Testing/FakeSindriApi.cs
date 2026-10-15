@@ -133,20 +133,30 @@ internal sealed partial class FakeSindriApi : ISindriApi
         return Task.FromResult(Refusal is { } refusal ? Refused<PingView>(refusal) : Down || FailPing ? Unreachable<PingView>(api) : Pong);
     }
 
-    public async Task<Result<StatusView>> Status(Uri api, CancellationToken cancellationToken)
+    public Task<Result<StatusView>> Status(Uri api, CancellationToken cancellationToken) => Status(api, after: null, cancellationToken);
+
+    /// <summary>
+    /// A status call that carries <paramref name="after"/> as X-Sindri-After (0 for none), as the HTTP handler passes the
+    /// header it received; null is a direct call, which carries the sequence of the last accepted command.
+    /// </summary>
+    /// <param name="api">The API.</param>
+    /// <param name="after">The sequence the request carried, or null for a direct call.</param>
+    /// <param name="cancellationToken">Cancels the wait.</param>
+    /// <returns>The answer.</returns>
+    internal async Task<Result<StatusView>> Status(Uri api, long? after, CancellationToken cancellationToken)
     {
         StatusCalls++;
-        var carried = TakePending();
+        var carried = Carried(after, unreachable: Down || FailStatus);
         _statusAfters.Add(carried);
         if (StatusGate is { } gate)
         {
             await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        return carried > 0 && Lag != ViewsLag.None ? Behind(carried)
+        return Down || FailStatus ? Unreachable<StatusView>(api)
+            : carried > 0 && Lag != ViewsLag.None ? Behind(carried)
             : StatusError is { } failure ? failure
             : Refusal is { } refusal ? Refused<StatusView>(refusal)
-            : Down || FailStatus ? Unreachable<StatusView>(api)
             : UnreadableStatus ? SindriUiErrors.BadAnswer.With(UnreadableReason)
             : Current;
     }
@@ -181,8 +191,10 @@ internal sealed partial class FakeSindriApi : ISindriApi
         }
     }
 
-    // A view query uses the pending sequence once, whatever the answer is (best effort, UI spec §9.1).
-    private long TakePending() => Interlocked.Exchange(ref _pending, 0);
+    // A view query uses the sequence once, whatever the answer is (best effort, UI spec §9.1), but not when the call never
+    // got one (a transport failure leaves it for the next read, as the client does). A request over HTTP carries its own.
+    private long Carried(long? after, bool unreachable) =>
+        after ?? (unreachable ? Volatile.Read(ref _pending) : Interlocked.Exchange(ref _pending, 0));
 
     private static Error Behind(long sequence) =>
         new("SND-API-011", ErrorKind.Unavailable, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"The views have not reached sequence {sequence} (fix: retry shortly)"));
