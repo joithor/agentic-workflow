@@ -15,6 +15,7 @@ internal sealed partial class ShellViewModel
 
     private readonly TimeProvider _clock;
     private DateTimeOffset? _chordAt;
+    private ITimer? _chordTimer;
 
     /// <summary>"G …" while the chord waits for its second key, else empty.</summary>
     public string ChordHint { get; private set => Set(ref field, value); } = string.Empty;
@@ -31,19 +32,63 @@ internal sealed partial class ShellViewModel
             return true;
         }
 
+        // An expired chord is no chord (§8): its key is handled as a fresh key, a G included.
         if (_chordAt is { } at)
         {
-            (_chordAt, ChordHint) = (null, string.Empty);
-            return _clock.GetUtcNow() - at <= ChordWait && Go(key);
+            var live = _clock.GetUtcNow() - at <= ChordWait;
+            EndChord();
+            if (live)
+            {
+                return Go(key);
+            }
         }
 
         if (key == "G")
         {
-            (_chordAt, ChordHint) = (_clock.GetUtcNow(), Labels.ChordHint);
+            StartChord();
             return true;
         }
 
         return Single(key, inSheet) || RowKey(key, inSheet);
+    }
+
+    // The chord waits ChordWait, then the clock ends it: the hint hides without another key.
+    private void StartChord()
+    {
+        EndChord();
+        var started = _clock.GetUtcNow();
+        _chordAt = started;
+        ChordHint = Labels.ChordHint;
+        var ui = SynchronizationContext.Current;
+        _chordTimer = _clock.CreateTimer(
+            _ =>
+            {
+                if (ui is null)
+                {
+                    LapseChord(started);
+                }
+                else
+                {
+                    ui.Post(_ => LapseChord(started), state: null);
+                }
+            },
+            state: null,
+            ChordWait,
+            Timeout.InfiniteTimeSpan);
+    }
+
+    private void LapseChord(DateTimeOffset started)
+    {
+        if (_chordAt == started)
+        {
+            EndChord();
+        }
+    }
+
+    private void EndChord()
+    {
+        _chordTimer?.Dispose();
+        (_chordTimer, _chordAt, ChordHint) = (null, null, string.Empty);
     }
 
     // Y copies the selected row's CLI (§8); / opens the Queue page's filter.
