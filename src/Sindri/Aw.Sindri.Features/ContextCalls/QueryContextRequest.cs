@@ -8,8 +8,8 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// <param name="Node">A graph node anchor, or null.</param>
 /// <param name="Item">An item anchor, or null.</param>
 /// <param name="Symbol">A file or symbol anchor, or null.</param>
-/// <param name="Depth">The cascade depth, or null.</param>
+/// <param name="Depth">The cascade depth as sent (a number 0 to 4; anything else is SND-CONTEXT-006), or null.</param>
 /// <param name="Budget">The token budget, or null.</param>
 /// <param name="Draft">True to read the draft map.</param>
-public sealed record QueryContextRequest(string? Q, string? Node = null, string? Item = null, string? Symbol = null, int? Depth = null,
+public sealed record QueryContextRequest(string? Q, string? Node = null, string? Item = null, string? Symbol = null, string? Depth = null,
     int? Budget = null, bool Draft = false) : IQuery<ContextResult>;

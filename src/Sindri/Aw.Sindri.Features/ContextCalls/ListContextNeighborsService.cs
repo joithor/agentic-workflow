@@ -11,6 +11,9 @@ internal sealed class ListContextNeighborsService(ContextScopes scopes, IContext
     public async ValueTask<Result<NeighborsView>> Handle(ListContextNeighborsRequest request, CancellationToken cancellationToken)
     {
         var scope = await scopes.Current(cancellationToken).ConfigureAwait(false);
-        return scope.IsError ? scope.Error : await engine.Neighbors(request.Key, request.Depth, scope.Value, cancellationToken).ConfigureAwait(false);
+        var depth = ContextDepth.Parse(request.Depth);
+        return depth.IsError ? depth.Error
+            : scope.IsError ? scope.Error
+            : await engine.Neighbors(request.Key, depth.Value, scope.Value, cancellationToken).ConfigureAwait(false);
     }
 }

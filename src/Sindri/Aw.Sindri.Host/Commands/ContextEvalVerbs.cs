@@ -55,7 +55,7 @@ internal sealed class ContextEvalVerbs(ControlPlaneClient client, Output output,
     private async Task<int> Failed(Error error)
     {
         var code = await output.Error(error).ConfigureAwait(false);
-        return error.Code == "SND-API-001" || ContextErrors.Attention.Contains(error.Code) ? 1 : code;
+        return ContextErrors.Attention.Contains(error.Code) ? 1 : code;
     }
 
     /// <summary>'[--file F] [--json]' in either order.</summary>

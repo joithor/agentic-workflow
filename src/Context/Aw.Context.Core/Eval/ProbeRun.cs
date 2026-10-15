@@ -9,5 +9,5 @@ public sealed record ProbeRun(ProbeReport Report, string? Path)
     public bool Incomplete => Report.Incomplete;
 
     /// <summary>The ids of the probes whose query failed, in file order.</summary>
-    public IReadOnlyList<string> Failed => [.. Report.Probes.Where(p => p.Error is not null).Select(p => p.Id.Value)];
+    public IReadOnlyList<ProbeId> Failed => [.. Report.Probes.Where(p => p.Error is not null).Select(p => p.Id)];
 }

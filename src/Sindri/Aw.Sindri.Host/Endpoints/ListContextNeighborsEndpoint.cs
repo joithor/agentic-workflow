@@ -9,7 +9,7 @@ internal static class ListContextNeighborsEndpoint
 {
     internal static RouteGroupBuilder MapListContextNeighbors(this RouteGroupBuilder group)
     {
-        _ = group.MapGet("/context/neighbors", static async (IService<ListContextNeighborsRequest, NeighborsView> service, string? key, int? depth, CancellationToken ct)
+        _ = group.MapGet("/context/neighbors", static async (IService<ListContextNeighborsRequest, NeighborsView> service, string? key, string? depth, CancellationToken ct)
             => (await service.Handle(new ListContextNeighborsRequest(key ?? string.Empty, depth), ct).ConfigureAwait(false)).ToHttpResult());
         return group;
     }

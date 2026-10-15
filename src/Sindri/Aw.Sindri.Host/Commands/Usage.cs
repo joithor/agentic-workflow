@@ -19,7 +19,7 @@ internal static class Usage
         "       sindri context show <key> [--json]   one map node (a key, alias or name), its aliases and edges (exit 1: unknown or ambiguous, no map)",
         "       sindri context neighbors <key> [--depth N] [--json]   the nodes within N edges (0-4, default 1) either way",
         "       sindri context path <a> <b> [--json]   the shortest path of at most 8 edges between two nodes",
-        "       sindri context eval probes [--file F] [--json]   ask each probe, print precision@5 and citation correctness beside the previous run (exit 1: regressed, SND-CONTEXT-038)",
+        "       sindri context eval probes [--file F] [--json]   ask each probe, print precision@5 and citation correctness beside the baseline run (exit 1: regressed, SND-CONTEXT-038; exit 2: a probe's query failed, nothing saved)",
         "       sindri context sources status [--json]   each context source's state and whether sessions may read context",
         "       sindri context map import <file>   check a map file, show its hash, type the challenge it shows ('import map <hash6>') to make it the current map (a terminal only)",
         "       sindri context map export [<path>] [--json]   write the current map under $AW_SINDRI_HOME/context/exports/",

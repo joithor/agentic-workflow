@@ -27,7 +27,7 @@ public sealed class GraphQueryTests : IDisposable
             Section(result, "graph").Items.Select(i => i.Node), StringComparer.Ordinal);
         var affects = Assert.Single(Section(result, "affects").Items);
         Assert.Equal(("feature:tabs.tab-manager", 1, "Tabs"), (affects.Node, affects.Depth, affects.Title));
-        Assert.Equal([Orientation, "writes thing:pane-layout", "reads action:tab-manager.restore-layout"], affects.Path, StringComparer.Ordinal);
+        Assert.Equal([Orientation, "owns surface:command/toggle-orientation", "owns action:split-pane.toggle-orientation", "writes thing:pane-layout", "reads action:tab-manager.restore-layout"], affects.Path, StringComparer.Ordinal);
         Assert.DoesNotContain(result.Sections.SelectMany(s => s.Items), i => i.Node == "feature:layout.pane-resize");
         Assert.Equal(["code:src/layout/SplitPane.ts", "code:src/tabs/TabManager.ts"], Section(result, "code").Items.Select(i => i.Node), StringComparer.Ordinal);
     }

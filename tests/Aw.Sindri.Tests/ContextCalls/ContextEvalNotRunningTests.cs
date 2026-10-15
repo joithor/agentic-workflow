@@ -33,11 +33,11 @@ public sealed class ContextEvalNotRunningTests
         protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
         {
             Assert.Equal(nameof(IContextEngine.EvalProbes), targetMethod?.Name);
-            var ask = (Func<ProbeCase, CancellationToken, ValueTask<Result<Aw.Context.Core.Results.ContextResult>>>)args![1]!;
+            var ask = (Func<ProbeCase, CancellationToken, ValueTask<Result<Context.Core.Results.ContextResult>>>)args![1]!;
             return new ValueTask<Result<ProbeRun>>(Run(ask));
         }
 
-        private static async Task<Result<ProbeRun>> Run(Func<ProbeCase, CancellationToken, ValueTask<Result<Aw.Context.Core.Results.ContextResult>>> ask)
+        private static async Task<Result<ProbeRun>> Run(Func<ProbeCase, CancellationToken, ValueTask<Result<Context.Core.Results.ContextResult>>> ask)
         {
             var set = new ProbeSet([new ProbeCase(ProbeId.From("one"), "what breaks", new ProbeExpect())]);
             var report = await ProbeRunner.Run(new ProbeFile("/p/probes.json", "h", set), ask, baseline: null, DateTimeOffset.UnixEpoch, TestContext.Current.CancellationToken);

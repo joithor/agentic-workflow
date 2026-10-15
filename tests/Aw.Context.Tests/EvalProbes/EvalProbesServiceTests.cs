@@ -61,7 +61,7 @@ public sealed class EvalProbesServiceTests
 
         Assert.True(run.IsSuccess, run.IsError ? run.Error.Message : null);
         Assert.True(run.Value.Incomplete);
-        Assert.Equal(["p1", "p2"], run.Value.Failed);
+        Assert.Equal(["p1", "p2"], run.Value.Failed.Select(i => i.Value), StringComparer.Ordinal);
         Assert.Null(run.Value.Path);
         Assert.Empty(world.Written);
     }

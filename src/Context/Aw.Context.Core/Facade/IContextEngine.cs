@@ -35,12 +35,12 @@ public interface IContextEngine : IContextMap, IContextGraph
     /// <summary>
     /// Runs a probe file (spec §9.2 item 3): reads and checks it, asks each question through <paramref name="ask"/> (Sindri's
     /// CLI passes its GET /sindri/context/query, so probes see what callers see), scores the answers, compares them with the
-    /// previous run of the same file and writes the report under $AW_SINDRI_HOME/context/eval/probes/.
+    /// baseline of the same file (its newest complete run that did not regress) and writes the report under $AW_SINDRI_HOME/context/eval/probes/.
     /// </summary>
     /// <param name="file">The probe file's absolute path, or null for $AW_SINDRI_HOME/context/eval/probes.json.</param>
     /// <param name="ask">Answers one probe's question.</param>
     /// <param name="cancellationToken">Cancels the run.</param>
-    /// <returns>The run (its report says whether it regressed, SND-CONTEXT-038), or SND-CONTEXT-004/005/035/036, or the error every probe failed with.</returns>
+    /// <returns>The run (its report says whether it regressed, SND-CONTEXT-038, or is incomplete because a probe's query failed, every probe included), or SND-CONTEXT-004/005/035/036.</returns>
     public ValueTask<Result<ProbeRun>> EvalProbes(string? file, Func<ProbeCase, CancellationToken, ValueTask<Result<ContextResult>>> ask, CancellationToken cancellationToken);
 
     /// <summary>Brings the snapshot sources (repo-docs' index) up to date with each repo's HEAD.</summary>

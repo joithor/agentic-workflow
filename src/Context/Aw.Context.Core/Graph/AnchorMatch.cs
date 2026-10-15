@@ -67,11 +67,14 @@ public static class AnchorMatch
         return new TextAnchors(anchors, Suggest(graph, words, [.. whole.Select(m => m.Node.Key.Value)]));
     }
 
+    /// <summary>The most words of a question matching reads (a question is at most 2000 characters, so this never truncates one in practice).</summary>
+    internal const int MaxWords = 256;
+
     /// <summary>The words of a text as matching reads them: lower-case letter and digit runs, a plural 's' dropped, small words left out.</summary>
     /// <param name="text">The text.</param>
     /// <returns>The words.</returns>
     internal static HashSet<string> Words(string text) =>
-        QueryRules.Terms(text).Select(Singular).Where(w => !_small.Contains(w)).ToHashSet(StringComparer.Ordinal);
+        QueryRules.Words(text, MaxWords).Select(Singular).Where(w => !_small.Contains(w)).ToHashSet(StringComparer.Ordinal);
 
     private static IReadOnlyList<NodeKey> Suggest(GraphSnapshot graph, HashSet<string> words, IReadOnlyCollection<string> except) =>
         [.. graph.Nodes.Where(n => !except.Contains(n.Key.Value, StringComparer.Ordinal))

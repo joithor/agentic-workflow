@@ -19,11 +19,11 @@ public static class Cascade
         ArgumentNullException.ThrowIfNull(graph);
         var index = new GraphIndex(graph);
         var own = OwnScope(index, anchor);
-        var ownKeys = own.Select(k => k.Value).ToHashSet(StringComparer.Ordinal);
+        var ownKeys = own.Select(d => d.Key.Value).ToHashSet(StringComparer.Ordinal);
         var visited = new HashSet<string>(ownKeys, StringComparer.Ordinal);
         var affected = new List<AffectedNode>();
         var reported = new HashSet<string>(ownKeys, StringComparer.Ordinal);
-        var frontier = own.Select(k => new Reach(k, [anchor.Value], [])).ToList();
+        var frontier = own.Select(d => new Reach(d.Key, d.Path, d.Edges)).ToList();
         for (var level = 1; level <= depth && frontier.Count > 0; level++)
         {
             var next = new List<Reach>();
@@ -44,37 +44,38 @@ public static class Cascade
             frontier = [.. next.OrderBy(r => r.Node.Value, StringComparer.Ordinal)];
         }
 
-        return new CascadeResult(own, [.. affected.OrderBy(a => a.Depth).ThenBy(a => a.Node.Value, StringComparer.Ordinal)]);
+        return new CascadeResult([.. own.Select(d => d.Key)], [.. affected.OrderBy(a => a.Depth).ThenBy(a => a.Node.Value, StringComparer.Ordinal)]);
     }
 
     /// <summary>The anchor first, then by key: a feature's descendant features, their surfaces and those surfaces' actions; a surface's actions.</summary>
-    private static List<NodeKey> OwnScope(GraphIndex index, NodeKey anchor)
+    // The anchor and everything it owns, each with the real hops down to it (part-of into a feature, on a surface), so an affects path never invents one.
+    private static List<Descent> OwnScope(GraphIndex index, NodeKey anchor)
     {
-        var features = new List<NodeKey>();
+        var root = new Descent(anchor, [anchor.Value], []);
+        var features = new List<Descent>();
         if (anchor.Kind == NodeKind.Feature)
         {
-            var queue = new Queue<NodeKey>([anchor]);
+            var queue = new Queue<Descent>([root]);
             var seen = new HashSet<string>(StringComparer.Ordinal) { anchor.Value };
             while (queue.TryDequeue(out var feature))
             {
                 features.Add(feature);
-                foreach (var child in index.In(feature, EdgeType.PartOf).Select(e => e.From).Where(k => k.Kind == NodeKind.Feature && seen.Add(k.Value)))
+                foreach (var edge in index.In(feature.Key, EdgeType.PartOf).Where(e => e.From.Kind == NodeKind.Feature && seen.Add(e.From.Value)))
                 {
-                    queue.Enqueue(child);
+                    queue.Enqueue(feature.Down(edge.From, edge));
                 }
             }
         }
 
         var surfaces = anchor.Kind == NodeKind.Surface
-            ? [anchor]
-            : features.SelectMany(f => index.In(f, EdgeType.PartOf)).Select(e => e.From).Where(k => k.Kind == NodeKind.Surface).ToList();
-        var actions = surfaces.SelectMany(s => index.In(s, EdgeType.On)).Select(e => e.From);
+            ? [root]
+            : features.SelectMany(f => index.In(f.Key, EdgeType.PartOf).Where(e => e.From.Kind == NodeKind.Surface).Select(e => f.Down(e.From, e))).ToList();
+        var actions = surfaces.SelectMany(s => index.In(s.Key, EdgeType.On).Select(e => s.Down(e.From, e)));
         var rest = features.Skip(1).Concat(surfaces).Concat(actions)
-            .Where(k => k.Value != anchor.Value).DistinctBy(k => k.Value, StringComparer.Ordinal).OrderBy(k => k.Value, StringComparer.Ordinal);
-        return [anchor, .. rest];
+            .Where(d => d.Key.Value != anchor.Value).DistinctBy(d => d.Key.Value, StringComparer.Ordinal).OrderBy(d => d.Key.Value, StringComparer.Ordinal);
+        return [root, .. rest];
     }
 
-    /// <summary>The steps from one node: a feature hops to its dependents; a surface or action makes state and flow hops; a thing is read by its readers.</summary>
     private static IEnumerable<Step> Steps(GraphIndex index, NodeKey node) => node.Kind switch
     {
         NodeKind.Feature => index.In(node, EdgeType.DependsOn).Select(e => new Step(e.From, [$"depended-on-by {e.From.Value}"], [e])),
@@ -107,6 +108,11 @@ public static class Cascade
         }
 
         return index.Out(s, EdgeType.PartOf).Select(e => (NodeKey?)e.To).FirstOrDefault(k => k is { Kind: NodeKind.Feature }) ?? node;
+    }
+
+    private sealed record Descent(NodeKey Key, IReadOnlyList<string> Path, IReadOnlyList<GraphEdge> Edges)
+    {
+        public Descent Down(NodeKey child, GraphEdge edge) => new(child, [.. Path, $"owns {child.Value}"], [.. Edges, edge]);
     }
 
     private sealed record Reach(NodeKey Node, IReadOnlyList<string> Path, IReadOnlyList<GraphEdge> Edges);

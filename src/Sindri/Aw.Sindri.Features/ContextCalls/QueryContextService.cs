@@ -11,10 +11,11 @@ internal sealed class QueryContextService(ContextScopes scopes, IContextEngine e
 {
     public async ValueTask<Result<ContextResult>> Handle(QueryContextRequest request, CancellationToken cancellationToken)
     {
+        var depth = ContextDepth.Parse(request.Depth);
         var scope = await scopes.Current(cancellationToken).ConfigureAwait(false);
-        return scope.IsError
-            ? scope.Error
-            : await engine.Query(new ContextQuery(request.Q, request.Node, request.Item, request.Symbol, request.Depth, request.Budget, request.Draft),
+        return depth.IsError ? depth.Error
+            : scope.IsError ? scope.Error
+            : await engine.Query(new ContextQuery(request.Q, request.Node, request.Item, request.Symbol, depth.Value, request.Budget, request.Draft),
                 scope.Value, cancellationToken).ConfigureAwait(false);
     }
 }
