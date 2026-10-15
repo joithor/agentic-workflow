@@ -129,10 +129,10 @@ public sealed partial class FreshnessTests : IDisposable
         await Connected(() => _vm.Catalog.Controls.Count > 0);
 
         Assert.Equal(1, _server.CatalogCalls);
-        Assert.Equal(37, _vm.Catalog.Controls.Count);
-        Assert.Equal("14 actions arrive in later phases", _vm.Catalog.PendingSummary);
-        Assert.Equal(["arrives in P6", "arrives in P3", "arrives in P4", "arrives in P10a", "arrives in S-5B"], _vm.Catalog.Pending.Select(p => p.Heading), StringComparer.Ordinal);
-        Assert.Equal(9, _vm.Catalog.CliOnly.Count);
+        Assert.Equal(52, _vm.Catalog.Controls.Count);
+        Assert.Equal("15 actions arrive in later phases", _vm.Catalog.PendingSummary);
+        Assert.Equal(["arrives in API-P6", "arrives in P6", "arrives in P3", "arrives in P4", "arrives in P10a", "arrives in S-5B"], _vm.Catalog.Pending.Select(p => p.Heading), StringComparer.Ordinal);
+        Assert.Equal(14, _vm.Catalog.CliOnly.Count);
     }
 
     // §9.2: an event re-reads every view the app shows (the status and the services view); its payload is never applied.
@@ -313,7 +313,7 @@ public sealed partial class FreshnessTests : IDisposable
         _server.Push(A.Event(1, "service.ran"));
         await Until(() => _vm.Banner.HasRebuild);
 
-        Assert.Equal((37, true, ShellState.Normal), (_vm.Catalog.Controls.Count, _vm.Banner.HasRebuild, _vm.State));
+        Assert.Equal((52, true, ShellState.Normal), (_vm.Catalog.Controls.Count, _vm.Banner.HasRebuild, _vm.State));
     }
 
     // F13: the pill words come from the goldens, not from records built by hand.
