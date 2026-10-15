@@ -5,16 +5,16 @@ using Aw.Sindri.Features.ListInstances;
 namespace Aw.Sindri.Host.Endpoints;
 
 /// <summary>
-/// GET /sindri/workflow/instances[?address=&amp;item=&amp;state=&amp;needsMe=] (engine spec §6.3; query): the instances
+/// GET /sindri/workflow/instances[?address=&amp;item=&amp;state=&amp;needsMe=&amp;query=] (engine spec §6.3; query): the instances
 /// by their search attributes, or with 'address' the one instance a CLI address or bare item names, with its opaque id.
 /// </summary>
 internal static class ListInstancesEndpoint
 {
     internal static RouteGroupBuilder MapListInstances(this RouteGroupBuilder group)
     {
-        _ = group.MapGet("/workflow/instances", static async (string? address, string? item, string? state, bool? needsMe,
+        _ = group.MapGet("/workflow/instances", static async (string? address, string? item, string? state, bool? needsMe, string? query,
                 IService<ListInstancesRequest, ListInstancesResponse> service, CancellationToken ct)
-            => (await service.Handle(new ListInstancesRequest(needsMe ?? false, item is null ? null : ItemKey.From(item), state, Query: null, address), ct).ConfigureAwait(false)).ToHttpResult());
+            => (await service.Handle(new ListInstancesRequest(needsMe ?? false, item is null ? null : ItemKey.From(item), state, query, address), ct).ConfigureAwait(false)).ToHttpResult());
         return group;
     }
 }

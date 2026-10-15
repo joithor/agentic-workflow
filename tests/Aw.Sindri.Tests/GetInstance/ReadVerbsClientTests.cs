@@ -39,6 +39,17 @@ public sealed class ReadVerbsClientTests
     }
 
     [Fact(Timeout = 30_000)]
+    public async Task List_with_a_state_that_is_not_a_state_name_is_refused_by_the_route_as_SND_CLI_003_with_exit_2()
+    {
+        using var api = ReadApi.Over(new OneInstance(StatusCases.View("done")));
+
+        var (exit, stdout, stderr) = await Run(api, TestContext.Current.CancellationToken, "list", "--state", "Not A State");
+
+        Assert.Equal((2, string.Empty), (exit, stdout));
+        Assert.StartsWith("SND-CLI-003 ", stderr, StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 30_000)]
     public async Task List_needs_me_asks_for_needsMe()
     {
         using var api = ReadApi.Over(new OneInstance(StatusCases.View("done")));

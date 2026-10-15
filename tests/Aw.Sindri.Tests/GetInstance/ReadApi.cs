@@ -110,10 +110,16 @@ internal sealed class ReadApi : HttpMessageHandler
 
     private static HttpResponseMessage Answer<T>(Result<T> result, JsonSerializerOptions json) => result.IsSuccess
         ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(AwJson.Serialize(result.Value, json)) { Headers = { ContentType = new("application/json") } } }
-        : new HttpResponseMessage(result.Error.Kind == ErrorKind.NotFound ? HttpStatusCode.NotFound : HttpStatusCode.BadRequest)
+        : Problem(result.Error);
+
+    private static HttpResponseMessage Problem(Error error)
+    {
+        var status = error.Kind == ErrorKind.NotFound ? HttpStatusCode.NotFound : HttpStatusCode.BadRequest;
+        return new HttpResponseMessage(status)
         {
-            Content = new StringContent(JsonSerializer.Serialize(new { type = "about:blank", title = result.Error.Code, detail = result.Error.Message }), Encoding.UTF8, "application/problem+json"),
+            Content = new StringContent(JsonSerializer.Serialize(new { type = "about:blank", title = error.Code, status = (int)status, detail = error.Message }), Encoding.UTF8, "application/problem+json"),
         };
+    }
 
     private sealed class NoRows : IWorkflowInstances
     {

@@ -77,7 +77,6 @@ public sealed class WorkflowReadVerbsTests : IDisposable
 
     [Theory]
     [InlineData("list", "--needs-me", "--item", "T-1")]
-    [InlineData("list", "--state", "Not A State")]
     [InlineData("list", "--colour", "blue")]
     [InlineData("status")]
     [InlineData("status", "--json")]

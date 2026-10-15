@@ -589,6 +589,12 @@ covers the search attributes, a delivered event, a refused event's park (`NeedsY
 
 Engine spec rev 8.1 §5.1, §5.6, §6.3, §6.4, S1-D6 and S1-D11; README X5 and X16.
 
+All three are clients of serve's routes, like the write verbs: `status` resolves its reference with `GET /sindri/workflow/instances?address=` and
+reads `GET /sindri/workflow/instances/{id}`; `list` calls `GET /sindri/workflow/instances` with `needsMe`, `item`, `state` and `query`;
+`events` resolves the same way and reads `GET /sindri/workflow/instances/{id}/events?after=` (`--follow` polls it). None starts serve:
+with none running they print `SND-API-001 not running: …` and exit 1. Only `recipe validate` and `recipe eval` run in process (spec §6.1).
+The `--json` output is the response as the CLI's serializer prints it (`status` prints the `instance` member, as before).
+
 | Verb | Slice | What it reads | Prints |
 |---|---|---|---|
 | `workflow status <address> [--json]` | `GetInstance` | the `GetInstance` Query (`TemporalInstanceRuntime.Get`); an ended instance answers too | the §6.4 layout, or the `InstanceView` as JSON. Exit 2 with `SND-WF-001` for no such instance, `SND-API-002` when no worker answers in 10 s |
