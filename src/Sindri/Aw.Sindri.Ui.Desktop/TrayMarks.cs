@@ -17,17 +17,18 @@ internal static class TrayMarks
     private const int Pixels = 32;
     private const double Units = 12;
     private static readonly Geometry _mark = Geometry.Parse("M6 1.25 10.75 6 6 10.75 1.25 6z");
-    private static readonly Dictionary<TrayState, WindowIcon> _icons = [];
+    private static readonly Dictionary<(TrayState, int), WindowIcon> _icons = [];
 
     /// <summary>The icon for a state.</summary>
     /// <param name="state">The state.</param>
+    /// <param name="count">The count an Attention or Calm icon carries.</param>
     /// <returns>The icon.</returns>
-    internal static WindowIcon For(TrayState state)
+    internal static WindowIcon For(TrayState state, int count)
     {
-        if (!_icons.TryGetValue(state, out var icon))
+        if (!_icons.TryGetValue((state, count), out var icon))
         {
-            icon = new WindowIcon(Draw(state));
-            _icons[state] = icon;
+            icon = new WindowIcon(Draw(state, count));
+            _icons[(state, count)] = icon;
         }
 
         return icon;
@@ -35,16 +36,18 @@ internal static class TrayMarks
 
     /// <summary>Draws the icon for a state.</summary>
     /// <param name="state">The state.</param>
+    /// <param name="count">The count an Attention or Calm icon carries.</param>
     /// <returns>The icon's bitmap.</returns>
-    internal static Bitmap Draw(TrayState state)
+    internal static Bitmap Draw(TrayState state, int count)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
         var ink = new SolidColorBrush(Colors.White);
         var pen = new Pen(ink, thickness: 1, lineCap: PenLineCap.Round, lineJoin: PenLineJoin.Round);
         var bitmap = new RenderTargetBitmap(new PixelSize(Pixels, Pixels), new Vector(96, 96));
         using (var context = bitmap.CreateDrawingContext())
         using (context.PushTransform(Matrix.CreateScale(Pixels / Units, Pixels / Units)))
         {
-            if (state == TrayState.Neutral)
+            if (state is TrayState.Neutral or TrayState.Attention or TrayState.Calm)
             {
                 context.DrawGeometry(ink, pen: null, _mark);
             }

@@ -105,3 +105,31 @@ Aw.Sindri.Ui.Platform.NullDockBadge.Show(int count) -> void
 Aw.Sindri.Ui.Platform.NullDockBadge.Shown.get -> int
 Aw.Sindri.Ui.Platform.SindriPlatform.DockBadge.get -> Aw.Sindri.Ui.Platform.IDockBadge!
 Aw.Sindri.Ui.Platform.SindriPlatform.DockBadge.init -> void
+Aw.Sindri.Ui.Platform.ITray.RowRequested -> System.EventHandler<Aw.Sindri.Ui.Platform.TrayRowEventArgs!>?
+Aw.Sindri.Ui.Platform.TrayState.Attention = 3 -> Aw.Sindri.Ui.Platform.TrayState
+Aw.Sindri.Ui.Platform.TrayState.Calm = 4 -> Aw.Sindri.Ui.Platform.TrayState
+Aw.Sindri.Ui.Platform.TrayRow
+Aw.Sindri.Ui.Platform.TrayRow.<Clone>$() -> Aw.Sindri.Ui.Platform.TrayRow!
+Aw.Sindri.Ui.Platform.TrayRow.Deconstruct(out string! Id, out string! Label) -> void
+Aw.Sindri.Ui.Platform.TrayRow.Equals(Aw.Sindri.Ui.Platform.TrayRow? other) -> bool
+Aw.Sindri.Ui.Platform.TrayRow.Id.get -> string!
+Aw.Sindri.Ui.Platform.TrayRow.Id.init -> void
+Aw.Sindri.Ui.Platform.TrayRow.Label.get -> string!
+Aw.Sindri.Ui.Platform.TrayRow.Label.init -> void
+Aw.Sindri.Ui.Platform.TrayRow.TrayRow(string! Id, string! Label) -> void
+override Aw.Sindri.Ui.Platform.TrayRow.Equals(object? obj) -> bool
+override Aw.Sindri.Ui.Platform.TrayRow.GetHashCode() -> int
+override Aw.Sindri.Ui.Platform.TrayRow.ToString() -> string!
+static Aw.Sindri.Ui.Platform.TrayRow.operator !=(Aw.Sindri.Ui.Platform.TrayRow? left, Aw.Sindri.Ui.Platform.TrayRow? right) -> bool
+static Aw.Sindri.Ui.Platform.TrayRow.operator ==(Aw.Sindri.Ui.Platform.TrayRow? left, Aw.Sindri.Ui.Platform.TrayRow? right) -> bool
+Aw.Sindri.Ui.Platform.TrayRowEventArgs
+Aw.Sindri.Ui.Platform.TrayRowEventArgs.RowId.get -> string!
+Aw.Sindri.Ui.Platform.TrayRowEventArgs.TrayRowEventArgs(string! rowId) -> void
+const Aw.Sindri.Ui.Platform.TrayView.MaxRows = 5 -> int
+Aw.Sindri.Ui.Platform.TrayView.Count.get -> int
+Aw.Sindri.Ui.Platform.TrayView.Count.init -> void
+Aw.Sindri.Ui.Platform.TrayView.MenuRows.get -> System.Collections.Generic.IEnumerable<Aw.Sindri.Ui.Platform.TrayRow!>!
+Aw.Sindri.Ui.Platform.TrayView.Rows.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Ui.Platform.TrayRow!>!
+Aw.Sindri.Ui.Platform.TrayView.Rows.init -> void
+Aw.Sindri.Ui.Platform.TrayView.RunningLabel.get -> string!
+Aw.Sindri.Ui.Platform.TrayView.RunningLabel.init -> void
