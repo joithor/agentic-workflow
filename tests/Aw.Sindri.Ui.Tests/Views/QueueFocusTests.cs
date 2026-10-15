@@ -189,6 +189,23 @@ public sealed class QueueFocusTests : IDisposable
         await Until(window, () => OnRowFrame(window, moving), "focus did not follow the row into its new group");
     });
 
+    // a11y-3: the pill hides when the pointer leaves while it has focus; focus must not be left on nothing.
+    [Fact]
+    public Task Focus_on_the_held_pill_moves_on_when_the_pill_hides() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        Settle(window);
+        shell.Queue.Hold(holding: true);
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
+        _server.Push(A.Event(58, "item.state-changed"));
+        await Until(window, () => shell.Queue.HasHeld);
+        var pill = Named<Button>(window, "HomeHeldPill");
+        Assert.True(pill.Focus(NavigationMethod.Tab));
+
+        shell.Queue.Hold(holding: false);
+        await Until(window, () => !pill.IsEffectivelyVisible && Focused(window) is { IsEffectivelyVisible: true } && !ReferenceEquals(Focused(window), pill), "focus was left on the hidden pill");
+    });
+
     private static string? FocusedRowId(Window window) =>
         Focused(window)?.GetSelfAndVisualAncestors().OfType<Control>().Select(c => c.DataContext).OfType<ViewModels.Queue.ItemRowViewModel>().FirstOrDefault()?.Id;
 

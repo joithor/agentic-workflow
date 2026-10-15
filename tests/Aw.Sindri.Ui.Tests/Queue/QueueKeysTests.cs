@@ -63,6 +63,40 @@ public sealed class QueueKeysTests
         Assert.Equal((4, false), (queue.Total, queue.HasHeld));   // L4: removals are not held
     }
 
+    // a11y-3: the pill hides when it is pressed, taking focus with it: focus goes to the first row it showed.
+    [Fact]
+    public async Task The_pill_asks_for_focus_on_the_first_row_it_shows()
+    {
+        var queue = await Queue();
+        queue.Hold(holding: true);
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
+        await queue.Refresh(_api, Token);
+        var asked = new List<FocusRequestedEventArgs>();
+        var known = queue.Groups.SelectMany(g => g.Rows).Select(r => r.Id).ToHashSet(StringComparer.Ordinal);
+        queue.FocusRequested += (_, e) => asked.Add(e);
+
+        queue.ShowHeld();
+
+        var first = queue.Groups.Where(g => g.IsVisible).SelectMany(g => g.Rows).First(r => !known.Contains(r.Id));
+        Assert.Equal([(first.Id, false)], asked.Select(a => (a.ItemId, a.OnlyIfLost)));
+    }
+
+    // Leaving the panel shows the held rows too, but nobody pressed the pill: focus stays where it is.
+    [Fact]
+    public async Task Leaving_the_panel_shows_the_held_rows_without_asking_for_focus()
+    {
+        var queue = await Queue();
+        queue.Hold(holding: true);
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
+        await queue.Refresh(_api, Token);
+        var asked = 0;
+        queue.FocusRequested += (_, _) => asked++;
+
+        queue.Hold(holding: false);
+
+        Assert.Equal(0, asked);
+    }
+
     // L4 (§8): hold only keeps rows from shifting in under the pointer. A removal is shown at once: no pill, nothing stale to click.
     [Fact]
     public async Task A_held_refresh_without_new_rows_shows_no_pill_and_applies_the_removals()
