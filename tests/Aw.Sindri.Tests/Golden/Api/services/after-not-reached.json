@@ -1,0 +1,7 @@
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.6.4",
+  "title": "SND-API-011",
+  "status": 503,
+  "detail": "views at cursor 1, waiting for 99",
+  "traceId": "<trace>"
+}

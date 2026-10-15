@@ -10,4 +10,16 @@ public static class A
     /// <summary>A ListCommandsRequest builder with deterministic defaults.</summary>
     /// <returns>A new builder.</returns>
     public static ListCommandsRequestBuilder ListCommandsRequest() => new();
+
+    /// <summary>A ListServicesRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static ListServicesRequestBuilder ListServicesRequest() => new();
+
+    /// <summary>A GetProfileRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static GetProfileRequestBuilder GetProfileRequest() => new();
+
+    /// <summary>A RebuildViewsRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static RebuildViewsRequestBuilder RebuildViewsRequest() => new();
 }

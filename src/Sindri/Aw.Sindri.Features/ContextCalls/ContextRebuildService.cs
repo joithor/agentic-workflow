@@ -21,7 +21,7 @@ internal sealed class ContextRebuildService(ContextScopes scopes, IContextEngine
 
     public ServiceName Identity() => ServiceId;
 
-    public async ValueTask<Result<Unit>> Run(ScheduledRun run, CancellationToken cancellationToken)
+    public async ValueTask<Result<ScheduledResult>> Run(ScheduledRun run, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(run);
         var scope = await scopes.Current(cancellationToken).ConfigureAwait(false);
@@ -35,6 +35,6 @@ internal sealed class ContextRebuildService(ContextScopes scopes, IContextEngine
         var payload = new ContextMapBuilt(report.Draft.Repo.Value, report.Draft.Number, report.Proposed.Count, report.Degraded);
         var key = string.Create(CultureInfo.InvariantCulture, $"{EventTypes.ContextMapBuilt}:{run.Grant.Epoch}:{run.Slot:O}");
         var recorded = await ledger.Append(events.Entry(EventTypes.ContextMapBuilt, payload, key), run.Grant, cancellationToken).ConfigureAwait(false);
-        return recorded.IsError ? recorded.Error : Unit.Value;
+        return recorded.IsError ? recorded.Error : ScheduledResult.Worked;
     }
 }

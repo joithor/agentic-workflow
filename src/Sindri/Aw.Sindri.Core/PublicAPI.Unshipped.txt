@@ -495,6 +495,23 @@ Aw.Sindri.Core.Events.ProfileApproved.Equals(Aw.Sindri.Core.Events.ProfileApprov
 Aw.Sindri.Core.Events.ProfileApproved.Hash.get -> Aw.Sindri.Core.Ids.ProfileHash
 Aw.Sindri.Core.Events.ProfileApproved.Hash.init -> void
 Aw.Sindri.Core.Events.ProfileApproved.ProfileApproved(Aw.Sindri.Core.Ids.ProfileHash Hash, System.Collections.Generic.IReadOnlyList<string!>! Changes) -> void
+Aw.Sindri.Core.Events.ProfileChecked
+Aw.Sindri.Core.Events.ProfileChecked.<Clone>$() -> Aw.Sindri.Core.Events.ProfileChecked!
+Aw.Sindri.Core.Events.ProfileChecked.Approved.get -> Aw.Sindri.Core.Ids.ProfileHash?
+Aw.Sindri.Core.Events.ProfileChecked.Approved.init -> void
+Aw.Sindri.Core.Events.ProfileChecked.ApprovedServices.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ServiceName>!
+Aw.Sindri.Core.Events.ProfileChecked.ApprovedServices.init -> void
+Aw.Sindri.Core.Events.ProfileChecked.ChangedPaths.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Events.ProfileChecked.ChangedPaths.init -> void
+Aw.Sindri.Core.Events.ProfileChecked.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.ProfileChecked.CommandId.init -> void
+Aw.Sindri.Core.Events.ProfileChecked.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.ProfileHash? Approved, out Aw.Sindri.Core.Ids.ProfileHash? Live, out bool Drifted, out System.Collections.Generic.IReadOnlyList<string!>! ChangedPaths, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ServiceName>! ApprovedServices) -> void
+Aw.Sindri.Core.Events.ProfileChecked.Drifted.get -> bool
+Aw.Sindri.Core.Events.ProfileChecked.Drifted.init -> void
+Aw.Sindri.Core.Events.ProfileChecked.Equals(Aw.Sindri.Core.Events.ProfileChecked? other) -> bool
+Aw.Sindri.Core.Events.ProfileChecked.Live.get -> Aw.Sindri.Core.Ids.ProfileHash?
+Aw.Sindri.Core.Events.ProfileChecked.Live.init -> void
+Aw.Sindri.Core.Events.ProfileChecked.ProfileChecked(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.ProfileHash? Approved, Aw.Sindri.Core.Ids.ProfileHash? Live, bool Drifted, System.Collections.Generic.IReadOnlyList<string!>! ChangedPaths, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ServiceName>! ApprovedServices) -> void
 Aw.Sindri.Core.Events.RecipeEvents
 Aw.Sindri.Core.Events.RecipeEvents.Approved(Aw.Sindri.Core.Workflow.Registry.RecipeApproval! approval, bool drift, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Ledger.LedgerAppend!>!>
 Aw.Sindri.Core.Events.RecipeEvents.RecipeEvents(Aw.Sindri.Core.Ledger.ILedgerStore! ledger, Aw.Sindri.Core.Events.EventFactory! events, Aw.Sindri.Core.Lease.HeldLease! held) -> void
@@ -509,11 +526,40 @@ Aw.Sindri.Core.Events.RecordedApproval.Hash.init -> void
 Aw.Sindri.Core.Events.RecordedApproval.RecordedApproval(Aw.Sindri.Core.Ids.ProfileHash Hash, long Sequence) -> void
 Aw.Sindri.Core.Events.RecordedApproval.Sequence.get -> long
 Aw.Sindri.Core.Events.RecordedApproval.Sequence.init -> void
+Aw.Sindri.Core.Events.ServiceOutcome
+Aw.Sindri.Core.Events.ServiceOutcome.Failed = 1 -> Aw.Sindri.Core.Events.ServiceOutcome
+Aw.Sindri.Core.Events.ServiceOutcome.Ok = 0 -> Aw.Sindri.Core.Events.ServiceOutcome
+Aw.Sindri.Core.Events.ServiceRan
+Aw.Sindri.Core.Events.ServiceRan.<Clone>$() -> Aw.Sindri.Core.Events.ServiceRan!
+Aw.Sindri.Core.Events.ServiceRan.Code.get -> string?
+Aw.Sindri.Core.Events.ServiceRan.Code.init -> void
+Aw.Sindri.Core.Events.ServiceRan.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.ServiceRan.CommandId.init -> void
+Aw.Sindri.Core.Events.ServiceRan.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.ServiceName Service, out System.DateTimeOffset Slot, out Aw.Sindri.Core.Events.ServiceOutcome Outcome, out string? Code) -> void
+Aw.Sindri.Core.Events.ServiceRan.Equals(Aw.Sindri.Core.Events.ServiceRan? other) -> bool
+Aw.Sindri.Core.Events.ServiceRan.Outcome.get -> Aw.Sindri.Core.Events.ServiceOutcome
+Aw.Sindri.Core.Events.ServiceRan.Outcome.init -> void
+Aw.Sindri.Core.Events.ServiceRan.Service.get -> Aw.Sindri.Core.Ids.ServiceName
+Aw.Sindri.Core.Events.ServiceRan.Service.init -> void
+Aw.Sindri.Core.Events.ServiceRan.ServiceRan(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.ServiceName Service, System.DateTimeOffset Slot, Aw.Sindri.Core.Events.ServiceOutcome Outcome, string? Code) -> void
+Aw.Sindri.Core.Events.ServiceRan.Slot.get -> System.DateTimeOffset
+Aw.Sindri.Core.Events.ServiceRan.Slot.init -> void
 Aw.Sindri.Core.Events.StopReason
 Aw.Sindri.Core.Events.StopReason.ListenFailed = 3 -> Aw.Sindri.Core.Events.StopReason
 Aw.Sindri.Core.Events.StopReason.PortInUse = 2 -> Aw.Sindri.Core.Events.StopReason
 Aw.Sindri.Core.Events.StopReason.Signal = 1 -> Aw.Sindri.Core.Events.StopReason
 Aw.Sindri.Core.Events.StopReason.Stop = 0 -> Aw.Sindri.Core.Events.StopReason
+Aw.Sindri.Core.Events.ViewsRebuilt
+Aw.Sindri.Core.Events.ViewsRebuilt.<Clone>$() -> Aw.Sindri.Core.Events.ViewsRebuilt!
+Aw.Sindri.Core.Events.ViewsRebuilt.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.ViewsRebuilt.CommandId.init -> void
+Aw.Sindri.Core.Events.ViewsRebuilt.CursorBefore.get -> long
+Aw.Sindri.Core.Events.ViewsRebuilt.CursorBefore.init -> void
+Aw.Sindri.Core.Events.ViewsRebuilt.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out long CursorBefore, out long EventsReplayed) -> void
+Aw.Sindri.Core.Events.ViewsRebuilt.Equals(Aw.Sindri.Core.Events.ViewsRebuilt? other) -> bool
+Aw.Sindri.Core.Events.ViewsRebuilt.EventsReplayed.get -> long
+Aw.Sindri.Core.Events.ViewsRebuilt.EventsReplayed.init -> void
+Aw.Sindri.Core.Events.ViewsRebuilt.ViewsRebuilt(Aw.Sindri.Core.Ids.CommandId CommandId, long CursorBefore, long EventsReplayed) -> void
 Aw.Sindri.Core.Events.WorkflowEventPayload
 Aw.Sindri.Core.Events.WorkflowEventPayload.<Clone>$() -> Aw.Sindri.Core.Events.WorkflowEventPayload!
 Aw.Sindri.Core.Events.WorkflowEventPayload.Deconstruct(out string! Instance, out string! From, out string! To, out string! Trigger, out string? Outcome, out string? Run) -> void
@@ -531,6 +577,34 @@ Aw.Sindri.Core.Events.WorkflowEventPayload.To.init -> void
 Aw.Sindri.Core.Events.WorkflowEventPayload.Trigger.get -> string!
 Aw.Sindri.Core.Events.WorkflowEventPayload.Trigger.init -> void
 Aw.Sindri.Core.Events.WorkflowEventPayload.WorkflowEventPayload(string! Instance, string! From, string! To, string! Trigger, string? Outcome, string? Run) -> void
+Aw.Sindri.Core.Health.HealthProblem
+Aw.Sindri.Core.Health.HealthProblem.<Clone>$() -> Aw.Sindri.Core.Health.HealthProblem!
+Aw.Sindri.Core.Health.HealthProblem.Clause.get -> string!
+Aw.Sindri.Core.Health.HealthProblem.Clause.init -> void
+Aw.Sindri.Core.Health.HealthProblem.Code.get -> string!
+Aw.Sindri.Core.Health.HealthProblem.Code.init -> void
+Aw.Sindri.Core.Health.HealthProblem.Deconstruct(out string! Code, out string! Text, out string! Clause) -> void
+Aw.Sindri.Core.Health.HealthProblem.Equals(Aw.Sindri.Core.Health.HealthProblem? other) -> bool
+Aw.Sindri.Core.Health.HealthProblem.HealthProblem(string! Code, string! Text, string! Clause) -> void
+Aw.Sindri.Core.Health.HealthProblem.Text.get -> string!
+Aw.Sindri.Core.Health.HealthProblem.Text.init -> void
+Aw.Sindri.Core.Health.HealthReport
+Aw.Sindri.Core.Health.HealthReport.<Clone>$() -> Aw.Sindri.Core.Health.HealthReport!
+Aw.Sindri.Core.Health.HealthReport.Deconstruct(out Aw.Sindri.Core.Health.HealthWord Word, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Health.HealthProblem!>! Problems, out string? Sentence) -> void
+Aw.Sindri.Core.Health.HealthReport.Equals(Aw.Sindri.Core.Health.HealthReport? other) -> bool
+Aw.Sindri.Core.Health.HealthReport.HealthReport(Aw.Sindri.Core.Health.HealthWord Word, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Health.HealthProblem!>! Problems, string? Sentence) -> void
+Aw.Sindri.Core.Health.HealthReport.Problems.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Health.HealthProblem!>!
+Aw.Sindri.Core.Health.HealthReport.Problems.init -> void
+Aw.Sindri.Core.Health.HealthReport.Sentence.get -> string?
+Aw.Sindri.Core.Health.HealthReport.Sentence.init -> void
+Aw.Sindri.Core.Health.HealthReport.Word.get -> Aw.Sindri.Core.Health.HealthWord
+Aw.Sindri.Core.Health.HealthReport.Word.init -> void
+Aw.Sindri.Core.Health.HealthSummary
+Aw.Sindri.Core.Health.HealthWord
+Aw.Sindri.Core.Health.HealthWord.Degraded = 1 -> Aw.Sindri.Core.Health.HealthWord
+Aw.Sindri.Core.Health.HealthWord.Healthy = 0 -> Aw.Sindri.Core.Health.HealthWord
+Aw.Sindri.Core.Health.HealthWord.Rebuilding = 3 -> Aw.Sindri.Core.Health.HealthWord
+Aw.Sindri.Core.Health.HealthWord.Stalled = 2 -> Aw.Sindri.Core.Health.HealthWord
 Aw.Sindri.Core.Ids.ActionId
 Aw.Sindri.Core.Ids.ActionId.ActionId() -> void
 Aw.Sindri.Core.Ids.ActionId.Equals(Aw.Sindri.Core.Ids.ActionId other) -> bool
@@ -663,8 +737,13 @@ Aw.Sindri.Core.Lease.ProcessFacts.Running.get -> bool
 Aw.Sindri.Core.Lease.ProcessFacts.Running.init -> void
 Aw.Sindri.Core.Lease.ProcessFacts.StartedAt.get -> System.DateTimeOffset?
 Aw.Sindri.Core.Lease.ProcessFacts.StartedAt.init -> void
+Aw.Sindri.Core.Ledger.ILedgerReader
+Aw.Sindri.Core.Ledger.ILedgerReader.Head(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<long>!>
+Aw.Sindri.Core.Ledger.ILedgerReader.Latest(string! type, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Ledger.LedgerEvent?>!>
+Aw.Sindri.Core.Ledger.ILedgerReader.ReadAfter(long sequence, int max, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ledger.LedgerEvent!>!>!>
 Aw.Sindri.Core.Ledger.ILedgerStore
 Aw.Sindri.Core.Ledger.ILedgerStore.Append(Aw.Sindri.Core.Ledger.LedgerEntry! entry, Aw.Sindri.Core.Lease.LeaseGrant! grant, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Ledger.LedgerAppend!>!>
+Aw.Sindri.Core.Ledger.ILedgerStore.Head(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<long>!>
 Aw.Sindri.Core.Ledger.ILedgerStore.Latest(string! type, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Ledger.LedgerEvent?>!>
 Aw.Sindri.Core.Ledger.ILedgerStore.ReadAfter(long sequence, int max, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ledger.LedgerEvent!>!>!>
 Aw.Sindri.Core.Ledger.ILedgerStore.Schema(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Ledger.SchemaStatus!>!>
@@ -810,6 +889,7 @@ Aw.Sindri.Core.Profile.LoadedProfile.Profile.get -> Aw.Sindri.Core.Profile.Sindr
 Aw.Sindri.Core.Profile.LoadedProfile.Profile.init -> void
 Aw.Sindri.Core.Profile.LoadedProfile.Source.get -> string!
 Aw.Sindri.Core.Profile.LoadedProfile.Source.init -> void
+Aw.Sindri.Core.Profile.ProfileCheck
 Aw.Sindri.Core.Profile.ProfileDiff
 Aw.Sindri.Core.Profile.ProfileHashing
 Aw.Sindri.Core.Profile.ProfileRules
@@ -855,7 +935,14 @@ Aw.Sindri.Core.Profile.SindriProfile.User.init -> void
 Aw.Sindri.Core.Registration.SindriCoreServiceCollectionExtensions
 Aw.Sindri.Core.Scheduling.IScheduledService
 Aw.Sindri.Core.Scheduling.IScheduledService.Identity() -> Aw.Sindri.Core.Ids.ServiceName
-Aw.Sindri.Core.Scheduling.IScheduledService.Run(Aw.Sindri.Core.Scheduling.ScheduledRun! run, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Scheduling.IScheduledService.Run(Aw.Sindri.Core.Scheduling.ScheduledRun! run, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Scheduling.ScheduledResult!>!>
+Aw.Sindri.Core.Scheduling.ScheduledResult
+Aw.Sindri.Core.Scheduling.ScheduledResult.<Clone>$() -> Aw.Sindri.Core.Scheduling.ScheduledResult!
+Aw.Sindri.Core.Scheduling.ScheduledResult.Deconstruct(out bool Idle) -> void
+Aw.Sindri.Core.Scheduling.ScheduledResult.Equals(Aw.Sindri.Core.Scheduling.ScheduledResult? other) -> bool
+Aw.Sindri.Core.Scheduling.ScheduledResult.Idle.get -> bool
+Aw.Sindri.Core.Scheduling.ScheduledResult.Idle.init -> void
+Aw.Sindri.Core.Scheduling.ScheduledResult.ScheduledResult(bool Idle) -> void
 Aw.Sindri.Core.Scheduling.ScheduledRun
 Aw.Sindri.Core.Scheduling.ScheduledRun.<Clone>$() -> Aw.Sindri.Core.Scheduling.ScheduledRun!
 Aw.Sindri.Core.Scheduling.ScheduledRun.Deconstruct(out Aw.Sindri.Core.Lease.LeaseGrant! Grant, out System.DateTimeOffset Slot) -> void
@@ -890,6 +977,161 @@ Aw.Sindri.Core.Secrets.SecretScheme.File = 2 -> Aw.Sindri.Core.Secrets.SecretSch
 Aw.Sindri.Core.Secrets.SecretScheme.Keychain = 3 -> Aw.Sindri.Core.Secrets.SecretScheme
 Aw.Sindri.Core.Secrets.SecretScheme.OnePassword = 4 -> Aw.Sindri.Core.Secrets.SecretScheme
 Aw.Sindri.Core.SindriErrors
+Aw.Sindri.Core.Views.AsOf
+Aw.Sindri.Core.Views.AsOf.<Clone>$() -> Aw.Sindri.Core.Views.AsOf!
+Aw.Sindri.Core.Views.AsOf.AsOf(long Cursor, long LedgerHead, System.DateTimeOffset? ProjectedAt, bool Rebuilding, bool Stalled) -> void
+Aw.Sindri.Core.Views.AsOf.Cursor.get -> long
+Aw.Sindri.Core.Views.AsOf.Cursor.init -> void
+Aw.Sindri.Core.Views.AsOf.Deconstruct(out long Cursor, out long LedgerHead, out System.DateTimeOffset? ProjectedAt, out bool Rebuilding, out bool Stalled) -> void
+Aw.Sindri.Core.Views.AsOf.Equals(Aw.Sindri.Core.Views.AsOf? other) -> bool
+Aw.Sindri.Core.Views.AsOf.LedgerHead.get -> long
+Aw.Sindri.Core.Views.AsOf.LedgerHead.init -> void
+Aw.Sindri.Core.Views.AsOf.ProjectedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Views.AsOf.ProjectedAt.init -> void
+Aw.Sindri.Core.Views.AsOf.Rebuilding.get -> bool
+Aw.Sindri.Core.Views.AsOf.Rebuilding.init -> void
+Aw.Sindri.Core.Views.AsOf.Stalled.get -> bool
+Aw.Sindri.Core.Views.AsOf.Stalled.init -> void
+Aw.Sindri.Core.Views.EmptyText
+Aw.Sindri.Core.Views.IProjection
+Aw.Sindri.Core.Views.IProjection.Apply(Aw.Sindri.Core.Ledger.LedgerEvent! recorded, Aw.Sindri.Core.Views.IViewRows! rows, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Views.IProjection.Handles(string! eventType) -> bool
+Aw.Sindri.Core.Views.IProjection.Views.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Views.IProjectorControl
+Aw.Sindri.Core.Views.IProjectorControl.RequestRebuild() -> void
+Aw.Sindri.Core.Views.IProjectorFeed
+Aw.Sindri.Core.Views.IProjectorFeed.Publish(Aw.Sindri.Core.Views.ViewsStatus! status) -> void
+Aw.Sindri.Core.Views.IProjectorFeed.RebuildRequested.get -> bool
+Aw.Sindri.Core.Views.IProjectorFeed.TakeRebuildRequest() -> bool
+Aw.Sindri.Core.Views.IProjectorStatus
+Aw.Sindri.Core.Views.IProjectorStatus.Current.get -> Aw.Sindri.Core.Views.ViewsStatus!
+Aw.Sindri.Core.Views.IProjectorStatus.WaitFor(long sequence, System.TimeSpan limit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Views.IViewReader
+Aw.Sindri.Core.Views.IViewReader.Get<TRow>(string! view, string! key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<TRow?>!>
+Aw.Sindri.Core.Views.IViewReader.List<TRow>(string! view, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<TRow!>!>!>
+Aw.Sindri.Core.Views.IViewReader.State(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Views.ProjectorState?>!>
+Aw.Sindri.Core.Views.IViewRows
+Aw.Sindri.Core.Views.IViewRows.Delete(string! view, string! key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Views.IViewRows.Get<TRow>(string! view, string! key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<TRow?>!>
+Aw.Sindri.Core.Views.IViewRows.Put<TRow>(string! view, string! key, TRow! row, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Views.IViewStore
+Aw.Sindri.Core.Views.IViewStore.Apply(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ledger.LedgerEvent!>! page, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.IProjection!>! projections, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Views.PageApplied!>!>
+Aw.Sindri.Core.Views.IViewStore.FinishRebuild(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Views.IViewStore.Open(int schemaVersion, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Views.ProjectorState!>!>
+Aw.Sindri.Core.Views.IViewStore.Reset(System.Collections.Generic.IReadOnlyList<string!>! views, int schemaVersion, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Views.ProjectorState!>!>
+Aw.Sindri.Core.Views.LastRun
+Aw.Sindri.Core.Views.LastRun.<Clone>$() -> Aw.Sindri.Core.Views.LastRun!
+Aw.Sindri.Core.Views.LastRun.Code.get -> string?
+Aw.Sindri.Core.Views.LastRun.Code.init -> void
+Aw.Sindri.Core.Views.LastRun.Deconstruct(out System.DateTimeOffset Slot, out Aw.Sindri.Core.Events.ServiceOutcome Outcome, out string? Code, out System.DateTimeOffset RanAt) -> void
+Aw.Sindri.Core.Views.LastRun.Equals(Aw.Sindri.Core.Views.LastRun? other) -> bool
+Aw.Sindri.Core.Views.LastRun.LastRun(System.DateTimeOffset Slot, Aw.Sindri.Core.Events.ServiceOutcome Outcome, string? Code, System.DateTimeOffset RanAt) -> void
+Aw.Sindri.Core.Views.LastRun.Outcome.get -> Aw.Sindri.Core.Events.ServiceOutcome
+Aw.Sindri.Core.Views.LastRun.Outcome.init -> void
+Aw.Sindri.Core.Views.LastRun.RanAt.get -> System.DateTimeOffset
+Aw.Sindri.Core.Views.LastRun.RanAt.init -> void
+Aw.Sindri.Core.Views.LastRun.Slot.get -> System.DateTimeOffset
+Aw.Sindri.Core.Views.LastRun.Slot.init -> void
+Aw.Sindri.Core.Views.PageApplied
+Aw.Sindri.Core.Views.PageApplied.<Clone>$() -> Aw.Sindri.Core.Views.PageApplied!
+Aw.Sindri.Core.Views.PageApplied.Deconstruct(out Aw.Sindri.Core.Views.ProjectorState! State, out Aw.Sindri.Core.Views.ViewStall? Stall) -> void
+Aw.Sindri.Core.Views.PageApplied.Equals(Aw.Sindri.Core.Views.PageApplied? other) -> bool
+Aw.Sindri.Core.Views.PageApplied.PageApplied(Aw.Sindri.Core.Views.ProjectorState! State, Aw.Sindri.Core.Views.ViewStall? Stall) -> void
+Aw.Sindri.Core.Views.PageApplied.Stall.get -> Aw.Sindri.Core.Views.ViewStall?
+Aw.Sindri.Core.Views.PageApplied.Stall.init -> void
+Aw.Sindri.Core.Views.PageApplied.State.get -> Aw.Sindri.Core.Views.ProjectorState!
+Aw.Sindri.Core.Views.PageApplied.State.init -> void
+Aw.Sindri.Core.Views.ProfileRow
+Aw.Sindri.Core.Views.ProfileRow.<Clone>$() -> Aw.Sindri.Core.Views.ProfileRow!
+Aw.Sindri.Core.Views.ProfileRow.Approved.get -> Aw.Sindri.Core.Ids.ProfileHash?
+Aw.Sindri.Core.Views.ProfileRow.Approved.init -> void
+Aw.Sindri.Core.Views.ProfileRow.ApprovedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Views.ProfileRow.ApprovedAt.init -> void
+Aw.Sindri.Core.Views.ProfileRow.ApprovedServices.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ServiceName>!
+Aw.Sindri.Core.Views.ProfileRow.ApprovedServices.init -> void
+Aw.Sindri.Core.Views.ProfileRow.Changed.get -> bool
+Aw.Sindri.Core.Views.ProfileRow.Changed.init -> void
+Aw.Sindri.Core.Views.ProfileRow.ChangedPaths.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Views.ProfileRow.ChangedPaths.init -> void
+Aw.Sindri.Core.Views.ProfileRow.CheckedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Views.ProfileRow.CheckedAt.init -> void
+Aw.Sindri.Core.Views.ProfileRow.Deconstruct(out Aw.Sindri.Core.Ids.ProfileHash? Approved, out System.DateTimeOffset? ApprovedAt, out Aw.Sindri.Core.Ids.ProfileHash? Live, out System.DateTimeOffset? CheckedAt, out bool Changed, out System.Collections.Generic.IReadOnlyList<string!>! ChangedPaths, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ServiceName>! ApprovedServices, out long Sequence) -> void
+Aw.Sindri.Core.Views.ProfileRow.Equals(Aw.Sindri.Core.Views.ProfileRow? other) -> bool
+Aw.Sindri.Core.Views.ProfileRow.Live.get -> Aw.Sindri.Core.Ids.ProfileHash?
+Aw.Sindri.Core.Views.ProfileRow.Live.init -> void
+Aw.Sindri.Core.Views.ProfileRow.ProfileRow(Aw.Sindri.Core.Ids.ProfileHash? Approved, System.DateTimeOffset? ApprovedAt, Aw.Sindri.Core.Ids.ProfileHash? Live, System.DateTimeOffset? CheckedAt, bool Changed, System.Collections.Generic.IReadOnlyList<string!>! ChangedPaths, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ServiceName>! ApprovedServices, long Sequence) -> void
+Aw.Sindri.Core.Views.ProfileRow.Sequence.get -> long
+Aw.Sindri.Core.Views.ProfileRow.Sequence.init -> void
+Aw.Sindri.Core.Views.ProjectorState
+Aw.Sindri.Core.Views.ProjectorState.<Clone>$() -> Aw.Sindri.Core.Views.ProjectorState!
+Aw.Sindri.Core.Views.ProjectorState.Cursor.get -> long
+Aw.Sindri.Core.Views.ProjectorState.Cursor.init -> void
+Aw.Sindri.Core.Views.ProjectorState.Deconstruct(out long Cursor, out int SchemaVersion, out System.DateTimeOffset? ProjectedAt, out bool Rebuilding, out long? StalledAt, out string? StalledType, out bool Fresh) -> void
+Aw.Sindri.Core.Views.ProjectorState.Equals(Aw.Sindri.Core.Views.ProjectorState? other) -> bool
+Aw.Sindri.Core.Views.ProjectorState.Fresh.get -> bool
+Aw.Sindri.Core.Views.ProjectorState.Fresh.init -> void
+Aw.Sindri.Core.Views.ProjectorState.ProjectedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Views.ProjectorState.ProjectedAt.init -> void
+Aw.Sindri.Core.Views.ProjectorState.ProjectorState(long Cursor, int SchemaVersion, System.DateTimeOffset? ProjectedAt, bool Rebuilding, long? StalledAt, string? StalledType, bool Fresh) -> void
+Aw.Sindri.Core.Views.ProjectorState.Rebuilding.get -> bool
+Aw.Sindri.Core.Views.ProjectorState.Rebuilding.init -> void
+Aw.Sindri.Core.Views.ProjectorState.SchemaVersion.get -> int
+Aw.Sindri.Core.Views.ProjectorState.SchemaVersion.init -> void
+Aw.Sindri.Core.Views.ProjectorState.StalledAt.get -> long?
+Aw.Sindri.Core.Views.ProjectorState.StalledAt.init -> void
+Aw.Sindri.Core.Views.ProjectorState.StalledType.get -> string?
+Aw.Sindri.Core.Views.ProjectorState.StalledType.init -> void
+Aw.Sindri.Core.Views.ServiceRow
+Aw.Sindri.Core.Views.ServiceRow.<Clone>$() -> Aw.Sindri.Core.Views.ServiceRow!
+Aw.Sindri.Core.Views.ServiceRow.Deconstruct(out Aw.Sindri.Core.Ids.ServiceName Name, out Aw.Sindri.Core.Views.LastRun? LastRun, out bool Paused, out long Sequence) -> void
+Aw.Sindri.Core.Views.ServiceRow.Equals(Aw.Sindri.Core.Views.ServiceRow? other) -> bool
+Aw.Sindri.Core.Views.ServiceRow.LastRun.get -> Aw.Sindri.Core.Views.LastRun?
+Aw.Sindri.Core.Views.ServiceRow.LastRun.init -> void
+Aw.Sindri.Core.Views.ServiceRow.Name.get -> Aw.Sindri.Core.Ids.ServiceName
+Aw.Sindri.Core.Views.ServiceRow.Name.init -> void
+Aw.Sindri.Core.Views.ServiceRow.Paused.get -> bool
+Aw.Sindri.Core.Views.ServiceRow.Paused.init -> void
+Aw.Sindri.Core.Views.ServiceRow.Sequence.get -> long
+Aw.Sindri.Core.Views.ServiceRow.Sequence.init -> void
+Aw.Sindri.Core.Views.ServiceRow.ServiceRow(Aw.Sindri.Core.Ids.ServiceName Name, Aw.Sindri.Core.Views.LastRun? LastRun, bool Paused, long Sequence) -> void
+Aw.Sindri.Core.Views.ViewNames
+Aw.Sindri.Core.Views.ViewSchema
+Aw.Sindri.Core.Views.ViewStall
+Aw.Sindri.Core.Views.ViewStall.<Clone>$() -> Aw.Sindri.Core.Views.ViewStall!
+Aw.Sindri.Core.Views.ViewStall.Code.get -> string!
+Aw.Sindri.Core.Views.ViewStall.Code.init -> void
+Aw.Sindri.Core.Views.ViewStall.Deconstruct(out long Sequence, out string! Type, out string! Code, out string! Detail) -> void
+Aw.Sindri.Core.Views.ViewStall.Detail.get -> string!
+Aw.Sindri.Core.Views.ViewStall.Detail.init -> void
+Aw.Sindri.Core.Views.ViewStall.Equals(Aw.Sindri.Core.Views.ViewStall? other) -> bool
+Aw.Sindri.Core.Views.ViewStall.Sequence.get -> long
+Aw.Sindri.Core.Views.ViewStall.Sequence.init -> void
+Aw.Sindri.Core.Views.ViewStall.Type.get -> string!
+Aw.Sindri.Core.Views.ViewStall.Type.init -> void
+Aw.Sindri.Core.Views.ViewStall.ViewStall(long Sequence, string! Type, string! Code, string! Detail) -> void
+Aw.Sindri.Core.Views.ViewsStatus
+Aw.Sindri.Core.Views.ViewsStatus.<Clone>$() -> Aw.Sindri.Core.Views.ViewsStatus!
+Aw.Sindri.Core.Views.ViewsStatus.AsOf.get -> Aw.Sindri.Core.Views.AsOf!
+Aw.Sindri.Core.Views.ViewsStatus.Cursor.get -> long
+Aw.Sindri.Core.Views.ViewsStatus.Cursor.init -> void
+Aw.Sindri.Core.Views.ViewsStatus.Deconstruct(out long Cursor, out long LedgerHead, out System.DateTimeOffset? ProjectedAt, out bool Rebuilding, out bool Stalled, out long? StalledAt, out string? StalledType) -> void
+Aw.Sindri.Core.Views.ViewsStatus.Equals(Aw.Sindri.Core.Views.ViewsStatus? other) -> bool
+Aw.Sindri.Core.Views.ViewsStatus.LedgerHead.get -> long
+Aw.Sindri.Core.Views.ViewsStatus.LedgerHead.init -> void
+Aw.Sindri.Core.Views.ViewsStatus.ProjectedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Views.ViewsStatus.ProjectedAt.init -> void
+Aw.Sindri.Core.Views.ViewsStatus.Rebuilding.get -> bool
+Aw.Sindri.Core.Views.ViewsStatus.Rebuilding.init -> void
+Aw.Sindri.Core.Views.ViewsStatus.Stalled.get -> bool
+Aw.Sindri.Core.Views.ViewsStatus.Stalled.init -> void
+Aw.Sindri.Core.Views.ViewsStatus.StalledFix() -> string!
+Aw.Sindri.Core.Views.ViewsStatus.StalledPhrase() -> string!
+Aw.Sindri.Core.Views.ViewsStatus.StalledAt.get -> long?
+Aw.Sindri.Core.Views.ViewsStatus.StalledAt.init -> void
+Aw.Sindri.Core.Views.ViewsStatus.StalledType.get -> string?
+Aw.Sindri.Core.Views.ViewsStatus.StalledType.init -> void
+Aw.Sindri.Core.Views.ViewsStatus.Text.get -> string?
+Aw.Sindri.Core.Views.ViewsStatus.ViewsStatus(long Cursor, long LedgerHead, System.DateTimeOffset? ProjectedAt, bool Rebuilding, bool Stalled, long? StalledAt, string? StalledType) -> void
 Aw.Sindri.Core.Workflow.Blocks.BlockCatalog
 Aw.Sindri.Core.Workflow.Blocks.BlockCatalog.BlockCatalog(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor!>! blocks, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Blocks.EventDescriptor!>! events) -> void
 Aw.Sindri.Core.Workflow.Blocks.BlockCatalog.Blocks.get -> System.Collections.Generic.IReadOnlyCollection<Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor!>!
@@ -3029,12 +3271,18 @@ const Aw.Sindri.Core.Events.EventTypes.ProfileApproved = "profile.approved" -> s
 const Aw.Sindri.Core.Events.EventTypes.RecipeApproved = "recipe.approved" -> string!
 const Aw.Sindri.Core.Events.EventTypes.RecipeRegistered = "recipe.registered" -> string!
 const Aw.Sindri.Core.Events.EventTypes.RecipeRevoked = "recipe.revoked" -> string!
+const Aw.Sindri.Core.Events.EventTypes.ProfileChecked = "profile.checked" -> string!
+const Aw.Sindri.Core.Events.EventTypes.ServiceRan = "service.ran" -> string!
+const Aw.Sindri.Core.Events.EventTypes.ViewsRebuilt = "views.rebuilt" -> string!
 const Aw.Sindri.Core.Events.EventTypes.WorkflowStarted = "workflow.started" -> string!
 const Aw.Sindri.Core.Events.EventTypes.WorkflowTransition = "workflow.transition" -> string!
 const Aw.Sindri.Core.Mcp.McpScope.ServerName = "sindri" -> string!
 const Aw.Sindri.Core.Profile.ApiSettings.DefaultPort = 7410 -> int
 const Aw.Sindri.Core.Profile.SindriProfile.CurrentSchemaVersion = 1 -> int
 const Aw.Sindri.Core.Profile.SindriProfile.DefaultTenant = "local" -> string!
+const Aw.Sindri.Core.Views.ViewNames.Profile = "profile" -> string!
+const Aw.Sindri.Core.Views.ViewNames.Services = "services" -> string!
+const Aw.Sindri.Core.Views.ViewSchema.Version = 1 -> int
 const Aw.Sindri.Core.Workflow.Engine.EngineStates.Cancelled = "cancelled" -> string!
 const Aw.Sindri.Core.Workflow.Engine.EngineStates.Escalated = "escalated" -> string!
 const Aw.Sindri.Core.Workflow.Engine.EngineStates.Parked = "parked" -> string!
@@ -3162,6 +3410,21 @@ override Aw.Sindri.Core.Events.RecordedApproval.ToString() -> string!
 override Aw.Sindri.Core.Events.WorkflowEventPayload.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Events.WorkflowEventPayload.GetHashCode() -> int
 override Aw.Sindri.Core.Events.WorkflowEventPayload.ToString() -> string!
+override Aw.Sindri.Core.Events.ProfileChecked.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ProfileChecked.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ProfileChecked.ToString() -> string!
+override Aw.Sindri.Core.Events.ServiceRan.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ServiceRan.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ServiceRan.ToString() -> string!
+override Aw.Sindri.Core.Events.ViewsRebuilt.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ViewsRebuilt.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ViewsRebuilt.ToString() -> string!
+override Aw.Sindri.Core.Health.HealthProblem.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Health.HealthProblem.GetHashCode() -> int
+override Aw.Sindri.Core.Health.HealthProblem.ToString() -> string!
+override Aw.Sindri.Core.Health.HealthReport.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Health.HealthReport.GetHashCode() -> int
+override Aw.Sindri.Core.Health.HealthReport.ToString() -> string!
 override Aw.Sindri.Core.Ids.ActionId.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Ids.ActionId.GetHashCode() -> int
 override Aw.Sindri.Core.Ids.ActionId.ToString() -> string!
@@ -3243,6 +3506,9 @@ override Aw.Sindri.Core.Profile.ServiceSettings.ToString() -> string!
 override Aw.Sindri.Core.Profile.SindriProfile.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Profile.SindriProfile.GetHashCode() -> int
 override Aw.Sindri.Core.Profile.SindriProfile.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.ScheduledResult.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.ScheduledResult.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.ScheduledResult.ToString() -> string!
 override Aw.Sindri.Core.Scheduling.ScheduledRun.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Scheduling.ScheduledRun.GetHashCode() -> int
 override Aw.Sindri.Core.Scheduling.ScheduledRun.ToString() -> string!
@@ -3252,6 +3518,30 @@ override Aw.Sindri.Core.Scheduling.ServiceSchedule.ToString() -> string!
 override Aw.Sindri.Core.Secrets.SecretPointer.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Secrets.SecretPointer.GetHashCode() -> int
 override Aw.Sindri.Core.Secrets.SecretPointer.ToString() -> string!
+override Aw.Sindri.Core.Views.AsOf.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Views.AsOf.GetHashCode() -> int
+override Aw.Sindri.Core.Views.AsOf.ToString() -> string!
+override Aw.Sindri.Core.Views.LastRun.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Views.LastRun.GetHashCode() -> int
+override Aw.Sindri.Core.Views.LastRun.ToString() -> string!
+override Aw.Sindri.Core.Views.PageApplied.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Views.PageApplied.GetHashCode() -> int
+override Aw.Sindri.Core.Views.PageApplied.ToString() -> string!
+override Aw.Sindri.Core.Views.ProfileRow.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Views.ProfileRow.GetHashCode() -> int
+override Aw.Sindri.Core.Views.ProfileRow.ToString() -> string!
+override Aw.Sindri.Core.Views.ProjectorState.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Views.ProjectorState.GetHashCode() -> int
+override Aw.Sindri.Core.Views.ProjectorState.ToString() -> string!
+override Aw.Sindri.Core.Views.ServiceRow.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Views.ServiceRow.GetHashCode() -> int
+override Aw.Sindri.Core.Views.ServiceRow.ToString() -> string!
+override Aw.Sindri.Core.Views.ViewStall.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Views.ViewStall.GetHashCode() -> int
+override Aw.Sindri.Core.Views.ViewStall.ToString() -> string!
+override Aw.Sindri.Core.Views.ViewsStatus.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Views.ViewsStatus.GetHashCode() -> int
+override Aw.Sindri.Core.Views.ViewsStatus.ToString() -> string!
 override Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.ToString() -> string!
@@ -3859,6 +4149,7 @@ static Aw.Sindri.Core.Events.ContextMapProposed.operator !=(Aw.Sindri.Core.Event
 static Aw.Sindri.Core.Events.ContextMapProposed.operator ==(Aw.Sindri.Core.Events.ContextMapProposed? left, Aw.Sindri.Core.Events.ContextMapProposed? right) -> bool
 static Aw.Sindri.Core.Events.ContextMapReviewed.operator !=(Aw.Sindri.Core.Events.ContextMapReviewed? left, Aw.Sindri.Core.Events.ContextMapReviewed? right) -> bool
 static Aw.Sindri.Core.Events.ContextMapReviewed.operator ==(Aw.Sindri.Core.Events.ContextMapReviewed? left, Aw.Sindri.Core.Events.ContextMapReviewed? right) -> bool
+static Aw.Sindri.Core.Doctor.DoctorRules.Views(Aw.Kernel.Result<Aw.Sindri.Core.Views.ProjectorState?>! state, Aw.Kernel.Result<long>! head) -> Aw.Sindri.Core.Doctor.DoctorCheck!
 static Aw.Sindri.Core.Events.ContextRepoSynced.operator !=(Aw.Sindri.Core.Events.ContextRepoSynced? left, Aw.Sindri.Core.Events.ContextRepoSynced? right) -> bool
 static Aw.Sindri.Core.Events.ContextRepoSynced.operator ==(Aw.Sindri.Core.Events.ContextRepoSynced? left, Aw.Sindri.Core.Events.ContextRepoSynced? right) -> bool
 static Aw.Sindri.Core.Events.ContextSourcesSynced.operator !=(Aw.Sindri.Core.Events.ContextSourcesSynced? left, Aw.Sindri.Core.Events.ContextSourcesSynced? right) -> bool
@@ -3883,6 +4174,17 @@ static Aw.Sindri.Core.Events.RecordedApproval.operator !=(Aw.Sindri.Core.Events.
 static Aw.Sindri.Core.Events.RecordedApproval.operator ==(Aw.Sindri.Core.Events.RecordedApproval? left, Aw.Sindri.Core.Events.RecordedApproval? right) -> bool
 static Aw.Sindri.Core.Events.WorkflowEventPayload.operator !=(Aw.Sindri.Core.Events.WorkflowEventPayload? left, Aw.Sindri.Core.Events.WorkflowEventPayload? right) -> bool
 static Aw.Sindri.Core.Events.WorkflowEventPayload.operator ==(Aw.Sindri.Core.Events.WorkflowEventPayload? left, Aw.Sindri.Core.Events.WorkflowEventPayload? right) -> bool
+static Aw.Sindri.Core.Events.ProfileChecked.operator !=(Aw.Sindri.Core.Events.ProfileChecked? left, Aw.Sindri.Core.Events.ProfileChecked? right) -> bool
+static Aw.Sindri.Core.Events.ProfileChecked.operator ==(Aw.Sindri.Core.Events.ProfileChecked? left, Aw.Sindri.Core.Events.ProfileChecked? right) -> bool
+static Aw.Sindri.Core.Events.ServiceRan.operator !=(Aw.Sindri.Core.Events.ServiceRan? left, Aw.Sindri.Core.Events.ServiceRan? right) -> bool
+static Aw.Sindri.Core.Events.ServiceRan.operator ==(Aw.Sindri.Core.Events.ServiceRan? left, Aw.Sindri.Core.Events.ServiceRan? right) -> bool
+static Aw.Sindri.Core.Events.ViewsRebuilt.operator !=(Aw.Sindri.Core.Events.ViewsRebuilt? left, Aw.Sindri.Core.Events.ViewsRebuilt? right) -> bool
+static Aw.Sindri.Core.Events.ViewsRebuilt.operator ==(Aw.Sindri.Core.Events.ViewsRebuilt? left, Aw.Sindri.Core.Events.ViewsRebuilt? right) -> bool
+static Aw.Sindri.Core.Health.HealthProblem.operator !=(Aw.Sindri.Core.Health.HealthProblem? left, Aw.Sindri.Core.Health.HealthProblem? right) -> bool
+static Aw.Sindri.Core.Health.HealthProblem.operator ==(Aw.Sindri.Core.Health.HealthProblem? left, Aw.Sindri.Core.Health.HealthProblem? right) -> bool
+static Aw.Sindri.Core.Health.HealthReport.operator !=(Aw.Sindri.Core.Health.HealthReport? left, Aw.Sindri.Core.Health.HealthReport? right) -> bool
+static Aw.Sindri.Core.Health.HealthReport.operator ==(Aw.Sindri.Core.Health.HealthReport? left, Aw.Sindri.Core.Health.HealthReport? right) -> bool
+static Aw.Sindri.Core.Health.HealthSummary.For(bool running, Aw.Sindri.Core.Views.ViewsStatus! views, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>? services, bool profileNeedsApproval, bool profileChanged) -> Aw.Sindri.Core.Health.HealthReport!
 static Aw.Sindri.Core.Ids.ActionId.From(string! value) -> Aw.Sindri.Core.Ids.ActionId
 static Aw.Sindri.Core.Ids.ActionId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Ids.ActionId
 static Aw.Sindri.Core.Ids.ActionId.TryFrom(string? value, out Aw.Sindri.Core.Ids.ActionId vo) -> bool
@@ -3991,6 +4293,7 @@ static Aw.Sindri.Core.Profile.IndexSettings.operator !=(Aw.Sindri.Core.Profile.I
 static Aw.Sindri.Core.Profile.IndexSettings.operator ==(Aw.Sindri.Core.Profile.IndexSettings? left, Aw.Sindri.Core.Profile.IndexSettings? right) -> bool
 static Aw.Sindri.Core.Profile.LoadedProfile.operator !=(Aw.Sindri.Core.Profile.LoadedProfile? left, Aw.Sindri.Core.Profile.LoadedProfile? right) -> bool
 static Aw.Sindri.Core.Profile.LoadedProfile.operator ==(Aw.Sindri.Core.Profile.LoadedProfile? left, Aw.Sindri.Core.Profile.LoadedProfile? right) -> bool
+static Aw.Sindri.Core.Profile.ProfileCheck.Decide(Aw.Sindri.Core.Events.ProfileChecked? previous, Aw.Sindri.Core.Profile.LoadedProfile? approved, Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile!>! live, Aw.Sindri.Core.Ids.CommandId commandId) -> Aw.Sindri.Core.Events.ProfileChecked?
 static Aw.Sindri.Core.Profile.ProfileDiff.Between(Aw.Sindri.Core.Profile.SindriProfile? approved, Aw.Sindri.Core.Profile.SindriProfile! live) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Sindri.Core.Profile.ProfileHashing.Of(System.ReadOnlySpan<byte> canonicalJson) -> Aw.Sindri.Core.Ids.ProfileHash
 static Aw.Sindri.Core.Profile.ProfileRules.Check(Aw.Sindri.Core.Profile.SindriProfile! profile) -> Aw.Kernel.Result<Aw.Sindri.Core.Profile.SindriProfile!>!
@@ -4004,6 +4307,10 @@ static Aw.Sindri.Core.Profile.SindriProfile.NoServices.get -> System.Collections
 static Aw.Sindri.Core.Profile.SindriProfile.operator !=(Aw.Sindri.Core.Profile.SindriProfile? left, Aw.Sindri.Core.Profile.SindriProfile? right) -> bool
 static Aw.Sindri.Core.Profile.SindriProfile.operator ==(Aw.Sindri.Core.Profile.SindriProfile? left, Aw.Sindri.Core.Profile.SindriProfile? right) -> bool
 static Aw.Sindri.Core.Registration.SindriCoreServiceCollectionExtensions.AddSindriCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Sindri.Core.Scheduling.ScheduledResult.Quiet.get -> Aw.Sindri.Core.Scheduling.ScheduledResult!
+static Aw.Sindri.Core.Scheduling.ScheduledResult.Worked.get -> Aw.Sindri.Core.Scheduling.ScheduledResult!
+static Aw.Sindri.Core.Scheduling.ScheduledResult.operator !=(Aw.Sindri.Core.Scheduling.ScheduledResult? left, Aw.Sindri.Core.Scheduling.ScheduledResult? right) -> bool
+static Aw.Sindri.Core.Scheduling.ScheduledResult.operator ==(Aw.Sindri.Core.Scheduling.ScheduledResult? left, Aw.Sindri.Core.Scheduling.ScheduledResult? right) -> bool
 static Aw.Sindri.Core.Scheduling.ScheduledRun.operator !=(Aw.Sindri.Core.Scheduling.ScheduledRun? left, Aw.Sindri.Core.Scheduling.ScheduledRun? right) -> bool
 static Aw.Sindri.Core.Scheduling.ScheduledRun.operator ==(Aw.Sindri.Core.Scheduling.ScheduledRun? left, Aw.Sindri.Core.Scheduling.ScheduledRun? right) -> bool
 static Aw.Sindri.Core.Scheduling.ServiceSchedule.From(Aw.Sindri.Core.Profile.SindriProfile! profile, System.DateTimeOffset start) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.ServiceSchedule!>!
@@ -4014,6 +4321,30 @@ static Aw.Sindri.Core.Secrets.SecretPointer.Parse(string! text) -> Aw.Kernel.Res
 static Aw.Sindri.Core.Secrets.SecretPointer.operator !=(Aw.Sindri.Core.Secrets.SecretPointer? left, Aw.Sindri.Core.Secrets.SecretPointer? right) -> bool
 static Aw.Sindri.Core.Secrets.SecretPointer.operator ==(Aw.Sindri.Core.Secrets.SecretPointer? left, Aw.Sindri.Core.Secrets.SecretPointer? right) -> bool
 static Aw.Sindri.Core.SindriErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static Aw.Sindri.Core.Views.AsOf.operator !=(Aw.Sindri.Core.Views.AsOf? left, Aw.Sindri.Core.Views.AsOf? right) -> bool
+static Aw.Sindri.Core.Views.AsOf.operator ==(Aw.Sindri.Core.Views.AsOf? left, Aw.Sindri.Core.Views.AsOf? right) -> bool
+static Aw.Sindri.Core.Views.EmptyText.For(Aw.Sindri.Core.Views.ViewsStatus! views, bool empty, System.Func<string!>! emptySentence) -> string?
+static Aw.Sindri.Core.Views.EmptyText.Rebuilding(long cursor, long head) -> string!
+static Aw.Sindri.Core.Views.EmptyText.Services() -> string!
+static Aw.Sindri.Core.Views.EmptyText.Failing(string? detail) -> string!
+static Aw.Sindri.Core.Views.EmptyText.FixFor(string? detail) -> string!
+static Aw.Sindri.Core.Views.EmptyText.Unreadable() -> string!
+static Aw.Sindri.Core.Views.EmptyText.Stalled(long at) -> string!
+static Aw.Sindri.Core.Views.LastRun.operator !=(Aw.Sindri.Core.Views.LastRun? left, Aw.Sindri.Core.Views.LastRun? right) -> bool
+static Aw.Sindri.Core.Views.LastRun.operator ==(Aw.Sindri.Core.Views.LastRun? left, Aw.Sindri.Core.Views.LastRun? right) -> bool
+static Aw.Sindri.Core.Views.PageApplied.operator !=(Aw.Sindri.Core.Views.PageApplied? left, Aw.Sindri.Core.Views.PageApplied? right) -> bool
+static Aw.Sindri.Core.Views.PageApplied.operator ==(Aw.Sindri.Core.Views.PageApplied? left, Aw.Sindri.Core.Views.PageApplied? right) -> bool
+static Aw.Sindri.Core.Views.ProfileRow.operator !=(Aw.Sindri.Core.Views.ProfileRow? left, Aw.Sindri.Core.Views.ProfileRow? right) -> bool
+static Aw.Sindri.Core.Views.ProfileRow.operator ==(Aw.Sindri.Core.Views.ProfileRow? left, Aw.Sindri.Core.Views.ProfileRow? right) -> bool
+static Aw.Sindri.Core.Views.ProjectorState.operator !=(Aw.Sindri.Core.Views.ProjectorState? left, Aw.Sindri.Core.Views.ProjectorState? right) -> bool
+static Aw.Sindri.Core.Views.ProjectorState.operator ==(Aw.Sindri.Core.Views.ProjectorState? left, Aw.Sindri.Core.Views.ProjectorState? right) -> bool
+static Aw.Sindri.Core.Views.ServiceRow.operator !=(Aw.Sindri.Core.Views.ServiceRow? left, Aw.Sindri.Core.Views.ServiceRow? right) -> bool
+static Aw.Sindri.Core.Views.ServiceRow.operator ==(Aw.Sindri.Core.Views.ServiceRow? left, Aw.Sindri.Core.Views.ServiceRow? right) -> bool
+static Aw.Sindri.Core.Views.ViewNames.All.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Views.ViewStall.operator !=(Aw.Sindri.Core.Views.ViewStall? left, Aw.Sindri.Core.Views.ViewStall? right) -> bool
+static Aw.Sindri.Core.Views.ViewStall.operator ==(Aw.Sindri.Core.Views.ViewStall? left, Aw.Sindri.Core.Views.ViewStall? right) -> bool
+static Aw.Sindri.Core.Views.ViewsStatus.operator !=(Aw.Sindri.Core.Views.ViewsStatus? left, Aw.Sindri.Core.Views.ViewsStatus? right) -> bool
+static Aw.Sindri.Core.Views.ViewsStatus.operator ==(Aw.Sindri.Core.Views.ViewsStatus? left, Aw.Sindri.Core.Views.ViewsStatus? right) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.BlockCatalog.Empty.get -> Aw.Sindri.Core.Workflow.Blocks.BlockCatalog!
 static Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.operator !=(Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? left, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? right) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.operator ==(Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? left, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? right) -> bool
@@ -4476,6 +4807,9 @@ static readonly Aw.Sindri.Core.SindriErrors.SecretUnresolved -> Aw.Kernel.ErrorD
 static readonly Aw.Sindri.Core.SindriErrors.ServiceFailed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.StartFailed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.UnknownVerb -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.ViewsBehind -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.ViewsRebuilding -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.ViewsStalled -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.AmbiguousAddress -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.EarlierAttemptLive -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.EffectNotAllowed -> Aw.Kernel.ErrorDefinition!
@@ -4509,3 +4843,5 @@ virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.Equals(Aw.Sindri.Core
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.PrintMembers(System.Text.StringBuilder! builder) -> bool
 ~Aw.Sindri.Core.Ids.CommandId.ToString(string format, System.IFormatProvider provider) -> string
 ~Aw.Sindri.Core.Ids.CorrelationId.ToString(string format, System.IFormatProvider provider) -> string
+Aw.Sindri.Core.Views.ApprovedServices
+static Aw.Sindri.Core.Views.ApprovedServices.Of(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>! rows, Aw.Sindri.Core.Profile.LoadedProfile? approved) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>!

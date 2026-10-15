@@ -116,10 +116,17 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
 
     /// <summary>A status body as this handler writes it.</summary>
     internal static string Status(StatusView s) => string.Create(CultureInfo.InvariantCulture,
-        $$"""{"running":{{Bool(s.Running)}},"pid":{{s.Pid}},"epoch":{{s.Epoch}},"leaseExpiresAt":{{Quoted(s.LeaseExpiresAt)}},"profile":{"approved":{{Quoted(s.Profile.Approved)}},"live":{{Quoted(s.Profile.Live)}},"changedSinceApproval":{{Bool(s.Profile.ChangedSinceApproval)}},"problem":{{Quoted(s.Profile.Problem)}},"source":{{Quoted(s.Profile.Source)}},"needsApproval":{{Bool(s.Profile.NeedsApproval)}}},"services":[{{string.Join(',', s.Services.Select(Service))}}]{{ApiVersion(s.ApiVersion)}}}""");
+        $$"""{"running":{{Bool(s.Running)}},"pid":{{s.Pid}},"epoch":{{s.Epoch}},"leaseExpiresAt":{{Quoted(s.LeaseExpiresAt)}},"profile":{"approved":{{Quoted(s.Profile.Approved)}},"live":{{Quoted(s.Profile.Live)}},"changedSinceApproval":{{Bool(s.Profile.ChangedSinceApproval)}},"problem":{{Quoted(s.Profile.Problem)}},"source":{{Quoted(s.Profile.Source)}},"needsApproval":{{Bool(s.Profile.NeedsApproval)}}},"services":[{{string.Join(',', s.Services.Select(Service))}}]{{ApiVersion(s.ApiVersion)}}{{ViewsAndHealth(s.Profile.NeedsApproval)}}}""");
 
     // Absent before API P1 (the field doesn't exist on S1's status), so the app must read a status without it.
     private static string ApiVersion(int? version) => version is { } v ? string.Create(CultureInfo.InvariantCulture, $",\"apiVersion\":{v}") : string.Empty;
+
+    // API P2 adds views and health to /status. The fake serves fresh views and the health the profile implies.
+    private static string ViewsAndHealth(bool needsApproval) => needsApproval
+        ? $$""",{{FreshViews}},"health":{"word":"degraded","problems":[{"code":"SND-PROFILE-005","text":"Not approved: run `sindri profile approve`","clause":"the profile isn't approved"}],"sentence":"Sindri is degraded: the profile isn't approved."}"""
+        : $$""",{{FreshViews}},"health":{"word":"healthy","problems":[],"sentence":null}""";
+
+    private const string FreshViews = "\"views\":{\"cursor\":0,\"ledgerHead\":0,\"projectedAt\":null,\"rebuilding\":false,\"stalled\":false,\"stalledAt\":null,\"stalledType\":null,\"text\":null}";
 
     private static string Service(ServiceView v) => $$"""{"name":"{{v.Name}}","every":"{{v.Every}}","lastRun":{{Quoted(v.LastRun)}}}""";
 

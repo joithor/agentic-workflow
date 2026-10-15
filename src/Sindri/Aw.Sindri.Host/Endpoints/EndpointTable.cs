@@ -9,10 +9,11 @@ internal static class EndpointTable
     internal static WebApplication MapSindriEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/sindri");
-        var queries = group.MapGroup(string.Empty);
+        var queries = group.MapGroup(string.Empty).WithMetadata(QueryRouteMetadata.Instance);   // X-Sindri-After honoured (read-your-writes)
         var commands = group.MapGroup(string.Empty).WithMetadata(CommandRouteMetadata.Instance);   // Origin refused before binding (SND-API-008)
 
         // ---- queries: one line per slice, sorted ----
+        _ = queries.MapGetProfile();
         _ = queries.MapExportContextMap();
         _ = queries.MapExportContextReview();
         _ = queries.MapFindContextPath();
@@ -26,6 +27,7 @@ internal static class EndpointTable
         _ = queries.MapGetStatus();
         _ = queries.MapListContextNeighbors();
         _ = queries.MapListCommands();
+        _ = queries.MapListServices();
         _ = queries.MapListRecipes();
         _ = queries.MapPingProcess();
         _ = queries.MapQueryContext();
@@ -33,8 +35,15 @@ internal static class EndpointTable
         _ = queries.MapShowRecipe();
         _ = queries.MapStreamEvents();
 
+        MapCommands(commands);
+        return app;
+    }
+
+    private static void MapCommands(RouteGroupBuilder commands)
+    {
         // ---- commands: one line per slice, sorted ----
         _ = commands.MapApproveProfile();
+        _ = commands.MapRebuildViews();
         _ = commands.MapImportContextMap();
         _ = commands.MapPromoteContextMap();
         _ = commands.MapProposeContextMap();
@@ -44,6 +53,5 @@ internal static class EndpointTable
         _ = commands.MapRevokeRecipe();
         _ = commands.MapIssueChallenge();
         _ = commands.MapRegisterRecipe();
-        return app;
     }
 }

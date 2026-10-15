@@ -12,10 +12,10 @@ internal sealed class ContextPurgeService(IContextEngine engine) : IScheduledSer
 
     public ServiceName Identity() => ServiceId;
 
-    public async ValueTask<Result<Unit>> Run(ScheduledRun run, CancellationToken cancellationToken)
+    public async ValueTask<Result<ScheduledResult>> Run(ScheduledRun run, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(run);
         var purged = await engine.PurgeExpired(cancellationToken).ConfigureAwait(false);
-        return purged.IsError ? purged.Error : Unit.Value;
+        return purged.IsError ? purged.Error : ScheduledResult.Worked;
     }
 }

@@ -22,6 +22,7 @@ internal static class ApiScenarios
         ("profile-approve", "refused-session"), ("profile-approve", "refused-no-terminal"), ("profile-approve", "refused-origin"),
         ("profile-approve", "stale-hash"), ("profile-approve", "bad-body"),
         .. ContextApiScenarios.Rows,
+        .. ViewScenarios.All,
     ];
 
     /// <summary>Whether the scenario's host must refuse the prover label (its home isn't temporary).</summary>
@@ -42,6 +43,11 @@ internal static class ApiScenarios
         }
 
         var token = host.Token.Value;
+        if (ViewScenarios.Handles(slug, scenario))
+        {
+            return await ViewScenarios.Body(host, slug, scenario, ct);
+        }
+
         return (slug, scenario) switch
         {
             ("status", "running-unapproved") => await Ask(host, Get("/sindri/status", Human(token))),

@@ -58,7 +58,7 @@ public sealed class ContextReviewApiTests : IDisposable
 
     private static (string Name, string Value)[] Session() => [(SindriHeaders.Caller, "session"), (SindriHeaders.Repo, "split-panes")];
 
-    private static async Task<Kernel.Result<Kernel.Unit>> Run(GoldenHost host, string service)
+    private static async Task<Kernel.Result<Core.Scheduling.ScheduledResult>> Run(GoldenHost host, string service)
     {
         await using var scope = host.App.Services.CreateAsyncScope();
         var run = scope.ServiceProvider.GetServices<IScheduledService>().Single(s => s.Identity().Value == service);

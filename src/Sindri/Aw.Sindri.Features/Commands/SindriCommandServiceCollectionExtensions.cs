@@ -2,6 +2,8 @@ using System.Diagnostics.CodeAnalysis;
 using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Views;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -49,7 +51,7 @@ public static class SindriCommandServiceCollectionExtensions
         where TService : class, IService<TIssue, TResult>
         => services.AddChained<TIssue, TResult, TService>();
 
-    /// <summary>The command chain, outermost first: gate, audit, authorization, validation, then the handler.</summary>
+    /// <summary>The command chain, outermost first: gate, audit, authorization, validation, waiting for the views, then the handler.</summary>
     private static IServiceCollection AddChained<TRequest, TResponse, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection services)
         where TRequest : notnull
         where TService : class, IService<TRequest, TResponse>
@@ -71,7 +73,10 @@ public static class SindriCommandServiceCollectionExtensions
         return new CommandGate<TRequest, TResponse>(
             new AuditingService<TRequest, TResponse>(
                 new AuthorizingService<TRequest, TResponse>(
-                    new ValidatingService<TRequest, TResponse>(sp.GetRequiredService<TService>(), sp.GetRequiredService<IValidator<TRequest>>()),
+                    new ValidatingService<TRequest, TResponse>(
+                        new AwaitingViews<TRequest, TResponse>(sp.GetRequiredService<TService>(), catalog,
+                            sp.GetRequiredService<IProjectorStatus>(), sp.GetRequiredService<ILedgerStore>()),
+                        sp.GetRequiredService<IValidator<TRequest>>()),
                     callers, catalog),
                 sp.GetRequiredService<AuditTrail>(), callers, catalog, sp.GetRequiredService<IIdGenerator>()),
             sp.GetRequiredService<CommandGateLock>(), sp.GetRequiredService<TimeProvider>());
