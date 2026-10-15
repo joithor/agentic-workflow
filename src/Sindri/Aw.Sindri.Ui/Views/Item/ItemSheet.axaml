@@ -31,7 +31,11 @@
           <TextBlock Classes="caption subtle" Text="{Binding Repo}" Margin="0,0,12,0" AutomationProperties.Name="{Binding Repo}" />
           <TextBlock x:Name="ItemState" Classes="caption body-strong" Text="{Binding StateWord}" Margin="0,0,12,0" AutomationProperties.Name="{Binding StateWord}" />
           <TextBlock x:Name="ItemVersion" Classes="caption subtle" Text="{Binding VersionText}" Margin="0,0,12,0" AutomationProperties.Name="{Binding VersionText}" />
-          <TextBlock x:Name="ItemAge" Classes="caption subtle" Text="{Binding Age}" AutomationProperties.Name="{Binding Age}" />
+          <TextBlock x:Name="ItemAge" Classes="caption subtle" Text="{Binding Age}" Margin="0,0,12,0" AutomationProperties.Name="{Binding Age}" />
+          <StackPanel x:Name="ItemStale" Orientation="Horizontal" Spacing="4" IsVisible="{Binding IsStale}">
+            <icons:StateIcon Glyph="Stale" VerticalAlignment="Center" />
+            <TextBlock Classes="caption subtle" Text="{Binding Text.Stale}" VerticalAlignment="Center" />
+          </StackPanel>
         </WrapPanel>
         <!-- §4.6 (owner, 2026-10-12): the body as served (scrubbed, plain text) and the tracker link. -->
         <TextBlock x:Name="ItemBodyText" Classes="body" Text="{Binding Body}" TextWrapping="Wrap" IsVisible="{Binding HasBody}"

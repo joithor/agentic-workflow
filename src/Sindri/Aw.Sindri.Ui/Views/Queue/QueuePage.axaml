@@ -4,6 +4,7 @@
              xmlns:queue="using:Aw.Sindri.Ui.ViewModels.Queue"
              xmlns:rows="using:Aw.Sindri.Ui.Views.Queue"
              xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
+             xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
              x:Class="Aw.Sindri.Ui.Views.Queue.QueuePage"
              x:DataType="shell:ShellViewModel">
   <!-- The Queue page (UI spec §4.5, queue.html): the API's groups in its order, each a collapsible section with its
@@ -21,6 +22,18 @@
         </Button>
       </StackPanel>
     </Grid>
+
+    <!-- §4.1: a first read that failed says what the API said (the skeleton ends); a later failure marks the rows shown stale. -->
+    <StackPanel x:Name="QueueProblem" Orientation="Horizontal" Spacing="6" IsVisible="{Binding Queue.HasProblem}">
+      <icons:StateIcon Glyph="Down" Classes="error" VerticalAlignment="Top" />
+      <TextBlock x:Name="QueueProblemCode" Classes="caption error" Text="{Binding Queue.ProblemCode}" AutomationProperties.Name="{Binding Queue.ProblemCode}" />
+      <TextBlock x:Name="QueueProblemDetail" Classes="caption" Text="{Binding Queue.ProblemDetail}" TextWrapping="Wrap" MaxWidth="560"
+                 AutomationProperties.Name="{Binding Queue.ProblemDetail}" />
+    </StackPanel>
+    <StackPanel x:Name="QueueStale" Orientation="Horizontal" Spacing="4" IsVisible="{Binding Queue.IsStale}">
+      <icons:StateIcon Glyph="Stale" VerticalAlignment="Center" />
+      <TextBlock Classes="caption subtle" Text="{Binding Text.Stale}" VerticalAlignment="Center" />
+    </StackPanel>
 
     <!-- §8 `/`: the filter field (id, title, repo); Esc clears and closes it. -->
     <TextBox x:Name="QueueFilter" Text="{Binding Queue.FilterText}" IsVisible="{Binding Queue.IsFiltering}"

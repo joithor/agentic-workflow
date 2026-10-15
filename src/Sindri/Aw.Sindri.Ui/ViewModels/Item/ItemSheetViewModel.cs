@@ -17,6 +17,7 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
 
     private readonly Dictionary<string, ControlViewModel> _controls = new(StringComparer.Ordinal);
     private Uri? _url;
+    private bool _readProblem;
     private long _version;
     private int _pages;
 
@@ -109,8 +110,9 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     private void Show(ItemView item)
     {
         (HasItem, IsNotFound, IsStale, _version) = (true, false, false, item.Version);
-        if (ProblemCode == NotFound)
+        if (ProblemCode == NotFound || _readProblem)
         {
+            _readProblem = false;
             Problem(string.Empty, string.Empty);
         }
 
@@ -134,6 +136,12 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
         }
 
         IsStale = HasItem;
+        if (!HasItem)
+        {
+            // Nothing was ever read: say what the API said (until a read succeeds) rather than a skeleton or a blank sheet.
+            _readProblem = true;
+            Problem(error.Code, error.Message);
+        }
     }
 
     private void Problem(string code, string detail)

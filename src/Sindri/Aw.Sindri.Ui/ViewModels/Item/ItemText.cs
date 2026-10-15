@@ -30,6 +30,9 @@ internal sealed class ItemText
     /// <summary><see cref="Labels.Filter"/>.</summary>
     public string Filter { get; } = Labels.Filter;
 
+    /// <summary><see cref="Labels.Stale"/>.</summary>
+    public string Stale { get; } = Labels.Stale;
+
     /// <summary><see cref="Labels.LoadMore"/>.</summary>
     public string LoadMore { get; } = Labels.LoadMore;
 

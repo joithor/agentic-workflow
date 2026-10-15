@@ -107,11 +107,17 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
         var answer = await api.Queue(url, cancellationToken).ConfigureAwait(true);
         if (answer.IsError)
         {
-            IsStale = _view is not null;
+            // Rows were shown: they stay, marked stale. Nothing was ever read: say what the API said instead of a skeleton for good.
+            (IsStale, IsLoading) = (_view is not null, false);
+            if (_view is null)
+            {
+                (ProblemCode, ProblemDetail) = (answer.Error.Code, answer.Error.Message);
+            }
+
             return;
         }
 
-        IsStale = false;
+        (IsStale, ProblemCode, ProblemDetail) = (false, string.Empty, string.Empty);
         Rest();
         Apply(Hold(answer.Value));
         IsLoading = false;   // after the rows are there: a waiter on the end of loading finds them

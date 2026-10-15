@@ -33,7 +33,13 @@
         <!-- The panel stretches to its row's height; an empty group's sentence sits centred in the body (states.html .empty). -->
         <DockPanel>
           <Border Classes="phead" DockPanel.Dock="Top">
-            <TextBlock Classes="eyebrow" Text="{Binding Queue.RunningHeader}" AutomationProperties.Name="{Binding Queue.RunningHeader}" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Classes="eyebrow" Text="{Binding Queue.RunningHeader}" AutomationProperties.Name="{Binding Queue.RunningHeader}" />
+              <StackPanel x:Name="RunningStale" Orientation="Horizontal" Spacing="4" IsVisible="{Binding Queue.IsStale}">
+                <icons:StateIcon Glyph="Stale" VerticalAlignment="Center" />
+                <TextBlock Classes="caption subtle" Text="{Binding Text.Stale}" VerticalAlignment="Center" />
+              </StackPanel>
+            </StackPanel>
           </Border>
           <Button DockPanel.Dock="Bottom" HorizontalAlignment="Left" x:Name="RunningShowAll" Classes="copy" Tag="Running" Click="OnShowAll" IsVisible="{Binding Queue.HasMoreRunning}"
                   AutomationProperties.Name="{Binding Queue.ShowAllRunning}" Margin="16,6">
@@ -57,7 +63,13 @@
         <!-- The panel stretches to its row's height; an empty group's sentence sits centred in the body (states.html .empty). -->
         <DockPanel>
           <Border Classes="phead" DockPanel.Dock="Top">
-            <TextBlock Classes="eyebrow" Text="{Binding Queue.QueuedHeader}" AutomationProperties.Name="{Binding Queue.QueuedHeader}" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Classes="eyebrow" Text="{Binding Queue.QueuedHeader}" AutomationProperties.Name="{Binding Queue.QueuedHeader}" />
+              <StackPanel x:Name="QueuedStale" Orientation="Horizontal" Spacing="4" IsVisible="{Binding Queue.IsStale}">
+                <icons:StateIcon Glyph="Stale" VerticalAlignment="Center" />
+                <TextBlock Classes="caption subtle" Text="{Binding Text.Stale}" VerticalAlignment="Center" />
+              </StackPanel>
+            </StackPanel>
           </Border>
           <Button DockPanel.Dock="Bottom" HorizontalAlignment="Left" x:Name="QueuedShowAll" Classes="copy" Tag="All" Click="OnShowAll" IsVisible="{Binding Queue.HasMoreQueued}"
                   AutomationProperties.Name="{Binding Queue.ShowAllQueued}" Margin="16,6">
