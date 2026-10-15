@@ -166,7 +166,7 @@ Three layouts were mocked with the same fixture data (`shotgun/contact-sheet.htm
 |---|---|---|---|---|
 | 1 | **Home** (Needs you, Running and With you, Queued, Health) | `G H` | Always the default | needs-you, queue, status, services |
 | 1a | Home's **Needs you** panel, expanded | `G N` | the tray, the attention band | `GET /needs-you` |
-| 2 | **Queue** (all five groups) | `G Q` | — | `GET /queue` |
+| 2 | **Queue** (all four groups) | `G Q` | — | `GET /queue` |
 | 2a | Queue filtered to Running / With you | `G R` / `G W` | Home's panel headers | the queue's `running` / `withYou` groups |
 | 3 | **Decisions** (and requests) | `G D` | — | `GET /decisions`, `GET /requests` |
 | 4 | **Services** (and jobs) | `G S` | — | `GET /services`, `GET /jobs/{id}` |
@@ -289,7 +289,8 @@ Mockups: `mockups/park-grant.html` (protected answer), `mockups/park-needs-answe
 
 - **Queue:** the four groups in the API's order (`waitingOnYou`, `withYou`, `running`, `queued`; API §3.6), each a
   collapsible section with its count; items within a group in the API's order. There is no parked group: a parked item
-  sits in Waiting on you and carries a "parked" badge, from its `state`. Each row: id, title, repo, state as a
+  sits in Waiting on you and carries a "parked" badge, from its `state`. (The wire enum keeps `parked` only as a reserved
+  value the API never fills.) Each row: id, title, repo, state as a
   word, step, agent (once launched), since, and the row's primary action from `actions`.
 - **Running** (Home's left panel, and the Queue page filtered by `G R`): the `running` group, with the step (`produce round 2/3`), the agent and where it runs ("Claude Code in
   Warp", "factory worker"), the budget line as text plus a thin `ink-subtle` bar, **Open ▾** and **Take over** (§6.2). **Attach** belongs to With-you rows
