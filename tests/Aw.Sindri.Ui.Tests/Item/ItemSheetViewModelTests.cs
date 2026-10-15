@@ -274,4 +274,55 @@ public sealed class ItemSheetViewModelTests
 
         Assert.Equal((false, "Done", "version 2"), (sheet.IsStale, sheet.StateWord, sheet.VersionText));
     }
+
+    // L15 (testing-2): a refresh re-reads every page Load more showed, from the first, so it never shrinks the timeline.
+    [Fact]
+    public async Task A_refresh_after_load_more_keeps_all_the_pages()
+    {
+        var sheet = await Sheet();
+        await sheet.Open(_api, A.NewItem, Token);
+        await sheet.LoadMore(Token);
+        var calls = _server.TimelineCalls;
+
+        await sheet.Refresh(_api, Token);
+
+        Assert.Equal(calls + 2, _server.TimelineCalls);   // both pages, the first from the start
+        Assert.Equal((101, 152L, false), (sheet.Timeline.Count, sheet.Timeline[^1].Sequence, sheet.HasMore));
+    }
+
+    // L15: a page that fails part-way through a re-read leaves the timeline as it was, in full, rather than a shorter one.
+    [Fact]
+    public async Task A_page_error_part_way_through_a_re_read_keeps_the_old_timeline()
+    {
+        var sheet = await Sheet();
+        await sheet.Open(_api, A.NewItem, Token);
+        await sheet.LoadMore(Token);
+        var (timeline, last) = (sheet.Timeline, sheet.Timeline[^1]);
+        _server.TimelinePages[151] = RouteAnswer.Problem(System.Net.HttpStatusCode.ServiceUnavailable, "SND-API-011", "The views didn't catch up within 2 s (fix: retry)");
+
+        await sheet.Refresh(_api, Token);
+
+        Assert.Same(timeline, sheet.Timeline);
+        Assert.Equal((101, false), (sheet.Timeline.Count, sheet.HasMore));
+        Assert.Same(last, sheet.Timeline[^1]);
+    }
+
+    // L15: a Load more that fails shows nothing new and keeps its place: the same press, once the page answers, adds it.
+    [Fact]
+    public async Task A_failed_load_more_leaves_the_rows_and_the_cursor_as_they_were()
+    {
+        var sheet = await Sheet();
+        await sheet.Open(_api, A.NewItem, Token);
+        var good = _server.TimelinePages[151];
+        _server.TimelinePages[151] = RouteAnswer.Problem(System.Net.HttpStatusCode.ServiceUnavailable, "SND-API-011", "The views didn't catch up within 2 s (fix: retry)");
+
+        await sheet.LoadMore(Token);
+
+        Assert.Equal((100, true), (sheet.Timeline.Count, sheet.HasMore));
+
+        _server.TimelinePages[151] = good;
+        await sheet.LoadMore(Token);
+
+        Assert.Equal((101, 152L, false), (sheet.Timeline.Count, sheet.Timeline[^1].Sequence, sheet.HasMore));
+    }
 }
