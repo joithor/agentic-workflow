@@ -169,7 +169,7 @@ public sealed class WorkflowViewConsistencyTests
     public void Now_is_a_short_sentence()
     {
         Assert.All(Roots, r => Assert.InRange(r.Now.Length, 1, 80));
-        Assert.Equal("agent rolling back in ITM-01JG2 · comms posting", Roots.Single(r => r.Address.Value == "ITM-01JK1/incident-response/1").Now);
+        Assert.Equal("agent rolling back in ITM-01JG2", Roots.Single(r => r.Address.Value == "ITM-01JK1/incident-response/1").Now);
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -215,7 +215,7 @@ public sealed class WorkflowViewConsistencyTests
         }
 
         var rows = Project.Children.Single().Workstreams.SelectMany(w => w.Rows).ToDictionary(r => r.ItemId!.Value.Value, StringComparer.Ordinal);
-        Assert.Equal("factory worker", rows["ITM-01JD6"].Agent);
+        Assert.Null(rows["ITM-01JD6"].Agent);
         Assert.Equal(0, rows["ITM-01JD6"].AgeSeconds);
         Assert.Equal([3120L, 2400L, 720L], [rows["ITM-01JF3"].AgeSeconds, rows["ITM-01JF4"].AgeSeconds, rows["ITM-01JF8"].AgeSeconds]);
     }
@@ -224,7 +224,9 @@ public sealed class WorkflowViewConsistencyTests
     public void An_open_child_makes_its_state_active_and_open_item_needs_an_item()
     {
         var incident = WorkflowViewFixtures.IncidentLoop();
-        Assert.Equal(StateGlyph.Active, incident.States.Single(s => s.State == "comms").Glyph);
+        _ = Assert.Single(incident.States, s => s.Glyph == StateGlyph.Active);
+        var parentWait = WorkflowViewFixtures.ProjectBuild();
+        Assert.Equal(StateGlyph.Active, parentWait.States.Single(s => s.State == "build").Glyph);
         foreach (var row in Roots)
         {
             Assert.True(row.ItemId is not null || row.Actions.All(a => a.Value != "OpenItem"), row.Address.Value);

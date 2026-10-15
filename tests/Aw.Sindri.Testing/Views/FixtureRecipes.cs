@@ -39,9 +39,17 @@ public static class FixtureRecipes
         [In("fact:item", "Item", FactType.Item, "item")],
         [Out("fact:output", "Draft", FactType.File, "desk"), Out("fact:answer", "Decision", FactType.Decision, "answer")]);
 
+    /// <summary>workflow.item v1 (recipes/sindri/workflow.item.yaml): the item's own instance; its running wait starts the workflow.step child and propagates a park.</summary>
+    public static RecipeShape Item { get; } = new("workflow.item", 1, "496cdcbfe884c70dce832d96d21883660f29fffe9b122fcfa72a04c98be8cae3", RecipeUrgency.Work,
+        [S("triaged", 1, wait: true, timeout: T(7 * Day, TimeoutAction.Escalate)), S("startable", 2, wait: true, timeout: T(3 * Day, TimeoutAction.Escalate)),
+            S("claimed", 3, wait: true, timeout: T(10, TimeoutAction.Retry)),
+            S("running", 4, child: true, timeout: T(14 * Day, TimeoutAction.Park), onParked: OnParked.Propagate, childRecipe: "workflow.step"),
+            S("done", 5, terminal: true), S("dropped", 6, terminal: true)],
+        [], [In("fact:item", null, FactType.Text, null)], []);
+
     /// <summary>workflow.incident-response (fixture-only): the remediate loop is recorded as its back edge, verify to mitigate.</summary>
     public static RecipeShape Incident { get; } = new("workflow.incident-response", 4, "5d90e1b2", RecipeUrgency.Incident,
-        [S("assess", 1, timeout: T(30, TimeoutAction.Park), agent: true), S("mitigate", 2, timeout: T(Hour, TimeoutAction.Escalate), agent: true), S("verify", 3, timeout: T(30, TimeoutAction.Park), agent: true),
+        [S("assess", 1, timeout: T(30, TimeoutAction.Park), agent: true), S("mitigate", 2, timeout: T(4 * Hour, TimeoutAction.Escalate), agent: true), S("verify", 3, timeout: T(30, TimeoutAction.Park), agent: true),
             S("comms", 4, child: true, timeout: T(2 * Hour, TimeoutAction.Escalate), onParked: OnParked.Ignore, childRecipe: "workflow.step"), S("resolved", 5, terminal: true)],
         [new ShapeLoop("remediate", "verify", "mitigate", 3)],
         [In("fact:alert", "Alert", FactType.Payload, "webhook")],
@@ -74,5 +82,5 @@ public static class FixtureRecipes
         [In("fact:request", "Request", FactType.Text, "text")], []);
 
     /// <summary>Every shape.</summary>
-    public static IReadOnlyList<RecipeShape> All { get; } = [Step, DevDesk, DevTriage, Incident, Triage, Project, Intake, Fork];
+    public static IReadOnlyList<RecipeShape> All { get; } = [Step, Item, DevDesk, DevTriage, Incident, Triage, Project, Intake, Fork];
 }

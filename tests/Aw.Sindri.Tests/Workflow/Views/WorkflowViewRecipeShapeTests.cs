@@ -98,7 +98,7 @@ public sealed class WorkflowViewRecipeShapeTests
         var failures = new List<string>();
         if (file.Hash.Value != shape.Stamp.Hash.Value || recipe.Version != shape.Version || Urgencies.Parse(recipe.Urgency) != shape.Urgency || recipe.Budget?.Tokens != shape.BudgetTokens)
         {
-            failures.Add(M($"{shape.Id}: hash, version, urgency or recipe budget differ from the file"));
+            failures.Add(M($"{shape.Id}: hash, version, urgency or recipe budget differ from the file (file {file.Hash.Value} v{recipe.Version} {recipe.Urgency}, declared {shape.Stamp.Hash.Value} v{shape.Version} {shape.Urgency})"));
         }
 
         if (!recipe.States.Keys.Order(StringComparer.Ordinal).SequenceEqual(shape.States.Select(s => s.Id).Order(StringComparer.Ordinal), StringComparer.Ordinal))
@@ -146,7 +146,7 @@ public sealed class WorkflowViewRecipeShapeTests
         var inputs = recipe.Inputs.Select(i => M($"{i.Key.Value}|{i.Label}|{i.Type ?? FactTypes.Default}|{i.Kind}"));
         if (!inputs.SequenceEqual(shape.Inputs.Select(i => M($"{i.Key}|{i.Label}|{FactTypeWord(i.Type)}|{i.Kind}")), StringComparer.Ordinal))
         {
-            failures.Add(M($"{shape.Id}: the inputs (key, label, type, kind) differ from the file"));
+            failures.Add(M($"{shape.Id}: the inputs (key, label, type, kind) differ from the file: {string.Join('/', inputs)}"));
         }
 
         var outputs = recipe.Outputs.Select(o => M($"{o.Key.Value}|{o.Label}|{o.Type ?? FactTypes.Default}|{o.From}"));
@@ -226,7 +226,7 @@ public sealed class WorkflowViewRecipeShapeTests
     public void An_item_instance_at_produce_round_two_of_three_has_its_parent()
     {
         var view = WorkflowViewFixtures.ItemProduce();
-        Assert.Equal("ITM-01JE7/item/1/step.1", view.Address.Value);
+        Assert.Equal("ITM-01JE7/item/1/step.4", view.Address.Value);
         Assert.Equal("ITM-01JE7", view.ItemId!.Value.Value);
         Assert.Equal("ITM-01JE7/item/1", view.Parent!.Address.Value);
         Assert.Equal("produce", view.State);
@@ -236,7 +236,7 @@ public sealed class WorkflowViewRecipeShapeTests
     [Fact, Trait("Lane", "unit")]
     public void The_goldens_cover_a_missing_required_input_and_a_child_group_with_more_rows()
     {
-        Assert.Contains(WorkflowViewFixtures.RootList().Instances, r => r.Inputs.Any(i => i.Required && !i.Present));
+        Assert.Contains(WorkflowViewFixtures.AllSummaries(), r => r.Inputs.Any(i => i.Required && !i.Present));
         Assert.Contains(WorkflowViewFixtures.AllDetails().SelectMany(d => d.Children), g => g.More > 0);
     }
 }

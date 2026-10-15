@@ -32,6 +32,7 @@ public static class WorkflowViewFixtures
     private static List<ActionId> Acts(params string[] ids) => [.. ids.Select(Act)];
 
     private static readonly RecipeShape _step = FixtureRecipes.Step;
+    private static readonly RecipeShape _item = FixtureRecipes.Item;
     private static readonly RecipeShape _incident = FixtureRecipes.Incident;
     private static readonly RecipeShape _triage = FixtureRecipes.Triage;
     private static readonly RecipeShape _project = FixtureRecipes.Project;
@@ -62,11 +63,10 @@ public static class WorkflowViewFixtures
 
     private static readonly InstanceSummary _inc14 = Row("ITM-01JK1/incident-response/1", _incident, "mitigate", Today(11, 2), null,
         Subject("webhook", "P-2211", "PagerDuty P-2211 · Outbox retry storm"),
-        _incident.Cells("mitigate", round: 1, Shape(
+        _incident.Cells("mitigate", round: 0, Shape(
             ("mitigate", c => c with { Round = new Round(1, 3) }),
-            ("comms", c => c with { Glyph = StateGlyph.Active, Children = new Progress(0, 1) }),
             ("assess", c => c with { Outcome = "sev2" }))),
-        "agent rolling back in ITM-01JG2 · comms posting", "ApplyCommand:takeover", "ApplyCommand:cancel");
+        "agent rolling back in ITM-01JG2", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
     private static readonly InstanceSummary _sentry8812 = Row("ITM-01JK2/triage-alert/1", _triage, "classify", Today(12, 22), null,
         Subject("webhook", "8812", "sentry #8812 TypeError in tabs.layout"), _triage.Cells("classify"),
@@ -91,32 +91,37 @@ public static class WorkflowViewFixtures
         Subject("linear-project", "ENG", "ENG · Billing exports"), _project.Cells("design"),
         "with you: import the design output", "ApplyCommand:handback", "ApplyCommand:cancel");
 
-    // The one required input still missing: a project at scoping whose PRD hasn't arrived yet (E-20 shows it as an empty slot).
+    // ITM-01JK5 of the screens fixture: PRD-tabs.md is given (the engine starts an instance with its required inputs).
     private static readonly InstanceSummary _prjTabs = Row("ITM-01JK5/project/1", _project, "scoping", Today(11, 40), null,
         Subject("linear-project", "ENG", "ENG · Tab manager v2"),
-        _project.Cells("scoping", round: 2, Shape(("scoping", c => c with { Round = new Round(2, 3) }))),
-        "challenger round 2 · 84k / 600k", "ApplyCommand:takeover", "ApplyCommand:cancel") with
-    { Inputs = _project.InputRows("fact:prd"), };
+        _project.Cells("scoping", round: 1, Shape(("scoping", c => c with { Round = new Round(2, 3) }))),
+        "challenger round 2 · 84k / 600k", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
     // Instances only the status layouts name: none of them is a row of the root list, so the layouts don't contradict it.
-    private static readonly InstanceSummary _prjSearch = Row("ITM-01JKD/project/1", _project, "build", Today(11, 54), new EngineOwnedBadge(EngineOwnedKind.Parked, "no-progress (child)"),
-        Subject("linear-project", "SRCH", "SRCH · Search"),
-        _project.Cells("build", change: Shape(("build", c => c with { Children = new Progress(2, 5) }))),
+    private static readonly InstanceSummary _itemParked = Row("ITM-01JC8/item/1", _item, "running", Today(11, 54), new EngineOwnedBadge(EngineOwnedKind.Parked, "no-progress (child)"),
+        Subject("text", "ITM-01JC8", "Retry storm in outbox dispatcher"),
+        _item.Cells("running", change: Shape(("running", c => c with { Children = new Progress(0, 1) }))),
         "parked child", "ApplyCommand:answer-grant", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
     private static readonly InstanceSummary _budgetStep = Row("ITM-01JH5/step/1", _step, "produce", Today(11, 54), new EngineOwnedBadge(EngineOwnedKind.Parked, "budget"),
-        Subject("item", "ITM-01JH5", "ITM-01JH5"), _step.Cells("produce"), "parked: budget", "ApplyCommand:answer-grant-tokens", "ApplyCommand:takeover", "ApplyCommand:cancel");
+        Subject("text", "ITM-01JH5", "ITM-01JH5"), _step.Cells("produce"), "parked: budget", "ApplyCommand:answer-grant-tokens", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
     // ITM-01JA1 of the screens fixture: taken over at 12:01, at its produce step. Layout 5: the covered state with the badge.
     private static readonly InstanceSummary _takenOver = Row("ITM-01JA1/step/1", _step, "produce", Today(12, 1),
         new EngineOwnedBadge(EngineOwnedKind.TakenOver, "with you since 12:01"),
-        Subject("item", "ITM-01JA1", "ITM-01JA1"), _step.Cells("produce"), "with you", "ApplyCommand:handback", "ApplyCommand:cancel");
+        Subject("text", "ITM-01JA1", "ITM-01JA1"), _step.Cells("produce"), "with you", "ApplyCommand:handback", "ApplyCommand:cancel");
 
     // A needs-answer park of its own (PRJ-exports is the taken-over project): a project parked at its design desk. Not a row of the root list.
     private static readonly InstanceSummary _prjReports = Row("ITM-01JKE/project/1", _project, "design", Today(10, 30),
         new EngineOwnedBadge(EngineOwnedKind.Parked, "needs-answer"), Subject("linear-project", "ENG", "ENG · Reports"),
         _project.Cells("design"), "parked: needs-answer",
-        "ApplyCommand:answer-resume", "ApplyCommand:takeover", "ApplyCommand:cancel");
+        "ApplyCommand:answer-text", "ApplyCommand:takeover", "ApplyCommand:cancel");
+
+    // The one instance whose required input is really missing: the intake agent parked asking for the PRD (not a root row and not in the screens fixture).
+    private static readonly InstanceSummary _prjNoPrd = Row("ITM-01JKH/project/1", _project, "intake", Today(12, 5), new EngineOwnedBadge(EngineOwnedKind.Parked, "needs-answer"),
+        Subject("linear-project", "ENG", "ENG · Docs site"), _project.Cells("intake"), "parked: needs-answer",
+        "ApplyCommand:answer-text", "ApplyCommand:takeover", "ApplyCommand:cancel") with
+    { Inputs = _project.InputRows("fact:prd"), };
 
     private static readonly InstanceSummary _prjCache = Row("ITM-01JKF/project/1", _project, "scoping", Today(11, 50), new EngineOwnedBadge(EngineOwnedKind.Parked, "spec-conflict (drift)"),
         Subject("linear-project", "ENG", "ENG · Cache layer"), _project.Cells("scoping"), "parked: spec-conflict", "ApplyCommand:takeover", "ApplyCommand:cancel", "ApproveRecipe");
@@ -124,7 +129,7 @@ public static class WorkflowViewFixtures
     private static string LinAddress(string team) => team == "ENG" ? "ITM-01JKB/intake-linear/1" : "ITM-01JKC/intake-linear/1";
 
     private static InstanceSummary Intake(string team, DateTimeOffset since, string now) =>
-        Row(LinAddress(team), _intake, "poll", since, null, Subject("linear-team", team, $"Linear {team}"), _intake.Cells("poll"), now, "ApplyCommand:cancel");
+        Row(LinAddress(team), _intake, "poll", since, null, Subject("text", team, $"Linear {team}"), _intake.Cells("poll"), now, "ApplyCommand:cancel");
 
     private static IReadOnlyList<InstanceSummary> Roots() =>
     [
@@ -149,7 +154,7 @@ public static class WorkflowViewFixtures
 
     /// <summary>Every summary row the fixtures build: the 12 roots, and the instances only the status layouts and instance views name.</summary>
     /// <returns>The rows.</returns>
-    public static IReadOnlyList<InstanceSummary> AllSummaries() => [.. Roots(), _prjSearch, _budgetStep, _takenOver, _prjReports, _prjCache, _prjDocs];
+    public static IReadOnlyList<InstanceSummary> AllSummaries() => [.. Roots(), _itemParked, _budgetStep, _takenOver, _prjReports, _prjCache, _prjDocs, _prjNoPrd];
 
     /// <summary>
     /// The addresses whose child group previews schema v2 fan-out (WF 3.9): several live children of one wait. A v1 child wait starts
@@ -269,32 +274,36 @@ public static class WorkflowViewFixtures
 
     private static readonly StatusInput _alertInput = new("fact:alert", "alert.json", "1c0e5a77");
 
-    private static StatusFields DeskStatus(InstanceSummary row, string produce, string run, string outputKey, string outputSample, StatusInput input)
+    // An open desk task: the declared timeout (at least the desk floor, ending in a park) and the state's budget, where the recipe declares one.
+    private static StatusFields DeskStatus(InstanceSummary row, string produce, string run, (string Key, string Sample)? output, StatusLines lines)
     {
-        var complete = $"sindri workflow complete {row.Address.Value} --run {run} --outcome done --output {outputKey}={outputSample}";
-        return Status(row, "desk task", $"{produce}, then run: {complete}", new OpenWork(CompleteCli: complete), new StatusLines { Inputs = [input] });
+        var complete = $"sindri workflow complete {row.Address.Value} --run {run} --outcome done" + (output is { } o ? $" --output {o.Key}={o.Sample}" : string.Empty);
+        return Status(row, "desk task", $"{produce}, then run: {complete}", new OpenWork(CompleteCli: complete), lines);
     }
 
+    private static StatusLines DeskLines(StatusInput input, long timeoutSeconds, string state, StatusBudget? budget = null) =>
+        new() { Inputs = [input], Timeout = new StatusTimeout(TimeoutKind.Parks, timeoutSeconds, state), Budget = budget };
+
     /// <summary>Layout 1: a park that mirrors a parked child; the grant is forwarded to it.</summary>
-    public static StatusFields StatusParkedChild() => Status(_prjSearch, "no-progress (child)",
-        "Parked (no-progress) in ITM-01JKD/project/1/step.1: checks failed twice with the same findings. Grant more rounds at a terminal, or cancel.",
+    public static StatusFields StatusParkedChild() => Status(_itemParked, "no-progress (child)",
+        "Parked (no-progress) in ITM-01JC8/item/1/step.4: checks failed twice with the same findings. Grant more rounds at a terminal, or cancel.",
         new OpenWork(OpenChildren: 1),
-        new StatusLines { Answer = Answer(AnswerKind.Grant, "ITM-01JKD/project/1"), Child = new StatusChild(InstanceAddress.From("ITM-01JKD/project/1/step.1"), "parked", "no-progress") });
+        new StatusLines { Answer = Answer(AnswerKind.Grant, "ITM-01JC8/item/1"), Child = new StatusChild(InstanceAddress.From("ITM-01JC8/item/1/step.4"), "parked", "no-progress") });
 
     /// <summary>Layout 2: an open desk task with its inputs, a parking timeout and the state and instance budgets.</summary>
     public static StatusFields StatusDeskTask() => Status(_sentry8812, "desk task",
-        "Classify the severity for sentry-8812, then run: sindri workflow complete ITM-01JK2/triage-alert/1 --run 1.1 --outcome done --output fact:severity=<file>",
-        new OpenWork(CompleteCli: "sindri workflow complete ITM-01JK2/triage-alert/1 --run 1.1 --outcome done --output fact:severity=<file>"),
+        "Classify the severity for sentry-8812, then run: sindri workflow complete ITM-01JK2/triage-alert/1 --run 2.1 --outcome done --output fact:severity=<file>",
+        new OpenWork(CompleteCli: "sindri workflow complete ITM-01JK2/triage-alert/1 --run 2.1 --outcome done --output fact:severity=<file>"),
         new StatusLines
         {
             Inputs = [_alertInput],
-            Timeout = new StatusTimeout(TimeoutKind.Parks, 165_000, "desk"),
+            Timeout = new StatusTimeout(TimeoutKind.Parks, 172_560, "classify"),
             Budget = new StatusBudget("state", 0, 200_000, new BudgetFigures(0, 400_000)),
         });
 
     /// <summary>Layout 3: a budget park; the answer grants tokens.</summary>
     public static StatusFields StatusParkedBudget() => Status(_budgetStep, "budget", "Parked (budget): produce used 200k of 200k tokens.",
-        new OpenWork(), new StatusLines { Answer = Answer(AnswerKind.GrantTokens, "ITM-01JH5/step/1") });
+        new OpenWork(), new StatusLines { Answer = Answer(AnswerKind.GrantTokens, "ITM-01JH5/step/1"), Budget = new StatusBudget("state", 200_000, 200_000, new BudgetFigures(200_000, 400_000)) });
 
     /// <summary>Layout 4: an escalated gate; the answer accepts at a terminal.</summary>
     public static StatusFields StatusEscalatedGate() => Status(_p2211, "gate",
@@ -303,7 +312,8 @@ public static class WorkflowViewFixtures
 
     /// <summary>Layout 5: a taken-over instance with its timeout paused.</summary>
     public static StatusFields StatusTakenOver() => Status(_takenOver, null,
-        "With you since 12:01. Run `sindri workflow handback ITM-01JA1/step/1` when you're done.", new OpenWork(), new StatusLines { Paused = new StatusPaused(40) });
+        "With you since 12:01. Run `sindri workflow handback ITM-01JA1/step/1` when you're done.", new OpenWork(),
+        new StatusLines { Paused = new StatusPaused(40), Budget = new StatusBudget("state", 40_000, 200_000, new BudgetFigures(40_000, 400_000)) });
 
     /// <summary>Layout 6: a finished instance, the header only.</summary>
     public static StatusFields StatusDone() => Status(_sentry8809, "resolved", null, new OpenWork());
@@ -315,10 +325,10 @@ public static class WorkflowViewFixtures
 
     private static string Pinned(InstanceSummary row) => $"{row.Recipe.Id.Value}@{row.Recipe.Hash.Display}";
 
-    /// <summary>A needs-answer wait on a project of its own: the answer is a bare resume with optional text.</summary>
+    /// <summary>A needs-answer park at a Step on a project of its own: the answer is its text (WF 6.4; a wait takes --resume).</summary>
     public static StatusFields StatusNeedsAnswerWait() => Status(_prjReports, "needs-answer",
-        "Parked (needs-answer) in design: import the design output, then resume.", new OpenWork(),
-        new StatusLines { Answer = Answer(AnswerKind.Resume, "ITM-01JKE/project/1", "--resume [--text <answer>]") });
+        "Parked (needs-answer) in design: import the design output, then answer.", new OpenWork(),
+        new StatusLines { Answer = Answer(AnswerKind.Text, "ITM-01JKE/project/1", "--text <answer>") });
 
     /// <summary>Every status the fixtures serve: the eight layouts, then the status block of each instance view.</summary>
     /// <returns>The statuses.</returns>
@@ -342,14 +352,15 @@ public static class WorkflowViewFixtures
 
     // A child is addressed under its parent ('ITM-01JK3/project/1/step.1'); its state is a real state of its recipe (workflow.step), and what it
     // offers follows that state: a child not started or done offers OpenItem only, a parked one shows its park on the parent's band.
-    private static ChildRow Child(string parent, int entry, string item, string title, StateGlyph glyph, string state, EngineOwnedBadge? owned = null, string? agent = null, long age = 600)
+    private static ChildRow Child(string parent, int entry, string item, string title, StateGlyph glyph, string state, EngineOwnedBadge? owned = null, long age = 600)
     {
         var parked = owned is { Kind: EngineOwnedKind.Parked };
         var actions = glyph != StateGlyph.Active ? Acts("OpenItem")
             : parked ? Acts("OpenItem", "ApplyCommand:answer-grant", "ApplyCommand:takeover")
             : Acts("OpenItem", "ApplyCommand:takeover");
-        var chip = StateChip.For(owned, false, state == "done", notStarted: glyph == StateGlyph.Pending);
-        return new(InstanceAddress.From(parent + "/step." + entry.ToString(System.Globalization.CultureInfo.InvariantCulture)), ItemKey.From(item), title, glyph, state, chip, null, agent, age, owned, parked ? owned : null, actions);
+        // A workflow.step state is a desk task until the agent runtime (P8): an active child that isn't parked is a DECISION with no agent.
+        var chip = StateChip.For(owned, glyph == StateGlyph.Active && !parked, state == "done", notStarted: glyph == StateGlyph.Pending);
+        return new(InstanceAddress.From(parent + "/step." + entry.ToString(System.Globalization.CultureInfo.InvariantCulture)), ItemKey.From(item), title, glyph, state, chip, null, null, age, owned, parked ? owned : null, actions);
     }
 
     private static ViewCounts Counts(int timeline, int decisions, int requests) => new(timeline, decisions, requests, null);
@@ -376,13 +387,24 @@ public static class WorkflowViewFixtures
         .. evidence is null ? (FactRow[])[] : [evidence],
     ];
 
+    // PRJ-docs has its own project, PRD, scope map and packet: 24 tasks, frozen, with no workstreams (so the children list is flat).
+    private static FactRow[] HandbookFacts(FactRow evidence) =>
+    [
+        Produced(_project, "fact:project", "Linear DOCS · Handbook", Today(8, 40), "human:cli",
+            Ref(url: "https://linear.app/example/project/handbook", host: "linear.app", title: "DOCS · Handbook")),
+        Produced(_project, "fact:prd", "PRD-handbook.md", Today(8, 40), "human:cli", Ref(name: "PRD-handbook.md", size: 9_216, hash: Hash("6be7a413"), path: "docs/PRD-handbook.md")),
+        Produced(_project, "fact:scope", "3 areas, 24 cited files", Today(8, 55), "step.scope.draft", Ref(factKey: "fact:scope")),
+        Produced(_project, "fact:packet", "24 tasks, no workstreams, frozen", Today(9, 5), "step.packet.freeze", Ref(factKey: "fact:packet")),
+        evidence,
+    ];
+
     /// <summary>PRJ-sync: build, four of nine children done in four workstreams, a scope map, a packet and evidence; one child parked.</summary>
     public static InstanceDetail ProjectBuild()
     {
         var status = Status(_prjSync, null, "Waiting on 9 children: 4 done, 1 running, 1 parked, 3 not started.", new OpenWork(OpenChildren: 5),
             new StatusLines
             {
-                Timeout = new StatusTimeout(TimeoutKind.Escalates, 86_400, "build"),
+                Timeout = new StatusTimeout(TimeoutKind.Escalates, 74_880, "build"),
                 Budget = new StatusBudget("state", 1_200_000, 4_000_000, new BudgetFigures(1_900_000, 6_000_000)),
             });
         const string parent = "ITM-01JK3/project/1";
@@ -390,14 +412,14 @@ public static class WorkflowViewFixtures
             [Child(parent, 1, "ITM-01JC3", "Sync status pill", StateGlyph.Done, "done"), Child(parent, 2, "ITM-01JC5", "Conflict resolver dialog", StateGlyph.Done, "done")]);
         var ws2 = new Workstream("ws-2", "Store",
             [Child(parent, 3, "ITM-01JC1", "PUT /sync/changes", StateGlyph.Done, "done"), Child(parent, 4, "ITM-01JC2", "Outbox queue", StateGlyph.Done, "done"),
-                Child(parent, 5, "ITM-01JD6", "Services page job panel", StateGlyph.Active, "checks", agent: "factory worker", age: 0)]);
+                Child(parent, 5, "ITM-01JD6", "Services page job panel", StateGlyph.Active, "checks", age: 0)]);
         var park = new EngineOwnedBadge(EngineOwnedKind.Parked, "no-progress");
         var ws3 = new Workstream("ws-3", "Mobile",
             [Child(parent, 6, "ITM-01JD7", "Background sync (iOS)", StateGlyph.Active, "produce", owned: park), Child(parent, 7, "ITM-01JF3", "doctor views line", StateGlyph.Pending, "produce", age: 3_120),
                 Child(parent, 8, "ITM-01JF4", "Tray badge on Linux", StateGlyph.Pending, "produce", age: 2_400)]);
         var ws4 = new Workstream("ws-4", "Rollout", [Child(parent, 9, "ITM-01JF8", "Receipt verify route", StateGlyph.Pending, "produce", age: 720)]);
         return Detail(_prjSync, "Offline sync", PathOrdering.Path,
-            new CurrentState("build", new StepDeclaration("step.children", "builder.feature", "one child per packet task"),
+            new CurrentState("build", new StepDeclaration("wait", "workflow.step", "one child per packet task"),
                 [new GateLine(BlockId.From("gate.evidence.all"), "exit", null, "Every child has its evidence pack."), new GateLine(BlockId.From("gate.judge.verify"), "exit", 0.8, "The judge scores the build at least 0.8.")],
                 null, status),
             _project.Facts([.. ProjectFacts(At(10, 12, 9, 14), Fake(_project, "fact:evidence", FactStatus.InProgress, "4 of 9 packs", reference: Ref(factKey: "fact:evidence"), progress: new Progress(4, 9)))]),
@@ -416,11 +438,16 @@ public static class WorkflowViewFixtures
         const string parent = "ITM-01JKG/project/1";
         var rows = Enumerable.Range(1, 20).Select(i => Child(parent, i, $"ITM-01M{i.ToString("X2", System.Globalization.CultureInfo.InvariantCulture)}", "Chapter " + i.ToString(System.Globalization.CultureInfo.InvariantCulture),
             i <= 6 ? StateGlyph.Done : i <= 8 ? StateGlyph.Active : StateGlyph.Pending, i <= 6 ? "done" : i <= 8 ? "checks" : "produce",
-            agent: i is 7 or 8 ? "factory worker" : null, age: 600 + (i * 60L))).ToList();
-        var status = Status(_prjDocs, null, "Waiting on 24 children: 6 done, 2 running, 16 not started.", new OpenWork(OpenChildren: 18));
+            age: 600 + (i * 60L))).ToList();
+        var status = Status(_prjDocs, null, "Waiting on 24 children: 6 done, 2 running, 16 not started.", new OpenWork(OpenChildren: 18),
+            new StatusLines
+            {
+                Timeout = new StatusTimeout(TimeoutKind.Escalates, 72_840, "build"),
+                Budget = new StatusBudget("state", 900_000, 4_000_000, new BudgetFigures(1_100_000, 6_000_000)),
+            });
         return Detail(_prjDocs, "Handbook", PathOrdering.Path,
-            new CurrentState("build", new StepDeclaration("step.children", "builder.feature", "one child per packet task"), [], null, status),
-            _project.Facts([.. ProjectFacts(At(10, 12, 8, 40), Fake(_project, "fact:evidence", FactStatus.InProgress, "6 of 24 packs", reference: Ref(factKey: "fact:evidence"), progress: new Progress(6, 24)))]),
+            new CurrentState("build", new StepDeclaration("wait", "workflow.step", "one child per packet task"), [], null, status),
+            _project.Facts([.. HandbookFacts(Fake(_project, "fact:evidence", FactStatus.InProgress, "6 of 24 packs", reference: Ref(factKey: "fact:evidence"), progress: new Progress(6, 24)))]),
             [new ChildGroup("build", RecipeId.From("workflow.step"), 6, 24, [], rows, 4)],
             Counts(30, 0, 0));
     }
@@ -428,16 +455,15 @@ public static class WorkflowViewFixtures
     /// <summary>INC-14: the mitigate and verify loop at round 1 of 3, a recorded sev2 outcome, a running comms child, a timeout that escalates.</summary>
     public static InstanceDetail IncidentLoop()
     {
-        var status = Status(_inc14, null, "Mitigate the outage in round 1/3: ITM-01JG2 rolls back the last release; comms posts the update.", new OpenWork(RunningSteps: 1, OpenChildren: 1),
-            new StatusLines { Timeout = new StatusTimeout(TimeoutKind.Escalates, 3_600, "mitigate") });
+        var status = Status(_inc14, null, "Mitigate the outage in round 1/3: ITM-01JG2 rolls back the last release.", new OpenWork(RunningSteps: 1),
+            new StatusLines { Timeout = new StatusTimeout(TimeoutKind.Escalates, 9_360, "mitigate") });
         return Detail(_inc14, "Outbox retry storm", PathOrdering.Path,
-            new CurrentState("mitigate", new StepDeclaration("step.agent", "mitigate.rollback", "roll back the last release"), [], null, status),
+            new CurrentState("mitigate", new StepDeclaration("active", "step.agent", "roll back the last release"), [], null, status),
             _incident.Facts(
                 Produced(_incident, "fact:alert", "PagerDuty P-2211", At(10, 12, 11, 2), "service:webhook", Ref(factKey: "fact:alert")),
                 Produced(_incident, "fact:severity", "sev2", At(10, 12, 11, 4), "step.assess", Ref(factKey: "fact:severity")),
                 Produced(_incident, "fact:history", "2 of 40 events", At(10, 12, 11, 3), "service:webhook", Ref(factKey: "fact:history"))),
-            [new ChildGroup("comms", RecipeId.From("workflow.step"), 0, 1, [], [Child("ITM-01JK1/incident-response/1", 1, "ITM-01JG3", "Post status updates", StateGlyph.Active, "produce", age: 300)], 0)],
-            Counts(12, 1, 0));
+            [], Counts(12, 1, 0));
     }
 
     /// <summary>sentry #8812: the classify desk is open and asks for a severity.</summary>
@@ -445,8 +471,8 @@ public static class WorkflowViewFixtures
     {
         var pending = new FactPending(true, ["output.nonempty"], Act("CompleteStep"));
         return Detail(_sentry8812, "TypeError in tabs.layout", PathOrdering.Path,
-            new CurrentState("classify", new StepDeclaration("step.desk", "classify.severity", "a person classifies the alert"),
-                [], new DeskForm(RunToken.From("1.1"), [new DeskOutput("fact:severity", FactType.Text, true)], ["output.nonempty"], Act("CompleteStep")), StatusDeskTask()),
+            new CurrentState("classify", new StepDeclaration("active", "step.produce", "a person classifies the alert"),
+                [], new DeskForm(RunToken.From("2.1"), [new DeskOutput("fact:severity", FactType.Text, true)], ["output.nonempty"], Act("CompleteStep")), StatusDeskTask()),
             _triage.Facts(
                 Produced(_triage, "fact:alert", "sentry #8812 TypeError", At(10, 12, 12, 22), "service:webhook", Ref(factKey: "fact:alert")),
                 Fake(_triage, "fact:severity", FactStatus.Pending, "awaiting your answer", pending: pending)),
@@ -456,7 +482,7 @@ public static class WorkflowViewFixtures
     /// <summary>pagerduty P-2211: escalated at the severity gate; the accept needs a terminal.</summary>
     public static InstanceDetail EscalatedGate() =>
         Detail(_p2211, "PagerDuty P-2211", PathOrdering.Path,
-            new CurrentState("route", new StepDeclaration("step.tool", "route.severity", "route by severity"),
+            new CurrentState("route", new StepDeclaration("active", "step.agent", "route by severity"),
                 [new GateLine(BlockId.From("gate.severity"), "exit", 0.8, "The severity check passes at 0.8 or above; below it the instance escalates.")], null, StatusEscalatedGate()),
             _triage.Facts(
                 Produced(_triage, "fact:alert", "PagerDuty P-2211", At(10, 12, 11, 2), "service:webhook", Ref(factKey: "fact:alert")),
@@ -464,34 +490,34 @@ public static class WorkflowViewFixtures
                 Fake(_triage, "fact:route", FactStatus.InProgress, "gate.severity 0.62, below 0.8: escalated")),
             [], Counts(6, 1, 0));
 
-    /// <summary>A workflow.step child of an item at produce, round 2 of 3, with its parent (the item's workflow.item instance).</summary>
+    /// <summary>
+    /// ITM-01JE7 (the screens fixture's item): the workflow.step child of its workflow.item instance, at its produce desk task, round 2 of 3
+    /// (the second entry of produce, so run 3.1). A workflow.step declares no outputs, so the sheet's other facts come from the parent.
+    /// </summary>
     public static InstanceDetail ItemProduce()
     {
-        var row = Row("ITM-01JE7/item/1/step.1", _step, "produce", Today(11, 30), null, Subject("item", "ITM-01JE7", "ITM-01JE7"),
-            _step.Cells("produce", round: 2, Shape(("produce", c => c with { Round = new Round(2, 3) }))),
-            "agent writing the Step output · round 2/3", "ApplyCommand:takeover", "ApplyCommand:cancel");
-        var status = Status(row, null, "Produce the Step output for ITM-01JE7 (round 2/3).", new OpenWork(RunningSteps: 1),
-            new StatusLines
-            {
-                Inputs = [new StatusInput("fact:spec", "spec.md", "9d3e41aa")],
-                Budget = new StatusBudget("state", 84_000, 200_000, new BudgetFigures(84_000, 400_000)),
-            });
-        return Detail(row, "Receipt retries", PathOrdering.Path,
-            new CurrentState("produce", new StepDeclaration("step.produce", "produce.output", "produce the output for the item"), [], null, status),
-            _step.Facts(Produced(_step, "fact:spec", "ITM-01JE7 spec", At(10, 12, 11, 30), "service:item")),
+        var row = Row("ITM-01JE7/item/1/step.4", _step, "produce", Today(12, 20), null, Subject("text", "ITM-01JE7", "Linear ENG-511 · repo agentic-workflow · no project · feature:needs-you.ack"),
+            _step.Cells("produce", round: 1, Shape(("produce", c => c with { Round = new Round(2, 3) }))),
+            "your output for the Step (desk) · round 2/3", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
+        var status = DeskStatus(row, "Produce the Step output for ITM-01JE7 (round 2/3)", "3.1", null,
+            DeskLines(new StatusInput("fact:spec", "spec.md", "1c0e5a77"), 172_440, "produce", new StatusBudget("state", 84_000, 200_000, new BudgetFigures(84_000, 400_000))));
+        return Detail(row, "Add needs-you ack route", PathOrdering.Path,
+            new CurrentState("produce", new StepDeclaration("active", "step.produce", "produce the output for the item"), [],
+                new DeskForm(RunToken.From("3.1"), [], [], Act("CompleteStep")), status),
+            _step.Facts(Produced(_step, "fact:spec", "spec.md", At(10, 12, 12, 20), "service:item", Ref(name: "spec.md", hash: Hash("1c0e5a77")))),
             [], Counts(6, 0, 0),
-            new ParentRef(InstanceAddress.From("ITM-01JE7/item/1"), "ITM-01JE7 · Receipt retries", null, null));
+            new ParentRef(InstanceAddress.From("ITM-01JE7/item/1"), "ITM-01JE7 · Add needs-you ack route", null, null));
     }
 
     /// <summary>The desk-round-trip dev recipe, desk open on its export (round 1 of 2): the P11 signal fixture.</summary>
     public static InstanceDetail DeskRoundTrip()
     {
         var row = Row("ITM-01JL1/dev-desk-round-trip/1", _devDesk, "export", Today(12, 0), null, Subject("text", "desk-round-trip", "desk-round-trip"),
-            _devDesk.Cells("export", round: 1, Shape(("export", c => c with { Round = new Round(1, 2) }))), "next step", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
+            _devDesk.Cells("export", round: 0, Shape(("export", c => c with { Round = new Round(1, 2) }))), "next step", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
         return Detail(row, "Desk round trip", PathOrdering.Path,
-            new CurrentState("export", new StepDeclaration("step.produce", "export.file", "a person exports the file"),
+            new CurrentState("export", new StepDeclaration("active", "step.produce", "a person exports the file"),
                 [], new DeskForm(RunToken.From("1.1"), [new DeskOutput("fact:output", FactType.File, true)], ["output.file"], Act("CompleteStep")),
-                DeskStatus(row, "Export the file for the request (round 1/2)", "1.1", "fact:output", "<file>", new StatusInput("fact:request", "request.txt", "7ab2c013"))),
+                DeskStatus(row, "Export the file for the request (round 1/2)", "1.1", ("fact:output", "<file>"), DeskLines(new StatusInput("fact:request", "request.txt", "7ab2c013"), 171_240, "export"))),
             _devDesk.Facts(
                 Produced(_devDesk, "fact:request", "Summarize the week", At(10, 12, 12, 0), "human:cli"),
                 Fake(_devDesk, "fact:output", FactStatus.Pending, "awaiting your file", pending: new FactPending(true, ["output.file"], Act("CompleteStep")))),
@@ -504,9 +530,9 @@ public static class WorkflowViewFixtures
         var row = Row("ITM-01JL2/dev-triage-three-state/1", _devTriage, "desk", Today(12, 0), null, Subject("item", "ITM-01JL2", "dev-triage-three-state"),
             _devTriage.Cells("desk"), "next step", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
         return Detail(row, "Three-state triage", PathOrdering.Path,
-            new CurrentState("desk", new StepDeclaration("step.produce", "desk.draft", "a person writes the draft"),
+            new CurrentState("desk", new StepDeclaration("active", "step.produce", "a person writes the draft"),
                 [], new DeskForm(RunToken.From("1.1"), [new DeskOutput("fact:output", FactType.File, true)], ["output.file"], Act("CompleteStep")),
-                DeskStatus(row, "Write the draft for ITM-01JL2", "1.1", "fact:output", "<file>", new StatusInput("fact:item", "item.json", "5cd0e9a2"))),
+                DeskStatus(row, "Write the draft for ITM-01JL2", "1.1", ("fact:output", "<file>"), DeskLines(new StatusInput("fact:item", "item.json", "5cd0e9a2"), 171_240, "desk"))),
             _devTriage.Facts(
                 Produced(_devTriage, "fact:item", "ITM-01JL2 Crash on launch", At(10, 12, 12, 0), "human:cli", Ref(item: "ITM-01JL2")),
                 Fake(_devTriage, "fact:output", FactStatus.Pending, "awaiting your file", pending: new FactPending(true, ["output.file"], Act("CompleteStep")))),
@@ -519,8 +545,8 @@ public static class WorkflowViewFixtures
         var row = Row("ITM-01JL3/fork-demo/1", _fork, "right", Today(12, 0), null, Subject("text", "fork-demo", "Fork demo"),
             _fork.Cells("right"), "next step", "ApplyCommand:takeover", "ApplyCommand:cancel");
         return Detail(row, "Fork demo", PathOrdering.TransitionList,
-            new CurrentState("right", new StepDeclaration("step.tool", "branch.right", "the right branch"), [], null,
-                Status(row, null, "branch.right is running.", new OpenWork(RunningSteps: 1))),
+            new CurrentState("right", new StepDeclaration("active", "step.agent", "the right branch"), [], null,
+                Status(row, null, "branch.right is running.", new OpenWork(RunningSteps: 1), new StatusLines { Timeout = new StatusTimeout(TimeoutKind.Parks, 2_040, "right") })),
             _fork.Facts(Produced(_fork, "fact:request", "Fork it", At(10, 12, 12, 0), "human:cli")),
             [], Counts(2, 0, 0));
     }

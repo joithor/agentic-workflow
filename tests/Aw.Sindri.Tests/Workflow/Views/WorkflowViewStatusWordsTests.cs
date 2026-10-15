@@ -42,14 +42,14 @@ public sealed class WorkflowViewStatusWordsTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_wait_answer_resumes_with_optional_text_and_a_desk_step_answers_through_complete()
+    public void A_step_park_answers_with_text_and_a_desk_step_answers_through_complete()
     {
-        Assert.Equal("sindri workflow answer ITM-01JKE/project/1 --resume [--text <answer>]", WorkflowViewFixtures.StatusNeedsAnswerWait().Answer!.Cli);
+        Assert.Equal("sindri workflow answer ITM-01JKE/project/1 --text <answer>", WorkflowViewFixtures.StatusNeedsAnswerWait().Answer!.Cli);
 
         var desk = WorkflowViewFixtures.StatusDeskTask();
         Assert.Null(desk.Answer);
         Assert.Equal("complete", desk.Commands[0].Verb.Value);
-        Assert.StartsWith("sindri workflow complete ITM-01JK2/triage-alert/1 --run 1.1 ", desk.Commands[0].Cli, StringComparison.Ordinal);
+        Assert.StartsWith("sindri workflow complete ITM-01JK2/triage-alert/1 --run 2.1 ", desk.Commands[0].Cli, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
