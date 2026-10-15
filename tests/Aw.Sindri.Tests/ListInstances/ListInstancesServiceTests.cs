@@ -7,8 +7,8 @@ using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ListInstances;
-using Aw.Sindri.Tests.GetInstance;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Tests.GetInstance;
 using Microsoft.Extensions.Time.Testing;
 using RecipeUrgency = Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency;
 

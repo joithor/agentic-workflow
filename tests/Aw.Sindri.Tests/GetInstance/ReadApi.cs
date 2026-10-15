@@ -69,7 +69,7 @@ internal sealed class ReadApi : HttpMessageHandler
             .AddSingleton<IInstanceDirectory>(instances)
             .AddSingleton<IInstanceReader>(instances)
             .AddSingleton<IService<GetInstanceRequest, GetInstanceResponse>>(new GetInstanceService(instances, instances))
-            .AddSingleton<IService<ListInstancesRequest, ListInstancesResponse>>(new ListInstancesService(instances, new NoRows(), instances, new Aw.Sindri.Tests.ListInstances.FixedItemViews(), new Aw.Sindri.Tests.ListInstances.FixedCaller(current: null), clock: new FakeTimeProvider()));
+            .AddSingleton<IService<ListInstancesRequest, ListInstancesResponse>>(new ListInstancesService(instances, new NoRows(), instances, new ListInstances.FixedItemViews(), new ListInstances.FixedCaller(current: null), clock: new FakeTimeProvider()));
         configure?.Invoke(services);
     }, running: true);
 

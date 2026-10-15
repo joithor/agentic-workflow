@@ -48,6 +48,6 @@ public sealed class FactReadActivitiesTests : IDisposable
         var text = await Read(Store(bytes, new string('3', 64)));
 
         Assert.Equal(new string('x', Limit - 1), text);
-        Assert.DoesNotContain("\uFFFD", text!, StringComparison.Ordinal);
+        Assert.DoesNotContain("\uFFFD", text, StringComparison.Ordinal);
     }
 }
