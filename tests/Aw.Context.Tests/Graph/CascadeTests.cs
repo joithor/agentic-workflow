@@ -16,8 +16,8 @@ public sealed class CascadeTests
 
         var affected = Assert.Single(result.Affected);
         Assert.Equal((TabManager, 1), (affected.Node.Value, affected.Depth));
-        Assert.Equal([Orientation, "writes thing:pane-layout", "reads action:tab-manager.restore-layout"], affected.Path);
-        Assert.Equal([EdgeType.Writes, EdgeType.Reads], affected.Edges.Select(e => e.Type));
+        Assert.Equal([Orientation, "owns surface:command/toggle-orientation", "owns action:split-pane.toggle-orientation", "writes thing:pane-layout", "reads action:tab-manager.restore-layout"], affected.Path);
+        Assert.Equal([EdgeType.PartOf, EdgeType.On, EdgeType.Writes, EdgeType.Reads], affected.Edges.Select(e => e.Type));
     }
 
     [Fact, Trait("Lane", "unit")]

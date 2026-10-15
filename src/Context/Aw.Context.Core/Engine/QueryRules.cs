@@ -67,6 +67,12 @@ public static class QueryRules
         return new ValidQuery(terms, budget);
     }
 
+    /// <summary>The distinct words of <paramref name="text"/>, as <see cref="Terms"/> reads them but with a cap of the caller's choosing.</summary>
+    /// <param name="text">The text.</param>
+    /// <param name="max">The most words to return.</param>
+    /// <returns>Up to <paramref name="max"/> words, in order of first use.</returns>
+    public static IReadOnlyList<string> Words(string text, int max) => throw new NotSupportedException();
+
     /// <summary>The distinct words of <paramref name="text"/>: runs of letters and digits, lower-cased, at most 64 characters each.</summary>
     /// <param name="text">The question.</param>
     /// <returns>Up to <see cref="MaxTerms"/> terms, in order of first use.</returns>

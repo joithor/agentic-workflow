@@ -14,7 +14,7 @@ public sealed class ProbeRunnerTests
     private static CancellationToken None => TestContext.Current.CancellationToken;
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_first_run_scores_each_probe_and_its_means_with_no_previous()
+    public async Task A_first_run_scores_each_probe_and_its_means_with_no_baseline()
     {
         var report = (await ProbeRunner.Run(_file, Ask(("one", "feature:a"), ("two", "feature:x")), baseline: null, Answers.At, None)).Value;
 
@@ -29,13 +29,13 @@ public sealed class ProbeRunnerTests
     [InlineData(0.5, false)]
     [InlineData(0.4, false)]
     [InlineData(0.6, true)]
-    public async Task A_run_below_the_previous_one_regressed(double previousPrecision, bool regressed)
+    public async Task A_run_below_the_baseline_regressed(double baselinePrecision, bool regressed)
     {
-        var previous = new ProbeReport(1, _file.Path, _file.Hash, "v1", [], new ProbeTotals(previousPrecision, 1.0, 2, Answers.At.AddDays(-1)), Baseline: null, Regressed: false);
+        var baseline = new ProbeReport(1, _file.Path, _file.Hash, "v1", [], new ProbeTotals(baselinePrecision, 1.0, 2, Answers.At.AddDays(-1)), Baseline: null, Regressed: false);
 
-        var report = (await ProbeRunner.Run(_file, Ask(("one", "feature:a"), ("two", "feature:x")), previous, Answers.At, None)).Value;
+        var report = (await ProbeRunner.Run(_file, Ask(("one", "feature:a"), ("two", "feature:x")), baseline, Answers.At, None)).Value;
 
-        Assert.Equal(previous.Totals, report.Baseline);
+        Assert.Equal(baseline.Totals, report.Baseline);
         Assert.Equal(regressed, report.Regressed);
     }
 
@@ -74,9 +74,9 @@ public sealed class ProbeRunnerTests
     [Fact, Trait("Lane", "unit")]
     public async Task A_run_with_a_failed_question_is_incomplete_and_never_a_regression_whatever_its_scores()
     {
-        var previous = new ProbeReport(1, _file.Path, _file.Hash, "v1", [], new ProbeTotals(1.0, 1.0, 2, Answers.At.AddDays(-1)), Baseline: null, Regressed: false);
+        var baseline = new ProbeReport(1, _file.Path, _file.Hash, "v1", [], new ProbeTotals(1.0, 1.0, 2, Answers.At.AddDays(-1)), Baseline: null, Regressed: false);
 
-        var report = (await ProbeRunner.Run(_file, Fails("two"), previous, Answers.At, None)).Value;
+        var report = (await ProbeRunner.Run(_file, Fails("two"), baseline, Answers.At, None)).Value;
 
         Assert.True(report.Incomplete);
         Assert.False(report.Regressed);
@@ -87,13 +87,14 @@ public sealed class ProbeRunnerTests
     [InlineData(0, 1, true)]
     [InlineData(1, 1, false)]
     [InlineData(2, 1, false)]
-    public async Task A_run_that_names_more_absent_nodes_than_the_previous_one_regressed_even_when_the_precision_holds(int before, int now, bool regressed)
+    public async Task A_run_that_names_more_absent_nodes_than_the_baseline_probe_regressed_even_when_the_precision_holds(int before, int now, bool regressed)
     {
         var file = new ProbeFile("/probes/probes.json", "abc123", new ProbeSet([Answers.Probe("one", nodes: ["feature:a"], absent: ["feature:b", "feature:c"])]));
-        var previous = new ProbeReport(1, file.Path, file.Hash, "v1", [], new ProbeTotals(0.0, 1.0, 1, Answers.At.AddDays(-1), AbsentReturned: before), Baseline: null, Regressed: false);
+        var baseline = new ProbeReport(1, file.Path, file.Hash, "v1", [new ProbeScore(ProbeId.From("one"), 0.0, 1.0, [], [], [.. _nodes.Skip(1).Take(before)])],
+            new ProbeTotals(0.0, 1.0, 1, Answers.At.AddDays(-1), AbsentReturned: before), Baseline: null, Regressed: false);
         var items = _nodes.Take(1 + now).Select(n => ("graph", Answers.Item(n))).ToArray();
 
-        var report = (await ProbeRunner.Run(file, (_, _) => ValueTask.FromResult(Results.Success(Answers.Of(items))), previous, Answers.At, None)).Value;
+        var report = (await ProbeRunner.Run(file, (_, _) => ValueTask.FromResult(Results.Success(Answers.Of(items))), baseline, Answers.At, None)).Value;
 
         Assert.Equal(now, report.Totals.AbsentReturned);
         Assert.Equal(regressed, report.Regressed);
@@ -105,6 +106,7 @@ public sealed class ProbeRunnerTests
     [InlineData("""{"probes":[{"id":"a","question":"q","expect":{}},{"id":"a","question":"q","expect":{}}]}""", "probes[1].id")]
     [InlineData("""{"probes":[{"id":"Not A Slug","question":"q","expect":{}}]}""", "probes[0].id")]
     [InlineData("""{"probes":[{"id":"a","question":" ","expect":{}}]}""", "probes[0].question")]
+    [InlineData("""{"probes":[{"id":"a","question":"?!?!","expect":{}}]}""", "probes[0].question")]
     public void A_bad_probe_file_is_SND_CONTEXT_035_at_its_key_path(string json, string keyPath)
     {
         var set = Kernel.Json.AwJson.Deserialize<ProbeSet>(System.Text.Encoding.UTF8.GetBytes(json), EvalJson.Options).Value;

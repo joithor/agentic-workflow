@@ -23,6 +23,8 @@ public sealed class ContextGraphApiTests
         var outOfScope = await host.Http.Ask(Get("/sindri/context/node?key=thing%3Apane-layout", session));
         var inScope = await host.Http.Ask(Get("/sindri/context/node?key=feature%3Atabs.tab-manager", session));
         var deep = await host.Http.Ask(Get("/sindri/context/neighbors?key=thing%3Apane-layout&depth=9", Human(host.Token.Value)));
+        var word = await host.Http.Ask(Get("/sindri/context/neighbors?key=thing%3Apane-layout&depth=abc", Human(host.Token.Value)));
+        var queryWord = await host.Http.Ask(Get("/sindri/context/query?node=feature%3Alayout.split-pane.orientation&depth=abc", Human(host.Token.Value)));
         var origin = await host.Http.Ask(Get("/sindri/context/node?key=feature%3Alayout.orientation", [.. Human(host.Token.Value), ("Origin", "http://evil.example")]));
 
         Assert.Equal(HttpStatusCode.OK, node.Status);
@@ -34,6 +36,8 @@ public sealed class ContextGraphApiTests
         Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-003"), (outOfScope.Status, outOfScope.Code));
         Assert.Equal(HttpStatusCode.OK, inScope.Status);
         Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (deep.Status, deep.Code));
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (word.Status, word.Code));
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (queryWord.Status, queryWord.Code));
         Assert.Equal(HttpStatusCode.Forbidden, origin.Status);
     }
 }

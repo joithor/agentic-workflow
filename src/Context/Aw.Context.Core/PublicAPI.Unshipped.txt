@@ -2022,3 +2022,4 @@ Aw.Context.Core.Eval.ProbeTotals.ProbeTotals(double PrecisionAt5, double Citatio
 Aw.Context.Core.Eval.ProbeRun.Incomplete.get -> bool
 Aw.Context.Core.Eval.ProbeRun.Failed.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Context.Core.Map.MapText.SearchTerms(string! label) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Context.Core.Engine.QueryRules.Words(string! text, int max) -> System.Collections.Generic.IReadOnlyList<string!>!
