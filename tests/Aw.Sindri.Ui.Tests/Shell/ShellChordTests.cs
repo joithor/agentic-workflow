@@ -45,6 +45,24 @@ public sealed class ShellChordTests
         Assert.Equal((PageId.Queue, QueueFilter.All, string.Empty), (shell.CurrentPage, shell.Queue.Showing, shell.ChordHint));
     }
 
+    // The timer's post to the UI context is queued but has not run: the app's window between the second passing and the dispatcher catching up.
+    [Fact]
+    public Task A_g_after_the_second_but_before_the_posted_lapse_runs_is_a_fresh_chord() => UiThread.Run(async () =>
+    {
+        var shell = Shell();
+        shell.GoTo(PageId.Home);
+
+        _ = shell.Press("G");
+        _clock.Advance(TimeSpan.FromSeconds(2));   // posts the lapse to the queued context; it has not run
+        Assert.True(shell.Press("G"));
+        Assert.Equal("G …", shell.ChordHint);
+        await Task.Yield();   // the stale lapse runs now and must not end the new chord
+        Assert.Equal("G …", shell.ChordHint);
+        _ = shell.Press("Q");
+
+        Assert.Equal((PageId.Queue, string.Empty), (shell.CurrentPage, shell.ChordHint));
+    }, TestContext.Current.CancellationToken);
+
     [Fact]
     public void A_second_key_inside_the_second_still_completes_the_chord()
     {
