@@ -83,6 +83,28 @@ public sealed class StatusViewsHealthTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_failed_service_the_approval_dropped_does_not_degrade_health()
+    {
+        await RunningAndApproved();
+        await _v.Fold(EventTypes.ServiceRan, new ServiceRan(H.Ids.New<CommandId>(), ServiceName.From("ghost"), H.Clock.GetUtcNow(), ServiceOutcome.Failed, "SND-SCHED-001"));
+
+        var status = (await Service().Handle(new GetStatusRequest(), Token)).Value;
+
+        Assert.Equal(HealthWord.Healthy, status.Health!.Word);
+        Assert.Empty(status.Health.Problems);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_displayed_head_is_never_behind_the_cursor_mid_rebuild()
+    {
+        var views = new ViewsStatus(Cursor: 66, LedgerHead: 65, ProjectedAt: null, Rebuilding: true, Stalled: false, StalledAt: null, StalledType: null);
+
+        Assert.Equal(66, views.LedgerHead);
+        Assert.Equal(EmptyText.Rebuilding(66, 66), views.Text);
+        Assert.Equal(66, views.AsOf.LedgerHead);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void The_views_json_carries_the_status_fields_and_text_without_a_nested_as_of()
     {
         var views = new ViewsStatus(Cursor: 6, LedgerHead: 9, ProjectedAt: null, Rebuilding: false, Stalled: true, StalledAt: 7, StalledType: "service.ran");
