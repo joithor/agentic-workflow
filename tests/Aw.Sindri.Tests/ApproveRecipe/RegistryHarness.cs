@@ -42,6 +42,7 @@ namespace Aw.Sindri.Tests.ApproveRecipe;
 internal sealed class RegistryHarness : IAsyncDisposable
 {
     private readonly ServiceProvider _provider;
+    private readonly NoInstances _instances = new();
 
     public RegistryHarness()
     {
@@ -56,11 +57,15 @@ internal sealed class RegistryHarness : IAsyncDisposable
             .AddSingleton(H.Events)
             .AddSingleton(H.Callers)
             .AddSingleton<ICommandCatalog>(new CommandCatalog())
+            .AddSingleton<Core.Views.IProjectorStatus>(new Core.Views.ProjectorProgress(H.Clock))
             .AddSingleton<ILogger<AuditTrail>>(new ListLogger<AuditTrail>())
             .AddSingleton<IRecipeStore>(Recipes)
             .AddSingleton<IRecipeApprovals>(Approvals)
             .AddSingleton<IChallenges>(Challenges)
             .AddSingleton<IRecipeWake>(Wake)
+            .AddSingleton<Core.Workflow.Engine.Runtime.IInstanceDirectory>(_instances)
+            .AddSingleton<Core.Workflow.Engine.Runtime.IInstanceRuntime>(_instances)
+            .AddSingleton<Core.Workflow.Engine.Runtime.IInstanceReader>(_instances)
             .AddSingleton(SliceHarness.Json)
             .AddSingleton<IProfileSource>(H.Profiles)
             .AddRecipeBlocks()

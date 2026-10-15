@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Validation;
 using Aw.Sindri.Core.Workflow.Views;
@@ -72,8 +73,8 @@ public sealed class WorkflowViewRecipeShapeTests
         Assert.True(compared >= 3, "the dev recipes and workflow.step are compared");
     }
 
-    // WF 12's Blocks table: the Steps that run on the desk runtime until the agent runtime (P8).
-    private static readonly HashSet<string> _deskCapable = new(StringComparer.Ordinal) { "step.produce", "step.checks", "step.verify" };
+    // The shipped catalog says which Steps are deskCapable; the engine runs those at the desk until the agent runtime (WF 12, W20).
+    private static readonly BlockCatalog _catalog = FixtureCatalog.Shipped();
 
     private static string M(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
 
@@ -120,7 +121,7 @@ public sealed class WorkflowViewRecipeShapeTests
 
     private static string FileSignature(RecipeState declared)
     {
-        var deskCapable = declared.Kind == StateKind.Active && declared.Step is { } step && _deskCapable.Contains(step.Use.Value);
+        var deskCapable = declared.Kind == StateKind.Active && declared.Step is { } step && _catalog.Find(step.Use) is { DeskCapable: true };
         var child = declared.WaitFor?.Child;
         return M($"{declared.Kind}|{child?.Recipe.Value}|{child?.OnParked}|{deskCapable}|{declared.Step?.Use.Value}|{declared.Timeout?.After.Span}|{declared.Timeout?.Then}|{declared.Budget?.Tokens}");
     }

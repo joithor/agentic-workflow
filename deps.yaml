@@ -236,7 +236,7 @@ packages:
     files: [sindri-app/control.json, sindri-app/auth/human.token]
     namespace: sindri
     routes: [/sindri/]
-    note: "built new in C# as an application (control plane, workflow engine, context retrieval; addendum §17.29, Q7), not ported; ts: sindri (profile, ledger, scrub, observe, index, scope, evolve) is the reference and runs until the switch; S1 (app shell: CLI and control plane, host lease, ledger, profile, API, scheduler, doctor) and workflow engine P1 (the recipe model and validator, `sindri recipe validate`) are in src/Sindri; API P2 adds the projector and its views (views.db: services, profile; read-your-writes, health, `sindri views rebuild`); Aw.Sindri.Workflows is the Temporal adapter (Infrastructure layer, namespace Aw.Sindri.Infrastructure.Workflows, AwAotCompatible=false for temporalio/sdk-dotnet#286; engine rev 8 §0); reaches lower tiers only through Core contracts or CLIs"
+    note: "built new in C# as an application (control plane, workflow engine, context retrieval; addendum §17.29, Q7), not ported; ts: sindri (profile, ledger, scrub, observe, index, scope, evolve) is the reference and runs until the switch; S1 (app shell: CLI and control plane, host lease, ledger, profile, API, scheduler, doctor) and workflow engine P1 (the recipe model and validator, `sindri recipe validate`) are in src/Sindri; API P2 adds the projector and its views (views.db: services, profile; read-your-writes, health, `sindri views rebuild`); Aw.Sindri.Workflows is the Temporal adapter (Infrastructure layer, namespace Aw.Sindri.Infrastructure.Workflows, AwAotCompatible=false for temporalio/sdk-dotnet#286; engine rev 8 §0); reaches lower tiers only through Core contracts or CLIs, plus the tier-0 Redaction edge (RecordEvent's ledger scrub)"
 
   # ---- tier 4 ----
   - id: SindriUi
@@ -482,8 +482,8 @@ edges:
   - from: Sindri
     to: Redaction
     kind: project
-    status: planned
-    note: "replaces sindri's copy of the scrubbing patterns"
+    status: current
+    note: "replaces sindri's copy of the scrubbing patterns; Aw.Sindri.Workflows' RecordEvent scrubs each mirrored payload with it"
   - from: Sindri
     to: Packets
     kind: cli

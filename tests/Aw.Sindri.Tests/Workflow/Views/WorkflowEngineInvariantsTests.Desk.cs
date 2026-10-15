@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Testing.Views;
 
@@ -41,9 +42,8 @@ public sealed partial class WorkflowEngineInvariantsTests
         var looped = view.Cells.Any(c => c.Round is { N: > 1 });
         var tokens = TokensOf(view);
         var failures = tokens
-            .Select(t => int.Parse(t[..t.IndexOf('.', StringComparison.Ordinal)], CultureInfo.InvariantCulture))
-            .Where(entry => entry != order && !(looped && entry > order))
-            .Select(entry => M($"run token entry {entry}: the entry of '{view.State}' is {order} (RunToken = <entry>.<n>, WF 5.3); tokens {string.Join(", ", tokens)}"))
+            .Where(t => t != RunToken.For(order, 1).Value && !(looped && int.Parse(t[..t.IndexOf('.', StringComparison.Ordinal)], CultureInfo.InvariantCulture) > order))
+            .Select(t => M($"run token {t}: the engine opens '{view.State}' as {RunToken.For(order, 1).Value} (StateEntry; WF 5.3)"))
             .ToList();
         if (tokens.Count > 1)
         {

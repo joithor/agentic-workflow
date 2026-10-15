@@ -55,7 +55,7 @@ internal sealed class RecipeRegistryCommands(RecipeDesk desk, IServiceProvider s
             .ConfigureAwait(false);
         if (shown.IsError)
         {
-            return await output.Error(NotRunning(shown.Error)).ConfigureAwait(false);
+            return await output.Error(InstanceReads.NotRunning(shown.Error)).ConfigureAwait(false);
         }
 
         return json
@@ -68,15 +68,11 @@ internal sealed class RecipeRegistryCommands(RecipeDesk desk, IServiceProvider s
         var listed = await desk.Client.Get<ListRecipesResponse>(stale ? Recipes + "?stale=true" : Recipes, ct).ConfigureAwait(false);
         if (listed.IsError)
         {
-            return await output.Error(NotRunning(listed.Error)).ConfigureAwait(false);
+            return await output.Error(InstanceReads.NotRunning(listed.Error)).ConfigureAwait(false);
         }
 
         return json
             ? await output.Raw(listed.Value.Body, 0).ConfigureAwait(false)
             : await output.Text(RecipeLineText.List(listed.Value.Value.Recipes, stale), 0).ConfigureAwait(false);
     }
-
-    /// <summary>A query never starts the control plane; when it is down the error says so, as 'status' does.</summary>
-    private static Kernel.Error NotRunning(Kernel.Error error) =>
-        error.Code == SindriErrors.NotRunning.Code ? error with { Message = "not running: " + error.Message } : error;
 }

@@ -77,10 +77,10 @@ public sealed class WorkflowViewAddressTests
     [Fact, Trait("Lane", "unit")]
     public void Ids_are_derived_from_the_address_and_match_the_engine_vector()
     {
-        Assert.Equal("WFI-1de747c7239d87e2a87d1a16b585b6e3", WorkflowViewFixtures.IdOf("T-50/step/1").Value);
+        Assert.Equal("WFI-1de747c7239d87e2a87d1a16b585b6e3", WorkflowInstanceId.Of(InstanceAddress.From("T-50/step/1")).Value);
         foreach (var row in WorkflowViewFixtures.RootList().Instances)
         {
-            Assert.Equal(WorkflowViewFixtures.IdOf(row.Address.Value), row.Id);
+            Assert.Equal(WorkflowInstanceId.Of(row.Address), row.Id);
         }
     }
 

@@ -1,8 +1,10 @@
 using System.Globalization;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Testing.Views;
+using Aw.Sindri.Testing.Workflow;
 
 namespace Aw.Sindri.Tests.Workflow.Views;
 
@@ -16,8 +18,8 @@ public sealed partial class WorkflowEngineInvariantsTests
     private sealed record View(string Address, InstanceRecipe Recipe, string State, DateTimeOffset Since, EngineOwnedBadge? EngineOwned, SubjectRef Subject,
         IReadOnlyList<StateCell> Cells, StateChip? Chip, InstanceDetail? Detail, IReadOnlyList<StatusFields> Statuses);
 
-    // WF 12's Blocks table: the Steps that run on the desk runtime until the agent runtime (P8).
-    private static readonly HashSet<string> _deskCapable = new(StringComparer.Ordinal) { "step.produce", "step.checks", "step.verify" };
+    // The shipped catalog says which Steps are deskCapable; the engine runs those at the desk until the agent runtime (WF 12, W20).
+    private static readonly BlockCatalog _catalog = FixtureCatalog.Shipped();
 
     private static string M(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
 
@@ -86,7 +88,7 @@ public sealed partial class WorkflowEngineInvariantsTests
             failures.Add(M($"{at}: no Block has an agent runtime until P8, so an active state is served as a desk task (WF 12, W5, W20)"));
         }
 
-        if (state.Block is { } block && !_deskCapable.Contains(block))
+        if (state.Block is { } block && _catalog.Find(BlockId.From(block)) is not { DeskCapable: true })
         {
             failures.Add(M($"{at}: {block} is not deskCapable, so it parks with SND-WF-010 instead of running"));
         }

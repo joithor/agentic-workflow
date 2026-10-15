@@ -1,4 +1,5 @@
 #pragma warning disable MA0003, MA0127 // fixture records are positional; their literals are named by the record
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Testing.Views;
@@ -29,8 +30,7 @@ public sealed record ShapeState(string Id, int? Order, string? BranchOf = null, 
     public bool RunsAtDesk => Kind == StateKind.Active;
 
     /// <summary>The timeout the engine serves: at the desk at least the desk floor, and always ending in park (W20).</summary>
-    public ShapeTimeout? Served => Timeout is null ? null : RunsAtDesk ? new ShapeTimeout(Timeout.After < DeskFloor ? DeskFloor : Timeout.After, TimeoutAction.Park) : Timeout;
+    public ShapeTimeout? Served => Timeout is null ? null : RunsAtDesk ? new ShapeTimeout(DeskTimeouts.Wait(new TimeoutSpec(RecipeDuration.From(M(Timeout.After)), Timeout.Then), DeskTimeouts.DefaultFloor), TimeoutAction.Park) : Timeout;
 
-    /// <summary>The profile's workflow.deskTimeout default (W20).</summary>
-    public static TimeSpan DeskFloor { get; } = TimeSpan.FromDays(2);
+    private static string M(TimeSpan span) => ((long)span.TotalMinutes).ToString(System.Globalization.CultureInfo.InvariantCulture) + "m";
 }

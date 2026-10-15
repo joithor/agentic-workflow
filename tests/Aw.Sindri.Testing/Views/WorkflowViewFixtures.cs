@@ -51,24 +51,9 @@ public static class WorkflowViewFixtures
         EngineOwnedBadge? owned, SubjectRef subject, IReadOnlyList<StateCell> cells, string now, params string[] actions)
     {
         var states = cells.Select(c => owned is not null && c.State == state && c.Badge is null ? c with { Badge = owned } : c).ToList();
-        return new(InstanceAddress.From(address), IdOf(address), ItemKey.From(address[..address.IndexOf('/', StringComparison.Ordinal)]), shape.Stamp, state,
+        return new(InstanceAddress.From(address), WorkflowInstanceId.Of(InstanceAddress.From(address)), ItemKey.From(address[..address.IndexOf('/', StringComparison.Ordinal)]), shape.Stamp, state,
             StateChip.For(owned, states.Exists(c => c.Desk && c.Glyph == StateGlyph.Active), states.Exists(c => c.Terminal && c.Glyph == StateGlyph.Done && c.State == state)),
             since, owned, subject, shape.InputRows(), states, now.Length > 80 ? now[..79] + "…" : now, null, Acts(actions));
-    }
-
-    /// <summary>
-    /// The engine's id of an address: the minting rule written out here (a UUIDv8 over the SHA-256 of the address), pinned by a
-    /// test vector (IdOf("T-50/step/1")), so the goldens carry the ids the engine mints. Swap it for the engine's own
-    /// factory when that lands on main; the vector test then proves the two agree.
-    /// </summary>
-    public static WorkflowInstanceId IdOf(string address)
-    {
-        Span<byte> digest = stackalloc byte[System.Security.Cryptography.SHA256.HashSizeInBytes];
-        _ = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(address), digest);
-        var bytes = digest[..16];
-        bytes[6] = (byte)((bytes[6] & 0x0F) | 0x80);
-        bytes[8] = (byte)((bytes[8] & 0x3F) | 0x80);
-        return WorkflowInstanceId.For(new Guid(bytes, bigEndian: true));
     }
 
     private static InstanceSummary DoneTriage(string address, string label, DateTimeOffset since) =>

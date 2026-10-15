@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Testing.Views;
@@ -76,25 +77,15 @@ public sealed partial class WorkflowEngineInvariantsTests
 
     private static List<string> ChildEntries(View view, RecipeShape shape, ChildGroup group, List<ChildRow> rows)
     {
-        var failures = new List<string>();
         var preview = WorkflowViewFixtures.FanOutPreviews.Contains(view.Address);
-        var prefix = M($"{view.Address}/{group.Recipe.Name}.");
-        for (var i = 0; i < rows.Count; i++)
-        {
-            var address = rows[i].Address.Value;
-            var expected = preview ? i + 1 : shape.State(view.State).Order!.Value;
-            if (!address.StartsWith(prefix, StringComparison.Ordinal) || !int.TryParse(address[prefix.Length..], NumberStyles.None, CultureInfo.InvariantCulture, out var entry))
-            {
-                failures.Add(M($"child address {address} is not '{prefix}<entry>'"));
-            }
-            else if (entry != expected && !(entry > expected && !preview && view.Cells.Any(c => c.Round is not null)))
-            {
-                failures.Add(M($"child address {address}: entry {entry}, the parent's entry of '{view.State}' is {expected}{(preview ? " (fan-out is sequential)" : string.Empty)}"));
-            }
-        }
-
-        return failures;
+        var parent = InstanceAddress.From(view.Address);
+        var looped = view.Cells.Any(c => c.Round is not null);
+        return [.. rows.Select((row, i) => (row.Address.Value, Expected: preview ? i + 1 : shape.State(view.State).Order!.Value))
+            .Where(r => r.Value != parent.Child(group.Recipe, r.Expected).Value && !(looped && !preview && Entry(r.Value) > r.Expected))
+            .Select(r => M($"child address {r.Value}: the engine addresses it {parent.Child(group.Recipe, r.Expected).Value} (the parent's entry of '{view.State}'{(preview ? ", fan-out is sequential" : string.Empty)})"))];
     }
+
+    private static int Entry(string address) => int.TryParse(address[(address.LastIndexOf('.') + 1)..], NumberStyles.None, CultureInfo.InvariantCulture, out var n) ? n : 0;
 
     private static List<string> ParentEntry(InstanceDetail detail, ParentRef parent)
     {
@@ -106,7 +97,7 @@ public sealed partial class WorkflowEngineInvariantsTests
             return [M($"no declaration of the parent recipe {parentId} with a child wait on {childId}")];
         }
 
-        var expected = M($"{parent.Address.Value}/{detail.Recipe.Id.Name}.{order}");
+        var expected = parent.Address.Child(detail.Recipe.Id, order).Value;
         return detail.Address.Value == expected ? [] : [M($"the child of a {parentId} is created in '{state}' (entry {order}): {expected}, not {detail.Address.Value}")];
     }
 

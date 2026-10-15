@@ -8,15 +8,16 @@ using Temporalio.Exceptions;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
-/// <summary>The dev server's frontend over the Temporal SDK: is the 'sindri' namespace there, and the search attributes it needs.</summary>
+/// <summary>The dev server's frontend over the Temporal SDK: is Sindri's namespace there, and the search attributes it needs.</summary>
 internal static class DevServerProbe
 {
-    /// <summary>Asks the frontend for the 'sindri' namespace, within <paramref name="timeout"/>.</summary>
+    /// <summary>Asks the frontend for <paramref name="namespace"/>, within <paramref name="timeout"/>.</summary>
     /// <param name="frontend">The loopback frontend.</param>
+    /// <param name="namespace">Sindri's namespace (the settings').</param>
     /// <param name="timeout">How long the probe may take.</param>
     /// <param name="cancellationToken">Cancels the probe.</param>
     /// <returns>The answer, and the reason when it isn't ready.</returns>
-    public static async Task<(DevServerAnswer Answer, string? Problem)> Ask(IPEndPoint frontend, TimeSpan timeout, CancellationToken cancellationToken)
+    public static async Task<(DevServerAnswer Answer, string? Problem)> Ask(IPEndPoint frontend, string @namespace, TimeSpan timeout, CancellationToken cancellationToken)
     {
         using var bounded = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         bounded.CancelAfter(timeout);
@@ -30,7 +31,7 @@ internal static class DevServerProbe
             // WaitAsync bounds the wait itself: the SDK's lazy connect ignores the RPC's cancellation, so against a server
             // that accepts TCP but never answers (SIGSTOPped, say) the call alone would hang.
             _ = await Connection(frontend).WorkflowService
-                .DescribeNamespaceAsync(new DescribeNamespaceRequest { Namespace = SindriTemporal.Namespace }, Options(timeout, bounded.Token))
+                .DescribeNamespaceAsync(new DescribeNamespaceRequest { Namespace = @namespace }, Options(timeout, bounded.Token))
                 .WaitAsync(bounded.Token).ConfigureAwait(false);
             return (DevServerAnswer.Ready, null);
         }
@@ -50,16 +51,17 @@ internal static class DevServerProbe
 
     /// <summary>Registers the search attributes the namespace doesn't have yet (idempotent: an existing one is left alone).</summary>
     /// <param name="frontend">The loopback frontend.</param>
+    /// <param name="namespace">Sindri's namespace (the settings').</param>
     /// <param name="cancellationToken">Cancels the calls.</param>
     /// <returns>A task that completes when they are registered.</returns>
-    public static async Task RegisterSearchAttributes(IPEndPoint frontend, CancellationToken cancellationToken)
+    public static async Task RegisterSearchAttributes(IPEndPoint frontend, string @namespace, CancellationToken cancellationToken)
     {
         var connection = Connection(frontend);
         var options = Options(TimeSpan.FromSeconds(10), cancellationToken);
         var listed = await connection.OperatorService
-            .ListSearchAttributesAsync(new ListSearchAttributesRequest { Namespace = SindriTemporal.Namespace }, options)
+            .ListSearchAttributesAsync(new ListSearchAttributesRequest { Namespace = @namespace }, options)
             .WaitAsync(TimeSpan.FromSeconds(10), cancellationToken).ConfigureAwait(false);
-        var add = new AddSearchAttributesRequest { Namespace = SindriTemporal.Namespace };
+        var add = new AddSearchAttributesRequest { Namespace = @namespace };
         foreach (var (name, type) in SindriTemporal.SearchAttributes.Where(a => !listed.CustomAttributes.ContainsKey(a.Name)))
         {
             add.SearchAttributes.Add(name, type);

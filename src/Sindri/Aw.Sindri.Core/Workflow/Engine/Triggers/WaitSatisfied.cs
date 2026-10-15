@@ -18,4 +18,10 @@ public sealed record WaitSatisfied(
 
     /// <inheritdoc/>
     public override string KeyPart => Source.KeyPart;
+
+    /// <summary>
+    /// When the delivered event happened (its ledger envelope's time; spec §5.4): one held longer than
+    /// 'workflow.eventHold' is dropped. Null for a trigger that isn't a delivered event, which never expires.
+    /// </summary>
+    public DateTimeOffset? OccurredAt { get; init; }
 }

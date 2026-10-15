@@ -6,8 +6,9 @@ using Aw.Sindri.Core.Workflow.Registry;
 namespace Aw.Sindri.Infrastructure.Workflow;
 
 /// <summary>
-/// The revoke and drift wake until P4 brings the signal sender (engine spec rev 8, Phase 2): no instance runs on
-/// Temporal yet, so it finds none and sends nothing.
+/// The revoke and drift wake, a stand-in until P6 brings TemporalRecipeWake (the Temporal signal sender; engine spec
+/// rev 8, Phase 2): it finds no running instance and sends nothing, so in P4 a revoke or a drift parks none. The
+/// approval check at each command, answer and 'complete' still refuses a revoked or drifted recipe.
 /// </summary>
 internal sealed class NoOpRecipeWake : IRecipeWake
 {

@@ -5,6 +5,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Registry;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,8 +16,9 @@ public static class SindriCoreServiceCollectionExtensions
 {
     /// <summary>
     /// Adds the Sindri domain services: the control plane's event scope and factory, the caller of the code running now,
-    /// the lease and human token this process holds, the projector's progress (status and rebuild control), the Temporal runtime serve keeps,
-    /// the registry's approve and revoke planners and its reader, and the registry's event appender.
+    /// the lease and human token this process holds, the Temporal runtime serve keeps, the projector's progress (status,
+    /// rebuild control and feed) and its projections, the registry's approve and revoke planners, its reader and its
+    /// event appender, and the approved recipes the engine reads over the registry.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
@@ -26,8 +28,8 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<EventFactory>()
             .AddSingleton<ICallerContextAccessor, AsyncLocalCallerContextAccessor>()
             .AddSingleton<HeldLease>()
-            .AddSingleton<HeldHumanToken>()
             .AddSingleton<TemporalRuntime>()
+            .AddSingleton<HeldHumanToken>()
             .AddSingleton<BlockCatalog>()
             .AddSingleton<ProjectorProgress>()
             .AddSingleton<IProjectorStatus>(static sp => sp.GetRequiredService<ProjectorProgress>())
@@ -38,5 +40,6 @@ public static class SindriCoreServiceCollectionExtensions
             .AddScoped<RecipeApprovalPlanner>()
             .AddScoped<RecipeRevokePlanner>()
             .AddScoped<RecipeRegistryReader>()
-            .AddSingleton<RecipeEvents>();
+            .AddSingleton<RecipeEvents>()
+            .AddSingleton<IApprovedRecipes, RegistryApprovedRecipes>();
 }
