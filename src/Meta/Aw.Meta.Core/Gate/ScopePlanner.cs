@@ -9,5 +9,21 @@ public static class ScopePlanner
     /// <param name="changedPaths">Repository-relative paths the pull request changes.</param>
     /// <param name="gate">The gate configuration.</param>
     /// <returns>Scope names: the always scopes first, then every matching scope in configured order.</returns>
-    public static IReadOnlyList<string> Plan(IReadOnlyList<string> changedPaths, GateConfig gate) => throw new NotSupportedException("ScopePlanner: make ScopePlannerTests pass");
+    public static IReadOnlyList<string> Plan(IReadOnlyList<string> changedPaths, GateConfig gate)
+    {
+        ArgumentNullException.ThrowIfNull(changedPaths);
+        ArgumentNullException.ThrowIfNull(gate);
+        var planned = gate.Always.Where(gate.Scopes.ContainsKey).ToList();
+        var docsOnly = changedPaths.Count > 0 && changedPaths.All(path => gate.DocsOnly.Any(glob => GlobMatcher.IsMatch(glob, path)));
+        if (docsOnly)
+        {
+            return planned;
+        }
+
+        planned.AddRange(gate.Scopes
+            .Where(scope => !planned.Contains(scope.Key, StringComparer.Ordinal)
+                && changedPaths.Any(path => scope.Value.Paths.Any(glob => GlobMatcher.IsMatch(glob, path))))
+            .Select(scope => scope.Key));
+        return planned;
+    }
 }

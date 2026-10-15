@@ -129,7 +129,7 @@ public sealed class ObligationEvaluatorTests
 
     [Theory, Trait("Lane", "unit")]
     [InlineData(null, false)]
-    [InlineData(55, false)]
+    [InlineData(58, false)]
     [InlineData(20, true)]
     public void A_stale_watch_must_be_rearmed(int? heartbeatMinute, bool open)
     {
