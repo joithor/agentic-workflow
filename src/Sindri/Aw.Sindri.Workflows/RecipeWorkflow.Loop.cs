@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Events;
@@ -49,7 +50,7 @@ internal sealed partial class RecipeWorkflow
     private async Task<WorkflowInstance> Wait(WorkflowInstance instance, Interpreting context)
     {
         var wait = instance.Suspension is null && context.Recipe.States.TryGetValue(instance.Frame.State, out var state) ? state.WaitFor : null;
-        if (!await WaitHolding(() => _submitted.Count > 0 || _delivered.Any(e => Fits(e, wait, instance.Frame)), instance).ConfigureAwait(true))
+        if (!await WaitHolding(() => _submitted.Count > 0 || _delivered.Any(e => Fits(e, wait, instance.Frame)), instance, wait).ConfigureAwait(true))
         {
             return instance;   // woke only to expire a held event (§5.4); wait again
         }
@@ -79,6 +80,29 @@ internal sealed partial class RecipeWorkflow
         }
 
         return after;
+    }
+
+    /// <summary>
+    /// The instance ended: every Update still queued for the loop (validated in the same activation as the trigger that ended
+    /// it) is decided against the ended instance, which refuses it, and a report still pending is refused too, so no handler
+    /// waits forever and 'AllHandlersFinished' returns (review run 1, P4 interpreter).
+    /// </summary>
+    private void Close(WorkflowInstance ended, Interpreting context)
+    {
+        while (_submitted.TryDequeue(out var queued))
+        {
+            var decision = TransitionDecision.Decide(new DecisionInput(ended, context.Recipe, queued.Trigger, GateAnswers.None, context.Decisions));
+            _decided[queued.Ticket] = decision as Rejected
+                ?? new Rejected(queued.Trigger.KeyFor(ended.Id), WorkflowErrors.TriggerNotAllowed.With($"{ended.Address.Value} has ended (fix: run status)"));
+        }
+
+        if (_reportId is not null)
+        {
+            Settle(_reportId, new Reported(Result: null, WorkflowErrors.TriggerNotAllowed.With($"{ended.Address.Value} has ended (fix: run status)")));
+        }
+
+        _report = null;
+        _reportId = null;
     }
 
     /// <summary>The first delivered event that fits the wait, taken out of the buffer; the others stay, in order.</summary>
@@ -133,7 +157,8 @@ internal sealed partial class RecipeWorkflow
             WaitSatisfied satisfied => satisfied.Outcome?.Value,
             _ => null,
         },
-        before.Frame.Run?.Token.Value);
+        before.Frame.Run?.Token.Value,
+        trigger.Actor);
 
     private static string TypeOf(WorkflowEventType type) => type switch
     {

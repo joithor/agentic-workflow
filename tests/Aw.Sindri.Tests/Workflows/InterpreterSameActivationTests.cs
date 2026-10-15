@@ -35,7 +35,11 @@ public sealed class InterpreterSameActivationTests(SindriTimeSkippingServer serv
         var handle = await StartOnDesk(sindri, "T-53", ct);
         var desk = new DeskInstance(sindri, handle);
         var report = Report("1.1", "done");
-        await env.DelayAsync(TimeSpan.FromDays(3), ct);   // the 2d desk deadline passes while no worker runs
+        using var skipping = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var ended = handle.GetResultAsync(rpcOptions: new RpcOptions { CancellationToken = skipping.Token });   // waiting on the result lets the time-skipping server skip to the 2d desk deadline while no worker runs
+        await TimerFired(handle, ct);
+        await skipping.CancelAsync();   // and no further: the next run's own timeout must not skip
+        _ = await Assert.ThrowsAnyAsync<Exception>(() => ended.WaitAsync(TimeSpan.FromSeconds(30), ct));
         var update = handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(new string('a', 32)));   // waits for a worker
         await Task.Delay(TimeSpan.FromSeconds(1), ct);   // the server has it queued (an Update can't be started 'admitted')
 
@@ -81,7 +85,9 @@ public sealed class InterpreterSameActivationTests(SindriTimeSkippingServer serv
     private async Task<WorkflowHandle<RecipeWorkflow, RecipeResult>> StartOnDesk(IServiceProvider sindri, string item, CancellationToken ct)
     {
         var env = server.Environment;
-        using var first = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
+        var options = sindri.GetRequiredService<TemporalWorkerOptions>();
+        options.MaxCachedWorkflows = 0;   // the time-skipping server never moves a task off a dead sticky queue (TemporalProbes)
+        using var first = new TemporalWorker(env.Client, options);
         WorkflowHandle<RecipeWorkflow, RecipeResult>? started = null;
         await first.ExecuteAsync(async () =>
         {
@@ -101,6 +107,17 @@ public sealed class InterpreterSameActivationTests(SindriTimeSkippingServer serv
         }
 
         await Task.Delay(TimeSpan.FromMilliseconds(500), ct);   // the workflow task that follows it
+    }
+
+    /// <summary>Waits until the desk deadline's timer has fired in the history: the next worker's first activation carries it.</summary>
+    private static async Task TimerFired(WorkflowHandle handle, CancellationToken ct)
+    {
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        limit.CancelAfter(TimeSpan.FromSeconds(30));
+        while (!(await handle.FetchHistoryAsync()).Events.Any(static e => e.EventType == Temporalio.Api.Enums.V1.EventType.TimerFired))
+        {
+            await Task.Delay(100, limit.Token);
+        }
     }
 
     private static StepCompleted Report(string run, string outcome)

@@ -4952,3 +4952,5 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.NonceClaim
 Aw.Sindri.Core.Workflow.Engine.Runtime.NonceClaim.Applied = 2 -> Aw.Sindri.Core.Workflow.Engine.Runtime.NonceClaim
 Aw.Sindri.Core.Workflow.Engine.Runtime.NonceClaim.Fresh = 0 -> Aw.Sindri.Core.Workflow.Engine.Runtime.NonceClaim
 Aw.Sindri.Core.Workflow.Engine.Runtime.NonceClaim.Pending = 1 -> Aw.Sindri.Core.Workflow.Engine.Runtime.NonceClaim
+Aw.Sindri.Core.Events.EventFactory.Entry<TPayload>(string! type, TPayload payload, string! key, string? item, Aw.Sindri.Core.Events.EventScope! on) -> Aw.Sindri.Core.Ledger.LedgerEntry!
+Aw.Sindri.Core.Events.EventFactory.Scope.get -> Aw.Sindri.Core.Events.EventScope!

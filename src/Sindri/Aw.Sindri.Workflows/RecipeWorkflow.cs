@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -73,6 +71,7 @@ internal sealed partial class RecipeWorkflow
                 : await Wait(instance, context).ConfigureAwait(true);
         }
 
+        Close(instance, context);
         await Workflow.WaitConditionAsync(static () => Workflow.AllHandlersFinished).ConfigureAwait(true);   // the Update that ended it returns its result
         return new RecipeResult(instance.State, instance.Outcome?.Value);
     }
@@ -142,8 +141,8 @@ internal sealed partial class RecipeWorkflow
     /// A registered ledger event the bridge routed here (spec §5.4). Temporal buffers it until the instance reaches the
     /// wait; unit (a) consumes <see cref="_delivered"/> at a wait. Unit (d): the event's ledger sequence is its idempotency
     /// key, so a re-sent event (a bridge that crashed before it moved its cursor) is dropped; so is a kind no wait of the
-    /// recipe waits for (the bridge signals every live instance of the item). Dropping one older than 'eventHold' is open
-    /// (S1-D11's key, unit (e)).
+    /// recipe waits for (the bridge signals every live instance of the item). Dropping a buffered one older than 'eventHold' is
+    /// that of RecipeWorkflow.Hold.cs (S1-D11's key, unit (e)).
     /// </summary>
     /// <param name="delivered">The event as the wait's trigger.</param>
     /// <returns>Done.</returns>
@@ -171,7 +170,8 @@ internal sealed partial class RecipeWorkflow
     /// </summary>
     private async Task Mirror(WorkflowEventRecord record, bool needsYou)
     {
-        _ = await Workflow.ExecuteLocalActivityAsync((RecordEventActivities a) => a.RecordAsync(record), RecordEventActivities.LocalOptions).ConfigureAwait(true);
+        var stamped = record with { Tenant = _start!.Tenant, Ring = _start.Ring };   // why: Mirror runs only after RunAsync set _start; the row is the instance's, not the worker's
+        _ = await Workflow.ExecuteLocalActivityAsync((RecordEventActivities a) => a.RecordAsync(stamped), RecordEventActivities.LocalOptions).ConfigureAwait(true);
         _mirrored++;   // the instance's version, 'v<n>' in status: Temporal keeps no row version (unit (e))
         Upsert(record.To, needsYou);
     }
@@ -212,7 +212,7 @@ internal sealed partial class RecipeWorkflow
     private static StartRequest StartOf(InstanceStart start, LoadedRecipe loaded)
     {
         var address = start.WorkflowId();
-        var id = WorkflowInstanceId.For(new Guid(SHA256.HashData(Encoding.UTF8.GetBytes(address.Value)).AsSpan(0, 16)));
+        var id = WorkflowInstanceId.Of(address);
         return new StartRequest(
             TriggerKey.For(id, "start"),
             id,

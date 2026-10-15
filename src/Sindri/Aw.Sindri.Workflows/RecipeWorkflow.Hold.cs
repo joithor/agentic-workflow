@@ -1,6 +1,7 @@
 using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Aw.Sindri.Core.Workflow.Recipes;
 using Temporalio.Workflows;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
@@ -21,27 +22,31 @@ internal sealed partial class RecipeWorkflow
     /// expire or to re-arm for a newly held event (the caller waits again); a held event already past the hold never makes
     /// it ready.
     /// </summary>
-    private async Task<bool> WaitHolding(Func<bool> ready, WorkflowInstance instance)
+    private async Task<bool> WaitHolding(Func<bool> ready, WorkflowInstance instance, WaitFor? wait)
     {
-        await ExpireHeld(instance).ConfigureAwait(true);
+        await ExpireHeld(instance, wait).ConfigureAwait(true);
         var seen = _arrivals;
         bool Woken() => ready() || _arrivals != seen;   // a new held event may run out before the ones already held
         var woke = NextExpiry() is { } left
             ? await Workflow.WaitConditionAsync(Woken, left).ConfigureAwait(true)
             : await Workflow.WaitConditionAsync(Woken, Timeout.InfiniteTimeSpan).ConfigureAwait(true);
-        await ExpireHeld(instance).ConfigureAwait(true);   // what ran out, and one that arrived already past the hold
+        await ExpireHeld(instance, wait).ConfigureAwait(true);   // what ran out, and one that arrived already past the hold
         return woke && ready();
     }
 
-    /// <summary>Drops every held event older than the hold, each with one 'workflow.expired' row; the others stay, in order.</summary>
-    private async Task ExpireHeld(WorkflowInstance instance)
+    /// <summary>
+    /// Drops every held event older than the hold that doesn't fit <paramref name="wait"/>, each with one 'workflow.expired' row;
+    /// the others stay, in order. An event that fits the wait satisfies it, however late the bridge delivered it (§5.4: only a
+    /// signal buffered before its wait expires).
+    /// </summary>
+    private async Task ExpireHeld(WorkflowInstance instance, WaitFor? wait)
     {
         var now = Now;
         List<WaitSatisfied> expired = [];
         for (var left = _delivered.Count; left > 0; left--)
         {
             var held = _delivered.Dequeue();
-            if (held.OccurredAt is { } at && now - at >= _eventHold)
+            if (held.OccurredAt is { } at && now - at >= _eventHold && !Fits(held, wait, instance.Frame))
             {
                 expired.Add(held);
             }
@@ -55,7 +60,7 @@ internal sealed partial class RecipeWorkflow
         {
             var record = new WorkflowEventRecord(
                 _start!.WorkflowId().Value, // why: the loop runs only after RunAsync set _start
-                TypeOf(WorkflowEventType.Expired), _start.Item.Value, instance.State, instance.State, held.Name, held.Outcome?.Value, instance.Frame.Run?.Token.Value);
+                TypeOf(WorkflowEventType.Expired), _start.Item.Value, instance.State, instance.State, held.Name, held.Outcome?.Value, instance.Frame.Run?.Token.Value, Timers);
             await Mirror(record, NeedsYou(instance)).ConfigureAwait(true);
         }
     }
