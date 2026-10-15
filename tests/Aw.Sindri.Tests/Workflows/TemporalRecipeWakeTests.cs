@@ -66,10 +66,16 @@ public sealed class TemporalRecipeWakeTests : IDisposable
             Assert.Contains(a.Id, failed.Error.Message, StringComparison.Ordinal);
             Assert.Contains(b.Id, failed.Error.Message, StringComparison.Ordinal);
             Assert.Equal(2, failing.Tried);
-            await AssertApprovalFixIsRetry(failing, drifted);
+            await AssertFixes(failing, drifted);
 
             await Task.WhenAll(a.TerminateAsync("test over"), b.TerminateAsync("test over"));
         }, Token);
+    }
+
+    private static async Task AssertFixes(TemporalRecipeWake failing, RecipeWakeNotice drifted)
+    {
+        await AssertApprovalFixIsRetry(failing, drifted);
+        await AssertRevokeFixIsHonest(failing, drifted);
     }
 
     /// <summary>The error's fix works: an approval that missed an instance is retried by approving again, which sends the wake again.</summary>
@@ -78,6 +84,15 @@ public sealed class TemporalRecipeWakeTests : IDisposable
         var missed = await failing.Wake(drifted with { Kind = RecipeWakeKind.Approved, Sequence = 8 }, Token);
         Assert.Contains("sindri recipe approve", missed.Error.Message, StringComparison.Ordinal);
         Assert.Contains("again", missed.Error.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>A revoke can't be rerun (the planner refuses a revoked hash first), so its fix says what happens instead: the recording stands and the instance parks at its next step.</summary>
+    private static async Task AssertRevokeFixIsHonest(TemporalRecipeWake failing, RecipeWakeNotice drifted)
+    {
+        var missed = await failing.Wake(drifted with { Kind = RecipeWakeKind.Revoked, Sequence = 9 }, Token);
+        Assert.Contains("SND-RECIPE-005", missed.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("revocation is recorded", missed.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("revoke again", missed.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact]

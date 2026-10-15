@@ -51,7 +51,7 @@ public sealed class RecipeWakeTests
     {
         var missed = Claimed();
         _ = Assert.IsType<Absorbed>(Decide(missed, Item, Wake(RecipeWakeKind.Approved, sequence: 7), rules: EngineRules.Default));   // why: absorbed before the drift park exists
-        var drifted = DriftParked();
+        var drifted = Parked(Decide(missed, Item, new OutboxRefused(Dispatcher, _claimRef, "SND-RECIPE-006", Sequence: 91), rules: EngineRules.Default));   // why: the same instance the first wake missed
 
         var again = Assert.IsType<Applied>(Decide(drifted, Item, Wake(RecipeWakeKind.Approved, sequence: 7), rules: EngineRules.Default));
 
