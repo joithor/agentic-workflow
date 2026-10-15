@@ -24,6 +24,9 @@ internal sealed class ShellText
     /// <summary><see cref="Labels.CloseSheet"/>.</summary>
     public string CloseSheet { get; } = Labels.CloseSheet;
 
+    /// <summary><see cref="Labels.CloseSheetName"/>.</summary>
+    public string CloseSheetName { get; } = Labels.CloseSheetName;
+
     /// <summary><see cref="Labels.Connecting"/>.</summary>
     public string Connecting { get; } = Labels.Connecting;
 

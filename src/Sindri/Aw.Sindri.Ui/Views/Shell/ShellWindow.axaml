@@ -236,7 +236,7 @@
                            Text="{Binding SheetSubject}" AutomationProperties.Name="{Binding SheetSubject}"
                            VerticalAlignment="Center" />
                 <Button x:Name="SheetClose" Grid.Column="2" Click="OnCloseSheet" Margin="12,0,0,0"
-                        AutomationProperties.Name="{Binding Text.CloseSheet}">
+                        AutomationProperties.Name="{Binding Text.CloseSheetName}">
                   <StackPanel Orientation="Horizontal" Spacing="6">
                     <icons:StateIcon Icon="Close" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding Text.CloseSheet}" VerticalAlignment="Center" />
