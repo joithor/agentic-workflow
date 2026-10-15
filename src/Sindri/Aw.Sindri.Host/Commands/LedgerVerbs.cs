@@ -9,7 +9,7 @@ namespace Aw.Sindri.Host.Commands;
 /// <summary>
 /// 'sindri ledger [--after N] [--item X] [--type T] [--max N] [--json] [--no-start]' (API P5 unit F): a client of GET /sindri/ledger.
 /// A human verb: it starts the control plane unless --no-start, and inside an agent session it never does (API spec §7). The text form is one
-/// line per event, then 'next: N' while the ledger has more; --json is the raw body.
+/// line per event, then 'next: N' when the answer names one (after a full page, or short of the head); --json is the raw body.
 /// </summary>
 /// <param name="client">The API client.</param>
 /// <param name="output">Where the verb writes.</param>
