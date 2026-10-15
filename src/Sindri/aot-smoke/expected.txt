@@ -74,6 +74,36 @@ views rebuild requested (sequence SEQ)
   api       127.0.0.1:PORT
   lease     held by pid PID, epoch 1
   ready     running
+## sindri item add Smoke item (human, terminal)
+ITM-ID created (sequence SEQ)
+## sindri queue
+waitingOnYou
+  Nothing is waiting on you.
+withYou
+  Nothing is with you.
+running
+  Nothing running.
+queued
+  ITM-ID  Smoke item  new  since TIME
+## sindri items --state new
+ITM-ID  Smoke item  new  since TIME
+## sindri item add Refused by the desk (session)
+SND-AUTH-002 CreateItem is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri item add <title> [--repo <repo>] (this CLI ran as a session: CLAUDECODE is set)
+exit 2
+## sindri item close ITM-ID (human, terminal)
+ITM-ID closed: done (sequence SEQ)
+## sindri items --state done
+ITM-ID  Smoke item  done  since TIME
+## sindri queue
+Nothing in the queue. Add one with `sindri item add`.
+waitingOnYou
+  Nothing is waiting on you.
+withYou
+  Nothing is with you.
+running
+  Nothing running.
+queued
+  Nothing queued.
 ## sindri stop (session)
 SND-AUTH-002 StopProcess is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri stop (this CLI ran as a session: CLAUDECODE is set)
 exit 2
