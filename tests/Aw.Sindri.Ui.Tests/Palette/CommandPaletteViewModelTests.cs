@@ -234,6 +234,38 @@ public sealed class CommandPaletteViewModelTests
         await run;
     }
 
+    // H6 (a11y-1): the "n of m" counts every entry that runs, the sending one too; it is skipped only as a stop. So moving
+    // off it says the next position of the same total, not a position of one fewer.
+    [Theory]
+    [InlineData(1)]
+    [InlineData(-1)]
+    public async Task Moving_off_a_sending_selection_keeps_the_positions_of_the_same_total(int by)
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        _palette.Open();
+        for (var i = 0; i < 200 && _palette.Selected?.Id != "RebuildViews"; i++)
+        {
+            _palette.Move(1);
+        }
+
+        var (position, total) = PositionOf(_palette.Announcement);
+        var run = _palette.Run(_palette.Selected, Token);
+        _clock.Advance(ControlViewModel.SendingAfter);
+
+        _palette.Move(by);
+
+        Assert.Equal((position + by, total), PositionOf(_palette.Announcement));
+        _server.RebuildGate.SetResult();
+        await run;
+    }
+
+    // The "n of m" at the end of an announcement.
+    private static (int Position, int Total) PositionOf(string announcement)
+    {
+        var tail = announcement[(announcement.LastIndexOf(", ", StringComparison.Ordinal) + 2)..].Split(" of ");
+        return (int.Parse(tail[0], System.Globalization.CultureInfo.InvariantCulture), int.Parse(tail[1], System.Globalization.CultureInfo.InvariantCulture));
+    }
+
     // The nearest entry that runs above (-1) or below (+1) an entry in the list.
     private PaletteEntry Neighbour(PaletteEntry from, int by)
     {
