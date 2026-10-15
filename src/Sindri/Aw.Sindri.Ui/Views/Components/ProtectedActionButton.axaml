@@ -16,7 +16,7 @@
        is never a dead end). The popover shows and copies; nothing here sends a command. -->
   <StackPanel>
     <Button x:Name="LockButton" Content="{Binding Label}" ToolTip.Tip="{Binding Title}"
-            AutomationProperties.Name="{Binding ButtonName}">
+            AutomationProperties.Name="{Binding ButtonName}" AutomationProperties.HelpText="{Binding Title}">
       <Button.Flyout>
         <Flyout Placement="BottomEdgeAlignedLeft" ShowMode="Standard">
           <StackPanel Name="PopoverRoot" x:DataType="att:ProtectedActionViewModel" Spacing="8" MinWidth="280">

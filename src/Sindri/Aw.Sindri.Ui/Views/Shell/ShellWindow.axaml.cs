@@ -224,7 +224,11 @@ internal sealed partial class ShellWindow : Window
                 break;
             case nameof(ShellViewModel.CurrentPage):
                 // A page switch (a G-chord) hides the page the focused control was on: focus goes to the page region, which is named, so the new page is spoken.
-                Dispatcher.UIThread.Post(KeepFocus, DispatcherPriority.Loaded);
+                if (!_openingSettings)
+                {
+                    Dispatcher.UIThread.Post(KeepFocus, DispatcherPriority.Loaded);
+                }
+
                 break;
             case nameof(ShellViewModel.IsSheetShown):
                 CoverPage();

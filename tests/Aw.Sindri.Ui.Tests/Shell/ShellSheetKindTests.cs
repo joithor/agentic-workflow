@@ -79,6 +79,7 @@ public sealed class ShellSheetKindTests
             shell.OpenSheet(new DeepLink(kind, kind == DeepLinkKind.HomeNeedsYou ? null : "X"));
 
             Assert.True(shell.IsSheetPlaceholderShown, kind.ToString());
+            Assert.EndsWith(kind == DeepLinkKind.HomeNeedsYou ? string.Empty : "X", shell.SheetName, StringComparison.Ordinal);
         }
     }
 
@@ -92,6 +93,8 @@ public sealed class ShellSheetKindTests
         shell.OpenSheet(Link("item/X"));
 
         Assert.Contains(seen, name => string.Equals(name, nameof(ShellViewModel.IsSheetPlaceholderShown), StringComparison.Ordinal));
+        Assert.Contains(seen, name => string.Equals(name, nameof(ShellViewModel.SheetName), StringComparison.Ordinal));
+        Assert.Contains(seen, name => string.Equals(name, nameof(ShellViewModel.EdgeTabName), StringComparison.Ordinal));
     }
 
     [Fact]
@@ -132,5 +135,7 @@ public sealed class ShellSheetKindTests
 
         Assert.Contains("x:Name=\"Sheet\" Classes=\"sheet focus-region\" IsVisible=\"{Binding IsSheetShown}\" Focusable=\"True\"\n                AutomationProperties.Name=\"{Binding SheetName}\"", xaml.ReplaceLineEndings("\n"), StringComparison.Ordinal);
         Assert.Contains("Text=\"{Binding SheetSubject}\" AutomationProperties.Name=\"{Binding SheetName}\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"EdgeTab\"", xaml, StringComparison.Ordinal);
+        Assert.Matches(@"x:Name=""EdgeTab""[^>]*AutomationProperties\.Name=""\{Binding EdgeTabName\}""", xaml.ReplaceLineEndings(" "));
     }
 }

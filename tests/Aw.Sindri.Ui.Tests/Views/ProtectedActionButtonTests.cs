@@ -50,17 +50,18 @@ public sealed class ProtectedActionButtonTests
     [Fact]
     public async Task The_button_reads_the_lock_label_has_the_title_and_a_name_with_the_subject()
     {
-        var (label, tip, name) = await OnUi(() =>
+        var (label, tip, name, help) = await OnUi(() =>
         {
             var (window, _, button, _) = Show();
-            var result = (button.Content?.ToString(), ToolTip.GetTip(button)?.ToString(), AutomationProperties.GetName(button));
+            var result = (button.Content?.ToString(), ToolTip.GetTip(button)?.ToString(), AutomationProperties.GetName(button), AutomationProperties.GetHelpText(button));
             window.Close();
             return result;
         });
 
         Assert.Equal("⌂ Accept · terminal", label);
         Assert.Equal("Needs a typed confirmation at a terminal", tip);
-        Assert.Equal($"Accept {Subject}: needs a typed confirmation at a terminal", name);
+        Assert.Equal($"Accept {Subject}", name);
+        Assert.Equal("Needs a typed confirmation at a terminal", help);
     }
 
     [Fact]

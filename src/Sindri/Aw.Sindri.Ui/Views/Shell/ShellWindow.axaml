@@ -249,7 +249,7 @@
               <Panel x:Name="SheetContent">
                 <TextBlock x:Name="SheetBody" Classes="body muted" Text="{Binding Text.NotServedYet}" IsVisible="{Binding IsSheetPlaceholderShown}"
                            AutomationProperties.Name="{Binding Text.NotServedYet}" />
-                <!-- LANE ANCHOR U3': the sheet content for the kinds U3' claims (kinds: NeedsYou, Decision); U2's item sheet (#197) is its own, written above both markers by whichever of #197 and #215 merges second. Insert immediately above this marker, never between the markers. -->
+                <!-- LANE ANCHOR U3': the sheet content for the kinds U3' claims (kinds: NeedsYou, Decision); U2's item sheet (PR 197) is its own, written above both markers by whichever of PR 197 and PR 215 merges second. Insert immediately above this marker, never between the markers. -->
                 <!-- LANE ANCHOR U8: the sheet content for the kinds U8 claims (kinds: Workflow); the item sheet's re-base is content only. Recipe, Node, Session, System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers. -->
               </Panel>
             </StackPanel>

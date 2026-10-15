@@ -20,11 +20,11 @@ internal static partial class Labels
     /// <returns>The label.</returns>
     internal static string ProtectedLabel(string verb) => $"⌂ {verb} · terminal";
 
-    /// <summary>The lock button's accessible name, which says what it acts on.</summary>
+    /// <summary>The lock button's accessible name: the verb and what it acts on. Why it is locked is its help text (<see cref="ProtectedTitle"/>).</summary>
     /// <param name="verb">The verb.</param>
     /// <param name="subject">What it acts on.</param>
     /// <returns>The name.</returns>
-    internal static string ProtectedName(string verb, string subject) => $"{verb} {subject}: needs a typed confirmation at a terminal";
+    internal static string ProtectedName(string verb, string subject) => $"{verb} {subject}";
 
     /// <summary>Open in an agent's accessible name, which carries the subject and what it waits for.</summary>
     /// <param name="subject">What it acts on.</param>

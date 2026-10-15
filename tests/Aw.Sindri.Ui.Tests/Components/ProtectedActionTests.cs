@@ -66,7 +66,7 @@ public sealed class ProtectedActionTests
     {
         var vm = Make();
 
-        Assert.Equal($"Accept {Subject}: needs a typed confirmation at a terminal", vm.ButtonName);
+        Assert.Equal($"Accept {Subject}", vm.ButtonName);
         Assert.Equal($"Copy: {Cli}", vm.CopyName);
         Assert.Equal($"Open in an agent: {Subject}, available with API P10a", vm.OpenInAgentName);
     }

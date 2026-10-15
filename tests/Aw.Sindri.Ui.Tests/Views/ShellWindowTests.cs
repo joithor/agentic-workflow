@@ -1751,12 +1751,15 @@ public sealed class ShellWindowTests : IDisposable
         _records.Write(A.Record());
         var (window, shell) = await Show(s => s.State == ShellState.Normal);
         var command = OperatingSystem.IsMacOS() ? RawInputModifiers.Meta : RawInputModifiers.Control;
+        var focusEvents = 0;
+        window.GotFocus += (_, _) => focusEvents++;
 
         window.KeyPress(Key.OemComma, command, PhysicalKey.Comma, keySymbol: ",");
         Settle(window);
 
         Assert.Equal(PageId.Settings, shell.CurrentPage);
         Assert.True(Visible(window, "SettingsSlot"));
+        Assert.InRange(focusEvents, 0, 1);   // a11y-5: the chord moves focus once, into Settings
     });
 
     [Fact]
