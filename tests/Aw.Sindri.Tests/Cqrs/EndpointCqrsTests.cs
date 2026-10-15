@@ -1,3 +1,4 @@
+using Aw.Sindri.Tests.Server;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
@@ -84,7 +85,7 @@ public sealed class EndpointCqrsTests : IDisposable
 
     private WebApplication Host()
     {
-        var app = LoopbackBinding.Build([], n => n == "AW_SINDRI_HOME" ? _home.Path : null, TimeProvider.System);
+        var app = LoopbackBinding.Build([], n => n == "AW_SINDRI_HOME" ? _home.Path : null, TimeProvider.System, NoTemporal.Use);
         _ = Pipeline.Configure(app);
         return app;
     }

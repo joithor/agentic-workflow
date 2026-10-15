@@ -1,3 +1,4 @@
+using Aw.Sindri.Tests.Server;
 using System.Text;
 using Aw.Kernel;
 using Aw.Kernel.Json;
@@ -164,7 +165,7 @@ public sealed class RecipeApproveCliTests : IDisposable
     {
         _ = Directory.CreateDirectory(Path.Combine(_home.Path, "profile"));
         await File.WriteAllTextAsync(Path.Combine(_home.Path, "profile", "profile.yaml"), "schemaVersion: 1\nuser: thor\n", ct);
-        var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System);
+        var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System, NoTemporal.Use);
         _ = Pipeline.Configure(app);
         Core.Lease.LeaseGrant grant;
         await using (var scope = app.Services.CreateAsyncScope())

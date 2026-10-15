@@ -17,36 +17,32 @@ public sealed class ServerGuardTests
     /// The server is found by its unique database file, never by a global count: other lanes run servers too.
     /// </summary>
     [Fact(Timeout = 60_000)]
-    public async Task A_server_started_by_a_host_that_is_SIGKILLed_dies_within_ten_seconds()
+    public Task A_server_started_by_a_host_that_is_SIGKILLed_dies_within_ten_seconds() => ServerOutlivingItsHost(kill: true, TestContext.Current.CancellationToken);
+
+    /// <summary>The same for a host that ends normally without stopping the server (a test that forgot, or a Dispose that failed).</summary>
+    /// <returns>The test.</returns>
+    [Fact(Timeout = 60_000)]
+    public Task A_server_left_running_by_a_host_that_exits_normally_dies_within_ten_seconds() => ServerOutlivingItsHost(kill: false, TestContext.Current.CancellationToken);
+
+    private static async Task ServerOutlivingItsHost(bool kill, CancellationToken ct)
     {
-        var ct = TestContext.Current.CancellationToken;
         using var temp = new TempHome();
         var database = Path.Combine(temp.Path, "guard-test.db");
 
-        // the host reads the server path from stdin, so the guard can name the host's own pid as the owner
-        using var host = Process.Start(new ProcessStartInfo("/bin/sh", ["-c",
-            "read -r server; \"$server\" server start-dev --headless --db-filename \"$0\" --port \"$1\" --log-level error </dev/null >/dev/null 2>&1 & echo $!; wait",
-            database, FreePort()])
-        { UseShellExecute = false, RedirectStandardInput = true, RedirectStandardOutput = true })!;   // why: Start returns a process for a shell that exists
-        int server;
+        var (host, server) = await StartHost(database, kill, ct);
+        using var _ = host;
         try
         {
-            await host.StandardInput.WriteLineAsync(ServerGuard.Wrap(PinnedTemporal.Path(), host.Id).AsMemory(), ct);
-            host.StandardInput.Close();
-            server = int.Parse((await host.StandardOutput.ReadLineAsync(ct))!, CultureInfo.InvariantCulture);
-            await WaitFor(() => File.Exists(database), TimeSpan.FromSeconds(20), "the server never created its database", ct);
-            Assert.True(Alive(server), "the server did not start");
-        }
-        catch
-        {
-            host.Kill();
-            throw;
-        }
+            if (kill)
+            {
+                host.Kill();   // SIGKILL on Unix: no Dispose, no finalizer, no shutdown hook runs in the host
+            }
+            else
+            {
+                await host.WaitForExitAsync(ct);   // ends normally with the server still running
+            }
 
-        try
-        {
-            host.Kill();   // SIGKILL on Unix: no Dispose, no finalizer, no shutdown hook runs in the host
-            await WaitFor(() => !Alive(server), TimeSpan.FromSeconds(10), string.Create(CultureInfo.InvariantCulture, $"server {server} outlived its SIGKILLed host"), ct);
+            await WaitFor(() => !Alive(server), TimeSpan.FromSeconds(10), string.Create(CultureInfo.InvariantCulture, $"server {server} outlived its host"), ct);
         }
         finally
         {
@@ -78,6 +74,31 @@ public sealed class ServerGuardTests
             }
 
             await Task.Delay(100, ct);
+        }
+    }
+
+    /// <summary>Starts a shell as the stand-in host; it starts a guarded dev server as its child and prints the server's pid.</summary>
+    private static async Task<(Process Host, int Server)> StartHost(string database, bool wait, CancellationToken ct)
+    {
+        // the host reads the server path from stdin, so the guard can name the host's own pid as the owner
+        var host = Process.Start(new ProcessStartInfo("/bin/sh", ["-c",
+            "read -r server; \"$server\" server start-dev --headless --db-filename \"$0\" --port \"$1\" --log-level error </dev/null >/dev/null 2>&1 & echo $!; if [ \"$2\" = wait ]; then wait; else sleep 4; fi",
+            database, FreePort(), wait ? "wait" : "exit"])
+        { UseShellExecute = false, RedirectStandardInput = true, RedirectStandardOutput = true })!;   // why: Start returns a process for a shell that exists
+        try
+        {
+            await host.StandardInput.WriteLineAsync(ServerGuard.Wrap(PinnedTemporal.Unwrapped(), host.Id).AsMemory(), ct);
+            host.StandardInput.Close();
+            var server = int.Parse((await host.StandardOutput.ReadLineAsync(ct))!, CultureInfo.InvariantCulture);
+            await WaitFor(() => File.Exists(database), TimeSpan.FromSeconds(20), "the server never created its database", ct);
+            Assert.True(Alive(server), "the server did not start");
+            return (host, server);
+        }
+        catch
+        {
+            host.Kill();
+            host.Dispose();
+            throw;
         }
     }
 

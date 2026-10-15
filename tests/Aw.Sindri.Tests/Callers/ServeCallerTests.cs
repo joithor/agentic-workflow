@@ -5,6 +5,7 @@ using Aw.Sindri.Infrastructure;
 using Aw.Sindri.Infrastructure.Auth;
 using Aw.Sindri.Infrastructure.Control;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Tests.Server;
 using Aw.Sindri.Tests.Ledger;
 using Microsoft.Extensions.DependencyInjection;
 using static Aw.Sindri.Tests.Callers.CallerRequests;
@@ -27,12 +28,12 @@ public sealed class ServeCallerTests : IDisposable
     public async Task Serve_mints_the_token_only_after_taking_the_lease()
     {
         var ct = TestContext.Current.CancellationToken;
-        var serve = ServeCommand.Run(Environment, TimeProvider.System, TextWriter.Null);
+        var serve = ServeCommand.Run(Environment, TimeProvider.System, TextWriter.Null, NoTemporal.Use);
         var url = await Endpoint(ct);
         var token = (await new FileHumanToken(Settings).Read(ct)).Value;
         Assert.NotNull(token);
 
-        var second = await ServeCommand.Run(Environment, TimeProvider.System, TextWriter.Null).WaitAsync(_prompt, ct);   // refused: the lease is held
+        var second = await ServeCommand.Run(Environment, TimeProvider.System, TextWriter.Null, NoTemporal.Use).WaitAsync(_prompt, ct);   // refused: the lease is held
         var afterRefusal = (await new FileHumanToken(Settings).Read(ct)).Value;
         using var http = new HttpClient { BaseAddress = url, Timeout = _prompt };
         var status = await http.Ask(Get("/sindri/status", Human(token.Value)));
@@ -52,7 +53,7 @@ public sealed class ServeCallerTests : IDisposable
         var ct = TestContext.Current.CancellationToken;
 
         var code = await ServeCommand.Run(Environment, TimeProvider.System, TextWriter.Null,
-            static services => services.AddHostedService<StopsAsIfInterrupted>()).WaitAsync(_prompt, ct);
+            NoTemporal.And(static services => services.AddHostedService<StopsAsIfInterrupted>())).WaitAsync(_prompt, ct);
 
         var stores = SqliteStores.Create(_home.Path, TimeProvider.System, new FakeProcessProbe());
         var started = (await stores.Ledger.Latest(EventTypes.ProcessStarted, ct)).Value;
