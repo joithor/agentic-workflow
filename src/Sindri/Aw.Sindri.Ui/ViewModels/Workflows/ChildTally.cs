@@ -12,6 +12,11 @@ internal sealed record ChildTally(int Done, int Total, IReadOnlyList<(string Wor
     /// <summary>The tally of a group.</summary>
     /// <param name="group">The group.</param>
     /// <returns>Its counts.</returns>
-    internal static ChildTally Of(ChildGroup group) => throw new NotSupportedException();
+    internal static ChildTally Of(ChildGroup group)
+    {
+        var rows = group.Workstreams.SelectMany(w => w.Rows).Concat(group.Rows).ToList();
+        var byWord = rows.GroupBy(r => r.Chip.Word, StringComparer.Ordinal).Select(g => (g.Key, g.Count())).ToList();
+        return new ChildTally(rows.Count(r => r.Glyph == Api.Workflow.StateGlyph.Done), rows.Count + group.More, byWord);
+    }
 }
 #pragma warning restore MA0182
