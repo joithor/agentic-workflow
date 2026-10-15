@@ -44,9 +44,20 @@ internal static partial class Labels
         PageId.Decisions => Decisions,
         PageId.Services => Services,
         PageId.Health => Health,
+        PageId.Workflows => Workflows,
+        PageId.Work => Work,
+        PageId.Recipes => Recipes,
+        PageId.Context => Context,
+        PageId.Agents => Agents,
+        PageId.System => System,
         PageId.Settings => Settings,
         _ => throw new ArgumentOutOfRangeException(nameof(page), page, message: null),
     };
+
+    /// <summary>What an unbuilt page says it waits for ("arrives with U8"), or null for a built page.</summary>
+    /// <param name="page">The page.</param>
+    /// <returns>The words, or null.</returns>
+    internal static string? ArrivesWith(PageId page) => page == PageId.Home ? null : string.Empty;
 
     /// <summary>A scale as a percentage ("110%").</summary>
     /// <param name="scale">The scale (1.0 is 100%).</param>

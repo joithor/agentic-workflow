@@ -50,24 +50,37 @@ public sealed class ShellViewModelTests
         }
     }
 
+    // Screens spec §3: seven pages, each with its G-chord key; Settings is not a tab.
     [Fact]
-    public async Task The_top_bar_is_Home_Queue_Decisions_Services_with_no_counts_yet()
+    public async Task Nav_is_Home_Workflows_Work_Recipes_Context_Agents_System()
     {
         var shell = await Shell();
 
-        Assert.Equal([PageId.Home, PageId.Queue, PageId.Decisions, PageId.Services], shell.Navigation.Select(n => n.Page));
-        Assert.Equal([Labels.Home, Labels.Queue, Labels.Decisions, Labels.Services], shell.Navigation.Select(n => n.Label), StringComparer.Ordinal);
-        Assert.Equal(["H", "Q", "D", "S"], shell.Navigation.Select(n => n.Key), StringComparer.Ordinal);
+        Assert.Equal(
+            [PageId.Home, PageId.Workflows, PageId.Work, PageId.Recipes, PageId.Context, PageId.Agents, PageId.System],
+            shell.Navigation.Select(n => n.Page));
+        Assert.Equal(
+            [Labels.Home, Labels.Workflows, Labels.Work, Labels.Recipes, Labels.Context, Labels.Agents, Labels.System],
+            shell.Navigation.Select(n => n.Label),
+            StringComparer.Ordinal);
+        Assert.Equal(["H", "W", "Q", "R", "C", "A", "."], shell.Navigation.Select(n => n.Key), StringComparer.Ordinal);
         Assert.All(shell.Navigation, n => Assert.Equal(string.Empty, n.Count));
     }
 
-    [Fact]
-    public async Task Later_lists_the_views_the_api_doesnt_serve_yet()
+    // Screens spec §4.8: a page whose phase hasn't landed says which phase brings it, never faked content.
+    [Theory]
+    [InlineData(PageId.Workflows, "arrives with U8")]
+    [InlineData(PageId.Work, "arrives with U3'")]
+    [InlineData(PageId.Recipes, "arrives with U10")]
+    [InlineData(PageId.Context, "arrives with U9")]
+    [InlineData(PageId.Agents, "arrives with U11")]
+    internal async Task Unbuilt_pages_show_arrives_with_their_phase(PageId page, string words)
     {
-        var shell = await Shell();
+        await Task.CompletedTask;
 
-        Assert.Equal([Labels.Agents, Labels.Repos, Labels.Today, Labels.AutomaticWork], shell.Later.Select(l => l.Label), StringComparer.Ordinal);
-        Assert.All(shell.Later, l => Assert.Equal(Labels.NotServedYet, l.Note));
+        Assert.Equal(words, Labels.ArrivesWith(page));
+        Assert.Null(Labels.ArrivesWith(PageId.Home));
+        Assert.Null(Labels.ArrivesWith(PageId.System));
     }
 
     [Fact]
