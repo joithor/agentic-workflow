@@ -42,10 +42,10 @@ internal sealed partial class OnyxClient(OnyxSettings settings, OnyxSourceParts 
     {
         ArgumentNullException.ThrowIfNull(call);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(deadline);
+        timeout.CancelAfter(deadline > TimeSpan.Zero ? deadline : TimeSpan.FromMilliseconds(1));   // a spent query deadline is 010, never an ArgumentOutOfRangeException
         try
         {
-            var key = await _key.Value.WaitAsync(timeout.Token).ConfigureAwait(false);
+            var key = await Key(timeout.Token).ConfigureAwait(false);
             if (string.IsNullOrEmpty(key) || key.Any(c => char.IsControl(c) || char.IsWhiteSpace(c)))
             {
                 return Failed(call, ContextErrors.SourceNotConfigured.With(
@@ -68,6 +68,19 @@ internal sealed partial class OnyxClient(OnyxSettings settings, OnyxSourceParts 
         catch (HttpRequestException e)
         {
             return Failed(call, Unavailable($"isn't reachable ({e.HttpRequestError}); start Onyx or check context.sources.onyx.url"), status: null);
+        }
+    }
+
+    /// <summary>The resolved key, or null when the resolution failed; a resolution that throws counts as not resolved (002), never as an exception.</summary>
+    private async Task<string?> Key(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _key.Value.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return null;   // Sindri's doctor names the reason; the exception's text may name a path and stays out of the answer
         }
     }
 
