@@ -235,7 +235,7 @@ Spec Phase 2 and §7 (D14: one scrubber). The profile's `context.scrub.extraPatt
 - **The map's text.** Graph answers (show, neighbors, path, and the query's graph, affects, decisions and code
   sections) clean every label, wording and quote through `MapText` (S-3b). Human map text is stored as written in the
   owner-only `context.db` and cleaned on every answer; map status carries no map text. The export is the owner's raw
-  round-trip copy (0600, purged after 14 days) and is deliberately not scrubbed (spec §7 "Stored text").
+  round-trip copy (0600, purged after 14 days by `context-purge` when that service is enabled; doctor `context:retention` warns otherwise) and is deliberately not scrubbed (spec §7 "Stored text").
 - **Not here: telemetry.** Telemetry's redactor stays `Redactor.Default`: log lines and spans carry codes, counts and hashes,
   never record or query text (§7), and the telemetry redactor is fixed at start while the profile changes at run time.
 
@@ -338,7 +338,7 @@ routes through the real pipeline (preview, protected import and its refusals, ev
   - `ProbeSet`, `ProbeCase`, `ProbeExpect` and `ProbeDecision` (probes.json's shape plus an optional `schemaVersion`; unknown keys refused).
   - `ProbeId`.
   - `ProbeScoring` (keys in answer order, precision@5, citation correctness, absent nodes).
-  - `ProbeRunner`. `Run` asks through a delegate and compares with the previous run (038); `Check` validates the file (035 with a key path).
+  - `ProbeRunner`. `Run` asks through a delegate and compares with the baseline (038: lower means, or a probe with more absent nodes than the same probe in the baseline); `Check` validates the file (035 with a key path).
   - `ProbeReport` and `ProbeTotals`.
   - The ports `IProbeFileReader` and `IProbeReportStore`.
 - **Core settings and errors.** `ContextSettings.CascadeDepth` (`context.cascadeDepth`, 0–4, default 2).
@@ -356,7 +356,9 @@ routes through the real pipeline (preview, protected import and its refusals, ev
   - CLI `context show | neighbors | path` (`ContextGraphVerbs`) and `context eval probes` (`ContextEvalVerbs`). Probes
     have no route (a lead decision): the CLI asks each probe through `GET /sindri/context/query`; the engine's
     `EvalProbes` slice reads the file, scores and writes the report. A run in which a probe's query failed is
-    incomplete: exit 2, nothing saved, never a baseline.
+    incomplete, whether some or every probe failed: exit 2, the failed probes listed, nothing saved, never a baseline.
+    `ProbeRun` carries `incomplete` and `failed` beside `{report, path}` in `--json`. The report's `baseline` field was
+    `previous`; old report files still read.
   - Text renderers in `Text/`. `ContextText` prints an affects item's depth and path.
 - **The map import's challenge.** Described in S-3a above. `ProtectedCommandTests` lost its `ImportContextMap`
   exemption, #192's context-lane waiver.
@@ -368,7 +370,7 @@ routes through the real pipeline (preview, protected import and its refusals, ev
 | `SND-CONTEXT-035` | Invalid (400) | 1 | The probe file is invalid (shape, unknown key, duplicate or non-slug id, empty question, schema version); key path given; nothing run |
 | `SND-CONTEXT-036` | NotFound (404) | 1 | No probe file: the named one doesn't exist, or none was named and `context/eval/probes.json` doesn't exist |
 | `SND-CONTEXT-037` | Conflict (409) | 1 | A node name matches several nodes; the message lists their keys (fix: ask by key) |
-| `SND-CONTEXT-038` | Conflict (409) | 1 | A probe run scored lower than the previous run of the same file (precision@5 or citation correctness) |
+| `SND-CONTEXT-038` | Conflict (409) | 1 | A probe run scored lower than the baseline of the same file (its newest complete run that did not regress) in precision@5 or citation correctness, or a probe returned more absent nodes than it did there |
 
 039 is reserved. Neighbors outside depth 0–4 reuse `SND-CONTEXT-006`; a graph read with no map reuses 030; a key, alias
 or name not in the caller's map reuses 003.
