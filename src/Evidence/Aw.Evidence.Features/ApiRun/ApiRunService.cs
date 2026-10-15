@@ -59,7 +59,7 @@ internal sealed class ApiRunService(ApiRunFiles files, ApiVetting vetting, Reque
         files.WriteSummaryAsync(run.Request.RunDirectory, summary, cancellationToken);
 
     private ApiSummary Refused(RunFacts run, ApiScript? script, Error error) =>
-        Compose(run, new SummaryParts(script, Host: null, ApiOutcome.Refused, Number.Text($"refused: {error.Code} {error.Message}"), files.NewCollected(), new CodedMessage(error.Code, error.Message), Error: null, PassedEnv: []));
+        Compose(run, new SummaryParts(script, Host: null, ApiOutcome.Refused, Number.Text($"refused: {error.Code} {Number.ShortPaths(error.Message)}"), files.NewCollected(), new CodedMessage(error.Code, error.Message), Error: null, PassedEnv: []));
 
     private ApiSummary Finished(RunFacts run, VettedRun vetted, Collected collected)
     {

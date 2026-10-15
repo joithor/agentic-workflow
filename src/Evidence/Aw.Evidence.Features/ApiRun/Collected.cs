@@ -21,24 +21,17 @@ internal sealed class Collected(ITextScrubber scrubber)
     internal void Record(StepInfo info, Expectation expect, int code, string output, string? goldenText)
     {
         var checkedExpectation = ExpectationCheck.Evaluate(info.Index, expect, code, output, goldenText);
+        var failures = checkedExpectation.Failures.Select(failure => RecordedText.Of(scrubber, failure)).ToList();
         if (checkedExpectation.FirstFailedOrdinal is { } ordinal && FirstFailedAssertion is null)
         {
             FirstFailedAssertion = Assertions + ordinal;
-            FirstFailureText = $"{info.Target}: {checkedExpectation.Failures[0].Describe()}";
+            FirstFailureText = $"{info.Target}: {failures[0].Describe()}";
         }
 
         Assertions += checkedExpectation.Count;
-        foreach (var failure in checkedExpectation.Failures)
-        {
-            Failures.Add(failure with
-            {
-                Location = failure.Location is null ? null : RecordedText.Of(scrubber, failure.Location, RecordedText.ValueLimit),
-                Expected = RecordedText.Of(scrubber, failure.Expected, RecordedText.ValueLimit),
-                Actual = RecordedText.Of(scrubber, failure.Actual, RecordedText.ValueLimit),
-            });
-        }
+        Failures.AddRange(failures);
 
-        var status = checkedExpectation.Failures.Count == 0 ? ApiStepStatus.Passed : ApiStepStatus.Failed;
+        var status = failures.Count == 0 ? ApiStepStatus.Passed : ApiStepStatus.Failed;
         Steps.Add(new ApiStep(info.Index, info.Action, info.Target, status, code, RecordedText.Of(scrubber, output, RecordedText.OutputLimit), info.HeaderNames));
     }
 }
