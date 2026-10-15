@@ -10,5 +10,10 @@ namespace Aw.Sindri.Core.Workflow.Registry;
 /// <param name="Standing">Unapproved, approved or revoked.</param>
 /// <param name="Via">How its latest approval was given, or null when unapproved.</param>
 /// <param name="Stale">Why it is stale (empty when it isn't).</param>
-/// <param name="Inputs">The facts a start supplies.</param>
-public sealed record RecipeSummary(RecipeId Id, int Version, RecipeHash Hash, RecipeStanding Standing, ApprovalVia? Via, IReadOnlyList<StaleReason> Stale, IReadOnlyList<RecipeInput> Inputs);
+/// <param name="Inputs">The facts a start supplies (the first is the subject), with their types and kinds.</param>
+/// <param name="Urgency">The recipe's urgency: incident, triage or work.</param>
+/// <param name="Outputs">What the recipe produces for a human, each with the state it comes from.</param>
+/// <param name="OrderedBy">'path', or 'transition-list' when 'initial' has more than one first target (spec §3.10).</param>
+/// <param name="States">Every state with its path order and branch (spec §3.10, UI E-20); computed, never hashed.</param>
+/// <param name="Loops">The loop edges of the path walk (spec §3.10).</param>
+public sealed record RecipeSummary(RecipeId Id, int Version, RecipeHash Hash, RecipeStanding Standing, ApprovalVia? Via, IReadOnlyList<StaleReason> Stale, IReadOnlyList<RecipeInput> Inputs, string Urgency, IReadOnlyList<RecipeOutput> Outputs, string OrderedBy, IReadOnlyList<StatePlace> States, IReadOnlyList<PathLoop> Loops);

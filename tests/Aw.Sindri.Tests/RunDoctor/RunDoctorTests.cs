@@ -5,6 +5,7 @@ using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.RunDoctor;
+using Aw.Sindri.Infrastructure.Secrets;
 using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.RunDoctor;
@@ -19,7 +20,8 @@ public sealed class RunDoctorTests
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     private RunDoctorService Service(ILedgerStore? ledger = null) =>
-        new(_h.Store, _h.Probe, new LedgerFacts(_h.Store, _views), new ProfileFacts(_h.Profiles, _h.Profiles, ledger ?? _h.Store, _h.Events, FakeContextEngine.Instance), _api, _temporal, _h.Clock);
+        new(_h.Store, _h.Probe, new LedgerFacts(_h.Store, _views), new ProfileFacts(_h.Profiles, _h.Profiles, ledger ?? _h.Store, _h.Events,
+            new ContextEngineChecks(FakeContextEngine.Instance, new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))))), _api, _temporal, _h.Clock);
 
     [Fact, Trait("Lane", "unit")]
     public async Task RunDoctor_is_green_when_running_approved_and_answering()
@@ -34,10 +36,10 @@ public sealed class RunDoctorTests
 
         var report = (await Service().Handle(new RunDoctorRequest(), Token)).Value;
 
-        Assert.Equal("lease,ledger,views,profile,api,temporal,context:map,context:retention", string.Join(',', report.Checks.Select(c => c.Name)));
-        Assert.All(report.Checks.Where(c => !c.Name.StartsWith("context:", StringComparison.Ordinal)), c => Assert.Equal(CheckState.Ok, c.State));
+        Assert.Equal("lease,ledger,views,profile,api,temporal,context:map,context:retention,context:onyx", string.Join(',', report.Checks.Select(c => c.Name)));
+        Assert.All(report.Checks.Where(c => c.Name is not ("context:map" or "context:retention")), c => Assert.Equal(CheckState.Ok, c.State));
         Assert.Equal((CheckState.Warn, "no map yet", "sindri context map import <file>"), (report.Checks[6].State, report.Checks[6].Detail, report.Checks[6].Fix));
-        Assert.Equal(1, report.ExitCode);   // the test engine has no map, so context:map warns (S-3a); everything else is green
+        Assert.Equal(1, report.ExitCode);   // the test engine has no map, so context:map warns (S-3a); everything else, context:onyx included, is green
     }
 
     [Fact, Trait("Lane", "unit")]

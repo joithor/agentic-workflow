@@ -89,6 +89,8 @@ public static class SindriFeaturesServiceCollectionExtensions
     private static IServiceCollection AddDoctor(this IServiceCollection services) => services
         .AddScoped<ProfileFacts>()
         .AddScoped<LedgerFacts>()
+        .AddScoped<OnyxDoctor>()
+        .AddScoped<ContextEngineChecks>()
         .AddScoped<RunDoctorService>()
         .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>>(static sp =>
             new WithMoreChecks(sp.GetRequiredService<RunDoctorService>(), sp.GetServices<IDoctorChecks>()))

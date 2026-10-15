@@ -40,7 +40,8 @@ internal sealed class SourcesStatusService(IDocIndex index, ISourceCatalog catal
             rows.Add(Row(repo.Name, status.Value));
         }
 
-        foreach (var source in catalog.For(settings.Value, repos.Value, scrubbers.Value).Where(s => s.Describe().Freshness == SourceFreshness.Live))
+        foreach (var source in catalog.For(settings.Value, repos.Value, scrubbers.Value)
+            .Where(s => s.Describe().Freshness == SourceFreshness.Live && ScopeRules.MayRead(request.Scope.Caller, s.Describe())))
         {
             var health = await source.Probe(cancellationToken).ConfigureAwait(false);
             var described = source.Describe();

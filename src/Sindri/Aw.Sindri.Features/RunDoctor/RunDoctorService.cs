@@ -26,7 +26,7 @@ internal sealed class RunDoctorService(
             DoctorRules.Profile(live, saved, recorded),
             DoctorRules.Api(await api.Check(cancellationToken).ConfigureAwait(false), row, now),
             DoctorRules.Temporal(await temporal.Inspect(cancellationToken).ConfigureAwait(false)),
-            .. await profile.Context(cancellationToken).ConfigureAwait(false),
+            .. await profile.Context(saved.IsSuccess ? saved.Value : null, cancellationToken).ConfigureAwait(false),
         ];
         return new RunDoctorResponse(checks, DoctorRules.ExitCode(checks));
     }

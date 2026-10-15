@@ -43,9 +43,23 @@ public static class RankFusion
             }
         }
 
+        var all = answers.SelectMany(a => a.Hits).ToLookup(h => h.Ref.Canonical.Value, StringComparer.Ordinal);
         return [.. items
-            .Select(i => new FusedItem(i.Value.Hits[0].Ref.Canonical, i.Value.Score, BestFirst(i.Value.Hits, i.Value.Why), i.Value.Why))
+            .Select(i => Item(i.Value.Hits[0].Ref.Canonical, i.Value.Score, BestFirst(i.Value.Hits, i.Value.Why), i.Value.Why, all[i.Key]))
             .OrderByDescending(i => i.Score)
             .ThenBy(i => i.Key.Value, StringComparer.Ordinal)];
+    }
+
+    /// <summary>
+    /// The fused item, with the aliases of every hit of its record (sub-queries and chunks too, not only each source's best
+    /// hit): source by source in best-first order, each source's hits by rank, each alias once.
+    /// </summary>
+    private static FusedItem Item(Sources.RecordKey key, double score, List<Sources.SourceHit> best, List<string> why, IEnumerable<Sources.SourceHit> all)
+    {
+        var hits = all.ToList();
+        var aliases = best
+            .SelectMany(b => hits.Where(h => h.Ref.Source == b.Ref.Source).OrderBy(h => h.Rank).SelectMany(h => h.Aliases))
+            .Distinct(StringComparer.Ordinal);
+        return new FusedItem(key, score, best, why) { Aliases = [.. aliases] };
     }
 }
