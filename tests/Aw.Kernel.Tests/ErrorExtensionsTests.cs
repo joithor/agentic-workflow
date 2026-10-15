@@ -30,7 +30,7 @@ public sealed class ErrorExtensionsTests
     [Fact]
     public void A_value_is_serialized_through_the_callers_type_info_without_reflection()
     {
-        var extended = _base.WithExtension<Anchor[]>("suggestedAnchors", [new Anchor("a", "A")], TestJsonContext.Default.AnchorArray);
+        var extended = _base.WithExtension("suggestedAnchors", [new Anchor("a", "A")], TestJsonContext.Default.AnchorArray);
 
         Assert.Equal("""[{"Key":"a","Label":"A"}]""", extended.Extensions![0].Value.GetRawText());   // the context's naming, not the Kernel's
     }
