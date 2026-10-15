@@ -7,6 +7,7 @@ using Aw.Sindri.Infrastructure.Workflows;
 using Microsoft.Extensions.DependencyInjection;
 using Temporalio.Api.Enums.V1;
 using Temporalio.Client;
+using Temporalio.Exceptions;
 using Temporalio.Testing;
 using Temporalio.Worker;
 
@@ -26,8 +27,9 @@ public sealed class TemporalRecipeWakeTests : IDisposable
 
     public void Dispose() => _harness.Dispose();
 
+    /// <summary>One dev server for the cases that need one: the hash filter and Running, a vanished instance, and a failing signal.</summary>
     [Fact]
-    public async Task Running_lists_the_open_instances_of_a_hash_and_a_wake_signals_only_those()
+    public async Task Wake_signals_only_the_matching_hash_skips_a_vanished_instance_and_reports_failures_after_trying_every_one()
     {
         await using var env = await WorkflowsHarness.StartDevServer(ct: Token);
         var notify = _harness.Approve(WorkflowsHarness.Shipped("dev/workflow.dev-notify.yaml"));
@@ -40,17 +42,32 @@ public sealed class TemporalRecipeWakeTests : IDisposable
         await worker.ExecuteAsync(async () =>
         {
             var (a, b) = await Started(sindri, env, "T-201", "T-202");
-            var wake = new TemporalRecipeWake(sindri.GetRequiredService<TemporalFrontend>());
-            var running = await Listed(wake, notify.Hash);
+            var frontend = sindri.GetRequiredService<TemporalFrontend>();
+            var wake = new TemporalRecipeWake(frontend);
+            var drifted = new RecipeWakeNotice(notify.Hash, RecipeWakeKind.Drifted, Sequence: 5, "human:cli");
 
-            var woken = await wake.Wake(new RecipeWakeNotice(notify.Hash, RecipeWakeKind.Drifted, Sequence: 5, "human:cli"), Token);
-
-            Assert.Equal([InstanceIdOf(a)], running);
+            // The RecipeHash filter and Running(): two instances on different hashes, only the matching one listed and woken.
+            var woken = await wake.Wake(drifted, Token);
+            Assert.Equal([InstanceIdOf(a)], await Listed(wake, notify.Hash));
             Assert.Equal([InstanceIdOf(b)], await Listed(wake, timeout.Hash));
             Assert.True(woken.IsSuccess);
-            Assert.Equal((1, 0), (await Signals(a), await Signals(b)));   // only the matching hash was woken
-            await a.TerminateAsync("test over");
-            await b.TerminateAsync("test over");
+            Assert.Equal((1, 0), (await Signals(a), await Signals(b)));
+
+            // An instance listed as open that ended before its signal (Temporal: not found) is skipped; the others still wake.
+            var gone = InstanceAddress.Root(ItemKey.From("T-999"), RecipeId.From("workflow.dev-notify"), 1);
+            var skipped = await new ListingWake(frontend, [gone, InstanceAddress.From(a.Id)]).Wake(drifted with { Sequence = 6 }, Token);
+            Assert.True(skipped.IsSuccess, skipped.IsError ? skipped.Error.Message : null);
+            Assert.Equal(2, await Signals(a, atLeast: 2));
+
+            // A signal that fails for any other reason doesn't abandon the instances after it: all are tried, then one error names the failures.
+            var failing = new ListingWake(frontend, [InstanceAddress.From(a.Id), InstanceAddress.From(b.Id)], _ => throw new RpcException(RpcException.StatusCode.Unavailable, "the frontend is down", rawStatus: null));
+            var failed = await failing.Wake(drifted with { Sequence = 7 }, Token);
+            Assert.True(failed.IsError);
+            Assert.Contains(a.Id, failed.Error.Message, StringComparison.Ordinal);
+            Assert.Contains(b.Id, failed.Error.Message, StringComparison.Ordinal);
+            Assert.Equal(2, failing.Tried);
+
+            await Task.WhenAll(a.TerminateAsync("test over"), b.TerminateAsync("test over"));
         }, Token);
     }
 
@@ -68,59 +85,6 @@ public sealed class TemporalRecipeWakeTests : IDisposable
         Assert.True(running.IsSuccess);
         Assert.Empty(running.Value);
         Assert.True(woken.IsSuccess);
-    }
-
-    /// <summary>An instance listed as open that ended before its signal (Temporal: not found) is skipped; the others still wake.</summary>
-    [Fact]
-    public async Task An_instance_that_ended_between_the_list_and_the_signal_is_skipped_and_the_rest_are_woken()
-    {
-        await using var env = await WorkflowsHarness.StartDevServer(ct: Token);
-        var notify = _harness.Approve(WorkflowsHarness.Shipped("dev/workflow.dev-notify.yaml"));
-        _ = _harness.Approve(WorkflowsHarness.Shipped("dev/workflow.dev-timeout.yaml"));
-        await using var sindri = Sindri(env);
-        await WorkflowsHarness.HoldLease(sindri, Token);
-        _ = await WorkflowsHarness.AsServe(sindri, env, Token);
-        using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
-
-        await worker.ExecuteAsync(async () =>
-        {
-            var (a, _) = await Started(sindri, env, "T-203", "T-204");
-            var gone = InstanceAddress.Root(ItemKey.From("T-999"), RecipeId.From("workflow.dev-notify"), 1);
-            var wake = new ListingWake(sindri.GetRequiredService<TemporalFrontend>(), extra: gone);
-
-            var woken = await wake.Wake(new RecipeWakeNotice(notify.Hash, RecipeWakeKind.Drifted, Sequence: 7, "human:cli"), Token);
-
-            Assert.True(woken.IsSuccess, woken.IsError ? woken.Error.Message : null);
-            Assert.Equal(1, await Signals(a));
-            await a.TerminateAsync("test over");
-        }, Token);
-    }
-
-    /// <summary>A signal that fails for any other reason doesn't abandon the instances after it: all are tried, then one error names the failures.</summary>
-    [Fact]
-    public async Task A_failing_signal_is_reported_after_every_instance_was_tried()
-    {
-        await using var env = await WorkflowsHarness.StartDevServer(ct: Token);
-        var notify = _harness.Approve(WorkflowsHarness.Shipped("dev/workflow.dev-notify.yaml"));
-        _ = _harness.Approve(WorkflowsHarness.Shipped("dev/workflow.dev-timeout.yaml"));
-        await using var sindri = Sindri(env);
-        await WorkflowsHarness.HoldLease(sindri, Token);
-        _ = await WorkflowsHarness.AsServe(sindri, env, Token);
-        using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
-        List<InstanceAddress> open = [];
-
-        await worker.ExecuteAsync(async () =>
-        {
-            var (a, b) = await Started(sindri, env, "T-205", "T-206");
-            open = [InstanceAddress.From(a.Id), InstanceAddress.From(b.Id)];
-        }, Token);
-        var wake = new ListingWake(sindri.GetRequiredService<TemporalFrontend>(), extra: null, listed: open, afterList: () => env.ShutdownAsync());   // the server goes away once the list is read
-
-        var woken = await wake.Wake(new RecipeWakeNotice(notify.Hash, RecipeWakeKind.Drifted, Sequence: 8, "human:cli"), Token);
-
-        Assert.True(woken.IsError);
-        Assert.Contains(open[0].Value, woken.Error.Message, StringComparison.Ordinal);
-        Assert.Contains(open[1].Value, woken.Error.Message, StringComparison.Ordinal);
     }
 
     private ServiceProvider Sindri(WorkflowEnvironment env) => _harness.Sindri(
@@ -157,21 +121,37 @@ public sealed class TemporalRecipeWakeTests : IDisposable
 
     private static string InstanceIdOf(WorkflowHandle handle) => WorkflowInstanceId.Of(InstanceAddress.From(handle.Id)).Value;
 
-    private static async Task<int> Signals(WorkflowHandle handle) =>
-        (await handle.FetchHistoryAsync()).Events.Count(static e => e.EventType == EventType.WorkflowExecutionSignaled && e.WorkflowExecutionSignaledEventAttributes.SignalName == "wake");
-
-    /// <summary>The wake with a list the test controls: the real one plus a stale address, or a fixed one, and a hook that runs once the list is read.</summary>
-    private sealed class ListingWake(TemporalFrontend frontend, InstanceAddress? extra, IReadOnlyList<InstanceAddress>? listed = null, Func<Task>? afterList = null) : TemporalRecipeWake(frontend)
+    /// <summary>The 'wake' signals in the instance's history, polled until there are <paramref name="atLeast"/> (history is read from the visible store).</summary>
+    private static async Task<int> Signals(WorkflowHandle handle, int atLeast = 0)
     {
-        internal override async ValueTask<IReadOnlyList<InstanceAddress>> Open(RecipeHash hash, CancellationToken cancellationToken)
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+        while (true)
         {
-            var open = listed ?? await base.Open(hash, cancellationToken);
-            if (afterList is not null)
+            var signals = (await handle.FetchHistoryAsync()).Events.Count(static e => e.EventType == EventType.WorkflowExecutionSignaled && e.WorkflowExecutionSignaledEventAttributes.SignalName == "wake");
+            if (signals >= atLeast || DateTime.UtcNow > deadline)
             {
-                await afterList();
+                return signals;
             }
 
-            return extra is { } stale ? [stale, .. open] : open;
+            await Task.Delay(100, Token);
+        }
+    }
+
+    /// <summary>The wake with a list the test controls (instead of the visibility store's) and, when given, a signal that fails.</summary>
+    private sealed class ListingWake(TemporalFrontend frontend, IReadOnlyList<InstanceAddress> listed, Action<InstanceAddress>? signal = null) : TemporalRecipeWake(frontend)
+    {
+        private int _tried;
+
+        /// <summary>The signals attempted.</summary>
+        public int Tried => _tried;
+
+        internal override ValueTask<IReadOnlyList<InstanceAddress>> Open(RecipeHash hash, CancellationToken cancellationToken) => ValueTask.FromResult(listed);
+
+        internal override Task Signal(ITemporalClient client, InstanceAddress address, RecipeWake wake, CancellationToken cancellationToken)
+        {
+            _ = Interlocked.Increment(ref _tried);
+            signal?.Invoke(address);
+            return signal is null ? base.Signal(client, address, wake, cancellationToken) : Task.CompletedTask;
         }
     }
 }

@@ -42,8 +42,7 @@ internal class TemporalRecipeWake(TemporalFrontend frontend) : IRecipeWake
         {
             try
             {
-                await client.Value.GetWorkflowHandle<RecipeWorkflow>(address.Value).SignalAsync(
-                    wf => wf.WakeAsync(wake), new WorkflowSignalOptions { Rpc = new RpcOptions { CancellationToken = cancellationToken } }).ConfigureAwait(false);
+                await Signal(client.Value, address, wake, cancellationToken).ConfigureAwait(false);
             }
             catch (RpcException e) when (e.Code == RpcException.StatusCode.NotFound)   // boundary: it ended between the list and the signal
             {
@@ -59,6 +58,11 @@ internal class TemporalRecipeWake(TemporalFrontend frontend) : IRecipeWake
             ? Unit.Value
             : SindriErrors.NotRunning.With($"Temporal didn't take the {notice.Kind} wake for {failed.Count} instance(s): {string.Join("; ", failed)} (fix: the instances wake on the next approval or revoke; retry it)");
     }
+
+    /// <summary>Delivers <paramref name="wake"/> to the instance at <paramref name="address"/>.</summary>
+    internal virtual async Task Signal(ITemporalClient client, InstanceAddress address, RecipeWake wake, CancellationToken cancellationToken) =>
+        await client.GetWorkflowHandle<RecipeWorkflow>(address.Value).SignalAsync(
+            wf => wf.WakeAsync(wake), new WorkflowSignalOptions { Rpc = new RpcOptions { CancellationToken = cancellationToken } }).ConfigureAwait(false);
 
     /// <summary>The open instances running <paramref name="hash"/>; none when nothing serves this home.</summary>
     internal virtual async ValueTask<IReadOnlyList<InstanceAddress>> Open(RecipeHash hash, CancellationToken cancellationToken)
