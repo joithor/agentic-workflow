@@ -11,6 +11,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Queue;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Shell;
 using Microsoft.Extensions.Time.Testing;
@@ -168,10 +169,41 @@ public sealed class CreateDialogLayoutTests : IDisposable
         var back = Named<Button>(window, "NotFoundBack");
         Assert.Equal(("Back", true), (AutomationProperties.GetName(back), back.IsEffectivelyVisible));
 
+        Assert.True(back.Focus(NavigationMethod.Tab));   // the keyboard user's Back has focus when it is pressed
         back.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Settle(window);
 
         Assert.False(shell.IsSheetShown);
-        Assert.NotNull(window.FocusManager?.GetFocusedElement());
+        Assert.Same(Named<Border>(window, "Page"), window.FocusManager?.GetFocusedElement());   // a deep link has no opener row: the page region
+    });
+
+    // The opener path: the missing item opened from a row (J, Enter) gives focus back to that row.
+    [Fact]
+    public Task Back_from_a_missing_item_opened_from_a_row_returns_focus_to_that_row() => OnUi(async () =>
+    {
+        var (window, shell) = await Opened();
+        shell.Create.Close();
+        Settle(window);
+        window.KeyPressQwerty(PhysicalKey.J, RawInputModifiers.None);
+        Settle(window);
+        var selected = shell.Queue.SelectedId!;
+        _ = _server.Items.Remove(selected);
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        for (var i = 0; i < 100 && !shell.Item.IsNotFound; i++)
+        {
+            await Task.Delay(10, Token);
+            Settle(window);
+        }
+
+        Settle(window);
+        Assert.True(shell.Item.IsNotFound);
+
+        var back = Named<Button>(window, "NotFoundBack");
+        Assert.True(back.Focus(NavigationMethod.Tab));
+        back.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Settle(window);
+
+        var focused = Assert.IsType<Border>(window.FocusManager?.GetFocusedElement());
+        Assert.Equal(("RowFrame", selected), (focused.Name, Assert.IsType<ItemRowViewModel>(focused.DataContext).Id));
     });
 }
