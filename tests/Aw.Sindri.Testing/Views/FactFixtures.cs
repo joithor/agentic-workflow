@@ -6,8 +6,8 @@ namespace Aw.Sindri.Testing.Views;
 
 /// <summary>
 /// The bodies behind the fact rows (the facts route, API spec section 3.8; screens spec section 4.2): a scope-map table with
-/// its graph and items columns, a packet with its PKT-* results, a payload tree, text, and a truncated payload. A body is
-/// an object for scope-map, packet and payload (also when truncated) and a string for text. Each is built from small shapes
+/// its graph and items columns, a packet with its PKT-* results, an evidence summary (the packs and how many tasks are done), a payload tree, text, and a
+/// truncated payload. A body is an object for scope-map, packet, evidence and payload (also when truncated) and a string for text. Each is built from small shapes
 /// and serialized, so no JSON is written by hand.
 /// </summary>
 public static class FactFixtures
@@ -26,6 +26,10 @@ public static class FactFixtures
 
     private sealed record Packet(string Id, bool Frozen, Stream[] Workstreams, PacketCheck[] Checks);
 
+    private sealed record EvidencePack(string Task, string Verdict);
+
+    private sealed record EvidenceSummary(EvidencePack[] Packs, int Done, int Total);
+
     private sealed record Incident(string Id, string Title, string Urgency, string Service, string Status, string CreatedAt);
 
     private sealed record Alert(string Source, Incident Incident, string[] Tags);
@@ -36,7 +40,7 @@ public static class FactFixtures
 
     private static JsonElement Body<T>(T value) => JsonSerializer.SerializeToElement(value, _options);
 
-    /// <summary>The body behind one fact row, by scenario: scope-map, packet, text, payload or truncated.</summary>
+    /// <summary>The body behind one fact row, by scenario: scope-map, packet, evidence, text, payload or truncated.</summary>
     /// <param name="scenario">The scenario name.</param>
     /// <returns>The fact view.</returns>
     public static FactView Fact(string scenario) => scenario switch
@@ -58,6 +62,7 @@ public static class FactFixtures
             new PacketCheck("PKT-ACCEPT-001", "pass", Detail: null, []),
             new PacketCheck("PKT-SCOPE-002", "fail", "t4 and t7 both write src/sync/queue.ts", ["t4", "t7"]),
         ])), Truncated: false),
+        "evidence" => new FactView("evidence", FactType.Evidence, Body(new EvidenceSummary([new EvidencePack("t1", "pass"), new EvidencePack("t2", "pass")], Done: 4, Total: 9)), Truncated: false),
         "text" => new FactView("severity", FactType.Text, Body("sev2: the outbox dispatcher retries without backoff"), Truncated: false),
         "payload" => new FactView("alert", FactType.Payload, Body(new Alert("pagerduty",
             new Incident("P-2211", "Outbox retry storm", "high", "outbox-dispatcher", "triggered", "2026-10-12T11:02:00Z"), ["prod", "outbox"])), Truncated: false),

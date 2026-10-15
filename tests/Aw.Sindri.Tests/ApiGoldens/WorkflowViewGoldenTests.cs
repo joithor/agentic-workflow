@@ -25,7 +25,7 @@ public sealed class WorkflowViewGoldenTests : IAsyncLifetime
         ("workflow-status", "escalated-gate"), ("workflow-status", "taken-over"), ("workflow-status", "done"),
         ("workflow-status", "parked-drift"), ("workflow-status", "needs-answer-wait"),
         ("workflow-recipe", "workflow-project"), ("workflow-recipe", "incident-response"), ("workflow-recipe", "no-outputs"),
-        ("workflow-instance-fact", "scope-map"), ("workflow-instance-fact", "packet"), ("workflow-instance-fact", "payload"),
+        ("workflow-instance-fact", "scope-map"), ("workflow-instance-fact", "packet"), ("workflow-instance-fact", "evidence"), ("workflow-instance-fact", "payload"),
         ("workflow-instance-fact", "text"), ("workflow-instance-fact", "truncated"), ("workflow-instance-fact", "not-found"),
     ];
 
