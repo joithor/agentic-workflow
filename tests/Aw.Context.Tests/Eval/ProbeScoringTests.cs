@@ -19,7 +19,7 @@ public sealed class ProbeScoringTests
             ("records", Answers.Item(node: null, "C2")));
 
         Assert.Equal(
-            ["feature:layout.split-pane.orientation", "map:aw-split-panes/v1", "feature:tabs.tab-manager", "thing:pane-layout", "action:tab-manager.restore-layout",
+            ["feature:layout.split-pane.orientation", "feature:tabs.tab-manager", "thing:pane-layout", "action:tab-manager.restore-layout",
              "file:src/layout/SplitPane.ts", "file:docs/x.md"],
             ProbeScoring.Keys(result));
     }
@@ -33,10 +33,22 @@ public sealed class ProbeScoringTests
 
         var score = ProbeScoring.Score(probe, result);
 
-        // keys: a, map citation, b, c, d → hits a, c
-        Assert.Equal(0.4, score.PrecisionAt5, 6);
-        Assert.Equal(["feature:a", "feature:c"], score.Hits);
+        // keys: a, b, c, d, file:src/x.ts → hits a, c, file:src/x.ts
+        Assert.Equal(0.6, score.PrecisionAt5, 6);
+        Assert.Equal(["feature:a", "feature:c", "file:src/x.ts"], score.Hits);
         Assert.Equal(5, score.Top.Count);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_map_citation_is_not_a_scored_key_so_a_graph_answer_hitting_all_five_expected_keys_scores_1()
+    {
+        string[] nodes = ["feature:a", "feature:b", "feature:c", "feature:d", "feature:e"];
+        var probe = Answers.Probe("p", nodes: nodes);
+
+        var score = ProbeScoring.Score(probe, Answers.Of([.. nodes.Select(n => ("graph", Answers.Item(n)))]));
+
+        Assert.Equal(1.0, score.PrecisionAt5, 6);
+        Assert.DoesNotContain(score.Top, k => k.StartsWith("map:", StringComparison.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]

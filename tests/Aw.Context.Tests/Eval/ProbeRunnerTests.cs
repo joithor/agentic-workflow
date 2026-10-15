@@ -40,14 +40,35 @@ public sealed class ProbeRunnerTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_failed_question_scores_zero_with_its_code_and_every_one_failing_is_the_error()
+    public async Task A_failed_question_scores_zero_with_its_code_and_every_one_failing_is_an_incomplete_run_not_the_error()
     {
         var some = (await ProbeRunner.Run(_file, Fails("two"), previous: null, Answers.At, None)).Value;
         var all = await ProbeRunner.Run(_file, Fails("one", "two"), previous: null, Answers.At, None);
 
         Assert.Equal(ContextErrors.SessionsDisabled.Code, some.Probes[1].Error);
         Assert.Equal(0.0, some.Probes[1].PrecisionAt5);
-        Assert.Equal(ContextErrors.SessionsDisabled.Code, all.Error.Code);
+        Assert.True(all.IsSuccess, all.IsError ? all.Error.Message : null);
+        Assert.True(all.Value.Incomplete);
+        Assert.Equal(["one", "two"], all.Value.Probes.Where(p => p.Error is not null).Select(p => p.Id.Value), StringComparer.Ordinal);
+        Assert.False(all.Value.Regressed);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task One_probe_naming_more_absent_nodes_than_its_baseline_probe_regressed_even_when_the_total_is_unchanged()
+    {
+        var file = new ProbeFile("/probes/probes.json", "abc123", new ProbeSet(
+            [Answers.Probe("one", nodes: ["feature:a"], absent: ["feature:x"]), Answers.Probe("two", nodes: ["feature:b"], absent: ["feature:y"])]));
+        static ProbeScore Score(string id, params string[] absent) => new(ProbeId.From(id), 0.5, 1, [], [], absent);
+        var before = new ProbeReport(1, file.Path, file.Hash, "v1", [Score("one", "feature:x"), Score("two")], new ProbeTotals(0.0, 1.0, 2, Answers.At.AddDays(-1), AbsentReturned: 1),
+            Previous: null, Regressed: false);
+
+        // 'one' stops naming its absent node and 'two' starts: the total is 1 both times
+        var report = (await ProbeRunner.Run(file, (probe, _) => ValueTask.FromResult(Results.Success(Answers.Of(
+            ("graph", Answers.Item(probe.Id.Value == "one" ? "feature:a" : "feature:b")), ("affects", Answers.Item(probe.Id.Value == "two" ? "feature:y" : "feature:z"))))),
+            before, Answers.At, None)).Value;
+
+        Assert.Equal(1, report.Totals.AbsentReturned);
+        Assert.True(report.Regressed);
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -98,6 +98,25 @@ public sealed class ContextCliTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void The_json_of_a_probe_run_is_report_path_incomplete_and_failed_and_the_context_registers_the_type()
+    {
+        var at = new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
+        ProbeScore Score(string id, string? error) => new(ProbeId.From(id), 0, 0, [], [], [], error);
+        ProbeReport Report(params ProbeScore[] probes) => new(1, "/p/probes.json", "h", "v1", probes, new ProbeTotals(0, 0, probes.Length, at), Previous: null, Regressed: false);
+
+        var complete = System.Text.Json.JsonDocument.Parse(Kernel.Json.AwJson.Serialize(new ProbeRun(Report(Score("one", error: null)), "/p/r.json"), SliceHarness.Json)).RootElement;
+        var incomplete = System.Text.Json.JsonDocument.Parse(Kernel.Json.AwJson.Serialize(new ProbeRun(Report(Score("one", "SND-CONTEXT-020"), Score("two", "SND-CONTEXT-020")), Path: null),
+            SliceHarness.Json)).RootElement;
+
+        Assert.Equal(["report", "path", "incomplete", "failed"], complete.EnumerateObject().Select(p => p.Name), StringComparer.Ordinal);
+        Assert.Equal(("/p/r.json", false, 0), (complete.GetProperty("path").GetString(), complete.GetProperty("incomplete").GetBoolean(), complete.GetProperty("failed").GetArrayLength()));
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, incomplete.GetProperty("path").ValueKind);
+        Assert.True(incomplete.GetProperty("incomplete").GetBoolean());
+        Assert.Equal(["one", "two"], incomplete.GetProperty("failed").EnumerateArray().Select(e => e.GetString()), StringComparer.Ordinal);
+        Assert.False(incomplete.GetProperty("report").TryGetProperty("incomplete", out _));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void The_text_of_an_incomplete_run_names_each_failed_probe_and_says_nothing_was_saved()
     {
         var at = new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);

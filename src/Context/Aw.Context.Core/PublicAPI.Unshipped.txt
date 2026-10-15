@@ -2019,3 +2019,5 @@ Aw.Context.Core.Eval.ProbeTotals.AbsentReturned.get -> int
 Aw.Context.Core.Eval.ProbeTotals.AbsentReturned.init -> void
 Aw.Context.Core.Eval.ProbeTotals.Deconstruct(out double PrecisionAt5, out double CitationCorrectness, out int Probes, out System.DateTimeOffset RunAt, out int AbsentReturned) -> void
 Aw.Context.Core.Eval.ProbeTotals.ProbeTotals(double PrecisionAt5, double CitationCorrectness, int Probes, System.DateTimeOffset RunAt, int AbsentReturned = 0) -> void
+Aw.Context.Core.Eval.ProbeRun.Incomplete.get -> bool
+Aw.Context.Core.Eval.ProbeRun.Failed.get -> System.Collections.Generic.IReadOnlyList<string!>!

@@ -53,6 +53,33 @@ public sealed class EvalProbesServiceTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_run_in_which_every_probe_failed_is_incomplete_names_them_and_is_not_written()
+    {
+        var world = new World { TwoProbes = true };
+
+        var run = await world.Run((_, _) => ValueTask.FromResult<Result<ContextResult>>(ContextErrors.SessionsDisabled.With("off")));
+
+        Assert.True(run.IsSuccess, run.IsError ? run.Error.Message : null);
+        Assert.Equal((true, ["p1", "p2"], null), (run.Value.Incomplete, run.Value.Failed, run.Value.Path));
+        Assert.Empty(world.Written);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_regressed_run_is_not_the_baseline_of_the_next_one()
+    {
+        var world = new World();
+        var first = await world.Run(Hit);
+        world.Clock.Advance(TimeSpan.FromMinutes(1));
+        _ = await world.Run(Miss);
+        world.Clock.Advance(TimeSpan.FromMinutes(1));
+
+        var again = await world.Run(Miss);
+
+        Assert.Equal(first.Value.Report.Totals, again.Value.Report.Previous);
+        Assert.True(again.Value.Report.Regressed);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_refused_file_passes_through_as_the_error_and_nothing_is_asked_or_written()
     {
         var world = new World { Refusal = ContextErrors.ProbeFileInvalid.With("probes[0]: bad") };
