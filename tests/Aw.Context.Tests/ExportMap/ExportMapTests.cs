@@ -85,7 +85,7 @@ public sealed class ExportMapTests : IDisposable
         Assert.Equal("feature:gone", Assert.Single(document.Orphaned!).Value);
         Assert.True(again.IsSuccess);
         Assert.Equal(3, (await _world.Store.Overrides(MapWorld.None)).Value.Count);
-        Assert.Equal(1, (await _world.Map.MapStatus(MapWorld.Human, MapWorld.None)).Value.Orphaned);
+        Assert.Equal(1, (await _world.Map.MapStatus(anchor: null, MapWorld.Human, MapWorld.None)).Value.Orphaned);
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -110,7 +110,7 @@ public sealed class ExportMapTests : IDisposable
 
         var document = _world.Exports.Documents[exported.Value.Path];
         Assert.Equal(string.Join(',', FixtureMap.ScopedNodes), string.Join(',', document.Nodes.Select(n => n.Key.Value).Order(StringComparer.Ordinal)));
-        Assert.Equal(2, document.Edges!.Count);
+        Assert.Equal(FixtureMap.ScopedEdges, document.Edges!.Count);
         Assert.Empty(document.Decisions!);
         _ = Assert.Single(document.Overrides!);
     }

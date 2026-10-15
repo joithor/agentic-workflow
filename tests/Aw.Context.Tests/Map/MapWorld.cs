@@ -1,12 +1,20 @@
 using Aw.Context.Core.Docs;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
+using Aw.Context.Core.Extract;
 using Aw.Context.Core.Facade;
+using Aw.Context.Core.Locks;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Proposals;
+using Aw.Context.Core.Review;
 using Aw.Context.Core.Trust;
 using Aw.Context.Features;
 using Aw.Context.Testing.Engine;
+using Aw.Context.Testing.Extract;
+using Aw.Context.Testing.Fixtures;
+using Aw.Context.Testing.Locks;
 using Aw.Context.Testing.Map;
+using Aw.Context.Testing.Review;
 using Aw.Context.Tests.EvalProbes;
 using Aw.Kernel.Ids;
 using Aw.Kernel.Testing;
@@ -22,12 +30,31 @@ namespace Aw.Context.Tests.Map;
 /// </summary>
 internal sealed class MapWorld : IDisposable
 {
+    /// <summary>The tabs map (map-tabs.json): a conflict, a suggested file link and an orphaned override.</summary>
+    public static string TabsMap => MapTabsRepo.MapJson;
+
     public const string MapPath = "/maps/product-map.yaml";
 
     private readonly ServiceProvider _provider;
     private readonly IServiceScope _scope;
 
-    public MapWorld()
+    /// <summary>The commit the fake repo is at.</summary>
+    public const string Head = "0a1b2c3d4e5f60718293a4b5c6d7e8f901234567";
+
+    /// <summary>The files of the fake repo at <see cref="Head"/>: the extractor finds two commands, a keybinding, a component and a setting in them; the rest is noise or private.</summary>
+    public static IReadOnlyDictionary<string, string> BuildFiles { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["src/commands/ids.ts"] = "export type CommandId = \"split-vertical\" | \"close-pane\";",
+        ["src/commands/registry.ts"] = "register({ id: \"split-vertical\", title: \"Split vertically\" });",
+        ["src/keys.ts"] = "export const keys: Record<string, CommandId> = { \"ctrl+shift+d\": \"split-vertical\" };",
+        ["src/ui/Split.tsx"] = "export function SplitPane() {}",
+        ["config/settings.json"] = "{\"paneResizeStep\": 8}",
+        ["config/secrets/settings.json"] = "{\"apiToken\": \"hunter2\"}",
+        [".env"] = "TOKEN=hunter2",
+        ["README.md"] = "# Split panes",
+    };
+
+    public MapWorld(IRepoReader? repoReader = null)
     {
         Sources = new FixedSourceCatalog(Docs);
         Exports = new FakeExportStore(Clock);
@@ -35,6 +62,7 @@ internal sealed class MapWorld : IDisposable
         _provider = new ServiceCollection()
             .AddSingleton<TimeProvider>(Clock)
             .AddSingleton<IGraphStore>(Store)
+            .AddSingleton<IProposalRuns>(Store)
             .AddSingleton<IExportStore>(Exports)
             .AddSingleton<IMapFileReader>(Reader)
             .AddSingleton<IScrubberFactory>(new FakeScrubberFactory())
@@ -43,6 +71,12 @@ internal sealed class MapWorld : IDisposable
             .AddSingleton<IIdGenerator>(new SequentialIdGenerator())
             .AddSingleton<IProbeFileReader>(new NoProbes())
             .AddSingleton<IProbeReportStore>(new NoProbes())
+            .AddSingleton(repoReader ?? new FakeRepoReader(Repos[0], Head, BuildFiles))
+            .AddSingleton<IClusterSource>(Clusters)
+            .AddSingleton<ILabeler>(Labeler)
+            .AddSingleton<IHeavyJobLock>(HeavyLock)
+            .AddSingleton<IReviewFileStore>(ReviewFiles)
+            .AddSingleton<ICurrentUser>(new FakeCurrentUser())
             .AddContextFeatures()
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = false, ValidateScopes = true });
         _scope = _provider.CreateScope();
@@ -53,6 +87,14 @@ internal sealed class MapWorld : IDisposable
     public FakeGraphStore Store { get; } = new();
 
     public FakeExportStore Exports { get; }
+
+    public FakeClusterSource Clusters { get; } = new();
+
+    public FakeLabeler Labeler { get; } = new();
+
+    public FakeHeavyJobLock HeavyLock { get; } = new();
+
+    public FakeReviewFileStore ReviewFiles { get; } = new();
 
     public FakeMapFileReader Reader { get; } = new();
 
@@ -69,6 +111,19 @@ internal sealed class MapWorld : IDisposable
     public static IReadOnlyList<ContextRepo> Repos { get; } = [new(ContextRepoName.From(FixtureMap.Repo), "/work/aw-split-panes"), new(ContextRepoName.From("other"), "/work/other")];
 
     public static ContextScope Human { get; } = new(Settings: null, Repos, new ContextCaller(ContextCallerKind.Human, Repo: null, ContextClient.Cli));
+
+    /// <summary>A human whose call arrives through <paramref name="client"/> (the app is plain HTTP; the CLI, MCP and services are the others).</summary>
+    public static ContextScope HumanVia(ContextClient client) => new(Settings: null, Repos, new ContextCaller(ContextCallerKind.Human, Repo: null, client));
+
+    /// <summary>A human's scope with the given 'context:' section (JSON) over the repos, or over <paramref name="repos"/> when given.</summary>
+    public static ContextScope HumanWith(string sectionJson, IReadOnlyList<ContextRepo>? repos = null)
+    {
+        using var section = System.Text.Json.JsonDocument.Parse(sectionJson);
+        return new(section.RootElement.Clone(), repos ?? Repos, new ContextCaller(ContextCallerKind.Human, Repo: null, ContextClient.Cli));
+    }
+
+    /// <summary>The section that maps only the fixture repo (the fake repo reader knows no other).</summary>
+    public const string OnlyFixtureRepo = """{"repos":["aw-split-panes"]}""";
 
     public static ContextScope Session(string? repo, bool enabled = true)
     {

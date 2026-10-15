@@ -68,11 +68,11 @@ public static class ScopeRules
     /// refuses such a name in scope at validate and approve.
     /// </summary>
     /// <param name="repos">The profile's repos as written.</param>
-    /// <returns>The repos with usable names, in profile order.</returns>
+    /// <returns>The repos with usable names, in profile order, each with the built-in secret globs and the profile's deny paths.</returns>
     public static IReadOnlyList<ContextRepo> Usable(IReadOnlyList<ProfileRepoEntry> repos)
     {
         ArgumentNullException.ThrowIfNull(repos);
-        return [.. repos.Where(r => ContextRepoName.TryFrom(r.Name, out _)).Select(r => new ContextRepo(ContextRepoName.From(r.Name), r.Path))];
+        return [.. repos.Where(r => ContextRepoName.TryFrom(r.Name, out _)).Select(r => new ContextRepo(ContextRepoName.From(r.Name), r.Path) { DenyPaths = [.. PathDenylist.Defaults, .. r.DenyPaths ?? []] })];
     }
 
     /// <summary>

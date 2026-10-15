@@ -1,0 +1,321 @@
+using System.Net;
+using System.Text.Json;
+using Aw.Context.Core.Extract;
+using Aw.Context.Testing.Extract;
+using Aw.Context.Testing.Fixtures;
+using Aw.Context.Testing.Map;
+using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Host;
+using Aw.Sindri.Tests.ApiGoldens;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using static Aw.Sindri.Tests.Callers.CallerRequests;
+
+namespace Aw.Sindri.Tests.ContextCalls;
+
+/// <summary>The app's two reads (lenses and filemap), the scoping run's proposals and MCP's context_lenses (context spec §8.5, §8.9; README X63) on the fixture map.</summary>
+public sealed class ContextLensesApiTests : IDisposable
+{
+    private const string Anchor = "feature:tabs.tab-manager";
+    private readonly FixtureRepo _repo = FixtureRepo.Build();
+
+    public void Dispose() => _repo.Dispose();
+
+    private async Task<GoldenHost> Host(bool sessions = true)
+    {
+        var host = await ContextHosts.Approved(_repo, sessions, TestContext.Current.CancellationToken,
+            s => { _ = s.RemoveAll<IClusterSource>(); _ = s.AddSingleton<IClusterSource>(new FakeClusterSource()); }, name: FixtureMap.Repo);
+        await ContextMapApiTests.Import(host);
+        return host;
+    }
+
+    private static (string Name, string Value)[] Terminal(GoldenHost host) => Human(host.Token.Value);
+
+    private static (string Name, string Value)[] App(GoldenHost host) => [.. Human(host.Token.Value, client: "ui").Where(h => h.Name != SindriHeaders.Terminal)];
+
+    private static (string Name, string Value)[] Session(string repo = FixtureMap.Repo) => [(SindriHeaders.Caller, "session"), (SindriHeaders.Repo, repo)];
+
+    private static Microsoft.Extensions.Time.Testing.FakeTimeProvider Clock(GoldenHost host) =>
+        (Microsoft.Extensions.Time.Testing.FakeTimeProvider)host.App.Services.GetRequiredService<TimeProvider>();
+
+    private static List<string?> Statuses(string body) => [.. Json(body).GetProperty("surfaces").EnumerateArray().Select(s => s.GetProperty("status").GetString())];
+
+    private static JsonElement Json(string body) => JsonDocument.Parse(body).RootElement;
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Lenses_show_the_three_bands_a_session_reads_its_scope_and_an_unknown_anchor_is_003_and_no_draft_is_044()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+
+        var lenses = await host.Http.Ask(Get("/sindri/context/lenses?anchor=" + Uri.EscapeDataString(Anchor), Terminal(host)));
+        var session = await host.Http.Ask(Get("/sindri/context/lenses?anchor=" + Uri.EscapeDataString(Anchor), Session()));
+        var unknown = await host.Http.Ask(Get("/sindri/context/lenses?anchor=no-such-node", Terminal(host)));
+        var draft = await host.Http.Ask(Get("/sindri/context/lenses?anchor=" + Uri.EscapeDataString(Anchor) + "&draft=true", Terminal(host)));
+
+        Assert.Equal(HttpStatusCode.OK, lenses.Status);
+        var view = Json(lenses.Body);
+        Assert.Equal(Anchor, view.GetProperty("anchor").GetProperty("key").GetString());
+        Assert.All(["intent", "product", "code"], name => Assert.True(view.GetProperty("bands").TryGetProperty(name, out _), name));
+        Assert.All(["coverage", "conflicts", "edges", "degraded", "cites", "mapVersion", "asOf"], name => Assert.True(view.TryGetProperty(name, out _), name));
+        Assert.Equal((1, 2), (view.GetProperty("schemaVersion").GetInt32(), view.GetProperty("depth").GetInt32()));
+        Assert.Equal(HttpStatusCode.OK, session.Status);
+        Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-003"), (unknown.Status, unknown.Code));
+        Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-044"), (draft.Status, draft.Code));
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Filemap_lists_direct_children_with_rollups_and_a_repo_outside_the_profile_or_a_session_scope_gives_the_same_045()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+
+        var root = await host.Http.Ask(Get($"/sindri/context/filemap?repo={FixtureMap.Repo}&path=src/", Terminal(host)));
+        var unmapped = await host.Http.Ask(Get($"/sindri/context/filemap?repo={FixtureMap.Repo}&path=src/&unmapped=true", Terminal(host)));
+        var nope = await host.Http.Ask(Get("/sindri/context/filemap?repo=nope", Terminal(host)));
+        var outside = await host.Http.Ask(Get($"/sindri/context/filemap?repo={FixtureMap.Repo}", Session("other")));
+        var draft = await host.Http.Ask(Get($"/sindri/context/filemap?repo={FixtureMap.Repo}&draft=true", Terminal(host)));
+
+        Assert.Equal(HttpStatusCode.OK, root.Status);
+        var view = Json(root.Body);
+        Assert.Equal("src/", view.GetProperty("path").GetString());
+        Assert.Contains(view.GetProperty("entries").EnumerateArray(), e => e.GetProperty("name").GetString() == "layout" && e.GetProperty("type").GetString() == "dir");
+        Assert.Equal(1, view.GetProperty("schemaVersion").GetInt32());
+        Assert.Equal(HttpStatusCode.OK, unmapped.Status);
+        Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-045"), (nope.Status, nope.Code));
+        Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-045"), (outside.Status, outside.Code));
+        Assert.Equal(Json(nope.Body).GetProperty("status").GetInt32(), Json(outside.Body).GetProperty("status").GetInt32());
+        Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-044"), (draft.Status, draft.Code));
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Context_lenses_over_mcp_returns_the_lenses_as_structured_content_and_a_session_off_is_020()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Host();
+        await using var mcp = await McpSession.Open(host, FixtureMap.Repo, ct);
+
+        var tools = await mcp.Client.ListToolsAsync(cancellationToken: ct);
+        var result = await mcp.Call("context_lenses", $$"""{"anchor":"{{Anchor}}"}""", ct);
+        var bad = await mcp.Call("context_lenses", """{"anchor":"x","draft":true}""", ct);
+
+        Assert.Contains("context_lenses", tools.Select(t => t.Name), StringComparer.Ordinal);
+        Assert.True(tools.Single(t => t.Name == "context_lenses").ProtocolTool.Annotations?.ReadOnlyHint);
+        Assert.NotEqual(true, result.IsError);
+        Assert.Equal(Anchor, result.StructuredContent!.Value.GetProperty("anchor").GetProperty("key").GetString());
+        Assert.Equal(true, bad.IsError);   // no draft argument over MCP
+        await using var off = await OffHost();
+        await using var offMcp = await McpSession.Open(off, FixtureMap.Repo, ct);
+        var refused = await offMcp.Call("context_lenses", $$"""{"anchor":"{{Anchor}}"}""", ct);
+        Assert.Equal(true, refused.IsError);
+        Assert.Contains("SND-CONTEXT-020", refused.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Context_lenses_over_mcp_fences_the_untrusted_labels_the_way_a_session_over_http_reads_them()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Host();
+        await ImportDrafted(host);
+        await using var mcp = await McpSession.Open(host, FixtureMap.Repo, ct);
+
+        var result = await mcp.Call("context_lenses", """{"anchor":"feature:a"}""", ct);
+
+        Assert.NotEqual(true, result.IsError);
+        var own = result.StructuredContent!.Value.GetProperty("bands").GetProperty("product").GetProperty("own").EnumerateArray().Single(i => i.GetProperty("node").GetString() == "feature:b");
+        Assert.Equal(("<untrusted source=\"map\">Drafted B</untrusted>", "untrusted"), (own.GetProperty("label").GetString(), own.GetProperty("trust").GetString()));
+    }
+
+    private async Task<GoldenHost> OffHost() => await Host(sessions: false);
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Lenses_depth_is_0_to_4_and_anything_else_is_006_over_http()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+        var route = "/sindri/context/lenses?anchor=" + Uri.EscapeDataString(Anchor);
+
+        var zero = await host.Http.Ask(Get(route + "&depth=0", Terminal(host)));
+        var four = await host.Http.Ask(Get(route + "&depth=4", Terminal(host)));
+        var five = await host.Http.Ask(Get(route + "&depth=5", Terminal(host)));
+        var negative = await host.Http.Ask(Get(route + "&depth=-1", Terminal(host)));
+
+        Assert.Equal((HttpStatusCode.OK, 0), (zero.Status, Json(zero.Body).GetProperty("depth").GetInt32()));
+        Assert.Equal((HttpStatusCode.OK, 4), (four.Status, Json(four.Body).GetProperty("depth").GetInt32()));
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (five.Status, five.Code));
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (negative.Status, negative.Code));
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task An_app_caller_reads_a_clean_label_with_trust_untrusted()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+        await ImportDrafted(host);
+
+        var app = await host.Http.Ask(Get("/sindri/context/lenses?anchor=feature%3Aa", App(host)));
+        var terminal = await host.Http.Ask(Get("/sindri/context/lenses?anchor=feature%3Aa", Terminal(host)));
+
+        Assert.Equal(("Drafted B", "untrusted"), DraftedLabel(app.Body));
+        Assert.Equal(("Drafted B", "untrusted"), DraftedLabel(terminal.Body));
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task A_session_caller_reads_the_fenced_label()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+        await ImportDrafted(host);
+
+        var session = await host.Http.Ask(Get("/sindri/context/lenses?anchor=feature%3Aa", Session()));
+
+        Assert.Equal(("<untrusted source=\"map\">Drafted B</untrusted>", "untrusted"), DraftedLabel(session.Body));
+    }
+
+    private static (string Label, string Trust) DraftedLabel(string body)
+    {
+        var item = Json(body).GetProperty("bands").GetProperty("product").GetProperty("own").EnumerateArray().Single(i => i.GetProperty("node").GetString() == "feature:b");
+        return (item.GetProperty("label").GetString()!, item.GetProperty("trust").GetString()!);
+    }
+
+    /// <summary>A map whose feature B is a model's draft, with a deterministic file that implements both in the fixture repo (so a session of that repo sees them).</summary>
+    private static async Task ImportDrafted(GoldenHost host)
+    {
+        var file = Path.Combine(host.Home, "drafted-map.yaml");
+        await File.WriteAllTextAsync(file, string.Join('\n',
+            "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
+            "  - {key: \"feature:a\", label: \"A\"}",
+            "  - {key: \"feature:b\", label: \"Drafted B\", provenance: model, confidence: 0.5}",
+            "  - {key: \"code:src/a.ts\", label: \"a.ts\", provenance: deterministic}",
+            "edges:",
+            "  - {from: \"feature:b\", to: \"feature:a\", type: part-of}",
+            "  - {from: \"code:src/a.ts\", to: \"feature:a\", type: implements, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/src/a.ts\"}]}",
+            "  - {from: \"code:src/a.ts\", to: \"feature:b\", type: implements, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/src/a.ts\"}]}") + "\n", TestContext.Current.CancellationToken);
+        await ContextMapApiTests.Import(host, file);
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task A_scoping_run_proposes_into_a_draft_idempotently_never_again_after_a_reject_and_never_into_current()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Host();
+        var body = $$"""{"run":"scope-1","repo":"{{FixtureMap.Repo}}","surfaces":[{"name":"Tab manager","key":"{{Anchor}}"},{"name":"Zoom","kind":"feature","evidence":[]},{"name":"Something vague"}]}""";
+
+        var first = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
+        var second = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
+        var session = await host.Http.Ask(Post("/sindri/context/map/proposals", body, Session()));
+        var view = await host.Http.Ask(Get("/sindri/context/map/proposals?run=scope-1", App(host)));
+        Clock(host).Advance(TimeSpan.FromMinutes(1));   // why: the golden host's clock stands still, and a decision is ordered after what it decides about by its time
+        var reject = await host.Http.Ask(Post("/sindri/context/map/review", """{"verb":"reject","node":"feature:zoom"}""", App(host)));
+        var third = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
+        var status = await host.Http.Ask(Get("/sindri/context/map", Terminal(host)));
+        var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapProposed, ct);
+
+        Assert.True(first.Status == HttpStatusCode.OK, first.Body);
+        Assert.Equal(1, Json(first.Body).GetProperty("result").GetProperty("added").GetInt32());
+        Assert.Equal(["mapped", "new", "unmapped"], Statuses(first.Body), StringComparer.Ordinal);   // the response carries each surface's standing too (spec §8.7), not the counts alone
+        Assert.Equal(Anchor, Json(first.Body).GetProperty("surfaces")[0].GetProperty("node").GetString());
+        Assert.Equal("Tab manager", Json(first.Body).GetProperty("surfaces")[0].GetProperty("surface").GetString());
+        Assert.Equal(["mapped", "new", "unmapped"], Statuses(second.Body), StringComparer.Ordinal);   // an idempotent re-run reports the same standing
+        Assert.Equal(0, Json(second.Body).GetProperty("result").GetProperty("added").GetInt32());
+        Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (session.Status, session.Code));
+        Assert.Equal(["mapped", "new", "unmapped"], Statuses(view.Body), StringComparer.Ordinal);   // every surface of the run, in the order it was submitted: the mapped one and the one with no kind wrote no row
+        Assert.Equal(HttpStatusCode.OK, reject.Status);
+        Assert.Equal(["mapped", "unmapped", "unmapped"], Statuses((await host.Http.Ask(Get("/sindri/context/map/proposals?run=scope-1", App(host)))).Body), StringComparer.Ordinal);
+        Assert.Equal(0, Json(third.Body).GetProperty("result").GetProperty("added").GetInt32());
+        Assert.Equal(1, Json(third.Body).GetProperty("result").GetProperty("rejected").GetInt32());
+        Assert.Contains("\"status\":\"current\"", status.Body, StringComparison.Ordinal);
+        Assert.Contains("scope-1", recorded.Value!.Envelope.Payload, StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task A_proposal_without_the_lease_is_refused_before_any_row_is_written_and_the_event_key_is_the_run_and_a_hash_of_its_rows()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Host();
+        var body = $$"""{"run":"scope-2","repo":"{{FixtureMap.Repo}}","surfaces":[{"name":"Zoom","kind":"feature"}]}""";
+        var held = host.App.Services.GetRequiredService<HeldLease>();
+        var grant = held.Current!;
+        held.Clear();
+
+        var refused = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
+        held.Hold(grant);
+        var view = await host.Http.Ask(Get("/sindri/context/map/proposals?run=scope-2", App(host)));
+        var accepted = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
+        var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapProposed, ct);
+
+        Assert.Equal((HttpStatusCode.ServiceUnavailable, "SND-LEDGER-002"), (refused.Status, refused.Code));   // the command gate needs the lease to record the call, so it answers before the service does
+        Assert.Empty(Json(view.Body).GetProperty("surfaces").EnumerateArray());   // no row and no run list were written
+        Assert.Equal(1, Json(accepted.Body).GetProperty("result").GetProperty("added").GetInt32());   // so the retry adds the row and records the event
+        Assert.Matches(@"^context\.map\.proposed:scope-2:[0-9a-f]{16}$", recorded.Value!.IdempotencyKey);
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Two_proposals_of_one_run_with_different_surfaces_each_record_an_event_and_a_repeat_records_none()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+        static string Body(string name) => $$"""{"run":"scope-3","repo":"{{FixtureMap.Repo}}","surfaces":[{"name":"{{name}}","kind":"feature"}]}""";
+
+        var one = await host.Http.Ask(Post("/sindri/context/map/proposals", Body("Zoom"), App(host)));
+        var two = await host.Http.Ask(Post("/sindri/context/map/proposals", Body("Pan"), App(host)));
+        var repeat = await host.Http.Ask(Post("/sindri/context/map/proposals", Body("Pan"), App(host)));
+
+        var sequences = new[] { one, two, repeat }.Select(r => Json(r.Body).GetProperty("sequence")).ToList();
+        Assert.Equal(JsonValueKind.Number, sequences[0].ValueKind);
+        Assert.Equal(JsonValueKind.Number, sequences[1].ValueKind);   // the second call added one row, so it has its own event even though its counts equal the first call's
+        Assert.NotEqual(sequences[0].GetInt64(), sequences[1].GetInt64());
+        Assert.Equal(JsonValueKind.Null, sequences[2].ValueKind);
+        var back = await host.Http.Ask(Post("/sindri/context/map/proposals", Body("Zoom"), App(host)));   // the first set of surfaces again: its event is in the ledger
+        Assert.Equal(JsonValueKind.Null, Json(back.Body).GetProperty("sequence").ValueKind);
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task A_retry_after_the_event_append_failed_records_the_event_the_committed_rows_lack()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        var ledger = new FlakyLedger();
+        await using var host = await ContextHosts.Approved(_repo, sessions: true, TestContext.Current.CancellationToken,
+            s => { _ = s.RemoveAll<IClusterSource>(); _ = s.AddSingleton<IClusterSource>(new FakeClusterSource()); ledger.Wrap(s); }, name: FixtureMap.Repo);
+        await ContextMapApiTests.Import(host);
+        var body = $$"""{"run":"scope-4","repo":"{{FixtureMap.Repo}}","surfaces":[{"name":"Zoom","kind":"feature"}]}""";
+
+        ledger.Failing = true;
+        var failed = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
+        ledger.Failing = false;
+        var retry = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
+        var again = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
+
+        Assert.Equal((HttpStatusCode.ServiceUnavailable, "SND-LEDGER-002"), (failed.Status, failed.Code));
+        Assert.Equal(0, Json(retry.Body).GetProperty("result").GetProperty("added").GetInt32());   // the row committed the first time
+        Assert.Equal(JsonValueKind.Number, Json(retry.Body).GetProperty("sequence").ValueKind);   // and the retry wrote its event
+        Assert.Equal(JsonValueKind.Null, Json(again.Body).GetProperty("sequence").ValueKind);
+        var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapProposed, TestContext.Current.CancellationToken);
+        var payload = Json(recorded.Value!.Envelope.Payload);
+        Assert.Equal((1, 0), (payload.GetProperty("added").GetInt32(), payload.GetProperty("existing").GetInt32()));   // the re-emitted event says what the committed call added, not the retry's 0
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task A_draft_opened_from_a_map_imported_without_a_commit_promotes_instead_of_failing()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Host();
+        var body = $$"""{"run":"scope-1","repo":"{{FixtureMap.Repo}}","surfaces":[{"name":"Tab manager","key":"{{Anchor}}"}]}""";
+        Assert.Equal(HttpStatusCode.OK, (await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)))).Status);
+
+        var preview = await host.Http.Ask(Post("/sindri/context/map/promote", "{}", Terminal(host)));
+        var shown = Json(preview.Body);
+        var draft = shown.GetProperty("draft").GetString();
+        var challenge = shown.GetProperty("challenge");
+        var answer = new { challenge = challenge.GetProperty("challenge").GetString(), typed = challenge.GetProperty("action").GetString() };
+        var promoted = await host.Http.Ask(Post("/sindri/context/map/promote", JsonSerializer.Serialize(new { draft, answer }), Terminal(host)));
+        var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapPromoted, ct);
+
+        Assert.True(preview.Status == HttpStatusCode.OK, preview.Body);
+        Assert.DoesNotContain('@', draft!);   // why: an imported map has no commit, so its draft's label is a bare 'v<N>'
+        Assert.True(promoted.Status == HttpStatusCode.OK, promoted.Body);
+        Assert.NotNull(recorded.Value);
+    }
+}

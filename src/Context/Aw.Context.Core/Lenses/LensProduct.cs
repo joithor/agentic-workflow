@@ -1,0 +1,62 @@
+using Aw.Context.Core.Graph;
+
+namespace Aw.Context.Core.Lenses;
+
+/// <summary>The product band (spec §8.9): the own scope, the neighbors at the depth and the nodes the cascade reaches, each node in the first list that holds it.</summary>
+internal static class LensProduct
+{
+    private static readonly NodeKind[] _kinds = [NodeKind.Feature, NodeKind.Surface, NodeKind.Action, NodeKind.Thing, NodeKind.Flow];
+    private static readonly EdgeType[] _structure = [EdgeType.PartOf, EdgeType.On, EdgeType.Reads, EdgeType.Writes, EdgeType.StepOf, EdgeType.DependsOn, EdgeType.MovesTo];
+
+    /// <summary>The band and the keys of every item it lists before the cut (the other bands' edges are drawn among them).</summary>
+    /// <param name="scope">The anchor's scope.</param>
+    /// <param name="depth">How far the neighbors reach.</param>
+    /// <returns>The band and its item keys.</returns>
+    internal static (ProductBand Band, HashSet<string> Keys) Build(LensScope scope, int depth)
+    {
+        var own = scope.Cascade.OwnScope.Where(k => scope.Nodes.ContainsKey(k.Value)).Select(k => LensScope.Item(scope.Nodes[k.Value])).ToList();
+        var seen = own.Select(i => i.Node.Value).ToHashSet(StringComparer.Ordinal);
+        var neighbors = Neighbors(scope, depth, seen);
+        seen.UnionWith(neighbors.Select(n => n.Node.Value));
+        var affects = Affects(scope, seen);
+        seen.UnionWith(affects.Select(a => a.Node.Value));
+        var edges = Edges(scope.Graph, seen);
+        var cut = own.Count > LensesBuilder.BandCap || neighbors.Count > LensesBuilder.BandCap || affects.Count > LensesBuilder.BandCap || edges.Count > LensesBuilder.BandCap;
+        var band = new ProductBand([.. own.Take(LensesBuilder.BandCap)], [.. neighbors.Take(LensesBuilder.BandCap)], [.. affects.Take(LensesBuilder.BandCap)],
+            new ProductCounts(own.Count, affects.Count), [.. edges.Take(LensesBuilder.BandCap)], cut);
+        return (band, seen);
+    }
+
+    private static List<LensReach> Neighbors(LensScope scope, int depth, HashSet<string> taken)
+    {
+        var near = GraphWalk.Neighbors(scope.Graph, scope.Anchor.Key, depth).Nodes.Where(n => n.Depth > 0 && _kinds.Contains(n.Node.Key.Kind) && !taken.Contains(n.Node.Key.Value)).ToList();
+        if (near.Count == 0)
+        {
+            return [];
+        }
+
+        var structure = scope.Graph with { Edges = [.. scope.Graph.Edges.Where(e => _structure.Contains(e.Type))] };
+        return [.. near.Select(n => Reach(n.Node, n.Depth, Path(scope, structure, n.Node.Key)))];
+    }
+
+    // The hops from the anchor, over structure edges where they reach and over any edge where they don't ("part-of-by" is an edge walked from its target).
+    private static string[] Path(LensScope scope, GraphSnapshot structure, NodeKey to)
+    {
+        var path = GraphWalk.ShortestPath(structure, scope.Anchor.Key, to) ?? GraphWalk.ShortestPath(scope.Graph, scope.Anchor.Key, to);
+        return path is null ? [] : [.. path.Steps.Select(s => $"{EdgeRules.Name(s.Edge.Type)}{(s.Forward ? string.Empty : "-by")} {s.Node.Value}")];
+    }
+
+    private static List<LensReach> Affects(LensScope scope, HashSet<string> taken) =>
+        [.. scope.Cascade.Affected.Where(a => scope.Nodes.ContainsKey(a.Node.Value) && !taken.Contains(a.Node.Value)).Select(a => Reach(scope.Nodes[a.Node.Value], a.Depth, [.. a.Path]))];
+
+    private static LensReach Reach(GraphNode n, int depth, IReadOnlyList<string> path)
+    {
+        var item = LensScope.Item(n);
+        return new LensReach(item.Node, item.Label, item.Kind, item.Provenance, item.Confidence, item.Confirmed, item.Trust, depth, path);
+    }
+
+    private static List<LensEdge> Edges(GraphSnapshot graph, HashSet<string> items) =>
+        [.. graph.Edges.Where(e => _structure.Contains(e.Type) && items.Contains(e.From.Value) && items.Contains(e.To.Value))
+            .OrderBy(e => e.Type).ThenBy(e => e.From.Value, StringComparer.Ordinal).ThenBy(e => e.To.Value, StringComparer.Ordinal)
+            .Select(LensEdges.Of)];
+}
