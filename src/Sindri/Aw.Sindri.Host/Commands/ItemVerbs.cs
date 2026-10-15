@@ -17,7 +17,7 @@ namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// 'sindri queue', 'items', 'item add' and 'item close' (API P3 unit H, plan G17): clients of the item routes. Human verbs
-/// start the control plane unless --no-start; inside an agent session they never do (API spec §7). 'queue' exits 1 while the
+/// start the control plane unless --no-start; inside an agent session they never do (API spec §7). 'queue' and 'items' exit 1 while the
 /// views rebuild or stall, so a script doesn't read a partial queue as the truth (API spec §3.6).
 /// </summary>
 /// <param name="client">The API client.</param>
@@ -84,9 +84,10 @@ internal sealed class ItemVerbs(ControlPlaneClient client, Output output, Func<b
         }
 
         var list = answer.Value.Value;
+        var code = list.AsOf.Rebuilding || list.AsOf.Stalled ? 1 : 0;
         return command.Json
-            ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
-            : await output.Text(list.Items.Count > 0 ? Lines(list.Items, indent: string.Empty) : (list.Empty ?? EmptyText.Items(state: null, repo: null)) + "\n", 0).ConfigureAwait(false);
+            ? await output.Raw(answer.Value.Body, code).ConfigureAwait(false)
+            : await output.Text(list.Items.Count > 0 ? Lines(list.Items, indent: string.Empty) : (list.Empty ?? EmptyText.Items(state: null, repo: null)) + "\n", code).ConfigureAwait(false);
     }
 
     private async Task<int> Add(ItemVerbArguments.Parsed command, CancellationToken ct)

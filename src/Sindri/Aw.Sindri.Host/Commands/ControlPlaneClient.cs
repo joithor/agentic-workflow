@@ -39,6 +39,7 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
     /// <summary>
     /// GET a view route so it reflects every write made so far (API spec §2.4): reads the ledger head from GET /sindri/status, then sends it as
     /// X-Sindri-After, so a read right after a write never lags the projector. Views still behind after 2 s are the server's SND-API-011.
+    /// When the status says the views stall or rebuild, no header is sent, so the answer arrives with its asOf and sentence instead of that error.
     /// </summary>
     /// <param name="route">The route under the base URL, e.g. '/sindri/items'.</param>
     /// <param name="ct">Cancels the calls.</param>
@@ -52,7 +53,10 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
             return status.Error;
         }
 
-        var head = status.Value.Value.Views?.LedgerHead;
+        // Views that stall or rebuild can't catch up to the head, so the header would only turn the answer into SND-API-011: the answer's asOf
+        // already says its rows may be partial, and the verb exits 1 on it.
+        var views = status.Value.Value.Views;
+        var head = views is { Stalled: false, Rebuilding: false } ? views.LedgerHead : (long?)null;
         return await Send<T>(HttpMethod.Get, route, content: null, head, ct).ConfigureAwait(false);
     }
 
