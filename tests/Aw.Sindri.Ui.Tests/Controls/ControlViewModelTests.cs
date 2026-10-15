@@ -274,6 +274,28 @@ public sealed class ControlViewModelTests
         Assert.Equal((false, 1, CommandPhase.Accepted), (control.IsConfirming, _server.RebuildCalls, control.Phase));
     }
 
+    // L11: Confirm and Keep are named for what they answer, and the question is spoken once when the row appears.
+    [Fact]
+    public async Task The_confirm_row_names_its_buttons_and_speaks_its_question_once()
+    {
+        var control = new ControlViewModel(Row("CloseItem:cancelled", "ready", destructive: true), ct => _server.RebuildViews(_api, ct), _clipboard, _clock, "ITM-1");
+        var spoken = new List<string>();
+        control.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ControlViewModel.Announcement) && control.IsAnnouncing)
+            {
+                spoken.Add(control.Announcement);
+            }
+        };
+        Assert.Equal(("Confirm: Close as cancelled ITM-1?", "Keep ITM-1"), (control.ConfirmName, control.KeepName));
+
+        await control.Press(Token);
+        Assert.Equal(["Close as cancelled ITM-1?"], spoken);
+
+        control.Keep();
+        Assert.False(control.IsAnnouncing);
+    }
+
     [Fact]
     public async Task A_control_that_isnt_destructive_sends_on_the_first_press()
     {

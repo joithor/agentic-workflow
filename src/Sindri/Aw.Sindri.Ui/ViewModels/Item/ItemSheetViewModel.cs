@@ -109,6 +109,9 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     /// <summary>The timeline entries read so far, in the API's order.</summary>
     public ObservableCollection<TimelineRow> Timeline { get; } = [];
 
+    /// <summary>The Load more button's accessible name: "Load more timeline for ITM-…".</summary>
+    public string LoadMoreName => Text.LoadMore;
+
     /// <summary>True when the API names a next page.</summary>
     public bool HasMore => Next is not null;
 

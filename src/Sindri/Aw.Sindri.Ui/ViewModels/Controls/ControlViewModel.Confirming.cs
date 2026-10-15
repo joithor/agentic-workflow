@@ -18,6 +18,12 @@ internal sealed partial class ControlViewModel
     /// <summary>The question a destructive control asks: its name and a question mark ("Close as cancelled ITM-…?").</summary>
     public string ConfirmQuestion { get; }
 
+    /// <summary>The Confirm button's accessible name: "Confirm: Close as cancelled ITM-…?".</summary>
+    public string ConfirmName => ConfirmLabel;
+
+    /// <summary>The Keep button's accessible name: "Keep ITM-…".</summary>
+    public string KeepName => KeepLabel;
+
     /// <summary>A press: a destructive control asks first; any other sends at once.</summary>
     /// <param name="cancellationToken">Cancels the wait for the answer.</param>
     /// <returns>A task that completes when the answer is shown, or at once when it asks.</returns>

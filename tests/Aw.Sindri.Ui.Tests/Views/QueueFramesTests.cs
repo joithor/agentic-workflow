@@ -212,6 +212,41 @@ public sealed class QueueFramesTests : IDisposable
         Assert.True(shell.IsSheetOpen);
     });
 
+    // L11: the buttons carry the question and the item in their names (the question text itself is not read twice), and Esc returns to the control.
+    [Fact]
+    public Task The_confirm_row_names_its_buttons_and_escape_returns_focus_to_the_control() => OnUi(async () =>
+    {
+        var (window, _) = await OpenItem(Connected(s => !s.Queue.IsLoading), A.NewItem);
+        var cancel = Named<Control>(window, "ItemActionList").GetVisualDescendants().OfType<Ui.Views.Controls.CommandControl>().ElementAt(1);
+        Named<Button>(cancel, "RunButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Settle(window);
+
+        Assert.Equal("Confirm: Close as cancelled " + A.NewItem + "?", AutomationProperties.GetName(Named<Button>(cancel, "ConfirmButton")));
+        Assert.Equal("Keep " + A.NewItem, AutomationProperties.GetName(Named<Button>(cancel, "KeepButton")));
+        Assert.True(string.IsNullOrEmpty(AutomationProperties.GetName(Named<TextBlock>(cancel, "ConfirmText"))));
+
+        window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        Settle(window);
+
+        Assert.Same(Named<Button>(cancel, "RunButton"), Focused(window));
+    });
+
+    // L12: Load more is named for the timeline it extends; when the page lands, focus goes to its first new row.
+    [Fact]
+    public Task Load_more_is_named_for_its_timeline_and_focus_moves_to_the_first_new_row() => OnUi(async () =>
+    {
+        var (window, shell) = await OpenItem(Connected(s => !s.Queue.IsLoading), A.NewItem);
+        var more = Named<Button>(window, "LoadMoreButton");
+        Assert.Equal("Load more timeline for " + A.NewItem, AutomationProperties.GetName(more));
+        Assert.True(more.Focus(NavigationMethod.Tab));
+
+        more.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await Until(window, () => !shell.Item.HasMore);
+
+        var rows = Named<Control>(window, "TimelineList").GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("timeline-row")).ToList();
+        Assert.Same(rows[100], Focused(window));
+    });
+
     // §18 U2's signal: Close with a stale version shows SND-ITEM-409's detail as served.
     [Fact]
     public Task A_stale_close_shows_SND_ITEM_409s_detail() => OnUi(async () =>
