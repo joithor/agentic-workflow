@@ -25,12 +25,13 @@ public sealed class CommandPaletteViewModelTests
     private readonly List<string> _history = [];
     private readonly CommandList _catalog = AwJson.Deserialize<CommandList>(Encoding.UTF8.GetBytes(GoldenFiles.Api("commands", "catalog")), SindriApiClient.Json).Value;
     private readonly CommandPaletteViewModel _palette;
+    private readonly CatalogViewModel _controls;
 
     public CommandPaletteViewModelTests()
     {
-        var catalog = new CatalogViewModel(_clipboard, _clock);
-        catalog.Show(_api, _server, _catalog);
-        _palette = new CommandPaletteViewModel(catalog, _pages.Add, _history.Add);
+        _controls = new CatalogViewModel(_clipboard, _clock);
+        _controls.Show(_api, _server, _catalog);
+        _palette = new CommandPaletteViewModel(_controls, _pages.Add, _history.Add);
     }
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -206,6 +207,25 @@ public sealed class CommandPaletteViewModelTests
         Assert.NotEqual("RebuildViews", _palette.Selected!.Id, StringComparer.Ordinal);
         _server.RebuildGate.SetResult();
         await run;
+    }
+
+    // H1 (corr-0): the palette built for the first time while a command is in flight must still run that entry once the
+    // send is over (its Runs is the control's sendability, not CanRun at build time).
+    [Fact]
+    public async Task A_palette_first_opened_while_a_command_sends_runs_that_entry_afterwards()
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        var control = _controls.For("RebuildViews")!;
+        var first = control.Run(Token);
+
+        _palette.Open();
+        var rebuild = Entry("RebuildViews");
+        _server.RebuildGate.SetResult();
+        await first;
+        _server.RebuildGate = null;
+        await _palette.Run(rebuild, Token);
+
+        Assert.Equal((true, 2), (rebuild.IsEnabled, _server.RebuildCalls));
     }
 
     // F2: a refusal shows Sindri's code as the entry's status and its detail as served; the palette stays open.
