@@ -29,6 +29,12 @@ internal static class CommandTable
         OwnerAskCommand.Entry,
         LogAppendCommand.Entry,
         StatusCommand.Entry,
+        GateRunCommand.Entry,
+        GateRerunCommand.Entry,
+        MergeCheckCommand.Entry,
+        MergeRunCommand.Entry,
+        HealthCommand.Entry,
+        WatchCommand.Entry,
     ];
 
     internal static IReadOnlyList<CommandEntry> Entries => _entries;

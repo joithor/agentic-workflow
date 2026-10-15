@@ -2,11 +2,16 @@ using System.Text.Json.Serialization;
 using Aw.Kernel;
 using Aw.Meta.Core.Config;
 using Aw.Meta.Core.Messages;
+using Aw.Meta.Features.CheckMerge;
+using Aw.Meta.Features.GateRerun;
+using Aw.Meta.Features.GateRun;
+using Aw.Meta.Features.Health;
 using Aw.Meta.Features.Inbox;
 using Aw.Meta.Features.InboxDefer;
 using Aw.Meta.Features.InboxDismiss;
 using Aw.Meta.Features.Lanes;
 using Aw.Meta.Features.LogAppend;
+using Aw.Meta.Features.MergeRun;
 using Aw.Meta.Features.OutboxRecord;
 using Aw.Meta.Features.Owner;
 using Aw.Meta.Features.OwnerAnswer;
@@ -15,6 +20,7 @@ using Aw.Meta.Features.Roles;
 using Aw.Meta.Features.Status;
 using Aw.Meta.Features.StopCheck;
 using Aw.Meta.Features.SyncInbox;
+using Aw.Meta.Features.Watch;
 
 namespace Aw.Meta.Host;
 
@@ -35,6 +41,12 @@ namespace Aw.Meta.Host;
 [JsonSerializable(typeof(AppendLogResponse))]
 [JsonSerializable(typeof(StatusResponse))]
 [JsonSerializable(typeof(StopCheckResponse))]
+[JsonSerializable(typeof(GateRunResponse))]
+[JsonSerializable(typeof(GateRerunResponse))]
+[JsonSerializable(typeof(CheckMergeResponse))]
+[JsonSerializable(typeof(MergeRunResponse))]
+[JsonSerializable(typeof(HealthResponse))]
+[JsonSerializable(typeof(WatchResponse))]
 [JsonSerializable(typeof(SyncInboxRequest))]
 [JsonSerializable(typeof(SyncInboxResponse))]
 internal sealed partial class MetaJsonContext : JsonSerializerContext;

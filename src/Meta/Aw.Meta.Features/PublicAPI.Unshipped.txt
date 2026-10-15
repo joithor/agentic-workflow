@@ -506,6 +506,8 @@ override Aw.Meta.Features.Status.StatusResponse.Equals(object? obj) -> bool
 override Aw.Meta.Features.Status.StatusResponse.GetHashCode() -> int
 Aw.Meta.Features.Status.StatusResponse.Lanes.get -> Aw.Meta.Core.Lanes.LaneMapState!
 Aw.Meta.Features.Status.StatusResponse.Lanes.init -> void
+Aw.Meta.Features.Status.StatusResponse.LastHealth.get -> string?
+Aw.Meta.Features.Status.StatusResponse.LastHealth.init -> void
 Aw.Meta.Features.Status.StatusResponse.MergeQueue.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Features.Status.QueuedPr!>!
 Aw.Meta.Features.Status.StatusResponse.MergeQueue.init -> void
 Aw.Meta.Features.Status.StatusResponse.Obligations.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>!

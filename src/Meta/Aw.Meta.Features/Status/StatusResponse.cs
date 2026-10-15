@@ -9,4 +9,8 @@ namespace Aw.Meta.Features.Status;
 /// <param name="MergeQueue">Pull requests lanes said are ready, not yet merged.</param>
 /// <param name="OwnerQueue">Questions waiting for the owner.</param>
 /// <param name="Lanes">The current lane map.</param>
-public sealed record StatusResponse(IReadOnlyList<Obligation> Obligations, IReadOnlyList<QueuedPr> MergeQueue, IReadOnlyList<OwnerQuestion> OwnerQueue, LaneMapState Lanes);
+public sealed record StatusResponse(IReadOnlyList<Obligation> Obligations, IReadOnlyList<QueuedPr> MergeQueue, IReadOnlyList<OwnerQuestion> OwnerQueue, LaneMapState Lanes)
+{
+    /// <summary>The last health check's one-line summary; null when health never ran.</summary>
+    public string? LastHealth { get; init; }
+}

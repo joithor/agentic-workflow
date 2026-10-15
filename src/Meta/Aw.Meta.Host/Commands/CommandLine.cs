@@ -67,7 +67,7 @@ internal sealed record CommandLine(IReadOnlyList<string> Positionals, IReadOnlyD
             return $"missing --{missing}";
         }
 
-        return line.Positionals.Count == spec.Positionals
+        return line.Positionals.Count == spec.Positionals || (spec.AnyMore && line.Positionals.Count > spec.Positionals)
             ? string.Empty
             : string.Create(CultureInfo.InvariantCulture, $"expected {spec.Positionals} argument(s) before the options, got {line.Positionals.Count}");
     }

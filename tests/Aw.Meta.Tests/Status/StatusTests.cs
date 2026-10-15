@@ -10,7 +10,7 @@ public sealed class StatusTests
 {
     private readonly MetaWorld _world = new();
 
-    private StatusService Service() => new(_world.Config, new StatusReader(_world.Reader, _world.Messages, _world.Gates, _world.Owner, _world.Lanes), _world.Clock);
+    private StatusService Service() => new(_world.Config, new StatusReader(_world.Reader, _world.Messages, _world.Gates, _world.Owner, _world.Lanes), _world.Values, _world.Clock);
 
     private async Task<StatusResponse> Status()
     {
@@ -64,6 +64,19 @@ public sealed class StatusTests
 
         Assert.Equal([(ObligationKind.Reply, "m1")], status.Obligations.Select(o => (o.Kind, o.Key)));
         Assert.Equal("which db?", Assert.Single(status.OwnerQueue).Text);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_last_health_summary_is_shown_once_health_has_run()
+    {
+        await _world.Ready();
+        var never = await Status();
+        _ = await _world.Values.Set(KvKeys.HealthLast, "2026-10-15T05:00:00Z ok: orphans=0", CancellationToken.None);
+
+        var ran = await Status();
+
+        Assert.Null(never.LastHealth);
+        Assert.Equal("2026-10-15T05:00:00Z ok: orphans=0", ran.LastHealth);
     }
 
     [Fact, Trait("Lane", "unit")]
