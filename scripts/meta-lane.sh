@@ -51,10 +51,10 @@ unset CLAUDECODE CLAUDE_PID CLAUDE_CODE_SESSION_ID CLAUDE_CODE_CHILD_SESSION CLA
   CLAUDE_CODE_MESSAGING_TOKEN CLAUDE_CODE_BRIDGE_SESSION_ID CLAUDE_CODE_ENTRYPOINT CLAUDE_CODE_SESSION_ATTENDED \
   CLAUDE_CODE_EXECPATH
 if [ "$mode" = resume ]; then
-  "$claude_cmd" "${claude_args[@]}" --resume "$id" -n "$name"
+  "$claude_cmd" ${claude_args[@]+"${claude_args[@]}"} --resume "$id" -n "$name"
 elif [ -n "$prompts" ] && [ -f "$prompts/$lane.md" ]; then
-  "$claude_cmd" "${claude_args[@]}" --session-id "$id" -n "$name" "$(cat "$prompts/$lane.md")"
+  "$claude_cmd" ${claude_args[@]+"${claude_args[@]}"} --session-id "$id" -n "$name" "$(cat "$prompts/$lane.md")"
 else
-  "$claude_cmd" "${claude_args[@]}" --session-id "$id" -n "$name"
+  "$claude_cmd" ${claude_args[@]+"${claude_args[@]}"} --session-id "$id" -n "$name"
 fi
 [ "${AW_META_NO_SHELL:-0}" = 1 ] || exec bash -i

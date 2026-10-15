@@ -66,6 +66,7 @@ check "launch: three sessions started" "$(printf '%s\n' "$OUT" | grep -c ': star
 yaml="$AW_WARP_LAUNCH_DIR/demo-team.yaml"
 check "launch: warp yaml written" "$(test -s "$yaml" && echo yes)" "yes"
 check "launch: one attach per lane" "$(grep -c 'exec: tmux new -A -s demo-' "$yaml")" "3"
+check "launch: a pane that creates its session runs the lane, not a shell" "$(grep -c "exec: tmux new -A -s demo-api -c $WORK/repo -e AW_META_CONFIG=$cfg '$DIR/meta-lane.sh demo api'" "$yaml")" "1"
 check "launch: absolute cwd everywhere" "$(grep -c "cwd: $WORK/repo" "$yaml")" "3"
 check "launch: meta pane first" "$(grep -m1 -o 'demo-[a-z]*' "$yaml")" "demo-meta"
 tmux new-session -d -s demo-api "sleep 60" 2> /dev/null   # stands in for a live lane on the rerun
@@ -86,7 +87,7 @@ OUT="$(AW_META_CONFIG="$WORK/rel.json" bash "$DIR/meta-launch.sh" --no-open 2>&1
 check "relative repo refused (Warp needs absolute cwd)" "$RC" "1"
 mkdir -p "$WORK/bin"; ln -s "$DIR/meta-launch.sh" "$WORK/bin/aw-meta-launch"   # as install-meta.sh links it
 OUT="$("$WORK/bin/aw-meta-launch" --no-open --dry-run --lanes api)"
-check "run through a symlink: finds meta-lane.sh beside the real script" "$(printf '%s\n' "$OUT" | grep -c "$DIR/meta-lane.sh demo api")" "1"
+check "run through a symlink: finds meta-lane.sh beside the real script" "$(printf '%s\n' "$OUT" | grep -c "^\[dry-run\] tmux new-session .* $DIR/meta-lane.sh demo api")" "1"
 jq '.lanes = ["meta", "api"]' "$cfg" > "$WORK/dup.json"   # team-init lists the meta lane in lanes too
 OUT="$(AW_META_CONFIG="$WORK/dup.json" bash "$DIR/meta-launch.sh" --no-open --dry-run)"
 check "meta lane listed in lanes: one pane, not two" "$(printf '%s\n' "$OUT" | grep -c 'exec: tmux new -A -s demo-meta')" "1"

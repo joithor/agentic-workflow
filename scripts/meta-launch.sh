@@ -6,7 +6,8 @@
 # configuration and opens it. One command restores the whole team after a crash.
 #   meta-launch.sh [--lanes a,b,...] [--no-open] [--dry-run]
 #   AW_META_CONFIG      team config (default $AW_STATE_DIR/meta/team.json; `aw-meta team-init` writes it)
-#   AW_WARP_LAUNCH_DIR  default ${XDG_DATA_HOME:-~/.local/share}/warp-terminal/launch_configurations
+#   AW_WARP_LAUNCH_DIR  default ${XDG_DATA_HOME:-~/.local/share}/warp-terminal/launch_configurations (Linux),
+#                       ~/.warp/launch_configurations (macOS)
 set -euo pipefail
 here="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"   # through the ~/.local/bin/aw-meta-launch symlink too
 only=""; open=1; dry=0
@@ -32,7 +33,9 @@ for n in "$team" "${A[@]}" "${L[@]}"; do
 done
 case "$repo" in /*) [ -d "$repo" ] || { echo "meta-launch: repo $repo not found" >&2; exit 1; } ;;
   *) echo "meta-launch: repo must be an absolute path (Warp requires it): '$repo'" >&2; exit 1 ;; esac
-dir="${AW_WARP_LAUNCH_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/warp-terminal/launch_configurations}"
+if [ "$(uname -s)" = Darwin ]; then default_dir="$HOME/.warp/launch_configurations"
+else default_dir="${XDG_DATA_HOME:-$HOME/.local/share}/warp-terminal/launch_configurations"; fi
+dir="${AW_WARP_LAUNCH_DIR:-$default_dir}"
 yaml="$dir/$team-team.yaml"
 
 # 1. tmux sessions: create the missing ones (detached), keep the live ones.
@@ -47,8 +50,11 @@ for l in "${L[@]}"; do
 done
 
 # 2. Warp launch configuration: the first lane on the left, the others stacked on the right.
+# The pane attaches, or creates the session itself with the same command as step 1, so a session that is missing when
+# Warp opens (a --lanes run, a lane that exited) still runs the lane instead of a plain shell under its name.
+attach() { printf 'tmux new -A -s %s -c %s -e AW_META_CONFIG=%s %s' "$team-$1" "$repo" "$config" "'$here/meta-lane.sh $team $1'"; }
 pane() { # indent lane
-  printf '%s- cwd: %s\n%s  commands:\n%s    - exec: tmux new -A -s %s\n' "$1" "$repo" "$1" "$1" "$team-$2"
+  printf '%s- cwd: %s\n%s  commands:\n%s    - exec: %s\n' "$1" "$repo" "$1" "$1" "$(attach "$2")"
 }
 render() {
   echo "# Written by scripts/meta-launch.sh from $config; rerun it rather than editing."
@@ -58,7 +64,7 @@ render() {
   echo "      - title: $team"
   echo "        layout:"
   if [ "${#A[@]}" = 1 ]; then
-    printf '          cwd: %s\n          commands:\n            - exec: tmux new -A -s %s\n' "$repo" "$team-${A[0]}"
+    printf '          cwd: %s\n          commands:\n            - exec: %s\n' "$repo" "$(attach "${A[0]}")"
     return
   fi
   echo "          split_direction: vertical"
@@ -79,7 +85,8 @@ if [ "$open" = 1 ]; then
   # Warp opens a launch configuration by its name (the YAML's name:, URI-encoded), not by its file path.
   uri="warp://launch/$(jq -rn --arg n "$team team" '$n|@uri')"
   echo "warp: opening $uri"
-  if command -v xdg-open > /dev/null; then xdg-open "$uri" > /dev/null 2>&1 &
+  if [ "$(uname -s)" = Darwin ]; then open "$uri"
+  elif command -v xdg-open > /dev/null; then xdg-open "$uri" > /dev/null 2>&1 &
   elif command -v warp-terminal > /dev/null; then warp-terminal "$uri" > /dev/null 2>&1 &
   else echo "open $uri in Warp (Command Palette → Launch Configuration → $team team)"; fi
 fi
