@@ -174,7 +174,7 @@ public sealed class RecipeRegistryCliTests : IDisposable
     {
         _ = Directory.CreateDirectory(Path.Combine(_home.Path, "profile"));
         await File.WriteAllTextAsync(Path.Combine(_home.Path, "profile", "profile.yaml"), "schemaVersion: 1\nuser: thor\n", ct);
-        var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System, NoTemporal.Use);   // the registry verbs don't use Temporal: a real dev server only slows the start under load
+        var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System, NoTemporal.Use);
         _ = Pipeline.Configure(app);
         Core.Lease.LeaseGrant grant;
         await using (var scope = app.Services.CreateAsyncScope())

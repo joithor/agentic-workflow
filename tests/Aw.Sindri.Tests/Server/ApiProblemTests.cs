@@ -59,7 +59,7 @@ public sealed class ApiProblemTests : IDisposable
         var ct = TestContext.Current.CancellationToken;
         var logs = new ListLoggerFactory();
         await using var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System,
-            services => services.AddSingleton<ILoggerFactory>(logs));
+            NoTemporal.And(services => services.AddSingleton<ILoggerFactory>(logs)));
         _ = Pipeline.Configure(app);
         _ = app.MapGet("/probe-id", static string () => throw new ValueObjectValidationException("framework detail: Use of uninitialized Value Object"));
         await app.StartAsync(ct);
