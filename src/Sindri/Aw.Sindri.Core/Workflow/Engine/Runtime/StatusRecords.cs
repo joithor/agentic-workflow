@@ -41,6 +41,11 @@ internal static class StatusRecords
     /// <summary>Whole seconds, never negative.</summary>
     private static long Seconds(TimeSpan span) => Math.Max(0, (long)span.TotalSeconds);
 
+    /// <summary>The action ids of the commands the instance offers, in the order status lists them, without rendering the rest of the status.</summary>
+    /// <param name="view">The instance view.</param>
+    /// <returns>One action id per command.</returns>
+    public static IReadOnlyList<ActionId> ActionIds(InstanceView view) => [.. Commands(view).Select(static c => c.ActionId)];
+
     /// <summary>The instance's own verbs in §6.4 order, then the re-approval a drift waits for: each a row of the command catalog.</summary>
     private static List<StatusCommand> Commands(InstanceView view)
     {

@@ -17,6 +17,21 @@ public static class InstanceViews
     /// <summary>The state of a view whose workflow has not built its instance yet (the Query answers before the start finishes): it carries no layout.</summary>
     public const string StartingState = "starting";
 
+    /// <summary>The view of a workflow that has not built its instance yet: <see cref="StartingState"/>, no layout, but the item it is on (and the subject, once named).</summary>
+    /// <param name="address">The instance address.</param>
+    /// <param name="recipe">The recipe version it was started on.</param>
+    /// <param name="since">When it started.</param>
+    /// <param name="item">The item it is on.</param>
+    /// <param name="subject">The subject, when it has been named by now; null before.</param>
+    /// <returns>The view.</returns>
+    public static InstanceView Starting(InstanceAddress address, RecipeVersion recipe, DateTimeOffset since, ItemKey item, SubjectRef? subject) =>
+        new(address, recipe, StartingState, Detail: null, since, string.Empty, [], Question: null, Task: null, Run: null, Children: [], Outcome: null)
+        {
+            Id = WorkflowInstanceId.Of(address),
+            ItemId = item,
+            Subject = subject,
+        };
+
     /// <summary>The view of <paramref name="instance"/>, with every layout member filled: item, urgency, engine badge, subject, inputs, state cells, fact rows and the status record's time-independent parts.</summary>
     /// <param name="instance">The interpreter's state.</param>
     /// <param name="recipe">The recipe it runs, its blocks' descriptors and the input facts.</param>

@@ -171,7 +171,7 @@
       "direction": "input",
       "from": null,
       "status": "produced",
-      "summary": "sentry #8812 TypeError",
+      "summary": "sentry #8812 TypeError in tabs.layout",
       "at": "2026-10-12T12:22:00.0000000Z",
       "by": "service:webhook",
       "ref": {

@@ -31,7 +31,7 @@ public static class InstanceSummaries
             view.States,
             Cut(RowSentences.Now(view, chip)),
             view.AnswerLine,
-            [.. InstanceViews.Status(view, context.Now).Commands.Select(static c => c.ActionId)]);
+            StatusRecords.ActionIds(view));
     }
 
     /// <summary>

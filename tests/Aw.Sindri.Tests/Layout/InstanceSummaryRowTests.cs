@@ -32,12 +32,23 @@ public sealed partial class InstanceSummaryRowTests
         Assert.Equal(new StateChip("DECISION", ChipTone.Attn), row.Chip);
         Assert.Equal(view.Since, row.Since);
         Assert.Equal(view.EngineOwned, row.EngineOwned);
-        Assert.Equal(InstanceSummaries.SubjectOf(view, itemTitle: null), row.Subject);
+        Assert.Equal(new SubjectRef("text", "fact:spec", "spec.md", Href: null), row.Subject);
         Assert.Same(view.Inputs, row.Inputs);
         Assert.Same(view.States, row.States);
         Assert.Equal("needs your output (desk answer)", row.Now);
         Assert.Equal(view.AnswerLine, row.Answer);
         Assert.Equal([ActionId.From("CompleteStep"), ActionId.From("ApplyCommand:takeover"), ActionId.From("ApplyCommand:cancel")], row.Actions);
+    }
+
+    [Fact]
+    public void The_actions_of_a_row_are_the_action_ids_of_the_status_commands_for_every_case()
+    {
+        foreach (var name in StatusCases.Names)
+        {
+            var view = StatusCases.View(name);
+
+            Assert.Equal(InstanceViews.Status(view, StatusCases.Now).Commands.Select(static c => c.ActionId), InstanceSummaries.Of(view, new InstanceSummaryContext(StatusCases.Now)).Actions);
+        }
     }
 
     [Fact]

@@ -331,4 +331,14 @@ public sealed class InstanceViewProducerTests
             }
         }
     }
+
+    [Fact]
+    public void A_workflow_that_has_not_built_its_instance_yet_shows_its_item_and_the_subject_it_has()
+    {
+        var subject = new SubjectRef("text", "fact:spec", "spec.md", Href: null);
+        var view = InstanceViews.Starting(InstanceAddress.From("T-3/step/1"), StatusCases.View("desk-task").Recipe, StatusCases.Now, ItemKey.From("T-3"), subject);
+
+        Assert.Equal((InstanceViews.StartingState, ItemKey.From("T-3"), subject), (view.State, view.ItemId, view.Subject));
+        Assert.Equal(InstanceViews.StartingState, view.State);
+    }
 }

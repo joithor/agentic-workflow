@@ -100,7 +100,7 @@ public static class WorkflowViewFixtures
 
     // Instances only the status layouts name: none of them is a row of the root list, so the layouts don't contradict it.
     private static readonly InstanceSummary _itemParked = Row("ITM-01JC8/item/1", _item, "running", Today(11, 54), new EngineOwnedBadge(EngineOwnedKind.Parked, "no-progress (child)"),
-        Subject("text", "ITM-01JC8", "Retry storm in outbox dispatcher"),
+        Subject("text", "Retry storm in outbox dispatcher", "Retry storm in outbox dispatcher"),
         _item.Cells("running", change: Shape(("running", c => c with { Children = new Progress(0, 1) }))),
         "parked child", "ApplyCommand:answer-grant", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
@@ -136,7 +136,7 @@ public static class WorkflowViewFixtures
     private static string LinAddress(string team) => team == "ENG" ? "ITM-01JKB/intake-linear/1" : "ITM-01JKC/intake-linear/1";
 
     private static InstanceSummary Intake(string team, DateTimeOffset since, string now) =>
-        Row(LinAddress(team), _intake, "poll", since, null, Subject("text", team, $"Linear {team}"), _intake.Cells("poll"), now, "ApplyCommand:cancel");
+        Row(LinAddress(team), _intake, "poll", since, null, Subject("text", $"Linear {team}", $"Linear {team}"), _intake.Cells("poll"), now, "ApplyCommand:cancel");
 
     private static IReadOnlyList<InstanceSummary> Roots() =>
     [
@@ -144,8 +144,8 @@ public static class WorkflowViewFixtures
         DoneTriage("ITM-01JK8/triage-alert/1", "sentry #8801", Today(10, 30)),
         DoneTriage("ITM-01JK9/triage-alert/1", "sentry #8797", Today(10, 5)),
         DoneTriage("ITM-01JKA/triage-alert/1", "sentry #8790", Today(9, 40)),
-        Intake("ENG", Today(12, 10), "engine polling in ITM-01JKB"),
-        Intake("APP", Today(12, 15), "engine polling in ITM-01JKC"),
+        Intake("ENG", Today(12, 10), "engine waiting in ITM-01JKB"),
+        Intake("APP", Today(12, 15), "engine waiting in ITM-01JKC"),
     ];
 
     private static ListCounts CountsOf(IReadOnlyList<InstanceSummary> roots) => new(
@@ -483,7 +483,7 @@ public static class WorkflowViewFixtures
         return Detail(_inc14, "Outbox retry storm", PathOrdering.Path,
             new CurrentState("mitigate", new StepDeclaration("active", "step.agent", "roll back the last release"), [], null, status),
             _incident.Facts(
-                Produced(_incident, "fact:alert", "PagerDuty P-2211", At(10, 12, 11, 2), "service:webhook", Ref(factKey: "fact:alert")),
+                Produced(_incident, "fact:alert", "PagerDuty P-2211 · Outbox retry storm", At(10, 12, 11, 2), "service:webhook", Ref(factKey: "fact:alert")),
                 Produced(_incident, "fact:severity", "sev2", At(10, 12, 11, 4), "step.assess", Ref(factKey: "fact:severity")),
                 Produced(_incident, "fact:history", "2 of 40 events", At(10, 12, 11, 3), "service:webhook", Ref(factKey: "fact:history"))),
             [], Counts(12, 1, 0));
@@ -497,7 +497,7 @@ public static class WorkflowViewFixtures
             new CurrentState("classify", new StepDeclaration("active", "step.classify", "a person classifies the alert"),
                 [], new DeskForm(RunToken.From("2.1"), [new DeskOutput("fact:severity", FactType.Text, true)], ["output.nonempty"], Act("CompleteStep")), StatusDeskTask()),
             _triage.Facts(
-                Produced(_triage, "fact:alert", "sentry #8812 TypeError", At(10, 12, 12, 22), "service:webhook", Ref(factKey: "fact:alert")),
+                Produced(_triage, "fact:alert", "sentry #8812 TypeError in tabs.layout", At(10, 12, 12, 22), "service:webhook", Ref(factKey: "fact:alert")),
                 Fake(_triage, "fact:severity", FactStatus.Pending, "awaiting your answer", pending: pending)),
             [], Counts(3, 0, 1));
     }
@@ -520,7 +520,7 @@ public static class WorkflowViewFixtures
     /// </summary>
     public static InstanceDetail ItemProduce()
     {
-        var row = Row("ITM-01JE7/item/1/step.4", _step, "produce", Today(12, 20), null, Subject("text", "ITM-01JE7", "Linear ENG-511 · repo agentic-workflow · no project · feature:needs-you.ack"),
+        var row = Row("ITM-01JE7/item/1/step.4", _step, "produce", Today(12, 20), null, Subject("text", "Linear ENG-511 · repo agentic-workflow ·", "Linear ENG-511 · repo agentic-workflow · no project · feature:needs-you.ack"),
             _step.Cells("produce", round: 1, Shape(("produce", c => c with { Round = new Round(2, 3) }))),
             "your output for the Step (desk) · round 2/3", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
         var status = DeskStatus(row, "Produce the Step output for ITM-01JE7 (round 2/3)", "3.1", ("fact:output", "<file>"),

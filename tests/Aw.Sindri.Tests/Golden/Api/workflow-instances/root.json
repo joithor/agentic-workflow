@@ -669,7 +669,7 @@
       "engineOwned": null,
       "subject": {
         "kind": "text",
-        "key": "APP",
+        "key": "Linear APP",
         "label": "Linear APP",
         "href": null
       },
@@ -726,7 +726,7 @@
           "terminal": true
         }
       ],
-      "now": "engine polling in ITM-01JKC",
+      "now": "engine waiting in ITM-01JKC",
       "answer": null,
       "actions": [
         "ApplyCommand:cancel"
@@ -751,7 +751,7 @@
       "engineOwned": null,
       "subject": {
         "kind": "text",
-        "key": "ENG",
+        "key": "Linear ENG",
         "label": "Linear ENG",
         "href": null
       },
@@ -808,7 +808,7 @@
           "terminal": true
         }
       ],
-      "now": "engine polling in ITM-01JKB",
+      "now": "engine waiting in ITM-01JKB",
       "answer": null,
       "actions": [
         "ApplyCommand:cancel"
