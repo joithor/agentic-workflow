@@ -23,6 +23,7 @@ internal static class ApiScenarios
         ("profile-approve", "stale-hash"), ("profile-approve", "bad-body"),
         .. ContextApiScenarios.Rows,
         .. ViewScenarios.All,
+        .. ItemScenarios.All,
     ];
 
     /// <summary>Whether the scenario's host must refuse the prover label (its home isn't temporary).</summary>
@@ -32,7 +33,10 @@ internal static class ApiScenarios
     public static async Task<GoldenHost> Start(string slug, string scenario, CancellationToken ct) =>
         ContextApiScenarios.Handles(slug)
             ? await ContextApiScenarios.Start(slug, scenario, ct)
-            : await GoldenHost.Start(temporary: !NeedsNonTemporaryHome(slug, scenario), ct);
+            : await GoldenHost.Start(temporary: !NeedsNonTemporaryHome(slug, scenario), ct, ProfileYaml(slug, scenario));
+
+    /// <summary>The live profile the scenario's host starts with: the item scenarios need two repos.</summary>
+    public static string ProfileYaml(string slug, string scenario) => ItemScenarios.Handles(slug, scenario) ? ItemScenarios.ProfileYaml : GoldenHost.ProfileYaml;
 
     /// <summary>Runs the scenario against <paramref name="host"/> and returns the body to compare.</summary>
     public static async Task<string> Body(GoldenHost host, string slug, string scenario, CancellationToken ct)
@@ -43,6 +47,11 @@ internal static class ApiScenarios
         }
 
         var token = host.Token.Value;
+        if (ItemScenarios.Handles(slug, scenario))
+        {
+            return await ItemScenarios.Body(host, slug, scenario, ct);
+        }
+
         if (ViewScenarios.Handles(slug, scenario))
         {
             return await ViewScenarios.Body(host, slug, scenario, ct);

@@ -71,6 +71,15 @@ public static class EventTypes
     /// <summary>A human asked for the views to be rebuilt (not public).</summary>
     public const string ViewsRebuilt = "views.rebuilt";
 
+    /// <summary>A human created a work item.</summary>
+    public const string ItemCreated = "item.created";
+
+    /// <summary>An item moved from one state to another.</summary>
+    public const string ItemStateChanged = "item.state-changed";
+
+    /// <summary>An existing item was linked to a tracker record.</summary>
+    public const string ItemLinked = "item.linked";
+
     /// <summary>The event a background service records per run: 'service.&lt;name&gt;'.</summary>
     /// <param name="service">The service.</param>
     /// <returns>The event type, for example 'service.heartbeat'.</returns>

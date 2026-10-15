@@ -12,7 +12,17 @@ internal static class EndpointTable
         var queries = group.MapGroup(string.Empty).WithMetadata(QueryRouteMetadata.Instance);   // X-Sindri-After honoured (read-your-writes)
         var commands = group.MapGroup(string.Empty).WithMetadata(CommandRouteMetadata.Instance);   // Origin refused before binding (SND-API-008)
 
+        _ = MapQueries(queries);
+        _ = MapCommands(commands);
+        return app;
+    }
+
+    private static RouteGroupBuilder MapQueries(RouteGroupBuilder queries)
+    {
         // ---- queries: one line per slice, sorted ----
+        _ = queries.MapGetItem();
+        _ = queries.MapGetItemTimeline();
+        _ = queries.MapGetQueue();
         _ = queries.MapGetInstance();
         _ = queries.MapGetInstanceEvents();
         _ = queries.MapGetProfile();
@@ -29,6 +39,7 @@ internal static class EndpointTable
         _ = queries.MapGetStatus();
         _ = queries.MapListContextNeighbors();
         _ = queries.MapListCommands();
+        _ = queries.MapListItems();
         _ = queries.MapListInstances();
         _ = queries.MapListServices();
         _ = queries.MapListRecipes();
@@ -37,15 +48,15 @@ internal static class EndpointTable
         _ = queries.MapShowContextNode();
         _ = queries.MapShowRecipe();
         _ = queries.MapStreamEvents();
-
-        MapCommands(commands);
-        return app;
+        return queries;
     }
 
-    private static void MapCommands(RouteGroupBuilder commands)
+    private static RouteGroupBuilder MapCommands(RouteGroupBuilder commands)
     {
         // ---- commands: one line per slice, sorted ----
         _ = commands.MapApproveProfile();
+        _ = commands.MapCloseItem();
+        _ = commands.MapCreateItem();
         _ = commands.MapRebuildViews();
         _ = commands.MapImportContextMap();
         _ = commands.MapPromoteContextMap();
@@ -60,5 +71,6 @@ internal static class EndpointTable
         _ = commands.MapIssueNonce();
         _ = commands.MapApplyCommand();
         _ = commands.MapCompleteStep();
+        return commands;
     }
 }

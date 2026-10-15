@@ -12,6 +12,7 @@ using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Health;
+using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Blocks;
@@ -24,18 +25,24 @@ using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.ApproveRecipe;
+using Aw.Sindri.Features.CloseItem;
 using Aw.Sindri.Features.CompleteStep;
 using Aw.Sindri.Features.ContextCalls;
+using Aw.Sindri.Features.CreateItem;
 using Aw.Sindri.Features.EvalRecipe;
 using Aw.Sindri.Features.GetInstance;
 using Aw.Sindri.Features.GetInstanceEvents;
 using Aw.Sindri.Features.GetInstanceFact;
+using Aw.Sindri.Features.GetItem;
+using Aw.Sindri.Features.GetItemTimeline;
 using Aw.Sindri.Features.GetProfile;
+using Aw.Sindri.Features.GetQueue;
 using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.IssueChallenge;
 using Aw.Sindri.Features.IssueNonce;
 using Aw.Sindri.Features.ListCommands;
 using Aw.Sindri.Features.ListInstances;
+using Aw.Sindri.Features.ListItems;
 using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Features.RebuildViews;
@@ -51,6 +58,7 @@ using Aw.Sindri.Features.ValidateProfile;
 using Aw.Sindri.Features.ValidateRecipe;
 using Aw.Sindri.Host.Commands.Probe;
 using Aw.Sindri.Host.Commands.Recipe;
+using Aw.Sindri.Host.Endpoints;
 using Aw.Sindri.Host.Mcp;
 
 namespace Aw.Sindri.Host;
@@ -70,10 +78,17 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ServiceRan))]
 [JsonSerializable(typeof(ProfileChecked))]
 [JsonSerializable(typeof(ViewsRebuilt))]
+[JsonSerializable(typeof(ItemCreated))]
+[JsonSerializable(typeof(ItemCreatedPublic))]
+[JsonSerializable(typeof(ItemStateChanged))]
+[JsonSerializable(typeof(ItemLinked))]
 [JsonSerializable(typeof(AsOf))]
 [JsonSerializable(typeof(ViewsStatus))]
 [JsonSerializable(typeof(ServiceRow))]
 [JsonSerializable(typeof(ProfileRow))]
+[JsonSerializable(typeof(ItemRow))]
+[JsonSerializable(typeof(AliasRow))]
+[JsonSerializable(typeof(TimelineRow))]
 [JsonSerializable(typeof(HealthReport))]
 [JsonSerializable(typeof(CommandAccepted))]
 [JsonSerializable(typeof(GetStatusResponse))]
@@ -92,6 +107,20 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(GetProfileRequest))]
 [JsonSerializable(typeof(GetProfileResponse))]
 [JsonSerializable(typeof(RebuildViewsRequest))]
+[JsonSerializable(typeof(CreateItemRequest))]
+[JsonSerializable(typeof(ItemCreatedResponse))]
+[JsonSerializable(typeof(CloseItemRequest))]
+[JsonSerializable(typeof(CloseItemBody))]
+[JsonSerializable(typeof(GetQueueRequest))]
+[JsonSerializable(typeof(QueueResponse))]
+[JsonSerializable(typeof(QueueGroupView))]
+[JsonSerializable(typeof(ItemSummary))]
+[JsonSerializable(typeof(ListItemsRequest))]
+[JsonSerializable(typeof(ListItemsResponse))]
+[JsonSerializable(typeof(GetItemRequest))]
+[JsonSerializable(typeof(ItemView))]
+[JsonSerializable(typeof(GetItemTimelineRequest))]
+[JsonSerializable(typeof(TimelineResponse))]
 [JsonSerializable(typeof(Recipe))]
 [JsonSerializable(typeof(BlockDescriptor))]
 [JsonSerializable(typeof(ValidateRecipeResponse))]
@@ -149,6 +178,8 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(PurgeReport))]
 [JsonSerializable(typeof(ImportContextMapRequest))]
 [JsonSerializable(typeof(ImportContextMapResponse))]
+// Two RecordKey types meet here: Sindri's item link key and the context lane's source key; name Sindri's apart (SYSLIB1031).
+[JsonSerializable(typeof(Core.Ids.RecordKey), TypeInfoPropertyName = "ItemRecordKey")]
 [JsonSerializable(typeof(BudgetFigures))]
 [JsonSerializable(typeof(ChildGroup))]
 [JsonSerializable(typeof(ChildRow))]
