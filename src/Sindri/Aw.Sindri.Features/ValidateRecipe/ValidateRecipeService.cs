@@ -1,6 +1,5 @@
 using Aw.Kernel;
 using Aw.Kernel.Services;
-using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Validation;
@@ -13,7 +12,7 @@ namespace Aw.Sindri.Features.ValidateRecipe;
 /// recipe file's directory (spec §9.1); text has no directory, so its children don't resolve. RCP-EFFECT-001 checks
 /// the approved profile's 'workflow.effects' (S1-D11); it is skipped when none is approved or it has no such key.
 /// </summary>
-internal sealed class ValidateRecipeService(IRecipeReader reader, IRecipeFiles files, BlockCatalog catalog, IApprovedProfile profile)
+internal sealed class ValidateRecipeService(IRecipeReader reader, IRecipeFiles files, BlockCatalog catalog, IRecipeProfileFacts profileFacts)
     : IService<ValidateRecipeRequest, ValidateRecipeResponse>
 {
     public async ValueTask<Result<ValidateRecipeResponse>> Handle(ValidateRecipeRequest request, CancellationToken cancellationToken)
@@ -34,13 +33,13 @@ internal sealed class ValidateRecipeService(IRecipeReader reader, IRecipeFiles f
         var children = request.Path is { } path
             ? await SameDirectoryChildren.Load(path, document.Recipe, reader, files, cancellationToken).ConfigureAwait(false)
             : SameDirectoryChildren.None;
-        var approved = await profile.Latest(cancellationToken).ConfigureAwait(false);
-        if (approved.IsError)
+        var facts = await profileFacts.Current(cancellationToken).ConfigureAwait(false);
+        if (facts.IsError)
         {
-            return approved.Error;
+            return facts.Error;
         }
 
-        var context = new ValidationContext(catalog, ApprovedRecipeProfileFacts.Of(approved.Value), children, BaseRecipe: null);
+        var context = new ValidationContext(catalog, facts.Value, children, BaseRecipe: null);
         return new ValidateRecipeResponse([.. reading.Findings, .. RecipeValidator.Validate(document, context)], document.Hash)
         {
             Normalized = document.Recipe,

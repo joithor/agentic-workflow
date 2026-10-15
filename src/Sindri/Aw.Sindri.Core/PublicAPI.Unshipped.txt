@@ -5766,7 +5766,6 @@ static Aw.Sindri.Core.Mcp.ProviderFileRead.operator !=(Aw.Sindri.Core.Mcp.Provid
 static Aw.Sindri.Core.Mcp.ProviderFileRead.operator ==(Aw.Sindri.Core.Mcp.ProviderFileRead? left, Aw.Sindri.Core.Mcp.ProviderFileRead? right) -> bool
 static Aw.Sindri.Core.Profile.ApiSettings.operator !=(Aw.Sindri.Core.Profile.ApiSettings? left, Aw.Sindri.Core.Profile.ApiSettings? right) -> bool
 static Aw.Sindri.Core.Profile.ApiSettings.operator ==(Aw.Sindri.Core.Profile.ApiSettings? left, Aw.Sindri.Core.Profile.ApiSettings? right) -> bool
-static Aw.Sindri.Core.Profile.ApprovedRecipeProfileFacts.Of(Aw.Sindri.Core.Profile.LoadedProfile? approved) -> Aw.Sindri.Core.Workflow.Validation.RecipeProfileFacts!
 static Aw.Sindri.Core.Profile.Cadence.Parse(string! text) -> Aw.Kernel.Result<Aw.Sindri.Core.Profile.Cadence!>!
 static Aw.Sindri.Core.Profile.Cadence.operator !=(Aw.Sindri.Core.Profile.Cadence? left, Aw.Sindri.Core.Profile.Cadence? right) -> bool
 static Aw.Sindri.Core.Profile.Cadence.operator ==(Aw.Sindri.Core.Profile.Cadence? left, Aw.Sindri.Core.Profile.Cadence? right) -> bool

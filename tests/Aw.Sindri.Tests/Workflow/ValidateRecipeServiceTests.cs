@@ -87,5 +87,5 @@ public sealed class ValidateRecipeServiceTests : IDisposable
     }
 
     private ValidateRecipeService Service() =>
-        new(RecipeReaderTests.Reader, _files, new BlockCatalog([TestBlocks.Step("step.produce")], []), new InMemoryProfiles());
+        new(RecipeReaderTests.Reader, _files, new BlockCatalog([TestBlocks.Step("step.produce")], []), new Aw.Sindri.Core.Profile.ApprovedRecipeProfileFacts(new InMemoryProfiles()));
 }

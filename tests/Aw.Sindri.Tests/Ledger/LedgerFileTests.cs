@@ -64,10 +64,10 @@ public sealed class LedgerFileTests : IDisposable
     [Fact, Trait("Lane", "integration")]
     public async Task A_copy_of_the_recipes_schema_gains_workflow_claims_on_the_first_take_and_keeps_its_recipes()
     {
-        // The previous schema is P2's: S1's three, then the recipe registry at 4 (engine P6 unit (d) adds 5).
+        // The previous schema is main's: S1's three, the recipe registry at 4, the Temporal event id at 5; engine P6 unit (d) adds claims at 6.
         var previous = Path.Combine(_home.Path, "previous.db");
         var runner = new MigrationRunner(new SqliteConnectionFactory(new SqliteOptions(previous)), new FakeTimeProvider(), backupBeforeUpgrade: false);
-        Assert.True((await runner.Migrate(LedgerDatabase.Migrations, TestContext.Current.CancellationToken, targetVersion: LedgerDatabase.RecipesVersion)).IsSuccess);
+        Assert.True((await runner.Migrate(LedgerDatabase.Migrations, TestContext.Current.CancellationToken, targetVersion: LedgerDatabase.ClaimsVersion - 1)).IsSuccess);
         Execute(previous, "INSERT INTO recipes (hash, id, version, text, registered_at) VALUES ('sha256:" + new string('a', 64) + "', 'workflow.step', 1, '{}', '2026-10-10T07:05:07.0000000Z')");
         var home = Path.Combine(_home.Path, "home");
         _ = Directory.CreateDirectory(home);

@@ -10,7 +10,7 @@ public sealed class ApprovedRecipeProfileFacts(IApprovedProfile profile) : IReci
     /// <summary>The validator's profile facts for <paramref name="approved"/>: its effect allowlist, or none.</summary>
     /// <param name="approved">The approved profile, or null when none is approved.</param>
     /// <returns>The facts RCP-EFFECT-001 reads.</returns>
-    public static RecipeProfileFacts Of(LoadedProfile? approved) =>
+    private static RecipeProfileFacts Of(LoadedProfile? approved) =>
         approved is null ? RecipeProfileFacts.None : new RecipeProfileFacts(EffectSettings.Of(approved.Profile).Allowlist);
 
     /// <inheritdoc/>

@@ -73,7 +73,7 @@ internal static class InvalidFixtureRun
 
     private static async Task<IReadOnlyList<RecipeFinding>> Service(IRecipeReader reader, InMemoryRecipeFiles files, BlockCatalog catalog, string path, CancellationToken cancellationToken)
     {
-        var service = new ValidateRecipeService(reader, files, catalog, new InMemoryProfiles());
+        var service = new ValidateRecipeService(reader, files, catalog, new Aw.Sindri.Core.Profile.ApprovedRecipeProfileFacts(new InMemoryProfiles()));
         return (await service.Handle(ValidateRecipeRequest.FromPath(path), cancellationToken)).Value.Findings;
     }
 

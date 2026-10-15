@@ -10,6 +10,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Tests.CompleteStep;
 using Microsoft.Extensions.DependencyInjection;
 using Temporalio.Api.Enums.V1;
 using Temporalio.Client;
@@ -26,7 +27,7 @@ namespace Aw.Sindri.Tests.Workflows.Effects;
 /// keys). A refusal writes 'outbox.refused' with its code and parks the instance with spec-conflict of that kind.
 /// </summary>
 [Lane(TestLane.Integration)]
-public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) : IClassFixture<SindriTimeSkippingServer>, IDisposable
+public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server, DevServer devServer) : IClassFixture<SindriTimeSkippingServer>, IClassFixture<DevServer>, IDisposable
 {
     private static readonly TimeSpan _delay = EffectSettings.DefaultDispatchDelay;
     private static readonly BlockId _notify = BlockId.From("effect.notify.desk");
@@ -183,6 +184,11 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) 
             Assert.Equal("SND-WF-015", refused.Code);   // the state's 10 m timeout parked the instance meanwhile; the dispatch park waits behind it
             Assert.Equal(Kernel.Outbox.OutboxRetryPolicy.Default.MaxAttempts, _desk.RecipeCalls.Count);
             Assert.Equal(WorkflowExecutionStatus.Running, (await handle.DescribeAsync()).Status);
+
+            // The refusal is held by a dispatch park behind the timeout park: resuming the timeout surfaces it, carrying the effect.
+            _ = await handle.ExecuteUpdateAsync(wf => wf.AnswerAsync(Resume('e')), new WorkflowUpdateOptions(new string('e', 32)));
+            var dispatch = await WorkflowsHarness.Until(handle, static v => v.State == "parked" && v.Detail == "spec-conflict (dispatch)");
+            Assert.Equal("spec-conflict (dispatch)", dispatch.Detail);
             await handle.TerminateAsync("test over");
         }, Token);
     }
@@ -278,7 +284,7 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) 
     public async Task A_drift_reapproval_wakes_the_parked_instance_and_resends_the_refused_effect()
     {
         var window = TimeSpan.FromSeconds(5);   // the profile's shortest dispatch delay: the dev server runs in real time, and the wake finds the instance through its visibility store, which the time-skipping server lacks
-        await using var env = await WorkflowsHarness.StartDevServer(ct: Token);
+        var env = devServer.Environment;   // one real-time server for both wake cases
         var recipe = _harness.Approve(WorkflowsHarness.Shipped("dev/workflow.dev-notify.yaml"));
         await Allow("5s", _notify);
         await using var sindri = Sindri(env);
@@ -314,7 +320,7 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) 
     public async Task A_revoke_wakes_the_instance_into_a_revoked_park_before_the_dispatch_delay_ends()
     {
         var window = TimeSpan.FromSeconds(5);   // the profile's shortest dispatch delay: the dev server runs in real time
-        await using var env = await WorkflowsHarness.StartDevServer(ct: Token);
+        var env = devServer.Environment;   // one real-time server for both wake cases
         var recipe = _harness.Approve(WorkflowsHarness.Shipped("dev/workflow.dev-notify.yaml"));
         await Allow("5s", _notify);
         await using var sindri = Sindri(env);
