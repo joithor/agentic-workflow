@@ -1,4 +1,3 @@
-#pragma warning disable CA1822, IDE0052 // red stage: removed when the service takes its ports
 using Aw.Meta.Core;
 using Aw.Meta.Features.LogAppend;
 using Aw.Meta.Testing;
@@ -9,7 +8,7 @@ public sealed class AppendLogTests
 {
     private readonly MetaWorld _world = new();
 
-    private AppendLogService Service() => new();
+    private AppendLogService Service() => new(_world.Log, _world.Clock);
 
     [Fact, Trait("Lane", "unit")]
     public async Task A_line_is_appended_with_the_kind_and_the_time()

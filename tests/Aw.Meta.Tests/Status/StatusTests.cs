@@ -1,4 +1,3 @@
-#pragma warning disable CA1822, IDE0052 // red stage: removed when the service takes its ports
 using Aw.Meta.Core;
 using Aw.Meta.Core.Gate;
 using Aw.Meta.Core.Obligations;
@@ -11,7 +10,7 @@ public sealed class StatusTests
 {
     private readonly MetaWorld _world = new();
 
-    private StatusService Service() => new();
+    private StatusService Service() => new(_world.Config, new StatusReader(_world.Reader, _world.Messages, _world.Gates, _world.Owner, _world.Lanes), _world.Clock);
 
     private async Task<StatusResponse> Status()
     {

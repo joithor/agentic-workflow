@@ -39,7 +39,7 @@ public sealed class ObligationReader(IMessageStore messages, ILaneStore lanes, I
             Lanes = map.Value,
             MetaLane = metaLane,
             LatestMerge = merge.Value,
-            Answers = answers.Value,
+            Answers = [.. answers.Value.Where(a => !string.Equals(a.AskedBy, metaLane, StringComparison.OrdinalIgnoreCase))],   // the meta's own questions need no relay
             Heartbeat = Beat(beat.Value),
             Now = now,
         }));

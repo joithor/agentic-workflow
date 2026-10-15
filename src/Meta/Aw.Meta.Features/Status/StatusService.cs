@@ -1,10 +1,18 @@
 using Aw.Kernel;
 using Aw.Kernel.Services;
+using Aw.Meta.Core.Ports;
 
 namespace Aw.Meta.Features.Status;
 
-internal sealed class StatusService : IService<StatusRequest, StatusResponse>
+/// <summary>Where the meta stands: what it owes, the merge queue, the owner's queue and the lane map.</summary>
+/// <param name="config">The team config.</param>
+/// <param name="status">Reads the parts.</param>
+/// <param name="clock">The current time.</param>
+internal sealed class StatusService(IMetaConfig config, StatusReader status, TimeProvider clock) : IService<StatusRequest, StatusResponse>
 {
-    public ValueTask<Result<StatusResponse>> Handle(StatusRequest request, CancellationToken cancellationToken) =>
-        throw new NotSupportedException();
+    public async ValueTask<Result<StatusResponse>> Handle(StatusRequest request, CancellationToken cancellationToken)
+    {
+        var team = await config.Load(cancellationToken).ConfigureAwait(false);
+        return team.IsError ? team.Error : await status.Read(team.Value.MetaLane, clock.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+    }
 }

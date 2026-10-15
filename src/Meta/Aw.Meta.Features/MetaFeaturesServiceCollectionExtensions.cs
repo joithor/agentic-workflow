@@ -80,6 +80,7 @@ public static class MetaFeaturesServiceCollectionExtensions
         .AddScoped<AppendLogService>()
         .AddScoped<IValidator<AppendLogRequest>, AppendLogValidator>()
         .Validated<AppendLogService, AppendLogRequest, AppendLogResponse>()
+        .AddScoped<StatusReader>()
         .AddScoped<StatusService>()
         .Plain<StatusService, StatusRequest, StatusResponse>();
 

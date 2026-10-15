@@ -1,4 +1,3 @@
-#pragma warning disable CA1822, IDE0052 // red stage: removed when the services take their ports
 using Aw.Meta.Core;
 using Aw.Meta.Core.Obligations;
 using Aw.Meta.Features.Owner;
@@ -12,11 +11,11 @@ public sealed class OwnerTests
 {
     private readonly MetaWorld _world = new();
 
-    private ListOwnerService List() => new();
+    private ListOwnerService List() => new(_world.Owner);
 
-    private AnswerOwnerService Answer() => new();
+    private AnswerOwnerService Answer() => new(_world.Owner, _world.Log, _world.Clock);
 
-    private AskOwnerService Ask() => new();
+    private AskOwnerService Ask() => new(_world.Config, _world.Owner, _world.Clock);
 
     [Fact, Trait("Lane", "unit")]
     public async Task A_lane_s_owner_question_shows_in_the_owner_queue_until_it_is_answered()
