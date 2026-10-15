@@ -9,6 +9,8 @@
 #     temporal, temporal-test-server   scripts/binaries-lock.sh fetch <name> (sha256-verified, idempotent) into
 #                  ${AW_STATE_DIR:-~/.agentic-workflow}/cache/bin/<name>-<pin>/, where sindri serve and the tests look;
 #                  `temporal --version` is run afterwards and a failed fetch or a binary that won't run fails the script
+#   bwrap is also probed with a no-op sandbox (`bwrap --ro-bind / / true`); when that fails because AppArmor restricts
+#   user namespaces (Ubuntu 24.04), the exact /etc/apparmor.d/bwrap profile and `sudo apparmor_parser -r` are printed and the run exits 1.
 #   system packages, checked only (installing needs root, so the exact command is printed and this exits 1):
 #     Linux: bubblewrap (bwrap: graphify never runs unsandboxed), libsecret-tools (secret-tool: Sindri keychain:
 #            pointers), clang + zlib1g-dev (NativeAOT), lsof, tmux, curl, git
@@ -29,6 +31,8 @@ echo "=== External tools (uv, graphify, Temporal, system packages) ==="
 
 # --- system packages: check, never sudo ---
 MISSING_PKGS=""
+BWRAP_BROKEN=0
+BWRAP_RESTRICTED=""
 need() {   # <command> <apt package> [<what needs it>]
   if command -v "$1" &>/dev/null; then echo "  $1: found"; else
     echo "  $1: MISSING${3:+ ($3)}"; MISSING_PKGS="$MISSING_PKGS $2"
@@ -36,6 +40,15 @@ need() {   # <command> <apt package> [<what needs it>]
 }
 if [ "$OS" = "Linux" ]; then
   need bwrap bubblewrap "network sandbox for graphify; it never runs unsandboxed"
+  # Present is not enough: Ubuntu 24.04 (kernel.apparmor_restrict_unprivileged_userns=1, no profile for bwrap) refuses
+  # the user namespace, so graphify could never run. Probe a no-op sandbox; AW_DEPS_BWRAP_PROBE replaces the command (tests).
+  if command -v bwrap &>/dev/null; then
+    if _why="$(eval "${AW_DEPS_BWRAP_PROBE:-bwrap --ro-bind / / true}" 2>&1)"; then echo "  bwrap: sandbox works"; else
+      echo "  bwrap: found but cannot create a sandbox (${_why:-no output})"; BWRAP_BROKEN=1
+      _restrict=""; read -r _restrict <"${AW_DEPS_USERNS_FILE:-/proc/sys/kernel/apparmor_restrict_unprivileged_userns}" 2>/dev/null || true
+      BWRAP_RESTRICTED="$_restrict"
+    fi
+  fi
   need secret-tool libsecret-tools "Sindri keychain: pointers"
   need clang clang "NativeAOT publish"
   if [ -e "${AW_DEPS_ZLIB_H:-/usr/include/zlib.h}" ]; then echo "  zlib.h: found"; else
@@ -106,6 +119,29 @@ if [ -n "$MISSING_PKGS" ]; then
   echo "  Missing system packages; root is needed, so this script does not install them. Run:"
   if command -v apt-get &>/dev/null; then echo "    sudo apt-get install -y$MISSING_PKGS"
   else echo "    (install with your package manager:$MISSING_PKGS; Debian/Ubuntu package names)"; fi
+  if dry; then echo "  [dry-run] a real run would stop here"; else FAILED=1; fi
+fi
+
+# --- bwrap present but unusable: the exact root fix, then fail ---
+if [ "$BWRAP_BROKEN" = "1" ]; then
+  echo ""
+  if [ "$BWRAP_RESTRICTED" = "1" ]; then
+    echo "  AppArmor blocks unprivileged user namespaces (kernel.apparmor_restrict_unprivileged_userns=1) and has no profile"
+    echo "  for /usr/bin/bwrap, so graphify's sandbox cannot start. Root is needed, so this script does not apply it. Run:"
+    cat <<'FIX'
+    sudo tee /etc/apparmor.d/bwrap >/dev/null <<'PROFILE'
+abi <abi/4.0>,
+include <tunables/global>
+profile bwrap /usr/bin/bwrap flags=(unconfined) {
+  userns,
+  include if exists <local/bwrap>
+}
+PROFILE
+    sudo apparmor_parser -r /etc/apparmor.d/bwrap
+FIX
+  else
+    echo "  bwrap cannot create a sandbox and the AppArmor userns restriction is not the cause; run \`bwrap --ro-bind / / true\` and read its error."
+  fi
   if dry; then echo "  [dry-run] a real run would stop here"; else FAILED=1; fi
 fi
 
