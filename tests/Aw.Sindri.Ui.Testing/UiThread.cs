@@ -47,7 +47,18 @@ public static class UiThread
     {
         private readonly BlockingCollection<(SendOrPostCallback Callback, object? State)> _queue = [];
 
-        public override void Post(SendOrPostCallback d, object? state) => _ = _queue.TryAdd((d, state));
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            try
+            {
+                _ = _queue.TryAdd((d, state));
+            }
+            catch (InvalidOperationException)
+            {
+                // The run has ended (CompleteAdding): work posted after it, such as a timer's finalizer, is dropped.
+                // why: a throw here can land on the finalizer thread and kill the test host
+            }
+        }
 
         public override void Send(SendOrPostCallback d, object? state) => throw new NotSupportedException("The UI thread stand-in takes posted work only.");
 
