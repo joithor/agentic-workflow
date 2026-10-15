@@ -77,6 +77,9 @@ check "no team config: exit 1 with the fix" "$RC:$(printf '%s' "$OUT" | grep -c 
 jq '.repo = "relative/path"' "$cfg" > "$WORK/rel.json"
 OUT="$(AW_META_CONFIG="$WORK/rel.json" bash "$DIR/meta-launch.sh" --no-open 2>&1)"; RC=$?
 check "relative repo refused (Warp needs absolute cwd)" "$RC" "1"
+mkdir -p "$WORK/bin"; ln -s "$DIR/meta-launch.sh" "$WORK/bin/aw-meta-launch"   # as install-meta.sh links it
+OUT="$("$WORK/bin/aw-meta-launch" --no-open --dry-run --lanes api)"
+check "run through a symlink: finds meta-lane.sh beside the real script" "$(printf '%s\n' "$OUT" | grep -c "$DIR/meta-lane.sh demo api")" "1"
 jq '.lanes = ["meta", "api"]' "$cfg" > "$WORK/dup.json"   # team-init lists the meta lane in lanes too
 OUT="$(AW_META_CONFIG="$WORK/dup.json" bash "$DIR/meta-launch.sh" --no-open --dry-run)"
 check "meta lane listed in lanes: one pane, not two" "$(printf '%s\n' "$OUT" | grep -c 'exec: tmux new -A -s demo-meta')" "1"
