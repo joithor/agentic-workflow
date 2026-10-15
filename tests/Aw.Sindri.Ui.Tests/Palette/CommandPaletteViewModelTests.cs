@@ -421,6 +421,46 @@ public sealed class CommandPaletteViewModelTests
         Assert.Empty(spoken);
     }
 
+    // J3 (corr-1): a retry from Failed or from Accepted clears the old outcome only after the phase is Sending, so the entry's
+    // name is never the half-cleared ", :" (or an empty status that leaves ", 3 of 14").
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task A_retry_never_announces_a_half_cleared_outcome(bool fromFailed)
+    {
+        if (fromFailed)
+        {
+            _server.Rebuild = RouteAnswer.Problem(System.Net.HttpStatusCode.InternalServerError, "SND-API-005", "failed");
+        }
+
+        _palette.Open();
+        for (var i = 0; i < 200 && _palette.Selected?.Id != "RebuildViews"; i++)
+        {
+            _palette.Move(1);
+        }
+
+        var rebuild = _palette.Selected!;
+        await _palette.Run(rebuild, Token);
+        _server.Rebuild = RouteAnswer.SpecShaped("views-rebuild", "accepted");
+        var spoken = new List<string>();
+        _palette.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(CommandPaletteViewModel.Announcement))
+            {
+                spoken.Add(_palette.Announcement);
+            }
+        };
+
+        await _palette.Run(rebuild, Token);
+
+        Assert.NotEmpty(spoken);
+        Assert.All(spoken, t =>
+        {
+            Assert.DoesNotContain(", :", t, StringComparison.Ordinal);
+            Assert.False(t.StartsWith(',') || t.Length == 0);
+        });
+    }
+
     // F2: a refusal shows Sindri's code as the entry's status and its detail as served; the palette stays open.
     [Fact]
     public async Task A_refused_ready_entry_shows_sindris_code_and_detail()
