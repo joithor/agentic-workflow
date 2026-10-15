@@ -27,7 +27,7 @@ public sealed class ShortcutsViewModelTests
         Assert.True(sheet.IsOpen);
         Assert.Contains(("⌘K / Ctrl+K", "Command palette"), sheet.Rows.Select(r => (r.Keys, r.Action)));
         Assert.Contains(("?", "Shortcuts sheet"), sheet.Rows.Select(r => (r.Keys, r.Action)));
-        Assert.Contains(("⌘,", "Settings"), sheet.Rows.Select(r => (r.Keys, r.Action)));
+        Assert.Contains(("⌘, / Ctrl+,", "Settings"), sheet.Rows.Select(r => (r.Keys, r.Action)));
         Assert.Contains(sheet.Rows, r => r.Keys.StartsWith("G then", StringComparison.Ordinal));
         Assert.All(sheet.Rows, r => Assert.Equal(r.Keys + ": " + r.Action, r.Name));
     }
