@@ -113,26 +113,43 @@ internal sealed partial class ItemSheetViewModel
 
         Problem(string.Empty, string.Empty);
         Rest();
+        var subject = _subject;
         var answer = await api.CloseItem(url, ItemId, new CloseItemRequest(reason, _version), cancellationToken).ConfigureAwait(true);
-        if (answer.IsError && answer.Error.Code == Conflict)
+        if (answer.IsError && answer.Error.Code == Conflict && subject == _subject)
         {
-            // §9.1: the item changed since the human looked. Re-read it. The pressed control shows the API's detail
-            // inline while the item still allows it; when the re-read item no longer does (closed elsewhere), the
-            // sheet shows the detail in its own line instead, speaks it once, and the control (muted) goes when it settles.
+            // §9.1: the item changed since the human looked. Re-read it. Whichever read wins settles the conflict (Show or
+            // Failed): the pressed control shows the API's detail inline while the item still allows its action; when the
+            // item no longer does (closed elsewhere), the sheet shows the detail in its own line instead, speaks it once, and
+            // the control (muted) goes when it settles. An answer for an item the sheet has since left is no concern of the sheet.
+            _conflict = (action, answer.Error);
             _ = await Read(cancellationToken).ConfigureAwait(true);
-            if (!_allowed.Contains(action, StringComparer.Ordinal) && ProblemCode != NotFound)
-            {
-                if (_controls.TryGetValue(action, out var control))
-                {
-                    control.IsMuted = true;
-                }
-
-                Problem(answer.Error.Code, answer.Error.Message);
-                Say($"{answer.Error.Code}: {answer.Error.Message}");
-            }
         }
 
         return answer;
+    }
+
+    // The conflict a Close met, once the item is read again: the sheet speaks it when the item no longer allows the action.
+    private void Settle(IReadOnlyList<string> allowed)
+    {
+        if (_conflict is not var (action, error))
+        {
+            return;
+        }
+
+        _conflict = null;
+        if (allowed.Contains(action, StringComparer.Ordinal))
+        {
+            return;
+        }
+
+        if (_controls.TryGetValue(action, out var control))
+        {
+            control.IsMuted = true;
+        }
+
+        (_conflictAction, _conflictVersion) = (action, _version);
+        Problem(error.Code, error.Message);
+        Say($"{error.Code}: {error.Message}");
     }
 
     // Says a text through the polite region, as the queue's does: dark first, the resting text set, then live, then the text.

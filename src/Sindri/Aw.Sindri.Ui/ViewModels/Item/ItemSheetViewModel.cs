@@ -20,6 +20,10 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     private Uri? _url;
     private bool _readProblem;
     private long _version;
+    private int _subject;   // bumped when the sheet moves to another item
+    private (string Action, Error Error)? _conflict;
+    private string _conflictAction = string.Empty;   // the 409 line shown, if any: the action it refused and the version it was shown at
+    private long _conflictVersion;
     private int _pages;
 
     /// <summary>The app's copy for the sheet's headings and buttons.</summary>
@@ -121,7 +125,7 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     {
         var previous = _version;
         (HasItem, IsNotFound, IsStale, _version) = (true, false, false, item.Version);
-        if (ProblemCode == NotFound || _readProblem)
+        if (ProblemCode == NotFound || _readProblem || ConflictPassed(item))
         {
             _readProblem = false;
             Problem(string.Empty, string.Empty);
@@ -135,8 +139,13 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
         OnChanged(nameof(HasWaitingOn));
         OnChanged(nameof(HasInstance));
         ShowActions(item.Actions);
+        Settle(item.Actions);
         CancelQuestions(previous, item.Version);
     }
+
+    // corr-4: the 409 line is the state at the conflict; it goes once the item allows the action again or its version moved on.
+    private bool ConflictPassed(ItemView item) =>
+        ProblemCode == Conflict && (item.Actions.Contains(_conflictAction, StringComparer.Ordinal) || item.Version != _conflictVersion);
 
     // corr-9: a question asked about one version is not answered for another; the human is asked again at the new one.
     private void CancelQuestions(long previous, long current)
@@ -154,6 +163,7 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
 
     private void Failed(Error error)
     {
+        _conflict = null;
         if (error.Code == NotFound)
         {
             var first = ProblemCode != NotFound;
@@ -186,6 +196,7 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     private void Clear()
     {
         _controls.Clear();
+        (_conflict, _subject) = (null, _subject + 1);
         _generation++;
         (_pages, Next, HasItem, IsNotFound, IsStale) = (0, null, false, false, false);
         (Title, Repo, StateWord, VersionText, Age, Step, CreatedBy, WaitingOn, Instance) =
