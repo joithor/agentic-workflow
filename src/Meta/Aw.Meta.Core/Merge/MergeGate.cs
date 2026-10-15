@@ -8,13 +8,19 @@ public static class MergeGate
 {
     private const string NoGate = "no gate recorded for this pull request";
 
-    /// <summary>Evaluates every precondition: gate, gate-result, head, main, order, draft.</summary>
+    /// <summary>Evaluates every precondition: gate, gate-result, head, main, order, draft. With no gate recorded, only
+    /// the gate check: the pull request isn't looked up then, so order and draft would report defaults, not facts.</summary>
     /// <param name="facts">What is known about the pull request and main.</param>
     /// <returns>One check per precondition, in that order.</returns>
     public static IReadOnlyList<MergeCheck> Evaluate(MergeFacts facts)
     {
         ArgumentNullException.ThrowIfNull(facts);
         var gate = facts.Gate;
+        if (gate is null)
+        {
+            return [new MergeCheck("gate", Ok: false, NoGate + "; run aw-meta gate-run " + facts.Pr.ToString(CultureInfo.InvariantCulture))];
+        }
+
         return
         [
             new MergeCheck("gate", gate is not null, gate is null ? NoGate : "gate run " + gate.Run.ToString(CultureInfo.InvariantCulture) + " at " + gate.Head),

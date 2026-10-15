@@ -32,8 +32,14 @@ public sealed class MergeGateTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void No_gate_fails_the_gate_checks() =>
-        Assert.Equal(["gate", "gate-result", "head", "main"], Failed(Facts(gate: null)), StringComparer.Ordinal);
+    public void No_gate_reports_only_the_missing_gate_not_unfetched_defaults()
+    {
+        var checks = MergeGate.Evaluate(Facts(gate: null) with { IsDraft = false });
+
+        var only = Assert.Single(checks);
+        Assert.Equal(("gate", false), (only.Name, only.Ok));
+        Assert.EndsWith("run aw-meta gate-run 190", only.Detail, StringComparison.Ordinal);
+    }
 
     [Fact, Trait("Lane", "unit")]
     public void A_failed_gate_fails_unless_every_red_step_is_a_flake()

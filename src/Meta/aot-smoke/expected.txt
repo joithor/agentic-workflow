@@ -37,12 +37,7 @@ LANE MAP v1
 api          smoke-api (Direct)
 ui           (no session)
 ## merge-check 1
-FAIL gate: no gate recorded for this pull request
-FAIL gate-result: no gate recorded for this pull request
-FAIL head: no gate recorded for this pull request
-FAIL main: no gate recorded for this pull request
-PASS order: no earlier pull request is waiting
-PASS draft: ready for review
+FAIL gate: no gate recorded for this pull request; run aw-meta gate-run 1
 NOT READY #1
 exit 1
 ## merge-check
