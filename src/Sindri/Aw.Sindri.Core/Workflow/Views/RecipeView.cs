@@ -7,6 +7,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="Inputs">The inputs.</param>
 /// <param name="Outputs">The outputs.</param>
 /// <param name="Urgency">The urgency.</param>
+/// <param name="OrderedBy">How the states were ordered: 'path', or 'transition-list' with more than one initial path.</param>
 /// <param name="States">States in path order.</param>
 /// <param name="Loops">The loops.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
@@ -14,5 +15,6 @@ public sealed record RecipeView(
     IReadOnlyList<RecipeInputView> Inputs,
     IReadOnlyList<RecipeOutputView> Outputs,
     RecipeUrgency Urgency,
+    PathOrdering OrderedBy,
     IReadOnlyList<RecipeStateView> States,
     IReadOnlyList<RecipeLoopView> Loops);

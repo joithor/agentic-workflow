@@ -1,12 +1,12 @@
 {
-  "address": "workflow/sentry-8809",
-  "id": "WFI-1C27917745",
+  "address": "ITM-01JK7/triage-alert/1",
+  "id": "WFI-9abca2e051458a73850462c51a95afa6",
   "parent": null,
-  "itemId": null,
+  "itemId": "ITM-01JK7",
   "title": "429s on stream",
   "recipe": {
-    "id": "triage.alert",
-    "hash": "d41f2a0700000000000000000000000000000000000000000000000000000000",
+    "id": "workflow.triage-alert",
+    "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
     "version": 2,
     "urgency": "triage"
   },
@@ -23,20 +23,6 @@
   "states": [
     {
       "id": "ingest",
-      "order": 0,
-      "branchOf": null,
-      "glyph": "done",
-      "badge": null,
-      "round": null,
-      "loops": [],
-      "desk": false,
-      "child": false,
-      "children": null,
-      "outcome": null,
-      "terminal": false
-    },
-    {
-      "id": "classify",
       "order": 1,
       "branchOf": null,
       "glyph": "done",
@@ -50,8 +36,22 @@
       "terminal": false
     },
     {
-      "id": "route",
+      "id": "classify",
       "order": 2,
+      "branchOf": null,
+      "glyph": "done",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": true,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "route",
+      "order": 3,
       "branchOf": null,
       "glyph": "done",
       "badge": null,
@@ -65,7 +65,7 @@
     },
     {
       "id": "done",
-      "order": 3,
+      "order": 4,
       "branchOf": null,
       "glyph": "done",
       "badge": null,
@@ -85,8 +85,8 @@
     "desk": null,
     "status": {
       "header": {
-        "address": "workflow/sentry-8809",
-        "recipe": "triage.alert",
+        "address": "ITM-01JK7/triage-alert/1",
+        "recipe": "workflow.triage-alert",
         "hash12": "d41f2a070000",
         "version": 2,
         "state": "done",
@@ -94,7 +94,7 @@
         "since": "2026-10-12T11:58:00.0000000Z",
         "ageSeconds": 1680
       },
-      "next": "",
+      "next": null,
       "answer": null,
       "child": null,
       "drift": null,
@@ -103,12 +103,12 @@
       "budget": null,
       "paused": null,
       "commands": [],
-      "text": "workflow/sentry-8809  triage.alert@d41f2a070000  v2  done: resolved  since 11:58 (28m)\n"
+      "text": "ITM-01JK7/triage-alert/1  workflow.triage-alert@d41f2a070000  v2  done: resolved  since 11:58 (28m)\n"
     }
   },
   "facts": [
     {
-      "key": "alert",
+      "key": "fact:alert",
       "label": "Alert",
       "type": "payload",
       "direction": "input",
@@ -116,7 +116,7 @@
       "status": "produced",
       "summary": "sentry #8809 429s on stream",
       "at": "2026-10-12T11:40:00.0000000Z",
-      "by": "human:webhook",
+      "by": "service:webhook",
       "ref": {
         "name": null,
         "size": null,
@@ -126,19 +126,47 @@
         "url": null,
         "host": null,
         "title": null,
-        "factKey": "alert"
+        "factKey": "fact:alert"
       },
       "progress": null,
       "pending": null
     },
     {
-      "key": "item",
+      "key": "fact:severity",
+      "label": "Severity",
+      "type": "text",
+      "direction": "output",
+      "from": "classify",
+      "status": "produced",
+      "summary": "sev3",
+      "at": "2026-10-12T11:50:00.0000000Z",
+      "by": "step.classify",
+      "ref": null,
+      "progress": null,
+      "pending": null
+    },
+    {
+      "key": "fact:route",
+      "label": "Route",
+      "type": "decision",
+      "direction": "output",
+      "from": "route",
+      "status": "produced",
+      "summary": "ticket",
+      "at": "2026-10-12T11:58:00.0000000Z",
+      "by": "step.route",
+      "ref": null,
+      "progress": null,
+      "pending": null
+    },
+    {
+      "key": "fact:item",
       "label": "Item",
       "type": "item",
       "direction": "output",
       "from": "route",
       "status": "produced",
-      "summary": "ITM-01JF0 queued",
+      "summary": "ITM-01JF0 startable",
       "at": "2026-10-12T11:58:00.0000000Z",
       "by": "step.route",
       "ref": {

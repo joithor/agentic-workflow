@@ -1,0 +1,272 @@
+using Aw.Kernel;
+using Aw.Sindri.Core;
+using Aw.Sindri.Core.Challenges;
+using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Features.ApplyCommand;
+using Aw.Sindri.Features.IssueChallenge;
+
+namespace Aw.Sindri.Host.Commands;
+
+/// <summary>
+/// 'sindri workflow answer &lt;address&gt; [--text …|--file …] [--grant n | --grant-tokens n | --accept | --reject |
+/// --resume]', 'workflow command &lt;address&gt; &lt;verb&gt;' and 'workflow cancel &lt;address&gt;', each with '[--nonce
+/// &lt;n&gt;] [--json]' (engine spec rev 8 §5.2, §5.8, §6.3), as clients of the API: without '--nonce' the CLI asks the
+/// instance's nonce route for one, then posts the command to its commands route, where the command chain classes the
+/// caller (an agent session is refused SND-AUTH-002). Each prints the new status header and what happened (an answer:
+/// the resume action it ran); a repeated nonce prints 'already applied (…)'. A protected answer (grant, grant-tokens,
+/// accept) asks the server for its challenge, shows the instance and the action to type, and sends what the human types
+/// (§4.2); a session sends none and is refused. Exit 0 applied, 1 not running, 2 invalid, refused or error.
+/// </summary>
+/// <param name="desk">The API client, the terminal and the start rule.</param>
+/// <param name="services">The scope the clock resolves from.</param>
+/// <param name="output">Where the verbs write.</param>
+internal sealed class ApplyCommandVerbs(RecipeDesk desk, IServiceProvider services, Output output)
+{
+    private const string AnswerUsage =
+        "usage: sindri workflow answer <address> [--text <t> | --file <f>] [--grant <n> | --grant-tokens <n> | --accept | --reject | --resume] [--nonce <n>] [--json]";
+
+    private const string CommandUsage = "usage: sindri workflow command <address> <verb> [--nonce <n>] [--json]";
+
+    private const string CancelUsage = "usage: sindri workflow cancel <address> [--nonce <n>] [--json]";
+
+    /// <summary>The answer options that take no value.</summary>
+    private static readonly string[] _switches = ["--accept", "--reject", "--resume"];
+
+    /// <summary>The answer options that take one value.</summary>
+    private static readonly string[] _valued = ["--text", "--file", "--grant", "--grant-tokens", "--nonce"];
+
+    /// <summary>The answer options that carry text or the nonce rather than choose the variant.</summary>
+    private static readonly string[] _carriers = ["--text", "--file", "--nonce"];
+
+    internal async Task<int> Answer(string[] args, CancellationToken ct)
+    {
+        var (json, rest) = Json(args);
+        if (rest is not [var address, .. var options])
+        {
+            return await output.Error(SindriErrors.InvalidInput.With(AnswerUsage)).ConfigureAwait(false);
+        }
+
+        var parsed = await AnswerOptions(options, ct).ConfigureAwait(false);
+        if (parsed.IsError)
+        {
+            return await output.Error(parsed.Error).ConfigureAwait(false);
+        }
+
+        var (variant, text, amount, nonce) = parsed.Value;
+        var request = new ApplyCommandRequest(address, ApplyCommandKind.Answer, variant, text, amount, Verb: null, nonce, Challenge: null);
+        if (ApplyCommandChallenge.IsProtected(request.Kind, variant) && desk.Client.SessionReason is null)
+        {
+            var challenge = await Challenge(request, ct).ConfigureAwait(false);
+            if (challenge.IsError)
+            {
+                return await output.Error(challenge.Error).ConfigureAwait(false);
+            }
+
+            request = request with { Challenge = challenge.Value };
+        }
+
+        return await Apply(request, json, ct).ConfigureAwait(false);
+    }
+
+    internal async Task<int> Command(string[] args, CancellationToken ct)
+    {
+        var (json, rest) = Json(args);
+        if (rest is not [var address, var verb, .. var options] || !CommandVerb.TryFrom(verb, out var parsed))
+        {
+            return await output.Error(SindriErrors.InvalidInput.With($"the verb matches [a-z][a-z-]{{1,31}} ({CommandUsage})")).ConfigureAwait(false);
+        }
+
+        var nonce = Nonce(options, CommandUsage);
+        return nonce.IsError
+            ? await output.Error(nonce.Error).ConfigureAwait(false)
+            : await Apply(new ApplyCommandRequest(address, ApplyCommandKind.Command, Answer: null, Text: null, Amount: null, parsed, nonce.Value, Challenge: null), json, ct).ConfigureAwait(false);
+    }
+
+    internal async Task<int> Cancel(string[] args, CancellationToken ct)
+    {
+        var (json, rest) = Json(args);
+        if (rest is not [var address, .. var options])
+        {
+            return await output.Error(SindriErrors.InvalidInput.With(CancelUsage)).ConfigureAwait(false);
+        }
+
+        var nonce = Nonce(options, CancelUsage);
+        return nonce.IsError
+            ? await output.Error(nonce.Error).ConfigureAwait(false)
+            : await Apply(new ApplyCommandRequest(address, ApplyCommandKind.Cancel, Answer: null, Text: null, Amount: null, Verb: null, nonce.Value, Challenge: null), json, ct).ConfigureAwait(false);
+    }
+
+    private async Task<int> Apply(ApplyCommandRequest request, bool json, CancellationToken ct)
+    {
+        var target = await InstanceTarget.Resolve(desk, request.Instance, request.Nonce, ct).ConfigureAwait(false);
+        var done = target.IsError ? target.Error : await desk.Client.Post<ApplyCommandRequest, ApplyCommandResponse>(
+            $"/sindri/workflow/instances/{target.Value.Id.Value}/commands", request with { Nonce = target.Value.Nonce }, ct).ConfigureAwait(false);
+        if (done.IsError)
+        {
+            return await output.Error(done.Error).ConfigureAwait(false);
+        }
+
+        if (json)
+        {
+            return await output.Raw(done.Value.Body, 0).ConfigureAwait(false);
+        }
+
+        var answer = done.Value.Value;
+        var happened = answer.AlreadyApplied ? $"already applied ({answer.Result.Happened})" : answer.Result.Happened;
+        var header = InstanceHeader.Line(answer.Result.Instance, services.GetRequiredService<TimeProvider>().GetUtcNow());
+        return await output.Text($"{header}\n  {happened}\n", 0).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// The §4.2 challenge of a protected answer: the server issues it for the instance as it is now and answers with the
+    /// instance and the action text; the human types the action back at the terminal. The server checks the typed text
+    /// and the subject when the answer arrives.
+    /// </summary>
+    private async Task<Result<ChallengeAnswer>> Challenge(ApplyCommandRequest request, CancellationToken ct)
+    {
+        if (await desk.EnsureRunning(ct).ConfigureAwait(false) is { } down)
+        {
+            return down;
+        }
+
+        var action = ChallengeText(request);
+        var issued = await desk.Client.Post<IssueChallengeRequest, IssueChallengeResponse>("/sindri/workflow/challenges", new IssueChallengeRequest(action), ct)
+            .ConfigureAwait(false);
+        if (issued.IsError)
+        {
+            return issued.Error;
+        }
+
+        var challenge = issued.Value.Value;
+        var header = challenge.Instance is { } view ? InstanceHeader.Line(view, services.GetRequiredService<TimeProvider>().GetUtcNow()) : request.Instance;
+        var question = challenge.Instance?.Question is { } q ? $"\n  {q.Question}" : string.Empty;
+        await output.Out.WriteAsync($"{header}{question}\n  type '{challenge.Action}' to confirm: ").ConfigureAwait(false);
+        await output.Out.FlushAsync(ct).ConfigureAwait(false);
+        var typed = (await desk.Input.ReadLineAsync(ct).ConfigureAwait(false))?.Trim() ?? string.Empty;
+        return new ChallengeAnswer(challenge.Challenge, typed);
+    }
+
+    /// <summary>The action text the server issues a protected answer's challenge for: 'grant n &lt;ref&gt;', 'grant-tokens n &lt;ref&gt;' or 'accept &lt;ref&gt;'.</summary>
+    private static string ChallengeText(ApplyCommandRequest request)
+    {
+        var n = request.Amount?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "?";
+        return request.Answer switch
+        {
+            AnswerVariant.Grant => $"grant {n} {request.Instance}",
+            AnswerVariant.GrantTokens => $"grant-tokens {n} {request.Instance}",
+            AnswerVariant.Accept or AnswerVariant.Text or AnswerVariant.Reject or AnswerVariant.Resume or null or _ => "accept " + request.Instance,
+        };
+    }
+
+    /// <summary>The answer's variant and its text or amount, and the optional nonce; exactly one variant, '--resume' may carry '--text'.</summary>
+    private static async Task<Result<(AnswerVariant Variant, string? Text, int? Amount, CommandNonce? Nonce)>> AnswerOptions(string[] options, CancellationToken ct)
+    {
+        var tokens = Tokens(options);
+        if (tokens.IsError)
+        {
+            return tokens.Error;
+        }
+
+        string? Last(string flag) => tokens.Value.LastOrDefault(t => t.Flag == flag).Value;
+        var text = Last("--file") is { } file ? await ReadText(file, ct).ConfigureAwait(false) : Last("--text");
+        if (text.IsError)
+        {
+            return text.Error;
+        }
+
+        var variant = Variant(tokens.Value, text.Value is not null);
+        if (variant.IsError)
+        {
+            return variant.Error;
+        }
+
+        if (Last("--nonce") is not { } nonce)
+        {
+            return (variant.Value.Variant, text.Value, variant.Value.Amount, null);
+        }
+
+        return CommandNonce.TryFrom(nonce, out var parsed)
+            ? (variant.Value.Variant, text.Value, variant.Value.Amount, parsed)
+            : SindriErrors.InvalidInput.With($"'{nonce}' isn't a nonce: 32 lower-case hex digits ({AnswerUsage})");
+    }
+
+    /// <summary>The options as '(flag, value)' pairs: '--accept', '--reject' and '--resume' take no value, the others one.</summary>
+    private static Result<List<(string Flag, string? Value)>> Tokens(string[] options)
+    {
+        var tokens = new List<(string Flag, string? Value)>();
+        for (var i = 0; i < options.Length; i++)
+        {
+            var flag = options[i];
+            if (_switches.Contains(flag, StringComparer.Ordinal))
+            {
+                tokens.Add((flag, null));
+            }
+            else if (_valued.Contains(flag, StringComparer.Ordinal) && i + 1 < options.Length)
+            {
+                tokens.Add((flag, options[++i]));
+            }
+            else
+            {
+                return SindriErrors.InvalidInput.With($"'{flag}' isn't an option here, or needs a value ({AnswerUsage})");
+            }
+        }
+
+        return tokens;
+    }
+
+    /// <summary>Exactly one variant: a grant (with its amount), '--accept', '--reject', '--resume' (which may carry the text), or the text alone.</summary>
+    private static Result<(AnswerVariant Variant, int? Amount)> Variant(List<(string Flag, string? Value)> tokens, bool hasText)
+    {
+        var given = tokens.Where(static t => !_carriers.Contains(t.Flag, StringComparer.Ordinal)).ToList();
+        var resumeWithText = given is [("--resume", _)];
+        return (given, hasText) switch
+        {
+            ([], true) => (AnswerVariant.Text, null),
+            ([("--accept", _)], false) => (AnswerVariant.Accept, null),
+            ([("--reject", _)], false) => (AnswerVariant.Reject, null),
+            ([("--resume", _)], _) when resumeWithText => (AnswerVariant.Resume, null),
+            ([(var flag and ("--grant" or "--grant-tokens"), { } n)], false) when Amount(n, flag) is { } amount =>
+                (flag == "--grant" ? AnswerVariant.Grant : AnswerVariant.GrantTokens, amount),
+            _ => SindriErrors.InvalidInput.With($"give exactly one of --text/--file, --grant <n>, --grant-tokens <n>, --accept, --reject or --resume [--text] ({AnswerUsage})"),
+        };
+    }
+
+    /// <summary>'--grant n' is a whole number; '--grant-tokens n' also takes '100k' or '1.5m'.</summary>
+    private static int? Amount(string text, string flag) =>
+        flag == "--grant"
+            ? int.TryParse(text, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var rounds) ? rounds : null
+            : TokenCounts.TryParse(text, out var tokens) ? tokens : null;
+
+    private static async Task<Result<string?>> ReadText(string file, CancellationToken ct)
+    {
+        try
+        {
+            var info = new FileInfo(file);
+            if (info.Exists && info.Length > IFactStore.MaxBytes)
+            {
+                return SindriErrors.InvalidInput.With($"{file} is larger than 1 MiB (fix: answer with a smaller file)");
+            }
+
+            return await File.ReadAllTextAsync(file, ct).ConfigureAwait(false);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) // boundary: an unreadable file is the caller's input error
+        {
+            return SindriErrors.InvalidInput.With($"{file} can't be read: {e.Message}");
+        }
+    }
+
+    /// <summary>The optional '--nonce &lt;n&gt;', the only option the command and cancel verbs take.</summary>
+    private static Result<CommandNonce?> Nonce(string[] options, string usage) => options switch
+    {
+        [] => (CommandNonce?)null,
+        ["--nonce", var given] when CommandNonce.TryFrom(given, out var nonce) => nonce,
+        ["--nonce", var given] => SindriErrors.InvalidInput.With($"'{given}' isn't a nonce: 32 lower-case hex digits ({usage})"),
+        _ => SindriErrors.InvalidInput.With($"'{string.Join(' ', options)}' isn't an option here ({usage})"),
+    };
+
+    private static (bool Json, string[] Others) Json(string[] args) =>
+        (args.Contains("--json", StringComparer.Ordinal), [.. args.Where(static a => a != "--json")]);
+}

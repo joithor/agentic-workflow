@@ -1,14 +1,14 @@
 {
   "inputs": [
     {
-      "key": "project",
+      "key": "fact:project",
       "label": "Linear project",
-      "type": "text",
+      "type": "payload",
       "kind": "linear-project",
       "required": true
     },
     {
-      "key": "prd",
+      "key": "fact:prd",
       "label": "PRD",
       "type": "file",
       "kind": null,
@@ -17,56 +17,64 @@
   ],
   "outputs": [
     {
-      "key": "scope",
+      "key": "fact:scope",
       "label": "Scope map",
       "type": "scope-map",
       "from": "scoping"
     },
     {
-      "key": "packet",
+      "key": "fact:packet",
       "label": "Packet",
       "type": "packet",
       "from": "design"
     },
     {
-      "key": "evidence",
+      "key": "fact:evidence",
       "label": "Evidence",
       "type": "evidence",
       "from": "build"
     }
   ],
   "urgency": "work",
+  "orderedBy": "path",
   "states": [
     {
       "id": "intake",
-      "order": 0,
-      "branchOf": null
-    },
-    {
-      "id": "scoping",
       "order": 1,
       "branchOf": null
     },
     {
-      "id": "design",
+      "id": "scoping",
       "order": 2,
       "branchOf": null
     },
     {
-      "id": "build",
+      "id": "design",
       "order": 3,
       "branchOf": null
     },
     {
-      "id": "verify",
+      "id": "build",
       "order": 4,
       "branchOf": null
     },
     {
-      "id": "done",
+      "id": "verify",
       "order": 5,
+      "branchOf": null
+    },
+    {
+      "id": "done",
+      "order": 6,
       "branchOf": null
     }
   ],
-  "loops": []
+  "loops": [
+    {
+      "name": "challenge",
+      "from": "scoping",
+      "to": "scoping",
+      "cap": 3
+    }
+  ]
 }

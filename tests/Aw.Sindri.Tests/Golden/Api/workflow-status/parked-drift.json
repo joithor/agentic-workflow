@@ -1,22 +1,16 @@
 {
   "header": {
-    "address": "workflow/PRJ-tabs",
+    "address": "ITM-01JKF/project/1",
     "recipe": "workflow.project",
     "hash12": "a8c21e7f0000",
     "version": 12,
-    "state": "scoping",
-    "detail": "parked: spec-conflict",
+    "state": "parked",
+    "detail": "spec-conflict (drift)",
     "since": "2026-10-12T11:50:00.0000000Z",
     "ageSeconds": 2160
   },
-  "next": "Parked (spec-conflict, drift): block step.scope.draft changed in this build. Re-approve it at a terminal, then resume.",
-  "answer": {
-    "kind": "resume",
-    "actionId": "ApplyCommand:answer",
-    "class": "protected",
-    "cli": "sindri workflow answer workflow/PRJ-tabs --resume",
-    "atTerminal": true
-  },
+  "next": "Block step.scope.draft changed since workflow.project@a8c21e7f0000 was approved. Re-approve it (`sindri recipe approve workflow.project@a8c21e7f0000`); the approval resumes this instance.",
+  "answer": null,
   "child": null,
   "drift": {
     "block": "step.scope.draft",
@@ -28,26 +22,26 @@
   "paused": null,
   "commands": [
     {
-      "verb": "answer",
-      "actionId": "ApplyCommand:answer",
-      "class": "desk",
-      "cli": "sindri workflow answer workflow/PRJ-tabs --resume",
-      "confirm": null
-    },
-    {
       "verb": "takeover",
       "actionId": "ApplyCommand:takeover",
-      "class": "protected",
-      "cli": "sindri workflow takeover workflow/PRJ-tabs",
+      "class": "pause",
+      "cli": "sindri workflow takeover ITM-01JKF/project/1",
       "confirm": null
     },
     {
       "verb": "cancel",
       "actionId": "ApplyCommand:cancel",
+      "class": "desk",
+      "cli": "sindri workflow cancel ITM-01JKF/project/1",
+      "confirm": "Cancel ITM-01JKF/project/1? 0 running steps stop; 0 children are cancelled."
+    },
+    {
+      "verb": "approve",
+      "actionId": "ApproveRecipe",
       "class": "protected",
-      "cli": "sindri workflow cancel workflow/PRJ-tabs",
-      "confirm": "Cancel workflow/PRJ-tabs? 1 running steps stop; 0 children are cancelled."
+      "cli": "sindri recipe approve workflow.project@a8c21e7f0000",
+      "confirm": null
     }
   ],
-  "text": "workflow/PRJ-tabs  workflow.project@a8c21e7f0000  v12  parked: spec-conflict  since 11:50 (36m)\n  next      Parked (spec-conflict, drift): block step.scope.draft changed in this build. Re-approve it at a terminal, then resume.\n  drift     step.scope.draft changed; the answer needs the re-approval first\n  answer    sindri workflow answer workflow/PRJ-tabs --resume     (at a terminal)\n  commands  answer, takeover, cancel\n"
+  "text": "ITM-01JKF/project/1  workflow.project@a8c21e7f0000  v12  parked: spec-conflict (drift)  since 11:50 (36m)\n  next      Block step.scope.draft changed since workflow.project@a8c21e7f0000 was approved.\n            Re-approve it (`sindri recipe approve workflow.project@a8c21e7f0000`); the approval\n            resumes this instance.\n  drift     step.scope.draft changed since workflow.project@a8c21e7f0000 was approved\n  answer    none (drift): sindri recipe approve workflow.project@a8c21e7f0000     (at a terminal;\n            the approval resumes it)\n  commands  takeover, cancel, approve\n"
 }

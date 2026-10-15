@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Views;
 
@@ -7,5 +8,5 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="NeedsReapproval">Whether re-approval is needed.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record StatusDrift(
-    string Block,
+    BlockId Block,
     bool NeedsReapproval);

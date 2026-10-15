@@ -1,5 +1,6 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Tests.Ledger;
@@ -34,6 +35,30 @@ public sealed class DevServerTemporalTests : IDisposable
 
         var stopped = DoctorRules.Temporal(await adapter.Inspect(ct));
         Assert.Equal((CheckState.Fail, "sindri"), (stopped.State, stopped.Fix));
+    }
+
+    [Fact(Timeout = 60_000)]
+    public async Task A_stop_cancelled_while_it_waits_for_a_hung_worker_still_leaves_no_dev_server()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var adapter = new DevServerTemporal(new TemporalSettings(_home.Path, PinnedTemporal.Path()), new TemporalDevServer());
+        var started = (await adapter.Ensure(ct)).Value;
+        var runtime = new TemporalRuntime(adapter, TimeProvider.System);
+        runtime.Track(new TaskCompletionSource().Task);   // a worker that never stops
+        using var gaveUp = new CancellationTokenSource(TimeSpan.FromSeconds(1));   // the CLI or a test teardown timing out
+
+        try
+        {
+            _ = await runtime.Stop(gaveUp.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // the caller gave up; the server must be gone all the same
+        }
+
+        // why: the dev server runs detached (setsid), so one a cancelled stop leaves behind outlives serve and the test run
+        Assert.True(DevServerProcesses.Gone(started.Pid), "the dev server is still running");
+        Assert.Empty(TemporalDevServer.Find(_home.Path));
     }
 
     [Fact(Timeout = 60_000)]

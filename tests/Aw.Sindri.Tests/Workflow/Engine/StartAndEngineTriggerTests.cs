@@ -30,6 +30,16 @@ public sealed class StartAndEngineTriggerTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Start_keeps_the_tenant_and_ring_of_the_workflow_input()
+    {
+        var applied = Assert.IsType<Applied>(TransitionDecision.Start(Request() with { Tenant = "acme", Ring = 2 }, Step, EngineFixture.Context(), new FakeEngineRules()));
+
+        var (row, started) = (applied.Changes[0].After, applied.Changes[0].Event);
+        Assert.Equal(("acme", 2), (row.Tenant, row.Ring));
+        Assert.Equal(("acme", 2), (started.Started!.Tenant, started.Started.Ring));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Start_on_a_revoked_recipe_is_rejected()
     {
         var decision = TransitionDecision.Start(Request(), Step, EngineFixture.Context() with { Approval = ApprovalCheck.Revoked }, new FakeEngineRules());
@@ -170,5 +180,7 @@ public sealed class StartAndEngineTriggerTests
         Parent: null,
         new Dictionary<FactKey, FactValue> { [FactKey.From("fact:spec")] = Fact("Add a --version flag.") },
         "human:thor",
-        TakenOver: false);
+        TakenOver: false,
+        Tenant: "local",
+        Ring: 0);
 }

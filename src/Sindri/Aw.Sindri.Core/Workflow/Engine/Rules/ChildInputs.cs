@@ -18,15 +18,7 @@ internal static class ChildInputs
     /// </summary>
     /// <param name="address">The child's address.</param>
     /// <returns>The child's id.</returns>
-    public static WorkflowInstanceId IdFor(InstanceAddress address)
-    {
-        Span<byte> digest = stackalloc byte[SHA256.HashSizeInBytes];
-        _ = SHA256.HashData(Encoding.UTF8.GetBytes(address.Value), digest);
-        var bytes = digest[..16];
-        bytes[6] = (byte)((bytes[6] & 0x0F) | 0x80);
-        bytes[8] = (byte)((bytes[8] & 0x3F) | 0x80);
-        return WorkflowInstanceId.For(new Guid(bytes, bigEndian: true));
-    }
+    public static WorkflowInstanceId IdFor(InstanceAddress address) => WorkflowInstanceId.Of(address);
 
     /// <summary>The child's own pins: the hash of each recipe its child waits name, as the pinned resolver has it; one it lacks is left out, so creating that grandchild is SND-RECIPE-002.</summary>
     /// <param name="recipe">The child recipe.</param>

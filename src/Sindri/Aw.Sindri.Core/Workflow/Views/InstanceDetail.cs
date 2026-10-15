@@ -1,12 +1,14 @@
 using System.Text.Json.Serialization;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Core.Workflow.Views;
 
 /// <summary>One instance for the Workflows frame (API spec section 3.8, E-20, E-23); the spec calls it InstanceView, a name the engine's status view holds.</summary>
-/// <param name="Address">The CLI address.</param>
-/// <param name="Instance">The engine's WFI id.</param>
+/// <param name="Address">The CLI address in the engine form ("ITM-01JK3/project/1"; a child "ITM-01JK3/project/1/step.5"); the app deep-links to workflow/{address}.</param>
+/// <param name="Id">The engine's WFI id.</param>
 /// <param name="Parent">The parent instance, for a child.</param>
-/// <param name="Item">The item id.</param>
+/// <param name="ItemId">The item id.</param>
 /// <param name="Title">The title.</param>
 /// <param name="Recipe">The recipe stamp.</param>
 /// <param name="State">The current state.</param>
@@ -23,10 +25,10 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="AsOf">When it was read.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record InstanceDetail(
-    string Address,
-    [property: JsonPropertyName("id")] string Instance,
+    InstanceAddress Address,
+    WorkflowInstanceId Id,
     ParentRef? Parent,
-    [property: JsonPropertyName("itemId")] string? Item,
+    ItemKey? ItemId,
     string Title,
     InstanceRecipe Recipe,
     string State,
@@ -39,5 +41,5 @@ public sealed record InstanceDetail(
     IReadOnlyList<FactRow> Facts,
     IReadOnlyList<ChildGroup> Children,
     ViewCounts Counts,
-    IReadOnlyList<string> Actions,
+    IReadOnlyList<ActionId> Actions,
     DateTimeOffset AsOf);

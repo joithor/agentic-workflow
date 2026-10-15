@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Core.Workflow.Views;
 
@@ -7,7 +8,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="Size">File size.</param>
 /// <param name="Hash">File hash.</param>
 /// <param name="Path">File path.</param>
-/// <param name="Item">Item id.</param>
+/// <param name="ItemId">Item id.</param>
 /// <param name="Url">Link url.</param>
 /// <param name="Host">Link host.</param>
 /// <param name="Title">Link title.</param>
@@ -18,7 +19,7 @@ public sealed record FactRef(
     long? Size,
     string? Hash,
     string? Path,
-    [property: JsonPropertyName("itemId")] string? Item,
+    ItemKey? ItemId,
     string? Url,
     string? Host,
     string? Title,

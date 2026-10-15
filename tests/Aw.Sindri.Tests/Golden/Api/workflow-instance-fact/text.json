@@ -1,5 +1,5 @@
 {
-  "key": "severity",
+  "key": "fact:severity",
   "type": "text",
   "body": "sev2: the outbox dispatcher retries without backoff",
   "truncated": false
