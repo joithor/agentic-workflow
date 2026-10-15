@@ -148,6 +148,7 @@ public abstract class GraphStoreContract
         var opened = await store.OpenDraft(SampleMap.At, None);
 
         Expect.That(opened.IsError && opened.Error.Code == "SND-CONTEXT-030", test, "expected SND-CONTEXT-030");
+        Expect.That(opened.Error.Message.Contains("context map import <file>", StringComparison.Ordinal) && !opened.Error.Message.Contains("map build", StringComparison.Ordinal), test, "the fix line must name a command that works today");
         Expect.That(Expect.Ok(await store.Versions(None), test).Count == 0, test, "a version appeared");
     }
 

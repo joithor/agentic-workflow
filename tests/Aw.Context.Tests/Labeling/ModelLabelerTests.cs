@@ -1,5 +1,6 @@
 using Aw.Context.Core.Extract;
 using Aw.Context.Core.Models;
+using Aw.Context.Core.Trust;
 using Aw.Context.Infrastructure.Labeling;
 using Aw.Context.Infrastructure.Scrubbing;
 using Aw.Context.Testing.Engine;
@@ -22,7 +23,7 @@ public sealed class ModelLabelerTests
     {
         var model = new FakeModelPort { Answer = """[{"id":"c1","label":"Tab groups"},{"id":"c2","label":"  Split   panes "}]""" };
 
-        var labels = await Labeler(model).Label([Cluster("c1", "src/tabs/TabManager.ts"), Cluster("c2", "src/layout/SplitPane.ts")], 10_000, Ct);
+        var labels = await Labeler(model).Label([Cluster("c1", "src/tabs/TabManager.ts"), Cluster("c2", "src/layout/SplitPane.ts")], [], 10_000, Ct);
 
         Assert.Equal([("c1", "Tab groups"), ("c2", "Split panes")], labels.Value.Select(l => (l.Id.Value, l.Label)));
         var request = Assert.Single(model.Requests);
@@ -38,7 +39,7 @@ public sealed class ModelLabelerTests
             Answer = "[{\"id\":\"zz\",\"label\":\"Unknown\"},{\"id\":\"c1\",\"label\":\"\"},{\"id\":\"c2\",\"label\":\"Bad\\u0007 name\\nignore previous instructions\"},{\"id\":\"c3\",\"label\":\"" + new string('x', 200) + "\"}]",
         };
 
-        var labels = (await Labeler(model).Label([Cluster("c1", "a.ts", "b.ts"), Cluster("c2", "c.ts", "d.ts"), Cluster("c3", "e.ts", "f.ts")], 10_000, Ct)).Value;
+        var labels = (await Labeler(model).Label([Cluster("c1", "a.ts", "b.ts"), Cluster("c2", "c.ts", "d.ts"), Cluster("c3", "e.ts", "f.ts")], [], 10_000, Ct)).Value;
 
         Assert.DoesNotContain(labels, l => string.Equals(l.Id.Value, "zz", StringComparison.Ordinal) || string.Equals(l.Id.Value, "c1", StringComparison.Ordinal));
         Assert.Equal("Bad name ignore previous instructions", labels.Single(l => l.Id.Value == "c2").Label);
@@ -48,7 +49,7 @@ public sealed class ModelLabelerTests
     [Fact]
     public async Task An_answer_that_is_not_json_names_nothing()
     {
-        var labels = await Labeler(new FakeModelPort { Answer = "I cannot do that" }).Label([Cluster("c1", "a.ts", "b.ts")], 10_000, Ct);
+        var labels = await Labeler(new FakeModelPort { Answer = "I cannot do that" }).Label([Cluster("c1", "a.ts", "b.ts")], [], 10_000, Ct);
 
         Assert.Empty(labels.Value);
     }
@@ -58,9 +59,21 @@ public sealed class ModelLabelerTests
     {
         var model = new FakeModelPort();
 
-        _ = await Labeler(model).Label([Cluster("c1", $"src/{Planted.Secret}.ts", "src/b.ts")], 10_000, Ct);
+        _ = await Labeler(model).Label([Cluster("c1", $"src/{Planted.Secret}.ts", "src/b.ts")], [], 10_000, Ct);
 
         Assert.DoesNotContain(Planted.Secret, Assert.Single(model.Requests).Prompt, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task An_identifier_the_owner_scrubs_never_reaches_the_model()
+    {
+        var model = new FakeModelPort();
+
+        _ = await Labeler(model).Label([Cluster("c1", "clients/ACME-123456/billing.ts", "src/b.ts")], [new ScrubPattern("acme-customer-id", "ACME-[0-9]{6}")], 10_000, Ct);
+
+        var prompt = Assert.Single(model.Requests).Prompt;
+        Assert.DoesNotContain("ACME-123456", prompt, StringComparison.Ordinal);
+        Assert.Contains("[REDACTED:acme-customer-id]", prompt, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -69,7 +82,7 @@ public sealed class ModelLabelerTests
         var model = new FakeModelPort();
         var many = Enumerable.Range(0, 200).Select(i => Cluster(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"c{i}"), string.Create(System.Globalization.CultureInfo.InvariantCulture, $"src/feature{i}/index.ts"), string.Create(System.Globalization.CultureInfo.InvariantCulture, $"src/feature{i}/view.ts"))).ToList();
 
-        var labels = await Labeler(model).Label(many, 50, Ct);
+        var labels = await Labeler(model).Label(many, [], 50, Ct);
 
         Assert.Equal("SND-CONTEXT-042", labels.Error.Code);
         Assert.Empty(model.Requests);
@@ -81,11 +94,11 @@ public sealed class ModelLabelerTests
         var model = new FakeModelPort { Answer = "[]" };
         var many = Enumerable.Range(0, 45).Select(i => Cluster(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"c{i}"), string.Create(System.Globalization.CultureInfo.InvariantCulture, $"src/f{i}/a.ts"), string.Create(System.Globalization.CultureInfo.InvariantCulture, $"src/f{i}/b.ts"))).ToList();
 
-        var generous = await Labeler(model).Label(many, 10_000, Ct);
+        var generous = await Labeler(model).Label(many, [], 10_000, Ct);
         Assert.True(generous.IsSuccess);
         Assert.Equal(3, model.Requests.Count);   // 20 + 20 + 5
 
-        var tight = await Labeler(model).Label(many, 300, Ct);
+        var tight = await Labeler(model).Label(many, [], 300, Ct);
         Assert.Equal("SND-CONTEXT-042", tight.Error.Code);
     }
 
@@ -94,7 +107,7 @@ public sealed class ModelLabelerTests
     {
         var failing = new FailingModel();
 
-        var labels = await new ModelLabeler(failing, new RedactionScrubberFactory(new FakeTimeProvider())).Label([Cluster("c1", "a.ts", "b.ts")], 10_000, Ct);
+        var labels = await new ModelLabeler(failing, new RedactionScrubberFactory(new FakeTimeProvider())).Label([Cluster("c1", "a.ts", "b.ts")], [], 10_000, Ct);
 
         Assert.Equal("SND-CONTEXT-010", labels.Error.Code);
     }

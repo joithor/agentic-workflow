@@ -43,6 +43,8 @@ public sealed class ReviewMapTests : IDisposable
         var queue = await _world.Map.ReviewQueue(limit: null, Drafts.Scope, MapWorld.None);
 
         Assert.Equal(ContextErrors.NoDraftMap.Code, queue.Error.Code);
+        Assert.Contains("context map propose <file>", queue.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("map build", queue.Error.Message, StringComparison.Ordinal);   // pending:API-P6, answers SND-CLI-001
     }
 
     [Fact, Trait("Lane", "unit")]

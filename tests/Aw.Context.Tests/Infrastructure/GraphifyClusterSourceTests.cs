@@ -25,10 +25,42 @@ public sealed class GraphifyClusterSourceTests
     public async Task A_graphify_of_another_version_is_not_run_on_a_repo()
     {
         using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal) { ["src/a.ts"] = "export const a = 1;\n" });
-        var source = new GraphifyClusterSource(new GitCli(), GraphifyOptions.Default with { Pin = "0.0.1" });
+        using var stub = new StubGraphify("0.0.1");
+        var source = new GraphifyClusterSource(new GitCli(), stub.Options);
 
         var set = await source.Clusters(repo.Repo, repo.Head, Ct);
 
+        Assert.True(set.IsSuccess);
+        Assert.False(set.Value.Available);
+        Assert.False(File.Exists(stub.RanMarker), "a graphify of another version must not be run on the repo");
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_pinned_graphify_runs_in_a_private_folder_inside_the_snapshot_and_its_communities_become_clusters()
+    {
+        using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal) { ["src/a.ts"] = "export const a = 1;\n", ["src/b.ts"] = "export const b = 2;\n" });
+        using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
+        var source = new GraphifyClusterSource(new GitCli(), stub.Options);
+
+        var set = await source.Clusters(repo.Repo, repo.Head, Ct);
+
+        Assert.True(set.IsSuccess);
+        Assert.True(set.Value.Available);
+        var cluster = Assert.Single(set.Value.Clusters);
+        Assert.Equal(["src/a.ts", "src/b.ts"], cluster.Files);
+        Assert.True(File.Exists(stub.RanMarker));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_run_that_throws_for_an_unexpected_io_reason_is_a_degraded_unavailable_set_not_an_exception()
+    {
+        using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal) { ["src/a.ts"] = "export const a = 1;\n" });
+        using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
+        var source = new GraphifyClusterSource(new GitCli(), stub.Options with { Sandbox = (_, _, _) => throw new IOException("disk full") });
+
+        var set = await source.Clusters(repo.Repo, repo.Head, Ct);
+
+        Assert.True(set.IsSuccess);
         Assert.False(set.Value.Available);
     }
 

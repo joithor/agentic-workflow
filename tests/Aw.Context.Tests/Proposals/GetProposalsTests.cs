@@ -100,6 +100,19 @@ public sealed class GetProposalsTests : IDisposable
         Assert.Equal(ContextErrors.SessionsDisabled.Code, off.Error.Code);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_surface_name_a_scoping_run_wrote_is_untrusted_so_a_session_reads_it_fenced_and_a_human_clean()
+    {
+        _ = await _world.ImportFixture();
+        _ = await _world.Map.Propose(Run(), MapWorld.Human, MapWorld.None);
+
+        var session = Assert.Single((await Proposals(scope: MapWorld.Session(FixtureMap.Repo))).Surfaces);
+        var human = Assert.Single((await Proposals()).Surfaces);
+
+        Assert.Equal("<untrusted source=\"map\">Restore session</untrusted>", session.Surface);
+        Assert.Equal("Restore session", human.Surface);
+    }
+
     private static ScopeProposal Mixed(string run = "run-1") => new(run, ContextRepoName.From(FixtureMap.Repo),
     [
         new ProposedSurface("Layout split pane", NodeKey.From("feature:layout.split-pane")),

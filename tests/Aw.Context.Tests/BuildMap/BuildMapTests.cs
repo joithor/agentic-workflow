@@ -114,6 +114,18 @@ public sealed class BuildMapTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task The_profiles_extra_scrub_patterns_go_to_the_labeler()
+    {
+        _world.Clusters.Set = new ClusterSet([Cluster("src/commands/ids.ts", "src/commands/registry.ts")], Available: true);
+        var scope = MapWorld.HumanWith("""{"repos":["aw-split-panes"],"labeling":{"enabled":true},"scrub":{"extraPatterns":[{"id":"acme-customer-id","pattern":"ACME-[0-9]{6}"}]}}""");
+
+        _ = await _world.Map.BuildMap(progress: null, scope, MapWorld.None);
+
+        var patterns = Assert.Single(_world.Labeler.Patterns);
+        Assert.Equal([("acme-customer-id", "ACME-[0-9]{6}")], patterns.Select(p => (p.Rule, p.Pattern)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_labeling_pass_over_its_cap_is_SND_CONTEXT_042_and_no_draft_appears()
     {
         _world.Clusters.Set = new ClusterSet([Cluster("src/commands/ids.ts", "src/commands/registry.ts")], Available: true);
@@ -140,7 +152,7 @@ public sealed class BuildMapTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Labeling_turned_on_with_no_labeler_set_up_is_SND_CONTEXT_042()
     {
-        var labels = await new DisabledLabeler().Label([Cluster("a.ts")], 400_000, MapWorld.None);
+        var labels = await new DisabledLabeler().Label([Cluster("a.ts")], [], 400_000, MapWorld.None);
 
         Assert.Equal(ContextErrors.LabelingUnavailable.Code, labels.Error.Code);
     }
@@ -253,6 +265,26 @@ public sealed class BuildMapTests : IDisposable
         Assert.Equal(["src/commands/ids.ts"], world.Labeler.Shown.SelectMany(c => c.Files), StringComparer.Ordinal);
         var draft = (await world.Store.Snapshot(draft: true, MapWorld.None)).Value!;
         Assert.DoesNotContain(draft.Graph.Nodes, n => n.Key.Value.Contains("private/", StringComparison.Ordinal) || n.Key.Value.Contains("secrets/", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_deny_glob_added_after_a_map_exists_removes_the_denied_code_nodes_their_edges_and_the_features_only_they_made()
+    {
+        _world.Clusters.Set = new ClusterSet([Cluster("src/commands/ids.ts", "src/commands/registry.ts")], Available: true);
+        var first = (await _world.Map.BuildMap(progress: null, Scope, MapWorld.None)).Value;
+        _ = await _world.Store.Promote(first.Draft.Number, MapWorld.None);
+        var current = (await _world.Store.Snapshot(draft: false, MapWorld.None)).Value!;
+        Assert.Contains(current.Graph.Nodes, n => n.Key.Value == "code:src/commands/ids.ts");
+        Assert.Contains(current.Graph.Nodes, n => n.Key.Kind == NodeKind.Feature);
+        var denying = new ContextRepo(ContextRepoName.From(FixtureMap.Repo), "/work/aw-split-panes") { DenyPaths = [.. PathDenylist.Defaults, "src/commands/**"] };
+
+        _ = await _world.Map.BuildMap(progress: null, MapWorld.HumanWith(MapWorld.OnlyFixtureRepo, [denying]), MapWorld.None);
+
+        var draft = (await _world.Store.Snapshot(draft: true, MapWorld.None)).Value!;
+        Assert.DoesNotContain(draft.Graph.Nodes, n => n.Key.Value.StartsWith("code:src/commands/", StringComparison.Ordinal));
+        Assert.DoesNotContain(draft.Graph.Edges, e => e.From.Value.StartsWith("code:src/commands/", StringComparison.Ordinal) || e.To.Value.StartsWith("code:src/commands/", StringComparison.Ordinal));
+        Assert.DoesNotContain(draft.Graph.Nodes, n => n.Key.Kind == NodeKind.Feature && n.Provenance == Provenance.Model);
+        Assert.Contains(draft.Graph.Nodes, n => n.Key.Value == "code:src/keys.ts");
     }
 
     [Fact, Trait("Lane", "unit")]

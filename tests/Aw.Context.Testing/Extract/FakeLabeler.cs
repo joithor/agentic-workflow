@@ -1,4 +1,5 @@
 using Aw.Context.Core.Extract;
+using Aw.Context.Core.Trust;
 using Aw.Kernel;
 
 namespace Aw.Context.Testing.Extract;
@@ -12,8 +13,11 @@ public sealed class FakeLabeler : ILabeler
     /// <summary>The clusters shown to the model, across passes.</summary>
     public IList<FileCluster> Shown { get; } = [];
 
+    /// <summary>The extra scrub patterns each pass was given.</summary>
+    public IList<IReadOnlyList<ScrubPattern>> Patterns { get; } = [];
+
     /// <inheritdoc/>
-    public ValueTask<Result<IReadOnlyList<ClusterLabel>>> Label(IReadOnlyList<FileCluster> clusters, int maxTokens, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<ClusterLabel>>> Label(IReadOnlyList<FileCluster> clusters, IReadOnlyList<ScrubPattern> extraPatterns, int maxTokens, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(clusters);
         if (Failure is { } failure)
@@ -21,6 +25,7 @@ public sealed class FakeLabeler : ILabeler
             return ValueTask.FromResult<Result<IReadOnlyList<ClusterLabel>>>(failure);
         }
 
+        Patterns.Add(extraPatterns);
         foreach (var cluster in clusters)
         {
             Shown.Add(cluster);

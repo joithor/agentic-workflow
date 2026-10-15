@@ -9,4 +9,7 @@ internal sealed record GraphifyOptions(string Pin, string Binary, TimeSpan Timeo
 {
     /// <summary>The shipped options.</summary>
     public static GraphifyOptions Default { get; } = new("0.9.67", "graphify", TimeSpan.FromMinutes(10), 128L * 1024 * 1024);
+
+    /// <summary>Wraps a command in the sandbox (null: this machine has none). Tests swap it for a pass-through so the run path needs no bwrap.</summary>
+    public Func<SandboxHost, IReadOnlyList<string>, IReadOnlyList<string>, IReadOnlyList<string>?> Sandbox { get; init; } = GraphifySandbox.Argv;
 }

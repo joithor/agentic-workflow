@@ -51,7 +51,7 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
         var real = host.RealPath(snapshot);
         var priv = Directory.CreateTempSubdirectory(Path.Combine(real, PrivateFolder + "-")).FullName;
         _ = Directory.CreateDirectory(Path.Combine(priv, "cache"));
-        var argv = GraphifySandbox.Argv(host, [binary, "extract", real, "--code-only", "--no-viz"], [real]);
+        var argv = options.Sandbox(host, [binary, "extract", real, "--code-only", "--no-viz"], [real]);
         if (argv is null)
         {
             return _unavailable;
@@ -74,7 +74,7 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
         var scratch = Directory.CreateTempSubdirectory("aw-graphify-probe-").FullName;
         try
         {
-            var argv = GraphifySandbox.Argv(host, [binary, "--version"], []);
+            var argv = options.Sandbox(host, [binary, "--version"], []);
             var ran = argv is null ? null : await Spawn(argv, PrivateEnvironment(scratch), scratch, TimeSpan.FromSeconds(30), cancellationToken).ConfigureAwait(false);
             return ran is { Exit: 0 } && Version.Match(ran.Stdout) is { Success: true } found && string.Equals(found.Value, options.Pin, StringComparison.Ordinal);
         }

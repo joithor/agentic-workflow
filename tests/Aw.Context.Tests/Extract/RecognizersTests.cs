@@ -73,6 +73,25 @@ public sealed class RecognizersTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void An_exported_constant_or_a_name_that_runs_on_is_not_a_component()
+    {
+        const string Text = "export const DEFAULT_THEME = {};\nexport const API_URL = \"x\";\nexport const Theme_Colors = {};\nexport function TabStrip() {}";
+
+        Assert.Equal(["surface:pane/TabStrip"], Keys("src/ui/Tabs.tsx", Text));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_editors_or_tools_settings_file_is_not_the_apps_settings_registry()
+    {
+        const string Text = "{\"editor.formatOnSave\": true}";
+
+        Assert.Empty(Keys(".vscode/settings.json", Text));
+        Assert.Empty(Keys(".devcontainer/settings.json", Text));
+        Assert.Empty(Keys("packages/app/.idea/settings.json", Text));
+        Assert.Equal(["surface:setting/editor.formatOnSave"], Keys("config/settings.json", Text));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_component_is_only_read_from_a_jsx_file() =>
         Assert.Empty(Keys("src/ui/helpers.ts", "export function TabStrip() {}"));
 

@@ -144,6 +144,8 @@ public sealed class GetLensesTests : IDisposable
         var noDraft = await Ask(Anchor, draft: true);
 
         Assert.Equal((ContextErrors.NoMap.Code, ContextErrors.NoDraftMap.Code), (none.Error.Code, noDraft.Error.Code));
+        Assert.Contains("context map propose <file>", noDraft.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("map build", noDraft.Error.Message, StringComparison.Ordinal);   // pending:API-P6, answers SND-CLI-001
     }
 
     [Fact, Trait("Lane", "unit")]

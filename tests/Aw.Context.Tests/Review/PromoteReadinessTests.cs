@@ -16,6 +16,8 @@ public sealed class PromoteReadinessTests
 
         Assert.Equal(ContextErrors.PromoteRefused.Code, ready.Error.Code);
         Assert.Contains("no draft", ready.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("context map propose <file>", ready.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("map build", ready.Error.Message, StringComparison.Ordinal);   // pending:API-P6, answers SND-CLI-001
     }
 
     [Fact, Trait("Lane", "unit")]
