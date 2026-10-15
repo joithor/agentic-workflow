@@ -63,10 +63,12 @@ public sealed class ContextApiTests : IDisposable
         var ct = TestContext.Current.CancellationToken;
         await using var host = await Approved(sessions: false, ct);
 
-        var anchor = await host.Http.Ask(Get("/sindri/context/query?node=feature:x", Human(host.Token.Value)));
+        var anchor = await host.Http.Ask(Get("/sindri/context/query?item=ENG-1", Human(host.Token.Value)));
+        var node = await host.Http.Ask(Get("/sindri/context/query?node=feature:x", Human(host.Token.Value)));
         var empty = await host.Http.Ask(Get("/sindri/context/query?q=%20", Human(host.Token.Value)));
 
-        Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-003"), (anchor.Status, anchor.Code));
+        Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-003"), (anchor.Status, anchor.Code));   // item anchors arrive with S-5B
+        Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-030"), (node.Status, node.Code));   // a node anchor needs a map
         Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (empty.Status, empty.Code));
     }
 
