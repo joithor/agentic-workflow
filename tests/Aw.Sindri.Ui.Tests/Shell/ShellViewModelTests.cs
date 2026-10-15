@@ -25,7 +25,7 @@ public sealed class ShellViewModelTests
     // The shell as the app starts it: built over the ports, then restored from the stored preferences.
     private async Task<ShellViewModel> Shell()
     {
-        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences), new FakeClipboard());
         await shell.Restore(Token);
         return shell;
     }
@@ -241,6 +241,7 @@ public sealed class ShellViewModelTests
         var shell = await Running(ShellState.NotRunning);
 
         // I7: the reason's words lead; the record's path is its own value, shortened.
+        await Until(() => shell.Pill.Text == Labels.NotRunning);
         Assert.Equal(Labels.NoRecord, shell.Reason);
         Assert.Equal(StatusText.ShortPath(_records.Location), shell.ReasonDetail);
         Assert.Equal(Labels.NotRunning, shell.Pill.Text);
@@ -253,6 +254,7 @@ public sealed class ShellViewModelTests
 
         var shell = await Running(ShellState.Normal);
 
+        await Until(() => shell.Pill.Text.StartsWith(Labels.Running, StringComparison.Ordinal));
         Assert.StartsWith(Labels.Running, shell.Pill.Text, StringComparison.Ordinal);
     }
 
@@ -288,6 +290,7 @@ public sealed class ShellViewModelTests
         _clock.Advance(ShellViewModel.StaleAfter);
         await Until(() => shell.State == ShellState.Stale);
 
+        await Until(() => shell.Pill.Text.Contains(Labels.Stale, StringComparison.Ordinal));
         Assert.Equal(ShellState.Stale, shell.State);
         Assert.Contains(Labels.Stale, shell.Pill.Text, StringComparison.Ordinal);
 

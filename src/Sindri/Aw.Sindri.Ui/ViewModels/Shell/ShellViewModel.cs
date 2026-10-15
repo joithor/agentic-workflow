@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Palette;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -40,13 +41,17 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <param name="api">Its API.</param>
     /// <param name="clock">The clock for every timing rule.</param>
     /// <param name="preferences">The app's local preferences, shared with Settings (the shell keeps its window, sheet width and last page there).</param>
-    internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, Preferences preferences)
+    /// <param name="clipboard">Where Copy puts a CLI (the window's clipboard).</param>
+    internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, Preferences preferences, IClipboard clipboard)
     {
         _store = preferences;
         _clock = clock;
-        Health = new HealthViewModel(records, api, clock);
+        Health = new HealthViewModel(records, api, clock, clipboard);
         Health.PropertyChanged += OnHealthChanged;
         Health.Pill.PropertyChanged += OnPillChanged;
+        CommandOutcome = new CommandOutcomeRegion(control => Health.Banner.HasRebuild && ReferenceEquals(Health.Banner.Rebuild, control));
+        Palette = new CommandPaletteViewModel(Health.Catalog, GoTo, RememberRun, CommandOutcome);
+        Shortcuts = new ShortcutsViewModel(Health.Catalog);
     }
 
     /// <summary>The app's copy, for the view.</summary>

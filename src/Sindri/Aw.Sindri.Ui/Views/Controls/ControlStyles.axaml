@@ -1,0 +1,37 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
+        xmlns:icons="using:Aw.Sindri.Ui.Views.Icons">
+  <!-- The control renderer's looks (UI spec §7, §11.1): secondary buttons on Surface1 with a hairline; disabled ink only
+       for the disabled label; the pending line in InkSubtle; errors in the Error token, always with a word and ✕. -->
+  <Style Selector="Button.command-control, Button.copy">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="10,4" />
+  </Style>
+  <Style Selector="Button.command-control:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+  </Style>
+  <Style Selector="Button.command-control:disabled TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkTertiary}" />
+  </Style>
+  <Style Selector="Button.command-control:disabled icons|StateIcon">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkTertiary}" />
+  </Style>
+  <Style Selector="Button.copy">
+    <Setter Property="Padding" Value="8,2" />
+  </Style>
+  <Style Selector="Border.pending-line">
+    <Setter Property="Padding" Value="2,2" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.XS}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.error">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
+  </Style>
+  <Style Selector="icons|StateIcon.error">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
+  </Style>
+</Styles>

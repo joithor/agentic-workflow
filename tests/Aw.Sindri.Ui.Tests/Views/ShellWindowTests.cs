@@ -66,7 +66,7 @@ public sealed class ShellWindowTests : IDisposable
 
     private async Task<(ShellWindow Window, ShellViewModel Shell)> Show(Func<ShellViewModel, bool> ready, bool run = true)
     {
-        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences), new FakeClipboard());
         await shell.Restore(Token);
         var window = new ShellWindow { DataContext = shell };
         _windows.Add(window);
@@ -124,6 +124,7 @@ public sealed class ShellWindowTests : IDisposable
                 && (c is Button or ListBoxItem or TextBlock { Text.Length: > 1 })
                 && string.IsNullOrEmpty(AutomationProperties.GetName(c))
                 && !c.Classes.Contains("live-region")
+                && AutomationProperties.GetAccessibilityView(c) != AccessibilityView.Raw   // hidden from the tree on purpose; its parent carries the name
                 && (c is not TextBlock || (c.FindAncestorOfType<Button>() is null && c.FindAncestorOfType<ListBoxItem>() is null)))
             .Select(c => c.GetType().Name + ":" + (c as TextBlock)?.Text)
             .ToList();
@@ -215,6 +216,7 @@ public sealed class ShellWindowTests : IDisposable
 
     // I1 (home.html .seg): one group; unselected labels muted, the selected one in PrimaryHover with the Primary dot;
     // The whole group disabled while not running.
+
     [Fact]
     public Task The_navigation_is_one_segmented_group_with_the_selected_dot() => OnUi(async () =>
     {
@@ -841,6 +843,7 @@ public sealed class ShellWindowTests : IDisposable
         Assert.True(string.IsNullOrEmpty(AutomationProperties.GetName(Named<TextBlock>(window, "RunningLive"))));
 
         _server.UnreadableStatus = true;
+        _clock.Advance(HealthViewModel.RefreshEvery);   // the refresh that followed the recovery is still throttled (§9.2)
         _server.Push(A.Event(3));
         await Until(() => shell.State == ShellState.Unreadable);
         Settle(window);

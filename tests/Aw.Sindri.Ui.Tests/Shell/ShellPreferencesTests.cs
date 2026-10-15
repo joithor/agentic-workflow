@@ -19,7 +19,7 @@ public sealed class ShellPreferencesTests
 
     private async Task<ShellViewModel> Shell()
     {
-        var shell = new ShellViewModel(new InMemoryEndpointRecords(), new FakeSindriApi(), new FakeTimeProvider(A.Noon), new Preferences(_store));
+        var shell = new ShellViewModel(new InMemoryEndpointRecords(), new FakeSindriApi(), new FakeTimeProvider(A.Noon), new Preferences(_store), new FakeClipboard());
         await shell.Restore(Token);
         return shell;
     }
@@ -90,7 +90,7 @@ public sealed class ShellPreferencesTests
     {
         var store = new GatedPreferencesStore();
         var preferences = new Preferences(store);
-        var shell = new ShellViewModel(new InMemoryEndpointRecords(), new FakeSindriApi(), new FakeTimeProvider(A.Noon), preferences);
+        var shell = new ShellViewModel(new InMemoryEndpointRecords(), new FakeSindriApi(), new FakeTimeProvider(A.Noon), preferences, new FakeClipboard());
         await shell.Restore(Token);
         using var settings = new SettingsViewModel(preferences, new FakeMotionPreference(), _ => { });
         store.HoldReads();
@@ -112,5 +112,21 @@ public sealed class ShellPreferencesTests
         shell.GoTo(PageId.Home);
 
         Assert.Equal(0, _store.Writes);
+    }
+    // §12.3 paletteHistory: each entry run from the palette is remembered, a repeat moving to the newest end.
+    [Fact]
+    public async Task Palette_entries_run_are_remembered_newest_last()
+    {
+        var shell = await Shell();
+        shell.Palette.Open();
+
+        await shell.Palette.Run(shell.Palette.Entries.First(e => e.Id == "go:Work"), Token);
+        shell.Palette.Open();
+        await shell.Palette.Run(shell.Palette.Entries.First(e => e.Id == "go:Recipes"), Token);
+        shell.Palette.Open();
+        await shell.Palette.Run(shell.Palette.Entries.First(e => e.Id == "go:Work"), Token);
+
+        Assert.Equal(["go:Recipes", "go:Work"], (await Stored()).PaletteHistory, StringComparer.Ordinal);
+        Assert.Equal(PageId.Work, shell.CurrentPage);
     }
 }
