@@ -52,23 +52,6 @@ internal sealed class WorkflowsHarness : IDisposable
     public ServiceProvider Sindri() =>
         Composition.Compose(new ServiceCollection(), name => name == "AW_SINDRI_HOME" ? _home.Path : null, new FakeTimeProvider(DateTimeOffset.UtcNow)).BuildServiceProvider();
 
-    /// <summary>
-    /// Moves the time-skipping server's clock by <paramref name="by"/>, as 'WorkflowEnvironment.DelayAsync' does, but with an RPC
-    /// timeout of 3 minutes: the SDK's own call gives up after 30 s of wall clock, which a loaded box can spend on the server
-    /// replaying the workflow tasks the skip wakes.
-    /// </summary>
-    /// <param name="environment">The time-skipping environment.</param>
-    /// <param name="by">How far to move the clock.</param>
-    /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>When the clock has moved.</returns>
-    public static async Task Skip(WorkflowEnvironment environment, TimeSpan by, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(environment);
-        _ = await environment.Client.Connection.TestService.UnlockTimeSkippingWithSleepAsync(
-            new Temporalio.Api.TestService.V1.SleepRequest { Duration = Google.Protobuf.WellKnownTypes.Duration.FromTimeSpan(by) },
-            new RpcOptions { Timeout = TimeSpan.FromMinutes(3), CancellationToken = cancellationToken });
-    }
-
     /// <summary>The 'temporal' dev server pinned in binaries.lock, with Sindri's namespace (or <paramref name="namespace"/>) and search attributes.</summary>
     public static Task<WorkflowEnvironment> StartDevServer(string @namespace = TemporalSettings.DefaultNamespace, CancellationToken ct = default) =>
         WorkflowEnvironment.StartLocalAsync(new WorkflowEnvironmentStartLocalOptions
