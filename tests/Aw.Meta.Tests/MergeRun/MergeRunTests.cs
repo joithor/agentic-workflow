@@ -13,21 +13,35 @@ public sealed class MergeRunTests
 {
     private readonly MetaWorld _world = new();
 
-    private MergeRunService Service() => new(new MergeReadiness(_world.Config, _world.Gates, _world.Repo), _world.Repo, _world.Gates, _world.Log, _world.Clock);
+    private MergeRunService Service() => new(new MergeReadiness(_world.Config, _world.Gates, _world.Repo, _world.LogFiles), _world.Repo, _world.Gates, _world.Log, _world.Clock);
 
-    private async Task Ready(bool gated = true, bool mergeFails = false)
+    private async Task Ready(bool gated = true, bool mergeFails = false, bool fetchFails = false, string state = "OPEN", string? mergeCommit = null)
     {
         await _world.ReadyWithGate();
         if (gated)
         {
-            GateStep[] steps = [new("sync-rules", GateVerdict.Pass, "/l/sync.log")];
-            _ = await _world.Gates.Save(new GateRecord(190, "headsha", "mainsha", ["repo"], steps, GateVerdict.Pass, A.At(5)), CancellationToken.None);
+            await SaveGate();
         }
 
+        ScriptGitHub(mergeFails, fetchFails, state, mergeCommit);
+    }
+
+    private async Task AssignApiLane() =>
+        _ = await _world.Lanes.Save(new LaneMapState(1, [A.Assigned("api", "sindri-api")]), A.At(1), CancellationToken.None);
+
+    private async Task SaveGate()
+    {
+        GateStep[] steps = [new("sync-rules", GateVerdict.Pass, "/l/sync.log")];
+        _ = await _world.Gates.Save(new GateRecord(190, "headsha", "mainsha", ["repo"], steps, GateVerdict.Pass, A.At(5)), CancellationToken.None);
+    }
+
+    private void ScriptGitHub(bool mergeFails, bool fetchFails, string state, string? mergeCommit)
+    {
         // origin/main is mainsha until the merge, newmainsha1234 after it.
         var merged = false;
         _ = _world.Runner
-            .When("gh pr view 190 --json headRefOid,isDraft,title,state", """{"headRefOid":"headsha","isDraft":false,"title":"Add x","state":"OPEN"}""")
+            .When("gh pr view 190 --json headRefOid,isDraft,title,state", """{"headRefOid":"headsha","isDraft":false,"title":"Add x","state":"{state}"}""".Replace("{state}", state, StringComparison.Ordinal))
+            .When("gh pr view 190 --json mergeCommit", mergeCommit is null ? string.Empty : "{\"mergeCommit\":{\"oid\":\"" + mergeCommit + "\"}}", mergeCommit is null ? 1 : 0)
             .When("gh pr merge 190 --merge", _ =>
             {
                 merged = !mergeFails;
@@ -35,14 +49,14 @@ public sealed class MergeRunTests
             })
             .When("rev-parse --verify --quiet origin/main", _ => new CommandResult(0, merged ? "newmainsha1234\n" : "mainsha\n", string.Empty, TimedOut: false))
             .When("git diff --name-only mainsha...headsha", "README.md\n")
-            .When("git fetch");
+            .When("git fetch", _ => new CommandResult(merged && fetchFails ? 1 : 0, string.Empty, merged && fetchFails ? "network down" : string.Empty, TimedOut: false));
     }
 
     [Fact, Trait("Lane", "unit")]
     public async Task A_ready_pull_request_is_merged_recorded_logged_and_announced()
     {
         await Ready();
-        _ = await _world.Lanes.Save(new LaneMapState(1, [A.Assigned("api", "sindri-api")]), A.At(1), CancellationToken.None);
+        await AssignApiLane();
 
         var result = await Service().Handle(new MergeRunRequest(190), CancellationToken.None);
 
@@ -80,6 +94,62 @@ public sealed class MergeRunTests
 
         Assert.Equal(MetaErrors.CommandFailed.Code, result.Error.Code);
         Assert.Null((await _world.Gates.LatestMerge(CancellationToken.None)).Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_merge_is_recorded_even_when_the_fetch_after_it_fails_using_the_merge_commit_gh_reports()
+    {
+        await Ready(fetchFails: true, mergeCommit: "abcdef1234567");
+        await AssignApiLane();
+
+        var result = await Service().Handle(new MergeRunRequest(190), CancellationToken.None);
+
+        Assert.True(result.IsSuccess, result.IsError ? result.Error.Message : string.Empty);
+        Assert.Equal((true, "abcdef1234567"), (result.Value.Merged, result.Value.Sha));
+        Assert.Equal("abcdef1234567", (await _world.Gates.LatestMerge(CancellationToken.None)).Value!.Sha);
+        Assert.Contains(await _world.Open(), o => o.Kind == ObligationKind.AnnounceMain);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_merge_whose_sha_cannot_be_read_is_recorded_with_the_sha_unknown_and_announced()
+    {
+        await Ready(fetchFails: true);
+        await AssignApiLane();
+
+        var result = await Service().Handle(new MergeRunRequest(190), CancellationToken.None);
+
+        Assert.True(result.IsSuccess, result.IsError ? result.Error.Message : string.Empty);
+        Assert.Equal((true, null, "main moved (#190 Add x merged). Merge main into your branches."), (result.Value.Merged, result.Value.Sha, result.Value.Announce));
+        Assert.Equal(MergeRecord.Unknown, (await _world.Gates.LatestMerge(CancellationToken.None)).Value!.Sha);
+        var announce = Assert.Single(await _world.Open(), o => o.Kind == ObligationKind.AnnounceMain);
+        Assert.Contains("main moved", announce.Summary, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Running_merge_again_on_a_merged_pull_request_with_no_merge_record_records_it()
+    {
+        await Ready(state: "MERGED", mergeCommit: "abcdef1234567");
+        await AssignApiLane();
+
+        var result = await Service().Handle(new MergeRunRequest(190), CancellationToken.None);
+
+        Assert.True(result.IsSuccess, result.IsError ? result.Error.Message : string.Empty);
+        Assert.True(result.Value.Merged);
+        Assert.DoesNotContain(_world.Runner.Lines, l => l.StartsWith("gh pr merge", StringComparison.Ordinal));
+        Assert.Equal("abcdef1234567", (await _world.Gates.LatestMerge(CancellationToken.None)).Value!.Sha);
+        Assert.Contains(await _world.Open(), o => o.Kind == ObligationKind.AnnounceMain);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_merged_pull_request_that_already_has_a_merge_record_is_not_recorded_twice()
+    {
+        await Ready(state: "MERGED");
+        _ = await _world.Gates.RecordMerge(new MergeRecord(190, "oldsha1234", A.At(2)), CancellationToken.None);
+
+        var result = await Service().Handle(new MergeRunRequest(190), CancellationToken.None);
+
+        Assert.False(result.Value.Merged);
+        Assert.Empty(_world.Log.Lines);
     }
 
     [Fact, Trait("Lane", "unit")]

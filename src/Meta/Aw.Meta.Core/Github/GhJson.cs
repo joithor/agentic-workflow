@@ -54,6 +54,29 @@ public static class GhJson
         return first is { Length: >= 7 } ? first : null;
     }
 
+    /// <summary>Reads `gh pr view --json mergeCommit`.</summary>
+    /// <param name="json">The output: {"mergeCommit":{"oid":"..."}}.</param>
+    /// <returns>The merge commit's sha, or null when there is none (not merged yet, or unexpected output).</returns>
+    public static string? MergeCommit(string json)
+    {
+        ArgumentNullException.ThrowIfNull(json);
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            var root = document.RootElement;
+            var sha = root.ValueKind == JsonValueKind.Object
+                && root.TryGetProperty("mergeCommit", out var commit)
+                && commit.ValueKind == JsonValueKind.Object
+                ? Text(commit, "oid")
+                : string.Empty;
+            return sha.Length >= 7 ? sha : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
     private static PrView View(JsonElement item) => new(
         item.GetProperty("number").GetInt32(),
         State(Text(item, "state")),

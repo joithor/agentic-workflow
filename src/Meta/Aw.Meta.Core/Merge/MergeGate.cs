@@ -24,7 +24,7 @@ public static class MergeGate
         return
         [
             new MergeCheck("gate", Ok: true, "gate run " + gate.Run.ToString(CultureInfo.InvariantCulture) + " at " + gate.Head),
-            GateResult(gate),
+            GateResult(gate, facts.FailingTests),
             Scopes(gate, facts.PlannedScopes),
             Head(facts),
             new MergeCheck("main", gate.Main == facts.CurrentMain, $"gate ran on main {gate.Main}, main is {facts.CurrentMain}"),
@@ -33,23 +33,35 @@ public static class MergeGate
         ];
     }
 
-    private static MergeCheck GateResult(GateRecord? gate)
+    private static MergeCheck GateResult(GateRecord gate, IReadOnlyDictionary<string, IReadOnlyList<string>> failing)
     {
-        if (gate is null)
-        {
-            return new MergeCheck("gate-result", Ok: false, NoGate);
-        }
-
         if (gate.Verdict == GateVerdict.Pass)
         {
             return new MergeCheck("gate-result", Ok: true, "PASS");
         }
 
         var red = gate.Steps.Where(s => s.Verdict != GateVerdict.Pass).ToList();
-        var unexplained = red.Where(s => s.Flake != FlakeVerdict.Flake).Select(s => s.Name).ToList();
-        return gate.Verdict == GateVerdict.Fail && red.Count > 0 && unexplained.Count == 0
-            ? new MergeCheck("gate-result", Ok: true, "every red step is a classified flake")
-            : new MergeCheck("gate-result", Ok: false, $"{gate.Verdict}: {(unexplained.Count == 0 ? "no failing step recorded" : "not a flake: " + string.Join(", ", unexplained))}");
+        if (gate.Verdict != GateVerdict.Fail || red.Count == 0)
+        {
+            return new MergeCheck("gate-result", Ok: false, $"{gate.Verdict}: no failing step recorded");
+        }
+
+        var unexplained = red.Select(step => Unexplained(step, failing)).Where(text => text is not null).ToList();
+        return unexplained.Count == 0
+            ? new MergeCheck("gate-result", Ok: true, "every failing test of every red step is a classified flake")
+            : new MergeCheck("gate-result", Ok: false, $"{gate.Verdict}: {string.Join("; ", unexplained)}");
+    }
+
+    // A red step is accepted only when its log names its failing tests and every one of them was rerun and classified a flake.
+    private static string? Unexplained(GateStep step, IReadOnlyDictionary<string, IReadOnlyList<string>> failing)
+    {
+        if (!failing.TryGetValue(step.Name, out var tests) || tests.Count == 0)
+        {
+            return $"{step.Name}: could not list its failing tests from the log, so no flake classification can vouch for it";
+        }
+
+        var open = tests.Where(test => !step.Reruns.Any(r => r.Verdict == FlakeVerdict.Flake && TestNames.Matches(r.Test, test))).ToList();
+        return open.Count == 0 ? null : $"not a flake in {step.Name}: {string.Join(", ", open)}";
     }
 
     // A gate run with fewer scopes than the diff needs (gate-run <pr> repo on a code change) vouches only for what it ran.

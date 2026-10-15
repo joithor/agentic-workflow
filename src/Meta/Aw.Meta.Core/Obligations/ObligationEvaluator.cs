@@ -73,14 +73,17 @@ public static class ObligationEvaluator
             yield break;
         }
 
-        var missing = Missing(facts, Targets(facts), o => o.At >= merge.At && o.Message.Contains(merge.ShortSha, StringComparison.Ordinal));
+        var missing = Missing(facts, Targets(facts), o => o.At >= merge.At && o.Message.Contains(merge.Marker, StringComparison.Ordinal));
         if (missing.Count > 0)
         {
+            var moved = merge.IsKnown ? $"main moved to {merge.ShortSha}" : "main moved";
+            var number = merge.Pr.ToString(CultureInfo.InvariantCulture);
+            var sent = merge.IsKnown ? $"{moved}: #{number} merged." : $"main moved (#{number} merged).";
             yield return new Obligation(
                 ObligationKind.AnnounceMain,
-                merge.ShortSha,
-                string.Create(CultureInfo.InvariantCulture, $"main moved to {merge.ShortSha} (#{merge.Pr}); not sent to: {Described(missing)}"),
-                string.Create(CultureInfo.InvariantCulture, $"SendMessage \"main moved to {merge.ShortSha}: #{merge.Pr} merged. Merge main into your branches.\" to: {Addresses(missing)}"));
+                merge.Marker,
+                $"{moved} (#{number}); not sent to: {Described(missing)}",
+                $"SendMessage \"{sent} Merge main into your branches.\" to: {Addresses(missing)}");
         }
     }
 

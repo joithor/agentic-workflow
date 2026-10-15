@@ -2,15 +2,19 @@ using System.Globalization;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Meta.Core.Coordination;
+using Aw.Meta.Core.Github;
 using Aw.Meta.Core.Logs;
 using Aw.Meta.Core.Obligations;
 using Aw.Meta.Core.Ports;
+using Aw.Meta.Core.Watch;
 
 namespace Aw.Meta.Features.MergeRun;
 
 /// <summary>
-/// Merges a pull request once every check holds: "gh pr merge --merge", a fetch, the merge recorded with main's new sha
-/// (which opens the announce-main obligation), a running-log line, and the text to send every lane.
+/// Merges a pull request once every check holds: "gh pr merge --merge", the merge recorded with main's new sha (which opens
+/// the announce-main obligation), a running-log line, and the text to send every lane. The merge is recorded as soon as gh
+/// succeeds: main's sha comes from a fetch, else from GitHub's merge commit, else stays unknown. A pull request that is
+/// already merged on GitHub with no merge recorded (an earlier run died after gh) is recorded now instead.
 /// </summary>
 /// <param name="readiness">Checks the pull request.</param>
 /// <param name="repo">The git and gh calls.</param>
@@ -24,27 +28,60 @@ internal sealed class MergeRunService(MergeReadiness readiness, RepoCommands rep
     {
         ArgumentNullException.ThrowIfNull(request);
         var assessed = await readiness.Assess(request.Pr, cancellationToken).ConfigureAwait(false);
-        if (assessed.IsError || !assessed.Value.Ready || assessed.Value.Pr is not { } pull)
+        if (assessed.IsError)
         {
-            return assessed.IsError ? assessed.Error : new MergeRunResponse(request.Pr, Merged: false, assessed.Value.Checks, Sha: null, Announce: null);
+            return assessed.Error;
+        }
+
+        var repoDirectory = assessed.Value.Team.Repo;
+        if (assessed.Value.Pr is not { } pull)
+        {
+            return Refused(request, assessed.Value);
+        }
+
+        if (!assessed.Value.Ready)
+        {
+            return await Unrecorded(pull, request.Pr, cancellationToken).ConfigureAwait(false)
+                ? await Record(request, assessed.Value, pull, await repo.MergeCommit(repoDirectory, request.Pr).ConfigureAwait(false), cancellationToken).ConfigureAwait(false)
+                : Refused(request, assessed.Value);
         }
 
         var number = request.Pr.ToString(CultureInfo.InvariantCulture);
-        var repoDirectory = assessed.Value.Team.Repo;
         var merged = await repo.Gh(repoDirectory, "pr", "merge", number, "--merge").ConfigureAwait(false);
-        var fetched = merged.IsError ? Results.Failure<Unit>(merged.Error) : await repo.Fetch(repoDirectory, pr: null).ConfigureAwait(false);
+        return merged.IsError
+            ? merged.Error
+            : await Record(request, assessed.Value, pull, await MainSha(repoDirectory, request.Pr).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
+    }
+
+    private async ValueTask<bool> Unrecorded(PrDetails pull, int pr, CancellationToken cancellationToken) =>
+        pull.State == PrState.Merged && await gates.FindMerge(pr, cancellationToken).ConfigureAwait(false) is { IsSuccess: true, Value: null };
+
+    private static MergeRunResponse Refused(MergeRunRequest request, MergeAssessment assessed) =>
+        new(request.Pr, Merged: false, assessed.Checks, Sha: null, Announce: null);
+
+    // Main's tip after a fetch; failing that, the commit GitHub made; failing that, unknown. The merge happened either way.
+    private async ValueTask<Result<string>> MainSha(string repoDirectory, int pr)
+    {
+        var fetched = await repo.Fetch(repoDirectory, pr: null).ConfigureAwait(false);
         var sha = fetched.IsError ? Results.Failure<string>(fetched.Error) : await repo.Sha(repoDirectory, "origin/main").ConfigureAwait(false);
-        if (sha.IsError)
+        return sha.IsSuccess ? sha : await repo.MergeCommit(repoDirectory, pr).ConfigureAwait(false);
+    }
+
+    private async ValueTask<Result<MergeRunResponse>> Record(MergeRunRequest request, MergeAssessment assessed, PrDetails pull, Result<string> sha, CancellationToken cancellationToken)
+    {
+        var now = clock.GetUtcNow();
+        var record = new MergeRecord(request.Pr, sha.IsSuccess ? sha.Value : MergeRecord.Unknown, now);
+        var recorded = await gates.RecordMerge(record, cancellationToken).ConfigureAwait(false);
+        if (recorded.IsError)
         {
-            return sha.Error;
+            return recorded.Error;
         }
 
-        var now = clock.GetUtcNow();
-        var record = new MergeRecord(request.Pr, sha.Value, now);
-        var recorded = await gates.RecordMerge(record, cancellationToken).ConfigureAwait(false);
-        var logged = recorded.IsError ? Results.Failure<Unit>(recorded.Error) : await log.Append(LogLine.Event(LogKind.Merge, now, $"#{number} {pull.Title} merged; main is now {record.ShortSha}"), cancellationToken).ConfigureAwait(false);
-        return logged.IsError
-            ? logged.Error
-            : new MergeRunResponse(request.Pr, Merged: true, assessed.Value.Checks, sha.Value, $"main moved to {record.ShortSha}: #{number} {pull.Title} merged. Merge main into your branches.");
+        var number = request.Pr.ToString(CultureInfo.InvariantCulture);
+        var logged = await log.Append(LogLine.Event(LogKind.Merge, now, $"#{number} {pull.Title} merged; main is now {(record.IsKnown ? record.ShortSha : "unknown")}"), cancellationToken).ConfigureAwait(false);
+        var announce = record.IsKnown
+            ? $"main moved to {record.ShortSha}: #{number} {pull.Title} merged. Merge main into your branches."
+            : $"main moved (#{number} {pull.Title} merged). Merge main into your branches.";
+        return logged.IsError ? logged.Error : new MergeRunResponse(request.Pr, Merged: true, assessed.Checks, record.IsKnown ? record.Sha : null, announce);
     }
 }

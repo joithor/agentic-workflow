@@ -46,7 +46,7 @@ internal sealed class GateRerunService(IMetaConfig config, IGateStore gates, Gat
         }
 
         var run = target.Value.Gate.Run;
-        var stored = await gates.Classify(request.Pr, run, request.Step, judged.Value.Verdict, cancellationToken).ConfigureAwait(false);
+        var stored = await gates.Classify(request.Pr, run, request.Step, new TestVerdict(request.Test, judged.Value.Verdict), cancellationToken).ConfigureAwait(false);
         return stored.IsError ? stored.Error : new GateRerunResponse(request.Pr, run, request.Step, request.Test, judged.Value.Verdict, judged.Value.Reason);
     }
 
@@ -90,7 +90,7 @@ internal sealed class GateRerunService(IMetaConfig config, IGateStore gates, Gat
     private async ValueTask<Result<Judgement>> AgainstMain(TeamConfig team, RerunTarget target, GateRerunRequest request, RerunOutcome alone, CancellationToken cancellationToken)
     {
         var main = await workspace.PrepareMain(team, request.Pr, target.Gate.Main).ConfigureAwait(false);
-        var onMain = main.IsError ? Results.Failure<RerunOutcome>(main.Error) : await reruns.Run(target.Command, main.Value, request.Test, cancellationToken).ConfigureAwait(false);
+        var onMain = main.IsError ? Results.Failure<RerunOutcome>(main.Error) : await reruns.Run(RerunExecutor.Building(target.Command), main.Value, request.Test, cancellationToken).ConfigureAwait(false);
         var gateLog = await logs.Tail(target.Step.Log, LogCharacters, cancellationToken).ConfigureAwait(false);
         if (onMain.IsError)
         {
@@ -107,5 +107,5 @@ internal sealed class GateRerunService(IMetaConfig config, IGateStore gates, Gat
     }
 
     private static string? Known(TeamConfig team, string test) =>
-        team.KnownFlakes.FirstOrDefault(flake => test.Contains(flake, StringComparison.OrdinalIgnoreCase) || flake.Contains(test, StringComparison.OrdinalIgnoreCase));
+        team.KnownFlakes.FirstOrDefault(flake => TestNames.Matches(flake, test));
 }

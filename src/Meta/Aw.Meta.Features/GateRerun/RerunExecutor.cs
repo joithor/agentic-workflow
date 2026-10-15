@@ -27,13 +27,19 @@ internal sealed class RerunExecutor(ICommandRunner runner, MetaPaths paths)
         }
 
         var result = ran.Value;
-        if (result is { ExitCode: NoTestsRan, TimedOut: false } && argv.Contains("dotnet", StringComparer.Ordinal))
+        var output = result.Stdout + "\n" + result.Stderr;
+        var ranNothing = TestNames.RanNone(output) || (result.ExitCode == NoTestsRan && !TestNames.Ran(output));
+        if (!result.TimedOut && ranNothing && argv.Contains("dotnet", StringComparer.Ordinal))
         {
             return MetaErrors.Invalid.With($"no test matched '{test}'");
         }
 
-        return result is { ExitCode: 0, TimedOut: false }
+        // Exit 8 with tests run is some project having none to run, as in a solution-wide filter: the tests that ran passed.
+        return result is { ExitCode: 0 or NoTestsRan, TimedOut: false }
             ? new RerunOutcome(Passed: true)
-            : new RerunOutcome(Passed: false, result.TimedOut ? "timed out" : FailureExcerpt.For(result.Stdout + "\n" + result.Stderr, test));
+            : new RerunOutcome(Passed: false, result.TimedOut ? "timed out" : FailureExcerpt.For(output, test));
     }
+
+    /// <summary>The same command without --no-build, for a tree nobody built.</summary>
+    internal static IReadOnlyList<string> Building(IReadOnlyList<string> argv) => [.. argv.Where(word => word != "--no-build")];
 }

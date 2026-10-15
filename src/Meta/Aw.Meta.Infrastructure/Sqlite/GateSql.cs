@@ -28,9 +28,9 @@ internal static class GateSql
             var step = gate.Steps[position];
             var at = position;
             yield return new SqlStatement(
-                "INSERT INTO gate_steps (pr, run, position, name, verdict, log, flake) VALUES ($pr, $run, $position, $name, $verdict, $log, $flake)",
+                "INSERT INTO gate_steps (pr, run, position, name, verdict, log) VALUES ($pr, $run, $position, $name, $verdict, $log)",
                 c => c.Bind("$pr", gate.Pr).Bind("$run", gate.Run).Bind("$position", at).Bind("$name", step.Name)
-                    .Bind("$verdict", step.Verdict.ToString()).Bind("$log", step.Log).Bind("$flake", step.Flake?.ToString()),
+                    .Bind("$verdict", step.Verdict.ToString()).Bind("$log", step.Log),
                 "gate step " + step.Name);
         }
     }
@@ -46,14 +46,29 @@ internal static class GateSql
         "gate history");
 
     internal static SqlStatement Steps(int pr, int run) => new(
-        "SELECT name, verdict, log, flake FROM gate_steps WHERE pr = $pr AND run = $run ORDER BY position ASC",
+        "SELECT name, verdict, log FROM gate_steps WHERE pr = $pr AND run = $run ORDER BY position ASC",
         c => c.Bind("$pr", pr).Bind("$run", run),
         "gate steps");
 
-    internal static SqlStatement Classify(int pr, int run, string step, FlakeVerdict verdict) => new(
-        "UPDATE gate_steps SET flake = $flake WHERE pr = $pr AND run = $run AND name = $name AND verdict <> 'Pass'",
-        c => c.Bind("$flake", verdict.ToString()).Bind("$pr", pr).Bind("$run", run).Bind("$name", step),
+    internal static SqlStatement HasFailedStep(int pr, int run, string step) => new(
+        "SELECT COUNT(*) FROM gate_steps WHERE pr = $pr AND run = $run AND name = $name AND verdict <> 'Pass'",
+        c => c.Bind("$pr", pr).Bind("$run", run).Bind("$name", step),
         "gate step " + step);
+
+    internal static SqlStatement Classify(int pr, int run, string step, TestVerdict verdict) => new(
+        "INSERT OR REPLACE INTO gate_reruns (pr, run, step, test, verdict) VALUES ($pr, $run, $step, $test, $verdict)",
+        c => c.Bind("$pr", pr).Bind("$run", run).Bind("$step", step).Bind("$test", verdict.Test).Bind("$verdict", verdict.Verdict.ToString()),
+        "gate rerun " + step);
+
+    internal static SqlStatement Reruns(int pr, int run) => new(
+        "SELECT step, test, verdict FROM gate_reruns WHERE pr = $pr AND run = $run ORDER BY rowid ASC",
+        c => c.Bind("$pr", pr).Bind("$run", run),
+        "gate reruns");
+
+    internal static SqlStatement MergeOf(int pr) => new(
+        "SELECT pr, sha, at FROM merges WHERE pr = $pr ORDER BY at DESC, rowid DESC LIMIT 1",
+        c => c.Bind("$pr", pr),
+        "merge of a pull request");
 
     internal static SqlStatement InsertMerge(MergeRecord merge) => new(
         "INSERT OR REPLACE INTO merges (pr, sha, at) VALUES ($pr, $sha, $at)",
@@ -73,8 +88,10 @@ internal static class GateSql
     };
 
     internal static GateStep ReadStep(SqliteDataReader r) =>
-        new(r.GetString(0), Enum.Parse<GateVerdict>(r.GetString(1)), r.GetString(2))
-        {
-            Flake = r.IsDBNull(3) ? null : Enum.Parse<FlakeVerdict>(r.GetString(3)),
-        };
+        new(r.GetString(0), Enum.Parse<GateVerdict>(r.GetString(1)), r.GetString(2));
+
+    internal static (string Step, TestVerdict Verdict) ReadRerun(SqliteDataReader r) =>
+        (r.GetString(0), new TestVerdict(r.GetString(1), Enum.Parse<FlakeVerdict>(r.GetString(2))));
+
+    internal static MergeRecord ReadMerge(SqliteDataReader r) => new(checked((int)r.GetInt64(0)), r.GetString(1), SqliteRead.GetTimestamp(r, 2));
 }

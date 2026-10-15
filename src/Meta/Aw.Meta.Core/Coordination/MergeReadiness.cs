@@ -15,9 +15,11 @@ namespace Aw.Meta.Core.Coordination;
 /// <param name="config">The team config.</param>
 /// <param name="gates">The recorded gate runs.</param>
 /// <param name="repo">The git and gh calls.</param>
-public sealed class MergeReadiness(IMetaConfig config, IGateStore gates, RepoCommands repo)
+/// <param name="logs">Reads the red steps' logs for their failing tests.</param>
+public sealed class MergeReadiness(IMetaConfig config, IGateStore gates, RepoCommands repo, ILogFiles logs)
 {
     private const string Fields = "headRefOid,isDraft,title,state";
+    private const int LogCharacters = 4 * 1024 * 1024;
 
     /// <summary>Checks a pull request.</summary>
     /// <param name="pr">The pull request number.</param>
@@ -58,6 +60,7 @@ public sealed class MergeReadiness(IMetaConfig config, IGateStore gates, RepoCom
             MergeOrder = team.Value.MergeOrder,
             DocsOnly = team.Value.Gate.DocsOnly,
             PlannedScopes = await Planned(team.Value, gate).ConfigureAwait(false),
+            FailingTests = await FailingTests(gate).ConfigureAwait(false),
         };
         return new MergeAssessment(team.Value, [.. MergeGate.Evaluate(facts), State(view)], view);
     }
@@ -97,6 +100,23 @@ public sealed class MergeReadiness(IMetaConfig config, IGateStore gates, RepoCom
     {
         var changed = await repo.Changed(team.Repo, $"{gate.Main}...{gate.Head}").ConfigureAwait(false);
         return changed.IsSuccess ? ScopePlanner.Plan(changed.Value, team.Gate) : null;
+    }
+
+    // The failing tests each red step's log names. A log that can't be read, or is longer than what is read (its first failures
+    // may be cut off), leaves the step out: it can't be vouched for.
+    private async ValueTask<IReadOnlyDictionary<string, IReadOnlyList<string>>> FailingTests(GateRecord gate)
+    {
+        var failing = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+        foreach (var step in gate.Steps.Where(s => s.Verdict != GateVerdict.Pass))
+        {
+            var log = await logs.Tail(step.Log, LogCharacters, CancellationToken.None).ConfigureAwait(false);
+            if (log.IsSuccess && log.Value.Length < LogCharacters)
+            {
+                failing[step.Name] = TestNames.Failing(log.Value);
+            }
+        }
+
+        return failing;
     }
 
     private async ValueTask<IReadOnlyList<int>> OpenBefore(TeamConfig team, int pr)

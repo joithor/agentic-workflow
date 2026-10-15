@@ -31,7 +31,7 @@ public sealed class InMemoryGateStore : IGateStore
         Done.Of<IReadOnlyList<GateRecord>>([.. _gates.Where(g => g.Pr == pr).OrderByDescending(g => g.Run)]);
 
     /// <inheritdoc />
-    public ValueTask<Result<Unit>> Classify(int pr, int run, string step, FlakeVerdict verdict, CancellationToken cancellationToken)
+    public ValueTask<Result<Unit>> Classify(int pr, int run, string step, TestVerdict verdict, CancellationToken cancellationToken)
     {
         var at = _gates.FindIndex(g => g.Pr == pr && g.Run == run);
         var steps = at < 0 ? null : _gates[at].Steps.ToList();
@@ -41,7 +41,7 @@ public sealed class InMemoryGateStore : IGateStore
             return Done.Failed<Unit>(MetaErrors.GateStepNotFound.With(string.Create(CultureInfo.InvariantCulture, $"no failed step {step} in gate {pr}/{run}")));
         }
 
-        steps[index] = steps[index] with { Flake = verdict };
+        steps[index] = steps[index] with { Reruns = [.. steps[index].Reruns.Where(r => r.Test != verdict.Test), verdict] };
         _gates[at] = _gates[at] with { Steps = steps };
         return Done.Unit();
     }
@@ -52,6 +52,10 @@ public sealed class InMemoryGateStore : IGateStore
         _merges.Add(merge);
         return Done.Unit();
     }
+
+    /// <inheritdoc />
+    public ValueTask<Result<MergeRecord?>> FindMerge(int pr, CancellationToken cancellationToken) =>
+        Done.Of(_merges.Where(m => m.Pr == pr).MaxBy(m => m.At));
 
     /// <inheritdoc />
     public ValueTask<Result<MergeRecord?>> LatestMerge(CancellationToken cancellationToken) =>

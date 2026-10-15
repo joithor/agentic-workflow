@@ -26,7 +26,9 @@ public abstract class GateStoreContract
 
     private static bool Same(GateRecord? a, GateRecord b) =>
         a is not null && a.Pr == b.Pr && a.Run == b.Run && a.Head == b.Head && a.Main == b.Main && a.Verdict == b.Verdict && a.At == b.At
-        && a.Scopes.SequenceEqual(b.Scopes, StringComparer.Ordinal) && a.Steps.SequenceEqual(b.Steps);
+        && a.Scopes.SequenceEqual(b.Scopes, StringComparer.Ordinal) && a.Steps.Select(Key).SequenceEqual(b.Steps.Select(Key), StringComparer.Ordinal);
+
+    private static string Key(GateStep step) => $"{step.Name}|{step.Verdict}|{step.Log}|{string.Join(',', step.Reruns.Select(r => r.Test + "=" + r.Verdict))}";
 
     /// <summary>Runs are numbered per pull request and the latest one is returned with its steps in order.</summary>
     /// <returns>A task.</returns>
@@ -65,20 +67,26 @@ public abstract class GateStoreContract
         Expect.That(none.IsSuccess && none.Value.Count == 0, "no runs is an empty list");
     }
 
-    /// <summary>Classifying a failed step is stored; an unknown step is AW-META-007.</summary>
+    /// <summary>Classifying a test of a failed step is stored per test; an unknown step or run is AW-META-007.</summary>
     /// <returns>A task.</returns>
     [Fact]
-    public async Task A_failed_step_can_be_classified()
+    public async Task A_failed_step_can_be_classified_per_test()
     {
         var store = await Create();
         var saved = await store.Save(Gate(190, "h1"), _none);
 
-        var done = await store.Classify(190, saved.Value.Run, "unit", FlakeVerdict.Flake, _none);
-        var wrongStep = await store.Classify(190, saved.Value.Run, "nope", FlakeVerdict.Flake, _none);
-        var wrongRun = await store.Classify(190, 9, "unit", FlakeVerdict.Flake, _none);
+        var done = await store.Classify(190, saved.Value.Run, "unit", new TestVerdict("A", FlakeVerdict.Flake), _none);
+        var other = await store.Classify(190, saved.Value.Run, "unit", new TestVerdict("B", FlakeVerdict.Real), _none);
+        var again = await store.Classify(190, saved.Value.Run, "unit", new TestVerdict("B", FlakeVerdict.Flake), _none);
+        var wrongStep = await store.Classify(190, saved.Value.Run, "nope", new TestVerdict("A", FlakeVerdict.Flake), _none);
+        var wrongRun = await store.Classify(190, 9, "unit", new TestVerdict("A", FlakeVerdict.Flake), _none);
         var latest = await store.Latest(190, _none);
+        var history = await store.History(190, _none);
 
-        Expect.That(done.IsSuccess && latest.Value!.Steps[1].Flake == FlakeVerdict.Flake && latest.Value.Steps[0].Flake is null, "the classification is stored on the step");
+        Expect.That(done.IsSuccess && other.IsSuccess && again.IsSuccess, "classifying succeeds");
+        Expect.That(latest.Value!.Steps[1].Reruns.SequenceEqual([new TestVerdict("A", FlakeVerdict.Flake), new TestVerdict("B", FlakeVerdict.Flake)]), "each test keeps its own verdict, the last one replacing an earlier one");
+        Expect.That(latest.Value.Steps[0].Reruns.Count == 0, "a step with no rerun has none");
+        Expect.That(history.Value[0].Steps[1].Reruns.Count == 2, "history carries the reruns too");
         Expect.That(wrongStep.IsError && wrongStep.Error.Code == MetaErrors.GateStepNotFound.Code, "AW-META-007 for an unknown step");
         Expect.That(wrongRun.IsError && wrongRun.Error.Code == MetaErrors.GateStepNotFound.Code, "AW-META-007 for an unknown run");
     }
@@ -99,5 +107,23 @@ public abstract class GateStoreContract
 
         Expect.That(none.IsSuccess && none.Value is null, "no merge is null");
         Expect.That(latest.Value == newer, "the most recent merge wins");
+    }
+
+    /// <summary>A merge is found by its pull request.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task A_merge_is_found_by_its_pull_request()
+    {
+        var store = await Create();
+        var merge = new MergeRecord(190, "bbbbbbb2222", A.At(9));
+
+        var before = await store.FindMerge(190, _none);
+        _ = await store.RecordMerge(merge, _none);
+        var after = await store.FindMerge(190, _none);
+        var other = await store.FindMerge(191, _none);
+
+        Expect.That(before.IsSuccess && before.Value is null, "no merge is null");
+        Expect.That(after.Value == merge, "the recorded merge is found");
+        Expect.That(other.Value is null, "another pull request has none");
     }
 }

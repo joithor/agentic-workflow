@@ -11,7 +11,7 @@ public sealed class CheckMergeTests
 {
     private readonly MetaWorld _world = new();
 
-    private CheckMergeService Service() => new(new MergeReadiness(_world.Config, _world.Gates, _world.Repo));
+    private CheckMergeService Service() => new(new MergeReadiness(_world.Config, _world.Gates, _world.Repo, _world.LogFiles));
 
     private async Task SaveGate(string head, string main, string[] scopes, GateVerdict verdict = GateVerdict.Pass, int pr = 190, params GateStep[] red)
     {
@@ -20,14 +20,14 @@ public sealed class CheckMergeTests
     }
 
     // GitHub says: the pull request is at `head`, open, ready; origin/main is at `main`.
-    private void Script(int pr = 190, string head = "headsha", string main = "mainsha", bool draft = false, string state = "OPEN")
+    private void Script(int pr = 190, string head = "headsha", string main = "mainsha", bool draft = false, string state = "OPEN", bool diffFails = false)
     {
         var view = """{"headRefOid":"HEAD","isDraft":DRAFT,"title":"Add x","state":"STATE"}"""
             .Replace("HEAD", head, StringComparison.Ordinal).Replace("DRAFT", draft ? "true" : "false", StringComparison.Ordinal).Replace("STATE", state, StringComparison.Ordinal);
         _ = _world.Runner
             .When(string.Create(CultureInfo.InvariantCulture, $"gh pr view {pr} --json headRefOid,isDraft,title,state"), view)
             .When("rev-parse --verify --quiet origin/main", main + "\n")
-            .When("mainsha...", "src/a.cs\n")   // the gated diff: code, so repo and dotnet
+            .When("mainsha...", diffFails ? string.Empty : "src/a.cs\n", diffFails ? 128 : 0)   // the gated diff: code, so repo and dotnet
             .When("oldmain...", "src/a.cs\n")
             .When("git fetch");
     }
@@ -140,19 +140,79 @@ public sealed class CheckMergeTests
         Assert.Equal(["main"], Failed(await Check()));
     }
 
+    private const string UnitLog = "/l/unit.log";
+
+    // A red unit step whose log names the failing tests, with the reruns recorded so far.
+    private async Task SaveRedUnit(string log, params (string Test, FlakeVerdict Verdict)[] reruns)
+    {
+        _world.LogFiles.Put(UnitLog, log);
+        await SaveGate("headsha", "mainsha", ["repo", "dotnet"], GateVerdict.Fail, red: new GateStep("unit", GateVerdict.Fail, UnitLog));
+        foreach (var (test, verdict) in reruns)
+        {
+            _ = await _world.Gates.Classify(190, 1, "unit", new TestVerdict(test, verdict), CancellationToken.None);
+        }
+    }
+
     [Fact, Trait("Lane", "unit")]
-    public async Task A_red_gate_is_refused_unless_every_red_step_is_a_classified_flake()
+    public async Task A_red_step_is_accepted_when_every_failing_test_in_it_is_a_classified_flake()
     {
         await _world.ReadyWithGate();
-        await SaveGate("headsha", "mainsha", ["repo", "dotnet"], GateVerdict.Fail, red: new GateStep("unit", GateVerdict.Fail, "/l/unit.log") { Flake = FlakeVerdict.Real });
+        await SaveRedUnit("failed Spike.Tests.Eval_runs (20ms)\n  boom\nfailed Spike.Tests.Other(x: 1) (3ms)\n", ("Eval_runs", FlakeVerdict.Flake), ("Other", FlakeVerdict.Flake));
         Script();
-        var refused = await Check();
-        await SaveGate("headsha", "mainsha", ["repo", "dotnet"], GateVerdict.Fail, red: new GateStep("unit", GateVerdict.Fail, "/l/unit.log") { Flake = FlakeVerdict.Flake });
 
         var accepted = await Check();
 
+        Assert.True(accepted.Ready, string.Join("; ", accepted.Checks.Where(c => !c.Ok).Select(c => c.Detail)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_flake_verdict_for_one_test_does_not_clear_the_other_failing_tests_of_the_step()
+    {
+        await _world.ReadyWithGate();
+        await SaveRedUnit("failed Spike.Tests.Eval_runs (20ms)\nfailed Spike.Tests.Real_bug (3ms)\n", ("Eval_runs", FlakeVerdict.Flake));
+        Script();
+
+        var refused = await Check();
+
         Assert.Equal(["gate-result"], Failed(refused));
-        Assert.True(accepted.Ready);
+        Assert.Contains("Spike.Tests.Real_bug", refused.Checks.Single(c => c.Name == "gate-result").Detail, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_test_classified_real_or_not_classified_keeps_the_gate_red()
+    {
+        await _world.ReadyWithGate();
+        await SaveRedUnit("failed Spike.Tests.Eval_runs (20ms)\n", ("Eval_runs", FlakeVerdict.Real));
+        Script();
+
+        Assert.Equal(["gate-result"], Failed(await Check()));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_red_step_whose_failing_tests_cannot_be_read_is_refused_even_with_a_flake_verdict()
+    {
+        await _world.ReadyWithGate();
+        await SaveGate("headsha", "mainsha", ["repo", "dotnet"], GateVerdict.Fail, red: new GateStep("unit", GateVerdict.Fail, "/l/missing.log"));
+        _ = await _world.Gates.Classify(190, 1, "unit", new TestVerdict("Eval_runs", FlakeVerdict.Flake), CancellationToken.None);
+        Script();
+
+        var refused = await Check();
+
+        Assert.Equal(["gate-result"], Failed(refused));
+        Assert.Contains("could not list its failing tests", refused.Checks.Single(c => c.Name == "gate-result").Detail, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_diff_that_cannot_be_read_refuses_instead_of_assuming_the_scopes()
+    {
+        await _world.ReadyWithGate();
+        await SaveGate("headsha", "mainsha", ["repo"]);
+        Script(diffFails: true);
+
+        var refused = await Check();
+
+        Assert.Equal(["scopes"], Failed(refused));
+        Assert.Contains("could not work out the scopes", refused.Checks.Single(c => c.Name == "scopes").Detail, StringComparison.Ordinal);
     }
 
     [Theory, Trait("Lane", "unit")]

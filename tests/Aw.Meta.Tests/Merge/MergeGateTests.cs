@@ -44,6 +44,15 @@ public sealed class MergeGateTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_gate_is_refused_when_the_scopes_the_diff_needs_cannot_be_worked_out()
+    {
+        var check = MergeGate.Evaluate(Facts(Gate()) with { PlannedScopes = null }).Single(c => c.Name == "scopes");
+
+        Assert.False(check.Ok);
+        Assert.Equal("could not work out the scopes the diff needs; the gate ran repo", check.Detail);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void No_gate_reports_only_the_missing_gate_not_unfetched_defaults()
     {
         var checks = MergeGate.Evaluate(Facts(gate: null) with { IsDraft = false });
@@ -53,18 +62,41 @@ public sealed class MergeGateTests
         Assert.EndsWith("run aw-meta gate-run 190", only.Detail, StringComparison.Ordinal);
     }
 
-    [Fact, Trait("Lane", "unit")]
-    public void A_failed_gate_fails_unless_every_red_step_is_a_flake()
-    {
-        var real = new GateStep("unit", GateVerdict.Fail, "/l") { Flake = FlakeVerdict.Real };
-        var flake = new GateStep("integration", GateVerdict.Fail, "/l") { Flake = FlakeVerdict.Flake };
-        var unclassified = new GateStep("build", GateVerdict.Fail, "/l");
-        var green = new GateStep("repo", GateVerdict.Pass, "/l");
+    private static GateStep Red(string name, params (string Test, FlakeVerdict Verdict)[] reruns) =>
+        new(name, GateVerdict.Fail, "/l") { Reruns = [.. reruns.Select(r => new TestVerdict(r.Test, r.Verdict))] };
 
-        Assert.Equal(["gate-result"], Failed(Facts(Gate(GateVerdict.Fail, green, real, flake))), StringComparer.Ordinal);
-        Assert.Equal(["gate-result"], Failed(Facts(Gate(GateVerdict.Fail, unclassified))), StringComparer.Ordinal);
-        Assert.Empty(Failed(Facts(Gate(GateVerdict.Fail, green, flake))));
-        Assert.Equal(["gate-result"], Failed(Facts(Gate(GateVerdict.Conflict))), StringComparer.Ordinal);
+    private static MergeFacts Failing(GateRecord gate, params (string Step, string[] Tests)[] failing) =>
+        Facts(gate) with { FailingTests = failing.ToDictionary(f => f.Step, f => (IReadOnlyList<string>)f.Tests, StringComparer.Ordinal) };
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_failed_gate_passes_only_when_every_failing_test_of_every_red_step_is_a_flake()
+    {
+        var green = new GateStep("repo", GateVerdict.Pass, "/l");
+        var real = Red("unit", ("A.B.T1", FlakeVerdict.Real));
+        var flake = Red("integration", ("T2", FlakeVerdict.Flake));
+
+        Assert.Equal(["gate-result"], Failed(Failing(Gate(GateVerdict.Fail, green, real, flake), ("unit", ["A.B.T1"]), ("integration", ["A.T2"]))), StringComparer.Ordinal);
+        Assert.Equal(["gate-result"], Failed(Failing(Gate(GateVerdict.Fail, Red("build")), ("build", ["A.T3"]))), StringComparer.Ordinal);
+        Assert.Empty(Failed(Failing(Gate(GateVerdict.Fail, green, flake), ("integration", ["A.T2"]))));
+        Assert.Equal(["gate-result"], Failed(Failing(Gate(GateVerdict.Conflict))), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_flake_verdict_covers_only_the_tests_it_names()
+    {
+        var step = Red("unit", ("T2", FlakeVerdict.Flake));
+
+        Assert.Equal(["gate-result"], Failed(Failing(Gate(GateVerdict.Fail, step), ("unit", ["A.T2", "A.T9"]))), StringComparer.Ordinal);
+        Assert.Empty(Failed(Failing(Gate(GateVerdict.Fail, step), ("unit", ["A.T2(x: 1)", "A.T2(x: 2)"]))));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_red_step_with_no_readable_failing_tests_fails_whatever_was_classified()
+    {
+        var step = Red("unit", ("T2", FlakeVerdict.Flake));
+
+        Assert.Equal(["gate-result"], Failed(Facts(Gate(GateVerdict.Fail, step))), StringComparer.Ordinal);
+        Assert.Equal(["gate-result"], Failed(Failing(Gate(GateVerdict.Fail, step), ("unit", []))), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

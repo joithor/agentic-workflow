@@ -87,6 +87,16 @@ public sealed class RepoCommands(ICommandRunner runner, MetaPaths paths)
         return line.IsError ? line.Error : GhJson.RemoteSha(line.Value) is { } sha ? sha : Unexpected("git ls-remote");
     }
 
+    /// <summary>The commit a merged pull request created on main.</summary>
+    /// <param name="repo">The repo directory.</param>
+    /// <param name="pr">The pull request number.</param>
+    /// <returns>The sha, or an error (also when the pull request has no merge commit).</returns>
+    public async ValueTask<Result<string>> MergeCommit(string repo, int pr)
+    {
+        var json = await Gh(repo, "pr", "view", Number(pr), "--json", "mergeCommit").ConfigureAwait(false);
+        return json.IsError ? json.Error : GhJson.MergeCommit(json.Value) is { } sha ? sha : Unexpected("gh pr view --json mergeCommit");
+    }
+
     private async ValueTask<Result<string>> Run(string cwd, IReadOnlyList<string> argv)
     {
         var ran = await runner.Run(new CommandRequest(argv, _limit) { Cwd = cwd }, CancellationToken.None).ConfigureAwait(false);

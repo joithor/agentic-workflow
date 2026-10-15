@@ -1,5 +1,6 @@
 using Aw.Meta.Core;
 using Aw.Meta.Core.Commands;
+using Aw.Meta.Core.Config;
 using Aw.Meta.Core.Coordination;
 using Aw.Meta.Core.Gate;
 using Aw.Meta.Features.GateRerun;
@@ -48,8 +49,21 @@ public sealed class GateRerunTests
         return result.Value;
     }
 
-    private async Task<FlakeVerdict?> Stored() =>
-        (await _world.Gates.Latest(190, CancellationToken.None)).Value!.Steps.First(s => s.Name == "unit").Flake;
+    private async Task<IReadOnlyList<TestVerdict>> Reruns() =>
+        (await _world.Gates.Latest(190, CancellationToken.None)).Value!.Steps.First(s => s.Name == "unit").Reruns;
+
+    private async Task<FlakeVerdict?> Stored(string test = "Eval_runs") =>
+        (await Reruns()).Where(r => r.Test == test).Select(r => (FlakeVerdict?)r.Verdict).SingleOrDefault();
+
+    // The unit step as the shipped team config has it: no build of its own, and exit 8 (no test matched) turned into success.
+    private async Task UseShippedUnitStep()
+    {
+        var team = (await _world.Config.Load(CancellationToken.None)).Value;
+        var scopes = team.Gate.Scopes.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+        var unit = new StepConfig("unit", ["dotnet", "test", "--solution", "X.slnx", "--no-build", "--ignore-exit-code", "8"], Heavy: true);
+        scopes["dotnet"] = scopes["dotnet"] with { Steps = [.. scopes["dotnet"].Steps.Where(step => step.Name != "unit"), unit] };
+        _ = await _world.Config.Save(team with { Gate = team.Gate with { Scopes = scopes } }, CancellationToken.None);
+    }
 
     [Fact, Trait("Lane", "unit")]
     public async Task A_test_that_passes_alone_is_a_flake_and_main_is_not_run()
@@ -145,6 +159,68 @@ public sealed class GateRerunTests
 
         Assert.Equal(MetaErrors.Invalid.Code, result.Error.Code);
         Assert.Null(await Stored());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_filter_that_matches_nothing_is_refused_even_when_the_step_turns_exit_8_into_success()
+    {
+        await SaveRedGate();
+        await UseShippedUnitStep();
+        const string ZeroTests = "Test run summary: Zero tests ran\n  total: 0\n  failed: 0\n  succeeded: 0\n";
+        Script(onGate: new CommandResult(0, ZeroTests, string.Empty, TimedOut: false), onMain: Pass());
+
+        var result = await Service().Handle(new GateRerunRequest(190, "unit", "Eval_runs(value: 3)"), CancellationToken.None);
+
+        Assert.Equal(MetaErrors.Invalid.Code, result.Error.Code);
+        Assert.Empty(await Reruns());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_rerun_that_ran_tests_and_passed_is_a_flake_under_the_shipped_step()
+    {
+        await SaveRedGate();
+        await UseShippedUnitStep();
+        Script(onGate: new CommandResult(0, "Test run summary: Passed!\n  total: 1\n  failed: 0\n", string.Empty, TimedOut: false), onMain: Pass());
+
+        Assert.Equal(FlakeVerdict.Flake, (await Rerun()).Verdict);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_main_tree_is_built_for_the_rerun_because_nobody_built_it()
+    {
+        await SaveRedGate();
+        await UseShippedUnitStep();
+        Script(onGate: Fail(), onMain: Fail());
+
+        _ = await Rerun();
+
+        var gate = _world.Runner.Requests.Single(r => r.Cwd == GateTree && r.Argv.Contains("--filter-method", StringComparer.Ordinal));
+        var main = _world.Runner.Requests.Single(r => r.Cwd == MainTree && r.Argv.Contains("--filter-method", StringComparer.Ordinal));
+        Assert.Contains("--no-build", gate.Argv, StringComparer.Ordinal);
+        Assert.DoesNotContain("--no-build", main.Argv, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Each_test_is_classified_on_its_own()
+    {
+        await SaveRedGate();
+        Script(onGate: Pass(), onMain: Pass());
+
+        _ = await Rerun("Eval_runs");
+        _ = await Rerun("Other_test");
+
+        Assert.Equal([new TestVerdict("Eval_runs", FlakeVerdict.Flake), new TestVerdict("Other_test", FlakeVerdict.Flake)], await Reruns());
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("Tests")]
+    [InlineData("Spike")]
+    public async Task A_known_flake_is_not_matched_by_a_fragment_of_its_name(string test)
+    {
+        await SaveRedGate();
+        Script(onGate: Fail("failed A (1ms)\n  boom a"), onMain: Fail("failed B\n  boom b"));
+
+        Assert.Equal(FlakeVerdict.Real, (await Rerun(test)).Verdict);
     }
 
     [Fact, Trait("Lane", "unit")]
