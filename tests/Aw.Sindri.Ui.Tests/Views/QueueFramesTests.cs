@@ -264,6 +264,21 @@ public sealed class QueueFramesTests : IDisposable
         Assert.Same(rows[100], Focused(window));
     });
 
+    // a11y-7: the item vanishes (404 on a refresh) while focus is inside its body: focus goes to the sheet's title, not to nothing.
+    [Fact]
+    public Task A_404_on_refresh_moves_focus_from_the_body_to_the_sheet_title() => OnUi(async () =>
+    {
+        var (window, shell) = await OpenItem(Connected(s => !s.Queue.IsLoading), A.NewItem);
+        var row = Named<Control>(window, "TimelineList").GetVisualDescendants().OfType<Border>().First(b => b.Classes.Contains("timeline-row"));
+        Assert.True(row.Focus(NavigationMethod.Tab));
+
+        _ = _server.Items.Remove(A.NewItem);
+        _server.Push(A.Event(58, "item.state-changed"));
+        await Until(window, () => shell.Item.IsNotFound);
+
+        await Until(window, () => string.Equals((Focused(window) as Control)?.Name, "SheetTitle", StringComparison.Ordinal));
+    });
+
     // a11y-6: an empty last page hides the button the human pressed: focus goes to the last timeline row, never to nothing.
     [Fact]
     public Task An_empty_last_page_leaves_focus_on_the_last_timeline_row() => OnUi(async () =>
