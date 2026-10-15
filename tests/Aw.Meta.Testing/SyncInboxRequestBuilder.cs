@@ -6,18 +6,28 @@ namespace Aw.Meta.Testing;
 /// <summary>Builds a SyncInboxRequest with deterministic defaults.</summary>
 public sealed class SyncInboxRequestBuilder
 {
-    private MessageId _messageId = MessageId.From("messageid-1");
+    private SessionId _session = SessionId.From("session-1");
+    private string _transcript = "/transcripts/meta.jsonl";
 
-    /// <summary>Sets MessageId.</summary>
+    /// <summary>Sets the session.</summary>
     /// <param name="value">The id.</param>
     /// <returns>This builder.</returns>
-    public SyncInboxRequestBuilder WithMessageId(MessageId value)
+    public SyncInboxRequestBuilder WithSession(SessionId value)
     {
-        _messageId = value;
+        _session = value;
+        return this;
+    }
+
+    /// <summary>Sets the transcript path.</summary>
+    /// <param name="value">The path.</param>
+    /// <returns>This builder.</returns>
+    public SyncInboxRequestBuilder WithTranscript(string value)
+    {
+        _transcript = value;
         return this;
     }
 
     /// <summary>Builds the request.</summary>
     /// <returns>The request.</returns>
-    public SyncInboxRequest Build() => new(_messageId);
+    public SyncInboxRequest Build() => new(_session, _transcript);
 }

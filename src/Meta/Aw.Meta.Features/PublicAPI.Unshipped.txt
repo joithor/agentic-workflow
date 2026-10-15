@@ -2,15 +2,20 @@
 Aw.Meta.Features.MetaFeaturesServiceCollectionExtensions
 Aw.Meta.Features.SyncInbox.SyncInboxRequest
 Aw.Meta.Features.SyncInbox.SyncInboxRequest.<Clone>$() -> Aw.Meta.Features.SyncInbox.SyncInboxRequest!
-Aw.Meta.Features.SyncInbox.SyncInboxRequest.Deconstruct(out Aw.Meta.Core.Ids.MessageId MessageId) -> void
+Aw.Meta.Features.SyncInbox.SyncInboxRequest.Deconstruct(out Aw.Meta.Core.Ids.SessionId Session, out string! Transcript) -> void
 Aw.Meta.Features.SyncInbox.SyncInboxRequest.Equals(Aw.Meta.Features.SyncInbox.SyncInboxRequest? other) -> bool
-Aw.Meta.Features.SyncInbox.SyncInboxRequest.MessageId.get -> Aw.Meta.Core.Ids.MessageId
-Aw.Meta.Features.SyncInbox.SyncInboxRequest.MessageId.init -> void
-Aw.Meta.Features.SyncInbox.SyncInboxRequest.SyncInboxRequest(Aw.Meta.Core.Ids.MessageId MessageId) -> void
+Aw.Meta.Features.SyncInbox.SyncInboxRequest.Session.get -> Aw.Meta.Core.Ids.SessionId
+Aw.Meta.Features.SyncInbox.SyncInboxRequest.Session.init -> void
+Aw.Meta.Features.SyncInbox.SyncInboxRequest.SyncInboxRequest(Aw.Meta.Core.Ids.SessionId Session, string! Transcript) -> void
+Aw.Meta.Features.SyncInbox.SyncInboxRequest.Transcript.get -> string!
+Aw.Meta.Features.SyncInbox.SyncInboxRequest.Transcript.init -> void
 Aw.Meta.Features.SyncInbox.SyncInboxResponse
 Aw.Meta.Features.SyncInbox.SyncInboxResponse.<Clone>$() -> Aw.Meta.Features.SyncInbox.SyncInboxResponse!
+Aw.Meta.Features.SyncInbox.SyncInboxResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Ids.MessageId>! NewMessages) -> void
 Aw.Meta.Features.SyncInbox.SyncInboxResponse.Equals(Aw.Meta.Features.SyncInbox.SyncInboxResponse? other) -> bool
-Aw.Meta.Features.SyncInbox.SyncInboxResponse.SyncInboxResponse() -> void
+Aw.Meta.Features.SyncInbox.SyncInboxResponse.NewMessages.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Ids.MessageId>!
+Aw.Meta.Features.SyncInbox.SyncInboxResponse.NewMessages.init -> void
+Aw.Meta.Features.SyncInbox.SyncInboxResponse.SyncInboxResponse(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Ids.MessageId>! NewMessages) -> void
 override Aw.Meta.Features.SyncInbox.SyncInboxRequest.Equals(object? obj) -> bool
 override Aw.Meta.Features.SyncInbox.SyncInboxRequest.GetHashCode() -> int
 override Aw.Meta.Features.SyncInbox.SyncInboxRequest.ToString() -> string!
