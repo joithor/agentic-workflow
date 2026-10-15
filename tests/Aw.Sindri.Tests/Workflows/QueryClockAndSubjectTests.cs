@@ -59,8 +59,23 @@ public sealed class QueryClockAndSubjectTests : IDisposable
 
         const string line = "Fix the crash on launch of the tab manager when two windows are open";
         var key = line[..40];
-        Assert.Equal(new SubjectRef("payload", key, line, Href: null), view.Subject);
+        Assert.Equal(new SubjectRef("text", key, line, Href: null), view.Subject);
         Assert.Equal(key, (await handle.DescribeAsync()).TypedSearchAttributes.Get(SindriTemporal.SubjectKey));
+        await handle.TerminateAsync("test over");
+    }
+
+    [Fact(Timeout = 120_000)]
+    public async Task A_first_input_whose_fact_is_not_stored_still_starts_with_the_subject_keyed_by_the_fact_key()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var env = await WorkflowsHarness.StartDevServer(ct: ct);
+        await using var served = await ApplyCommand.Served.Start(_harness.Home, env, ct);
+        var handle = await WorkflowsHarness.Start(env.Client, await WorkflowsHarness.StepStart(served.Sindri, "T-1", ct));   // its 'fact:spec' content is not in the store
+
+        var view = await WorkflowsHarness.Until(handle, static v => v.Task is not null);
+
+        Assert.Equal(new SubjectRef("text", "fact:spec", "spec.md", Href: null), view.Subject);
+        Assert.Equal("fact:spec", (await handle.DescribeAsync()).TypedSearchAttributes.Get(SindriTemporal.SubjectKey));
         await handle.TerminateAsync("test over");
     }
 }

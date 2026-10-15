@@ -229,7 +229,7 @@ internal sealed partial class RecipeWorkflow
         try
         {
             return await Workflow.ExecuteLocalActivityAsync(
-                (ItemFactActivities a) => a.ReadSubjectAsync(fact),
+                (FactReadActivities a) => a.ReadSubjectAsync(fact),
                 new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(10), RetryPolicy = new RetryPolicy { MaximumAttempts = 3 } }).ConfigureAwait(true);
         }
         catch (ActivityFailureException)
@@ -244,7 +244,7 @@ internal sealed partial class RecipeWorkflow
         try
         {
             return await Workflow.ExecuteLocalActivityAsync(
-                (ItemFactActivities a) => a.ReadRepoAsync(item),
+                (FactReadActivities a) => a.ReadRepoAsync(item),
                 new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(10), RetryPolicy = new RetryPolicy { MaximumAttempts = 3 } }).ConfigureAwait(true);
         }
         catch (ActivityFailureException)

@@ -28,8 +28,8 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<ITemporalServer, DevServerTemporal>()
             .AddSingleton<RunStepActivities>()
             .AddSingleton<RecordEventActivities>()
-            .AddSingleton<ItemFactActivities>()
-            .AddSingleton(provider => SindriWorker.Options(settings, provider.GetRequiredService<RunStepActivities>(), provider.GetRequiredService<RecordEventActivities>(), provider.GetRequiredService<ItemFactActivities>()))
+            .AddSingleton<FactReadActivities>()
+            .AddSingleton(provider => SindriWorker.Options(settings, provider.GetRequiredService<RunStepActivities>(), provider.GetRequiredService<RecordEventActivities>(), provider.GetRequiredService<FactReadActivities>()))
             .AddSingleton<TemporalFrontend>()
             .AddSingleton<KnownInstances>()                            // engine P4: the opaque ids this process has seen (spec §6.3)
             .AddSingleton<IItems, SelfItems>()                       // stub until API P3's items

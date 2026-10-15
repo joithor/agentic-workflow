@@ -5,12 +5,12 @@ using Temporalio.Activities;
 namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
-/// 'ReadItemRepo' (engine spec rev 8 §5.1 'Repo', §12 'fact:item'): reads the stored 'fact:item' content and returns its
-/// repo, so the interpreter sets the 'Repo' search attribute without I/O in workflow code. The interpreter runs it as a
-/// local activity once, on start, and only when the input has a 'fact:item'.
+/// The local activities that read a stored fact for the interpreter, so workflow code does no I/O. Each runs once, on start:
+/// 'ReadItemRepo' (engine spec rev 8 §5.1 'Repo', §12 'fact:item') returns the repo a 'fact:item' names, only when the input
+/// has one; 'ReadSubject' returns the first input's content as text, for the 'Subject' attribute and the view's subject.
 /// </summary>
 /// <param name="home">Where the facts are.</param>
-internal sealed class ItemFactActivities(WorkflowsHome home)
+internal sealed class FactReadActivities(WorkflowsHome home)
 {
     private const int SubjectBytes = 64 * 1024;
 
@@ -50,7 +50,9 @@ internal sealed class ItemFactActivities(WorkflowsHome home)
         {
             var buffer = new byte[SubjectBytes];
             var read = await stream.ReadAtLeastAsync(buffer, buffer.Length, throwOnEndOfStream: false, ActivityExecutionContext.Current.CancellationToken).ConfigureAwait(false);
-            return System.Text.Encoding.UTF8.GetString(buffer, 0, read);
+            var chars = new char[System.Text.Encoding.UTF8.GetMaxCharCount(read)];
+            var count = System.Text.Encoding.UTF8.GetDecoder().GetChars(buffer, 0, read, chars, 0, flush: false);   // why: flush: false leaves out a character the 64 KiB cut split, so no U+FFFD ends the text
+            return new string(chars, 0, count);
         }
     }
 }
