@@ -58,7 +58,7 @@ public sealed class WorkflowViewFixtureTests
             return;
         }
 
-        var open = view.Children.Sum(g => g.Rows.Concat(g.Workstreams.SelectMany(w => w.Rows)).Count(r => r.Glyph != StateGlyph.Done));
+        var open = view.Children.Sum(g => g.Total - g.Done);
         var match = Regex.Match(cancel.Confirm!, @"^Cancel (?<address>\S+)\? (?<n>\d+) running steps stop; (?<m>\d+) children are cancelled\.$", RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
         Assert.True(match.Success, cancel.Confirm);
         Assert.Equal(view.Address.Value, match.Groups["address"].Value);

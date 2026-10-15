@@ -90,7 +90,7 @@
       "run": "1.1",
       "outputs": [
         {
-          "key": "severity",
+          "key": "fact:severity",
           "type": "text",
           "required": true
         }
@@ -165,7 +165,7 @@
   },
   "facts": [
     {
-      "key": "alert",
+      "key": "fact:alert",
       "label": "Alert",
       "type": "payload",
       "direction": "input",
@@ -183,13 +183,13 @@
         "url": null,
         "host": null,
         "title": null,
-        "factKey": "alert"
+        "factKey": "fact:alert"
       },
       "progress": null,
       "pending": null
     },
     {
-      "key": "severity",
+      "key": "fact:severity",
       "label": "Severity",
       "type": "text",
       "direction": "output",
@@ -207,6 +207,34 @@
         ],
         "completeAction": "CompleteStep"
       }
+    },
+    {
+      "key": "fact:route",
+      "label": "Route",
+      "type": "decision",
+      "direction": "output",
+      "from": "route",
+      "status": "pending",
+      "summary": "not started",
+      "at": null,
+      "by": null,
+      "ref": null,
+      "progress": null,
+      "pending": null
+    },
+    {
+      "key": "fact:item",
+      "label": "Item",
+      "type": "item",
+      "direction": "output",
+      "from": "route",
+      "status": "pending",
+      "summary": "not started",
+      "at": null,
+      "by": null,
+      "ref": null,
+      "progress": null,
+      "pending": null
     }
   ],
   "children": [],

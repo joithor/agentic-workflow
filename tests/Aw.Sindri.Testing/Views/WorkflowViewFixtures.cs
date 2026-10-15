@@ -31,68 +31,29 @@ public static class WorkflowViewFixtures
 
     private static List<ActionId> Acts(params string[] ids) => [.. ids.Select(Act)];
 
-    private static InstanceRecipe Recipe(string id, string hashPrefix, int version, RecipeUrgency urgency) =>
-        new(RecipeId.From(id), RecipeHash.From("sha256:" + Hash(hashPrefix)), version, urgency);
-
-    private static readonly InstanceRecipe _incident = Recipe("workflow.incident-response", "5d90e1b2", 4, RecipeUrgency.Incident);
-    private static readonly InstanceRecipe _triage = Recipe("workflow.triage-alert", "d41f2a07", 2, RecipeUrgency.Triage);
-    private static readonly InstanceRecipe _project = Recipe("workflow.project", "a8c21e7f", 12, RecipeUrgency.Work);
-    private static readonly InstanceRecipe _intake = Recipe("workflow.intake-linear", "0b7e44d3", 1, RecipeUrgency.Work);
-    private static readonly InstanceRecipe _devTriage = Recipe("workflow.dev-triage-three-state", "88a0e8fc810fb8dbdccb244b1a601e16743ade3c4230b57c7c0cf782b3ed0f66", 1, RecipeUrgency.Triage);
-    private static readonly InstanceRecipe _devDesk = Recipe("workflow.dev-desk-round-trip", "42e9e8ab897f90e38c74f9a3a5aa499f9a56475b4c1a416c0ad5b01a79bb2346", 1, RecipeUrgency.Work);
-    private static readonly InstanceRecipe _fork = Recipe("workflow.fork-demo", "1f08c6a9", 1, RecipeUrgency.Work);
-    private static readonly InstanceRecipe _item = Recipe("workflow.item", "496cdcbfe884c70dce832d96d21883660f29fffe9b122fcfa72a04c98be8cae3", 1, RecipeUrgency.Work);
-
-    private static readonly InstanceRecipe _step = Recipe("workflow.step", "1b13bd920351e56227141fe24e59f2f90cb46bc3549e1e90f2da2af1c3be9f5c", 9, RecipeUrgency.Work);
-
-    private static readonly string[] _incidentStates = ["assess", "mitigate", "verify", "comms", "resolved"];
-    private static readonly string[] _triageStates = ["ingest", "classify", "route", "done"];
-    private static readonly string[] _projectStates = ["intake", "scoping", "design", "build", "verify", "done"];
-    private static readonly string[] _intakeStates = ["poll", "emit"];
-    private static readonly string[] _devTriageStates = ["intake", "classify", "done"];
-    private static readonly string[] _devDeskStates = ["intake", "desk", "done"];
-    private static readonly string[] _forkStates = ["start", "left", "right", "merge", "done"];
-
-    /// <summary>The state cells of a recipe, path order, with <paramref name="current"/> active and earlier states done.</summary>
-    private static List<StateCell> Cells(string[] states, string current, Func<StateCell, StateCell>? shape = null)
-    {
-        var at = Array.IndexOf(states, current);
-        var cells = new List<StateCell>();
-        for (var i = 0; i < states.Length; i++)
-        {
-            var terminal = i == states.Length - 1;
-            var glyph = i < at || (terminal && at == i) ? StateGlyph.Done : i == at ? StateGlyph.Active : StateGlyph.Pending;
-            var cell = new StateCell(states[i], i + 1, null, glyph, null, null, [], false, false, null, null, terminal);
-            cells.Add(shape is null ? cell : shape(cell));
-        }
-
-        // WF section 3.10: main-path states are numbered 1, 2, 3 in walk order; a branch state has no order.
-        var next = 0;
-        return [.. cells.Select(c => c with { Order = c.BranchOf is null ? ++next : null })];
-    }
-
-    /// <summary>The project cells: the scoping loop belongs to the recipe hash, so every instance carries it (an empty round where it isn't looping).</summary>
-    private static List<StateCell> ProjectCells(string current, Func<StateCell, StateCell>? shape = null) =>
-        Cells(_projectStates, current, cell => shape is null ? WithScopingLoop(cell) : shape(WithScopingLoop(cell)));
-
-    private static StateCell WithScopingLoop(StateCell cell) => cell.State == "scoping" ? cell with { Loops = [new LoopPair("scoping", 0, 3)] } : cell;
+    private static readonly RecipeShape _step = FixtureRecipes.Step;
+    private static readonly RecipeShape _incident = FixtureRecipes.Incident;
+    private static readonly RecipeShape _triage = FixtureRecipes.Triage;
+    private static readonly RecipeShape _project = FixtureRecipes.Project;
+    private static readonly RecipeShape _intake = FixtureRecipes.Intake;
+    private static readonly RecipeShape _devTriage = FixtureRecipes.DevTriage;
+    private static readonly RecipeShape _devDesk = FixtureRecipes.DevDesk;
+    private static readonly RecipeShape _fork = FixtureRecipes.Fork;
 
     private static Func<StateCell, StateCell> Shape(params (string State, Func<StateCell, StateCell> Change)[] changes) =>
         cell => changes.Where(c => c.State == cell.State).Aggregate(cell, (acc, c) => c.Change(acc));
 
     private static SubjectRef Subject(string kind, string key, string label, string? href = null) => new(kind, key, label, href);
 
-    private static InputPresence Input(string key, string label, string? kind, bool present = true) => new(key, label, kind, true, present);
-
     // ---- the instance list (E-20) ------------------------------------------------------------------------------------
 
-    private static InstanceSummary Row(string address, InstanceRecipe recipe, string state, DateTimeOffset since,
-        EngineOwnedBadge? owned, SubjectRef subject, InputPresence[] inputs, List<StateCell> cells, string now, params string[] actions)
+    private static InstanceSummary Row(string address, RecipeShape shape, string state, DateTimeOffset since,
+        EngineOwnedBadge? owned, SubjectRef subject, IReadOnlyList<StateCell> cells, string now, params string[] actions)
     {
-        var states = cells.ConvertAll(c => owned is not null && c.State == state && c.Badge is null ? c with { Badge = owned } : c);
-        return new(InstanceAddress.From(address), IdOf(address), ItemKey.From(address[..address.IndexOf('/', StringComparison.Ordinal)]), recipe, state,
-            StateChip.For(state, owned, states.Exists(c => c.Desk && c.Glyph == StateGlyph.Active), states.Exists(c => c.Terminal && c.Glyph == StateGlyph.Done && c.State == state)),
-            since, owned, subject, inputs, states, now.Length > 80 ? now[..79] + "…" : now, null, Acts(actions));
+        var states = cells.Select(c => owned is not null && c.State == state && c.Badge is null ? c with { Badge = owned } : c).ToList();
+        return new(InstanceAddress.From(address), IdOf(address), ItemKey.From(address[..address.IndexOf('/', StringComparison.Ordinal)]), shape.Stamp, state,
+            StateChip.For(owned, states.Exists(c => c.Desk && c.Glyph == StateGlyph.Active), states.Exists(c => c.Terminal && c.Glyph == StateGlyph.Done && c.State == state)),
+            since, owned, subject, shape.InputRows(), states, now.Length > 80 ? now[..79] + "…" : now, null, Acts(actions));
     }
 
     /// <summary>
@@ -111,84 +72,73 @@ public static class WorkflowViewFixtures
 
     private static InstanceSummary DoneTriage(string address, string label, DateTimeOffset since) =>
         Row(address, _triage, "done", since, null, Subject("webhook", label[(label.IndexOf('#', StringComparison.Ordinal) + 1)..], label),
-            [Input("alert", "Alert", "webhook")], Cells(_triageStates, "done"), "done");
+            _triage.Cells("done"), "done");
 
     private static readonly InstanceSummary _inc14 = Row("ITM-01JK1/incident-response/1", _incident, "mitigate", Today(11, 2), null,
-        Subject("webhook", "P-2211", "PagerDuty P-2211 · Outbox retry storm"), [Input("alert", "Alert", "webhook")],
-        Cells(_incidentStates, "mitigate", Shape(
-            ("mitigate", c => c with { Round = new Round(1, 3), Loops = [new LoopPair("verify", 1, 3)] }),
-            ("verify", c => c with { Loops = [new LoopPair("mitigate", 1, 3)] }),
-            ("comms", c => c with { Glyph = StateGlyph.Active, Child = true, Children = new Progress(0, 1) }),
+        Subject("webhook", "P-2211", "PagerDuty P-2211 · Outbox retry storm"),
+        _incident.Cells("mitigate", round: 1, Shape(
+            ("mitigate", c => c with { Round = new Round(1, 3) }),
+            ("comms", c => c with { Glyph = StateGlyph.Active, Children = new Progress(0, 1) }),
             ("assess", c => c with { Outcome = "sev2" }))),
         "agent rolling back in ITM-01JG2 · comms posting", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
     private static readonly InstanceSummary _sentry8812 = Row("ITM-01JK2/triage-alert/1", _triage, "classify", Today(12, 22), null,
-        Subject("webhook", "8812", "sentry #8812 TypeError in tabs.layout"), [Input("alert", "Alert", "webhook")],
-        Cells(_triageStates, "classify", Shape(("classify", c => c with { Desk = true }))),
+        Subject("webhook", "8812", "sentry #8812 TypeError in tabs.layout"), _triage.Cells("classify"),
         "needs your severity (desk answer)", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
     private static readonly InstanceSummary _p2211 = Row("ITM-01JK6/triage-alert/1", _triage, "route", Today(11, 2),
         new EngineOwnedBadge(EngineOwnedKind.Escalated, "gate.severity 0.91 → INC-14 opened"),
-        Subject("webhook", "P-2211", "PagerDuty P-2211"), [Input("alert", "Alert", "webhook")],
-        Cells(_triageStates, "route", Shape(("route", c => c with { Badge = new EngineOwnedBadge(EngineOwnedKind.Escalated, "gate.severity 0.91 → INC-14 opened") }))),
+        Subject("webhook", "P-2211", "PagerDuty P-2211"), _triage.Cells("route"),
         "accept at a terminal", "ApplyCommand:answer-accept", "ApplyCommand:takeover", "ApplyCommand:cancel") with
     { Answer = Answer(AnswerKind.Accept, "ITM-01JK6/triage-alert/1"), };
 
     private static readonly InstanceSummary _sentry8809 = Row("ITM-01JK7/triage-alert/1", _triage, "done", Today(11, 58), null,
-        Subject("webhook", "8809", "sentry #8809 429s on stream"), [Input("alert", "Alert", "webhook")],
-        Cells(_triageStates, "done"), "done 12m → ITM-01JF0 queued");
+        Subject("webhook", "8809", "sentry #8809 429s on stream"), _triage.Cells("done"), "done 12m → ITM-01JF0 queued");
 
     private static readonly InstanceSummary _prjSync = Row("ITM-01JK3/project/1", _project, "build", Today(9, 14), null,
         Subject("linear-project", "APP", "APP · Offline sync", "https://linear.app/example/project/offline-sync"),
-        [Input("project", "Linear project", "linear-project"), Input("prd", "PRD", null)],
-        ProjectCells("build", Shape(("build", c => c with { Child = true, Children = new Progress(4, 9) }))),
+        _project.Cells("build", change: Shape(("build", c => c with { Children = new Progress(4, 9) }))),
         "ITM-01JD6 checks · 4 done · 1 running · 1 parked · 3 queued", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
     private static readonly InstanceSummary _prjExports = Row("ITM-01JK4/project/1", _project, "design", At(10, 11, 16, 2),
         new EngineOwnedBadge(EngineOwnedKind.TakenOver, "with you since 10-11 16:02"),
-        Subject("linear-project", "ENG", "ENG · Billing exports"),
-        [Input("project", "Linear project", "linear-project"), Input("prd", "PRD", null)],
-        ProjectCells("design", Shape(("design", c => c with { Desk = true }))),
+        Subject("linear-project", "ENG", "ENG · Billing exports"), _project.Cells("design"),
         "with you: import the design output", "ApplyCommand:handback", "ApplyCommand:cancel");
 
+    // The one required input still missing: a project at scoping whose PRD hasn't arrived yet (E-20 shows it as an empty slot).
     private static readonly InstanceSummary _prjTabs = Row("ITM-01JK5/project/1", _project, "scoping", Today(11, 40), null,
         Subject("linear-project", "ENG", "ENG · Tab manager v2"),
-        [Input("project", "Linear project", "linear-project"), Input("prd", "PRD", null)],
-        ProjectCells("scoping", Shape(("scoping", c => c with { Round = new Round(2, 3), Loops = [new LoopPair("scoping", 2, 3)] }))),
-        "challenger round 2 · 84k / 600k", "ApplyCommand:takeover", "ApplyCommand:cancel");
+        _project.Cells("scoping", round: 2, Shape(("scoping", c => c with { Round = new Round(2, 3) }))),
+        "challenger round 2 · 84k / 600k", "ApplyCommand:takeover", "ApplyCommand:cancel") with
+    { Inputs = _project.InputRows("fact:prd"), };
 
     // Instances only the status layouts name: none of them is a row of the root list, so the layouts don't contradict it.
     private static readonly InstanceSummary _prjSearch = Row("ITM-01JKD/project/1", _project, "build", Today(11, 54), new EngineOwnedBadge(EngineOwnedKind.Parked, "no-progress (child)"),
-        Subject("linear-project", "SRCH", "SRCH · Search"), [Input("project", "Linear project", "linear-project"), Input("prd", "PRD", null)],
-        ProjectCells("build", Shape(("build", c => c with { Child = true, Children = new Progress(2, 5) }))),
+        Subject("linear-project", "SRCH", "SRCH · Search"),
+        _project.Cells("build", change: Shape(("build", c => c with { Children = new Progress(2, 5) }))),
         "parked child", "ApplyCommand:answer-grant", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
     private static readonly InstanceSummary _budgetStep = Row("ITM-01JH5/step/1", _step, "produce", Today(11, 54), new EngineOwnedBadge(EngineOwnedKind.Parked, "budget"),
-        Subject("item", "ITM-01JH5", "ITM-01JH5"), [Input("item", "Item", "item")],
-        Cells(["produce", "checks", "done"], "produce"), "parked: budget", "ApplyCommand:answer-grant-tokens", "ApplyCommand:takeover", "ApplyCommand:cancel");
+        Subject("item", "ITM-01JH5", "ITM-01JH5"), _step.Cells("produce"), "parked: budget", "ApplyCommand:answer-grant-tokens", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
     // ITM-01JA1 of the screens fixture: taken over at 12:01, at its produce step. Layout 5: the covered state with the badge.
     private static readonly InstanceSummary _takenOver = Row("ITM-01JA1/step/1", _step, "produce", Today(12, 1),
         new EngineOwnedBadge(EngineOwnedKind.TakenOver, "with you since 12:01"),
-        Subject("item", "ITM-01JA1", "ITM-01JA1"), [Input("item", "Item", "item")],
-        Cells(["produce", "checks", "done"], "produce"), "with you", "ApplyCommand:handback", "ApplyCommand:cancel");
+        Subject("item", "ITM-01JA1", "ITM-01JA1"), _step.Cells("produce"), "with you", "ApplyCommand:handback", "ApplyCommand:cancel");
 
     // A needs-answer park of its own (PRJ-exports is the taken-over project): a project parked at its design desk. Not a row of the root list.
     private static readonly InstanceSummary _prjReports = Row("ITM-01JKE/project/1", _project, "design", Today(10, 30),
         new EngineOwnedBadge(EngineOwnedKind.Parked, "needs-answer"), Subject("linear-project", "ENG", "ENG · Reports"),
-        [Input("project", "Linear project", "linear-project"), Input("prd", "PRD", null)],
-        ProjectCells("design", Shape(("design", c => c with { Desk = true }))), "parked: needs-answer",
+        _project.Cells("design"), "parked: needs-answer",
         "ApplyCommand:answer-resume", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
     private static readonly InstanceSummary _prjCache = Row("ITM-01JKF/project/1", _project, "scoping", Today(11, 50), new EngineOwnedBadge(EngineOwnedKind.Parked, "spec-conflict (drift)"),
-        Subject("linear-project", "ENG", "ENG · Cache layer"), [Input("project", "Linear project", "linear-project"), Input("prd", "PRD", null)],
-        ProjectCells("scoping"), "parked: spec-conflict", "ApplyCommand:answer-resume", "ApplyCommand:takeover", "ApplyCommand:cancel");
+        Subject("linear-project", "ENG", "ENG · Cache layer"), _project.Cells("scoping"), "parked: spec-conflict", "ApplyCommand:answer-resume", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
     private static string LinAddress(string team) => team == "ENG" ? "ITM-01JKB/intake-linear/1" : "ITM-01JKC/intake-linear/1";
 
     private static InstanceSummary Intake(string team, DateTimeOffset since, string now) =>
-        Row(LinAddress(team), _intake, "poll", since, null, Subject("linear-team", team, $"Linear {team}"),
-            [Input("team", "Linear team", "linear-team")], Cells(_intakeStates, "poll"), now, "ApplyCommand:cancel");
+        Row(LinAddress(team), _intake, "poll", since, null, Subject("linear-team", team, $"Linear {team}"), _intake.Cells("poll"), now, "ApplyCommand:cancel");
 
     private static IReadOnlyList<InstanceSummary> Roots() =>
     [
@@ -323,7 +273,7 @@ public static class WorkflowViewFixtures
 
     private static StatusFields DeskStatus(InstanceSummary row, string produce, string run, string outputKey, string outputSample, StatusInput input)
     {
-        var complete = $"sindri workflow complete {row.Address.Value} --run {run} --outcome done --output fact:{outputKey}={outputSample}";
+        var complete = $"sindri workflow complete {row.Address.Value} --run {run} --outcome done --output {outputKey}={outputSample}";
         return Status(row, "desk task", $"{produce}, then run: {complete}", new OpenWork(CompleteCli: complete), new StatusLines { Inputs = [input] });
     }
 
@@ -381,25 +331,25 @@ public static class WorkflowViewFixtures
     /// <summary>Every instance view the fixtures serve.</summary>
     /// <returns>The views.</returns>
     public static IReadOnlyList<InstanceDetail> AllDetails() =>
-        [ProjectBuild(), IncidentLoop(), TriageDesk(), EscalatedGate(), DeskRoundTrip(), TriageThreeState(), TransitionList(), Done()];
+        [ProjectBuild(), ProjectManyChildren(), IncidentLoop(), TriageDesk(), EscalatedGate(), ItemProduce(), DeskRoundTrip(), TriageThreeState(), TransitionList(), Done()];
+
 
     // ---- facts and children ------------------------------------------------------------------------------------------
-
-    private static FactRow Fact(string key, string label, FactType type, FactDirection direction, string? from, FactStatus status, string summary,
-        DateTimeOffset? at = null, string? by = null, FactRef? reference = null, Progress? progress = null, FactPending? pending = null) =>
-        new(key, label, type, direction, from, status, summary, at, by, reference, progress, pending);
 
     private static FactRef Ref(string? name = null, long? size = null, string? hash = null, string? path = null, string? item = null,
         string? url = null, string? host = null, string? title = null, string? factKey = null) =>
         new(name, size, hash, path, item is null ? null : ItemKey.From(item), url, host, title, factKey);
 
-    // A child is addressed under its parent ('ITM-01JK3/project/1/step.1'); its actions follow its own state.
+    // A child is addressed under its parent ('ITM-01JK3/project/1/step.1'); its state is a real state of its recipe (workflow.step), and what it
+    // offers follows that state: a child not started or done offers OpenItem only, a parked one shows its park on the parent's band.
     private static ChildRow Child(string parent, int entry, string item, string title, StateGlyph glyph, string state, EngineOwnedBadge? owned = null, string? agent = null, long age = 600)
     {
-        var actions = glyph == StateGlyph.Done ? Acts("OpenItem")
-            : owned is { Kind: EngineOwnedKind.Parked } ? Acts("OpenItem", "ApplyCommand:answer-grant", "ApplyCommand:takeover")
+        var parked = owned is { Kind: EngineOwnedKind.Parked };
+        var actions = glyph != StateGlyph.Active ? Acts("OpenItem")
+            : parked ? Acts("OpenItem", "ApplyCommand:answer-grant", "ApplyCommand:takeover")
             : Acts("OpenItem", "ApplyCommand:takeover");
-        return new(InstanceAddress.From(parent + "/step." + entry.ToString(System.Globalization.CultureInfo.InvariantCulture)), ItemKey.From(item), title, glyph, state, StateChip.For(state, owned, false, state == "done"), null, agent, age, owned, null, actions);
+        var chip = StateChip.For(owned, false, state == "done", notStarted: glyph == StateGlyph.Pending);
+        return new(InstanceAddress.From(parent + "/step." + entry.ToString(System.Globalization.CultureInfo.InvariantCulture)), ItemKey.From(item), title, glyph, state, chip, null, agent, age, owned, parked ? owned : null, actions);
     }
 
     private static ViewCounts Counts(int timeline, int decisions, int requests) => new(timeline, decisions, requests, null);
@@ -407,8 +357,24 @@ public static class WorkflowViewFixtures
     // ---- the instance views (E-20) -----------------------------------------------------------------------------------
 
     private static InstanceDetail Detail(InstanceSummary row, string title, PathOrdering ordering, CurrentState current, IReadOnlyList<FactRow> facts,
-        IReadOnlyList<ChildGroup> children, ViewCounts counts) =>
-        new(row.Address, row.Id, null, row.ItemId, title, row.Recipe, row.State, row.Since, row.EngineOwned, row.Subject, ordering, row.States, current, facts, children, counts, row.Actions, Now);
+        IReadOnlyList<ChildGroup> children, ViewCounts counts, ParentRef? parent = null) =>
+        new(row.Address, row.Id, parent, row.ItemId, title, row.Recipe, row.State, row.Since, row.EngineOwned, row.Subject, ordering, row.States, current, facts, children, counts, row.Actions, Now);
+
+    private static FactRow Fake(RecipeShape recipe, string key, FactStatus status, string summary, DateTimeOffset? at = null, string? by = null, FactRef? reference = null, Progress? progress = null, FactPending? pending = null) =>
+        recipe.Fact(key, status, summary, at, by, reference, progress, pending);
+
+    private static FactRow Produced(RecipeShape recipe, string key, string summary, DateTimeOffset at, string by, FactRef? reference = null) =>
+        recipe.Fact(key, FactStatus.Produced, summary, at, by, reference);
+
+    private static FactRow[] ProjectFacts(DateTimeOffset prdAt, FactRow? evidence = null) =>
+    [
+        Produced(_project, "fact:project", "Linear APP · Offline sync", prdAt, "human:cli",
+            Ref(url: "https://linear.app/example/project/offline-sync", host: "linear.app", title: "APP · Offline sync")),
+        Produced(_project, "fact:prd", "PRD-sync.md", prdAt, "human:cli", Ref(name: "PRD-sync.md", size: 18_432, hash: Hash("1c0e5a77"), path: "docs/PRD-sync.md")),
+        Produced(_project, "fact:scope", "4 areas, 9 cited files", At(10, 12, 9, 40), "step.scope.draft", Ref(factKey: "fact:scope")),
+        Produced(_project, "fact:packet", "9 tasks in 4 workstreams, frozen", At(10, 12, 10, 5), "step.packet.freeze", Ref(factKey: "fact:packet")),
+        .. evidence is null ? (FactRow[])[] : [evidence],
+    ];
 
     /// <summary>PRJ-sync: build, four of nine children done in four workstreams, a scope map, a packet and evidence; one child parked.</summary>
     public static InstanceDetail ProjectBuild()
@@ -434,17 +400,29 @@ public static class WorkflowViewFixtures
             new CurrentState("build", new StepDeclaration("step.children", "builder.feature", "one child per packet task"),
                 [new GateLine(BlockId.From("gate.evidence.all"), "exit", null, "Every child has its evidence pack."), new GateLine(BlockId.From("gate.judge.verify"), "exit", 0.8, "The judge scores the build at least 0.8.")],
                 null, status),
-            [
-                Fact("project", "Linear project", FactType.Link, FactDirection.Input, null, FactStatus.Produced, "Linear APP · Offline sync", At(10, 12, 9, 14), "human:cli",
-                    Ref(url: "https://linear.app/example/project/offline-sync", host: "linear.app", title: "APP · Offline sync")),
-                Fact("prd", "PRD", FactType.File, FactDirection.Input, null, FactStatus.Produced, "PRD-sync.md", At(10, 12, 9, 14), "human:cli",
-                    Ref(name: "PRD-sync.md", size: 18_432, hash: Hash("1c0e5a77"), path: "docs/PRD-sync.md")),
-                Fact("scope", "Scope map", FactType.ScopeMap, FactDirection.Output, "scoping", FactStatus.Produced, "4 areas, 9 cited files", At(10, 12, 9, 40), "step.scope.draft", Ref(factKey: "scope")),
-                Fact("packet", "Packet", FactType.Packet, FactDirection.Output, "design", FactStatus.Produced, "9 tasks in 4 workstreams, frozen", At(10, 12, 10, 5), "step.packet.freeze", Ref(factKey: "packet")),
-                Fact("evidence", "Evidence", FactType.Evidence, FactDirection.Output, "build", FactStatus.InProgress, "4 of 9 packs", null, null, Ref(factKey: "evidence"), new Progress(4, 9)),
-            ],
+            _project.Facts([.. ProjectFacts(At(10, 12, 9, 14), Fake(_project, "fact:evidence", FactStatus.InProgress, "4 of 9 packs", reference: Ref(factKey: "fact:evidence"), progress: new Progress(4, 9)))]),
             [new ChildGroup("build", RecipeId.From("workflow.step"), 4, 9, [ws1, ws2, ws3, ws4], [], 0)],
             Counts(41, 3, 1));
+    }
+
+    private static readonly InstanceSummary _prjDocs = Row("ITM-01JKG/project/1", _project, "build", Today(8, 40), null,
+        Subject("linear-project", "DOCS", "DOCS · Handbook"),
+        _project.Cells("build", change: Shape(("build", c => c with { Children = new Progress(6, 24) }))),
+        "2 running · 16 queued", "ApplyCommand:takeover", "ApplyCommand:cancel");
+
+    /// <summary>PRJ-docs: 24 children, the first 20 listed (no workstreams), four more behind the 'more' count.</summary>
+    public static InstanceDetail ProjectManyChildren()
+    {
+        const string parent = "ITM-01JKG/project/1";
+        var rows = Enumerable.Range(1, 20).Select(i => Child(parent, i, $"ITM-01M{i.ToString("X2", System.Globalization.CultureInfo.InvariantCulture)}", "Chapter " + i.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            i <= 6 ? StateGlyph.Done : i <= 8 ? StateGlyph.Active : StateGlyph.Pending, i <= 6 ? "done" : i <= 8 ? "checks" : "produce",
+            agent: i is 7 or 8 ? "factory worker" : null, age: 600 + (i * 60L))).ToList();
+        var status = Status(_prjDocs, "children 6 of 24", "Waiting on 24 children: 6 done · 2 running · 16 queued.", new OpenWork(OpenChildren: 18));
+        return Detail(_prjDocs, "Handbook", PathOrdering.Path,
+            new CurrentState("build", new StepDeclaration("step.children", "builder.feature", "one child per packet task"), [], null, status),
+            _project.Facts([.. ProjectFacts(At(10, 12, 8, 40), Fake(_project, "fact:evidence", FactStatus.InProgress, "6 of 24 packs", reference: Ref(factKey: "fact:evidence"), progress: new Progress(6, 24)))]),
+            [new ChildGroup("build", RecipeId.From("workflow.step"), 6, 24, [], rows, 4)],
+            Counts(30, 0, 0));
     }
 
     /// <summary>INC-14: the mitigate and verify loop at round 1 of 3, a recorded sev2 outcome, a running comms child, a timeout that escalates.</summary>
@@ -454,11 +432,9 @@ public static class WorkflowViewFixtures
             new StatusLines { Timeout = new StatusTimeout(TimeoutKind.Escalates, 3_600, "mitigate") });
         return Detail(_inc14, "Outbox retry storm", PathOrdering.Path,
             new CurrentState("mitigate", new StepDeclaration("step.agent", "mitigate.rollback", "roll back the last release"), [], null, status),
-            [
-                Fact("alert", "Alert", FactType.Payload, FactDirection.Input, null, FactStatus.Produced, "PagerDuty P-2211", At(10, 12, 11, 2), "service:webhook", Ref(factKey: "alert")),
-                Fact("severity", "Severity", FactType.Text, FactDirection.Output, "assess", FactStatus.Produced, "sev2", At(10, 12, 11, 4), "step.assess", Ref(factKey: "severity")),
-                Fact("postmortem", "Postmortem draft", FactType.Text, FactDirection.Output, "resolved", FactStatus.Pending, "not started"),
-            ],
+            _incident.Facts(
+                Produced(_incident, "fact:alert", "PagerDuty P-2211", At(10, 12, 11, 2), "service:webhook", Ref(factKey: "fact:alert")),
+                Produced(_incident, "fact:severity", "sev2", At(10, 12, 11, 4), "step.assess", Ref(factKey: "fact:severity"))),
             [new ChildGroup("comms", RecipeId.From("workflow.step"), 0, 1, [], [Child("ITM-01JK1/incident-response/1", 1, "ITM-01JG3", "Post status updates", StateGlyph.Active, "produce", age: 300)], 0)],
             Counts(12, 1, 0));
     }
@@ -469,11 +445,10 @@ public static class WorkflowViewFixtures
         var pending = new FactPending(true, ["output.nonempty"], Act("CompleteStep"));
         return Detail(_sentry8812, "TypeError in tabs.layout", PathOrdering.Path,
             new CurrentState("classify", new StepDeclaration("step.desk", "classify.severity", "a person classifies the alert"),
-                [], new DeskForm(RunToken.From("1.1"), [new DeskOutput("severity", FactType.Text, true)], ["output.nonempty"], Act("CompleteStep")), StatusDeskTask()),
-            [
-                Fact("alert", "Alert", FactType.Payload, FactDirection.Input, null, FactStatus.Produced, "sentry #8812 TypeError", At(10, 12, 12, 22), "service:webhook", Ref(factKey: "alert")),
-                Fact("severity", "Severity", FactType.Text, FactDirection.Output, "classify", FactStatus.Pending, "awaiting your answer", pending: pending),
-            ],
+                [], new DeskForm(RunToken.From("1.1"), [new DeskOutput("fact:severity", FactType.Text, true)], ["output.nonempty"], Act("CompleteStep")), StatusDeskTask()),
+            _triage.Facts(
+                Produced(_triage, "fact:alert", "sentry #8812 TypeError", At(10, 12, 12, 22), "service:webhook", Ref(factKey: "fact:alert")),
+                Fake(_triage, "fact:severity", FactStatus.Pending, "awaiting your answer", pending: pending)),
             [], Counts(3, 0, 1));
     }
 
@@ -482,42 +457,58 @@ public static class WorkflowViewFixtures
         Detail(_p2211, "PagerDuty P-2211", PathOrdering.Path,
             new CurrentState("route", new StepDeclaration("step.tool", "route.severity", "route by severity"),
                 [new GateLine(BlockId.From("gate.severity"), "exit", 0.8, "Severity under 0.8 routes to a ticket; above it opens an incident.")], null, StatusEscalatedGate()),
-            [
-                Fact("alert", "Alert", FactType.Payload, FactDirection.Input, null, FactStatus.Produced, "PagerDuty P-2211", At(10, 12, 11, 2), "service:webhook", Ref(factKey: "alert")),
-                Fact("route", "Route", FactType.Decision, FactDirection.Output, "route", FactStatus.InProgress, "gate.severity 0.91 → INC-14 opened"),
-            ],
+            _triage.Facts(
+                Produced(_triage, "fact:alert", "PagerDuty P-2211", At(10, 12, 11, 2), "service:webhook", Ref(factKey: "fact:alert")),
+                Produced(_triage, "fact:severity", "sev1", At(10, 12, 11, 3), "step.classify"),
+                Fake(_triage, "fact:route", FactStatus.InProgress, "gate.severity 0.91 → INC-14 opened")),
             [], Counts(6, 1, 0));
 
-    private static InstanceSummary DevRow(string address, string name, InstanceRecipe recipe, string[] states, string state, Func<StateCell, StateCell>? shape, params string[] actions) =>
-        Row(address, recipe, state, Today(12, 0), null, Subject("text", name, name), [Input("request", "Request", "text")], Cells(states, state, shape), "next step", actions);
+    /// <summary>A workflow.step child of an item at produce, round 2 of 3, with its parent (the item's workflow.item instance).</summary>
+    public static InstanceDetail ItemProduce()
+    {
+        var row = Row("ITM-01JE7/item/1/step.1", _step, "produce", Today(11, 30), null, Subject("item", "ITM-01JE7", "ITM-01JE7"),
+            _step.Cells("produce", round: 2, Shape(("produce", c => c with { Round = new Round(2, 3) }))),
+            "agent writing the Step output · round 2/3", "ApplyCommand:takeover", "ApplyCommand:cancel");
+        var status = Status(row, null, "Produce the Step output for ITM-01JE7 (round 2/3).", new OpenWork(RunningSteps: 1),
+            new StatusLines
+            {
+                Inputs = [new StatusInput("fact:spec", "spec.md", "9d3e41aa")],
+                Budget = new StatusBudget("state", 84_000, 200_000, new BudgetFigures(84_000, 400_000)),
+            });
+        return Detail(row, "Receipt retries", PathOrdering.Path,
+            new CurrentState("produce", new StepDeclaration("step.produce", "produce.output", "produce the output for the item"), [], null, status),
+            _step.Facts(Produced(_step, "fact:spec", "ITM-01JE7 spec", At(10, 12, 11, 30), "service:item")),
+            [], Counts(6, 0, 0),
+            new ParentRef(InstanceAddress.From("ITM-01JE7/item/1"), "ITM-01JE7 · Receipt retries", null, null));
+    }
 
-    /// <summary>The desk-round-trip dev recipe, desk open (the P11 signal fixture).</summary>
+    /// <summary>The desk-round-trip dev recipe, desk open on its export (round 1 of 2): the P11 signal fixture.</summary>
     public static InstanceDetail DeskRoundTrip()
     {
-        var row = DevRow("ITM-01JL1/dev-desk-round-trip/1", "desk-round-trip", _devDesk, _devDeskStates, "desk", Shape(("desk", c => c with { Desk = true })), "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
+        var row = Row("ITM-01JL1/dev-desk-round-trip/1", _devDesk, "export", Today(12, 0), null, Subject("text", "desk-round-trip", "desk-round-trip"),
+            _devDesk.Cells("export", round: 1, Shape(("export", c => c with { Round = new Round(1, 2) }))), "next step", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
         return Detail(row, "Desk round trip", PathOrdering.Path,
-            new CurrentState("desk", new StepDeclaration("step.desk", "desk.produce", "a person produces the file"),
-                [], new DeskForm(RunToken.From("1.1"), [new DeskOutput("report", FactType.File, true)], ["output.file"], Act("CompleteStep")),
-                DeskStatus(row, "Produce the report file", "1.1", "report", "<file>", new StatusInput("fact:request", "request.txt", "7ab2c013"))),
-            [
-                Fact("request", "Request", FactType.Text, FactDirection.Input, null, FactStatus.Produced, "Summarize the week", At(10, 12, 12, 0), "human:cli"),
-                Fact("report", "Report", FactType.File, FactDirection.Output, "desk", FactStatus.Pending, "awaiting your file",
-                    pending: new FactPending(true, ["output.file"], Act("CompleteStep"))),
-            ],
+            new CurrentState("export", new StepDeclaration("step.produce", "export.file", "a person exports the file"),
+                [], new DeskForm(RunToken.From("1.1"), [new DeskOutput("fact:output", FactType.File, true)], ["output.file"], Act("CompleteStep")),
+                DeskStatus(row, "Export the file for the request (round 1/2)", "1.1", "fact:output", "<file>", new StatusInput("fact:request", "request.txt", "7ab2c013"))),
+            _devDesk.Facts(
+                Produced(_devDesk, "fact:request", "Summarize the week", At(10, 12, 12, 0), "human:cli"),
+                Fake(_devDesk, "fact:output", FactStatus.Pending, "awaiting your file", pending: new FactPending(true, ["output.file"], Act("CompleteStep")))),
             [], Counts(2, 0, 0));
     }
 
-    /// <summary>The three-state triage dev recipe: 'order' follows the transition order.</summary>
+    /// <summary>The three-state triage dev recipe, at its desk.</summary>
     public static InstanceDetail TriageThreeState()
     {
-        var row = DevRow("ITM-01JL2/dev-triage-three-state/1", "triage-three-state", _devTriage, _devTriageStates, "classify", null, "ApplyCommand:takeover", "ApplyCommand:cancel");
+        var row = Row("ITM-01JL2/dev-triage-three-state/1", _devTriage, "desk", Today(12, 0), null, Subject("item", "ITM-01JL2", "dev-triage-three-state"),
+            _devTriage.Cells("desk"), "next step", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
         return Detail(row, "Three-state triage", PathOrdering.Path,
-            new CurrentState("classify", new StepDeclaration("step.tool", "classify.rules", "classify by rules"), [], null,
-                Status(row, "running", "classify.rules is running.", new OpenWork(RunningSteps: 1), new StatusLines { Inputs = [new StatusInput("fact:request", "request.txt", "5cd0e9a2")] })),
-            [
-                Fact("request", "Request", FactType.Text, FactDirection.Input, null, FactStatus.Produced, "Crash on launch", At(10, 12, 12, 0), "human:cli"),
-                Fact("label", "Label", FactType.Text, FactDirection.Output, "classify", FactStatus.InProgress, "classifying"),
-            ],
+            new CurrentState("desk", new StepDeclaration("step.produce", "desk.draft", "a person writes the draft"),
+                [], new DeskForm(RunToken.From("1.1"), [new DeskOutput("fact:output", FactType.File, true)], ["output.file"], Act("CompleteStep")),
+                DeskStatus(row, "Write the draft for ITM-01JL2", "1.1", "fact:output", "<file>", new StatusInput("fact:item", "item.json", "5cd0e9a2"))),
+            _devTriage.Facts(
+                Produced(_devTriage, "fact:item", "ITM-01JL2 Crash on launch", At(10, 12, 12, 0), "human:cli", Ref(item: "ITM-01JL2")),
+                Fake(_devTriage, "fact:output", FactStatus.Pending, "awaiting your file", pending: new FactPending(true, ["output.file"], Act("CompleteStep")))),
             [], Counts(2, 0, 0));
     }
 
@@ -525,12 +516,11 @@ public static class WorkflowViewFixtures
     public static InstanceDetail TransitionList()
     {
         var row = Row("ITM-01JL3/fork-demo/1", _fork, "right", Today(12, 0), null, Subject("text", "fork-demo", "Fork demo"),
-            [Input("request", "Request", "text")],
-            Cells(_forkStates, "right", Shape(("right", c => c with { BranchOf = "left" }))), "next step", "ApplyCommand:takeover", "ApplyCommand:cancel");
+            _fork.Cells("right"), "next step", "ApplyCommand:takeover", "ApplyCommand:cancel");
         return Detail(row, "Fork demo", PathOrdering.TransitionList,
             new CurrentState("right", new StepDeclaration("step.tool", "branch.right", "the right branch"), [], null,
                 Status(row, "running", "branch.right is running.", new OpenWork(RunningSteps: 1))),
-            [Fact("request", "Request", FactType.Text, FactDirection.Input, null, FactStatus.Produced, "Fork it", At(10, 12, 12, 0), "human:cli")],
+            _fork.Facts(Produced(_fork, "fact:request", "Fork it", At(10, 12, 12, 0), "human:cli")),
             [], Counts(2, 0, 0));
     }
 
@@ -538,38 +528,25 @@ public static class WorkflowViewFixtures
     public static InstanceDetail Done() =>
         Detail(_sentry8809, "429s on stream", PathOrdering.Path,
             new CurrentState("done", null, [], null, StatusDone()),
-            [
-                Fact("alert", "Alert", FactType.Payload, FactDirection.Input, null, FactStatus.Produced, "sentry #8809 429s on stream", At(10, 12, 11, 40), "service:webhook", Ref(factKey: "alert")),
-                Fact("item", "Item", FactType.Item, FactDirection.Output, "route", FactStatus.Produced, "ITM-01JF0 queued", At(10, 12, 11, 58), "step.route", Ref(item: "ITM-01JF0")),
-            ],
+            _triage.Facts(
+                Produced(_triage, "fact:alert", "sentry #8809 429s on stream", At(10, 12, 11, 40), "service:webhook", Ref(factKey: "fact:alert")),
+                Produced(_triage, "fact:severity", "sev3", At(10, 12, 11, 50), "step.classify"),
+                Produced(_triage, "fact:route", "ticket", At(10, 12, 11, 58), "step.route"),
+                Produced(_triage, "fact:item", "ITM-01JF0 queued", At(10, 12, 11, 58), "step.route", Ref(item: "ITM-01JF0"))),
             [], Counts(7, 0, 0));
-
-    /// <summary>A workflow.step child at produce, round 2 of 3, with its parent (red stub).</summary>
-    public static InstanceDetail ItemProduce() => throw new NotSupportedException("red: item-produce");
-
-    /// <summary>A project whose build state has more children than the first 20 rows (red stub).</summary>
-    public static InstanceDetail ProjectManyChildren() => throw new NotSupportedException("red: project-many-children");
 
     // ---- the recipe additions (E-22) ---------------------------------------------------------------------------------
 
-    private static RecipeStateView[] StateViews(string[] states) => [.. states.Select((s, i) => new RecipeStateView(s, i + 1, null))];
-
     /// <summary>workflow.project: a Linear project input, outputs with their producing states, urgency work.</summary>
-    public static RecipeView ProjectRecipe() => new(
-        [new RecipeInputView("project", "Linear project", FactType.Link, "linear-project", true), new RecipeInputView("prd", "PRD", FactType.File, null, true)],
-        [new RecipeOutputView("scope", "Scope map", FactType.ScopeMap, "scoping"), new RecipeOutputView("packet", "Packet", FactType.Packet, "design"), new RecipeOutputView("evidence", "Evidence", FactType.Evidence, "build")],
-        RecipeUrgency.Work, StateViews(_projectStates), [new RecipeLoopView("challenge", "scoping", "scoping")]);
+    public static RecipeView ProjectRecipe() => _project.View();
 
     /// <summary>incident.response: urgency incident and the mitigate and verify loop.</summary>
-    public static RecipeView IncidentRecipe() => new(
-        [new RecipeInputView("alert", "Alert", FactType.Payload, "webhook", true)],
-        [new RecipeOutputView("severity", "Severity", FactType.Text, "assess"), new RecipeOutputView("postmortem", "Postmortem draft", FactType.Text, "resolved")],
-        RecipeUrgency.Incident, StateViews(_incidentStates), [new RecipeLoopView("remediate", "mitigate", "verify")]);
+    public static RecipeView IncidentRecipe() => _incident.View();
 
     /// <summary>A recipe with no outputs: 'outputs: []', and a kind on the first input only.</summary>
     public static RecipeView NoOutputsRecipe() => new(
-        [new RecipeInputView("request", "Request", FactType.Text, "text", true), new RecipeInputView("context", null, FactType.File, null, false)],
-        [], RecipeUrgency.Work, StateViews(_devTriageStates), []);
+        [new RecipeInputView("fact:request", "Request", FactType.Text, "text", true), new RecipeInputView("fact:context", null, FactType.File, null, false)],
+        [], RecipeUrgency.Work, [new RecipeStateView("intake", 1, null), new RecipeStateView("classify", 2, null), new RecipeStateView("done", 3, null)], []);
 
     // ---- the facts route (GetInstanceFact) ---------------------------------------------------------------------------
 

@@ -1,5 +1,5 @@
 {
-  "key": "packet",
+  "key": "fact:packet",
   "type": "packet",
   "body": {
     "id": "3f1c09",

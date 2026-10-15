@@ -92,7 +92,7 @@ public sealed class WorkflowViewConsistencyTests
     public void A_fact_body_agrees_with_its_row()
     {
         var rows = Project.Facts.ToDictionary(f => f.Key, StringComparer.Ordinal);
-        foreach (var (key, scenario) in new[] { ("scope", "scope-map"), ("packet", "packet"), ("evidence", "evidence") })
+        foreach (var (key, scenario) in new[] { ("fact:scope", "scope-map"), ("fact:packet", "packet"), ("fact:evidence", "evidence") })
         {
             var view = WorkflowViewFixtures.Fact(scenario);
             Assert.Equal(key, view.Key);
@@ -102,16 +102,16 @@ public sealed class WorkflowViewConsistencyTests
         var packet = WorkflowViewFixtures.Fact("packet").Body;
         var tasks = packet.GetProperty("workstreams").EnumerateArray().Sum(w => w.GetProperty("tasks").GetArrayLength());
         Assert.True(packet.GetProperty("frozen").GetBoolean());
-        Assert.Equal($"{tasks.ToString(CultureInfo.InvariantCulture)} tasks in {packet.GetProperty("workstreams").GetArrayLength().ToString(CultureInfo.InvariantCulture)} workstreams, frozen", rows["packet"].Summary);
+        Assert.Equal($"{tasks.ToString(CultureInfo.InvariantCulture)} tasks in {packet.GetProperty("workstreams").GetArrayLength().ToString(CultureInfo.InvariantCulture)} workstreams, frozen", rows["fact:packet"].Summary);
         Assert.All(packet.GetProperty("checks").EnumerateArray(), c => Assert.Equal("pass", c.GetProperty("result").GetString()));
 
         var scope = WorkflowViewFixtures.Fact("scope-map").Body.GetProperty("surfaces").EnumerateArray().ToList();
         var files = scope.Sum(s => s.GetProperty("files").GetArrayLength());
-        Assert.Equal($"{scope.Count.ToString(CultureInfo.InvariantCulture)} areas, {files.ToString(CultureInfo.InvariantCulture)} cited files", rows["scope"].Summary);
+        Assert.Equal($"{scope.Count.ToString(CultureInfo.InvariantCulture)} areas, {files.ToString(CultureInfo.InvariantCulture)} cited files", rows["fact:scope"].Summary);
 
         var evidence = WorkflowViewFixtures.Fact("evidence").Body;
-        Assert.Equal(rows["evidence"].Progress!.Done, evidence.GetProperty("done").GetInt32());
-        Assert.Equal(rows["evidence"].Progress!.Total, evidence.GetProperty("total").GetInt32());
+        Assert.Equal(rows["fact:evidence"].Progress!.Done, evidence.GetProperty("done").GetInt32());
+        Assert.Equal(rows["fact:evidence"].Progress!.Total, evidence.GetProperty("total").GetInt32());
         Assert.Equal(evidence.GetProperty("done").GetInt32(), evidence.GetProperty("packs").GetArrayLength());
     }
 
@@ -208,7 +208,8 @@ public sealed class WorkflowViewConsistencyTests
                         Assert.Contains(row.Actions, a => a.Value.StartsWith("ApplyCommand:answer", StringComparison.Ordinal));
                     }
 
-                    Assert.True(row.MirroredPark is null || view.Current.Status.Child is not null, row.Address.Value);
+                    // A child's park is shown on the parent's band; it doesn't park the parent (Q-API-5).
+                    Assert.Equal(row.EngineOwned?.Kind == EngineOwnedKind.Parked ? row.EngineOwned : null, row.MirroredPark);
                 }
             }
         }

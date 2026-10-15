@@ -1,5 +1,5 @@
 {
-  "key": "scope",
+  "key": "fact:scope",
   "type": "scope-map",
   "body": {
     "brief": "PRD-sync.md",

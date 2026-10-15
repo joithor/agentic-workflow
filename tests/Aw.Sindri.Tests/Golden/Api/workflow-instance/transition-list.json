@@ -141,7 +141,7 @@
   },
   "facts": [
     {
-      "key": "request",
+      "key": "fact:request",
       "label": "Request",
       "type": "text",
       "direction": "input",

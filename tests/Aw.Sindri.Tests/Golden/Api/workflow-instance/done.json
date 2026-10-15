@@ -43,7 +43,7 @@
       "badge": null,
       "round": null,
       "loops": [],
-      "desk": false,
+      "desk": true,
       "child": false,
       "children": null,
       "outcome": null,
@@ -108,7 +108,7 @@
   },
   "facts": [
     {
-      "key": "alert",
+      "key": "fact:alert",
       "label": "Alert",
       "type": "payload",
       "direction": "input",
@@ -126,13 +126,41 @@
         "url": null,
         "host": null,
         "title": null,
-        "factKey": "alert"
+        "factKey": "fact:alert"
       },
       "progress": null,
       "pending": null
     },
     {
-      "key": "item",
+      "key": "fact:severity",
+      "label": "Severity",
+      "type": "text",
+      "direction": "output",
+      "from": "classify",
+      "status": "produced",
+      "summary": "sev3",
+      "at": "2026-10-12T11:50:00.0000000Z",
+      "by": "step.classify",
+      "ref": null,
+      "progress": null,
+      "pending": null
+    },
+    {
+      "key": "fact:route",
+      "label": "Route",
+      "type": "decision",
+      "direction": "output",
+      "from": "route",
+      "status": "produced",
+      "summary": "ticket",
+      "at": "2026-10-12T11:58:00.0000000Z",
+      "by": "step.route",
+      "ref": null,
+      "progress": null,
+      "pending": null
+    },
+    {
+      "key": "fact:item",
       "label": "Item",
       "type": "item",
       "direction": "output",

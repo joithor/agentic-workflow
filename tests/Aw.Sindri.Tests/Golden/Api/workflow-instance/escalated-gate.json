@@ -46,7 +46,7 @@
       "badge": null,
       "round": null,
       "loops": [],
-      "desk": false,
+      "desk": true,
       "child": false,
       "children": null,
       "outcome": null,
@@ -153,7 +153,7 @@
   },
   "facts": [
     {
-      "key": "alert",
+      "key": "fact:alert",
       "label": "Alert",
       "type": "payload",
       "direction": "input",
@@ -171,19 +171,47 @@
         "url": null,
         "host": null,
         "title": null,
-        "factKey": "alert"
+        "factKey": "fact:alert"
       },
       "progress": null,
       "pending": null
     },
     {
-      "key": "route",
+      "key": "fact:severity",
+      "label": "Severity",
+      "type": "text",
+      "direction": "output",
+      "from": "classify",
+      "status": "produced",
+      "summary": "sev1",
+      "at": "2026-10-12T11:03:00.0000000Z",
+      "by": "step.classify",
+      "ref": null,
+      "progress": null,
+      "pending": null
+    },
+    {
+      "key": "fact:route",
       "label": "Route",
       "type": "decision",
       "direction": "output",
       "from": "route",
       "status": "in-progress",
       "summary": "gate.severity 0.91 → INC-14 opened",
+      "at": null,
+      "by": null,
+      "ref": null,
+      "progress": null,
+      "pending": null
+    },
+    {
+      "key": "fact:item",
+      "label": "Item",
+      "type": "item",
+      "direction": "output",
+      "from": "route",
+      "status": "pending",
+      "summary": "not started",
       "at": null,
       "by": null,
       "ref": null,

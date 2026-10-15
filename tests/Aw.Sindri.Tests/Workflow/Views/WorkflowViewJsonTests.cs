@@ -95,17 +95,17 @@ public sealed class WorkflowViewJsonTests
     private sealed record TypeHolder(FactType Type, int N);
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("mitigate", null, false, false, "RUNNING", ChipTone.Ok)]
-    [InlineData("classify", null, true, false, "DECISION", ChipTone.Attn)]
-    [InlineData("done", null, false, true, "DONE", ChipTone.Neutral)]
-    [InlineData("queued", null, false, false, "QUEUED", ChipTone.Neutral)]
-    [InlineData("route", EngineOwnedKind.Escalated, true, false, "ESCALATED", ChipTone.Attn)]
-    [InlineData("build", EngineOwnedKind.Parked, false, false, "PARKED", ChipTone.Attn)]
-    [InlineData("design", EngineOwnedKind.TakenOver, true, false, "WITH YOU", ChipTone.Neutral)]
-    public void The_chip_follows_the_one_mapping(string state, EngineOwnedKind? owned, bool deskOpen, bool terminal, string word, ChipTone tone)
+    [InlineData(null, false, false, false, "RUNNING", ChipTone.Ok)]
+    [InlineData(null, true, false, false, "DECISION", ChipTone.Attn)]
+    [InlineData(null, false, true, false, "DONE", ChipTone.Neutral)]
+    [InlineData(null, false, false, true, "QUEUED", ChipTone.Neutral)]
+    [InlineData(EngineOwnedKind.Escalated, true, false, false, "ESCALATED", ChipTone.Attn)]
+    [InlineData(EngineOwnedKind.Parked, false, false, false, "PARKED", ChipTone.Attn)]
+    [InlineData(EngineOwnedKind.TakenOver, true, false, false, "WITH YOU", ChipTone.Neutral)]
+    public void The_chip_follows_the_one_mapping(EngineOwnedKind? owned, bool deskOpen, bool terminal, bool notStarted, string word, ChipTone tone)
     {
         var badge = owned is { } kind ? new EngineOwnedBadge(kind, "why") : null;
 
-        Assert.Equal(new StateChip(word, tone), StateChip.For(state, badge, deskOpen, terminal));
+        Assert.Equal(new StateChip(word, tone), StateChip.For(badge, deskOpen, terminal, notStarted));
     }
 }

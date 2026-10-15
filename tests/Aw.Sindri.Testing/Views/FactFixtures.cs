@@ -84,25 +84,25 @@ public static class FactFixtures
     /// <returns>The fact view.</returns>
     public static FactView Fact(string scenario) => scenario switch
     {
-        "scope-map" => new FactView("scope", FactType.ScopeMap, Body(new ScopeMap("PRD-sync.md",
+        "scope-map" => new FactView("fact:scope", FactType.ScopeMap, Body(new ScopeMap("PRD-sync.md",
         [
             new Surface("sync store", "mapped", ["src/sync/store.ts", "src/sync/outbox.ts", "src/sync/queue.ts"], ["ITM-01JC1", "ITM-01JC2"]),
             new Surface("status pill", "mapped", ["ui/sync-pill.tsx"], ["ITM-01JC3"]),
             new Surface("conflict dialog", "new", ["ui/conflict-dialog.tsx", "ui/conflict-diff.tsx"], ["ITM-01JC5"]),
             new Surface("background sync (iOS)", "unmapped", ["ios/BackgroundSync.swift", "ios/SyncScheduler.swift", "ios/Reachability.swift"], ["ITM-01JD7"]),
         ])), Truncated: false),
-        "packet" => new FactView("packet", FactType.Packet, Body(new Packet("3f1c09", Frozen: true, Streams(), PassingChecks())), Truncated: false),
-        "packet-unfrozen" => new FactView("packet", FactType.Packet, Body(new Packet("3f1c09", Frozen: false, UnfrozenStreams(),
+        "packet" => new FactView("fact:packet", FactType.Packet, Body(new Packet("3f1c09", Frozen: true, Streams(), PassingChecks())), Truncated: false),
+        "packet-unfrozen" => new FactView("fact:packet", FactType.Packet, Body(new Packet("3f1c09", Frozen: false, UnfrozenStreams(),
         [
             .. PassingChecks().Where(c => c.Id != "PKT-SCOPE-002"),
             new PacketCheck("PKT-SCOPE-002", "fail", "t4 and t9 both write src/sync/queue.ts", ["t4", "t9"]),
         ])), Truncated: false),
-        "evidence" => new FactView("evidence", FactType.Evidence, Body(new EvidenceSummary(
+        "evidence" => new FactView("fact:evidence", FactType.Evidence, Body(new EvidenceSummary(
             [new EvidencePack("t1", "pass"), new EvidencePack("t2", "pass"), new EvidencePack("t3", "pass"), new EvidencePack("t9", "pass")], Done: 4, Total: 9)), Truncated: false),
-        "text" => new FactView("severity", FactType.Text, Body("sev2: the outbox dispatcher retries without backoff"), Truncated: false),
-        "payload" => new FactView("alert", FactType.Payload, Body(new Alert("pagerduty",
+        "text" => new FactView("fact:severity", FactType.Text, Body("sev2: the outbox dispatcher retries without backoff"), Truncated: false),
+        "payload" => new FactView("fact:alert", FactType.Payload, Body(new Alert("pagerduty",
             new Incident("P-2211", "Outbox retry storm", "high", "outbox-dispatcher", "triggered", "2026-10-12T11:02:00Z"), ["prod", "outbox"])), Truncated: false),
-        "truncated" => new FactView("alert", FactType.Payload, Body(new EventLog("pagerduty", [new Event(1, "triggered"), new Event(2, "acknowledged")])), Truncated: true),
+        "truncated" => new FactView("fact:alert", FactType.Payload, Body(new EventLog("pagerduty", [new Event(1, "triggered"), new Event(2, "acknowledged")])), Truncated: true),
         _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "no such fact scenario"),
     };
 }

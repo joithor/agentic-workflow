@@ -10,7 +10,7 @@
     "version": 1,
     "urgency": "work"
   },
-  "state": "desk",
+  "state": "export",
   "since": "2026-10-12T12:00:00.0000000Z",
   "engineOwned": null,
   "subject": {
@@ -22,28 +22,43 @@
   "orderedBy": "path",
   "states": [
     {
-      "id": "intake",
+      "id": "export",
       "order": 1,
       "branchOf": null,
-      "glyph": "done",
+      "glyph": "active",
       "badge": null,
-      "round": null,
-      "loops": [],
-      "desk": false,
+      "round": {
+        "n": 1,
+        "max": 2
+      },
+      "loops": [
+        {
+          "with": "import",
+          "n": 1,
+          "max": 2
+        }
+      ],
+      "desk": true,
       "child": false,
       "children": null,
       "outcome": null,
       "terminal": false
     },
     {
-      "id": "desk",
+      "id": "import",
       "order": 2,
       "branchOf": null,
-      "glyph": "active",
+      "glyph": "pending",
       "badge": null,
       "round": null,
-      "loops": [],
-      "desk": true,
+      "loops": [
+        {
+          "with": "export",
+          "n": 1,
+          "max": 2
+        }
+      ],
+      "desk": false,
       "child": false,
       "children": null,
       "outcome": null,
@@ -65,18 +80,18 @@
     }
   ],
   "current": {
-    "state": "desk",
+    "state": "export",
     "step": {
-      "kind": "step.desk",
-      "ref": "desk.produce",
-      "declaration": "a person produces the file"
+      "kind": "step.produce",
+      "ref": "export.file",
+      "declaration": "a person exports the file"
     },
     "gates": [],
     "desk": {
       "run": "1.1",
       "outputs": [
         {
-          "key": "report",
+          "key": "fact:output",
           "type": "file",
           "required": true
         }
@@ -92,12 +107,12 @@
         "recipe": "workflow.dev-desk-round-trip",
         "hash12": "42e9e8ab897f",
         "version": 1,
-        "state": "desk",
+        "state": "export",
         "detail": "desk task",
         "since": "2026-10-12T12:00:00.0000000Z",
         "ageSeconds": 1560
       },
-      "next": "Produce the report file, then run: sindri workflow complete ITM-01JL1/dev-desk-round-trip/1 --run 1.1 --outcome done --output fact:report=<file>",
+      "next": "Export the file for the request (round 1/2), then run: sindri workflow complete ITM-01JL1/dev-desk-round-trip/1 --run 1.1 --outcome done --output fact:output=<file>",
       "answer": null,
       "child": null,
       "drift": null,
@@ -116,7 +131,7 @@
           "verb": "complete",
           "actionId": "CompleteStep",
           "class": "desk",
-          "cli": "sindri workflow complete ITM-01JL1/dev-desk-round-trip/1 --run 1.1 --outcome done --output fact:report=<file>",
+          "cli": "sindri workflow complete ITM-01JL1/dev-desk-round-trip/1 --run 1.1 --outcome done --output fact:output=<file>",
           "confirm": null
         },
         {
@@ -134,12 +149,12 @@
           "confirm": "Cancel ITM-01JL1/dev-desk-round-trip/1? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JL1/dev-desk-round-trip/1  workflow.dev-desk-round-trip@42e9e8ab897f  v1  desk: desk task  since 12:00 (26m)\n  next      Produce the report file, then run: sindri workflow complete\n            ITM-01JL1/dev-desk-round-trip/1 --run 1.1 --outcome done --output fact:report=<file>\n  inputs    fact:request  request.txt  sha256:7ab2…\n  commands  complete, takeover, cancel\n"
+      "text": "ITM-01JL1/dev-desk-round-trip/1  workflow.dev-desk-round-trip@42e9e8ab897f  v1  export: desk task  since 12:00 (26m)\n  next      Export the file for the request (round 1/2), then run: sindri workflow complete\n            ITM-01JL1/dev-desk-round-trip/1 --run 1.1 --outcome done --output fact:output=<file>\n  inputs    fact:request  request.txt  sha256:7ab2…\n  commands  complete, takeover, cancel\n"
     }
   },
   "facts": [
     {
-      "key": "request",
+      "key": "fact:request",
       "label": "Request",
       "type": "text",
       "direction": "input",
@@ -153,11 +168,11 @@
       "pending": null
     },
     {
-      "key": "report",
-      "label": "Report",
+      "key": "fact:output",
+      "label": "Exported file",
       "type": "file",
       "direction": "output",
-      "from": "desk",
+      "from": "export",
       "status": "pending",
       "summary": "awaiting your file",
       "at": null,

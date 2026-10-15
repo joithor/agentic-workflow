@@ -1,14 +1,14 @@
 {
   "inputs": [
     {
-      "key": "request",
+      "key": "fact:request",
       "label": "Request",
       "type": "text",
       "kind": "text",
       "required": true
     },
     {
-      "key": "context",
+      "key": "fact:context",
       "label": null,
       "type": "file",
       "kind": null,

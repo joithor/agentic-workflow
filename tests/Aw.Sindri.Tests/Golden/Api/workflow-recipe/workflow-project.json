@@ -1,14 +1,14 @@
 {
   "inputs": [
     {
-      "key": "project",
+      "key": "fact:project",
       "label": "Linear project",
-      "type": "link",
+      "type": "payload",
       "kind": "linear-project",
       "required": true
     },
     {
-      "key": "prd",
+      "key": "fact:prd",
       "label": "PRD",
       "type": "file",
       "kind": null,
@@ -17,19 +17,19 @@
   ],
   "outputs": [
     {
-      "key": "scope",
+      "key": "fact:scope",
       "label": "Scope map",
       "type": "scope-map",
       "from": "scoping"
     },
     {
-      "key": "packet",
+      "key": "fact:packet",
       "label": "Packet",
       "type": "packet",
       "from": "design"
     },
     {
-      "key": "evidence",
+      "key": "fact:evidence",
       "label": "Evidence",
       "type": "evidence",
       "from": "build"

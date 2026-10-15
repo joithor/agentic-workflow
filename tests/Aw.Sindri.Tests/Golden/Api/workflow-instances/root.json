@@ -25,7 +25,7 @@
       },
       "inputs": [
         {
-          "key": "alert",
+          "key": "fact:alert",
           "label": "Alert",
           "kind": "webhook",
           "required": true,
@@ -154,7 +154,7 @@
       },
       "inputs": [
         {
-          "key": "alert",
+          "key": "fact:alert",
           "label": "Alert",
           "kind": "webhook",
           "required": true,
@@ -252,14 +252,14 @@
       },
       "inputs": [
         {
-          "key": "project",
+          "key": "fact:project",
           "label": "Linear project",
           "kind": "linear-project",
           "required": true,
           "present": true
         },
         {
-          "key": "prd",
+          "key": "fact:prd",
           "label": "PRD",
           "kind": null,
           "required": true,
@@ -309,7 +309,7 @@
           "badge": null,
           "round": null,
           "loops": [],
-          "desk": false,
+          "desk": true,
           "child": false,
           "children": null,
           "outcome": null,
@@ -396,14 +396,14 @@
       },
       "inputs": [
         {
-          "key": "project",
+          "key": "fact:project",
           "label": "Linear project",
           "kind": "linear-project",
           "required": true,
           "present": true
         },
         {
-          "key": "prd",
+          "key": "fact:prd",
           "label": "PRD",
           "kind": null,
           "required": true,
@@ -471,7 +471,7 @@
           "round": null,
           "loops": [],
           "desk": false,
-          "child": false,
+          "child": true,
           "children": null,
           "outcome": null,
           "terminal": false
@@ -537,18 +537,18 @@
       },
       "inputs": [
         {
-          "key": "project",
+          "key": "fact:project",
           "label": "Linear project",
           "kind": "linear-project",
           "required": true,
           "present": true
         },
         {
-          "key": "prd",
+          "key": "fact:prd",
           "label": "PRD",
           "kind": null,
           "required": true,
-          "present": true
+          "present": false
         }
       ],
       "states": [
@@ -597,7 +597,7 @@
           "badge": null,
           "round": null,
           "loops": [],
-          "desk": false,
+          "desk": true,
           "child": false,
           "children": null,
           "outcome": null,
@@ -612,7 +612,7 @@
           "round": null,
           "loops": [],
           "desk": false,
-          "child": false,
+          "child": true,
           "children": null,
           "outcome": null,
           "terminal": false
@@ -678,9 +678,9 @@
       },
       "inputs": [
         {
-          "key": "team",
+          "key": "fact:team",
           "label": "Linear team",
-          "kind": "linear-team",
+          "kind": "text",
           "required": true,
           "present": true
         }
@@ -703,6 +703,20 @@
         {
           "id": "emit",
           "order": 2,
+          "branchOf": null,
+          "glyph": "pending",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "done",
+          "order": 3,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -746,9 +760,9 @@
       },
       "inputs": [
         {
-          "key": "team",
+          "key": "fact:team",
           "label": "Linear team",
-          "kind": "linear-team",
+          "kind": "text",
           "required": true,
           "present": true
         }
@@ -771,6 +785,20 @@
         {
           "id": "emit",
           "order": 2,
+          "branchOf": null,
+          "glyph": "pending",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "done",
+          "order": 3,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -817,7 +845,7 @@
       },
       "inputs": [
         {
-          "key": "alert",
+          "key": "fact:alert",
           "label": "Alert",
           "kind": "webhook",
           "required": true,
@@ -847,7 +875,7 @@
           "badge": null,
           "round": null,
           "loops": [],
-          "desk": false,
+          "desk": true,
           "child": false,
           "children": null,
           "outcome": null,
@@ -924,7 +952,7 @@
       },
       "inputs": [
         {
-          "key": "alert",
+          "key": "fact:alert",
           "label": "Alert",
           "kind": "webhook",
           "required": true,
@@ -954,7 +982,7 @@
           "badge": null,
           "round": null,
           "loops": [],
-          "desk": false,
+          "desk": true,
           "child": false,
           "children": null,
           "outcome": null,
@@ -1018,7 +1046,7 @@
       },
       "inputs": [
         {
-          "key": "alert",
+          "key": "fact:alert",
           "label": "Alert",
           "kind": "webhook",
           "required": true,
@@ -1048,7 +1076,7 @@
           "badge": null,
           "round": null,
           "loops": [],
-          "desk": false,
+          "desk": true,
           "child": false,
           "children": null,
           "outcome": null,
@@ -1112,7 +1140,7 @@
       },
       "inputs": [
         {
-          "key": "alert",
+          "key": "fact:alert",
           "label": "Alert",
           "kind": "webhook",
           "required": true,
@@ -1142,7 +1170,7 @@
           "badge": null,
           "round": null,
           "loops": [],
-          "desk": false,
+          "desk": true,
           "child": false,
           "children": null,
           "outcome": null,
@@ -1206,7 +1234,7 @@
       },
       "inputs": [
         {
-          "key": "alert",
+          "key": "fact:alert",
           "label": "Alert",
           "kind": "webhook",
           "required": true,
@@ -1236,7 +1264,7 @@
           "badge": null,
           "round": null,
           "loops": [],
-          "desk": false,
+          "desk": true,
           "child": false,
           "children": null,
           "outcome": null,

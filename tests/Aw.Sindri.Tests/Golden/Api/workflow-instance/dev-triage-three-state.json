@@ -10,36 +10,36 @@
     "version": 1,
     "urgency": "triage"
   },
-  "state": "classify",
+  "state": "desk",
   "since": "2026-10-12T12:00:00.0000000Z",
   "engineOwned": null,
   "subject": {
-    "kind": "text",
-    "key": "triage-three-state",
-    "label": "triage-three-state",
+    "kind": "item",
+    "key": "ITM-01JL2",
+    "label": "dev-triage-three-state",
     "href": null
   },
   "orderedBy": "path",
   "states": [
     {
-      "id": "intake",
+      "id": "desk",
       "order": 1,
       "branchOf": null,
-      "glyph": "done",
+      "glyph": "active",
       "badge": null,
       "round": null,
       "loops": [],
-      "desk": false,
+      "desk": true,
       "child": false,
       "children": null,
       "outcome": null,
       "terminal": false
     },
     {
-      "id": "classify",
+      "id": "answer",
       "order": 2,
       "branchOf": null,
-      "glyph": "active",
+      "glyph": "pending",
       "badge": null,
       "round": null,
       "loops": [],
@@ -65,33 +65,46 @@
     }
   ],
   "current": {
-    "state": "classify",
+    "state": "desk",
     "step": {
-      "kind": "step.tool",
-      "ref": "classify.rules",
-      "declaration": "classify by rules"
+      "kind": "step.produce",
+      "ref": "desk.draft",
+      "declaration": "a person writes the draft"
     },
     "gates": [],
-    "desk": null,
+    "desk": {
+      "run": "1.1",
+      "outputs": [
+        {
+          "key": "fact:output",
+          "type": "file",
+          "required": true
+        }
+      ],
+      "checks": [
+        "output.file"
+      ],
+      "completeAction": "CompleteStep"
+    },
     "status": {
       "header": {
         "address": "ITM-01JL2/dev-triage-three-state/1",
         "recipe": "workflow.dev-triage-three-state",
         "hash12": "88a0e8fc810f",
         "version": 1,
-        "state": "classify",
-        "detail": "running",
+        "state": "desk",
+        "detail": "desk task",
         "since": "2026-10-12T12:00:00.0000000Z",
         "ageSeconds": 1560
       },
-      "next": "classify.rules is running.",
+      "next": "Write the draft for ITM-01JL2, then run: sindri workflow complete ITM-01JL2/dev-triage-three-state/1 --run 1.1 --outcome done --output fact:output=<file>",
       "answer": null,
       "child": null,
       "drift": null,
       "inputs": [
         {
-          "key": "fact:request",
-          "name": "request.txt",
+          "key": "fact:item",
+          "name": "item.json",
           "hash": "5cd0e9a2"
         }
       ],
@@ -99,6 +112,13 @@
       "budget": null,
       "paused": null,
       "commands": [
+        {
+          "verb": "complete",
+          "actionId": "CompleteStep",
+          "class": "desk",
+          "cli": "sindri workflow complete ITM-01JL2/dev-triage-three-state/1 --run 1.1 --outcome done --output fact:output=<file>",
+          "confirm": null
+        },
         {
           "verb": "takeover",
           "actionId": "ApplyCommand:takeover",
@@ -111,35 +131,65 @@
           "actionId": "ApplyCommand:cancel",
           "class": "desk",
           "cli": "sindri workflow cancel ITM-01JL2/dev-triage-three-state/1",
-          "confirm": "Cancel ITM-01JL2/dev-triage-three-state/1? 1 running steps stop; 0 children are cancelled."
+          "confirm": "Cancel ITM-01JL2/dev-triage-three-state/1? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JL2/dev-triage-three-state/1  workflow.dev-triage-three-state@88a0e8fc810f  v1  classify: running  since 12:00 (26m)\n  next      classify.rules is running.\n  inputs    fact:request  request.txt  sha256:5cd0…\n  commands  takeover, cancel\n"
+      "text": "ITM-01JL2/dev-triage-three-state/1  workflow.dev-triage-three-state@88a0e8fc810f  v1  desk: desk task  since 12:00 (26m)\n  next      Write the draft for ITM-01JL2, then run: sindri workflow complete\n            ITM-01JL2/dev-triage-three-state/1 --run 1.1 --outcome done --output fact:output=<file>\n  inputs    fact:item  item.json  sha256:5cd0…\n  commands  complete, takeover, cancel\n"
     }
   },
   "facts": [
     {
-      "key": "request",
-      "label": "Request",
-      "type": "text",
+      "key": "fact:item",
+      "label": "Item",
+      "type": "item",
       "direction": "input",
       "from": null,
       "status": "produced",
-      "summary": "Crash on launch",
+      "summary": "ITM-01JL2 Crash on launch",
       "at": "2026-10-12T12:00:00.0000000Z",
       "by": "human:cli",
-      "ref": null,
+      "ref": {
+        "name": null,
+        "size": null,
+        "hash": null,
+        "path": null,
+        "itemId": "ITM-01JL2",
+        "url": null,
+        "host": null,
+        "title": null,
+        "factKey": null
+      },
       "progress": null,
       "pending": null
     },
     {
-      "key": "label",
-      "label": "Label",
-      "type": "text",
+      "key": "fact:output",
+      "label": "Draft",
+      "type": "file",
       "direction": "output",
-      "from": "classify",
-      "status": "in-progress",
-      "summary": "classifying",
+      "from": "desk",
+      "status": "pending",
+      "summary": "awaiting your file",
+      "at": null,
+      "by": null,
+      "ref": null,
+      "progress": null,
+      "pending": {
+        "required": true,
+        "checks": [
+          "output.file"
+        ],
+        "completeAction": "CompleteStep"
+      }
+    },
+    {
+      "key": "fact:answer",
+      "label": "Decision",
+      "type": "decision",
+      "direction": "output",
+      "from": "answer",
+      "status": "pending",
+      "summary": "not started",
       "at": null,
       "by": null,
       "ref": null,
@@ -155,6 +205,7 @@
     "context": null
   },
   "actions": [
+    "CompleteStep",
     "ApplyCommand:takeover",
     "ApplyCommand:cancel"
   ],

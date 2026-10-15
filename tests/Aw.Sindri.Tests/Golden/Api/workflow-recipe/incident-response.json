@@ -1,7 +1,7 @@
 {
   "inputs": [
     {
-      "key": "alert",
+      "key": "fact:alert",
       "label": "Alert",
       "type": "payload",
       "kind": "webhook",
@@ -10,16 +10,16 @@
   ],
   "outputs": [
     {
-      "key": "severity",
+      "key": "fact:severity",
       "label": "Severity",
       "type": "text",
       "from": "assess"
     },
     {
-      "key": "postmortem",
+      "key": "fact:postmortem",
       "label": "Postmortem draft",
       "type": "text",
-      "from": "resolved"
+      "from": "comms"
     }
   ],
   "urgency": "incident",
@@ -53,8 +53,8 @@
   "loops": [
     {
       "name": "remediate",
-      "from": "mitigate",
-      "to": "verify"
+      "from": "verify",
+      "to": "mitigate"
     }
   ]
 }

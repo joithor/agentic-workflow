@@ -1,0 +1,201 @@
+{
+  "address": "ITM-01JE7/item/1/step.1",
+  "id": "WFI-a7981510993b83cab742557716a484dd",
+  "parent": {
+    "address": "ITM-01JE7/item/1",
+    "title": "ITM-01JE7 · Receipt retries",
+    "task": null,
+    "workstream": null
+  },
+  "itemId": "ITM-01JE7",
+  "title": "Receipt retries",
+  "recipe": {
+    "id": "workflow.step",
+    "hash": "sha256:1b13bd920351e56227141fe24e59f2f90cb46bc3549e1e90f2da2af1c3be9f5c",
+    "version": 1,
+    "urgency": "work"
+  },
+  "state": "produce",
+  "since": "2026-10-12T11:30:00.0000000Z",
+  "engineOwned": null,
+  "subject": {
+    "kind": "item",
+    "key": "ITM-01JE7",
+    "label": "ITM-01JE7",
+    "href": null
+  },
+  "orderedBy": "path",
+  "states": [
+    {
+      "id": "produce",
+      "order": 1,
+      "branchOf": null,
+      "glyph": "active",
+      "badge": null,
+      "round": {
+        "n": 2,
+        "max": 3
+      },
+      "loops": [
+        {
+          "with": "checks",
+          "n": 2,
+          "max": 3
+        },
+        {
+          "with": "verify",
+          "n": 2,
+          "max": 3
+        }
+      ],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "checks",
+      "order": 2,
+      "branchOf": null,
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [
+        {
+          "with": "produce",
+          "n": 2,
+          "max": 3
+        }
+      ],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "verify",
+      "order": 3,
+      "branchOf": null,
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [
+        {
+          "with": "produce",
+          "n": 2,
+          "max": 3
+        }
+      ],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "done",
+      "order": 4,
+      "branchOf": null,
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": true
+    }
+  ],
+  "current": {
+    "state": "produce",
+    "step": {
+      "kind": "step.produce",
+      "ref": "produce.output",
+      "declaration": "produce the output for the item"
+    },
+    "gates": [],
+    "desk": null,
+    "status": {
+      "header": {
+        "address": "ITM-01JE7/item/1/step.1",
+        "recipe": "workflow.step",
+        "hash12": "1b13bd920351",
+        "version": 1,
+        "state": "produce",
+        "detail": null,
+        "since": "2026-10-12T11:30:00.0000000Z",
+        "ageSeconds": 3360
+      },
+      "next": "Produce the Step output for ITM-01JE7 (round 2/3).",
+      "answer": null,
+      "child": null,
+      "drift": null,
+      "inputs": [
+        {
+          "key": "fact:spec",
+          "name": "spec.md",
+          "hash": "9d3e41aa"
+        }
+      ],
+      "timeout": null,
+      "budget": {
+        "scope": "state",
+        "used": 84000,
+        "limit": 200000,
+        "instance": {
+          "used": 84000,
+          "limit": 400000
+        }
+      },
+      "paused": null,
+      "commands": [
+        {
+          "verb": "takeover",
+          "actionId": "ApplyCommand:takeover",
+          "class": "pause",
+          "cli": "sindri workflow takeover ITM-01JE7/item/1/step.1",
+          "confirm": null
+        },
+        {
+          "verb": "cancel",
+          "actionId": "ApplyCommand:cancel",
+          "class": "desk",
+          "cli": "sindri workflow cancel ITM-01JE7/item/1/step.1",
+          "confirm": "Cancel ITM-01JE7/item/1/step.1? 1 running steps stop; 0 children are cancelled."
+        }
+      ],
+      "text": "ITM-01JE7/item/1/step.1  workflow.step@1b13bd920351  v1  produce  since 11:30 (56m)\n  next      Produce the Step output for ITM-01JE7 (round 2/3).\n  inputs    fact:spec  spec.md  sha256:9d3e…\n  budget    tokens 84k / 200k (state), 84k / 400k (instance)\n  commands  takeover, cancel\n"
+    }
+  },
+  "facts": [
+    {
+      "key": "fact:spec",
+      "label": "spec",
+      "type": "text",
+      "direction": "input",
+      "from": null,
+      "status": "produced",
+      "summary": "ITM-01JE7 spec",
+      "at": "2026-10-12T11:30:00.0000000Z",
+      "by": "service:item",
+      "ref": null,
+      "progress": null,
+      "pending": null
+    }
+  ],
+  "children": [],
+  "counts": {
+    "timeline": 6,
+    "decisions": 0,
+    "requests": 0,
+    "context": null
+  },
+  "actions": [
+    "ApplyCommand:takeover",
+    "ApplyCommand:cancel"
+  ],
+  "asOf": "2026-10-12T12:26:00.0000000Z"
+}

@@ -63,7 +63,7 @@
       "badge": null,
       "round": null,
       "loops": [],
-      "desk": false,
+      "desk": true,
       "child": false,
       "children": null,
       "outcome": null,
@@ -189,9 +189,9 @@
   },
   "facts": [
     {
-      "key": "project",
+      "key": "fact:project",
       "label": "Linear project",
-      "type": "link",
+      "type": "payload",
       "direction": "input",
       "from": null,
       "status": "produced",
@@ -213,7 +213,7 @@
       "pending": null
     },
     {
-      "key": "prd",
+      "key": "fact:prd",
       "label": "PRD",
       "type": "file",
       "direction": "input",
@@ -237,7 +237,7 @@
       "pending": null
     },
     {
-      "key": "scope",
+      "key": "fact:scope",
       "label": "Scope map",
       "type": "scope-map",
       "direction": "output",
@@ -255,13 +255,13 @@
         "url": null,
         "host": null,
         "title": null,
-        "factKey": "scope"
+        "factKey": "fact:scope"
       },
       "progress": null,
       "pending": null
     },
     {
-      "key": "packet",
+      "key": "fact:packet",
       "label": "Packet",
       "type": "packet",
       "direction": "output",
@@ -279,13 +279,13 @@
         "url": null,
         "host": null,
         "title": null,
-        "factKey": "packet"
+        "factKey": "fact:packet"
       },
       "progress": null,
       "pending": null
     },
     {
-      "key": "evidence",
+      "key": "fact:evidence",
       "label": "Evidence",
       "type": "evidence",
       "direction": "output",
@@ -303,7 +303,7 @@
         "url": null,
         "host": null,
         "title": null,
-        "factKey": "evidence"
+        "factKey": "fact:evidence"
       },
       "progress": {
         "done": 4,
@@ -448,7 +448,10 @@
                 "kind": "parked",
                 "reason": "no-progress"
               },
-              "mirroredPark": null,
+              "mirroredPark": {
+                "kind": "parked",
+                "reason": "no-progress"
+              },
               "actions": [
                 "OpenItem",
                 "ApplyCommand:answer-grant",
@@ -462,8 +465,8 @@
               "glyph": "pending",
               "state": "produce",
               "chip": {
-                "word": "RUNNING",
-                "tone": "ok"
+                "word": "QUEUED",
+                "tone": "neutral"
               },
               "round": null,
               "agent": null,
@@ -471,8 +474,7 @@
               "engineOwned": null,
               "mirroredPark": null,
               "actions": [
-                "OpenItem",
-                "ApplyCommand:takeover"
+                "OpenItem"
               ]
             },
             {
@@ -482,8 +484,8 @@
               "glyph": "pending",
               "state": "produce",
               "chip": {
-                "word": "RUNNING",
-                "tone": "ok"
+                "word": "QUEUED",
+                "tone": "neutral"
               },
               "round": null,
               "agent": null,
@@ -491,8 +493,7 @@
               "engineOwned": null,
               "mirroredPark": null,
               "actions": [
-                "OpenItem",
-                "ApplyCommand:takeover"
+                "OpenItem"
               ]
             }
           ]
@@ -508,8 +509,8 @@
               "glyph": "pending",
               "state": "produce",
               "chip": {
-                "word": "RUNNING",
-                "tone": "ok"
+                "word": "QUEUED",
+                "tone": "neutral"
               },
               "round": null,
               "agent": null,
@@ -517,8 +518,7 @@
               "engineOwned": null,
               "mirroredPark": null,
               "actions": [
-                "OpenItem",
-                "ApplyCommand:takeover"
+                "OpenItem"
               ]
             }
           ]

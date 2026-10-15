@@ -163,7 +163,7 @@
   },
   "facts": [
     {
-      "key": "alert",
+      "key": "fact:alert",
       "label": "Alert",
       "type": "payload",
       "direction": "input",
@@ -181,13 +181,13 @@
         "url": null,
         "host": null,
         "title": null,
-        "factKey": "alert"
+        "factKey": "fact:alert"
       },
       "progress": null,
       "pending": null
     },
     {
-      "key": "severity",
+      "key": "fact:severity",
       "label": "Severity",
       "type": "text",
       "direction": "output",
@@ -205,17 +205,17 @@
         "url": null,
         "host": null,
         "title": null,
-        "factKey": "severity"
+        "factKey": "fact:severity"
       },
       "progress": null,
       "pending": null
     },
     {
-      "key": "postmortem",
+      "key": "fact:postmortem",
       "label": "Postmortem draft",
       "type": "text",
       "direction": "output",
-      "from": "resolved",
+      "from": "comms",
       "status": "pending",
       "summary": "not started",
       "at": null,
