@@ -167,8 +167,8 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
                 _goTo(PageId.Health);
                 break;
             case { Control.Action: "CreateItem" }:
+                CreateItem?.Invoke();   // the form's own control sends it; it opens first, so the window hands the palette's opener on to it
                 Close();
-                CreateItem?.Invoke();   // the form's own control sends it
                 break;
             default:
                 // why: an enabled entry without a page has a control

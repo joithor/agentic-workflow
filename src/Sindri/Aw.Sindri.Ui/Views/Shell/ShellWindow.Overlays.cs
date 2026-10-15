@@ -87,6 +87,11 @@ internal sealed partial class ShellWindow
             return;
         }
 
+        if (OverlayOpen)
+        {
+            return;   // closing because another overlay opened: its opener goes on to that one, with no focus move in between
+        }
+
         var back = Usable(_overlayOpener) ?? Usable(FallbackAfter(sender, shell));
         _overlayOpener = null;
         _ = back?.Focus(NavigationMethod.Tab);
