@@ -54,7 +54,7 @@ public sealed partial class CommandPaletteViewModelTests
     {
         var created = 0;
         var controls = new CatalogViewModel(_clipboard, _clock);   // P1's catalog keeps these at pending:P3; the spec-shaped one has them ready
-        controls.Show(_api, _server, AwJson.Deserialize<CommandList>(Encoding.UTF8.GetBytes(GoldenFiles.SpecShaped("commands", "catalog")), SindriApiClient.Json).Value);
+        controls.Show(_api, _server, AwJson.Deserialize<CommandList>(Encoding.UTF8.GetBytes(GoldenFiles.Api("commands", "catalog")), SindriApiClient.Json).Value);
         var palette = new CommandPaletteViewModel(controls, _pages.Add, _history.Add, createItem: () => created++);
         palette.Open();
         var entries = palette.Entries.Where(e => e.IsAction).ToDictionary(e => e.Id, StringComparer.Ordinal);
@@ -76,7 +76,7 @@ public sealed partial class CommandPaletteViewModelTests
     public void Create_item_without_a_form_to_open_is_not_runnable()
     {
         var controls = new CatalogViewModel(_clipboard, _clock);
-        controls.Show(_api, _server, AwJson.Deserialize<CommandList>(Encoding.UTF8.GetBytes(GoldenFiles.SpecShaped("commands", "catalog")), SindriApiClient.Json).Value);
+        controls.Show(_api, _server, AwJson.Deserialize<CommandList>(Encoding.UTF8.GetBytes(GoldenFiles.Api("commands", "catalog")), SindriApiClient.Json).Value);
         var palette = new CommandPaletteViewModel(controls, _pages.Add, _history.Add);
         palette.Open();
 

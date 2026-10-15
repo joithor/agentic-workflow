@@ -14,7 +14,7 @@ public sealed class CreateItemViewModelTests
 {
     private static readonly Uri _api = new("http://127.0.0.1:7410/");
     private readonly FakeTimeProvider _clock = new(A.Noon);
-    private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.SpecShaped("commands", "catalog") };
+    private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.Api("commands", "catalog") };
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -67,11 +67,13 @@ public sealed class CreateItemViewModelTests
         Assert.Equal((true, "Kept"), (form.IsOpen, form.Title));
     }
 
-    // §7: until P3 ships the catalog says pending:P3, so the form's button is drawn disabled with its phase and CLI.
+    // §7: while the catalog says pending:P3 (it did before P3 shipped), the form's button is drawn disabled with its phase and CLI.
     [Fact]
     public async Task Before_p3_the_create_control_is_pending()
     {
-        _server.Catalog = RouteAnswer.Api("commands", "catalog");
+        var catalog = System.Text.Json.Nodes.JsonNode.Parse(GoldenFiles.Api("commands", "catalog"))!;
+        catalog["rows"]!.AsArray().Single(r => (string?)r!["action"] == "CreateItem")!["ui"] = "pending:P3";
+        _server.Catalog = new RouteAnswer(System.Net.HttpStatusCode.OK, catalog.ToJsonString());
         var form = await Form();
         form.Title = "Not yet";
 

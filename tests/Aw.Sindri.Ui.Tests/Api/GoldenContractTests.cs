@@ -204,20 +204,4 @@ public sealed class GoldenContractTests
         var value = AwJson.Deserialize<T>(body, SindriApiClient.Json);
         return value.IsSuccess ? value.Value : value.Error;
     }
-
-    // testing-4: the spec-shaped catalog U2's tests use is the API's own with the three P3 rows ready, and nothing else differs.
-    [Fact]
-    public void The_spec_shaped_catalog_differs_from_the_API_golden_only_in_the_three_P3_ui_fields()
-    {
-        var api = JsonNode.Parse(GoldenFiles.Api("commands", "catalog"))!;
-        var shaped = JsonNode.Parse(GoldenFiles.SpecShaped("commands", "catalog"))!;
-        string[] flipped = ["CreateItem", "CloseItem:done", "CloseItem:cancelled"];
-        foreach (var row in api["rows"]!.AsArray().Where(r => flipped.Contains((string?)r!["action"], StringComparer.Ordinal)))
-        {
-            Assert.Equal("pending:P3", (string?)row!["ui"]);
-            row["ui"] = "ready";
-        }
-
-        Assert.Equal(api.ToJsonString(), shaped.ToJsonString());
-    }
 }

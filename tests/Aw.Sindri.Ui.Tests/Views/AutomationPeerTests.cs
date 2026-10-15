@@ -24,7 +24,7 @@ public sealed class AutomationPeerTests : IDisposable
     private readonly List<Window> _windows = [];
     private readonly CancellationTokenSource _stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
     private readonly InMemoryEndpointRecords _records = new();
-    private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.SpecShaped("commands", "catalog"), QueueView = RouteAnswer.SpecShaped("queue", "extra-p4-waiting") };
+    private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.Api("commands", "catalog"), QueueView = RouteAnswer.SpecShaped("queue", "extra-p4-waiting") };
     private readonly FakeTimeProvider _clock = new(A.Noon);
 
     private static readonly string[] _homePanels = ["NeedsYouPanel", "RunningPanel", "QueuedPanel"];
