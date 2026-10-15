@@ -69,7 +69,7 @@ internal sealed class TemporalWorkflowInstances(TemporalFrontend frontend) : IWo
             attributes.TryGetValue(SindriTemporal.NeedsYouKey, out var needsYou) && needsYou,
             new DateTimeOffset(DateTime.SpecifyKind(execution.StartTime, DateTimeKind.Utc)),
             attributes.TryGetValue(SindriTemporal.RecipeKey, out var recipe) ? recipe : null,
-            attributes.TryGetValue(SindriTemporal.UrgencyKey, out var urgency) && Urgencies.IsKnown(urgency) ? urgency : Urgencies.Default,
+            attributes.TryGetValue(SindriTemporal.UrgencyKey, out var urgency) && Urgencies.IsKnown(urgency) ? Urgencies.Parse(urgency) : RecipeUrgency.Work,
             attributes.TryGetValue(SindriTemporal.SubjectKey, out var subject) ? subject : null,
             !attributes.TryGetValue(SindriTemporal.RootKey, out var root) || root);
     }

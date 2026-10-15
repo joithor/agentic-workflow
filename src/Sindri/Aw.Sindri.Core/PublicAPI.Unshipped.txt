@@ -1693,9 +1693,7 @@ Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Address.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Address.init -> void
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow!
-Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Deconstruct(out string! Address, out string? State, out bool NeedsYou, out System.DateTimeOffset? StartedAt) -> void
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Equals(Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow? other) -> bool
-Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.InstanceRow(string! Address, string? State, bool NeedsYou, System.DateTimeOffset? StartedAt = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.NeedsYou.get -> bool
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.NeedsYou.init -> void
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.StartedAt.get -> System.DateTimeOffset?
@@ -6127,9 +6125,7 @@ virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.PrintMembers(System.T
 Aw.Sindri.Core.Workflow.Engine.Desk.IWorkflowInstances.List(Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter! filter, bool ended, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow!>!>!>
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter!
-Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter.Deconstruct(out string? Recipe, out string? State, out bool? NeedsYou, out string? Urgency, out string? Item, out string? Subject, out bool? Root) -> void
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter.Equals(Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter? other) -> bool
-Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter.InstanceFilter(string? Recipe = null, string? State = null, bool? NeedsYou = null, string? Urgency = null, string? Item = null, string? Subject = null, bool? Root = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter.Item.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter.Item.init -> void
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter.NeedsYou.get -> bool?
@@ -6142,18 +6138,14 @@ Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter.State.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter.State.init -> void
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter.Subject.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter.Subject.init -> void
-Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter.Urgency.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter.Urgency.init -> void
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilters
-Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Deconstruct(out string! Address, out string? State, out bool NeedsYou, out System.DateTimeOffset? StartedAt, out string? Recipe, out string! Urgency, out string? Subject, out bool Root) -> void
-Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.InstanceRow(string! Address, string? State, bool NeedsYou, System.DateTimeOffset? StartedAt = null, string? Recipe = null, string! Urgency = "work", string? Subject = null, bool Root = true) -> void
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Recipe.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Recipe.init -> void
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Root.get -> bool
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Root.init -> void
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Subject.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Subject.init -> void
-Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Urgency.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Urgency.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.ChildGroups.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ChildGroup!>!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.ChildGroups.init -> void
@@ -6172,7 +6164,6 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Status.get -> Aw.Sindri.Core
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Status.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Subject.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.SubjectRef?
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Subject.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Urgency.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Urgency.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ActionClass
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ActionClass.Desk = 0 -> Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ActionClass
@@ -6467,7 +6458,6 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.RecipeRef.Equals(Aw.Sindri.Core.Wo
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.RecipeRef.Hash.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.RecipeRef.Hash.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.RecipeRef.Id.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.RecipeRef.Urgency.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.RecipeRef.Urgency.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.RecipeRef.Version.get -> int
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.RecipeRef.Version.init -> void
@@ -6734,9 +6724,7 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.FactRef.ItemId.get -> Aw.Sindri.Co
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.InstanceSummary.Deconstruct(out string! Address, out Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.RecipeRef! Recipe, out string! State, out System.DateTimeOffset Since, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.EngineBadge? EngineOwned, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.SubjectRef? Subject, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.InputSlot!>! Inputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StateCell!>! States, out string! Now, out System.Collections.Generic.IReadOnlyList<string!>! Actions) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.InstanceSummary.InstanceSummary(string! Address, Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.RecipeRef! Recipe, string! State, System.DateTimeOffset Since, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.EngineBadge? EngineOwned, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.SubjectRef? Subject, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.InputSlot!>! Inputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StateCell!>! States, string! Now, System.Collections.Generic.IReadOnlyList<string!>! Actions) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.InstanceSummary.ItemId.get -> Aw.Sindri.Core.Workflow.Engine.ItemKey?
-Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.RecipeRef.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out string! Hash, out int Version, out string! Urgency) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.RecipeRef.Id.get -> Aw.Sindri.Core.Workflow.Ids.RecipeId
-Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.RecipeRef.RecipeRef(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, string! Hash, int Version, string! Urgency) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StateCell.Deconstruct(out string! State, out int? Order, out string? BranchOf, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StateGlyph Glyph, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.EngineBadge? Badge, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.RoundOf? Round, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.LoopPair!>! Loops, out bool Desk, out bool Child, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ChildProgress? Children, out string? Outcome, out bool Terminal) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StateCell.State.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StateCell.State.init -> void
@@ -6749,7 +6737,6 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaries
 Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeUrgencies
 const Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaries.NowLength = 80 -> int
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaries.Of(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view) -> Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.InstanceSummary!
-static Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeUrgencies.UrgencyOf(Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! recipe) -> string!
 Aw.Sindri.Core.Workflow.Views.ChildRow.Id.init -> void
 Aw.Sindri.Core.Workflow.Views.StatusChild.Id.init -> void
 static Aw.Sindri.Core.Workflow.Views.ConfirmText.Cancel(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, int runningSteps, int openChildren) -> string!
@@ -6775,3 +6762,15 @@ Aw.Sindri.Core.Workflow.Views.ChildRow.Deconstruct(out Aw.Sindri.Core.Workflow.E
 Aw.Sindri.Core.Workflow.Views.StatusVerb.Complete = 2 -> Aw.Sindri.Core.Workflow.Views.StatusVerb
 Aw.Sindri.Core.Workflow.Views.ParentRef.Id.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
 Aw.Sindri.Core.Workflow.Views.StatusVerb.Cancel = 5 -> Aw.Sindri.Core.Workflow.Views.StatusVerb
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter.Deconstruct(out string? Recipe, out string? State, out bool? NeedsYou, out Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency? Urgency, out string? Item, out string? Subject, out bool? Root) -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter.InstanceFilter(string? Recipe = null, string? State = null, bool? NeedsYou = null, Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency? Urgency = null, string? Item = null, string? Subject = null, bool? Root = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter.Urgency.get -> Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency?
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Deconstruct(out string! Address, out string? State, out bool NeedsYou, out System.DateTimeOffset? StartedAt, out string? Recipe, out Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency, out string? Subject, out bool Root) -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.InstanceRow(string! Address, string? State, bool NeedsYou, System.DateTimeOffset? StartedAt = null, string? Recipe = null, Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency = Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency.Work, string? Subject = null, bool Root = true) -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Urgency.get -> Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Urgency.get -> Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency
+Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.RecipeRef.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out string! Hash, out int Version, out Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.RecipeRef.RecipeRef(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, string! Hash, int Version, Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.RecipeRef.Urgency.get -> Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency
+static Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeUrgencies.UrgencyOf(Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! recipe) -> Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency
+static Aw.Sindri.Core.Workflow.Recipes.Urgencies.Word(Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency urgency) -> string!

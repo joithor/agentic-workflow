@@ -5,6 +5,7 @@ using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
+using RecipeUrgency = Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency;
 using Aw.Sindri.Host;
 using Aw.Sindri.Tests.GetInstance;
 
@@ -26,7 +27,7 @@ public sealed class InstanceViewLayoutTests
         return StatusCases.View("desk-task") with
         {
             ItemId = ItemKey.From("ITM-1"),
-            Urgency = "incident",
+            Urgency = RecipeUrgency.Incident,
             EngineOwned = badge,
             Subject = new SubjectRef("linear-project", "APP", "APP Offline sync", Href: null),
             Inputs = [new InputSlot("spec", "Spec", "file", Required: true, Present: false)],
@@ -151,7 +152,7 @@ public sealed class InstanceViewLayoutTests
         var back = JsonSerializer.Deserialize<InstanceView>(JsonSerializer.Serialize(view, _options), _options)!;
 
         Assert.Equal(JsonSerializer.Serialize(view, _options), JsonSerializer.Serialize(back, _options));
-        Assert.Equal((ItemKey.From("ITM-1"), "incident", OrderedBy.TransitionList), (back.ItemId, back.Urgency, back.OrderedBy));
+        Assert.Equal((ItemKey.From("ITM-1"), RecipeUrgency.Incident, OrderedBy.TransitionList), (back.ItemId, back.Urgency, back.OrderedBy));
         Assert.Equal("verify", back.States[0].Loops[0].With);
     }
 
@@ -166,7 +167,7 @@ public sealed class InstanceViewLayoutTests
         Assert.Equal(new string('x', 77) + "...", summary.Now);
         Assert.Equal(80, summary.Now.Length);
         Assert.Equal(view.Address.Value, summary.Address);
-        Assert.Equal(new RecipeRef(view.Recipe.Id, view.Recipe.Hash.Value, view.Recipe.Version, "incident"), summary.Recipe);
+        Assert.Equal(new RecipeRef(view.Recipe.Id, view.Recipe.Hash.Value, view.Recipe.Version, RecipeUrgency.Incident), summary.Recipe);
         Assert.Equal(view.AllowedCommands.Select(c => c.Action), summary.Actions, StringComparer.Ordinal);
         Assert.Equal((ItemKey.From("ITM-1"), view.State, view.Since), (summary.ItemId, summary.State, summary.Since));
         Assert.Same(view.States, summary.States);

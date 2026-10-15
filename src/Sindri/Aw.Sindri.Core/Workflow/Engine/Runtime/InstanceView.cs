@@ -62,8 +62,8 @@ public sealed record InstanceView(
     /// <summary>The item's id ('ITM-...') when the instance is an item's; null otherwise (UI screens E-20).</summary>
     public ItemKey? ItemId { get; init; }
 
-    /// <summary>How soon the recipe's instances need a human (E-21); <see cref="Urgencies.Default"/> unless the recipe says so.</summary>
-    public string Urgency { get; init; } = Urgencies.Default;
+    /// <summary>How soon the recipe's instances need a human (E-21); work unless the recipe says so.</summary>
+    public RecipeUrgency Urgency { get; init; } = RecipeUrgency.Work;
 
     /// <summary>The badge that replaces the state's glyph when the engine interrupted the instance; null otherwise.</summary>
     public EngineBadge? EngineOwned { get; init; }

@@ -500,11 +500,9 @@ Aw.Sindri.Features.ListInstances.ListInstancesRequest
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Address.get -> string?
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Address.init -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.<Clone>$() -> Aw.Sindri.Features.ListInstances.ListInstancesRequest!
-Aw.Sindri.Features.ListInstances.ListInstancesRequest.Deconstruct(out bool NeedsMe, out Aw.Sindri.Core.Workflow.Engine.ItemKey? Item, out string? State, out string? Query, out string? Address) -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Equals(Aw.Sindri.Features.ListInstances.ListInstancesRequest? other) -> bool
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Item.get -> Aw.Sindri.Core.Workflow.Engine.ItemKey?
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Item.init -> void
-Aw.Sindri.Features.ListInstances.ListInstancesRequest.ListInstancesRequest(bool NeedsMe = false, Aw.Sindri.Core.Workflow.Engine.ItemKey? Item = null, string? State = null, string? Query = null, string? Address = null) -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.NeedsMe.get -> bool
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.NeedsMe.init -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Query.get -> string?

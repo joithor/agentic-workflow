@@ -17,6 +17,6 @@ public sealed record InstanceRow(
     bool NeedsYou,
     DateTimeOffset? StartedAt = null,
     string? Recipe = null,
-    string Urgency = Urgencies.Default,
+    RecipeUrgency Urgency = RecipeUrgency.Work,
     string? Subject = null,
     bool Root = true);

@@ -195,7 +195,7 @@ internal sealed partial class RecipeWorkflow
         ];
         if (_recipe is { } recipe)
         {
-            updates.Add(SindriTemporal.UrgencyKey.ValueSet(RecipeUrgencies.UrgencyOf(recipe)));
+            updates.Add(SindriTemporal.UrgencyKey.ValueSet(Urgencies.Word(RecipeUrgencies.UrgencyOf(recipe))));
             if (recipe.Recipe.Inputs.Count > 0)
             {
                 updates.Add(SindriTemporal.SubjectKey.ValueSet(recipe.Recipe.Inputs[0].Key.Value));

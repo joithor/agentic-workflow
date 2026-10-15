@@ -15,7 +15,7 @@ public sealed record InstanceFilter(
     string? Recipe = null,
     string? State = null,
     bool? NeedsYou = null,
-    string? Urgency = null,
+    Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency? Urgency = null,
     string? Item = null,
     string? Subject = null,
     bool? Root = null);

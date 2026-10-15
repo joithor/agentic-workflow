@@ -20,7 +20,7 @@ public static class InstanceFilters
             parts.Add("NeedsYou = " + Bool(needsYou));
         }
 
-        Text(parts, "Urgency", filter.Urgency);
+        Text(parts, "Urgency", filter.Urgency is { } urgency ? Urgencies.Word(urgency) : null);
         Text(parts, "Item", filter.Item);
         Text(parts, "Subject", filter.Subject);
         if (filter.Root is { } root)
@@ -43,11 +43,7 @@ public static class InstanceFilters
             .ThenBy(static r => r.Address, StringComparer.Ordinal)];
     }
 
-    private static int Rank(string urgency)
-    {
-        var rank = Urgencies.All.ToList().IndexOf(urgency);
-        return rank < 0 ? Urgencies.All.Count : rank;
-    }
+    private static int Rank(RecipeUrgency urgency) => (int)urgency;
 
     private static string Bool(bool value) => value ? "true" : "false";
 

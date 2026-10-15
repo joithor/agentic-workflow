@@ -125,7 +125,7 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
         request.Recipe,
         request.State,
         request.NeedsMe ? true : null,
-        request.Urgency,
+        request.Urgency is { } urgency ? Urgencies.Parse(urgency) : null,
         request.Item?.Value,
         request.Subject,
         request.Root);

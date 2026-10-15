@@ -10,4 +10,4 @@ public sealed record RecipeRef(
     RecipeId Id,
     string Hash,
     int Version,
-    string Urgency);
+    Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency);
