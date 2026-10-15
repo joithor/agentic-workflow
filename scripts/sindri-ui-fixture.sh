@@ -13,8 +13,9 @@
 #   sindri-ui-fixture.sh --large   reserved for U2/U3 (30 items, 12 needs-you rows); exits 2 until then
 #
 # Environment: AW_SINDRI_HOME (required: sindri-prove.sh's guard, a temp or proof folder), SINDRI (the built C# CLI,
-# as sindri-prove.sh reads it), STALL_TYPE (the stalled row's type; default service.ran, a type the projector reads).
-# Needs sqlite3 for stall and unstall, jq for up.
+# as sindri-prove.sh reads it), STALL_TYPE (the stalled row's type; default service.ran, a type the projector reads),
+# SINDRI_UI_FIXTURE_SQL=python (use python3's sqlite3 module even when the sqlite3 CLI is installed; without the CLI it is
+# the fallback anyway). Needs sqlite3 or python3 for stall and unstall, jq for up.
 # Exit: 0 done; 2 the guard, a usage error or a missing tool; otherwise the failing step's exit code.
 # Tests: bash scripts/tests/sindri-ui-fixture.test.sh
 set -uo pipefail
@@ -22,6 +23,8 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROVE="$ROOT/scripts/sindri-prove.sh"
 STALL_KEY="sindri-ui-fixture:stall"
+STALL_ID="7f3c1a52-0b6e-4d1e-9a55-3c2f6d8e1b04"
+STALL_CORRELATION="7f3c1a52-0b6e-4d1e-9a55-3c2f6d8e1b05"
 
 die() { echo "sindri-ui-fixture: $*" >&2; exit 2; }
 usage() { sed -n '5,16p' "$0" | sed 's/^# \{0,1\}//'; }
@@ -31,9 +34,30 @@ guard() { SINDRI=true "$PROVE" guard >/dev/null || exit 2; }
 
 need() { command -v "$1" >/dev/null 2>&1 || die "$1 is needed for '$verb'"; }
 
+# The sqlite3 CLI when there is one, else python3's sqlite3 module (a box without the CLI). Both run the statements in
+# order, stop at the first error and print each selected row with its columns joined by '|'.
+use_cli() { [ "${SINDRI_UI_FIXTURE_SQL:-}" != python ] && command -v sqlite3 >/dev/null 2>&1; }
+need_sql() { use_cli || command -v python3 >/dev/null 2>&1 || die "sqlite3 (or python3) is needed for '$verb'"; }
+
 ledger() {
   [ -f "$AW_SINDRI_HOME/ledger.db" ] || die "no ledger at $AW_SINDRI_HOME/ledger.db: run 'up' first"
-  sqlite3 -bail "$AW_SINDRI_HOME/ledger.db" "$1"
+  if use_cli; then sqlite3 -bail "$AW_SINDRI_HOME/ledger.db" "$1"; else python_sql "$AW_SINDRI_HOME/ledger.db" "$1"; fi
+}
+
+python_sql() {
+  python3 -I -c '
+import sqlite3, sys
+con = sqlite3.connect(sys.argv[1], isolation_level=None)
+pending = ""
+for part in sys.argv[2].split(";"):
+    pending += part
+    if not sqlite3.complete_statement(pending + ";"):
+        pending += ";"
+        continue
+    for row in con.execute(pending):
+        print("|".join("" if v is None else str(v) for v in row))
+    pending = ""
+' "$1" "$2"
 }
 
 profile_path() { printf '%s\n' "${AW_SINDRI_PROFILE:-$AW_SINDRI_HOME/profile/profile.yaml}"; }
@@ -52,23 +76,25 @@ api: { port: 0 }
 YAML
   hash="$("$PROVE" profile validate --json | jq -r '.hash // empty')"
   [ -n "$hash" ] || die "profile validate gave no hash"
-  printf '%s\n' "${hash:0:6}" | "$PROVE" human profile approve "$hash" || return
+  printf 'approve profile %s\n' "${hash:0:6}" | "$PROVE" human profile approve "$hash" || return
   "$PROVE" human --headless
 }
 
-# One row, the same one every time (INSERT OR IGNORE on its idempotency key), at the ledger's current epoch.
+# One row, the same one every time (INSERT OR IGNORE on its idempotency key), at the ledger's current epoch. The ledger's
+# reader takes only GUIDs for id and correlation_id and the 7-digit round-trip timestamp for occurred_at, or the row
+# is rejected, the projection never stalls and /events answers 500.
 stall() {
-  need sqlite3
+  need_sql
   local type="${STALL_TYPE:-service.ran}"
   case "$type" in *[!a-z0-9._-]*) die "STALL_TYPE must be an event type (a-z, 0-9, . _ -): $type" ;; esac
   ledger "INSERT OR IGNORE INTO events (id, type, schema_version, occurred_at, actor, tenant, ring, correlation_id, epoch, idempotency_key, payload_json)
-          VALUES ('$STALL_KEY', '$type', 1, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), 'prover:fixture', 'local', 0, '$STALL_KEY',
+          VALUES ('$STALL_ID', '$type', 1, strftime('%Y-%m-%dT%H:%M:%S', 'now') || '.0000000Z', 'prover:fixture', 'local', 0, '$STALL_CORRELATION',
                   COALESCE((SELECT MAX(epoch) FROM events), 0), '$STALL_KEY', '{not json');
           SELECT seq || ' ' || type FROM events WHERE idempotency_key = '$STALL_KEY';"
 }
 
 unstall() {
-  need sqlite3
+  need_sql
   ledger "DELETE FROM events WHERE idempotency_key = '$STALL_KEY'; SELECT changes() || ' row(s) removed';"
 }
 
