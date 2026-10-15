@@ -63,7 +63,7 @@ public sealed class FocusRingTests : IDisposable
     private async Task<(ShellWindow Window, ShellViewModel Shell)> Running(double width = 1280, double height = 800)
     {
         _records.Write(A.Record());
-        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences), new FakeClipboard());
         await shell.Restore(Token);
         var window = new ShellWindow { DataContext = shell, Width = width, Height = height };
         var settings = new SettingsViewModel(new Preferences(_preferences), new FakeMotionPreference(), _ => { });
@@ -132,13 +132,10 @@ public sealed class FocusRingTests : IDisposable
     {
         var (window, _) = await Running();
         var reached = TabThroughTopBar(window);
-        // §11.2: navigation and the health pill. The ⌘K field is inert until U1 brings the palette, so it is no Tab stop
-        // (review run 3, accessibility-tester-1): a keyboard user never lands on a control that does nothing.
-        string[] expected = ["Navigation", "LaterButton", "HealthPill"];
+        string[] expected = ["Navigation", "LaterButton", "SearchField", "HealthPill"]; // §11.2: navigation, search, health pill
 
         var names = reached.Select(Name).ToList();
         Assert.Equal(["TopBar", .. expected], names);
-        Assert.False(window.Get<TopBar>("TopBar").Get<Control>("SearchField").Focusable);
 
         // The top bar's own stop (F6 lands there) fills the window's width: its ring is drawn just inside it.
         FocusByTab(window, window.Get<Control>("TopBar"), "TopBar");

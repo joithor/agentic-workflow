@@ -55,6 +55,7 @@ takes the ring, the darker primary hover and pressed fills, and `semantic-error`
 | `IMotionPreference` (`ReduceMotion`, `Changed`) | macOS `NSWorkspace`, Windows `SPI_GETCLIENTAREAANIMATION`, GNOME `enable-animations`; bound over a drivable OS seam | `MotionPreferenceContract` |
 | `ISingleInstance` (`TryClaim`, `Send`, `Messages`, `Retire`, `HolderProcessId`; `InstanceMessages.Focus`, `MaxLength` 512) | A local channel only the user can open, under `$AW_SINDRI_HOME/ui/`. A message only navigates: the app reads it as a `DeepLink` and ignores anything else. `Send` is true only once the running instance has **handled** the message, never because a lock is held: a holder that doesn't read gives no answer, and the message isn't handed over later. Handling is one decision, `InstanceMessage.TryAct()`: the app claims it on the UI thread just before acting (or the reader coming back for the next message claims it), the first claim wins and is the sender's answer, and the message is withdrawn (`InstanceMessage.Withdrawn` cancelled, `TryAct()` false) as soon as the sender has been answered or has given up, so a message acted on is never answered "not handled" and one whose wait ended is never acted on late (`SingleInstanceContract.A_message_acted_on_is_acknowledged_and_then_withdrawn`) | `SingleInstanceContract` |
 | `ITray` (`Show(TrayView)`, `Shown`, `OpenRequested`, `QuitRequested`; `TrayState` Neutral, NotRunning, Stale) | Avalonia `TrayIcon`; menu labels escape `_` | `TrayContract` |
+| `IClipboard` (`SetText`: true once the platform holds it, false when it refused) | `Views/AvaloniaClipboard` over the window's `TopLevel.Clipboard`: one adapter every head shares (Avalonia's clipboard belongs to the window), so it is not in `SindriPlatform`; the view models take it as a required constructor argument (no null object) | `ClipboardContract` (fake; the adapter under headless, which accepts a write but keeps nothing, so only the acknowledgement and the refusal are checked there) |
 | `IPreferencesStore` (`Location`, `Read`/`Write` of the bytes, like the endpoint record) | `$AW_SINDRI_HOME/ui/preferences.json`, 0600, temp file and rename | `PreferencesStoreContract` |
 
 A head hands its adapters to `SindriApp.Create(SindriPlatform, TimeProvider)` (`SindriPlatform` bundles them, so a
@@ -126,7 +127,7 @@ only, never the message, which can name the home), with a line that names the ex
 
 | Part | What it shows |
 |---|---|
-| Top bar (48 px) | Brand; Home · Queue · Decisions · Services (counts empty until their routes); Later ▾ (Agents, Repos, Today, Automatic work, each "not served yet"); the ⌘K field, inert until U1 and so no Tab stop and Raw to assistive tech; the health pill, which opens Health (while Sindri isn't running it is only the state: disabled like the navigation, its word undimmed, since the Not running card is the health state and Health has nothing to show). When they don't all fit (the 900 px minimum, text scale up to 1.3) the bar steps down in `TopBar.axaml.cs`: the ⌘K field folds to its magnifier, then the pill's age drops (the pill's accessible name keeps it), then the brand keeps its mark alone. The pill's word always shows |
+| Top bar (48 px) | Brand; Home · Queue · Decisions · Services (counts empty until their routes); Later ▾ (Agents, Repos, Today, Automatic work, each "not served yet"); the ⌘K field, which opens the palette (U1); the health pill, which opens Health (while Sindri isn't running it is only the state: disabled like the navigation, its word undimmed, since the Not running card is the health state and Health has nothing to show). When they don't all fit (the 900 px minimum, text scale up to 1.3) the bar steps down in `TopBar.axaml.cs`: the ⌘K field folds to its magnifier, then the pill's age drops (the pill's accessible name keeps it), then the brand keeps its mark alone. The pill's word always shows |
 | Home panels' bodies | "not served yet", centred in the panel |
 | Home | The page title, three frames (Needs you, Running · With you, Queued), each "not served yet", and the Sindri health strip: the health line (§4.8) over the fields the status carries today (`Running · pid · epoch · API v1 · N services · profile <state>`; "Not running" when it isn't), which opens Health on a click or Enter |
 | Queue, Decisions, Services, Settings | The title and "not served yet"; Settings is the slot `Views/Settings*` fills (⌘, opens it) |
@@ -213,7 +214,7 @@ announcement is a change again) is set only while `LiveSetting` is Off; and a hi
 show it a moment before its text changes. Refresh's "Sending…" (`TopBar`'s `RefreshSending`) does both: the region is in
 the tree from the click (`!Health.CanRefresh`), is live (`Polite`, through its `live` class) only while
 `Health.IsSending`, which turns on before the text becomes "Sending…" and off before it goes back to its resting
-"Refresh"; it is zero-width and transparent, so it takes no room and shows nothing. The Unreadable banner, the Not responding banner and the Not running card follow the same rules (WCAG 4.1.3; review run 2): `ShellWindow`'s `UnreadableLive`, `NotRespondingLive` and `NotRunningLive` sit outside the banners, zero-width and transparent, so each is in the tree before its state comes; each is live only while its state holds (`IsUnreadable`, `IsNotRespondingBanner`, `IsNotRunning`), and `ShellViewModel` changes that flag before its announcement ("Unreadable: " or "Not running: " and the reason, or the not-responding sentence), resting at "Sindri" while Off. Two more follow the same rules (review run 5): `MismatchLive` announces the version-mismatch card's sentence, and the card's heading (`VersionMismatchText`, focusable) takes focus when the state is entered, also mid-session, since the card hides the whole shell and leaves no neighbour for `KeepFocus`; `RunningLive` says "Running" (the pill's own label; spec §12 has no recovery sentence) when the state returns to Normal after trouble (Not running, Unreadable, stale or not responding, a mismatch), is silent at the first connect, and rests when trouble comes again (`ShellViewModel.IsRecovered`, `RecoveredAnnouncement`). If the pass finds it silent, the fallback is a head adapter posting
+"Refresh"; it is zero-width and transparent, so it takes no room and shows nothing. The Unreadable banner, the Not responding banner and the Not running card follow the same rules (WCAG 4.1.3; review run 2): `ShellWindow`'s `UnreadableLive`, `NotRespondingLive` and `NotRunningLive` sit outside the banners, zero-width and transparent, so each is in the tree before its state comes; each is live only while its state holds (`IsUnreadable`, `IsNotRespondingBanner`, `IsNotRunning`), and `ShellViewModel` changes that flag before its announcement ("Unreadable: " or "Not running: " and the reason, or the not-responding sentence), resting at "Sindri" while Off. Two more follow the same rules (review run 5): `MismatchLive` announces the version-mismatch card's sentence, and the card's heading (`VersionMismatchText`, focusable) takes focus when the state is entered, also mid-session, since the card hides the whole shell and leaves no neighbour for `KeepFocus`; `RunningLive` says "Running" (the pill's own label; spec §12 has no recovery sentence) when the state returns to Normal after trouble (Not running, Unreadable, stale or not responding, a mismatch), is silent at the first connect, and rests when trouble comes again (`ShellViewModel.IsRecovered`, `RecoveredAnnouncement`). `CommandOutcomeLive` (review run 5, K2) follows the same rules: it speaks a command the palette started and closed on before its outcome (see "A closed palette" under the palette), flag (`CommandOutcome.IsLive`) then text. If the pass finds it silent, the fallback is a head adapter posting
 `NSAccessibilityAnnouncementRequestedNotification` through ObjC interop; no production seam is added before that.
 
 **The owner's VoiceOver pass** (a throwaway probe window: a polite `TextBlock` changing every 3 s, an assertive one, a
@@ -226,6 +227,137 @@ the tree from the click (`!Health.CanRefresh`), is live (`Polite`, through its `
    only once something has read the tree).
 5. Accessibility Inspector shows `AXARIALive` on the element and the `AXLiveRegionChanged` and announcement events.
 6. The app in the background: is the announcement still spoken?
+
+**Linux (owner question, provisional owner default (2026-10-14 night)).** The Linux real-app proof found that Avalonia's
+AT-SPI bridge exposes no live-region attribute and emits no announcement signal, only name changes, so Orca probably speaks
+none of the announcements above. macOS VoiceOver is the primary accessibility target; on Linux the announcements are a
+known platform limit, tracked for an Avalonia upstream fix or a later AT-SPI workaround. Nothing in U1 depends on it:
+every outcome is also shown on screen.
+
+## U1: catalog, headers and freshness (UI spec §18 U1)
+
+U1 gives the app the API's catalog of actions, the headers and token every call carries, and the views' freshness.
+
+**Requests (§9.1, API §6).** Every request sends `X-Sindri-Caller: human` and `X-Sindri-Client: ui`, and
+`X-Sindri-Token` read from `<home>/auth/human.token` before each request (a restart mints a new one; a missing file
+sends none, so the API answers `SND-AUTH-001`). Never `X-Sindri-Terminal` or `Origin`. After an accepted command the
+next view query carries `X-Sindri-After: <sequence>` once (best effort, below). A refusal Sindri explains is that error: a 403 with a `title`,
+or any other non-2xx whose ProblemDetails has an SND `title` and a `detail` (a command's 409 `SND-API-010`, for one),
+shown as served; anything else stays `SND-UI-003`. The token comes through U0's port (`IHumanTokenSource`, above):
+on `SND-AUTH-001` the call re-reads the token and retries once, then a status or ping refusal is the Unreadable banner
+with Sindri's code and detail. Every such decision keys off the code, never the detail sentence. Only `SND-UI-002`
+(nothing answered) is Not running.
+
+| Route | Read when | Shown as |
+|---|---|---|
+| `GET /sindri/commands` | on connect and after every reconnect (a new epoch) | the controls, Health's ACTIONS card, the palette's Actions |
+| `GET /sindri/status` | on connect and on each event | the pill (`health.word`, `health.problems`, `views.projectedAt`) |
+| `GET /sindri/services` | on connect and on each event | the stalled / rebuilding banner (`asOf`, `empty`) |
+| `POST /sindri/views/rebuild` | Rebuild views (banner, palette) | the command lifecycle |
+
+**Controls (§7, `ViewModels/Controls/*`, `Views/Controls/CommandControl`).** One control per catalog row, keyed by
+action id (labels in `Labels.Actions.cs`): `ready` is a button (it runs only when the app has a sender for it; U1 sends
+`RebuildViews`), `pending:<phase>` a disabled button with a focusable `InkSubtle` line "arrives in <phase> · <cli>" and
+Copy, `cli-only:<reason>` the copy block (the CLI, Copy, and "Needs a typed confirmation at a terminal." for
+`typed-confirmation`). A CLI with a control, bidi or invisible character is neither shown nor copied. Lifecycle (§4.1):
+sending (enabled for the keyboard so focus stays on it, the view model refuses a second run; label kept, spinner; "Sending…" announced after 300 ms; a second click does nothing), accepted
+("Rebuild views: done", 2 s), refused or failed (the code and `detail` inline, as served, and announced as "<code>: <detail>"; every run first rests the live region on the label so a repeat outcome is a change; a retry sets the phase to Sending before it clears the old outcome, so nothing reads half-cleared), Copy ("Copied", 1.5 s; a second Copy inside the 1.5 s rests the region and says it again). A send cancelled with its token (the window closing) leaves the phase Idle. The control's live region is dark (`IsMuted`) only for a run the command palette started and still announces; otherwise the control speaks its own lifecycle.
+The clipboard is a port (`Platform/IClipboard`, `Views/AvaloniaClipboard`; see the ports table).
+
+**Freshness (U10, E-14).** The pill reads `health.word` (Healthy, Degraded, Stalled, Rebuilding), its age from
+`views.projectedAt`, then each `health.problems[].text`. Connection states win. While `views` or `health` is null (P1,
+or P2 before unit E) it reads "Running" with the age from the last event or ping (Q1; the one decision point is
+`HealthPill.Show`). A stalled services view shows the banner under the top bar with the view's own `empty` sentence and
+**Rebuild views** (the catalog's row through the control renderer); rebuilding shows a progress banner. Each event
+re-reads the status and the services view at most once per view per 250 ms (§9.2; `HealthViewModel.RefreshEvery`,
+`ControlPlaneFollower.RefreshOnSignal`): the first event of a burst re-reads at once, the rest collapse into one
+re-read when the window ends. A projection still behind the ledger (`cursor < ledgerHead`) or rebuilding is read again
+on the same beat with no event needed (a stalled one waits for an event, it won't move by itself). `X-Sindri-After`
+(the accepted command's sequence) is best effort and has one lifetime: it rides the view queries only (status, services;
+never ping, the catalog, a command or the stream), goes on the stale-token retry too, gives that call a 5 s deadline (the
+server waits up to 2 s when the views are behind, and answers a stalled projection at once), and is used up by the first
+answer of any kind, SND-API-011 included. A ping that shows another pid or epoch (another ledger) drops it unused. So
+SND-API-011 ("views behind") is not trouble and never repeats: the follower reads the status once more at once, without
+the header, and shows what Sindri says (stalled, rebuilding); only if that is behind too does the last data stay and the
+next beat read again. On connect, a first status that is behind is read the same way, and the URL is followed once a
+status was shown. A manual Refresh that hears SND-API-011 re-reads once more at once, without the header (two status calls: the first carries the sequence, the second does not), exactly as the follower does, and is not a failed refresh (it doesn't count toward "not responding"). A services read that fails for any reason but the
+missing route before P2 (SND-UI-003) leaves the banner as it was; a catalog that failed on connect is read again with
+the next refresh. The views banner has live regions (stalled sentence, "Rebuilding views", "Views are up to date"), flag
+then text. E-15's `invalidates` waits for P5.
+
+**The palette (§8, `ViewModels/Palette/*`, `Views/Palette/CommandPalette*`, `Views/Palette/ShortcutsSheet*`).** ⌘K (Ctrl+K off macOS), a click on the ⌘K field,
+or Enter or Space on it opens it with focus in its field. Sections: **Actions**, every catalog row not in Sindri,
+ready first, then pending (shown with "arrives in <phase>", never run), then cli-only ("Copy: sindri …"; Enter copies,
+"Copied" for 1.5 s, the palette stays open); U1 has no selected row, so Actions lists the whole catalog (Q3). **Go to**:
+Home G H, Queue G Q, Decisions G D, Services G S, Health G ., Settings ⌘,. **Sindri**: Rebuild views, Stop Sindri
+(Enter goes to Health, where it lives; never sent from the palette, its confirm is U4: Q4) and Health. Every catalog row
+appears once. Typing filters by a fuzzy match (the query's letters in order, spaces ignored) on labels and ids; ↑/↓
+move between entries that do something, Enter runs one, Esc or a click on the scrim closes it, and focus returns to
+what had it (the ⌘K field when that is gone). Each entry run is remembered in `paletteHistory`, newest last.
+It opens, and each refilter shows, at the top with the first heading in view and the first entry that does something
+selected; only ↑/↓ scroll the list to follow the selection (`FollowsSelection`; U1 finding F1). Enter on a ready
+command (Rebuild views) follows `CommandPaletteViewModel.RunPolicy`, the one place that decision lives (U1 finding F2,
+provisional until the owner decides): by default (`StayOpen`) the palette stays open and the entry shows §4.1's
+lifecycle in place, a spinner beside its kept label and "Sending…" (disabled, a second Enter does nothing), then
+"<label>: done" for 2 s, or Sindri's code as its status with the detail as served under it (an accepted entry's accessible
+name is the outcome alone: "Rebuild views: done"). Esc closes the palette at any point and the command keeps running.
+`CloseFirst` closes, then sends. **Who speaks a run.** The palette never mutes controls as a whole. When it runs an entry it
+mutes that entry's control only, for that run (`CommandPaletteViewModel.Runs.cs`), and it announces the lifecycle of every
+entry it ran, whatever the selection or the query became meanwhile: "Sending…" after 300 ms, then the outcome or the
+refusal; the selected entry is announced with its position ("Rebuild views: done, 3 of 14"), another ran entry by its name
+alone. Nothing is said in a send's first 300 ms and nothing when the outcome settles back to ready. Each run says an entry's status once
+(the outcome arrives through several property changes, and moving the selection off the entry after "Sending…" does not
+say "Sending…" again), and a run says its outcome even when it equals the last run's (a retry's same refusal, an
+accepted retry inside the 2 s, a second Copy inside the 1.5 s): the palette's region rests on a neutral text with its gate
+(`IsAnnouncing`) dark, then says it, flag before text. The mute ends when the palette has announced the run's outcome
+(accepted or refused) or, for a copy, when "Copied" clears. **A closed palette.** When the palette closes while a send is
+still in flight (Esc, or the `CloseFirst` policy), the control stays muted and the shell's command-outcome region
+(`ShellWindow`'s `CommandOutcomeLive`, `ShellViewModel.CommandOutcome`, a `CommandOutcomeRegion` in `ViewModels/Palette`; always in the tree, zero-width and transparent,
+flag then text, never "") speaks the rest of the run once: "Sending…" if it was not said yet, then the outcome or the
+refusal. Only a control whose own view is on show (the Rebuild views control of the stalled banner while the banner
+shows) is handed back at the close and speaks itself; the Rebuild views control has no view otherwise, so its outcome
+would be spoken by nobody. The decision is made at the close: a view that appears or goes away mid-send is not
+re-decided. A cancelled send returns the control to Idle, so the palette lets go of it. Known limit: a catalog
+replaced mid-run (a reconnect) releases every run, so a send that was already in flight is spoken by no live region.
+A send that did not start from the palette is never muted: its control speaks the outcome even while the palette is
+open, and the palette says nothing about it. A ready row the app has no sender for (the catalog's `IssueChallenge`,
+`RegisterRecipe`) is shown as "not in the app yet" and skipped by Enter; every action id in the catalog has its own
+label, and an id without one shows a humanised form of itself, never the raw `X:y`.
+
+**The `?` sheet.** `?` (not while typing in a field, nor over the palette) opens §8's keys plus each catalog row's own
+`shortcut` (none yet); it takes focus, Tab cycles inside it, Esc closes it and returns focus. The sheet lists §8's
+table; the keys U1 serves are ⌘K, `?`, ⌘, and F6 (the G-chords, J/K, O, A and the rest arrive with their views).
+
+**Proof fixture (§18.2): `scripts/sindri-ui-fixture.sh`.** Everything goes through `scripts/sindri-prove.sh`, whose
+guard runs first (a temp or proof `AW_SINDRI_HOME` only). `up` writes the live profile (a 5 s heartbeat, port 0),
+approves it as the owner and starts `sindri --headless`; `stall` inserts one `service.ran` row with an unparseable
+payload into `ledger.db` (`STALL_TYPE` overrides the type); `unstall` deletes it; `drift` changes the heartbeat's
+cadence so the approval no longer matches; `down` stops it; `--large` is reserved for U2/U3. Test:
+`bash scripts/tests/sindri-ui-fixture.test.sh` (the guard, usage, the stall SQL on a temp ledger, a stub SINDRI).
+
+```bash
+H=$(mktemp -d "${TMPDIR:-/tmp}/sindri-u1.XXXXXX"); export AW_SINDRI_HOME=$H SINDRI=<built sindri>
+scripts/sindri-ui-fixture.sh up
+AW_SINDRI_HOME=$H <published sindri-ui> &      # bash src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh <dir>
+scripts/sindri-ui-fixture.sh stall             # the stalled banner and Rebuild views
+scripts/sindri-ui-fixture.sh unstall           # then click Rebuild views
+sqlite3 -readonly $H/ledger.db "select type, actor from events where type in ('command.handled','views.rebuilt') order by seq desc limit 2"
+scripts/sindri-ui-fixture.sh down
+```
+
+**Tests.** Unit lane: `Palette/*` (the palette and the sheet), `Controls/ControlViewModelTests`, `Shell/FreshnessTests`
+(the pill, the banners, the catalog on connect, the 250 ms re-read), `Api/*` (headers, token, ProblemDetails, and
+`GoldenContractTests`, which deserializes every golden through `SindriUiJsonContext`). Integration lane:
+`Views/CommandPaletteTests` (⌘K, the field's click, arrows, Enter, Esc returning focus, `?` never while typing; frames
+`palette`, `palette-filtered`, `palette-top`, `palette-sending`, `palette-done`, `palette-refused`, `shortcuts`) and `Views/CatalogFramesTests` (frames `u1-banner-stalled`,
+`u1-banner-rebuilding`, `u1-control-sending`, `u1-control-accepted`, `u1-health-controls`). The fake serves P1's and
+P2's goldens (`tests/Aw.Sindri.Tests/Golden/Api/**`) and U1's spec-shaped ones (`tests/Aw.Sindri.Ui.Tests/Golden/SpecShaped/**`, to be replaced by P2's as they land).
+
+**Real-app runs (the Linux proof).** A run of the real app on Linux uses its own Xvfb display (for example `:99`) and a
+private AT-SPI bus with a private `XDG_RUNTIME_DIR`. It never inherits `DISPLAY`, never uses the owner's desktop (`:0`,
+`:1`) and never touches `/run/user/<uid>/at-spi`. The proof tools under
+`~/.agentic-workflow/jthorare-agentic-workflow/proof/sindri-ui-u1/raw/tools` enforce this: `session-up.sh` brings the
+session up, `env.sh` refuses to load unless the session is private, and `privsession.py` is the private-bus helper.
 
 ## How it finds the control plane
 
