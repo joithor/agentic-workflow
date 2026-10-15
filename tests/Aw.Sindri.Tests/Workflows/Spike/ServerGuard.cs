@@ -14,6 +14,9 @@ namespace Aw.Sindri.Tests.Workflows.Spike;
 /// </summary>
 internal static class ServerGuard
 {
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, Lazy<string>> _launchers = new(StringComparer.Ordinal);
+
+
     private const string Watchdog =
         "alive() { kill -0 \"$1\" 2>/dev/null || return 1; case $(ps -o stat= -p \"$1\" 2>/dev/null) in Z*) return 1;; esac; }; "
         + "owner=$1; target=$2; "
@@ -34,6 +37,17 @@ internal static class ServerGuard
             return executable;
         }
 
+        // why: one writer per (owner, executable): another test class may be exec'ing the script this very moment
+        return _launchers.GetOrAdd(string.Create(CultureInfo.InvariantCulture, $"{ownerPid}\n{executable}"), static (key, state) => new Lazy<string>(() => Write(state.Executable, state.OwnerPid)), (Executable: executable, OwnerPid: ownerPid)).Value;
+    }
+
+    private static string Write(string executable, int ownerPid)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return executable;
+        }
+
         var directory = Path.Combine(Path.GetTempPath(), "aw-sindri-test-guard");
         _ = Directory.CreateDirectory(directory);
         Sweep(directory);
@@ -42,8 +56,12 @@ internal static class ServerGuard
         _ = script.Append(CultureInfo.InvariantCulture, $"exec '{executable.Replace("'", "'\\''", StringComparison.Ordinal)}' \"$@\"\n");
         var name = string.Create(CultureInfo.InvariantCulture, $"{ownerPid}-{Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(executable)))[..12]}.sh");
         var path = Path.Combine(directory, name);
-        File.WriteAllText(path, script.ToString());
-        File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+
+        // why: another host may share the name only if pids repeat; write complete and executable under a private name, then rename atomically
+        var staging = Path.Combine(directory, name + "." + Path.GetRandomFileName());
+        File.WriteAllText(staging, script.ToString());
+        File.SetUnixFileMode(staging, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        File.Move(staging, path, overwrite: true);
         return path;
     }
 
