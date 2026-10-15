@@ -107,6 +107,8 @@ public sealed class AutomationPeerTests : IDisposable
         Assert.Equal((true, AutomationControlType.ListItem), Peer(row));
         Assert.Equal((true, AutomationControlType.ListItem), Peer(timeline));
         Assert.Equal((true, AutomationControlType.ListItem), Peer(compact));
+        Assert.Equal((true, AutomationControlType.Group), Peer(First(window, b => b.Name == "Sheet")));
+        Assert.Equal((true, AutomationControlType.Button), Peer(First(window, b => b.Name == "SearchField")));
     });
 
     [Fact]

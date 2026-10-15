@@ -13,7 +13,7 @@
   <StackPanel Spacing="{StaticResource Size.PanelGap}">
     <TextBlock Classes="page-title" Text="{Binding Text.Home}" AutomationProperties.Name="{Binding Text.Home}" />
 
-    <Border x:Name="NeedsYouPanel" Classes="panel" AutomationProperties.Name="{Binding Text.NeedsYouPanel}">
+    <Border x:Name="NeedsYouPanel" Classes="panel" AutomationProperties.Name="{Binding Text.NeedsYouPanel}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
       <StackPanel>
         <Border Classes="phead">
           <TextBlock Classes="eyebrow" Text="{Binding Text.NeedsYouPanel}" AutomationProperties.Name="{Binding Text.NeedsYouPanel}" />
@@ -29,7 +29,7 @@
     </Button>
 
     <Grid ColumnDefinitions="*,16,*" PointerEntered="OnPanelEntered" PointerExited="OnPanelExited">
-      <Border x:Name="RunningPanel" Classes="panel" AutomationProperties.Name="{Binding Text.RunningPanel}">
+      <Border x:Name="RunningPanel" Classes="panel" AutomationProperties.Name="{Binding Text.RunningPanel}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
         <!-- The panel stretches to its row's height; an empty group's sentence sits centred in the body (states.html .empty). -->
         <DockPanel>
           <Border Classes="phead" DockPanel.Dock="Top">
@@ -59,7 +59,7 @@
           </Panel>
         </DockPanel>
       </Border>
-      <Border x:Name="QueuedPanel" Grid.Column="2" Classes="panel" AutomationProperties.Name="{Binding Text.QueuedPanel}">
+      <Border x:Name="QueuedPanel" Grid.Column="2" Classes="panel" AutomationProperties.Name="{Binding Text.QueuedPanel}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
         <!-- The panel stretches to its row's height; an empty group's sentence sits centred in the body (states.html .empty). -->
         <DockPanel>
           <Border Classes="phead" DockPanel.Dock="Top">

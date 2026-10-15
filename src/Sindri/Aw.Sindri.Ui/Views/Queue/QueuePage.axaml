@@ -45,7 +45,7 @@
       <TextBlock Classes="caption" Text="{Binding Queue.HeldText}" />
     </Button>
 
-    <Border x:Name="QueuePanel" Classes="panel" AutomationProperties.Name="{Binding Text.Queue}"
+    <Border x:Name="QueuePanel" Classes="panel" AutomationProperties.Name="{Binding Text.Queue}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group"
             PointerEntered="OnPanelEntered" PointerExited="OnPanelExited">
       <StackPanel>
         <Border Classes="phead">

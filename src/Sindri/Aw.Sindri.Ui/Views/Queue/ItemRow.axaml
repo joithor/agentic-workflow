@@ -8,7 +8,7 @@
        primary action from the catalog. A click on the title, or Enter, opens the sheet (§3.2); the row is named by its
        id, title and state. -->
   <Border x:Name="RowFrame" Classes="item-row" Classes.selected="{Binding IsSelected}" Focusable="True"
-          AutomationProperties.Name="{Binding Name}">
+          AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
     <Grid x:Name="TableRow" ColumnDefinitions="150,*,150,130,110,70,260" VerticalAlignment="Center">
       <TextBlock x:Name="IdText" AutomationProperties.Name="{Binding Id}" Classes="mono subtle" Text="{Binding Id}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
       <Button x:Name="TitleButton" Grid.Column="1" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding OpenName}">

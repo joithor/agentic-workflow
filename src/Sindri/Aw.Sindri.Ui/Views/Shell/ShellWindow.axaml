@@ -124,7 +124,7 @@
       </Border>
 
       <Panel>
-        <Border x:Name="Page" Classes="focus-region" Focusable="True" AutomationProperties.Name="{Binding PageName}">
+        <Border x:Name="Page" Classes="focus-region" Focusable="True" AutomationProperties.Name="{Binding PageName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
           <Panel>
             <!-- Connecting (§4.1, states.html): Home's frame with static, left-aligned skeleton bars, first load only. -->
             <StackPanel x:Name="ConnectingSkeleton" IsVisible="{Binding IsConnecting}" Margin="{StaticResource Space.LG.Thickness}"
@@ -223,7 +223,7 @@
 
         <!-- The detail sheet (§3.2): over the page at the right, 420–760 px wide; below 1100 px it covers the page. -->
         <Border x:Name="Sheet" Classes="sheet focus-region" IsVisible="{Binding IsSheetShown}" Focusable="True"
-                AutomationProperties.Name="{Binding SheetSubject}">
+                AutomationProperties.Name="{Binding SheetSubject}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
           <DockPanel>
             <Thumb x:Name="SheetGrip" Classes="sheet-grip" DockPanel.Dock="Left" Cursor="SizeWestEast"
                    DragDelta="OnSheetDrag" DragCompleted="OnSheetDragged"

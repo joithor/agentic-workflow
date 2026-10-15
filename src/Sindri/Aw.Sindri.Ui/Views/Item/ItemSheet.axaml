@@ -77,7 +77,7 @@
         <ItemsControl x:Name="TimelineList" ItemsSource="{Binding Timeline}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="item:TimelineRow">
-              <Border Classes="timeline-row" Focusable="True" AutomationProperties.Name="{Binding Name}">
+              <Border Classes="timeline-row" Focusable="True" AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
                 <Grid ColumnDefinitions="70,*">
                   <TextBlock Classes="mono subtle" Text="{Binding Time}" />
                   <StackPanel Grid.Column="1" Spacing="2">

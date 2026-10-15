@@ -24,7 +24,7 @@
   <Panel>
     <Border Classes="scrim" PointerPressed="OnScrim" />
     <Border x:Name="CreateCard" Classes="dialog" Width="520" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,96,0,0"
-            KeyboardNavigation.TabNavigation="Cycle" AutomationProperties.ControlTypeOverride="Window"
+            KeyboardNavigation.TabNavigation="Cycle" AutomationProperties.ControlTypeOverride="Window" AutomationProperties.AccessibilityView="Control"
             AutomationProperties.Name="{Binding Text.CreateItem}">
       <StackPanel Spacing="10">
         <TextBlock Classes="detail-title" Text="{Binding Text.CreateItem}" />
