@@ -2,6 +2,7 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Sources;
 using Aw.Context.Testing.Map;
+using Aw.Kernel;
 
 namespace Aw.Context.Tests.Map;
 
@@ -54,7 +55,7 @@ public sealed class SessionDenyAcrossReposTests : IDisposable
         var text = new System.Text.StringBuilder();
         var codes = new List<string>();
 
-        void Take(Aw.Kernel.Result<string> r) { if (r.IsError) { codes.Add(r.Error.Code); text.Append(r.Error.Message); } else { text.Append(r.Value); } }
+        void Take(Result<string> r) { if (r.IsError) { codes.Add(r.Error.Code); text.Append(r.Error.Message); } else { text.Append(r.Value); } }
 
         var lens = await _world.Engine.Lenses("feature:in", draft: false, depth: 3, scope, ct);
         Take(lens.Map(l => string.Join(' ', l.Bands.Intent.Records.Select(r => r.Key.Value + r.Label)) + string.Join(' ', l.Bands.Intent.Decisions.Select(d => d.Node.Value + d.Text + d.Quote?.Text))));
