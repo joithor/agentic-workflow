@@ -44,8 +44,8 @@
       <Button x:Name="ConfirmButton" Content="{Binding ConfirmLabel}" Click="OnConfirm" AutomationProperties.Name="{Binding ConfirmButtonName}" />
       <Button x:Name="KeepButton" Content="{Binding KeepLabel}" Click="OnKeep" AutomationProperties.Name="{Binding KeepButtonName}" />
     </StackPanel>
-    <!-- The confirm's announcement: a polite live region, in the tree from the start so assistive tech has read it before
-         its text changes (it joins the tree when the menu opens, so a list of rows carries one only for the row in use), live only while the confirm shows, and never "" (Avalonia #22312). Zero-width and invisible. -->
+    <!-- The confirm's announcement: a polite live region that joins the tree when the menu opens (a list of rows carries one
+         only for the row in use), live only while the confirm shows, and never "" (Avalonia #22312). Zero-width and invisible. -->
     <TextBlock x:Name="ConfirmAnnouncementRegion" Classes="caption live-region" Classes.live="{Binding IsConfirmLive}"
                IsVisible="{Binding IsRegionInTree}"
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left"
