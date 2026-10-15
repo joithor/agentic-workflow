@@ -70,7 +70,10 @@ public static class StatusText
 
         if (status.Budget is { } budget)
         {
-            yield return ("budget", $"tokens {Tokens(budget.Used)} / {Tokens(budget.Limit)} ({budget.Scope}), {Tokens(budget.Instance.Used)} / {Tokens(budget.Instance.Limit)} (instance)");
+            // a null limit is no cap: "used" only, never "/ <limit>"
+            var state = budget.Limit is { } cap ? $"{Tokens(budget.Used)} / {Tokens(cap)}" : $"{Tokens(budget.Used)} used";
+            var instance = budget.Instance.Limit is { } total ? $"{Tokens(budget.Instance.Used)} / {Tokens(total)}" : $"{Tokens(budget.Instance.Used)} used";
+            yield return ("budget", $"tokens {state} ({budget.Scope}), {instance} (instance)");
         }
 
         if (status.Paused is { } paused)

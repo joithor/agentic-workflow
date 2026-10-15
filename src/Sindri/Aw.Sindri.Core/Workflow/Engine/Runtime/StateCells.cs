@@ -1,5 +1,5 @@
 using Aw.Sindri.Core.Workflow.Engine.Instances;
-using Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -17,7 +17,7 @@ public static class StateCells
     /// <param name="interpreted">The recipe it runs and its blocks' descriptors.</param>
     /// <param name="badge">The engine's badge for the state the instance is interrupted in, if it is.</param>
     /// <returns>The cells, in path order (<see cref="StatePathOrder"/>).</returns>
-    public static IReadOnlyList<StateCell> Of(WorkflowInstance instance, InterpretedRecipe interpreted, EngineBadge? badge)
+    public static IReadOnlyList<StateCell> Of(WorkflowInstance instance, InterpretedRecipe interpreted, EngineOwnedBadge? badge)
     {
         ArgumentNullException.ThrowIfNull(instance);
         ArgumentNullException.ThrowIfNull(interpreted);
@@ -71,8 +71,8 @@ public static class StateCells
         return root?.Order ?? 0;
     }
 
-    private static RoundOf? Round(RecipeState state, WorkflowInstance instance) =>
-        state.Loop is { } name && instance.Loops.TryGetValue(name, out var loop) ? new RoundOf(loop.Round, loop.Allowed) : null;
+    private static Round? Round(RecipeState state, WorkflowInstance instance) =>
+        state.Loop is { } name && instance.Loops.TryGetValue(name, out var loop) ? new Round(loop.Round, loop.Allowed) : null;
 
     /// <summary>The loop pairs of a state (API spec §3.8): the other state of each named loop edge, the rounds completed so far and the recipe's cap; a self-loop pairs a state with itself.</summary>
     private static List<LoopPair> Loops(string state, Place at)
@@ -95,5 +95,5 @@ public static class StateCells
         return pairs;
     }
 
-    private sealed record Place(WorkflowInstance Instance, InterpretedRecipe Interpreted, PathOrder Path, string Active, int ActiveOrder, EngineBadge? Badge);
+    private sealed record Place(WorkflowInstance Instance, InterpretedRecipe Interpreted, PathOrder Path, string Active, int ActiveOrder, EngineOwnedBadge? Badge);
 }

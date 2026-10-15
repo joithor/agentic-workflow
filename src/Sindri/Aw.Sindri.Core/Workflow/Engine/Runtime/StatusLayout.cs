@@ -85,16 +85,15 @@ public static class StatusLayout
 
     private static string Budget(BudgetView budget)
     {
-        var parts = new List<string>(2);
-        if (budget.StateCap is { } state)
-        {
-            parts.Add($"{StatusText.Tokens(budget.State)} / {StatusText.Tokens(state)} (state)");
-        }
-
-        if (budget.InstanceCap is { } instance)
-        {
-            parts.Add($"{StatusText.Tokens(budget.Instance)} / {StatusText.Tokens(instance)} (instance)");
-        }
+        List<string> parts =
+        [
+            budget.StateCap is { } state
+                ? $"{StatusText.Tokens(budget.State)} / {StatusText.Tokens(state)} (state)"
+                : $"{StatusText.Tokens(budget.State)} used (state)",   // no cap: "used" only, never "/ <limit>"
+            budget.InstanceCap is { } instance
+                ? $"{StatusText.Tokens(budget.Instance)} / {StatusText.Tokens(instance)} (instance)"
+                : $"{StatusText.Tokens(budget.Instance)} used (instance)",
+        ];
 
         return "tokens " + string.Join(", ", parts);
     }

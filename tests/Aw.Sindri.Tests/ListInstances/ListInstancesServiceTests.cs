@@ -4,7 +4,7 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
-using Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ListInstances;
 using Aw.Sindri.Tests.GetInstance;
 using RecipeUrgency = Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency;
@@ -160,7 +160,7 @@ public sealed class ListInstancesServiceTests
         Assert.Equal(
             result.Value.Instances.Select(static v => InstanceSummaries.Of(v)).Select(static r => (r.Address, r.State, r.Now, r.Recipe, r.Since)),
             result.Value.Rows.Select(static r => (r.Address, r.State, r.Now, r.Recipe, r.Since)));
-        Assert.Equal(["T-4/step/1", "T-3/step/1"], result.Value.Rows.Select(static r => r.Address), StringComparer.Ordinal);
+        Assert.Equal(["T-4/step/1", "T-3/step/1"], result.Value.Rows.Select(static r => r.Address.Value), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -171,7 +171,7 @@ public sealed class ListInstancesServiceTests
             View("desk-task", "T-1/step/1"),
             View("parked-rounds", "T-3/step/1"));
 
-        Assert.Equal(["T-3/step/1", "T-1/step/1"], result.Value.Rows.Select(static r => r.Address), StringComparer.Ordinal);
+        Assert.Equal(["T-3/step/1", "T-1/step/1"], result.Value.Rows.Select(static r => r.Address.Value), StringComparer.Ordinal);
     }
 
     [Fact]

@@ -1,5 +1,5 @@
 using Aw.Sindri.Core.Ids;
-using Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
+using Aw.Sindri.Core.Workflow.Views;
 using ActionClass = Aw.Sindri.Core.Commands.ActionClass;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -22,16 +22,16 @@ internal static class StatusRecords
         words.AnswerLine(),
         words.ChildPark(),
         words.DriftNote(),
-        [.. view.Task?.Inputs.Select(static i => new StepInput(i.Key.Value, i.Value.Name, Hash: Hash(i.Value.Value.Sha256))) ?? []],
-        view.Task?.TimeoutAt is { } at ? new TimeoutLine(TimeoutKind.Parks, Seconds(at - now), view.Task.State) : null,
-        view is { Task: not null, Budget: { } budget } ? new BudgetLine("state", budget.State, budget.StateCap, new InstanceBudget(budget.Instance, budget.InstanceCap)) : null,
-        view.Paused is { } left ? new PausedLine(Seconds(left)) : null,
+        [.. view.Task?.Inputs.Select(static i => new StatusInput(i.Key.Value, i.Value.Name, Hash: Hash(i.Value.Value.Sha256))) ?? []],
+        view.Task?.TimeoutAt is { } at ? new StatusTimeout(TimeoutKind.Parks, Seconds(at - now), view.Task.State) : null,
+        view is { Task: not null, Budget: { } budget } ? new StatusBudget("state", budget.State, budget.StateCap, new BudgetFigures(budget.Instance, budget.InstanceCap)) : null,
+        view.Paused is { } left ? new StatusPaused(Seconds(left)) : null,
         Commands(view, words),
         StatusLayout.Render(view, now));
 
-    private static HeaderParts Header(InstanceView view, DateTimeOffset now) => new(
-        view.Address.Value,
-        view.Recipe.Id.Value,
+    private static StatusHeader Header(InstanceView view, DateTimeOffset now) => new(
+        view.Address,
+        view.Recipe.Id,
         StatusText.Hash12(view.Recipe.Hash.Value),
         view.Version,
         view.State,
@@ -45,9 +45,9 @@ internal static class StatusRecords
     private static string Hash(string sha256) => sha256.StartsWith("sha256:", StringComparison.Ordinal) ? sha256 : "sha256:" + sha256;
 
     /// <summary>The instance's own verbs in §6.4 order, then the re-approval a drift waits for: each a row of the command catalog.</summary>
-    private static List<CommandRow> Commands(InstanceView view, InstanceWords words)
+    private static List<StatusCommand> Commands(InstanceView view, InstanceWords words)
     {
-        var rows = view.AllowedCommands.Select(c => Row(c, words.AnswerLine())).ToList();
+        var rows = view.AllowedCommands.Select(c => Row(c, words.AnswerLine(), view)).ToList();
         if (words.ApproveRow() is { } approve)
         {
             rows.Add(approve);
@@ -56,15 +56,28 @@ internal static class StatusRecords
         return rows;
     }
 
-    private static CommandRow Row(AllowedCommand command, AnswerLine? answer)
+    private static StatusCommand Row(AllowedCommand command, StatusAnswer? answer, InstanceView view)
     {
-        var verb = StatusLayout.Verb(command.Action);
+        var verb = Verb(StatusLayout.Verb(command.Action));
         return verb switch
         {
-            "answer" when answer is not null => new CommandRow(verb, answer.ActionId, answer.Class, command.Cli),
-            "answer" => new CommandRow(verb, ActionId.From("ApplyCommand:answer-text"), ActionClass.Desk, command.Cli),
-            "takeover" => new CommandRow(verb, ActionId.From(command.Action), ActionClass.Pause, command.Cli),
-            _ => new CommandRow(verb, ActionId.From(command.Action), ActionClass.Desk, command.Cli),
+            StatusVerb.Answer when answer is not null => new StatusCommand(verb, answer.ActionId, answer.Class, command.Cli, Confirm: null),
+            StatusVerb.Answer => new StatusCommand(verb, ActionId.From("ApplyCommand:answer-text"), ActionClass.Desk, command.Cli, Confirm: null),
+            StatusVerb.Takeover => new StatusCommand(verb, ActionId.From(command.Action), ActionClass.Pause, command.Cli, Confirm: null),
+            StatusVerb.Cancel => new StatusCommand(verb, ActionId.From(command.Action), ActionClass.Desk, command.Cli, ConfirmText.Cancel(view.Address, view.RunningSteps, view.Children.Count)),
+            StatusVerb.Complete or StatusVerb.Handback or StatusVerb.Approve or _ => new StatusCommand(verb, ActionId.From(command.Action), ActionClass.Desk, command.Cli, Confirm: null),
         };
     }
+
+    /// <summary>The closed verb of an allowed command's name.</summary>
+    private static StatusVerb Verb(string name) => name switch
+    {
+        "answer" => StatusVerb.Answer,
+        "complete" => StatusVerb.Complete,
+        "handback" => StatusVerb.Handback,
+        "takeover" => StatusVerb.Takeover,
+        "cancel" => StatusVerb.Cancel,
+        "approve" => StatusVerb.Approve,
+        _ => throw new InvalidOperationException($"no status verb '{name}'"),
+    };
 }

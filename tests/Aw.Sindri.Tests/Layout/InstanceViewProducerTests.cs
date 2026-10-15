@@ -1,7 +1,7 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
-using Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Tests.GetInstance;
@@ -50,10 +50,10 @@ public sealed class InstanceViewProducerTests
     {
         var view = Produce();
 
-        Assert.Equal((ItemKey.From("T-3"), RecipeUrgency.Incident, OrderedBy.Path), (view.ItemId, view.Urgency, view.OrderedBy));
+        Assert.Equal((ItemKey.From("T-3"), RecipeUrgency.Incident, PathOrdering.Path), (view.ItemId, view.Urgency, view.OrderedBy));
         Assert.Null(view.EngineOwned);
         Assert.Equal(new SubjectRef("file", "fact:spec", "spec.md", Href: null), view.Subject);
-        Assert.Equal([new InputSlot("fact:spec", "Spec", "file", Required: true, Present: true)], view.Inputs);
+        Assert.Equal([new InputPresence("fact:spec", "Spec", "file", Required: true, Present: true)], view.Inputs);
         Assert.Empty(view.ChildGroups);
     }
 
@@ -97,7 +97,7 @@ public sealed class InstanceViewProducerTests
     {
         var produce = Produce().States[0];
 
-        Assert.Equal(new RoundOf(1, 3), produce.Round);
+        Assert.Equal(new Round(1, 3), produce.Round);
         Assert.Equal([new LoopPair("verify", 0, 3), new LoopPair("checks", 0, 3)], produce.Loops);
         Assert.True(produce.Desk);
         Assert.False(produce.Child);
@@ -109,7 +109,7 @@ public sealed class InstanceViewProducerTests
     {
         var view = Produce(i => i with { Loops = new Dictionary<string, Core.Workflow.Engine.Instances.LoopState>(StringComparer.Ordinal) { ["revisions"] = new(3, 3, Last: null) } });
 
-        Assert.Equal(new RoundOf(3, 3), view.States[0].Round);
+        Assert.Equal(new Round(3, 3), view.States[0].Round);
         Assert.Equal([new LoopPair("verify", 2, 3), new LoopPair("checks", 2, 3)], view.States[0].Loops);
         Assert.Equal([new LoopPair("produce", 2, 3)], view.States[1].Loops);
     }
@@ -132,10 +132,10 @@ public sealed class InstanceViewProducerTests
     }
 
     [Theory]
-    [InlineData("parked-rounds", BadgeKind.Parked, "rounds")]
-    [InlineData("escalated-gate", BadgeKind.Escalated, "gate")]
-    [InlineData("taken-over", BadgeKind.TakenOver, "taken over by ")]
-    public void An_interrupted_instance_has_its_engine_badge_on_the_state_it_is_in_and_on_the_view(string name, BadgeKind kind, string reason)
+    [InlineData("parked-rounds", EngineOwnedKind.Parked, "rounds")]
+    [InlineData("escalated-gate", EngineOwnedKind.Escalated, "gate")]
+    [InlineData("taken-over", EngineOwnedKind.TakenOver, "taken over by ")]
+    public void An_interrupted_instance_has_its_engine_badge_on_the_state_it_is_in_and_on_the_view(string name, EngineOwnedKind kind, string reason)
     {
         var view = StatusCases.View(name);
 
@@ -151,25 +151,25 @@ public sealed class InstanceViewProducerTests
 
         Assert.Equal(["fact:spec", "fact:output", "fact:findings"], facts.Select(static f => f.Key), StringComparer.Ordinal);
         var spec = facts[0];
-        Assert.Equal((FactDirection.Input, FactStatus.Produced, "file", "Spec"), (spec.Direction, spec.Status, spec.Type, spec.Label));
+        Assert.Equal((FactDirection.Input, FactStatus.Produced, FactType.File, "Spec"), (spec.Direction, spec.Status, spec.Type, spec.Label));
         Assert.Equal(("human:thor", StatusCases.Now - TimeSpan.FromMinutes(90), "spec.md"), (spec.By, spec.At, spec.Summary));
         Assert.Equal("spec.md", spec.Ref?.Name);
         Assert.Equal(EngineFixture.Fact("the spec").Sha256, spec.Ref?.Hash);
     }
 
     [Fact]
-    public void An_output_the_open_desk_task_owes_is_in_progress_with_what_completing_it_needs_and_another_is_pending()
+    public void An_output_the_open_desk_task_owes_is_pending_with_what_completing_it_needs_and_another_is_pending()
     {
         var facts = Produce().Facts;
 
         var output = facts[1];
-        Assert.Equal((FactDirection.Output, FactStatus.InProgress, "text", "produce"), (output.Direction, output.Status, output.Type, output.From));
+        Assert.Equal((FactDirection.Output, FactStatus.Pending, FactType.Text, "produce"), (output.Direction, output.Status, output.Type, output.From));
         Assert.NotNull(output.Pending);
-        Assert.Equal("CompleteStep", output.Pending.CompleteAction);
+        Assert.Equal(Core.Ids.ActionId.From("CompleteStep"), output.Pending.CompleteAction);
         Assert.Equal((null, null, null), (output.At, output.By, output.Ref));
 
         var findings = facts[2];
-        Assert.Equal((FactStatus.Pending, "payload", "checks", "not produced yet"), (findings.Status, findings.Type, findings.From, findings.Summary));   // an unknown type is served as payload
+        Assert.Equal((FactStatus.Pending, FactType.Payload, "checks", "not produced yet"), (findings.Status, findings.Type, findings.From, findings.Summary));   // an unknown type is served as payload
         Assert.Null(findings.Pending);
     }
 
@@ -188,7 +188,7 @@ public sealed class InstanceViewProducerTests
         var output = view.Facts[1];
         Assert.Equal((FactStatus.Produced, "step.produce", at), (output.Status, output.By, output.At));
         Assert.Equal($"sha256:{StatusText.Digest(value.Sha256)}", output.Summary);
-        Assert.Equal("fact:output", output.Ref?.FactKey);
+        Assert.Null(output.Ref);   // a text fact has no handle (API spec 3.8 ref): the summary is its text
         Assert.Null(output.Pending);
     }
 
@@ -207,7 +207,7 @@ public sealed class InstanceViewProducerTests
         var header = Produce().Status?.Header;
 
         Assert.Equal(
-            new HeaderParts("T-3/step/1", "workflow.step", StatusText.Hash12(EngineFixture.Step.Hash!.Value.Value), 4, "produce", "desk task", StatusCases.Now - TimeSpan.FromMinutes(72), 72 * 60),
+            new StatusHeader(Core.Workflow.Engine.InstanceAddress.From("T-3/step/1"), Core.Workflow.Ids.RecipeId.From("workflow.step"), StatusText.Hash12(EngineFixture.Step.Hash!.Value.Value), 4, "produce", "desk task", StatusCases.Now - TimeSpan.FromMinutes(72), 72 * 60),
             header);
     }
 
@@ -225,9 +225,9 @@ public sealed class InstanceViewProducerTests
     {
         var status = Produce().Status!;
 
-        Assert.Equal([new StepInput("fact:spec", "spec.md", $"sha256:{EngineFixture.Fact("the spec").Sha256}")], status.Inputs);
-        Assert.Equal(new TimeoutLine(TimeoutKind.Parks, 3 * 3600, "produce"), status.Timeout);
-        Assert.Equal(new BudgetLine("state", 0, 200_000, new InstanceBudget(0, 400_000)), status.Budget);
+        Assert.Equal([new StatusInput("fact:spec", "spec.md", $"sha256:{EngineFixture.Fact("the spec").Sha256}")], status.Inputs);
+        Assert.Equal(new StatusTimeout(TimeoutKind.Parks, 3 * 3600, "produce"), status.Timeout);
+        Assert.Equal(new StatusBudget("state", 0, 200_000, new BudgetFigures(0, 400_000)), status.Budget);
         Assert.Contains("  timeout   parks in 3h 0m (desk)\n".Replace("0m (desk)", "(desk)", StringComparison.Ordinal), status.Text, StringComparison.Ordinal);
         Assert.Contains("tokens 0 / 200k (state), 0 / 400k (instance)", status.Text, StringComparison.Ordinal);
         Assert.Null(status.Answer);
@@ -252,9 +252,9 @@ public sealed class InstanceViewProducerTests
     {
         var status = StatusCases.View("taken-over").Status!;
 
-        Assert.Equal(new PausedLine(40), status.Paused);
+        Assert.Equal(new StatusPaused(40), status.Paused);
         Assert.Null(status.Answer);
-        Assert.Equal(["handback", "cancel"], status.Commands.Select(static c => c.Verb), StringComparer.Ordinal);
+        Assert.Equal([StatusVerb.Handback, StatusVerb.Cancel], status.Commands.Select(static c => c.Verb));
         Assert.Contains("timeout 40s left", status.Text, StringComparison.Ordinal);
     }
 
@@ -263,7 +263,7 @@ public sealed class InstanceViewProducerTests
     {
         var status = StatusCases.View("parked-no-progress-child").Status!;
 
-        Assert.Equal(new ChildPark("T-3/step/1/step.4", "parked", "no-progress"), status.Child);
+        Assert.Equal(new StatusChild(Core.Workflow.Engine.WorkflowInstanceId.Of(Core.Workflow.Engine.InstanceAddress.From("T-3/step/1/step.4")), Core.Workflow.Engine.InstanceAddress.From("T-3/step/1/step.4"), "parked", "no-progress"), status.Child);
         Assert.Contains("T-3/step/1/step.4  parked: no-progress", status.Text, StringComparison.Ordinal);
     }
 
@@ -281,7 +281,7 @@ public sealed class InstanceViewProducerTests
     {
         var status = StatusCases.View(name).Status!;
 
-        Assert.Equal(new AnswerLine(kind, Core.Ids.ActionId.From(action), actionClass, cli, atTerminal), status.Answer);
+        Assert.Equal(new StatusAnswer(kind, Core.Ids.ActionId.From(action), actionClass, cli, atTerminal), status.Answer);
         Assert.Contains(cli, status.Text, StringComparison.Ordinal);
     }
 
@@ -292,9 +292,9 @@ public sealed class InstanceViewProducerTests
 
         Assert.Null(status.Answer);
         Assert.Null(status.Drift);   // the text has no 'drift' line either: the park's own next sentence names the block
-        Assert.Equal(["takeover", "cancel", "approve"], status.Commands.Select(static c => c.Verb), StringComparer.Ordinal);
+        Assert.Equal([StatusVerb.Takeover, StatusVerb.Cancel, StatusVerb.Approve], status.Commands.Select(static c => c.Verb));
         Assert.Equal(
-            new CommandRow("approve", Core.Ids.ActionId.From("ApproveRecipe"), ActionClass.Protected, $"sindri recipe approve workflow.step@{StatusText.Hash12(EngineFixture.Step.Hash!.Value.Value)}"),
+            new StatusCommand(StatusVerb.Approve, Core.Ids.ActionId.From("ApproveRecipe"), ActionClass.Protected, $"sindri recipe approve workflow.step@{StatusText.Hash12(EngineFixture.Step.Hash!.Value.Value)}", Confirm: null),
             status.Commands[^1]);
         Assert.Contains("step.produce changed since", status.Text, StringComparison.Ordinal);
     }
@@ -305,7 +305,7 @@ public sealed class InstanceViewProducerTests
         var status = StatusCases.View("parked-rounds-with-drift").Status!;
 
         Assert.Equal(AnswerKind.Grant, status.Answer?.Kind);
-        Assert.Equal(new DriftNote("step.produce", NeedsReapproval: true), status.Drift);
+        Assert.Equal(new StatusDrift(Core.Workflow.Ids.BlockId.From("step.produce"), NeedsReapproval: true), status.Drift);
     }
 
     [Fact]

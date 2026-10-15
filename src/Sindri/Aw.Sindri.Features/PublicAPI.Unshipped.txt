@@ -1282,7 +1282,7 @@ Aw.Sindri.Features.ListInstances.ListInstancesRequest.Deconstruct(out string? Ne
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.ListInstancesRequest(string? NeedsMe = null, Aw.Sindri.Core.Workflow.Engine.ItemKey? Item = null, string? State = null, string? Query = null, string? Address = null, string? Recipe = null, string? Urgency = null, string? Subject = null, string? Root = null) -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.NeedsMe.get -> string?
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Root.get -> string?
-Aw.Sindri.Features.ListInstances.ListInstancesResponse.Rows.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.InstanceSummary!>!
 Aw.Sindri.Features.ListInstances.ListInstancesResponse.Rows.init -> void
 Aw.Sindri.Features.ApplyCommand.ApplyCommandKind.Takeover = 4 -> Aw.Sindri.Features.ApplyCommand.ApplyCommandKind
 Aw.Sindri.Features.ApplyCommand.ApplyCommandKind.Handback = 5 -> Aw.Sindri.Features.ApplyCommand.ApplyCommandKind
+Aw.Sindri.Features.ListInstances.ListInstancesResponse.Rows.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InstanceSummary!>!

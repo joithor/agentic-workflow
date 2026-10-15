@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Host;
 using Aw.Sindri.Tests.GetInstance;
@@ -32,8 +32,8 @@ public sealed class InstanceViewWireTests
     {
         Assert.Equal(["incident", "triage", "work"], Wire<RecipeUrgency>(), StringComparer.Ordinal);
         Assert.Equal(["done", "active", "pending"], Wire<StateGlyph>(), StringComparer.Ordinal);
-        Assert.Equal(["parked", "escalated", "taken-over"], Wire<BadgeKind>(), StringComparer.Ordinal);
-        Assert.Equal(["path", "transition-list"], Wire<OrderedBy>(), StringComparer.Ordinal);
+        Assert.Equal(["parked", "escalated", "taken-over"], Wire<EngineOwnedKind>(), StringComparer.Ordinal);
+        Assert.Equal(["path", "transition-list"], Wire<PathOrdering>(), StringComparer.Ordinal);
         Assert.Equal(["text", "resume", "grant", "grantTokens", "accept", "cancel-only"], Wire<AnswerKind>(), StringComparer.Ordinal);
         Assert.Equal(["parks", "escalates"], Wire<TimeoutKind>(), StringComparer.Ordinal);
         Assert.Equal(["input", "output"], Wire<FactDirection>(), StringComparer.Ordinal);

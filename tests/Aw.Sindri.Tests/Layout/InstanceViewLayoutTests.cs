@@ -3,8 +3,9 @@ using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
-using Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Host;
 using Aw.Sindri.Tests.GetInstance;
 using ActionClass = Aw.Sindri.Core.Commands.ActionClass;
@@ -20,42 +21,42 @@ public sealed class InstanceViewLayoutTests
 
     private static InstanceView Full()
     {
-        var badge = new EngineBadge(BadgeKind.TakenOver, "taken over by thor");
-        var progress = new ChildProgress(4, 9);
-        var round = new RoundOf(2, 3);
-        var park = new ChildPark("T-3/step/1/step.4", "parked", Reason: null);
-        var row = new ChildRow("T-3/step/2", ItemKey.From("ITM-1"), "Sync pill", StateGlyph.Active, "produce", round, Agent: null, 360, badge, park, ["OpenItem"]);
+        var badge = new EngineOwnedBadge(EngineOwnedKind.TakenOver, "taken over by thor");
+        var progress = new Progress(4, 9);
+        var round = new Round(2, 3);
+        var park = new StatusChild(WorkflowInstanceId.Of(InstanceAddress.From("T-3/step/1/step.4")), InstanceAddress.From("T-3/step/1/step.4"), "parked", Reason: null);
+        var row = new ChildRow(WorkflowInstanceId.Of(InstanceAddress.From("T-3/step/2")), InstanceAddress.From("T-3/step/2"), ItemKey.From("ITM-1"), "Sync pill", StateGlyph.Active, "produce", new StateChip("RUNNING", ChipTone.Ok), round, Agent: null, 360, badge, new EngineOwnedBadge(EngineOwnedKind.Parked, "parked"), [ActionId.From("OpenItem")]);
         return StatusCases.View("desk-task") with
         {
             ItemId = ItemKey.From("ITM-1"),
             Urgency = RecipeUrgency.Incident,
             EngineOwned = badge,
             Subject = new SubjectRef("linear-project", "APP", "APP Offline sync", Href: null),
-            Inputs = [new InputSlot("spec", "Spec", "file", Required: true, Present: false)],
-            OrderedBy = OrderedBy.TransitionList,
+            Inputs = [new InputPresence("spec", "Spec", "file", Required: true, Present: false)],
+            OrderedBy = PathOrdering.TransitionList,
             States =
             [
                 new StateCell("build", Order: null, BranchOf: "intake", StateGlyph.Pending, badge, round, [new LoopPair("verify", 1, 3)], Desk: true, Child: true, progress, Outcome: null, Terminal: false),
             ],
             Status = new StatusFields(
-                new HeaderParts("T-3/step/1", "workflow.step", "0123456789ab", 4, "produce", "desk task", StatusCases.Now, 4320),
+                new StatusHeader(InstanceAddress.From("T-3/step/1"), RecipeId.From("workflow.step"), "0123456789ab", 4, "produce", "desk task", StatusCases.Now, 4320),
                 "next text",
-                new AnswerLine(AnswerKind.GrantTokens, ActionId.From("ApplyCommand:answer"), ActionClass.Protected, "sindri workflow answer", AtTerminal: true),
+                new StatusAnswer(AnswerKind.GrantTokens, ActionId.From("ApplyCommand:answer"), ActionClass.Protected, "sindri workflow answer", AtTerminal: true),
                 park,
-                new DriftNote("step.produce", NeedsReapproval: true),
-                [new StepInput("spec", "spec.md", Hash: null)],
-                new TimeoutLine(TimeoutKind.Parks, 1000, "desk"),
-                new BudgetLine("state", 1, Limit: null, new InstanceBudget(2, 3)),
-                new PausedLine(40),
-                [new CommandRow("cancel", ActionId.From("ApplyCommand:cancel"), ActionClass.Desk, "sindri workflow cancel")],
+                new StatusDrift(BlockId.From("step.produce"), NeedsReapproval: true),
+                [new StatusInput("spec", "spec.md", Hash: null)],
+                new StatusTimeout(TimeoutKind.Parks, 1000, "desk"),
+                new StatusBudget("state", 1, Limit: null, new BudgetFigures(2, 3)),
+                new StatusPaused(40),
+                [new StatusCommand(StatusVerb.Cancel, ActionId.From("ApplyCommand:cancel"), ActionClass.Desk, "sindri workflow cancel", Confirm: null)],
                 "text form"),
             Facts =
             [
-                new FactRow("spec", "Spec", "file", FactDirection.Input, From: null, FactStatus.InProgress, "a file", At: null, By: null,
+                new FactRow("spec", "Spec", FactType.File, FactDirection.Input, From: null, FactStatus.InProgress, "a file", At: null, By: null,
                     new FactRef("spec.md", 10, "sha256:aa", "p", ItemId: null, Url: null, Host: null, Title: null, FactKey: null), progress,
-                    new PendingOutput(Required: true, ["tests"], "CompleteStep")),
+                    new FactPending(Required: true, ["tests"], ActionId.From("CompleteStep"))),
             ],
-            ChildGroups = [new ChildGroup("build", "builder.feature", 4, 9, [new Workstream("ws-1", "UI", [row])], [], More: 6)],
+            ChildGroups = [new ChildGroup("build", RecipeId.From("workflow.builder-feature"), 4, 9, [new Workstream("ws-1", "UI", [row])], [], More: 6)],
         };
     }
 
@@ -106,7 +107,7 @@ public sealed class InstanceViewLayoutTests
         HasExactly(Prop(status, "answer"), "kind", "actionId", "class", "cli", "atTerminal");
         Assert.Equal("grantTokens", Prop(Prop(status, "answer"), "kind").GetString());
         Assert.Equal("protected", Prop(Prop(status, "answer"), "class").GetString());
-        HasExactly(Prop(status, "child"), "address", "state", "reason");
+        HasExactly(Prop(status, "child"), "id", "address", "state", "reason");
         HasExactly(Prop(status, "drift"), "block", "needsReapproval");
         HasExactly(Prop(status, "inputs")[0], "key", "name", "hash");
         HasExactly(Prop(status, "timeout"), "kind", "inSeconds", "on");
@@ -114,7 +115,7 @@ public sealed class InstanceViewLayoutTests
         HasExactly(Prop(status, "budget"), "scope", "used", "limit", "instance");
         HasExactly(Prop(Prop(status, "budget"), "instance"), "used", "limit");
         HasExactly(Prop(status, "paused"), "timeoutLeftSeconds");
-        HasExactly(Prop(status, "commands")[0], "verb", "actionId", "class", "cli");
+        HasExactly(Prop(status, "commands")[0], "verb", "actionId", "class", "cli", "confirm");
     }
 
     private static void AssertFactsAndChildren(JsonElement root)
@@ -129,7 +130,7 @@ public sealed class InstanceViewLayoutTests
         var group = Prop(root, "childGroups")[0];
         HasExactly(group, "state", "recipe", "done", "total", "workstreams", "rows", "more");
         HasExactly(Prop(group, "workstreams")[0], "id", "label", "rows");
-        HasExactly(Prop(Prop(group, "workstreams")[0], "rows")[0], "address", "itemId", "title", "glyph", "state", "round", "agent", "ageSeconds", "engineOwned", "mirroredPark", "actions");
+        HasExactly(Prop(Prop(group, "workstreams")[0], "rows")[0], "id", "address", "itemId", "title", "glyph", "state", "chip", "round", "agent", "ageSeconds", "engineOwned", "mirroredPark", "actions");
     }
 
     [Fact]
@@ -159,7 +160,7 @@ public sealed class InstanceViewLayoutTests
         var back = JsonSerializer.Deserialize<InstanceView>(JsonSerializer.Serialize(view, _options), _options)!;
 
         Assert.Equal(JsonSerializer.Serialize(view, _options), JsonSerializer.Serialize(back, _options));
-        Assert.Equal((ItemKey.From("ITM-1"), RecipeUrgency.Incident, OrderedBy.TransitionList), (back.ItemId, back.Urgency, back.OrderedBy));
+        Assert.Equal((ItemKey.From("ITM-1"), RecipeUrgency.Incident, PathOrdering.TransitionList), (back.ItemId, back.Urgency, back.OrderedBy));
         Assert.Equal("verify", back.States[0].Loops[0].With);
     }
 
@@ -173,9 +174,9 @@ public sealed class InstanceViewLayoutTests
 
         Assert.Equal(new string('x', 77) + "...", summary.Now);
         Assert.Equal(80, summary.Now.Length);
-        Assert.Equal(view.Address.Value, summary.Address);
-        Assert.Equal(new RecipeRef(view.Recipe.Id, view.Recipe.Hash.Value, view.Recipe.Version, RecipeUrgency.Incident), summary.Recipe);
-        Assert.Equal(view.AllowedCommands.Select(c => c.Action), summary.Actions, StringComparer.Ordinal);
+        Assert.Equal(view.Address, summary.Address);
+        Assert.Equal(new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, RecipeUrgency.Incident), summary.Recipe);
+        Assert.Equal(view.Status!.Commands.Select(c => c.ActionId), summary.Actions);
         Assert.Equal((ItemKey.From("ITM-1"), view.State, view.Since), (summary.ItemId, summary.State, summary.Since));
         Assert.Same(view.States, summary.States);
         Assert.Equal(view.EngineOwned, summary.EngineOwned);

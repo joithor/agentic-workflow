@@ -1,5 +1,6 @@
+using System.Text;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
-using Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 
@@ -54,9 +55,40 @@ public static class InstanceViews
             Answer = words.Answer(),
             Drift = words.Drift(),
             Budget = Budget(instance, recipe),
+            RunningSteps = instance is { Ended: false, Frame.Run.Runtime: not StepRuntime.Desk } ? 1 : 0,
             Paused = instance.Suspension is { Kind: SuspensionKind.Takeover, Remaining: { } paused } ? paused.Left : null,
         };
         return WithLayout(view, new Layout(instance, recipe, task, words), context);
+    }
+
+    /// <summary>The API's detail view of <paramref name="view"/>: a pure function of the view and the context (no clock, no I/O).</summary>
+    /// <param name="view">The instance view <see cref="Of(WorkflowInstance, InterpretedRecipe, DateTimeOffset, DateTimeOffset?, InstanceViewContext)"/> built.</param>
+    /// <param name="context">The title, parent, counts and as-of time the read service supplies.</param>
+    /// <returns>The detail the API serves.</returns>
+    public static InstanceDetail Detail(InstanceView view, InstanceDetailContext context)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+        ArgumentNullException.ThrowIfNull(context);
+        var status = view.Status ?? throw new ArgumentException("the view has no status record; build it with InstanceViews.Of", nameof(view));
+        return new InstanceDetail(
+            view.Address,
+            view.Id,
+            context.Parent,
+            view.ItemId,
+            context.Title,
+            new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, view.Urgency),
+            view.State,
+            view.Since,
+            view.EngineOwned,
+            view.Subject ?? InstanceSummaries.NoSubject(view),
+            view.OrderedBy,
+            view.States,
+            new CurrentState(view.State, view.Step, view.Gates, view.Desk, status),
+            view.Facts,
+            view.ChildGroups,
+            context.Counts,
+            [.. status.Commands.Select(static c => c.ActionId)],
+            context.AsOf);
     }
 
     /// <summary>The state the layout members are built from.</summary>
@@ -73,10 +105,13 @@ public static class InstanceViews
             EngineOwned = badge,
             Subject = SubjectRefs.Of(from.Recipe),
             Inputs = InputSlots.Of(from.Instance, from.Recipe),
-            OrderedBy = StatePathOrder.Of(from.Recipe.Recipe).OrderedBy == "transition-list" ? OrderedBy.TransitionList : OrderedBy.Path,
+            OrderedBy = StatePathOrder.Of(from.Recipe.Recipe).OrderedBy == "transition-list" ? PathOrdering.TransitionList : PathOrdering.Path,
             States = StateCells.Of(from.Instance, from.Recipe, badge),
             Facts = FactRows.Of(from.Instance, from.Recipe, from.Task, context.Provenance ?? new Dictionary<FactKey, FactProvenance>()),
             ChildGroups = [],
+            Step = CurrentStates.Step(from.Instance, from.Recipe),
+            Gates = CurrentStates.Gates(from.Instance, from.Recipe),
+            Desk = CurrentStates.Desk(from.Task, from.Recipe),
         };
         return complete with { Status = StatusRecords.Of(complete, from.Words, context.Now) };
     }
@@ -106,7 +141,7 @@ public static class InstanceViews
 
         if (task is not null)
         {
-            commands.Add(new("CompleteStep", $"sindri workflow complete {address} --run {task.Run.Value} --outcome <outcome>"));
+            commands.Add(new("CompleteStep", CompleteCli(address, task)));
         }
 
         commands.Add(instance.Suspension is { Kind: SuspensionKind.Takeover }
@@ -114,6 +149,27 @@ public static class InstanceViews
             : new("ApplyCommand:takeover", $"sindri workflow takeover {address}"));
         commands.Add(new("ApplyCommand:cancel", $"sindri workflow cancel {address}"));
         return commands;
+    }
+
+    /// <summary>
+    /// The complete command with the outcome it reports (the Step's first declared) and an '--output &lt;fact&gt;=&lt;file&gt;' flag for each
+    /// output required on that outcome (API spec §3.8 'desk runtime'); '&lt;outcome&gt;' when the Step declares none.
+    /// </summary>
+    private static string CompleteCli(string address, DeskTask task)
+    {
+        var line = new StringBuilder($"sindri workflow complete {address} --run {task.Run.Value} --outcome ");
+        if (task.Outcomes.Count == 0)
+        {
+            return line.Append("<outcome>").ToString();
+        }
+
+        _ = line.Append(task.Outcomes[0].Value);
+        foreach (var output in task.Outputs.Where(o => o.RequiredOn.Contains(task.Outcomes[0])))
+        {
+            _ = line.Append(" --output ").Append(output.Fact.Value).Append("=<file>");
+        }
+
+        return line.ToString();
     }
 
     private static bool Answerable(Suspension suspension) =>

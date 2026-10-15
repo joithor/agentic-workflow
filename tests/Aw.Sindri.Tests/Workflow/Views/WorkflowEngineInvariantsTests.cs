@@ -39,10 +39,12 @@ public sealed partial class WorkflowEngineInvariantsTests
     private static RecipeShape? ShapeOf(InstanceRecipe recipe) =>
         FixtureRecipes.All.SingleOrDefault(s => s.Id == recipe.Id.Value && s.Stamp.Hash.Value == recipe.Hash.Value);
 
-    private static void Walk(Func<View, RecipeShape, IEnumerable<string>> check)
+    private static void Walk(Func<View, RecipeShape, IEnumerable<string>> check) => Walk(check, Views());
+
+    private static void Walk(Func<View, RecipeShape, IEnumerable<string>> check, IEnumerable<View> views)
     {
         var failures = new List<string>();
-        foreach (var view in Views())
+        foreach (var view in views)
         {
             if (ShapeOf(view.Recipe) is not { } shape)
             {

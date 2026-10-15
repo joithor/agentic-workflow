@@ -1,4 +1,4 @@
-using Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 
@@ -59,6 +59,18 @@ public sealed record InstanceView(
     /// <summary>What was left of the state's timeout when a takeover paused it (§6.4 'paused'; engine P5 sets it).</summary>
     public TimeSpan? Paused { get; init; }
 
+    /// <summary>The runs of non-desk steps now executing, which a cancel stops (the cancel confirmation counts them; a desk run is not a running step).</summary>
+    public int RunningSteps { get; init; }
+
+    /// <summary>The active state's step declaration (API spec §3.8 'current.step'); null in a terminal state.</summary>
+    public StepDeclaration? Step { get; init; }
+
+    /// <summary>The gates on the active state's exits.</summary>
+    public IReadOnlyList<GateLine> Gates { get; init; } = [];
+
+    /// <summary>The desk form of the open task, if one is open.</summary>
+    public DeskForm? Desk { get; init; }
+
     /// <summary>The item's id ('ITM-...') when the instance is an item's; null otherwise (UI screens E-20).</summary>
     public ItemKey? ItemId { get; init; }
 
@@ -66,16 +78,16 @@ public sealed record InstanceView(
     public RecipeUrgency Urgency { get; init; } = RecipeUrgency.Work;
 
     /// <summary>The badge that replaces the state's glyph when the engine interrupted the instance; null otherwise.</summary>
-    public EngineBadge? EngineOwned { get; init; }
+    public EngineOwnedBadge? EngineOwned { get; init; }
 
     /// <summary>What the instance is about, from the recipe's first input; null when the recipe has no input.</summary>
     public SubjectRef? Subject { get; init; }
 
     /// <summary>The recipe's inputs, in declaration order.</summary>
-    public IReadOnlyList<InputSlot> Inputs { get; init; } = [];
+    public IReadOnlyList<InputPresence> Inputs { get; init; } = [];
 
     /// <summary>How <see cref="States"/> is ordered: the path, or the transition list when the graph has several initial paths.</summary>
-    public OrderedBy OrderedBy { get; init; } = OrderedBy.Path;
+    public PathOrdering OrderedBy { get; init; } = PathOrdering.Path;
 
     /// <summary>Every state of the recipe, in <see cref="OrderedBy"/> order.</summary>
     public IReadOnlyList<StateCell> States { get; init; } = [];

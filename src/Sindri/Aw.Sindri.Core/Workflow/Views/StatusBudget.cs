@@ -11,5 +11,5 @@ namespace Aw.Sindri.Core.Workflow.Views;
 public sealed record StatusBudget(
     string Scope,
     long Used,
-    long Limit,
+    long? Limit,
     BudgetFigures Instance);

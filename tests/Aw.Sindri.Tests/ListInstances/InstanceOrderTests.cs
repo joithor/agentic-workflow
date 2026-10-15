@@ -1,7 +1,7 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
-using Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Tests.GetInstance;
 using RecipeUrgency = Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency;
 
