@@ -52,7 +52,7 @@
     <Setter Property="Padding" Value="0" />
   </Style>
   <Style Selector="ListBox.nav > ListBoxItem">
-    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="Padding" Value="7,0" />
     <Setter Property="Margin" Value="0" />
     <Setter Property="MinHeight" Value="26" />
     <Setter Property="Height" Value="26" />

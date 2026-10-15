@@ -30,19 +30,20 @@ Home · Workflows **12** · Work **12** · Recipes **8** · Context · Agents **
 | ITM-01JF4 | Tray badge on Linux | sindri-app | packet task t7 of PRJ-sync (ws-3) | ○ queued | — | — | queued 40m |
 | ITM-01JF8 | Receipt verify route | sindri-app | packet task t8 of PRJ-sync (ws-4) | ○ queued | — | — | queued 12m |
 
-Summary lines: Home `5 need you · 4 running · 1 with you · 4 queued`; Work `12 items · 3 need you · 1 with you ·
+Summary lines: Home `6 need you · 4 running · 1 with you · 4 queued`; Work `12 items · 3 need you · 1 with you ·
 4 running · 4 queued` (3 + 1 + 4 + 4 = 12; the parked item is inside the 3, see "The human queue"). Home's Running panel shows the four running rows and the with-you row
 (with-you first), then "Show all 5 in Work". Home's Queued panel shows the four queued rows.
 
-Needs you (5, most urgent first): ITM-01JC8 park · REQ-01JD4 decision (re-scope ITM-01JD2) · ITM-01JB4 escalated ·
-service `index` failure · profile changed (2 keys: `services.index.every`, `context.maxBudget`).
+Needs you (6, most urgent first): ITM-01JC8 park · REQ-01JD4 decision (re-scope ITM-01JD2) · ITM-01JB4 escalated ·
+service `index` failure · profile changed (2 keys: `services.index.every`, `context.maxBudget`) · sentry #8812 `DECISION`
+(a workflow row, drawn in the Home Workflows strip; see "Resulting counts").
 
 ITM-01JE7's item sheet: subject `Linear ENG-511 · repo agentic-workflow · no project · feature:needs-you.ack`;
 facts `fact:item` (ENG-511 intake record), `fact:spec` (spec.md sha256:1c0e…), `fact:output` (round 1: 4 files,
 +182 −9; round 2 running), `fact:findings` (round 1: 2 findings: second ack returns 500; route missing from the
 catalog), `fact:evidence` (after checks pass). Children: none.
 
-## Root workflows (Workflows = 12 open)
+## Root workflows (Workflows = 8 open · 4 done today)
 
 | Address | Recipe | Subject | State | Since | Now |
 |---|---|---|---|---|---|
@@ -64,8 +65,9 @@ ITM-01JF3 doctor views line (○ queued), ITM-01JF4 Tray badge on Linux (○ que
 verify route (○ queued). 4 done · 1 running · 1 parked · 3 queued = 9.
 (ITM-01JD7 is a child only; it is not in Work's 12 because PRJ-sync's parked child is mirrored on the parent row.)
 
-Home's Workflows strip: `WORKFLOWS 12 open`, rows INC-14, sentry #8812, PRJ-sync, PRJ-exports, PRJ-tabs, then
-"… 7 more".
+Open means not terminal (owner, 2026-10-14): the 12 root rows above are 8 open and 4 done (sentry #8809, #8801, #8797,
+#8790). Home's Workflows strip: `WORKFLOWS 8 open`, rows INC-14, sentry #8812, PRJ-sync, PRJ-exports, PRJ-tabs, then
+"… 3 more", and a collapsed "4 done today" line.
 
 ## Agents (4 live · 1 with you · 2 need you)
 
@@ -99,13 +101,13 @@ Resulting counts (each equals the attention-chip rows on that page):
 
 | Page | Needs you | Rows |
 |---|---|---|
-| Home | **5** | ITM-01JC8 parked, REQ-01JD4 decision, ITM-01JB4 escalated, service `index` failed, profile changed |
-| Workflows | **2** | sentry #8812 `DECISION`, PagerDuty P-2211 `ESCALATED` (PRJ-sync's parked child is a child, not a root row; INC-14, PRJ-sync, PRJ-tabs run, PRJ-exports is `WITH YOU`). Head: `12 open · 2 need you · 1 with you` |
+| Home | **6** | ITM-01JC8 parked, REQ-01JD4 decision, ITM-01JB4 escalated, service `index` failed, profile changed, sentry #8812 `DECISION` (drawn in the Workflows strip) |
+| Workflows | **2** | sentry #8812 `DECISION`, PagerDuty P-2211 `ESCALATED` (PRJ-sync's parked child is a child, not a root row; INC-14, PRJ-sync, PRJ-tabs run, PRJ-exports is `WITH YOU`). Head: `8 open · 2 need you · 1 with you`, plus a collapsed "4 done today" line |
 | Work | **3** | ITM-01JB4 escalated, ITM-01JD2 decision, ITM-01JC8 parked (the parked section folds into Needs you) |
 | Agents | **2** | ITM-01JC8 parked, ITM-01JB4 escalated (sessions wait on them; failed service and profile are not sessions) |
 | Sheets | their own | An item or workflow sheet's head counts only the attention-chip rows inside that sheet; an incident or project head names those rows |
 
-Open point: Home's Workflows strip also draws sentry #8812 with a `DECISION` chip, which is a workflow-level row counted on Workflows (2) and not in Home's five (item-level, service and profile rows). If Home must count every attention chip it draws, its count is 6; this file keeps 5 as the owner specified.
+Home counts every attention chip it draws (owner, 2026-10-14), so sentry #8812's `DECISION` chip in the Workflows strip makes Home's count 6: the five item-level, service and profile rows plus that workflow-level row, which Workflows also counts in its 2.
 
 
 ## Recipes: the numbers (30 days, one source for Recipes and the inspector)

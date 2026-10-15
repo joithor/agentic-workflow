@@ -72,7 +72,7 @@ public sealed class CreateDialogLayoutTests : IDisposable
             Settle(window);
         }
 
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
         window.KeyPressQwerty(PhysicalKey.C, RawInputModifiers.None);
         Settle(window);

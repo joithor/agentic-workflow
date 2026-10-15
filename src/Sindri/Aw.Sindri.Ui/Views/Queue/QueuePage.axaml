@@ -12,7 +12,7 @@
        is empty; skeleton rows on the first load only (§4.1). Create item (C) sits at the right of the title. -->
   <StackPanel Spacing="{StaticResource Size.PanelGap}">
     <Grid ColumnDefinitions="Auto,*,Auto">
-      <TextBlock Classes="page-title" Text="{Binding Text.Queue}" AutomationProperties.Name="{Binding Text.Queue}" VerticalAlignment="Center" />
+      <TextBlock Classes="page-title" Text="{Binding Text.Work}" AutomationProperties.Name="{Binding Text.Work}" VerticalAlignment="Center" />
       <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
         <Button x:Name="CreateButton" Classes="command-control" Click="OnCreate" AutomationProperties.Name="{Binding Text.Items.CreateItem}">
           <StackPanel Orientation="Horizontal" Spacing="6">
@@ -45,7 +45,7 @@
       <TextBlock Classes="caption" Text="{Binding Queue.HeldText}" />
     </Button>
 
-    <Border x:Name="QueuePanel" Classes="panel" AutomationProperties.Name="{Binding Text.Queue}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group"
+    <Border x:Name="QueuePanel" Classes="panel" AutomationProperties.Name="{Binding Text.Work}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group"
             PointerEntered="OnPanelEntered" PointerExited="OnPanelExited">
       <StackPanel>
         <Border Classes="phead">

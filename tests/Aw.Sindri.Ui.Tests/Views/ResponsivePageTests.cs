@@ -79,7 +79,7 @@ public sealed class ResponsivePageTests : IDisposable
         window.Show();
         _ = shell.Run(_stop.Token);
         await Until(window, () => shell.State == ShellState.Normal && shell.Queue.Total > 0 && shell.Queue.Groups.Count > 0);
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
         for (var i = 0; i < 12 && shell.Queue.SelectedId != A.NewItem; i++)
         {
@@ -110,7 +110,7 @@ public sealed class ResponsivePageTests : IDisposable
     [MemberData(nameof(Cases))]
     public Task Every_focus_stop_in_the_page_ends_left_of_the_sheet(double sheetWidth, bool home) => OnUi(async () =>
     {
-        var (window, _) = await Open(sheetWidth, home ? PageId.Home : PageId.Queue);
+        var (window, _) = await Open(sheetWidth, home ? PageId.Home : PageId.Work);
         var sheetLeft = Left(window.Get<Border>("Sheet"), window);
         var host = Named(window, home ? "HomePage" : "QueuePage");
 
@@ -124,7 +124,7 @@ public sealed class ResponsivePageTests : IDisposable
     [InlineData(760)]
     public Task A_queue_row_keeps_its_title_at_160_and_ends_before_the_sheet(double sheetWidth) => OnUi(async () =>
     {
-        var (window, _) = await Open(sheetWidth, PageId.Queue);
+        var (window, _) = await Open(sheetWidth, PageId.Work);
         var sheetLeft = Left(window.Get<Border>("Sheet"), window);
         var grid = window.GetVisualDescendants().OfType<Grid>().First(g => g.Name == "TableRow");
         var title = grid.GetVisualDescendants().OfType<Button>().First(b => b.Name == "TitleButton");
@@ -160,7 +160,7 @@ public sealed class ResponsivePageTests : IDisposable
     [Fact]
     public Task Focusing_a_title_does_not_move_the_layout() => OnUi(async () =>
     {
-        var (window, _) = await Open(sheetWidth: 520, PageId.Queue, windowWidth: 1500);
+        var (window, _) = await Open(sheetWidth: 520, PageId.Work, windowWidth: 1500);
         var rows = window.GetVisualDescendants().OfType<Button>().Where(b => b.Name == "TitleButton").ToList();
         var before = rows.Select(b => (b.TranslatePoint(default, window), b.Bounds.Size)).ToList();
         var next = window.GetVisualDescendants().OfType<Border>().Where(b => b.Name == "RowFrame").Select(b => b.Bounds.Height).ToList();
@@ -177,7 +177,7 @@ public sealed class ResponsivePageTests : IDisposable
     [Fact]
     public Task A_focused_title_draws_its_whole_ring_inside_the_button() => OnUi(async () =>
     {
-        var (window, _) = await Open(sheetWidth: 520, PageId.Queue, windowWidth: 1500);
+        var (window, _) = await Open(sheetWidth: 520, PageId.Work, windowWidth: 1500);
         var title = window.GetVisualDescendants().OfType<Button>().First(b => b.Name == "TitleButton");
         _ = title.Focus(NavigationMethod.Tab);
         Settle(window);

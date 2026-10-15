@@ -4,6 +4,7 @@ using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
 
 namespace Aw.Sindri.Ui.Tests.Api;
@@ -33,14 +34,18 @@ public sealed class GoldenContractTests
         ["items-id-timeline"] = As<TimelineView>,
         ["items"] = As<ItemCreatedView>,   // POST /items' created* goldens only
         ["items-id-close"] = As<CommandAcceptedView>,
+        ["workflow-instances"] = As<InstanceList>,
+        ["workflow-instance"] = As<InstanceDetail>,
+        ["workflow-instance-fact"] = As<FactView>,
+        ["workflow-status"] = As<StatusFields>,
+        ["workflow-recipe"] = As<RecipeView>,
     };
 
     // Routes the app never calls yet: stop is Health's (U4), profile approve is protected (the app shows the CLI, §6.5), the profile route is a later page's (U2+), and the
-    // rev-8 workflow views (API spec section 3.8) are read by the UI lanes that build on them (E-20, E-22, E-23); the context routes are U9's (the context lens), read once U9 lands, until U9 (context records).
+    // context routes are U9's (the context lens), read once U9 lands, until U9 (context records).
     private static readonly HashSet<string> _notRead = new(StringComparer.Ordinal)
     {
         "stop", "profile-approve", "profile",
-        "workflow-instances", "workflow-instance", "workflow-instance-fact", "workflow-status", "workflow-recipe",
         "context-filemap", "context-lenses", "context-map", "context-map-promote", "context-map-proposals", "context-map-review", "context-map-review-history", "context-node",   // until U9 (context records)
         "items",   // GET /items (the list) is never called; POST /items' created* goldens are read (see the loop)
     };
@@ -193,8 +198,14 @@ public sealed class GoldenContractTests
         where T : class =>
         AwJson.Deserialize<T>(Encoding.UTF8.GetBytes(GoldenFiles.Api(slug, scenario)), SindriApiClient.Json).Value;
 
+    // A view's own "title" (an instance's, a child's) is no refusal: ProblemDetails also carries a numeric status.
     private static ProblemView? Problem(byte[] body)
     {
+        if (JsonNode.Parse(body) is not JsonObject { } json || json["status"] is not JsonValue { } || json["traceId"] is null)
+        {
+            return null;
+        }
+
         var problem = AwJson.Deserialize<ProblemView>(body, SindriApiClient.Json);
         return problem is { IsSuccess: true, Value.Title.Length: > 0 } ? problem.Value : null;
     }

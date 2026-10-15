@@ -165,7 +165,7 @@ public sealed class ShellWindowTests : IDisposable
 
         Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
         shell.Navigate(link);
-        shell.GoTo(PageId.Health);
+        shell.GoTo(PageId.System);
         Settle(window);
         EveryTextIsOnTheRampAt130(window);
     });
@@ -203,7 +203,7 @@ public sealed class ShellWindowTests : IDisposable
         shell.Navigate(link);
         Settle(window);
 
-        var title = window.Get<TextBlock>("SheetTitle");
+        var title = window.Get<TextBlock>("SheetSubjectText");
         Assert.Equal(18, title.FontSize);
         Assert.Equal(FontWeight.Medium, title.FontWeight);
         Assert.Contains("JetBrains Mono", title.FontFamily.ToString(), StringComparison.Ordinal);
@@ -215,31 +215,7 @@ public sealed class ShellWindowTests : IDisposable
         Application.Current!.TryGetResource(key, theme: null, out var v) && v is Color c ? c : default;
 
     // I1 (home.html .seg): one group; unselected labels muted, the selected one in PrimaryHover with the Primary dot;
-    // Later ▾ a flat segment of the same group; the whole group disabled while not running.
-    // K9 (Linux proof, finding 6): choosing "Services" in the top bar shows the Services page ("not served yet" until the phase that
-    // serves it), from Health and from Home, not the Health page under a highlighted "Services".
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public Task Choosing_services_shows_the_services_page_and_not_health(bool fromHealth) => OnUi(async () =>
-    {
-        _records.Write(A.Record());
-        var (window, shell) = await Show(s => s.State == ShellState.Normal);
-        shell.GoTo(fromHealth ? PageId.Health : PageId.Home);
-        Settle(window);
-        var navigation = Named<ListBox>(window, "Navigation");
-
-        var item = navigation.GetVisualDescendants().OfType<ListBoxItem>().Single(i => i.DataContext is NavEntry { Page: PageId.Services });
-        var at = item.TranslatePoint(new Point(item.Bounds.Width / 2, item.Bounds.Height / 2), window)!.Value;
-        window.MouseDown(at, MouseButton.Left);
-        window.MouseUp(at, MouseButton.Left);
-        Settle(window);
-
-        Assert.Equal(PageId.Services, shell.CurrentPage);
-        Assert.True(Visible(window, "ServicesPage"));
-        Assert.False(Visible(window, "HealthPage"));
-        Assert.Contains(Labels.NotServedYet, window.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible).Select(t => t.Text ?? string.Empty), StringComparer.Ordinal);
-    });
+    // The whole group disabled while not running.
 
     [Fact]
     public Task The_navigation_is_one_segmented_group_with_the_selected_dot() => OnUi(async () =>
@@ -252,7 +228,6 @@ public sealed class ShellWindowTests : IDisposable
         Assert.All(labels.Where(t => t.Text != Labels.Home), t => Assert.Equal(Colour("Color.InkSubtle"), Ink(t)));
         _ = Assert.Single(window.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Ellipse>(), e => e.Classes.Contains("nav-dot") && e.IsEffectivelyVisible);
         var group = Named<StackPanel>(window, "NavigationGroup");
-        Assert.True(group.IsVisualAncestorOf(Named<Button>(window, "LaterButton")));
         Assert.True(group.IsVisualAncestorOf(Named<ListBox>(window, "Navigation")));
         Frame(window, "nav");
     });
@@ -367,7 +342,7 @@ public sealed class ShellWindowTests : IDisposable
         Assert.Equal(Brush("Success"), Named<StateIcon>(window, "PillGlyph").Foreground);
         var profile = Named<ItemsControl>(window, "HealthCells").GetVisualDescendants().OfType<StateIcon>().Single(i => i.IsEffectivelyVisible);
         Assert.Equal(Brush("Success"), profile.Foreground);
-        shell.GoTo(PageId.Health);
+        shell.GoTo(PageId.System);
         Settle(window);
         Assert.Equal(Brush("Success"), Named<StateIcon>(window, "ProfileHeadGlyph").Foreground);
 
@@ -410,7 +385,7 @@ public sealed class ShellWindowTests : IDisposable
         _records.Write(A.Record());
         _server.Push(A.Event(3));
         var (window, shell) = await Show(s => s.State == ShellState.Normal && s.Health.LastEvent.EndsWith("#3", StringComparison.Ordinal));
-        shell.GoTo(PageId.Health);
+        shell.GoTo(PageId.System);
         Settle(window);
 
         static double Baseline(TextBlock t, Window w) => t.TranslatePoint(default, w)!.Value.Y + t.TextLayout.Baseline; // why: in the window
@@ -1213,7 +1188,7 @@ public sealed class ShellWindowTests : IDisposable
         Assert.DoesNotContain("covers", sheet.Classes, StringComparer.Ordinal);
         Assert.False(tab.IsEffectivelyVisible);
         Assert.True(Focused(window) is Visual focused && sheet.IsVisualAncestorOf(focused), $"focus is on {(Focused(window) as Control)?.Name ?? Focused(window)?.GetType().Name ?? "nothing"}, not in the sheet");
-        Assert.Same(window.Get<TextBlock>("SheetTitle"), Focused(window));
+        Assert.Same(window.Get<Border>("SheetTitle"), Focused(window));
     });
 
     // Review run 4 (accessibility-tester-1; WCAG 2.4.3): narrowing the window below 1100 px while the sheet is open makes
@@ -1266,7 +1241,7 @@ public sealed class ShellWindowTests : IDisposable
     {
         _records.Write(A.Record());
         var (window, shell) = await Show(s => s.State == ShellState.Normal);
-        shell.GoTo(PageId.Health);
+        shell.GoTo(PageId.System);
         _server.FailPing = true;
         _clock.Advance(ShellViewModel.StaleAfter);
         await Until(() => shell.State == ShellState.Stale);
@@ -1287,7 +1262,7 @@ public sealed class ShellWindowTests : IDisposable
         window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "HealthPill").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Settle(window);
 
-        Assert.Equal(PageId.Health, shell.CurrentPage);
+        Assert.Equal(PageId.System, shell.CurrentPage);
         Assert.True(Visible(window, "HealthPage"));
 
         // I5 (services-health.html HEALTH): label/value rows at Body size under section heads that carry the state's
@@ -1327,14 +1302,14 @@ public sealed class ShellWindowTests : IDisposable
 
         strip.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Settle(window);
-        Assert.Equal(PageId.Health, shell.CurrentPage);
+        Assert.Equal(PageId.System, shell.CurrentPage);
 
         shell.GoTo(PageId.Home);
         Settle(window);
         Assert.True(strip.Focus(NavigationMethod.Tab));
         window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, keySymbol: null);
         Settle(window);
-        Assert.Equal(PageId.Health, shell.CurrentPage);
+        Assert.Equal(PageId.System, shell.CurrentPage);
     });
 
     [Fact]
@@ -1347,7 +1322,7 @@ public sealed class ShellWindowTests : IDisposable
         shell.Navigate(link);
         Settle(window);
         Assert.True(Visible(window, "Sheet"));
-        Assert.Equal("ITM-01JC8", Text(window, "SheetTitle"));
+        Assert.Equal("ITM-01JC8", Text(window, "SheetSubjectText"));
         Assert.Equal(UiPreferences.DefaultSheetWidth, window.Get<Border>("Sheet").Bounds.Width);
         Frame(window, "sheet");
 
@@ -1501,7 +1476,8 @@ public sealed class ShellWindowTests : IDisposable
             Assert.True(Visible(window, "RefreshSpinner"), "no spinner while sending");
             Assert.Equal(Labels.Sending, Named<TextBlock>(window, "RefreshSending").Text);
             Assert.Equal(0, Named<TextBlock>(window, "RefreshSending").Bounds.Width);
-            Assert.True(Visible(window, "BrandWord"), "the brand word dropped while sending");
+            // Seven tabs (screens spec §3) leave no room for the word at 1.3x; the bar steps down to the mark alone, as stale does.
+            Assert.True(scale > 1.0 || Visible(window, "BrandWord"), "the brand word dropped while sending");
         }
 
         if (state == BarState.NotResponding)
@@ -1627,9 +1603,9 @@ public sealed class ShellWindowTests : IDisposable
         _records.Write(A.Record());
         var (window, shell) = await Show(s => s.State == ShellState.Normal);
 
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
-        Assert.Equal(Labels.Queue, AutomationProperties.GetName(window.Get<Border>("Page")));
+        Assert.Equal(Labels.Work, AutomationProperties.GetName(window.Get<Border>("Page")));
 
         shell.GoTo(PageId.Settings);
         Settle(window);
@@ -1649,7 +1625,7 @@ public sealed class ShellWindowTests : IDisposable
             ? title.TranslatePoint(new Point(0, 0), window) ?? default : default;
 
         var home = Title();
-        shell.GoTo(PageId.Health);
+        shell.GoTo(PageId.System);
         Settle(window);
         var health = Title();
         shell.GoTo(PageId.Settings);
@@ -1710,7 +1686,7 @@ public sealed class ShellWindowTests : IDisposable
         }
     }
 
-    private static readonly string[] _topBarControls = ["Navigation", "LaterButton", "SearchField", "RefreshSending", "RefreshButton", "HealthPill"];
+    private static readonly string[] _topBarControls = ["Navigation", "SearchField", "RefreshSending", "RefreshButton", "HealthPill"];
 
     private static Rect Box(Window window, string name)
     {
@@ -1782,12 +1758,17 @@ public sealed class ShellWindowTests : IDisposable
         _records.Write(A.Record());
         var (window, shell) = await Show(s => s.State == ShellState.Normal);
         var command = OperatingSystem.IsMacOS() ? RawInputModifiers.Meta : RawInputModifiers.Control;
+        window.SettingsSlot.Content = new SettingsView { DataContext = new SettingsViewModel(new Preferences(_preferences), new FakeMotionPreference(), _ => { }) };
+        var focusEvents = 0;
+        window.GotFocus += (_, _) => focusEvents++;
 
         window.KeyPress(Key.OemComma, command, PhysicalKey.Comma, keySymbol: ",");
         Settle(window);
 
         Assert.Equal(PageId.Settings, shell.CurrentPage);
         Assert.True(Visible(window, "SettingsSlot"));
+        Assert.Equal(1, focusEvents);   // a11y-5: the chord moves focus once, into Settings
+        Assert.True(Focused(window) is Visual focused && window.SettingsSlot.IsVisualAncestorOf(focused), "focus isn't in Settings");
     });
 
     [Fact]
@@ -1802,5 +1783,100 @@ public sealed class ShellWindowTests : IDisposable
         var stored = (await new Preferences(_preferences).Load(Token)).Window;
         Assert.NotNull(stored);
         Assert.Equal((1100d, 720d), (stored.Width, stored.Height));
+    });
+
+    // W3 (a11y-0): the focus regions are control elements of type Group named for the region; a Border has no peer otherwise.
+    [Fact]
+    public Task The_focus_regions_are_exposed_as_named_groups() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
+        shell.Navigate(link);
+        Settle(window);
+        var regions = new (Control Region, string Name)[]
+        {
+            (window.Get<Border>("Page"), shell.PageName),
+            (window.Get<Border>("Sheet"), shell.SheetName),
+            (window.Get<TopBar>("TopBar").GetVisualDescendants().OfType<Border>().First(b => b.Classes.Contains("focus-region")), shell.Text.Sindri),
+        };
+
+        foreach (var (region, name) in regions)
+        {
+            var peer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(region);
+            Assert.True(peer.IsControlElement(), name);
+            Assert.Equal(Avalonia.Automation.Peers.AutomationControlType.Group, peer.GetAutomationControlType());
+            Assert.Equal(name, peer.GetName());
+        }
+
+        // testing-2: the shortcuts card is a focus region from the same style.
+        shell.Shortcuts.Open();
+        Settle(window);
+        var card = Named<Border>(window, "ShortcutsCard");
+        var cardPeer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(card);
+        Assert.True(cardPeer.IsControlElement());
+        Assert.Equal(Avalonia.Automation.Peers.AutomationControlType.Group, cardPeer.GetAutomationControlType());
+        Assert.False(string.IsNullOrEmpty(cardPeer.GetName()));
+    });
+
+    // W3: the element F6 and a page change focus is a control named by the page.
+    [Fact]
+    public Task The_focused_page_region_has_a_peer_named_by_the_page() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        shell.GoTo(PageId.Work);
+        Settle(window);
+        Assert.True(window.Get<Border>("Page").Focus(NavigationMethod.Tab));
+
+        var peer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement((Control)window.FocusManager!.GetFocusedElement()!);
+
+        Assert.True(peer.IsControlElement());
+        Assert.Equal(shell.PageName, peer.GetName());
+    });
+
+    // W4 (a11y-1): the sheet title's peer is named for the kind noun and subject ("Workflow WFI-1"), not the bare subject.
+    [Fact]
+    public Task The_sheet_title_focus_target_is_text_named_for_the_kind_and_subject() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        Assert.True(DeepLink.TryParse("workflow/WFI-1", out var link));
+        shell.Navigate(link);
+        Settle(window);
+        var title = window.Get<Border>("SheetTitle");
+
+        var peer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(title);
+
+        Assert.True(peer.IsControlElement());
+        Assert.Equal(Avalonia.Automation.Peers.AutomationControlType.Text, peer.GetAutomationControlType());
+        Assert.Equal("Workflow WFI-1", peer.GetName());
+        Assert.NotEqual(shell.SheetSubject, peer.GetName(), StringComparer.Ordinal);
+        Assert.Equal(shell.SheetSubject, title.GetVisualDescendants().OfType<TextBlock>().Single().Text);
+    });
+
+    // W5 (a11y-2): a page change with focus already on the Page region raises a fresh focus event on it, so the new page is
+    // announced; from a control on the old page, focus lands on the region once (the existing rule).
+    [Theory]
+    [InlineData("Home", "System", false, 1)]
+    [InlineData("System", "Home", true, 1)]
+    [InlineData("Home", "Work", true, 1)]
+    public Task A_page_change_with_focus_on_the_page_region_raises_one_fresh_focus_event(string from, string to, bool startOnRegion, int events) => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        shell.GoTo(Enum.Parse<PageId>(from));
+        Settle(window);
+        var page = window.Get<Border>("Page");
+        var start = startOnRegion ? page : Named<Control>(window, "HealthStrip");
+        Assert.True(start.Focus(NavigationMethod.Tab));
+        var raised = 0;
+        window.AddHandler(InputElement.GotFocusEvent, (_, e) => raised += ReferenceEquals(e.Source, page) ? 1 : 0, RoutingStrategies.Bubble);
+
+        shell.GoTo(Enum.Parse<PageId>(to));
+        Settle(window);
+
+        Assert.Same(page, Focused(window));
+        Assert.Equal(events, raised);
     });
 }

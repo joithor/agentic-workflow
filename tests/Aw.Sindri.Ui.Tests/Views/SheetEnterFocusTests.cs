@@ -69,7 +69,7 @@ public sealed class SheetEnterFocusTests : IDisposable
         window.Show();
         _ = shell.Run(_stop.Token);
         await Until(window, () => shell.State == ShellState.Normal && shell.Queue.Total > 0 && shell.Queue.Groups.Count > 0);
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
         for (var i = 0; i < 12 && shell.Queue.SelectedId != A.NewItem; i++)
         {

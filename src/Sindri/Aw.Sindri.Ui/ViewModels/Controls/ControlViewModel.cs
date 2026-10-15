@@ -276,7 +276,7 @@ internal sealed partial class ControlViewModel : ObservableObject
     };
 
     // §7: the app refuses to show or copy a cli with a control, bidi or invisible character (E-16 makes this never happen).
-    private static bool Safe(string cli) => cli.Length > 0 && !cli.EnumerateRunes().Any(r => r.Value != ' ' && Rune.GetUnicodeCategory(r) is
+    internal static bool Safe(string cli) => cli.Length > 0 && !cli.EnumerateRunes().Any(r => r.Value != ' ' && Rune.GetUnicodeCategory(r) is
         UnicodeCategory.Control or UnicodeCategory.Format or UnicodeCategory.LineSeparator or UnicodeCategory.ParagraphSeparator
         or UnicodeCategory.SpaceSeparator or UnicodeCategory.PrivateUse or UnicodeCategory.Surrogate or UnicodeCategory.OtherNotAssigned);
 }

@@ -42,8 +42,7 @@
       </StackPanel>
 
       <!-- The segmented navigation (§3.2, home.html): one group on Surface1 with a hairline; unselected labels muted, the
-           selected segment on PrimarySoft with a Primary dot and its label in PrimaryHover. Later ▾ is a flat segment of
-           the same group. Dimmed and disabled while Sindri isn't running (states.html). -->
+           selected segment on PrimarySoft with a Primary dot and its label in PrimaryHover. Dimmed and disabled while Sindri isn't running (states.html). -->
       <Border x:Name="NavSegments" Grid.Column="1" Grid.ColumnSpan="2" Classes="seg" HorizontalAlignment="Left">
         <StackPanel x:Name="NavigationGroup" Orientation="Horizontal" Spacing="2" IsEnabled="{Binding IsNavigationEnabled}">
           <ListBox x:Name="Navigation" Classes="nav" ItemsSource="{Binding Navigation}"
@@ -64,44 +63,16 @@
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <Ellipse Classes="nav-dot" VerticalAlignment="Center" />
                   <TextBlock Classes="body-strong nav-label" Text="{Binding Label}" AutomationProperties.Name="{Binding Label}" />
-                  <TextBlock Classes="caption subtle" Text="{Binding Count}" AutomationProperties.Name="{Binding Count}" />
+                  <TextBlock Classes="caption subtle" Text="{Binding Count}" IsVisible="{Binding HasCount}" AutomationProperties.Name="{Binding Count}" />
                 </StackPanel>
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
-
-          <Button x:Name="LaterButton" Classes="later" AutomationProperties.Name="{Binding Text.Later}">
-            <StackPanel Orientation="Horizontal" Spacing="4">
-              <TextBlock Classes="body-strong nav-label" Text="{Binding Text.Later}" AutomationProperties.Name="{Binding Text.Later}" />
-              <TextBlock Classes="caption nav-label" Text="▾" VerticalAlignment="Center" />
-            </StackPanel>
-            <Button.Flyout>
-              <Flyout Placement="BottomEdgeAlignedLeft">
-                <ItemsControl x:Name="LaterList" ItemsSource="{Binding Later}" AutomationProperties.Name="{Binding Text.Later}">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="shell:LaterEntry">
-                      <Grid ColumnDefinitions="140,Auto" Margin="4,6" AutomationProperties.Name="{Binding Label}">
-                        <TextBlock Classes="body muted" Text="{Binding Label}" AutomationProperties.Name="{Binding Label}" />
-                        <TextBlock Grid.Column="1" Classes="caption subtle" Text="{Binding Note}" AutomationProperties.Name="{Binding Note}" />
-                      </Grid>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </Flyout>
-            </Button.Flyout>
-          </Button>
         </StackPanel>
       </Border>
 
       <!-- The ⌘K field (home.html): a magnifier, the placeholder, and the ⌘K keycap at the right; folded ("compact"), the
            magnifier alone, still named "Search or run a command". -->
-      <!-- §8: while the G chord waits for its second key, "G …" shows here. A visual cue only: no live region (an ungated one
-           would speak the resting text, and its name going to "" is the empty live region VoiceOver crashes on, Avalonia #22312). -->
-      <Border x:Name="ChordHint" Grid.Column="3" Classes="kbd" HorizontalAlignment="Right" VerticalAlignment="Center"
-              IsVisible="{Binding ChordHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-              AutomationProperties.AccessibilityView="Raw">
-        <TextBlock x:Name="ChordHintText" Classes="kbd" Text="{Binding ChordHint}" AutomationProperties.AccessibilityView="Raw" />
-      </Border>
       <Border x:Name="SearchField" Grid.Column="4" Classes="search" Margin="12,0,12,0" Focusable="True" Cursor="Hand"
               PointerPressed="OnSearch" KeyDown="OnSearchKey"
               AutomationProperties.Name="{Binding Text.Search}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Button">
@@ -161,6 +132,16 @@
           </StackPanel>
         </Button>
       </StackPanel>
+      <!-- The G-chord's wait (rev 7 §8): "G …" in a keycap while G waits for its second key. It sits inside the bar, vertically
+           centred over the ⌘K field's right end, where its keycap is (re-check R1: laid out below the bar, the page region painted over
+           it; the bar has no spare room for a column of its own at 900 px). Last in the grid so nothing in the bar draws over it; transient and exposed as text, not live: the key press is the
+           user's own. -->
+      <Border x:Name="ChordHint" Grid.Column="4" Classes="kbd" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,20,0"
+              IsHitTestVisible="False" IsVisible="{Binding IsChordPending}"
+              AutomationProperties.Name="{Binding ChordHint}" AutomationProperties.AccessibilityView="Control"
+              AutomationProperties.ControlTypeOverride="Text">
+        <TextBlock Classes="kbd" Text="{Binding ChordHint}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+      </Border>
     </Grid>
   </Border>
 </UserControl>

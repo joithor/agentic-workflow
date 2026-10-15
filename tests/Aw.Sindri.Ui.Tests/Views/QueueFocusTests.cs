@@ -104,7 +104,7 @@ public sealed class QueueFocusTests : IDisposable
     public Task A_refresh_keeps_focus_on_the_same_row_control() => OnUi(async () =>
     {
         var (window, shell) = await Connected();
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
         var title = Named<Button>(Rows(window)[1], "TitleButton");
         Assert.True(title.Focus(NavigationMethod.Tab));
@@ -144,7 +144,7 @@ public sealed class QueueFocusTests : IDisposable
     public Task A_cleared_row_is_spoken_once_and_focus_moves_to_the_next_row() => OnUi(async () =>
     {
         var (window, shell) = await Connected();
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
         Assert.True(Named<Border>(Rows(window)[1], "RowFrame").Focus(NavigationMethod.Tab));
         var gone = ((ItemRowViewModel)Focused(window)!.DataContext!).Id;   // the focused row, and focus selected it
@@ -178,7 +178,7 @@ public sealed class QueueFocusTests : IDisposable
     public Task A_focused_row_that_changes_group_keeps_focus_on_its_new_frame() => OnUi(async () =>
     {
         var (window, shell) = await Connected();
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
         var moving = Rows(window)[1].ItemId;
         Assert.True(Named<Border>(Rows(window)[1], "RowFrame").Focus(NavigationMethod.Tab));
@@ -274,7 +274,7 @@ public sealed class QueueFocusTests : IDisposable
     public Task J_moves_the_selection_and_the_focus_together_and_enter_opens_that_row() => OnUi(async () =>
     {
         var (window, shell) = await Connected();
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
 
         window.KeyPressQwerty(PhysicalKey.J, RawInputModifiers.None);
@@ -295,7 +295,7 @@ public sealed class QueueFocusTests : IDisposable
     public Task A_row_getting_focus_selects_it() => OnUi(async () =>
     {
         var (window, shell) = await Connected();
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
         var third = Rows(window)[2];
 
@@ -327,7 +327,7 @@ public sealed class QueueFocusTests : IDisposable
     public Task J_in_the_sheet_does_not_drive_the_queue() => OnUi(async () =>
     {
         var (window, shell) = await Connected(width: 1000);
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
         window.KeyPressQwerty(PhysicalKey.J, RawInputModifiers.None);
         await Until(window, () => shell.Queue.SelectedId is not null);
@@ -350,7 +350,7 @@ public sealed class QueueFocusTests : IDisposable
     public Task Esc_from_the_covering_sheet_returns_focus_to_the_row_that_opened_it() => OnUi(async () =>
     {
         var (window, shell) = await Connected(width: 1000);
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
         window.KeyPressQwerty(PhysicalKey.J, RawInputModifiers.None);
         window.KeyPressQwerty(PhysicalKey.J, RawInputModifiers.None);
@@ -370,7 +370,7 @@ public sealed class QueueFocusTests : IDisposable
     public Task Esc_after_the_opener_row_cleared_returns_focus_to_the_row_the_selection_moved_to() => OnUi(async () =>
     {
         var (window, shell) = await Connected(width: 1000);
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
         window.KeyPressQwerty(PhysicalKey.J, RawInputModifiers.None);
         await Until(window, () => shell.Queue.SelectedId is not null && FocusedRowId(window) == shell.Queue.SelectedId);
@@ -392,7 +392,7 @@ public sealed class QueueFocusTests : IDisposable
     public Task Esc_from_the_beside_sheet_returns_focus_to_the_row_that_opened_it() => OnUi(async () =>
     {
         var (window, shell) = await Connected(width: 1400);
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
         window.KeyPressQwerty(PhysicalKey.J, RawInputModifiers.None);
         await Until(window, () => shell.Queue.SelectedId is not null && FocusedRowId(window) == shell.Queue.SelectedId);
@@ -412,7 +412,7 @@ public sealed class QueueFocusTests : IDisposable
     public Task A_focus_request_for_a_row_that_is_no_longer_drawn_still_keeps_focus_on_the_page() => OnUi(async () =>
     {
         var (window, shell) = await Connected();
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
         var title = Named<Button>(Rows(window)[^1], "TitleButton");
         Assert.True(title.Focus(NavigationMethod.Tab));

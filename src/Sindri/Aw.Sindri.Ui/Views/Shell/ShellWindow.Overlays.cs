@@ -46,6 +46,7 @@ internal sealed partial class ShellWindow
     // The Create form is modal (L10, §11.2): ⌘K, ⌘, and ? are swallowed. ? is a character in a field, so it types there.
     private static bool SwallowedByForm(KeyEventArgs e) =>
         (e.Key is Key.K or Key.OemComma && e.KeyModifiers == _command) || (IsQuestionMark(e) && e.Source is not TextBox);
+    private bool _openingSettings;
 
     private bool OpenSettingsByKey(KeyEventArgs e, ShellViewModel shell)
     {
@@ -59,7 +60,16 @@ internal sealed partial class ShellWindow
             return true;   // the palette and the ? sheet are modal (§11.2): the chord is swallowed, focus stays in the card
         }
 
-        shell.GoTo(PageId.Settings);
+        _openingSettings = true;   // the page change would post KeepFocus too; ⌘, moves focus once, into Settings
+        try
+        {
+            shell.GoTo(PageId.Settings);
+        }
+        finally
+        {
+            _openingSettings = false;
+        }
+
         // Like the sheet's heading (§11.2), opening Settings moves focus into it: its first control.
         Dispatcher.UIThread.Post(() => FirstFocusable(this.Get<Control>("SettingsSlot"))?.Focus(NavigationMethod.Tab), DispatcherPriority.Loaded);
         return true;

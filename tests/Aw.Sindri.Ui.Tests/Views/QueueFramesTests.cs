@@ -120,7 +120,7 @@ public sealed class QueueFramesTests : IDisposable
     public Task The_queue_page_shows_the_apis_groups_and_rows() => OnUi(async () =>
     {
         var (window, shell) = await Connected(s => !s.Queue.IsLoading);
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
 
         var page = Named<Control>(window, "QueuePage");
@@ -129,7 +129,7 @@ public sealed class QueueFramesTests : IDisposable
         var rows = page.GetVisualDescendants().OfType<Ui.Views.Queue.ItemRow>().Where(r => r.IsEffectivelyVisible).Select(r => r.ItemId).ToList();
         Assert.Equal(4, rows.Count);
         Assert.Equal(A.NewItem, rows[^1]);
-        Assert.Equal("4", shell.Navigation[1].Count);
+        Assert.Equal("4", shell.Navigation[2].Count);
         Frame(window, "queue-populated");
     });
 
@@ -138,7 +138,7 @@ public sealed class QueueFramesTests : IDisposable
     {
         _server.QueueView = RouteAnswer.SpecShaped("queue", "empty");
         var (window, shell) = await Connected(s => !s.Queue.IsLoading);
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
 
         var empty = Named<TextBlock>(window, "QueueEmpty");
@@ -153,7 +153,7 @@ public sealed class QueueFramesTests : IDisposable
     {
         _server.QueueGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var (window, shell) = await Connected(s => s.State == ShellState.Normal);
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
 
         Assert.True(Visible(window, "QueueSkeleton"));
@@ -393,7 +393,7 @@ public sealed class QueueFramesTests : IDisposable
     {
         _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-parked");
         var (window, shell) = await Connected(s => !s.Queue.IsLoading);
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
 
         var badges = Named<Control>(window, "QueuePage").GetVisualDescendants().OfType<TextBlock>()
@@ -419,7 +419,7 @@ public sealed class QueueFramesTests : IDisposable
     {
         _server.QueueView = RouteAnswer.Problem(System.Net.HttpStatusCode.ServiceUnavailable, "SND-API-011", "The views didn't catch up within 2 s (fix: retry)");
         var (window, shell) = await Connected(s => !s.Queue.IsLoading);
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
         Assert.Equal((true, "SND-API-011"), (Visible(window, "QueueProblem"), Named<TextBlock>(window, "QueueProblemCode").Text));
         Assert.False(Visible(window, "QueueSkeleton"));

@@ -17,15 +17,15 @@ internal sealed partial class ShellViewModel
     /// <summary>The Create item form (U2, `C`).</summary>
     public CreateItemViewModel Create { get; }
 
-    /// <summary>True when the sheet's subject is an item (its own view), else the sheet's placeholder body.</summary>
-    public bool IsItemSheet { get; private set; }
+    /// <summary>True when the sheet's subject is an item (its own view in the sheet's content).</summary>
+    public bool IsItemSheet => SheetLink?.Kind == DeepLinkKind.Item;
 
     /// <summary>Opens the Queue page on one filter (G Q, G R, G W; Home's "Show all N in Queue").</summary>
     /// <param name="filter">The filter.</param>
     internal void GoToQueue(QueueFilter filter)
     {
         Queue.Filter(filter);
-        GoTo(PageId.Queue);
+        GoTo(PageId.Work);
     }
 
     /// <summary>Opens an item's sheet (a row's Enter or title click, §3.2).</summary>
@@ -39,14 +39,6 @@ internal sealed partial class ShellViewModel
     /// <summary>The row the sheet was opened from (its item id), where Esc returns focus; null when the sheet came from elsewhere.</summary>
     internal string? OpenerRow { get; private set; }
 
-    private static NavEntry[] Nav(string queued) =>
-    [
-        new(PageId.Home, Labels.Home, "H", string.Empty),
-        new(PageId.Queue, Labels.Queue, "Q", queued),
-        new(PageId.Decisions, Labels.Decisions, "D", string.Empty),
-        new(PageId.Services, Labels.Services, "S", string.Empty),
-    ];
-
     // §3.2: the Queue tab carries the queue's count from the view's rows.
     private void OnQueueChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -56,25 +48,14 @@ internal sealed partial class ShellViewModel
         }
 
         var count = Queue.IsLoading ? string.Empty : Queue.Total.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        Navigation[1].Count = count;
+        Navigation.First(n => n.Page == PageId.Work).Count = count;
     }
 
-    /// <summary>Goes where a deep link points: a page, or the detail sheet with its subject.</summary>
-    /// <param name="link">The link.</param>
-    internal void Navigate(DeepLink link)
+    // The item sheet's part of opening the sheet (OpenSheet): the item is fetched; any other kind leaves it alone.
+    private void OnSheetOpened(DeepLink link)
     {
-        if (link.Kind == DeepLinkKind.HomeNeedsYou || link.Subject is null)
-        {
-            GoTo(PageId.Home);
-            return;
-        }
-
-        SheetSubject = link.Subject;
         OpenerRow = null;
-        IsSheetOpen = true;
-        IsItemSheet = link.Kind == DeepLinkKind.Item;
-        Changed(nameof(SheetSubject), nameof(EdgeTabName), nameof(IsSheetOpen), nameof(HasEdgeTab), nameof(IsSheetShown), nameof(IsEdgeTabShown), nameof(IsItemSheet));
-        if (!IsItemSheet)
+        if (link.Kind != DeepLinkKind.Item || link.Subject is null)
         {
             return;
         }
@@ -84,24 +65,5 @@ internal sealed partial class ShellViewModel
         {
             _ = Item.Open(url, link.Subject, CancellationToken.None);
         }
-    }
-
-    /// <summary>Closes the sheet (Esc); its subject stays on the edge tab.</summary>
-    internal void CloseSheet()
-    {
-        IsSheetOpen = false;
-        Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
-    }
-
-    /// <summary>Opens the sheet again on its last subject (the edge tab).</summary>
-    internal void ReopenSheet()
-    {
-        if (!HasEdgeTab)
-        {
-            return;
-        }
-
-        (IsSheetOpen, OpenerRow) = (true, null);
-        Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
     }
 }

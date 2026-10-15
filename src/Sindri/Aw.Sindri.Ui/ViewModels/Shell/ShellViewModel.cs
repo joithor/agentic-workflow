@@ -27,11 +27,12 @@ internal sealed partial class ShellViewModel : ObservableObject
 
     private static readonly string[] _pageProperties =
     [
-        nameof(CurrentPage), nameof(PageName), nameof(SelectedNav), nameof(IsHome), nameof(IsQueue), nameof(IsDecisions), nameof(IsServices),
-        nameof(IsHealth), nameof(IsSettings), nameof(IsNotRunningPanel), nameof(IsPageVisible),
+        nameof(CurrentPage), nameof(PageName), nameof(SelectedNav), nameof(IsHome), nameof(IsWorkflows), nameof(IsWork), nameof(IsRecipes), nameof(IsContext),
+        nameof(IsAgents), nameof(IsSystem), nameof(IsSettings), nameof(IsNotRunningPanel), nameof(IsPageVisible),
     ];
 
     private readonly Preferences _store;
+    private readonly TimeProvider _clock;
     private UiPreferences _preferences = UiPreferences.Defaults;
 
     // The page Settings was opened from, where leaving it over the Not running card returns.
@@ -68,25 +69,25 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <summary>The connection and the Health page's status card.</summary>
     public HealthViewModel Health { get; }
 
-    /// <summary>The top bar's segments, in order: Home, Queue, Decisions, Services.</summary>
-    public IReadOnlyList<NavEntry> Navigation { get; } = Nav(queued: string.Empty);
-
-    /// <summary>"Later ▾": Agents, Repos, Today, Automatic work, each "not served yet".</summary>
-    public IReadOnlyList<LaterEntry> Later { get; } =
+    /// <summary>The top bar's segments, in order: Home, Workflows, Work, Recipes, Context, Agents, System (screens spec §3).</summary>
+    public IReadOnlyList<NavEntry> Navigation { get; } =
     [
-        new(Labels.Agents, Labels.NotServedYet),
-        new(Labels.Repos, Labels.NotServedYet),
-        new(Labels.Today, Labels.NotServedYet),
-        new(Labels.AutomaticWork, Labels.NotServedYet),
+        new(PageId.Home, Labels.Home, "H", string.Empty),
+        new(PageId.Workflows, Labels.Workflows, "W", string.Empty),
+        new(PageId.Work, Labels.Work, "Q", string.Empty),
+        new(PageId.Recipes, Labels.Recipes, "R", string.Empty),
+        new(PageId.Context, Labels.Context, "C", string.Empty),
+        new(PageId.Agents, Labels.Agents, "A", string.Empty),
+        new(PageId.System, Labels.System, ".", string.Empty),
     ];
 
-    /// <summary>Every page the window can show, in order: Home, Queue, Decisions, Services, Health, Settings.</summary>
+    /// <summary>Every page the window can show, in order: the seven tabs, then Settings.</summary>
     public IReadOnlyList<PageId> Pages { get; } = Enum.GetValues<PageId>();
 
     /// <summary>The page shown.</summary>
     public PageId CurrentPage { get; private set; } = PageId.Home;
 
-    /// <summary>The top bar's segment for the page shown; null on Health and Settings. Setting it goes to its page.</summary>
+    /// <summary>The top bar's segment for the page shown; null on Settings. Setting it goes to its page.</summary>
     public NavEntry? SelectedNav
     {
         get => Navigation.FirstOrDefault(n => n.Page == CurrentPage);
@@ -105,17 +106,23 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <summary>True on Home.</summary>
     public bool IsHome => CurrentPage == PageId.Home;
 
-    /// <summary>True on Queue.</summary>
-    public bool IsQueue => CurrentPage == PageId.Queue;
+    /// <summary>True on Workflows.</summary>
+    public bool IsWorkflows => CurrentPage == PageId.Workflows;
 
-    /// <summary>True on Decisions.</summary>
-    public bool IsDecisions => CurrentPage == PageId.Decisions;
+    /// <summary>True on Work.</summary>
+    public bool IsWork => CurrentPage == PageId.Work;
 
-    /// <summary>True on Services.</summary>
-    public bool IsServices => CurrentPage == PageId.Services;
+    /// <summary>True on Recipes.</summary>
+    public bool IsRecipes => CurrentPage == PageId.Recipes;
 
-    /// <summary>True on Health.</summary>
-    public bool IsHealth => CurrentPage == PageId.Health;
+    /// <summary>True on Context.</summary>
+    public bool IsContext => CurrentPage == PageId.Context;
+
+    /// <summary>True on Agents.</summary>
+    public bool IsAgents => CurrentPage == PageId.Agents;
+
+    /// <summary>True on System.</summary>
+    public bool IsSystem => CurrentPage == PageId.System;
 
     /// <summary>True on Settings.</summary>
     public bool IsSettings => CurrentPage == PageId.Settings;
@@ -162,24 +169,6 @@ internal sealed partial class ShellViewModel : ObservableObject
     // Connected: the API's pages (and the sheet over them) have something to show.
     private bool IsConnected => State is ShellState.Normal or ShellState.Stale or ShellState.Unreadable;
 
-    /// <summary>True while the detail sheet is open.</summary>
-    public bool IsSheetOpen { get; private set; }
-
-    /// <summary>The sheet's subject (the deep link's subject); kept after the sheet closes for the edge tab; empty before the first.</summary>
-    public string SheetSubject { get; private set; } = string.Empty;
-
-    /// <summary>True when the closed sheet shows its edge tab (a subject was opened before).</summary>
-    public bool HasEdgeTab => SheetSubject.Length > 0;
-
-    /// <summary>The sheet shows when it's open over a visible page.</summary>
-    public bool IsSheetShown => IsSheetOpen && IsConnected;
-
-    /// <summary>The edge tab's accessible name: "Reopen" and its subject.</summary>
-    public string EdgeTabName => Labels.Reopen + " " + SheetSubject;
-
-    /// <summary>The edge tab shows when the sheet is closed and has a subject, over a visible page.</summary>
-    public bool IsEdgeTabShown => !IsSheetOpen && HasEdgeTab && IsConnected;
-
     /// <summary>The attention band under the top bar (§3.2): always false in U0, since needs-you arrives in U3.</summary>
     public bool IsAttentionBandVisible { get; }
 
@@ -189,10 +178,16 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <summary>The detail sheet's width (420–760).</summary>
     public double SheetWidth => _preferences.SheetWidth;
 
-    /// <summary>Shows a page (the G-chords, the top bar, the pill) and remembers it.</summary>
+    /// <summary>Shows a page (the G-chords, the top bar, the pill) and remembers it. Any way to a page but G D clears the Home filter.</summary>
     /// <param name="page">The page.</param>
-    internal void GoTo(PageId page)
+    internal void GoTo(PageId page) => GoTo(page, HomeFilter.All);
+
+    /// <summary>Shows a page with a Home filter, which is set once (G D is the one way to a filter but All).</summary>
+    /// <param name="page">The page.</param>
+    /// <param name="filter">The Home filter.</param>
+    internal void GoTo(PageId page, HomeFilter filter)
     {
+        SetHomeFilter(filter);
         if (page == CurrentPage)
         {
             return;
@@ -224,6 +219,9 @@ internal sealed partial class ShellViewModel : ObservableObject
         GoTo(_beforeSettings);
         return true;
     }
+
+    // LANE ANCHOR U3': new Needs you state belongs in its own partial (ShellViewModel.<Slice>.cs), not in this file (cap 300 lines); only a hook-up line goes here. Insert immediately above this marker, never between the markers.
+    // LANE ANCHOR U8: new workflow state belongs in its own partial (ShellViewModel.<Slice>.cs), not in this file (cap 300 lines); only a hook-up line goes here. Insert immediately below this marker, never between the markers.
 
     /// <summary>Follows the control plane until cancelled (S1b's loop: control.json, ping, status, events).</summary>
     /// <param name="cancellationToken">Stops following.</param>

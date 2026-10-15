@@ -98,7 +98,7 @@ public sealed class AutomationPeerTests : IDisposable
         shell.GoTo(PageId.Home);
         Settle(window);
         var compact = First(window, b => b.Name == "RowFrame" && b.IsEffectivelyVisible);
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
         var row = First(window, b => b.Name == "RowFrame" && b.IsEffectivelyVisible);
         shell.OpenItem(A.NewItem);
@@ -132,7 +132,7 @@ public sealed class AutomationPeerTests : IDisposable
         Settle(window);
         var home = _homePanels.Select(n => Peer(First(window, b => b.Name == n))).ToList();
         var topBar = Peer(First(window, b => b.Classes.Contains("topbar")));
-        shell.GoTo(PageId.Health);
+        shell.GoTo(PageId.System);
         Settle(window);
         var pending = Peer(First(window, b => b.Name == "PendingLine"));
         shell.Palette.Open();

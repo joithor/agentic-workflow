@@ -20,7 +20,8 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
     // §8's G-chords (and ⌘, for Settings), by page.
     private static readonly (PageId Page, string Key)[] _pages =
     [
-        (PageId.Home, "G H"), (PageId.Queue, "G Q"), (PageId.Decisions, "G D"), (PageId.Services, "G S"), (PageId.Health, "G ."), (PageId.Settings, "⌘,"),
+        (PageId.Home, "G H"), (PageId.Workflows, "G W"), (PageId.Work, "G Q"), (PageId.Recipes, "G R"), (PageId.Context, "G C"), (PageId.Agents, "G A"),
+        (PageId.System, "G ."), (PageId.Settings, "⌘,"),
     ];
 
     private readonly CatalogViewModel _catalog;
@@ -157,15 +158,16 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
         switch (entry)
         {
             case { Page: { } page }:
-                Close();
+                // The page changes first, so the region the close hands focus back to already carries the new page's name.
                 _goTo(page);
+                Close();
                 break;
             case { Control.IsCliOnly: true }:
                 await Copy(entry, entry.Control, cancellationToken).ConfigureAwait(true);
                 break;
             case { Control.Action: "StopProcess" }:
                 Close();
-                _goTo(PageId.Health);
+                _goTo(PageId.System);
                 break;
             case { Control.Action: "CreateItem" }:
                 CreateItem?.Invoke();   // the form's own control sends it; it opens first, so the window hands the palette's opener on to it
@@ -183,7 +185,7 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
         var actions = _catalog.Controls.Where(c => !_sindri.Contains(c.Action, StringComparer.Ordinal)).OrderBy(c => c.Kind)
             .Select(c => PaletteEntry.For(c, Runs(c), NotRun(c)));
         var sindri = _sindri.Select(_catalog.For).OfType<ControlViewModel>().Select(c => PaletteEntry.For(c, Runs(c), NotRun(c)))
-            .Append(PaletteEntry.For(PageId.Health, "G ."));
+            .Append(PaletteEntry.For(PageId.System, "G ."));
         return
         [
             new(Labels.PaletteActions, [.. actions]),

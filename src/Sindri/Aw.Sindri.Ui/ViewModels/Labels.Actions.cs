@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using System.Globalization;
 
 namespace Aw.Sindri.Ui.ViewModels;
 
@@ -123,7 +124,7 @@ internal static partial class Labels
     /// <param name="count">How many rows are pending.</param>
     /// <returns>The words.</returns>
     internal static string PendingSummary(int count) =>
-        string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{count} {(count == 1 ? "action arrives" : "actions arrive")} in later phases");
+        string.Create(CultureInfo.InvariantCulture, $"{count} {(count == 1 ? "action arrives" : "actions arrive")} in later phases");
 
     /// <summary>The health pill's word for the status's health.word (E-14); a word this build doesn't know shows as served.</summary>
     /// <param name="word">'healthy', 'degraded', 'stalled' or 'rebuilding'.</param>

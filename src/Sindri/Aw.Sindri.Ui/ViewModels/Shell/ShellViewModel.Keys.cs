@@ -4,22 +4,12 @@ using Aw.Sindri.Ui.ViewModels.Queue;
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
 /// <summary>
-/// The shell's single keys (<see cref="ShellViewModel"/>, continued; UI spec §8): the G chord (1 s, "G …" in the top bar),
+/// The shell's single keys (<see cref="ShellViewModel"/>, continued; UI spec §8): the G chord (ShellViewModel.Chords.cs),
 /// J / K between rows, Enter to open the selected row's sheet, and C to create an item. The window passes a key only when
 /// no text field has focus and no layer is open.
 /// </summary>
 internal sealed partial class ShellViewModel
 {
-    // §8: "The chord waits 1 s"; on the injected clock so the unit lane tests it.
-    internal static readonly TimeSpan ChordWait = TimeSpan.FromSeconds(1);
-
-    private readonly TimeProvider _clock;
-    private DateTimeOffset? _chordAt;
-    private ITimer? _chordTimer;
-
-    /// <summary>"G …" while the chord waits for its second key, else empty.</summary>
-    public string ChordHint { get; private set => Set(ref field, value); } = string.Empty;
-
     /// <summary>One single key (a letter, "Enter"); true when it did something.</summary>
     /// <param name="key">The key: "G", "J", "K", "C", "Enter", …</param>
     /// <param name="inSheet">True when focus is in the detail sheet: the row keys (J, K, Enter, Y) belong to the sheet then.</param>
@@ -32,63 +22,13 @@ internal sealed partial class ShellViewModel
             return true;
         }
 
-        // An expired chord is no chord (§8): its key is handled as a fresh key, a G included.
-        if (_chordAt is { } at)
+        // The G chord (ShellViewModel.Chords.cs) takes G and its second key; an expired chord is no chord, so its key is a fresh one.
+        if (PressKey(key))
         {
-            var live = _clock.GetUtcNow() - at <= ChordWait;
-            EndChord();
-            if (live)
-            {
-                return Go(key);
-            }
-        }
-
-        if (key == "G")
-        {
-            StartChord();
             return true;
         }
 
         return Single(key, inSheet) || RowKey(key, inSheet);
-    }
-
-    // The chord waits ChordWait, then the clock ends it: the hint hides without another key.
-    private void StartChord()
-    {
-        EndChord();
-        var started = _clock.GetUtcNow();
-        _chordAt = started;
-        ChordHint = Labels.ChordHint;
-        var ui = SynchronizationContext.Current;
-        _chordTimer = _clock.CreateTimer(
-            _ =>
-            {
-                if (ui is null)
-                {
-                    LapseChord(started);
-                }
-                else
-                {
-                    ui.Post(_ => LapseChord(started), state: null);
-                }
-            },
-            state: null,
-            ChordWait,
-            Timeout.InfiniteTimeSpan);
-    }
-
-    private void LapseChord(DateTimeOffset started)
-    {
-        if (_chordAt == started)
-        {
-            EndChord();
-        }
-    }
-
-    private void EndChord()
-    {
-        _chordTimer?.Dispose();
-        (_chordTimer, _chordAt, ChordHint) = (null, null, string.Empty);
     }
 
     // Y copies the selected row's CLI (§8); / opens the Queue page's filter.
@@ -100,7 +40,7 @@ internal sealed partial class ShellViewModel
             return true;
         }
 
-        if (key != "/" || !IsQueue)
+        if (key != "/" || !IsWork)
         {
             return false;
         }
@@ -133,41 +73,10 @@ internal sealed partial class ShellViewModel
     internal bool IsSelectedRowOpen => OnRowPage && Queue.HasSelectionOn(RowScope)
         && string.Equals(Item.ItemId, Queue.SelectedId, StringComparison.Ordinal);
 
-    private bool OnRowPage => IsHome || IsQueue;
+    private bool OnRowPage => IsHome || IsWork;
 
     private QueueScope RowScope => RowScopeOf(CurrentPage) ?? QueueScope.Page;
 
     // The rows' scope for a page the shell shows (the queue follows it, silently); null for a page that draws none.
-    private static QueueScope? RowScopeOf(PageId page) => page == PageId.Home ? QueueScope.Home : page == PageId.Queue ? QueueScope.Page : null;
-
-    // The chord's second key (§8): N H Q R W D S and '.'.
-    private bool Go(string key)
-    {
-        switch (key)
-        {
-            case "N" or "H":
-                GoTo(PageId.Home);
-                return true;
-            case "Q":
-                GoToQueue(QueueFilter.All);
-                return true;
-            case "R":
-                GoToQueue(QueueFilter.Running);
-                return true;
-            case "W":
-                GoToQueue(QueueFilter.WithYou);
-                return true;
-            case "D":
-                GoTo(PageId.Decisions);
-                return true;
-            case "S":
-                GoTo(PageId.Services);
-                return true;
-            case ".":
-                GoTo(PageId.Health);
-                return true;
-            default:
-                return false;
-        }
-    }
+    private static QueueScope? RowScopeOf(PageId page) => page == PageId.Home ? QueueScope.Home : page == PageId.Work ? QueueScope.Page : null;
 }

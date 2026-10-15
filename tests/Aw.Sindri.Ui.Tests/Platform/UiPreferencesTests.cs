@@ -51,16 +51,16 @@ public sealed class UiPreferencesTests
     [InlineData("[]")]
     [InlineData("{ not json")]
     [InlineData("""{"version":"one"}""")]
-    [InlineData("""{"version":0,"sheetWidth":600,"lastPage":"Queue","seenIds":[],"paletteHistory":[],"textScale":1,"reduceMotion":false}""")]
-    [InlineData("""{"version":2,"sheetWidth":600,"lastPage":"Queue","seenIds":[],"paletteHistory":[],"textScale":1,"reduceMotion":false}""")]
+    [InlineData("""{"version":0,"sheetWidth":600,"lastPage":"Work","seenIds":[],"paletteHistory":[],"textScale":1,"reduceMotion":false}""")]
+    [InlineData("""{"version":2,"sheetWidth":600,"lastPage":"Work","seenIds":[],"paletteHistory":[],"textScale":1,"reduceMotion":false}""")]
     public void A_malformed_or_foreign_file_reads_as_the_defaults(string text) =>
         Assert.Equal(UiPreferences.Defaults, PreferencesJson.Read(Encoding.UTF8.GetBytes(text)));
 
     [Fact]
     public void Missing_lists_read_as_empty() =>
         Assert.Equal(
-            UiPreferences.Defaults with { LastPage = "Queue" },
-            PreferencesJson.Read("""{"version":1,"sheetWidth":520,"lastPage":"Queue","textScale":1,"reduceMotion":false}"""u8));
+            UiPreferences.Defaults with { LastPage = "Work" },
+            PreferencesJson.Read("""{"version":1,"sheetWidth":520,"lastPage":"Work","textScale":1,"reduceMotion":false}"""u8));
 
     [Theory]
     [InlineData(300, 200, 900, 600)]
@@ -100,7 +100,8 @@ public sealed class UiPreferencesTests
     [InlineData("Home", "Home")]
     [InlineData("Settings", "Settings")]
     [InlineData("queue", "Home")]
-    [InlineData("Agents", "Home")]
+    [InlineData("Decisions", "Home")]
+    [InlineData("Health", "Home")]
     [InlineData("", "Home")]
     public void An_unknown_page_reads_as_Home(string page, string clamped) =>
         Assert.Equal(clamped, (UiPreferences.Defaults with { LastPage = page }).Clamp().LastPage);

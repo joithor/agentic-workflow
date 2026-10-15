@@ -160,13 +160,13 @@ public sealed class CommandPaletteTests : IDisposable
         Settle(window);
         Assert.True(shell.Palette.IsOpen);
 
-        window.KeyTextInput("queue");   // the Queue page entry (a bare "go" now also matches workflow copy blocks)
+        window.KeyTextInput("workflows");   // the Workflows page entry (a bare "go" now also matches workflow copy blocks)
         Settle(window);
         Press(window, Key.Down, PhysicalKey.ArrowDown);
-        Assert.Equal("go:Queue", shell.Palette.Selected?.Id);
+        Assert.Equal("go:Workflows", shell.Palette.Selected?.Id);
         Press(window, Key.Enter, PhysicalKey.Enter);
 
-        Assert.Equal((PageId.Queue, false), (shell.CurrentPage, shell.Palette.IsOpen));
+        Assert.Equal((PageId.Workflows, false), (shell.CurrentPage, shell.Palette.IsOpen));
     });
 
     [Fact]

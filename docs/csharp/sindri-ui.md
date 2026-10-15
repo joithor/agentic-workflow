@@ -159,6 +159,18 @@ the page the tab hides as the sheet opens), as opening a covering sheet does. Cl
 tab when the tab reopened it, otherwise (a deep link) to the page region. Narrowing the window below 1100 px with the
 sheet open moves focus on the page (now disabled under the sheet) to the sheet's heading. A state change that hides the focused control moves focus to its region's neighbour: the pill in
 the top bar, the page region in the page (`ShellWindow.KeepFocus`, `TopBar.KeepRefreshFocus`).
+The mechanics: the regions (Page, Sheet, the top bar, the shortcuts card) are Borders with `AccessibilityView=Control` and
+`ControlTypeOverride=Group` (the `focus-region` style) so they have a named peer; `SheetTitle` is a Border typed Text that wraps
+the raw `SheetSubjectText`, so its name is the kind noun and the subject. **A page change by a navigation command** (a G-chord,
+the palette's Go to, a pointer click on a nav tab) always lands focus on the new page's region wherever focus was (the pill, a nav item, a sheet
+beside the page), and `ShellWindow.KeepFocusOrReannounce` does it: Avalonia 12.1.3 has no `ClearFocus`, so when the region
+already has focus it pulses `Page.IsEnabled` false and true (focus drops) and focuses it again, which raises the fresh event
+the screen reader speaks. From the palette, opened from the region, it raises two (the palette's close hands focus back, then the re-announce); the page changes before the palette closes, so both carry the new page's name. Over a
+covering sheet the page is disabled and the usual keep-focus rule applies. ⌘, keeps its own rule (Settings' first control,
+once, via `_openingSettings`). The nav tabs are a tabs pattern with automatic activation: Right, Left, Home and End on a focused tab select the neighbouring
+tab and focus stays on that tab (`ShellWindow.WatchNavigationKeys`; only a pointer click on a tab moves focus to the region).
+Other page changes that are not a navigation command (`LeaveSettings`, the Home health strip, the pill's `GoTo(System)`) take the
+same path as a chord; any new one would too unless it says otherwise. Whether the OS screen reader speaks it is not provable headless.
 
 ### Settings and reduced motion (§3.3 ⌘,, §11.4, §14.2)
 
@@ -382,13 +394,13 @@ pressed control shows the `detail` inline while the item still allows it, else t
 Tests key off the code and the golden's `detail`, never a copy of the sentence.
 
 **What the app shows.**
-- **Queue page** (`G Q`; `Views/Queue/QueuePage`): the API's groups as collapsible sections with counts; empty groups
-  hidden, a filtered group (`G R` running, `G W` with you) shows its own sentence; the view's `empty` when every group
+- **Queue page** (the Work tab, `G Q`; `Views/Queue/QueuePage`): the API's groups as collapsible sections with counts; empty groups
+  hidden, a filtered group shows its own sentence; the view's `empty` when every group
   is empty; skeleton rows on the first load only. Rows (`ItemRow`; Home uses `CompactItemRow`): id, title, repo, the state as a word, step, age,
   and the API's `primaryAction` as the catalog's control (pending rows draw disabled with their phase). A row sends
   nothing itself: Enter or a title click opens its sheet.
 - **Home** (`HomePage`): Running and With you (With you first, at most five, then "Show all N in Queue", which opens
-  the Queue on `G R`) and Queued (five, then "Show all N"), each with its group's own sentence when empty (E-18), in a
+  the Work page filtered to running) and Queued (five, then "Show all N"), each with its group's own sentence when empty (E-18), in a
   compact row. Needs you stays "not served yet" until U3. The Queue tab carries the queue's count.
 - **Item sheet** (`Views/Item/ItemSheet`, in the shell's sheet when the subject is `item/<ItemId>`): title, repo, the
   state as a word, version, age, created by, waiting on, instance; the item's `actions` ∩ the catalog as controls
@@ -404,8 +416,7 @@ Tests key off the code and the golden's `detail`, never a copy of the sentence.
   and **Keep** (focused; Esc keeps). Controls on a subject are named with it ("Close item ITM-…", §11.2).
 - **Refresh:** `HealthViewModel.Follow` registers the queue and the open item; the follower re-reads them after the
   status and services on connect and on every event (U1's 250 ms debounce). No payload is folded.
-- **Keys** (`ShellViewModel.Keys`): the `G` chord (1 s on the injected clock, "G …" while it waits: `N`/`H` Home, `Q`,
-  `R`, `W` Queue filters, `D`, `S`, `.`), `J`/`K` rows, `Enter` opens the selected row, `C` create; never while typing
+- **Keys** (`ShellViewModel.Keys`): the `G` chord is rev 8's (`ShellViewModel.Chords`: 1 s on the injected clock, "G …" while it waits; its keys are listed under "Rev 8 contract"), `J`/`K` rows, `Enter` opens the selected row, `C` create; never while typing
   in a field or over a layer. Esc closes the create form, then a confirm, then the sheet.
 
 **Spec-shaped fixtures (replace with P3 goldens of the same names).** `queue/{fixture,empty,stalled,large}`,
@@ -486,6 +497,62 @@ scripts/sindri-ui-fixture.sh down
 facts in `Controls/ControlViewModelTests`, and the P3 facts in `SindriApiContract` (fake and client). Integration lane:
 `Views/QueueFramesTests` (frames `u2-queue-populated`, `u2-queue-empty`, `u2-queue-loading`, `u2-home-panels`,
 `u2-item-sheet`, `u2-item-timeline`, `u2-item-404`, `u2-item-409`, `u2-create`, `u2-close-confirm`).
+
+## Rev 8 contract (UI spec rev 8, screens spec §3; PR #215)
+
+The rev-8 contract unit gives the shell its screens' skeleton and the app its first workflow reads; the pages fill in with
+U3' and U8.
+
+- **Navigation.** The top bar has seven tabs, in order: Home, Workflows, Work, Recipes, Context, Agents, System. Settings is
+  not a tab (⌘, opens it). `PageId` names the eight pages; a page with no screen yet shows a placeholder that says what it
+  waits for. The last page is remembered in the preferences.
+- **Chords.** `G`, then a page's key within `ShellViewModel.ChordWait` (1 s): `H` or `N` Home, `D` Home filtered to
+  decisions (`HomeFilter.Decisions`), `W` Workflows, `Q` Work, `R` Recipes, `C` Context, `A` Agents, `.` or `S` System.
+  They carry no modifier, so they are the same on every platform. The wait is a delay on the shell's clock (no timer
+  thread), and a generation says which chord a finished wait belongs to. A chord is gated like the other navigation
+  (`IsNavigationEnabled` and `IsChromeVisible`, in `PressKey`), never fires while a text field has focus or an overlay
+  is open, and any other unmodified key (Esc included) cancels a waiting chord. Any navigation but G D clears the Home
+  filter. The top bar shows `G …` while one waits, in a keycap inside the bar over the ⌘K field's right end (drawn in the bar, not below it, where the page region would paint over it).
+- **Deep links.** `workflow/<address>` (an address, which may contain `/`), `recipe/<id>`, `node/<key>`, `session/<id>`
+  and `system/<dependency>` go to Workflows, Recipes, Context, Agents and System; `item/`, `decision/`, `service/` and
+  `job/` open their sheet over the page shown; `needs-you/<row>` (the row's item, decision, service or job) opens that row's sheet;
+  `home/needs-you` is Home. A workflow instance's `subject.kind` is nullable (engine #227: null when the first input is a link
+  or payload with no declared kind); U8 shows the input's key then (API spec §3.8). `ShellViewModel.Navigate` routes them and the
+  sheet and its subject live in `ShellViewModel.Sheet.cs`.
+- **Workflow reads** (`ISindriApi`, API §3.8; the client's routes are in `Api/Workflow/WorkflowRoutes`):
+  `GET /sindri/workflow/instances` (the root rows and the root-wide counts; `root`, `open`, `recipe`, `subject`, `address`
+  narrow it), `GET /sindri/workflow/instances/{id}` (by the opaque id; an address is only ever a query value),
+  `GET /sindri/workflow/instances/{id}/facts/{key}` and `GET /sindri/workflow/recipes/{id}[@{hash}]`. The records mirror the
+  API's goldens (`Api/Workflow`). The views print the figures
+  as served (`counts.open`, a group's `done` and `total`) and recount nothing.
+- **Test support.** `WorkflowAnswers` serves the API's `workflow-*` goldens, found by enumerating the directory, to the
+  fake (`FakeSindriApi.Workflow.cs`) and to the handler; `FixtureInstances` is the one instance table (the root list
+  golden and every instance golden) with the one open rule, and `ChildTally` recounts a group's shown rows. They are
+  consistency checks on the fixture, not app code. `GoldenContractTests` deserializes every `workflow-instances`,
+  `-instance`, `-instance-fact`, `-status` and `-recipe` golden through the app's JSON context, and
+  `SindriApiContract.Workflow` runs the same scenarios against the fake and the real client.
+  Every recipe an instance runs has a recipe golden keyed by its id, and the fake answers it with that golden's body (the
+  contract test asserts both, and that the golden's `hash` is the one every instance running it reports); any other id,
+  or a hash nobody runs, is SND-RECIPE-002 (API spec line 771), never another recipe's content.
+
+## Lane anchors (U3' and U8)
+
+Two lanes add to the same files, so each hotspot carries one marker per lane, `LANE ANCHOR U3'` and `LANE ANCHOR U8`
+(a comment: `//` in C#, `<!-- -->` in XAML), adjacent: U3' first, U8 second. **One insertion rule:** U3' adds its lines
+immediately above its own marker and U8 adds its lines immediately below its own, so the pair stays together and neither
+lane inserts between the markers; every marker's text says so. Two merges then touch different lines. The files:
+`Api/ISindriApi.cs`, `Api/SindriApiClient.cs` (right after the public reads, `Recipe(...)`; a lane's routes go in a routes
+class of its own, like `Api/Workflow/WorkflowRoutes.cs`), `Api/SindriUiJsonContext.cs`, `ViewModels/Shell/ShellViewModel.cs` and
+`.Sheet.cs` (the markers sit inside the `IsSheetPlaceholderShown` switch), `Views/Shell/ShellWindow.axaml` (inside `SheetContent`, the content of the one sheet layer, chosen by the
+sheet's link kind), and in `tests/Aw.Sindri.Ui.Testing`: `FakeSindriApi.Workflow.cs`, `FakeSindriHandler.cs` (inside
+`Route()`'s switch, above the workflow-read arm, which answers GET only), `SindriApiContract.cs` and
+`SindriApiContract.Workflow.cs`. This page has its own marker at the end of "Tests". A lane's new shell state goes in its
+own `ShellViewModel.<Slice>.cs` partial (the file cap is 300 lines), and a lane's new window behavior goes in a
+`ShellWindow.<Slice>.cs` partial (`ShellWindow.axaml.cs` is near the cap). The sheet keeps the **kind** of the link that opened it
+(`SheetLink`: kind and subject; `SheetSubject` is derived), so `item/X` and `workflow/X` are two sheets and the edge tab
+reopens the right one. The sheet's content is chosen by that kind: `ShellViewModel.IsSheetPlaceholderShown` is `SheetLink?.Kind switch { …, _ => true }`, and `SheetBody` ("not served yet") binds its `IsVisible` to it. Each lane claims its kinds with one `DeepLinkKind.X or … => false` arm at its own marker inside that switch (U3' above its marker, U8 below its own), then adds its content inside `SheetContent`. The kinds follow screens spec §8, and each marker's text lists them as `(kinds: …)`, which a test parses: **U3'** claims `NeedsYou` and `Decision`; **U8** claims `Workflow` (its re-base of the item sheet, §4.7, is content and adds no arm). `Item` is U2's item sheet (#197): its arm, `DeepLinkKind.Item => false`, is written above both markers. `HomeNeedsYou` is a page link, not a sheet. `Recipe`, `Node`, `Session`, `System`, `Service` and `Job` are claimed later, at this switch, by the phase that renders them (screens spec §8). The sheet's accessible name carries the kind's noun (`SheetName`: "Workflow X", "Recipe X", "Node X", "Session X", "System X", "Service X") and the edge tab's follows it ("Reopen workflow X"); an item, decision, job or needs-you row keeps its bare id, which names itself. The rev-8 links (`workflow/`, `recipe/`, `node/`, `session/`, `system/`) go to their page and open the
+sheet on their subject. The desk-complete and nonce sends are **not declared** on `ISindriApi`: their shapes come with
+API P11 (Q-API-7/8), and declaring them now would guess.
 
 ## How it finds the control plane
 
@@ -596,3 +663,6 @@ dotnet test --project tests/Aw.Sindri.Ui.Tests --filter-trait "Lane=unit"
 dotnet test --project tests/Aw.Sindri.Ui.Tests --filter-trait "Lane=integration"
 bash src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh [<dir>]   # NativeAOT sindri-ui on a copy (CI's AOT step); copies it to <dir> when given
 ```
+
+<!-- LANE ANCHOR U3': document the Needs you screens. Insert immediately above this marker, never between the markers. -->
+<!-- LANE ANCHOR U8: document the instance screens. Insert immediately below this marker, never between the markers. -->

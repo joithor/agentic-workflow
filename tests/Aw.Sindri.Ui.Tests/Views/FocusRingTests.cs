@@ -132,7 +132,7 @@ public sealed class FocusRingTests : IDisposable
     {
         var (window, _) = await Running();
         var reached = TabThroughTopBar(window);
-        string[] expected = ["Navigation", "LaterButton", "SearchField", "HealthPill"]; // §11.2: navigation, search, health pill
+        string[] expected = ["Navigation", "SearchField", "HealthPill"]; // §11.2: navigation, search, health pill
 
         var names = reached.Select(Name).ToList();
         Assert.Equal(["TopBar", .. expected], names);

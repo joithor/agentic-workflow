@@ -1,0 +1,50 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:att="using:Aw.Sindri.Ui.ViewModels.Components"
+             x:Class="Aw.Sindri.Ui.Views.Components.ProtectedActionButton"
+             x:DataType="att:ProtectedActionViewModel">
+  <UserControl.Styles>
+    <!-- The announcement is live only while it speaks, so its resting text is never read
+         (docs/csharp/sindri-ui.md "LiveSetting on macOS"). -->
+    <Style Selector="TextBlock.live-region.live">
+      <Setter Property="AutomationProperties.LiveSetting" Value="Polite" />
+    </Style>
+  </UserControl.Styles>
+  <!-- Names inside the flyout use Name, not x:Name: its content is outside the view's name scope.
+       The protected-action label (screens fixture): a locked secondary button, "⌂ Accept · terminal", whose title says why.
+       It opens a popover with the CLI the catalog row serves, Copy, and Open in an agent (rev 8 critique run 5 P1: a lock
+       is never a dead end). The popover shows and copies; nothing here sends a command. -->
+  <StackPanel>
+    <Button x:Name="LockButton" Content="{Binding Label}" ToolTip.Tip="{Binding Title}"
+            AutomationProperties.Name="{Binding ButtonName}" AutomationProperties.HelpText="{Binding Title}">
+      <Button.Flyout>
+        <Flyout Placement="BottomEdgeAlignedLeft" ShowMode="Standard">
+          <StackPanel Name="PopoverRoot" x:DataType="att:ProtectedActionViewModel" Spacing="8" MinWidth="280">
+            <TextBlock Name="PopoverTitle" Classes="caption subtle" TextWrapping="Wrap" Text="{Binding Title}" />
+            <TextBlock Name="ServedCli" Classes="mono" TextWrapping="Wrap" Focusable="{Binding !HasFocusableAction}" Text="{Binding CliText}" AutomationProperties.Name="{Binding CliText}" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Name="CopyButton" IsEnabled="{Binding CanCopy}" Click="OnCopy" Content="{Binding CopyLabel}"
+                      AutomationProperties.Name="{Binding CopyName}" />
+              <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <!-- A disabled Button, not a focusable panel: a screen reader reaches it and hears what it waits for. -->
+                <Button Name="OpenInAgent" IsEnabled="{Binding !IsOpenInAgentPending}" Content="{Binding OpenInAgentLabel}"
+                        AutomationProperties.Name="{Binding OpenInAgentName}" />
+                <Panel Name="OpenInAgentChip" IsVisible="{Binding IsOpenInAgentPending}" AutomationProperties.AccessibilityView="Raw">
+                  <Rectangle Stroke="{DynamicResource Brush.HairlineStrong}" StrokeThickness="1" StrokeDashArray="3,3"
+                             RadiusX="4" RadiusY="4" IsHitTestVisible="False" />
+                  <TextBlock Classes="caption subtle" Margin="10,4" VerticalAlignment="Center" Text="{Binding OpenInAgentChip}"
+                             AutomationProperties.AccessibilityView="Raw" />
+                </Panel>
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
+        </Flyout>
+      </Button.Flyout>
+    </Button>
+    <!-- Copied: a polite live region that joins the tree when the popover opens (so a list of lock buttons carries one only for the button in use,
+         as Attach's does), live only while it speaks, never "" (Avalonia #22312). -->
+    <TextBlock x:Name="CopyAnnouncementRegion" Classes="caption live-region" Classes.live="{Binding IsAnnouncing}"
+               IsVisible="{Binding IsOpen}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" Text="{Binding Announcement}" />
+  </StackPanel>
+</UserControl>

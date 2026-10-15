@@ -34,17 +34,63 @@ internal static partial class Labels
     /// <summary>The text size slider.</summary>
     internal const string TextSize = "Text size";
 
+    /// <summary>The noun a sheet's name starts with for a link kind, or empty when the subject names itself (an item, decision, job or row id).</summary>
+    /// <param name="kind">The link's kind.</param>
+    /// <returns>The noun, capitalised ("Workflow"), or empty.</returns>
+    internal static string KindNoun(DeepLinkKind kind) => kind switch
+    {
+        DeepLinkKind.Workflow => "Workflow",
+        DeepLinkKind.Recipe => "Recipe",
+        DeepLinkKind.Node => "Node",
+        DeepLinkKind.Session => "Session",
+        DeepLinkKind.System => "System",
+        DeepLinkKind.Service => "Service",
+        DeepLinkKind.HomeNeedsYou or DeepLinkKind.NeedsYou or DeepLinkKind.Item or DeepLinkKind.Decision or DeepLinkKind.Job => string.Empty,
+        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, message: null),
+    };
+
     /// <summary>A page's name, as the top bar and the page region's accessible name say it (§11.2).</summary>
     /// <param name="page">The page.</param>
     /// <returns>The words.</returns>
     internal static string Page(PageId page) => page switch
     {
         PageId.Home => Home,
-        PageId.Queue => Queue,
-        PageId.Decisions => Decisions,
-        PageId.Services => Services,
-        PageId.Health => Health,
+        PageId.Workflows => Workflows,
+        PageId.Work => Work,
+        PageId.Recipes => Recipes,
+        PageId.Context => Context,
+        PageId.Agents => Agents,
+        PageId.System => System,
         PageId.Settings => Settings,
+        _ => throw new ArgumentOutOfRangeException(nameof(page), page, message: null),
+    };
+
+    /// <summary>Workflows' placeholder.</summary>
+    internal const string ArrivesWorkflows = "arrives with U8 and the workflow routes (API P11)";
+
+    /// <summary>Work's placeholder.</summary>
+    internal const string ArrivesWork = "arrives with U3' and the workflow routes (API P11)";
+
+    /// <summary>Recipes' placeholder.</summary>
+    internal const string ArrivesRecipes = "arrives with U10 and the recipe stats (API P12)";
+
+    /// <summary>Context's placeholder.</summary>
+    internal const string ArrivesContext = "arrives with U9 and the context lens routes (CTX phase 4)";
+
+    /// <summary>Agents' placeholder.</summary>
+    internal const string ArrivesAgents = "arrives with U11 and the launch targets (API P10a)";
+
+    /// <summary>What an unbuilt page says it waits for ("arrives with U8 and the workflow routes (API P11)"), or null for a built page.</summary>
+    /// <param name="page">The page.</param>
+    /// <returns>The words, or null.</returns>
+    internal static string? ArrivesWith(PageId page) => page switch
+    {
+        PageId.Workflows => ArrivesWorkflows,
+        PageId.Work => ArrivesWork,
+        PageId.Recipes => ArrivesRecipes,
+        PageId.Context => ArrivesContext,
+        PageId.Agents => ArrivesAgents,
+        PageId.Home or PageId.System or PageId.Settings => null,
         _ => throw new ArgumentOutOfRangeException(nameof(page), page, message: null),
     };
 

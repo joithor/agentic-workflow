@@ -1,78 +1,186 @@
+using System.Diagnostics;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
-using Aw.Sindri.Ui.ViewModels.Queue;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Ui.Tests.Shell;
 
-/// <summary>The G chord's one second (UI spec §8): it ends by the clock, and a key after it is a fresh key.</summary>
+/// <summary>The G-chords' timing, gating and filter (screens spec §3, rev 7 §8): the wait is on the clock, not a thread-pool timer.</summary>
 [Lane(TestLane.Unit)]
 public sealed class ShellChordTests
 {
+    private readonly InMemoryEndpointRecords _records = new();
+    private readonly FakeSindriApi _server = new();
     private readonly FakeTimeProvider _clock = new(A.Noon);
+    private readonly InMemoryPreferencesStore _preferences = new();
 
-    private ShellViewModel Shell() => new(new InMemoryEndpointRecords(), new FakeSindriApi(), _clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
+    private async Task<ShellViewModel> Shell()
+    {
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences), new FakeClipboard());
+        await shell.Restore(Token);
+        return shell;
+    }
+
+    // The wait ends on the clock's thread, so a test waits for the flag with a bound, never for a count of yields. The bound is
+    // well below ChordWait (1 s): a wait that ran on a real timer would still be pending when it runs out.
+    private static async Task Expired(ShellViewModel shell)
+    {
+        var bound = Stopwatch.StartNew();
+        while (shell.IsChordPending && bound.Elapsed < _expiryBound)
+        {
+            await Task.Delay(2, Token);
+        }
+    }
+
+    private static readonly TimeSpan _expiryBound = TimeSpan.FromMilliseconds(250);
 
     [Fact]
-    public void The_chord_hint_hides_when_the_second_passes_without_a_key()
+    public async Task A_chord_just_inside_its_wait_still_takes_the_second_key()
     {
-        var shell = Shell();
+        var shell = await Shell();
 
-        _ = shell.Press("G");
-        Assert.Equal("G …", shell.ChordHint);
-        _clock.Advance(TimeSpan.FromMilliseconds(500));
-        Assert.Equal("G …", shell.ChordHint);
-        _clock.Advance(TimeSpan.FromMilliseconds(600));
+        _ = shell.PressKey("G");
+        _clock.Advance(ShellViewModel.ChordWait - TimeSpan.FromMilliseconds(1));
 
+        Assert.True(shell.IsChordPending);
+        Assert.True(shell.PressKey("W"));
+        Assert.Equal(PageId.Workflows, shell.CurrentPage);
+    }
+
+    [Fact]
+    public async Task A_chord_at_its_wait_has_expired()
+    {
+        var shell = await Shell();
+
+        _ = shell.PressKey("G");
+        _clock.Advance(ShellViewModel.ChordWait);
+        await Expired(shell);
+
+        Assert.False(shell.IsChordPending);
         Assert.Equal(string.Empty, shell.ChordHint);
+        Assert.False(shell.PressKey("W"));
+        Assert.Equal(PageId.Home, shell.CurrentPage);
     }
 
     [Fact]
-    public void A_g_after_an_expired_chord_starts_a_new_chord()
+    public async Task An_old_wait_cannot_clear_a_newer_chord()
     {
-        var shell = Shell();
-        shell.GoTo(PageId.Home);
+        var shell = await Shell();
+        _ = shell.PressKey("G");
+        _clock.Advance(TimeSpan.FromMilliseconds(900));
+        _ = shell.PressKey("W");
+        _ = shell.PressKey("G");
 
-        _ = shell.Press("G");
-        _clock.Advance(TimeSpan.FromSeconds(2));
-        _ = shell.Press("G");
-        Assert.Equal("G …", shell.ChordHint);
-        _ = shell.Press("Q");
+        _clock.Advance(TimeSpan.FromMilliseconds(200));   // 1.1 s after the first G, 0.2 s after the second
+        await Task.Delay(50, Token);
 
-        Assert.Equal((PageId.Queue, QueueFilter.All, string.Empty), (shell.CurrentPage, shell.Queue.Showing, shell.ChordHint));
+        Assert.True(shell.IsChordPending);
+        Assert.True(shell.PressKey("Q"));
+        Assert.Equal(PageId.Work, shell.CurrentPage);
     }
 
-    // The timer's post to the UI context is queued but has not run: the app's window between the second passing and the dispatcher catching up.
     [Fact]
-    public Task A_g_after_the_second_but_before_the_posted_lapse_runs_is_a_fresh_chord() => UiThread.Run(async () =>
+    public async Task Cancelling_a_waiting_chord_clears_it_and_the_next_key_is_not_its_second()
     {
-        var shell = Shell();
-        shell.GoTo(PageId.Home);
+        var shell = await Shell();
+        _ = shell.PressKey("G");
 
-        _ = shell.Press("G");
-        _clock.Advance(TimeSpan.FromSeconds(2));   // posts the lapse to the queued context; it has not run
-        Assert.True(shell.Press("G"));
-        Assert.Equal("G …", shell.ChordHint);
-        await Task.Yield();   // the stale lapse runs now and must not end the new chord
-        Assert.Equal("G …", shell.ChordHint);
-        _ = shell.Press("Q");
+        shell.CancelChord();
 
-        Assert.Equal((PageId.Queue, string.Empty), (shell.CurrentPage, shell.ChordHint));
-    }, TestContext.Current.CancellationToken);
+        Assert.False(shell.IsChordPending);
+        Assert.False(shell.PressKey("W"));
+        Assert.Equal(PageId.Home, shell.CurrentPage);
+    }
 
     [Fact]
-    public void A_second_key_inside_the_second_still_completes_the_chord()
+    public async Task Cancelling_with_no_chord_waiting_does_nothing()
     {
-        var shell = Shell();
-        shell.GoTo(PageId.Home);
+        var shell = await Shell();
 
-        _ = shell.Press("G");
-        _clock.Advance(TimeSpan.FromMilliseconds(500));
-        _ = shell.Press("Q");
+        shell.CancelChord();
 
-        Assert.Equal(PageId.Queue, shell.CurrentPage);
+        Assert.False(shell.IsChordPending);
+    }
+
+    [Theory]
+    [InlineData(PageId.Work)]
+    [InlineData(PageId.Home)]
+    [InlineData(PageId.Settings)]
+    internal async Task Any_navigation_but_G_D_clears_the_Home_filter(PageId page)
+    {
+        var shell = await Shell();
+        _ = shell.PressKey("G");
+        _ = shell.PressKey("D");
+        Assert.Equal(HomeFilter.Decisions, shell.HomeFilter);
+
+        shell.GoTo(page);
+
+        Assert.Equal(HomeFilter.All, shell.HomeFilter);
+    }
+
+    // GoTo(page, filter) sets the filter once: G D with the filter already Decisions raises no HomeFilter change at all
+    // (it is not cleared and set again), and from All it changes once (corr-3).
+    [Fact]
+    public async Task G_D_sets_the_Home_filter_once_and_a_repeat_changes_nothing()
+    {
+        var shell = await Shell();
+        var changes = 0;
+        shell.PropertyChanged += (_, e) => changes += string.Equals(e.PropertyName, nameof(ShellViewModel.HomeFilter), StringComparison.Ordinal) ? 1 : 0;
+
+        _ = shell.PressKey("G");
+        _ = shell.PressKey("D");
+        Assert.Equal(1, changes);
+        _ = shell.PressKey("G");
+        _ = shell.PressKey("D");
+
+        Assert.Equal(1, changes);
+        Assert.Equal(HomeFilter.Decisions, shell.HomeFilter);
+    }
+
+    [Fact]
+    public async Task GoTo_with_a_filter_shows_the_page_with_that_filter()
+    {
+        var shell = await Shell();
+
+        shell.GoTo(PageId.Home, HomeFilter.Decisions);
+
+        Assert.Equal((PageId.Home, HomeFilter.Decisions), (shell.CurrentPage, shell.HomeFilter));
+    }
+
+    [Fact]
+    public async Task G_D_on_Home_with_the_filter_already_set_keeps_it()
+    {
+        var shell = await Shell();
+        _ = shell.PressKey("G");
+        _ = shell.PressKey("D");
+
+        _ = shell.PressKey("G");
+        _ = shell.PressKey("D");
+
+        Assert.Equal(HomeFilter.Decisions, shell.HomeFilter);
+    }
+
+    [Fact]
+    public async Task Chords_do_not_navigate_while_Sindri_is_not_running()
+    {
+        var shell = await Shell();
+        shell.GoTo(PageId.Context);
+        _ = shell.Run(Token);
+        for (var i = 0; i < 400 && shell.State != ShellState.NotRunning; i++)
+        {
+            await Task.Delay(5, Token);
+        }
+
+        Assert.Equal(ShellState.NotRunning, shell.State);
+        Assert.False(shell.PressKey("G"));
+        Assert.False(shell.IsChordPending);
+        Assert.False(shell.PressKey("W"));
+        Assert.Equal(PageId.Context, shell.CurrentPage);
+        Assert.Equal("Context", (await new Preferences(_preferences).Load(Token)).LastPage);
     }
 }

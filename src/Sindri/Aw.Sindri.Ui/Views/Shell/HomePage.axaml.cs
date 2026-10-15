@@ -44,7 +44,7 @@ internal sealed partial class HomePage : UserControl
         Grid.SetRow(queued, stacked ? 2 : 0);
     }
 
-    private void OnHealthStrip(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.GoTo(PageId.Health);
+    private void OnHealthStrip(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.GoTo(PageId.System);
 
     // "Show all N in Queue": the Queue page, filtered to the panel's group for Running (G R), whole for Queued.
     private void OnShowAll(object? sender, RoutedEventArgs e)

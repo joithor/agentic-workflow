@@ -30,7 +30,7 @@ public sealed class ShellItemsTests
         var shell = new ShellViewModel(_records, _server, _clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
         await shell.Restore(Token);
         _ = shell.Run(Token);
-        await Until(() => shell.State == ShellState.Normal && shell.Queue.Total > 0 && shell.Navigation[1].Count.Length > 0 && shell.Queue.Groups.Count > 0);
+        await Until(() => shell.State == ShellState.Normal && shell.Queue.Total > 0 && shell.Navigation[2].Count.Length > 0 && shell.Queue.Groups.Count > 0);
         return shell;
     }
 
@@ -50,13 +50,13 @@ public sealed class ShellItemsTests
     {
         var shell = await Connected();
         Assert.Equal(5, shell.Queue.Total);
-        Assert.Equal("5", shell.Navigation[1].Count);
+        Assert.Equal("5", shell.Navigation[2].Count);
 
         _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
         _server.Push(A.Event(58, "item.created"));
 
-        await Until(() => shell.Queue.Total == 12 && shell.Navigation[1].Count == "12");
-        Assert.Equal("12", shell.Navigation[1].Count);
+        await Until(() => shell.Queue.Total == 12 && shell.Navigation[2].Count == "12");
+        Assert.Equal("12", shell.Navigation[2].Count);
     }
 
     // corr-11: an empty first answer still ends the tab's blank: the Queue tab says 0, not nothing.
@@ -70,8 +70,8 @@ public sealed class ShellItemsTests
 
         _ = shell.Run(Token);
 
-        await Until(() => shell.State == ShellState.Normal && !shell.Queue.IsLoading && shell.Navigation[1].Count == "0");
-        Assert.Equal(("0", 0), (shell.Navigation[1].Count, shell.Queue.Total));
+        await Until(() => shell.State == ShellState.Normal && !shell.Queue.IsLoading && shell.Navigation[2].Count == "0");
+        Assert.Equal(("0", 0), (shell.Navigation[2].Count, shell.Queue.Total));
     }
 
     // §3.3 deep link item/<ItemId>: the sheet shows the item; every event re-reads it too.
@@ -114,12 +114,12 @@ public sealed class ShellItemsTests
         Assert.True(shell.Press("G"));
         Assert.Equal("G …", shell.ChordHint);
         Assert.True(shell.Press("R"));
-        Assert.Equal((PageId.Queue, QueueFilter.Running, string.Empty), (shell.CurrentPage, shell.Queue.Showing, shell.ChordHint));
+        Assert.Equal((PageId.Work, QueueFilter.Running, string.Empty), (shell.CurrentPage, shell.Queue.Showing, shell.ChordHint));
 
         _ = shell.Press("G");
         _clock.Advance(ShellViewModel.ChordWait + TimeSpan.FromMilliseconds(1));
         Assert.False(shell.Press("H"));
-        Assert.Equal(PageId.Queue, shell.CurrentPage);
+        Assert.Equal(PageId.Work, shell.CurrentPage);
 
         _ = shell.Press("G");
         _ = shell.Press("Q");
@@ -131,7 +131,7 @@ public sealed class ShellItemsTests
     public async Task J_and_enter_open_the_selected_rows_sheet_and_c_opens_create()
     {
         var shell = await Connected();
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
 
         Assert.True(shell.Press("J"));
         Assert.True(shell.Press("Enter"));
@@ -161,7 +161,7 @@ public sealed class ShellItemsTests
     public async Task The_row_keys_belong_to_the_sheet_while_focus_is_in_it()
     {
         var shell = await Connected();
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         _ = shell.Press("J");
         var selected = shell.Queue.SelectedId;
 
@@ -184,7 +184,7 @@ public sealed class ShellItemsTests
         await Until(() => shell.State == ShellState.Normal && shell.Queue.Total > 0 && shell.Queue.Groups.Count > 0);
 
         Assert.False(shell.Press("/"));
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         _ = shell.Press("J");
         Assert.True(shell.Press("Y"));
         await Until(() => clipboard.Text is not null);
@@ -222,7 +222,7 @@ public sealed class ShellItemsTests
             _ = shell.Press("J");
             _ = shell.Press("J");
             var selected = shell.Queue.SelectedId!;
-            shell.GoTo(PageId.Decisions);
+            shell.GoTo(PageId.Recipes);
 
             _server.QueueView = QueueKeysTests.Regrouped("extra-p11-running", selected, "waitingOnYou");
             await shell.Queue.Refresh(new Uri("http://127.0.0.1:7410/"), Token);   // awaited: an event's refresh would race the reads
@@ -231,9 +231,9 @@ public sealed class ShellItemsTests
             Assert.Equal((selected, false, Labels.Sindri), (shell.Queue.SelectedId, shell.Queue.IsAnnouncing, shell.Queue.Announcement));
         }, Token);
 
-    // V1 through the shell: the selected row leaves the queue on Decisions; the settle is silent, so G H works on the first key.
+    // V1 through the shell: the selected row leaves the queue on Recipes; the settle is silent, so G H works on the first key.
     [Fact]
-    public async Task A_selected_row_that_leaves_while_decisions_is_shown_does_not_guard_the_next_key()
+    public async Task A_selected_row_that_leaves_while_recipes_is_shown_does_not_guard_the_next_key()
     {
         _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
         var shell = await Connected();
@@ -241,8 +241,8 @@ public sealed class ShellItemsTests
         _ = shell.Press("J");
         var selected = shell.Queue.SelectedId!;
         _ = shell.Press("G");
-        _ = shell.Press("D");
-        Assert.Equal(PageId.Decisions, shell.CurrentPage);
+        _ = shell.Press("R");
+        Assert.Equal(PageId.Recipes, shell.CurrentPage);
 
         _server.QueueView = QueueKeysTests.Without("extra-p11-running", selected);
         await shell.Queue.Refresh(new Uri("http://127.0.0.1:7410/"), Token);   // awaited here: an event's refresh would race the keys
@@ -257,7 +257,7 @@ public sealed class ShellItemsTests
     public async Task A_row_regrouped_while_the_restored_page_has_no_rows_keeps_its_selection_silently()
     {
         var store = new InMemoryPreferencesStore();
-        await new Preferences(store).Update(_ => UiPreferences.Defaults with { LastPage = nameof(PageId.Decisions) });
+        await new Preferences(store).Update(_ => UiPreferences.Defaults with { LastPage = nameof(PageId.Recipes) });
         _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
         _records.Write(A.Record());
         var shell = new ShellViewModel(_records, _server, _clock, new Preferences(store), new FakeClipboard());
@@ -265,7 +265,7 @@ public sealed class ShellItemsTests
         await shell.Restore(Token);
         _ = shell.Run(Token);
         await Until(() => shell.State == ShellState.Normal && shell.Queue.Total > 0);
-        Assert.Equal(PageId.Decisions, shell.CurrentPage);
+        Assert.Equal(PageId.Recipes, shell.CurrentPage);
 
         _server.QueueView = QueueKeysTests.Regrouped("extra-p11-running", QueueKeysTests.Running(1), "waitingOnYou");
         await shell.Queue.Refresh(new Uri("http://127.0.0.1:7410/"), Token);   // awaited here: an event's refresh would race the assertions

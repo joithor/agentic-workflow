@@ -64,7 +64,7 @@ public sealed class CreateItemDialogTests : IDisposable
         window.Show();
         _ = shell.Run(_stop.Token);
         await Until(window, () => shell.State == ShellState.Normal && shell.Queue.Total > 0 && shell.Queue.Groups.Count > 0 && shell.Health.Catalog.Controls.Count > 0);
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
         return (window, shell);
     }

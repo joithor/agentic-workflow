@@ -415,4 +415,6 @@ public abstract partial class SindriApiContract
 
         Expect.Equal(("SND-ITEM-409", A.Detail("items-id-close", "stale-version")), (refused.Error.Code, refused.Error.Message));
     }
+    // LANE ANCHOR U3': contract cases for the U3' reads go in a new partial file (SindriApiContract.<Slice>.cs); only a hook-up line goes here. Insert immediately above this marker, never between the markers.
+    // LANE ANCHOR U8: contract cases for the U8 sends go in SindriApiContract.Workflow.cs; only a hook-up line goes here. Insert immediately below this marker, never between the markers.
 }

@@ -14,9 +14,26 @@ internal sealed class NavEntry(PageId page, string label, string key, string cou
     /// <summary>Its label.</summary>
     public string Label { get; } = label;
 
-    /// <summary>The G-chord's second key (§8): H, Q, D, S.</summary>
+    /// <summary>The G-chord's second key (§8): H, W, Q, R, C, A, ..</summary>
     public string Key { get; } = key;
 
     /// <summary>The count from the page's view rows, or empty until its route is served.</summary>
-    public string Count { get; internal set => Set(ref field, value); } = count;
+    public string Count
+    {
+        get;
+        internal set
+        {
+            if (field == value)
+            {
+                return;
+            }
+
+            field = value;
+            OnChanged(nameof(Count));
+            OnChanged(nameof(HasCount));
+        }
+    } = count;
+
+    /// <summary>True when there is a count to draw; an empty one takes no room (seven tabs must fit at 900 px).</summary>
+    public bool HasCount => Count.Length > 0;
 }
