@@ -31,7 +31,7 @@ public sealed class GoldenContractTests
         ["queue"] = As<QueueView>,
         ["items-id"] = As<ItemView>,
         ["items-id-timeline"] = As<TimelineView>,
-        ["items"] = As<ItemCreatedView>,
+        ["items"] = As<ItemCreatedView>,   // POST /items' created* goldens only
         ["items-id-close"] = As<CommandAcceptedView>,
     };
 
@@ -41,7 +41,7 @@ public sealed class GoldenContractTests
     {
         "stop", "profile-approve", "profile",
         "workflow-instances", "workflow-instance", "workflow-instance-fact", "workflow-status", "workflow-recipe",
-        "queue", "items", "items-id", "items-id-timeline", "items-id-close",   // API P3: the queue and item screens (U2) place these
+        "items",   // GET /items (the list) is never called; POST /items' created* goldens are read (see the loop)
     };
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -63,7 +63,7 @@ public sealed class GoldenContractTests
                 continue;
             }
 
-            if (_notRead.Contains(slug))
+            if (_notRead.Contains(slug) && !(slug == "items" && scenario.StartsWith("created", StringComparison.Ordinal)))
             {
                 continue;
             }
