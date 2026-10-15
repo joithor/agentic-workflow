@@ -251,6 +251,7 @@ public sealed class CreateItemDialogTests : IDisposable
         Assert.Equal((true, "Title is required"), (error.IsEffectivelyVisible, error.Text));
         Assert.Equal(("Title is required", true), (live.Text, live.Classes.Contains("live")));
         Assert.Equal(Named<TextBox>(window, "TitleField"), Focused(window));
+        Assert.Equal("Title is required", Avalonia.Automation.AutomationProperties.GetHelpText(Named<TextBox>(window, "TitleField")));   // a11y-8: the error is attached to the field
         Assert.Empty(_server.Created);
         Assert.True(shell.Create.IsOpen);
     });
