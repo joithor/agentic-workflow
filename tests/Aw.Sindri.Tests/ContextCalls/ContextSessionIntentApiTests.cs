@@ -17,6 +17,8 @@ namespace Aw.Sindri.Tests.ContextCalls;
 /// <summary>Owner decision 2026-10-15: B. A session (HTTP and MCP) sees the records and decisions linked to its repo's nodes, fenced, and nothing linked only to other nodes (context spec §3).</summary>
 public sealed class ContextSessionIntentApiTests : IDisposable
 {
+    private const string InRecord = "record:linear:issue/0e5a1b00-0000-4000-8000-000000000a02";
+    private const string Fenced = "<untrusted source=\"map\">Mentions in</untrusted>";
     private const string OutRecord = "record:linear:issue/0e5a1b00-0000-4000-8000-000000000b02";
     private readonly FixtureRepo _repo = FixtureRepo.Build();
 
@@ -92,5 +94,26 @@ public sealed class ContextSessionIntentApiTests : IDisposable
         Assert.Equal(true, outside.IsError);
         Assert.Contains("SND-CONTEXT-003", outside.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal);
         Assert.DoesNotContain("ZEBRA", outside.StructuredContent.Value.GetRawText(), StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task A_record_anchor_s_lenses_are_fenced_for_a_session_over_http_and_mcp_and_clean_but_untrusted_for_a_human()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Host();
+        await using var mcp = await McpSession.Open(host, FixtureMap.Repo, ct);
+        var url = "/sindri/context/lenses?anchor=" + Uri.EscapeDataString(InRecord);
+
+        var http = Json((await host.Http.Ask(Get(url, Session()))).Body);
+        var over = (await mcp.Call("context_lenses", $$"""{"anchor":"{{InRecord}}"}""", ct)).StructuredContent!.Value;
+        var human = Json((await host.Http.Ask(Get(url, (SindriHeaders.Caller, "human"), (SindriHeaders.Token, host.Token.Value)))).Body);
+
+        foreach (var view in new[] { http, over })
+        {
+            Assert.Equal(Fenced, view.GetProperty("anchor").GetProperty("label").GetString());
+            Assert.Equal(Fenced, view.GetProperty("bands").GetProperty("product").GetProperty("own")[0].GetProperty("label").GetString());
+        }
+
+        Assert.Equal(("Mentions in", "untrusted"), (human.GetProperty("anchor").GetProperty("label").GetString(), human.GetProperty("anchor").GetProperty("trust").GetString()));
     }
 }

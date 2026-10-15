@@ -25,9 +25,11 @@ public sealed class SessionDenyAcrossReposTests : IDisposable
         new(ContextRepoName.From(Other), "/work/other") { DenyPaths = [.. PathDenylist.Defaults, .. otherDenies ? new[] { "docs/private/**" } : []] },
     ];
 
-    private static ContextScope Scope(ContextCallerKind kind, bool otherDenies)
+    private static ContextScope Scope(ContextCallerKind kind, bool otherDenies, bool narrowed = false)
     {
-        using var section = System.Text.Json.JsonDocument.Parse("""{"sessions":{"enabled":true}}""");
+        using var section = System.Text.Json.JsonDocument.Parse(narrowed
+            ? """{"sessions":{"enabled":true},"repos":["aw-split-panes"]}"""
+            : """{"sessions":{"enabled":true}}""");
         var caller = kind == ContextCallerKind.Session
             ? new ContextCaller(kind, ContextRepoName.From(FixtureMap.Repo), ContextClient.Http)
             : new ContextCaller(kind, Repo: null, ContextClient.Cli);
@@ -73,14 +75,16 @@ public sealed class SessionDenyAcrossReposTests : IDisposable
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData(ContextCallerKind.Session)]
-    [InlineData(ContextCallerKind.Human)]
-    public async Task A_document_another_profile_repo_denies_is_gone_with_its_decision_for_a_session_and_a_human(ContextCallerKind kind)
+    [InlineData(ContextCallerKind.Session, false)]
+    [InlineData(ContextCallerKind.Human, false)]
+    [InlineData(ContextCallerKind.Session, true)]
+    [InlineData(ContextCallerKind.Human, true)]
+    public async Task A_document_another_profile_repo_denies_is_gone_with_its_decision_for_a_session_and_a_human_even_when_context_repos_leaves_that_repo_out(ContextCallerKind kind, bool narrowed)
     {
         await ImportMap();
 
-        var (open, _) = await Reads(Scope(kind, otherDenies: false));
-        var (denied, codes) = await Reads(Scope(kind, otherDenies: true));
+        var (open, _) = await Reads(Scope(kind, otherDenies: false, narrowed));
+        var (denied, codes) = await Reads(Scope(kind, otherDenies: true, narrowed));
 
         Assert.Contains("BPRIVATE-TITLE-ZEBRA", open, StringComparison.Ordinal);   // why: without the glob the pair is visible, so the denied run proves the cut
         Assert.DoesNotContain("ZEBRA", denied, StringComparison.Ordinal);

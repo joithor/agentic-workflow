@@ -115,6 +115,24 @@ public sealed class SessionIntentScopeTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_record_anchor_s_lenses_fence_its_title_for_a_session_and_report_untrusted_beside_a_clean_label_for_a_human()
+    {
+        await ImportMap();
+        const string mentions = "record:linear:issue/0e5a1b00-0000-4000-8000-000000000a02";
+        const string fenced = "<untrusted source=\"map\">Mentions in</untrusted>";
+
+        var session = (await _world.Engine.Lenses(mentions, draft: false, depth: null, MapWorld.Session(FixtureMap.Repo), MapWorld.None)).Value;
+        var human = (await _world.Engine.Lenses(mentions, draft: false, depth: null, MapWorld.Human, MapWorld.None)).Value;
+
+        Assert.Equal((fenced, Trust.Untrusted), (session.Anchor.Label, session.Anchor.Trust));
+        var own = Assert.Single(session.Bands.Product.Own, i => i.Node.Value == mentions);
+        Assert.Equal((fenced, Trust.Untrusted), (own.Label, own.Trust));
+        Assert.Equal(("Mentions in", Trust.Untrusted), (human.Anchor.Label, human.Anchor.Trust));
+        var humanOwn = Assert.Single(human.Bands.Product.Own, i => i.Node.Value == mentions);
+        Assert.Equal(("Mentions in", Trust.Untrusted), (humanOwn.Label, humanOwn.Trust));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_record_a_visible_decision_quotes_is_shown_with_only_its_in_scope_mentions_and_is_003_when_the_quoted_doc_is_denied()
     {
         await ImportMap();
