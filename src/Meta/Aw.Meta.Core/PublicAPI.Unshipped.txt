@@ -69,7 +69,6 @@ Aw.Meta.Core.Config.StepConfig.Run.init -> void
 Aw.Meta.Core.Config.StepConfig.StepConfig(string! Name, System.Collections.Generic.IReadOnlyList<string!>! Run, bool Heavy = false) -> void
 Aw.Meta.Core.Config.TeamConfig
 Aw.Meta.Core.Config.TeamConfig.<Clone>$() -> Aw.Meta.Core.Config.TeamConfig!
-Aw.Meta.Core.Config.TeamConfig.Deconstruct(out string! Team, out string! Repo, out System.Collections.Generic.IReadOnlyList<string!>! Lanes) -> void
 Aw.Meta.Core.Config.TeamConfig.Equals(Aw.Meta.Core.Config.TeamConfig? other) -> bool
 Aw.Meta.Core.Config.TeamConfig.Gate.get -> Aw.Meta.Core.Config.GateConfig!
 Aw.Meta.Core.Config.TeamConfig.Gate.init -> void
@@ -89,7 +88,7 @@ Aw.Meta.Core.Config.TeamConfig.Repo.get -> string!
 Aw.Meta.Core.Config.TeamConfig.Repo.init -> void
 Aw.Meta.Core.Config.TeamConfig.Team.get -> string!
 Aw.Meta.Core.Config.TeamConfig.Team.init -> void
-Aw.Meta.Core.Config.TeamConfig.TeamConfig(string! Team, string! Repo, System.Collections.Generic.IReadOnlyList<string!>! Lanes) -> void
+Aw.Meta.Core.Config.TeamConfig.TeamConfig(string! team, string! repo, System.Collections.Generic.IReadOnlyList<string!>! lanes, string! metaLane = "meta", string? log = null, string? prompts = null, Aw.Meta.Core.Config.GateConfig? gate = null, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.MergeOrderRule!>? mergeOrder = null, System.Collections.Generic.IReadOnlyList<string!>? knownFlakes = null) -> void
 Aw.Meta.Core.Gate.FlakeRule
 Aw.Meta.Core.Gate.FlakeVerdict
 Aw.Meta.Core.Gate.FlakeVerdict.Flake = 1 -> Aw.Meta.Core.Gate.FlakeVerdict

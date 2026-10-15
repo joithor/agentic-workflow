@@ -1,16 +1,57 @@
+using System.Text.Json.Serialization;
+
 namespace Aw.Meta.Core.Config;
 
 /// <summary>
 /// The team the meta session coordinates: everything team-specific lives here, nothing is built into the code.
-/// Unknown fields in the file are ignored.
+/// Unknown fields in the file are ignored; every field but the first three is optional.
 /// </summary>
-/// <param name="Team">The team name; session names are "team-lane".</param>
-/// <param name="Repo">The repository directory the gate and merge commands work in.</param>
-/// <param name="Lanes">The lane names, the meta lane included.</param>
-public sealed record TeamConfig(string Team, string Repo, IReadOnlyList<string> Lanes)
+public sealed record TeamConfig
 {
+    /// <summary>Creates a config.</summary>
+    /// <param name="team">The team name; session names are "team-lane".</param>
+    /// <param name="repo">The repository directory the gate and merge commands work in.</param>
+    /// <param name="lanes">The lane names, the meta lane included.</param>
+    /// <param name="metaLane">The meta lane's name.</param>
+    /// <param name="log">The running log file; null means the default under the state directory.</param>
+    /// <param name="prompts">A directory of per-lane kickoff prompts, read only by the launcher script.</param>
+    /// <param name="gate">The gate scopes; none when absent.</param>
+    /// <param name="mergeOrder">Merge-order rules; none when absent.</param>
+    /// <param name="knownFlakes">Names of tests known to be flaky; none when absent.</param>
+    [JsonConstructor]
+    public TeamConfig(
+        string team,
+        string repo,
+        IReadOnlyList<string> lanes,
+        string metaLane = "meta",
+        string? log = null,
+        string? prompts = null,
+        GateConfig? gate = null,
+        IReadOnlyList<MergeOrderRule>? mergeOrder = null,
+        IReadOnlyList<string>? knownFlakes = null)
+    {
+        Team = team;
+        Repo = repo;
+        Lanes = lanes;
+        MetaLane = metaLane;
+        Log = log;
+        Prompts = prompts;
+        Gate = gate ?? GateConfig.Empty;
+        MergeOrder = mergeOrder ?? [];
+        KnownFlakes = knownFlakes ?? [];
+    }
+
+    /// <summary>The team name; session names are "team-lane".</summary>
+    public string Team { get; init; }
+
+    /// <summary>The repository directory the gate and merge commands work in.</summary>
+    public string Repo { get; init; }
+
+    /// <summary>The lane names, the meta lane included.</summary>
+    public IReadOnlyList<string> Lanes { get; init; }
+
     /// <summary>The meta lane's name.</summary>
-    public string MetaLane { get; init; } = "meta";
+    public string MetaLane { get; init; }
 
     /// <summary>The running log file; null means the default under the state directory.</summary>
     public string? Log { get; init; }
@@ -19,11 +60,11 @@ public sealed record TeamConfig(string Team, string Repo, IReadOnlyList<string> 
     public string? Prompts { get; init; }
 
     /// <summary>The gate scopes.</summary>
-    public GateConfig Gate { get; init; } = GateConfig.Empty;
+    public GateConfig Gate { get; init; }
 
     /// <summary>Merge-order rules.</summary>
-    public IReadOnlyList<MergeOrderRule> MergeOrder { get; init; } = [];
+    public IReadOnlyList<MergeOrderRule> MergeOrder { get; init; }
 
     /// <summary>Names of tests known to be flaky.</summary>
-    public IReadOnlyList<string> KnownFlakes { get; init; } = [];
+    public IReadOnlyList<string> KnownFlakes { get; init; }
 }

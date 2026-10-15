@@ -24,6 +24,10 @@ public abstract class GateStoreContract
         verdict,
         A.At(5));
 
+    private static bool Same(GateRecord? a, GateRecord b) =>
+        a is not null && a.Pr == b.Pr && a.Run == b.Run && a.Head == b.Head && a.Main == b.Main && a.Verdict == b.Verdict && a.At == b.At
+        && a.Scopes.SequenceEqual(b.Scopes, StringComparer.Ordinal) && a.Steps.SequenceEqual(b.Steps);
+
     /// <summary>Runs are numbered per pull request and the latest one is returned with its steps in order.</summary>
     /// <returns>A task.</returns>
     [Fact]
@@ -38,7 +42,7 @@ public abstract class GateStoreContract
         var none = await store.Latest(404, _none);
 
         Expect.That(first.Value.Run == 1 && second.Value.Run == 2 && other.Value.Run == 1, "runs count per pull request");
-        Expect.That(latest.Value == second.Value, "the latest run reads back with every field");
+        Expect.That(Same(latest.Value, second.Value), "the latest run reads back with every field");
         Expect.That(latest.Value!.Steps.Select(s => s.Name).SequenceEqual(["repo", "unit"], StringComparer.Ordinal), "steps keep their order");
         Expect.That(none.IsSuccess && none.Value is null, "no run is null");
     }

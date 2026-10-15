@@ -4,7 +4,14 @@ namespace Aw.Meta.Infrastructure;
 internal static class SettingsFromEnvironment
 {
     internal static MetaSettings Read(Func<string, string?> environment)
-        => new(StateDirectory: environment("AW_STATE_DIR") is { Length: > 0 } root
+    {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var state = environment("AW_STATE_DIR") is { Length: > 0 } root
             ? Path.Combine(root, "meta")
-            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".agentic-workflow", "meta"));
+            : Path.Combine(home, ".agentic-workflow", "meta");
+        return new MetaSettings(
+            state,
+            environment("AW_META_CONFIG") is { Length: > 0 } config ? config : Path.Combine(state, "team.json"),
+            environment("AW_CLAUDE_SESSIONS_DIR") is { Length: > 0 } sessions ? sessions : Path.Combine(home, ".claude", "sessions"));
+    }
 }
