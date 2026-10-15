@@ -14,7 +14,10 @@ public sealed partial class ShippedRecipesTests
     [Fact, Trait("Lane", "unit")]
     public void The_real_and_dev_recipes_are_shipped() =>
         Assert.Equal(
-            ["dev/workflow.dev-notify.yaml", "dev/workflow.dev-timeout.yaml", "sindri/workflow.item.yaml", "sindri/workflow.step.yaml"],
+            [
+                "dev/desk-round-trip.yaml", "dev/incident-hold.yaml", "dev/triage-three-state.yaml", "dev/workflow.dev-notify.yaml",
+                "dev/workflow.dev-timeout.yaml", "sindri/workflow.item.yaml", "sindri/workflow.step.yaml",
+            ],
             ShippedRecipes.Recipes,
             StringComparer.Ordinal);
 

@@ -1,6 +1,10 @@
+using System.Globalization;
 using System.Text;
+using Aw.Context.Core;
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Results;
 using Aw.Sindri.Core;
+using Aw.Sindri.Host.Text;
 
 namespace Aw.Sindri.Host.Commands;
 
@@ -14,8 +18,6 @@ namespace Aw.Sindri.Host.Commands;
 /// <param name="output">Where the verbs write.</param>
 internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
 {
-    private static readonly string[] _attention = ["SND-API-001", "SND-CONTEXT-003", "SND-CONTEXT-005", "SND-CONTEXT-006", "SND-CONTEXT-020"];
-
     internal Task<int> Run(string[] args, CancellationToken ct) => args switch
     {
         ["query", .. var rest] => Query(rest, ct),
@@ -23,7 +25,7 @@ internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
         ["sources", "status", "--json"] => Sources(json: true, ct),
         ["sources", "sync"] => output.Error(SindriErrors.UnknownVerb.With(
             "'context sources sync' is pending:S-5B (a job: it ships with stage S-5B, after API P6's job runtime); repo docs refresh through the context-docs-refresh service: name it under services: in the profile")),
-        _ => output.Error(SindriErrors.UnknownVerb.With($"'context {string.Join(' ', args)}' is not a context command: context query <text> | context sources status | context sources sync | context map import|export|status")),
+        _ => output.Error(SindriErrors.UnknownVerb.With($"'context {string.Join(' ', args)}' is not a context command: context query <text> | context show|neighbors|path | context eval probes | context sources status | context sources sync | context map import|export|status")),
     };
 
     private async Task<int> Query(string[] rest, CancellationToken ct)
@@ -31,7 +33,7 @@ internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
         var parsed = QueryArguments.Parse(rest);
         if (parsed.IsError)
         {
-            return await output.Error(parsed.Error).ConfigureAwait(false);
+            return await Failed(parsed.Error).ConfigureAwait(false);   // a refused question (006) is attention (1); a usage error stays 2
         }
 
         var answer = await client.Get<ContextResult>("/sindri/context/query" + parsed.Value.QueryString, ct).ConfigureAwait(false);
@@ -60,8 +62,8 @@ internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
 
     private async Task<int> Failed(Kernel.Error error)
     {
-        var code = await output.Error(error).ConfigureAwait(false);
-        return _attention.Contains(error.Code, StringComparer.Ordinal) ? 1 : code;
+        var code = await output.Error(QueryFlagHints.Add(error)).ConfigureAwait(false);
+        return error.Code == "SND-API-001" || ContextErrors.Attention.Contains(error.Code) ? 1 : code;
     }
 
     /// <summary>The query's arguments: the words of the question, then its flags; the query string they make.</summary>
@@ -100,13 +102,25 @@ internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
                 pairs.Insert(0, ("q", string.Join(' ', words)));
             }
 
+            var query = EncodedQuery(pairs);
+            return query.IsError ? query.Error : new QueryArguments(query.Value, json);
+        }
+
+        private static Kernel.Result<string> EncodedQuery(List<(string Key, string Value)> pairs)
+        {
             var query = new StringBuilder();
             foreach (var (key, value) in pairs)
             {
+                if (!QueryRules.FitsQueryUrl(value))
+                {
+                    return ContextErrors.QueryInvalid.With(string.Create(CultureInfo.InvariantCulture,
+                        $"{(key == "q" ? "the question" : "--" + key)} is over {QueryRules.MaxEncodedText} characters once percent-encoded for the query (shorten it)"));
+                }
+
                 _ = query.Append(query.Length == 0 ? '?' : '&').Append(key).Append('=').Append(Uri.EscapeDataString(value));
             }
 
-            return new QueryArguments(query.ToString(), json);
+            return query.ToString();
         }
     }
 }

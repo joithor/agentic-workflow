@@ -1,9 +1,12 @@
 using System.Text.Json;
+using Aw.Context.Core.Facade;
 using Aw.Kernel.Telemetry;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Profile;
+
+using Aw.Sindri.Host.Commands.Probe;
 
 namespace Aw.Sindri.Host.Commands;
 
@@ -29,7 +32,7 @@ internal static class CommandTable
             await using (scope.ConfigureAwait(false))
             {
                 var session = AgentSession.Detect(environment, scope.ServiceProvider.GetRequiredService<IProcessAncestry>(), Interactive());
-                return await Dispatch(args, session, scope.ServiceProvider).ConfigureAwait(false);
+                return await Dispatch(args, session, scope.ServiceProvider, environment).ConfigureAwait(false);
             }
         }
     }
@@ -51,20 +54,23 @@ internal static class CommandTable
             : await output.Error(refused).ConfigureAwait(false);
     }
 
-    private static async Task<int> Dispatch(string[] args, AgentSession session, IServiceProvider services)
+    private static async Task<int> Dispatch(string[] args, AgentSession session, IServiceProvider services, Func<string, string?> environment)
     {
         var options = services.GetRequiredService<JsonSerializerOptions>();
         var probe = services.GetRequiredService<IControlPlaneProbe>();
         var output = new Output(Console.Out, Console.Error, options);
         using var client = new ControlPlaneClient(probe, options, Headers(session, services));
-        var start = new StartCommand(probe, services.GetRequiredService<IControlPlaneLauncher>(), client, output, services.GetRequiredService<TimeProvider>(), session);
+        StartCommand Start(bool headless) => new(probe, services.GetRequiredService<IControlPlaneLauncher>(), client, output,
+            services.GetRequiredService<TimeProvider>(), session, UiOpener(headless, environment));
+        var start = Start(headless: true);   // 'sindri --headless', and the start a human 'profile approve' may need
         var verbs = new Verbs(client, probe, output, services);
         var ct = CancellationToken.None;
+        var harnesses = new ProbeCommands(services.GetRequiredService<IProcessAncestry>(), services.GetRequiredService<IHarnessVersions>(), environment, Interactive());
         return args switch
         {
             // ---- verbs: one arm per verb ----
-            [] => await start.Run(headless: false, ct).ConfigureAwait(false),
-            ["--headless"] => await start.Run(headless: true, ct).ConfigureAwait(false),
+            [] => await Start(headless: false).Run(ct).ConfigureAwait(false),
+            ["--headless"] => await start.Run(ct).ConfigureAwait(false),
             ["status", .. var rest] when Json(rest) is { } json => await verbs.Status(json, ct).ConfigureAwait(false),
             ["stop"] => await verbs.Stop(ct).ConfigureAwait(false),
             ["profile", "validate", .. var rest] when Json(rest) is { } json => await verbs.Validate(json, ct).ConfigureAwait(false),
@@ -72,10 +78,15 @@ internal static class CommandTable
                 .Approve(a.Hash, Interactive(), Console.In, ct).ConfigureAwait(false),
             ["views", "rebuild", .. var rest] when NoStart(rest) is { } noStart => await new Verbs(client, probe, output, services, c => start.EnsureRunning(!noStart, c))
                 .RebuildViews(ct).ConfigureAwait(false),
-            ["doctor", .. var rest] when Json(rest) is { } json => await verbs.Doctor(json, ct).ConfigureAwait(false),
+            ["doctor", "--probe"] or ["doctor", "--probe", "--json"] => await output.Json(await harnesses.Probe(harness: null, ct).ConfigureAwait(false), 0).ConfigureAwait(false),
+            ["doctor", "--probe", "--harness", var name, .. var rest] when Json(rest) is not null => await output.Json(await harnesses.Probe(name, ct).ConfigureAwait(false), 0).ConfigureAwait(false),
+            ["doctor", .. var rest] when Json(rest) is { } json => await verbs.Doctor(json, ct, harnesses.DoctorChecks).ConfigureAwait(false),
+            ["mcp", .. var rest] => await new McpVerbs(services, output, session).Run(rest, ct).ConfigureAwait(false),
+            ["context", "show" or "neighbors" or "path", ..] => await new ContextGraphVerbs(client, output).Run(args[1..], ct).ConfigureAwait(false),
+            ["context", "eval", .. var rest] => await new ContextEvalVerbs(client, output, services.GetRequiredService<IContextEngine>()).Run(rest, ct).ConfigureAwait(false),
             ["context", "map", .. var rest] => await new ContextMapVerbs(client, output, Interactive(), Console.In).Run(rest, ct).ConfigureAwait(false),
             ["context", .. var rest] => await new ContextVerbs(client, output).Run(rest, ct).ConfigureAwait(false),
-            ["recipe", .. var rest] => await RecipeCommandTable.Run(rest, services, output, ct).ConfigureAwait(false),
+            ["recipe", .. var rest] => await RecipeCommandTable.Run(rest, services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), ct).ConfigureAwait(false),
             ["workflow", .. var rest] => await WorkflowCommandTable.Run(rest, services, output, ct).ConfigureAwait(false),
             ["help" or "--help" or "-h"] => await output.Text(Usage.Text + "\n", 0).ConfigureAwait(false),
             _ => await UnknownVerb(args, output).ConfigureAwait(false),
@@ -90,6 +101,10 @@ internal static class CommandTable
     private static CallerHeaders Headers(AgentSession session, IServiceProvider services) =>
         CallerHeaders.For(session, services.GetRequiredService<IHumanTokenStore>(),
             ct => CallerHeaders.RepoOf(services.GetRequiredService<IApprovals>(), services.GetRequiredService<IRepoLocator>(), Environment.CurrentDirectory, ct));
+
+    /// <summary>What bare 'sindri' does to open the app; 'sindri --headless' opens nothing.</summary>
+    internal static Func<string>? UiOpener(bool headless, Func<string, string?> environment) =>
+        headless ? null : () => UiLauncher.Open(UiLauncher.Locate(environment, AppContext.BaseDirectory));
 
     private static bool? Json(string[] rest) => rest switch
     {

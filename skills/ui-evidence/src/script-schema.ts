@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { ScriptLoginSchema } from "./login.js";
+
 // A machine-checkable post-step expectation. Free-form prose can't be
 // asserted, so the planner must emit one of these shapes; runStep checks it
 // after every step, and a step whose expectation fails is never a pass.
@@ -12,12 +14,26 @@ export const ExpectedStateSchema = z.discriminatedUnion("kind", [
 ]);
 export type ExpectedState = z.infer<typeof ExpectedStateSchema>;
 
-export const ScriptStepSchema = z.object({
-  action: z.enum(["goto", "click", "fill", "expect-visible"]),
-  target: z.string(),
-  value: z.string().optional(),
-  expectedState: ExpectedStateSchema,
-});
+// scroll's `value`: end/start (horizontal), bottom/top (vertical) or a horizontal pixel offset; default end.
+const SCROLL_VALUE = /^(end|start|bottom|top|\d+)$/;
+
+export const ScriptStepSchema = z
+  .object({
+    action: z.enum(["goto", "click", "fill", "expect-visible", "scroll"]),
+    target: z.string(),
+    value: z.string().optional(),
+    /** Picks the nth match (0-based) when a data-testid repeats; click, fill and scroll only. */
+    index: z.number().int().nonnegative().optional(),
+    expectedState: ExpectedStateSchema,
+  })
+  .superRefine((step, ctx) => {
+    if (step.index !== undefined && step.action !== "click" && step.action !== "fill" && step.action !== "scroll") {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["index"], message: "index is only allowed for click, fill and scroll steps" });
+    }
+    if (step.action === "scroll" && step.value !== undefined && !SCROLL_VALUE.test(step.value)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["value"], message: 'scroll value must be "end", "start", "bottom", "top" or a non-negative integer pixel offset' });
+    }
+  });
 export type ScriptStep = z.infer<typeof ScriptStepSchema>;
 
 // Provenance for the cost baseline: the planner's one model invocation,
@@ -35,6 +51,8 @@ export type PlanningMeta = z.infer<typeof PlanningMetaSchema>;
 export const UiScriptSchema = z.object({
   route: z.string(),
   role: z.enum(["manager", "staff", "central-staffer", "super-admin"]),
+  /** Env-var sign-in run before the first step (credentials never live in the script). */
+  login: ScriptLoginSchema.optional(),
   steps: z.array(ScriptStepSchema).min(1),
   viewports: z.array(z.enum(["desktop", "phone"])).min(1),
   planning: PlanningMetaSchema.optional(),

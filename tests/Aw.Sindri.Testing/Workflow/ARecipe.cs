@@ -18,7 +18,9 @@ public static class ARecipe
         Version: 1,
         Description: null,
         Base: null,
+        Urgency: "work",
         Inputs: [],
+        Outputs: [],
         Initial: "produce",
         States: new Dictionary<string, RecipeState>(StringComparer.Ordinal)
         {

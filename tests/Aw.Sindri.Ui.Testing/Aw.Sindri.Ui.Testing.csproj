@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aw.Sindri.Ui.Testing: the in-memory fakes and contract bases for the app's ports (spec §4b.5). Test support:
+       only *.Tests and *.Testing projects reference it. Its types are internal because the ports are; the tests use
+       them through InternalsVisibleTo. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Aw.Sindri.Ui.Testing</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Sindri/Aw.Sindri.Ui/Aw.Sindri.Ui.csproj" />
+    <ProjectReference Include="../Aw.Kernel.Testing/Aw.Kernel.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Aw.Sindri.Ui.Tests" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aw.Sindri.Ui.Tests: view models and the API client in the unit lane; views under Avalonia's headless platform and
+       the desktop head's adapter in the integration lane (spec §4a "UI", §4b.5). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Aw.Sindri.Ui.Tests</RootNamespace>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <PackageReference Include="Avalonia.Headless" />
+    <PackageReference Include="Avalonia.Skia" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Sindri/Aw.Sindri.Ui/Aw.Sindri.Ui.csproj" />
+    <ProjectReference Include="../../src/Sindri/Aw.Sindri.Ui.Desktop/Aw.Sindri.Ui.Desktop.csproj" />
+    <ProjectReference Include="../Aw.Sindri.Ui.Testing/Aw.Sindri.Ui.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <!-- The API goldens the fake serves (UI spec E-17): Sindri's own, recorded by its tests, and the spec-shaped stand-ins
+       for routes whose API phase isn't built yet (Golden/SpecShaped). -->
+  <ItemGroup>
+    <None Include="../Aw.Sindri.Tests/Golden/Api/**/*.json" Link="Golden/Api/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Golden/SpecShaped/**/*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

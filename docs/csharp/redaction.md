@@ -20,6 +20,11 @@ bool whole = redactor.IsSecretName("client_secret");   // true: write ScrubResul
 
 - `Redactor.Create(TimeSpan)` gives the same rules with another per-pattern timeout; `Redactor.Create(extraPatterns,
   TimeSpan, TimeProvider)` adds patterns from configuration ("Extra patterns from configuration" below).
+- `RulesDigest` is SHA-256 (64 lowercase hex characters) over the scan engine's version (`Redactor.EngineVersion`,
+  raised with any change to folding, escapes, invisible characters or how hits merge), the homoglyph table, the options
+  every rule gets, and every rule's id, pattern and options in order, each length-prefixed (extra patterns included).
+  It changes whenever a rule or the scan does, even under the same id, so a caller that
+  stores scrubbed text records it and cleans the text again after a change (the context engine's scrub ruleset).
 - `IsSecretName(name)` is for callers that see a key and its value apart (a telemetry attribute, a header, a JSON
   field): the assignment rules need the name and the value in one string, so such a caller redacts the whole value of
   a field whose name ends in a secret word (API_KEY, SECRET, TOKEN, PASSWORD, PRIVATE_KEY, ACCESS_KEY, any case and
@@ -149,7 +154,10 @@ token shapes that matter (JWTs, `ya29.`) have their own rules.
 
 Every pattern is a `Regex` with a match timeout. The timeout is a budget per window of input: up to 128 K characters
 get the redactor's timeout (1 s for `Default`), and each doubling of the text doubles it (the rules are compiled once per
-size tier), so a large ordinary input is scrubbed and only a pathological match blocks. A timeout returns `ScrubOutcome.Blocked` with
+size tier), so a large ordinary input is scrubbed and only a pathological match blocks. The scaling rule is a pure function
+(`Redactor.MatchTimeoutFor`), which the unit lane tests as arithmetic (`AdversarialInputTests`); the cases that scrub
+megabytes against real regex timeouts are in `HeavyScaleTests` (the heavy lane, kept out of the unit lane and its budget; CI's unfiltered run still executes them), because their wall clock
+depends on machine load. A timeout returns `ScrubOutcome.Blocked` with
 `Text = "[REDACTED:blocked]"` and `BlockCode = "AW-REDACT-001"`: the input is withheld, never passed on. The caller
 logs the block (Redaction has no logger) and refuses the commit, write or egress.
 

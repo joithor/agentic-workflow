@@ -1,8 +1,12 @@
 using System.Text.Json;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Eval;
 using Aw.Context.Core.Facade;
+using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
+using Aw.Context.Core.Trust;
+using Aw.Context.Features.EvalProbes;
 using Aw.Context.Features.QueryContext;
 using Aw.Context.Features.RefreshDocs;
 using Aw.Context.Features.SourcesStatus;
@@ -11,15 +15,21 @@ using Aw.Kernel.Services;
 
 namespace Aw.Context.Features;
 
-/// <summary>The facade (spec §4): each method dispatches to its slice; settings are read the same way by all of them.</summary>
+/// <summary>
+/// The facade (spec §4): each method dispatches to its slice; settings are read the same way by all of them. A settings
+/// check also builds the scrubbers, so 'profile validate' and approve refuse an extra pattern Redaction refuses.
+/// </summary>
 internal sealed class ContextEngine(
     IService<QueryContextRequest, ContextResult> query,
     IService<SourcesStatusRequest, SourcesView> sources,
     IService<RefreshDocsRequest, RefreshReport> refresh,
-    IContextMap map) : IContextEngine
+    IScrubberFactory scrubbers,
+    IContextMap map,
+    IContextGraph graph,
+    IService<EvalProbesRequest, ProbeRun> probes) : IContextEngine
 {
     public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) =>
-        SettingsReader.Check(section, repos);
+        SettingsReader.Read(section).Bind(read => scrubbers.For(read.ExtraPatterns)).Bind(_ => SettingsReader.Check(section, repos));   // the keys, then the patterns, then the repos
 
     public ValueTask<Result<ContextResult>> Query(ContextQuery query1, ContextScope scope, CancellationToken cancellationToken) =>
         query.Handle(new QueryContextRequest(query1, scope), cancellationToken);
@@ -29,6 +39,16 @@ internal sealed class ContextEngine(
 
     public ValueTask<Result<RefreshReport>> Refresh(ContextScope scope, CancellationToken cancellationToken) =>
         refresh.Handle(new RefreshDocsRequest(scope), cancellationToken);
+
+    public ValueTask<Result<ProbeRun>> EvalProbes(string? file, Func<ProbeCase, CancellationToken, ValueTask<Result<ContextResult>>> ask, CancellationToken cancellationToken) =>
+        probes.Handle(new EvalProbesRequest(file, ask), cancellationToken);
+
+    public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) => graph.ShowNode(key, scope, cancellationToken);
+
+    public ValueTask<Result<NeighborsView>> Neighbors(string key, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
+        graph.Neighbors(key, depth, scope, cancellationToken);
+
+    public ValueTask<Result<PathView>> Path(string from, string to, ContextScope scope, CancellationToken cancellationToken) => graph.Path(from, to, scope, cancellationToken);
 
     public ValueTask<Result<MapFilePreview>> PreviewMap(string path, ContextScope scope, CancellationToken cancellationToken) =>
         map.PreviewMap(path, scope, cancellationToken);

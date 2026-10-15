@@ -3,12 +3,15 @@ using Aw.Context.Testing.Engine;
 using Aw.Kernel;
 using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core.Auth;
+using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.Commands;
 using Aw.Sindri.Features.StopProcess;
@@ -22,16 +25,19 @@ namespace Aw.Sindri.Tests.Commands.Chain;
 
 /// <summary>
 /// The real command chain (AddCommand) over in-memory ports: StopProcess, ApproveProfile and the fixture command, with
-/// the shell's catalog rows plus the fixture's desk row.
+/// the shell's catalog rows plus the fixture's desk row (reading views, or granted to services, when asked).
 /// </summary>
 internal sealed class ChainHarness : IAsyncDisposable
 {
     private readonly ServiceProvider _provider;
 
-    public ChainHarness(Func<ILedgerStore, ILedgerStore>? ledger = null, IEndpointFile? endpoints = null)
+    public ChainHarness(Func<ILedgerStore, ILedgerStore>? ledger = null, IEndpointFile? endpoints = null, bool fixtureReadsViews = false,
+        IReadOnlyList<string>? grants = null)
     {
+        FixtureGrants = grants ?? [];
         Ledger = ledger?.Invoke(H.Store) ?? H.Store;
-        var fixture = Authorization.Rows.Of(ActionClass.Desk, "FixtureCommand", typeof(FixtureCommand));
+        Progress = new ProjectorProgress(H.Clock);
+        var fixture = Authorization.Rows.Of(ActionClass.Desk, "FixtureCommand", typeof(FixtureCommand)) with { ReadsViews = fixtureReadsViews, ServiceGrants = FixtureGrants };
         _provider = new ServiceCollection()
             .AddSingleton<TimeProvider>(H.Clock)
             .AddSingleton<IIdGenerator>(H.Ids)
@@ -42,12 +48,17 @@ internal sealed class ChainHarness : IAsyncDisposable
             .AddSingleton(H.Callers)
             .AddSingleton<IShutdown>(H.Shutdown)
             .AddSingleton(endpoints ?? new InMemoryEndpointFile())
+            .AddSingleton(new HeldHumanToken())
+            .AddSingleton<IHumanTokenStore>(new InMemoryHumanTokenStore())
+            .AddScoped<ServeRecords>()
             .AddSingleton(new TemporalRuntime(new FakeTemporalServer(), H.Clock))   // the stop's Temporal side, with no server running
             .AddSingleton<IProfileSource>(H.Profiles)
             .AddSingleton<IApprovals>(H.Profiles)
+            .AddSingleton<IChallenges>(H.Challenges)
             .AddSingleton<IContextEngine>(FakeContextEngine.Instance)
             .AddSingleton<ICommandCatalog>(new InMemoryCommandCatalog([.. ShellRows.All, fixture]))
             .AddSingleton(Latch)
+            .AddSingleton<IProjectorStatus>(Progress)
             .AddSingleton<ILogger<AuditTrail>>(Log)
             .AddScoped<IValidator<FixtureCommand>, FixtureValidator>().AddCommand<FixtureCommand, CommandAccepted, FixtureService>()
             .AddScoped<IValidator<StopProcessRequest>, AcceptAllValidator<StopProcessRequest>>().AddCommand<StopProcessRequest, StopProcessResponse, StopProcessService>()
@@ -57,7 +68,13 @@ internal sealed class ChainHarness : IAsyncDisposable
 
     public SliceHarness H { get; } = new();
 
+    /// <summary>The services the fixture's desk row grants (none unless a test asks).</summary>
+    public IReadOnlyList<string> FixtureGrants { get; }
+
     public ILedgerStore Ledger { get; }
+
+    /// <summary>The projector's progress the chain waits on (nothing publishes it unless a test does).</summary>
+    public ProjectorProgress Progress { get; }
 
     public FixtureLatch Latch { get; } = new();
 

@@ -1,0 +1,337 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:icons="using:Aw.Sindri.Ui.Views.Icons">
+  <!-- The shell's chrome (UI spec §3.2) over the tokens (Theme/Tokens.axaml): no colour value here, only Brush.* keys. -->
+
+  <!-- Top bar: 48 px on the canvas with a hairline bottom rule. -->
+  <Style Selector="Border.topbar">
+    <Setter Property="Height" Value="{StaticResource Size.TopBar}" />
+    <Setter Property="Background" Value="{DynamicResource Brush.Canvas}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="Padding" Value="16,0" />
+  </Style>
+  <!-- Icons (R1, Theme/Icons.axaml): Size.Icon square, the Body line scaled with the text. R9: one colour rule for state
+       glyphs: ✓ Success wherever it means ok, ✕ Error, every other glyph and mark InkMuted; the word beside each stays Ink. -->
+  <Style Selector="icons|StateIcon">
+    <Setter Property="Width" Value="{DynamicResource Size.Icon}" />
+    <Setter Property="Height" Value="{DynamicResource Size.Icon}" />
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkMuted}" />
+  </Style>
+  <Style Selector="icons|StateIcon:ok">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Success}" />
+  </Style>
+  <Style Selector="icons|StateIcon:down">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
+  </Style>
+  <!-- The brand mark (§3.2 "◆ Sindri"): filled in the accent; decorative, the name beside it is read. -->
+  <Style Selector="icons|StateIcon.brand">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Primary}" />
+  </Style>
+  <!-- In a keycap (⌘K): the kbd step's size and colour. -->
+  <Style Selector="icons|StateIcon.kbd">
+    <Setter Property="Width" Value="{DynamicResource Type.Kbd.Size}" />
+    <Setter Property="Height" Value="{DynamicResource Type.Kbd.Size}" />
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkSubtle}" />
+  </Style>
+
+  <!-- The segmented navigation (home.html .seg): one group on Surface1 with a hairline, segments 26 px high. Unselected
+       labels are InkSubtle at 13/500; the selected segment sits on PrimarySoft with a 6 px Primary dot and its label in
+       PrimaryHover. Later ▾ is a flat segment. While disabled (not running) the labels drop to InkTertiary. -->
+  <Style Selector="Border.seg">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.MD}" />
+    <Setter Property="Padding" Value="2" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="ListBox.nav">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="ListBox.nav > ListBoxItem">
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="Margin" Value="0" />
+    <Setter Property="MinHeight" Value="26" />
+    <Setter Property="Height" Value="26" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.SM}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="ListBox.nav > ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+  </Style>
+  <Style Selector="ListBox.nav > ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.PrimarySoft}" />
+  </Style>
+  <Style Selector="TextBlock.nav-label">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkSubtle}" />
+  </Style>
+  <Style Selector="ListBox.nav > ListBoxItem:pointerover TextBlock.nav-label, Button.later:pointerover TextBlock.nav-label">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkMuted}" />
+  </Style>
+  <Style Selector="ListBox.nav > ListBoxItem:selected TextBlock.nav-label">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.PrimaryHover}" />
+  </Style>
+  <Style Selector="Ellipse.nav-dot">
+    <Setter Property="Width" Value="6" />
+    <Setter Property="Height" Value="6" />
+    <Setter Property="Fill" Value="{DynamicResource Brush.Primary}" />
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="ListBox.nav > ListBoxItem:selected Ellipse.nav-dot">
+    <Setter Property="IsVisible" Value="True" />
+  </Style>
+  <Style Selector="StackPanel:disabled TextBlock.nav-label">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkTertiary}" />
+  </Style>
+  <Style Selector="StackPanel:disabled Ellipse.nav-dot">
+    <Setter Property="Fill" Value="{DynamicResource Brush.InkTertiary}" />
+  </Style>
+  <Style Selector="StackPanel:disabled ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+  </Style>
+  <Style Selector="Button.later">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="Height" Value="26" />
+    <Setter Property="MinHeight" Value="26" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.SM}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.later:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+  </Style>
+  <Style Selector="Button.later:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Path.magnifier">
+    <Setter Property="Stroke" Value="{DynamicResource Brush.InkSubtle}" />
+    <Setter Property="StrokeThickness" Value="1.4" />
+    <Setter Property="Width" Value="13" />
+    <Setter Property="Height" Value="13" />
+  </Style>
+
+  <!-- The ⌘K field: it opens the palette (§8). It fills its top-bar column (300 px with room, down to 160 px;
+       TopBar.axaml), and its text trims; narrower still it folds to its magnifier. -->
+  <Style Selector="Border.search">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.MD}" />
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="Height" Value="{StaticResource Size.Control}" />
+  </Style>
+  <!-- Folded at a narrow window (TopBar.axaml.cs): the magnifier alone. -->
+  <Style Selector="Border.search.compact TextBlock.search-text, Border.search.compact Border.search-key">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <!-- Keycaps: at least as wide as they are tall (R6), their key centred. -->
+  <Style Selector="Border.kbd">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.XS}" />
+    <Setter Property="Padding" Value="4,1" />
+    <Setter Property="MinWidth" Value="{DynamicResource Size.Icon}" />
+  </Style>
+  <Style Selector="Border.kbd > TextBlock">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <!-- R6: the "." key is drawn as a dot of Size.KeyDot in the keycap's ink, not as a font's period. -->
+  <Style Selector="Ellipse.key-dot">
+    <Setter Property="Width" Value="{DynamicResource Size.KeyDot}" />
+    <Setter Property="Height" Value="{DynamicResource Size.KeyDot}" />
+    <Setter Property="Fill" Value="{DynamicResource Brush.InkSubtle}" />
+  </Style>
+
+  <!-- S2: a Health section head's eyebrow sits on the baseline of the state word at its right. Avalonia has no baseline
+       alignment: centred in the head row, the 11 px eyebrow's baseline sits about 1.3 px above the 13 px word's, and a
+       1 px top margin with the layout's whole-pixel rounding puts the two within half a pixel at text scale 1.0 and 1.3
+       (the Health view test measures it). -->
+  <Style Selector="TextBlock.head-eyebrow">
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Margin" Value="0,1,0,0" />
+  </Style>
+
+  <!-- The health pill: a word in a pill; it opens Health. -->
+  <Style Selector="Button.health-pill">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.HairlineStrong}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.Pill}" />
+    <Setter Property="Padding" Value="12,4" />
+  </Style>
+  <!-- N3: the pill's ring follows its corner radius (Radius.Pill), not ControlCornerRadius (Theme/FluentOverrides.axaml). -->
+  <Style Selector="Button.health-pill">
+    <Setter Property="FocusAdorner">
+      <FocusAdornerTemplate>
+        <Border BorderBrush="{DynamicResource Brush.PrimaryHover}" BorderThickness="2" Margin="-4"
+                CornerRadius="{StaticResource Radius.Pill}" AdornerLayer.IsClipEnabled="False" />
+      </FocusAdornerTemplate>
+    </Setter>
+  </Style>
+
+  <!-- Refresh beside a stale pill: a quiet secondary button at the pill's height. -->
+  <Style Selector="Button.refresh">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="10,4" />
+  </Style>
+  <!-- In flight (§4.1 "sending"): its label kept, dimmed to InkTertiary (§11.1's disabled text) on its own surface. -->
+  <Style Selector="Button.refresh:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+  </Style>
+  <Style Selector="Button.refresh:disabled TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkTertiary}" />
+  </Style>
+  <Style Selector="Button.refresh:disabled icons|StateIcon">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkTertiary}" />
+  </Style>
+
+  <!-- Home's health strip (home.html .strip): a panel that is a button (it opens Health), Surface2 on hover. -->
+  <Style Selector="Button.health-strip">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.LG}" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Button.health-strip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+  </Style>
+  <Style Selector="StackPanel.strip-head">
+    <Setter Property="Margin" Value="16,0,12,0" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.cell">
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1,0,0,0" />
+    <Setter Property="Padding" Value="12,8" />
+  </Style>
+
+  <!-- Panels (home.html .panel): Surface1 with a hairline; a header row (.phead, 36 px, the eyebrow over a hairline) and
+       a body on the spacing scale. -->
+  <Style Selector="Border.panel">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.LG}" />
+  </Style>
+  <Style Selector="Border.phead">
+    <Setter Property="MinHeight" Value="{StaticResource Size.Row}" />
+    <Setter Property="Padding" Value="16,0" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="Border.phead > TextBlock">
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <!-- The Health page's sections: 16 px insets, a hairline between them; label/value rows 28 px apart. -->
+  <Style Selector="Border.section">
+    <Setter Property="Padding" Value="{StaticResource Space.MD.Thickness}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="Border.section.last">
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="Grid.row">
+    <Setter Property="MinHeight" Value="24" />
+  </Style>
+  <!-- R12: a row's label sits on its value's baseline: both top-aligned on the value's line height (Body, or Mono for
+       the last event), so the smaller label's half-leading lines its baseline up with the value's. -->
+  <Style Selector="Grid.row > TextBlock.row-label">
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="LineHeight" Value="{DynamicResource Type.Body.LineHeight}" />
+  </Style>
+  <Style Selector="Grid.row > TextBlock.row-label.on-mono">
+    <Setter Property="LineHeight" Value="{DynamicResource Type.Mono.LineHeight}" />
+  </Style>
+
+  <!-- A body the API doesn't serve yet: a quiet caption, never the brightest text in the panel, centred in the body
+       (I3, states.html .empty). -->
+  <Style Selector="TextBlock.quiet">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkSubtle}" />
+    <Setter Property="Margin" Value="16" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="TextAlignment" Value="Center" />
+  </Style>
+  <!-- Skeleton bars (states.html .sk): 10 px, Surface3, left-aligned at their own widths; static, no shimmer, so
+       reduced motion has nothing to stop. -->
+  <Style Selector="Border.skeleton">
+    <Setter Property="Height" Value="10" />
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface3}" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.XS}" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+  </Style>
+  <Style Selector="Grid.skrow">
+    <Setter Property="Margin" Value="16,12" />
+  </Style>
+  <!-- The page's gutter (Space.LG); while the closed sheet's edge tab shows, the right gutter grows to Space.XXL so the
+       tab keeps a gap from the panels. -->
+  <Style Selector="Panel.page-content">
+    <Setter Property="Margin" Value="{StaticResource Space.LG.Thickness}" />
+  </Style>
+  <Style Selector="Panel.page-content.edge">
+    <Setter Property="Margin" Value="24,24,48,24" />
+  </Style>
+  <!-- A pre-API state's card (states.html .card): compact and centred. -->
+  <Style Selector="Border.state-card">
+    <Setter Property="MaxWidth" Value="520" />
+    <Setter Property="MinWidth" Value="420" />
+  </Style>
+  <!-- The not-running mark: the hollow ◆ struck through, as the tray draws it. -->
+  <Style Selector="Path.struck-mark">
+    <Setter Property="Stroke" Value="{DynamicResource Brush.InkMuted}" />
+    <Setter Property="StrokeThickness" Value="1.4" />
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+  </Style>
+  <!-- R11: the banner's content starts on the page's 24 px gutter (Space.LG), in line with the page title. -->
+  <Style Selector="Border.banner">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Error}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="Padding" Value="24,10" />
+  </Style>
+
+  <!-- The detail sheet: Surface1 with a hairline left rule, 420–760 px; below 1100 px it covers the page ("covers"). -->
+  <Style Selector="Border.sheet">
+    <Setter Property="HorizontalAlignment" Value="Right" />
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1,0,0,0" />
+    <Setter Property="MinWidth" Value="{StaticResource Size.SheetMin}" />
+    <Setter Property="MaxWidth" Value="{StaticResource Size.SheetMax}" />
+  </Style>
+  <Style Selector="Border.sheet.covers">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="MaxWidth" Value="Infinity" />
+  </Style>
+  <Style Selector="Border.sheet Button.back">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="Border.sheet.covers Button.back">
+    <Setter Property="IsVisible" Value="True" />
+  </Style>
+  <Style Selector="Thumb.sheet-grip">
+    <Setter Property="Width" Value="{StaticResource Space.XXS}" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Border.sheet.covers Thumb.sheet-grip">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="Button.edge-tab">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1,1,0,1" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.SM}" />
+    <Setter Property="Padding" Value="6,12" />
+  </Style>
+</Styles>

@@ -5,6 +5,7 @@ using Aw.Sindri.Host;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Catalog;
 using Aw.Sindri.Tests.Ledger;
+using Aw.Sindri.Tests.Server;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -30,6 +31,9 @@ public sealed class EndpointCqrsTests : IDisposable
 
         Assert.True(violations.Count == 0, CatalogRules.Lines(violations));
         Assert.Contains("GET /sindri/commands", endpoints.Endpoints.OfType<RouteEndpoint>().SelectMany(EndpointCqrsRules.Routes), StringComparer.Ordinal);
+        var mcp = endpoints.Endpoints.OfType<RouteEndpoint>().Where(e => (e.RoutePattern.RawText ?? string.Empty).StartsWith("/sindri/mcp", StringComparison.Ordinal)).ToList();
+        Assert.NotEmpty(mcp);
+        Assert.All(mcp, e => Assert.True(EndpointCqrsRules.IsMcp(e), e.RoutePattern.RawText));   // why: the exemption covers /sindri/mcp itself, no route under it
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -41,7 +45,7 @@ public sealed class EndpointCqrsTests : IDisposable
             .Where(row => row.Route is not null && !row.Ui.StartsWith("pending:", StringComparison.Ordinal)).ToList();
 
         Assert.NotEmpty(shipped);
-        Assert.All(shipped, row => Assert.Contains(row.Method + " " + EndpointCqrsRules.WithoutParameterNames(row.Route!), mapped));
+        Assert.All(shipped, row => Assert.Contains(row.Method + " " + EndpointCqrsRules.Normalize(row.Route!), mapped));   // why: the filter above keeps only rows with a route
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -81,7 +85,7 @@ public sealed class EndpointCqrsTests : IDisposable
 
     private WebApplication Host()
     {
-        var app = LoopbackBinding.Build([], n => n == "AW_SINDRI_HOME" ? _home.Path : null, TimeProvider.System);
+        var app = LoopbackBinding.Build([], n => n == "AW_SINDRI_HOME" ? _home.Path : null, TimeProvider.System, NoTemporal.Use);
         _ = Pipeline.Configure(app);
         return app;
     }

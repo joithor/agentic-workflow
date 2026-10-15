@@ -39,7 +39,8 @@ RUN set -eu; \
     node --version; npm --version
 
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1 \
-    DOTNET_NOLOGO=1
+    DOTNET_NOLOGO=1 \
+    AVALONIA_TELEMETRY_OPTOUT=1
 
 # The noble base ships the non-root user "ubuntu" (uid 1000); the container runs as that user.
 USER ubuntu

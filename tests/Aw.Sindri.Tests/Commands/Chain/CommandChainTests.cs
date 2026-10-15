@@ -162,17 +162,21 @@ public sealed class CommandChainTests : IAsyncDisposable
     public async Task Commands_run_one_at_a_time()
     {
         _ = await _c.H.HoldLease();
-        var first = _c.Start(new FixtureCommand("block"), Human);
-        var second = _c.Start(new FixtureCommand("accept"), Human with { CommandId = Core.Ids.CommandId.From(new Guid(0xaa, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)) });
+        var human = Human;
+        var secondId = Core.Ids.CommandId.From(new Guid(0xaa, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+        var first = _c.Start(new FixtureCommand("block"), human);
+        await _c.Latch.Entered.Task.WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken);   // the first is held inside the handler
 
-        // The chain runs synchronously up to the gate, so Start returns with the second parked there (or, without the
-        // gate, already inside the handler): no wait is needed to observe it.
+        var second = _c.Start(new FixtureCommand("accept"), human with { CommandId = secondId });
+        // why: the chain awaits before the handler (AwaitingViews), so give an ungated second the time to run past it
+        _ = await Task.WhenAny(second, Task.Delay(TimeSpan.FromMilliseconds(100), TimeProvider.System, TestContext.Current.CancellationToken));
+        Assert.False(second.IsCompleted);
         Assert.Equal(1, _c.Latch.Started);
         _c.Latch.Release.SetResult();
         var results = await Task.WhenAll(first, second).WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken);
 
         Assert.All(results, r => Assert.True(r.IsSuccess));
-        Assert.Equal(2, _c.Latch.Started);
+        Assert.Equal([human.CommandId, secondId], _c.Handled.Select(h => h.CommandId));   // the order they finished in: the second waited for the first
         Assert.Equal([FixtureService.Done, EventTypes.CommandHandled, FixtureService.Done, EventTypes.CommandHandled], _c.Events.Select(e => e.Envelope.Type),
             StringComparer.Ordinal);
     }
@@ -236,7 +240,7 @@ public sealed class CommandChainTests : IAsyncDisposable
         _ = await _c.H.HoldLease();
 
         var refused = await _c.Run<Features.ApproveProfile.ApproveProfileRequest, Features.ApproveProfile.ApproveProfileResponse>(
-            new(_c.H.Profiles.Live.Value.Hash, Confirmed: true), Session);
+            new(_c.H.Profiles.Live.Value.Hash, _c.H.Confirm(_c.H.Profiles.Live.Value.Hash)), Session);
 
         Assert.Equal(SindriErrors.AuthRefused.Code, refused.Error.Code);
         Assert.Equal("ApproveProfile is a human decision. Ask the human to run it in a terminal: sindri profile approve [<hash>]", refused.Error.Message);

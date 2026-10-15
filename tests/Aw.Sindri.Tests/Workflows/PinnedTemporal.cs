@@ -7,8 +7,12 @@ internal static class PinnedTemporal
     public static string Version => Row()[1];
 
     /// <summary>The installed binary; fails the test, naming the fetch command, when it isn't installed.</summary>
+    /// <returns>Its path, wrapped so the server dies with this test host (<see cref="Spike.ServerGuard"/>).</returns>
+    public static string Path() => Spike.ServerGuard.Wrap(Unwrapped());
+
+    /// <summary>The installed binary itself, for the test that checks the guard; everything else starts <see cref="Path"/>.</summary>
     /// <returns>Its path.</returns>
-    public static string Path()
+    public static string Unwrapped()
     {
         var stateDir = Environment.GetEnvironmentVariable("AW_STATE_DIR") is { Length: > 0 } dir
             ? dir

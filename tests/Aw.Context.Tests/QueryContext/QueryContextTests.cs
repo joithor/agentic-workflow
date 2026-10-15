@@ -109,6 +109,27 @@ public sealed class QueryContextTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task The_profiles_extra_patterns_scrub_this_calls_records_and_a_bad_one_refuses_the_query()
+    {
+        const string acme = """{"scrub":{"extraPatterns":[{"id":"acme-customer-id","pattern":"ACME-[0-9]{6}"}]}}""";
+        var docs = new FakeContextSource(FakeContextSource.FixtureDocs().Describe(),
+            [FakeContextSource.Doc("docs/a.md", "Customer ACME-123456", "orientation for customer ACME-123456", "v1")]);
+        var catalog = new FixedSourceCatalog(docs);
+        var engine = Engines.Over(catalog);
+
+        var plain = await engine.Query(new ContextQuery("orientation"), Engines.Human(), CancellationToken.None);
+        var scrubbed = await engine.Query(new ContextQuery("orientation"), Engines.Human(acme), CancellationToken.None);
+        var bad = await engine.Query(new ContextQuery("orientation"), Engines.Human(acme.Replace("[0-9]{6}", "[0-9", StringComparison.Ordinal)), CancellationToken.None);
+
+        var item = scrubbed.Value.Sections.Single().Items.Single();
+        Assert.Contains("ACME-123456", plain.Value.Sections.Single().Items.Single().Text, StringComparison.Ordinal);
+        Assert.Equal(("<untrusted source=\"repo-docs\">Customer [REDACTED:acme-customer-id]</untrusted>", false), (item.Title, item.Text!.Contains("ACME-123456", StringComparison.Ordinal)));
+        Assert.Contains("[REDACTED:acme-customer-id]", item.Text, StringComparison.Ordinal);
+        Assert.Equal(new FakeScrubberFactory().For([new("acme-customer-id", "ACME-[0-9]{6}")]).Value.Ruleset, catalog.LastScrubbers?.Ruleset);
+        Assert.Equal((ContextErrors.SettingsInvalid.Code, true), (bad.Error.Code, bad.Error.Message.StartsWith("context.scrub.extraPatterns[0].pattern:", StringComparison.Ordinal)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Items_past_the_budget_are_listed_as_references_only()
     {
         var result = await Engines.Over(FakeContextSource.FixtureDocs()).Query(new ContextQuery("layout orientation", Budget: 60), Engines.Human(), CancellationToken.None);
@@ -149,6 +170,72 @@ public sealed class QueryContextTests
         var cite = result.Value.Cites["C1"];
         Assert.Equal(["onyx", "repo-docs"], cite.Refs.Select(r => r.Source.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.Equal(CitationState.Current, cite.State);   // a ref sent to the wrong source would read as gone, so stale
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Aliases_reach_the_citation_scrubbed_field_by_field_like_titles()
+    {
+        var record = FakeContextSource.Doc("docs/decisions/0001-orientation-toggle.md", "Mirror", "orientation toggle", "o9");
+        var other = new FakeContextSource(_onyx, [record with
+        {
+            Ref = record.Ref with { Source = _onyx.Id },
+            Aliases = ["SPL-103", "SPL-" + FakeScrubber.Secret, "SPL-" + FakeScrubber.BlockMe, "SPL-103"],
+        }]);
+
+        var result = await Engines.Over(FakeContextSource.FixtureDocs(), other).Query(new ContextQuery("orientation toggle"), Engines.Human(), CancellationToken.None);
+
+        var cite = result.Value.Cites["C1"];
+        Assert.Equal(["SPL-103", "SPL-[REDACTED:fake]"], cite.Aliases, StringComparer.Ordinal);   // a blocked alias is dropped, not shown
+        Assert.Empty(result.Value.Cites.Values.Where(c => c != cite).SelectMany(c => c.Aliases));
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("https://linear.app/fixture-labs/issue/SPL-103", "https://linear.app/fixture-labs/issue/SPL-103")]
+    [InlineData("https://linear.app/fixture-labs/issue/" + FakeScrubber.Secret, null)]
+    [InlineData("https://linear.app/fixture-labs/issue/" + FakeScrubber.BlockMe, null)]
+    public async Task A_permalink_is_scrubbed_like_every_field_and_dropped_when_the_scrub_changes_it(string link, string? shown)
+    {
+        var record = FakeContextSource.Doc("docs/decisions/0001-orientation-toggle.md", "Mirror", "orientation toggle", "o9");
+        var other = new FakeContextSource(_onyx, [record with { Ref = record.Ref with { Source = _onyx.Id, Permalink = new Uri(link) } }]);
+
+        var result = await Engines.Over(other).Query(new ContextQuery("orientation toggle"), Engines.Human(), CancellationToken.None);
+
+        var cite = result.Value.Cites["C1"];
+        Assert.Equal(shown, cite.Permalink?.OriginalString);
+        Assert.Equal(record.Ref.Canonical, cite.Key);   // the citation and its key stay
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_onyx_record_is_scrubbed_with_the_profiles_extra_patterns_in_title_text_alias_and_permalink()
+    {
+        const string acme = """{"scrub":{"extraPatterns":[{"id":"acme-customer-id","pattern":"ACME-[0-9]{6}"}]}}""";
+        var record = FakeContextSource.Doc("linear/SPL-103", "Customer ACME-123456 escalation", "orientation for customer ACME-123456", "o9");
+        var onyx = new FakeContextSource(_onyx, [record with
+        {
+            Ref = record.Ref with { Source = _onyx.Id, Permalink = new Uri("https://linear.app/fixture-labs/issue/ACME-123456") },
+            Aliases = ["SPL-103", "ACME-123456"],
+        }]);
+
+        var result = await Engines.Over(onyx).Query(new ContextQuery("orientation"), Engines.Human(acme), CancellationToken.None);
+
+        var item = result.Value.Sections.Single().Items.Single();
+        var cite = result.Value.Cites[item.Cites.Single()];
+        Assert.Equal("<untrusted source=\"onyx\">Customer [REDACTED:acme-customer-id] escalation</untrusted>", item.Title);
+        Assert.Equal((false, true), (item.Text!.Contains("ACME-123456", StringComparison.Ordinal), item.Text.Contains("[REDACTED:acme-customer-id]", StringComparison.Ordinal)));
+        Assert.Equal(["SPL-103", "[REDACTED:acme-customer-id]"], cite.Aliases, StringComparer.Ordinal);
+        Assert.Null(cite.Permalink);   // a link the extra pattern changed is left out
+        Assert.Equal(record.Ref.Canonical, cite.Key);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_degraded_source_names_the_cause_code_when_it_is_not_010_itself()
+    {
+        var onyx = new FakeContextSource(_onyx, []) { Failure = ContextErrors.OnyxUnexpectedReply.With("Onyx answered with a body v4.9.0 doesn't send") };
+
+        var result = await Engines.Over(FakeContextSource.FixtureDocs(), onyx).Query(new ContextQuery("orientation"), Engines.Human(), CancellationToken.None);
+
+        var degraded = result.Value.Degraded.Single();
+        Assert.Equal(("SND-CONTEXT-010", "SND-CONTEXT-051: Onyx answered with a body v4.9.0 doesn't send"), (degraded.Code, degraded.Message));
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -84,9 +84,13 @@ B is dated after PR #5 merged, so SPL-105 is also the `leaky` case for an as-of 
 
 ## Onyx (`onyx/documents.json`)
 
-The same six issues as Onyx's Linear connector would index them: `document_id` is the issue UUID, the identifier is
-in `metadata.identifier` (structured metadata, never parsed from text; §5.1), `updated_at` equals the issue's
-`updatedAt`, `source_type` is `linear`, and the chunks are the description then each comment. One Slack thread
+The same six issues as Onyx's Linear connector (Onyx **v4.9.0**, `backend/onyx/connectors/linear/connector.py`) would
+index them: `document_id` is the issue UUID, `semantic_identifier` is `[<identifier>] <title>` (the only place a
+search result carries the `SPL-1NN` identifier; the connector puts it nowhere in `metadata`), `link` is the issue URL,
+`updated_at` equals the issue's `updatedAt`, `source_type` is `linear`, and the chunks are the description then each
+comment. `metadata` holds only keys the v4.9.0 connector writes, as strings (it applies `str()` to each value): here
+`team`, `state`, `priority`, `completed_at` (when set) and `created_at`, taken from `linear/issues.json`. There is no
+`identifier` and no `project` key, because the real connector sends neither. One Slack thread
 (`C0FIXTURE01__1784972400.000100`, canonical key `slack:C0FIXTURE01/1784972400.000100`) adds a second source type.
 Each entry is `{"search_doc": <SearchDoc as Onyx returns it>, "chunks": [...]}`. Onyx has no PRD: its Linear connector
 doesn't read Linear Documents (D4).
@@ -137,20 +141,53 @@ to change; an exception it didn't anticipate becomes a recorded JSON 500 naming 
   except `neq`, `nin` and `null: true`; the fake doesn't model Linear's joins beyond that.
 - No or a wrong token is a 401.
 
-`FakeOnyxServer` (`Url` = base, `Token`, default `fixture-onyx`, `Authorization` = `Bearer <token>`):
+`FakeOnyxServer` (`Url` = base, `Token`, default `on_fixture-onyx`, `Authorization` = `Bearer <token>`). What is
+pinned to **Onyx v4.9.0** (`FakeOnyxServer.PinnedVersion`; checked against the release's source, S-5A):
 
-- `POST /api/query/document-search` reads exactly `message` and
-  `retrieval_options.{filters.{source_type,time_cutoff},limit,offset}`; `time_cutoff` keeps documents updated at or
-  after it, and an empty `source_type` list is no filter (as in Onyx). **Any other field** (`search_type`, `run_search`, `real_time`, `enable_auto_detect_filters`, `tags`,
-  `document_set`, …), a missing `message`, or a badly typed value (a `source_type` that isn't a list of strings, a
-  non-string `time_cutoff`, a non-integer `limit`) is a 422 in Onyx's validation shape (`detail: [{loc, msg, type}]`),
-  so a client never relies on a knob the fake would ignore. The reply is
-  `{"top_documents": [SearchDoc + score, chunk_ind, match_highlights], "llm_indices": []}`, ranked by a deterministic
-  term match (not Onyx's ranking; Sindri ranks, D3).
-- `GET /api/document/chunk-info?document_id=&chunk_id=` returns `{"content", "num_tokens"}`, 404 for an unknown one.
-- Any other route is a 404 naming the two it serves.
-- The exact HTTP routes and the change feed by updated time are open items of Phase 5 (§12). S-5A pins them against
-  the Onyx release it sets up and, if they differ, changes this fake and these recordings in its own PR.
+- **Keys.** A token must be a service-account key (`on_…`) or a personal access token (`onyx_pat_…`), the two kinds
+  Onyx accepts; `Start` refuses any other with an `ArgumentException`. As in Onyx (`onyx/auth/utils.py`
+  `get_hashed_bearer_token_from_request`), `Authorization: Bearer <token>` works for both kinds and the raw
+  `Authorization: <token>` only for an `on_…` key. Onyx's alternative header `X-Onyx-Authorization` isn't served.
+- **Unauthenticated.** No key, an unknown key or a wrong form is a **403** with
+  `{"error_code": "UNAUTHORIZED", "detail": "Access denied. User is not authenticated."}`, which is what Onyx answers
+  (`double_check_user` raises `BasicAuthenticationError`, an `HTTPException` 403, and `main.py` `log_http_error`
+  writes it with the canonical code for 403). It is not a 401. `GET /api/me` says `"detail": "Unauthorized"` instead
+  (`verify_user_logged_in`).
+- **The key's account** (`FakeServerOptions.OnyxAccountType`, `OnyxAdmin`): by default the key belongs to a
+  `SERVICE_ACCOUNT` holding `admin`. **`GET /api/me`** returns Onyx's `UserInfo` (`onyx/server/manage/users.py`
+  `verify_user_logged_in`, `manage/models.py:165`): `account_type` and `effective_permissions` (every permission for an
+  admin; `basic` and the CE grants for a basic key, approximately). A key without `admin` gets Onyx's 403
+  `{"error_code": "INSUFFICIENT_PERMISSIONS", "detail": "You do not have the required permissions for this action."}`
+  on admin search (`require_permission(FULL_ADMIN_PANEL_ACCESS)`); the document routes need only `basic`.
+- **`GET /api/version`** returns `{"backend_version": "v4.9.0"}` and needs no key (it is in Onyx's public endpoint
+  list, `onyx/server/auth_check.py`; release images set `ONYX_VERSION` from the git tag).
+  `FakeServerOptions.OnyxVersion` overrides the reported version so a test can simulate drift.
+- **`POST /api/admin/search`** (`onyx/server/query_and_chat/query_backend.py:36-82`): body `{"query": str,
+  "filters": BaseFilters}`, both required. Reply `{"documents": [SearchDoc]}`: the recorded SearchDoc plus `chunk_ind`,
+  `score`, `match_highlights`, `is_relevant`, `relevance_explanation`, `source_types`, `is_internet`, `file_id`, at
+  most **50** (`NUM_RETURNED_HITS`), one per document id; there is no `limit` or `offset`. Of the filters
+  (`onyx/context/search/models.py:104-124`) the fake applies `source_type` (DocumentSource values; an empty list is no
+  filter), `updated_at_range {start, end}` and its legacy alias `time_cutoff` (an explicit range wins). Pydantic's
+  default ignores fields the models don't have, and so does the fake. A body the real models reject (no `query` or
+  `filters`, a non-string query, a non-list or unknown `source_type`, a bad datetime) is Onyx's generic 422
+  `{"status_code": 422, "message": "Request validation failed.", "data": null, "error_code": "VALIDATION_ERROR",
+  "detail": "Request validation failed."}`, which names no field. A real filter the fake doesn't model
+  (`document_set`, `tags`, `created_at_range`) with a value is a 422 `FAKE_UNSUPPORTED` naming it. Ranking is a
+  deterministic term match (not Onyx's keyword ranking; Sindri ranks, D3); an empty query (Onyx's random retrieval)
+  returns the filtered documents in id order.
+- **`GET /api/document/document-size-info?document_id=`** returns `{"num_chunks", "num_tokens"}`; an unknown document is
+  a 404 `{"error_code": "NOT_FOUND", "detail": "Document not found"}`. **`GET /api/document/chunk-info?document_id=&chunk_id=`**
+  returns `{"content", "num_tokens"}`; an unknown document or chunk is a 404 `"Chunk not found"`. A missing or
+  non-integer parameter is Onyx's 422 above. Token counts are word counts, a stand-in for Onyx's tokenizer.
+- **Any other route** is a 404 `{"error_code": "NOT_FOUND", "detail": …}`, answered before the key check as in Onyx;
+  the detail names the routes the fake serves (Onyx's says `Not Found`).
+- **`FakeServerOptions.Delay`** holds every answer back, so a client's deadline can be tested.
+- **`FakeServerOptions.OnyxPlant`** rewrites the JSON text of every reply before it is sent, to plant what the
+  fixture never holds: a document Onyx marks `hidden` (`OnyxSourceContractTests`), a secret-shaped identifier in a
+  link (Sindri's `OnyxContextTests`) or another reported version (`FakeOnyxServerTests`, which checks the rewrite
+  itself). The plant must return valid JSON (the server parses it). Null, the default, sends the replies as they are.
+
+There is no change feed (§12) and no route that gives a document's `updated_at` by id.
 
 ## What later stages add
 
@@ -158,7 +195,5 @@ to change; an exception it didn't anticipate becomes a recorded JSON 500 naming 
   `FixtureRepo` and wraps these fakes. Nothing here references `Aw.Context.Core`.
 - **S-5A**: the `onyx` adapter against `FakeOnyxServer`. **S-6**: the native `linear` adapter's `.graphql` files against
   `FakeLinearServer`. **S-3 / S-7A**: the cascade fixtures, the probe runner and the backtest over this app.
-- **Not here yet, added by the stage that needs it:** fault and latency injection (`Unavailable`, deadlines,
-  `Probe` health), records that change between calls (change feeds, cursor replay, removals) and an Onyx
-  fetch-by-id carrying `updated_at` (`Versions`). `FakeServerOptions` is the place to grow them without breaking
-  callers.
+- **Not here yet, added by the stage that needs it:** records that change between calls (change feeds, cursor replay,
+  removals). `FakeServerOptions` is the place to grow them without breaking callers.

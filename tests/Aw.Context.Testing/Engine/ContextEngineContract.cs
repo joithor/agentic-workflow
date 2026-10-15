@@ -38,6 +38,8 @@ public abstract class ContextEngineContract<TEngine>
         var engine = CreateDown();
 
         Check(Code(engine, """{"deadline":"soon"}""") == ("SND-CONTEXT-001", "context.deadline:"), "a bad deadline");
+        Check(Code(engine, """{"scrub":{"extraPatterns":[{"id":"acme-customer-id","pattern":"ACME-[0-9"}]}}""") == ("SND-CONTEXT-001", "context.scrub.extraPatterns[0].pattern:"),
+            "an extra pattern that doesn't parse");
         Check(Code(engine, """{"repos":["nope"]}""") == ("SND-CONTEXT-001", "context.repos:"), "an unknown context.repos name");
         Check(Code(engine, """{"deadline":"4s"}""") == ("SND-CONTEXT-001", "context.repos:"), "an unusable repo name in scope");
         Check(Code(engine, """{"repos":["split-panes"]}""") == ("ok", ""), "an unusable repo out of scope is fine");
@@ -54,6 +56,35 @@ public abstract class ContextEngineContract<TEngine>
         var result = await CreateDown().Query(new ContextQuery("orientation"), scope, CancellationToken.None);
 
         Check(result.IsError && result.Error.Code == ContextErrors.AllSourcesUnavailable.Code, "no source answering is 011");
+    }
+
+    /// <summary>Without a map, the graph reads are SND-CONTEXT-030.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task Graph_reads_without_a_map_are_030()
+    {
+        var scope = new ContextScope(Settings: null, [new ContextRepo(ContextRepoName.From("split-panes"), "/repos/split-panes")],
+            new ContextCaller(ContextCallerKind.Human, Repo: null, ContextClient.Cli));
+        var engine = CreateDown();
+
+        var codes = new[]
+        {
+            (await engine.ShowNode("feature:a", scope, CancellationToken.None)).Error.Code,
+            (await engine.Neighbors("feature:a", depth: null, scope, CancellationToken.None)).Error.Code,
+            (await engine.Path("feature:a", "feature:b", scope, CancellationToken.None)).Error.Code,
+        };
+
+        Check(codes.All(c => c == ContextErrors.NoMap.Code), "a graph read without a map is 030");
+    }
+
+    /// <summary>An eval with no probe file named and none on disk is SND-CONTEXT-036, whatever the engine.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task An_eval_with_no_probe_file_is_036()
+    {
+        var run = await CreateDown().EvalProbes(file: null, static (_, _) => throw new ContractViolationException("no probe may run without a probe file"), CancellationToken.None);
+
+        Check(run.IsError && run.Error.Code == ContextErrors.NoProbeFile.Code, "an eval with no probe file is 036");
     }
 
     private static (string Code, string Path) Code(TEngine engine, string json)

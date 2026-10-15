@@ -24,6 +24,7 @@ internal static class RecipeTypes
         [typeof(EvidenceCheck)] = "an evidence check",
         [typeof(LoopSpec)] = "a loop",
         [typeof(RecipeInput)] = "an input",
+        [typeof(RecipeOutput)] = "an output",
         [typeof(RecipeRef)] = "a base",
         [typeof(WithValue)] = "a with value",
     };
@@ -46,7 +47,6 @@ internal static class RecipeTypes
         [typeof(TimeoutAction)] = "park, escalate or retry",
         [typeof(ResourceKind)] = "heavy or slot",
         [typeof(OnParked)] = "propagate or ignore",
-        [typeof(InputType)] = "text, file or item",
         [typeof(EvidencePoint)] = "base or head",
         [typeof(EvidenceExpectation)] = "pass or fail",
         [typeof(FactPresence)] = "present or absent",
