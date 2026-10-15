@@ -122,6 +122,27 @@ public sealed class WorkflowGoldenTests
         }
     }
 
+    // The fake serves a fact golden only for the instance goldens its table binds it to: the table names every served fact
+    // golden (an unfrozen packet fits no instance yet, so its list is empty), and each bound instance lists the golden's key.
+    [Fact]
+    public void Every_served_fact_golden_is_bound_and_each_bound_instance_lists_its_key()
+    {
+        var served = GoldenFiles.All().Where(g => g.Kind == "Api" && g.Slug == "workflow-instance-fact" && !g.Body.Contains("traceId", StringComparison.Ordinal)).ToList();
+        var instances = GoldenFiles.All().Where(g => g.Kind == "Api" && g.Slug == "workflow-instance" && !g.Body.Contains("traceId", StringComparison.Ordinal)).ToDictionary(g => g.Scenario, g => JsonNode.Parse(g.Body)!, StringComparer.Ordinal);
+
+        Assert.Equal(served.Select(g => g.Scenario).Order(StringComparer.Ordinal), WorkflowAnswers.FactGoldens.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Empty(WorkflowAnswers.FactGoldens["packet-unfrozen"]);
+        foreach (var (_, _, scenario, body) in served)
+        {
+            var key = (string)JsonNode.Parse(body)!["key"]!; // why: a fact golden has its key
+            foreach (var instance in WorkflowAnswers.FactGoldens[scenario])
+            {
+                Assert.True(instances.ContainsKey(instance), $"{scenario}: no instance golden {instance}");
+                Assert.Contains(instances[instance]["facts"]!.AsArray(), f => (string?)f!["key"] == key); // why: an instance lists its facts
+            }
+        }
+    }
+
     [Fact]
     public void Unknown_fact_type_reads_as_payload()
     {
