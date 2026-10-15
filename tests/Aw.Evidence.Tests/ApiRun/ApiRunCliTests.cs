@@ -232,4 +232,34 @@ public sealed class ApiRunCliTests
         Assert.DoesNotContain("tok-123", response.Document, StringComparison.Ordinal);
         Assert.Equal("found [REDACTED]", response.Summary.Steps[0].Output);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task ApiRun_hides_secret_named_members_in_cli_stdout_and_in_the_failures_that_quote_them()
+    {
+        var harness = With(Script("""["out/tool"]""", """{"exitCode":0,"pointers":[{"pointer":"/db/password","equals":"wanted"}]}"""));
+        _ = harness.Scrubber.HidesName("password");
+        _ = harness.Cli.Program(Tool, new CliOutcome(0, """{"db":{"password":"s3cr3t","host":"h"},"all":[{"password":"p2"}]}""", string.Empty));
+
+        var response = (await harness.Run(ApiRunHarness.Request(host: null))).Value;
+
+        Assert.DoesNotContain("s3cr3t", response.Document, StringComparison.Ordinal);
+        Assert.DoesNotContain("p2", response.Document, StringComparison.Ordinal);
+        Assert.Contains("\"host\":\"h\"", response.Summary.Steps[0].Output, StringComparison.Ordinal);
+        Assert.Equal("[REDACTED:secret-field]", Assert.Single(response.Summary.Failures).Actual);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task ApiRun_keeps_the_code_and_the_reason_in_a_refusal_headline_whatever_the_path_length()
+    {
+        var harness = With(Script($$"""["out/{{new string('d', 300)}}/tool"]"""));
+
+        var response = (await harness.Run(ApiRunHarness.Request(host: null))).Value;
+
+        Assert.Equal(ApiOutcome.Refused, response.Summary.Outcome);
+        var headline = response.Summary.Headline;
+        Assert.True(headline.Length <= 200);
+        Assert.Contains(response.Summary.Refusal!.Code, headline, StringComparison.Ordinal);
+        Assert.Contains("not an executable file", headline, StringComparison.Ordinal);
+        Assert.Contains(new string('d', 300), response.Summary.Refusal.Message, StringComparison.Ordinal);
+    }
 }

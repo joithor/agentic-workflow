@@ -325,4 +325,56 @@ public sealed class ApiRunHttpTests
         Assert.Equal(EvidenceErrors.FileNotFound.Code, response.Summary.Refusal?.Code);
         Assert.Empty(harness.Locks.Events);
     }
+
+    private const string SecretBody = """{"password":"s3cr3t","user":{"name":"ann","api_key":"k1","tokens":[{"secret":"x9"},{"id":7}]},"list":[{"password":"p2"}]}""";
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task ApiRun_hides_the_value_of_every_secret_named_member_in_a_recorded_body_at_any_depth()
+    {
+        var harness = With(Get("/api/notes", "\"status\":201"));
+        _ = harness.Scrubber.HidesName("password").HidesName("api_key").HidesName("secret");
+        _ = harness.Transport.Reply("GET", Notes, new HttpReply(200, Location: null, SecretBody));
+
+        var response = (await harness.Run()).Value;
+
+        foreach (var value in new[] { "s3cr3t", "\"k1\"", "x9", "\"p2\"" })
+        {
+            Assert.DoesNotContain(value, response.Document, StringComparison.Ordinal);
+        }
+
+        var output = response.Summary.Steps[0].Output!;
+        Assert.Contains("\"name\":\"ann\"", output, StringComparison.Ordinal);
+        Assert.Contains("\"id\":7", output, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task ApiRun_hides_the_quoted_values_of_a_pointer_assertion_through_a_secret_named_member_in_failures_and_headline()
+    {
+        var harness = With(Get("/api/notes", """ "status":200,"pointers":[{"pointer":"/user/api_key","equals":"wanted-k"},{"pointer":"/list/0/password","equals":"wanted-p"}]"""));
+        _ = harness.Scrubber.HidesName("password").HidesName("api_key");
+        _ = harness.Transport.Reply("GET", Notes, new HttpReply(200, Location: null, SecretBody));
+
+        var response = (await harness.Run()).Value;
+
+        Assert.Equal(2, response.Summary.Failures.Count);
+        Assert.All(response.Summary.Failures, static failure => Assert.Equal("[REDACTED:secret-field]", failure.Actual));
+        foreach (var value in new[] { "\"k1\"", "p2", "wanted-k", "wanted-p" })
+        {
+            Assert.DoesNotContain(value, response.Document, StringComparison.Ordinal);
+        }
+
+        Assert.Contains("/user/api_key", response.Summary.Headline, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task ApiRun_leaves_a_body_that_is_not_json_to_the_value_scrubbing()
+    {
+        var harness = With(Get("/api/notes", "\"status\":200"));
+        _ = harness.Scrubber.HidesName("password").Hides("tok-123");
+        _ = harness.Transport.Reply("GET", Notes, new HttpReply(200, Location: null, "password=short tok-123 {broken"));
+
+        var response = (await harness.Run()).Value;
+
+        Assert.Equal("password=short [REDACTED] {broken", response.Summary.Steps[0].Output);
+    }
 }

@@ -8,4 +8,7 @@ internal sealed class RedactionScrubber(IRedactor redactor) : ITextScrubber
 {
     /// <inheritdoc/>
     public string Scrub(string text) => redactor.Scrub(text).Text;
+
+    /// <inheritdoc/>
+    public bool IsSecretName(string name) => redactor.IsSecretName(name);
 }

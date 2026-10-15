@@ -198,4 +198,22 @@ public sealed class ApiRunCommandTests : IDisposable
     public void Dispose() => _root.Dispose();
 
     private List<string> Snapshot() => [.. Directory.EnumerateFiles(_root.Path, "*", SearchOption.AllDirectories)];
+
+    [Fact]
+    public async Task ApiRunCommand_records_no_short_value_of_a_secret_named_member_anywhere_in_the_summary()
+    {
+        _ = _transport.Reply("GET", Origin + "/api/notes", new HttpReply(200, Location: null, """{"password":"s3cr3t-Pw","nested":{"clientSecret":"abc","list":[{"apiKey":"k9"}]},"n":1}"""));
+
+        var (exit, output, _) = await Run(
+            await Script(Get("""{"status":200,"pointers":[{"pointer":"/password","equals":"wrong"},{"pointer":"/nested/list/0/apiKey","equals":"wrong"}]}""")), "--at", "head", "--host", Origin);
+
+        Assert.Equal(2, exit);
+        foreach (var value in new[] { "s3cr3t-Pw", "\"abc\"", "k9" })
+        {
+            Assert.DoesNotContain(value, output, StringComparison.Ordinal);
+        }
+
+        Assert.DoesNotContain("s3cr3t-Pw", await File.ReadAllTextAsync(SummaryFile, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        Assert.Contains("\"n\":1", JsonNode.Parse(output)!["steps"]![0]!["output"]!.GetValue<string>(), StringComparison.Ordinal);
+    }
 }

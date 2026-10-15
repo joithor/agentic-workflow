@@ -1846,6 +1846,7 @@ Aw.Evidence.Core.Data.IApiTransport
 Aw.Evidence.Core.Data.IApiTransport.SendAsync(Aw.Evidence.Core.Data.HttpCall! call, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Evidence.Core.Data.HttpReply!>!>
 Aw.Evidence.Core.Data.ITextScrubber
 Aw.Evidence.Core.Data.ITextScrubber.Scrub(string! text) -> string!
+Aw.Evidence.Core.Data.ITextScrubber.IsSecretName(string! name) -> bool
 const Aw.Evidence.Core.Data.ApiSummary.KindName = "api" -> string!
 const Aw.Evidence.Core.Data.ApiSummary.SchemaName = "evidence.api.summary/1" -> string!
 const Aw.Evidence.Core.Data.ApiSummary.Unseeded = "unseeded" -> string!
