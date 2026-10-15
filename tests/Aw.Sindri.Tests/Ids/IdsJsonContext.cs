@@ -6,9 +6,12 @@ namespace Aw.Sindri.Tests.Ids;
 [JsonSerializable(typeof(ActionIdHolder))]
 [JsonSerializable(typeof(CommandIdHolder))]
 [JsonSerializable(typeof(CorrelationIdHolder))]
+[JsonSerializable(typeof(DecisionIdHolder))]
+[JsonSerializable(typeof(DecisionOptionHolder))]
 [JsonSerializable(typeof(ItemAliasHolder))]
 [JsonSerializable(typeof(ItemIdHolder))]
 [JsonSerializable(typeof(ItemRefHolder))]
 [JsonSerializable(typeof(RecordKeyHolder))]
+[JsonSerializable(typeof(RequestIdHolder))]
 [JsonSerializable(typeof(RepoNameHolder))]
 internal sealed partial class IdsJsonContext : JsonSerializerContext;

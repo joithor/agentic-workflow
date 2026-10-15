@@ -6858,3 +6858,56 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.For(Aw.Sindri.Core.Workflow.En
 Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.ItemTitles(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! titles) -> void
 static Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.None.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViews.Starting(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeVersion! recipe, System.DateTimeOffset since, Aw.Sindri.Core.Workflow.Engine.ItemKey item, Aw.Sindri.Core.Workflow.Views.SubjectRef? subject) -> Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!
+Aw.Sindri.Core.Ids.DecisionId
+Aw.Sindri.Core.Ids.DecisionId.DecisionId() -> void
+Aw.Sindri.Core.Ids.DecisionId.Equals(Aw.Sindri.Core.Ids.DecisionId other) -> bool
+Aw.Sindri.Core.Ids.DecisionId.Equals(Aw.Sindri.Core.Ids.DecisionId other, System.Collections.Generic.IEqualityComparer<Aw.Sindri.Core.Ids.DecisionId>! comparer) -> bool
+Aw.Sindri.Core.Ids.DecisionId.GetTypeCode() -> System.TypeCode
+Aw.Sindri.Core.Ids.DecisionId.IsInitialized() -> bool
+Aw.Sindri.Core.Ids.DecisionId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Sindri.Core.Ids.DecisionId.Value.get -> string!
+Aw.Sindri.Core.Ids.DecisionOption
+Aw.Sindri.Core.Ids.DecisionOption.DecisionOption() -> void
+Aw.Sindri.Core.Ids.DecisionOption.Equals(Aw.Sindri.Core.Ids.DecisionOption other) -> bool
+Aw.Sindri.Core.Ids.DecisionOption.Equals(Aw.Sindri.Core.Ids.DecisionOption other, System.Collections.Generic.IEqualityComparer<Aw.Sindri.Core.Ids.DecisionOption>! comparer) -> bool
+Aw.Sindri.Core.Ids.DecisionOption.GetTypeCode() -> System.TypeCode
+Aw.Sindri.Core.Ids.DecisionOption.IsInitialized() -> bool
+Aw.Sindri.Core.Ids.DecisionOption.ToString(System.IFormatProvider? provider) -> string!
+Aw.Sindri.Core.Ids.DecisionOption.Value.get -> string!
+Aw.Sindri.Core.Ids.RequestId
+Aw.Sindri.Core.Ids.RequestId.Equals(Aw.Sindri.Core.Ids.RequestId other) -> bool
+Aw.Sindri.Core.Ids.RequestId.Equals(Aw.Sindri.Core.Ids.RequestId other, System.Collections.Generic.IEqualityComparer<Aw.Sindri.Core.Ids.RequestId>! comparer) -> bool
+Aw.Sindri.Core.Ids.RequestId.GetTypeCode() -> System.TypeCode
+Aw.Sindri.Core.Ids.RequestId.IsInitialized() -> bool
+Aw.Sindri.Core.Ids.RequestId.RequestId() -> void
+Aw.Sindri.Core.Ids.RequestId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Sindri.Core.Ids.RequestId.Value.get -> string!
+override Aw.Sindri.Core.Ids.DecisionId.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Ids.DecisionId.GetHashCode() -> int
+override Aw.Sindri.Core.Ids.DecisionId.ToString() -> string!
+override Aw.Sindri.Core.Ids.DecisionOption.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Ids.DecisionOption.GetHashCode() -> int
+override Aw.Sindri.Core.Ids.DecisionOption.ToString() -> string!
+override Aw.Sindri.Core.Ids.RequestId.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Ids.RequestId.GetHashCode() -> int
+override Aw.Sindri.Core.Ids.RequestId.ToString() -> string!
+static Aw.Sindri.Core.Ids.DecisionId.From(string! value) -> Aw.Sindri.Core.Ids.DecisionId
+static Aw.Sindri.Core.Ids.DecisionId.New(Aw.Kernel.Ids.IIdGenerator! ids) -> Aw.Sindri.Core.Ids.DecisionId
+static Aw.Sindri.Core.Ids.DecisionId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Ids.DecisionId
+static Aw.Sindri.Core.Ids.DecisionId.TryFrom(string? value, out Aw.Sindri.Core.Ids.DecisionId vo) -> bool
+static Aw.Sindri.Core.Ids.DecisionId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Ids.DecisionId result) -> bool
+static Aw.Sindri.Core.Ids.DecisionId.operator !=(Aw.Sindri.Core.Ids.DecisionId left, Aw.Sindri.Core.Ids.DecisionId right) -> bool
+static Aw.Sindri.Core.Ids.DecisionId.operator ==(Aw.Sindri.Core.Ids.DecisionId left, Aw.Sindri.Core.Ids.DecisionId right) -> bool
+static Aw.Sindri.Core.Ids.DecisionOption.From(string! value) -> Aw.Sindri.Core.Ids.DecisionOption
+static Aw.Sindri.Core.Ids.DecisionOption.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Ids.DecisionOption
+static Aw.Sindri.Core.Ids.DecisionOption.TryFrom(string? value, out Aw.Sindri.Core.Ids.DecisionOption vo) -> bool
+static Aw.Sindri.Core.Ids.DecisionOption.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Ids.DecisionOption result) -> bool
+static Aw.Sindri.Core.Ids.DecisionOption.operator !=(Aw.Sindri.Core.Ids.DecisionOption left, Aw.Sindri.Core.Ids.DecisionOption right) -> bool
+static Aw.Sindri.Core.Ids.DecisionOption.operator ==(Aw.Sindri.Core.Ids.DecisionOption left, Aw.Sindri.Core.Ids.DecisionOption right) -> bool
+static Aw.Sindri.Core.Ids.RequestId.From(string! value) -> Aw.Sindri.Core.Ids.RequestId
+static Aw.Sindri.Core.Ids.RequestId.New(Aw.Kernel.Ids.IIdGenerator! ids) -> Aw.Sindri.Core.Ids.RequestId
+static Aw.Sindri.Core.Ids.RequestId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Ids.RequestId
+static Aw.Sindri.Core.Ids.RequestId.TryFrom(string? value, out Aw.Sindri.Core.Ids.RequestId vo) -> bool
+static Aw.Sindri.Core.Ids.RequestId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Ids.RequestId result) -> bool
+static Aw.Sindri.Core.Ids.RequestId.operator !=(Aw.Sindri.Core.Ids.RequestId left, Aw.Sindri.Core.Ids.RequestId right) -> bool
+static Aw.Sindri.Core.Ids.RequestId.operator ==(Aw.Sindri.Core.Ids.RequestId left, Aw.Sindri.Core.Ids.RequestId right) -> bool
