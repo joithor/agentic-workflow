@@ -406,8 +406,8 @@ User-facing behaviour is in `docs/sindri/context.md` (S-4). This is where the co
   decision to override rows; `Repoint` is an undo of the orphan plus the same decision on the new node), `ReviewFileMatcher`, `PromoteReadiness`,
   `ReviewHistory`, `ProposalPlanner`, `GraphStatuses`, `LensesBuilder`, `FileMapBuilder`. `ReviewDrafts.Gate` (the whole-map paths: session callers
   are `SND-CONTEXT-020`) and `ReviewDrafts.GateDecision` (a single decision is left to Sindri's class check; only the bulk accept keeps the gate).
-- **Core `Locks/IHeavyJobLock`** is the context engine's lock port; `Sindri.Core/Locks/IHeavySlots` is Sindri's own (one lock for the engine,
-  the workflow engine's `heavy` allocator and the shell tools).
+- **Core `Locks/IHeavyJobLock`** is the context engine's lock port; `Sindri.Core/Locks/IHeavySlots` is Sindri's own (one lock for the engine
+  and the shell tools today; the workflow engine's `heavy` allocator is meant to use it too and is not wired yet).
 - **Infrastructure.** `GitRepoReader` over `GitCli` (048), `GraphifyClusterSource` (pinned, sandboxed, fail-closed), `ModelLabeler` over `IModelPort`
   (042), `FileReviewFileStore`, migration `0004_s4_map_review.sql` (`map_override` rebuilt with `propose` and `undo`, `link`, `undoes` and `payload` columns).
 - **Features.** Slices `BuildMap`, `ReviewQueue`, `ReviewMap`, `ReviewHistory`, `ExportReview`, `PreviewReviewFile`, `ApplyReviewFile`, `PromoteMap`,

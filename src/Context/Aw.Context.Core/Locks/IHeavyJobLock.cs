@@ -3,7 +3,7 @@ using Aw.Kernel;
 namespace Aw.Context.Core.Locks;
 
 /// <summary>
-/// The box-wide heavy-job lock a map build takes (spec §8.6): one session job, plus two box-wide slots shared with the
+/// The box-wide heavy-job lock a map build takes (spec §8.6): the box-wide slots (two by default) shared with the
 /// shell helpers. Sindri supplies the adapter; the engine only asks for a slot.
 /// </summary>
 public interface IHeavyJobLock

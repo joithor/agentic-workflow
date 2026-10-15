@@ -11,7 +11,7 @@ namespace Aw.Sindri.Infrastructure.Locks;
 /// slot is held while its directory exists, taken with an atomic mkdir and polled every second. Slot 1 is the lock's path and slot k
 /// is '&lt;path&gt;.k', tried in order, so a holder that knows only the path occupies slot 1 and the total never exceeds the slot count.
 /// The holder writes '&lt;pid&gt; &lt;utc&gt; &lt;holder&gt;' to &lt;slot&gt;/owner. With AW_HEAVY_LOCK_HELD=1 a parent already holds a slot, so taking
-/// one is a no-op. Like the heavy wrapper, a slot whose owner process is gone is reclaimed.
+/// one is a no-op. Like the heavy wrapper, a slot whose owner process is gone is reclaimed, and so is one with no owner line older than <see cref="OrphanGrace"/> (a crash between the mkdir and the owner write).
 /// </summary>
 /// <param name="settings">Where the lock is and how many slots it has.</param>
 /// <param name="clock">The clock the wait runs on.</param>
@@ -19,6 +19,9 @@ internal sealed class DirectoryHeavySlots(HeavyLockSettings settings, TimeProvid
 {
     /// <summary>The file a holder writes inside the lock directory.</summary>
     internal const string OwnerFile = "owner";
+
+    /// <summary>How old a slot with no owner line must be before it counts as a crash between the holder's mkdir and its owner write.</summary>
+    internal static readonly TimeSpan OrphanGrace = TimeSpan.FromSeconds(30);
 
     private static readonly TimeSpan _poll = TimeSpan.FromSeconds(1);
 
@@ -88,7 +91,7 @@ internal sealed class DirectoryHeavySlots(HeavyLockSettings settings, TimeProvid
         return (HeavySlotLease?)null;
     }
 
-    private static Result<bool> TryTake(string directory)
+    private Result<bool> TryTake(string directory)
     {
         try
         {
@@ -113,24 +116,57 @@ internal sealed class DirectoryHeavySlots(HeavyLockSettings settings, TimeProvid
         };
     }
 
-    /// <summary>Removes a slot whose owner process has died (the heavy wrapper does the same); false when it is held, has no owner line, or can't be removed.</summary>
-    private static bool Reclaim(string directory)
+    /// <summary>
+    /// Removes a stale slot, once: one whose owner process is dead (as the heavy wrapper does), or one with no owner line that is older than a grace
+    /// period (a holder that died between its mkdir and its owner write). The slot is first renamed to a name of its own, which only one reclaimer can
+    /// win; the winner checks that it took what it judged stale, and puts the slot back if a new holder got there first. False when the slot is held,
+    /// was taken meanwhile, or can't be removed.
+    /// </summary>
+    private bool Reclaim(string directory)
     {
         try
         {
             var owner = Path.Combine(directory, OwnerFile);
-            if (!File.Exists(owner) || !int.TryParse(File.ReadAllText(owner).Split(' ', 2)[0], NumberStyles.None, CultureInfo.InvariantCulture, out var pid) || Alive(pid))
+            var judged = File.Exists(owner) ? File.ReadAllText(owner) : null;
+            if (!Stale(directory, judged))
             {
                 return false;
             }
 
-            File.Delete(owner);
-            Directory.Delete(directory, recursive: false);
+            BeforeTakeover(directory);
+            var removed = directory + ".stale." + Path.GetRandomFileName();
+            Directory.Move(directory, removed);   // atomic: of two reclaimers of one slot, the second finds nothing to move
+            var found = Path.Combine(removed, OwnerFile);
+            if (!string.Equals(File.Exists(found) ? File.ReadAllText(found) : null, judged, StringComparison.Ordinal))
+            {
+                PutBack(removed, directory);   // the slot changed hands between the judgment and the rename: it isn't ours to remove
+                return false;
+            }
+
+            File.Delete(found);
+            Directory.Delete(removed, recursive: false);
             return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return false;
+        }
+    }
+
+    private bool Stale(string directory, string? ownerLine) =>
+        ownerLine is null
+            ? clock.GetUtcNow() - new DateTimeOffset(Directory.GetLastWriteTimeUtc(directory), TimeSpan.Zero) > OrphanGrace
+            : int.TryParse(ownerLine.Split(' ', 2)[0], NumberStyles.None, CultureInfo.InvariantCulture, out var pid) && !Alive(pid);
+
+    private static void PutBack(string removed, string directory)
+    {
+        try
+        {
+            Directory.Move(removed, directory);
+        }
+        catch (IOException)
+        {
+            // Another holder took the slot meanwhile: the removed copy is the old holder's leftover, and nothing else names it.
         }
     }
 

@@ -4,8 +4,8 @@ namespace Aw.Sindri.Core.Locks;
 
 /// <summary>
 /// The box-wide heavy-job lock (builds, test runs, index builds, map builds): Sindri's own port over the shared lock
-/// directory, so there is one lock for the context engine, the workflow engine's 'heavy' allocator and the shell tools
-/// (context spec §4 "The heavy-job lock is a port, supplied by Sindri").
+/// directory, so the context engine and the shell tools count against one cap (context spec §4 "The heavy-job lock is a
+/// port, supplied by Sindri"). The workflow engine's 'heavy' allocator is meant to use it too; it is not wired yet.
 /// </summary>
 public interface IHeavySlots
 {
