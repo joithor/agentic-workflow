@@ -56,11 +56,18 @@ if [ -n "${AW_JUDGE_CHILD:-}" ]; then
   exit 0
 fi
 
+# allow [msg]: with a msg, rewrite the message and keep every other field of the original tool input. updatedInput
+# REPLACES the whole tool input, so emitting only {message} dropped the required `to` and Claude Code rejected the
+# rewrite. If the rewrite can't be built, allow the original unchanged (fail open).
 allow() {
-  local msg="${1:-}"
-  if [ -n "$msg" ]; then
-    jq -nc --arg m "$msg" '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","updatedInput":{"message":$m}}}'
+  local msg="${1:-}" out=""
+  if [ -n "$msg" ] && [ -n "${input:-}" ]; then
+    out="$(printf '%s' "$input" | jq -ce --arg m "$msg" '(.tool_input | select(type == "object" and (.to // "") != "") | .message = $m) as $u | {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","updatedInput":$u}}' 2>/dev/null)" || out=""
+  fi
+  if [ -n "$out" ]; then
+    printf '%s\n' "$out"
   else
+    [ -z "$msg" ] || failopen rewrite-unbuildable
     echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}'
   fi
   exit 0
@@ -70,20 +77,21 @@ deny() {
   exit 0
 }
 
-INPUT="$(cat 2>/dev/null || true)"
-[ -n "$INPUT" ] || { failopen empty-input; allow; }
+input="$(cat 2>/dev/null || true)"
+[ -n "$input" ] || { failopen empty-input; allow; }
 
-SESSION_ID="$(printf '%s' "$INPUT" | jq -r '.session_id // "unknown"')"
-AGENT_TYPE="$(printf '%s' "$INPUT" | jq -r '.agent_type // empty')"
-MESSAGE="$(printf '%s' "$INPUT" | jq -r '.tool_input.message // empty')"
+SESSION_ID="$(printf '%s' "$input" | jq -r '.session_id // "unknown"')"
+AGENT_TYPE="$(printf '%s' "$input" | jq -r '.agent_type // empty')"
+MESSAGE="$(printf '%s' "$input" | jq -r '.tool_input.message // empty')"
+TO="$(printf '%s' "$input" | jq -r '.tool_input.to // empty' 2>/dev/null)"   # stderr silenced: an unparsable payload is already reported by the jq calls above
 # A control message carries no message and is not a failure; a plain
 # SendMessage without one means the payload shape changed.
-[ -n "$MESSAGE" ] || { failopen input "$INPUT" '.tool_name == "SendMessage" and ((.tool_input.type // "message") == "message")'; allow; }
+[ -n "$MESSAGE" ] || { failopen input "$input" '.tool_name == "SendMessage" and ((.tool_input.type // "message") == "message")'; allow; }
 
 # BLOCKER fix (Step 2, F6): a control message (shutdown_request,
 # shutdown_response, ...) is never routed through the classifier —
 # deterministic, checked before senderKind derivation or any judge call.
-TOOL_INPUT_TYPE="$(printf '%s' "$INPUT" | jq -r '.tool_input.type // "message"')"
+TOOL_INPUT_TYPE="$(printf '%s' "$input" | jq -r '.tool_input.type // "message"')"
 [ "$TOOL_INPUT_TYPE" = "message" ] || allow
 
 # senderKind (Probe gate item 4): agent_type absent -> main; agent_type found
@@ -109,20 +117,30 @@ DECISION="$(printf '%s' "$JUDGE_OUT" | jq -r '.decision // empty' 2>/dev/null)" 
 
 case "$DECISION" in
   send)
-    # RF-4: mkdir-based lock around the read-then-truncate (no flock on macOS).
+    # RF-4: mkdir-based lock around the read-then-rewrite (no flock on macOS).
     if acquire_lock "$LOCK_DIR" 5; then
       if [ -s "$OUTBOX_FILE" ]; then
-        NOW_EPOCH="$(date -u +%s)"
-        CUTOFF_EPOCH=$((NOW_EPOCH - 7200))
-        FRESH="$(jq -c --argjson cutoff "$CUTOFF_EPOCH" 'select((.ts | fromdateiso8601) >= $cutoff)' "$OUTBOX_FILE" 2>/dev/null)"
-        jq -c --argjson cutoff "$CUTOFF_EPOCH" 'select((.ts | fromdateiso8601) < $cutoff)' "$OUTBOX_FILE" 2>/dev/null >> "$OUTBOX_DIR/expired.jsonl" || true
-        : > "$OUTBOX_FILE"
-        release_lock "$LOCK_DIR"
-        if [ -n "$FRESH" ]; then
-          DIGEST="$(printf '%s\n' "$FRESH" | jq -r '.text' | paste -sd'; ' -)"
-          allow "$MESSAGE
+        CUTOFF_EPOCH=$(( $(date -u +%s) - 7200 ))
+        # Classify every queued item: expired (past 2h), mine (queued for this recipient, or from before items
+        # recorded one), other (queued for a different recipient: kept for its own send, never merged here).
+        # A queue that doesn't parse leaves the file untouched and the original send goes through (fail open).
+        if CLASSIFIED="$(jq -c --argjson cutoff "$CUTOFF_EPOCH" --arg to "$TO" \
+            '(.ts | fromdateiso8601) as $t | if $t < $cutoff then {k:"expired",e:.} elif (.to == null or .to == $to) then {k:"mine",e:.} else {k:"other",e:.} end' \
+            "$OUTBOX_FILE" 2>/dev/null)"; then
+          printf '%s\n' "$CLASSIFIED" | jq -c 'select(.k == "expired") | .e' >> "$OUTBOX_DIR/expired.jsonl" 2>/dev/null || true
+          OTHERS="$(printf '%s\n' "$CLASSIFIED" | jq -c 'select(.k == "other") | .e' 2>/dev/null)"
+          FRESH="$(printf '%s\n' "$CLASSIFIED" | jq -c 'select(.k == "mine") | .e' 2>/dev/null)"
+          if [ -n "$OTHERS" ]; then printf '%s\n' "$OTHERS" > "$OUTBOX_FILE"; else : > "$OUTBOX_FILE"; fi
+          release_lock "$LOCK_DIR"
+          if [ -n "$FRESH" ]; then
+            DIGEST="$(printf '%s\n' "$FRESH" | jq -r '.text' | paste -sd'; ' -)"
+            allow "$MESSAGE
 
 [queued progress, now attached]: $DIGEST"
+          fi
+        else
+          failopen outbox-unreadable
+          release_lock "$LOCK_DIR"
         fi
       else
         release_lock "$LOCK_DIR"
@@ -135,9 +153,13 @@ case "$DECISION" in
     ;;
   batch|*)
     if acquire_lock "$LOCK_DIR" 5; then
-      jq -nc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg agent "$AGENT_TYPE" --arg text "$MESSAGE" \
-        '{ts: $ts, agentType: (if $agent == "" then null else $agent end), text: $text}' >> "$OUTBOX_FILE"
+      jq -nc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg agent "$AGENT_TYPE" --arg to "$TO" --arg text "$MESSAGE" \
+        '{ts: $ts, agentType: (if $agent == "" then null else $agent end), to: (if $to == "" then null else $to end), text: $text}' >> "$OUTBOX_FILE"
       release_lock "$LOCK_DIR"
+    else
+      # Could not take the lock, so the item was not queued: deny-as-queued would lose it. Send it instead.
+      failopen outbox-lock-timeout
+      allow
     fi
     deny "Queued: this reads as progress with nothing to act on yet. It'll ride along on your next real send, or flush automatically before you go idle."
     ;;
