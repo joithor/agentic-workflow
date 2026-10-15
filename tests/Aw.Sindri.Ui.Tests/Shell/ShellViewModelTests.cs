@@ -155,6 +155,20 @@ public sealed class ShellViewModelTests
         Assert.StartsWith(Labels.Running, shell.Pill.Text, StringComparison.Ordinal);
     }
 
+    // Main's #231: while views.db migrates, /status answers views: null ("no views yet"): the app starts cleanly, says Running, and
+    // shows no views banner (nothing is stalled or rebuilding that it knows of).
+    [Fact]
+    public async Task A_status_with_no_views_yet_starts_cleanly_and_says_running()
+    {
+        _records.Write(A.Record());
+        _server.Current = A.Status() with { Views = null, Health = null };
+
+        var shell = await Running(ShellState.Normal);
+
+        await Until(() => shell.Pill.Text.StartsWith(Labels.Running, StringComparison.Ordinal));
+        Assert.Equal((true, false), (shell.Pill.Text.StartsWith(Labels.Running, StringComparison.Ordinal), shell.Health.Banner.IsShown));
+    }
+
     [Fact]
     public async Task A_status_of_another_api_version_is_a_version_mismatch()
     {
