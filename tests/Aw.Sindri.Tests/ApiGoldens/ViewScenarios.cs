@@ -1,14 +1,14 @@
 using Aw.Kernel.Services;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
-using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.CheckProfile;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Server;
-using Aw.Kernel.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 using static Aw.Sindri.Tests.Callers.CallerRequests;

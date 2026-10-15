@@ -3,6 +3,7 @@ using Aw.Context.Testing.Engine;
 using Aw.Kernel;
 using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
@@ -47,6 +48,9 @@ internal sealed class ChainHarness : IAsyncDisposable
             .AddSingleton(H.Callers)
             .AddSingleton<IShutdown>(H.Shutdown)
             .AddSingleton(endpoints ?? new InMemoryEndpointFile())
+            .AddSingleton(new HeldHumanToken())
+            .AddSingleton<IHumanTokenStore>(new InMemoryHumanTokenStore())
+            .AddScoped<ServeRecords>()
             .AddSingleton(new TemporalRuntime(new FakeTemporalServer(), H.Clock))   // the stop's Temporal side, with no server running
             .AddSingleton<IProfileSource>(H.Profiles)
             .AddSingleton<IApprovals>(H.Profiles)
