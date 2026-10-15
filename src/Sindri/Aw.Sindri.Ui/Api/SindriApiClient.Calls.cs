@@ -106,7 +106,7 @@ internal sealed partial class SindriApiClient
     // not the app's. A 403 (API §6: SND-AUTH-001 for a missing or stale token) needs only a title; a command's refusal
     // (409 SND-API-010 and the like, UI spec §4.1 Error) carries an SND title and its detail. Anything else that isn't a
     // success stays SND-UI-003.
-    private static Error? Refusal(HttpStatusCode status, byte[] body)
+    internal static Error? Refusal(HttpStatusCode status, byte[] body)
     {
         if (status is >= HttpStatusCode.OK and < HttpStatusCode.MultipleChoices)
         {

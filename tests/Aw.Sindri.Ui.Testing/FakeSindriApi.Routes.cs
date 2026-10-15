@@ -1,4 +1,3 @@
-using System.Net;
 using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Sindri.Ui.Api;
@@ -36,13 +35,13 @@ internal sealed partial class FakeSindriApi
     public Task<Result<CommandList>> Commands(Uri api, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _catalogCalls);
-        return Task.FromResult(Answer<CommandList>(api, Catalog));
+        return Task.FromResult(Answer<CommandList>(api, "/sindri/commands", Catalog));
     }
 
     public Task<Result<ServiceList>> Services(Uri api, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _servicesCalls);
-        return Task.FromResult(Answer<ServiceList>(api, ServiceView));
+        return Task.FromResult(Answer<ServiceList>(api, "/sindri/services", ServiceView));
     }
 
     public async Task<Result<CommandAcceptedView>> RebuildViews(Uri api, CancellationToken cancellationToken)
@@ -53,34 +52,31 @@ internal sealed partial class FakeSindriApi
             await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        return Answer<CommandAcceptedView>(api, Rebuild);
+        return Answer<CommandAcceptedView>(api, "/sindri/views/rebuild", Rebuild);
     }
 
-    // What the real client makes of the same answer: the record, or the refusal's code and detail as served.
-    private Result<T> Answer<T>(Uri api, RouteAnswer answer)
+    // What the real client makes of the same answer: the record, or the refusal's code, detail and kind as served (the
+    // client's own reading, SindriApiClient.Refusal, so the two cannot drift), or an answer it can't read.
+    private Result<T> Answer<T>(Uri api, string path, RouteAnswer answer)
     {
         if (Down)
         {
             return SindriUiErrors.Unreachable.With($"nothing answers at {api.Authority}");
         }
 
-        if (answer.IsSuccess)
+        var body = System.Text.Encoding.UTF8.GetBytes(answer.Body);
+        if (Refusal is { } refusal)
         {
-            return AwJson.Deserialize<T>(System.Text.Encoding.UTF8.GetBytes(answer.Body), SindriApiClient.Json);
+            return Refused<T>(refusal);
         }
 
-        var problem = AwJson.Deserialize<ProblemView>(System.Text.Encoding.UTF8.GetBytes(answer.Body), SindriApiClient.Json);
-        return problem is { IsSuccess: true, Value: { Title: { Length: > 0 } code, Detail: { Length: > 0 } detail } }
-            ? new Error(code, KindOf(answer.Status), detail)
-            : SindriUiErrors.BadAnswer.With(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{api.AbsolutePath} answered {(int)answer.Status}"));
-    }
+        if (SindriApiClient.Refusal(answer.Status, body) is { } refused)
+        {
+            return refused;
+        }
 
-    private static ErrorKind KindOf(HttpStatusCode status) => (int)status switch
-    {
-        400 => ErrorKind.Invalid,
-        403 => ErrorKind.Forbidden,
-        404 => ErrorKind.NotFound,
-        409 => ErrorKind.Conflict,
-        _ => ErrorKind.Unavailable,
-    };
+        return answer.IsSuccess
+            ? AwJson.Deserialize<T>(body, SindriApiClient.Json)
+            : SindriUiErrors.BadAnswer.With(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{path} answered {(int)answer.Status}"));
+    }
 }
