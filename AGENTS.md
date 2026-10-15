@@ -115,6 +115,8 @@ dotnet run --project src/Sindri/Aw.Sindri.Host -- recipe eval <file> [--json] | 
 dotnet run --project src/Sindri/Aw.Sindri.Host -- workflow complete <address> --run <token> --outcome <o> [--output <fact>=<file>]... [--temporal <host:port>] [--no-wait]   # P4a: report an open desk run to serve's Temporal (frontend from control.json); exit 0, 1 Temporal not running, 2 error (docs/csharp/sindri.md)
 dotnet run --project src/Sindri/Aw.Sindri.Host -- workflow list [--query <visibility query>] [--temporal <host:port>]   # P4a: the open recipe instances by search attributes
 bash src/Sindri/aot-smoke/run.sh         # sindri, framework-dependent (the Temporal SDK has no NativeAOT; needs scripts/binaries-lock.sh fetch temporal): publish (on a copy), drive start, a refused second serve, the approve preview and its non-terminal refusal, a session's approve and stop refused (SND-AUTH-002), the human's typed approval and stop under a pty, status (and --json's apiVersion), /sindri/mcp's initialize and tools/list, stop and doctor (on a scratch HOME) in a temp home, then recipe validate on the shipped recipes and an invalid fixture (each call bounded to 30 s), compare with expected.txt
+dotnet run --project src/Sindri/Aw.Sindri.Ui.Desktop       # the Sindri app (S1b shell, U0 theme and shell; docs/csharp/sindri-ui.md): top bar, Home, Health, Settings, tray, single instance, live from the event stream; bare `sindri` opens it (sindri-ui next to sindri, or AW_SINDRI_UI)
+bash src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh [<dir>]   # sindri-ui under NativeAOT: publish (on a copy) and fail on any IL2xxx/IL3xxx warning or a missing binary; copies it and its native libraries to <dir> when given
 
 # Rules (edit .agents/rules/, then regenerate)
 scripts/sync-rules.sh                   # Link .claude/rules, .cursor/rules, CLAUDE.md; refresh Rules Index
@@ -127,6 +129,9 @@ node scripts/check-deps.mjs --mermaid [--base-file F]   # Also print the Mermaid
 # Pinned external binaries (binaries.lock: the temporal CLI and the time-skipping test server; engine spec rev 8 §0)
 scripts/binaries-lock.sh check          # Shape of binaries.lock: six fields, one version per name, all four platforms
 scripts/binaries-lock.sh fetch <name>   # Download this platform's row, verify its sha256, install under $AW_STATE_DIR/cache/bin/<name>-<version>/
+
+# External tools, once per box (setup.sh runs it): uv, graphify at sindri's pin, both Temporal binaries, Linux system-package checks
+scripts/install-deps.sh                 # AW_DRY_RUN=1 prints only; a missing apt package prints its sudo command and exits 1
 
 # Rule records (rules/engineering/csharp/*.yaml + schemas/rule-record.schema.json; docs/csharp/rule-records.md)
 node scripts/check-rules.mjs [--json]   # Every §4b rule has a record; every active check exists; pending ones wait on their PR
@@ -147,6 +152,7 @@ bash scripts/tests/check-rules.test.sh
 bash scripts/tests/scaffold.test.sh
 bash scripts/tests/check-env-example.test.sh
 bash scripts/tests/binaries-lock.test.sh
+bash scripts/tests/install-deps.test.sh
 bash scripts/tests/denylist-check.test.sh
 bash scripts/tests/owner-check.test.sh
 bash scripts/tests/repo-templates.test.sh

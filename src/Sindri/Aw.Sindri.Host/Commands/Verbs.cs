@@ -41,7 +41,7 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
         var code = StatusExitCode(status.Value.Value);
         return json
             ? await output.Raw(status.Value.Body, code).ConfigureAwait(false)
-            : await output.Text(SummaryText.Render(status.Value.Value, found.Value.Endpoint, showUi: false), code).ConfigureAwait(false);
+            : await output.Text(SummaryText.Render(status.Value.Value, found.Value.Endpoint, ui: null), code).ConfigureAwait(false);
     }
 
     /// <summary>The 'sindri status' exit code: 1 unless the health is healthy (a server without health: unless the profile is approved).</summary>

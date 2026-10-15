@@ -32,6 +32,13 @@ public sealed record Scope(
         return new Scope(list, hosts, layers);
     }
 
+    /// <summary>
+    /// Roots of unshaped packages (the Sindri UI and its heads, spec §4a "UI"): a namespace under one belongs to no shaped
+    /// package, even when a shaped root (Aw.Sindri) is a prefix of it, so only the global rules (cycles, naming, service
+    /// providers, typed ids) cover it.
+    /// </summary>
+    public IReadOnlyList<string> Unshaped { get; init; } = [];
+
     /// <summary>The package root whose Host or App assembly this is, or null.</summary>
     /// <param name="assemblyName">An assembly's short name.</param>
     /// <returns>The root, or null.</returns>
@@ -45,5 +52,10 @@ public sealed record Scope(
     /// <summary>The package root whose namespace contains the given one (longest wins), or null.</summary>
     /// <param name="ns">A namespace.</param>
     /// <returns>The root, or null.</returns>
-    public string? RootOf(string ns) => Roots.Where(r => ns.StartsWith(r + ".", StringComparison.Ordinal)).MaxBy(r => r.Length);
+    public string? RootOf(string ns)
+    {
+        var shaped = Roots.Where(r => ns.StartsWith(r + ".", StringComparison.Ordinal)).MaxBy(r => r.Length);
+        var unshaped = Unshaped.Where(r => ns == r || ns.StartsWith(r + ".", StringComparison.Ordinal)).MaxBy(r => r.Length);
+        return unshaped is not null && (shaped is null || unshaped.Length > shaped.Length) ? null : shaped;
+    }
 }

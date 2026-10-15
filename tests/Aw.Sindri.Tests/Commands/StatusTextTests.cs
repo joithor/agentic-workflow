@@ -24,7 +24,7 @@ public sealed class StatusTextTests
     private static HealthReport Healthy() => new(HealthWord.Healthy, [], Sentence: null);
 
     private static string Render(GetStatusResponse status) =>
-        SummaryText.Render(status, _endpoint, showUi: false).ReplaceLineEndings("\n");
+        SummaryText.Render(status, _endpoint, ui: null).ReplaceLineEndings("\n");
 
     [Fact, Trait("Lane", "unit")]
     public void Fresh_views_and_a_healthy_word_print_one_line_each()

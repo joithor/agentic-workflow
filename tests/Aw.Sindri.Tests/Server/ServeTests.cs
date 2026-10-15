@@ -142,7 +142,7 @@ public sealed class ServeTests : IDisposable
         var ct = TestContext.Current.CancellationToken;
         var error = new StringWriter();
 
-        var code = await ServeCommand.Run(n => n switch { "AW_SINDRI_HOME" => _home.Path, "AW_SINDRI_PORT" => port, _ => null }, TimeProvider.System, error)
+        var code = await ServeCommand.Run(n => n switch { "AW_SINDRI_HOME" => _home.Path, "AW_SINDRI_PORT" => port, _ => null }, TimeProvider.System, error, NoTemporal.Use)
             .WaitAsync(ct);
 
         Assert.Equal(2, code);

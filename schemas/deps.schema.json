@@ -107,7 +107,7 @@
         "tier": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 3
+          "maximum": 4
         },
         "sublevel": {
           "type": "integer",
@@ -170,6 +170,16 @@
           "type": "string",
           "pattern": "^[a-z][a-z0-9-]*$",
           "description": "State-root directory this package owns; any other node using a path under it needs a file (or db) edge."
+        },
+        "routes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^/[a-z0-9][a-z0-9/-]*/$"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "description": "HTTP route prefixes this package serves (e.g. /sindri/); another package's C# string literal starting with one is an http edge."
         },
         "note": {
           "type": "string",
@@ -269,6 +279,11 @@
                   "required": [
                     "namespace"
                   ]
+                },
+                {
+                  "required": [
+                    "routes"
+                  ]
                 }
               ]
             }
@@ -299,9 +314,10 @@
             "cli",
             "db",
             "file",
+            "http",
             "compose"
           ],
-          "description": "project = a C# ProjectReference to the other package's Core (or a tier-0 package's library projects); compose = a Host's ProjectReference to a lower-tier, non-tier-0 package's Features and Infrastructure, for their public Add…() registration methods only (DEPS-COMPOSE-001, ARCH-COMPOSE-001; needs a project edge beside it, which only a Core reference makes current); cli, db, file as described in deps.yaml."
+          "description": "project = a C# ProjectReference to the other package's Core (or a tier-0 package's library projects); compose = a Host's ProjectReference to a lower-tier, non-tier-0 package's Features and Infrastructure, for their public Add…() registration methods only (DEPS-COMPOSE-001, ARCH-COMPOSE-001; needs a project edge beside it, which only a Core reference makes current); http = calls the other package's HTTP API, which it declares as routes (DEPS-KIND-004 otherwise); cli, db, file as described in deps.yaml."
         },
         "status": {
           "enum": [
@@ -330,13 +346,38 @@
         "rule": {
           "enum": [
             "DEPS-FANOUT-002",
-            "DEPS-FANOUT-003"
+            "DEPS-FANOUT-003",
+            "DEPS-CYCLE-001"
           ],
-          "description": "Only the fan-out rules take exceptions."
+          "description": "Only the fan-out rules and the cycle rule take exceptions."
         },
         "subject": {
           "$ref": "#/$defs/id",
-          "description": "The package the exception covers: every project of that package."
+          "description": "The package the exception covers: every project of that package (DEPS-FANOUT-002/003), or the package its excused edge leaves (DEPS-CYCLE-001)."
+        },
+        "excuses": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "from",
+            "to",
+            "kind"
+          ],
+          "properties": {
+            "from": {
+              "$ref": "#/$defs/id"
+            },
+            "to": {
+              "$ref": "#/$defs/id"
+            },
+            "kind": {
+              "enum": [
+                "cli",
+                "http"
+              ]
+            }
+          },
+          "description": "DEPS-CYCLE-001 only (required there): the one declared cli or http edge, leaving the subject, that the exception excuses. It covers the one cycle that edge closes (the cycle that goes away without it); DEPS-EXC-005 when the edge isn't declared or doesn't leave the subject, DEPS-EXC-002 when it closes no cycle or more than one."
         },
         "reason": {
           "type": "string",
@@ -348,7 +389,37 @@
         "expires": {
           "$ref": "#/$defs/date"
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "rule": {
+                "const": "DEPS-CYCLE-001"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "excuses"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "excuses"
+            ]
+          },
+          "then": {
+            "properties": {
+              "rule": {
+                "const": "DEPS-CYCLE-001"
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }

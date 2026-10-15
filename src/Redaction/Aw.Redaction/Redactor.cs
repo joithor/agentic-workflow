@@ -10,10 +10,11 @@ public sealed class Redactor : IRedactor
     // timeout, and each doubling of the text doubles it, so input size alone never blocks; only a pathological match
     // does (spec §4c). The rules are compiled once per size tier, on first use.
     private const int Window = 128 * 1024;
+    private const int TierCount = 24; // a safe upper bound: an int length needs at most tier 14
 
     private readonly IReadOnlyList<RedactionRule> _rules;
     private readonly TimeSpan _matchTimeout;
-    private readonly CompiledRules?[] _tiers = new CompiledRules?[24];
+    private readonly CompiledRules?[] _tiers = new CompiledRules?[TierCount];
     private readonly Regex _secretName;
     private readonly TimeProvider? _clock;
 
@@ -156,15 +157,29 @@ public sealed class Redactor : IRedactor
         return raw;
     }
 
+    /// <summary>The per-pattern match timeout used to scrub a text of <paramref name="length"/> characters.</summary>
+    internal TimeSpan TimeoutFor(int length) => RulesFor(length).MatchTimeout;
+
     private CompiledRules RulesFor(int length)
     {
+        var tier = TierFor(length);
+        return _tiers[tier] ??= new CompiledRules(_rules, RuleIds, MatchTimeoutFor(_matchTimeout, length));
+    }
+
+    /// <summary>The per-pattern match timeout for a text of <paramref name="length"/> characters: <paramref name="baseTimeout"/>
+    /// up to one window, doubled for each doubling of the text, capped like every timeout.</summary>
+    internal static TimeSpan MatchTimeoutFor(TimeSpan baseTimeout, int length) =>
+        Cap(baseTimeout.TotalMilliseconds * (1L << TierFor(length)));
+
+    private static int TierFor(int length)
+    {
         var tier = 0;
-        while (tier < _tiers.Length - 1 && (long)Window << tier < length)
+        while (tier < TierCount - 1 && (long)Window << tier < length)
         {
             tier++;
         }
 
-        return _tiers[tier] ??= new CompiledRules(_rules, RuleIds, Cap(_matchTimeout.TotalMilliseconds * (1L << tier)));
+        return tier;
     }
 
     // Regex refuses a timeout past int.MaxValue - 1 ms (about 24.8 days); a longer budget is capped there.
