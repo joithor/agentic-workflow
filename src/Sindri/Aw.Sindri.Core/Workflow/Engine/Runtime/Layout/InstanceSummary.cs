@@ -14,7 +14,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
 /// <param name="Actions">The action ids allowed now.</param>
 public sealed record InstanceSummary(
     string Address,
-    string? ItemId,
+    ItemKey? ItemId,
     RecipeRef Recipe,
     string State,
     DateTimeOffset Since,

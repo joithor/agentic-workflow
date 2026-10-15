@@ -1,6 +1,5 @@
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Workflow.Engine;
-using Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
 
 namespace Aw.Sindri.Features.ListInstances;
 
@@ -21,5 +20,5 @@ namespace Aw.Sindri.Features.ListInstances;
 /// uses on the instance routes; SND-WF-001 when there is none. The other filters don't apply with it.
 /// </param>
 public sealed record ListInstancesRequest(bool NeedsMe = false, ItemKey? Item = null, string? State = null, string? Query = null, string? Address = null,
-    string? Recipe = null, Urgency? Urgency = null, string? Subject = null, bool? Root = null)
+    string? Recipe = null, string? Urgency = null, string? Subject = null, bool? Root = null)
     : IQuery<ListInstancesResponse>;

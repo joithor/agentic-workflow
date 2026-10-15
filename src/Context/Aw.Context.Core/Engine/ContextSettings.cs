@@ -1,3 +1,4 @@
+using Aw.Context.Core.Onyx;
 using Aw.Context.Core.Trust;
 
 namespace Aw.Context.Core.Engine;
@@ -26,8 +27,17 @@ public sealed record ContextSettings
     /// <summary>Below this many fused items a query reformulates once (Phase 8).</summary>
     public int MinHits { get; init; } = 3;
 
+    /// <summary>The cascade's depth cap ('context.cascadeDepth', spec §6.1): 0 to 4, default 2; a query's depth overrides it.</summary>
+    public int CascadeDepth { get; init; } = 2;
+
     /// <summary>Whether session callers may read context at all, on any transport (spec §3). Off until approved.</summary>
     public bool SessionsEnabled { get; init; }
+
+    /// <summary>The checked 'context.sources.onyx' entry, or null when the profile names no onyx source.</summary>
+    public OnyxSettings? Onyx { get; init; }
+
+    /// <summary>The Linear team keys ('context.sources.linear.teams') an Onyx identifier alias may name; empty for none.</summary>
+    public IReadOnlyList<string> LinearTeams { get; init; } = [];
 
     /// <summary>
     /// The profile's extra scrub patterns ('context.scrub.extraPatterns', D14), as written: <see cref="IScrubberFactory"/>

@@ -49,6 +49,7 @@ internal sealed class RegistryHarness : IAsyncDisposable
         Challenges = new InMemoryChallenges(H.Clock);
         _provider = new ServiceCollection()
             .AddSingleton<TimeProvider>(H.Clock)
+            .AddSingleton<Core.Views.IProjectorStatus>(new Core.Views.ProjectorProgress(H.Clock))
             .AddSingleton<IIdGenerator>(H.Ids)
             .AddSingleton<ILedgerStore>(H.Store)
             .AddSingleton<ILease>(H.Store)
@@ -64,6 +65,7 @@ internal sealed class RegistryHarness : IAsyncDisposable
             .AddSingleton<IRecipeWake>(Wake)
             .AddSingleton<Core.Workflow.Engine.Runtime.IInstanceDirectory>(_instances)
             .AddSingleton<Core.Workflow.Engine.Runtime.IInstanceRuntime>(_instances)
+            .AddSingleton<Core.Workflow.Engine.Runtime.IInstanceReader>(_instances)
             .AddSingleton(SliceHarness.Json)
             .AddSingleton<IProfileSource>(H.Profiles)
             .AddRecipeBlocks()
@@ -128,6 +130,13 @@ internal sealed class RegistryHarness : IAsyncDisposable
     /// <summary>Registers the shipped recipe at <paramref name="path"/> (relative to recipes/, e.g. 'sindri/workflow.step.yaml').</summary>
     public Task<RegisteredRecipe> Shipped(string path) =>
         Register(Workflow.RecipeReaderTests.Reader.Read(ShippedRecipes.Read(path), Path.GetFileName(path)).Document!);   // why: the shipped recipes bind (ShippedRecipesTests)
+
+    /// <summary>The child recipes a served validation resolves (RecipeRegistryReader.Children).</summary>
+    public async Task<IChildRecipeResolver> Children()
+    {
+        await using var scope = _provider.CreateAsyncScope();
+        return (await scope.ServiceProvider.GetRequiredService<RecipeRegistryReader>().Children(TestContext.Current.CancellationToken)).Value;
+    }
 
     /// <summary>Asks for a challenge for <paramref name="action"/> as <paramref name="caller"/> (a human at a terminal by default).</summary>
     public Task<Result<IssueChallengeResponse>> Issue(string action, CallerContext? caller = null) =>

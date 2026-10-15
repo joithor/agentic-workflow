@@ -5,7 +5,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Events;
 /// <summary>
 /// The payload of a workflow ledger event (spec §5.6): one per instance a decision changes, written by the
 /// interpreter's RecordEvent activity. Every event carries the trigger, any gate, evidence, grant or override data,
-/// the effects it runs, and the post-state delta. The ledger writer scrubs the whole payload (E20).
+/// the effects it runs, and the post-state delta. RecordEvent scrubs the whole serialized payload before it is appended (E20).
 /// </summary>
 /// <param name="Type">The event type.</param>
 /// <param name="Instance">The instance it changed.</param>

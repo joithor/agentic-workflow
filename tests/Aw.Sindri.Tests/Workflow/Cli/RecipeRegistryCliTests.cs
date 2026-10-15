@@ -58,6 +58,9 @@ public sealed class RecipeRegistryCliTests : IDisposable
         Assert.Equal($"{name} unapproved\n", listOut);
         Assert.StartsWith($"{name} unapproved\n", showOut, StringComparison.Ordinal);
         Assert.Contains("pinned blocks:\n  step.checks sha256:", showOut, StringComparison.Ordinal);
+        Assert.Contains("urgency: work\ninput: fact:spec type=text kind=text\n", showOut, StringComparison.Ordinal);
+        Assert.Contains("order: path\nstate: produce order=1\nstate: checks order=2\nstate: verify order=3\nstate: done order=4\n", showOut, StringComparison.Ordinal);
+        Assert.Contains("loop: revisions verify -> produce\nloop: revisions checks -> produce\n", showOut, StringComparison.Ordinal);
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
@@ -74,6 +77,58 @@ public sealed class RecipeRegistryCliTests : IDisposable
         var recipe = Assert.Single(JsonDocument.Parse(_out.ToString()).RootElement.GetProperty("recipes").EnumerateArray());
         Assert.Equal(("workflow.step", "unapproved"), (recipe.GetProperty("id").GetString(), recipe.GetProperty("standing").GetString()));
         Assert.Equal("fact:spec", Assert.Single(recipe.GetProperty("inputs").EnumerateArray()).GetProperty("key").GetString());
+    }
+
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
+    public async Task Show_json_returns_the_recipes_fields_as_list_json_does_and_the_preview()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var app = await Started(ct);
+        _ = await Run(app, ct, "register", await Shipped("workflow.step.yaml", ct));
+        var hash = (await app.Services.GetRequiredService<IRecipeStore>().All(ct)).Value.Single().Hash;
+        _ = Take();
+        var name = $"workflow.step@{hash.Display}";
+
+        var after = await Run(app, ct, "show", name, "--json");
+        var afterOut = Take();
+        var before = await Run(app, ct, "show", "--json", name);
+
+        Assert.True((after, before) == (0, 0), _error.ToString());
+        Assert.Equal(afterOut, _out.ToString());
+        var shown = JsonDocument.Parse(afterOut).RootElement;
+        var recipe = shown.GetProperty("recipe");
+        Assert.Equal(("workflow.step", "unapproved", "work"), (recipe.GetProperty("id").GetString(), recipe.GetProperty("standing").GetString(), recipe.GetProperty("urgency").GetString()));
+        Assert.Equal(JsonValueKind.Array, recipe.GetProperty("outputs").ValueKind);
+        Assert.Equal("path", recipe.GetProperty("orderedBy").GetString());
+        var done = recipe.GetProperty("states").EnumerateArray().Last();
+        Assert.Equal(("done", 4), (done.GetProperty("id").GetString(), done.GetProperty("order").GetInt32()));
+        var loop = recipe.GetProperty("loops").EnumerateArray().First();
+        Assert.Equal(("verify", "produce"), (loop.GetProperty("from").GetString(), loop.GetProperty("to").GetString()));
+        Assert.Equal("fact:spec", Assert.Single(recipe.GetProperty("inputs").EnumerateArray()).GetProperty("key").GetString());
+        Assert.True(recipe.TryGetProperty("hash", out _) && recipe.TryGetProperty("version", out _));
+        Assert.Equal(JsonValueKind.Object, shown.GetProperty("preview").ValueKind);
+    }
+
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
+    public async Task Show_json_carries_the_declared_outputs_and_the_inputs_kind()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var app = await Started(ct);
+        var file = Path.Combine(_home.Path, "triage.yaml");
+        await File.WriteAllTextAsync(file, ShippedRecipes.Read("dev/triage-three-state.yaml"), ct);
+        _ = await Run(app, ct, "register", file);
+        var hash = (await app.Services.GetRequiredService<IRecipeStore>().All(ct)).Value.Single().Hash;
+        _ = Take();
+
+        var code = await Run(app, ct, "show", $"workflow.dev-triage-three-state@{hash.Display}", "--json");
+
+        Assert.True(code == 0, _error.ToString());
+        var recipe = JsonDocument.Parse(_out.ToString()).RootElement.GetProperty("recipe");
+        Assert.Equal("triage", recipe.GetProperty("urgency").GetString());
+        Assert.Equal("item", recipe.GetProperty("inputs")[0].GetProperty("kind").GetString());
+        Assert.Equal(
+            [("fact:output", "file", "desk"), ("fact:answer", "decision", "answer")],
+            recipe.GetProperty("outputs").EnumerateArray().Select(o => (o.GetProperty("key").GetString(), o.GetProperty("type").GetString(), o.GetProperty("from").GetString())));
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]

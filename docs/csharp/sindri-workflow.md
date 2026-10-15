@@ -123,13 +123,29 @@ form under its hash: `registered <id>@<hash12> (unapproved)`, or `already regist
 `recipe.registered` event per hash). Other content under a registered id and version is `SND-RECIPE-007`; any other
 failing rule is `SND-RECIPE-001`, each followed by its rule lines.
 
-`sindri recipe show <id@hash>` (a query; the hash by 8 or more digits) prints the recipe's line and the approval preview;
-an unknown hash is `SND-RECIPE-002`. `sindri recipe list [--stale] [--json]` prints one line per registered recipe,
+`sindri recipe show <id@hash> [--json]` (a query; the hash by 8 or more digits) prints the recipe's line, then `urgency: <urgency>`, one
+`input: <key> type=<type> kind=<kind|->` line per input and one `output: <key> type=<type> from=<state>` line per output, then the path order (below), then the approval preview;
+an unknown hash is `SND-RECIPE-002`. `show --json` prints the server's body, `{"recipe":{id, version, hash, standing, via, stale, inputs, urgency, outputs, orderedBy, states, loops},"preview":{…}}`: the recipe object has the same fields as a `recipe list --json` row, so a client reads urgency, inputs, outputs and the path order the same way from either. `sindri recipe list [--stale] [--json]` prints one line per registered recipe,
 `<id>@<hash12> <standing> (<via>)[; stale: …]`, where standing is `approved`, `unapproved` or `revoked` and stale names
 `pin-drift` (a pinned block's descriptor changed in this build) or `child-stale` (a pinned child was revoked);
 `--stale` keeps only the approved ones that are stale. `--json` prints the server's body,
-`{"recipes":[{id, version, hash, standing, via, stale, inputs}]}`. The queries never start the control plane: when it
+`{"recipes":[{id, version, hash, standing, via, stale, inputs, urgency, outputs, orderedBy, states, loops}]}`, where an input is `{key, label, type, kind}`
+(type and kind `null` when not declared) and an output is `{key, label, type, from}`. A row registered before `urgency`, `outputs` and
+`inputs[].kind` existed keeps its stored text and hash and lists with the defaults (`work`, no outputs, no kinds); registering the same
+file again hashes differently and is `SND-RECIPE-007` naming `RCP-VERSION-001` until the author raises `version`. The queries never start the control plane: when it
 isn't running they print `SND-API-001 not running: …` and exit 1.
+
+**Path order (spec §3.10, UI E-20).** `recipe show` and `recipe list --json` carry the recipe's states in path order, computed from the
+transition graph by `StatePathOrder` and never hashed (a recipe's hash is the same with or without it): `orderedBy` (`path`, or
+`transition-list` when `initial` has more than one distinct non-terminal first target other than itself), `states[]` (`id`, `order`, `branchOf`) and
+`loops[]` (`name`, `from`, `to`). Text form: `order: <orderedBy>`, one `state: <name> order=<n>|branch-of=<state>|order=-` line per state and
+one `loop: <name|-> <from> -> <to>` line per loop edge. The walk starts at `initial` and follows each state's transitions in list order:
+the first to a non-terminal state not yet seen continues the main path, a later one is a branch and every state only that branch reaches is folded
+under the state it leaves (`branchOf`, no `order`); a transition back to a state still on the walk is a loop edge, named by the target's
+`loop:` (the loop the engine counts the round on; else the looping state's), listed in the order the walk finds them. A terminal target neither takes the main-path slot nor decides `orderedBy`; terminal states are numbered after the non-terminal ones in
+the order the walk found them, wherever they were reached from; a state the walk never reaches is listed last with neither. `order`
+starts at 1 (WF spec §3.10; the API spec's StateCell says 0-based, an open cross-spec question), set in one place
+(`StatePathOrder.FirstOrder`).
 
 ## `sindri recipe approve` and `sindri recipe revoke`
 
@@ -161,8 +177,8 @@ with the register call's `SND-RECIPE-007` and its `RCP-VERSION-001` line.
 
 `sindri recipe revoke <id@hash>` (the hash by 8 or more digits) previews the instances that will park, the takeovers it
 ends, the generated recipes approved from it (revoked with it, recursively) and the parents pinning it as a child
-(marked `child-stale`), asks for `revoke <id>@<hash12>`, and prints `revoked …; N instances parked` (N is 0 until P4's
-wake reaches instances). Revoking an already revoked hash is `SND-RECIPE-005`, unless a revoke stopped partway through
+(marked `child-stale`), asks for `revoke <id>@<hash12>`, and prints `revoked …; N instances parked` (N is 0 until P6's
+`TemporalRecipeWake` reaches instances; P4 keeps `NoOpRecipeWake`). Revoking an already revoked hash is `SND-RECIPE-005`, unless a revoke stopped partway through
 its cascade: then the same command finishes it (each step is keyed by its hash, so nothing is recorded twice).
 
 Each approval appends `recipe.approved` (keyed `recipe.approved:<hash>:after:<seq>`) and an approval row keyed by
@@ -214,13 +230,23 @@ needs re-approval.
 | `version` | yes | An integer. Same id and version with another hash, or a version not above the highest registered, is refused once the registry exists (`RCP-VERSION-001`/`-002`, P2) |
 | `description` | no | |
 | `base` | generated recipes only | Written by Sindri's generator; on a hand-written recipe it is `RCP-CAP-004`, and `recipe validate` treats every recipe as hand-written |
-| `inputs` | no | The facts a start supplies: `{ key, label?, type?: text \| file \| item }` |
+| `urgency` | no | `incident`, `triage` or `work` (default `work`; UI E-21). The app orders its Workflows strip by it; the engine never reads it. The normalizer writes `work` when it is absent, so an absent urgency and `urgency: work` hash the same. Any other value is `RCP-URG-001` |
+| `inputs` | no | The facts a start supplies: `{ key, label?, type?, kind? }`. `type` is a fact type (default `text`), `kind` a subject kind; the first input is the instance's subject (UI E-22) |
+| `outputs` | no | What the recipe produces for a human: `{ key, label?, type?, from }`. `from` names the state that produces the fact. Declarations only: they add no wiring (UI E-22) |
 | `initial` | yes | An `active` or `wait` state (`RCP-INIT-001`) |
 | `states` | yes | At least one non-terminal and one terminal state. `cancelled`, `escalated`, `parked` and `taken-over` are reserved (`RCP-STATE-001`) |
 | `transitions` | yes | |
 | `loops`, `budget` | no | |
 | `evals` | to approve (P2) | Paths of eval files, relative to the recipe's directory (`evals/<id>/<case>.jsonl`, spec §9.2). The paths' form isn't checked yet |
 | `hash` | no | Checked when present |
+
+### Fact types and subject kinds
+
+Fact type: `text`, `file`, `item`, `link`, `scope-map`, `packet`, `evidence`, `decision`, `payload` (`FactTypes`). It picks a viewer in
+the app and nothing else. Subject kind: `item`, `linear-project`, `webhook`, `file`, `text` (`SubjectKinds`); `item`, `file` and `text`
+pair with the type of the same name, `linear-project` and `webhook` with `payload`. Both are strings in the long form, so a bad value
+reaches its rule (`RCP-TYPE-001` to `-003`, `RCP-OUT-001` to `-003`, `RCP-URG-001`) instead of a reader error. Those rules
+(the Declarations rows under Rules) run on every path that validates a recipe, so a value of another spelling is refused with its rule's line.
 
 ### Value grammars
 
@@ -349,6 +375,13 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-NEXT-002` | `next` names no approval-tier command | Leave it out |
 | `RCP-EFFECT-001` | Every effect is on the profile's effect allowlist. **Skipped** while the profile has no `workflow.effects` (P6) | Add it to `workflow.effects` |
 | `RCP-RES-001` | **Information:** a resource wait has no allocator in this build | None needed; it parks with `SND-WF-010` until one lands |
+| `RCP-URG-001` | `urgency` is `incident`, `triage` or `work` | Use one of them, or remove `urgency` (the default is `work`) |
+| `RCP-OUT-001` | An output's `from` names a state of the recipe | Name one of its states |
+| `RCP-OUT-002` | An output's `from` isn't a terminal or engine-owned state, and the state's Step, its leaving transitions' `produces` or its wait records the output's key. **Information** when the state waits on a child, whose outcome the validator can't read | Record the fact there, or name the state that does |
+| `RCP-OUT-003` | Output keys are unique and none is also an input key | Give each output its own key |
+| `RCP-TYPE-001` | An input's or output's `type` is a fact type | Use one of the nine types |
+| `RCP-TYPE-002` | An input's `kind` is a subject kind | Use one of the five kinds |
+| `RCP-TYPE-003` | An input's `kind` pairs with its `type` (an absent `type` is `text`); not reported for an entry with a bad type or kind | Set `type` to the kind's, or change `kind` |
 | `RCP-HASH-001` | A `hash` in the file matches the content | Set it to the hash the message names, or remove it |
 | `RCP-VERSION-001` | Same id and version, same hash (registry, P2) | Raise `version` |
 | `RCP-VERSION-002` | `version` is above the highest registered (registry, P2) | Raise `version` |
@@ -492,6 +525,11 @@ same at-least-once execution with three history events per ledger row, so exactl
 and the local activity is the cheaper of the two. Its retry policy is unbounded with backoff, so the workflow waits for
 the ledger.
 
+Each payload is scrubbed before it is appended (free text in an event's detail can carry a secret). Until the context lane's
+scrubber is wired in, the engine's ledger scrub uses `Redactor.Default`, the built-in rules; the profile's
+`context.scrub.extraPatterns` do not reach it yet. A payload the scrub blocks, or breaks so it is no longer JSON, is stored
+without its detail; one that still can't be scrubbed throws, and the activity retries.
+
 **How it was measured.** `AW_SPIKE_LOG=<file> dotnet test --project tests/Aw.Sindri.Tests -- --filter-namespace
 Aw.Sindri.Tests.Workflows.Spike` appends each measurement line to the file; `AW_SPIKE_LEDGER_COPY=<dir>` keeps the
 ledger replay test's `ledger.db`. Counted with `sqlite3 ledger.db "select type, count(*) from events group by type"`
@@ -512,7 +550,7 @@ Engine spec rev 8.1 §5.1–§5.6, "Phase 4". The P4 contract fixes the interfac
 | Workflow id | The address, `InstanceStart.WorkflowId()` (`{item}/{recipe-name}/{attempt}`) | same |
 | `GetInstance` Query | `InstanceView`: the state, its detail and since, `next`, `allowedCommands` as `AllowedCommand` (`{ actionId, cli }`, UI E-13), the open `OpenQuestion` or `DeskTask` (the Step's declared outcomes and outputs, the inputs, when the timeout fires), the run token, the children and the outcome. `InstanceViews.Of` builds it, and it is pure | same |
 | Updates (§5.2) | `complete(StepCompleted)`, `answer(AnswerGiven)`, `command(CommandFired)`, `cancel(CancelRequested)`, `takeover(TakeoverRequested)`, `handback(HandbackRequested)`. Each has a `[WorkflowUpdateValidator]` and returns `CommandResult` (the view after the command, and what happened). The update id is the nonce | `RecipeWorkflow` |
-| Desk Step (rev 8.1 §5.3) | `RunStep` is a short activity with id `run:{token}:{n}`. The workflow then waits for the `complete` Update, bounded by the state's timeout | `RecipeWorkflow.RunStep`, `RunStepActivities` |
+| Desk Step (rev 8.1 §5.3) | `RunStep` is a short activity with id `run:{token}:{n}`. The workflow then waits for the `complete` Update, bounded by the state's timeout raised to `workflow.deskTimeout`; the expiry always parks `timeout` | `RecipeWorkflow.RunStep`, `RunStepActivities` |
 | Events (§5.4) | The `event` signal carries a `WaitSatisfied` | `RecipeWorkflow.EventAsync` |
 | Ledger mirror (§5.6) | `RecordEvent`, a local activity keyed `workflow:{workflow id}:{run id}:{activity id}` | `RecordEventActivities` |
 | Client port | `IInstanceRuntime`: `Start` (UseExisting), `Get` (the Query), `Send` (the Update the trigger names, with the nonce as its id), `Signal` (the bridge) | Core port; `TemporalInstanceRuntime` |
@@ -532,7 +570,12 @@ active state runs its desk Step (`RunDeskStep`, unit (c)); a wait state, a park,
 Update), or a delivered `event` signal whose source fits the wait's `waitFor` (its event kind, its resource, or its
 child's end). A delivered event that fits no wait yet stays buffered until one does. An applied or refused trigger writes
 one ledger event (`workflow.transition` or `workflow.refused`) and sets the search attributes; a rejected one records
-nothing. Gates have no runtime in the interpreter yet, so a matched transition's gate refuses (fail closed, W5) and the
+nothing. The row's payload is `WorkflowEventPayload` (instance, from, to, trigger kind, outcome, run) plus a `detail` projection of
+the decision's event (`WorkflowEventDetail`, §5.6): the trigger's id (its key: a command's nonce and arguments digest, a
+report's run and digest, an event's source sequence), actor, source sequence, answer variant and amount, any gates, evidence,
+grant, override and refusal records, the effect identities and the post-state delta (state names, reasons, counters and fact
+digests). It never holds an answer's text, a parked question or a fact's content. The `started` row carries the start's key
+and actor; a held event's expiry and the desk deadline's park, which have no decision, carry no `detail`. Gates have no runtime in the interpreter yet, so a matched transition's gate refuses (fail closed, W5) and the
 refusal follows §5.8's precedence. Wait timeouts are P5's (P3 doesn't decide `DeadlineFired`), and a child wait doesn't
 start its child until P7.
 
@@ -550,6 +593,12 @@ covers the search attributes, a delivered event, a refused event's park (`NeedsY
 ## Status, list and events (engine P4 unit (e))
 
 Engine spec rev 8.1 §5.1, §5.6, §6.3, §6.4, S1-D6 and S1-D11; README X5 and X16.
+
+All three are clients of serve's routes, like the write verbs: `status` resolves its reference with `GET /sindri/workflow/instances?address=` and
+reads `GET /sindri/workflow/instances/{id}`; `list` calls `GET /sindri/workflow/instances` with `needsMe`, `item`, `state` and `query`;
+`events` resolves the same way and reads `GET /sindri/workflow/instances/{id}/events?after=` (`--follow` polls it). None starts serve:
+with none running they print `SND-API-001 not running: …` and exit 1. Only `recipe validate` and `recipe eval` run in process (spec §6.1).
+The `--json` output is the response as the CLI's serializer prints it (`status` prints the `instance` member, as before).
 
 | Verb | Slice | What it reads | Prints |
 |---|---|---|---|
@@ -594,6 +643,9 @@ Engine spec rev 8.1 §5.1, §5.6, §6.3, §6.4, S1-D6 and S1-D11; README X5 and 
   (`SND-RECIPE-008`); the Core port `IApprovalEvals` names the hook and has no implementation or caller yet. Binding it
   (moving `EvalRecipe`'s case running into Core) is a later phase's work.
   `workflow events` reads the ledger directly until API P3's item timeline exists.
+- **Not yet (P6):** the revoke and drift wake. `IRecipeWake` is bound to `NoOpRecipeWake`, so a revoke or a pin drift parks no
+  running instance in P4 (the approval check at each command, answer and `complete` still refuses a revoked or drifted recipe
+  with `SND-RECIPE-005`/`-006`). P6 brings `TemporalRecipeWake`, which signals the running instances.
 
 ## The event bridge (engine P4 unit (d))
 

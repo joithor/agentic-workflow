@@ -53,7 +53,7 @@ internal sealed class WorkflowsHarness : IDisposable
         Composition.Compose(new ServiceCollection(), name => name == "AW_SINDRI_HOME" ? _home.Path : null, new FakeTimeProvider(DateTimeOffset.UtcNow)).BuildServiceProvider();
 
     /// <summary>The 'temporal' dev server pinned in binaries.lock, with Sindri's namespace (or <paramref name="namespace"/>) and search attributes.</summary>
-    public static Task<WorkflowEnvironment> StartDevServer(string @namespace = TemporalSettings.DefaultNamespace) =>
+    public static Task<WorkflowEnvironment> StartDevServer(string @namespace = TemporalSettings.DefaultNamespace, CancellationToken ct = default) =>
         WorkflowEnvironment.StartLocalAsync(new WorkflowEnvironmentStartLocalOptions
         {
             Namespace = @namespace,
@@ -63,7 +63,7 @@ internal sealed class WorkflowsHarness : IDisposable
                 ExistingPath = PinnedTemporal.Path(),
                 ExtraArgs = [.. SindriTemporal.SearchAttributes.SelectMany(static a => new[] { "--search-attribute", $"{a.Name}={a.Type}" })],
             },
-        });
+        }).WaitAsync(TimeSpan.FromSeconds(120), ct);   // a dev server that never comes up fails the test instead of hanging the lane
 
     public static string Target(WorkflowEnvironment env) => env.Client.Connection.Options.TargetHost!;
 
@@ -177,7 +177,18 @@ internal sealed class WorkflowsHarness : IDisposable
         InstanceView? last = null;
         while (DateTime.UtcNow < deadline)
         {
-            last = await handle.QueryAsync(static wf => wf.GetInstance());
+            // why: an unbounded Query can sit on a time-skipping server (a replay waiting for a worker) until the test's own timeout; 25 s is past the 10 s sticky-queue wait a restarted worker leaves behind
+            var ct = TestContext.Current.CancellationToken;
+            var query = new WorkflowQueryOptions { Rpc = new RpcOptions { Timeout = TimeSpan.FromSeconds(25), CancellationToken = ct } };
+            try
+            {
+                last = await handle.QueryAsync(static wf => wf.GetInstance(), query);
+            }
+            catch (Exception e) when (!ct.IsCancellationRequested && e is Temporalio.Exceptions.RpcException { Code: Temporalio.Exceptions.RpcException.StatusCode.DeadlineExceeded or Temporalio.Exceptions.RpcException.StatusCode.Cancelled or Temporalio.Exceptions.RpcException.StatusCode.Unknown } or Temporalio.Exceptions.RpcTimeoutOrCanceledException)
+            {
+                continue;   // boundary: one slow Query; the loop's deadline decides when to give up
+            }
+
             if (holds(last))
             {
                 return last;

@@ -20,7 +20,7 @@ public enum AnswerKind
 
     /// <summary>A grant of more tokens.</summary>
     [JsonStringEnumMemberName("grantTokens")]
-    Granttokens,
+    GrantTokens,
 
     /// <summary>An accept of the escalation.</summary>
     [JsonStringEnumMemberName("accept")]

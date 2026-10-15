@@ -137,7 +137,7 @@ public sealed class FlakyServiceTests : IDisposable
 
         public ServiceName Identity() => _flaky;
 
-        public ValueTask<Result<Unit>> Run(ScheduledRun run, CancellationToken cancellationToken) =>
-            ValueTask.FromResult<Result<Unit>>(Interlocked.Increment(ref _runs) == 1 ? Failure : Unit.Value);
+        public ValueTask<Result<ScheduledResult>> Run(ScheduledRun run, CancellationToken cancellationToken) =>
+            ValueTask.FromResult<Result<ScheduledResult>>(Interlocked.Increment(ref _runs) == 1 ? Failure : ScheduledResult.Worked);
     }
 }

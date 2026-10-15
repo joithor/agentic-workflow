@@ -15,9 +15,9 @@ internal sealed class CountingService : IScheduledService
 
     public ServiceName Identity() => Name;
 
-    public ValueTask<Result<Unit>> Run(ScheduledRun run, CancellationToken cancellationToken)
+    public ValueTask<Result<ScheduledResult>> Run(ScheduledRun run, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _runs);
-        return ValueTask.FromResult<Result<Unit>>(Unit.Value);
+        return ValueTask.FromResult<Result<ScheduledResult>>(ScheduledResult.Worked);
     }
 }

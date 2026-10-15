@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Ids;
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
 
 /// <summary>The suggested answer line (E-23).</summary>
@@ -8,7 +9,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
 /// <param name="AtTerminal">Whether the answer is given at a terminal.</param>
 public sealed record AnswerLine(
     AnswerKind Kind,
-    string ActionId,
+    ActionId ActionId,
     ActionClass Class,
     string Cli,
     bool AtTerminal);

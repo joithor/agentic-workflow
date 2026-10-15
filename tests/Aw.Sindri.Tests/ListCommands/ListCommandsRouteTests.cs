@@ -20,7 +20,7 @@ public sealed class ListCommandsRouteTests : IDisposable
     public async Task Commands_route_lists_every_action_for_a_session_caller()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var app = LoopbackBinding.Build([], n => n == "AW_SINDRI_HOME" ? _home.Path : null, TimeProvider.System);
+        await using var app = LoopbackBinding.Build([], n => n == "AW_SINDRI_HOME" ? _home.Path : null, TimeProvider.System, NoTemporal.Use);
         _ = Pipeline.Configure(app);
         await app.StartAsync(ct);
         using var http = new HttpClient { BaseAddress = new Uri(app.Urls.First()), Timeout = TimeSpan.FromSeconds(10) };

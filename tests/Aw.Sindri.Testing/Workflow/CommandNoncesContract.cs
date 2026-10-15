@@ -78,6 +78,58 @@ public abstract class CommandNoncesContract
         Expect.Equal("SND-WF-009", late.IsError ? late.Error.Code : "accepted");
     }
 
+    /// <summary>
+    /// An expired claim of the same command that never reported applied may have applied (a lost response): the refusal says
+    /// so and sends the caller to status and events first, not to a blind rerun (review run 2, data-integrity-guardian-r2-4).
+    /// </summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task An_expired_pending_claim_says_the_command_may_have_applied_and_to_check_first()
+    {
+        var clock = new FakeTimeProvider();
+        var nonces = Create(clock);
+        _ = await nonces.Claim(_nonce, "subject-1", Token);
+
+        clock.Advance(ICommandNonces.Lifetime + TimeSpan.FromSeconds(1));
+        var late = await nonces.Claim(_nonce, "subject-1", Token);
+
+        var message = late.IsError ? late.Error.Message : string.Empty;
+        Expect.True(message.Contains("may have applied", StringComparison.Ordinal) && message.Contains("sindri workflow status", StringComparison.Ordinal) && message.Contains("sindri workflow events", StringComparison.Ordinal));
+        Expect.True(!message.Contains("run the command again; the CLI fetches", StringComparison.Ordinal));
+    }
+
+    /// <summary>An expired claim of the same command that reported applied says it applied and that nothing needs rerunning.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task An_expired_applied_claim_says_the_command_applied_and_nothing_needs_rerunning()
+    {
+        var clock = new FakeTimeProvider();
+        var nonces = Create(clock);
+        _ = await nonces.Claim(_nonce, "subject-1", Token);
+        _ = await nonces.Applied(_nonce, "subject-1", Token);
+
+        clock.Advance(ICommandNonces.Lifetime + TimeSpan.FromSeconds(1));
+        var late = await nonces.Claim(_nonce, "subject-1", Token);
+
+        var message = late.IsError ? late.Error.Message : string.Empty;
+        Expect.True(message.Contains("its command applied", StringComparison.Ordinal) && message.Contains("nothing needs rerunning", StringComparison.Ordinal));
+    }
+
+    /// <summary>An expired claim of another command is still just expired: running its command again is safe.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task An_expired_claim_of_another_command_says_to_run_the_command_again()
+    {
+        var clock = new FakeTimeProvider();
+        var nonces = Create(clock);
+        _ = await nonces.Claim(_nonce, "subject-1", Token);
+
+        clock.Advance(ICommandNonces.Lifetime + TimeSpan.FromSeconds(1));
+        var late = await nonces.Claim(_nonce, "subject-2", Token);
+
+        Expect.True(late.IsError && late.Error.Message.Contains("run the command again", StringComparison.Ordinal));
+    }
+
     /// <summary>A released claim consumes nothing: the nonce may name another command.</summary>
     /// <returns>The test.</returns>
     [Fact]

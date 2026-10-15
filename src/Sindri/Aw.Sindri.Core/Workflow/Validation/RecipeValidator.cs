@@ -13,6 +13,7 @@ public static class RecipeValidator
         new SchemaRules(),
         new GraphRules(),
         new WiringRules(),
+        new DeclarationRules(),
         new BlockRules(),
         new CapabilityRules(),
         new RegistryRules(),

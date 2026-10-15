@@ -15,7 +15,7 @@ public sealed record FactRef(
     long? Size,
     string? Hash,
     string? Path,
-    string? ItemId,
+    ItemKey? ItemId,
     string? Url,
     string? Host,
     string? Title,

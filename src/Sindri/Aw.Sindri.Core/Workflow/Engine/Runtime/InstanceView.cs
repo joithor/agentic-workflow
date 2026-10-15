@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 
@@ -59,10 +60,10 @@ public sealed record InstanceView(
     public TimeSpan? Paused { get; init; }
 
     /// <summary>The item's id ('ITM-...') when the instance is an item's; null otherwise (UI screens E-20).</summary>
-    public string? ItemId { get; init; }
+    public ItemKey? ItemId { get; init; }
 
-    /// <summary>How soon the recipe's instances need a human (E-21); <see cref="Urgency.Work"/> unless the recipe says so.</summary>
-    public Urgency Urgency { get; init; } = Urgency.Work;
+    /// <summary>How soon the recipe's instances need a human (E-21); <see cref="Urgencies.Default"/> unless the recipe says so.</summary>
+    public string Urgency { get; init; } = Urgencies.Default;
 
     /// <summary>The badge that replaces the state's glyph when the engine interrupted the instance; null otherwise.</summary>
     public EngineBadge? EngineOwned { get; init; }

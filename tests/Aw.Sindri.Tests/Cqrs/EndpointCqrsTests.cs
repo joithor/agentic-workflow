@@ -5,6 +5,7 @@ using Aw.Sindri.Host;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Catalog;
 using Aw.Sindri.Tests.Ledger;
+using Aw.Sindri.Tests.Server;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -84,7 +85,7 @@ public sealed class EndpointCqrsTests : IDisposable
 
     private WebApplication Host()
     {
-        var app = LoopbackBinding.Build([], n => n == "AW_SINDRI_HOME" ? _home.Path : null, TimeProvider.System);
+        var app = LoopbackBinding.Build([], n => n == "AW_SINDRI_HOME" ? _home.Path : null, TimeProvider.System, NoTemporal.Use);
         _ = Pipeline.Configure(app);
         return app;
     }

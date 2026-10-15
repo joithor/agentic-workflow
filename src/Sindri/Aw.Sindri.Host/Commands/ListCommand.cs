@@ -1,16 +1,15 @@
 using System.Text;
-using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Workflow.Engine;
-using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Features.ListInstances;
 
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// 'sindri workflow list [--needs-me | --item &lt;id&gt; | --state &lt;s&gt;] [--recipe &lt;id&gt;] [--urgency incident|triage|work] [--subject &lt;fact&gt;] [--root true|false] [--query &lt;visibility query&gt;] [--json]'
-/// (engine spec §6.3; engine P4 unit (e)): one status header per line. '--needs-me' shows <b>Decisions</b> and then
+/// (engine spec §6.3; engine P4 unit (e)): one status header per line. A client of serve's 'GET /workflow/instances' (review run 2); it never starts serve. '--needs-me' shows <b>Decisions</b> and then
 /// <b>Tasks</b>, each under its heading; the typed filters AND together and the list runs incidents, triage, then work,
 /// the oldest first; empty, it prints 'nothing needs you', and the other filters 'no instances match'.
 /// Exit 0, empty included; 1 when Sindri isn't running; 2 on any other error.
@@ -19,7 +18,7 @@ internal static class ListCommand
 {
     private const string Usage = "usage: sindri workflow list [--needs-me | --item <id> | --state <s>] [--recipe <id>] [--urgency incident|triage|work] [--subject <fact>] [--root true|false] [--query <visibility query>] [--json]";
 
-    internal static async Task<int> Run(string[] args, IServiceProvider services, Output output, CancellationToken ct)
+    internal static async Task<int> Run(string[] args, RecipeDesk desk, IServiceProvider services, Output output, CancellationToken ct)
     {
         var json = args.Contains("--json", StringComparer.Ordinal);
         var rest = args.Where(static a => a != "--json").ToArray();
@@ -34,15 +33,34 @@ internal static class ListCommand
             return await output.Error(SindriErrors.InvalidInput.With(Usage)).ConfigureAwait(false);
         }
 
-        var listed = await services.GetRequiredService<IService<ListInstancesRequest, ListInstancesResponse>>().Handle(request, ct).ConfigureAwait(false);
+        var listed = await desk.Client.Get<ListInstancesResponse>(Route(request), ct).ConfigureAwait(false);
         if (listed.IsError)
         {
-            return await output.Error(listed.Error).ConfigureAwait(false);
+            return await output.Error(InstanceReads.NotRunning(listed.Error)).ConfigureAwait(false);
         }
 
         return json
-            ? await output.Json(listed.Value, 0).ConfigureAwait(false)
-            : await output.Text(Text(listed.Value, services.GetRequiredService<TimeProvider>().GetUtcNow()), 0).ConfigureAwait(false);
+            ? await output.Json(listed.Value.Value, 0).ConfigureAwait(false)
+            : await output.Text(Text(listed.Value.Value, services.GetRequiredService<TimeProvider>().GetUtcNow()), 0).ConfigureAwait(false);
+    }
+
+    /// <summary>'GET /workflow/instances' with each filter given as its query parameter.</summary>
+    private static string Route(ListInstancesRequest request)
+    {
+        (string Name, string? Value)[] filters =
+        [
+            ("needsMe", request.NeedsMe ? "true" : null),
+            ("item", request.Item?.Value),
+            ("state", request.State),
+            ("recipe", request.Recipe),
+            ("urgency", request.Urgency),
+            ("subject", request.Subject),
+            ("root", request.Root is { } root ? (root ? "true" : "false") : null),
+            ("query", request.Query),
+        ];
+        var parts = filters.Where(static f => f.Value is not null).Select(static f => $"{f.Name}={Uri.EscapeDataString(f.Value!)}");   // why: Where kept only the non-null values
+        var query = string.Join('&', parts);
+        return query.Length == 0 ? InstanceReads.Instances : $"{InstanceReads.Instances}?{query}";
     }
 
     /// <summary>The flags, each at most once, '--needs-me' alone of the filters it excludes; null when they don't parse.</summary>
@@ -71,7 +89,7 @@ internal static class ListCommand
         "--item" when request.Item is null && value is not null && ItemKey.TryFrom(value, out var key) => (request with { Item = key }, true),
         "--state" when request.State is null && value is not null => (request with { State = value }, true),
         "--recipe" when request.Recipe is null && value is not null => (request with { Recipe = value }, true),
-        "--urgency" when request.Urgency is null && InstanceFilters.TryParse(value, out var urgency) => (request with { Urgency = urgency }, true),
+        "--urgency" when request.Urgency is null && value is not null && Urgencies.IsKnown(value) => (request with { Urgency = value }, true),
         "--subject" when request.Subject is null && value is not null => (request with { Subject = value }, true),
         "--root" when request.Root is null && Boolean(value) is { } root => (request with { Root = root }, true),
         "--query" when request.Query is null && value is not null => (request with { Query = value }, true),
@@ -83,7 +101,7 @@ internal static class ListCommand
     {
         for (var i = 0; i + 1 < args.Length; i++)
         {
-            if (args[i] == "--urgency" && !InstanceFilters.TryParse(args[i + 1], out _))
+            if (args[i] == "--urgency" && !Urgencies.IsKnown(args[i + 1]))
             {
                 return $"'{args[i + 1]}' isn't an urgency (fix: --urgency incident, triage or work)";
             }

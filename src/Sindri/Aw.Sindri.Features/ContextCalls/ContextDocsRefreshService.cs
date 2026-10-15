@@ -21,7 +21,7 @@ internal sealed class ContextDocsRefreshService(ContextScopes scopes, IContextEn
 
     public ServiceName Identity() => ServiceId;
 
-    public async ValueTask<Result<Unit>> Run(ScheduledRun run, CancellationToken cancellationToken)
+    public async ValueTask<Result<ScheduledResult>> Run(ScheduledRun run, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(run);
         var scope = await scopes.Current(cancellationToken).ConfigureAwait(false);
@@ -35,6 +35,6 @@ internal sealed class ContextDocsRefreshService(ContextScopes scopes, IContextEn
             [.. report.Value.Repos.Select(r => new ContextRepoSynced(r.Repo.Value, r.Head?.Value, r.Added, r.Removed, r.Kept, r.Blocked, r.Code, r.Skipped, r.Recleaned))]);
         var key = string.Create(CultureInfo.InvariantCulture, $"{EventTypes.ContextSourcesSynced}:{run.Grant.Epoch}:{run.Slot:O}");
         var recorded = await ledger.Append(events.Entry(EventTypes.ContextSourcesSynced, payload, key), run.Grant, cancellationToken).ConfigureAwait(false);
-        return recorded.IsError ? recorded.Error : Unit.Value;
+        return recorded.IsError ? recorded.Error : ScheduledResult.Worked;
     }
 }

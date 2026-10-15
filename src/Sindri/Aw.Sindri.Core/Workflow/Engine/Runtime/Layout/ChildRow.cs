@@ -14,7 +14,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
 /// <param name="Actions">The action ids allowed now.</param>
 public sealed record ChildRow(
     string Address,
-    string? ItemId,
+    ItemKey? ItemId,
     string Title,
     StateGlyph Glyph,
     string State,

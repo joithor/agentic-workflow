@@ -1,7 +1,8 @@
+using System.Text.Json.Serialization;
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
 
 /// <summary>One state of the recipe as the band draws it (E-20).</summary>
-/// <param name="Id">The state id.</param>
+/// <param name="State">The state's name (wire name 'id').</param>
 /// <param name="Order">The 0-based position in path order for a main-path state; null for a branch state.</param>
 /// <param name="BranchOf">The state this one is folded under, for a branch.</param>
 /// <param name="Glyph">Done, active or pending.</param>
@@ -14,7 +15,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
 /// <param name="Outcome">A recorded outcome worth showing on the band.</param>
 /// <param name="Terminal">Whether it is a final state.</param>
 public sealed record StateCell(
-    string Id,
+    [property: JsonPropertyName("id")] string State,
     int? Order,
     string? BranchOf,
     StateGlyph Glyph,

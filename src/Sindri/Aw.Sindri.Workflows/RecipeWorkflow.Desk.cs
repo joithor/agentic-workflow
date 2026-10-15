@@ -59,6 +59,12 @@ internal sealed partial class RecipeWorkflow
             throw Refusal(WorkflowErrors.StaleRunToken.With($"run {_report.Run.Value} was already reported and is being applied (fix: use the token in status)"));
         }
 
+        if (instance.Suspension is { } suspension)
+        {
+            // why: the parked loop never reads a report, so one accepted here would hang its Update and apply stale after the resume
+            throw Refusal(WorkflowErrors.TriggerNotAllowed.With($"{instance.Address.Value} is parked ({suspension.Reason?.ToString() ?? suspension.Kind.ToString()}); answer --resume first, then complete run {report.Run.Value}"));
+        }
+
         if (TransitionDecision.Decide(new DecisionInput(instance, context.Recipe, report, GateAnswers.None, context.Decisions)) is Rejected rejected)
         {
             throw Refusal(rejected.Error);
@@ -69,9 +75,9 @@ internal sealed partial class RecipeWorkflow
     /// One pass over an active state's desk Step: wait for its report or its timeout, decide, mirror a change into the
     /// ledger, and hand the outcome to the 'complete' Update that carried the report.
     /// </summary>
-    private async Task<WorkflowInstance> RunDeskStep(WorkflowInstance instance, OpenRun open, InstanceStart start, Interpreting context)
+    private async Task<WorkflowInstance> RunDeskStep(WorkflowInstance instance, OpenRun open, Interpreting context)
     {
-        if (await RunStep(instance.Frame, open, context.Recipe.States[instance.Frame.State]).ConfigureAwait(true) is not { } trigger)
+        if (await RunStep(instance, open, context.Recipe.States[instance.Frame.State]).ConfigureAwait(true) is not { } trigger)
         {
             return await ApplySubmitted(instance, open, context).ConfigureAwait(true);
         }
@@ -97,7 +103,7 @@ internal sealed partial class RecipeWorkflow
             }
 
             Enter(instance);
-            await Mirror(Transition(start, before, instance, trigger, open), NeedsYou(instance)).ConfigureAwait(true);
+            await Mirror(DeskRow(before, instance, trigger, open, decision), NeedsYou(instance)).ConfigureAwait(true);
         }
 
         Settle(reportId, new Reported(new CommandResult(GetInstance(), Happened(before, instance, decision)), Refusal: null));
@@ -119,7 +125,13 @@ internal sealed partial class RecipeWorkflow
         return after;
     }
 
-    /// <summary>The 'workflow.transition' row for a desk report or the desk timeout.</summary>
+    /// <summary>The report's row comes from its decision, as the loop's rows do; the deadline's park has none.</summary>
+    private WorkflowEventRecord DeskRow(WorkflowInstance before, WorkflowInstance after, Trigger trigger, OpenRun open, Decision? decision) =>
+        decision is not null && OwnChange(before, decision) is { } change
+            ? Record(before, change, trigger)
+            : Transition(_start!, before, after, trigger, open);   // why: the loop runs only after RunAsync set _start
+
+    /// <summary>The 'workflow.transition' row for the desk timeout's park (a report's row comes from its decision).</summary>
     private static WorkflowEventRecord Transition(InstanceStart start, WorkflowInstance before, WorkflowInstance after, Trigger trigger, OpenRun open)
     {
         var (kind, outcome) = trigger switch
@@ -128,7 +140,8 @@ internal sealed partial class RecipeWorkflow
             StepFailed => (TriggerNames.StepFailed, null),
             _ => (TriggerNames.Deadline, null),
         };
-        return new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowTransition, start.Item.Value, before.State, after.State, kind, outcome, open.Token.Value);
+        return new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowTransition, start.Item.Value, before.State, after.State, kind, outcome, open.Token.Value, trigger.Actor,
+            Detail: WorkflowEventDetail.Of(trigger, after.Id, after.Suspension));
     }
 
     /// <summary>
@@ -139,7 +152,42 @@ internal sealed partial class RecipeWorkflow
     /// wakes for an answer, command or cancel another Update submitted; it then returns null and the loop applies that
     /// command (unit (b)).
     /// </summary>
-    private async Task<Trigger?> RunStep(Frame frame, OpenRun open, RecipeState state)
+    private async Task<Trigger?> RunStep(WorkflowInstance instance, OpenRun open, RecipeState state)
+    {
+        var frame = instance.Frame;
+        await RecordRun(frame, open, state).ConfigureAwait(true);
+        var deadline = Arm(open, state);
+        while (true)
+        {
+            await ExpireHeld(instance, wait: null).ConfigureAwait(true);   // an active state waits for no event: what ran out while the Step is open expires on time (§5.4)
+            if (_report is { } report)
+            {
+                _report = null;   // a report that lands with the deadline wins it, and none is left stale
+                return report;
+            }
+
+            if (_submitted.Count > 0)
+            {
+                return null;   // a submitted command; the deadline stays armed for this run
+            }
+
+            var left = deadline - Now;
+            if (left <= TimeSpan.Zero)
+            {
+                break;
+            }
+
+            var span = NextExpiry() is { } expiry && expiry < left ? expiry : left;
+            var seen = _arrivals;
+            _ = await Workflow.WaitConditionAsync(() => _report is not null || _submitted.Count > 0 || _arrivals != seen, span).ConfigureAwait(true);
+        }
+
+        _timeoutAt = null;
+        return new DeadlineFired(Timers, frame.Entry, DeadlineKind.State);
+    }
+
+    /// <summary>Records the open task once per run token ('run:{token}:{n}') and clears the old deadline for the new run.</summary>
+    private async Task RecordRun(Frame frame, OpenRun open, RecipeState state)
     {
         if (!string.Equals(_recorded, open.Token.Value, StringComparison.Ordinal))
         {
@@ -156,22 +204,6 @@ internal sealed partial class RecipeWorkflow
             _recorded = open.Token.Value;
             _timeoutAt = null;
         }
-
-        var left = Arm(open, state) - Now;
-        var woke = left > TimeSpan.Zero && await Workflow.WaitConditionAsync(() => _report is not null || _submitted.Count > 0, left).ConfigureAwait(true);
-        if (woke && _report is { } report)
-        {
-            _report = null;
-            return report;
-        }
-
-        if (woke)
-        {
-            return null;   // a submitted command; the deadline stays armed for this run
-        }
-
-        _timeoutAt = null;
-        return new DeadlineFired(Timers, frame.Entry, DeadlineKind.State);
     }
 
     /// <summary>

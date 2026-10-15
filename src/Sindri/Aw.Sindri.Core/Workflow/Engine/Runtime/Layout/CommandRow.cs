@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Ids;
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
 
 /// <summary>One command the instance accepts (E-23).</summary>
@@ -7,6 +8,6 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
 /// <param name="Cli">The CLI line.</param>
 public sealed record CommandRow(
     string Verb,
-    string ActionId,
+    ActionId ActionId,
     ActionClass Class,
     string Cli);

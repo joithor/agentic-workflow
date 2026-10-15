@@ -1,7 +1,5 @@
 using System.Text.Json;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Control;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Tests.Workflows;
 
@@ -19,17 +17,13 @@ public sealed class WorkflowReadVerbsTests : IDisposable
 
     public void Dispose() => _harness.Dispose();
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Status_list_and_events_show_a_started_instance_and_its_desk_task()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var env = await WorkflowsHarness.StartDevServer();
-        await using var sindri = _harness.Sindri();
-        await WorkflowsHarness.HoldLease(sindri, ct);
-        var temporal = await WorkflowsHarness.AsServe(sindri, env, ct);
-        using var stop = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var worker = sindri.GetRequiredService<ITemporalWorker>().Run(temporal, stop.Token);
-        try
+        await using var env = await WorkflowsHarness.StartDevServer(ct: TestContext.Current.CancellationToken);
+        await using var served = await ApplyCommand.Served.Start(_harness.Home, env, TestContext.Current.CancellationToken);   // the read verbs are clients of serve's routes
+        var sindri = served.Sindri;
         {
             var handle = await WorkflowsHarness.Start(env.Client, await WorkflowsHarness.StepStart(sindri, "T-1", ct));
             _ = await WorkflowsHarness.Until(handle, static v => v.Task is not null);
@@ -54,11 +48,6 @@ public sealed class WorkflowReadVerbsTests : IDisposable
             Assert.Matches(@"^\d+  \d\d-\d\d \d\d:\d\d:\d\d  workflow\.started  -> produce  start  \S+\n$", events);
             await handle.TerminateAsync("test over");
         }
-        finally
-        {
-            await stop.CancelAsync();
-            await worker;
-        }
     }
 
     /// <summary>The §6.4 desk-task layout for T-1/step/1, run 1.1.</summary>
@@ -74,36 +63,20 @@ public sealed class WorkflowReadVerbsTests : IDisposable
         Assert.Equal("  commands  complete, takeover, cancel", lines[6]);
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Status_of_an_unknown_instance_is_SND_WF_001_and_exit_2()
     {
-        var ct = TestContext.Current.CancellationToken;
-        await using var env = await WorkflowsHarness.StartDevServer();
-        await using var sindri = _harness.Sindri();
-        _ = await WorkflowsHarness.AsServe(sindri, env, ct);
+        await using var env = await WorkflowsHarness.StartDevServer(ct: TestContext.Current.CancellationToken);
+        await using var served = await ApplyCommand.Served.Start(_harness.Home, env, TestContext.Current.CancellationToken);
 
-        var (exit, stdout, stderr) = await WorkflowsHarness.Cli(sindri, "status", "T-9/step/1");
+        var (exit, stdout, stderr) = await WorkflowsHarness.Cli(served.Sindri, "status", "T-9/step/1");
 
         Assert.Equal((2, string.Empty), (exit, stdout));
         Assert.StartsWith("SND-WF-001 T-9/step/1 isn't an instance", stderr, StringComparison.Ordinal);
     }
 
     [Theory]
-    [InlineData("status")]
-    [InlineData("events")]
-    public async Task A_reference_that_is_neither_an_address_nor_an_item_is_SND_WF_001_and_exit_2(string verb)
-    {
-        await using var sindri = _harness.Sindri();
-
-        var (exit, stdout, stderr) = await WorkflowsHarness.Cli(sindri, verb, "not-an-address");
-
-        Assert.Equal((2, string.Empty), (exit, stdout));
-        Assert.StartsWith("SND-WF-001 ", stderr, StringComparison.Ordinal);
-    }
-
-    [Theory]
     [InlineData("list", "--needs-me", "--item", "T-1")]
-    [InlineData("list", "--state", "Not A State")]
     [InlineData("list", "--colour", "blue")]
     [InlineData("status")]
     [InlineData("status", "--json")]

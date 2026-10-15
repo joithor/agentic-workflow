@@ -1,6 +1,8 @@
 using System.Text.Json;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
 using Aw.Sindri.Host;
@@ -12,7 +14,7 @@ namespace Aw.Sindri.Tests.Layout;
 [Lane(TestLane.Unit)]
 public sealed class InstanceViewLayoutTests
 {
-    private static readonly JsonSerializerOptions Options = AwJson.CreateOptions(SindriJsonContext.Default);
+    private static readonly JsonSerializerOptions _options = AwJson.CreateOptions(SindriJsonContext.Default);
 
     private static InstanceView Full()
     {
@@ -20,11 +22,11 @@ public sealed class InstanceViewLayoutTests
         var progress = new ChildProgress(4, 9);
         var round = new RoundOf(2, 3);
         var park = new ChildPark("T-3/step/1/step.4", "parked", Reason: null);
-        var row = new ChildRow("T-3/step/2", "ITM-1", "Sync pill", StateGlyph.Active, "produce", round, Agent: null, 360, badge, park, ["OpenItem"]);
+        var row = new ChildRow("T-3/step/2", ItemKey.From("ITM-1"), "Sync pill", StateGlyph.Active, "produce", round, Agent: null, 360, badge, park, ["OpenItem"]);
         return StatusCases.View("desk-task") with
         {
-            ItemId = "ITM-1",
-            Urgency = Urgency.Incident,
+            ItemId = ItemKey.From("ITM-1"),
+            Urgency = "incident",
             EngineOwned = badge,
             Subject = new SubjectRef("linear-project", "APP", "APP Offline sync", Href: null),
             Inputs = [new InputSlot("spec", "Spec", "file", Required: true, Present: false)],
@@ -36,14 +38,14 @@ public sealed class InstanceViewLayoutTests
             Status = new StatusFields(
                 new HeaderParts("T-3/step/1", "workflow.step", "0123456789ab", 4, "produce", "desk task", StatusCases.Now, 4320),
                 "next text",
-                new AnswerLine(AnswerKind.GrantTokens, "ApplyCommand:answer", ActionClass.Protected, "sindri workflow answer", AtTerminal: true),
+                new AnswerLine(AnswerKind.GrantTokens, ActionId.From("ApplyCommand:answer"), ActionClass.Protected, "sindri workflow answer", AtTerminal: true),
                 park,
                 new DriftNote("step.produce", NeedsReapproval: true),
                 [new StepInput("spec", "spec.md", Hash: null)],
                 new TimeoutLine(TimeoutKind.Parks, 1000, "desk"),
                 new BudgetLine("state", 1, Limit: null, new InstanceBudget(2, 3)),
                 new PausedLine(40),
-                [new CommandRow("cancel", "ApplyCommand:cancel", ActionClass.Desk, "sindri workflow cancel")],
+                [new CommandRow("cancel", ActionId.From("ApplyCommand:cancel"), ActionClass.Desk, "sindri workflow cancel")],
                 "text form"),
             Facts =
             [
@@ -67,12 +69,12 @@ public sealed class InstanceViewLayoutTests
     [Fact]
     public void The_view_serializes_the_section_3_8_names_and_enum_strings()
     {
-        using var doc = JsonDocument.Parse(JsonSerializer.Serialize(Full(), Options));
+        using var doc = JsonDocument.Parse(JsonSerializer.Serialize(Full(), _options));
         var root = doc.RootElement;
 
         foreach (var name in new[] { "itemId", "urgency", "engineOwned", "subject", "inputs", "orderedBy", "states", "status", "facts", "childGroups" })
         {
-            Prop(root, name);
+            _ = Prop(root, name);
         }
 
         Assert.Equal("incident", Prop(root, "urgency").GetString());
@@ -91,7 +93,12 @@ public sealed class InstanceViewLayoutTests
         HasExactly(Prop(cell, "loops")[0], "with", "n", "max");
         HasExactly(Prop(cell, "children"), "done", "total");
 
-        var status = Prop(root, "status");
+        AssertStatus(Prop(root, "status"));
+        AssertFactsAndChildren(root);
+    }
+
+    private static void AssertStatus(JsonElement status)
+    {
         HasExactly(status, "header", "next", "answer", "child", "drift", "inputs", "timeout", "budget", "paused", "commands", "text");
         HasExactly(Prop(status, "header"), "address", "recipe", "hash12", "version", "state", "detail", "since", "ageSeconds");
         HasExactly(Prop(status, "answer"), "kind", "actionId", "class", "cli", "atTerminal");
@@ -106,7 +113,10 @@ public sealed class InstanceViewLayoutTests
         HasExactly(Prop(Prop(status, "budget"), "instance"), "used", "limit");
         HasExactly(Prop(status, "paused"), "timeoutLeftSeconds");
         HasExactly(Prop(status, "commands")[0], "verb", "actionId", "class", "cli");
+    }
 
+    private static void AssertFactsAndChildren(JsonElement root)
+    {
         var fact = Prop(root, "facts")[0];
         HasExactly(fact, "key", "label", "type", "direction", "from", "status", "summary", "at", "by", "ref", "progress", "pending");
         Assert.Equal("in-progress", Prop(fact, "status").GetString());
@@ -123,7 +133,7 @@ public sealed class InstanceViewLayoutTests
     [Fact]
     public void A_view_without_layout_data_serializes_empty_lists_and_work_urgency()
     {
-        using var doc = JsonDocument.Parse(JsonSerializer.Serialize(StatusCases.View("done"), Options));
+        using var doc = JsonDocument.Parse(JsonSerializer.Serialize(StatusCases.View("done"), _options));
         var root = doc.RootElement;
 
         Assert.Equal("work", Prop(root, "urgency").GetString());
@@ -138,10 +148,10 @@ public sealed class InstanceViewLayoutTests
     {
         var view = Full();
 
-        var back = JsonSerializer.Deserialize<InstanceView>(JsonSerializer.Serialize(view, Options), Options)!;
+        var back = JsonSerializer.Deserialize<InstanceView>(JsonSerializer.Serialize(view, _options), _options)!;
 
-        Assert.Equal(JsonSerializer.Serialize(view, Options), JsonSerializer.Serialize(back, Options));
-        Assert.Equal(("ITM-1", Urgency.Incident, OrderedBy.TransitionList), (back.ItemId, back.Urgency, back.OrderedBy));
+        Assert.Equal(JsonSerializer.Serialize(view, _options), JsonSerializer.Serialize(back, _options));
+        Assert.Equal((ItemKey.From("ITM-1"), "incident", OrderedBy.TransitionList), (back.ItemId, back.Urgency, back.OrderedBy));
         Assert.Equal("verify", back.States[0].Loops[0].With);
     }
 
@@ -156,9 +166,9 @@ public sealed class InstanceViewLayoutTests
         Assert.Equal(new string('x', 77) + "...", summary.Now);
         Assert.Equal(80, summary.Now.Length);
         Assert.Equal(view.Address.Value, summary.Address);
-        Assert.Equal(new RecipeRef(view.Recipe.Id.Value, view.Recipe.Hash.Value, view.Recipe.Version, Urgency.Incident), summary.Recipe);
-        Assert.Equal(view.AllowedCommands.Select(c => c.Action), summary.Actions);
-        Assert.Equal(("ITM-1", view.State, view.Since), (summary.ItemId, summary.State, summary.Since));
+        Assert.Equal(new RecipeRef(view.Recipe.Id, view.Recipe.Hash.Value, view.Recipe.Version, "incident"), summary.Recipe);
+        Assert.Equal(view.AllowedCommands.Select(c => c.Action), summary.Actions, StringComparer.Ordinal);
+        Assert.Equal((ItemKey.From("ITM-1"), view.State, view.Since), (summary.ItemId, summary.State, summary.Since));
         Assert.Same(view.States, summary.States);
         Assert.Equal(view.EngineOwned, summary.EngineOwned);
     }

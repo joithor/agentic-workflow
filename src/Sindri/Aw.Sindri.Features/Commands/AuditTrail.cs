@@ -18,7 +18,7 @@ namespace Aw.Sindri.Features.Commands;
 /// <param name="ledger">The ledger.</param>
 /// <param name="events">The event factory (the caller's actor and correlation).</param>
 /// <param name="ids">Ids for an attempt with no caller context (it has no command id of its own).</param>
-/// <param name="logger">Where a lost audit row of an accepted command is reported.</param>
+/// <param name="logger">Where a lost audit row is reported.</param>
 internal sealed partial class AuditTrail(HeldLease held, ILedgerStore ledger, EventFactory events, IIdGenerator ids, ILogger<AuditTrail> logger)
 {
     /// <summary>Appends the audit row of one attempt.</summary>
@@ -32,7 +32,9 @@ internal sealed partial class AuditTrail(HeldLease held, ILedgerStore ledger, Ev
     {
         if (held.Current is not { } grant)
         {
-            return SindriErrors.LedgerUnavailable.With($"no lease is held, so the audit row for {row.Action.Value} can't be written (fix: restart sindri)");
+            // why: only an accepted command needed the lease; a refused, invalid or failed attempt without one isn't the process's fault
+            var fix = outcome == CommandOutcome.Accepted ? " (fix: restart sindri)" : "";
+            return SindriErrors.LedgerUnavailable.With($"no lease is held, so the audit row for {row.Action.Value} can't be written{fix}");
         }
 
         var commandId = caller?.CommandId ?? ids.New<CommandId>();
@@ -42,11 +44,33 @@ internal sealed partial class AuditTrail(HeldLease held, ILedgerStore ledger, Ev
         return appended.IsError ? appended.Error : Unit.Value;
     }
 
-    /// <summary>Reports that an accepted command's audit row wasn't written (its domain event is, so its result stands).</summary>
+    /// <summary>Reports that an attempt's audit row wasn't written.</summary>
     /// <param name="row">The command's row.</param>
+    /// <param name="outcome">How the attempt ended: an accepted command's result stands, any other attempt answers SND-LEDGER-002.</param>
     /// <param name="error">Why the row wasn't written.</param>
-    internal void Lost(CommandRow row, Error error) => LogLost(logger, row.Action.Value, error.Code, error.Message);
+    internal void Lost(CommandRow row, CommandOutcome outcome, Error error)
+    {
+        if (outcome == CommandOutcome.Accepted)
+        {
+            LogLost(logger, row.Action.Value, error.Code, error.Message);
+            return;
+        }
+
+        LogLostAttempt(logger, row.Action.Value, Name(outcome), error.Code, error.Message);
+    }
+
+    private static string Name(CommandOutcome outcome) => outcome switch
+    {
+        CommandOutcome.Refused => "refused",
+        CommandOutcome.Invalid => "invalid",
+        CommandOutcome.Failed => "failed",
+        CommandOutcome.Accepted => "accepted",
+        _ => outcome.ToString(),
+    };
 
     [LoggerMessage(Level = LogLevel.Error, Message = "SND-LEDGER-002 the audit row for {Action} wasn't written ({Code} {Detail}); the command's own result stands")]
     private static partial void LogLost(ILogger logger, string action, string code, string detail);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "SND-LEDGER-002 the audit row for {Action} ({Outcome}) wasn't written ({Code} {Detail}); the caller gets SND-LEDGER-002")]
+    private static partial void LogLostAttempt(ILogger logger, string action, string outcome, string code, string detail);
 }

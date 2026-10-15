@@ -38,7 +38,7 @@ public sealed class EventBridgeTests(DevServer server) : IClassFixture<DevServer
 
     public void Dispose() => _harness.Dispose();
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task An_item_event_from_its_producer_reaches_the_waiting_instance_and_moves_it()
     {
         await Serve(async sindri =>
@@ -54,10 +54,10 @@ public sealed class EventBridgeTests(DevServer server) : IClassFixture<DevServer
             Assert.Equal("claimed", view.State);
             Assert.Equal(1, await Signals(relay));
             Assert.Contains(("routed", "claimed", "wait.satisfied"), await Transitions(sindri, relay.Id));
-        });
+        }, TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Early_event_applies_on_entering_the_wait()
     {
         await Serve(async sindri =>
@@ -76,10 +76,10 @@ public sealed class EventBridgeTests(DevServer server) : IClassFixture<DevServer
             Assert.Equal("routed", early.State);
             Assert.Equal(("done", "resolved"), (result.State, result.Outcome));
             Assert.Equal([("routed", "claimed", "wait.satisfied"), ("claimed", "done", "wait.satisfied")], await Transitions(sindri, relay.Id));
-        });
+        }, TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task A_causation_event_reaches_only_its_causer()
     {
         await Serve(async sindri =>
@@ -99,10 +99,10 @@ public sealed class EventBridgeTests(DevServer server) : IClassFixture<DevServer
             Assert.Equal(("done", "resolved"), (result.State, result.Outcome));
             Assert.Equal("claimed", (await other.QueryAsync(static wf => wf.GetInstance())).State);
             Assert.Equal((2, 1), (await Signals(causer), await Signals(other)));
-        });
+        }, TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task A_restarted_bridge_resends_nothing_and_a_resent_event_applies_once()
     {
         await Serve(async sindri =>
@@ -128,10 +128,10 @@ public sealed class EventBridgeTests(DevServer server) : IClassFixture<DevServer
             Assert.Equal(3, await Signals(twice));                                   // the first event again, then the new one
             Assert.Equal(("dropped", "unresolved"), (result.State, result.Outcome)); // the re-sent 'startable' was dropped
             Assert.Equal([("first", "second", "wait.satisfied"), ("second", "dropped", "wait.satisfied")], await Transitions(sindri, twice.Id));
-        });
+        }, TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task An_item_event_does_not_reach_an_instance_started_after_it()
     {
         await Serve(async sindri =>
@@ -146,17 +146,17 @@ public sealed class EventBridgeTests(DevServer server) : IClassFixture<DevServer
 
             Assert.Equal("routed", (await later.QueryAsync(static wf => wf.GetInstance())).State);
             Assert.Equal(0, await Signals(later));
-        });
+        }, TestContext.Current.CancellationToken);
     }
 
     /// <summary>Composes Sindri over the test's home with both recipes, holds the lease, names the dev server in control.json and runs the worker around <paramref name="body"/>.</summary>
-    private async Task Serve(Func<ServiceProvider, Task> body)
+    private async Task Serve(Func<ServiceProvider, Task> body, CancellationToken ct)
     {
         BridgeRecipes.WriteTo(_harness);
         await using var sindri = _harness.Sindri();
-        await WorkflowsHarness.HoldLease(sindri, Token);
-        var temporal = await WorkflowsHarness.AsServe(sindri, server.Environment, Token);
-        using var stop = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        await WorkflowsHarness.HoldLease(sindri, ct);
+        var temporal = await WorkflowsHarness.AsServe(sindri, server.Environment, ct);
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var worker = sindri.GetRequiredService<ITemporalWorker>().Run(temporal, stop.Token);
         try
         {

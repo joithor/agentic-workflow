@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -18,30 +17,11 @@ namespace Aw.Architecture.Tests;
 public sealed class ProtectedCommandTests
 {
     /// <summary>
-    /// Protected rows that don't redeem the challenge yet, each with its owning lane, its reason and the date the waiver
-    /// ends. ImportContextMap: X30 (docs/sindri/README.md) makes map import 'protected' with the shared challenge, but the
-    /// context lane's S-3a request (merged after S1-D5) still confirms with the previewed hash and a 'confirmed' flag
-    /// (ImportContextMapRequest). The context lane owns that code, so the engine lanes don't change it; this waiver lets the
-    /// rest of the rule hold meanwhile. It is still terminal-bound, which the first assertion checks;
-    /// <see cref="Every_waiver_is_still_open"/> fails once its date passes, and a waiver whose row redeems the challenge (or
-    /// is gone) fails as stale, so it can't outlive the fix silently.
+    /// Protected rows that still confirm another way, each with its reason; a stale entry fails, and review keeps new entries out.
     /// </summary>
-    private static readonly Dictionary<string, Waiver> _waived = new(StringComparer.Ordinal)
+    private static readonly Dictionary<string, string> _confirmsOtherwise = new(StringComparer.Ordinal)
     {
-        ["ImportContextMap"] = new(
-            Owner: "context lane (context spec S-3a, §8.7)",
-            Reason: "confirms the previewed map hash with 'confirmed', not the S1-D5 challenge X30 requires",
-            Until: new DateOnly(2026, 10, 27)),
     };
-
-    [Fact]
-    public void Every_waiver_is_still_open()
-    {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var lapsed = _waived.Where(w => w.Value.Until < today).Select(w => $"{w.Key} (owner: {w.Value.Owner}; lapsed {w.Value.Until.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)})").ToList();
-
-        Assert.True(lapsed.Count == 0, $"challenge waivers past their date: [{string.Join(", ", lapsed)}]. Fix: the owning lane moves the request onto {nameof(ChallengeAnswer)}, then drop the waiver");
-    }
 
     [Fact]
     public void Every_protected_engine_command_requires_the_challenge()
@@ -50,19 +30,19 @@ public sealed class ProtectedCommandTests
 
         var unbound = rows.Where(r => !r.NeedsTerminal).Select(r => $"{r.Action.Value} isn't terminal-bound").ToList();
         var unchallenged = rows
-            .Where(r => r.CommandType is { } type && !Redeems(type) && !_waived.ContainsKey(r.Action.Value))
+            .Where(r => r.CommandType is { } type && !Redeems(type) && !_confirmsOtherwise.ContainsKey(r.Action.Value))
             .Select(r => r.Action.Value)
             .Order(StringComparer.Ordinal)
             .ToList();
 
-        var stale = _waived.Keys
+        var stale = _confirmsOtherwise.Keys
             .Where(a => !rows.Exists(r => r.Action.Value == a && r.CommandType is { } type && !Redeems(type)))
             .Order(StringComparer.Ordinal)
             .ToList();
-        var exempted = string.Join("; ", _waived.Select(e => $"{e.Key}: {e.Value.Reason} (owner: {e.Value.Owner})"));
+        var exempted = string.Join("; ", _confirmsOtherwise.Select(e => $"{e.Key}: {e.Value}"));
 
         Assert.True(unbound.Count == 0, string.Join(Environment.NewLine, unbound) + ". Fix: set NeedsTerminal on every protected row (engine spec §6.2)");
-        Assert.True(stale.Count == 0, $"stale exemptions: [{string.Join(", ", stale)}]. Fix: remove them from _waived (exempted: {exempted})");
+        Assert.True(stale.Count == 0, $"stale exemptions: [{string.Join(", ", stale)}]. Fix: remove them from _confirmsOtherwise (exempted: {exempted})");
         Assert.True(
             unchallenged.Count == 0,
             $"protected requests without a {nameof(ChallengeAnswer)}: [{string.Join(", ", unchallenged)}]. "
@@ -120,10 +100,4 @@ public sealed class ProtectedCommandTests
 
         return strings;
     }
-
-    /// <summary>A protected row's time-boxed exemption from the challenge rule.</summary>
-    /// <param name="Owner">The lane that owns the request and its fix.</param>
-    /// <param name="Reason">Why it doesn't redeem the challenge yet.</param>
-    /// <param name="Until">The last day the waiver holds.</param>
-    private sealed record Waiver(string Owner, string Reason, DateOnly Until);
 }

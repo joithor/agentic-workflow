@@ -1,4 +1,4 @@
-using Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
+using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Desk;
 
@@ -8,7 +8,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Desk;
 /// <param name="NeedsYou">The 'NeedsYou' search attribute: a desk run waits on a human.</param>
 /// <param name="StartedAt">When the instance started (visibility's start time), when the listing knows it.</param>
 /// <param name="Recipe">The 'Recipe' search attribute: the recipe id, when set.</param>
-/// <param name="Urgency">The 'Urgency' search attribute; <see cref="Runtime.Layout.Urgency.Work"/> when unset.</param>
+/// <param name="Urgency">The 'Urgency' search attribute; <see cref="Urgencies.Default"/> when unset.</param>
 /// <param name="Subject">The 'Subject' search attribute: the key of the first input fact, when the recipe declares one.</param>
 /// <param name="Root">The 'Root' search attribute: a top-level instance, not a child; true when unset.</param>
 public sealed record InstanceRow(
@@ -17,6 +17,6 @@ public sealed record InstanceRow(
     bool NeedsYou,
     DateTimeOffset? StartedAt = null,
     string? Recipe = null,
-    Urgency Urgency = Urgency.Work,
+    string Urgency = Urgencies.Default,
     string? Subject = null,
     bool Root = true);

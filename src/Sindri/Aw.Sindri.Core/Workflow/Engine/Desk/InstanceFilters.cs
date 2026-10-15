@@ -1,10 +1,9 @@
-using System.Globalization;
 using System.Text;
-using Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
+using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Desk;
 
-/// <summary>What the Workflows list does with an <see cref="InstanceFilter"/>: the visibility query, the urgency names and the order.</summary>
+/// <summary>What the Workflows list does with an <see cref="InstanceFilter"/>: the visibility query, the order.</summary>
 public static class InstanceFilters
 {
     /// <summary>The visibility query fragment for <paramref name="filter"/>: each filter given, ANDed; every value is a quoted literal.</summary>
@@ -21,7 +20,7 @@ public static class InstanceFilters
             parts.Add("NeedsYou = " + Bool(needsYou));
         }
 
-        Text(parts, "Urgency", filter.Urgency is { } urgency ? Name(urgency) : null);
+        Text(parts, "Urgency", filter.Urgency);
         Text(parts, "Item", filter.Item);
         Text(parts, "Subject", filter.Subject);
         if (filter.Root is { } root)
@@ -32,39 +31,6 @@ public static class InstanceFilters
         return parts.Count == 0 ? null : string.Join(" AND ", parts);
     }
 
-    /// <summary>The name <paramref name="urgency"/> has in the 'Urgency' search attribute and on the command line.</summary>
-    /// <param name="urgency">The urgency.</param>
-    /// <returns>'incident', 'triage' or 'work'.</returns>
-    public static string Name(Urgency urgency) => urgency switch
-    {
-        Urgency.Incident => "incident",
-        Urgency.Triage => "triage",
-        Urgency.Work or _ => "work",
-    };
-
-    /// <summary>Reads an urgency name.</summary>
-    /// <param name="text">'incident', 'triage' or 'work'.</param>
-    /// <param name="urgency">The urgency, when it parsed.</param>
-    /// <returns>Whether <paramref name="text"/> is an urgency name.</returns>
-    public static bool TryParse(string? text, out Urgency urgency)
-    {
-        switch (text)
-        {
-            case "incident":
-                urgency = Urgency.Incident;
-                return true;
-            case "triage":
-                urgency = Urgency.Triage;
-                return true;
-            case "work":
-                urgency = Urgency.Work;
-                return true;
-            default:
-                urgency = Urgency.Work;
-                return false;
-        }
-    }
-
     /// <summary>The list's order: incidents, then triage, then work; within an urgency the oldest first, then by address.</summary>
     /// <param name="rows">The rows.</param>
     /// <returns>The rows, ordered.</returns>
@@ -72,9 +38,15 @@ public static class InstanceFilters
     {
         ArgumentNullException.ThrowIfNull(rows);
         return [.. rows
-            .OrderBy(static r => r.Urgency)
+            .OrderBy(static r => Rank(r.Urgency))
             .ThenBy(static r => r.StartedAt ?? DateTimeOffset.MaxValue)
             .ThenBy(static r => r.Address, StringComparer.Ordinal)];
+    }
+
+    private static int Rank(string urgency)
+    {
+        var rank = Urgencies.All.ToList().IndexOf(urgency);
+        return rank < 0 ? Urgencies.All.Count : rank;
     }
 
     private static string Bool(bool value) => value ? "true" : "false";
@@ -83,7 +55,7 @@ public static class InstanceFilters
     {
         if (value is not null)
         {
-            parts.Add(string.Create(CultureInfo.InvariantCulture, $"{attribute} = {Literal(value)}"));
+            parts.Add($"{attribute} = {Literal(value)}");
         }
     }
 

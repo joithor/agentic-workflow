@@ -30,7 +30,8 @@ internal sealed partial class RunStepActivities(IApprovedRecipes approvals, Bloc
         var found = await approvals.Find(recipe.Id, recipe.Hash, cancel).ConfigureAwait(false);
         if (found.IsError)
         {
-            throw new ApplicationFailureException($"{found.Error.Message}", errorType: found.Error.Code, nonRetryable: true);
+            // unknown (SND-RECIPE-002) and not approved or revoked (-003) can't change by retrying; a read that failed (I/O) can
+            throw new ApplicationFailureException($"{found.Error.Message}", errorType: found.Error.Code, nonRetryable: string.Equals(found.Error.Code, "SND-RECIPE-002", StringComparison.Ordinal) || string.Equals(found.Error.Code, "SND-RECIPE-003", StringComparison.Ordinal));
         }
 
         var definition = found.Value.Recipe;

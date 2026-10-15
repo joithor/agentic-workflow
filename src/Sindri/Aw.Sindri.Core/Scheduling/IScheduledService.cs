@@ -16,6 +16,6 @@ public interface IScheduledService
     /// <summary>Runs once.</summary>
     /// <param name="run">The run.</param>
     /// <param name="cancellationToken">Cancels the run (shutdown).</param>
-    /// <returns>Success, or the error the scheduler records as a failed run.</returns>
-    public ValueTask<Result<Unit>> Run(ScheduledRun run, CancellationToken cancellationToken);
+    /// <returns>How the run ended (<see cref="ScheduledResult.Worked"/> unless it truly did nothing), or the error the scheduler records as a failed run.</returns>
+    public ValueTask<Result<ScheduledResult>> Run(ScheduledRun run, CancellationToken cancellationToken);
 }

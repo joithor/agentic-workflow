@@ -85,6 +85,18 @@ public sealed class ListServicesTests
         _ = Assert.Single(stalled.Services);   // the rows still answer, with the sentence beside them
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_projector_that_cannot_run_answers_with_its_own_sentence_not_an_event_number()
+    {
+        await Approve(("heartbeat", "30s"));
+        _v.Progress.Publish(_v.Progress.Current with { Stalled = true, StalledAt = null, StalledType = "SND-VIEW-001: views.db can't be opened" });
+
+        var list = (await Service().Handle(new ListServicesRequest(), Token)).Value;
+
+        Assert.Equal(_v.Progress.Current.Text, list.Empty);
+        Assert.Contains("can't be updated (SND-VIEW-001: views.db can't be opened)", list.Empty, StringComparison.Ordinal);
+    }
+
     private ListServicesService Service() => new(_v.Slice.Profiles, _v.Views, _v.Progress);
 
     private async Task Approve(params (string Name, string Every)[] services) =>

@@ -36,9 +36,19 @@ internal static class Packages
         "Aw.Sindri.Features",
         "Aw.Sindri.Infrastructure",
         "Aw.Sindri.Host",
+        "Aw.Sindri.Ui",
+        "Aw.Sindri.Ui.Desktop",
         "Aw.Context.Core",
         "Aw.Context.Features",
         "Aw.Context.Infrastructure",
         "Aw.Sindri.Workflows",
     ];
+
+    /// <summary>
+    /// The registered projects that are deliberately unshaped (no Core/Features/Infrastructure/Host layers): the Sindri
+    /// UI (spec §4a "UI") and its platform heads. Only the global rules cover them. Declared, not inferred, so a misnamed
+    /// project inside a shaped root (Aw.Sindri.Engine) still fails ARCH-PLACE-001; ARCH-REG-003 fails a registered
+    /// project that is neither tier 0, a layer project nor listed here.
+    /// </summary>
+    public static IReadOnlyList<string> Unshaped { get; } = ["Aw.Sindri.Ui", "Aw.Sindri.Ui.Desktop"];
 }

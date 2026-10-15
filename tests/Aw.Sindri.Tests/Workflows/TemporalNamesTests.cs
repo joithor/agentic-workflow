@@ -37,18 +37,18 @@ public sealed class TemporalNamesTests : IDisposable
         Assert.Equal(("sindri", "sindri"), (empty.Namespace, empty.TaskQueue));
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     [Lane(TestLane.Integration)]
     public async Task An_instance_runs_on_a_non_default_namespace_and_task_queue()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var server = await WorkflowsHarness.StartDevServer("team-a");   // no 'sindri' namespace on this server
+        await using var server = await WorkflowsHarness.StartDevServer("team-a", ct);   // no 'sindri' namespace on this server
         await using var served = await Served.Start(_harness.Home, server, static name => name switch
         {
             "AW_SINDRI_TEMPORAL_NAMESPACE" => "team-a",
             "AW_SINDRI_TEMPORAL_TASK_QUEUE" => "queue-b",
             _ => null,
-        });
+        }, TestContext.Current.CancellationToken);
 
         var started = await served.Cli("start", "workflow.step", "--item", "T-31", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
         var open = await served.Until("T-31/step/1", static v => v.Task is not null);   // RunStep ran: only queue-b has a worker

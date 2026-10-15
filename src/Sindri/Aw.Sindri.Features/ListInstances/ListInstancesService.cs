@@ -6,6 +6,7 @@ using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Features.ListInstances;
 
@@ -17,7 +18,7 @@ namespace Aw.Sindri.Features.ListInstances;
 /// <param name="directory">Resolves an address or a bare item ('address').</param>
 /// <param name="instances">The visibility query.</param>
 /// <param name="runtime">Each instance's 'GetInstance' Query; one that ended between the list and its query (SND-WF-001) is left out.</param>
-internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, IInstanceRuntime runtime) : IService<ListInstancesRequest, ListInstancesResponse>
+internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, IInstanceReader runtime) : IService<ListInstancesRequest, ListInstancesResponse>
 {
     public async ValueTask<Result<ListInstancesResponse>> Handle(ListInstancesRequest request, CancellationToken cancellationToken)
     {
@@ -27,9 +28,9 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             return await One(reference, cancellationToken).ConfigureAwait(false);
         }
 
-        if (request.State is { } state && !StateName.IsMatch(state))
+        if (Refusal(request) is { } refused)
         {
-            return SindriErrors.InvalidInput.With($"'{state}' isn't a state name (fix: --state <name>, e.g. --state produce or --state parked)");
+            return refused;
         }
 
         var filter = Filter(request);
@@ -42,8 +43,20 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             return rows.Error;
         }
 
+        var views = await Views(rows.Value, cancellationToken).ConfigureAwait(false);
+        if (views.IsError)
+        {
+            return views.Error;
+        }
+
+        return Listed(request.NeedsMe, views.Value, byAddress: request.Query is { Length: > 0 });
+    }
+
+    /// <summary>Each row's 'GetInstance' view; one that ended between the list and its query is left out.</summary>
+    private async ValueTask<Result<List<InstanceView>>> Views(IReadOnlyList<InstanceRow> rows, CancellationToken cancellationToken)
+    {
         var views = new List<InstanceView>();
-        foreach (var row in rows.Value)
+        foreach (var row in rows)
         {
             if (!InstanceAddress.TryFrom(row.Address, out var address))
             {
@@ -61,7 +74,20 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             }
         }
 
-        return Listed(request.NeedsMe, views, byAddress: request.Query is { Length: > 0 });
+        return views;
+    }
+
+    /// <summary>The filter value that isn't one of its words, with the fix; null when they are fine.</summary>
+    private static Error? Refusal(ListInstancesRequest request)
+    {
+        if (request.State is { } state && !StateName.IsMatch(state))
+        {
+            return SindriErrors.InvalidInput.With($"'{state}' isn't a state name (fix: --state <name>, e.g. --state produce or --state parked)");
+        }
+
+        return request.Urgency is { } urgency && !Urgencies.IsKnown(urgency)
+            ? SindriErrors.InvalidInput.With($"'{urgency}' isn't an urgency (fix: urgency incident, triage or work)")
+            : null;
     }
 
     /// <summary>The one instance an address or bare item names, as 'GetInstance' shows it (its id included).</summary>
@@ -85,7 +111,12 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             return new([.. sections.Decisions, .. sections.Tasks], sections, sections.IsEmpty ? NeedsYouList.Nothing : null);
         }
 
-        var sorted = byAddress ? views.OrderBy(static v => v.Address.Value, StringComparer.Ordinal).ToList() : views;   // a typed list keeps the port's order: urgency, then oldest
+        var sorted = views;   // a typed list keeps the port's order: urgency, then oldest
+        if (byAddress)
+        {
+            sorted = [.. views.OrderBy(static v => v.Address.Value, StringComparer.Ordinal)];
+        }
+
         return new(sorted, NeedsYou: null, sorted.Count == 0 ? "no instances match" : null);
     }
 

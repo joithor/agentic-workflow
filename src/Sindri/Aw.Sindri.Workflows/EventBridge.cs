@@ -45,6 +45,8 @@ internal sealed partial class EventBridge(
 
     private const int Batch = 100;
 
+    private int _signalled;
+
     /// <summary>The service's name in the schedule ('workflow-events'; a service name is kebab-case).</summary>
     public static readonly ServiceName ServiceId = ServiceName.From("workflow-events");
 
@@ -53,8 +55,10 @@ internal sealed partial class EventBridge(
 
     public ServiceName Identity() => ServiceId;
 
-    public async ValueTask<Result<Unit>> Run(ScheduledRun run, CancellationToken cancellationToken)
+    /// <summary>Delivers the events after the cursor, then the held ones owed; <see cref="ScheduledResult.Quiet"/> when it signalled no instance (C8).</summary>
+    public async ValueTask<Result<ScheduledResult>> Run(ScheduledRun run, CancellationToken cancellationToken)
     {
+        _signalled = 0;
         var from = await cursor.Read(cancellationToken).ConfigureAwait(false);
         if (from.IsError)
         {
@@ -64,9 +68,15 @@ internal sealed partial class EventBridge(
         for (var at = from.Value; ;)
         {
             var read = await ledger.ReadAfter(at, Batch, cancellationToken).ConfigureAwait(false);
-            if (read.IsError || read.Value.Count == 0)
+            if (read.IsError)
             {
-                return read.IsError ? read.Error : await Redeliver(cancellationToken).ConfigureAwait(false);
+                return read.Error;
+            }
+
+            if (read.Value.Count == 0)
+            {
+                var redelivered = await Redeliver(cancellationToken).ConfigureAwait(false);
+                return redelivered.IsError ? redelivered.Error : _signalled > 0 ? ScheduledResult.Worked : ScheduledResult.Quiet;
             }
 
             var delivered = await DeliverBatch(read.Value, cancellationToken).ConfigureAwait(false);
@@ -197,6 +207,11 @@ internal sealed partial class EventBridge(
     private async ValueTask<Result<Unit>> Send(InstanceAddress target, WaitSatisfied trigger, CancellationToken cancellationToken)
     {
         var signalled = await runtime.Signal(target, trigger, cancellationToken).ConfigureAwait(false);
+        if (!signalled.IsError)
+        {
+            _signalled++;
+        }
+
         return signalled.IsError && signalled.Error.Code != WorkflowErrors.InstanceNotFound.Code ? signalled.Error : Unit.Value;
     }
 

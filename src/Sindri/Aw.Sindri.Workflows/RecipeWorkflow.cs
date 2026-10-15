@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -69,10 +67,11 @@ internal sealed partial class RecipeWorkflow
         while (!instance.Ended)
         {
             instance = instance is { Suspension: null, Frame.Run: { } open }
-                ? await RunDeskStep(instance, open, start, context).ConfigureAwait(true)
+                ? await RunDeskStep(instance, open, context).ConfigureAwait(true)
                 : await Wait(instance, context).ConfigureAwait(true);
         }
 
+        Close(instance, context);
         await Workflow.WaitConditionAsync(static () => Workflow.AllHandlersFinished).ConfigureAwait(true);   // the Update that ended it returns its result
         return new RecipeResult(instance.State, instance.Outcome?.Value);
     }
@@ -96,9 +95,10 @@ internal sealed partial class RecipeWorkflow
         var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, new HashSet<BlockId>(), NoChildRecipes.Instance);
         _context = new Interpreting(loaded.Recipe, decisions);
         _repo = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : null;
-        var instance = Started(TransitionDecision.Start(StartOf(start, loaded), loaded.Recipe, decisions));
+        var change = Started(TransitionDecision.Start(StartOf(start, loaded), loaded.Recipe, decisions));
+        var instance = change.After;
         Enter(instance);
-        await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null), NeedsYou(instance)).ConfigureAwait(true);
+        await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null, Detail: WorkflowEventDetail.Of(change.Event, trigger: null)), NeedsYou(instance)).ConfigureAwait(true);
         return (instance, _context);
     }
 
@@ -109,7 +109,7 @@ internal sealed partial class RecipeWorkflow
     {
         var start = _start ?? throw new InvalidOperationException("the instance has no input yet");
         return (_instance, _recipe) is ({ } instance, { } recipe)
-            ? InstanceViews.Of(instance, recipe, _since, _timeoutAt) with { Version = _mirrored }
+            ? InstanceViews.Of(instance, recipe, _since, _timeoutAt) with { Version = _mirrored, Id = instance.Id }
             : new InstanceView(start.WorkflowId(), start.Recipe, "starting", Detail: null, _since, string.Empty, [], Question: null, Task: null, Run: null, Children: [], Outcome: null)
             {
                 Id = WorkflowInstanceId.Of(start.WorkflowId()),
@@ -142,8 +142,8 @@ internal sealed partial class RecipeWorkflow
     /// A registered ledger event the bridge routed here (spec §5.4). Temporal buffers it until the instance reaches the
     /// wait; unit (a) consumes <see cref="_delivered"/> at a wait. Unit (d): the event's ledger sequence is its idempotency
     /// key, so a re-sent event (a bridge that crashed before it moved its cursor) is dropped; so is a kind no wait of the
-    /// recipe waits for (the bridge signals every live instance of the item). Dropping one older than 'eventHold' is open
-    /// (S1-D11's key, unit (e)).
+    /// recipe waits for (the bridge signals every live instance of the item). Dropping a buffered one older than 'eventHold' is
+    /// that of RecipeWorkflow.Hold.cs (S1-D11's key, unit (e)).
     /// </summary>
     /// <param name="delivered">The event as the wait's trigger.</param>
     /// <returns>Done.</returns>
@@ -171,7 +171,8 @@ internal sealed partial class RecipeWorkflow
     /// </summary>
     private async Task Mirror(WorkflowEventRecord record, bool needsYou)
     {
-        _ = await Workflow.ExecuteLocalActivityAsync((RecordEventActivities a) => a.RecordAsync(record), RecordEventActivities.LocalOptions).ConfigureAwait(true);
+        var stamped = record with { Tenant = _start!.Tenant, Ring = _start.Ring };   // why: Mirror runs only after RunAsync set _start; the row is the instance's, not the worker's
+        _ = await Workflow.ExecuteLocalActivityAsync((RecordEventActivities a) => a.RecordAsync(stamped), RecordEventActivities.LocalOptions).ConfigureAwait(true);
         _mirrored++;   // the instance's version, 'v<n>' in status: Temporal keeps no row version (unit (e))
         Upsert(record.To, needsYou);
     }
@@ -212,7 +213,7 @@ internal sealed partial class RecipeWorkflow
     private static StartRequest StartOf(InstanceStart start, LoadedRecipe loaded)
     {
         var address = start.WorkflowId();
-        var id = WorkflowInstanceId.For(new Guid(SHA256.HashData(Encoding.UTF8.GetBytes(address.Value)).AsSpan(0, 16)));
+        var id = WorkflowInstanceId.Of(address);
         return new StartRequest(
             TriggerKey.For(id, "start"),
             id,
@@ -228,9 +229,9 @@ internal sealed partial class RecipeWorkflow
             start.Ring);
     }
 
-    private static WorkflowInstance Started(Decision decision) => decision switch
+    private static InstanceChange Started(Decision decision) => decision switch
     {
-        Applied applied => applied.Changes[0].After,
+        Applied applied => applied.Changes[0],
         Rejected rejected => throw new ApplicationFailureException($"the start was rejected: {rejected.Error.Code} {rejected.Error.Message}", errorType: rejected.Error.Code, nonRetryable: true),
         _ => throw new ApplicationFailureException($"the start was {decision.GetType().Name}", nonRetryable: true),
     };

@@ -12,5 +12,5 @@ internal sealed class FailingService : IScheduledService
 
     public ServiceName Identity() => ServiceName.From("sour");
 
-    public ValueTask<Result<Unit>> Run(ScheduledRun run, CancellationToken cancellationToken) => ValueTask.FromResult<Result<Unit>>(Failure);
+    public ValueTask<Result<ScheduledResult>> Run(ScheduledRun run, CancellationToken cancellationToken) => ValueTask.FromResult<Result<ScheduledResult>>(Failure);
 }

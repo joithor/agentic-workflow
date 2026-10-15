@@ -14,11 +14,17 @@ namespace Aw.Context.Testing.Engine;
 public abstract class ContextSourceContract<TSource>
     where TSource : IContextSource
 {
-    private static readonly SourceQuery _orientation = new(["orientation"], AsOf: null, Limit: 50, TimeSpan.FromSeconds(10));
+    private static readonly SourceQuery _orientation = new(["orientation"], AsOf: null, Limit: 50, TimeSpan.FromSeconds(30));   // only bounds a hang: a real source on a loaded machine must not miss it
 
     /// <summary>A fresh source over the fixture's docs.</summary>
     /// <returns>The source.</returns>
     protected abstract Task<TSource> Create();
+
+    /// <summary>
+    /// False for a live source with no route to a record's version by id (spec §5.2: onyx). Its Versions answers
+    /// Unavailable, so its citations stay 'version unchecked', and its Fetch reads the record as it is now.
+    /// </summary>
+    protected virtual bool ChecksVersions => true;
 
     /// <summary>Hits are ranked 1, 2, … in order, at most the limit, each carrying a canonical key and a version.</summary>
     /// <returns>A task.</returns>
@@ -76,7 +82,7 @@ public abstract class ContextSourceContract<TSource>
         Check(record.Text.Contains("rientation", StringComparison.Ordinal), "its text holds the term");
     }
 
-    /// <summary>A version that doesn't exist is NotFound, not an exception.</summary>
+    /// <summary>A version that doesn't exist is NotFound, not an exception (or, for a source that can't check versions, the record now).</summary>
     /// <returns>A task.</returns>
     [Fact]
     public async Task Fetch_of_a_missing_version_is_not_found()
@@ -86,10 +92,14 @@ public abstract class ContextSourceContract<TSource>
 
         var missing = await source.Fetch(hit.Ref with { Version = SourceVersion.From("0000000000000000000000000000000000000000") }, CancellationToken.None);
 
-        Check(missing.IsError && missing.Error.Kind == ErrorKind.NotFound, "a missing version is NotFound");
+        Check(ChecksVersions ? missing.IsError && missing.Error.Kind == ErrorKind.NotFound : missing.IsSuccess && missing.Value.Ref.Id == hit.Ref.Id,
+            ChecksVersions ? "a missing version is NotFound" : "a source that can't check versions fetches the record as it is now");
     }
 
-    /// <summary>Versions answers one entry per reference, in order, and an unchanged record is at its cited version.</summary>
+    /// <summary>
+    /// Versions answers one entry per reference, in order, and an unchanged record is at its cited version (or, for a
+    /// source that can't check versions, Unavailable).
+    /// </summary>
     /// <returns>A task.</returns>
     [Fact]
     public async Task Versions_are_batched_and_in_order()
@@ -97,8 +107,14 @@ public abstract class ContextSourceContract<TSource>
         var source = await Create();
         var hits = Expect(await source.Search(_orientation with { Terms = ["layout", "orientation"] }, CancellationToken.None));
 
-        var versions = Expect(await source.Versions([.. hits.Select(h => h.Ref)], CancellationToken.None));
+        var answer = await source.Versions([.. hits.Select(h => h.Ref)], CancellationToken.None);
+        if (!ChecksVersions)
+        {
+            Check(answer.IsError && answer.Error.Kind == ErrorKind.Unavailable, "a source that can't check versions answers Unavailable");
+            return;
+        }
 
+        var versions = Expect(answer);
         Check(versions.Count == hits.Count, "one version per reference");
         Check(hits.Select(h => (SourceVersion?)h.Ref.Version).SequenceEqual(versions), "unchanged records are at their cited versions");
     }

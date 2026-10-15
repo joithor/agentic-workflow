@@ -1,5 +1,6 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.CompleteStep;
@@ -21,7 +22,7 @@ public sealed class CompleteStepRetryTests
     [Fact(Timeout = 30_000)]
     public async Task A_report_retried_after_a_timeout_that_did_apply_is_applied_and_keeps_its_claim()
     {
-        var service = new CompleteStepService(_instance, _instance, new InMemoryFactStore(), _nonces, _instance);
+        var service = new CompleteStepService(_instance, _instance, _instance, new InMemoryFactStore(), _nonces, _instance);
         var request = Report();
         _instance.LoseNextResponse();
 
@@ -38,13 +39,51 @@ public sealed class CompleteStepRetryTests
     [Fact(Timeout = 30_000)]
     public async Task A_refused_report_gives_its_fresh_nonce_back()
     {
-        var service = new CompleteStepService(_instance, _instance, new InMemoryFactStore(), _nonces, _instance);
+        var service = new CompleteStepService(_instance, _instance, _instance, new InMemoryFactStore(), _nonces, _instance);
         _instance.RefuseNext();
 
         var refused = await service.Handle(Report(), TestContext.Current.CancellationToken);
         var other = await _nonces.Claim(_nonce, "another command", TestContext.Current.CancellationToken);
 
         Assert.Equal("SND-WF-003", refused.IsError ? refused.Error.Code : "accepted");
+        Assert.Equal(NonceClaim.Fresh, other.Value);
+    }
+
+    [Theory(Timeout = 30_000)]
+    [InlineData(ApprovalCheck.Revoked, "SND-RECIPE-005")]
+    [InlineData(ApprovalCheck.Drifted, "SND-RECIPE-006")]
+    public async Task A_report_on_an_instance_whose_recipe_is_no_longer_approved_is_refused_and_gives_its_nonce_back(ApprovalCheck approval, string code)
+    {
+        var facts = new InMemoryFactStore();
+        var service = new CompleteStepService(_instance, _instance, _instance, facts, _nonces, _instance);
+        _instance.Approval = approval;
+
+        var refused = await service.Handle(Report(), TestContext.Current.CancellationToken);
+        var other = await _nonces.Claim(_nonce, "another command", TestContext.Current.CancellationToken);
+
+        Assert.Equal(code, refused.IsError ? refused.Error.Code : "accepted");
+        Assert.Empty(_instance.Sent);
+        Assert.Empty(facts.Stored);   // nothing was stored for a report that was refused
+        Assert.Equal(NonceClaim.Fresh, other.Value);
+    }
+
+    [Theory(Timeout = 30_000)]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task A_report_whose_approval_check_cannot_be_made_gives_the_error_and_its_nonce_back_and_stores_nothing(bool instanceQueryFails)
+    {
+        var facts = new InMemoryFactStore();
+        var service = new CompleteStepService(_instance, _instance, _instance, facts, _nonces, _instance);
+        var failure = Core.SindriErrors.ApprovalsUnavailable.With("approved/latest can't be read (test)");
+        _instance.GetFails = instanceQueryFails ? failure : null;
+        _instance.CheckFails = instanceQueryFails ? null : failure;
+
+        var refused = await service.Handle(Report(), TestContext.Current.CancellationToken);
+        var other = await _nonces.Claim(_nonce, "another command", TestContext.Current.CancellationToken);
+
+        Assert.Equal(failure.Code, refused.IsError ? refused.Error.Code : "accepted");
+        Assert.Empty(_instance.Sent);
+        Assert.Empty(facts.Stored);
         Assert.Equal(NonceClaim.Fresh, other.Value);
     }
 
