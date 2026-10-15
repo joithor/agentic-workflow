@@ -1,5 +1,6 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
 using Aw.Context.Core.Proposals;
@@ -44,9 +45,13 @@ internal sealed class GetProposalsService(IGraphStore store, IProposalRuns runs,
         var currentGraph = OverrideApplier.Apply(current.Graph, [.. overrides.Where(o => o.Action != OverrideAction.Propose)]).Graph;
         var draftGraph = draft is null ? null : OverrideApplier.Apply(draft.Graph, overrides).Graph;
         var statuses = GraphStatuses.Of(GraphStatuses.ForRun(request.Run, overrides, Visible(saved.Value, request.Scope.Caller)), currentGraph, draftGraph)
-            .Select(s => s with { Surface = text.Label(s.Surface, Trust.Untrusted) });
+            .Select(s => s with { Surface = text.Label(s.Surface, Trust.Untrusted), Node = KeepNode(s, request.Scope.Caller) });
         return new ProposalsView(request.Run, current.Label, draft?.Label, [.. statuses]);
     }
+
+    // A new proposal's node key is built from the model-written name, so a fenced caller (a session) gets no key for it: the name is already there, fenced.
+    private static NodeKey? KeepNode(GraphStatus status, ContextCaller caller) =>
+        status.Status == GraphStatusKind.New && FencePolicies.For(caller) == FencePolicy.Fenced ? null : status.Node;
 
     private async ValueTask<Result<(MapSnapshot Current, MapSnapshot? Draft)>> Load(CancellationToken cancellationToken)
     {

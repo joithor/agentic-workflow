@@ -1691,15 +1691,17 @@ Aw.Context.Core.Packing.Packer
 Aw.Context.Core.Packing.TokenEstimate
 Aw.Context.Core.Proposals.GraphStatus
 Aw.Context.Core.Proposals.GraphStatus.<Clone>$() -> Aw.Context.Core.Proposals.GraphStatus!
-Aw.Context.Core.Proposals.GraphStatus.Deconstruct(out string! Surface, out Aw.Context.Core.Graph.NodeKey? Node, out Aw.Context.Core.Proposals.GraphStatusKind Status) -> void
+Aw.Context.Core.Proposals.GraphStatus.Deconstruct(out string! Surface, out Aw.Context.Core.Graph.NodeKey? Node, out Aw.Context.Core.Proposals.GraphStatusKind Status, out Aw.Context.Core.Results.Trust Trust) -> void
 Aw.Context.Core.Proposals.GraphStatus.Equals(Aw.Context.Core.Proposals.GraphStatus? other) -> bool
-Aw.Context.Core.Proposals.GraphStatus.GraphStatus(string! Surface, Aw.Context.Core.Graph.NodeKey? Node, Aw.Context.Core.Proposals.GraphStatusKind Status) -> void
+Aw.Context.Core.Proposals.GraphStatus.GraphStatus(string! Surface, Aw.Context.Core.Graph.NodeKey? Node, Aw.Context.Core.Proposals.GraphStatusKind Status, Aw.Context.Core.Results.Trust Trust = Aw.Context.Core.Results.Trust.Untrusted) -> void
 Aw.Context.Core.Proposals.GraphStatus.Node.get -> Aw.Context.Core.Graph.NodeKey?
 Aw.Context.Core.Proposals.GraphStatus.Node.init -> void
 Aw.Context.Core.Proposals.GraphStatus.Status.get -> Aw.Context.Core.Proposals.GraphStatusKind
 Aw.Context.Core.Proposals.GraphStatus.Status.init -> void
 Aw.Context.Core.Proposals.GraphStatus.Surface.get -> string!
 Aw.Context.Core.Proposals.GraphStatus.Surface.init -> void
+Aw.Context.Core.Proposals.GraphStatus.Trust.get -> Aw.Context.Core.Results.Trust
+Aw.Context.Core.Proposals.GraphStatus.Trust.init -> void
 Aw.Context.Core.Proposals.GraphStatusKind
 Aw.Context.Core.Proposals.GraphStatusKind.Mapped = 0 -> Aw.Context.Core.Proposals.GraphStatusKind
 Aw.Context.Core.Proposals.GraphStatusKind.New = 1 -> Aw.Context.Core.Proposals.GraphStatusKind

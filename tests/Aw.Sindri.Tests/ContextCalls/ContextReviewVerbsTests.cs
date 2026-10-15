@@ -235,8 +235,8 @@ public sealed class ContextReviewVerbsTests : IDisposable
             Assert.True(exit == 0, _error.ToString());
             Assert.Contains("\"run\":\"scope-1\"", api.Calls[0].Body, StringComparison.Ordinal);
             Assert.Contains("Proposed into draft v14: 1 added, 1 already mapped, 0 rejected earlier; recorded as event 13", _out.ToString(), StringComparison.Ordinal);
-            Assert.Contains("new       Zoom → feature:zoom", _out.ToString(), StringComparison.Ordinal);
-            Assert.Contains("mapped    Tab manager → feature:tabs.tab-manager", _out.ToString(), StringComparison.Ordinal);
+            Assert.Contains("new       <untrusted source=\"map\">Zoom</untrusted> → feature:zoom", _out.ToString(), StringComparison.Ordinal);
+            Assert.Contains("mapped    <untrusted source=\"map\">Tab manager</untrusted> → feature:tabs.tab-manager", _out.ToString(), StringComparison.Ordinal);
         }
         finally
         {

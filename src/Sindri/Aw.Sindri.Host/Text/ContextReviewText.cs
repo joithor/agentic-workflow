@@ -88,25 +88,28 @@ internal static class ContextReviewText
         ? Invariant($"Promoted {response.Draft} to current for {promoted.Version.Repo.Value} (v{promoted.Version.Number}){(promoted.Retained is { } old ? Invariant($"; v{old.Number} is retained") : string.Empty)}; recorded as event {response.Sequence}\n")
         : $"draft {response.Draft} has nothing left to decide\n";
 
-    internal static string Proposals(ProposalsView view)
+    internal static string Proposals(ProposalsView view, bool fence)
     {
         var text = new StringBuilder(Invariant($"run {view.Run} · map {view.Map}{(view.Draft is { } d ? $" · draft {d}" : string.Empty)}\n"));
         foreach (var s in view.Surfaces)
         {
-            _ = text.AppendLine($"  {s.Status.ToString().ToLowerInvariant(),-9} {s.Surface}{(s.Node is { } node ? " → " + node.Value : string.Empty)}");
+            _ = text.AppendLine($"  {s.Status.ToString().ToLowerInvariant(),-9} {Fenced(s, fence)}{(s.Node is { } node ? " → " + node.Value : string.Empty)}");
         }
 
         return text.ToString();
     }
 
-    internal static string Proposed(ProposeContextMapResponse response)
+    internal static string Proposed(ProposeContextMapResponse response, bool fence)
     {
         var text = new StringBuilder(Invariant($"Proposed into draft v{response.Result.Draft.Number}: {response.Result.Added} added, {response.Result.Existing} already mapped, {response.Result.Rejected} rejected earlier{(response.Sequence is { } seq ? Invariant($"; recorded as event {seq}") : string.Empty)}\n"));
         foreach (var s in response.Surfaces)
         {
-            _ = text.AppendLine($"  {s.Status.ToString().ToLowerInvariant(),-9} {s.Surface}{(s.Node is { } node ? " → " + node.Value : string.Empty)}");
+            _ = text.AppendLine($"  {s.Status.ToString().ToLowerInvariant(),-9} {Fenced(s, fence)}{(s.Node is { } node ? " → " + node.Value : string.Empty)}");
         }
 
         return text.ToString();
     }
+
+    // A human's answer carries the clean name beside its trust, so the text fences it itself; a session's answer was fenced by the server already.
+    private static string Fenced(GraphStatus status, bool fence) => fence && status.Trust == Trust.Untrusted ? UntrustedFence.Wrap("map", author: null, status.Surface) : status.Surface;
 }

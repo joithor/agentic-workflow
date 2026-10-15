@@ -83,7 +83,7 @@ internal sealed class ContextReviewVerbs(ControlPlaneClient client, Output outpu
         var answer = await client.Post<ProposeContextMapRequest, ProposeContextMapResponse>(Route + "/proposals", request, ct).ConfigureAwait(false);
         return answer.IsError ? await Failed(answer.Error).ConfigureAwait(false)
             : json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
-            : await output.Text(ContextReviewText.Proposed(answer.Value.Value), 0).ConfigureAwait(false);
+            : await output.Text(ContextReviewText.Proposed(answer.Value.Value, fence: client.SessionReason is null), 0).ConfigureAwait(false);
     }
 
     internal async Task<int> Proposals(string run, bool json, CancellationToken ct)
@@ -91,7 +91,7 @@ internal sealed class ContextReviewVerbs(ControlPlaneClient client, Output outpu
         var answer = await client.Get<Context.Core.Proposals.ProposalsView>(Route + "/proposals?run=" + Uri.EscapeDataString(run), ct).ConfigureAwait(false);
         return answer.IsError ? await Failed(answer.Error).ConfigureAwait(false)
             : json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
-            : await output.Text(ContextReviewText.Proposals(answer.Value.Value), 0).ConfigureAwait(false);
+            : await output.Text(ContextReviewText.Proposals(answer.Value.Value, fence: client.SessionReason is null), 0).ConfigureAwait(false);
     }
 
     private async Task<int> Queue(bool json, string? limit, CancellationToken ct)
