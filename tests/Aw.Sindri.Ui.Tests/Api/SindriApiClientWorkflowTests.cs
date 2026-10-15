@@ -140,6 +140,16 @@ public sealed class SindriApiClientWorkflowTests
     }
 
     [Fact]
+    public async Task An_empty_hash_asks_for_the_recipe_by_its_id_alone()
+    {
+        var canned = Serving("workflow-recipe", "workflow-project");
+
+        _ = await Client(canned).Recipe(_api, "workflow.project", hash: "", Token);
+
+        Assert.Equal("/sindri/workflow/recipes/workflow.project", Assert.Single(canned.Seen).Uri.AbsolutePath);
+    }
+
+    [Fact]
     public async Task A_recipe_without_a_hash_is_asked_for_by_its_id()
     {
         var canned = Serving("workflow-recipe", "workflow-project");

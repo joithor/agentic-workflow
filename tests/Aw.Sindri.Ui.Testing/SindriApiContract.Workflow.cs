@@ -21,6 +21,16 @@ public abstract partial class SindriApiContract
     /// <summary>Every served recipe golden whose scenario is a recipe id (the recipe's dots are dashes).</summary>
     public static TheoryData<string> RecipeScenarios => Scenarios("workflow-recipe");
 
+    /// <summary>Every distinct recipe id an instance golden or a list golden's row runs: each is a link the app can follow to the recipe.</summary>
+    public static TheoryData<string> RunningRecipeIds => [.. RunningRecipes().Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+
+    private static IEnumerable<string> RunningRecipes() =>
+        from g in GoldenFiles.All()
+        where g.Kind == "Api" && (string.Equals(g.Slug, "workflow-instance", StringComparison.Ordinal) || string.Equals(g.Slug, "workflow-instances", StringComparison.Ordinal)) && !IsRefusal(g.Body)
+        let json = JsonNode.Parse(g.Body)!
+        from named in json["instances"] is JsonArray rows ? rows.Select(r => r!["recipe"]!) : [json["recipe"]!] // why: a list's rows and an instance both name their recipe
+        select (string)named["id"]!; // why: a recipe has an id
+
     private static TheoryData<string> Scenarios(string slug) =>
         [.. GoldenFiles.All().Where(g => g.Kind == "Api" && g.Slug == slug && !IsRefusal(g.Body)).Select(g => g.Scenario)];
 
@@ -163,6 +173,15 @@ public abstract partial class SindriApiContract
 
         Expect.Equal(golden["inputs"]!.AsArray().Count, recipe.Inputs.Count);
         Expect.Equal(golden["outputs"]!.AsArray().Count, recipe.Outputs.Count);
+    }
+
+    [Theory]
+    [MemberData(nameof(RunningRecipeIds))]
+    public async Task Every_recipe_an_instance_runs_can_be_opened(string recipeId)
+    {
+        var recipe = await Reach(new FakeSindriApi()).Recipe(_api, recipeId, hash: null, Token);
+
+        Expect.True(recipe.IsSuccess);
     }
 
     [Fact]
