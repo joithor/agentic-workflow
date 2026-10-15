@@ -51,7 +51,7 @@ public sealed class WorkflowViewFixtureTests
     public void The_cancel_sentence_names_the_instance_and_counts_its_open_children(string address)
     {
         var view = Detail(address);
-        var cancel = view.Current.Status.Commands.SingleOrDefault(c => c.Verb.Value == "cancel");
+        var cancel = view.Current.Status.Commands.SingleOrDefault(c => c.Verb == StatusVerb.Cancel);
         if (cancel is null)
         {
             Assert.DoesNotContain(view.Actions, a => a.Value == "ApplyCommand:cancel");
@@ -63,7 +63,7 @@ public sealed class WorkflowViewFixtureTests
         Assert.True(match.Success, cancel.Confirm);
         Assert.Equal(view.Address.Value, match.Groups["address"].Value);
         Assert.Equal(open, int.Parse(match.Groups["m"].Value, CultureInfo.InvariantCulture));
-        Assert.All(view.Current.Status.Commands.Where(c => c.Verb.Value != "cancel"), c => Assert.Null(c.Confirm));
+        Assert.All(view.Current.Status.Commands.Where(c => c.Verb != StatusVerb.Cancel), c => Assert.Null(c.Confirm));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -90,7 +90,7 @@ public sealed class WorkflowViewFixtureTests
 
             foreach (var command in status.Commands)
             {
-                Assert.Contains(command.Verb.Value, lines.Single(l => l.StartsWith("  commands", StringComparison.Ordinal)), StringComparison.Ordinal);
+                Assert.Contains(StatusVerbNames.Of(command.Verb), lines.Single(l => l.StartsWith("  commands", StringComparison.Ordinal)), StringComparison.Ordinal);
             }
         }
     }
@@ -111,7 +111,7 @@ public sealed class WorkflowViewFixtureTests
             {
                 Assert.True(catalog.TryGetValue(answer.ActionId.Value, out var actionClass), $"{answer.ActionId.Value} is not a catalog row");
                 Assert.Equal(actionClass, answer.Class);
-                Assert.Equal(answer.ActionId, status.Commands.Single(c => c.Verb.Value == "answer").ActionId);
+                Assert.Equal(answer.ActionId, status.Commands.Single(c => c.Verb == StatusVerb.Answer).ActionId);
             }
         }
     }

@@ -308,6 +308,7 @@
       "workstreams": [],
       "rows": [
         {
+          "id": "WFI-59cb304d7f1c8407abd726981cd000e1",
           "address": "ITM-01JKG/project/1/step.1",
           "itemId": "ITM-01M01",
           "title": "Chapter 1",
@@ -327,6 +328,7 @@
           ]
         },
         {
+          "id": "WFI-a166d689e3be886aa947e7ec95ba32a1",
           "address": "ITM-01JKG/project/1/step.2",
           "itemId": "ITM-01M02",
           "title": "Chapter 2",
@@ -346,6 +348,7 @@
           ]
         },
         {
+          "id": "WFI-e08d8489c6b58e87b41c2e852d3ebea9",
           "address": "ITM-01JKG/project/1/step.3",
           "itemId": "ITM-01M03",
           "title": "Chapter 3",
@@ -365,6 +368,7 @@
           ]
         },
         {
+          "id": "WFI-58109e458ad28751a93459d6eba1aebd",
           "address": "ITM-01JKG/project/1/step.4",
           "itemId": "ITM-01M04",
           "title": "Chapter 4",
@@ -384,6 +388,7 @@
           ]
         },
         {
+          "id": "WFI-ce8ff207b0e5874ea1c749f863997266",
           "address": "ITM-01JKG/project/1/step.5",
           "itemId": "ITM-01M05",
           "title": "Chapter 5",
@@ -403,6 +408,7 @@
           ]
         },
         {
+          "id": "WFI-91e6927b100a8a4c9c27f19c578c6e7b",
           "address": "ITM-01JKG/project/1/step.6",
           "itemId": "ITM-01M06",
           "title": "Chapter 6",
@@ -422,6 +428,7 @@
           ]
         },
         {
+          "id": "WFI-a29b38ccb5ae8bf7a766c58255e7f6aa",
           "address": "ITM-01JKG/project/1/step.7",
           "itemId": "ITM-01M07",
           "title": "Chapter 7",
@@ -442,6 +449,7 @@
           ]
         },
         {
+          "id": "WFI-ef71592ac55a85cfbcf573c5b7cca558",
           "address": "ITM-01JKG/project/1/step.8",
           "itemId": "ITM-01M08",
           "title": "Chapter 8",
@@ -462,6 +470,7 @@
           ]
         },
         {
+          "id": "WFI-7c0476e1dae889ef88366322471e7709",
           "address": "ITM-01JKG/project/1/step.9",
           "itemId": "ITM-01M09",
           "title": "Chapter 9",
@@ -481,6 +490,7 @@
           ]
         },
         {
+          "id": "WFI-f60be648e91c896f9ce900c37d1523b0",
           "address": "ITM-01JKG/project/1/step.10",
           "itemId": "ITM-01M0A",
           "title": "Chapter 10",
@@ -500,6 +510,7 @@
           ]
         },
         {
+          "id": "WFI-57673442c8768f1fabfd87f7bee611d1",
           "address": "ITM-01JKG/project/1/step.11",
           "itemId": "ITM-01M0B",
           "title": "Chapter 11",
@@ -519,6 +530,7 @@
           ]
         },
         {
+          "id": "WFI-c5f00a01ed5a8be8926c650eba069091",
           "address": "ITM-01JKG/project/1/step.12",
           "itemId": "ITM-01M0C",
           "title": "Chapter 12",
@@ -538,6 +550,7 @@
           ]
         },
         {
+          "id": "WFI-f52584a17a7d80d0881590af72f349ef",
           "address": "ITM-01JKG/project/1/step.13",
           "itemId": "ITM-01M0D",
           "title": "Chapter 13",
@@ -557,6 +570,7 @@
           ]
         },
         {
+          "id": "WFI-413ab124d8bc8dd58dae465c45a87ae1",
           "address": "ITM-01JKG/project/1/step.14",
           "itemId": "ITM-01M0E",
           "title": "Chapter 14",
@@ -576,6 +590,7 @@
           ]
         },
         {
+          "id": "WFI-b1c20a25fcae8cc2a552c91eb14486ea",
           "address": "ITM-01JKG/project/1/step.15",
           "itemId": "ITM-01M0F",
           "title": "Chapter 15",
@@ -595,6 +610,7 @@
           ]
         },
         {
+          "id": "WFI-0d6bbce1635580879e7030a1a797ef31",
           "address": "ITM-01JKG/project/1/step.16",
           "itemId": "ITM-01M10",
           "title": "Chapter 16",
@@ -614,6 +630,7 @@
           ]
         },
         {
+          "id": "WFI-e462bbaf55d28850b0609980eb7ae807",
           "address": "ITM-01JKG/project/1/step.17",
           "itemId": "ITM-01M11",
           "title": "Chapter 17",
@@ -633,6 +650,7 @@
           ]
         },
         {
+          "id": "WFI-c50f8ff8d7548ad3add96eb56f43aa4d",
           "address": "ITM-01JKG/project/1/step.18",
           "itemId": "ITM-01M12",
           "title": "Chapter 18",
@@ -652,6 +670,7 @@
           ]
         },
         {
+          "id": "WFI-fdfa3b8020518f92896a4c9aac344b82",
           "address": "ITM-01JKG/project/1/step.19",
           "itemId": "ITM-01M13",
           "title": "Chapter 19",
@@ -671,6 +690,7 @@
           ]
         },
         {
+          "id": "WFI-1863f7cea5c98b9086abb7c46e4cb7af",
           "address": "ITM-01JKG/project/1/step.20",
           "itemId": "ITM-01M14",
           "title": "Chapter 20",

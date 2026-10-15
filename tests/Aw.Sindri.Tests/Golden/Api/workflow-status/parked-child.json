@@ -18,6 +18,7 @@
     "atTerminal": true
   },
   "child": {
+    "id": "WFI-43d0edcfe0e98fa29e350cdcd99150b2",
     "address": "ITM-01JC8/item/1/step.4",
     "state": "parked",
     "reason": "no-progress"

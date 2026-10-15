@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Workflow.Engine;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -65,7 +66,7 @@ public sealed class WorkflowViewConsistencyTests
 
         var takenOver = WorkflowViewFixtures.StatusTakenOver();
         Assert.Equal("taken-over", takenOver.Header.State);
-        Assert.Equal(["handback", "cancel"], takenOver.Commands.Select(c => c.Verb.Value), StringComparer.Ordinal);
+        Assert.Equal(["handback", "cancel"], takenOver.Commands.Select(c => StatusVerbNames.Of(c.Verb)), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -320,8 +321,8 @@ public sealed class WorkflowViewConsistencyTests
     [Fact, Trait("Lane", "unit")]
     public void A_cancel_sentence_rejects_negative_counts()
     {
-        _ = Assert.Throws<ArgumentOutOfRangeException>(() => ConfirmText.Cancel("workflow/x", -1, 0));
-        _ = Assert.Throws<ArgumentOutOfRangeException>(() => ConfirmText.Cancel("workflow/x", 0, -1));
+        _ = Assert.Throws<ArgumentOutOfRangeException>(() => ConfirmText.Cancel(InstanceAddress.From("ITM-01JK1/item/1"), -1, 0));
+        _ = Assert.Throws<ArgumentOutOfRangeException>(() => ConfirmText.Cancel(InstanceAddress.From("ITM-01JK1/item/1"), 0, -1));
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -110,9 +110,9 @@ public sealed partial class WorkflowEngineInvariantsTests
                 failures.Add(M($"status detail '{status.Header.Detail}', not 'desk task'"));
             }
 
-            if (status.Commands.Count == 0 || status.Commands[0].Verb.Value != "complete")
+            if (status.Commands.Count == 0 || status.Commands[0].Verb != StatusVerb.Complete)
             {
-                failures.Add(M($"status commands start with '{(status.Commands.Count == 0 ? "nothing" : status.Commands[0].Verb.Value)}', not complete"));
+                failures.Add(M($"status commands start with '{(status.Commands.Count == 0 ? "nothing" : StatusVerbNames.Of(status.Commands[0].Verb))}', not complete"));
             }
         }
 

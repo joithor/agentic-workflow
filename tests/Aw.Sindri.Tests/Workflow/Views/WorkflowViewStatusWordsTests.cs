@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Testing.Views;
 
 namespace Aw.Sindri.Tests.Workflow.Views;
@@ -16,8 +17,8 @@ public sealed class WorkflowViewStatusWordsTests
         var status = WorkflowViewFixtures.StatusParkedDrift();
 
         Assert.Null(status.Answer);
-        Assert.Equal(["takeover", "cancel", "approve"], status.Commands.Select(c => c.Verb.Value), StringComparer.Ordinal);
-        var approve = Assert.Single(status.Commands, c => c.Verb.Value == "approve");
+        Assert.Equal(["takeover", "cancel", "approve"], status.Commands.Select(c => StatusVerbNames.Of(c.Verb)), StringComparer.Ordinal);
+        var approve = Assert.Single(status.Commands, c => c.Verb == StatusVerb.Approve);
         Assert.Equal(ActionClass.Protected, approve.Class);
         Assert.Equal("ApproveRecipe", approve.ActionId.Value);
         Assert.Equal($"sindri recipe approve {status.Header.Recipe.Value}@{status.Header.Hash12}", approve.Cli);
@@ -48,7 +49,7 @@ public sealed class WorkflowViewStatusWordsTests
 
         var desk = WorkflowViewFixtures.StatusDeskTask();
         Assert.Null(desk.Answer);
-        Assert.Equal("complete", desk.Commands[0].Verb.Value);
+        Assert.Equal("complete", StatusVerbNames.Of(desk.Commands[0].Verb));
         Assert.StartsWith("sindri workflow complete ITM-01JK2/triage-alert/1 --run 2.1 ", desk.Commands[0].Cli, StringComparison.Ordinal);
     }
 

@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Core.Workflow.Views;
 
@@ -10,12 +11,12 @@ public static class ConfirmText
     /// <param name="runningSteps">How many steps are running now (the open run).</param>
     /// <param name="openChildren">How many child instances are still open.</param>
     /// <returns>The sentence.</returns>
-    public static string Cancel(string address, int runningSteps, int openChildren)
+    public static string Cancel(InstanceAddress address, int runningSteps, int openChildren)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(runningSteps);
         ArgumentOutOfRangeException.ThrowIfNegative(openChildren);
         var steps = runningSteps == 1 ? "running step stops" : "running steps stop";
         var children = openChildren == 1 ? "child is" : "children are";
-        return string.Create(CultureInfo.InvariantCulture, $"Cancel {address}? {runningSteps} {steps}; {openChildren} {children} cancelled.");
+        return string.Create(CultureInfo.InvariantCulture, $"Cancel {address.Value}? {runningSteps} {steps}; {openChildren} {children} cancelled.");
     }
 }

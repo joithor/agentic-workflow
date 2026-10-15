@@ -324,6 +324,7 @@
           "label": "UI",
           "rows": [
             {
+              "id": "WFI-205dbef942128d85aab1ffa4316be661",
               "address": "ITM-01JK3/project/1/step.1",
               "itemId": "ITM-01JC3",
               "title": "Sync status pill",
@@ -343,6 +344,7 @@
               ]
             },
             {
+              "id": "WFI-023ffc0cd0df8f6f80409d87393ef85d",
               "address": "ITM-01JK3/project/1/step.2",
               "itemId": "ITM-01JC5",
               "title": "Conflict resolver dialog",
@@ -368,6 +370,7 @@
           "label": "Store",
           "rows": [
             {
+              "id": "WFI-06618546f7bd8b299da5dbcd72fc6975",
               "address": "ITM-01JK3/project/1/step.3",
               "itemId": "ITM-01JC1",
               "title": "PUT /sync/changes",
@@ -387,6 +390,7 @@
               ]
             },
             {
+              "id": "WFI-8fa6b65ae2df814db4c7f7dcee91e97a",
               "address": "ITM-01JK3/project/1/step.4",
               "itemId": "ITM-01JC2",
               "title": "Outbox queue",
@@ -406,6 +410,7 @@
               ]
             },
             {
+              "id": "WFI-906fc454487d8cebae1bbbf370138fc6",
               "address": "ITM-01JK3/project/1/step.5",
               "itemId": "ITM-01JD6",
               "title": "Services page job panel",
@@ -432,6 +437,7 @@
           "label": "Mobile",
           "rows": [
             {
+              "id": "WFI-dd2d4d895399895e8d19b213ab24b0d0",
               "address": "ITM-01JK3/project/1/step.6",
               "itemId": "ITM-01JD7",
               "title": "Background sync (iOS)",
@@ -459,6 +465,7 @@
               ]
             },
             {
+              "id": "WFI-e5f6b1d765ce823496bca559d1d98d60",
               "address": "ITM-01JK3/project/1/step.7",
               "itemId": "ITM-01JF3",
               "title": "doctor views line",
@@ -478,6 +485,7 @@
               ]
             },
             {
+              "id": "WFI-67f481a2bbdf89c6a94e28416825be43",
               "address": "ITM-01JK3/project/1/step.8",
               "itemId": "ITM-01JF4",
               "title": "Tray badge on Linux",
@@ -503,6 +511,7 @@
           "label": "Rollout",
           "rows": [
             {
+              "id": "WFI-1989f884965c8e018247b86e07c9f419",
               "address": "ITM-01JK3/project/1/step.9",
               "itemId": "ITM-01JF8",
               "title": "Receipt verify route",

@@ -3579,11 +3579,9 @@ Aw.Sindri.Core.Workflow.Views.ChildRow.Agent.get -> string?
 Aw.Sindri.Core.Workflow.Views.ChildRow.Agent.init -> void
 Aw.Sindri.Core.Workflow.Views.ChildRow.AgeSeconds.get -> long
 Aw.Sindri.Core.Workflow.Views.ChildRow.AgeSeconds.init -> void
-Aw.Sindri.Core.Workflow.Views.ChildRow.ChildRow(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, string! Title, Aw.Sindri.Core.Workflow.Views.StateGlyph Glyph, string! State, Aw.Sindri.Core.Workflow.Views.StateChip! Chip, Aw.Sindri.Core.Workflow.Views.Round? Round, string? Agent, long AgeSeconds, Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? MirroredPark, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions) -> void
 Aw.Sindri.Core.Workflow.Views.ChildRow.Chip.get -> Aw.Sindri.Core.Workflow.Views.StateChip!
 Aw.Sindri.Core.Workflow.Views.ChildRow.Chip.init -> void
 Aw.Sindri.Core.Workflow.Views.ChildRow.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.ChildRow!
-Aw.Sindri.Core.Workflow.Views.ChildRow.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, out string! Title, out Aw.Sindri.Core.Workflow.Views.StateGlyph Glyph, out string! State, out Aw.Sindri.Core.Workflow.Views.StateChip! Chip, out Aw.Sindri.Core.Workflow.Views.Round? Round, out string? Agent, out long AgeSeconds, out Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, out Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? MirroredPark, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions) -> void
 Aw.Sindri.Core.Workflow.Views.ChildRow.EngineOwned.get -> Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge?
 Aw.Sindri.Core.Workflow.Views.ChildRow.EngineOwned.init -> void
 Aw.Sindri.Core.Workflow.Views.ChildRow.Equals(Aw.Sindri.Core.Workflow.Views.ChildRow? other) -> bool
@@ -3897,9 +3895,7 @@ Aw.Sindri.Core.Workflow.Views.ParentRef
 Aw.Sindri.Core.Workflow.Views.ParentRef.Address.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
 Aw.Sindri.Core.Workflow.Views.ParentRef.Address.init -> void
 Aw.Sindri.Core.Workflow.Views.ParentRef.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.ParentRef!
-Aw.Sindri.Core.Workflow.Views.ParentRef.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out string! Title, out string? Task, out string? Workstream) -> void
 Aw.Sindri.Core.Workflow.Views.ParentRef.Equals(Aw.Sindri.Core.Workflow.Views.ParentRef? other) -> bool
-Aw.Sindri.Core.Workflow.Views.ParentRef.ParentRef(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, string! Title, string? Task, string? Workstream) -> void
 Aw.Sindri.Core.Workflow.Views.ParentRef.Task.get -> string?
 Aw.Sindri.Core.Workflow.Views.ParentRef.Task.init -> void
 Aw.Sindri.Core.Workflow.Views.ParentRef.Title.get -> string!
@@ -4068,13 +4064,11 @@ Aw.Sindri.Core.Workflow.Views.StatusChild
 Aw.Sindri.Core.Workflow.Views.StatusChild.Address.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
 Aw.Sindri.Core.Workflow.Views.StatusChild.Address.init -> void
 Aw.Sindri.Core.Workflow.Views.StatusChild.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StatusChild!
-Aw.Sindri.Core.Workflow.Views.StatusChild.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out string! State, out string? Reason) -> void
 Aw.Sindri.Core.Workflow.Views.StatusChild.Equals(Aw.Sindri.Core.Workflow.Views.StatusChild? other) -> bool
 Aw.Sindri.Core.Workflow.Views.StatusChild.Reason.get -> string?
 Aw.Sindri.Core.Workflow.Views.StatusChild.Reason.init -> void
 Aw.Sindri.Core.Workflow.Views.StatusChild.State.get -> string!
 Aw.Sindri.Core.Workflow.Views.StatusChild.State.init -> void
-Aw.Sindri.Core.Workflow.Views.StatusChild.StatusChild(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, string! State, string? Reason) -> void
 Aw.Sindri.Core.Workflow.Views.StatusCommand
 Aw.Sindri.Core.Workflow.Views.StatusCommand.ActionId.get -> Aw.Sindri.Core.Ids.ActionId
 Aw.Sindri.Core.Workflow.Views.StatusCommand.ActionId.init -> void
@@ -4085,10 +4079,7 @@ Aw.Sindri.Core.Workflow.Views.StatusCommand.Cli.init -> void
 Aw.Sindri.Core.Workflow.Views.StatusCommand.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StatusCommand!
 Aw.Sindri.Core.Workflow.Views.StatusCommand.Confirm.get -> string?
 Aw.Sindri.Core.Workflow.Views.StatusCommand.Confirm.init -> void
-Aw.Sindri.Core.Workflow.Views.StatusCommand.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.CommandVerb Verb, out Aw.Sindri.Core.Ids.ActionId ActionId, out Aw.Sindri.Core.Commands.ActionClass Class, out string! Cli, out string? Confirm) -> void
 Aw.Sindri.Core.Workflow.Views.StatusCommand.Equals(Aw.Sindri.Core.Workflow.Views.StatusCommand? other) -> bool
-Aw.Sindri.Core.Workflow.Views.StatusCommand.StatusCommand(Aw.Sindri.Core.Workflow.Engine.CommandVerb Verb, Aw.Sindri.Core.Ids.ActionId ActionId, Aw.Sindri.Core.Commands.ActionClass Class, string! Cli, string? Confirm) -> void
-Aw.Sindri.Core.Workflow.Views.StatusCommand.Verb.get -> Aw.Sindri.Core.Workflow.Engine.CommandVerb
 Aw.Sindri.Core.Workflow.Views.StatusCommand.Verb.init -> void
 Aw.Sindri.Core.Workflow.Views.StatusDrift
 Aw.Sindri.Core.Workflow.Views.StatusDrift.Block.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
@@ -5983,7 +5974,6 @@ static Aw.Sindri.Core.Workflow.Views.ChildGroup.operator !=(Aw.Sindri.Core.Workf
 static Aw.Sindri.Core.Workflow.Views.ChildGroup.operator ==(Aw.Sindri.Core.Workflow.Views.ChildGroup? left, Aw.Sindri.Core.Workflow.Views.ChildGroup? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.ChildRow.operator !=(Aw.Sindri.Core.Workflow.Views.ChildRow? left, Aw.Sindri.Core.Workflow.Views.ChildRow? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.ChildRow.operator ==(Aw.Sindri.Core.Workflow.Views.ChildRow? left, Aw.Sindri.Core.Workflow.Views.ChildRow? right) -> bool
-static Aw.Sindri.Core.Workflow.Views.ConfirmText.Cancel(string! address, int runningSteps, int openChildren) -> string!
 static Aw.Sindri.Core.Workflow.Views.CurrentState.operator !=(Aw.Sindri.Core.Workflow.Views.CurrentState? left, Aw.Sindri.Core.Workflow.Views.CurrentState? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.CurrentState.operator ==(Aw.Sindri.Core.Workflow.Views.CurrentState? left, Aw.Sindri.Core.Workflow.Views.CurrentState? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.DeskForm.operator !=(Aw.Sindri.Core.Workflow.Views.DeskForm? left, Aw.Sindri.Core.Workflow.Views.DeskForm? right) -> bool
@@ -6132,3 +6122,28 @@ virtual Aw.Sindri.Core.Workflow.Engine.Triggers.Trigger.PrintMembers(System.Text
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.EqualityContract.get -> System.Type!
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.Equals(Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource? other) -> bool
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.PrintMembers(System.Text.StringBuilder! builder) -> bool
+Aw.Sindri.Core.Workflow.Views.ChildRow.Id.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusChild.Id.init -> void
+static Aw.Sindri.Core.Workflow.Views.ConfirmText.Cancel(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, int runningSteps, int openChildren) -> string!
+Aw.Sindri.Core.Workflow.Views.StatusChild.StatusChild(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, string! State, string? Reason) -> void
+Aw.Sindri.Core.Workflow.Views.ParentRef.ParentRef(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, string! Title, string? Task, string? Workstream) -> void
+Aw.Sindri.Core.Workflow.Views.StatusVerb.Takeover = 4 -> Aw.Sindri.Core.Workflow.Views.StatusVerb
+Aw.Sindri.Core.Workflow.Views.StatusCommand.Deconstruct(out Aw.Sindri.Core.Workflow.Views.StatusVerb Verb, out Aw.Sindri.Core.Ids.ActionId ActionId, out Aw.Sindri.Core.Commands.ActionClass Class, out string! Cli, out string? Confirm) -> void
+Aw.Sindri.Core.Workflow.Views.StatusVerb
+Aw.Sindri.Core.Workflow.Views.StatusChild.Id.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
+Aw.Sindri.Core.Workflow.Views.StatusCommand.StatusCommand(Aw.Sindri.Core.Workflow.Views.StatusVerb Verb, Aw.Sindri.Core.Ids.ActionId ActionId, Aw.Sindri.Core.Commands.ActionClass Class, string! Cli, string? Confirm) -> void
+Aw.Sindri.Core.Workflow.Views.ChildRow.ChildRow(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, string! Title, Aw.Sindri.Core.Workflow.Views.StateGlyph Glyph, string! State, Aw.Sindri.Core.Workflow.Views.StateChip! Chip, Aw.Sindri.Core.Workflow.Views.Round? Round, string? Agent, long AgeSeconds, Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? MirroredPark, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions) -> void
+Aw.Sindri.Core.Workflow.Views.StatusVerb.Answer = 1 -> Aw.Sindri.Core.Workflow.Views.StatusVerb
+Aw.Sindri.Core.Workflow.Views.StatusCommand.Verb.get -> Aw.Sindri.Core.Workflow.Views.StatusVerb
+Aw.Sindri.Core.Workflow.Views.StatusVerbNames
+Aw.Sindri.Core.Workflow.Views.StatusChild.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out string! State, out string? Reason) -> void
+Aw.Sindri.Core.Workflow.Views.StatusVerb.Approve = 6 -> Aw.Sindri.Core.Workflow.Views.StatusVerb
+static Aw.Sindri.Core.Workflow.Views.StatusVerbNames.Of(Aw.Sindri.Core.Workflow.Views.StatusVerb verb) -> string!
+Aw.Sindri.Core.Workflow.Views.ChildRow.Id.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
+Aw.Sindri.Core.Workflow.Views.ParentRef.Id.init -> void
+Aw.Sindri.Core.Workflow.Views.ParentRef.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out string! Title, out string? Task, out string? Workstream) -> void
+Aw.Sindri.Core.Workflow.Views.StatusVerb.Handback = 3 -> Aw.Sindri.Core.Workflow.Views.StatusVerb
+Aw.Sindri.Core.Workflow.Views.ChildRow.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, out string! Title, out Aw.Sindri.Core.Workflow.Views.StateGlyph Glyph, out string! State, out Aw.Sindri.Core.Workflow.Views.StateChip! Chip, out Aw.Sindri.Core.Workflow.Views.Round? Round, out string? Agent, out long AgeSeconds, out Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, out Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? MirroredPark, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions) -> void
+Aw.Sindri.Core.Workflow.Views.StatusVerb.Complete = 2 -> Aw.Sindri.Core.Workflow.Views.StatusVerb
+Aw.Sindri.Core.Workflow.Views.ParentRef.Id.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
+Aw.Sindri.Core.Workflow.Views.StatusVerb.Cancel = 5 -> Aw.Sindri.Core.Workflow.Views.StatusVerb

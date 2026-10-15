@@ -213,7 +213,7 @@ public static class WorkflowViewFixtures
 
             var (actionClass, cli, confirm) = verb switch
             {
-                "cancel" => (ActionClass.Desk, $"sindri workflow cancel {row.Address.Value}", ConfirmText.Cancel(row.Address.Value, open.RunningSteps, open.OpenChildren)),
+                "cancel" => (ActionClass.Desk, $"sindri workflow cancel {row.Address.Value}", ConfirmText.Cancel(row.Address, open.RunningSteps, open.OpenChildren)),
                 "answer" => (answer!.Class, answer.Cli, null),
                 "complete" => (ActionClass.Desk, open.CompleteCli!, null),
                 "takeover" => (ActionClass.Pause, $"sindri workflow takeover {row.Address.Value}", null),
@@ -221,7 +221,7 @@ public static class WorkflowViewFixtures
                 "approve" => (ActionClass.Protected, $"sindri recipe approve {Pinned(row)}", null),
                 _ => throw new InvalidOperationException($"no command line for the verb {verb}"),
             };
-            commands.Add(new StatusCommand(CommandVerb.From(verb), found[0], actionClass, cli, confirm));
+            commands.Add(new StatusCommand(Enum.Parse<StatusVerb>(verb, ignoreCase: true), found[0], actionClass, cli, confirm));
         }
 
         return commands;
@@ -288,7 +288,7 @@ public static class WorkflowViewFixtures
     public static StatusFields StatusParkedChild() => Status(_itemParked, "no-progress (child)",
         "Parked (no-progress) in ITM-01JC8/item/1/step.4: checks failed twice with the same findings. Grant more rounds at a terminal, or cancel.",
         new OpenWork(OpenChildren: 1),
-        new StatusLines { Answer = Answer(AnswerKind.Grant, "ITM-01JC8/item/1"), Child = new StatusChild(InstanceAddress.From("ITM-01JC8/item/1/step.4"), "parked", "no-progress") });
+        new StatusLines { Answer = Answer(AnswerKind.Grant, "ITM-01JC8/item/1"), Child = new StatusChild(WorkflowInstanceId.Of(InstanceAddress.From("ITM-01JC8/item/1/step.4")), InstanceAddress.From("ITM-01JC8/item/1/step.4"), "parked", "no-progress") });
 
     /// <summary>Layout 2: an open desk task with its inputs, a parking timeout and the state and instance budgets.</summary>
     public static StatusFields StatusDeskTask() => Status(_sentry8812, "desk task",
@@ -360,7 +360,8 @@ public static class WorkflowViewFixtures
             : Acts("OpenItem", "ApplyCommand:takeover");
         // A workflow.step state is a desk task until the agent runtime (P8): an active child that isn't parked is a DECISION with no agent.
         var chip = StateChip.For(owned, glyph == StateGlyph.Active && !parked, state == "done", notStarted: glyph == StateGlyph.Pending);
-        return new(InstanceAddress.From(parent + "/step." + entry.ToString(System.Globalization.CultureInfo.InvariantCulture)), ItemKey.From(item), title, glyph, state, chip, null, null, age, owned, parked ? owned : null, actions);
+        var address = InstanceAddress.From(parent + "/step." + entry.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        return new(WorkflowInstanceId.Of(address), address, ItemKey.From(item), title, glyph, state, chip, null, null, age, owned, parked ? owned : null, actions);
     }
 
     private static ViewCounts Counts(int timeline, int decisions, int requests) => new(timeline, decisions, requests, null);
@@ -506,7 +507,7 @@ public static class WorkflowViewFixtures
                 new DeskForm(RunToken.From("3.1"), [], [], Act("CompleteStep")), status),
             _step.Facts(Produced(_step, "fact:spec", "spec.md", At(10, 12, 12, 20), "service:item", Ref(name: "spec.md", hash: Hash("1c0e5a77")))),
             [], Counts(6, 0, 0),
-            new ParentRef(InstanceAddress.From("ITM-01JE7/item/1"), "ITM-01JE7 · Add needs-you ack route", null, null));
+            new ParentRef(WorkflowInstanceId.Of(InstanceAddress.From("ITM-01JE7/item/1")), InstanceAddress.From("ITM-01JE7/item/1"), "ITM-01JE7 · Add needs-you ack route", null, null));
     }
 
     /// <summary>The desk-round-trip dev recipe, desk open on its export (round 1 of 2): the P11 signal fixture.</summary>
