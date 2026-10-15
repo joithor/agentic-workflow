@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Registry;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
@@ -51,6 +52,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<TemporalInstanceDirectory>()
             .AddSingleton<IInstanceDirectory>(static sp => sp.GetRequiredService<TemporalInstanceDirectory>())   // engine P4 unit (b): attempts and bare items
             .AddSingleton<IInstanceLiveness>(static sp => sp.GetRequiredService<TemporalInstanceDirectory>())    // engine P6 unit (d): a claim holder's liveness
+            .AddSingleton<IRecipeWake, TemporalRecipeWake>()          // engine P6 integration: the revoke and drift wakes as the 'wake' signal (replaces P2's no-op)
             .AddSingleton<ProfileWorkflowTimes>()                    // engine P4 unit (e): S1-D11, workflow.deskTimeout and workflow.eventHold, read by LoadRecipe
             .AddSingleton<HeldItemEvents>()                            // engine P4: the bridge's held window (visibility lag)
             .AddSingleton<EventBridgeCursor>()                         // engine P4 unit (d): the bridge's cursor file

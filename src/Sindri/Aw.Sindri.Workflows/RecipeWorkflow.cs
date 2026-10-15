@@ -142,6 +142,21 @@ internal sealed partial class RecipeWorkflow
     public void ValidateHandback(HandbackRequested handback) => throw Unbuilt("P5: the handback validator");
 
     /// <summary>
+    /// A registry change the recipe's approval saw (spec §4.1, W11; engine P6 integration): a revoke parks the instance
+    /// at once, a drift parks it, and a drift approval resumes a drift park and re-sends the effect it carries. The loop
+    /// decides it at the instance's current wait like any trigger; a repeat is absorbed.
+    /// </summary>
+    /// <param name="wake">The wake, acting as 'service:engine'.</param>
+    /// <returns>Done once queued.</returns>
+    [WorkflowSignal("wake")]
+    public Task WakeAsync(RecipeWake wake)
+    {
+        ArgumentNullException.ThrowIfNull(wake);
+        _submitted.Enqueue(new Submission(Ticket: 0, wake));
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
     /// A registered ledger event the bridge routed here (spec §5.4). Temporal buffers it until the instance reaches the
     /// wait; unit (a) consumes <see cref="_delivered"/> at a wait. Unit (d): the event's ledger sequence is its idempotency
     /// key, so a re-sent event (a bridge that crashed before it moved its cursor) is dropped; so is a kind no wait of the
