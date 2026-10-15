@@ -1,13 +1,17 @@
 using System.Net;
+using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Infrastructure;
 using Aw.Sindri.Infrastructure.Auth;
 using Aw.Sindri.Infrastructure.Control;
+using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Ledger;
 using Aw.Sindri.Tests.Server;
+using Aw.Sindri.Tests.Workflows;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using static Aw.Sindri.Tests.Callers.CallerRequests;
 
 namespace Aw.Sindri.Tests.Callers;
@@ -45,6 +49,29 @@ public sealed class ServeCallerTests : IDisposable
         Assert.Equal((HttpStatusCode.OK, HttpStatusCode.OK), (status.Status, stop.Status));
         Assert.Equal(0, code);
         Assert.Null((await new FileHumanToken(Settings).Read(ct)).Value);   // removed with control.json
+    }
+
+    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    public async Task Stop_takes_the_real_dev_server_down_with_serve()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var serve = ServeCommand.Run(Environment, TimeProvider.System, TextWriter.Null, services =>
+        {
+            NoTemporal.Use(services);
+            _ = services.Replace(ServiceDescriptor.Singleton<ITemporalServer>(
+                new DevServerTemporal(new TemporalSettings(_home.Path, PinnedTemporal.Path()), new TemporalDevServer())));
+        });
+        var url = await Endpoint(ct);
+        var token = (await new FileHumanToken(Settings).Read(ct)).Value;
+        Assert.NotNull(token);
+        using var http = new HttpClient { BaseAddress = url, Timeout = TimeSpan.FromSeconds(30) };
+
+        var stop = await http.Ask(Post("/sindri/stop", json: null, Human(token.Value)));
+        var code = await serve.WaitAsync(TimeSpan.FromSeconds(30), ct);
+
+        // why: serve's stop takes its dev server down before it releases the lease; a server left here would outlive the test
+        Assert.Equal((HttpStatusCode.OK, 0), (stop.Status, code));
+        Assert.Empty(TemporalDevServer.Find(_home.Path));
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
