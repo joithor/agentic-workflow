@@ -196,6 +196,42 @@ static Aw.Meta.Core.Gate.RerunOutcome.operator !=(Aw.Meta.Core.Gate.RerunOutcome
 static Aw.Meta.Core.Gate.RerunOutcome.operator ==(Aw.Meta.Core.Gate.RerunOutcome? left, Aw.Meta.Core.Gate.RerunOutcome? right) -> bool
 Aw.Meta.Core.Gate.ScopePlanner
 static Aw.Meta.Core.Gate.ScopePlanner.Plan(System.Collections.Generic.IReadOnlyList<string!>! changedPaths, Aw.Meta.Core.Config.GateConfig! gate) -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Guard.GuardDecision
+Aw.Meta.Core.Guard.GuardDecision.<Clone>$() -> Aw.Meta.Core.Guard.GuardDecision!
+Aw.Meta.Core.Guard.GuardDecision.Allowed.get -> bool
+Aw.Meta.Core.Guard.GuardDecision.Allowed.init -> void
+Aw.Meta.Core.Guard.GuardDecision.Block.get -> bool
+Aw.Meta.Core.Guard.GuardDecision.Block.init -> void
+Aw.Meta.Core.Guard.GuardDecision.Deconstruct(out bool Block, out Aw.Meta.Core.Guard.GuardState! State, out bool Allowed, out bool FirstAllowed) -> void
+Aw.Meta.Core.Guard.GuardDecision.Equals(Aw.Meta.Core.Guard.GuardDecision? other) -> bool
+override Aw.Meta.Core.Guard.GuardDecision.Equals(object? obj) -> bool
+Aw.Meta.Core.Guard.GuardDecision.FirstAllowed.get -> bool
+Aw.Meta.Core.Guard.GuardDecision.FirstAllowed.init -> void
+override Aw.Meta.Core.Guard.GuardDecision.GetHashCode() -> int
+Aw.Meta.Core.Guard.GuardDecision.GuardDecision(bool Block, Aw.Meta.Core.Guard.GuardState! State, bool Allowed, bool FirstAllowed) -> void
+Aw.Meta.Core.Guard.GuardDecision.State.get -> Aw.Meta.Core.Guard.GuardState!
+Aw.Meta.Core.Guard.GuardDecision.State.init -> void
+override Aw.Meta.Core.Guard.GuardDecision.ToString() -> string!
+static Aw.Meta.Core.Guard.GuardDecision.operator !=(Aw.Meta.Core.Guard.GuardDecision? left, Aw.Meta.Core.Guard.GuardDecision? right) -> bool
+static Aw.Meta.Core.Guard.GuardDecision.operator ==(Aw.Meta.Core.Guard.GuardDecision? left, Aw.Meta.Core.Guard.GuardDecision? right) -> bool
+Aw.Meta.Core.Guard.GuardState
+Aw.Meta.Core.Guard.GuardState.<Clone>$() -> Aw.Meta.Core.Guard.GuardState!
+Aw.Meta.Core.Guard.GuardState.Count.get -> int
+Aw.Meta.Core.Guard.GuardState.Count.init -> void
+Aw.Meta.Core.Guard.GuardState.Deconstruct(out string! Fingerprint, out int Count) -> void
+Aw.Meta.Core.Guard.GuardState.Equals(Aw.Meta.Core.Guard.GuardState? other) -> bool
+override Aw.Meta.Core.Guard.GuardState.Equals(object? obj) -> bool
+Aw.Meta.Core.Guard.GuardState.Fingerprint.get -> string!
+Aw.Meta.Core.Guard.GuardState.Fingerprint.init -> void
+override Aw.Meta.Core.Guard.GuardState.GetHashCode() -> int
+Aw.Meta.Core.Guard.GuardState.GuardState(string! Fingerprint, int Count) -> void
+static Aw.Meta.Core.Guard.GuardState.None.get -> Aw.Meta.Core.Guard.GuardState!
+override Aw.Meta.Core.Guard.GuardState.ToString() -> string!
+static Aw.Meta.Core.Guard.GuardState.operator !=(Aw.Meta.Core.Guard.GuardState? left, Aw.Meta.Core.Guard.GuardState? right) -> bool
+static Aw.Meta.Core.Guard.GuardState.operator ==(Aw.Meta.Core.Guard.GuardState? left, Aw.Meta.Core.Guard.GuardState? right) -> bool
+Aw.Meta.Core.Guard.StopLoopGuard
+static Aw.Meta.Core.Guard.StopLoopGuard.Decide(Aw.Meta.Core.Guard.GuardState! previous, string! fingerprint, bool hookActive, int max) -> Aw.Meta.Core.Guard.GuardDecision!
+static Aw.Meta.Core.Guard.StopLoopGuard.Fingerprint(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>! open) -> string!
 Aw.Meta.Core.Health.HostSnapshot
 Aw.Meta.Core.Health.HostSnapshot.<Clone>$() -> Aw.Meta.Core.Health.HostSnapshot!
 Aw.Meta.Core.Health.HostSnapshot.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Processes, out long MemAvailableKb, out long SwapUsedKb, out long DiskFreeBytes) -> void
@@ -270,6 +306,7 @@ static Aw.Meta.Core.Ids.SessionId.TryParse(string? s, System.IFormatProvider? pr
 Aw.Meta.Core.Ids.SessionId.Value.get -> string!
 static Aw.Meta.Core.Ids.SessionId.operator !=(Aw.Meta.Core.Ids.SessionId left, Aw.Meta.Core.Ids.SessionId right) -> bool
 static Aw.Meta.Core.Ids.SessionId.operator ==(Aw.Meta.Core.Ids.SessionId left, Aw.Meta.Core.Ids.SessionId right) -> bool
+Aw.Meta.Core.KvKeys
 Aw.Meta.Core.Lanes.LaneAssignment
 Aw.Meta.Core.Lanes.LaneAssignment.<Clone>$() -> Aw.Meta.Core.Lanes.LaneAssignment!
 Aw.Meta.Core.Lanes.LaneAssignment.Deconstruct(out string! Lane, out string! SessionName, out Aw.Meta.Core.Ids.SessionId? Session, out Aw.Meta.Core.Lanes.LaneSource Source) -> void
@@ -391,6 +428,8 @@ Aw.Meta.Core.Messages.Classification.Pr.init -> void
 override Aw.Meta.Core.Messages.Classification.ToString() -> string!
 static Aw.Meta.Core.Messages.Classification.operator !=(Aw.Meta.Core.Messages.Classification? left, Aw.Meta.Core.Messages.Classification? right) -> bool
 static Aw.Meta.Core.Messages.Classification.operator ==(Aw.Meta.Core.Messages.Classification? left, Aw.Meta.Core.Messages.Classification? right) -> bool
+Aw.Meta.Core.Messages.DueTime
+static Aw.Meta.Core.Messages.DueTime.Parse(string! text, System.DateTimeOffset now) -> System.DateTimeOffset?
 Aw.Meta.Core.Messages.InboxMessage
 Aw.Meta.Core.Messages.InboxMessage.<Clone>$() -> Aw.Meta.Core.Messages.InboxMessage!
 Aw.Meta.Core.Messages.InboxMessage.At.get -> System.DateTimeOffset
@@ -762,6 +801,9 @@ Aw.Meta.Core.Watch.WatchedPr.WatchedPr(Aw.Meta.Core.Watch.PrState State, bool Is
 static Aw.Meta.Core.Watch.WatchedPr.operator !=(Aw.Meta.Core.Watch.WatchedPr? left, Aw.Meta.Core.Watch.WatchedPr? right) -> bool
 static Aw.Meta.Core.Watch.WatchedPr.operator ==(Aw.Meta.Core.Watch.WatchedPr? left, Aw.Meta.Core.Watch.WatchedPr? right) -> bool
 const Aw.Meta.Core.Health.OrphanRule.MinimumAgeSeconds = 300 -> long
+const Aw.Meta.Core.KvKeys.StopCount = "stopcheck.count" -> string!
+const Aw.Meta.Core.KvKeys.StopFingerprint = "stopcheck.fingerprint" -> string!
+const Aw.Meta.Core.KvKeys.WatchHeartbeat = "watch.heartbeat" -> string!
 static readonly Aw.Meta.Core.MetaErrors.CommandNotStarted -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.ConfigExists -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.ConfigInvalid -> Aw.Kernel.ErrorDefinition!
