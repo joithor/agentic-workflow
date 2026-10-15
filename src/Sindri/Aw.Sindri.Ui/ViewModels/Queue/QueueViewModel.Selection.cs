@@ -73,15 +73,12 @@ internal sealed partial class QueueViewModel
             return;
         }
 
-        if (_rows.TryGetValue(id, out var kept))
+        // Served but not drawn on this page any more (past Home's cap, in a group Home or the filter doesn't draw): for this
+        // page it is cleared, so it passes on like a cleared row. A row that was never drawn here is left alone.
+        var wasDrawn = before.Exists(r => string.Equals(r.Id, id, StringComparison.Ordinal));
+        if (_rows.TryGetValue(id, out var kept) && (!wasDrawn || Drawn(id)))
         {
-            // Still there, but in another group or panel: its element was built anew where it now sits, and focus on the old one is lost.
-            var was = before.FirstOrDefault(r => string.Equals(r.Id, id, StringComparison.Ordinal));
-            if (was.Id is not null && !string.Equals(Panel(_scope, was.Group), Panel(_scope, kept.Group), StringComparison.Ordinal))
-            {
-                FocusRequested?.Invoke(this, new FocusRequestedEventArgs(id, onlyIfLost: true));
-            }
-
+            Regrouped(id, kept, before);
             return;
         }
 
@@ -93,6 +90,18 @@ internal sealed partial class QueueViewModel
         if (next is not null)
         {
             FocusRequested?.Invoke(this, new FocusRequestedEventArgs(next.Id, onlyIfLost: true));
+        }
+    }
+
+    private bool Drawn(string id) => Seen(_scope).Any(r => string.Equals(r.Id, id, StringComparison.Ordinal));
+
+    // Still there, but in another group or panel: its element was built anew where it now sits, and focus on the old one is lost.
+    private void Regrouped(string id, ItemRowViewModel kept, List<(string Id, string Group)> before)
+    {
+        var was = before.FirstOrDefault(r => string.Equals(r.Id, id, StringComparison.Ordinal));
+        if (was.Id is not null && !string.Equals(Panel(_scope, was.Group), Panel(_scope, kept.Group), StringComparison.Ordinal))
+        {
+            FocusRequested?.Invoke(this, new FocusRequestedEventArgs(id, onlyIfLost: true));
         }
     }
 
