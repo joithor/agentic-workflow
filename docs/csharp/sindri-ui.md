@@ -365,7 +365,7 @@ Built against the fake `ISindriApi` because API P3 isn't built: every P3 route i
 fixture** under `tests/Aw.Sindri.Ui.Tests/Golden/SpecShaped/` (listed below), each to be replaced by P3's golden
 (E-17). The real catalog keeps `CreateItem`, `CloseItem:done` and `CloseItem:cancelled` at `pending:P3`, so against
 today's control plane the Create button and the sheet's Close controls draw disabled with "arrives in P3"; the tests
-use `commands/catalog-p3.json` (P1's catalog with those three rows `ready`).
+use `commands/catalog` (P1's catalog with those three rows `ready`).
 
 **Routes (API P3).** `GET /sindri/queue` (`QueueView`: `groups[]` of `{group, items, empty}` in the API's order,
 every group present, E-18; the view's `empty`; `asOf`), `GET /sindri/items/{id}` (`ItemView`: the summary fields plus

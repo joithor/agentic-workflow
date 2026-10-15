@@ -217,6 +217,52 @@ public sealed class QueueViewModelTests
         Assert.Equal((false, Labels.Sindri), (queue.IsAnnouncing, queue.Announcement));
     }
 
+    // testing-5: G W shows the With you group alone.
+    [Fact]
+    public async Task The_with_you_filter_shows_only_that_group()
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
+        var queue = await Queue();
+        await queue.Refresh(_api, Token);
+
+        queue.Filter(QueueFilter.WithYou);
+
+        Assert.Equal([false, true, false, false], queue.Groups.Select(g => g.IsVisible));
+        Assert.Equal(1, queue.Groups[1].Count);
+        Assert.False(queue.IsEmpty);
+    }
+
+    // testing-5, Keep: a cleared row's group has emptied, so the selection falls to the first visible row.
+    [Fact]
+    public async Task A_cleared_row_whose_group_emptied_moves_the_selection_to_the_first_visible_row()
+    {
+        var queue = await Queue();
+        await queue.Refresh(_api, Token);
+        queue.Select(A.DecisionItem);
+
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "fixture");
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal(("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a301", Labels.Cleared(A.DecisionItem)), (queue.SelectedId, queue.Announcement));
+    }
+
+    // testing-5, Keep: the group's last row cleared, so the selection falls to the group's new last row.
+    [Fact]
+    public async Task A_cleared_last_row_moves_the_selection_to_the_groups_new_last_row()
+    {
+        var queue = await Queue();
+        await queue.Refresh(_api, Token);
+        queue.Select(A.NewItem);
+
+        var view = System.Text.Json.Nodes.JsonNode.Parse(GoldenFiles.SpecShaped("queue", "extra-p4-waiting"))!;
+        var queued = view["groups"]!.AsArray().Single(g => (string?)g!["group"] == "queued")!["items"]!.AsArray();
+        _ = queued.Remove(queued.Single(i => (string?)i!["id"] == A.NewItem));
+        _server.QueueView = new RouteAnswer(HttpStatusCode.OK, view.ToJsonString());
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal(("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a303", Labels.Cleared(A.NewItem)), (queue.SelectedId, queue.Announcement));
+    }
+
     // §8: J and K move between the visible rows in the API's order.
     [Fact]
     public async Task Next_and_previous_move_through_the_visible_rows()

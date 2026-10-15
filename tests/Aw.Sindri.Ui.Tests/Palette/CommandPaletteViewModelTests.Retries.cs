@@ -262,4 +262,20 @@ public sealed partial class CommandPaletteViewModelTests
         _clock.Advance(ControlViewModel.CopiedFor);
         Assert.Equal((false, false), (control.IsMuted, controlSpoke));
     }
+
+    // arch-5: the in-app confirm is the only way a destructive command sends: Enter on one asks, and sends nothing.
+    [Fact]
+    public async Task A_destructive_entry_run_from_the_palette_asks_and_does_not_send()
+    {
+        var rows = _catalog.Rows.Select(r => string.Equals(r.Action, "RebuildViews", StringComparison.Ordinal) ? r with { Destructive = true } : r).ToList();
+        var controls = new CatalogViewModel(_clipboard, _clock);
+        controls.Show(_api, _server, _catalog with { Rows = rows });
+        var palette = new CommandPaletteViewModel(controls, _pages.Add, _history.Add);
+        palette.Open();
+        var entry = palette.Entries.Single(e => e.Id == "RebuildViews");
+
+        await palette.Run(entry, Token);
+
+        Assert.Equal((true, 0), (entry.Control!.IsConfirming, _server.RebuildCalls));
+    }
 }

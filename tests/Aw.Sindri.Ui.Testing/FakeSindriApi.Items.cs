@@ -8,7 +8,6 @@ internal sealed partial class FakeSindriApi
 {
     private readonly List<CreateItemRequest> _created = [];
     private readonly List<(string Item, CloseItemRequest Request)> _closed = [];
-    private int _queueCalls;
     private int _itemCalls;
     private int _timelineCalls;
 
@@ -56,9 +55,6 @@ internal sealed partial class FakeSindriApi
     /// <summary>Every CloseItem received (item, body), in order.</summary>
     public IReadOnlyList<(string Item, CloseItemRequest Request)> Closed { get { lock (_gate) { return [.. _closed]; } } }
 
-    /// <summary>How many times the queue was read.</summary>
-    public int QueueCalls => Volatile.Read(ref _queueCalls);
-
     /// <summary>How many times an item was read.</summary>
     public int ItemCalls => Volatile.Read(ref _itemCalls);
 
@@ -85,11 +81,8 @@ internal sealed partial class FakeSindriApi
     /// <param name="sequence">The sequence the request carried, or null for a direct call.</param>
     /// <param name="cancellationToken">Cancels the wait.</param>
     /// <returns>The answer.</returns>
-    internal Task<Result<QueueView>> Queue(Uri api, long? sequence, CancellationToken cancellationToken)
-    {
-        _ = Interlocked.Increment(ref _queueCalls);
-        return View<QueueView>(api, "/sindri/queue", QueueView, sequence, QueueGate, cancellationToken);
-    }
+    internal Task<Result<QueueView>> Queue(Uri api, long? sequence, CancellationToken cancellationToken) =>
+        View<QueueView>(api, "/sindri/queue", QueueView, sequence, QueueGate, cancellationToken);
 
     public Task<Result<ItemView>> Item(Uri api, string itemId, CancellationToken cancellationToken) => Item(api, itemId, sequence: null, cancellationToken);
 

@@ -153,20 +153,10 @@ internal sealed partial class ControlViewModel : ObservableObject
     /// </summary>
     internal Func<bool>? Precondition { get; set; }
 
-    /// <summary>Clears a shown refusal: the owner shows it elsewhere (the item sheet's SND-ITEM-409 line).</summary>
-    internal void ClearError()
-    {
-        if (Phase == CommandPhase.Failed)
-        {
-            (ErrorCode, ErrorDetail) = (string.Empty, string.Empty);
-            Phase = CommandPhase.Idle;
-        }
-    }
-
     /// <summary>Sends the command once (a second click while sending does nothing; the app never retries on its own).</summary>
     /// <param name="cancellationToken">Cancels the wait for the answer.</param>
     /// <returns>A task that completes when the answer is shown.</returns>
-    internal async Task Run(CancellationToken cancellationToken)
+    private async Task Run(CancellationToken cancellationToken)
     {
         if (!CanRun || _send is not { } send || Precondition?.Invoke() == false)
         {

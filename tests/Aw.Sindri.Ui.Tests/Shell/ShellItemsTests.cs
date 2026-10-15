@@ -57,6 +57,21 @@ public sealed class ShellItemsTests
         Assert.Equal("12", shell.Navigation[1].Count);
     }
 
+    // corr-11: an empty first answer still ends the tab's blank: the Queue tab says 0, not nothing.
+    [Fact]
+    public async Task An_empty_first_queue_gives_the_queue_tab_a_zero()
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "empty");
+        _records.Write(A.Record());
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
+        await shell.Restore(Token);
+
+        _ = shell.Run(Token);
+
+        await Until(() => shell.State == ShellState.Normal && !shell.Queue.IsLoading);
+        Assert.Equal(("0", 0), (shell.Navigation[1].Count, shell.Queue.Total));
+    }
+
     // §3.3 deep link item/<ItemId>: the sheet shows the item; every event re-reads it too.
     [Fact]
     public async Task An_item_link_opens_its_sheet_and_events_re_read_it()
