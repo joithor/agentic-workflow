@@ -16,6 +16,17 @@ public abstract class RepoReaderContract
         ["docs/guide.md"] = "Guide\n",
     };
 
+    /// <summary>Files committed that extraction must never see: the built-in secret globs deny them.</summary>
+    public static IReadOnlyDictionary<string, string> Denied { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        [".env"] = "TOKEN=hunter2\n",
+        ["config/secrets/token.txt"] = "hunter2\n",
+        ["certs/server.pem"] = "-----BEGIN PRIVATE KEY-----\n",
+    };
+
+    /// <summary>Everything a reader's repo holds at its commit: <see cref="Files"/> and <see cref="Denied"/>.</summary>
+    public static IReadOnlyDictionary<string, string> Committed { get; } = Files.Concat(Denied).ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal);
+
     private static CancellationToken None => TestContext.Current.CancellationToken;
 
     /// <summary>The commit lists its files in ordinal order.</summary>
@@ -67,7 +78,26 @@ public abstract class RepoReaderContract
         Expect.That(results.All(code => code == "SND-CONTEXT-048"), test, $"codes were {string.Join(", ", results)}");
     }
 
-    /// <summary>A reader with a repo that holds <see cref="Files"/> at one commit.</summary>
+    /// <summary>A path the repo denies is never listed and never read (the profile's deny paths reach every file the extractor reads).</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_denied_path_is_never_listed_or_read()
+    {
+        const string test = nameof(A_denied_path_is_never_listed_or_read);
+        var reader = CreateReader(out var repo, out var commit);
+        var custom = repo with { DenyPaths = [.. repo.DenyPaths, "docs/**"] };
+
+        var listed = Expect.Ok(await reader.ListFiles(custom, commit, None), test);
+        var env = await reader.Read(custom, commit, ".env", None);
+        var secret = await reader.Read(custom, commit, "config/secrets/token.txt", None);
+        var docsRead = await reader.Read(custom, commit, "docs/guide.md", None);
+
+        Expect.That(listed.SequenceEqual(["README.md", "src/commands/registry.ts"], StringComparer.Ordinal), test, $"listed {string.Join(", ", listed)}");
+        Expect.That(env.IsError && secret.IsError && docsRead.IsError, test, "a denied path was read");
+        Expect.That(new[] { env, secret, docsRead }.All(r => r.Error.Code == "SND-CONTEXT-048"), test, "a denied read wasn't SND-CONTEXT-048");
+    }
+
+    /// <summary>A reader with a repo that holds <see cref="Committed"/> at one commit.</summary>
     /// <param name="repo">The repo.</param>
     /// <param name="commit">Its HEAD commit.</param>
     /// <returns>The reader.</returns>

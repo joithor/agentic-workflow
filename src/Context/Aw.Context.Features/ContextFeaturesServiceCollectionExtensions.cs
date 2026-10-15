@@ -1,4 +1,5 @@
 using Aw.Context.Core.Eval;
+using Aw.Context.Core.Extract;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
@@ -32,6 +33,7 @@ using Aw.Context.Features.ShowNode;
 using Aw.Context.Features.SourcesStatus;
 using Aw.Kernel.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Aw.Context.Features;
 
@@ -41,7 +43,14 @@ public static class ContextFeaturesServiceCollectionExtensions
     /// <summary>Adds the facade (IContextEngine, and IContextMap behind it) and every Context use case as an IService. The ports come from Aw.Context.Infrastructure.</summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
-    public static IServiceCollection AddContextFeatures(this IServiceCollection services) => services
+    public static IServiceCollection AddContextFeatures(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        services.TryAddSingleton<ILabeler, DisabledLabeler>();   // a host that sets up labeling (AddContextLabeling) replaces it
+        return services.AddContextSlices();
+    }
+
+    private static IServiceCollection AddContextSlices(this IServiceCollection services) => services
         .AddScoped<IService<QueryContextRequest, ContextResult>, QueryContextService>()
         .AddScoped<IService<SourcesStatusRequest, SourcesView>, SourcesStatusService>()
         .AddScoped<IService<RefreshDocsRequest, RefreshReport>, RefreshDocsService>()

@@ -15,7 +15,7 @@ public sealed class GitRepoReaderContractTests : RepoReaderContract, IDisposable
 
     protected override IRepoReader CreateReader(out ContextRepo repo, out string commit)
     {
-        var temp = new TempGitRepo(Files);
+        var temp = new TempGitRepo(Committed);
         _repos.Add(temp);
         repo = temp.Repo;
         commit = temp.Head;

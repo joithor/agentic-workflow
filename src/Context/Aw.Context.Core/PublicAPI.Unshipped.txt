@@ -117,13 +117,11 @@ Aw.Context.Core.Engine.ContextSettings.SessionsEnabled.get -> bool
 Aw.Context.Core.Engine.ContextSettings.SessionsEnabled.init -> void
 Aw.Context.Core.Engine.ProfileRepoEntry
 Aw.Context.Core.Engine.ProfileRepoEntry.<Clone>$() -> Aw.Context.Core.Engine.ProfileRepoEntry!
-Aw.Context.Core.Engine.ProfileRepoEntry.Deconstruct(out string! Name, out string! Path) -> void
 Aw.Context.Core.Engine.ProfileRepoEntry.Equals(Aw.Context.Core.Engine.ProfileRepoEntry? other) -> bool
 Aw.Context.Core.Engine.ProfileRepoEntry.Name.get -> string!
 Aw.Context.Core.Engine.ProfileRepoEntry.Name.init -> void
 Aw.Context.Core.Engine.ProfileRepoEntry.Path.get -> string!
 Aw.Context.Core.Engine.ProfileRepoEntry.Path.init -> void
-Aw.Context.Core.Engine.ProfileRepoEntry.ProfileRepoEntry(string! Name, string! Path) -> void
 Aw.Context.Core.Engine.QueryRules
 Aw.Context.Core.Engine.ScopeRules
 Aw.Context.Core.Engine.SettingsReader
@@ -2907,7 +2905,31 @@ static readonly Aw.Context.Core.ContextErrors.SourceNotConfigured -> Aw.Kernel.E
 static readonly Aw.Context.Core.ContextErrors.SourceUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.StoreUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.UnknownAnchor -> Aw.Kernel.ErrorDefinition!
-
 Aw.Context.Core.Review.IReviewFileStore
 Aw.Context.Core.Review.IReviewFileStore.Read(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Review.ReviewFile!>!>
 Aw.Context.Core.Review.IReviewFileStore.Write(string? path, string! defaultName, Aw.Context.Core.Review.ReviewFile! file, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Context.Core.Engine.ContextRepo.Denies(string! path) -> bool
+Aw.Context.Core.Engine.ContextRepo.DenyPaths.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Engine.ContextRepo.DenyPaths.init -> void
+Aw.Context.Core.Engine.ContextSettings.Labeling.get -> Aw.Context.Core.Engine.LabelingSettings!
+Aw.Context.Core.Engine.ContextSettings.Labeling.init -> void
+Aw.Context.Core.Engine.LabelingSettings
+Aw.Context.Core.Engine.LabelingSettings.<Clone>$() -> Aw.Context.Core.Engine.LabelingSettings!
+Aw.Context.Core.Engine.LabelingSettings.Enabled.get -> bool
+Aw.Context.Core.Engine.LabelingSettings.Enabled.init -> void
+Aw.Context.Core.Engine.LabelingSettings.Equals(Aw.Context.Core.Engine.LabelingSettings? other) -> bool
+Aw.Context.Core.Engine.LabelingSettings.LabelingSettings() -> void
+Aw.Context.Core.Engine.LabelingSettings.MaxTokens.get -> int
+Aw.Context.Core.Engine.LabelingSettings.MaxTokens.init -> void
+Aw.Context.Core.Engine.PathDenylist
+Aw.Context.Core.Engine.ProfileRepoEntry.Deconstruct(out string! Name, out string! Path, out System.Collections.Generic.IReadOnlyList<string!>? DenyPaths) -> void
+Aw.Context.Core.Engine.ProfileRepoEntry.DenyPaths.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Context.Core.Engine.ProfileRepoEntry.DenyPaths.init -> void
+Aw.Context.Core.Engine.ProfileRepoEntry.ProfileRepoEntry(string! Name, string! Path, System.Collections.Generic.IReadOnlyList<string!>? DenyPaths = null) -> void
+override Aw.Context.Core.Engine.LabelingSettings.Equals(object? obj) -> bool
+override Aw.Context.Core.Engine.LabelingSettings.GetHashCode() -> int
+override Aw.Context.Core.Engine.LabelingSettings.ToString() -> string!
+static Aw.Context.Core.Engine.LabelingSettings.operator !=(Aw.Context.Core.Engine.LabelingSettings? left, Aw.Context.Core.Engine.LabelingSettings? right) -> bool
+static Aw.Context.Core.Engine.LabelingSettings.operator ==(Aw.Context.Core.Engine.LabelingSettings? left, Aw.Context.Core.Engine.LabelingSettings? right) -> bool
+static Aw.Context.Core.Engine.PathDenylist.Defaults.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Context.Core.Engine.PathDenylist.Matches(string! path, System.Collections.Generic.IReadOnlyList<string!>! globs) -> bool

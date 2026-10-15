@@ -37,7 +37,7 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
         var snapshot = Directory.CreateTempSubdirectory("aw-graphify-").FullName;
         try
         {
-            var exported = await git.Archive(repo.Path, commit, (stream, token) => Unpack(stream, snapshot, token), cancellationToken).ConfigureAwait(false);
+            var exported = await git.Archive(repo.Path, commit, (stream, token) => Unpack(stream, snapshot, repo, token), cancellationToken).ConfigureAwait(false);
             return exported.IsError ? _unavailable : await Run(host, binary, snapshot, cancellationToken).ConfigureAwait(false);
         }
         finally
@@ -125,8 +125,9 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
     }
 
     // Writes the tar's regular files under the snapshot: no link, no path that climbs out, nothing in graphify's own folders, no oversized file.
-    private static async Task Unpack(Stream tar, string snapshot, CancellationToken cancellationToken)
+    internal static async Task Unpack(Stream tar, string snapshot, ContextRepo repo, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(repo);
         long total = 0;
         var reader = new TarReader(tar, leaveOpen: true);
         await using (reader.ConfigureAwait(false))
