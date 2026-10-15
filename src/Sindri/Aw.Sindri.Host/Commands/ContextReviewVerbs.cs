@@ -174,7 +174,7 @@ internal sealed class ContextReviewVerbs(ControlPlaneClient client, Output outpu
             step = session.Answer(await input.ReadLineAsync(ct).ConfigureAwait(false) ?? "q");
             var code = await Apply(step, ct).ConfigureAwait(false);
             exit = Math.Max(exit, code);
-            step = code == 0 ? session.Applied(step) : step;   // a count moves only when the server took the request
+            step = code == 0 ? session.Applied(step) : session.Failed(step);   // a count moves only when the server took the request
         }
 
         var c = session.Counts;

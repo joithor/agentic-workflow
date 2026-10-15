@@ -148,6 +148,38 @@ public sealed class ReviewSessionTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_bulk_accept_the_server_refused_leaves_the_deterministic_items_in_the_walk_and_the_hidden_count()
+    {
+        var shown = ReviewQueueView.Of("v14@0a1b2c3", [Entry("surface:command/close-tab", ReviewGroup.Deterministic, "Close tab"), Entry("feature:layout", ReviewGroup.Model, "Layout")], 0);
+        var capped = shown with { Counts = new QueueCounts(Deterministic: 412, Model: 1, Orphaned: 0), Truncated = new ReviewTruncated(Deterministic: true, Model: false, Orphaned: false) };
+        var session = new ReviewSession(capped);
+        _ = session.Start();
+
+        var bulk = session.Answer("y");
+        Assert.Contains("Layout", bulk.Prompt, StringComparison.Ordinal);
+        var again = session.Failed(bulk);
+
+        Assert.Contains("[1/2] Close tab", again.Prompt, StringComparison.Ordinal);   // the shown deterministic item is walked after all
+        Assert.Equal(0, session.Counts.Accepted);
+        Assert.Equal(411, session.Hidden);   // and the 411 the queue cut still wait
+        Assert.Equal("accept", session.Answer("a").Send!.Verb);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_single_decision_the_server_refused_changes_nothing_in_the_session()
+    {
+        var session = new ReviewSession(Queue());
+        _ = session.Start();
+        _ = session.Answer("n");
+        var accept = session.Answer("a");
+
+        var failed = session.Failed(accept);
+
+        Assert.Same(accept, failed);
+        Assert.Equal(0, session.Counts.Accepted);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void The_session_says_how_many_undecided_items_the_queue_did_not_show()
     {
         var shown = ReviewQueueView.Of("v14@0a1b2c3", [Entry("feature:layout", ReviewGroup.Model, "Layout")], 0);

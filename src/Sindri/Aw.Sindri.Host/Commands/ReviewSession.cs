@@ -53,6 +53,11 @@ internal sealed class ReviewSession(ReviewQueueView queue)
             return step;
         }
 
+        if (IsBulk(step))
+        {
+            _bulkAccepted = true;   // only now: the shown deterministic items were left out of the walk and the cut ones are no longer waiting
+        }
+
         switch (tally.Outcome)
         {
             case ReviewOutcome.Accepted:
@@ -66,18 +71,42 @@ internal sealed class ReviewSession(ReviewQueueView queue)
                 break;
             case ReviewOutcome.Edited:
                 _counts.Edited += tally.Count;
-                _items[_index] = _items[_index] with
-                {
-                    Label = tally.Label ?? _items[_index].Label,
-                    Parent = tally.Parent is { } parent && NodeKey.TryFrom(parent, out var key) ? key : _items[_index].Parent,
-                };
-                return step with { Prompt = ItemPrompt() };
+                return Renamed(step, tally);
             default:
                 break;
         }
 
         return step;
     }
+
+    private ReviewStep Renamed(ReviewStep step, ReviewTally tally)
+    {
+        _items[_index] = _items[_index] with
+        {
+            Label = tally.Label ?? _items[_index].Label,
+            Parent = tally.Parent is { } parent && NodeKey.TryFrom(parent, out var key) ? key : _items[_index].Parent,
+        };
+        return step with { Prompt = ItemPrompt() };
+    }
+
+    /// <summary>The server refused <paramref name="step"/>'s request: nothing it would have counted moved. A refused bulk accept puts the deterministic items back into the walk.</summary>
+    /// <param name="step">The step that was sent.</param>
+    /// <returns>The step to go on with.</returns>
+    internal ReviewStep Failed(ReviewStep step)
+    {
+        ArgumentNullException.ThrowIfNull(step);
+        if (!IsBulk(step))
+        {
+            return step;
+        }
+
+        _bulkAccepted = false;
+        _items = [.. queue.Entries];
+        _index = -1;
+        return Advance(send: null);
+    }
+
+    private static bool IsBulk(ReviewStep step) => step.Send is { } send && string.Equals(send.Verb, "accept-deterministic", StringComparison.Ordinal);
 
     private static bool Bulkable(ReviewEntry e) => e is { Group: ReviewGroup.Deterministic, Link: null };
 
@@ -112,21 +141,13 @@ internal sealed class ReviewSession(ReviewQueueView queue)
         };
     }
 
-    private ReviewStep AnswerBulk(string text)
+    private ReviewStep AnswerBulk(string text) => text.ToLowerInvariant() switch
     {
-        switch (text.ToLowerInvariant())
-        {
-            case "y" or "yes":
-                _bulkAccepted = true;
-                return Begin([.. queue.Entries.Where(e => !Bulkable(e))], new ReviewContextMapRequest("accept-deterministic"), new ReviewTally(ReviewOutcome.Accepted, queue.Counts.Deterministic));
-            case "n" or "no":
-                return Begin([.. queue.Entries]);
-            case "q" or "quit":
-                return Finish();
-            default:
-                return Again(Start().Prompt);
-        }
-    }
+        "y" or "yes" => Begin([.. queue.Entries.Where(e => !Bulkable(e))], new ReviewContextMapRequest("accept-deterministic"), new ReviewTally(ReviewOutcome.Accepted, queue.Counts.Deterministic)),
+        "n" or "no" => Begin([.. queue.Entries]),
+        "q" or "quit" => Finish(),
+        _ => Again(Start().Prompt),
+    };
 
     private ReviewStep AnswerItem(string text)
     {
