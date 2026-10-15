@@ -1,3 +1,4 @@
+using Aw.Meta.Core;
 using Aw.Meta.Core.Config;
 using Aw.Meta.Core.Coordination;
 using Aw.Meta.Core.Ids;
@@ -45,6 +46,36 @@ public sealed class MetaWorld
     /// <summary>Transcript files.</summary>
     public InMemoryTranscriptReader Transcripts { get; } = new();
 
+    /// <summary>External programs (git, gh and the gate's steps), scripted per test.</summary>
+    public InMemoryCommandRunner Runner { get; } = new();
+
+    /// <summary>Gate step logs.</summary>
+    public InMemoryLogFiles LogFiles { get; } = new();
+
+    /// <summary>Memory, disk and heavy-job locks.</summary>
+    public InMemoryHostResources Resources { get; } = new();
+
+    /// <summary>Processes.</summary>
+    public InMemoryProcessTable Processes { get; } = new();
+
+    /// <summary>The delay between polls; waiting moves <see cref="Clock"/>.</summary>
+    public InMemoryDelay Delay { get; }
+
+    /// <summary>Where files live and which programs run: the gate directory is /state/meta/gates, the heavy wrapper /bin/heavy.</summary>
+    public MetaPaths Paths { get; } = new("/state/meta", "/state/meta/gates", "/bin/heavy", "gh");
+
+    /// <summary>The git and gh calls over <see cref="Runner"/>.</summary>
+    public RepoCommands Repo => new(Runner, Paths);
+
+    /// <summary>The gate worktrees over <see cref="Runner"/>.</summary>
+    public GateTree Trees => new(Repo);
+
+    /// <summary>A world with all its fakes.</summary>
+    public MetaWorld()
+    {
+        Delay = new InMemoryDelay(Clock);
+    }
+
     /// <summary>The inbox sync.</summary>
     public InboxSync Sync => new(Transcripts, Messages, Owner, Clock);
 
@@ -69,6 +100,22 @@ public sealed class MetaWorld
     {
         _ = await Config.Save(new TeamConfig("sindri", "/work", ["meta", "api", "ui"], "meta"), CancellationToken.None);
         _ = await Messages.SetRole(new MetaRole(SessionId.From(MetaSessionId), "sindri-meta"), CancellationToken.None);
+    }
+
+    /// <summary>Saves a config with a repo at /work, a "repo" scope (always; sync-rules) and a "dotnet" scope (src/**, tests/**; heavy build and unit), docs-only paths, a merge order #190 before #192 and one known flake.</summary>
+    /// <returns>A task.</returns>
+    public async Task ReadyWithGate()
+    {
+        await Ready();
+        var gate = new GateConfig(
+            ["repo"],
+            ["**/*.md", "docs/**"],
+            new Dictionary<string, ScopeConfig>(StringComparer.Ordinal)
+            {
+                ["repo"] = new(["**"], [new StepConfig("sync-rules", ["scripts/sync-rules.sh", "--check"])]),
+                ["dotnet"] = new(["src/**", "tests/**"], [new StepConfig("build", ["dotnet", "build", "X.slnx"], Heavy: true), new StepConfig("unit", ["dotnet", "test", "--solution", "X.slnx"], Heavy: true)]),
+            });
+        _ = await Config.Save(new TeamConfig("sindri", "/work", ["meta", "api", "ui"], "meta") { Gate = gate, MergeOrder = [new MergeOrderRule(190, 192)], KnownFlakes = ["SpikeEvalTests"] }, CancellationToken.None);
     }
 
     /// <summary>The open obligations now.</summary>

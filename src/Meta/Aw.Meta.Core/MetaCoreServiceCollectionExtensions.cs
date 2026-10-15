@@ -15,5 +15,7 @@ public static class MetaCoreServiceCollectionExtensions
         .AddScoped<ObligationReader>()
         .AddScoped<MetaSession>()
         .AddScoped<MetaSweep>()
-        .AddScoped<StopGuard>();
+        .AddScoped<StopGuard>()
+        .AddScoped<RepoCommands>()
+        .AddScoped<GateTree>();
 }
