@@ -1,3 +1,5 @@
+using Aw.Kernel;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
@@ -109,6 +111,43 @@ public sealed class StopProcessTests
         Assert.True(stopped.IsSuccess);
         Assert.Null((await tokens.Read(Token)).Value);
         Assert.Null(held.Current);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_failed_token_removal_keeps_the_token_held_so_a_second_try_removes_it()
+    {
+        var tokens = new InMemoryHumanTokenStore();
+        var held = new HeldHumanToken();
+        held.Hold((await tokens.Mint(Token)).Value);
+        var records = Records(new InMemoryEndpointFile(), held, new FailsOnce(tokens));
+
+        var first = await records.RemoveToken(Token);
+
+        Assert.True(first.IsError);
+        Assert.NotNull(held.Current);   // not forgotten: the file is still there
+        Assert.True((await records.RemoveToken(Token)).IsSuccess);
+        Assert.Null(held.Current);
+        Assert.Null((await tokens.Read(Token)).Value);
+    }
+
+    private sealed class FailsOnce(InMemoryHumanTokenStore inner) : IHumanTokenStore
+    {
+        private bool _failed;
+
+        public ValueTask<Result<HumanToken>> Mint(CancellationToken cancellationToken) => inner.Mint(cancellationToken);
+
+        public ValueTask<Result<HumanToken?>> Read(CancellationToken cancellationToken) => inner.Read(cancellationToken);
+
+        public ValueTask<Result<Unit>> Remove(HumanToken mine, CancellationToken cancellationToken)
+        {
+            if (_failed)
+            {
+                return inner.Remove(mine, cancellationToken);
+            }
+
+            _failed = true;
+            return ValueTask.FromResult<Result<Unit>>(SindriErrors.ViewsStalled.With("the token file can't be removed (fixture)"));
+        }
     }
 
     [Fact, Trait("Lane", "unit")]
