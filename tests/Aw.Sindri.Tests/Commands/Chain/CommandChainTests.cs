@@ -236,7 +236,7 @@ public sealed class CommandChainTests : IAsyncDisposable
         _ = await _c.H.HoldLease();
 
         var refused = await _c.Run<Features.ApproveProfile.ApproveProfileRequest, Features.ApproveProfile.ApproveProfileResponse>(
-            new(_c.H.Profiles.Live.Value.Hash, Confirmed: true), Session);
+            new(_c.H.Profiles.Live.Value.Hash, _c.H.Confirm(_c.H.Profiles.Live.Value.Hash)), Session);
 
         Assert.Equal(SindriErrors.AuthRefused.Code, refused.Error.Code);
         Assert.Equal("ApproveProfile is a human decision. Ask the human to run it in a terminal: sindri profile approve [<hash>]", refused.Error.Message);

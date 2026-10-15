@@ -4,6 +4,7 @@ using Aw.Context.Core.Facade;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Lease;
@@ -16,9 +17,10 @@ namespace Aw.Sindri.Features.ApproveProfile;
 /// Shows or records an approval. The 'profile.approved' event is appended first and the snapshot saved second, so a
 /// failed append changes nothing and a retry after a failed save finds the event already recorded and only saves. Each
 /// approval's key names the event it follows ('profile.approved:&lt;hash&gt;:after:&lt;seq&gt;'), so approving A, B,
-/// A, B records every step and a retry computes the same key.
+/// A, B records every step and a retry computes the same key. Approving redeems the 'approve profile &lt;hash6&gt;'
+/// challenge (S1-D5) bound to the live hash; a missing, mistyped, expired or stale one is SND-PROFILE-004 and records nothing.
 /// </summary>
-internal sealed class ApproveProfileService(IProfileSource live, IApprovals approvals, HeldLease held, ILedgerStore ledger, EventFactory events, IContextEngine context)
+internal sealed class ApproveProfileService(IProfileSource live, IApprovals approvals, HeldLease held, ILedgerStore ledger, EventFactory events, IChallenges challenges, IContextEngine context)
     : IService<ApproveProfileRequest, ApproveProfileResponse>
 {
     public async ValueTask<Result<ApproveProfileResponse>> Handle(ApproveProfileRequest request, CancellationToken cancellationToken)
@@ -43,7 +45,7 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
 
         var shown = preview.Value;
 
-        if (Refusal(asked, loaded.Value, request.Confirmed) is { } refusal)
+        if (Refusal(asked, loaded.Value, request.Answer) is { } refusal)
         {
             return refusal;
         }
@@ -94,13 +96,15 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
         return new ApproveProfileResponse(loaded.Hash, ProfileDiff.Between(previous?.Profile, loaded.Profile), approved, Sequence: null);
     }
 
-    private static Error? Refusal(ProfileHash asked, LoadedProfile live, bool confirmed) => true switch
+    private Error? Refusal(ProfileHash asked, LoadedProfile live, ChallengeAnswer? answer) => true switch
     {
         _ when asked != live.Hash => SindriErrors.ProfileHashMismatch.With(
             $"{asked.Abbreviated}… isn't the live profile's hash ({live.Hash.Value}); run 'sindri profile approve' to see it and what changed"),
-        _ when !confirmed => SindriErrors.ProfileNeedsTerminal.With(
-            "approving needs you at an interactive terminal: run 'sindri profile approve <hash>' and type the first 6 characters"),
-        _ => null,
+        _ when answer is null => SindriErrors.ProfileNeedsTerminal.With(
+            $"approving needs you at an interactive terminal: run 'sindri profile approve <hash>' and type '{ChallengeAction.ApproveProfile(asked).Text}'"),
+        _ => challenges.Redeem(answer, ChallengeAction.ApproveProfile(asked), ChallengeSubject.ForProfile(live.Hash), SindriErrors.ProfileNeedsTerminal) is { IsError: true } stale
+            ? stale.Error
+            : null,
     };
 
     /// <summary>The live profile, refused when its context section doesn't check, its repos included: an invalid section is never approved (SND-CONTEXT-001).</summary>

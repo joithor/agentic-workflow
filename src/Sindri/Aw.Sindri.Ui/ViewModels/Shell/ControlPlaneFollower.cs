@@ -34,15 +34,7 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            bool wait;
-            try
-            {
-                wait = await Cycle(cancellationToken).ConfigureAwait(true);
-            }
-            catch (EndpointRecordUnreadableException e)
-            {
-                wait = RecordUnreadable(e.Reason);
-            }
+            var wait = await Cycle(cancellationToken).ConfigureAwait(true);
 
             if (wait)
             {
@@ -62,7 +54,7 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
     // the port's reason (review run 4, architecture-strategist-0), and keep trying. The platform's message names the
     // record's full path, so it stays out of the window; the path shows shortened on its own line, as everywhere else
     // (review run 3, security-sentinel-0).
-    private bool RecordUnreadable(EndpointRecordFailure reason)
+    private Uri? RecordUnreadable(EndpointRecordFailure reason)
     {
         var why = reason switch
         {
@@ -71,8 +63,7 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
             EndpointRecordFailure.Unreadable => Labels.RecordIoError,
             _ => Labels.RecordIoError,
         };
-        _ = health.NotRunning(Labels.RecordUnreadableBecause(why), StatusText.ShortPath(records.Location));
-        return true;
+        return health.NotRunning(Labels.RecordUnreadableBecause(why), StatusText.ShortPath(records.Location));
     }
 
     // One connect-and-follow; true when Run should wait before the next one: nothing answers, or the event stream
@@ -92,8 +83,13 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
 
     private async Task<Uri?> Connect(CancellationToken cancellationToken)
     {
-        var bytes = await records.Read(cancellationToken).ConfigureAwait(true);
-        if (bytes is null)
+        var read = await records.Read(cancellationToken).ConfigureAwait(true);
+        if (read.Failure is { } unreadable)
+        {
+            return RecordUnreadable(unreadable);
+        }
+
+        if (read.Bytes is not { } bytes)
         {
             return health.NotRunning(Labels.NoRecord, StatusText.ShortPath(records.Location));
         }
@@ -209,17 +205,13 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
             while (true)
             {
                 await Task.Delay(HealthViewModel.RetryEvery, clock, stop.Token).ConfigureAwait(true);
-                var now = await records.Read(stop.Token).ConfigureAwait(true);
+                var now = (await records.Read(stop.Token).ConfigureAwait(true)).Bytes;   // unreadable reads as none: the next Connect reads it again and says why
                 if (now is null || !now.AsSpan().SequenceEqual(_record))
                 {
                     await stop.CancelAsync().ConfigureAwait(true);
                     return;
                 }
             }
-        }
-        catch (EndpointRecordUnreadableException)
-        {
-            await stop.CancelAsync().ConfigureAwait(true);   // the next Connect reads it again and says why
         }
         catch (OperationCanceledException)
         {

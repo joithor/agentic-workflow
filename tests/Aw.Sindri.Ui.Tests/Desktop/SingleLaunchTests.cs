@@ -50,7 +50,7 @@ public sealed class SingleLaunchTests : IDisposable
         Assert.True(await first.TryClaim(TestContext.Current.CancellationToken));
         var ran = false;
 
-        var exit = SingleLaunch.Run(new FakeSingleInstance(_channel), [], () =>
+        var exit = new SingleLaunch(TimeSpan.FromMilliseconds(100)).Execute(new FakeSingleInstance(_channel), [], () =>
         {
             ran = true;
             return 0;
@@ -71,6 +71,49 @@ public sealed class SingleLaunchTests : IDisposable
 
         Assert.Equal(7, SingleLaunch.Run(second, [], () => 7, _errors, _log));
         Assert.Equal(string.Empty, _errors.ToString());
+    }
+
+    // Review run 5 (julik-frontend-races-reviewer-0): a relaunch while the app is quitting is not answered "handled"
+    // (nothing would run) and not told the holder "isn't answering": the holder retires, the message is refused, and the
+    // launch waits for the holder to go, then claims and runs the app.
+    [Fact]
+    public async Task A_second_launch_while_the_holder_quits_waits_for_it_to_go_and_runs_the_app()
+    {
+        var first = new FakeSingleInstance(_channel);
+        Assert.True(await first.TryClaim(TestContext.Current.CancellationToken));
+        await using var reader = new InstanceReader(first, TestContext.Current.CancellationToken);
+        first.Retire();
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(300, TestContext.Current.CancellationToken);
+            await first.DisposeAsync();
+        }, TestContext.Current.CancellationToken);
+        var ran = false;
+
+        var exit = new SingleLaunch(TimeSpan.FromSeconds(5)).Execute(new FakeSingleInstance(_channel), [], () =>
+        {
+            ran = true;
+            return 7;
+        }, _errors, _log);
+
+        Assert.Equal(7, exit);
+        Assert.True(ran);
+        Assert.Equal(string.Empty, _errors.ToString());
+        Assert.Equal(0, _channel.Taken);
+    }
+
+    // A holder that retires but never goes (wedged while ending) is still named after the bounded wait.
+    [Fact]
+    public async Task A_second_launch_to_a_holder_that_quits_but_never_goes_exits_1_after_the_wait()
+    {
+        var first = new FakeSingleInstance(_channel, processId: 4242);
+        Assert.True(await first.TryClaim(TestContext.Current.CancellationToken));
+        first.Retire();
+
+        var exit = new SingleLaunch(TimeSpan.FromMilliseconds(100)).Execute(new FakeSingleInstance(_channel), [], () => 0, _errors, _log);
+
+        Assert.Equal(1, exit);
+        Assert.Contains("pid 4242", _errors.ToString(), StringComparison.Ordinal);
     }
 
     [Theory]
@@ -230,6 +273,8 @@ public sealed class SingleLaunchTests : IDisposable
 
         public IAsyncEnumerable<InstanceMessage> Messages(CancellationToken cancellationToken) => inner.Messages(cancellationToken);
 
+        public void Retire() => inner.Retire();
+
         public int? HolderProcessId() => inner.HolderProcessId();
 
         public async ValueTask DisposeAsync()
@@ -251,6 +296,10 @@ public sealed class SingleLaunchTests : IDisposable
 
         public IAsyncEnumerable<InstanceMessage> Messages(CancellationToken cancellationToken) => AsyncEnumerable.Empty<InstanceMessage>();
 
+        public void Retire()
+        {
+        }
+
         public int? HolderProcessId() => null;
 
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
@@ -263,6 +312,10 @@ public sealed class SingleLaunchTests : IDisposable
         public ValueTask<bool> Send(string message, CancellationToken cancellationToken) => ValueTask.FromException<bool>(failure);
 
         public IAsyncEnumerable<InstanceMessage> Messages(CancellationToken cancellationToken) => AsyncEnumerable.Empty<InstanceMessage>();
+
+        public void Retire()
+        {
+        }
 
         public int? HolderProcessId() => null;
 
@@ -281,6 +334,8 @@ public sealed class SingleLaunchTests : IDisposable
         }
 
         public IAsyncEnumerable<InstanceMessage> Messages(CancellationToken cancellationToken) => inner.Messages(cancellationToken);
+
+        public void Retire() => inner.Retire();
 
         public int? HolderProcessId() => inner.HolderProcessId();
 

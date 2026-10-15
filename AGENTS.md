@@ -114,7 +114,7 @@ dotnet run --project src/Sindri/Aw.Sindri.Host -- recipe validate <file> [--json
 dotnet run --project src/Sindri/Aw.Sindri.Host -- recipe eval <file> [--json] | --scaffold <file>   # run a recipe's eval cases over the pure engine (docs/csharp/sindri-workflow.md); exit 0 pass, 1 a case fails, 2 usage or tool error; --record needs the server (P4)
 dotnet run --project src/Sindri/Aw.Sindri.Host -- workflow complete <address> --run <token> --outcome <o> [--output <fact>=<file>]... [--temporal <host:port>] [--no-wait]   # P4a: report an open desk run to serve's Temporal (frontend from control.json); exit 0, 1 Temporal not running, 2 error (docs/csharp/sindri.md)
 dotnet run --project src/Sindri/Aw.Sindri.Host -- workflow list [--query <visibility query>] [--temporal <host:port>]   # P4a: the open recipe instances by search attributes
-bash src/Sindri/aot-smoke/run.sh         # sindri, framework-dependent (the Temporal SDK has no NativeAOT; needs scripts/binaries-lock.sh fetch temporal): publish (on a copy), drive start, a refused second serve, the approve preview and its non-terminal refusal, a session's approve and stop refused (SND-AUTH-002), the human's typed approval and stop under a pty, status (and --json's apiVersion), stop and doctor in a temp home, then recipe validate on the shipped recipes and an invalid fixture (each call bounded to 30 s), compare with expected.txt
+bash src/Sindri/aot-smoke/run.sh         # sindri, framework-dependent (the Temporal SDK has no NativeAOT; needs scripts/binaries-lock.sh fetch temporal): publish (on a copy), drive start, a refused second serve, the approve preview and its non-terminal refusal, a session's approve and stop refused (SND-AUTH-002), the human's typed approval and stop under a pty, status (and --json's apiVersion), /sindri/mcp's initialize and tools/list, stop and doctor (on a scratch HOME) in a temp home, then recipe validate on the shipped recipes and an invalid fixture (each call bounded to 30 s), compare with expected.txt
 dotnet run --project src/Sindri/Aw.Sindri.Ui.Desktop       # the Sindri app (S1b shell, U0 theme and shell; docs/csharp/sindri-ui.md): top bar, Home, Health, Settings, tray, single instance, live from the event stream; bare `sindri` opens it (sindri-ui next to sindri, or AW_SINDRI_UI)
 bash src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh [<dir>]   # sindri-ui under NativeAOT: publish (on a copy) and fail on any IL2xxx/IL3xxx warning or a missing binary; copies it and its native libraries to <dir> when given
 
@@ -165,6 +165,7 @@ bash scripts/tests/ci-changed-areas.test.sh
 bash scripts/tests/ci-bash-tests.test.sh
 bash scripts/tests/ci-lane-budgets.test.sh
 bash scripts/tests/ci-no-any.test.sh
+bash scripts/tests/sindri-smoke-normalize.test.sh
 bash config/hooks/tests/codex-adapter.test.sh
 bash config/hooks/tests/cursor-adapter.test.sh
 bash config/hooks/tests/provider-install-hooks.test.sh
@@ -192,7 +193,7 @@ sindri shape reconcile                   # move the spool into the ledger and la
 sindri observe                          # Backlog with sizes; records to the ledger when the profile is approved
 scripts/install-sindri.sh               # Build sindri, install the CLI wrapper (or ./setup.sh --with-sindri)
 GH_TOKEN="$(scripts/agent-token.sh [--repo NAME])"  # Owner/session launcher only, never inside an agent session: 1h agent App token
-scripts/denylist-check.sh <denylist> <file>...   # Work identifiers in PR text: prints only file:line and a hit count; exit 0 none, 1 hits, 2 missing/empty denylist (fails closed)
+AW_DENYLIST=<file:ABSPATH|env:VAR> scripts/denylist-check.sh <file>...   # Work identifiers in PR text; the list is injected through AW_DENYLIST (0600-or-stricter file or env var), never an argument: prints only file:line and a hit count; exit 0 none, 1 hits, 2 fails closed (unset/invalid pointer, bad or missing list; see the script header)
 scripts/owner-check.sh <stage> up [--seed] [--services a,b] [--labeling] [--session] [--repo NAME] | down   # Owner only: the scratch Sindri instance (port 7480) for a stage's owner check (context spec, owner-check outline steps 1-4 and 7)
 scripts/sindri-ui-fixture.sh up|stall|unstall|drift|down   # The Sindri UI's proof fixture in a guarded temp AW_SINDRI_HOME, through sindri-prove.sh (UI spec §18.2; --large reserved)
 
