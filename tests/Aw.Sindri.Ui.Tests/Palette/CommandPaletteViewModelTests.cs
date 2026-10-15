@@ -378,9 +378,11 @@ public sealed class CommandPaletteViewModelTests
         }
 
         var rebuild = _palette.Selected!;
+        var before = _palette.Announcement;
         var run = _palette.Run(rebuild, Token);
 
         Assert.DoesNotContain("ready", _palette.Announcement, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(before, _palette.Announcement);   // J2: the live region is not rewritten ("Rebuild views, 3 of 14" again) before "Sending…"
         Assert.Equal(("Rebuild views", string.Empty), (rebuild.Name, rebuild.Status));
         _server.RebuildGate.SetResult();
         await run;
