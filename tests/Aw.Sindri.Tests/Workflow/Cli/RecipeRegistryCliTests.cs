@@ -128,7 +128,7 @@ public sealed class RecipeRegistryCliTests : IDisposable
         Assert.Equal("item", recipe.GetProperty("inputs")[0].GetProperty("kind").GetString());
         Assert.Equal(
             [("fact:output", "file", "desk"), ("fact:answer", "decision", "answer")],
-            recipe.GetProperty("outputs").EnumerateArray().Select(o => (o.GetProperty("key").GetString()!, o.GetProperty("type").GetString()!, o.GetProperty("from").GetString()!)));
+            recipe.GetProperty("outputs").EnumerateArray().Select(o => (o.GetProperty("key").GetString(), o.GetProperty("type").GetString(), o.GetProperty("from").GetString())));
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]

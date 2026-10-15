@@ -75,7 +75,7 @@ public static class StatePathOrder
         public PathOrder Result(string orderedBy)
         {
             var places = new List<StatePlace>();
-            var order = StatePathOrder.FirstOrder;
+            var order = FirstOrder;
             foreach (var (state, branchOf) in _others)
             {
                 places.Add(new StatePlace(state, branchOf is null ? order++ : null, branchOf));
