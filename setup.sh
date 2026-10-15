@@ -256,15 +256,6 @@ else
   bash "$SCRIPT_DIR/scripts/install-judge.sh" --build-only
 fi
 
-# --- Meta harness (opt-in: ./setup.sh --with-meta; owner decision 2026-10-14) ---
-if [ "$WITH_META" = "1" ]; then
-  if aw_dry; then
-    echo "  [dry-run] would run scripts/install-meta.sh"
-  else
-    bash "$SCRIPT_DIR/scripts/install-meta.sh" --provider claude
-  fi
-fi
-
 # --- Permission mode (owner, 2026-10-14): every Claude session starts in bypassPermissions ---
 # shellcheck source=config/lib/claude-bypass.sh
 source "$SCRIPT_DIR/config/lib/claude-bypass.sh"
@@ -296,6 +287,16 @@ fi
 # User-level installs happen here; a missing system package (needs root) prints its sudo command and stops setup.
 echo ""
 bash "$SCRIPT_DIR/scripts/install-deps.sh" || { echo "FATAL: external tools missing (see above). Fix, then re-run setup.sh."; exit 1; }
+
+# --- Meta harness (opt-in: ./setup.sh --with-meta; owner decision 2026-10-14). After install-deps: its NativeAOT
+# publish needs the clang and zlib that install-deps checks for ---
+if [ "$WITH_META" = "1" ]; then
+  if aw_dry; then
+    echo "  [dry-run] would run scripts/install-meta.sh"
+  else
+    bash "$SCRIPT_DIR/scripts/install-meta.sh" --provider claude
+  fi
+fi
 
 # --- Skill packages (TypeScript helpers run by SKILL.md) ---
 echo ""
