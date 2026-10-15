@@ -8,7 +8,7 @@ namespace Aw.Sindri.Ui.Testing;
 /// The contract every <see cref="ISindriApi"/> passes: the in-memory fake and the real HTTP client over the canned
 /// handler. A binding derives from it and says how to reach a <see cref="FakeSindriApi"/> server.
 /// </summary>
-public abstract class SindriApiContract
+public abstract partial class SindriApiContract
 {
     private static readonly Uri _api = new("http://127.0.0.1:7410/");
 

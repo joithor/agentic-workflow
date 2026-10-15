@@ -225,4 +225,24 @@ public sealed partial class CommandPaletteViewModelTests
         Assert.All(steps.Where(s => s.StartsWith("Text=", StringComparison.Ordinal)), s => Assert.NotEqual("Text=", s, StringComparer.Ordinal));
         Assert.True(region.IsLive);
     }
+
+    // K5 (testing-3): a copy from the palette is spoken by the palette alone; the control stays dark while it copies and is
+    // let go of when "Copied" clears.
+    [Fact]
+    public async Task A_palette_copy_is_spoken_by_the_palette_while_its_control_is_muted_until_copied_clears()
+    {
+        _palette.Open();
+        _palette.Query = "approve profile";
+        var entry = _palette.Selected!;
+        var control = entry.Control!;
+        var controlSpoke = false;
+        control.PropertyChanged += (_, e) => controlSpoke |= e.PropertyName == nameof(ControlViewModel.IsAnnouncing) && control.IsAnnouncing;
+
+        await _palette.Run(entry, Token);
+
+        Assert.Equal((true, false), (control.IsMuted, controlSpoke));
+        Assert.Contains("Copied", _palette.Announcement, StringComparison.Ordinal);
+        _clock.Advance(ControlViewModel.CopiedFor);
+        Assert.Equal((false, false), (control.IsMuted, controlSpoke));
+    }
 }

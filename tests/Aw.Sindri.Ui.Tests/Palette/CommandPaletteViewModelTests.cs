@@ -443,6 +443,7 @@ public sealed partial class CommandPaletteViewModelTests
                     _palette.Move(1);
                 }
             });
+        Assert.NotEqual("RebuildViews", _palette.Selected?.Id, StringComparer.Ordinal);   // the selection really moved off the entry that was run
     }
 
     [Fact]
@@ -450,7 +451,7 @@ public sealed partial class CommandPaletteViewModelTests
         await RunRefusedWhile(() => _palette.Query = "queue");
 
     [Fact]
-    public async Task A_run_on_a_control_the_catalog_replaced_while_open_is_spoken_once() =>
+    public async Task A_run_on_a_control_the_catalog_replaced_before_the_run_is_spoken_once() =>
         await RunRefusedWhile(() => { }, () => _controls.Show(_api, _server, _catalog));
 
     [Fact]
@@ -475,7 +476,7 @@ public sealed partial class CommandPaletteViewModelTests
         await run;
 
         Assert.Equal(1, said.Count(t => t.Contains("SND-API-005: failed", StringComparison.Ordinal)));
-        Assert.DoesNotContain(spoken, t => t.Contains("SND-API-005", StringComparison.Ordinal));
+        Assert.Empty(spoken);   // the palette said nothing: the run did not start here
     }
 
     // J4 (corr-2): the accepted outcome settling back to idle (2 s later) is not announced: no unprompted "ready".
