@@ -3,6 +3,7 @@ using Aw.Kernel;
 using Aw.Meta.Core.Config;
 using Aw.Meta.Core.Messages;
 using Aw.Meta.Features.Lanes;
+using Aw.Meta.Features.OutboxRecord;
 using Aw.Meta.Features.Roles;
 using Aw.Meta.Features.StopCheck;
 using Aw.Meta.Features.SyncInbox;
@@ -16,6 +17,7 @@ namespace Aw.Meta.Host;
 [JsonSerializable(typeof(MetaRole))]
 [JsonSerializable(typeof(ShowRoleResponse))]
 [JsonSerializable(typeof(LanesResponse))]
+[JsonSerializable(typeof(OutboxRecordResponse))]
 [JsonSerializable(typeof(StopCheckResponse))]
 [JsonSerializable(typeof(SyncInboxRequest))]
 [JsonSerializable(typeof(SyncInboxResponse))]

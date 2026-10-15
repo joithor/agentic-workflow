@@ -1,4 +1,3 @@
-#pragma warning disable CA1822, IDE0052 // red stage: removed when the service takes its ports
 using Aw.Meta.Core;
 using Aw.Meta.Core.Ids;
 using Aw.Meta.Core.Obligations;
@@ -11,7 +10,7 @@ public sealed class OutboxRecordTests
 {
     private readonly MetaWorld _world = new();
 
-    private OutboxRecordService Service() => new();
+    private OutboxRecordService Service() => new(_world.Session, _world.Messages, _world.Reader, _world.Clock);
 
     private async Task<OutboxRecordResponse> Send(string to, string message, string session = MetaWorld.MetaSessionId, string? id = null)
     {
@@ -71,7 +70,7 @@ public sealed class OutboxRecordTests
         await _world.Ready();
         _world.Sessions.Add(A.Live("sindri-api", "s-api"));
         _world.Sessions.Add(A.Live("sindri-ui", "s-ui"));
-        _ = await _world.Sweep.Run(MetaWorld.Transcript, (await _world.Config.Load(CancellationToken.None)).Value, _world.Clock.GetUtcNow(), CancellationToken.None);
+        _ = await _world.Refresher.Run((await _world.Config.Load(CancellationToken.None)).Value, _world.Clock.GetUtcNow(), CancellationToken.None);
 
         var first = await Send("sindri-api", "LANE MAP v1: api=sindri-api, ui=sindri-ui");
         var second = await Send("sindri-ui", "LANE MAP v1: api=sindri-api, ui=sindri-ui");

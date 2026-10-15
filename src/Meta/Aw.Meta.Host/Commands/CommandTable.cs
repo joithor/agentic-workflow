@@ -18,6 +18,7 @@ internal static class CommandTable
         TeamShowCommand.Entry,
         SyncInboxCommand.Entry,
         StopCheckCommand.Entry,
+        OutboxRecordCommand.Entry,
         LanesRefreshCommand.Entry,
         LanesCommand.Entry,
     ];

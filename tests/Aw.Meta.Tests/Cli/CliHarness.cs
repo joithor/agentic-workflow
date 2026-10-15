@@ -21,7 +21,7 @@ internal sealed class CliHarness : IDisposable
         _ = Directory.CreateDirectory(SessionsDirectory);
     }
 
-    internal FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 10, 15, 4, 0, 0, TimeSpan.Zero));
+    internal FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 10, 15, 5, 0, 0, TimeSpan.Zero));
 
     internal string SessionsDirectory => Path.Combine(_root.Path, "sessions");
 
