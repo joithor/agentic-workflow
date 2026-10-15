@@ -2,6 +2,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Tests.CompleteStep;
 using Microsoft.Extensions.DependencyInjection;
 using Temporalio.Api.Enums.V1;
@@ -187,6 +188,34 @@ public sealed class StateTimerTests(SindriTimeSkippingServer server) : IClassFix
             Assert.Equal(["workflow.started", "workflow.transition"], await Rows(desk, 2));
             Assert.Equal("parked", (await desk.Until(static _ => true)).State);
             await desk.Handle.TerminateAsync("test over");
+        }, ct);
+    }
+
+    [Fact(Timeout = 240_000)]
+    public async Task A_takeover_after_a_re_arm_cancels_the_newer_timer_though_the_older_scope_exits_after_it_started()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var env = server.Environment;
+        await using var sindri = _harness.Sindri();
+        await WorkflowsHarness.HoldLease(sindri, ct);
+        using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
+
+        await worker.ExecuteAsync(async () =>
+        {
+            var handle = await WorkflowsHarness.Start(env.Client, await WorkflowsHarness.StepStart(sindri, "T-47", ct));
+            var desk = new DeskInstance(sindri, handle);
+            _ = await desk.Until(static v => v.Task is not null);
+            var output = new FactValue("fact:sha256:" + new string('e', 64), new string('e', 64), HeadSha: null);
+            var report = new StepCompleted("human:cli", RunToken.From("1.1"), OutcomeName.From("done"), new Dictionary<FactKey, FactValue> { [FactKey.From("fact:output")] = output }, Tokens: 0, StepRuntime.Desk, new string('f', 64));
+            var done = await handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(new string('a', 32)));   // 'checks' arms its timer while 'produce''s still runs: the older scope exits after the newer one started
+            Assert.Equal("-> checks", done.Happened);
+
+            _ = await handle.ExecuteUpdateAsync(wf => wf.TakeoverAsync(new TakeoverRequested("human:cli", Stamp('1'))), new WorkflowUpdateOptions(new string('1', 32)));
+            await WorkflowsHarness.Skip(env, TimeSpan.FromDays(3), ct);   // past the desk timeout (2d): only 'takeoverIdle' (2h) may fire
+            var fired = (await handle.FetchHistoryAsync()).Events.Count(static e => e.EventType == EventType.TimerFired);
+
+            Assert.Equal(1, fired);
+            await handle.TerminateAsync("test over");
         }, ct);
     }
 
