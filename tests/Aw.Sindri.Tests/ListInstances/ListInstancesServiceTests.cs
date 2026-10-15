@@ -293,6 +293,22 @@ public sealed class ListInstancesServiceTests
     }
 
     [Fact]
+    public async Task An_instance_with_no_input_is_about_its_item_so_the_row_shows_the_item_title_and_the_title_finds_it()
+    {
+        var noInput = View("desk-task", $"{ItemA}/step/1") with { ItemId = ItemKey.From(ItemA), Subject = null };
+        var other = View("desk-task", $"{ItemB}/step/1") with { ItemId = ItemKey.From(ItemB), Subject = null };
+        var items = new FixedItemViews(failing: false, Titled(ItemA, "Pager storm"), Titled(ItemB, "Dark mode"));
+        var service = Service([noInput, other], items, new CallerContextBuilder().Human().Build());
+
+        var byTitle = await service.Handle(new ListInstancesRequest(Subject: "pager"), CancellationToken.None);
+        var byId = await service.Handle(new ListInstancesRequest(Subject: ItemA), CancellationToken.None);
+
+        var row = Assert.Single(byTitle.Value.Rows);
+        Assert.Equal(new SubjectRef("item", ItemA, "Pager storm", Href: null), row.Subject);
+        Assert.Equal([$"{ItemA}/step/1"], byId.Value.Rows.Select(static r => r.Address.Value), StringComparer.Ordinal);
+    }
+
+    [Fact]
     public async Task A_title_view_that_cannot_be_read_leaves_the_list_working_with_the_ids_as_labels_in_id_order()
     {
         var views = new[] { OnItem(ItemB, $"{ItemB}/step/1"), OnItem(ItemA, $"{ItemA}/step/1") };

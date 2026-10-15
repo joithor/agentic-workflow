@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Host;
@@ -58,6 +59,15 @@ public sealed partial class InstanceSummaryRowTests
 
         Assert.Equal(AnswerKind.Text, row.Answer?.Kind);
         Assert.Contains(ActionId.From("ApplyCommand:cancel"), row.Actions);
+    }
+
+    [Fact]
+    public void A_row_for_an_instance_with_no_input_is_about_its_item_titled_when_the_caller_knows_it_else_labelled_by_its_address()
+    {
+        var view = StatusCases.View("desk-task") with { Subject = null, ItemId = ItemKey.From("T-3") };
+
+        Assert.Equal(new SubjectRef("item", "T-3", "Crash on launch", Href: null), InstanceSummaries.Of(view, new InstanceSummaryContext(StatusCases.Now, ItemTitle: "Crash on launch")).Subject);
+        Assert.Equal(new SubjectRef("item", "T-3", view.Address.Value, Href: null), InstanceSummaries.Of(view, new InstanceSummaryContext(StatusCases.Now)).Subject);
     }
 
     [Fact]
