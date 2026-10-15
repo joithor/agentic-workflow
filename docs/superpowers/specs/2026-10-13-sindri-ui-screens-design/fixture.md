@@ -30,12 +30,13 @@ Home · Workflows **12** · Work **12** · Recipes **8** · Context · Agents **
 | ITM-01JF4 | Tray badge on Linux | sindri-app | packet task t7 of PRJ-sync (ws-3) | ○ queued | — | — | queued 40m |
 | ITM-01JF8 | Receipt verify route | sindri-app | packet task t8 of PRJ-sync (ws-4) | ○ queued | — | — | queued 12m |
 
-Summary lines: Home `5 need you · 4 running · 1 with you · 4 queued`; Work `12 items · 3 need you · 1 with you ·
+Summary lines: Home `6 need you · 4 running · 1 with you · 4 queued`; Work `12 items · 3 need you · 1 with you ·
 4 running · 4 queued` (3 + 1 + 4 + 4 = 12; the parked item is inside the 3, see "The human queue"). Home's Running panel shows the four running rows and the with-you row
 (with-you first), then "Show all 5 in Work". Home's Queued panel shows the four queued rows.
 
-Needs you (5, most urgent first): ITM-01JC8 park · REQ-01JD4 decision (re-scope ITM-01JD2) · ITM-01JB4 escalated ·
-service `index` failure · profile changed (2 keys: `services.index.every`, `context.maxBudget`).
+Needs you (6, most urgent first): ITM-01JC8 park · REQ-01JD4 decision (re-scope ITM-01JD2) · ITM-01JB4 escalated ·
+service `index` failure · profile changed (2 keys: `services.index.every`, `context.maxBudget`) · sentry #8812 `DECISION`
+(a workflow row, drawn in the Home Workflows strip; see "Resulting counts").
 
 ITM-01JE7's item sheet: subject `Linear ENG-511 · repo agentic-workflow · no project · feature:needs-you.ack`;
 facts `fact:item` (ENG-511 intake record), `fact:spec` (spec.md sha256:1c0e…), `fact:output` (round 1: 4 files,
