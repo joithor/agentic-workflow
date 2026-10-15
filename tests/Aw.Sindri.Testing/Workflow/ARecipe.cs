@@ -19,6 +19,7 @@ public static class ARecipe
         Description: null,
         Base: null,
         Urgency: "work",
+        Name: null,
         Inputs: [],
         Outputs: [],
         Initial: "produce",

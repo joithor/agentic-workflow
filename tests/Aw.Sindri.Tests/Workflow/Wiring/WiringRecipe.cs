@@ -62,6 +62,9 @@ internal static class WiringRecipe
     public static Dictionary<string, WithValue> With(params (string Name, WithValue Value)[] arguments) =>
         arguments.ToDictionary(a => a.Name, a => a.Value, StringComparer.Ordinal);
 
+    /// <summary>The input a recipe built without 'inputs' declares (RCP-INPUT-002 needs one).</summary>
+    public const string DefaultInput = "fact:subject";
+
     public static Recipe Of(
         string initial,
         IEnumerable<(string Name, RecipeState State)> states,
@@ -71,7 +74,7 @@ internal static class WiringRecipe
         IEnumerable<string>? loops = null) =>
         ARecipe.Minimal(RecipeId.From(id)) with
         {
-            Inputs = [.. (inputs ?? []).Select(k => new RecipeInput(FactKey.From(k), Label: null, Type: null, Kind: null, Generate: null))],
+            Inputs = [.. (inputs ?? [DefaultInput]).Select(k => new RecipeInput(FactKey.From(k), Label: null, Type: null, Kind: "text", Generate: null))],
             Initial = initial,
             States = states.ToDictionary(s => s.Name, s => s.State, StringComparer.Ordinal),
             Transitions = [.. transitions],

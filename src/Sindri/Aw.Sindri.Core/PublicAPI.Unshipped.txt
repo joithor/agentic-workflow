@@ -3172,7 +3172,6 @@ Aw.Sindri.Core.Workflow.Recipes.Recipe.Base.get -> Aw.Sindri.Core.Workflow.Recip
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Base.init -> void
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Budget.get -> Aw.Sindri.Core.Workflow.Recipes.BudgetSpec?
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Budget.init -> void
-Aw.Sindri.Core.Workflow.Recipes.Recipe.Deconstruct(out int Schema, out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out int Version, out string? Description, out Aw.Sindri.Core.Workflow.Recipes.RecipeRef? Base, out string! Urgency, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeInput!>! Inputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeOutput!>! Outputs, out string! Initial, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.RecipeState!>! States, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeTransition!>! Transitions, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.LoopSpec!>! Loops, out Aw.Sindri.Core.Workflow.Recipes.BudgetSpec? Budget, out System.Collections.Generic.IReadOnlyList<string!>! Evals, out Aw.Sindri.Core.Workflow.Ids.RecipeHash? Hash) -> void
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Description.get -> string?
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Description.init -> void
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Equals(Aw.Sindri.Core.Workflow.Recipes.Recipe? other) -> bool
@@ -3190,7 +3189,6 @@ Aw.Sindri.Core.Workflow.Recipes.Recipe.Loops.get -> System.Collections.Generic.I
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Loops.init -> void
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Outputs.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeOutput!>!
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Outputs.init -> void
-Aw.Sindri.Core.Workflow.Recipes.Recipe.Recipe(int Schema, Aw.Sindri.Core.Workflow.Ids.RecipeId Id, int Version, string? Description, Aw.Sindri.Core.Workflow.Recipes.RecipeRef? Base, string! Urgency, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeInput!>! Inputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeOutput!>! Outputs, string! Initial, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.RecipeState!>! States, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeTransition!>! Transitions, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.LoopSpec!>! Loops, Aw.Sindri.Core.Workflow.Recipes.BudgetSpec? Budget, System.Collections.Generic.IReadOnlyList<string!>! Evals, Aw.Sindri.Core.Workflow.Ids.RecipeHash? Hash) -> void
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Schema.get -> int
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Schema.init -> void
 Aw.Sindri.Core.Workflow.Recipes.Recipe.States.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.RecipeState!>!
@@ -3212,7 +3210,6 @@ Aw.Sindri.Core.Workflow.Recipes.RecipeDuration.ToString(System.IFormatProvider? 
 Aw.Sindri.Core.Workflow.Recipes.RecipeDuration.Value.get -> string!
 Aw.Sindri.Core.Workflow.Recipes.RecipeInput
 Aw.Sindri.Core.Workflow.Recipes.RecipeInput.<Clone>$() -> Aw.Sindri.Core.Workflow.Recipes.RecipeInput!
-Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.FactKey Key, out string? Label, out string? Type, out string? Kind) -> void
 Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Equals(Aw.Sindri.Core.Workflow.Recipes.RecipeInput? other) -> bool
 Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Key.get -> Aw.Sindri.Core.Workflow.Ids.FactKey
 Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Key.init -> void
@@ -3220,7 +3217,6 @@ Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Kind.get -> string?
 Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Kind.init -> void
 Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Label.get -> string?
 Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Label.init -> void
-Aw.Sindri.Core.Workflow.Recipes.RecipeInput.RecipeInput(Aw.Sindri.Core.Workflow.Ids.FactKey Key, string? Label, string? Type, string? Kind) -> void
 Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Type.get -> string?
 Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Type.init -> void
 Aw.Sindri.Core.Workflow.Recipes.RecipeOutput
@@ -6858,3 +6854,11 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.For(Aw.Sindri.Core.Workflow.En
 Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.ItemTitles(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! titles) -> void
 static Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.None.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViews.Starting(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeVersion! recipe, System.DateTimeOffset since, Aw.Sindri.Core.Workflow.Engine.ItemKey item, Aw.Sindri.Core.Workflow.Views.SubjectRef? subject) -> Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!
+Aw.Sindri.Core.Workflow.Recipes.Recipe.Deconstruct(out int Schema, out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out int Version, out string? Description, out Aw.Sindri.Core.Workflow.Recipes.RecipeRef? Base, out string! Urgency, out string? Name, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeInput!>! Inputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeOutput!>! Outputs, out string! Initial, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.RecipeState!>! States, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeTransition!>! Transitions, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.LoopSpec!>! Loops, out Aw.Sindri.Core.Workflow.Recipes.BudgetSpec? Budget, out System.Collections.Generic.IReadOnlyList<string!>! Evals, out Aw.Sindri.Core.Workflow.Ids.RecipeHash? Hash) -> void
+Aw.Sindri.Core.Workflow.Recipes.Recipe.Name.get -> string?
+Aw.Sindri.Core.Workflow.Recipes.Recipe.Name.init -> void
+Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.FactKey Key, out string? Label, out string? Type, out string? Kind, out string? Generate) -> void
+Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Generate.get -> string?
+Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Generate.init -> void
+Aw.Sindri.Core.Workflow.Recipes.RecipeInput.RecipeInput(Aw.Sindri.Core.Workflow.Ids.FactKey Key, string? Label, string? Type, string? Kind, string? Generate) -> void
+Aw.Sindri.Core.Workflow.Recipes.Recipe.Recipe(int Schema, Aw.Sindri.Core.Workflow.Ids.RecipeId Id, int Version, string? Description, Aw.Sindri.Core.Workflow.Recipes.RecipeRef? Base, string! Urgency, string? Name, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeInput!>! Inputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeOutput!>! Outputs, string! Initial, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.RecipeState!>! States, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeTransition!>! Transitions, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.LoopSpec!>! Loops, Aw.Sindri.Core.Workflow.Recipes.BudgetSpec? Budget, System.Collections.Generic.IReadOnlyList<string!>! Evals, Aw.Sindri.Core.Workflow.Ids.RecipeHash? Hash) -> void

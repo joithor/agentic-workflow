@@ -7,7 +7,7 @@ namespace Aw.Sindri.Core.Workflow.Validation;
 
 /// <summary>
 /// The declaration rules (spec §3.2, §3.3, §9.1 "Added (UI E-21, E-22)"): RCP-URG-001, RCP-OUT-001/002/003 and
-/// RCP-TYPE-001/002/003. Pure: they read the bound recipe and the catalog. They check that what a recipe declares for
+/// RCP-TYPE-001/002/003, RCP-INPUT-001/002 and RCP-NAME-002..006 (P4c). Pure: they read the bound recipe and the catalog. They check that what a recipe declares for
 /// the app (its urgency, outputs and input types) is well formed and names real things; they add no wiring. A block or
 /// event that isn't found is the block rules' to report, so the output check skips a state whose source it can't resolve.
 /// </summary>
@@ -22,6 +22,7 @@ internal sealed class DeclarationRules : IRecipeRules
         return
         [
             .. Urgency(recipe, source),
+            .. Name(recipe, source),
             .. Inputs(recipe, source),
             .. Outputs(recipe, context, source),
         ];
@@ -37,10 +38,62 @@ internal sealed class DeclarationRules : IRecipeRules
         }
     }
 
-    private static IEnumerable<RecipeFinding> Inputs(Recipe recipe, RecipeSource source) =>
-        recipe.Inputs.SelectMany((input, i) => Input(input, $"inputs[{Inv(i)}]", source));
+    private static IEnumerable<RecipeFinding> Name(Recipe recipe, RecipeSource source) =>
+        recipe.Name is { } name
+            ? Template(name, "name", "name", recipe.Inputs, source)
+            : [];
 
-    private static IEnumerable<RecipeFinding> Input(RecipeInput input, string path, RecipeSource source)
+    /// <summary>RCP-NAME-002/003/004 for a name template, RCP-NAME-002/003/005 for a generate template.</summary>
+    private static IEnumerable<RecipeFinding> Template(string text, string path, string what, IReadOnlyList<RecipeInput> inputs, RecipeSource source)
+    {
+        var isName = string.Equals(what, "name", StringComparison.Ordinal);
+        var allowed = isName ? "write literal text with {fact:<input>} or {start:date|time}" : "write literal text with {start:date} or {start:time}";
+        if (string.IsNullOrWhiteSpace(text) || text.Length > NameTemplate.MaxLength)
+        {
+            yield return source.Finding("RCP-NAME-002", path, $"the {what} template is empty or longer than 200 characters", allowed);
+            yield break;
+        }
+
+        var template = NameTemplate.Parse(text);
+        if (template.Problem is { } problem)
+        {
+            yield return source.Finding("RCP-NAME-003", path, problem,
+                isName
+                    ? "use {fact:<input>}, {start:date} or {start:time}, and write {{ or }} for a literal brace"
+                    : "use {start:date} or {start:time}, and write {{ or }} for a literal brace");
+            yield break;
+        }
+
+        foreach (var key in template.Facts)
+        {
+            if (!isName)
+            {
+                yield return source.Finding("RCP-NAME-005", path, $"generate may not read inputs ('{{{key.Value}}}')",
+                    "use only literals, {start:date} and {start:time}");
+            }
+            else if (!inputs.Any(i => i.Key == key))
+            {
+                yield return source.Finding("RCP-NAME-004", path, $"'{{{key.Value}}}' names no declared input",
+                    $"declare {key.Value} under inputs or remove the placeholder");
+            }
+        }
+    }
+
+    private static IEnumerable<RecipeFinding> Inputs(Recipe recipe, RecipeSource source)
+    {
+        if (recipe.Inputs.Count == 0)
+        {
+            yield return source.Finding("RCP-INPUT-002", "inputs", "the recipe declares no input",
+                "declare at least one input; a scheduled recipe gives it generate: \"<template>\"");
+        }
+
+        foreach (var finding in recipe.Inputs.SelectMany((input, i) => Input(input, $"inputs[{Inv(i)}]", recipe, source)))
+        {
+            yield return finding;
+        }
+    }
+
+    private static IEnumerable<RecipeFinding> Input(RecipeInput input, string path, Recipe recipe, RecipeSource source)
     {
         var what = $"input '{input.Key.Value}'";
         var badType = TypeFinding(source, path, what, input.Type);
@@ -48,17 +101,51 @@ internal sealed class DeclarationRules : IRecipeRules
             ? source.Finding("RCP-TYPE-002", $"{path}.kind",
                 $"{what} has kind '{kind}', which isn't one of {string.Join(", ", SubjectKinds.All)}", "use one of them")
             : null;
-        if (badType is not null || badKind is not null)
+        foreach (var finding in new[] { badType, badKind }.OfType<RecipeFinding>())
         {
-            return [.. new[] { badType, badKind }.OfType<RecipeFinding>()];
+            yield return finding;
         }
 
-        return input.Kind is { } paired && SubjectKinds.PairedType(paired) is { } expected
-            && !string.Equals(input.Type ?? FactTypes.Default, expected, StringComparison.Ordinal)
-            ? [source.Finding("RCP-TYPE-003", $"{path}.kind",
-                $"{what} has kind '{paired}' but type {(input.Type is null ? $"'{FactTypes.Default}' (the default)" : $"'{input.Type}'")}; kind {paired} pairs with type {expected}",
-                $"set type to {expected}, or change kind")]
-            : [];
+        if (input.Kind is null)
+        {
+            yield return source.Finding("RCP-INPUT-001", path, $"{what} declares no kind",
+                "add kind: item | link | linear-project | webhook | file | text, paired with its type (item/item, file/file, text/text, link/link, linear-project and webhook/payload)");
+        }
+
+        if (badType is null && badKind is null && Unpaired(input, what, path, source) is { } unpaired)
+        {
+            yield return unpaired;
+        }
+
+        if (input.Generate is { } generate)
+        {
+            foreach (var finding in Generated(input, generate, path, recipe, source))
+            {
+                yield return finding;
+            }
+        }
+    }
+
+    private static RecipeFinding? Unpaired(RecipeInput input, string what, string path, RecipeSource source) =>
+        input.Type is not null && input.Kind is { } paired && SubjectKinds.PairedType(paired) is { } expected
+            && !string.Equals(input.Type, expected, StringComparison.Ordinal)
+            ? source.Finding("RCP-TYPE-003", $"{path}.kind",
+                $"{what} has kind '{paired}' but type '{input.Type}'; kind {paired} pairs with type {expected}",
+                $"set type to {expected}, or change kind")
+            : null;
+
+    private static IEnumerable<RecipeFinding> Generated(RecipeInput input, string generate, string path, Recipe recipe, RecipeSource source)
+    {
+        foreach (var finding in Template(generate, $"{path}.generate", "generate", recipe.Inputs, source))
+        {
+            yield return finding;
+        }
+
+        if (input.Kind is { } k && SubjectKinds.IsKnown(k) && !string.Equals(k, "text", StringComparison.Ordinal))
+        {
+            yield return source.Finding("RCP-NAME-006", $"{path}.generate", $"generate on an input of kind '{k}'",
+                "only a text input can be generated; supply this input at start");
+        }
     }
 
     private static RecipeFinding? TypeFinding(RecipeSource source, string path, string what, string? type) =>

@@ -24,7 +24,7 @@ public sealed class DeclarationRulesTests
 
     private static RecipeOutput Out(string key, string from, string? type = "file") => new(FactKey.From(key), Label: null, type, from);
 
-    private static RecipeInput In(string key, string? type = null, string? kind = null) => new(FactKey.From(key), Label: null, type, kind);
+    private static RecipeInput In(string key, string? type = null, string? kind = "text", string? generate = null) => new(FactKey.From(key), Label: null, type, kind, generate);
 
     private static Located At(params (string Path, int Line, int Column)[] positions) => new("r.yaml", positions);
 
