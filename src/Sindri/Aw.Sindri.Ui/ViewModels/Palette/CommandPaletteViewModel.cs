@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.ViewModels.Controls;
+using Aw.Sindri.Ui.ViewModels.Shell;
 
 namespace Aw.Sindri.Ui.ViewModels.Palette;
 
@@ -31,11 +32,15 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
     /// <param name="catalog">The catalog (read on connect).</param>
     /// <param name="goTo">Shows a page.</param>
     /// <param name="remember">Records an entry run (the paletteHistory preference).</param>
-    internal CommandPaletteViewModel(CatalogViewModel catalog, Action<PageId> goTo, Action<string> remember)
+    /// <param name="outcomes">The shell's region for a run whose palette closed before its outcome; null hands such a run back to its control.</param>
+    internal CommandPaletteViewModel(CatalogViewModel catalog, Action<PageId> goTo, Action<string> remember, CommandOutcomeRegion? outcomes = null)
     {
-        (_catalog, _goTo, _remember) = (catalog, goTo, remember);
+        (_catalog, _goTo, _remember, Outcomes) = (catalog, goTo, remember, outcomes);
         _catalog.PropertyChanged += OnCatalogChanged;
     }
+
+    /// <summary>The shell's region for a run whose palette closed before its outcome, or null.</summary>
+    internal CommandOutcomeRegion? Outcomes { get; }
 
     /// <summary>The palette's accessible name.</summary>
     public string Title { get; } = Labels.Palette;

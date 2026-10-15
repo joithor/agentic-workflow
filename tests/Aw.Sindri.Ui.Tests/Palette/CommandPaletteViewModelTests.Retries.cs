@@ -1,6 +1,7 @@
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.Palette;
+using Aw.Sindri.Ui.ViewModels.Shell;
 
 namespace Aw.Sindri.Ui.Tests.Palette;
 
@@ -124,5 +125,104 @@ public sealed partial class CommandPaletteViewModelTests
         _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => run);
 
         Assert.Equal((false, CommandPhase.Idle, true), (rebuild.Control!.IsMuted, rebuild.Control.Phase, rebuild.IsEnabled));
+    }
+
+    // K2 (run 5, a11y-1 and corr-0): Esc, or the close-first policy, mid-send hands the outcome to a control whose only view is the stalled
+    // banner, hidden unless stalled: it was announced 0 times. The shell's command-outcome region speaks it instead, once, and the control stays dark.
+    private (CommandPaletteViewModel Palette, CommandOutcomeRegion Region, List<string> Said) Closing(bool bannerShowsControl)
+    {
+        var region = new CommandOutcomeRegion(_ => bannerShowsControl);
+        var palette = new CommandPaletteViewModel(_controls, _pages.Add, _history.Add, region);
+        var said = new List<string>();
+        region.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(CommandOutcomeRegion.Text) && region.IsLive)
+            {
+                said.Add(region.Text);
+            }
+        };
+        return (palette, region, said);
+    }
+
+    private static PaletteEntry Find(CommandPaletteViewModel palette, string id)
+    {
+        palette.Open();
+        return palette.Entries.Single(e => e.Id == id);
+    }
+
+    [Theory]
+    [InlineData(false, "Rebuild views: done")]
+    [InlineData(true, "SND-API-005: failed")]
+    public async Task A_run_whose_palette_closed_while_it_sent_is_spoken_once_by_the_shell_region(bool refused, string outcome)
+    {
+        if (refused)
+        {
+            _server.Rebuild = RouteAnswer.Problem(System.Net.HttpStatusCode.InternalServerError, "SND-API-005", "failed");
+        }
+
+        _server.RebuildGate = new TaskCompletionSource();
+        var (palette, region, said) = Closing(bannerShowsControl: false);
+        var rebuild = Find(palette, "RebuildViews");
+        var control = rebuild.Control!;
+        var controlSpoke = false;
+        control.PropertyChanged += (_, e) => controlSpoke |= e.PropertyName == nameof(ControlViewModel.IsAnnouncing) && control.IsAnnouncing;
+
+        var run = palette.Run(rebuild, Token);
+        palette.Close();
+        _server.RebuildGate.SetResult();
+        await run;
+
+        Assert.Equal(1, said.Count(t => t.Contains(outcome, StringComparison.Ordinal)));
+        Assert.True(region.IsLive);
+        Assert.False(controlSpoke);
+        Assert.False(control.IsMuted);   // the run is over: the control is back to speaking its own runs
+    }
+
+    [Fact]
+    public async Task A_run_whose_palette_closed_is_handed_back_to_a_control_whose_view_is_on_show()
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        var (palette, _, said) = Closing(bannerShowsControl: true);
+        var rebuild = Find(palette, "RebuildViews");
+
+        var run = palette.Run(rebuild, Token);
+        palette.Close();
+        _server.RebuildGate.SetResult();
+        await run;
+
+        Assert.Empty(said);
+        Assert.Equal((true, "Rebuild views: done"), (rebuild.Control!.IsAnnouncing, rebuild.Control.Announcement));
+    }
+
+    [Fact]
+    public async Task The_close_first_policy_speaks_through_the_shell_region_too()
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        var (palette, _, said) = Closing(bannerShowsControl: false);
+        palette.RunPolicy = PaletteRunPolicy.CloseFirst;
+        var rebuild = Find(palette, "RebuildViews");
+
+        var run = palette.Run(rebuild, Token);
+        _server.RebuildGate.SetResult();
+        await run;
+
+        Assert.Equal(1, said.Count(t => t.Contains("Rebuild views: done", StringComparison.Ordinal)));
+        Assert.False(rebuild.Control!.IsAnnouncing);
+    }
+
+    // The region: the flag changes before the text, the text is never empty, and the same text twice is a change.
+    [Fact]
+    public void The_shell_region_says_the_same_text_twice_flag_then_text_and_never_empty()
+    {
+        var region = new CommandOutcomeRegion(_ => false);
+        var steps = new List<string>();
+        region.PropertyChanged += (_, e) => steps.Add(e.PropertyName + "=" + (e.PropertyName == nameof(CommandOutcomeRegion.Text) ? region.Text : region.IsLive));
+
+        region.Say("Rebuild views: done");
+        region.Say("Rebuild views: done");
+
+        Assert.Equal(2, steps.Count(s => s == "Text=Rebuild views: done"));
+        Assert.All(steps.Where(s => s.StartsWith("Text=", StringComparison.Ordinal)), s => Assert.NotEqual("Text=", s, StringComparer.Ordinal));
+        Assert.True(region.IsLive);
     }
 }

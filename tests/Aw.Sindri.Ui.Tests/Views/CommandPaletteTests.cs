@@ -295,6 +295,29 @@ public sealed class CommandPaletteTests : IDisposable
         Assert.False(shell.Palette.IsOpen);
     });
 
+    // K2 (run 5, a11y-1 and corr-0): Esc while a command sends, with the views healthy (the Rebuild views control's only view, the stalled
+    // banner, is hidden): the outcome is spoken by the shell's command-outcome region, which is in the tree, effectively visible and live.
+    [Fact]
+    public Task Esc_while_a_command_sends_is_spoken_by_the_shell_region_that_is_in_the_tree() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        _server.RebuildGate = new TaskCompletionSource();
+        Press(window, Key.K, PhysicalKey.K, _command, "k");
+        window.KeyTextInput("rebuild");
+        Settle(window);
+        Press(window, Key.Enter, PhysicalKey.Enter);
+        Press(window, Key.Escape, PhysicalKey.Escape);
+        Assert.False(shell.Palette.IsOpen);
+        Assert.False(shell.Health.Banner.HasRebuild);
+
+        _server.RebuildGate.SetResult();
+        await Until(window, () => Visible(window, "CommandOutcomeLive") && Named<TextBlock>(window, "CommandOutcomeLive").Text == "Rebuild views: done", "the outcome in the shell region");
+
+        var region = Named<TextBlock>(window, "CommandOutcomeLive");
+        Assert.True(region.IsEffectivelyVisible);
+        Assert.Contains("live", region.Classes, StringComparer.Ordinal);
+    });
+
     // F2: a refusal shows Sindri's code as the entry's status and the detail as served under it; the palette stays open.
     [Fact]
     public Task A_refused_entry_shows_sindris_code_and_detail_in_the_open_palette() => OnUi(async () =>
