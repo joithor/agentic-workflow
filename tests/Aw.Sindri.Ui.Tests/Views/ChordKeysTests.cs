@@ -298,8 +298,18 @@ public sealed class ChordKeysTests : IDisposable
         Assert.Equal(PageId.Work, shell.CurrentPage);
     });
 
+    // Re-check R1: the hint sits wholly inside the top bar, so the page region's opaque background can't paint over it, and clear of the pill.
+    private static void AssertInsideTheBar(Window window, Rect at, string detail)
+    {
+        var bar = window.Get<Control>("TopBar");
+        var barAt = new Rect(bar.TranslatePoint(default, window)!.Value, bar.Bounds.Size);
+        Assert.True(barAt.Contains(at), $"the hint is outside the top bar {barAt}: " + detail);
+        var pill = window.GetVisualDescendants().OfType<Button>().First(b => b.Name == "HealthPill");
+        Assert.False(at.Intersects(new Rect(pill.TranslatePoint(default, window)!.Value, pill.Bounds.Size)), "the hint overlaps the health pill: " + detail);
+    }
+
     // The hint is an overlay: it takes no room in the bar, so it can be seen at the narrowest window and the largest text
-    // scale. It is drawn at its desired width (not squeezed to the spacer column's), inside the window, clear of the ⌘K field.
+    // scale. It is drawn at its desired width, inside the bar, over the ⌘K field's keycap end and clear of its text.
     [Theory]
     [InlineData(900, 1.0)]
     [InlineData(900, 1.3)]
@@ -307,7 +317,7 @@ public sealed class ChordKeysTests : IDisposable
     [InlineData(1100, 1.3)]
     [InlineData(1280, 1.0)]
     [InlineData(1280, 1.3)]
-    public Task The_chord_hint_is_drawn_at_its_width_clear_of_the_search_field(double width, double scale) => OnUi(async () =>
+    public Task The_chord_hint_is_drawn_at_its_width_inside_the_bar_clear_of_the_search_text(double width, double scale) => OnUi(async () =>
     {
         _records.Write(A.Record());
         var (window, shell) = await Show(ShellState.Normal);
@@ -331,10 +341,15 @@ public sealed class ChordKeysTests : IDisposable
             var field = new Rect(search.TranslatePoint(default, window)!.Value, search.Bounds.Size);
             var label = hint.GetVisualDescendants().OfType<TextBlock>().First();
             var detail = $"hint {at}, field {field}, window {window.ClientSize}";
-            Assert.True(hint.Bounds.Width >= hint.DesiredSize.Width - 0.5 && hint.Bounds.Width > 0, detail);
+            Assert.True(hint.Bounds.Width >= hint.DesiredSize.Width - hint.Margin.Left - hint.Margin.Right - 0.5 && hint.Bounds.Width > 0, detail);
             Assert.True(label.TextLayout.WidthIncludingTrailingWhitespace <= label.Bounds.Width + 0.5, "the hint's text is clipped: " + detail);
-            Assert.False(at.Intersects(field), "the hint overlaps the search field: " + detail);
+            Assert.True(field.Contains(at), "the hint is not over the search field's keycap end: " + detail);
+            var text = search.GetVisualDescendants().OfType<TextBlock>().First(t => t.Name == "SearchText");
+            Assert.False(text.IsEffectivelyVisible && at.Intersects(new Rect(text.TranslatePoint(default, window)!.Value, text.Bounds.Size)), "the hint covers the field's text: " + detail);
             Assert.True(new Rect(window.ClientSize).Contains(at), "the hint leaves the window: " + detail);
+
+            AssertInsideTheBar(window, at, detail);
+            Assert.Equal("G …", label.Text);
         }
         finally
         {

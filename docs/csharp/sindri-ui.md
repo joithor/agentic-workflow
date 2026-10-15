@@ -385,7 +385,7 @@ U3' and U8.
   thread), and a generation says which chord a finished wait belongs to. A chord is gated like the other navigation
   (`IsNavigationEnabled` and `IsChromeVisible`, in `PressKey`), never fires while a text field has focus or an overlay
   is open, and any other unmodified key (Esc included) cancels a waiting chord. Any navigation but G D clears the Home
-  filter. The top bar shows `G …` while one waits.
+  filter. The top bar shows `G …` while one waits, in a keycap inside the bar over the ⌘K field's right end (drawn in the bar, not below it, where the page region would paint over it).
 - **Deep links.** `workflow/<address>` (an address, which may contain `/`), `recipe/<id>`, `node/<key>`, `session/<id>`
   and `system/<dependency>` go to Workflows, Recipes, Context, Agents and System; `item/`, `decision/`, `service/` and
   `job/` open their sheet over the page shown; `needs-you/<row>` (the row's item, decision, service or job) opens that row's sheet;
