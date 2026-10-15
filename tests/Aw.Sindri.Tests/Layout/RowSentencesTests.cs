@@ -17,7 +17,6 @@ public sealed class RowSentencesTests
 
     private static InstanceView Running(string step)
     {
-        _ = StatusCases.Recipe with { Recipe = EngineFixture.Step with { States = new Dictionary<string, Core.Workflow.Recipes.RecipeState>(EngineFixture.Step.States, StringComparer.Ordinal) } };
         var instance = EngineFixture.At(EngineFixture.Step, "produce");
         var view = InstanceViews.Of(instance with { Frame = instance.Frame with { Run = instance.Frame.Run! with { Runtime = StepRuntime.Agent } } }, StatusCases.Recipe, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
         return view with { Step = new StepDeclaration("active", step, step) };
@@ -93,5 +92,32 @@ public sealed class RowSentencesTests
         Assert.Equal("queued", Row(Running("step.produce"), new InstanceSummaryContext(StatusCases.Now, NotStarted: true)).Now);
         Assert.Equal(("DONE", "resolved"), (Row(StatusCases.View("done")).Chip.Word, Row(StatusCases.View("done")).Now));
         Assert.Equal("cancelled", Row(StatusCases.View("cancelled")).Now);
+    }
+
+    [Fact]
+    public void A_park_or_escalation_with_no_answer_line_and_no_detail_is_the_bare_word()
+    {
+        var parked = StatusCases.View("parked-drift") with { Detail = null };
+
+        Assert.Equal("parked", Row(parked).Now);
+    }
+
+    [Fact]
+    public void An_escalation_with_no_answer_line_says_what_it_waits_for()
+    {
+        var escalated = StatusCases.View("escalated-gate") with { AnswerLine = null, Detail = "gate failed" };
+
+        Assert.Equal("escalated (gate failed)", Row(escalated).Now);
+    }
+
+    [Fact]
+    public void A_sentence_over_80_characters_is_cut_to_80_with_the_ellipsis_inside()
+    {
+        var long_ = StatusCases.View("taken-over") with { Activity = new string('a', 120) };
+
+        var now = Row(long_).Now;
+
+        Assert.Equal(InstanceSummaries.NowLength, now.Length);
+        Assert.EndsWith("...", now, StringComparison.Ordinal);
     }
 }
