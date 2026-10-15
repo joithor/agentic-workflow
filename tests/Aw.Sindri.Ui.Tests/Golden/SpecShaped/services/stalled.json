@@ -1,0 +1,24 @@
+{
+  "services": [
+    {
+      "name": "heartbeat",
+      "every": "5s",
+      "paused": false,
+      "lastRun": {
+        "slot": "2026-01-01T00:00:25.0000000Z",
+        "outcome": "ok",
+        "code": null,
+        "ranAt": "2026-01-01T00:00:25.0000000Z"
+      },
+      "nextSlot": "2026-01-01T00:00:30.0000000Z"
+    }
+  ],
+  "empty": "Views are stalled at 42: run `sindri views rebuild`",
+  "asOf": {
+    "cursor": 41,
+    "ledgerHead": 42,
+    "projectedAt": "2026-01-01T00:00:30.0000000Z",
+    "rebuilding": false,
+    "stalled": true
+  }
+}

@@ -21,7 +21,7 @@ public sealed class ForeignRecordTests : IDisposable
 
     public ForeignRecordTests()
     {
-        _vm = new HealthViewModel(_records, _server, _clock);
+        _vm = new HealthViewModel(_records, _server, _clock, new FakeClipboard());
     }
 
     public void Dispose()

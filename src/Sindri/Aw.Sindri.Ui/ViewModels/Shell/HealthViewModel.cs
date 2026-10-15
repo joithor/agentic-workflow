@@ -1,6 +1,7 @@
 using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Controls;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -14,7 +15,8 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 /// <param name="records">Where the control plane recorded its endpoint.</param>
 /// <param name="api">Its API.</param>
 /// <param name="clock">The clock for retry waits and freshness.</param>
-internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock) : ObservableObject
+/// <param name="clipboard">Where the catalog's controls copy a CLI.</param>
+internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, IClipboard clipboard) : ObservableObject
 {
     /// <summary>How long to wait before looking for the control plane again.</summary>
     internal static readonly TimeSpan RetryEvery = TimeSpan.FromSeconds(2);
@@ -28,6 +30,9 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     /// <summary>How often the follow pings the control plane it follows, well inside <see cref="StaleAfter"/>.</summary>
     internal static readonly TimeSpan PingEvery = TimeSpan.FromSeconds(10);
 
+    /// <summary>The shortest time between two re-reads of a view after events (§9.2: one refresh per view per 250 ms).</summary>
+    internal static readonly TimeSpan RefreshEvery = TimeSpan.FromMilliseconds(250);
+
     // How often "updated Ns ago" is re-worded.
     private static readonly TimeSpan _tick = TimeSpan.FromSeconds(1);
 
@@ -38,6 +43,8 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     private int _failedRefreshes;
     private int _refreshes;
     private SynchronizationContext? _ui;
+    private HealthView? _health;
+    private DateTimeOffset? _projectedAt;
 
     /// <summary>The app's copy, for the view.</summary>
     public ShellText Text { get; } = ShellText.Instance;
@@ -47,6 +54,12 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
 
     /// <summary>The health pill's parts.</summary>
     public HealthPill Pill { get; } = new();
+
+    /// <summary>The command catalog as controls (read on connect and after a reconnect).</summary>
+    public CatalogViewModel Catalog { get; } = new(clipboard, clock);
+
+    /// <summary>The stalled and rebuilding banners (§4.1), from the services view's asOf.</summary>
+    public ViewsBanner Banner { get; } = new();
 
     /// <summary>The status as labelled values: Home's strip and the Health page's rows.</summary>
     public HealthDetail Detail { get; } = new();
@@ -128,6 +141,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
         }
 
         _url = url;
+        (_health, _projectedAt) = (status.Health, status.Views?.ProjectedAt);
         Detail.Show(url, status);
         Api = url.Authority;
         Lease = StatusText.Lease(status);
@@ -150,19 +164,29 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
         }
     }
 
+    /// <summary>The catalog as the API at <paramref name="url"/> served it; the stalled banner's Rebuild views follows it.</summary>
+    /// <param name="url">Where the API answered.</param>
+    /// <param name="catalog">The catalog.</param>
+    internal void ShowCatalog(Uri url, CommandList catalog) => Catalog.Show(url, api, catalog);
+
+    /// <summary>The services view (API P2) for the banners; null when it isn't served or failed, which hides them.</summary>
+    /// <param name="view">The view, or null.</param>
+    internal void ShowViews(ServiceList? view) => Banner.Show(view, Catalog.For("RebuildViews"));
+
     /// <summary>
-    /// A failed call: SND-UI-003 is an answer this build can't read, and a refusal (Sindri's 403 after the client's one
-    /// retry, e.g. SND-AUTH-001 for a missing or stale token) is Sindri's code and detail as they are (API §3.6); both are
-    /// the Unreadable banner, the last data kept (orchestrator decision, PR #184). Anything else is Not running, led by
-    /// SND-UI-002's sentence with the address on its own line (I7). The app keeps looking every 2 s either way.
+    /// A failed call: SND-UI-002 (nothing answered) is Not running, led by its sentence with the address on its own line
+    /// (I7). Anything else answered: SND-UI-003 is an answer this build can't read, and a refusal (Sindri's code after the
+    /// client's one retry, e.g. SND-AUTH-001 for a missing or stale token) is Sindri's code and detail as they are (API
+    /// §3.6); both are the Unreadable banner, the last data kept (orchestrator decision, PR #184). The decision keys off
+    /// the code, never the detail sentence. The app keeps looking every 2 s either way.
     /// </summary>
     /// <param name="error">The call's error.</param>
     /// <param name="api">The API the call went to.</param>
     /// <returns>Null: no API to follow.</returns>
     internal Uri? Failed(Error error, Uri api) =>
-        string.Equals(error.Code, SindriUiErrors.BadAnswer.Code, StringComparison.Ordinal) || error.Kind == ErrorKind.Forbidden
-            ? Unreadable(error)
-            : NotRunning(Labels.NothingAnswered, api.Authority);
+        string.Equals(error.Code, SindriUiErrors.Unreachable.Code, StringComparison.Ordinal)
+            ? NotRunning(Labels.NothingAnswered, api.Authority)
+            : Unreadable(error);
 
     /// <summary>Not running, and why.</summary>
     /// <param name="reason">The reason in words.</param>
@@ -183,48 +207,6 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
         }
 
         return null;
-    }
-
-    private Uri? Unreadable(Error error)
-    {
-        lock (_gate)
-        {
-            _decisions++;
-            Become(ShellState.Unreadable, $"{error.Code}: {error.Message}");
-            Word();
-        }
-
-        return null;
-    }
-
-    private void Mismatch(int version)
-    {
-        lock (_gate)
-        {
-            _decisions++;
-            Detail.Mismatch(version);
-            HealthLine = Labels.VersionMismatch;
-            Become(ShellState.VersionMismatch, Labels.Versions(version, SindriApiClient.AppApiVersion));
-            Word();
-        }
-    }
-
-    // A state and its reason are one change (review run 3, julik-frontend-races-reviewer-0): both are set before either
-    // is raised, State first, so whoever reacts to State (the shell's live regions) already sees the new reason, and the
-    // old state's region never speaks it. Raised under the gate, like every other change here.
-    private void Become(ShellState state, string reason)
-    {
-        var (stateChanged, reasonChanged) = (State != state, !string.Equals(Reason, reason, StringComparison.Ordinal));
-        (State, Reason) = (state, reason);
-        if (stateChanged)
-        {
-            OnChanged(nameof(State));
-        }
-
-        if (reasonChanged)
-        {
-            OnChanged(nameof(Reason));
-        }
     }
 
     // An event, a status or an answered ping: the views are fresh again.
@@ -264,7 +246,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     // The pill for the state now (under the gate): its age counts from the last event, status or answered ping.
     private void Word()
     {
-        Pill.Show(State, clock.GetUtcNow() - _heard, _failedRefreshes >= NotRespondingAfter);
+        Pill.Show(State, clock.GetUtcNow() - (_projectedAt ?? _heard), _failedRefreshes >= NotRespondingAfter, _health);
         StripName = Pill.IsDataStale ? HealthLine + " · " + Labels.Stale : HealthLine;
     }
 

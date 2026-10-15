@@ -43,6 +43,10 @@ internal sealed partial class ShellViewModel
         Changed(nameof(Window), nameof(SheetWidth));
     }
 
+    // The palette's history (§12.3 paletteHistory): an entry run moves to the newest end.
+    private void RememberRun(string entry) =>
+        Remember(p => p with { PaletteHistory = [.. p.PaletteHistory.Where(e => !string.Equals(e, entry, StringComparison.Ordinal)), entry] });
+
     // The shell's fields are written over whatever the file holds by then, through the app's one write queue (shared with
     // Settings, so neither writes back what it read before the other's change).
     private void Remember(Func<UiPreferences, UiPreferences> change)

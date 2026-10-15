@@ -4,6 +4,8 @@
         xmlns:shell="using:Aw.Sindri.Ui.ViewModels.Shell"
         xmlns:views="using:Aw.Sindri.Ui.Views.Shell"
         xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
+        xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
+        xmlns:root="using:Aw.Sindri.Ui.Views.Palette"
         x:Class="Aw.Sindri.Ui.Views.Shell.ShellWindow"
         x:DataType="shell:ShellViewModel"
         Title="{Binding Text.Sindri}"
@@ -98,6 +100,24 @@
                          AutomationProperties.Name="{Binding Text.DoctorFix}" />
             </Border>
           </StackPanel>
+        </WrapPanel>
+      </Border>
+
+      <!-- Stalled and rebuilding (§4.1): the views' own sentence as served (GET /sindri/services' empty) across the page; the
+           stalled one carries Rebuild views, the catalog's RebuildViews row through the control renderer. Rows stay. -->
+      <Border x:Name="ViewsBanner" DockPanel.Dock="Top" Classes="banner" DataContext="{Binding Health.Banner}" x:DataType="shell:ViewsBanner"
+              IsVisible="{Binding IsShown}" AutomationProperties.Name="{Binding Text}">
+        <WrapPanel ItemSpacing="12" LineSpacing="6">
+          <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+            <icons:StateIcon x:Name="StalledGlyph" Glyph="Down" Classes="error" IsVisible="{Binding IsStalled}" VerticalAlignment="Center" />
+            <icons:StateIcon x:Name="RebuildingGlyph" Icon="Spinner" Spins="{Binding IsRebuilding}" IsVisible="{Binding IsRebuilding}"
+                             VerticalAlignment="Center" />
+            <TextBlock x:Name="ViewsBannerText" Classes="body" Text="{Binding Text}" TextWrapping="Wrap" VerticalAlignment="Center"
+                       AutomationProperties.Name="{Binding Text}" />
+          </StackPanel>
+          <Panel IsVisible="{Binding HasRebuild}" VerticalAlignment="Center">
+            <controls:CommandControl x:Name="RebuildControl" DataContext="{Binding Rebuild}" />
+          </Panel>
         </WrapPanel>
       </Border>
 
@@ -244,5 +264,19 @@
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
     <TextBlock x:Name="RunningLive" Classes="live-region" Classes.live="{Binding IsRecovered}" Text="{Binding RecoveredAnnouncement}"
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <TextBlock x:Name="ViewsLive" Classes="live-region" Classes.live="{Binding Health.Banner.IsShown}" Text="{Binding Health.Banner.Announcement}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <TextBlock x:Name="ViewsRecoveredLive" Classes="live-region" Classes.live="{Binding Health.Banner.IsRecovered}" Text="{Binding Health.Banner.RecoveredAnnouncement}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <!-- A command the palette started and closed on before its outcome: no control has a view on show to say it, so this region does. -->
+    <TextBlock x:Name="CommandOutcomeLive" Classes="live-region" Classes.live="{Binding CommandOutcome.IsLive}" Text="{Binding CommandOutcome.Text}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <!-- The palette and the ? sheet (§8): layers over everything, shown by their view models; Esc closes the topmost. -->
+    <Panel x:Name="PaletteLayer" IsVisible="{Binding Palette.IsOpen}">
+      <root:CommandPalette x:Name="CommandPalette" DataContext="{Binding Palette}" />
+    </Panel>
+    <Panel x:Name="ShortcutsLayer" IsVisible="{Binding Shortcuts.IsOpen}">
+      <root:ShortcutsSheet x:Name="ShortcutsSheet" DataContext="{Binding Shortcuts}" />
+    </Panel>
   </Panel>
 </Window>

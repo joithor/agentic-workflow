@@ -66,7 +66,7 @@ public sealed class ShellWindowTests : IDisposable
 
     private async Task<(ShellWindow Window, ShellViewModel Shell)> Show(Func<ShellViewModel, bool> ready, bool run = true)
     {
-        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences), new FakeClipboard());
         await shell.Restore(Token);
         var window = new ShellWindow { DataContext = shell };
         _windows.Add(window);
@@ -124,6 +124,7 @@ public sealed class ShellWindowTests : IDisposable
                 && (c is Button or ListBoxItem or TextBlock { Text.Length: > 1 })
                 && string.IsNullOrEmpty(AutomationProperties.GetName(c))
                 && !c.Classes.Contains("live-region")
+                && AutomationProperties.GetAccessibilityView(c) != AccessibilityView.Raw   // hidden from the tree on purpose; its parent carries the name
                 && (c is not TextBlock || (c.FindAncestorOfType<Button>() is null && c.FindAncestorOfType<ListBoxItem>() is null)))
             .Select(c => c.GetType().Name + ":" + (c as TextBlock)?.Text)
             .ToList();
@@ -215,6 +216,31 @@ public sealed class ShellWindowTests : IDisposable
 
     // I1 (home.html .seg): one group; unselected labels muted, the selected one in PrimaryHover with the Primary dot;
     // Later ▾ a flat segment of the same group; the whole group disabled while not running.
+    // K9 (Linux proof, finding 6): choosing "Services" in the top bar shows the Services page ("not served yet" until the phase that
+    // serves it), from Health and from Home, not the Health page under a highlighted "Services".
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public Task Choosing_services_shows_the_services_page_and_not_health(bool fromHealth) => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        shell.GoTo(fromHealth ? PageId.Health : PageId.Home);
+        Settle(window);
+        var navigation = Named<ListBox>(window, "Navigation");
+
+        var item = navigation.GetVisualDescendants().OfType<ListBoxItem>().Single(i => i.DataContext is NavEntry { Page: PageId.Services });
+        var at = item.TranslatePoint(new Point(item.Bounds.Width / 2, item.Bounds.Height / 2), window)!.Value;
+        window.MouseDown(at, MouseButton.Left);
+        window.MouseUp(at, MouseButton.Left);
+        Settle(window);
+
+        Assert.Equal(PageId.Services, shell.CurrentPage);
+        Assert.True(Visible(window, "ServicesPage"));
+        Assert.False(Visible(window, "HealthPage"));
+        Assert.Contains(Labels.NotServedYet, window.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible).Select(t => t.Text ?? string.Empty), StringComparer.Ordinal);
+    });
+
     [Fact]
     public Task The_navigation_is_one_segmented_group_with_the_selected_dot() => OnUi(async () =>
     {
@@ -842,6 +868,7 @@ public sealed class ShellWindowTests : IDisposable
         Assert.True(string.IsNullOrEmpty(AutomationProperties.GetName(Named<TextBlock>(window, "RunningLive"))));
 
         _server.UnreadableStatus = true;
+        _clock.Advance(HealthViewModel.RefreshEvery);   // the refresh that followed the recovery is still throttled (§9.2)
         _server.Push(A.Event(3));
         await Until(() => shell.State == ShellState.Unreadable);
         Settle(window);
