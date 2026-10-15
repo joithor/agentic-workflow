@@ -60,7 +60,7 @@ internal sealed partial class CommandPaletteViewModel
         {
             if (!control.IsSending)
             {
-                Release(entry);   // normally released at the outcome already; this covers a cancelled send
+                Release(entry);   // normally released at the outcome already; a cancelled send leaves the control Idle (ControlViewModel.Run), which this covers
             }
         }
     }

@@ -158,7 +158,20 @@ internal sealed partial class ControlViewModel : ObservableObject
         Phase = CommandPhase.Sending;   // before the old outcome is cleared: an entry showing Failed or Accepted never reads half-cleared (", :")
         (ErrorCode, ErrorDetail, Outcome) = (string.Empty, string.Empty, string.Empty);
         _ = AnnounceSending(run, cancellationToken);
-        var answer = await send(cancellationToken).ConfigureAwait(true);
+        Result<CommandAcceptedView> answer;
+        try
+        {
+            answer = await send(cancellationToken).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancelled (the window is closing): nothing was answered, so the control is not left sending.
+            Phase = CommandPhase.Idle;
+            IsAnnouncingSending = false;
+            Rest();
+            throw;
+        }
+
         if (answer.IsError)
         {
             (ErrorCode, ErrorDetail) = (answer.Error.Code, answer.Error.Message);
