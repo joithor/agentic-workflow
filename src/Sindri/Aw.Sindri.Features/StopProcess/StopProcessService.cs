@@ -9,7 +9,7 @@ using Aw.Sindri.Core.Ledger;
 namespace Aw.Sindri.Features.StopProcess;
 
 /// <summary>
-/// Records the stop, then lets go in the order a client can trust: remove control.json while the grant is still held,
+/// Records the stop, then lets go in the order a client can trust: remove control.json and this start's human token while the grant is still held,
 /// forget the grant (from here ping answers epoch 0), request the shutdown, stop the Temporal worker and then the dev server, and only then
 /// release the lease. So no ping answers epoch 0 while control.json exists, no client finds control.json once the lease
 /// is free (unless the removal failed: the stop returns that error, and serve removes the record again on its way out),
@@ -35,12 +35,14 @@ internal sealed class StopProcessService(HeldLease held, ILease lease, ILedgerSt
         // Past the point of no return: the process is stopping whatever the caller does, so a client that hangs up now
         // must not cancel the removal, the server stop or the release (the lease would stay held until it expires).
         var removed = await records.RemoveEndpoint(grant.Holder.Pid, CancellationToken.None).ConfigureAwait(false);   // while the grant is held
+        var tokenRemoved = await records.RemoveToken(CancellationToken.None).ConfigureAwait(false);   // this start's human token, beside it
         held.Clear();         // before the release, so a renewal finishing now can't hold the grant again
         shutdown.Request();   // stops the worker; before the release, so a renewal that runs after it sees a stop, not a lost lease
         var stopped = await temporal.Stop(CancellationToken.None).ConfigureAwait(false);   // the worker, then the server, before the release
         var released = await lease.Release(grant, CancellationToken.None).ConfigureAwait(false);
         return recorded.IsError ? recorded.Error
             : removed.IsError ? removed.Error
+            : tokenRemoved.IsError ? tokenRemoved.Error
             : stopped.IsError ? stopped.Error
             : released.IsError ? released.Error
             : new StopProcessResponse(grant.Holder.Pid, grant.Epoch, recorded.Value.Sequence);
