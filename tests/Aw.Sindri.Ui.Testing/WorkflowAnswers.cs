@@ -99,11 +99,10 @@ internal static class WorkflowAnswers
     /// <param name="recipe">The recipe id.</param>
     /// <param name="hash">The hash the caller names, or null for the current one.</param>
     /// <returns>The answer.</returns>
-    // An unknown recipe or hash is SND-RECIPE-002 (API spec line 771, WorkflowErrors.RecipeNotFound); API #243 adds the refusal golden, which this takes over once it is on main.
     internal static RouteAnswer Recipe(string recipe, string? hash) =>
         Served("workflow-recipe").FirstOrDefault(g => Is(g.Body["id"], recipe)) is { Body: { } body } && HashKnown(body, hash)
             ? new RouteAnswer(HttpStatusCode.OK, body.ToJsonString())
-            : RouteAnswer.Problem(HttpStatusCode.NotFound, "SND-RECIPE-002", string.IsNullOrEmpty(hash) ? $"No recipe {recipe} in this repo." : $"No recipe {recipe}@{hash} in this repo.");
+            : NotFound("workflow-recipe", "not-found");
 
     // A recipe's hash is the golden's own, or whatever an instance of it reports running; none named means the current one.
     private static bool HashKnown(JsonObject recipe, string? hash) =>

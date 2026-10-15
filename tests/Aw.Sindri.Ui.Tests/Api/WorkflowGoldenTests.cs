@@ -168,16 +168,16 @@ public sealed class WorkflowGoldenTests
     }
 
     [Fact]
-    public void A_recipe_not_found_with_an_empty_hash_names_no_hash()
+    public void A_recipe_not_found_is_the_apis_refusal_golden()
     {
         var refused = WorkflowAnswers.Recipe("workflow.none", hash: string.Empty);
 
         Assert.Equal(HttpStatusCode.NotFound, refused.Status);
-        Assert.Contains("No recipe workflow.none in this repo.", refused.Body, StringComparison.Ordinal);
+        Assert.Equal(GoldenFiles.Api("workflow-recipe", "not-found"), refused.Body);   // SND-RECIPE-002, served as the API wrote it
     }
 
     [Fact]
-    public void A_recipe_asked_for_by_a_hash_it_does_not_have_is_not_found_with_the_hash_named()
+    public void A_recipe_asked_for_by_a_hash_it_does_not_have_is_the_apis_refusal_golden()
     {
         var id = WorkflowAnswers.NamedRecipeGoldens.Values.First();
         var own = (string)JsonNode.Parse(GoldenFiles.Api("workflow-recipe", id))!["hash"]!; // why: a recipe golden carries its hash
@@ -186,7 +186,7 @@ public sealed class WorkflowGoldenTests
         var refused = WorkflowAnswers.Recipe(id, "sha256:" + new string('0', 64));
 
         Assert.Equal(HttpStatusCode.NotFound, refused.Status);
-        Assert.Contains($"No recipe {id}@sha256:", refused.Body, StringComparison.Ordinal);
+        Assert.Equal(GoldenFiles.Api("workflow-recipe", "not-found"), refused.Body);
     }
 
     [Fact]
