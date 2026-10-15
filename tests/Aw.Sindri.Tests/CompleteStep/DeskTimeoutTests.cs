@@ -58,6 +58,8 @@ public sealed class DeskTimeoutTests(TimeSkippingServer server) : IClassFixture<
             Assert.Equal((ParkReason.Timeout, "checks ran past 2d", "2.1"), (parked.Question?.Reason, parked.Question?.Question, parked.Run?.Value));
             Assert.Equal((ParkReason.Timeout, "2.1"), (later.Question?.Reason, later.Run?.Value));
             Assert.Equal(["workflow.started", "workflow.transition", "workflow.transition"], await desk.Events());
+
+            await AssertParkRowDetail(desk);
         }
         finally
         {
@@ -103,6 +105,17 @@ public sealed class DeskTimeoutTests(TimeSkippingServer server) : IClassFixture<
             await stop.CancelAsync();
             _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => running);
         }
+    }
+
+    /// <summary>The park row has a detail too: the deadline's key and actor, and the park as the post-state suspension.</summary>
+    private static async Task AssertParkRowDetail(DeskInstance desk)
+    {
+        var parkRow = (await desk.Payloads("workflow.transition"))[^1].GetProperty("detail");
+        var suspension = parkRow.GetProperty("delta").GetProperty("suspension");
+        Assert.Equal("service:workflow.timers", parkRow.GetProperty("triggerActor").GetString());
+        Assert.Contains(":timer:", parkRow.GetProperty("triggerId").GetString(), StringComparison.Ordinal);
+        Assert.Equal("timeout", suspension.GetProperty("reason").GetString(), ignoreCase: true);
+        Assert.Equal("park", suspension.GetProperty("kind").GetString(), ignoreCase: true);
     }
 
     private static Task<CommandResult> Complete(WorkflowHandle<RecipeWorkflow> handle, StepCompleted report, char id, CancellationToken ct) =>

@@ -18,7 +18,8 @@ internal static class InstanceReads
 
     /// <summary>
     /// The opaque id of the instance <paramref name="reference"/> names (an address or a bare item), through
-    /// 'GET /workflow/instances?address=', the only place an address travels. Does not start the control plane.
+    /// 'GET /workflow/instances?address=', the only place an address travels. Does not start the control plane, and returns the error as it came
+    /// (a read says 'not running' with <see cref="NotRunning"/>; a write has already ensured it runs).
     /// </summary>
     /// <param name="desk">The API client.</param>
     /// <param name="reference">The address or bare item.</param>
@@ -29,12 +30,29 @@ internal static class InstanceReads
         var listed = await desk.Client.Get<ListInstancesResponse>($"{Instances}?address={Uri.EscapeDataString(reference)}", ct).ConfigureAwait(false);
         if (listed.IsError)
         {
-            return NotRunning(listed.Error);
+            return listed.Error;
         }
 
         return listed.Value.Value.Instances is [var instance]
             ? instance.Id
             : WorkflowErrors.InstanceNotFound.With($"'{reference}' names no one instance (fix: sindri workflow list)");
+    }
+
+    /// <summary>
+    /// The id for reading an instance's trail: <see cref="IdOf"/>, except that an address Temporal no longer knows (retention,
+    /// SND-WF-001) or can't answer for (no worker, SND-API-002) still names its ledger rows, whose reader needs no Temporal.
+    /// </summary>
+    /// <param name="desk">The API client.</param>
+    /// <param name="reference">The address or bare item.</param>
+    /// <param name="ct">Cancels the call.</param>
+    /// <returns>The id, or the error when the reference can't name an instance without Temporal.</returns>
+    internal static async Task<Result<WorkflowInstanceId>> IdForTrail(RecipeDesk desk, string reference, CancellationToken ct)
+    {
+        var resolved = await IdOf(desk, reference, ct).ConfigureAwait(false);
+        return resolved.IsError && InstanceAddress.TryFrom(reference, out var typed)
+            && (resolved.Error.Code == WorkflowErrors.InstanceNotFound.Code || resolved.Error.Code == SindriErrors.ApiTimeout.Code)
+            ? WorkflowInstanceId.Of(typed)
+            : resolved.IsError ? NotRunning(resolved.Error) : resolved;
     }
 
     /// <summary>A query never starts the control plane; when it is down the error says so.</summary>

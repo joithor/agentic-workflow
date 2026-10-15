@@ -28,7 +28,7 @@ internal static class EventsCommand
             return await output.Error(SindriErrors.InvalidInput.With($"the one argument is the instance: its address (e.g. T-1/step/1) or a bare item ({Usage})")).ConfigureAwait(false);
         }
 
-        var resolved = await InstanceReads.IdOf(desk, text, ct).ConfigureAwait(false);
+        var resolved = await InstanceReads.IdForTrail(desk, text, ct).ConfigureAwait(false);
         if (resolved.IsError)
         {
             return await output.Error(resolved.Error).ConfigureAwait(false);

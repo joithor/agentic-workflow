@@ -41,6 +41,10 @@ public sealed class HeldEventTests(SindriTimeSkippingServer server) : IClassFixt
             var rows = await WorkflowRows(sindri, static types => types.Contains("workflow.expired", StringComparer.Ordinal), ct);
 
             Assert.Equal(["workflow.started", "workflow.expired"], rows);
+            var expired = System.Text.Json.JsonDocument.Parse((await sindri.GetRequiredService<ILedgerStore>().ReadAfter(0, 100, ct)).Value.Single(static e => e.Envelope.Type == "workflow.expired").Envelope.Payload).RootElement.GetProperty("detail");
+            Assert.Equal("service:workflow.events", expired.GetProperty("triggerActor").GetString());   // the expired event's own trigger
+            Assert.EndsWith(":" + held.KeyPart, expired.GetProperty("triggerId").GetString(), StringComparison.Ordinal);
+            Assert.Equal(7, expired.GetProperty("sourceSequence").GetInt64());
             Assert.Equal("triaged", (await WorkflowsHarness.Until(handle, static _ => true)).State);
             Assert.Null((await InterpreterEvalTests.Replay(handle, ct)).ReplayFailure);
             await handle.TerminateAsync("test over");

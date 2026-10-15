@@ -1,5 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
+using Aw.Redaction;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
@@ -24,7 +26,8 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="lease">The lease this process holds; every append is fenced by it.</param>
 /// <param name="events">The control plane's event factory (its scope, clock, ids and the host's JSON options).</param>
 /// <param name="logger">Where a replay that mirrors a different event than the ledger holds is warned about.</param>
-internal sealed partial class RecordEventActivities(ILedgerStore ledger, HeldLease lease, EventFactory events, ILogger<RecordEventActivities>? logger = null)
+/// <param name="redactor">Scrubs each serialized payload before it is appended (free text in a detail can carry a secret); the built-in rules when none is given.</param>
+internal sealed partial class RecordEventActivities(ILedgerStore ledger, HeldLease lease, EventFactory events, ILogger<RecordEventActivities>? logger = null, IRedactor? redactor = null)
 {
     /// <summary>
     /// How the interpreter runs it: a local activity with unbounded retries and backoff, so the workflow does not move on
@@ -74,12 +77,12 @@ internal sealed partial class RecordEventActivities(ILedgerStore ledger, HeldLea
         var payload = new WorkflowEventPayload(record.WorkflowId, record.From, record.To, record.Trigger, record.Outcome, record.Run, record.Detail) { Causation = record.Causation };
         var own = events.Scope;
         var scope = new EventScope(record.Actor ?? own.Actor, record.Tenant ?? own.Tenant, record.Ring ?? own.Ring);
-        var entry = events.Entry(record.Type, payload, key, record.Item, scope) with { TemporalEvent = activityId };   // the key's third part (UI E-30)
+        var entry = Scrubbed(events.Entry(record.Type, payload, key, record.Item, scope) with { TemporalEvent = activityId }, record, payload, scope, key);   // the key's third part (UI E-30)
         var appended = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
         if (!appended.IsError && appended.Value.AlreadyRecorded && await Differs(appended.Value.Sequence, entry, cancellationToken).ConfigureAwait(false))
         {
             // a workflow-task retry replayed with other signals: the same activity id now mirrors another event, so it keeps its own row
-            var other = entry with { IdempotencyKey = $"{key}:{ContentHash(record)}" };
+            var other = entry with { IdempotencyKey = $"{key}:{ContentHash(entry)}" };
             appended = await ledger.Append(other, grant, cancellationToken).ConfigureAwait(false);
         }
 
@@ -88,13 +91,57 @@ internal sealed partial class RecordEventActivities(ILedgerStore ledger, HeldLea
             : appended.Value;
     }
 
+    /// <summary>
+    /// The entry with its serialized payload scrubbed (<see cref="IRedactor"/>), so what is stored, and what <see cref="Differs"/>
+    /// compares, never holds a secret. A payload the scrub blocked or broke (it must stay JSON) is stored without its detail,
+    /// which holds the only free text, and scrubbed again; a payload that still can't be scrubbed throws, and the activity retries.
+    /// </summary>
+    private LedgerEntry Scrubbed(LedgerEntry entry, WorkflowEventRecord record, WorkflowEventPayload payload, EventScope scope, string key)
+    {
+        var scrubber = redactor ?? Redactor.Default;
+        if (Scrub(scrubber, entry.Envelope.Payload) is { } text)
+        {
+            return entry with { Envelope = entry.Envelope with { Payload = text } };
+        }
+
+        var bare = events.Entry(record.Type, payload with { Detail = null }, key, record.Item, scope) with { TemporalEvent = entry.TemporalEvent };
+        return Scrub(scrubber, bare.Envelope.Payload) is { } kept
+            ? bare with { Envelope = bare.Envelope with { Payload = kept } }
+            : throw new InvalidOperationException($"the payload of {key} can't be scrubbed (a pattern timed out); the activity retries");
+    }
+
+    /// <summary>The scrubbed text when it is still JSON, else null.</summary>
+    private static string? Scrub(IRedactor scrubber, string payload)
+    {
+        var result = scrubber.Scrub(payload);
+        if (result.IsBlocked)
+        {
+            return null;
+        }
+
+        try
+        {
+            using var _ = JsonDocument.Parse(result.Text);
+            return result.Text;
+        }
+        catch (JsonException) // boundary: a placeholder that swallowed a quote; the caller stores the payload without its detail
+        {
+            return null;
+        }
+    }
+
     /// <summary>Whether the row at <paramref name="sequence"/> is another event than <paramref name="entry"/> (type or payload).</summary>
     private async Task<bool> Differs(long sequence, LedgerEntry entry, CancellationToken cancellationToken)
     {
         var read = await ledger.ReadAfter(sequence - 1, 1, cancellationToken).ConfigureAwait(false);
-        if (read.IsError || read.Value.Count == 0 || read.Value[0].Sequence != sequence)
+        if (read.IsError)
         {
-            return false;   // can't see the stored row: keep the spec's behaviour (the first record stands)
+            throw new InvalidOperationException($"{read.Error.Code}: {read.Error.Message}");   // not knowing is not 'same': the activity retries until the stored row can be compared
+        }
+
+        if (read.Value.Count == 0 || read.Value[0].Sequence != sequence)
+        {
+            throw new InvalidOperationException($"the ledger row {sequence.ToString(System.Globalization.CultureInfo.InvariantCulture)} recorded under {entry.IdempotencyKey} can't be read back; the activity retries");
         }
 
         var stored = read.Value[0].Envelope;
@@ -107,8 +154,9 @@ internal sealed partial class RecordEventActivities(ILedgerStore ledger, HeldLea
         return differs;
     }
 
-    private static string ContentHash(WorkflowEventRecord record) =>
-        Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes($"{record.Type}|{record.From}|{record.To}|{record.Trigger}|{record.Run}")))[..12];
+    /// <summary>The first 12 hex digits of SHA-256 over exactly what <see cref="Differs"/> compares: the type and the serialized payload.</summary>
+    private static string ContentHash(LedgerEntry entry) =>
+        Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(entry.Envelope.Type + "\n" + entry.Envelope.Payload)))[..12];
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "RecordEvent replay under {Key} mirrors a different event than the ledger holds ({Stored} there, {Replayed} now); recording it under a content-hash key")]
     private static partial void ReplayDiffers(ILogger logger, string key, string stored, string replayed);

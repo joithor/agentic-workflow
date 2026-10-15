@@ -53,14 +53,13 @@ internal sealed class Served : IAsyncDisposable
     /// <summary>A client of the API, without caller headers (a test adds them per request).</summary>
     public HttpClient Http { get; }
 
-    /// <summary>Serves <paramref name="home"/> on <paramref name="environment"/>.</summary>
-    public static Task<Served> Start(string home, WorkflowEnvironment environment, Action<IServiceCollection>? replace = null) =>
-        Start(home, environment, static _ => null, replace);
+    /// <summary>Serves <paramref name="home"/> on <paramref name="environment"/>; <paramref name="ct"/> is the test's token, so a test with a timeout stops promptly.</summary>
+    public static Task<Served> Start(string home, WorkflowEnvironment environment, CancellationToken ct, Action<IServiceCollection>? replace = null) =>
+        Start(home, environment, static _ => null, ct, replace);
 
     /// <summary>Serves <paramref name="home"/> on <paramref name="environment"/>, reading the other variables from <paramref name="variables"/>.</summary>
-    public static async Task<Served> Start(string home, WorkflowEnvironment environment, Func<string, string?> variables, Action<IServiceCollection>? replace = null)
+    public static async Task<Served> Start(string home, WorkflowEnvironment environment, Func<string, string?> variables, CancellationToken ct, Action<IServiceCollection>? replace = null)
     {
-        var ct = TestContext.Current.CancellationToken;
         var app = LoopbackBinding.Build([], name => name == "AW_SINDRI_HOME" ? home : variables(name), new FakeTimeProvider(), services =>
         {
             // why: the clock is fake, so the projector never ticks and a ReadsViews command (StartInstance, UI E-19) would wait for the views forever

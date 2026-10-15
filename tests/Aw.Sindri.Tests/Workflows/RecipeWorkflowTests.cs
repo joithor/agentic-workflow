@@ -62,7 +62,7 @@ public sealed class RecipeWorkflowTests : IDisposable
     {
         var ct = TestContext.Current.CancellationToken;
         await using var env = await WorkflowsHarness.StartDevServer(ct: TestContext.Current.CancellationToken);
-        await using var served = await ApplyCommand.Served.Start(_harness.Home, env);   // 'workflow list' is a client of serve's route
+        await using var served = await ApplyCommand.Served.Start(_harness.Home, env, TestContext.Current.CancellationToken);   // 'workflow list' is a client of serve's route
         var sindri = served.Sindri;
         var handle = await WorkflowsHarness.Start(env.Client, await WorkflowsHarness.StepStart(sindri, "T-1", ct));
         _ = await WorkflowsHarness.Until(handle, static v => v.Task is not null);

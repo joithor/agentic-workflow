@@ -5,8 +5,8 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
 /// The instance ids this process has seen, with their addresses (engine spec §6.3): an id is a digest of its address, so
-/// it can't be read back; the runtime remembers every instance it starts or shows, and the directory finds an id here
-/// before it scans visibility, which can lag a start by a moment.
+/// it can't be read back; the runtime remembers every instance it starts or queries (so the second hop of 'status' by id finds it), and the
+/// directory finds an id here before it scans visibility, which can lag a start by a moment. It is a read cache, not instance state.
 /// </summary>
 internal sealed class KnownInstances
 {

@@ -37,10 +37,10 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
 
     public void Dispose() => _harness.Dispose();
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Text_on_a_rounds_park_is_SND_WF_003_naming_the_grant_and_records_nothing()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         var address = await Rounds(served, "T-11");
         var events = await served.Events(address);
 
@@ -53,10 +53,10 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
         Assert.Equal(ParkReason.Rounds, (await served.Until(address, static v => v.State == "parked")).Question?.Reason);
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Grant_without_its_challenge_is_SND_WF_013_and_records_nothing()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         var address = await Rounds(served, "T-12");
         var events = await served.Events(address);
 
@@ -67,10 +67,10 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
         Assert.Equal(events, await served.Events(address));
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Grant_with_its_challenge_runs_the_withheld_transition()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         var address = await Rounds(served, "T-13");
         var parked = await served.Until(address, static v => v.State == "parked");
         var challenges = served.Sindri.GetRequiredService<IChallenges>();
@@ -86,10 +86,10 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
         Assert.Null(granted.Value.Result.Instance.Question);
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Text_on_a_no_progress_park_resumes_and_the_same_nonce_again_is_already_applied()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         var address = await NoProgress(served, "T-14");
         string[] answer = ["answer", address, "--text", "the version comes from the assembly", "--nonce", new string('e', 32)];
 
@@ -105,10 +105,10 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
         Assert.Equal(events, await served.Events(address));
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Cancel_again_with_its_nonce_after_the_instance_ended_is_already_applied_and_records_nothing()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         _ = await served.Cli("start", "workflow.step", "--item", "T-19", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
         _ = await served.Until("T-19/step/1", static v => v.Task is not null);
         string[] cancel = ["cancel", "T-19/step/1", "--nonce", new string('c', 32)];
@@ -125,10 +125,10 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
         Assert.Equal(events, await served.Events("T-19/step/1"));
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Answer_while_nothing_waits_for_one_is_SND_WF_003_and_records_nothing()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         _ = await served.Cli("start", "workflow.step", "--item", "T-15", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
         _ = await served.Until("T-15/step/1", static v => v.Task is not null);
 
@@ -139,10 +139,10 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
         Assert.Equal(["workflow.started"], await served.Events("T-15/step/1"));
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Command_fires_the_recipe_command_and_an_unknown_verb_is_SND_WF_003()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         _ = WriteSkip();
         _ = await served.Cli("start", "workflow.skip", "--item", "T-16", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
         _ = await served.Until("T-16/skip/1", static v => v.Task is not null);
@@ -158,11 +158,11 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
         Assert.Equal(["workflow.started", "workflow.transition"], await served.Events("T-16/skip/1"));
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task On_a_revoked_recipe_a_command_is_SND_RECIPE_005_but_cancel_is_exempt()
     {
         var recipe = WriteSkip();
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         _ = await served.Cli("start", "workflow.skip", "--item", "T-17", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
         _ = await served.Until("T-17/skip/1", static v => v.Task is not null);
         _harness.Revoke(recipe);   // revoked while its instance runs (W11)
@@ -179,11 +179,11 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
         Assert.Equal("cancelled", (await served.Until("T-17/skip/1", static v => v.State == "cancelled")).State);
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task A_bare_item_with_roots_of_two_recipes_is_SND_WF_006_listing_them()
     {
         _ = WriteSkip();
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         var spec = "fact:spec=" + _harness.File("spec.md", "the spec");
         _ = await served.Cli("start", "workflow.step", "--item", "T-18", "--fact", spec);
         _ = await served.Cli("start", "workflow.skip", "--item", "T-18", "--fact", spec);

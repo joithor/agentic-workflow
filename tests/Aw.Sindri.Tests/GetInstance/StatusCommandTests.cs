@@ -38,7 +38,7 @@ public sealed class StatusCommandTests
         var (exit, stdout, _) = await Run(api, TestContext.Current.CancellationToken, "T-3/step/1", "--json");
 
         Assert.Equal(0, exit);
-        Assert.Equal(Kernel.Json.AwJson.Serialize(StatusCases.View("done"), SliceHarness.Json).Length + 1, System.Text.Encoding.UTF8.GetByteCount(stdout));
+        Assert.Equal(System.Text.Encoding.UTF8.GetString(Kernel.Json.AwJson.Serialize(StatusCases.View("done"), SliceHarness.Json)) + "\n", stdout);
     }
 
     [Theory(Timeout = 30_000)]

@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Events;
+using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 
 namespace Aw.Sindri.Core.Events;
@@ -8,7 +9,7 @@ namespace Aw.Sindri.Core.Events;
 /// What a mirrored workflow event carries beyond the state change (engine spec rev 8.1 §5.6): the trigger's kind, id and
 /// actor, any gate, evidence, grant or override data, the effects it runs, and the post-state delta. A public projection of
 /// the decision's <see cref="WorkflowEvent"/>: ids, digests, reasons and counters only. It never holds an answer's text, a
-/// parked question or a fact's content (the ledger scrubs the payload, and the rows stay free of such text by construction).
+/// parked question or a fact's content (RecordEvent scrubs the serialized payload before it is appended, and the rows stay free of such text by construction).
 /// </summary>
 /// <param name="TriggerId">The trigger's key, 'wf:{instance}:{trigger}': carries a command's nonce and arguments digest, a report's run and digest, an event's source sequence.</param>
 /// <param name="TriggerActor">Who fired the trigger.</param>
@@ -17,7 +18,7 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="ReportSha256">The report's digest, for a Step completion.</param>
 /// <param name="Answer">Which option a 'workflow answer' gave.</param>
 /// <param name="Amount">The rounds or tokens of a grant answer.</param>
-/// <param name="Reason">A step.failed's reason (already scrubbed by the decision).</param>
+/// <param name="Reason">A step.failed's reason (free text; RecordEvent scrubs the payload it is in).</param>
 /// <param name="Gates">The gates' answers, in order.</param>
 /// <param name="Evidence">The evidence checks.</param>
 /// <param name="Grant">A grant the trigger made.</param>
@@ -42,6 +43,35 @@ public sealed record WorkflowEventDetail(
     IReadOnlyList<string> Effects,
     WorkflowEventDelta Delta)
 {
+    /// <summary>
+    /// The detail of a row mirrored without a decision: a desk timeout's park, or a held event's expiry. It names the trigger
+    /// (its key and actor, a wait's source sequence) and the instance's suspension after the row, and nothing else.
+    /// </summary>
+    /// <param name="trigger">The deadline that fired, or the held event that expired.</param>
+    /// <param name="instance">The instance the row is about.</param>
+    /// <param name="suspension">The instance's suspension after it; none when it has none.</param>
+    /// <returns>The detail the ledger row carries.</returns>
+    public static WorkflowEventDetail Of(Trigger trigger, WorkflowInstanceId instance, Suspension? suspension)
+    {
+        ArgumentNullException.ThrowIfNull(trigger);
+        return new WorkflowEventDetail(
+            trigger.KeyFor(instance),
+            trigger.Actor,
+            trigger is WaitSatisfied { Source: EventWaitSource e } ? e.Sequence : null,
+            ArgumentsSha256: null,
+            ReportSha256: null,
+            Answer: null,
+            Amount: null,
+            Reason: null,
+            Gates: [],
+            Evidence: [],
+            Grant: null,
+            Override: null,
+            Refusal: null,
+            Effects: [],
+            new WorkflowEventDelta(Frame: null, WorkflowEventDelta.Summary(suspension), PendingPark: null, Loops: null, TokensSpent: null, TokensGranted: null, Facts: null, Outcome: null));
+    }
+
     /// <summary>The public projection of a decision's event for <paramref name="trigger"/>.</summary>
     /// <param name="recorded">The decision's event for this instance.</param>
     /// <param name="trigger">The trigger the decision decided; none for a start, whose event carries only its key and actor.</param>

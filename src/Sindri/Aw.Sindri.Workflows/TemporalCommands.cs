@@ -59,11 +59,12 @@ internal sealed class TemporalCommands(TemporalFrontend frontend)
             return client.Error;
         }
 
+        using var patience = TemporalUpdates.Wait(cancellationToken);
         try
         {
             return await client.Value.GetWorkflowHandle<RecipeWorkflow>(address.Value).ExecuteUpdateAsync(
                 update,
-                new WorkflowUpdateOptions(updateId) { Rpc = TemporalUpdates.Rpc(cancellationToken) }).ConfigureAwait(false);
+                new WorkflowUpdateOptions(updateId) { Rpc = patience.Options }).ConfigureAwait(false);
         }
         catch (WorkflowUpdateFailedException e) when (e.InnerException is ApplicationFailureException { ErrorType: { } code } refusal) // boundary: the validator's refusal is the caller's answer
         {
@@ -75,7 +76,7 @@ internal sealed class TemporalCommands(TemporalFrontend frontend)
         }
         catch (Exception e) when (!cancellationToken.IsCancellationRequested && e is WorkflowUpdateRpcTimeoutOrCanceledException or RpcException { Code: RpcException.StatusCode.DeadlineExceeded }) // boundary: no worker took it
         {
-            return CommandNonce.TryFrom(updateId, out var nonce) ? TemporalUpdates.NoWorker(address, nonce) : TemporalUpdates.NoWorker(address, updateId);
+            return await TemporalUpdates.NoAnswer(client.Value, address, updateId, cancellationToken).ConfigureAwait(false);
         }
         catch (RpcException e) when (e.Code == RpcException.StatusCode.NotFound) // boundary: no running execution with that id
         {
@@ -83,7 +84,7 @@ internal sealed class TemporalCommands(TemporalFrontend frontend)
         }
         catch (RpcException e) when (e.Code == RpcException.StatusCode.Unavailable) // boundary: the dev server died under a live serve
         {
-            return TemporalUpdates.Down(client.Value, e);
+            return TemporalUpdates.Down(client.Value, e, CommandNonce.TryFrom(updateId, out var nonce) ? nonce : null);
         }
     }
 }

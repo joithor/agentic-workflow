@@ -22,4 +22,22 @@ public static class InstanceEvents
         ArgumentNullException.ThrowIfNull(recorded);
         return recorded.IdempotencyKey.StartsWith($"workflow:{address.Value}:", StringComparison.Ordinal);
     }
+
+    /// <summary>Whether <paramref name="recorded"/> was mirrored by the instance whose id is <paramref name="id"/>: the id is read from the ledger's own keys, so it needs no Temporal.</summary>
+    /// <param name="recorded">The ledger event.</param>
+    /// <param name="id">The instance's opaque id.</param>
+    /// <returns>True when its key names an address that mints <paramref name="id"/>.</returns>
+    public static bool Belongs(LedgerEvent recorded, WorkflowInstanceId id)
+    {
+        ArgumentNullException.ThrowIfNull(recorded);
+        const string Prefix = "workflow:";
+        var key = recorded.IdempotencyKey;
+        if (!key.StartsWith(Prefix, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var end = key.IndexOf(':', Prefix.Length);
+        return end > Prefix.Length && InstanceAddress.TryFrom(key[Prefix.Length..end], out var address) && WorkflowInstanceId.Of(address) == id;
+    }
 }

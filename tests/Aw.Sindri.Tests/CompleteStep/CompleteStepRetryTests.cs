@@ -63,6 +63,27 @@ public sealed class CompleteStepRetryTests
 
         Assert.Equal(code, refused.IsError ? refused.Error.Code : "accepted");
         Assert.Empty(_instance.Sent);
+        Assert.Empty(facts.Stored);   // nothing was stored for a report that was refused
+        Assert.Equal(NonceClaim.Fresh, other.Value);
+    }
+
+    [Theory(Timeout = 30_000)]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task A_report_whose_approval_check_cannot_be_made_gives_the_error_and_its_nonce_back_and_stores_nothing(bool instanceQueryFails)
+    {
+        var facts = new InMemoryFactStore();
+        var service = new CompleteStepService(_instance, _instance, _instance, facts, _nonces, _instance);
+        var failure = Core.SindriErrors.ApprovalsUnavailable.With("approved/latest can't be read (test)");
+        _instance.GetFails = instanceQueryFails ? failure : null;
+        _instance.CheckFails = instanceQueryFails ? null : failure;
+
+        var refused = await service.Handle(Report(), TestContext.Current.CancellationToken);
+        var other = await _nonces.Claim(_nonce, "another command", TestContext.Current.CancellationToken);
+
+        Assert.Equal(failure.Code, refused.IsError ? refused.Error.Code : "accepted");
+        Assert.Empty(_instance.Sent);
+        Assert.Empty(facts.Stored);
         Assert.Equal(NonceClaim.Fresh, other.Value);
     }
 

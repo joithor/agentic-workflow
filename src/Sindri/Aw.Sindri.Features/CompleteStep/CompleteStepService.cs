@@ -6,6 +6,7 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -81,7 +82,7 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
         }
 
         var approval = await recipes.Check(view.Value.Recipe, cancellationToken).ConfigureAwait(false);
-        return approval.IsError ? approval.Error : ApprovalRefusal.Of(approval.Value, view.Value.Recipe, address);
+        return approval.IsError ? approval.Error : ApprovalRefusal.Of(approval.Value, view.Value.Recipe.Id, view.Value.Recipe.Hash, address);
     }
 
     /// <summary>Sends the report as the Update keyed by the nonce; a refusal gives back a claim this call created, an unconfirmed send keeps it.</summary>

@@ -125,7 +125,8 @@ internal sealed partial class RecipeWorkflow
             StepFailed => (TriggerNames.StepFailed, null),
             _ => (TriggerNames.Deadline, null),
         };
-        return new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowTransition, start.Item.Value, before.State, after.State, kind, outcome, open.Token.Value, trigger.Actor);
+        return new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowTransition, start.Item.Value, before.State, after.State, kind, outcome, open.Token.Value, trigger.Actor,
+            Detail: WorkflowEventDetail.Of(trigger, after.Id, after.Suspension));
     }
 
     /// <summary>
