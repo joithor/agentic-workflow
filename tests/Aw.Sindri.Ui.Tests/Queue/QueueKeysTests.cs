@@ -366,4 +366,109 @@ public sealed class QueueKeysTests
         Assert.Equal((Q(1), true), (queue.SelectedId, queue.QueuedRows[0].IsSelected));
         Assert.NotNull(queue.SelectedCopy());
     }
+
+    // The view with an item taken out of its group and put in another (the projector re-grouped it).
+    private static RouteAnswer Regrouped(string view, string itemId, string toGroup, int clones = 0)
+    {
+        var root = System.Text.Json.Nodes.JsonNode.Parse(GoldenFiles.SpecShaped("queue", view))!;
+        var groups = root["groups"]!.AsArray();
+        System.Text.Json.Nodes.JsonNode? moved = null;
+        foreach (var group in groups)
+        {
+            var items = group!["items"]!.AsArray();
+            foreach (var item in items.Where(i => i!["id"]!.GetValue<string>() == itemId).ToList())
+            {
+                _ = items.Remove(item);
+                moved = item;
+            }
+        }
+
+        var target = groups.Single(g => g!["group"]!.GetValue<string>() == toGroup)!["items"]!.AsArray();
+        if (moved is not null)
+        {
+            target.Add(moved);
+        }
+
+        var template = groups.Single(g => g!["group"]!.GetValue<string>() == "withYou")!["items"]!.AsArray()[0] ?? moved!;
+        for (var n = 0; n < clones; n++)
+        {
+            var copy = System.Text.Json.Nodes.JsonNode.Parse(template.ToJsonString())!;
+            copy["id"] = "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a9" + n.ToString("00", System.Globalization.CultureInfo.InvariantCulture);
+            groups.Single(g => g!["group"]!.GetValue<string>() == "withYou")!["items"]!.AsArray().Insert(0, copy);
+        }
+
+        return new RouteAnswer(System.Net.HttpStatusCode.OK, root.ToJsonString());
+    }
+
+    private static string Running(int n) => "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2e70" + n.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    // corr-1 / a11y-0 (a): a focused row Home draws that is served in a group Home does not draw has left the page: like a cleared row.
+    [Fact]
+    public async Task A_focused_home_row_served_in_a_group_home_does_not_draw_passes_to_the_next_row_and_is_spoken_once()
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
+        var queue = await Queue();
+        queue.Move(1, QueueScope.Home);
+        queue.Move(1, QueueScope.Home);
+        Assert.Equal(Running(1), queue.SelectedId);
+        var asked = new List<FocusRequestedEventArgs>();
+        queue.FocusRequested += (_, e) => asked.Add(e);
+
+        _server.QueueView = Regrouped("extra-p11-running", Running(1), "waitingOnYou");
+        await queue.Refresh(_api, Token);
+
+        var drawn = queue.RunningRows.Concat(queue.QueuedRows).Select(r => r.Id).ToList();
+        Assert.Contains(queue.SelectedId!, drawn, StringComparer.Ordinal);
+        Assert.NotEqual(Running(1), queue.SelectedId, StringComparer.Ordinal);
+        Assert.Equal([(queue.SelectedId!, true)], asked.Select(a => (a.ItemId, a.OnlyIfLost)));
+        Assert.Equal((true, Labels.Cleared(Running(1))), (queue.IsAnnouncing, queue.Announcement));
+        Assert.True(queue.IsGuarded);
+    }
+
+    // (b): five new With you rows push the focused row past Home's cap of five.
+    [Fact]
+    public async Task A_focused_home_row_pushed_past_the_cap_passes_to_a_row_that_is_drawn()
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
+        var queue = await Queue();
+        for (var i = 0; i < 5; i++)
+        {
+            queue.Move(1, QueueScope.Home);
+        }
+
+        var last = queue.RunningRows[^1].Id;
+        Assert.Equal(last, queue.SelectedId);
+        var asked = FocusAsked(queue);
+
+        _server.QueueView = Regrouped("extra-p11-running", string.Empty, "withYou", clones: 5);
+        await queue.Refresh(_api, Token);
+
+        var drawn = queue.RunningRows.Concat(queue.QueuedRows).Select(r => r.Id).ToList();
+        Assert.DoesNotContain(last, drawn, StringComparer.Ordinal);
+        Assert.Contains(queue.SelectedId!, drawn, StringComparer.Ordinal);
+        Assert.Equal([queue.SelectedId!], asked);
+        Assert.Equal((true, Labels.Cleared(last)), (queue.IsAnnouncing, queue.Announcement));
+    }
+
+    // (c): G R on the Queue page; the focused running row is served in With you, a group the filter hides.
+    [Fact]
+    public async Task A_focused_page_row_served_in_a_group_the_filter_hides_passes_to_the_next_running_row()
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
+        var queue = await Queue();
+        queue.Filter(QueueFilter.Running);
+        queue.Move(1, QueueScope.Page);
+        queue.Move(1, QueueScope.Page);
+        Assert.Equal(Running(2), queue.SelectedId);
+        var asked = FocusAsked(queue);
+
+        _server.QueueView = Regrouped("extra-p11-running", Running(2), "withYou");
+        await queue.Refresh(_api, Token);
+
+        var shown = queue.Groups.Where(g => g.IsVisible).SelectMany(g => g.Rows).Select(r => r.Id).ToList();
+        Assert.Contains(queue.SelectedId!, shown, StringComparer.Ordinal);
+        Assert.NotEqual(Running(2), queue.SelectedId, StringComparer.Ordinal);
+        Assert.Equal([queue.SelectedId!], asked);
+        Assert.Equal(Labels.Cleared(Running(2)), queue.Announcement);
+    }
 }
