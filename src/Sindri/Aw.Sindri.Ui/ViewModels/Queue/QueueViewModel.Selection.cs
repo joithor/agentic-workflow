@@ -17,6 +17,10 @@ internal sealed partial class QueueViewModel
         Mark();
     }
 
+    /// <summary>The shell shows a page: the selection's scope follows it (silently); a page without rows (null) is no scope.</summary>
+    /// <param name="scope">The page shown, or null for a page that draws no rows.</param>
+    internal void PageShown(QueueScope? scope) => _ = (_scope, scope);
+
     /// <summary>
     /// J / K (§8): the next or previous row of the page the key was pressed on, in the order it draws them; stays at the
     /// ends. Selecting is focusing (§3.3): the view is asked to move focus onto the row.

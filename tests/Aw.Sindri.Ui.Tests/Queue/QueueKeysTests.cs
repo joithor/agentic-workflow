@@ -471,4 +471,69 @@ public sealed class QueueKeysTests
         Assert.Equal([queue.SelectedId!], asked);
         Assert.Equal(Labels.Cleared(Running(2)), queue.Announcement);
     }
+
+    // R1: the selection's scope follows the page the shell SHOWS. G R, J on a running row, G H: Home draws With you too, so a
+    // row served in With you is still on the page shown and keeps its selection, silently.
+    [Fact]
+    public async Task A_selection_made_under_a_filter_follows_the_page_the_shell_shows_when_it_goes_home()
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
+        var queue = await Queue();
+        queue.Filter(QueueFilter.Running);
+        queue.Move(1, QueueScope.Page);
+        queue.Move(1, QueueScope.Page);
+        Assert.Equal(Running(2), queue.SelectedId);
+        var asked = FocusAsked(queue);
+        queue.PageShown(QueueScope.Home);
+
+        _server.QueueView = Regrouped("extra-p11-running", Running(2), "withYou");
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal(Running(2), queue.SelectedId);
+        Assert.Equal((false, Labels.Sindri, false), (queue.IsAnnouncing, queue.Announcement, queue.IsGuarded));
+        Assert.Empty(asked);
+    }
+
+    // R1: select on Home, G Q; the refresh that pushes the row past Home's cap is no concern of the Queue page, which still draws it.
+    [Fact]
+    public async Task A_row_pushed_past_homes_cap_while_the_queue_page_is_shown_keeps_its_selection_silently()
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
+        var queue = await Queue();
+        for (var i = 0; i < 5; i++)
+        {
+            queue.Move(1, QueueScope.Home);
+        }
+
+        var last = queue.RunningRows[^1].Id;
+        queue.PageShown(QueueScope.Page);
+        var asked = FocusAsked(queue);
+
+        _server.QueueView = Regrouped("extra-p11-running", string.Empty, "withYou", clones: 5);
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal(last, queue.SelectedId);
+        Assert.Equal((false, Labels.Sindri, false), (queue.IsAnnouncing, queue.Announcement, queue.IsGuarded));
+        Assert.Empty(asked);
+    }
+
+    // R1: on any other page (Decisions, Services...) neither list is shown: a served row keeps its selection, silently.
+    [Fact]
+    public async Task A_served_row_keeps_its_selection_silently_while_another_page_is_shown()
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
+        var queue = await Queue();
+        queue.Move(1, QueueScope.Home);
+        queue.Move(1, QueueScope.Home);
+        Assert.Equal(Running(1), queue.SelectedId);
+        var asked = FocusAsked(queue);
+        queue.PageShown(scope: null);
+
+        _server.QueueView = Regrouped("extra-p11-running", Running(1), "waitingOnYou");
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal(Running(1), queue.SelectedId);
+        Assert.Equal((false, Labels.Sindri, false), (queue.IsAnnouncing, queue.Announcement, queue.IsGuarded));
+        Assert.Empty(asked);
+    }
 }
