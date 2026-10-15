@@ -112,7 +112,7 @@ public sealed class GetInstanceEventsTests
         Assert.Equal([2L, 4L], read.Value.Events.Select(static e => e.Sequence));
     }
 
-    [Fact]
+    [Fact(Timeout = 30_000)]
     public async Task Following_ends_with_exit_0_when_it_is_interrupted()
     {
         var h = await Ledger();
@@ -127,7 +127,7 @@ public sealed class GetInstanceEventsTests
         Assert.Contains("workflow.started", stdout.ToString(), StringComparison.Ordinal);
     }
 
-    [Fact]
+    [Fact(Timeout = 30_000)]
     public async Task Following_ends_with_exit_0_when_stdout_is_closed()
     {
         var h = await Ledger();
@@ -139,7 +139,7 @@ public sealed class GetInstanceEventsTests
         Assert.Equal(0, exit);
     }
 
-    [Theory]
+    [Theory(Timeout = 30_000)]
     [InlineData(false)]
     [InlineData(true)]
     public async Task The_events_command_on_an_unknown_instance_is_SND_WF_001_with_exit_2_and_never_follows(bool follow)

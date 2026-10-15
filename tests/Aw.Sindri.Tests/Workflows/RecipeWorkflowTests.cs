@@ -21,7 +21,7 @@ public sealed class RecipeWorkflowTests : IDisposable
 
     public void Dispose() => _harness.Dispose();
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Start_opens_the_produce_desk_task_1_1_with_its_declared_outcomes_and_replays()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -57,7 +57,7 @@ public sealed class RecipeWorkflowTests : IDisposable
     /// The worker 'sindri serve' runs (ITemporalWorker) runs the instance; the start is one ledger row keyed
     /// 'workflow:{workflow id}:{run id}:{activity id}' (spec rev 8.1 §5.6); 'workflow list' finds it by its search attributes.
     /// </summary>
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Serve_worker_mirrors_the_start_into_the_ledger_and_lists_the_instance()
     {
         var ct = TestContext.Current.CancellationToken;

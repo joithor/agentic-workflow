@@ -17,7 +17,7 @@ public sealed class WorkflowReadVerbsTests : IDisposable
 
     public void Dispose() => _harness.Dispose();
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Status_list_and_events_show_a_started_instance_and_its_desk_task()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -63,7 +63,7 @@ public sealed class WorkflowReadVerbsTests : IDisposable
         Assert.Equal("  commands  complete, takeover, cancel", lines[6]);
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Status_of_an_unknown_instance_is_SND_WF_001_and_exit_2()
     {
         await using var env = await WorkflowsHarness.StartDevServer();
@@ -75,7 +75,7 @@ public sealed class WorkflowReadVerbsTests : IDisposable
         Assert.StartsWith("SND-WF-001 T-9/step/1 isn't an instance", stderr, StringComparison.Ordinal);
     }
 
-    [Theory]
+    [Theory(Timeout = 120_000)]
     [InlineData("list", "--needs-me", "--item", "T-1")]
     [InlineData("list", "--colour", "blue")]
     [InlineData("status")]

@@ -63,7 +63,7 @@ internal sealed class WorkflowsHarness : IDisposable
                 ExistingPath = PinnedTemporal.Path(),
                 ExtraArgs = [.. SindriTemporal.SearchAttributes.SelectMany(static a => new[] { "--search-attribute", $"{a.Name}={a.Type}" })],
             },
-        });
+        }).WaitAsync(TimeSpan.FromSeconds(120));   // a dev server that never comes up fails the test instead of hanging the lane
 
     public static string Target(WorkflowEnvironment env) => env.Client.Connection.Options.TargetHost!;
 

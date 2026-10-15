@@ -38,7 +38,7 @@ public sealed class EventBridgeTests(DevServer server) : IClassFixture<DevServer
 
     public void Dispose() => _harness.Dispose();
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task An_item_event_from_its_producer_reaches_the_waiting_instance_and_moves_it()
     {
         await Serve(async sindri =>
@@ -57,7 +57,7 @@ public sealed class EventBridgeTests(DevServer server) : IClassFixture<DevServer
         });
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Early_event_applies_on_entering_the_wait()
     {
         await Serve(async sindri =>
@@ -79,7 +79,7 @@ public sealed class EventBridgeTests(DevServer server) : IClassFixture<DevServer
         });
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task A_causation_event_reaches_only_its_causer()
     {
         await Serve(async sindri =>
@@ -102,7 +102,7 @@ public sealed class EventBridgeTests(DevServer server) : IClassFixture<DevServer
         });
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task A_restarted_bridge_resends_nothing_and_a_resent_event_applies_once()
     {
         await Serve(async sindri =>
@@ -131,7 +131,7 @@ public sealed class EventBridgeTests(DevServer server) : IClassFixture<DevServer
         });
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task An_item_event_does_not_reach_an_instance_started_after_it()
     {
         await Serve(async sindri =>

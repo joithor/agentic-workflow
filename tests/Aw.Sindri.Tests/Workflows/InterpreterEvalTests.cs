@@ -31,7 +31,7 @@ public sealed class InterpreterEvalTests(SindriTimeSkippingServer server) : ICla
 
     public void Dispose() => _harness.Dispose();
 
-    [Theory]
+    [Theory(Timeout = 120_000)]
     [InlineData("happy", "T-11")]
     [InlineData("no-progress", "T-12")]
     [InlineData("rounds", "T-13")]
@@ -57,7 +57,7 @@ public sealed class InterpreterEvalTests(SindriTimeSkippingServer server) : ICla
                 var line = evalCase.Steps[i];
                 Assert.Equal(TriggerNames.StepCompleted, line.Trigger.Kind);
                 var report = new StepCompleted("human:cli", view.Run!.Value, line.Trigger.Outcome!.Value, Outputs(line.Trigger), Tokens: 0, StepRuntime.Desk, Sha(name + ":" + i.ToString(CultureInfo.InvariantCulture))); // why: the view before a step.completed line has an open run (asserted through Seen)
-                _ = await handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(Sha("nonce:" + name + ":" + i.ToString(CultureInfo.InvariantCulture))[..32]));
+                _ = await handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(Sha("nonce:" + name + ":" + i.ToString(CultureInfo.InvariantCulture))[..32])).WaitAsync(TimeSpan.FromSeconds(30));
                 var folded = simulation.Step(line, i + 2);
                 Assert.False(folded.IsError, folded.IsError ? folded.Error.Message : null);
                 simulation = folded.Value.Next;
