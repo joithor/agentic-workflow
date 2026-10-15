@@ -717,8 +717,10 @@ Engine spec rev 8.1 §3.8, §5.2, §5.5, §5.8, §6.2; UI spec E-6, E-19.
 - **`workflow takeover <address>`** (class `pause`: an agent session may take over, so the attach hook works) and
   **`workflow handback <address>`** (class `desk`: a session is refused `SND-AUTH-002`) are `ApplyCommand` kinds
   `takeover` and `handback`, sent as the `takeover` and `handback` Updates with the nonce as id. Both are exempt from
-  the approval check. A takeover of an ended or already taken-over instance, and a handback of one that isn't taken
-  over, are `SND-WF-003` from the validator and record nothing.
+  the approval check. While the workflow is still open, a takeover of an ended or already taken-over instance, and a handback of one
+  that isn't taken over, are `SND-WF-003` from the validator and record nothing. Once an ended instance's workflow has
+  closed, Temporal has no running execution to take the Update: the command is `SND-WF-001` ("no running instance"),
+  as for `cancel` and `command` (the same open/closed split holds for them).
 - **Timers.** A takeover cancels the state timer's scope and keeps what was left (`RemainingTimer`, from
   `Workflow.UtcNow`) on the takeover's suspension; status shows it as `paused  timeout 40s left`
   (`InstanceView.paused`). No state timer fires while taken over (`StateTimers.Between` decides `arm`, `pause`, `resume`, `keep` or `stop`). The handback re-arms that timer with what was left
@@ -731,7 +733,8 @@ Engine spec rev 8.1 §3.8, §5.2, §5.5, §5.8, §6.2; UI spec E-6, E-19.
 - **open-request (E-6).** `IInstanceRuntime.OpenRequest(address, LaunchId, …)` builds the open-request (actor `service:engine`) and sends it as the `open-request` Update with id
   `wf:{instance}:open:{launchId}`: no nonce, actor `service:engine`, past the API chain and exempt from approval. It
   takes over wherever a takeover is allowed, is a no-op (nothing recorded) when the instance is already taken over,
-  and is `SND-WF-003` on an ended instance and for any actor other than `service:engine`. One that arrives while the
+  and is `SND-WF-003` on an ended instance whose workflow is still open (`SND-WF-001` once it has closed), for any actor other than `service:engine`,
+  and for a launch that is not a launch id (`LCH-` and 32 lower-case hex digits). One that arrives while the
   instance is still starting waits for the start, then takes over. Temporal deduplicates the id, so a repeat applies once. The ledger row
   carries the launch id as `causation`. Its sender is API P10b's launcher.
 - **Start taken over (E-19).** `StartInstance` reads the item's launches (`ILaunchRequests.Requested` returns a `LaunchId?`: `LCH-` and 32 hex digits); when one is still
