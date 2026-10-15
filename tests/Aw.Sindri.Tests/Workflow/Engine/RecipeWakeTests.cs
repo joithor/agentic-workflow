@@ -72,6 +72,40 @@ public sealed class RecipeWakeTests
         _ = Assert.IsType<Absorbed>(Decide(parked, Item, Wake(RecipeWakeKind.Drifted, sequence: 8), rules: EngineRules.Default));
     }
 
+    /// <summary>Two effects of one transition are refused under the same drift: the park keeps both, and the approval re-sends both.</summary>
+    [Fact, Trait("Lane", "unit")]
+    public void Two_effects_refused_under_drift_are_both_resent_by_the_approval()
+    {
+        var second = new RefusedEffect(BlockId.From("effect.notify.desk"), new EffectIdentity(Id, Entry: 3, Index: 1), new Dictionary<string, WithValue>(StringComparer.Ordinal));
+        var parked = Parked(Decide(DriftParked(), Item, new OutboxRefused(Dispatcher, second, "SND-RECIPE-006", Sequence: 92), rules: EngineRules.Default));
+
+        var resumed = Assert.IsType<Applied>(Decide(parked, Item, Wake(RecipeWakeKind.Approved), rules: EngineRules.Default));
+
+        Assert.Equal([_claim, second.Identity], resumed.Effects.Select(e => e.Identity));
+        Assert.Equal([_claim, second.Identity], resumed.Changes[0].Event.Effects);
+    }
+
+    /// <summary>A drift wake parks with no effect; the refusal that follows (the delay expired) joins that park, and the approval sends it.</summary>
+    [Fact, Trait("Lane", "unit")]
+    public void A_refusal_after_a_drift_wake_park_is_kept_and_resent_by_the_approval()
+    {
+        var woken = Parked(Decide(Claimed(), Item, Wake(RecipeWakeKind.Drifted), rules: EngineRules.Default));
+
+        var parked = Parked(Decide(woken, Item, new OutboxRefused(Dispatcher, _claimRef, "SND-RECIPE-006", Sequence: 92), rules: EngineRules.Default));
+        var resumed = Assert.IsType<Applied>(Decide(parked, Item, Wake(RecipeWakeKind.Approved, sequence: 9), rules: EngineRules.Default));
+
+        Assert.Equal(_claim, Assert.Single(resumed.Effects).Identity);
+    }
+
+    /// <summary>The same effect refused twice under drift changes nothing.</summary>
+    [Fact, Trait("Lane", "unit")]
+    public void The_same_effect_refused_twice_under_drift_is_absorbed()
+    {
+        var parked = Decide(DriftParked(), Item, new OutboxRefused(Dispatcher, _claimRef, "SND-RECIPE-006", Sequence: 92), rules: EngineRules.Default);
+
+        _ = Assert.IsType<Absorbed>(parked);
+    }
+
     private static WorkflowInstance Claimed() => At(Item, "claimed", entry: 3);
 
     private static WorkflowInstance DriftParked() =>
