@@ -59,6 +59,12 @@ internal sealed partial class RecipeWorkflow
             throw Refusal(WorkflowErrors.StaleRunToken.With($"run {_report.Run.Value} was already reported and is being applied (fix: use the token in status)"));
         }
 
+        if (instance.Suspension is { } suspension)
+        {
+            // why: the parked loop never reads a report, so one accepted here would hang its Update and apply stale after the resume
+            throw Refusal(WorkflowErrors.TriggerNotAllowed.With($"{instance.Address.Value} is parked ({suspension.Reason?.ToString() ?? suspension.Kind.ToString()}); answer --resume first, then complete run {report.Run.Value}"));
+        }
+
         if (TransitionDecision.Decide(new DecisionInput(instance, context.Recipe, report, GateAnswers.None, context.Decisions)) is Rejected rejected)
         {
             throw Refusal(rejected.Error);
