@@ -1,13 +1,18 @@
 using Aw.Context.Core.Docs;
 using Aw.Context.Core.Eval;
+using Aw.Context.Core.Extract;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Review;
 using Aw.Context.Core.Trust;
 using Aw.Context.Infrastructure.Docs;
+using Aw.Context.Infrastructure.Extract;
 using Aw.Context.Infrastructure.Eval;
 using Aw.Context.Infrastructure.Git;
 using Aw.Context.Infrastructure.Graph;
+using Aw.Context.Infrastructure.Labeling;
 using Aw.Context.Infrastructure.Map;
 using Aw.Context.Infrastructure.Onyx;
+using Aw.Context.Infrastructure.Review;
 using Aw.Context.Infrastructure.Scrubbing;
 using Aw.Context.Infrastructure.Sources;
 using Aw.Context.Infrastructure.Store;
@@ -42,8 +47,23 @@ public static class ContextInfrastructureServiceCollectionExtensions
             .AddSingleton<IGraphStore, SqliteGraphStore>()
             .AddSingleton<IMapFileReader, MapFileReader>()
             .AddSingleton<IExportStore, FileExportStore>()
+            .AddSingleton<IReviewFileStore, FileReviewFileStore>()
+            .AddSingleton<IRepoReader, GitRepoReader>()
+            .AddSingleton(GraphifyOptions.Default)
+            .AddSingleton<IClusterSource, GraphifyClusterSource>()
             .AddSingleton<IProbeFileReader, ProbeFileReader>()
             .AddSingleton<IProbeReportStore, FileProbeReportStore>()
             .AddSingleton(sp => new OnyxSources(new OnyxSourceParts(
                 OnyxHttp.Client, environment, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILogger<OnyxClient>>())));
+
+    /// <summary>
+    /// Adds the labeling pass ('context.labeling'): <see cref="ILabeler"/> over the host's <see cref="Core.Models.IModelPort"/>, held to
+    /// <paramref name="maxTokens"/> tokens per pass. Registered only when the approved profile turns labeling on.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="maxTokens">The profile's 'context.labeling.maxTokens'.</param>
+    /// <returns>The same collection.</returns>
+    public static IServiceCollection AddContextLabeling(this IServiceCollection services, int maxTokens)
+        => services.AddSingleton<ILabeler>(sp => new ModelLabeler(
+            sp.GetRequiredService<Core.Models.IModelPort>(), sp.GetRequiredService<Core.Trust.IScrubberFactory>(), maxTokens));
 }

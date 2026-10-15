@@ -7,9 +7,9 @@ namespace Aw.Context.Core.Extract;
 public interface IClusterSource
 {
     /// <summary>Clusters the repo at a commit.</summary>
-    /// <param name="repo">The repo.</param>
+    /// <param name="repo">The repo: its name and checkout.</param>
     /// <param name="commit">The commit.</param>
     /// <param name="cancellationToken">Cancels the run.</param>
     /// <returns>The clusters.</returns>
-    public ValueTask<Result<ClusterSet>> Clusters(ContextRepoName repo, string commit, CancellationToken cancellationToken);
+    public ValueTask<Result<ClusterSet>> Clusters(ContextRepo repo, string commit, CancellationToken cancellationToken);
 }

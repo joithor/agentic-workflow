@@ -46,8 +46,8 @@ public sealed class GraphStoreFileTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void The_graph_tables_are_migration_0002_after_the_repo_docs_one() =>
-        Assert.Equal("1 s1a_repo_docs, 2 s3a_graph, 3 s2w_scrub_ruleset", string.Join(", ", ContextDatabase.Migrations.Select(m => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{m.Version} {m.Name}"))));
+    public void The_map_review_columns_are_migration_0004_after_the_scrub_ruleset_one() =>
+        Assert.Equal("1 s1a_repo_docs, 2 s3a_graph, 3 s2w_scrub_ruleset, 4 s4_map_review", string.Join(", ", ContextDatabase.Migrations.Select(m => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{m.Version} {m.Name}"))));
 
     [Fact, Trait("Lane", "integration")]
     public async Task The_fixture_map_round_trips_through_yaml_the_store_and_back()
