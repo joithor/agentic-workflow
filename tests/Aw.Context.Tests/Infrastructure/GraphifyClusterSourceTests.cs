@@ -1,11 +1,12 @@
 using Aw.Context.Infrastructure.Extract;
 using Aw.Context.Infrastructure.Git;
-using Aw.Context.Testing.Fixtures;
 
 namespace Aw.Context.Tests.Infrastructure;
 
 public sealed class GraphifyClusterSourceTests
 {
+    private static readonly string[] _bwrapPaths = ["/usr/bin/bwrap", "/bin/bwrap"];
+
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact, Trait("Lane", "integration")]
@@ -83,27 +84,83 @@ public sealed class GraphifyClusterSourceTests
     }
 
     /// <summary>
-    /// The real pinned graphify under the real sandbox on the fixture app at its head commit. Where the machine's sandbox
-    /// can't start (an AppArmor-restricted user namespace for bwrap), graphify must not run at all: the set is unavailable.
+    /// The real pinned graphify under the real sandbox on a small TS repo whose files import each other, one of them under a
+    /// deny glob. Where the machine can't run it (no root-owned bwrap that starts, no graphify at the pin on PATH) the test is
+    /// skipped with the reason; where it can, it must cluster: a silent pass without graphify running is not allowed.
     /// </summary>
     [Fact, Trait("Lane", "heavy")]
-    public async Task The_fixture_app_clusters_under_the_sandbox_or_degrades_without_running_graphify()
+    public async Task The_real_graphify_clusters_a_small_repo_under_the_sandbox_and_never_sees_a_denied_file()
     {
-        using var fixture = FixtureRepo.Build();
-        var repo = new Context.Core.Engine.ContextRepo(Context.Core.Engine.ContextRepoName.From("aw-split-panes"), fixture.Path);
+        var unrunnable = WhyGraphifyCannotRun();
+        Assert.SkipWhen(unrunnable is not null, unrunnable ?? string.Empty);
+        using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["src/app.ts"] = "import { open } from './layout/pane';\nimport { bind } from './keys/bindings';\nexport const app = () => [open(), bind()];\n",
+            ["src/layout/pane.ts"] = "import { size } from './size';\nexport function open() { return size() + 1; }\n",
+            ["src/layout/size.ts"] = "export function size() { return 2; }\n",
+            ["src/keys/bindings.ts"] = "import { open } from '../layout/pane';\nimport { token } from '../../config/secrets/keys';\nexport function bind() { return [open(), token]; }\n",
+            ["config/secrets/keys.ts"] = "export const token = 'not-a-real-secret';\n",
+        });
         var source = new GraphifyClusterSource(new GitCli(), GraphifyOptions.Default);
 
-        var set = await source.Clusters(repo, fixture.Head, Ct);
+        var set = await source.Clusters(repo.Repo, repo.Head, Ct);
 
         Assert.True(set.IsSuccess);
-        if (!set.Value.Available)
+        Assert.True(set.Value.Available, "graphify and the sandbox are usable here, so the set must be available");
+        Assert.NotEmpty(set.Value.Clusters);
+        var members = set.Value.Clusters.SelectMany(c => c.Files).ToList();
+        Assert.NotEmpty(members);
+        var tracked = repo.Run("ls-files").Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        Assert.All(members, f => Assert.Contains(f, tracked, StringComparer.Ordinal));
+        Assert.DoesNotContain(members, f => f.Contains("secrets/", StringComparison.Ordinal));
+        Assert.Contains(members, f => f.EndsWith("pane.ts", StringComparison.Ordinal));
+        TestContext.Current.SendDiagnosticMessage($"graphify produced {set.Value.Clusters.Count} cluster(s) over {members.Count} file(s)");
+    }
+
+    // Null when the real run is possible; else the reason to skip. A root-owned bwrap that starts and a graphify on PATH printing the pin.
+    private static string? WhyGraphifyCannotRun()
+    {
+        if (!OperatingSystem.IsLinux())
         {
-            Assert.Empty(set.Value.Clusters);   // no usable sandbox here: graphify never ran unsandboxed
-            return;
+            return "the real-graphify run is only wired for Linux (bwrap)";
         }
 
-        Assert.NotEmpty(set.Value.Clusters);
-        Assert.All(set.Value.Clusters.SelectMany(c => c.Files), f => Assert.False(Path.IsPathRooted(f)));
-        Assert.Contains(set.Value.Clusters.SelectMany(c => c.Files), f => f.EndsWith("SplitPane.ts", StringComparison.Ordinal));
+        var bwrap = _bwrapPaths.FirstOrDefault(File.Exists);
+        if (bwrap is null || Probe(bwrap, "--ro-bind", "/", "/", "true") is not { } sandboxed || sandboxed.Exit != 0)
+        {
+            return "no root-owned bwrap that can start a sandbox here";
+        }
+
+        var graphify = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
+            .Select(dir => Path.Combine(dir, "graphify")).FirstOrDefault(File.Exists);
+        return graphify is null ? "no graphify on PATH"
+            : Probe(graphify, "--version") is { Exit: 0 } version && version.Output.Contains(GraphifyOptions.Default.Pin, StringComparison.Ordinal) ? null
+            : $"the graphify on PATH is not the pin {GraphifyOptions.Default.Pin}";
+    }
+
+    private static (int Exit, string Output)? Probe(string file, params string[] args)
+    {
+        var start = new System.Diagnostics.ProcessStartInfo(file) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
+        foreach (var arg in args)
+        {
+            start.ArgumentList.Add(arg);
+        }
+
+        try
+        {
+            using var process = System.Diagnostics.Process.Start(start);
+            if (process is null)
+            {
+                return null;
+            }
+
+            var stderr = process.StandardError.ReadToEndAsync(CancellationToken.None);
+            var output = process.StandardOutput.ReadToEnd();
+            return process.WaitForExit(TimeSpan.FromSeconds(60)) ? (process.ExitCode, output + stderr.Result) : null;
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            return null;
+        }
     }
 }
