@@ -1751,6 +1751,7 @@ public sealed class ShellWindowTests : IDisposable
         _records.Write(A.Record());
         var (window, shell) = await Show(s => s.State == ShellState.Normal);
         var command = OperatingSystem.IsMacOS() ? RawInputModifiers.Meta : RawInputModifiers.Control;
+        window.SettingsSlot.Content = new SettingsView { DataContext = new SettingsViewModel(new Preferences(_preferences), new FakeMotionPreference(), _ => { }) };
         var focusEvents = 0;
         window.GotFocus += (_, _) => focusEvents++;
 
@@ -1759,7 +1760,8 @@ public sealed class ShellWindowTests : IDisposable
 
         Assert.Equal(PageId.Settings, shell.CurrentPage);
         Assert.True(Visible(window, "SettingsSlot"));
-        Assert.InRange(focusEvents, 0, 1);   // a11y-5: the chord moves focus once, into Settings
+        Assert.Equal(1, focusEvents);   // a11y-5: the chord moves focus once, into Settings
+        Assert.True(Focused(window) is Visual focused && window.SettingsSlot.IsVisualAncestorOf(focused), "focus isn't in Settings");
     });
 
     [Fact]
