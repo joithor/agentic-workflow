@@ -159,6 +159,16 @@ the page the tab hides as the sheet opens), as opening a covering sheet does. Cl
 tab when the tab reopened it, otherwise (a deep link) to the page region. Narrowing the window below 1100 px with the
 sheet open moves focus on the page (now disabled under the sheet) to the sheet's heading. A state change that hides the focused control moves focus to its region's neighbour: the pill in
 the top bar, the page region in the page (`ShellWindow.KeepFocus`, `TopBar.KeepRefreshFocus`).
+The mechanics: the regions (Page, Sheet, the top bar, the shortcuts card) are Borders with `AccessibilityView=Control` and
+`ControlTypeOverride=Group` (the `focus-region` style) so they have a named peer; `SheetTitle` is a Border typed Text that wraps
+the raw `SheetSubjectText`, so its name is the kind noun and the subject. **A page change by a navigation command** (a G-chord,
+the palette's Go to, a nav tab) always lands focus on the new page's region wherever focus was (the pill, a nav item, a sheet
+beside the page), and `ShellWindow.KeepFocusOrReannounce` does it: Avalonia 12.1.3 has no `ClearFocus`, so when the region
+already has focus it pulses `Page.IsEnabled` false and true (focus drops) and focuses it again, which raises the fresh event
+the screen reader speaks. From the palette it raises two (the palette's close hands focus back, then the re-announce). Over a
+covering sheet the page is disabled and the usual keep-focus rule applies. ⌘, keeps its own rule (Settings' first control,
+once, via `_openingSettings`). A page change that does not come from a navigation command does not exist today; any new one
+would take the same path unless it says otherwise. Whether the OS screen reader speaks it is not provable headless.
 
 ### Settings and reduced motion (§3.3 ⌘,, §11.4, §14.2)
 
@@ -376,7 +386,9 @@ U3' and U8.
   filter. The top bar shows `G …` while one waits.
 - **Deep links.** `workflow/<address>` (an address, which may contain `/`), `recipe/<id>`, `node/<key>`, `session/<id>`
   and `system/<dependency>` go to Workflows, Recipes, Context, Agents and System; `item/`, `decision/`, `service/` and
-  `job/` open their sheet over the page shown; `home/needs-you` is Home. `ShellViewModel.Navigate` routes them and the
+  `job/` open their sheet over the page shown; `needs-you/<row>` (the row's item, decision, service or job) opens that row's sheet;
+  `home/needs-you` is Home. A workflow instance's `subject.kind` is nullable (engine #227: null when the first input is a link
+  or payload with no declared kind); U8 shows the input's key then (API spec §3.8). `ShellViewModel.Navigate` routes them and the
   sheet and its subject live in `ShellViewModel.Sheet.cs`.
 - **Workflow reads** (`ISindriApi`, API §3.8; the client's routes are in `Api/Workflow/WorkflowRoutes`):
   `GET /sindri/workflow/instances` (the root rows and the root-wide counts; `root`, `open`, `recipe`, `subject`, `address`
@@ -406,7 +418,8 @@ class of its own, like `Api/Workflow/WorkflowRoutes.cs`), `Api/SindriUiJsonConte
 sheet's link kind), and in `tests/Aw.Sindri.Ui.Testing`: `FakeSindriApi.Workflow.cs`, `FakeSindriHandler.cs` (inside
 `Route()`'s switch, above the workflow-read arm, which answers GET only), `SindriApiContract.cs` and
 `SindriApiContract.Workflow.cs`. This page has its own marker at the end of "Tests". A lane's new shell state goes in its
-own `ShellViewModel.<Slice>.cs` partial (the file cap is 300 lines). The sheet keeps the **kind** of the link that opened it
+own `ShellViewModel.<Slice>.cs` partial (the file cap is 300 lines), and a lane's new window behavior goes in a
+`ShellWindow.<Slice>.cs` partial (`ShellWindow.axaml.cs` is near the cap). The sheet keeps the **kind** of the link that opened it
 (`SheetLink`: kind and subject; `SheetSubject` is derived), so `item/X` and `workflow/X` are two sheets and the edge tab
 reopens the right one. The sheet's content is chosen by that kind: `ShellViewModel.IsSheetPlaceholderShown` is `SheetLink?.Kind switch { …, _ => true }`, and `SheetBody` ("not served yet") binds its `IsVisible` to it. Each lane claims its kinds with one `DeepLinkKind.X or … => false` arm at its own marker inside that switch (U3' above its marker, U8 below its own), then adds its content inside `SheetContent`. The kinds follow screens spec §8, and each marker's text lists them as `(kinds: …)`, which a test parses: **U3'** claims `NeedsYou` and `Decision`; **U8** claims `Workflow` (its re-base of the item sheet, §4.7, is content and adds no arm). `Item` is U2's item sheet (#197): its arm, `DeepLinkKind.Item => false`, is written above both markers by whichever of #197 and #215 merges second. `HomeNeedsYou` is a page link, not a sheet. `Recipe`, `Node`, `Session`, `System`, `Service` and `Job` are claimed later, at this switch, by the phase that renders them (screens spec §8). The sheet's accessible name carries the kind's noun (`SheetName`: "Workflow X", "Recipe X", "Node X", "Session X", "System X", "Service X") and the edge tab's follows it ("Reopen workflow X"); an item, decision, job or needs-you row keeps its bare id, which names itself. The rev-8 links (`workflow/`, `recipe/`, `node/`, `session/`, `system/`) go to their page and open the
 sheet on their subject. The desk-complete and nonce sends are **not declared** on `ISindriApi`: their shapes come with

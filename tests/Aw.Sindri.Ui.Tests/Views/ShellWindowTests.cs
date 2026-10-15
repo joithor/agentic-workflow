@@ -1801,6 +1801,15 @@ public sealed class ShellWindowTests : IDisposable
             Assert.Equal(Avalonia.Automation.Peers.AutomationControlType.Group, peer.GetAutomationControlType());
             Assert.Equal(name, peer.GetName());
         }
+
+        // testing-2: the shortcuts card is a focus region from the same style.
+        shell.Shortcuts.Open();
+        Settle(window);
+        var card = Named<Border>(window, "ShortcutsCard");
+        var cardPeer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(card);
+        Assert.True(cardPeer.IsControlElement());
+        Assert.Equal(Avalonia.Automation.Peers.AutomationControlType.Group, cardPeer.GetAutomationControlType());
+        Assert.False(string.IsNullOrEmpty(cardPeer.GetName()));
     });
 
     // W3: the element F6 and a page change focus is a control named by the page.

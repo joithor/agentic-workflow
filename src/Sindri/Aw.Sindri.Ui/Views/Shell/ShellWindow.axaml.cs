@@ -207,6 +207,8 @@ internal sealed partial class ShellWindow : Window
     // While the sheet covers the page, the page and its controls leave the tab order, F6's cycle and hit-testing, so focus
     // never lands where it can't be seen (WCAG 2.4.3, 2.4.7). The sheet hides the page's disabled look. The page is
     // enabled again as soon as the sheet closes or stops covering, before focus returns to it (KeepFocus runs later).
+    // KeepFocusOrReannounce (ShellWindow.Focus.cs) also pulses Page.IsEnabled to drop and retake focus, but that is on the Page
+    // border; this is PagePanel, the page's container, so the two don't fight.
     private void CoverPage() => PagePanel.IsEnabled = !(Covering && Shell is { IsSheetShown: true });
 
     private bool Covering => SheetPanel.Classes.Contains("covers");
