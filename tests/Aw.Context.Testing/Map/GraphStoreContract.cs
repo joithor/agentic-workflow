@@ -151,6 +151,7 @@ public abstract class GraphStoreContract
         var two = SampleMap.Build(" (two)");
 
         var replaced = Expect.Ok(await store.ReplaceDraft(open.Number, two with { Overrides = [decision] }, SampleMap.At.AddDays(2), None), test);
+        Expect.That(Expect.Ok(await store.Overrides(None), test).Where(o => o.ToId() == decision.ToId()).Take(2).Count() == 1, test, "the replacement's own write didn't store the override");
         _ = Expect.Ok(await store.AppendOverrides([decision], None), test);
 
         Expect.That(replaced.Status == MapVersionStatus.Draft && replaced.Number > open.Number, test, "the replacement isn't a newer draft");
