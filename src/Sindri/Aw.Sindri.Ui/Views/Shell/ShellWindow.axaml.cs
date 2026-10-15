@@ -198,9 +198,11 @@ internal sealed partial class ShellWindow : Window
     }
 
     // Beside the page the sheet takes its width from the page region, so the page's rows and their focus rings (drawn in the
-    // adorner layer, above the sheet) end where the sheet starts (proof B2).
+    // adorner layer, above the sheet) end where the sheet starts (proof B2). The width is the sheet's clamped one, not the requested.
     private void ReservePage() =>
-        PagePanel.Margin = new Thickness(0, 0, !Covering && Shell is { IsSheetShown: true } && !double.IsNaN(SheetPanel.Width) ? SheetPanel.Width : 0, 0);
+        PagePanel.Margin = new Thickness(0, 0, !Covering && Shell is { IsSheetShown: true } && !double.IsNaN(SheetPanel.Width) ? ClampedSheetWidth() : 0, 0);
+
+    private double ClampedSheetWidth() => Math.Clamp(SheetPanel.Width, SheetPanel.MinWidth, SheetPanel.MaxWidth);
 
     private bool Covering => SheetPanel.Classes.Contains("covers");
 
@@ -253,7 +255,7 @@ internal sealed partial class ShellWindow : Window
 
     private void OnSheetDrag(object? sender, VectorEventArgs e)
     {
-        SheetPanel.Width = SheetPanel.Bounds.Width - e.Vector.X;
+        SheetPanel.Width = Math.Clamp(SheetPanel.Bounds.Width - e.Vector.X, SheetPanel.MinWidth, SheetPanel.MaxWidth);
         ReservePage();
     }
 

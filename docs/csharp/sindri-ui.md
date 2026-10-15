@@ -429,6 +429,13 @@ its row cleared, single keys do nothing. `Y` copies the selected row's primary-a
 Home's panels ignore it. The top bar shows "G …" while the chord waits: a visual cue only, with no live region and
 not a control element for a screen reader.
 
+**Deviation: the page narrows beside the sheet (owner question, provisional owner default (2026-10-15)).** UI spec §3.2 has
+the sheet sit "over the page". With the sheet beside the page (1100 px and wider) the page's right margin reserves the
+sheet's clamped width (420 to 760 px), so the page is narrower while it is open (340 to 540 px at 1100 to 1300 px with a
+760 px sheet) and the focused row's ring, drawn in the adorner layer above the sheet, is never drawn over it. Below
+1100 px the sheet covers the page as before. The alternative is a full-width page clipped at the sheet's edge
+(`ClipToBounds`); the owner decides.
+
 **Selection is focus (U2 review run 1).** A refresh reconciles in place: groups by name (so a collapsed group stays
 collapsed), rows by id and timeline rows by sequence are updated, and the bound lists (`ObservableCollection`, via
 `Patch`) change only where they differ, so the focused control keeps focus. One selection is the focus: J / K select
