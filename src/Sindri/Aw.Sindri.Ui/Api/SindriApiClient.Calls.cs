@@ -22,11 +22,15 @@ internal sealed partial class SindriApiClient
     private readonly Lock _leaseGate = new();
     private (int Pid, long Epoch)? _lease;
 
-    private Task<Result<T>> Get<T>(Uri api, string path, CancellationToken cancellationToken, bool view = false) =>
-        Call<T>(api, HttpMethod.Get, path, cancellationToken, view);
+    // How a call differs from a plain one: a view query waits on the pending sequence; a command carries a JSON body.
+    private readonly record struct CallOptions(bool View = false, byte[]? Content = null);
 
-    private async Task<Result<T>> Call<T>(Uri api, HttpMethod method, string path, CancellationToken cancellationToken, bool view = false, byte[]? content = null)
+    private Task<Result<T>> Get<T>(Uri api, string path, CancellationToken cancellationToken, bool view = false) =>
+        Call<T>(api, HttpMethod.Get, path, cancellationToken, new CallOptions(view));
+
+    private async Task<Result<T>> Call<T>(Uri api, HttpMethod method, string path, CancellationToken cancellationToken, CallOptions options = default)
     {
+        var (view, content) = options;
         // A read that carries a sequence is held by the server for up to 2 s before it answers SND-API-011, so its
         // deadline is longer than an ordinary call's.
         using var timeout = new CancellationTokenSource(view && Volatile.Read(ref _after) > 0 ? _waitingTimeout : _callTimeout, clock);

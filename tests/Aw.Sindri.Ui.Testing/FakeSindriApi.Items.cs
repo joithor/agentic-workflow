@@ -72,19 +72,19 @@ internal sealed partial class FakeSindriApi
     public Task<Result<QueueView>> Queue(Uri api, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _queueCalls);
-        return Task.FromResult(Answer<QueueView>(api, QueueView));
+        return Task.FromResult(Answer<QueueView>(api, "/sindri/queue", QueueView));
     }
 
     public Task<Result<ItemView>> Item(Uri api, string itemId, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _itemCalls);
-        return Task.FromResult(Answer<ItemView>(api, ItemAnswer(itemId)));
+        return Task.FromResult(Answer<ItemView>(api, "/sindri/items/{id}", ItemAnswer(itemId)));
     }
 
     public Task<Result<TimelineView>> Timeline(Uri api, string itemId, long after, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _timelineCalls);
-        return Task.FromResult(Answer<TimelineView>(api, TimelineAnswer(after)));
+        return Task.FromResult(Answer<TimelineView>(api, "/sindri/items/{id}/timeline", TimelineAnswer(after)));
     }
 
     public async Task<Result<ItemCreatedView>> CreateItem(Uri api, CreateItemRequest request, CancellationToken cancellationToken)
@@ -99,7 +99,7 @@ internal sealed partial class FakeSindriApi
             await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        return Answer<ItemCreatedView>(api, Create);
+        return Answer<ItemCreatedView>(api, "/sindri/items", Create);
     }
 
     public async Task<Result<CommandAcceptedView>> CloseItem(Uri api, string itemId, CloseItemRequest request, CancellationToken cancellationToken)
@@ -114,7 +114,7 @@ internal sealed partial class FakeSindriApi
             await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        var answer = Answer<CommandAcceptedView>(api, Close);
+        var answer = Answer<CommandAcceptedView>(api, "/sindri/items/{id}/close", Close);
         if (answer.IsSuccess)
         {
             OnClosed?.Invoke(itemId, request);

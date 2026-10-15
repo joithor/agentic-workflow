@@ -25,7 +25,7 @@ public sealed class ShellItemsTests
     private async Task<ShellViewModel> Connected()
     {
         _records.Write(A.Record());
-        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(new InMemoryPreferencesStore()));
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
         await shell.Restore(Token);
         _ = shell.Run(Token);
         await Until(() => shell.State == ShellState.Normal && !shell.Queue.IsLoading);

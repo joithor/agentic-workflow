@@ -20,9 +20,9 @@ internal sealed partial class SindriApiClient
 
     /// <inheritdoc />
     public Task<Result<ItemCreatedView>> CreateItem(Uri api, CreateItemRequest request, CancellationToken cancellationToken) =>
-        Call<ItemCreatedView>(api, HttpMethod.Post, "/sindri/items", cancellationToken, content: AwJson.Serialize(request, Json));
+        Call<ItemCreatedView>(api, HttpMethod.Post, "/sindri/items", cancellationToken, new CallOptions(Content: AwJson.Serialize(request, Json)));
 
     /// <inheritdoc />
     public Task<Result<CommandAcceptedView>> CloseItem(Uri api, string itemId, CloseItemRequest request, CancellationToken cancellationToken) =>
-        Call<CommandAcceptedView>(api, HttpMethod.Post, "/sindri/items/" + Uri.EscapeDataString(itemId) + "/close", cancellationToken, content: AwJson.Serialize(request, Json));
+        Call<CommandAcceptedView>(api, HttpMethod.Post, "/sindri/items/" + Uri.EscapeDataString(itemId) + "/close", cancellationToken, new CallOptions(Content: AwJson.Serialize(request, Json)));
 }
