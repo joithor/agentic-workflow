@@ -552,6 +552,11 @@ edges:
     status: current
     note: "Result, IService, ports (scaffolded by /new-package)"
   - from: Meta
+    to: KernelData
+    kind: project
+    status: current
+    note: "meta.db (SQLite stores and migrations)"
+  - from: Meta
     to: KernelTelemetry
     kind: project
     status: current
