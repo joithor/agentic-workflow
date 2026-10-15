@@ -9,8 +9,10 @@ internal sealed partial class QueueViewModel
 {
     /// <summary>Selects a row by id (a click, focus arriving on it); focus is already there.</summary>
     /// <param name="itemId">The row's id.</param>
-    internal void Select(string itemId)
+    /// <param name="scope">The page the row is on: a refresh that clears it looks for its successor there.</param>
+    internal void Select(string itemId, QueueScope scope = QueueScope.Page)
     {
+        _scope = scope;
         SelectedId = itemId;
         Mark();
     }
@@ -31,7 +33,7 @@ internal sealed partial class QueueViewModel
 
         var at = rows.FindIndex(r => string.Equals(r.Id, SelectedId, StringComparison.Ordinal));
         var next = at < 0 ? 0 : Math.Clamp(at + by, 0, rows.Count - 1);
-        Select(rows[next].Id);
+        Select(rows[next].Id, scope);
         FocusRequested?.Invoke(this, new FocusRequestedEventArgs(rows[next].Id, onlyIfLost: false));
     }
 
@@ -44,6 +46,13 @@ internal sealed partial class QueueViewModel
     private List<ItemRowViewModel> Navigable(QueueScope scope) => scope == QueueScope.Home
         ? [.. RunningRows, .. QueuedRows]
         : [.. Groups.Where(g => g.IsVisible && g.IsExpanded).SelectMany(g => g.Rows)];
+
+    // The rows the page the selection lives on shows, for a refresh to measure the selection's place by: Home's panels, or the
+    // Queue page's visible groups. The Queue page's filter doesn't apply to Home's panels (and the other way round).
+    private IEnumerable<ItemRowViewModel> Seen(QueueScope scope) => scope == QueueScope.Home ? [.. RunningRows, .. QueuedRows] : Visible();
+
+    // The list a row sits in on that page: its group on the Queue page, one of Home's two panels on Home.
+    private static string Panel(QueueScope scope, string group) => scope == QueueScope.Home && group != "queued" ? "running" : group;
 
     // A filter change that hides the selected row clears it: nothing hidden stays selected for Enter or Y (no announcement:
     // the human did it).
@@ -75,18 +84,25 @@ internal sealed partial class QueueViewModel
         }
     }
 
-    // The row now at the cleared row's place in the same group, else the group's last row, else the first visible row.
+    // The row now at the cleared row's place in the same list, else the list's last row, else the page's first row.
     private ItemRowViewModel? Successor(string id, List<(string Id, string Group)> before)
     {
         var old = before.FirstOrDefault(r => r.Id == id);
-        var group = old.Id is null ? null : Groups.FirstOrDefault(g => g.Group == old.Group && g.IsVisible && g.Rows.Count > 0);
-        var index = old.Id is null ? 0 : before.Where(r => r.Group == old.Group).ToList().FindIndex(r => r.Id == id);
-        return group is null ? Visible().FirstOrDefault() : group.Rows[Math.Min(index, group.Rows.Count - 1)];
+        if (old.Id is null)
+        {
+            return Seen(_scope).FirstOrDefault();
+        }
+
+        var panel = Panel(_scope, old.Group);
+        var peers = Seen(_scope).Where(r => Panel(_scope, r.Group) == panel).ToList();
+        var index = before.Where(r => Panel(_scope, r.Group) == panel).ToList().FindIndex(r => r.Id == id);
+        return peers.Count == 0 ? Seen(_scope).FirstOrDefault() : peers[Math.Min(index, peers.Count - 1)];
     }
 
+    // Every row there is, whatever the Queue page shows: Home's panels draw rows the page's filter hides.
     private void Mark()
     {
-        foreach (var row in Groups.SelectMany(g => g.Rows))
+        foreach (var row in _rows.Values)
         {
             row.IsSelected = string.Equals(row.Id, SelectedId, StringComparison.Ordinal);
         }

@@ -259,7 +259,8 @@ public sealed class QueueKeysTests
         _server.QueueView = Without("extra-p4-waiting", Q(2));
         await queue.Refresh(_api, Token);
 
-        Assert.Equal((Q(3), [Q(3)], true), (queue.SelectedId, asked, queue.QueuedRows.Single(r => r.Id == Q(3)).IsSelected));
+        Assert.Equal((Q(3), true), (queue.SelectedId, queue.QueuedRows.Single(r => r.Id == Q(3)).IsSelected));
+        Assert.Equal([Q(3)], asked);
     }
 
     // corr-3 (G W left on, Home): the same, with the With you filter still on.

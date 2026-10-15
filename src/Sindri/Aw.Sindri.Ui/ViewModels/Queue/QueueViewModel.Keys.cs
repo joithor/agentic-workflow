@@ -77,7 +77,7 @@ internal sealed partial class QueueViewModel
     /// <summary>`Y`: the selected row's primary action, when it has a CLI to copy.</summary>
     /// <returns>The control, or null.</returns>
     internal ControlViewModel? SelectedCopy() =>
-        Groups.SelectMany(g => g.Rows).FirstOrDefault(r => r.Id == SelectedId)?.PrimaryAction is { CanCopy: true } control ? control : null;
+        SelectedId is { } id && _rows.TryGetValue(id, out var row) && row.PrimaryAction is { CanCopy: true } control ? control : null;
 
     // While holding, only rows the page doesn't show yet wait behind the pill (they would shift the rows under the
     // pointer); removals and in-place updates show at once, so nothing stale sits under it. Returns what to show now.

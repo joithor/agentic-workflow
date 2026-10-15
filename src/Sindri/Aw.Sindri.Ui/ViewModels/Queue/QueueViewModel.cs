@@ -15,6 +15,7 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
     internal const int PanelCap = 5;
 
     private QueueView? _view;
+    private QueueScope _scope;   // the page the selection was last made on (Select, J / K)
 
     // The rows and groups as last shown, by id and by name: a refresh updates them in place (§3.3).
     private Dictionary<string, ItemRowViewModel> _rows = new(StringComparer.Ordinal);
@@ -135,7 +136,7 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
     // Shows a view, keeping the selection by id (§3.3).
     private void Apply(QueueView view)
     {
-        var before = Visible().Select(r => (r.Id, r.Group)).ToList();
+        var before = Seen(_scope).Select(r => (r.Id, r.Group)).ToList();
         _view = view;
         Show();
         Keep(before);

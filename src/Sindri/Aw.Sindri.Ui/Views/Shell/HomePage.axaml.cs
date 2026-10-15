@@ -39,7 +39,7 @@ internal sealed partial class HomePage : UserControl
     {
         if (ItemRow.ItemIdOf(e) is { Length: > 0 } id && DataContext is ShellViewModel shell)
         {
-            shell.Queue.Select(id);
+            shell.Queue.Select(id, QueueScope.Home);
         }
     }
 
@@ -47,7 +47,7 @@ internal sealed partial class HomePage : UserControl
     {
         if (ItemRow.ItemIdOf(e) is { Length: > 0 } id && DataContext is ShellViewModel shell)
         {
-            shell.Queue.Select(id);
+            shell.Queue.Select(id, QueueScope.Home);
             shell.OpenItem(id);
         }
     }
