@@ -26,11 +26,11 @@ public sealed class DeskTimeoutTests(TimeSkippingServer server) : IClassFixture<
 
     public void Dispose() => _harness.Dispose();
 
-    [Fact(Timeout = 120_000)]
+    [Fact(Timeout = 240_000)]
     public async Task Desk_timeout_never_retries()
     {
         var ct = TestContext.Current.CancellationToken;
-        var env = server.Environment;
+        await using var env = await TemporalServerFixture.Start(ServerKind.TimeSkipping);   // its own server: after the other test on the class's, the server's clock sits days ahead and the first skip can wait in wall clock
         await using var sindri = _harness.Sindri();
         await WorkflowsHarness.HoldLease(sindri, ct);
         await RegisterAttributes(env);
@@ -47,11 +47,11 @@ public sealed class DeskTimeoutTests(TimeSkippingServer server) : IClassFixture<
             var done = await handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(new string('a', 32))).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
             Assert.Equal("-> checks", done.Happened);   // 'checks': timeout { after: 30m, then: retry }
 
-            await env.DelayAsync(TimeSpan.FromHours(1), ct);
+            await WorkflowsHarness.Skip(env, TimeSpan.FromHours(1), ct);
             var waiting = await desk.Until(static v => v.Task is not null);
-            await env.DelayAsync(TimeSpan.FromDays(2), ct);
+            await WorkflowsHarness.Skip(env, TimeSpan.FromDays(2), ct);
             var parked = await desk.Until(static v => v.State == "parked");
-            await env.DelayAsync(TimeSpan.FromDays(5), ct);
+            await WorkflowsHarness.Skip(env, TimeSpan.FromDays(5), ct);
             var later = await desk.Until(static v => v.State == "parked");
 
             Assert.Equal(("checks", "2.1"), (waiting.State, waiting.Run?.Value));
@@ -85,7 +85,7 @@ public sealed class DeskTimeoutTests(TimeSkippingServer server) : IClassFixture<
         try
         {
             _ = await desk.Until(static v => v.Task is not null);
-            await env.DelayAsync(TimeSpan.FromDays(3), ct);
+            await WorkflowsHarness.Skip(env, TimeSpan.FromDays(3), ct);
             var parked = await desk.Until(static v => v.State == "parked");
             var output = new FactValue("fact:sha256:" + new string('e', 64), new string('e', 64), HeadSha: null);
             var report = new StepCompleted("human:cli", parked.Run!.Value, OutcomeName.From("done"), new Dictionary<FactKey, FactValue> { [FactKey.From("fact:output")] = output }, Tokens: 0, StepRuntime.Desk, new string('f', 64));

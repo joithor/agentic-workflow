@@ -79,30 +79,23 @@ internal sealed partial class RecipeWorkflow
     {
         if (await RunStep(instance, open, context.Recipe.States[instance.Frame.State]).ConfigureAwait(true) is not { } trigger)
         {
-            return await ApplySubmitted(instance, open, context).ConfigureAwait(true);
+            return await ApplySubmitted(instance, context).ConfigureAwait(true);
         }
 
         var reportId = _reportId;
         _reportId = null;
         var before = instance;
-        var decision = trigger is DeadlineFired
-            ? null
-            : TransitionDecision.Decide(new DecisionInput(instance, context.Recipe, trigger, GateAnswers.None, context.Decisions));
+        var decision = TransitionDecision.Decide(new DecisionInput(instance, context.Recipe, trigger, GateAnswers.None, context.Decisions));   // a desk timer's expiry always parks (W20)
         if (decision is Rejected rejected)
         {
             Settle(reportId, new Reported(Result: null, rejected.Error));   // the validator saw the same instance, so this is a bug guard
             return instance;
         }
 
-        instance = decision is null ? DeskTimeouts.Expire(instance, _waited, Timers) : After(instance, decision);
+        instance = After(instance, decision);
         if (!ReferenceEquals(before, instance))
         {
-            if (instance.Frame.Run?.Token != before.Frame.Run?.Token)
-            {
-                _timeoutAt = null;   // a new run arms its own deadline in RunStep
-            }
-
-            Enter(instance, decision is null ? Timers : trigger.Actor);
+            instance = Enter(instance, decision is null ? Timers : trigger.Actor);
             await Mirror(DeskRow(before, instance, trigger, open, decision), NeedsYou(instance)).ConfigureAwait(true);
         }
 
@@ -112,18 +105,10 @@ internal sealed partial class RecipeWorkflow
 
     /// <summary>
     /// Applies an answer, command or cancel another Update submitted while the desk task is open (unit (a)'s
-    /// <see cref="Submit"/>); a change that ends the run clears its deadline, so the next run arms its own.
+    /// <see cref="Submit"/>); its change re-arms or stops the timer like any other (<see cref="Enter"/>).
     /// </summary>
-    private async Task<WorkflowInstance> ApplySubmitted(WorkflowInstance instance, OpenRun open, Interpreting context)
-    {
-        var after = await Apply(instance, _submitted.Dequeue(), context).ConfigureAwait(true);
-        if (after.Frame.Run?.Token != open.Token)
-        {
-            _timeoutAt = null;
-        }
-
-        return after;
-    }
+    private Task<WorkflowInstance> ApplySubmitted(WorkflowInstance instance, Interpreting context) =>
+        Apply(instance, _submitted.Dequeue(), context);
 
     /// <summary>The report's row comes from its decision, as the loop's rows do; the deadline's park has none.</summary>
     private WorkflowEventRecord DeskRow(WorkflowInstance before, WorkflowInstance after, Trigger trigger, OpenRun open, Decision? decision) =>
@@ -146,47 +131,41 @@ internal sealed partial class RecipeWorkflow
 
     /// <summary>
     /// Runs one desk Step (rev 8.1 §5.3): once per run, the short 'RunStep' activity with the run token in its id
-    /// ('run:{token}:{n}') records the open task, and the wait's deadline is armed when none is (a new run, or an answer that re-arms it): the state's timeout raised to
-    /// 'workflow.deskTimeout' (W20). The workflow then waits for the 'complete' Update's report; its expiry is the desk
-    /// timeout, which always parks (W20, §3.8). A later wait on the same run keeps its deadline. Unit (c). The wait also
-    /// wakes for an answer, command or cancel another Update submitted; it then returns null and the loop applies that
-    /// command (unit (b)).
+    /// ('run:{token}:{n}') records the open task. The workflow then waits for the 'complete' Update's report, bounded by
+    /// the state's timer (<see cref="TimerScopes"/>), which the entry armed: the state's timeout raised to
+    /// 'workflow.deskTimeout' (W20); its expiry is the desk timeout, which always parks (W20, §3.8). A later wait on the
+    /// same run keeps the timer. Unit (c). The wait also wakes for an answer, command or cancel another Update
+    /// submitted; it then returns null and the loop applies that command (unit (b)).
     /// </summary>
     private async Task<Trigger?> RunStep(WorkflowInstance instance, OpenRun open, RecipeState state)
     {
-        var frame = instance.Frame;
-        await RecordRun(frame, open, state).ConfigureAwait(true);
-        var deadline = Arm(open, state);
+        await RecordRun(instance.Frame, open, state).ConfigureAwait(true);
         while (true)
         {
             await ExpireHeld(instance, wait: null).ConfigureAwait(true);   // an active state waits for no event: what ran out while the Step is open expires on time (§5.4)
             if (_report is { } report)
             {
-                _report = null;   // a report that lands with the deadline wins it, and none is left stale
+                _report = null;   // a report that lands with the timer wins it, and none is left stale
                 return report;
             }
 
             if (_submitted.Count > 0)
             {
-                return null;   // a submitted command; the deadline stays armed for this run
+                return null;   // a submitted command; the timer stays armed for this run
             }
 
-            var left = deadline - Now;
-            if (left <= TimeSpan.Zero)
+            if (_timers.Fired)
             {
-                break;
+                return _timers.Take();
             }
 
-            var span = NextExpiry() is { } expiry && expiry < left ? expiry : left;
             var seen = _arrivals;
-            _ = await Workflow.WaitConditionAsync(() => _report is not null || _submitted.Count > 0 || _arrivals != seen, span).ConfigureAwait(true);
+            bool Woken() => _report is not null || _submitted.Count > 0 || _timers.Fired || _arrivals != seen;
+            _ = await Workflow.WaitConditionAsync(Woken, NextExpiry() ?? Timeout.InfiniteTimeSpan).ConfigureAwait(true);
         }
-
-        _timeoutAt = null;
-        return new DeadlineFired(Timers, frame.Entry, DeadlineKind.State);
     }
 
-    /// <summary>Records the open task once per run token ('run:{token}:{n}') and clears the old deadline for the new run.</summary>
+    /// <summary>Records the open task once per run token ('run:{token}:{n}') </summary>
     private async Task RecordRun(Frame frame, OpenRun open, RecipeState state)
     {
         if (!string.Equals(_recorded, open.Token.Value, StringComparison.Ordinal))
@@ -202,24 +181,7 @@ internal sealed partial class RecipeWorkflow
                     StartToCloseTimeout = TimeSpan.FromSeconds(30),
                 }).ConfigureAwait(true);
             _recorded = open.Token.Value;
-            _timeoutAt = null;
         }
-    }
-
-    /// <summary>
-    /// The run's deadline: armed when none is (a new run, or an answer that re-arms it) to the state's timeout, raised to
-    /// 'workflow.deskTimeout' for a desk Step (W20); a later wait on the same run keeps it.
-    /// </summary>
-    private DateTimeOffset Arm(OpenRun open, RecipeState state)
-    {
-        if (_timeoutAt is { } armed)
-        {
-            return armed;
-        }
-
-        _waited = open.Runtime == StepRuntime.Desk ? DeskTimeouts.Wait(state.Timeout, _deskTimeout) : state.Timeout?.After.Span ?? _deskTimeout;
-        _timeoutAt = Now + _waited;
-        return _timeoutAt.Value;
     }
 
     /// <summary>Hands what the loop did with a report to the 'complete' Update that carried it.</summary>

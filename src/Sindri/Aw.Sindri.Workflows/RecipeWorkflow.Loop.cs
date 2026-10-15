@@ -44,21 +44,56 @@ internal sealed partial class RecipeWorkflow
     }
 
     /// <summary>
-    /// Waits for the next trigger and decides it (§5.4, §5.8): in a wait state, the first delivered event that fits its
-    /// 'waitFor' or a submitted command, whichever is first; parked, escalated or taken over, a submitted command. Wait
-    /// timeouts are P5's. A child wait is P7's: the child isn't started yet, so only its delivered end or a command moves it.
+    /// Lets every Update that is still waiting on the loop finish once the instance has ended (engine P5 review): a command
+    /// the Update that ended it left queued (a takeover validated beside a cancel) is decided on the ended instance, which
+    /// refuses it (SND-WF-003), and a desk report that was never applied is refused; then the handlers return their results.
+    /// </summary>
+    private async Task SettleLeftovers(WorkflowInstance ended, Interpreting context)
+    {
+        while (true)
+        {
+            while (_submitted.TryDequeue(out var left))
+            {
+                _decided[left.Ticket] = TransitionDecision.Decide(new DecisionInput(ended, context.Recipe, left.Trigger, GateAnswers.None, context.Decisions));
+            }
+
+            if (_reportId is { } reportId)
+            {
+                _report = null;
+                _reportId = null;
+                Settle(reportId, new Reported(Result: null, WorkflowErrors.TriggerNotAllowed.With($"{ended.Address.Value} ended before the report was applied (fix: run status)")));
+            }
+
+            if (Workflow.AllHandlersFinished)
+            {
+                return;
+            }
+
+            await Workflow.WaitConditionAsync(() => Workflow.AllHandlersFinished || _submitted.Count > 0 || _reportId is not null).ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>
+    /// Waits for the next trigger and decides it (§5.4, §5.5, §5.8): in a wait state, the first delivered event that fits
+    /// its 'waitFor', a submitted command, or its timer running out, whichever is first; parked, escalated or taken over,
+    /// a submitted command (a park stops the timer). A child wait is P7's: the child isn't started yet, so only its
+    /// delivered end, a command or its timer moves it.
     /// </summary>
     private async Task<WorkflowInstance> Wait(WorkflowInstance instance, Interpreting context)
     {
         var wait = instance.Suspension is null && context.Recipe.States.TryGetValue(instance.Frame.State, out var state) ? state.WaitFor : null;
-        if (!await WaitHolding(() => _submitted.Count > 0 || _delivered.Any(e => Fits(e, wait, instance.Frame)), instance, wait).ConfigureAwait(true))
+        if (!await WaitHolding(() => _submitted.Count > 0 || _timers.Fired || _delivered.Any(e => Fits(e, wait, instance.Frame)), instance, wait).ConfigureAwait(true))
         {
             return instance;   // woke only to expire a held event (§5.4); wait again
         }
 
-        return _submitted.TryDequeue(out var submission)
-            ? await Apply(instance, submission, context).ConfigureAwait(true)
-            : await Apply(instance, new Submission(Ticket: 0, Take(wait, instance.Frame)), context).ConfigureAwait(true);
+        if (_submitted.TryDequeue(out var submission))
+        {
+            return await Apply(instance, submission, context).ConfigureAwait(true);
+        }
+
+        Trigger next = _delivered.Any(e => Fits(e, wait, instance.Frame)) ? Take(wait, instance.Frame) : _timers.Take()!; // why: WaitHolding woke for an event that fits or a fired timer
+        return await Apply(instance, new Submission(Ticket: 0, next), context).ConfigureAwait(true);
     }
 
     /// <summary>
@@ -71,7 +106,7 @@ internal sealed partial class RecipeWorkflow
         var after = After(instance, decision);
         if (OwnChange(instance, decision) is { } change)
         {
-            Enter(after, submission.Trigger.Actor);
+            after = Enter(after, submission.Trigger.Actor);
             await Mirror(Record(instance, change, submission.Trigger), NeedsYou(after)).ConfigureAwait(true);
         }
 
@@ -81,29 +116,6 @@ internal sealed partial class RecipeWorkflow
         }
 
         return after;
-    }
-
-    /// <summary>
-    /// The instance ended: every Update still queued for the loop (validated in the same activation as the trigger that ended
-    /// it) is decided against the ended instance, which refuses it, and a report still pending is refused too, so no handler
-    /// waits forever and 'AllHandlersFinished' returns (review run 1, P4 interpreter).
-    /// </summary>
-    private void Close(WorkflowInstance ended, Interpreting context)
-    {
-        while (_submitted.TryDequeue(out var queued))
-        {
-            var decision = TransitionDecision.Decide(new DecisionInput(ended, context.Recipe, queued.Trigger, GateAnswers.None, context.Decisions));
-            _decided[queued.Ticket] = decision as Rejected
-                ?? new Rejected(queued.Trigger.KeyFor(ended.Id), WorkflowErrors.TriggerNotAllowed.With($"{ended.Address.Value} has ended (fix: run status)"));
-        }
-
-        if (_reportId is not null)
-        {
-            Settle(_reportId, new Reported(Result: null, WorkflowErrors.TriggerNotAllowed.With($"{ended.Address.Value} has ended (fix: run status)")));
-        }
-
-        _report = null;
-        _reportId = null;
     }
 
     /// <summary>The first delivered event that fits the wait, taken out of the buffer; the others stay, in order.</summary>
@@ -160,7 +172,8 @@ internal sealed partial class RecipeWorkflow
         },
         before.Frame.Run?.Token.Value,
         trigger.Actor,
-        Detail: WorkflowEventDetail.Of(change.Event, trigger));
+        Detail: WorkflowEventDetail.Of(change.Event, trigger),
+        Causation: (trigger as OpenRequested)?.Launch);
 
     internal static string TypeOf(WorkflowEventType type) => type switch
     {

@@ -41,7 +41,8 @@ public static partial class TransitionDecision
 
         var entered = entering.Value;
         var effects = Effects(transition, instance.Id, entered.Entry);
-        var own = d.Change(entered.After, WorkflowEventType.Transition, records);
+        var after = entered.After with { Frame = entered.After.Frame with { EnteredBy = index } };   // a 'then: retry' re-emits these effects (§3.4)
+        var own = d.Change(after, WorkflowEventType.Transition, records);
         own = own with { Event = own.Event with { Effects = [.. effects.Select(e => e.Identity)] } };
         return new Applied(d.Key, [own, .. entered.Children], [.. effects, .. entered.Effects], entered.FollowUps);
     }

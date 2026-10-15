@@ -9,6 +9,8 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Tests.Server;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.Workflows;
@@ -137,6 +139,35 @@ public sealed class RecordEventReplayTests
     }
 
     [Fact(Timeout = 30_000)]
+    public async Task A_dropped_detail_is_warned_about_with_the_key_and_the_block_code_and_never_the_text()
+    {
+        var log = new ListLogger<RecordEventActivities>();
+        var (activities, _) = await Open(redactor: new StubRedactor(static text => text.Contains("secret-reason", StringComparison.Ordinal) ? _blocked : Pass(text)), logger: log);
+
+        _ = await activities.Record(Moved("checks") with { Detail = WithReason("secret-reason") }, Key, "event:3", TestContext.Current.CancellationToken);
+
+        var line = Assert.Single(log.Lines);
+        Assert.Contains(Key, line, StringComparison.Ordinal);
+        Assert.Contains(RedactionCodes.MatchTimeout, line, StringComparison.Ordinal);
+        Assert.DoesNotContain("secret-reason", line, StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task A_dropped_detail_whose_scrub_was_not_json_says_so_and_never_the_text()
+    {
+        var log = new ListLogger<RecordEventActivities>();
+        var (activities, _) = await Open(redactor: new StubRedactor(static text => text.Contains("secret-reason", StringComparison.Ordinal) ? new ScrubResult("{ not json", [], ScrubOutcome.Redacted, BlockCode: null) : Pass(text)), logger: log);
+
+        _ = await activities.Record(Moved("checks") with { Detail = WithReason("secret-reason") }, Key, "event:3", TestContext.Current.CancellationToken);
+
+        var line = Assert.Single(log.Lines);
+        Assert.Contains(Key, line, StringComparison.Ordinal);
+        Assert.Contains("not json", line, StringComparison.Ordinal);
+        Assert.DoesNotContain("secret-reason", line, StringComparison.Ordinal);
+        Assert.DoesNotContain("{ not json", line, StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 30_000)]
     public async Task A_bare_payload_that_still_cannot_be_scrubbed_throws_so_the_activity_retries_and_nothing_is_stored()
     {
         var (activities, ledger) = await Open(redactor: new StubRedactor(static _ => _blocked));
@@ -193,7 +224,7 @@ public sealed class RecordEventReplayTests
     private static WorkflowEventRecord Moved(string to) =>
         new("T-1/step/1", EventTypes.WorkflowTransition, "T-1", "produce", to, "step.completed", "done", "1.1");
 
-    private static async Task<(RecordEventActivities Activities, ILedgerStore Ledger)> Open(Func<ILedgerStore, ILedgerStore>? wrap = null, IRedactor? redactor = null)
+    private static async Task<(RecordEventActivities Activities, ILedgerStore Ledger)> Open(Func<ILedgerStore, ILedgerStore>? wrap = null, IRedactor? redactor = null, ILogger<RecordEventActivities>? logger = null)
     {
         var clock = new FakeTimeProvider(KnownInstants.Epoch);
         var probe = new FakeProcessProbe();
@@ -202,6 +233,6 @@ public sealed class RecordEventReplayTests
         held.Hold((await store.Acquire(probe.Self(), TestContext.Current.CancellationToken)).Value);
         var ids = new SequentialIdGenerator();
         var events = new EventFactory(EventScope.ControlPlane, clock, ids, SliceHarness.Json, new AsyncLocalCallerContextAccessor(ids));
-        return (new RecordEventActivities(wrap?.Invoke(store) ?? store, held, events, redactor: redactor), store);
+        return (new RecordEventActivities(wrap?.Invoke(store) ?? store, held, events, logger, redactor), store);
     }
 }
