@@ -49,6 +49,7 @@ public sealed class SecretFileTests : IDisposable
     [Fact, Trait("Lane", "integration")]
     public void A_file_under_a_directory_the_owner_cannot_search_is_an_error_not_an_exception()
     {
+        Assert.SkipWhen(Environment.IsPrivilegedProcess, "a privileged process ignores the permissions this test takes away");
         var locked = Path.Combine(_home.Path, "locked");
         var path = Path.Combine(locked, "token");
         _ = Directory.CreateDirectory(locked);
@@ -59,6 +60,9 @@ public sealed class SecretFileTests : IDisposable
             var result = _secrets.Resolve(PointerSecretsTests.Pointer("file:" + path));
 
             Assert.False(result.IsSuccess);
+            Assert.Equal(SindriErrors.SecretUnresolved.Code, result.Error.Code);
+            Assert.Contains("doesn't exist or can't be reached", result.Error.Message, StringComparison.Ordinal);
+            Assert.Contains("check the directory's owner and mode", result.Error.Message, StringComparison.Ordinal);
             Assert.DoesNotContain(Fixture, result.Error.Message, StringComparison.Ordinal);
         }
         finally

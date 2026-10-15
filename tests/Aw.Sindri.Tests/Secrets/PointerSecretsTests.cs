@@ -67,7 +67,7 @@ public sealed class PointerSecretsTests
     [Theory, Trait("Lane", "unit")]
     [InlineData("exit 1")]
     [InlineData("empty")]
-    [InlineData("missing")]
+    [InlineData("newline only")]
     [InlineData("timed out")]
     public void A_secret_tool_that_fails_is_SND_SECRET_002_with_the_Linux_store_command(string run)
     {
@@ -75,9 +75,38 @@ public sealed class PointerSecretsTests
 
         Assert.Equal(SindriErrors.SecretUnresolved.Code, result.Error.Code);
         Assert.Contains("keychain:onyx/sindri-onyx", result.Error.Message, StringComparison.Ordinal);
-        Assert.Contains("secret-tool store --label \"onyx/sindri-onyx\" service onyx account sindri-onyx", result.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("secret-tool store --label 'onyx/sindri-onyx' service 'onyx' account 'sindri-onyx'", result.Error.Message, StringComparison.Ordinal);
         Assert.DoesNotContain("security add-generic-password", result.Error.Message, StringComparison.Ordinal);
         Assert.DoesNotContain(Fixture, result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_secret_tool_exit_says_the_entry_may_be_missing_or_no_keyring_reachable_and_never_prints_its_output()
+    {
+        var result = Secrets(_ => null, new FakeToolRunner(Run("exit 1")), KeychainPlatform.Linux).Resolve(Pointer("keychain:onyx/sindri-onyx"));
+
+        Assert.Contains("no such entry, or no keyring reachable (sindri serve needs the login session's D-Bus)", result.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(Fixture, result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_missing_secret_tool_says_to_install_libsecret_tools_not_to_run_it()
+    {
+        var result = Secrets(_ => null, new FakeToolRunner(Run("missing")), KeychainPlatform.Linux).Resolve(Pointer("keychain:onyx/sindri-onyx"));
+
+        Assert.Equal(SindriErrors.SecretUnresolved.Code, result.Error.Code);
+        Assert.Contains("install libsecret-tools (Debian/Ubuntu)", result.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("secret-tool store", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(Fixture)]
+    [InlineData(Fixture + "\n")]
+    public void A_Linux_secret_with_or_without_a_trailing_newline_resolves(string output)
+    {
+        var result = Secrets(_ => null, new FakeToolRunner(new ToolRun(ToolOutcome.Exited, 0, output)), KeychainPlatform.Linux).Resolve(Pointer("keychain:onyx/sindri-onyx"));
+
+        Assert.Equal(Fixture, result.Value);
     }
 
     [Fact, Trait("Lane", "unit")]

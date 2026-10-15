@@ -86,6 +86,19 @@ public sealed class OnyxClientTests
         _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await Search(handler, cancellation: cancel.Token));
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_already_cancelled_caller_gets_the_cancellation_even_when_the_deadline_is_spent()
+    {
+        using var http = new HttpClient(new ScriptedHandler((_, _) => Task.FromResult(Reply(HttpStatusCode.OK, "{}"))));
+        var parts = new OnyxSourceParts(http, _ => "on_fixture", new FakeTimeProvider(OnyxSourceHarness.Now), new CapturingLogger<OnyxClient>());
+        var client = new OnyxClient(_settings, parts);
+        using var cancel = new CancellationTokenSource();
+        await cancel.CancelAsync();
+
+        _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            await client.Call<object>(OnyxCall.Get("/api/x"), TimeSpan.Zero, cancel.Token));
+    }
+
     private static async Task<Kernel.Result<IReadOnlyList<Context.Core.Sources.SourceHit>>> Search(
         ScriptedHandler handler, string? token = "on_fixture", CancellationToken? cancellation = null)
     {
