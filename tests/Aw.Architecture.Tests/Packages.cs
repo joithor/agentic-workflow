@@ -42,6 +42,10 @@ internal static class Packages
         "Aw.Context.Features",
         "Aw.Context.Infrastructure",
         "Aw.Sindri.Workflows",
+        "Aw.Meta.Core",
+        "Aw.Meta.Features",
+        "Aw.Meta.Infrastructure",
+        "Aw.Meta.Host",
     ];
 
     /// <summary>

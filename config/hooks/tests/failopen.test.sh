@@ -204,6 +204,20 @@ run_case "outbox-flush: outbox unreadable" outbox-flush.sh '{"session_id":"s1","
 run_case "outbox-flush: unparsable stdin" outbox-flush.sh "$SECRET" "outbox-flush input-unparsable"
 run_case "outbox-flush: empty stdin" outbox-flush.sh "" "outbox-flush empty-input"
 
+# --- meta-stop-gate.sh (Stop) and meta-outbox.sh (PostToolUse SendMessage), against a stub aw-meta ---
+printf '#!/usr/bin/env bash\ncat > /dev/null\nexit "${META_MODE:-0}"\n' > "$FAKE_BIN/aw-meta"
+chmod +x "$FAKE_BIN/aw-meta"
+META_STOP='{"session_id":"s1","transcript_path":"/t/s1.jsonl","stop_hook_active":false}'
+META_SEND='{"session_id":"s1","tool_name":"SendMessage","tool_input":{"to":"x","message":"y"}}'
+run_case "meta-stop-gate: unparsable stdin" meta-stop-gate.sh "$SECRET" "meta-stop-gate input-unparsable" AW_META_BIN="$FAKE_BIN/aw-meta"
+run_case "meta-stop-gate: empty stdin" meta-stop-gate.sh "" "meta-stop-gate empty-input" AW_META_BIN="$FAKE_BIN/aw-meta"
+run_case "meta-stop-gate: no transcript_path" meta-stop-gate.sh '{"session_id":"s1"}' "meta-stop-gate field-missing" AW_META_BIN="$FAKE_BIN/aw-meta"
+run_case "meta-stop-gate: aw-meta errors" meta-stop-gate.sh "$META_STOP" "meta-stop-gate meta-exit-2" AW_META_BIN="$FAKE_BIN/aw-meta" META_MODE=2
+run_case "meta-stop-gate: nothing owed logs nothing" meta-stop-gate.sh "$META_STOP" "-" AW_META_BIN="$FAKE_BIN/aw-meta"
+run_case "meta-outbox: empty stdin" meta-outbox.sh "" "meta-outbox empty-input" AW_META_BIN="$FAKE_BIN/aw-meta"
+run_case "meta-outbox: aw-meta errors" meta-outbox.sh "$META_SEND" "meta-outbox meta-exit-2" AW_META_BIN="$FAKE_BIN/aw-meta" META_MODE=2
+run_case "meta-outbox: recorded send logs nothing" meta-outbox.sh "$META_SEND" "-" AW_META_BIN="$FAKE_BIN/aw-meta"
+
 # --- Bash safety hooks (PreToolUse Bash) ---
 NO_CAT="$(path_without cat)"
 for h in block-destructive block-push-main detect-secrets; do
@@ -278,6 +292,9 @@ hostile "send-gate: judge fails" send-gate.sh "$SEND" JUDGE_MODE=exit1
 hostile "scope-gate: judge fails" scope-gate.sh "$AGENT" JUDGE_MODE=exit1
 hostile "external-write-guard: matched write, no session" external-write-guard.sh '{"tool_name":"Bash","tool_input":{"command":"gh pr merge 1"}}'
 hostile "done-gate: brief judge fails, then RF-2 denies" done-gate.sh "{\"session_id\":\"s1\",\"transcript_path\":\"$CLAIM2\"}" JUDGE_MODE=exit1
+hostile "meta-stop-gate: unreadable payload" meta-stop-gate.sh "$SECRET" AW_META_BIN="$FAKE_BIN/aw-meta"
+hostile "meta-stop-gate: aw-meta errors" meta-stop-gate.sh "$META_STOP" AW_META_BIN="$FAKE_BIN/aw-meta" META_MODE=2
+hostile "meta-outbox: aw-meta errors" meta-outbox.sh "$META_SEND" AW_META_BIN="$FAKE_BIN/aw-meta" META_MODE=2
 hostile "outbox-flush: outbox unreadable" outbox-flush.sh '{"session_id":"s1","teammate_name":"t"}' AW_OUTBOX_DIR="$OUTBOX2"
 for h in block-destructive block-push-main detect-secrets; do
   hostile "$h: Bash call without a command" "$h.sh" '{"tool_name":"Bash","tool_input":{"cmd":"x"}}'
