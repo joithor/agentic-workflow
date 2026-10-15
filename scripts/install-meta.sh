@@ -41,14 +41,20 @@ if [ "${AW_SKIP_BUILD:-0}" = 1 ]; then
 elif dry; then
   echo "  [dry-run] would publish src/Meta/Aw.Meta.Host (NativeAOT) to $BIN/aw-meta"
 else
-  command -v dotnet > /dev/null || [ -x "$HOME/.dotnet/dotnet" ] || { echo "install-meta: the .NET SDK is not installed (global.json)" >&2; exit 1; }
+  export PATH="$HOME/.dotnet:$PATH" DOTNET_ROOT="${DOTNET_ROOT:-$HOME/.dotnet}"
+  # The SDK global.json pins (rollForward disable): installed into ~/.dotnet with Microsoft's dotnet-install.sh when missing
+  sdk="$(jq -r '.sdk.version' "$SCRIPT_DIR/global.json")"
+  if ! dotnet --list-sdks 2>/dev/null | grep -q "^$sdk "; then
+    echo "  meta: installing the .NET SDK $sdk into ~/.dotnet (global.json)"
+    curl -fsSL https://dot.net/v1/dotnet-install.sh | bash -s -- --version "$sdk" --install-dir "$HOME/.dotnet" --no-path \
+      || { echo "install-meta: installing the .NET SDK $sdk failed" >&2; exit 1; }
+  fi
   work="$STATE/cache/meta-build"
   mkdir -p "$work"
   tree="$(mktemp -d "$work/tree.XXXXXX")"
   git -C "$SCRIPT_DIR" ls-files -z --cached --others --exclude-standard -- global.json nuget.config .editorconfig 'Directory.*' \
     BannedSymbols.txt CodeMetricsConfig.txt src/Aw.Kernel src/Aw.Kernel.Data src/Aw.Kernel.Telemetry src/Redaction src/Aw.Analyzers src/Meta \
     | (cd "$SCRIPT_DIR" && tar --null -T - -cf -) | tar -xf - -C "$tree"
-  export PATH="$HOME/.dotnet:$PATH" DOTNET_ROOT="${DOTNET_ROOT:-$HOME/.dotnet}"
   rid="$(dotnet --info | awk '/^ *RID:/ {print $2; exit}')"
   run=(dotnet publish "$tree/src/Meta/Aw.Meta.Host/Aw.Meta.Host.csproj" -c Release -r "$rid" -p:RestoreLockedMode=false -o "$tree/out")
   [ -x "$HEAVY" ] && run=("$HEAVY" "${run[@]}")
