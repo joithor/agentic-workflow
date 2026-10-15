@@ -179,8 +179,8 @@ public sealed class ContextCliTests
         ProbeScore Score(string id, string? error) => new(ProbeId.From(id), 0, 0, [], [], [], error);
         ProbeReport Report(params ProbeScore[] probes) => new(1, "/p/probes.json", "h", "v1", probes, new ProbeTotals(0, 0, probes.Length, at), Baseline: null, Regressed: false);
 
-        var complete = System.Text.Json.JsonDocument.Parse(Kernel.Json.AwJson.Serialize(new ProbeRun(Report(Score("one", error: null)), "/p/r.json"), SliceHarness.Json)).RootElement;
-        var incomplete = System.Text.Json.JsonDocument.Parse(Kernel.Json.AwJson.Serialize(new ProbeRun(Report(Score("one", "SND-CONTEXT-020"), Score("two", "SND-CONTEXT-020")), Path: null),
+        var complete = System.Text.Json.JsonDocument.Parse(AwJson.Serialize(new ProbeRun(Report(Score("one", error: null)), "/p/r.json"), SliceHarness.Json)).RootElement;
+        var incomplete = System.Text.Json.JsonDocument.Parse(AwJson.Serialize(new ProbeRun(Report(Score("one", "SND-CONTEXT-020"), Score("two", "SND-CONTEXT-020")), Path: null),
             SliceHarness.Json)).RootElement;
 
         Assert.Equal(["report", "path", "incomplete", "failed"], complete.EnumerateObject().Select(p => p.Name), StringComparer.Ordinal);
