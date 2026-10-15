@@ -1282,6 +1282,7 @@ Aw.Context.Core.Overrides.ProposalPayload.Repo.init -> void
 Aw.Context.Core.Overrides.ProposalPayload.Run.get -> string!
 Aw.Context.Core.Overrides.ProposalPayload.Run.init -> void
 Aw.Context.Core.Overrides.ProposalPayload.ToHashText() -> string!
+Aw.Context.Core.Overrides.ProposalRows
 Aw.Context.Core.Overrides.RejectionIdentity
 Aw.Context.Core.Overrides.UndoRules
 Aw.Context.Core.Packing.PackCandidate
@@ -1641,6 +1642,7 @@ Aw.Context.Core.Results.Trust
 Aw.Context.Core.Results.Trust.Trusted = 0 -> Aw.Context.Core.Results.Trust
 Aw.Context.Core.Results.Trust.Untrusted = 1 -> Aw.Context.Core.Results.Trust
 Aw.Context.Core.Review.PromoteReadiness
+Aw.Context.Core.Review.ReviewBacklog
 Aw.Context.Core.Review.ReviewDecision
 Aw.Context.Core.Review.ReviewDecision.<Clone>$() -> Aw.Context.Core.Review.ReviewDecision!
 Aw.Context.Core.Review.ReviewDecision.Deconstruct(out Aw.Context.Core.Review.ReviewVerb Verb, out Aw.Context.Core.Graph.NodeKey? Node, out Aw.Context.Core.Graph.LinkId? Link, out Aw.Context.Core.Overrides.OverrideId? Undoes, out string? Label, out Aw.Context.Core.Graph.NodeKey? Other) -> void
@@ -1662,7 +1664,6 @@ Aw.Context.Core.Review.ReviewEntry
 Aw.Context.Core.Review.ReviewEntry.<Clone>$() -> Aw.Context.Core.Review.ReviewEntry!
 Aw.Context.Core.Review.ReviewEntry.Confidence.get -> double
 Aw.Context.Core.Review.ReviewEntry.Confidence.init -> void
-Aw.Context.Core.Review.ReviewEntry.Deconstruct(out Aw.Context.Core.Graph.NodeKey Node, out Aw.Context.Core.Graph.LinkId? Link, out Aw.Context.Core.Review.ReviewGroup Group, out string! Label, out Aw.Context.Core.Results.Provenance Provenance, out double Confidence, out int Impact, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Files, out Aw.Context.Core.Graph.NodeKey? Parent) -> void
 Aw.Context.Core.Review.ReviewEntry.Deconstruct(out Aw.Context.Core.Graph.NodeKey Node, out Aw.Context.Core.Graph.LinkId? Link, out Aw.Context.Core.Review.ReviewGroup Group, out string! Label, out Aw.Context.Core.Results.Provenance Provenance, out double Confidence, out int Impact, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Files, out Aw.Context.Core.Graph.NodeKey? Parent, out Aw.Context.Core.Overrides.OverrideId? Override) -> void
 Aw.Context.Core.Review.ReviewEntry.Equals(Aw.Context.Core.Review.ReviewEntry? other) -> bool
 Aw.Context.Core.Review.ReviewEntry.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>!
@@ -1683,7 +1684,6 @@ Aw.Context.Core.Review.ReviewEntry.Parent.get -> Aw.Context.Core.Graph.NodeKey?
 Aw.Context.Core.Review.ReviewEntry.Parent.init -> void
 Aw.Context.Core.Review.ReviewEntry.Provenance.get -> Aw.Context.Core.Results.Provenance
 Aw.Context.Core.Review.ReviewEntry.Provenance.init -> void
-Aw.Context.Core.Review.ReviewEntry.ReviewEntry(Aw.Context.Core.Graph.NodeKey Node, Aw.Context.Core.Graph.LinkId? Link, Aw.Context.Core.Review.ReviewGroup Group, string! Label, Aw.Context.Core.Results.Provenance Provenance, double Confidence, int Impact, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Files, Aw.Context.Core.Graph.NodeKey? Parent) -> void
 Aw.Context.Core.Review.ReviewEntry.ReviewEntry(Aw.Context.Core.Graph.NodeKey Node, Aw.Context.Core.Graph.LinkId? Link, Aw.Context.Core.Review.ReviewGroup Group, string! Label, Aw.Context.Core.Results.Provenance Provenance, double Confidence, int Impact, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Files, Aw.Context.Core.Graph.NodeKey? Parent, Aw.Context.Core.Overrides.OverrideId? Override = null) -> void
 Aw.Context.Core.Review.ReviewExported
 Aw.Context.Core.Review.ReviewExported.<Clone>$() -> Aw.Context.Core.Review.ReviewExported!
@@ -1737,7 +1737,6 @@ Aw.Context.Core.Review.ReviewGroup.Deterministic = 0 -> Aw.Context.Core.Review.R
 Aw.Context.Core.Review.ReviewGroup.Model = 1 -> Aw.Context.Core.Review.ReviewGroup
 Aw.Context.Core.Review.ReviewGroup.Orphaned = 2 -> Aw.Context.Core.Review.ReviewGroup
 Aw.Context.Core.Review.ReviewPlanner
-Aw.Context.Core.Review.ReviewQueue
 Aw.Context.Core.Review.ReviewQueueView
 Aw.Context.Core.Review.ReviewQueueView.<Clone>$() -> Aw.Context.Core.Review.ReviewQueueView!
 Aw.Context.Core.Review.ReviewQueueView.Decided.get -> int
@@ -2016,7 +2015,7 @@ const Aw.Context.Core.Graph.GraphWalk.MaxDepth = 4 -> int
 const Aw.Context.Core.Graph.GraphWalk.MaxPathLength = 8 -> int
 const Aw.Context.Core.Lenses.LensesBuilder.BandCap = 100 -> int
 const Aw.Context.Core.Map.MapRetention.RetainedVersions = 20 -> int
-const Aw.Context.Core.Proposals.ProposalNodes.Confidence = 0.5 -> double
+const Aw.Context.Core.Overrides.ProposalRows.Confidence = 0.5 -> double
 const Aw.Context.Core.Ranking.RankFusion.K = 60 -> int
 const Aw.Context.Core.Results.ContextResult.CurrentSchemaVersion = 1 -> int
 const Aw.Context.Core.Trust.UntrustedFence.MaxTitle = 200 -> int
@@ -2669,6 +2668,7 @@ static Aw.Context.Core.Overrides.OverrideLog.Ordered(System.Collections.Generic.
 static Aw.Context.Core.Overrides.OverrideLog.Undone(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides) -> System.Collections.Generic.IReadOnlySet<string!>!
 static Aw.Context.Core.Overrides.ProposalPayload.operator !=(Aw.Context.Core.Overrides.ProposalPayload? left, Aw.Context.Core.Overrides.ProposalPayload? right) -> bool
 static Aw.Context.Core.Overrides.ProposalPayload.operator ==(Aw.Context.Core.Overrides.ProposalPayload? left, Aw.Context.Core.Overrides.ProposalPayload? right) -> bool
+static Aw.Context.Core.Overrides.ProposalRows.NodeOf(Aw.Context.Core.Overrides.MapOverride! o) -> Aw.Context.Core.Graph.GraphNode?
 static Aw.Context.Core.Overrides.RejectionIdentity.For(Aw.Context.Core.Graph.GraphNode! node) -> string!
 static Aw.Context.Core.Overrides.UndoRules.Check(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, Aw.Context.Core.Overrides.OverrideId target) -> Aw.Kernel.Result<Aw.Context.Core.Overrides.MapOverride!>!
 static Aw.Context.Core.Packing.PackCandidate.operator !=(Aw.Context.Core.Packing.PackCandidate? left, Aw.Context.Core.Packing.PackCandidate? right) -> bool
@@ -2683,7 +2683,6 @@ static Aw.Context.Core.Proposals.GraphStatuses.ForRun(string! run, System.Collec
 static Aw.Context.Core.Proposals.GraphStatuses.Of(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Proposals.ProposedSurface!>! surfaces, Aw.Context.Core.Graph.GraphSnapshot! current, Aw.Context.Core.Graph.GraphSnapshot? draft) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Proposals.GraphStatus!>!
 static Aw.Context.Core.Proposals.ProposalNodes.Candidate(Aw.Context.Core.Graph.NodeKey key, Aw.Context.Core.Proposals.ProposedSurface! surface) -> Aw.Context.Core.Graph.GraphNode!
 static Aw.Context.Core.Proposals.ProposalNodes.KeyOf(Aw.Context.Core.Proposals.ProposedSurface! surface) -> Aw.Context.Core.Graph.NodeKey?
-static Aw.Context.Core.Proposals.ProposalNodes.NodeOf(Aw.Context.Core.Overrides.MapOverride! o) -> Aw.Context.Core.Graph.GraphNode?
 static Aw.Context.Core.Proposals.ProposalPlan.operator !=(Aw.Context.Core.Proposals.ProposalPlan? left, Aw.Context.Core.Proposals.ProposalPlan? right) -> bool
 static Aw.Context.Core.Proposals.ProposalPlan.operator ==(Aw.Context.Core.Proposals.ProposalPlan? left, Aw.Context.Core.Proposals.ProposalPlan? right) -> bool
 static Aw.Context.Core.Proposals.ProposalPlanner.Plan(Aw.Context.Core.Proposals.ScopeProposal! proposal, Aw.Context.Core.Graph.GraphSnapshot! basis, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, string! who, System.DateTimeOffset at) -> Aw.Context.Core.Proposals.ProposalPlan!
@@ -2733,6 +2732,7 @@ static Aw.Context.Core.Results.SourceStatusRow.operator ==(Aw.Context.Core.Resul
 static Aw.Context.Core.Results.SourcesView.operator !=(Aw.Context.Core.Results.SourcesView? left, Aw.Context.Core.Results.SourcesView? right) -> bool
 static Aw.Context.Core.Results.SourcesView.operator ==(Aw.Context.Core.Results.SourcesView? left, Aw.Context.Core.Results.SourcesView? right) -> bool
 static Aw.Context.Core.Review.PromoteReadiness.Check(Aw.Context.Core.Review.ReviewQueueView? queue) -> Aw.Kernel.Result<Aw.Context.Core.Review.ReviewQueueView!>!
+static Aw.Context.Core.Review.ReviewBacklog.Build(string! label, Aw.Context.Core.Graph.GraphSnapshot! draft, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides) -> Aw.Context.Core.Review.ReviewQueueView!
 static Aw.Context.Core.Review.ReviewDecision.operator !=(Aw.Context.Core.Review.ReviewDecision? left, Aw.Context.Core.Review.ReviewDecision? right) -> bool
 static Aw.Context.Core.Review.ReviewDecision.operator ==(Aw.Context.Core.Review.ReviewDecision? left, Aw.Context.Core.Review.ReviewDecision? right) -> bool
 static Aw.Context.Core.Review.ReviewEntry.operator !=(Aw.Context.Core.Review.ReviewEntry? left, Aw.Context.Core.Review.ReviewEntry? right) -> bool
@@ -2748,7 +2748,6 @@ static Aw.Context.Core.Review.ReviewFileMatch.operator !=(Aw.Context.Core.Review
 static Aw.Context.Core.Review.ReviewFileMatch.operator ==(Aw.Context.Core.Review.ReviewFileMatch? left, Aw.Context.Core.Review.ReviewFileMatch? right) -> bool
 static Aw.Context.Core.Review.ReviewFileMatcher.Match(Aw.Context.Core.Review.ReviewFile! file, Aw.Context.Core.Review.ReviewQueueView! queue) -> Aw.Kernel.Result<Aw.Context.Core.Review.ReviewFileMatch!>!
 static Aw.Context.Core.Review.ReviewPlanner.Plan(Aw.Context.Core.Review.ReviewDecision! decision, Aw.Context.Core.Graph.GraphSnapshot! draft, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, string! who, System.DateTimeOffset at) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>!>!
-static Aw.Context.Core.Review.ReviewQueue.Build(string! label, Aw.Context.Core.Graph.GraphSnapshot! draft, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides) -> Aw.Context.Core.Review.ReviewQueueView!
 static Aw.Context.Core.Review.ReviewQueueView.operator !=(Aw.Context.Core.Review.ReviewQueueView? left, Aw.Context.Core.Review.ReviewQueueView? right) -> bool
 static Aw.Context.Core.Review.ReviewQueueView.operator ==(Aw.Context.Core.Review.ReviewQueueView? left, Aw.Context.Core.Review.ReviewQueueView? right) -> bool
 static Aw.Context.Core.Review.ReviewResult.operator !=(Aw.Context.Core.Review.ReviewResult? left, Aw.Context.Core.Review.ReviewResult? right) -> bool

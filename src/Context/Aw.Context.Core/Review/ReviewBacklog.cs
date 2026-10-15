@@ -4,7 +4,7 @@ using Aw.Context.Core.Overrides;
 namespace Aw.Context.Core.Review;
 
 /// <summary>Builds what is left to decide in a draft (spec §8.7, S-4): deterministic proposals, model proposals and suggested file links by impact, then orphaned overrides.</summary>
-public static class ReviewQueue
+public static class ReviewBacklog
 {
     /// <summary>Builds the queue.</summary>
     /// <param name="label">The draft read ('v14@7c3e1a2').</param>
@@ -16,6 +16,6 @@ public static class ReviewQueue
         ArgumentNullException.ThrowIfNull(label);
         ArgumentNullException.ThrowIfNull(draft);
         ArgumentNullException.ThrowIfNull(overrides);
-        throw new NotSupportedException("S-4: ReviewQueue.Build is not built yet");
+        throw new NotSupportedException("S-4: ReviewBacklog.Build is not built yet");
     }
 }
