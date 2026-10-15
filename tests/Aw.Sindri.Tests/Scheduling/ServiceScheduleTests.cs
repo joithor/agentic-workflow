@@ -28,4 +28,31 @@ public sealed class ServiceScheduleTests
 
         Assert.Equal(new ServiceSchedule(ServiceName.From("heartbeat"), new Cadence(TimeSpan.FromMinutes(2)), _t0), only);
     }
+    [Fact, Trait("Lane", "unit")]
+    public void A_built_in_service_runs_on_its_own_cadence_without_a_profile_entry()
+    {
+        var bridge = new BuiltInService(ServiceName.From("workflow-events"), new Cadence(TimeSpan.FromSeconds(5)));
+        var profile = new SindriProfile(1, "thor",
+            Services: new Dictionary<string, ServiceSettings>(StringComparer.Ordinal) { ["heartbeat"] = new("2m") });
+
+        var withProfile = ServiceSchedule.From(profile, [bridge], _t0);
+        var withoutProfile = ServiceSchedule.From(profile: null, [bridge], _t0);
+
+        Assert.Equal(
+            [new ServiceSchedule(ServiceName.From("heartbeat"), new Cadence(TimeSpan.FromMinutes(2)), _t0), new ServiceSchedule(bridge.Name, bridge.Cadence, _t0)],
+            withProfile);
+        Assert.Equal([new ServiceSchedule(bridge.Name, bridge.Cadence, _t0)], withoutProfile);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_profile_entry_sets_a_built_in_service_s_cadence()
+    {
+        var bridge = new BuiltInService(ServiceName.From("workflow-events"), new Cadence(TimeSpan.FromSeconds(5)));
+        var profile = new SindriProfile(1, "thor",
+            Services: new Dictionary<string, ServiceSettings>(StringComparer.Ordinal) { ["workflow-events"] = new("30s") });
+
+        var only = Assert.Single(ServiceSchedule.From(profile, [bridge], _t0));
+
+        Assert.Equal(new ServiceSchedule(bridge.Name, new Cadence(TimeSpan.FromSeconds(30)), _t0), only);
+    }
 }

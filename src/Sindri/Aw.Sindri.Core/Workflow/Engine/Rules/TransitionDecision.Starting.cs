@@ -1,4 +1,3 @@
-using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
@@ -57,8 +56,8 @@ public static partial class TransitionDecision
     private static WorkflowInstance Seed(StartRequest request, Recipe recipe) => new(
         request.Id,
         request.Address,
-        SindriProfile.DefaultTenant,
-        Ring: 0,
+        request.Tenant,
+        request.Ring,
         request.Recipe,
         request.Item,
         request.Attempt,

@@ -208,6 +208,7 @@
         "type": "Project",
         "dependencies": {
           "Aw.Kernel": "[1.0.0, )",
+          "Aw.Redaction": "[1.0.0, )",
           "Aw.Sindri.Core": "[1.0.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
           "Temporalio": "[1.19.0, 1.19.0]"
