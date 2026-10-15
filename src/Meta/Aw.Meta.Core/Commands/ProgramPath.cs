@@ -13,7 +13,17 @@ public static class ProgramPath
     public static string Resolve(string program, string? cwd)
     {
         ArgumentNullException.ThrowIfNull(program);
-        _ = cwd;
-        return program;
+        if (cwd is not { Length: > 0 } || !program.Contains('/', StringComparison.Ordinal) || program.StartsWith('/'))
+        {
+            return program;
+        }
+
+        var relative = program;
+        while (relative.StartsWith("./", StringComparison.Ordinal))
+        {
+            relative = relative[2..];
+        }
+
+        return cwd.TrimEnd('/') + "/" + relative;
     }
 }
