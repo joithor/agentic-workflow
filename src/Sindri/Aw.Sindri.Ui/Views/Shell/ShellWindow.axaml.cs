@@ -88,13 +88,15 @@ internal sealed partial class ShellWindow : Window
     /// <inheritdoc />
     protected override void OnKeyDown(KeyEventArgs e)
     {
+        var chordWaiting = Shell?.IsChordPending == true;
         if (!IsChordStep(e))
         {
             Shell?.CancelChord();
         }
 
+        // Esc with a chord waiting is spent on cancelling it: whatever Esc would close stays open.
         e.Handled = RegionStep(e.Key, e.KeyModifiers, OperatingSystem.IsMacOS()) is { } step ? CycleRegion(back: step < 0)
-            : e.Key == Key.Escape ? Escape()
+            : e.Key == Key.Escape ? chordWaiting || Escape()
             : OpenByKey(e) || (!OverlayOpen && Chord(e));
         base.OnKeyDown(e);
     }
