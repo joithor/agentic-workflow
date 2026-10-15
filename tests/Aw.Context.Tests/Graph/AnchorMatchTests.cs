@@ -99,12 +99,12 @@ public sealed class AnchorMatchTests
         var node = AnchorMatch.Resolve(graph, "zzz");
 
         Assert.Equal(ContextErrors.UnknownAnchor.Code, node.Error.Code);
-        Assert.DoesNotContain(node.Error.Extensions ?? Aw.Kernel.ErrorExtensions.Empty, m => m.Key == "suggestedAnchors");
+        Assert.DoesNotContain(node.Error.Extensions ?? Kernel.ErrorExtensions.Empty, m => m.Key == "suggestedAnchors");
     }
 
-    private static List<string> Members(Aw.Kernel.Error error, string name)
+    private static List<string> Members(Kernel.Error error, string name)
     {
-        var member = Assert.Single(error.Extensions ?? Aw.Kernel.ErrorExtensions.Empty, m => m.Key == name);
+        var member = Assert.Single(error.Extensions ?? Kernel.ErrorExtensions.Empty, m => m.Key == name);
         return [.. member.Value.EnumerateArray().Select(e => e.GetString()!)];
     }
 
