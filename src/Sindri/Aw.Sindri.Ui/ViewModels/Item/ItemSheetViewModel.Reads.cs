@@ -143,6 +143,13 @@ internal sealed partial class ItemSheetViewModel
             if (ReferenceEquals(_reads, mine))
             {
                 _reads = null;
+
+                // Abandoned by its caller with no newer read in flight: nothing will settle a conflict this read was holding.
+                // Close goes on (its control speaks the refusal itself).
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    EndConflict();
+                }
             }
 
             mine.Dispose();
