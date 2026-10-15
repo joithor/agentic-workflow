@@ -187,8 +187,7 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server, 
 
             // The refusal is held by a dispatch park behind the timeout park: resuming the timeout surfaces it, carrying the effect.
             _ = await handle.ExecuteUpdateAsync(wf => wf.AnswerAsync(Resume('e')), new WorkflowUpdateOptions(new string('e', 32)));
-            var dispatch = await WorkflowsHarness.Until(handle, static v => v.State == "parked" && v.Detail == "spec-conflict (dispatch)");
-            Assert.Equal("spec-conflict (dispatch)", dispatch.Detail);
+            _ = await WorkflowsHarness.Until(handle, static v => v.State == "parked" && v.Detail == "spec-conflict (dispatch)");
             _ = await handle.ExecuteUpdateAsync(wf => wf.CancelAsync(Cancel()), new WorkflowUpdateOptions(new string('c', 32)));   // ends the run cleanly: the shared server's next case must start with nothing open
             Assert.Equal("cancelled", (await handle.GetResultAsync()).State);
         }, Token);
@@ -295,6 +294,7 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server, 
         {
             _ = await WorkflowsHarness.AsServe(sindri, env, Token);
             var handle = await Completed(sindri, "T-96", env);
+            await using var ended = new Terminating(handle);   // one failing case must not leave a running instance for the other on the shared server
             await Armed(handle, timers: 1, window);
             var original = await Pins(sindri, recipe);
             await Drift(sindri, recipe);
@@ -302,7 +302,7 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server, 
             _ = await WorkflowsHarness.Until(handle, static v => v.State == "parked");
 
             _ = await Pins(sindri, recipe, original);   // the re-approval: the pins match this build again
-            await Visible(sindri, recipe.Hash);
+            await Visible(sindri, recipe.Hash, handle);
             var woken = await sindri.GetRequiredService<IRecipeWake>().Wake(new RecipeWakeNotice(recipe.Hash, RecipeWakeKind.Approved, Sequence: 99, "human:cli"), Token);
             _ = await WorkflowsHarness.Until(handle, static v => v.State == "sent");
             await Armed(handle, timers: 2, window);
@@ -311,7 +311,6 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server, 
             Assert.True(woken.IsSuccess);
             Assert.Equal(refused.Identity, dispatched.Identity);
             Assert.Equal([refused.Identity], _desk.RecipePerformed);
-            await handle.TerminateAsync("test over");
         }, Token);
     }
 
@@ -331,9 +330,10 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server, 
         {
             _ = await WorkflowsHarness.AsServe(sindri, env, Token);
             var handle = await Completed(sindri, "T-101", env);
+            await using var ended = new Terminating(handle);   // one failing case must not leave a running instance for the other on the shared server
             await Armed(handle, timers: 1, window);
             _harness.Revoke(recipe);
-            await Visible(sindri, recipe.Hash);
+            await Visible(sindri, recipe.Hash, handle);
             var woken = await sindri.GetRequiredService<IRecipeWake>().Wake(new RecipeWakeNotice(recipe.Hash, RecipeWakeKind.Revoked, Sequence: 98, "human:cli"), Token);
             var parked = await WorkflowsHarness.Until(handle, static v => v.State == "parked");
             var early = await EffectRows.Of(sindri, OutboxEvents.Refused, CommandOrigin.Recipe);   // the delay (5 s) is still running: no recheck has refused anything yet
@@ -345,25 +345,41 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server, 
             var after = await WorkflowsHarness.Until(handle, static v => v.State == "parked");
             Assert.Equal(("SND-RECIPE-005", "spec-conflict (revoked)"), (refused.Code, after.Detail));
             Assert.Empty(_desk.RecipeCalls);
-            await handle.TerminateAsync("test over");
         }, Token);
     }
 
-    /// <summary>Polls until the visibility store lists a running instance of the recipe: the wake finds instances through it, so waking earlier races the indexing.</summary>
-    private static async Task Visible(IServiceProvider sindri, RecipeHash hash)
+    /// <summary>Polls until the visibility store lists <paramref name="handle"/> among the recipe's running instances: the wake finds instances through it, so waking earlier races the indexing (and the shared server may list another case's).</summary>
+    private static async Task Visible(IServiceProvider sindri, RecipeHash hash, WorkflowHandle handle)
     {
-        var wake = sindri.GetRequiredService<TemporalFrontend>();
+        var wake = new TemporalRecipeWake(sindri.GetRequiredService<TemporalFrontend>());
+        var mine = WorkflowInstanceId.Of(InstanceAddress.From(handle.Id));
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
         while (true)
         {
-            var running = await new TemporalRecipeWake(wake).Running(hash, Token);
-            if (running.IsSuccess && running.Value.Count > 0)
+            var running = await wake.Running(hash, Token);
+            if (running.IsSuccess && running.Value.Contains(mine))
             {
                 return;
             }
 
-            Assert.True(DateTime.UtcNow < deadline, "the visibility store never listed the instance");
+            Assert.True(DateTime.UtcNow < deadline, "the visibility store never listed this test's instance");
             await Task.Delay(100, Token);
+        }
+    }
+
+    /// <summary>Terminates the instance when the case ends, whatever its outcome; an instance that already ended is left alone.</summary>
+    private sealed class Terminating(WorkflowHandle handle) : IAsyncDisposable
+    {
+        public async ValueTask DisposeAsync()
+        {
+            try
+            {
+                await handle.TerminateAsync("test over");
+            }
+            catch (RpcException)
+            {
+                // already closed: nothing to stop
+            }
         }
     }
 
