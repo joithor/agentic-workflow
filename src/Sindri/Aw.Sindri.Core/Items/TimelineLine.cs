@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.Json;
-using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
@@ -19,7 +18,7 @@ public static class TimelineLine
         ArgumentNullException.ThrowIfNull(recorded);
         var bytes = Encoding.UTF8.GetBytes(recorded.Envelope.Payload);
         var type = recorded.Envelope.Type;
-        Result<string> line = type switch
+        var line = type switch
         {
             EventTypes.ItemCreated => AwJson.Deserialize<ItemCreated>(bytes, json).Map(static created => $"Created: {created.Title}"),
             EventTypes.ItemStateChanged => AwJson.Deserialize<ItemStateChanged>(bytes, json).Map(static changed => $"{ItemStateNames.Of(changed.From)} → {ItemStateNames.Of(changed.To)}"),

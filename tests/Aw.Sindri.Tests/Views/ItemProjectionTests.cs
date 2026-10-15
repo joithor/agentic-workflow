@@ -68,7 +68,7 @@ public sealed class ItemProjectionTests
 
         var row = ItemsProjection.Fold(created, Created("x", 1), new MaskScrubber("SECRET"));
 
-        Assert.Equal("Fix \\x1b[31m[masked]\\x1b[0m now", row.Title);
+        Assert.Equal("Fix \\x1B[31m[masked]\\x1B[0m now", row.Title);
         Assert.Equal("line1 [masked]\\u{200B}", row.Body);
     }
 
@@ -97,13 +97,15 @@ public sealed class ItemProjectionTests
     {
         var other = ItemId.From("ITM-" + new string('2', 32));
         var views = await Fold(
-            Recorded.Of(_h.Events, EventTypes.ItemLinked, new ItemLinked(_h.Ids.New<CommandId>(), _item, _record, _alias), 1, _item),
-            Recorded.Of(_h.Events, EventTypes.ItemLinked, new ItemLinked(_h.Ids.New<CommandId>(), other, _record, _alias), 2, other));
+            Created("one", 1),
+            Recorded.Of(_h.Events, EventTypes.ItemCreated, new ItemCreated(_h.Ids.New<CommandId>(), other, "two", Repo: null, Link: null, Body: null, Owner: null), 2, other),
+            Recorded.Of(_h.Events, EventTypes.ItemLinked, new ItemLinked(_h.Ids.New<CommandId>(), _item, _record, _alias), 3, _item),
+            Recorded.Of(_h.Events, EventTypes.ItemLinked, new ItemLinked(_h.Ids.New<CommandId>(), other, _record, _alias), 4, other));
 
         var row = (await views.Get<AliasRow>(ViewNames.ItemAliases, _alias.Value, Token)).Value;
 
         Assert.Equal(other, row!.Item);
-        Assert.Single((await views.List<AliasRow>(ViewNames.ItemAliases, Token)).Value);
+        _ = Assert.Single((await views.List<AliasRow>(ViewNames.ItemAliases, Token)).Value);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -116,9 +118,9 @@ public sealed class ItemProjectionTests
 
         var lines = (await views.Range<TimelineRow>(ViewNames.ItemTimeline, afterKey: _item.Value + "/", beforeKey: _item.Value + "0", max: 10, Token)).Value;
 
-        Assert.Equal(["Created: Ship it", "new → done", "Linked to linear:issue/abc-123 (ENG-142)"], lines.Select(l => l.Line));
+        Assert.Equal<string>(["Created: Ship it", "new → done", "Linked to linear:issue/abc-123 (ENG-142)"], lines.Select(l => l.Line), StringComparer.Ordinal);
         Assert.Equal([1L, 2L, 3L], lines.Select(l => l.Sequence));
-        Assert.Equal(["item.created", "item.state-changed", "item.linked"], lines.Select(l => l.Type));
+        Assert.Equal<string>(["item.created", "item.state-changed", "item.linked"], lines.Select(l => l.Type), StringComparer.Ordinal);
         Assert.Equal(ItemTimelineProjection.Key(_item.Value, 2), _item.Value + "/0000000000000000002");
     }
 

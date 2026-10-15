@@ -18,7 +18,9 @@ internal sealed class ItemsProjection(EventFactory events, ITextScrubber scrubbe
     public IReadOnlyList<string> Views => [ViewNames.Items];
 
     public bool Handles(string eventType) =>
-        eventType is EventTypes.ItemCreated or EventTypes.ItemStateChanged or EventTypes.ItemLinked;
+        string.Equals(eventType, EventTypes.ItemCreated, StringComparison.Ordinal)
+        || string.Equals(eventType, EventTypes.ItemStateChanged, StringComparison.Ordinal)
+        || string.Equals(eventType, EventTypes.ItemLinked, StringComparison.Ordinal);
 
     public async ValueTask<Result<Unit>> Apply(LedgerEvent recorded, IViewRows rows, CancellationToken cancellationToken)
     {
