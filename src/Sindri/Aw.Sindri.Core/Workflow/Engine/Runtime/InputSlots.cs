@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Views;
 
@@ -19,7 +20,7 @@ public static class InputSlots
             .. recipe.Recipe.Inputs.Select(i => new InputPresence(
                 i.Key.Value,
                 i.Label ?? SubjectRefs.Bare(i.Key.Value),
-                i.Kind ?? i.Type ?? FactTypes.Payload,
+                SubjectKinds.KindOf(i),
                 Required: true,
                 Present: instance.Facts.ContainsKey(i.Key) || recipe.Inputs.ContainsKey(i.Key))),
         ];

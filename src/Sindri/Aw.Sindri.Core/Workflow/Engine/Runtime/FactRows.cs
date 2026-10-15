@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
@@ -34,8 +35,8 @@ public static class FactRows
         var held = new Held(instance, interpreted, task, provenance);
         return
         [
-            .. recipe.Inputs.Select(i => Row(new Declared(i.Key, i.Label, i.Type, FactDirection.Input, From: null), held)),
-            .. recipe.Outputs.Select(o => Row(new Declared(o.Key, o.Label, o.Type, FactDirection.Output, o.From), held)),
+            .. recipe.Inputs.Select(i => Row(new Declared(i.Key, i.Label, SubjectKinds.TypeOf(i), FactDirection.Input, From: null), held)),
+            .. recipe.Outputs.Select(o => Row(new Declared(o.Key, o.Label, o.Type ?? Recipes.FactTypes.Default, FactDirection.Output, o.From), held)),
         ];
     }
 

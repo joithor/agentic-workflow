@@ -34,7 +34,7 @@ public static partial class SubjectRefs
         }
 
         var input = recipe.Recipe.Inputs[0];
-        var kind = input.Kind ?? input.Type ?? FactTypes.Payload;
+        var kind = SubjectKinds.KindOf(input);
         var (key, label) = Named(recipe, input, item, content);
         return new SubjectRef(kind, key, label, Href: null);
     }
@@ -85,7 +85,7 @@ public static partial class SubjectRefs
         text.Length <= length ? text : text[..(char.IsHighSurrogate(text[length - 1]) ? length - 1 : length)];
 
     /// <summary>The kind of the fact's value: its declared type, else the subject kind the recipe names, else text.</summary>
-    private static FactType ValueKind(RecipeInput input) => FactTypes.Parse(input.Type ?? input.Kind ?? "text");
+    private static FactType ValueKind(RecipeInput input) => FactTypes.Parse(SubjectKinds.TypeOf(input));
 
     private static (string Key, string Label) Same(string value) => (value, value);
 

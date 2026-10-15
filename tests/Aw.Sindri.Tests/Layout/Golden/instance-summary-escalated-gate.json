@@ -19,7 +19,7 @@
     "reason": "gate"
   },
   "subject": {
-    "kind": "payload",
+    "kind": "text",
     "key": "fact:spec",
     "label": "spec.md",
     "href": null
@@ -28,7 +28,7 @@
     {
       "key": "fact:spec",
       "label": "spec",
-      "kind": "payload",
+      "kind": "text",
       "required": true,
       "present": true
     }

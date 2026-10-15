@@ -110,7 +110,7 @@ public sealed class CurrentStatesTests
     }
 
     [Fact]
-    public void The_type_of_an_output_is_the_recipes_and_an_unknown_or_missing_one_is_served_as_payload()
+    public void The_type_of_an_output_is_the_recipes_an_unknown_name_is_payload_and_an_undeclared_one_is_the_default_text()
     {
         var recipe = Interpreted(EngineFixture.Step with { Outputs = [new RecipeOutput(_output, "Output", "mystery", From: "produce")] });
         var done = OutcomeName.From("done");
@@ -119,7 +119,7 @@ public sealed class CurrentStatesTests
         var undeclared = CurrentStates.Desk(Task([done], new OutputSpec(_notes, [done])), recipe)!.Outputs;
 
         Assert.Equal(FactType.Payload, Assert.Single(declared).Type);
-        Assert.Equal(FactType.Payload, Assert.Single(undeclared).Type);
+        Assert.Equal(FactType.Text, Assert.Single(undeclared).Type);   // engine spec §3.3: an undeclared type is text
     }
 
     [Fact]

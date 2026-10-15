@@ -97,4 +97,17 @@ public sealed class SubjectRefsTests
 
     [Fact]
     public void A_recipe_without_an_input_has_no_subject() => Assert.Null(SubjectRefs.Of(StatusCases.Recipe with { Recipe = EngineFixture.Step with { Inputs = [] } }, _item));
+
+    [Fact]
+    public void An_undeclared_type_is_the_declared_default_text_in_the_subject_the_slot_and_the_fact_row()
+    {
+        var recipe = Recipe(type: null);
+        var view = InstanceViews.Of(EngineFixture.At(recipe.Recipe, "produce"), recipe, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
+
+        Assert.Equal("text", view.Subject?.Kind);
+        Assert.Equal("text", Assert.Single(view.Inputs).Kind);
+        Assert.Equal(FactType.Text, view.Facts.First(f => f.Direction == FactDirection.Input).Type);
+        Assert.True(SubjectRefs.NeedsContent(recipe));
+        Assert.Equal("first line", SubjectRefs.Of(recipe, _item, "first line\nsecond")?.Key);
+    }
 }

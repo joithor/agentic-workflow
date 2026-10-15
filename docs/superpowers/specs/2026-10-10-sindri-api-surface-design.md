@@ -692,7 +692,7 @@ every §6.4 layout both ways. Lines the layout leaves out are `null` or `[]`.
 
 | Field | What it holds |
 |---|---|
-| `key`, `label`, `type` | `key` carries the `fact:` prefix everywhere it appears (declarations, rows, refs, the facts route); `label` and `type` equal the recipe's declaration of the key (`RecipeView.inputs[]` and `outputs[]`); `type` is `text`, `file`, `item`, `link`, `scope-map`, `packet`, `evidence`, `decision` or `payload`; an unknown type is served as `payload` |
+| `key`, `label`, `type` | `key` carries the `fact:` prefix everywhere it appears (declarations, rows, refs, the facts route); `label` and `type` equal the recipe's declaration of the key (`RecipeView.inputs[]` and `outputs[]`); `type` is `text`, `file`, `item`, `link`, `scope-map`, `packet`, `evidence`, `decision` or `payload`; an unknown type is served as `payload`; an undeclared type is served as the declared default `text` (engine §3.3); `FactTypeJsonConverter`'s unknown-name → payload rule is separate (a wire name the client doesn't know) |
 | `direction` | `input` or `output` |
 | `from?` | The state that produces it (E-22 `outputs[].from`), which places the band's ◐ mark |
 | `status` | `produced`, `in-progress` or `pending` |

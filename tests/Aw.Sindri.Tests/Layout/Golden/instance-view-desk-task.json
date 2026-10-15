@@ -77,7 +77,7 @@
     "outputs": [
       {
         "key": "fact:output",
-        "type": "payload",
+        "type": "text",
         "required": true
       }
     ],
@@ -90,7 +90,7 @@
   "urgency": "work",
   "engineOwned": null,
   "subject": {
-    "kind": "payload",
+    "kind": "text",
     "key": "fact:spec",
     "label": "spec.md",
     "href": null
@@ -99,7 +99,7 @@
     {
       "key": "fact:spec",
       "label": "spec",
-      "kind": "payload",
+      "kind": "text",
       "required": true,
       "present": true
     }
@@ -198,7 +198,7 @@
     {
       "key": "fact:spec",
       "label": "spec",
-      "type": "payload",
+      "type": "text",
       "direction": "input",
       "from": null,
       "status": "pending",

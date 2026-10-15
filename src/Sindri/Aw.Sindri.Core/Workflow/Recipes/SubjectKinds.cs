@@ -19,6 +19,20 @@ public static class SubjectKinds
         _ => null,
     };
 
+    /// <summary>The fact type an input's value has: the declared one, else the type its declared kind pairs with, else the declared default 'text' (spec §3.3).</summary>
+    /// <param name="input">A recipe input.</param>
+    /// <returns>The type name.</returns>
+    public static string TypeOf(RecipeInput input)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        return input.Type ?? (input.Kind is { } kind ? PairedType(kind) : null) ?? FactTypes.Default;
+    }
+
+    /// <summary>The kind an input is shown with: its effective subject kind, else its type name (a link or payload has no subject kind).</summary>
+    /// <param name="input">A recipe input.</param>
+    /// <returns>The kind, never null.</returns>
+    public static string KindOf(RecipeInput input) => Effective(input) ?? TypeOf(input);
+
     /// <summary>The kind an input has: the declared one, else the one its type implies (spec §3.3: item, file or text; a payload, link or other structured type has none).</summary>
     /// <param name="input">A recipe input.</param>
     /// <returns>The kind, or null when it has none.</returns>

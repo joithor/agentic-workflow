@@ -6853,3 +6853,5 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Activity.init -> void
 static Aw.Sindri.Core.Profile.RepoDenyGlobs.Entries(Aw.Sindri.Core.Profile.SindriProfile! profile) -> System.Collections.Generic.IReadOnlyList<(string! Name, string! Path, System.Collections.Generic.IReadOnlyList<string!>? DenyPaths)>!
 static Aw.Sindri.Core.Profile.RepoDenyGlobs.For(Aw.Sindri.Core.Profile.SindriProfile! profile, Aw.Sindri.Core.Profile.RepoEntry! repo) -> System.Collections.Generic.IReadOnlyList<string!>?
 Aw.Sindri.Core.Profile.RepoDenyGlobs
+static Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.TypeOf(Aw.Sindri.Core.Workflow.Recipes.RecipeInput! input) -> string!
+static Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.KindOf(Aw.Sindri.Core.Workflow.Recipes.RecipeInput! input) -> string!
