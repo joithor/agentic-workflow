@@ -29,7 +29,7 @@
       <StackPanel Spacing="10">
         <TextBlock Classes="detail-title" Text="{Binding Text.CreateItem}" />
         <TextBlock Classes="caption subtle" Text="{Binding Text.TitleRequired}" AutomationProperties.AccessibilityView="Raw" />
-        <TextBox x:Name="TitleField" Text="{Binding Title}" AutomationProperties.Name="{Binding Text.TitleRequired}" />
+        <TextBox x:Name="TitleField" Text="{Binding Title}" AutomationProperties.Name="{Binding Text.TitleRequired}" AutomationProperties.HelpText="{Binding TitleError}" />
         <!-- A blank submit: said under the field, and spoken once through the gated region (live only while it speaks; never empty). -->
         <TextBlock x:Name="TitleError" Classes="caption error" Text="{Binding TitleError}" IsVisible="{Binding HasTitleError}"
                    AutomationProperties.AccessibilityView="Raw" />
