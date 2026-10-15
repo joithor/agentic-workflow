@@ -287,7 +287,7 @@ public sealed class CommandPaletteTests : IDisposable
         Frame(window, "palette-sending");
 
         _server.RebuildGate.SetResult();
-        await Until(window, () => AutomationProperties.GetName(EntryButton(window, "Rebuild views")) == "Rebuild views, Rebuild views: done", "done");
+        await Until(window, () => AutomationProperties.GetName(EntryButton(window, "Rebuild views")) == "Rebuild views: done", "done");
         Assert.True(shell.Palette.IsOpen);
         Frame(window, "palette-done");
 
