@@ -575,9 +575,11 @@ with a read key. The public `POST /api/search` (scope `read:search`) needs an LL
 returns no document id; only `POST /api/admin/search` returns document ids and `updated_at` without a model. Mitigations:
 the `onyx` adapter can send only its own requests (search, the two document reads, the version and the key's own
 `/api/me`), an allowlist enforced in Infrastructure and tested; doctor shows the key's role so it stays visible; and the
-key belongs to a service account used by Sindri alone. The no-cloud-provider and telemetry-off
-settings can't be read with a search-only key, so the setup doc lists them as a manual check on each Onyx version change. First indexing time is reported by
-`context sources status` from Onyx's own connector status. A future shared Onyx (README X61) would declare its placement
+key belongs to a service account used by Sindri alone. Admin search also returns documents an Onyx admin hid from
+search (`include_hidden`); the adapter drops every hit Onyx marks `hidden`. The adapter never reads Onyx's settings or
+connector status (neither route is on its allowlist), so the no-cloud-provider and telemetry-off settings are a manual
+check in the setup doc on each Onyx version change, and indexing progress, first indexing included, is read in Onyx's
+own admin UI, not reported by `context sources status`. A future shared Onyx (README X61) would declare its placement
 and limits through `SourceDescriptor.Placement` and `SourceDescriptor.Limits`; today's local one keeps the defaults
 (`Local`, no limits).
 
@@ -771,9 +773,11 @@ fake passes `ContextSourceContract<TSource>`. Tests never touch work data or the
 
 - **Closed (S-5A, Onyx CE v4.9.0):** search returns `updated_at` (`POST /api/admin/search`, §5.2, §8.8). The
   federated Slack lane is not used: Slack comes through Onyx's indexing connector. The MCP `search` adds nothing (it
-  wraps `POST /api/search`, which has no document id).
+  wraps `POST /api/search`, which has no document id). Admin search includes hidden documents; the adapter drops
+  them (§8.8).
 - **Closed (S-5A):** Onyx has no change feed for a read key (its document listing needs `manage:connectors` and has no
-  times), so links are re-derived from search hits and the gap is reported by `context sources status`.
+  times), so links are re-derived from search hits. The gap is documented in `docs/sindri/onyx.md`, not reported by
+  `context sources status`, which reads no Onyx connector status (§8.8).
 - Linear document content history for as-of cuts (Phase 6).
 - Feature weights (Phase 8), starting equal.
 - Where this engine meets TS `sindri scope` before the switch: none. `sindri scope` keeps running as it is; the scoping
