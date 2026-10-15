@@ -6,7 +6,7 @@ namespace Aw.Sindri.Infrastructure.Locks;
 /// <summary>Reads who holds a slot (our owner file or the TS sindri's holder.json) and judges whether that holder is dead.</summary>
 internal static class HolderRecords
 {
-    private static readonly System.Text.Json.JsonSerializerOptions _json = Aw.Kernel.Json.AwJson.CreateOptions(HolderJsonContext.Default);
+    private static readonly System.Text.Json.JsonSerializerOptions _json = Kernel.Json.AwJson.CreateOptions(HolderJsonContext.Default);
 
     // A record's time is written to the second, after the process started: this much slack keeps a holder that took the slot at once from reading as a reused pid.
     private static readonly TimeSpan _startTolerance = TimeSpan.FromSeconds(5);
@@ -30,7 +30,7 @@ internal static class HolderRecords
         }
 
         var json = File.ReadAllText(beside);
-        var parsed = Aw.Kernel.Json.AwJson.Deserialize<TsHolderRecord>(System.Text.Encoding.UTF8.GetBytes(json), _json);
+        var parsed = Kernel.Json.AwJson.Deserialize<TsHolderRecord>(System.Text.Encoding.UTF8.GetBytes(json), _json);
         return parsed.IsError   // a bad document is no record
             ? null
             : new HolderRecord(beside, json, parsed.Value.Pid, parsed.Value.Host, DateTimeOffset.TryParse(parsed.Value.StartedAt, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var written) ? written : null);

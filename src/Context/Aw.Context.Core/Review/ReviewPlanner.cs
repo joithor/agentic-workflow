@@ -64,7 +64,7 @@ public static class ReviewPlanner
         {
             var entry = Queue.Entries.FirstOrDefault(e => e.Link?.Value == link.Value);
             return entry is null
-                ? Stale($"link {link.Value} is not in {Basis} (fix: {(OnDraft ? "list it again with 'sindri context map review'" : "find its id with 'sindri context filemap'")})")
+                ? Stale($"link {link.Value} is not in {(OnDraft ? "the review queue" : "the current map")} (fix: {(OnDraft ? "list it again with 'sindri context map review'" : "find its id with 'sindri context filemap'")})")
                 : Row(Verb(d), entry.Node) with { Link = link };
         }
 

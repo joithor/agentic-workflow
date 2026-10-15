@@ -79,7 +79,7 @@ public sealed class OneVisibleViewTests : IDisposable
         };
     }
 
-    private static string Code<T>(Aw.Kernel.Result<T> result) => result.IsError ? result.Error.Code : "answered";
+    private static string Code<T>(Kernel.Result<T> result) => result.IsError ? result.Error.Code : "answered";
 
     [Theory, Trait("Lane", "unit")]
     [MemberData(nameof(AnchorReaders), DisableDiscoveryEnumeration = true)]
