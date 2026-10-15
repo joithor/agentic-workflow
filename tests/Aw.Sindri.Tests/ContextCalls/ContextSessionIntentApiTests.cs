@@ -1,6 +1,8 @@
 using System.Net;
 using System.Text.Json;
 using Aw.Context.Core.Extract;
+using Aw.Context.Core.Graph;
+using Aw.Context.Core.Sources;
 using Aw.Context.Testing.Extract;
 using Aw.Context.Testing.Fixtures;
 using Aw.Context.Testing.Map;
@@ -29,8 +31,8 @@ public sealed class ContextSessionIntentApiTests : IDisposable
         var host = await ContextHosts.Approved(_repo, sessions: true, TestContext.Current.CancellationToken,
             s => { _ = s.RemoveAll<IClusterSource>(); _ = s.AddSingleton<IClusterSource>(new FakeClusterSource()); }, name: FixtureMap.Repo);
         var file = Path.Combine(host.Home, "intent-map.yaml");
-        var inDecision = Aw.Context.Core.Graph.DecisionRow.KeyFor(Aw.Context.Core.Sources.RecordKey.From("linear:issue/0e5a1b00-0000-4000-8000-000000000a01"), "keep the pane in view").Value;
-        var outDecision = Aw.Context.Core.Graph.DecisionRow.KeyFor(Aw.Context.Core.Sources.RecordKey.From("linear:issue/0e5a1b00-0000-4000-8000-000000000b01"), "other quote").Value;
+        var inDecision = DecisionRow.KeyFor(RecordKey.From("linear:issue/0e5a1b00-0000-4000-8000-000000000a01"), "keep the pane in view").Value;
+        var outDecision = DecisionRow.KeyFor(RecordKey.From("linear:issue/0e5a1b00-0000-4000-8000-000000000b01"), "other quote").Value;
         await File.WriteAllTextAsync(file, string.Join('\n',
             "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
             "  - {key: \"feature:in\", label: \"In scope\"}",
