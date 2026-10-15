@@ -275,6 +275,11 @@ if [ "$WITH_SINDRI" = "1" ]; then
   fi
 fi
 
+# --- External tools: uv, graphify (pinned), Temporal binaries, system-package checks ---
+# User-level installs happen here; a missing system package (needs root) prints its sudo command and stops setup.
+echo ""
+bash "$SCRIPT_DIR/scripts/install-deps.sh" || { echo "FATAL: external tools missing (see above). Fix, then re-run setup.sh."; exit 1; }
+
 # --- Skill packages (TypeScript helpers run by SKILL.md) ---
 echo ""
 echo "Building skill packages..."
