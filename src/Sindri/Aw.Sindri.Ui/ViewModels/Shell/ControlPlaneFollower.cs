@@ -7,8 +7,9 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 
 /// <summary>
 /// S1b's loop behind <see cref="HealthViewModel"/>: it finds the control plane through its endpoint record, checks the
-/// record against /sindri/ping (a stale record reads as not running), reads /sindri/status, and refreshes the status after
-/// each event on /sindri/events. While it follows, it pings every 10 s: a quiet control plane (nothing scheduled) sends
+/// record against /sindri/ping (a stale record reads as not running), reads the catalog (/sindri/commands) and
+/// /sindri/status, and after each event on /sindri/events re-reads every view it shows (the status and, for the
+/// stalled and rebuilding banners, /sindri/services), at most once per view per 250 ms: it never applies an event's payload (UI spec §9.2). While it follows, it pings every 10 s: a quiet control plane (nothing scheduled) sends
 /// no events, and an answer from the process it connected to keeps the views fresh (UI spec §4.1: stale is "no event or
 /// ping for 30 s"; the stream sends no keep-alive). When the stream ends, a refresh fails or the record changes, it looks
 /// again every 2 s.
@@ -19,12 +20,13 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 /// <param name="api">Its API.</param>
 /// <param name="clock">The clock for retry waits and pings.</param>
 /// <param name="health">The view model it tells.</param>
-internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, HealthViewModel health)
+internal sealed partial class ControlPlaneFollower(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, HealthViewModel health)
 {
     private long _cursor;
     private byte[] _record = [];
     private long _epoch;
     private int _pid;
+    private bool _again;   // the last refresh found the views behind: read again on the next throttle beat
 
     /// <summary>Follows the control plane until cancelled.</summary>
     /// <param name="cancellationToken">Stops following.</param>
@@ -104,6 +106,12 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
             return health.NotRunning(Labels.RecordUnreadableBecause(Labels.NotOnThisMachine(record.Url.Authority)), StatusText.ShortPath(records.Location));
         }
 
+        return await Handshake(record, bytes, cancellationToken).ConfigureAwait(true);
+    }
+
+    // Pings the record's endpoint, rejects a stale record, then loads the catalog and the first status; the url to follow, or null.
+    private async Task<Uri?> Handshake(ControlRecord record, byte[] bytes, CancellationToken cancellationToken)
+    {
         var ping = await api.Ping(record.Url, cancellationToken).ConfigureAwait(true);
         if (ping.IsError)
         {
@@ -117,7 +125,13 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
 
         _record = bytes;
         Track(ping.Value);
-        return await Refresh(record.Url, cancellationToken).ConfigureAwait(true) ? record.Url : null;
+        if (await api.Commands(record.Url, cancellationToken).ConfigureAwait(true) is { IsSuccess: true } catalog)
+        {
+            health.ShowCatalog(record.Url, catalog.Value);   // §9.1: on connect and after every reconnect
+        }
+
+        // The url is followed once a status was shown: should the views still be behind, connect again (best effort).
+        return await Refresh(record.Url, cancellationToken).ConfigureAwait(true) == Refreshed.Shown ? record.Url : null;
     }
 
     // Follows the stream until it ends, a status refresh fails, or the endpoint record changes. A stopping control plane
@@ -140,7 +154,12 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
         var events = 0;
         var dirty = Channel.CreateBounded<bool>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropWrite });
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var refresher = RefreshOnSignal(url, dirty.Reader, stop);
+        if (_again)
+        {
+            _ = dirty.Writer.TryWrite(item: true);
+        }
+
+        var refresher = RefreshOnSignal(url, dirty, stop);
         var watcher = WatchRecord(stop);
         var pinger = PingWhileFollowing(url, stop);
         try
@@ -166,17 +185,27 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
         return events;
     }
 
-    // One status refresh per burst of events: the signal holds at most one pending refresh. A failed refresh ends the follow.
-    private async Task RefreshOnSignal(Uri url, ChannelReader<bool> dirty, CancellationTokenSource stop)
+    // Each view re-read at most once per RefreshEvery (§9.2): the first event of a burst re-reads at once, and the
+    // events that arrive in the next RefreshEvery collapse into the signal's one pending refresh, run when it ends. A
+    // failed refresh ends the follow.
+    private async Task RefreshOnSignal(Uri url, Channel<bool> channel, CancellationTokenSource stop)
     {
+        var dirty = channel.Reader;
         try
         {
             while (await dirty.WaitToReadAsync(stop.Token).ConfigureAwait(true))
             {
                 _ = dirty.TryRead(item: out _);
-                if (!await Refresh(url, stop.Token).ConfigureAwait(true))
+                if (await Refresh(url, stop.Token).ConfigureAwait(true) == Refreshed.Failed)
                 {
                     await stop.CancelAsync().ConfigureAwait(true);
+                    return;
+                }
+
+                await Task.Delay(HealthViewModel.RefreshEvery, clock, stop.Token).ConfigureAwait(true);
+                if (_again)
+                {
+                    _ = channel.Writer.TryWrite(item: true);   // the projection is still behind: no event may come to say it caught up
                 }
             }
         }
@@ -234,18 +263,5 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
         {
             // The follow ended.
         }
-    }
-
-    private async Task<bool> Refresh(Uri url, CancellationToken cancellationToken)
-    {
-        var status = await api.Status(url, cancellationToken).ConfigureAwait(true);
-        if (status.IsError)
-        {
-            _ = health.Failed(status.Error, url);
-            return false;
-        }
-
-        health.Show(url, status.Value);
-        return true;
     }
 }

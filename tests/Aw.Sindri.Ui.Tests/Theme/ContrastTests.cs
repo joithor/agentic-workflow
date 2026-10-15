@@ -32,6 +32,7 @@ public sealed partial class ContrastTests
         { "InkTertiary", "Surface1", 3.3, 0 },
         { "PrimaryHover", "Canvas", 7.3, TextAa },
         { "PrimaryHover", "Surface1", 6.6, NonText },
+        { "PrimaryHover", "Surface3", 6.1, NonText },   // the palette's selected-row bar on its card (U1 run 1, a11y-4)
         { "OnPrimary", "Primary", 4.70, TextAa },
         { "OnPrimary", "PrimaryHoverFill", 5.5, TextAa },
         { "OnPrimary", "PrimaryPressed", 6.2, TextAa },

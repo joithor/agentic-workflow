@@ -1,6 +1,8 @@
 # Sindri UI app design: the control plane's views, actions and launching sessions
 
 Status:
+- **Revision 7 amendment (owner, 2026-10-12; PR #193):** §4.1's command lifecycle also covers the palette's rows: a
+  ready command run from the palette keeps the palette open and its row shows the lifecycle.
 - **Revision 8 note (owner session, 2026-10-13):** the app's contents were re-evaluated around five questions. `2026-10-13-sindri-ui-screens-design.md` supersedes this spec's §3, §4.2–§4.8, §10, §16, §18 and §19 with seven pages (Home · Workflows · Work · Recipes · Context · Agents · System), a recipe-driven instance frame, the context lens stack and phases U3', U5', U8–U13. Everything else here stands and is referenced from there.
 - **Revision 7 amendment (owner, 2026-10-12; PR #184):** §12.4 lists two more app-owned sentences, "On in your system
   settings" (Settings, while the OS reduces motion) and "Looks again every 2 s" (the Not running card); §15's deps cycle
@@ -200,13 +202,17 @@ Every view is in exactly one of these states, taken from the API, in this priori
 
 | Phase | Shows |
 |---|---|
-| `sending` | The control disabled with a spinner, its label kept; a polite announcement ("Sending…") after 300 ms |
+| `sending` | A spinner, the label kept. The control stays enabled so keyboard focus is kept; the view model refuses a second run. A polite announcement ("Sending…") after 300 ms |
 | `accepted` | An inline check and the outcome in words for 2 s ("Resumed ITM-01JC8"), announced; the row then clears or updates on the next refresh |
 | `refused` / `failed` | The inline error (above); focus stays on the control |
 | Copy | "Copied" for 1.5 s, announced |
 
 A second click while `sending` does nothing. The engine's nonce is minted at click time (§9.1), never when a form
 renders.
+
+**The palette's rows follow the same lifecycle** (owner, 2026-10-12; PR #193): running a `ready` command from the
+palette (§8) keeps the palette open, and that row shows `sending`, then `accepted` or Sindri's code and detail as
+`refused` / `failed`. Esc closes the palette at any point; the command keeps running.
 
 **A subject that clears while its sheet is open** (a decision decided at the CLI, an instance resumed): the sheet keeps
 the subject, shows "Cleared: <the timeline line that cleared it>" with **Close**, and disables any form while keeping

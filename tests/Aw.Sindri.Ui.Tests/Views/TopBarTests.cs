@@ -57,7 +57,7 @@ public sealed class TopBarTests : IDisposable
 
     private async Task<(ShellWindow Window, ShellViewModel Shell)> Show(Func<ShellViewModel, bool> ready)
     {
-        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences), new FakeClipboard());
         await shell.Restore(Token);
         var window = new ShellWindow { DataContext = shell };
         _windows.Add(window);
@@ -105,22 +105,19 @@ public sealed class TopBarTests : IDisposable
     // text is never "" (Avalonia #22312), it is live (Polite) only while sending, and every change of its text happens
     // with the live setting that matches: to "Sending…" while Polite, back to its resting text while Off, so only
     // "Sending…" is ever spoken. It is in the tree only while a refresh is in flight, and takes no room in the bar.
-    // Review run 4 (accessibility-tester-2): the ⌘K field does nothing until U1, so assistive tech doesn't meet it either:
-    // the field and everything in it are Raw (as the decorative glyphs are), so no screen reader announces a named search
-    // group that takes no input. U1 restores its view with its role and action.
+    // Review run 4 (accessibility-tester-2) hid the ⌘K field from assistive tech while it did nothing. U1 opens the
+    // palette from it, so the field is a Tab stop and exposed with its name; only its decorative parts (the placeholder
+    // text, the keycap) stay Raw so the name is not read twice.
     [Fact]
-    public Task The_inert_search_field_is_hidden_from_assistive_tech() => OnUi(async () =>
+    public Task The_search_field_is_exposed_to_assistive_tech_and_reachable_by_keyboard() => OnUi(async () =>
     {
         _records.Write(A.Record());
         var (window, _) = await Show(s => s.State == ShellState.Normal);
         var field = window.Get<TopBar>("TopBar").Get<Control>("SearchField");
         Assert.True(field.IsEffectivelyVisible);
-
-        var exposed = field.GetVisualDescendants().OfType<Control>().Prepend(field)
-            .Where(c => AutomationProperties.GetAccessibilityView(c) != AccessibilityView.Raw)
-            .Select(c => c.Name ?? c.GetType().Name)
-            .ToList();
-        Assert.True(exposed.Count == 0, "exposed to assistive tech: " + string.Join(", ", exposed));
+        Assert.True(field.Focusable);
+        Assert.NotEqual(AccessibilityView.Raw, AutomationProperties.GetAccessibilityView(field));
+        Assert.False(string.IsNullOrWhiteSpace(AutomationProperties.GetName(field)));
     });
 
     [Fact]
