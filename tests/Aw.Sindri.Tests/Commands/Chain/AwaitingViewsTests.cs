@@ -75,6 +75,38 @@ public sealed class AwaitingViewsTests : IAsyncDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_stall_that_starts_during_the_wait_is_SND_VIEW_001()
+    {
+        await AnEarlierCommand();
+        var running = _c.Start(new FixtureCommand("accept"), Human);
+        await Task.Delay(50, TestContext.Current.CancellationToken);   // it is waiting for the cursor
+
+        _c.Progress.Publish(_c.Progress.Current with { Stalled = true, StalledAt = 1, StalledType = "service.ran" });
+        _c.H.Clock.Advance(TimeSpan.FromMilliseconds(500));
+
+        Assert.Equal(SindriErrors.ViewsStalled.Code, (await running).Error.Code);
+        Assert.Equal(1, _c.Latch.Started);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_rebuild_that_starts_during_the_wait_is_SND_API_010()
+    {
+        await AnEarlierCommand();
+        var running = _c.Start(new FixtureCommand("accept"), Human);
+        await Task.Delay(50, TestContext.Current.CancellationToken);   // it is waiting for the cursor
+
+        _c.Progress.RequestRebuild();
+        while (!running.IsCompleted)
+        {
+            _c.H.Clock.Advance(TimeSpan.FromMilliseconds(500));
+            await Task.Delay(5, TestContext.Current.CancellationToken);
+        }
+
+        Assert.Equal(SindriErrors.ViewsRebuilding.Code, (await running).Error.Code);
+        Assert.Equal(1, _c.Latch.Started);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task StopProcess_reads_no_views_and_runs_during_a_rebuild()
     {
         _ = await _c.H.HoldLease();
