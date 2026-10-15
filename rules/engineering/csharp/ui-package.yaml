@@ -1,0 +1,19 @@
+schemaVersion: 1
+id: engineering.csharp.ui-package
+kind: engineering
+section: "4b.1"
+text: "The Sindri UI is its own package: views, view models and the API client in Aw.Sindri.Ui, thin platform heads; it uses no Sindri type (its HTTP contract and the two files it reads under AW_SINDRI_HOME, the endpoint record control.json and the per-start human token auth/human.token, are its only edges), view models carry no Avalonia types, heads hold no views or view models, compiled bindings only."
+why: "View models stay unit-testable, heads stay thin so a new platform is a new head, and compiled bindings keep the app trim- and AOT-safe."
+select:
+  languages: [csharp]
+  paths: ["src/Sindri/Aw.Sindri.Ui/**", "src/Sindri/Aw.Sindri.Ui.Desktop/**"]
+checks:
+  - type: archunit
+    id: "ARCH-UI-001"
+    status: active
+gap: partial
+gapNote: "ARCH-UI-001 covers Sindri types in the UI, view models (no Avalonia type; checked under Aw.Sindri.Ui.ViewModels, where view models live) and heads (no view or view model). Compiled bindings (x:DataType everywhere, no ReflectionBinding) rest on the build default, the NativeAOT publish (src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh) and review."
+source:
+  type: import
+  ref: ".agents/rules/csharp.md"
+status: active

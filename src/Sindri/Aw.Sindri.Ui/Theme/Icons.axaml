@@ -1,0 +1,30 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- The app's icons (UI spec §11.3, R1): the state glyphs and the shell's marks as vector geometries on a 16 × 16 grid,
+       drawn by Views/StateIcon with a 1.5 px round stroke (the brand ◆ filled), so they render at the same size and
+       weight on every OS instead of falling back to another font. Each icon sits beside its word: a state is never shown
+       by colour or shape alone. Colours come from the Brush.* tokens through the icon's styles. -->
+
+  <!-- The icon box: the Body line (16 px at text scale 1); TextScale.Apply scales it with the type ramp. -->
+  <x:Double x:Key="Size.Icon">16</x:Double>
+  <!-- The "." keycap's dot (R6): 4.5 px at text scale 1, scaled with the type ramp. -->
+  <x:Double x:Key="Size.KeyDot">4.5</x:Double>
+
+  <!-- ✓ ok -->
+  <StreamGeometry x:Key="Icon.Ok">M3,8.5 L6.5,12 L13,4.5</StreamGeometry>
+  <!-- ✕ failure (and the sheet's Close) -->
+  <StreamGeometry x:Key="Icon.Down">M4,4 L12,12 M12,4 L4,12</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Close">M4.5,4.5 L11.5,11.5 M11.5,4.5 L4.5,11.5</StreamGeometry>
+  <!-- ⌛ stale: an hourglass -->
+  <StreamGeometry x:Key="Icon.Stale">M4,2 L12,2 M4,14 L12,14 M5,2 L5,4.5 L8,8 L11,4.5 L11,2 M5,14 L5,11.5 L8,8 L11,11.5 L11,14</StreamGeometry>
+  <!-- ◇ a profile to look at -->
+  <StreamGeometry x:Key="Icon.Profile">M8,2 L14,8 L8,14 L2,8 Z</StreamGeometry>
+  <!-- ◆ the brand mark (filled) -->
+  <StreamGeometry x:Key="Icon.Brand">M8,1.5 L14.5,8 L8,14.5 L1.5,8 Z</StreamGeometry>
+  <!-- ⟳ refresh: a clockwise arc with its arrowhead -->
+  <StreamGeometry x:Key="Icon.Refresh">M13,8 A5,5 0 1 1 11.5,4.5 M11.5,1.5 L11.5,4.5 L8.5,4.5</StreamGeometry>
+  <!-- In flight (§4.1 "sending"): a three-quarter arc that turns, still under reduced motion -->
+  <StreamGeometry x:Key="Icon.Spinner">M8,2 A6,6 0 1 1 2,8</StreamGeometry>
+  <!-- ⌘ the command key -->
+  <StreamGeometry x:Key="Icon.Command">M6,6 L10,6 L10,10 L6,10 Z M6,6 L6,4 A2,2 0 1 0 4,6 L6,6 M10,6 L12,6 A2,2 0 1 0 10,4 L10,6 M10,10 L10,12 A2,2 0 1 0 12,10 L10,10 M6,10 L4,10 A2,2 0 1 0 6,12 L6,10</StreamGeometry>
+</ResourceDictionary>
