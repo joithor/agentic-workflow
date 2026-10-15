@@ -1,6 +1,8 @@
+using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Registry;
+using Aw.Sindri.Features.RevokeRecipe;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.ApproveRecipe;
 using Aw.Sindri.Tests.Workflow;
@@ -82,5 +84,36 @@ public sealed class LegacyRecipeRowTests
         Assert.Equal("path", line.OrderedBy);
         Assert.Equal(["produce=1", "checks=2", "verify=3", "done=4"], line.States.Select(s => $"{s.State}={s.Order?.ToString(System.Globalization.CultureInfo.InvariantCulture)}"), StringComparer.Ordinal);
         Assert.Equal(["verify>produce", "checks>produce"], line.Loops.Select(l => $"{l.From}>{l.To}"), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_legacy_hash_of_workflow_step_is_the_one_it_was_registered_under()
+    {
+        Assert.Equal(
+            "sha256:12e030dc92a0f827d4da641c65f023d5e547e15e9c1b29a9a427a603e0f50d40",
+            RecipeDeclarationsTests.LegacyHash(ShippedRecipes.Read("sindri/workflow.step.yaml")).Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_approved_old_row_lists_approved_and_not_stale_shows_its_preview_and_revokes_by_its_stored_hash()
+    {
+        var (r, row) = await Seeded();
+        await using var _ = r;
+
+        var approved = await r.Approve(row);
+        var line = await r.Line(row);
+        var shown = await r.Show(row.Id, row.Hash.Display);
+        var issued = (await r.Issue($"revoke workflow.step@{row.Hash.Display}")).Value;
+        var revoked = await r.Run<RevokeRecipeRequest, RevokeRecipeResponse>(
+            new RevokeRecipeRequest(row.Id, row.Hash, new ChallengeAnswer(issued.Challenge, issued.Action)), RegistryHarness.Human);
+
+        Assert.True(approved.IsSuccess, approved.IsError ? approved.Error.ToString() : null);
+        Assert.Equal(row.Hash, approved.Value.Approval.Hash);
+        Assert.Equal((RecipeStanding.Approved, 0), (line.Standing, line.Stale.Count));
+        Assert.True(shown.IsSuccess, shown.IsError ? shown.Error.ToString() : null);
+        Assert.Equal(row.Hash, shown.Value.Recipe.Hash);
+        Assert.True(revoked.IsSuccess, revoked.IsError ? revoked.Error.ToString() : null);
+        Assert.Equal(row.Hash, revoked.Value.Revocation.Hash);
+        Assert.Equal(RecipeStanding.Revoked, (await r.Line(row)).Standing);
     }
 }

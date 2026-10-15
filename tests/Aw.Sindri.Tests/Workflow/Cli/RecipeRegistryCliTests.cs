@@ -110,6 +110,28 @@ public sealed class RecipeRegistryCliTests : IDisposable
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
+    public async Task Show_json_carries_the_declared_outputs_and_the_inputs_kind()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var app = await Started(ct);
+        var file = Path.Combine(_home.Path, "triage.yaml");
+        await File.WriteAllTextAsync(file, ShippedRecipes.Read("dev/triage-three-state.yaml"), ct);
+        _ = await Run(app, ct, "register", file);
+        var hash = (await app.Services.GetRequiredService<IRecipeStore>().All(ct)).Value.Single().Hash;
+        _ = Take();
+
+        var code = await Run(app, ct, "show", $"workflow.dev-triage-three-state@{hash.Display}", "--json");
+
+        Assert.True(code == 0, _error.ToString());
+        var recipe = JsonDocument.Parse(_out.ToString()).RootElement.GetProperty("recipe");
+        Assert.Equal("triage", recipe.GetProperty("urgency").GetString());
+        Assert.Equal("item", recipe.GetProperty("inputs")[0].GetProperty("kind").GetString());
+        Assert.Equal(
+            [("fact:output", "file", "desk"), ("fact:answer", "decision", "answer")],
+            recipe.GetProperty("outputs").EnumerateArray().Select(o => (o.GetProperty("key").GetString()!, o.GetProperty("type").GetString()!, o.GetProperty("from").GetString()!)));
+    }
+
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task Empty_lists_say_so()
     {
         var ct = TestContext.Current.CancellationToken;
