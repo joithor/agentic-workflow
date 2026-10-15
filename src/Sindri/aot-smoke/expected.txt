@@ -60,7 +60,7 @@ Approved HASH
 {"running":true,"apiVersion":1}
 ## /sindri/mcp initialize, then tools/list (stateless)
 "sindri"
-["context_query","context_sources"]
+["context_query","context_sources","context_lenses"]
 ## sindri views rebuild (session)
 SND-AUTH-002 RebuildViews is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri views rebuild (this CLI ran as a session: CLAUDECODE is set)
 exit 2

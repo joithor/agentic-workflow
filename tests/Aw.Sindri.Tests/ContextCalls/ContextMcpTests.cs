@@ -27,7 +27,7 @@ public sealed class ContextMcpTests : IDisposable
     public void Dispose() => _repo.Dispose();
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task Tools_list_names_both_context_tools_read_only_even_while_sessions_are_off()
+    public async Task Tools_list_names_the_context_tools_read_only_even_while_sessions_are_off()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var host = await ContextHosts.Approved(_repo, sessions: false, ct);
@@ -35,7 +35,7 @@ public sealed class ContextMcpTests : IDisposable
 
         var tools = await mcp.Client.ListToolsAsync(cancellationToken: ct);
 
-        Assert.Equal(["context_query", "context_sources"], tools.Select(t => t.Name).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal(["context_lenses", "context_query", "context_sources"], tools.Select(t => t.Name).Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.All(tools, t => Assert.True(t.ProtocolTool.Annotations?.ReadOnlyHint));
         var query = tools.Single(t => t.Name == "context_query").JsonSchema;
         Assert.False(query.GetProperty("additionalProperties").GetBoolean());

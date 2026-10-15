@@ -2,6 +2,7 @@ using System.Text.Json;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
+using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Sources;
 using Aw.Kernel.Data;
 using Microsoft.Data.Sqlite;
@@ -19,12 +20,18 @@ internal static class GraphRows
     public static readonly IRowMapper<NodeAlias> Alias = new AliasMapper();
     public static readonly IRowMapper<DecisionRow> Decision = new DecisionMapper();
     public static readonly IRowMapper<MapOverride> Override = new OverrideMapper();
+    public static readonly IRowMapper<ScopeProposal> Run = new RunMapper();
 
     private static string? Text(SqliteDataReader r, int i) => r.IsDBNull(i) ? null : r.GetString(i);
 
     private sealed class IdMapper : IRowMapper<long>
     {
         public long Map(SqliteDataReader reader) => reader.GetInt64(0);
+    }
+
+    private sealed class RunMapper : IRowMapper<ScopeProposal>
+    {
+        public ScopeProposal Map(SqliteDataReader r) => new(r.GetString(0), Core.Engine.ContextRepoName.From(r.GetString(1)), GraphPayload.ReadSurfaces(r.GetString(2)));
     }
 
     private sealed class VersionMapper : IRowMapper<MapVersion>
@@ -77,6 +84,7 @@ internal static class GraphRows
     private sealed class OverrideMapper : IRowMapper<MapOverride>
     {
         public MapOverride Map(SqliteDataReader r) => new(GraphText.Action(r.GetString(0)), NodeKey.From(r.GetString(1)), r.GetString(2),
-            GraphText.Time(r.GetString(3)) ?? default, Text(r, 4), Text(r, 5) is { } other ? NodeKey.From(other) : null, Text(r, 6));
+            GraphText.Time(r.GetString(3)) ?? default, Text(r, 4), Text(r, 5) is { } other ? NodeKey.From(other) : null, Text(r, 6),
+            Text(r, 7) is { } link ? LinkId.From(link) : null, Text(r, 8) is { } undoes ? OverrideId.From(undoes) : null, GraphPayload.Read(Text(r, 9)));
     }
 }

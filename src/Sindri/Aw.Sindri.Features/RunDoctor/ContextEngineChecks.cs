@@ -1,3 +1,4 @@
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Map;
 using Aw.Kernel;
@@ -20,10 +21,15 @@ internal sealed class ContextEngineChecks(IContextEngine context, OnyxDoctor ony
     /// <returns>The three checks.</returns>
     internal async ValueTask<DoctorCheck[]> Check(LoadedProfile? approved, CancellationToken cancellationToken) =>
     [
-        Line("context:map", await context.CheckMap(cancellationToken).ConfigureAwait(false)),
+        Line("context:map", await context.CheckMap(ScopeOf(approved), cancellationToken).ConfigureAwait(false)),
         Line("context:retention", await context.CheckRetention(cancellationToken).ConfigureAwait(false)),
         await onyx.Check(approved, cancellationToken).ConfigureAwait(false),
     ];
+
+    // The approved profile's scope as a service reads it (the deny globs apply); null while no profile is approved.
+    private static ContextScope? ScopeOf(LoadedProfile? approved) => approved is null
+        ? null
+        : new ContextScope(approved.Profile.Context, ScopeRules.Usable([.. RepoDenyGlobs.Entries(approved.Profile).Select(e => new ProfileRepoEntry(e.Name, e.Path, e.DenyPaths))]), new ContextCaller(ContextCallerKind.Service, Repo: null, ContextClient.Service));
 
     private static DoctorCheck Line(string name, Result<MapHealth> health) => health.IsError
         ? new DoctorCheck(name, CheckState.Fail, $"{health.Error.Code}: {health.Error.Message}", "check $AW_SINDRI_HOME/context")

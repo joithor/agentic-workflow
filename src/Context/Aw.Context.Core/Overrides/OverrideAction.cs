@@ -33,4 +33,12 @@ public enum OverrideAction
     /// <summary>Removes a node and its edges.</summary>
     [JsonStringEnumMemberName("delete")]
     Delete,
+
+    /// <summary>A scoping run proposes a node the map doesn't have: a model-provenance, unconfirmed node under its parent (S-4). It is never re-proposed once rejected.</summary>
+    [JsonStringEnumMemberName("propose")]
+    Propose,
+
+    /// <summary>Reverses one earlier override (named in <see cref="MapOverride.Undoes"/>); itself a row, so the history keeps both (S-4).</summary>
+    [JsonStringEnumMemberName("undo")]
+    Undo,
 }

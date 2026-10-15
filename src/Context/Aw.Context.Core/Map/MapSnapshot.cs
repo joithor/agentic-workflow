@@ -13,4 +13,7 @@ public sealed record MapSnapshot(MapVersion Version, GraphSnapshot Graph, IReadO
     public string Label => Version.Commit is { Length: > 0 } commit
         ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"v{Version.Number}@{commit[..Math.Min(7, commit.Length)]}")
         : string.Create(System.Globalization.CultureInfo.InvariantCulture, $"v{Version.Number}");
+
+    /// <summary>The version without its commit: 'v12'.</summary>
+    public string Tag => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"v{Version.Number}");
 }
