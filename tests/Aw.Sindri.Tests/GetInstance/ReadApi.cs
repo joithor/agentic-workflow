@@ -96,7 +96,7 @@ internal sealed class ReadApi : HttpMessageHandler
         if (uri.AbsolutePath == Instances)
         {
             var item = query["item"];
-            var list = new ListInstancesRequest(query["needsMe"], item is null ? null : ItemKey.From(item), query["state"], query["query"], query["address"]);
+            var list = new ListInstancesRequest(query["needsMe"], item is null ? null : ItemKey.From(item), query["state"], query["query"], query["address"], query["recipe"], query["urgency"], query["subject"], query["root"]);
             return Answer(await _services.GetRequiredService<IService<ListInstancesRequest, ListInstancesResponse>>().Handle(list, cancellationToken).ConfigureAwait(false), json);
         }
 

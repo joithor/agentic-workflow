@@ -26,10 +26,10 @@ public sealed class ListInstancesServiceTests
             Subject = subjectKey is null ? null : new SubjectRef("file", subjectKey, label ?? subjectKey, Href: null),
         };
 
-    private static async Task<(Result<ListInstancesResponse> Result, Port Port)> Run(ListInstancesRequest request, params InstanceView[] views)
+    private static async Task<(Result<ListInstancesResponse> Result, RecordingInstances Port)> Run(ListInstancesRequest request, params InstanceView[] views)
     {
-        var port = new Port([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]);
-        var service = new ListInstancesService(new NoDirectory(), port, new Reader(views));
+        var port = new RecordingInstances([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]);
+        var service = new ListInstancesService(new NoDirectory(), port, new FixedReader(views));
         return (await service.Handle(request, CancellationToken.None), port);
     }
 
@@ -167,39 +167,5 @@ public sealed class ListInstancesServiceTests
         Assert.Equal(["T-1/step/1"], byLabel.Value.Instances.Select(static v => v.Address.Value), StringComparer.Ordinal);
         Assert.Equal(("no instances match", 0), (none.Value.Empty, none.Value.Instances.Count));
         Assert.Null(port.Calls[0].Filter!.Subject);
-    }
-
-    private sealed record Call(InstanceFilter? Filter, string? Query, bool Ended);
-
-    private sealed class Port(IReadOnlyList<InstanceRow> rows) : IWorkflowInstances
-    {
-        public List<Call> Calls { get; } = [];
-
-        public ValueTask<Result<IReadOnlyList<InstanceRow>>> List(InstanceFilter filter, bool ended, CancellationToken cancellationToken)
-        {
-            Calls.Add(new Call(filter, InstanceFilters.ToQuery(filter), ended));
-            return ValueTask.FromResult(Results.Success(rows));
-        }
-
-        public ValueTask<Result<IReadOnlyList<InstanceRow>>> List(string? query, bool ended, CancellationToken cancellationToken)
-        {
-            Calls.Add(new Call(Filter: null, query, ended));
-            return ValueTask.FromResult(Results.Success(rows));
-        }
-    }
-
-    private sealed class Reader(IReadOnlyList<InstanceView> views) : IInstanceReader
-    {
-        public ValueTask<Result<InstanceView>> Get(InstanceAddress address, CancellationToken cancellationToken) =>
-            ValueTask.FromResult<Result<InstanceView>>(views.First(v => v.Address == address));
-    }
-
-    private sealed class NoDirectory : IInstanceDirectory
-    {
-        public ValueTask<Result<AttemptState?>> Latest(ItemKey item, Aw.Sindri.Core.Workflow.Ids.RecipeId recipe, CancellationToken cancellationToken) =>
-            throw new NotSupportedException("a list never resolves a reference here");
-
-        public ValueTask<Result<InstanceAddress>> Resolve(string reference, CancellationToken cancellationToken) =>
-            throw new NotSupportedException("a list never resolves a reference here");
     }
 }
