@@ -5,7 +5,6 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="Counts">Counts, as served.</param>
 /// <param name="Empty">Empty, as served.</param>
 /// <param name="AsOf">AsOf, as served.</param>
-#pragma warning disable MA0182 // red: the JSON context registers it in the green commit
 internal sealed record InstanceList(
     IReadOnlyList<InstanceSummary> Instances,
     ListCounts Counts,

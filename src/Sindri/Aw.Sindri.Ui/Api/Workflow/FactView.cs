@@ -7,7 +7,6 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="Type">Type, as served.</param>
 /// <param name="Body">Body, as served.</param>
 /// <param name="Truncated">Truncated, as served.</param>
-#pragma warning disable MA0182 // red: the JSON context registers it in the green commit
 internal sealed record FactView(
     string Key,
     FactType Type,

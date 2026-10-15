@@ -7,7 +7,6 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="OrderedBy">OrderedBy, as served.</param>
 /// <param name="States">States, as served.</param>
 /// <param name="Loops">Loops, as served.</param>
-#pragma warning disable MA0182 // red: the JSON context registers it in the green commit
 internal sealed record RecipeView(
     IReadOnlyList<RecipeInputView> Inputs,
     IReadOnlyList<RecipeOutputView> Outputs,
