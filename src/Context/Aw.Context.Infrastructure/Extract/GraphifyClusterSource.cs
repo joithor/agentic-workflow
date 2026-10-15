@@ -41,7 +41,8 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
     private async ValueTask<Result<ClusterSet>> Cluster(ContextRepo repo, string commit, CancellationToken cancellationToken)
     {
         var host = SandboxHost.Current();
-        if (Find(options.Binary) is not { } binary || !await Usable(host, binary, cancellationToken).ConfigureAwait(false))
+        var (binary, reason) = await Check(host, cancellationToken).ConfigureAwait(false);
+        if (binary is null || reason is not null)
         {
             return _unavailable;
         }
@@ -90,15 +91,37 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
         return path;
     }
 
-    // Absent, the wrong version, or a sandbox that can't start all read the same: --version run inside the sandbox must print the pin.
-    private async ValueTask<bool> Usable(SandboxHost host, string binary, CancellationToken cancellationToken)
+    /// <summary>Null when this machine can run the pinned graphify under the sandbox; else why it can't (no sandbox, no binary, a sandbox that won't start, the wrong version). The same check, sandbox argv, timeout and kill the build uses.</summary>
+    /// <param name="cancellationToken">Stops the probe.</param>
+    internal async ValueTask<string?> WhyUnavailable(CancellationToken cancellationToken) =>
+        (await Check(SandboxHost.Current(), cancellationToken).ConfigureAwait(false)).Reason;
+
+    // The binary's path (null when absent) and the reason it can't be used (null when usable): --version run inside the sandbox must print the pin.
+    private async ValueTask<(string? Binary, string? Reason)> Check(SandboxHost host, CancellationToken cancellationToken)
     {
+        if (Find(options.Binary) is not { } binary)
+        {
+            return (null, $"no {options.Binary} binary found");
+        }
+
         var scratch = Directory.CreateTempSubdirectory("aw-graphify-probe-").FullName;
         try
         {
             var argv = options.Sandbox(host, [binary, "--version"], []);
-            var ran = argv is null ? null : await Spawn(argv, PrivateEnvironment(scratch), scratch, TimeSpan.FromSeconds(30), cancellationToken).ConfigureAwait(false);
-            return ran is { Exit: 0 } && Version.Match(ran.Stdout) is { Success: true } found && string.Equals(found.Value, options.Pin, StringComparison.Ordinal);
+            if (argv is null)
+            {
+                return (binary, "no sandbox available on this machine");
+            }
+
+            var ran = await Spawn(argv, PrivateEnvironment(scratch), scratch, TimeSpan.FromSeconds(30), cancellationToken).ConfigureAwait(false);
+            if (ran is not { Exit: 0 })
+            {
+                return (binary, "the sandboxed graphify --version did not start, failed or timed out");
+            }
+
+            return Version.Match(ran.Stdout) is { Success: true } found && string.Equals(found.Value, options.Pin, StringComparison.Ordinal)
+                ? (binary, null)
+                : (binary, $"graphify is not the pin {options.Pin}");
         }
         finally
         {
