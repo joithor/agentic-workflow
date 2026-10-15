@@ -59,7 +59,7 @@ public sealed class CallerEventViewScopeTests
     private CallerContext Session() => new(CallerClass.Session, Terminal: false, "session:cli", _h.Ids.New<CommandId>(), _h.Ids.New<CorrelationId>(), RepoName.From("demo"));
 
     /// <summary>The item's creation and one state change: two rows about it.</summary>
-    private async Task AppendItem(Aw.Sindri.Core.Lease.LeaseGrant grant, ItemId item, string repo)
+    private async Task AppendItem(Core.Lease.LeaseGrant grant, ItemId item, string repo)
     {
         var ct = TestContext.Current.CancellationToken;
         var created = new ItemCreated(_h.Ids.New<CommandId>(), item, "t", RepoName.From(repo), Link: null, Body: null, Owner: null);

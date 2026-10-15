@@ -99,7 +99,7 @@ public sealed class PublicEventsTests
         return new LedgerEvent(Sequence: 1, Epoch: 1, entry.Envelope with { Type = type, Payload = payload }, IdempotencyKey: "k", Item: null);
     }
 
-    private sealed class MaskingScrubber : Aw.Sindri.Core.Text.ITextScrubber
+    private sealed class MaskingScrubber : Core.Text.ITextScrubber
     {
         public string Scrub(string text) => text.Replace("SECRET", "[masked]", StringComparison.Ordinal);
     }
