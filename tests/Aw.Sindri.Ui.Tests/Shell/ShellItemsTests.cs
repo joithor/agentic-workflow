@@ -209,4 +209,22 @@ public sealed class ShellItemsTests
         Assert.True(shell.Press("C"));
         Assert.True(shell.Create.IsOpen);
     }
+
+    // R1, through the shell: leaving Home for a page without rows tells the queue, so a served row keeps its selection, silently.
+    [Fact]
+    public async Task A_row_served_elsewhere_while_another_page_is_shown_keeps_its_selection_silently()
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
+        var shell = await Connected();
+        _ = shell.Press("J");
+        _ = shell.Press("J");
+        var selected = shell.Queue.SelectedId!;
+        shell.GoTo(PageId.Decisions);
+
+        _server.QueueView = Tests.Queue.QueueKeysTests.Regrouped("extra-p11-running", selected, "waitingOnYou");
+        _server.Push(A.Event(59, "item.updated"));
+
+        await Until(() => shell.Queue.Groups.Single(g => g.Group == "waitingOnYou").Rows.Any(r => r.Id == selected));
+        Assert.Equal((selected, false, Labels.Sindri), (shell.Queue.SelectedId, shell.Queue.IsAnnouncing, shell.Queue.Announcement));
+    }
 }

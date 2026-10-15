@@ -368,7 +368,7 @@ public sealed class QueueKeysTests
     }
 
     // The view with an item taken out of its group and put in another (the projector re-grouped it).
-    private static RouteAnswer Regrouped(string view, string itemId, string toGroup, int clones = 0)
+    internal static RouteAnswer Regrouped(string view, string itemId, string toGroup, int clones = 0)
     {
         var root = System.Text.Json.Nodes.JsonNode.Parse(GoldenFiles.SpecShaped("queue", view))!;
         var groups = root["groups"]!.AsArray();
@@ -400,7 +400,7 @@ public sealed class QueueKeysTests
         return new RouteAnswer(System.Net.HttpStatusCode.OK, root.ToJsonString());
     }
 
-    private static string Running(int n) => "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2e70" + n.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    internal static string Running(int n) => "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2e70" + n.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
     // corr-1 / a11y-0 (a): a focused row Home draws that is served in a group Home does not draw has left the page: like a cleared row.
     [Fact]

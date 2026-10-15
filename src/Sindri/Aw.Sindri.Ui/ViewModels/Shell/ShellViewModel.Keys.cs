@@ -88,6 +88,9 @@ internal sealed partial class ShellViewModel
 
     private QueueScope RowScope => IsHome ? QueueScope.Home : QueueScope.Page;
 
+    // The rows' scope for a page the shell shows (the queue follows it, silently); null for a page that draws none.
+    private static QueueScope? RowScopeOf(PageId page) => page == PageId.Home ? QueueScope.Home : page == PageId.Queue ? QueueScope.Page : null;
+
     // The chord's second key (§8): N H Q R W D S and '.'.
     private bool Go(string key)
     {

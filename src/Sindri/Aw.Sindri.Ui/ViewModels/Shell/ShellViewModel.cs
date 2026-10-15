@@ -55,6 +55,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         Palette = new CommandPaletteViewModel(Health.Catalog, GoTo, RememberRun, CommandOutcome, () => Create.Open());
         Shortcuts = new ShortcutsViewModel(Health.Catalog);
         Queue = new QueueViewModel(api, Health.Catalog, clock);
+        Queue.PageShown(RowScopeOf(CurrentPage));
         Item = new ItemSheetViewModel(api, Health.Catalog, clock);
         Health.Follow(Queue.Refresh);
         Health.Follow(Item.Refresh);
@@ -203,6 +204,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         }
 
         CurrentPage = page;
+        Queue.PageShown(RowScopeOf(page));
         Changed(_pageProperties);
         Remember(p => p with { LastPage = page.ToString() });
     }

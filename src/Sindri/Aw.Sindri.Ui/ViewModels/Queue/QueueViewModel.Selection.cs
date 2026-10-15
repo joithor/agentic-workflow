@@ -12,14 +12,18 @@ internal sealed partial class QueueViewModel
     /// <param name="scope">The page the row is on: a refresh that clears it looks for its successor there.</param>
     internal void Select(string itemId, QueueScope scope)
     {
-        _scope = scope;
+        (_scope, _onPage) = (scope, true);
         SelectedId = itemId;
         Mark();
     }
 
     /// <summary>The shell shows a page: the selection's scope follows it (silently); a page without rows (null) is no scope.</summary>
     /// <param name="scope">The page shown, or null for a page that draws no rows.</param>
-    internal void PageShown(QueueScope? scope) => _ = (_scope, scope);
+    internal void PageShown(QueueScope? scope)
+    {
+        _onPage = scope is not null;
+        _scope = scope ?? _scope;
+    }
 
     /// <summary>
     /// J / K (§8): the next or previous row of the page the key was pressed on, in the order it draws them; stays at the
@@ -77,10 +81,11 @@ internal sealed partial class QueueViewModel
             return;
         }
 
-        // Served but not drawn on this page any more (past Home's cap, in a group Home or the filter doesn't draw): for this
-        // page it is cleared, so it passes on like a cleared row. A row that was never drawn here is left alone.
+        // Served but not drawn on the page shown any more (past Home's cap, in a group Home or the filter doesn't draw): for
+        // this page it is cleared, so it passes on like a cleared row. A row that was never drawn here is left alone, and on
+        // a page without rows (Decisions, Services...) a served row keeps its selection silently.
         var wasDrawn = before.Exists(r => string.Equals(r.Id, id, StringComparison.Ordinal));
-        if (_rows.TryGetValue(id, out var kept) && (!wasDrawn || Drawn(id)))
+        if (_rows.TryGetValue(id, out var kept) && (!_onPage || !wasDrawn || Drawn(id)))
         {
             Regrouped(id, kept, before);
             return;
