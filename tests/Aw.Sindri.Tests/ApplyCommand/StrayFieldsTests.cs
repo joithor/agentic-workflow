@@ -1,9 +1,11 @@
+using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Testing.Workflow;
 
@@ -68,10 +70,10 @@ public sealed class StrayFieldsTests
 
     private sealed class NoApprovals : IApprovedRecipes
     {
-        public ValueTask<Aw.Kernel.Result<ApprovedRecipe>> Latest(Core.Workflow.Ids.RecipeId id, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public ValueTask<Result<ApprovedRecipe>> Latest(RecipeId id, CancellationToken cancellationToken) => throw new NotSupportedException();
 
-        public ValueTask<Aw.Kernel.Result<ApprovedRecipe>> Find(Core.Workflow.Ids.RecipeId id, Core.Workflow.Ids.RecipeHash hash, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public ValueTask<Result<ApprovedRecipe>> Find(RecipeId id, RecipeHash hash, CancellationToken cancellationToken) => throw new NotSupportedException();
 
-        public ValueTask<Aw.Kernel.Result<ApprovalCheck>> Check(RecipeVersion recipe, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public ValueTask<Result<ApprovalCheck>> Check(RecipeVersion recipe, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 }
