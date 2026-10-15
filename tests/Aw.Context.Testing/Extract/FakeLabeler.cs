@@ -17,12 +17,12 @@ public sealed class FakeLabeler : ILabeler
     public IList<IReadOnlyList<ScrubPattern>> Patterns { get; } = [];
 
     /// <inheritdoc/>
-    public ValueTask<Result<IReadOnlyList<ClusterLabel>>> Label(IReadOnlyList<FileCluster> clusters, IReadOnlyList<ScrubPattern> extraPatterns, int maxTokens, CancellationToken cancellationToken)
+    public ValueTask<Result<LabelPass>> Label(IReadOnlyList<FileCluster> clusters, IReadOnlyList<ScrubPattern> extraPatterns, int maxTokens, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(clusters);
         if (Failure is { } failure)
         {
-            return ValueTask.FromResult<Result<IReadOnlyList<ClusterLabel>>>(failure);
+            return ValueTask.FromResult<Result<LabelPass>>(failure);
         }
 
         Patterns.Add(extraPatterns);
@@ -31,6 +31,6 @@ public sealed class FakeLabeler : ILabeler
             Shown.Add(cluster);
         }
 
-        return ValueTask.FromResult(Results.Success<IReadOnlyList<ClusterLabel>>([.. clusters.Select(c => new ClusterLabel(c.Id, "Labeled " + c.Id.Value))]));
+        return ValueTask.FromResult(Results.Success(new LabelPass([.. clusters.Select(c => new ClusterLabel(c.Id, "Labeled " + c.Id.Value))])));
     }
 }

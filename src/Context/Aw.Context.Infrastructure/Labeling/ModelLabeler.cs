@@ -24,7 +24,7 @@ internal sealed class ModelLabeler(IModelPort model, IScrubberFactory scrubbers)
     private const int LabelLength = 60;
     private static readonly TimeSpan _budget = TimeSpan.FromMinutes(2);
 
-    public async ValueTask<Result<IReadOnlyList<ClusterLabel>>> Label(IReadOnlyList<FileCluster> clusters, IReadOnlyList<ScrubPattern> extraPatterns, int maxTokens, CancellationToken cancellationToken)
+    public async ValueTask<Result<LabelPass>> Label(IReadOnlyList<FileCluster> clusters, IReadOnlyList<ScrubPattern> extraPatterns, int maxTokens, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(clusters);
         var built = scrubbers.For(extraPatterns);
@@ -55,7 +55,7 @@ internal sealed class ModelLabeler(IModelPort model, IScrubberFactory scrubbers)
             labels.AddRange(Parse(answer.Value.Text, batch));
         }
 
-        return labels;
+        return new LabelPass(labels);
     }
 
     private static int Tokens(string text) => (text.Length + 3) / 4;

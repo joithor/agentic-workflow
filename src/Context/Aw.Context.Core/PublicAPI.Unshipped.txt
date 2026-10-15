@@ -362,7 +362,7 @@ Aw.Context.Core.Extract.Found.Named.init -> void
 Aw.Context.Core.Extract.IClusterSource
 Aw.Context.Core.Extract.IClusterSource.Clusters(Aw.Context.Core.Engine.ContextRepo! repo, string! commit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Extract.ClusterSet!>!>
 Aw.Context.Core.Extract.ILabeler
-Aw.Context.Core.Extract.ILabeler.Label(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.FileCluster!>! clusters, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Trust.ScrubPattern!>! extraPatterns, int maxTokens, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.ClusterLabel!>!>!>
+Aw.Context.Core.Extract.ILabeler.Label(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.FileCluster!>! clusters, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Trust.ScrubPattern!>! extraPatterns, int maxTokens, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Extract.LabelPass!>!>
 Aw.Context.Core.Extract.IRepoReader
 Aw.Context.Core.Extract.IRepoReader.Head(Aw.Context.Core.Engine.ContextRepo! repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 Aw.Context.Core.Extract.IRepoReader.ListFiles(Aw.Context.Core.Engine.ContextRepo! repo, string! commit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!>
@@ -3577,3 +3577,18 @@ Aw.Context.Core.Overrides.ProposalPayload.Deconstruct(out string! Run, out Aw.Co
 Aw.Context.Core.Overrides.ProposalPayload.Generation.get -> int
 Aw.Context.Core.Overrides.ProposalPayload.Generation.init -> void
 Aw.Context.Core.Overrides.ProposalPayload.ProposalPayload(string! Run, Aw.Context.Core.Engine.ContextRepoName Repo, Aw.Context.Core.Graph.NodeKind Kind, Aw.Context.Core.Graph.NodeKey? Parent = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? Evidence = null, string? Quote = null, int Generation = 0) -> void
+
+Aw.Context.Core.Extract.LabelPass
+Aw.Context.Core.Extract.LabelPass.<Clone>$() -> Aw.Context.Core.Extract.LabelPass!
+Aw.Context.Core.Extract.LabelPass.Complete.get -> bool
+Aw.Context.Core.Extract.LabelPass.Complete.init -> void
+Aw.Context.Core.Extract.LabelPass.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.ClusterLabel!>! Labels, out bool Complete) -> void
+Aw.Context.Core.Extract.LabelPass.Equals(Aw.Context.Core.Extract.LabelPass? other) -> bool
+Aw.Context.Core.Extract.LabelPass.LabelPass(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.ClusterLabel!>! Labels, bool Complete = true) -> void
+Aw.Context.Core.Extract.LabelPass.Labels.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.ClusterLabel!>!
+Aw.Context.Core.Extract.LabelPass.Labels.init -> void
+override Aw.Context.Core.Extract.LabelPass.Equals(object? obj) -> bool
+override Aw.Context.Core.Extract.LabelPass.GetHashCode() -> int
+override Aw.Context.Core.Extract.LabelPass.ToString() -> string!
+static Aw.Context.Core.Extract.LabelPass.operator !=(Aw.Context.Core.Extract.LabelPass? left, Aw.Context.Core.Extract.LabelPass? right) -> bool
+static Aw.Context.Core.Extract.LabelPass.operator ==(Aw.Context.Core.Extract.LabelPass? left, Aw.Context.Core.Extract.LabelPass? right) -> bool

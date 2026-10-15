@@ -108,8 +108,8 @@ internal sealed class BuildMapService(
         }
 
         // A model that couldn't answer leaves the clusters their file-derived names.
-        var features = ClusterFeatures.Propose(repo.Name, clusters, labels.IsError ? [] : labels.Value, extracted);
-        string[] degraded = [.. clusters.Available ? [] : new[] { "clusters" }, .. labels.IsError ? new[] { "labels" } : []];
+        var features = ClusterFeatures.Propose(repo.Name, clusters, labels.IsError ? [] : labels.Value.Labels, extracted);
+        string[] degraded = [.. clusters.Available ? [] : new[] { "clusters" }, .. labels.IsError || !labels.Value.Complete ? new[] { "labels" } : []];
         return new RepoExtraction(extracted.Plus(features), commit, degraded);
     }
 
@@ -158,11 +158,11 @@ internal sealed class BuildMapService(
             Available: true);
     }
 
-    private async ValueTask<Result<IReadOnlyList<ClusterLabel>>> Labels(IProgress<string>? progress, ContextSettings settings, ClusterSet clusters, CancellationToken cancellationToken)
+    private async ValueTask<Result<LabelPass>> Labels(IProgress<string>? progress, ContextSettings settings, ClusterSet clusters, CancellationToken cancellationToken)
     {
         if (!settings.Labeling.Enabled || clusters.Clusters.Count == 0)
         {
-            return Results.Success<IReadOnlyList<ClusterLabel>>([]);
+            return Results.Success(new LabelPass([]));
         }
 
         progress?.Report(string.Create(CultureInfo.InvariantCulture, $"labeling {clusters.Clusters.Count} clusters"));

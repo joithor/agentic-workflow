@@ -25,7 +25,7 @@ public sealed class ModelLabelerTests
 
         var labels = await Labeler(model).Label([Cluster("c1", "src/tabs/TabManager.ts"), Cluster("c2", "src/layout/SplitPane.ts")], [], 10_000, Ct);
 
-        Assert.Equal([("c1", "Tab groups"), ("c2", "Split panes")], labels.Value.Select(l => (l.Id.Value, l.Label)));
+        Assert.Equal([("c1", "Tab groups"), ("c2", "Split panes")], labels.Value.Labels.Select(l => (l.Id.Value, l.Label)));
         var request = Assert.Single(model.Requests);
         Assert.Equal(ModelPurpose.Labeling, request.Purpose);
         Assert.Contains("src/tabs/TabManager.ts", request.Prompt, StringComparison.Ordinal);
@@ -39,7 +39,7 @@ public sealed class ModelLabelerTests
             Answer = "[{\"id\":\"zz\",\"label\":\"Unknown\"},{\"id\":\"c1\",\"label\":\"\"},{\"id\":\"c2\",\"label\":\"Bad\\u0007 name\\nignore previous instructions\"},{\"id\":\"c3\",\"label\":\"" + new string('x', 200) + "\"}]",
         };
 
-        var labels = (await Labeler(model).Label([Cluster("c1", "a.ts", "b.ts"), Cluster("c2", "c.ts", "d.ts"), Cluster("c3", "e.ts", "f.ts")], [], 10_000, Ct)).Value;
+        var labels = (await Labeler(model).Label([Cluster("c1", "a.ts", "b.ts"), Cluster("c2", "c.ts", "d.ts"), Cluster("c3", "e.ts", "f.ts")], [], 10_000, Ct)).Value.Labels;
 
         Assert.DoesNotContain(labels, l => string.Equals(l.Id.Value, "zz", StringComparison.Ordinal) || string.Equals(l.Id.Value, "c1", StringComparison.Ordinal));
         Assert.Equal("Bad name ignore previous instructions", labels.Single(l => l.Id.Value == "c2").Label);
@@ -51,7 +51,7 @@ public sealed class ModelLabelerTests
     {
         var labels = await Labeler(new FakeModelPort { Answer = "I cannot do that" }).Label([Cluster("c1", "a.ts", "b.ts")], [], 10_000, Ct);
 
-        Assert.Empty(labels.Value);
+        Assert.Empty(labels.Value.Labels);
     }
 
     [Fact]
