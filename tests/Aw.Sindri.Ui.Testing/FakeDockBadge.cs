@@ -12,5 +12,9 @@ internal sealed class FakeDockBadge : IDockBadge
     /// <summary>Every count shown, in order.</summary>
     public IReadOnlyList<int> History => _history;
 
-    public void Show(int count) => throw new NotSupportedException();
+    public void Show(int count)
+    {
+        Shown = Math.Max(count, 0);
+        _history.Add(Shown);
+    }
 }

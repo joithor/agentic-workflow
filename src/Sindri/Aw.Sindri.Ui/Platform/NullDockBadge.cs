@@ -7,5 +7,5 @@ public sealed class NullDockBadge : IDockBadge
     public int Shown { get; private set; }
 
     /// <inheritdoc />
-    public void Show(int count) => throw new NotSupportedException();
+    public void Show(int count) => Shown = Math.Max(count, 0);
 }
