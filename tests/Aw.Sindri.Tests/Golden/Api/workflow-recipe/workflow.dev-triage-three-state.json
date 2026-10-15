@@ -1,0 +1,48 @@
+{
+  "id": "workflow.dev-triage-three-state",
+  "hash": "sha256:88a0e8fc810fb8dbdccb244b1a601e16743ade3c4230b57c7c0cf782b3ed0f66",
+  "version": 1,
+  "inputs": [
+    {
+      "key": "fact:item",
+      "label": "Item",
+      "type": "item",
+      "kind": "item",
+      "required": true
+    }
+  ],
+  "outputs": [
+    {
+      "key": "fact:output",
+      "label": "Draft",
+      "type": "file",
+      "from": "desk"
+    },
+    {
+      "key": "fact:answer",
+      "label": "Decision",
+      "type": "decision",
+      "from": "answer"
+    }
+  ],
+  "urgency": "triage",
+  "orderedBy": "path",
+  "states": [
+    {
+      "id": "desk",
+      "order": 1,
+      "branchOf": null
+    },
+    {
+      "id": "answer",
+      "order": 2,
+      "branchOf": null
+    },
+    {
+      "id": "done",
+      "order": 3,
+      "branchOf": null
+    }
+  ],
+  "loops": []
+}
