@@ -622,6 +622,8 @@ Aw.Meta.Core.Merge.MergeFacts.Gate.init -> void
 override Aw.Meta.Core.Merge.MergeFacts.GetHashCode() -> int
 Aw.Meta.Core.Merge.MergeFacts.IsDraft.get -> bool
 Aw.Meta.Core.Merge.MergeFacts.IsDraft.init -> void
+Aw.Meta.Core.Merge.MergeFacts.PlannedScopes.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Meta.Core.Merge.MergeFacts.PlannedScopes.init -> void
 Aw.Meta.Core.Merge.MergeFacts.MergeFacts() -> void
 Aw.Meta.Core.Merge.MergeFacts.MergeOrder.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.MergeOrderRule!>!
 Aw.Meta.Core.Merge.MergeFacts.MergeOrder.init -> void

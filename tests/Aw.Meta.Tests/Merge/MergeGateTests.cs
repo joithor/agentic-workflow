@@ -18,6 +18,7 @@ public sealed class MergeGateTests
         CurrentMain = "main1",
         OpenPrs = [190],
         DocsOnly = ["**/*.md", "docs/**"],
+        PlannedScopes = ["repo"],
     };
 
     private static string[] Failed(MergeFacts facts) => [.. MergeGate.Evaluate(facts).Where(c => !c.Ok).Select(c => c.Name)];
@@ -27,8 +28,19 @@ public sealed class MergeGateTests
     {
         var checks = MergeGate.Evaluate(Facts(Gate()));
 
-        Assert.Equal(["gate", "gate-result", "head", "main", "order", "draft"], checks.Select(c => c.Name), StringComparer.Ordinal);
+        Assert.Equal(["gate", "gate-result", "scopes", "head", "main", "order", "draft"], checks.Select(c => c.Name), StringComparer.Ordinal);
         Assert.All(checks, c => Assert.True(c.Ok, c.Detail));
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(new[] { "repo" }, true)]
+    [InlineData(new[] { "repo", "dotnet" }, false)]
+    public void A_gate_vouches_only_for_the_scopes_it_ran(string[] planned, bool ok)
+    {
+        var check = MergeGate.Evaluate(Facts(Gate()) with { PlannedScopes = planned }).Single(c => c.Name == "scopes");
+
+        Assert.Equal(ok, check.Ok);
+        Assert.Equal(ok ? "ran every scope the diff needs (repo)" : "the diff needs dotnet; the gate ran repo", check.Detail);
     }
 
     [Fact, Trait("Lane", "unit")]

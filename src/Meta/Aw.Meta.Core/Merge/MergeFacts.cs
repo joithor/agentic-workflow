@@ -35,4 +35,7 @@ public sealed record MergeFacts
 
     /// <summary>Globs of documentation-only paths.</summary>
     public IReadOnlyList<string> DocsOnly { get; init; } = [];
+
+    /// <summary>The scopes the gated diff needs (the scope planner over the gate's main...head); null when unknown.</summary>
+    public IReadOnlyList<string>? PlannedScopes { get; init; }
 }

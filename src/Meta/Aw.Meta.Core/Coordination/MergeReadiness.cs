@@ -57,6 +57,7 @@ public sealed class MergeReadiness(IMetaConfig config, IGateStore gates, RepoCom
             OpenPrs = await OpenBefore(team.Value, pr).ConfigureAwait(false),
             MergeOrder = team.Value.MergeOrder,
             DocsOnly = team.Value.Gate.DocsOnly,
+            PlannedScopes = await Planned(team.Value, gate).ConfigureAwait(false),
         };
         return new MergeAssessment(team.Value, [.. MergeGate.Evaluate(facts), State(view)], view);
     }
@@ -89,6 +90,13 @@ public sealed class MergeReadiness(IMetaConfig config, IGateStore gates, RepoCom
 
         var changed = await repo.Changed(repoDirectory, $"{gate.Head}..{head}").ConfigureAwait(false);
         return changed.IsSuccess ? changed.Value : null;
+    }
+
+    // The scopes the gated code needs, from the same planner gate-run uses, over the diff the gate merged.
+    private async ValueTask<IReadOnlyList<string>?> Planned(TeamConfig team, GateRecord gate)
+    {
+        var changed = await repo.Changed(team.Repo, $"{gate.Main}...{gate.Head}").ConfigureAwait(false);
+        return changed.IsSuccess ? ScopePlanner.Plan(changed.Value, team.Gate) : null;
     }
 
     private async ValueTask<IReadOnlyList<int>> OpenBefore(TeamConfig team, int pr)

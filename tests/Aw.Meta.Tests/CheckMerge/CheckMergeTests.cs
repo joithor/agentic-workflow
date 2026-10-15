@@ -27,6 +27,8 @@ public sealed class CheckMergeTests
         _ = _world.Runner
             .When(string.Create(CultureInfo.InvariantCulture, $"gh pr view {pr} --json headRefOid,isDraft,title,state"), view)
             .When("rev-parse --verify --quiet origin/main", main + "\n")
+            .When("mainsha...", "src/a.cs\n")   // the gated diff: code, so repo and dotnet
+            .When("oldmain...", "src/a.cs\n")
             .When("git fetch");
     }
 
@@ -40,6 +42,20 @@ public sealed class CheckMergeTests
     private static string[] Failed(CheckMergeResponse response) => [.. response.Checks.Where(c => !c.Ok).Select(c => c.Name)];
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_repo_only_gate_does_not_vouch_for_a_code_change()
+    {
+        await _world.ReadyWithGate();
+        await SaveGate("headsha", "mainsha", ["repo"]);
+        Script();
+
+        var response = await Check();
+
+        Assert.False(response.Ready);
+        Assert.Equal(["scopes"], Failed(response), StringComparer.Ordinal);
+        Assert.Contains("git diff --name-only mainsha...headsha", _world.Runner.Lines, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_green_gate_on_the_current_head_and_main_is_ready()
     {
         await _world.ReadyWithGate();
@@ -49,7 +65,7 @@ public sealed class CheckMergeTests
         var response = await Check();
 
         Assert.True(response.Ready);
-        Assert.Equal(["gate", "gate-result", "head", "main", "order", "draft", "state"], response.Checks.Select(c => c.Name), StringComparer.Ordinal);
+        Assert.Equal(["gate", "gate-result", "scopes", "head", "main", "order", "draft", "state"], response.Checks.Select(c => c.Name), StringComparer.Ordinal);
         Assert.Contains("git fetch --quiet origin pull/190/head", _world.Runner.Lines, StringComparer.Ordinal);
     }
 

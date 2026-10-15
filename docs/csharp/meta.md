@@ -74,7 +74,7 @@ the team config (`AW-META-002` otherwise); the two hook commands must let any se
 | `lanes-refresh` / `lanes [--announce]` | Rebuilds the lane map from live sessions named `<team>-<lane>` (`~/.claude/sessions`), then lane announcements ("API lane: …"); `lanes` refreshes first; `--announce` prints the `LANE MAP v<n>:` text |
 | `gate-run <pr> [scope...]` | Runs the merge gate in a gate tree (PR head merged onto `origin/main`); scopes come from the changed paths and the team config |
 | `gate-rerun <pr> --step <s> --test <filter>` | Reruns one red test alone and on plain main; records `flake` or `real` |
-| `merge-check <pr>` | The merge preconditions: gate green (or reds all flakes), head and main unmoved since the gate (a docs-only delta needs only the `always` scopes), merge order, not a draft |
+| `merge-check <pr>` | The merge preconditions: gate green (or reds all flakes), the gate ran every scope its diff needs, head and main unmoved since the gate (a docs-only delta needs only the `always` scopes), merge order, not a draft |
 | `merge-run <pr>` | `merge-check`, then `gh pr merge <pr> --merge`, logs it and opens `announce-main` with the "main moved to <sha>" text |
 | `owner [--all]` / `owner-answer <q> --answer <t>` / `owner-ask --text <t>` | The owner question queue (inbound messages starting `OWNER QUESTION`); an answer is dated in the decision log and owed back to the lane |
 | `health [--kill-orphans]` | Memory by group, orphaned Temporal dev servers, duplicate MCP server copies, lanes with no live session, heavy-lock holders; `--kill-orphans` kills only orphans by the rule below, by pid |

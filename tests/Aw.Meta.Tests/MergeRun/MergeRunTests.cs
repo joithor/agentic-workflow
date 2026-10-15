@@ -34,6 +34,7 @@ public sealed class MergeRunTests
                 return new CommandResult(mergeFails ? 1 : 0, string.Empty, mergeFails ? "not mergeable" : string.Empty, TimedOut: false);
             })
             .When("rev-parse --verify --quiet origin/main", _ => new CommandResult(0, merged ? "newmainsha1234\n" : "mainsha\n", string.Empty, TimedOut: false))
+            .When("git diff --name-only mainsha...headsha", "README.md\n")
             .When("git fetch");
     }
 

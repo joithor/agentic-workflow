@@ -23,12 +23,11 @@ public static class MergeGate
 
         return
         [
-            new MergeCheck("gate", gate is not null, gate is null ? NoGate : "gate run " + gate.Run.ToString(CultureInfo.InvariantCulture) + " at " + gate.Head),
+            new MergeCheck("gate", Ok: true, "gate run " + gate.Run.ToString(CultureInfo.InvariantCulture) + " at " + gate.Head),
             GateResult(gate),
+            Scopes(gate, facts.PlannedScopes),
             Head(facts),
-            gate is null
-                ? new MergeCheck("main", Ok: false, NoGate)
-                : new MergeCheck("main", gate.Main == facts.CurrentMain, $"gate ran on main {gate.Main}, main is {facts.CurrentMain}"),
+            new MergeCheck("main", gate.Main == facts.CurrentMain, $"gate ran on main {gate.Main}, main is {facts.CurrentMain}"),
             Order(facts),
             new MergeCheck("draft", !facts.IsDraft, facts.IsDraft ? "the pull request is a draft" : "ready for review"),
         ];
@@ -51,6 +50,21 @@ public static class MergeGate
         return gate.Verdict == GateVerdict.Fail && red.Count > 0 && unexplained.Count == 0
             ? new MergeCheck("gate-result", Ok: true, "every red step is a classified flake")
             : new MergeCheck("gate-result", Ok: false, $"{gate.Verdict}: {(unexplained.Count == 0 ? "no failing step recorded" : "not a flake: " + string.Join(", ", unexplained))}");
+    }
+
+    // A gate run with fewer scopes than the diff needs (gate-run <pr> repo on a code change) vouches only for what it ran.
+    private static MergeCheck Scopes(GateRecord gate, IReadOnlyList<string>? planned)
+    {
+        var ran = string.Join(", ", gate.Scopes);
+        if (planned is null)
+        {
+            return new MergeCheck("scopes", Ok: false, $"could not work out the scopes the diff needs; the gate ran {ran}");
+        }
+
+        var missing = planned.Where(scope => !gate.Scopes.Contains(scope, StringComparer.Ordinal)).ToList();
+        return missing.Count == 0
+            ? new MergeCheck("scopes", Ok: true, $"ran every scope the diff needs ({ran})")
+            : new MergeCheck("scopes", Ok: false, $"the diff needs {string.Join(", ", missing)}; the gate ran {ran}");
     }
 
     private static MergeCheck Head(MergeFacts facts)
