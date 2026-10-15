@@ -39,6 +39,7 @@ public sealed class GoldenContractTests
         "context-filemap", "context-lenses", "context-map", "context-map-promote", "context-map-proposals", "context-map-review", "context-map-review-history", "context-node",
         "queue", "items", "items-id", "items-id-timeline", "items-id-close",   // API P3: the queue and item screens (U2) place these
         "ledger",   // API P5: the audit read is the CLI's; the app follows the stream and re-queries
+        "events-catalog",   // API P5 (E-15): the app reads each type's invalidates once it switches from re-querying every view on each event (UI lane)
     };
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;

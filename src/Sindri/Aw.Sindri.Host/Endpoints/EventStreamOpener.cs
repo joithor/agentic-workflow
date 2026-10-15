@@ -46,7 +46,7 @@ internal sealed class EventStreamOpener(ILedgerReader ledger, IStreamSlots slots
         var head = await ledger.Head(context.RequestAborted).ConfigureAwait(false);
         if (head.IsError)
         {
-            return Refused(head.Error, head.Error.Kind == ErrorKind.Unavailable ? StatusCodes.Status503ServiceUnavailable : StatusCodes.Status500InternalServerError);
+            return Refused(head.Error, StatusOf(head.Error.Kind));
         }
 
         if (request.Value.After > head.Value)
@@ -60,7 +60,7 @@ internal sealed class EventStreamOpener(ILedgerReader ledger, IStreamSlots slots
         var item = await ItemFilters.Resolve(request.Value.Ref, items, repos, callers, context.RequestAborted).ConfigureAwait(false);
         if (item.IsError)
         {
-            return HttpResults.Problem(item.Error);   // 404 SND-ITEM-404 for an item that isn't there or that a session may not see
+            return Refused(item.Error, StatusOf(item.Error.Kind));   // 404 SND-ITEM-404 for an item that isn't there or that a session may not see
         }
 
         var caller = callers.Current?.Class ?? CallerClass.Human;
@@ -72,6 +72,21 @@ internal sealed class EventStreamOpener(ILedgerReader ledger, IStreamSlots slots
         StreamTelemetry.Opened(caller, slots.Open(caller));
         var resolved = request.Value with { Ref = item.Value is { } id ? ItemRef.To(id) : null };   // the pages resolve it again, by id, from the ledger
         return new SseResult(pump, service, resolved, new Counted(slot, slots, caller), shutdown.Stopping);
+    }
+
+    private static int StatusOf(ErrorKind kind)
+    {
+        if (kind == ErrorKind.Invalid)
+        {
+            return StatusCodes.Status400BadRequest;
+        }
+
+        if (kind == ErrorKind.NotFound)
+        {
+            return StatusCodes.Status404NotFound;
+        }
+
+        return kind == ErrorKind.Unavailable ? StatusCodes.Status503ServiceUnavailable : StatusCodes.Status500InternalServerError;
     }
 
     /// <summary>A ProblemDetails answer, as every other route sends one: title the code, detail the message.</summary>
