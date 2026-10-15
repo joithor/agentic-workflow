@@ -35,7 +35,7 @@ public sealed class ContextMcpTests : IDisposable
 
         var tools = await mcp.Client.ListToolsAsync(cancellationToken: ct);
 
-        Assert.Equal(["context_lenses", "context_query", "context_sources"], tools.Select(t => t.Name).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal(["context_lenses", "context_neighbors", "context_node", "context_query", "context_sources"], tools.Select(t => t.Name).Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.All(tools, t => Assert.True(t.ProtocolTool.Annotations?.ReadOnlyHint));
         var query = tools.Single(t => t.Name == "context_query").JsonSchema;
         Assert.False(query.GetProperty("additionalProperties").GetBoolean());
