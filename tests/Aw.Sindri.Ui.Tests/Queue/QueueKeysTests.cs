@@ -557,4 +557,36 @@ public sealed class QueueKeysTests
         Assert.Equal([(queue.SelectedId!, true)], asked.Select(a => (a.ItemId, a.OnlyIfLost)));
         Assert.Equal((true, Labels.Cleared(Running(2))), (queue.IsAnnouncing, queue.Announcement));
     }
+
+    // R3: the pill's press asks for the rows: focus goes to the first new one, once. The selected row it pushes past Home's cap
+    // is no "cleared" row: nothing is spoken for it, no second focus move, no key guard.
+    [Fact]
+    public async Task The_pill_press_moves_focus_once_to_the_first_new_row_even_when_it_pushes_the_selection_past_the_cap()
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
+        var queue = await Queue();
+        for (var i = 0; i < 5; i++)
+        {
+            queue.Move(1, QueueScope.Home);
+        }
+
+        var last = queue.RunningRows[^1].Id;
+        queue.Hold(holding: true);
+        _server.QueueView = Regrouped("extra-p11-running", string.Empty, "withYou", clones: 5);
+        await queue.Refresh(_api, Token);
+        Assert.True(queue.HasHeld);
+        var held = (queue.IsAnnouncing, queue.Announcement);
+        var asked = new List<FocusRequestedEventArgs>();
+        queue.FocusRequested += (_, e) => asked.Add(e);
+
+        queue.ShowHeld(QueueScope.Home);
+
+        Assert.DoesNotContain(last, queue.RunningRows.Select(r => r.Id), StringComparer.Ordinal);
+        var focus = Assert.Single(asked);
+        Assert.False(focus.OnlyIfLost);
+        Assert.Equal(queue.RunningRows[0].Id, focus.ItemId);
+        Assert.Equal(focus.ItemId, queue.SelectedId);
+        Assert.Equal(held, (queue.IsAnnouncing, queue.Announcement));
+        Assert.False(queue.IsGuarded);
+    }
 }
