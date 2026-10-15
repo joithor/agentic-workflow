@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
+using ActionClass = Aw.Sindri.Core.Commands.ActionClass;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;

@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
 
 /// <summary>A packet workstream and its children (E-20).</summary>

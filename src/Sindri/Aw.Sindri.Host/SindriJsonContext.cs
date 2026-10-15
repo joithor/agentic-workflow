@@ -189,7 +189,6 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ParentRef))]
 [JsonSerializable(typeof(FactView))]
 [JsonSerializable(typeof(MapImportChallenge))]
-[JsonSerializable(typeof(Core.Workflow.Engine.Runtime.Layout.ActionClass), TypeInfoPropertyName = "LayoutActionClass")]   // why: the command catalog has an ActionClass too
 // why: the engine layout records (Engine.Runtime.Layout) share simple names with the API view records (Workflow.Views)
 [JsonSerializable(typeof(Core.Workflow.Engine.Runtime.Layout.AnswerKind), TypeInfoPropertyName = "LayoutAnswerKind")]
 [JsonSerializable(typeof(Core.Workflow.Engine.Runtime.Layout.ChildGroup), TypeInfoPropertyName = "LayoutChildGroup")]

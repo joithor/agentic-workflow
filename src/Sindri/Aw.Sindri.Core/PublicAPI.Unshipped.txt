@@ -6165,9 +6165,6 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Status.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Subject.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.SubjectRef?
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Subject.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Urgency.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ActionClass
-Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ActionClass.Desk = 0 -> Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ActionClass
-Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ActionClass.Protected = 1 -> Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ActionClass
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerKind
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerKind.Accept = 4 -> Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerKind
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerKind.CancelOnly = 5 -> Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerKind
@@ -6180,7 +6177,6 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerLine.<Clone>$() -> Aw.Sindri
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerLine.ActionId.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerLine.AtTerminal.get -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerLine.AtTerminal.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerLine.Class.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ActionClass
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerLine.Class.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerLine.Cli.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerLine.Cli.init -> void
@@ -6270,7 +6266,6 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ChildRow.Title.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow!
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow.ActionId.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow.Class.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ActionClass
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow.Class.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow.Cli.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow.Cli.init -> void
@@ -6709,14 +6704,10 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.Workstream.operator !=(Aw.S
 static Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.Workstream.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.Workstream? left, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.Workstream? right) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.ItemId.get -> Aw.Sindri.Core.Workflow.Engine.ItemKey?
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerLine.ActionId.get -> Aw.Sindri.Core.Ids.ActionId
-Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerLine.AnswerLine(Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerKind Kind, Aw.Sindri.Core.Ids.ActionId ActionId, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ActionClass Class, string! Cli, bool AtTerminal) -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerLine.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerKind Kind, out Aw.Sindri.Core.Ids.ActionId ActionId, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ActionClass Class, out string! Cli, out bool AtTerminal) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ChildRow.ChildRow(string! Address, Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, string! Title, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StateGlyph Glyph, string! State, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.RoundOf? Round, string? Agent, long AgeSeconds, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.EngineBadge? EngineOwned, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ChildPark? MirroredPark, System.Collections.Generic.IReadOnlyList<string!>! Actions) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ChildRow.Deconstruct(out string! Address, out Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, out string! Title, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StateGlyph Glyph, out string! State, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.RoundOf? Round, out string? Agent, out long AgeSeconds, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.EngineBadge? EngineOwned, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ChildPark? MirroredPark, out System.Collections.Generic.IReadOnlyList<string!>! Actions) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ChildRow.ItemId.get -> Aw.Sindri.Core.Workflow.Engine.ItemKey?
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow.ActionId.get -> Aw.Sindri.Core.Ids.ActionId
-Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow.CommandRow(string! Verb, Aw.Sindri.Core.Ids.ActionId ActionId, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ActionClass Class, string! Cli) -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow.Deconstruct(out string! Verb, out Aw.Sindri.Core.Ids.ActionId ActionId, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ActionClass Class, out string! Cli) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.FactRef.Deconstruct(out string? Name, out long? Size, out string? Hash, out string? Path, out Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, out string? Url, out string? Host, out string? Title, out string? FactKey) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.FactRef.FactRef(string? Name, long? Size, string? Hash, string? Path, Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, string? Url, string? Host, string? Title, string? FactKey) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.FactRef.ItemId.get -> Aw.Sindri.Core.Workflow.Engine.ItemKey?
@@ -6777,3 +6768,9 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceOrder
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceOrder.Compare(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView? x, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView? y) -> int
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceOrder.InstanceOrder() -> void
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceOrder.Instance.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceOrder!
+Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerLine.AnswerLine(Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerKind Kind, Aw.Sindri.Core.Ids.ActionId ActionId, Aw.Sindri.Core.Commands.ActionClass Class, string! Cli, bool AtTerminal) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerLine.Class.get -> Aw.Sindri.Core.Commands.ActionClass
+Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerLine.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerKind Kind, out Aw.Sindri.Core.Ids.ActionId ActionId, out Aw.Sindri.Core.Commands.ActionClass Class, out string! Cli, out bool AtTerminal) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow.Class.get -> Aw.Sindri.Core.Commands.ActionClass
+Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow.CommandRow(string! Verb, Aw.Sindri.Core.Ids.ActionId ActionId, Aw.Sindri.Core.Commands.ActionClass Class, string! Cli) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow.Deconstruct(out string! Verb, out Aw.Sindri.Core.Ids.ActionId ActionId, out Aw.Sindri.Core.Commands.ActionClass Class, out string! Cli) -> void

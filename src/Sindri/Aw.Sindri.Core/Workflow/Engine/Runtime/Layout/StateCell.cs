@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
 
 /// <summary>One state of the recipe as the band draws it (E-20).</summary>

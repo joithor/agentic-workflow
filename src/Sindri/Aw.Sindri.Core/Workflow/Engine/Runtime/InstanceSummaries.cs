@@ -28,5 +28,15 @@ public static class InstanceSummaries
             [.. view.AllowedCommands.Select(static c => c.Action)]);
     }
 
-    private static string Cut(string next) => next.Length <= NowLength ? next : string.Concat(next.AsSpan(0, NowLength - 3), "...");
+    /// <summary>The text cut to <see cref="NowLength"/> with the ellipsis inside it, never between the two halves of a surrogate pair.</summary>
+    private static string Cut(string next)
+    {
+        if (next.Length <= NowLength)
+        {
+            return next;
+        }
+
+        var keep = NowLength - 3;
+        return string.Concat(next.AsSpan(0, char.IsHighSurrogate(next[keep - 1]) ? keep - 1 : keep), "...");
+    }
 }
