@@ -272,6 +272,7 @@ packages:
     kind: package
     tier: 2
     projectPrefix: Aw.Meta
+    bins: [aw-meta]
     ts: null
     src: src/Meta
     note: "aw-meta CLI for the /meta skill: the meta orchestrator's obligations (inbox/outbox), lane map, gate and merge runner, owner queue, health and running log; state under $AW_STATE_DIR/meta; a thin harness Sindri absorbs later"
@@ -308,6 +309,11 @@ edges:
     kind: cli
     status: current
     note: "bugfix-state runs the sibling ui-evidence entry point (same tier, through its CLI contract)"
+  - from: Hooks
+    to: Meta
+    kind: cli
+    status: current
+    note: "the meta Stop gate runs aw-meta stop-check and the SendMessage outbox hook runs aw-meta outbox-record (docs/csharp/meta.md)"
   - from: Sindri
     to: Evidence
     kind: file
