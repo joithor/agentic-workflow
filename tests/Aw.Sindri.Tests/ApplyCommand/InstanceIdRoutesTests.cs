@@ -23,10 +23,10 @@ public sealed class InstanceIdRoutesTests(DevServer server) : IClassFixture<DevS
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task An_address_with_slashes_resolves_through_the_address_query_and_its_id_drives_the_instance_routes()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         var started = await served.Cli("start", "workflow.step", "--item", "T-50", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"), "--json");
         _ = await served.Until("T-50/step/1", static v => v.Task is not null);
 
@@ -44,10 +44,10 @@ public sealed class InstanceIdRoutesTests(DevServer server) : IClassFixture<DevS
         Assert.Equal((0, "  -> cancelled"), (cancel.Exit, cancel.Lines[1]));
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task An_unknown_id_is_SND_WF_001_and_an_address_in_the_route_is_refused()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
 
         var (unknown, problem) = await Send(served, HttpMethod.Post, $"/sindri/workflow/instances/WFI-{new string('0', 32)}/nonce");
         var (address, _) = await Send(served, HttpMethod.Post, "/sindri/workflow/instances/" + Uri.EscapeDataString("T-51/step/1") + "/nonce");
@@ -59,10 +59,10 @@ public sealed class InstanceIdRoutesTests(DevServer server) : IClassFixture<DevS
         Assert.Equal(("SND-WF-001", false), (notFound.GetProperty("title").GetString(), missing == HttpStatusCode.OK));
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task The_instance_and_its_events_are_read_by_id_and_a_bare_item_works_in_the_cli()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         _ = await served.Cli("start", "workflow.step", "--item", "T-52", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
         _ = await served.Until("T-52/step/1", static v => v.Task is not null);
         var id = WorkflowInstanceId.Of(InstanceAddress.From("T-52/step/1")).Value;
@@ -86,7 +86,7 @@ public sealed class InstanceIdRoutesTests(DevServer server) : IClassFixture<DevS
     [Fact(Timeout = 120_000)]
     public async Task Showing_an_instance_serve_did_not_start_remembers_its_id_so_the_second_hop_scans_nothing()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         var handle = await WorkflowsHarness.Start(server.Environment.Client, await WorkflowsHarness.StepStart(served.Sindri, "T-54", TestContext.Current.CancellationToken));
         _ = await WorkflowsHarness.Until(handle, static v => v.Task is not null);
         var id = WorkflowInstanceId.Of(InstanceAddress.From("T-54/step/1"));

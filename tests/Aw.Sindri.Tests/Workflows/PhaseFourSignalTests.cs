@@ -18,7 +18,7 @@ public sealed class PhaseFourSignalTests : IDisposable
     public async Task Start_workflow_step_on_an_item_then_status_shows_the_desk_task_with_run_1_1()
     {
         await using var env = await WorkflowsHarness.StartDevServer(ct: TestContext.Current.CancellationToken);
-        await using var served = await ApplyCommand.Served.Start(_harness.Home, env);
+        await using var served = await ApplyCommand.Served.Start(_harness.Home, env, TestContext.Current.CancellationToken);
         var sindri = served.Sindri;
         {
             var spec = _harness.File("spec.md", "the spec");

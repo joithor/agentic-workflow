@@ -24,10 +24,10 @@ public sealed class WorkflowRoutesTests(DevServer server) : IClassFixture<DevSer
 
     public void Dispose() => _harness.Dispose();
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task An_agent_session_gets_SND_AUTH_002_on_start_answer_command_cancel_and_complete()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
 
         (string Route, string Body, string Action)[] calls =
         [
@@ -48,10 +48,10 @@ public sealed class WorkflowRoutesTests(DevServer server) : IClassFixture<DevSer
         Assert.Empty(await served.Events("T-31/step/1"));
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task The_app_starts_an_instance_but_a_grant_is_SND_AUTH_002()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
 
         var (started, _, startDetail) = await Post(served, "/sindri/workflow/instances", Start("T-32"), r => r.AsHuman(served.App, terminal: false));
         _ = await served.Until("T-32/step/1", static v => v.Task is not null);
@@ -63,10 +63,10 @@ public sealed class WorkflowRoutesTests(DevServer server) : IClassFixture<DevSer
         Assert.StartsWith("ApplyCommand:answer-grant is a human decision. Ask the human to run it in a terminal", detail, StringComparison.Ordinal);
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task An_agent_session_may_ask_for_a_nonce_for_an_instance()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         _ = await served.Cli("start", "workflow.step", "--item", "T-33", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
         _ = await served.Until("T-33/step/1", static v => v.Task is not null);
 

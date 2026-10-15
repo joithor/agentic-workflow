@@ -48,7 +48,7 @@ public sealed class TemporalNamesTests : IDisposable
             "AW_SINDRI_TEMPORAL_NAMESPACE" => "team-a",
             "AW_SINDRI_TEMPORAL_TASK_QUEUE" => "queue-b",
             _ => null,
-        });
+        }, TestContext.Current.CancellationToken);
 
         var started = await served.Cli("start", "workflow.step", "--item", "T-31", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
         var open = await served.Until("T-31/step/1", static v => v.Task is not null);   // RunStep ran: only queue-b has a worker

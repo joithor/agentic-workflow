@@ -17,10 +17,10 @@ public sealed class StartInstanceTests(DevServer server) : IClassFixture<DevServ
 
     public void Dispose() => _harness.Dispose();
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Start_prints_the_status_header_and_opens_the_first_desk_task()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
 
         var started = await served.Cli("start", "workflow.step", "--item", "T-1", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
 
@@ -31,11 +31,11 @@ public sealed class StartInstanceTests(DevServer server) : IClassFixture<DevServ
         Assert.Equal("spec.md", Assert.Single(view.Task!.Inputs.Values).Name);
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Starting_a_registered_recipe_nobody_approved_is_SND_RECIPE_003_and_starts_nothing()
     {
         _ = _harness.Register(WorkflowsHarness.Shipped("sindri/workflow.item.yaml"));
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
 
         var started = await served.Cli("start", "workflow.item", "--item", "T-6", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
 
@@ -44,11 +44,11 @@ public sealed class StartInstanceTests(DevServer server) : IClassFixture<DevServ
         Assert.Empty(await served.Events("T-6/item/1"));
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Starting_a_recipe_whose_approval_was_revoked_is_SND_RECIPE_003_and_starts_nothing()
     {
         _harness.Revoke(_harness.Approve(WorkflowsHarness.Shipped("sindri/workflow.item.yaml")));
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
 
         var started = await served.Cli("start", "workflow.item", "--item", "T-7", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
 
@@ -58,10 +58,10 @@ public sealed class StartInstanceTests(DevServer server) : IClassFixture<DevServ
         Assert.Empty(await served.Events("T-7/item/1"));
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Starting_the_same_recipe_item_and_attempt_again_returns_that_instance()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         var spec = "fact:spec=" + _harness.File("spec.md", "the spec");
         var first = await served.Cli("start", "workflow.step", "--item", "T-2", "--fact", spec);
         _ = await served.Until("T-2/step/1", static v => v.Task is not null);
@@ -74,10 +74,10 @@ public sealed class StartInstanceTests(DevServer server) : IClassFixture<DevServ
         Assert.Equal(["workflow.started"], await served.Events("T-2/step/1"));
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Attempt_next_while_an_attempt_is_live_is_SND_WF_012()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         var spec = "fact:spec=" + _harness.File("spec.md", "the spec");
         _ = await served.Cli("start", "workflow.step", "--item", "T-3", "--fact", spec);
 
@@ -89,10 +89,10 @@ public sealed class StartInstanceTests(DevServer server) : IClassFixture<DevServ
         Assert.Empty(await served.Events("T-3/step/2"));
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task After_a_cancel_start_shows_the_finished_attempt_and_attempt_next_starts_attempt_2()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         var spec = "fact:spec=" + _harness.File("spec.md", "the spec");
         _ = await served.Cli("start", "workflow.step", "--item", "T-4", "--fact", spec);
         var cancelled = await served.Cli("cancel", "T-4/step/1");
@@ -108,10 +108,10 @@ public sealed class StartInstanceTests(DevServer server) : IClassFixture<DevServ
         Assert.StartsWith("T-4/step/2  workflow.step@", next.Lines[0], StringComparison.Ordinal);
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Fact_item_naming_another_item_is_SND_WF_014_and_starts_nothing()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         var item = _harness.File("item.json", """{ "id": "T-9", "repo": "agentic-workflow", "spec": "the spec" }""");
 
         var started = await served.Cli("start", "workflow.step", "--item", "T-5", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"), "--fact", "fact:item=" + item);

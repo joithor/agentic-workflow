@@ -22,7 +22,7 @@ public sealed class WorkflowReadVerbsTests : IDisposable
     {
         var ct = TestContext.Current.CancellationToken;
         await using var env = await WorkflowsHarness.StartDevServer(ct: TestContext.Current.CancellationToken);
-        await using var served = await ApplyCommand.Served.Start(_harness.Home, env);   // the read verbs are clients of serve's routes
+        await using var served = await ApplyCommand.Served.Start(_harness.Home, env, TestContext.Current.CancellationToken);   // the read verbs are clients of serve's routes
         var sindri = served.Sindri;
         {
             var handle = await WorkflowsHarness.Start(env.Client, await WorkflowsHarness.StepStart(sindri, "T-1", ct));
@@ -67,7 +67,7 @@ public sealed class WorkflowReadVerbsTests : IDisposable
     public async Task Status_of_an_unknown_instance_is_SND_WF_001_and_exit_2()
     {
         await using var env = await WorkflowsHarness.StartDevServer(ct: TestContext.Current.CancellationToken);
-        await using var served = await ApplyCommand.Served.Start(_harness.Home, env);
+        await using var served = await ApplyCommand.Served.Start(_harness.Home, env, TestContext.Current.CancellationToken);
 
         var (exit, stdout, stderr) = await WorkflowsHarness.Cli(served.Sindri, "status", "T-9/step/1");
 

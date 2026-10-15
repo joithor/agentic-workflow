@@ -25,10 +25,10 @@ public sealed class DeskReportFailureTests(DevServer server) : IClassFixture<Dev
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Complete_on_a_Temporal_without_the_namespace_is_SND_API_001_naming_it()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment, static name => name == "AW_SINDRI_TEMPORAL_NAMESPACE" ? "elsewhere" : null);
+        await using var served = await Served.Start(_harness.Home, server.Environment, static name => name == "AW_SINDRI_TEMPORAL_NAMESPACE" ? "elsewhere" : null, TestContext.Current.CancellationToken);
 
         var sent = await served.Sindri.GetRequiredService<TemporalDeskReports>()
             .Complete(InstanceAddress.From("T-41/step/1"), CommandNonce.From(new string('a', 32)), Report(RunToken.For(1, 1), output: null), Token);
@@ -37,10 +37,10 @@ public sealed class DeskReportFailureTests(DevServer server) : IClassFixture<Dev
         Assert.Contains("has no 'elsewhere' namespace", sent.Error.Message, StringComparison.Ordinal);
     }
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Complete_with_no_worker_gives_up_cleanly_and_the_same_nonce_applies_once_one_runs()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         _ = await served.Cli("start", "workflow.step", "--item", "T-42", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
         var open = await served.Until("T-42/step/1", static v => v.Task is not null);
         var reports = served.Sindri.GetRequiredService<TemporalDeskReports>();
