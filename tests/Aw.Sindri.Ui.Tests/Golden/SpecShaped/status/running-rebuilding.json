@@ -26,10 +26,12 @@
     "rebuilding": true,
     "stalled": false,
     "stalledAt": null,
-    "stalledType": null
+    "stalledType": null,
+    "text": null
   },
   "health": {
     "word": "rebuilding",
-    "problems": []
+    "problems": [],
+    "sentence": null
   }
 }

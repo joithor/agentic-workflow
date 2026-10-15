@@ -162,10 +162,10 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
 
     // Null until API P2's projector fills them; the status always carries both fields, as Sindri's does. Written with P2's full shape (text, clause, sentence).
     private static string Views(AsOfView? v) => v is null ? ",\"views\":null" : string.Create(CultureInfo.InvariantCulture,
-        $$""","views":{"cursor":{{v.Cursor}},"ledgerHead":{{v.LedgerHead}},"projectedAt":{{Quoted(v.ProjectedAt)}},"rebuilding":{{Bool(v.Rebuilding)}},"stalled":{{Bool(v.Stalled)}},"stalledAt":{{Number(v.StalledAt)}},"stalledType":{{Quoted(v.StalledType)}},"text":{{Quoted(v.Stalled ? $"Views are stalled at {v.StalledAt}: run `sindri views rebuild`" : null)}}}""");
+        $$""","views":{"cursor":{{v.Cursor}},"ledgerHead":{{v.LedgerHead}},"projectedAt":{{Quoted(v.ProjectedAt)}},"rebuilding":{{Bool(v.Rebuilding)}},"stalled":{{Bool(v.Stalled)}},"stalledAt":{{Number(v.StalledAt)}},"stalledType":{{Quoted(v.StalledType)}},"text":{{Quoted(v.Text)}}}""");
 
     private static string Health(HealthView? h) => h is null ? ",\"health\":null" :
-        $$""","health":{"word":"{{h.Word}}","problems":[{{string.Join(',', h.Problems.Select(p => $$"""{"code":"{{p.Code}}","text":"{{p.Text}}","clause":"{{p.Text}}"}"""))}}],"sentence":{{Quoted(h.Problems.Count == 0 ? null : $"Sindri is {h.Word}: {string.Join("; ", h.Problems.Select(p => p.Text))}.")}}}""";
+        $$""","health":{"word":"{{h.Word}}","problems":[{{string.Join(',', h.Problems.Select(p => $$"""{"code":"{{p.Code}}","text":"{{p.Text}}","clause":{{Quoted(p.Clause)}}}"""))}}],"sentence":{{Quoted(h.Sentence)}}}""";
 
     private static string Service(ServiceView v) => $$"""{"name":"{{v.Name}}","every":"{{v.Every}}","lastRun":{{Quoted(v.LastRun)}}}""";
 

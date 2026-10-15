@@ -11,4 +11,5 @@ namespace Aw.Sindri.Ui.Api;
 /// <param name="Stalled">True when a projection threw and the projector stopped.</param>
 /// <param name="StalledAt">The ledger sequence the projection threw at (the status serves it; the banner's sentence comes from the services view); null when not stalled.</param>
 /// <param name="StalledType">The event type it threw on; null when not stalled.</param>
-internal sealed record AsOfView(long Cursor, long LedgerHead, DateTimeOffset? ProjectedAt, bool Rebuilding, bool Stalled, long? StalledAt = null, string? StalledType = null);
+/// <param name="Text">Sindri's words for a stall or rebuild; null otherwise (and before P2).</param>
+internal sealed record AsOfView(long Cursor, long LedgerHead, DateTimeOffset? ProjectedAt, bool Rebuilding, bool Stalled, long? StalledAt = null, string? StalledType = null, string? Text = null);
