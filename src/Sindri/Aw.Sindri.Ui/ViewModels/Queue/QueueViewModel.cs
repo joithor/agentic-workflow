@@ -85,13 +85,14 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
             return;
         }
 
-        (IsLoading, IsStale) = (false, false);
+        IsStale = false;
         if (Park(answer.Value))
         {
             return;
         }
 
         Apply(answer.Value);
+        IsLoading = false;   // after the rows are there: a waiter on the end of loading finds them
     }
 
     /// <summary>Shows one group (G R, G W) or all of them (G Q).</summary>

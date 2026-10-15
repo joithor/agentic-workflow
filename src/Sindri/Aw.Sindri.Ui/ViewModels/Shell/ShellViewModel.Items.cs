@@ -43,7 +43,7 @@ internal sealed partial class ShellViewModel
     // §3.2: the Queue tab carries the queue's count from the view's rows.
     private void OnQueueChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(QueueViewModel.Total))
+        if (e.PropertyName is not (nameof(QueueViewModel.Total) or nameof(QueueViewModel.IsLoading)))
         {
             return;
         }

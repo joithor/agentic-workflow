@@ -28,7 +28,7 @@ public sealed class ShellItemsTests
         var shell = new ShellViewModel(_records, _server, _clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
         await shell.Restore(Token);
         _ = shell.Run(Token);
-        await Until(() => shell.State == ShellState.Normal && !shell.Queue.IsLoading);
+        await Until(() => shell.State == ShellState.Normal && shell.Queue.Total > 0 && shell.Navigation[1].Count.Length > 0 && shell.Queue.Groups.Count > 0);
         return shell;
     }
 
@@ -117,7 +117,7 @@ public sealed class ShellItemsTests
         var shell = new ShellViewModel(_records, _server, _clock, new Preferences(new InMemoryPreferencesStore()), clipboard);
         await shell.Restore(Token);
         _ = shell.Run(Token);
-        await Until(() => shell.State == ShellState.Normal && !shell.Queue.IsLoading);
+        await Until(() => shell.State == ShellState.Normal && shell.Queue.Total > 0 && shell.Queue.Groups.Count > 0);
 
         _ = shell.Press("J");
         Assert.True(shell.Press("Y"));
