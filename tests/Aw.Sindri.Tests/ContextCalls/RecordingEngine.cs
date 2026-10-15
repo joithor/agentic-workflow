@@ -4,8 +4,11 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
+using Aw.Context.Core.Review;
 using Aw.Kernel;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -59,6 +62,33 @@ internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller 
         inner.Neighbors(key, depth, scope, cancellationToken);
 
     public ValueTask<Result<PathView>> Path(string from, string to, ContextScope scope, CancellationToken cancellationToken) => inner.Path(from, to, scope, cancellationToken);
+
+    public ValueTask<Result<MapBuildReport>> BuildMap(IProgress<string>? progress, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.BuildMap(progress, scope, cancellationToken);
+
+    public ValueTask<Result<ReviewQueueView>> ReviewQueue(ContextScope scope, CancellationToken cancellationToken) => inner.ReviewQueue(scope, cancellationToken);
+
+    public ValueTask<Result<ReviewResult>> ApplyReview(ReviewDecision decision, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.ApplyReview(decision, scope, cancellationToken);
+
+    public ValueTask<Result<ReviewExported>> ExportReview(string? path, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.ExportReview(path, scope, cancellationToken);
+
+    public ValueTask<Result<ReviewResult>> ApplyReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.ApplyReviewFile(path, scope, cancellationToken);
+
+    public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken) => inner.Promote(scope, cancellationToken);
+
+    public ValueTask<Result<ProposeResult>> Propose(ScopeProposal proposal, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.Propose(proposal, scope, cancellationToken);
+
+    public ValueTask<Result<ProposalsView>> Proposals(string run, ContextScope scope, CancellationToken cancellationToken) => inner.Proposals(run, scope, cancellationToken);
+
+    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.Lenses(anchor, draft, scope, cancellationToken);
+
+    public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.FileMap(query, scope, cancellationToken);
 
     public ValueTask<Result<MapHealth>> CheckMap(CancellationToken cancellationToken) => inner.CheckMap(cancellationToken);
 

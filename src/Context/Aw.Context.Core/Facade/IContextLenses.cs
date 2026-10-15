@@ -1,0 +1,27 @@
+using Aw.Context.Core.Engine;
+using Aw.Context.Core.Lenses;
+using Aw.Kernel;
+
+namespace Aw.Context.Core.Facade;
+
+/// <summary>
+/// The app's two reads (spec §8.8, §8.9, stage S-4): the lenses around one node and the file map of a repo path. A session
+/// sees only its repo's scope. IContextEngine extends it.
+/// </summary>
+public interface IContextLenses
+{
+    /// <summary>The intent, product and code bands around one node.</summary>
+    /// <param name="anchor">A node key, alias or label.</param>
+    /// <param name="draft">True to read the latest draft instead of the current map.</param>
+    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The lenses, or SND-CONTEXT-001/003/004/020/030/037/044.</returns>
+    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, ContextScope scope, CancellationToken cancellationToken);
+
+    /// <summary>The direct children of a repo path with their status.</summary>
+    /// <param name="query">The repo, the path and the filters.</param>
+    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The file map, or SND-CONTEXT-001/003/004/020/030/044/045 (045 for a repo outside the profile or a session's scope, answered the same way).</returns>
+    public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken);
+}

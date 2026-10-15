@@ -127,6 +127,18 @@ internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSet
         return tables.IsError ? ContextDatabase.Translate(tables.Error) : (SqliteReadSession?)null;
     }
 
+    public ValueTask<Result<MapVersion>> SaveDraft(MapImport map, DateTimeOffset created, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("S-4: SaveDraft is not built yet");
+
+    public ValueTask<Result<MapVersion>> OpenDraft(DateTimeOffset created, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("S-4: OpenDraft is not built yet");
+
+    public ValueTask<Result<MapVersion>> Promote(int draft, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("S-4: Promote is not built yet");
+
+    public ValueTask<Result<int>> AppendOverrides(IReadOnlyList<MapOverride> overrides, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("S-4: AppendOverrides is not built yet");
+
     private async ValueTask<Result<IReadOnlyList<T>>> Query<T>(SqlStatement statement, IRowMapper<T> mapper, CancellationToken cancellationToken)
     {
         var read = await OpenRead(cancellationToken).ConfigureAwait(false);

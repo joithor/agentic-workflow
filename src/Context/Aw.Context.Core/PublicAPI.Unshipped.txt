@@ -1740,11 +1740,9 @@ Aw.Context.Core.Overrides.MapOverride.Action.get -> Aw.Context.Core.Overrides.Ov
 Aw.Context.Core.Overrides.MapOverride.Action.init -> void
 Aw.Context.Core.Overrides.MapOverride.At.get -> System.DateTimeOffset
 Aw.Context.Core.Overrides.MapOverride.At.init -> void
-Aw.Context.Core.Overrides.MapOverride.Deconstruct(out Aw.Context.Core.Overrides.OverrideAction Action, out Aw.Context.Core.Graph.NodeKey Target, out string! Who, out System.DateTimeOffset At, out string? Label, out Aw.Context.Core.Graph.NodeKey? Other, out string? Rejection) -> void
 Aw.Context.Core.Overrides.MapOverride.Equals(Aw.Context.Core.Overrides.MapOverride? other) -> bool
 Aw.Context.Core.Overrides.MapOverride.Label.get -> string?
 Aw.Context.Core.Overrides.MapOverride.Label.init -> void
-Aw.Context.Core.Overrides.MapOverride.MapOverride(Aw.Context.Core.Overrides.OverrideAction Action, Aw.Context.Core.Graph.NodeKey Target, string! Who, System.DateTimeOffset At, string? Label = null, Aw.Context.Core.Graph.NodeKey? Other = null, string? Rejection = null) -> void
 Aw.Context.Core.Overrides.MapOverride.Other.get -> Aw.Context.Core.Graph.NodeKey?
 Aw.Context.Core.Overrides.MapOverride.Other.init -> void
 Aw.Context.Core.Overrides.MapOverride.Rejection.get -> string?
@@ -2015,3 +2013,582 @@ static readonly Aw.Context.Core.ContextErrors.NoMap -> Aw.Kernel.ErrorDefinition
 static readonly Aw.Context.Core.ContextErrors.NoProbeFile -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.ProbeFileInvalid -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.ProbesRegressed -> Aw.Kernel.ErrorDefinition!
+Aw.Context.Core.Facade.IContextLenses
+Aw.Context.Core.Facade.IContextLenses.FileMap(Aw.Context.Core.Lenses.FileMapQuery! query, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Lenses.FileMapView!>!>
+Aw.Context.Core.Facade.IContextLenses.Lenses(string! anchor, bool draft, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Lenses.LensesView!>!>
+Aw.Context.Core.Facade.IContextMap.ApplyReview(Aw.Context.Core.Review.ReviewDecision! decision, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Review.ReviewResult!>!>
+Aw.Context.Core.Facade.IContextMap.ApplyReviewFile(string! path, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Review.ReviewResult!>!>
+Aw.Context.Core.Facade.IContextMap.BuildMap(System.IProgress<string!>? progress, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapBuildReport!>!>
+Aw.Context.Core.Facade.IContextMap.ExportReview(string? path, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Review.ReviewExported!>!>
+Aw.Context.Core.Facade.IContextMap.Promote(Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapPromoted!>!>
+Aw.Context.Core.Facade.IContextMap.Proposals(string! run, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Proposals.ProposalsView!>!>
+Aw.Context.Core.Facade.IContextMap.Propose(Aw.Context.Core.Proposals.ScopeProposal! proposal, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Proposals.ProposeResult!>!>
+Aw.Context.Core.Facade.IContextMap.ReviewQueue(Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Review.ReviewQueueView!>!>
+Aw.Context.Core.Graph.LinkId
+Aw.Context.Core.Graph.LinkId.Equals(Aw.Context.Core.Graph.LinkId other) -> bool
+Aw.Context.Core.Graph.LinkId.Equals(Aw.Context.Core.Graph.LinkId other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Graph.LinkId>! comparer) -> bool
+Aw.Context.Core.Graph.LinkId.GetTypeCode() -> System.TypeCode
+Aw.Context.Core.Graph.LinkId.IsInitialized() -> bool
+Aw.Context.Core.Graph.LinkId.LinkId() -> void
+Aw.Context.Core.Graph.LinkId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Context.Core.Graph.LinkId.Value.get -> string!
+Aw.Context.Core.Graph.LinkIds
+Aw.Context.Core.Lenses.FileMapEntry
+Aw.Context.Core.Lenses.FileMapEntry.<Clone>$() -> Aw.Context.Core.Lenses.FileMapEntry!
+Aw.Context.Core.Lenses.FileMapEntry.Deconstruct(out string! Name, out string! Path, out bool Directory, out Aw.Context.Core.Lenses.FileMapStatus Status, out int Files, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Features) -> void
+Aw.Context.Core.Lenses.FileMapEntry.Directory.get -> bool
+Aw.Context.Core.Lenses.FileMapEntry.Directory.init -> void
+Aw.Context.Core.Lenses.FileMapEntry.Equals(Aw.Context.Core.Lenses.FileMapEntry? other) -> bool
+Aw.Context.Core.Lenses.FileMapEntry.Features.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>!
+Aw.Context.Core.Lenses.FileMapEntry.Features.init -> void
+Aw.Context.Core.Lenses.FileMapEntry.FileMapEntry(string! Name, string! Path, bool Directory, Aw.Context.Core.Lenses.FileMapStatus Status, int Files, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Features) -> void
+Aw.Context.Core.Lenses.FileMapEntry.Files.get -> int
+Aw.Context.Core.Lenses.FileMapEntry.Files.init -> void
+Aw.Context.Core.Lenses.FileMapEntry.Name.get -> string!
+Aw.Context.Core.Lenses.FileMapEntry.Name.init -> void
+Aw.Context.Core.Lenses.FileMapEntry.Path.get -> string!
+Aw.Context.Core.Lenses.FileMapEntry.Path.init -> void
+Aw.Context.Core.Lenses.FileMapEntry.Status.get -> Aw.Context.Core.Lenses.FileMapStatus
+Aw.Context.Core.Lenses.FileMapEntry.Status.init -> void
+Aw.Context.Core.Lenses.FileMapQuery
+Aw.Context.Core.Lenses.FileMapQuery.<Clone>$() -> Aw.Context.Core.Lenses.FileMapQuery!
+Aw.Context.Core.Lenses.FileMapQuery.Deconstruct(out Aw.Context.Core.Engine.ContextRepoName Repo, out string! Path, out bool UnmappedOnly, out bool Draft) -> void
+Aw.Context.Core.Lenses.FileMapQuery.Draft.get -> bool
+Aw.Context.Core.Lenses.FileMapQuery.Draft.init -> void
+Aw.Context.Core.Lenses.FileMapQuery.Equals(Aw.Context.Core.Lenses.FileMapQuery? other) -> bool
+Aw.Context.Core.Lenses.FileMapQuery.FileMapQuery(Aw.Context.Core.Engine.ContextRepoName Repo, string! Path, bool UnmappedOnly, bool Draft) -> void
+Aw.Context.Core.Lenses.FileMapQuery.Path.get -> string!
+Aw.Context.Core.Lenses.FileMapQuery.Path.init -> void
+Aw.Context.Core.Lenses.FileMapQuery.Repo.get -> Aw.Context.Core.Engine.ContextRepoName
+Aw.Context.Core.Lenses.FileMapQuery.Repo.init -> void
+Aw.Context.Core.Lenses.FileMapQuery.UnmappedOnly.get -> bool
+Aw.Context.Core.Lenses.FileMapQuery.UnmappedOnly.init -> void
+Aw.Context.Core.Lenses.FileMapStatus
+Aw.Context.Core.Lenses.FileMapStatus.Mapped = 0 -> Aw.Context.Core.Lenses.FileMapStatus
+Aw.Context.Core.Lenses.FileMapStatus.Suggested = 1 -> Aw.Context.Core.Lenses.FileMapStatus
+Aw.Context.Core.Lenses.FileMapStatus.Unmapped = 2 -> Aw.Context.Core.Lenses.FileMapStatus
+Aw.Context.Core.Lenses.FileMapSuggestion
+Aw.Context.Core.Lenses.FileMapSuggestion.<Clone>$() -> Aw.Context.Core.Lenses.FileMapSuggestion!
+Aw.Context.Core.Lenses.FileMapSuggestion.Confidence.get -> double
+Aw.Context.Core.Lenses.FileMapSuggestion.Confidence.init -> void
+Aw.Context.Core.Lenses.FileMapSuggestion.Deconstruct(out Aw.Context.Core.Graph.LinkId Link, out Aw.Context.Core.Graph.NodeKey File, out Aw.Context.Core.Graph.NodeKey Feature, out double Confidence) -> void
+Aw.Context.Core.Lenses.FileMapSuggestion.Equals(Aw.Context.Core.Lenses.FileMapSuggestion? other) -> bool
+Aw.Context.Core.Lenses.FileMapSuggestion.Feature.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.Lenses.FileMapSuggestion.Feature.init -> void
+Aw.Context.Core.Lenses.FileMapSuggestion.File.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.Lenses.FileMapSuggestion.File.init -> void
+Aw.Context.Core.Lenses.FileMapSuggestion.FileMapSuggestion(Aw.Context.Core.Graph.LinkId Link, Aw.Context.Core.Graph.NodeKey File, Aw.Context.Core.Graph.NodeKey Feature, double Confidence) -> void
+Aw.Context.Core.Lenses.FileMapSuggestion.Link.get -> Aw.Context.Core.Graph.LinkId
+Aw.Context.Core.Lenses.FileMapSuggestion.Link.init -> void
+Aw.Context.Core.Lenses.FileMapTotals
+Aw.Context.Core.Lenses.FileMapTotals.<Clone>$() -> Aw.Context.Core.Lenses.FileMapTotals!
+Aw.Context.Core.Lenses.FileMapTotals.Deconstruct(out int Mapped, out int Suggested, out int Unmapped) -> void
+Aw.Context.Core.Lenses.FileMapTotals.Equals(Aw.Context.Core.Lenses.FileMapTotals? other) -> bool
+Aw.Context.Core.Lenses.FileMapTotals.FileMapTotals(int Mapped, int Suggested, int Unmapped) -> void
+Aw.Context.Core.Lenses.FileMapTotals.Mapped.get -> int
+Aw.Context.Core.Lenses.FileMapTotals.Mapped.init -> void
+Aw.Context.Core.Lenses.FileMapTotals.Suggested.get -> int
+Aw.Context.Core.Lenses.FileMapTotals.Suggested.init -> void
+Aw.Context.Core.Lenses.FileMapTotals.Unmapped.get -> int
+Aw.Context.Core.Lenses.FileMapTotals.Unmapped.init -> void
+Aw.Context.Core.Lenses.FileMapView
+Aw.Context.Core.Lenses.FileMapView.<Clone>$() -> Aw.Context.Core.Lenses.FileMapView!
+Aw.Context.Core.Lenses.FileMapView.Deconstruct(out string! Map, out bool Draft, out Aw.Context.Core.Engine.ContextRepoName Repo, out string! Path, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapEntry!>! Entries, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapSuggestion!>! Suggested, out Aw.Context.Core.Lenses.FileMapTotals! Totals, out Aw.Context.Core.Lenses.LensSymbols! Symbols) -> void
+Aw.Context.Core.Lenses.FileMapView.Draft.get -> bool
+Aw.Context.Core.Lenses.FileMapView.Draft.init -> void
+Aw.Context.Core.Lenses.FileMapView.Entries.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapEntry!>!
+Aw.Context.Core.Lenses.FileMapView.Entries.init -> void
+Aw.Context.Core.Lenses.FileMapView.Equals(Aw.Context.Core.Lenses.FileMapView? other) -> bool
+Aw.Context.Core.Lenses.FileMapView.FileMapView(string! Map, bool Draft, Aw.Context.Core.Engine.ContextRepoName Repo, string! Path, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapEntry!>! Entries, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapSuggestion!>! Suggested, Aw.Context.Core.Lenses.FileMapTotals! Totals, Aw.Context.Core.Lenses.LensSymbols! Symbols) -> void
+Aw.Context.Core.Lenses.FileMapView.Map.get -> string!
+Aw.Context.Core.Lenses.FileMapView.Map.init -> void
+Aw.Context.Core.Lenses.FileMapView.Path.get -> string!
+Aw.Context.Core.Lenses.FileMapView.Path.init -> void
+Aw.Context.Core.Lenses.FileMapView.Repo.get -> Aw.Context.Core.Engine.ContextRepoName
+Aw.Context.Core.Lenses.FileMapView.Repo.init -> void
+Aw.Context.Core.Lenses.FileMapView.Suggested.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapSuggestion!>!
+Aw.Context.Core.Lenses.FileMapView.Suggested.init -> void
+Aw.Context.Core.Lenses.FileMapView.Symbols.get -> Aw.Context.Core.Lenses.LensSymbols!
+Aw.Context.Core.Lenses.FileMapView.Symbols.init -> void
+Aw.Context.Core.Lenses.FileMapView.Totals.get -> Aw.Context.Core.Lenses.FileMapTotals!
+Aw.Context.Core.Lenses.FileMapView.Totals.init -> void
+Aw.Context.Core.Lenses.LensBand
+Aw.Context.Core.Lenses.LensBand.<Clone>$() -> Aw.Context.Core.Lenses.LensBand!
+Aw.Context.Core.Lenses.LensBand.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensItem!>! Items, out bool Truncated) -> void
+Aw.Context.Core.Lenses.LensBand.Equals(Aw.Context.Core.Lenses.LensBand? other) -> bool
+Aw.Context.Core.Lenses.LensBand.Items.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensItem!>!
+Aw.Context.Core.Lenses.LensBand.Items.init -> void
+Aw.Context.Core.Lenses.LensBand.LensBand(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensItem!>! Items, bool Truncated) -> void
+Aw.Context.Core.Lenses.LensBand.Truncated.get -> bool
+Aw.Context.Core.Lenses.LensBand.Truncated.init -> void
+Aw.Context.Core.Lenses.LensConflict
+Aw.Context.Core.Lenses.LensConflict.<Clone>$() -> Aw.Context.Core.Lenses.LensConflict!
+Aw.Context.Core.Lenses.LensConflict.Deconstruct(out string! Kind, out Aw.Context.Core.Graph.NodeKey Newer, out Aw.Context.Core.Graph.NodeKey Older) -> void
+Aw.Context.Core.Lenses.LensConflict.Equals(Aw.Context.Core.Lenses.LensConflict? other) -> bool
+Aw.Context.Core.Lenses.LensConflict.Kind.get -> string!
+Aw.Context.Core.Lenses.LensConflict.Kind.init -> void
+Aw.Context.Core.Lenses.LensConflict.LensConflict(string! Kind, Aw.Context.Core.Graph.NodeKey Newer, Aw.Context.Core.Graph.NodeKey Older) -> void
+Aw.Context.Core.Lenses.LensConflict.Newer.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.Lenses.LensConflict.Newer.init -> void
+Aw.Context.Core.Lenses.LensConflict.Older.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.Lenses.LensConflict.Older.init -> void
+Aw.Context.Core.Lenses.LensCoverage
+Aw.Context.Core.Lenses.LensCoverage.<Clone>$() -> Aw.Context.Core.Lenses.LensCoverage!
+Aw.Context.Core.Lenses.LensCoverage.Confirmed.get -> int
+Aw.Context.Core.Lenses.LensCoverage.Confirmed.init -> void
+Aw.Context.Core.Lenses.LensCoverage.Covered.get -> int
+Aw.Context.Core.Lenses.LensCoverage.Covered.init -> void
+Aw.Context.Core.Lenses.LensCoverage.Deconstruct(out int Scope, out int Covered, out int Confirmed, out int Implemented) -> void
+Aw.Context.Core.Lenses.LensCoverage.Equals(Aw.Context.Core.Lenses.LensCoverage? other) -> bool
+Aw.Context.Core.Lenses.LensCoverage.Implemented.get -> int
+Aw.Context.Core.Lenses.LensCoverage.Implemented.init -> void
+Aw.Context.Core.Lenses.LensCoverage.LensCoverage(int Scope, int Covered, int Confirmed, int Implemented) -> void
+Aw.Context.Core.Lenses.LensCoverage.Scope.get -> int
+Aw.Context.Core.Lenses.LensCoverage.Scope.init -> void
+Aw.Context.Core.Lenses.LensEdge
+Aw.Context.Core.Lenses.LensEdge.<Clone>$() -> Aw.Context.Core.Lenses.LensEdge!
+Aw.Context.Core.Lenses.LensEdge.Confidence.get -> double
+Aw.Context.Core.Lenses.LensEdge.Confidence.init -> void
+Aw.Context.Core.Lenses.LensEdge.Confirmed.get -> bool
+Aw.Context.Core.Lenses.LensEdge.Confirmed.init -> void
+Aw.Context.Core.Lenses.LensEdge.Deconstruct(out Aw.Context.Core.Graph.NodeKey From, out Aw.Context.Core.Graph.NodeKey To, out Aw.Context.Core.Graph.EdgeType Type, out Aw.Context.Core.Graph.LinkId Link, out bool Confirmed, out double Confidence) -> void
+Aw.Context.Core.Lenses.LensEdge.Equals(Aw.Context.Core.Lenses.LensEdge? other) -> bool
+Aw.Context.Core.Lenses.LensEdge.From.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.Lenses.LensEdge.From.init -> void
+Aw.Context.Core.Lenses.LensEdge.LensEdge(Aw.Context.Core.Graph.NodeKey From, Aw.Context.Core.Graph.NodeKey To, Aw.Context.Core.Graph.EdgeType Type, Aw.Context.Core.Graph.LinkId Link, bool Confirmed, double Confidence) -> void
+Aw.Context.Core.Lenses.LensEdge.Link.get -> Aw.Context.Core.Graph.LinkId
+Aw.Context.Core.Lenses.LensEdge.Link.init -> void
+Aw.Context.Core.Lenses.LensEdge.To.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.Lenses.LensEdge.To.init -> void
+Aw.Context.Core.Lenses.LensEdge.Type.get -> Aw.Context.Core.Graph.EdgeType
+Aw.Context.Core.Lenses.LensEdge.Type.init -> void
+Aw.Context.Core.Lenses.LensItem
+Aw.Context.Core.Lenses.LensItem.<Clone>$() -> Aw.Context.Core.Lenses.LensItem!
+Aw.Context.Core.Lenses.LensItem.Confidence.get -> double
+Aw.Context.Core.Lenses.LensItem.Confidence.init -> void
+Aw.Context.Core.Lenses.LensItem.Confirmed.get -> bool
+Aw.Context.Core.Lenses.LensItem.Confirmed.init -> void
+Aw.Context.Core.Lenses.LensItem.Deconstruct(out Aw.Context.Core.Graph.NodeKey Key, out string! Label, out Aw.Context.Core.Lenses.LensRelation Relation, out Aw.Context.Core.Results.Provenance Provenance, out double Confidence, out bool Confirmed, out Aw.Context.Core.Graph.LinkId? Link) -> void
+Aw.Context.Core.Lenses.LensItem.Equals(Aw.Context.Core.Lenses.LensItem? other) -> bool
+Aw.Context.Core.Lenses.LensItem.Key.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.Lenses.LensItem.Key.init -> void
+Aw.Context.Core.Lenses.LensItem.Label.get -> string!
+Aw.Context.Core.Lenses.LensItem.Label.init -> void
+Aw.Context.Core.Lenses.LensItem.LensItem(Aw.Context.Core.Graph.NodeKey Key, string! Label, Aw.Context.Core.Lenses.LensRelation Relation, Aw.Context.Core.Results.Provenance Provenance, double Confidence, bool Confirmed, Aw.Context.Core.Graph.LinkId? Link) -> void
+Aw.Context.Core.Lenses.LensItem.Link.get -> Aw.Context.Core.Graph.LinkId?
+Aw.Context.Core.Lenses.LensItem.Link.init -> void
+Aw.Context.Core.Lenses.LensItem.Provenance.get -> Aw.Context.Core.Results.Provenance
+Aw.Context.Core.Lenses.LensItem.Provenance.init -> void
+Aw.Context.Core.Lenses.LensItem.Relation.get -> Aw.Context.Core.Lenses.LensRelation
+Aw.Context.Core.Lenses.LensItem.Relation.init -> void
+Aw.Context.Core.Lenses.LensRelation
+Aw.Context.Core.Lenses.LensRelation.Affects = 2 -> Aw.Context.Core.Lenses.LensRelation
+Aw.Context.Core.Lenses.LensRelation.Neighbor = 1 -> Aw.Context.Core.Lenses.LensRelation
+Aw.Context.Core.Lenses.LensRelation.Own = 0 -> Aw.Context.Core.Lenses.LensRelation
+Aw.Context.Core.Lenses.LensSymbols
+Aw.Context.Core.Lenses.LensSymbols.<Clone>$() -> Aw.Context.Core.Lenses.LensSymbols!
+Aw.Context.Core.Lenses.LensSymbols.Deconstruct(out string! Status, out string! Reason) -> void
+Aw.Context.Core.Lenses.LensSymbols.Equals(Aw.Context.Core.Lenses.LensSymbols? other) -> bool
+Aw.Context.Core.Lenses.LensSymbols.LensSymbols(string! Status, string! Reason) -> void
+Aw.Context.Core.Lenses.LensSymbols.Reason.get -> string!
+Aw.Context.Core.Lenses.LensSymbols.Reason.init -> void
+Aw.Context.Core.Lenses.LensSymbols.Status.get -> string!
+Aw.Context.Core.Lenses.LensSymbols.Status.init -> void
+Aw.Context.Core.Lenses.LensesView
+Aw.Context.Core.Lenses.LensesView.<Clone>$() -> Aw.Context.Core.Lenses.LensesView!
+Aw.Context.Core.Lenses.LensesView.Anchor.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.Lenses.LensesView.Anchor.init -> void
+Aw.Context.Core.Lenses.LensesView.Code.get -> Aw.Context.Core.Lenses.LensBand!
+Aw.Context.Core.Lenses.LensesView.Code.init -> void
+Aw.Context.Core.Lenses.LensesView.Conflicts.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensConflict!>!
+Aw.Context.Core.Lenses.LensesView.Conflicts.init -> void
+Aw.Context.Core.Lenses.LensesView.Coverage.get -> Aw.Context.Core.Lenses.LensCoverage!
+Aw.Context.Core.Lenses.LensesView.Coverage.init -> void
+Aw.Context.Core.Lenses.LensesView.Deconstruct(out string! Map, out bool Draft, out Aw.Context.Core.Graph.NodeKey Anchor, out Aw.Context.Core.Lenses.LensBand! Intent, out Aw.Context.Core.Lenses.LensBand! Product, out Aw.Context.Core.Lenses.LensBand! Code, out Aw.Context.Core.Lenses.LensSymbols! Symbols, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensConflict!>! Conflicts, out Aw.Context.Core.Lenses.LensCoverage! Coverage, out System.Collections.Generic.IReadOnlyList<string!>! Gaps) -> void
+Aw.Context.Core.Lenses.LensesView.Draft.get -> bool
+Aw.Context.Core.Lenses.LensesView.Draft.init -> void
+Aw.Context.Core.Lenses.LensesView.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>!
+Aw.Context.Core.Lenses.LensesView.Edges.init -> void
+Aw.Context.Core.Lenses.LensesView.Equals(Aw.Context.Core.Lenses.LensesView? other) -> bool
+Aw.Context.Core.Lenses.LensesView.Gaps.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Lenses.LensesView.Gaps.init -> void
+Aw.Context.Core.Lenses.LensesView.Intent.get -> Aw.Context.Core.Lenses.LensBand!
+Aw.Context.Core.Lenses.LensesView.Intent.init -> void
+Aw.Context.Core.Lenses.LensesView.LensesView(string! Map, bool Draft, Aw.Context.Core.Graph.NodeKey Anchor, Aw.Context.Core.Lenses.LensBand! Intent, Aw.Context.Core.Lenses.LensBand! Product, Aw.Context.Core.Lenses.LensBand! Code, Aw.Context.Core.Lenses.LensSymbols! Symbols, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensConflict!>! Conflicts, Aw.Context.Core.Lenses.LensCoverage! Coverage, System.Collections.Generic.IReadOnlyList<string!>! Gaps) -> void
+Aw.Context.Core.Lenses.LensesView.Map.get -> string!
+Aw.Context.Core.Lenses.LensesView.Map.init -> void
+Aw.Context.Core.Lenses.LensesView.Product.get -> Aw.Context.Core.Lenses.LensBand!
+Aw.Context.Core.Lenses.LensesView.Product.init -> void
+Aw.Context.Core.Lenses.LensesView.Symbols.get -> Aw.Context.Core.Lenses.LensSymbols!
+Aw.Context.Core.Lenses.LensesView.Symbols.init -> void
+Aw.Context.Core.Locks.IHeavyJobLock
+Aw.Context.Core.Locks.IHeavyJobLock.Take(System.IProgress<string!>? waiting, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.IAsyncDisposable!>!>
+Aw.Context.Core.Map.IGraphStore.AppendOverrides(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int>!>
+Aw.Context.Core.Map.IGraphStore.OpenDraft(System.DateTimeOffset created, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapVersion!>!>
+Aw.Context.Core.Map.IGraphStore.Promote(int draft, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapVersion!>!>
+Aw.Context.Core.Map.IGraphStore.SaveDraft(Aw.Context.Core.Map.MapImport! map, System.DateTimeOffset created, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapVersion!>!>
+Aw.Context.Core.Map.MapBuildReport
+Aw.Context.Core.Map.MapBuildReport.<Clone>$() -> Aw.Context.Core.Map.MapBuildReport!
+Aw.Context.Core.Map.MapBuildReport.Deconstruct(out Aw.Context.Core.Map.MapVersion! Draft, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Map.ProposedNode!>! Proposed, out System.Collections.Generic.IReadOnlyList<string!>! Degraded) -> void
+Aw.Context.Core.Map.MapBuildReport.Degraded.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Map.MapBuildReport.Degraded.init -> void
+Aw.Context.Core.Map.MapBuildReport.Draft.get -> Aw.Context.Core.Map.MapVersion!
+Aw.Context.Core.Map.MapBuildReport.Draft.init -> void
+Aw.Context.Core.Map.MapBuildReport.Equals(Aw.Context.Core.Map.MapBuildReport? other) -> bool
+Aw.Context.Core.Map.MapBuildReport.MapBuildReport(Aw.Context.Core.Map.MapVersion! Draft, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Map.ProposedNode!>! Proposed, System.Collections.Generic.IReadOnlyList<string!>! Degraded) -> void
+Aw.Context.Core.Map.MapBuildReport.Proposed.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Map.ProposedNode!>!
+Aw.Context.Core.Map.MapBuildReport.Proposed.init -> void
+Aw.Context.Core.Map.MapPromoted
+Aw.Context.Core.Map.MapPromoted.<Clone>$() -> Aw.Context.Core.Map.MapPromoted!
+Aw.Context.Core.Map.MapPromoted.Deconstruct(out Aw.Context.Core.Map.MapVersion! Version, out Aw.Context.Core.Map.MapVersion? Retained) -> void
+Aw.Context.Core.Map.MapPromoted.Equals(Aw.Context.Core.Map.MapPromoted? other) -> bool
+Aw.Context.Core.Map.MapPromoted.MapPromoted(Aw.Context.Core.Map.MapVersion! Version, Aw.Context.Core.Map.MapVersion? Retained) -> void
+Aw.Context.Core.Map.MapPromoted.Retained.get -> Aw.Context.Core.Map.MapVersion?
+Aw.Context.Core.Map.MapPromoted.Retained.init -> void
+Aw.Context.Core.Map.MapPromoted.Version.get -> Aw.Context.Core.Map.MapVersion!
+Aw.Context.Core.Map.MapPromoted.Version.init -> void
+Aw.Context.Core.Map.ProposedNode
+Aw.Context.Core.Map.ProposedNode.<Clone>$() -> Aw.Context.Core.Map.ProposedNode!
+Aw.Context.Core.Map.ProposedNode.Confidence.get -> double
+Aw.Context.Core.Map.ProposedNode.Confidence.init -> void
+Aw.Context.Core.Map.ProposedNode.Deconstruct(out Aw.Context.Core.Graph.NodeKey Key, out Aw.Context.Core.Results.Provenance Provenance, out double Confidence, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Files) -> void
+Aw.Context.Core.Map.ProposedNode.Equals(Aw.Context.Core.Map.ProposedNode? other) -> bool
+Aw.Context.Core.Map.ProposedNode.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>!
+Aw.Context.Core.Map.ProposedNode.Files.init -> void
+Aw.Context.Core.Map.ProposedNode.Key.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.Map.ProposedNode.Key.init -> void
+Aw.Context.Core.Map.ProposedNode.ProposedNode(Aw.Context.Core.Graph.NodeKey Key, Aw.Context.Core.Results.Provenance Provenance, double Confidence, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Files) -> void
+Aw.Context.Core.Map.ProposedNode.Provenance.get -> Aw.Context.Core.Results.Provenance
+Aw.Context.Core.Map.ProposedNode.Provenance.init -> void
+Aw.Context.Core.Overrides.MapOverride.Deconstruct(out Aw.Context.Core.Overrides.OverrideAction Action, out Aw.Context.Core.Graph.NodeKey Target, out string! Who, out System.DateTimeOffset At, out string? Label, out Aw.Context.Core.Graph.NodeKey? Other, out string? Rejection, out Aw.Context.Core.Graph.LinkId? Link, out Aw.Context.Core.Overrides.OverrideId? Undoes, out Aw.Context.Core.Overrides.ProposalPayload? Proposal) -> void
+Aw.Context.Core.Overrides.MapOverride.Link.get -> Aw.Context.Core.Graph.LinkId?
+Aw.Context.Core.Overrides.MapOverride.Link.init -> void
+Aw.Context.Core.Overrides.MapOverride.MapOverride(Aw.Context.Core.Overrides.OverrideAction Action, Aw.Context.Core.Graph.NodeKey Target, string! Who, System.DateTimeOffset At, string? Label = null, Aw.Context.Core.Graph.NodeKey? Other = null, string? Rejection = null, Aw.Context.Core.Graph.LinkId? Link = null, Aw.Context.Core.Overrides.OverrideId? Undoes = null, Aw.Context.Core.Overrides.ProposalPayload? Proposal = null) -> void
+Aw.Context.Core.Overrides.MapOverride.Proposal.get -> Aw.Context.Core.Overrides.ProposalPayload?
+Aw.Context.Core.Overrides.MapOverride.Proposal.init -> void
+Aw.Context.Core.Overrides.MapOverride.Undoes.get -> Aw.Context.Core.Overrides.OverrideId?
+Aw.Context.Core.Overrides.MapOverride.Undoes.init -> void
+Aw.Context.Core.Overrides.OverrideAction.Propose = 7 -> Aw.Context.Core.Overrides.OverrideAction
+Aw.Context.Core.Overrides.OverrideAction.Undo = 8 -> Aw.Context.Core.Overrides.OverrideAction
+Aw.Context.Core.Overrides.ProposalPayload
+Aw.Context.Core.Overrides.ProposalPayload.<Clone>$() -> Aw.Context.Core.Overrides.ProposalPayload!
+Aw.Context.Core.Overrides.ProposalPayload.Deconstruct(out string! Run, out Aw.Context.Core.Engine.ContextRepoName Repo, out Aw.Context.Core.Graph.NodeKind Kind, out Aw.Context.Core.Graph.NodeKey? Parent, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? Evidence, out string? Quote) -> void
+Aw.Context.Core.Overrides.ProposalPayload.Equals(Aw.Context.Core.Overrides.ProposalPayload? other) -> bool
+Aw.Context.Core.Overrides.ProposalPayload.Evidence.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>?
+Aw.Context.Core.Overrides.ProposalPayload.Evidence.init -> void
+Aw.Context.Core.Overrides.ProposalPayload.Kind.get -> Aw.Context.Core.Graph.NodeKind
+Aw.Context.Core.Overrides.ProposalPayload.Kind.init -> void
+Aw.Context.Core.Overrides.ProposalPayload.Parent.get -> Aw.Context.Core.Graph.NodeKey?
+Aw.Context.Core.Overrides.ProposalPayload.Parent.init -> void
+Aw.Context.Core.Overrides.ProposalPayload.ProposalPayload(string! Run, Aw.Context.Core.Engine.ContextRepoName Repo, Aw.Context.Core.Graph.NodeKind Kind, Aw.Context.Core.Graph.NodeKey? Parent = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? Evidence = null, string? Quote = null) -> void
+Aw.Context.Core.Overrides.ProposalPayload.Quote.get -> string?
+Aw.Context.Core.Overrides.ProposalPayload.Quote.init -> void
+Aw.Context.Core.Overrides.ProposalPayload.Repo.get -> Aw.Context.Core.Engine.ContextRepoName
+Aw.Context.Core.Overrides.ProposalPayload.Repo.init -> void
+Aw.Context.Core.Overrides.ProposalPayload.Run.get -> string!
+Aw.Context.Core.Overrides.ProposalPayload.Run.init -> void
+Aw.Context.Core.Overrides.ProposalPayload.ToHashText() -> string!
+Aw.Context.Core.Proposals.GraphStatus
+Aw.Context.Core.Proposals.GraphStatus.<Clone>$() -> Aw.Context.Core.Proposals.GraphStatus!
+Aw.Context.Core.Proposals.GraphStatus.Deconstruct(out string! Surface, out Aw.Context.Core.Graph.NodeKey? Node, out Aw.Context.Core.Proposals.GraphStatusKind Status) -> void
+Aw.Context.Core.Proposals.GraphStatus.Equals(Aw.Context.Core.Proposals.GraphStatus? other) -> bool
+Aw.Context.Core.Proposals.GraphStatus.GraphStatus(string! Surface, Aw.Context.Core.Graph.NodeKey? Node, Aw.Context.Core.Proposals.GraphStatusKind Status) -> void
+Aw.Context.Core.Proposals.GraphStatus.Node.get -> Aw.Context.Core.Graph.NodeKey?
+Aw.Context.Core.Proposals.GraphStatus.Node.init -> void
+Aw.Context.Core.Proposals.GraphStatus.Status.get -> Aw.Context.Core.Proposals.GraphStatusKind
+Aw.Context.Core.Proposals.GraphStatus.Status.init -> void
+Aw.Context.Core.Proposals.GraphStatus.Surface.get -> string!
+Aw.Context.Core.Proposals.GraphStatus.Surface.init -> void
+Aw.Context.Core.Proposals.GraphStatusKind
+Aw.Context.Core.Proposals.GraphStatusKind.Mapped = 0 -> Aw.Context.Core.Proposals.GraphStatusKind
+Aw.Context.Core.Proposals.GraphStatusKind.New = 1 -> Aw.Context.Core.Proposals.GraphStatusKind
+Aw.Context.Core.Proposals.GraphStatusKind.Unmapped = 2 -> Aw.Context.Core.Proposals.GraphStatusKind
+Aw.Context.Core.Proposals.ProposalsView
+Aw.Context.Core.Proposals.ProposalsView.<Clone>$() -> Aw.Context.Core.Proposals.ProposalsView!
+Aw.Context.Core.Proposals.ProposalsView.Deconstruct(out string! Run, out string! Map, out string? Draft, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Proposals.GraphStatus!>! Surfaces) -> void
+Aw.Context.Core.Proposals.ProposalsView.Draft.get -> string?
+Aw.Context.Core.Proposals.ProposalsView.Draft.init -> void
+Aw.Context.Core.Proposals.ProposalsView.Equals(Aw.Context.Core.Proposals.ProposalsView? other) -> bool
+Aw.Context.Core.Proposals.ProposalsView.Map.get -> string!
+Aw.Context.Core.Proposals.ProposalsView.Map.init -> void
+Aw.Context.Core.Proposals.ProposalsView.ProposalsView(string! Run, string! Map, string? Draft, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Proposals.GraphStatus!>! Surfaces) -> void
+Aw.Context.Core.Proposals.ProposalsView.Run.get -> string!
+Aw.Context.Core.Proposals.ProposalsView.Run.init -> void
+Aw.Context.Core.Proposals.ProposalsView.Surfaces.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Proposals.GraphStatus!>!
+Aw.Context.Core.Proposals.ProposalsView.Surfaces.init -> void
+Aw.Context.Core.Proposals.ProposeResult
+Aw.Context.Core.Proposals.ProposeResult.<Clone>$() -> Aw.Context.Core.Proposals.ProposeResult!
+Aw.Context.Core.Proposals.ProposeResult.Added.get -> int
+Aw.Context.Core.Proposals.ProposeResult.Added.init -> void
+Aw.Context.Core.Proposals.ProposeResult.Deconstruct(out Aw.Context.Core.Map.MapVersion! Draft, out int Added, out int Existing, out int Rejected) -> void
+Aw.Context.Core.Proposals.ProposeResult.Draft.get -> Aw.Context.Core.Map.MapVersion!
+Aw.Context.Core.Proposals.ProposeResult.Draft.init -> void
+Aw.Context.Core.Proposals.ProposeResult.Equals(Aw.Context.Core.Proposals.ProposeResult? other) -> bool
+Aw.Context.Core.Proposals.ProposeResult.Existing.get -> int
+Aw.Context.Core.Proposals.ProposeResult.Existing.init -> void
+Aw.Context.Core.Proposals.ProposeResult.ProposeResult(Aw.Context.Core.Map.MapVersion! Draft, int Added, int Existing, int Rejected) -> void
+Aw.Context.Core.Proposals.ProposeResult.Rejected.get -> int
+Aw.Context.Core.Proposals.ProposeResult.Rejected.init -> void
+Aw.Context.Core.Proposals.ProposedSurface
+Aw.Context.Core.Proposals.ProposedSurface.<Clone>$() -> Aw.Context.Core.Proposals.ProposedSurface!
+Aw.Context.Core.Proposals.ProposedSurface.Deconstruct(out string! Name, out Aw.Context.Core.Graph.NodeKey? Key, out Aw.Context.Core.Graph.NodeKind? Kind, out Aw.Context.Core.Graph.NodeKey? Parent, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? Evidence, out string? Quote) -> void
+Aw.Context.Core.Proposals.ProposedSurface.Equals(Aw.Context.Core.Proposals.ProposedSurface? other) -> bool
+Aw.Context.Core.Proposals.ProposedSurface.Evidence.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>?
+Aw.Context.Core.Proposals.ProposedSurface.Evidence.init -> void
+Aw.Context.Core.Proposals.ProposedSurface.Key.get -> Aw.Context.Core.Graph.NodeKey?
+Aw.Context.Core.Proposals.ProposedSurface.Key.init -> void
+Aw.Context.Core.Proposals.ProposedSurface.Kind.get -> Aw.Context.Core.Graph.NodeKind?
+Aw.Context.Core.Proposals.ProposedSurface.Kind.init -> void
+Aw.Context.Core.Proposals.ProposedSurface.Name.get -> string!
+Aw.Context.Core.Proposals.ProposedSurface.Name.init -> void
+Aw.Context.Core.Proposals.ProposedSurface.Parent.get -> Aw.Context.Core.Graph.NodeKey?
+Aw.Context.Core.Proposals.ProposedSurface.Parent.init -> void
+Aw.Context.Core.Proposals.ProposedSurface.ProposedSurface(string! Name, Aw.Context.Core.Graph.NodeKey? Key, Aw.Context.Core.Graph.NodeKind? Kind, Aw.Context.Core.Graph.NodeKey? Parent, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? Evidence, string? Quote) -> void
+Aw.Context.Core.Proposals.ProposedSurface.Quote.get -> string?
+Aw.Context.Core.Proposals.ProposedSurface.Quote.init -> void
+Aw.Context.Core.Proposals.ScopeProposal
+Aw.Context.Core.Proposals.ScopeProposal.<Clone>$() -> Aw.Context.Core.Proposals.ScopeProposal!
+Aw.Context.Core.Proposals.ScopeProposal.Deconstruct(out string! Run, out Aw.Context.Core.Engine.ContextRepoName Repo, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Proposals.ProposedSurface!>! Surfaces) -> void
+Aw.Context.Core.Proposals.ScopeProposal.Equals(Aw.Context.Core.Proposals.ScopeProposal? other) -> bool
+Aw.Context.Core.Proposals.ScopeProposal.Repo.get -> Aw.Context.Core.Engine.ContextRepoName
+Aw.Context.Core.Proposals.ScopeProposal.Repo.init -> void
+Aw.Context.Core.Proposals.ScopeProposal.Run.get -> string!
+Aw.Context.Core.Proposals.ScopeProposal.Run.init -> void
+Aw.Context.Core.Proposals.ScopeProposal.ScopeProposal(string! Run, Aw.Context.Core.Engine.ContextRepoName Repo, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Proposals.ProposedSurface!>! Surfaces) -> void
+Aw.Context.Core.Proposals.ScopeProposal.Surfaces.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Proposals.ProposedSurface!>!
+Aw.Context.Core.Proposals.ScopeProposal.Surfaces.init -> void
+Aw.Context.Core.Review.ReviewDecision
+Aw.Context.Core.Review.ReviewDecision.<Clone>$() -> Aw.Context.Core.Review.ReviewDecision!
+Aw.Context.Core.Review.ReviewDecision.Deconstruct(out Aw.Context.Core.Review.ReviewVerb Verb, out Aw.Context.Core.Graph.NodeKey? Node, out Aw.Context.Core.Graph.LinkId? Link, out Aw.Context.Core.Overrides.OverrideId? Undoes, out string? Label, out Aw.Context.Core.Graph.NodeKey? Other) -> void
+Aw.Context.Core.Review.ReviewDecision.Equals(Aw.Context.Core.Review.ReviewDecision? other) -> bool
+Aw.Context.Core.Review.ReviewDecision.Label.get -> string?
+Aw.Context.Core.Review.ReviewDecision.Label.init -> void
+Aw.Context.Core.Review.ReviewDecision.Link.get -> Aw.Context.Core.Graph.LinkId?
+Aw.Context.Core.Review.ReviewDecision.Link.init -> void
+Aw.Context.Core.Review.ReviewDecision.Node.get -> Aw.Context.Core.Graph.NodeKey?
+Aw.Context.Core.Review.ReviewDecision.Node.init -> void
+Aw.Context.Core.Review.ReviewDecision.Other.get -> Aw.Context.Core.Graph.NodeKey?
+Aw.Context.Core.Review.ReviewDecision.Other.init -> void
+Aw.Context.Core.Review.ReviewDecision.ReviewDecision(Aw.Context.Core.Review.ReviewVerb Verb, Aw.Context.Core.Graph.NodeKey? Node = null, Aw.Context.Core.Graph.LinkId? Link = null, Aw.Context.Core.Overrides.OverrideId? Undoes = null, string? Label = null, Aw.Context.Core.Graph.NodeKey? Other = null) -> void
+Aw.Context.Core.Review.ReviewDecision.Undoes.get -> Aw.Context.Core.Overrides.OverrideId?
+Aw.Context.Core.Review.ReviewDecision.Undoes.init -> void
+Aw.Context.Core.Review.ReviewDecision.Verb.get -> Aw.Context.Core.Review.ReviewVerb
+Aw.Context.Core.Review.ReviewDecision.Verb.init -> void
+Aw.Context.Core.Review.ReviewEntry
+Aw.Context.Core.Review.ReviewEntry.<Clone>$() -> Aw.Context.Core.Review.ReviewEntry!
+Aw.Context.Core.Review.ReviewEntry.Confidence.get -> double
+Aw.Context.Core.Review.ReviewEntry.Confidence.init -> void
+Aw.Context.Core.Review.ReviewEntry.Deconstruct(out Aw.Context.Core.Graph.NodeKey Node, out Aw.Context.Core.Graph.LinkId? Link, out Aw.Context.Core.Review.ReviewGroup Group, out string! Label, out Aw.Context.Core.Results.Provenance Provenance, out double Confidence, out int Impact, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Files, out Aw.Context.Core.Graph.NodeKey? Parent) -> void
+Aw.Context.Core.Review.ReviewEntry.Equals(Aw.Context.Core.Review.ReviewEntry? other) -> bool
+Aw.Context.Core.Review.ReviewEntry.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>!
+Aw.Context.Core.Review.ReviewEntry.Files.init -> void
+Aw.Context.Core.Review.ReviewEntry.Group.get -> Aw.Context.Core.Review.ReviewGroup
+Aw.Context.Core.Review.ReviewEntry.Group.init -> void
+Aw.Context.Core.Review.ReviewEntry.Impact.get -> int
+Aw.Context.Core.Review.ReviewEntry.Impact.init -> void
+Aw.Context.Core.Review.ReviewEntry.Label.get -> string!
+Aw.Context.Core.Review.ReviewEntry.Label.init -> void
+Aw.Context.Core.Review.ReviewEntry.Link.get -> Aw.Context.Core.Graph.LinkId?
+Aw.Context.Core.Review.ReviewEntry.Link.init -> void
+Aw.Context.Core.Review.ReviewEntry.Node.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.Review.ReviewEntry.Node.init -> void
+Aw.Context.Core.Review.ReviewEntry.Parent.get -> Aw.Context.Core.Graph.NodeKey?
+Aw.Context.Core.Review.ReviewEntry.Parent.init -> void
+Aw.Context.Core.Review.ReviewEntry.Provenance.get -> Aw.Context.Core.Results.Provenance
+Aw.Context.Core.Review.ReviewEntry.Provenance.init -> void
+Aw.Context.Core.Review.ReviewEntry.ReviewEntry(Aw.Context.Core.Graph.NodeKey Node, Aw.Context.Core.Graph.LinkId? Link, Aw.Context.Core.Review.ReviewGroup Group, string! Label, Aw.Context.Core.Results.Provenance Provenance, double Confidence, int Impact, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Files, Aw.Context.Core.Graph.NodeKey? Parent) -> void
+Aw.Context.Core.Review.ReviewExported
+Aw.Context.Core.Review.ReviewExported.<Clone>$() -> Aw.Context.Core.Review.ReviewExported!
+Aw.Context.Core.Review.ReviewExported.Deconstruct(out string! Path, out int Entries) -> void
+Aw.Context.Core.Review.ReviewExported.Entries.get -> int
+Aw.Context.Core.Review.ReviewExported.Entries.init -> void
+Aw.Context.Core.Review.ReviewExported.Equals(Aw.Context.Core.Review.ReviewExported? other) -> bool
+Aw.Context.Core.Review.ReviewExported.Path.get -> string!
+Aw.Context.Core.Review.ReviewExported.Path.init -> void
+Aw.Context.Core.Review.ReviewExported.ReviewExported(string! Path, int Entries) -> void
+Aw.Context.Core.Review.ReviewGroup
+Aw.Context.Core.Review.ReviewGroup.Deterministic = 0 -> Aw.Context.Core.Review.ReviewGroup
+Aw.Context.Core.Review.ReviewGroup.Model = 1 -> Aw.Context.Core.Review.ReviewGroup
+Aw.Context.Core.Review.ReviewGroup.Orphaned = 2 -> Aw.Context.Core.Review.ReviewGroup
+Aw.Context.Core.Review.ReviewQueueView
+Aw.Context.Core.Review.ReviewQueueView.<Clone>$() -> Aw.Context.Core.Review.ReviewQueueView!
+Aw.Context.Core.Review.ReviewQueueView.Decided.get -> int
+Aw.Context.Core.Review.ReviewQueueView.Decided.init -> void
+Aw.Context.Core.Review.ReviewQueueView.Deconstruct(out string! Draft, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Review.ReviewEntry!>! Entries, out int Decided) -> void
+Aw.Context.Core.Review.ReviewQueueView.Draft.get -> string!
+Aw.Context.Core.Review.ReviewQueueView.Draft.init -> void
+Aw.Context.Core.Review.ReviewQueueView.Entries.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Review.ReviewEntry!>!
+Aw.Context.Core.Review.ReviewQueueView.Entries.init -> void
+Aw.Context.Core.Review.ReviewQueueView.Equals(Aw.Context.Core.Review.ReviewQueueView? other) -> bool
+Aw.Context.Core.Review.ReviewQueueView.ReviewQueueView(string! Draft, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Review.ReviewEntry!>! Entries, int Decided) -> void
+Aw.Context.Core.Review.ReviewQueueView.Undecided.get -> int
+Aw.Context.Core.Review.ReviewResult
+Aw.Context.Core.Review.ReviewResult.<Clone>$() -> Aw.Context.Core.Review.ReviewResult!
+Aw.Context.Core.Review.ReviewResult.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>! Written, out System.Collections.Generic.IReadOnlyList<string!>! Skipped, out int Undecided) -> void
+Aw.Context.Core.Review.ReviewResult.Equals(Aw.Context.Core.Review.ReviewResult? other) -> bool
+Aw.Context.Core.Review.ReviewResult.ReviewResult(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>! Written, System.Collections.Generic.IReadOnlyList<string!>! Skipped, int Undecided) -> void
+Aw.Context.Core.Review.ReviewResult.Skipped.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Review.ReviewResult.Skipped.init -> void
+Aw.Context.Core.Review.ReviewResult.Undecided.get -> int
+Aw.Context.Core.Review.ReviewResult.Undecided.init -> void
+Aw.Context.Core.Review.ReviewResult.Written.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>!
+Aw.Context.Core.Review.ReviewResult.Written.init -> void
+Aw.Context.Core.Review.ReviewVerb
+Aw.Context.Core.Review.ReviewVerb.Accept = 0 -> Aw.Context.Core.Review.ReviewVerb
+Aw.Context.Core.Review.ReviewVerb.AcceptDeterministic = 4 -> Aw.Context.Core.Review.ReviewVerb
+Aw.Context.Core.Review.ReviewVerb.Add = 8 -> Aw.Context.Core.Review.ReviewVerb
+Aw.Context.Core.Review.ReviewVerb.Delete = 9 -> Aw.Context.Core.Review.ReviewVerb
+Aw.Context.Core.Review.ReviewVerb.Drop = 6 -> Aw.Context.Core.Review.ReviewVerb
+Aw.Context.Core.Review.ReviewVerb.Merge = 7 -> Aw.Context.Core.Review.ReviewVerb
+Aw.Context.Core.Review.ReviewVerb.Move = 3 -> Aw.Context.Core.Review.ReviewVerb
+Aw.Context.Core.Review.ReviewVerb.Reject = 1 -> Aw.Context.Core.Review.ReviewVerb
+Aw.Context.Core.Review.ReviewVerb.Rename = 2 -> Aw.Context.Core.Review.ReviewVerb
+Aw.Context.Core.Review.ReviewVerb.Undo = 5 -> Aw.Context.Core.Review.ReviewVerb
+override Aw.Context.Core.Graph.LinkId.Equals(object? obj) -> bool
+override Aw.Context.Core.Graph.LinkId.GetHashCode() -> int
+override Aw.Context.Core.Graph.LinkId.ToString() -> string!
+override Aw.Context.Core.Lenses.FileMapEntry.Equals(object? obj) -> bool
+override Aw.Context.Core.Lenses.FileMapEntry.GetHashCode() -> int
+override Aw.Context.Core.Lenses.FileMapEntry.ToString() -> string!
+override Aw.Context.Core.Lenses.FileMapQuery.Equals(object? obj) -> bool
+override Aw.Context.Core.Lenses.FileMapQuery.GetHashCode() -> int
+override Aw.Context.Core.Lenses.FileMapQuery.ToString() -> string!
+override Aw.Context.Core.Lenses.FileMapSuggestion.Equals(object? obj) -> bool
+override Aw.Context.Core.Lenses.FileMapSuggestion.GetHashCode() -> int
+override Aw.Context.Core.Lenses.FileMapSuggestion.ToString() -> string!
+override Aw.Context.Core.Lenses.FileMapTotals.Equals(object? obj) -> bool
+override Aw.Context.Core.Lenses.FileMapTotals.GetHashCode() -> int
+override Aw.Context.Core.Lenses.FileMapTotals.ToString() -> string!
+override Aw.Context.Core.Lenses.FileMapView.Equals(object? obj) -> bool
+override Aw.Context.Core.Lenses.FileMapView.GetHashCode() -> int
+override Aw.Context.Core.Lenses.FileMapView.ToString() -> string!
+override Aw.Context.Core.Lenses.LensBand.Equals(object? obj) -> bool
+override Aw.Context.Core.Lenses.LensBand.GetHashCode() -> int
+override Aw.Context.Core.Lenses.LensBand.ToString() -> string!
+override Aw.Context.Core.Lenses.LensConflict.Equals(object? obj) -> bool
+override Aw.Context.Core.Lenses.LensConflict.GetHashCode() -> int
+override Aw.Context.Core.Lenses.LensConflict.ToString() -> string!
+override Aw.Context.Core.Lenses.LensCoverage.Equals(object? obj) -> bool
+override Aw.Context.Core.Lenses.LensCoverage.GetHashCode() -> int
+override Aw.Context.Core.Lenses.LensCoverage.ToString() -> string!
+override Aw.Context.Core.Lenses.LensEdge.Equals(object? obj) -> bool
+override Aw.Context.Core.Lenses.LensEdge.GetHashCode() -> int
+override Aw.Context.Core.Lenses.LensEdge.ToString() -> string!
+override Aw.Context.Core.Lenses.LensItem.Equals(object? obj) -> bool
+override Aw.Context.Core.Lenses.LensItem.GetHashCode() -> int
+override Aw.Context.Core.Lenses.LensItem.ToString() -> string!
+override Aw.Context.Core.Lenses.LensSymbols.Equals(object? obj) -> bool
+override Aw.Context.Core.Lenses.LensSymbols.GetHashCode() -> int
+override Aw.Context.Core.Lenses.LensSymbols.ToString() -> string!
+override Aw.Context.Core.Lenses.LensesView.Equals(object? obj) -> bool
+override Aw.Context.Core.Lenses.LensesView.GetHashCode() -> int
+override Aw.Context.Core.Lenses.LensesView.ToString() -> string!
+override Aw.Context.Core.Map.MapBuildReport.Equals(object? obj) -> bool
+override Aw.Context.Core.Map.MapBuildReport.GetHashCode() -> int
+override Aw.Context.Core.Map.MapBuildReport.ToString() -> string!
+override Aw.Context.Core.Map.MapPromoted.Equals(object? obj) -> bool
+override Aw.Context.Core.Map.MapPromoted.GetHashCode() -> int
+override Aw.Context.Core.Map.MapPromoted.ToString() -> string!
+override Aw.Context.Core.Map.ProposedNode.Equals(object? obj) -> bool
+override Aw.Context.Core.Map.ProposedNode.GetHashCode() -> int
+override Aw.Context.Core.Map.ProposedNode.ToString() -> string!
+override Aw.Context.Core.Overrides.ProposalPayload.Equals(object? obj) -> bool
+override Aw.Context.Core.Overrides.ProposalPayload.GetHashCode() -> int
+override Aw.Context.Core.Overrides.ProposalPayload.ToString() -> string!
+override Aw.Context.Core.Proposals.GraphStatus.Equals(object? obj) -> bool
+override Aw.Context.Core.Proposals.GraphStatus.GetHashCode() -> int
+override Aw.Context.Core.Proposals.GraphStatus.ToString() -> string!
+override Aw.Context.Core.Proposals.ProposalsView.Equals(object? obj) -> bool
+override Aw.Context.Core.Proposals.ProposalsView.GetHashCode() -> int
+override Aw.Context.Core.Proposals.ProposalsView.ToString() -> string!
+override Aw.Context.Core.Proposals.ProposeResult.Equals(object? obj) -> bool
+override Aw.Context.Core.Proposals.ProposeResult.GetHashCode() -> int
+override Aw.Context.Core.Proposals.ProposeResult.ToString() -> string!
+override Aw.Context.Core.Proposals.ProposedSurface.Equals(object? obj) -> bool
+override Aw.Context.Core.Proposals.ProposedSurface.GetHashCode() -> int
+override Aw.Context.Core.Proposals.ProposedSurface.ToString() -> string!
+override Aw.Context.Core.Proposals.ScopeProposal.Equals(object? obj) -> bool
+override Aw.Context.Core.Proposals.ScopeProposal.GetHashCode() -> int
+override Aw.Context.Core.Proposals.ScopeProposal.ToString() -> string!
+override Aw.Context.Core.Review.ReviewDecision.Equals(object? obj) -> bool
+override Aw.Context.Core.Review.ReviewDecision.GetHashCode() -> int
+override Aw.Context.Core.Review.ReviewDecision.ToString() -> string!
+override Aw.Context.Core.Review.ReviewEntry.Equals(object? obj) -> bool
+override Aw.Context.Core.Review.ReviewEntry.GetHashCode() -> int
+override Aw.Context.Core.Review.ReviewEntry.ToString() -> string!
+override Aw.Context.Core.Review.ReviewExported.Equals(object? obj) -> bool
+override Aw.Context.Core.Review.ReviewExported.GetHashCode() -> int
+override Aw.Context.Core.Review.ReviewExported.ToString() -> string!
+override Aw.Context.Core.Review.ReviewQueueView.Equals(object? obj) -> bool
+override Aw.Context.Core.Review.ReviewQueueView.GetHashCode() -> int
+override Aw.Context.Core.Review.ReviewQueueView.ToString() -> string!
+override Aw.Context.Core.Review.ReviewResult.Equals(object? obj) -> bool
+override Aw.Context.Core.Review.ReviewResult.GetHashCode() -> int
+override Aw.Context.Core.Review.ReviewResult.ToString() -> string!
+static Aw.Context.Core.Graph.LinkId.From(string! value) -> Aw.Context.Core.Graph.LinkId
+static Aw.Context.Core.Graph.LinkId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Graph.LinkId
+static Aw.Context.Core.Graph.LinkId.TryFrom(string? value, out Aw.Context.Core.Graph.LinkId vo) -> bool
+static Aw.Context.Core.Graph.LinkId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Graph.LinkId result) -> bool
+static Aw.Context.Core.Graph.LinkId.operator !=(Aw.Context.Core.Graph.LinkId left, Aw.Context.Core.Graph.LinkId right) -> bool
+static Aw.Context.Core.Graph.LinkId.operator ==(Aw.Context.Core.Graph.LinkId left, Aw.Context.Core.Graph.LinkId right) -> bool
+static Aw.Context.Core.Graph.LinkIds.For(Aw.Context.Core.Graph.GraphEdge! edge) -> Aw.Context.Core.Graph.LinkId
+static Aw.Context.Core.Lenses.FileMapEntry.operator !=(Aw.Context.Core.Lenses.FileMapEntry? left, Aw.Context.Core.Lenses.FileMapEntry? right) -> bool
+static Aw.Context.Core.Lenses.FileMapEntry.operator ==(Aw.Context.Core.Lenses.FileMapEntry? left, Aw.Context.Core.Lenses.FileMapEntry? right) -> bool
+static Aw.Context.Core.Lenses.FileMapQuery.operator !=(Aw.Context.Core.Lenses.FileMapQuery? left, Aw.Context.Core.Lenses.FileMapQuery? right) -> bool
+static Aw.Context.Core.Lenses.FileMapQuery.operator ==(Aw.Context.Core.Lenses.FileMapQuery? left, Aw.Context.Core.Lenses.FileMapQuery? right) -> bool
+static Aw.Context.Core.Lenses.FileMapSuggestion.operator !=(Aw.Context.Core.Lenses.FileMapSuggestion? left, Aw.Context.Core.Lenses.FileMapSuggestion? right) -> bool
+static Aw.Context.Core.Lenses.FileMapSuggestion.operator ==(Aw.Context.Core.Lenses.FileMapSuggestion? left, Aw.Context.Core.Lenses.FileMapSuggestion? right) -> bool
+static Aw.Context.Core.Lenses.FileMapTotals.operator !=(Aw.Context.Core.Lenses.FileMapTotals? left, Aw.Context.Core.Lenses.FileMapTotals? right) -> bool
+static Aw.Context.Core.Lenses.FileMapTotals.operator ==(Aw.Context.Core.Lenses.FileMapTotals? left, Aw.Context.Core.Lenses.FileMapTotals? right) -> bool
+static Aw.Context.Core.Lenses.FileMapView.operator !=(Aw.Context.Core.Lenses.FileMapView? left, Aw.Context.Core.Lenses.FileMapView? right) -> bool
+static Aw.Context.Core.Lenses.FileMapView.operator ==(Aw.Context.Core.Lenses.FileMapView? left, Aw.Context.Core.Lenses.FileMapView? right) -> bool
+static Aw.Context.Core.Lenses.LensBand.operator !=(Aw.Context.Core.Lenses.LensBand? left, Aw.Context.Core.Lenses.LensBand? right) -> bool
+static Aw.Context.Core.Lenses.LensBand.operator ==(Aw.Context.Core.Lenses.LensBand? left, Aw.Context.Core.Lenses.LensBand? right) -> bool
+static Aw.Context.Core.Lenses.LensConflict.operator !=(Aw.Context.Core.Lenses.LensConflict? left, Aw.Context.Core.Lenses.LensConflict? right) -> bool
+static Aw.Context.Core.Lenses.LensConflict.operator ==(Aw.Context.Core.Lenses.LensConflict? left, Aw.Context.Core.Lenses.LensConflict? right) -> bool
+static Aw.Context.Core.Lenses.LensCoverage.operator !=(Aw.Context.Core.Lenses.LensCoverage? left, Aw.Context.Core.Lenses.LensCoverage? right) -> bool
+static Aw.Context.Core.Lenses.LensCoverage.operator ==(Aw.Context.Core.Lenses.LensCoverage? left, Aw.Context.Core.Lenses.LensCoverage? right) -> bool
+static Aw.Context.Core.Lenses.LensEdge.operator !=(Aw.Context.Core.Lenses.LensEdge? left, Aw.Context.Core.Lenses.LensEdge? right) -> bool
+static Aw.Context.Core.Lenses.LensEdge.operator ==(Aw.Context.Core.Lenses.LensEdge? left, Aw.Context.Core.Lenses.LensEdge? right) -> bool
+static Aw.Context.Core.Lenses.LensItem.operator !=(Aw.Context.Core.Lenses.LensItem? left, Aw.Context.Core.Lenses.LensItem? right) -> bool
+static Aw.Context.Core.Lenses.LensItem.operator ==(Aw.Context.Core.Lenses.LensItem? left, Aw.Context.Core.Lenses.LensItem? right) -> bool
+static Aw.Context.Core.Lenses.LensSymbols.operator !=(Aw.Context.Core.Lenses.LensSymbols? left, Aw.Context.Core.Lenses.LensSymbols? right) -> bool
+static Aw.Context.Core.Lenses.LensSymbols.operator ==(Aw.Context.Core.Lenses.LensSymbols? left, Aw.Context.Core.Lenses.LensSymbols? right) -> bool
+static Aw.Context.Core.Lenses.LensesView.operator !=(Aw.Context.Core.Lenses.LensesView? left, Aw.Context.Core.Lenses.LensesView? right) -> bool
+static Aw.Context.Core.Lenses.LensesView.operator ==(Aw.Context.Core.Lenses.LensesView? left, Aw.Context.Core.Lenses.LensesView? right) -> bool
+static Aw.Context.Core.Map.MapBuildReport.operator !=(Aw.Context.Core.Map.MapBuildReport? left, Aw.Context.Core.Map.MapBuildReport? right) -> bool
+static Aw.Context.Core.Map.MapBuildReport.operator ==(Aw.Context.Core.Map.MapBuildReport? left, Aw.Context.Core.Map.MapBuildReport? right) -> bool
+static Aw.Context.Core.Map.MapPromoted.operator !=(Aw.Context.Core.Map.MapPromoted? left, Aw.Context.Core.Map.MapPromoted? right) -> bool
+static Aw.Context.Core.Map.MapPromoted.operator ==(Aw.Context.Core.Map.MapPromoted? left, Aw.Context.Core.Map.MapPromoted? right) -> bool
+static Aw.Context.Core.Map.ProposedNode.operator !=(Aw.Context.Core.Map.ProposedNode? left, Aw.Context.Core.Map.ProposedNode? right) -> bool
+static Aw.Context.Core.Map.ProposedNode.operator ==(Aw.Context.Core.Map.ProposedNode? left, Aw.Context.Core.Map.ProposedNode? right) -> bool
+static Aw.Context.Core.Overrides.ProposalPayload.operator !=(Aw.Context.Core.Overrides.ProposalPayload? left, Aw.Context.Core.Overrides.ProposalPayload? right) -> bool
+static Aw.Context.Core.Overrides.ProposalPayload.operator ==(Aw.Context.Core.Overrides.ProposalPayload? left, Aw.Context.Core.Overrides.ProposalPayload? right) -> bool
+static Aw.Context.Core.Proposals.GraphStatus.operator !=(Aw.Context.Core.Proposals.GraphStatus? left, Aw.Context.Core.Proposals.GraphStatus? right) -> bool
+static Aw.Context.Core.Proposals.GraphStatus.operator ==(Aw.Context.Core.Proposals.GraphStatus? left, Aw.Context.Core.Proposals.GraphStatus? right) -> bool
+static Aw.Context.Core.Proposals.ProposalsView.operator !=(Aw.Context.Core.Proposals.ProposalsView? left, Aw.Context.Core.Proposals.ProposalsView? right) -> bool
+static Aw.Context.Core.Proposals.ProposalsView.operator ==(Aw.Context.Core.Proposals.ProposalsView? left, Aw.Context.Core.Proposals.ProposalsView? right) -> bool
+static Aw.Context.Core.Proposals.ProposeResult.operator !=(Aw.Context.Core.Proposals.ProposeResult? left, Aw.Context.Core.Proposals.ProposeResult? right) -> bool
+static Aw.Context.Core.Proposals.ProposeResult.operator ==(Aw.Context.Core.Proposals.ProposeResult? left, Aw.Context.Core.Proposals.ProposeResult? right) -> bool
+static Aw.Context.Core.Proposals.ProposedSurface.operator !=(Aw.Context.Core.Proposals.ProposedSurface? left, Aw.Context.Core.Proposals.ProposedSurface? right) -> bool
+static Aw.Context.Core.Proposals.ProposedSurface.operator ==(Aw.Context.Core.Proposals.ProposedSurface? left, Aw.Context.Core.Proposals.ProposedSurface? right) -> bool
+static Aw.Context.Core.Proposals.ScopeProposal.operator !=(Aw.Context.Core.Proposals.ScopeProposal? left, Aw.Context.Core.Proposals.ScopeProposal? right) -> bool
+static Aw.Context.Core.Proposals.ScopeProposal.operator ==(Aw.Context.Core.Proposals.ScopeProposal? left, Aw.Context.Core.Proposals.ScopeProposal? right) -> bool
+static Aw.Context.Core.Review.ReviewDecision.operator !=(Aw.Context.Core.Review.ReviewDecision? left, Aw.Context.Core.Review.ReviewDecision? right) -> bool
+static Aw.Context.Core.Review.ReviewDecision.operator ==(Aw.Context.Core.Review.ReviewDecision? left, Aw.Context.Core.Review.ReviewDecision? right) -> bool
+static Aw.Context.Core.Review.ReviewEntry.operator !=(Aw.Context.Core.Review.ReviewEntry? left, Aw.Context.Core.Review.ReviewEntry? right) -> bool
+static Aw.Context.Core.Review.ReviewEntry.operator ==(Aw.Context.Core.Review.ReviewEntry? left, Aw.Context.Core.Review.ReviewEntry? right) -> bool
+static Aw.Context.Core.Review.ReviewExported.operator !=(Aw.Context.Core.Review.ReviewExported? left, Aw.Context.Core.Review.ReviewExported? right) -> bool
+static Aw.Context.Core.Review.ReviewExported.operator ==(Aw.Context.Core.Review.ReviewExported? left, Aw.Context.Core.Review.ReviewExported? right) -> bool
+static Aw.Context.Core.Review.ReviewQueueView.operator !=(Aw.Context.Core.Review.ReviewQueueView? left, Aw.Context.Core.Review.ReviewQueueView? right) -> bool
+static Aw.Context.Core.Review.ReviewQueueView.operator ==(Aw.Context.Core.Review.ReviewQueueView? left, Aw.Context.Core.Review.ReviewQueueView? right) -> bool
+static Aw.Context.Core.Review.ReviewResult.operator !=(Aw.Context.Core.Review.ReviewResult? left, Aw.Context.Core.Review.ReviewResult? right) -> bool
+static Aw.Context.Core.Review.ReviewResult.operator ==(Aw.Context.Core.Review.ReviewResult? left, Aw.Context.Core.Review.ReviewResult? right) -> bool
+static readonly Aw.Context.Core.ContextErrors.ExtractionUnreadable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.HeavyLockBusy -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.LabelingUnavailable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.NoDraftMap -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.PromoteRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.RepoOutsideScope -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.ReviewFileNoMatch -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.ReviewTargetStale -> Aw.Kernel.ErrorDefinition!

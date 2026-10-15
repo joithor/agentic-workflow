@@ -4,8 +4,11 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
+using Aw.Context.Core.Review;
 using Aw.Kernel;
 
 namespace Aw.Context.Testing.Engine;
@@ -67,6 +70,36 @@ public sealed class FakeContextEngine : IContextEngine
 
     /// <inheritdoc/>
     public ValueTask<Result<PathView>> Path(string from, string to, ContextScope scope, CancellationToken cancellationToken) => NoMap<PathView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<MapBuildReport>> BuildMap(IProgress<string>? progress, ContextScope scope, CancellationToken cancellationToken) => NoMap<MapBuildReport>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ReviewQueueView>> ReviewQueue(ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewQueueView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ReviewResult>> ApplyReview(ReviewDecision decision, ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewResult>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ReviewExported>> ExportReview(string? path, ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewExported>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ReviewResult>> ApplyReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewResult>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken) => NoMap<MapPromoted>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ProposeResult>> Propose(ScopeProposal proposal, ContextScope scope, CancellationToken cancellationToken) => NoMap<ProposeResult>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ProposalsView>> Proposals(string run, ContextScope scope, CancellationToken cancellationToken) => NoMap<ProposalsView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, ContextScope scope, CancellationToken cancellationToken) => NoMap<LensesView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) => NoMap<FileMapView>();
 
     /// <inheritdoc/>
     public ValueTask<Result<MapHealth>> CheckMap(CancellationToken cancellationToken) =>

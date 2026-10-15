@@ -61,5 +61,21 @@ public sealed class FakeGraphStore : IGraphStore
     public ValueTask<Result<int>> Delete(IReadOnlyList<int> versions, CancellationToken cancellationToken) =>
         Done(() => Results.Success(_versions.RemoveAll(v => versions.Contains(v.Version.Number) && v.Version.Status == MapVersionStatus.Retained)));
 
+    /// <inheritdoc/>
+    public ValueTask<Result<MapVersion>> SaveDraft(MapImport map, DateTimeOffset created, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("S-4: SaveDraft is not built yet");
+
+    /// <inheritdoc/>
+    public ValueTask<Result<MapVersion>> OpenDraft(DateTimeOffset created, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("S-4: OpenDraft is not built yet");
+
+    /// <inheritdoc/>
+    public ValueTask<Result<MapVersion>> Promote(int draft, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("S-4: Promote is not built yet");
+
+    /// <inheritdoc/>
+    public ValueTask<Result<int>> AppendOverrides(IReadOnlyList<MapOverride> overrides, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("S-4: AppendOverrides is not built yet");
+
     private ValueTask<Result<T>> Done<T>(Func<Result<T>> work) => ValueTask.FromResult(Failure is { } failure ? failure : work());
 }

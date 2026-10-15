@@ -56,7 +56,8 @@ public static class OverrideApplier
             OverrideAction.Reject => o.Rejection is null || o.Rejection == RejectionIdentity.For(target) ? Remove(graph, target.Key) : graph,
             OverrideAction.Delete => Remove(graph, target.Key),
             OverrideAction.Move or OverrideAction.Merge => WithOther(graph, target, o),
-            OverrideAction.Rename or OverrideAction.Add => null,
+            OverrideAction.Rename or OverrideAction.Add or OverrideAction.Propose or OverrideAction.Undo => null,   // propose and undo are applied by the S-4 layer
+
             _ => null,
         };
     }

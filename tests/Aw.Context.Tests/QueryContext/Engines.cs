@@ -1,26 +1,36 @@
 using System.Text.Json;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
+using Aw.Context.Core.Map;
 using Aw.Context.Core.Sources;
 using Aw.Context.Features;
+using Aw.Context.Features.ApplyReviewFile;
+using Aw.Context.Features.BuildMap;
 using Aw.Context.Features.CheckMap;
 using Aw.Context.Features.CheckRetention;
 using Aw.Context.Features.EvalProbes;
-using Aw.Context.Tests.EvalProbes;
 using Aw.Context.Features.ExportMap;
+using Aw.Context.Features.ExportReview;
 using Aw.Context.Features.FindPath;
-using Aw.Context.Core.Map;
-using Aw.Context.Features.ListNeighbors;
-using Aw.Context.Features.ShowNode;
+using Aw.Context.Features.GetFileMap;
+using Aw.Context.Features.GetLenses;
+using Aw.Context.Features.GetProposals;
 using Aw.Context.Features.ImportMap;
+using Aw.Context.Features.ListNeighbors;
 using Aw.Context.Features.PreviewMap;
+using Aw.Context.Features.PromoteMap;
+using Aw.Context.Features.ProposeFromScope;
 using Aw.Context.Features.PurgeMap;
 using Aw.Context.Features.QueryContext;
 using Aw.Context.Features.RefreshDocs;
+using Aw.Context.Features.ReviewMap;
+using Aw.Context.Features.ReviewQueue;
 using Aw.Context.Features.ShowMapStatus;
+using Aw.Context.Features.ShowNode;
 using Aw.Context.Features.SourcesStatus;
 using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Map;
+using Aw.Context.Tests.EvalProbes;
 using Aw.Kernel.Testing;
 using Microsoft.Extensions.Time.Testing;
 
@@ -40,7 +50,8 @@ internal static class Engines
         var graphs = new MapReader(store);
         return new ContextEngine(new QueryContextService(catalog, scrubbers, new SequentialIdGenerator(), clock, graphs),
             new SourcesStatusService(docs, catalog, scrubbers, clock), new RefreshDocsService(docs, scrubbers), scrubbers, Map(clock, store),
-            new ContextGraph(new ShowNodeService(graphs, scrubbers), new ListNeighborsService(graphs, scrubbers), new FindPathService(graphs, scrubbers)),
+            new ContextGraph(new ShowNodeService(graphs, scrubbers), new ListNeighborsService(graphs, scrubbers), new FindPathService(graphs, scrubbers),
+                new GetLensesService(), new GetFileMapService()),
             Probes(clock));
     }
 
@@ -52,8 +63,10 @@ internal static class Engines
     {
         var exports = new FakeExportStore(clock);
         var reader = new FakeMapFileReader();
-        return new ContextMap(new PreviewMapService(reader), new ImportMapService(reader, store, clock), new ExportMapService(store, exports, clock),
+        var admin = new MapAdmin(new PreviewMapService(reader), new ImportMapService(reader, store, clock), new ExportMapService(store, exports, clock),
             new ShowMapStatusService(store), new CheckMapService(store), new CheckRetentionService(store, exports, clock), new PurgeMapService(store, exports, clock));
+        var review = new MapReview(new ReviewQueueService(), new ReviewMapService(), new ExportReviewService(), new ApplyReviewFileService(), new PromoteMapService());
+        return new ContextMap(admin, review, new MapProposals(new BuildMapService(), new ProposeFromScopeService(), new GetProposalsService()));
     }
 
     internal static IContextEngine Over(params IContextSource[] sources) => Over(new FixedSourceCatalog(sources));
