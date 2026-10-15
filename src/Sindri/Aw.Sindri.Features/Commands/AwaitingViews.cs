@@ -40,6 +40,23 @@ internal sealed class AwaitingViews<TRequest, TResponse>(IService<TRequest, TRes
 
     private async ValueTask<Result<Unit>> Ready(CancellationToken cancellationToken)
     {
+        if (Blocked() is { } blocked)
+        {
+            return blocked;
+        }
+
+        var head = await ledger.Head(cancellationToken).ConfigureAwait(false);
+        if (head.IsError)
+        {
+            return head.Error;
+        }
+
+        var waited = await views.WaitFor(head.Value, Limit, cancellationToken).ConfigureAwait(false);
+        return waited.IsError ? Blocked() ?? waited.Error : waited;   // a stall or rebuild that began during the wait is named, not SND-API-011
+    }
+
+    private Error? Blocked()
+    {
         var status = views.Current;
         if (status.Stalled)
         {
@@ -47,12 +64,6 @@ internal sealed class AwaitingViews<TRequest, TResponse>(IService<TRequest, TRes
                 $"views stalled at {status.StalledAt} ({status.StalledType}); the command wasn't run (fix: sindri views rebuild)"));
         }
 
-        if (status.Rebuilding)
-        {
-            return SindriErrors.ViewsRebuilding.With("views are rebuilding; the command wasn't run, retry in a moment");
-        }
-
-        var head = await ledger.Head(cancellationToken).ConfigureAwait(false);
-        return head.IsError ? head.Error : await views.WaitFor(head.Value, Limit, cancellationToken).ConfigureAwait(false);
+        return status.Rebuilding ? SindriErrors.ViewsRebuilding.With("views are rebuilding; the command wasn't run, retry in a moment") : null;
     }
 }
