@@ -39,6 +39,9 @@ public sealed record MergeFacts
     /// <summary>The scopes the gated diff needs (the scope planner over the gate's main...head); null when unknown.</summary>
     public IReadOnlyList<string>? PlannedScopes { get; init; }
 
+    /// <summary>For each scope the gate vouches for, the run it came from (the newest run at this head and main that ran it); null when only one run is considered.</summary>
+    public IReadOnlyDictionary<string, int>? ScopeRuns { get; init; }
+
     /// <summary>The failing tests each red step's log names, by step name; a step missing here, or with no names, couldn't be read.</summary>
     public IReadOnlyDictionary<string, IReadOnlyList<string>> FailingTests { get; init; } = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
 

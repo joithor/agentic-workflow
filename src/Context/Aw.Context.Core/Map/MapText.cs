@@ -56,7 +56,7 @@ public sealed partial class MapText(Scrubbers scrubbers, FencePolicy policy)
     {
         ArgumentNullException.ThrowIfNull(node);
         var confirmed = node.Provenance == Provenance.Human;
-        var trust = TrustPolicy.For(node.Provenance, confirmed);
+        var trust = TrustPolicy.ForNode(node, confirmed);
         return new NodeFact(node.Key, node.Key.Kind, Label(node.Label, trust), node.Provenance, confirmed, trust, node.Confidence);
     }
 

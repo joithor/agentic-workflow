@@ -29,7 +29,7 @@ public interface IContextMap
 
     /// <summary>Exports the current version (with the override layer) to the exports folder.</summary>
     /// <param name="path">A name or path under the exports folder, or null.</param>
-    /// <param name="scope">The profile's context section and repos, and the caller: a session's export holds only its repo's scope.</param>
+    /// <param name="scope">The profile's context section and repos, and the caller: a session can't export (SND-CONTEXT-020).</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The file, or SND-CONTEXT-001/003/005/020/030/033.</returns>
     public ValueTask<Result<MapExported>> ExportMap(string? path, ContextScope scope, CancellationToken cancellationToken);

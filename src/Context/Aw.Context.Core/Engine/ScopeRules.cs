@@ -27,9 +27,7 @@ public static class ScopeRules
                 $"context.repos: '{unknown[0]}' is not a profile repo (repos: {string.Join(", ", repos.Select(r => r.Name.Value))})");
         }
 
-        var mapped = settings.Repos is { } names
-            ? repos.Where(r => names.Contains(r.Name)).ToList()
-            : [.. repos];
+        var mapped = Mapped(settings, repos).ToList();
         if (caller.Kind != ContextCallerKind.Session)
         {
             return mapped;
@@ -47,10 +45,22 @@ public static class ScopeRules
             : ContextErrors.UnknownAnchor.With("no context is mapped for this session's repo (X-Sindri-Repo)");
     }
 
+    /// <summary>The repos the map is built from and maps: <c xml:lang="en">context.repos</c> narrows the profile's, whoever asks.</summary>
+    /// <param name="settings">The checked settings.</param>
+    /// <param name="repos">The profile's repos.</param>
+    /// <returns>The mapped repos, in profile order.</returns>
+    public static IReadOnlyList<ContextRepo> Mapped(ContextSettings settings, IReadOnlyList<ContextRepo> repos)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(repos);
+        return settings.Repos is { } names ? [.. repos.Where(r => names.Contains(r.Name))] : [.. repos];
+    }
+
     /// <summary>
     /// Whether <paramref name="caller"/> may read <paramref name="source"/> at all. A session reads no intent source
     /// until the profile maps Linear teams to its repo ('context.repoTeams', spec §3, a later stage): without that map
-    /// no intent record is reachable from its repo.
+    /// no intent source can be searched for its repo. The records and decisions linked to its repo's nodes are in the map, not a source, and
+    /// a session sees them regardless (owner decision 2026-10-15, B; <see cref="Graph.RepoScope.WithLinkedIntent"/>).
     /// </summary>
     /// <param name="caller">The caller.</param>
     /// <param name="source">The source.</param>
