@@ -152,10 +152,14 @@ Three layouts were mocked with the same fixture data (`shotgun/contact-sheet.htm
   "Show all N", which expands the panel in place. The summary line always states the totals; the fold rule above says
   what fits.
 - **Detail sheet:** a right-side sheet (default 520 px, resizable 420–760 px, `surface-1`, a `hairline` left rule)
-  over the page, opened from any row with `Enter` or a click on its title. It shows the item, park, decision, service
+  beside the page, opened from any row with `Enter` or a click on its title. It shows the item, park, decision, service
   or job (§4.3–§4.8). `Esc` closes it and returns focus to the row. While it's closed, a slim edge tab shows the last
   opened subject. Below 1100 px window width the sheet covers the full width with a back affordance, and opening it moves focus to its
   heading.
+- **Page beside the sheet** (owner, 2026-10-15; WCAG 2.2 2.4.11): a sheet beside the page never covers page content.
+  The page area is the window width minus the sheet. Rows drop low-priority columns (since, repo, step) as the page
+  narrows, and Home stacks its two panels. Nothing hides under the sheet, the title keeps at least 160 px, and the
+  primary action stays visible.
 - **Pages** behind the top bar (Queue, Decisions, Services, Health) use the same width and panels, with the detail
   sheet on the right.
 - Window minimum 900 × 600. The window remembers its size, the sheet width and the last page (local preference).
