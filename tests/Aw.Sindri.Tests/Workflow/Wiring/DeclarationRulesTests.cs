@@ -98,6 +98,45 @@ public sealed class DeclarationRulesTests
         Assert.Empty(CheckDeclarations(recipe));
     }
 
+    private static Recipe Waiting(RecipeState wait, string key, params string[] produces) =>
+        Of(
+            "produce",
+            [("produce", Active("step.produce")), ("wait", wait), ("done", Terminal())],
+            [Go("produce", "wait", when: Outcome("done")), Go("wait", "done", "wait.satisfied", produces: produces)]) with
+        {
+            Outputs = [Out(key, "wait")],
+        };
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_output_a_waited_for_event_carries_passes_and_one_it_does_not_names_the_event()
+    {
+        Assert.Empty(CheckDeclarations(Waiting(WaitForEvent("item.routed"), "fact:stepSpec")));
+        Assert.Equal(
+            ["RCP-OUT-002: output 'fact:report' comes from state 'wait', but nothing there records it (event 'item.routed' records fact:stepSpec) at r.yaml:5:48 (outputs[0].from); have the state's Step, a transition leaving it ('produces') or its wait record 'fact:report', or name the state that does"],
+            CheckDeclarations(Waiting(WaitForEvent("item.routed"), "fact:report"), At(("outputs[0].from", 5, 48))).Lines());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_output_from_a_resource_wait_errors_unless_a_leaving_transition_produces_it()
+    {
+        Assert.Empty(CheckDeclarations(Waiting(WaitForResource(ResourceKind.Heavy), "fact:report", "fact:report")));
+        Assert.Equal(
+            ["RCP-OUT-002: output 'fact:report' comes from state 'wait', but nothing there records it (resource records nothing) at r.yaml:5:48 (outputs[0].from); have the state's Step, a transition leaving it ('produces') or its wait record 'fact:report', or name the state that does"],
+            CheckDeclarations(Waiting(WaitForResource(ResourceKind.Heavy), "fact:report"), At(("outputs[0].from", 5, 48))).Lines());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_output_from_a_state_whose_block_or_event_is_unknown_is_left_to_the_block_rules()
+    {
+        var unknownStep = Of("produce", [("produce", Active("step.nope")), ("done", Terminal())], [Go("produce", "done", when: Outcome("done"))]) with
+        {
+            Outputs = [Out("fact:report", "produce")],
+        };
+
+        Assert.Empty(CheckDeclarations(unknownStep));
+        Assert.Empty(CheckDeclarations(Waiting(WaitForEvent("no.such"), "fact:report")));
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void An_output_from_a_state_waiting_on_a_child_is_information_when_nothing_records_it()
     {
