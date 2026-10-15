@@ -33,12 +33,15 @@
   <Style Selector="Border.item-row Button">
     <Setter Property="FocusAdorner" Value="{x:Null}" />
   </Style>
-  <!-- N9: focusing changes only the colour. A title button's presenter always has the 2 px border (transparent) and a -2
-       margin that gives its size back; a command control's 1 px border grows to 2 px while its padding gives 1 px up. -->
+  <!-- N9: focusing changes only the colour. A title button's presenter always has the 2 px border (transparent), inside
+       the button so the button's clip keeps the whole ring (B9); the button's -2 margin gives the size back. A command
+       control's 1 px border grows to 2 px while its padding gives 1 px up. -->
+  <Style Selector="Border.item-row Button.row-title">
+    <Setter Property="Margin" Value="-2" />
+  </Style>
   <Style Selector="Border.item-row Button.row-title /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="BorderBrush" Value="Transparent" />
     <Setter Property="BorderThickness" Value="2" />
-    <Setter Property="Margin" Value="-2" />
     <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />
   </Style>
   <Style Selector="Border.item-row Button:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
