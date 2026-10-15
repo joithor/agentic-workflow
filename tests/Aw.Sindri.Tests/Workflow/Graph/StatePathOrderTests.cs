@@ -1,3 +1,4 @@
+using Aw.Kernel.Json;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Testing.Workflow;
 using static Aw.Sindri.Tests.Workflow.Graph.GraphRecipe;
@@ -166,6 +167,25 @@ public sealed class StatePathOrderTests
         var order = Shipped(path);
 
         Assert.All(order.States, s => Assert.True(s.Order is not null || s.BranchOf is not null, $"{path}: {s.State}"));
+    }
+
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("sindri/workflow.item.yaml", "sha256:496cdcbfe884c70dce832d96d21883660f29fffe9b122fcfa72a04c98be8cae3")]
+    [InlineData("sindri/workflow.step.yaml", "sha256:1b13bd920351e56227141fe24e59f2f90cb46bc3549e1e90f2da2af1c3be9f5c")]
+    [InlineData("dev/desk-round-trip.yaml", "sha256:42e9e8ab897f90e38c74f9a3a5aa499f9a56475b4c1a416c0ad5b01a79bb2346")]
+    [InlineData("dev/incident-hold.yaml", "sha256:6913fd55ce71cfcdf6dc8892ad1e5968480506af640cf065b4fece88307af6b4")]
+    [InlineData("dev/triage-three-state.yaml", "sha256:88a0e8fc810fb8dbdccb244b1a601e16743ade3c4230b57c7c0cf782b3ed0f66")]
+    [InlineData("dev/workflow.dev-notify.yaml", "sha256:a37120f25686700c1c0ad665eed881b851bfdcd55f7605fcd5aef46fb3988e87")]
+    [InlineData("dev/workflow.dev-timeout.yaml", "sha256:8156a3b02f9e0d824cf56be5ade5f0b7be81c0ff4a9a5a49c882d68132f3a043")]
+    public void The_path_order_is_not_hashed_so_every_shipped_recipe_keeps_its_hash(string path, string hash)
+    {
+        var document = RecipeComposition.ReadClean(ShippedRecipes.Read(path), Path.GetFileName(path));
+        var json = System.Text.Encoding.UTF8.GetString(AwJson.Serialize(document.Recipe, SliceHarness.Json));
+
+        Assert.Equal(hash, document.Hash.Value);
+        Assert.DoesNotContain("orderedBy", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("branchOf", json, StringComparison.Ordinal);
     }
 
     public static TheoryData<string> Recipes => [.. ShippedRecipes.Recipes];

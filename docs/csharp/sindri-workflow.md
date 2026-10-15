@@ -124,16 +124,28 @@ form under its hash: `registered <id>@<hash12> (unapproved)`, or `already regist
 failing rule is `SND-RECIPE-001`, each followed by its rule lines.
 
 `sindri recipe show <id@hash> [--json]` (a query; the hash by 8 or more digits) prints the recipe's line, then `urgency: <urgency>`, one
-`input: <key> type=<type> kind=<kind|->` line per input and one `output: <key> type=<type> from=<state>` line per output, then the approval preview;
-an unknown hash is `SND-RECIPE-002`. `show --json` prints the server's body, `{"recipe":{id, version, hash, standing, via, stale, inputs, urgency, outputs},"preview":{…}}`: the recipe object has the same fields as a `recipe list --json` row, so a client reads urgency, inputs and outputs the same way from either. `sindri recipe list [--stale] [--json]` prints one line per registered recipe,
+`input: <key> type=<type> kind=<kind|->` line per input and one `output: <key> type=<type> from=<state>` line per output, then the path order (below), then the approval preview;
+an unknown hash is `SND-RECIPE-002`. `show --json` prints the server's body, `{"recipe":{id, version, hash, standing, via, stale, inputs, urgency, outputs, orderedBy, states, loops},"preview":{…}}`: the recipe object has the same fields as a `recipe list --json` row, so a client reads urgency, inputs, outputs and the path order the same way from either. `sindri recipe list [--stale] [--json]` prints one line per registered recipe,
 `<id>@<hash12> <standing> (<via>)[; stale: …]`, where standing is `approved`, `unapproved` or `revoked` and stale names
 `pin-drift` (a pinned block's descriptor changed in this build) or `child-stale` (a pinned child was revoked);
 `--stale` keeps only the approved ones that are stale. `--json` prints the server's body,
-`{"recipes":[{id, version, hash, standing, via, stale, inputs, urgency, outputs}]}`, where an input is `{key, label, type, kind}`
+`{"recipes":[{id, version, hash, standing, via, stale, inputs, urgency, outputs, orderedBy, states, loops}]}`, where an input is `{key, label, type, kind}`
 (type and kind `null` when not declared) and an output is `{key, label, type, from}`. A row registered before `urgency`, `outputs` and
 `inputs[].kind` existed keeps its stored text and hash and lists with the defaults (`work`, no outputs, no kinds); registering the same
 file again hashes differently and is `SND-RECIPE-007` naming `RCP-VERSION-001` until the author raises `version`. The queries never start the control plane: when it
 isn't running they print `SND-API-001 not running: …` and exit 1.
+
+**Path order (spec §3.10, UI E-20).** `recipe show` and `recipe list --json` carry the recipe's states in path order, computed from the
+transition graph by `StatePathOrder` and never hashed (a recipe's hash is the same with or without it): `orderedBy` (`path`, or
+`transition-list` when `initial` has more than one distinct first target other than itself), `states[]` (`id`, `order`, `branchOf`) and
+`loops[]` (`name`, `from`, `to`). Text form: `order: <orderedBy>`, one `state: <name> order=<n>|branch-of=<state>|order=-` line per state and
+one `loop: <name|-> <from> -> <to>` line per loop edge. The walk starts at `initial` and follows each state's transitions in list order:
+the first to a state not yet seen continues the main path, a later one is a branch and every state only that branch reaches is folded
+under the state it leaves (`branchOf`, no `order`); a transition back to a state still on the walk is a loop edge, named by the looping
+state's `loop:` (else the target's), listed in the order the walk finds them. Terminal states are numbered after the non-terminal ones in
+the order the walk found them, wherever they were reached from; a state the walk never reaches is listed last with neither. `order`
+starts at 1 (WF spec §3.10; the API spec's StateCell says 0-based, an open cross-spec question), set in one place
+(`StatePathOrder.FirstOrder`).
 
 ## `sindri recipe approve` and `sindri recipe revoke`
 

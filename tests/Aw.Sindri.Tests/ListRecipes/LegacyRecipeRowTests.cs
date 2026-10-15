@@ -81,6 +81,6 @@ public sealed class LegacyRecipeRowTests
 
         Assert.Equal("path", line.OrderedBy);
         Assert.Equal(["produce=1", "checks=2", "verify=3", "done=4"], line.States.Select(s => $"{s.State}={s.Order?.ToString(System.Globalization.CultureInfo.InvariantCulture)}"), StringComparer.Ordinal);
-        Assert.Equal(["checks>produce", "verify>produce"], line.Loops.Select(l => $"{l.From}>{l.To}"), StringComparer.Ordinal);
+        Assert.Equal(["verify>produce", "checks>produce"], line.Loops.Select(l => $"{l.From}>{l.To}"), StringComparer.Ordinal);
     }
 }
