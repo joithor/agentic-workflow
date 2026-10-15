@@ -1,7 +1,9 @@
 using Aw.Context.Core.Docs;
+using Aw.Context.Core.Eval;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Trust;
 using Aw.Context.Infrastructure.Docs;
+using Aw.Context.Infrastructure.Eval;
 using Aw.Context.Infrastructure.Git;
 using Aw.Context.Infrastructure.Graph;
 using Aw.Context.Infrastructure.Map;
@@ -17,7 +19,7 @@ public static class ContextInfrastructureServiceCollectionExtensions
     /// <summary>
     /// Adds the context store (context.db under $AW_SINDRI_HOME/context), git, the repo-docs index and source catalog,
     /// the scrubber factory over Aw.Redaction (each call's scrubbers carry the profile's extra patterns), the graph store,
-    /// the map file reader and the exports folder. Needs a TimeProvider and the host's AwJson options (a
+    /// the map file reader, the exports folder, the probe file reader and the probe reports folder. Needs a TimeProvider and the host's AwJson options (a
     /// JsonSerializerOptions singleton whose context holds the map types), both registered by the host.
     /// </summary>
     /// <param name="services">The service collection.</param>
@@ -33,5 +35,7 @@ public static class ContextInfrastructureServiceCollectionExtensions
             .AddSingleton<IDocIndex, SqliteDocIndex>()
             .AddSingleton<IGraphStore, SqliteGraphStore>()
             .AddSingleton<IMapFileReader, MapFileReader>()
-            .AddSingleton<IExportStore, FileExportStore>();
+            .AddSingleton<IExportStore, FileExportStore>()
+            .AddSingleton<IProbeFileReader, ProbeFileReader>()
+            .AddSingleton<IProbeReportStore, FileProbeReportStore>();
 }
