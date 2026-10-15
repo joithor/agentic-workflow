@@ -264,20 +264,51 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) 
             await Armed(handle, timers: 1, window);
             var original = await Pins(sindri, recipe);
             await Drift(sindri, recipe);
-            await Task.Delay(window + TimeSpan.FromSeconds(1), Token);
-            var refused = Assert.Single(await EffectRows.Eventually(sindri, OutboxEvents.Refused, CommandOrigin.Recipe));
+            var refused = Assert.Single(await EffectRows.Eventually(sindri, OutboxEvents.Refused, CommandOrigin.Recipe));   // polls until the delay's recheck refuses
             _ = await WorkflowsHarness.Until(handle, static v => v.State == "parked");
 
             _ = await Pins(sindri, recipe, original);   // the re-approval: the pins match this build again
             var woken = await sindri.GetRequiredService<IRecipeWake>().Wake(new RecipeWakeNotice(recipe.Hash, RecipeWakeKind.Approved, Sequence: 99, "human:cli"), Token);
             _ = await WorkflowsHarness.Until(handle, static v => v.State == "sent");
             await Armed(handle, timers: 2, window);
-            await Task.Delay(window + TimeSpan.FromSeconds(1), Token);
-            var dispatched = Assert.Single(await EffectRows.Eventually(sindri, OutboxEvents.Dispatched, CommandOrigin.Recipe));
+            var dispatched = Assert.Single(await EffectRows.Eventually(sindri, OutboxEvents.Dispatched, CommandOrigin.Recipe));   // polls until the delay passes
 
             Assert.True(woken.IsSuccess);
             Assert.Equal(refused.Identity, dispatched.Identity);
             Assert.Equal([refused.Identity], _desk.RecipePerformed);
+            await handle.TerminateAsync("test over");
+        }, Token);
+    }
+
+    /// <summary>The revoke's wake reaches the instance through Temporal and parks it (revoked) at once, before the dispatch delay ends (§4.1, §3.8).</summary>
+    [Fact]
+    public async Task A_revoke_wakes_the_instance_into_a_revoked_park_before_the_dispatch_delay_ends()
+    {
+        var window = TimeSpan.FromSeconds(5);   // the profile's shortest dispatch delay: the dev server runs in real time
+        await using var env = await WorkflowsHarness.StartDevServer(ct: Token);
+        var recipe = _harness.Approve(WorkflowsHarness.Shipped("dev/workflow.dev-notify.yaml"));
+        await Allow("5s", _notify);
+        await using var sindri = Sindri(env);
+        await WorkflowsHarness.HoldLease(sindri, Token);
+        using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
+
+        await worker.ExecuteAsync(async () =>
+        {
+            _ = await WorkflowsHarness.AsServe(sindri, env, Token);
+            var handle = await Completed(sindri, "T-101", env);
+            await Armed(handle, timers: 1, window);
+            _harness.Revoke(recipe);
+            var woken = await sindri.GetRequiredService<IRecipeWake>().Wake(new RecipeWakeNotice(recipe.Hash, RecipeWakeKind.Revoked, Sequence: 98, "human:cli"), Token);
+            var parked = await WorkflowsHarness.Until(handle, static v => v.State == "parked");
+            var early = await EffectRows.Of(sindri, OutboxEvents.Refused, CommandOrigin.Recipe);   // the delay (5 s) is still running: no recheck has refused anything yet
+
+            Assert.True(woken.IsSuccess);
+            Assert.Equal("spec-conflict (revoked)", parked.Detail);
+            Assert.Empty(early);
+            var refused = Assert.Single(await EffectRows.Eventually(sindri, OutboxEvents.Refused, CommandOrigin.Recipe));   // the delay ends: the recheck refuses, and the park stays the revoke's
+            var after = await WorkflowsHarness.Until(handle, static v => v.State == "parked");
+            Assert.Equal(("SND-RECIPE-005", "spec-conflict (revoked)"), (refused.Code, after.Detail));
+            Assert.Empty(_desk.RecipeCalls);
             await handle.TerminateAsync("test over");
         }, Token);
     }

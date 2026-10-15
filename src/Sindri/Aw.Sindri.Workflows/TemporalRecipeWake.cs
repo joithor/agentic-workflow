@@ -1,4 +1,5 @@
 using Aw.Kernel;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -15,7 +16,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// there is nobody to wake and the registry change still stands.
 /// </summary>
 /// <param name="frontend">Finds the dev server.</param>
-internal sealed class TemporalRecipeWake(TemporalFrontend frontend) : IRecipeWake
+internal class TemporalRecipeWake(TemporalFrontend frontend) : IRecipeWake
 {
     private const string Actor = "service:engine";
 
@@ -36,6 +37,7 @@ internal sealed class TemporalRecipeWake(TemporalFrontend frontend) : IRecipeWak
         }
 
         var wake = new RecipeWake(Actor, notice.Kind, notice.Sequence);
+        List<string> failed = [];
         foreach (var address in await Open(notice.Hash, cancellationToken).ConfigureAwait(false))
         {
             try
@@ -47,13 +49,19 @@ internal sealed class TemporalRecipeWake(TemporalFrontend frontend) : IRecipeWak
             {
                 continue;
             }
+            catch (RpcException e)   // boundary: one instance's signal failing must not abandon the others; every one is tried, then the failures are reported
+            {
+                failed.Add($"{address.Value}: {e.Message}");
+            }
         }
 
-        return Unit.Value;
+        return failed.Count == 0
+            ? Unit.Value
+            : SindriErrors.NotRunning.With($"Temporal didn't take the {notice.Kind} wake for {failed.Count} instance(s): {string.Join("; ", failed)} (fix: the instances wake on the next approval or revoke; retry it)");
     }
 
     /// <summary>The open instances running <paramref name="hash"/>; none when nothing serves this home.</summary>
-    private async ValueTask<IReadOnlyList<InstanceAddress>> Open(RecipeHash hash, CancellationToken cancellationToken)
+    internal virtual async ValueTask<IReadOnlyList<InstanceAddress>> Open(RecipeHash hash, CancellationToken cancellationToken)
     {
         var client = await frontend.Connect(flag: null, cancellationToken).ConfigureAwait(false);
         if (client.IsError)
