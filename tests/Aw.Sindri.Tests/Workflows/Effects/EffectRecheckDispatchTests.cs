@@ -187,6 +187,34 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) 
         }, Token);
     }
 
+    /// <summary>A cancel while the failing effect waits out its retry backoff stops the retries: no later send (PR 232 run 2, S1).</summary>
+    [Fact]
+    public async Task A_cancel_during_the_retry_backoff_sends_nothing_further()
+    {
+        var env = server.Environment;
+        _harness.Recipe("workflow.dev-notify", WorkflowsHarness.Shipped("dev/workflow.dev-notify.yaml"));
+        await Allow(_notify);
+        _desk.Failure = Core.Workflow.WorkflowErrors.TriggerNotAllowed.With("the desk is down");
+        await using var sindri = Sindri();
+        await WorkflowsHarness.HoldLease(sindri, Token);
+        using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
+
+        await worker.ExecuteAsync(async () =>
+        {
+            var handle = await Completed(sindri, "T-97");
+            await Armed(handle, timers: 1);
+            await env.DelayAsync(_delay + TimeSpan.FromSeconds(1), Token);
+            var tried = _desk.RecipeCalls.Count;
+            Assert.InRange(tried, 1, Kernel.Outbox.OutboxRetryPolicy.Default.MaxAttempts - 1);   // one or more attempts failed; the next waits in its backoff
+
+            _ = await handle.ExecuteUpdateAsync(wf => wf.CancelAsync(Cancel()), new WorkflowUpdateOptions(new string('c', 32)));
+            await env.DelayAsync(TimeSpan.FromHours(4), Token);
+
+            Assert.Equal("cancelled", (await handle.GetResultAsync()).State);
+            Assert.Equal(tried, _desk.RecipeCalls.Count);
+        }, Token);
+    }
+
     /// <summary>A revoke after the delay but before the activity runs is still honoured: the run re-checks the approval.</summary>
     [Fact]
     public async Task RunEffect_refuses_when_the_recipe_was_revoked_after_the_delay()
@@ -268,6 +296,7 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) 
             _ = await WorkflowsHarness.Until(handle, static v => v.State == "parked");
 
             _ = await Pins(sindri, recipe, original);   // the re-approval: the pins match this build again
+            await Visible(sindri, recipe.Hash);
             var woken = await sindri.GetRequiredService<IRecipeWake>().Wake(new RecipeWakeNotice(recipe.Hash, RecipeWakeKind.Approved, Sequence: 99, "human:cli"), Token);
             _ = await WorkflowsHarness.Until(handle, static v => v.State == "sent");
             await Armed(handle, timers: 2, window);
@@ -298,6 +327,7 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) 
             var handle = await Completed(sindri, "T-101", env);
             await Armed(handle, timers: 1, window);
             _harness.Revoke(recipe);
+            await Visible(sindri, recipe.Hash);
             var woken = await sindri.GetRequiredService<IRecipeWake>().Wake(new RecipeWakeNotice(recipe.Hash, RecipeWakeKind.Revoked, Sequence: 98, "human:cli"), Token);
             var parked = await WorkflowsHarness.Until(handle, static v => v.State == "parked");
             var early = await EffectRows.Of(sindri, OutboxEvents.Refused, CommandOrigin.Recipe);   // the delay (5 s) is still running: no recheck has refused anything yet
@@ -311,6 +341,24 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) 
             Assert.Empty(_desk.RecipeCalls);
             await handle.TerminateAsync("test over");
         }, Token);
+    }
+
+    /// <summary>Polls until the visibility store lists a running instance of the recipe: the wake finds instances through it, so waking earlier races the indexing.</summary>
+    private static async Task Visible(IServiceProvider sindri, RecipeHash hash)
+    {
+        var wake = sindri.GetRequiredService<TemporalFrontend>();
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+        while (true)
+        {
+            var running = await new TemporalRecipeWake(wake).Running(hash, Token);
+            if (running.IsSuccess && running.Value.Count > 0)
+            {
+                return;
+            }
+
+            Assert.True(DateTime.UtcNow < deadline, "the visibility store never listed the instance");
+            await Task.Delay(100, Token);
+        }
     }
 
     /// <summary>The pins of the latest approval of <paramref name="recipe"/>; with <paramref name="set"/>, a newer approval carrying those pins.</summary>

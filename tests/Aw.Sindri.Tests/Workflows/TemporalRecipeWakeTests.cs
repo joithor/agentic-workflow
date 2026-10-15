@@ -47,9 +47,9 @@ public sealed class TemporalRecipeWakeTests : IDisposable
             var drifted = new RecipeWakeNotice(notify.Hash, RecipeWakeKind.Drifted, Sequence: 5, "human:cli");
 
             // The RecipeHash filter and Running(): two instances on different hashes, only the matching one listed and woken.
-            var woken = await wake.Wake(drifted, Token);
-            Assert.Equal([InstanceIdOf(a)], await Listed(wake, notify.Hash));
+            Assert.Equal([InstanceIdOf(a)], await Listed(wake, notify.Hash));   // visibility lists them before the wake looks (it finds instances through the visibility store)
             Assert.Equal([InstanceIdOf(b)], await Listed(wake, timeout.Hash));
+            var woken = await wake.Wake(drifted, Token);
             Assert.True(woken.IsSuccess);
             Assert.Equal((1, 0), (await Signals(a), await Signals(b)));
 

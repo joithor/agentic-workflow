@@ -67,6 +67,19 @@ public sealed class FileDeskNoticesTests : IDisposable
         _ = Assert.Single(_os.Shown);
     }
 
+    /// <summary>A restart builds a new instance on the same home: it seeds what was written, so a re-sent identity writes and shows nothing (PR 232 run 2, I7).</summary>
+    [Fact]
+    public async Task A_repeat_through_a_new_instance_on_the_same_home_writes_and_shows_nothing()
+    {
+        _ = await Notices().Send(DeskNoticesContract.Notice("WFI-a:1:n1"), Token);
+
+        var again = await Notices().Send(DeskNoticesContract.Notice("WFI-a:1:n1"), Token);
+
+        Assert.False(again.Value);
+        _ = Assert.Single(await File.ReadAllLinesAsync(Path.Combine(_home.Path, "notifications.jsonl"), Token));
+        _ = Assert.Single(_os.Shown);
+    }
+
     private FileDeskNotices Notices() =>
         new(new SindriSettings(_home.Path, Path.Combine(_home.Path, "profile.yaml")), _os, SliceHarness.Json);
 }

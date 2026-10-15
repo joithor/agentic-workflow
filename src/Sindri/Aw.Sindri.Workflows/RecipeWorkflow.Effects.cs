@@ -126,11 +126,17 @@ internal sealed partial class RecipeWorkflow
 
             var run = new EffectRun(after.Address.Value, after.Item.Value, after.Attempt, effect, row.Command, TextOf(after, effect), after.Facts, _recipe!.Version);   // why: effects run only after Begin set _recipe
             var options = (ActivityOptions)EffectActivities.RunOptions.Clone();
+            options.CancellationToken = Effects().Token;   // a cancel of the instance stops the retries too, not only the delay
             options.TaskQueue = Workflow.Info.TaskQueue;   // the instance's queue, from settings (never a constant)
             try
             {
                 _ = await Workflow.ExecuteActivityAsync((EffectActivities a) => a.RunAsync(run), options).ConfigureAwait(true);
                 _ = _effectsSent.Add(row.Identity);
+            }
+            catch (ActivityFailureException e) when (e.InnerException is CanceledFailureException && Effects().IsCancellationRequested)
+            {
+                // The instance was cancelled while the effect retried: it stops there, unsent, and the row says why.
+                _ = await Record(row with { State = EffectState.Cancelled, Reason = "cancelled: the instance was cancelled while the effect retried" }).ConfigureAwait(true);
             }
             catch (ActivityFailureException e) when (e.InnerException is not CanceledFailureException)
             {
