@@ -75,6 +75,9 @@ internal sealed class CommandPaletteViewModel : ObservableObject
     /// <summary>Every matching entry, in order.</summary>
     public IReadOnlyList<PaletteEntry> Entries { get; private set => Set(ref field, value); } = [];
 
+    /// <summary>The polite live region's text: never empty (Avalonia #22312 crashes VoiceOver on an empty live region).</summary>
+    public string Announcement { get; private set => Set(ref field, value); } = string.Empty;
+
     /// <summary>True when nothing matches the query.</summary>
     public bool IsEmpty => Entries.Count == 0;
 

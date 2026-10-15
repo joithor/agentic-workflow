@@ -276,4 +276,58 @@ public sealed class CommandPaletteViewModelTests
         Assert.Equal((true, string.Empty), (_palette.IsOpen, _palette.Query));
         Assert.Equal(3, _palette.Sections.Count);
     }
+
+    // F1 (a11y-0, a11y-1): the live region is never empty (Avalonia #22312) and says the selected entry on every change.
+    [Fact]
+    public void The_announcement_is_never_empty_and_names_the_selected_entry()
+    {
+        var seen = new List<string>();
+        _palette.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(CommandPaletteViewModel.Announcement))
+            {
+                seen.Add(_palette.Announcement);
+            }
+        };
+
+        _palette.Open();
+        Assert.Contains(_palette.Selected!.Name, _palette.Announcement, StringComparison.Ordinal);
+
+        _palette.Move(1);
+        Assert.Contains(_palette.Selected!.Name, _palette.Announcement, StringComparison.Ordinal);
+        Assert.Contains("2 of", _palette.Announcement, StringComparison.Ordinal);
+
+        _palette.Query = "queue";
+        Assert.Contains("Queue", _palette.Announcement, StringComparison.Ordinal);
+
+        _palette.Query = "zzzz";
+        Assert.Equal("Nothing matches", _palette.Announcement);
+        Assert.All(seen, Assert.NotEmpty);
+        Assert.NotEmpty(_palette.Announcement);
+    }
+
+    // F1: "Copied" after a copy reaches the live region too (the selected entry's name changes under it).
+    [Fact]
+    public async Task A_copy_changes_the_announcement()
+    {
+        _palette.Open();
+        _palette.Query = "approve profile";
+
+        await _palette.Run(_palette.Selected, Token);
+
+        Assert.Contains("Copied", _palette.Announcement, StringComparison.Ordinal);
+    }
+
+    // F1 (arch-2, corr-5): opening again must not stack subscriptions on the long-lived controls.
+    [Fact]
+    public void Opening_again_reuses_the_entries_while_the_catalog_is_unchanged()
+    {
+        _palette.Open();
+        var first = _palette.Entries.ToList();
+        _palette.Close();
+
+        _palette.Open();
+
+        Assert.Equal(first, _palette.Entries);
+    }
 }
