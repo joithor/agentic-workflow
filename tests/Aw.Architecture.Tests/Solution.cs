@@ -49,6 +49,16 @@ internal static class Solution
         return path is null ? project : AssemblyNameIn(XDocument.Load(Path.Combine(RepoRoot, path)), project);
     }
 
+    /// <summary>The root namespace of a solution project: its &lt;RootNamespace&gt;, else the project name.</summary>
+    /// <param name="project">The project name, e.g. Aw.Sindri.Workflows.</param>
+    /// <returns>The root namespace, or the project name when the project isn't in the solution or sets none.</returns>
+    public static string RootNamespaceOf(string project)
+    {
+        var path = ProjectPaths.FirstOrDefault(p => NameOf(p) == project);
+        return path is null ? project : XDocument.Load(Path.Combine(RepoRoot, path)).Descendants("RootNamespace")
+            .Select(e => e.Value.Trim()).LastOrDefault(v => v.Length > 0) ?? project;
+    }
+
     /// <summary>The &lt;AssemblyName&gt; a project file sets, else the project name.</summary>
     /// <param name="projectFile">The parsed .csproj.</param>
     /// <param name="project">The project name.</param>

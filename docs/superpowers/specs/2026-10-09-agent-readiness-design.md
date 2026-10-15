@@ -100,10 +100,11 @@ and ports to native apps without a rewrite:
   (`AvaloniaUseCompiledBindingsByDefault`, every view has an `x:DataType`, no `ReflectionBinding`), so the app stays
   trim- and AOT-safe.
 - **A client, not a second implementation:** the app talks to Sindri's host over its versioned HTTP API (factory
-  addendum §17.27.1) and holds no logic of its own: no extra checks, shortcuts or UI-only state. It is its own
-  package (`SindriUi` in `deps.yaml`, above `Sindri`) and references no Sindri project: Sindri's HTTP contract is
-  its only edge. `deps.yaml` has no `http` edge kind yet (today: `project`, `cli`, `db`, `file`); the first UI PR
-  adds it to the schema and `check-deps.mjs`. Its own platform services (notifications, tray icon, opening
+  addendum §17.27.1) and holds no logic of its own: no extra checks, shortcuts or UI-only state changes (its only own state is local presentation preferences under
+  ui/). It is its own
+  package (`SindriUi` in `deps.yaml`, above `Sindri`) and references no Sindri project: Sindri's HTTP contract (and two files under Sindri's
+  home: the endpoint record `control.json` it finds the API by, and the per-start human token `auth/human.token`) is its only edge. The first UI PR (#184, which superseded #168) added the `http` edge kind to `deps.yaml`, the schema and
+  `check-deps.mjs`. Its own platform services (notifications, tray icon, opening
   apps for attach, passkeys) sit behind ports in `Aw.Sindri.Ui`, one adapter per platform in the heads.
 - **Dependencies:** the MIT-licensed Avalonia packages only (no Avalonia XPF or paid add-ons), under the same
   Central Package Management, pinning and 14-day rules as every package (§4b.6).
@@ -235,7 +236,9 @@ splits now is §9 R17.
 ### 4b.1a No cycles, no spider web
 
 The dependency graph is a **declared, layered, acyclic tree** at every level, and CI fails on any drift from the
-declaration.
+declaration. The one allowed exception is a package cycle closed by a `cli` or `http` edge, under a reviewed, dated
+`DEPS-CYCLE-001` exception in `deps.yaml` that names that edge and covers exactly that cycle (owner, 2026-10-12: bare
+`sindri` launching `sindri-ui`).
 
 **Package tiers** (a package takes `project` dependencies only on lower tiers; read-only `db` and `file` edges may also point across a tier, see the direction rule below):
 
@@ -245,7 +248,7 @@ declaration.
 | 1 | `Judge`, `Packets`, `Readiness` | Tier 0 |
 | 2 | `Scorer`, `Evidence` (ui-evidence), `BugFix` | Tiers 0–1 (today they call judge, and scorer reads `judge.db`) |
 | 3 | `Sindri` | Tiers 0–2, **only through their `Core` contracts or their CLIs** (every package reaches a non-tier-0 package only through its `Core`; `deps.yaml` check DEPS-PROJ-007) |
-| 4 | `SindriUi` (the Avalonia app, §4a "UI") | No project edges: Sindri's HTTP contract only |
+| 4 | `SindriUi` (the Avalonia app, §4a "UI") | Tier-0 project edges only (no Sindri project); Sindri's HTTP API (http edge), and its endpoint record `control.json` and human token `auth/human.token` (one file edge) |
 | — | Every `Host` | Its own package's projects, plus the tier-0 and lower-tier `Core`s it composes |
 
 - **Tier 0 is ordered inside:** it is the one tier with internal project references. `deps.yaml` gives each tier-0
@@ -255,11 +258,15 @@ declaration.
   package's `Core`; `Core` and `Infrastructure` never reference a package above tier 0 (DEPS-PROJ-008). Test
   projects follow their owning package's edges.
 - **Declared graph, every edge kind:** `deps.yaml` (with a JSON Schema) lists each package's tier and every allowed
-  edge, with its kind: `project` (a reference), `cli` (one package runs another's binary), `db` (one package opens
-  another's SQLite file) or `file` (shared state files). Project edges are checked against the real references. CLI,
-  database and file edges are checked by a scan of process launches, connection strings and known state paths. Any
-  undeclared edge fails CI. **Direction:** `project` edges point strictly down the tiers; `db` and `file` edges
-  point down or across, are read-only, and are slated to become CLIs or published views over time (today: scorer
+  edge, with its kind: `project` (a reference), `compose` (a `Host` references a lower-tier package's `Features` and
+  `Infrastructure` to call their `Add…()` registration methods only; context spec §4), `cli` (one package runs
+  another's binary), `db` (one package opens another's SQLite file), `file` (shared state files) or `http` (one
+  package calls another's HTTP API, which that package declares as `routes`). Project and compose edges are checked
+  against the real references. CLI, database and file edges are checked by a scan of process launches, connection
+  strings and known state paths; http edges by a scan of C# string literals for another package's route prefix
+  (`DEPS-KIND-004` for an http edge to a package with no routes). Any undeclared edge fails CI. **Direction:**
+  `project` and `compose` edges point strictly down the tiers; `cli` and `http` edges may point anywhere (a CLI or an
+  HTTP API is a contract); `db` and `file` edges point down or across, are read-only, and are slated to become CLIs or published views over time (today: scorer
   reads `judge.db`, and reads Evidence's run files across tier 2, §4e B10). Adding an edge is
   a reviewed change to `deps.yaml` (and an approval-tier change once it is a rule record).
 - **Prefer contracts over references:** a package calls a same-tier or higher-tier package only through its CLI or
@@ -650,7 +657,8 @@ one that is merged; any other is still open, and its rule record (§4b intro) sa
 | Service-locator types only in `Host` and registration classes | ARCH-DI-001 | same | #131 (main) |
 | No technology types in `Core`, `Features` or the small shape's `App.Commands` (`Host` may use them); only `Composition` uses `Infrastructure` | ARCH-PORT-001, ARCH-PORT-002 | same | #131 (main) |
 | Typed ids (R9: defaults, user-code converter) | ARCH-ID-001, ARCH-ID-002 (`TypedIdGuard`, moved from `Aw.Kernel.Tests`) | same | #131 (main) |
-| The `Packages.Production` registry matches the solution | ARCH-REG-001, ARCH-REG-002 | same | #131 (main) |
+| The `Packages.Production` registry matches the solution, and every non-layer project is declared unshaped | ARCH-REG-001, ARCH-REG-002, ARCH-REG-003 | same | #131 (main), #184 |
+| The UI package: no Sindri type, plain view models, thin heads | ARCH-UI-001 | same | #184 |
 | Raw ids in public `Core`/`Features` signatures; `!` without `// why:`; endpoint lambda calls exactly one service; file ≤ 300 lines; parameters ≤ 5; constructor dependencies > 7 (error) and 6–7 (`suggestion`); generic arity ≤ 3 | AW1001, AW1002, AW1004, AW1005, AW1006, AW1007, AW1008, AW1009 | `Aw.Analyzers` (`CA1005` off, owned by AW1009) | #132 |
 | Per-test lane cap; exactly one known lane | LANE-TEST-001, LANE-TEST-002 | `tests/Aw.LaneCap.Testing` over CTRF reports | #133 (main) |
 | Per-package lane budget; a timed lane run failed | LANE-PKG-001, LANE-PKG-002 | `node scripts/ci/lane-budgets.mjs` (CI .NET job) | #138 |

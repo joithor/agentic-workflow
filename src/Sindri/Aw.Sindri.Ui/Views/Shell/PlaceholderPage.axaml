@@ -1,0 +1,14 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:Aw.Sindri.Ui.Views.Shell"
+             xmlns:shell="using:Aw.Sindri.Ui.ViewModels.Shell"
+             x:Class="Aw.Sindri.Ui.Views.Shell.PlaceholderPage"
+             x:DataType="shell:ShellViewModel">
+  <!-- A page whose route the API doesn't serve yet (§10.2): its title and "not served yet", never faked. -->
+  <StackPanel Spacing="12">
+    <TextBlock Classes="page-title" Text="{Binding $parent[views:PlaceholderPage].Title}"
+               AutomationProperties.Name="{Binding $parent[views:PlaceholderPage].Title}" />
+    <TextBlock Classes="body muted" Text="{Binding Text.NotServedYet}"
+               AutomationProperties.Name="{Binding Text.NotServedYet}" />
+  </StackPanel>
+</UserControl>

@@ -4,8 +4,9 @@
 //   node scripts/check-deps.mjs [--root DIR] [--mermaid [--base-file FILE]]
 //
 // Validates deps.yaml against schemas/deps.schema.json; checks the reference, kind, tier, cycle and
-// fan-out rules; scans the TypeScript packages, hooks and statusline for cli/db/file edges and fails on
-// any undeclared one or any whose status is wrong; and, once src/ or tests/ have C# projects, checks
+// fan-out rules; scans the TypeScript packages, hooks and statusline for cli/db/file edges, and the C#
+// projects for http, file and db edges (string literals naming another package's routes or state paths), and
+// fails on any undeclared one or any whose status is wrong; and, once src/ or tests/ have C# projects, checks
 // their ProjectReferences, per-project fan-out and project- and compose-edge status. A compose edge lets a Host
 // reference a lower package's Features and Infrastructure for their Add…() registration methods (DEPS-COMPOSE-001;
 // ARCH-COMPOSE-001 checks the calls in the compiled Host). --mermaid also prints the graph
@@ -17,7 +18,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { YamlError, parseYaml } from "./deps/yaml.mjs";
 import { SchemaError, SUPPORTED_KEYWORDS, validate } from "./deps/schema.mjs";
-import { ScanError, buildFiles, readProjects, scan } from "./deps/scan.mjs";
+import { ScanError, buildFiles, readProjects, scan, scanCSharp } from "./deps/scan.mjs";
 
 export { parseYaml, validate, SUPPORTED_KEYWORDS };
 
@@ -139,6 +140,14 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
       continue;
     }
     if (x.expires < today) { fail("DEPS-EXC-001", "expired exception", `${x.rule} for ${x.subject} expired ${x.expires} (today ${today})`, "an exception is valid until its expires date", "fix the violation, or renew the exception in a reviewed PR with a new reason and dates"); continue; }
+    if (x.excuses) { // DEPS-CYCLE-001: the one declared cli or http edge it excuses, leaving its subject; covered at the cycle check
+      const at = `${x.excuses.from} -> ${x.excuses.to} (${x.excuses.kind})`;
+      const why = x.excuses.from !== x.subject ? `${at} does not leave ${x.subject}` : !seenEdges.has(`${x.excuses.from}|${x.excuses.to}|${x.excuses.kind}`) ? `${at} is not a declared edge` : null;
+      if (why) { fail("DEPS-EXC-005", "cycle exception excuses an edge it can't", `${x.rule} for ${x.subject}: ${why}`, "a DEPS-CYCLE-001 exception excuses one declared cli or http edge leaving its subject", `declare (from: ${x.subject}, to: <package>, kind: cli or http) and name it under excuses, or fix the exception's excuses`); continue; }
+      active.push({ ...x, used: false, measured: null });
+      info.push(`exception ${x.rule} ${at} (expires ${x.expires}): ${x.reason}`);
+      continue;
+    }
     active.push({ ...x, used: false, measured: null });
     info.push(`exception ${x.rule} ${x.subject} (expires ${x.expires}): ${x.reason}`);
   }
@@ -159,6 +168,8 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
       flag("DEPS-KIND-002", "edge into a shell or mod node", edgeText(e), `shell and mod nodes only consume packages; nothing depends on them (${e.to} is ${b.kind})`, `move the shared state or contract into a package and point the edge the other way (${e.to} -> <package>)`);
       return bad;
     }
+    // DEPS-KIND-004 depends only on the target, so it holds for an http edge from a shell or mod node too.
+    if (e.kind === "http" && !(b.routes ?? []).length) flag("DEPS-KIND-004", "http edge to a package that serves no routes", edgeText(e), `an http edge calls a package's HTTP API, declared as its routes (${e.to} lists none)`, `add routes: [/<prefix>/] to ${e.to} in deps.yaml, or change the edge's kind`);
     if (a.kind !== "package") {
       if (linked(e.kind)) flag("DEPS-KIND-001", `${e.kind} edge outside the C# packages`, edgeText(e), `project and compose edges connect kind: package nodes (${e.from} is ${a.kind})`, `change the edge to kind: cli or file in deps.yaml`);
       return bad;
@@ -175,28 +186,58 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
   for (const e of edges.filter((x) => x.kind === "compose" && !misplaced.has(edgeKey(x)) && !seenEdges.has(`${x.from}|${x.to}|project`))) {
     fail("DEPS-COMPOSE-001", "compose edge without a project edge", `${edgeText(e)}: no project edge ${e.from} -> ${e.to}`, "a compose edge sits beside a project edge to the same package: the Host and Features reach the target's Core through the project edge, and the compose edge adds only the Add…() registration calls", `declare the project edge too (the Host and Features reference ${e.to}'s Core):\n${yamlEdge(e.from, e.to, "project", e.status)}`);
   }
-  for (const c of findCycles(edges)) fail("DEPS-CYCLE-001", "the declared graph has a cycle", c.join(" -> "), "the graph is acyclic across every edge kind (§4b.1a)", "delete one edge of the cycle in deps.yaml, or move the shared part into a lower tier");
+  // A cycle exception covers the cycle its excused edge closes: the one cycle that goes away without that edge.
+  const cycles = findCycles(edges);
+  const coveredCycles = new Set();
+  for (const x of active.filter((a) => a.excuses)) {
+    const { from, to, kind } = x.excuses;
+    const at = `${from} -> ${to} (${kind})`;
+    const without = new Set(findCycles(edges.filter((e) => !(e.from === from && e.to === to && e.kind === kind))).map((c) => c.join(">")));
+    const closes = cycles.filter((c) => !without.has(c.join(">")));
+    // Only the first exception on a cycle covers it: a second one (say, the other direction) suppresses nothing.
+    const duplicate = closes.length === 1 && coveredCycles.has(closes[0]);
+    if (closes.length === 1 && !duplicate) { x.used = true; coveredCycles.add(closes[0]); }
+    const parallel = closes.length === 0 && cycles.some((c) => c.some((n, i) => n === from && c[i + 1] === to));
+    x.measured = duplicate ? `${closes[0].join(" -> ")} is already covered by another DEPS-CYCLE-001 exception`
+      : closes.length === 1 ? closes[0].join(" -> ")
+      : closes.length > 1 ? `${closes.length} cycles pass through ${at} (${closes.map((c) => c.join(" -> ")).join("; ")}), more than the one an exception covers`
+      : parallel ? `every cycle through ${at} also has another ${from} -> ${to} edge` : `no cycle passes through ${at}`;
+    x.fix = duplicate ? `delete one of the two exceptions on ${closes[0].join(" -> ")}`
+      : closes.length > 1 ? `break the other cycle through ${at}: the exception covers one`
+      : parallel ? `remove the other ${from} -> ${to} edge: only the excused ${kind} edge may close the cycle` : undefined;
+  }
+  for (const c of cycles.filter((x) => !coveredCycles.has(x))) fail("DEPS-CYCLE-001", "the declared graph has a cycle", c.join(" -> "), "the graph is acyclic across every edge kind (§4b.1a); a DEPS-CYCLE-001 exception covers the one cycle its excused cli or http edge closes", "delete one edge of the cycle in deps.yaml, or move the shared part into a lower tier");
 
   // ---- cli/db/file edges in the source ----
   const declared = new Map(edges.map((e) => [edgeKey(e), e]));
   const found = scan(root, doc.packages);
+  for (const [k, h] of scanCSharp(root, doc.packages)) if (!found.has(k)) found.set(k, h);
   let undeclared = 0;
   for (const [k, h] of found) {
     const d = declared.get(k);
     if (!d) {
       undeclared++;
-      fail("DEPS-EDGE-001", "undeclared edge in source", `${h.from} -> ${h.to} (${h.kind}): ${h.where} ${h.what}`, "every cli, db and file edge is declared in deps.yaml", `remove the call, or add this under edges in deps.yaml (a reviewed change):\n${yamlEdge(h.from, h.to, h.kind, "current")}`);
+      fail("DEPS-EDGE-001", "undeclared edge in source", `${h.from} -> ${h.to} (${h.kind}): ${h.where} ${h.what}`, "every cli, db, file and http edge is declared in deps.yaml", `remove the call, or add this under edges in deps.yaml (a reviewed change):\n${yamlEdge(h.from, h.to, h.kind, "current")}`);
     } else if (d.status === "planned") fail("DEPS-STALE-002", "planned edge found in source", `${edgeText(d)}: ${h.where} ${h.what}`, "an edge the source has today is status: current", `set status: current on ${edgeText(d)} in deps.yaml`);
   }
   for (const e of edges.filter((x) => x.status === "current" && !linked(x.kind) && !found.has(edgeKey(x)))) {
-    fail("DEPS-STALE-001", "declared current edge not found in source", `${edgeText(e)}: no match under ${byId.get(e.from).scan?.join(", ") ?? "(no scan dirs)"}`, "a status: current edge exists in the source today", "set status: planned in deps.yaml if it is still intended, or delete the edge");
+    // Only the C# scan finds http calls, so an http edge from a shell or mod node can't be checked (review run 4).
+    const from = byId.get(e.from);
+    if (e.kind === "http" && from.kind !== "package") {
+      info.push(`${edgeText(e)}: not scanned (http calls from ${from.kind} sources are not detected)`);
+      continue;
+    }
+    const where = e.kind === "http"
+      ? `no string literal naming ${e.to}'s routes (${byId.get(e.to).routes?.join(", ") ?? "none"}) in ${e.from}'s C# projects`
+      : `no match under ${byId.get(e.from).scan?.join(", ") ?? "(no scan dirs)"} or in ${e.from}'s C# projects`;
+    fail("DEPS-STALE-001", "declared current edge not found in source", `${edgeText(e)}: ${where}`, "a status: current edge exists in the source today", "set status: planned in deps.yaml if it is still intended, or delete the edge");
   }
-  info.push(`scan: ${found.size} cli/db/file edges found in source, ${undeclared === 0 ? "all declared" : `${undeclared} undeclared (DEPS-EDGE-001 above)`}`);
+  info.push(`scan: ${found.size} cli/db/file/http edges found in source, ${undeclared === 0 ? "all declared" : `${undeclared} undeclared (DEPS-EDGE-001 above)`}`);
 
   checkProjects(root, doc, byId, declared, edges, { fail, info, excepted, measure });
 
   for (const x of active.filter((a) => !a.used)) {
-    fail("DEPS-EXC-002", "exception suppresses nothing", `${x.rule} for ${x.subject}: ${x.measured ?? "no projects to measure yet"}`, "an exception exists only while its rule would fail", `delete the ${x.rule} exception for ${x.subject} from deps.yaml`);
+    fail("DEPS-EXC-002", "exception suppresses nothing", `${x.rule} for ${x.subject}: ${x.measured ?? "no projects to measure yet"}`, "an exception exists only while its rule would fail, and a cycle exception covers exactly one cycle", x.fix ?? `delete the ${x.rule} exception for ${x.subject} from deps.yaml`);
   }
   return { fails, info, doc, valid: true };
 }
@@ -290,7 +331,7 @@ function checkProjects(root, doc, byId, declared, edges, { fail, info, excepted,
 
 // ---------- output ----------
 
-const ARROW = { project: "-->", compose: "-->", cli: "-.->", db: "==>", file: "--o" };
+const ARROW = { project: "-->", compose: "-->", cli: "-.->", db: "==>", file: "--o", http: "-.->" };
 
 export function mermaid(doc, baseDoc) {
   const out = ["```mermaid", "flowchart TB"];
