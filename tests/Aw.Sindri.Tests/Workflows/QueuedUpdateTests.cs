@@ -32,6 +32,7 @@ public sealed class QueuedUpdateTests(SindriTimeSkippingServer server) : IClassF
         await using var sindri = _harness.Sindri();
         await WorkflowsHarness.HoldLease(sindri, ct);
         var options = sindri.GetRequiredService<TemporalWorkerOptions>();
+        options.MaxCachedWorkflows = 0;   // the time-skipping server never moves a task off a dead sticky queue (TemporalProbes)
         var client = server.Environment.Client;
         var start = await WorkflowsHarness.RecipeStart(sindri, "workflow.dev-timeout", "T-31", ct);
         WorkflowHandle<RecipeWorkflow, RecipeResult> handle;
@@ -56,9 +57,6 @@ public sealed class QueuedUpdateTests(SindriTimeSkippingServer server) : IClassF
         await second.ExecuteAsync(async () =>
         {
             var cancelled = await cancelling.WaitAsync(_patience, ct);
-            var done = await handle.GetResultAsync().WaitAsync(_patience, ct);
-            var hist = await handle.FetchHistoryAsync();
-            Assert.Fail("DBG " + done.State + " " + string.Join(',', hist.Events.Select(e => e.EventType.ToString())));
             var refused = await Assert.ThrowsAsync<WorkflowUpdateFailedException>(() => takingOver.WaitAsync(_patience, ct));
             var ended = await handle.GetResultAsync().WaitAsync(_patience, ct);
 
