@@ -11,7 +11,7 @@ namespace Aw.Sindri.Infrastructure.Locks;
 /// slot is held while its directory exists, taken with an atomic mkdir and polled every second. Slot 1 is the lock's path and slot k
 /// is '&lt;path&gt;.k', tried in order, so a holder that knows only the path occupies slot 1 and the total never exceeds the slot count.
 /// The holder writes '&lt;pid&gt; &lt;utc&gt; &lt;holder&gt;' to &lt;slot&gt;/owner. With AW_HEAVY_LOCK_HELD=1 a parent already holds a slot, so taking
-/// one is a no-op. Like the heavy wrapper, a slot whose owner process is gone is reclaimed, and so is one with no owner line older than <see cref="OrphanGrace"/> (a crash between the mkdir and the owner write).
+/// one is a no-op. Like the heavy wrapper, a slot whose recorded owner process is gone is reclaimed; a slot with no record is held (see <see cref="NoRecordGrace"/>).
 /// </summary>
 /// <param name="settings">Where the lock is and how many slots it has.</param>
 /// <param name="clock">The clock the wait runs on.</param>
@@ -20,13 +20,16 @@ internal sealed class DirectoryHeavySlots(HeavyLockSettings settings, TimeProvid
     /// <summary>The file a holder writes inside the lock directory.</summary>
     internal const string OwnerFile = "owner";
 
-    /// <summary>How old a slot with no owner line must be before it counts as a crash between the holder's mkdir and its owner write.</summary>
-    internal static readonly TimeSpan OrphanGrace = TimeSpan.FromSeconds(30);
+    /// <summary>How old a slot with no record at all must be before it is taken (the TS sindri's last resort; a live config/lib/locks.sh holder writes none).</summary>
+    internal static readonly TimeSpan NoRecordGrace = TimeSpan.FromHours(6);
 
     private static readonly TimeSpan _poll = TimeSpan.FromSeconds(1);
 
     /// <summary>Called with a slot's path after it was judged stale and before it is taken over (tests use it to play the other waiter).</summary>
     internal Action<string> BeforeTakeover { get; init; } = static _ => { };
+
+    /// <summary>Called with a slot's path right after our mkdir made it (tests use it to make the owner write fail).</summary>
+    internal Action<string> AfterMkdir { get; init; } = static _ => { };
 
     public async ValueTask<Result<HeavySlotTaken>> Take(string holder, TimeSpan timeout, IProgress<string>? waiting, CancellationToken cancellationToken)
     {
@@ -83,7 +86,11 @@ internal sealed class DirectoryHeavySlots(HeavyLockSettings settings, TimeProvid
 
             if (taken.Value)
             {
-                WriteOwner(slot, holder);
+                if (!WriteOwner(slot, holder))
+                {
+                    return SindriErrors.ServiceFailed.With($"can't write the owner record in {slot}, so the slot was released");
+                }
+
                 return new HeavySlotLease(slot);
             }
         }
@@ -108,6 +115,11 @@ internal sealed class DirectoryHeavySlots(HeavyLockSettings settings, TimeProvid
             errno = Libc.MakeDirectory(directory);
         }
 
+        if (errno == 0)
+        {
+            AfterMkdir(directory);
+        }
+
         return errno switch
         {
             0 => true,
@@ -117,34 +129,53 @@ internal sealed class DirectoryHeavySlots(HeavyLockSettings settings, TimeProvid
     }
 
     /// <summary>
-    /// Removes a stale slot, once: one whose owner process is dead (as the heavy wrapper does), or one with no owner line that is older than a grace
-    /// period (a holder that died between its mkdir and its owner write). The slot is first renamed to a name of its own, which only one reclaimer can
-    /// win; the winner checks that it took what it judged stale, and puts the slot back if a new holder got there first. False when the slot is held,
-    /// was taken meanwhile, or can't be removed.
+    /// Removes a slot whose holder is provably dead, once. The record that proves it is our own '&lt;slot&gt;/owner' or the TS sindri's
+    /// '&lt;slot&gt;.holder.json' (written beside the slot, and only trusted when it is not older than the slot): a pid that is gone on this host,
+    /// as the heavy wrapper judges it. A slot with no record is held: config/lib/locks.sh and ui-evidence write none, and the TS sindri
+    /// treats such a slot as live too. Only after <see cref="NoRecordGrace"/> (the TS sindri's 6 h last resort, for a crashed shell holder
+    /// nobody will ever release) is a record-less slot taken. The dead record is first renamed to a name of its own, which only one reclaimer can
+    /// win; the winner checks it got the record it judged, and puts it back (inside a directory that still exists, so nobody else can have taken
+    /// the slot) if a new holder's record was moved instead. False when the slot is held, was taken meanwhile, or can't be removed.
     /// </summary>
     private bool Reclaim(string directory)
     {
         try
         {
-            var owner = Path.Combine(directory, OwnerFile);
-            var judged = File.Exists(owner) ? File.ReadAllText(owner) : null;
-            if (!Stale(directory, judged))
+            var record = RecordOf(directory);
+            if (record is null)
+            {
+                return clock.GetUtcNow() - new DateTimeOffset(Directory.GetLastWriteTimeUtc(directory), TimeSpan.Zero) > NoRecordGrace
+                    && TryRemove(directory);
+            }
+
+            if (!Dead(record))
             {
                 return false;
             }
 
             BeforeTakeover(directory);
-            var removed = directory + ".stale." + Path.GetRandomFileName();
-            Directory.Move(directory, removed);   // atomic: of two reclaimers of one slot, the second finds nothing to move
-            var found = Path.Combine(removed, OwnerFile);
-            if (!string.Equals(File.Exists(found) ? File.ReadAllText(found) : null, judged, StringComparison.Ordinal))
+            var claimed = record.Path + ".reclaim." + Path.GetRandomFileName();
+            File.Move(record.Path, claimed);   // atomic: of two reclaimers of one record, the second finds nothing to move
+            if (!string.Equals(File.ReadAllText(claimed), record.Text, StringComparison.Ordinal))
             {
-                PutBack(removed, directory);   // the slot changed hands between the judgment and the rename: it isn't ours to remove
+                File.Move(claimed, record.Path);   // a new holder's record: the slot changed hands between the judgment and the rename
                 return false;
             }
 
-            File.Delete(found);
-            Directory.Delete(removed, recursive: false);
+            File.Delete(claimed);
+            return TryRemove(directory);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    private static bool TryRemove(string directory)
+    {
+        try
+        {
+            Directory.Delete(directory, recursive: false);
             return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -153,22 +184,40 @@ internal sealed class DirectoryHeavySlots(HeavyLockSettings settings, TimeProvid
         }
     }
 
-    private bool Stale(string directory, string? ownerLine) =>
-        ownerLine is null
-            ? clock.GetUtcNow() - new DateTimeOffset(Directory.GetLastWriteTimeUtc(directory), TimeSpan.Zero) > OrphanGrace
-            : int.TryParse(ownerLine.Split(' ', 2)[0], NumberStyles.None, CultureInfo.InvariantCulture, out var pid) && !Alive(pid);
-
-    private static void PutBack(string removed, string directory)
+    private static HolderRecord? RecordOf(string directory)
     {
+        var owner = Path.Combine(directory, OwnerFile);
+        if (File.Exists(owner))
+        {
+            var text = File.ReadAllText(owner);
+            return int.TryParse(text.Split(' ', 2)[0], NumberStyles.None, CultureInfo.InvariantCulture, out var pid) ? new HolderRecord(owner, text, pid, Host: null) : null;
+        }
+
+        var beside = directory + ".holder.json";
+        if (!File.Exists(beside) || File.GetLastWriteTimeUtc(beside) < Directory.GetLastWriteTimeUtc(directory))
+        {
+            return null;   // no record, or a leftover from a holder that took the slot without one
+        }
+
+        var json = File.ReadAllText(beside);
         try
         {
-            Directory.Move(removed, directory);
+            using var document = System.Text.Json.JsonDocument.Parse(json);
+            var root = document.RootElement;
+            return root.TryGetProperty("pid", out var pid) && pid.TryGetInt32(out var number)
+                ? new HolderRecord(beside, json, number, root.TryGetProperty("host", out var host) ? host.GetString() : null)
+                : null;
         }
-        catch (IOException)
+        catch (System.Text.Json.JsonException)
         {
-            // Another holder took the slot meanwhile: the removed copy is the old holder's leftover, and nothing else names it.
+            return null;
         }
     }
+
+    private static bool Dead(HolderRecord record) =>
+        (record.Host is null || string.Equals(record.Host, Environment.MachineName, StringComparison.OrdinalIgnoreCase)) && !Alive(record.Pid);
+
+    private sealed record HolderRecord(string Path, string Text, int Pid, string? Host);
 
     private static bool Alive(int pid)
     {
@@ -187,16 +236,18 @@ internal sealed class DirectoryHeavySlots(HeavyLockSettings settings, TimeProvid
         }
     }
 
-    private void WriteOwner(string directory, string holder)
+    private bool WriteOwner(string directory, string holder)
     {
         var line = string.Create(CultureInfo.InvariantCulture, $"{Environment.ProcessId} {clock.GetUtcNow().UtcDateTime:yyyy-MM-ddTHH:mm:ssZ} {holder}\n");
         try
         {
             File.WriteAllText(Path.Combine(directory, OwnerFile), line);
+            return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // The owner line is for people reading a stuck lock; the lock itself is the directory, already held.
+            _ = TryRemove(directory);   // a slot without our record would read as nobody's, so don't hold it
+            return false;
         }
     }
 

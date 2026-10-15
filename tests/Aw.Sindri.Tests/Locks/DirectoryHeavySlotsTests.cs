@@ -86,9 +86,10 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_slot_held_by_a_live_process_without_an_owner_line_stays_held()
+    public async Task A_slot_with_no_owner_record_stays_held_however_old_it_is_because_locks_sh_and_ui_evidence_write_none()
     {
         Directory.CreateDirectory(Lock);
+        Directory.SetLastWriteTimeUtc(Lock, DateTime.UtcNow.AddMinutes(-5));
 
         var taken = (await Slots(slots: 1).Take("x", TimeSpan.Zero, waiting: null, TestContext.Current.CancellationToken)).Value;
 
@@ -97,14 +98,70 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_slot_with_no_owner_line_older_than_the_grace_is_a_crash_between_mkdir_and_the_owner_write_and_is_reclaimed()
+    public async Task A_slot_with_no_record_is_taken_only_after_the_six_hour_last_resort_the_TS_sindri_uses()
     {
         Directory.CreateDirectory(Lock);
-        Directory.SetLastWriteTimeUtc(Lock, DateTime.UtcNow.AddMinutes(-5));
+        Directory.SetLastWriteTimeUtc(Lock, DateTime.UtcNow.AddHours(-7));
 
         await using var lease = await Taken(Slots(slots: 1));
 
         Assert.Contains(Pid, await File.ReadAllTextAsync(Path.Combine(Lock, "owner"), TestContext.Current.CancellationToken), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_TS_sindri_holder_record_with_a_live_pid_keeps_the_slot_held()
+    {
+        Directory.CreateDirectory(Lock);
+        await File.WriteAllTextAsync(Lock + ".holder.json", $"{{\"kind\":\"index-build:x\",\"pid\":{Pid},\"host\":\"{Environment.MachineName}\",\"startedAt\":\"2026-10-01T00:00:00Z\"}}", TestContext.Current.CancellationToken);
+
+        var taken = (await Slots(slots: 1).Take("x", TimeSpan.Zero, waiting: null, TestContext.Current.CancellationToken)).Value;
+
+        Assert.Null(taken.Lease);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_TS_sindri_holder_record_with_a_dead_pid_on_this_host_is_reclaimed()
+    {
+        Directory.CreateDirectory(Lock);
+        await File.WriteAllTextAsync(Lock + ".holder.json", $"{{\"kind\":\"index-build:x\",\"pid\":2147483646,\"host\":\"{Environment.MachineName}\",\"startedAt\":\"2026-10-01T00:00:00Z\"}}", TestContext.Current.CancellationToken);
+        File.SetLastWriteTimeUtc(Lock + ".holder.json", DateTime.UtcNow.AddMinutes(1));
+
+        await using var lease = await Taken(Slots(slots: 1));
+
+        Assert.Contains(Pid, await File.ReadAllTextAsync(Path.Combine(Lock, "owner"), TestContext.Current.CancellationToken), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_dead_pid_recorded_on_another_host_is_not_ours_to_judge()
+    {
+        Directory.CreateDirectory(Lock);
+        await File.WriteAllTextAsync(Lock + ".holder.json", "{\"kind\":\"k\",\"pid\":2147483646,\"host\":\"some-other-box\",\"startedAt\":\"2026-10-01T00:00:00Z\"}", TestContext.Current.CancellationToken);
+        File.SetLastWriteTimeUtc(Lock + ".holder.json", DateTime.UtcNow.AddMinutes(1));
+
+        var taken = (await Slots(slots: 1).Take("x", TimeSpan.Zero, waiting: null, TestContext.Current.CancellationToken)).Value;
+
+        Assert.Null(taken.Lease);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_failed_owner_write_fails_the_take_and_releases_the_slot()
+    {
+        // A read-only slot directory makes the owner write fail, as a full disk would.
+        var slots = new DirectoryHeavySlots(new HeavyLockSettings(Lock, 1, Held: false), TimeProvider.System)
+        {
+            AfterMkdir = directory =>
+            {
+                if (!OperatingSystem.IsWindows())
+                {
+                    File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+                }
+            },
+        };
+
+        var taken = await slots.Take("x", TimeSpan.Zero, waiting: null, TestContext.Current.CancellationToken);
+
+        Assert.True(taken.IsError);
+        Assert.False(Directory.Exists(Lock));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -128,7 +185,7 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
 
         Assert.Null(b.Lease);
         Assert.Equal(aOwner, await File.ReadAllTextAsync(Path.Combine(Lock, "owner"), TestContext.Current.CancellationToken));
-        Assert.Empty(Directory.GetDirectories(Path.GetDirectoryName(Lock)!, "*.stale.*"));
+        Assert.Empty(Directory.GetFiles(Lock, "owner.reclaim.*"));
     }
 
     [Fact, Trait("Lane", "unit")]
