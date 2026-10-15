@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 
 namespace Aw.Sindri.Ui.ViewModels.Item;
@@ -78,24 +79,36 @@ internal sealed partial class ItemSheetViewModel
             var page = await api.Timeline(url, id, next, cancellationToken).ConfigureAwait(true);
 
             // The sheet moved to another item, or a re-read moved the cursor, while the page was on its way: it is not this page.
-            if (page.IsSuccess && string.Equals(id, ItemId, StringComparison.Ordinal) && Next == next)
+            if (!string.Equals(id, ItemId, StringComparison.Ordinal) || (page.IsSuccess && Next != next))
             {
-                _pages++;
-                foreach (var row in Rows(page.Value))
-                {
-                    Timeline.Add(row);
-                }
-
-                Next = page.Value.Next;
-                return true;
+                return false;
             }
 
-            return false;
+            // A page that failed is said once, so the human who pressed the button hears why nothing came; the rows stay.
+            return page.IsSuccess ? Append(page.Value) : PageFailed(page.Error);
         }
         finally
         {
             _loadingMore = false;
         }
+    }
+
+    private bool Append(TimelineView page)
+    {
+        _pages++;
+        foreach (var row in Rows(page))
+        {
+            Timeline.Add(row);
+        }
+
+        Next = page.Next;
+        return true;
+    }
+
+    private bool PageFailed(Error error)
+    {
+        Say($"{error.Code}: {error.Message}");
+        return false;
     }
 
     // Reads the item and the pages shown so far; false when a newer read (or another item) took over and this answer was dropped.

@@ -51,21 +51,26 @@ internal sealed partial class ItemSheet : UserControl
         }
     }
 
-    // L12: the page lands and the button may hide (the last page): focus goes to the first new row, never to nothing.
+    // L12: the page lands and the button may hide (the last page): focus goes to the first new row, never to nothing. A last page
+    // with no row hides the button and adds none: focus goes to the timeline's last row. A page that didn't land moves nothing.
     private async Task LoadMoreAndFocus(ItemSheetViewModel sheet)
     {
         var before = sheet.Timeline.Count;
-        _ = await sheet.LoadMore(CancellationToken.None).ConfigureAwait(true);
-        if (sheet.Timeline.Count > before)
+        var appended = await sheet.LoadMore(CancellationToken.None).ConfigureAwait(true);
+        if (appended && sheet.Timeline.Count > before)
         {
             Dispatcher.UIThread.Post(() => FocusRow(before), DispatcherPriority.Loaded);
+        }
+        else if (appended && !sheet.HasMore)
+        {
+            Dispatcher.UIThread.Post(() => FocusRow(sheet.Timeline.Count - 1), DispatcherPriority.Loaded);
         }
     }
 
     private void FocusRow(int index)
     {
         var rows = this.FindControl<ItemsControl>("TimelineList")?.GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("timeline-row")).ToList();
-        if (rows is { } && index < rows.Count)
+        if (rows is { } && index >= 0 && index < rows.Count)
         {
             _ = rows[index].Focus(NavigationMethod.Tab);
         }
