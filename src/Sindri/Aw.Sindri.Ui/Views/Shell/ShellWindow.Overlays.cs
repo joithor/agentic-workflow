@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Threading;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.ViewModels.Palette;
+using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Palette;
 
 namespace Aw.Sindri.Ui.Views.Shell;
@@ -21,6 +22,7 @@ internal sealed partial class ShellWindow
 
         if (e.Key == Key.K && e.KeyModifiers == _command)
         {
+            shell.Shortcuts.Close();   // one overlay at a time; focus goes back to the original opener first (OnOverlayChanged)
             shell.Palette.Open();
             return true;
         }
@@ -31,9 +33,19 @@ internal sealed partial class ShellWindow
             return true;
         }
 
+        return OpenSettingsByKey(e, shell);
+    }
+
+    private bool OpenSettingsByKey(KeyEventArgs e, ShellViewModel shell)
+    {
         if (e.Key != Key.OemComma || e.KeyModifiers != _command)
         {
             return false;
+        }
+
+        if (OverlayOpen)
+        {
+            return true;   // the palette and the ? sheet are modal (§11.2): the chord is swallowed, focus stays in the card
         }
 
         shell.GoTo(PageId.Settings);
@@ -41,6 +53,8 @@ internal sealed partial class ShellWindow
         Dispatcher.UIThread.Post(() => FirstFocusable(this.Get<Control>("SettingsSlot"))?.Focus(NavigationMethod.Tab), DispatcherPriority.Loaded);
         return true;
     }
+
+    private bool OverlayOpen => Shell is { } shell && (shell.Palette.IsOpen || shell.Shortcuts.IsOpen);
 
     // `?` is Shift+/ on most layouts; the key symbol says so on the rest.
     private static bool IsQuestionMark(KeyEventArgs e) =>

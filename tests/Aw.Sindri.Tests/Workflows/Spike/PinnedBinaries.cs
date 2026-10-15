@@ -8,7 +8,7 @@ internal static class PinnedBinaries
 {
     /// <summary>The installed path of <paramref name="name"/>'s pinned version (binaries.lock: name, version, ..., path).</summary>
     /// <param name="name">'temporal' or 'temporal-test-server'.</param>
-    /// <returns>The executable.</returns>
+    /// <returns>The executable, wrapped so the server dies with this test host (<see cref="ServerGuard"/>).</returns>
     public static string Path(string name)
     {
         var row = File.ReadLines(System.IO.Path.Combine(RepoRoot(), "binaries.lock"))
@@ -23,7 +23,7 @@ internal static class PinnedBinaries
             Assert.Fail($"the pinned {name} {row[1]} is not installed at {path}: run scripts/binaries-lock.sh fetch {name}");
         }
 
-        return path;
+        return ServerGuard.Wrap(path);
     }
 
     private static string RepoRoot()

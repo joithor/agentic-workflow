@@ -15,7 +15,7 @@ namespace Aw.Sindri.Ui.Tests.Palette;
 /// (Rebuild views, Stop Sindri, Health); fuzzy matching on labels and ids; ↑/↓, Enter, Esc; the history of entries run.
 /// </summary>
 [Lane(TestLane.Unit)]
-public sealed class CommandPaletteViewModelTests
+public sealed partial class CommandPaletteViewModelTests
 {
     private static readonly Uri _api = new("http://127.0.0.1:7410/");
     private readonly FakeTimeProvider _clock = new(A.Noon);
@@ -25,12 +25,13 @@ public sealed class CommandPaletteViewModelTests
     private readonly List<string> _history = [];
     private readonly CommandList _catalog = AwJson.Deserialize<CommandList>(Encoding.UTF8.GetBytes(GoldenFiles.Api("commands", "catalog")), SindriApiClient.Json).Value;
     private readonly CommandPaletteViewModel _palette;
+    private readonly CatalogViewModel _controls;
 
     public CommandPaletteViewModelTests()
     {
-        var catalog = new CatalogViewModel(_clipboard, _clock);
-        catalog.Show(_api, _server, _catalog);
-        _palette = new CommandPaletteViewModel(catalog, _pages.Add, _history.Add);
+        _controls = new CatalogViewModel(_clipboard, _clock);
+        _controls.Show(_api, _server, _catalog);
+        _palette = new CommandPaletteViewModel(_controls, _pages.Add, _history.Add);
     }
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -111,7 +112,7 @@ public sealed class CommandPaletteViewModelTests
         Assert.Equal("ApproveProfile", _palette.Selected?.Id);   // no ready row is in Actions: the first that runs is a copy block
 
         _palette.Move(1);
-        Assert.Equal("ImportContextMap", _palette.Selected?.Id);
+        Assert.Equal("ApproveRecipe", _palette.Selected?.Id);
         _palette.Move(-1);
         _palette.Move(-1);
         Assert.Equal("ApproveProfile", _palette.Selected?.Id);
@@ -164,6 +165,8 @@ public sealed class CommandPaletteViewModelTests
 
         var run = _palette.Run(rebuild, Token);
 
+        _clock.Advance(ControlViewModel.SendingAfter);
+
         Assert.Equal((true, true, false, "Rebuild views", "Sending…"), (_palette.IsOpen, rebuild.IsSending, rebuild.IsEnabled, rebuild.Label, rebuild.Status));
         await _palette.Run(rebuild, Token);
         _server.RebuildGate.SetResult();
@@ -171,10 +174,376 @@ public sealed class CommandPaletteViewModelTests
 
         Assert.Equal(1, _server.RebuildCalls);
         Assert.Equal((true, false, true, "Rebuild views: done"), (_palette.IsOpen, rebuild.IsSending, rebuild.IsEnabled, rebuild.Status));
-        Assert.Equal("Rebuild views, Rebuild views: done", rebuild.Name);
+        Assert.Equal("Rebuild views: done", rebuild.Name);
         Assert.Equal(["RebuildViews"], _history, StringComparer.Ordinal);
         _clock.Advance(ControlViewModel.AcceptedFor);
         Assert.Equal("ready", rebuild.Status);
+    }
+
+    // G3 (a11y-0, corr-2): the selected entry that starts sending stays counted ("n of m", never "0 of"), the palette says
+    // "Sending…" only after the control does (300 ms), and arrowing away from it goes to its neighbour.
+    [Fact]
+    public async Task A_selection_that_is_sending_keeps_its_place_and_says_sending_only_after_300_ms()
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        _palette.Open();
+        for (var i = 0; i < 200 && _palette.Selected?.Id != "RebuildViews"; i++)
+        {
+            _palette.Move(1);
+        }
+
+        var rebuild = _palette.Selected!;
+        var position = PositionOf(_palette.Announcement);
+        var run = _palette.Run(rebuild, Token);
+
+        Assert.Equal(position, PositionOf(_palette.Announcement));
+        Assert.DoesNotContain("Sending", _palette.Announcement, StringComparison.Ordinal);
+        Assert.Equal(string.Empty, rebuild.Status);
+
+        _clock.Advance(ControlViewModel.SendingAfter);
+
+        Assert.StartsWith("Rebuild views, Sending…, ", _palette.Announcement, StringComparison.Ordinal);
+        Assert.Equal(position, PositionOf(_palette.Announcement));
+        var next = Neighbour(rebuild, by: 1);
+        _palette.Move(1);
+        Assert.Same(next, _palette.Selected);
+        _server.RebuildGate.SetResult();
+        await run;
+    }
+
+    // H5 (test-1): arrowing up off a sending selection goes to the entry above it, not to the first one. Before G3 the
+    // sending entry was not among the stops, its index was -1, and any move landed on the first entry that runs.
+    [Fact]
+    public async Task Arrowing_up_from_a_sending_selection_goes_to_the_previous_entry_that_runs()
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        _palette.Open();
+        for (var i = 0; i < 200 && _palette.Selected?.Id != "RebuildViews"; i++)
+        {
+            _palette.Move(1);
+        }
+
+        var rebuild = _palette.Selected!;
+        var run = _palette.Run(rebuild, Token);
+        var previous = Neighbour(rebuild, by: -1);
+
+        _palette.Move(-1);
+
+        Assert.Same(previous, _palette.Selected);
+        Assert.NotSame(_palette.Entries.First(e => e.IsEnabled), previous);
+        _server.RebuildGate.SetResult();
+        await run;
+    }
+
+    // H6 (a11y-1): the "n of m" counts every entry that runs, the sending one too; it is skipped only as a stop. So moving
+    // off it says the next position of the same total, not a position of one fewer.
+    [Theory]
+    [InlineData(1)]
+    [InlineData(-1)]
+    public async Task Moving_off_a_sending_selection_keeps_the_positions_of_the_same_total(int by)
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        _palette.Open();
+        for (var i = 0; i < 200 && _palette.Selected?.Id != "RebuildViews"; i++)
+        {
+            _palette.Move(1);
+        }
+
+        var (position, total) = PositionOf(_palette.Announcement);
+        var run = _palette.Run(_palette.Selected, Token);
+        _clock.Advance(ControlViewModel.SendingAfter);
+
+        _palette.Move(by);
+
+        Assert.Equal((position + by, total), PositionOf(_palette.Announcement));
+        _server.RebuildGate.SetResult();
+        await run;
+    }
+
+    // The "n of m" at the end of an announcement.
+    private static (int Position, int Total) PositionOf(string announcement)
+    {
+        var tail = announcement[(announcement.LastIndexOf(", ", StringComparison.Ordinal) + 2)..].Split(" of ");
+        return (int.Parse(tail[0], System.Globalization.CultureInfo.InvariantCulture), int.Parse(tail[1], System.Globalization.CultureInfo.InvariantCulture));
+    }
+
+    // H6 (a11y-2, J1): a run from the palette is announced once. The palette speaks the lifecycle of what it ran and mutes that
+    // control only, so the control's own live region stays dark; once the palette is closed (Esc while sending) the control
+    // speaks the outcome.
+    [Fact]
+    public async Task A_run_from_the_palette_is_announced_by_the_palette_and_not_by_the_control()
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        _palette.Open();
+        for (var i = 0; i < 200 && _palette.Selected?.Id != "RebuildViews"; i++)
+        {
+            _palette.Move(1);
+        }
+
+        var rebuild = _palette.Selected!;
+        var live = new List<bool>();
+        rebuild.Control!.PropertyChanged += (_, e) => live.Add(e.PropertyName == nameof(ControlViewModel.IsAnnouncing) && rebuild.Control.IsAnnouncing);
+
+        var run = _palette.Run(rebuild, Token);
+        _clock.Advance(ControlViewModel.SendingAfter);
+        _server.RebuildGate.SetResult();
+        await run;
+
+        Assert.DoesNotContain(true, live);
+        Assert.False(rebuild.Control.IsAnnouncing);
+        Assert.StartsWith("Rebuild views: done, ", _palette.Announcement, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_control_speaks_its_outcome_when_the_palette_closed_while_it_sent()
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        _palette.Open();
+        var rebuild = Entry("RebuildViews");
+        var run = _palette.Run(rebuild, Token);
+
+        _palette.Close();
+        _server.RebuildGate.SetResult();
+        await run;
+
+        Assert.Equal((true, "Rebuild views: done"), (rebuild.Control!.IsAnnouncing, rebuild.Control.Announcement));
+    }
+
+    // The nearest entry that runs above (-1) or below (+1) an entry in the list.
+    private PaletteEntry Neighbour(PaletteEntry from, int by)
+    {
+        var at = _palette.Entries.ToList().IndexOf(from);
+        return by > 0 ? _palette.Entries.Skip(at + 1).First(e => e.IsEnabled) : _palette.Entries.Take(at).Last(e => e.IsEnabled);
+    }
+
+    // H1 (corr-0): the palette built for the first time while a command is in flight must still run that entry once the
+    // send is over (its Runs is the control's sendability, not CanRun at build time).
+    [Fact]
+    public async Task A_palette_first_opened_while_a_command_sends_runs_that_entry_afterwards()
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        var control = _controls.For("RebuildViews")!;
+        var first = control.Run(Token);
+
+        _palette.Open();
+        var rebuild = Entry("RebuildViews");
+        _server.RebuildGate.SetResult();
+        await first;
+        _server.RebuildGate = null;
+        await _palette.Run(rebuild, Token);
+
+        Assert.Equal((true, 2), (rebuild.IsEnabled, _server.RebuildCalls));
+    }
+
+    // H2 (a11y-0): while a command sends, the palette's live region never says "ready": not in the first 300 ms, not at
+    // "Sending…", and not between "Sending…" and the outcome (the order the control clears its flags in).
+    [Theory]
+    [InlineData(false, "Rebuild views: done, ")]
+    [InlineData(true, "Rebuild views, SND-API-005")]
+    public async Task A_send_is_never_announced_as_ready_on_the_way_to_its_outcome(bool refused, string outcome)
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        if (refused)
+        {
+            _server.Rebuild = RouteAnswer.Problem(System.Net.HttpStatusCode.InternalServerError, "SND-API-005", "failed");
+        }
+
+        _palette.Open();
+        for (var i = 0; i < 200 && _palette.Selected?.Id != "RebuildViews"; i++)
+        {
+            _palette.Move(1);
+        }
+
+        var said = new List<string>();
+        _palette.PropertyChanged += (_, e) => said.Add(e.PropertyName == nameof(CommandPaletteViewModel.Announcement) ? _palette.Announcement : string.Empty);
+        var run = _palette.Run(_palette.Selected, Token);
+        _clock.Advance(ControlViewModel.SendingAfter);
+        _server.RebuildGate.SetResult();
+        await run;
+
+        var spoken = said.Where(t => t.Length > 0).ToList();
+        Assert.DoesNotContain(spoken, t => t.Contains("ready", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(spoken, t => t.StartsWith("Rebuild views, Sending…, ", StringComparison.Ordinal));
+        Assert.StartsWith(outcome, spoken[^1], StringComparison.Ordinal);
+    }
+
+    // H2: nor in the first 300 ms, when the control is still silent: the status is empty then, not "ready".
+    [Fact]
+    public async Task A_send_in_its_first_300_ms_is_not_called_ready()
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        _palette.Open();
+        for (var i = 0; i < 200 && _palette.Selected?.Id != "RebuildViews"; i++)
+        {
+            _palette.Move(1);
+        }
+
+        var rebuild = _palette.Selected!;
+        var spoken = new List<string>();
+        _palette.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(CommandPaletteViewModel.Announcement))
+            {
+                spoken.Add(_palette.Announcement);
+            }
+        };
+        var run = _palette.Run(rebuild, Token);
+
+        Assert.Empty(spoken);   // J2: nothing is said before "Sending…": no "Rebuild views, 13 of 15" again, and never "ready"
+        Assert.Equal(("Rebuild views", string.Empty), (rebuild.Name, rebuild.Status));
+        _server.RebuildGate.SetResult();
+        await run;
+    }
+
+    // J1 (corr-0, a11y-0): the palette speaks the lifecycle of every entry IT ran, whatever the selection or the query becomes
+    // while it sends, and only that entry's control is dark; a refusal is spoken once, by the palette.
+    private List<string> Spoken()
+    {
+        var spoken = new List<string>();
+        _palette.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(CommandPaletteViewModel.Announcement))
+            {
+                spoken.Add(_palette.Announcement);
+            }
+        };
+        return spoken;
+    }
+
+    private async Task RunRefusedWhile(Action change, Action? afterOpen = null)
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        _server.Rebuild = RouteAnswer.Problem(System.Net.HttpStatusCode.InternalServerError, "SND-API-005", "failed");
+        _palette.Open();
+        afterOpen?.Invoke();
+        var rebuild = Entry("RebuildViews");
+        var spoken = Spoken();
+        var control = rebuild.Control!;
+        var controlSpoke = false;
+        control.PropertyChanged += (_, e) => controlSpoke |= e.PropertyName == nameof(ControlViewModel.IsAnnouncing) && control.IsAnnouncing;
+
+        var run = _palette.Run(rebuild, Token);
+        change();
+        _server.RebuildGate.SetResult();
+        await run;
+
+        Assert.Equal(1, spoken.Count(t => t.Contains("SND-API-005: failed", StringComparison.Ordinal)));
+        Assert.False(controlSpoke);
+    }
+
+    [Fact]
+    public async Task A_refusal_is_spoken_once_by_the_palette_after_the_selection_moved_off_the_entry()
+    {
+        await RunRefusedWhile(
+            () => _palette.Move(1),
+            () =>
+            {
+                for (var i = 0; i < 200 && _palette.Selected?.Id != "RebuildViews"; i++)
+                {
+                    _palette.Move(1);
+                }
+            });
+        Assert.NotEqual("RebuildViews", _palette.Selected?.Id, StringComparer.Ordinal);   // the selection really moved off the entry that was run
+    }
+
+    [Fact]
+    public async Task A_refusal_is_spoken_once_by_the_palette_after_the_query_filtered_the_entry_out() =>
+        await RunRefusedWhile(() => _palette.Query = "queue");
+
+    [Fact]
+    public async Task A_run_on_a_control_the_catalog_replaced_before_the_run_is_spoken_once() =>
+        await RunRefusedWhile(() => { }, () => _controls.Show(_api, _server, _catalog));
+
+    [Fact]
+    public async Task A_send_that_did_not_start_from_the_palette_is_spoken_by_its_control_and_not_by_the_palette()
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        _server.Rebuild = RouteAnswer.Problem(System.Net.HttpStatusCode.InternalServerError, "SND-API-005", "failed");
+        var control = _controls.For("RebuildViews")!;
+        var run = control.Run(Token);
+        _palette.Open();
+        var spoken = Spoken();
+        var said = new List<string>();
+        control.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ControlViewModel.Announcement) && control.IsAnnouncing)
+            {
+                said.Add(control.Announcement);
+            }
+        };
+
+        _server.RebuildGate.SetResult();
+        await run;
+
+        Assert.Equal(1, said.Count(t => t.Contains("SND-API-005: failed", StringComparison.Ordinal)));
+        Assert.Empty(spoken);   // the palette said nothing: the run did not start here
+    }
+
+    // J4 (corr-2): the accepted outcome settling back to idle (2 s later) is not announced: no unprompted "ready".
+    [Fact]
+    public async Task The_accepted_outcome_settling_to_idle_is_not_announced()
+    {
+        _palette.Open();
+        for (var i = 0; i < 200 && _palette.Selected?.Id != "RebuildViews"; i++)
+        {
+            _palette.Move(1);
+        }
+
+        var rebuild = _palette.Selected!;
+        await _palette.Run(rebuild, Token);
+        var spoken = new List<string>();
+        _palette.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(CommandPaletteViewModel.Announcement))
+            {
+                spoken.Add(_palette.Announcement);
+            }
+        };
+
+        _clock.Advance(ControlViewModel.AcceptedFor);
+
+        Assert.Equal("ready", rebuild.Status);
+        Assert.Empty(spoken);
+    }
+
+    // J3 (corr-1): a retry from Failed or from Accepted clears the old outcome only after the phase is Sending, so the entry's
+    // name is never the half-cleared ", :" (or an empty status that leaves ", 3 of 14").
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task A_retry_never_announces_a_half_cleared_outcome(bool fromFailed)
+    {
+        if (fromFailed)
+        {
+            _server.Rebuild = RouteAnswer.Problem(System.Net.HttpStatusCode.InternalServerError, "SND-API-005", "failed");
+        }
+
+        _palette.Open();
+        for (var i = 0; i < 200 && _palette.Selected?.Id != "RebuildViews"; i++)
+        {
+            _palette.Move(1);
+        }
+
+        var rebuild = _palette.Selected;
+        await _palette.Run(rebuild, Token);
+        _server.Rebuild = RouteAnswer.SpecShaped("views-rebuild", "accepted");
+        var spoken = new List<string>();
+        _palette.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(CommandPaletteViewModel.Announcement))
+            {
+                spoken.Add(_palette.Announcement);
+            }
+        };
+
+        await _palette.Run(rebuild, Token);
+
+        Assert.Contains(spoken, t => t.StartsWith("Rebuild views: done", StringComparison.Ordinal));
+        Assert.All(spoken, t =>
+        {
+            Assert.DoesNotContain(", :", t, StringComparison.Ordinal);
+            Assert.False(t.StartsWith(',') || t.Length == 0);
+        });
     }
 
     // F2: a refusal shows Sindri's code as the entry's status and its detail as served; the palette stays open.
@@ -275,5 +644,59 @@ public sealed class CommandPaletteViewModelTests
 
         Assert.Equal((true, string.Empty), (_palette.IsOpen, _palette.Query));
         Assert.Equal(3, _palette.Sections.Count);
+    }
+
+    // F1 (a11y-0, a11y-1): the live region is never empty (Avalonia #22312) and says the selected entry on every change.
+    [Fact]
+    public void The_announcement_is_never_empty_and_names_the_selected_entry()
+    {
+        var seen = new List<string>();
+        _palette.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(CommandPaletteViewModel.Announcement))
+            {
+                seen.Add(_palette.Announcement);
+            }
+        };
+
+        _palette.Open();
+        Assert.Contains(_palette.Selected!.Name, _palette.Announcement, StringComparison.Ordinal);
+
+        _palette.Move(1);
+        Assert.Contains(_palette.Selected!.Name, _palette.Announcement, StringComparison.Ordinal);
+        Assert.Contains("2 of", _palette.Announcement, StringComparison.Ordinal);
+
+        _palette.Query = "queue";
+        Assert.Contains("Queue", _palette.Announcement, StringComparison.Ordinal);
+
+        _palette.Query = "zzzz";
+        Assert.Equal("Nothing matches", _palette.Announcement);
+        Assert.All(seen, Assert.NotEmpty);
+        Assert.NotEmpty(_palette.Announcement);
+    }
+
+    // F1: "Copied" after a copy reaches the live region too (the selected entry's name changes under it).
+    [Fact]
+    public async Task A_copy_changes_the_announcement()
+    {
+        _palette.Open();
+        _palette.Query = "approve profile";
+
+        await _palette.Run(_palette.Selected, Token);
+
+        Assert.Contains("Copied", _palette.Announcement, StringComparison.Ordinal);
+    }
+
+    // F1 (arch-2, corr-5): opening again must not stack subscriptions on the long-lived controls.
+    [Fact]
+    public void Opening_again_reuses_the_entries_while_the_catalog_is_unchanged()
+    {
+        _palette.Open();
+        var first = _palette.Entries.ToList();
+        _palette.Close();
+
+        _palette.Open();
+
+        Assert.Equal(first, _palette.Entries);
     }
 }

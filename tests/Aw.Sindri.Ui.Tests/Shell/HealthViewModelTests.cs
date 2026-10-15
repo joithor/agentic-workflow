@@ -19,7 +19,7 @@ public sealed class HealthViewModelTests : IDisposable
 
     public HealthViewModelTests()
     {
-        _vm = new HealthViewModel(_records, _server, _clock);
+        _vm = new HealthViewModel(_records, _server, _clock, new FakeClipboard());
     }
 
     private Task _run = Task.CompletedTask;
@@ -506,6 +506,7 @@ public sealed class HealthViewModelTests : IDisposable
 
         _clock.Advance(TimeSpan.FromSeconds(1));
         await Eventually(() => _vm.State == ShellState.Stale, "stale after 30 s of failed pings");
+        await Eventually(() => _vm.Pill.Text == "stale · updated 30s ago", "the stale pill");
         Assert.Equal("stale · updated 30s ago", _vm.Pill.Text);
     }
 

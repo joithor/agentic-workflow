@@ -16,7 +16,8 @@ internal sealed class ListServicesService(IApprovedProfile approvals, IViewReade
 {
     public async ValueTask<Result<ListServicesResponse>> Handle(ListServicesRequest request, CancellationToken cancellationToken)
     {
-        var asOf = status.Current.AsOf;
+        var current = status.Current;
+        var asOf = current.AsOf;
         var approved = await approvals.Latest(cancellationToken).ConfigureAwait(false);
         if (approved.IsError)
         {
@@ -29,11 +30,11 @@ internal sealed class ListServicesService(IApprovedProfile approvals, IViewReade
             return rows.Error;
         }
 
-        var runs = rows.Value.ToDictionary(r => r.Name.Value, StringComparer.Ordinal);
+        var runs = ApprovedServices.Of(rows.Value, approved.Value).ToDictionary(r => r.Name.Value, StringComparer.Ordinal);
         IReadOnlyList<ServiceView> services = [.. (approved.Value?.Profile.Services ?? SindriProfile.NoServices)
             .OrderBy(s => s.Key, StringComparer.Ordinal)
             .Select(s => View(s.Key, s.Value.Every, runs.GetValueOrDefault(s.Key)))];
-        return new ListServicesResponse(services, EmptyText.For(asOf, services.Count == 0, EmptyText.Services), asOf);
+        return new ListServicesResponse(services, EmptyText.For(current, services.Count == 0, EmptyText.Services), asOf);
     }
 
     /// <summary>One service; the approved profile was checked, so its cadence parses (an unparseable one shows no next slot).</summary>

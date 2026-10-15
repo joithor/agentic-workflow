@@ -37,3 +37,6 @@ sindri/.sandbox-probe-*/
 artifacts/
 # dotnet test --report-* and --results-directory output (local runs and CI)
 TestResults/
+
+# impeccable critique snapshots (local)
+.impeccable/

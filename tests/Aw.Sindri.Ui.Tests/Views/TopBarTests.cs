@@ -57,7 +57,7 @@ public sealed class TopBarTests : IDisposable
 
     private async Task<(ShellWindow Window, ShellViewModel Shell)> Show(Func<ShellViewModel, bool> ready)
     {
-        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences), new FakeClipboard());
         await shell.Restore(Token);
         var window = new ShellWindow { DataContext = shell };
         _windows.Add(window);

@@ -11,7 +11,7 @@ namespace Aw.Sindri.Ui.ViewModels.Controls;
 /// the control is drawn and says what the API answered; it decides nothing about whether the action is allowed: a
 /// 'ready' row runs only when a sender is wired, and a 'pending' or 'cli-only' row never runs.
 /// </summary>
-internal sealed class ControlViewModel : ObservableObject
+internal sealed partial class ControlViewModel : ObservableObject
 {
     /// <summary>How long a command is in flight before "Sending…" is announced.</summary>
     internal static readonly TimeSpan SendingAfter = TimeSpan.FromMilliseconds(300);
@@ -108,6 +108,9 @@ internal sealed class ControlViewModel : ObservableObject
     /// <summary>True when a click sends it: a ready row with a sender, not already in flight.</summary>
     public bool CanRun => IsReady && _send is not null && Phase != CommandPhase.Sending;
 
+    /// <summary>True when the control is a live button: a ready row with a sender, even while it sends (so focus stays on it).</summary>
+    public bool IsSendable => IsReady && _send is not null;
+
     /// <summary>True while sending (the spinner).</summary>
     public bool IsSending => Phase == CommandPhase.Sending;
 
@@ -126,14 +129,22 @@ internal sealed class ControlViewModel : ObservableObject
     /// <summary>The refusal's detail as served, or empty.</summary>
     public string ErrorDetail { get; private set => Set(ref field, value); } = string.Empty;
 
+    /// <summary>A pending row's line with its subject: "Cancel job, arrives in P6 · sindri jobs cancel &lt;jobId&gt;".</summary>
+    public string PendingName => PendingLine.Length > 0 ? Label + ", " + PendingLine : string.Empty;
+
+    /// <summary>The Copy button's accessible name: "Copy: Cancel job", then "Copied".</summary>
+    public string CopyName => string.Equals(CopyLabel, Labels.Copied, StringComparison.Ordinal) ? Labels.Copied : Labels.Copy + ": " + Label;
+
     /// <summary>"Copy", or "Copied" for 1.5 s after a copy.</summary>
-    public string CopyLabel { get; private set => Set(ref field, value); } = Labels.Copy;
-
-    /// <summary>True while "Sending…" is announced (the live region's gate, set before its text changes).</summary>
-    public bool IsAnnouncingSending { get; private set => Set(ref field, value); }
-
-    /// <summary>The polite live region's text: "Sending…", the outcome, "Copied"; never empty (Avalonia #22312).</summary>
-    public string Announcement { get; private set => Set(ref field, value); } = Labels.Copy;
+    public string CopyLabel
+    {
+        get;
+        private set
+        {
+            Set(ref field, value);
+            OnChanged(nameof(CopyName));
+        }
+    } = Labels.Copy;
 
     /// <summary>True when the catalog marks the action destructive (E-8): a press asks in-app before it sends (§8).</summary>
     public bool IsDestructive { get; }
@@ -202,21 +213,38 @@ internal sealed class ControlViewModel : ObservableObject
         }
 
         var run = ++_runs;
+        IsAnnouncing = false;   // dark first, then the resting text: an outcome the same as the last one is still a change, and the label is not spoken
+        Announce(Label);
+        Phase = CommandPhase.Sending;   // before the old outcome is cleared: an entry showing Failed or Accepted never reads half-cleared (", :")
         (ErrorCode, ErrorDetail, Outcome) = (string.Empty, string.Empty, string.Empty);
-        Phase = CommandPhase.Sending;
         _ = AnnounceSending(run, cancellationToken);
-        var answer = await send(cancellationToken).ConfigureAwait(true);
-        IsAnnouncingSending = false;
+        Result<CommandAcceptedView> answer;
+        try
+        {
+            answer = await send(cancellationToken).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancelled (the window is closing): nothing was answered, so the control is not left sending.
+            IsAnnouncingSending = false;   // first: the palette reads the name on every change, and Idle with this still set says "ready"
+            Phase = CommandPhase.Idle;
+            Rest();
+            throw;
+        }
+
         if (answer.IsError)
         {
             (ErrorCode, ErrorDetail) = (answer.Error.Code, answer.Error.Message);
+            Announce($"{ErrorCode}: {ErrorDetail}");
             Phase = CommandPhase.Failed;
+            IsAnnouncingSending = false;   // last: nothing shows "ready" between "Sending…" and the outcome
             return;
         }
 
         Outcome = Labels.Done(Label);
-        Announcement = Outcome;
+        Announce(Outcome);
         Phase = CommandPhase.Accepted;
+        IsAnnouncingSending = false;
         _ = Settle(run, cancellationToken);
     }
 
@@ -230,7 +258,8 @@ internal sealed class ControlViewModel : ObservableObject
             return;
         }
 
-        (CopyLabel, Announcement) = (Labels.Copied, Labels.Copied);
+        CopyLabel = Labels.Copied;
+        Announce(Labels.Copied);
         _ = Uncopy(++_copies, cancellationToken);
     }
 
@@ -248,6 +277,7 @@ internal sealed class ControlViewModel : ObservableObject
         if (copy == _copies)
         {
             CopyLabel = Labels.Copy;
+            Rest();
         }
     }
 
@@ -265,7 +295,7 @@ internal sealed class ControlViewModel : ObservableObject
         if (run == _runs && Phase == CommandPhase.Sending)
         {
             IsAnnouncingSending = true;
-            Announcement = Labels.Sending;
+            Announce(Labels.Sending);
         }
     }
 
@@ -283,6 +313,7 @@ internal sealed class ControlViewModel : ObservableObject
         if (run == _runs && Phase == CommandPhase.Accepted)
         {
             Phase = CommandPhase.Idle;
+            Rest();
         }
     }
 

@@ -1,15 +1,21 @@
+using Aw.Context.Core.Eval;
 using Aw.Context.Core.Facade;
+using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Context.Features.CheckMap;
 using Aw.Context.Features.CheckRetention;
+using Aw.Context.Features.EvalProbes;
 using Aw.Context.Features.ExportMap;
+using Aw.Context.Features.FindPath;
 using Aw.Context.Features.ImportMap;
+using Aw.Context.Features.ListNeighbors;
 using Aw.Context.Features.PreviewMap;
 using Aw.Context.Features.PurgeMap;
 using Aw.Context.Features.QueryContext;
 using Aw.Context.Features.RefreshDocs;
 using Aw.Context.Features.ShowMapStatus;
+using Aw.Context.Features.ShowNode;
 using Aw.Context.Features.SourcesStatus;
 using Aw.Kernel.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,6 +39,12 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<CheckMapRequest, MapHealth>, CheckMapService>()
         .AddScoped<IService<CheckRetentionRequest, MapHealth>, CheckRetentionService>()
         .AddScoped<IService<PurgeMapRequest, PurgeReport>, PurgeMapService>()
+        .AddScoped<IService<ShowNodeRequest, NodeView>, ShowNodeService>()
+        .AddScoped<IService<ListNeighborsRequest, NeighborsView>, ListNeighborsService>()
+        .AddScoped<IService<FindPathRequest, PathView>, FindPathService>()
+        .AddScoped<IService<EvalProbesRequest, ProbeRun>, EvalProbesService>()
+        .AddScoped<MapReader>()
         .AddScoped<IContextMap, ContextMap>()
+        .AddScoped<IContextGraph, ContextGraph>()
         .AddScoped<IContextEngine, ContextEngine>();
 }

@@ -107,6 +107,8 @@ public sealed class CatalogFramesTests : IDisposable
         var run = Named<Button>(banner, "RunButton");
         Assert.Equal((true, "Rebuild views"), (run.IsEffectivelyEnabled, AutomationProperties.GetName(run)));
         Assert.True(shell.Health.Banner.IsStalled);
+        var live = Named<TextBlock>(window, "ViewsLive");
+        Assert.Equal((true, "Views are stalled at 42: run `sindri views rebuild`"), (live.Classes.Contains("live"), live.Text));
         Frame(window, "banner-stalled");
     });
 
@@ -123,7 +125,7 @@ public sealed class CatalogFramesTests : IDisposable
         Frame(window, "banner-rebuilding");
     });
 
-    // §4.1 sending: disabled, its label kept, the spinner; the answer then shows the accepted outcome.
+    // §4.1 sending: the label kept, the spinner (enabled for focus, F4; the view model refuses a second run); the answer then shows the accepted outcome.
     [Fact]
     public Task Rebuild_views_shows_sending_then_its_outcome() => OnUi(async () =>
     {
@@ -136,7 +138,7 @@ public sealed class CatalogFramesTests : IDisposable
         run.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Settle(window);
 
-        Assert.Equal((false, true, "Rebuild views"), (run.IsEffectivelyEnabled, Visible(banner, "RunSpinner"), Named<TextBlock>(banner, "RunLabel").Text));
+        Assert.Equal((true, true, "Rebuild views"), (run.IsEffectivelyEnabled, Visible(banner, "RunSpinner"), Named<TextBlock>(banner, "RunLabel").Text));
         Frame(window, "control-sending");
 
         _server.RebuildGate.SetResult();
@@ -162,12 +164,16 @@ public sealed class CatalogFramesTests : IDisposable
         var lines = page.GetVisualDescendants().OfType<Border>().Where(b => b.Name == "PendingLine" && b.IsEffectivelyVisible).ToList();
         Assert.Equal(shell.Health.Catalog.Pending.Sum(p => p.Controls.Count), lines.Count);
         Assert.All(lines, l => Assert.True(l.Focusable));
-        Assert.Contains("arrives in P6 · sindri jobs cancel <jobId>", lines.Select(AutomationProperties.GetName), StringComparer.Ordinal);
+        Assert.Contains("Cancel job, arrives in P6 · sindri jobs cancel <jobId>", lines.Select(AutomationProperties.GetName), StringComparer.Ordinal);
+        var copies = page.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("copy") && b.IsEffectivelyVisible).Select(AutomationProperties.GetName).ToList();
+        Assert.Contains("Copy: Cancel job", copies, StringComparer.Ordinal);
+        Assert.Contains("Copy: Run doctor", copies, StringComparer.Ordinal);
+        Assert.All(page.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == "TerminalGlyph"), g => Assert.Equal(AccessibilityView.Raw, AutomationProperties.GetAccessibilityView(g)));
         var pendingRun = page.GetVisualDescendants().OfType<Button>().First(b => b.Name == "RunButton" && b.IsEffectivelyVisible);
         Assert.False(pendingRun.IsEffectivelyEnabled);
 
         var blocks = page.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == "CliText" && t.IsEffectivelyVisible).Select(t => t.Text).ToList();
-        Assert.Equal(["sindri profile approve [<hash>]", "sindri context map import <file>", "sindri doctor", "sindri profile validate"], blocks, StringComparer.Ordinal);
+        Assert.Equal(["sindri profile approve [<hash>]", "sindri recipe approve <recipe>", "sindri context map import <file>", "sindri recipe revoke <recipe>", "sindri doctor", "sindri profile validate"], blocks, StringComparer.Ordinal);
         Assert.Contains(page.GetVisualDescendants().OfType<TextBlock>(), t => t.Name == "CopyNoteText" && t.IsEffectivelyVisible && t.Text == Labels.TypedConfirmation);
 
         Assert.True(lines[0].Focus(NavigationMethod.Tab));
@@ -176,5 +182,60 @@ public sealed class CatalogFramesTests : IDisposable
         Settle(window);
         Assert.Same(lines[0], window.FocusManager?.GetFocusedElement());
         Frame(window, "health-controls");
+    });
+
+    private static Visual? Focused(Window window) => window.FocusManager?.GetFocusedElement() as Visual;
+
+    // F4 (a11y-5, corr-2): focus stays on the control while it sends and after Sindri refuses; the live region says the
+    // code and detail.
+    [Fact]
+    public Task A_refused_rebuild_keeps_focus_on_the_control_and_announces_the_refusal() => OnUi(async () =>
+    {
+        _server.ServiceView = RouteAnswer.SpecShaped("services", "stalled");
+        _server.RebuildGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _server.Rebuild = RouteAnswer.Problem(System.Net.HttpStatusCode.Conflict, "SND-API-010", "Views are rebuilding (fix: retry after the rebuild)");
+        var (window, _) = await Connected(s => s.Health.Banner.IsShown);
+        var banner = Named<Control>(window, "ViewsBanner");
+        var run = Named<Button>(banner, "RunButton");
+        Assert.True(run.Focus(NavigationMethod.Tab));
+        Assert.DoesNotContain("live", Named<TextBlock>(banner, "Announcer").Classes, StringComparer.Ordinal);   // G4: the resting label is not live
+
+        run.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Settle(window);
+        Assert.Same(run, Focused(window));
+
+        _server.RebuildGate.SetResult();
+        for (var i = 0; i < 200 && !Visible(banner, "ErrorLine"); i++)
+        {
+            await Task.Delay(10, Token);
+            Settle(window);
+        }
+
+        Assert.Same(run, Focused(window));
+        Assert.Equal("SND-API-010: Views are rebuilding (fix: retry after the rebuild)", Named<TextBlock>(banner, "Announcer").Text);
+        Assert.Contains("live", Named<TextBlock>(banner, "Announcer").Classes, StringComparer.Ordinal);
+    });
+
+    // F4: when the banner (and so the control that had focus) goes, focus lands on a usable control, never nowhere.
+    [Fact]
+    public Task Focus_moves_sensibly_when_the_banner_with_the_control_hides() => OnUi(async () =>
+    {
+        _server.ServiceView = RouteAnswer.SpecShaped("services", "stalled");
+        var (window, shell) = await Connected(s => s.Health.Banner.IsShown);
+        var run = Named<Button>(Named<Control>(window, "ViewsBanner"), "RunButton");
+        Assert.True(run.Focus(NavigationMethod.Tab));
+
+        run.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        _server.ServiceView = RouteAnswer.SpecShaped("services", "fixture");
+        _server.Push(A.Event(1, "views.rebuilt"));
+        for (var i = 0; i < 200 && shell.Health.Banner.IsShown; i++)
+        {
+            await Task.Delay(10, Token);
+            Settle(window);
+        }
+
+        Assert.False(shell.Health.Banner.IsShown);
+        var focused = Assert.IsType<Control>(Focused(window), exactMatch: false);
+        Assert.True(focused.IsEffectivelyVisible && focused.IsEffectivelyEnabled);
     });
 }

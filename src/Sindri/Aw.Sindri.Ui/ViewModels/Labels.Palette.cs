@@ -15,8 +15,17 @@ internal static partial class Labels
     /// <summary>A ready entry's status.</summary>
     internal const string Ready = "ready";
 
+    /// <summary>A ready row the app has no sender for: shown, never run (K8).</summary>
+    internal const string NotInApp = "not in the app yet";
+
     /// <summary>The palette's line when nothing matches.</summary>
     internal const string NoMatches = "Nothing matches";
+
+    /// <summary>The views banner's live text while the views rebuild (the sentence on screen carries a moving cursor).</summary>
+    internal const string ViewsRebuilding = "Rebuilding views";
+
+    /// <summary>The live text when the stalled or rebuilding banner goes away.</summary>
+    internal const string ViewsRecovered = "Views are up to date";
 
     /// <summary>The shortcuts sheet's title and accessible name.</summary>
     internal const string Shortcuts = "Keyboard shortcuts";
@@ -45,7 +54,7 @@ internal static partial class Labels
         ("C / R", "Create item / file a request"),
         ("/", "Filter the current list"),
         ("?", "Shortcuts sheet"),
-        ("⌘,", Settings),
+        ("⌘, / Ctrl+,", Settings),
         ("F6 / Shift+F6", "Next / previous region"),
     ];
 }

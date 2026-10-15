@@ -3,7 +3,7 @@ Aw.Sindri.Ui.Platform.IClipboard
 Aw.Sindri.Ui.Platform.IClipboard.SetText(string! text, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!
 Aw.Sindri.Ui.Platform.IEndpointRecordSource
 Aw.Sindri.Ui.Platform.IEndpointRecordSource.Location.get -> string!
-Aw.Sindri.Ui.Platform.IEndpointRecordSource.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<byte[]?>
+Aw.Sindri.Ui.Platform.IEndpointRecordSource.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Ui.Platform.EndpointRecordRead!>
 Aw.Sindri.Ui.Platform.IHumanTokenSource
 Aw.Sindri.Ui.Platform.IHumanTokenSource.Location.get -> string!
 Aw.Sindri.Ui.Platform.IHumanTokenSource.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<string?>
@@ -16,6 +16,7 @@ Aw.Sindri.Ui.Platform.IPreferencesStore.Read(System.Threading.CancellationToken 
 Aw.Sindri.Ui.Platform.IPreferencesStore.Write(byte[]! contents, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 Aw.Sindri.Ui.Platform.ISingleInstance
 Aw.Sindri.Ui.Platform.ISingleInstance.HolderProcessId() -> int?
+Aw.Sindri.Ui.Platform.ISingleInstance.Retire() -> void
 Aw.Sindri.Ui.Platform.ISingleInstance.Messages(System.Threading.CancellationToken cancellationToken) -> System.Collections.Generic.IAsyncEnumerable<Aw.Sindri.Ui.Platform.InstanceMessage!>!
 Aw.Sindri.Ui.Platform.ISingleInstance.Send(string! message, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
 Aw.Sindri.Ui.Platform.ISingleInstance.TryClaim(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
@@ -90,10 +91,10 @@ Aw.Sindri.Ui.Platform.EndpointRecordFailure
 Aw.Sindri.Ui.Platform.EndpointRecordFailure.NoPermission = 1 -> Aw.Sindri.Ui.Platform.EndpointRecordFailure
 Aw.Sindri.Ui.Platform.EndpointRecordFailure.NotAFile = 2 -> Aw.Sindri.Ui.Platform.EndpointRecordFailure
 Aw.Sindri.Ui.Platform.EndpointRecordFailure.Unreadable = 0 -> Aw.Sindri.Ui.Platform.EndpointRecordFailure
-Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException
-Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.EndpointRecordUnreadableException() -> void
-Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.EndpointRecordUnreadableException(Aw.Sindri.Ui.Platform.EndpointRecordFailure reason, System.Exception? innerException) -> void
-Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.EndpointRecordUnreadableException(string! message) -> void
-Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.EndpointRecordUnreadableException(string! message, System.Exception! innerException) -> void
-Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.Reason.get -> Aw.Sindri.Ui.Platform.EndpointRecordFailure
+Aw.Sindri.Ui.Platform.EndpointRecordRead
+Aw.Sindri.Ui.Platform.EndpointRecordRead.Bytes.get -> byte[]?
+Aw.Sindri.Ui.Platform.EndpointRecordRead.Failure.get -> Aw.Sindri.Ui.Platform.EndpointRecordFailure?
+static Aw.Sindri.Ui.Platform.EndpointRecordRead.Found(byte[]! bytes) -> Aw.Sindri.Ui.Platform.EndpointRecordRead!
+static Aw.Sindri.Ui.Platform.EndpointRecordRead.None.get -> Aw.Sindri.Ui.Platform.EndpointRecordRead!
+static Aw.Sindri.Ui.Platform.EndpointRecordRead.Unreadable(Aw.Sindri.Ui.Platform.EndpointRecordFailure why) -> Aw.Sindri.Ui.Platform.EndpointRecordRead!
 Aw.Sindri.Ui.Platform.InstanceMessage.TryAct() -> bool

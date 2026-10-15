@@ -1,3 +1,4 @@
+using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
@@ -20,7 +21,7 @@ public sealed class ShellStateTests
 
     private async Task<ShellViewModel> Running(ShellState until)
     {
-        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences), new FakeClipboard());
         await shell.Restore(Token);
         _ = shell.Run(Token);
         await Eventually(() => shell.State == until);
@@ -29,7 +30,7 @@ public sealed class ShellStateTests
 
     private static async Task Eventually(Func<bool> condition)
     {
-        for (var i = 0; i < 200 && !condition(); i++)
+        for (var i = 0; i < 400 && !condition(); i++)   // 2 s: the follower runs on the thread pool, so a loaded box needs room
         {
             await Task.Delay(5, Token);
         }
@@ -43,7 +44,7 @@ public sealed class ShellStateTests
     [Fact]
     public async Task Connecting_shows_the_chrome_and_the_skeleton_only()
     {
-        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences), new FakeClipboard());
         await shell.Restore(Token);
 
         Assert.Equal((false, true, false, true, false, false), Shown(shell));
@@ -66,6 +67,7 @@ public sealed class ShellStateTests
         var shell = await Running(ShellState.VersionMismatch);
 
         Assert.Equal((true, false, false, false, false, false), Shown(shell));
+        await Eventually(() => shell.Pill.Text == Labels.VersionMismatch);
         Assert.Equal(Labels.VersionMismatch, shell.Pill.Text);
         Assert.Equal([new HealthCell("This app", "API v1"), new HealthCell("Sindri", "API v2")], shell.Health.Detail.Versions);
     }
@@ -78,6 +80,7 @@ public sealed class ShellStateTests
 
         var shell = await Running(ShellState.Normal);
 
+        await Eventually(() => shell.Pill.Text == "Running · updated 0s ago");
         Assert.Equal((false, true, false, false, false, true), Shown(shell));
         Assert.Equal("Running · updated 0s ago", shell.Pill.Text);
     }
@@ -90,6 +93,7 @@ public sealed class ShellStateTests
 
         _clock.Advance(TimeSpan.FromSeconds(5));
 
+        await Eventually(() => shell.Pill.Text == "Running · updated 5s ago");
         Assert.Equal("Running · updated 5s ago", shell.Pill.Text);
         Assert.Equal(ShellState.Normal, shell.State);
     }
@@ -104,6 +108,7 @@ public sealed class ShellStateTests
         _server.Push(A.Event(1));
         await Eventually(() => shell.State == ShellState.Unreadable);
 
+        await Eventually(() => shell.Pill.Text == Labels.Unreadable + " · " + Labels.Stale);
         Assert.Equal((false, true, false, false, true, true), Shown(shell));
         Assert.Equal(Labels.Unreadable + " · " + Labels.Stale, shell.Pill.Text);
         Assert.Equal("pid 4242 · epoch 7", shell.Health.Lease);
@@ -125,6 +130,7 @@ public sealed class ShellStateTests
         var shell = await Running(ShellState.NotRunning);
 
         Assert.Equal(Labels.NoLease, shell.Reason);
+        await Eventually(() => shell.Pill.Text == Labels.NotRunning);
         Assert.Equal(Labels.NotRunning, shell.Pill.Text);
     }
 
@@ -160,7 +166,7 @@ public sealed class ShellStateTests
     [Fact]
     public async Task The_top_bar_selection_follows_the_page_and_selecting_a_segment_goes_there()
     {
-        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences), new FakeClipboard());
         await shell.Restore(Token);
 
         shell.SelectedNav = shell.Navigation[2];
@@ -194,6 +200,7 @@ public sealed class ShellStateTests
         Assert.Equal(fresh.Health.HealthLine, fresh.Health.StripName);
 
         var stale = await Stale();
+        await Eventually(() => stale.Pill.IsDataStale);
         Assert.True(stale.Pill.IsDataStale);
         Assert.Equal(stale.Health.HealthLine + " · " + Labels.Stale, stale.Health.StripName);
     }
@@ -203,10 +210,29 @@ public sealed class ShellStateTests
     {
         var shell = await Stale();
 
+        await Eventually(() => shell.Pill.Text == Labels.Stale + " · " + Labels.UpdatedAgo(ShellViewModel.StaleAfter));
         Assert.Equal((StateGlyph.Stale, Labels.Stale, Labels.UpdatedAgo(ShellViewModel.StaleAfter)), (shell.Pill.Glyph, shell.Pill.Word, shell.Pill.Age));
         Assert.Equal(Labels.Stale + " · " + Labels.UpdatedAgo(ShellViewModel.StaleAfter), shell.Pill.Text);
         Assert.True(shell.Pill.IsRefreshShown);
         Assert.True(shell.Pill.IsStale);
+    }
+
+    // H6 (corr-2, arch-1): a manual Refresh is a status read like the follower's: when the views are behind the sequence
+    // of the last command, the sequence is used up and the status is read once more at once, so Refresh shows it.
+    [Fact]
+    public async Task Refresh_after_a_command_the_views_have_not_reached_shows_the_re_read()
+    {
+        var shell = await Stale();
+        _server.Lag = ViewsLag.Behind;
+        _ = await _server.RebuildViews(new Uri("http://127.0.0.1:7410/"), Token);
+
+        var before = _server.StatusCalls;
+
+        await shell.Health.Refresh(Token);
+
+        Assert.Equal(ShellState.Normal, shell.State);
+        Assert.Equal(before + 2, _server.StatusCalls);   // the read that carried the sequence, then the re-read without it
+        Assert.Equal([43L, 0L], _server.StatusAfters.TakeLast(2));
     }
 
     [Fact]
@@ -219,6 +245,7 @@ public sealed class ShellStateTests
 
         Assert.Equal(before + 1, _server.StatusCalls);
         Assert.Equal(ShellState.Normal, shell.State);
+        await Eventually(() => shell.Pill.Word == Labels.Running && shell.Pill.Age == Labels.UpdatedAgo(TimeSpan.Zero));
         Assert.Equal((StateGlyph.Ok, Labels.Running, Labels.UpdatedAgo(TimeSpan.Zero)), (shell.Pill.Glyph, shell.Pill.Word, shell.Pill.Age));
         Assert.False(shell.Pill.IsRefreshShown);
     }
@@ -384,10 +411,26 @@ public sealed class ShellStateTests
 
         Assert.Equal(ShellState.Stale, shell.State);
         Assert.True(shell.IsNotRespondingBanner);
+        await Eventually(() => shell.Pill.Word == Labels.Stale);
         Assert.Equal((StateGlyph.Stale, Labels.Stale), (shell.Pill.Glyph, shell.Pill.Word));
         Assert.True(shell.Pill.IsRefreshShown);
         _clock.Advance(TimeSpan.FromSeconds(1));
         Assert.True(shell.IsNotRespondingBanner);
+    }
+
+    // G1(c): "views behind" is an answer from a live Sindri (API §2.4), not a failed refresh.
+    [Fact]
+    public async Task A_refresh_that_hears_views_behind_does_not_count_toward_not_responding()
+    {
+        var shell = await Stale();
+        _server.StatusError = new Error("SND-API-011", ErrorKind.Unavailable, "The views have not reached sequence 43 (fix: retry shortly)");
+
+        for (var i = 0; i < 3; i++)
+        {
+            await shell.Health.Refresh(Token);
+        }
+
+        Assert.False(shell.IsNotRespondingBanner);
     }
 
     [Fact]
@@ -413,23 +456,26 @@ public sealed class ShellStateTests
     [Fact]
     public async Task Each_state_puts_its_glyph_before_its_word()
     {
-        var connecting = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
+        var connecting = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences), new FakeClipboard());
         Assert.Equal((StateGlyph.None, Labels.Connecting, string.Empty), (connecting.Pill.Glyph, connecting.Pill.Word, connecting.Pill.Age));
         // S1: no glyph while connecting, so the pill drops the glyph's slot and its word centres.
         Assert.False(connecting.Pill.HasGlyph);
 
         var down = await Running(ShellState.NotRunning);
+        await Eventually(() => down.Pill.Word == Labels.NotRunning);
         Assert.Equal((StateGlyph.Down, Labels.NotRunning, string.Empty), (down.Pill.Glyph, down.Pill.Word, down.Pill.Age));
         Assert.True(down.Pill.IsDown);
 
         _records.Write(A.Record());
         _server.UnreadableStatus = true;
         var unreadable = await Running(ShellState.Unreadable);
+        await Eventually(() => unreadable.Pill.Word == Labels.Unreadable);
         Assert.Equal((StateGlyph.Down, Labels.Unreadable, Labels.Stale), (unreadable.Pill.Glyph, unreadable.Pill.Word, unreadable.Pill.Age));
         Assert.True(unreadable.Pill.IsDown);
 
         _server.UnreadableStatus = false;
         var healthy = await Running(ShellState.Normal);
+        await Eventually(() => healthy.Pill.Word == Labels.Running);
         Assert.Equal((StateGlyph.Ok, Labels.Running), (healthy.Pill.Glyph, healthy.Pill.Word));
         Assert.True(healthy.Pill.IsHealthy);
         Assert.True(healthy.Pill.HasGlyph);
@@ -439,7 +485,7 @@ public sealed class ShellStateTests
     [Fact]
     public async Task The_navigation_is_disabled_only_while_not_running()
     {
-        Assert.True(new ShellViewModel(_records, _server, _clock, new Preferences(_preferences)).IsNavigationEnabled);
+        Assert.True(new ShellViewModel(_records, _server, _clock, new Preferences(_preferences), new FakeClipboard()).IsNavigationEnabled);
         var shell = await Running(ShellState.NotRunning);
         Assert.False(shell.IsNavigationEnabled);
 

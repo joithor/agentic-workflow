@@ -15,8 +15,8 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 /// <param name="records">Where the control plane recorded its endpoint.</param>
 /// <param name="api">Its API.</param>
 /// <param name="clock">The clock for retry waits and freshness.</param>
-/// <param name="clipboard">Where the catalog's controls copy a CLI; none by default.</param>
-internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, IClipboard? clipboard = null) : ObservableObject
+/// <param name="clipboard">Where the catalog's controls copy a CLI.</param>
+internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, IClipboard clipboard) : ObservableObject
 {
     /// <summary>How long to wait before looking for the control plane again.</summary>
     internal static readonly TimeSpan RetryEvery = TimeSpan.FromSeconds(2);
@@ -56,7 +56,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     public HealthPill Pill { get; } = new();
 
     /// <summary>The command catalog as controls (read on connect and after a reconnect).</summary>
-    public CatalogViewModel Catalog { get; } = new(clipboard ?? NoClipboard.Instance, clock);
+    public CatalogViewModel Catalog { get; } = new(clipboard, clock);
 
     /// <summary>The stalled and rebuilding banners (§4.1), from the services view's asOf.</summary>
     public ViewsBanner Banner { get; } = new();

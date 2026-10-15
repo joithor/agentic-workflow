@@ -39,9 +39,12 @@
       <Setter Property="Margin" Value="4,0" />
       <Setter Property="MinHeight" Value="{StaticResource Size.Row}" />
     </Style>
-    <!-- The selection: PrimarySoft (the selected nav's background), since Surface2 barely shows on the Surface3 card. -->
+    <!-- The selection: PrimarySoft (the selected nav's background) and a 2 px PrimaryHover bar (6.1:1 on the card): the fill alone
+         is 1.1:1, so the bar is what tells the selected row apart (WCAG 1.4.11). -->
     <Style Selector="Button.palette-entry.selected /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource Brush.PrimarySoft}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.PrimaryHover}" />
+      <Setter Property="BorderThickness" Value="2,0,0,0" />
     </Style>
     <!-- A pending entry is disabled, but its phase is information: it keeps InkSubtle, never the disabled ink. -->
     <Style Selector="Button.palette-entry:disabled /template/ ContentPresenter#PART_ContentPresenter">
@@ -69,9 +72,9 @@
       <DockPanel>
         <TextBox x:Name="PaletteQuery" DockPanel.Dock="Top" Classes="palette-query" Text="{Binding Query}"
                  PlaceholderText="{Binding Placeholder}" AutomationProperties.Name="{Binding Title}" />
-        <!-- The polite live region: the selected entry's status ("Copied" after a copy). Never empty (Avalonia #22312). -->
-        <TextBlock x:Name="PaletteAnnouncer" DockPanel.Dock="Top" Classes="caption live-region live" Width="0" Height="0" Opacity="0"
-                   IsHitTestVisible="False" Text="{Binding Selected.Status, FallbackValue={x:Static x:String.Empty}}" />
+        <!-- The polite live region: the selected entry (name, status, "N of M"), "Nothing matches" when empty. Never empty (Avalonia #22312). -->
+        <TextBlock x:Name="PaletteAnnouncer" DockPanel.Dock="Top" Classes="caption live-region" Classes.live="{Binding IsAnnouncing}" Width="0" Height="0" Opacity="0"
+                   IsHitTestVisible="False" Text="{Binding Announcement}" />
         <TextBlock x:Name="PaletteEmpty" DockPanel.Dock="Top" Classes="body subtle" Margin="16,12" Text="{Binding NoMatches}"
                    IsVisible="{Binding IsEmpty}" AutomationProperties.Name="{Binding NoMatches}" />
         <ScrollViewer x:Name="PaletteScroll" MaxHeight="440" Padding="0,0,0,8">

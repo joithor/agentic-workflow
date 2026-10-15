@@ -148,13 +148,71 @@ public sealed class AppLifetimeTests
         }
     });
 
+    // Review run 5 (julik-frontend-races-reviewer-0): the single instance must stop taking messages the moment ending
+    // begins, not when the process is finally gone, so Quit says so before it waits for the preferences.
+    [Fact]
+    public Task Quit_says_it_is_quitting_before_it_waits_for_the_preferences() => OnUi(() =>
+    {
+        var written = new TaskCompletionSource();
+        _settle = () => written.Task;
+        var (_, lifetime, _) = Start();
+        using (lifetime)
+        {
+            var quitting = 0;
+            lifetime.Quitting += (_, _) => quitting++;
+
+            _tray.ClickQuit();
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal((1, 0), (quitting, _shutdowns));
+            written.SetResult();
+        }
+    });
+
+    [Fact]
+    public Task The_OS_ending_the_app_says_it_is_quitting_before_the_bounds_are_written() => OnUi(() =>
+    {
+        var (_, lifetime, _) = Start();
+        using (lifetime)
+        {
+            var quitting = 0;
+            var settlesWhenSaid = -1;
+            lifetime.Quitting += (_, _) =>
+            {
+                quitting++;
+                settlesWhenSaid = _settles;
+            };
+
+            lifetime.OnShutdownRequested(sender: null, new ShutdownRequestedEventArgs());
+
+            Assert.Equal((1, 0), (quitting, settlesWhenSaid));
+        }
+    });
+
+    // A message that arrives once quitting has begun is not acted on.
+    [Fact]
+    public Task A_message_received_once_quitting_has_begun_is_not_acted_on() => OnUi(() =>
+    {
+        var (window, lifetime, _) = Start();
+        using (lifetime)
+        {
+            window.Close();
+            lifetime.OnShutdownRequested(sender: null, new ShutdownRequestedEventArgs());
+
+            lifetime.Receive("item/ITM-01JC8");
+
+            Assert.False(window.IsVisible);
+            Assert.Empty(_navigated);
+        }
+    });
+
     // The real wiring: the shell window's bounds reach the store before the app ends.
     [Fact]
     public Task Quit_writes_the_shell_windows_bounds_before_the_app_ends() => OnUi(async () =>
     {
         var store = new GatedPreferencesStore();
         var preferences = new Preferences(store);
-        var shell = new ShellViewModel(new InMemoryEndpointRecords(), new FakeSindriApi(), _clock, preferences);
+        var shell = new ShellViewModel(new InMemoryEndpointRecords(), new FakeSindriApi(), _clock, preferences, new FakeClipboard());
         await shell.Restore(TestContext.Current.CancellationToken);
         var window = new ShellWindow { DataContext = shell, Width = 1000, Height = 700 };
         window.Show();

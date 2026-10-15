@@ -11,7 +11,7 @@ namespace Aw.Sindri.Ui.ViewModels.Palette;
 /// fuzzy match on labels and ids; ↑/↓ move between entries that do something; Enter runs one and Esc closes. U1 has no
 /// selected row, so Actions lists the whole catalog. It decides nothing about an action: the catalog says what runs.
 /// </summary>
-internal sealed class CommandPaletteViewModel : ObservableObject
+internal sealed partial class CommandPaletteViewModel : ObservableObject
 {
     // The Sindri section's catalog rows, in its order.
     private static readonly string[] _sindri = ["RebuildViews", "StopProcess"];
@@ -25,17 +25,21 @@ internal sealed class CommandPaletteViewModel : ObservableObject
     private readonly CatalogViewModel _catalog;
     private readonly Action<PageId> _goTo;
     private readonly Action<string> _remember;
-    private IReadOnlyList<PaletteSection> _all = [];
+    private IReadOnlyList<PaletteSection>? _all;
 
     /// <summary>The palette over the catalog.</summary>
     /// <param name="catalog">The catalog (read on connect).</param>
     /// <param name="goTo">Shows a page.</param>
     /// <param name="remember">Records an entry run (the paletteHistory preference).</param>
-    internal CommandPaletteViewModel(CatalogViewModel catalog, Action<PageId> goTo, Action<string> remember)
+    /// <param name="outcomes">The shell's region for a run whose palette closed before its outcome; null hands such a run back to its control.</param>
+    internal CommandPaletteViewModel(CatalogViewModel catalog, Action<PageId> goTo, Action<string> remember, CommandOutcomeRegion? outcomes = null)
     {
-        (_catalog, _goTo, _remember) = (catalog, goTo, remember);
+        (_catalog, _goTo, _remember, Outcomes) = (catalog, goTo, remember, outcomes);
         _catalog.PropertyChanged += OnCatalogChanged;
     }
+
+    /// <summary>The shell's region for a run whose palette closed before its outcome, or null.</summary>
+    internal CommandOutcomeRegion? Outcomes { get; }
 
     /// <summary>The palette's accessible name.</summary>
     public string Title { get; } = Labels.Palette;
@@ -75,6 +79,12 @@ internal sealed class CommandPaletteViewModel : ObservableObject
     /// <summary>Every matching entry, in order.</summary>
     public IReadOnlyList<PaletteEntry> Entries { get; private set => Set(ref field, value); } = [];
 
+    /// <summary>The polite live region's text: never empty (Avalonia #22312 crashes VoiceOver on an empty live region).</summary>
+    public string Announcement { get; private set => Set(ref field, value); } = Labels.Palette;
+
+    /// <summary>The live region's gate: true except for the moment it rests on a neutral text so that a repeated announcement is a change (flag first, then the text).</summary>
+    public bool IsAnnouncing { get; private set => Set(ref field, value); } = true;
+
     /// <summary>True when nothing matches the query.</summary>
     public bool IsEmpty => Entries.Count == 0;
 
@@ -93,7 +103,7 @@ internal sealed class CommandPaletteViewModel : ObservableObject
     /// <summary>Opens it with an empty query, the first entry that runs selected.</summary>
     internal void Open()
     {
-        _all = Build();
+        _all ??= Build();
         Query = string.Empty;
         IsOpen = true;
     }
@@ -102,6 +112,7 @@ internal sealed class CommandPaletteViewModel : ObservableObject
     internal void Close()
     {
         IsOpen = false;
+        HandBack();   // a run still sending is then spoken by the shell's region, or by its own control when its view is on show
         Query = string.Empty;
     }
 
@@ -109,7 +120,7 @@ internal sealed class CommandPaletteViewModel : ObservableObject
     /// <param name="by">How far.</param>
     internal void Move(int by)
     {
-        var runs = Entries.Where(e => e.IsEnabled).ToList();
+        var runs = Stops();
         if (runs.Count == 0)
         {
             return;
@@ -118,6 +129,7 @@ internal sealed class CommandPaletteViewModel : ObservableObject
         var at = Selected is { } selected ? runs.IndexOf(selected) : -1;
         FollowsSelection = true;
         Selected = runs[Math.Clamp(at + by, 0, runs.Count - 1)];
+        Announce();
     }
 
     /// <summary>
@@ -144,19 +156,15 @@ internal sealed class CommandPaletteViewModel : ObservableObject
                 _goTo(page);
                 break;
             case { Control.IsCliOnly: true }:
-                await entry.Control.Copy(cancellationToken).ConfigureAwait(true);
+                await Copy(entry, entry.Control, cancellationToken).ConfigureAwait(true);
                 break;
             case { Control.Action: "StopProcess" }:
                 Close();
                 _goTo(PageId.Health);
                 break;
             default:
-                if (RunPolicy == PaletteRunPolicy.CloseFirst)
-                {
-                    Close();
-                }
-
-                await entry.Control!.Run(cancellationToken).ConfigureAwait(true);   // why: an enabled entry without a page has a control
+                // why: an enabled entry without a page has a control
+                await Send(entry, entry.Control!, cancellationToken).ConfigureAwait(true);
                 break;
         }
     }
@@ -177,24 +185,54 @@ internal sealed class CommandPaletteViewModel : ObservableObject
 
     // Enter does something with a ready row that has a sender, with Stop Sindri (it goes to Health) and with a cli-only row it can copy.
     private static bool Runs(ControlViewModel control) =>
-        control.CanRun || (control.IsReady && control.Action == "StopProcess") || (control.IsCliOnly && control.CanCopy);
+        control.IsSendable || (control.IsReady && control.Action == "StopProcess") || (control.IsCliOnly && control.CanCopy);
+
+    // The entries ↑/↓ stop at: those that run now, and the selection even while it sends (it is disabled then, but it is
+    // where the user is: arrowing off it goes to its neighbour).
+    private List<PaletteEntry> Stops() => [.. Entries.Where(e => e.IsEnabled || e == Selected)];
+
+    // The entries the live region counts: every one that runs, a sending one too, so a position and its total do not
+    // change when the user moves off an entry that started sending.
+    private List<PaletteEntry> Counted() => [.. Entries.Where(e => e.Runs)];
 
     private void Filter()
     {
+        _all ??= Build();
         var query = new string([.. Query.Where(c => !char.IsWhiteSpace(c)).Select(char.ToLowerInvariant)]);
         Sections = [.. _all.Select(s => s with { Entries = [.. s.Entries.Where(e => e.Matches(query))] }).Where(s => s.Entries.Count > 0)];
         Entries = [.. Sections.SelectMany(s => s.Entries)];
         OnChanged(nameof(IsEmpty));
         FollowsSelection = false;
         Selected = Entries.FirstOrDefault(e => e.IsEnabled);
+        Announce();
+    }
+
+    // The live region says the selected entry (its name carries the status) and where it is among the entries that run;
+    // "Nothing matches" when empty; never "" (Avalonia #22312 crashes VoiceOver on an empty live region).
+    private void Announce() => Announcement = Describe();
+
+    private string Describe()
+    {
+        var runs = Counted();
+        return Entries.Count == 0 ? Labels.NoMatches
+            : Selected is { } selected ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{selected.Name}, {runs.IndexOf(selected) + 1} of {runs.Count}")
+            : Labels.Palette;
     }
 
     // A catalog read while it is open (a reconnect) replaces its entries.
     private void OnCatalogChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (IsOpen && e.PropertyName == nameof(CatalogViewModel.Controls))
+        if (e.PropertyName != nameof(CatalogViewModel.Controls))
         {
-            _all = Build();
+            return;
+        }
+
+        Selected = null;
+        ReleaseAll();
+        _all?.SelectMany(s => s.Entries).ToList().ForEach(entry => entry.Detach());
+        _all = null;
+        if (IsOpen)
+        {
             Filter();
         }
     }

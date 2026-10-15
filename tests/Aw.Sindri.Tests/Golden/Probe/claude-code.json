@@ -1,0 +1,99 @@
+{
+  "harness": "claude-code",
+  "variables": [
+    "AI_AGENT",
+    "AW_SINDRI_HOME",
+    "AW_SINDRI_PORT",
+    "BUN_INSTALL",
+    "CLAUDECODE",
+    "CLAUDE_CODE_BRIDGE_SESSION_ID",
+    "CLAUDE_CODE_CHILD_SESSION",
+    "CLAUDE_CODE_ENTRYPOINT",
+    "CLAUDE_CODE_EXECPATH",
+    "CLAUDE_CODE_MESSAGING_SOCKET",
+    "CLAUDE_CODE_MESSAGING_TOKEN",
+    "CLAUDE_CODE_SESSION_ATTENDED",
+    "CLAUDE_CODE_SESSION_ID",
+    "CLAUDE_EFFORT",
+    "CLAUDE_PID",
+    "COLORTERM",
+    "COMMAND_MODE",
+    "CONDA_CHANGEPS1",
+    "COREPACK_ENABLE_AUTO_PIN",
+    "FPATH",
+    "GIT_EDITOR",
+    "HOME",
+    "HOMEBREW_CELLAR",
+    "HOMEBREW_PREFIX",
+    "HOMEBREW_REPOSITORY",
+    "INFOPATH",
+    "LANG",
+    "LOGNAME",
+    "LaunchInstanceID",
+    "NVM_BIN",
+    "NVM_CD_FLAGS",
+    "NVM_DIR",
+    "NVM_INC",
+    "NoDefaultCurrentDirectoryInExePath",
+    "OSLogRateLimit",
+    "PATH",
+    "PWD",
+    "SECURITYSESSIONID",
+    "SHELL",
+    "SHLVL",
+    "SINDRI",
+    "SSH_AUTH_SOCK",
+    "SSH_SOCKET_DIR",
+    "TERM",
+    "TERM_PROGRAM",
+    "TERM_PROGRAM_VERSION",
+    "TMPDIR",
+    "USER",
+    "WARP_CLIENT_VERSION",
+    "WARP_CLI_AGENT_PROTOCOL_VERSION",
+    "WARP_FOCUS_URL",
+    "WARP_HONOR_PS1",
+    "WARP_IS_LOCAL_SHELL_SESSION",
+    "WARP_PROMPT_NODE_VERSION_ENABLED",
+    "WARP_SSH_REUSE_CONTROL_MASTER",
+    "WARP_TERMINAL_SESSION_UUID",
+    "WARP_USE_SSH_WRAPPER",
+    "XPC_FLAGS",
+    "XPC_SERVICE_NAME",
+    "_",
+    "__CFBundleIdentifier",
+    "__CF_USER_TEXT_ENCODING"
+  ],
+  "ancestry": [
+    {
+      "name": "bash",
+      "executable": "/bin/bash"
+    },
+    {
+      "name": "zsh",
+      "executable": "/bin/zsh"
+    },
+    {
+      "name": "claude",
+      "executable": "~/.local/share/claude/versions/2.1.299"
+    },
+    {
+      "name": "-zsh",
+      "executable": "/bin/zsh"
+    },
+    {
+      "name": "stable",
+      "executable": "/Applications/Warp.app/Contents/MacOS/stable"
+    },
+    {
+      "name": "stable",
+      "executable": "/Applications/Warp.app/Contents/MacOS/stable"
+    },
+    {
+      "name": "launchd",
+      "executable": "/sbin/launchd"
+    }
+  ],
+  "terminal": false,
+  "version": "2.1.299"
+}

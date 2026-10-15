@@ -26,15 +26,18 @@
     "rebuilding": false,
     "stalled": false,
     "stalledAt": null,
-    "stalledType": null
+    "stalledType": null,
+    "text": null
   },
   "health": {
     "word": "degraded",
     "problems": [
       {
         "code": "SND-SCHED-001",
-        "text": "index failed"
+        "text": "index failed",
+        "clause": "index failed"
       }
-    ]
+    ],
+    "sentence": "Sindri is degraded: index failed."
   }
 }

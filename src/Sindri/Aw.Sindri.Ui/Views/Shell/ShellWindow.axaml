@@ -30,7 +30,7 @@
     <Border x:Name="VersionMismatchPanel" IsVisible="{Binding IsVersionMismatch}" Classes="card state-card"
             HorizontalAlignment="Center" VerticalAlignment="Center">
       <StackPanel Spacing="{StaticResource Space.SM}">
-        <TextBlock x:Name="VersionMismatchText" Classes="detail-title" TextWrapping="Wrap"
+        <TextBlock x:Name="VersionMismatchText" Classes="detail-title" TextWrapping="Wrap" Focusable="True"
                    Text="{Binding Text.VersionMismatch}" AutomationProperties.Name="{Binding Text.VersionMismatch}" />
         <ItemsControl x:Name="VersionRows" ItemsSource="{Binding Health.Detail.Versions}" AutomationProperties.Name="{Binding Reason}">
           <ItemsControl.ItemTemplate>
@@ -264,6 +264,17 @@
     <TextBlock x:Name="NotRespondingLive" Classes="live-region" Classes.live="{Binding IsNotRespondingBanner}" Text="{Binding NotRespondingAnnouncement}"
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
     <TextBlock x:Name="NotRunningLive" Classes="live-region" Classes.live="{Binding IsNotRunning}" Text="{Binding NotRunningAnnouncement}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <TextBlock x:Name="MismatchLive" Classes="live-region" Classes.live="{Binding IsVersionMismatch}" Text="{Binding MismatchAnnouncement}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <TextBlock x:Name="RunningLive" Classes="live-region" Classes.live="{Binding IsRecovered}" Text="{Binding RecoveredAnnouncement}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <TextBlock x:Name="ViewsLive" Classes="live-region" Classes.live="{Binding Health.Banner.IsShown}" Text="{Binding Health.Banner.Announcement}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <TextBlock x:Name="ViewsRecoveredLive" Classes="live-region" Classes.live="{Binding Health.Banner.IsRecovered}" Text="{Binding Health.Banner.RecoveredAnnouncement}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <!-- A command the palette started and closed on before its outcome: no control has a view on show to say it, so this region does. -->
+    <TextBlock x:Name="CommandOutcomeLive" Classes="live-region" Classes.live="{Binding CommandOutcome.IsLive}" Text="{Binding CommandOutcome.Text}"
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
     <!-- The palette and the ? sheet (§8): layers over everything, shown by their view models; Esc closes the topmost. -->
     <Panel x:Name="PaletteLayer" IsVisible="{Binding Palette.IsOpen}">

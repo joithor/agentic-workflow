@@ -41,6 +41,20 @@ public sealed class ResultJsonTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_citations_aliases_round_trip_as_a_list()
+    {
+        var cite = new Citation(RecordKey.From("linear:issue/0e5a1b00-0000-4000-8000-000000000103"),
+            [new CitationRef(SourceId.From("onyx"), ExternalId.From("0e5a1b00-0000-4000-8000-000000000103"), SourceVersion.From("2026-07-23T09:00:00.0000000Z"))],
+            Permalink: null, Trust.Untrusted, CitationState.Unchecked)
+        { Aliases = ["SPL-103"] };
+
+        var bytes = AwJson.Serialize(cite, _json);
+
+        Assert.Contains("\"aliases\":[\"SPL-103\"]", Encoding.UTF8.GetString(bytes), StringComparison.Ordinal);
+        Assert.Equal(["SPL-103"], AwJson.Deserialize<Citation>(bytes, _json).Value.Aliases, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Scrub_blocked_is_written_in_kebab_case() =>
         Assert.Equal("\"scrub-blocked\"", Encoding.UTF8.GetString(AwJson.Serialize(CitationState.ScrubBlocked, _json)));
 }

@@ -49,13 +49,9 @@ internal sealed partial class ShellWindow : Window
     /// <inheritdoc />
     protected override void OnDataContextChanged(EventArgs e)
     {
-        _shell?.PropertyChanged -= OnShellChanged;
-        _shell?.Palette.PropertyChanged -= OnOverlayChanged;
-        _shell?.Shortcuts.PropertyChanged -= OnOverlayChanged;
+        Listen(_shell, on: false);
         _shell = Shell;
-        _shell?.PropertyChanged += OnShellChanged;
-        _shell?.Palette.PropertyChanged += OnOverlayChanged;
-        _shell?.Shortcuts.PropertyChanged += OnOverlayChanged;
+        Listen(_shell, on: true);
         if (_shell?.Window is { } bounds)
         {
             WindowStartupLocation = WindowStartupLocation.Manual;
@@ -144,6 +140,11 @@ internal sealed partial class ShellWindow : Window
     // region itself, so Tab then moves inside it (or its first focusable control when the region itself can't take focus).
     private bool CycleRegion(bool back)
     {
+        if (OverlayOpen)
+        {
+            return true;   // the palette and the ? sheet trap focus: the regions behind the scrim are out of reach (WCAG 2.4.3)
+        }
+
         Control[] regions = [.. _regions.Select(this.Get<Control>).Where(c => c.IsEffectivelyVisible && c.IsEffectivelyEnabled)];
         var focused = FocusManager?.GetFocusedElement() as Visual;
         var current = Array.FindIndex(regions, r => focused is not null && (r == focused || r.IsVisualAncestorOf(focused)));
@@ -202,7 +203,7 @@ internal sealed partial class ShellWindow : Window
                 break;
             case nameof(ShellViewModel.State):
                 CoverPage();
-                Dispatcher.UIThread.Post(KeepFocus, DispatcherPriority.Loaded);
+                Dispatcher.UIThread.Post(Shell is { IsVersionMismatch: true } ? FocusMismatchCard : KeepFocus, DispatcherPriority.Loaded);
                 break;
             case nameof(ShellViewModel.IsSheetShown):
                 CoverPage();
@@ -221,6 +222,17 @@ internal sealed partial class ShellWindow : Window
         if (Shell is { IsSheetShown: true } && (Covering || !HasUsableFocus))
         {
             _ = this.Get<TextBlock>("SheetTitle").Focus(Method());
+        }
+    }
+
+    // The version-mismatch card replaces the whole shell (it can appear mid-session), so whatever had focus is hidden and
+    // there is no neighbour: focus goes into the card, to its heading, which is spoken with the card's live region
+    // (review run 5, accessibility-tester-0).
+    private void FocusMismatchCard()
+    {
+        if (Shell is { IsVersionMismatch: true })
+        {
+            _ = this.Get<TextBlock>("VersionMismatchText").Focus(Method());
         }
     }
 
@@ -249,34 +261,4 @@ internal sealed partial class ShellWindow : Window
             _lastMethod = e.NavigationMethod;
         }
     }
-
-    // After a state change, a closed sheet or a change in its covering: if the focused control is gone (hidden, disabled,
-    // or nothing has focus after something had it), focus its region's neighbour.
-    private void KeepFocus()
-    {
-        if (HasUsableFocus || _lastFocused is not { } last)
-        {
-            return;
-        }
-
-        var target = Neighbour(last) ?? Usable(FirstFocusable(TopBar) as Control);
-        _sheetOpener = null;
-        _ = target?.Focus(Method());
-    }
-
-    // The sheet's opener (the edge tab) or the page region for the sheet; the health pill for the top bar; the page
-    // region, or the sheet's heading while the sheet covers the page.
-    private Control? Neighbour(Control last)
-    {
-        var page = Usable(this.Get<Control>("Page")) ?? (Covering ? Usable(this.Get<TextBlock>("SheetTitle")) : null);
-        if (SheetPanel == last || SheetPanel.IsVisualAncestorOf(last))
-        {
-            return Usable(_sheetOpener) ?? page;
-        }
-
-        return TopBar.IsVisualAncestorOf(last) ? Usable(TopBar.Get<Control>("HealthPill")) : page;
-    }
-
-    private static Control? Usable(Control? control) =>
-        control is { IsEffectivelyVisible: true, IsEffectivelyEnabled: true, Focusable: true } ? control : null;
 }

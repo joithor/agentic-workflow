@@ -23,6 +23,9 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
     private readonly HttpClient _http = new(handler ?? new SocketsHttpHandler { UseProxy = false }) { Timeout = timeout ?? TimeSpan.FromSeconds(10) };
     private readonly CallerHeaders _headers = headers ?? CallerHeaders.None;
 
+    /// <summary>Why this CLI calls as a session ('CLAUDECODE is set', 'no terminal'), or null when it calls as a human.</summary>
+    public string? SessionReason => _headers.SessionReason;
+
     public void Dispose() => _http.Dispose();
 
     /// <summary>GET a route and read its answer as <typeparamref name="T"/>.</summary>

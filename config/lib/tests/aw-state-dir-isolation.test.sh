@@ -94,13 +94,19 @@ test_full_envelope_leaves_both_the_empty_home_and_the_real_home_untouched() {
   # scope the "real HOME untouched" assertion to the specific locations this
   # fix's env overrides are meant to redirect away from: exactly the set
   # found by grepping every install script/hook for a $HOME-resolving write.
+  # ~/.agentic-workflow is deliberately not watched: other sessions on the same box write there all the time, which
+  # made this assertion flaky. The fake HOME stays empty below, which proves nothing was written to $HOME/.agentic-workflow.
   local real_targets=("$real_home/.local/bin" "$real_home/.claude/hooks" "$real_home/.claude/settings.json" \
-                       "$real_home/.agentic-workflow" "$real_home/Library/LaunchAgents")
+                       "$real_home/Library/LaunchAgents")
+  # mtime, size and name per file: GNU stat (Linux) takes -c, BSD stat (macOS) takes -f; on Linux `stat -f` is a
+  # different (filesystem) command that fails, which under pipefail killed this test silently.
+  local STAT_FILES
+  if stat -c '%Y' / >/dev/null 2>&1; then STAT_FILES=(stat -c '%Y %s %n'); else STAT_FILES=(stat -f '%m %z %N'); fi
   local before after
   before="$(mktemp)"; after="$(mktemp)"
   : > "$before"
   for t in "${real_targets[@]}"; do
-    [ -e "$t" ] && find "$t" -type f -exec stat -f '%m %z %N' {} + 2>/dev/null
+    if [ -e "$t" ]; then find "$t" -type f -exec "${STAT_FILES[@]}" {} + 2>/dev/null; fi   # `[ -e ] && …` as the loop's last command failed the pipeline (pipefail) when the last target is absent, as ~/Library/LaunchAgents is on Linux
   done | sort >> "$before"
 
   local env=(HOME="$fake_home" AW_STATE_DIR="$state" CLAUDE_SETTINGS_FILE="$settings" CLAUDE_HOOKS_DIR="$hooks_dir" \
@@ -111,7 +117,7 @@ test_full_envelope_leaves_both_the_empty_home_and_the_real_home_untouched() {
 
   : > "$after"
   for t in "${real_targets[@]}"; do
-    [ -e "$t" ] && find "$t" -type f -exec stat -f '%m %z %N' {} + 2>/dev/null
+    if [ -e "$t" ]; then find "$t" -type f -exec "${STAT_FILES[@]}" {} + 2>/dev/null; fi   # `[ -e ] && …` as the loop's last command failed the pipeline (pipefail) when the last target is absent, as ~/Library/LaunchAgents is on Linux
   done | sort >> "$after"
   diff "$before" "$after" > /dev/null \
     || { echo "FAIL: the real HOME's install-target locations changed during a fully-sandboxed installer run:"; diff "$before" "$after"; exit 1; }

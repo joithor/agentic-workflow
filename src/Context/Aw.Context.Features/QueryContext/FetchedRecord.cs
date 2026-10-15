@@ -9,4 +9,5 @@ namespace Aw.Context.Features.QueryContext;
 /// <param name="Source">The source it was fetched from (its best hit's).</param>
 /// <param name="Title">The cleaned, one-line title.</param>
 /// <param name="Text">The cleaned text, or a blocked field.</param>
-internal sealed record FetchedRecord(FusedItem Item, IContextSource Source, ScrubbedField Title, ScrubbedField Text);
+/// <param name="Aliases">The item's aliases, each cleaned on its own as one line (record text, spec §7).</param>
+internal sealed record FetchedRecord(FusedItem Item, IContextSource Source, ScrubbedField Title, ScrubbedField Text, IReadOnlyList<ScrubbedField> Aliases);

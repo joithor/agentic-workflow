@@ -99,8 +99,8 @@ rounds pass
 
 A line the engine rejects (an answer that doesn't fit the park, a grant of 0 or above the loop's cap, an undeclared
 outcome) or one out of the format (not JSON, an unknown `kind`, a `variant` that doesn't go with its kind) fails its case
-at that line, saying why. A recipe without `evals:` prints `no evals declared` and exits 0: nothing failed. Approval will refuse
-such a recipe (`SND-RECIPE-008`) once the registry lands (P2); this build has no approve path yet. `--json` prints `{"cases":[{"case","passed","line","detail"}],"scaffold":null,"passed"}`, where `"case"` is the eval file's path as `evals:` lists it (`evals/workflow.step/happy.jsonl`); the text output shows the bare name (`happy`).
+at that line, saying why. A recipe without `evals:` prints `no evals declared` and exits 0: nothing failed. Approving
+such a recipe is refused (`SND-RECIPE-008`, see `sindri recipe approve` below). `--json` prints `{"cases":[{"case","passed","line","detail"}],"scaffold":null,"passed"}`, where `"case"` is the eval file's path as `evals:` lists it (`evals/workflow.step/happy.jsonl`); the text output shows the bare name (`happy`).
 The same eval run twice prints the same output.
 
 `--scaffold <file>` prints a happy-path case for the recipe on stdout, marked `"scaffold": true` on line 1: the start
@@ -114,6 +114,76 @@ history in the same format; it needs the server's instances (P4) and exits 2 unt
 | 0 | Every case passes, or the recipe declares none |
 | 1 | A case fails (`<case> fail at <file>:<line>: <detail>`) |
 | 2 | A usage error (no file, `--record` without an address and `--out`: `SND-CLI-003`; an unknown argument: `SND-CLI-001`; `--record` itself until P4: `SND-CLI-001 … needs the server (P4)`), or a tool error: the recipe can't be read (`SND-RECIPE-010`) or doesn't bind (`SND-RECIPE-001`, fix: `sindri recipe validate`), a listed eval file is missing, unreadable or outside the recipe's directory (`SND-RECIPE-008`), or a bug inside `sindri` (`SND-API-005 recipe eval failed inside sindri: …`) |
+
+## `sindri recipe register`, `show` and `list`
+
+`sindri recipe register <file>` (`desk`; starts the control plane if it may) validates the recipe on the server with the
+registry's view (`RCP-VERSION-001/002`, and `RCP-CAP-003` for a generated recipe's base) and stores its normalized long
+form under its hash: `registered <id>@<hash12> (unapproved)`, or `already registered …` for a hash it has (one
+`recipe.registered` event per hash). Other content under a registered id and version is `SND-RECIPE-007`; any other
+failing rule is `SND-RECIPE-001`, each followed by its rule lines.
+
+`sindri recipe show <id@hash> [--json]` (a query; the hash by 8 or more digits) prints the recipe's line, then `urgency: <urgency>`, one
+`input: <key> type=<type> kind=<kind|->` line per input and one `output: <key> type=<type> from=<state>` line per output, then the path order (below), then the approval preview;
+an unknown hash is `SND-RECIPE-002`. `show --json` prints the server's body, `{"recipe":{id, version, hash, standing, via, stale, inputs, urgency, outputs, orderedBy, states, loops},"preview":{…}}`: the recipe object has the same fields as a `recipe list --json` row, so a client reads urgency, inputs, outputs and the path order the same way from either. `sindri recipe list [--stale] [--json]` prints one line per registered recipe,
+`<id>@<hash12> <standing> (<via>)[; stale: …]`, where standing is `approved`, `unapproved` or `revoked` and stale names
+`pin-drift` (a pinned block's descriptor changed in this build) or `child-stale` (a pinned child was revoked);
+`--stale` keeps only the approved ones that are stale. `--json` prints the server's body,
+`{"recipes":[{id, version, hash, standing, via, stale, inputs, urgency, outputs, orderedBy, states, loops}]}`, where an input is `{key, label, type, kind}`
+(type and kind `null` when not declared) and an output is `{key, label, type, from}`. A row registered before `urgency`, `outputs` and
+`inputs[].kind` existed keeps its stored text and hash and lists with the defaults (`work`, no outputs, no kinds); registering the same
+file again hashes differently and is `SND-RECIPE-007` naming `RCP-VERSION-001` until the author raises `version`. The queries never start the control plane: when it
+isn't running they print `SND-API-001 not running: …` and exit 1.
+
+**Path order (spec §3.10, UI E-20).** `recipe show` and `recipe list --json` carry the recipe's states in path order, computed from the
+transition graph by `StatePathOrder` and never hashed (a recipe's hash is the same with or without it): `orderedBy` (`path`, or
+`transition-list` when `initial` has more than one distinct non-terminal first target other than itself), `states[]` (`id`, `order`, `branchOf`) and
+`loops[]` (`name`, `from`, `to`). Text form: `order: <orderedBy>`, one `state: <name> order=<n>|branch-of=<state>|order=-` line per state and
+one `loop: <name|-> <from> -> <to>` line per loop edge. The walk starts at `initial` and follows each state's transitions in list order:
+the first to a non-terminal state not yet seen continues the main path, a later one is a branch and every state only that branch reaches is folded
+under the state it leaves (`branchOf`, no `order`); a transition back to a state still on the walk is a loop edge, named by the target's
+`loop:` (the loop the engine counts the round on; else the looping state's), listed in the order the walk finds them. A terminal target neither takes the main-path slot nor decides `orderedBy`; terminal states are numbered after the non-terminal ones in
+the order the walk found them, wherever they were reached from; a state the walk never reaches is listed last with neither. `order`
+starts at 1 (WF spec §3.10; the API spec's StateCell says 0-based, an open cross-spec question), set in one place
+(`StatePathOrder.FirstOrder`).
+
+## `sindri recipe approve` and `sindri recipe revoke`
+
+Both are `protected` (engine spec §4.2, §6.2, §6.3): only a human at a terminal gets past the command chain; a session
+or a CLI without a terminal gets `SND-AUTH-002` naming the agent variable or process it saw, and nothing is recorded but
+the audit row.
+
+`sindri recipe approve <file|id@hash>`:
+
+1. With a file, the CLI validates it in-process (`SND-RECIPE-001` if it fails) and checks every eval file its `evals:`
+   names is present beside it (`SND-RECIPE-008` otherwise; P4 runs them at approve). It registers the file if the server
+   doesn't know it yet.
+2. It asks `POST /sindri/workflow/challenges` for `approve <id> <version>` and prints the preview: id, version, hash and
+   base; the diff against the last approved version of the id (`nothing` for a first approval); the capability uses
+   (block, `from -> to`, capabilities and capability parameters); the effect kinds and their allowlist status; the pinned
+   blocks with their descriptor hashes and the pinned children; the eval files. A re-approval of an approved hash also
+   shows the blocks whose descriptor changed and the drift-parked instances it resumes.
+3. You type the action text, `approve workflow.step 1`. With a file, the CLI re-reads it first and refuses with
+   `SND-RECIPE-009` if it changed while you read.
+4. It prints `approved workflow.step@<hash12>`.
+
+The server refuses before any challenge when the hash is revoked (`SND-RECIPE-005`), the recipe declares no evals
+(`SND-RECIPE-008`), a child it starts has no approved hash to pin (`SND-RECIPE-003`), or it is already approved with the
+same pins (`SND-CLI-003`). A wrong typed text, a challenge for another action, an expired one (5 minutes) or one whose
+subject changed (another hash, or other pins: a child approved while you read) is `SND-RECIPE-009` and records nothing.
+A generated recipe whose base was revoked after it was registered is refused too (`SND-RECIPE-005`). With a file whose
+id and version are registered with other content (edited without raising its version), the CLI refuses before the preview
+with the register call's `SND-RECIPE-007` and its `RCP-VERSION-001` line.
+
+`sindri recipe revoke <id@hash>` (the hash by 8 or more digits) previews the instances that will park, the takeovers it
+ends, the generated recipes approved from it (revoked with it, recursively) and the parents pinning it as a child
+(marked `child-stale`), asks for `revoke <id>@<hash12>`, and prints `revoked …; N instances parked` (N is 0 until P4's
+wake reaches instances). Revoking an already revoked hash is `SND-RECIPE-005`, unless a revoke stopped partway through
+its cascade: then the same command finishes it (each step is keyed by its hash, so nothing is recorded twice).
+
+Each approval appends `recipe.approved` (keyed `recipe.approved:<hash>:after:<seq>`) and an approval row keyed by
+(id, version, hash) with its pins; each revoked hash appends `recipe.revoked` (keyed `recipe.revoked:<hash>`) and its row,
+and is sent to `IRecipeWake`. Challenges live in the server process and die on restart.
 
 ## Recipe reference (schema 1)
 
@@ -160,13 +230,23 @@ needs re-approval.
 | `version` | yes | An integer. Same id and version with another hash, or a version not above the highest registered, is refused once the registry exists (`RCP-VERSION-001`/`-002`, P2) |
 | `description` | no | |
 | `base` | generated recipes only | Written by Sindri's generator; on a hand-written recipe it is `RCP-CAP-004`, and `recipe validate` treats every recipe as hand-written |
-| `inputs` | no | The facts a start supplies: `{ key, label?, type?: text \| file \| item }` |
+| `urgency` | no | `incident`, `triage` or `work` (default `work`; UI E-21). The app orders its Workflows strip by it; the engine never reads it. The normalizer writes `work` when it is absent, so an absent urgency and `urgency: work` hash the same. Any other value is `RCP-URG-001` |
+| `inputs` | no | The facts a start supplies: `{ key, label?, type?, kind? }`. `type` is a fact type (default `text`), `kind` a subject kind; the first input is the instance's subject (UI E-22) |
+| `outputs` | no | What the recipe produces for a human: `{ key, label?, type?, from }`. `from` names the state that produces the fact. Declarations only: they add no wiring (UI E-22) |
 | `initial` | yes | An `active` or `wait` state (`RCP-INIT-001`) |
 | `states` | yes | At least one non-terminal and one terminal state. `cancelled`, `escalated`, `parked` and `taken-over` are reserved (`RCP-STATE-001`) |
 | `transitions` | yes | |
 | `loops`, `budget` | no | |
 | `evals` | to approve (P2) | Paths of eval files, relative to the recipe's directory (`evals/<id>/<case>.jsonl`, spec §9.2). The paths' form isn't checked yet |
 | `hash` | no | Checked when present |
+
+### Fact types and subject kinds
+
+Fact type: `text`, `file`, `item`, `link`, `scope-map`, `packet`, `evidence`, `decision`, `payload` (`FactTypes`). It picks a viewer in
+the app and nothing else. Subject kind: `item`, `linear-project`, `webhook`, `file`, `text` (`SubjectKinds`); `item`, `file` and `text`
+pair with the type of the same name, `linear-project` and `webhook` with `payload`. Both are strings in the long form, so a bad value
+reaches its rule (`RCP-TYPE-001` to `-003`, `RCP-OUT-001` to `-003`, `RCP-URG-001`) instead of a reader error. Those rules
+(the Declarations rows under Rules) run on every path that validates a recipe, so a value of another spelling is refused with its rule's line.
 
 ### Value grammars
 
@@ -295,6 +375,13 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-NEXT-002` | `next` names no approval-tier command | Leave it out |
 | `RCP-EFFECT-001` | Every effect is on the profile's effect allowlist. **Skipped** while the profile has no `workflow.effects` (P6) | Add it to `workflow.effects` |
 | `RCP-RES-001` | **Information:** a resource wait has no allocator in this build | None needed; it parks with `SND-WF-010` until one lands |
+| `RCP-URG-001` | `urgency` is `incident`, `triage` or `work` | Use one of them, or remove `urgency` (the default is `work`) |
+| `RCP-OUT-001` | An output's `from` names a state of the recipe | Name one of its states |
+| `RCP-OUT-002` | An output's `from` isn't a terminal or engine-owned state, and the state's Step, its leaving transitions' `produces` or its wait records the output's key. **Information** when the state waits on a child, whose outcome the validator can't read | Record the fact there, or name the state that does |
+| `RCP-OUT-003` | Output keys are unique and none is also an input key | Give each output its own key |
+| `RCP-TYPE-001` | An input's or output's `type` is a fact type | Use one of the nine types |
+| `RCP-TYPE-002` | An input's `kind` is a subject kind | Use one of the five kinds |
+| `RCP-TYPE-003` | An input's `kind` pairs with its `type` (an absent `type` is `text`); not reported for an entry with a bad type or kind | Set `type` to the kind's, or change `kind` |
 | `RCP-HASH-001` | A `hash` in the file matches the content | Set it to the hash the message names, or remove it |
 | `RCP-VERSION-001` | Same id and version, same hash (registry, P2) | Raise `version` |
 | `RCP-VERSION-002` | `version` is above the highest registered (registry, P2) | Raise `version` |

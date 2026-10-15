@@ -37,6 +37,7 @@ internal sealed class FakeSingleInstance(FakeInstanceChannel channel, int proces
             }
             finally
             {
+                channel.Settled(delivery);   // before it is disposed, so Retire never withdraws a disposed one
                 delivery.Withdraw();
             }
 
@@ -78,6 +79,8 @@ internal sealed class FakeSingleInstance(FakeInstanceChannel channel, int proces
             channel.StopReading(this);
         }
     }
+
+    public void Retire() => channel.Retire(this);
 
     public int? HolderProcessId() => channel.HolderProcessId;
 

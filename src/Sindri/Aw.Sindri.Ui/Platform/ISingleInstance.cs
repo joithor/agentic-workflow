@@ -27,4 +27,12 @@ public interface ISingleInstance : IAsyncDisposable
     /// <summary>The process id of the instance that holds the claim, when one does and it is known.</summary>
     /// <returns>The id, or null.</returns>
     public int? HolderProcessId();
+
+    /// <summary>
+    /// The holder has begun ending (Quit, or the OS ending the app): it no longer takes messages. A later launch's
+    /// message is refused at once (Send is false, never "handled", since nothing will act on it), and one already
+    /// handed to the app is withdrawn. The claim stays held until <see cref="IAsyncDisposable.DisposeAsync"/>, so a
+    /// later launch claims once the holder has gone.
+    /// </summary>
+    public void Retire();
 }

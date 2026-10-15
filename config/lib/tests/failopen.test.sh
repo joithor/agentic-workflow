@@ -87,7 +87,7 @@ state5="$(mktemp -d)"; mkdir -p "$state5/logs"; head -c 300 /dev/zero | tr '\0' 
 AW_FAILOPEN_MAX_BYTES=200 run_lib "$state5" h c > /dev/null
 check "rotation: old log moved to failopen.log.1" "$(wc -c < "$state5/logs/failopen.log.1" | tr -d ' ')" "300"
 check "rotation: new log holds only the new event" "$(jq -r .cause "$state5/logs/failopen.log")" "c"
-check "new log is private to the user" "$(stat -f %Lp "$state5/logs/failopen.log" 2>/dev/null || stat -c %a "$state5/logs/failopen.log")" "600"
+check "new log is private to the user" "$(stat -c %a "$state5/logs/failopen.log" 2>/dev/null || stat -f %Lp "$state5/logs/failopen.log")" "600"
 
 # bounded <seconds> <cmd...> — prints "rc=<n>" or "rc=hung" when it had to be killed.
 bounded() {

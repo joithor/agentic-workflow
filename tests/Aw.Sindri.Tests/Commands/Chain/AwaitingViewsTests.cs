@@ -45,6 +45,20 @@ public sealed class AwaitingViewsTests : IAsyncDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_projector_that_cannot_run_is_named_without_an_event_number()
+    {
+        _ = await _c.H.HoldLease();
+        _c.Progress.Publish(new ViewsStatus(0, 5, ProjectedAt: null, Rebuilding: false, Stalled: true, StalledAt: null, StalledType: "SND-LEDGER-002: the ledger can't be read"));
+
+        var refused = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("accept"), Human);
+
+        Assert.Equal(SindriErrors.ViewsStalled.Code, refused.Error.Code);
+        Assert.Contains("views can't be updated (SND-LEDGER-002: the ledger can't be read)", refused.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("stalled at", refused.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("sindri doctor", refused.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_command_that_reads_views_runs_once_the_views_reach_the_ledger_head()
     {
         await AnEarlierCommand();
@@ -71,6 +85,38 @@ public sealed class AwaitingViewsTests : IAsyncDisposable
         }
 
         Assert.Equal(SindriErrors.ViewsBehind.Code, (await running).Error.Code);
+        Assert.Equal(1, _c.Latch.Started);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_stall_that_starts_during_the_wait_is_SND_VIEW_001()
+    {
+        await AnEarlierCommand();
+        var running = _c.Start(new FixtureCommand("accept"), Human);
+        await Task.Delay(50, TestContext.Current.CancellationToken);   // it is waiting for the cursor
+
+        _c.Progress.Publish(_c.Progress.Current with { Stalled = true, StalledAt = 1, StalledType = "service.ran" });
+        _c.H.Clock.Advance(TimeSpan.FromMilliseconds(500));
+
+        Assert.Equal(SindriErrors.ViewsStalled.Code, (await running).Error.Code);
+        Assert.Equal(1, _c.Latch.Started);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_rebuild_that_starts_during_the_wait_is_SND_API_010()
+    {
+        await AnEarlierCommand();
+        var running = _c.Start(new FixtureCommand("accept"), Human);
+        await Task.Delay(50, TestContext.Current.CancellationToken);   // it is waiting for the cursor
+
+        _c.Progress.RequestRebuild();
+        while (!running.IsCompleted)
+        {
+            _c.H.Clock.Advance(TimeSpan.FromMilliseconds(500));
+            await Task.Delay(5, TestContext.Current.CancellationToken);
+        }
+
+        Assert.Equal(SindriErrors.ViewsRebuilding.Code, (await running).Error.Code);
         Assert.Equal(1, _c.Latch.Started);
     }
 

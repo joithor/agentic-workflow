@@ -9,6 +9,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Shell;
 using Microsoft.Extensions.Time.Testing;
@@ -133,7 +134,7 @@ public sealed class CommandPaletteTests : IDisposable
         Assert.True(field.Focus(NavigationMethod.Tab));
 
         Press(window, Key.K, PhysicalKey.K, _command, "k");
-        window.KeyTextInput("approve");
+        window.KeyTextInput("approve profile");
         Settle(window);
 
         Assert.Equal(["Approve profile, Copy: sindri profile approve [<hash>]"], EntryNames(window), StringComparer.Ordinal);
@@ -186,6 +187,28 @@ public sealed class CommandPaletteTests : IDisposable
         Press(window, Key.Escape, PhysicalKey.Escape);
         Assert.False(Visible(window, "ShortcutsSheet"));
         Assert.Same(page, Focused(window));
+    });
+
+    // G5 (a11y-2): Ctrl+, / ⌘, with the palette or the ? sheet open does nothing: the card keeps focus and Settings does not
+    // open behind it (the card is modal, §11.2).
+    [Fact]
+    public Task The_settings_chord_does_nothing_over_the_palette_or_the_sheet() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        var page = shell.CurrentPage;
+
+        Press(window, Key.K, PhysicalKey.K, _command, "k");
+        Press(window, Key.OemComma, PhysicalKey.Comma, _command, ",");
+
+        Assert.Equal((true, page), (shell.Palette.IsOpen, shell.CurrentPage));
+        Assert.Same(Named<TextBox>(window, "PaletteQuery"), Focused(window));
+
+        Press(window, Key.Escape, PhysicalKey.Escape);
+        Press(window, Key.OemQuestion, PhysicalKey.Slash, RawInputModifiers.Shift, "?");
+        Press(window, Key.OemComma, PhysicalKey.Comma, _command, ",");
+
+        Assert.Equal((true, page), (shell.Shortcuts.IsOpen, shell.CurrentPage));
+        Assert.Same(Named<Control>(window, "ShortcutsCard"), Focused(window));
     });
 
     // §8: single keys never fire while typing in a text field.
@@ -256,18 +279,43 @@ public sealed class CommandPaletteTests : IDisposable
         Press(window, Key.Enter, PhysicalKey.Enter);
 
         Assert.True(shell.Palette.IsOpen);
+        _clock.Advance(ControlViewModel.SendingAfter);   // G3: "Sending…" is said after 300 ms, as the control does
+        Settle(window);
         var entry = EntryButton(window, "Rebuild views");
         Assert.Equal(("Rebuild views, Sending…", false), (AutomationProperties.GetName(entry), entry.IsEnabled));
         Assert.True(entry.GetVisualDescendants().OfType<Control>().First(c => c.Classes.Contains("entry-spinner")).IsEffectivelyVisible);
         Frame(window, "palette-sending");
 
         _server.RebuildGate.SetResult();
-        await Until(window, () => AutomationProperties.GetName(EntryButton(window, "Rebuild views")) == "Rebuild views, Rebuild views: done", "done");
+        await Until(window, () => AutomationProperties.GetName(EntryButton(window, "Rebuild views")) == "Rebuild views: done", "done");
         Assert.True(shell.Palette.IsOpen);
         Frame(window, "palette-done");
 
         Press(window, Key.Escape, PhysicalKey.Escape);
         Assert.False(shell.Palette.IsOpen);
+    });
+
+    // K2 (run 5, a11y-1 and corr-0): Esc while a command sends, with the views healthy (the Rebuild views control's only view, the stalled
+    // banner, is hidden): the outcome is spoken by the shell's command-outcome region, which is in the tree, effectively visible and live.
+    [Fact]
+    public Task Esc_while_a_command_sends_is_spoken_by_the_shell_region_that_is_in_the_tree() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        _server.RebuildGate = new TaskCompletionSource();
+        Press(window, Key.K, PhysicalKey.K, _command, "k");
+        window.KeyTextInput("rebuild");
+        Settle(window);
+        Press(window, Key.Enter, PhysicalKey.Enter);
+        Press(window, Key.Escape, PhysicalKey.Escape);
+        Assert.False(shell.Palette.IsOpen);
+        Assert.False(shell.Health.Banner.HasRebuild);
+
+        _server.RebuildGate.SetResult();
+        await Until(window, () => Visible(window, "CommandOutcomeLive") && Named<TextBlock>(window, "CommandOutcomeLive").Text == "Rebuild views: done", "the outcome in the shell region");
+
+        var region = Named<TextBlock>(window, "CommandOutcomeLive");
+        Assert.True(region.IsEffectivelyVisible);
+        Assert.Contains("live", region.Classes, StringComparer.Ordinal);
     });
 
     // F2: a refusal shows Sindri's code as the entry's status and the detail as served under it; the palette stays open.
@@ -290,5 +338,118 @@ public sealed class CommandPaletteTests : IDisposable
         Assert.Equal("POST /sindri/views/rebuild failed with NotSupportedException; the control plane logged it", detail.Text);
         Assert.StartsWith("Rebuild views, SND-API-005: ", AutomationProperties.GetName(EntryButton(window, "Rebuild views")), StringComparison.Ordinal);
         Frame(window, "palette-refused");
+    });
+
+    // F1 (a11y-0, a11y-1): the palette's live region is never empty; ↓ and filtering to nothing change what it says.
+    [Fact]
+    public Task The_palette_live_region_is_never_empty_and_follows_the_selection() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        Press(window, Key.K, PhysicalKey.K, _command, "k");
+        var live = Named<TextBlock>(window, "PaletteAnnouncer");
+        var texts = new List<string>();
+        live.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == TextBlock.TextProperty)
+            {
+                texts.Add(live.Text ?? string.Empty);
+            }
+        };
+
+        Press(window, Key.Down, PhysicalKey.ArrowDown);
+        Assert.Contains(shell.Palette.Selected!.Name, live.Text, StringComparison.Ordinal);
+
+        window.KeyTextInput("zzzz");
+        Settle(window);
+        Assert.Equal("Nothing matches", live.Text);
+        Assert.All(texts, Assert.NotEmpty);
+    });
+
+    private static bool Inside(Window window, string card)
+    {
+        var focused = Focused(window);
+        var root = Named<Control>(window, card);
+        return focused is not null && (focused == root || root.IsVisualAncestorOf(focused));
+    }
+
+    // F6 (a11y-2): the overlays trap focus; F6 and Shift+F6 neither move it behind the scrim nor out of the card.
+    [Fact]
+    public Task F6_keeps_focus_inside_the_palette_and_the_shortcuts_sheet() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        Press(window, Key.K, PhysicalKey.K, _command, "k");
+        Assert.True(Inside(window, "PaletteCard"));
+
+        Press(window, Key.F6, PhysicalKey.F6);
+        Assert.True(Inside(window, "PaletteCard"), "F6 stays in the palette");
+        Press(window, Key.F6, PhysicalKey.F6, RawInputModifiers.Shift);
+        Assert.True(Inside(window, "PaletteCard"), "Shift+F6 stays in the palette");
+        Press(window, Key.Escape, PhysicalKey.Escape);
+
+        Assert.True(Named<Control>(window, "Page").Focus(NavigationMethod.Tab));
+        Press(window, Key.OemQuestion, PhysicalKey.Slash, RawInputModifiers.Shift, "?");
+        Assert.True(shell.Shortcuts.IsOpen);
+
+        Press(window, Key.F6, PhysicalKey.F6);
+        Assert.True(Inside(window, "ShortcutsCard"), "F6 stays in the sheet");
+        Press(window, Key.F6, PhysicalKey.F6, RawInputModifiers.Shift);
+        Assert.True(Inside(window, "ShortcutsCard"), "Shift+F6 stays in the sheet");
+    });
+
+    // F7 (a11y-3): one overlay at a time. Ctrl+K over the ? sheet closes the sheet and opens the palette; Esc then returns
+    // focus to what had it before the sheet.
+    [Fact]
+    public Task Command_K_over_the_shortcuts_sheet_replaces_it_and_focus_returns_to_the_original_opener() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        var page = Named<Control>(window, "Page");
+        Assert.True(page.Focus(NavigationMethod.Tab));
+        Press(window, Key.OemQuestion, PhysicalKey.Slash, RawInputModifiers.Shift, "?");
+        Assert.True(shell.Shortcuts.IsOpen);
+
+        Press(window, Key.K, PhysicalKey.K, _command, "k");
+
+        Assert.Equal((false, true), (shell.Shortcuts.IsOpen, shell.Palette.IsOpen));
+        Assert.True(Inside(window, "PaletteCard"));
+        Press(window, Key.Escape, PhysicalKey.Escape);
+        Assert.False(shell.Palette.IsOpen);
+        Assert.Same(page, Focused(window));
+    });
+
+    // F10 (a11y-7): the sheet is longer than its card; the keyboard reaches the last row (End).
+    [Fact]
+    public Task The_shortcuts_sheets_last_row_is_reachable_by_keyboard() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        Press(window, Key.OemQuestion, PhysicalKey.Slash, RawInputModifiers.Shift, "?");
+        var scroll = Named<ScrollViewer>(window, "ShortcutsScroll");
+
+        Assert.True(Inside(window, "ShortcutsCard"));
+        Assert.True(scroll.Extent.Height > scroll.Viewport.Height, "the sheet is longer than its card");
+        Press(window, Key.End, PhysicalKey.End);
+
+        var last = Named<Control>(window, "ShortcutRows").GetVisualDescendants().OfType<Grid>().Last(g => g.IsEffectivelyVisible);
+        var at = last.TranslatePoint(new Point(0, last.Bounds.Height), scroll);
+        Assert.True(at is { } p && p.Y <= scroll.Viewport.Height + 1, "the last row is inside the viewport");
+        Assert.True(shell.Shortcuts.Rows.Count > 0);
+    });
+
+    // F8 (a11y-4): the selected row is told apart by more than its PrimarySoft fill (1.1:1 on the card): a 2 px bar in
+    // PrimaryHover (6.1:1 on Surface3, ContrastTests).
+    [Fact]
+    public Task The_selected_palette_row_has_a_two_pixel_primary_hover_bar() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        Press(window, Key.K, PhysicalKey.K, _command, "k");
+        var selected = EntryButton(window, shell.Palette.Selected!.Label);
+
+        var presenter = selected.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.ContentPresenter>().First(p => p.Name == "PART_ContentPresenter");
+
+        Assert.Equal(2d, presenter.BorderThickness.Left);
+        var bar = Assert.IsType<Avalonia.Media.SolidColorBrush>(presenter.BorderBrush);
+        Assert.True(window.TryFindResource("Color.PrimaryHover", window.ActualThemeVariant, out var hover) && hover is Avalonia.Media.Color c && c == bar.Color);
+
+        Press(window, Key.Down, PhysicalKey.ArrowDown);
+        Assert.Equal(0d, presenter.BorderThickness.Left);
     });
 }

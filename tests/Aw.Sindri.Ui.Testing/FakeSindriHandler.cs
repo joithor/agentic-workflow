@@ -66,18 +66,14 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
     private async Task<HttpResponseMessage> Route(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var uri = request.RequestUri!; // why: HttpClient always sets it on a sent request
-        if (server.FailPing && uri.AbsolutePath == "/sindri/ping")
-        {
-            throw new HttpRequestException("Connection refused (127.0.0.1)");
-        }
-
+        var after = long.TryParse(Header(request, "X-Sindri-After"), NumberStyles.None, CultureInfo.InvariantCulture, out var carried) ? carried : 0;
         return uri.AbsolutePath switch
         {
-            "/sindri/ping" => Text(HttpStatusCode.OK, Ping(server.Pong), "application/json"),
-            "/sindri/status" => Text(HttpStatusCode.OK, Status((await server.Status(uri, cancellationToken)).Value), "application/json"),
+            "/sindri/ping" => await PingAnswer(uri, cancellationToken),
+            "/sindri/status" => await StatusAnswer(uri, after, cancellationToken),
             "/sindri/events" => Events(After(uri), cancellationToken),
             "/sindri/commands" => Answer(Counted(await server.Commands(uri, cancellationToken), server.Catalog)),
-            "/sindri/services" => Answer(Counted(await server.Services(uri, cancellationToken), server.ServiceView)),
+            "/sindri/services" => Answer(Counted(await server.Services(uri, after), server.ServiceView)),
             "/sindri/views/rebuild" when request.Method == HttpMethod.Post => Answer(Counted(await server.RebuildViews(uri, cancellationToken), server.Rebuild)),
             "/sindri/queue" => Answer(Counted(await server.Queue(uri, cancellationToken), server.QueueView)),
             "/sindri/items" when request.Method == HttpMethod.Post =>
@@ -85,6 +81,26 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
             var path when path.StartsWith("/sindri/items/", StringComparison.Ordinal) => await Item(request, path["/sindri/items/".Length..], cancellationToken),
             _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
         };
+    }
+
+    // The ping goes through the model (its count, and the new epoch that drops a pending sequence); a failing ping is a transport failure.
+    private async Task<HttpResponseMessage> PingAnswer(Uri uri, CancellationToken cancellationToken)
+    {
+        var ping = await server.Ping(uri, cancellationToken);
+        return server.FailPing || ping.IsError
+            ? throw new HttpRequestException("Connection refused (127.0.0.1)")
+            : Text(HttpStatusCode.OK, Ping(ping.Value), "application/json");
+    }
+
+    // The model answers with the header the request carried; a status that can't be reached is a transport failure, as the client sees it.
+    private async Task<HttpResponseMessage> StatusAnswer(Uri uri, long after, CancellationToken cancellationToken)
+    {
+        var status = await server.Status(uri, after, cancellationToken);
+        return server.FailStatus
+            ? throw new HttpRequestException("Connection refused (127.0.0.1)")
+            : status.IsError
+                ? Answer(RouteAnswer.Problem(HttpStatusCode.ServiceUnavailable, status.Error.Code, status.Error.Message))
+                : Text(HttpStatusCode.OK, Status(status.Value), "application/json");
     }
 
     // /sindri/items/{id}, /sindri/items/{id}/timeline and POST /sindri/items/{id}/close (API P3).
@@ -120,8 +136,12 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
         return server.Refusal is { } refusal ? Answer(RouteAnswer.Problem(HttpStatusCode.Forbidden, refusal.Code, refusal.Detail)) : null;
     }
 
-    // The route's golden text as served; the call above went through the model so its counts and gates hold.
-    private static RouteAnswer Counted<T>(T _, RouteAnswer answer) => answer;
+    // The route's golden text as served; the call above went through the model so its counts and gates hold. The one answer
+    // the model decides is "views behind" (SND-API-011, a read that carried a sequence the views haven't reached).
+    private static RouteAnswer Counted<T>(Kernel.Result<T> result, RouteAnswer answer) =>
+        result.IsError && string.Equals(result.Error.Code, SindriApiClient.ViewsBehind, StringComparison.Ordinal)
+            ? RouteAnswer.Problem(HttpStatusCode.ServiceUnavailable, result.Error.Code, result.Error.Message)
+            : answer;
 
     // A success is JSON; anything else is ProblemDetails, as Sindri's ApiProblems writes it.
     private static HttpResponseMessage Answer(RouteAnswer answer) =>
@@ -165,14 +185,16 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
     // Absent before API P1 (the field doesn't exist on S1's status), so the app must read a status without it.
     private static string ApiVersion(int? version) => version is { } v ? string.Create(CultureInfo.InvariantCulture, $",\"apiVersion\":{v}") : string.Empty;
 
-    // Null until API P2's projector fills them; the status always carries both fields, as Sindri's does.
+    // Null until API P2's projector fills them; the status always carries both fields, as Sindri's does. Written with P2's full shape (text, clause, sentence).
     private static string Views(AsOfView? v) => v is null ? ",\"views\":null" : string.Create(CultureInfo.InvariantCulture,
-        $$""","views":{"cursor":{{v.Cursor}},"ledgerHead":{{v.LedgerHead}},"projectedAt":{{Quoted(v.ProjectedAt)}},"rebuilding":{{Bool(v.Rebuilding)}},"stalled":{{Bool(v.Stalled)}}}""");
+        $$""","views":{"cursor":{{v.Cursor}},"ledgerHead":{{v.LedgerHead}},"projectedAt":{{Quoted(v.ProjectedAt)}},"rebuilding":{{Bool(v.Rebuilding)}},"stalled":{{Bool(v.Stalled)}},"stalledAt":{{Number(v.StalledAt)}},"stalledType":{{Quoted(v.StalledType)}},"text":{{Quoted(v.Text)}}}""");
 
     private static string Health(HealthView? h) => h is null ? ",\"health\":null" :
-        $$""","health":{"word":"{{h.Word}}","problems":[{{string.Join(',', h.Problems.Select(p => $$"""{"code":"{{p.Code}}","text":"{{p.Text}}"}"""))}}]}""";
+        $$""","health":{"word":"{{h.Word}}","problems":[{{string.Join(',', h.Problems.Select(p => $$"""{"code":"{{p.Code}}","text":"{{p.Text}}","clause":{{Quoted(p.Clause)}}}"""))}}],"sentence":{{Quoted(h.Sentence)}}}""";
 
     private static string Service(ServiceView v) => $$"""{"name":"{{v.Name}}","every":"{{v.Every}}","lastRun":{{Quoted(v.LastRun)}}}""";
+
+    private static string Number(long? n) => n is { } v ? v.ToString(CultureInfo.InvariantCulture) : "null";
 
     private static string Bool(bool b) => b ? "true" : "false";
 

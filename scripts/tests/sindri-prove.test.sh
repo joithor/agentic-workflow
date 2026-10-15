@@ -32,7 +32,7 @@ cat > "$STUB" <<'EOF'
 #!/usr/bin/env bash
 echo "args=$*"
 if [ -t 0 ] && [ -t 1 ]; then echo "tty=yes"; else echo "tty=no"; fi
-for v in CLAUDECODE AW_SINDRI_CHILD CODEX_SANDBOX CURSOR_AGENT AW_SINDRI_PROVER AW_SINDRI_PORT; do
+for v in CLAUDECODE CLAUDE_CODE_ENTRYPOINT CLAUDE_CODE_EXECPATH CLAUDE_CODE_SESSION_ID CLAUDE_PID AW_SINDRI_CHILD CODEX_SANDBOX CURSOR_AGENT AW_SINDRI_PROVER AW_SINDRI_PORT; do
   echo "$v=${!v-<unset>}"
 done
 if [ "${STUB_READ:-0}" = 1 ]; then IFS= read -r line; echo "stdin=[$line]"; fi
@@ -134,10 +134,10 @@ STUB_EXIT=2 prove "$H" stop >/dev/null 2>&1 </dev/null; rc=$?
 check "verb_mode_keeps_the_environment: SINDRI's exit code" "$rc" "2"
 
 # --- human_mode_unsets_agent_variables_sets_the_marker_and_has_a_tty ---
-out="$(CLAUDECODE=1 AW_SINDRI_CHILD=1 CODEX_SANDBOX=seatbelt CURSOR_AGENT=1 prove "$H" human status 2>&1 </dev/null)"; rc=$?
+out="$(CLAUDECODE=1 CLAUDE_CODE_ENTRYPOINT=cli CLAUDE_CODE_EXECPATH=x CLAUDE_CODE_SESSION_ID=s CLAUDE_PID=1 AW_SINDRI_CHILD=1 CODEX_SANDBOX=seatbelt CURSOR_AGENT=1 prove "$H" human status 2>&1 </dev/null)"; rc=$?
 check "human_mode_unsets_agent_variables_sets_the_marker_and_has_a_tty: exit 0" "$rc" "0"
 contains "human_mode_unsets_agent_variables_sets_the_marker_and_has_a_tty: arguments" "$out" "args=status"
-for v in CLAUDECODE AW_SINDRI_CHILD CODEX_SANDBOX CURSOR_AGENT; do
+for v in CLAUDECODE CLAUDE_CODE_ENTRYPOINT CLAUDE_CODE_EXECPATH CLAUDE_CODE_SESSION_ID CLAUDE_PID AW_SINDRI_CHILD CODEX_SANDBOX CURSOR_AGENT; do
   contains "human_mode_unsets_agent_variables_sets_the_marker_and_has_a_tty: $v unset" "$out" "$v=<unset>"
 done
 contains "human_mode_unsets_agent_variables_sets_the_marker_and_has_a_tty: marker" "$out" "AW_SINDRI_PROVER=1"
@@ -218,6 +218,16 @@ check "curl_flags_drop_terminal_and_token: --no-token needs no token file" "$rc"
 out="$(bash -c 'set -euo pipefail; source "$1"; with_tty sh -c "sleep 0.6; echo hi; exit 0" </dev/null; echo "after"' _ "$ROOT/scripts/lib/with-tty.sh" 2>&1)"; rc=$?
 check "with_tty_under_set_e_outlives_its_feeder: the caller carries on" "$rc" "0"
 contains "with_tty_under_set_e_outlives_its_feeder: the caller reaches its next line" "$out" "after"
+
+# --- with_tty_under_set_e_stops_its_feeder_when_the_command_fails ---
+# A caller with errexit and pipefail on, and a command that fails: with_tty still cleans up (its temp folder, its
+# feeder) before it returns the command's status, instead of the failed pipeline ending it halfway.
+FT="$WORK/feeder-tmp"; mkdir -p "$FT"
+out="$(TMPDIR="$FT" bash -c 'set -euo pipefail; source "$1"; with_tty sh -c "echo hi; exit 3" < <(sleep 8 >/dev/null 2>&1); echo "after"' _ "$ROOT/scripts/lib/with-tty.sh" 2>&1)"; rc=$?
+check "with_tty_under_set_e_stops_its_feeder_when_the_command_fails: the command's status ends the caller" "$rc" "3"
+contains "with_tty_under_set_e_stops_its_feeder_when_the_command_fails: the output arrives" "$out" "hi"
+check "with_tty_under_set_e_stops_its_feeder_when_the_command_fails: no temp folder is left" "$(ls "$FT" | wc -l | tr -d ' ')" "0"
+check "with_tty_under_set_e_stops_its_feeder_when_the_command_fails: no feeder is left running" "$(pgrep -f "$FT/with-tty" | wc -l | tr -d ' ')" "0"
 
 if [ "$fail" -ne 0 ]; then echo "FAIL: sindri-prove tests"; exit 1; fi
 echo "PASS: sindri-prove tests"

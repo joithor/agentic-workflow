@@ -8,12 +8,13 @@
        disabled, and its phase and CLI on the next line in InkSubtle, focusable and copyable (disabled ink never carries
        information); cli-only: the copy block (terminal glyph, the CLI, Copy, and its one line). -->
   <StackPanel Spacing="{StaticResource Space.XXS}">
-    <!-- The polite live region for "Sending…", the outcome and "Copied" (U0's LiveSetting rules): zero-width, never "". -->
-    <TextBlock x:Name="Announcer" Classes="caption live-region live" Width="0" Opacity="0" IsHitTestVisible="False"
+    <!-- The button stays enabled while it sends (a disabled control drops keyboard focus; the view model refuses a second
+         run). The polite live region for "Sending…", the outcome, a refusal's code and detail and "Copied" (U0's LiveSetting rules): zero-width, never "". -->
+    <TextBlock x:Name="Announcer" Classes="caption live-region" Classes.live="{Binding IsAnnouncing}" Width="0" Opacity="0" IsHitTestVisible="False"
                Text="{Binding Announcement}" HorizontalAlignment="Left" />
 
     <StackPanel x:Name="ButtonRow" Orientation="Horizontal" Spacing="{StaticResource Space.XS}" IsVisible="{Binding !IsCliOnly}">
-      <Button x:Name="RunButton" Classes="command-control" IsEnabled="{Binding CanRun}" Click="OnRun"
+      <Button x:Name="RunButton" Classes="command-control" IsEnabled="{Binding IsSendable}" Click="OnRun"
               AutomationProperties.Name="{Binding Name}">
         <StackPanel Orientation="Horizontal" Spacing="6">
           <icons:StateIcon x:Name="RunSpinner" Icon="Spinner" IsVisible="{Binding IsSending}" Spins="{Binding IsSending}"
@@ -42,10 +43,10 @@
 
     <!-- pending: the phase and the CLI, focusable so the keyboard reaches it, with Copy. -->
     <WrapPanel x:Name="PendingRow" Orientation="Horizontal" IsVisible="{Binding IsPending}">
-      <Border x:Name="PendingLine" Classes="pending-line" Focusable="True" AutomationProperties.Name="{Binding PendingLine}">
-        <TextBlock x:Name="PendingText" Classes="caption subtle" TextWrapping="Wrap" Margin="0,0,6,0" Text="{Binding PendingLine}" AutomationProperties.Name="{Binding PendingLine}" />
+      <Border x:Name="PendingLine" Classes="pending-line" Focusable="True" AutomationProperties.Name="{Binding PendingName}">
+        <TextBlock x:Name="PendingText" Classes="caption subtle" TextWrapping="Wrap" Margin="0,0,6,0" Text="{Binding PendingLine}" AutomationProperties.AccessibilityView="Raw" />
       </Border>
-      <Button x:Name="PendingCopy" Classes="copy" Click="OnCopy" IsEnabled="{Binding CanCopy}" AutomationProperties.Name="{Binding CopyLabel}">
+      <Button x:Name="PendingCopy" Classes="copy" Click="OnCopy" IsEnabled="{Binding CanCopy}" AutomationProperties.Name="{Binding CopyName}">
         <TextBlock Classes="caption" Text="{Binding CopyLabel}" />
       </Button>
     </WrapPanel>
@@ -54,10 +55,10 @@
     <StackPanel x:Name="CopyBlock" Spacing="{StaticResource Space.XXS}" IsVisible="{Binding IsCliOnly}">
       <Border Classes="command">
         <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.XS}">
-          <TextBlock x:Name="TerminalGlyph" Classes="mono subtle" Text="&gt;_" VerticalAlignment="Center" AutomationProperties.Name="{Binding Cli}" />
+          <TextBlock x:Name="TerminalGlyph" Classes="mono subtle" Text="&gt;_" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
           <TextBlock x:Name="CliText" Classes="mono" Text="{Binding Cli}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Cli}" />
           <Button x:Name="BlockCopy" Classes="copy" Click="OnCopy" IsEnabled="{Binding CanCopy}"
-                  AutomationProperties.Name="{Binding CopyLabel}">
+                  AutomationProperties.Name="{Binding CopyName}">
             <TextBlock Classes="caption" Text="{Binding CopyLabel}" />
           </Button>
         </StackPanel>

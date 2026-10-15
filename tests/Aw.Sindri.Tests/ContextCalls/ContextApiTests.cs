@@ -4,9 +4,7 @@ using Aw.Context.Testing.Fixtures;
 using Aw.Kernel.Telemetry;
 using Aw.Kernel.Telemetry.Testing;
 using Aw.Sindri.Core.Events;
-using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
-using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Host;
 using Aw.Sindri.Tests.ApiGoldens;
 using Microsoft.Extensions.DependencyInjection;
@@ -65,10 +63,12 @@ public sealed class ContextApiTests : IDisposable
         var ct = TestContext.Current.CancellationToken;
         await using var host = await Approved(sessions: false, ct);
 
-        var anchor = await host.Http.Ask(Get("/sindri/context/query?node=feature:x", Human(host.Token.Value)));
+        var anchor = await host.Http.Ask(Get("/sindri/context/query?item=ENG-1", Human(host.Token.Value)));
+        var node = await host.Http.Ask(Get("/sindri/context/query?node=feature:x", Human(host.Token.Value)));
         var empty = await host.Http.Ask(Get("/sindri/context/query?q=%20", Human(host.Token.Value)));
 
-        Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-003"), (anchor.Status, anchor.Code));
+        Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-003"), (anchor.Status, anchor.Code));   // item anchors arrive with S-5B
+        Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-030"), (node.Status, node.Code));   // a node anchor needs a map
         Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (empty.Status, empty.Code));
     }
 
@@ -92,19 +92,6 @@ public sealed class ContextApiTests : IDisposable
         Assert.DoesNotContain("focused pane", sink.Text, StringComparison.Ordinal);
     }
 
-    /// <summary>A host whose profile maps the fixture repo, approved by the human, with one context-docs-refresh run done.</summary>
-    private async Task<GoldenHost> Approved(bool sessions, CancellationToken ct, Action<IServiceCollection>? extra = null)
-    {
-        var yaml = $"schemaVersion: 1\nuser: golden\nrepos:\n  - {{ name: split-panes, path: \"{_repo.Path}\" }}\n"
-            + $"context:\n  docs: {{ globs: [\"docs/**/*.md\"] }}\n  sessions: {{ enabled: {(sessions ? "true" : "false")} }}\n";
-        var host = await GoldenHost.Start(temporary: true, ct, yaml, extra);
-        var hash = (await host.LiveHash(ct)).Value;
-        var approved = await host.Http.Ask(Post("/sindri/profile/approve", $"{{\"hash\":\"{hash}\",\"confirmed\":true}}", Human(host.Token.Value)));
-        Assert.Equal(HttpStatusCode.OK, approved.Status);
-        await using var scope = host.App.Services.CreateAsyncScope();
-        var refresh = scope.ServiceProvider.GetServices<IScheduledService>().Single(s => s.Identity().Value == "context-docs-refresh");
-        var grant = host.App.Services.GetRequiredService<HeldLease>().Current!;   // why: the started host holds the lease
-        Assert.True((await refresh.Run(new ScheduledRun(grant, DateTimeOffset.UnixEpoch), ct)).IsSuccess);
-        return host;
-    }
+    private Task<GoldenHost> Approved(bool sessions, CancellationToken ct, Action<IServiceCollection>? extra = null) =>
+        ContextHosts.Approved(_repo, sessions, ct, extra);
 }

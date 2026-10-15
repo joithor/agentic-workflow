@@ -14,7 +14,7 @@ internal sealed class PaletteEntry : ObservableObject
     private static readonly string[] _shown =
     [
         nameof(ControlViewModel.CopyLabel), nameof(ControlViewModel.Phase), nameof(ControlViewModel.Outcome),
-        nameof(ControlViewModel.ErrorCode), nameof(ControlViewModel.ErrorDetail),
+        nameof(ControlViewModel.ErrorCode), nameof(ControlViewModel.ErrorDetail), nameof(ControlViewModel.IsAnnouncingSending),
     ];
 
     private PaletteEntry(string id, string label, string key, bool enabled, ControlViewModel? control, PageId? page)
@@ -22,6 +22,9 @@ internal sealed class PaletteEntry : ObservableObject
         (Id, Label, Key, Runs, Control, Page) = (id, label, key, enabled, control, page);
         control?.PropertyChanged += OnControlChanged;
     }
+
+    /// <summary>Stops listening to its control (the palette rebuilt its entries; the control outlives them).</summary>
+    internal void Detach() => Control?.PropertyChanged -= OnControlChanged;
 
     /// <summary>Its id: the catalog action id, or "go:" and the page.</summary>
     public string Id { get; }
@@ -39,10 +42,10 @@ internal sealed class PaletteEntry : ObservableObject
     public string Status => Control switch
     {
         null => string.Empty,
-        { IsSending: true } => Labels.Sending,
+        { IsSending: true } => Control.IsAnnouncingSending ? Labels.Sending : string.Empty,   // "Sending…" after 300 ms, as the control's own live region says it; silent before, never "ready"
         { IsAccepted: true } => Control.Outcome,
         { IsFailed: true } => Control.ErrorCode,
-        { IsReady: true } => Labels.Ready,
+        { IsReady: true } => Runs ? Labels.Ready : Labels.NotInApp,   // a ready row is called ready only when Enter does something with it
         { IsPending: true } => Labels.Arrives(Control.Stage),
         { CopyLabel: Labels.Copied } => Labels.Copied,
         _ => Labels.CopyCli(Control.Cli),
@@ -57,14 +60,16 @@ internal sealed class PaletteEntry : ObservableObject
     /// <summary>The refusal's detail as served, or empty.</summary>
     public string ErrorDetail => Control?.ErrorDetail ?? string.Empty;
 
-    // True when Enter does something with it at all (a pending row never does).
-    private bool Runs { get; }
+    /// <summary>True when Enter does something with it at all (a pending row never does), even while it sends.</summary>
+    internal bool Runs { get; }
 
     /// <summary>True when it has a status.</summary>
     public bool HasStatus => Control is not null;
 
-    /// <summary>Its accessible name: its label and its status.</summary>
-    public string Name => IsFailed ? $"{Label}, {Status}: {ErrorDetail}" : HasStatus ? Label + ", " + Status : Label;
+    /// <summary>Its accessible name: its label and its status (an accepted command's outcome alone).</summary>
+    public string Name => IsFailed ? $"{Label}, {Status}: {ErrorDetail}"
+        : Control is { IsAccepted: true } ? Status   // the outcome names the command already: "Rebuild views: done"
+        : Status.Length > 0 ? Label + ", " + Status : Label;
 
     /// <summary>True for a catalog row.</summary>
     public bool IsAction => Control is not null;

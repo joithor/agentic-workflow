@@ -149,9 +149,113 @@ public sealed class ControlViewModelTests
     [Theory]
     [InlineData("ApplyCommand:answer-grant", "Grant rounds")]
     [InlineData("ApplyCommand:answer-grant-tokens", "Grant tokens")]
-    [InlineData("SomeFutureCommand:variant", "SomeFutureCommand:variant")]
-    public void Labels_are_keyed_by_action_id_and_an_unknown_one_shows_its_id(string action, string label) =>
+    [InlineData("SomeFutureCommand:variant", "Some future command variant")]
+    public void Labels_are_keyed_by_action_id_and_an_unknown_one_shows_it_humanised(string action, string label) =>
         Assert.Equal(label, Control(Row(action, "cli-only:typed-confirmation", "sindri workflow answer <address> --grant <n>")).Label);
+
+    // F4 (corr-2): a refusal is announced with its code and detail, so a screen reader hears what the eyes read.
+    [Fact]
+    public async Task A_refusal_is_announced_with_its_code_and_detail()
+    {
+        _server.Rebuild = RouteAnswer.Problem(HttpStatusCode.Conflict, "SND-API-010", "Views are rebuilding (fix: retry after the rebuild)");
+        var control = Control(Row("RebuildViews", "ready"));
+
+        await control.Run(Token);
+
+        Assert.Equal("SND-API-010: Views are rebuilding (fix: retry after the rebuild)", control.Announcement);
+    }
+
+    // G4 (a11y-1): the live region is live only while the control announces something (flag, then text, as the shell's
+    // regions do), so the resting label is never spoken: not at rest, not as the reset before a run, not after.
+    [Fact]
+    public async Task The_live_region_is_gated_so_the_resting_label_is_never_spoken()
+    {
+        var control = Control(Row("RebuildViews", "ready"));
+        var spoken = new List<string>();
+        control.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ControlViewModel.Announcement) && control.IsAnnouncing)
+            {
+                spoken.Add(control.Announcement);
+            }
+        };
+        Assert.False(control.IsAnnouncing);
+
+        await control.Run(Token);
+        Assert.True(control.IsAnnouncing);
+        _clock.Advance(ControlViewModel.AcceptedFor);
+
+        Assert.Equal(["Rebuild views: done"], spoken);
+        Assert.False(control.IsAnnouncing);
+    }
+
+    [Fact]
+    public async Task A_copy_is_spoken_through_the_gate_and_the_gate_closes_with_the_label()
+    {
+        var control = Control(Row("RunDoctor", "cli-only:no-protection", "sindri doctor"));
+
+        await control.Copy(Token);
+        Assert.Equal((true, "Copied"), (control.IsAnnouncing, control.Announcement));
+        _clock.Advance(ControlViewModel.CopiedFor);
+
+        Assert.False(control.IsAnnouncing);
+    }
+
+    // F4 (corr-2): the same outcome twice is two announcements; the live region changes between them.
+    [Fact]
+    public async Task The_same_outcome_twice_changes_the_announcement_each_time()
+    {
+        var control = Control(Row("RebuildViews", "ready"));
+        var heard = new List<string>();
+        control.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ControlViewModel.Announcement))
+            {
+                heard.Add(control.Announcement);
+            }
+        };
+
+        await control.Run(Token);
+        _clock.Advance(ControlViewModel.AcceptedFor);
+        await control.Run(Token);
+
+        Assert.Equal(2, heard.Count(text => text == "Rebuild views: done"));
+        Assert.All(heard, Assert.NotEmpty);
+    }
+
+    // F4 (a11y-5): while it sends the control stays enabled for the keyboard (focus stays on it); the view model refuses a second run.
+    [Fact]
+    public async Task While_sending_the_control_stays_focusable_and_a_second_run_is_refused()
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        var control = Control(Row("RebuildViews", "ready"));
+
+        var first = control.Run(Token);
+
+        Assert.Equal((true, false), (control.IsSendable, control.CanRun));
+        _server.RebuildGate.SetResult();
+        await first;
+    }
+
+    // F11 (a11y-8): a name read out of context says whose it is.
+    [Fact]
+    public async Task Pending_line_and_copy_button_names_carry_the_controls_label()
+    {
+        var pending = Control(Row("CancelJob", "pending:P6", "sindri jobs cancel <jobId>"));
+        var cliOnly = Control(Row("RunDoctor", "cli-only:no-server", "sindri doctor"));
+
+        Assert.Equal("Cancel job, arrives in P6 · sindri jobs cancel <jobId>", pending.PendingName);
+        Assert.Equal(("Copy: Cancel job", "Copy: Run doctor"), (pending.CopyName, cliOnly.CopyName));
+        var heard = new List<string?>();
+        cliOnly.PropertyChanged += (_, e) => heard.Add(e.PropertyName);
+
+        await cliOnly.Copy(Token);
+
+        Assert.Equal("Copied", cliOnly.CopyName);
+        Assert.Contains(nameof(ControlViewModel.CopyName), heard, StringComparer.Ordinal);
+        _clock.Advance(ControlViewModel.CopiedFor);
+        Assert.Equal("Copy: Run doctor", cliOnly.CopyName);
+    }
 
     // §8 (E-8): a destructive row confirms in-app first; Confirm sends once, Keep sends nothing.
     [Fact]

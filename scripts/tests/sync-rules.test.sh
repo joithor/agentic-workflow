@@ -112,6 +112,19 @@ E="$TMPROOT/empty"; mkdir -p "$E"
 check "missing .agents/rules exits nonzero" '! bash "$SCRIPT" "$E" >/dev/null 2>&1'
 check "unknown flag exits 2" 'set +e; bash "$SCRIPT" --nope >/dev/null 2>&1; [ $? -eq 2 ]; r=$?; set -e; [ $r -eq 0 ]'
 
+echo "sync-rules: locale independence"
+U="$(fixture locale)"
+printf -- '---\ndescription: a\nglobs: ["x/**"]\npaths: ["x/**"]\n---\n# A\n' > "$U/.agents/rules/csharp.md"
+printf -- '---\ndescription: b\nglobs: ["y/**"]\npaths: ["y/**"]\n---\n# B\n' > "$U/.agents/rules/csharp-testing.md"
+bash "$SCRIPT" "$U" >/dev/null
+UTF="$(locale -a 2>/dev/null | grep -iE '^(en_US|C)\.utf-?8$' | sort -r | head -1 || true)"
+if [ -n "$UTF" ]; then
+  check "--check passes under $UTF" 'LC_ALL="$UTF" LANG="$UTF" bash "$SCRIPT" --check "$U" >/dev/null 2>&1'
+  check "a UTF-8 run writes the same index as the C run" 'cp "$U/AGENTS.md" "$TMPROOT/c.md"; LC_ALL="$UTF" bash "$SCRIPT" "$U" >/dev/null && cmp -s "$U/AGENTS.md" "$TMPROOT/c.md"'
+else
+  echo "  skip no UTF-8 locale installed"
+fi
+
 echo
 echo "sync-rules: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
