@@ -82,7 +82,7 @@ public sealed class RegistryRulesTests
         var registry = View(("workflow.cap-base", 1, CapabilityRecipe.BaseHash));
 
         Assert.Equal(
-            ["RCP-CAP-003: base workflow.cap-base@5aa84cb58a5a is registered but not approved at RCP-CAP-003.yaml:4:1 (base); approve the base at a terminal (sindri recipe approve workflow.cap-base@5aa84cb58a5a), or generate the recipe from an approved base"],
+            ["RCP-CAP-003: base workflow.cap-base@84b1571f2b84 is registered but not approved at RCP-CAP-003.yaml:4:1 (base); approve the base at a terminal (sindri recipe approve workflow.cap-base@84b1571f2b84), or generate the recipe from an approved base"],
             Lines(CapabilityRecipe.Generated, registry, CapabilityRecipe.Base, "RCP-CAP-003.yaml", [("base", 4, 1)]));
     }
 
@@ -90,7 +90,7 @@ public sealed class RegistryRulesTests
     public void A_base_that_is_not_registered_is_refused()
     {
         Assert.Equal(
-            ["RCP-CAP-003: base workflow.cap-base@5aa84cb58a5a isn't registered at r.yaml:1:1 (base); generate the recipe from a registered, approved base"],
+            ["RCP-CAP-003: base workflow.cap-base@84b1571f2b84 isn't registered at r.yaml:1:1 (base); generate the recipe from a registered, approved base"],
             Lines(CapabilityRecipe.Generated, RecipeRegistryView.Empty, CapabilityRecipe.Base));
     }
 
@@ -100,7 +100,7 @@ public sealed class RegistryRulesTests
         var registry = View(RegistryApproval.Revoked, ("workflow.cap-base", 1, CapabilityRecipe.BaseHash));
 
         Assert.Equal(
-            ["RCP-CAP-003: base workflow.cap-base@5aa84cb58a5a is revoked at r.yaml:1:1 (base); generate the recipe from an approved base, since a revoked hash can't be approved again"],
+            ["RCP-CAP-003: base workflow.cap-base@84b1571f2b84 is revoked at r.yaml:1:1 (base); generate the recipe from an approved base, since a revoked hash can't be approved again"],
             Lines(CapabilityRecipe.Generated, registry, CapabilityRecipe.Base));
     }
 
@@ -110,7 +110,7 @@ public sealed class RegistryRulesTests
         var registry = View(RegistryApproval.Drifted, ("workflow.cap-base", 1, CapabilityRecipe.BaseHash));
 
         Assert.Equal(
-            ["RCP-CAP-003: base workflow.cap-base@5aa84cb58a5a was approved against other block descriptors than this build's at r.yaml:1:1 (base); re-approve the base at a terminal (sindri recipe approve workflow.cap-base@5aa84cb58a5a), then generate the recipe again"],
+            ["RCP-CAP-003: base workflow.cap-base@84b1571f2b84 was approved against other block descriptors than this build's at r.yaml:1:1 (base); re-approve the base at a terminal (sindri recipe approve workflow.cap-base@84b1571f2b84), then generate the recipe again"],
             Lines(CapabilityRecipe.Generated, registry, CapabilityRecipe.Base));
     }
 

@@ -27,6 +27,15 @@ public sealed class FakeGraphStore : IGraphStore
         Done(() => Results.Success(_versions.Find(v => v.Version.Number == version).Graph ?? GraphSnapshot.Empty));
 
     /// <inheritdoc/>
+    public ValueTask<Result<MapSnapshot?>> Snapshot(bool draft, CancellationToken cancellationToken) => Done(() =>
+    {
+        var wanted = draft ? MapVersionStatus.Draft : MapVersionStatus.Current;
+        var found = _versions.Where(v => v.Version.Status == wanted).OrderByDescending(v => v.Version.Number).Select(v => ((MapVersion, GraphSnapshot)?)v).FirstOrDefault();
+        IReadOnlyList<MapOverride> overrides = [.. _overrides.OrderBy(o => o.At).ThenBy(o => o.ToId().Value, StringComparer.Ordinal)];
+        return Results.Success(found is { } f ? new MapSnapshot(f.Item1, f.Item2, overrides) : null);
+    });
+
+    /// <inheritdoc/>
     public ValueTask<Result<IReadOnlyList<MapOverride>>> Overrides(CancellationToken cancellationToken) =>
         Done(() => Results.Success<IReadOnlyList<MapOverride>>([.. _overrides.OrderBy(o => o.At).ThenBy(o => o.ToId().Value, StringComparer.Ordinal)]));
 

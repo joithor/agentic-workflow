@@ -1,4 +1,6 @@
 using System.Text.Json.Serialization;
+using Aw.Context.Core.Eval;
+using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Kernel;
@@ -84,6 +86,12 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(HarnessProbeReport))]
 [JsonSerializable(typeof(ChallengeAnswer))]
 [JsonSerializable(typeof(ContextResult))]
+[JsonSerializable(typeof(NodeView))]
+[JsonSerializable(typeof(NeighborsView))]
+[JsonSerializable(typeof(PathView))]
+[JsonSerializable(typeof(ProbeSet))]
+[JsonSerializable(typeof(ProbeReport))]
+[JsonSerializable(typeof(ProbeRun))]
 [JsonSerializable(typeof(SourcesView))]
 [JsonSerializable(typeof(McpToolError))]
 [JsonSerializable(typeof(McpSourcesAnswer))]
@@ -140,4 +148,5 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ListCounts))]
 [JsonSerializable(typeof(ParentRef))]
 [JsonSerializable(typeof(FactView))]
+[JsonSerializable(typeof(MapImportChallenge))]
 internal sealed partial class SindriJsonContext : JsonSerializerContext;

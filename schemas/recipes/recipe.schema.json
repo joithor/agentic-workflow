@@ -42,6 +42,9 @@
       ],
       "additionalProperties": false
     },
+    "urgency": {
+      "type": "string"
+    },
     "inputs": {
       "type": "array",
       "items": {
@@ -58,18 +61,57 @@
             ]
           },
           "type": {
-            "enum": [
-              "text",
-              "file",
-              "item",
-              null
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kind": {
+            "type": [
+              "string",
+              "null"
             ]
           }
         },
         "required": [
           "key",
           "label",
-          "type"
+          "type",
+          "kind"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^(fact:[a-z][A-Za-z0-9]*|evidence:[a-z][a-z0-9]*([.-][a-z0-9]+)*@(base|head))$"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "from": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "type",
+          "from"
         ],
         "additionalProperties": false
       }
@@ -659,7 +701,9 @@
     "version",
     "description",
     "base",
+    "urgency",
     "inputs",
+    "outputs",
     "initial",
     "states",
     "transitions",

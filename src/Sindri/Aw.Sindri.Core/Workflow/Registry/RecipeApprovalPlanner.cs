@@ -86,7 +86,7 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
     public async ValueTask<Result<ApprovalPreview>> Preview(RegisteredRecipe recipe, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(recipe);
-        var parsed = AwJson.Deserialize<Recipe>(Encoding.UTF8.GetBytes(recipe.Text), json);
+        var parsed = recipe.Read(json);
         var current = parsed.IsError ? parsed.Error : await approvals.Current(cancellationToken).ConfigureAwait(false);
         var latest = current.IsError ? current.Error : await approvals.Latest(recipe.Id, recipe.Version, recipe.Hash, cancellationToken).ConfigureAwait(false);
         if (latest.IsError)
@@ -184,7 +184,7 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
             return refused;
         }
 
-        var parsed = AwJson.Deserialize<Recipe>(Encoding.UTF8.GetBytes(recipe.Text), json);
+        var parsed = recipe.Read(json);
         if (parsed.IsError || parsed.Value.Evals.Count == 0)
         {
             return parsed.IsError ? parsed.Error : WorkflowErrors.RecipeEvalsFailing.With(
@@ -243,7 +243,13 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
             return before.IsError ? before.Error : Results.Success<string?>(value: null);
         }
 
-        return LineDiff.Unified(ApprovalPreviews.Pretty(old.Text), ApprovalPreviews.Pretty(recipe.Text),
+        var normalized = old.Read(json);   // why: an old row lacks the fields later versions default, so compare its normalized form, not its stored text
+        if (normalized.IsError)
+        {
+            return normalized.Error;
+        }
+
+        return LineDiff.Unified(ApprovalPreviews.Pretty(Encoding.UTF8.GetString(AwJson.Serialize(normalized.Value with { Hash = null }, json))), ApprovalPreviews.Pretty(recipe.Text),
             string.Create(CultureInfo.InvariantCulture, $"{Name(old)} (approved, version {old.Version})"),
             string.Create(CultureInfo.InvariantCulture, $"{Name(recipe)} (version {recipe.Version})"));
     }

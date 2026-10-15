@@ -6,4 +6,8 @@ namespace Aw.Context.Testing.Engine;
 /// <param name="Ref">Its reference (the version it is cited at).</param>
 /// <param name="Title">Its title.</param>
 /// <param name="Text">Its text.</param>
-public sealed record FakeRecord(SourceRef Ref, string Title, string Text);
+public sealed record FakeRecord(SourceRef Ref, string Title, string Text)
+{
+    /// <summary>The other names its search hits carry (<see cref="SourceHit.Aliases"/>), empty by default.</summary>
+    public IReadOnlyList<string> Aliases { get; init; } = [];
+}
