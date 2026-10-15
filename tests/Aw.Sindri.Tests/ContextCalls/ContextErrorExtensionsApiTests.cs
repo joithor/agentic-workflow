@@ -59,13 +59,16 @@ public sealed class ContextErrorExtensionsApiTests
         await ContextMapApiTests.Import(host);
         await using var mcp = await McpSession.Open(host, FixtureMap.Repo, ct);
 
-        var result = await mcp.Call("context_query", """{"node":"feature:tabs.nope"}""", ct);
+        foreach (var (tool, args) in new[] { ("context_query", """{"node":"feature:tabs.nope"}"""), ("context_node", """{"key":"feature:tabs.nope"}""") })
+        {
+            var result = await mcp.Call(tool, args, ct);
 
-        Assert.Equal(true, result.IsError);
-        var content = result.StructuredContent!.Value;
-        Assert.Equal(["code", "message"], content.EnumerateObject().Select(p => p.Name).Order(StringComparer.Ordinal), StringComparer.Ordinal);
-        Assert.Equal("SND-CONTEXT-003", content.GetProperty("code").GetString());
-        Assert.Contains("try action:tab-manager.restore-layout, feature:tabs.tab-manager", content.GetProperty("message").GetString(), StringComparison.Ordinal);
+            Assert.Equal(true, result.IsError);
+            var content = result.StructuredContent!.Value;
+            Assert.Equal(["code", "message"], content.EnumerateObject().Select(p => p.Name).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+            Assert.Equal("SND-CONTEXT-003", content.GetProperty("code").GetString());
+            Assert.Contains("try action:tab-manager.restore-layout, feature:tabs.tab-manager", content.GetProperty("message").GetString(), StringComparison.Ordinal);
+        }
     }
 
     private static List<string> Strings(string body, string member) =>
