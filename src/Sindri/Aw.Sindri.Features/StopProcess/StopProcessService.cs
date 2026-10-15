@@ -16,7 +16,7 @@ namespace Aw.Sindri.Features.StopProcess;
 /// and the next serve, which can take the lease only after the release, never adopts a server that is stopping.
 /// Without a lease this process owns no server, so it only shuts down.
 /// </summary>
-internal sealed class StopProcessService(HeldLease held, ILease lease, ILedgerStore ledger, EventFactory events, IShutdown shutdown, IEndpointFile endpoints, TemporalRuntime temporal)
+internal sealed class StopProcessService(HeldLease held, ILease lease, ILedgerStore ledger, EventFactory events, IShutdown shutdown, ServeRecords records, TemporalRuntime temporal)
     : IService<StopProcessRequest, StopProcessResponse>
 {
     public async ValueTask<Result<StopProcessResponse>> Handle(StopProcessRequest request, CancellationToken cancellationToken)
@@ -34,7 +34,7 @@ internal sealed class StopProcessService(HeldLease held, ILease lease, ILedgerSt
 
         // Past the point of no return: the process is stopping whatever the caller does, so a client that hangs up now
         // must not cancel the removal, the server stop or the release (the lease would stay held until it expires).
-        var removed = await endpoints.Remove(grant.Holder.Pid, CancellationToken.None).ConfigureAwait(false);   // while the grant is held
+        var removed = await records.RemoveEndpoint(grant.Holder.Pid, CancellationToken.None).ConfigureAwait(false);   // while the grant is held
         held.Clear();         // before the release, so a renewal finishing now can't hold the grant again
         shutdown.Request();   // stops the worker; before the release, so a renewal that runs after it sees a stop, not a lost lease
         var stopped = await temporal.Stop(CancellationToken.None).ConfigureAwait(false);   // the worker, then the server, before the release

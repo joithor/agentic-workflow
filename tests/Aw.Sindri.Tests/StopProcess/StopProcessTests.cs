@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Features.StopProcess;
@@ -19,7 +20,10 @@ public sealed class StopProcessTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private StopProcessService Service() => new(_h.Held, _h.Store, _h.Store, _h.Events, _h.Shutdown, new InMemoryEndpointFile(), _runtime);
+    private static ServeRecords Records(IEndpointFile endpoints, HeldHumanToken? token = null, IHumanTokenStore? tokens = null) =>
+        new(endpoints, token ?? new HeldHumanToken(), tokens ?? new InMemoryHumanTokenStore());
+
+    private StopProcessService Service() => new(_h.Held, _h.Store, _h.Store, _h.Events, _h.Shutdown, Records(new InMemoryEndpointFile()), _runtime);
 
     [Fact, Trait("Lane", "unit")]
     public async Task StopProcess_records_the_stop_releases_the_lease_and_shuts_down()
@@ -44,7 +48,7 @@ public sealed class StopProcessTests
         bool? requestedAtRelease = null;
         lease.BeforeRelease = () => requestedAtRelease = _h.Shutdown.Requested;
 
-        _ = await new StopProcessService(_h.Held, lease, _h.Store, _h.Events, _h.Shutdown, new InMemoryEndpointFile(), _runtime).Handle(new StopProcessRequest(StopReason.Stop), Token);
+        _ = await new StopProcessService(_h.Held, lease, _h.Store, _h.Events, _h.Shutdown, Records(new InMemoryEndpointFile()), _runtime).Handle(new StopProcessRequest(StopReason.Stop), Token);
 
         Assert.True(requestedAtRelease);   // why: a renewal that runs after the release must see a stop, not a lost lease
     }
@@ -64,7 +68,7 @@ public sealed class StopProcessTests
         ControlEndpoint? recordedAtRelease = null;
         lease.BeforeRelease = () => recordedAtRelease = Recorded(record);
 
-        var stopped = await new StopProcessService(_h.Held, lease, _h.Store, _h.Events, _h.Shutdown, endpoints, _runtime).Handle(new StopProcessRequest(StopReason.Stop), Token);
+        var stopped = await new StopProcessService(_h.Held, lease, _h.Store, _h.Events, _h.Shutdown, Records(endpoints), _runtime).Handle(new StopProcessRequest(StopReason.Stop), Token);
 
         Assert.True(stopped.IsSuccess);
         Assert.True((await _h.Store.Read(Token)).Value!.Released);   // why: the lease row exists once HoldLease took it
@@ -84,11 +88,42 @@ public sealed class StopProcessTests
         var record = new ObservedEndpointFile(new InMemoryEndpointFile());
         using var caller = CancellationTokenSource.CreateLinkedTokenSource(Token);   // the request's RequestAborted
 
-        _ = await new StopProcessService(_h.Held, lease, _h.Store, _h.Events, _h.Shutdown, record, _runtime).Handle(new StopProcessRequest(StopReason.Stop), caller.Token);
+        _ = await new StopProcessService(_h.Held, lease, _h.Store, _h.Events, _h.Shutdown, Records(record), _runtime).Handle(new StopProcessRequest(StopReason.Stop), caller.Token);
 
         Assert.False(record.RemovedWith?.CanBeCanceled ?? true);   // why: a cancelled removal would skip the clear, the shutdown and the release
         Assert.False(lease.ReleasedWith?.CanBeCanceled ?? true);   // why: a client that hangs up mid-stop must not leave the lease held
         Assert.False(_temporal.StoppedWith?.CanBeCanceled ?? true);   // why: a cancelled server stop would skip the release too
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task StopProcess_removes_this_starts_human_token_beside_the_endpoint_record()
+    {
+        _ = await _h.HoldLease();
+        var tokens = new InMemoryHumanTokenStore();
+        var held = new HeldHumanToken();
+        held.Hold((await tokens.Mint(Token)).Value);
+
+        var stopped = await new StopProcessService(_h.Held, _h.Store, _h.Store, _h.Events, _h.Shutdown, Records(new InMemoryEndpointFile(), held, tokens), _runtime)
+            .Handle(new StopProcessRequest(StopReason.Stop), Token);
+
+        Assert.True(stopped.IsSuccess);
+        Assert.Null((await tokens.Read(Token)).Value);
+        Assert.Null(held.Current);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task StopProcess_leaves_a_successors_human_token_alone()
+    {
+        _ = await _h.HoldLease();
+        var tokens = new InMemoryHumanTokenStore();
+        var held = new HeldHumanToken();
+        held.Hold((await tokens.Mint(Token)).Value);
+        var successors = (await tokens.Mint(Token)).Value;   // a later start replaced the file
+
+        _ = await new StopProcessService(_h.Held, _h.Store, _h.Store, _h.Events, _h.Shutdown, Records(new InMemoryEndpointFile(), held, tokens), _runtime)
+            .Handle(new StopProcessRequest(StopReason.Stop), Token);
+
+        Assert.Equal(successors, (await tokens.Read(Token)).Value);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -110,7 +145,7 @@ public sealed class StopProcessTests
         bool? runningAtRelease = null;
         lease.BeforeRelease = () => runningAtRelease = _temporal.Running is not null;
 
-        _ = await new StopProcessService(_h.Held, lease, _h.Store, _h.Events, _h.Shutdown, new InMemoryEndpointFile(), _runtime).Handle(new StopProcessRequest(StopReason.Stop), Token);
+        _ = await new StopProcessService(_h.Held, lease, _h.Store, _h.Events, _h.Shutdown, Records(new InMemoryEndpointFile()), _runtime).Handle(new StopProcessRequest(StopReason.Stop), Token);
 
         Assert.Null(_temporal.Running);
         Assert.False(runningAtRelease);   // why: the next serve takes the lease and must not adopt a server that is stopping
@@ -144,7 +179,7 @@ public sealed class StopProcessTests
         bool? workerStoppedAtRelease = null;
         lease.BeforeRelease = () => workerStoppedAtRelease = worker.Task.IsCompleted;
 
-        _ = await new StopProcessService(_h.Held, lease, _h.Store, _h.Events, _h.Shutdown, new InMemoryEndpointFile(), _runtime).Handle(new StopProcessRequest(StopReason.Stop), Token);
+        _ = await new StopProcessService(_h.Held, lease, _h.Store, _h.Events, _h.Shutdown, Records(new InMemoryEndpointFile()), _runtime).Handle(new StopProcessRequest(StopReason.Stop), Token);
 
         Assert.True(serverAtWorkerStop);        // why: a worker whose server goes first fails its pollers instead of stopping
         Assert.True(workerStoppedAtRelease);
