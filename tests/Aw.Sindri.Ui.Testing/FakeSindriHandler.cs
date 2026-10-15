@@ -74,13 +74,21 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
         return uri.AbsolutePath switch
         {
             "/sindri/ping" => Text(HttpStatusCode.OK, Ping(server.Pong), "application/json"),
-            "/sindri/status" => Text(HttpStatusCode.OK, Status((await server.Status(uri, cancellationToken)).Value), "application/json"),
+            "/sindri/status" => await StatusAnswer(uri, cancellationToken),
             "/sindri/events" => Events(After(uri), cancellationToken),
             "/sindri/commands" => Answer(Counted(await server.Commands(uri, cancellationToken), server.Catalog)),
             "/sindri/services" => Answer(Counted(await server.Services(uri, cancellationToken), server.ServiceView)),
             "/sindri/views/rebuild" when request.Method == HttpMethod.Post => Answer(Counted(await server.RebuildViews(uri, cancellationToken), server.Rebuild)),
             _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
         };
+    }
+
+    private async Task<HttpResponseMessage> StatusAnswer(Uri uri, CancellationToken cancellationToken)
+    {
+        var status = await server.Status(uri, cancellationToken);
+        return status.IsError
+            ? Answer(RouteAnswer.Problem(HttpStatusCode.ServiceUnavailable, status.Error.Code, status.Error.Message))
+            : Text(HttpStatusCode.OK, Status(status.Value), "application/json");
     }
 
     // Sindri's caller check (API P1 §6: a human without this start's token, ping, status and the stream included), then the model's own refusal: 403 with ProblemDetails.

@@ -35,6 +35,9 @@ internal sealed partial class FakeSindriApi : ISindriApi
     /// <summary>When true, status calls answer SND-UI-003 (an answer this build can't read) while pings carry on.</summary>
     public bool UnreadableStatus { get; set; }
 
+    /// <summary>When set, status calls answer this error (the handler serves it as a 503 problem): SND-API-011 is "views behind".</summary>
+    public Error? StatusError { get; set; }
+
     /// <summary>What an unreadable status says (SND-UI-003's message), for a layout test that needs a long one.</summary>
     public string UnreadableReason { get; set; } = "/sindri/status answered 500";
 
@@ -118,7 +121,8 @@ internal sealed partial class FakeSindriApi : ISindriApi
             await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        return Refusal is { } refusal ? Refused<StatusView>(refusal)
+        return StatusError is { } failure ? failure
+            : Refusal is { } refusal ? Refused<StatusView>(refusal)
             : Down || FailStatus ? Unreachable<StatusView>(api)
             : UnreadableStatus ? SindriUiErrors.BadAnswer.With(UnreadableReason)
             : Current;

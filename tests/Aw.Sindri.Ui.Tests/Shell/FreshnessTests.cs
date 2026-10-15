@@ -170,6 +170,91 @@ public sealed class FreshnessTests : IDisposable
         Assert.Equal((status + 2, services + 2), (_server.StatusCalls, _server.ServicesCalls));
     }
 
+    // F2 (arch-0, corr-0): a rebuild is accepted and the next status read is "views behind" (503 SND-API-011). That is not
+    // trouble with Sindri: the shell stays Normal with the banner and the last data, and reads again.
+    [Fact]
+    public async Task Views_behind_keeps_the_shell_normal_and_the_last_data_and_reads_again()
+    {
+        _server.ServiceView = RouteAnswer.SpecShaped("services", "stalled");
+        await Connected(() => _vm.Banner.IsShown);
+        var status = _server.StatusCalls;
+        _server.StatusError = new Aw.Kernel.Error("SND-API-011", Aw.Kernel.ErrorKind.Unavailable, "The views have not reached sequence 43 (fix: retry shortly)");
+
+        _server.Push(A.Event(1, "views.rebuild.started"));
+        await Until(() => _server.StatusCalls > status);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
+
+        Assert.Equal((ShellState.Normal, true), (_vm.State, _vm.Banner.IsShown));
+        Assert.Equal("Views are stalled at 42: run `sindri views rebuild`", _vm.Banner.Text);
+
+        _server.StatusError = null;
+        _server.Current = Status(new AsOfView(42, 42, A.Noon, Rebuilding: false, Stalled: false), new HealthView("healthy", []));
+        _server.ServiceView = RouteAnswer.SpecShaped("services", "fixture");
+        await Until(() => !_vm.Banner.IsShown, _clock);
+
+        Assert.Equal(("Healthy", ShellState.Normal), (_vm.Pill.Word, _vm.State));
+    }
+
+    // F3 (corr-1): after an event the status can still show the projection behind the ledger; with no other event the
+    // app keeps reading on the 250 ms throttle until it catches up, so the pill and banner follow.
+    [Fact]
+    public async Task A_projection_still_behind_the_ledger_is_read_again_until_it_catches_up()
+    {
+        _server.Current = Status(new AsOfView(10, 42, A.Noon, Rebuilding: false, Stalled: false), new HealthView("healthy", []));
+        await Connected(() => _server.ServicesCalls > 0);
+        _server.Push(A.Event(1, "service.ran"));
+        await Until(() => _server.StatusCalls > 1);
+
+        var before = _server.StatusCalls;
+        await Until(() => _server.StatusCalls >= before + 2, _clock);
+
+        _server.Current = Status(new AsOfView(42, 42, A.Noon, Rebuilding: false, Stalled: false), new HealthView("degraded", [new HealthProblemView("SND-SCHED-001", "index failed")]));
+        _server.ServiceView = RouteAnswer.SpecShaped("services", "rebuilding");
+        await Until(() => _vm.Pill.Word == "Degraded", _clock);
+        var settled = _server.StatusCalls;
+        _clock.Advance(HealthViewModel.RefreshEvery);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
+        _clock.Advance(HealthViewModel.RefreshEvery);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
+
+        Assert.Equal("Degraded", _vm.Pill.Word);
+        Assert.True(_server.StatusCalls <= settled + 1, "caught up: no more polling");
+    }
+
+    // F3: a rebuild in progress is polled the same way; a stalled projection is not (it won't move by itself).
+    [Fact]
+    public async Task A_rebuild_in_progress_is_polled_and_a_stalled_projection_is_not()
+    {
+        _server.Current = Status(new AsOfView(12, 42, A.Noon, Rebuilding: true, Stalled: false), new HealthView("healthy", []));
+        await Connected(() => _server.ServicesCalls > 0);
+        _server.Push(A.Event(1, "views.rebuild.progress"));
+        await Until(() => _server.StatusCalls > 1);
+        var before = _server.StatusCalls;
+        await Until(() => _server.StatusCalls >= before + 2, _clock);
+
+        _server.Current = Status(new AsOfView(12, 42, A.Noon, Rebuilding: false, Stalled: true), new HealthView("degraded", []));
+        await Until(() => _vm.Pill.Word == "Degraded", _clock);
+        var settled = _server.StatusCalls;
+        for (var i = 0; i < 3; i++)
+        {
+            _clock.Advance(HealthViewModel.RefreshEvery);
+            await Task.Delay(30, TestContext.Current.CancellationToken);
+        }
+
+        Assert.True(_server.StatusCalls <= settled + 1, "stalled: not polled");
+    }
+
+    private static async Task Until(Func<bool> condition, FakeTimeProvider clock)
+    {
+        for (var i = 0; i < 300 && !condition(); i++)
+        {
+            clock.Advance(HealthViewModel.RefreshEvery);
+            await Task.Delay(10, TestContext.Current.CancellationToken);
+        }
+
+        Assert.True(condition());
+    }
+
     private static async Task Until(Func<bool> condition)
     {
         for (var i = 0; i < 200 && !condition(); i++)

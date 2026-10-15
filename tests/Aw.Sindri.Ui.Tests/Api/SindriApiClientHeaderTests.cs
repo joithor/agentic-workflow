@@ -108,4 +108,115 @@ public sealed class SindriApiClientHeaderTests
         Assert.Equal(new Error("SND-API-010", ErrorKind.Conflict, "Views are rebuilding (fix: retry after the rebuild)"), rebuild.Error);
         _ = Assert.Single(handler.Requests);
     }
+
+    // F2 (arch-0, corr-0): X-Sindri-After belongs to the view queries (status, services). A ping or the catalog never
+    // carries it, and never uses it up.
+    [Fact]
+    public async Task Only_status_and_services_carry_the_sequence_and_a_ping_or_the_catalog_does_not_use_it_up()
+    {
+        var handler = new FakeSindriHandler(new FakeSindriApi());
+        var client = new SindriApiClient(new HttpClient(handler), new InMemoryHumanToken("tok-1"), TimeProvider.System);
+
+        _ = await client.RebuildViews(_api, Token);
+        _ = await client.Ping(_api, Token);
+        _ = await client.Commands(_api, Token);
+        _ = await client.Services(_api, Token);
+        _ = await client.Status(_api, Token);
+
+        Assert.Equal(
+            [("POST", null), ("GET", null), ("GET", null), ("GET", "43"), ("GET", null)],
+            handler.Requests.Select(r => (r.Method, r.After)));
+    }
+
+    // F2: a view query that never got an answer didn't use it: the next one carries it.
+    [Fact]
+    public async Task A_query_that_got_no_answer_leaves_the_sequence_for_the_next_one()
+    {
+        var server = new FakeSindriApi();
+        var handler = new FakeSindriHandler(server);
+        var client = new SindriApiClient(new HttpClient(handler), new InMemoryHumanToken("tok-1"), TimeProvider.System);
+        _ = await client.RebuildViews(_api, Token);
+
+        server.GoDown();
+        _ = await client.Status(_api, Token);
+        server.ComeUp();
+        _ = await client.Status(_api, Token);
+
+        Assert.Equal(["43", "43"], handler.Requests.Skip(1).Select(r => r.After), StringComparer.Ordinal);
+    }
+
+    // F2: the retry after a stale token carries it too.
+    [Fact]
+    public async Task The_stale_token_retry_carries_the_sequence()
+    {
+        var handler = new FakeSindriHandler(new FakeSindriApi()) { RequiredToken = "tok-2" };
+        var tokens = new InMemoryHumanToken("tok-2");
+        var client = new SindriApiClient(new HttpClient(handler), tokens, TimeProvider.System);
+        _ = await client.RebuildViews(_api, Token);
+        tokens.Then("tok-1", "tok-2");
+
+        var status = await client.Status(_api, Token);
+
+        Assert.True(status.IsSuccess);
+        Assert.Equal(["43", "43"], handler.Requests.Skip(1).Select(r => r.After), StringComparer.Ordinal);
+    }
+
+    // F2: the server waits up to 2 s for the sequence before it answers SND-API-011, so the call carrying it waits longer
+    // than the 2 s of an ordinary call.
+    [Fact]
+    public async Task The_call_carrying_the_sequence_outlasts_the_servers_two_second_wait()
+    {
+        var clock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(A.Noon);
+        var gate = new GatedHandler();
+        var client = new SindriApiClient(new HttpClient(gate), new InMemoryHumanToken("tok-1"), clock);
+        _ = await client.RebuildViews(_api, Token);
+
+        var plain = client.Commands(_api, Token);
+        clock.Advance(TimeSpan.FromSeconds(2.5));
+        Assert.Equal("SND-UI-002", (await plain).Error.Code);
+
+        var query = client.Services(_api, Token);
+        clock.Advance(TimeSpan.FromSeconds(2.5));
+        Assert.False(query.IsCompleted, "still waiting at 2.5 s");
+        gate.Release();
+        Assert.True((await query).IsSuccess);
+    }
+
+    // F2: SND-API-011 ("views behind") on such a read is Sindri's code as served, and the sequence is kept for the next.
+    [Fact]
+    public async Task Views_behind_is_sindris_code_and_keeps_the_sequence()
+    {
+        var handler = new FakeSindriHandler(new FakeSindriApi());
+        var client = new SindriApiClient(new HttpClient(handler), new InMemoryHumanToken("tok-1"), TimeProvider.System);
+        _ = await client.RebuildViews(_api, Token);
+        handler.Override = (HttpStatusCode.ServiceUnavailable, RouteAnswer.Problem(HttpStatusCode.ServiceUnavailable, "SND-API-011", "The views have not reached sequence 43 (fix: retry shortly)").Body);
+
+        var behind = await client.Status(_api, Token);
+        handler.Override = null;
+        _ = await client.Status(_api, Token);
+        _ = await client.Status(_api, Token);
+
+        Assert.Equal(new Error("SND-API-011", ErrorKind.Unavailable, "The views have not reached sequence 43 (fix: retry shortly)"), behind.Error);
+        Assert.Equal(["43", "43", null], handler.Requests.Skip(1).Select(r => r.After), StringComparer.Ordinal);
+    }
+
+    // Answers a view query only when released; an ordinary call it never answers (the deadline decides).
+    private sealed class GatedHandler : HttpMessageHandler
+    {
+        private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        internal void Release() => _release.SetResult();
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var path = request.RequestUri!.AbsolutePath;
+            if (path == "/sindri/views/rebuild")
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(RouteAnswer.SpecShaped("views-rebuild", "accepted").Body) };
+            }
+
+            await _release.Task.WaitAsync(cancellationToken);
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(RouteAnswer.SpecShaped("services", "fixture").Body) };
+        }
+    }
 }
