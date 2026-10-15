@@ -733,7 +733,7 @@ the code's kind, or is absorbed when the same revoke already parked it.
 
 | Unit | Owns |
 |---|---|
-| (a) | `EffectActivities.RecordAsync`, `RunAsync`; `RecipeWorkflow.Dispatch` and its call from `Apply`; the dispatch delay from `LoadedRecipe.DispatchDelay`; `EffectRules.Reemitted` (the `retry` re-emission, which P5's retry arm calls); the effect ids in the transition's payload |
+| (a) | `EffectActivities.RecordAsync`, `RunAsync`; `RecipeWorkflow.Dispatch` and its call from `Apply`; the dispatch delay from `LoadedRecipe.DispatchDelay`; the `retry` re-emission (`TransitionDecision.Retry` returns the entering transition's effects, which `Emit` dispatches); the effect ids in the transition's payload |
 | (b) | `EffectRules.Recheck`; `EffectActivities.RecheckAsync`; `TransitionDecision.OutboxRefusal` (the `outbox.refused` park or absorb) and `Reemit` (`--resume` on a dispatch park) |
 | (c) | `NotifyDeskEffect`, `IDeskNotices` and its adapter (`notifications.jsonl`, macOS notifications); `EngineNotices.For` and the engine-origin notices; `ListOutbox`, `GET /outbox?state=`, `OutboxCommandTable` lines |
 | (d) | `ClaimRefEffect`, `IWorkflowClaims` and the `workflow_claims` migration (ledger.db, version 6); `EffectSettings.Of`, the two keys in `ProfileRules` and `ProfileDiff`, RCP-EFFECT-001 against the allowlist, `workflow.dispatchDelay` in `LoadRecipe` |
@@ -748,7 +748,7 @@ Unit (a), as built:
   unit (b): a cancel is not a refusal, and no recheck runs). Engine-origin
   notices skip the delay and the recheck. The instance returns only once every effect it emitted has settled.
 - **One run per identity:** an identity already dispatched, or still on its way, is skipped, so a `retry` re-emission
-  (`RecipeWorkflow.Reemit`, over `EffectRules.Reemitted`) writes nothing twice. `RunEffect` keys its rows by identity
+  (`TransitionDecision.Retry`'s effects, through `Emit`) writes nothing twice. `RunEffect` keys its rows by identity
   (`workflow:{address}:effect:{identity}:dispatched`, `…:reply`, under the instance's address so `workflow events` lists them; envelope ids derived from the keys), so an activity retry
   writes nothing twice either.
 - **The reply** is the one causation-routed event that declares the block's outcome, appended as its producer

@@ -15,8 +15,9 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// The interpreter's effects (engine spec rev 8 §5.7, §3.4; engine P6 unit (a)). After a change's ledger event the loop
 /// hands its effects to <see cref="Emit"/>, which starts <see cref="Dispatch"/> as a workflow task it doesn't await, so
 /// the instance enters its next state while a recipe effect waits out the dispatch delay. An effect identity runs once
-/// per instance: one already dispatched, or still on its way, is skipped, so a 'retry' re-emission (<see cref="Reemit"/>)
-/// writes nothing twice. A cancel within the delay aborts the effect. The instance returns only once every effect it
+/// per instance: one already dispatched, or still on its way, is skipped, so a 'retry' re-emission (the retry decision's
+/// effects, which reach <see cref="Emit"/> through <c lang="csharp">TransitionDecision.Retry</c>) writes nothing twice. A cancel within
+/// the delay aborts the effect. The instance returns only once every effect it
 /// emitted is dispatched, refused or aborted.
 /// </summary>
 internal sealed partial class RecipeWorkflow
@@ -55,24 +56,10 @@ internal sealed partial class RecipeWorkflow
     }
 
     /// <summary>
-    /// A 'retry' re-emits the effects of the transition that entered the instance's state, with their identities (§3.4,
-    /// §5.5): P5's retry arm calls this. Each one already dispatched is skipped.
-    /// </summary>
-    /// <param name="instance">The instance whose timeout retries.</param>
-    internal void Reemit(WorkflowInstance instance)
-    {
-        var effects = EffectRules.Reemitted(instance, _context!.Recipe); // why: the loop runs only after Begin set _context
-        if (effects.Count > 0)
-        {
-            _effects.Add(Dispatch(instance, effects));   // the recipe's effects only: a re-emission sends no engine notice (P6 unit (c))
-        }
-    }
-
-    /// <summary>
     /// Starts the effects of a change just mirrored: the recipe's effects for this instance and the engine's own notices.
     /// A change that cancels the instance aborts every effect still in its delay.
     /// </summary>
-    /// <param name="before">The instance before the change (null at start or for a re-emission).</param>
+    /// <param name="before">The instance before the change (null at start).</param>
     /// <param name="after">The instance after it.</param>
     /// <param name="effects">The recipe effects the change runs.</param>
     /// <param name="change">The type of the change's ledger event: a 'workflow.notified' one is takeoverIdle's (P5).</param>

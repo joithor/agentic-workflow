@@ -1,12 +1,10 @@
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
-using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Effects;
 
-/// <summary>The pure effect decisions (engine spec §3.4, §5.7; engine P6): the dispatch recheck and the 'retry' re-emission.</summary>
+/// <summary>The pure effect decisions (engine spec §3.4, §5.7; engine P6): the dispatch recheck. A 'retry' re-emits through the transition decision's own effects.</summary>
 public static class EffectRules
 {
     /// <summary>The one effect the engine's own origin may send (§5.7): its desk notice.</summary>
@@ -42,26 +40,5 @@ public static class EffectRules
         }
 
         return effects.Allowlist?.Contains(kind) == true ? null : WorkflowErrors.EffectNotAllowed.Code;
-    }
-
-    /// <summary>
-    /// The effects a 'retry' re-emits (§3.4; unit (a)): those of the transition that entered the instance's frame, each
-    /// with the identity it had, so the effect block's existence check makes the repeat harmless.
-    /// </summary>
-    /// <param name="instance">The instance, in the state whose timeout retries.</param>
-    /// <param name="recipe">Its recipe.</param>
-    /// <returns>The effects, in their transition's order.</returns>
-    public static IReadOnlyList<EffectCommand> Reemitted(WorkflowInstance instance, Recipe recipe)
-    {
-        ArgumentNullException.ThrowIfNull(instance);
-        ArgumentNullException.ThrowIfNull(recipe);
-        var entering = recipe.Transitions.Where(t => string.Equals(t.To, instance.Frame.State, StringComparison.Ordinal) && t.Effects.Count > 0).ToList();
-        if (entering.Select(static t => string.Join(',', t.Effects.Select(static e => e.Use.Value))).Distinct(StringComparer.Ordinal).Take(2).Count() != 1)
-        {
-            return [];   // none, or transitions with different effects enter the state: the instance doesn't record which one did
-        }
-
-        return [.. entering[0].Effects.Select((use, index) =>
-            new EffectCommand(use.Use, new EffectIdentity(instance.Id, instance.Frame.Entry, index), CommandOrigin.Recipe, use.With))];
     }
 }
