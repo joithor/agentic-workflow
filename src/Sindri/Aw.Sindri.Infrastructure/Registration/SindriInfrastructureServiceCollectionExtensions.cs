@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Mcp;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Secrets;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Infrastructure.Auth;
@@ -17,6 +18,7 @@ using Aw.Sindri.Infrastructure.Ledger;
 using Aw.Sindri.Infrastructure.Mcp;
 using Aw.Sindri.Infrastructure.Profile;
 using Aw.Sindri.Infrastructure.Secrets;
+using Aw.Sindri.Infrastructure.Views;
 using Aw.Sindri.Infrastructure.Workflow;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -25,7 +27,7 @@ namespace Aw.Sindri.Infrastructure.Registration;
 /// <summary>Registers Aw.Sindri.Infrastructure's adapters and settings. A second technology for a port gets its own AddSindri&lt;Tech&gt;Infrastructure method.</summary>
 public static class SindriInfrastructureServiceCollectionExtensions
 {
-    /// <summary>Adds the Sindri adapters (SQLite ledger and lease, YAML profile and recipes, files, the process probe, process ancestry, git repo resolution, secret pointers, the claude CLI and the providers' MCP files) and their settings.</summary>
+    /// <summary>Adds the Sindri adapters (SQLite ledger, lease and views, YAML profile and recipes, files, the process probe, process ancestry, git repo resolution, secret pointers, the claude CLI and the providers' MCP files) and their settings.</summary>
     /// <param name="services">The service collection.</param>
     /// <remarks>The profile and approval adapters take the package's AwJson options, which Compose registers.</remarks>
     /// <param name="environment">Reads an environment variable (Environment.GetEnvironmentVariable in Program.cs, a lambda in tests).</param>
@@ -37,7 +39,11 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IProcessProbe, PosixProcessProbe>()
             .AddSingleton<LedgerDatabase>()
             .AddSingleton<ILedgerStore, SqliteLedger>()
+            .AddSingleton<ILedgerReader, SqliteLedgerReader>()
             .AddSingleton<ILease, SqliteLease>()
+            .AddSingleton<ViewsDatabase>()
+            .AddSingleton<IViewStore, SqliteViewStore>()
+            .AddSingleton<IViewReader, SqliteViewReader>()
             .AddSingleton<IProfileSource, YamlProfileSource>()
             .AddSingleton<IApprovals, FileApprovals>()
             .AddSingleton<IApprovedProfile>(static sp => sp.GetRequiredService<IApprovals>())

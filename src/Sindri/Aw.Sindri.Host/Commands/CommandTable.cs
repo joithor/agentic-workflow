@@ -76,6 +76,8 @@ internal static class CommandTable
             ["profile", "validate", .. var rest] when Json(rest) is { } json => await verbs.Validate(json, ct).ConfigureAwait(false),
             ["profile", "approve", .. var rest] when Approval(rest) is { } a => await new Verbs(client, probe, output, services, c => start.EnsureRunning(!a.NoStart, c))
                 .Approve(a.Hash, Interactive(), Console.In, ct).ConfigureAwait(false),
+            ["views", "rebuild", .. var rest] when NoStart(rest) is { } noStart => await new Verbs(client, probe, output, services, c => start.EnsureRunning(!noStart, c))
+                .RebuildViews(ct).ConfigureAwait(false),
             ["doctor", "--probe"] or ["doctor", "--probe", "--json"] => await output.Json(await harnesses.Probe(harness: null, ct).ConfigureAwait(false), 0).ConfigureAwait(false),
             ["doctor", "--probe", "--harness", var name, .. var rest] when Json(rest) is not null => await output.Json(await harnesses.Probe(name, ct).ConfigureAwait(false), 0).ConfigureAwait(false),
             ["doctor", .. var rest] when Json(rest) is { } json => await verbs.Doctor(json, ct, harnesses.DoctorChecks).ConfigureAwait(false),
@@ -108,6 +110,14 @@ internal static class CommandTable
     {
         [] => false,
         ["--json"] => true,
+        _ => null,
+    };
+
+    /// <summary>'views rebuild [--no-start]'.</summary>
+    private static bool? NoStart(string[] rest) => rest switch
+    {
+        [] => false,
+        ["--no-start"] => true,
         _ => null,
     };
 

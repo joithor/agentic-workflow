@@ -443,7 +443,7 @@
       "method": "POST",
       "route": "/sindri/views/rebuild",
       "cli": "sindri views rebuild",
-      "ui": "pending:P2",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null

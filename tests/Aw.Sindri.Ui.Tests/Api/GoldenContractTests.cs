@@ -26,8 +26,8 @@ public sealed class GoldenContractTests
         ["events"] = As<EventView>,
     };
 
-    // Routes U0 never calls: the catalog is U1's, stop is Health's (U4), and profile approve is protected (§6.5).
-    private static readonly HashSet<string> _notRead = new(StringComparer.Ordinal) { "commands", "stop", "profile-approve" };
+    // Routes U0 never calls: the catalog is U1's, stop is Health's (U4), profile approve is protected (§6.5), and the services, profile and views-rebuild routes are the later pages' (U2+).
+    private static readonly HashSet<string> _notRead = new(StringComparer.Ordinal) { "commands", "stop", "profile-approve", "services", "profile", "views-rebuild" };
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
