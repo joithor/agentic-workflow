@@ -13,12 +13,12 @@ namespace Aw.Meta.Features.Status;
 /// <param name="lanes">The lane map.</param>
 internal sealed class StatusReader(ObligationReader reader, IMessageStore messages, IGateStore gates, IOwnerStore owner, ILaneStore lanes)
 {
-    internal async ValueTask<Result<StatusResponse>> Read(string metaLane, DateTimeOffset now, CancellationToken cancellationToken)
+    internal async ValueTask<Result<StatusResponse>> Read(string metaLane, DateTimeOffset now, IReadOnlySet<int> ended, CancellationToken cancellationToken)
     {
         var open = await reader.Open(metaLane, now, cancellationToken).ConfigureAwait(false);
         var queue = await owner.List(includeAnswered: false, cancellationToken).ConfigureAwait(false);
         var map = await lanes.Current(cancellationToken).ConfigureAwait(false);
-        var ready = await MergeQueue(cancellationToken).ConfigureAwait(false);
+        var ready = await MergeQueue(ended, cancellationToken).ConfigureAwait(false);
         if (open.IsError || queue.IsError || map.IsError || ready.IsError)
         {
             return open.IsError ? open.Error : queue.IsError ? queue.Error : map.IsError ? map.Error : ready.Error;
@@ -27,18 +27,28 @@ internal sealed class StatusReader(ObligationReader reader, IMessageStore messag
         return new StatusResponse(open.Value, ready.Value, queue.Value, map.Value);
     }
 
-    private async ValueTask<Result<IReadOnlyList<QueuedPr>>> MergeQueue(CancellationToken cancellationToken)
+    private async ValueTask<Result<IReadOnlyList<QueuedPr>>> MergeQueue(IReadOnlySet<int> ended, CancellationToken cancellationToken)
     {
         var inbound = await messages.Messages(cancellationToken).ConfigureAwait(false);
-        var merge = await gates.LatestMerge(cancellationToken).ConfigureAwait(false);
-        if (inbound.IsError || merge.IsError)
+        if (inbound.IsError)
         {
-            return inbound.IsError ? inbound.Error : merge.Error;
+            return inbound.Error;
         }
 
         var queued = new List<QueuedPr>();
-        foreach (var (pr, from) in Ready(inbound.Value, merge.Value?.Pr))
+        foreach (var (pr, from) in Ready(inbound.Value, ended))
         {
+            var merge = await gates.FindMerge(pr, cancellationToken).ConfigureAwait(false);
+            if (merge.IsError)
+            {
+                return merge.Error;
+            }
+
+            if (merge.Value is not null)
+            {
+                continue;
+            }
+
             var gate = await gates.Latest(pr, cancellationToken).ConfigureAwait(false);
             if (gate.IsError)
             {
@@ -51,10 +61,10 @@ internal sealed class StatusReader(ObligationReader reader, IMessageStore messag
         return queued;
     }
 
-    // The latest "ready #n" message per pull request number, lowest number first, leaving out the one merged last.
-    private static IEnumerable<(int Pr, string From)> Ready(IReadOnlyList<InboxMessage> inbound, int? merged) =>
+    // The latest "ready #n" message per pull request number, lowest number first, leaving out those GitHub shows merged or closed (the caller's set).
+    private static IEnumerable<(int Pr, string From)> Ready(IReadOnlyList<InboxMessage> inbound, IReadOnlySet<int> ended) =>
         inbound
-            .Where(m => m.Class is { Kind: MessageKind.Ready, Pr: { } pr } && pr != merged)
+            .Where(m => m.Class is { Kind: MessageKind.Ready, Pr: { } pr } && !ended.Contains(pr))
             .GroupBy(m => m.Class.Pr.GetValueOrDefault())
             .OrderBy(group => group.Key)
             .Select(group => group.MaxBy(m => m.At))

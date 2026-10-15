@@ -6,12 +6,18 @@ namespace Aw.Meta.Testing;
 /// <summary>The IDelay contract: the same tests run against the in-memory fake and every real adapter.</summary>
 public abstract class DelayContract
 {
+    private static readonly TimeSpan _timerSlack = TimeSpan.FromMilliseconds(30);
+
     /// <summary>The adapter under test and a reading of the clock it waits on.</summary>
     /// <param name="now">Reads the clock the delay's time passes on.</param>
     /// <returns>The adapter.</returns>
     protected abstract IDelay Create(out Func<DateTimeOffset> now);
 
-    /// <summary>After a wait, at least that much time has passed on the clock.</summary>
+    /// <summary>
+    /// After a wait, about that much time has passed on the clock. A timer may fire a few milliseconds before the wall
+    /// clock shows the full delay (the two clocks tick apart), so the check allows that much slack and the wait is long
+    /// enough that a delay which returned at once still fails.
+    /// </summary>
     /// <returns>A task.</returns>
     [Fact]
     public async Task A_wait_lets_the_time_pass()
@@ -19,9 +25,9 @@ public abstract class DelayContract
         var delay = Create(out var now);
         var before = now();
 
-        await delay.Wait(TimeSpan.FromMilliseconds(40), CancellationToken.None);
+        await delay.Wait(TimeSpan.FromMilliseconds(100), CancellationToken.None);
 
-        Expect.That(now() - before >= TimeSpan.FromMilliseconds(40), "the clock moved by at least the wait");
+        Expect.That(now() - before >= TimeSpan.FromMilliseconds(100) - _timerSlack, "the clock moved by about the wait");
     }
 
     /// <summary>A cancelled wait is cancelled.</summary>
