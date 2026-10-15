@@ -416,11 +416,24 @@ The destructive confirm reads "<label> <id>?" with Confirm and Keep. Actors (`cr
 opaque strings shown exactly as served; the app maps no fixed set (README X61), and assumes nothing about where an
 agent session runs. Running rows' agent, place and budget arrive with P11 (open for U5/P11).
 
-**§8's guards and filter.** While the pointer is over the Queue panel or Home's queue panels, a refresh is parked and
-an "N new" pill (polite) counts the rows it adds; leaving, or the pill, shows them. For 500 ms after a refresh moved
-the selection because its row cleared, single keys do nothing. `Y` copies the selected row's primary-action CLI
-(through its control: "Copied"); `/` opens the Queue page's filter (id, title, repo; "Nothing matches"), the last Esc
-layer after the sheet; Home's panels ignore it. The top bar shows "G …" while the chord waits.
+**§8's guards and filter.** While the pointer is over the Queue panel or Home's queue panels, only rows the page does
+not show yet wait behind the "N new" pill (spoken through the shell's gated queue region); removals and in-place
+updates show at once. Leaving, or the pill, shows the held rows. For 500 ms after a refresh moved the selection because
+its row cleared, single keys do nothing. `Y` copies the selected row's primary-action CLI (through its control:
+"Copied"); `/` opens the Queue page's filter (id, title, repo; "Nothing matches"), the last Esc layer after the sheet;
+Home's panels ignore it. The top bar shows "G …" while the chord waits.
+
+**Selection is focus (U2 review run 1).** A refresh reconciles in place: groups by name (so a collapsed group stays
+collapsed), rows by id and timeline rows by sequence are updated, and the bound lists (`ObservableCollection`, via
+`Patch`) change only where they differ, so the focused control keeps focus. One selection is the focus: J / K select
+the next or previous row of the page they are pressed on (Home: Running and With you, then Queued, as drawn; the
+Queue page: its visible, expanded groups) and focus that row's frame; a row, or a control in it, that gets focus
+selects it; Enter and Y act on the selected row only while it is on the page, and J / K / Enter / Y belong to the sheet
+while focus is inside it. A filter change that hides the selection clears it silently; a refresh compares against the
+unfiltered view, so a row hidden by the filter is not "cleared". When the selected row clears, the selection moves to
+the row now at its place, "<id> cleared" is spoken once through the gated queue region, and focus goes there if the
+old row had it. The sheet's subject is set by every deep link (before the connection too: the first re-read loads it),
+and Esc from the sheet returns focus to the row that opened it, by id.
 
 **The event stream (P5).** API P5 replaces `/events`' body with `PublicEvent`; the follower switches its event record
 when P5 merges. U2 doesn't touch the stream: it only re-reads views on each event.
