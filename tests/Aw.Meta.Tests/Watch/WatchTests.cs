@@ -107,6 +107,18 @@ public sealed class WatchTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Pull_requests_seen_merged_or_closed_are_kept_for_the_merge_queue_to_drop()
+    {
+        await _world.Ready();
+        _ = await _world.Values.Set(KvKeys.EndedPrs, "180", CancellationToken.None);
+        Script([List(Pr(190, "OPEN", "aaa1111"), Pr(191, "MERGED", "bbb2222"), Pr(192, "CLOSED", "ccc3333"))]);
+
+        _ = await Watch(TimeSpan.FromSeconds(120));
+
+        Assert.Equal("180,191,192", (await _world.Values.Get(KvKeys.EndedPrs, CancellationToken.None)).Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_failing_poll_reports_once_per_streak_and_the_watch_carries_on()
     {
         await _world.Ready();
