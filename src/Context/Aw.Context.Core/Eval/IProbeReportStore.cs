@@ -5,7 +5,7 @@ namespace Aw.Context.Core.Eval;
 /// <summary>The probe reports folder, $AW_SINDRI_HOME/context/eval/probes/ (0700, files 0600 by temp file and rename).</summary>
 public interface IProbeReportStore
 {
-    /// <summary>The newest report of a run of the probe file with <paramref name="probeFileHash"/>.</summary>
+    /// <summary>The newest baseline of the probe file with <paramref name="probeFileHash"/>: its newest run that was complete and did not regress (<see cref="ProbeReport.IsBaseline"/>), so a regression stays one on an identical rerun.</summary>
     /// <param name="probeFileHash">The probe file's hash.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The report, null when there is none, or SND-CONTEXT-004.</returns>

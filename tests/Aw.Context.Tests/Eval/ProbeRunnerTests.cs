@@ -66,10 +66,10 @@ public sealed class ProbeRunnerTests
     [InlineData(0, 1, true)]
     [InlineData(1, 1, false)]
     [InlineData(2, 1, false)]
-    public async Task A_run_that_names_more_absent_nodes_than_the_previous_one_regressed_even_when_the_scores_hold(int before, int now, bool regressed)
+    public async Task A_run_that_names_more_absent_nodes_than_the_previous_one_regressed_even_when_the_precision_holds(int before, int now, bool regressed)
     {
         var file = new ProbeFile("/probes/probes.json", "abc123", new ProbeSet([Answers.Probe("one", nodes: ["feature:a"], absent: ["feature:b", "feature:c"])]));
-        var previous = new ProbeReport(1, file.Path, file.Hash, "v1", [], new ProbeTotals(1.0, 1.0, 1, Answers.At.AddDays(-1), AbsentReturned: before), Previous: null, Regressed: false);
+        var previous = new ProbeReport(1, file.Path, file.Hash, "v1", [], new ProbeTotals(0.0, 1.0, 1, Answers.At.AddDays(-1), AbsentReturned: before), Previous: null, Regressed: false);
         var items = _nodes.Take(1 + now).Select(n => ("graph", Answers.Item(n))).ToArray();
 
         var report = (await ProbeRunner.Run(file, (_, _) => ValueTask.FromResult(Results.Success(Answers.Of(items))), previous, Answers.At, None)).Value;

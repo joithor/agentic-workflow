@@ -10,8 +10,8 @@ namespace Aw.Context.Infrastructure.Eval;
 
 /// <summary>
 /// The probe reports folder, $AW_SINDRI_HOME/context/eval/probes/ (0700): one JSON file per run, 'probes-&lt;time&gt;.json',
-/// written by temp file and rename at 0600. The latest run of a probe file is the newest report carrying its hash; a
-/// report that doesn't parse is skipped.
+/// written by temp file and rename at 0600. The baseline of a probe file is the newest report carrying its hash that was
+/// complete and did not regress; a report that doesn't parse is skipped.
 /// </summary>
 internal sealed class FileProbeReportStore(ContextStoreSettings settings, JsonSerializerOptions options) : IProbeReportStore
 {
@@ -28,7 +28,7 @@ internal sealed class FileProbeReportStore(ContextStoreSettings settings, JsonSe
             foreach (var file in Directory.EnumerateFiles(folder, "probes-*.json").Order(StringComparer.Ordinal).Reverse())
             {
                 var read = AwJson.Deserialize<ProbeReport>(await File.ReadAllBytesAsync(file, cancellationToken).ConfigureAwait(false), options);
-                if (read.IsSuccess && string.Equals(read.Value.ProbeFileHash, probeFileHash, StringComparison.Ordinal))
+                if (read.IsSuccess && read.Value.IsBaseline && string.Equals(read.Value.ProbeFileHash, probeFileHash, StringComparison.Ordinal))
                 {
                     return read.Value;
                 }

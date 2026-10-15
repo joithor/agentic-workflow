@@ -21,9 +21,25 @@ internal static class ContextEvalText
         _ = text.AppendLine(report.Previous is { } before
             ? Invariant($"previous run {before.RunAt:O}: precision@5 {before.PrecisionAt5:0.0000} · citation correctness {before.CitationCorrectness:0.0000}")
             : "previous run: none");
-        _ = text.AppendLine(report.Regressed ? "REGRESSED: SND-CONTEXT-038 (lower than the previous run of this probe file)"
+        if (report.Incomplete)
+        {
+            return Incomplete(text, report);
+        }
+
+        _ = text.AppendLine(report.Regressed ? "REGRESSED: SND-CONTEXT-038 (lower than the previous run of this probe file, or more absent nodes came back)"
             : report.Previous is null ? "first run: nothing to compare" : "no regression");
         return text.Append("report ").AppendLine(path ?? "not written").ToString();
+    }
+
+    private static string Incomplete(StringBuilder text, ProbeReport report)
+    {
+        _ = text.AppendLine("INCOMPLETE: a probe's query failed, so this run says nothing about retrieval; it is not saved and not compared");
+        foreach (var probe in report.Probes.Where(p => p.Error is not null))
+        {
+            _ = text.AppendLine(Invariant($"  failed probe {probe.Id.Value}: {probe.Error}"));
+        }
+
+        return text.AppendLine("report not saved").ToString();
     }
 
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
