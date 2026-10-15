@@ -1,36 +1,6 @@
 {
   "types": [
     {
-      "type": "context.map.built",
-      "keyShape": "context.map.built:<epoch>:<slot>",
-      "invalidates": []
-    },
-    {
-      "type": "context.map.imported",
-      "keyShape": "context.map.imported:<hash>:v<version>",
-      "invalidates": []
-    },
-    {
-      "type": "context.map.promoted",
-      "keyShape": "context.map.promoted:<repo>:v<version>",
-      "invalidates": []
-    },
-    {
-      "type": "context.map.proposed",
-      "keyShape": "context.map.proposed:<run>:<rows hash16>",
-      "invalidates": []
-    },
-    {
-      "type": "context.map.reviewed",
-      "keyShape": "context.map.reviewed:<overrideId>",
-      "invalidates": []
-    },
-    {
-      "type": "context.sources.synced",
-      "keyShape": "context.sources.synced:<epoch>:<slot>",
-      "invalidates": []
-    },
-    {
       "type": "item.created",
       "keyShape": "item.created:<itemId>",
       "invalidates": [
@@ -91,21 +61,6 @@
       ]
     },
     {
-      "type": "recipe.approved",
-      "keyShape": "recipe.approved:<hash>:after:<seq>",
-      "invalidates": []
-    },
-    {
-      "type": "recipe.registered",
-      "keyShape": "recipe.registered:<hash>",
-      "invalidates": []
-    },
-    {
-      "type": "recipe.revoked",
-      "keyShape": "recipe.revoked:<hash>",
-      "invalidates": []
-    },
-    {
       "type": "service.heartbeat",
       "keyShape": "service.heartbeat:<epoch>:<slot>",
       "invalidates": [
@@ -119,36 +74,6 @@
         "status",
         "services"
       ]
-    },
-    {
-      "type": "workflow.expired",
-      "keyShape": "workflow:<workflow id>:<run id>:<activity id>[:<content hash>]",
-      "invalidates": []
-    },
-    {
-      "type": "workflow.notified",
-      "keyShape": "workflow:<workflow id>:<run id>:<activity id>[:<content hash>]",
-      "invalidates": []
-    },
-    {
-      "type": "workflow.refused",
-      "keyShape": "workflow:<workflow id>:<run id>:<activity id>[:<content hash>]",
-      "invalidates": []
-    },
-    {
-      "type": "workflow.shifted",
-      "keyShape": "workflow:<workflow id>:<run id>:<activity id>[:<content hash>]",
-      "invalidates": []
-    },
-    {
-      "type": "workflow.started",
-      "keyShape": "workflow:<workflow id>:<run id>:<activity id>[:<content hash>]",
-      "invalidates": []
-    },
-    {
-      "type": "workflow.transition",
-      "keyShape": "workflow:<workflow id>:<run id>:<activity id>[:<content hash>]",
-      "invalidates": []
     }
   ]
 }

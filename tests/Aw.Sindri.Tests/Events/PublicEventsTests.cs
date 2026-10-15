@@ -30,6 +30,18 @@ public sealed class PublicEventsTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_human_ledger_read_sees_a_public_types_whole_payload_scrubbed_and_escaped()
+    {
+        var created = new ItemCreated(_h.Ids.New<CommandId>(), A.FirstItemId, "title", Repo: null, Link: null, Body: "private \u001b[31mSECRET\u001b[0m body", Owner: null);
+        var entry = _h.Events.Entry(EventTypes.ItemCreated, created, "item.created:x", A.FirstItemId.Value);
+        var row = new LedgerEvent(Sequence: 1, Epoch: 1, entry.Envelope, entry.IdempotencyKey, entry.Item);
+
+        var shown = PublicEvents.For(row, SliceHarness.Json, new MaskingScrubber(), includeNonPublic: true).Value!;
+
+        Assert.Equal("private \\x1B[31m[masked]\\x1B[0m body", shown.Payload.GetProperty("body").GetString());   // the stream's public record leaves the body out; the human's audit read doesn't
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Public_payload_drops_fields_the_public_record_lacks()
     {
         var row = Row(EventTypes.ProcessStarted, """{"host":"host-1","pid":7,"epoch":3,"profile":null,"private":"only for the ledger"}""");
@@ -85,5 +97,10 @@ public sealed class PublicEventsTests
     {
         var entry = _h.Events.Entry(EventTypes.ProcessStopped, new ProcessStopped(1, 1, StopReason.Stop), "k");
         return new LedgerEvent(Sequence: 1, Epoch: 1, entry.Envelope with { Type = type, Payload = payload }, IdempotencyKey: "k", Item: null);
+    }
+
+    private sealed class MaskingScrubber : Aw.Sindri.Core.Text.ITextScrubber
+    {
+        public string Scrub(string text) => text.Replace("SECRET", "[masked]", StringComparison.Ordinal);
     }
 }

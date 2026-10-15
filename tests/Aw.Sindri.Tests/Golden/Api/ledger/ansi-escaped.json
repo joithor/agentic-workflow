@@ -19,6 +19,7 @@
         "title": "In demo",
         "repo": "demo",
         "link": null,
+        "body": null,
         "owner": null
       }
     },
@@ -41,6 +42,7 @@
         "title": "In other",
         "repo": "other",
         "link": null,
+        "body": null,
         "owner": null
       }
     },
@@ -63,6 +65,7 @@
         "title": "Fix \\x1B]8;;http://example.org\\x07link\\x1B]8;;\\x07 \\x1B[31mred\\x1B[0m",
         "repo": "demo",
         "link": null,
+        "body": "private body",
         "owner": null
       }
     }

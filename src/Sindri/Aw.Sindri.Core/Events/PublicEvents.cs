@@ -16,13 +16,14 @@ public static class PublicEvents
     /// <summary>
     /// The public form of <paramref name="row"/>: null when its type isn't public and <paramref name="includeNonPublic"/> is
     /// false; else the envelope with the catalog's public payload (a record that leaves out what a caller may not see, such
-    /// as an item's body, by construction; the whole payload for a non-public type), every string scrubbed and escaped.
+    /// as an item's body, by construction). For a human's audit read (<paramref name="includeNonPublic"/>) the payload is the
+    /// whole stored one for every type, public or not. Every string is scrubbed and escaped.
     /// A payload that doesn't parse is sent as JSON null, so the stream never stalls on one row.
     /// </summary>
     /// <param name="row">The ledger row.</param>
     /// <param name="options">The options that know each public payload type.</param>
     /// <param name="scrubber">Masks secrets in every string of the payload.</param>
-    /// <param name="includeNonPublic">True for a human's ledger read.</param>
+    /// <param name="includeNonPublic">True for a human's ledger read: types outside the catalog's public ones come too, and every payload is whole.</param>
     /// <returns>The event, or null.</returns>
     public static Result<PublicEvent?> For(LedgerEvent row, JsonSerializerOptions options, ITextScrubber scrubber, bool includeNonPublic)
     {
@@ -40,7 +41,7 @@ public static class PublicEvents
         return new PublicEvent(row.Sequence, EventId.From(e.Id), e.Type, e.SchemaVersion, e.OccurredAt, e.Actor, e.Tenant, e.Ring,
             ItemId.TryFrom(row.Item ?? string.Empty, out var item) ? item : null, CorrelationId.From(e.CorrelationId),
             e.CausationId is { } cause ? EventId.From(cause) : null, TraceId.TryFrom(e.TraceId ?? string.Empty, out var trace) ? trace : null,
-            Payload(e.Payload, entry is { Public: true } ? entry.PublicPayload : null, options, scrubber));
+            Payload(e.Payload, includeNonPublic || entry is not { Public: true } ? null : entry.PublicPayload, options, scrubber));
     }
 
     private static JsonElement NullElement { get; } = JsonDocument.Parse("null").RootElement.Clone();

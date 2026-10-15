@@ -15,7 +15,7 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="Actor">Who acted, an open string.</param>
 /// <param name="Tenant">The tenant.</param>
 /// <param name="Ring">The ring.</param>
-/// <param name="Item">The work item, if any.</param>
+/// <param name="Item">The work item, if any: null for a row keyed by anything but an item id (a tracker-keyed engine row is reached with the stream's ?instance= filter, not ?item=). Rows the engine records in production carry ITM ids.</param>
 /// <param name="CorrelationId">The correlation id.</param>
 /// <param name="CausationId">The event or command that caused it, if any.</param>
 /// <param name="TraceId">The trace id, if any.</param>

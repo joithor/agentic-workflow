@@ -19,6 +19,7 @@
         "title": "In demo",
         "repo": "demo",
         "link": null,
+        "body": null,
         "owner": null
       }
     },
@@ -41,6 +42,7 @@
         "title": "In other",
         "repo": "other",
         "link": null,
+        "body": null,
         "owner": null
       }
     }

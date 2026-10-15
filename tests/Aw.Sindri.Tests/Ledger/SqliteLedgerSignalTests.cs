@@ -8,7 +8,7 @@ using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.Ledger;
 
-/// <summary>The SQLite ledger pulses its <see cref="ILedgerSignal"/> once per new committed append (API spec §5.5), and never otherwise.</summary>
+/// <summary>The SQLite ledger pulses only after its commit (API spec §5.5): a second connection already reads the row at the pulse. The pulse rules themselves (once per new append, none on a replay or a refusal) are in <see cref="LedgerStoreContract"/>.</summary>
 public sealed class SqliteLedgerSignalTests : IDisposable
 {
     private readonly TempHome _home = new();
@@ -32,34 +32,6 @@ public sealed class SqliteLedgerSignalTests : IDisposable
 
         // at each pulse the row was already readable by another connection: the pulse came after the commit
         Assert.Equal([(1L, 1L), (2L, 2L)], signal.Pulses);
-    }
-
-    [Fact, Trait("Lane", "integration")]
-    public async Task Replay_doesnt_pulse()
-    {
-        var signal = new CommittedHeadSignal(Path.Combine(_home.Path, "ledger.db"));
-        var stores = SqliteStores.Create(_home.Path, _clock, _probe, signal);
-        var grant = (await stores.Lease.Acquire(_probe.Self(), Token)).Value;
-        _ = await stores.Ledger.Append(Entry("k1"), grant, Token);
-
-        var replay = await stores.Ledger.Append(Entry("k1"), grant, Token);
-
-        Assert.True(replay.Value.AlreadyRecorded);
-        Assert.Equal([(1L, 1L)], signal.Pulses);
-    }
-
-    [Fact, Trait("Lane", "integration")]
-    public async Task A_stale_append_doesnt_pulse()
-    {
-        var signal = new CommittedHeadSignal(Path.Combine(_home.Path, "ledger.db"));
-        var stores = SqliteStores.Create(_home.Path, _clock, _probe, signal);
-        var grant = (await stores.Lease.Acquire(_probe.Self(), Token)).Value;
-        _ = await stores.Lease.Release(grant, Token);
-
-        var refused = await stores.Ledger.Append(Entry("k1"), grant, Token);
-
-        Assert.True(refused.IsError);
-        Assert.Empty(signal.Pulses);
     }
 
     private LedgerEntry Entry(string key)
