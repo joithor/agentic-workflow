@@ -20,6 +20,16 @@ internal sealed class TemporalDevServer
     private readonly TimeSpan _adoptWait = TimeSpan.FromSeconds(3);
     private readonly TimeSpan _readyWait = TimeSpan.FromSeconds(30);
     private readonly TimeSpan _stopWait = TimeSpan.FromSeconds(10);
+    internal const int MaxPortAttempts = 3;
+
+    public TemporalDevServer()
+    {
+    }
+
+    internal TemporalDevServer(Func<int> pickPort)
+    {
+        ArgumentNullException.ThrowIfNull(pickPort);
+    }
 
     /// <summary>Starts the server, or adopts the one already running on the home's database, and waits until its frontend answers.</summary>
     /// <param name="start">The executable and the Sindri home.</param>
