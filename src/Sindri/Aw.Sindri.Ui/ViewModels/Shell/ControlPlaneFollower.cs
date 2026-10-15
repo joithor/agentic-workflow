@@ -105,6 +105,12 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
             return health.NotRunning(Labels.RecordUnreadableBecause(Labels.NotOnThisMachine(record.Url.Authority)), StatusText.ShortPath(records.Location));
         }
 
+        return await Handshake(record, bytes, cancellationToken).ConfigureAwait(true);
+    }
+
+    // Pings the record's endpoint, rejects a stale record, then loads the catalog and the first status; the url to follow, or null.
+    private async Task<Uri?> Handshake(ControlRecord record, byte[] bytes, CancellationToken cancellationToken)
+    {
         var ping = await api.Ping(record.Url, cancellationToken).ConfigureAwait(true);
         if (ping.IsError)
         {

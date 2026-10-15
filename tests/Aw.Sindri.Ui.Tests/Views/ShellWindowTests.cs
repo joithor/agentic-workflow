@@ -842,6 +842,7 @@ public sealed class ShellWindowTests : IDisposable
         Assert.True(string.IsNullOrEmpty(AutomationProperties.GetName(Named<TextBlock>(window, "RunningLive"))));
 
         _server.UnreadableStatus = true;
+        _clock.Advance(HealthViewModel.RefreshEvery);   // the refresh that followed the recovery is still throttled (§9.2)
         _server.Push(A.Event(3));
         await Until(() => shell.State == ShellState.Unreadable);
         Settle(window);

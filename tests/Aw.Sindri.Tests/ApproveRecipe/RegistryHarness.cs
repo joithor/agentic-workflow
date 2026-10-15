@@ -9,6 +9,7 @@ using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -55,6 +56,7 @@ internal sealed class RegistryHarness : IAsyncDisposable
             .AddSingleton(H.Events)
             .AddSingleton(H.Callers)
             .AddSingleton<ICommandCatalog>(new CommandCatalog())
+            .AddSingleton<IProjectorStatus>(new ProjectorProgress(H.Clock))   // the chain's wait on the views (nothing publishes it here)
             .AddSingleton<ILogger<AuditTrail>>(new ListLogger<AuditTrail>())
             .AddSingleton<IRecipeStore>(Recipes)
             .AddSingleton<IRecipeApprovals>(Approvals)

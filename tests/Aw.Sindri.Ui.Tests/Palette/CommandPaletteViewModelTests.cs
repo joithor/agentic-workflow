@@ -111,7 +111,7 @@ public sealed class CommandPaletteViewModelTests
         Assert.Equal("ApproveProfile", _palette.Selected?.Id);   // no ready row is in Actions: the first that runs is a copy block
 
         _palette.Move(1);
-        Assert.Equal("ImportContextMap", _palette.Selected?.Id);
+        Assert.Equal("ApproveRecipe", _palette.Selected?.Id);
         _palette.Move(-1);
         _palette.Move(-1);
         Assert.Equal("ApproveProfile", _palette.Selected?.Id);

@@ -133,7 +133,7 @@ public sealed class CommandPaletteTests : IDisposable
         Assert.True(field.Focus(NavigationMethod.Tab));
 
         Press(window, Key.K, PhysicalKey.K, _command, "k");
-        window.KeyTextInput("approve");
+        window.KeyTextInput("approve profile");
         Settle(window);
 
         Assert.Equal(["Approve profile, Copy: sindri profile approve [<hash>]"], EntryNames(window), StringComparer.Ordinal);

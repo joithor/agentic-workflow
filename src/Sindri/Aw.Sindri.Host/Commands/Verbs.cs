@@ -1,14 +1,14 @@
 using System.Globalization;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
-using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Challenges;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.GetStatus;
-using Aw.Sindri.Features.RebuildViews;
 using Aw.Sindri.Features.IssueChallenge;
+using Aw.Sindri.Features.RebuildViews;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Features.ValidateProfile;
