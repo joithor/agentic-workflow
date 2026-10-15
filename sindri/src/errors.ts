@@ -62,7 +62,7 @@ export const ERRORS = {
   "SND-INDEX-404": { summary: "No index has been built for this repo.", fix: "sindri index build --repo <name>" },
   "SND-INDEX-005": { summary: "The embedding URL is not loopback.", fix: "set index.embeddings.url to http://127.0.0.1:11434 (or disable embeddings)" },
   "SND-INDEX-006": { summary: "The local embedding server failed.", fix: "sindri index setup (starts Ollama checks and pulls the model)" },
-  "SND-INDEX-007": { summary: "No network sandbox is available for graphify.", fix: "macOS: sandbox-exec ships with the OS; Linux: install bubblewrap (bwrap), or set index.graph: none" },
+  "SND-INDEX-007": { summary: "No network sandbox is available for graphify.", fix: "macOS: sandbox-exec ships with the OS; Linux: install bubblewrap (bwrap); if `bwrap --ro-bind / / true` fails with \"setting up uid map: Permission denied\" (Ubuntu 24.04), run `scripts/install-deps.sh` for the AppArmor profile fix; or set index.graph: none" },
   "SND-INDEX-008": { summary: "graphify is missing, failed or wrote no usable graph.", fix: "if graphify or its sandbox is missing: sindri index setup; if graph.json is over the cap: raise index.graphMaxMB (max 512); then sindri index build" },
   "SND-EVOLVE-001": { summary: "The toolkit repo couldn't be read as a git repository.", fix: "check the ring-0 repo's path in repos/<name>.yaml, then sindri profile approve" },
   "SND-EVOLVE-002": { summary: "No offline comparison exists for that artifact yet.", fix: "only the scope.draft prompt can be compared in this release (spec amendment 4)" },
