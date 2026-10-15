@@ -197,7 +197,7 @@ public sealed class CommandPaletteViewModelTests
 
         Assert.DoesNotContain("0 of", _palette.Announcement, StringComparison.Ordinal);
         Assert.DoesNotContain("Sending", _palette.Announcement, StringComparison.Ordinal);
-        Assert.Equal("ready", rebuild.Status);
+        Assert.Equal(string.Empty, rebuild.Status);
 
         _clock.Advance(ControlViewModel.SendingAfter);
 

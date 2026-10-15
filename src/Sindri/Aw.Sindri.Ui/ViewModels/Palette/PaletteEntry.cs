@@ -42,7 +42,7 @@ internal sealed class PaletteEntry : ObservableObject
     public string Status => Control switch
     {
         null => string.Empty,
-        { IsAnnouncingSending: true } => Labels.Sending,   // after 300 ms, as the control's own live region says it
+        { IsSending: true } => Control.IsAnnouncingSending ? Labels.Sending : string.Empty,   // "Sending…" after 300 ms, as the control's own live region says it; silent before, never "ready"
         { IsAccepted: true } => Control.Outcome,
         { IsFailed: true } => Control.ErrorCode,
         { IsReady: true } => Labels.Ready,
@@ -67,7 +67,7 @@ internal sealed class PaletteEntry : ObservableObject
     public bool HasStatus => Control is not null;
 
     /// <summary>Its accessible name: its label and its status.</summary>
-    public string Name => IsFailed ? $"{Label}, {Status}: {ErrorDetail}" : HasStatus ? Label + ", " + Status : Label;
+    public string Name => IsFailed ? $"{Label}, {Status}: {ErrorDetail}" : Status.Length > 0 ? Label + ", " + Status : Label;
 
     /// <summary>True for a catalog row.</summary>
     public bool IsAction => Control is not null;

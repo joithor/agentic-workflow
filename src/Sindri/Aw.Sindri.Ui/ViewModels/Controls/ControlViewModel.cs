@@ -168,18 +168,19 @@ internal sealed class ControlViewModel : ObservableObject
         Phase = CommandPhase.Sending;
         _ = AnnounceSending(run, cancellationToken);
         var answer = await send(cancellationToken).ConfigureAwait(true);
-        IsAnnouncingSending = false;
         if (answer.IsError)
         {
             (ErrorCode, ErrorDetail) = (answer.Error.Code, answer.Error.Message);
             Announce($"{ErrorCode}: {ErrorDetail}");
             Phase = CommandPhase.Failed;
+            IsAnnouncingSending = false;   // last: nothing shows "ready" between "Sending…" and the outcome
             return;
         }
 
         Outcome = Labels.Done(Label);
         Announce(Outcome);
         Phase = CommandPhase.Accepted;
+        IsAnnouncingSending = false;
         _ = Settle(run, cancellationToken);
     }
 
