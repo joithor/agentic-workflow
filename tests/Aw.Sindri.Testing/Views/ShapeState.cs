@@ -1,12 +1,36 @@
 #pragma warning disable MA0003, MA0127 // fixture records are positional; their literals are named by the record
+using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Testing.Views;
 
-/// <summary>One state of a fixture recipe: where it sits in the path order (spec 3.10) and what it is.</summary>
+/// <summary>One state of a fixture recipe: where it sits in the path order (spec 3.10) and what the recipe declares for it.</summary>
 /// <param name="Id">The state id.</param>
 /// <param name="Order">1-based path order, null for a branch state.</param>
 /// <param name="BranchOf">The state a branch folds under.</param>
 /// <param name="Terminal">A final state.</param>
-/// <param name="Desk">Its step is a desk step.</param>
+/// <param name="Desk">What the fixtures serve for the state: a desk task. The engine serves every active state as one until the agent runtime (P8); see <see cref="RunsAtDesk"/>.</param>
 /// <param name="Child">It waits on a child recipe.</param>
-public sealed record ShapeState(string Id, int? Order, string? BranchOf = null, bool Terminal = false, bool Desk = false, bool Child = false);
+/// <param name="Wait">It is a wait state (a child wait is one too).</param>
+/// <param name="Timeout">The declared timeout; every active and wait state has one.</param>
+/// <param name="BudgetTokens">The declared state budget, in tokens.</param>
+/// <param name="OnParked">A child wait's reaction to a parked child.</param>
+/// <param name="Block">The Step block an active state uses, where the recipe is a file under recipes/.</param>
+/// <param name="ChildRecipe">The recipe a child wait starts.</param>
+public sealed record ShapeState(string Id, int? Order, string? BranchOf = null, bool Terminal = false, bool Desk = false, bool Child = false, bool Wait = false,
+    ShapeTimeout? Timeout = null, int? BudgetTokens = null, OnParked? OnParked = null, string? Block = null, string? ChildRecipe = null)
+{
+    /// <summary>The state kind the declaration has.</summary>
+    public StateKind Kind => Terminal ? StateKind.Terminal : Child || Wait ? StateKind.Wait : StateKind.Active;
+
+    /// <summary>
+    /// The engine runs the state on the desk runtime: an active state, since no Block has an agent runtime until P8 (WF 12 table: the
+    /// Steps are deskCapable; W5, W20).
+    /// </summary>
+    public bool RunsAtDesk => Kind == StateKind.Active;
+
+    /// <summary>The timeout the engine serves: at the desk at least the desk floor, and always ending in park (W20).</summary>
+    public ShapeTimeout? Served => Timeout is null ? null : RunsAtDesk ? new ShapeTimeout(Timeout.After < DeskFloor ? DeskFloor : Timeout.After, TimeoutAction.Park) : Timeout;
+
+    /// <summary>The profile's workflow.deskTimeout default (W20).</summary>
+    public static TimeSpan DeskFloor { get; } = TimeSpan.FromDays(2);
+}

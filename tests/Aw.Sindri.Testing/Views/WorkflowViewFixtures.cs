@@ -162,6 +162,16 @@ public static class WorkflowViewFixtures
     // Parked and escalated instances sort behind the ones still moving: Needs you carries them, so the Home strip doesn't repeat them.
     private static bool IsStuck(InstanceSummary row) => row.EngineOwned?.Kind is EngineOwnedKind.Parked or EngineOwnedKind.Escalated;
 
+    /// <summary>Every summary row the fixtures build: the 12 roots, and the instances only the status layouts and instance views name.</summary>
+    /// <returns>The rows.</returns>
+    public static IReadOnlyList<InstanceSummary> AllSummaries() => [.. Roots(), _prjSearch, _budgetStep, _takenOver, _prjReports, _prjCache, _prjDocs];
+
+    /// <summary>
+    /// The addresses whose child group previews schema v2 fan-out (WF 3.9): several live children of one wait. A v1 child wait starts
+    /// one child workflow, so every other instance has at most one live child; these goldens are re-recorded when v2 lands.
+    /// </summary>
+    public static IReadOnlySet<string> FanOutPreviews { get; } = new HashSet<string>(StringComparer.Ordinal) { "ITM-01JK3/project/1", "ITM-01JKG/project/1" };
+
     /// <summary>The Workflows page: the 12 roots, unfinished first, the parked and escalated behind the moving ones, then by urgency and subject label (API spec section 3.8).</summary>
     public static InstanceList RootList() => Ordered(Roots());
 

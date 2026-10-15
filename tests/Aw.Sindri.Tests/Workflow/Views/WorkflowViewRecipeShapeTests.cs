@@ -1,5 +1,6 @@
 using System.Globalization;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Validation;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Testing.Views;
 using Aw.Sindri.Testing.Workflow;
@@ -69,6 +70,91 @@ public sealed class WorkflowViewRecipeShapeTests
         }
 
         Assert.True(compared >= 3, "the dev recipes and workflow.step are compared");
+    }
+
+    // WF 12's Blocks table: the Steps that run on the desk runtime until the agent runtime (P8).
+    private static readonly HashSet<string> _deskCapable = new(StringComparer.Ordinal) { "step.produce", "step.checks", "step.verify" };
+
+    private static string M(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_fixture_recipe_declaration_equals_its_file_in_every_field_the_file_carries()
+    {
+        var files = ShippedRecipes.Recipes
+            .Select(p => RecipeComposition.ReadClean(ShippedRecipes.Read(p), p))
+            .ToDictionary(d => d.Recipe.Id.Value, StringComparer.Ordinal);
+        var compared = FixtureRecipes.All.Where(s => files.ContainsKey(s.Id)).ToList();
+        var failures = compared.SelectMany(shape => Mismatches(shape, files[shape.Id])).ToList();
+        Assert.True(failures.Count == 0, Environment.NewLine + string.Join(Environment.NewLine, failures));
+        Assert.Contains(compared, s => s.Id == "workflow.step");
+        Assert.Contains(compared, s => s.Id == "workflow.dev-desk-round-trip");
+        Assert.Contains(compared, s => s.Id == "workflow.dev-triage-three-state");
+    }
+
+    private static List<string> Mismatches(RecipeShape shape, RecipeDocument file)
+    {
+        var recipe = file.Recipe;
+        var failures = new List<string>();
+        if (file.Hash.Value != shape.Stamp.Hash.Value || recipe.Version != shape.Version || Urgencies.Parse(recipe.Urgency) != shape.Urgency || recipe.Budget?.Tokens != shape.BudgetTokens)
+        {
+            failures.Add(M($"{shape.Id}: hash, version, urgency or recipe budget differ from the file"));
+        }
+
+        if (!recipe.States.Keys.Order(StringComparer.Ordinal).SequenceEqual(shape.States.Select(s => s.Id).Order(StringComparer.Ordinal), StringComparer.Ordinal))
+        {
+            failures.Add(M($"{shape.Id}: the state ids differ from the file"));
+        }
+
+        failures.AddRange(shape.States.Where(s => recipe.States.ContainsKey(s.Id)).SelectMany(s => StateMismatches(shape.Id, s, recipe.States[s.Id])));
+        failures.AddRange(LoopMismatches(shape, recipe));
+        failures.AddRange(FactMismatches(shape, recipe));
+        return failures;
+    }
+
+    private static List<string> StateMismatches(string id, ShapeState state, RecipeState declared)
+    {
+        var file = FileSignature(declared);
+        var shape = M($"{state.Kind}|{state.ChildRecipe}|{state.OnParked}|{state.Desk}|{state.Block}|{state.Timeout?.After}|{state.Timeout?.Then}|{state.BudgetTokens}");
+        return file == shape ? [] : [M($"{id}/{state.Id}: kind|child|onParked|desk|block|timeout|then|budget is {shape}, the file has {file} (an active deskCapable Step runs at the desk until P8: WF 12, W20)")];
+    }
+
+    private static string FileSignature(RecipeState declared)
+    {
+        var deskCapable = declared.Kind == StateKind.Active && declared.Step is { } step && _deskCapable.Contains(step.Use.Value);
+        var child = declared.WaitFor?.Child;
+        return M($"{declared.Kind}|{child?.Recipe.Value}|{child?.OnParked}|{deskCapable}|{declared.Step?.Use.Value}|{declared.Timeout?.After.Span}|{declared.Timeout?.Then}|{declared.Budget?.Tokens}");
+    }
+
+    private static List<string> LoopMismatches(RecipeShape shape, Recipe recipe)
+    {
+        static string Edge(string? name, string from, string to) => M($"{name}:{from}>{to}");
+        var failures = new List<string>();
+        var file = StatePathOrder.Of(recipe).Loops.Select(l => Edge(l.Name, l.From, l.To)).Order(StringComparer.Ordinal);
+        if (!file.SequenceEqual(shape.Loops.Select(l => Edge(l.Name, l.From, l.To)).Order(StringComparer.Ordinal), StringComparer.Ordinal))
+        {
+            failures.Add(M($"{shape.Id}: the loop edges differ from the file"));
+        }
+
+        failures.AddRange(shape.Loops.Where(l => !recipe.Loops.TryGetValue(l.Name, out var spec) || spec.Cap != l.Max).Select(l => M($"{shape.Id}: loop {l.Name} has another cap in the file")));
+        return failures;
+    }
+
+    private static List<string> FactMismatches(RecipeShape shape, Recipe recipe)
+    {
+        var failures = new List<string>();
+        var inputs = recipe.Inputs.Select(i => M($"{i.Key.Value}|{i.Label}|{i.Type ?? FactTypes.Default}|{i.Kind}"));
+        if (!inputs.SequenceEqual(shape.Inputs.Select(i => M($"{i.Key}|{i.Label}|{FactTypeWord(i.Type)}|{i.Kind}")), StringComparer.Ordinal))
+        {
+            failures.Add(M($"{shape.Id}: the inputs (key, label, type, kind) differ from the file"));
+        }
+
+        var outputs = recipe.Outputs.Select(o => M($"{o.Key.Value}|{o.Label}|{o.Type ?? FactTypes.Default}|{o.From}"));
+        if (!outputs.SequenceEqual(shape.Outputs.Select(o => M($"{o.Key}|{o.Label}|{FactTypeWord(o.Type)}|{o.From}")), StringComparer.Ordinal))
+        {
+            failures.Add(M($"{shape.Id}: the outputs (key, label, type, from) differ from the file"));
+        }
+
+        return failures;
     }
 
     [Fact, Trait("Lane", "unit")]

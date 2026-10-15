@@ -18,9 +18,15 @@ namespace Aw.Sindri.Testing.Views;
 /// <param name="Loops">The loop edges.</param>
 /// <param name="Inputs">The inputs.</param>
 /// <param name="Outputs">The outputs.</param>
+/// <param name="BudgetTokens">The recipe-wide token budget, where declared.</param>
 public sealed record RecipeShape(string Id, int Version, string HashPrefix, RecipeUrgency Urgency, IReadOnlyList<ShapeState> States,
-    IReadOnlyList<ShapeLoop> Loops, IReadOnlyList<ShapeInput> Inputs, IReadOnlyList<ShapeOutput> Outputs)
+    IReadOnlyList<ShapeLoop> Loops, IReadOnlyList<ShapeInput> Inputs, IReadOnlyList<ShapeOutput> Outputs, int? BudgetTokens = null)
 {
+    /// <summary>The declaration of one state.</summary>
+    /// <param name="id">The state id.</param>
+    /// <returns>The state.</returns>
+    public ShapeState State(string id) => States.Single(s => s.Id == id);
+
     /// <summary>The stamp every instance of this recipe carries.</summary>
     public InstanceRecipe Stamp => new(RecipeId.From(Id), RecipeHash.From("sha256:" + HashPrefix.PadRight(64, '0')), Version, Urgency);
 
