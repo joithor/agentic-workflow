@@ -1,0 +1,154 @@
+{
+  "types": [
+    {
+      "type": "context.map.built",
+      "keyShape": "context.map.built:<epoch>:<slot>",
+      "invalidates": []
+    },
+    {
+      "type": "context.map.imported",
+      "keyShape": "context.map.imported:<hash>:v<version>",
+      "invalidates": []
+    },
+    {
+      "type": "context.map.promoted",
+      "keyShape": "context.map.promoted:<repo>:v<version>",
+      "invalidates": []
+    },
+    {
+      "type": "context.map.proposed",
+      "keyShape": "context.map.proposed:<run>:<rows hash16>",
+      "invalidates": []
+    },
+    {
+      "type": "context.map.reviewed",
+      "keyShape": "context.map.reviewed:<overrideId>",
+      "invalidates": []
+    },
+    {
+      "type": "context.sources.synced",
+      "keyShape": "context.sources.synced:<epoch>:<slot>",
+      "invalidates": []
+    },
+    {
+      "type": "item.created",
+      "keyShape": "item.created:<itemId>",
+      "invalidates": [
+        "queue",
+        "items",
+        "item",
+        "timeline"
+      ]
+    },
+    {
+      "type": "item.linked",
+      "keyShape": "item.linked:<itemId>:<record>",
+      "invalidates": [
+        "items",
+        "item",
+        "timeline"
+      ]
+    },
+    {
+      "type": "item.state-changed",
+      "keyShape": "item.state-changed:<itemId>:v<version>",
+      "invalidates": [
+        "queue",
+        "items",
+        "item",
+        "timeline"
+      ]
+    },
+    {
+      "type": "process.started",
+      "keyShape": "process.started:<epoch>",
+      "invalidates": [
+        "status"
+      ]
+    },
+    {
+      "type": "process.stopped",
+      "keyShape": "process.stopped:<epoch>",
+      "invalidates": [
+        "status"
+      ]
+    },
+    {
+      "type": "profile.approved",
+      "keyShape": "profile.approved:<hash>:after:<seq>",
+      "invalidates": [
+        "status",
+        "profile",
+        "services"
+      ]
+    },
+    {
+      "type": "profile.checked",
+      "keyShape": "profile.checked:<previousCheckSequence>",
+      "invalidates": [
+        "status",
+        "profile"
+      ]
+    },
+    {
+      "type": "recipe.approved",
+      "keyShape": "recipe.approved:<hash>:after:<seq>",
+      "invalidates": []
+    },
+    {
+      "type": "recipe.registered",
+      "keyShape": "recipe.registered:<hash>",
+      "invalidates": []
+    },
+    {
+      "type": "recipe.revoked",
+      "keyShape": "recipe.revoked:<hash>",
+      "invalidates": []
+    },
+    {
+      "type": "service.heartbeat",
+      "keyShape": "service.heartbeat:<epoch>:<slot>",
+      "invalidates": [
+        "status"
+      ]
+    },
+    {
+      "type": "service.ran",
+      "keyShape": "service.ran:<name>:<epoch>:<slot>",
+      "invalidates": [
+        "status",
+        "services"
+      ]
+    },
+    {
+      "type": "workflow.expired",
+      "keyShape": "workflow:<workflow id>:<run id>:<activity id>[:<content hash>]",
+      "invalidates": []
+    },
+    {
+      "type": "workflow.notified",
+      "keyShape": "workflow:<workflow id>:<run id>:<activity id>[:<content hash>]",
+      "invalidates": []
+    },
+    {
+      "type": "workflow.refused",
+      "keyShape": "workflow:<workflow id>:<run id>:<activity id>[:<content hash>]",
+      "invalidates": []
+    },
+    {
+      "type": "workflow.shifted",
+      "keyShape": "workflow:<workflow id>:<run id>:<activity id>[:<content hash>]",
+      "invalidates": []
+    },
+    {
+      "type": "workflow.started",
+      "keyShape": "workflow:<workflow id>:<run id>:<activity id>[:<content hash>]",
+      "invalidates": []
+    },
+    {
+      "type": "workflow.transition",
+      "keyShape": "workflow:<workflow id>:<run id>:<activity id>[:<content hash>]",
+      "invalidates": []
+    }
+  ]
+}

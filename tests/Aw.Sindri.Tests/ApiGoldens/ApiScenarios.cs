@@ -16,7 +16,7 @@ internal static class ApiScenarios
     [
         ("status", "running-unapproved"), ("status", "running-approved"), ("status", "human-no-token"),
         ("status", "human-stale-token"), ("status", "unknown-caller"), ("status", "prover-refused"),
-        ("ping", "running"), ("commands", "catalog"), ("events", "process-started"),
+        ("ping", "running"), ("commands", "catalog"), ("events", "process-started"), ("events-catalog", "catalog"),
         ("stop", "accepted"), ("stop", "refused-session"), ("stop", "refused-origin"),
         ("profile-approve", "preview"), ("profile-approve", "approved"), ("profile-approve", "already-approved"),
         ("profile-approve", "refused-session"), ("profile-approve", "refused-no-terminal"), ("profile-approve", "refused-origin"),
@@ -75,6 +75,7 @@ internal static class ApiScenarios
             ("ping", "running") => await Ask(host, Get("/sindri/ping", Human(token))),
             ("commands", "catalog") => await Ask(host, Get("/sindri/commands", Human(token))),
             ("events", "process-started") => await FirstEventData(host, ct),
+            ("events-catalog", "catalog") => await Ask(host, Get("/sindri/events/catalog", Human(token))),
             ("workflow-recipe", "not-found") => await Ask(host, Get(UnknownRecipe, Human(token))),
             ("stop", "accepted") => await Ask(host, Post("/sindri/stop", json: null, Human(token))),
             ("stop", "refused-session") => await Ask(host, Post("/sindri/stop", json: null, Session)),
