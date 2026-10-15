@@ -108,13 +108,25 @@ internal sealed class CommandPaletteViewModel : ObservableObject
         _all ??= Build();
         Query = string.Empty;
         IsOpen = true;
+        Mute(muted: true);
     }
 
     /// <summary>Closes it (Esc) and clears the query.</summary>
     internal void Close()
     {
         IsOpen = false;
+        Mute(muted: false);
         Query = string.Empty;
+    }
+
+    // While it is open the palette speaks every command's lifecycle through its own live region, so the controls' regions
+    // stay dark (a run from the palette is announced once).
+    private void Mute(bool muted)
+    {
+        foreach (var control in _catalog.Controls)
+        {
+            control.IsMuted = muted;
+        }
     }
 
     /// <summary>Moves the selection over the entries that run (↑ −1, ↓ +1), stopping at either end.</summary>
@@ -243,6 +255,7 @@ internal sealed class CommandPaletteViewModel : ObservableObject
         _all = null;
         if (IsOpen)
         {
+            Mute(muted: true);
             Filter();
         }
     }

@@ -66,8 +66,10 @@ internal sealed class PaletteEntry : ObservableObject
     /// <summary>True when it has a status.</summary>
     public bool HasStatus => Control is not null;
 
-    /// <summary>Its accessible name: its label and its status.</summary>
-    public string Name => IsFailed ? $"{Label}, {Status}: {ErrorDetail}" : Status.Length > 0 ? Label + ", " + Status : Label;
+    /// <summary>Its accessible name: its label and its status (an accepted command's outcome alone).</summary>
+    public string Name => IsFailed ? $"{Label}, {Status}: {ErrorDetail}"
+        : Control is { IsAccepted: true } ? Status   // the outcome names the command already: "Rebuild views: done"
+        : Status.Length > 0 ? Label + ", " + Status : Label;
 
     /// <summary>True for a catalog row.</summary>
     public bool IsAction => Control is not null;

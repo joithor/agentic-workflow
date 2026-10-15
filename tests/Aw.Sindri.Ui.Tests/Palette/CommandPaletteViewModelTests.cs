@@ -273,7 +273,12 @@ public sealed class CommandPaletteViewModelTests
     {
         _server.RebuildGate = new TaskCompletionSource();
         _palette.Open();
-        var rebuild = Entry("RebuildViews");
+        for (var i = 0; i < 200 && _palette.Selected?.Id != "RebuildViews"; i++)
+        {
+            _palette.Move(1);
+        }
+
+        var rebuild = _palette.Selected!;
         var live = new List<bool>();
         rebuild.Control!.PropertyChanged += (_, e) => live.Add(e.PropertyName == nameof(ControlViewModel.IsAnnouncing) && rebuild.Control.IsAnnouncing);
 
@@ -331,8 +336,8 @@ public sealed class CommandPaletteViewModelTests
     // H2 (a11y-0): while a command sends, the palette's live region never says "ready": not in the first 300 ms, not at
     // "Sending…", and not between "Sending…" and the outcome (the order the control clears its flags in).
     [Theory]
-    [InlineData(false, "Rebuild views: done")]
-    [InlineData(true, "SND-API-005")]
+    [InlineData(false, "Rebuild views: done, ")]
+    [InlineData(true, "Rebuild views, SND-API-005")]
     public async Task A_send_is_never_announced_as_ready_on_the_way_to_its_outcome(bool refused, string outcome)
     {
         _server.RebuildGate = new TaskCompletionSource();
@@ -357,7 +362,7 @@ public sealed class CommandPaletteViewModelTests
         var spoken = said.Where(t => t.Length > 0).ToList();
         Assert.DoesNotContain(spoken, t => t.Contains("ready", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(spoken, t => t.StartsWith("Rebuild views, Sending…, ", StringComparison.Ordinal));
-        Assert.StartsWith("Rebuild views, " + outcome, spoken[^1], StringComparison.Ordinal);
+        Assert.StartsWith(outcome, spoken[^1], StringComparison.Ordinal);
     }
 
     // H2: nor in the first 300 ms, when the control is still silent: the status is empty then, not "ready".
