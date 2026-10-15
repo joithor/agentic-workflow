@@ -5702,25 +5702,25 @@ Aw.Sindri.Core.Events.IStreamSlots
 Aw.Sindri.Core.Events.IStreamSlots.Open(Aw.Sindri.Core.Commands.CallerClass caller) -> int
 Aw.Sindri.Core.Events.IStreamSlots.TryEnter(Aw.Sindri.Core.Commands.CallerClass caller, out System.IDisposable! slot) -> bool
 Aw.Sindri.Core.Events.StreamLimits
-Aw.Sindri.Core.Events.TypeFilter
-Aw.Sindri.Core.Events.TypeFilter.<Clone>$() -> Aw.Sindri.Core.Events.TypeFilter!
-Aw.Sindri.Core.Events.TypeFilter.Equals(Aw.Sindri.Core.Events.TypeFilter? other) -> bool
-Aw.Sindri.Core.Events.TypeFilter.Globs.get -> System.Collections.Generic.IReadOnlyList<string!>!
-Aw.Sindri.Core.Events.TypeFilter.Matches(string! type) -> bool
+Aw.Sindri.Core.Ledger.TypeFilter
+Aw.Sindri.Core.Ledger.TypeFilter.<Clone>$() -> Aw.Sindri.Core.Ledger.TypeFilter!
+Aw.Sindri.Core.Ledger.TypeFilter.Equals(Aw.Sindri.Core.Ledger.TypeFilter? other) -> bool
+Aw.Sindri.Core.Ledger.TypeFilter.Globs.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Ledger.TypeFilter.Matches(string! type) -> bool
 Aw.Sindri.Core.Ledger.ILedgerReader.Scan(long sequence, int max, Aw.Sindri.Core.Ledger.LedgerFilter! filter, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Ledger.LedgerScan!>!>
 Aw.Sindri.Core.Ledger.ILedgerSignal
 Aw.Sindri.Core.Ledger.ILedgerSignal.Pulse(long sequence) -> void
 Aw.Sindri.Core.Ledger.ILedgerSignal.WaitAfter(long sequence, System.TimeSpan limit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<long>
 Aw.Sindri.Core.Ledger.LedgerFilter
 Aw.Sindri.Core.Ledger.LedgerFilter.<Clone>$() -> Aw.Sindri.Core.Ledger.LedgerFilter!
-Aw.Sindri.Core.Ledger.LedgerFilter.Deconstruct(out Aw.Sindri.Core.Events.TypeFilter? Types, out Aw.Sindri.Core.Ids.ItemId? Item, out int ScanLimit) -> void
+Aw.Sindri.Core.Ledger.LedgerFilter.Deconstruct(out Aw.Sindri.Core.Ledger.TypeFilter? Types, out Aw.Sindri.Core.Ids.ItemId? Item, out int ScanLimit) -> void
 Aw.Sindri.Core.Ledger.LedgerFilter.Equals(Aw.Sindri.Core.Ledger.LedgerFilter? other) -> bool
 Aw.Sindri.Core.Ledger.LedgerFilter.Item.get -> Aw.Sindri.Core.Ids.ItemId?
 Aw.Sindri.Core.Ledger.LedgerFilter.Item.init -> void
-Aw.Sindri.Core.Ledger.LedgerFilter.LedgerFilter(Aw.Sindri.Core.Events.TypeFilter? Types, Aw.Sindri.Core.Ids.ItemId? Item, int ScanLimit = 5000) -> void
+Aw.Sindri.Core.Ledger.LedgerFilter.LedgerFilter(Aw.Sindri.Core.Ledger.TypeFilter? Types, Aw.Sindri.Core.Ids.ItemId? Item, int ScanLimit = 5000) -> void
 Aw.Sindri.Core.Ledger.LedgerFilter.ScanLimit.get -> int
 Aw.Sindri.Core.Ledger.LedgerFilter.ScanLimit.init -> void
-Aw.Sindri.Core.Ledger.LedgerFilter.Types.get -> Aw.Sindri.Core.Events.TypeFilter?
+Aw.Sindri.Core.Ledger.LedgerFilter.Types.get -> Aw.Sindri.Core.Ledger.TypeFilter?
 Aw.Sindri.Core.Ledger.LedgerFilter.Types.init -> void
 Aw.Sindri.Core.Ledger.LedgerScan
 Aw.Sindri.Core.Ledger.LedgerScan.<Clone>$() -> Aw.Sindri.Core.Ledger.LedgerScan!
@@ -5742,9 +5742,9 @@ const Aw.Sindri.Core.Events.ApiViews.Timeline = "timeline" -> string!
 const Aw.Sindri.Core.Events.StreamLimits.HumanReserved = 4 -> int
 const Aw.Sindri.Core.Events.StreamLimits.Session = 12 -> int
 const Aw.Sindri.Core.Events.StreamLimits.Total = 16 -> int
-override Aw.Sindri.Core.Events.TypeFilter.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Events.TypeFilter.GetHashCode() -> int
-override Aw.Sindri.Core.Events.TypeFilter.ToString() -> string!
+override Aw.Sindri.Core.Ledger.TypeFilter.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Ledger.TypeFilter.GetHashCode() -> int
+override Aw.Sindri.Core.Ledger.TypeFilter.ToString() -> string!
 override Aw.Sindri.Core.Ledger.LedgerFilter.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Ledger.LedgerFilter.GetHashCode() -> int
 override Aw.Sindri.Core.Ledger.LedgerFilter.ToString() -> string!
@@ -5753,9 +5753,9 @@ override Aw.Sindri.Core.Ledger.LedgerScan.GetHashCode() -> int
 override Aw.Sindri.Core.Ledger.LedgerScan.ToString() -> string!
 static Aw.Sindri.Core.Events.ApiViews.All.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Sindri.Core.Events.StreamLimits.Admits(Aw.Sindri.Core.Commands.CallerClass caller, int open, int openSessions) -> bool
-static Aw.Sindri.Core.Events.TypeFilter.operator !=(Aw.Sindri.Core.Events.TypeFilter? left, Aw.Sindri.Core.Events.TypeFilter? right) -> bool
-static Aw.Sindri.Core.Events.TypeFilter.operator ==(Aw.Sindri.Core.Events.TypeFilter? left, Aw.Sindri.Core.Events.TypeFilter? right) -> bool
-static Aw.Sindri.Core.Events.TypeFilter.Parse(string! text) -> Aw.Kernel.Result<Aw.Sindri.Core.Events.TypeFilter!>!
+static Aw.Sindri.Core.Ledger.TypeFilter.operator !=(Aw.Sindri.Core.Ledger.TypeFilter? left, Aw.Sindri.Core.Ledger.TypeFilter? right) -> bool
+static Aw.Sindri.Core.Ledger.TypeFilter.operator ==(Aw.Sindri.Core.Ledger.TypeFilter? left, Aw.Sindri.Core.Ledger.TypeFilter? right) -> bool
+static Aw.Sindri.Core.Ledger.TypeFilter.Parse(string! text) -> Aw.Kernel.Result<Aw.Sindri.Core.Ledger.TypeFilter!>!
 static Aw.Sindri.Core.Ledger.LedgerFilter.All.get -> Aw.Sindri.Core.Ledger.LedgerFilter!
 static Aw.Sindri.Core.Ledger.LedgerFilter.operator !=(Aw.Sindri.Core.Ledger.LedgerFilter? left, Aw.Sindri.Core.Ledger.LedgerFilter? right) -> bool
 static Aw.Sindri.Core.Ledger.LedgerFilter.operator ==(Aw.Sindri.Core.Ledger.LedgerFilter? left, Aw.Sindri.Core.Ledger.LedgerFilter? right) -> bool
@@ -5763,9 +5763,9 @@ static Aw.Sindri.Core.Ledger.LedgerScan.operator !=(Aw.Sindri.Core.Ledger.Ledger
 static Aw.Sindri.Core.Ledger.LedgerScan.operator ==(Aw.Sindri.Core.Ledger.LedgerScan? left, Aw.Sindri.Core.Ledger.LedgerScan? right) -> bool
 static readonly Aw.Sindri.Core.SindriErrors.StreamsFull -> Aw.Kernel.ErrorDefinition!
 ~Aw.Sindri.Core.Ids.EventId.ToString(string format, System.IFormatProvider provider) -> string
-Aw.Sindri.Core.Events.EventVisibility
-Aw.Sindri.Core.Events.IItemRepos
-Aw.Sindri.Core.Events.IItemRepos.RepoOf(Aw.Sindri.Core.Ids.ItemId item, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Ids.RepoName?>!>
+Aw.Sindri.Core.Items.EventVisibility
+Aw.Sindri.Core.Items.IItemRepos
+Aw.Sindri.Core.Items.IItemRepos.RepoOf(Aw.Sindri.Core.Ids.ItemId item, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Ids.RepoName?>!>
 Aw.Sindri.Core.Events.PublicEvent
 Aw.Sindri.Core.Events.PublicEvent.<Clone>$() -> Aw.Sindri.Core.Events.PublicEvent!
 Aw.Sindri.Core.Events.PublicEvent.Actor.get -> string!
@@ -5822,7 +5822,7 @@ override Aw.Sindri.Core.Ids.EventId.ToString() -> string!
 override Aw.Sindri.Core.Ids.TraceId.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Ids.TraceId.GetHashCode() -> int
 override Aw.Sindri.Core.Ids.TraceId.ToString() -> string!
-static Aw.Sindri.Core.Events.EventVisibility.Visible(Aw.Sindri.Core.Commands.CallerContext! caller, Aw.Sindri.Core.Ledger.LedgerEvent! row, Aw.Sindri.Core.Events.IItemRepos! repos, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
+static Aw.Sindri.Core.Items.EventVisibility.Visible(Aw.Sindri.Core.Commands.CallerContext! caller, Aw.Sindri.Core.Ledger.LedgerEvent! row, Aw.Sindri.Core.Items.IItemRepos! repos, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
 static Aw.Sindri.Core.Events.PublicEvent.operator !=(Aw.Sindri.Core.Events.PublicEvent? left, Aw.Sindri.Core.Events.PublicEvent? right) -> bool
 static Aw.Sindri.Core.Events.PublicEvent.operator ==(Aw.Sindri.Core.Events.PublicEvent? left, Aw.Sindri.Core.Events.PublicEvent? right) -> bool
 static Aw.Sindri.Core.Events.PublicEvents.For(Aw.Sindri.Core.Ledger.LedgerEvent! row, System.Text.Json.JsonSerializerOptions! options, Aw.Sindri.Core.Text.ITextScrubber! scrubber, bool includeNonPublic) -> Aw.Kernel.Result<Aw.Sindri.Core.Events.PublicEvent?>!

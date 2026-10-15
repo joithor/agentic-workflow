@@ -1,4 +1,4 @@
-using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Features.StreamEvents;
 using Aw.Sindri.Testing;

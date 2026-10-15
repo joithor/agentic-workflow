@@ -1,5 +1,5 @@
 using Aw.Sindri.Core.Commands;
-using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Features.StreamEvents;

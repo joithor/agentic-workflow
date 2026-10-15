@@ -1,10 +1,9 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
-using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Ledger;
 
-namespace Aw.Sindri.Core.Events;
+namespace Aw.Sindri.Core.Items;
 
 /// <summary>
 /// The session repo filter (API spec §3.1, §5.2): a human or service sees every event; a session sees the events of its

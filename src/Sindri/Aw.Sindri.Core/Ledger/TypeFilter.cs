@@ -1,6 +1,6 @@
 using Aw.Kernel;
 
-namespace Aw.Sindri.Core.Events;
+namespace Aw.Sindri.Core.Ledger;
 
 /// <summary>
 /// An event-type filter (API spec §5.2 'types=', ReadLedger 'type='): a comma list of up to 16 globs, each a dotted

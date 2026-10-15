@@ -1,9 +1,10 @@
 using System.Collections.Concurrent;
 using Aw.Kernel;
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Ledger;
 
-namespace Aw.Sindri.Core.Events;
+namespace Aw.Sindri.Core.Items;
 
 /// <summary>
 /// <see cref="IItemRepos"/> over the ledger: one forward pass over the 'item.created' rows, remembered, so each lookup

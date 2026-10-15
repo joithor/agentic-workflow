@@ -1,7 +1,7 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Ids;
 
-namespace Aw.Sindri.Core.Events;
+namespace Aw.Sindri.Core.Items;
 
 /// <summary>
 /// The repo each item belongs to, for the session repo filter (API spec §3.1, §5.2): read from the item's item.created

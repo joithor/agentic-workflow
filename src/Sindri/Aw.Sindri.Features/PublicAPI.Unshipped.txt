@@ -1088,7 +1088,7 @@ Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Instance.get -> Aw.Sindri.Co
 Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Instance.init -> void
 Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Item.get -> Aw.Sindri.Core.Workflow.Engine.ItemKey?
 Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Item.init -> void
-Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Types.get -> Aw.Sindri.Core.Events.TypeFilter?
+Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Types.get -> Aw.Sindri.Core.Ledger.TypeFilter?
 Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Types.init -> void
 Aw.Sindri.Features.StreamEvents.StreamEventsResponse.ScannedTo.get -> long
 Aw.Sindri.Features.StreamEvents.StreamEventsResponse.ScannedTo.init -> void
@@ -1729,8 +1729,8 @@ static Aw.Sindri.Features.StopProcess.StopProcessResponse.operator !=(Aw.Sindri.
 static Aw.Sindri.Features.StopProcess.StopProcessResponse.operator ==(Aw.Sindri.Features.StopProcess.StopProcessResponse? left, Aw.Sindri.Features.StopProcess.StopProcessResponse? right) -> bool
 static Aw.Sindri.Features.StreamEvents.StreamEventsRequest.operator !=(Aw.Sindri.Features.StreamEvents.StreamEventsRequest? left, Aw.Sindri.Features.StreamEvents.StreamEventsRequest? right) -> bool
 static Aw.Sindri.Features.StreamEvents.StreamEventsRequest.operator ==(Aw.Sindri.Features.StreamEvents.StreamEventsRequest? left, Aw.Sindri.Features.StreamEvents.StreamEventsRequest? right) -> bool
-Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Deconstruct(out long After, out int Max, out Aw.Sindri.Core.Workflow.Engine.ItemKey? Item, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance, out Aw.Sindri.Core.Events.TypeFilter? Types) -> void
-Aw.Sindri.Features.StreamEvents.StreamEventsRequest.StreamEventsRequest(long After, int Max = 100, Aw.Sindri.Core.Workflow.Engine.ItemKey? Item = null, Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance = null, Aw.Sindri.Core.Events.TypeFilter? Types = null) -> void
+Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Deconstruct(out long After, out int Max, out Aw.Sindri.Core.Workflow.Engine.ItemKey? Item, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance, out Aw.Sindri.Core.Ledger.TypeFilter? Types) -> void
+Aw.Sindri.Features.StreamEvents.StreamEventsRequest.StreamEventsRequest(long After, int Max = 100, Aw.Sindri.Core.Workflow.Engine.ItemKey? Item = null, Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance = null, Aw.Sindri.Core.Ledger.TypeFilter? Types = null) -> void
 static Aw.Sindri.Features.StreamEvents.StreamEventsResponse.operator !=(Aw.Sindri.Features.StreamEvents.StreamEventsResponse? left, Aw.Sindri.Features.StreamEvents.StreamEventsResponse? right) -> bool
 static Aw.Sindri.Features.StreamEvents.StreamEventsResponse.operator ==(Aw.Sindri.Features.StreamEvents.StreamEventsResponse? left, Aw.Sindri.Features.StreamEvents.StreamEventsResponse? right) -> bool
 static Aw.Sindri.Features.ValidateProfile.ValidateProfileRequest.operator !=(Aw.Sindri.Features.ValidateProfile.ValidateProfileRequest? left, Aw.Sindri.Features.ValidateProfile.ValidateProfileRequest? right) -> bool
