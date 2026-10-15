@@ -9,5 +9,5 @@ public static class ItemStates
     /// <param name="state">The state.</param>
     /// <returns>True when closed.</returns>
     public static bool IsClosed(ItemState state)
-        => throw new NotSupportedException("ItemStates.IsClosed: P3 unit D makes it pass");
+        => state is ItemState.Done or ItemState.Cancelled;
 }
