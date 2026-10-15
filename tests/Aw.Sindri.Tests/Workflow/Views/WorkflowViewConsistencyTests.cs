@@ -264,7 +264,7 @@ public sealed class WorkflowViewConsistencyTests
         var actor = new Regex("^(human:[a-z-]+|step\\.[a-z.-]+|agent:[a-z-]+|service:[a-z-]+)$", RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
         foreach (var by in WorkflowViewFixtures.AllDetails().SelectMany(d => d.Facts).Select(f => f.By).Where(b => b is not null))
         {
-            Assert.Matches(actor, by!);
+            Assert.Matches(actor, by);
         }
 
         Assert.DoesNotContain(WorkflowViewFixtures.AllDetails().SelectMany(d => d.Facts), f => f.By == "human:webhook");
