@@ -46,7 +46,15 @@ public static class DoctorRules
     /// <param name="head">The ledger's head, or why it can't be read.</param>
     /// <returns>The check.</returns>
     public static DoctorCheck Views(Result<ProjectorState?> state, Result<long> head) =>
-        throw new NotSupportedException("DoctorRules.Views: P2 unit E makes the Doctor_views tests pass");
+        state.IsError ? new("views", CheckState.Fail, state.Error.Message, "check the file's permissions and disk, then run sindri doctor again")
+        : head.IsError ? new("views", CheckState.Fail, head.Error.Message, "check the file's permissions and disk, then run sindri doctor again")
+        : state.Value switch
+        {
+            null => new("views", CheckState.Warn, "no views yet", "sindri"),
+            { StalledAt: { } at } s => new("views", CheckState.Fail, Text($"stalled at {at} ({s.StalledType})"), "sindri views rebuild"),
+            { Rebuilding: true } s => new("views", CheckState.Warn, Text($"rebuilding (cursor {s.Cursor} of {head.Value})"), "wait for the rebuild, then run sindri doctor again"),
+            var s => new("views", CheckState.Ok, Text($"cursor {s.Cursor} of head {head.Value}"), Fix: null),
+        };
 
     /// <summary>
     /// The profile: valid, and approved by <see cref="ProfileRules.IsApproved"/> (it is the saved approval and the latest

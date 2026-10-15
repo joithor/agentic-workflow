@@ -4,6 +4,7 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Doctor;
+using Aw.Sindri.Core.Health;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.GetStatus;
@@ -45,7 +46,7 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
 
     /// <summary>The 'sindri status' exit code: 1 unless the health is healthy (a server without health: unless the profile is approved).</summary>
     internal static int StatusExitCode(GetStatusResponse status) =>
-        status.Profile.NeedsApproval ? 1 : 0;   // red: the health word comes with the fix
+        status.Health is { } health ? (health.Word == HealthWord.Healthy ? 0 : 1) : (status.Profile.NeedsApproval ? 1 : 0);
 
     internal async Task<int> Stop(CancellationToken ct)
     {

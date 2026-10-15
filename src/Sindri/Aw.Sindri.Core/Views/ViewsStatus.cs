@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Aw.Sindri.Core.Views;
 
 /// <summary>The projector's status: GET /status 'views', the doctor line and the health (API spec §2.2, §2.3).</summary>
@@ -12,6 +14,7 @@ public sealed record ViewsStatus(long Cursor, long LedgerHead, DateTimeOffset? P
     long? StalledAt, string? StalledType)
 {
     /// <summary>The freshness a view answer carries.</summary>
+    [JsonIgnore]
     public AsOf AsOf => new(Cursor, LedgerHead, ProjectedAt, Rebuilding, Stalled);
 
     /// <summary>The sentence for the stalled or rebuilding views (API spec §3.6), or null when they are fresh.</summary>
