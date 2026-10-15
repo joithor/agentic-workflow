@@ -1,6 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Aw.Sindri.Ui.Views.Item;
 
 namespace Aw.Sindri.Ui.Views.Shell;
@@ -19,7 +21,7 @@ internal sealed partial class ShellWindow
         }
 
         var key = KeyName(e);
-        if (key is null || !shell.Press(key))
+        if (key is null || !shell.Press(key, inSheet: FocusInSheet()))
         {
             return false;
         }
@@ -27,6 +29,9 @@ internal sealed partial class ShellWindow
         FocusOpenedField(shell, key);
         return true;
     }
+
+    // §8, §11.2: keys belong to the focused region; the row keys are the page's, not the sheet's.
+    private bool FocusInSheet() => FocusManager?.GetFocusedElement() is Visual focused && (SheetPanel == focused || SheetPanel.IsVisualAncestorOf(focused));
 
     // A key that opened a field moves focus into it: C the create form's title, / the Queue page's filter.
     private void FocusOpenedField(ViewModels.Shell.ShellViewModel shell, string key)

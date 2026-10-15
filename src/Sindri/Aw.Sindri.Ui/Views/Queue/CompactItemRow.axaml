@@ -9,7 +9,7 @@
           AutomationProperties.Name="{Binding Name}">
     <Grid x:Name="CompactRow" ColumnDefinitions="120,*,Auto,50" VerticalAlignment="Center">
       <TextBlock Classes="mono subtle" Text="{Binding Id}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" AutomationProperties.Name="{Binding Id}" />
-      <Button x:Name="CompactTitle" Grid.Column="1" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding Name}">
+      <Button x:Name="CompactTitle" Grid.Column="1" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding OpenName}">
         <TextBlock Classes="body-strong" Text="{Binding Title}" TextTrimming="CharacterEllipsis" AutomationProperties.Name="{Binding Title}" />
       </Button>
       <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" Margin="8,0" VerticalAlignment="Center">

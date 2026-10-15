@@ -44,7 +44,7 @@ internal sealed class ItemRowViewModel : ObservableObject
     public string Name { get; private set => Set(ref field, value); }
 
     /// <summary>The row's title button's accessible name: "Open" and the id.</summary>
-    public string OpenName => Name;
+    public string OpenName => "Open " + Id;
 
     /// <summary>The API's primaryAction as the catalog's control (pending rows drawn disabled), or null.</summary>
     public ControlViewModel? PrimaryAction { get; private set { Set(ref field, value); OnChanged(nameof(HasPrimaryAction)); } }

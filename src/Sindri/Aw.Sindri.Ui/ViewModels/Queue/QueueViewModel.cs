@@ -108,37 +108,13 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
         IsLoading = false;   // after the rows are there: a waiter on the end of loading finds them
     }
 
-    /// <summary>Shows one group (G R, G W) or all of them (G Q).</summary>
+    /// <summary>Shows one group (G R, G W) or all of them (G Q); a selection the filter hides is cleared, silently.</summary>
     /// <param name="filter">The filter.</param>
     internal void Filter(QueueFilter filter)
     {
         Showing = filter;
         Show();
-    }
-
-    /// <summary>Selects a row by id.</summary>
-    /// <param name="itemId">The row's id.</param>
-    internal void Select(string itemId)
-    {
-        SelectedId = itemId;
-        Mark();
-    }
-
-    /// <summary>J / K (§8): the next or previous visible row, in the API's order; stays at the ends.</summary>
-    /// <param name="by">+1 for next, -1 for previous.</param>
-    /// <param name="scope">The page the key was pressed on.</param>
-    internal void Move(int by, QueueScope scope = QueueScope.Page)
-    {
-        _ = scope;
-        var rows = Visible().ToList();
-        if (rows.Count == 0)
-        {
-            return;
-        }
-
-        var at = rows.FindIndex(r => string.Equals(r.Id, SelectedId, StringComparison.Ordinal));
-        var next = at < 0 ? 0 : Math.Clamp(at + by, 0, rows.Count - 1);
-        Select(rows[next].Id);
+        ClearHidden();
     }
 
     // Shows a view, keeping the selection by id (§3.3).
@@ -230,70 +206,4 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
     }
 
     private string EmptyOf(string group) => Groups.FirstOrDefault(g => g.Group == group)?.Empty ?? string.Empty;
-
-    // §3.3: a refresh keeps the selected row by id; if it cleared, the selection moves to the row now at its place in the
-    // same group (else the group's last row, else the first visible row) and the clearing is announced.
-    // A row hidden by the filter is not gone: it is checked against the unfiltered view.
-    private void Keep(List<(string Id, string Group)> before)
-    {
-        if (SelectedId is not { } id || _rows.ContainsKey(id))
-        {
-            return;
-        }
-
-        var next = Successor(id, before);
-        Say(Labels.Cleared(id));
-        SelectedId = next?.Id;
-        _movedAt = clock.GetUtcNow();
-        Mark();
-        if (next is not null)
-        {
-            FocusRequested?.Invoke(this, new FocusRequestedEventArgs(next.Id, onlyIfLost: true));
-        }
-    }
-
-    // The row now at the cleared row's place in the same group, else the group's last row, else the first visible row.
-    private ItemRowViewModel? Successor(string id, List<(string Id, string Group)> before)
-    {
-        var old = before.FirstOrDefault(r => r.Id == id);
-        var group = old.Id is null ? null : Groups.FirstOrDefault(g => g.Group == old.Group && g.IsVisible && g.Rows.Count > 0);
-        var index = old.Id is null ? 0 : before.Where(r => r.Group == old.Group).ToList().FindIndex(r => r.Id == id);
-        return group is null ? Visible().FirstOrDefault() : group.Rows[Math.Min(index, group.Rows.Count - 1)];
-    }
-
-    private void Mark()
-    {
-        foreach (var row in Groups.SelectMany(g => g.Rows))
-        {
-            row.IsSelected = string.Equals(row.Id, SelectedId, StringComparison.Ordinal);
-        }
-    }
-
-    // Says a text through the polite region: dark first, the resting text set, then live, then the text (the flag changes
-    // before the text, as the shell's regions do), so the resting text is never spoken and a text is spoken once.
-    private void Say(string text)
-    {
-        if (IsAnnouncing && string.Equals(Announcement, text, StringComparison.Ordinal))
-        {
-            IsAnnouncing = false;   // the same text again is still a change: dark first, then the text
-        }
-
-        if (!IsAnnouncing)
-        {
-            Announcement = Labels.Sindri;
-            IsAnnouncing = true;
-        }
-
-        Announcement = text;
-    }
-
-    // The region goes dark again at the next refresh (flag first, then the resting text).
-    private void Rest()
-    {
-        if (IsAnnouncing)
-        {
-            IsAnnouncing = false;
-            Announcement = Labels.Sindri;
-        }
-    }
 }

@@ -37,6 +37,7 @@ internal sealed partial class QueueViewModel
         {
             Set(ref field, value ?? string.Empty);
             Show();
+            ClearHidden();
         }
     } = string.Empty;
 

@@ -25,7 +25,6 @@ internal sealed partial class ShellViewModel
     /// <returns>True when the key was handled.</returns>
     internal bool Press(string key, bool inSheet = false)
     {
-        _ = inSheet;
         // §8 key guard: for 500 ms after a refresh moved the selection on its own, single keys do nothing.
         if (Queue.IsGuarded)
         {
@@ -44,13 +43,13 @@ internal sealed partial class ShellViewModel
             return true;
         }
 
-        return Single(key) || RowKey(key);
+        return Single(key, inSheet) || RowKey(key, inSheet);
     }
 
     // Y copies the selected row's CLI (§8); / opens the Queue page's filter.
-    private bool RowKey(string key)
+    private bool RowKey(string key, bool inSheet)
     {
-        if (key == "Y" && (IsHome || IsQueue) && Queue.SelectedCopy() is { } control)
+        if (key == "Y" && !inSheet && OnRowPage && Queue.HasSelectionOn(RowScope) && Queue.SelectedCopy() is { } control)
         {
             _ = control.Copy(CancellationToken.None);
             return true;
@@ -65,24 +64,29 @@ internal sealed partial class ShellViewModel
         return true;
     }
 
-    // C, J / K and Enter (§8), scoped to the pages with rows.
-    private bool Single(string key)
+    // C, J / K and Enter (§8), scoped to the pages with rows and, for the row keys, to the page rather than the sheet.
+    private bool Single(string key, bool inSheet)
     {
         switch (key)
         {
             case "C":
                 Create.Open();
                 return true;
-            case "J" or "K" when IsHome || IsQueue:
-                Queue.Move(key == "J" ? 1 : -1);
+            case "J" or "K" when !inSheet && OnRowPage:
+                Queue.Move(key == "J" ? 1 : -1, RowScope);
                 return true;
-            case "Enter" when (IsHome || IsQueue) && Queue.SelectedId is { } id:
+            case "Enter" when !inSheet && OnRowPage && Queue.HasSelectionOn(RowScope) && Queue.SelectedId is { } id:
                 OpenItem(id);
                 return true;
             default:
                 return false;
         }
     }
+
+    // The pages with rows, and the rows the keys walk there: Home's panels or the Queue page's groups.
+    private bool OnRowPage => IsHome || IsQueue;
+
+    private QueueScope RowScope => IsHome ? QueueScope.Home : QueueScope.Page;
 
     // The chord's second key (§8): N H Q R W D S and '.'.
     private bool Go(string key)

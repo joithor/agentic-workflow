@@ -11,7 +11,7 @@
           AutomationProperties.Name="{Binding Name}">
     <Grid x:Name="TableRow" ColumnDefinitions="150,*,150,130,110,70,260" VerticalAlignment="Center">
       <TextBlock x:Name="IdText" AutomationProperties.Name="{Binding Id}" Classes="mono subtle" Text="{Binding Id}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-      <Button x:Name="TitleButton" Grid.Column="1" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding Name}">
+      <Button x:Name="TitleButton" Grid.Column="1" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding OpenName}">
         <TextBlock Classes="body-strong" Text="{Binding Title}" TextTrimming="CharacterEllipsis" AutomationProperties.Name="{Binding Title}" />
       </Button>
       <TextBlock x:Name="RepoText" AutomationProperties.Name="{Binding Repo}" Grid.Column="2" Classes="caption subtle" Text="{Binding Repo}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />

@@ -11,9 +11,14 @@ internal sealed partial class ItemRow : UserControl
     public static readonly RoutedEvent<RoutedEventArgs> OpenEvent =
         RoutedEvent.Register<ItemRow, RoutedEventArgs>(nameof(Open), RoutingStrategies.Bubble);
 
+    /// <summary>Raised when focus arrives on the row or anything in it: the row is then the selected one (§3.3).</summary>
+    public static readonly RoutedEvent<RoutedEventArgs> SelectEvent =
+        RoutedEvent.Register<ItemRow, RoutedEventArgs>("Select", RoutingStrategies.Bubble);
+
     public ItemRow()
     {
         InitializeComponent();
+        AddHandler(GotFocusEvent, (_, _) => RaiseEvent(new RoutedEventArgs(SelectEvent, this)));
     }
 
     /// <summary>Raised when the row asks to open its item's sheet.</summary>

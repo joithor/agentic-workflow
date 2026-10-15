@@ -14,6 +14,7 @@ internal sealed partial class HomePage : UserControl
     {
         InitializeComponent();
         AddHandler(ItemRow.OpenEvent, OnOpen);
+        AddHandler(ItemRow.SelectEvent, OnSelect);
     }
 
     private void OnHealthStrip(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.GoTo(PageId.Health);
@@ -32,6 +33,15 @@ internal sealed partial class HomePage : UserControl
     private void OnPanelEntered(object? sender, Avalonia.Input.PointerEventArgs e) => (DataContext as ShellViewModel)?.Queue.Hold(holding: true);
 
     private void OnPanelExited(object? sender, Avalonia.Input.PointerEventArgs e) => (DataContext as ShellViewModel)?.Queue.Hold(holding: false);
+
+    // Focus arriving on a row, or on a control in it, selects it: the selection is the focus (§3.3).
+    private void OnSelect(object? sender, RoutedEventArgs e)
+    {
+        if (ItemRow.ItemIdOf(e) is { Length: > 0 } id && DataContext is ShellViewModel shell)
+        {
+            shell.Queue.Select(id);
+        }
+    }
 
     private void OnOpen(object? sender, RoutedEventArgs e)
     {

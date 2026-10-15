@@ -10,6 +10,7 @@ internal sealed partial class CompactItemRow : UserControl
     public CompactItemRow()
     {
         InitializeComponent();
+        AddHandler(GotFocusEvent, (_, _) => RaiseEvent(new RoutedEventArgs(ItemRow.SelectEvent, this)));
     }
 
     private void OnOpen(object? sender, RoutedEventArgs e) => RaiseEvent(new RoutedEventArgs(ItemRow.OpenEvent, this));

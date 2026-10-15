@@ -11,6 +11,16 @@ internal sealed partial class QueuePage : UserControl
     {
         InitializeComponent();
         AddHandler(ItemRow.OpenEvent, OnOpen);
+        AddHandler(ItemRow.SelectEvent, OnSelect);
+    }
+
+    // Focus arriving on a row, or on a control in it, selects it: the selection is the focus (§3.3).
+    private void OnSelect(object? sender, RoutedEventArgs e)
+    {
+        if (ItemRow.ItemIdOf(e) is { Length: > 0 } id && DataContext is ShellViewModel shell)
+        {
+            shell.Queue.Select(id);
+        }
     }
 
     private void OnOpen(object? sender, RoutedEventArgs e)
