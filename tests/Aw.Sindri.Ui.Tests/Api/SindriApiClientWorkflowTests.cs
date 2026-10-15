@@ -121,13 +121,15 @@ public sealed class SindriApiClientWorkflowTests
         Assert.Equal(("SND-ITEM-404", ErrorKind.NotFound, (string)golden["detail"]!), (fact.Error.Code, fact.Error.Kind, fact.Error.Message)); // why: a refusal has a detail
     }
 
+    private static string RunningRecipeId() => (string)Golden("workflow-instance", "project-build")["recipe"]!["id"]!; // why: the instance names the recipe it runs
+
     [Fact]
     public async Task Recipe_reads_inputs_type_kind_and_outputs_from()
     {
-        var golden = Golden("workflow-recipe", "workflow-project");
         var instance = Golden("workflow-instance", "project-build")["recipe"]!; // why: the instance names the recipe it runs
         var (id, hash) = ((string)instance["id"]!, (string)instance["hash"]!); // why: both are always served
-        var canned = Serving("workflow-recipe", "workflow-project");
+        var golden = Golden("workflow-recipe", id); // why: a recipe golden is named by the id its body carries
+        var canned = Serving("workflow-recipe", id);
 
         var recipe = await Client(canned).Recipe(_api, id, hash, Token);
 
@@ -142,21 +144,23 @@ public sealed class SindriApiClientWorkflowTests
     [Fact]
     public async Task An_empty_hash_asks_for_the_recipe_by_its_id_alone()
     {
-        var canned = Serving("workflow-recipe", "workflow-project");
+        var id = RunningRecipeId();
+        var canned = Serving("workflow-recipe", id);
 
-        _ = await Client(canned).Recipe(_api, "workflow.project", hash: "", Token);
+        _ = await Client(canned).Recipe(_api, id, hash: "", Token);
 
-        Assert.Equal("/sindri/workflow/recipes/workflow.project", Assert.Single(canned.Seen).Uri.AbsolutePath);
+        Assert.Equal($"/sindri/workflow/recipes/{id}", Assert.Single(canned.Seen).Uri.AbsolutePath);
     }
 
     [Fact]
     public async Task A_recipe_without_a_hash_is_asked_for_by_its_id()
     {
-        var canned = Serving("workflow-recipe", "workflow-project");
+        var id = RunningRecipeId();
+        var canned = Serving("workflow-recipe", id);
 
-        _ = await Client(canned).Recipe(_api, "workflow.project", hash: null, Token);
+        _ = await Client(canned).Recipe(_api, id, hash: null, Token);
 
-        Assert.Equal("/sindri/workflow/recipes/workflow.project", Assert.Single(canned.Seen).Uri.AbsolutePath);
+        Assert.Equal($"/sindri/workflow/recipes/{id}", Assert.Single(canned.Seen).Uri.AbsolutePath);
     }
 
     // Every workflow read is a human's from the UI, like every call: never X-Sindri-Terminal, never Origin.

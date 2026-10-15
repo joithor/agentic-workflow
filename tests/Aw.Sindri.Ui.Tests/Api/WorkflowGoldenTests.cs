@@ -122,18 +122,24 @@ public sealed class WorkflowGoldenTests
         }
     }
 
-    // The recipe goldens carry no id, so the fake's table says which recipe each stands for: every golden is named there, and
-    // a golden for a recipe an instance runs must agree with it (the same states).
+    // Each recipe golden is named by the id its body carries (read from disk, never listed here), and agrees with the
+    // instances that run the recipe (the same states).
     [Fact]
-    public void Each_recipe_golden_is_named_for_a_recipe_and_agrees_with_the_instances_that_run_it()
+    public void Each_recipe_golden_is_named_by_its_id_and_agrees_with_the_instances_that_run_it()
     {
-        var scenarios = GoldenFiles.All().Where(g => g.Kind == "Api" && g.Slug == "workflow-recipe" && !g.Body.Contains("traceId", StringComparison.Ordinal)).Select(g => g.Scenario).ToList();
+        var goldens = GoldenFiles.All().Where(g => g.Kind == "Api" && g.Slug == "workflow-recipe" && !g.Body.Contains("traceId", StringComparison.Ordinal)).ToList();
         var instances = GoldenFiles.All().Where(g => g.Kind == "Api" && g.Slug == "workflow-instance" && !g.Body.Contains("traceId", StringComparison.Ordinal)).Select(g => JsonNode.Parse(g.Body)!).ToList();
 
-        Assert.Equal(scenarios.Order(StringComparer.Ordinal), WorkflowAnswers.NamedRecipeGoldens.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);
-        foreach (var (scenario, id) in WorkflowAnswers.NamedRecipeGoldens)
+        Assert.NotEmpty(goldens);
+        Assert.Equal(goldens.Select(g => g.Scenario).Order(StringComparer.Ordinal), WorkflowAnswers.NamedRecipeGoldens.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        foreach (var (_, _, scenario, body) in goldens)
         {
-            var states = JsonNode.Parse(GoldenFiles.Api("workflow-recipe", scenario))!["states"]!.AsArray().Select(c => (string)c!["id"]!).ToList(); // why: a recipe lists states
+            var recipe = JsonNode.Parse(body)!;
+            var id = (string)recipe["id"]!; // why: a recipe golden starts with its id
+            Assert.Equal(scenario, id);
+            Assert.Matches("^sha256:[0-9a-f]{64}$", (string)recipe["hash"]!); // why: and its hash
+            Assert.Equal(id, WorkflowAnswers.NamedRecipeGoldens[scenario]);
+            var states = recipe["states"]!.AsArray().Select(c => (string)c!["id"]!).ToList(); // why: a recipe lists states
             var running = instances.Where(i => (string?)i["recipe"]!["id"] == id).ToList(); // why: an instance names its recipe
             Assert.All(running, i => Assert.Equal(states, i["states"]!.AsArray().Select(c => (string)c!["id"]!), StringComparer.Ordinal)); // why: an instance lists its states
         }
@@ -170,9 +176,22 @@ public sealed class WorkflowGoldenTests
     }
 
     [Fact]
+    public void A_recipe_asked_for_by_a_hash_it_does_not_have_is_not_found_with_the_hash_named()
+    {
+        var id = WorkflowAnswers.NamedRecipeGoldens.Values.First();
+        var own = (string)JsonNode.Parse(GoldenFiles.Api("workflow-recipe", id))!["hash"]!; // why: a recipe golden carries its hash
+
+        Assert.Equal(HttpStatusCode.OK, WorkflowAnswers.Recipe(id, own).Status);
+        var refused = WorkflowAnswers.Recipe(id, "sha256:" + new string('0', 64));
+
+        Assert.Equal(HttpStatusCode.NotFound, refused.Status);
+        Assert.Contains($"No recipe {id}@sha256:", refused.Body, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Unknown_fact_type_reads_as_payload()
     {
-        var recipe = JsonNode.Parse(GoldenFiles.Api("workflow-recipe", "workflow-project"))!; // why: the golden is a JSON object
+        var recipe = JsonNode.Parse(GoldenFiles.Api("workflow-recipe", (string)JsonNode.Parse(GoldenFiles.Api("workflow-instance", "project-build"))!["recipe"]!["id"]!))!; // why: the golden is a JSON object
         recipe["inputs"]![0]!["type"] = "hologram";
         recipe["outputs"]![0]!["type"] = "hologram";
         var instance = JsonNode.Parse(GoldenFiles.Api("workflow-instance", "project-build"))!; // why: as above

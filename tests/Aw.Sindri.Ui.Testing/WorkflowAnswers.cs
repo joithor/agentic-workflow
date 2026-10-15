@@ -7,10 +7,10 @@ namespace Aw.Sindri.Ui.Testing;
 /// <summary>
 /// What the API answers on the workflow reads (API §3.8), taken from its goldens on disk. Every golden is found by
 /// enumerating the directory, never listed here, so one the API lane adds or renames is served the moment it lands.
-/// Two tables say how goldens belong together, and WorkflowGoldenTests holds each to the files on disk: the fact goldens,
-/// each bound to the instance goldens that list its key, and the recipe goldens, each named for a recipe id. The instance list is the golden of the whole root set (and, unless root=true, the child instances the goldens show in
+/// One table says how goldens belong together, and WorkflowGoldenTests holds it to the files on disk: the fact goldens,
+/// each bound to the instance goldens that list its key. The recipe goldens need no table: each carries its recipe id in its body. The instance list is the golden of the whole root set (and, unless root=true, the child instances the goldens show in
 /// full), narrowed by the query the way the API narrows it (the counts stay root-wide); an instance and a recipe are the
-/// golden whose own id matches, a recipe the golden its table names for the id (and its hash must be one an instance runs),
+/// golden whose own id matches, a recipe the golden whose body carries the id (and its hash must be its own or one an instance runs),
 /// and a fact the golden its table binds to that instance and whose key the instance lists; anything else is the same
 /// not-found refusal the API writes.
 /// </summary>
@@ -86,36 +86,30 @@ internal static class WorkflowAnswers
             : NotFound("workflow-instance-fact", "not-found");
     }
 
-    // A recipe golden carries no id of its own, so this says which recipe each stands for. WorkflowGoldenTests holds each
-    // entry to the instance goldens that run the recipe (the golden's states are the instance's). A recipe that has no golden
-    // is not found: the fake never serves another recipe's content for it (recipe goldens for the other ids come from the API lane).
-    private static readonly Dictionary<string, string> _recipeGoldens = new(StringComparer.Ordinal)
-    {
-        ["workflow-project"] = "workflow.project",
-        ["incident-response"] = "workflow.incident-response",
-        ["no-outputs"] = "no.outputs",   // no instance runs it: it is served under its own scenario only
-    };
+    // A recipe golden names its own recipe: its body starts with the id, the hash and the version, and the file is named by the
+    // id. So the fake keys recipes by the body's id, read from disk, and no table says which golden is which. A recipe with no
+    // golden is not found: the fake never serves another recipe's content for it. WorkflowGoldenTests holds each golden to the
+    // instance goldens that run the recipe (the golden's states are the instance's).
 
-    /// <summary>The recipe goldens, by scenario, with the recipe id each is named for.</summary>
-    internal static IReadOnlyDictionary<string, string> NamedRecipeGoldens => _recipeGoldens;
+    /// <summary>The recipe goldens, by scenario, with the recipe id each body carries.</summary>
+    internal static IReadOnlyDictionary<string, string> NamedRecipeGoldens =>
+        Served("workflow-recipe").ToDictionary(g => g.Scenario, g => (string)g.Body["id"]!, StringComparer.Ordinal); // why: a recipe golden carries its id
 
-    /// <summary>GET /workflow/recipes/{recipe}[@hash]: the golden named for the recipe; a recipe with none is not found, and a hash must be one an instance runs.</summary>
+    /// <summary>GET /workflow/recipes/{recipe}[@hash]: the golden whose body has the id; an unknown id is not found, and a hash must be the golden's own or one an instance runs.</summary>
     /// <param name="recipe">The recipe id.</param>
     /// <param name="hash">The hash the caller names, or null for the current one.</param>
     /// <returns>The answer.</returns>
     internal static RouteAnswer Recipe(string recipe, string? hash) =>
-        ScenarioOf(recipe) is { } scenario && Served("workflow-recipe").FirstOrDefault(g => string.Equals(g.Scenario, scenario, StringComparison.Ordinal)) is { Body: { } body } && HashKnown(recipe, hash)
+        Served("workflow-recipe").FirstOrDefault(g => Is(g.Body["id"], recipe)) is { Body: { } body } && HashKnown(body, hash)
             ? new RouteAnswer(HttpStatusCode.OK, body.ToJsonString())
             : RouteAnswer.Problem(HttpStatusCode.NotFound, "SND-ITEM-404", string.IsNullOrEmpty(hash) ? $"No recipe {recipe} in this repo." : $"No recipe {recipe}@{hash} in this repo.");
 
-    private static string? ScenarioOf(string recipe) =>
-        _recipeGoldens.FirstOrDefault(g => string.Equals(g.Value, recipe, StringComparison.Ordinal)).Key;
-
-    // A recipe's hash is whatever an instance of it reports running; none named means the current one.
-    private static bool HashKnown(string recipe, string? hash) =>
+    // A recipe's hash is the golden's own, or whatever an instance of it reports running; none named means the current one.
+    private static bool HashKnown(JsonObject recipe, string? hash) =>
         string.IsNullOrEmpty(hash)
+        || Is(recipe["hash"], hash)
         || Served("workflow-instance").Select(g => g.Body["recipe"]).Concat(Rows().Select(r => r["recipe"]))
-            .Any(r => Is(r?["id"], recipe) && Is(r?["hash"], hash));
+            .Any(r => Is(r?["id"], (string?)recipe["id"]) && Is(r?["hash"], hash));
 
     private static IEnumerable<JsonNode> Rows() => ((JsonObject)JsonNode.Parse(GoldenFiles.Api("workflow-instances", AllRoots))!)["instances"]!.AsArray().Select(r => r!); // why: as above
 

@@ -1,6 +1,9 @@
 namespace Aw.Sindri.Ui.Api.Workflow;
 
 /// <summary>GET /workflow/recipes/{id}: what a recipe declares.</summary>
+/// <param name="Id">The recipe id (the body starts with it).</param>
+/// <param name="Hash">The recipe's content hash, sha256:&lt;64 hex&gt;.</param>
+/// <param name="Version">The recipe version.</param>
 /// <param name="Inputs">Inputs, as served.</param>
 /// <param name="Outputs">Outputs, as served.</param>
 /// <param name="Urgency">Urgency, as served.</param>
@@ -8,6 +11,9 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="States">States, as served.</param>
 /// <param name="Loops">Loops, as served.</param>
 internal sealed record RecipeView(
+    string Id,
+    string Hash,
+    int Version,
     IReadOnlyList<RecipeInputView> Inputs,
     IReadOnlyList<RecipeOutputView> Outputs,
     RecipeUrgency Urgency,
