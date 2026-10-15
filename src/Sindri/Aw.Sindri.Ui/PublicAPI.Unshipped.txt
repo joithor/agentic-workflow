@@ -96,3 +96,12 @@ static Aw.Sindri.Ui.Platform.EndpointRecordRead.Found(byte[]! bytes) -> Aw.Sindr
 static Aw.Sindri.Ui.Platform.EndpointRecordRead.None.get -> Aw.Sindri.Ui.Platform.EndpointRecordRead!
 static Aw.Sindri.Ui.Platform.EndpointRecordRead.Unreadable(Aw.Sindri.Ui.Platform.EndpointRecordFailure why) -> Aw.Sindri.Ui.Platform.EndpointRecordRead!
 Aw.Sindri.Ui.Platform.InstanceMessage.TryAct() -> bool
+Aw.Sindri.Ui.Platform.IDockBadge
+Aw.Sindri.Ui.Platform.IDockBadge.Show(int count) -> void
+Aw.Sindri.Ui.Platform.IDockBadge.Shown.get -> int
+Aw.Sindri.Ui.Platform.NullDockBadge
+Aw.Sindri.Ui.Platform.NullDockBadge.NullDockBadge() -> void
+Aw.Sindri.Ui.Platform.NullDockBadge.Show(int count) -> void
+Aw.Sindri.Ui.Platform.NullDockBadge.Shown.get -> int
+Aw.Sindri.Ui.Platform.SindriPlatform.DockBadge.get -> Aw.Sindri.Ui.Platform.IDockBadge!
+Aw.Sindri.Ui.Platform.SindriPlatform.DockBadge.init -> void

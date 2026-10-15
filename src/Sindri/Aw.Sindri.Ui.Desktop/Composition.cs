@@ -27,8 +27,15 @@ internal static class Composition
             new FilePreferencesStore(ui.Preferences),
             new PolledMotionPreference(MotionReader(), clock, MotionPoll),
             new SocketSingleInstance(ui, clock),
-            new AvaloniaTray());
+            new AvaloniaTray())
+        {
+            DockBadge = DockBadge(),
+        };
     }
+
+    /// <summary>This OS's dock badge: macOS NSDockTile; elsewhere none yet (Windows and Linux arrive with their adapters).</summary>
+    /// <returns>The badge.</returns>
+    internal static IDockBadge DockBadge() => OperatingSystem.IsMacOS() ? new MacDockBadge() : new NullDockBadge();
 
     /// <summary>The app over <paramref name="platform"/>.</summary>
     /// <param name="platform">The head's adapters.</param>
