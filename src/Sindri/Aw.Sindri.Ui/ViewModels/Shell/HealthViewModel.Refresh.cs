@@ -57,7 +57,7 @@ internal sealed partial class HealthViewModel
     private async Task Answer(Uri url, CancellationToken cancellationToken)
     {
         var decided = Volatile.Read(ref _decisions);
-        var status = await api.Status(url, cancellationToken).ConfigureAwait(true);
+        var status = await api.ReadStatus(url, cancellationToken).ConfigureAwait(true);
         lock (_gate)
         {
             if (decided != _decisions || State is not (ShellState.Normal or ShellState.Stale))
@@ -67,7 +67,7 @@ internal sealed partial class HealthViewModel
 
             if (status.IsError)
             {
-                if (string.Equals(status.Error.Code, SindriApiClient.ViewsBehind, StringComparison.Ordinal))
+                if (SindriApiReads.IsViewsBehind(status.Error))
                 {
                     return;   // "views behind" is an answer from a live Sindri, not a failed refresh
                 }

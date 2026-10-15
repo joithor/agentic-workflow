@@ -17,7 +17,7 @@ internal sealed partial class ControlPlaneFollower
     private async Task<Refreshed> Refresh(Uri url, CancellationToken cancellationToken)
     {
         _again = false;
-        var status = await Status(url, cancellationToken).ConfigureAwait(true);
+        var status = await api.ReadStatus(url, cancellationToken).ConfigureAwait(true);
         if (status.IsError)
         {
             if (IsBehind(status.Error))
@@ -54,13 +54,6 @@ internal sealed partial class ControlPlaneFollower
         return Refreshed.Shown;
     }
 
-    // One status read, and one more when the views were behind (the first used the sequence up).
-    private async Task<Result<StatusView>> Status(Uri url, CancellationToken cancellationToken)
-    {
-        var status = await api.Status(url, cancellationToken).ConfigureAwait(true);
-        return status.IsError && IsBehind(status.Error) ? await api.Status(url, cancellationToken).ConfigureAwait(true) : status;
-    }
-
     private enum Refreshed
     {
         /// <summary>The status failed: the follow ends.</summary>
@@ -73,5 +66,5 @@ internal sealed partial class ControlPlaneFollower
         Shown,
     }
 
-    private static bool IsBehind(Error error) => string.Equals(error.Code, SindriApiClient.ViewsBehind, StringComparison.Ordinal);
+    private static bool IsBehind(Error error) => SindriApiReads.IsViewsBehind(error);
 }
