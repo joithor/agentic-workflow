@@ -549,7 +549,7 @@ How items move through the states:
 
 **Empty, loading and error text.** One `EmptyText` table in `Core` holds the sentences for each list: its empty
 sentence (for example "Nothing is waiting on you. 3 running, 1 queued."), plus `rebuilding` ("Rebuilding views (cursor
-N of M)…") and `stalled` ("Views are stalled at N: run `sindri views rebuild`").
+N of M)…"), `stalled` ("Views are stalled at N: run `sindri views rebuild`") and, for a projector that can't run, "The views can't be updated (<code>: <detail>)" with `sindri views rebuild` or `sindri doctor` as its fix.
 - The CLI prints them, and every list view returns the right one in `empty`. The UI never keeps its own copy.
 - The CLI exits 1 (attention) when a view answers `rebuilding` or `stalled`, so a script can tell those apart from an
   empty list (exit 0).
@@ -1136,7 +1136,7 @@ of **`docs/csharp/sindri.md`**. Not `docs/sindri/errors.md`, which is generated 
 | `SND-API-009` | Unavailable (503) | The command gate wasn't acquired within 5 s | P1 |
 | `SND-API-011` | Unavailable (503) | The views didn't reach `X-Sindri-After`, or the head, within 2 s | P2 |
 | `SND-API-010` | Unavailable (503) | A command that reads views arrived during a rebuild; it wasn't run, so retry | P2 |
-| `SND-VIEW-001` | Unavailable (503) | The projector stalled on an event (status, doctor, logs) | P2 |
+| `SND-VIEW-001` | Unavailable (503) | The projector stalled on an event, or can't run because views.db or the ledger can't be used (status, doctor, logs); the fix is `sindri views rebuild`, or `sindri doctor` for a ledger cause | P2 |
 | `SND-ITEM-404` | NotFound (404) | No such item, or it's outside a session's repo | P3 |
 | `SND-ITEM-409` | Conflict (409) | The item changed since you looked, or the decision was decided elsewhere | P3, P4 |
 | `SND-REQ-001` | Invalid (400) | An unknown request kind, or text that's empty or over 2,000 characters | P4 |

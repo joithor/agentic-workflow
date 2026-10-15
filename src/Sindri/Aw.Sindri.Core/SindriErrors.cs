@@ -95,7 +95,7 @@ public static class SindriErrors
     /// <summary>SND-API-011: the views didn't reach the sequence a caller waits for (X-Sindri-After, or a command's head) in time.</summary>
     public static readonly ErrorDefinition ViewsBehind = new("SND-API-011", ErrorKind.Unavailable, "The views didn't reach the sequence in time");
 
-    /// <summary>SND-VIEW-001: the projector stalled on an event; 'sindri views rebuild' clears it.</summary>
+    /// <summary>SND-VIEW-001: the projector stalled on an event or can't run (views.db or the ledger can't be used); 'sindri views rebuild' clears an event stall or a views.db cause, 'sindri doctor' diagnoses a ledger cause.</summary>
     public static readonly ErrorDefinition ViewsStalled = new("SND-VIEW-001", ErrorKind.Unavailable, "The projector stalled on an event");
 
     /// <summary>Every Sindri error, for ErrorCatalogue.Validate.</summary>
