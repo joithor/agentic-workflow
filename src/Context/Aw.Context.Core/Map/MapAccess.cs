@@ -98,7 +98,7 @@ public static class MapAccess
     /// <summary>
     /// The graph without the code nodes of denied paths, every edge touching them, the model-made features only those files implemented, and the
     /// deterministic or model nodes and edges whose only evidence is a denied file; denied evidence is struck from what stays. A deny glob added after the
-    /// map was built keeps the path out of every read, before any rebuild (context spec §3, read-time scope; the globs are the profile's 'index.denyPaths').
+    /// map was built keeps the path out of every read, before any rebuild (context spec §3, "Denied paths"; the globs are the profile's 'index.denyPaths').
     /// </summary>
     /// <param name="current">The graph.</param>
     /// <param name="built">The repos whose deny globs apply.</param>

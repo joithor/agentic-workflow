@@ -17,17 +17,20 @@
     {
       "surface": "Tab manager",
       "node": "feature:tabs.tab-manager",
-      "status": "mapped"
+      "status": "mapped",
+      "trust": "untrusted"
     },
     {
       "surface": "Zoom",
       "node": "feature:zoom",
-      "status": "new"
+      "status": "new",
+      "trust": "untrusted"
     },
     {
       "surface": "Something vague",
       "node": null,
-      "status": "unmapped"
+      "status": "unmapped",
+      "trust": "untrusted"
     }
   ]
 }

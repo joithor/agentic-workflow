@@ -346,7 +346,7 @@ imports.
 ### Status and export
 
 ```bash
-$SINDRI context map status [--json]
+$SINDRI context map status [--anchor <key>] [--json]
 # map v2 current · aw-split-panes · created 2026-10-12T17:02:11.0000000+00:00
 # 20 nodes, 21 edges, 1 aliases, 1 decisions, 2 overrides; 0 orphaned overrides; 1 retained versions
 $SINDRI context map export [<name-or-path>] [--json]
@@ -525,10 +525,9 @@ services:
 ```
 
 - `index.denyPaths` adds to the built-in secret globs (`.env*`, `*.pem`, `**/secrets/**` and the like) and never
-  replaces them. A denied path never reaches the recognizers, graphify, the labeler or the graph; a glob added after a map exists removes that path's code nodes, their links and the features only they made from the next draft, so it leaves the map when you promote that draft. A glob is relative
+  replaces them. A denied path never reaches the recognizers, graphify, the labeler or the graph. A glob added after a map exists hides that path from every read (lenses, file maps, queries, export, `map status`, the review queue, the CLI, HTTP and MCP) as soon as the profile with the glob is approved: its code nodes, their links, the features only they made, the surfaces only it produced and any evidence that names it. The path leaves the stored map at the next promote. A glob is relative
   to the repo root, uses `/`, and has no `..`; `profile validate` names the bad one (`repos.work-app.index.denyPaths[1]: …`).
-- Labeling is off by default. When on, it asks your own agent CLI (Claude Code, Codex or Cursor, in that order, never a
-  remote API) to name each cluster from its file paths, scrubbed (with your `context.scrub.extraPatterns` too), in batches of twenty, inside `maxTokens`. If no CLI
+- Labeling is off by default. When on, it runs through your own agent CLIs (Claude Code, Codex or Cursor, in that order), which send the scrubbed file paths to their provider, as any session does; it never uses Judge's remote API. It asks the CLI to name each cluster from its file paths, scrubbed (with your `context.scrub.extraPatterns` too), in batches of twenty, inside `maxTokens`. If no CLI
   answers, the build goes on with unnamed clusters and reports `degraded: labels`.
 - Clusters need graphify (pinned) under a working sandbox: `bwrap` on Linux, `sandbox-exec` on macOS. Without either,
   the build still proposes the deterministic anchors and reports `degraded: clusters`; it is not an error. On Linux
@@ -562,11 +561,11 @@ Accept all 31 deterministic proposals at once? [y]es / [n]o, go through them one
 
 | Command | What it does | Class |
 |---|---|---|
-| `context map review` | At a terminal, the loop above; otherwise (or with `--list`/`--json`) the queue, read-only | query |
+| `context map review` | At a terminal, the loop above; otherwise (or with `--list`/`--json`) the queue, read-only; `--limit N` caps each group (default 100) | query |
 | `review accept\|reject <node\|edge:id>` | Decide one proposal or one suggested file link | desk |
 | `review rename <node> <name>`, `review move <node> --under <node>` | Edit a proposal | desk |
 | `review --accept-deterministic` | Accept every deterministic proposal at once | desk |
-| `review --undo <id>`, `--history` | Reverse one decision (a reject too); list the log with the ids | desk, query |
+| `review --undo <id>[,<id>…]`, `--history` | Reverse one decision (a reject too); list the log with the ids | desk, query |
 | `review --drop <id>`, `--repoint <id> --to <node>` | An orphaned override (its node vanished): drop it, or point it at another node | desk |
 | `review --export [<path>]` | Write the queue as a review file under `$AW_SINDRI_HOME/context/exports/` | query |
 | `review --apply <file>` | Apply a review file you edited | protected |
@@ -647,9 +646,9 @@ the store, a usage error · `75` the heavy-job lock stayed busy (`040`).
 | `SND-CONTEXT-040` | The heavy-job lock stayed busy (names the holder) | Retry when the other job finishes |
 | `SND-CONTEXT-042` | Labeling is on and the pass would pass `maxTokens` | Raise `context.labeling.maxTokens` or turn labeling off |
 | `SND-CONTEXT-043` | No entry in the review file matches the latest draft | `review --export` again |
-| `SND-CONTEXT-044` | `--draft` and no draft map exists | Build or propose first |
+| `SND-CONTEXT-044` | A draft is needed and none exists (`--draft`, or `map review`) | `context map propose <file>` or the `context-rebuild` service, then retry; or drop `--draft` |
 | `SND-CONTEXT-045` | The repo is not in the profile, or is outside the session's repo | Name a listed repo |
-| `SND-CONTEXT-046` | `promote` refused: no draft, or undecided items | Finish `map review` |
+| `SND-CONTEXT-046` | `promote` refused: no draft, undecided items, or the draft changed after you confirmed it | `context map propose <file>` or the `context-rebuild` service, then `map review`; run `promote` again if the draft moved |
 | `SND-CONTEXT-047` | The node or link was decided already or is gone, or `--undo` names an unknown or undone override | `map review` lists the queue; `--history` the ids |
 | `SND-CONTEXT-048` | Git can't read the repo at the commit | Fix the repo path or fetch the commit |
 

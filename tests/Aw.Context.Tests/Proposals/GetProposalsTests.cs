@@ -111,7 +111,7 @@ public sealed class GetProposalsTests : IDisposable
 
         Assert.Equal("<untrusted source=\"map\">Restore session</untrusted>", session.Surface);
         Assert.Equal("Restore session", human.Surface);
-        Assert.Equal((Aw.Context.Core.Results.Trust.Untrusted, Aw.Context.Core.Results.Trust.Untrusted), (session.Trust, human.Trust));   // the wire says so beside the text
+        Assert.Equal((Context.Core.Results.Trust.Untrusted, Context.Core.Results.Trust.Untrusted), (session.Trust, human.Trust));   // the wire says so beside the text
     }
 
     [Fact, Trait("Lane", "unit")]

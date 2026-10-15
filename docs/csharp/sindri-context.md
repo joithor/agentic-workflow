@@ -446,9 +446,9 @@ API P6 (the job runtime) has not merged, so `map build` has no route; the `Build
 | `SND-CONTEXT-040` | Unavailable (503) | 75 | The heavy-job lock stayed busy, or its directory can't be used; the message names the holder |
 | `SND-CONTEXT-042` | Invalid (400) | 1 | Labeling over its token cap (or the host has no model for it) |
 | `SND-CONTEXT-043` | Conflict (409) | 1 | No entry of the review file matches the latest draft |
-| `SND-CONTEXT-044` | NotFound (404) | 1 | `draft` asked and no draft map exists |
+| `SND-CONTEXT-044` | NotFound (404) | 1 | A draft is needed and none exists (`draft` asked, or `map review` listing the queue) |
 | `SND-CONTEXT-045` | NotFound (404) | 1 | A repo outside the profile or the session's repo (one answer for both) |
-| `SND-CONTEXT-046` | Conflict (409) | 1 | Promote refused: no draft, or undecided review items |
+| `SND-CONTEXT-046` | Conflict (409) | 1 | Promote refused: no draft, undecided review items, or the draft changed after you confirmed it (run promote again) |
 | `SND-CONTEXT-047` | Conflict (409) | 1 | Stale review target, or an undo of an unknown or undone override |
 | `SND-CONTEXT-048` | Unavailable (503) | 2 | Git can't read the repo at the commit |
 
@@ -466,7 +466,7 @@ The goldens under `tests/Aw.Sindri.Tests/Golden/Api/context-*/` pin every body b
 | `GET /sindri/context/map/review` | `limit` (per group, default 100, max 1000; else 006) | `{draft, version{number,commit}, entries[…, trust], decided, proposals, counts{deterministic,model,orphaned}, byKind{}, truncated{…}, undecided}`; `decided` counts the proposals of this draft with a standing decision, `proposals` = decided + deterministic + model |
 | `GET /sindri/context/map/review/history` | `limit` (default 200, max 1000; else 006) | `{entries[], truncated}` |
 | `POST /sindri/context/map/review` | `{verb, node?, link?, override?, overrides?, label?, other?, path?, answer?}` | `{result{written[],skipped[],undecided}, sequence, challenge?, summary?}` |
-| `POST /sindri/context/map/proposals` | `{run, repo, surfaces[{name, key? or kind?, evidence?, quote?}]}` (a session is 020) | `{result{draft, added, existing, rejected}, sequence, surfaces[{surface, node, status}]}`; `surfaces` is every surface of the run in the order submitted, each `mapped`, `new` or `unmapped` (spec §8.7) with its label and node key, the same list `GET` returns, so the counts are not the only answer; `context map propose` prints it under the counts |
+| `POST /sindri/context/map/proposals` | `{run, repo, surfaces[{name, key? or kind?, parent?, evidence?, quote?}]}` (a session is `SND-AUTH-002`, 403) | `{result{draft, added, existing, rejected}, sequence, surfaces[{surface, node, status, trust}]}`; `surfaces` is every surface of the run in the order submitted, each `mapped`, `new` or `unmapped` (spec §8.7) with its label and node key, the same list `GET` returns, so the counts are not the only answer; `context map propose` prints it under the counts |
 | `GET /sindri/context/map/proposals` | `run` | every surface the run submitted (kept per run in `proposal_run`, migration 0005; a second submission replaces the list), each `mapped`, `new` or `unmapped` against the current map at call time |
 
 - **Repoint** (`verb: repoint`, `override` = the orphan, `node` = the new target) writes `[undo of the orphan, the same decision on the new node]`; undoing both rows restores the orphan. A target not in the draft is 047.

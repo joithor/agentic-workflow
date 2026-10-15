@@ -231,7 +231,7 @@ public sealed class ContextLensesApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task A_proposal_without_the_lease_is_refused_before_any_row_is_written_and_the_event_key_names_the_run_and_the_counts()
+    public async Task A_proposal_without_the_lease_is_refused_before_any_row_is_written_and_the_event_key_names_the_run_and_its_rows()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var host = await Host();
@@ -246,7 +246,7 @@ public sealed class ContextLensesApiTests : IDisposable
         var accepted = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
         var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapProposed, ct);
 
-        Assert.NotEqual(HttpStatusCode.OK, refused.Status);
+        Assert.Equal((HttpStatusCode.ServiceUnavailable, "SND-LEDGER-002"), (refused.Status, refused.Code));   // the command gate needs the lease to record the call, so it answers before the service does
         Assert.Empty(Json(view.Body).GetProperty("surfaces").EnumerateArray());   // no row and no run list were written
         Assert.Equal(1, Json(accepted.Body).GetProperty("result").GetProperty("added").GetInt32());   // so the retry adds the row and records the event
         Assert.StartsWith("context.map.proposed:scope-2:v", recorded.Value!.IdempotencyKey, StringComparison.Ordinal);
@@ -286,7 +286,7 @@ public sealed class ContextLensesApiTests : IDisposable
         var retry = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
         var again = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
 
-        Assert.NotEqual(HttpStatusCode.OK, failed.Status);
+        Assert.Equal((HttpStatusCode.ServiceUnavailable, "SND-LEDGER-002"), (failed.Status, failed.Code));
         Assert.Equal(0, Json(retry.Body).GetProperty("result").GetProperty("added").GetInt32());   // the row committed the first time
         Assert.Equal(JsonValueKind.Number, Json(retry.Body).GetProperty("sequence").ValueKind);   // and the retry wrote its event
         Assert.Equal(JsonValueKind.Null, Json(again.Body).GetProperty("sequence").ValueKind);
