@@ -68,6 +68,7 @@ internal static class LedgerSql
 
     private static bool IsPrefix(string glob) => glob.EndsWith(".*", StringComparison.Ordinal);
 
+    // why: defence in depth: TypeFilter.Parse admits only lower-case dotted names (no '%', '_' or '\\'), so a parsed glob never needs this today
     private static string EscapeLike(string text) => text.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("%", "\\%", StringComparison.Ordinal).Replace("_", "\\_", StringComparison.Ordinal);
 
     internal const string SelectHead = "SELECT COALESCE(MAX(seq), 0) FROM events";

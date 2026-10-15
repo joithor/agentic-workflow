@@ -1,5 +1,6 @@
 using System.Globalization;
 using Aw.Kernel;
+using Aw.Sindri.Core.Text;
 
 namespace Aw.Sindri.Core.Ledger;
 
@@ -36,7 +37,7 @@ public sealed record TypeFilter
         {
             if (!IsGlob(glob))
             {
-                return SindriErrors.InvalidInput.With($"'{glob}' isn't an event type or a 'prefix.*' glob (fix: lower case dotted names, like service.* or process.started)");
+                return SindriErrors.InvalidInput.With($"'{SafeText.Line(SafeText.Escape(glob), 80)}' isn't an event type or a 'prefix.*' glob (fix: lower case dotted names, like service.* or process.started)");
             }
         }
 
