@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Install the /meta harness (opt-in: ./setup.sh --with-meta; owner decision 2026-10-14): the aw-meta NativeAOT CLI,
 # its two Claude Code hooks, and the team launcher. aw-meta is a standalone pre-switch C# CLI like aw-readiness and
-# aw-packets (docs/csharp/meta.md): it writes only under $AW_STATE_DIR/meta and the team's running log.
+# aw-packets (docs/csharp/meta.md): its state lives under $AW_STATE_DIR/meta, and
+# it appends to the team's running log; its gate and merge commands act on the team's checkout and PRs.
 #
 #   install-meta.sh [--provider claude|codex|cursor]   default claude
 #   AW_DRY_RUN=1     print what would happen, write nothing

@@ -8,8 +8,10 @@ not habits.
 
 It is a portable harness for any project. Everything team-specific (lanes, repo, gate scopes, merge order, known
 flakes, kickoff prompts, log file) lives in a team config. It runs before the C# switch as an opt-in standalone
-NativeAOT CLI (`./setup.sh --with-meta`, Claude Code only) that writes only under `$AW_STATE_DIR/meta/` and the
-configured running log. Sindri absorbs it later (see the last section).
+NativeAOT CLI (`./setup.sh --with-meta`, Claude Code only) that keeps its state under `$AW_STATE_DIR/meta/` and
+appends to the configured running log. Its gate and merge commands act on the team's checkout and PRs: `git fetch`, a
+gate worktree registered in the repo, the configured gate steps, and `gh pr merge`. Sindri absorbs it later (see the
+last section).
 
 Source: `src/Meta` (full shape: `Core`, `Features`, `Infrastructure`, `Host`; NativeAOT binary `aw-meta`).
 Tests: `tests/Aw.Meta.Tests` (rules, slices, contract bindings) and `tests/Aw.Meta.Testing` (fakes and contract bases).
