@@ -200,4 +200,31 @@ public sealed class ProtectedActionButtonTests
         Assert.True(closed);
         Assert.True(focused);
     }
+
+    // W6 (a11y-3): with neither Copy nor Open in an agent enabled, the popover would hold nothing to focus; the served-CLI
+    // line takes focus (exposed as Text with a name) and Esc still returns focus to the lock button.
+    [Fact]
+    public async Task An_unsafe_command_popover_focuses_the_served_line_and_Esc_returns_to_the_lock_button()
+    {
+        var (onCli, type, name, back) = await OnUi(() =>
+        {
+            var (window, _, button, _) = Show("sindri decision accept \u202eREQ-01JD4");
+            _ = button.Focus(NavigationMethod.Tab);
+            Press(window, Key.Enter, PhysicalKey.Enter);
+            Settle(window);
+            var cli = Named<TextBlock>((Visual)((Flyout)button.Flyout!).Content!, "ServedCli");
+            var peer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(cli);
+            var first = (window.FocusManager?.GetFocusedElement() == cli, peer.GetAutomationControlType(), peer.GetName());
+            Press(window, Key.Escape, PhysicalKey.Escape);
+            Settle(window);
+            var result = (first.Item1, first.Item2, first.Item3, button.IsFocused);
+            window.Close();
+            return result;
+        });
+
+        Assert.True(onCli);
+        Assert.Equal(Avalonia.Automation.Peers.AutomationControlType.Text, type);
+        Assert.Equal("The served command can't be shown", name);
+        Assert.True(back);
+    }
 }
