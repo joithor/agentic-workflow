@@ -1,6 +1,5 @@
-using Aw.Sindri.Core.Items.Vocabulary;
 
-namespace Aw.Sindri.Core.Items;
+namespace Aw.Sindri.Core.Items.Vocabulary;
 
 /// <summary>The wire names of the item states, for the text a person reads (the JSON converter writes the same names).</summary>
 internal static class ItemStateNames

@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using Aw.Kernel.Json;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Items.Vocabulary;
 using Aw.Sindri.Core.Ledger;
 
 namespace Aw.Sindri.Core.Items;

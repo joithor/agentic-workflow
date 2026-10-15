@@ -118,9 +118,9 @@ public sealed class ItemProjectionTests
 
         var lines = (await views.Range<TimelineRow>(ViewNames.ItemTimeline, afterKey: _item.Value + "/", beforeKey: _item.Value + "0", max: 10, Token)).Value;
 
-        Assert.Equal<string>(["Created: Ship it", "new → done", "Linked to linear:issue/abc-123 (ENG-142)"], lines.Select(l => l.Line), StringComparer.Ordinal);
+        Assert.Equal(["Created: Ship it", "new → done", "Linked to linear:issue/abc-123 (ENG-142)"], lines.Select(l => l.Line), StringComparer.Ordinal);
         Assert.Equal([1L, 2L, 3L], lines.Select(l => l.Sequence));
-        Assert.Equal<string>(["item.created", "item.state-changed", "item.linked"], lines.Select(l => l.Type), StringComparer.Ordinal);
+        Assert.Equal(["item.created", "item.state-changed", "item.linked"], lines.Select(l => l.Type), StringComparer.Ordinal);
         Assert.Equal(ItemTimelineProjection.Key(_item.Value, 2), _item.Value + "/0000000000000000002");
     }
 
@@ -161,7 +161,7 @@ public sealed class ItemProjectionTests
         return string.Join('\n', items.Select(Text).Concat(aliases.Select(Text)).Concat(timeline.Select(Text)));
     }
 
-    private static string Text<TRow>(TRow row) => System.Text.Encoding.UTF8.GetString(Aw.Kernel.Json.AwJson.Serialize(row, SliceHarness.Json));
+    private static string Text<TRow>(TRow row) => System.Text.Encoding.UTF8.GetString(Kernel.Json.AwJson.Serialize(row, SliceHarness.Json));
 
     private IProjection[] Projections(ITextScrubber scrubber) =>
         [new ItemsProjection(_h.Events, scrubber), new ItemAliasesProjection(_h.Events), new ItemTimelineProjection(SliceHarness.Json, scrubber)];
