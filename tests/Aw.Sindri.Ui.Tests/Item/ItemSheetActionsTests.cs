@@ -205,6 +205,39 @@ public sealed class ItemSheetActionsTests
         Assert.Equal(["SND-ITEM-409: " + A.Detail("items-id-close", "stale-version")], spoken);
     }
 
+    // corr-0 (run 3): the control and the sheet both have a live region; a 409 whose re-read a refresh took over is spoken by
+    // exactly one of them, once.
+    [Fact]
+    public async Task A_409_whose_re_read_a_refresh_took_over_is_spoken_once_across_the_control_and_the_sheet()
+    {
+        var sheet = await Sheet();
+        await sheet.Open(_api, A.NewItem, Token);
+        _server.Close = RouteAnswer.Problem("items-id-close", "stale-version");
+        _server.Items[A.NewItem] = RouteAnswer.SpecShaped("items-id", "after-close");
+        var gate = _server.ItemGates[A.NewItem] = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var close = sheet.Actions[0];
+        var spoken = Spoken(sheet);
+        var controlSpoke = Spoken(close);
+        var calls = _server.ItemCalls;
+        try
+        {
+            var press = close.Press(Token);
+            await Until(() => _server.ItemCalls == calls + 1);
+            var refresh = sheet.Refresh(_api, Token);
+            await Until(() => _server.ItemCalls == calls + 2);
+
+            gate.SetResult();
+            await Task.WhenAll(press, refresh).WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
+        }
+        finally
+        {
+            _ = gate.TrySetResult();
+        }
+
+        var code = "SND-ITEM-409";
+        Assert.Equal(1, spoken.Concat(controlSpoke).Count(t => t.Contains(code, StringComparison.Ordinal)));
+    }
+
     // corr-1: the 409 belongs to the item it was sent for; the sheet has moved on, so item B shows nothing of it.
     [Fact]
     public async Task A_409_for_an_item_the_sheet_has_moved_on_from_is_not_shown_or_spoken_on_the_next_one()
