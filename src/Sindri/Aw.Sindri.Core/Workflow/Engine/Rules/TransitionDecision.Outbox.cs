@@ -53,17 +53,17 @@ public static partial class TransitionDecision
             ? $"{effect.Kind.Value} can't run: {refused.Reason}. Fix that, then resume to send it again."
             : $"{effect.Kind.Value} isn't on the profile's effect allowlist. Add it and approve the profile, then resume to send it again.";
         return SpecConflict(ParkKind.Dispatch, question,
-            new ResumeAction(ResumeKind.Reemit, Withheld: null, Gate: null, effect), d.Trigger.Actor);
+            new ResumeAction(ResumeKind.Reemit, Withheld: null, Gate: null, [effect]), d.Trigger.Actor);
     }
 
     private static Suspension RevokedPark(string recipe, string actor) =>
         SpecConflict(ParkKind.Revoked, $"{recipe} was revoked. Cancel, then start a new attempt from an approved version.",
-            new ResumeAction(ResumeKind.None, Withheld: null, Gate: null, Effect: null), actor);
+            new ResumeAction(ResumeKind.None, Withheld: null, Gate: null, Effects: []), actor);
 
     /// <summary>The drift park; <paramref name="effect"/> is the one refused for the drift, which the re-approval re-sends.</summary>
     private static Suspension DriftPark(string recipe, RefusedEffect? effect, string actor) =>
         SpecConflict(ParkKind.Drift, $"A block pinned by {recipe} changed since it was approved. Re-approve it; the approval resumes this instance.",
-            new ResumeAction(ResumeKind.Rearm, Withheld: null, Gate: null, effect), actor);
+            new ResumeAction(ResumeKind.Rearm, Withheld: null, Gate: null, effect is null ? [] : [effect]), actor);
 
     private static Suspension SpecConflict(ParkKind kind, string question, ResumeAction resume, string actor) =>
         new(SuspensionKind.Park, ParkReason.SpecConflict, kind, Escalation: null, question, actor, Mirrors: null, resume);
@@ -75,7 +75,7 @@ public static partial class TransitionDecision
     private static Applied Reemit(Deciding d, WorkflowInstance instance, ResumeAction resume)
     {
         var applied = d.Changed(instance);
-        if (resume.Effect is not { } effect)
+        if (resume.Effects.Count == 0)
         {
             return applied;
         }
@@ -83,8 +83,8 @@ public static partial class TransitionDecision
         var own = applied.Changes[0];
         return applied with
         {
-            Changes = [own with { Event = own.Event with { Effects = [effect.Identity] } }, .. applied.Changes.Skip(1)],
-            Effects = [new EffectCommand(effect.Kind, effect.Identity, CommandOrigin.Recipe, effect.With)],
+            Changes = [own with { Event = own.Event with { Effects = [.. resume.Effects.Select(static e => e.Identity)] } }, .. applied.Changes.Skip(1)],
+            Effects = [.. resume.Effects.Select(static e => new EffectCommand(e.Kind, e.Identity, CommandOrigin.Recipe, e.With))],
         };
     }
 }

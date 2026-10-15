@@ -182,5 +182,5 @@ internal static class ChildPropagation
 
     private static Suspension Mirror(ChildChanged change, SuspensionKind kind, EscalationKind? escalation) => new(
         kind, kind == SuspensionKind.Park ? change.Reason : null, ParkKind: null, escalation, change.Question ?? string.Empty, change.Actor, change.Child,
-        new ResumeAction(ResumeKind.Forward, Withheld: null, Gate: null, Effect: null));
+        new ResumeAction(ResumeKind.Forward, Withheld: null, Gate: null, Effects: []));
 }

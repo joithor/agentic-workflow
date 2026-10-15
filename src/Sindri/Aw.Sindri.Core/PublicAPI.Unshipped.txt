@@ -2177,15 +2177,15 @@ Aw.Sindri.Core.Workflow.Engine.Instances.RemainingTimer.Left.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.RemainingTimer.RemainingTimer(Aw.Sindri.Core.Workflow.Engine.DeadlineKind Kind, System.TimeSpan Left) -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction!
-Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Instances.ResumeKind Kind, out Aw.Sindri.Core.Workflow.Engine.Instances.WithheldTrigger? Withheld, out Aw.Sindri.Core.Workflow.Ids.BlockId? Gate, out Aw.Sindri.Core.Workflow.Engine.RefusedEffect? Effect) -> void
-Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Effect.get -> Aw.Sindri.Core.Workflow.Engine.RefusedEffect?
-Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Effect.init -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Instances.ResumeKind Kind, out Aw.Sindri.Core.Workflow.Engine.Instances.WithheldTrigger? Withheld, out Aw.Sindri.Core.Workflow.Ids.BlockId? Gate, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.RefusedEffect!>! Effects) -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Effects.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.RefusedEffect!>!
+Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Effects.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Equals(Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction? other) -> bool
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Gate.get -> Aw.Sindri.Core.Workflow.Ids.BlockId?
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Gate.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Kind.get -> Aw.Sindri.Core.Workflow.Engine.Instances.ResumeKind
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Kind.init -> void
-Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.ResumeAction(Aw.Sindri.Core.Workflow.Engine.Instances.ResumeKind Kind, Aw.Sindri.Core.Workflow.Engine.Instances.WithheldTrigger? Withheld, Aw.Sindri.Core.Workflow.Ids.BlockId? Gate, Aw.Sindri.Core.Workflow.Engine.RefusedEffect? Effect) -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.ResumeAction(Aw.Sindri.Core.Workflow.Engine.Instances.ResumeKind Kind, Aw.Sindri.Core.Workflow.Engine.Instances.WithheldTrigger? Withheld, Aw.Sindri.Core.Workflow.Ids.BlockId? Gate, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.RefusedEffect!>! Effects) -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Withheld.get -> Aw.Sindri.Core.Workflow.Engine.Instances.WithheldTrigger?
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Withheld.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeKind

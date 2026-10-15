@@ -61,7 +61,7 @@ internal static class StatusCases
     private static Suspension Suspended(ParkReason reason, ParkKind? kind, string question) =>
         new(SuspensionKind.Park, reason, kind, Escalation: null, question, "service:workflow", Mirrors: null, Resume(ResumeKind.Rerun));
 
-    private static ResumeAction Resume(ResumeKind kind) => new(kind, Withheld: null, Gate: null, Effect: null);
+    private static ResumeAction Resume(ResumeKind kind) => new(kind, Withheld: null, Gate: null, Effects: []);
 
     /// <summary>A no-progress park mirroring its child (§5.8).</summary>
     private static WorkflowInstance MirroringChild() => Produce() with
@@ -82,7 +82,7 @@ internal static class StatusCases
         {
             Suspension = new Suspension(
                 SuspensionKind.Escalation, Reason: null, ParkKind: null, EscalationKind.Gate, "gate.verify.judge scored 0.62, below 0.8", "service:workflow", Mirrors: null,
-                new ResumeAction(ResumeKind.Override, new WithheldTrigger(Transition: 3, report), BlockId.From("gate.verify.judge"), Effect: null)),
+                new ResumeAction(ResumeKind.Override, new WithheldTrigger(Transition: 3, report), BlockId.From("gate.verify.judge"), Effects: [])),
         };
     }
 

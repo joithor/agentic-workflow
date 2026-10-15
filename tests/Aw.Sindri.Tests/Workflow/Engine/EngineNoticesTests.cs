@@ -100,8 +100,8 @@ public sealed class EngineNoticesTests
     private static string Text(EffectCommand command) => command.With["text"].Literal!.Value.GetString()!;   // why: an engine notice always carries its text
 
     private static Suspension Park(ParkReason reason, string question) =>
-        new(SuspensionKind.Park, reason, ParkKind: null, Escalation: null, question, "system:timer", Mirrors: null, new ResumeAction(ResumeKind.Rearm, Withheld: null, Gate: null, Effect: null));
+        new(SuspensionKind.Park, reason, ParkKind: null, Escalation: null, question, "system:timer", Mirrors: null, new ResumeAction(ResumeKind.Rearm, Withheld: null, Gate: null, Effects: []));
 
     private static Suspension Escalation(string question) =>
-        new(SuspensionKind.Escalation, Reason: null, ParkKind: null, EscalationKind.Gate, question, "system:gate", Mirrors: null, new ResumeAction(ResumeKind.Reevaluate, Withheld: null, Gate: null, Effect: null));
+        new(SuspensionKind.Escalation, Reason: null, ParkKind: null, EscalationKind.Gate, question, "system:gate", Mirrors: null, new ResumeAction(ResumeKind.Reevaluate, Withheld: null, Gate: null, Effects: []));
 }

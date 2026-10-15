@@ -53,7 +53,7 @@ public sealed class OutboxRefusalTests
         var parked = Parked(Decide(Claimed(), Item, Refused("SND-WF-011"), rules: EngineRules.Default));
 
         Assert.Equal((ParkReason.SpecConflict, ParkKind.Dispatch, ResumeKind.Reemit), Of(parked));
-        Assert.Equal(_claimRef, parked.Suspension!.Resume.Effect);
+        Assert.Equal(_claimRef, parked.Suspension!.Resume.Effects.Single());
         Assert.StartsWith("effect.claim.ref isn't on the profile's effect allowlist", parked.Suspension.Question, StringComparison.Ordinal);
     }
 

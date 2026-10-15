@@ -113,7 +113,7 @@ public static partial class TransitionDecision
             ResumeKind.Restart => Restart(d, instance),
             ResumeKind.None => new Rejected(d.Key, WorkflowErrors.TriggerNotAllowed.With(
                 $"nothing resumes {instance.Address.Value} (fix: cancel it with sindri workflow cancel {instance.Address.Value})")),
-            ResumeKind.Reemit or ResumeKind.Rearm when resume.Effect is not null => Reemit(d, instance, resume),   // a drift approval re-sends the effect refused for the drift
+            ResumeKind.Reemit or ResumeKind.Rearm when resume.Effects.Count > 0 => Reemit(d, instance, resume),   // a drift approval re-sends the effects refused for the drift
             ResumeKind.Transition or ResumeKind.Reevaluate or ResumeKind.Override or ResumeKind.Refuse or ResumeKind.Rearm
                 or ResumeKind.Rewait or ResumeKind.Restart or ResumeKind.Return or ResumeKind.Forward or _ => d.Changed(instance),
         };
@@ -163,7 +163,7 @@ public static partial class TransitionDecision
     private static Suspension AtCapPark(string loop, BlockId step, ResumeAction resume, string actor) => new(
         SuspensionKind.Park, ParkReason.Rounds, ParkKind.Refusal, Escalation: null,
         $"{loop} used all its rounds; {step.Value} runs again only with more rounds", actor, Mirrors: null,
-        new ResumeAction(ResumeKind.Rerun, resume.Withheld, Gate: null, Effect: null));
+        new ResumeAction(ResumeKind.Rerun, resume.Withheld, Gate: null, Effects: []));
 
     /// <summary>
     /// An SND-WF-010 park's restart (§5.8): its frame never opened a run, so the Step's run opens now, as a real entry

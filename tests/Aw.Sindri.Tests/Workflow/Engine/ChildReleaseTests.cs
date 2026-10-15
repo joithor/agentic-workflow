@@ -15,7 +15,7 @@ public sealed class ChildReleaseTests
 
     private static Suspension Timeout { get; } = new(
         SuspensionKind.Park, ParkReason.Timeout, ParkKind: null, Escalation: null, "running timed out", "service:workflow.timers", Mirrors: null,
-        new ResumeAction(ResumeKind.Rearm, Withheld: null, Gate: null, Effect: null));
+        new ResumeAction(ResumeKind.Rearm, Withheld: null, Gate: null, Effects: []));
 
     [Fact, Trait("Lane", "unit")]
     public void Release_returns_to_the_wait_on_the_same_child()

@@ -88,7 +88,7 @@ internal static class Suspensions
 
         return Suspend(instance, new Suspension(
             SuspensionKind.Takeover, Reason: null, ParkKind: null, Escalation: null, Question: string.Empty, actor, Mirrors: null,
-            new ResumeAction(ResumeKind.Return, Withheld: null, Gate: null, Effect: null)));
+            new ResumeAction(ResumeKind.Return, Withheld: null, Gate: null, Effects: [])));
     }
 
     /// <summary>A cancel (spec §3.8): the suspension and pending park are dropped, the instance ends in 'cancelled' with outcome 'cancelled'.</summary>
@@ -118,7 +118,7 @@ internal static class Suspensions
     {
         if (park.ParkKind == ParkKind.Drift && ParkedForDrift(instance))
         {
-            return instance;
+            return Merged(instance, park);   // absorbed as a park, but the effect it refused stays with the park that will be resumed
         }
 
         if (instance.Suspension is null)
@@ -126,7 +126,38 @@ internal static class Suspensions
             return instance with { Suspension = park };
         }
 
-        return instance.PendingPark is null ? instance with { PendingPark = park } : instance;
+        return instance.PendingPark is null ? instance with { PendingPark = park } : Merged(instance, park);
+    }
+
+    /// <summary>
+    /// A park that can't wait or replace the one there hands over the effects it carries: they join the drift or
+    /// dispatch park whose resume re-sends effects (the pending one first, then the current), de-duplicated by identity.
+    /// </summary>
+    private static WorkflowInstance Merged(WorkflowInstance instance, Suspension park)
+    {
+        if (park.Resume.Effects.Count == 0)
+        {
+            return instance;
+        }
+
+        if (Resending(instance.PendingPark, park) is { } pending)
+        {
+            return instance with { PendingPark = pending };
+        }
+
+        return Resending(instance.Suspension, park) is { } current ? instance with { Suspension = current } : instance;
+    }
+
+    private static Suspension? Resending(Suspension? held, Suspension park)
+    {
+        if (held is not { Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Drift or ParkKind.Dispatch, Resume.Kind: ResumeKind.Rearm or ResumeKind.Reemit })
+        {
+            return null;
+        }
+
+        var known = held.Resume.Effects.Select(static e => e.Identity).ToHashSet();
+        var added = park.Resume.Effects.Where(e => !known.Contains(e.Identity)).ToList();
+        return added.Count == 0 ? null : held with { Resume = held.Resume with { Effects = [.. held.Resume.Effects, .. added] } };
     }
 
     private static bool ParkedForDrift(WorkflowInstance instance) =>
