@@ -36,6 +36,21 @@ public sealed class LockButtonWalkTests
         Assert.Empty(byHand);
     }
 
+    // The label text is built by Labels.ProtectedLabel, so a view or view model that calls it draws the glyph without the
+    // glyph appearing in its own source: only the view model behind the protected-action button may.
+    [Fact]
+    public void No_source_asks_for_the_protected_label_but_its_view_model()
+    {
+        var callers = Directory.EnumerateFiles(UiSource.Library, "*.*", SearchOption.AllDirectories)
+            .Where(f => (f.EndsWith(".cs", StringComparison.Ordinal) || f.EndsWith(".axaml", StringComparison.Ordinal))
+                && !f.Split(Path.DirectorySeparatorChar).Any(p => string.Equals(p, "bin", StringComparison.Ordinal) || string.Equals(p, "obj", StringComparison.Ordinal))
+                && !_owners.Contains(Path.GetFileName(f), StringComparer.Ordinal)
+                && File.ReadAllText(f).Contains("ProtectedLabel", StringComparison.Ordinal))
+            .Select(Path.GetFileName).ToList();
+
+        Assert.Empty(callers);
+    }
+
     [Theory]
     [MemberData(nameof(NamedControlsTests.Views), MemberType = typeof(NamedControlsTests))]
     public async Task No_realized_view_draws_the_lock_glyph_outside_a_protected_action_button(string view)
