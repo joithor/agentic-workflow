@@ -133,4 +133,29 @@ public sealed class LaneAnchorTests
             m.Line.Contains("never between the markers", StringComparison.Ordinal) && (m.Line.Contains("immediately above", StringComparison.Ordinal) || m.Line.Contains("immediately below", StringComparison.Ordinal)),
             m.File + ": " + m.Line));
     }
+
+    private static HashSet<string> Kinds(string path, string marker)
+    {
+        var line = Lines(path).Single(l => l.Contains(marker, StringComparison.Ordinal));
+        var from = line.IndexOf("(kinds: ", StringComparison.Ordinal);
+        Assert.True(from >= 0, path + ": " + marker + " names no kinds");
+        var list = line[(from + "(kinds: ".Length)..];
+        return [.. list[..list.IndexOf(')', StringComparison.Ordinal)].Split(',', StringSplitOptions.TrimEntries)];
+    }
+
+    [Fact]
+    public void The_two_markers_claim_real_kinds_and_no_kind_twice_and_the_window_says_the_same()
+    {
+        var u3 = Kinds(SheetPath, "LANE ANCHOR U3'");
+        var u8 = Kinds(SheetPath, "LANE ANCHOR U8");
+        var real = Enum.GetNames<Aw.Sindri.Ui.Navigation.DeepLinkKind>().ToHashSet(StringComparer.Ordinal);
+
+        Assert.NotEmpty(u3);
+        Assert.NotEmpty(u8);
+        Assert.Subset(real, u3);
+        Assert.Subset(real, u8);
+        Assert.Empty(u3.Intersect(u8, StringComparer.Ordinal));
+        Assert.Equal(u3.Order(StringComparer.Ordinal), Kinds("src/Sindri/Aw.Sindri.Ui/Views/Shell/ShellWindow.axaml", "LANE ANCHOR U3'").Order(StringComparer.Ordinal));
+        Assert.Equal(u8.Order(StringComparer.Ordinal), Kinds("src/Sindri/Aw.Sindri.Ui/Views/Shell/ShellWindow.axaml", "LANE ANCHOR U8").Order(StringComparer.Ordinal));
+    }
 }
