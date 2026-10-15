@@ -106,19 +106,20 @@ public sealed class WorkflowGoldenTests
     }
 
     [Fact]
-    public void Not_found_reads_as_ProblemDetails_SND_ITEM_404()
+    public void Not_found_reads_as_ProblemDetails_with_the_routes_code()
     {
         var refusals = GoldenFiles.All().Where(g => g.Kind == "Api" && g.Scenario == "not-found" && _workflowSlugs.Contains(g.Slug, StringComparer.Ordinal)).ToList();
-        Assert.True(refusals.Count >= 2, "the instance and fact routes each have a not-found golden");
+        Assert.True(refusals.Count >= 3, "the instance, fact and recipe routes each have a not-found golden");
 
         foreach (var (_, slug, _, body) in refusals)
         {
             var problem = AwJson.Deserialize<ProblemView>(Encoding.UTF8.GetBytes(body), SindriApiClient.Json).Value;
             var error = SindriApiClient.Refusal(HttpStatusCode.NotFound, Encoding.UTF8.GetBytes(body));
 
-            Assert.Equal("SND-ITEM-404", problem.Title);
+            var code = string.Equals(slug, "workflow-recipe", StringComparison.Ordinal) ? "SND-RECIPE-002" : "SND-ITEM-404";
+            Assert.Equal(code, problem.Title);
             Assert.NotNull(error);
-            Assert.Equal(("SND-ITEM-404", ErrorKind.NotFound, problem.Detail), (error.Code, error.Kind, error.Message));
+            Assert.Equal((code, ErrorKind.NotFound, problem.Detail), (error.Code, error.Kind, error.Message));
             Assert.False(string.IsNullOrEmpty(problem.Detail), slug);
         }
     }
