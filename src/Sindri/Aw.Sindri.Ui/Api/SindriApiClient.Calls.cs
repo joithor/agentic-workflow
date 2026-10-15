@@ -16,6 +16,8 @@ internal sealed partial class SindriApiClient
     // The sequence of the last command the API accepted, sent as X-Sindri-After on the view queries (status, services;
     // API §2.4, UI §9.1) until one of them has used it; 0 when there is none to send.
     private long _after;
+    private readonly Lock _leaseGate = new();
+    private (int Pid, long Epoch)? _lease;
 
     private Task<Result<T>> Get<T>(Uri api, string path, CancellationToken cancellationToken, bool view = false) =>
         Call<T>(api, HttpMethod.Get, path, cancellationToken, view);
@@ -49,6 +51,22 @@ internal sealed partial class SindriApiClient
         }
     }
 
+    // Another process or epoch is another ledger (the lease lives in it): a sequence from the old one means nothing to
+    // the new, so it is dropped when ping shows the change. The first ping has nothing to compare with.
+    private void Lease(PingView ping)
+    {
+        var seen = (ping.Pid, ping.Epoch);
+        lock (_leaseGate)
+        {
+            if (_lease is { } before && before != seen)
+            {
+                Volatile.Write(ref _after, 0);
+            }
+
+            _lease = seen;
+        }
+    }
+
     private Result<T> Read<T>(string path, byte[] body)
     {
         var value = AwJson.Deserialize<T>(body, Json);
@@ -64,12 +82,18 @@ internal sealed partial class SindriApiClient
         {
             _ = Interlocked.Exchange(ref _after, accepted.Sequence);
         }
+        else if (value.Value is PingView ping)
+        {
+            Lease(ping);
+        }
 
         return value;
     }
 
     // A call, and its one retry when the token was stale.
-    // A view query carries the pending sequence on both tries, and has used it once it got an answer that isn't "views behind".
+    // A view query carries the pending sequence on both tries, and has used it once it got any answer, SND-API-011
+    // included: read-your-writes is best effort (API §2.4), so the next read goes without it and shows what Sindri says
+    // (a stalled projection would otherwise answer "behind" for ever).
     private async Task<(HttpStatusCode Code, byte[] Body)> Exchange(HttpMethod method, Uri url, bool view, CancellationToken cancellationToken)
     {
         var after = view ? Volatile.Read(ref _after) : 0;
@@ -79,7 +103,7 @@ internal sealed partial class SindriApiClient
             answer = await Send(method, url, after, cancellationToken).ConfigureAwait(false);
         }
 
-        if (after > 0 && !string.Equals(Refusal(answer.Code, answer.Body)?.Code, ViewsBehind, StringComparison.Ordinal))
+        if (after > 0)
         {
             _ = Interlocked.CompareExchange(ref _after, 0, after);   // a newer command's sequence stays
         }

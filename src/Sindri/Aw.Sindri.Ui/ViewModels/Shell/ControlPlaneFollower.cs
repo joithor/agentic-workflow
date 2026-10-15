@@ -130,7 +130,8 @@ internal sealed partial class ControlPlaneFollower(IEndpointRecordSource records
             health.ShowCatalog(record.Url, catalog.Value);   // §9.1: on connect and after every reconnect
         }
 
-        return await Refresh(record.Url, cancellationToken).ConfigureAwait(true) ? record.Url : null;
+        // The url is followed once a status was shown: should the views still be behind, connect again (best effort).
+        return await Refresh(record.Url, cancellationToken).ConfigureAwait(true) == Refreshed.Shown ? record.Url : null;
     }
 
     // Follows the stream until it ends, a status refresh fails, or the endpoint record changes. A stopping control plane
@@ -195,7 +196,7 @@ internal sealed partial class ControlPlaneFollower(IEndpointRecordSource records
             while (await dirty.WaitToReadAsync(stop.Token).ConfigureAwait(true))
             {
                 _ = dirty.TryRead(item: out _);
-                if (!await Refresh(url, stop.Token).ConfigureAwait(true))
+                if (await Refresh(url, stop.Token).ConfigureAwait(true) == Refreshed.Failed)
                 {
                     await stop.CancelAsync().ConfigureAwait(true);
                     return;

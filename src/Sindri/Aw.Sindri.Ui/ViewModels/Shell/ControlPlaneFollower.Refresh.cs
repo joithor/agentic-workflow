@@ -6,25 +6,28 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 /// <summary>The follower's re-read of the status and the services view (<see cref="ControlPlaneFollower"/>, continued).</summary>
 internal sealed partial class ControlPlaneFollower
 {
-    // Re-reads the status and the services view. "Views behind" (SND-API-011, the server's 2 s wait after an
-    // X-Sindri-After) is not trouble: the last data stays and the next beat reads again. A projection that is still
+    // Re-reads the status and the services view. "Views behind" (SND-API-011, the server's answer to an X-Sindri-After
+    // the views haven't reached: at once when stalled, after 2 s when behind) is not trouble, and the sequence is used
+    // up by it (best effort, API §2.4): the status is read once more at once, without it, so the pill and banner show
+    // what Sindri says (stalled, rebuilding). Should that be behind too, the last data stays and the next beat reads
+    // again. A projection that is still
     // catching up (cursor behind the ledger head) or rebuilding is read again too, since no further event need come; a
     // stalled one won't move by itself, so it waits for an event. A failed status ends the follow. A services read that
     // fails for any reason but "no such route" (SND-UI-003, before P2) leaves the banner as Sindri last said it.
-    private async Task<bool> Refresh(Uri url, CancellationToken cancellationToken)
+    private async Task<Refreshed> Refresh(Uri url, CancellationToken cancellationToken)
     {
         _again = false;
-        var status = await api.Status(url, cancellationToken).ConfigureAwait(true);
+        var status = await Status(url, cancellationToken).ConfigureAwait(true);
         if (status.IsError)
         {
             if (IsBehind(status.Error))
             {
                 _again = true;
-                return true;
+                return Refreshed.Behind;
             }
 
             _ = health.Failed(status.Error, url);
-            return false;
+            return Refreshed.Failed;
         }
 
         health.Show(url, status.Value);
@@ -48,7 +51,26 @@ internal sealed partial class ControlPlaneFollower
             health.ShowViews(view: null);   // before P2 there's no such route: no banner
         }
 
-        return true;
+        return Refreshed.Shown;
+    }
+
+    // One status read, and one more when the views were behind (the first used the sequence up).
+    private async Task<Result<StatusView>> Status(Uri url, CancellationToken cancellationToken)
+    {
+        var status = await api.Status(url, cancellationToken).ConfigureAwait(true);
+        return status.IsError && IsBehind(status.Error) ? await api.Status(url, cancellationToken).ConfigureAwait(true) : status;
+    }
+
+    private enum Refreshed
+    {
+        /// <summary>The status failed: the follow ends.</summary>
+        Failed,
+
+        /// <summary>The views are behind and nothing was shown: the last data stays, the next beat reads again.</summary>
+        Behind,
+
+        /// <summary>A status was shown.</summary>
+        Shown,
     }
 
     private static bool IsBehind(Error error) => string.Equals(error.Code, SindriApiClient.ViewsBehind, StringComparison.Ordinal);

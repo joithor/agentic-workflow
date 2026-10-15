@@ -235,7 +235,7 @@ U1 gives the app the API's catalog of actions, the headers and token every call 
 **Requests (§9.1, API §6).** Every request sends `X-Sindri-Caller: human` and `X-Sindri-Client: ui`, and
 `X-Sindri-Token` read from `<home>/auth/human.token` before each request (a restart mints a new one; a missing file
 sends none, so the API answers `SND-AUTH-001`). Never `X-Sindri-Terminal` or `Origin`. After an accepted command the
-next query carries `X-Sindri-After: <sequence>` once. A refusal Sindri explains is that error: a 403 with a `title`,
+next view query carries `X-Sindri-After: <sequence>` once (best effort, below). A refusal Sindri explains is that error: a 403 with a `title`,
 or any other non-2xx whose ProblemDetails has an SND `title` and a `detail` (a command's 409 `SND-API-010`, for one),
 shown as served; anything else stays `SND-UI-003`. The token comes through U0's port (`IHumanTokenSource`, above):
 on `SND-AUTH-001` the call re-reads the token and retries once, then a status or ping refusal is the Unreadable banner
@@ -267,10 +267,14 @@ re-reads the status and the services view at most once per view per 250 ms (§9.
 `ControlPlaneFollower.RefreshOnSignal`): the first event of a burst re-reads at once, the rest collapse into one
 re-read when the window ends. A projection still behind the ledger (`cursor < ledgerHead`) or rebuilding is read again
 on the same beat with no event needed (a stalled one waits for an event, it won't move by itself). `X-Sindri-After`
-(the accepted command's sequence) rides the view queries only (status, services; never ping, the catalog, a command or
-the stream), stays until one of them has been answered with anything but SND-API-011, goes on the stale-token retry too,
-and gives that call a 5 s deadline (the server waits up to 2 s). SND-API-011 ("views behind") is not trouble: the last
-data stays, the shell stays Normal and the next beat reads again. A services read that fails for any reason but the
+(the accepted command's sequence) is best effort and has one lifetime: it rides the view queries only (status, services;
+never ping, the catalog, a command or the stream), goes on the stale-token retry too, gives that call a 5 s deadline (the
+server waits up to 2 s when the views are behind, and answers a stalled projection at once), and is used up by the first
+answer of any kind, SND-API-011 included. A ping that shows another pid or epoch (another ledger) drops it unused. So
+SND-API-011 ("views behind") is not trouble and never repeats: the follower reads the status once more at once, without
+the header, and shows what Sindri says (stalled, rebuilding); only if that is behind too does the last data stay and the
+next beat read again. On connect, a first status that is behind is read the same way, and the URL is followed once a
+status was shown. A manual Refresh that hears SND-API-011 is not a failed refresh (it doesn't count toward "not responding"). A services read that fails for any reason but the
 missing route before P2 (SND-UI-003) leaves the banner as it was; a catalog that failed on connect is read again with
 the next refresh. The views banner has live regions (stalled sentence, "Rebuilding views", "Views are up to date"), flag
 then text. E-15's `invalidates` waits for P5.

@@ -17,7 +17,7 @@ public sealed partial class FreshnessTests
         await Connected(() => _server.ServicesCalls > 0);
         _server.Lag = ViewsLag.Stalled;
         _ = await _server.RebuildViews(_api, TestContext.Current.CancellationToken);
-        _server.Current = Status(new AsOfView(42, 42, A.Noon, Rebuilding: false, Stalled: true), new HealthView("degraded", []));
+        _server.Current = Status(new AsOfView(42, 42, A.Noon, Rebuilding: false, Stalled: true), new HealthView("stalled", []));
         _server.ServiceView = RouteAnswer.SpecShaped("services", "stalled");
 
         _server.Push(A.Event(1, "views.rebuild.started"));

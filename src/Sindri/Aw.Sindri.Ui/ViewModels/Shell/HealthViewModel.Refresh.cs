@@ -1,3 +1,5 @@
+using Aw.Sindri.Ui.Api;
+
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
 /// <summary>Refresh beside a stale pill (<see cref="HealthViewModel"/>, continued; §4.1 Stale and "sending").</summary>
@@ -65,6 +67,11 @@ internal sealed partial class HealthViewModel
 
             if (status.IsError)
             {
+                if (string.Equals(status.Error.Code, SindriApiClient.ViewsBehind, StringComparison.Ordinal))
+                {
+                    return;   // "views behind" is an answer from a live Sindri, not a failed refresh
+                }
+
                 _failedRefreshes++;
                 Word();
                 return;
