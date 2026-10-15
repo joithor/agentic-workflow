@@ -1958,3 +1958,39 @@ static Aw.Evidence.Core.Data.CliOutcome.operator ==(Aw.Evidence.Core.Data.CliOut
 static Aw.Evidence.Core.Data.ResolvedTargets.Empty.get -> Aw.Evidence.Core.Data.ResolvedTargets!
 static Aw.Evidence.Core.Data.ResolvedTargets.operator !=(Aw.Evidence.Core.Data.ResolvedTargets? left, Aw.Evidence.Core.Data.ResolvedTargets? right) -> bool
 static Aw.Evidence.Core.Data.ResolvedTargets.operator ==(Aw.Evidence.Core.Data.ResolvedTargets? left, Aw.Evidence.Core.Data.ResolvedTargets? right) -> bool
+Aw.Evidence.Core.Data.CliTargets
+Aw.Evidence.Core.Data.CliTargets.<Clone>$() -> Aw.Evidence.Core.Data.CliTargets!
+Aw.Evidence.Core.Data.CliTargets.Allow.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Evidence.Core.Data.CliTargets.Allow.init -> void
+Aw.Evidence.Core.Data.CliTargets.BuildOutputs.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Evidence.Core.Data.CliTargets.BuildOutputs.init -> void
+Aw.Evidence.Core.Data.CliTargets.CliTargets(System.Collections.Generic.IReadOnlyList<string!>? BuildOutputs = null, System.Collections.Generic.IReadOnlyList<string!>? Allow = null, System.Collections.Generic.IReadOnlyList<string!>? PassEnv = null) -> void
+Aw.Evidence.Core.Data.CliTargets.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? BuildOutputs, out System.Collections.Generic.IReadOnlyList<string!>? Allow, out System.Collections.Generic.IReadOnlyList<string!>? PassEnv) -> void
+Aw.Evidence.Core.Data.CliTargets.Equals(Aw.Evidence.Core.Data.CliTargets? other) -> bool
+Aw.Evidence.Core.Data.CliTargets.PassEnv.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Evidence.Core.Data.CliTargets.PassEnv.init -> void
+Aw.Evidence.Core.Data.TargetsFile
+Aw.Evidence.Core.Data.TargetsFile.<Clone>$() -> Aw.Evidence.Core.Data.TargetsFile!
+Aw.Evidence.Core.Data.TargetsFile.Cli.get -> Aw.Evidence.Core.Data.CliTargets?
+Aw.Evidence.Core.Data.TargetsFile.Cli.init -> void
+Aw.Evidence.Core.Data.TargetsFile.Databases.get -> System.Text.Json.JsonElement?
+Aw.Evidence.Core.Data.TargetsFile.Databases.init -> void
+Aw.Evidence.Core.Data.TargetsFile.Deconstruct(out string? Schema, out Aw.Evidence.Core.Data.CliTargets? Cli, out System.Text.Json.JsonElement? Databases) -> void
+Aw.Evidence.Core.Data.TargetsFile.Equals(Aw.Evidence.Core.Data.TargetsFile? other) -> bool
+Aw.Evidence.Core.Data.TargetsFile.Schema.get -> string?
+Aw.Evidence.Core.Data.TargetsFile.Schema.init -> void
+Aw.Evidence.Core.Data.TargetsFile.TargetsFile(string? Schema = null, Aw.Evidence.Core.Data.CliTargets? Cli = null, System.Text.Json.JsonElement? Databases = null) -> void
+Aw.Evidence.Core.Data.TargetsReader
+const Aw.Evidence.Core.Data.TargetsFile.RepoRelativePath = ".agentic-workflow/evidence.json" -> string!
+override Aw.Evidence.Core.Data.CliTargets.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.CliTargets.GetHashCode() -> int
+override Aw.Evidence.Core.Data.CliTargets.ToString() -> string!
+override Aw.Evidence.Core.Data.TargetsFile.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.TargetsFile.GetHashCode() -> int
+override Aw.Evidence.Core.Data.TargetsFile.ToString() -> string!
+static Aw.Evidence.Core.Data.CliTargets.operator !=(Aw.Evidence.Core.Data.CliTargets? left, Aw.Evidence.Core.Data.CliTargets? right) -> bool
+static Aw.Evidence.Core.Data.CliTargets.operator ==(Aw.Evidence.Core.Data.CliTargets? left, Aw.Evidence.Core.Data.CliTargets? right) -> bool
+static Aw.Evidence.Core.Data.TargetsFile.SchemaNames.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Evidence.Core.Data.TargetsFile.operator !=(Aw.Evidence.Core.Data.TargetsFile? left, Aw.Evidence.Core.Data.TargetsFile? right) -> bool
+static Aw.Evidence.Core.Data.TargetsFile.operator ==(Aw.Evidence.Core.Data.TargetsFile? left, Aw.Evidence.Core.Data.TargetsFile? right) -> bool
+static Aw.Evidence.Core.Data.TargetsReader.Read(System.ReadOnlySpan<byte> utf8Json, System.Text.Json.JsonSerializerOptions! options) -> Aw.Kernel.Result<Aw.Evidence.Core.Data.ResolvedTargets!>!
