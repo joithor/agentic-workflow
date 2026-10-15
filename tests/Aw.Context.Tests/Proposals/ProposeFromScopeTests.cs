@@ -56,6 +56,29 @@ public sealed class ProposeFromScopeTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_row_another_identical_call_wrote_first_counts_as_existing_so_the_counts_still_add_up()
+    {
+        _ = await _world.ImportFixture();
+        var raced = false;
+        ProposeResult? winner = null;
+        _world.Store.AfterSnapshot = draft =>
+        {
+            if (draft && !raced)
+            {
+                raced = true;   // the other call plans the same row and writes it between this call's read and its write
+                winner = _world.Map.Propose(Run(), MapWorld.Human, MapWorld.None).AsTask().GetAwaiter().GetResult().Value;
+            }
+        };
+        var lone = new ScopeProposal("run-1", _repo, [Run().Surfaces[1]]);
+
+        var result = await Propose(lone);
+
+        Assert.Equal(1, winner!.Added);
+        Assert.Equal((0, 1, 0), (result.Added, result.Existing, result.Rejected));
+        Assert.Equal(1, await ProposeRows());
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Proposing_never_changes_the_current_map()
     {
         var current = (await _world.ImportFixture()).Version;
