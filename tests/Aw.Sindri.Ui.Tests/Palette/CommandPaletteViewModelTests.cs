@@ -204,8 +204,6 @@ public sealed class CommandPaletteViewModelTests
         Assert.DoesNotContain("0 of", _palette.Announcement, StringComparison.Ordinal);
         _palette.Move(1);
         Assert.NotEqual("RebuildViews", _palette.Selected!.Id, StringComparer.Ordinal);
-        _palette.Move(-1);
-        Assert.Equal("RebuildViews", _palette.Selected!.Id, StringComparer.Ordinal);
         _server.RebuildGate.SetResult();
         await run;
     }

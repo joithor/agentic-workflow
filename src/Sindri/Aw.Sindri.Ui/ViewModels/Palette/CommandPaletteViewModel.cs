@@ -121,7 +121,7 @@ internal sealed class CommandPaletteViewModel : ObservableObject
     /// <param name="by">How far.</param>
     internal void Move(int by)
     {
-        var runs = Entries.Where(e => e.IsEnabled).ToList();
+        var runs = Stops();
         if (runs.Count == 0)
         {
             return;
@@ -192,6 +192,10 @@ internal sealed class CommandPaletteViewModel : ObservableObject
     private static bool Runs(ControlViewModel control) =>
         control.CanRun || (control.IsReady && control.Action == "StopProcess") || (control.IsCliOnly && control.CanCopy);
 
+    // The entries ↑/↓ stop at and the live region counts: those that run, and the selection even while it sends (it is
+    // disabled then, but it is where the user is: "0 of 14" would be wrong, and arrowing off it goes to its neighbour).
+    private List<PaletteEntry> Stops() => [.. Entries.Where(e => e.IsEnabled || e == Selected)];
+
     private void Filter()
     {
         _all ??= Build();
@@ -208,7 +212,7 @@ internal sealed class CommandPaletteViewModel : ObservableObject
     // "Nothing matches" when empty; never "" (Avalonia #22312 crashes VoiceOver on an empty live region).
     private void Announce()
     {
-        var runs = Entries.Where(e => e.IsEnabled).ToList();
+        var runs = Stops();
         Announcement = Entries.Count == 0 ? Labels.NoMatches
             : Selected is { } selected ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{selected.Name}, {runs.IndexOf(selected) + 1} of {runs.Count}")
             : Labels.Palette;

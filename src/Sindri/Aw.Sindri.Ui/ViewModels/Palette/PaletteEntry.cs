@@ -14,7 +14,7 @@ internal sealed class PaletteEntry : ObservableObject
     private static readonly string[] _shown =
     [
         nameof(ControlViewModel.CopyLabel), nameof(ControlViewModel.Phase), nameof(ControlViewModel.Outcome),
-        nameof(ControlViewModel.ErrorCode), nameof(ControlViewModel.ErrorDetail),
+        nameof(ControlViewModel.ErrorCode), nameof(ControlViewModel.ErrorDetail), nameof(ControlViewModel.IsAnnouncingSending),
     ];
 
     private PaletteEntry(string id, string label, string key, bool enabled, ControlViewModel? control, PageId? page)
@@ -42,7 +42,7 @@ internal sealed class PaletteEntry : ObservableObject
     public string Status => Control switch
     {
         null => string.Empty,
-        { IsSending: true } => Labels.Sending,
+        { IsAnnouncingSending: true } => Labels.Sending,   // after 300 ms, as the control's own live region says it
         { IsAccepted: true } => Control.Outcome,
         { IsFailed: true } => Control.ErrorCode,
         { IsReady: true } => Labels.Ready,
