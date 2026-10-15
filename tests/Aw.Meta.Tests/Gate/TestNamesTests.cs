@@ -37,4 +37,16 @@ public sealed class TestNamesTests
     [InlineData("", "A.B.C", false)]
     public void A_filter_names_a_test_by_equality_or_a_whole_segment_suffix(string filter, string name, bool expected) =>
         Assert.Equal(expected, TestNames.Matches(filter, name));
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_bash_runners_failed_suites_are_named_once_from_its_real_log()
+    {
+        var log = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Gate", "Golden", "bash-runner-one-failed.log"));
+
+        Assert.Equal(["scripts/tests/ci-bash-tests.test.sh"], TestNames.Failing(log));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_bash_log_with_only_passing_suites_names_no_tests() =>
+        Assert.Empty(TestNames.Failing("PASS  par  scripts/tests/a.test.sh  1s\nbash suites: 2 run, 0 failed, 0 excluded\n"));
 }
