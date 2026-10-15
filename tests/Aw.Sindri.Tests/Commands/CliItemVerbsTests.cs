@@ -1,0 +1,189 @@
+using System.Net;
+using System.Text;
+using Aw.Kernel.Ids;
+using Aw.Kernel.Json;
+using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Items;
+using Aw.Sindri.Core.Items.Vocabulary;
+using Aw.Sindri.Core.Views;
+using Aw.Sindri.Features.CreateItem;
+using Aw.Sindri.Features.GetItem;
+using Aw.Sindri.Features.GetQueue;
+using Aw.Sindri.Features.ListItems;
+using Aw.Sindri.Host;
+using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Testing;
+using Aw.Sindri.Tests.Server;
+using Microsoft.Extensions.Time.Testing;
+
+namespace Aw.Sindri.Tests.Commands;
+
+/// <summary>The item verbs (API P3 unit H): queue, items, item add, item close.</summary>
+public sealed class CliItemVerbsTests : IDisposable
+{
+    private static readonly FakeControlPlaneProbe _probe = FakeControlPlaneProbe.For(new ControlEndpoint(new Uri("http://127.0.0.1:7410"), 42, 3), new Ping(42, 3));
+    private static readonly AsOf _fresh = new(5, 5, KnownInstants.Epoch, Rebuilding: false, Stalled: false);
+    private readonly StringWriter _out = new();
+    private readonly StringWriter _error = new();
+
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
+    private static AgentSession Human => new(Signal: null, Terminal: true, Prover: false);
+
+    public void Dispose()
+    {
+        _out.Dispose();
+        _error.Dispose();
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_queue_prints_each_group_and_its_empty_text()
+    {
+        var item = Summary(A.FirstItemId, "Try the queue", ItemState.New);
+        var queue = new QueueResponse(
+            [new(QueueGroup.WaitingOnYou, [], EmptyText.Group(QueueGroup.WaitingOnYou)), new(QueueGroup.Queued, [item], Empty: null)],
+            Empty: null, _fresh);
+        var api = new RoutedApi().On("/sindri/queue", HttpStatusCode.OK, queue);
+
+        var code = await Verbs(api, Human).Run(["queue"], Token);
+
+        Assert.Equal(0, code);
+        Assert.Equal($"waitingOnYou\n  Nothing is waiting on you.\nqueued\n  {A.FirstItemId.Value}  Try the queue  [demo]  new  since 1970-01-01T00:00:00Z\n", _out.ToString().ReplaceLineEndings("\n"));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_queue_exits_1_while_stalled()
+    {
+        var stalled = new AsOf(2, 9, KnownInstants.Epoch, Rebuilding: false, Stalled: true);
+        var api = new RoutedApi().On("/sindri/queue", HttpStatusCode.OK, new QueueResponse([], EmptyText.Stalled(3), stalled));
+
+        var code = await Verbs(api, Human).Run(["queue"], Token);
+
+        Assert.Equal(1, code);
+        Assert.Contains(EmptyText.Stalled(3), _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_queue_json_is_the_raw_body()
+    {
+        var queue = new QueueResponse([], EmptyText.Queue(), _fresh);
+        var api = new RoutedApi().On("/sindri/queue", HttpStatusCode.OK, queue);
+
+        var code = await Verbs(api, Human).Run(["queue", "--json"], Token);
+
+        Assert.Equal((0, Encoding.UTF8.GetString(AwJson.Serialize(queue, SliceHarness.Json)) + "\n"), (code, _out.ToString().ReplaceLineEndings("\n")));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_item_add_posts_as_human()
+    {
+        var created = new ItemCreatedResponse(new CommandAccepted(new SequentialIdGenerator().New<CommandId>(), Sequence: 4), A.FirstItemId);
+        var api = new RoutedApi().On("/sindri/items", HttpStatusCode.OK, created);
+
+        var code = await Verbs(api, Human).Run(["item", "add", "Try", "the", "queue", "--repo", "demo"], Token);
+
+        Assert.Equal((0, $"{A.FirstItemId.Value} created (sequence 4)\n"), (code, _out.ToString().ReplaceLineEndings("\n")));
+        var call = Assert.Single(api.Calls);
+        Assert.Equal(("POST", "human", """{"title":"Try the queue","repo":"demo"}"""), (call.Method, call.Headers[SindriHeaders.Caller], call.Body));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_item_close_reads_the_version_when_none_given()
+    {
+        var api = new RoutedApi().On("/sindri/items/" + A.FirstItemId.Value, HttpStatusCode.OK, View(version: 3))
+            .On("/sindri/items/" + A.FirstItemId.Value + "/close", HttpStatusCode.OK, new CommandAccepted(new SequentialIdGenerator().New<CommandId>(), Sequence: 9));
+
+        var code = await Verbs(api, Human).Run(["item", "close", A.FirstItemId.Value], Token);
+
+        Assert.Equal((0, $"{A.FirstItemId.Value} closed: done (sequence 9)\n"), (code, _out.ToString().ReplaceLineEndings("\n")));
+        Assert.Equal([("GET", null), ("POST", """{"reason":"done","itemVersion":3}""")], api.Calls.Select(static c => (c.Method, c.Body)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_item_close_cancelled_posts_the_cancelled_variant()
+    {
+        var api = new RoutedApi().On("/sindri/items/ENG-142/close", HttpStatusCode.OK, new CommandAccepted(new SequentialIdGenerator().New<CommandId>(), Sequence: 12));
+
+        var code = await Verbs(api, Human).Run(["item", "close", "ENG-142", "--cancelled", "--version", "2"], Token);
+
+        Assert.Equal((0, "ENG-142 closed: cancelled (sequence 12)\n"), (code, _out.ToString().ReplaceLineEndings("\n")));
+        Assert.Equal("""{"reason":"cancelled","itemVersion":2}""", Assert.Single(api.Calls).Body);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_items_filters()
+    {
+        var api = new RoutedApi().On("/sindri/items", HttpStatusCode.OK, new ListItemsResponse([], EmptyText.Items(ItemState.Done, RepoName.From("demo")), _fresh));
+
+        var code = await Verbs(api, Human).Run(["items", "--state", "done", "--repo", "demo"], Token);
+
+        Assert.Equal((0, "No done items in demo.\n"), (code, _out.ToString().ReplaceLineEndings("\n")));
+        Assert.Equal("?state=done&repo=demo", Assert.Single(api.Calls).Query);
+    }
+
+    [Fact(Timeout = 10_000), Trait("Lane", "unit")]
+    public async Task Cli_in_an_agent_session_never_starts_the_process()
+    {
+        var launcher = new FakeControlPlaneLauncher();
+        var down = new FakeControlPlaneProbe();
+        var api = new RoutedApi();
+        using var client = new ControlPlaneClient(down, SliceHarness.Json, handler: api);
+        var inAgent = new AgentSession(Signal: "CLAUDECODE is set", Terminal: true, Prover: false);
+        var start = new StartCommand(down, launcher, client, new Output(_out, _error, SliceHarness.Json), new SteppedClock(new FakeTimeProvider(KnownInstants.Epoch)), inAgent);
+        var verbs = new ItemVerbs(client, new Output(_out, _error, SliceHarness.Json), (launch, ct) => start.EnsureRunning(launch, ct));
+
+        var code = await verbs.Run(["queue"], TestContext.Current.CancellationToken);
+
+        Assert.Equal((1, 0, 0), (code, launcher.Launches, api.Calls.Count));
+        Assert.StartsWith("SND-API-001 ", _error.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Usage_and_the_catalog_name_the_same_verbs()
+    {
+        var forms = new[] { "sindri queue [--json] [--no-start]", "sindri items [--state <s>] [--repo <r>] [--json] [--no-start]", "sindri item add <title> [--repo <r>] [--no-start]", "sindri item close <item> [--cancelled] [--version <n>] [--no-start]" };
+
+        Assert.All(forms, f => Assert.Contains(f, Usage.Text, StringComparison.Ordinal));
+    }
+
+    private static ItemSummary Summary(ItemId id, string title, ItemState state) =>
+        new(id, title, RepoName.From("demo"), state, Step: null, KnownInstants.Epoch, PrimaryAction: null, Actions: [], Owner: null);
+
+    private static ItemView View(long version) =>
+        new(A.FirstItemId, "Try the queue", Repo: null, ItemState.New, Step: null, KnownInstants.Epoch, PrimaryAction: null, Actions: [], Owner: null,
+            version, "human:desk", WaitingOn: null, Instance: null, KnownInstants.Epoch, KnownInstants.Epoch, Body: null, Link: null, _fresh);
+
+    private ItemVerbs Verbs(RoutedApi api, AgentSession session)
+    {
+        var client = new ControlPlaneClient(_probe, SliceHarness.Json,
+            CallerHeaders.For(session, new InMemoryHumanTokenStore(), _ => ValueTask.FromResult((RepoName?)null)), handler: api);
+        return new ItemVerbs(client, new Output(_out, _error, SliceHarness.Json), (_, _) => Task.FromResult<Kernel.Error?>(null));
+    }
+
+    /// <summary>An API that answers each route with its canned body and records every call.</summary>
+    private sealed class RoutedApi : HttpMessageHandler
+    {
+        private readonly Dictionary<string, (HttpStatusCode Status, string Body)> _routes = [];
+        public List<Call> Calls { get; } = [];
+
+        public RoutedApi On<T>(string path, HttpStatusCode status, T body)
+        {
+            _routes[path] = (status, Encoding.UTF8.GetString(AwJson.Serialize(body, SliceHarness.Json)));
+            return this;
+        }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var uri = request.RequestUri!;   // why: HttpClient always sets the URI
+            var body = request.Content is null ? null : await request.Content.ReadAsStringAsync(cancellationToken);
+            Calls.Add(new Call(request.Method.Method, uri.AbsolutePath, uri.Query, body, request.Headers.ToDictionary(h => h.Key, h => string.Join(',', h.Value), StringComparer.OrdinalIgnoreCase)));
+            var (status, text) = _routes.TryGetValue(uri.AbsolutePath, out var found) ? found : (HttpStatusCode.NotFound, """{"title":"SND-API-404","detail":"no route"}""");
+            return new HttpResponseMessage(status) { Content = new StringContent(text, Encoding.UTF8, (int)status >= 400 ? "application/problem+json" : "application/json") };
+        }
+    }
+
+    private sealed record Call(string Method, string Path, string Query, string? Body, Dictionary<string, string> Headers);
+}
