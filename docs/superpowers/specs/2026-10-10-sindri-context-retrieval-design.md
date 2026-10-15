@@ -207,8 +207,9 @@ public sealed record SourceRecord(SourceRef Ref, RecordKind Kind, string Title, 
 public sealed record ChangePage(IReadOnlyList<SourceRef> Changed, IReadOnlyList<ExternalId> Removed, SourceCursor Next);
 ```
 
-- **Read-only by construction.** Credentials are read-only and least-privilege (§8.8); `context sources status`
-  reports the scope each token actually has where the source exposes it.
+- **Read-only by construction.** Adapters only read. Credentials are the least privilege that serves the contract:
+  Onyx's is an admin key on its own service account, held to read requests by an allowlist (§8.8); `context sources
+  status` reports the scope each token actually has where the source exposes it.
 - **Errors** (`Result<T>`): `Unavailable` (the query goes on without the source and reports `degraded`), `NotFound`,
   `Fatal`. No `RateLimited` for Local sources (D6); a Shared source's declared limits are README X61's later work.
 - **Freshness:** every hit carries `AsOf`. `Search`, `Fetch` and `Versions` are live; `Changes` drives a scheduled sync.
@@ -776,8 +777,8 @@ fake passes `ContextSourceContract<TSource>`. Tests never touch work data or the
   wraps `POST /api/search`, which has no document id). Admin search includes hidden documents; the adapter drops
   them (§8.8).
 - **Closed (S-5A):** Onyx has no change feed for a read key (its document listing needs `manage:connectors` and has no
-  times), so links are re-derived from search hits. The gap is documented in `docs/sindri/onyx.md`, not reported by
-  `context sources status`, which reads no Onyx connector status (§8.8).
+  times), so links are re-derived from search hits. The gap is documented in `docs/sindri/onyx.md` §7, not
+  reported by `context sources status`, which reads no Onyx connector status (§8.8).
 - Linear document content history for as-of cuts (Phase 6).
 - Feature weights (Phase 8), starting equal.
 - Where this engine meets TS `sindri scope` before the switch: none. `sindri scope` keeps running as it is; the scoping

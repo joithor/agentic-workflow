@@ -187,7 +187,8 @@ only. Answer: *pending the S-1M owner check*.
 
 - `context:sources`: the context engine read in-process from the same home and approved profile serve uses, so it
   works with the process stopped. It reports each source as of its last refresh (the `context-docs-refresh`
-  service), not a live probe: a repo moved away shows only after the next refresh. `ok` when every source is ok (it says whether session reads are on; off means MCP
+  service); repo-docs is not probed live (a repo moved away shows only after the next refresh), while a live source
+  such as Onyx is probed on each doctor run (its keyless `GET /api/version`, then `GET /api/me` with the key). `ok` when every source is ok (it says whether session reads are on; off means MCP
   calls answer `020`), `warn` when some are degraded (`SND-CONTEXT-010`), `fail` when every source is down (`011`) or
   the store can't open; `warn` with no approved profile, `ok` with no `context:` section.
 - `context:mcp-scope`: warns (`SND-CONTEXT-026`) on a user-wide `sindri` entry in Claude Code's `~/.claude.json`
@@ -459,14 +460,14 @@ version, then `GET /api/me` with the key for its role and account type.
 | `warn` | the key is an admin key of a person's account (`053`); or onyx is named but no repo is mapped, so no source runs | create a service-account key; map a repo |
 | `fail` | the key's pointer doesn't resolve (`SND-SECRET-001`..`003`, checked before Onyx is called), Onyx is down (`010`), another version (`055`, naming both), the key lacks admin (`050`), the section is invalid | per the line; see `docs/sindri/onyx.md` |
 
-Onyx's provider and telemetry settings can't be read with the key; `docs/sindri/onyx.md` lists them as a manual check
+The adapter never reads Onyx's provider and telemetry settings (no settings route is on its allowlist); `docs/sindri/onyx.md` lists them as a manual check
 on each Onyx version change.
 
 ### Trying it in a throwaway profile
 
 ```bash
+$SINDRI stop                                    # first, with the old home: a running control plane keeps its port
 export AW_SINDRI_HOME="$(mktemp -d)"            # throwaway state
-$SINDRI stop                                    # if a control plane is already running, so the next one sees the key
 export SINDRI_ONYX_KEY='on_…'                   # the service account's admin key (or use keychain:onyx/sindri-read)
 mkdir -p "$AW_SINDRI_HOME/profile"
 cat >"$AW_SINDRI_HOME/profile/profile.yaml" <<'YAML'
@@ -479,7 +480,7 @@ context:
     linear: { teams: [ENG] }
 YAML
 $SINDRI profile validate                        # prints the hash; exit 1 = valid, not approved yet
-$SINDRI profile approve <hash>                  # type its first 6 characters; also starts the control plane
+$SINDRI profile approve <hash>                  # type the challenge it shows: 'approve profile <first 6>'; starts the control plane
 $SINDRI doctor                                  # context:onyx
 $SINDRI context sources status
 $SINDRI context query "split pane orientation"

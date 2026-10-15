@@ -3,7 +3,7 @@
 Sindri's `onyx` source reads business intent (Linear issues with their comments, Slack, docs spaces) from a local Onyx
 Community Edition. Onyx stays unmodified; Sindri uses it for recall only and does its own ranking (context spec D2,
 D3). This page sets Onyx up so it is pinned, bound to loopback, keeps all data on the machine, and gives Sindri one
-read key. Connecting Onyx to company Linear and Slack uses company OAuth: get sign-off first. Sindri never connects a
+admin key on its own service account (§5). Connecting Onyx to company Linear and Slack uses company OAuth: get sign-off first. Sindri never connects a
 source itself.
 
 `$SINDRI` is the C# Sindri build (before the switch, `~/.local/bin/sindri` is still the TS one); see
@@ -103,7 +103,7 @@ at a terminal:
 
 ```bash
 $SINDRI profile validate          # prints the profile's hash; exit 1 means valid but not approved yet
-$SINDRI profile approve <hash>    # type the hash's first 6 characters; this also starts the control plane
+$SINDRI profile approve <hash>    # type the challenge it shows, 'approve profile <first 6 of the hash>'; also starts the control plane
 ```
 
 Validate checks only the pointer's scheme and that a target follows; it neither parses the target nor resolves it, so a
@@ -131,7 +131,7 @@ $SINDRI context sources status
 A hit whose document Onyx no longer has when Sindri fetches its text is left out of the answer (no citation without
 the record), so nothing reports it and there's nothing to fix.
 
-**Manual checks on every Onyx version change** (a search key can't read these): Admin → LLM shows no cloud provider;
+**Manual checks on every Onyx version change** (the adapter never reads Onyx's settings; the allowlist has no settings route): Admin → LLM shows no cloud provider;
 Admin → Search Settings shows a self-hosted embedding model; `.env` has `DISABLE_TELEMETRY=true`; §2's `lsof` shows
 loopback only.
 
@@ -148,3 +148,7 @@ Nothing else: the adapter refuses any other request before sending it. Linear is
 (Onyx's document id). The `ENG-482`-style identifier is stored as an alias,
 read from Onyx's title prefix `[ENG-482]` and checked against the issue link. Onyx doesn't serve `updated_at` by
 id, so Onyx citations show `version unchecked` until the native Linear source versions them.
+
+Onyx has no change feed a key can read (its document listing needs `manage:connectors` and carries no times), so
+Sindri re-derives links from search hits: a document that no longer matches any query is never read again, and
+`context sources status` doesn't report the gap (context spec §12).
