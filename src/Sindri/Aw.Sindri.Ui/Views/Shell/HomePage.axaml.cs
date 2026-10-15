@@ -13,5 +13,5 @@ internal sealed partial class HomePage : UserControl
         InitializeComponent();
     }
 
-    private void OnHealthStrip(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.GoTo(PageId.Health);
+    private void OnHealthStrip(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.GoTo(PageId.System);
 }

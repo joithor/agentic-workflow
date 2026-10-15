@@ -23,6 +23,30 @@ public sealed class DeepLinkTests
     }
 
     [Theory]
+    [InlineData("workflow/INC-14", nameof(DeepLinkKind.Workflow), "INC-14")]
+    [InlineData("workflow/ITM-01JC8/step", nameof(DeepLinkKind.Workflow), "ITM-01JC8/step")]
+    [InlineData("recipe/workflow.project-build", nameof(DeepLinkKind.Recipe), "workflow.project-build")]
+    [InlineData("node/feature:tabs.tab-manager", nameof(DeepLinkKind.Node), "feature:tabs.tab-manager")]
+    [InlineData("session/snd-01JE7.2", nameof(DeepLinkKind.Session), "snd-01JE7.2")]
+    [InlineData("system/temporal", nameof(DeepLinkKind.System), "temporal")]
+    public void Deep_links_parse_workflow_recipe_node_session_system(string text, string kind, string subject)
+    {
+        Assert.True(DeepLink.TryParse(text, out var link));
+        Assert.Equal(new DeepLink(Enum.Parse<DeepLinkKind>(kind), subject), link);
+        Assert.Equal(text, link.ToString());
+    }
+
+    [Theory]
+    [InlineData("workflow/")]
+    [InlineData("workflow//x")]
+    [InlineData("workflow/a/")]
+    [InlineData("workflow/a/../b")]
+    [InlineData("recipe/a/b")]
+    [InlineData("system/a/b")]
+    public void A_workflow_address_may_hold_segments_and_no_other_subject_may(string text) =>
+        Assert.False(DeepLink.TryParse(text, out _));
+
+    [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("focus")]
