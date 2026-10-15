@@ -3,6 +3,7 @@ using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features.RecordHeartbeat;
 using Aw.Sindri.Features.RecordServiceRun;
@@ -119,6 +120,29 @@ public sealed class SchedulerHostTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_built_in_service_runs_without_a_profile_entry_and_without_an_approved_profile()
+    {
+        _ = await _h.HoldLease();   // no profile approved at all
+        var counted = new CountingService();
+
+        await Run(new CountingApprovals(_h.Profiles), () => counted.Runs >= 2, counted, builtIns: [new BuiltInService(CountingService.Name, new Cadence(TimeSpan.FromSeconds(5)))]);
+
+        Assert.Equal(0, Heartbeats());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_service_still_running_holds_back_neither_the_others_nor_starts_again()
+    {
+        _ = await _h.Profiles.Save(SliceHarness.ProfileOf("thor", ("stuck", "5s"), ("heartbeat", "5s")), Token);
+        _ = await _h.HoldLease();
+        var stuck = new BlockedService();
+
+        await Run(new CountingApprovals(_h.Profiles), () => Heartbeats() >= 3, stuck, release: stuck.Release);
+
+        Assert.Equal(1, stuck.Started);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Every_run_appends_service_ran_ok_or_failed_with_its_code()
     {
         _ = await _h.Profiles.Save(SliceHarness.ProfileOf("thor", ("heartbeat", "5s"), ("sour", "5s")), Token);
@@ -178,9 +202,15 @@ public sealed class SchedulerHostTests
     private int Heartbeats() => _h.Store.Events.Count(e => e.Envelope.Type == HeartbeatType);
 
     /// <summary>Starts the scheduler, steps the clock until <paramref name="done"/> holds (at most 60 fake seconds), and stops it.</summary>
-    private async Task Run(CountingApprovals approvals, Func<bool> done)
+    private async Task Run(CountingApprovals approvals, Func<bool> done, IScheduledService? extra = null, IReadOnlyList<BuiltInService>? builtIns = null, Action? release = null)
     {
-        await using var provider = new ServiceCollection()
+        var services = new ServiceCollection();
+        if (extra is not null)
+        {
+            _ = services.AddSingleton(extra);
+        }
+
+        await using var provider = services
             .AddSingleton<ILedgerStore>(_h.Store)
             .AddSingleton(_h.Events)
             .AddSingleton<TimeProvider>(_h.Clock)
@@ -194,7 +224,7 @@ public sealed class SchedulerHostTests
             .AddScoped<IScheduledService, FailingService>()
             .BuildServiceProvider();
         var clock = new SteppedClock(_h.Clock);
-        using var scheduler = new SchedulerHost(provider.GetRequiredService<IServiceScopeFactory>(), approvals, _h.Held, _h.Callers, clock, _log);
+        using var scheduler = new SchedulerHost(provider.GetRequiredService<IServiceScopeFactory>(), approvals, _h.Held, _h.Callers, builtIns ?? [], clock, _log);
         await scheduler.StartAsync(Token);
         for (var step = 0; !done(); step++)
         {
@@ -203,6 +233,7 @@ public sealed class SchedulerHostTests
             await clock.Armed();
         }
 
+        release?.Invoke();
         await scheduler.StopAsync(Token);
     }
 }

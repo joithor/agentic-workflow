@@ -17,6 +17,18 @@ public static class EventTypes
     /// <summary>A recipe instance moved from one state to another (mirrored from its RecipeWorkflow).</summary>
     public const string WorkflowTransition = "workflow.transition";
 
+    /// <summary>A recipe instance refused a trigger (a gate failed closed, a report's findings): the gate results and what followed (engine spec §5.6).</summary>
+    public const string WorkflowRefused = "workflow.refused";
+
+    /// <summary>A sleep or downtime shift moved an instance's clocks (engine spec §5.6).</summary>
+    public const string WorkflowShifted = "workflow.shifted";
+
+    /// <summary>A takeoverIdle timer fired and notified the human (engine spec §5.6).</summary>
+    public const string WorkflowNotified = "workflow.notified";
+
+    /// <summary>A held event expired from an instance's inbox (engine spec §5.4, §5.6).</summary>
+    public const string WorkflowExpired = "workflow.expired";
+
     /// <summary>A human approved a profile hash.</summary>
     public const string ProfileApproved = "profile.approved";
 

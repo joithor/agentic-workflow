@@ -203,8 +203,11 @@ public sealed class ContextMapApiTests
         var yaml = $"schemaVersion: 1\nuser: golden\nrepos:\n  - {{ name: {FixtureMap.Repo}, path: /work/{FixtureMap.Repo} }}\n  - {{ name: other, path: /work/other }}\n"
             + $"context:\n  sessions: {{ enabled: {(sessions ? "true" : "false")} }}\n";
         var host = await GoldenHost.Start(temporary: true, ct, yaml);
-        var hash = (await host.LiveHash(ct)).Value;
-        var approved = await host.Http.Ask(Post("/sindri/profile/approve", await ApiScenarios.Confirmed(host, hash), Human(host.Token.Value)));   // the S1-D5 challenge
+        var hash = await host.LiveHash(ct);
+        var issued = await host.Http.Ask(Post("/sindri/workflow/challenges", $$"""{"action":"approve profile {{hash.Abbreviated}}"}""", Human(host.Token.Value)));
+        var challenge = JsonDocument.Parse(issued.Body).RootElement.GetProperty("challenge").GetString();
+        var approved = await host.Http.Ask(Post("/sindri/profile/approve",
+            $$$"""{"hash":"{{{hash.Value}}}","answer":{"challenge":"{{{challenge}}}","typed":"approve profile {{{hash.Abbreviated}}}"}}""", Human(host.Token.Value)));
         Assert.Equal(HttpStatusCode.OK, approved.Status);
         return host;
     }

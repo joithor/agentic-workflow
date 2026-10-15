@@ -17,6 +17,8 @@ namespace Aw.Sindri.Core.Workflow.Engine.Decisions;
 /// <param name="Inputs">The input facts.</param>
 /// <param name="Actor">Who started it (a child keeps its parent trigger's actor).</param>
 /// <param name="TakenOver">Whether it starts taken over, because a launch for the item is still requested.</param>
+/// <param name="Tenant">The tenant key, from the workflow input (a child keeps its parent's).</param>
+/// <param name="Ring">The ring, from the workflow input (a child keeps its parent's).</param>
 public sealed record StartRequest(
     TriggerKey Key,
     WorkflowInstanceId Id,
@@ -27,4 +29,6 @@ public sealed record StartRequest(
     WorkflowInstanceId? Parent,
     IReadOnlyDictionary<FactKey, FactValue> Inputs,
     string Actor,
-    bool TakenOver);
+    bool TakenOver,
+    string Tenant,
+    int Ring);

@@ -33,7 +33,7 @@ public sealed class IssueChallengeTests
     [InlineData("approve workflow.step 2", "SND-RECIPE-002")]
     [InlineData("approve workflow.nothing 1", "SND-RECIPE-002")]
     [InlineData("approve workflow.step", "SND-CLI-003")]
-    [InlineData("grant 1 T-1/step/1", "SND-CLI-003")]
+    [InlineData("grant 1 T-1/step/1", "SND-WF-001")]
     [InlineData("revoke workflow.step@zzzz", "SND-CLI-003")]
     public async Task Unknown_actions_and_recipes_are_refused(string action, string code)
     {

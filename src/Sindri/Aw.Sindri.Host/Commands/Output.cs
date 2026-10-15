@@ -15,7 +15,7 @@ internal sealed class Output(TextWriter stdout, TextWriter stderr, JsonSerialize
     /// <param name="utf8Json">The document.</param>
     /// <typeparam name="T">A type in the package's JSON context.</typeparam>
     /// <returns>The value, or the reason it can't be read.</returns>
-    public Kernel.Result<T> Read<T>(ReadOnlySpan<byte> utf8Json) => AwJson.Deserialize<T>(utf8Json, options);
+    public Result<T> Read<T>(ReadOnlySpan<byte> utf8Json) => AwJson.Deserialize<T>(utf8Json, options);
 
     public async Task<int> Json<T>(T value, int exitCode)
     {

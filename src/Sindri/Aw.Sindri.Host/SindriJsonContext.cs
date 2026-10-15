@@ -17,16 +17,23 @@ using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Evals;
 using Aw.Sindri.Core.Workflow.Engine.Events;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Registry;
+using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.ApproveRecipe;
+using Aw.Sindri.Features.CompleteStep;
 using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Features.EvalRecipe;
+using Aw.Sindri.Features.GetInstance;
+using Aw.Sindri.Features.GetInstanceEvents;
 using Aw.Sindri.Features.GetProfile;
 using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.IssueChallenge;
+using Aw.Sindri.Features.IssueNonce;
 using Aw.Sindri.Features.ListCommands;
+using Aw.Sindri.Features.ListInstances;
 using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Features.RebuildViews;
@@ -35,6 +42,7 @@ using Aw.Sindri.Features.RegisterRecipe;
 using Aw.Sindri.Features.RevokeRecipe;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.ShowRecipe;
+using Aw.Sindri.Features.StartInstance;
 using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Features.StreamEvents;
 using Aw.Sindri.Features.ValidateProfile;
@@ -90,6 +98,19 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(EvalStartLine))]
 [JsonSerializable(typeof(EvalStepLine))]
 [JsonSerializable(typeof(RecipeValidationView))]
+[JsonSerializable(typeof(CompleteStepResponse))]
+[JsonSerializable(typeof(InstanceView))]
+[JsonSerializable(typeof(GetInstanceResponse))]
+[JsonSerializable(typeof(ListInstancesResponse))]
+[JsonSerializable(typeof(GetInstanceEventsResponse))]
+[JsonSerializable(typeof(InstanceEventView))]
+[JsonSerializable(typeof(InstanceEventFields))]
+[JsonSerializable(typeof(StartInstanceResponse))]
+[JsonSerializable(typeof(StartInstanceRequest))]
+[JsonSerializable(typeof(ApplyCommandRequest))]
+[JsonSerializable(typeof(CompleteStepRequest))]
+[JsonSerializable(typeof(ApplyCommandResponse))]
+[JsonSerializable(typeof(IssueNonceResponse))]
 [JsonSerializable(typeof(RecipeRegistered))]
 [JsonSerializable(typeof(RecipeApproved))]
 [JsonSerializable(typeof(RecipeRevoked))]

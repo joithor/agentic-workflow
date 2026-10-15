@@ -1,6 +1,7 @@
 using System.Globalization;
 using Aw.Kernel;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Profile;
 
@@ -28,31 +29,13 @@ public static class ProfileRules
             return Invalid("api.port", "must be 0 (a free port) or 1024 to 65535");
         }
 
-        if ((Services(profile) ?? Globs(profile)) is { } invalid)
+        var invalid = Services(profile.Services) ?? Durations(profile.Workflow) ?? Globs(profile);
+        if (invalid is not null)
         {
             return invalid;
         }
 
         return Canonical(profile);
-    }
-
-    /// <summary>Checks every service's name and cadence.</summary>
-    private static Error? Services(SindriProfile profile)
-    {
-        foreach (var (name, settings) in profile.Services ?? SindriProfile.NoServices)
-        {
-            if (!ServiceName.TryFrom(name, out _))
-            {
-                return Invalid($"services.{name}", "is not a service name: kebab-case, 1 to 40 characters");
-            }
-
-            if (Cadence.Parse(settings.Every) is { IsSuccess: false } bad)
-            {
-                return Invalid($"services.{name}.every", bad.Error.Message);
-            }
-        }
-
-        return null;
     }
 
     /// <summary>The longest glob 'index.denyPaths' takes.</summary>
@@ -124,6 +107,39 @@ public static class ProfileRules
             (profile.Services ?? SindriProfile.NoServices).ToDictionary(StringComparer.Ordinal), StringComparer.Ordinal),
         Api = profile.Api ?? new ApiSettings(),
     };
+
+    /// <summary>Each service's name and cadence.</summary>
+    private static Error? Services(IReadOnlyDictionary<string, ServiceSettings>? services)
+    {
+        foreach (var (name, settings) in services ?? SindriProfile.NoServices)
+        {
+            if (!ServiceName.TryFrom(name, out _))
+            {
+                return Invalid($"services.{name}", "is not a service name: kebab-case, 1 to 40 characters");
+            }
+
+            if (Cadence.Parse(settings.Every) is { IsSuccess: false } bad)
+            {
+                return Invalid($"services.{name}.every", bad.Error.Message);
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>The 'workflow:' durations (S1-D11): each key that is set must be a duration such as '1m', '4h' or '2d'.</summary>
+    private static Error? Durations(WorkflowSettings? workflow)
+    {
+        foreach (var (key, value) in new[] { ("deskTimeout", workflow?.DeskTimeout), ("eventHold", workflow?.EventHold) })
+        {
+            if (value is not null && !RecipeDuration.TryFrom(value, out _))
+            {
+                return Invalid($"workflow.{key}", $"'{value}' is not a duration: a whole number and m, h or d (for example 1m, 4h, 2d)");
+            }
+        }
+
+        return null;
+    }
 
     private static Error Invalid(string keyPath, string problem) =>
         SindriErrors.ProfileInvalid.With($"{keyPath}: {problem}");
