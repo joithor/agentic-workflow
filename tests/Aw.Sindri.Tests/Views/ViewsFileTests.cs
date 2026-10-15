@@ -30,6 +30,22 @@ public sealed class ViewsFileTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task A_views_db_the_projector_created_but_hasnt_migrated_yet_reads_as_empty()
+    {
+        using var views = new SqliteViews(Path.Combine(_home.Path, "home"));
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(views.Path)!);
+        await File.WriteAllBytesAsync(views.Path, [], Token);   // the window between the projector creating the file and its migration committing
+
+        var state = await views.Reader.State(Token);
+        var rows = await views.Reader.List<ServiceRow>(ViewNames.Services, Token);
+        var row = await views.Reader.Get<ServiceRow>(ViewNames.Services, "any", Token);
+
+        Assert.Null(state.Value);
+        Assert.Empty(rows.Value);
+        Assert.Null(row.Value);
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task The_views_migration_creates_the_state_and_one_table_per_view()
     {
         var path = Path.Combine(_home.Path, "steps.db");
