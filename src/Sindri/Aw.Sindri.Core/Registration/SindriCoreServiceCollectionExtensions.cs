@@ -34,12 +34,12 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<ProjectorProgress>()
             .AddSingleton<IProjectorStatus>(static sp => sp.GetRequiredService<ProjectorProgress>())
             .AddSingleton<IProjectorControl>(static sp => sp.GetRequiredService<ProjectorProgress>())
+            .AddSingleton<IProjectorFeed>(static sp => sp.GetRequiredService<ProjectorProgress>())
+            .AddSingleton<IProjection, ServicesProjection>()
+            .AddSingleton<IProjection, ProfileProjection>()
             .AddScoped<RecipeApprovalPlanner>()
             .AddScoped<RecipeRevokePlanner>()
             .AddScoped<RecipeRegistryReader>()
             .AddSingleton<RecipeEvents>()
-            .AddSingleton<IApprovedRecipes, RegistryApprovedRecipes>()
-            .AddSingleton<IProjectorFeed>(static sp => sp.GetRequiredService<ProjectorProgress>())
-            .AddSingleton<IProjection, ServicesProjection>()
-            .AddSingleton<IProjection, ProfileProjection>();
+            .AddSingleton<IApprovedRecipes, RegistryApprovedRecipes>();
 }

@@ -53,7 +53,7 @@ internal sealed partial class EventBridge(
 
     public ServiceName Identity() => ServiceId;
 
-    public async ValueTask<Result<Unit>> Run(ScheduledRun run, CancellationToken cancellationToken)
+    public async ValueTask<Result<ScheduledResult>> Run(ScheduledRun run, CancellationToken cancellationToken)
     {
         var from = await cursor.Read(cancellationToken).ConfigureAwait(false);
         if (from.IsError)
@@ -64,9 +64,15 @@ internal sealed partial class EventBridge(
         for (var at = from.Value; ;)
         {
             var read = await ledger.ReadAfter(at, Batch, cancellationToken).ConfigureAwait(false);
-            if (read.IsError || read.Value.Count == 0)
+            if (read.IsError)
             {
-                return read.IsError ? read.Error : await Redeliver(cancellationToken).ConfigureAwait(false);
+                return read.Error;
+            }
+
+            if (read.Value.Count == 0)
+            {
+                var redelivered = await Redeliver(cancellationToken).ConfigureAwait(false);
+                return redelivered.IsError ? redelivered.Error : ScheduledResult.Worked;
             }
 
             var delivered = await DeliverBatch(read.Value, cancellationToken).ConfigureAwait(false);

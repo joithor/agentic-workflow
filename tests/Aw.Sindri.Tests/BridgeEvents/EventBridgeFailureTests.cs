@@ -107,7 +107,7 @@ public sealed class EventBridgeFailureTests : IDisposable
     /// <summary>A bridge and the lease it runs under.</summary>
     private sealed record Bridge(EventBridge Service, LeaseGrant Grant)
     {
-        public ValueTask<Result<Unit>> Run(CancellationToken ct) => Service.Run(new ScheduledRun(Grant, KnownInstants.Epoch), ct);
+        public ValueTask<Result<ScheduledResult>> Run(CancellationToken ct) => Service.Run(new ScheduledRun(Grant, KnownInstants.Epoch), ct);
     }
 
     private sealed class FakeInstances(params InstanceRow[] rows) : IWorkflowInstances

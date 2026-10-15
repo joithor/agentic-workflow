@@ -426,6 +426,149 @@ Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.Scaffold.get -> string?
 Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.Scaffold.init -> void
 Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse.Normalized.get -> Aw.Sindri.Core.Workflow.Recipes.Recipe?
 Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse.Normalized.init -> void
+Aw.Sindri.Features.CheckProfile.CheckProfileRequest
+Aw.Sindri.Features.CheckProfile.CheckProfileRequest.<Clone>$() -> Aw.Sindri.Features.CheckProfile.CheckProfileRequest!
+Aw.Sindri.Features.CheckProfile.CheckProfileRequest.CheckProfileRequest(Aw.Sindri.Core.Lease.LeaseGrant! Grant) -> void
+Aw.Sindri.Features.CheckProfile.CheckProfileRequest.Deconstruct(out Aw.Sindri.Core.Lease.LeaseGrant! Grant) -> void
+Aw.Sindri.Features.CheckProfile.CheckProfileRequest.Equals(Aw.Sindri.Features.CheckProfile.CheckProfileRequest? other) -> bool
+Aw.Sindri.Features.CheckProfile.CheckProfileRequest.Grant.get -> Aw.Sindri.Core.Lease.LeaseGrant!
+Aw.Sindri.Features.CheckProfile.CheckProfileRequest.Grant.init -> void
+Aw.Sindri.Features.CheckProfile.CheckProfileResponse
+Aw.Sindri.Features.CheckProfile.CheckProfileResponse.<Clone>$() -> Aw.Sindri.Features.CheckProfile.CheckProfileResponse!
+Aw.Sindri.Features.CheckProfile.CheckProfileResponse.CheckProfileResponse(long? Sequence) -> void
+Aw.Sindri.Features.CheckProfile.CheckProfileResponse.Deconstruct(out long? Sequence) -> void
+Aw.Sindri.Features.CheckProfile.CheckProfileResponse.Equals(Aw.Sindri.Features.CheckProfile.CheckProfileResponse? other) -> bool
+Aw.Sindri.Features.CheckProfile.CheckProfileResponse.Sequence.get -> long?
+Aw.Sindri.Features.CheckProfile.CheckProfileResponse.Sequence.init -> void
+Aw.Sindri.Features.GetProfile.GetProfileRequest
+Aw.Sindri.Features.GetProfile.GetProfileRequest.<Clone>$() -> Aw.Sindri.Features.GetProfile.GetProfileRequest!
+Aw.Sindri.Features.GetProfile.GetProfileRequest.Equals(Aw.Sindri.Features.GetProfile.GetProfileRequest? other) -> bool
+Aw.Sindri.Features.GetProfile.GetProfileRequest.GetProfileRequest() -> void
+Aw.Sindri.Features.GetProfile.GetProfileResponse
+Aw.Sindri.Features.GetProfile.GetProfileResponse.<Clone>$() -> Aw.Sindri.Features.GetProfile.GetProfileResponse!
+Aw.Sindri.Features.GetProfile.GetProfileResponse.Approved.get -> Aw.Sindri.Core.Ids.ProfileHash?
+Aw.Sindri.Features.GetProfile.GetProfileResponse.Approved.init -> void
+Aw.Sindri.Features.GetProfile.GetProfileResponse.ApprovedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Features.GetProfile.GetProfileResponse.ApprovedAt.init -> void
+Aw.Sindri.Features.GetProfile.GetProfileResponse.AsOf.get -> Aw.Sindri.Core.Views.AsOf!
+Aw.Sindri.Features.GetProfile.GetProfileResponse.AsOf.init -> void
+Aw.Sindri.Features.GetProfile.GetProfileResponse.Changed.get -> bool
+Aw.Sindri.Features.GetProfile.GetProfileResponse.Changed.init -> void
+Aw.Sindri.Features.GetProfile.GetProfileResponse.ChangedPaths.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.GetProfile.GetProfileResponse.ChangedPaths.init -> void
+Aw.Sindri.Features.GetProfile.GetProfileResponse.CheckedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Features.GetProfile.GetProfileResponse.CheckedAt.init -> void
+Aw.Sindri.Features.GetProfile.GetProfileResponse.Deconstruct(out Aw.Sindri.Core.Ids.ProfileHash? Approved, out System.DateTimeOffset? ApprovedAt, out Aw.Sindri.Core.Ids.ProfileHash? Live, out System.DateTimeOffset? CheckedAt, out bool Changed, out System.Collections.Generic.IReadOnlyList<string!>! ChangedPaths, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.GetProfile.GetProfileResponse.Equals(Aw.Sindri.Features.GetProfile.GetProfileResponse? other) -> bool
+Aw.Sindri.Features.GetProfile.GetProfileResponse.GetProfileResponse(Aw.Sindri.Core.Ids.ProfileHash? Approved, System.DateTimeOffset? ApprovedAt, Aw.Sindri.Core.Ids.ProfileHash? Live, System.DateTimeOffset? CheckedAt, bool Changed, System.Collections.Generic.IReadOnlyList<string!>! ChangedPaths, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.GetProfile.GetProfileResponse.Live.get -> Aw.Sindri.Core.Ids.ProfileHash?
+Aw.Sindri.Features.GetProfile.GetProfileResponse.Live.init -> void
+Aw.Sindri.Features.GetStatus.GetStatusResponse.Health.get -> Aw.Sindri.Core.Health.HealthReport?
+Aw.Sindri.Features.GetStatus.GetStatusResponse.Health.init -> void
+Aw.Sindri.Features.GetStatus.GetStatusResponse.Views.get -> Aw.Sindri.Core.Views.ViewsStatus?
+Aw.Sindri.Features.GetStatus.GetStatusResponse.Views.init -> void
+Aw.Sindri.Features.ListServices.ListServicesRequest
+Aw.Sindri.Features.ListServices.ListServicesRequest.<Clone>$() -> Aw.Sindri.Features.ListServices.ListServicesRequest!
+Aw.Sindri.Features.ListServices.ListServicesRequest.Equals(Aw.Sindri.Features.ListServices.ListServicesRequest? other) -> bool
+Aw.Sindri.Features.ListServices.ListServicesRequest.ListServicesRequest() -> void
+Aw.Sindri.Features.ListServices.ListServicesResponse
+Aw.Sindri.Features.ListServices.ListServicesResponse.<Clone>$() -> Aw.Sindri.Features.ListServices.ListServicesResponse!
+Aw.Sindri.Features.ListServices.ListServicesResponse.AsOf.get -> Aw.Sindri.Core.Views.AsOf!
+Aw.Sindri.Features.ListServices.ListServicesResponse.AsOf.init -> void
+Aw.Sindri.Features.ListServices.ListServicesResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ListServices.ServiceView!>! Services, out string? Empty, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.ListServices.ListServicesResponse.Empty.get -> string?
+Aw.Sindri.Features.ListServices.ListServicesResponse.Empty.init -> void
+Aw.Sindri.Features.ListServices.ListServicesResponse.Equals(Aw.Sindri.Features.ListServices.ListServicesResponse? other) -> bool
+Aw.Sindri.Features.ListServices.ListServicesResponse.ListServicesResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ListServices.ServiceView!>! Services, string? Empty, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.ListServices.ListServicesResponse.Services.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ListServices.ServiceView!>!
+Aw.Sindri.Features.ListServices.ListServicesResponse.Services.init -> void
+Aw.Sindri.Features.ListServices.ServiceView
+Aw.Sindri.Features.ListServices.ServiceView.<Clone>$() -> Aw.Sindri.Features.ListServices.ServiceView!
+Aw.Sindri.Features.ListServices.ServiceView.Deconstruct(out Aw.Sindri.Core.Ids.ServiceName Name, out string! Every, out bool Paused, out Aw.Sindri.Core.Views.LastRun? LastRun, out System.DateTimeOffset? NextSlot) -> void
+Aw.Sindri.Features.ListServices.ServiceView.Equals(Aw.Sindri.Features.ListServices.ServiceView? other) -> bool
+Aw.Sindri.Features.ListServices.ServiceView.Every.get -> string!
+Aw.Sindri.Features.ListServices.ServiceView.Every.init -> void
+Aw.Sindri.Features.ListServices.ServiceView.LastRun.get -> Aw.Sindri.Core.Views.LastRun?
+Aw.Sindri.Features.ListServices.ServiceView.LastRun.init -> void
+Aw.Sindri.Features.ListServices.ServiceView.Name.get -> Aw.Sindri.Core.Ids.ServiceName
+Aw.Sindri.Features.ListServices.ServiceView.Name.init -> void
+Aw.Sindri.Features.ListServices.ServiceView.NextSlot.get -> System.DateTimeOffset?
+Aw.Sindri.Features.ListServices.ServiceView.NextSlot.init -> void
+Aw.Sindri.Features.ListServices.ServiceView.Paused.get -> bool
+Aw.Sindri.Features.ListServices.ServiceView.Paused.init -> void
+Aw.Sindri.Features.ListServices.ServiceView.ServiceView(Aw.Sindri.Core.Ids.ServiceName Name, string! Every, bool Paused, Aw.Sindri.Core.Views.LastRun? LastRun, System.DateTimeOffset? NextSlot) -> void
+Aw.Sindri.Features.RebuildViews.RebuildViewsRequest
+Aw.Sindri.Features.RebuildViews.RebuildViewsRequest.<Clone>$() -> Aw.Sindri.Features.RebuildViews.RebuildViewsRequest!
+Aw.Sindri.Features.RebuildViews.RebuildViewsRequest.Equals(Aw.Sindri.Features.RebuildViews.RebuildViewsRequest? other) -> bool
+Aw.Sindri.Features.RebuildViews.RebuildViewsRequest.RebuildViewsRequest() -> void
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.<Clone>$() -> Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest!
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Deconstruct(out Aw.Sindri.Core.Ids.ServiceName Service, out Aw.Sindri.Core.Scheduling.ScheduledRun! Run, out Aw.Kernel.Result<Aw.Kernel.Unit>! Outcome) -> void
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Equals(Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest? other) -> bool
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Outcome.get -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Outcome.init -> void
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.RecordServiceRunRequest(Aw.Sindri.Core.Ids.ServiceName Service, Aw.Sindri.Core.Scheduling.ScheduledRun! Run, Aw.Kernel.Result<Aw.Kernel.Unit>! Outcome) -> void
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Run.get -> Aw.Sindri.Core.Scheduling.ScheduledRun!
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Run.init -> void
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Service.get -> Aw.Sindri.Core.Ids.ServiceName
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Service.init -> void
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.<Clone>$() -> Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse!
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.Deconstruct(out long Sequence) -> void
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.Equals(Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse? other) -> bool
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.RecordServiceRunResponse(long Sequence) -> void
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.Sequence.get -> long
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.Sequence.init -> void
+override Aw.Sindri.Features.CheckProfile.CheckProfileRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.CheckProfile.CheckProfileRequest.GetHashCode() -> int
+override Aw.Sindri.Features.CheckProfile.CheckProfileRequest.ToString() -> string!
+override Aw.Sindri.Features.CheckProfile.CheckProfileResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.CheckProfile.CheckProfileResponse.GetHashCode() -> int
+override Aw.Sindri.Features.CheckProfile.CheckProfileResponse.ToString() -> string!
+override Aw.Sindri.Features.GetProfile.GetProfileRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetProfile.GetProfileRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetProfile.GetProfileRequest.ToString() -> string!
+override Aw.Sindri.Features.GetProfile.GetProfileResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetProfile.GetProfileResponse.GetHashCode() -> int
+override Aw.Sindri.Features.GetProfile.GetProfileResponse.ToString() -> string!
+override Aw.Sindri.Features.ListServices.ListServicesRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ListServices.ListServicesRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ListServices.ListServicesRequest.ToString() -> string!
+override Aw.Sindri.Features.ListServices.ListServicesResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ListServices.ListServicesResponse.GetHashCode() -> int
+override Aw.Sindri.Features.ListServices.ListServicesResponse.ToString() -> string!
+override Aw.Sindri.Features.ListServices.ServiceView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ListServices.ServiceView.GetHashCode() -> int
+override Aw.Sindri.Features.ListServices.ServiceView.ToString() -> string!
+override Aw.Sindri.Features.RebuildViews.RebuildViewsRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.RebuildViews.RebuildViewsRequest.GetHashCode() -> int
+override Aw.Sindri.Features.RebuildViews.RebuildViewsRequest.ToString() -> string!
+override Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.GetHashCode() -> int
+override Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.ToString() -> string!
+override Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.GetHashCode() -> int
+override Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.ToString() -> string!
+static Aw.Sindri.Features.CheckProfile.CheckProfileRequest.operator !=(Aw.Sindri.Features.CheckProfile.CheckProfileRequest? left, Aw.Sindri.Features.CheckProfile.CheckProfileRequest? right) -> bool
+static Aw.Sindri.Features.CheckProfile.CheckProfileRequest.operator ==(Aw.Sindri.Features.CheckProfile.CheckProfileRequest? left, Aw.Sindri.Features.CheckProfile.CheckProfileRequest? right) -> bool
+static Aw.Sindri.Features.CheckProfile.CheckProfileResponse.operator !=(Aw.Sindri.Features.CheckProfile.CheckProfileResponse? left, Aw.Sindri.Features.CheckProfile.CheckProfileResponse? right) -> bool
+static Aw.Sindri.Features.CheckProfile.CheckProfileResponse.operator ==(Aw.Sindri.Features.CheckProfile.CheckProfileResponse? left, Aw.Sindri.Features.CheckProfile.CheckProfileResponse? right) -> bool
+static Aw.Sindri.Features.GetProfile.GetProfileRequest.operator !=(Aw.Sindri.Features.GetProfile.GetProfileRequest? left, Aw.Sindri.Features.GetProfile.GetProfileRequest? right) -> bool
+static Aw.Sindri.Features.GetProfile.GetProfileRequest.operator ==(Aw.Sindri.Features.GetProfile.GetProfileRequest? left, Aw.Sindri.Features.GetProfile.GetProfileRequest? right) -> bool
+static Aw.Sindri.Features.GetProfile.GetProfileResponse.operator !=(Aw.Sindri.Features.GetProfile.GetProfileResponse? left, Aw.Sindri.Features.GetProfile.GetProfileResponse? right) -> bool
+static Aw.Sindri.Features.GetProfile.GetProfileResponse.operator ==(Aw.Sindri.Features.GetProfile.GetProfileResponse? left, Aw.Sindri.Features.GetProfile.GetProfileResponse? right) -> bool
+static Aw.Sindri.Features.ListServices.ListServicesRequest.operator !=(Aw.Sindri.Features.ListServices.ListServicesRequest? left, Aw.Sindri.Features.ListServices.ListServicesRequest? right) -> bool
+static Aw.Sindri.Features.ListServices.ListServicesRequest.operator ==(Aw.Sindri.Features.ListServices.ListServicesRequest? left, Aw.Sindri.Features.ListServices.ListServicesRequest? right) -> bool
+static Aw.Sindri.Features.ListServices.ListServicesResponse.operator !=(Aw.Sindri.Features.ListServices.ListServicesResponse? left, Aw.Sindri.Features.ListServices.ListServicesResponse? right) -> bool
+static Aw.Sindri.Features.ListServices.ListServicesResponse.operator ==(Aw.Sindri.Features.ListServices.ListServicesResponse? left, Aw.Sindri.Features.ListServices.ListServicesResponse? right) -> bool
+static Aw.Sindri.Features.ListServices.ServiceView.operator !=(Aw.Sindri.Features.ListServices.ServiceView? left, Aw.Sindri.Features.ListServices.ServiceView? right) -> bool
+static Aw.Sindri.Features.ListServices.ServiceView.operator ==(Aw.Sindri.Features.ListServices.ServiceView? left, Aw.Sindri.Features.ListServices.ServiceView? right) -> bool
+static Aw.Sindri.Features.RebuildViews.RebuildViewsRequest.operator !=(Aw.Sindri.Features.RebuildViews.RebuildViewsRequest? left, Aw.Sindri.Features.RebuildViews.RebuildViewsRequest? right) -> bool
+static Aw.Sindri.Features.RebuildViews.RebuildViewsRequest.operator ==(Aw.Sindri.Features.RebuildViews.RebuildViewsRequest? left, Aw.Sindri.Features.RebuildViews.RebuildViewsRequest? right) -> bool
+static Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.operator !=(Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest? left, Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest? right) -> bool
+static Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.operator ==(Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest? left, Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest? right) -> bool
+static Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.operator !=(Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse? left, Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse? right) -> bool
+static Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.operator ==(Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse? left, Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse? right) -> bool
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.<Clone>$() -> Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest!
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.Answer.get -> Aw.Sindri.Core.Challenges.ChallengeAnswer!
@@ -687,149 +830,6 @@ Aw.Sindri.Features.CompleteStep.CompleteStepResponse.Deconstruct(out Aw.Sindri.C
 Aw.Sindri.Features.CompleteStep.CompleteStepResponse.Result.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.CommandResult!
 Aw.Sindri.Features.CompleteStep.CompleteStepResponse.Result.init -> void
 Aw.Sindri.Features.CompleteStep.CompleteStepResponse.CompleteStepResponse(Aw.Sindri.Core.Workflow.Engine.Runtime.CommandResult! Result, Aw.Sindri.Core.Workflow.Engine.CommandNonce Nonce, bool AlreadyApplied) -> void
-Aw.Sindri.Features.CheckProfile.CheckProfileRequest
-Aw.Sindri.Features.CheckProfile.CheckProfileRequest.<Clone>$() -> Aw.Sindri.Features.CheckProfile.CheckProfileRequest!
-Aw.Sindri.Features.CheckProfile.CheckProfileRequest.CheckProfileRequest(Aw.Sindri.Core.Lease.LeaseGrant! Grant) -> void
-Aw.Sindri.Features.CheckProfile.CheckProfileRequest.Deconstruct(out Aw.Sindri.Core.Lease.LeaseGrant! Grant) -> void
-Aw.Sindri.Features.CheckProfile.CheckProfileRequest.Equals(Aw.Sindri.Features.CheckProfile.CheckProfileRequest? other) -> bool
-Aw.Sindri.Features.CheckProfile.CheckProfileRequest.Grant.get -> Aw.Sindri.Core.Lease.LeaseGrant!
-Aw.Sindri.Features.CheckProfile.CheckProfileRequest.Grant.init -> void
-Aw.Sindri.Features.CheckProfile.CheckProfileResponse
-Aw.Sindri.Features.CheckProfile.CheckProfileResponse.<Clone>$() -> Aw.Sindri.Features.CheckProfile.CheckProfileResponse!
-Aw.Sindri.Features.CheckProfile.CheckProfileResponse.CheckProfileResponse(long? Sequence) -> void
-Aw.Sindri.Features.CheckProfile.CheckProfileResponse.Deconstruct(out long? Sequence) -> void
-Aw.Sindri.Features.CheckProfile.CheckProfileResponse.Equals(Aw.Sindri.Features.CheckProfile.CheckProfileResponse? other) -> bool
-Aw.Sindri.Features.CheckProfile.CheckProfileResponse.Sequence.get -> long?
-Aw.Sindri.Features.CheckProfile.CheckProfileResponse.Sequence.init -> void
-Aw.Sindri.Features.GetProfile.GetProfileRequest
-Aw.Sindri.Features.GetProfile.GetProfileRequest.<Clone>$() -> Aw.Sindri.Features.GetProfile.GetProfileRequest!
-Aw.Sindri.Features.GetProfile.GetProfileRequest.Equals(Aw.Sindri.Features.GetProfile.GetProfileRequest? other) -> bool
-Aw.Sindri.Features.GetProfile.GetProfileRequest.GetProfileRequest() -> void
-Aw.Sindri.Features.GetProfile.GetProfileResponse
-Aw.Sindri.Features.GetProfile.GetProfileResponse.<Clone>$() -> Aw.Sindri.Features.GetProfile.GetProfileResponse!
-Aw.Sindri.Features.GetProfile.GetProfileResponse.Approved.get -> Aw.Sindri.Core.Ids.ProfileHash?
-Aw.Sindri.Features.GetProfile.GetProfileResponse.Approved.init -> void
-Aw.Sindri.Features.GetProfile.GetProfileResponse.ApprovedAt.get -> System.DateTimeOffset?
-Aw.Sindri.Features.GetProfile.GetProfileResponse.ApprovedAt.init -> void
-Aw.Sindri.Features.GetProfile.GetProfileResponse.AsOf.get -> Aw.Sindri.Core.Views.AsOf!
-Aw.Sindri.Features.GetProfile.GetProfileResponse.AsOf.init -> void
-Aw.Sindri.Features.GetProfile.GetProfileResponse.Changed.get -> bool
-Aw.Sindri.Features.GetProfile.GetProfileResponse.Changed.init -> void
-Aw.Sindri.Features.GetProfile.GetProfileResponse.ChangedPaths.get -> System.Collections.Generic.IReadOnlyList<string!>!
-Aw.Sindri.Features.GetProfile.GetProfileResponse.ChangedPaths.init -> void
-Aw.Sindri.Features.GetProfile.GetProfileResponse.CheckedAt.get -> System.DateTimeOffset?
-Aw.Sindri.Features.GetProfile.GetProfileResponse.CheckedAt.init -> void
-Aw.Sindri.Features.GetProfile.GetProfileResponse.Deconstruct(out Aw.Sindri.Core.Ids.ProfileHash? Approved, out System.DateTimeOffset? ApprovedAt, out Aw.Sindri.Core.Ids.ProfileHash? Live, out System.DateTimeOffset? CheckedAt, out bool Changed, out System.Collections.Generic.IReadOnlyList<string!>! ChangedPaths, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
-Aw.Sindri.Features.GetProfile.GetProfileResponse.Equals(Aw.Sindri.Features.GetProfile.GetProfileResponse? other) -> bool
-Aw.Sindri.Features.GetProfile.GetProfileResponse.GetProfileResponse(Aw.Sindri.Core.Ids.ProfileHash? Approved, System.DateTimeOffset? ApprovedAt, Aw.Sindri.Core.Ids.ProfileHash? Live, System.DateTimeOffset? CheckedAt, bool Changed, System.Collections.Generic.IReadOnlyList<string!>! ChangedPaths, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
-Aw.Sindri.Features.GetProfile.GetProfileResponse.Live.get -> Aw.Sindri.Core.Ids.ProfileHash?
-Aw.Sindri.Features.GetProfile.GetProfileResponse.Live.init -> void
-Aw.Sindri.Features.GetStatus.GetStatusResponse.Health.get -> Aw.Sindri.Core.Health.HealthReport?
-Aw.Sindri.Features.GetStatus.GetStatusResponse.Health.init -> void
-Aw.Sindri.Features.GetStatus.GetStatusResponse.Views.get -> Aw.Sindri.Core.Views.ViewsStatus?
-Aw.Sindri.Features.GetStatus.GetStatusResponse.Views.init -> void
-Aw.Sindri.Features.ListServices.ListServicesRequest
-Aw.Sindri.Features.ListServices.ListServicesRequest.<Clone>$() -> Aw.Sindri.Features.ListServices.ListServicesRequest!
-Aw.Sindri.Features.ListServices.ListServicesRequest.Equals(Aw.Sindri.Features.ListServices.ListServicesRequest? other) -> bool
-Aw.Sindri.Features.ListServices.ListServicesRequest.ListServicesRequest() -> void
-Aw.Sindri.Features.ListServices.ListServicesResponse
-Aw.Sindri.Features.ListServices.ListServicesResponse.<Clone>$() -> Aw.Sindri.Features.ListServices.ListServicesResponse!
-Aw.Sindri.Features.ListServices.ListServicesResponse.AsOf.get -> Aw.Sindri.Core.Views.AsOf!
-Aw.Sindri.Features.ListServices.ListServicesResponse.AsOf.init -> void
-Aw.Sindri.Features.ListServices.ListServicesResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ListServices.ServiceView!>! Services, out string? Empty, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
-Aw.Sindri.Features.ListServices.ListServicesResponse.Empty.get -> string?
-Aw.Sindri.Features.ListServices.ListServicesResponse.Empty.init -> void
-Aw.Sindri.Features.ListServices.ListServicesResponse.Equals(Aw.Sindri.Features.ListServices.ListServicesResponse? other) -> bool
-Aw.Sindri.Features.ListServices.ListServicesResponse.ListServicesResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ListServices.ServiceView!>! Services, string? Empty, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
-Aw.Sindri.Features.ListServices.ListServicesResponse.Services.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ListServices.ServiceView!>!
-Aw.Sindri.Features.ListServices.ListServicesResponse.Services.init -> void
-Aw.Sindri.Features.ListServices.ServiceView
-Aw.Sindri.Features.ListServices.ServiceView.<Clone>$() -> Aw.Sindri.Features.ListServices.ServiceView!
-Aw.Sindri.Features.ListServices.ServiceView.Deconstruct(out Aw.Sindri.Core.Ids.ServiceName Name, out string! Every, out bool Paused, out Aw.Sindri.Core.Views.LastRun? LastRun, out System.DateTimeOffset? NextSlot) -> void
-Aw.Sindri.Features.ListServices.ServiceView.Equals(Aw.Sindri.Features.ListServices.ServiceView? other) -> bool
-Aw.Sindri.Features.ListServices.ServiceView.Every.get -> string!
-Aw.Sindri.Features.ListServices.ServiceView.Every.init -> void
-Aw.Sindri.Features.ListServices.ServiceView.LastRun.get -> Aw.Sindri.Core.Views.LastRun?
-Aw.Sindri.Features.ListServices.ServiceView.LastRun.init -> void
-Aw.Sindri.Features.ListServices.ServiceView.Name.get -> Aw.Sindri.Core.Ids.ServiceName
-Aw.Sindri.Features.ListServices.ServiceView.Name.init -> void
-Aw.Sindri.Features.ListServices.ServiceView.NextSlot.get -> System.DateTimeOffset?
-Aw.Sindri.Features.ListServices.ServiceView.NextSlot.init -> void
-Aw.Sindri.Features.ListServices.ServiceView.Paused.get -> bool
-Aw.Sindri.Features.ListServices.ServiceView.Paused.init -> void
-Aw.Sindri.Features.ListServices.ServiceView.ServiceView(Aw.Sindri.Core.Ids.ServiceName Name, string! Every, bool Paused, Aw.Sindri.Core.Views.LastRun? LastRun, System.DateTimeOffset? NextSlot) -> void
-Aw.Sindri.Features.RebuildViews.RebuildViewsRequest
-Aw.Sindri.Features.RebuildViews.RebuildViewsRequest.<Clone>$() -> Aw.Sindri.Features.RebuildViews.RebuildViewsRequest!
-Aw.Sindri.Features.RebuildViews.RebuildViewsRequest.Equals(Aw.Sindri.Features.RebuildViews.RebuildViewsRequest? other) -> bool
-Aw.Sindri.Features.RebuildViews.RebuildViewsRequest.RebuildViewsRequest() -> void
-Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest
-Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.<Clone>$() -> Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest!
-Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Deconstruct(out Aw.Sindri.Core.Ids.ServiceName Service, out Aw.Sindri.Core.Scheduling.ScheduledRun! Run, out Aw.Kernel.Result<Aw.Kernel.Unit>! Outcome) -> void
-Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Equals(Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest? other) -> bool
-Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Outcome.get -> Aw.Kernel.Result<Aw.Kernel.Unit>!
-Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Outcome.init -> void
-Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.RecordServiceRunRequest(Aw.Sindri.Core.Ids.ServiceName Service, Aw.Sindri.Core.Scheduling.ScheduledRun! Run, Aw.Kernel.Result<Aw.Kernel.Unit>! Outcome) -> void
-Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Run.get -> Aw.Sindri.Core.Scheduling.ScheduledRun!
-Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Run.init -> void
-Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Service.get -> Aw.Sindri.Core.Ids.ServiceName
-Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Service.init -> void
-Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse
-Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.<Clone>$() -> Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse!
-Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.Deconstruct(out long Sequence) -> void
-Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.Equals(Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse? other) -> bool
-Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.RecordServiceRunResponse(long Sequence) -> void
-Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.Sequence.get -> long
-Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.Sequence.init -> void
-override Aw.Sindri.Features.CheckProfile.CheckProfileRequest.Equals(object? obj) -> bool
-override Aw.Sindri.Features.CheckProfile.CheckProfileRequest.GetHashCode() -> int
-override Aw.Sindri.Features.CheckProfile.CheckProfileRequest.ToString() -> string!
-override Aw.Sindri.Features.CheckProfile.CheckProfileResponse.Equals(object? obj) -> bool
-override Aw.Sindri.Features.CheckProfile.CheckProfileResponse.GetHashCode() -> int
-override Aw.Sindri.Features.CheckProfile.CheckProfileResponse.ToString() -> string!
-override Aw.Sindri.Features.GetProfile.GetProfileRequest.Equals(object? obj) -> bool
-override Aw.Sindri.Features.GetProfile.GetProfileRequest.GetHashCode() -> int
-override Aw.Sindri.Features.GetProfile.GetProfileRequest.ToString() -> string!
-override Aw.Sindri.Features.GetProfile.GetProfileResponse.Equals(object? obj) -> bool
-override Aw.Sindri.Features.GetProfile.GetProfileResponse.GetHashCode() -> int
-override Aw.Sindri.Features.GetProfile.GetProfileResponse.ToString() -> string!
-override Aw.Sindri.Features.ListServices.ListServicesRequest.Equals(object? obj) -> bool
-override Aw.Sindri.Features.ListServices.ListServicesRequest.GetHashCode() -> int
-override Aw.Sindri.Features.ListServices.ListServicesRequest.ToString() -> string!
-override Aw.Sindri.Features.ListServices.ListServicesResponse.Equals(object? obj) -> bool
-override Aw.Sindri.Features.ListServices.ListServicesResponse.GetHashCode() -> int
-override Aw.Sindri.Features.ListServices.ListServicesResponse.ToString() -> string!
-override Aw.Sindri.Features.ListServices.ServiceView.Equals(object? obj) -> bool
-override Aw.Sindri.Features.ListServices.ServiceView.GetHashCode() -> int
-override Aw.Sindri.Features.ListServices.ServiceView.ToString() -> string!
-override Aw.Sindri.Features.RebuildViews.RebuildViewsRequest.Equals(object? obj) -> bool
-override Aw.Sindri.Features.RebuildViews.RebuildViewsRequest.GetHashCode() -> int
-override Aw.Sindri.Features.RebuildViews.RebuildViewsRequest.ToString() -> string!
-override Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Equals(object? obj) -> bool
-override Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.GetHashCode() -> int
-override Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.ToString() -> string!
-override Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.Equals(object? obj) -> bool
-override Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.GetHashCode() -> int
-override Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.ToString() -> string!
-static Aw.Sindri.Features.CheckProfile.CheckProfileRequest.operator !=(Aw.Sindri.Features.CheckProfile.CheckProfileRequest? left, Aw.Sindri.Features.CheckProfile.CheckProfileRequest? right) -> bool
-static Aw.Sindri.Features.CheckProfile.CheckProfileRequest.operator ==(Aw.Sindri.Features.CheckProfile.CheckProfileRequest? left, Aw.Sindri.Features.CheckProfile.CheckProfileRequest? right) -> bool
-static Aw.Sindri.Features.CheckProfile.CheckProfileResponse.operator !=(Aw.Sindri.Features.CheckProfile.CheckProfileResponse? left, Aw.Sindri.Features.CheckProfile.CheckProfileResponse? right) -> bool
-static Aw.Sindri.Features.CheckProfile.CheckProfileResponse.operator ==(Aw.Sindri.Features.CheckProfile.CheckProfileResponse? left, Aw.Sindri.Features.CheckProfile.CheckProfileResponse? right) -> bool
-static Aw.Sindri.Features.GetProfile.GetProfileRequest.operator !=(Aw.Sindri.Features.GetProfile.GetProfileRequest? left, Aw.Sindri.Features.GetProfile.GetProfileRequest? right) -> bool
-static Aw.Sindri.Features.GetProfile.GetProfileRequest.operator ==(Aw.Sindri.Features.GetProfile.GetProfileRequest? left, Aw.Sindri.Features.GetProfile.GetProfileRequest? right) -> bool
-static Aw.Sindri.Features.GetProfile.GetProfileResponse.operator !=(Aw.Sindri.Features.GetProfile.GetProfileResponse? left, Aw.Sindri.Features.GetProfile.GetProfileResponse? right) -> bool
-static Aw.Sindri.Features.GetProfile.GetProfileResponse.operator ==(Aw.Sindri.Features.GetProfile.GetProfileResponse? left, Aw.Sindri.Features.GetProfile.GetProfileResponse? right) -> bool
-static Aw.Sindri.Features.ListServices.ListServicesRequest.operator !=(Aw.Sindri.Features.ListServices.ListServicesRequest? left, Aw.Sindri.Features.ListServices.ListServicesRequest? right) -> bool
-static Aw.Sindri.Features.ListServices.ListServicesRequest.operator ==(Aw.Sindri.Features.ListServices.ListServicesRequest? left, Aw.Sindri.Features.ListServices.ListServicesRequest? right) -> bool
-static Aw.Sindri.Features.ListServices.ListServicesResponse.operator !=(Aw.Sindri.Features.ListServices.ListServicesResponse? left, Aw.Sindri.Features.ListServices.ListServicesResponse? right) -> bool
-static Aw.Sindri.Features.ListServices.ListServicesResponse.operator ==(Aw.Sindri.Features.ListServices.ListServicesResponse? left, Aw.Sindri.Features.ListServices.ListServicesResponse? right) -> bool
-static Aw.Sindri.Features.ListServices.ServiceView.operator !=(Aw.Sindri.Features.ListServices.ServiceView? left, Aw.Sindri.Features.ListServices.ServiceView? right) -> bool
-static Aw.Sindri.Features.ListServices.ServiceView.operator ==(Aw.Sindri.Features.ListServices.ServiceView? left, Aw.Sindri.Features.ListServices.ServiceView? right) -> bool
-static Aw.Sindri.Features.RebuildViews.RebuildViewsRequest.operator !=(Aw.Sindri.Features.RebuildViews.RebuildViewsRequest? left, Aw.Sindri.Features.RebuildViews.RebuildViewsRequest? right) -> bool
-static Aw.Sindri.Features.RebuildViews.RebuildViewsRequest.operator ==(Aw.Sindri.Features.RebuildViews.RebuildViewsRequest? left, Aw.Sindri.Features.RebuildViews.RebuildViewsRequest? right) -> bool
-static Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.operator !=(Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest? left, Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest? right) -> bool
-static Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.operator ==(Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest? left, Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest? right) -> bool
-static Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.operator !=(Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse? left, Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse? right) -> bool
-static Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.operator ==(Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse? left, Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse? right) -> bool
 Aw.Sindri.Features.GetInstance.GetInstanceRequest
 Aw.Sindri.Features.GetInstance.GetInstanceRequest.<Clone>$() -> Aw.Sindri.Features.GetInstance.GetInstanceRequest!
 Aw.Sindri.Features.GetInstance.GetInstanceRequest.Instance.get -> string!
