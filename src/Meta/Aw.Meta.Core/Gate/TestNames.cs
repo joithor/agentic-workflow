@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace Aw.Meta.Core.Gate;
 
-/// <summary>Reads the failing tests out of a Microsoft.Testing.Platform log and matches test names against filters.</summary>
+/// <summary>Reads the failing tests out of a Microsoft.Testing.Platform log or the bash test runner's log and matches test names against filters.</summary>
 public static partial class TestNames
 {
     /// <summary>The failing tests a log names: MTP prints "failed &lt;Namespace.Class.Method(args)&gt; (12ms)" for each.</summary>
@@ -103,6 +103,11 @@ public static partial class TestNames
         try
         {
             var match = FailedLine.Match(line);
+            if (!match.Success)
+            {
+                match = BashSuiteLine.Match(line);
+            }
+
             return match.Success ? match.Groups["name"].Value : null;
         }
         catch (RegexMatchTimeoutException)
@@ -113,6 +118,10 @@ public static partial class TestNames
 
     [GeneratedRegex(@"^failed (?<name>\S.*?) \((\d+(\.\d+)?\s?(ms|s|m|h|d)\s?)+\)$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
     private static partial Regex FailedLine { get; }
+
+    // The bash runner (scripts/ci/bash-tests.sh): "FAIL  par  <suite>  0s  exit 1" per suite as it finishes, and "FAIL  par  <suite>  (exit 1, 0s)" in the summary block.
+    [GeneratedRegex(@"^FAIL\s+(par|ser)\s+(?<name>\S+)\s+(\d+s\s+exit \d+|\(exit \d+, \d+s\))$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
+    private static partial Regex BashSuiteLine { get; }
 
     [GeneratedRegex(@"^\s*failed: (?<n>\d{1,9})\s*$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture | RegexOptions.Multiline, matchTimeoutMilliseconds: 100)]
     private static partial Regex FailedCountLine { get; }

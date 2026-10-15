@@ -25,7 +25,7 @@ public static class MergeGate
         [
             new MergeCheck("gate", Ok: true, "gate run " + gate.Run.ToString(CultureInfo.InvariantCulture) + " at " + gate.Head),
             GateResult(gate, facts.FailingTests, facts.FailureCounts),
-            Scopes(gate, facts.PlannedScopes),
+            Scopes(gate, facts.PlannedScopes, facts.ScopeRuns),
             Head(facts),
             new MergeCheck("main", gate.Main == facts.CurrentMain, $"gate ran on main {gate.Main}, main is {facts.CurrentMain}"),
             Order(facts),
@@ -70,9 +70,9 @@ public static class MergeGate
     }
 
     // A gate run with fewer scopes than the diff needs (gate-run <pr> repo on a code change) vouches only for what it ran.
-    private static MergeCheck Scopes(GateRecord gate, IReadOnlyList<string>? planned)
+    private static MergeCheck Scopes(GateRecord gate, IReadOnlyList<string>? planned, IReadOnlyDictionary<string, int>? runs)
     {
-        var ran = string.Join(", ", gate.Scopes);
+        var ran = string.Join(", ", gate.Scopes.Select(scope => runs is not null && runs.TryGetValue(scope, out var run) ? $"{scope} (run {run.ToString(CultureInfo.InvariantCulture)})" : scope));
         if (planned is null)
         {
             return new MergeCheck("scopes", Ok: false, $"could not work out the scopes the diff needs; the gate ran {ran}");
