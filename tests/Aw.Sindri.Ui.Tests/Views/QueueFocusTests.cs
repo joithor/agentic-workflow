@@ -147,7 +147,7 @@ public sealed class QueueFocusTests : IDisposable
         shell.GoTo(PageId.Queue);
         Settle(window);
         Assert.True(Named<Border>(Rows(window)[1], "RowFrame").Focus(NavigationMethod.Tab));
-        var gone = ((ViewModels.Queue.ItemRowViewModel)Focused(window)!.DataContext!).Id;   // the focused row, and focus selected it
+        var gone = ((ItemRowViewModel)Focused(window)!.DataContext!).Id;   // the focused row, and focus selected it
         Assert.Equal(gone, shell.Queue.SelectedId);
         var live = Named<TextBlock>(window, "QueueLive");
         Assert.Equal(Labels.Sindri, live.Text);
@@ -157,7 +157,7 @@ public sealed class QueueFocusTests : IDisposable
         await Until(window, () => shell.Queue.SelectedId == "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a3ff");
 
         Assert.Equal((Labels.Cleared(gone), Avalonia.Automation.AutomationLiveSetting.Polite), (live.Text, Avalonia.Automation.AutomationProperties.GetLiveSetting(live)));
-        await Until(window, () => Focused(window) is Border frame && string.Equals(frame.Name, "RowFrame", StringComparison.Ordinal) && (frame.DataContext as ViewModels.Queue.ItemRowViewModel)?.Id == shell.Queue.SelectedId);
+        await Until(window, () => Focused(window) is Border frame && string.Equals(frame.Name, "RowFrame", StringComparison.Ordinal) && (frame.DataContext as ItemRowViewModel)?.Id == shell.Queue.SelectedId);
     });
 
     // The queue served with one queued item moved to the running group (its row is rebuilt in the other group).
@@ -213,7 +213,7 @@ public sealed class QueueFocusTests : IDisposable
     public Task A_cleared_queued_row_on_home_under_the_running_filter_passes_to_the_next_queued_row() => OnUi(async () =>
     {
         var (window, shell) = await Connected();
-        shell.GoToQueue(ViewModels.Queue.QueueFilter.Running);
+        shell.GoToQueue(QueueFilter.Running);
         shell.GoTo(PageId.Home);
         Settle(window);
         var panel = Named<Control>(window, "QueuedPanel");
@@ -267,7 +267,7 @@ public sealed class QueueFocusTests : IDisposable
     });
 
     private static string? FocusedRowId(Window window) =>
-        Focused(window)?.GetSelfAndVisualAncestors().OfType<Control>().Select(c => c.DataContext).OfType<ViewModels.Queue.ItemRowViewModel>().FirstOrDefault()?.Id;
+        Focused(window)?.GetSelfAndVisualAncestors().OfType<Control>().Select(c => c.DataContext).OfType<ItemRowViewModel>().FirstOrDefault()?.Id;
 
     // L2 (§3.3, §8): J / K move the selection and focus that row's frame; Enter acts on the focused row.
     [Fact]
@@ -343,7 +343,7 @@ public sealed class QueueFocusTests : IDisposable
     });
 
     private static bool OnRowFrame(Window window, string id) =>
-        Focused(window) is Border frame && string.Equals(frame.Name, "RowFrame", StringComparison.Ordinal) && (frame.DataContext as ViewModels.Queue.ItemRowViewModel)?.Id == id;
+        Focused(window) is Border frame && string.Equals(frame.Name, "RowFrame", StringComparison.Ordinal) && (frame.DataContext as ItemRowViewModel)?.Id == id;
 
     // L5 (§11.2): the sheet that covers the page takes focus (its title); Esc gives it back to the row that opened it, by id.
     [Fact]

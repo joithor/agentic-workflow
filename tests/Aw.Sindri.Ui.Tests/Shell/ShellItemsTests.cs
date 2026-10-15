@@ -1,6 +1,7 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.Tests.Queue;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Queue;
 using Aw.Sindri.Ui.ViewModels.Shell;
@@ -221,7 +222,7 @@ public sealed class ShellItemsTests
         var selected = shell.Queue.SelectedId!;
         shell.GoTo(PageId.Decisions);
 
-        _server.QueueView = Tests.Queue.QueueKeysTests.Regrouped("extra-p11-running", selected, "waitingOnYou");
+        _server.QueueView = QueueKeysTests.Regrouped("extra-p11-running", selected, "waitingOnYou");
         _server.Push(A.Event(59, "item.updated"));
 
         await Until(() => shell.Queue.Groups.Single(g => g.Group == "waitingOnYou").Rows.Any(r => r.Id == selected));
