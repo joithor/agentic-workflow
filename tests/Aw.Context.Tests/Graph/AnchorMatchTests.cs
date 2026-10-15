@@ -51,6 +51,21 @@ public sealed class AnchorMatchTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_key_longer_than_a_problem_string_stays_in_the_detail_but_not_in_the_typed_lists()
+    {
+        var longKey = "feature:" + new string('x', 250);
+        var graph = new GraphBuilder().Node("feature:a", "Same pane").Node(longKey, "same pane").Build();
+
+        var ambiguous = AnchorMatch.Resolve(graph, "Same pane");
+        var unknown = AnchorMatch.Resolve(graph, "pane thing");
+
+        Assert.Equal(["feature:a"], Members(ambiguous.Error, "candidates"));
+        Assert.Contains(longKey, ambiguous.Error.Message, StringComparison.Ordinal);
+        Assert.Equal(["feature:a"], Members(unknown.Error, "suggestedAnchors"));
+        Assert.Contains(longKey, unknown.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void SND_CONTEXT_037_candidates_stop_at_a_hundred_keys_while_the_detail_lists_all()
     {
         var builder = new GraphBuilder();
