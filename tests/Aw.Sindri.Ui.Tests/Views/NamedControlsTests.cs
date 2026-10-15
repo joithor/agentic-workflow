@@ -69,7 +69,8 @@ public sealed class NamedControlsTests
         var flyoutless = await HeadlessUnitTestSession.GetOrStartForAssembly(typeof(NamedControlsTests).Assembly)
             .Dispatch(() => _all.SelectMany(v =>
             {
-                var window = new Avalonia.Controls.Window { Content = Construct(v) };
+                var control = Construct(v);
+                var window = control as Avalonia.Controls.Window ?? new Avalonia.Controls.Window { Content = control };
                 window.Show();
                 var found = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(window).OfType<ProtectedActionButton>()
                     .Where(b => !b.HasPopover).Select(_ => v).ToList();
