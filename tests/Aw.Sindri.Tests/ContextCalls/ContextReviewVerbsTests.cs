@@ -205,4 +205,27 @@ public sealed class ContextReviewVerbsTests : IDisposable
         Assert.Equal("/sindri/context/map/review?limit=5", queue.Calls[0].Route);
         Assert.Equal("/sindri/context/map/review/history?limit=7", history.Calls[0].Route);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Propose_reads_a_camelCase_file_sends_it_and_prints_each_surfaces_standing()
+    {
+        var file = Path.Combine(Path.GetTempPath(), $"aw-propose-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(file, """{"run":"scope-1","repo":"work-app","surfaces":[{"name":"Zoom","kind":"feature"},{"name":"Tab manager","key":"feature:tabs.tab-manager"}]}""", Token);
+        try
+        {
+            var api = new ScriptedApi(Ok("""{"result":{"draft":{"number":14,"repo":"work-app","commit":null,"keyVersion":1,"created":"2026-10-15T00:00:00Z","status":"draft"},"added":1,"existing":1,"rejected":0},"sequence":13,"surfaces":[{"surface":"Zoom","node":"feature:zoom","status":"new"},{"surface":"Tab manager","node":"feature:tabs.tab-manager","status":"mapped"}]}"""));
+
+            var exit = await Run(api, interactive: false, string.Empty, "propose", file);
+
+            Assert.True(exit == 0, _error.ToString());
+            Assert.Contains("\"run\":\"scope-1\"", api.Calls[0].Body, StringComparison.Ordinal);
+            Assert.Contains("Proposed into draft v14: 1 added, 1 already mapped, 0 rejected earlier; recorded as event 13", _out.ToString(), StringComparison.Ordinal);
+            Assert.Contains("new       Zoom → feature:zoom", _out.ToString(), StringComparison.Ordinal);
+            Assert.Contains("mapped    Tab manager → feature:tabs.tab-manager", _out.ToString(), StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
 }
