@@ -74,7 +74,7 @@ This design adds to these. Where it has to change one of them, §10 lists the co
 | D5 | Finding or starting the process | S1's `control.json`, spawn and ping check, plus one rule for which verbs may start the process. Nothing run inside an agent session starts it (§7) |
 | D6 | MCP server | **One MCP endpoint, `/sindri/mcp`**: Streamable HTTP in stateless mode on the API port (the MCP C# SDK), shared with the context engine's `context_*` tools. Every call is stamped `session`. It offers queries and `sindri_request` only. **It is proven by a real Claude Code subagent**, run as a fresh `claude -p` process (§8) |
 | D7 | Webhooks | **Cut for now** (§11) |
-| D8 | Errors, versioning, JSON | <ul><li>S1's `Result` → `ProblemDetails` mapping stays unchanged.</li><li>New codes are reserved per phase and documented in `docs/csharp/sindri.md`.</li><li>No version in the path in v0.</li><li>One JSON context.</li><li>`--json` prints the API body unchanged (§9).</li></ul> |
+| D8 | Errors, versioning, JSON | <ul><li>S1's `Result` → `ProblemDetails` mapping stays unchanged, plus extension members (§9).</li><li>New codes are reserved per phase and documented in `docs/csharp/sindri.md`.</li><li>No version in the path in v0.</li><li>One JSON context.</li><li>`--json` prints the API body unchanged (§9).</li></ul> |
 
 ## 2. The CQRS model
 
@@ -1140,6 +1140,10 @@ One port launches every agent session: the human handoff (`OpenItem`) and the en
 S1's `HttpResults` mapping is unchanged: `ErrorKind` sets the status, and `ProblemDetails` carries `title` = the SND
 code and `detail` = the message with its `(fix: …)`. The CLI prints `SND-… message` and exits 0 for ok, 1 for attention,
 2 for an error (S1), and 75 when a heavy-job lock stayed busy (as Evidence and the context engine do).
+
+An error may carry extension members (RFC 9457 §3.2), named camelCase and written as top-level members of the problem body
+after the standard ones; their string values and the member names inside objects are cleaned (scrubbed, escaped, one line, at most 200 characters), and an array is cut at 100 items, and each code
+that uses them lists them in its row. The CLI ignores them.
 
 The phase that reserves a code registers it in `SindriErrors` and its `All` list, and documents it in the error table
 of **`docs/csharp/sindri.md`**. Not `docs/sindri/errors.md`, which is generated from the TS build.
