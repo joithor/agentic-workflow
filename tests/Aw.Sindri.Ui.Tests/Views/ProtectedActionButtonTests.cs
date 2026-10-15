@@ -24,10 +24,10 @@ public sealed class ProtectedActionButtonTests
     private static Task<T> OnUi<T>(Func<T> body) =>
         HeadlessUnitTestSession.GetOrStartForAssembly(typeof(ProtectedActionButtonTests).Assembly).Dispatch(body, TestContext.Current.CancellationToken);
 
-    private static (Window Window, ProtectedActionButton Control, Button Lock, FakeClipboard Clipboard) Show()
+    private static (Window Window, ProtectedActionButton Control, Button Lock, FakeClipboard Clipboard) Show(string cli = Cli)
     {
         var clipboard = new FakeClipboard();
-        var vm = new ProtectedActionViewModel(new ProtectedAction("Accept", Cli, Subject), clipboard, new FakeTimeProvider(A.Noon));
+        var vm = new ProtectedActionViewModel(new ProtectedAction("Accept", cli, Subject), clipboard, new FakeTimeProvider(A.Noon));
         var control = new ProtectedActionButton { DataContext = vm };
         var window = new Window { Content = control, Width = 600, Height = 300 };
         window.Show();
@@ -89,6 +89,28 @@ public sealed class ProtectedActionButtonTests
         Assert.True(agent);
         Assert.Equal($"Open in an agent: {Subject}, available with API P10a", agentName);
         Assert.True(pending);
+    }
+
+    // a11y-1: a served command holding a bidi or control character is not shown and not copied; the popover says so, and Copy's name says there is no command.
+    [Fact]
+    public async Task An_unsafe_served_command_is_not_shown_and_Copy_is_named_no_command_served()
+    {
+        var (shown, shownName, copyName) = await OnUi(() =>
+        {
+            var (window, _, button, _) = Show("sindri decision accept \u202eREQ-01JD4");
+            _ = button.Focus(NavigationMethod.Tab);
+            Press(window, Key.Enter, PhysicalKey.Enter);
+            Settle(window);
+            var root = (Visual)((Flyout)button.Flyout!).Content!;
+            var cli = Named<TextBlock>(root, "ServedCli");
+            var result = (cli.Text, AutomationProperties.GetName(cli), AutomationProperties.GetName(Named<Button>(root, "CopyButton")));
+            window.Close();
+            return result;
+        });
+
+        Assert.Equal("The served command can't be shown", shown);
+        Assert.Equal("The served command can't be shown", shownName);
+        Assert.Equal("Copy: no command served", copyName);
     }
 
     // The popover's focus targets are the controls a screen reader and the Tab key reach (a11y-0): each is a control
