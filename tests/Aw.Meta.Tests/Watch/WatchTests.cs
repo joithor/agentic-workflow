@@ -1,4 +1,3 @@
-#pragma warning disable CA1822, IDE0052 // red stage: removed when the service takes its ports
 using System.Globalization;
 using Aw.Meta.Core;
 using Aw.Meta.Core.Commands;
@@ -14,7 +13,12 @@ public sealed class WatchTests
     private readonly MetaWorld _world = new();
     private readonly List<string> _lines = [];
 
-    private WatchService Service() => new();
+    private WatchService Service() => new(
+        _world.Config,
+        new WatchPoller(_world.Repo, _world.Resources, _world.Messages),
+        _world.Values,
+        _world.Delay,
+        _world.Clock);
 
     private static string Pr(int number, string state, string head, string mergeable = "MERGEABLE", bool draft = false) =>
         string.Create(CultureInfo.InvariantCulture, $$"""{"number":{{number}},"state":"{{state}}","isDraft":{{(draft ? "true" : "false")}},"headRefOid":"{{head}}","mergeable":"{{mergeable}}","title":"t{{number}}"}""");

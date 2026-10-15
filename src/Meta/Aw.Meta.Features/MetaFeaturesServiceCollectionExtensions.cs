@@ -114,6 +114,7 @@ public static class MetaFeaturesServiceCollectionExtensions
         .AddScoped<OrphanKiller>()
         .AddScoped<HealthService>()
         .Plain<HealthService, HealthRequest, HealthResponse>()
+        .AddScoped<WatchPoller>()
         .AddScoped<WatchService>()
         .AddScoped<IValidator<WatchRequest>, WatchValidator>()
         .Validated<WatchService, WatchRequest, WatchResponse>();

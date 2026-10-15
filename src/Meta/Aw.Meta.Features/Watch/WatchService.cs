@@ -1,10 +1,58 @@
+using System.Globalization;
 using Aw.Kernel;
 using Aw.Kernel.Services;
+using Aw.Meta.Core;
+using Aw.Meta.Core.Ports;
 
 namespace Aw.Meta.Features.Watch;
 
-internal sealed class WatchService : IService<WatchRequest, WatchResponse>
+/// <summary>
+/// Polls GitHub, origin/main, the disk and the inbox every interval and emits one line per settled change. Every poll
+/// writes the heartbeat (and the interval, so stop-check can tell a stale one). Shortly before the duration ends it asks to be re-armed.
+/// </summary>
+/// <param name="config">The team config (the repo).</param>
+/// <param name="poller">Takes a snapshot.</param>
+/// <param name="values">Keeps the heartbeat.</param>
+/// <param name="delay">Waits between polls.</param>
+/// <param name="clock">The current time.</param>
+internal sealed class WatchService(IMetaConfig config, WatchPoller poller, IKeyValueStore values, IDelay delay, TimeProvider clock)
+    : IService<WatchRequest, WatchResponse>
 {
-    public ValueTask<Result<WatchResponse>> Handle(WatchRequest request, CancellationToken cancellationToken) =>
-        throw new NotSupportedException();
+    public async ValueTask<Result<WatchResponse>> Handle(WatchRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var team = await config.Load(cancellationToken).ConfigureAwait(false);
+        if (team.IsError)
+        {
+            return team.Error;
+        }
+
+        var end = clock.GetUtcNow() + request.Duration;
+        var loop = new WatchLoop(team.Value.Repo, poller, request.Emit);
+        for (var polls = 1; ; polls++)
+        {
+            await loop.Tick(cancellationToken).ConfigureAwait(false);
+            var beat = await Beat(request.Interval, cancellationToken).ConfigureAwait(false);
+            if (beat.IsError)
+            {
+                return beat.Error;
+            }
+
+            if (clock.GetUtcNow() + request.Interval >= end)
+            {
+                await loop.Say("WATCH EXPIRING: rerun aw-meta watch").ConfigureAwait(false);
+                return new WatchResponse(polls, loop.Lines);
+            }
+
+            await delay.Wait(request.Interval, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private async ValueTask<Result<Unit>> Beat(TimeSpan interval, CancellationToken cancellationToken)
+    {
+        var beat = await values.Set(KvKeys.WatchHeartbeat, clock.GetUtcNow().ToString("O", CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
+        return beat.IsError
+            ? beat
+            : await values.Set(KvKeys.WatchInterval, ((long)interval.TotalSeconds).ToString(CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
+    }
 }
