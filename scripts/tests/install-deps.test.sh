@@ -70,6 +70,20 @@ run AW_DEPS_OS=Linux AW_DRY_RUN=1
 expect "all system packages present" 0 "bwrap: found" "secret-tool: found"
 printf '%s\n' "$OUT" | grep -q "sudo apt-get" && fail "no sudo line when nothing is missing" || ok "no sudo line when nothing is missing"
 
+# 4b. bwrap present but its sandbox fails with the AppArmor restriction on: root fix printed, exit 1 (real run), note in dry run.
+fake bwrap
+echo 1 >"$TMPROOT/userns"
+run AW_DEPS_OS=Linux AW_DEPS_BWRAP_PROBE='echo "setting up uid map: Permission denied" >&2; false' AW_DEPS_USERNS_FILE="$TMPROOT/userns"
+expect "a bwrap that cannot sandbox under AppArmor exits 1 with the fix" 1 "cannot create a sandbox \\(setting up uid map" "profile bwrap /usr/bin/bwrap flags=\\(unconfined\\)" "sudo apparmor_parser -r /etc/apparmor.d/bwrap"
+run AW_DEPS_OS=Linux AW_DRY_RUN=1 AW_DEPS_BWRAP_PROBE=false AW_DEPS_USERNS_FILE="$TMPROOT/userns"
+expect "dry run shows the fix and notes a real run would stop" 0 "apparmor_parser -r" "a real run would stop here"
+echo 0 >"$TMPROOT/userns"
+run AW_DEPS_OS=Linux AW_DEPS_BWRAP_PROBE=false AW_DEPS_USERNS_FILE="$TMPROOT/userns"
+expect "a failing bwrap with the restriction off still fails, without the AppArmor advice" 1 "cannot create a sandbox"
+printf '%s\n' "$OUT" | grep -q "apparmor_parser" && fail "no AppArmor advice when the sysctl is 0" || ok "no AppArmor advice when the sysctl is 0"
+run AW_DEPS_OS=Linux AW_DEPS_BWRAP_PROBE=true AW_DRY_RUN=1
+expect "a working bwrap probe passes" 0 "bwrap: sandbox works"
+
 # 5. Real run with a package missing: exit 1 and the sudo command.
 rm "$BIN/bwrap"
 run AW_DEPS_OS=Linux
