@@ -2,6 +2,7 @@ schema: 1
 id: workflow.cap-generated
 version: 1
 base: { id: workflow.cap-base, hash: "sha256:84b1571f2b8439caa58c35c4560095bc89b2fde1fef4ae7bd57e59569494ae47" }
+inputs: [{ key: fact:item, type: item, kind: item }]
 initial: produce
 states:
   produce:

@@ -16,3 +16,4 @@ states:
     outcome: unresolved
 transitions:
   - { from: produce, to: done, on: step.completed, when: { outcome: done }, produces: [fact:output] }
+inputs: [{ key: fact:item, type: item, kind: item }]

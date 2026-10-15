@@ -4,8 +4,9 @@ id: workflow.forms
 version: 1
 description: null
 base: null
+name: null
 inputs:
-  - { key: fact:item, label: null, type: null }
+  - { key: fact:item, label: "Item", type: item, kind: item, generate: null }
 initial: produce
 states:
   produce:

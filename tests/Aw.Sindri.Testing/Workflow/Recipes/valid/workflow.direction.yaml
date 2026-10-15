@@ -6,6 +6,7 @@ schema: 1
 id: workflow.direction
 version: 1
 description: "Is this the right path? A relayed proposer, challenger and arbiter exchange before more effort is committed."
+inputs: [{ key: fact:item, type: item, kind: item }]
 initial: position
 states:
   position:
