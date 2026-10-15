@@ -29,6 +29,7 @@ internal sealed class ReadApi : HttpMessageHandler
 {
     private const string Instances = "/sindri/workflow/instances";
     private readonly ServiceProvider _services;
+    private readonly Lock _gate = new();
     private readonly List<string> _calls = [];
     private readonly ControlPlaneClient? _client;
 
@@ -45,8 +46,17 @@ internal sealed class ReadApi : HttpMessageHandler
     /// <summary>What the CLI is given: this API's client and a start rule that must not be called.</summary>
     public RecipeDesk Desk { get; }
 
-    /// <summary>Every request's path and query, in order.</summary>
-    public IReadOnlyList<string> Calls => _calls;
+    /// <summary>A snapshot of every request's path and query, in order (taken under a lock: the CLI under test calls from another thread).</summary>
+    public IReadOnlyList<string> Calls
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return [.. _calls];
+            }
+        }
+    }
 
     /// <summary>The routes over the instance <paramref name="instances"/> holds and the ledger services <paramref name="configure"/> adds.</summary>
     /// <param name="instances">The one instance the directory and reader know.</param>
@@ -76,7 +86,11 @@ internal sealed class ReadApi : HttpMessageHandler
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var uri = request.RequestUri!;   // why: HttpClient always sets the URI
-        _calls.Add(uri.PathAndQuery);
+        lock (_gate)
+        {
+            _calls.Add(uri.PathAndQuery);
+        }
+
         var query = HttpUtility.ParseQueryString(uri.Query);
         var json = SliceHarness.Json;
         if (uri.AbsolutePath == Instances)

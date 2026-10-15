@@ -167,12 +167,14 @@ public sealed class GetInstanceEventsTests
 
         var entry = h.Events.Entry("workflow.transition", new InstanceEventFields("checks", "done", "step.completed", "done", "1.2"), "workflow:T-1/step/1:run-a:5") with { Item = "T-1" };
         Assert.False((await h.Store.Append(entry, h.Held.Current!, TestContext.Current.CancellationToken)).IsError);
+        var cursor = (await h.Store.Head(TestContext.Current.CancellationToken)).Value;   // the appended row's sequence: the seeded rows plus one
+        var fromCursor = $"events?after={cursor.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
         while (!await stdout.Wait(3, TimeSpan.FromMilliseconds(50)))
         {
             h.Clock.Advance(EventsCommand.Poll);   // the poll's delay may not have started yet: advance until it has read the row
         }
 
-        while (!api.Calls.Where(static c => c.EndsWith("events?after=6", StringComparison.Ordinal)).Skip(1).Any())
+        while (!api.Calls.Where(c => c.EndsWith(fromCursor, StringComparison.Ordinal)).Skip(1).Any())
         {
             h.Clock.Advance(EventsCommand.Poll);   // polls after the row: two must have read from its cursor, and none may print it again
             await Task.Delay(20, TestContext.Current.CancellationToken);
