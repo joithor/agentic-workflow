@@ -174,7 +174,7 @@ public sealed class CommandPaletteViewModelTests
 
         Assert.Equal(1, _server.RebuildCalls);
         Assert.Equal((true, false, true, "Rebuild views: done"), (_palette.IsOpen, rebuild.IsSending, rebuild.IsEnabled, rebuild.Status));
-        Assert.Equal("Rebuild views, Rebuild views: done", rebuild.Name);
+        Assert.Equal("Rebuild views: done", rebuild.Name);
         Assert.Equal(["RebuildViews"], _history, StringComparer.Ordinal);
         _clock.Advance(ControlViewModel.AcceptedFor);
         Assert.Equal("ready", rebuild.Status);
@@ -264,6 +264,42 @@ public sealed class CommandPaletteViewModelTests
     {
         var tail = announcement[(announcement.LastIndexOf(", ", StringComparison.Ordinal) + 2)..].Split(" of ");
         return (int.Parse(tail[0], System.Globalization.CultureInfo.InvariantCulture), int.Parse(tail[1], System.Globalization.CultureInfo.InvariantCulture));
+    }
+
+    // H6 (a11y-2): a run from the palette is announced once. While the palette is open it speaks the command's lifecycle, so
+    // the control's own live region stays dark; once it is closed (Esc while sending) the control speaks the outcome.
+    [Fact]
+    public async Task A_run_from_the_palette_is_announced_by_the_palette_and_not_by_the_control()
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        _palette.Open();
+        var rebuild = Entry("RebuildViews");
+        var live = new List<bool>();
+        rebuild.Control!.PropertyChanged += (_, e) => live.Add(e.PropertyName == nameof(ControlViewModel.IsAnnouncing) && rebuild.Control.IsAnnouncing);
+
+        var run = _palette.Run(rebuild, Token);
+        _clock.Advance(ControlViewModel.SendingAfter);
+        _server.RebuildGate.SetResult();
+        await run;
+
+        Assert.DoesNotContain(true, live);
+        Assert.False(rebuild.Control.IsAnnouncing);
+        Assert.StartsWith("Rebuild views: done, ", _palette.Announcement, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_control_speaks_its_outcome_when_the_palette_closed_while_it_sent()
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        _palette.Open();
+        var rebuild = Entry("RebuildViews");
+        var run = _palette.Run(rebuild, Token);
+
+        _palette.Close();
+        _server.RebuildGate.SetResult();
+        await run;
+
+        Assert.Equal((true, "Rebuild views: done"), (rebuild.Control!.IsAnnouncing, rebuild.Control.Announcement));
     }
 
     // The nearest entry that runs above (-1) or below (+1) an entry in the list.
