@@ -69,4 +69,11 @@
     <Error Code="AW0001"
            Text="$(MSBuildProjectName) has no packages.lock.json. Run `dotnet restore` locally (CI unset) and commit the packages.lock.json next to $(MSBuildProjectFile)." />
   </Target>
+  <!-- Avalonia build telemetry off (review run 3, code-reviewer-0). The Avalonia pins bring in Avalonia.BuildServices
+       transitively, whose buildTransitive targets add AvaloniaStats before CoreCompile: it starts a collector that posts a
+       hashed project and machine name, the OS, the RID and a machine id to avaloniaui.net on every build. This file is
+       imported after the packages' targets, so this empty target replaces it (the last definition wins); CI, the dev
+       container and .env.example also set AVALONIA_TELEMETRY_OPTOUT=1. Check: dotnet build -v:d src/Sindri/Aw.Sindri.Ui
+       shows the AvaloniaStats target from this file and no AvaloniaStatsTask. -->
+  <Target Name="AvaloniaStats" />
 </Project>

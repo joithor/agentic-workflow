@@ -1,0 +1,6 @@
+root = false
+
+# The desktop head is the app's composition root: catching every exception is allowed here, at the process boundary
+# (CA1031, .agents/rules/csharp.md "Types and errors"; SingleLaunch logs SND-UI-004 and exits 2).
+[*.cs]
+dotnet_diagnostic.CA1031.severity = none

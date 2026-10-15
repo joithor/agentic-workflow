@@ -12,7 +12,7 @@ checks:
     id: "ARCH-DI-001"
     status: active
 gap: partial
-gapNote: "ARCH-DI-001 matches whole *ServiceCollectionExtensions classes, not only their factory lambdas, and misses a call through a type that implements IServiceProvider and a top-level Program's body; those, and constructor injection elsewhere, are reviewed."
+gapNote: "ARCH-DI-001 matches whole *ServiceCollectionExtensions classes, not only their factory lambdas, and misses a call through a type that implements IServiceProvider and a top-level Program's body; those, and constructor injection elsewhere, are reviewed. Code Avalonia's XAML compiler generates (CompiledAvaloniaXaml, XamlClosure_N types, !XamlIl members) is exempt: it passes a markup IServiceProvider, not a container. The XamlClosure_N branch has a red fixture; the !XamlIl-member branch (all locator-using members start with !) is exercised on the real views but has no red fixture, since C# can't declare such a member, so a hand-written member next to them is reviewed."
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b4"
