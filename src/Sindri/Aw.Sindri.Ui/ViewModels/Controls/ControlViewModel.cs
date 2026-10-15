@@ -146,6 +146,7 @@ internal sealed class ControlViewModel : ObservableObject
 
         var run = ++_runs;
         (ErrorCode, ErrorDetail, Outcome) = (string.Empty, string.Empty, string.Empty);
+        Announcement = Label;   // a resting text first, so an outcome the same as the last one is still a change to the live region
         Phase = CommandPhase.Sending;
         _ = AnnounceSending(run, cancellationToken);
         var answer = await send(cancellationToken).ConfigureAwait(true);
@@ -153,6 +154,7 @@ internal sealed class ControlViewModel : ObservableObject
         if (answer.IsError)
         {
             (ErrorCode, ErrorDetail) = (answer.Error.Code, answer.Error.Message);
+            Announcement = $"{ErrorCode}: {ErrorDetail}";
             Phase = CommandPhase.Failed;
             return;
         }

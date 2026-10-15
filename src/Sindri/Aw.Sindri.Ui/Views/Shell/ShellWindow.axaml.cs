@@ -49,13 +49,9 @@ internal sealed partial class ShellWindow : Window
     /// <inheritdoc />
     protected override void OnDataContextChanged(EventArgs e)
     {
-        _shell?.PropertyChanged -= OnShellChanged;
-        _shell?.Palette.PropertyChanged -= OnOverlayChanged;
-        _shell?.Shortcuts.PropertyChanged -= OnOverlayChanged;
+        Listen(_shell, on: false);
         _shell = Shell;
-        _shell?.PropertyChanged += OnShellChanged;
-        _shell?.Palette.PropertyChanged += OnOverlayChanged;
-        _shell?.Shortcuts.PropertyChanged += OnOverlayChanged;
+        Listen(_shell, on: true);
         if (_shell?.Window is { } bounds)
         {
             WindowStartupLocation = WindowStartupLocation.Manual;
@@ -255,34 +251,4 @@ internal sealed partial class ShellWindow : Window
             _lastMethod = e.NavigationMethod;
         }
     }
-
-    // After a state change, a closed sheet or a change in its covering: if the focused control is gone (hidden, disabled,
-    // or nothing has focus after something had it), focus its region's neighbour.
-    private void KeepFocus()
-    {
-        if (HasUsableFocus || _lastFocused is not { } last)
-        {
-            return;
-        }
-
-        var target = Neighbour(last) ?? Usable(FirstFocusable(TopBar) as Control);
-        _sheetOpener = null;
-        _ = target?.Focus(Method());
-    }
-
-    // The sheet's opener (the edge tab) or the page region for the sheet; the health pill for the top bar; the page
-    // region, or the sheet's heading while the sheet covers the page.
-    private Control? Neighbour(Control last)
-    {
-        var page = Usable(this.Get<Control>("Page")) ?? (Covering ? Usable(this.Get<TextBlock>("SheetTitle")) : null);
-        if (SheetPanel == last || SheetPanel.IsVisualAncestorOf(last))
-        {
-            return Usable(_sheetOpener) ?? page;
-        }
-
-        return TopBar.IsVisualAncestorOf(last) ? Usable(TopBar.Get<Control>("HealthPill")) : page;
-    }
-
-    private static Control? Usable(Control? control) =>
-        control is { IsEffectivelyVisible: true, IsEffectivelyEnabled: true, Focusable: true } ? control : null;
 }

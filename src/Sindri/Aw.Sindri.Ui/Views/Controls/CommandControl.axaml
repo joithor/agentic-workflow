@@ -8,12 +8,13 @@
        disabled, and its phase and CLI on the next line in InkSubtle, focusable and copyable (disabled ink never carries
        information); cli-only: the copy block (terminal glyph, the CLI, Copy, and its one line). -->
   <StackPanel Spacing="{StaticResource Space.XXS}">
-    <!-- The polite live region for "Sending…", the outcome and "Copied" (U0's LiveSetting rules): zero-width, never "". -->
+    <!-- The button stays enabled while it sends (a disabled control drops keyboard focus; the view model refuses a second
+         run). The polite live region for "Sending…", the outcome, a refusal's code and detail and "Copied" (U0's LiveSetting rules): zero-width, never "". -->
     <TextBlock x:Name="Announcer" Classes="caption live-region live" Width="0" Opacity="0" IsHitTestVisible="False"
                Text="{Binding Announcement}" HorizontalAlignment="Left" />
 
     <StackPanel x:Name="ButtonRow" Orientation="Horizontal" Spacing="{StaticResource Space.XS}" IsVisible="{Binding !IsCliOnly}">
-      <Button x:Name="RunButton" Classes="command-control" IsEnabled="{Binding CanRun}" Click="OnRun"
+      <Button x:Name="RunButton" Classes="command-control" IsEnabled="{Binding IsSendable}" Click="OnRun"
               AutomationProperties.Name="{Binding Name}">
         <StackPanel Orientation="Horizontal" Spacing="6">
           <icons:StateIcon x:Name="RunSpinner" Icon="Spinner" IsVisible="{Binding IsSending}" Spins="{Binding IsSending}"
