@@ -166,6 +166,25 @@ public abstract class SindriApiContract
         Expect.Equal(expected, (await api.RebuildViews(_api, Token)).Error);
     }
 
+    // J5 (arch-1): the order a real server answers in: nothing answers (Down), then the caller check (a refusal), then the route's own
+    // failures. So a refusal outranks a failing status or ping, and a stopped server outranks a refusal.
+    [Fact]
+    public async Task A_refusal_outranks_the_routes_own_failures_and_a_stopped_server_outranks_a_refusal()
+    {
+        var server = new FakeSindriApi { Refusal = A.NoTokenRefusal, FailStatus = true, FailPing = true };
+        var api = Reach(server);
+        var expected = new Error(A.NoTokenRefusal.Code, ErrorKind.Forbidden, A.NoTokenRefusal.Detail);
+
+        Expect.Equal(expected, (await api.Ping(_api, Token)).Error);
+        Expect.Equal(expected, (await api.Status(_api, Token)).Error);
+
+        server.GoDown();
+
+        Expect.Equal("SND-UI-002", (await api.Ping(_api, Token)).Error.Code);
+        Expect.Equal("SND-UI-002", (await api.Status(_api, Token)).Error.Code);
+        Expect.Equal("SND-UI-002", (await api.Services(_api, Token)).Error.Code);
+    }
+
     [Fact]
     public async Task A_stopped_server_is_unreachable_on_every_route()
     {
