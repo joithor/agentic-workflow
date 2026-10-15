@@ -25,6 +25,19 @@ public sealed class EngineReviewRulesTests
         Assert.Equal(EngineActor.Name, accepted.Changes[0].After.Suspension?.Actor);
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("")]
+    [InlineData("LCH-0123")]
+    [InlineData("lch-0123456789abcdef0123456789abcdef")]
+    [InlineData("LCH-0123456789ABCDEF0123456789abcdef")]
+    public void An_open_request_whose_launch_is_not_a_launch_id_is_SND_WF_003(string launch)
+    {
+        var rejected = Assert.IsType<Rejected>(Real(At(Step, "produce"), new OpenRequested(EngineActor.Name, launch)));
+
+        Assert.Equal("SND-WF-003", rejected.Error.Code);
+        Assert.Contains("LCH-", rejected.Error.Message, StringComparison.Ordinal);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void A_handback_whose_takeover_kept_nothing_resumes_the_full_timeout_so_takeoverIdle_stops()
     {

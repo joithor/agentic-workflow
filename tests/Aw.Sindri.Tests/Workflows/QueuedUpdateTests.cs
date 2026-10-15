@@ -136,6 +136,30 @@ public sealed class QueuedUpdateTests(SindriTimeSkippingServer server) : IClassF
         }, ct);
     }
 
+    [Fact]
+    public async Task An_open_request_for_a_malformed_launch_is_refused_while_the_instance_is_starting()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _harness.Recipe("workflow.dev-timeout", WorkflowsHarness.Shipped("dev/workflow.dev-timeout.yaml"));
+        await using var sindri = _harness.Sindri();
+        await WorkflowsHarness.HoldLease(sindri, ct);
+        var client = server.Environment.Client;
+        var start = await WorkflowsHarness.RecipeStart(sindri, "workflow.dev-timeout", "T-33", ct);
+        var handle = await WorkflowsHarness.Start(client, start);
+        var open = new OpenRequested("service:engine", "LCH-not-a-launch");
+        var opening = handle.ExecuteUpdateAsync(wf => wf.OpenRequestAsync(open), new WorkflowUpdateOptions(InstanceIds.OpenRequestUpdate(start.WorkflowId(), open)));
+        await Task.Delay(TimeSpan.FromSeconds(1), ct);   // let the server queue it
+
+        using var worker = new TemporalWorker(client, sindri.GetRequiredService<TemporalWorkerOptions>());
+        await worker.ExecuteAsync(async () =>
+        {
+            var refused = await Assert.ThrowsAsync<WorkflowUpdateFailedException>(() => opening.WaitAsync(_patience, ct));
+
+            Assert.Equal("SND-WF-003", Assert.IsType<ApplicationFailureException>(refused.InnerException).ErrorType);
+            await handle.TerminateAsync("test over");
+        }, ct);
+    }
+
     private static StepCompleted Report(RunToken run)
     {
         var output = new FactValue("fact:sha256:" + new string('e', 64), new string('e', 64), HeadSha: null);
