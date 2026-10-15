@@ -126,13 +126,21 @@ internal sealed class ControlViewModel : ObservableObject
     public string ErrorDetail { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>A pending row's line with its subject: "Cancel job, arrives in P6 · sindri jobs cancel &lt;jobId&gt;".</summary>
-    public string PendingName => PendingLine;
+    public string PendingName => PendingLine.Length > 0 ? Label + ", " + PendingLine : string.Empty;
 
     /// <summary>The Copy button's accessible name: "Copy: Cancel job", then "Copied".</summary>
-    public string CopyName => CopyLabel;
+    public string CopyName => string.Equals(CopyLabel, Labels.Copied, StringComparison.Ordinal) ? Labels.Copied : Labels.Copy + ": " + Label;
 
     /// <summary>"Copy", or "Copied" for 1.5 s after a copy.</summary>
-    public string CopyLabel { get; private set => Set(ref field, value); } = Labels.Copy;
+    public string CopyLabel
+    {
+        get;
+        private set
+        {
+            Set(ref field, value);
+            OnChanged(nameof(CopyName));
+        }
+    } = Labels.Copy;
 
     /// <summary>True while "Sending…" is announced (the live region's gate, set before its text changes).</summary>
     public bool IsAnnouncingSending { get; private set => Set(ref field, value); }
