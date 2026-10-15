@@ -3,6 +3,7 @@ using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Features.StreamEvents;
@@ -13,7 +14,8 @@ namespace Aw.Sindri.Host.Endpoints;
 /// The event stream's loop (API spec §5.2, §5.4, §5.5): read a page after the cursor, write each event as a frame, and when caught
 /// up wait on the ledger signal (a committed append wakes it at once; the one-second poll is the fallback), writing a ': ping'
 /// comment after 15 seconds without a write. A full page, or a cursor still behind the head, reads again at once. A read error is
-/// sent as an 'event: error' frame and ends the stream; so does the client leaving or a stop, without a frame.
+/// sent as an 'event: error' frame and ends the stream; so does an unexpected exception (logged, told as SND-API-005 without its text);
+/// the client leaving or a stop ends it without a frame.
 /// </summary>
 /// <param name="ledger">The ledger, for its head.</param>
 /// <param name="signal">Wakes the wait when an append commits.</param>
@@ -34,32 +36,9 @@ internal sealed partial class EventPump(ILedgerReader ledger, ILedgerSignal sign
     /// <returns>When the stream has ended.</returns>
     public async Task Run(SseWriter writer, IService<StreamEventsRequest, StreamEventsResponse> service, StreamEventsRequest request, CancellationToken cancellationToken)
     {
-        var cursor = request.After;
-        var lastWrite = clock.GetTimestamp();
         try
         {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                var next = await NextPage(service, request with { After = cursor }, cancellationToken).ConfigureAwait(false);
-                if (next.IsError)
-                {
-                    await writer.Event(id: null, "error", Text(new StreamErrorFrame(next.Error.Code, next.Error.Message)), cancellationToken).ConfigureAwait(false);
-                    return;
-                }
-
-                var (page, head) = next.Value;
-                foreach (var e in page.Events)
-                {
-                    await Send(writer, e, cancellationToken).ConfigureAwait(false);
-                    lastWrite = clock.GetTimestamp();
-                }
-
-                cursor = Math.Max(cursor, page.ScannedTo);
-                if (page.Events.Count < request.Max && cursor >= head)
-                {
-                    lastWrite = await WaitOrPing(writer, cursor, lastWrite, cancellationToken).ConfigureAwait(false);
-                }
-            }
+            await Loop(writer, service, request, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -68,6 +47,53 @@ internal sealed partial class EventPump(ILedgerReader ledger, ILedgerSignal sign
         catch (IOException)
         {
             // the client's connection broke mid-write
+        }
+        catch (Exception e)
+        {
+            // a bug: the stream is the boundary, so say so to the client and the log and end it, instead of letting the host abort the connection with no word
+            LogFailed(log, e);
+            await TellInternalError(writer).ConfigureAwait(false);
+        }
+    }
+
+    private async Task Loop(SseWriter writer, IService<StreamEventsRequest, StreamEventsResponse> service, StreamEventsRequest request, CancellationToken cancellationToken)
+    {
+        var cursor = request.After;
+        var lastWrite = clock.GetTimestamp();
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            var next = await NextPage(service, request with { After = cursor }, cancellationToken).ConfigureAwait(false);
+            if (next.IsError)
+            {
+                await writer.Event(id: null, "error", Text(new StreamErrorFrame(next.Error.Code, next.Error.Message)), cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
+            var (page, head) = next.Value;
+            foreach (var e in page.Events)
+            {
+                await Send(writer, e, cancellationToken).ConfigureAwait(false);
+                lastWrite = clock.GetTimestamp();
+            }
+
+            cursor = Math.Max(cursor, page.ScannedTo);
+            if (page.Events.Count < request.Max && cursor >= head)
+            {
+                lastWrite = await WaitOrPing(writer, cursor, lastWrite, cancellationToken).ConfigureAwait(false);
+            }
+        }
+    }
+
+    /// <summary>Best effort: the client may be gone, and the stop that ended the stream may have fired.</summary>
+    private async ValueTask TellInternalError(SseWriter writer)
+    {
+        try
+        {
+            await writer.Event(id: null, "error", Text(new StreamErrorFrame(SindriErrors.ApiInternal.Code, SindriErrors.ApiInternal.Title)), CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception e) when (e is IOException or ObjectDisposedException or OperationCanceledException)
+        {
+            // nobody to tell
         }
     }
 
@@ -106,6 +132,9 @@ internal sealed partial class EventPump(ILedgerReader ledger, ILedgerSignal sign
         _ = await signal.WaitAfter(cursor, untilPing < Poll ? untilPing : Poll, cancellationToken).ConfigureAwait(false);
         return lastWrite;
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "The event stream ended with an unexpected error (SND-API-005)")]
+    private static partial void LogFailed(ILogger logger, Exception exception);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Event {Sequence} ({Type}) was sent with payload null: its stored payload doesn't read as the public record")]
     private static partial void LogUnreadable(ILogger logger, long sequence, string type);

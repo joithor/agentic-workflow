@@ -107,12 +107,12 @@ internal sealed class EventStreamOpener(ILedgerReader ledger, IStreamSlots slots
         return new StreamEventsRequest(after.Value, Item: null, Instance: instance.Value, Types: types.Value, Ref: item.Value);
     }
 
-    /// <summary>The first cursor (C4): Last-Event-ID when it holds a sequence, else ?after=, else 0.</summary>
+    /// <summary>The first cursor (C4): Last-Event-ID when it holds a sequence (0 or more), else ?after=, else 0.</summary>
     private static Result<long> Cursor(string? lastEventId, string? after)
     {
-        if (long.TryParse(lastEventId, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var last))
+        if (long.TryParse(lastEventId, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var last) && last >= 0)
         {
-            return NonNegative(last);
+            return last;   // a negative one is no sequence a stream ever sent: it falls through like an unparseable header, and after= is judged
         }
 
         return after is null || after.Length == 0

@@ -52,7 +52,6 @@ public sealed class EventStreamEndpointTests
 
     [Theory(Timeout = 30_000), Trait("Lane", "integration")]
     [InlineData("/sindri/events?after=-1", null)]
-    [InlineData("/sindri/events", "-1")]
     [InlineData("/sindri/ledger?after=-1", null)]
     public async Task A_negative_after_is_named_as_negative(string route, string? lastEventId)
     {
@@ -99,10 +98,10 @@ public sealed class EventStreamEndpointTests
         var open = await OpenMany(host, StreamLimits.Session, session);
 
         var thirteenth = await host.Http.Ask(Get("/sindri/events", session));
-        await using var human = await EventStreamClient.Open(host, "/sindri/events?after=1");
+        await using var human = await EventStreamClient.Open(host, "/sindri/events?after=0");
 
         Assert.Equal((HttpStatusCode.TooManyRequests, "SND-API-012"), (thirteenth.Status, thirteenth.Code));
-        Assert.NotNull(human);
+        Assert.StartsWith("event: ", await human.Line(), StringComparison.Ordinal);
         await DisposeAll(open);
     }
 
