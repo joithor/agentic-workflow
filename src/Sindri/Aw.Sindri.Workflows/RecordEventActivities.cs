@@ -1,6 +1,10 @@
+using System.Security.Cryptography;
+using System.Text;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Temporalio.Activities;
 using Temporalio.Common;
 using Temporalio.Workflows;
@@ -19,7 +23,8 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="ledger">The ledger.</param>
 /// <param name="lease">The lease this process holds; every append is fenced by it.</param>
 /// <param name="events">The control plane's event factory (its scope, clock, ids and the host's JSON options).</param>
-internal sealed class RecordEventActivities(ILedgerStore ledger, HeldLease lease, EventFactory events)
+/// <param name="logger">Where a replay that mirrors a different event than the ledger holds is warned about.</param>
+internal sealed partial class RecordEventActivities(ILedgerStore ledger, HeldLease lease, EventFactory events, ILogger<RecordEventActivities>? logger = null)
 {
     /// <summary>
     /// How the interpreter runs it: a local activity with unbounded retries and backoff, so the workflow does not move on
@@ -71,8 +76,40 @@ internal sealed class RecordEventActivities(ILedgerStore ledger, HeldLease lease
         var scope = new EventScope(record.Actor ?? own.Actor, record.Tenant ?? own.Tenant, record.Ring ?? own.Ring);
         var entry = events.Entry(record.Type, payload, key, record.Item, scope) with { TemporalEvent = activityId };   // the key's third part (UI E-30)
         var appended = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
+        if (!appended.IsError && appended.Value.AlreadyRecorded && await Differs(appended.Value.Sequence, entry, cancellationToken).ConfigureAwait(false))
+        {
+            // a workflow-task retry replayed with other signals: the same activity id now mirrors another event, so it keeps its own row
+            var other = entry with { IdempotencyKey = $"{key}:{ContentHash(record)}" };
+            appended = await ledger.Append(other, grant, cancellationToken).ConfigureAwait(false);
+        }
+
         return appended.IsError
             ? throw new InvalidOperationException($"{appended.Error.Code}: {appended.Error.Message}")
             : appended.Value;
     }
+
+    /// <summary>Whether the row at <paramref name="sequence"/> is another event than <paramref name="entry"/> (type or payload).</summary>
+    private async Task<bool> Differs(long sequence, LedgerEntry entry, CancellationToken cancellationToken)
+    {
+        var read = await ledger.ReadAfter(sequence - 1, 1, cancellationToken).ConfigureAwait(false);
+        if (read.IsError || read.Value.Count == 0 || read.Value[0].Sequence != sequence)
+        {
+            return false;   // can't see the stored row: keep the spec's behaviour (the first record stands)
+        }
+
+        var stored = read.Value[0].Envelope;
+        var differs = !string.Equals(stored.Type, entry.Envelope.Type, StringComparison.Ordinal) || !string.Equals(stored.Payload, entry.Envelope.Payload, StringComparison.Ordinal);
+        if (differs)
+        {
+            ReplayDiffers(logger ?? NullLogger<RecordEventActivities>.Instance, entry.IdempotencyKey, stored.Type, entry.Envelope.Type);
+        }
+
+        return differs;
+    }
+
+    private static string ContentHash(WorkflowEventRecord record) =>
+        Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes($"{record.Type}|{record.From}|{record.To}|{record.Trigger}|{record.Run}")))[..12];
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "RecordEvent replay under {Key} mirrors a different event than the ledger holds ({Stored} there, {Replayed} now); recording it under a content-hash key")]
+    private static partial void ReplayDiffers(ILogger logger, string key, string stored, string replayed);
 }
