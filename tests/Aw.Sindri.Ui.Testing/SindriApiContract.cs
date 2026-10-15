@@ -153,4 +153,60 @@ public abstract class SindriApiContract
 
         Expect.Equal(("SND-API-009", "Sindri is busy with another command (fix: retry)"), (refused.Error.Code, refused.Error.Message));
     }
+
+    // F12 (test-0): every route answers a refusal, a stopped server and an odd body the same way, whichever API is behind it.
+    [Fact]
+    public async Task A_403_refusal_reaches_every_route_as_sindris_code_and_detail()
+    {
+        var api = Reach(new FakeSindriApi { Refusal = A.NoTokenRefusal });
+        var expected = new Error(A.NoTokenRefusal.Code, ErrorKind.Forbidden, A.NoTokenRefusal.Detail);
+
+        Expect.Equal(expected, (await api.Commands(_api, Token)).Error);
+        Expect.Equal(expected, (await api.Services(_api, Token)).Error);
+        Expect.Equal(expected, (await api.RebuildViews(_api, Token)).Error);
+    }
+
+    [Fact]
+    public async Task A_stopped_server_is_unreachable_on_every_route()
+    {
+        var server = new FakeSindriApi();
+        server.GoDown();
+        var api = Reach(server);
+
+        Expect.Equal("SND-UI-002", (await api.Commands(_api, Token)).Error.Code);
+        Expect.Equal("SND-UI-002", (await api.Services(_api, Token)).Error.Code);
+        Expect.Equal("SND-UI-002", (await api.RebuildViews(_api, Token)).Error.Code);
+    }
+
+    [Theory]
+    [InlineData(409, ErrorKind.Conflict)]
+    [InlineData(429, ErrorKind.RateLimited)]
+    [InlineData(504, ErrorKind.Timeout)]
+    [InlineData(503, ErrorKind.Unavailable)]
+    [InlineData(404, ErrorKind.NotFound)]
+    public async Task A_refusal_keeps_its_code_detail_and_kind_on_every_route(int status, ErrorKind kind)
+    {
+        var problem = RouteAnswer.Problem((HttpStatusCode)status, "SND-API-777", "Not now (fix: later)");
+        var api = Reach(new FakeSindriApi { Catalog = problem, ServiceView = problem, Rebuild = problem });
+        var expected = new Error("SND-API-777", kind, "Not now (fix: later)");
+
+        Expect.Equal(expected, (await api.Commands(_api, Token)).Error);
+        Expect.Equal(expected, (await api.Services(_api, Token)).Error);
+        Expect.Equal(expected, (await api.RebuildViews(_api, Token)).Error);
+    }
+
+    // A body that isn't Sindri's ProblemDetails (not an SND title, no detail, not JSON) is an answer the app can't read.
+    [Theory]
+    [InlineData(500, "boom")]
+    [InlineData(418, "{\"title\":\"Teapot\",\"detail\":\"short and stout\"}")]
+    [InlineData(500, "{\"title\":\"SND-API-001\"}")]
+    public async Task A_body_that_is_not_sindris_is_an_unreadable_answer_on_every_route(int status, string body)
+    {
+        var odd = new RouteAnswer((HttpStatusCode)status, body);
+        var api = Reach(new FakeSindriApi { Catalog = odd, ServiceView = odd, Rebuild = odd });
+
+        Expect.Equal("SND-UI-003", (await api.Commands(_api, Token)).Error.Code);
+        Expect.Equal("SND-UI-003", (await api.Services(_api, Token)).Error.Code);
+        Expect.Equal("SND-UI-003", (await api.RebuildViews(_api, Token)).Error.Code);
+    }
 }
