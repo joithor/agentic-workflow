@@ -385,4 +385,23 @@ public sealed class CommandPaletteTests : IDisposable
         Assert.True(at is { } p && p.Y <= scroll.Viewport.Height + 1, "the last row is inside the viewport");
         Assert.True(shell.Shortcuts.Rows.Count > 0);
     });
+
+    // F8 (a11y-4): the selected row is told apart by more than its PrimarySoft fill (1.1:1 on the card): a 2 px bar in
+    // PrimaryHover (6.1:1 on Surface3, ContrastTests).
+    [Fact]
+    public Task The_selected_palette_row_has_a_two_pixel_primary_hover_bar() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        Press(window, Key.K, PhysicalKey.K, _command, "k");
+        var selected = EntryButton(window, shell.Palette.Selected!.Label);
+
+        var presenter = selected.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.ContentPresenter>().First(p => p.Name == "PART_ContentPresenter");
+
+        Assert.Equal(2d, presenter.BorderThickness.Left);
+        var bar = Assert.IsType<Avalonia.Media.SolidColorBrush>(presenter.BorderBrush);
+        Assert.True(window.TryFindResource("Color.PrimaryHover", window.ActualThemeVariant, out var hover) && hover is Avalonia.Media.Color c && c == bar.Color);
+
+        Press(window, Key.Down, PhysicalKey.ArrowDown);
+        Assert.Equal(0d, presenter.BorderThickness.Left);
+    });
 }
