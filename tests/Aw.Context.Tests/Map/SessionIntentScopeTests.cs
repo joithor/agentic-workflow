@@ -18,6 +18,8 @@ public sealed class SessionIntentScopeTests : IDisposable
     private const string QuoteOut = "OUTONLY-QUOTE-ZEBRA";
     private const string RecordInDecision = "linear:issue/0e5a1b00-0000-4000-8000-000000000a01";
     private const string RecordOutDecision = "linear:issue/0e5a1b00-0000-4000-8000-000000000b01";
+    private const string AliasIn = "record:linear:issue/0e5a1b00-0000-4000-8000-000000000a09";
+    private const string AliasOut = "record:linear:issue/0e5a1b00-0000-4000-8000-000000000b09";
     private const string PrivateDoc = "repo:aw-split-panes/docs/private/notes.md";
     private readonly MapWorld _world = new();
 
@@ -42,6 +44,7 @@ public sealed class SessionIntentScopeTests : IDisposable
             $"  - {{key: \"{InKey}\", label: \"In scope\"}}",
             $"  - {{key: \"{OutKey}\", label: \"Out of scope\"}}",
             "  - {key: \"code:src/in.ts\", label: \"in.ts\", provenance: deterministic}",
+            $"  - {{key: \"record:{RecordInDecision}\", label: \"Quoted record\"}}",
             "  - {key: \"record:linear:issue/0e5a1b00-0000-4000-8000-000000000a02\", label: \"Mentions in\"}",
             $"  - {{key: \"record:linear:issue/0e5a1b00-0000-4000-8000-000000000b02\", label: \"{OutOnlyTitle}\"}}",
             $"  - {{key: \"record:linear:issue/0e5a1b00-0000-4000-8000-000000000c02\", label: \"Both {FakeScrubber.Secret}\"}}",
@@ -51,9 +54,13 @@ public sealed class SessionIntentScopeTests : IDisposable
             "  - {from: \"record:linear:issue/0e5a1b00-0000-4000-8000-000000000b02\", to: \"feature:out\", type: mentions}",
             "  - {from: \"record:linear:issue/0e5a1b00-0000-4000-8000-000000000c02\", to: \"feature:in\", type: mentions}",
             "  - {from: \"record:linear:issue/0e5a1b00-0000-4000-8000-000000000c02\", to: \"feature:out\", type: mentions}",
+            $"  - {{from: \"record:{RecordInDecision}\", to: \"feature:out\", type: mentions}}",
             $"  - {{from: \"{inDecision}\", to: \"feature:in\", type: decides}}",
             $"  - {{from: \"{outDecision}\", to: \"feature:out\", type: decides}}",
             $"  - {{from: \"{privateDecision}\", to: \"feature:in\", type: decides}}",
+            "aliases:",
+            $"  - {{alias: \"{AliasIn}\", target: \"record:linear:issue/0e5a1b00-0000-4000-8000-000000000a02\"}}",
+            $"  - {{alias: \"{AliasOut}\", target: \"record:linear:issue/0e5a1b00-0000-4000-8000-000000000b02\"}}",
             "decisions:",
             $"  - {{record: \"{RecordInDecision}\", quote: \"{extraQuote}\", wording: \"Keep the pane in view {FakeScrubber.Secret}.\", at: 2026-07-15T10:00:00Z}}",
             $"  - {{record: \"{RecordOutDecision}\", quote: \"{QuoteOut}\", wording: \"{OutOnlyTitle} decision.\", at: 2026-07-15T10:00:00Z}}",
@@ -77,16 +84,65 @@ public sealed class SessionIntentScopeTests : IDisposable
     public async Task A_session_reads_a_record_s_mentions_only_among_its_own_nodes_and_the_quote_fenced_and_scrubbed()
     {
         await ImportMap();
+        const string both = "record:linear:issue/0e5a1b00-0000-4000-8000-000000000c02";
 
+        var session = (await _world.Engine.ShowNode(both, MapWorld.Session(FixtureMap.Repo), MapWorld.None)).Value;
+        var human = (await _world.Engine.ShowNode(both, MapWorld.Human, MapWorld.None)).Value;
         var band = (await _world.Engine.Lenses(InKey, draft: false, depth: null, MapWorld.Session(FixtureMap.Repo), MapWorld.None)).Value.Bands.Intent;
 
-        var both = Assert.Single(band.Records, r => r.Key.Value.EndsWith("c02", StringComparison.Ordinal));
-        Assert.Equal([InKey], both.Mentions.Select(k => k.Value), StringComparer.Ordinal);   // why: the out-of-scope end of the link is not the session's to see
-        Assert.DoesNotContain(FakeScrubber.Secret, both.Label, StringComparison.Ordinal);
-        Assert.StartsWith("<untrusted source=\"map\">", both.Label, StringComparison.Ordinal);
+        Assert.Equal([InKey], session.Out.Select(e => e.To.Value), StringComparer.Ordinal);   // why: the out-of-scope end of the link is not the session's to see
+        Assert.Equal([InKey, OutKey], human.Out.Select(e => e.To.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.DoesNotContain(FakeScrubber.Secret, session.Node.Label, StringComparison.Ordinal);
         var decision = Assert.Single(band.Decisions, d => d.Node.Value == DecisionKey(RecordInDecision, QuoteIn));
         Assert.DoesNotContain(FakeScrubber.Secret, decision.Text, StringComparison.Ordinal);
         Assert.Equal(("<untrusted source=\"map\">" + QuoteIn + "</untrusted>", Trust.Untrusted), (decision.Quote!.Text, decision.Quote.Trust));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_record_title_is_inside_the_fence_for_a_session_in_show_and_neighbors_and_untrusted_for_a_human()
+    {
+        await ImportMap();
+        const string mentions = "record:linear:issue/0e5a1b00-0000-4000-8000-000000000a02";
+
+        var shown = (await _world.Engine.ShowNode(mentions, MapWorld.Session(FixtureMap.Repo), MapWorld.None)).Value;
+        var hood = (await _world.Engine.Neighbors(InKey, depth: 1, MapWorld.Session(FixtureMap.Repo), MapWorld.None)).Value;
+        var human = (await _world.Engine.ShowNode(mentions, MapWorld.Human, MapWorld.None)).Value;
+
+        Assert.Equal(("<untrusted source=\"map\">Mentions in</untrusted>", Trust.Untrusted), (shown.Node.Label, shown.Node.Trust));
+        var neighbor = Assert.Single(hood.Nodes, n => n.Node.Key.Value == mentions);
+        Assert.Equal(("<untrusted source=\"map\">Mentions in</untrusted>", Trust.Untrusted), (neighbor.Node.Label, neighbor.Node.Trust));
+        Assert.Equal(("Mentions in", Trust.Untrusted), (human.Node.Label, human.Node.Trust));   // why: a human reads it clean, beside the flag
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_record_a_visible_decision_quotes_is_shown_with_only_its_in_scope_mentions_and_is_003_when_the_quoted_doc_is_denied()
+    {
+        await ImportMap();
+        var session = MapWorld.Session(FixtureMap.Repo);
+
+        var quoted = (await _world.Engine.ShowNode("record:" + RecordInDecision, session, MapWorld.None)).Value;
+        var human = (await _world.Engine.ShowNode("record:" + RecordInDecision, MapWorld.Human, MapWorld.None)).Value;
+        var privateOpen = await _world.Engine.ShowNode("record:" + PrivateDoc, session, MapWorld.None);
+        var privateDenied = await _world.Engine.ShowNode("record:" + PrivateDoc, SessionDenying("docs/private/**"), MapWorld.None);
+
+        Assert.DoesNotContain(quoted.Out, e => e.To.Value == OutKey);
+        Assert.Contains(human.Out, e => e.To.Value == OutKey);
+        Assert.True(privateOpen.IsSuccess);
+        Assert.Equal(ContextErrors.UnknownAnchor.Code, privateDenied.Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_alias_to_a_record_resolves_for_a_session_when_the_record_is_linked_in_scope_and_is_003_without_its_title_when_not()
+    {
+        await ImportMap();
+        var session = MapWorld.Session(FixtureMap.Repo);
+
+        var inScope = await _world.Engine.ShowNode(AliasIn, session, MapWorld.None);
+        var outOfScope = await _world.Engine.ShowNode(AliasOut, session, MapWorld.None);
+
+        Assert.Equal("record:linear:issue/0e5a1b00-0000-4000-8000-000000000a02", inScope.Value.Node.Key.Value);
+        Assert.Equal(ContextErrors.UnknownAnchor.Code, outOfScope.Error.Code);
+        Assert.DoesNotContain("ZEBRA", outOfScope.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

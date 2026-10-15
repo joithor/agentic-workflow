@@ -87,6 +87,7 @@ public sealed class ContextSessionIntentApiTests : IDisposable
         Assert.NotEqual(true, result.IsError);
         var counts = result.StructuredContent!.Value.GetProperty("bands").GetProperty("intent").GetProperty("counts");
         Assert.Equal((1, 1), (counts.GetProperty("records").GetInt32(), counts.GetProperty("decisions").GetInt32()));
+        Assert.StartsWith("<untrusted source=\"map\">", result.StructuredContent!.Value.GetProperty("bands").GetProperty("intent").GetProperty("decisions")[0].GetProperty("quote").GetProperty("text").GetString(), StringComparison.Ordinal);
         Assert.DoesNotContain("ZEBRA", result.StructuredContent.Value.GetRawText(), StringComparison.Ordinal);
         Assert.Equal(true, outside.IsError);
         Assert.Contains("SND-CONTEXT-003", outside.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal);
