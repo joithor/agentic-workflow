@@ -105,6 +105,26 @@ public sealed class WorkflowGoldenTests
         }
     }
 
+    // The recipe goldens carry no id, so the fake's table says which recipe each stands for: the table must agree with the
+    // instance goldens that run the recipe (the same states), and every recipe golden is named there or is the stand-in.
+    [Fact]
+    public void Each_recipe_golden_is_named_for_a_recipe_whose_instances_have_its_states_or_is_the_stand_in()
+    {
+        var scenarios = GoldenFiles.All().Where(g => g.Kind == "Api" && g.Slug == "workflow-recipe" && !g.Body.Contains("traceId", StringComparison.Ordinal)).Select(g => g.Scenario).ToList();
+        var instances = GoldenFiles.All().Where(g => g.Kind == "Api" && g.Slug == "workflow-instance" && !g.Body.Contains("traceId", StringComparison.Ordinal)).Select(g => JsonNode.Parse(g.Body)!).ToList();
+
+        foreach (var scenario in scenarios.Where(s => !string.Equals(s, WorkflowAnswers.RecipeStandIn, StringComparison.Ordinal)))
+        {
+            Assert.True(WorkflowAnswers.NamedRecipeGoldens.TryGetValue(scenario, out var id), scenario + " is not named for a recipe");
+            var states = JsonNode.Parse(GoldenFiles.Api("workflow-recipe", scenario))!["states"]!.AsArray().Select(c => (string)c!["id"]!).ToList(); // why: a recipe lists states
+            var running = instances.Where(i => (string?)i["recipe"]!["id"] == id).ToList(); // why: an instance names its recipe
+            Assert.NotEmpty(running);
+            Assert.All(running, i => Assert.Equal(states, i["states"]!.AsArray().Select(c => (string)c!["id"]!), StringComparer.Ordinal)); // why: an instance lists its states
+        }
+
+        Assert.Contains(WorkflowAnswers.RecipeStandIn, scenarios, StringComparer.Ordinal);
+    }
+
     [Fact]
     public void Unknown_fact_type_reads_as_payload()
     {

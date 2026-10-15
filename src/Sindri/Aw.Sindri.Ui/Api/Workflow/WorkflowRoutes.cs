@@ -36,7 +36,7 @@ internal static class WorkflowRoutes
     internal static string Recipe(string recipe, string? hash)
     {
         var path = new StringBuilder(Root).Append("/recipes/").Append(Uri.EscapeDataString(recipe));
-        return (hash is null ? path : path.Append('@').Append(Uri.EscapeDataString(hash))).ToString();
+        return (string.IsNullOrEmpty(hash) ? path : path.Append('@').Append(Uri.EscapeDataString(hash))).ToString();
     }
 
     private static void Add(List<string> parts, string name, string? value)

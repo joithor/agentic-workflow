@@ -18,7 +18,7 @@ public abstract partial class SindriApiContract
     /// <summary>Every served fact golden.</summary>
     public static TheoryData<string> FactScenarios => Scenarios("workflow-instance-fact");
 
-    /// <summary>Every served recipe golden whose scenario is a recipe id (the recipe's dots are dashes).</summary>
+    /// <summary>Every served recipe golden.</summary>
     public static TheoryData<string> RecipeScenarios => Scenarios("workflow-recipe");
 
     /// <summary>Every distinct recipe id an instance golden or a list golden's row runs: each is a link the app can follow to the recipe.</summary>
@@ -165,14 +165,19 @@ public abstract partial class SindriApiContract
 
     [Theory]
     [MemberData(nameof(RecipeScenarios))]
-    public async Task Recipe_answers_each_golden_by_its_recipe_id(string scenario)
+    public async Task Recipe_answers_each_golden_for_the_recipes_it_stands_for(string scenario)
     {
         var golden = Golden("workflow-recipe", scenario);
+        var recipes = WorkflowAnswers.RecipesAnsweredBy(scenario).ToList();
+        Expect.True(recipes.Count > 0);
 
-        var recipe = (await Reach(new FakeSindriApi()).Recipe(_api, scenario.Replace('-', '.'), hash: null, Token)).Value;
+        foreach (var id in recipes)
+        {
+            var recipe = (await Reach(new FakeSindriApi()).Recipe(_api, id, hash: null, Token)).Value;
 
-        Expect.Equal(golden["inputs"]!.AsArray().Count, recipe.Inputs.Count);
-        Expect.Equal(golden["outputs"]!.AsArray().Count, recipe.Outputs.Count);
+            Expect.Equal(golden["inputs"]!.AsArray().Count, recipe.Inputs.Count);
+            Expect.Equal(golden["outputs"]!.AsArray().Count, recipe.Outputs.Count);
+        }
     }
 
     [Theory]
