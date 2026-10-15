@@ -18,6 +18,12 @@ internal static partial class Labels
     /// <summary>The palette's line when nothing matches.</summary>
     internal const string NoMatches = "Nothing matches";
 
+    /// <summary>The views banner's live text while the views rebuild (the sentence on screen carries a moving cursor).</summary>
+    internal const string ViewsRebuilding = "Rebuilding views";
+
+    /// <summary>The live text when the stalled or rebuilding banner goes away.</summary>
+    internal const string ViewsRecovered = "Views are up to date";
+
     /// <summary>The shortcuts sheet's title and accessible name.</summary>
     internal const string Shortcuts = "Keyboard shortcuts";
 

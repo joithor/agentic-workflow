@@ -107,6 +107,8 @@ public sealed class CatalogFramesTests : IDisposable
         var run = Named<Button>(banner, "RunButton");
         Assert.Equal((true, "Rebuild views"), (run.IsEffectivelyEnabled, AutomationProperties.GetName(run)));
         Assert.True(shell.Health.Banner.IsStalled);
+        var live = Named<TextBlock>(window, "ViewsLive");
+        Assert.Equal((true, "Views are stalled at 42: run `sindri views rebuild`"), (live.Classes.Contains("live"), live.Text));
         Frame(window, "banner-stalled");
     });
 

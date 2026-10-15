@@ -42,11 +42,30 @@ internal sealed class ViewsBanner : ObservableObject
     /// <param name="rebuild">The catalog's RebuildViews control, or null.</param>
     internal void Show(ServiceList? view, ControlViewModel? rebuild)
     {
+        var was = IsShown;
         IsStalled = view?.AsOf.Stalled == true;
         IsRebuilding = !IsStalled && view?.AsOf.Rebuilding == true;
         IsShown = IsStalled || IsRebuilding;
         Text = IsShown ? view?.Empty ?? string.Empty : string.Empty;
         Rebuild = IsStalled ? rebuild : null;
         HasRebuild = Rebuild is not null;
+        Announce(was);
+    }
+
+    // The flag (IsShown) has already changed; now the text. The rebuilding sentence carries a cursor that moves on every
+    // read, so the live region says the state, not the number. Going away after trouble is the recovery, flag then text.
+    private void Announce(bool was)
+    {
+        Announcement = IsStalled ? Text : IsRebuilding ? Labels.ViewsRebuilding : Labels.Sindri;
+        if (IsShown)
+        {
+            IsRecovered = false;   // trouble again: the flag drops, then the text rests
+            RecoveredAnnouncement = Labels.Sindri;
+        }
+        else if (was)
+        {
+            IsRecovered = true;
+            RecoveredAnnouncement = Labels.ViewsRecovered;
+        }
     }
 }
