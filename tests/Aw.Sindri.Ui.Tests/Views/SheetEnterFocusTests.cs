@@ -111,6 +111,47 @@ public sealed class SheetEnterFocusTests : IDisposable
     });
 
     [Fact]
+    public Task Enter_on_a_different_row_opens_that_rows_item_and_leaves_focus_outside_the_sheet() => OnUi(async () =>
+    {
+        var (window, shell) = await OpenSheet(width: 1400);
+        var first = shell.Item.ItemId;
+        window.KeyPressQwerty(PhysicalKey.K, RawInputModifiers.None);
+        Settle(window);
+        Assert.NotEqual(first, shell.Queue.SelectedId, StringComparer.Ordinal);
+
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        await Until(window, () => string.Equals(shell.Item.ItemId, shell.Queue.SelectedId, StringComparison.Ordinal));
+
+        Assert.False(window.Get<Border>("Sheet").IsVisualAncestorOf((Visual)window.FocusManager!.GetFocusedElement()!));
+    });
+
+    [Fact]
+    public Task Enter_where_the_sheet_covers_the_page_does_not_jump_to_the_first_action() => OnUi(async () =>
+    {
+        var (window, shell) = await OpenSheet(width: 1000);
+        _ = window.Get<Border>("Page").Focus(NavigationMethod.Tab);
+
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        Settle(window);
+
+        Assert.True(shell.IsSheetShown);
+        Assert.False(InFirstAction(window));
+    });
+
+    [Fact]
+    public Task Enter_falls_back_to_the_sheet_heading_when_the_first_action_takes_no_focus() => OnUi(async () =>
+    {
+        var (window, _) = await OpenSheet(width: 1400);
+        var list = window.GetVisualDescendants().OfType<ItemsControl>().First(c => c.Name == "ItemActionList");
+        list.GetVisualDescendants().OfType<Button>().First(b => b.Name == "RunButton").IsEnabled = false;
+
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        Settle(window);
+
+        Assert.Same(window.Get<TextBlock>("SheetTitle"), window.FocusManager?.GetFocusedElement());
+    });
+
+    [Fact]
     public Task The_focused_rows_ring_is_not_drawn_over_the_open_sheet() => OnUi(async () =>
     {
         var (window, _) = await OpenSheet(width: 1400);
