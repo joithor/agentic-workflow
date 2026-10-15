@@ -1,3 +1,5 @@
+using Aw.Meta.Core.Coordination;
+
 namespace Aw.Meta.Features.GateRun;
 
 /// <summary>What a gate run will do: the pull request, its run number, the scopes and the prepared tree.</summary>

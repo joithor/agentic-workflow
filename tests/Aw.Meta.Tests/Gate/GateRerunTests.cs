@@ -1,5 +1,5 @@
-#pragma warning disable CA1822, IDE0052 // red stage: removed when the service takes its ports
 using Aw.Meta.Core;
+using Aw.Meta.Core.Coordination;
 using Aw.Meta.Core.Commands;
 using Aw.Meta.Core.Gate;
 using Aw.Meta.Features.GateRerun;
@@ -14,7 +14,12 @@ public sealed class GateRerunTests
     private const string UnitLog = "/state/meta/gates/190/1/unit.log";
     private readonly MetaWorld _world = new();
 
-    private GateRerunService Service() => new();
+    private GateRerunService Service() => new(
+        _world.Config,
+        _world.Gates,
+        new GateWorkspace(_world.Repo, _world.Trees, _world.Paths),
+        new RerunExecutor(_world.Runner, _world.Paths),
+        _world.LogFiles);
 
     private async Task SaveRedGate()
     {

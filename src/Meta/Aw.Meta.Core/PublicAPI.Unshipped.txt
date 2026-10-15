@@ -131,6 +131,13 @@ Aw.Meta.Core.Coordination.GateTree
 Aw.Meta.Core.Coordination.GateTree.GateTree(Aw.Meta.Core.Coordination.RepoCommands! repo) -> void
 Aw.Meta.Core.Coordination.GateTree.Merge(string! tree, string! head) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
 Aw.Meta.Core.Coordination.GateTree.Prepare(string! repoDirectory, string! tree, string! revision) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Meta.Core.Coordination.GateWorkspace
+Aw.Meta.Core.Coordination.GateWorkspace.GateWorkspace(Aw.Meta.Core.Coordination.RepoCommands! repo, Aw.Meta.Core.Coordination.GateTree! trees, Aw.Meta.Core.MetaPaths! paths) -> void
+Aw.Meta.Core.Coordination.GateWorkspace.LogPath(int pr, int run, string! name) -> string!
+Aw.Meta.Core.Coordination.GateWorkspace.MainTreePath(int pr) -> string!
+Aw.Meta.Core.Coordination.GateWorkspace.Prepare(Aw.Meta.Core.Config.TeamConfig! config, int pr, bool listChanged) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Coordination.PreparedGate!>!>
+Aw.Meta.Core.Coordination.GateWorkspace.PrepareMain(Aw.Meta.Core.Config.TeamConfig! config, int pr, string! main) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Meta.Core.Coordination.GateWorkspace.TreePath(int pr) -> string!
 Aw.Meta.Core.Coordination.InboxSync
 Aw.Meta.Core.Coordination.InboxSync.InboxSync(Aw.Meta.Core.Ports.ITranscriptReader! transcripts, Aw.Meta.Core.Ports.IMessageStore! messages, Aw.Meta.Core.Ports.IOwnerStore! owner, System.TimeProvider! clock) -> void
 Aw.Meta.Core.Coordination.InboxSync.Run(string! transcript, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Ids.MessageId>!>!>
@@ -160,6 +167,26 @@ Aw.Meta.Core.Coordination.MetaSweep.Run(string! transcript, Aw.Meta.Core.Config.
 Aw.Meta.Core.Coordination.ObligationReader
 Aw.Meta.Core.Coordination.ObligationReader.ObligationReader(Aw.Meta.Core.Ports.IMessageStore! messages, Aw.Meta.Core.Ports.ILaneStore! lanes, Aw.Meta.Core.Ports.IOwnerStore! owner, Aw.Meta.Core.Ports.IGateStore! gates, Aw.Meta.Core.Ports.IKeyValueStore! values) -> void
 Aw.Meta.Core.Coordination.ObligationReader.Open(string! metaLane, System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>!>!>
+Aw.Meta.Core.Coordination.PreparedGate
+Aw.Meta.Core.Coordination.PreparedGate.<Clone>$() -> Aw.Meta.Core.Coordination.PreparedGate!
+Aw.Meta.Core.Coordination.PreparedGate.Changed.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Coordination.PreparedGate.Changed.init -> void
+Aw.Meta.Core.Coordination.PreparedGate.Deconstruct(out Aw.Meta.Core.Github.PrDetails! Pr, out string! Main, out string! Tree, out bool Merged, out System.Collections.Generic.IReadOnlyList<string!>! Changed) -> void
+Aw.Meta.Core.Coordination.PreparedGate.Equals(Aw.Meta.Core.Coordination.PreparedGate? other) -> bool
+override Aw.Meta.Core.Coordination.PreparedGate.Equals(object? obj) -> bool
+override Aw.Meta.Core.Coordination.PreparedGate.GetHashCode() -> int
+Aw.Meta.Core.Coordination.PreparedGate.Main.get -> string!
+Aw.Meta.Core.Coordination.PreparedGate.Main.init -> void
+Aw.Meta.Core.Coordination.PreparedGate.Merged.get -> bool
+Aw.Meta.Core.Coordination.PreparedGate.Merged.init -> void
+Aw.Meta.Core.Coordination.PreparedGate.Pr.get -> Aw.Meta.Core.Github.PrDetails!
+Aw.Meta.Core.Coordination.PreparedGate.Pr.init -> void
+Aw.Meta.Core.Coordination.PreparedGate.PreparedGate(Aw.Meta.Core.Github.PrDetails! Pr, string! Main, string! Tree, bool Merged, System.Collections.Generic.IReadOnlyList<string!>! Changed) -> void
+override Aw.Meta.Core.Coordination.PreparedGate.ToString() -> string!
+Aw.Meta.Core.Coordination.PreparedGate.Tree.get -> string!
+Aw.Meta.Core.Coordination.PreparedGate.Tree.init -> void
+static Aw.Meta.Core.Coordination.PreparedGate.operator !=(Aw.Meta.Core.Coordination.PreparedGate? left, Aw.Meta.Core.Coordination.PreparedGate? right) -> bool
+static Aw.Meta.Core.Coordination.PreparedGate.operator ==(Aw.Meta.Core.Coordination.PreparedGate? left, Aw.Meta.Core.Coordination.PreparedGate? right) -> bool
 Aw.Meta.Core.Coordination.RepoCommands
 Aw.Meta.Core.Coordination.RepoCommands.Changed(string! repo, string! range) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!>
 Aw.Meta.Core.Coordination.RepoCommands.Fetch(string! repo, int? pr) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>

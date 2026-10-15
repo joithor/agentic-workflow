@@ -17,5 +17,6 @@ public static class MetaCoreServiceCollectionExtensions
         .AddScoped<MetaSweep>()
         .AddScoped<StopGuard>()
         .AddScoped<RepoCommands>()
-        .AddScoped<GateTree>();
+        .AddScoped<GateTree>()
+        .AddScoped<GateWorkspace>();
 }
