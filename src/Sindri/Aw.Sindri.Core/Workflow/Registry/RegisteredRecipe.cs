@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -22,6 +23,22 @@ public sealed record RegisteredRecipe(RecipeId Id, int Version, RecipeHash Hash,
     /// </summary>
     /// <param name="json">The JSON options with the recipe records' context.</param>
     /// <returns>The recipe, or the read error.</returns>
-    public Result<Recipe> Read(JsonSerializerOptions json) =>
-        AwJson.Deserialize<Recipe>(Encoding.UTF8.GetBytes(Text), json);
+    public Result<Recipe> Read(JsonSerializerOptions json)
+    {
+        ArgumentNullException.ThrowIfNull(json);
+        if (JsonNode.Parse(Text) is not JsonObject recipe)
+        {
+            return AwJson.Deserialize<Recipe>(Encoding.UTF8.GetBytes(Text), json);   // why: not an object, so the typed read reports it
+        }
+
+        _ = recipe.TryAdd("urgency", Urgencies.Default);
+        _ = recipe.TryAdd("outputs", new JsonArray());
+        _ = recipe.TryAdd("hash", value: null);
+        foreach (var input in recipe["inputs"] is JsonArray inputs ? inputs.OfType<JsonObject>() : [])
+        {
+            _ = input.TryAdd("kind", value: null);
+        }
+
+        return AwJson.Deserialize<Recipe>(Encoding.UTF8.GetBytes(recipe.ToJsonString()), json);
+    }
 }

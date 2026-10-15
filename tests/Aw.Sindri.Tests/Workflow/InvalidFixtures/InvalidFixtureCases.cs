@@ -36,13 +36,13 @@ internal static class InvalidFixtureCases
             ]),
         ["RCP-CAP-003"] = new(
             FixtureSetup.CapabilityWithUnapprovedBase,
-            "RCP-CAP-003: base workflow.cap-base@5aa84cb58a5a is registered but not approved at RCP-CAP-003.yaml:4:1 (base); approve the base at a terminal (sindri recipe approve workflow.cap-base@5aa84cb58a5a), or generate the recipe from an approved base",
+            "RCP-CAP-003: base workflow.cap-base@84b1571f2b84 is registered but not approved at RCP-CAP-003.yaml:4:1 (base); approve the base at a terminal (sindri recipe approve workflow.cap-base@84b1571f2b84), or generate the recipe from an approved base",
             [
                 "RCP-EFFECT-001: effect 'effect.repo.push' wasn't checked against an effect allowlist, since the profile has no workflow.effects at RCP-CAP-003.yaml:47:9 (transitions[2].effects[0].use); add workflow.effects to the profile; until then the effect is refused at run time [Skipped]",
             ]),
         ["RCP-CAP-004"] = new(
             FixtureSetup.Capability,
-            "RCP-CAP-004: hand-written recipe workflow.cap-handwritten names base workflow.cap-base@5aa84cb58a5a at RCP-CAP-004.yaml:4:1 (base); remove base, which only Sindri's generator writes",
+            "RCP-CAP-004: hand-written recipe workflow.cap-handwritten names base workflow.cap-base@84b1571f2b84 at RCP-CAP-004.yaml:4:1 (base); remove base, which only Sindri's generator writes",
             []),
         ["RCP-CAP-005"] = new(
             FixtureSetup.CapabilityWithBase,
@@ -96,7 +96,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-HASH-001"] = new(
             FixtureSetup.Shipped,
-            "RCP-HASH-001: hash 000000000000 doesn't match the recipe's content, whose hash is bf21a0f792f6 at RCP-HASH-001.yaml:16:1 (hash); set hash to sha256:bf21a0f792f68562707433eb71ae250767113da2997c3d497a1b654af246c4b5, or remove it",
+            "RCP-HASH-001: hash 000000000000 doesn't match the recipe's content, whose hash is e69eeb6a8547 at RCP-HASH-001.yaml:16:1 (hash); set hash to sha256:e69eeb6a8547f69896a6b6b63f18a392b5b999cd22705e9286e461c2f7071b2c, or remove it",
             []),
         ["RCP-INIT-001"] = new(
             FixtureSetup.Shipped,
@@ -180,7 +180,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-VERSION-001"] = new(
             FixtureSetup.Registry,
-            "RCP-VERSION-001: workflow.version-taken version 1 is registered with hash 2bd784957be7, but this recipe's hash is 0f811d6c0e23 at RCP-VERSION-001.yaml:3:1 (version); raise version to 2, one above the highest registered, or restore the content registered as version 1",
+            "RCP-VERSION-001: workflow.version-taken version 1 is registered with hash 2bd784957be7, but this recipe's hash is 165194be5b2b at RCP-VERSION-001.yaml:3:1 (version); raise version to 2, one above the highest registered, or restore the content registered as version 1",
             []),
         ["RCP-VERSION-002"] = new(
             FixtureSetup.Registry,

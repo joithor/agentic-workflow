@@ -55,7 +55,7 @@ internal sealed class RecipeRegistryCommands(RecipeDesk desk, IServiceProvider s
             .ConfigureAwait(false);
         return shown.IsError
             ? await output.Error(NotRunning(shown.Error)).ConfigureAwait(false)
-            : await output.Text(RecipeLineText.Line(shown.Value.Value.Recipe) + "\n" + RecipePreviewText.Approve(shown.Value.Value.Preview, evals: null), 0).ConfigureAwait(false);
+            : await output.Text(RecipeLineText.Line(shown.Value.Value.Recipe) + "\n" + RecipeLineText.Detail(shown.Value.Value.Recipe) + RecipePreviewText.Approve(shown.Value.Value.Preview, evals: null), 0).ConfigureAwait(false);
     }
 
     internal async Task<int> List(bool stale, bool json, CancellationToken ct)

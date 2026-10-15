@@ -110,7 +110,7 @@ public sealed class RecipeReaderTests
 
         Assert.Equal(
             [
-                "RCP-SCHEMA-001: 'colour' isn't a field of the recipe at test.yaml:15:1 (colour); remove it; the recipe has schema, id, version, description, base, inputs, initial, states, transitions, loops, budget, evals, hash",
+                "RCP-SCHEMA-001: 'colour' isn't a field of the recipe at test.yaml:15:1 (colour); remove it; the recipe has schema, id, version, description, base, urgency, inputs, outputs, initial, states, transitions, loops, budget, evals, hash",
                 "RCP-SCHEMA-002: transition to 'nowhere' names a state the recipe doesn't declare at test.yaml:14:22 (transitions[0].to); name one of the recipe's states: produce, done",
                 "RCP-SCHEMA-001: active state 'produce' has no 'next' at test.yaml:6:3 (states.produce.next); an active state has step, timeout and next, and may have loop and budget",
             ],

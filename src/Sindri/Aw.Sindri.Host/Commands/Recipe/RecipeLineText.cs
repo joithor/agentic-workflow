@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Registry;
 
 namespace Aw.Sindri.Host.Commands.Recipe;
@@ -20,6 +21,17 @@ internal static class RecipeLineText
             : $"; stale: {string.Join(", ", s.Stale.Select(Word))} (fix: sindri recipe approve {name})";
         return $"{name} {Word(s.Standing)}{via}{stale}";
     }
+
+    /// <summary>
+    /// What 'recipe show' adds under the line: 'urgency: &lt;urgency&gt;', then one 'input: &lt;key&gt; type=&lt;type&gt; kind=&lt;kind&gt;' line per input
+    /// (type text when none is declared, kind '-' when none) and one 'output: &lt;key&gt; type=&lt;type&gt; from=&lt;state&gt;' line per output.
+    /// </summary>
+    /// <param name="s">The recipe's line.</param>
+    /// <returns>The lines, each with its newline.</returns>
+    internal static string Detail(RecipeSummary s) =>
+        $"urgency: {s.Urgency}\n"
+        + string.Concat(s.Inputs.Select(static i => $"input: {i.Key.Value} type={i.Type ?? FactTypes.Default} kind={i.Kind ?? "-"}\n"))
+        + string.Concat(s.Outputs.Select(static o => $"output: {o.Key.Value} type={o.Type ?? FactTypes.Default} from={o.From}\n"));
 
     /// <summary>One line per recipe, or the empty state: 'no recipes registered', or 'no stale recipes' for '--stale'.</summary>
     /// <param name="lines">The recipes.</param>

@@ -18,8 +18,9 @@ public sealed class LegacyRecipeRowTests
     {
         var registry = new RegistryHarness();
         _ = await registry.H.HoldLease();
-        var legacy = RecipeDeclarationsTests.LegacyJson(ShippedRecipes.Read("sindri/workflow.step.yaml"));
-        var row = new RegisteredRecipe(RecipeId.From("workflow.step"), 1, RecipeHash.Of(CanonicalJson.Of(legacy)), legacy.ToJsonString(), Base: null, registry.H.Clock.GetUtcNow());
+        var source = ShippedRecipes.Read("sindri/workflow.step.yaml");
+        var row = new RegisteredRecipe(RecipeId.From("workflow.step"), 1, RecipeDeclarationsTests.LegacyHash(source),
+            RecipeDeclarationsTests.LegacyJson(source).ToJsonString(), Base: null, registry.H.Clock.GetUtcNow());
         _ = await registry.Recipes.Add(row, TestContext.Current.CancellationToken);
         return (registry, row);
     }

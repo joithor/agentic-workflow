@@ -66,11 +66,10 @@ public sealed class RecipeDeclarationsTests
         Assert.Contains(lines, l => l.Contains("RCP-SCHEMA-001", StringComparison.Ordinal) && l.Contains("outputs[0].color", StringComparison.Ordinal));
     }
 
-    /// <summary>The long form of the legacy recipe: today's JSON without the three declarations P2b added.</summary>
+    /// <summary>The long form of the legacy recipe as the registry stored it: today's JSON (with its null 'hash') without the three declarations P2b added.</summary>
     internal static JsonObject LegacyJson(string yaml)
     {
         var node = JsonNode.Parse(AwJson.Serialize(RecipeReaderTests.Bind(yaml) with { Hash = null }, SliceHarness.Json))!.AsObject();
-        _ = node.Remove("hash");
         _ = node.Remove("urgency");
         _ = node.Remove("outputs");
         foreach (var input in node["inputs"]!.AsArray())
@@ -81,18 +80,25 @@ public sealed class RecipeDeclarationsTests
         return node;
     }
 
+    /// <summary>The hash the legacy recipe was registered under: sha256 over the canonical legacy form without 'hash'.</summary>
+    internal static Core.Workflow.Ids.RecipeHash LegacyHash(string yaml)
+    {
+        var node = LegacyJson(yaml);
+        _ = node.Remove("hash");
+        return Core.Workflow.Ids.RecipeHash.Of(CanonicalJson.Of(node));
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void Legacy_stored_text_without_the_declarations_reads_with_their_defaults()
     {
         var yaml = WithDeclarations("inputs: [fact:item]\n");
         var row = new Core.Workflow.Registry.RegisteredRecipe(
-            Core.Workflow.Ids.RecipeId.From("workflow.minimal"), 1, Core.Workflow.Ids.RecipeHash.Of(CanonicalJson.Of(LegacyJson(yaml))),
-            LegacyJson(yaml).ToJsonString(), Base: null, DateTimeOffset.UnixEpoch);
+            Core.Workflow.Ids.RecipeId.From("workflow.minimal"), 1, LegacyHash(yaml), LegacyJson(yaml).ToJsonString(), Base: null, DateTimeOffset.UnixEpoch);
 
         var read = row.Read(SliceHarness.Json);
 
         Assert.True(read.IsSuccess, read.IsError ? read.Error.ToString() : null);
-        Assert.Equal(RecipeReaderTests.Bind(yaml), read.Value);
+        Assert.Equal(AwJson.Serialize(RecipeReaderTests.Bind(yaml), SliceHarness.Json), AwJson.Serialize(read.Value, SliceHarness.Json));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -101,9 +107,8 @@ public sealed class RecipeDeclarationsTests
         var yaml = WithDeclarations("inputs: [fact:item]\n");
         var legacy = LegacyJson(yaml);
         var current = JsonNode.Parse(AwJson.Serialize(RecipeReaderTests.Bind(yaml) with { Hash = null }, SliceHarness.Json))!.AsObject();
-        _ = current.Remove("hash");
 
         Assert.Equal(["outputs", "urgency"], current.Select(p => p.Key).Except(legacy.Select(p => p.Key), StringComparer.Ordinal).Order(StringComparer.Ordinal), StringComparer.Ordinal);
-        Assert.NotEqual(Core.Workflow.Ids.RecipeHash.Of(CanonicalJson.Of(legacy)), Core.Workflow.Ids.RecipeHash.Of(CanonicalJson.Of(current)));
+        Assert.NotEqual(LegacyHash(yaml), RecipeHashing.Of(RecipeReaderTests.Bind(yaml), SliceHarness.Json));
     }
 }
