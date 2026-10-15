@@ -158,7 +158,7 @@ public sealed class AutomationPeerTests : IDisposable
         var hint = First(window, b => b.Name == "ChordHint");
 
         Assert.Equal(
-            (Avalonia.Automation.AutomationLiveSetting.Off, Avalonia.Automation.AccessibilityView.Raw, string.Empty),
+            (Avalonia.Automation.AutomationLiveSetting.Off, Avalonia.Automation.AccessibilityView.Raw, null),
             (Avalonia.Automation.AutomationProperties.GetLiveSetting(hint), Avalonia.Automation.AutomationProperties.GetAccessibilityView(hint), Avalonia.Automation.AutomationProperties.GetName(hint)));
     });
 }

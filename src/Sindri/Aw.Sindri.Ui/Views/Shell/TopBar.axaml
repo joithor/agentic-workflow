@@ -95,11 +95,12 @@
 
       <!-- The ⌘K field (home.html): a magnifier, the placeholder, and the ⌘K keycap at the right; folded ("compact"), the
            magnifier alone, still named "Search or run a command". -->
-      <!-- §8: while the G chord waits for its second key, "G …" shows here (a polite live region names it). -->
+      <!-- §8: while the G chord waits for its second key, "G …" shows here. A visual cue only: no live region (an ungated one
+           would speak the resting text, and its name going to "" is the empty live region VoiceOver crashes on, Avalonia #22312). -->
       <Border x:Name="ChordHint" Grid.Column="3" Classes="kbd" HorizontalAlignment="Right" VerticalAlignment="Center"
               IsVisible="{Binding ChordHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-              AutomationProperties.Name="{Binding ChordHint}" AutomationProperties.LiveSetting="Polite">
-        <TextBlock x:Name="ChordHintText" Classes="kbd" Text="{Binding ChordHint}" />
+              AutomationProperties.AccessibilityView="Raw">
+        <TextBlock x:Name="ChordHintText" Classes="kbd" Text="{Binding ChordHint}" AutomationProperties.AccessibilityView="Raw" />
       </Border>
       <Border x:Name="SearchField" Grid.Column="4" Classes="search" Margin="12,0,12,0" Focusable="True" Cursor="Hand"
               PointerPressed="OnSearch" KeyDown="OnSearchKey"
