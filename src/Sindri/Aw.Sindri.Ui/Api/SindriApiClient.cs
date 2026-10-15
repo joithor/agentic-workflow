@@ -162,4 +162,7 @@ internal sealed partial class SindriApiClient(HttpClient http, IHumanTokenSource
             return false;
         }
     }
+
+    // LANE ANCHOR U3': implement the U3' reads in SindriApiClient.Calls.cs and list their routes there.
+    // LANE ANCHOR U8: implement the U8 sends in SindriApiClient.Calls.cs; the workflow reads already have their routes in WorkflowRoutes.
 }

@@ -72,4 +72,7 @@ internal interface ISindriApi
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The recipe, the API's refusal, or SND-UI-002/003.</returns>
     public Task<Result<RecipeView>> Recipe(Uri api, string recipe, string? hash, CancellationToken cancellationToken);
+
+    // LANE ANCHOR U3': the Needs you, decision and request reads go here, one method each, before the end of the interface.
+    // LANE ANCHOR U8: the command sends (nonce, commands, complete) go here once API P11 serves their shapes (Q-API-7/8); none is declared before.
 }

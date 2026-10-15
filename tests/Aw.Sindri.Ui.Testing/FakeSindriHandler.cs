@@ -217,4 +217,7 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
     private static string Quoted(DateTimeOffset? t) => t is { } v ? $"\"{Time(v)}\"" : "null";
 
     private static string Time(DateTimeOffset t) => t.UtcDateTime.ToString("O", CultureInfo.InvariantCulture);
+
+    // LANE ANCHOR U3': add the Needs you routes below the existing ones, each a RouteAnswer from the goldens.
+    // LANE ANCHOR U8: add the workflow command routes below the existing ones, each a RouteAnswer from the goldens.
 }

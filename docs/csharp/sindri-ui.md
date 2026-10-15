@@ -359,6 +359,18 @@ private AT-SPI bus with a private `XDG_RUNTIME_DIR`. It never inherits `DISPLAY`
 `~/.agentic-workflow/jthorare-agentic-workflow/proof/sindri-ui-u1/raw/tools` enforce this: `session-up.sh` brings the
 session up, `env.sh` refuses to load unless the session is private, and `privsession.py` is the private-bus helper.
 
+## Lane anchors (U3' and U8)
+
+Two lanes add to the same files, so each hotspot carries one marker per lane, `LANE ANCHOR U3'` and `LANE ANCHOR U8`
+(a comment: `//` in C#, `<!-- -->` in XAML). A lane adds its lines at its own marker and nowhere else in the file, so
+two merges don't touch the same lines. The files: `Api/ISindriApi.cs`, `Api/SindriApiClient.cs`,
+`Api/SindriUiJsonContext.cs`, `ViewModels/Shell/ShellViewModel.cs` and `.Sheet.cs`, `Views/Shell/ShellWindow.axaml`,
+and in `tests/Aw.Sindri.Ui.Testing`: `FakeSindriApi.Workflow.cs`, `FakeSindriHandler.cs`, `SindriApiContract.cs` and
+`SindriApiContract.Workflow.cs`. This page has its own marker at the end of "Tests". A lane's new shell state goes in its
+own `ShellViewModel.<Slice>.cs` partial (the file cap is 300 lines); the sheet and its subject already live in
+`ShellViewModel.Sheet.cs`. The desk-complete and nonce sends are **not declared** on `ISindriApi`: their shapes come with
+API P11 (Q-API-7/8), and declaring them now would guess.
+
 ## How it finds the control plane
 
 Every call carries this start's human token (`IHumanTokenSource`, read at each call; see the caller headers
@@ -468,3 +480,6 @@ dotnet test --project tests/Aw.Sindri.Ui.Tests --filter-trait "Lane=unit"
 dotnet test --project tests/Aw.Sindri.Ui.Tests --filter-trait "Lane=integration"
 bash src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh [<dir>]   # NativeAOT sindri-ui on a copy (CI's AOT step); copies it to <dir> when given
 ```
+
+<!-- LANE ANCHOR U3': document the Needs you screens below this line. -->
+<!-- LANE ANCHOR U8: document the instance screens below this line. -->

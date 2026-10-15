@@ -274,6 +274,8 @@
     <!-- A command the palette started and closed on before its outcome: no control has a view on show to say it, so this region does. -->
     <TextBlock x:Name="CommandOutcomeLive" Classes="live-region" Classes.live="{Binding CommandOutcome.IsLive}" Text="{Binding CommandOutcome.Text}"
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <!-- LANE ANCHOR U3': the Needs you band and its sheet layer go above this line. -->
+    <!-- LANE ANCHOR U8: the instance sheet layer goes above this line. -->
     <!-- The palette and the ? sheet (§8): layers over everything, shown by their view models; Esc closes the topmost. -->
     <Panel x:Name="PaletteLayer" IsVisible="{Binding Palette.IsOpen}">
       <root:CommandPalette x:Name="CommandPalette" DataContext="{Binding Palette}" />

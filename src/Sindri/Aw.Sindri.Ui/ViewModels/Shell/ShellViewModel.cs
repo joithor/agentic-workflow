@@ -160,24 +160,6 @@ internal sealed partial class ShellViewModel : ObservableObject
     // Connected: the API's pages (and the sheet over them) have something to show.
     private bool IsConnected => State is ShellState.Normal or ShellState.Stale or ShellState.Unreadable;
 
-    /// <summary>True while the detail sheet is open.</summary>
-    public bool IsSheetOpen { get; private set; }
-
-    /// <summary>The sheet's subject (the deep link's subject); kept after the sheet closes for the edge tab; empty before the first.</summary>
-    public string SheetSubject { get; private set; } = string.Empty;
-
-    /// <summary>True when the closed sheet shows its edge tab (a subject was opened before).</summary>
-    public bool HasEdgeTab => SheetSubject.Length > 0;
-
-    /// <summary>The sheet shows when it's open over a visible page.</summary>
-    public bool IsSheetShown => IsSheetOpen && IsConnected;
-
-    /// <summary>The edge tab's accessible name: "Reopen" and its subject.</summary>
-    public string EdgeTabName => Labels.Reopen + " " + SheetSubject;
-
-    /// <summary>The edge tab shows when the sheet is closed and has a subject, over a visible page.</summary>
-    public bool IsEdgeTabShown => !IsSheetOpen && HasEdgeTab && IsConnected;
-
     /// <summary>The attention band under the top bar (§3.2): always false in U0, since needs-you arrives in U3.</summary>
     public bool IsAttentionBandVisible { get; }
 
@@ -206,13 +188,6 @@ internal sealed partial class ShellViewModel : ObservableObject
         Remember(p => p with { LastPage = page.ToString() });
     }
 
-    /// <summary>Closes the sheet (Esc); its subject stays on the edge tab.</summary>
-    internal void CloseSheet()
-    {
-        IsSheetOpen = false;
-        Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
-    }
-
     /// <summary>
     /// Esc on Settings over the Not running card: back to the page it was opened from, so the card shows again. While
     /// connected Settings is a page like any other, and Esc leaves it where it is.
@@ -229,17 +204,8 @@ internal sealed partial class ShellViewModel : ObservableObject
         return true;
     }
 
-    /// <summary>Opens the sheet again on its last subject (the edge tab).</summary>
-    internal void ReopenSheet()
-    {
-        if (!HasEdgeTab)
-        {
-            return;
-        }
-
-        IsSheetOpen = true;
-        Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
-    }
+    // LANE ANCHOR U3': new Needs you state belongs in its own partial (ShellViewModel.<Slice>.cs), not in this file (cap 300 lines).
+    // LANE ANCHOR U8: new workflow state belongs in its own partial (ShellViewModel.<Slice>.cs), not in this file (cap 300 lines).
 
     /// <summary>Follows the control plane until cancelled (S1b's loop: control.json, ping, status, events).</summary>
     /// <param name="cancellationToken">Stops following.</param>

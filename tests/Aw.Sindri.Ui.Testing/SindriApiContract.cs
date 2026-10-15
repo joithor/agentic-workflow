@@ -295,4 +295,7 @@ public abstract partial class SindriApiContract
 
         Expect.Equal("SND-API-011", (await api.Status(_api, Token)).Error.Code);
     }
+
+    // LANE ANCHOR U3': contract cases for the U3' reads go in a new partial file (SindriApiContract.<Slice>.cs).
+    // LANE ANCHOR U8: contract cases for the U8 sends go in SindriApiContract.Workflow.cs, after the refusal cases.
 }

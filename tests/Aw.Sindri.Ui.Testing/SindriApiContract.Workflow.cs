@@ -221,4 +221,7 @@ public abstract partial class SindriApiContract
         Expect.Equal("SND-UI-003", (await api.InstanceFact(_api, "WFI-1", "fact:a", Token)).Error.Code);
         Expect.Equal("SND-UI-003", (await api.Recipe(_api, "workflow.project", hash: null, Token)).Error.Code);
     }
+
+    // LANE ANCHOR U3': nothing: U3' cases go in their own partial file.
+    // LANE ANCHOR U8: the send cases (nonce, commands, complete) go here once the goldens exist; enumerate them from disk like the reads.
 }
