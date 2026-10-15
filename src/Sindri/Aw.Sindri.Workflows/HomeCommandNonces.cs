@@ -46,7 +46,7 @@ internal sealed class HomeCommandNonces(WorkflowsHome home, TimeProvider clock) 
 
             if (now - DateTimeOffset.FromUnixTimeMilliseconds(milliseconds) > ICommandNonces.Lifetime)
             {
-                return WorkflowErrors.NonceRefused.With($"nonce {nonce.Value} expired (fix: run the command again; the CLI fetches a new nonce)");
+                return NonceExpiry.Refusal(nonce, string.Equals(claimed, digest, StringComparison.Ordinal), lines.Contains(AppliedMark, StringComparer.Ordinal));
             }
 
             return string.Equals(claimed, digest, StringComparison.Ordinal)

@@ -33,7 +33,7 @@ public sealed class InMemoryCommandNonces(TimeProvider clock) : ICommandNonces
             return ValueTask.FromResult<Result<NonceClaim>>(claim switch
             {
                 _ when now - claim.At > ICommandNonces.Lifetime =>
-                    WorkflowErrors.NonceRefused.With($"nonce {nonce.Value} expired (fix: run the command again; the CLI fetches a new nonce)"),
+                    NonceExpiry.Refusal(nonce, string.Equals(claim.Subject, subject, StringComparison.Ordinal), claim.Applied),
                 _ when !string.Equals(claim.Subject, subject, StringComparison.Ordinal) =>
                     WorkflowErrors.NonceRefused.With($"nonce {nonce.Value} was used for another command (fix: run the command again; the CLI fetches a new nonce)"),
                 _ => claim.Applied ? NonceClaim.Applied : NonceClaim.Pending,
