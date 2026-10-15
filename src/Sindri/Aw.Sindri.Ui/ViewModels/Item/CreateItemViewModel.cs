@@ -12,6 +12,8 @@ namespace Aw.Sindri.Ui.ViewModels.Item;
 /// </summary>
 internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> url, ISindriApi api) : ObservableObject
 {
+    private int _form;   // which opening of the form this is; an answer is for the one that sent it
+
     /// <summary>The app's copy for the form.</summary>
     public ItemText Text { get; } = ItemText.Instance;
 
@@ -83,7 +85,8 @@ internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> u
             old.PropertyChanged -= OnControl;
         }
 
-        Control = catalog.On("CreateItem", string.Empty, Send);
+        var form = ++_form;
+        Control = catalog.On("CreateItem", string.Empty, ct => Send(form, ct));
         if (Control is { } control)
         {
             control.PropertyChanged += OnControl;
@@ -158,7 +161,7 @@ internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> u
         Announcement = text;
     }
 
-    private async Task<Result<CommandAcceptedView>> Send(CancellationToken cancellationToken)
+    private async Task<Result<CommandAcceptedView>> Send(int form, CancellationToken cancellationToken)
     {
         if (url() is not { } api1)
         {
@@ -172,7 +175,11 @@ internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> u
             return created.Error;
         }
 
-        CreatedId = created.Value.ItemId;
+        if (form == _form)
+        {
+            CreatedId = created.Value.ItemId;   // only the form that sent it: Esc and C made another since
+        }
+
         return created.Value.Accepted;
     }
 
