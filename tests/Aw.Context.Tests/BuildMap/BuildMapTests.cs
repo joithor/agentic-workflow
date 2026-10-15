@@ -321,6 +321,29 @@ public sealed class BuildMapTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_rebuild_after_a_deny_glob_also_undoes_the_decisions_about_a_surface_only_the_open_draft_holds()
+    {
+        _ = await _world.Map.BuildMap(progress: null, Scope, MapWorld.None);   // no promote: the surface lives in the open draft only
+        Assert.True((await _world.Map.ApplyReview(new ReviewDecision(ReviewVerb.Accept, _split), Scope, MapWorld.None)).IsSuccess);
+        Assert.True((await _world.Map.ApplyReview(new ReviewDecision(ReviewVerb.Rename, _close, Label: "Close it"), Scope, MapWorld.None)).IsSuccess);
+        var denying = MapWorld.HumanWith(MapWorld.OnlyFixtureRepo, [new ContextRepo(ContextRepoName.From(FixtureMap.Repo), "/work/aw-split-panes") { DenyPaths = [.. PathDenylist.Defaults, "src/commands/**"] }]);
+
+        _ = await _world.Map.BuildMap(progress: null, denying, MapWorld.None);
+
+        var queue = (await _world.Map.ReviewQueue(limit: null, denying, MapWorld.None)).Value;
+        var history = (await _world.Map.ReviewHistory(limit: null, denying, MapWorld.None)).Value;
+        Assert.True((await _world.Map.ApplyReview(new ReviewDecision(ReviewVerb.AcceptDeterministic), denying, MapWorld.None)).IsSuccess);
+        var promoted = await _world.Map.Promote(denying, MapWorld.None);
+        Assert.True(promoted.IsSuccess, promoted.IsError ? promoted.Error.Message : null);
+        var exported = await _world.Map.ExportMap(path: null, denying, MapWorld.None);
+        var document = _world.Exports.Documents[exported.Value.Path];
+        var names = history.Entries.SelectMany(e => new[] { e.Target.Value, e.Label ?? string.Empty })
+            .Concat((document.Overrides ?? []).Select(o => o.Target.Value)).Concat((document.Orphaned ?? []).Select(k => k.Value)).Concat(document.Nodes.Select(n => n.Key.Value));
+        Assert.DoesNotContain(queue.Entries, e => e.Group == ReviewGroup.Orphaned);
+        Assert.DoesNotContain(names, n => n.Contains("split-vertical", StringComparison.Ordinal) || n.Contains("close-pane", StringComparison.Ordinal) || n.Contains("Close it", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_build_whose_draft_cant_be_saved_writes_no_undo_rows()
     {
         _ = await _world.Map.BuildMap(progress: null, Scope, MapWorld.None);
