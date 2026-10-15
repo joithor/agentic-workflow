@@ -3,6 +3,7 @@ using Aw.Meta.Core.Config;
 using Aw.Meta.Core.Messages;
 using Aw.Meta.Features.Lanes;
 using Aw.Meta.Features.Roles;
+using Aw.Meta.Features.StopCheck;
 using Aw.Meta.Features.SyncInbox;
 using Aw.Meta.Features.Team;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,7 +32,10 @@ public static class MetaFeaturesServiceCollectionExtensions
             .AddScoped<TeamShowService>()
             .Plain<TeamShowService, TeamShowRequest, TeamConfig>()
             .AddScoped<RefreshLanesService>()
-            .Plain<RefreshLanesService, RefreshLanesRequest, LanesResponse>();
+            .Plain<RefreshLanesService, RefreshLanesRequest, LanesResponse>()
+            .AddScoped<StopCheckService>()
+            .AddScoped<IValidator<StopCheckRequest>, StopCheckValidator>()
+            .Validated<StopCheckService, StopCheckRequest, StopCheckResponse>();
         return services;
     }
 

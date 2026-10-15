@@ -148,9 +148,29 @@ Aw.Meta.Core.Coordination.LaneRefresher.Run(Aw.Meta.Core.Config.TeamConfig! conf
 Aw.Meta.Core.Coordination.MetaSession
 Aw.Meta.Core.Coordination.MetaSession.MetaSession(Aw.Meta.Core.Ports.IMessageStore! messages, Aw.Meta.Core.Ports.IMetaConfig! config) -> void
 Aw.Meta.Core.Coordination.MetaSession.Resolve(Aw.Meta.Core.Ids.SessionId session, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Config.TeamConfig?>!>
+Aw.Meta.Core.Coordination.MetaSweep
+Aw.Meta.Core.Coordination.MetaSweep.MetaSweep(Aw.Meta.Core.Coordination.InboxSync! sync, Aw.Meta.Core.Coordination.LaneRefresher! refresher, Aw.Meta.Core.Coordination.ObligationReader! reader) -> void
+Aw.Meta.Core.Coordination.MetaSweep.Run(string! transcript, Aw.Meta.Core.Config.TeamConfig! config, System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>!>!>
 Aw.Meta.Core.Coordination.ObligationReader
 Aw.Meta.Core.Coordination.ObligationReader.ObligationReader(Aw.Meta.Core.Ports.IMessageStore! messages, Aw.Meta.Core.Ports.ILaneStore! lanes, Aw.Meta.Core.Ports.IOwnerStore! owner, Aw.Meta.Core.Ports.IGateStore! gates, Aw.Meta.Core.Ports.IKeyValueStore! values) -> void
 Aw.Meta.Core.Coordination.ObligationReader.Open(string! metaLane, System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>!>!>
+Aw.Meta.Core.Coordination.StopGuard
+Aw.Meta.Core.Coordination.StopGuard.Decide(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>! open, bool hookActive, int max, System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Coordination.StopOutcome!>!>
+Aw.Meta.Core.Coordination.StopGuard.StopGuard(Aw.Meta.Core.Ports.IKeyValueStore! values, Aw.Meta.Core.Ports.IRunningLog! log) -> void
+Aw.Meta.Core.Coordination.StopOutcome
+Aw.Meta.Core.Coordination.StopOutcome.<Clone>$() -> Aw.Meta.Core.Coordination.StopOutcome!
+Aw.Meta.Core.Coordination.StopOutcome.Block.get -> bool
+Aw.Meta.Core.Coordination.StopOutcome.Block.init -> void
+Aw.Meta.Core.Coordination.StopOutcome.Deconstruct(out bool Block, out string? Warning) -> void
+Aw.Meta.Core.Coordination.StopOutcome.Equals(Aw.Meta.Core.Coordination.StopOutcome? other) -> bool
+override Aw.Meta.Core.Coordination.StopOutcome.Equals(object? obj) -> bool
+override Aw.Meta.Core.Coordination.StopOutcome.GetHashCode() -> int
+Aw.Meta.Core.Coordination.StopOutcome.StopOutcome(bool Block, string? Warning) -> void
+override Aw.Meta.Core.Coordination.StopOutcome.ToString() -> string!
+Aw.Meta.Core.Coordination.StopOutcome.Warning.get -> string?
+Aw.Meta.Core.Coordination.StopOutcome.Warning.init -> void
+static Aw.Meta.Core.Coordination.StopOutcome.operator !=(Aw.Meta.Core.Coordination.StopOutcome? left, Aw.Meta.Core.Coordination.StopOutcome? right) -> bool
+static Aw.Meta.Core.Coordination.StopOutcome.operator ==(Aw.Meta.Core.Coordination.StopOutcome? left, Aw.Meta.Core.Coordination.StopOutcome? right) -> bool
 Aw.Meta.Core.Gate.FlakeRule
 static Aw.Meta.Core.Gate.FlakeRule.Classify(Aw.Meta.Core.Gate.RerunOutcome! alone, Aw.Meta.Core.Gate.RerunOutcome! onMain, string! gateFailure) -> Aw.Meta.Core.Gate.FlakeVerdict
 Aw.Meta.Core.Gate.FlakeVerdict
@@ -391,6 +411,16 @@ Aw.Meta.Core.Lanes.LiveSession.Status.init -> void
 override Aw.Meta.Core.Lanes.LiveSession.ToString() -> string!
 static Aw.Meta.Core.Lanes.LiveSession.operator !=(Aw.Meta.Core.Lanes.LiveSession? left, Aw.Meta.Core.Lanes.LiveSession? right) -> bool
 static Aw.Meta.Core.Lanes.LiveSession.operator ==(Aw.Meta.Core.Lanes.LiveSession? left, Aw.Meta.Core.Lanes.LiveSession? right) -> bool
+Aw.Meta.Core.Logs.LogKind
+Aw.Meta.Core.Logs.LogKind.Decision = 2 -> Aw.Meta.Core.Logs.LogKind
+Aw.Meta.Core.Logs.LogKind.Incident = 4 -> Aw.Meta.Core.Logs.LogKind
+Aw.Meta.Core.Logs.LogKind.Lanes = 3 -> Aw.Meta.Core.Logs.LogKind
+Aw.Meta.Core.Logs.LogKind.Merge = 1 -> Aw.Meta.Core.Logs.LogKind
+Aw.Meta.Core.Logs.LogKind.Note = 5 -> Aw.Meta.Core.Logs.LogKind
+Aw.Meta.Core.Logs.LogLine
+static Aw.Meta.Core.Logs.LogLine.Event(Aw.Meta.Core.Logs.LogKind kind, System.DateTimeOffset at, string! text) -> string!
+static Aw.Meta.Core.Logs.LogLine.Owner(System.DateTimeOffset at, string! text, string! askedBy) -> string!
+static Aw.Meta.Core.Logs.LogLine.TryParseKind(string! text, out Aw.Meta.Core.Logs.LogKind kind) -> bool
 Aw.Meta.Core.Merge.MergeCheck
 Aw.Meta.Core.Merge.MergeCheck.<Clone>$() -> Aw.Meta.Core.Merge.MergeCheck!
 Aw.Meta.Core.Merge.MergeCheck.Deconstruct(out string! Name, out bool Ok, out string! Detail) -> void

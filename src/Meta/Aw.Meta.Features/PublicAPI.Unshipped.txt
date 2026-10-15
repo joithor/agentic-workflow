@@ -65,6 +65,42 @@ Aw.Meta.Features.Roles.ShowRoleResponse.ShowRoleResponse(Aw.Meta.Core.Messages.M
 override Aw.Meta.Features.Roles.ShowRoleResponse.ToString() -> string!
 static Aw.Meta.Features.Roles.ShowRoleResponse.operator !=(Aw.Meta.Features.Roles.ShowRoleResponse? left, Aw.Meta.Features.Roles.ShowRoleResponse? right) -> bool
 static Aw.Meta.Features.Roles.ShowRoleResponse.operator ==(Aw.Meta.Features.Roles.ShowRoleResponse? left, Aw.Meta.Features.Roles.ShowRoleResponse? right) -> bool
+Aw.Meta.Features.StopCheck.StopCheckRequest
+Aw.Meta.Features.StopCheck.StopCheckRequest.<Clone>$() -> Aw.Meta.Features.StopCheck.StopCheckRequest!
+Aw.Meta.Features.StopCheck.StopCheckRequest.Deconstruct(out Aw.Meta.Core.Ids.SessionId Session, out string! Transcript, out bool HookActive, out int MaxBlocks) -> void
+Aw.Meta.Features.StopCheck.StopCheckRequest.Equals(Aw.Meta.Features.StopCheck.StopCheckRequest? other) -> bool
+override Aw.Meta.Features.StopCheck.StopCheckRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.StopCheck.StopCheckRequest.GetHashCode() -> int
+Aw.Meta.Features.StopCheck.StopCheckRequest.HookActive.get -> bool
+Aw.Meta.Features.StopCheck.StopCheckRequest.HookActive.init -> void
+Aw.Meta.Features.StopCheck.StopCheckRequest.MaxBlocks.get -> int
+Aw.Meta.Features.StopCheck.StopCheckRequest.MaxBlocks.init -> void
+Aw.Meta.Features.StopCheck.StopCheckRequest.Session.get -> Aw.Meta.Core.Ids.SessionId
+Aw.Meta.Features.StopCheck.StopCheckRequest.Session.init -> void
+Aw.Meta.Features.StopCheck.StopCheckRequest.StopCheckRequest(Aw.Meta.Core.Ids.SessionId Session, string! Transcript, bool HookActive, int MaxBlocks) -> void
+override Aw.Meta.Features.StopCheck.StopCheckRequest.ToString() -> string!
+Aw.Meta.Features.StopCheck.StopCheckRequest.Transcript.get -> string!
+Aw.Meta.Features.StopCheck.StopCheckRequest.Transcript.init -> void
+static Aw.Meta.Features.StopCheck.StopCheckRequest.operator !=(Aw.Meta.Features.StopCheck.StopCheckRequest? left, Aw.Meta.Features.StopCheck.StopCheckRequest? right) -> bool
+static Aw.Meta.Features.StopCheck.StopCheckRequest.operator ==(Aw.Meta.Features.StopCheck.StopCheckRequest? left, Aw.Meta.Features.StopCheck.StopCheckRequest? right) -> bool
+Aw.Meta.Features.StopCheck.StopCheckResponse
+Aw.Meta.Features.StopCheck.StopCheckResponse.<Clone>$() -> Aw.Meta.Features.StopCheck.StopCheckResponse!
+Aw.Meta.Features.StopCheck.StopCheckResponse.Blocked.get -> bool
+Aw.Meta.Features.StopCheck.StopCheckResponse.Blocked.init -> void
+Aw.Meta.Features.StopCheck.StopCheckResponse.Deconstruct(out bool IsMeta, out bool Blocked, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>! Open, out string? Warning) -> void
+Aw.Meta.Features.StopCheck.StopCheckResponse.Equals(Aw.Meta.Features.StopCheck.StopCheckResponse? other) -> bool
+override Aw.Meta.Features.StopCheck.StopCheckResponse.Equals(object? obj) -> bool
+override Aw.Meta.Features.StopCheck.StopCheckResponse.GetHashCode() -> int
+Aw.Meta.Features.StopCheck.StopCheckResponse.IsMeta.get -> bool
+Aw.Meta.Features.StopCheck.StopCheckResponse.IsMeta.init -> void
+Aw.Meta.Features.StopCheck.StopCheckResponse.Open.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>!
+Aw.Meta.Features.StopCheck.StopCheckResponse.Open.init -> void
+Aw.Meta.Features.StopCheck.StopCheckResponse.StopCheckResponse(bool IsMeta, bool Blocked, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>! Open, string? Warning) -> void
+override Aw.Meta.Features.StopCheck.StopCheckResponse.ToString() -> string!
+Aw.Meta.Features.StopCheck.StopCheckResponse.Warning.get -> string?
+Aw.Meta.Features.StopCheck.StopCheckResponse.Warning.init -> void
+static Aw.Meta.Features.StopCheck.StopCheckResponse.operator !=(Aw.Meta.Features.StopCheck.StopCheckResponse? left, Aw.Meta.Features.StopCheck.StopCheckResponse? right) -> bool
+static Aw.Meta.Features.StopCheck.StopCheckResponse.operator ==(Aw.Meta.Features.StopCheck.StopCheckResponse? left, Aw.Meta.Features.StopCheck.StopCheckResponse? right) -> bool
 Aw.Meta.Features.SyncInbox.SyncInboxRequest
 Aw.Meta.Features.SyncInbox.SyncInboxRequest.<Clone>$() -> Aw.Meta.Features.SyncInbox.SyncInboxRequest!
 Aw.Meta.Features.SyncInbox.SyncInboxRequest.Deconstruct(out Aw.Meta.Core.Ids.SessionId Session, out string! Transcript) -> void

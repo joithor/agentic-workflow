@@ -6,12 +6,14 @@ namespace Aw.Meta.Core;
 /// <summary>Registers Aw.Meta.Core's types.</summary>
 public static class MetaCoreServiceCollectionExtensions
 {
-    /// <summary>Adds the Meta domain services that the slices share: the inbox sync, the lane refresher, the obligation reader and the meta-session check.</summary>
+    /// <summary>Adds the Meta domain services that the slices share: the inbox sync, the lane refresher, the obligation reader, the meta-session check, the sweep and the stop guard.</summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddMetaCore(this IServiceCollection services) => services
         .AddScoped<InboxSync>()
         .AddScoped<LaneRefresher>()
         .AddScoped<ObligationReader>()
-        .AddScoped<MetaSession>();
+        .AddScoped<MetaSession>()
+        .AddScoped<MetaSweep>()
+        .AddScoped<StopGuard>();
 }
