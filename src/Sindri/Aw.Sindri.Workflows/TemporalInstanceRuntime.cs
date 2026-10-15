@@ -154,8 +154,8 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
     /// The 'open-request' Update (UI spec E-6, spec §5.2) with update id <see cref="InstanceIds.OpenRequestUpdate"/>: no
     /// nonce, actor 'service:engine'.
     /// </summary>
-    public ValueTask<Result<CommandResult>> OpenRequest(InstanceAddress address, OpenRequested request, CancellationToken cancellationToken) =>
-        commands.OpenRequest(address, request, cancellationToken);
+    public ValueTask<Result<CommandResult>> OpenRequest(InstanceAddress address, LaunchId launch, CancellationToken cancellationToken) =>
+        commands.OpenRequest(address, new OpenRequested(EngineActor.Name, launch.Value), cancellationToken);
 
     /// <summary>
     /// The bridge's 'event' signal (spec §5.4; unit (d)): Temporal buffers it until the instance reaches the wait. The

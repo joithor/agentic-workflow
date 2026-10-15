@@ -1,5 +1,4 @@
 using Aw.Kernel;
-using Aw.Sindri.Core.Workflow.Engine.Triggers;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 
@@ -14,6 +13,6 @@ public interface ILaunchRequests
     /// <summary>The launch still 'requested' for <paramref name="item"/>, once the launches view has reached the ledger head ('ReadsViews').</summary>
     /// <param name="item">The item.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
-    /// <returns>The open-request for that launch ('service:engine'); null when none is in flight.</returns>
-    public ValueTask<Result<OpenRequested?>> Requested(ItemKey item, CancellationToken cancellationToken);
+    /// <returns>The id of that launch; null when none is in flight. The runtime builds the open-request from it (actor 'service:engine').</returns>
+    public ValueTask<Result<LaunchId?>> Requested(ItemKey item, CancellationToken cancellationToken);
 }

@@ -18,16 +18,16 @@ public abstract class LaunchRequestsContract
 
     /// <summary>The port under test with <paramref name="launch"/> requested for <paramref name="item"/>.</summary>
     /// <param name="item">The item.</param>
-    /// <param name="launch">The launch id ('LCH-…').</param>
+    /// <param name="launch">The launch id.</param>
     /// <returns>The port, or null when the adapter has no launches to request (the stub until API P10a).</returns>
-    protected abstract ILaunchRequests? CreateRequesting(ItemKey item, string launch);
+    protected abstract ILaunchRequests? CreateRequesting(ItemKey item, LaunchId launch);
 
-    /// <summary>A requested launch reads as the engine's open-request for its item, and only for that item.</summary>
+    /// <summary>A requested launch reads as its id for its item, and only for that item.</summary>
     /// <returns>The test.</returns>
     [Fact]
-    public async Task A_requested_launch_reads_as_the_engine_s_open_request_for_its_item_only()
+    public async Task A_requested_launch_reads_as_its_id_for_its_item_only()
     {
-        var launches = CreateRequesting(ItemKey.From("T-2"), "LCH-0123456789abcdef0123456789abcdef");
+        var launches = CreateRequesting(ItemKey.From("T-2"), LaunchId.From("LCH-0123456789abcdef0123456789abcdef"));
         if (launches is null)
         {
             return;
@@ -37,8 +37,7 @@ public abstract class LaunchRequestsContract
         var other = await launches.Requested(ItemKey.From("T-3"), Token);
 
         Expect.True(!own.IsError && own.Value is { } open
-            && string.Equals(open.Actor, "service:engine", StringComparison.Ordinal)
-            && string.Equals(open.Launch, "LCH-0123456789abcdef0123456789abcdef", StringComparison.Ordinal));
+            && string.Equals(open.Value, "LCH-0123456789abcdef0123456789abcdef", StringComparison.Ordinal));
         Expect.True(!other.IsError && other.Value is null);
     }
 

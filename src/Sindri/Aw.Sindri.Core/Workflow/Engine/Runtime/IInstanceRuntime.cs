@@ -34,10 +34,10 @@ public interface IInstanceRuntime : IInstanceReader
     /// The launcher waits for this result (E-1) and fails the launch with the refusal's code. Engine P5 unit (b).
     /// </summary>
     /// <param name="address">The item's active instance.</param>
-    /// <param name="request">The open-request: actor 'service:engine' and the launch id.</param>
+    /// <param name="launch">The launch the open-request answers; the runtime sends it as actor 'service:engine'.</param>
     /// <param name="cancellationToken">Cancels the wait for the outcome.</param>
     /// <returns>The instance after it (taken over, or as it was), or the validator's refusal (SND-WF-003), or SND-WF-001.</returns>
-    public ValueTask<Result<CommandResult>> OpenRequest(InstanceAddress address, OpenRequested request, CancellationToken cancellationToken);
+    public ValueTask<Result<CommandResult>> OpenRequest(InstanceAddress address, LaunchId launch, CancellationToken cancellationToken);
 
     /// <summary>Signals a registered event to the instance (the bridge, §5.4); Temporal buffers it until the instance reaches its wait.</summary>
     /// <param name="address">The instance the event routes to.</param>

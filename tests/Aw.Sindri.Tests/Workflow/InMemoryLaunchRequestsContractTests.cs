@@ -10,7 +10,7 @@ public sealed class InMemoryLaunchRequestsContractTests : LaunchRequestsContract
 {
     protected override ILaunchRequests Create() => new InMemoryLaunchRequests();
 
-    protected override ILaunchRequests? CreateRequesting(ItemKey item, string launch)
+    protected override ILaunchRequests? CreateRequesting(ItemKey item, LaunchId launch)
     {
         var launches = new InMemoryLaunchRequests();
         launches.Request(item, launch);

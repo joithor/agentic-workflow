@@ -5,7 +5,6 @@ using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
-using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.StartInstance;
 using Aw.Sindri.Host.Catalog;
@@ -65,7 +64,7 @@ public sealed class StartInstanceLaunchReadTests
 
     private sealed class FailingLaunches : ILaunchRequests
     {
-        public ValueTask<Result<OpenRequested?>> Requested(ItemKey item, CancellationToken cancellationToken) =>
-            ValueTask.FromResult<Result<OpenRequested?>>(SindriErrors.ViewsBehind.With("the launches view didn't answer"));
+        public ValueTask<Result<LaunchId?>> Requested(ItemKey item, CancellationToken cancellationToken) =>
+            ValueTask.FromResult<Result<LaunchId?>>(SindriErrors.ViewsBehind.With("the launches view didn't answer"));
     }
 }

@@ -1,7 +1,6 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
-using Aw.Sindri.Core.Workflow.Engine.Triggers;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
@@ -14,6 +13,6 @@ internal sealed class NoLaunchRequests : ILaunchRequests
     /// <summary>The one instance.</summary>
     public static NoLaunchRequests Instance { get; } = new();
 
-    public ValueTask<Result<OpenRequested?>> Requested(ItemKey item, CancellationToken cancellationToken) =>
-        ValueTask.FromResult<Result<OpenRequested?>>((OpenRequested?)null);
+    public ValueTask<Result<LaunchId?>> Requested(ItemKey item, CancellationToken cancellationToken) =>
+        ValueTask.FromResult<Result<LaunchId?>>((LaunchId?)null);
 }

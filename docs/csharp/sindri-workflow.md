@@ -728,13 +728,13 @@ Engine spec rev 8.1 §3.8, §5.2, §5.5, §5.8, §6.2; UI spec E-6, E-19.
 - **takeoverIdle.** A takeover arms a 2 h timer in its own scope. When it fires while still taken over the engine
   records one `workflow.notified` row and clears it; it never hands back. P6 delivers it as `notify.desk`
   ("hand back {item}?").
-- **open-request (E-6).** `IInstanceRuntime.OpenRequest` sends the `open-request` Update with id
+- **open-request (E-6).** `IInstanceRuntime.OpenRequest(address, LaunchId, …)` builds the open-request (actor `service:engine`) and sends it as the `open-request` Update with id
   `wf:{instance}:open:{launchId}`: no nonce, actor `service:engine`, past the API chain and exempt from approval. It
   takes over wherever a takeover is allowed, is a no-op (nothing recorded) when the instance is already taken over,
   and is `SND-WF-003` on an ended instance and for any actor other than `service:engine`. One that arrives while the
   instance is still starting waits for the start, then takes over. Temporal deduplicates the id, so a repeat applies once. The ledger row
   carries the launch id as `causation`. Its sender is API P10b's launcher.
-- **Start taken over (E-19).** `StartInstance` reads the item's launches (`ILaunchRequests`); when one is still
+- **Start taken over (E-19).** `StartInstance` reads the item's launches (`ILaunchRequests.Requested` returns a `LaunchId?`: `LCH-` and 32 hex digits); when one is still
   requested the instance starts taken over (`InstanceStart.OpenLaunch`, actor `service:engine`), with the launch as the
   `workflow.started` row's `causation`, the state's full timeout kept for the handback and takeoverIdle running. Until
   API P10a's launches projection lands, the adapter (`NoLaunchRequests`) reads none.

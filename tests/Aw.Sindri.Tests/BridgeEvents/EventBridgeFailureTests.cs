@@ -185,6 +185,6 @@ public sealed class EventBridgeFailureTests : IDisposable
 
         public ValueTask<Result<CommandResult>> Send(InstanceAddress address, CommandNonce nonce, Trigger command, CancellationToken cancellationToken) => throw new NotSupportedException();
 
-        public ValueTask<Result<CommandResult>> OpenRequest(InstanceAddress address, OpenRequested request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public ValueTask<Result<CommandResult>> OpenRequest(InstanceAddress address, LaunchId launch, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 }

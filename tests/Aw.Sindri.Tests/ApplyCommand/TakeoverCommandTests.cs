@@ -4,7 +4,6 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
-using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.CompleteStep;
 using Aw.Sindri.Tests.Server;
@@ -75,12 +74,11 @@ public sealed class TakeoverCommandTests(DevServer server) : IClassFixture<DevSe
         await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         var address = await Started(served, "T-62");
         var runtime = served.Sindri.GetRequiredService<IInstanceRuntime>();
-        var open = new OpenRequested("service:engine", Launch);
         var before = await served.Events(address);
 
-        var first = await runtime.OpenRequest(InstanceAddress.From(address), open, Token);
+        var first = await runtime.OpenRequest(InstanceAddress.From(address), LaunchId.From(Launch), Token);
         var afterFirst = await served.Events(address);
-        var second = await runtime.OpenRequest(InstanceAddress.From(address), open, Token);
+        var second = await runtime.OpenRequest(InstanceAddress.From(address), LaunchId.From(Launch), Token);
 
         Assert.False(first.IsError, first.IsError ? first.Error.Message : null);
         Assert.False(second.IsError, second.IsError ? second.Error.Message : null);
@@ -93,7 +91,7 @@ public sealed class TakeoverCommandTests(DevServer server) : IClassFixture<DevSe
     public async Task Start_with_a_requested_launch_starts_taken_over_with_the_launch_as_causation()
     {
         var launches = new InMemoryLaunchRequests();
-        launches.Request(ItemKey.From("T-63"), Launch);
+        launches.Request(ItemKey.From("T-63"), LaunchId.From(Launch));
         await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken, s => s.AddSingleton<ILaunchRequests>(launches));
 
         var started = await served.Cli("start", "workflow.step", "--item", "T-63", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));

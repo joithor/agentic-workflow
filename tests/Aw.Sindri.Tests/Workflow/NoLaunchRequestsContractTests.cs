@@ -12,5 +12,5 @@ public sealed class NoLaunchRequestsContractTests : LaunchRequestsContract
 {
     protected override ILaunchRequests Create() => NoLaunchRequests.Instance;
 
-    protected override ILaunchRequests? CreateRequesting(ItemKey item, string launch) => null;   // the stub has no way to request one
+    protected override ILaunchRequests? CreateRequesting(ItemKey item, LaunchId launch) => null;   // the stub has no way to request one
 }
