@@ -255,4 +255,30 @@ public sealed class CreateItemDialogTests : IDisposable
         Assert.Empty(_server.Created);
         Assert.True(shell.Create.IsOpen);
     });
+
+    // R5: the palette's CreateItem entry closes the palette and opens the form, through the shell: focus moves once, into the
+    // form's title (the palette's opener goes on to the form, not back to the page first), and Esc returns to that opener.
+    [Fact]
+    public Task The_palettes_Create_item_entry_opens_the_form_with_one_focus_move_into_its_title() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        var opener = Named<Button>(window, "CreateButton");
+        Assert.True(opener.Focus(NavigationMethod.Tab));
+        window.KeyPress(Key.K, RawInputModifiers.Control, PhysicalKey.K, "k");
+        Settle(window);
+        Assert.True(shell.Palette.IsOpen);
+        var entry = shell.Palette.Entries.Single(e => e.Id == "CreateItem");
+        var moved = new List<string>();
+        window.AddHandler(InputElement.GotFocusEvent, (_, e) => moved.Add((e.Source as Control)?.Name ?? "<unnamed>"));
+
+        await shell.Palette.Run(entry, Token);
+        await Until(window, () => shell.Create.IsOpen && Focused(window)?.Name == "TitleField");
+
+        Assert.Equal((false, true), (shell.Palette.IsOpen, shell.Create.IsOpen));
+        Assert.True(Inside(window));
+        Assert.Equal(["TitleField"], moved);
+        window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        Settle(window);
+        Assert.Equal((false, opener), (shell.Create.IsOpen, Focused(window)));
+    });
 }
