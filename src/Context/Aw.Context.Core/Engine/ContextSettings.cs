@@ -44,4 +44,7 @@ public sealed record ContextSettings
     /// checks them and every call scrubs with them, on ingest and on egress.
     /// </summary>
     public IReadOnlyList<ScrubPattern> ExtraPatterns { get; init; } = [];
+
+    /// <summary>'context.labeling': the optional labeling pass of a map build (S-4). Off by default.</summary>
+    public LabelingSettings Labeling { get; init; } = new();
 }

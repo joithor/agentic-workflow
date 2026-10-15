@@ -12,23 +12,14 @@ internal sealed class FileExportStore(ContextStoreSettings settings, JsonSeriali
 {
     public ValueTask<Result<string>> Write(string? path, string defaultName, MapDocument document, CancellationToken cancellationToken)
     {
+        var resolved = ExportTarget.Resolve(settings, path, defaultName);
+        if (resolved.IsError)
+        {
+            return Done<string>(resolved.Error);
+        }
+
+        var target = resolved.Value;
         var lexical = Path.GetFullPath(settings.ExportsDirectory);
-        var folder = RealPath.Of(lexical) ?? lexical;
-        var named = string.IsNullOrEmpty(path) ? defaultName : path;
-        if (named.Any(char.IsControl) || RealPath.Of(Path.GetFullPath(named, lexical)) is not { } target)
-        {
-            return Done<string>(ContextErrors.ExportOutsideHome.With($"the export path isn't resolvable or has control characters (fix: omit the path, or give a plain name under {folder})"));
-        }
-        if (Worktrees.Containing(target) is { } worktree)
-        {
-            return Done<string>(ContextErrors.PathInWorktree.With($"{target} is inside the git worktree {worktree} (fix: omit the path, or give a name under {folder})"));
-        }
-
-        if (!Inside(folder, target))
-        {
-            return Done<string>(ContextErrors.ExportOutsideHome.With($"{target} is outside {folder} (fix: omit the path, or give a name under it)"));
-        }
-
         try
         {
             OwnerOnly.EnsureDirectory(settings.Home);
@@ -84,18 +75,9 @@ internal sealed class FileExportStore(ContextStoreSettings settings, JsonSeriali
     }
 
     /// <summary>The exports folder where it really is (links resolved), as Write returns paths.</summary>
-    private string Folder()
-    {
-        var lexical = Path.GetFullPath(settings.ExportsDirectory);
-        return RealPath.Of(lexical) ?? lexical;
-    }
+    private string Folder() => ExportTarget.Folder(settings);
 
-    private static bool Inside(string folder, string path)
-    {
-        var relative = Path.GetRelativePath(folder, path);
-        var first = relative.Split(Path.DirectorySeparatorChar)[0];
-        return relative != "." && first != ".." && !Path.IsPathRooted(relative);
-    }
+    private static bool Inside(string folder, string path) => ExportTarget.Inside(folder, path);
 
     private static ValueTask<Result<T>> Done<T>(Result<T> result) => ValueTask.FromResult(result);
 }

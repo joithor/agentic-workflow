@@ -1,5 +1,4 @@
 using Aw.Context.Core.Engine;
-using Aw.Context.Core.Overrides;
 using Aw.Context.Core.Trust;
 using Aw.Kernel;
 
@@ -30,13 +29,27 @@ public sealed class MapReader(IGraphStore store)
         if (snapshot.IsError || snapshot.Value is not { } map)
         {
             return snapshot.IsError ? snapshot.Error
-                : draft ? ContextErrors.NoMap.With("there is no draft map: drafts come from 'context map build' (S-4) (fix: ask without --draft)")
+                : draft ? ContextErrors.NoMap.With("there is no draft map: drafts come from 'context map propose <file>' and the context-rebuild service (fix: ask without --draft)")
                 : ContextErrors.NoMap.With("there is no map yet (fix: sindri context map import <file>)");
         }
 
-        var applied = OverrideApplier.Apply(map.Graph, map.Overrides).Graph;
-        var visible = MapAccess.Visible(applied, [], scope.Caller);
-        return visible.IsError ? visible.Error : new VisibleMap(map, visible.Value.Graph);
+        // A 'propose' row only adds its node to a draft: a pending proposal is never part of the current map (a promote makes an accepted one a node of the version).
+        // A deny glob added after the map was built hides its paths now, before any rebuild: the one view every reader uses (review #220 run 3).
+        var visible = MapAccess.View(map.Graph, map.Overrides, scope, pending: draft);
+        return visible.IsError ? visible.Error : new VisibleMap(map, visible.Value.Applied);
+    }
+
+    /// <summary>The map the app's lenses and file-map reads start from: <see cref="Read"/>, but a draft that doesn't exist is SND-CONTEXT-044 (a missing map stays 030).</summary>
+    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <param name="draft">True for the newest draft instead of the current version.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The visible map, or SND-CONTEXT-001/003/004/020/030/044.</returns>
+    public async ValueTask<Result<VisibleMap>> ReadView(ContextScope scope, bool draft, CancellationToken cancellationToken)
+    {
+        var map = await Read(scope, draft, cancellationToken).ConfigureAwait(false);
+        return draft && map.IsError && map.Error.Code == ContextErrors.NoMap.Code
+            ? ContextErrors.NoDraftMap.With("there is no draft map (fix: sindri context map propose <file>, or name context-rebuild under services: in the profile, then retry; or drop --draft)")
+            : map;
     }
 
     /// <summary>The current map and this call's text scrubbing, for the graph reads: the settings (001), the scrubbers built from them (001), then <see cref="Read"/>.</summary>
@@ -55,6 +68,6 @@ public sealed class MapReader(IGraphStore store)
         }
 
         var map = await Read(scope, draft: false, cancellationToken).ConfigureAwait(false);
-        return map.IsError ? map.Error : (map.Value, new MapText(built.Value));
+        return map.IsError ? map.Error : (map.Value, new MapText(built.Value, FencePolicies.For(scope.Caller)));
     }
 }

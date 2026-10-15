@@ -17,6 +17,7 @@ namespace Aw.Context.Infrastructure.Git;
 internal sealed partial class GitCli
 {
     private readonly TimeSpan _timeout = TimeSpan.FromSeconds(30);
+    private readonly TimeSpan _archiveTimeout = TimeSpan.FromMinutes(5);
 
     /// <summary>The commit HEAD points at.</summary>
     /// <param name="repo">The repo's checkout.</param>
@@ -70,6 +71,64 @@ internal sealed partial class GitCli
     {
         var exists = await Exists(repo, blob, cancellationToken).ConfigureAwait(false);
         return exists.IsError ? exists.Error : await Text(repo, ["cat-file", "blob", blob], cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>A file's text at a commit ('cat-file blob &lt;commit&gt;:&lt;path&gt;'). The caller has checked <paramref name="path"/> (relative, no '..').</summary>
+    /// <param name="repo">The repo's checkout.</param>
+    /// <param name="commit">A commit sha.</param>
+    /// <param name="path">The path from the repo root.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The text, or SND-CONTEXT-010 when git can't read it.</returns>
+    public async ValueTask<Result<string>> Show(string repo, string commit, string path, CancellationToken cancellationToken) =>
+        IsSha(commit)
+            ? await Text(repo, ["cat-file", "blob", $"{commit}:{path}"], cancellationToken).ConfigureAwait(false)
+            : ContextErrors.SourceUnavailable.With("not a commit sha");
+
+    /// <summary>Streams 'git archive --format=tar' of a commit to <paramref name="consume"/> (tracked files only, never the working tree).</summary>
+    /// <param name="repo">The repo's checkout.</param>
+    /// <param name="commit">A commit sha.</param>
+    /// <param name="consume">Reads the tar stream to its end.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>Unit, or SND-CONTEXT-010 when git fails or the consumer does.</returns>
+    public async ValueTask<Result<Unit>> Archive(string repo, string commit, Func<Stream, CancellationToken, Task> consume, CancellationToken cancellationToken)
+    {
+        if (!IsSha(commit))
+        {
+            return ContextErrors.SourceUnavailable.With("not a commit sha");
+        }
+
+        var start = CleanGit(["-C", repo, "archive", "--format=tar", commit]);
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(_archiveTimeout);
+        Process? git = null;
+        try
+        {
+            git = Process.Start(start) ?? throw new InvalidOperationException("git didn't start");
+            var stderr = git.StandardError.ReadToEndAsync(timeout.Token);
+            await consume(git.StandardOutput.BaseStream, timeout.Token).ConfigureAwait(false);
+            await git.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
+            _ = await stderr.ConfigureAwait(false);
+            return git.ExitCode == 0 ? Unit.Value : Failed("archive", git.ExitCode);
+        }
+        catch (OperationCanceledException)
+        {
+            Kill(git);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+
+            return ContextErrors.SourceUnavailable.With("git archive didn't finish in time");
+        }
+        catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception or IOException or InvalidDataException)
+        {
+            Kill(git);
+            return ContextErrors.SourceUnavailable.With($"git archive didn't run: {e.GetType().Name}");
+        }
+        finally
+        {
+            git?.Dispose();
+        }
     }
 
     /// <summary>True for a full or abbreviated lower-case hex sha (never an option, never a ref expression).</summary>
@@ -155,6 +214,17 @@ internal sealed partial class GitCli
         {
             git?.Dispose();
         }
+    }
+
+    private static ProcessStartInfo CleanGit(string[] args)
+    {
+        var start = new ProcessStartInfo("git", args) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
+        foreach (var name in start.Environment.Keys.Where(k => k.StartsWith("GIT_", StringComparison.Ordinal)).ToList())
+        {
+            _ = start.Environment.Remove(name);
+        }
+
+        return start;
     }
 
     private static void Kill(Process? git)

@@ -14,10 +14,18 @@ namespace Aw.Context.Core.Map;
 /// next answer; nothing cleaned is stored, so there is no ruleset to record.
 /// </summary>
 /// <param name="scrubbers">This call's scrubbers.</param>
-public sealed partial class MapText(Scrubbers scrubbers)
+/// <param name="policy">Whether untrusted text is fenced (<see cref="FencePolicies.For"/> picks it from the caller).</param>
+public sealed partial class MapText(Scrubbers scrubbers, FencePolicy policy)
 {
     private const string Blocked = "[REDACTED:blocked]";
     private const string Source = "map";
+
+    /// <summary>Text that fences untrusted labels, as every answer did before the app: queries, and any caller that has not asked for clean text.</summary>
+    /// <param name="scrubbers">This call's scrubbers.</param>
+    public MapText(Scrubbers scrubbers)
+        : this(scrubbers, FencePolicy.Fenced)
+    {
+    }
 
     /// <summary>A label: one line, at most 200 characters, fenced when untrusted.</summary>
     /// <param name="label">The label as stored.</param>
@@ -49,7 +57,7 @@ public sealed partial class MapText(Scrubbers scrubbers)
         ArgumentNullException.ThrowIfNull(node);
         var confirmed = node.Provenance == Provenance.Human;
         var trust = TrustPolicy.For(node.Provenance, confirmed);
-        return new NodeFact(node.Key, node.Key.Kind, Label(node.Label, trust), node.Provenance, confirmed, trust);
+        return new NodeFact(node.Key, node.Key.Kind, Label(node.Label, trust), node.Provenance, confirmed, trust, node.Confidence);
     }
 
     private string Clean(string text, bool singleLine)
@@ -61,5 +69,5 @@ public sealed partial class MapText(Scrubbers scrubbers)
     [GeneratedRegex("\\[REDACTED:[^\\]]*\\]", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Placeholder { get; }
 
-    private static string Fenced(string text, Results.Trust trust) => trust == Results.Trust.Untrusted ? UntrustedFence.Wrap(Source, author: null, text) : text;
+    private string Fenced(string text, Results.Trust trust) => trust == Results.Trust.Untrusted && policy == FencePolicy.Fenced ? UntrustedFence.Wrap(Source, author: null, text) : text;
 }

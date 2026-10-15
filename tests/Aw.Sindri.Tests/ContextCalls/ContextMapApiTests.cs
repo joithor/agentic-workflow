@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Aw.Context.Testing.Fixtures;
 using Aw.Context.Testing.Map;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
@@ -145,8 +146,31 @@ public sealed class ContextMapApiTests
         Assert.Equal(HttpStatusCode.OK, export.Status);
         Assert.Contains(Path.Combine(host.Home, "context", "exports"), JsonDocument.Parse(export.Body).RootElement.GetProperty("path").GetString(), StringComparison.Ordinal);
         Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-033"), (outside.Status, outside.Code));
-        Assert.Contains("\"nodes\":5", scoped.Body, StringComparison.Ordinal);
+        Assert.Contains("\"nodes\":8", scoped.Body, StringComparison.Ordinal);
         Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-003"), (other.Status, other.Code));
+    }
+
+    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    public async Task Map_status_with_an_anchor_adds_the_lenses_coverage_and_without_one_has_none()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Approved(sessions: false, ct);
+        var tabs = Path.Combine(host.Home, "tabs-map.json");
+        await File.WriteAllTextAsync(tabs, MapTabsRepo.MapJson, ct);
+        await Import(host, tabs);
+        var anchor = Uri.EscapeDataString("feature:tabs.tab-manager");
+
+        var plain = await host.Http.Ask(Get("/sindri/context/map", Human(host.Token.Value)));
+        var withAnchor = await host.Http.Ask(Get("/sindri/context/map?anchor=" + anchor, Human(host.Token.Value)));
+        var lenses = await host.Http.Ask(Get("/sindri/context/lenses?anchor=" + anchor, Human(host.Token.Value)));
+        var unknown = await host.Http.Ask(Get("/sindri/context/map?anchor=nope", Human(host.Token.Value)));
+
+        Assert.False(JsonDocument.Parse(plain.Body).RootElement.TryGetProperty("coverage", out _));
+        var coverage = JsonDocument.Parse(withAnchor.Body).RootElement.GetProperty("coverage");
+        Assert.Equal(JsonDocument.Parse(lenses.Body).RootElement.GetProperty("coverage").GetRawText(), coverage.GetRawText());
+        Assert.Equal((6, 2, 6, 2), (coverage.GetProperty("scope").GetInt32(), coverage.GetProperty("intent").GetProperty("covered").GetInt32(),
+            coverage.GetProperty("product").GetProperty("confirmed").GetInt32(), coverage.GetProperty("code").GetProperty("implemented").GetInt32()));
+        Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-003"), (unknown.Status, unknown.Code));
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
@@ -162,9 +186,9 @@ public sealed class ContextMapApiTests
         Assert.True((await purge.Run(new ScheduledRun(grant, DateTimeOffset.UnixEpoch), ct)).IsSuccess);
     }
 
-    internal static async Task Import(GoldenHost host)
+    internal static async Task Import(GoldenHost host, string? mapFile = null)
     {
-        var file = FixtureMap.WriteTo(host.Home);
+        var file = mapFile ?? FixtureMap.WriteTo(host.Home);
         var (hash, challenge, action) = Issued(await PreviewBody(host, file));
         var imported = await host.Http.Ask(Post("/sindri/context/map/import", Body(file, hash, (challenge, action)), Human(host.Token.Value)));
         Assert.Equal(HttpStatusCode.OK, imported.Status);

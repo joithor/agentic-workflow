@@ -101,9 +101,18 @@ public sealed class QueryRulesTests
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("ENG-1", null)]
-    [InlineData(null, "src/a.ts")]
-    public void Item_and_symbol_anchors_are_unknown_until_their_phases(string? item, string? symbol) =>
+    [InlineData(null, "src/a.ts#render")]
+    public void An_item_anchor_and_a_symbol_inside_a_file_are_unknown_until_their_phases(string? item, string? symbol) =>
         Assert.Equal(ContextErrors.UnknownAnchor.Code, QueryRules.Check(new ContextQuery(Text: null, Node: null, item, symbol), new()).Error.Code);
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_symbol_in_its_file_path_form_passes_with_no_terms_of_its_own_and_an_empty_one_is_006()
+    {
+        var valid = QueryRules.Check(new ContextQuery(Text: null, Symbol: "src/a.ts"), new()).Value;
+
+        Assert.Empty(valid.Terms);
+        Assert.Equal(ContextErrors.QueryInvalid.Code, QueryRules.Check(new ContextQuery(Text: null, Symbol: "  "), new()).Error.Code);
+    }
 
     [Fact, Trait("Lane", "unit")]
     public void A_node_anchor_passes_with_no_terms_of_its_own_and_an_empty_one_is_006()

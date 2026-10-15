@@ -4,8 +4,9 @@ namespace Aw.Context.Core;
 
 /// <summary>
 /// The context engine's error catalogue (spec §8.6), codes SND-CONTEXT-NNN. Stage S-1A owns 001–019 and defines 020
-/// (the session gate, spec §3); S-3a adds 030–034 (the map file and its store); S-3b adds 035–038 (the probe runner and anchors; 039 is reserved); S-5A adds 050–055 (Onyx, in the
-/// S-5A/B range 050–069); later stages add theirs in their ranges. HTTP status follows the kind; the CLI exit code is 1 for attention (<see cref="Attention"/>) and 2 for a tool error.
+/// (the session gate, spec §3); S-3a adds 030–034 (the map file and its store); S-3b adds 035–038 (the probe runner and anchors; 039 is reserved); S-4 adds 040 and 042–048 (041 stays retired, 049 is reserved); S-5A adds 050–055 (Onyx, in the
+/// S-5A/B range 050–069); later stages
+/// add theirs in their ranges. HTTP status follows the kind; the CLI exit code is 1 for attention (<see cref="Attention"/>) and 2 for a tool error.
 /// </summary>
 public static class ContextErrors
 {
@@ -81,6 +82,30 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-038: a probe run scored lower than the baseline of the same probe file (its newest complete run that did not regress) in precision@5 or citation correctness, or a probe returned more absent nodes than it did there.</summary>
     public static readonly ErrorDefinition ProbesRegressed = new("SND-CONTEXT-038", ErrorKind.Conflict, "The probes regressed");
 
+    /// <summary>SND-CONTEXT-040: the heavy-job lock stayed busy; the message names the holder (CLI exit 75, HTTP 503).</summary>
+    public static readonly ErrorDefinition HeavyLockBusy = new("SND-CONTEXT-040", ErrorKind.Unavailable, "The heavy-job lock stayed busy");
+
+    /// <summary>SND-CONTEXT-042: labeling is off ('context.labeling'), or the pass would go over its token cap.</summary>
+    public static readonly ErrorDefinition LabelingUnavailable = new("SND-CONTEXT-042", ErrorKind.Invalid, "Labeling is off or over its token cap");
+
+    /// <summary>SND-CONTEXT-043: no entry of the review file matches the latest draft (the others are listed as skipped).</summary>
+    public static readonly ErrorDefinition ReviewFileNoMatch = new("SND-CONTEXT-043", ErrorKind.Conflict, "No entry in the review file matches the latest draft");
+
+    /// <summary>SND-CONTEXT-044: there is no draft map: 'draft' was asked on lenses or filemap, or the review queue or a review decision that needs a draft was asked with none.</summary>
+    public static readonly ErrorDefinition NoDraftMap = new("SND-CONTEXT-044", ErrorKind.NotFound, "No draft map");
+
+    /// <summary>SND-CONTEXT-045: a repo the profile doesn't name, or one outside a session's X-Sindri-Repo (answered the same way, so the scope isn't revealed).</summary>
+    public static readonly ErrorDefinition RepoOutsideScope = new("SND-CONTEXT-045", ErrorKind.NotFound, "Repo outside the scope");
+
+    /// <summary>SND-CONTEXT-046: 'map promote' refused: there is no draft, the draft still has undecided review items (the ones the review queue shows, not those a deny glob hides), or the draft changed after you confirmed.</summary>
+    public static readonly ErrorDefinition PromoteRefused = new("SND-CONTEXT-046", ErrorKind.Conflict, "The draft can't be promoted");
+
+    /// <summary>SND-CONTEXT-047: a stale review target: the node or link isn't in the latest draft's queue (decided already, or gone), or an undo names an override that is unknown or already undone.</summary>
+    public static readonly ErrorDefinition ReviewTargetStale = new("SND-CONTEXT-047", ErrorKind.Conflict, "The review target is stale");
+
+    /// <summary>SND-CONTEXT-048: extraction couldn't read the repo from git at the commit (a missing repo or sha).</summary>
+    public static readonly ErrorDefinition ExtractionUnreadable = new("SND-CONTEXT-048", ErrorKind.Unavailable, "Extraction can't read the repo from git");
+
     /// <summary>
     /// SND-CONTEXT-050: Onyx refused the key (HTTP 403): it is missing, wrong, or lacks the admin role that
     /// 'POST /api/admin/search' needs (spec §8.8). Fix: create an admin key for a dedicated service account, store it
@@ -114,15 +139,18 @@ public static class ContextErrors
         [SettingsInvalid, SourceNotConfigured, UnknownAnchor, StoreUnavailable, PathInWorktree, QueryInvalid, SourceUnavailable, AllSourcesUnavailable, SessionsDisabled,
          McpRepoMissing, McpArgumentsInvalid, McpToolUnknown, McpRegisterRepoUnknown, McpRegisterFailed, McpUserWide,
          NoMap, MapFileInvalid, MapNodeUndefined, ExportOutsideHome, MapFileChanged, ProbeFileInvalid, NoProbeFile, AmbiguousAnchor, ProbesRegressed,
+         HeavyLockBusy, LabelingUnavailable, ReviewFileNoMatch, NoDraftMap, RepoOutsideScope, PromoteRefused, ReviewTargetStale, ExtractionUnreadable,
          OnyxKeyRefused, OnyxUnexpectedReply, OnyxDocumentNotFound, OnyxKeyNotServiceAccount, OnyxNotPinnedOrLoopback];
 
     /// <summary>
     /// The codes the CLI answers with exit 1 (attention, spec §8.6): an unknown or ambiguous anchor, a refused input or
-    /// path, sessions off, no map, a refused map or probe file, a regression. The rest are tool errors (exit 2).
+    /// path, sessions off, no map, a refused map or probe file, a regression, labeling refused, a review file or target that doesn't match, no draft, a repo outside the scope, a refused promote.
+    /// The rest are tool errors (exit 2); 040 is exit 75 (Sindri maps it).
     /// </summary>
     public static IReadOnlySet<string> Attention { get; } = new HashSet<string>(StringComparer.Ordinal)
     {
         UnknownAnchor.Code, PathInWorktree.Code, QueryInvalid.Code, SessionsDisabled.Code, NoMap.Code, MapFileInvalid.Code, MapNodeUndefined.Code,
         ExportOutsideHome.Code, MapFileChanged.Code, ProbeFileInvalid.Code, NoProbeFile.Code, AmbiguousAnchor.Code, ProbesRegressed.Code,
+        LabelingUnavailable.Code, ReviewFileNoMatch.Code, NoDraftMap.Code, RepoOutsideScope.Code, PromoteRefused.Code, ReviewTargetStale.Code,
     };
 }
