@@ -116,4 +116,21 @@ public sealed class ContextSessionIntentApiTests : IDisposable
 
         Assert.Equal(("Mentions in", "untrusted"), (human.GetProperty("anchor").GetProperty("label").GetString(), human.GetProperty("anchor").GetProperty("trust").GetString()));
     }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Context_query_over_mcp_by_node_carries_the_in_decision_with_a_fenced_quote_and_not_the_other()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Host();
+        await using var mcp = await McpSession.Open(host, FixtureMap.Repo, ct);
+
+        var result = await mcp.Call("context_query", """{"node":"feature:in"}""", ct);
+
+        Assert.NotEqual(true, result.IsError);
+        var raw = result.StructuredContent!.Value.GetRawText();
+        var texts = result.StructuredContent.Value.GetProperty("sections").EnumerateArray().SelectMany(sec => sec.GetProperty("items").EnumerateArray())
+            .Select(i => i.GetProperty("text").GetString()).ToList();
+        Assert.Contains("<untrusted source=\"map\">keep the pane in view</untrusted>", texts, StringComparer.Ordinal);
+        Assert.DoesNotContain("ZEBRA", raw, StringComparison.Ordinal);
+    }
 }

@@ -139,7 +139,7 @@ learns why. Refusals are tool errors
 
 | Code | When |
 |---|---|
-| `SND-CONTEXT-020` | Session reads are off |
+| `SND-CONTEXT-020` | Session reads are off, or a session asked for a human or service job (map import, preview, build, export) |
 | `SND-CONTEXT-003` | An anchor outside the session's repo, or unknown; also every call whose `X-Sindri-Repo` isn't a repo the profile maps (re-run `sindri mcp register` in the work repo). A header that isn't a valid repo name at all is refused before MCP, with HTTP 400 `SND-API-007` |
 | `SND-CONTEXT-006` | The question is invalid (no words, two shapes, depth or budget out of range) |
 | `SND-CONTEXT-021` | The call has no `X-Sindri-Repo` (use a registration from `sindri mcp register`) |
@@ -367,7 +367,7 @@ $SINDRI context map export [<name-or-path>] [--json]
   `mention` one and the records those decisions quote. Record titles and decision quotes reach a session inside the
   `<untrusted>` fence, and every text is scrubbed in the read answers. A record or decision linked only to nodes
   outside the repo answers `SND-CONTEXT-003`. A repo that implements nothing in the map answers `SND-CONTEXT-003`.
-  The deny globs of every profile repo apply to a session too, not only its own repo's. A session can't export the
+  The deny globs of every profile repo apply to a session too, not only its own repo's, and whatever `context.repos` narrows the map to. A session can't export the
   map (`SND-CONTEXT-020`): the file is not scrubbed and now holds the linked work text.
 - No map yet: `SND-CONTEXT-030` (fix: `sindri context map import <file>`).
 

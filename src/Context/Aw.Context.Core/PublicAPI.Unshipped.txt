@@ -3583,4 +3583,5 @@ const Aw.Context.Core.Overrides.MapOverride.CutMarker = "service:deny-cut" -> st
 Aw.Context.Core.Overrides.MapOverride.IsCutUndo.get -> bool
 static Aw.Context.Core.Overrides.MapOverride.UndoingCut(Aw.Context.Core.Overrides.MapOverride! decision, System.DateTimeOffset at) -> Aw.Context.Core.Overrides.MapOverride!
 
+static Aw.Context.Core.Graph.TrustPolicy.ForNode(Aw.Context.Core.Graph.GraphNode! node, bool accepted) -> Aw.Context.Core.Results.Trust
 static Aw.Context.Core.Map.MapAccess.WithoutDenied(Aw.Context.Core.Graph.GraphSnapshot! current, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! built, System.DateTimeOffset at) -> (Aw.Context.Core.Graph.GraphSnapshot! Graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Undo)

@@ -1,6 +1,7 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 using Aw.Context.Testing.Engine;
@@ -130,6 +131,20 @@ public sealed class SessionIntentScopeTests : IDisposable
         Assert.Equal(("Mentions in", Trust.Untrusted), (human.Anchor.Label, human.Anchor.Trust));
         var humanOwn = Assert.Single(human.Bands.Product.Own, i => i.Node.Value == mentions);
         Assert.Equal(("Mentions in", Trust.Untrusted), (humanOwn.Label, humanOwn.Trust));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_session_s_map_status_counts_exactly_the_nodes_it_implements_and_the_intent_linked_to_them()
+    {
+        await ImportMap();
+
+        var status = (await _world.Map.MapStatus(anchor: null, MapWorld.Session(FixtureMap.Repo), MapWorld.None)).Value;
+        var denied = (await _world.Map.MapStatus(anchor: null, SessionDenying("docs/private/**"), MapWorld.None)).Value;
+
+        // feature:in, code:src/in.ts, records a01 (quoted by the in decision), a02 and c02, the in decision, and the private-doc record and its decision (open: no deny glob here);
+        // edges: implements, 2 mentions, 2 decides, 2 quotes. Not feature:out, b02, the out decision or record b01. The alias to a02 and the two decisions stay; the alias to b02 and the out decision go.
+        Assert.Equal(new MapCounts(8, 7, 1, 2, 0), status.Counts);
+        Assert.Equal(new MapCounts(6, 5, 1, 1, 0), denied.Counts);   // why: denying docs/private/** takes the private record, its decision and their two edges with it
     }
 
     [Fact, Trait("Lane", "unit")]

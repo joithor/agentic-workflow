@@ -44,12 +44,9 @@ public static class MapAccess
             return repos.Error;
         }
 
-        // Whoever asks, every repo the settings map has its deny globs applied: the snapshot is global, so a session in repo A must not reach a document repo B denies (review #234 run 1).
-        // The session's own repo (repos.Value) is for the gate and the scope step only.
-        var denyRepos = scope.Caller.Kind == ContextCallerKind.Session
-            ? ScopeRules.Resolve(settings.Value, scope.Repos, scope.Caller with { Kind = ContextCallerKind.Human }).Value
-            : repos.Value;
-        var cut = DenyCut.Of(graph, overrides, denyRepos);   // every override, pending or not: what is hidden doesn't depend on which reader asks
+        // Whoever asks, every profile repo's deny globs apply, not just the ones context.repos maps: the snapshot is global, so a session in repo A must not reach a document repo B denies (review #234 runs 1 and 2).
+        // The resolved repos are for the gate and the session's scope step only.
+        var cut = DenyCut.Of(graph, overrides, scope.Repos);   // every override, pending or not: what is hidden doesn't depend on which reader asks
         var (cutGraph, cutOverrides) = (cut.Apply(graph), cut.Apply(overrides));
         var applied = OverrideApplier.Apply(cutGraph, pending ? cutOverrides : [.. cutOverrides.Where(o => o.Action != OverrideAction.Propose)]).Graph;
         var view = new MapView(cutGraph, applied, cutOverrides, cut);
@@ -64,6 +61,7 @@ public static class MapAccess
             return ContextErrors.UnknownAnchor.With("no map nodes are implemented in this session's repo (X-Sindri-Repo)");
         }
 
+        // Both scopings run the same repo scope over graphs that differ only by the overrides applied; status counts come from scopedGraph and reads from scopedApplied.
         var scopedGraph = scope.Caller.Repo is { } own ? view.Graph.ScopedTo(own) : GraphSnapshot.Empty;
         return view.Scoped(scopedGraph, scopedApplied, [.. view.Overrides.Where(o => scopedGraph.Resolve(o.Target) is not null)]);
     }
