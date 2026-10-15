@@ -590,10 +590,10 @@ public static class WorkflowViewFixtures
     /// <summary>workflow.project: a Linear project input, outputs with their producing states, urgency work.</summary>
     public static RecipeView ProjectRecipe() => _project.View();
 
-    /// <summary>incident.response: urgency incident and the mitigate and verify loop.</summary>
+    /// <summary>workflow.incident-response: urgency incident and the mitigate and verify loop.</summary>
     public static RecipeView IncidentRecipe() => _incident.View();
 
-    /// <summary>A recipe with no outputs: 'outputs: []', and a kind on the first input only.</summary>
+    /// <summary>workflow.no-outputs, a fixture-only preview: no instance names it, and its optional input is a future schema (v1 serves every input required). 'outputs: []', and a kind on the first input only.</summary>
     public static RecipeView NoOutputsRecipe() => new(
         RecipeId.From("workflow.no-outputs"), RecipeHash.From("sha256:" + "3c9d51e2".PadRight(64, '0')), 1,
         [new RecipeInputView("fact:request", "Request", FactType.Text, "text", true), new RecipeInputView("fact:context", null, FactType.File, null, false)],

@@ -325,14 +325,14 @@ public sealed class WorkflowViewRecipeShapeTests
     private static List<string> LoopFailures(string id, System.Text.Json.JsonElement golden, Instance first)
     {
         var failures = new List<string>();
-        var loops = Items(golden, "loops").Select(l => M($"{Pair(Text(l, "from"), Text(l, "to"))}")).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
-        var cells = first.States.SelectMany(c => c.Loops.Select(l => M($"{Pair(c.State, l.With)}"))).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        var loops = Items(golden, "loops").Select(l => M($"{Pair(Text(l, "from"), Text(l, "to"))}:{l.GetProperty("cap").GetInt32()}")).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        var cells = first.States.SelectMany(c => c.Loops.Select(l => M($"{Pair(c.State, l.With)}:{l.Max}"))).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
         if (!loops.SequenceEqual(cells, StringComparer.Ordinal))
         {
             failures.Add($"{id}: the loops (from, to, cap) are [{string.Join(' ', loops)}], the cells' loop pairs (with, max) [{string.Join(' ', cells)}]");
         }
 
-        if (FixtureRecipes.All.SingleOrDefault(r => r.Id == id) is { } shape && false)
+        if (FixtureRecipes.All.SingleOrDefault(r => r.Id == id) is { } shape)
         {
             var named = Items(golden, "loops").Select(l => M($"{Text(l, "name")}:{Text(l, "from")}>{Text(l, "to")}:{l.GetProperty("cap").GetInt32()}")).Order(StringComparer.Ordinal);
             if (!named.SequenceEqual(shape.Loops.Select(l => M($"{l.Name}:{l.From}>{l.To}:{l.Max}")).Order(StringComparer.Ordinal), StringComparer.Ordinal))
@@ -346,8 +346,8 @@ public sealed class WorkflowViewRecipeShapeTests
 
     private static List<string> InputFailures(string id, System.Text.Json.JsonElement golden, List<Instance> instances)
     {
-        var inputs = Items(golden, "inputs").Select(i => M($"{Text(i, "key")}|{Text(i, "label")}|{Text(i, "kind")}")).ToList();
-        return [.. instances.Where(i => i.Inputs.Count > 0 && !i.Inputs.Select(p => M($"{p.Key}|{p.Label}|{p.Kind}")).SequenceEqual(inputs, StringComparer.Ordinal))
+        var inputs = Items(golden, "inputs").Select(i => M($"{Text(i, "key")}|{Text(i, "label")}|{Text(i, "kind")}|{i.GetProperty("required").GetBoolean()}")).ToList();
+        return [.. instances.Where(i => i.Inputs.Count > 0 && !i.Inputs.Select(p => M($"{p.Key}|{p.Label}|{p.Kind}|{p.Required}")).SequenceEqual(inputs, StringComparer.Ordinal))
             .Select(i => $"{id}: the declared inputs (key, label, kind, required) differ from the input slots of {i.Address}")];
     }
 
@@ -358,7 +358,7 @@ public sealed class WorkflowViewRecipeShapeTests
             .Concat(Items(golden, "outputs").Select(d => M($"out|{Text(d, "key")}|{Label(d)}|{TypeWord(Text(d, "type"))}|{Text(d, "from")}")))
             .Order(StringComparer.Ordinal).ToList();
         static IEnumerable<string> Rows(Instance row) => row.Facts.Select(f => M($"{(f.Direction == FactDirection.Input ? "in" : "out")}|{f.Key}|{f.Label}|{TypeWord(f.Type.ToString())}|{(f.Direction == FactDirection.Output ? f.From : string.Empty)}"));
-        return [.. instances.Where(i => i.Facts.Count > 0 && Rows(i).Any(r => !declared.Contains(r)))
+        return [.. instances.Where(i => i.Facts.Count > 0 && !Rows(i).Order(StringComparer.Ordinal).SequenceEqual(declared, StringComparer.Ordinal))
             .Select(i => $"{id}: the declared inputs and outputs (key, label, type, from) differ from the fact rows of {i.Address}")];
     }
 

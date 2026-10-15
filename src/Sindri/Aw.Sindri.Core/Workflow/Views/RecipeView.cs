@@ -4,7 +4,7 @@ using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Workflow.Views;
 
-/// <summary>The additions the recipe view makes (E-22): the recipe's id, hash and version, inputs, outputs, urgency, path-ordered states and loops.</summary>
+/// <summary>The recipe view: the recipe's stamp (id, hash, version; the same one an instance carries in `recipe`), served now ahead of the engine's full body, and the E-22 additions (inputs, outputs, urgency, path-ordered states and loops).</summary>
 /// <param name="Id">The recipe id.</param>
 /// <param name="Hash">The recipe hash, sha256: and 64 hex digits.</param>
 /// <param name="Version">The recipe version.</param>

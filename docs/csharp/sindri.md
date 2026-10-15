@@ -563,7 +563,7 @@ an address is the typed `InstanceAddress`), plus
 **Golden contract.** Each scenario's fixture (`tests/Aw.Sindri.Testing/Views/WorkflowViewFixtures.cs`, `FactFixtures.cs`,
 and the recipe declarations in `FixtureRecipes.cs`/`RecipeShape.cs`, one declaration per recipe) is serialized through the
 host's own JSON options and pinned at `tests/Aw.Sindri.Tests/Golden/Api/<slug>/<scenario>.json` (`workflow-instances`,
-`workflow-instance`, `workflow-instance-fact`, `workflow-status`, `workflow-recipe`; 45 files, in `WorkflowViewGoldenTests`).
+`workflow-instance`, `workflow-instance-fact`, `workflow-status`, `workflow-recipe`; 42 files, in `WorkflowViewGoldenTests`).
 Addresses are the engine's form (`ITM-01JK3/project/1`, child `ITM-01JK3/project/1/step.1`), every root has an item, and a
 fixture's `id` is the engine's minting rule applied to its address (`WorkflowInstanceId.Of`, pinned by a test vector); every child row, parent reference and status child carries that `id` beside its address. The UI lanes build
 their fake `ISindriApi` on these files, so a change to one is a contract change; re-record with `AW_GOLDEN_UPDATE=1`.
@@ -579,8 +579,7 @@ back into its record. The composer and the `GetInstanceFact` service arrive with
 
 The recipe files (`workflow-recipe/`) hold `id`, `hash` and `version` (they identify the recipe the view describes) and the E-22 additions (inputs, outputs, urgency, `orderedBy`,
 states, loops with their `cap`), not the engine's own fields (transitions, evals, pins, open instances), until UI U1. There is one file per recipe id the instance and list goldens
-reference, named by the id (`workflow-recipe/workflow.step.json`, `workflow.project.json`, `workflow.incident-response.json`, and the other six of `FixtureRecipes.All`), built from the same declaration as those instances, and
-`workflow-project`, `incident-response` and `no-outputs` stay beside them. `WorkflowViewRecipeShapeTests` pins that every recipe an instance, list row or child group names has such a file and that its hash, version, states, loops, inputs and outputs equal what the instance goldens show.
+reference, named by the id (`workflow-recipe/workflow.step.json`, `workflow.project.json`, `workflow.incident-response.json`, and the other six of `FixtureRecipes.All`), built from the same declaration as those instances. Files are named by recipe id; key a fake by `id`. `workflow.no-outputs.json` is a fixture-only preview: no instance names it, and its optional input is a future schema. `WorkflowViewRecipeShapeTests` pins that every recipe an instance, list row or child group names has such a file and that it equals what the instance goldens show, in both directions: the hash, version and states, the loops as (from, to, cap, name) against the cells' loop pairs and the declaration, the declared inputs (key, label, kind, required) against the input slots, and the declared inputs and outputs (key, label, type, from) against the fact rows.
 
 **`status.text` is rendered verbatim by the UI and never parsed.** The fixtures render it with a test-only renderer that
 is a provisional rendering in ASCII: it differs from main's `StatusLayout` and `InstanceWords` in wording, wrap width (about 100 columns, main's 120)
@@ -589,7 +588,7 @@ are provisional until engine P4b confirms them (the change then goes through poi
 sentence is singular at 1 (a provisional owner default, 2026-10-14 night).
 
 **Marked previews.** v1 serves every input of a started instance as required and present. `workflow-instances/preview-missing-input` (ITM-01JKH) and the optional
-`fact:context` of `workflow-recipe/no-outputs` are previews of a future optional-input recipe schema, like the fan-out previews; they give the UI data for the missing and
+`fact:context` of `workflow-recipe/workflow.no-outputs` are previews of a future optional-input recipe schema, like the fan-out previews; they give the UI data for the missing and
 blocked renders and are re-recorded when that schema lands. `workflow-status/needs-answer-step` is a Step's text-answered park and `needs-answer-wait` a wait's `--resume` park.
 
 ## Hook contract
