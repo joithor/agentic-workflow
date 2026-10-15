@@ -144,6 +144,15 @@ public sealed class WorkflowGoldenTests
     }
 
     [Fact]
+    public void A_recipe_not_found_with_an_empty_hash_names_no_hash()
+    {
+        var refused = WorkflowAnswers.Recipe("workflow.none", hash: string.Empty);
+
+        Assert.Equal(HttpStatusCode.NotFound, refused.Status);
+        Assert.Contains("No recipe workflow.none in this repo.", refused.Body, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Unknown_fact_type_reads_as_payload()
     {
         var recipe = JsonNode.Parse(GoldenFiles.Api("workflow-recipe", "workflow-project"))!; // why: the golden is a JSON object

@@ -224,7 +224,9 @@ public abstract partial class SindriApiContract
         }
         else
         {
-            Expect.Equal(Golden("workflow-recipe", golden)["inputs"]!.AsArray().Count, recipe.Value.Inputs.Count);
+            var served = Golden("workflow-recipe", golden);
+            Expect.Equal(served["inputs"]!.AsArray().Count, recipe.Value.Inputs.Count);
+            Expect.Equal(string.Join(',', served["states"]!.AsArray().Select(c => (string)c!["id"]!)), string.Join(',', recipe.Value.States.Select(c => c.State))); // why: a recipe lists states, each with an id
         }
     }
 
