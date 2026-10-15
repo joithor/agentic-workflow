@@ -27,6 +27,7 @@ public sealed class WorkflowViewGoldenTests : IAsyncLifetime
         ("workflow-status", "escalated-gate"), ("workflow-status", "taken-over"), ("workflow-status", "done"),
         ("workflow-status", "parked-drift"), ("workflow-status", "needs-answer-step"), ("workflow-status", "needs-answer-wait"),
         ("workflow-recipe", "workflow-project"), ("workflow-recipe", "incident-response"), ("workflow-recipe", "no-outputs"),
+        .. FixtureRecipes.All.Select(r => ("workflow-recipe", r.Id)),
         ("workflow-instance-fact", "scope-map"), ("workflow-instance-fact", "packet"), ("workflow-instance-fact", "evidence"), ("workflow-instance-fact", "payload"), ("workflow-instance-fact", "packet-unfrozen"),
         ("workflow-instance-fact", "text"), ("workflow-instance-fact", "truncated"), ("workflow-instance-fact", "not-found"),
     ];
@@ -117,6 +118,7 @@ public sealed class WorkflowViewGoldenTests : IAsyncLifetime
         ("workflow-recipe", "workflow-project") => Json(WorkflowViewFixtures.ProjectRecipe(), options),
         ("workflow-recipe", "incident-response") => Json(WorkflowViewFixtures.IncidentRecipe(), options),
         ("workflow-recipe", "no-outputs") => Json(WorkflowViewFixtures.NoOutputsRecipe(), options),
+        ("workflow-recipe", var id) when FixtureRecipes.All.Any(r => r.Id == id) => Json(WorkflowViewFixtures.Recipe(id), options),
         ("workflow-instance-fact", "not-found") => FactNotFound,
         ("workflow-instance-fact", _) => Json(WorkflowViewFixtures.Fact(scenario), options),
         _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "no such workflow view scenario"),

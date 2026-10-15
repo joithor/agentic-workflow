@@ -727,6 +727,7 @@ definition (states, transitions, evals, pins, open instances placed per state, t
 
 | Field | What it holds |
 |---|---|
+| `id`, `hash`, `version` | The recipe the view describes: its id, its `sha256:<64 hex>` hash and its version, the same stamp an instance carries in `recipe` |
 | `inputs[]` | `{key, label?, type, kind?, required}`. `type` is a fact type (the nine of `FactRow.type`); **`kind`** is the subject adapter (`item`, `linear-project`, `webhook`, `file`, `text`) and is read from the first input only (screens §5.4) |
 | `outputs[]` | `{key, label?, type, from}`: the new output declarations (WF `outputs`, E-22), with the added fact types of screens §5.2 |
 | `orderedBy` | `"path"`, or `"transition-list"` when the graph has more than one initial path: the same field and meaning as on `InstanceView` |

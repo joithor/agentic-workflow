@@ -303,11 +303,12 @@ public sealed class WorkflowViewRecipeShapeTests
             Assert.Equal(row.Inputs.Select(i => $"{i.Key}|{i.Label}|{i.Kind}"), inputs, StringComparer.Ordinal);
         }
 
+        // A fact row's label is the recipe's label, or the key without its prefix where the recipe declares none.
         var declared = golden.GetProperty("inputs").EnumerateArray().Concat(golden.GetProperty("outputs").EnumerateArray())
-            .Select(d => $"{Text(d, "key")}|{Text(d, "label")}|{Text(d, "type")}").ToList();
+            .Select(d => $"{Text(d, "key")}|{(Text(d, "label") is { Length: > 0 } label ? label : Text(d, "key")[5..])}|{Text(d, "type").Replace("-", string.Empty, StringComparison.Ordinal)}").ToList();
         foreach (var fact in instances.SelectMany(i => i.Facts))
         {
-            Assert.Contains($"{fact.Key}|{fact.Label}|{fact.Type.ToString().Replace("-", string.Empty, StringComparison.Ordinal)}", declared.Select(d => d.Replace("-", string.Empty, StringComparison.Ordinal)), StringComparer.OrdinalIgnoreCase);
+            Assert.Contains($"{fact.Key}|{fact.Label}|{fact.Type.ToString().Replace("-", string.Empty, StringComparison.Ordinal)}", declared, StringComparer.OrdinalIgnoreCase);
         }
     }
 }
