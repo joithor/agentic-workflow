@@ -585,13 +585,16 @@ Registered events (`EventDescriptor`, §2) reach instances as Temporal **Signals
   complete record.
 - The ledger writer runs the payload through `Aw.Redaction`. `causation` is the trigger's source; `EventFactory` takes
   the item, the causation and the request's actor (S1-D7, API P1).
-- **Temporal event id (UI E-30).** Every mirrored row records the Temporal history event id it was written for, in a
-  nullable `temporal_event_id` column on the ledger row (null on every row the engine didn't mirror; documented with
+- **Temporal event id (UI E-30).** Every mirrored row records the id of the `RecordEvent` activity it was written for
+  (not a Temporal history event id; rev 8.2, owner 2026-10-14), in a nullable `temporal_event_id` column on the ledger row (null on every row the engine didn't mirror; documented with
   the ledger columns in `docs/csharp/sindri.md`, "Ledger"). It is the third part of `RecordEvent`'s idempotency key, so
   the column and the key never disagree. The instance is identified by the row's payload (the instance id), so
   `GET /engine/instances/{address}/history` joins a history page's event ids to ledger sequences with one query on
   `(instance, temporal_event_id)` and the UI draws "ledger ↔ 4231 step.round-started" beside the line. The column is
-  added in P4, with the mirror (S1's migrations own the ledger schema).
+  added in P4, with the mirror (S1's migrations own the ledger schema). *Rev 8.2 (owner decision 2026-10-14).*
+  `temporal_event_id` is the `RecordEvent` activity id; the history route joins on `idempotency_key`, which carries the
+  run id. On `AlreadyRecorded` with different content (a workflow-task replay), the new event is recorded under
+  `<key>:<content hash>` and a warning is logged.
 - **Who reads Temporal (R8-12).** Only the engine, its tests and the API's read-only `GET /engine`,
   `GET /engine/instances` and `GET /engine/instances/{address}/history?page=`, which answer from the SDK's describe,
   list and history queries and scrub the payloads through `Aw.Redaction`. The UI reads Temporal's state and history
