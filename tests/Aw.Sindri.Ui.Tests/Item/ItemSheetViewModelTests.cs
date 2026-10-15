@@ -186,4 +186,52 @@ public sealed class ItemSheetViewModelTests
         Assert.Equal(["Decide", "Close item", "Close as cancelled"], sheet.Actions.Select(a => a.Label), StringComparer.Ordinal);
         Assert.True(sheet.Actions[0].IsPending);
     }
+
+    // L6: an answer for an item the sheet has moved on from is dropped, whatever order the reads finish in.
+    [Fact]
+    public async Task A_held_refresh_of_one_item_never_overwrites_the_item_opened_since()
+    {
+        var sheet = await Sheet();
+        await sheet.Open(_api, A.NewItem, Token);
+        var gate = _server.ItemGates[A.NewItem] = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var held = sheet.Refresh(_api, Token);
+
+        await sheet.Open(_api, A.DecisionItem, Token);
+        gate.SetResult();
+        await held;
+
+        Assert.Equal((A.DecisionItem, "Needs decision", 3), (sheet.ItemId, sheet.StateWord, sheet.Actions.Count));
+    }
+
+    [Fact]
+    public async Task A_held_first_read_of_one_item_is_dropped_when_another_is_opened()
+    {
+        var sheet = await Sheet();
+        var gate = _server.ItemGates[A.NewItem] = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var held = sheet.Open(_api, A.NewItem, Token);
+
+        await sheet.Open(_api, A.DecisionItem, Token);
+        gate.SetResult();
+        await held;
+
+        Assert.Equal((A.DecisionItem, "Needs decision", false), (sheet.ItemId, sheet.StateWord, sheet.IsLoading));
+    }
+
+    // L6: Load more while a page is in flight does nothing (the button stays focusable, so a second press is possible).
+    [Fact]
+    public async Task A_second_load_more_while_one_is_in_flight_reads_nothing()
+    {
+        var sheet = await Sheet();
+        await sheet.Open(_api, A.NewItem, Token);
+        var gate = _server.TimelineGates[151] = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var calls = _server.TimelineCalls;
+        var first = sheet.LoadMore(Token);
+
+        var second = sheet.LoadMore(Token);
+        gate.SetResult();
+        await Task.WhenAll(first, second);
+
+        Assert.Equal(calls + 1, _server.TimelineCalls);
+        Assert.Equal(101, sheet.Timeline.Count);
+    }
 }

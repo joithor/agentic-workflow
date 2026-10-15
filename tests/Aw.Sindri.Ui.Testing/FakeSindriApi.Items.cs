@@ -29,6 +29,12 @@ internal sealed partial class FakeSindriApi
         [151] = RouteAnswer.SpecShaped("items-id-timeline", "page-2"),
     };
 
+    /// <summary>Held open until set, per item id: that item's read waits for its gate (others answer at once).</summary>
+    public Dictionary<string, TaskCompletionSource> ItemGates { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>Held open until set, per 'after' cursor: that timeline page's read waits for its gate.</summary>
+    public Dictionary<long, TaskCompletionSource> TimelineGates { get; } = [];
+
     /// <summary>POST /sindri/items' answer.</summary>
     public RouteAnswer Create { get; set; } = RouteAnswer.SpecShaped("items", "created");
 
@@ -75,16 +81,28 @@ internal sealed partial class FakeSindriApi
         return Task.FromResult(Answer<QueueView>(api, "/sindri/queue", QueueView));
     }
 
-    public Task<Result<ItemView>> Item(Uri api, string itemId, CancellationToken cancellationToken)
+    public async Task<Result<ItemView>> Item(Uri api, string itemId, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _itemCalls);
-        return Task.FromResult(Answer<ItemView>(api, "/sindri/items/{id}", ItemAnswer(itemId)));
+        var answer = ItemAnswer(itemId);
+        if (ItemGates.TryGetValue(itemId, out var gate))
+        {
+            await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        return Answer<ItemView>(api, "/sindri/items/{id}", answer);
     }
 
-    public Task<Result<TimelineView>> Timeline(Uri api, string itemId, long after, CancellationToken cancellationToken)
+    public async Task<Result<TimelineView>> Timeline(Uri api, string itemId, long after, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _timelineCalls);
-        return Task.FromResult(Answer<TimelineView>(api, "/sindri/items/{id}/timeline", TimelineAnswer(after)));
+        var answer = TimelineAnswer(after);
+        if (TimelineGates.TryGetValue(after, out var gate))
+        {
+            await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        return Answer<TimelineView>(api, "/sindri/items/{id}/timeline", answer);
     }
 
     public async Task<Result<ItemCreatedView>> CreateItem(Uri api, CreateItemRequest request, CancellationToken cancellationToken)
