@@ -23,11 +23,12 @@
     <StackPanel Orientation="Horizontal" Spacing="4">
       <Button x:Name="AttachPrimary" Classes="accent" IsVisible="{Binding IsPrimaryShown}" Click="OnPrimary"
               Content="{Binding PrimaryLabel}" AutomationProperties.Name="{Binding PrimaryName}" />
-      <Panel x:Name="PendingChip" IsVisible="{Binding IsPending}" AutomationProperties.Name="{Binding PendingChip}">
+      <Panel x:Name="PendingChip" IsVisible="{Binding IsPending}" AutomationProperties.Name="{Binding PendingChipName}"
+             AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
         <Rectangle Stroke="{DynamicResource Brush.HairlineStrong}" StrokeThickness="1" StrokeDashArray="3,3"
                    RadiusX="4" RadiusY="4" IsHitTestVisible="False" />
         <TextBlock Classes="caption subtle" Margin="10,4" VerticalAlignment="Center" Text="{Binding PendingChip}"
-                   AutomationProperties.Name="{Binding PendingChip}" />
+                   AutomationProperties.AccessibilityView="Raw" />
       </Panel>
       <Button x:Name="AttachChevron" Content="▾" AutomationProperties.Name="{Binding ChevronName}">
         <Button.Flyout>
@@ -40,12 +41,13 @@
     <StackPanel x:Name="ConfirmRow" Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsConfirmingCancel}">
       <TextBlock x:Name="ConfirmLine" Classes="body" VerticalAlignment="Center" TextWrapping="Wrap"
                  Text="{Binding ConfirmLine}" AutomationProperties.Name="{Binding ConfirmLine}" />
-      <Button x:Name="ConfirmButton" Content="Cancel it" Click="OnConfirm" AutomationProperties.Name="{Binding ConfirmButtonName}" />
-      <Button x:Name="KeepButton" Content="Keep" Click="OnKeep" AutomationProperties.Name="{Binding KeepButtonName}" />
+      <Button x:Name="ConfirmButton" Content="{Binding ConfirmLabel}" Click="OnConfirm" AutomationProperties.Name="{Binding ConfirmButtonName}" />
+      <Button x:Name="KeepButton" Content="{Binding KeepLabel}" Click="OnKeep" AutomationProperties.Name="{Binding KeepButtonName}" />
     </StackPanel>
     <!-- The confirm's announcement: a polite live region, in the tree from the start so assistive tech has read it before
-         its text changes, live only while the confirm shows, and never "" (Avalonia #22312). Zero-width and invisible. -->
+         its text changes (it joins the tree when the menu opens, so a list of rows carries one only for the row in use), live only while the confirm shows, and never "" (Avalonia #22312). Zero-width and invisible. -->
     <TextBlock x:Name="ConfirmAnnouncementRegion" Classes="caption live-region" Classes.live="{Binding IsConfirmLive}"
+               IsVisible="{Binding IsRegionInTree}"
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left"
                Text="{Binding ConfirmAnnouncement}" />
   </StackPanel>

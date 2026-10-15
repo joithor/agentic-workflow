@@ -25,11 +25,11 @@
             <StackPanel Orientation="Horizontal" Spacing="8">
               <Button Name="CopyButton" IsEnabled="{Binding CanCopy}" Click="OnCopy" Content="{Binding CopyLabel}"
                       AutomationProperties.Name="{Binding CopyName}" />
-              <StackPanel Name="OpenInAgent" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
-                          Focusable="True" AutomationProperties.Name="{Binding OpenInAgentName}">
-                <TextBlock Classes="caption subtle" VerticalAlignment="Center" Text="{Binding OpenInAgentLabel}"
-                           AutomationProperties.AccessibilityView="Raw" />
-                <Panel Name="OpenInAgentChip" IsVisible="{Binding IsOpenInAgentPending}">
+              <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <!-- A disabled Button, not a focusable panel: a screen reader reaches it and hears what it waits for. -->
+                <Button Name="OpenInAgent" IsEnabled="False" Content="{Binding OpenInAgentLabel}"
+                        AutomationProperties.Name="{Binding OpenInAgentName}" />
+                <Panel Name="OpenInAgentChip" IsVisible="{Binding IsOpenInAgentPending}" AutomationProperties.AccessibilityView="Raw">
                   <Rectangle Stroke="{DynamicResource Brush.HairlineStrong}" StrokeThickness="1" StrokeDashArray="3,3"
                              RadiusX="4" RadiusY="4" IsHitTestVisible="False" />
                   <TextBlock Classes="caption subtle" Margin="10,4" VerticalAlignment="Center" Text="{Binding OpenInAgentChip}"

@@ -40,18 +40,10 @@ internal sealed class ProtectedActionViewModel(ProtectedAction action, IClipboar
     public bool IsOpen { get; private set => Set(ref field, value); }
 
     /// <summary>"Copy", or "Copied" for 1.5 s after a copy.</summary>
-    public string CopyLabel
-    {
-        get;
-        private set
-        {
-            Set(ref field, value);
-            OnChanged(nameof(CopyName));
-        }
-    } = Labels.Copy;
+    public string CopyLabel { get; private set => Set(ref field, value); } = Labels.Copy;
 
-    /// <summary>The Copy button's accessible name: "Copy: sindri …", then "Copied".</summary>
-    public string CopyName => string.Equals(CopyLabel, Labels.Copied, StringComparison.Ordinal) ? Labels.Copied : Labels.Copy + ": " + Cli;
+    /// <summary>The Copy button's accessible name: "Copy: sindri …". It stays put; the live region alone says Copied.</summary>
+    public string CopyName => Labels.Copy + ": " + Cli;
 
     /// <summary>True while the live region is live (set before its text changes): the resting label is never spoken.</summary>
     public bool IsAnnouncing { get; private set => Set(ref field, value); }
@@ -121,7 +113,8 @@ internal sealed class ProtectedActionViewModel(ProtectedAction action, IClipboar
         if (copy == _copies)
         {
             CopyLabel = Labels.Copy;
-            IsAnnouncing = false;
+            IsAnnouncing = false;   // flag first: dark, then the resting text, so "Copied" is not read twice
+            Announcement = Label;
         }
     }
 }
