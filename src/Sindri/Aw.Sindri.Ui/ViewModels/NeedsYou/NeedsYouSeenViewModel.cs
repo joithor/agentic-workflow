@@ -13,6 +13,7 @@ internal sealed class NeedsYouSeenViewModel : ObservableObject
 {
     private readonly SeenTracker _tracker;
     private readonly IMotionPreference _motion;
+    private readonly TimeProvider _clock;
     private readonly Preferences _preferences;
     private readonly Dictionary<string, NeedsYouRowViewModel> _byId = new(StringComparer.Ordinal);
     private List<NeedsYouEntry> _entries = [];
@@ -23,7 +24,7 @@ internal sealed class NeedsYouSeenViewModel : ObservableObject
 
     internal NeedsYouSeenViewModel(Preferences preferences, IMotionPreference motion, TimeProvider clock)
     {
-        (_preferences, _motion) = (preferences, motion);
+        (_preferences, _motion, _clock) = (preferences, motion, clock);
         _tracker = new SeenTracker(preferences, clock);
         _tracker.PropertyChanged += (_, e) =>
         {
@@ -106,7 +107,7 @@ internal sealed class NeedsYouSeenViewModel : ObservableObject
         var reduced = ReducedMotion;
         foreach (var entry in _entries.Where(e => fresh.Contains(e.Id)))
         {
-            _byId[entry.Id] = new NeedsYouRowViewModel(entry, _tracker.IsSeen(entry.Id), reduced, _arrivals.Contains(entry.Id));
+            _byId[entry.Id] = new NeedsYouRowViewModel(entry, _tracker.IsSeen(entry.Id), reduced, _arrivals.Contains(entry.Id), _clock);
         }
 
         Rows = [.. _entries.Select(e => _byId[e.Id])];
