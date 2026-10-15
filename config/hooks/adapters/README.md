@@ -51,6 +51,8 @@ the `aw:*` entries.
 | `sindri-nudge.sh` | SessionStart (`install-sindri.sh --hook-only`) | SessionStart (`--provider codex`) | `sessionStart` → `additional_context` (`--provider cursor`) |
 | `context-guard.sh` | PostToolUse `.*` | PostToolUse `.*`: reads the rollout's latest `token_count.last_token_usage.input_tokens` | **unmapped**: Cursor transcripts carry no token usage, and no hook reports context size per tool call (`preCompact` fires only at compaction) |
 | `done-gate.sh` | Stop | Stop: reads `last_assistant_message`, exit 2 → continuation reason on stderr | `stop`: last assistant text from the transcript; exit 2 → `followup_message`; `stop_hook_active = loop_count > 0` |
+| `meta-stop-gate.sh` | Stop (only for the session `aw-meta role-set` registered) | **unmapped**: Codex has no cross-session messages to owe replies for | **unmapped**: no cross-session messages |
+| `meta-outbox.sh` | PostToolUse `SendMessage` | **unmapped**: as above | **unmapped**: as above |
 | `done-gate-annotate.sh` | PostToolUse `Agent` | **unmapped**: `spawn_agent` returns at once with an agent id. The result comes later through `wait_agent`, with no link back to the brief | **unmapped**: `subagentStop` has no dispatch id to look up the brief, and it can't annotate the parent's tool result |
 | `scope-gate.sh` | PreToolUse `Agent` | PreToolUse `^(Agent\|spawn_agent)$`: `message`→`prompt`, `agent_type`→`subagent_type`, `task_name`→`name`/`description`, `turn_id`→`prompt_id` | `subagentStart` (can block): `task`→`prompt`, `tool_call_id`→`tool_use_id` |
 | `subagent-start-map.sh` | SubagentStart | SubagentStart (`turn_id`→`prompt_id`, the same value scope-gate saved) | not needed: `subagentStart` gives scope-gate the dispatch's `tool_call_id` directly |
