@@ -4321,3 +4321,53 @@ static Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.IsKnown(string! kind) -> boo
 static Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.PairedType(string! kind) -> string?
 static Aw.Sindri.Core.Workflow.Recipes.Urgencies.All.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Sindri.Core.Workflow.Recipes.Urgencies.IsKnown(string! urgency) -> bool
+Aw.Sindri.Core.Workflow.Recipes.PathLoop
+Aw.Sindri.Core.Workflow.Recipes.PathLoop.<Clone>$() -> Aw.Sindri.Core.Workflow.Recipes.PathLoop!
+Aw.Sindri.Core.Workflow.Recipes.PathLoop.Deconstruct(out string? Name, out string! From, out string! To) -> void
+Aw.Sindri.Core.Workflow.Recipes.PathLoop.Equals(Aw.Sindri.Core.Workflow.Recipes.PathLoop? other) -> bool
+Aw.Sindri.Core.Workflow.Recipes.PathLoop.From.get -> string!
+Aw.Sindri.Core.Workflow.Recipes.PathLoop.From.init -> void
+Aw.Sindri.Core.Workflow.Recipes.PathLoop.Name.get -> string?
+Aw.Sindri.Core.Workflow.Recipes.PathLoop.Name.init -> void
+Aw.Sindri.Core.Workflow.Recipes.PathLoop.PathLoop(string? Name, string! From, string! To) -> void
+Aw.Sindri.Core.Workflow.Recipes.PathLoop.To.get -> string!
+Aw.Sindri.Core.Workflow.Recipes.PathLoop.To.init -> void
+Aw.Sindri.Core.Workflow.Recipes.PathOrder
+Aw.Sindri.Core.Workflow.Recipes.PathOrder.<Clone>$() -> Aw.Sindri.Core.Workflow.Recipes.PathOrder!
+Aw.Sindri.Core.Workflow.Recipes.PathOrder.Deconstruct(out string! OrderedBy, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.StatePlace!>! States, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.PathLoop!>! Loops) -> void
+Aw.Sindri.Core.Workflow.Recipes.PathOrder.Equals(Aw.Sindri.Core.Workflow.Recipes.PathOrder? other) -> bool
+Aw.Sindri.Core.Workflow.Recipes.PathOrder.Loops.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.PathLoop!>!
+Aw.Sindri.Core.Workflow.Recipes.PathOrder.Loops.init -> void
+Aw.Sindri.Core.Workflow.Recipes.PathOrder.OrderedBy.get -> string!
+Aw.Sindri.Core.Workflow.Recipes.PathOrder.OrderedBy.init -> void
+Aw.Sindri.Core.Workflow.Recipes.PathOrder.PathOrder(string! OrderedBy, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.StatePlace!>! States, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.PathLoop!>! Loops) -> void
+Aw.Sindri.Core.Workflow.Recipes.PathOrder.States.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.StatePlace!>!
+Aw.Sindri.Core.Workflow.Recipes.PathOrder.States.init -> void
+Aw.Sindri.Core.Workflow.Recipes.StatePathOrder
+Aw.Sindri.Core.Workflow.Recipes.StatePlace
+Aw.Sindri.Core.Workflow.Recipes.StatePlace.BranchOf.get -> string?
+Aw.Sindri.Core.Workflow.Recipes.StatePlace.BranchOf.init -> void
+Aw.Sindri.Core.Workflow.Recipes.StatePlace.<Clone>$() -> Aw.Sindri.Core.Workflow.Recipes.StatePlace!
+Aw.Sindri.Core.Workflow.Recipes.StatePlace.Deconstruct(out string! State, out int? Order, out string? BranchOf) -> void
+Aw.Sindri.Core.Workflow.Recipes.StatePlace.Equals(Aw.Sindri.Core.Workflow.Recipes.StatePlace? other) -> bool
+Aw.Sindri.Core.Workflow.Recipes.StatePlace.Order.get -> int?
+Aw.Sindri.Core.Workflow.Recipes.StatePlace.Order.init -> void
+Aw.Sindri.Core.Workflow.Recipes.StatePlace.State.get -> string!
+Aw.Sindri.Core.Workflow.Recipes.StatePlace.State.init -> void
+Aw.Sindri.Core.Workflow.Recipes.StatePlace.StatePlace(string! State, int? Order, string? BranchOf) -> void
+override Aw.Sindri.Core.Workflow.Recipes.PathLoop.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Recipes.PathLoop.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Recipes.PathLoop.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Recipes.PathOrder.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Recipes.PathOrder.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Recipes.PathOrder.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Recipes.StatePlace.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Recipes.StatePlace.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Recipes.StatePlace.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Recipes.PathLoop.operator !=(Aw.Sindri.Core.Workflow.Recipes.PathLoop? left, Aw.Sindri.Core.Workflow.Recipes.PathLoop? right) -> bool
+static Aw.Sindri.Core.Workflow.Recipes.PathLoop.operator ==(Aw.Sindri.Core.Workflow.Recipes.PathLoop? left, Aw.Sindri.Core.Workflow.Recipes.PathLoop? right) -> bool
+static Aw.Sindri.Core.Workflow.Recipes.PathOrder.operator !=(Aw.Sindri.Core.Workflow.Recipes.PathOrder? left, Aw.Sindri.Core.Workflow.Recipes.PathOrder? right) -> bool
+static Aw.Sindri.Core.Workflow.Recipes.PathOrder.operator ==(Aw.Sindri.Core.Workflow.Recipes.PathOrder? left, Aw.Sindri.Core.Workflow.Recipes.PathOrder? right) -> bool
+static Aw.Sindri.Core.Workflow.Recipes.StatePathOrder.Of(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> Aw.Sindri.Core.Workflow.Recipes.PathOrder!
+static Aw.Sindri.Core.Workflow.Recipes.StatePlace.operator !=(Aw.Sindri.Core.Workflow.Recipes.StatePlace? left, Aw.Sindri.Core.Workflow.Recipes.StatePlace? right) -> bool
+static Aw.Sindri.Core.Workflow.Recipes.StatePlace.operator ==(Aw.Sindri.Core.Workflow.Recipes.StatePlace? left, Aw.Sindri.Core.Workflow.Recipes.StatePlace? right) -> bool
