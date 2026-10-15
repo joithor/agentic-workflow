@@ -811,9 +811,13 @@ Unit (d), as built:
 - **`--attempt next`** is refused with `SND-WF-012` while the latest attempt of the recipe is live (P4) **or** while the
   item's claim is held by a live instance (`ClaimHolders.LiveHolder`), naming the holder.
 **Park invariants (P6).** The instance holds its suspension and a queue of pending parks (`PendingPark`, then
-`LaterParks`; the wire shape still shows the first pending park). (a) A refused effect is never dropped: it is held by
+`LaterParks`; the wire shape still shows the first pending park). (a) A refused effect is never dropped, except by a revoke
+(which replaces every park: only `cancel` follows, and the `outbox.refused` rows keep the record): it is held by
 exactly one `spec-conflict` drift or dispatch park until a resume or approval re-sends it; a refusal joins the first such
-park anywhere (current or queued), de-duplicated by identity, else a new dispatch park joins the queue. (b) A takeover
+park of its own kind anywhere (current or queued), else the first of any, de-duplicated by identity, else a new dispatch
+park joins the queue. One rule ends every suspension (`Suspensions.EndCurrent`: answer, handback, drift approval, child
+release): when a queued park takes effect, the ended park's effects stay queued as an approved holder; when nothing does,
+the effects of every approved holder are released and the caller sends them (`WithReleased`); none may drop them. (b) A takeover
 never drops a park: what it covers goes first in the queue, and the handback or the next ending makes the first queued
 park the suspension. (c) A revoke or drift wake always ends in a `spec-conflict` park (a revoke replaces a takeover by
 design; a drift wake queues behind other parks). (d) A drift approval ends the drift park wherever it sits; behind a

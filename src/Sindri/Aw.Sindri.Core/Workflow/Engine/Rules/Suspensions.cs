@@ -66,7 +66,7 @@ internal static class Suspensions
     /// <summary>
     /// Suspends the instance (spec §5.1, §5.8). A revoke's spec-conflict park replaces whatever is there, ending a
     /// takeover. A takeover covers a park or escalation, which goes first in the queue behind it. A park carrying effects
-    /// joins the first resendable drift or dispatch park; a drift park while already parked for drift is absorbed; any
+    /// joins the first resendable drift or dispatch park of its own kind, else the first of any; a drift park while already parked for drift is absorbed; any
     /// other park that arrives while suspended joins the queue (an equal one already there absorbs it).
     /// </summary>
     /// <param name="instance">The instance.</param>
@@ -196,15 +196,20 @@ internal static class Suspensions
         && string.Equals(a.Question, b.Question, StringComparison.Ordinal) && a.Resume.Effects.Count == 0 && b.Resume.Effects.Count == 0;
 
     /// <summary>
-    /// A park that carries effects joins the first drift or dispatch park whose resume re-sends effects, wherever it
-    /// sits (the suspension or the queue), de-duplicated by identity: a refused effect is held by exactly one park.
+    /// A park that carries effects joins the first drift or dispatch park of its own kind whose resume re-sends effects
+    /// (else the first of any), wherever it sits (the suspension or the queue), de-duplicated by identity: a refused effect is held by exactly one park.
     /// Null when no such park exists, so the park waits (or becomes the suspension) itself.
     /// </summary>
     private static WorkflowInstance? Merged(WorkflowInstance instance, Suspension park)
     {
         var queue = PendingParks(instance);
         var all = (instance.Suspension is { } current ? new[] { current } : []).Concat(queue).ToList();
-        var at = all.FindIndex(Resendable);
+        var at = all.FindIndex(p => Resendable(p) && p.ParkKind == park.ParkKind);   // the refusal's own kind first
+        if (at < 0)
+        {
+            at = all.FindIndex(Resendable);
+        }
+
         if (at < 0)
         {
             return null;
