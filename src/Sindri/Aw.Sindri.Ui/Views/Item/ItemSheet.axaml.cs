@@ -55,7 +55,7 @@ internal sealed partial class ItemSheet : UserControl
     private async Task LoadMoreAndFocus(ItemSheetViewModel sheet)
     {
         var before = sheet.Timeline.Count;
-        await sheet.LoadMore(CancellationToken.None).ConfigureAwait(true);
+        _ = await sheet.LoadMore(CancellationToken.None).ConfigureAwait(true);
         if (sheet.Timeline.Count > before)
         {
             Dispatcher.UIThread.Post(() => FocusRow(before), DispatcherPriority.Loaded);

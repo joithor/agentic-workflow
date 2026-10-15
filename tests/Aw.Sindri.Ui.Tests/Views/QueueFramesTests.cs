@@ -264,6 +264,22 @@ public sealed class QueueFramesTests : IDisposable
         Assert.Same(rows[100], Focused(window));
     });
 
+    // a11y-6: an empty last page hides the button the human pressed: focus goes to the last timeline row, never to nothing.
+    [Fact]
+    public Task An_empty_last_page_leaves_focus_on_the_last_timeline_row() => OnUi(async () =>
+    {
+        _server.TimelinePages[151] = new RouteAnswer(System.Net.HttpStatusCode.OK, """{"entries":[],"next":null,"asOf":{"cursor":57,"ledgerHead":57,"projectedAt":null,"rebuilding":false,"stalled":false}}""");
+        var (window, shell) = await OpenItem(Connected(s => !s.Queue.IsLoading), A.NewItem);
+        var more = Named<Button>(window, "LoadMoreButton");
+        Assert.True(more.Focus(NavigationMethod.Tab));
+
+        more.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await Until(window, () => !shell.Item.HasMore);
+
+        var rows = Named<Control>(window, "TimelineList").GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("timeline-row")).ToList();
+        await Until(window, () => ReferenceEquals(rows[^1], Focused(window)));
+    });
+
     // §18 U2's signal: Close with a stale version shows SND-ITEM-409's detail as served.
     [Fact]
     public Task A_stale_close_shows_SND_ITEM_409s_detail() => OnUi(async () =>

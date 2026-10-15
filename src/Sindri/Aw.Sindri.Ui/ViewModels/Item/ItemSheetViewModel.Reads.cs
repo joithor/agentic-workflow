@@ -64,12 +64,12 @@ internal sealed partial class ItemSheetViewModel
 
     /// <summary>Load more: appends the page the API's 'next' names. A second call while one is in flight does nothing.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
-    /// <returns>A task that completes when the page is shown.</returns>
-    internal async Task LoadMore(CancellationToken cancellationToken)
+    /// <returns>A task that completes when the page is shown: true when it was appended.</returns>
+    internal async Task<bool> LoadMore(CancellationToken cancellationToken)
     {
         if (_loadingMore || _url is not { } url || Next is not { } next)
         {
-            return;
+            return false;
         }
 
         (_loadingMore, var id) = (true, ItemId);
@@ -87,7 +87,10 @@ internal sealed partial class ItemSheetViewModel
                 }
 
                 Next = page.Value.Next;
+                return true;
             }
+
+            return false;
         }
         finally
         {

@@ -50,11 +50,10 @@ public sealed class ItemSheetViewModelTests
         var sheet = await Sheet();
         await sheet.Open(_api, A.NewItem, Token);
         IsObservable(sheet.Timeline);
-        var (timeline, second) = (sheet.Timeline, sheet.Timeline[1]);
+        var second = sheet.Timeline[1];
 
         await sheet.Refresh(_api, Token);
 
-        Assert.Same(timeline, sheet.Timeline);
         Assert.Same(second, sheet.Timeline[1]);
         Assert.Equal(100, sheet.Timeline.Count);
     }
@@ -92,7 +91,7 @@ public sealed class ItemSheetViewModelTests
         var sheet = await Sheet();
         await sheet.Open(_api, A.NewItem, Token);
 
-        await sheet.LoadMore(Token);
+        _ = await sheet.LoadMore(Token);
 
         Assert.Equal((101, 152L), (sheet.Timeline.Count, sheet.Timeline[^1].Sequence));
         Assert.False(sheet.HasMore);
@@ -189,34 +188,85 @@ public sealed class ItemSheetViewModelTests
         Assert.True(sheet.Actions[0].IsPending);
     }
 
-    // L6: an answer for an item the sheet has moved on from is dropped, whatever order the reads finish in.
-    [Fact]
-    public async Task A_held_refresh_of_one_item_never_overwrites_the_item_opened_since()
+    private static Task Within(Task task) => task.WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
+
+    private static TaskCompletionSource Gate() => new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    // L6: an answer for an item the sheet has moved on from is dropped, whatever order the reads finish in. With a wire that
+    // ignores cancellation (a response already on its way) it is ReadItem's own generation check that drops it.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task A_held_refresh_of_one_item_never_overwrites_the_item_opened_since(bool wireIgnoresCancellation)
     {
         var sheet = await Sheet();
         await sheet.Open(_api, A.NewItem, Token);
-        var gate = _server.ItemGates[A.NewItem] = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var held = sheet.Refresh(_api, Token);
+        _server.IgnoreCancellation = wireIgnoresCancellation;
+        var gate = _server.ItemGates[A.NewItem] = Gate();
+        try
+        {
+            var held = sheet.Refresh(_api, Token);
 
-        await sheet.Open(_api, A.DecisionItem, Token);
-        gate.SetResult();
-        await held;
+            await Within(sheet.Open(_api, A.DecisionItem, Token));
+            gate.SetResult();
+            await Within(held);
+        }
+        finally
+        {
+            _ = gate.TrySetResult();
+        }
 
         Assert.Equal((A.DecisionItem, "Needs decision", 3), (sheet.ItemId, sheet.StateWord, sheet.Actions.Count));
     }
 
-    [Fact]
-    public async Task A_held_first_read_of_one_item_is_dropped_when_another_is_opened()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task A_held_first_read_of_one_item_is_dropped_when_another_is_opened(bool wireIgnoresCancellation)
     {
         var sheet = await Sheet();
-        var gate = _server.ItemGates[A.NewItem] = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var held = sheet.Open(_api, A.NewItem, Token);
+        _server.IgnoreCancellation = wireIgnoresCancellation;
+        var gate = _server.ItemGates[A.NewItem] = Gate();
+        try
+        {
+            var held = sheet.Open(_api, A.NewItem, Token);
 
-        await sheet.Open(_api, A.DecisionItem, Token);
-        gate.SetResult();
-        await held;
+            await Within(sheet.Open(_api, A.DecisionItem, Token));
+            gate.SetResult();
+            await Within(held);
+        }
+        finally
+        {
+            _ = gate.TrySetResult();
+        }
 
         Assert.Equal((A.DecisionItem, "Needs decision", false), (sheet.ItemId, sheet.StateWord, sheet.IsLoading));
+    }
+
+    // L6 (testing-1): the timeline page of an item the sheet has left, answered late by a wire that ignores cancellation, is
+    // dropped by ReadTimeline's generation check; the other item's own timeline stays.
+    [Fact]
+    public async Task A_late_timeline_page_of_one_item_never_replaces_the_timeline_of_the_item_opened_since()
+    {
+        var sheet = await Sheet();
+        _server.IgnoreCancellation = true;
+        _server.ItemTimelinePages[(A.DecisionItem, 0)] = RouteAnswer.SpecShaped("items-id-timeline", "page-2");
+        var gate = _server.TimelineGates[(A.NewItem, 0)] = Gate();
+        try
+        {
+            var held = sheet.Open(_api, A.NewItem, Token);
+
+            await Within(sheet.Open(_api, A.DecisionItem, Token));
+            gate.SetResult();
+            await Within(held);
+        }
+        finally
+        {
+            _ = gate.TrySetResult();
+        }
+
+        Assert.Equal((A.DecisionItem, 1, false), (sheet.ItemId, sheet.Timeline.Count, sheet.HasMore));
+        Assert.Equal(152, sheet.Timeline[0].Sequence);
     }
 
     // L6: Load more while a page is in flight does nothing (the button stays focusable, so a second press is possible).
@@ -225,16 +275,77 @@ public sealed class ItemSheetViewModelTests
     {
         var sheet = await Sheet();
         await sheet.Open(_api, A.NewItem, Token);
-        var gate = _server.TimelineGates[151] = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var gate = _server.TimelineGates[(A.NewItem, 151)] = Gate();
         var calls = _server.TimelineCalls;
-        var first = sheet.LoadMore(Token);
+        try
+        {
+            var first = sheet.LoadMore(Token);
 
-        var second = sheet.LoadMore(Token);
-        gate.SetResult();
-        await Task.WhenAll(first, second);
+            var second = await WithinResult(sheet.LoadMore(Token));
+            gate.SetResult();
+
+            Assert.Equal((true, false), (await WithinResult(first), second));
+        }
+        finally
+        {
+            _ = gate.TrySetResult();
+        }
 
         Assert.Equal(calls + 1, _server.TimelineCalls);
         Assert.Equal(101, sheet.Timeline.Count);
+    }
+
+    private static Task<T> WithinResult<T>(Task<T> task) => task.WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
+
+    // testing-2: a page that lands after the sheet moved to another item is not that item's: no row of the old item's page is
+    // added, whether or not the two timelines point at the same next page.
+    [Fact]
+    public async Task A_load_more_that_lands_after_another_item_was_opened_adds_nothing_to_it()
+    {
+        var sheet = await Sheet();
+        await sheet.Open(_api, A.NewItem, Token);
+        var gate = _server.TimelineGates[(A.NewItem, 151)] = Gate();
+        bool appended;
+        try
+        {
+            var more = sheet.LoadMore(Token);
+            await Within(sheet.Open(_api, A.DecisionItem, Token));
+            gate.SetResult();
+            appended = await WithinResult(more);
+        }
+        finally
+        {
+            _ = gate.TrySetResult();
+        }
+
+        Assert.False(appended);
+        Assert.Equal((A.DecisionItem, 100, true), (sheet.ItemId, sheet.Timeline.Count, sheet.HasMore));
+        Assert.DoesNotContain(sheet.Timeline, r => r.Sequence == 152);
+    }
+
+    // testing-2: a refresh that moved the cursor while Load more was in flight makes that page the wrong one: it is dropped.
+    [Fact]
+    public async Task A_load_more_that_lands_after_a_refresh_moved_the_cursor_is_dropped()
+    {
+        var sheet = await Sheet();
+        await sheet.Open(_api, A.NewItem, Token);
+        var gate = _server.TimelineGates[(A.NewItem, 151)] = Gate();
+        bool appended;
+        try
+        {
+            var more = sheet.LoadMore(Token);
+            _server.TimelinePages[0] = new RouteAnswer(System.Net.HttpStatusCode.OK, GoldenFiles.SpecShaped("items-id-timeline", "fixture").Replace("\"next\": 151", "\"next\": 200", StringComparison.Ordinal));
+            await Within(sheet.Refresh(_api, Token));
+            gate.SetResult();
+            appended = await WithinResult(more);
+        }
+        finally
+        {
+            _ = gate.TrySetResult();
+        }
+
+        Assert.False(appended);
+        Assert.Equal((100, true), (sheet.Timeline.Count, sheet.HasMore));
     }
 
     // L7 (corr-7): a first read that fails with anything but 404 shows the API's code and detail; the next good read clears them.
@@ -281,7 +392,7 @@ public sealed class ItemSheetViewModelTests
     {
         var sheet = await Sheet();
         await sheet.Open(_api, A.NewItem, Token);
-        await sheet.LoadMore(Token);
+        _ = await sheet.LoadMore(Token);
         var calls = _server.TimelineCalls;
 
         await sheet.Refresh(_api, Token);
@@ -296,13 +407,12 @@ public sealed class ItemSheetViewModelTests
     {
         var sheet = await Sheet();
         await sheet.Open(_api, A.NewItem, Token);
-        await sheet.LoadMore(Token);
-        var (timeline, last) = (sheet.Timeline, sheet.Timeline[^1]);
+        _ = await sheet.LoadMore(Token);
+        var last = sheet.Timeline[^1];
         _server.TimelinePages[151] = RouteAnswer.Problem(System.Net.HttpStatusCode.ServiceUnavailable, "SND-API-011", "The views didn't catch up within 2 s (fix: retry)");
 
         await sheet.Refresh(_api, Token);
 
-        Assert.Same(timeline, sheet.Timeline);
         Assert.Equal((101, false), (sheet.Timeline.Count, sheet.HasMore));
         Assert.Same(last, sheet.Timeline[^1]);
     }
@@ -316,12 +426,14 @@ public sealed class ItemSheetViewModelTests
         var good = _server.TimelinePages[151];
         _server.TimelinePages[151] = RouteAnswer.Problem(System.Net.HttpStatusCode.ServiceUnavailable, "SND-API-011", "The views didn't catch up within 2 s (fix: retry)");
 
-        await sheet.LoadMore(Token);
+        var failed = await sheet.LoadMore(Token);
 
-        Assert.Equal((100, true), (sheet.Timeline.Count, sheet.HasMore));
+        Assert.Equal((false, 100, true), (failed, sheet.Timeline.Count, sheet.HasMore));
+        Assert.Equal((true, "SND-API-011: The views didn't catch up within 2 s (fix: retry)"), (sheet.IsAnnouncing, sheet.Announcement));
 
         _server.TimelinePages[151] = good;
-        await sheet.LoadMore(Token);
+        var landed = await sheet.LoadMore(Token);
+        Assert.True(landed);
 
         Assert.Equal((101, 152L, false), (sheet.Timeline.Count, sheet.Timeline[^1].Sequence, sheet.HasMore));
     }

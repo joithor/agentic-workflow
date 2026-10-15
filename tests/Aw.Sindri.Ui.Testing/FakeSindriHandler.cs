@@ -111,7 +111,7 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
         return parts switch
         {
             [var id] => Answer(Counted(await server.Item(uri, id, sequence, cancellationToken), server.ItemAnswer(id))),
-            [_, "timeline"] => Answer(Counted(await server.Timeline(uri, After(uri), sequence, cancellationToken), server.TimelineAnswer(After(uri)))),
+            [var id, "timeline"] => Answer(Counted(await server.Timeline(uri, id, After(uri), sequence, cancellationToken), server.TimelineAnswer(id, After(uri)))),
             [var id, "close"] when request.Method == HttpMethod.Post =>
                 Answer(Counted(await server.CloseItem(uri, id, await Body<CloseItemRequest>(request, cancellationToken), cancellationToken), server.Close)),
             _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),

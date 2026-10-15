@@ -21,7 +21,7 @@ internal sealed partial class FakeSindriApi
         [A.DecisionItem] = RouteAnswer.SpecShaped("items-id", "extra-p4-needs-decision"),
     };
 
-    /// <summary>GET /sindri/items/{id}/timeline's page per 'after' (any item).</summary>
+    /// <summary>GET /sindri/items/{id}/timeline's page per 'after' (any item without its own page in <see cref="ItemTimelinePages"/>).</summary>
     public Dictionary<long, RouteAnswer> TimelinePages { get; } = new()
     {
         [0] = RouteAnswer.SpecShaped("items-id-timeline", "fixture"),
@@ -34,8 +34,17 @@ internal sealed partial class FakeSindriApi
     /// <summary>Held open until set, per item id: that item's read waits for its gate (others answer at once).</summary>
     public Dictionary<string, TaskCompletionSource> ItemGates { get; } = new(StringComparer.Ordinal);
 
-    /// <summary>Held open until set, per 'after' cursor: that timeline page's read waits for its gate.</summary>
-    public Dictionary<long, TaskCompletionSource> TimelineGates { get; } = [];
+    /// <summary>GET /sindri/items/{id}/timeline's page for one item and 'after' (before <see cref="TimelinePages"/>).</summary>
+    public Dictionary<(string Item, long After), RouteAnswer> ItemTimelinePages { get; } = [];
+
+    /// <summary>Held open until set, per item and 'after' cursor: that timeline page's read waits for its gate.</summary>
+    public Dictionary<(string Item, long After), TaskCompletionSource> TimelineGates { get; } = [];
+
+    /// <summary>
+    /// When true a gated read answers once its gate opens even if its caller was cancelled meanwhile, as a response already on
+    /// the wire does: the view model's own generation checks, not the cancellation, must then drop a late answer.
+    /// </summary>
+    public bool IgnoreCancellation { get; set; }
 
     /// <summary>POST /sindri/items' answer.</summary>
     public RouteAnswer Create { get; set; } = RouteAnswer.SpecShaped("items", "created");
@@ -68,10 +77,12 @@ internal sealed partial class FakeSindriApi
         Items.TryGetValue(itemId, out var answer) ? answer : RouteAnswer.Problem("items-id", "not-found");
 
     /// <summary>The page for one cursor; a cursor with no page answers an empty last page.</summary>
+    /// <param name="itemId">The item.</param>
     /// <param name="after">The cursor.</param>
     /// <returns>The page's answer.</returns>
-    public RouteAnswer TimelineAnswer(long after) =>
-        TimelinePages.TryGetValue(after, out var page) ? page
+    public RouteAnswer TimelineAnswer(string itemId, long after) =>
+        ItemTimelinePages.TryGetValue((itemId, after), out var own) ? own
+        : TimelinePages.TryGetValue(after, out var page) ? page
             : new RouteAnswer(System.Net.HttpStatusCode.OK, """{"entries":[],"next":null,"asOf":{"cursor":57,"ledgerHead":57,"projectedAt":null,"rebuilding":false,"stalled":false}}""");
 
     public Task<Result<QueueView>> Queue(Uri api, CancellationToken cancellationToken) => Queue(api, sequence: null, cancellationToken);
@@ -99,18 +110,19 @@ internal sealed partial class FakeSindriApi
     }
 
     public Task<Result<TimelineView>> Timeline(Uri api, string itemId, long after, CancellationToken cancellationToken) =>
-        Timeline(api, after, sequence: null, cancellationToken);
+        Timeline(api, itemId, after, sequence: null, cancellationToken);
 
     /// <summary>A timeline read that carries <paramref name="sequence"/> as X-Sindri-After.</summary>
     /// <param name="api">The API.</param>
+    /// <param name="itemId">The item.</param>
     /// <param name="after">The timeline cursor.</param>
     /// <param name="sequence">The sequence the request carried, or null for a direct call.</param>
     /// <param name="cancellationToken">Cancels the wait.</param>
     /// <returns>The answer.</returns>
-    internal Task<Result<TimelineView>> Timeline(Uri api, long after, long? sequence, CancellationToken cancellationToken)
+    internal Task<Result<TimelineView>> Timeline(Uri api, string itemId, long after, long? sequence, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _timelineCalls);
-        return View<TimelineView>(api, "/sindri/items/{id}/timeline", TimelineAnswer(after), sequence, TimelineGates.GetValueOrDefault(after), cancellationToken);
+        return View<TimelineView>(api, "/sindri/items/{id}/timeline", TimelineAnswer(itemId, after), sequence, TimelineGates.GetValueOrDefault((itemId, after)), cancellationToken);
     }
 
     public async Task<Result<ItemCreatedView>> CreateItem(Uri api, CreateItemRequest request, CancellationToken cancellationToken)
@@ -177,11 +189,11 @@ internal sealed partial class FakeSindriApi
         return !Down && Refusal is null && carried > 0 && Lag != ViewsLag.None ? Behind(carried) : Answer<T>(api, path, answer);
     }
 
-    private static async Task WaitFor(TaskCompletionSource? gate, CancellationToken cancellationToken)
+    private async Task WaitFor(TaskCompletionSource? gate, CancellationToken cancellationToken)
     {
         if (gate is not null)
         {
-            await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await gate.Task.WaitAsync(IgnoreCancellation ? CancellationToken.None : cancellationToken).ConfigureAwait(false);
         }
     }
 }
