@@ -199,6 +199,10 @@ public sealed class ContextLensesApiTests : IDisposable
 
         Assert.True(first.Status == HttpStatusCode.OK, first.Body);
         Assert.Equal(1, Json(first.Body).GetProperty("result").GetProperty("added").GetInt32());
+        Assert.Equal(["mapped", "new", "unmapped"], Statuses(first.Body), StringComparer.Ordinal);   // the response carries each surface's standing too (spec §8.7), not the counts alone
+        Assert.Equal(Anchor, Json(first.Body).GetProperty("surfaces")[0].GetProperty("node").GetString());
+        Assert.Equal("Tab manager", Json(first.Body).GetProperty("surfaces")[0].GetProperty("surface").GetString());
+        Assert.Equal(["mapped", "new", "unmapped"], Statuses(second.Body), StringComparer.Ordinal);   // an idempotent re-run reports the same standing
         Assert.Equal(0, Json(second.Body).GetProperty("result").GetProperty("added").GetInt32());
         Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (session.Status, session.Code));
         Assert.Equal(["mapped", "new", "unmapped"], Statuses(view.Body), StringComparer.Ordinal);   // every surface of the run, in the order it was submitted: the mapped one and the one with no kind wrote no row
@@ -208,5 +212,27 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.Equal(1, Json(third.Body).GetProperty("result").GetProperty("rejected").GetInt32());
         Assert.Contains("\"status\":\"current\"", status.Body, StringComparison.Ordinal);
         Assert.Contains("scope-1", recorded.Value!.Envelope.Payload, StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task A_draft_opened_from_a_map_imported_without_a_commit_promotes_instead_of_failing()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Host();
+        var body = $$"""{"run":"scope-1","repo":"{{FixtureMap.Repo}}","surfaces":[{"name":"Tab manager","key":"{{Anchor}}"}]}""";
+        Assert.Equal(HttpStatusCode.OK, (await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)))).Status);
+
+        var preview = await host.Http.Ask(Post("/sindri/context/map/promote", "{}", Terminal(host)));
+        var shown = Json(preview.Body);
+        var draft = shown.GetProperty("draft").GetString();
+        var challenge = shown.GetProperty("challenge");
+        var answer = new { challenge = challenge.GetProperty("challenge").GetString(), typed = challenge.GetProperty("action").GetString() };
+        var promoted = await host.Http.Ask(Post("/sindri/context/map/promote", JsonSerializer.Serialize(new { draft, answer }), Terminal(host)));
+        var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapPromoted, ct);
+
+        Assert.True(preview.Status == HttpStatusCode.OK, preview.Body);
+        Assert.DoesNotContain('@', draft!);   // why: an imported map has no commit, so its draft's label is a bare 'v<N>'
+        Assert.True(promoted.Status == HttpStatusCode.OK, promoted.Body);
+        Assert.NotNull(recorded.Value);
     }
 }

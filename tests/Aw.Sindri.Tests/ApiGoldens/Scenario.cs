@@ -117,6 +117,16 @@ internal sealed class Scenario(GoldenHost host)
         return await Fetch("/sindri/context/map/review/history", ct);
     }
 
+    /// <summary>A scoping run's proposals: one surface the map has, one it gets as new, one with no kind (unmapped); the response names each one's standing.</summary>
+    public async Task<string> Propose(CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        const string Body = """{"run":"golden-run","repo":"aw-split-panes","surfaces":[{"name":"Tab manager","key":"feature:tabs.tab-manager"},{"name":"Zoom","kind":"feature","evidence":[]},{"name":"Something vague"}]}""";
+        var proposed = await host.Http.Ask(Post("/sindri/context/map/proposals", Body, AppHeaders()));
+        Assert.True(proposed.Status == System.Net.HttpStatusCode.OK, proposed.Body);
+        return proposed.Body;
+    }
+
     /// <summary>Promoting with items undecided.</summary>
     public async Task<string> PromoteRefused(CancellationToken ct)
     {

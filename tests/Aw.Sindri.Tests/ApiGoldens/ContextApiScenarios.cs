@@ -53,6 +53,7 @@ internal static class ContextApiScenarios
         ("context-map-review", "post-accept-deterministic", async (s, ct) => await s.AcceptDeterministic(ct)),
         ("context-map-review", "post-apply-file-preview", async (s, ct) => await s.ApplyFilePreview(ct)),
         ("context-map-review-history", "after-accept-undo", async (s, ct) => await s.AcceptThenUndo(ct)),
+        ("context-map-proposals", "map-tabs-run", async (s, ct) => await s.Propose(ct)),
         ("context-map-promote", "refused-046", async (s, ct) => await s.PromoteRefused(ct)),
         ("context-map-promote", "preview", async (s, ct) => await s.PromotePreview(ct)),
     ];
