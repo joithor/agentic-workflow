@@ -16,6 +16,7 @@ namespace Aw.Context.Core.Review;
 /// <param name="Files">The files that implement it ('code:' keys).</param>
 /// <param name="Parent">The feature it is under, or null.</param>
 /// <param name="Override">For an orphaned entry: the override whose target is gone (the id a 'drop' names), else null.</param>
+/// <param name="Trust">Whether its label may be read as instructions: a model's proposal is untrusted until a person accepts it.</param>
 public sealed record ReviewEntry(
     NodeKey Node,
     LinkId? Link,
@@ -26,4 +27,5 @@ public sealed record ReviewEntry(
     int Impact,
     IReadOnlyList<NodeKey> Files,
     NodeKey? Parent,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] OverrideId? Override = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] OverrideId? Override = null,
+    Results.Trust Trust = Results.Trust.Trusted);

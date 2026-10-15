@@ -24,6 +24,12 @@ internal sealed class GetLensesService(MapReader reader, IScrubberFactory scrubb
             return built.Error;
         }
 
+        var depth = request.Depth ?? settings.Value.CascadeDepth;
+        if (QueryRules.CheckDepth(depth) is { } badDepth)
+        {
+            return badDepth;
+        }
+
         var read = await reader.ReadView(request.Scope, request.Draft, cancellationToken).ConfigureAwait(false);
         var anchor = read.IsError ? read.Error : AnchorMatch.Resolve(read.Value.Graph, request.Anchor);
         if (read.IsError || anchor.IsError)
@@ -31,6 +37,8 @@ internal sealed class GetLensesService(MapReader reader, IScrubberFactory scrubb
             return read.IsError ? read.Error : anchor.Error;
         }
 
-        return LensesBuilder.Build(new LensBasis(read.Value.Snapshot.Label, request.Draft, clock.GetUtcNow()), read.Value.Graph, anchor.Value.Key, settings.Value.CascadeDepth);
+        var basis = new LensBasis(read.Value.Snapshot.Label, request.Draft, clock.GetUtcNow());
+        var view = LensesBuilder.Build(basis, read.Value.Graph, anchor.Value.Key, depth);
+        return view.Map(v => LensTexts.Clean(v, new MapText(built.Value, FencePolicies.For(request.Scope.Caller))));
     }
 }

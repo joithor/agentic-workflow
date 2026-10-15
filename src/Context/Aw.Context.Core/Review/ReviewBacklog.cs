@@ -20,15 +20,36 @@ public static class ReviewBacklog
         ArgumentNullException.ThrowIfNull(overrides);
         var applied = OverrideApplier.Apply(draft, overrides);
         var graph = applied.Graph;
-        var nodes = graph.Nodes.Where(n => n.Provenance != Provenance.Human && _proposable.Contains(n.Key.Kind)).Select(n => NodeEntry(graph, n));
-        var links = graph.Edges.Where(e => e.Provenance == Provenance.Model && e.Type is EdgeType.Implements or EdgeType.Tests).Select(e => LinkEntry(graph, e));
+        var nodes = graph.Nodes.Where(IsProposal).Select(n => NodeEntry(graph, n));
+        var links = graph.Edges.Where(IsSuggestion).Select(e => LinkEntry(graph, e));
         var undecided = nodes.Concat(links).ToList();
         var ordered = undecided.Where(e => e.Group == ReviewGroup.Deterministic).OrderBy(e => e.Node.Value, StringComparer.Ordinal)
             .Concat(undecided.Where(e => e.Group == ReviewGroup.Model).OrderByDescending(e => e.Impact).ThenBy(e => e.Node.Value, StringComparer.Ordinal).ThenBy(e => e.Link?.Value, StringComparer.Ordinal))
-            .Concat(applied.Orphaned.Where(o => o.Action != OverrideAction.Propose).Select(Orphan));
-        var decided = OverrideLog.Active(overrides).Where(OverrideLog.Decides).Select(o => o.Link?.Value ?? o.Target.Value).Distinct(StringComparer.Ordinal).Count();
-        return ReviewQueueView.Of(label, [.. ordered], decided);
+            .Concat(applied.Orphaned.Where(o => o.Action != OverrideAction.Propose).Select(Orphan))
+            .ToList();
+        var counts = QueueCounts.Of(ordered);
+        var decided = DecidedProposals(draft, overrides);
+        return new ReviewQueueView(label, ReviewVersion.None, ordered, decided, decided + counts.Deterministic + counts.Model, counts, ByKind(ordered), ReviewTruncated.None);
     }
+
+    private static bool IsProposal(GraphNode n) => n.Provenance != Provenance.Human && _proposable.Contains(n.Key.Kind);
+
+    private static bool IsSuggestion(GraphEdge e) => e.Provenance == Provenance.Model && e.Type is EdgeType.Implements or EdgeType.Tests;
+
+    // The proposals of this draft with a standing decision: the draft's own proposals and its scoping run's, not every target someone ever decided about.
+    private static int DecidedProposals(GraphSnapshot draft, IReadOnlyList<MapOverride> overrides)
+    {
+        var active = OverrideLog.Active(overrides);
+        var proposals = draft.Nodes.Where(IsProposal).Select(n => n.Key.Value)
+            .Concat(draft.Edges.Where(IsSuggestion).Select(e => LinkIds.For(e).Value))
+            .Concat(active.Where(o => o.Action == OverrideAction.Propose).Select(o => o.Target.Value)).ToHashSet(StringComparer.Ordinal);
+        var deciding = active.Where(OverrideLog.Decides).Select(o => o.Link?.Value ?? o.Target.Value).ToHashSet(StringComparer.Ordinal);
+        return proposals.Count(deciding.Contains);
+    }
+
+    private static Dictionary<string, int> ByKind(List<ReviewEntry> entries) =>
+        entries.Where(e => e is { Group: ReviewGroup.Deterministic, Link: null }).GroupBy(e => e.Node.Value[..e.Node.Value.IndexOf(':', StringComparison.Ordinal)], StringComparer.Ordinal)
+            .OrderBy(g => g.Key, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
 
     private static ReviewEntry NodeEntry(GraphSnapshot graph, GraphNode node)
     {
@@ -36,13 +57,13 @@ public static class ReviewBacklog
         var parent = graph.Edges.Where(e => e.Type == EdgeType.PartOf && e.From.Value == node.Key.Value).Select(e => (NodeKey?)e.To).FirstOrDefault();
         var impact = graph.Edges.Count(e => e.From.Value == node.Key.Value || e.To.Value == node.Key.Value);
         var group = node.Provenance == Provenance.Deterministic ? ReviewGroup.Deterministic : ReviewGroup.Model;
-        return new ReviewEntry(node.Key, Link: null, group, node.Label, node.Provenance, node.Confidence, impact, files, parent);
+        return new ReviewEntry(node.Key, Link: null, group, node.Label, node.Provenance, node.Confidence, impact, files, parent, Trust: TrustPolicy.For(node.Provenance, accepted: false));
     }
 
     private static ReviewEntry LinkEntry(GraphSnapshot graph, GraphEdge edge)
     {
         var to = graph.Resolve(edge.To)?.Label ?? edge.To.Name;
-        return new ReviewEntry(edge.From, LinkIds.For(edge), ReviewGroup.Model, $"{edge.From.Name} {EdgeRules.Name(edge.Type)} {to}", edge.Provenance, edge.Confidence, 1, [edge.From], edge.To);
+        return new ReviewEntry(edge.From, LinkIds.For(edge), ReviewGroup.Model, $"{edge.From.Name} {EdgeRules.Name(edge.Type)} {to}", edge.Provenance, edge.Confidence, 1, [edge.From], edge.To, Trust: TrustPolicy.For(edge.Provenance, accepted: false));
     }
 
     private static ReviewEntry Orphan(MapOverride o) =>

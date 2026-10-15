@@ -70,6 +70,6 @@ public sealed class MapReader(IGraphStore store)
         }
 
         var map = await Read(scope, draft: false, cancellationToken).ConfigureAwait(false);
-        return map.IsError ? map.Error : (map.Value, new MapText(built.Value));
+        return map.IsError ? map.Error : (map.Value, new MapText(built.Value, FencePolicies.For(scope.Caller)));
     }
 }

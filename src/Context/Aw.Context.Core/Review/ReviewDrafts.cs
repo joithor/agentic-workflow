@@ -84,8 +84,9 @@ public static class ReviewDrafts
             return built.IsError ? built.Error : draft.Error;
         }
 
-        var text = new MapText(built.Value);
+        var text = new MapText(built.Value, FencePolicies.For(scope.Caller));
         var queue = ReviewBacklog.Build(draft.Value.Label, draft.Value.Graph, draft.Value.Overrides);
-        return (draft.Value, queue with { Entries = [.. queue.Entries.Select(e => e with { Label = text.Label(e.Label, Results.Trust.Trusted) })] });
+        var version = new ReviewVersion(draft.Value.Version.Number, draft.Value.Version.Commit is { Length: > 0 } commit ? commit[..Math.Min(7, commit.Length)] : null);
+        return (draft.Value, queue with { Version = version, Entries = [.. queue.Entries.Select(e => e with { Label = text.Label(e.Label, e.Trust) })] });
     }
 }

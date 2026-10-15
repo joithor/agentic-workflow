@@ -3,6 +3,7 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Extract;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Review;
 using Aw.Context.Core.Trust;
 using Aw.Context.Infrastructure.Docs;
@@ -45,7 +46,9 @@ public static class ContextInfrastructureServiceCollectionExtensions
             .AddSingleton<IScrubberFactory, RedactionScrubberFactory>()
             .AddSingleton<ISourceCatalog, ContextSourceCatalog>()
             .AddSingleton<IDocIndex, SqliteDocIndex>()
-            .AddSingleton<IGraphStore, SqliteGraphStore>()
+            .AddSingleton<SqliteGraphStore>()
+            .AddSingleton<IGraphStore>(sp => sp.GetRequiredService<SqliteGraphStore>())
+            .AddSingleton<IProposalRuns>(sp => sp.GetRequiredService<SqliteGraphStore>())
             .AddSingleton<IMapFileReader, MapFileReader>()
             .AddSingleton<IExportStore, FileExportStore>()
             .AddSingleton<IReviewFileStore, FileReviewFileStore>()

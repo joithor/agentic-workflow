@@ -12,6 +12,9 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// <param name="Path">The review file for apply-file, or null.</param>
 internal sealed record ReviewInput(string Verb, ReviewDecision? Decision, string? Path)
 {
+    /// <summary>The most overrides one undo may name.</summary>
+    internal const int MaxUndoList = 1000;
+
     /// <summary>Every variant this command takes.</summary>
     internal static IReadOnlyList<string> Verbs { get; } =
         ["accept", "reject", "rename", "move", "accept-deterministic", "undo", "drop", "repoint", "apply-file", "merge", "add", "delete"];
@@ -50,8 +53,40 @@ internal sealed record ReviewInput(string Verb, ReviewDecision? Decision, string
         var other = Field<NodeKey>(request.Other, "other", NodeKey.TryFrom);
         var link = Field<LinkId>(request.Link, "link", LinkId.TryFrom);
         var undoes = Field<OverrideId>(request.Override, "override", OverrideId.TryFrom);
-        var bad = node.IsError ? node.Error : other.IsError ? other.Error : link.IsError ? link.Error : undoes.IsError ? undoes.Error : null;
-        return bad is { } error ? error : new ReviewDecision(ToVerb(request.Verb), node.Value, link.Value, undoes.Value, request.Label, other.Value);
+        var all = UndoList(request);
+        var bad = node.IsError ? node.Error : other.IsError ? other.Error : link.IsError ? link.Error : undoes.IsError ? undoes.Error : all.IsError ? all.Error : null;
+        return bad is { } error ? error : new ReviewDecision(ToVerb(request.Verb), node.Value, link.Value, undoes.Value, request.Label, other.Value, all.Value);
+    }
+
+    /// <summary>The overrides an undo reverses together: 1 to 1000 ids, only for undo and not beside a single override.</summary>
+    private static Result<IReadOnlyList<OverrideId>?> UndoList(ReviewContextMapRequest request)
+    {
+        if (request.Overrides is not { } ids)
+        {
+            return Results.Success<IReadOnlyList<OverrideId>?>(value: null);
+        }
+
+        var refusal = !string.Equals(request.Verb, "undo", StringComparison.Ordinal) ? "overrides: only undo takes a list of overrides"
+            : request.Override is not null ? "overrides: give either 'override' (one id) or 'overrides' (a list), not both"
+            : ids.Count is 0 or > MaxUndoList ? $"overrides: undo takes 1 to {MaxUndoList} override ids (fix: sindri context map review --undo <id>[,<id>…])"
+            : null;
+        if (refusal is not null)
+        {
+            return SindriErrors.InvalidInput.With(refusal);
+        }
+
+        var parsed = new List<OverrideId>(ids.Count);
+        for (var i = 0; i < ids.Count; i++)
+        {
+            if (!OverrideId.TryFrom(ids[i], out var id))
+            {
+                return SindriErrors.InvalidInput.With(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"overrides[{i}]: '{ids[i]}' is not a valid override id ('ovr_' and 16 hex digits)"));
+            }
+
+            parsed.Add(id);
+        }
+
+        return Results.Success<IReadOnlyList<OverrideId>?>(parsed);
     }
 
     private delegate bool TryParse<T>(string text, out T value);

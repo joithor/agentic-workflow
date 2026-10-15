@@ -25,7 +25,7 @@ public static class ReviewPlanner
         {
             ReviewVerb.AcceptDeterministic => world.AcceptDeterministic(),
             ReviewVerb.Accept or ReviewVerb.Reject => One(decision.Link is { } link ? world.DecideLink(decision, link) : world.DecideNode(decision)),
-            ReviewVerb.Undo => One(world.Undo(decision)),
+            ReviewVerb.Undo => decision.UndoesAll is null ? One(world.Undo(decision)) : world.UndoAll(decision.UndoesAll),
             ReviewVerb.Drop => One(world.Drop(decision)),
             ReviewVerb.Repoint => world.Repoint(decision),
             ReviewVerb.Rename or ReviewVerb.Move or ReviewVerb.Merge or ReviewVerb.Add or ReviewVerb.Delete => One(world.Edit(decision)),
@@ -71,6 +71,30 @@ public static class ReviewPlanner
             d.Undoes is not { } id
                 ? Stale("undo names an override id (fix: list the history with 'sindri context map review --history')")
                 : UndoRules.Check(Overrides, id).Map(o => Row(OverrideAction.Undo, o.Target) with { Undoes = o.ToId() });
+
+        /// <summary>Undoes every named override, or none: the first id that is unknown or undone already refuses the whole call and is named.</summary>
+        internal Result<IReadOnlyList<MapOverride>> UndoAll(IReadOnlyList<OverrideId> ids)
+        {
+            var distinct = ids.DistinctBy(i => i.Value, StringComparer.Ordinal).ToList();
+            if (distinct.Count == 0)
+            {
+                return Stale("undo names no override (fix: list the history with 'sindri context map review --history')");
+            }
+
+            var rows = new List<MapOverride>();
+            foreach (var id in distinct)
+            {
+                var found = UndoRules.Check(Overrides, id);
+                if (found.IsError)
+                {
+                    return found.Error;
+                }
+
+                rows.Add(Row(OverrideAction.Undo, found.Value.Target) with { Undoes = found.Value.ToId() });
+            }
+
+            return rows;
+        }
 
         /// <summary>Points an orphaned node decision at a node of the draft: an undo of the orphan, then the same decision on the new node.</summary>
         internal Result<IReadOnlyList<MapOverride>> Repoint(ReviewDecision d)

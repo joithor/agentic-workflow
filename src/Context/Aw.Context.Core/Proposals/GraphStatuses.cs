@@ -18,6 +18,26 @@ public static class GraphStatuses
             .Select(o => new ProposedSurface(o.Label ?? o.Target.Name, o.Target, o.Proposal!.Kind, o.Proposal.Parent, o.Proposal.Evidence, o.Proposal.Quote))];   // why: the filter keeps only rows with a payload
     }
 
+    /// <summary>
+    /// Every surface a run submitted: the list the run saved (the mapped and unmapped ones too), then any surface of it that only a
+    /// 'propose' row remembers (a run saved before the list was kept), each once.
+    /// </summary>
+    /// <param name="run">The run.</param>
+    /// <param name="overrides">Every override.</param>
+    /// <param name="saved">The surfaces the run saved, or null when none were.</param>
+    /// <returns>The surfaces, in submission order.</returns>
+    public static IReadOnlyList<ProposedSurface> ForRun(string run, IReadOnlyList<MapOverride> overrides, IReadOnlyList<ProposedSurface>? saved)
+    {
+        ArgumentNullException.ThrowIfNull(overrides);
+        var surfaces = new List<ProposedSurface>(saved ?? []);
+        var known = surfaces.Select(Identity).ToHashSet(StringComparer.Ordinal);
+        surfaces.AddRange(ForRun(run, overrides).Where(s => known.Add(Identity(s))));
+        return surfaces;
+    }
+
+    // What makes two submissions of a surface the same: its node key when it has one, else its name.
+    private static string Identity(ProposedSurface surface) => ProposalNodes.KeyOf(surface) is { } key ? key.Value : "name:" + surface.Name;
+
     /// <summary>The status of each surface.</summary>
     /// <param name="surfaces">The surfaces.</param>
     /// <param name="current">The current map with its overrides applied.</param>

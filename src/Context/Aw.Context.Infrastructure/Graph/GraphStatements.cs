@@ -1,5 +1,6 @@
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Overrides;
+using Aw.Context.Core.Proposals;
 using Aw.Kernel.Data;
 
 namespace Aw.Context.Infrastructure.Graph;
@@ -44,6 +45,9 @@ internal static class GraphStatements
         .Bind("$id", o.ToId().Value).Bind("$action", GraphText.Of(o.Action)).Bind("$target", o.Target.Value).Bind("$label", o.Label)
         .Bind("$other", o.Other?.Value).Bind("$who", o.Who).Bind("$at", GraphText.Time(o.At)).Bind("$rejection", o.Rejection)
         .Bind("$link", o.Link?.Value).Bind("$undoes", o.Undoes?.Value).Bind("$payload", GraphPayload.Write(o.Proposal)));
+
+    public static SqlStatement Run(ScopeProposal proposal) => new(GraphSql.UpsertRun, c => c
+        .Bind("$run", proposal.Run).Bind("$repo", proposal.Repo.Value).Bind("$surfaces", GraphPayload.WriteSurfaces(proposal.Surfaces)));
 
     private static SqlStatement Node(long version, GraphNode node) => new(GraphSql.InsertNode, c => c
         .Bind("$v", version).Bind("$key", node.Key.Value).Bind("$label", node.Label).Bind("$attributes", node.Attributes?.GetRawText())

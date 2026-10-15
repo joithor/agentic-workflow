@@ -8,7 +8,7 @@ using Aw.Kernel;
 namespace Aw.Context.Testing.Map;
 
 /// <summary>The in-memory graph store; <see cref="GraphStoreContract"/> holds it to the SQLite store's behavior.</summary>
-public sealed class FakeGraphStore : IGraphStore
+public sealed class FakeGraphStore : IGraphStore, IProposalRuns
 {
     private readonly List<(MapVersion Version, GraphSnapshot Graph)> _versions = [];
     private readonly List<MapOverride> _overrides = [];

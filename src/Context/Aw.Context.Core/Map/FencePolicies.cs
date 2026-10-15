@@ -11,6 +11,6 @@ public static class FencePolicies
     public static FencePolicy For(ContextCaller caller)
     {
         ArgumentNullException.ThrowIfNull(caller);
-        return FencePolicy.Fenced;
+        return caller.Kind == ContextCallerKind.Human && caller.Client is ContextClient.Cli or ContextClient.Http ? FencePolicy.Clean : FencePolicy.Fenced;
     }
 }

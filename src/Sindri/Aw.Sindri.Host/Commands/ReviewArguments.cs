@@ -9,7 +9,7 @@ namespace Aw.Sindri.Host.Commands;
 /// </summary>
 internal static class ReviewArguments
 {
-    private const string Forms = "context map review [--json] | review --history | review --export [<path>] | review --apply <file> | review --undo <id> | review --drop <id> | "
+    private const string Forms = "context map review [--json] | review --list [--limit <n>] | review --history [--limit <n>] | review --export [<path>] | review --apply <file> | review --undo <id>[,<id>…] | review --drop <id> | "
         + "review --repoint <id> --to <node> | review --accept-deterministic | review accept|reject <node|link> | review rename <node> <name…> | review move <node> --under <node> | "
         + "review merge <node> --into <node> | review add <node> <name…> [--under <node>] | review delete <node>";
 
@@ -20,7 +20,7 @@ internal static class ReviewArguments
     {
         ArgumentNullException.ThrowIfNull(args);
         var json = args.Contains("--json", StringComparer.Ordinal);
-        string[] rest = [.. args.Where(a => !string.Equals(a, "--json", StringComparison.Ordinal))];
+        var (rest, limit) = TakeLimit([.. args.Where(a => !string.Equals(a, "--json", StringComparison.Ordinal))]);
         ReviewCommand Send(ReviewContextMapRequest request) => new(ReviewMode.Request, json, request);
         var command = rest switch
         {
@@ -30,7 +30,7 @@ internal static class ReviewArguments
             ["--export"] => new ReviewCommand(ReviewMode.Export, json),
             ["--export", var path] when !path.StartsWith("--", StringComparison.Ordinal) => new ReviewCommand(ReviewMode.Export, json, Path: path),
             ["--apply", var file] => Send(new ReviewContextMapRequest("apply-file", Path: Path.GetFullPath(file))),
-            ["--undo", var id] => Send(new ReviewContextMapRequest("undo", Override: id)),
+            ["--undo", var ids] => Send(Undo(ids)),
             ["--drop", var id] => Send(new ReviewContextMapRequest("drop", Override: id)),
             ["--accept-deterministic"] => Send(new ReviewContextMapRequest("accept-deterministic")),
             ["--repoint", var id, "--to", var node] => Send(new ReviewContextMapRequest("repoint", Node: node, Override: id)),
@@ -42,10 +42,23 @@ internal static class ReviewArguments
             ["delete", var node] => Send(new ReviewContextMapRequest("delete", Node: node)),
             _ => null,
         };
-        return command is null
+        return command is null || (limit is not null && command.Mode is not (ReviewMode.Queue or ReviewMode.History))
             ? SindriErrors.UnknownVerb.With($"'review {string.Join(' ', args)}' is not a review command: {Forms}")
-            : command;
+            : command with { Limit = limit };
     }
+
+    // '--limit N' anywhere in the arguments, left for the server to range-check.
+    private static (string[] Args, string? Limit) TakeLimit(string[] args)
+    {
+        var at = Array.IndexOf(args, "--limit");
+        return at < 0 || at + 1 >= args.Length ? (args, null) : ([.. args[..at], .. args[(at + 2)..]], args[at + 1]);
+    }
+
+    // One id, or ids separated by commas (undone together, all or none).
+    private static ReviewContextMapRequest Undo(string ids) =>
+        ids.Contains(',', StringComparison.Ordinal)
+            ? new ReviewContextMapRequest("undo", Overrides: [.. ids.Split(',', StringSplitOptions.TrimEntries)])
+            : new ReviewContextMapRequest("undo", Override: ids);
 
     private static ReviewContextMapRequest Decide(string verb, string target) =>
         target.StartsWith("edge:", StringComparison.Ordinal) ? new ReviewContextMapRequest(verb, Link: target) : new ReviewContextMapRequest(verb, Node: target);

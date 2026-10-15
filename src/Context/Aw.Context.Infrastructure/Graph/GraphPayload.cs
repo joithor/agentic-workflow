@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using Aw.Context.Core.Overrides;
+using Aw.Context.Core.Proposals;
 using Aw.Kernel.Json;
 
 namespace Aw.Context.Infrastructure.Graph;
@@ -12,6 +13,14 @@ internal static class GraphPayload
 
     public static string? Write(ProposalPayload? payload) =>
         payload is null ? null : Encoding.UTF8.GetString(AwJson.Serialize(payload, _options));
+
+    public static string WriteSurfaces(IReadOnlyList<ProposedSurface> surfaces) => Encoding.UTF8.GetString(AwJson.Serialize(surfaces.ToArray(), _options));
+
+    public static IReadOnlyList<ProposedSurface> ReadSurfaces(string json)
+    {
+        var read = AwJson.Deserialize<ProposedSurface[]>(Encoding.UTF8.GetBytes(json), _options);
+        return read.IsError ? throw new InvalidOperationException($"proposal_run.surfaces isn't a surface list: {read.Error.Message}") : read.Value;
+    }
 
     public static ProposalPayload? Read(string? json)
     {

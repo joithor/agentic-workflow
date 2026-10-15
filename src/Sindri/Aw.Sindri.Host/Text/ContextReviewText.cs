@@ -1,7 +1,9 @@
 using System.Globalization;
 using System.Text;
 using Aw.Context.Core.Proposals;
+using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
+using Aw.Context.Core.Trust;
 using Aw.Sindri.Features.ContextCalls;
 
 namespace Aw.Sindri.Host.Text;
@@ -39,7 +41,8 @@ internal static class ContextReviewText
         var files = entry.Files.Count == 0 ? string.Empty : "  files: " + string.Join(", ", entry.Files.Select(f => f.Value));
         var link = entry.Link is { } id ? $"  link: {id.Value}" : string.Empty;
         var orphan = entry.Override is { } o ? $"  override: {o.Value}" : string.Empty;
-        return Invariant($"{index}/{total} {entry.Group.ToString().ToLowerInvariant()} {entry.Confidence:0.00}  {entry.Label}  ({entry.Node.Value}, impact {entry.Impact}){files}{link}{orphan}\n");
+        var label = entry.Trust == Trust.Untrusted ? UntrustedFence.Wrap("map", author: null, entry.Label) : entry.Label;
+        return Invariant($"{index}/{total} {entry.Group.ToString().ToLowerInvariant()} {entry.Confidence:0.00}  {label}  ({entry.Node.Value}, impact {entry.Impact}){files}{link}{orphan}\n");
     }
 
     internal static string History(ReviewHistoryView history)

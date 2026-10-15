@@ -20,13 +20,13 @@ internal sealed class GetFileMapService(MapReader reader, IRepoReader repos) : I
         var query = request.Query;
         var repo = Addressed(request.Scope, query.Repo);
         var map = repo.IsError ? repo.Error : await reader.ReadView(request.Scope, query.Draft, cancellationToken).ConfigureAwait(false);
-        var files = map.IsError ? map.Error : await Files(repo.Value, cancellationToken).ConfigureAwait(false);
-        if (repo.IsError || map.IsError || files.IsError)
+        var tree = map.IsError ? map.Error : await Tree(repo.Value, cancellationToken).ConfigureAwait(false);
+        if (repo.IsError || map.IsError || tree.IsError)
         {
-            return repo.IsError ? repo.Error : map.IsError ? map.Error : files.Error;
+            return repo.IsError ? repo.Error : map.IsError ? map.Error : tree.Error;
         }
 
-        return FileMapBuilder.Build(new FileMapBasis(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"v{map.Value.Snapshot.Version.Number}"), string.Empty), query, files.Value, map.Value.Graph);
+        return FileMapBuilder.Build(new FileMapBasis(map.Value.Snapshot.Tag, tree.Value.Sha), query, tree.Value.Files, map.Value.Graph);
     }
 
     private static Result<ContextRepo> Addressed(ContextScope scope, ContextRepoName name)
@@ -43,10 +43,11 @@ internal sealed class GetFileMapService(MapReader reader, IRepoReader repos) : I
             : repo;
     }
 
-    private async ValueTask<Result<IReadOnlyList<string>>> Files(ContextRepo repo, CancellationToken cancellationToken)
+    /// <summary>The repo's tracked files at HEAD (never a denied path) and the first seven characters of that commit.</summary>
+    private async ValueTask<Result<(string Sha, IReadOnlyList<string> Files)>> Tree(ContextRepo repo, CancellationToken cancellationToken)
     {
         var head = await repos.Head(repo, cancellationToken).ConfigureAwait(false);
         var listed = head.IsError ? head.Error : await repos.ListFiles(repo, head.Value, cancellationToken).ConfigureAwait(false);
-        return listed.Map<IReadOnlyList<string>>(files => [.. files.Where(p => !repo.Denies(p))]);
+        return listed.IsError ? listed.Error : (head.Value[..Math.Min(7, head.Value.Length)], [.. listed.Value.Where(p => !repo.Denies(p))]);
     }
 }

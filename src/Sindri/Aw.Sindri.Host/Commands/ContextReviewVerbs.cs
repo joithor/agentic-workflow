@@ -32,11 +32,11 @@ internal sealed class ContextReviewVerbs(ControlPlaneClient client, Output outpu
         var command = parsed.Value;
         return command.Mode switch
         {
-            ReviewMode.Queue => Queue(command.Json, ct),
-            ReviewMode.History => History(command.Json, ct),
+            ReviewMode.Queue => Queue(command.Json, command.Limit, ct),
+            ReviewMode.History => History(command.Json, command.Limit, ct),
             ReviewMode.Export => Export(command.Path, command.Json, ct),
             ReviewMode.Request => Send(command.Request!, command.Json, ct),   // why: the parser sets the request for this mode
-            ReviewMode.Interactive => interactive ? Loop(ct) : Queue(json: false, ct),
+            ReviewMode.Interactive => interactive ? Loop(ct) : Queue(json: false, limit: null, ct),
             _ => throw new UnreachableException($"review mode {command.Mode} has no handler"),
         };
     }
@@ -93,17 +93,19 @@ internal sealed class ContextReviewVerbs(ControlPlaneClient client, Output outpu
             : await output.Text(ContextReviewText.Proposals(answer.Value.Value), 0).ConfigureAwait(false);
     }
 
-    private async Task<int> Queue(bool json, CancellationToken ct)
+    private async Task<int> Queue(bool json, string? limit, CancellationToken ct)
     {
-        var answer = await client.Get<ReviewQueueView>(Route + "/review", ct).ConfigureAwait(false);
+        var answer = await client.Get<ReviewQueueView>(Route + "/review" + LimitQuery(limit), ct).ConfigureAwait(false);
         return answer.IsError ? await Failed(answer.Error).ConfigureAwait(false)
             : json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
             : await output.Text(ContextReviewText.Queue(answer.Value.Value), 0).ConfigureAwait(false);
     }
 
-    private async Task<int> History(bool json, CancellationToken ct)
+    private static string LimitQuery(string? limit) => limit is null ? string.Empty : "?limit=" + Uri.EscapeDataString(limit);
+
+    private async Task<int> History(bool json, string? limit, CancellationToken ct)
     {
-        var answer = await client.Get<ReviewHistoryView>(Route + "/review/history", ct).ConfigureAwait(false);
+        var answer = await client.Get<ReviewHistoryView>(Route + "/review/history" + LimitQuery(limit), ct).ConfigureAwait(false);
         return answer.IsError ? await Failed(answer.Error).ConfigureAwait(false)
             : json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
             : await output.Text(ContextReviewText.History(answer.Value.Value), 0).ConfigureAwait(false);

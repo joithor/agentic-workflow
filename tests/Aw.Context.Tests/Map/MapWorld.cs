@@ -5,6 +5,7 @@ using Aw.Context.Core.Extract;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Locks;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Review;
 using Aw.Context.Core.Trust;
 using Aw.Context.Features;
@@ -61,6 +62,7 @@ internal sealed class MapWorld : IDisposable
         _provider = new ServiceCollection()
             .AddSingleton<TimeProvider>(Clock)
             .AddSingleton<IGraphStore>(Store)
+            .AddSingleton<IProposalRuns>(Store)
             .AddSingleton<IExportStore>(Exports)
             .AddSingleton<IMapFileReader>(Reader)
             .AddSingleton<IScrubberFactory>(new FakeScrubberFactory())

@@ -16,7 +16,7 @@ namespace Aw.Context.Features.GetProposals;
 /// pending proposals, so a promoted proposal turns from new to mapped without running the scope again. A session sees only
 /// the proposals of its own repo.
 /// </summary>
-internal sealed class GetProposalsService(IGraphStore store, IScrubberFactory scrubbers) : IService<GetProposalsRequest, ProposalsView>
+internal sealed class GetProposalsService(IGraphStore store, IProposalRuns runs, IScrubberFactory scrubbers) : IService<GetProposalsRequest, ProposalsView>
 {
     public async ValueTask<Result<ProposalsView>> Handle(GetProposalsRequest request, CancellationToken cancellationToken)
     {
@@ -34,10 +34,16 @@ internal sealed class GetProposalsService(IGraphStore store, IScrubberFactory sc
 
         var (current, draft) = loaded.Value;
         var text = new MapText(built.Value);
+        var saved = await runs.Run(request.Run, cancellationToken).ConfigureAwait(false);
+        if (saved.IsError)
+        {
+            return saved.Error;
+        }
+
         var overrides = Visible(current.Overrides, request.Scope.Caller);
         var currentGraph = OverrideApplier.Apply(current.Graph, [.. overrides.Where(o => o.Action != OverrideAction.Propose)]).Graph;
         var draftGraph = draft is null ? null : OverrideApplier.Apply(draft.Graph, overrides).Graph;
-        var statuses = GraphStatuses.Of(GraphStatuses.ForRun(request.Run, overrides), currentGraph, draftGraph)
+        var statuses = GraphStatuses.Of(GraphStatuses.ForRun(request.Run, overrides, Visible(saved.Value, request.Scope.Caller)), currentGraph, draftGraph)
             .Select(s => s with { Surface = text.Label(s.Surface, Trust.Trusted) });
         return new ProposalsView(request.Run, current.Label, draft?.Label, [.. statuses]);
     }
@@ -58,6 +64,10 @@ internal sealed class GetProposalsService(IGraphStore store, IScrubberFactory sc
         var draft = await store.Snapshot(draft: true, cancellationToken).ConfigureAwait(false);
         return draft.IsError ? draft.Error : (map, draft.Value);
     }
+
+    // A session sees the surfaces of its own repo's runs only.
+    private static IReadOnlyList<ProposedSurface>? Visible(ScopeProposal? run, ContextCaller caller) =>
+        run is null || (caller.Kind == ContextCallerKind.Session && run.Repo != caller.Repo) ? null : run.Surfaces;
 
     // A session sees the proposals of its own repo only.
     private static IReadOnlyList<MapOverride> Visible(IReadOnlyList<MapOverride> overrides, ContextCaller caller) =>

@@ -36,7 +36,7 @@ internal sealed class PromoteContextMapService(ContextScopes scopes, IContextEng
         }
 
         var draft = ready.Value;
-        var action = new ChallengeAction("promote map " + draft[..draft.IndexOf('@', StringComparison.Ordinal)]);
+        var action = new ChallengeAction("promote map " + Tag(draft));
         var subject = new ChallengeSubject("promote:" + draft, Digest: null);
         if (request.Draft is null)
         {
@@ -51,6 +51,9 @@ internal sealed class PromoteContextMapService(ContextScopes scopes, IContextEng
         var refused = challenges.Refuse(request.Answer, action, subject, "sindri context map promote");
         return refused is not null ? refused : await Promote(draft, scope.Value, cancellationToken).ConfigureAwait(false);
     }
+
+    // 'v14' of 'v14@7c3e1a2'; a draft opened from a map with no commit is just 'v14'.
+    private static string Tag(string draft) => draft.Split('@')[0];
 
     /// <summary>The latest draft's label when nothing in it is left to decide; else SND-CONTEXT-046 (a missing draft too).</summary>
     private async ValueTask<Result<string>> Ready(ContextScope scope, CancellationToken cancellationToken)

@@ -201,9 +201,9 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.Equal(1, Json(first.Body).GetProperty("result").GetProperty("added").GetInt32());
         Assert.Equal(0, Json(second.Body).GetProperty("result").GetProperty("added").GetInt32());
         Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (session.Status, session.Code));
-        Assert.Equal(["new"], Statuses(view.Body), StringComparer.Ordinal);   // why: only a surface that got a 'propose' row is remembered; the mapped one and the one with no kind wrote none
+        Assert.Equal(["mapped", "new", "unmapped"], Statuses(view.Body), StringComparer.Ordinal);   // every surface of the run, in the order it was submitted: the mapped one and the one with no kind wrote no row
         Assert.Equal(HttpStatusCode.OK, reject.Status);
-        Assert.Equal(["unmapped"], Statuses((await host.Http.Ask(Get("/sindri/context/map/proposals?run=scope-1", App(host)))).Body), StringComparer.Ordinal);
+        Assert.Equal(["mapped", "unmapped", "unmapped"], Statuses((await host.Http.Ask(Get("/sindri/context/map/proposals?run=scope-1", App(host)))).Body), StringComparer.Ordinal);
         Assert.Equal(0, Json(third.Body).GetProperty("result").GetProperty("added").GetInt32());
         Assert.Equal(1, Json(third.Body).GetProperty("result").GetProperty("rejected").GetInt32());
         Assert.Contains("\"status\":\"current\"", status.Body, StringComparison.Ordinal);

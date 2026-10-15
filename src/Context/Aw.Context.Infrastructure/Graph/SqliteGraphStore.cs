@@ -13,7 +13,7 @@ namespace Aw.Context.Infrastructure.Graph;
 /// missing file, or one whose schema has no graph tables yet, is a store with no map. Writes migrate first; a version is
 /// written in batches as 'building', then made current in one short transaction, and removed again when anything fails.
 /// </summary>
-internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSettings settings) : IGraphStore
+internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSettings settings) : IGraphStore, IProposalRuns
 {
     private const int BatchSize = 500;
 
@@ -180,9 +180,32 @@ internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSet
         return open.IsError ? open.Error : await new GraphWrites(open.Value, BatchSize).AppendOverrides(overrides, cancellationToken).ConfigureAwait(false);
     }
 
-    public ValueTask<Result<int>> SaveRun(ScopeProposal proposal, CancellationToken cancellationToken) => throw new NotSupportedException();
+    public async ValueTask<Result<int>> SaveRun(ScopeProposal proposal, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(proposal);
+        var open = await database.Writable(cancellationToken).ConfigureAwait(false);
+        return open.IsError ? open.Error : await new GraphWrites(open.Value, BatchSize).SaveRun(proposal, cancellationToken).ConfigureAwait(false);
+    }
 
-    public ValueTask<Result<ScopeProposal?>> Run(string run, CancellationToken cancellationToken) => throw new NotSupportedException();
+    public async ValueTask<Result<ScopeProposal?>> Run(string run, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(run);
+        var read = await OpenRead(cancellationToken).ConfigureAwait(false);
+        if (read.IsError || read.Value is not { } session)
+        {
+            return read.IsError ? read.Error : Results.Success<ScopeProposal?>(value: null);
+        }
+
+        await using (session.ConfigureAwait(false))
+        {
+            var table = await SqliteQueries.One(session, new SqlStatement(GraphSql.HasRunTable), GraphRows.Id, cancellationToken).ConfigureAwait(false);
+            var rows = table.IsError || table.Value == 0 ? null : await SqliteQueries.List(session, new SqlStatement(GraphSql.SelectRun, c => c.Bind("$run", run)), GraphRows.Run, cancellationToken).ConfigureAwait(false);
+            return table.IsError ? ContextDatabase.Translate(table.Error)
+                : rows is null ? Results.Success<ScopeProposal?>(value: null)
+                : rows.IsError ? ContextDatabase.Translate(rows.Error)
+                : Results.Success(rows.Value.Count == 0 ? null : rows.Value[0]);
+        }
+    }
 
     private async ValueTask<Result<IReadOnlyList<T>>> Query<T>(SqlStatement statement, IRowMapper<T> mapper, CancellationToken cancellationToken)
     {

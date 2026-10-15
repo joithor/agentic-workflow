@@ -1,6 +1,5 @@
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Overrides;
-using Aw.Context.Core.Proposals;
 using Aw.Kernel;
 
 namespace Aw.Context.Core.Map;
@@ -78,16 +77,4 @@ public interface IGraphStore
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>How many rows were added, or SND-CONTEXT-004 (nothing is added then).</returns>
     public ValueTask<Result<int>> AppendOverrides(IReadOnlyList<MapOverride> overrides, CancellationToken cancellationToken);
-
-    /// <summary>Remembers every surface a scoping run submitted, the mapped and unmapped ones too, so its graph status can list them all later (spec §8.7). A second save of the same run replaces the first.</summary>
-    /// <param name="proposal">The run and its surfaces.</param>
-    /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>How many surfaces are remembered, or SND-CONTEXT-004.</returns>
-    public ValueTask<Result<int>> SaveRun(ScopeProposal proposal, CancellationToken cancellationToken);
-
-    /// <summary>The run as last saved: its repo and every surface it submitted.</summary>
-    /// <param name="run">The run's address.</param>
-    /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The run, null when it was never saved, or SND-CONTEXT-004.</returns>
-    public ValueTask<Result<ScopeProposal?>> Run(string run, CancellationToken cancellationToken);
 }

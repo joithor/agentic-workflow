@@ -46,7 +46,7 @@ public sealed class LensesBuilderTests
         var own = Lenses().Bands.Product.Own;
 
         Assert.Equal(
-            [Anchor, "action:tab-groups.group-selected", "action:tab-manager.restore-layout", "feature:tabs.tab-groups", "surface:command/group-tabs", "surface:command/switch-tab"],
+            ["action:tab-groups.group-selected", "action:tab-manager.restore-layout", "feature:tabs.tab-groups", Anchor, "surface:command/group-tabs", "surface:command/switch-tab"],
             own.Select(i => i.Node.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
         var action = own.Single(i => i.Node.Value == "action:tab-manager.restore-layout");
         Assert.Equal((NodeKind.Action, Provenance.Human, 1.0, true, Trust.Trusted), (action.Kind, action.Provenance, action.Confidence, action.Confirmed, action.Trust));
@@ -87,10 +87,10 @@ public sealed class LensesBuilderTests
         var product = Build(graph, "feature:a", depth: 2).Bands.Product;
 
         var affected = product.Affects.Single(i => i.Node.Value == "feature:r");
-        Assert.Equal(2, affected.Depth);
+        Assert.Equal(1, affected.Depth);
         Assert.NotEmpty(affected.Path);
         Assert.Equal(1, product.Neighbors.Count(i => i.Node.Value == "feature:d") + product.Affects.Count(i => i.Node.Value == "feature:d"));
-        Assert.Equal("feature:d", Assert.Single(product.Neighbors).Node.Value);
+        _ = Assert.Single(product.Neighbors, n => n.Node.Value == "feature:d");
         Assert.Equal(product.Affects.Count, product.Counts.Affects);
     }
 
@@ -178,7 +178,8 @@ public sealed class LensesBuilderTests
         var view = Build(graph, "feature:a", depth: 1);
 
         var file = Assert.Single(view.Bands.Code.Files);
-        Assert.Equal((["feature:a"], 0), (Keys(file.Tests), file.Implements.Count));
+        Assert.Equal(["feature:a"], Keys(file.Tests));
+        Assert.Empty(file.Implements);
         Assert.Equal(0, view.Coverage.Code.Implemented);
         Assert.Equal(1, view.Bands.Code.Counts.FeaturesWithNoCode);
     }

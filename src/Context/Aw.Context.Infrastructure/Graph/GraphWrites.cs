@@ -2,6 +2,7 @@ using Aw.Context.Core;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
+using Aw.Context.Core.Proposals;
 using Aw.Context.Infrastructure.Store;
 using Aw.Kernel;
 using Aw.Kernel.Data;
@@ -204,6 +205,13 @@ internal sealed class GraphWrites(SqliteUnitOfWorkFactory sessions, int batchSiz
     {
         var added = await Run([.. overrides.Select(GraphStatements.Override)], returnsId: false, cancellationToken).ConfigureAwait(false);
         return added.IsError ? added.Error : (int)added.Value;
+    }
+
+    /// <summary>Remembers a scoping run's surface list, replacing an earlier one of the same run.</summary>
+    public async ValueTask<Result<int>> SaveRun(ScopeProposal proposal, CancellationToken cancellationToken)
+    {
+        var saved = await Run([GraphStatements.Run(proposal)], returnsId: false, cancellationToken).ConfigureAwait(false);
+        return saved.IsError ? saved.Error : proposal.Surfaces.Count;
     }
 
     /// <summary>Removes a version that didn't become current, whatever the caller's token says; reports both failures if that fails too.</summary>

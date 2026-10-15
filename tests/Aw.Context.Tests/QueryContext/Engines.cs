@@ -73,7 +73,7 @@ internal static class Engines
             new ShowMapStatusService(store), new CheckMapService(store), new CheckRetentionService(store, exports, clock), new PurgeMapService(store, exports, clock));
         var review = new MapReview(new ReviewQueueService(store, scrubbers), new ReviewMapService(store, new FakeCurrentUser(), clock), new ReviewHistoryService(store), new ExportReviewService(store, scrubbers, new FakeReviewFileStore(), clock),
             new PreviewReviewFileService(new FakeReviewFileStore()), new ApplyReviewFileService(store, new FakeReviewFileStore(), new FakeCurrentUser(), clock), new PromoteMapService(store));
-        return new ContextMap(admin, review, new MapProposals(Build(clock, store), new ProposeFromScopeService(store, clock), new GetProposalsService(store, scrubbers)));
+        return new ContextMap(admin, review, new MapProposals(Build(clock, store), new ProposeFromScopeService(store, store, clock), new GetProposalsService(store, store, scrubbers)));
     }
 
     /// <summary>The build slice over empty fakes (the query tests never build).</summary>

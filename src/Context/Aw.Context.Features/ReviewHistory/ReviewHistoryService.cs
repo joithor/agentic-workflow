@@ -15,7 +15,8 @@ internal sealed class ReviewHistoryService(IGraphStore store) : IService<ReviewH
             return refused;
         }
 
-        var overrides = await store.Overrides(cancellationToken).ConfigureAwait(false);
-        return overrides.IsError ? overrides.Error : Core.Review.ReviewHistory.Of(overrides.Value);
+        var limit = ReviewLimits.Resolve(request.Limit, Core.Review.ReviewHistory.DefaultLimit);
+        var overrides = limit.IsError ? limit.Error : await store.Overrides(cancellationToken).ConfigureAwait(false);
+        return limit.IsError || overrides.IsError ? (limit.IsError ? limit.Error : overrides.Error) : Core.Review.ReviewHistory.Of(overrides.Value, limit.Value);
     }
 }

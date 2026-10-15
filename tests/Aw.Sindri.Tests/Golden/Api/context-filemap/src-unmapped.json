@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "repo": "aw-split-panes",
+  "sha": "270d7c9",
+  "mapVersion": "v1",
+  "draft": false,
+  "path": "src/tabs/",
+  "entries": [
+    {
+      "name": "Pinned.ts",
+      "path": "src/tabs/Pinned.ts",
+      "type": "file",
+      "status": "unmapped",
+      "files": 1,
+      "features": [],
+      "intent": null
+    },
+    {
+      "name": "TabGroups.ts",
+      "path": "src/tabs/TabGroups.ts",
+      "type": "file",
+      "status": "suggested",
+      "files": 1,
+      "features": [
+        {
+          "key": "feature:tabs.tab-groups",
+          "provenance": "model",
+          "confidence": 0.74,
+          "confirmed": false,
+          "linkId": "edge:402b8bed42f6611c",
+          "edge": "implements"
+        }
+      ],
+      "intent": {
+        "records": 0,
+        "decisions": 2
+      }
+    }
+  ],
+  "unmapped": [
+    {
+      "path": "src/tabs/Pinned.ts",
+      "files": 1
+    }
+  ],
+  "suggested": [
+    {
+      "linkId": "edge:402b8bed42f6611c",
+      "file": "src/tabs/TabGroups.ts",
+      "feature": "feature:tabs.tab-groups",
+      "confidence": 0.74,
+      "evidence": [
+        "repo:aw-split-panes/src/tabs/TabGroups.ts"
+      ]
+    }
+  ],
+  "totals": {
+    "files": 3,
+    "mapped": 1,
+    "suggested": 1,
+    "unmapped": 1
+  },
+  "symbols": {
+    "state": "unavailable",
+    "reason": "index not built",
+    "items": []
+  }
+}
