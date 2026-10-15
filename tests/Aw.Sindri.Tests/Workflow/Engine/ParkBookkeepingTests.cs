@@ -131,7 +131,8 @@ public sealed class ParkBookkeepingTests
     [Fact, Trait("Lane", "unit")]
     public void A_child_release_resends_the_effect_of_an_approved_drift_park_behind_the_mirror()
     {
-        var mirrored = Applied(Claimed() with { Frame = Claimed().Frame with { Child = ChildId } }, ChildParked());
+        var running = At(Item, "running", entry: 4);
+        var mirrored = Applied(running with { Frame = running.Frame with { Child = ChildId } }, ChildParked());
         var drifted = Refuse(mirrored, _first, "SND-RECIPE-006");
         var approved = Applied(drifted, new RecipeWake(Engine, RecipeWakeKind.Approved, 8));
         var resumed = new ChildChanged("service:workflow.inbox", ChildId, ChildChange.Resumed, Reason: null, Question: null, TriggerKey.For(ChildId, "cmd:x"));
