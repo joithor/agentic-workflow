@@ -35,6 +35,8 @@ public sealed class TokenTests
         { "Error", "#eb5757" },
         { "AttentionSoft", "#23160c" },
         { "PrimarySoft", "#1d2036" },
+        { "ErrorSoft", "#220d0e" },
+        { "SuccessSoft", "#06180b" },
     };
 
     [Theory]

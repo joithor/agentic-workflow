@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using System.Text;
 using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.Testing;
 
@@ -75,8 +76,49 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
             "/sindri/commands" => Answer(Counted(await server.Commands(uri, cancellationToken), server.Catalog)),
             "/sindri/services" => Answer(Counted(await server.Services(uri, after), server.ServiceView)),
             "/sindri/views/rebuild" when request.Method == HttpMethod.Post => Answer(Counted(await server.RebuildViews(uri, cancellationToken), server.Rebuild)),
+            // LANE ANCHOR U3': add the Needs you routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately above this marker, never between the markers.
+            // LANE ANCHOR U8: add the workflow command routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately below this marker, never between the markers.
+            { } path when request.Method == HttpMethod.Get && path.StartsWith("/sindri/workflow/", StringComparison.Ordinal) => await Workflow(uri, cancellationToken),
             _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
         };
+    }
+
+    // The workflow reads (API §3.8): the call goes through the model (so a down server or a refusal answers as it does there),
+    // then the route's golden is served as the model has it. An address is only ever a query value, so every segment is an id, a key or a recipe.
+    private async Task<HttpResponseMessage> Workflow(Uri uri, CancellationToken cancellationToken)
+    {
+        var parts = uri.AbsolutePath["/sindri/workflow/".Length..].Split('/').Select(Uri.UnescapeDataString).ToArray();
+        switch (parts)
+        {
+            case ["instances"]:
+                var query = Query(uri);
+                _ = await server.Instances(uri, query, cancellationToken);
+                return Answer(server.InstancesAnswer(query));
+            case ["instances", var id]:
+                _ = await server.Instance(uri, id, cancellationToken);
+                return Answer(server.InstanceAnswer(id));
+            case ["instances", var id, "facts", var key]:
+                _ = await server.InstanceFact(uri, id, key, cancellationToken);
+                return Answer(server.FactAnswer(id, key));
+            case ["recipes", var named]:
+                var at = named.IndexOf('@', StringComparison.Ordinal);
+                var (recipe, hash) = at < 0 ? (named, null) : (named[..at], named[(at + 1)..]);
+                _ = await server.Recipe(uri, recipe, hash, cancellationToken);
+                return Answer(server.RecipeAnswer(recipe, hash));
+            default:
+                return Text(HttpStatusCode.NotFound, "{}", "application/json");
+        }
+    }
+
+    private static InstanceQuery Query(Uri uri)
+    {
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        return new InstanceQuery(
+            Root: query["root"] == "true",
+            Open: query["open"] == "true",
+            Recipe: query["recipe"],
+            Subject: query["subject"],
+            Address: query["address"]);
     }
 
     // The ping goes through the model (its count, and the new epoch that drops a pending sequence); a failing ping is a transport failure.

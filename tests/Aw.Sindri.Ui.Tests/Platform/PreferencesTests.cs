@@ -18,7 +18,7 @@ public sealed class PreferencesTests
     {
         Window = new WindowBounds(40, 60, 1280, 800),
         SheetWidth = 600,
-        LastPage = "Queue",
+        LastPage = "Work",
         SeenIds = ["nyr-1", "nyr-2"],
         PaletteHistory = ["Rebuild views"],
         TextScale = 1.2,
@@ -52,7 +52,7 @@ public sealed class PreferencesTests
 
     [Theory]
     [InlineData("{ not json")]
-    [InlineData("""{"version":2,"sheetWidth":600,"lastPage":"Queue","seenIds":[],"paletteHistory":[],"textScale":1.1,"reduceMotion":true}""")]
+    [InlineData("""{"version":2,"sheetWidth":600,"lastPage":"Work","seenIds":[],"paletteHistory":[],"textScale":1.1,"reduceMotion":true}""")]
     public async Task A_malformed_or_foreign_file_loads_as_the_defaults(string text)
     {
         await _store.Write(Encoding.UTF8.GetBytes(text), Token);

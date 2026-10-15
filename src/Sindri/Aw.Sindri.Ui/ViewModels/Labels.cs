@@ -23,6 +23,21 @@ internal static partial class Labels
     /// <summary>The Services page.</summary>
     internal const string Services = "Services";
 
+    /// <summary>The Workflows page.</summary>
+    internal const string Workflows = "Workflows";
+
+    /// <summary>The Work page.</summary>
+    internal const string Work = "Work";
+
+    /// <summary>The Recipes page.</summary>
+    internal const string Recipes = "Recipes";
+
+    /// <summary>The Context page.</summary>
+    internal const string Context = "Context";
+
+    /// <summary>The System page.</summary>
+    internal const string System = "System";
+
     /// <summary>The Health page.</summary>
     internal const string Health = "Health";
 

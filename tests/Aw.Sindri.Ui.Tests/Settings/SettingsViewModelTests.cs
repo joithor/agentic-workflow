@@ -78,7 +78,7 @@ public sealed class SettingsViewModelTests
     [Fact]
     public async Task The_switch_forces_reduced_motion_whatever_the_OS_says_and_is_saved()
     {
-        await Store(UiPreferences.Defaults with { LastPage = "Queue", SheetWidth = 600 });
+        await Store(UiPreferences.Defaults with { LastPage = "Work", SheetWidth = 600 });
         using var settings = Settings();
         await settings.Load(Token);
 
@@ -87,7 +87,7 @@ public sealed class SettingsViewModelTests
 
         Assert.True(settings.IsMotionReduced);
         Assert.Equal(new AppearanceSettings(1.0, ReduceMotion: true), _applied[^1]);
-        Assert.Equal(UiPreferences.Defaults with { LastPage = "Queue", SheetWidth = 600, ReduceMotion = true }, await Stored());
+        Assert.Equal(UiPreferences.Defaults with { LastPage = "Work", SheetWidth = 600, ReduceMotion = true }, await Stored());
 
         _os.Set(reduce: true);
         _os.Set(reduce: false);
