@@ -25,7 +25,7 @@ internal sealed class CommandPaletteViewModel : ObservableObject
     private readonly CatalogViewModel _catalog;
     private readonly Action<PageId> _goTo;
     private readonly Action<string> _remember;
-    private IReadOnlyList<PaletteSection> _all = [];
+    private IReadOnlyList<PaletteSection>? _all;
 
     /// <summary>The palette over the catalog.</summary>
     /// <param name="catalog">The catalog (read on connect).</param>
@@ -76,7 +76,7 @@ internal sealed class CommandPaletteViewModel : ObservableObject
     public IReadOnlyList<PaletteEntry> Entries { get; private set => Set(ref field, value); } = [];
 
     /// <summary>The polite live region's text: never empty (Avalonia #22312 crashes VoiceOver on an empty live region).</summary>
-    public string Announcement { get; private set => Set(ref field, value); } = string.Empty;
+    public string Announcement { get; private set => Set(ref field, value); } = Labels.Palette;
 
     /// <summary>True when nothing matches the query.</summary>
     public bool IsEmpty => Entries.Count == 0;
@@ -87,16 +87,25 @@ internal sealed class CommandPaletteViewModel : ObservableObject
         get;
         private set
         {
-            field?.IsSelected = false;
+            if (field is { } previous)
+            {
+                previous.IsSelected = false;
+                previous.PropertyChanged -= OnSelectedChanged;
+            }
+
             Set(ref field, value);
-            field?.IsSelected = true;
+            if (field is { } now)
+            {
+                now.IsSelected = true;
+                now.PropertyChanged += OnSelectedChanged;
+            }
         }
     }
 
     /// <summary>Opens it with an empty query, the first entry that runs selected.</summary>
     internal void Open()
     {
-        _all = Build();
+        _all ??= Build();
         Query = string.Empty;
         IsOpen = true;
     }
@@ -121,6 +130,7 @@ internal sealed class CommandPaletteViewModel : ObservableObject
         var at = Selected is { } selected ? runs.IndexOf(selected) : -1;
         FollowsSelection = true;
         Selected = runs[Math.Clamp(at + by, 0, runs.Count - 1)];
+        Announce();
     }
 
     /// <summary>
@@ -184,20 +194,47 @@ internal sealed class CommandPaletteViewModel : ObservableObject
 
     private void Filter()
     {
+        _all ??= Build();
         var query = new string([.. Query.Where(c => !char.IsWhiteSpace(c)).Select(char.ToLowerInvariant)]);
         Sections = [.. _all.Select(s => s with { Entries = [.. s.Entries.Where(e => e.Matches(query))] }).Where(s => s.Entries.Count > 0)];
         Entries = [.. Sections.SelectMany(s => s.Entries)];
         OnChanged(nameof(IsEmpty));
         FollowsSelection = false;
         Selected = Entries.FirstOrDefault(e => e.IsEnabled);
+        Announce();
+    }
+
+    // The live region says the selected entry (its name carries the status) and where it is among the entries that run;
+    // "Nothing matches" when empty; never "" (Avalonia #22312 crashes VoiceOver on an empty live region).
+    private void Announce()
+    {
+        var runs = Entries.Where(e => e.IsEnabled).ToList();
+        Announcement = Entries.Count == 0 ? Labels.NoMatches
+            : Selected is { } selected ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{selected.Name}, {runs.IndexOf(selected) + 1} of {runs.Count}")
+            : Labels.Palette;
+    }
+
+    private void OnSelectedChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(PaletteEntry.Name))
+        {
+            Announce();
+        }
     }
 
     // A catalog read while it is open (a reconnect) replaces its entries.
     private void OnCatalogChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (IsOpen && e.PropertyName == nameof(CatalogViewModel.Controls))
+        if (e.PropertyName != nameof(CatalogViewModel.Controls))
         {
-            _all = Build();
+            return;
+        }
+
+        Selected = null;
+        _all?.SelectMany(s => s.Entries).ToList().ForEach(entry => entry.Detach());
+        _all = null;
+        if (IsOpen)
+        {
             Filter();
         }
     }

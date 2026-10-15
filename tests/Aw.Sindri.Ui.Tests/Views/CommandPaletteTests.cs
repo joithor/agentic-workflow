@@ -291,4 +291,29 @@ public sealed class CommandPaletteTests : IDisposable
         Assert.StartsWith("Rebuild views, SND-API-005: ", AutomationProperties.GetName(EntryButton(window, "Rebuild views")), StringComparison.Ordinal);
         Frame(window, "palette-refused");
     });
+
+    // F1 (a11y-0, a11y-1): the palette's live region is never empty; ↓ and filtering to nothing change what it says.
+    [Fact]
+    public Task The_palette_live_region_is_never_empty_and_follows_the_selection() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        Press(window, Key.K, PhysicalKey.K, _command, "k");
+        var live = Named<TextBlock>(window, "PaletteAnnouncer");
+        var texts = new List<string>();
+        live.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == TextBlock.TextProperty)
+            {
+                texts.Add(live.Text ?? string.Empty);
+            }
+        };
+
+        Press(window, Key.Down, PhysicalKey.ArrowDown);
+        Assert.Contains(shell.Palette.Selected!.Name, live.Text, StringComparison.Ordinal);
+
+        window.KeyTextInput("zzzz");
+        Settle(window);
+        Assert.Equal("Nothing matches", live.Text);
+        Assert.All(texts, Assert.NotEmpty);
+    });
 }

@@ -23,6 +23,9 @@ internal sealed class PaletteEntry : ObservableObject
         control?.PropertyChanged += OnControlChanged;
     }
 
+    /// <summary>Stops listening to its control (the palette rebuilt its entries; the control outlives them).</summary>
+    internal void Detach() => Control?.PropertyChanged -= OnControlChanged;
+
     /// <summary>Its id: the catalog action id, or "go:" and the page.</summary>
     public string Id { get; }
 

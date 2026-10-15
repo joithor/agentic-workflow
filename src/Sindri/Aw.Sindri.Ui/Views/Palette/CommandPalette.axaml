@@ -69,9 +69,9 @@
       <DockPanel>
         <TextBox x:Name="PaletteQuery" DockPanel.Dock="Top" Classes="palette-query" Text="{Binding Query}"
                  PlaceholderText="{Binding Placeholder}" AutomationProperties.Name="{Binding Title}" />
-        <!-- The polite live region: the selected entry's status ("Copied" after a copy). Never empty (Avalonia #22312). -->
+        <!-- The polite live region: the selected entry (name, status, "N of M"), "Nothing matches" when empty. Never empty (Avalonia #22312). -->
         <TextBlock x:Name="PaletteAnnouncer" DockPanel.Dock="Top" Classes="caption live-region live" Width="0" Height="0" Opacity="0"
-                   IsHitTestVisible="False" Text="{Binding Selected.Status, FallbackValue={x:Static x:String.Empty}}" />
+                   IsHitTestVisible="False" Text="{Binding Announcement}" />
         <TextBlock x:Name="PaletteEmpty" DockPanel.Dock="Top" Classes="body subtle" Margin="16,12" Text="{Binding NoMatches}"
                    IsVisible="{Binding IsEmpty}" AutomationProperties.Name="{Binding NoMatches}" />
         <ScrollViewer x:Name="PaletteScroll" MaxHeight="440" Padding="0,0,0,8">
