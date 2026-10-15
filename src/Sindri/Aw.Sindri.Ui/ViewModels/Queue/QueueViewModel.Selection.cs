@@ -88,7 +88,8 @@ internal sealed partial class QueueViewModel
             return;
         }
 
-        Clear(id, before, byPill);
+        // On a page without rows the departure is no one's to hear or follow: it settles like the pill's press.
+        Clear(id, before, byPill || !_onPage);
     }
 
     // The selected row left the page: the selection passes to the next row (see Keep).
