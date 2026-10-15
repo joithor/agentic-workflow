@@ -27,6 +27,7 @@ Aw.Meta.Core.Commands.CommandResult.Stdout.get -> string!
 Aw.Meta.Core.Commands.CommandResult.Stdout.init -> void
 Aw.Meta.Core.Commands.CommandResult.TimedOut.get -> bool
 Aw.Meta.Core.Commands.CommandResult.TimedOut.init -> void
+Aw.Meta.Core.Commands.ProgramPath
 Aw.Meta.Core.Config.GateConfig
 Aw.Meta.Core.Config.GateConfig.<Clone>$() -> Aw.Meta.Core.Config.GateConfig!
 Aw.Meta.Core.Config.GateConfig.Always.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -90,7 +91,22 @@ Aw.Meta.Core.Config.TeamConfig.Repo.get -> string!
 Aw.Meta.Core.Config.TeamConfig.Repo.init -> void
 Aw.Meta.Core.Config.TeamConfig.Team.get -> string!
 Aw.Meta.Core.Config.TeamConfig.Team.init -> void
-Aw.Meta.Core.Config.TeamConfig.TeamConfig(string! team, string! repo, System.Collections.Generic.IReadOnlyList<string!>! lanes, string! metaLane = "meta", string? log = null, string? prompts = null, Aw.Meta.Core.Config.GateConfig? gate = null, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.MergeOrderRule!>? mergeOrder = null, System.Collections.Generic.IReadOnlyList<string!>? knownFlakes = null) -> void
+Aw.Meta.Core.Config.TeamConfig.TeamConfig(string! team, string! repo, System.Collections.Generic.IReadOnlyList<string!>! lanes, string! metaLane = "meta", string? log = null, string? prompts = null, Aw.Meta.Core.Config.GateConfig? gate = null, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.MergeOrderRule!>? mergeOrder = null, System.Collections.Generic.IReadOnlyList<string!>? knownFlakes = null, Aw.Meta.Core.Config.WorktreeConfig? worktrees = null) -> void
+Aw.Meta.Core.Config.TeamConfig.Worktrees.get -> Aw.Meta.Core.Config.WorktreeConfig!
+Aw.Meta.Core.Config.TeamConfig.Worktrees.init -> void
+Aw.Meta.Core.Config.WorktreeConfig
+Aw.Meta.Core.Config.WorktreeConfig.<Clone>$() -> Aw.Meta.Core.Config.WorktreeConfig!
+Aw.Meta.Core.Config.WorktreeConfig.BuildOutputs.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Meta.Core.Config.WorktreeConfig.BuildOutputs.init -> void
+Aw.Meta.Core.Config.WorktreeConfig.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? Roots, out System.Collections.Generic.IReadOnlyList<string!>? BuildOutputs, out bool Enabled) -> void
+Aw.Meta.Core.Config.WorktreeConfig.EffectiveBuildOutputs.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Config.WorktreeConfig.EffectiveRoots(string! repo, string! gatesDirectory, string! home) -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Config.WorktreeConfig.Enabled.get -> bool
+Aw.Meta.Core.Config.WorktreeConfig.Enabled.init -> void
+Aw.Meta.Core.Config.WorktreeConfig.Equals(Aw.Meta.Core.Config.WorktreeConfig? other) -> bool
+Aw.Meta.Core.Config.WorktreeConfig.Roots.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Meta.Core.Config.WorktreeConfig.Roots.init -> void
+Aw.Meta.Core.Config.WorktreeConfig.WorktreeConfig(System.Collections.Generic.IReadOnlyList<string!>? Roots = null, System.Collections.Generic.IReadOnlyList<string!>? BuildOutputs = null, bool Enabled = true) -> void
 Aw.Meta.Core.Coordination.GateTree
 Aw.Meta.Core.Coordination.GateTree.GateTree(Aw.Meta.Core.Coordination.RepoCommands! repo) -> void
 Aw.Meta.Core.Coordination.GateTree.Merge(string! tree, string! head) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
@@ -157,6 +173,7 @@ Aw.Meta.Core.Coordination.PreparedGate.PreparedGate(Aw.Meta.Core.Github.PrDetail
 Aw.Meta.Core.Coordination.PreparedGate.Tree.get -> string!
 Aw.Meta.Core.Coordination.PreparedGate.Tree.init -> void
 Aw.Meta.Core.Coordination.RepoCommands
+Aw.Meta.Core.Coordination.RepoCommands.Branches(string! repo) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Github.PrBranch!>!>!>
 Aw.Meta.Core.Coordination.RepoCommands.Changed(string! repo, string! range) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!>
 Aw.Meta.Core.Coordination.RepoCommands.Fetch(string! repo, int? pr) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Meta.Core.Coordination.RepoCommands.Gh(string! cwd, params string![]! args) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
@@ -226,10 +243,10 @@ Aw.Meta.Core.Gate.GateVerdict.Pass = 1 -> Aw.Meta.Core.Gate.GateVerdict
 Aw.Meta.Core.Gate.GlobMatcher
 Aw.Meta.Core.Gate.RerunOutcome
 Aw.Meta.Core.Gate.RerunOutcome.<Clone>$() -> Aw.Meta.Core.Gate.RerunOutcome!
-Aw.Meta.Core.Gate.RerunOutcome.Deconstruct(out bool Passed, out string? Failure, out bool Absent) -> void
-Aw.Meta.Core.Gate.RerunOutcome.Equals(Aw.Meta.Core.Gate.RerunOutcome? other) -> bool
 Aw.Meta.Core.Gate.RerunOutcome.Absent.get -> bool
 Aw.Meta.Core.Gate.RerunOutcome.Absent.init -> void
+Aw.Meta.Core.Gate.RerunOutcome.Deconstruct(out bool Passed, out string? Failure, out bool Absent) -> void
+Aw.Meta.Core.Gate.RerunOutcome.Equals(Aw.Meta.Core.Gate.RerunOutcome? other) -> bool
 Aw.Meta.Core.Gate.RerunOutcome.Failure.get -> string?
 Aw.Meta.Core.Gate.RerunOutcome.Failure.init -> void
 Aw.Meta.Core.Gate.RerunOutcome.Passed.get -> bool
@@ -247,6 +264,19 @@ Aw.Meta.Core.Gate.TestVerdict.TestVerdict(string! Test, Aw.Meta.Core.Gate.FlakeV
 Aw.Meta.Core.Gate.TestVerdict.Verdict.get -> Aw.Meta.Core.Gate.FlakeVerdict
 Aw.Meta.Core.Gate.TestVerdict.Verdict.init -> void
 Aw.Meta.Core.Github.GhJson
+Aw.Meta.Core.Github.PrBranch
+Aw.Meta.Core.Github.PrBranch.<Clone>$() -> Aw.Meta.Core.Github.PrBranch!
+Aw.Meta.Core.Github.PrBranch.Deconstruct(out int Number, out Aw.Meta.Core.Watch.PrState State, out string! HeadRef, out string! Head) -> void
+Aw.Meta.Core.Github.PrBranch.Equals(Aw.Meta.Core.Github.PrBranch? other) -> bool
+Aw.Meta.Core.Github.PrBranch.Head.get -> string!
+Aw.Meta.Core.Github.PrBranch.Head.init -> void
+Aw.Meta.Core.Github.PrBranch.HeadRef.get -> string!
+Aw.Meta.Core.Github.PrBranch.HeadRef.init -> void
+Aw.Meta.Core.Github.PrBranch.Number.get -> int
+Aw.Meta.Core.Github.PrBranch.Number.init -> void
+Aw.Meta.Core.Github.PrBranch.PrBranch(int Number, Aw.Meta.Core.Watch.PrState State, string! HeadRef, string! Head) -> void
+Aw.Meta.Core.Github.PrBranch.State.get -> Aw.Meta.Core.Watch.PrState
+Aw.Meta.Core.Github.PrBranch.State.init -> void
 Aw.Meta.Core.Github.PrDetails
 Aw.Meta.Core.Github.PrDetails.<Clone>$() -> Aw.Meta.Core.Github.PrDetails!
 Aw.Meta.Core.Github.PrDetails.Deconstruct(out string! Head, out string! HeadRef, out bool IsDraft, out string! Title, out Aw.Meta.Core.Watch.PrState State) -> void
@@ -471,6 +501,8 @@ Aw.Meta.Core.Merge.MergeFacts.Pr.get -> int
 Aw.Meta.Core.Merge.MergeFacts.Pr.init -> void
 Aw.Meta.Core.Merge.MergeFacts.RepoGatePassedOnHead.get -> bool
 Aw.Meta.Core.Merge.MergeFacts.RepoGatePassedOnHead.init -> void
+Aw.Meta.Core.Merge.MergeFacts.ScopeRuns.get -> System.Collections.Generic.IReadOnlyDictionary<string!, int>?
+Aw.Meta.Core.Merge.MergeFacts.ScopeRuns.init -> void
 Aw.Meta.Core.Merge.MergeGate
 Aw.Meta.Core.Messages.Classification
 Aw.Meta.Core.Messages.Classification.<Clone>$() -> Aw.Meta.Core.Messages.Classification!
@@ -573,7 +605,7 @@ Aw.Meta.Core.Messages.TranscriptRecordParser
 Aw.Meta.Core.MetaErrors
 Aw.Meta.Core.MetaPaths
 Aw.Meta.Core.MetaPaths.<Clone>$() -> Aw.Meta.Core.MetaPaths!
-Aw.Meta.Core.MetaPaths.Deconstruct(out string! StateDirectory, out string! GatesDirectory, out string? Heavy, out string! Gh) -> void
+Aw.Meta.Core.MetaPaths.Deconstruct(out string! StateDirectory, out string! GatesDirectory, out string? Heavy, out string! Gh, out string! Home) -> void
 Aw.Meta.Core.MetaPaths.Equals(Aw.Meta.Core.MetaPaths? other) -> bool
 Aw.Meta.Core.MetaPaths.GateDirectory(int pr) -> string!
 Aw.Meta.Core.MetaPaths.GatesDirectory.get -> string!
@@ -582,7 +614,9 @@ Aw.Meta.Core.MetaPaths.Gh.get -> string!
 Aw.Meta.Core.MetaPaths.Gh.init -> void
 Aw.Meta.Core.MetaPaths.Heavy.get -> string?
 Aw.Meta.Core.MetaPaths.Heavy.init -> void
-Aw.Meta.Core.MetaPaths.MetaPaths(string! StateDirectory, string! GatesDirectory, string? Heavy, string! Gh) -> void
+Aw.Meta.Core.MetaPaths.Home.get -> string!
+Aw.Meta.Core.MetaPaths.Home.init -> void
+Aw.Meta.Core.MetaPaths.MetaPaths(string! StateDirectory, string! GatesDirectory, string? Heavy, string! Gh, string! Home = "") -> void
 Aw.Meta.Core.MetaPaths.StateDirectory.get -> string!
 Aw.Meta.Core.MetaPaths.StateDirectory.init -> void
 Aw.Meta.Core.Obligations.MergeRecord
@@ -712,6 +746,8 @@ Aw.Meta.Core.Ports.IOwnerStore.Answer(int number, string! text, System.DateTimeO
 Aw.Meta.Core.Ports.IOwnerStore.Answers(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.OwnerAnswer!>!>!>
 Aw.Meta.Core.Ports.IOwnerStore.Ask(string! askedBy, string! text, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int>!>
 Aw.Meta.Core.Ports.IOwnerStore.List(bool includeAnswered, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Owner.OwnerQuestion!>!>!>
+Aw.Meta.Core.Ports.IProcessLocations
+Aw.Meta.Core.Ports.IProcessLocations.Locations(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Worktrees.ProcessLocation!>!>!>
 Aw.Meta.Core.Ports.IProcessTable
 Aw.Meta.Core.Ports.IProcessTable.Snapshot(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Health.HostSnapshot!>!>
 Aw.Meta.Core.Ports.IProcessTable.Terminate(int pid, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
@@ -722,6 +758,7 @@ Aw.Meta.Core.Ports.ISessionDirectory.Live(System.Threading.CancellationToken can
 Aw.Meta.Core.Ports.ITranscriptReader
 Aw.Meta.Core.Ports.ITranscriptReader.ReadFrom(string! path, long offset, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Messages.TranscriptChunk!>!>
 Aw.Meta.Core.Registration.MetaCoreServiceCollectionExtensions
+Aw.Meta.Core.Watch.EndedPrs
 Aw.Meta.Core.Watch.PrState
 Aw.Meta.Core.Watch.PrState.Closed = 2 -> Aw.Meta.Core.Watch.PrState
 Aw.Meta.Core.Watch.PrState.Merged = 3 -> Aw.Meta.Core.Watch.PrState
@@ -793,6 +830,66 @@ Aw.Meta.Core.Watch.WatchedPr.PendingPolls.init -> void
 Aw.Meta.Core.Watch.WatchedPr.State.get -> Aw.Meta.Core.Watch.PrState
 Aw.Meta.Core.Watch.WatchedPr.State.init -> void
 Aw.Meta.Core.Watch.WatchedPr.WatchedPr(Aw.Meta.Core.Watch.PrState State, bool IsDraft, string! Head, string? Mergeable, string? Pending, int PendingPolls) -> void
+Aw.Meta.Core.Worktrees.ProcessLocation
+Aw.Meta.Core.Worktrees.ProcessLocation.<Clone>$() -> Aw.Meta.Core.Worktrees.ProcessLocation!
+Aw.Meta.Core.Worktrees.ProcessLocation.Command.get -> string!
+Aw.Meta.Core.Worktrees.ProcessLocation.Command.init -> void
+Aw.Meta.Core.Worktrees.ProcessLocation.Deconstruct(out int Pid, out string! Command, out System.Collections.Generic.IReadOnlyList<string!>! Paths) -> void
+Aw.Meta.Core.Worktrees.ProcessLocation.Equals(Aw.Meta.Core.Worktrees.ProcessLocation? other) -> bool
+Aw.Meta.Core.Worktrees.ProcessLocation.Paths.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Worktrees.ProcessLocation.Paths.init -> void
+Aw.Meta.Core.Worktrees.ProcessLocation.Pid.get -> int
+Aw.Meta.Core.Worktrees.ProcessLocation.Pid.init -> void
+Aw.Meta.Core.Worktrees.ProcessLocation.ProcessLocation(int Pid, string! Command, System.Collections.Generic.IReadOnlyList<string!>! Paths) -> void
+Aw.Meta.Core.Worktrees.SweepMode
+Aw.Meta.Core.Worktrees.SweepMode.DryRun = 2 -> Aw.Meta.Core.Worktrees.SweepMode
+Aw.Meta.Core.Worktrees.SweepMode.Remove = 1 -> Aw.Meta.Core.Worktrees.SweepMode
+Aw.Meta.Core.Worktrees.SweepOutcome
+Aw.Meta.Core.Worktrees.SweepOutcome.<Clone>$() -> Aw.Meta.Core.Worktrees.SweepOutcome!
+Aw.Meta.Core.Worktrees.SweepOutcome.Deconstruct(out bool DryRun, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Worktrees.WorktreeReport!>! Removed, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Worktrees.WorktreeReport!>! Kept, out int Failed) -> void
+Aw.Meta.Core.Worktrees.SweepOutcome.DryRun.get -> bool
+Aw.Meta.Core.Worktrees.SweepOutcome.DryRun.init -> void
+Aw.Meta.Core.Worktrees.SweepOutcome.Equals(Aw.Meta.Core.Worktrees.SweepOutcome? other) -> bool
+Aw.Meta.Core.Worktrees.SweepOutcome.Failed.get -> int
+Aw.Meta.Core.Worktrees.SweepOutcome.Failed.init -> void
+Aw.Meta.Core.Worktrees.SweepOutcome.Kept.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Worktrees.WorktreeReport!>!
+Aw.Meta.Core.Worktrees.SweepOutcome.Kept.init -> void
+Aw.Meta.Core.Worktrees.SweepOutcome.Removed.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Worktrees.WorktreeReport!>!
+Aw.Meta.Core.Worktrees.SweepOutcome.Removed.init -> void
+Aw.Meta.Core.Worktrees.SweepOutcome.SweepOutcome(bool DryRun, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Worktrees.WorktreeReport!>! Removed, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Worktrees.WorktreeReport!>! Kept, int Failed) -> void
+Aw.Meta.Core.Worktrees.WorktreeDecision
+Aw.Meta.Core.Worktrees.WorktreeDecision.Kept = 2 -> Aw.Meta.Core.Worktrees.WorktreeDecision
+Aw.Meta.Core.Worktrees.WorktreeDecision.Removable = 1 -> Aw.Meta.Core.Worktrees.WorktreeDecision
+Aw.Meta.Core.Worktrees.WorktreeInspector
+Aw.Meta.Core.Worktrees.WorktreeInspector.Inspect(Aw.Meta.Core.Config.TeamConfig! team, Aw.Meta.Core.Worktrees.WorktreeScope! scope, bool fetch, string? onlyPath, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Worktrees.WorktreeReport!>!>!>
+Aw.Meta.Core.Worktrees.WorktreeInspector.WorktreeInspector() -> void
+Aw.Meta.Core.Worktrees.WorktreeReport
+Aw.Meta.Core.Worktrees.WorktreeReport.<Clone>$() -> Aw.Meta.Core.Worktrees.WorktreeReport!
+Aw.Meta.Core.Worktrees.WorktreeReport.Branch.get -> string?
+Aw.Meta.Core.Worktrees.WorktreeReport.Branch.init -> void
+Aw.Meta.Core.Worktrees.WorktreeReport.Decision.get -> Aw.Meta.Core.Worktrees.WorktreeDecision
+Aw.Meta.Core.Worktrees.WorktreeReport.Decision.init -> void
+Aw.Meta.Core.Worktrees.WorktreeReport.Deconstruct(out string! Path, out string? Branch, out string! Head, out int? Pr, out Aw.Meta.Core.Watch.PrState? PrState, out Aw.Meta.Core.Worktrees.WorktreeDecision Decision, out System.Collections.Generic.IReadOnlyList<string!>! Reasons) -> void
+Aw.Meta.Core.Worktrees.WorktreeReport.Equals(Aw.Meta.Core.Worktrees.WorktreeReport? other) -> bool
+Aw.Meta.Core.Worktrees.WorktreeReport.Head.get -> string!
+Aw.Meta.Core.Worktrees.WorktreeReport.Head.init -> void
+Aw.Meta.Core.Worktrees.WorktreeReport.Path.get -> string!
+Aw.Meta.Core.Worktrees.WorktreeReport.Path.init -> void
+Aw.Meta.Core.Worktrees.WorktreeReport.Pr.get -> int?
+Aw.Meta.Core.Worktrees.WorktreeReport.Pr.init -> void
+Aw.Meta.Core.Worktrees.WorktreeReport.PrState.get -> Aw.Meta.Core.Watch.PrState?
+Aw.Meta.Core.Worktrees.WorktreeReport.PrState.init -> void
+Aw.Meta.Core.Worktrees.WorktreeReport.Reasons.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Worktrees.WorktreeReport.Reasons.init -> void
+Aw.Meta.Core.Worktrees.WorktreeReport.WorktreeReport(string! Path, string? Branch, string! Head, int? Pr, Aw.Meta.Core.Watch.PrState? PrState, Aw.Meta.Core.Worktrees.WorktreeDecision Decision, System.Collections.Generic.IReadOnlyList<string!>! Reasons) -> void
+Aw.Meta.Core.Worktrees.WorktreeScope
+Aw.Meta.Core.Worktrees.WorktreeScope.<Clone>$() -> Aw.Meta.Core.Worktrees.WorktreeScope!
+Aw.Meta.Core.Worktrees.WorktreeScope.Equals(Aw.Meta.Core.Worktrees.WorktreeScope? other) -> bool
+Aw.Meta.Core.Worktrees.WorktreeScope.Prs.get -> System.Collections.Generic.IReadOnlySet<int>?
+Aw.Meta.Core.Worktrees.WorktreeSweeper
+Aw.Meta.Core.Worktrees.WorktreeSweeper.Sweep(Aw.Meta.Core.Config.TeamConfig! team, Aw.Meta.Core.Worktrees.WorktreeScope! scope, Aw.Meta.Core.Worktrees.SweepMode mode, string! trigger, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Worktrees.SweepOutcome!>!>
+Aw.Meta.Core.Worktrees.WorktreeSweeper.Triggered(Aw.Meta.Core.Config.TeamConfig! team, System.Collections.Generic.IReadOnlyCollection<int>! prs, string! trigger, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Meta.Core.Worktrees.WorktreeSweeper.WorktreeSweeper() -> void
 const Aw.Meta.Core.Health.HostRules.LowMemoryPercent = 10 -> int
 const Aw.Meta.Core.Health.OrphanRule.MinimumAgeSeconds = 300 -> long
 const Aw.Meta.Core.Health.ProcessGroups.Claude = "claude" -> string!
@@ -827,6 +924,9 @@ override Aw.Meta.Core.Config.StepConfig.ToString() -> string!
 override Aw.Meta.Core.Config.TeamConfig.Equals(object? obj) -> bool
 override Aw.Meta.Core.Config.TeamConfig.GetHashCode() -> int
 override Aw.Meta.Core.Config.TeamConfig.ToString() -> string!
+override Aw.Meta.Core.Config.WorktreeConfig.Equals(object? obj) -> bool
+override Aw.Meta.Core.Config.WorktreeConfig.GetHashCode() -> int
+override Aw.Meta.Core.Config.WorktreeConfig.ToString() -> string!
 override Aw.Meta.Core.Coordination.LaneRefresh.Equals(object? obj) -> bool
 override Aw.Meta.Core.Coordination.LaneRefresh.GetHashCode() -> int
 override Aw.Meta.Core.Coordination.LaneRefresh.ToString() -> string!
@@ -851,6 +951,9 @@ override Aw.Meta.Core.Gate.RerunOutcome.ToString() -> string!
 override Aw.Meta.Core.Gate.TestVerdict.Equals(object? obj) -> bool
 override Aw.Meta.Core.Gate.TestVerdict.GetHashCode() -> int
 override Aw.Meta.Core.Gate.TestVerdict.ToString() -> string!
+override Aw.Meta.Core.Github.PrBranch.Equals(object? obj) -> bool
+override Aw.Meta.Core.Github.PrBranch.GetHashCode() -> int
+override Aw.Meta.Core.Github.PrBranch.ToString() -> string!
 override Aw.Meta.Core.Github.PrDetails.Equals(object? obj) -> bool
 override Aw.Meta.Core.Github.PrDetails.GetHashCode() -> int
 override Aw.Meta.Core.Github.PrDetails.ToString() -> string!
@@ -953,10 +1056,23 @@ override Aw.Meta.Core.Watch.WatchStep.ToString() -> string!
 override Aw.Meta.Core.Watch.WatchedPr.Equals(object? obj) -> bool
 override Aw.Meta.Core.Watch.WatchedPr.GetHashCode() -> int
 override Aw.Meta.Core.Watch.WatchedPr.ToString() -> string!
+override Aw.Meta.Core.Worktrees.ProcessLocation.Equals(object? obj) -> bool
+override Aw.Meta.Core.Worktrees.ProcessLocation.GetHashCode() -> int
+override Aw.Meta.Core.Worktrees.ProcessLocation.ToString() -> string!
+override Aw.Meta.Core.Worktrees.SweepOutcome.Equals(object? obj) -> bool
+override Aw.Meta.Core.Worktrees.SweepOutcome.GetHashCode() -> int
+override Aw.Meta.Core.Worktrees.SweepOutcome.ToString() -> string!
+override Aw.Meta.Core.Worktrees.WorktreeReport.Equals(object? obj) -> bool
+override Aw.Meta.Core.Worktrees.WorktreeReport.GetHashCode() -> int
+override Aw.Meta.Core.Worktrees.WorktreeReport.ToString() -> string!
+override Aw.Meta.Core.Worktrees.WorktreeScope.Equals(object? obj) -> bool
+override Aw.Meta.Core.Worktrees.WorktreeScope.GetHashCode() -> int
+override Aw.Meta.Core.Worktrees.WorktreeScope.ToString() -> string!
 static Aw.Meta.Core.Commands.CommandRequest.operator !=(Aw.Meta.Core.Commands.CommandRequest? left, Aw.Meta.Core.Commands.CommandRequest? right) -> bool
 static Aw.Meta.Core.Commands.CommandRequest.operator ==(Aw.Meta.Core.Commands.CommandRequest? left, Aw.Meta.Core.Commands.CommandRequest? right) -> bool
 static Aw.Meta.Core.Commands.CommandResult.operator !=(Aw.Meta.Core.Commands.CommandResult? left, Aw.Meta.Core.Commands.CommandResult? right) -> bool
 static Aw.Meta.Core.Commands.CommandResult.operator ==(Aw.Meta.Core.Commands.CommandResult? left, Aw.Meta.Core.Commands.CommandResult? right) -> bool
+static Aw.Meta.Core.Commands.ProgramPath.Resolve(string! program, string? cwd) -> string!
 static Aw.Meta.Core.Config.GateConfig.Empty.get -> Aw.Meta.Core.Config.GateConfig!
 static Aw.Meta.Core.Config.GateConfig.operator !=(Aw.Meta.Core.Config.GateConfig? left, Aw.Meta.Core.Config.GateConfig? right) -> bool
 static Aw.Meta.Core.Config.GateConfig.operator ==(Aw.Meta.Core.Config.GateConfig? left, Aw.Meta.Core.Config.GateConfig? right) -> bool
@@ -968,6 +1084,9 @@ static Aw.Meta.Core.Config.StepConfig.operator !=(Aw.Meta.Core.Config.StepConfig
 static Aw.Meta.Core.Config.StepConfig.operator ==(Aw.Meta.Core.Config.StepConfig? left, Aw.Meta.Core.Config.StepConfig? right) -> bool
 static Aw.Meta.Core.Config.TeamConfig.operator !=(Aw.Meta.Core.Config.TeamConfig? left, Aw.Meta.Core.Config.TeamConfig? right) -> bool
 static Aw.Meta.Core.Config.TeamConfig.operator ==(Aw.Meta.Core.Config.TeamConfig? left, Aw.Meta.Core.Config.TeamConfig? right) -> bool
+static Aw.Meta.Core.Config.WorktreeConfig.DefaultBuildOutputs.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Meta.Core.Config.WorktreeConfig.operator !=(Aw.Meta.Core.Config.WorktreeConfig? left, Aw.Meta.Core.Config.WorktreeConfig? right) -> bool
+static Aw.Meta.Core.Config.WorktreeConfig.operator ==(Aw.Meta.Core.Config.WorktreeConfig? left, Aw.Meta.Core.Config.WorktreeConfig? right) -> bool
 static Aw.Meta.Core.Coordination.LaneRefresh.operator !=(Aw.Meta.Core.Coordination.LaneRefresh? left, Aw.Meta.Core.Coordination.LaneRefresh? right) -> bool
 static Aw.Meta.Core.Coordination.LaneRefresh.operator ==(Aw.Meta.Core.Coordination.LaneRefresh? left, Aw.Meta.Core.Coordination.LaneRefresh? right) -> bool
 static Aw.Meta.Core.Coordination.MergeAssessment.operator !=(Aw.Meta.Core.Coordination.MergeAssessment? left, Aw.Meta.Core.Coordination.MergeAssessment? right) -> bool
@@ -988,18 +1107,21 @@ static Aw.Meta.Core.Gate.GlobMatcher.IsMatch(string! pattern, string! path) -> b
 static Aw.Meta.Core.Gate.RerunOutcome.operator !=(Aw.Meta.Core.Gate.RerunOutcome? left, Aw.Meta.Core.Gate.RerunOutcome? right) -> bool
 static Aw.Meta.Core.Gate.RerunOutcome.operator ==(Aw.Meta.Core.Gate.RerunOutcome? left, Aw.Meta.Core.Gate.RerunOutcome? right) -> bool
 static Aw.Meta.Core.Gate.ScopePlanner.Plan(System.Collections.Generic.IReadOnlyList<string!>! changedPaths, Aw.Meta.Core.Config.GateConfig! gate) -> System.Collections.Generic.IReadOnlyList<string!>!
-static Aw.Meta.Core.Gate.TestNames.Failing(string! log) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Meta.Core.Gate.TestNames.FailedLines(string! log) -> int
-static Aw.Meta.Core.Gate.TestNames.SummarizedFailures(string! log) -> int?
+static Aw.Meta.Core.Gate.TestNames.Failing(string! log) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Meta.Core.Gate.TestNames.Matches(string! filter, string! name) -> bool
 static Aw.Meta.Core.Gate.TestNames.Ran(string! output) -> bool
 static Aw.Meta.Core.Gate.TestNames.RanNone(string! output) -> bool
+static Aw.Meta.Core.Gate.TestNames.SummarizedFailures(string! log) -> int?
 static Aw.Meta.Core.Gate.TestVerdict.operator !=(Aw.Meta.Core.Gate.TestVerdict? left, Aw.Meta.Core.Gate.TestVerdict? right) -> bool
 static Aw.Meta.Core.Gate.TestVerdict.operator ==(Aw.Meta.Core.Gate.TestVerdict? left, Aw.Meta.Core.Gate.TestVerdict? right) -> bool
+static Aw.Meta.Core.Github.GhJson.Branches(string! json) -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Github.PrBranch!>?
 static Aw.Meta.Core.Github.GhJson.List(string! json) -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Watch.PrView!>?
 static Aw.Meta.Core.Github.GhJson.MergeCommit(string! json) -> string?
 static Aw.Meta.Core.Github.GhJson.RemoteSha(string! output) -> string?
 static Aw.Meta.Core.Github.GhJson.View(string! json) -> Aw.Meta.Core.Github.PrDetails?
+static Aw.Meta.Core.Github.PrBranch.operator !=(Aw.Meta.Core.Github.PrBranch? left, Aw.Meta.Core.Github.PrBranch? right) -> bool
+static Aw.Meta.Core.Github.PrBranch.operator ==(Aw.Meta.Core.Github.PrBranch? left, Aw.Meta.Core.Github.PrBranch? right) -> bool
 static Aw.Meta.Core.Github.PrDetails.operator !=(Aw.Meta.Core.Github.PrDetails? left, Aw.Meta.Core.Github.PrDetails? right) -> bool
 static Aw.Meta.Core.Github.PrDetails.operator ==(Aw.Meta.Core.Github.PrDetails? left, Aw.Meta.Core.Github.PrDetails? right) -> bool
 static Aw.Meta.Core.Guard.GuardDecision.operator !=(Aw.Meta.Core.Guard.GuardDecision? left, Aw.Meta.Core.Guard.GuardDecision? right) -> bool
@@ -1089,6 +1211,8 @@ static Aw.Meta.Core.Owner.OwnerQuestion.operator !=(Aw.Meta.Core.Owner.OwnerQues
 static Aw.Meta.Core.Owner.OwnerQuestion.operator ==(Aw.Meta.Core.Owner.OwnerQuestion? left, Aw.Meta.Core.Owner.OwnerQuestion? right) -> bool
 static Aw.Meta.Core.Owner.OwnerQuestionText.From(string! body) -> string!
 static Aw.Meta.Core.Registration.MetaCoreServiceCollectionExtensions.AddMetaCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Meta.Core.Watch.EndedPrs.Merge(string? stored, System.Collections.Generic.IEnumerable<Aw.Meta.Core.Watch.PrView!>! prs) -> string?
+static Aw.Meta.Core.Watch.EndedPrs.Parse(string? stored) -> System.Collections.Generic.IReadOnlySet<int>!
 static Aw.Meta.Core.Watch.PrView.operator !=(Aw.Meta.Core.Watch.PrView? left, Aw.Meta.Core.Watch.PrView? right) -> bool
 static Aw.Meta.Core.Watch.PrView.operator ==(Aw.Meta.Core.Watch.PrView? left, Aw.Meta.Core.Watch.PrView? right) -> bool
 static Aw.Meta.Core.Watch.WatchDiff.Step(Aw.Meta.Core.Watch.WatchState! state, Aw.Meta.Core.Watch.WatchSnapshot! snapshot) -> Aw.Meta.Core.Watch.WatchStep!
@@ -1102,6 +1226,16 @@ static Aw.Meta.Core.Watch.WatchStep.operator !=(Aw.Meta.Core.Watch.WatchStep? le
 static Aw.Meta.Core.Watch.WatchStep.operator ==(Aw.Meta.Core.Watch.WatchStep? left, Aw.Meta.Core.Watch.WatchStep? right) -> bool
 static Aw.Meta.Core.Watch.WatchedPr.operator !=(Aw.Meta.Core.Watch.WatchedPr? left, Aw.Meta.Core.Watch.WatchedPr? right) -> bool
 static Aw.Meta.Core.Watch.WatchedPr.operator ==(Aw.Meta.Core.Watch.WatchedPr? left, Aw.Meta.Core.Watch.WatchedPr? right) -> bool
+static Aw.Meta.Core.Worktrees.ProcessLocation.operator !=(Aw.Meta.Core.Worktrees.ProcessLocation? left, Aw.Meta.Core.Worktrees.ProcessLocation? right) -> bool
+static Aw.Meta.Core.Worktrees.ProcessLocation.operator ==(Aw.Meta.Core.Worktrees.ProcessLocation? left, Aw.Meta.Core.Worktrees.ProcessLocation? right) -> bool
+static Aw.Meta.Core.Worktrees.SweepOutcome.operator !=(Aw.Meta.Core.Worktrees.SweepOutcome? left, Aw.Meta.Core.Worktrees.SweepOutcome? right) -> bool
+static Aw.Meta.Core.Worktrees.SweepOutcome.operator ==(Aw.Meta.Core.Worktrees.SweepOutcome? left, Aw.Meta.Core.Worktrees.SweepOutcome? right) -> bool
+static Aw.Meta.Core.Worktrees.WorktreeReport.operator !=(Aw.Meta.Core.Worktrees.WorktreeReport? left, Aw.Meta.Core.Worktrees.WorktreeReport? right) -> bool
+static Aw.Meta.Core.Worktrees.WorktreeReport.operator ==(Aw.Meta.Core.Worktrees.WorktreeReport? left, Aw.Meta.Core.Worktrees.WorktreeReport? right) -> bool
+static Aw.Meta.Core.Worktrees.WorktreeScope.All.get -> Aw.Meta.Core.Worktrees.WorktreeScope!
+static Aw.Meta.Core.Worktrees.WorktreeScope.ForPrs(System.Collections.Generic.IEnumerable<int>! prs) -> Aw.Meta.Core.Worktrees.WorktreeScope!
+static Aw.Meta.Core.Worktrees.WorktreeScope.operator !=(Aw.Meta.Core.Worktrees.WorktreeScope? left, Aw.Meta.Core.Worktrees.WorktreeScope? right) -> bool
+static Aw.Meta.Core.Worktrees.WorktreeScope.operator ==(Aw.Meta.Core.Worktrees.WorktreeScope? left, Aw.Meta.Core.Worktrees.WorktreeScope? right) -> bool
 static readonly Aw.Meta.Core.MetaErrors.CommandFailed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.CommandNotStarted -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.ConfigExists -> Aw.Kernel.ErrorDefinition!
@@ -1115,10 +1249,3 @@ static readonly Aw.Meta.Core.MetaErrors.MessageNotFound -> Aw.Kernel.ErrorDefini
 static readonly Aw.Meta.Core.MetaErrors.NoTeamConfig -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.QuestionNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.TranscriptUnreadable -> Aw.Kernel.ErrorDefinition!
-Aw.Meta.Core.Commands.ProgramPath
-static Aw.Meta.Core.Commands.ProgramPath.Resolve(string! program, string? cwd) -> string!
-Aw.Meta.Core.Merge.MergeFacts.ScopeRuns.get -> System.Collections.Generic.IReadOnlyDictionary<string!, int>?
-Aw.Meta.Core.Merge.MergeFacts.ScopeRuns.init -> void
-Aw.Meta.Core.Watch.EndedPrs
-static Aw.Meta.Core.Watch.EndedPrs.Merge(string? stored, System.Collections.Generic.IEnumerable<Aw.Meta.Core.Watch.PrView!>! prs) -> string?
-static Aw.Meta.Core.Watch.EndedPrs.Parse(string? stored) -> System.Collections.Generic.IReadOnlySet<int>!

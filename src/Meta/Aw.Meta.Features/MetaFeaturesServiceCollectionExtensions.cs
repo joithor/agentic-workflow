@@ -21,6 +21,8 @@ using Aw.Meta.Features.StopCheck;
 using Aw.Meta.Features.SyncInbox;
 using Aw.Meta.Features.Team;
 using Aw.Meta.Features.Watch;
+using Aw.Meta.Features.WorktreeList;
+using Aw.Meta.Features.WorktreeSweep;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Meta.Features;
@@ -38,7 +40,8 @@ public static class MetaFeaturesServiceCollectionExtensions
         .AddOwnerSlices()
         .AddReportSlices()
         .AddGateSlices()
-        .AddHostSlices();
+        .AddHostSlices()
+        .AddWorktreeSlices();
 
     private static IServiceCollection AddSetupSlices(this IServiceCollection services) => services
         .AddScoped<SetRoleService>()
@@ -118,6 +121,13 @@ public static class MetaFeaturesServiceCollectionExtensions
         .AddScoped<WatchService>()
         .AddScoped<IValidator<WatchRequest>, WatchValidator>()
         .Validated<WatchService, WatchRequest, WatchResponse>();
+
+    private static IServiceCollection AddWorktreeSlices(this IServiceCollection services) => services
+        .AddScoped<ListWorktreesService>()
+        .Plain<ListWorktreesService, ListWorktreesRequest, ListWorktreesResponse>()
+        .AddScoped<SweepWorktreesService>()
+        .AddScoped<IValidator<SweepWorktreesRequest>, SweepWorktreesValidator>()
+        .Validated<SweepWorktreesService, SweepWorktreesRequest, SweepWorktreesResponse>();
 
     // Exposes an already registered service as its IService.
     private static IServiceCollection Plain<TService, TRequest, TResponse>(this IServiceCollection services)

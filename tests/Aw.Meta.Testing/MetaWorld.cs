@@ -58,6 +58,9 @@ public sealed class MetaWorld
     /// <summary>Processes.</summary>
     public InMemoryProcessTable Processes { get; } = new();
 
+    /// <summary>Where processes are (working directories, open files).</summary>
+    public InMemoryProcessLocations Locations { get; } = new();
+
     /// <summary>The delay between polls; waiting moves <see cref="Clock"/>.</summary>
     public InMemoryDelay Delay { get; }
 

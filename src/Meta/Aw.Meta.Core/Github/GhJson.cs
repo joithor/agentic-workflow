@@ -44,6 +44,11 @@ public static class GhJson
         }
     }
 
+    /// <summary>Reads `gh pr list --json number,state,headRefName,headRefOid`.</summary>
+    /// <param name="json">The output.</param>
+    /// <returns>The pull requests, or null when the output is not a JSON array.</returns>
+    public static IReadOnlyList<PrBranch>? Branches(string json) => throw new NotSupportedException();
+
     /// <summary>Reads the sha from `git ls-remote origin main`.</summary>
     /// <param name="output">The output: "&lt;sha&gt;&lt;tab&gt;refs/heads/main".</param>
     /// <returns>The sha, or null when the output has none.</returns>
