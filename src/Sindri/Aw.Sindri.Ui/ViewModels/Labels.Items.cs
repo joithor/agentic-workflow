@@ -135,6 +135,12 @@ internal static partial class Labels
     /// <returns>The words.</returns>
     internal static string Cleared(string id) => id + " cleared";
 
+    /// <summary>The two together, when "N new" and "cleared" come in one refresh: one sentence, spoken once.</summary>
+    /// <param name="newRows">The pill's words.</param>
+    /// <param name="id">The cleared row's id.</param>
+    /// <returns>The words.</returns>
+    internal static string NewAndCleared(string newRows, string id) => $"{newRows}, {Cleared(id)}";
+
     /// <summary>The pill over a panel while new rows are held (§8): "N new".</summary>
     /// <param name="count">How many rows are held.</param>
     /// <returns>The words.</returns>

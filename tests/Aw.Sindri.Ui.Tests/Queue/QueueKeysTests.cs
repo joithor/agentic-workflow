@@ -81,6 +81,41 @@ public sealed class QueueKeysTests
         Assert.Equal([(first.Id, false)], asked.Select(a => (a.ItemId, a.OnlyIfLost)));
     }
 
+    // corr-6: "N new" and "<id> cleared" in one refresh are one sentence, spoken once: the flag first, then the text, never "".
+    [Fact]
+    public async Task New_rows_and_a_cleared_row_in_one_refresh_are_spoken_as_one_sentence()
+    {
+        var queue = await Queue();
+        queue.Select(A.NewItem);
+        queue.Hold(holding: true);
+        var view = System.Text.Json.Nodes.JsonNode.Parse(GoldenFiles.SpecShaped("queue", "extra-p11-running"))!;
+        foreach (var group in view["groups"]!.AsArray())
+        {
+            var items = group!["items"]!.AsArray();
+            items.Where(i => (string?)i!["id"] == A.NewItem).ToList().ForEach(i => items.Remove(i));
+        }
+
+        var states = new List<(bool Live, string Text)>();
+        queue.PropertyChanged += (_, e) =>
+        {
+            if (string.Equals(e.PropertyName, nameof(QueueViewModel.IsAnnouncing), StringComparison.Ordinal) || string.Equals(e.PropertyName, nameof(QueueViewModel.Announcement), StringComparison.Ordinal))
+            {
+                states.Add((queue.IsAnnouncing, queue.Announcement));
+            }
+        };
+
+        _server.QueueView = new RouteAnswer(System.Net.HttpStatusCode.OK, view.ToJsonString());
+        await queue.Refresh(_api, Token);
+
+        var sentence = Labels.NewAndCleared(queue.HeldText, A.NewItem);
+        Assert.True(queue.HasHeld);
+        Assert.Equal((true, sentence), (queue.IsAnnouncing, queue.Announcement));
+        Assert.DoesNotContain(states, s => s.Text.Length == 0);
+        Assert.Equal(1, states.Count(s => s.Live && s.Text == sentence));
+        Assert.DoesNotContain(states, s => !s.Live && s.Text == sentence);
+        Assert.DoesNotContain(states, s => s.Text == queue.HeldText || s.Text == Labels.Cleared(A.NewItem));
+    }
+
     // Leaving the panel shows the held rows too, but nobody pressed the pill: focus stays where it is.
     [Fact]
     public async Task Leaving_the_panel_shows_the_held_rows_without_asking_for_focus()
