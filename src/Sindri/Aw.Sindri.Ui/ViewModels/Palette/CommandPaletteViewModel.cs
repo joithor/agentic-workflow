@@ -153,8 +153,9 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
         switch (entry)
         {
             case { Page: { } page }:
-                Close();
+                // The page changes first, so the region the close hands focus back to already carries the new page's name.
                 _goTo(page);
+                Close();
                 break;
             case { Control.IsCliOnly: true }:
                 await Copy(entry, entry.Control, cancellationToken).ConfigureAwait(true);

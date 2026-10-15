@@ -104,6 +104,20 @@ public sealed class NavTabClickTests : IDisposable
 
     private static readonly string[] _pages = ["HomePage", "WorkflowsPage", "WorkPage", "RecipesPage", "ContextPage", "AgentsPage", "HealthPage"];
 
+    // Re-check N1: the System page's region is named "System", so its heading says the same word.
+    [Fact]
+    public Task The_System_page_heading_is_the_name_of_its_region() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(ShellState.Normal);
+        shell.GoTo(PageId.System);
+        Dispatcher.UIThread.RunJobs();
+
+        var title = window.GetVisualDescendants().OfType<TextBlock>().First(t => t.IsEffectivelyVisible && t.Classes.Contains("page-title"));
+
+        Assert.Equal(shell.PageName, title.Text);
+    });
+
     private static string Own(PageId page) => page switch
     {
         PageId.Home => "HomePage",

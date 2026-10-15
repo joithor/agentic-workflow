@@ -143,7 +143,15 @@ public sealed class ChordFocusTests : IDisposable
         window.KeyPress(Key.Down, RawInputModifiers.None, PhysicalKey.ArrowDown, keySymbol: null);
         Dispatcher.UIThread.RunJobs();
         var raised = 0;
-        window.AddHandler(InputElement.GotFocusEvent, (_, e) => raised += ReferenceEquals(e.Source, page) ? 1 : 0, Avalonia.Interactivity.RoutingStrategies.Bubble);
+        var names = new List<string?>();
+        window.AddHandler(InputElement.GotFocusEvent, (_, e) =>
+        {
+            if (ReferenceEquals(e.Source, page))
+            {
+                raised++;
+                names.Add(Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(page).GetName());
+            }
+        }, Avalonia.Interactivity.RoutingStrategies.Bubble);
 
         window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, keySymbol: null);
         for (var i = 0; i < 5; i++)
@@ -154,6 +162,7 @@ public sealed class ChordFocusTests : IDisposable
 
         Assert.Equal(PageId.Workflows, shell.CurrentPage);
         AssertOnPageRegion(window, shell);
+        Assert.All(names, n => Assert.Equal(shell.PageName, n));   // nr-1: the page changes before the palette closes, so both events say the new page
         Assert.Equal(2, raised);   // the palette closing returns focus to the region, then the page change raises its fresh event
     });
 
