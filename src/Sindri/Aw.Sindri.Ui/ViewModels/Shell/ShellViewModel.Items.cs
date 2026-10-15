@@ -56,11 +56,7 @@ internal sealed partial class ShellViewModel
         }
 
         var count = Queue.IsLoading ? string.Empty : Queue.Total.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        if (Navigation[1].Count != count)
-        {
-            Navigation = Nav(count);
-            Changed(nameof(Navigation), nameof(SelectedNav));
-        }
+        Navigation[1].Count = count;
     }
 
     /// <summary>Goes where a deep link points: a page, or the detail sheet with its subject.</summary>

@@ -20,7 +20,8 @@ public sealed class ShellNavTests
         var records = new InMemoryEndpointRecords();
         records.Write(A.Record());
         var server = new FakeSindriApi { Catalog = RouteAnswer.Api("commands", "catalog"), QueueView = RouteAnswer.SpecShaped("queue", "extra-p4-waiting") };
-        var shell = new ShellViewModel(records, server, new FakeTimeProvider(A.Noon), new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
+        var clock = new FakeTimeProvider(A.Noon);
+        var shell = new ShellViewModel(records, server, clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
         await shell.Restore(Token);
         _ = shell.Run(Token);
         await Until(() => shell.Queue.Total > 0 && shell.Navigation[1].Count.Length > 0);
@@ -36,12 +37,14 @@ public sealed class ShellNavTests
             watched.PropertyChanged += (_, e) => counts.Add(e.PropertyName);
         }
 
-        foreach (var view in new[] { "extra-p11-running", "extra-p4-waiting", "extra-p11-running" })
+        var seq = 60;
+        foreach (var view in new[] { "extra-p11-running", "empty", "fixture" })
         {
+            clock.Advance(TimeSpan.FromSeconds(5));
             var before = shell.Navigation[1].Count;
             server.QueueView = RouteAnswer.SpecShaped("queue", view);
-            server.Push(A.Event(60, "item.created"));
-            await Until(() => shell.Navigation[1].Count != before);
+            server.Push(A.Event(seq++, "item.created"));
+            await Until(() => shell.Navigation[1].Count != before, view);
             Assert.Same(tab, shell.SelectedNav);
         }
 
@@ -50,13 +53,13 @@ public sealed class ShellNavTests
         Assert.Contains(counts, name => name == "Count");
     }
 
-    private static async Task Until(Func<bool> condition)
+    private static async Task Until(Func<bool> condition, string? what = null)
     {
         for (var i = 0; i < 400 && !condition(); i++)
         {
             await Task.Delay(5, Token);
         }
 
-        Assert.True(condition(), "the condition never held");
+        Assert.True(condition(), "the condition never held " + what);
     }
 }
