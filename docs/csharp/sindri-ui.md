@@ -359,6 +359,38 @@ private AT-SPI bus with a private `XDG_RUNTIME_DIR`. It never inherits `DISPLAY`
 `~/.agentic-workflow/jthorare-agentic-workflow/proof/sindri-ui-u1/raw/tools` enforce this: `session-up.sh` brings the
 session up, `env.sh` refuses to load unless the session is private, and `privsession.py` is the private-bus helper.
 
+## Rev 8 contract (UI spec rev 8, screens spec §3; PR #215)
+
+The rev-8 contract unit gives the shell its screens' skeleton and the app its first workflow reads; the pages fill in with
+U3' and U8.
+
+- **Navigation.** The top bar has seven tabs, in order: Home, Workflows, Work, Recipes, Context, Agents, System. Settings is
+  not a tab (⌘, opens it). `PageId` names the eight pages; a page with no screen yet shows a placeholder that says what it
+  waits for. The last page is remembered in the preferences.
+- **Chords.** `G`, then a page's key within `ShellViewModel.ChordWait` (1 s): `H` or `N` Home, `D` Home filtered to
+  decisions (`HomeFilter.Decisions`), `W` Workflows, `Q` Work, `R` Recipes, `C` Context, `A` Agents, `.` or `S` System.
+  They carry no modifier, so they are the same on every platform. The wait is a delay on the shell's clock (no timer
+  thread), and a generation says which chord a finished wait belongs to. A chord is gated like the other navigation
+  (`IsNavigationEnabled` and `IsChromeVisible`, in `PressKey`), never fires while a text field has focus or an overlay
+  is open, and any other unmodified key (Esc included) cancels a waiting chord. Any navigation but G D clears the Home
+  filter. The top bar shows `G …` while one waits.
+- **Deep links.** `workflow/<address>` (an address, which may contain `/`), `recipe/<id>`, `node/<key>`, `session/<id>`
+  and `system/<dependency>` go to Workflows, Recipes, Context, Agents and System; `item/`, `decision/`, `service/` and
+  `job/` open their sheet over the page shown; `home/needs-you` is Home. `ShellViewModel.Navigate` routes them and the
+  sheet and its subject live in `ShellViewModel.Sheet.cs`.
+- **Workflow reads** (`ISindriApi`, API §3.8; the client's routes are in `Api/Workflow/WorkflowRoutes`):
+  `GET /sindri/workflow/instances` (the root rows and the root-wide counts; `root`, `open`, `recipe`, `subject`, `address`
+  narrow it), `GET /sindri/workflow/instances/{id}` (by the opaque id; an address is only ever a query value),
+  `GET /sindri/workflow/instances/{id}/facts/{key}` and `GET /sindri/workflow/recipes/{id}[@{hash}]`. The records mirror the
+  API's goldens (`Api/Workflow`). The views print the figures
+  as served (`counts.open`, a group's `done` and `total`) and recount nothing.
+- **Test support.** `WorkflowAnswers` serves the API's `workflow-*` goldens, found by enumerating the directory, to the
+  fake (`FakeSindriApi.Workflow.cs`) and to the handler; `FixtureInstances` is the one instance table (the root list
+  golden and every instance golden) with the one open rule, and `ChildTally` recounts a group's shown rows. They are
+  consistency checks on the fixture, not app code. `GoldenContractTests` deserializes every `workflow-instances`,
+  `-instance`, `-instance-fact`, `-status` and `-recipe` golden through the app's JSON context, and
+  `SindriApiContract.Workflow` runs the same scenarios against the fake and the real client.
+
 ## Lane anchors (U3' and U8)
 
 Two lanes add to the same files, so each hotspot carries one marker per lane, `LANE ANCHOR U3'` and `LANE ANCHOR U8`
