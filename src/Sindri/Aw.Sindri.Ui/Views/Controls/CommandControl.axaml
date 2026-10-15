@@ -10,7 +10,7 @@
   <StackPanel Spacing="{StaticResource Space.XXS}">
     <!-- The button stays enabled while it sends (a disabled control drops keyboard focus; the view model refuses a second
          run). The polite live region for "Sending…", the outcome, a refusal's code and detail and "Copied" (U0's LiveSetting rules): zero-width, never "". -->
-    <TextBlock x:Name="Announcer" Classes="caption live-region live" Width="0" Opacity="0" IsHitTestVisible="False"
+    <TextBlock x:Name="Announcer" Classes="caption live-region" Classes.live="{Binding IsAnnouncing}" Width="0" Opacity="0" IsHitTestVisible="False"
                Text="{Binding Announcement}" HorizontalAlignment="Left" />
 
     <StackPanel x:Name="ButtonRow" Orientation="Horizontal" Spacing="{StaticResource Space.XS}" IsVisible="{Binding !IsCliOnly}">

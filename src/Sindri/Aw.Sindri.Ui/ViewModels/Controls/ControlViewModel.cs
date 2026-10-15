@@ -163,7 +163,8 @@ internal sealed class ControlViewModel : ObservableObject
 
         var run = ++_runs;
         (ErrorCode, ErrorDetail, Outcome) = (string.Empty, string.Empty, string.Empty);
-        Announcement = Label;   // a resting text first, so an outcome the same as the last one is still a change to the live region
+        IsAnnouncing = false;   // dark first, then the resting text: an outcome the same as the last one is still a change, and the label is not spoken
+        Announce(Label);
         Phase = CommandPhase.Sending;
         _ = AnnounceSending(run, cancellationToken);
         var answer = await send(cancellationToken).ConfigureAwait(true);
@@ -171,13 +172,13 @@ internal sealed class ControlViewModel : ObservableObject
         if (answer.IsError)
         {
             (ErrorCode, ErrorDetail) = (answer.Error.Code, answer.Error.Message);
-            Announcement = $"{ErrorCode}: {ErrorDetail}";
+            Announce($"{ErrorCode}: {ErrorDetail}");
             Phase = CommandPhase.Failed;
             return;
         }
 
         Outcome = Labels.Done(Label);
-        Announcement = Outcome;
+        Announce(Outcome);
         Phase = CommandPhase.Accepted;
         _ = Settle(run, cancellationToken);
     }
@@ -192,7 +193,8 @@ internal sealed class ControlViewModel : ObservableObject
             return;
         }
 
-        (CopyLabel, Announcement) = (Labels.Copied, Labels.Copied);
+        CopyLabel = Labels.Copied;
+        Announce(Labels.Copied);
         _ = Uncopy(++_copies, cancellationToken);
     }
 
@@ -210,6 +212,30 @@ internal sealed class ControlViewModel : ObservableObject
         if (copy == _copies)
         {
             CopyLabel = Labels.Copy;
+            Rest();
+        }
+    }
+
+    // Says a text through the live region. The region is live only while something is announced (flag first, then the
+    // text, as the shell's regions do): the first announcement rests the text on the label with the region still dark, so
+    // the resting label is never spoken (review run 2, a11y-1).
+    private void Announce(string text)
+    {
+        if (!IsAnnouncing)
+        {
+            Announcement = Label;
+            IsAnnouncing = true;
+        }
+
+        Announcement = text;
+    }
+
+    // Back to rest: the region goes dark again (its text stays, unspoken) once nothing is on show or in flight.
+    private void Rest()
+    {
+        if (Phase is CommandPhase.Idle && CopyLabel == Labels.Copy)
+        {
+            IsAnnouncing = false;
         }
     }
 
@@ -227,7 +253,7 @@ internal sealed class ControlViewModel : ObservableObject
         if (run == _runs && Phase == CommandPhase.Sending)
         {
             IsAnnouncingSending = true;
-            Announcement = Labels.Sending;
+            Announce(Labels.Sending);
         }
     }
 
@@ -245,6 +271,7 @@ internal sealed class ControlViewModel : ObservableObject
         if (run == _runs && Phase == CommandPhase.Accepted)
         {
             Phase = CommandPhase.Idle;
+            Rest();
         }
     }
 
