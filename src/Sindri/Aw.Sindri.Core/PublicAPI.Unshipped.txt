@@ -1050,6 +1050,8 @@ Aw.Sindri.Core.Views.ViewsStatus.Rebuilding.get -> bool
 Aw.Sindri.Core.Views.ViewsStatus.Rebuilding.init -> void
 Aw.Sindri.Core.Views.ViewsStatus.Stalled.get -> bool
 Aw.Sindri.Core.Views.ViewsStatus.Stalled.init -> void
+Aw.Sindri.Core.Views.ViewsStatus.StalledFix() -> string!
+Aw.Sindri.Core.Views.ViewsStatus.StalledPhrase() -> string!
 Aw.Sindri.Core.Views.ViewsStatus.StalledAt.get -> long?
 Aw.Sindri.Core.Views.ViewsStatus.StalledAt.init -> void
 Aw.Sindri.Core.Views.ViewsStatus.StalledType.get -> string?
@@ -4213,10 +4215,11 @@ static Aw.Sindri.Core.Secrets.SecretPointer.operator ==(Aw.Sindri.Core.Secrets.S
 static Aw.Sindri.Core.SindriErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
 static Aw.Sindri.Core.Views.AsOf.operator !=(Aw.Sindri.Core.Views.AsOf? left, Aw.Sindri.Core.Views.AsOf? right) -> bool
 static Aw.Sindri.Core.Views.AsOf.operator ==(Aw.Sindri.Core.Views.AsOf? left, Aw.Sindri.Core.Views.AsOf? right) -> bool
-static Aw.Sindri.Core.Views.EmptyText.For(Aw.Sindri.Core.Views.AsOf! asOf, bool empty, System.Func<string!>! emptySentence) -> string?
+static Aw.Sindri.Core.Views.EmptyText.For(Aw.Sindri.Core.Views.ViewsStatus! views, bool empty, System.Func<string!>! emptySentence) -> string?
 static Aw.Sindri.Core.Views.EmptyText.Rebuilding(long cursor, long head) -> string!
 static Aw.Sindri.Core.Views.EmptyText.Services() -> string!
 static Aw.Sindri.Core.Views.EmptyText.Failing(string? detail) -> string!
+static Aw.Sindri.Core.Views.EmptyText.FixFor(string? detail) -> string!
 static Aw.Sindri.Core.Views.EmptyText.Unreadable() -> string!
 static Aw.Sindri.Core.Views.EmptyText.Stalled(long at) -> string!
 static Aw.Sindri.Core.Views.LastRun.operator !=(Aw.Sindri.Core.Views.LastRun? left, Aw.Sindri.Core.Views.LastRun? right) -> bool

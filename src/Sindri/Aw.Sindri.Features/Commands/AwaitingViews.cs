@@ -1,4 +1,3 @@
-using System.Globalization;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
@@ -60,8 +59,7 @@ internal sealed class AwaitingViews<TRequest, TResponse>(IService<TRequest, TRes
         var status = views.Current;
         if (status.Stalled)
         {
-            return SindriErrors.ViewsStalled.With(string.Create(CultureInfo.InvariantCulture,
-                $"views stalled at {status.StalledAt} ({status.StalledType}); the command wasn't run (fix: sindri views rebuild)"));
+            return SindriErrors.ViewsStalled.With($"views {status.StalledPhrase()}; the command wasn't run (fix: {status.StalledFix()})");
         }
 
         return status.Rebuilding ? SindriErrors.ViewsRebuilding.With("views are rebuilding; the command wasn't run, retry in a moment") : null;

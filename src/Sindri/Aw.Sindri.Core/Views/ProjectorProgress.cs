@@ -111,6 +111,6 @@ internal sealed class ProjectorProgress(TimeProvider clock) : IProjectorStatus, 
 
     private static Error Behind(ViewsStatus status, long sequence) => SindriErrors.ViewsBehind.With(status.Stalled
         ? string.Create(CultureInfo.InvariantCulture,
-            $"views stalled at {status.StalledAt} ({status.StalledType}) with the cursor at {status.Cursor}, waiting for {sequence}: run sindri views rebuild")
+            $"views {status.StalledPhrase()} with the cursor at {status.Cursor}, waiting for {sequence}: run {status.StalledFix()}")
         : string.Create(CultureInfo.InvariantCulture, $"views at cursor {status.Cursor}, waiting for {sequence}"));
 }

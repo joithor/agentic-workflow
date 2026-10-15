@@ -42,7 +42,7 @@ internal static class SummaryText
 
     private static string Views(ViewsStatus v) => v switch
     {
-        { Stalled: true } => string.Create(CultureInfo.InvariantCulture, $"stalled at {v.StalledAt ?? (v.Cursor + 1)} ({v.StalledType}): run `sindri views rebuild`"),
+        { Stalled: true } => $"{v.StalledPhrase()}: run `{v.StalledFix()}`",
         { Rebuilding: true } => string.Create(CultureInfo.InvariantCulture, $"rebuilding (cursor {v.Cursor} of {v.LedgerHead})"),
         _ => string.Create(CultureInfo.InvariantCulture, $"cursor {v.Cursor} of {v.LedgerHead}"),
     };
