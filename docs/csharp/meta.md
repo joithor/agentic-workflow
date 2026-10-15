@@ -57,11 +57,13 @@ to install globally. Loop guard: when the same open set has blocked `AW_META_STO
 ## Commands
 
 Every command takes `--json`. Exit 0 ok, 1 attention (read the output and act), 2 usage or tool error; an error is one
-stderr line `AW-META-NNN: <reason>`. Every command but `team-init`, `role-*` and `health` needs the team config.
+stderr line `AW-META-NNN: <reason>`. Every command but `team-init`, `role-*`, `health`, `stop-check` and `outbox-record` needs
+the team config (`AW-META-002` otherwise); the two hook commands must let any session through when no team is set up.
+`stop-check` prints what is owed on stdout (the hook moves it to stderr for Claude Code).
 
 | Command | What it does |
 |---------|--------------|
-| `team-init --team <t> --repo <abs dir> --lanes a,b [--meta-lane meta] [--log <file>]` | Writes a starter team config |
+| `team-init --team <t> --repo <abs dir> --lanes a,b [--meta-lane meta] [--log <file>] [--force]` | Writes a starter team config (`--force` to overwrite one) |
 | `team-show` | Prints the team config |
 | `role-set --session <id> [--name <n>]` / `role-show` | Registers the meta session (the launcher does this for the meta pane) |
 | `inbox-sync --session <id> --transcript <path>` | Records new peer messages from the transcript |
@@ -69,7 +71,7 @@ stderr line `AW-META-NNN: <reason>`. Every command but `team-init`, `role-*` and
 | `inbox-dismiss <id> --reason <r>` / `inbox-defer <id> --reason <r> --until <iso8601\|+30m>` | Settles a reply without sending one |
 | `outbox-record` | Stdin: the PostToolUse payload. Records a send and closes what it settles |
 | `stop-check --session <id> --transcript <path> [--hook-active]` | Syncs, refreshes the lane map, prints every open obligation with the command that settles it; exit 1 if any |
-| `lanes-refresh` / `lanes [--announce]` | Rebuilds the lane map from live sessions (`~/.claude/sessions`), the launcher's id files and announcements; `--announce` prints the `LANE MAP v<n>:` text |
+| `lanes-refresh` / `lanes [--announce]` | Rebuilds the lane map from live sessions named `<team>-<lane>` (`~/.claude/sessions`), then lane announcements ("API lane: …"); `lanes` refreshes first; `--announce` prints the `LANE MAP v<n>:` text |
 | `gate-run <pr> [scope...]` | Runs the merge gate in a gate tree (PR head merged onto `origin/main`); scopes come from the changed paths and the team config |
 | `gate-rerun <pr> --step <s> --test <filter>` | Reruns one red test alone and on plain main; records `flake` or `real` |
 | `merge-check <pr>` | The merge preconditions: gate green (or reds all flakes), head and main unmoved since the gate (a docs-only delta needs only the `always` scopes), merge order, not a draft |
