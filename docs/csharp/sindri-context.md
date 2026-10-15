@@ -302,7 +302,7 @@ the file's overrides) in one transaction; a failed batch deletes the building ve
 | `SND-CONTEXT-031` | Invalid (400) | 1 | The map file is invalid (schema version, shape, unknown kind, disallowed edge, unreadable); key paths given; nothing written |
 | `SND-CONTEXT-032` | Invalid (400) | 1 | The map file refers to a node it doesn't define (edge end, alias target); nothing written |
 | `SND-CONTEXT-033` | Invalid (400) | 1 | Export path outside `$AW_SINDRI_HOME/context/exports/` |
-| `SND-CONTEXT-034` | Conflict (409) | 1 | The map file changed since its hash was confirmed; nothing written |
+| `SND-CONTEXT-034` | Conflict (409) | 1 | The map file changed since its hash was confirmed; nothing written (fix: run `context map import <file>` again) |
 
 ### Tests
 
@@ -313,3 +313,75 @@ adapters, the store's file modes and the YAML → store round trip); `ImportMap/
 `tests/Aw.Context.Testing/Map`: `FakeGraphStore`, `FakeExportStore`, `FakeMapFileReader` and their contract bases,
 `SampleMap`, `FixtureMap` (the split-panes product map). `tests/Aw.Sindri.Tests/ContextCalls/ContextMapApiTests`: the
 routes through the real pipeline (preview, protected import and its refusals, event, export, session scope, purge).
+
+## S-3b: the cascade, graph reads, the node and text shapes, the probe runner
+
+### Shape
+
+- **Core `Graph/`.** These are pure:
+  - `Cascade.Affects` (§6.1): own scope, state, dependency and flow hops, the ascend, BFS with a visited set under the depth cap.
+  - `GraphWalk.Neighbors` (depth 0–4) and `GraphWalk.ShortestPath` (at most 8 edges, either way).
+  - `AnchorMatch.Resolve` (key, alias, label; 037 or 003) and `AnchorMatch.FromText` (whole-label matches, most specific first).
+  - `GraphIndex` (internal adjacency in a fixed order).
+  - The answer views `NodeFact`, `EdgeFact`, `NodeView`, `NeighborsView` and `PathView`.
+- **Core `Map/`.**
+  - `IGraphStore.Snapshot(draft)` reads the version, its graph and the overrides in one read session (S-3a's follow-up).
+  - `MapReader`, a domain service shared by every graph read: gate, then snapshot, then overrides applied, then
+    `MapAccess.Visible`. A session's walks run on its scoped graph, so they can't leave it.
+  - `VisibleMap`.
+- **Core `Trust/MapText`.** Every label, wording and quote crosses this call's `Scrubbers`: ingest (sanitize, the
+  built-in rules, the extra patterns), then egress, one field at a time. Labels are capped at 200 characters and
+  untrusted ones are fenced (`<untrusted source="map">`). The text is cleaned on the way out with the current rules and
+  nothing cleaned is stored, so the map needs no ruleset fingerprint (S-2W's follow-up, closed).
+- **Core `Eval/`.**
+  - `ProbeSet`, `ProbeCase`, `ProbeExpect` and `ProbeDecision` (probes.json's shape plus an optional `schemaVersion`; unknown keys refused).
+  - `ProbeId`.
+  - `ProbeScoring` (keys in answer order, precision@5, citation correctness, absent nodes).
+  - `ProbeRunner`. `Run` asks through a delegate and compares with the previous run (038); `Check` validates the file (035 with a key path).
+  - `ProbeReport` and `ProbeTotals`.
+  - The ports `IProbeFileReader` and `IProbeReportStore`.
+- **Core settings and errors.** `ContextSettings.CascadeDepth` (`context.cascadeDepth`, 0–4, default 2).
+  `ContextErrors.Attention`, the CLI's exit-1 set, moved here from the verbs (S-3a's follow-up).
+- **Features.** `IContextGraph` (`ShowNode`, `Neighbors`, `Path`; `IContextEngine` extends it) over the slices
+  `ShowNode`, `ListNeighbors` and `FindPath`. In `QueryContext`, `QueryRules` accepts the node shape (item and symbol
+  stay 003 until their phases), and `GraphAnswer` builds the `graph`, `affects`, `decisions` and `code` sections, all
+  citing the map version as `C1`. An affects item takes the weakest provenance on its path and is confirmed only if
+  every node and edge is. `ResultAssembly` puts the graph part first, then the records.
+- **Infrastructure.** `ProbeFileReader`: the named file or `context/eval/probes.json`; 036, 005, 035; SHA-256.
+  `FileProbeReportStore`: `context/eval/probes/probes-<time>.json`, 0600 in 0700 folders, the latest by probe file hash.
+- **Sindri.**
+  - Query routes `GET /context/node`, `/neighbors` and `/path`, with their `ContextCalls` services.
+  - CLI `context show | neighbors | path` (`ContextGraphVerbs`) and `context eval probes` (`ContextEvalVerbs`). Probes
+    have no route (a lead decision): the CLI scores over `GET /context/query` and writes the report itself.
+  - Text renderers in `Text/`. `ContextText` prints an affects item's depth and path.
+- **The map import's challenge.** Described in S-3a above. `ProtectedCommandTests` lost its `ImportContextMap`
+  exemption, #192's context-lane waiver.
+
+### Errors
+
+| Code | Kind (HTTP) | CLI exit | Meaning |
+|---|---|---|---|
+| `SND-CONTEXT-035` | Invalid (400) | 1 | The probe file is invalid (shape, unknown key, duplicate or non-slug id, empty question, schema version); key path given; nothing run |
+| `SND-CONTEXT-036` | NotFound (404) | 1 | No probe file: the named one doesn't exist, or none was named and `context/eval/probes.json` doesn't exist |
+| `SND-CONTEXT-037` | Conflict (409) | 1 | A node name matches several nodes; the message lists their keys (fix: ask by key) |
+| `SND-CONTEXT-038` | Conflict (409) | 1 | A probe run scored lower than the previous run of the same file (precision@5 or citation correctness) |
+
+039 is reserved. Neighbors outside depth 0–4 reuse `SND-CONTEXT-006`; a graph read with no map reuses 030; a key, alias
+or name not in the caller's map reuses 003.
+
+### Tests
+
+- **Unit.**
+  - Cascade (the §6.1 fixtures: orientation reaches the tab manager at depth 1 through pane-layout; sibling exclusion;
+    ascend not re-entering own scope; dependency and flow hops; depth cap; cycles; unowned actions; thing anchors).
+  - GraphWalk, AnchorMatch, ProbeScoring and ProbeRunner (numbers by hand; regression; the file check with key paths;
+    the fixture probes.json).
+  - The slices over the fakes (aliases, names, overrides, scrubbed and fenced labels, 003/020/030/037/006, a session's
+    scope); the query's node and text shapes (the Phase 3 signal, depth 0, `--draft` with no draft, text anchors, no map).
+  - Text renderers.
+- **Integration.** `IGraphStore.Snapshot` on SQLite (the contract); the probe file reader and reports folder on disk;
+  one Sindri host test for the three routes, a node query, a session's scope, a bad depth and a foreign Origin; the
+  import challenge (`ContextMapApiTests`).
+- **Fixture.** `surface:command/switch-tab` (part-of the tab manager, restore-layout `on` it) lets the ascend reach the
+  tab manager; S-3a's golden export follows.
+

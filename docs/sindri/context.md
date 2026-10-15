@@ -371,3 +371,113 @@ retained versions past the newest 20 are still there). The `context-purge` servi
 `0` done · `1` attention: not running (`SND-API-001`), refused (`SND-AUTH-002`), out of scope (`003`), a worktree
 path (`005`), session reads off (`020`), no map (`030`), an invalid file (`031`, `032`), outside the exports folder
 (`033`), the file changed (`034`) · `2` a tool error: the store (`004`), a usage error.
+
+## S-3b: the graph: `context query --node`, `show`, `neighbors`, `path`, text anchors, `eval probes`
+
+### Asking about a node
+
+```bash
+$SINDRI context query --node feature:layout.split-pane.orientation [--depth N] [--json]
+# context q_… · anchors: feature:layout.split-pane.orientation · map: v1 · as of …
+#
+# ## graph
+# [C1] Split orientation
+#     trust trusted · anchor
+#     part-of feature:layout.split-pane; implemented-by code:src/layout/SplitPane.ts
+# [C1] Toggle the split orientation
+#     trust trusted · own-scope of feature:layout.split-pane.orientation
+#     on surface:command/toggle-orientation; writes thing:pane-layout
+# …
+# ## affects
+# [C1] Tabs
+#     trust trusted · cascade depth 1
+#     depth 1 · path feature:layout.split-pane.orientation → writes thing:pane-layout → reads action:tab-manager.restore-layout
+#
+# ## code
+# [C1] src/layout/SplitPane.ts (draft)
+# …
+```
+
+`--node` takes a key, an alias (`feature:layout.orientation`) or a node's name (`"Split orientation"`, case
+ignored). A name that two nodes share is `SND-CONTEXT-037` and lists both keys; an unknown one is `SND-CONTEXT-003` with
+suggestions; no map yet is `SND-CONTEXT-030`. Every graph item cites the map version (`map:<repo>/v<N>`, version
+`v<N>` or `v<N>@<commit>`) and says its provenance, whether a human confirmed it (`(draft)` when not) and its trust.
+
+**The cascade (`affects`, spec §6.1).** The anchor's own scope is free: its descendant features, their surfaces and
+those surfaces' actions (the `graph` section). Each step costs 1:
+- **A state hop:** something in scope `writes` a thing that another node `reads`.
+- **A dependency hop:** a feature that `depends-on` it.
+- **A flow hop:** the next step of a shared flow.
+
+A reached surface or action is reported as the feature that owns it. Only the reached node steps on, never that
+feature's other surfaces, so a sibling such as "Pane resize" is never pulled in. The depth is `context.cascadeDepth`
+in the profile (0–4, default 2), and `--depth` overrides it. Each affected node shows its shortest path.
+
+**A session sees only its repo.** A session sees only the nodes its repo implements (`implements` edges with file
+evidence in its `X-Sindri-Repo`) and the edges among them, so its cascade, neighbors and paths stay inside that set;
+anything else is `SND-CONTEXT-003`.
+
+### Text questions find anchors too
+
+```bash
+$SINDRI context query "What else is affected if I change how split orientation works?" --json
+```
+
+A question anchors on every node whose whole name it uses (case ignored, plurals and small words and a parenthesized kind
+such as `(command)` ignored; the most specific name wins), adds that node's `graph` and `affects` sections, and still
+searches the sources with the question's words. `suggestedAnchors` lists close names. With no map, the answer is S-1A's.
+
+### One node, its neighbors, a path
+
+```bash
+$SINDRI context show feature:layout.orientation [--json]        # the node, its aliases, its edges in and out
+$SINDRI context neighbors thing:pane-layout [--depth N] [--json] # nodes within N edges either way (0–4, default 1; else 006)
+$SINDRI context path feature:layout.split-pane.orientation Tabs [--json]   # the shortest path, at most 8 edges
+```
+
+No path within 8 edges is an answer (`no path within 8 edges`, exit 0), not an error. HTTP: `GET
+/sindri/context/node?key=`, `/neighbors?key=&depth=`, `/path?from=&to=` (keys in the query string, URL-escaped).
+
+### Probes
+
+A probe file is JSON, kept outside every repo:
+
+```json
+{ "schemaVersion": 1,
+  "probes": [ { "id": "orientation-cascade",
+                "question": "What else is affected if I change how split orientation works?",
+                "expect": { "nodes": ["feature:layout.split-pane.orientation", "feature:tabs.tab-manager"],
+                            "absentNodes": ["feature:layout.pane-resize"],
+                            "records": ["linear:issue/…"], "files": ["src/layout/SplitPane.ts"], "decisions": [] } } ] }
+```
+
+Ids are unique slugs; questions are 1–2000 characters; unknown keys are refused (`SND-CONTEXT-035` with the key path).
+
+```bash
+$SINDRI context eval probes [--file ~/probes/probes.json] [--json]
+# probes /Users/you/probes/probes.json · map v1 · 8 probe(s)
+#   orientation-cascade      precision@5 0.60  citations 1.00
+#   …
+# mean precision@5 0.3250 · citation correctness 1.0000
+# previous run 2026-10-14T…: precision@5 0.3250 · citation correctness 1.0000
+# no regression
+# report $AW_SINDRI_HOME/context/eval/probes/probes-20261014T….json
+```
+
+Without `--file` it reads `$AW_SINDRI_HOME/context/eval/probes.json` (`SND-CONTEXT-036` when there is none). The CLI
+asks each question through `GET /sindri/context/query`, as whoever runs it, and scores the answer:
+- **precision@5:** the expected nodes, records and files among the answer's first five keys. The keys are each item's
+  node, the nodes on an affects path, and its citations; code and repo-doc keys count as their file paths.
+- **Citation correctness:** the share of items whose citations all resolve with a version.
+- **Absent nodes:** any absent node the answer names is flagged.
+
+The report is written at 0600 under `context/eval/probes/`. A run that scores lower than the previous run of the same
+file prints `REGRESSED: SND-CONTEXT-038` and exits 1. That's the "probes don't regress" line every later phase's signal
+carries.
+
+### Exit codes (graph verbs and probes)
+
+`0` an answer (empty and "no path" included), or a run that didn't regress · `1` attention: not running
+(`SND-API-001`), unknown anchor or out of scope (`003`), a bad depth (`006`), session reads off (`020`), no map
+(`030`), a worktree path (`005`), an invalid or missing probe file (`035`, `036`), an ambiguous name (`037`), a
+regression (`038`) · `2` a tool error.
