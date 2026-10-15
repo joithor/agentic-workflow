@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.ObjectModel;
 using System.Text.Json;
 
 namespace Aw.Kernel;
@@ -10,12 +11,16 @@ namespace Aw.Kernel;
 /// A host that answers HTTP writes them as top-level members of the problem body, after the standard ones; a CLI prints
 /// the message only and ignores them.
 /// </summary>
-public sealed class ErrorExtensions : IReadOnlyList<KeyValuePair<string, JsonElement>>
+/// <remarks>
+/// Two extensions are equal when they hold the same names in the same order with deeply equal values, so an <see cref="Error"/> carrying
+/// them compares by content. A slice should bound its own lists: the Sindri host writes at most 100 items per array.
+/// </remarks>
+public sealed class ErrorExtensions : IReadOnlyList<KeyValuePair<string, JsonElement>>, IEquatable<ErrorExtensions>
 {
     /// <summary>The longest member name.</summary>
     public const int MaxNameLength = 64;
 
-    private static readonly string[] _reserved = ["type", "title", "status", "detail", "instance", "traceId"];
+    private static readonly ReadOnlyCollection<string> _reserved = new(["type", "title", "status", "detail", "instance", "traceId"]);
 
     private readonly KeyValuePair<string, JsonElement>[] _members;
 
@@ -27,7 +32,7 @@ public sealed class ErrorExtensions : IReadOnlyList<KeyValuePair<string, JsonEle
     /// <summary>No extensions.</summary>
     public static ErrorExtensions Empty { get; } = new([]);
 
-    /// <summary>The names an extension may not use: RFC 9457's own members and the host's trace id.</summary>
+    /// <summary>The names an extension may not use, in any letter case: RFC 9457's own members and the host's trace id.</summary>
     public static IReadOnlyList<string> ReservedNames => _reserved;
 
     /// <inheritdoc />
@@ -54,16 +59,21 @@ public sealed class ErrorExtensions : IReadOnlyList<KeyValuePair<string, JsonEle
             }
         }
 
-        return !Array.Exists(_reserved, r => string.Equals(r, name, StringComparison.Ordinal));
+        return !_reserved.Any(r => string.Equals(r, name, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>Returns these extensions with one more member at the end.</summary>
     /// <param name="name">The member name; see <see cref="IsValidName"/>.</param>
     /// <param name="value">The value; a clone is kept, so the caller's document can be disposed.</param>
     /// <returns>The new extensions.</returns>
-    /// <exception cref="ArgumentException">The name isn't valid or is already present (a bug in the slice, not an expected failure).</exception>
+    /// <exception cref="ArgumentException">The name isn't valid or is already present, or the value is undefined (a bug in the slice, not an expected failure).</exception>
     public ErrorExtensions With(string name, JsonElement value)
     {
+        if (value.ValueKind == JsonValueKind.Undefined)
+        {
+            throw new ArgumentException($"The extension '{name}' has no value (an undefined JsonElement).", nameof(value));
+        }
+
         if (!IsValidName(name))
         {
             throw new ArgumentException($"'{name}' isn't a valid extension name: camelCase, at most {MaxNameLength} characters, and not one of {string.Join(", ", _reserved)}.", nameof(name));
@@ -75,6 +85,42 @@ public sealed class ErrorExtensions : IReadOnlyList<KeyValuePair<string, JsonEle
         }
 
         return new([.. _members, new(name, value.Clone())]);
+    }
+
+    /// <inheritdoc />
+    public bool Equals(ErrorExtensions? other)
+    {
+        if (other is null || other._members.Length != _members.Length)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < _members.Length; i++)
+        {
+            if (!string.Equals(_members[i].Key, other._members[i].Key, StringComparison.Ordinal)
+                || !JsonElement.DeepEquals(_members[i].Value, other._members[i].Value))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <inheritdoc />
+    public override bool Equals(object? obj) => Equals(obj as ErrorExtensions);
+
+    /// <inheritdoc />
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        hash.Add(_members.Length);
+        foreach (var member in _members)
+        {
+            hash.Add(member.Key, StringComparer.Ordinal);
+        }
+
+        return hash.ToHashCode();
     }
 
     /// <inheritdoc />

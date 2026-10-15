@@ -250,3 +250,6 @@ const Aw.Kernel.ErrorExtensions.MaxNameLength = 64 -> int
 static Aw.Kernel.ErrorExtensions.Empty.get -> Aw.Kernel.ErrorExtensions!
 static Aw.Kernel.ErrorExtensions.IsValidName(string? name) -> bool
 static Aw.Kernel.ErrorExtensions.ReservedNames.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Kernel.ErrorExtensions.Equals(Aw.Kernel.ErrorExtensions? other) -> bool
+override Aw.Kernel.ErrorExtensions.Equals(object? obj) -> bool
+override Aw.Kernel.ErrorExtensions.GetHashCode() -> int

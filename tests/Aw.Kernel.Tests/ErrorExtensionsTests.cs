@@ -93,7 +93,49 @@ public sealed class ErrorExtensionsTests
         Assert.DoesNotContain("xtension", plain, StringComparison.Ordinal);
     }
 
-    private static JsonElement Element(string json) => JsonDocument.Parse(json).RootElement.Clone();
+    [Fact]
+    public void Extensions_with_equal_content_are_equal_and_so_are_the_errors_carrying_them()
+    {
+        var a = _base.WithExtension("candidates", Element("""[{"k":1}]""")).WithExtension("n", Element("2"));
+        var b = _base.WithExtension("candidates", Element("""[{"k":1}]""")).WithExtension("n", Element("2"));
+
+        Assert.Equal(a.Extensions, b.Extensions);
+        Assert.Equal(a.Extensions!.GetHashCode(), b.Extensions!.GetHashCode());
+        Assert.Equal(a, b);
+    }
+
+    [Fact]
+    public void Extensions_that_differ_in_value_or_order_are_not_equal()
+    {
+        var a = _base.WithExtension("x", Element("1")).WithExtension("y", Element("2"));
+
+        Assert.NotEqual(a, _base.WithExtension("x", Element("1")).WithExtension("y", Element("3")));
+        Assert.NotEqual(a, _base.WithExtension("y", Element("2")).WithExtension("x", Element("1")));
+        Assert.NotEqual(a, _base);
+    }
+
+    [Theory]
+    [InlineData("traceID")]
+    [InlineData("detaiL")]
+    [InlineData("staTus")]
+    public void A_reserved_name_is_refused_whatever_its_case(string name) => Assert.False(ErrorExtensions.IsValidName(name));
+
+    [Fact]
+    public void The_reserved_names_cannot_be_mutated_through_a_cast()
+    {
+        Assert.False(ErrorExtensions.ReservedNames is string[]);
+        Assert.True(ErrorExtensions.ReservedNames is not System.Collections.Generic.IList<string> list || list.IsReadOnly);
+    }
+
+    [Fact]
+    public void An_undefined_value_is_an_ArgumentException() =>
+         Assert.Throws<ArgumentException>(() => _base.WithExtension("x", default));
+
+    private static JsonElement Element(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return document.RootElement.Clone();
+    }
 
     internal sealed record Anchor(string Key, string Label);
 }
