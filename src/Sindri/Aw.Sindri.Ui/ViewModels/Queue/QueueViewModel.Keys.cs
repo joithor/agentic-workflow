@@ -50,18 +50,32 @@ internal sealed partial class QueueViewModel
         _holding = holding;
         if (!holding)
         {
-            ShowHeld();
+            _ = Release();
         }
     }
 
-    /// <summary>The pill: shows the held rows now.</summary>
-    internal void ShowHeld()
+    /// <summary>The pill: shows the held rows now, and moves focus to the first of them (the pill hides as it is pressed).</summary>
+    /// <param name="scope">The page whose pill was pressed.</param>
+    internal void ShowHeld(QueueScope scope = QueueScope.Page)
     {
-        if (_held is { } view)
+        var known = Navigable(scope).Select(r => r.Id).ToHashSet(StringComparer.Ordinal);
+        if (Release() && Navigable(scope).FirstOrDefault(r => !known.Contains(r.Id)) is { } first)
         {
-            (_held, HeldCount) = (null, 0);
-            Apply(view);
+            FocusRequested?.Invoke(this, new FocusRequestedEventArgs(first.Id, onlyIfLost: false));
         }
+    }
+
+    // Shows what is held; false when nothing was.
+    private bool Release()
+    {
+        if (_held is not { } view)
+        {
+            return false;
+        }
+
+        (_held, HeldCount) = (null, 0);
+        Apply(view);
+        return true;
     }
 
     /// <summary>`/`: opens the filter field.</summary>

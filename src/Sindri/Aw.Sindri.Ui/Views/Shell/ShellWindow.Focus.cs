@@ -28,8 +28,8 @@ internal sealed partial class ShellWindow
             shell.Queue.FocusRequested -= OnFocusRow;
         }
 
-        PropertyChangedEventHandler[] handlers = [OnShellChanged, OnBannerChanged, OnOverlayChanged, OnOverlayChanged, OnOverlayChanged];
-        INotifyPropertyChanged[] sources = [shell, shell.Health.Banner, shell.Palette, shell.Shortcuts, shell.Create];
+        PropertyChangedEventHandler[] handlers = [OnShellChanged, OnBannerChanged, OnOverlayChanged, OnOverlayChanged, OnOverlayChanged, OnQueueChanged];
+        INotifyPropertyChanged[] sources = [shell, shell.Health.Banner, shell.Palette, shell.Shortcuts, shell.Create, shell.Queue];
         for (var i = 0; i < sources.Length; i++)
         {
             if (on)
@@ -48,6 +48,15 @@ internal sealed partial class ShellWindow
     {
         if (string.Equals(e.PropertyName, nameof(Banner.IsShown), StringComparison.Ordinal)
             || string.Equals(e.PropertyName, nameof(Banner.HasRebuild), StringComparison.Ordinal))
+        {
+            Dispatcher.UIThread.Post(KeepFocus, DispatcherPriority.Loaded);
+        }
+    }
+
+    // The "N new" pill hides when what it held is shown, also when the pointer leaves: focus on it moves on.
+    private void OnQueueChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (string.Equals(e.PropertyName, nameof(ViewModels.Queue.QueueViewModel.HasHeld), StringComparison.Ordinal) && Shell?.Queue.HasHeld == false)
         {
             Dispatcher.UIThread.Post(KeepFocus, DispatcherPriority.Loaded);
         }
