@@ -59,8 +59,8 @@ aw_confirm() {
   [ "$answer" = "y" ]
 }
 
-# True if a symlink target string points into this toolkit checkout (or a
-# previous install of it under the legacy repo name).
+# True if a symlink target string points into this toolkit checkout (or
+# another checkout of it).
 aw_is_ours() {
   local link_target="$1"
   local toolkit_canon
@@ -69,7 +69,6 @@ aw_is_ours() {
     "$TOOLKIT_DIR"/*|"$toolkit_canon"/*) return 0 ;;
     "$AW_STATE_ROOT/toolkit/"*) return 0 ;;
     */agentic-workflow/*|*/agentic-workflow-*) return 0 ;;
-    */vitalize-workflow-toolkit/*|*/vitalize-workflow-toolkit-*) return 0 ;;
   esac
   return 1
 }
