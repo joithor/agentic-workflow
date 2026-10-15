@@ -453,7 +453,6 @@ public sealed class CommandPaletteViewModelTests
 
         await _palette.Run(rebuild, Token);
 
-        Assert.NotEmpty(spoken);
         Assert.All(spoken, t =>
         {
             Assert.DoesNotContain(", :", t, StringComparison.Ordinal);

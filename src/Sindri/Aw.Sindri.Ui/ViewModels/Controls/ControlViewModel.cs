@@ -153,10 +153,10 @@ internal sealed partial class ControlViewModel : ObservableObject
         }
 
         var run = ++_runs;
-        (ErrorCode, ErrorDetail, Outcome) = (string.Empty, string.Empty, string.Empty);
         IsAnnouncing = false;   // dark first, then the resting text: an outcome the same as the last one is still a change, and the label is not spoken
         Announce(Label);
-        Phase = CommandPhase.Sending;
+        Phase = CommandPhase.Sending;   // before the old outcome is cleared: an entry showing Failed or Accepted never reads half-cleared (", :")
+        (ErrorCode, ErrorDetail, Outcome) = (string.Empty, string.Empty, string.Empty);
         _ = AnnounceSending(run, cancellationToken);
         var answer = await send(cancellationToken).ConfigureAwait(true);
         if (answer.IsError)
