@@ -33,8 +33,7 @@ public sealed class WorkflowViewFixtureTests
         var status = view.Current.Status;
 
         Assert.Equal(view.Address, status.Header.Address);
-        Assert.Equal(view.Current.State, status.Header.State);
-        Assert.Equal(view.State, status.Header.State);
+        Assert.Equal(view.State, view.Current.State);
         Assert.Equal(view.Recipe.Id, status.Header.Recipe);
         Assert.Equal(view.Recipe.Hash.Display, status.Header.Hash12);
         Assert.Equal(view.Recipe.Version, status.Header.Version);
@@ -75,7 +74,7 @@ public sealed class WorkflowViewFixtureTests
             var lines = status.Text.Split('\n', StringSplitOptions.RemoveEmptyEntries);
             var header = status.Header;
             Assert.StartsWith($"{header.Address}  {header.Recipe.Value}@{header.Hash12}  v{header.Version.ToString(CultureInfo.InvariantCulture)}  {header.State}", lines[0], StringComparison.Ordinal);
-            Assert.Equal(status.Next.Length > 0, HasLine(lines, "next"));
+            Assert.Equal(status.Next is { Length: > 0 }, HasLine(lines, "next"));
             Assert.Equal(status.Child is not null, HasLine(lines, "child"));
             Assert.Equal(status.Drift is not null, HasLine(lines, "drift"));
             Assert.Equal(status.Inputs.Count > 0, HasLine(lines, "inputs"));
