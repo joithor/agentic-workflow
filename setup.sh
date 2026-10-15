@@ -339,8 +339,11 @@ else
   if [ "$_build_csharp" = "1" ]; then
     if ! docker image inspect "serena-local:${SERENA_VERSION}-csharp" &>/dev/null; then
       echo "Building serena-local:${SERENA_VERSION}-csharp (~15 min — .NET SDK download)..."
+      # No --pull here: this image's FROM is the local serena-local:${SERENA_VERSION}
+      # (not a registry image), so --pull would force Docker to resolve it against
+      # docker.io and fail with "pull access denied". The base build above uses --pull
+      # because its FROM is the remote ghcr.io/oraios/serena. (Matches the Swift build.)
       docker build \
-        --pull \
         --progress plain \
         --build-arg LOCAL_TAG="${SERENA_VERSION}" \
         -t "serena-local:${SERENA_VERSION}-csharp" \
