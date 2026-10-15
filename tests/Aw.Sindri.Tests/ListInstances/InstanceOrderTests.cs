@@ -61,10 +61,11 @@ public sealed class InstanceOrderTests
             Row("desk-task", "T-3/step/1", label: "A")));
 
     [Fact]
-    public void Key_4_an_instance_with_no_subject_sorts_as_an_empty_label() =>
-        Assert.Equal(["T-2/step/1", "T-1/step/1"], Sorted(
-            Row("desk-task", "T-1/step/1", label: "a"),
-            Row("desk-task", "T-2/step/1")));
+    public void Key_4_an_instance_with_no_subject_sorts_by_the_label_its_row_shows_which_is_its_address() =>
+        Assert.Equal(["T-2/step/1", "T-1/step/1", "T-3/step/1"], Sorted(
+            Row("desk-task", "T-3/step/1", label: "U"),
+            Row("desk-task", "T-1/step/1"),
+            Row("desk-task", "T-2/step/1", label: "A")));   // 'A' < 'T-1/step/1' < 'U': an empty label would have put the subject-less row first
 
     [Fact]
     public void The_address_is_the_final_tiebreak_by_ordinal_comparison() =>

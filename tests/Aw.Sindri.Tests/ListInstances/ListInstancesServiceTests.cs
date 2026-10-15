@@ -7,8 +7,8 @@ using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ListInstances;
 using Aw.Sindri.Tests.GetInstance;
-using RecipeUrgency = Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency;
 using Microsoft.Extensions.Time.Testing;
+using RecipeUrgency = Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency;
 
 namespace Aw.Sindri.Tests.ListInstances;
 
@@ -160,6 +160,25 @@ public sealed class ListInstancesServiceTests
             View("escalated-gate", "T-2/step/1"));
 
         Assert.Equal(["T-2/step/1", "T-3/step/1", "T-1/step/1"], result.Value.Instances.Select(static v => v.Address.Value), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task An_instance_that_is_still_starting_is_a_queued_row_beside_the_others_not_a_failed_list()
+    {
+        var address = InstanceAddress.From("T-9/step/1");
+        var starting = new InstanceView(address, StatusCases.View("desk-task").Recipe, InstanceViews.StartingState, Detail: null, StatusCases.Now, string.Empty, [], Question: null, Task: null, Run: null, Children: [], Outcome: null)
+        {
+            Id = WorkflowInstanceId.Of(address),
+        };
+
+        var (result, _) = await Run(new ListInstancesRequest(Recipe: "workflow.step"), View("desk-task", "T-3/step/1"), starting, View("taken-over", "T-4/step/1"));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(3, result.Value.Rows.Count);
+        var row = Assert.Single(result.Value.Rows, static r => r.Address.Value == "T-9/step/1");
+        Assert.Equal(("QUEUED", "queued", "starting"), (row.Chip.Word, row.Now, row.State));
+        Assert.Contains(result.Value.Rows, static r => r.Chip.Word == "DECISION");
+        Assert.Contains(result.Value.Rows, static r => r.Chip.Word == "WITH YOU");
     }
 
     [Fact]

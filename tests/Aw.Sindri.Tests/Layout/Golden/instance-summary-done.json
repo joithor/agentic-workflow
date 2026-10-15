@@ -1,0 +1,117 @@
+{
+  "address": "T-3/step/1",
+  "id": "WFI-95a5c2820bd88ec39379892be8909567",
+  "itemId": "T-3",
+  "recipe": {
+    "id": "workflow.step",
+    "hash": "sha256:1b13bd920351e56227141fe24e59f2f90cb46bc3549e1e90f2da2af1c3be9f5c",
+    "version": 1,
+    "urgency": "work"
+  },
+  "state": "done",
+  "chip": {
+    "word": "DONE",
+    "tone": "neutral"
+  },
+  "since": "2026-10-11T11:59:00.0000000Z",
+  "engineOwned": null,
+  "subject": {
+    "kind": "payload",
+    "key": "fact:spec",
+    "label": "spec.md",
+    "href": null
+  },
+  "inputs": [
+    {
+      "key": "fact:spec",
+      "label": "spec",
+      "kind": "payload",
+      "required": true,
+      "present": true
+    }
+  ],
+  "states": [
+    {
+      "id": "produce",
+      "order": 1,
+      "branchOf": null,
+      "glyph": "done",
+      "badge": null,
+      "round": null,
+      "loops": [
+        {
+          "with": "verify",
+          "n": 0,
+          "max": 3
+        },
+        {
+          "with": "checks",
+          "n": 0,
+          "max": 3
+        }
+      ],
+      "desk": true,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "checks",
+      "order": 2,
+      "branchOf": null,
+      "glyph": "done",
+      "badge": null,
+      "round": null,
+      "loops": [
+        {
+          "with": "produce",
+          "n": 0,
+          "max": 3
+        }
+      ],
+      "desk": true,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "verify",
+      "order": 3,
+      "branchOf": null,
+      "glyph": "done",
+      "badge": null,
+      "round": null,
+      "loops": [
+        {
+          "with": "produce",
+          "n": 0,
+          "max": 3
+        }
+      ],
+      "desk": true,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "done",
+      "order": 4,
+      "branchOf": null,
+      "glyph": "done",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": "resolved",
+      "terminal": true
+    }
+  ],
+  "now": "resolved",
+  "answer": null,
+  "actions": []
+}

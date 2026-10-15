@@ -34,12 +34,17 @@ internal sealed class ItemFactActivities(WorkflowsHome home)
     /// first line, a link's tracker key, a payload's id) without I/O in workflow code.
     /// </summary>
     /// <param name="fact">The stored first input.</param>
-    /// <returns>Its text.</returns>
+    /// <returns>Its text; null when it is not stored.</returns>
     [Activity("ReadSubject")]
-    public async Task<string> ReadSubjectAsync(FactValue fact)
+    public async Task<string?> ReadSubjectAsync(FactValue fact)
     {
         ArgumentNullException.ThrowIfNull(fact);
         var file = Path.Combine(home.FactsDirectory, Path.GetFileName(fact.Sha256));
+        if (!File.Exists(file))
+        {
+            return null;   // boundary: content that is not stored leaves the subject named by its fact key
+        }
+
         var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, FileOptions.Asynchronous);
         await using (stream.ConfigureAwait(false))
         {

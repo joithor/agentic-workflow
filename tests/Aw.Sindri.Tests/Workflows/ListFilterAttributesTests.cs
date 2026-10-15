@@ -1,7 +1,9 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Infrastructure.Workflows;
 using Temporalio.Client;
 using Temporalio.Worker;
@@ -17,10 +19,11 @@ namespace Aw.Sindri.Tests.Workflows;
 [Lane(TestLane.Integration)]
 public sealed class ListFilterAttributesTests : IDisposable
 {
+    /// <summary>The queries 'workflow list --urgency work' and '--root true' send, as the production code builds them (not copies of its text).</summary>
     private static readonly string[] _nullQueries =
     [
-        "WorkflowType = 'ParentOfRecipe' AND (Urgency = 'work' OR Urgency IS NULL)",
-        "WorkflowType = 'ParentOfRecipe' AND (Root = true OR Root IS NULL)",
+        "WorkflowType = 'ParentOfRecipe' AND " + InstanceFilters.ToQuery(new InstanceFilter(Urgency: RecipeUrgency.Work)),
+        "WorkflowType = 'ParentOfRecipe' AND " + InstanceFilters.ToQuery(new InstanceFilter(Root: true)),
     ];
 
     private readonly WorkflowsHarness _harness = new();
