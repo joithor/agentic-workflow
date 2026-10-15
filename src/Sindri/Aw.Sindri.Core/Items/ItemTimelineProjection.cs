@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.Text.Json;
+using Aw.Kernel;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
@@ -10,17 +12,31 @@ namespace Aw.Sindri.Core.Items;
 /// <param name="scrubber">Scrubs secrets out of each line.</param>
 internal sealed class ItemTimelineProjection(JsonSerializerOptions json, ITextScrubber scrubber) : IProjection
 {
+    private const int LineMax = 300;
+
     public IReadOnlyList<string> Views => [ViewNames.ItemTimeline];
 
-    public bool Handles(string eventType) => throw new NotSupportedException("ItemTimelineProjection.Handles: P3 unit C makes it pass");
+    public bool Handles(string eventType) => true;   // any event type can carry an item (the ledger's Item column decides)
 
-    public ValueTask<Result<Unit>> Apply(LedgerEvent recorded, IViewRows rows, CancellationToken cancellationToken)
-        => throw new NotSupportedException($"ItemTimelineProjection.Apply: P3 unit C makes it pass ({json is null} {scrubber is null})");
+    public async ValueTask<Result<Unit>> Apply(LedgerEvent recorded, IViewRows rows, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(recorded);
+        ArgumentNullException.ThrowIfNull(rows);
+        if (recorded.Item is not { } item)
+        {
+            return Unit.Value;
+        }
+
+        var envelope = recorded.Envelope;
+        var line = SafeText.Clean(scrubber, TimelineLine.For(recorded, json), LineMax);
+        var row = new TimelineRow(recorded.Sequence, envelope.OccurredAt, envelope.Type, envelope.Actor, line);
+        return await rows.Put(ViewNames.ItemTimeline, Key(item, recorded.Sequence), row, cancellationToken).ConfigureAwait(false);
+    }
 
     /// <summary>The timeline key of the event at <paramref name="sequence"/> about <paramref name="item"/>.</summary>
     /// <param name="item">The item id.</param>
     /// <param name="sequence">The ledger sequence.</param>
     /// <returns>'&lt;item&gt;/&lt;sequence:D19&gt;'.</returns>
     public static string Key(string item, long sequence)
-        => throw new NotSupportedException("ItemTimelineProjection.Key: P3 unit C makes it pass");
+        => string.Create(CultureInfo.InvariantCulture, $"{item}/{sequence:D19}");
 }

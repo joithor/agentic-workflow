@@ -1,3 +1,4 @@
+using Aw.Kernel;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Views;
@@ -10,15 +11,30 @@ internal sealed class ItemAliasesProjection(EventFactory events) : IProjection
 {
     public IReadOnlyList<string> Views => [ViewNames.ItemAliases];
 
-    public bool Handles(string eventType) => throw new NotSupportedException("ItemAliasesProjection.Handles: P3 unit C makes it pass");
+    public bool Handles(string eventType) => string.Equals(eventType, EventTypes.ItemLinked, StringComparison.Ordinal);
 
-    public ValueTask<Result<Unit>> Apply(LedgerEvent recorded, IViewRows rows, CancellationToken cancellationToken)
-        => throw new NotSupportedException($"ItemAliasesProjection.Apply: P3 unit C makes it pass ({events is null})");
+    public async ValueTask<Result<Unit>> Apply(LedgerEvent recorded, IViewRows rows, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(rows);
+        var linked = events.Payload<ItemLinked>(recorded);
+        if (linked.IsError)
+        {
+            return linked.Error;
+        }
+
+        return linked.Value.Alias is { } alias
+            ? await rows.Put(ViewNames.ItemAliases, alias.Value, Fold(linked.Value, recorded), cancellationToken).ConfigureAwait(false)
+            : Unit.Value;
+    }
 
     /// <summary>The row an 'item.linked' with an alias makes.</summary>
-    /// <param name="linked">The payload.</param>
+    /// <param name="linked">The payload; its alias must be set.</param>
     /// <param name="recorded">The recorded event.</param>
     /// <returns>The row.</returns>
     public static AliasRow Fold(ItemLinked linked, LedgerEvent recorded)
-        => throw new NotSupportedException("ItemAliasesProjection.Fold: P3 unit C makes it pass");
+    {
+        ArgumentNullException.ThrowIfNull(linked);
+        ArgumentNullException.ThrowIfNull(recorded);
+        return new AliasRow(linked.Alias ?? throw new ArgumentException("An alias row needs an alias", nameof(linked)), linked.Item, linked.Record, recorded.Sequence);
+    }
 }

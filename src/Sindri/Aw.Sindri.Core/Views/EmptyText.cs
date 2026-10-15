@@ -82,17 +82,5 @@ public static class EmptyText
         return views.Text ?? (empty ? emptySentence() : null);
     }
 
-    private static string Name(ItemState state) => state switch
-    {
-        ItemState.New => "new",
-        ItemState.Queued => "queued",
-        ItemState.Running => "running",
-        ItemState.NeedsDecision => "needs-decision",
-        ItemState.NeedsAnswer => "needs-answer",
-        ItemState.Parked => "parked",
-        ItemState.TakenOver => "taken-over",
-        ItemState.Done => "done",
-        ItemState.Cancelled => "cancelled",
-        _ => throw new ArgumentOutOfRangeException(nameof(state), state, "not an item state"),
-    };
+    private static string Name(ItemState state) => ItemStateNames.Of(state);
 }
