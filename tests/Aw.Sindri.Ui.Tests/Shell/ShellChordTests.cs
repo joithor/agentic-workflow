@@ -123,6 +123,35 @@ public sealed class ShellChordTests
         Assert.Equal(HomeFilter.All, shell.HomeFilter);
     }
 
+    // GoTo(page, filter) sets the filter once: G D with the filter already Decisions raises no HomeFilter change at all
+    // (it is not cleared and set again), and from All it changes once (corr-3).
+    [Fact]
+    public async Task G_D_sets_the_Home_filter_once_and_a_repeat_changes_nothing()
+    {
+        var shell = await Shell();
+        var changes = 0;
+        shell.PropertyChanged += (_, e) => changes += string.Equals(e.PropertyName, nameof(ShellViewModel.HomeFilter), StringComparison.Ordinal) ? 1 : 0;
+
+        _ = shell.PressKey("G");
+        _ = shell.PressKey("D");
+        Assert.Equal(1, changes);
+        _ = shell.PressKey("G");
+        _ = shell.PressKey("D");
+
+        Assert.Equal(1, changes);
+        Assert.Equal(HomeFilter.Decisions, shell.HomeFilter);
+    }
+
+    [Fact]
+    public async Task GoTo_with_a_filter_shows_the_page_with_that_filter()
+    {
+        var shell = await Shell();
+
+        shell.GoTo(PageId.Home, HomeFilter.Decisions);
+
+        Assert.Equal((PageId.Home, HomeFilter.Decisions), (shell.CurrentPage, shell.HomeFilter));
+    }
+
     [Fact]
     public async Task G_D_on_Home_with_the_filter_already_set_keeps_it()
     {

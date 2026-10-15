@@ -190,6 +190,15 @@ internal sealed partial class ShellViewModel : ObservableObject
         Remember(p => p with { LastPage = page.ToString() });
     }
 
+    /// <summary>Shows a page with a Home filter.</summary>
+    /// <param name="page">The page.</param>
+    /// <param name="filter">The Home filter.</param>
+    internal void GoTo(PageId page, HomeFilter filter)
+    {
+        GoTo(page);
+        SetHomeFilter(filter);
+    }
+
     /// <summary>
     /// Esc on Settings over the Not running card: back to the page it was opened from, so the card shows again. While
     /// connected Settings is a page like any other, and Esc leaves it where it is.
