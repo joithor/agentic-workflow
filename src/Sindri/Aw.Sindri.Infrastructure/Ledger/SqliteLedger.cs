@@ -8,8 +8,10 @@ using Aw.Sindri.Core.Ledger;
 namespace Aw.Sindri.Infrastructure.Ledger;
 
 /// <summary>The ledger's event log in SQLite: each append checks the lease epoch and the idempotency key in the same write transaction.</summary>
-internal sealed class SqliteLedger(LedgerDatabase database) : ILedgerStore
+internal sealed class SqliteLedger(LedgerDatabase database, ILedgerSignal signal) : ILedgerStore
 {
+    internal ILedgerSignal Signal { get; } = signal;
+
     private readonly SqliteLedgerReader _reads = new(database);
 
     public async ValueTask<Result<LedgerAppend>> Append(LedgerEntry entry, LeaseGrant grant, CancellationToken cancellationToken)

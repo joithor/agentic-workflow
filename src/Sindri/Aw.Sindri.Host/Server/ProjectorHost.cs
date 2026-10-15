@@ -1,11 +1,15 @@
+using Aw.Sindri.Core.Ledger;
+
 namespace Aw.Sindri.Host.Server;
 
 /// <summary>
 /// Runs the projector while 'sindri serve' runs: a pass, then a second's wait on the clock (P5's ledger signal replaces
 /// the poll). A stalled projector's pass is a no-op until its 30 s retry (Projector.StallRetry).
 /// </summary>
-internal sealed partial class ProjectorHost(Projector projector, TimeProvider clock, ILogger<ProjectorHost> log) : BackgroundService
+internal sealed partial class ProjectorHost(Projector projector, ILedgerSignal signal, TimeProvider clock, ILogger<ProjectorHost> log) : BackgroundService
 {
+    internal ILedgerSignal Signal { get; } = signal;
+
     private static readonly TimeSpan _tick = TimeSpan.FromSeconds(1);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
