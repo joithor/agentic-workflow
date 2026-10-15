@@ -1,3 +1,5 @@
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Testing;
 
@@ -15,7 +17,14 @@ internal sealed class ViewsHarness
     public ViewsHarness()
     {
         Progress = new ProjectorProgress(Slice.Clock);
-        _projections = [new ServicesProjection(Slice.Events), new ProfileProjection(Slice.Events)];
+        _projections =
+        [
+            new ServicesProjection(Slice.Events),
+            new ProfileProjection(Slice.Events),
+            new ItemsProjection(Slice.Events, new PassThroughScrubber()),
+            new ItemAliasesProjection(Slice.Events),
+            new ItemTimelineProjection(SliceHarness.Json, new PassThroughScrubber()),
+        ];
     }
 
     public SliceHarness Slice { get; } = new();
@@ -30,6 +39,16 @@ internal sealed class ViewsHarness
         var ct = TestContext.Current.CancellationToken;
         _ = (await Views.Open(ViewSchema.Version, ct)).Value;
         var applied = (await Views.Apply([Recorded.Of(Slice.Events, type, payload, ++_sequence)], _projections, Slice.Clock.GetUtcNow(), ct)).Value;
+        Assert.Null(applied.Stall);
+        Publish(stalledAt: null);
+    }
+
+    /// <summary>Folds one recorded <paramref name="type"/> event about <paramref name="item"/>, as the ledger stores it with its item set.</summary>
+    public async Task Fold<TPayload>(string type, TPayload payload, ItemId item)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _ = (await Views.Open(ViewSchema.Version, ct)).Value;
+        var applied = (await Views.Apply([Recorded.Of(Slice.Events, type, payload, ++_sequence, item)], _projections, Slice.Clock.GetUtcNow(), ct)).Value;
         Assert.Null(applied.Stall);
         Publish(stalledAt: null);
     }

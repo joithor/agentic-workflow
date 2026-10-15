@@ -22,6 +22,17 @@ public interface IViewReader
     public ValueTask<Result<IReadOnlyList<TRow>>> List<TRow>(string view, CancellationToken cancellationToken)
         where TRow : class;
 
+    /// <summary>The rows of <paramref name="view"/> whose keys sort after <paramref name="afterKey"/> and before <paramref name="beforeKey"/> (both exclusive), in key order, at most <paramref name="max"/>.</summary>
+    /// <typeparam name="TRow">The row record.</typeparam>
+    /// <param name="view">A <see cref="ViewNames"/> name.</param>
+    /// <param name="afterKey">The lower bound (exclusive).</param>
+    /// <param name="beforeKey">The upper bound (exclusive), or null for none.</param>
+    /// <param name="max">The most rows to return.</param>
+    /// <param name="cancellationToken">Cancels the operation.</param>
+    /// <returns>The rows.</returns>
+    public ValueTask<Result<IReadOnlyList<TRow>>> Range<TRow>(string view, string afterKey, string? beforeKey, int max, CancellationToken cancellationToken)
+        where TRow : class;
+
     /// <summary>The projector_state row, or null when the views store doesn't exist (doctor reads it while stopped).</summary>
     /// <param name="cancellationToken">Cancels the operation.</param>
     /// <returns>The state, if any.</returns>

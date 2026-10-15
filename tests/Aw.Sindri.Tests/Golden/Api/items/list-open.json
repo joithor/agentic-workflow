@@ -1,0 +1,54 @@
+{
+  "items": [
+    {
+      "id": "ITM-0000000000000000000000000000000e",
+      "title": "Item 1",
+      "repo": "demo",
+      "state": "new",
+      "step": null,
+      "since": "2026-01-01T00:00:00.0000000Z",
+      "primaryAction": null,
+      "actions": [
+        "CloseItem:done",
+        "CloseItem:cancelled"
+      ],
+      "owner": null
+    },
+    {
+      "id": "ITM-00000000000000000000000000000013",
+      "title": "Item 2",
+      "repo": "demo",
+      "state": "new",
+      "step": null,
+      "since": "2026-01-01T00:00:00.0000000Z",
+      "primaryAction": null,
+      "actions": [
+        "CloseItem:done",
+        "CloseItem:cancelled"
+      ],
+      "owner": null
+    },
+    {
+      "id": "ITM-00000000000000000000000000000018",
+      "title": "Item 3",
+      "repo": "demo",
+      "state": "new",
+      "step": null,
+      "since": "2026-01-01T00:00:00.0000000Z",
+      "primaryAction": null,
+      "actions": [
+        "CloseItem:done",
+        "CloseItem:cancelled"
+      ],
+      "owner": null
+    }
+  ],
+  "empty": null,
+  "asOf": {
+    "cursor": 10,
+    "ledgerHead": 10,
+    "projectedAt": "2026-01-01T00:00:00.0000000Z",
+    "rebuilding": false,
+    "stalled": false
+  }
+}

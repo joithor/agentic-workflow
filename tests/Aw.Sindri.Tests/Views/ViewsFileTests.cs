@@ -39,7 +39,9 @@ public sealed class ViewsFileTests : IDisposable
         var state = await views.Reader.State(Token);
         var rows = await views.Reader.List<ServiceRow>(ViewNames.Services, Token);
         var row = await views.Reader.Get<ServiceRow>(ViewNames.Services, "any", Token);
+        var range = await views.Reader.Range<TimelineRow>(ViewNames.ItemTimeline, "", beforeKey: null, 10, Token);
 
+        Assert.Empty(range.Value);
         Assert.Null(state.Value);
         Assert.Empty(rows.Value);
         Assert.Null(row.Value);
@@ -54,7 +56,51 @@ public sealed class ViewsFileTests : IDisposable
         var migrated = await runner.Migrate(ViewsDatabase.Migrations, Token);
 
         Assert.True(migrated.IsSuccess, migrated.IsError ? migrated.Error.Message : null);
-        Assert.Equal(["projector_state", "view_profile", "view_services"], Tables(path));
+        Assert.Equal(["projector_state", "view_item_aliases", "view_item_timeline", "view_items", "view_profile", "view_services"], Tables(path));
+        Assert.Equal(["key", "row_json", "seq", "owner"], Columns(path, "view_items"));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_views_db_at_schema_version_1_gains_the_item_tables_and_is_rebuilt()
+    {
+        var path = Path.Combine(_home.Path, "views.db");
+        var runner = new MigrationRunner(new SqliteConnectionFactory(new SqliteOptions(path)), new FakeTimeProvider(), backupBeforeUpgrade: false);
+        Assert.True((await runner.Migrate([ViewsDatabase.Migrations[0]], Token)).IsSuccess);
+        Exec(path, "INSERT INTO projector_state (id, cursor, schema_version, rebuilding) VALUES (1, 7, 1, 0)");
+        Assert.DoesNotContain("view_items", Tables(path), StringComparer.Ordinal);
+
+        using var views = new SqliteViews(_home.Path);
+        var opened = (await views.Store.Open(ViewSchema.Version, Token)).Value;
+
+        Assert.Equal(1, opened.SchemaVersion);   // the file's own version: the projector sees it differs and resets
+        Assert.Contains("view_items", Tables(path), StringComparer.Ordinal);
+        var reset = (await views.Store.Reset(ViewNames.All, ViewSchema.Version, new FakeTimeProvider().GetUtcNow(), Token)).Value;
+        Assert.True(reset is { Cursor: 0, Rebuilding: true, SchemaVersion: ViewSchema.Version });
+    }
+
+    private static void Exec(string path, string sql)
+    {
+        using var connection = new SqliteConnection($"Data Source={path};Pooling=False");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        _ = command.ExecuteNonQuery();
+    }
+
+    private static List<string> Columns(string path, string table)
+    {
+        using var connection = new SqliteConnection($"Data Source={path};Mode=ReadOnly;Pooling=False");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = $"SELECT name FROM pragma_table_info('{table}') ORDER BY cid";
+        using var reader = command.ExecuteReader();
+        var names = new List<string>();
+        while (reader.Read())
+        {
+            names.Add(reader.GetString(0));
+        }
+
+        return names;
     }
 
     private static List<string> Tables(string path)

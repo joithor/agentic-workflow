@@ -10,7 +10,7 @@
 # temporal): doctor with nothing running, start headless with an unapproved profile, a second serve refused by the lease,
 # the approve preview and its non-terminal refusal, a session's typed approve refused (SND-AUTH-002), the human's typed
 # approval, status (text and --json's apiVersion), /sindri/mcp's initialize and tools/list as a stateless MCP client,
-# the views rebuild refused to a session and requested by the human, status's views and health lines, a session's stop refused, the human's stop, status and doctor again (doctor with HOME on an empty scratch dir, so its
+# the views rebuild refused to a session and requested by the human, status's views and health lines, the item verbs (API P3: a human's item add, the queue and the item list, a session's item add refused, the human's item close, the done list and the queue again), a session's stop refused, the human's stop, status and doctor again (doctor with HOME on an empty scratch dir, so its
 # context:mcp-scope row never reads the real provider files);
 # then recipe validate on the shipped recipes (their hashes; workflow.item reads its child beside it) and on an invalid
 # fixture (RCP-REACH-001, exit 1). The normalized output (pids, ports, hashes, times, the host name and the temp path
@@ -134,6 +134,13 @@ settle() { # the projector has caught up and isn't rebuilding (it polls once a s
     sleep 0.25
   done
 }
+items_in() { # $1 = state, $2 = count: the items view lists that many in that state (the projector polls once a second)
+  local i
+  for i in $(seq 1 40); do
+    jq -e --argjson n "$2" '.items | length == $n' <<<"$(bounded "$bin" items --state "$1" --json </dev/null 2>/dev/null)" >/dev/null 2>&1 && return 0
+    sleep 0.25
+  done
+}
 session_tty() { # an agent session at a terminal (the CLI's own terminal check passes, so the server decides)
   echo "## sindri $* (session, terminal)"
   local rc=0
@@ -161,6 +168,16 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   human views rebuild </dev/null
   settle
   run status
+  human item add "Smoke item" </dev/null
+  items_in new 1
+  run queue
+  run items --state new
+  session item add "Refused by the desk"
+  item="$(bounded "$bin" items --json </dev/null | jq -r '.items[0].id')"
+  human item close "$item" </dev/null
+  items_in done 1
+  run items --state done
+  run queue
   session stop
   human stop </dev/null
   run status

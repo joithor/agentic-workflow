@@ -37,6 +37,7 @@ public sealed class GoldenContractTests
         "stop", "profile-approve", "profile",
         "workflow-instances", "workflow-instance", "workflow-instance-fact", "workflow-status", "workflow-recipe",
         "context-filemap", "context-lenses", "context-map", "context-map-promote", "context-map-proposals", "context-map-review", "context-map-review-history", "context-node",
+        "queue", "items", "items-id", "items-id-timeline", "items-id-close",   // API P3: the queue and item screens (U2) place these
     };
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
