@@ -1,3 +1,4 @@
+using Aw.Kernel.Ids;
 using Aw.Context.Testing.Engine;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Health;
@@ -5,7 +6,6 @@ using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.GetStatus;
-using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Views;
 
 namespace Aw.Sindri.Tests.GetStatus;

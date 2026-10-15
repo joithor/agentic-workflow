@@ -15,7 +15,7 @@ public sealed class StatusTextTests
     private static readonly ControlEndpoint _endpoint = new(new Uri("http://127.0.0.1:7410"), 42, 3);
 
     private static GetStatusResponse Status(ViewsStatus views, HealthReport health, bool needsApproval = false) =>
-        new GetStatusResponse(Running: true, 42, 3, KnownInstants.Epoch,
+        new(Running: true, 42, 3, KnownInstants.Epoch,
             new ProfileStatus(_hash, _hash, ChangedSinceApproval: false, Problem: null, "/home/profile.yaml", needsApproval), [])
         { Views = views, Health = health };
 

@@ -1,6 +1,5 @@
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Views;
-using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.RunDoctor;
 

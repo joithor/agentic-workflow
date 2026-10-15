@@ -54,12 +54,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IService<RecordServiceRunRequest, RecordServiceRunResponse>, RecordServiceRunService>()
             .AddScoped<IService<CheckProfileRequest, CheckProfileResponse>, CheckProfileService>()
             .AddScoped<IService<ValidateProfileRequest, ValidateProfileResponse>, ValidateProfileService>()
-            .AddScoped<ProfileFacts>()
-            .AddScoped<LedgerFacts>()
-            .AddScoped<RunDoctorService>()
-            .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>>(static sp =>
-                new WithMoreChecks(sp.GetRequiredService<RunDoctorService>(), sp.GetServices<IDoctorChecks>()))
-            .AddScoped<IDoctorChecks, ContextDoctorChecks>()
+            .AddDoctor()
             .AddScoped<IService<RegisterMcpRequest, RegisterMcpResponse>, RegisterMcpService>()
             .AddScoped<IScheduledService, HeartbeatService>()
             .AddScoped<ContextScopes>()
@@ -89,6 +84,15 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<StreamEventsRequest>, AcceptAllValidator<StreamEventsRequest>>().AddQuery<StreamEventsRequest, StreamEventsResponse, StreamEventsService>();
         return services;
     }
+
+    /// <summary>The doctor: its fact readers, the core checks and the extra checks decorator.</summary>
+    private static IServiceCollection AddDoctor(this IServiceCollection services) => services
+        .AddScoped<ProfileFacts>()
+        .AddScoped<LedgerFacts>()
+        .AddScoped<RunDoctorService>()
+        .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>>(static sp =>
+            new WithMoreChecks(sp.GetRequiredService<RunDoctorService>(), sp.GetServices<IDoctorChecks>()))
+        .AddScoped<IDoctorChecks, ContextDoctorChecks>();
 
     /// <summary>The registry's slices (engine P2): register, approve and revoke (commands), the challenge (an issue), list and show (queries).</summary>
     private static IServiceCollection AddRegistrySlices(this IServiceCollection services)
