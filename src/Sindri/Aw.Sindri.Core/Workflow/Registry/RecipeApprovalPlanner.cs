@@ -1,6 +1,8 @@
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using Aw.Kernel;
+using Aw.Kernel.Json;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -241,7 +243,13 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
             return before.IsError ? before.Error : Results.Success<string?>(value: null);
         }
 
-        return LineDiff.Unified(ApprovalPreviews.Pretty(old.Text), ApprovalPreviews.Pretty(recipe.Text),
+        var normalized = old.Read(json);   // why: an old row lacks the fields later versions default, so compare its normalized form, not its stored text
+        if (normalized.IsError)
+        {
+            return normalized.Error;
+        }
+
+        return LineDiff.Unified(ApprovalPreviews.Pretty(Encoding.UTF8.GetString(AwJson.Serialize(normalized.Value with { Hash = null }, json))), ApprovalPreviews.Pretty(recipe.Text),
             string.Create(CultureInfo.InvariantCulture, $"{Name(old)} (approved, version {old.Version})"),
             string.Create(CultureInfo.InvariantCulture, $"{Name(recipe)} (version {recipe.Version})"));
     }
