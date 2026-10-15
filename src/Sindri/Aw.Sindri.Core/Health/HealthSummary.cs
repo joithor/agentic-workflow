@@ -39,7 +39,7 @@ public static class HealthSummary
         }
 
         var word = views.Stalled ? HealthWord.Stalled : views.Rebuilding ? HealthWord.Rebuilding : (problems.Count > 0 ? HealthWord.Degraded : HealthWord.Healthy);
-        return new HealthReport(word, problems, Sentence(word, problems));
+        return new HealthReport(word, [.. problems], Sentence(word, problems));
     }
 
     private static IEnumerable<HealthProblem> Views(ViewsStatus views)

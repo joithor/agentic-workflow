@@ -30,6 +30,7 @@ public sealed class RunDoctorTests
         _ = await new ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events, _h.Challenges, FakeContextEngine.Instance).Handle(new ApproveProfileRequest(approved.Hash, _h.Confirm(approved.Hash)), Token);
         _api.Answer = (new ControlEndpoint(new Uri("http://127.0.0.1:7410"), grant.Holder.Pid, grant.Epoch), new Ping(grant.Holder.Pid, grant.Epoch));
         _ = await _temporal.Ensure(Token);
+        _ = await _views.Open(ViewSchema.Version, Token);
 
         var report = (await Service().Handle(new RunDoctorRequest(), Token)).Value;
 
