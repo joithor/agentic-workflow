@@ -53,7 +53,7 @@
     </Border>
 
     <DockPanel IsVisible="{Binding IsChromeVisible}">
-      <views:TopBar x:Name="TopBar" DockPanel.Dock="Top" />
+      <views:TopBar x:Name="TopBar" DockPanel.Dock="Top" ZIndex="1" />
 
       <!-- The attention band (§3.2): hidden until needs-you is served (U3). -->
       <Border x:Name="AttentionBand" DockPanel.Dock="Top" Height="{StaticResource Size.AttentionBand}"

@@ -20,7 +20,7 @@ public sealed class StateChipViewTests
 
     private static (string? Word, string[] Classes, bool Visible) Draw(Served? served, Served? fallback = null)
     {
-        var chip = new StateChip { Chip = served, Fallback = fallback };
+        var chip = new StateChipView { Chip = served, Fallback = fallback };
         var window = new Window { Content = chip, Width = 300, Height = 100 };
         window.Show();
         Dispatcher.UIThread.RunJobs();
@@ -72,7 +72,7 @@ public sealed class StateChipViewTests
     {
         var classes = await OnUi(() =>
         {
-            var chip = new StateChip { Chip = new Served("PARKED", ChipTone.Attn) };
+            var chip = new StateChipView { Chip = new Served("PARKED", ChipTone.Attn) };
             chip.Chip = new Served("DONE", ChipTone.Neutral);
             return chip.Classes.Order(StringComparer.Ordinal).ToArray();
         });

@@ -99,9 +99,10 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
                 _ = await server.InstanceFact(uri, id, key, cancellationToken);
                 return Answer(server.FactAnswer(id, key));
             case ["recipes", var named]:
-                var recipe = named.Split('@')[0];
-                _ = await server.Recipe(uri, recipe, hash: null, cancellationToken);
-                return Answer(server.RecipeAnswer(recipe));
+                var at = named.IndexOf('@', StringComparison.Ordinal);
+                var (recipe, hash) = at < 0 ? (named, null) : (named[..at], named[(at + 1)..]);
+                _ = await server.Recipe(uri, recipe, hash, cancellationToken);
+                return Answer(server.RecipeAnswer(recipe, hash));
             default:
                 return Text(HttpStatusCode.NotFound, "{}", "application/json");
         }

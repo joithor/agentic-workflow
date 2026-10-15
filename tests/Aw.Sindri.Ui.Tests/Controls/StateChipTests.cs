@@ -10,8 +10,9 @@ namespace Aw.Sindri.Ui.Tests.Controls;
 [Lane(TestLane.Unit)]
 public sealed class StateChipTests
 {
-    // fixture.md's table, as the screens spec draws it: attn (the one attention colour), fail, ok, neutral. ABSENT is subtle
-    // and drawn by the client for an input that is missing, never served.
+    // fixture.md's table, as the screens spec draws it: attn (the one attention colour), fail, ok, neutral. ABSENT (a dependency
+    // not found on this host, --ink-subtle) is the System page's chip: it is never served, so it is not in this table, and the
+    // chip control has no subtle look yet. It lands with the System page (U12), together with its test.
     private static readonly Dictionary<string, ChipTone> _spec = new(StringComparer.Ordinal)
     {
         ["PARKED"] = ChipTone.Attn,

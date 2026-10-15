@@ -19,7 +19,7 @@ internal sealed partial class FakeSindriApi
         Task.FromResult(Answer<FactView>(api, WorkflowRoutes.Fact(id, key), FactAnswer(id, key)));
 
     public Task<Result<RecipeView>> Recipe(Uri api, string recipe, string? hash, CancellationToken cancellationToken) =>
-        Task.FromResult(Answer<RecipeView>(api, WorkflowRoutes.Recipe(recipe, hash), RecipeAnswer(recipe)));
+        Task.FromResult(Answer<RecipeView>(api, WorkflowRoutes.Recipe(recipe, hash), RecipeAnswer(recipe, hash)));
 
     /// <summary>What GET /workflow/instances answers for a query.</summary>
     /// <param name="query">The query.</param>
@@ -39,8 +39,9 @@ internal sealed partial class FakeSindriApi
 
     /// <summary>What GET /workflow/recipes/{recipe} answers.</summary>
     /// <param name="recipe">The recipe id.</param>
+    /// <param name="hash">The hash named, or null.</param>
     /// <returns>The answer.</returns>
-    internal RouteAnswer RecipeAnswer(string recipe) => WorkflowAnswer ?? WorkflowAnswers.Recipe(recipe);
+    internal RouteAnswer RecipeAnswer(string recipe, string? hash) => WorkflowAnswer ?? WorkflowAnswers.Recipe(recipe, hash);
 
     // LANE ANCHOR U3': U3' keeps its own fake in FakeSindriApi.Routes.cs; it adds nothing here.
     // LANE ANCHOR U8: new workflow answers (commands, complete) and their gates are added here, answered from WorkflowAnswers.

@@ -35,7 +35,7 @@ public abstract partial class SindriApiContract
     {
         var golden = Golden("workflow-instances", "root");
 
-        var list = (await Reach(new FakeSindriApi()).Instances(_api, new InstanceQuery(), Token)).Value;
+        var list = (await Reach(new FakeSindriApi()).Instances(_api, new InstanceQuery(Root: true), Token)).Value;
 
         Expect.Sequence(Ids(golden), list.Instances.Select(i => i.Id));
         Expect.Equal(((int)golden["counts"]!["open"]!, (int)golden["counts"]!["needsYou"]!, (int)golden["counts"]!["done"]!), (list.Counts.Open, list.Counts.NeedsYou, list.Counts.Done));

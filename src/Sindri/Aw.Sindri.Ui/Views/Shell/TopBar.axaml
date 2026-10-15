@@ -71,13 +71,6 @@
         </StackPanel>
       </Border>
 
-      <!-- The G-chord's wait (rev 7 §8): "G …" in a keycap in the spacer column while G waits for its second key. Transient and
-           named, not live: the key press is the user's own. -->
-      <Border x:Name="ChordHint" Grid.Column="3" Classes="kbd" HorizontalAlignment="Left" VerticalAlignment="Center"
-              IsVisible="{Binding IsChordPending}" AutomationProperties.Name="{Binding ChordHint}">
-        <TextBlock Classes="kbd" Text="{Binding ChordHint}" VerticalAlignment="Center" />
-      </Border>
-
       <!-- The ⌘K field (home.html): a magnifier, the placeholder, and the ⌘K keycap at the right; folded ("compact"), the
            magnifier alone, still named "Search or run a command". -->
       <Border x:Name="SearchField" Grid.Column="4" Classes="search" Margin="12,0,12,0" Focusable="True" Cursor="Hand"
@@ -139,6 +132,18 @@
           </StackPanel>
         </Button>
       </StackPanel>
+      <!-- The G-chord's wait (rev 7 §8): "G …" in a keycap while G waits for its second key. It is an overlay: a zero-height
+           layer under the ⌘K field and the pill, so it takes no room in the bar (the spacer column is empty at 900 px) and is
+           drawn at its own width, clear of the field, over the top of the page. Transient and exposed as text, not live: the
+           key press is the user's own. -->
+      <Canvas x:Name="ChordHintLayer" Grid.Column="4" Grid.ColumnSpan="2" Height="0" VerticalAlignment="Bottom"
+              HorizontalAlignment="Stretch" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw">
+        <Border x:Name="ChordHint" Classes="kbd" Canvas.Right="0" Canvas.Top="6" IsVisible="{Binding IsChordPending}"
+                AutomationProperties.Name="{Binding ChordHint}" AutomationProperties.AccessibilityView="Control"
+                AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="kbd" Text="{Binding ChordHint}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+      </Canvas>
     </Grid>
   </Border>
 </UserControl>

@@ -2,19 +2,19 @@ using System.Text.Json.Serialization;
 
 namespace Aw.Sindri.Ui.Api.Workflow;
 
-/// <summary>The tone class of a served chip.</summary>
-[JsonConverter(typeof(JsonStringEnumConverter<ChipTone>))]
+/// <summary>The tone class of a served chip. A tone this build doesn't know reads as <see cref="Neutral"/> (API rev 8).</summary>
+[JsonConverter(typeof(ChipToneJsonConverter))]
 internal enum ChipTone
 {
-    [JsonStringEnumMemberName("attn")]
+    /// <summary>The one attention colour.</summary>
     Attn = 1,
 
-    [JsonStringEnumMemberName("fail")]
+    /// <summary>Something failed.</summary>
     Fail = 2,
 
-    [JsonStringEnumMemberName("ok")]
+    /// <summary>Running well.</summary>
     Ok = 3,
 
-    [JsonStringEnumMemberName("neutral")]
+    /// <summary>No colour; also what an unknown tone reads as.</summary>
     Neutral = 4,
 }

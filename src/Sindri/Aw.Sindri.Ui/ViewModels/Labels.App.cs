@@ -51,21 +51,21 @@ internal static partial class Labels
     };
 
     /// <summary>Workflows' placeholder.</summary>
-    internal const string ArrivesWorkflows = "arrives with U8";
+    internal const string ArrivesWorkflows = "arrives with U8 and the workflow routes (API P11)";
 
     /// <summary>Work's placeholder.</summary>
-    internal const string ArrivesWork = "arrives with U3'";
+    internal const string ArrivesWork = "arrives with U3' and the workflow routes (API P11)";
 
     /// <summary>Recipes' placeholder.</summary>
-    internal const string ArrivesRecipes = "arrives with U10";
+    internal const string ArrivesRecipes = "arrives with U10 and the recipe stats (API P12)";
 
     /// <summary>Context's placeholder.</summary>
-    internal const string ArrivesContext = "arrives with U9";
+    internal const string ArrivesContext = "arrives with U9 and the context lens routes (CTX phase 4)";
 
     /// <summary>Agents' placeholder.</summary>
-    internal const string ArrivesAgents = "arrives with U11";
+    internal const string ArrivesAgents = "arrives with U11 and the launch targets (API P10a)";
 
-    /// <summary>What an unbuilt page says it waits for ("arrives with U8"), or null for a built page.</summary>
+    /// <summary>What an unbuilt page says it waits for ("arrives with U8 and the workflow routes (API P11)"), or null for a built page.</summary>
     /// <param name="page">The page.</param>
     /// <returns>The words, or null.</returns>
     internal static string? ArrivesWith(PageId page) => page switch

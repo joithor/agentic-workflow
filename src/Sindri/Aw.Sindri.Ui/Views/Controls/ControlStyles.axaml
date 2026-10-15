@@ -37,35 +37,35 @@
   <!-- The state chip (fixture.md "State chips"): the word as served on Surface2; the tone picks the colours. attn is the one
        attention colour (needs-you), fail the error colour, ok the success colour, neutral the plain chip. Each pair is held to
        4.5:1 by the contrast tests, and the word is always there beside the colour. -->
-  <Style Selector="controls|StateChip">
+  <Style Selector="controls|StateChipView">
     <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
     <Setter Property="CornerRadius" Value="{StaticResource Radius.XS}" />
     <Setter Property="Padding" Value="6,1" />
     <Setter Property="VerticalAlignment" Value="Center" />
     <Setter Property="HorizontalAlignment" Value="Left" />
   </Style>
-  <Style Selector="controls|StateChip > TextBlock">
+  <Style Selector="controls|StateChipView > TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource Brush.InkMuted}" />
     <Setter Property="FontSize" Value="{DynamicResource Type.Eyebrow.Size}" />
     <Setter Property="LineHeight" Value="{DynamicResource Type.Eyebrow.LineHeight}" />
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
-  <Style Selector="controls|StateChip.attn">
+  <Style Selector="controls|StateChipView.attn">
     <Setter Property="Background" Value="{DynamicResource Brush.AttentionSoft}" />
   </Style>
-  <Style Selector="controls|StateChip.attn > TextBlock">
+  <Style Selector="controls|StateChipView.attn > TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource Brush.Attention}" />
   </Style>
-  <Style Selector="controls|StateChip.fail">
+  <Style Selector="controls|StateChipView.fail">
     <Setter Property="Background" Value="{DynamicResource Brush.ErrorSoft}" />
   </Style>
-  <Style Selector="controls|StateChip.fail > TextBlock">
+  <Style Selector="controls|StateChipView.fail > TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
   </Style>
-  <Style Selector="controls|StateChip.ok">
+  <Style Selector="controls|StateChipView.ok">
     <Setter Property="Background" Value="{DynamicResource Brush.SuccessSoft}" />
   </Style>
-  <Style Selector="controls|StateChip.ok > TextBlock">
+  <Style Selector="controls|StateChipView.ok > TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource Brush.Success}" />
   </Style>
 </Styles>

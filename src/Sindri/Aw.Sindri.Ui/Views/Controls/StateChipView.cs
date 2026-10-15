@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.ViewModels.Controls;
 
 namespace Aw.Sindri.Ui.Views.Controls;
@@ -9,23 +10,23 @@ namespace Aw.Sindri.Ui.Views.Controls;
 /// The state chip: a small bordered word, coloured by its tone. The word is drawn as served; the tone picks the class
 /// (attn, fail, ok, or none for neutral). The served chip wins; a chip the client draws itself is the fallback.
 /// </summary>
-internal sealed class StateChip : Border
+internal sealed class StateChipView : Border
 {
     /// <summary>The chip the API served.</summary>
-    public static readonly StyledProperty<Api.Workflow.StateChip?> ChipProperty = AvaloniaProperty.Register<StateChip, Api.Workflow.StateChip?>(nameof(Chip));
+    public static readonly StyledProperty<StateChip?> ChipProperty = AvaloniaProperty.Register<StateChipView, StateChip?>(nameof(Chip));
 
     private static readonly string[] _tones = ["attn", "fail", "ok"];
 
     private readonly TextBlock _word = new();
 
-    static StateChip()
+    static StateChipView()
     {
-        _ = ChipProperty.Changed.AddClassHandler<StateChip>((chip, _) => chip.Apply());
-        _ = FallbackProperty.Changed.AddClassHandler<StateChip>((chip, _) => chip.Apply());
+        _ = ChipProperty.Changed.AddClassHandler<StateChipView>((chip, _) => chip.Apply());
+        _ = FallbackProperty.Changed.AddClassHandler<StateChipView>((chip, _) => chip.Apply());
     }
 
-    /// <summary>Initializes a new instance of the <see cref="StateChip"/> class, empty and hidden until it has a chip to draw.</summary>
-    public StateChip()
+    /// <summary>Initializes a new instance of the <see cref="StateChipView"/> class, empty and hidden until it has a chip to draw.</summary>
+    public StateChipView()
     {
         Classes.Add("chip");
         Child = _word;
@@ -33,17 +34,17 @@ internal sealed class StateChip : Border
     }
 
     /// <summary>The chip a view draws itself when none is served.</summary>
-    public static readonly StyledProperty<Api.Workflow.StateChip?> FallbackProperty = AvaloniaProperty.Register<StateChip, Api.Workflow.StateChip?>(nameof(Fallback));
+    public static readonly StyledProperty<StateChip?> FallbackProperty = AvaloniaProperty.Register<StateChipView, StateChip?>(nameof(Fallback));
 
     /// <summary>Gets or sets the served chip.</summary>
-    public Api.Workflow.StateChip? Chip
+    public StateChip? Chip
     {
         get => GetValue(ChipProperty);
         set => SetValue(ChipProperty, value);
     }
 
     /// <summary>Gets or sets the chip a view draws itself.</summary>
-    public Api.Workflow.StateChip? Fallback
+    public StateChip? Fallback
     {
         get => GetValue(FallbackProperty);
         set => SetValue(FallbackProperty, value);
