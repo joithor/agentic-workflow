@@ -14,6 +14,9 @@ checks:
   - type: archunit
     id: "ARCH-REG-002"
     status: active
+  - type: archunit
+    id: "ARCH-REG-003"
+    status: active
 gap: closed
 source:
   type: adr

@@ -16,6 +16,9 @@ public sealed class ArchitectureTests
         Verify.None(ComposeRules.Check(Production.Edges, Production.Compose));
 
     [Fact]
+    public void The_ui_uses_no_sindri_type_view_models_no_avalonia_type_and_heads_no_views() => Verify.None(UiRules.Check(Production.Edges));
+
+    [Fact]
     public void No_slice_uses_another_slice() => Verify.None(SliceRules.Check(Production.Edges));
 
     [Fact]
