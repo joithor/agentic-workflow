@@ -9,23 +9,29 @@ internal static class EndpointTable
     internal static WebApplication MapSindriEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/sindri");
-        var queries = group.MapGroup(string.Empty);
+        var queries = group.MapGroup(string.Empty).WithMetadata(QueryRouteMetadata.Instance);   // X-Sindri-After honoured (read-your-writes)
         var commands = group.MapGroup(string.Empty).WithMetadata(CommandRouteMetadata.Instance);   // Origin refused before binding (SND-API-008)
 
         // ---- queries: one line per slice, sorted ----
+        _ = queries.MapGetProfile();
         _ = queries.MapExportContextMap();
+        _ = queries.MapFindContextPath();
         _ = queries.MapGetContextMap();
         _ = queries.MapGetContextSources();
         _ = queries.MapGetStatus();
+        _ = queries.MapListContextNeighbors();
         _ = queries.MapListCommands();
+        _ = queries.MapListServices();
         _ = queries.MapListRecipes();
         _ = queries.MapPingProcess();
         _ = queries.MapQueryContext();
+        _ = queries.MapShowContextNode();
         _ = queries.MapShowRecipe();
         _ = queries.MapStreamEvents();
 
         // ---- commands: one line per slice, sorted ----
         _ = commands.MapApproveProfile();
+        _ = commands.MapRebuildViews();
         _ = commands.MapImportContextMap();
         _ = commands.MapStopProcess();
         _ = commands.MapApproveRecipe();

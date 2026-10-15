@@ -60,13 +60,7 @@ internal static class ContextText
         _ = text.AppendLine().Append("## ").AppendLine(section.Name);
         foreach (var item in section.Items)
         {
-            var draft = item.Node is not null && !item.Confirmed ? " (draft)" : string.Empty;
-            _ = text.AppendLine(Invariant($"{Markers(item.Cites)} {item.Title ?? item.Node ?? item.Kind}{draft}"));
-            _ = text.AppendLine(Invariant($"    trust {(item.Trust == Trust.Trusted ? "trusted" : "untrusted")} · {string.Join(", ", item.Why)}"));
-            foreach (var line in (item.Text ?? "(text withheld)").Split('\n'))
-            {
-                _ = text.Append("    ").AppendLine(line);
-            }
+            Item(text, item);
         }
 
         if (section.More.Count > 0)
@@ -76,6 +70,28 @@ internal static class ContextText
 
         _ = text.AppendLine();
     }
+
+    /// <summary>One item: its markers and title ('(draft)' when a map item isn't confirmed), trust and why, an affects item's depth and path, then its body.</summary>
+    private static void Item(StringBuilder text, ResultItem item)
+    {
+        var draft = item.Node is not null && !item.Confirmed ? " (draft)" : string.Empty;
+        _ = text.AppendLine(Invariant($"{Markers(item.Cites)} {item.Title ?? item.Node ?? item.Kind}{draft}"));
+        _ = text.AppendLine(Invariant($"    trust {TrustWord(item.Trust)} · {string.Join(", ", item.Why)}"));
+        if (item is { Depth: { } depth, Path: { } path })
+        {
+            _ = text.AppendLine(Invariant($"    depth {depth} · path {string.Join(" → ", path)}"));
+        }
+
+        foreach (var line in Body(item))
+        {
+            _ = text.Append("    ").AppendLine(line);
+        }
+    }
+
+    private static string TrustWord(Trust trust) => trust == Trust.Trusted ? "trusted" : "untrusted";
+
+    /// <summary>An item's body lines: its text; '(text withheld)' for a record with none; nothing for a map item with no facts line.</summary>
+    private static string[] Body(ResultItem item) => (item.Text ?? (item.Node is null ? "(text withheld)" : null))?.Split('\n') ?? [];
 
     private static void Citations(StringBuilder text, IReadOnlyDictionary<string, Citation> cites)
     {
@@ -87,17 +103,20 @@ internal static class ContextText
         _ = text.AppendLine().AppendLine("sources:");
         foreach (var (marker, cite) in cites.OrderBy(c => int.Parse(c.Key.AsSpan(1), CultureInfo.InvariantCulture)))
         {
+            var key = cite.Aliases.Count > 0 ? $"{cite.Key.Value} ({cite.Aliases[0]})" : cite.Key.Value;   // the first alias only; --json has them all
             foreach (var reference in cite.Refs)
             {
                 var current = reference.Current is { } now ? " → " + Short(now) : string.Empty;
-                _ = text.AppendLine(Invariant($"  [{marker}] {cite.Key.Value}  {reference.Source.Value} {reference.Id.Value}  version {Short(reference.Version)}{current}  {Word(cite.State)}"));
+                _ = text.AppendLine(Invariant($"  [{marker}] {key}  {reference.Source.Value} {reference.Id.Value}  version {Short(reference.Version)}{current}  {Word(cite.State)}"));
             }
         }
     }
 
     private static string Markers(IReadOnlyList<string> markers) => string.Join(' ', markers.Select(m => "[" + m + "]"));
 
-    private static string Short(SourceVersion version) => version.Value.Length > 12 ? version.Value[..12] : version.Value;
+    /// <summary>A git object id (hex, longer than 12) cut to 12 characters; any other version, such as an Onyx 'updated_at' timestamp, in full.</summary>
+    private static string Short(SourceVersion version) =>
+        version.Value.Length > 12 && version.Value.All(char.IsAsciiHexDigitLower) ? version.Value[..12] : version.Value;
 
     private static string Word(CitationState state) => state switch
     {

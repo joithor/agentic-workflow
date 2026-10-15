@@ -14,6 +14,9 @@ internal sealed class FixtureService(HeldLease held, ILedgerStore ledger, EventF
 {
     public const string Done = "fixture.done";
 
+    /// <summary>What a 'full' run answers, under SND-LEDGER-002: its own append found the disk full.</summary>
+    public const string Full = "ledger.db: database or disk is full";
+
     public async ValueTask<Result<CommandAccepted>> Handle(FixtureCommand request, CancellationToken cancellationToken)
     {
         latch.Start();
@@ -25,6 +28,11 @@ internal sealed class FixtureService(HeldLease held, ILedgerStore ledger, EventF
         if (request.Outcome == "fail")
         {
             return SindriErrors.ProfileHashMismatch.With("changed since you looked");
+        }
+
+        if (request.Outcome == "full")
+        {
+            return SindriErrors.LedgerUnavailable.With(Full);
         }
 
         var key = string.Create(CultureInfo.InvariantCulture, $"{Done}:{latch.Started}");

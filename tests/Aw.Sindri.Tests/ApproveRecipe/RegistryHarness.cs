@@ -48,6 +48,7 @@ internal sealed class RegistryHarness : IAsyncDisposable
         Challenges = new InMemoryChallenges(H.Clock);
         _provider = new ServiceCollection()
             .AddSingleton<TimeProvider>(H.Clock)
+            .AddSingleton<Core.Views.IProjectorStatus>(new Core.Views.ProjectorProgress(H.Clock))
             .AddSingleton<IIdGenerator>(H.Ids)
             .AddSingleton<ILedgerStore>(H.Store)
             .AddSingleton<ILease>(H.Store)

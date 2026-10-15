@@ -7,7 +7,8 @@ namespace Aw.Context.Testing.Fakes;
 /// <summary>
 /// The recorded Onyx documents ('onyx/documents.json': each a SearchDoc and its chunk texts) and a deterministic search
 /// over them: a document scores by the share of query terms it contains (plus a tiny weight per occurrence), ties broken
-/// by newest 'updated_at', then document id. Not Onyx's ranking (Sindri ranks, D3); only stable and explainable.
+/// by newest 'updated_at', then document id, at most 50 (Onyx's keyword retrieval, one document per id). Not Onyx's
+/// ranking (Sindri ranks, D3); only stable and explainable.
 /// </summary>
 internal static class OnyxIndex
 {
@@ -22,17 +23,21 @@ internal static class OnyxIndex
 
     public static JsonArray Search(OnyxSearchRequest request)
     {
-        var terms = Terms(request.Message).Distinct(StringComparer.Ordinal).ToList();
-        var hits = Documents
-            .Where(d => (request.SourceTypes is null || request.SourceTypes.Contains(d.SourceType, StringComparer.Ordinal))
-                && (request.TimeCutoff is null || d.UpdatedAt >= request.TimeCutoff))
+        var candidates = Documents.Where(d => Matches(d, request)).ToList();
+        if (request.Query.Trim().Length == 0)
+        {
+            // Onyx answers an empty query with random_retrieval; the fake keeps it deterministic (document id order).
+            return [.. candidates.OrderBy(d => d.Id, StringComparer.Ordinal).Take(OnyxSearchRequest.MaxHits).Select(d => Hit(d, score: null, 0, []))];
+        }
+
+        var terms = Terms(request.Query).Distinct(StringComparer.Ordinal).ToList();
+        var hits = candidates
             .Select(d => (Document: d, Score: Score(d, terms, out var chunk), Chunk: chunk))
             .Where(h => h.Score > 0)
             .OrderByDescending(h => h.Score)
             .ThenByDescending(h => h.Document.UpdatedAt)
             .ThenBy(h => h.Document.Id, StringComparer.Ordinal)
-            .Skip(request.Offset)
-            .Take(request.Limit)
+            .Take(OnyxSearchRequest.MaxHits)
             .Select(h => Hit(h.Document, h.Score, h.Chunk, terms));
         return [.. hits];
     }
@@ -51,7 +56,13 @@ internal static class OnyxIndex
         return matched == 0 ? 0 : Math.Round(((double)matched / terms.Count) + (counts.Sum() * 0.001), 4, MidpointRounding.AwayFromZero);
     }
 
-    private static JsonObject Hit(OnyxDocument document, double score, int chunk, List<string> terms)
+    private static bool Matches(OnyxDocument document, OnyxSearchRequest request) =>
+        (request.SourceTypes is null || request.SourceTypes.Contains(document.SourceType, StringComparer.Ordinal))
+        && (request.UpdatedFrom is null || document.UpdatedAt >= request.UpdatedFrom)
+        && (request.UpdatedTo is null || document.UpdatedAt <= request.UpdatedTo);
+
+    /// <summary>A SearchDoc as v4.9.0 serializes it (onyx/context/search/models.py SearchDoc): the recording plus the per-hit fields.</summary>
+    private static JsonObject Hit(OnyxDocument document, double? score, int chunk, List<string> terms)
     {
         var hit = (JsonObject)document.SearchDoc.DeepClone();
         hit["chunk_ind"] = chunk;
@@ -59,6 +70,9 @@ internal static class OnyxIndex
         hit["is_relevant"] = null;
         hit["relevance_explanation"] = null;
         hit["match_highlights"] = new JsonArray([.. Highlights(document.Chunks[chunk], terms)]);
+        hit["source_types"] = null;
+        hit["is_internet"] = false;
+        hit["file_id"] = null;
         return hit;
     }
 

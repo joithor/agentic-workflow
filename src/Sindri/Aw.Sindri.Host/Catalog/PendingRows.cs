@@ -4,7 +4,7 @@ using Aw.Sindri.Core.Ids;
 namespace Aw.Sindri.Host.Catalog;
 
 /// <summary>
-/// The rows of API P2–P10a's actions, registered before their phase ships so the app and doctor can list them (P1 plan
+/// The rows of API P3–P10a's actions, registered before their phase ships so the app and doctor can list them (P1 plan
 /// G7): no command type yet, UI status 'pending:&lt;phase&gt;'. Each phase binds its type and flips its rows to 'ready'.
 /// Class, route and CLI come from API spec §3.2 and UI spec §7 (E-1, E-3, E-8); engine and context rows stay with their lanes.
 /// </summary>
@@ -12,7 +12,6 @@ internal static class PendingRows
 {
     internal static IReadOnlyList<CommandRow> All { get; } =
     [
-        Pending("RebuildViews", ActionClass.Desk, "POST /sindri/views/rebuild", "sindri views rebuild", "P2"),
         Pending("CreateItem", ActionClass.Desk, "POST /sindri/items", "sindri item add <title> [--repo <repo>]", "P3"),
         Pending("CloseItem:done", ActionClass.Desk, "POST /sindri/items/{itemId}/close", "sindri item close <itemId>", "P3") with { ReadsViews = true },
         Pending("CloseItem:cancelled", ActionClass.Desk, "POST /sindri/items/{itemId}/close", "sindri item close <itemId> --cancelled", "P3") with { ReadsViews = true, Destructive = true },

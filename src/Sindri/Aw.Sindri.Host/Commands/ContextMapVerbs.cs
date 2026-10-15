@@ -1,12 +1,14 @@
 using Aw.Context.Core.Map;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Features.ContextCalls;
 
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
-/// 'context map import &lt;file&gt; | export [&lt;path&gt;] | status' (context spec §8.5). Import is shaped like 'profile approve':
-/// it shows the file's hash, asks for its first 6 characters at an interactive terminal, then imports.
+/// 'context map import &lt;file&gt; | export [&lt;path&gt;] | status' (context spec §8.5). Import is a protected command typed
+/// like 'profile approve': it shows the file and its hash, asks the human to type the server's challenge ('import map
+/// &lt;hash6&gt;') at an interactive terminal, then sends the answer, which the server redeems.
 /// </summary>
 /// <param name="client">The API client.</param>
 /// <param name="output">Where the verbs write.</param>
@@ -34,35 +36,37 @@ internal sealed class ContextMapVerbs(ControlPlaneClient client, Output output, 
 
     private async Task<int> Import(string file, CancellationToken ct)
     {
-        var shown = await client.Post<ImportContextMapRequest, ImportContextMapResponse>(Route + "/import", new(file, Hash: null, Confirmed: false), ct).ConfigureAwait(false);
+        var shown = await client.Post<ImportContextMapRequest, ImportContextMapResponse>(Route + "/import", new(file, Hash: null, Answer: null), ct).ConfigureAwait(false);
         if (shown.IsError)
         {
             return await Failed(shown.Error).ConfigureAwait(false);
         }
 
-        var preview = shown.Value.Value.Preview;
+        var (preview, challenge) = (shown.Value.Value.Preview, shown.Value.Value.Challenge);
         await output.Out.WriteAsync(ContextMapText.Preview(preview)).ConfigureAwait(false);
-        if (await Confirmation(preview.Hash).ConfigureAwait(false) is { } refused)
+        var answer = challenge is null
+            ? SindriErrors.AuthRefused.With("the server issued no challenge for this import; nothing was imported (fix: update the CLI to the server's build)")
+            : await Answer(challenge).ConfigureAwait(false);
+        if (answer.IsError)
         {
-            return await Failed(refused).ConfigureAwait(false);
+            return await Failed(answer.Error).ConfigureAwait(false);
         }
 
-        var done = await client.Post<ImportContextMapRequest, ImportContextMapResponse>(Route + "/import", new(file, preview.Hash, Confirmed: true), ct).ConfigureAwait(false);
+        var done = await client.Post<ImportContextMapRequest, ImportContextMapResponse>(Route + "/import", new(file, preview.Hash, answer.Value), ct).ConfigureAwait(false);
         return done.IsError ? await Failed(done.Error).ConfigureAwait(false) : await output.Text(ContextMapText.Imported(done.Value.Value), 0).ConfigureAwait(false);
     }
 
-    private async Task<Kernel.Error?> Confirmation(string hash)
+    /// <summary>The human's answer to the challenge: what they typed at the terminal, sent as is (the server compares it).</summary>
+    private async Task<Kernel.Result<ChallengeAnswer>> Answer(MapImportChallenge challenge)
     {
         if (!interactive)
         {
-            return SindriErrors.AuthRefused.With("importing a map needs an interactive terminal: run it yourself and type the first 6 characters of the hash; nothing was imported");
+            return SindriErrors.AuthRefused.With($"importing a map needs an interactive terminal: run it yourself and type '{challenge.Action}'; nothing was imported");
         }
 
-        await output.Out.WriteAsync($"Type the first 6 characters of {hash} to import it: ").ConfigureAwait(false);
-        var typed = (await input.ReadLineAsync().ConfigureAwait(false))?.Trim();
-        return string.Equals(typed, hash[..6], StringComparison.Ordinal)
-            ? null
-            : SindriErrors.AuthRefused.With($"you typed '{typed}', not the hash's first 6 characters; nothing was imported");
+        await output.Out.WriteAsync($"Type '{challenge.Action}' to import it: ").ConfigureAwait(false);
+        var typed = (await input.ReadLineAsync().ConfigureAwait(false))?.Trim() ?? string.Empty;
+        return new ChallengeAnswer(challenge.Challenge, typed);
     }
 
     private async Task<int> Export(string? path, bool json, CancellationToken ct)

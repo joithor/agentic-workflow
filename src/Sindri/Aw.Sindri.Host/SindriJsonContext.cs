@@ -1,4 +1,6 @@
 using System.Text.Json.Serialization;
+using Aw.Context.Core.Eval;
+using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Kernel;
@@ -6,7 +8,9 @@ using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Health;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Evals;
 using Aw.Sindri.Core.Workflow.Engine.Events;
@@ -18,10 +22,13 @@ using Aw.Sindri.Features.ApproveRecipe;
 using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Features.EvalRecipe;
 using Aw.Sindri.Features.GetInstanceFact;
+using Aw.Sindri.Features.GetProfile;
 using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.IssueChallenge;
 using Aw.Sindri.Features.ListCommands;
 using Aw.Sindri.Features.ListRecipes;
+using Aw.Sindri.Features.ListServices;
+using Aw.Sindri.Features.RebuildViews;
 using Aw.Sindri.Features.RegisterMcp;
 using Aw.Sindri.Features.RegisterRecipe;
 using Aw.Sindri.Features.RevokeRecipe;
@@ -49,6 +56,14 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ProfileApproved))]
 [JsonSerializable(typeof(Heartbeat))]
 [JsonSerializable(typeof(CommandHandled))]
+[JsonSerializable(typeof(ServiceRan))]
+[JsonSerializable(typeof(ProfileChecked))]
+[JsonSerializable(typeof(ViewsRebuilt))]
+[JsonSerializable(typeof(AsOf))]
+[JsonSerializable(typeof(ViewsStatus))]
+[JsonSerializable(typeof(ServiceRow))]
+[JsonSerializable(typeof(ProfileRow))]
+[JsonSerializable(typeof(HealthReport))]
 [JsonSerializable(typeof(CommandAccepted))]
 [JsonSerializable(typeof(GetStatusResponse))]
 [JsonSerializable(typeof(StopProcessResponse))]
@@ -60,6 +75,12 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ListCommandsRequest))]
 [JsonSerializable(typeof(ListCommandsResponse))]
 [JsonSerializable(typeof(CommandListRow))]
+[JsonSerializable(typeof(ListServicesRequest))]
+[JsonSerializable(typeof(ListServicesResponse))]
+[JsonSerializable(typeof(ServiceView))]
+[JsonSerializable(typeof(GetProfileRequest))]
+[JsonSerializable(typeof(GetProfileResponse))]
+[JsonSerializable(typeof(RebuildViewsRequest))]
 [JsonSerializable(typeof(Recipe))]
 [JsonSerializable(typeof(BlockDescriptor))]
 [JsonSerializable(typeof(ValidateRecipeResponse))]
@@ -84,6 +105,12 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(HarnessProbeReport))]
 [JsonSerializable(typeof(ChallengeAnswer))]
 [JsonSerializable(typeof(ContextResult))]
+[JsonSerializable(typeof(NodeView))]
+[JsonSerializable(typeof(NeighborsView))]
+[JsonSerializable(typeof(PathView))]
+[JsonSerializable(typeof(ProbeSet))]
+[JsonSerializable(typeof(ProbeReport))]
+[JsonSerializable(typeof(ProbeRun))]
 [JsonSerializable(typeof(SourcesView))]
 [JsonSerializable(typeof(McpToolError))]
 [JsonSerializable(typeof(McpSourcesAnswer))]
@@ -140,4 +167,5 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ListCounts))]
 [JsonSerializable(typeof(ParentRef))]
 [JsonSerializable(typeof(FactView))]
+[JsonSerializable(typeof(MapImportChallenge))]
 internal sealed partial class SindriJsonContext : JsonSerializerContext;
