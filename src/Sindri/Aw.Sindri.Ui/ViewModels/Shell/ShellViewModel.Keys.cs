@@ -21,9 +21,11 @@ internal sealed partial class ShellViewModel
 
     /// <summary>One single key (a letter, "Enter"); true when it did something.</summary>
     /// <param name="key">The key: "G", "J", "K", "C", "Enter", …</param>
+    /// <param name="inSheet">True when focus is in the detail sheet: the row keys (J, K, Enter, Y) belong to the sheet then.</param>
     /// <returns>True when the key was handled.</returns>
-    internal bool Press(string key)
+    internal bool Press(string key, bool inSheet = false)
     {
+        _ = inSheet;
         // §8 key guard: for 500 ms after a refresh moved the selection on its own, single keys do nothing.
         if (Queue.IsGuarded)
         {

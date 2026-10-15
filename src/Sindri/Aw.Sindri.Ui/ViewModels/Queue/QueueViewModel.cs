@@ -126,8 +126,10 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
 
     /// <summary>J / K (§8): the next or previous visible row, in the API's order; stays at the ends.</summary>
     /// <param name="by">+1 for next, -1 for previous.</param>
-    internal void Move(int by)
+    /// <param name="scope">The page the key was pressed on.</param>
+    internal void Move(int by, QueueScope scope = QueueScope.Page)
     {
+        _ = scope;
         var rows = Visible().ToList();
         if (rows.Count == 0)
         {

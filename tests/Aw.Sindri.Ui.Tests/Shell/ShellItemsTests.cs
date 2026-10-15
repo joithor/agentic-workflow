@@ -93,11 +93,12 @@ public sealed class ShellItemsTests
         Assert.Equal(QueueFilter.All, shell.Queue.Showing);
     }
 
-    // §8: J moves to the next row; Enter opens its sheet; C opens the create form.
+    // §8: J moves to the next row of the page it is pressed on; Enter opens its sheet; C opens the create form.
     [Fact]
     public async Task J_and_enter_open_the_selected_rows_sheet_and_c_opens_create()
     {
         var shell = await Connected();
+        shell.GoTo(PageId.Queue);
 
         Assert.True(shell.Press("J"));
         Assert.True(shell.Press("Enter"));
@@ -106,6 +107,36 @@ public sealed class ShellItemsTests
         Assert.True(shell.Press("C"));
         Assert.True(shell.Create.IsOpen);
         Assert.False(shell.Press("X"));
+    }
+
+    // L2 (§3.3): on Home J walks Home's own rows (Queued here; the waiting row is not drawn on Home), and Enter opens that row.
+    [Fact]
+    public async Task J_on_home_walks_the_rows_home_draws()
+    {
+        var shell = await Connected();
+
+        Assert.True(shell.Press("J"));
+        Assert.Equal(shell.Queue.QueuedRows[0].Id, shell.Queue.SelectedId);
+        Assert.True(shell.Press("J"));
+        Assert.Equal(shell.Queue.QueuedRows[1].Id, shell.Queue.SelectedId);
+        Assert.True(shell.Press("Enter"));
+        Assert.Equal(shell.Queue.QueuedRows[1].Id, shell.SheetSubject);
+    }
+
+    // L2 (§8, §11.2): keys are scoped to the focused region: in the sheet, J / K / Enter / Y are not the queue's.
+    [Fact]
+    public async Task The_row_keys_belong_to_the_sheet_while_focus_is_in_it()
+    {
+        var shell = await Connected();
+        shell.GoTo(PageId.Queue);
+        _ = shell.Press("J");
+        var selected = shell.Queue.SelectedId;
+
+        Assert.False(shell.Press("J", inSheet: true));
+        Assert.False(shell.Press("Enter", inSheet: true));
+        Assert.False(shell.Press("Y", inSheet: true));
+        Assert.Equal((selected, false), (shell.Queue.SelectedId, shell.IsSheetOpen));
+        Assert.True(shell.Press("C", inSheet: true));
     }
 
     // §8 Y: copies the selected row's CLI ("Copied" through the control's lifecycle); / opens the Queue's filter.
@@ -119,13 +150,13 @@ public sealed class ShellItemsTests
         _ = shell.Run(Token);
         await Until(() => shell.State == ShellState.Normal && shell.Queue.Total > 0 && shell.Queue.Groups.Count > 0);
 
+        Assert.False(shell.Press("/"));
+        shell.GoTo(PageId.Queue);
         _ = shell.Press("J");
         Assert.True(shell.Press("Y"));
         await Until(() => clipboard.Text is not null);
         Assert.Equal("sindri decide <decisionId> <choice> [--note <note>]", clipboard.Text);
 
-        Assert.False(shell.Press("/"));
-        shell.GoTo(PageId.Queue);
         Assert.True(shell.Press("/"));
         Assert.True(shell.Queue.IsFiltering);
     }

@@ -158,4 +158,80 @@ public sealed class QueueFocusTests : IDisposable
         Assert.Equal((Labels.Cleared(gone), Avalonia.Automation.AutomationLiveSetting.Polite), (live.Text, Avalonia.Automation.AutomationProperties.GetLiveSetting(live)));
         await Until(window, () => Focused(window) is Border frame && string.Equals(frame.Name, "RowFrame", StringComparison.Ordinal) && (frame.DataContext as ViewModels.Queue.ItemRowViewModel)?.Id == shell.Queue.SelectedId);
     });
+
+    private static string? FocusedRowId(Window window) =>
+        Focused(window)?.GetSelfAndVisualAncestors().OfType<Control>().Select(c => c.DataContext).OfType<ViewModels.Queue.ItemRowViewModel>().FirstOrDefault()?.Id;
+
+    // L2 (§3.3, §8): J / K move the selection and focus that row's frame; Enter acts on the focused row.
+    [Fact]
+    public Task J_moves_the_selection_and_the_focus_together_and_enter_opens_that_row() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        shell.GoTo(PageId.Queue);
+        Settle(window);
+
+        window.KeyPressQwerty(PhysicalKey.J, RawInputModifiers.None);
+        await Until(window, () => shell.Queue.SelectedId is not null && FocusedRowId(window) == shell.Queue.SelectedId);
+        var first = shell.Queue.SelectedId;
+        window.KeyPressQwerty(PhysicalKey.J, RawInputModifiers.None);
+        await Until(window, () => shell.Queue.SelectedId != first && FocusedRowId(window) == shell.Queue.SelectedId);
+        Assert.True(Focused(window) is Border frame && string.Equals(frame.Name, "RowFrame", StringComparison.Ordinal));
+
+        var second = shell.Queue.SelectedId;
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        await Until(window, () => shell.IsSheetShown);
+        Assert.Equal(second, shell.SheetSubject);
+    });
+
+    // L2: a row that gets focus (Tab, a click) is the selected one, so Enter and Y act on what the user is on.
+    [Fact]
+    public Task A_row_getting_focus_selects_it() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        shell.GoTo(PageId.Queue);
+        Settle(window);
+        var third = Rows(window)[2];
+
+        Assert.True(Named<Border>(third, "RowFrame").Focus(NavigationMethod.Tab));
+        Assert.Equal(third.ItemId, shell.Queue.SelectedId);
+
+        var fourth = Rows(window)[3];
+        Assert.True(Named<Button>(fourth, "TitleButton").Focus(NavigationMethod.Tab));
+        Assert.Equal(fourth.ItemId, shell.Queue.SelectedId);
+        Assert.True(shell.Queue.Groups[3].Rows[3].IsSelected);
+        Assert.False(shell.Queue.Groups[3].Rows[2].IsSelected);
+    });
+
+    // L2: Home has its own rows; J there walks and focuses Home's compact rows, not the Queue page's.
+    [Fact]
+    public Task J_on_home_focuses_the_compact_rows_it_draws() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        Settle(window);
+
+        window.KeyPressQwerty(PhysicalKey.J, RawInputModifiers.None);
+        await Until(window, () => shell.Queue.SelectedId == shell.Queue.QueuedRows[0].Id && FocusedRowId(window) == shell.Queue.SelectedId);
+
+        Assert.NotNull(Focused(window)!.FindAncestorOfType<CompactItemRow>());
+    });
+
+    // L2 (§11.2): keys are scoped to the focused region: with focus in the sheet, J does not drive the queue behind it.
+    [Fact]
+    public Task J_in_the_sheet_does_not_drive_the_queue() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected(width: 1000);
+        shell.GoTo(PageId.Queue);
+        Settle(window);
+        window.KeyPressQwerty(PhysicalKey.J, RawInputModifiers.None);
+        await Until(window, () => shell.Queue.SelectedId is not null);
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        await Until(window, () => shell.IsSheetShown && string.Equals(Focused(window)?.Name, "SheetTitle", StringComparison.Ordinal));
+        var selected = shell.Queue.SelectedId;
+
+        window.KeyPressQwerty(PhysicalKey.J, RawInputModifiers.None);
+        await Task.Delay(50, Token);
+        Settle(window);
+
+        Assert.Equal(selected, shell.Queue.SelectedId);
+    });
 }

@@ -1,5 +1,6 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.Queue;
 using Microsoft.Extensions.Time.Testing;
@@ -146,5 +147,77 @@ public sealed class QueueKeysTests
         Assert.Equal("sindri decide <decisionId> <choice> [--note <note>]", queue.SelectedCopy()?.Cli);
         queue.Select(A.NewItem);
         Assert.Null(queue.SelectedCopy());
+    }
+
+    // L2 (§8): J / K walk the rows of the page they are pressed on: Home's panels as drawn, the Queue page's groups as drawn.
+    [Fact]
+    public async Task J_walks_homes_rows_as_drawn_and_the_pages_expanded_groups()
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
+        var queue = await Queue();
+        var home = queue.RunningRows.Concat(queue.QueuedRows).Select(r => r.Id).ToList();
+
+        var walked = new List<string?>();
+        for (var i = 0; i < home.Count; i++)
+        {
+            queue.Move(1, QueueScope.Home);
+            walked.Add(queue.SelectedId);
+        }
+
+        Assert.Equal(home, walked.Select(w => w!), StringComparer.Ordinal);
+
+        queue.Select(string.Empty);
+        queue.Groups.Single(g => g.Group == "queued").IsExpanded = false;
+        var page = queue.Groups.Where(g => g.IsVisible && g.IsExpanded).SelectMany(g => g.Rows).Select(r => r.Id).ToList();
+        var seen = new List<string?>();
+        for (var i = 0; i < page.Count + 2; i++)
+        {
+            queue.Move(1, QueueScope.Page);
+            seen.Add(queue.SelectedId);
+        }
+
+        Assert.Equal([.. page, page[^1], page[^1]], seen.Select(w => w!), StringComparer.Ordinal);
+    }
+
+    // L2: a filter change moves the selection off a row it hides (silently: no announcement, no key guard).
+    [Fact]
+    public async Task A_filter_change_clears_a_selection_it_hides_silently()
+    {
+        var queue = await Queue();
+        queue.Select(A.NewItem);
+
+        queue.FilterText = "Try the";
+        Assert.Equal(A.NewItem, queue.SelectedId);
+
+        queue.FilterText = "RETRY";
+        Assert.Equal((null, Labels.Sindri, false), (queue.SelectedId, queue.Announcement, queue.IsGuarded));
+
+        queue.Select(A.NewItem);
+        queue.ClearFilter();
+        queue.Select(A.NewItem);
+        queue.Filter(QueueFilter.Running);
+        Assert.Null(queue.SelectedId);
+    }
+
+    // L2: a row the filter hides is not a row that is gone: a refresh keeps it selected and says nothing.
+    [Fact]
+    public async Task A_refresh_keeps_a_selection_the_filter_hides()
+    {
+        var queue = await Queue();
+        queue.FilterText = "RETRY";
+        queue.Select(A.NewItem);
+
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal((A.NewItem, false, Labels.Sindri), (queue.SelectedId, queue.IsAnnouncing, queue.Announcement));
+    }
+
+    // a11y-11: the title button is named for what it does.
+    [Fact]
+    public async Task A_rows_title_button_is_named_open_and_its_id()
+    {
+        var queue = await Queue();
+
+        Assert.Equal("Open " + A.NewItem, queue.Groups[3].Rows[3].OpenName);
     }
 }
