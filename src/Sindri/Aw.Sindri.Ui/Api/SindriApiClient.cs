@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Net;
 using System.Net.ServerSentEvents;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -19,7 +18,7 @@ namespace Aw.Sindri.Ui.Api;
 /// <param name="token">The control plane's per-start human token, read at each call (API spec §6).</param>
 /// <param name="clock">The clock the 2 s deadline runs on (the app's, so tests drive it with a fake one).</param>
 /// <param name="log">The app's log, where an unreadable body's parser detail goes (never the window); none by default.</param>
-internal sealed class SindriApiClient(HttpClient http, IHumanTokenSource token, TimeProvider clock, ILogger? log = null) : ISindriApi
+internal sealed partial class SindriApiClient(HttpClient http, IHumanTokenSource token, TimeProvider clock, ILogger? log = null) : ISindriApi
 {
     private readonly ILogger _log = log ?? NullLogger.Instance;
 
@@ -31,12 +30,22 @@ internal sealed class SindriApiClient(HttpClient http, IHumanTokenSource token, 
 
     private static readonly TimeSpan _callTimeout = TimeSpan.FromSeconds(2);
 
+    // A view query carrying X-Sindri-After: the server waits up to 2 s for the views, so the client waits longer.
+    private static readonly TimeSpan _waitingTimeout = TimeSpan.FromSeconds(5);
+
     /// <summary>The app's JSON options (the AwJson profile over the app's context).</summary>
     internal static JsonSerializerOptions Json { get; } = AwJson.CreateOptions(SindriUiJsonContext.Default);
 
     public Task<Result<PingView>> Ping(Uri api, CancellationToken cancellationToken) => Get<PingView>(api, "/sindri/ping", cancellationToken);
 
-    public Task<Result<StatusView>> Status(Uri api, CancellationToken cancellationToken) => Get<StatusView>(api, "/sindri/status", cancellationToken);
+    public Task<Result<StatusView>> Status(Uri api, CancellationToken cancellationToken) => Get<StatusView>(api, "/sindri/status", cancellationToken, view: true);
+
+    public Task<Result<CommandList>> Commands(Uri api, CancellationToken cancellationToken) => Get<CommandList>(api, "/sindri/commands", cancellationToken);
+
+    public Task<Result<ServiceList>> Services(Uri api, CancellationToken cancellationToken) => Get<ServiceList>(api, "/sindri/services", cancellationToken, view: true);
+
+    public Task<Result<CommandAcceptedView>> RebuildViews(Uri api, CancellationToken cancellationToken) =>
+        Call<CommandAcceptedView>(api, HttpMethod.Post, "/sindri/views/rebuild", cancellationToken);
 
     public async IAsyncEnumerable<EventView> Events(Uri api, long after, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
@@ -70,117 +79,6 @@ internal sealed class SindriApiClient(HttpClient http, IHumanTokenSource token, 
         }
     }
 
-    private async Task<Result<T>> Get<T>(Uri api, string path, CancellationToken cancellationToken)
-    {
-        using var timeout = new CancellationTokenSource(_callTimeout, clock);
-        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
-        try
-        {
-            var (code, body) = await Exchange(new Uri(api, path), deadline.Token).ConfigureAwait(false);
-
-            if (Refusal(code, body) is { } refused)
-            {
-                return refused;
-            }
-
-            if (code is < HttpStatusCode.OK or >= HttpStatusCode.MultipleChoices)
-            {
-                return SindriUiErrors.BadAnswer.With(string.Create(CultureInfo.InvariantCulture, $"{path} answered {(int)code}"));
-            }
-
-            var value = AwJson.Deserialize<T>(body, Json);
-            if (value.IsError)
-            {
-                // The parser's text names .NET types, JSON paths and byte positions: the log keeps it, the window gets
-                // the route in words (UI spec §4.1 Unreadable; as I7 for SND-UI-002).
-                SindriApiLog.Unreadable(_log, path, value.Error.Message);
-                return SindriUiErrors.BadAnswer.With($"{path} answered with something this build can't read");
-            }
-
-            return value;
-        }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-        {
-            return SindriUiErrors.Unreachable.With($"{api.Authority} didn't answer within 2 s");
-        }
-        catch (HttpRequestException)
-        {
-            // The platform's message repeats the address in its own words ("Connection refused (127.0.0.1:61879)"): I7.
-            return SindriUiErrors.Unreachable.With($"nothing answered at {api.Authority}");
-        }
-    }
-
-    // A call, and its one retry when the token was stale.
-    private async Task<(HttpStatusCode Code, byte[] Body)> Exchange(Uri url, CancellationToken cancellationToken)
-    {
-        var answer = await Send(url, cancellationToken).ConfigureAwait(false);
-        return StaleToken(answer.Code, answer.Body) ? await Send(url, cancellationToken).ConfigureAwait(false) : answer;
-    }
-
-    // One call: the request with the token as it is now, and the answer's status and body.
-    private async Task<(HttpStatusCode Code, byte[] Body)> Send(Uri url, CancellationToken cancellationToken)
-    {
-        using var request = await Request(url, cancellationToken).ConfigureAwait(false);
-        using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        return (response.StatusCode, await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false));
-    }
-
-    // SND-AUTH-001 (API §6: a human call without this start's token): a restarted host has minted a new token, so the
-    // call is retried exactly once with the token read again from auth/human.token (orchestrator decision, PR #184). A
-    // second refusal is the answer.
-    private static bool StaleToken(HttpStatusCode code, byte[] body) =>
-        string.Equals(Refusal(code, body)?.Code, TokenRefused, StringComparison.Ordinal);
-
-    private const string TokenRefused = "SND-AUTH-001";
-
-    // A 403 with Sindri's ProblemDetails is a refusal (API §6: SND-AUTH-001 for a missing or stale token): Sindri's code
-    // and its detail as they are (API §3.6), so the window shows Sindri's own sentence and fix. Built like the CLI's
-    // reading of a problem (ControlPlaneClient): the code is Sindri's catalogue's, not the app's. Any other non-success,
-    // or a 403 without a title, stays SND-UI-003.
-    private static Error? Refusal(HttpStatusCode status, byte[] body)
-    {
-        if (status != HttpStatusCode.Forbidden)
-        {
-            return null;
-        }
-
-        var problem = AwJson.Deserialize<ProblemView>(body, Json);
-        return problem is { IsSuccess: true, Value.Title: { Length: > 0 } code }
-            ? new Error(code, ErrorKind.Forbidden, problem.Value.Detail is { Length: > 0 } detail ? detail : code)
-            : null;
-    }
-
-    // Every request says who the app is to the API (UI spec §9.1, API §6): a human, from the UI, with this start's token
-    // (read at each call, like the CLI's, so a restarted control plane's new one is sent with no app restart). Never
-    // X-Sindri-Terminal (the app is no terminal, so protected actions stay at the CLI) and never Origin (commands refuse
-    // it). With no token, or one the platform can't read, the call goes without it and Sindri's SND-AUTH-001 says why.
-    // The token goes only into this header: never into an error, the log or the window.
-    private async ValueTask<HttpRequestMessage> Request(Uri url, CancellationToken cancellationToken)
-    {
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Add("X-Sindri-Caller", "human");
-        request.Headers.Add("X-Sindri-Client", "ui");
-        if (await HumanToken(cancellationToken).ConfigureAwait(false) is { } value)
-        {
-            request.Headers.Add("X-Sindri-Token", value);
-        }
-
-        return request;
-    }
-
-    private async ValueTask<string?> HumanToken(CancellationToken cancellationToken)
-    {
-        try
-        {
-            return await token.Read(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            SindriApiLog.TokenUnreadable(_log, token.Location, e.GetType().Name);
-            return null;
-        }
-    }
-
     // The open event-stream response (owned by the caller), or null when it didn't answer 2xx or nothing answered.
     private async Task<HttpResponseMessage?> Open(Uri url, CancellationToken cancellationToken)
     {
@@ -188,7 +86,7 @@ internal sealed class SindriApiClient(HttpClient http, IHumanTokenSource token, 
         {
             for (var attempt = 1; ; attempt++)
             {
-                using var request = await Request(url, cancellationToken).ConfigureAwait(false);
+                using var request = await Request(HttpMethod.Get, url, after: 0, cancellationToken).ConfigureAwait(false);
                 request.Headers.Accept.ParseAdd("text/event-stream");
                 var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 if (response.IsSuccessStatusCode)

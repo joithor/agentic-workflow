@@ -193,4 +193,19 @@ internal sealed partial class TopBar : UserControl
             _ = shell.Health.Refresh(CancellationToken.None);
         }
     }
+    // The ⌘K field opens the palette (§8): a click, or Enter or Space while it has focus.
+    private void OnSearch(object? sender, PointerPressedEventArgs e)
+    {
+        (DataContext as ShellViewModel)?.Palette.Open();
+        e.Handled = true;
+    }
+
+    private void OnSearchKey(object? sender, KeyEventArgs e)
+    {
+        if (e.Key is Key.Enter or Key.Space && DataContext is ShellViewModel shell)
+        {
+            shell.Palette.Open();
+            e.Handled = true;
+        }
+    }
 }
