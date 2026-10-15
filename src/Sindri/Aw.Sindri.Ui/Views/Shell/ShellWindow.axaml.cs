@@ -28,6 +28,7 @@ internal sealed partial class ShellWindow : Window
 
     private ShellViewModel? _shell;
     private Control? _lastFocused;
+    private int _rowRequests;   // row-focus requests posted and not yet run
     private NavigationMethod _lastMethod = NavigationMethod.Tab;
     private Control? _sheetOpener;
 

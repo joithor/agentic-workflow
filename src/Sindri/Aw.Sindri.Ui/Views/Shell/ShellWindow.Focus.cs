@@ -64,17 +64,27 @@ internal sealed partial class ShellWindow
 
     // The queue asks for focus on a row (J / K, or the row a refresh moved the selection to): the row's frame gets it, on
     // the keyboard's ring, once the refresh has laid the rows out. A refresh only takes it when focus was lost with the old row.
-    private void OnFocusRow(object? sender, FocusRequestedEventArgs request) =>
+    private void OnFocusRow(object? sender, FocusRequestedEventArgs request)
+    {
+        _rowRequests++;   // KeepFocus (posted by whatever hid the focused control) waits for this: focus moves once
         Dispatcher.UIThread.Post(() => FocusRow(request), DispatcherPriority.Loaded);
+    }
 
     private void FocusRow(FocusRequestedEventArgs request)
     {
+        _rowRequests--;
         if (request.OnlyIfLost && HasUsableFocus)
         {
             return;
         }
 
-        _ = RowFrame(request.ItemId)?.Focus(NavigationMethod.Tab);
+        if (RowFrame(request.ItemId) is not { } frame)
+        {
+            KeepFocus();   // the row is not drawn: whoever KeepFocus waited for still gets its neighbour
+            return;
+        }
+
+        _ = frame.Focus(NavigationMethod.Tab);
     }
 
     // The visible frame of the row for an item, on the page the window shows.
@@ -86,7 +96,8 @@ internal sealed partial class ShellWindow
     // or nothing has focus after something had it), focus its region's neighbour.
     private void KeepFocus()
     {
-        if (HasUsableFocus || _lastFocused is not { } last)
+        // A row request is pending (the pill pressed: its row asks for focus right after the pill hides): it moves focus, once.
+        if (_rowRequests > 0 || HasUsableFocus || _lastFocused is not { } last)
         {
             return;
         }
