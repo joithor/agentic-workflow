@@ -22,6 +22,15 @@ internal sealed class ViewsBanner : ObservableObject
     /// <summary>The view's sentence for its state, as served.</summary>
     public string Text { get; private set => Set(ref field, value); } = string.Empty;
 
+    /// <summary>The polite live region's text while the banner shows (its sentence; "Rebuilding views" for progress), else its resting text (never empty).</summary>
+    public string Announcement { get; private set => Set(ref field, value); } = Labels.Sindri;
+
+    /// <summary>True from the banner going away until trouble comes again: the recovery's live flag.</summary>
+    public bool IsRecovered { get; private set => Set(ref field, value); }
+
+    /// <summary>The recovery's live text, else its resting text (never empty).</summary>
+    public string RecoveredAnnouncement { get; private set => Set(ref field, value); } = Labels.Sindri;
+
     /// <summary>The Rebuild views control (stalled only), or null when the catalog has no such row.</summary>
     public ControlViewModel? Rebuild { get; private set => Set(ref field, value); }
 
