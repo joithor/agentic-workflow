@@ -492,6 +492,82 @@ csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj; csproj "$d" tests/Aw.KTest.Testing/A
 csproj "$d" tests/Aw.Beta.Tests/Aw.Beta.Tests.csproj ../Aw.KTest.Testing/Aw.KTest.Testing.csproj; run "$d"
 expect "a test-support package under tests/ makes its own edges current and is usable by any test code" 0 "deps: ok"
 
+# ---- http edges: a C# client naming another package's routes (spec §4a "UI") ----
+http_fixture() { # http_fixture <name> — Beta serves /beta/; a tier-4 Gamma client package lives inside Beta's src dir
+  local d; d="$(fixture "$1")"
+  perl -0pi -e 's/(    bins: \[beta\]\n)/$1    routes: [\/beta\/]\n/' "$d/deps.yaml"
+  perl -0pi -e 's/(  - id: Hooks\n)/  - id: Gamma\n    kind: package\n    tier: 4\n    projectPrefix: Aw.Beta.Ui\n    ts: null\n    src: src\/Beta\/Aw.Beta.Ui\n    note: the client app\n$1/' "$d/deps.yaml"
+  csproj "$d" src/Beta/Aw.Beta.Host/Aw.Beta.Host.csproj
+  printf 'app.MapGet("/beta/status", () => 1);\n' > "$d/src/Beta/Aw.Beta.Host/Endpoints.cs"
+  csproj "$d" src/Beta/Aw.Beta.Ui/Aw.Beta.Ui.csproj
+  echo "$d"
+}
+
+d="$(http_fixture http-declared)"; edge "$d" Gamma Beta http current
+printf 'var s = await http.GetAsync($"/beta/status?x={x}", ct);\n' > "$d/src/Beta/Aw.Beta.Ui/Client.cs"; run "$d"
+expect "a declared http edge the C# source has passes; tier 4 is allowed; the server's own routes are no edge" 0 "deps: ok" "cli/db/file/http edges"
+
+d="$(http_fixture http-undeclared)"
+printf '// GET "/beta/status" is fine in a comment\n    /// <see cref="x"/> "/beta/x"\nconst string Path = "/beta/status";\n' > "$d/src/Beta/Aw.Beta.Ui/Client.cs"; run "$d"
+expect "an undeclared http edge fails with where it was found" 1 "DEPS-EDGE-001" "Gamma -> Beta (http)" "src/Beta/Aw.Beta.Ui/Client.cs:3"
+refuse "  ... and a quoted route in a whole-line // or /// comment is skipped" "Client.cs:1"
+refuse "  ... (the /// line too)" "Client.cs:2"
+
+d="$(http_fixture http-stale)"; edge "$d" Gamma Beta http current; run "$d"
+expect "a current http edge with no route literal in the client is stale" 1 "DEPS-STALE-001" "Gamma -> Beta (http)" "no string literal naming Beta's routes (/beta/)"
+
+d="$(http_fixture http-tests-only)"; edge "$d" Gamma Beta http planned
+mkdir -p "$d/tests/Aw.Beta.Ui.Tests"; csproj "$d" tests/Aw.Beta.Ui.Tests/Aw.Beta.Ui.Tests.csproj
+printf 'var url = "/beta/status";\n' > "$d/tests/Aw.Beta.Ui.Tests/T.cs"; run "$d"
+expect "route literals in test projects are not edges" 0 "deps: ok"
+
+d="$(http_fixture http-no-routes)"; edge "$d" Gamma Delta http planned; run "$d"
+expect "an http edge to a package with no routes fails" 1 "DEPS-KIND-004" "Gamma -> Delta (http)"
+
+# Review run 3 (kieran-typescript-reviewer-0): DEPS-KIND-004 depends only on the target, so an http edge from a shell
+# or mod node to a package with no routes fails too.
+d="$(http_fixture http-no-routes-shell)"; edge "$d" Hooks Delta http planned; run "$d"
+expect "an http edge from a shell node to a package with no routes fails" 1 "DEPS-KIND-004" "Hooks -> Delta (http)"
+
+# Review run 4 (kieran-typescript-reviewer-0): no scan covers http calls from shell or mod sources, so a current http
+# edge from one can't be stale. It passes with an info line saying it isn't scanned, and nothing names C# projects for it.
+d="$(http_fixture http-shell-current)"; edge "$d" Hooks Beta http current
+printf 'curl -s "http://127.0.0.1:7480/beta/status"\n' >> "$d/hooks/gate.sh"; run "$d"
+expect "a current http edge from a shell node passes with a not-scanned info line" 0 "deps: ok" "Hooks -> Beta (http): not scanned"
+refuse "  ... and its text names no C# projects for the shell node" "Hooks's C# projects"
+
+d="$(http_fixture http-cycle)"; edge "$d" Gamma Beta http planned; edge "$d" Beta Gamma cli planned; run "$d"
+expect "http edges count in the cycle check" 1 "DEPS-CYCLE-001" "Beta -> Gamma -> Beta"
+
+d="$(http_fixture http-shell-routes)"; perl -0pi -e 's/(    scan: \[hooks\]\n)/$1    routes: [\/hooks\/]\n/' "$d/deps.yaml"; run "$d"
+expect "a shell node can't serve routes (schema)" 1 "DEPS-SCHEMA-001"
+
+d="$(http_fixture http-nested-and-verbatim)"
+mkdir -p "$d/src/Beta/Aw.Beta.Host/Ui"; csproj "$d" src/Beta/Aw.Beta.Host/Ui/Aw.Beta.Ui.Nested.csproj
+printf 'var a = @"/beta/status";\n' > "$d/src/Beta/Aw.Beta.Host/Ui/Client.cs"; run "$d"
+expect "a client project nested in the server's directory is its own (verbatim literal found)" 1 "DEPS-EDGE-001" "Gamma -> Beta (http)" "src/Beta/Aw.Beta.Host/Ui/Client.cs:1"
+
+# ---- C# file and db edges: every segment of another package's state path as a string literal in one file ----
+d="$(http_fixture cs-file-undeclared)"
+printf 'var p = Path.Combine(home, "alpha", "outbox");\n' > "$d/src/Beta/Aw.Beta.Ui/Paths.cs"; run "$d"
+expect "a C# project naming another package's state file is an undeclared file edge" 1 "DEPS-EDGE-001" "Gamma -> Alpha (file)" "src/Beta/Aw.Beta.Ui/Paths.cs"
+
+d="$(http_fixture cs-file-declared)"; edge "$d" Gamma Alpha file current
+printf 'var p = Path.Combine(home, "alpha");\nvar f = Path.Combine(p, "outbox");\n' > "$d/src/Beta/Aw.Beta.Ui/Paths.cs"; run "$d"
+expect "a declared C# file edge passes when the segments sit on separate lines of one file" 0 "deps: ok"
+
+d="$(http_fixture cs-file-whole-path)"
+printf 'var p = Path.Combine(home, "alpha/outbox");\n' > "$d/src/Beta/Aw.Beta.Ui/Paths.cs"; run "$d"
+expect "a single literal holding the whole state path is a file edge" 1 "DEPS-EDGE-001" "Gamma -> Alpha (file)"
+
+d="$(http_fixture cs-file-commented)"
+printf '// var p = Path.Combine(home, "alpha", "outbox");\n    /// Path.Combine(home, "alpha", "outbox")\n' > "$d/src/Beta/Aw.Beta.Ui/Paths.cs"; run "$d"
+expect "a state path in whole-line // and /// comments is no file edge" 0 "deps: ok"
+
+d="$(http_fixture cs-file-partial)"
+printf 'var p = "outbox";\n' > "$d/src/Beta/Aw.Beta.Ui/Paths.cs"; run "$d"
+expect "one segment alone is not a file edge" 0 "deps: ok"
+
 # ---- the compose edge kind (context spec §4, stage S-1C): a Host calls a lower package's Add…() methods ----
 composed() { # composed <name> — Beta reaches Alpha by project (current) and compose (current); Alpha has every layer
   local d; d="$(fixture "$1")"
@@ -569,6 +645,56 @@ expect "the removed package fan-out rule takes no exception" 1 "DEPS-SCHEMA-001"
 
 d="$(over exc-edge)"; perl -pi -e "s/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-002\n    subject: Beta\n    edge: Alpha\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/" "$d/deps.yaml"; run "$d"
 expect "an exception names no edge" 1 "DEPS-SCHEMA-001" "/exceptions/0" "edge"
+
+# ---- cycle exceptions: a DEPS-CYCLE-001 exception excuses one declared cli or http edge and the one cycle it closes ----
+cyc() { # cyc <dir> <subject> <from> <to> <kind> [recorded expires] — a DEPS-CYCLE-001 exception excusing from -> to (kind)
+  perl -pi -e "s/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-CYCLE-001\n    subject: $2\n    excuses:\n      from: $3\n      to: $4\n      kind: $5\n    reason: test\n    recorded: ${6:-2026-10-10}\n    expires: ${7:-2026-12-01}\n/" "$1/deps.yaml"
+}
+d="$(fixture cycle-excepted)"; edge "$d" Alpha Beta cli planned; cyc "$d" Alpha Alpha Beta cli; run "$d"
+expect "a cycle exception excusing the cli edge that closes the cycle passes" 0 "deps: ok" "exception DEPS-CYCLE-001 Alpha -> Beta (cli) (expires 2026-12-01)"
+
+d="$(fixture cycle-excepted-other)"; edge "$d" Alpha Beta cli planned; edge "$d" Alpha Delta cli planned; edge "$d" Delta Beta cli planned; cyc "$d" Alpha Alpha Beta cli; run "$d"
+expect "a cycle exception covers its one cycle: another cycle still fails" 1 "DEPS-CYCLE-001" "Alpha -> Delta -> Beta -> Alpha"
+refuse "  ... and the excused cycle is not reported" "Alpha -> Beta -> Alpha"
+
+d="$(fixture cycle-excepted-two)"; edge "$d" Alpha Beta cli planned; edge "$d" Beta Delta cli planned; edge "$d" Delta Alpha cli planned; cyc "$d" Alpha Alpha Beta cli; run "$d"
+expect "a cycle exception whose edge closes two cycles covers neither" 1 "DEPS-CYCLE-001" "Alpha -> Beta -> Alpha" "Alpha -> Beta -> Delta -> Alpha" "DEPS-EXC-002" "2 cycles pass through Alpha -> Beta (cli)" "fix: break the other cycle through Alpha -> Beta (cli)"
+refuse "  ... and its fix isn't to delete the exception" "fix: delete the DEPS-CYCLE-001 exception"
+
+# Review run 3 (kieran-typescript-reviewer-1): two exceptions on the same cycle (one per direction): either alone removes
+# the cycle, so the second suppresses nothing and fails DEPS-EXC-002 with its own measurement and fix.
+d="$(fixture cycle-excepted-both)"; edge "$d" Alpha Delta cli planned; edge "$d" Delta Alpha cli planned; cyc "$d" Alpha Alpha Delta cli
+perl -pi -e "s/^exceptions:\n/exceptions:\n  - rule: DEPS-CYCLE-001\n    subject: Delta\n    excuses:\n      from: Delta\n      to: Alpha\n      kind: cli\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/" "$d/deps.yaml"; run "$d"
+expect "a second exception on an already covered cycle suppresses nothing" 1 "DEPS-EXC-002" "is already covered by another DEPS-CYCLE-001 exception" "fix: delete one of the two exceptions on"
+refuse "  ... and the cycle itself stays covered" "FAIL DEPS-CYCLE-001 the declared graph has a cycle"
+
+d="$(fixture cycle-excepted-none)"; edge "$d" Delta Alpha cli planned; cyc "$d" Delta Delta Alpha cli; run "$d"
+expect "a cycle exception whose cycle doesn't exist suppresses nothing" 1 "DEPS-EXC-002" "DEPS-CYCLE-001 for Delta: no cycle passes through Delta -> Alpha (cli)" "fix: delete the DEPS-CYCLE-001 exception for Delta from deps.yaml"
+
+d="$(fixture cycle-excepted-parallel)"; edge "$d" Alpha Beta cli planned; edge "$d" Alpha Beta file planned; cyc "$d" Alpha Alpha Beta cli; run "$d"
+expect "a cycle exception covers nothing when another edge of the same pair still closes the cycle" 1 "DEPS-CYCLE-001" "Alpha -> Beta -> Alpha" "DEPS-EXC-002" "every cycle through Alpha -> Beta (cli) also has another Alpha -> Beta edge" "fix: remove the other Alpha -> Beta edge"
+refuse "  ... and its fix isn't to delete the exception" "fix: delete the DEPS-CYCLE-001 exception"
+
+d="$(fixture cycle-excepted-missing)"; edge "$d" Alpha Beta cli planned; cyc "$d" Alpha Alpha Beta http; run "$d"
+expect "a cycle exception excusing an edge that isn't declared fails, and the cycle with it" 1 "DEPS-EXC-005" "Alpha -> Beta (http) is not a declared edge" "DEPS-CYCLE-001" "Alpha -> Beta -> Alpha"
+
+d="$(fixture cycle-excepted-subject)"; edge "$d" Alpha Beta cli planned; cyc "$d" Beta Alpha Beta cli; run "$d"
+expect "a cycle exception excuses an edge leaving its own subject" 1 "DEPS-EXC-005" "Alpha -> Beta (cli) does not leave Beta" "DEPS-CYCLE-001" "Alpha -> Beta -> Alpha"
+
+d="$(fixture cycle-excepted-file)"; edge "$d" Alpha Beta file planned; cyc "$d" Alpha Alpha Beta file; run "$d"
+expect "a cycle exception excuses a cli or http edge, not a db or file edge" 1 "DEPS-SCHEMA-001" "/exceptions/0/excuses/kind"
+
+d="$(fixture cycle-excepted-expired)"; edge "$d" Alpha Beta cli planned; cyc "$d" Alpha Alpha Beta cli 2020-01-01 2020-06-01; run "$d"
+expect "an expired cycle exception fails and no longer covers the cycle" 1 "DEPS-EXC-001" "DEPS-CYCLE-001" "Alpha -> Beta -> Alpha"
+for dates in "2026-13-45 2026-12-01" "2026-12-01 2026-11-01" "2026-10-10 2027-10-10"; do
+  set -- $dates; d="$(fixture "cycle-dates-$1-$2")"; edge "$d" Alpha Beta cli planned; cyc "$d" Alpha Alpha Beta cli "$1" "$2"; run "$d"
+  expect "bad cycle exception dates fail (recorded $1, expires $2)" 1 "DEPS-EXC-003" "Alpha -> Beta -> Alpha"
+done
+
+d="$(fixture cycle-excepted-unnamed)"; exc "$d" DEPS-CYCLE-001 Alpha 2026-10-10 2026-12-01; run "$d"
+expect "a cycle exception names the edge it excuses" 1 "DEPS-SCHEMA-001" "/exceptions/0: missing required property excuses"
+d="$(over fanout-excuses)"; perl -pi -e "s/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-002\n    subject: Beta\n    excuses:\n      from: Beta\n      to: Alpha\n      kind: cli\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/" "$d/deps.yaml"; run "$d"
+expect "only a cycle exception names an excused edge" 1 "DEPS-SCHEMA-001" "/exceptions/0"
 
 # ---- parser, validator and schema drift (node unit table) ----
 set +e; UNIT="$(node "$HERE/check-deps.unit.mjs" 2>&1)"; UCODE=$?; set -e

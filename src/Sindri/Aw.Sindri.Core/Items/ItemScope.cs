@@ -11,5 +11,8 @@ public static class ItemScope
     /// <param name="itemRepo">The item's repo, or null.</param>
     /// <returns>True when visible.</returns>
     public static bool Visible(CallerContext caller, RepoName? itemRepo)
-        => throw new NotSupportedException("ItemScope.Visible: P3 unit D makes Session_sees_only_its_repo pass");
+    {
+        ArgumentNullException.ThrowIfNull(caller);
+        return caller.Class != CallerClass.Session || Equals(caller.Repo, itemRepo);
+    }
 }

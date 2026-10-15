@@ -4,6 +4,7 @@ using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Features.GetStatus;
 
 namespace Aw.Sindri.Host.Commands;
 
@@ -23,6 +24,9 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
     private readonly HttpClient _http = new(handler ?? new SocketsHttpHandler { UseProxy = false }) { Timeout = timeout ?? TimeSpan.FromSeconds(10) };
     private readonly CallerHeaders _headers = headers ?? CallerHeaders.None;
 
+    /// <summary>Why this CLI calls as a session ('CLAUDECODE is set', 'no terminal'), or null when it calls as a human.</summary>
+    public string? SessionReason => _headers.SessionReason;
+
     public void Dispose() => _http.Dispose();
 
     /// <summary>GET a route and read its answer as <typeparamref name="T"/>.</summary>
@@ -30,7 +34,31 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
     /// <param name="ct">Cancels the call.</param>
     /// <typeparam name="T">The response record (in the package's JSON context).</typeparam>
     /// <returns>The answer, or the API's error.</returns>
-    public Task<Result<ApiAnswer<T>>> Get<T>(string route, CancellationToken ct) => Send<T>(HttpMethod.Get, route, content: null, ct);
+    public Task<Result<ApiAnswer<T>>> Get<T>(string route, CancellationToken ct) => Send<T>(HttpMethod.Get, route, content: null, after: null, ct);
+
+    /// <summary>
+    /// GET a view route so it reflects every write made so far (API spec §2.4): reads the ledger head from GET /sindri/status, then sends it as
+    /// X-Sindri-After, so a read right after a write never lags the projector. Views still behind after 2 s are the server's SND-API-011.
+    /// When the status says the views stall or rebuild, no header is sent, so the answer arrives with its asOf and sentence instead of that error.
+    /// </summary>
+    /// <param name="route">The route under the base URL, e.g. '/sindri/items'.</param>
+    /// <param name="ct">Cancels the calls.</param>
+    /// <typeparam name="T">The response record (in the package's JSON context).</typeparam>
+    /// <returns>The answer, or the API's error.</returns>
+    public async Task<Result<ApiAnswer<T>>> GetView<T>(string route, CancellationToken ct)
+    {
+        var status = await Send<GetStatusResponse>(HttpMethod.Get, "/sindri/status", content: null, after: null, ct).ConfigureAwait(false);
+        if (status.IsError)
+        {
+            return status.Error;
+        }
+
+        // Views that stall or rebuild can't catch up to the head, so the header would only turn the answer into SND-API-011: the answer's asOf
+        // already says its rows may be partial, and the verb exits 1 on it.
+        var views = status.Value.Value.Views;
+        var head = views is { Stalled: false, Rebuilding: false } ? views.LedgerHead : (long?)null;
+        return await Send<T>(HttpMethod.Get, route, content: null, head, ct).ConfigureAwait(false);
+    }
 
     /// <summary>POST <paramref name="body"/> (or nothing) to a route and read its answer.</summary>
     /// <param name="route">The route.</param>
@@ -42,10 +70,10 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
     public Task<Result<ApiAnswer<T>>> Post<TBody, T>(string route, TBody? body, CancellationToken ct)
     {
         var content = body is null ? null : new ByteArrayContent(AwJson.Serialize(body, options)) { Headers = { ContentType = new MediaTypeHeaderValue("application/json") } };
-        return Send<T>(HttpMethod.Post, route, content, ct);
+        return Send<T>(HttpMethod.Post, route, content, after: null, ct);
     }
 
-    private async Task<Result<ApiAnswer<T>>> Send<T>(HttpMethod method, string route, HttpContent? content, CancellationToken ct)
+    private async Task<Result<ApiAnswer<T>>> Send<T>(HttpMethod method, string route, HttpContent? content, long? after, CancellationToken ct)
     {
         var found = await probe.Check(ct).ConfigureAwait(false);
         if (found.IsError)
@@ -56,6 +84,10 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
 
         using var request = new HttpRequestMessage(method, new Uri(found.Value.Endpoint.Url, route)) { Content = content };
         await _headers.Apply(request, ct).ConfigureAwait(false);
+        if (after is { } sequence)
+        {
+            request.Headers.Add(SindriHeaders.After, sequence.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
         try
         {
             using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);

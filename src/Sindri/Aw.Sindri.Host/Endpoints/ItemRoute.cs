@@ -2,6 +2,7 @@ using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Items.Vocabulary;
+using Aw.Sindri.Core.Text;
 
 namespace Aw.Sindri.Host.Endpoints;
 
@@ -12,7 +13,7 @@ internal static class ItemRoute
     /// <param name="itemId">The segment.</param>
     /// <returns>The reference, or SND-CLI-003.</returns>
     internal static Result<ItemRef> Item(string itemId) =>
-        ItemRef.TryParse(itemId, out var item) ? item : SindriErrors.InvalidInput.With("'" + itemId + "' isn't an item id (ITM-…) or a tracker key (ENG-142)");
+        ItemRef.TryParse(itemId, out var item) ? item : SindriErrors.InvalidInput.With("'" + Echo(itemId) + "' isn't an item id (ITM-…) or a tracker key (ENG-142)");
 
     /// <summary>The kebab-case '?state=' filter, or null when absent.</summary>
     /// <param name="state">The query value.</param>
@@ -29,7 +30,7 @@ internal static class ItemRoute
         "taken-over" => ItemState.TakenOver,
         "done" => ItemState.Done,
         "cancelled" => ItemState.Cancelled,
-        _ => SindriErrors.InvalidInput.With("'" + state + "' isn't an item state"),
+        _ => SindriErrors.InvalidInput.With("'" + Echo(state) + "' isn't an item state"),
     };
 
     /// <summary>The '?repo=' filter, or null when absent.</summary>
@@ -42,6 +43,9 @@ internal static class ItemRoute
             return (RepoName?)null;
         }
 
-        return RepoName.TryFrom(repo, out var name) ? name : SindriErrors.InvalidInput.With("'" + repo + "' isn't a repo name");
+        return RepoName.TryFrom(repo, out var name) ? name : SindriErrors.InvalidInput.With("'" + Echo(repo) + "' isn't a repo name");
     }
+
+    /// <summary>A refused value as the 400 repeats it: escaped and on one line, so a control sequence in a URL never reaches a terminal.</summary>
+    private static string Echo(string value) => SafeText.Line(SafeText.Escape(value), 80);
 }

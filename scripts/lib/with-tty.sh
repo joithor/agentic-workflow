@@ -25,10 +25,15 @@ with_tty() {
     return "${PIPESTATUS[0]}"
   fi
 
-  local tmp rc
-  tmp="$(mktemp -d "${TMPDIR:-/tmp}/with-tty.XXXXXX")" || return 2
+  # A failed command fails the pipeline below; under a caller's errexit and pipefail that would end the function before
+  # its cleanup and its return. errexit is off for the function body and back on, if it was on, at each return.
+  local tmp rc reerrexit=0
+  case $- in *e*) reerrexit=1 ;; esac
+  set +e
+  tmp="$(mktemp -d "${TMPDIR:-/tmp}/with-tty.XXXXXX")" || { [ "$reerrexit" -eq 1 ] && set -e; return 2; }
   if ! mkfifo "$tmp/ready"; then
     rmdir "$tmp" 2>/dev/null
+    [ "$reerrexit" -eq 1 ] && set -e
     return 2
   fi
   # The feeder (left) records its pid, waits until the command's shell opens "ready" (it is running inside the pty
@@ -49,6 +54,7 @@ with_tty() {
   rc=${PIPESTATUS[1]}
   rm -f "$tmp/ready" "$tmp/pid"
   rmdir "$tmp" 2>/dev/null
+  [ "$reerrexit" -eq 1 ] && set -e
   return "$rc"
 }
 

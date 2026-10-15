@@ -10,7 +10,7 @@ namespace Aw.Sindri.Tests.Workflow.InvalidFixtures;
 /// </summary>
 public sealed class InvalidFixturesTests
 {
-    /// <summary>Spec §9.1's rules. RCP-CAP-003 and RCP-VERSION-* need the registry and come with it in P2.</summary>
+    /// <summary>Spec §9.1's rules.</summary>
     private static readonly string[] _section91 =
     [
         "RCP-SCHEMA-001", "RCP-SCHEMA-002", "RCP-SCHEMA-003", "RCP-STATE-001", "RCP-INIT-001", "RCP-DUR-001", "RCP-NAME-001",
@@ -20,9 +20,8 @@ public sealed class InvalidFixturesTests
         "RCP-REACH-001", "RCP-EXIT-001", "RCP-TIME-001", "RCP-LOOP-001", "RCP-LOOP-002", "RCP-LOOP-003", "RCP-EFFECT-001", "RCP-HASH-001",
         "RCP-TRIG-001", "RCP-WHEN-002", "RCP-THRESH-001", "RCP-THRESH-002", "RCP-NEXT-001", "RCP-NEXT-002", "RCP-CHILD-002",
         "RCP-CHILD-003", "RCP-VERSION-001", "RCP-VERSION-002", "RCP-TRIG-002", "RCP-TIME-002", "RCP-RES-001",
+        "RCP-URG-001", "RCP-OUT-001", "RCP-OUT-002", "RCP-OUT-003", "RCP-TYPE-001", "RCP-TYPE-002", "RCP-TYPE-003",
     ];
-
-    private static readonly string[] _phase2 = ["RCP-CAP-003", "RCP-VERSION-001", "RCP-VERSION-002"];
 
     public static TheoryData<string> Rules => [.. InvalidFixtureCases.All.Keys.Order(StringComparer.Ordinal)];
 
@@ -40,14 +39,14 @@ public sealed class InvalidFixturesTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Every_rule_but_the_registry_ones_has_an_invalid_fixture_and_an_end_to_end_case()
+    public void Every_rule_has_an_invalid_fixture_and_an_end_to_end_case()
     {
         var fixtures = typeof(RecipeFixtures).Assembly.GetManifestResourceNames()
             .Where(n => n.StartsWith("recipes/invalid/", StringComparison.Ordinal))
             .Select(n => Path.GetFileNameWithoutExtension(n))
             .Order(StringComparer.Ordinal);
 
-        Assert.Equal(_section91.Except(_phase2, StringComparer.Ordinal).Order(StringComparer.Ordinal), fixtures, StringComparer.Ordinal);
+        Assert.Equal(_section91.Order(StringComparer.Ordinal), fixtures, StringComparer.Ordinal);
         Assert.Equal(fixtures, InvalidFixtureCases.All.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
@@ -62,7 +61,7 @@ public sealed class InvalidFixturesTests
             .ToList();
 
         Assert.Equal(CapabilityRecipe.BaseHash, baseHash);
-        Assert.Equal(6, named.Count);
+        Assert.Equal(7, named.Count);
         Assert.All(named, r => Assert.Equal(baseHash, r.Hash));
     }
 }

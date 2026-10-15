@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# The Sindri host smoke's normalizer (src/Sindri/aot-smoke/normalize.sh): a captured transcript normalizes to what
+# expected.txt pins, whether or not the heartbeat has ticked before 'sindri status' runs.
+set -uo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+N="$ROOT/src/Sindri/aot-smoke/normalize.sh"
+fail=0
+check() { # name input expected
+  local got; got="$(printf '%s\n' "$2" | bash "$N" /tmp/smoke-work /tmp/smoke-root)"
+  if [ "$got" = "$3" ]; then echo "ok - $1"; else echo "not ok - $1"; printf '  expected: %s\n  got:      %s\n' "$3" "$got"; fail=1; fi
+}
+check "status before the first heartbeat" "  services  heartbeat every 5s" "  services  heartbeat every 5s"
+check "status after the first heartbeat (the (last …) suffix is dropped)" "  services  heartbeat every 5s (last 12:34:56Z)" "  services  heartbeat every 5s"
+check "the home path is WORK" "  profile   /tmp/smoke-work/home/profile/profile.yaml (approved, hash 90f90d)" "  profile   WORK/home/profile/profile.yaml (approved, hash HASH6)"
+check "the pid is a fixed word" "  lease     held by pid 4242, epoch 1" "  lease     held by pid PID, epoch 1"
+check "the port is a fixed word" "  api       127.0.0.1:60237" "  api       127.0.0.1:PORT"
+check "doctor's claude-code line is dropped" "$(printf 'ok    claude-code re-probed: the markers are set, version 2.1.296\nwarn  cursor-agent pending: owner probe')" "warn  cursor-agent pending: owner probe"
+check "this host's name is HOST" "  lease     held by $(hostname -s)/4242 since 2026-10-14T12:00:00Z (epoch 1)" "  lease     held by HOST/PID since TIME (epoch 1)"
+check "a full hash is HASH before its 6-digit form" "hash $(printf 'a%.0s' $(seq 64)) (approve profile abcdef)" "hash HASH (approve profile HASH6)"
+check "the repo root is ROOT" "## sindri recipe validate /tmp/smoke-root/recipes/sindri/workflow.step.yaml" "## sindri recipe validate ROOT/recipes/sindri/workflow.step.yaml"
+check "status's views line keeps its words and drops the numbers" "  views     cursor 7 of 9 (rebuilding: cursor 3 of 9)" "  views     cursor N of M (rebuilding: cursor N of M)"
+check "doctor's views line keeps 'head'" "ok    views             cursor 12 of head 12" "ok    views             cursor N of head M"
+check "a rebuild's sequence is SEQ" "views rebuild requested (sequence 31)" "views rebuild requested (sequence SEQ)"
+check "an item id is ITM-ID, its time and sequence fixed words" "ITM-0000000000000000000000000000000e  Smoke item  new  since 2026-10-15T09:00:01Z" "ITM-ID  Smoke item  new  since TIME"
+check "an item add's sequence is SEQ" "ITM-00000000000000000000000000000014 created (sequence 12)" "ITM-ID created (sequence SEQ)"
+[ "$fail" -eq 0 ] && echo "PASS: sindri-smoke-normalize tests" || { echo "FAIL: sindri-smoke-normalize tests"; exit 1; }

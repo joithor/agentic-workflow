@@ -265,6 +265,74 @@ export function scan(root, nodes) {
   return found;
 }
 
+// ---------- C#: http edges (another package's routes) and file/db edges (its state paths) ----------
+
+// A package that serves an HTTP API lists its route prefixes in `routes` (e.g. /sindri/). An http edge is a
+// C# string literal whose text starts with another package's route prefix (plain "…", interpolated $"…",
+// verbatim @"…" or raw """…""": the opening quote is followed by the route), in a production project's *.cs
+// files. A file or db edge is a C# file holding another package's `files` or `db` path in one literal
+// ("sindri-app/control.json") or every segment of it as literals ("sindri-app", "control.json": Path.Combine pieces).
+// The project belongs to the package whose projectPrefix starts its name (longest wins), so a client package
+// that lives inside the server's src directory is still told apart. Test projects (*.Tests, *.Testing) and
+// whole-line // comments are not scanned; /* */ blocks and trailing comments are. Not seen: a route after a base ($"{url}/sindri/x",
+// "http://host/sindri/x"), a URL or path built from computed pieces.
+const CS_FILE = /\.cs$/;
+
+function ownerByPrefix(name, nodes) {
+  let best = null;
+  for (const n of nodes) {
+    const pre = n.projectPrefix;
+    if (pre && (name === pre || name.startsWith(`${pre}.`)) && (!best || pre.length > best.projectPrefix.length)) best = n;
+  }
+  return best;
+}
+
+function sourceFiles(dir) {
+  // A project's own *.cs files: nested directories that hold another project are that project's.
+  const out = [];
+  for (const e of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) {
+      if (SKIP_SOURCE_DIRS.has(e.name) || fs.readdirSync(p).some((f) => /\.csproj$/i.test(f))) continue;
+      out.push(...sourceFiles(p));
+    } else if (CS_FILE.test(e.name)) out.push(p);
+  }
+  return out;
+}
+
+export function scanCSharp(root, nodes) {
+  const found = new Map();
+  const servers = nodes.filter((n) => (n.routes ?? []).length > 0)
+    .map((n) => ({ id: n.id, routes: n.routes, re: new RegExp(`"(?:${n.routes.map(esc).join("|")})`) }));
+  const owners = nodes.flatMap((n) => [
+    ...(n.files ?? []).map((f) => ({ id: n.id, kind: "file", path: f })),
+    ...(n.db ?? []).map((f) => ({ id: n.id, kind: "db", path: f })),
+  ]).map((o) => ({ ...o, whole: new RegExp(`"[^"\\n]*${esc(o.path)}`), segs: o.path.split("/").map((seg) => new RegExp(`"${esc(seg)}"`)) }));
+  const files = walk(path.join(root, "src"), SKIP_PROJECT_DIRS, (p) => /\.csproj$/i.test(p));
+  for (const proj of files) {
+    const name = projName(proj);
+    if (/\.(Tests|Testing)(\.|$)/.test(name)) continue;
+    const from = ownerByPrefix(name, nodes);
+    if (!from) continue;
+    for (const file of sourceFiles(path.dirname(proj))) {
+      const rel = path.relative(root, file).split(path.sep).join("/");
+      const lines = fs.readFileSync(file, "utf8").split("\n").map((l) => (/^\s*\/\//.test(l) ? "" : l));
+      for (const to of servers.filter((s) => s.id !== from.id)) {
+        const at = lines.findIndex((l) => to.re.test(l));
+        const key = `${from.id}|${to.id}|http`;
+        if (at >= 0 && !found.has(key)) found.set(key, { from: from.id, to: to.id, kind: "http", where: `${rel}:${at + 1}`, what: `calls ${to.routes.join(", ")}` });
+      }
+      for (const o of owners.filter((x) => x.id !== from.id)) {
+        const whole = lines.findIndex((l) => o.whole.test(l));
+        const at = whole >= 0 ? [whole] : o.segs.map((re) => lines.findIndex((l) => re.test(l)));
+        const key = `${from.id}|${o.id}|${o.kind}`;
+        if (at.every((i) => i >= 0) && !found.has(key)) found.set(key, { from: from.id, to: o.id, kind: o.kind, where: `${rel}:${Math.max(...at) + 1}`, what: `${o.kind === "db" ? "opens" : "uses"} ${o.path}` });
+      }
+    }
+  }
+  return found;
+}
+
 // ---------- C# projects ----------
 
 const stripXmlComments = (s) => s.replace(/<!--[\s\S]*?-->/g, "");

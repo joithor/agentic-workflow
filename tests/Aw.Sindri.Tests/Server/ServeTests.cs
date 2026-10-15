@@ -65,7 +65,7 @@ public sealed class ServeTests : IDisposable
     }
 
     [Theory(Timeout = Deadline), Trait("Lane", "integration")]
-    [InlineData("""{"hash":"nope","confirmed":true}""")]
+    [InlineData("""{"hash":"nope"}""")]
     [InlineData("""{"hash":""")]
     public async Task A_bad_approve_body_is_a_400_problem_with_SND_CLI_003_and_no_stack_trace(string json)
     {
@@ -142,7 +142,7 @@ public sealed class ServeTests : IDisposable
         var ct = TestContext.Current.CancellationToken;
         var error = new StringWriter();
 
-        var code = await ServeCommand.Run(n => n switch { "AW_SINDRI_HOME" => _home.Path, "AW_SINDRI_PORT" => port, _ => null }, TimeProvider.System, error)
+        var code = await ServeCommand.Run(n => n switch { "AW_SINDRI_HOME" => _home.Path, "AW_SINDRI_PORT" => port, _ => null }, TimeProvider.System, error, NoTemporal.Use)
             .WaitAsync(ct);
 
         Assert.Equal(2, code);
@@ -169,7 +169,7 @@ public sealed class ServeTests : IDisposable
         var stale = SliceHarness.Profile("9s").Hash;
         using var request = new HttpRequestMessage(HttpMethod.Post, "/sindri/profile/approve")
         {
-            Content = new StringContent($$"""{"hash":"{{stale.Value}}","confirmed":true}""", System.Text.Encoding.UTF8, "application/json"),
+            Content = new StringContent($$"""{"hash":"{{stale.Value}}"}""", System.Text.Encoding.UTF8, "application/json"),
         }.AsHuman(app);
 
         using var answer = await http.SendAsync(request, ct);

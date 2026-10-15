@@ -1,0 +1,107 @@
+using System.Diagnostics;
+using System.Text.Json;
+using Aw.Context.Core.Engine;
+using Aw.Context.Core.Eval;
+using Aw.Context.Core.Facade;
+using Aw.Context.Core.Graph;
+using Aw.Context.Core.Lenses;
+using Aw.Context.Core.Map;
+using Aw.Context.Core.Proposals;
+using Aw.Context.Core.Results;
+using Aw.Context.Core.Review;
+using Aw.Kernel;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Aw.Sindri.Tests.ContextCalls;
+
+/// <summary>
+/// Wraps the host's real context engine and records, for each query, the engine caller Sindri built and the span the call
+/// ran inside, so a test can show an MCP call took the same query chain as the HTTP route.
+/// </summary>
+internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller Caller, string? Span)> calls) : IContextEngine
+{
+    /// <summary>Replaces the registered engine with one that records into <paramref name="calls"/>.</summary>
+    public static void Install(IServiceCollection services, List<(ContextCaller Caller, string? Span)> calls)
+    {
+        var original = services.Last(d => d.ServiceType == typeof(IContextEngine));
+        _ = services.Remove(original);
+        services.Add(new ServiceDescriptor(typeof(IContextEngine), sp => new RecordingEngine(Resolve(original, sp), calls), original.Lifetime));
+    }
+
+    public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) => inner.CheckSettings(section, repos);
+
+    public ValueTask<Result<ContextResult>> Query(ContextQuery query, ContextScope scope, CancellationToken cancellationToken)
+    {
+        lock (calls)
+        {
+            calls.Add((scope.Caller, Activity.Current?.DisplayName));
+        }
+
+        return inner.Query(query, scope, cancellationToken);
+    }
+
+    public ValueTask<Result<SourcesView>> Sources(ContextScope scope, CancellationToken cancellationToken) => inner.Sources(scope, cancellationToken);
+
+    public ValueTask<Result<RefreshReport>> Refresh(ContextScope scope, CancellationToken cancellationToken) => inner.Refresh(scope, cancellationToken);
+
+    public ValueTask<Result<MapFilePreview>> PreviewMap(string path, ContextScope scope, CancellationToken cancellationToken) => inner.PreviewMap(path, scope, cancellationToken);
+
+    public ValueTask<Result<MapImported>> ImportMap(string path, string confirmedHash, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.ImportMap(path, confirmedHash, scope, cancellationToken);
+
+    public ValueTask<Result<MapExported>> ExportMap(string? path, ContextScope scope, CancellationToken cancellationToken) => inner.ExportMap(path, scope, cancellationToken);
+
+    public ValueTask<Result<MapStatusView>> MapStatus(string? anchor, ContextScope scope, CancellationToken cancellationToken) => inner.MapStatus(anchor, scope, cancellationToken);
+
+    public ValueTask<Result<ProbeRun>> EvalProbes(string? file, Func<ProbeCase, CancellationToken, ValueTask<Result<ContextResult>>> ask, CancellationToken cancellationToken) =>
+        inner.EvalProbes(file, ask, cancellationToken);
+
+    public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) => inner.ShowNode(key, scope, cancellationToken);
+
+    public ValueTask<Result<NeighborsView>> Neighbors(string key, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.Neighbors(key, depth, scope, cancellationToken);
+
+    public ValueTask<Result<PathView>> Path(string from, string to, ContextScope scope, CancellationToken cancellationToken) => inner.Path(from, to, scope, cancellationToken);
+
+    public ValueTask<Result<MapBuildReport>> BuildMap(IProgress<string>? progress, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.BuildMap(progress, scope, cancellationToken);
+
+    public ValueTask<Result<ReviewQueueView>> ReviewQueue(int? limit, ContextScope scope, CancellationToken cancellationToken) => inner.ReviewQueue(limit, scope, cancellationToken);
+
+    public ValueTask<Result<ReviewResult>> ApplyReview(ReviewDecision decision, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.ApplyReview(decision, scope, cancellationToken);
+
+    public ValueTask<Result<ReviewExported>> ExportReview(string? path, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.ExportReview(path, scope, cancellationToken);
+
+    public ValueTask<Result<ReviewResult>> ApplyReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.ApplyReviewFile(path, scope, cancellationToken);
+
+    public ValueTask<Result<ReviewHistoryView>> ReviewHistory(int? limit, ContextScope scope, CancellationToken cancellationToken) => inner.ReviewHistory(limit, scope, cancellationToken);
+
+    public ValueTask<Result<ReviewFilePreview>> PreviewReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) => inner.PreviewReviewFile(path, scope, cancellationToken);
+
+    public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken) => inner.Promote(scope, cancellationToken);
+
+    public ValueTask<Result<ProposeResult>> Propose(ScopeProposal proposal, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.Propose(proposal, scope, cancellationToken);
+
+    public ValueTask<Result<ProposalsView>> Proposals(string run, ContextScope scope, CancellationToken cancellationToken) => inner.Proposals(run, scope, cancellationToken);
+
+    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.Lenses(anchor, draft, depth, scope, cancellationToken);
+
+    public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.FileMap(query, scope, cancellationToken);
+
+    public ValueTask<Result<MapHealth>> CheckMap(ContextScope? scope, CancellationToken cancellationToken) => inner.CheckMap(scope, cancellationToken);
+
+    public ValueTask<Result<MapHealth>> CheckRetention(CancellationToken cancellationToken) => inner.CheckRetention(cancellationToken);
+
+    public ValueTask<Result<PurgeReport>> PurgeExpired(CancellationToken cancellationToken) => inner.PurgeExpired(cancellationToken);
+
+    private static IContextEngine Resolve(ServiceDescriptor original, IServiceProvider services) =>
+        (IContextEngine)(original.ImplementationInstance
+            ?? original.ImplementationFactory?.Invoke(services)
+            ?? ActivatorUtilities.CreateInstance(services, original.ImplementationType!));   // why: a descriptor has one of the three
+}

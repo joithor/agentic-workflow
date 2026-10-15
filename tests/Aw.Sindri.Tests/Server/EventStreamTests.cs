@@ -19,7 +19,7 @@ public sealed class EventStreamTests : IDisposable
         var read = new StoppedMidRead(_shutdown);
         var items = 0;
 
-        await foreach (var _ in EventStream.Events(read, TimeProvider.System, cursor: 0, (CancellationToken.None, _shutdown.Stopping)).WithCancellation(TestContext.Current.CancellationToken))
+        await foreach (var _ in EventStream.Events(read, TimeProvider.System, new StreamEventsRequest(0), (CancellationToken.None, _shutdown.Stopping)).WithCancellation(TestContext.Current.CancellationToken))
         {
             items++;
         }

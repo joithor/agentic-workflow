@@ -6,6 +6,12 @@
     <Project Path="src/Aw.Kernel.Telemetry/Aw.Kernel.Telemetry.csproj" />
     <Project Path="src/Redaction/Aw.Redaction/Aw.Redaction.csproj" />
   </Folder>
+  <Folder Name="/src/Meta/">
+    <Project Path="src/Meta/Aw.Meta.Core/Aw.Meta.Core.csproj" />
+    <Project Path="src/Meta/Aw.Meta.Features/Aw.Meta.Features.csproj" />
+    <Project Path="src/Meta/Aw.Meta.Infrastructure/Aw.Meta.Infrastructure.csproj" />
+    <Project Path="src/Meta/Aw.Meta.Host/Aw.Meta.Host.csproj" />
+  </Folder>
   <Folder Name="/src/Context/">
     <Project Path="src/Context/Aw.Context.Core/Aw.Context.Core.csproj" />
     <Project Path="src/Context/Aw.Context.Features/Aw.Context.Features.csproj" />
@@ -16,6 +22,8 @@
     <Project Path="src/Sindri/Aw.Sindri.Features/Aw.Sindri.Features.csproj" />
     <Project Path="src/Sindri/Aw.Sindri.Infrastructure/Aw.Sindri.Infrastructure.csproj" />
     <Project Path="src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj" />
+    <Project Path="src/Sindri/Aw.Sindri.Ui/Aw.Sindri.Ui.csproj" />
+    <Project Path="src/Sindri/Aw.Sindri.Ui.Desktop/Aw.Sindri.Ui.Desktop.csproj" />
     <Project Path="src/Sindri/Aw.Sindri.Workflows/Aw.Sindri.Workflows.csproj" />
   </Folder>
   <Folder Name="/src/Judge/">
@@ -67,8 +75,12 @@
     <Project Path="tests/Aw.BugFix.Testing/Aw.BugFix.Testing.csproj" />
     <Project Path="tests/Aw.Sindri.Tests/Aw.Sindri.Tests.csproj" />
     <Project Path="tests/Aw.Sindri.Testing/Aw.Sindri.Testing.csproj" />
+    <Project Path="tests/Aw.Sindri.Ui.Tests/Aw.Sindri.Ui.Tests.csproj" />
+    <Project Path="tests/Aw.Sindri.Ui.Testing/Aw.Sindri.Ui.Testing.csproj" />
     <Project Path="tests/Aw.Context.Testing/Aw.Context.Testing.csproj" />
     <Project Path="tests/Aw.Context.Testing.Tests/Aw.Context.Testing.Tests.csproj" />
     <Project Path="tests/Aw.Context.Tests/Aw.Context.Tests.csproj" />
+    <Project Path="tests/Aw.Meta.Tests/Aw.Meta.Tests.csproj" />
+    <Project Path="tests/Aw.Meta.Testing/Aw.Meta.Testing.csproj" />
   </Folder>
 </Solution>

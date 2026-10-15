@@ -1,193 +1,239 @@
-using System.Globalization;
-using System.Security.Cryptography;
-using System.Text;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Core.Workflow.Recipes;
-using Temporalio.Common;
 using Temporalio.Exceptions;
 using Temporalio.Workflows;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
-/// The recipe interpreter: the one workflow type that runs every recipe (engine spec rev 8 §5.1). Workflow code is
-/// deterministic: no I/O, clock or random except through 'Workflow.*'; every decision is P3's pure
-/// <see cref="TransitionDecision"/>. Engine P4a: the first interpreter for 'workflow.step': it loads the recipe
-/// through the 'LoadRecipe' local activity, enters the initial state, and runs each active state's Step as a 'RunStep'
-/// activity (desk runtime: async completion, the run token in the activity id) until a terminal state. It mirrors the
-/// start and every transition into the ledger through the 'RecordEvent' local activity (spec rev 8.1 §5.6) and upserts
-/// the 'Item', 'Recipe', 'State' and 'NeedsYou' search attributes 'workflow list' queries. Parks, waits, answers, gates
-/// and effects are P4's; a park here waits for ever. (Rev 8.1 §5.3: P4 replaces the async-completion desk activity with
-/// a short activity that records the open task and the validated 'complete' Update.)
+/// The recipe interpreter: the one workflow type that runs every recipe (engine spec rev 8 §5.1). Its input is
+/// <see cref="InstanceStart"/> and its workflow id is the instance address. Workflow code is deterministic: no I/O,
+/// clock or random except through 'Workflow.*'; every decision is P3's pure <see cref="TransitionDecision"/>, and it
+/// awaits with ConfigureAwait(true) (finding F3).
+/// <para>
+/// Engine P4. It loads the pinned recipe through 'LoadRecipe', enters the initial state, and loops (unit (a),
+/// 'RecipeWorkflow.Loop.cs'): an active state runs its desk Step (a short 'RunStep' activity with the run token in
+/// its id, then a wait for the 'complete' Update; rev 8.1 §5.3, unit (c)); a wait state, a park, an escalation or a
+/// takeover waits for a delivered event that fits or a command an Update submits. Every trigger is decided at the wait,
+/// one at a time; each change is mirrored into the ledger through 'RecordEvent' (§5.6) and the search attributes are
+/// set. The other Updates of §5.2 have their final signatures and hand their trigger to the loop through 'Submit':
+/// (b) 'answer', 'command', 'cancel'; (c) 'complete' and its validator; (d) the bridge's 'event' signal (§5.4). Engine
+/// P5 adds the timer scopes ('TimerScopes', §5.5) and 'takeover', 'handback' and 'open-request'
+/// ('RecipeWorkflow.Takeover.cs').
+/// </para>
 /// </summary>
 [Workflow("RecipeWorkflow")]
-internal sealed class RecipeWorkflow
+internal sealed partial class RecipeWorkflow
 {
     private const string Desk = "human:desk";
     private const string Timers = "service:workflow.timers";
-    private static readonly TimeSpan _noTimeout = TimeSpan.FromDays(30);
+    private static readonly FactKey _itemFact = FactKey.From("fact:item");
+    private readonly Queue<WaitSatisfied> _delivered = new();
+    private readonly HashSet<long> _eventsTaken = [];
+    private readonly Dictionary<string, Reported> _reported = new(StringComparer.Ordinal);
+    private readonly TimerScopes _timers = new(Timers);   // engine P5 (§5.5): unit (a) arms the state timers through it, unit (b) pauses and resumes them
+    private InstanceStart? _start;
+    private InterpretedRecipe? _recipe;
+    private Interpreting? _context;
     private WorkflowInstance? _instance;
-    private int _reports;
+    private DateTimeOffset _since;
+    private TimeSpan _deskTimeout;
+    private string? _repo;
+    private string? _recorded;
+    private StepCompleted? _report;
+    private string? _reportId;
+    private int _runs;
+    private int _mirrored;
 
-    /// <summary>Interprets the recipe from its initial state to a terminal one.</summary>
-    /// <param name="run">The instance.</param>
+    /// <summary>
+    /// Interprets the recipe from its initial state to a terminal one (spec §5.1): an active state runs its Step (unit
+    /// (c)'s desk seam, <see cref="RunDeskStep"/>); a wait state, a park, an escalation or a takeover waits
+    /// (<see cref="Wait"/>). Each step decides one trigger with P3's pure <see cref="TransitionDecision"/>. Before it
+    /// returns it lets the Update that ended the instance finish.
+    /// </summary>
+    /// <param name="start">The recipe, item, attempt, input facts, tenant and ring.</param>
     /// <returns>The terminal state.</returns>
     [WorkflowRun]
-    public async Task<RecipeResult> RunAsync(RecipeRun run)
+    public async Task<RecipeResult> RunAsync(InstanceStart start)
     {
-        ArgumentNullException.ThrowIfNull(run);
-        var address = InstanceAddress.From(run.Address);
-        var recipeId = "workflow." + address.Value.Split('/')[1];
-        var loaded = await Workflow.ExecuteLocalActivityAsync(
-            (RunStepActivities a) => a.LoadRecipeAsync(recipeId),
-            new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(30) }).ConfigureAwait(true);
-        var recipe = loaded.Recipe;
-        var context = new DecisionContext(ApprovalCheck.Holds, new BlockCatalog(loaded.Blocks, []), new HashSet<BlockId>(), NoChildRecipes.Instance);
-        var instance = Started(TransitionDecision.Start(StartOf(address, run, recipe), recipe, context));
-        _instance = instance;
-        var item = address.Value.Split('/')[0];
-        await Mirror(new WorkflowEventRecord(address.Value, EventTypes.WorkflowStarted, item, string.Empty, instance.State, "start", Outcome: null, Run: null), recipeId, NeedsYou(instance)).ConfigureAwait(true);
+        var (instance, context) = await Begin(start).ConfigureAwait(true);
         while (!instance.Ended)
         {
-            if (instance.Suspension is not null || instance.Frame.Run is not { } open)
-            {
-                await Workflow.WaitConditionAsync(static () => false).ConfigureAwait(true); // P4: parks, waits and answers
-                continue;
-            }
-
-            var trigger = await RunStep(address, instance.Frame, open, recipe.States[instance.Frame.State]).ConfigureAwait(true);
-            var before = instance;
-            instance = After(instance, TransitionDecision.Decide(new DecisionInput(instance, recipe, trigger, GateAnswers.None, context)));
-            _instance = instance;
-            if (!ReferenceEquals(before, instance))
-            {
-                var (kind, outcome) = trigger switch
-                {
-                    StepCompleted c => (TriggerNames.StepCompleted, c.Outcome.Value),
-                    StepFailed => (TriggerNames.StepFailed, null),
-                    _ => (TriggerNames.Deadline, null),
-                };
-                var record = new WorkflowEventRecord(address.Value, EventTypes.WorkflowTransition, item, before.State, instance.State, kind, outcome, open.Token.Value);
-                await Mirror(record, recipeId, NeedsYou(instance)).ConfigureAwait(true);
-            }
+            instance = instance is { Suspension: null, Frame.Run: { } open }
+                ? await RunDeskStep(instance, open, context).ConfigureAwait(true)
+                : await Wait(instance, context).ConfigureAwait(true);
         }
 
+        await SettleLeftovers(instance, context).ConfigureAwait(true);
         return new RecipeResult(instance.State, instance.Outcome?.Value);
     }
 
     /// <summary>
-    /// Mirrors one event into the ledger ('RecordEvent', a local activity keyed by its own activity id; rev 8.1 §5.6),
-    /// then upserts the search attributes the instance is found by.
+    /// Loads the pinned recipe ('LoadRecipe'), reads the repo 'fact:item' names ('ReadItemRepo'), enters the initial
+    /// state with the input's tenant and ring, mirrors 'workflow.started' into the ledger and sets the search attributes.
     /// </summary>
-    private static async Task Mirror(WorkflowEventRecord record, string recipeId, bool needsYou)
+    private async Task<(WorkflowInstance Instance, Interpreting Context)> Begin(InstanceStart start)
     {
-        _ = await Workflow.ExecuteLocalActivityAsync((RecordEventActivities a) => a.RecordAsync(record), RecordEventActivities.LocalOptions).ConfigureAwait(true);
-        Workflow.UpsertTypedSearchAttributes(
-            SindriTemporal.ItemKey.ValueSet(record.Item),
-            SindriTemporal.RecipeKey.ValueSet(recipeId),
-            SindriTemporal.StateKey.ValueSet(record.To),
-            SindriTemporal.NeedsYouKey.ValueSet(needsYou));
+        ArgumentNullException.ThrowIfNull(start);
+        _start = start;
+        _since = Now;
+        var loaded = await Workflow.ExecuteLocalActivityAsync(
+            (RunStepActivities a) => a.LoadRecipeAsync(start.Recipe),
+            new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(30) }).ConfigureAwait(true);
+        var catalog = new BlockCatalog(loaded.Blocks, []);
+        _recipe = new InterpretedRecipe(loaded.Version, loaded.Recipe, catalog, start.Inputs);
+        _deskTimeout = loaded.DeskTimeout;
+        _eventHold = loaded.EventHold;
+        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, new HashSet<BlockId>(), NoChildRecipes.Instance) { DeskTimeout = loaded.DeskTimeout };
+        _context = new Interpreting(loaded.Recipe, decisions);
+        _repo = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : null;
+        var change = Started(TransitionDecision.Start(StartOf(start, loaded), loaded.Recipe, decisions));
+        var instance = Enter(change.After);
+        await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null, Detail: WorkflowEventDetail.Of(change.Event, trigger: null), Causation: start.OpenLaunch), NeedsYou(instance)).ConfigureAwait(true);
+        return (instance, _context);
     }
 
-    /// <summary>A desk run waits on a human: the instance is in an active state with an open run.</summary>
-    private static bool NeedsYou(WorkflowInstance instance) => !instance.Ended && instance.Frame.Run is not null;
-
-    /// <summary>The instance as status shows it (the 'GetInstance' Query, spec §5.1).</summary>
-    /// <returns>The state, the open run token and the outcome.</returns>
+    /// <summary>The instance as status shows it (the 'GetInstance' Query, spec §5.1, §6.3).</summary>
+    /// <returns>The state, 'next', 'allowedCommands', the open question or desk task, the run token and the children.</returns>
     [WorkflowQuery("GetInstance")]
-    public InstanceSnapshot GetInstance() => _instance is { } i
-        ? new InstanceSnapshot(i.State, i.Frame.Run?.Token.Value, i.Outcome?.Value)
-        : new InstanceSnapshot("starting", Run: null, Outcome: null);
+    public InstanceView GetInstance()
+    {
+        var start = _start ?? throw new InvalidOperationException("the instance has no input yet");
+        return (_instance, _recipe) is ({ } instance, { } recipe)
+            ? InstanceViews.Of(instance, recipe, _since, _timers.FiresAt()) with { Version = _mirrored, Id = instance.Id }
+            : new InstanceView(start.WorkflowId(), start.Recipe, "starting", Detail: null, _since, string.Empty, [], Question: null, Task: null, Run: null, Children: [], Outcome: null)
+            {
+                Id = WorkflowInstanceId.Of(start.WorkflowId()),
+            };
+    }
 
     /// <summary>
-    /// Runs one Step: the RunStep activity with the run token in its id, at most once (a timeout is the state's
-    /// deadline, not a retry), closing by the state's timeout. Its report is the 'step.completed' trigger.
+    /// A registered ledger event the bridge routed here (spec §5.4). Temporal buffers it until the instance reaches the
+    /// wait; unit (a) consumes <see cref="_delivered"/> at a wait. Unit (d): the event's ledger sequence is its idempotency
+    /// key, so a re-sent event (a bridge that crashed before it moved its cursor) is dropped; so is a kind no wait of the
+    /// recipe waits for (the bridge signals every live instance of the item). Dropping a buffered one older than 'eventHold' is
+    /// that of RecipeWorkflow.Hold.cs (S1-D11's key, unit (e)).
     /// </summary>
-    private async Task<Trigger> RunStep(InstanceAddress address, Frame frame, OpenRun open, RecipeState state)
+    /// <param name="delivered">The event as the wait's trigger.</param>
+    /// <returns>Done.</returns>
+    [WorkflowSignal("event")]
+    public Task EventAsync(WaitSatisfied delivered)
     {
-        _reports++;
-        var step = new StepRun(address.Value, frame.State, open.Token.Value);
-        var options = new ActivityOptions
+        ArgumentNullException.ThrowIfNull(delivered);
+        if (delivered.Source is EventWaitSource e && (!_eventsTaken.Add(e.Sequence) || !WaitsFor(e.Kind)))
         {
-            ActivityId = string.Create(CultureInfo.InvariantCulture, $"run:{open.Token.Value}:{_reports}"),
-            ScheduleToCloseTimeout = state.Timeout?.After.Span ?? _noTimeout,
-            RetryPolicy = new RetryPolicy { MaximumAttempts = 1 },
+            return Task.CompletedTask;
+        }
+
+        _delivered.Enqueue(delivered);
+        _arrivals++;
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Whether a wait state of the recipe waits for <paramref name="kind"/>; true while the recipe isn't loaded yet.</summary>
+    private bool WaitsFor(EventKind kind) =>
+        _context is not { } context || context.Recipe.States.Values.Any(s => s.WaitFor?.Event == kind);
+
+    /// <summary>
+    /// Mirrors one event into the ledger ('RecordEvent', a local activity keyed by its own activity id; rev 8.1 §5.6),
+    /// then sets the search attributes the instance is found by (§5.1) as they stand after it.
+    /// </summary>
+    private async Task Mirror(WorkflowEventRecord record, bool needsYou)
+    {
+        var stamped = record with { Tenant = _start!.Tenant, Ring = _start.Ring };   // why: Mirror runs only after RunAsync set _start; the row is the instance's, not the worker's
+        _ = await Workflow.ExecuteLocalActivityAsync((RecordEventActivities a) => a.RecordAsync(stamped), RecordEventActivities.LocalOptions).ConfigureAwait(true);
+        _mirrored++;   // the instance's version, 'v<n>' in status: Temporal keeps no row version (unit (e))
+        Upsert(record.To, needsYou);
+    }
+
+    /// <summary>
+    /// The instance waits on a human (spec §5.1 'NeedsYou'): it is parked or escalated, or it holds an open desk task. A
+    /// takeover doesn't: the human already has it.
+    /// </summary>
+    private static bool NeedsYou(WorkflowInstance instance) => !instance.Ended && instance.Suspension switch
+    {
+        { Kind: SuspensionKind.Takeover } => false,
+        not null => true,
+        null => instance.Frame.Run is { Runtime: StepRuntime.Desk },
+    };
+
+    /// <summary>
+    /// Takes <paramref name="instance"/> as the instance after a decided change, and does what the change asks of the
+    /// timers (spec §5.5, <see cref="StateTimers.Between"/>): a new entry or run, or an answer that ended a park, arms the
+    /// state's full timeout; a park, escalation or end stops it; a 'then: retry' arms the retry timer; a takeover pauses
+    /// it and keeps what was left on its suspension, which the handback re-arms. The first entry arms its state's
+    /// timeout unless it parked at once; a start taken over (E-19) keeps the full timeout for the handback.
+    /// </summary>
+    /// <returns>The instance as the interpreter holds it: a takeover's suspension carries what it paused.</returns>
+    private WorkflowInstance Enter(WorkflowInstance instance)
+    {
+        var before = _instance;
+        if (before is null || !string.Equals(before.State, instance.State, StringComparison.Ordinal) || before.Frame.Entry != instance.Frame.Entry)
+        {
+            _since = Now;
+        }
+
+        var recipe = _context!.Recipe; // why: Begin sets the context before the first entry
+        var kept = before is null
+            ? First(instance, recipe)
+            : _timers.Apply(StateTimers.Between(before, instance, recipe, _deskTimeout), instance.Frame.Entry);
+        _instance = kept is not null && instance.Suspension is { Kind: SuspensionKind.Takeover } takeover
+            ? instance with { Suspension = takeover with { Remaining = kept } }
+            : instance;
+        return _instance;
+    }
+
+    /// <summary>
+    /// The first entry's timers: its state's timeout, unless it ended or parked at once; started taken over (E-19), the
+    /// full timeout is kept for the handback and 'takeoverIdle' runs.
+    /// </summary>
+    private RemainingTimer? First(WorkflowInstance instance, Core.Workflow.Recipes.Recipe recipe)
+    {
+        var full = instance.Ended ? null : StateTimers.Timeout(recipe.States[instance.Frame.State], instance.Frame.Run, _deskTimeout);
+        return (instance.Suspension, full) switch
+        {
+            ({ Kind: SuspensionKind.Takeover }, _) => _timers.Held(instance.PendingPark is null ? full : null, instance.Frame.Entry),   // parked at once: the handback returns to the park, no timer to resume
+            (null, { } after) => _timers.Apply(new TimerAction(TimerActionKind.Arm, DeadlineKind.State, after), instance.Frame.Entry),
+            _ => _timers.Apply(TimerAction.Stop, instance.Frame.Entry),
         };
-        try
-        {
-            var report = await Workflow.ExecuteActivityAsync((RunStepActivities a) => a.RunStepAsync(step), options).ConfigureAwait(true);
-            return Completed(open.Token, report);
-        }
-        catch (ActivityFailureException e) when (e.InnerException is TimeoutFailureException)
-        {
-            return new DeadlineFired(Timers, frame.Entry, DeadlineKind.State);
-        }
     }
 
-    private static Trigger Completed(RunToken run, StepReport report)
+    /// <summary>The workflow's deterministic clock, as an offset in UTC.</summary>
+    private static DateTimeOffset Now => new(Workflow.UtcNow, TimeSpan.Zero);
+
+    private static StartRequest StartOf(InstanceStart start, LoadedRecipe loaded)
     {
-        var sha = ReportSha256(report);
-        if (!OutcomeName.TryFrom(report.Outcome, out var outcome) || report.Outputs.Keys.Any(static k => !FactKey.TryFrom(k, out _)))
-        {
-            return new StepFailed(Desk, run, $"a malformed report: outcome '{report.Outcome}'", Tokens: 0, sha);
-        }
-
-        var outputs = report.Outputs.ToDictionary(static o => FactKey.From(o.Key), static o => o.Value);
-        return new StepCompleted(Desk, run, outcome, outputs, Tokens: 0, StepRuntime.Desk, sha);
-    }
-
-    /// <summary>The SHA-256 of the report's canonical text, so two different reports never share a trigger key.</summary>
-    private static string ReportSha256(StepReport report)
-    {
-        var text = new StringBuilder(report.Outcome);
-        foreach (var (fact, value) in report.Outputs.OrderBy(static o => o.Key, StringComparer.Ordinal))
-        {
-            _ = text.Append('\n').Append(fact).Append('=').Append(value.Sha256);
-        }
-
-        return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text.ToString())));
-    }
-
-    private static StartRequest StartOf(InstanceAddress address, RecipeRun run, Recipe recipe)
-    {
-        var parts = address.Value.Split('/');
-        var id = WorkflowInstanceId.For(new Guid(SHA256.HashData(Encoding.UTF8.GetBytes(address.Value)).AsSpan(0, 16)));
-        var hash = recipe.Hash ?? throw new InvalidOperationException($"LoadRecipe returned {recipe.Id.Value} without its hash");
+        var address = start.WorkflowId();
+        var id = WorkflowInstanceId.Of(address);
         return new StartRequest(
             TriggerKey.For(id, "start"),
             id,
             address,
-            new PinnedRecipe(recipe.Id, recipe.Version, hash, new Dictionary<RecipeId, RecipeHash>()),
-            ItemKey.From(parts[0]),
-            int.Parse(parts[2], NumberStyles.None, CultureInfo.InvariantCulture),
+            new PinnedRecipe(loaded.Version.Id, loaded.Version.Version, loaded.Version.Hash, new Dictionary<RecipeId, RecipeHash>()),
+            start.Item,
+            start.Attempt,
             Parent: null,
-            run.Inputs.ToDictionary(static i => FactKey.From(i.Key), static i => i.Value),
+            start.Inputs.ToDictionary(static i => i.Key, static i => i.Value.Value),
             Desk,
-            TakenOver: false);
+            TakenOver: start.OpenLaunch is not null,
+            start.Tenant,
+            start.Ring);
     }
 
-    private static WorkflowInstance Started(Decision decision) => decision switch
+    private static InstanceChange Started(Decision decision) => decision switch
     {
-        Applied applied => applied.Changes[0].After,
-        Rejected rejected => throw new ApplicationFailureException($"the start was rejected: {rejected.Error.Code} {rejected.Error.Message}", nonRetryable: true),
+        Applied applied => applied.Changes[0],
+        Rejected rejected => throw new ApplicationFailureException($"the start was rejected: {rejected.Error.Code} {rejected.Error.Message}", errorType: rejected.Error.Code, nonRetryable: true),
         _ => throw new ApplicationFailureException($"the start was {decision.GetType().Name}", nonRetryable: true),
     };
 
     /// <summary>The instance after a decision: an applied or refused trigger's own change; a rejected or absorbed one leaves it as it was.</summary>
-    private static WorkflowInstance After(WorkflowInstance instance, Decision decision) => decision switch
-    {
-        Applied applied => Own(instance, applied.Changes),
-        Refused refused => Own(instance, refused.Changes),
-        _ => instance,
-    };
-
-    private static WorkflowInstance Own(WorkflowInstance instance, IReadOnlyList<InstanceChange> changes) =>
-        changes.FirstOrDefault(c => c.After.Id == instance.Id)?.After ?? instance;
+    private static WorkflowInstance After(WorkflowInstance instance, Decision decision) => OwnChange(instance, decision)?.After ?? instance;
 }

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Aw.Context.Core.Trust;
 using Aw.Kernel;
 using Aw.Kernel.Json;
 
@@ -42,7 +43,12 @@ public static partial class SettingsReader
 
         if (UnknownKey(element) is { } unknown)
         {
-            return Invalid("context." + unknown, "is not a context setting this build knows (repos, docs, deadline, maxBudget, minHits, sessions)");
+            return Invalid("context." + unknown, "is not a context setting this build knows (repos, docs, cascadeDepth, deadline, maxBudget, minHits, labeling, scrub, sessions, sources)");
+        }
+
+        if (SourcesReader.Shape(element) is { } shape)
+        {
+            return shape;
         }
 
         var read = AwJson.Deserialize<ContextSection>(System.Text.Encoding.UTF8.GetBytes(element.GetRawText()), _json);
@@ -54,10 +60,12 @@ public static partial class SettingsReader
         var settings = new ContextSettings();
         var globs = section.Docs?.Globs ?? ContextSettings.DefaultDocGlobs;
         var deadline = section.Deadline is null ? settings.Deadline : Duration(section.Deadline);
-        return (Problem(section, globs), deadline) switch
+        var sources = SourcesReader.Check(section.Sources);
+        return (Problem(section, globs), deadline, sources) switch
         {
-            ({ } problem, _) => problem,
-            (_, null) => Invalid("context.deadline", "is a duration from 100ms to 60s, such as 4s or 500ms"),
+            ({ } problem, _, _) => problem,
+            (_, null, _) => Invalid("context.deadline", "is a duration from 100ms to 60s, such as 4s or 500ms"),
+            (_, _, { IsError: true }) => sources.Error,
             _ => settings with
             {
                 Repos = section.Repos?.Select(ContextRepoName.From).ToList(),
@@ -65,10 +73,22 @@ public static partial class SettingsReader
                 Deadline = deadline.Value,
                 MaxBudget = section.MaxBudget ?? settings.MaxBudget,
                 MinHits = section.MinHits ?? settings.MinHits,
+                CascadeDepth = section.CascadeDepth ?? settings.CascadeDepth,
                 SessionsEnabled = section.Sessions?.Enabled ?? false,
+                Onyx = sources.Value.Onyx,
+                LinearTeams = sources.Value.Teams,
+                ExtraPatterns = Patterns(section.Scrub),
+                Labeling = Labeling(section.Labeling),
             },
         };
     }
+
+    private static LabelingSettings Labeling(LabelingSection? section) =>
+        new() { Enabled = section?.Enabled ?? false, MaxTokens = section?.MaxTokens ?? new LabelingSettings().MaxTokens };
+
+    /// <summary>The extra patterns as written (a null entry was refused by <see cref="Problem"/>).</summary>
+    private static IReadOnlyList<ScrubPattern> Patterns(ScrubSection? scrub) =>
+        [.. (scrub?.ExtraPatterns ?? []).OfType<ScrubPatternEntry>().Select(e => new ScrubPattern(e.Id, e.Pattern))];
 
     /// <summary>The first refused key of <paramref name="section"/> other than the deadline, or null.</summary>
     private static Error? Problem(ContextSection section, IReadOnlyList<string> globs)
@@ -89,10 +109,18 @@ public static partial class SettingsReader
             return Invalid("context.docs.globs", $"'{(badGlob is null ? "(empty)" : Printable(badGlob))}' isn't a repo-relative glob (letters, digits, '._-/*', no '..', no leading '/')");
         }
 
+        var empty = (section.Scrub?.ExtraPatterns ?? []).ToList().FindIndex(e => e is null);   // the entries themselves are checked by IScrubberFactory
+        if (empty >= 0)
+        {
+            return Invalid(string.Create(CultureInfo.InvariantCulture, $"context.scrub.extraPatterns[{empty}]"), "is empty; write { id: <rule id>, pattern: <regex> }");
+        }
+
         return section switch
         {
             { MaxBudget: < 1_000 or > 200_000 } => Invalid("context.maxBudget", "is 1000 to 200000 tokens"),
             { MinHits: < 0 or > 50 } => Invalid("context.minHits", "is 0 to 50"),
+            { CascadeDepth: < 0 or > QueryRules.MaxDepth } => Invalid("context.cascadeDepth", "is 0 to 4 steps"),
+            { Labeling.MaxTokens: < 1_000 or > 20_000_000 } => Invalid("context.labeling.maxTokens", "is 1000 to 20000000 tokens"),
             _ => null,
         };
     }
@@ -107,7 +135,7 @@ public static partial class SettingsReader
 
     private static string? UnknownKey(JsonElement element)
     {
-        string[] known = ["repos", "docs", "deadline", "maxBudget", "minHits", "sessions"];
+        string[] known = ["repos", "docs", "cascadeDepth", "deadline", "maxBudget", "minHits", "labeling", "scrub", "sessions", "sources"];
         return element.EnumerateObject().Select(p => p.Name).FirstOrDefault(n => !known.Contains(n, StringComparer.Ordinal)) is { } name ? Printable(name) : null;
     }
 
@@ -125,9 +153,10 @@ public static partial class SettingsReader
     }
 
     /// <summary>A name or value from the profile, for a message: itself when it is plain, else a fixed word.</summary>
-    private static string Printable(string text) => PlainText.IsMatch(text) ? text : "(a value with unusual characters)";
+    internal static string Printable(string text) => PlainText.IsMatch(text) ? text : "(a value with unusual characters)";
 
-    private static Error Invalid(string keyPath, string problem) => ContextErrors.SettingsInvalid.With($"{keyPath}: {problem}");
+    /// <summary>SND-CONTEXT-001 with the key path first.</summary>
+    internal static Error Invalid(string keyPath, string problem) => ContextErrors.SettingsInvalid.With($"{keyPath}: {problem}");
 
     [GeneratedRegex("^(?<n>[0-9]{1,6})(?<u>ms|s)\\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex DurationShape { get; }

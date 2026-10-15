@@ -16,7 +16,7 @@ internal static class DocMappers
 
     private sealed class StoredMapper : IRowMapper<StoredDoc>
     {
-        public StoredDoc Map(SqliteDataReader reader) => new(reader.GetString(0), reader.GetString(1));
+        public StoredDoc Map(SqliteDataReader reader) => new(reader.GetString(0), reader.GetString(1), reader.GetString(2));
     }
 
     private sealed class HitMapper : IRowMapper<HitRow>
@@ -32,6 +32,9 @@ internal static class DocMappers
             reader.IsDBNull(1) ? null : SqliteRead.GetTimestamp(reader, 1),
             reader.IsDBNull(2) ? null : reader.GetString(2),
             reader.GetInt32(3),
-            reader.GetInt32(4));
+            reader.GetInt32(4))
+        {
+            Outdated = reader.GetInt32(5),
+        };
     }
 }

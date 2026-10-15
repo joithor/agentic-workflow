@@ -65,7 +65,7 @@ STATE_DIR="${AW_CONTEXT_GUARD_STATE_DIR:-${AW_STATE_DIR:-$HOME/.agentic-workflow
 [ -d "$STATE_DIR" ] || mkdir -p "$STATE_DIR" 2>/dev/null
 STATE_FILE="$STATE_DIR/$SESSION_ID.size"
 
-CURRENT_SIZE="$(stat -f%z "$TRANSCRIPT" 2>/dev/null)"
+CURRENT_SIZE="$(stat -c%s "$TRANSCRIPT" 2>/dev/null || stat -f%z "$TRANSCRIPT" 2>/dev/null)"   # GNU first: on Linux `stat -f` is the filesystem status and succeeds with junk
 if [ -z "$CURRENT_SIZE" ]; then
   CURRENT_SIZE="$(wc -c < "$TRANSCRIPT" 2>/dev/null)"
   CURRENT_SIZE="${CURRENT_SIZE//[[:space:]]/}"

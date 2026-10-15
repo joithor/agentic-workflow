@@ -1,4 +1,8 @@
+using System.Text;
 using System.Text.Json;
+using Aw.Kernel.Json;
+using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Items.Vocabulary;
 using Aw.Sindri.Core.Ledger;
 
 namespace Aw.Sindri.Core.Items;
@@ -11,5 +15,17 @@ public static class TimelineLine
     /// <param name="json">The options its payload reads with.</param>
     /// <returns>The line, before scrubbing.</returns>
     public static string For(LedgerEvent recorded, JsonSerializerOptions json)
-        => throw new NotSupportedException("TimelineLine.For: P3 unit D makes it pass");
+    {
+        ArgumentNullException.ThrowIfNull(recorded);
+        var bytes = Encoding.UTF8.GetBytes(recorded.Envelope.Payload);
+        var type = recorded.Envelope.Type;
+        var line = type switch
+        {
+            EventTypes.ItemCreated => AwJson.Deserialize<ItemCreated>(bytes, json).Map(static created => $"Created: {created.Title}"),
+            EventTypes.ItemStateChanged => AwJson.Deserialize<ItemStateChanged>(bytes, json).Map(static changed => $"{ItemStateNames.Of(changed.From)} → {ItemStateNames.Of(changed.To)}"),
+            EventTypes.ItemLinked => AwJson.Deserialize<ItemLinked>(bytes, json).Map(static linked => linked.Alias is { } alias ? $"Linked to {linked.Record.Value} ({alias.Value})" : $"Linked to {linked.Record.Value}"),
+            _ => type,
+        };
+        return line.IsError ? type : line.Value;
+    }
 }

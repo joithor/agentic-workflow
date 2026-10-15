@@ -11,7 +11,8 @@ public sealed class RepoScopeTests
 
         Assert.Equal(string.Join(", ", FixtureMap.ScopedNodes), string.Join(", ", scoped.Nodes.Select(n => n.Key.Value).Order(StringComparer.Ordinal)));
         Assert.All(scoped.Edges, e => Assert.Contains(e.From.Value, FixtureMap.ScopedNodes, StringComparer.Ordinal));
-        Assert.Equal(2, scoped.Edges.Count);
+        Assert.Contains(scoped.Nodes, n => string.Equals(n.Key.Value, "code:src/layout/SplitPane.ts", StringComparison.Ordinal));   // why: a session sees its repo's code files, not only the features they implement
+        Assert.Equal(FixtureMap.ScopedEdges, scoped.Edges.Count);
         _ = Assert.Single(scoped.Aliases);
         Assert.Empty(scoped.Decisions);
     }

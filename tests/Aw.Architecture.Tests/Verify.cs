@@ -26,7 +26,7 @@ internal static class Verify
         var list = violations.ToList();
         Assert.All(list, v => Assert.Equal(ruleId, v.RuleId));
         Assert.All(list, v => Assert.False(string.IsNullOrWhiteSpace(v.Fix)));
-        Assert.Equal(found.Length, list.Count);
+        Assert.True(found.Length == list.Count, $"expected {found.Length} violations, got {list.Count}: {string.Join(" | ", list.Select(v => v.Found))}");
 
         // Each expected text claims a distinct violation, so one violation can't satisfy two expectations.
         var unclaimed = new List<Violation>(list);

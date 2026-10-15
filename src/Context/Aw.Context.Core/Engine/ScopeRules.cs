@@ -1,3 +1,4 @@
+using Aw.Context.Core.Sources;
 using Aw.Kernel;
 
 namespace Aw.Context.Core.Engine;
@@ -47,16 +48,31 @@ public static class ScopeRules
     }
 
     /// <summary>
+    /// Whether <paramref name="caller"/> may read <paramref name="source"/> at all. A session reads no intent source
+    /// until the profile maps Linear teams to its repo ('context.repoTeams', spec §3, a later stage): without that map
+    /// no intent record is reachable from its repo.
+    /// </summary>
+    /// <param name="caller">The caller.</param>
+    /// <param name="source">The source.</param>
+    /// <returns>True when the source may answer this caller.</returns>
+    public static bool MayRead(ContextCaller caller, SourceDescriptor source)
+    {
+        ArgumentNullException.ThrowIfNull(caller);
+        ArgumentNullException.ThrowIfNull(source);
+        return caller.Kind != ContextCallerKind.Session || source.Kind != SourceKind.Intent;
+    }
+
+    /// <summary>
     /// The profile's repos the engine can address. A name that isn't a <see cref="ContextRepoName"/> is left out; with a
     /// 'context:' section, <see cref="SettingsReader.Check(System.Text.Json.JsonElement?, IReadOnlyList{ProfileRepoEntry})"/>
     /// refuses such a name in scope at validate and approve.
     /// </summary>
     /// <param name="repos">The profile's repos as written.</param>
-    /// <returns>The repos with usable names, in profile order.</returns>
+    /// <returns>The repos with usable names, in profile order, each with the built-in secret globs and the profile's deny paths.</returns>
     public static IReadOnlyList<ContextRepo> Usable(IReadOnlyList<ProfileRepoEntry> repos)
     {
         ArgumentNullException.ThrowIfNull(repos);
-        return [.. repos.Where(r => ContextRepoName.TryFrom(r.Name, out _)).Select(r => new ContextRepo(ContextRepoName.From(r.Name), r.Path))];
+        return [.. repos.Where(r => ContextRepoName.TryFrom(r.Name, out _)).Select(r => new ContextRepo(ContextRepoName.From(r.Name), r.Path) { DenyPaths = [.. PathDenylist.Defaults, .. r.DenyPaths ?? []] })];
     }
 
     /// <summary>

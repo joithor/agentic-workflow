@@ -9,10 +9,12 @@
 #           package lands after its port. `scan` lists the source the checker reads for cli/db/file edges.
 #           `bins`, `binPaths`, `db`, `files` and `namespace` are what other nodes need an edge to use:
 #           db, files and namespace are relative to the state root (${AW_STATE_DIR:-~/.agentic-workflow}),
-#           and `namespace` owns every path under that directory, listed or not. Shell and mod nodes own
-#           nothing: they only consume.
+#           and `namespace` owns every path under that directory, listed or not. `routes` lists the HTTP
+#           route prefixes a package serves (e.g. /sindri/). Shell and mod nodes own nothing: they only
+#           consume.
 # edges     kind: project (a C# ProjectReference), cli (runs the other's binary), db (opens the other's
-#           SQLite file, read-only), file (shared state files) or compose (a Host references a lower-tier
+#           SQLite file, read-only), file (shared state files), http (calls the other's HTTP API, which
+#           it declares as `routes`) or compose (a Host references a lower-tier
 #           package's Features and Infrastructure projects to call their public Add…() registration methods
 #           and nothing else: DEPS-COMPOSE-001 here, ARCH-COMPOSE-001 in tests/Aw.Architecture.Tests; context
 #           spec §4). A compose edge sits beside a project edge to the same package: the Host and Features
@@ -23,13 +25,16 @@
 # rules     Nothing depends on a shell or mod node. Project and compose edges point strictly down the
 #           tiers (a compose edge never into tier 0, which has no Features or Infrastructure); `sublevel`
 #           orders the kernel family inside tier 0 and is allowed on tier 0 only. db and file edges point
-#           down or across, never up; cli edges may point anywhere (a contract, §4b.1a). No cycles across
-#           any kind. Fan-out (§4b.1a): once C# projects exist, each project may reference at most
+#           down or across, never up; cli and http edges may point anywhere (a contract, §4b.1a). No cycles across
+#           any kind, unless a DEPS-CYCLE-001 exception excuses the one cli or http edge that closes it. Fan-out (§4b.1a): once C# projects exist, each project may reference at most
 #           limits.projectFanOut in-repo projects and limits.thirdPartyFanOut third-party packages (analyzers
 #           excluded; *.Host and *.Tests exempt). There is no cap on the packages one package declares project
-#           edges to (the owner removed DEPS-FANOUT-001, 2026-10-12). Only the fan-out rules take exceptions,
-#           each with a reason, at most limits.exceptionMaxDays long, and an exception that suppresses nothing
-#           fails.
+#           edges to (the owner removed DEPS-FANOUT-001, 2026-10-12). Only the fan-out rules and the cycle rule
+#           take exceptions, each with a reason, at most limits.exceptionMaxDays long, and an exception that
+#           suppresses nothing fails. A DEPS-CYCLE-001 exception names the edge it excuses (`excuses:` from, to,
+#           kind cli or http; from is its subject) and covers the one cycle that goes away without that edge:
+#           DEPS-EXC-005 when the edge isn't declared or doesn't leave the subject, DEPS-EXC-002 when it closes
+#           no cycle or more than one.
 # C# names  A project belongs to the package whose projectPrefix starts its name (longest wins), e.g.
 #           src/Judge/Aw.Judge.Core and tests/Aw.Judge.Tests both belong to Judge. Another package is
 #           reached only through its Core project (Aw.<Pkg>.Core) or a tier-0 package's library projects
@@ -63,7 +68,17 @@
 #           through a variable it doesn't recognise, indirection such as `npx <bin>`, or calls in JSON and
 #           plist config (config/settings.json hook commands, launchd jobs). Shell commands starting with
 #           echo, printf or log (separators inside quotes don't start a new command) and heredoc bodies
-#           are skipped.
+#           are skipped. C# projects (production only, owned by the longest projectPrefix, so a client inside
+#           the server's src directory is told apart): an http edge is a string literal ("…", $"…", @"…",
+#           """…""") whose text starts with another package's route prefix; a file or db edge is one .cs file
+#           holding another package's files/db path in one literal ("sindri-app/control.json") or every segment
+#           as literals ("sindri-app", "control.json"). Whole-line // comments are skipped (/* */ blocks are not).
+#           Not seen: a route after a base ($"{url}/sindri/x", an absolute
+#           URL), a path under another package's `namespace` that isn't in its files or db (namespace
+#           names double as log and label strings in C#, so the C# scan doesn't match them), paths from
+#           computed pieces, cli edges (a C# Process start is not scanned), and http calls from
+#           TypeScript or shell (only C# is scanned for routes; a current http edge from a shell or
+#           mod node is therefore never stale: check-deps prints "not scanned" for it instead).
 #
 # YAML subset (parsed without a library, so the check needs no install step): block mappings and
 # sequences, plain, 'single' or "double" quoted scalars, [flow, lists] of scalars, and # comments.
@@ -217,9 +232,22 @@ packages:
     src: src/Sindri
     scan: [sindri/src]
     bins: [sindri]
-    db: [sindri/ledger.db, sindri-app/ledger.db]
+    db: [sindri/ledger.db, sindri-app/ledger.db, sindri-app/views.db]
+    files: [sindri-app/control.json, sindri-app/auth/human.token]
     namespace: sindri
-    note: "built new in C# as an application (control plane, workflow engine, context retrieval; addendum §17.29, Q7), not ported; ts: sindri (profile, ledger, scrub, observe, index, scope, evolve) is the reference and runs until the switch; S1 (app shell: CLI and control plane, host lease, ledger, profile, API, scheduler, doctor) and workflow engine P1 (the recipe model and validator, `sindri recipe validate`) are in src/Sindri; Aw.Sindri.Workflows is the Temporal adapter (Infrastructure layer, namespace Aw.Sindri.Infrastructure.Workflows, AwAotCompatible=false for temporalio/sdk-dotnet#286; engine rev 8 §0); reaches lower tiers only through Core contracts or CLIs"
+    routes: [/sindri/]
+    note: "built new in C# as an application (control plane, workflow engine, context retrieval; addendum §17.29, Q7), not ported; ts: sindri (profile, ledger, scrub, observe, index, scope, evolve) is the reference and runs until the switch; S1 (app shell: CLI and control plane, host lease, ledger, profile, API, scheduler, doctor) and workflow engine P1 (the recipe model and validator, `sindri recipe validate`) are in src/Sindri; API P2 adds the projector and its views (views.db: services, profile; read-your-writes, health, `sindri views rebuild`); API P3 adds items and the queue (views.db: items, item-aliases, item-timeline; `sindri queue`, `items`, `item add`, `item close`); Aw.Sindri.Workflows is the Temporal adapter (Infrastructure layer, namespace Aw.Sindri.Infrastructure.Workflows, AwAotCompatible=false for temporalio/sdk-dotnet#286; engine rev 8 §0); reaches lower tiers only through Core contracts, CLIs and the compose edges to Context and Judge (registration only), plus the tier-0 Redaction edge (RecordEvent's ledger scrub)"
+
+  # ---- tier 4 ----
+  - id: SindriUi
+    kind: package
+    tier: 4
+    projectPrefix: Aw.Sindri.Ui
+    ts: null
+    src: src/Sindri/Aw.Sindri.Ui
+    bins: [sindri-ui]
+    files: [sindri-app/ui/preferences.json, sindri-app/ui/instance.sock, sindri-app/ui/instance.lock, sindri-app/ui/instance.pid]
+    note: "the Avalonia desktop app (readiness spec §4a UI): Aw.Sindri.Ui (views, view models, the typed API client, platform ports) and the thin Aw.Sindri.Ui.Desktop head (NativeAOT, binary sindri-ui). It references no Sindri project and holds no logic: Sindri's HTTP API and two files under AW_SINDRI_HOME, the endpoint record (control.json) and the per-start human token (auth/human.token), are its only contract (docs/csharp/sindri-ui.md). It owns its own files in a ui/ directory (0700) of Sindri's home: the local preferences and the single-instance lock and socket (instance.sock falls back to an owner-only temp directory when its path is too long for sun_path). Bare `sindri` starts sindri-ui: that Sindri -> SindriUi launch is declared as a cli edge (status planned only because check-deps does not scan C# for cli edges) and closes a cycle with the http edge, so it carries a DEPS-CYCLE-001 exception (owner decision 2026-10-12): the launch only spawns a separate process, shares no code or data, and the HTTP API (with control.json and auth/human.token) stays the app's only contract"
 
   # ---- outside the tiers: code that stays bash or TypeScript and calls the CLIs (§4a) ----
   - id: Hooks
@@ -240,6 +268,14 @@ packages:
     src: null
     scan: [mods/aw-live/hooks]
     note: "Claude Code mod (stays TypeScript, §4a); calls `scorer live --json`"
+  - id: Meta
+    kind: package
+    tier: 2
+    projectPrefix: Aw.Meta
+    bins: [aw-meta]
+    ts: null
+    src: src/Meta
+    note: "aw-meta CLI for the /meta skill: the meta orchestrator's obligations (inbox/outbox), lane map, gate and merge runner, owner queue, health and running log; state under $AW_STATE_DIR/meta; a thin harness Sindri absorbs later"
 
 edges:
   # ---- current: found in the source today ----
@@ -273,6 +309,11 @@ edges:
     kind: cli
     status: current
     note: "bugfix-state runs the sibling ui-evidence entry point (same tier, through its CLI contract)"
+  - from: Hooks
+    to: Meta
+    kind: cli
+    status: current
+    note: "the meta Stop gate runs aw-meta stop-check and the SendMessage outbox hook runs aw-meta outbox-record (docs/csharp/meta.md)"
   - from: Sindri
     to: Evidence
     kind: file
@@ -454,8 +495,8 @@ edges:
   - from: Sindri
     to: Redaction
     kind: project
-    status: planned
-    note: "replaces sindri's copy of the scrubbing patterns"
+    status: current
+    note: "the text scrubber adapter (Infrastructure/Text/RedactingScrubber); Aw.Sindri.Workflows' RecordEvent scrubs each mirrored payload with it; replaces sindri's copy of the scrubbing patterns"
   - from: Sindri
     to: Packets
     kind: cli
@@ -482,5 +523,74 @@ edges:
     kind: compose
     status: current
     note: "Sindri's Host calls AddContextFeatures and AddContextInfrastructure (and nothing else from those projects) in Composition"
+  # ---- the labeler's model port (context spec §4, stage S-4) ----
+  - from: Sindri
+    to: Judge
+    kind: project
+    status: current
+    note: "Sindri's Host adapts Judge's provider catalog (IProviderCatalog, IModelProvider in Aw.Judge.Core) as the context engine's IModelPort, so the labeling pass runs through the owner's own agent CLIs (Claude Code, Codex, Cursor) and never the remote jev API"
+  - from: Sindri
+    to: Judge
+    kind: compose
+    status: current
+    note: "Sindri's Host calls AddJudgeInfrastructure (and nothing else from that project), in a container of its own: Judge's stores and ids never join Sindri's container (Host/Models/JudgeCatalog)"
+  - from: Sindri
+    to: SindriUi
+    kind: cli
+    status: planned
+    note: "bare `sindri` starts the sindri-ui binary (Aw.Sindri.Host Commands/UiLauncher.cs); it closes a cycle with SindriUi's http edge, excused by the DEPS-CYCLE-001 exception below. The launch is in the source today, but check-deps does not scan C# for cli edges (a current edge the scan can't find fails DEPS-STALE-001), so it stays planned until it does"
 
-exceptions: []
+  - from: SindriUi
+    to: Kernel
+    kind: project
+    status: current
+    note: "Result and AwJson for the API client's source-generated JSON"
+  - from: SindriUi
+    to: KernelTelemetry
+    kind: project
+    status: current
+    note: "the desktop head (sindri-ui) starts Kernel telemetry and hands the app its logger: a failed start-up logs SND-UI-004 as a JSON line on standard error"
+  - from: SindriUi
+    to: Sindri
+    kind: file
+    status: current
+    note: "the app reads two files under AW_SINDRI_HOME, read-only: the endpoint record (control.json) to find the API and check it against /sindri/ping, and the per-start human token (auth/human.token, API spec §6), read at each call and sent as X-Sindri-Token beside X-Sindri-Caller: human (re-read and retried once on SND-AUTH-001). One entry covers both (one edge per from, to and kind). Its tests read Sindri's API goldens (tests/Aw.Sindri.Tests/Golden/Api/**, UI spec E-17) as the fake's wire, through Aw.Sindri.Ui.Testing's GoldenFiles: a wire change fails the UI's unit lane"
+  - from: SindriUi
+    to: Sindri
+    kind: http
+    status: current
+    note: "the app's API edge to Sindri (the file edge covers the endpoint record and the human token): GET /sindri/ping, /sindri/status, /sindri/commands, /sindri/services, the /sindri/events stream, and POST /sindri/views/rebuild (docs/csharp/sindri.md, docs/csharp/sindri-ui.md U1); it finds the endpoint in control.json under AW_SINDRI_HOME"
+
+# Sindri -> SindriUi (cli) closes a cycle with SindriUi -> Sindri (http): bare `sindri` only spawns the app's process.
+# Renewed on review like every exception.
+  - from: Meta
+    to: Kernel
+    kind: project
+    status: current
+    note: "Result, IService, ports (scaffolded by /new-package)"
+  - from: Meta
+    to: KernelData
+    kind: project
+    status: current
+    note: "meta.db (SQLite stores and migrations)"
+  - from: Meta
+    to: KernelTelemetry
+    kind: project
+    status: current
+    note: "the host starts Kernel telemetry in Compose (scaffolded by /new-package)"
+  - from: Meta
+    to: Evidence
+    kind: file
+    status: current
+    note: "health lists who holds the box-wide heavy-job lock (locks/heavy-job.lock and its .k siblings, owner file's pid); it only reads them"
+
+exceptions:
+  - rule: DEPS-CYCLE-001
+    subject: Sindri
+    excuses:
+      from: Sindri
+      to: SindriUi
+      kind: cli
+    reason: "the launch only spawns the separate sindri-ui process (owner decision 2026-10-12, PR #184): Sindri shares no code or data with the app, and Sindri's HTTP API (with its endpoint record control.json and human token auth/human.token) stays the app's only contract"
+    recorded: 2026-10-12
+    expires: 2027-04-12

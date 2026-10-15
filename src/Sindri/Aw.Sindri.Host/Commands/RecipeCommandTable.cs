@@ -17,15 +17,37 @@ internal static partial class RecipeCommandTable
 {
     private const string ValidateUsage = "usage: sindri recipe validate <file> [--json]";
     private const string EvalUsage = "usage: sindri recipe eval <file> [--json] | --scaffold <file> | --record <address> --out <file>";
+    private const string ApproveUsage = "usage: sindri recipe approve <file|id@hash>";
+    private const string RevokeUsage = "usage: sindri recipe revoke <id@hash>";
+    private const string RegisterUsage = "usage: sindri recipe register <file>";
+    private const string ShowUsage = "usage: sindri recipe show <id@hash> [--json]";
+    private const string ListUsage = "usage: sindri recipe list [--stale] [--json]";
 
-    internal static Task<int> Run(string[] args, IServiceProvider services, Output output, CancellationToken ct) => args switch
+    internal static Task<int> Run(string[] args, IServiceProvider services, Output output, CancellationToken ct) => Run(args, services, output, desk: null, ct);
+
+    /// <summary>Runs a 'recipe' verb; the registry's server verbs (register, show, list, approve, revoke) need <paramref name="desk"/>.</summary>
+    internal static Task<int> Run(string[] args, IServiceProvider services, Output output, RecipeDesk? desk, CancellationToken ct) => args switch
     {
         ["validate", "--json"] or ["validate"] => output.Error(SindriErrors.InvalidInput.With($"recipe validate needs a recipe file ({ValidateUsage})")),
         ["validate", var file] => Validate(file, json: false, services, output, ct),
         ["validate", var file, "--json"] => Validate(file, json: true, services, output, ct),
         ["validate", "--json", var file] => Validate(file, json: true, services, output, ct),
         ["eval", .. var rest] => RunEval(rest, services, output, ct),
-        _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["recipe", .. args])}' is not a sindri command ({ValidateUsage}; {EvalUsage})")),
+        ["register", var file] when !IsFlag(file) && desk is not null => new RecipeRegistryCommands(desk, services, output).Register(file, ct),
+        ["register", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe register needs one recipe file ({RegisterUsage})")),
+        ["show", var target] when target.Contains('@', StringComparison.Ordinal) && desk is not null => new RecipeRegistryCommands(desk, services, output).Show(target, json: false, ct),
+        ["show", var target, "--json"] when target.Contains('@', StringComparison.Ordinal) && desk is not null =>
+            new RecipeRegistryCommands(desk, services, output).Show(target, json: true, ct),
+        ["show", "--json", var target] when target.Contains('@', StringComparison.Ordinal) && desk is not null =>
+            new RecipeRegistryCommands(desk, services, output).Show(target, json: true, ct),
+        ["show", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe show needs one id@hash and takes only --json ({ShowUsage})")),
+        ["list", .. var flags] when ListFlags(flags) is { } list && desk is not null => new RecipeRegistryCommands(desk, services, output).List(list.Stale, list.Json, ct),
+        ["list", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe list takes only --stale and --json ({ListUsage})")),
+        ["approve", var target] when !IsFlag(target) && desk is not null => new RecipeDeskCommands(desk, services, output).Approve(target, ct),
+        ["approve", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe approve needs one recipe file or id@hash ({ApproveUsage})")),
+        ["revoke", var target] when target.Contains('@', StringComparison.Ordinal) && desk is not null => new RecipeDeskCommands(desk, services, output).Revoke(target, ct),
+        ["revoke", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe revoke needs one id@hash ({RevokeUsage})")),
+        _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["recipe", .. args])}' is not a sindri command ({ValidateUsage}; {EvalUsage}; {RegisterUsage}; {ShowUsage}; {ListUsage}; {ApproveUsage}; {RevokeUsage})")),
     };
 
     private static Task<int> RunEval(string[] args, IServiceProvider services, Output output, CancellationToken ct) => args switch
@@ -39,6 +61,16 @@ internal static partial class RecipeCommandTable
         [var file, "--json"] when !IsFlag(file) => Eval(new EvalRecipeRequest(file, EvalMode.Run), json: true, services, output, ct),
         [var file] when !IsFlag(file) => Eval(new EvalRecipeRequest(file, EvalMode.Run), json: false, services, output, ct),
         _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["recipe", "eval", .. args])}' is not a sindri command ({EvalUsage})")),
+    };
+
+    /// <summary>'list' takes '--stale' and '--json', each at most once, in either order.</summary>
+    private static (bool Stale, bool Json)? ListFlags(string[] flags) => flags switch
+    {
+        [] => (false, false),
+        ["--stale"] => (true, false),
+        ["--json"] => (false, true),
+        ["--stale", "--json"] or ["--json", "--stale"] => (true, true),
+        _ => null,
     };
 
     private static bool IsFlag(string arg) => arg.StartsWith("--", StringComparison.Ordinal);

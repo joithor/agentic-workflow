@@ -4,7 +4,7 @@ using Aw.Kernel;
 
 namespace Aw.Context.Core.Engine;
 
-/// <summary>Checks a question before any source sees it (spec §8.1, §8.3 caps). Phase 1 answers the text shape only.</summary>
+/// <summary>Checks a question before any source sees it (spec §8.1, §8.3 caps): the text and node shapes; item and symbol anchors arrive in later phases.</summary>
 public static class QueryRules
 {
     /// <summary>The budget a request gets when it names none.</summary>
@@ -19,10 +19,37 @@ public static class QueryRules
     /// <summary>The deepest cascade a request may ask for (spec §8.3).</summary>
     public const int MaxDepth = 4;
 
+    /// <summary>The longest value, percent-encoded, a query URL carries: under Kestrel's 8 KB request line, with room for the rest of the URL. The CLI and probe files both refuse a longer one with a clear code.</summary>
+    public const int MaxEncodedText = 6_000;
+
+    /// <summary>What a bad depth's 006 starts with (a transport adds its own hint after it).</summary>
+    public const string DepthMessage = "depth must be a whole number from 0 to 4";
+
+    /// <summary>What a bad budget's 006 starts with (a transport adds its own hint after it).</summary>
+    public const string BudgetMessage = "budget must be a whole number of tokens, 1 or more";
+
+    /// <summary>What the 006 for two or no question shapes says (a transport adds its own spelling of the shapes after it).</summary>
+    public const string ShapeMessage = "ask exactly one of: text, node, item or symbol";
+
+    /// <summary>What the 006 for a bad node anchor says (2000 is <see cref="MaxTextLength"/>; a transport adds its own spelling after it).</summary>
+    public const string NodeMessage = "a node anchor names a node key, alias or name of 1 to 2000 characters";
+
+    /// <summary>The 006 message for an empty or overlong symbol anchor.</summary>
+    public const string SymbolMessage = "a symbol anchor is a file path of 1 to 2000 characters";
+
+    /// <summary>Whether a value, percent-encoded, fits <see cref="MaxEncodedText"/>.</summary>
+    /// <param name="value">The question text or node name.</param>
+    /// <returns>True when a GET query string can carry it.</returns>
+    public static bool FitsQueryUrl(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        return Uri.EscapeDataString(value).Length <= MaxEncodedText;
+    }
+
     /// <summary>Checks <paramref name="query"/>.</summary>
     /// <param name="query">The question.</param>
     /// <param name="settings">The checked settings.</param>
-    /// <returns>The terms and budget; SND-CONTEXT-006 for a malformed question; SND-CONTEXT-003 for an anchor shape (no graph before Phase 3).</returns>
+    /// <returns>The terms (none for the node shape: they come from its anchor) and budget; SND-CONTEXT-006 for a malformed question; SND-CONTEXT-003 for the item and symbol shapes.</returns>
     public static Result<ValidQuery> Check(ContextQuery query, ContextSettings settings)
     {
         ArgumentNullException.ThrowIfNull(query);
@@ -30,18 +57,93 @@ public static class QueryRules
         var shapes = new[] { query.Text, query.Node, query.Item, query.Symbol }.Count(s => s is not null);
         if (shapes != 1)
         {
-            return ContextErrors.QueryInvalid.With("ask exactly one of: text, --node, --item or --symbol");
+            return ContextErrors.QueryInvalid.With(ShapeMessage);
         }
 
-        if (query.Depth is < 0 or > MaxDepth || query.Budget is <= 0)
+        if (CheckDepth(query.Depth) is { } depthError)
         {
-            return ContextErrors.QueryInvalid.With(string.Create(CultureInfo.InvariantCulture,
-                $"depth is 0 to {MaxDepth} and budget a positive number of tokens"));
+            return depthError;
+        }
+
+        if (query.Budget is <= 0 and var budget)
+        {
+            return OutOfRange(BudgetMessage, budget.ToString(CultureInfo.InvariantCulture));
+        }
+
+        return Shaped(query, Math.Min(query.Budget ?? DefaultBudget, settings.MaxBudget));
+    }
+
+    /// <summary>A depth as a transport sent it: absent, or a whole number from 0 to <see cref="MaxDepth"/>.</summary>
+    /// <param name="text">The text, or null.</param>
+    /// <returns>The depth (null when absent); SND-CONTEXT-006 when it is not a whole number or is out of range. The message names no flag: a transport adds its own hint.</returns>
+    public static Result<int?> ParseDepth(string? text) => ParseWhole(text, DepthMessage, 0, MaxDepth);
+
+    /// <summary>A token budget as a transport sent it: absent, or a whole number of 1 or more.</summary>
+    /// <param name="text">The text, or null.</param>
+    /// <returns>The budget (null when absent); SND-CONTEXT-006 when it is not a whole number or is out of range.</returns>
+    public static Result<int?> ParseBudget(string? text) => ParseWhole(text, BudgetMessage, 1, int.MaxValue);
+
+    /// <summary>The 006 for a depth already a number, worded as <see cref="ParseDepth"/> words it.</summary>
+    /// <param name="depth">The depth, or null.</param>
+    /// <returns>Null when absent or 0 to <see cref="MaxDepth"/>, else the error.</returns>
+    public static Error? CheckDepth(int? depth) =>
+        depth is { } value && value is < 0 or > MaxDepth ? OutOfRange(DepthMessage, value.ToString(CultureInfo.InvariantCulture)) : null;
+
+    private static Result<int?> ParseWhole(string? text, string rule, int min, int max)
+    {
+        if (text is null)
+        {
+            return (int?)null;
+        }
+
+        var digits = text.Length > 0 && text[0] is '-' or '+' ? text[1..] : text;
+        if (digits.Length == 0 || !digits.All(char.IsAsciiDigit))
+        {
+            return ContextErrors.QueryInvalid.With(rule);
+        }
+
+        if (int.TryParse(text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var value) && value >= min && value <= max)
+        {
+            return value;
+        }
+
+        return OutOfRange(rule, text);
+    }
+
+    private static Error OutOfRange(string rule, string shown) =>
+        ContextErrors.QueryInvalid.With($"{rule}; {(shown.Length <= 12 ? shown : "that value")} is out of range");
+
+    // The symbol shape in its file-path form: a path in the repo. A symbol inside a file ('path#name') needs the code index (Phase 9).
+    private static Result<ValidQuery> FilePath(string symbol, int budget)
+    {
+        if (string.IsNullOrWhiteSpace(symbol) || symbol.Length > MaxTextLength || symbol.Any(char.IsControl))
+        {
+            return ContextErrors.QueryInvalid.With(SymbolMessage);
+        }
+
+        return symbol.Contains('#', StringComparison.Ordinal)
+            ? ContextErrors.UnknownAnchor.With("symbols inside a file need the code index (a later phase); ask by the file's path")
+            : new ValidQuery([], budget);
+    }
+
+    /// <summary>The one shape's own checks: a node name's length; a file path; the text's words; an item not yet (003).</summary>
+    private static Result<ValidQuery> Shaped(ContextQuery query, int budget)
+    {
+        if (query.Node is { } node)
+        {
+            return string.IsNullOrWhiteSpace(node) || node.Length > MaxTextLength
+                ? ContextErrors.QueryInvalid.With(NodeMessage)
+                : new ValidQuery([], budget);
+        }
+
+        if (query.Symbol is { } symbol)
+        {
+            return FilePath(symbol, budget);
         }
 
         if (query.Text is null)
         {
-            return ContextErrors.UnknownAnchor.With("no product map exists yet, so node, item and symbol anchors can't resolve; ask a text question");
+            return ContextErrors.UnknownAnchor.With("item anchors arrive in a later phase; ask by --node, --symbol <file> or a text question");
         }
 
         var terms = Terms(query.Text);
@@ -51,16 +153,17 @@ public static class QueryRules
                 $"the question needs at least one word and at most {MaxTextLength} characters"));
         }
 
-        return new ValidQuery(terms, Math.Min(query.Budget ?? DefaultBudget, settings.MaxBudget));
+        return new ValidQuery(terms, budget);
     }
 
-    /// <summary>The distinct words of <paramref name="text"/>: runs of letters and digits, lower-cased, at most 64 characters each.</summary>
-    /// <param name="text">The question.</param>
-    /// <returns>Up to <see cref="MaxTerms"/> terms, in order of first use.</returns>
-    public static IReadOnlyList<string> Terms(string text)
+    /// <summary>The distinct words of <paramref name="text"/>, as <see cref="Terms"/> reads them but with a cap of the caller's choosing.</summary>
+    /// <param name="text">The text.</param>
+    /// <param name="max">The most words to return.</param>
+    /// <returns>Up to <paramref name="max"/> words, in order of first use.</returns>
+    public static IReadOnlyList<string> Words(string text, int max)
     {
         ArgumentNullException.ThrowIfNull(text);
-        var terms = new List<string>();
+        var words = new List<string>();
         var word = new StringBuilder();
         foreach (var c in text.Append(' '))
         {
@@ -72,13 +175,18 @@ public static class QueryRules
             {
                 var term = word.ToString();
                 _ = word.Clear();
-                if (!terms.Contains(term, StringComparer.Ordinal) && terms.Count < MaxTerms)
+                if (!words.Contains(term, StringComparer.Ordinal) && words.Count < max)
                 {
-                    terms.Add(term);
+                    words.Add(term);
                 }
             }
         }
 
-        return terms;
+        return words;
     }
+
+    /// <summary>The distinct words of <paramref name="text"/>: runs of letters and digits, lower-cased, at most 64 characters each.</summary>
+    /// <param name="text">The question.</param>
+    /// <returns>Up to <see cref="MaxTerms"/> terms, in order of first use.</returns>
+    public static IReadOnlyList<string> Terms(string text) => Words(text, MaxTerms);
 }

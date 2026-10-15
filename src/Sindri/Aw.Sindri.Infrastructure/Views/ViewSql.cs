@@ -5,6 +5,11 @@ namespace Aw.Sindri.Infrastructure.Views;
 /// <summary>views.db's SQL. A view's table comes from this fixed map (<see cref="ViewNames"/>), never from input.</summary>
 internal static class ViewSql
 {
+    /// <summary>Whether a table exists: views.db is created before its migration commits, so a reader can open it with no tables yet.</summary>
+    internal const string TableExists = "SELECT EXISTS (SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = $name)";
+
+    internal const string StateTable = "projector_state";
+
     internal const string SelectState =
         "SELECT cursor, schema_version, projected_at, rebuilding, stalled_at, stalled_type FROM projector_state WHERE id = 1";
 
@@ -24,6 +29,9 @@ internal static class ViewSql
     {
         [ViewNames.Services] = new ViewTable("view_services"),
         [ViewNames.Profile] = new ViewTable("view_profile"),
+        [ViewNames.Items] = new ViewTable("view_items"),
+        [ViewNames.ItemAliases] = new ViewTable("view_item_aliases"),
+        [ViewNames.ItemTimeline] = new ViewTable("view_item_timeline"),
     };
 
     /// <summary>The table behind <paramref name="view"/>, or null when it isn't a view.</summary>

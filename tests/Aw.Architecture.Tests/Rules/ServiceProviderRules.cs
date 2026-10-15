@@ -36,8 +36,32 @@ public static class ServiceProviderRules
         edges
             .Where(e => IsLocator(e.Target.FullName)
                 && e.From?.Layer is not (Layer.Host or Layer.Commands)
-                && !TypeNames.TopLevel(e.Origin).EndsWith("ServiceCollectionExtensions", StringComparison.Ordinal))
+                && !TypeNames.TopLevel(e.Origin).EndsWith("ServiceCollectionExtensions", StringComparison.Ordinal)
+                && !IsXamlGenerated(e))
             .Select(e => new Violation(Id, $"{TypeNames.Qualified(e.Origin)} uses {e.Target.Name}",
                 "take the dependency through the constructor; only a registration factory lambda inside the project's own "
                 + "Add…() method (a *ServiceCollectionExtensions class) may resolve from IServiceProvider"));
+
+    /// <summary>
+    /// Avalonia's XAML compiler passes a markup IServiceProvider (not a DI container) through the code it generates: the
+    /// CompiledAvaloniaXaml namespace, the nested XamlClosure_N types and the members named '!XamlIl…' that it adds to each
+    /// view and app class. A use only
+    /// there is no service locator; a hand-written member using IServiceProvider in the same class still fails.
+    /// </summary>
+    /// <param name="edge">An edge to a locator type.</param>
+    /// <returns>True when only XAML-generated code makes it.</returns>
+    public static bool IsXamlGenerated(Edge edge)
+    {
+        if (TypeNames.NamespaceOf(edge.Origin).StartsWith("CompiledAvaloniaXaml", StringComparison.Ordinal)
+            || edge.Origin.Name.Contains("+XamlClosure_", StringComparison.Ordinal)
+            || edge.Origin.Name.StartsWith("XamlClosure_", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        string[] users = [.. edge.Origin.Members
+            .Where(m => m.Dependencies.Exists(d => IsLocator(d.Target.FullName)) || m.FullName.Contains(edge.Target.FullName, StringComparison.Ordinal))
+            .Select(m => m.Name)];
+        return users.Length > 0 && Array.TrueForAll(users, n => n.StartsWith('!'));
+    }
 }

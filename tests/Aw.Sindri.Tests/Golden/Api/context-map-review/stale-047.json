@@ -1,0 +1,7 @@
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.10",
+  "title": "SND-CONTEXT-047",
+  "status": 409,
+  "detail": "link edge:402b8bed42f6611c is not in the review queue (fix: list it again with 'sindri context map review')",
+  "traceId": "<trace>"
+}

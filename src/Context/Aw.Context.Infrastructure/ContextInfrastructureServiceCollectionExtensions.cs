@@ -1,14 +1,25 @@
 using Aw.Context.Core.Docs;
+using Aw.Context.Core.Engine;
+using Aw.Context.Core.Eval;
+using Aw.Context.Core.Extract;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Proposals;
+using Aw.Context.Core.Review;
 using Aw.Context.Core.Trust;
 using Aw.Context.Infrastructure.Docs;
+using Aw.Context.Infrastructure.Eval;
+using Aw.Context.Infrastructure.Extract;
 using Aw.Context.Infrastructure.Git;
 using Aw.Context.Infrastructure.Graph;
+using Aw.Context.Infrastructure.Labeling;
 using Aw.Context.Infrastructure.Map;
+using Aw.Context.Infrastructure.Onyx;
+using Aw.Context.Infrastructure.Review;
 using Aw.Context.Infrastructure.Scrubbing;
+using Aw.Context.Infrastructure.Sources;
 using Aw.Context.Infrastructure.Store;
-using Aw.Redaction;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Aw.Context.Infrastructure;
 
@@ -17,9 +28,12 @@ public static class ContextInfrastructureServiceCollectionExtensions
 {
     /// <summary>
     /// Adds the context store (context.db under $AW_SINDRI_HOME/context), git, the repo-docs index and source catalog,
-    /// both scrubbing ports over Aw.Redaction's built-in rules, the graph store, the map file reader and the exports
-    /// folder. Needs a TimeProvider and the host's AwJson options (a JsonSerializerOptions singleton whose context holds
-    /// the map types), both registered by the host.
+    /// the scrubber factory over Aw.Redaction (each call's scrubbers carry the profile's extra patterns), the graph store,
+    /// the map file reader, the exports folder, the probe file reader and the probe reports folder, and the factory that builds the onyx source from the
+    /// profile's onyx settings and Linear teams (doctor's 'context:onyx' check runs that source's probe). The onyx source reads its key by calling
+    /// <paramref name="environment"/> with the settings' pointer text (Sindri's Composition wraps the environment so
+    /// pointers resolve there). Needs a TimeProvider, ILogger and the host's AwJson options (a JsonSerializerOptions
+    /// singleton whose context holds the map types), all registered by the host.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="environment">Reads an environment variable (Environment.GetEnvironmentVariable in Program.cs, a lambda in tests).</param>
@@ -29,12 +43,31 @@ public static class ContextInfrastructureServiceCollectionExtensions
             .AddSingleton(SettingsFromEnvironment.Read(environment))
             .AddSingleton<ContextDatabase>()
             .AddSingleton<GitCli>()
-            .AddSingleton(new RedactionScrubber(Redactor.Default))
-            .AddSingleton<IEgressScrubber>(static sp => sp.GetRequiredService<RedactionScrubber>())
-            .AddSingleton<IIngestFilter>(static sp => sp.GetRequiredService<RedactionScrubber>())
-            .AddSingleton<ISourceCatalog, RepoDocsCatalog>()
+            .AddSingleton<IScrubberFactory, RedactionScrubberFactory>()
+            .AddSingleton<ISourceCatalog, ContextSourceCatalog>()
             .AddSingleton<IDocIndex, SqliteDocIndex>()
-            .AddSingleton<IGraphStore, SqliteGraphStore>()
+            .AddSingleton<SqliteGraphStore>()
+            .AddSingleton<IGraphStore>(sp => sp.GetRequiredService<SqliteGraphStore>())
+            .AddSingleton<IProposalRuns>(sp => sp.GetRequiredService<SqliteGraphStore>())
             .AddSingleton<IMapFileReader, MapFileReader>()
-            .AddSingleton<IExportStore, FileExportStore>();
+            .AddSingleton<IExportStore, FileExportStore>()
+            .AddSingleton<IReviewFileStore, FileReviewFileStore>()
+            .AddSingleton<ICurrentUser, OsCurrentUser>()
+            .AddSingleton<IRepoReader, GitRepoReader>()
+            .AddSingleton(GraphifyOptions.Default)
+            .AddSingleton<IClusterSource, GraphifyClusterSource>()
+            .AddSingleton<IProbeFileReader, ProbeFileReader>()
+            .AddSingleton<IProbeReportStore, FileProbeReportStore>()
+            .AddSingleton(sp => new OnyxSources(new OnyxSourceParts(
+                OnyxHttp.Client, environment, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILogger<OnyxClient>>())));
+
+    /// <summary>
+    /// Adds the labeling pass ('context.labeling'): <see cref="ILabeler"/> over the host's <see cref="Core.Models.IModelPort"/>. The token cap
+    /// ('context.labeling.maxTokens') arrives with each pass; a build asks the labeler only when the approved profile turns labeling on.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    public static IServiceCollection AddContextLabeling(this IServiceCollection services)
+        => services.AddSingleton<ILabeler>(sp => new ModelLabeler(
+            sp.GetRequiredService<Core.Models.IModelPort>(), sp.GetRequiredService<IScrubberFactory>()));
 }

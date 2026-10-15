@@ -30,6 +30,16 @@ public sealed class StartAndEngineTriggerTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Start_keeps_the_tenant_and_ring_of_the_workflow_input()
+    {
+        var applied = Assert.IsType<Applied>(TransitionDecision.Start(Request() with { Tenant = "acme", Ring = 2 }, Step, EngineFixture.Context(), new FakeEngineRules()));
+
+        var (row, started) = (applied.Changes[0].After, applied.Changes[0].Event);
+        Assert.Equal(("acme", 2), (row.Tenant, row.Ring));
+        Assert.Equal(("acme", 2), (started.Started!.Tenant, started.Started.Ring));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Start_on_a_revoked_recipe_is_rejected()
     {
         var decision = TransitionDecision.Start(Request(), Step, EngineFixture.Context() with { Approval = ApprovalCheck.Revoked }, new FakeEngineRules());
@@ -44,6 +54,15 @@ public sealed class StartAndEngineTriggerTests
 
         var row = applied.Changes[0].After;
         Assert.Equal((EngineStates.TakenOver, "produce"), (row.State, row.Frame.State));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Start_taken_over_records_the_callers_actor_and_only_the_takeover_is_the_engines()
+    {
+        var applied = Assert.IsType<Applied>(TransitionDecision.Start(Request() with { TakenOver = true }, Step, EngineFixture.Context(), new FakeEngineRules()));
+
+        var (row, started) = (applied.Changes[0].After, applied.Changes[0].Event);
+        Assert.Equal(("human:thor", "service:engine"), (started.Trigger.Actor, row.Suspension?.Actor));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -170,5 +189,7 @@ public sealed class StartAndEngineTriggerTests
         Parent: null,
         new Dictionary<FactKey, FactValue> { [FactKey.From("fact:spec")] = Fact("Add a --version flag.") },
         "human:thor",
-        TakenOver: false);
+        TakenOver: false,
+        Tenant: "local",
+        Ring: 0);
 }

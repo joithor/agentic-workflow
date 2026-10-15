@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Aw.Kernel;
+using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
@@ -54,7 +55,9 @@ internal sealed record EvalSimulation(
             Parent: null,
             evalCase.Start.Start.Inputs.ToDictionary(static i => i.Key, static i => EvalFacts.Value(i.Value)),
             Person,
-            TakenOver: false);
+            TakenOver: false,
+            SindriProfile.DefaultTenant,
+            Ring: 0);
         return TransitionDecision.Start(request, recipe, Context(catalog, children)) switch
         {
             Applied applied => new EvalSimulation(recipe, catalog, children, applied.Changes[0].After, [applied.Changes[0]]),
@@ -218,14 +221,14 @@ internal sealed record EvalSimulation(
 
     /// <summary>
     /// The running timer fires (§9.2): the takeover's idle reminder while taken over; otherwise the state's timeout while
-    /// nothing is suspended (a park or escalation stops it). A 'then: retry' second expiry is P5's, with the timers.
+    /// nothing is suspended (a park or escalation stops it); once a 'then: retry' re-armed it, the retry timer.
     /// </summary>
     private Result<Trigger> Deadline() => Instance switch
     {
         { Ended: true } => Missing($"'{Instance.State}' has ended; no timer runs"),
         { Suspension.Kind: SuspensionKind.Takeover } => new DeadlineFired(Timers, Instance.Frame.Entry, DeadlineKind.TakeoverIdle),
         { Suspension: null } when Recipe.States.TryGetValue(Instance.Frame.State, out var state) && state.Timeout is not null =>
-            new DeadlineFired(Timers, Instance.Frame.Entry, DeadlineKind.State),
+            new DeadlineFired(Timers, Instance.Frame.Entry, Instance.Frame.Retried ? DeadlineKind.Retry : DeadlineKind.State),
         _ => Missing($"'{Instance.State}' has no running timer"),
     };
 

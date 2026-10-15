@@ -1,7 +1,6 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Host;
-using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Ledger;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,12 +19,7 @@ public sealed class SindriWorkerHostContractTests : TemporalWorkerContract
 
     protected override async ValueTask<(ITemporalWorker Worker, TemporalEndpoint Frontend)> Create()
     {
-        _env = await WorkflowEnvironment.StartLocalAsync(new WorkflowEnvironmentStartLocalOptions
-        {
-            Namespace = SindriTemporal.Namespace,
-            UI = false,
-            DevServerOptions = new DevServerOptions { ExistingPath = PinnedTemporal.Path() },
-        });
+        _env = await WorkflowsHarness.StartDevServer(ct: TestContext.Current.CancellationToken);
         _sindri = Composition.Compose(new ServiceCollection(), name => name == "AW_SINDRI_HOME" ? _home.Path : null, new FakeTimeProvider())
             .BuildServiceProvider();
         var port = int.Parse(_env.Client.Connection.Options.TargetHost!.Split(':')[1], System.Globalization.CultureInfo.InvariantCulture);

@@ -31,4 +31,19 @@ public sealed record ServiceSchedule(ServiceName Name, Cadence Cadence, DateTime
     public static IReadOnlyList<ServiceSchedule> From(SindriProfile profile, DateTimeOffset start) =>
         [.. (profile.Services ?? SindriProfile.NoServices)
             .Select(s => new ServiceSchedule(ServiceName.From(s.Key), Cadence.Parse(s.Value.Every).Value, start))];
+
+    /// <summary>
+    /// The schedules for the services an approved profile names and for the build's built-in services (engine spec §7.2
+    /// S1-D8): a built-in runs on its own cadence unless the profile names it, and runs with no approved profile too.
+    /// </summary>
+    /// <param name="profile">The approved profile, or null when none is approved.</param>
+    /// <param name="builtIns">The services the build runs without a profile entry.</param>
+    /// <param name="start">When the process started its scheduler.</param>
+    /// <returns>One schedule per service: the profile's first, then the built-ins it doesn't name.</returns>
+    public static IReadOnlyList<ServiceSchedule> From(SindriProfile? profile, IEnumerable<BuiltInService> builtIns, DateTimeOffset start)
+    {
+        ArgumentNullException.ThrowIfNull(builtIns);
+        var named = profile is null ? [] : From(profile, start);
+        return [.. named, .. builtIns.Where(b => named.All(n => n.Name != b.Name)).Select(b => new ServiceSchedule(b.Name, b.Cadence, start))];
+    }
 }

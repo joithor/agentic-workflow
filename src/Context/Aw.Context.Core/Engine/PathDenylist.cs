@@ -1,0 +1,67 @@
+using System.Collections.Concurrent;
+using System.Text;
+using System.Text.RegularExpressions;
+
+namespace Aw.Context.Core.Engine;
+
+/// <summary>
+/// The paths a repo's extraction never reads (S-4, the profile's 'index.denyPaths' and the built-in secret globs): they never
+/// reach a recognizer, the clustering snapshot or the labeler. Globs are repo-relative with '/' separators, matched without
+/// regard to case: '**/' is any directories, a trailing '**' is anything, '*' stays inside one segment, '?' is one character.
+/// </summary>
+public static class PathDenylist
+{
+    /// <summary>The secret globs every repo has.</summary>
+    public static IReadOnlyList<string> Defaults { get; } =
+    [
+        ".env*", "**/.env*", "**/*.pem", "**/*.key", "**/*.p12", "**/*.pfx", "**/id_rsa*", "**/*.tfstate", "**/*.tfvars",
+        "**/credentials*", "**/.npmrc", "**/.netrc", "**/secrets/**",
+    ];
+
+    /// <summary>Whether a path matches any glob.</summary>
+    /// <param name="path">The repo-relative path.</param>
+    /// <param name="globs">The globs.</param>
+    /// <returns>True when the path is denied.</returns>
+    public static bool Matches(string path, IReadOnlyList<string> globs)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        ArgumentNullException.ThrowIfNull(globs);
+        return globs.Any(g => _compiled.GetOrAdd(g, Compile).IsMatch(path));
+    }
+
+    // Each glob is compiled once per process: a build asks per tracked file.
+    private static readonly ConcurrentDictionary<string, Regex> _compiled = new(StringComparer.Ordinal);
+
+    private static Regex Compile(string glob)
+    {
+        var pattern = new StringBuilder("^");
+        for (var i = 0; i < glob.Length; i++)
+        {
+            var c = glob[i];
+            if (c == '*' && i + 1 < glob.Length && glob[i + 1] == '*')
+            {
+                if (i + 2 < glob.Length && glob[i + 2] == '/')
+                {
+                    _ = pattern.Append("(?:.*/)?");
+                    i += 2;
+                }
+                else
+                {
+                    _ = pattern.Append(".*");
+                    i++;
+                }
+            }
+            else
+            {
+                _ = c switch
+                {
+                    '*' => pattern.Append("[^/]*"),
+                    '?' => pattern.Append("[^/]"),
+                    _ => pattern.Append(Regex.Escape(c.ToString())),
+                };
+            }
+        }
+
+        return new Regex(pattern.Append('$').ToString(), RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Singleline, TimeSpan.FromSeconds(1));
+    }
+}

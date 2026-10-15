@@ -31,7 +31,7 @@ public sealed class ExportMapTests : IDisposable
         var exported = await _world.Map.ExportMap(path: null, MapWorld.Human, MapWorld.None);
 
         Assert.Equal(FakeExportStore.Folder + "/map-v1-20260801T120000Z.json", exported.Value.Path);
-        Assert.Equal((1, new MapCounts(19, 19, 1, 1, 2)), (exported.Value.Version, exported.Value.Counts));
+        Assert.Equal((1, new MapCounts(20, 21, 1, 1, 2)), (exported.Value.Version, exported.Value.Counts));
         var document = _world.Exports.Documents[exported.Value.Path];
         Assert.Equal((MapDocumentKind.Export, 1, 1), (document.Kind, document.SchemaVersion, document.MapVersion));
         Assert.Equal(_world.Clock.GetUtcNow(), document.ExportedAt);
@@ -85,7 +85,7 @@ public sealed class ExportMapTests : IDisposable
         Assert.Equal("feature:gone", Assert.Single(document.Orphaned!).Value);
         Assert.True(again.IsSuccess);
         Assert.Equal(3, (await _world.Store.Overrides(MapWorld.None)).Value.Count);
-        Assert.Equal(1, (await _world.Map.MapStatus(MapWorld.Human, MapWorld.None)).Value.Orphaned);
+        Assert.Equal(1, (await _world.Map.MapStatus(anchor: null, MapWorld.Human, MapWorld.None)).Value.Orphaned);
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -110,7 +110,7 @@ public sealed class ExportMapTests : IDisposable
 
         var document = _world.Exports.Documents[exported.Value.Path];
         Assert.Equal(string.Join(',', FixtureMap.ScopedNodes), string.Join(',', document.Nodes.Select(n => n.Key.Value).Order(StringComparer.Ordinal)));
-        Assert.Equal(2, document.Edges!.Count);
+        Assert.Equal(FixtureMap.ScopedEdges, document.Edges!.Count);
         Assert.Empty(document.Decisions!);
         _ = Assert.Single(document.Overrides!);
     }

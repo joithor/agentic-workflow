@@ -28,13 +28,13 @@ public static class EmptyText
         _ => throw new ArgumentOutOfRangeException(nameof(group), group, "not a queue group"),
     };
 
-    /// <summary>The item list is empty for its filters.</summary>
+    /// <summary>The item list is empty for its filters. Without a state filter the list holds open items only, so the sentence says "open".</summary>
     /// <param name="state">The state filter, or null.</param>
     /// <param name="repo">The repo filter, or null.</param>
     /// <returns>The sentence.</returns>
     public static string Items(ItemState? state, RepoName? repo)
     {
-        var what = state is { } s ? "No " + Name(s) + " items" : "No items";
+        var what = state is { } s ? "No " + Name(s) + " items" : "No open items";
         return repo is { } r ? what + " in " + r.Value + "." : what + ".";
     }
 
@@ -55,31 +55,32 @@ public static class EmptyText
     public static string Stalled(long at) =>
         string.Create(CultureInfo.InvariantCulture, $"Views are stalled at {at}: run `sindri views rebuild`");
 
-    /// <summary>The sentence a list answers with: stalled, then rebuilding, then its empty sentence when it has no rows, else null.</summary>
-    /// <param name="asOf">The answer's freshness.</param>
+    /// <summary>The projector can't run (no event is to blame).</summary>
+    /// <param name="detail">Why, with its code.</param>
+    /// <returns>The sentence.</returns>
+    public static string Failing(string? detail) => $"The views can't be updated ({detail}): run `{FixFor(detail)}`";
+
+    /// <summary>The command that fixes a stall: the doctor when the ledger is what can't be read (a rebuild can't help), else a rebuild.</summary>
+    /// <param name="detail">The stall's '&lt;code&gt;: &lt;detail&gt;'.</param>
+    /// <returns>The command.</returns>
+    public static string FixFor(string? detail) =>
+        detail is not null && detail.StartsWith("SND-LEDGER", StringComparison.Ordinal) ? "sindri doctor" : "sindri views rebuild";
+
+    /// <summary>The views can't be read.</summary>
+    /// <returns>The sentence.</returns>
+    public static string Unreadable() => "The views can't be read: run `sindri views rebuild`";
+
+    /// <summary>The sentence a list answers with: stalled or failing, then rebuilding, then its empty sentence when it has no rows, else null.</summary>
+    /// <param name="views">The projector's status.</param>
     /// <param name="empty">True when the list has no rows.</param>
     /// <param name="emptySentence">The list's empty sentence.</param>
     /// <returns>The sentence, or null.</returns>
-    public static string? For(AsOf asOf, bool empty, Func<string> emptySentence)
+    public static string? For(ViewsStatus views, bool empty, Func<string> emptySentence)
     {
-        ArgumentNullException.ThrowIfNull(asOf);
+        ArgumentNullException.ThrowIfNull(views);
         ArgumentNullException.ThrowIfNull(emptySentence);
-        return asOf.Stalled ? Stalled(asOf.Cursor + 1)
-            : asOf.Rebuilding ? Rebuilding(asOf.Cursor, asOf.LedgerHead)
-            : empty ? emptySentence() : null;
+        return views.Text ?? (empty ? emptySentence() : null);
     }
 
-    private static string Name(ItemState state) => state switch
-    {
-        ItemState.New => "new",
-        ItemState.Queued => "queued",
-        ItemState.Running => "running",
-        ItemState.NeedsDecision => "needs-decision",
-        ItemState.NeedsAnswer => "needs-answer",
-        ItemState.Parked => "parked",
-        ItemState.TakenOver => "taken-over",
-        ItemState.Done => "done",
-        ItemState.Cancelled => "cancelled",
-        _ => throw new ArgumentOutOfRangeException(nameof(state), state, "not an item state"),
-    };
+    private static string Name(ItemState state) => ItemStateNames.Of(state);
 }

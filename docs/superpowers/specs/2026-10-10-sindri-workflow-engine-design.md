@@ -10,10 +10,24 @@ eval format, §9.2). **Revision 8.1** (2026-10-12) applies the owner's decisions
 there is no spike; the code written to measure it lands as **P4a, the Temporal foundation**, whose acceptance checks
 carry the measured numbers (Phases), and P4 builds on it; a desk Step is a short activity and the report is the
 `complete` Update (§5.3); the ledger mirror is keyed by the `RecordEvent` activity id (§5.6); the Temporal test
-findings F1–F3 are in §11. Each is marked *rev 8.1* inline
+findings F1–F3 are in §11. Each is marked *rev 8.1* inline. **Revision 8.2** (2026-10-13) records what P4 settled:
+a desk timeout parks with reason `timeout` (§5.3), and the `Repo` search attribute comes from `fact:item`'s `repo`
+(§5.1). Each is marked *rev 8.2* inline. **Owner decisions of 2026-10-14** (PR #192) align two texts with rev 8.2: a
+held item event is re-sent only to instances that started before it, and only within 1 minute (§5.4); a desk timeout
+always parks and `then:` doesn't apply when it fires (§3.4, §3.8). Each is marked *owner, 2026-10-14* inline
 · **Date:** 2026-10-10 · **Builds:** factory addendum §17.28 (one workflow
 state machine) and §17.29.4 step 2 · **Next:** P4a (the Temporal foundation), then `/specToProvenPR` takes the Phases at
 the end to PRs.
+
+**Revision note (2026-10-14):** the UI screens spec's (`2026-10-13-sindri-ui-screens-design.md`) edits E-21 (recipe
+`urgency`), E-22 (engine half: `outputs`, the fact types, `inputs[].kind`), E-30 (the ledger column that links Temporal
+history to ledger sequences) and E-31 (the scoping recipe's draft proposals), and the states path order (its §5.1), are
+written in. Sections: §3.1, §3.2 (top-level table, `inputs`, `urgency`, `outputs`), §3.3 (fact types, subject kinds),
+§3.10 (new: path order of states), §5.6, §6.3 (verbs and routes), §9.1, §12 (the scoping recipe's requirements), W29
+in §1 and Phases 2, 4 and 7. Where they contradict older text the UI spec wins (README X52): W29 and §5.6 said nothing
+reads Temporal history but the engine and its tests; the API now reads it for `GET /engine` (R8-12), the UI only through
+the API, and the evolve loop, `workflow events` and the item timeline still read the ledger. Existing rule ids and phase
+numbers are unchanged.
 
 This doc makes §17.28 concrete. It doesn't reopen §17.28 or §17.29, which are settled (decisions Q6 and Q7). It
 settles the block contract, the recipe schema, approval and invariant 13, the instance and its events, the CLI and
@@ -129,7 +143,7 @@ P3 (#180) keeps its pure decisions and drops the frame, fold and store work. P4 
 | W26 | **Each S1 change is owned by one engine phase** (§7.2) | No dependency without an owner |
 | W27 | **Exit codes:** the checker verbs (`recipe validate`, `recipe eval`) return 0 for pass, 1 for fail and 2 for usage or tool errors, like `aw-packets`. Every other verb uses S1's `Output.Error`: 1 when Sindri isn't running, 2 for any other error, with the line `CODE message (fix: …)` | Consistent with the repo's checkers and with S1 (E8) |
 | W28 | **Temporal is the substrate** (owner, 2026-10-11). One `RecipeWorkflow` interprets every recipe; instances are workflow executions, commands are Updates, Steps are activities with async completion, events are signals, children are child workflows, timers are `DelayAsync` | §0: the only .NET option that runs locally on SQLite with a GA SDK and covers every rev 7 mechanism |
-| W29 | **The ledger stays the public log.** Every transition is mirrored into `ledger.db` by an idempotent local activity; nothing reads Temporal history but the engine and its tests | One log for the UI, the API and the evolve loop (X16, API §5) |
+| W29 | **The ledger stays the public log.** Every transition is mirrored into `ledger.db` by an idempotent local activity; the API reads Temporal history only for the read-only `GET /engine` family (§5.6), the UI reads it only through the API (R8-12), and the evolve loop, `workflow events` and the item timeline read the ledger | One log for the UI, the API and the evolve loop (X16, API §5); UI screens E-30 |
 | W30 | **Authorization never reaches Temporal.** The API chain is the only writer of Updates and starts; the server is loopback with no auth | API §4; the honest-mistake threat model (A §17.28.3) |
 | W31 | **tmux owns every agent session; Warp attaches.** `attach` joins the live session; typing is a takeover | README X55; the human can step onto the line at any Step (API §8.1, UI §6.2) |
 | W32 | **The Sindri host is framework-dependent;** the Temporal adapter opts out of `IsAotCompatible` with its reason; the Avalonia app stays NativeAOT | temporalio/sdk-dotnet#286; README X54; csharp.md "AOT scope" |
@@ -205,7 +219,10 @@ public interface IDescribedBlock { public static abstract BlockDescriptor Descri
 - **Hash:** `sha256:` over RFC 8785 (JCS) of the normalized document without `hash`, so a short form and its long
   form hash the same. Hashes are shown as 12 hex characters, and input accepts a prefix of 8 or more. The normalized
   document writes every absent optional value as `null` and every absent list or map as empty (owner decision, 2026-10-11), so adding an optional field to the
-  format re-hashes every recipe, and each needs re-approval.
+  format re-hashes every recipe, and each needs re-approval. Adding `outputs`, `urgency` or an input's `kind` to an
+  already approved recipe is therefore a new hash and a re-approval too: the registry's approved hash covers the whole
+  normalized file, and these fields are part of it (they are presentation, but the app renders from the approved
+  document). The fields themselves land in P2 for this reason (Phases, P2).
 
 ### 3.2 Top level
 
@@ -216,7 +233,9 @@ public interface IDescribedBlock { public static abstract BlockDescriptor Descri
 | `version` | yes | `RCP-VERSION-001` (same id and version, different hash); `-002` (not above the highest registered) |
 | `description` | no | |
 | `base` | generated only | Written by Sindri's generator. A hand-written recipe with `base` is `RCP-CAP-004` |
-| `inputs` | no | Fact keys. The long form is `{ key, label?, type?: text \| file \| item }`; `recipe show` and `GET /workflow/recipes` return them so the app can render a start form |
+| `urgency` | no | `incident \| triage \| work`, default `work` (UI E-21). The app orders Home's Workflows strip and the Workflows list's groups by it, `incident` first. It changes no engine behaviour: no timer, escalation or notification reads it. `RCP-URG-001` (any other value). The normalized document writes the default, so an absent `urgency` and `urgency: work` hash the same |
+| `inputs` | no | Fact keys. The long form is `{ key, label?, type?, kind? }` with `type` one of the fact types in §3.3 (default `text`) and `kind` one of the subject kinds in §3.3 (UI E-22). The **first** declared input is the instance's subject (UI §5.4). `recipe show` and `GET /workflow/recipes` return them so the app can render a start form and a subject line |
+| `outputs` | no | What the recipe produces for a human, in the long form `[{ key, label?, type?, from }]` (UI E-22). `key` is a fact key; `type` is one of §3.3's fact types (default `text`); `from` names the state that produces the fact. The app places the fact under that state in the states band and in the facts panel (UI §5.2). Declarations only: they add no wiring (`produces` and Step outputs still do), and an undeclared fact is still recorded and still shown, as `payload`. `RCP-OUT-001`–`003`, `RCP-TYPE-001`–`003` (§9.1) |
 | `initial` | yes | An `active` or `wait` state |
 | `states` | yes | At least one non-terminal and one terminal state; reserved names refused |
 | `transitions` | yes | |
@@ -235,6 +254,8 @@ Reserved state names: `cancelled`, `escalated`, `parked`, `taken-over`.
 | Event kind | `<area>.<name>`, registered as an `EventDescriptor` |
 | Duration | `<n>m`, `<n>h` or `<n>d`, at least `1m` |
 | Tokens | int, or with a `k`/`M` suffix |
+| Fact type | `text \| file \| item \| link \| scope-map \| packet \| evidence \| decision \| payload` (UI E-22, §5.2). `text`, `file` and `item` are the input types of rev 7; the rest are for outputs and for inputs that carry a structured value. The type picks a viewer in the app and nothing else: the engine stores every fact as a hashed blob, and a type it doesn't know is `RCP-TYPE-001`, not a runtime error |
+| Subject kind | `item \| linear-project \| webhook \| file \| text` (UI E-22, §5.4). `item` pairs with type `item`, `file` with `file`, `text` with `text`, and `linear-project` and `webhook` with `payload`; any other pairing is `RCP-TYPE-003`. Without `kind`, the kind is the one the type implies, and a `payload`, `link` or other structured type with no `kind` has none (the app shows the key) |
 | `with:` value | A literal (string, number, bool or a list of these), `{ fact }` or `{ profile }`. Capability parameters take only literals or `{ profile }` (`RCP-CAP-007`) |
 
 ### 3.4 States
@@ -264,7 +285,8 @@ Every state has `kind: active | wait | terminal`. State, loop and parameter (`wi
 `retry` stays in the **same frame entry**, so inbox rows and the run token stay valid. It re-arms the deadline
 (`arm + 1`) and re-emits the effects of the transition that entered the state. Each re-emitted effect gets a new
 command id but keeps its stable effect identity (§5.4), and the effect block's existence check makes the repeat
-harmless. A second timeout parks with `timeout`. In desk mode `retry` is replaced by `park` (W20). `retry` isn't
+harmless. A second timeout parks with `timeout`. In desk mode a timeout always parks with `timeout` and `then:` doesn't
+apply when it fires (W20, §5.3; *rev 8.2*, *owner, 2026-10-14*). `retry` isn't
 allowed on a `child` wait (`RCP-TIME-002`).
 
 ### 3.5 Transitions
@@ -312,14 +334,14 @@ names come from the trigger's source: a Step, an event, or a child's terminal ou
 | `parked` (`budget`) | A budget, or a `gate.budget.*` refusal | "Parked (budget): {question}. Grant tokens at a terminal, or cancel." | `answer --grant-tokens n` (protected): re-runs the Step, or re-evaluates the withheld transition. A re-run that would pass the loop's cap parks `rounds` (kind `refusal`) instead; `--grant n` is the way on (W7, §5.8, §13). `takeover`, `cancel` |
 | `parked` (`needs-answer`, Step) | A refusal without a loop, `step.failed` | "Parked (needs-answer): {question}. Answer with --text; the Step runs again with your answer." | `answer --text`: re-runs the Step with `fact:answer`. A re-run that would pass the loop's cap parks `rounds` (kind `refusal`) instead; `--grant n` is the way on (W7, §5.8, §13). `takeover`, `cancel` |
 | `parked` (`needs-answer`, wait) | A gate refused the transition out of a wait | "Parked: {gate} refused {from} -> {to} ({reasons}). Fix the cause, then resume to check again, or cancel." | `answer --resume [--text]`: re-checks every gate and evidence at the current head under the answer's key (§5.8). `takeover`, `cancel` |
-| `parked` (`timeout`) | `then: park` | "Parked (timeout): {state} ran past {after}. Resume to give it the full time again, or cancel." | `answer --resume`: back to the frame (the same run token) with a fresh deadline. `takeover`, `cancel` |
+| `parked` (`timeout`) | `then: park`, or any timeout in desk mode, whatever `then:` says (*rev 8.2*, *owner, 2026-10-14*) | "Parked (timeout): {state} ran past {after}. Resume to give it the full time again, or cancel." | `answer --resume`: back to the frame (the same run token) with a fresh deadline. `takeover`, `cancel` |
 | `parked` (`spec-conflict`: revoked) | `recipe revoke` of this instance's own recipe | "{recipe} was revoked. Cancel, then start a new attempt from an approved version." | `cancel` |
 | `parked` (`spec-conflict`: child revoked) | The child hash this recipe pins was revoked | "{child recipe} (pinned by {recipe}) was revoked. Re-approve {recipe} so it pins an approved child; the approval resumes this instance." | The parent's drift approval resumes it (§4.1). `cancel` |
 | `parked` (`spec-conflict`: drift) | A pinned block changed in this build | "{block} changed since {recipe} was approved. Re-approve it (`sindri recipe approve {recipe}`, shown as `id@hash12`); the approval resumes this instance." | The drift approval resumes every instance it lists, and re-sends any of their commands refused for the drift (§4.1). `cancel` |
 | `parked` (`spec-conflict`: dispatch) | `outbox.refused` with `SND-WF-011` (not allowlisted) | "{effect} isn't on the profile's effect allowlist. Add it and approve the profile, then resume to send it again." | `answer --resume`: re-emits the effect. `cancel` |
 | `parked` (`SND-WF-010`) | A Step or resource with no runtime | "No runtime for {block} in this build. Cancel, or resume in a build that has it." | `answer --resume`: starts the Step again (a new run), or waits for the resource again. `cancel` |
 | `escalated` (gate) | A top-rung gate below threshold or uncertain | "Escalated: {gate} scored {score}, below {threshold}. Accept to override it (the other checks still run before {to}), or reject (the Step re-runs within its loop, otherwise this parks)." | `--accept` (protected) overrides only that gate, then evaluates the remaining gates and evidence at the current head. `--reject` is a refusal. On a command's escalation, `--reject` (or an `--accept` another check refuses) pops the escalation and the command is refused with `SND-WF-004`. `cancel` |
-| `escalated` (timeout) | `then: escalate` | "Escalated: {state} ran past {after}. Resume to give it the full time again, or cancel." | `--resume`, `cancel` |
+| `escalated` (timeout) | `then: escalate`, outside desk mode (a desk timeout parks, *owner, 2026-10-14*) | "Escalated: {state} ran past {after}. Resume to give it the full time again, or cancel." | `--resume`, `cancel` |
 | `escalated` (child) | The child escalated | "Escalated in {child}: {childNext}" | The child's `answer` variants, forwarded (§5.7), and shown as the child's `allowedCommands`. `cancel` and `takeover` act on the parent |
 | `taken-over` | `takeover` (allowed on a parked or escalated instance as well) | "With you since {since}. Run `sindri workflow handback {instance}` when you're done." | `handback` (pops back to whatever it covered), `cancel` |
 | `cancelled` | `cancel` from any state, the tracker, a cancelled parent | (terminal) | outcome `cancelled` |
@@ -330,6 +352,32 @@ names come from the trigger's source: a Step, an event, or a child's terminal ou
 - **Per-transition timeouts** come only if a recipe needs one.
 - **A free expression language:** never.
 - **Variables and includes:** not planned.
+
+### 3.10 Path order of states (UI E-20, §5.1)
+
+The app shows a recipe's states left to right in **path order**. The engine computes it and serves it, so the app never
+parses YAML. It is derived from the normalized document, is not part of the hash, and is computed by a pure function in
+`Core` (`StatePathOrder`) on the transition graph that the validator already builds for `RCP-REACH-001` and
+`RCP-EXIT-001`. It is returned by `recipe show`, `ListRecipes`, `ShowRecipe` and the instance view as `states[].order`,
+`states[].branchOf` and `loops[]`:
+
+1. Walk the graph depth-first from `initial`. From each state, follow its outgoing transitions in the order the
+   recipe lists them (§3.5); the **first** one that reaches an unvisited state is the main path. The transition list is
+   the tie-break everywhere.
+2. A transition back to a state still on the walk's stack is a **loop edge**, not a path step. Each becomes one entry in
+   `loops[]`: `{ name?, from, to }`, with `name` set when the looping state declares `loop:` (§3.7). The two states
+   are drawn adjacent with `⇄`.
+3. A later transition from a state to an unvisited state is a **branch**: that state and what only it reaches get
+   `branchOf: <the state the branch leaves from>` and `order: null`, and are folded under it. A state reached by
+   both a main-path transition and a branch keeps its main-path place.
+4. Main-path states get `order` 1, 2, 3… in walk order; **terminal** states come last, in the order the walk found
+   them. The engine-owned states of §3.8 are not in the order: they are overlays on whatever state they cover.
+5. `orderedBy` is `path`, or `transition-list` when `initial` has more than one distinct first target (several initial
+   paths), in which case the first listed transition from `initial` leads and the band says "ordered by transition
+   list". The field is returned beside `states[]`.
+
+A state the walk never reaches is already `RCP-REACH-001`, so every state of a valid recipe has an `order` or a
+`branchOf`.
 
 ## 4. Approval and invariant 13
 
@@ -363,7 +411,7 @@ A changed child is never drift: it only marks the parent `child-stale`.
 
 1. The CLI asks the server for a challenge for one action, such as `approve workflow.step 1`,
    `revoke workflow.step@…`, `grant 1 T-1/step/1` or `accept T-1/step/1`. The server returns a one-time **challenge**, valid for 5 minutes and bound to the subject (the recipe hash and
-   version plus a digest of the pins for a drift approval; or the instance address and version, including the
+   version plus a digest of its pins, bound on every approval so a pin that moves before the answer makes it stale; or the instance address and version, including the
    child's address and version for a forwarded answer), together with the preview. If the subject changes before the answer, the
    challenge is refused.
 2. The human types the action text at a TTY, for example `grant-tokens 100k T-1/step/1`. The CLI returns it with
@@ -430,7 +478,9 @@ what the interpreter must do; the **mechanism** is Temporal's. Rev 7's text is i
 - **Determinism.** Workflow code calls no I/O, clock or random except through `Workflow.*`. Every read of a store, every
   gate, every effect and every ledger write is an activity. The SDK's analyzer and the replayer test (§10) enforce it.
 - **Search attributes**, set on start and on every transition: `Item`, `Recipe`, `State`, `NeedsYou` (true while
-  parked, escalated or holding an open desk task), `Repo`, `Tenant`, `Ring`.
+  parked, escalated or holding an open desk task), `Repo`, `Tenant`, `Ring`. *Rev 8.2:* `Repo` is the `repo` field of
+  the instance's `fact:item`, read once on start; an instance without that fact, or whose item names no repo, leaves
+  `Repo` unset.
 - **Queries.** `GetInstance` (§6.3) is a workflow **Query** returning the state, the rendered `next`, `allowedCommands`,
   the open question or task with the Step's declared outcomes and outputs, the run token and the children.
 
@@ -467,7 +517,9 @@ stays a public counter in `status` and in the CLI.
   synchronously like every other command: a stale run token is `SND-WF-005`, a malformed report `SND-WF-008`, and a
   rejected report records nothing. The human reports with `sindri workflow complete <address> --run <token> --outcome
   <o> --output …`; the API sends the Update. The state's timeout, at least `workflow.deskTimeout` in desk mode, is the
-  wait's `Workflow.DelayAsync` (§5.5); expiry is `step.failed(timeout)` and follows §3.4. *Why:* finding F1
+  wait's `Workflow.DelayAsync` (§5.5); expiry always parks with reason `timeout` (W20, §3.8), whatever the state's
+  `then:` says (*rev 8.2*; rev 8.1 said `step.failed(timeout)`, which would let an agent-sized timeout fail the
+  human's own work). *Why:* finding F1
   (§11): the time-skipping server skips no time while an activity is open, so a desk Step held open as an
   async-completion activity can't have its timeout tested there; with the Update the 4 h timeout fired in 3 ms of wall
   time. Rev 8 stored the task token on `step.started` and completed the activity through it; that is gone. The shipped
@@ -495,9 +547,13 @@ Registered events (`EventDescriptor`, §2) reach instances as Temporal **Signals
   through `item` and attempt, and signals it. Deliveries of engine-origin effects signal nothing, so the engine's own
   notification can never satisfy a recipe's wait. A `route: causation` event signals only the frame entry its command
   was written for; the interpreter drops it if that entry has ended.
+- **Held item events** (*owner, 2026-10-14*). The bridge re-sends an item-routed event only to instances of that item
+  that started at or before the event occurred, and only within 1 minute of its first delivery (the visibility lag of a just-started
+  instance). This replaces the rev 8.1 wording that held item events for `workflow.eventHold`.
 - **Buffering.** Signals that arrive before the matching wait are buffered by Temporal and consumed when the workflow
-  reaches the wait, so rev 7's "early row" hold is native. The interpreter discards a buffered signal older than
-  `workflow.eventHold` (default 24 h) with a `workflow.expired` ledger event.
+  reaches the wait, so rev 7's "early row" hold is native. The interpreter discards a buffered signal that doesn't fit
+  the current wait once it is older than `workflow.eventHold` (default 24 h), with a `workflow.expired` ledger event; a
+  signal that fits the wait satisfies it, however late it arrived.
 - **Signal-with-start** is how a webhook or intake source will start a standing workflow later (README follow-ups).
 
 ### 5.5 Timers, sleep, takeover
@@ -529,8 +585,21 @@ Registered events (`EventDescriptor`, §2) reach instances as Temporal **Signals
   complete record.
 - The ledger writer runs the payload through `Aw.Redaction`. `causation` is the trigger's source; `EventFactory` takes
   the item, the causation and the request's actor (S1-D7, API P1).
-- Temporal's own history is never read by the UI, the API or the evolve loop. `workflow events` and the item timeline
-  read the ledger (X16).
+- **Temporal event id (UI E-30).** Every mirrored row records the id of the `RecordEvent` activity it was written for
+  (not a Temporal history event id; rev 8.2, owner 2026-10-14), in a nullable `temporal_event_id` column on the ledger row (null on every row the engine didn't mirror; documented with
+  the ledger columns in `docs/csharp/sindri.md`, "Ledger"). It is the third part of `RecordEvent`'s idempotency key, so
+  the column and the key never disagree. The instance is identified by the row's payload (the instance id), so
+  `GET /engine/instances/{address}/history` joins a history page's event ids to ledger sequences with one query on
+  `(instance, temporal_event_id)` and the UI draws "ledger ↔ 4231 step.round-started" beside the line. The column is
+  added in P4, with the mirror (S1's migrations own the ledger schema). *Rev 8.2 (owner decision 2026-10-14).*
+  `temporal_event_id` is the `RecordEvent` activity id; the history route joins on `idempotency_key`, which carries the
+  run id. On `AlreadyRecorded` with different content (a workflow-task replay), the new event is recorded under
+  `<key>:<content hash>` and a warning is logged.
+- **Who reads Temporal (R8-12).** Only the engine, its tests and the API's read-only `GET /engine`,
+  `GET /engine/instances` and `GET /engine/instances/{address}/history?page=`, which answer from the SDK's describe,
+  list and history queries and scrub the payloads through `Aw.Redaction`. The UI reads Temporal's state and history
+  **only through those routes**, never from the dev server (which stays loopback-private), and the evolve loop reads
+  the ledger. `workflow events` and the item timeline read the ledger (X16).
 
 ### 5.7 Effects are activities
 
@@ -656,7 +725,7 @@ one API §6 reads. The probe records the whole process ancestry, not just names:
 Cursor's app hosts both the human's terminal and its agent, so the parent-process check matches the ancestry pattern
 the probe pinned. A variable that humans also see is excluded. `sindri doctor` re-probes Claude Code, and **warns**
 (never `ok`) when the Codex or Cursor version differs from the pinned probe; those probes are **(owner)** steps in P2,
-run with `sindri-prove.sh human doctor --probe` inside each harness. A refusal (`SND-AUTH-002`) names the variable or
+run with `sindri-prove.sh doctor --probe` inside each harness. A refusal (`SND-AUTH-002`) names the variable or
 process it found, so a human in an IDE terminal knows why. The table is honest-mistake grade (A 17.28.3).
 
 ### 6.3 Verbs
@@ -666,7 +735,7 @@ process it found, so a human in an IDE terminal knows why. The table is honest-m
 | `recipe validate <file> [--json]` | local | Rule lines, then the hash |
 | `recipe eval <file> [--json]` · `--scaffold <file>` · `--record <address> --out <file>` | local · local · query | Case results · a generated happy-path eval: from the initial state, the first declared outcome whose transition the engine applies into a state not yet visited, until a terminal state or one nothing moves on from (an answer wait is answered with a `text` line) · an instance's history as an eval |
 | `recipe register <file>` | desk | `registered workflow.step@9ab2d40c1e77 (unapproved)` |
-| `recipe show <id@hash>` | query | The preview |
+| `recipe show <id@hash>` | query | The preview, which now also prints `urgency`, `inputs` (key, type, kind), `outputs` (key, type, `from`) and the path order of the states (`states[].order` and `loops`, §3.10); `--json` returns them as fields |
 | `recipe approve <file\|id@hash>` | protected | The preview, the challenge, then `approved …` |
 | `recipe revoke <id@hash>` | protected | The preview, the challenge, then `revoked …; N instances parked` |
 | `recipe list [--stale] [--json]` | query | One line per recipe, or `no recipes registered` |
@@ -696,11 +765,12 @@ process it found, so a human in an IDE terminal knows why. The table is honest-m
 - **Empty states:** `nothing needs you` (`--needs-me`), `no instances match` (other filters), `no events`, `no
   commands`, and `no evals declared` (eval).
 
-**Routes** (under S1's `/sindri` group; each is one slice through API's chain, with a catalog row):
+**Routes** (under S1's `/sindri` group; each is one slice through API's chain; commands and issuing routes have a catalog row, queries don't (API ARCH-CQRS-003; UI spec rev 7 amendment, 2026-10-12)):
 
 | Route | Slice | Class |
 |---|---|---|
-| `GET /workflow/recipes` · `GET /workflow/recipes/{id}@{hash}` | `ListRecipes` (with each recipe's `inputs`, for the app's start form) · `ShowRecipe` (the preview) | query |
+| `GET /workflow/recipes` · `GET /workflow/recipes/{id}@{hash}` | `ListRecipes` (with each recipe's `inputs` incl. `kind`, `outputs`, `urgency`, and `states[]` with `order`, `branchOf` and `loops[]` per §3.10, for the app's start form and rendering) · `ShowRecipe` (the preview, with the same fields) | query |
+| `GET /engine` · `GET /engine/instances` · `GET /engine/instances/{address}/history?page=` | `GetEngine` · `ListEngineInstances` · `GetEngineHistory` (UI E-30; the API spec owns their shapes; history lines carry the ledger sequence from `temporal_event_id`, §5.6) | query |
 | `POST /workflow/recipes` | `RegisterRecipe` (body: the recipe text) | desk |
 | `POST /workflow/recipes/{id}@{hash}/approve` · `/revoke` | `ApproveRecipe` · `RevokeRecipe` (body: the challenge and its typed text) | protected |
 | `POST /workflow/challenges` | `IssueChallenge` (body: the action and its subject) | issue |
@@ -906,6 +976,7 @@ directory when not (so `workflow.item.yaml` finds `workflow.step.yaml`).
 | Allowlisted effects | `RCP-EFFECT-001` (`skipped` without the profile key) |
 | Hash | `RCP-HASH-001` |
 | Added | `RCP-TRIG-001`, `RCP-WHEN-002`, `RCP-THRESH-001`, `-002`, `RCP-NEXT-001`, `-002`, `RCP-CHILD-002` (cycle), `-003` (depth > 4), `RCP-VERSION-001`, `-002`, `RCP-TRIG-002` (reserved verb), `RCP-TIME-002` (`retry` on a child wait), `RCP-RES-001` (information: a resource with no allocator in this build) |
+| Added (UI E-21, E-22) | `RCP-URG-001` (`urgency` is not `incident`, `triage` or `work`) · `RCP-OUT-001` (`outputs[].from` names no state of the recipe) · `RCP-OUT-002` (`outputs[].from` names a terminal or engine-owned state, or a state whose Step descriptor and transitions never produce `key`; information when the fact only arrives through a child) · `RCP-OUT-003` (duplicate output `key`, or an output `key` that is also an input `key`) · `RCP-TYPE-001` (a fact `type`, on an input or an output, is not one of the nine in §3.3) · `RCP-TYPE-002` (an input `kind` is not one of the five in §3.3) · `RCP-TYPE-003` (a `kind` and `type` that don't pair, §3.3) |
 
 ### 9.2 Eval format
 
@@ -1118,6 +1189,25 @@ evals: [evals/workflow.step/happy.jsonl, evals/workflow.step/no-progress.jsonl, 
   so P1 can validate both recipes.
 
 The child's outcomes are `resolved` and `cancelled`, and `workflow.item` covers both.
+
+### The scoping recipe (requirements from UI E-31, R8-11)
+
+The scoping recipe (`workflow.scoping`, a child of `workflow.project`; its own spec is still to be written, UI phase U13
+waits on it) is not defined here. These are the requirements this spec puts on it, so that its spec starts from them:
+
+- **Draft proposals, never writes.** Its `deliver` state writes every new surface the run found (a surface with no
+  node in the current map) as a **draft proposal to the next map version**, with the run (the instance address and its
+  scoping evidence) as the proposal's evidence (CTX §8.7). It never writes to the current map; promoting a draft stays
+  the `protected` map command. The write is an `effect.*` block on the `deliver` transition, so it is an activity with
+  an effect identity (§5.7) and a retry repeats harmlessly.
+- **The `scope-map` fact carries graph status.** The recipe's output `scope-map` (declared `type: scope-map`, `from:
+  deliver`) is a fact whose rows each carry a graph status (`mapped`, `new` or `unmapped`, UI §5.2), so the app's
+  scope-map table and its counts come from the fact, not from a second lookup.
+- **Declared for the app.** It declares `urgency: work`, a `linear-project` subject as its first input, and `outputs`
+  for the scope map and the packet (`type: packet`, `from` the state that freezes it), so U13's viewers render from the
+  recipe alone.
+- **Desk round trip.** Export of the scope map and import of the design output are two `desk` states of
+  `workflow.project` (UI R8-10), not logic in the recipe's blocks; `aw-packets` is a block of the import state.
 
 ## 13. Review resolutions
 
@@ -1422,6 +1512,12 @@ Merged (#179). Unchanged by rev 8.
 - **Files:** ports and slices; SQLite adapters and migrations for `recipes` and `recipe_approvals` (with S1-D9); the
   challenge; registry events; contract bases; the architecture test; docs.
 - **Size:** M.
+- **UI screens edits E-21 and E-22 land here (2026-10-14).** The recipe format gains `urgency`, `outputs`, the nine
+  fact types and `inputs[].kind` (§3.2, §3.3), `StatePathOrder` (§3.10) and the rules `RCP-URG-001`, `RCP-OUT-001`–`003`
+  and `RCP-TYPE-001`–`003`, with `recipe show` and `ListRecipes` returning them. They land in P2, **before the hash and
+  the approval format are pinned**: the registry's approved hash covers the whole normalized file (§3.1), so a field
+  added after P2 re-hashes every approved recipe and forces a re-approval of each, which is cheap now and costly once
+  recipes are approved in daily use. (P1 is merged, so these are a follow-up to its model, owned by unit (b) and (d).)
 - **S1 dependency:** S1 merged, and API P1 (the command chain) merged; S1-D5, S1-D9.
 - **Signal:** rev 7's, unchanged: **(owner)** `sindri recipe approve recipes/sindri/workflow.step.yaml` prints the
   preview and asks for `approve workflow.step 1`, then `sindri recipe list` shows `workflow.step@<hash> approved
@@ -1479,6 +1575,10 @@ Merged (#179). Unchanged by rev 8.
 - **Size:** L.
 - **Starts from** P4a's code (*rev 8.1*): its units rebuild or extend the foundation to this spec.
 - **Dependencies:** P4a, P2 and P3 merged, API P3 (items) merged.
+- **UI screens edit E-30 (2026-10-14).** The interpreter's mirror (`RecordEvent`) writes the Temporal history event id
+  into the nullable `temporal_event_id` ledger column (§5.6; migration owned by S1, column documented in
+  `docs/csharp/sindri.md`, "Ledger"), so the API's later `GET /engine/instances/{address}/history` (API "P13 engine")
+  can link history lines to ledger sequences. Agent signal 6 below checks it.
 - **Signal:**
   1. **(owner)** With `workflow.step` approved, `sindri workflow start workflow.step --item T-1 --fact fact:spec=spec.md`,
      then `sindri workflow status T-1/step/1`, shows the desk-task layout with `--run 1.1`.
@@ -1492,6 +1592,9 @@ Merged (#179). Unchanged by rev 8.
      run token, and step 2 completes normally.
   5. **(agent)** The same `complete`, from the agent session, exits 2 with `SND-AUTH-002`. `sindri workflow events
      T-1/step/1 --json` matches the owner transcript.
+  6. **(agent)** After step 2, `sqlite3 ledger.db "select count(*), count(temporal_event_id) from events where type like
+     'workflow.%'"` returns equal counts (every mirrored row has its event id), and replaying the same history adds
+     no row.
 
 ### Phase 5: timers, takeover and handback
 
@@ -1532,6 +1635,8 @@ Merged (#179). Unchanged by rev 8.
   the `route` key; `gate.route.startable`, `gate.budget.available`; `workflow.item` evals; docs.
 - **Size:** M.
 - **Dependencies:** P5 and P6.
+- **UI screens edit E-31 (2026-10-14).** The scoping recipe's requirements are recorded in §12; its spec and recipe land
+  with `workflow.project`, after this phase, and do not change P7's scope.
 - **Signal** (dev profile naming a temp repo with one commit, `workflow.route: { startable: all }`, `effect.claim.ref`
   allowlisted, `workflow.budget.tokens: 1M`; **(owner)**, then the Prover checks the events): `sindri workflow start
   workflow.item --item T-3 --fact fact:item=item.json` shows `triaged -> startable -> claimed -> running` in

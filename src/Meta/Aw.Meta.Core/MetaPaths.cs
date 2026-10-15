@@ -1,0 +1,16 @@
+using System.Globalization;
+
+namespace Aw.Meta.Core;
+
+/// <summary>Where the meta keeps files and which programs it calls, resolved from the environment by Infrastructure.</summary>
+/// <param name="StateDirectory">$AW_STATE_DIR/meta.</param>
+/// <param name="GatesDirectory">Gate trees and step logs: &lt;state&gt;/gates.</param>
+/// <param name="Heavy">The heavy-job wrapper, or null when it isn't installed (heavy steps then run directly).</param>
+/// <param name="Gh">The GitHub CLI program.</param>
+public sealed record MetaPaths(string StateDirectory, string GatesDirectory, string? Heavy, string Gh)
+{
+    /// <summary>One pull request's gate directory: gates/&lt;pr&gt;.</summary>
+    /// <param name="pr">The pull request number.</param>
+    /// <returns>The directory.</returns>
+    public string GateDirectory(int pr) => string.Create(CultureInfo.InvariantCulture, $"{GatesDirectory}/{pr}");
+}
