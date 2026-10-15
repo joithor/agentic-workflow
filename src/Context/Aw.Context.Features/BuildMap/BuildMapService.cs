@@ -57,11 +57,11 @@ internal sealed class BuildMapService(
 
         await using (slot.Value.ConfigureAwait(false))
         {
-            return await Build(request.Progress, settings, mappedRepos, cancellationToken).ConfigureAwait(false);
+            return await Build(request.Progress, settings, mappedRepos, scope.Repos, cancellationToken).ConfigureAwait(false);
         }
     }
 
-    private async ValueTask<Result<MapBuildReport>> Build(IProgress<string>? progress, ContextSettings settings, IReadOnlyList<ContextRepo> mappedRepos, CancellationToken cancellationToken)
+    private async ValueTask<Result<MapBuildReport>> Build(IProgress<string>? progress, ContextSettings settings, IReadOnlyList<ContextRepo> mappedRepos, IReadOnlyList<ContextRepo> profileRepos, CancellationToken cancellationToken)
     {
         var found = ExtractedMap.Empty;
         var degraded = new List<string>();
@@ -94,17 +94,17 @@ internal sealed class BuildMapService(
         }
 
         var at = clock.GetUtcNow();
-        var (kept, undo) = MapAccess.WithoutDenied(basis, current.Value?.Overrides ?? [], mappedRepos, at);
-        undo = UndoAlso(undo, open.Value, mappedRepos, at);
+        var (kept, undo) = MapAccess.WithoutDenied(basis, current.Value?.Overrides ?? [], profileRepos, mappedRepos, at);
+        undo = UndoAlso(undo, open.Value, profileRepos, mappedRepos, at);
         var draft = await store.SaveDraft(new MapImport(name, commit, Join(kept, found), undo), at, cancellationToken).ConfigureAwait(false);
         return draft.IsError ? draft.Error : new MapBuildReport(draft.Value, Proposed(kept, found), degraded);
     }
 
     // The open draft this build replaces may hold nodes the current map doesn't (a surface found since the last promote): the decisions about those it would lose to the cut are undone too, in the same write.
-    private static IReadOnlyList<MapOverride> UndoAlso(IReadOnlyList<MapOverride> undo, MapSnapshot? openDraft, IReadOnlyList<ContextRepo> mappedRepos, DateTimeOffset at) =>
+    private static IReadOnlyList<MapOverride> UndoAlso(IReadOnlyList<MapOverride> undo, MapSnapshot? openDraft, IReadOnlyList<ContextRepo> profileRepos, IReadOnlyList<ContextRepo> mappedRepos, DateTimeOffset at) =>
         openDraft is null
             ? undo
-            : [.. undo.Concat(MapAccess.WithoutDenied(openDraft.Graph, openDraft.Overrides, mappedRepos, at).Undo).DistinctBy(o => o.Undoes?.Value, StringComparer.Ordinal)];
+            : [.. undo.Concat(MapAccess.WithoutDenied(openDraft.Graph, openDraft.Overrides, profileRepos, mappedRepos, at).Undo).DistinctBy(o => o.Undoes?.Value, StringComparer.Ordinal)];
 
     private async ValueTask<Result<RepoExtraction>> Extract(IProgress<string>? progress, ContextSettings settings, ContextRepo repo, CancellationToken cancellationToken)
     {

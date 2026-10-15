@@ -3178,6 +3178,7 @@ static Aw.Context.Core.Graph.PathStep.operator ==(Aw.Context.Core.Graph.PathStep
 static Aw.Context.Core.Graph.PathView.operator !=(Aw.Context.Core.Graph.PathView? left, Aw.Context.Core.Graph.PathView? right) -> bool
 static Aw.Context.Core.Graph.PathView.operator ==(Aw.Context.Core.Graph.PathView? left, Aw.Context.Core.Graph.PathView? right) -> bool
 static Aw.Context.Core.Graph.RepoScope.NodesFor(Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Engine.ContextRepoName repo) -> System.Collections.Generic.IReadOnlySet<string!>!
+static Aw.Context.Core.Graph.RepoScope.WithLinkedIntent(Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlySet<string!>! scope) -> System.Collections.Generic.IReadOnlySet<string!>!
 static Aw.Context.Core.Graph.TextAnchors.operator !=(Aw.Context.Core.Graph.TextAnchors? left, Aw.Context.Core.Graph.TextAnchors? right) -> bool
 static Aw.Context.Core.Graph.TextAnchors.operator ==(Aw.Context.Core.Graph.TextAnchors? left, Aw.Context.Core.Graph.TextAnchors? right) -> bool
 static Aw.Context.Core.Graph.TrustPolicy.For(Aw.Context.Core.Results.Provenance provenance, bool accepted) -> Aw.Context.Core.Results.Trust
@@ -3582,4 +3583,7 @@ const Aw.Context.Core.Overrides.MapOverride.CutMarker = "service:deny-cut" -> st
 Aw.Context.Core.Overrides.MapOverride.IsCutUndo.get -> bool
 static Aw.Context.Core.Overrides.MapOverride.UndoingCut(Aw.Context.Core.Overrides.MapOverride! decision, System.DateTimeOffset at) -> Aw.Context.Core.Overrides.MapOverride!
 
-static Aw.Context.Core.Map.MapAccess.WithoutDenied(Aw.Context.Core.Graph.GraphSnapshot! current, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! built, System.DateTimeOffset at) -> (Aw.Context.Core.Graph.GraphSnapshot! Graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Undo)
+static Aw.Context.Core.Graph.TrustPolicy.ForNode(Aw.Context.Core.Graph.GraphNode! node, bool accepted) -> Aw.Context.Core.Results.Trust
+static Aw.Context.Core.Map.MapAccess.WithoutDenied(Aw.Context.Core.Graph.GraphSnapshot! current, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! profile, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! mapped, System.DateTimeOffset at) -> (Aw.Context.Core.Graph.GraphSnapshot! Graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Undo)
+static Aw.Context.Core.Engine.ScopeRules.Mapped(Aw.Context.Core.Engine.ContextSettings! settings, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>!
+static Aw.Context.Core.Graph.TrustPolicy.ForNode(Aw.Context.Core.Graph.NodeKind kind, Aw.Context.Core.Results.Provenance provenance, bool accepted) -> Aw.Context.Core.Results.Trust

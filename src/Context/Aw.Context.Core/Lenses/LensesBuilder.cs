@@ -29,7 +29,7 @@ public static class LensesBuilder
         var (product, productKeys) = LensProduct.Build(scope, clamped);
         var (code, codeKeys) = LensCode.Build(scope);
         var items = productKeys.Concat(codeKeys).Concat(scope.IntoScope(EdgeType.Mentions, EdgeType.Decides).Select(e => e.From.Value)).ToHashSet(StringComparer.Ordinal);
-        var anchorTrust = TrustPolicy.For(scope.Anchor.Provenance, LensScope.Confirmed(scope.Anchor.Provenance));
+        var anchorTrust = TrustPolicy.ForNode(scope.Anchor, LensScope.Confirmed(scope.Anchor.Provenance));
         return new LensesView(1, new LensAnchor(scope.Anchor.Key, scope.Anchor.Label, scope.Anchor.Key.Kind, anchorTrust), basis.Map, basis.Draft, clamped, basis.AsOf,
             new LensBands(intent, product, code), LensEdges.Across(graph, items), LensConflicts.Of(scope), LensCoverageBuilder.Of(scope), [], new Dictionary<string, Results.Citation>(StringComparer.Ordinal));
     }

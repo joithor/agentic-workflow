@@ -38,5 +38,5 @@ internal sealed class LensScope
     internal static bool Confirmed(Provenance provenance) => Confirmation.Of(provenance);
 
     /// <summary>A node as the own-scope list shows it.</summary>
-    internal static LensItem Item(GraphNode n) => new(n.Key, n.Label, n.Key.Kind, n.Provenance, n.Confidence, Confirmed(n.Provenance), TrustPolicy.For(n.Provenance, Confirmed(n.Provenance)));
+    internal static LensItem Item(GraphNode n) => new(n.Key, n.Label, n.Key.Kind, n.Provenance, n.Confidence, Confirmed(n.Provenance), TrustPolicy.ForNode(n, Confirmed(n.Provenance)));
 }

@@ -132,7 +132,7 @@ public sealed class ContextMapApiTests
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task Export_lands_in_the_exports_folder_and_a_session_reads_only_its_repos_scope()
+    public async Task Export_lands_in_the_exports_folder_a_session_can_not_export_and_reads_only_its_repos_scope()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var host = await Approved(sessions: true, ct);
@@ -142,7 +142,9 @@ public sealed class ContextMapApiTests
         var outside = await host.Http.Ask(Get("/sindri/context/map/export?path=%2Ftmp%2Fx.json", Human(host.Token.Value)));
         var scoped = await host.Http.Ask(Get("/sindri/context/map", (SindriHeaders.Caller, "session"), (SindriHeaders.Repo, FixtureMap.Repo)));
         var other = await host.Http.Ask(Get("/sindri/context/map", (SindriHeaders.Caller, "session"), (SindriHeaders.Repo, "other")));
+        var sessionExport = await host.Http.Ask(Get("/sindri/context/map/export", (SindriHeaders.Caller, "session"), (SindriHeaders.Repo, FixtureMap.Repo)));
 
+        Assert.Equal((HttpStatusCode.Forbidden, "SND-CONTEXT-020"), (sessionExport.Status, sessionExport.Code));   // spec §3: an export is a whole-map path
         Assert.Equal(HttpStatusCode.OK, export.Status);
         Assert.Contains(Path.Combine(host.Home, "context", "exports"), JsonDocument.Parse(export.Body).RootElement.GetProperty("path").GetString(), StringComparison.Ordinal);
         Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-033"), (outside.Status, outside.Code));

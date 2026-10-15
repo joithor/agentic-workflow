@@ -1,5 +1,6 @@
 using System.Globalization;
 using Aw.Context.Core;
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
 using Aw.Kernel;
 using Aw.Kernel.Services;
@@ -8,14 +9,14 @@ namespace Aw.Context.Features.ExportMap;
 
 /// <summary>
 /// Writes the current version with its override layer to the exports folder (spec Phase 3): nodes, edges with their
-/// evidence, aliases, decisions and overrides with their original timestamps and provenance; never trust. A session's
-/// export holds only its repo's scope.
+/// evidence, aliases, decisions and overrides with their original timestamps and provenance; never trust. A session
+/// can't export (SND-CONTEXT-020, spec §3): the file holds unscrubbed work text.
 /// </summary>
 internal sealed class ExportMapService(IGraphStore store, IExportStore exports, TimeProvider clock) : IService<ExportMapRequest, MapExported>
 {
     public async ValueTask<Result<MapExported>> Handle(ExportMapRequest request, CancellationToken cancellationToken)
     {
-        if (MapAccess.Gate(request.Scope) is { } refused)
+        if (Refusal(request.Scope) is { } refused)
         {
             return refused;
         }
@@ -47,4 +48,8 @@ internal sealed class ExportMapService(IGraphStore store, IExportStore exports, 
             ? written.Error
             : new MapExported(written.Value, version.Number, MapCounts.Of(visible.Value.Graph, visible.Value.Overrides.Count));
     }
+
+    private static Error? Refusal(ContextScope scope) => scope.Caller.Kind == ContextCallerKind.Session
+        ? ContextErrors.SessionsDisabled.With("exporting the map is a human or service job: a session can't (it writes unscrubbed work text)")
+        : MapAccess.Gate(scope);
 }
