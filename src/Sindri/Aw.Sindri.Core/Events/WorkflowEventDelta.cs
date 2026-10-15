@@ -1,0 +1,51 @@
+using Aw.Sindri.Core.Workflow.Engine.Events;
+using Aw.Sindri.Core.Workflow.Engine.Instances;
+
+namespace Aw.Sindri.Core.Events;
+
+/// <summary>
+/// An event's post-state delta as the ledger row shows it (spec §5.6): each part the decision changed, as state names,
+/// reasons, counters and digests. A null part didn't change, except <see cref="Suspension"/> and <see cref="PendingPark"/>,
+/// which are always their post-state values. No question text, no actor's words, no fact content.
+/// </summary>
+/// <param name="Frame">The frame after it.</param>
+/// <param name="Suspension">The suspension after it; none when there is none.</param>
+/// <param name="PendingPark">The pending park after it; none when there is none.</param>
+/// <param name="Loops">Every loop's round and allowance after it.</param>
+/// <param name="TokensSpent">The tokens spent after it.</param>
+/// <param name="TokensGranted">The tokens granted after it.</param>
+/// <param name="Facts">The facts it added or replaced: key to the content's SHA-256.</param>
+/// <param name="Outcome">The terminal outcome, when it ended the instance.</param>
+public sealed record WorkflowEventDelta(
+    FrameSummary? Frame,
+    SuspensionSummary? Suspension,
+    SuspensionSummary? PendingPark,
+    IReadOnlyDictionary<string, LoopCounter>? Loops,
+    int? TokensSpent,
+    int? TokensGranted,
+    IReadOnlyDictionary<string, string>? Facts,
+    string? Outcome)
+{
+    /// <summary>The public projection of <paramref name="delta"/>.</summary>
+    /// <param name="delta">The decision's delta.</param>
+    /// <returns>The delta the row carries.</returns>
+    public static WorkflowEventDelta Of(InstanceDelta delta)
+    {
+        ArgumentNullException.ThrowIfNull(delta);
+        return new WorkflowEventDelta(
+            delta.Frame is { } f ? new FrameSummary(f.State, f.Entry, f.Run?.Token.Value, f.Child?.Value) : null,
+            Summary(delta.Suspension),
+            Summary(delta.PendingPark),
+            delta.Loops?.ToDictionary(l => l.Key, l => new LoopCounter(l.Value.Round, l.Value.Allowed), StringComparer.Ordinal),
+            delta.Spent?.Total,
+            delta.Spent?.Granted,
+            delta.Facts?.ToDictionary(f => f.Key.Value, f => f.Value.Sha256, StringComparer.Ordinal),
+            delta.Outcome?.Value);
+    }
+
+    /// <summary>A suspension as the delta shows it.</summary>
+    /// <param name="s">The suspension, or none.</param>
+    /// <returns>The summary, or none.</returns>
+    internal static SuspensionSummary? Summary(Suspension? s) =>
+        s is null ? null : new SuspensionSummary(s.Kind, s.Reason, s.ParkKind, s.Escalation, s.Mirrors?.Value);
+}

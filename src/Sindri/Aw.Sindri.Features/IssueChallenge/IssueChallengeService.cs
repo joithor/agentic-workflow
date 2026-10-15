@@ -5,6 +5,8 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Registry;
 
@@ -15,16 +17,21 @@ namespace Aw.Sindri.Features.IssueChallenge;
 /// subject and preview are the server's own, and returns the challenge with that preview. The chain lets only a human at
 /// a terminal reach it. Forms: 'approve &lt;id&gt; &lt;version&gt;' (or 'approve &lt;id&gt;@&lt;hash&gt;', issued as the
 /// former), 'revoke &lt;id&gt;@&lt;hash&gt;' and
-/// 'approve profile &lt;hash6&gt;' (the profile's preview is profile approve's own, so that one carries none).
+/// 'approve profile &lt;hash6&gt;' (the profile's preview is profile approve's own, so that one carries none), and a
+/// protected answer on an instance, 'grant &lt;n&gt; &lt;address&gt;', 'grant-tokens &lt;n&gt; &lt;address&gt;' or 'accept
+/// &lt;address&gt;' (engine spec §6.2), bound to the instance's address and version, whose preview is the instance.
 /// </summary>
 /// <param name="approvals">Plans a recipe approval.</param>
 /// <param name="revokes">Plans a revoke.</param>
 /// <param name="challenges">The server's challenges.</param>
 /// <param name="profiles">The live profile, for 'approve profile'.</param>
-internal sealed partial class IssueChallengeService(RecipeApprovalPlanner approvals, RecipeRevokePlanner revokes, IChallenges challenges, IProfileSource profiles)
+/// <param name="directory">Resolves an instance's address, for a protected answer.</param>
+/// <param name="runtime">Reads the instance as it is now, for a protected answer.</param>
+internal sealed partial class IssueChallengeService(RecipeApprovalPlanner approvals, RecipeRevokePlanner revokes, IChallenges challenges, IProfileSource profiles,
+    IInstanceDirectory directory, IInstanceRuntime runtime)
     : IService<IssueChallengeRequest, IssueChallengeResponse>
 {
-    private const string Forms = "'approve <recipe> <version>', 'revoke <recipe>@<hash>' or 'approve profile <hash6>'";
+    private const string Forms = "'approve <recipe> <version>', 'revoke <recipe>@<hash>', 'approve profile <hash6>', 'grant <n> <address>', 'grant-tokens <n> <address>' or 'accept <address>'";
 
     public async ValueTask<Result<IssueChallengeResponse>> Handle(IssueChallengeRequest request, CancellationToken cancellationToken)
     {
@@ -34,6 +41,7 @@ internal sealed partial class IssueChallengeService(RecipeApprovalPlanner approv
             : ApproveForm.Match(text) is { Success: true } approve ? await Approve(text, approve, cancellationToken).ConfigureAwait(false)
             : ApproveByHashForm.Match(text) is { Success: true } byHash ? await ApproveByHash(text, byHash, cancellationToken).ConfigureAwait(false)
             : RevokeForm.Match(text) is { Success: true } revoke ? await Revoke(text, revoke, cancellationToken).ConfigureAwait(false)
+            : AnswerForm.Match(text) is { Success: true } answer ? await Answer(text, answer, cancellationToken).ConfigureAwait(false)
             : Unknown(text);
     }
 
@@ -71,6 +79,28 @@ internal sealed partial class IssueChallengeService(RecipeApprovalPlanner approv
         return plan.IsError ? plan.Error : Issued(challenges.Issue(plan.Value.Action, plan.Value.Subject), approve: null, plan.Value.Preview);
     }
 
+    /// <summary>A protected answer's challenge: the instance as it is now is both its subject (address and version) and its preview.</summary>
+    private async ValueTask<Result<IssueChallengeResponse>> Answer(string text, Match form, CancellationToken cancellationToken)
+    {
+        var verb = form.Groups["verb"].Value;
+        int? amount = form.Groups["n"].Success && int.TryParse(form.Groups["n"].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var n) ? n : null;
+        if (verb != "accept" && amount is null)
+        {
+            return Unknown(text);
+        }
+
+        var address = await directory.Resolve(form.Groups["address"].Value, cancellationToken).ConfigureAwait(false);
+        var view = address.IsError ? address.Error : await runtime.Get(address.Value, cancellationToken).ConfigureAwait(false);
+        if (view.IsError)
+        {
+            return view.Error;
+        }
+
+        var variant = verb switch { "grant" => AnswerVariant.Grant, "grant-tokens" => AnswerVariant.GrantTokens, _ => AnswerVariant.Accept };
+        var issued = challenges.Issue(InstanceChallenge.Action(address.Value, variant, amount), InstanceChallenge.Subject(view.Value));
+        return Issued(issued, approve: null, revoke: null) with { Instance = view.Value };
+    }
+
     private static Error Unknown(string text) => SindriErrors.InvalidInput.With($"'{text}' isn't an action a challenge is issued for; use {Forms}");
 
     private async ValueTask<Result<IssueChallengeResponse>> Profile(string hash6, CancellationToken cancellationToken)
@@ -98,6 +128,9 @@ internal sealed partial class IssueChallengeService(RecipeApprovalPlanner approv
 
     [GeneratedRegex(@"^approve (?<id>[^@\s]+)@(?<hash>(sha256:)?[0-9a-f]{8,64})\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex ApproveByHashForm { get; }
+
+    [GeneratedRegex(@"^(?<verb>grant|grant-tokens) (?<n>[0-9]{1,9}) (?<address>\S+)\z|^(?<verb>accept) (?<address>\S+)\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex AnswerForm { get; }
 
     [GeneratedRegex(@"^revoke (?<id>[^@\s]+)@(?<hash>(sha256:)?[0-9a-f]{8,64})\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex RevokeForm { get; }

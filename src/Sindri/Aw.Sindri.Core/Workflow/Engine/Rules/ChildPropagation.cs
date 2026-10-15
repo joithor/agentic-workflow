@@ -56,7 +56,9 @@ internal static class ChildPropagation
             parent.Id,
             ChildInputs.From(parent, wait),
             actor,
-            TakenOver: false);
+            TakenOver: false,
+            parent.Tenant,
+            parent.Ring);
         return new ChildStart(request, child.Recipe);
     }
 
