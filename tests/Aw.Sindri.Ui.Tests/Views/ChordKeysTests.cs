@@ -98,6 +98,40 @@ public sealed class ChordKeysTests : IDisposable
         Assert.Equal(PageId.Home, shell.CurrentPage);
     });
 
+    // WCAG 2.4.3: a chord that switches the page hides the page the focused control was on; focus goes to the page region, which is named, so the new page is spoken.
+    private async Task FocusStaysVisibleAfterTheChord(PageId from, Func<ShellWindow, Control> focusable)
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(ShellState.Normal);
+        shell.GoTo(from);
+        Dispatcher.UIThread.RunJobs();
+        var control = focusable(window);
+        Assert.True(control.Focus(NavigationMethod.Tab));
+
+        Press(window, Key.G);
+        Press(window, Key.H);
+        for (var i = 0; i < 20 && window.FocusManager?.GetFocusedElement() is Control { IsEffectivelyVisible: false }; i++)
+        {
+            await Task.Delay(10, Token);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        var page = window.Get<Border>("Page");
+        var focused = Assert.IsType<Control>(window.FocusManager?.GetFocusedElement(), exactMatch: false);
+        Assert.Equal(PageId.Home, shell.CurrentPage);
+        Assert.True(focused.IsEffectivelyVisible, "focus is on something the user can see");
+        Assert.True(focused == page || page.IsVisualAncestorOf(focused), "focus is on the page region or inside it");
+    }
+
+    [Fact]
+    public Task A_chord_from_Settings_keeps_focus_on_the_new_page() => OnUi(() =>
+        FocusStaysVisibleAfterTheChord(PageId.Settings, w =>
+        {
+            var button = new Button { Content = "Probe" };
+            w.SettingsSlot.Content = button;
+            return button;
+        }));
+
     [Fact]
     public Task Typing_in_a_text_field_never_chords() => OnUi(async () =>
     {
