@@ -1,4 +1,6 @@
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Eval;
+using Aw.Context.Core.Graph;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 using Aw.Sindri.Host.Commands;
@@ -44,5 +46,58 @@ public sealed class ContextCliTests
         Assert.Contains("+1 more (references only): C2", text, StringComparison.Ordinal);
         Assert.Contains("version 3b18e512dba7 → 9c0ffee  stale", text, StringComparison.Ordinal);
         Assert.DoesNotContain("\u001b[", text, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_affects_item_shows_its_depth_and_path()
+    {
+        var at = new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
+        var item = new ResultItem("feature", "feature:tabs.tab-manager", "Tabs", Text: null, Score: null, ["cascade depth 1"], Provenance.Human, Confirmed: true, Trust.Trusted, ["C1"])
+        {
+            Depth = 1,
+            Path = ["feature:layout.split-pane.orientation", "writes thing:pane-layout", "reads action:tab-manager.restore-layout"],
+        };
+        var result = new ContextResult(1, QueryId.From("q_1"), new ContextQuery(Text: null, Node: "feature:layout.split-pane.orientation"), ["feature:layout.split-pane.orientation"],
+            "v1", at, [new ResultSection("affects", [item], [])], [], [], [], Truncated: false, new BudgetUse(10, 9, Estimate: true), new Dictionary<string, Citation>(StringComparer.Ordinal));
+
+        var text = ContextText.Render(result);
+
+        Assert.Contains("anchors: feature:layout.split-pane.orientation · map: v1", text, StringComparison.Ordinal);
+        Assert.Contains("depth 1 · path feature:layout.split-pane.orientation → writes thing:pane-layout → reads action:tab-manager.restore-layout", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("(text withheld)", text, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Graph_text_words_every_state_and_its_empty_answers()
+    {
+        var node = new NodeFact(NodeKey.From("feature:a"), NodeKind.Feature, "A", Provenance.Model, Confirmed: false, Trust.Untrusted);
+        var view = new NodeView("v1", node, [], [], []);
+
+        var shown = ContextGraphText.Node(view);
+        var lonely = ContextGraphText.Neighbors(new NeighborsView("v1", node.Key, 1, [new NeighborFact(node, 0)], []));
+        var nowhere = ContextGraphText.Path(new PathView("v1", node.Key, NodeKey.From("feature:b"), Found: false, []));
+
+        Assert.Contains("model, draft, untrusted", shown, StringComparison.Ordinal);
+        Assert.Contains("aliases: none", shown, StringComparison.Ordinal);
+        Assert.Contains("no neighbors within 1 edge(s)", lonely, StringComparison.Ordinal);
+        Assert.Contains("no path within 8 edges", nowhere, StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(null, false, "first run: nothing to compare")]
+    [InlineData(0.5, false, "no regression")]
+    [InlineData(0.9, true, "REGRESSED: SND-CONTEXT-038")]
+    public void Probe_text_prints_the_previous_run_beside_this_one_and_the_verdict_in_words(double? before, bool regressed, string verdict)
+    {
+        var at = new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
+        var previous = before is { } b ? new ProbeTotals(b, 1, 1, at.AddDays(-1)) : null;
+        var report = new ProbeReport(1, "/p/probes.json", "h", "v1", [new ProbeScore(ProbeId.From("orientation-cascade"), 0.6, 1, [], [], [])],
+            new ProbeTotals(0.6, 1, 1, at), previous, regressed);
+
+        var text = ContextEvalText.Report(report, "/home/context/eval/probes/probes-1.json");
+
+        Assert.Contains("orientation-cascade", text, StringComparison.Ordinal);
+        Assert.Contains("precision@5 0.60", text, StringComparison.Ordinal);
+        Assert.Contains(verdict, text, StringComparison.Ordinal);
     }
 }

@@ -136,7 +136,7 @@ public sealed class ContextMapApiTests
         Assert.True((await purge.Run(new ScheduledRun(grant, DateTimeOffset.UnixEpoch), ct)).IsSuccess);
     }
 
-    private static async Task Import(GoldenHost host)
+    internal static async Task Import(GoldenHost host)
     {
         var file = FixtureMap.WriteTo(host.Home);
         var (hash, challenge, action) = Issued(await PreviewBody(host, file));
@@ -148,7 +148,7 @@ public sealed class ContextMapApiTests
         (await host.Http.Ask(Post("/sindri/context/map/import", Body(file), Human(host.Token.Value)))).Body;
 
     /// <summary>A host whose approved profile maps the fixture map's repo and 'other'.</summary>
-    private static async Task<GoldenHost> Approved(bool sessions, CancellationToken ct)
+    internal static async Task<GoldenHost> Approved(bool sessions, CancellationToken ct)
     {
         var yaml = $"schemaVersion: 1\nuser: golden\nrepos:\n  - {{ name: {FixtureMap.Repo}, path: /work/{FixtureMap.Repo} }}\n  - {{ name: other, path: /work/other }}\n"
             + $"context:\n  sessions: {{ enabled: {(sessions ? "true" : "false")} }}\n";

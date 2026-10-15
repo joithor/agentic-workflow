@@ -1,4 +1,5 @@
 using System.Text;
+using Aw.Context.Core;
 using Aw.Context.Core.Results;
 using Aw.Sindri.Core;
 using Aw.Sindri.Host.Text;
@@ -15,8 +16,6 @@ namespace Aw.Sindri.Host.Commands;
 /// <param name="output">Where the verbs write.</param>
 internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
 {
-    private static readonly string[] _attention = ["SND-API-001", "SND-CONTEXT-003", "SND-CONTEXT-005", "SND-CONTEXT-006", "SND-CONTEXT-020"];
-
     internal Task<int> Run(string[] args, CancellationToken ct) => args switch
     {
         ["query", .. var rest] => Query(rest, ct),
@@ -24,7 +23,7 @@ internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
         ["sources", "status", "--json"] => Sources(json: true, ct),
         ["sources", "sync"] => output.Error(SindriErrors.UnknownVerb.With(
             "'context sources sync' is pending:S-5B (a job: it ships with stage S-5B, after API P6's job runtime); repo docs refresh through the context-docs-refresh service: name it under services: in the profile")),
-        _ => output.Error(SindriErrors.UnknownVerb.With($"'context {string.Join(' ', args)}' is not a context command: context query <text> | context sources status | context sources sync | context map import|export|status")),
+        _ => output.Error(SindriErrors.UnknownVerb.With($"'context {string.Join(' ', args)}' is not a context command: context query <text> | context show|neighbors|path | context eval probes | context sources status | context sources sync | context map import|export|status")),
     };
 
     private async Task<int> Query(string[] rest, CancellationToken ct)
@@ -62,7 +61,7 @@ internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
     private async Task<int> Failed(Kernel.Error error)
     {
         var code = await output.Error(error).ConfigureAwait(false);
-        return _attention.Contains(error.Code, StringComparer.Ordinal) ? 1 : code;
+        return error.Code == "SND-API-001" || ContextErrors.Attention.Contains(error.Code) ? 1 : code;
     }
 
     /// <summary>The query's arguments: the words of the question, then its flags; the query string they make.</summary>
