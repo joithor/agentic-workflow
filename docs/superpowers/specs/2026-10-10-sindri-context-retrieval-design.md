@@ -356,6 +356,8 @@ available in the bundled `e_sqlite3` before Phase 1 relies on it.
 | Anything a model wrote from untrusted input (decision wording, labels, proposed aliases) | `untrusted` until a human accepts it, then `trusted` |
 | Human overrides | `trusted` |
 
+**Egress by caller (provisional owner default, 2026-10-14 night; security-relevant, pending the owner):** for the map views (lenses, file map, review queue, node facts) a human at the CLI or in the app gets untrusted labels and wording clean, beside a `trust` field on every item, and the client fences them where a model could read them (the CLI's text output does); a session, an MCP call and an in-process caller get them inside the fence below. Query results stay fenced for everyone. Reversible: drop the policy and the app learns the fence grammar instead.
+
 **Egress:** CLI, HTTP and MCP output all reach a model. An `IEgressScrubber` port (Core), implemented over
 `Aw.Redaction` (Infrastructure), scrubs **per field** before serialization, so a `Blocked` field becomes
 `[REDACTED:blocked]` in that field only and the response stays valid JSON; nothing ever falls back to the unscrubbed
@@ -667,6 +669,7 @@ descendant features, their surfaces and those surfaces' actions).
   `decides`), `product.confirmed` counts those that are not model-only (`human`, or `deterministic`, or an accepted
   override), `code.implemented` counts those with an `implements` edge (`level` is `file` until Phase 9). `gaps` lists
   nodes missing a lens, with what is missing. The same numbers drive the map review queue's `Open gaps` filter.
+- **S-4 wire additions (UI contract delta).** `depth` outside 0–4 is `SND-CONTEXT-006`; `product.edges` holds the structure edges among product items; `coverage.code.suggested` counts scope nodes whose only `implements` are unconfirmed, and `implemented` counts a confirmed `implements` only; file-map `features[].edge` is `implements` or `tests`; `decisions[].at` and `.quote{record,text,trust}` carry the stored quote; the queue takes `limit` and returns `counts`, `byKind`, `truncated`; `GET map?anchor=` adds `coverage`; `undo` takes `overrides` (a list, all or none); trust and the caller-based fence are the paragraph in §7.
 - **MCP** `context_lenses {anchor}` (the draft map is never read over MCP) returns this JSON as `structuredContent` and a text summary
   (anchor, band counts, conflicts, the coverage line, degraded). The CLI prints the three bands as headings and the
   coverage block with every status as a word (§8.4's rules).
@@ -699,8 +702,8 @@ directory rolled up, and the app requests a subtree when the user expands it.
   `--unmapped`) keeps only unmapped and suggested entries. Counts come from stored edges, not live sources.
 - `Propose features` on an unmapped directory is not a route: it is `map build` scoped to the path by the extractor
   (Phase 4), and the app shows it as the command to run.
-- **Accept and reject of a suggested link** are `POST /sindri/context/map/review` with a single entry
-  `{action: "accept" | "reject", target: <linkId>}` (CLI `context filemap accept <link-id>` or `reject <link-id>`):
+- **Accept and reject of a suggested link** are `POST /sindri/context/map/review` with the review command's shape
+  `{verb: "accept" | "reject", link: <linkId>}` (CLI `context filemap accept <link-id>` or `reject <link-id>`):
   exactly one `map_override` row each, undoable with `map review --undo`. They are `desk` actions (README X63): the
   app runs them directly with an Undo toast, a session is `SND-AUTH-002`.
 - **Phase 9** fills the `symbols` column of each file (the symbols it defines and the features each implements);

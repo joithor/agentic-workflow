@@ -454,6 +454,29 @@ API P6 (the job runtime) has not merged, so `map build` has no route; the `Build
 
 041 is retired; 049 is reserved for findings in the review loop.
 
+### The app's wire (UI contract delta, D1–D14)
+
+The goldens under `tests/Aw.Sindri.Tests/Golden/Api/context-*/` pin every body below (`ApiScenarios`, `ContextApiScenarios`, the `MapTabsRepo` fixture). JSON is camelCase through AwJson.
+
+| Route | Request | Response |
+|---|---|---|
+| `GET /sindri/context/lenses` | `anchor`, `depth` (0–4, default `context.cascadeDepth`; else 006 / 400), `draft` | `{schemaVersion, anchor{key,label,kind,trust}, mapVersion, draft, depth, asOf, bands{intent,product,code}, edges[], conflicts[], coverage, degraded[], cites{}}` (spec §8.9) |
+| `GET /sindri/context/filemap` | `repo`, `path`, `unmapped`, `draft` | `{schemaVersion, repo, sha, mapVersion, draft, path, entries[{name,path,type,status,files,features[{key,provenance,confidence?,confirmed,linkId?,edge}],intent{records,decisions}\|null}], unmapped[], suggested[{linkId,file,feature,confidence,evidence[]}], totals{files,mapped,suggested,unmapped}, symbols}` |
+| `GET /sindri/context/map` | `anchor` (optional) | the map status; with an anchor also `coverage`, the lenses' record from the same Core function (`LensCoverageBuilder`) |
+| `GET /sindri/context/map/review` | `limit` (per group, default 100, max 1000; else 006) | `{draft, version{number,commit}, entries[…, trust], decided, proposals, counts{deterministic,model,orphaned}, byKind{}, truncated{…}, undecided}`; `decided` counts the proposals of this draft with a standing decision, `proposals` = decided + deterministic + model |
+| `GET /sindri/context/map/review/history` | `limit` (default 200, max 1000; else 006) | `{entries[], truncated}` |
+| `POST /sindri/context/map/review` | `{verb, node?, link?, override?, overrides?, label?, other?, path?, answer?}` | `{result{written[],skipped[],undecided}, sequence, challenge?, summary?}` |
+| `GET /sindri/context/map/proposals` | `run` | every surface the run submitted (kept per run in `proposal_run`, migration 0005; a second submission replaces the list), each `mapped`, `new` or `unmapped` against the current map at call time |
+
+- **Repoint** (`verb: repoint`, `override` = the orphan, `node` = the new target) writes `[undo of the orphan, the same decision on the new node]`; undoing both rows restores the orphan. A target not in the draft is 047.
+- **Undo list** (`overrides`, 1–1000 ids, only with `undo`, not beside `override`): all or none in one transaction; 047 names the first stale id; one `context.map.reviewed` event with `rows` = n. CLI `--undo <id>[,<id>…]`. *Provisional owner default (2026-10-14 night).*
+- **Lenses** details. `own[]` is the anchor's own scope; `neighbors[]` and `affects[]` carry `depth` and `path`. A neighbor's hops read `<edge type> <key>` going with the edge and `<edge type>-by <key>` going against it, over structure edges where they reach (else any edge); an affects path is the cascade's own words. `product.edges` are the structure edges among product items. Intent: `records[]` (`source` from the key: `linear`, `linear:doc`, `slack`, `onyx`, `repo-doc`; `state` `unchecked`, `cites` empty until S-5A/S-6) and `decisions[]` (with `at` and `quote{record,text,trust:untrusted}`); `counts.orphaned` is `null` (follow-up F2). Code: `files[]`, one per file (`suggested` = every link of it unconfirmed, `linkId` = its best link then); `counts.featuresWithNoCode` counts scope features with no confirmed `implements`. Coverage counts a confirmed `implements` only as implemented (not `tests`, not a model suggestion); `code.suggested` counts scope nodes whose only `implements` are unconfirmed. Conflicts: one per decided node, `supersedes` only until S-CF. Provisional: all of the product `edges`, the `-by` paths, `featuresWithNoCode` and the gap notes.
+- **File map** details. A file's `features` include its suggested link (with `linkId`) and `tests` links (`edge: tests`; they never make a file mapped); a directory's hold the confirmed ones only. `intent` counts the distinct records and decisions on the entry's features, `null` with none. `unmapped[]` lists the unmapped entries even when `unmapped=true` filters `entries`. `sha` is the seven-character HEAD the tree was listed at.
+- **Trust and the fence (provisional owner default, 2026-10-14 night; CTX §7).** Every lens item, record, decision, queue entry and node fact carries `trust`. A human at the CLI or in the app (`FencePolicies.For`: human and client `cli` or `http`) gets the label clean beside `trust`; a session, MCP and in-process callers get untrusted text inside `<untrusted source="map">…</untrusted>` as before. The CLI's text output fences an untrusted label itself when it called as a human (a session's answer is already fenced), `--json` prints the body unchanged. Query `ResultItem`s stay fenced for everyone. The file map carries only repo paths and node keys, so it has no `trust`. If the owner refuses the policy, drop `FencePolicies` to always-fenced and document the fence grammar for the app.
+- **Anchor errors** carry their candidates in text: 003 ends `(fix: try <key>, <key>)` (up to five), 037 lists the keys (goldens `unknown-anchor-003`, `ambiguous-037`). Structured extensions are follow-up F1.
+- **HTTP status per code.** 003 404, 037 409, 030 404, 044 404, 045 404, 046 409, 047 409, 043 409, 005 and 006 400, 042 400, 040 503 (CLI 75), 048 503 (CLI 2), 020 403, `SND-AUTH-002` 403, `SND-CLI-003` 400.
+- **Heavy-job slots.** `HeavyLockSettings` reads `AW_HEAVY_SLOTS` as `config/lib/locks.sh` does: unset or empty is 2, a whole number of at least 1 is that many, anything else is 1.
+
 ### Tests
 
 - **Unit.** The planner (repoint, undo, bulk), `ReviewHistory`, the review-file preview, `ReviewDrafts` gating (a single decision from a session is not refused by the engine;
