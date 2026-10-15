@@ -6836,3 +6836,6 @@ Aw.Sindri.Core.Profile.RepoDenyGlobs
 Aw.Sindri.Core.Ledger.LedgerFilter.Keeps(Aw.Sindri.Core.Ledger.LedgerEvent! row) -> bool
 Aw.Sindri.Core.Ledger.LedgerFilter.Scanned(long cursor, long head, int max, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ledger.LedgerEvent!>! kept) -> Aw.Sindri.Core.Ledger.LedgerScan!
 Aw.Sindri.Core.Ledger.LedgerFilter.UpperFrom(long cursor) -> long
+Aw.Sindri.Core.Items.CallerEventView
+Aw.Sindri.Core.Items.CallerEventView.CallerEventView(Aw.Sindri.Core.Commands.ICallerContextAccessor! callers, Aw.Sindri.Core.Items.IItemRepos! repos, Aw.Sindri.Core.Text.ITextScrubber! scrubber, System.Text.Json.JsonSerializerOptions! json) -> void
+Aw.Sindri.Core.Items.CallerEventView.Shown(Aw.Sindri.Core.Ledger.LedgerEvent! row, bool includeNonPublic, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Events.PublicEvent?>!>

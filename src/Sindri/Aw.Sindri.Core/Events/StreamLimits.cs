@@ -20,5 +20,5 @@ public static class StreamLimits
     /// <param name="openSessions">The streams sessions hold now.</param>
     /// <returns>Whether it is admitted.</returns>
     public static bool Admits(CallerClass caller, int open, int openSessions)
-        => throw new NotSupportedException("StreamLimits.Admits: P5 unit E2 makes the stream limit tests pass");
+        => open < Total && (caller != CallerClass.Session || openSessions < Session);
 }

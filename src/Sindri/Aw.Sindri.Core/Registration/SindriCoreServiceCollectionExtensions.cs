@@ -34,6 +34,8 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<HeldHumanToken>()
             .AddSingleton<BlockCatalog>()
             .AddSingleton<ILedgerSignal, LedgerSignal>()
+            .AddSingleton<IStreamSlots, StreamSlots>()
+            .AddScoped<CallerEventView>()
             .AddSingleton<IItemRepos, LedgerItemRepos>()
             .AddSingleton<ProjectorProgress>()
             .AddSingleton<IProjectorStatus>(static sp => sp.GetRequiredService<ProjectorProgress>())
