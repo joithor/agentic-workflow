@@ -15,6 +15,9 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
     private readonly Dictionary<string, ScopeProposal> _runs = new(StringComparer.Ordinal);
     private int _last;   // version numbers are never reused, as with the SQLite store's AUTOINCREMENT
 
+    /// <summary>Called after every snapshot read, with whether it was of the draft: a test's way to make another caller write between a service's read and its write.</summary>
+    public Action<bool>? AfterSnapshot { get; set; }
+
     /// <summary>When set, every call fails with it (a store that can't open).</summary>
     public Error? Failure { get; set; }
 
@@ -36,7 +39,9 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
         var wanted = draft ? MapVersionStatus.Draft : MapVersionStatus.Current;
         var found = _versions.Where(v => v.Version.Status == wanted).OrderByDescending(v => v.Version.Number).Select(v => ((MapVersion, GraphSnapshot)?)v).FirstOrDefault();
         IReadOnlyList<MapOverride> overrides = [.. _overrides.OrderBy(o => o.At).ThenBy(o => o.ToId().Value, StringComparer.Ordinal)];
-        return Results.Success(found is { } f ? new MapSnapshot(f.Item1, f.Item2, overrides) : null);
+        var snapshot = Results.Success(found is { } f ? new MapSnapshot(f.Item1, f.Item2, overrides) : null);
+        AfterSnapshot?.Invoke(draft);
+        return snapshot;
     });
 
     /// <inheritdoc/>
@@ -75,6 +80,10 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
         _ = Append(map.Overrides);
         return Results.Success(version);
     });
+
+    /// <inheritdoc/>
+    public ValueTask<Result<MapVersion>> ReplaceDraft(int draft, MapImport map, DateTimeOffset created, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("red: ReplaceDraft is not written yet");
 
     /// <inheritdoc/>
     public ValueTask<Result<MapVersion>> OpenDraft(DateTimeOffset created, CancellationToken cancellationToken) => Done(() =>

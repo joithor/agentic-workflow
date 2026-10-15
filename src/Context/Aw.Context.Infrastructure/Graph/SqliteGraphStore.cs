@@ -156,6 +156,9 @@ internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSet
         return open.IsError ? open.Error : await new GraphWrites(open.Value, BatchSize).Save(map, created, cancellationToken, draft: true).ConfigureAwait(false);
     }
 
+    public ValueTask<Result<MapVersion>> ReplaceDraft(int draft, MapImport map, DateTimeOffset created, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("red: ReplaceDraft is not written yet");
+
     public async ValueTask<Result<MapVersion>> OpenDraft(DateTimeOffset created, CancellationToken cancellationToken)
     {
         var open = await database.Writable(cancellationToken).ConfigureAwait(false);

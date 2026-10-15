@@ -1286,6 +1286,7 @@ Aw.Context.Core.Map.IGraphStore.Promote(int draft, System.Threading.Cancellation
 Aw.Context.Core.Map.IGraphStore.Read(int version, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Graph.GraphSnapshot!>!>
 Aw.Context.Core.Map.IGraphStore.SaveCurrent(Aw.Context.Core.Map.MapImport! map, System.DateTimeOffset created, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapVersion!>!>
 Aw.Context.Core.Map.IGraphStore.SaveDraft(Aw.Context.Core.Map.MapImport! map, System.DateTimeOffset created, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapVersion!>!>
+Aw.Context.Core.Map.IGraphStore.ReplaceDraft(int draft, Aw.Context.Core.Map.MapImport! map, System.DateTimeOffset created, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapVersion!>!>
 Aw.Context.Core.Map.IGraphStore.Snapshot(bool draft, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapSnapshot?>!>
 Aw.Context.Core.Map.IGraphStore.Versions(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Map.MapVersion!>!>!>
 Aw.Context.Core.Map.IMapFileReader

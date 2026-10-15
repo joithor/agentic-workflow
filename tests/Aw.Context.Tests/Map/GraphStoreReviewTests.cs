@@ -73,6 +73,35 @@ public sealed class GraphStoreReviewTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task Replacing_a_draft_leaves_the_building_version_another_build_is_writing()
+    {
+        var store = new SqliteGraphStore(_database, _settings);
+        var open = (await store.SaveDraft(SampleMap.Build(), SampleMap.At, Ct)).Value;
+        await Execute("INSERT INTO map_version (repo, key_version, created, status) VALUES ('aw-split-panes', 1, '2026-07-15T10:00:00Z', 'building')");
+
+        var replaced = await store.ReplaceDraft(open.Number, SampleMap.Build(" (cut)"), SampleMap.At, Ct);
+
+        Assert.True(replaced.IsSuccess, replaced.IsError ? replaced.Error.Message : null);
+        Assert.Equal(1L, await Count("SELECT count(*) FROM map_version WHERE status = 'building'"));
+        Assert.Equal(1L, await Count("SELECT count(*) FROM map_version WHERE status = 'draft'"));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_refused_replacement_removes_its_own_building_version_and_nothing_else()
+    {
+        var store = new SqliteGraphStore(_database, _settings);
+        var read = (await store.SaveDraft(SampleMap.Build(), SampleMap.At, Ct)).Value;
+        var newer = (await store.SaveDraft(SampleMap.Build(" (newer)"), SampleMap.At, Ct)).Value;
+
+        var stale = await store.ReplaceDraft(read.Number, SampleMap.Build(" (cut)"), SampleMap.At, Ct);
+
+        Assert.Equal("SND-CONTEXT-046", stale.Error.Code);
+        Assert.Equal(0L, await Count("SELECT count(*) FROM map_version WHERE status = 'building'"));
+        Assert.Equal(newer.Number, Assert.Single((await store.Versions(Ct)).Value, v => v.Status == Aw.Context.Core.Map.MapVersionStatus.Draft).Number);
+        Assert.Equal(0L, await Count("SELECT count(*) FROM node WHERE map_version NOT IN (SELECT id FROM map_version)"));
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task A_failed_draft_keeps_the_open_draft()
     {
         var store = new SqliteGraphStore(_database, _settings);

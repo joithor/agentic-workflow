@@ -60,6 +60,17 @@ public interface IGraphStore
     /// <returns>The new draft version, or SND-CONTEXT-004 (no draft appears then).</returns>
     public ValueTask<Result<MapVersion>> SaveDraft(MapImport map, DateTimeOffset created, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Replaces the open draft <paramref name="draft"/> with <paramref name="map"/> as a new version in batches ('building'), then in one short transaction makes it the draft. Unlike <see cref="SaveDraft"/>
+    /// it sweeps no other 'building' version and deletes nothing but <paramref name="draft"/>: if another draft appeared or the draft was promoted or replaced meanwhile, nothing changes.
+    /// </summary>
+    /// <param name="draft">The draft's version number, as read.</param>
+    /// <param name="map">The checked map (its overrides join the layer; one already there is kept once).</param>
+    /// <param name="created">The time to record.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The new draft version, SND-CONTEXT-046 when <paramref name="draft"/> is no longer the open draft (it changed; read it again), or SND-CONTEXT-004 (no draft appears then).</returns>
+    public ValueTask<Result<MapVersion>> ReplaceDraft(int draft, MapImport map, DateTimeOffset created, CancellationToken cancellationToken);
+
     /// <summary>The newest draft, opening one as a copy of 'current' when there is none (a scoping run's proposals need a draft to land in).</summary>
     /// <param name="created">The time to record when a draft is opened.</param>
     /// <param name="cancellationToken">Cancels the call.</param>

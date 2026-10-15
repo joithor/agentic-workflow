@@ -137,6 +137,48 @@ public abstract class GraphStoreContract
         Expect.That(overrides.Count == 2 && overrides.Any(o => o.ToId() == decided.ToId()), test, "a decision was lost or an override kept twice");
     }
 
+    /// <summary>Replacing the open draft swaps it for the new graph, keeps every override once and leaves current alone.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Replacing_the_open_draft_swaps_it_and_keeps_the_current_version()
+    {
+        const string test = nameof(Replacing_the_open_draft_swaps_it_and_keeps_the_current_version);
+        var store = CreateStore();
+        var current = Expect.Ok(await store.SaveCurrent(SampleMap.Build(), SampleMap.At, None), test);
+        var open = Expect.Ok(await store.SaveDraft(SampleMap.Build(" (one)"), SampleMap.At.AddDays(1), None), test);
+
+        var replaced = Expect.Ok(await store.ReplaceDraft(open.Number, SampleMap.Build(" (two)"), SampleMap.At.AddDays(2), None), test);
+
+        Expect.That(replaced.Status == MapVersionStatus.Draft && replaced.Number > open.Number, test, "the replacement isn't a newer draft");
+        Expect.That(Expect.Ok(await store.Versions(None), test).Select(v => (v.Number, v.Status)).SequenceEqual([(replaced.Number, MapVersionStatus.Draft), (current.Number, MapVersionStatus.Current)]),
+            test, "expected the new draft and the current version only");
+        Expect.That(Canonical.Of(Expect.Ok(await store.Snapshot(draft: true, None), test)!.Graph) == Canonical.Of(SampleMap.Build(" (two)").Graph), test, "the draft snapshot isn't the replacement");
+    }
+
+    /// <summary>A draft that another caller replaced or promoted since it was read is not replaced again: SND-CONTEXT-046, and the newer one stays.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Replacing_a_draft_that_changed_since_it_was_read_is_046_and_changes_nothing()
+    {
+        const string test = nameof(Replacing_a_draft_that_changed_since_it_was_read_is_046_and_changes_nothing);
+        var store = CreateStore();
+        _ = Expect.Ok(await store.SaveCurrent(SampleMap.Build(), SampleMap.At, None), test);
+        var read = Expect.Ok(await store.SaveDraft(SampleMap.Build(" (read)"), SampleMap.At.AddDays(1), None), test);
+        var rebuilt = Expect.Ok(await store.SaveDraft(SampleMap.Build(" (rebuilt)"), SampleMap.At.AddDays(2), None), test);
+
+        var stale = await store.ReplaceDraft(read.Number, SampleMap.Build(" (cut)"), SampleMap.At.AddDays(3), None);
+
+        Expect.That(stale.IsError && stale.Error.Code == "SND-CONTEXT-046", test, "replacing a draft that was replaced since wasn't SND-CONTEXT-046");
+        Expect.That(stale.Error.Message.Contains("changed", StringComparison.Ordinal) && stale.Error.Message.Contains("fix:", StringComparison.Ordinal), test, "the refusal doesn't say the draft changed and how to go on");
+        var drafts = Expect.Ok(await store.Versions(None), test).Where(v => v.Status == MapVersionStatus.Draft).ToList();
+        Expect.That(drafts.Count == 1 && drafts[0].Number == rebuilt.Number, test, "the newer draft didn't stay the only one");
+        Expect.That(Canonical.Of(Expect.Ok(await store.Read(rebuilt.Number, None), test)) == Canonical.Of(SampleMap.Build(" (rebuilt)").Graph), test, "the newer draft's graph changed");
+        var promoted = Expect.Ok(await store.Promote(rebuilt.Number, None), test);
+        var afterPromote = await store.ReplaceDraft(promoted.Number, SampleMap.Build(" (late)"), SampleMap.At.AddDays(4), None);
+        Expect.That(afterPromote.IsError && afterPromote.Error.Code == "SND-CONTEXT-046", test, "replacing a promoted draft wasn't SND-CONTEXT-046");
+        Expect.That(!Expect.Ok(await store.Versions(None), test).Any(v => v.Status == MapVersionStatus.Draft), test, "a draft appeared");
+    }
+
     /// <summary>A failed or empty store gives no draft to open until there is a current version to copy.</summary>
     /// <returns>The test.</returns>
     [Fact]
