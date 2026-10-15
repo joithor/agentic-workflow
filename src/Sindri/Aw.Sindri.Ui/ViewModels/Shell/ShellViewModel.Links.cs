@@ -20,7 +20,7 @@ internal sealed partial class ShellViewModel
             GoTo(page);
         }
 
-        OpenSheet(link.Subject);
+        OpenSheet(link);
     }
 
     // The rev 8 links name a page (screens spec §3); the older ones open their sheet over the page shown.

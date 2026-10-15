@@ -43,6 +43,6 @@ internal sealed partial class FakeSindriApi
     /// <returns>The answer.</returns>
     internal RouteAnswer RecipeAnswer(string recipe, string? hash) => WorkflowAnswer ?? WorkflowAnswers.Recipe(recipe, hash);
 
-    // LANE ANCHOR U3': U3' keeps its own fake in FakeSindriApi.Routes.cs; it adds nothing here.
-    // LANE ANCHOR U8: new workflow answers (commands, complete) and their gates are added here, answered from WorkflowAnswers.
+    // LANE ANCHOR U3': U3' keeps its own fake in FakeSindriApi.Routes.cs; it adds nothing here. Insert immediately above this marker, never between the markers.
+    // LANE ANCHOR U8: new workflow answers (commands, complete) and their gates, answered from WorkflowAnswers. Insert immediately below this marker, never between the markers.
 }

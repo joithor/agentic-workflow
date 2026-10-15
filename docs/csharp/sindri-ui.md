@@ -394,13 +394,19 @@ U3' and U8.
 ## Lane anchors (U3' and U8)
 
 Two lanes add to the same files, so each hotspot carries one marker per lane, `LANE ANCHOR U3'` and `LANE ANCHOR U8`
-(a comment: `//` in C#, `<!-- -->` in XAML). A lane adds its lines at its own marker and nowhere else in the file, so
-two merges don't touch the same lines. The files: `Api/ISindriApi.cs`, `Api/SindriApiClient.cs`,
-`Api/SindriUiJsonContext.cs`, `ViewModels/Shell/ShellViewModel.cs` and `.Sheet.cs`, `Views/Shell/ShellWindow.axaml`,
-and in `tests/Aw.Sindri.Ui.Testing`: `FakeSindriApi.Workflow.cs`, `FakeSindriHandler.cs`, `SindriApiContract.cs` and
+(a comment: `//` in C#, `<!-- -->` in XAML), adjacent: U3' first, U8 second. **One insertion rule:** U3' adds its lines
+immediately above its own marker and U8 adds its lines immediately below its own, so the pair stays together and neither
+lane inserts between the markers; every marker's text says so. Two merges then touch different lines. The files:
+`Api/ISindriApi.cs`, `Api/SindriApiClient.cs` (right after the public reads, `Recipe(...)`; a lane's routes go in a routes
+class of its own, like `Api/Workflow/WorkflowRoutes.cs`), `Api/SindriUiJsonContext.cs`, `ViewModels/Shell/ShellViewModel.cs` and
+`.Sheet.cs`, `Views/Shell/ShellWindow.axaml` (inside `SheetContent`, the content of the one sheet layer, chosen by the
+sheet's link kind), and in `tests/Aw.Sindri.Ui.Testing`: `FakeSindriApi.Workflow.cs`, `FakeSindriHandler.cs` (inside
+`Route()`'s switch, above the workflow-read arm, which answers GET only), `SindriApiContract.cs` and
 `SindriApiContract.Workflow.cs`. This page has its own marker at the end of "Tests". A lane's new shell state goes in its
-own `ShellViewModel.<Slice>.cs` partial (the file cap is 300 lines); the sheet and its subject already live in
-`ShellViewModel.Sheet.cs`. The desk-complete and nonce sends are **not declared** on `ISindriApi`: their shapes come with
+own `ShellViewModel.<Slice>.cs` partial (the file cap is 300 lines). The sheet keeps the **kind** of the link that opened it
+(`SheetLink`: kind and subject; `SheetSubject` is derived), so `item/X` and `workflow/X` are two sheets and the edge tab
+reopens the right one. The rev-8 links (`workflow/`, `recipe/`, `node/`, `session/`, `system/`) go to their page and open the
+sheet on their subject. The desk-complete and nonce sends are **not declared** on `ISindriApi`: their shapes come with
 API P11 (Q-API-7/8), and declaring them now would guess.
 
 ## How it finds the control plane
@@ -513,5 +519,5 @@ dotnet test --project tests/Aw.Sindri.Ui.Tests --filter-trait "Lane=integration"
 bash src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh [<dir>]   # NativeAOT sindri-ui on a copy (CI's AOT step); copies it to <dir> when given
 ```
 
-<!-- LANE ANCHOR U3': document the Needs you screens below this line. -->
-<!-- LANE ANCHOR U8: document the instance screens below this line. -->
+<!-- LANE ANCHOR U3': document the Needs you screens. Insert immediately above this marker, never between the markers. -->
+<!-- LANE ANCHOR U8: document the instance screens. Insert immediately below this marker, never between the markers. -->

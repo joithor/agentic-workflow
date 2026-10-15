@@ -244,8 +244,14 @@
                   </StackPanel>
                 </Button>
               </Grid>
-              <TextBlock x:Name="SheetBody" Classes="body muted" Text="{Binding Text.NotServedYet}"
-                         AutomationProperties.Name="{Binding Text.NotServedYet}" />
+              <!-- The one sheet layer's content, chosen by the kind of link that opened it (SheetLink.Kind): every kind shows
+                   "not served yet" until its lane adds its own content here. -->
+              <Panel x:Name="SheetContent">
+                <TextBlock x:Name="SheetBody" Classes="body muted" Text="{Binding Text.NotServedYet}"
+                           AutomationProperties.Name="{Binding Text.NotServedYet}" />
+                <!-- LANE ANCHOR U3': the Needs you sheet content for item, decision, service and job links. Insert immediately above this marker, never between the markers. -->
+                <!-- LANE ANCHOR U8: the instance sheet content for workflow, recipe, node, session and system links. Insert immediately below this marker, never between the markers. -->
+              </Panel>
             </StackPanel>
           </DockPanel>
         </Border>
@@ -274,8 +280,6 @@
     <!-- A command the palette started and closed on before its outcome: no control has a view on show to say it, so this region does. -->
     <TextBlock x:Name="CommandOutcomeLive" Classes="live-region" Classes.live="{Binding CommandOutcome.IsLive}" Text="{Binding CommandOutcome.Text}"
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
-    <!-- LANE ANCHOR U3': the Needs you band and its sheet layer go above this line. -->
-    <!-- LANE ANCHOR U8: the instance sheet layer goes above this line. -->
     <!-- The palette and the ? sheet (§8): layers over everything, shown by their view models; Esc closes the topmost. -->
     <Panel x:Name="PaletteLayer" IsVisible="{Binding Palette.IsOpen}">
       <root:CommandPalette x:Name="CommandPalette" DataContext="{Binding Palette}" />

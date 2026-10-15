@@ -206,8 +206,8 @@ internal sealed partial class ShellViewModel : ObservableObject
         return true;
     }
 
-    // LANE ANCHOR U3': new Needs you state belongs in its own partial (ShellViewModel.<Slice>.cs), not in this file (cap 300 lines).
-    // LANE ANCHOR U8: new workflow state belongs in its own partial (ShellViewModel.<Slice>.cs), not in this file (cap 300 lines).
+    // LANE ANCHOR U3': new Needs you state belongs in its own partial (ShellViewModel.<Slice>.cs), not in this file (cap 300 lines); only a hook-up line goes here. Insert immediately above this marker, never between the markers.
+    // LANE ANCHOR U8: new workflow state belongs in its own partial (ShellViewModel.<Slice>.cs), not in this file (cap 300 lines); only a hook-up line goes here. Insert immediately below this marker, never between the markers.
 
     /// <summary>Follows the control plane until cancelled (S1b's loop: control.json, ping, status, events).</summary>
     /// <param name="cancellationToken">Stops following.</param>

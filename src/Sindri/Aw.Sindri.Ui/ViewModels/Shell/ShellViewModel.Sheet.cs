@@ -9,7 +9,7 @@ internal sealed partial class ShellViewModel
     public bool IsSheetOpen { get; private set; }
 
     /// <summary>The sheet's subject (the deep link's subject); kept after the sheet closes for the edge tab; empty before the first.</summary>
-    public string SheetSubject { get; private set; } = string.Empty;
+    public string SheetSubject => SheetLink?.Subject ?? string.Empty;
 
     /// <summary>The link the sheet was opened by (its kind and subject); null before the first.</summary>
     public DeepLink? SheetLink { get; private set; }
@@ -26,13 +26,13 @@ internal sealed partial class ShellViewModel
     /// <summary>The edge tab shows when the sheet is closed and has a subject, over a visible page.</summary>
     public bool IsEdgeTabShown => !IsSheetOpen && HasEdgeTab && IsConnected;
 
-    /// <summary>Opens the sheet on a subject (a deep link's).</summary>
-    /// <param name="subject">The subject, as the link carries it.</param>
-    internal void OpenSheet(string subject)
+    /// <summary>Opens the sheet on a deep link's subject, keeping the link's kind (an item and a workflow with one subject are two sheets).</summary>
+    /// <param name="link">The link, with a subject.</param>
+    internal void OpenSheet(DeepLink link)
     {
-        SheetSubject = subject;
+        SheetLink = link;
         IsSheetOpen = true;
-        Changed(nameof(SheetSubject), nameof(EdgeTabName), nameof(IsSheetOpen), nameof(HasEdgeTab), nameof(IsSheetShown), nameof(IsEdgeTabShown));
+        Changed(nameof(SheetLink), nameof(SheetSubject), nameof(EdgeTabName), nameof(IsSheetOpen), nameof(HasEdgeTab), nameof(IsSheetShown), nameof(IsEdgeTabShown));
     }
 
     /// <summary>Closes the sheet (Esc); its subject stays on the edge tab.</summary>
@@ -54,6 +54,6 @@ internal sealed partial class ShellViewModel
         Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
     }
 
-    // LANE ANCHOR U3': the item sheet's subject kinds are routed from OpenSheet; add U3' kinds here.
-    // LANE ANCHOR U8: the instance sheet's tabs and subject kinds are routed from OpenSheet; add U8 kinds here.
+    // LANE ANCHOR U3': the sheet keeps its link kind (SheetLink); a lane that needs state for its kinds adds its own partial. Insert immediately above this marker, never between the markers.
+    // LANE ANCHOR U8: the instance sheet's tabs belong in a partial of their own, chosen by SheetLink.Kind. Insert immediately below this marker, never between the markers.
 }
