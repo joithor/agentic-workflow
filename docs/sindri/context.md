@@ -105,7 +105,7 @@ anything else answers `SND-CONTEXT-003`, the same as an unknown anchor.
 ### Exit codes
 
 `0` results (possibly degraded or empty) · `1` attention: not running (`SND-API-001`), an unknown or out-of-scope
-anchor (`003`), a refused question (`006`), session reads off (`020`) · `2` a tool error: invalid profile section
+anchor (`003`), a refused question (`006`), session reads off or a session's export or other human job (`020`) · `2` a tool error: invalid profile section
 (`001`), the store (`004`), every source down (`011`), a usage error or a pending verb (`SND-CLI-001`, `SND-CLI-003`).
 
 ### Where state lives

@@ -34,7 +34,7 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-011: every source is unavailable (a tool error, not "no results").</summary>
     public static readonly ErrorDefinition AllSourcesUnavailable = new("SND-CONTEXT-011", ErrorKind.Unavailable, "Every context source is unavailable");
 
-    /// <summary>SND-CONTEXT-020: session reads are off ('context.sessions.enabled: false'), on every transport.</summary>
+    /// <summary>SND-CONTEXT-020: session reads are off ('context.sessions.enabled: false'), on every transport; also a session asking for a human or service job (map import, preview, build, export, review).</summary>
     public static readonly ErrorDefinition SessionsDisabled = new("SND-CONTEXT-020", ErrorKind.Forbidden, "Context reads and the map export from sessions are off");
 
     /// <summary>SND-CONTEXT-021: an MCP call without X-Sindri-Repo, so it has no repo scope (stage S-1M).</summary>
