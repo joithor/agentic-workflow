@@ -50,6 +50,7 @@ public sealed class QueuedUpdateTests(SindriTimeSkippingServer server) : IClassF
         var cancel = new CancelRequested("human:cli", CancelOrigin.Command, Stamp('c'), Sequence: null, Parent: null);
         var takeover = new TakeoverRequested("human:cli", Stamp('d'));
         var cancelling = handle.ExecuteUpdateAsync(wf => wf.CancelAsync(cancel), new WorkflowUpdateOptions(new string('c', 32)));
+        await Task.Delay(TimeSpan.FromMilliseconds(500), ct);   // the server admits the cancel first, so the worker validates and runs it before the takeover
         var takingOver = handle.ExecuteUpdateAsync(wf => wf.TakeoverAsync(takeover), new WorkflowUpdateOptions(new string('d', 32)));
         await Task.Delay(TimeSpan.FromSeconds(1), ct);   // let the server queue both
 
