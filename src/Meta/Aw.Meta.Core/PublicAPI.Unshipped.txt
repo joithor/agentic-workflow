@@ -158,6 +158,26 @@ static Aw.Meta.Core.Coordination.LaneRefresh.operator ==(Aw.Meta.Core.Coordinati
 Aw.Meta.Core.Coordination.LaneRefresher
 Aw.Meta.Core.Coordination.LaneRefresher.LaneRefresher(Aw.Meta.Core.Ports.ISessionDirectory! sessions, Aw.Meta.Core.Ports.IMessageStore! messages, Aw.Meta.Core.Ports.ILaneStore! lanes) -> void
 Aw.Meta.Core.Coordination.LaneRefresher.Run(Aw.Meta.Core.Config.TeamConfig! config, System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Coordination.LaneRefresh!>!>
+Aw.Meta.Core.Coordination.MergeAssessment
+Aw.Meta.Core.Coordination.MergeAssessment.<Clone>$() -> Aw.Meta.Core.Coordination.MergeAssessment!
+Aw.Meta.Core.Coordination.MergeAssessment.Checks.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Merge.MergeCheck!>!
+Aw.Meta.Core.Coordination.MergeAssessment.Checks.init -> void
+Aw.Meta.Core.Coordination.MergeAssessment.Deconstruct(out Aw.Meta.Core.Config.TeamConfig! Team, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Merge.MergeCheck!>! Checks, out Aw.Meta.Core.Github.PrDetails? Pr) -> void
+Aw.Meta.Core.Coordination.MergeAssessment.Equals(Aw.Meta.Core.Coordination.MergeAssessment? other) -> bool
+override Aw.Meta.Core.Coordination.MergeAssessment.Equals(object? obj) -> bool
+override Aw.Meta.Core.Coordination.MergeAssessment.GetHashCode() -> int
+Aw.Meta.Core.Coordination.MergeAssessment.MergeAssessment(Aw.Meta.Core.Config.TeamConfig! Team, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Merge.MergeCheck!>! Checks, Aw.Meta.Core.Github.PrDetails? Pr) -> void
+Aw.Meta.Core.Coordination.MergeAssessment.Pr.get -> Aw.Meta.Core.Github.PrDetails?
+Aw.Meta.Core.Coordination.MergeAssessment.Pr.init -> void
+Aw.Meta.Core.Coordination.MergeAssessment.Ready.get -> bool
+Aw.Meta.Core.Coordination.MergeAssessment.Team.get -> Aw.Meta.Core.Config.TeamConfig!
+Aw.Meta.Core.Coordination.MergeAssessment.Team.init -> void
+override Aw.Meta.Core.Coordination.MergeAssessment.ToString() -> string!
+static Aw.Meta.Core.Coordination.MergeAssessment.operator !=(Aw.Meta.Core.Coordination.MergeAssessment? left, Aw.Meta.Core.Coordination.MergeAssessment? right) -> bool
+static Aw.Meta.Core.Coordination.MergeAssessment.operator ==(Aw.Meta.Core.Coordination.MergeAssessment? left, Aw.Meta.Core.Coordination.MergeAssessment? right) -> bool
+Aw.Meta.Core.Coordination.MergeReadiness
+Aw.Meta.Core.Coordination.MergeReadiness.Assess(int pr, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Coordination.MergeAssessment!>!>
+Aw.Meta.Core.Coordination.MergeReadiness.MergeReadiness(Aw.Meta.Core.Ports.IMetaConfig! config, Aw.Meta.Core.Ports.IGateStore! gates, Aw.Meta.Core.Coordination.RepoCommands! repo) -> void
 Aw.Meta.Core.Coordination.MetaSession
 Aw.Meta.Core.Coordination.MetaSession.MetaSession(Aw.Meta.Core.Ports.IMessageStore! messages, Aw.Meta.Core.Ports.IMetaConfig! config) -> void
 Aw.Meta.Core.Coordination.MetaSession.Resolve(Aw.Meta.Core.Ids.SessionId session, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Config.TeamConfig?>!>

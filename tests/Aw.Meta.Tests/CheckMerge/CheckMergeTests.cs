@@ -1,6 +1,6 @@
-#pragma warning disable CA1822, IDE0052 // red stage: removed when the service takes its ports
 using System.Globalization;
 using Aw.Meta.Core;
+using Aw.Meta.Core.Coordination;
 using Aw.Meta.Core.Gate;
 using Aw.Meta.Features.CheckMerge;
 using Aw.Meta.Testing;
@@ -11,7 +11,7 @@ public sealed class CheckMergeTests
 {
     private readonly MetaWorld _world = new();
 
-    private CheckMergeService Service() => new();
+    private CheckMergeService Service() => new(new MergeReadiness(_world.Config, _world.Gates, _world.Repo));
 
     private async Task SaveGate(string head, string main, string[] scopes, GateVerdict verdict = GateVerdict.Pass, int pr = 190, params GateStep[] red)
     {
