@@ -1836,4 +1836,29 @@ public sealed class ShellWindowTests : IDisposable
         Assert.NotEqual(shell.SheetSubject, peer.GetName(), StringComparer.Ordinal);
         Assert.Equal(shell.SheetSubject, title.GetVisualDescendants().OfType<TextBlock>().Single().Text);
     });
+
+    // W5 (a11y-2): a page change with focus already on the Page region raises a fresh focus event on it, so the new page is
+    // announced; from a control on the old page, focus lands on the region once (the existing rule).
+    [Theory]
+    [InlineData("Home", "System", false, 1)]
+    [InlineData("System", "Home", true, 1)]
+    [InlineData("Home", "Work", true, 1)]
+    public Task A_page_change_with_focus_on_the_page_region_raises_one_fresh_focus_event(string from, string to, bool startOnRegion, int events) => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        shell.GoTo(Enum.Parse<PageId>(from));
+        Settle(window);
+        var page = window.Get<Border>("Page");
+        var start = startOnRegion ? page : Named<Control>(window, "HealthStrip");
+        Assert.True(start.Focus(NavigationMethod.Tab));
+        var raised = 0;
+        window.AddHandler(InputElement.GotFocusEvent, (_, e) => raised += ReferenceEquals(e.Source, page) ? 1 : 0, RoutingStrategies.Bubble);
+
+        shell.GoTo(Enum.Parse<PageId>(to));
+        Settle(window);
+
+        Assert.Same(page, Focused(window));
+        Assert.Equal(events, raised);
+    });
 }
