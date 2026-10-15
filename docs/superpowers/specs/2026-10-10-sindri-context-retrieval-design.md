@@ -7,6 +7,11 @@ block and a provider-neutral model port. A second batch (X19–X33) gates every 
 defines repo scope (§3), puts the model port in this package's Core (§4), retires `SND-CONTEXT-041`, aligns exit
 codes with S1 (§8.6), adds ledger events, waits for API P1 and P6 (stage table), and links items to Linear (Phase 6).
 This is the written spec for review; it goes to `/specToProvenPR` once approved.
+Revision note (2026-10-14): the UI screens spec's edits E-26, E-27 and E-31 (context half) are written in
+(`2026-10-13-sindri-ui-screens-design.md` §4.4, §6; decision R8-11); sections: §8.5 (surfaces: `lenses`, `filemap`,
+`map/proposals`, `context_lenses`), §8.6 (`SND-CONTEXT-031`, `-032`; `-003` reused), §8.7 (scoping proposals and the
+lifecycle), new §8.9 (the lenses result and the file map), §6.1 (the `propose` override action), Phases 4 and 9. Where
+these differ from earlier text the UI spec wins (X52).
 It refines the factory addendum §17.3 (the context graph), §17.29.2 and §17.29.3 (the engine, and access from
 sessions) and §17.17 Q2 (component options), for build step 3 of §17.29.4 (stage S3 in `docs/csharp/sindri.md`).
 Where they disagree, this document wins for the context retrieval engine.
@@ -280,7 +285,7 @@ step reaches it).
 provenance `deterministic | model | human` with a confidence; evidence `SourceRef[]`; and `computedAt` (map version,
 commit sha).
 
-**Override layer** (`map_override`): accept, reject, rename, merge, move, add and delete, applied over every rebuild.
+**Override layer** (`map_override`): accept, reject, rename, merge, move, add, delete and **propose** (a proposal from a scoping run, §8.7; written by `service:engine` with the run as evidence, never confirmed until a person accepts it), applied over every rebuild.
 - An `EntryKey()` version bump ships a **key migration** that writes old → new aliases for every node, so overrides
   and links follow the rename; a golden test asserts no override is orphaned by a migration.
 - **Rejections are identified without versions:** (proposal kind, target key, evidence canonical keys and span
@@ -432,9 +437,9 @@ All of them call `IContextEngine`; they differ only in transport.
 
 | Surface | Shape | Phase |
 |---|---|---|
-| **HTTP** | `GET /sindri/context/query?q=&node=&item=&symbol=&depth=&budget=&draft=`; `GET /sindri/context/node?key=`; `GET /sindri/context/neighbors?key=&depth=`; `GET /sindri/context/path?from=&to=`; `POST /sindri/context/map/import`; `GET /sindri/context/map/export`; `POST /sindri/context/map/build`; `GET /sindri/context/map`; `GET /sindri/context/map/review`; `POST /sindri/context/map/review` (`protected`, §3); `POST /sindri/context/map/promote`; `GET /sindri/context/sources`; `POST /sindri/context/sources/sync`. Each `POST` is a command with a catalog row and the class API §3.7 gives it. Keys travel in query strings or bodies, never in the path (they hold `/` and `#`). Errors are ProblemDetails with the `SND-CONTEXT-*` code as `title` | 1 (query, sources), 3–4 (the rest) |
-| **CLI** | `$SINDRI context query "<q>" [--draft] [--node K \| --item ENG-1 \| --symbol S] [--depth N] [--budget N] [--json]`; `context show <key>`, `neighbors <key> [--depth N]`, `path <a> <b>`, `map import <file> \| export <file> \| build \| status \| promote \| review [--export F \| --apply F \| --history \| --undo ID]`, `sources status \| sync`, `eval backtest \| probes \| map` | as HTTP |
-| **MCP** | The shared Sindri endpoint `/sindri/mcp` (API §8): Streamable HTTP on the API port, **stateless mode** (so a Sindri restart doesn't break a session), behind the API guard. Read-only tools: `context_query {q, node?, item?, symbol?, depth?, budget?}`, `context_node {key}`, `context_neighbors {key, depth?}`, `context_sources {}`. Results: `structuredContent` with the result JSON, and a short text summary (anchors, counts, conflicts, degraded; not the full text a second time). Errors map to tool errors carrying the `SND-CONTEXT-*` code and fix. The `context_*` tools are off when `context.sessions.enabled` is false; the endpoint itself stays up for the `sindri_*` tools | 1 (`context_query`, `context_sources`), 3 (the rest) |
+| **HTTP** | `GET /sindri/context/query?q=&node=&item=&symbol=&depth=&budget=&draft=`; `GET /sindri/context/node?key=`; `GET /sindri/context/neighbors?key=&depth=`; `GET /sindri/context/path?from=&to=`; `GET /sindri/context/lenses?anchor=&depth=&draft=` (§8.9); `GET /sindri/context/filemap?repo=&path=&draft=` (§8.9); `POST /sindri/context/map/import`; `GET /sindri/context/map/export`; `POST /sindri/context/map/build`; `GET /sindri/context/map`; `GET /sindri/context/map/review`; `POST /sindri/context/map/review` (`protected`, §3); `POST /sindri/context/map/promote`; `POST /sindri/context/map/proposals` and `GET /sindri/context/map/proposals?run=` (a scoping run's surfaces as draft proposals, and their graph status against the current map, §8.7); `GET /sindri/context/sources`; `POST /sindri/context/sources/sync`. Each `POST` is a command with a catalog row and the class API §3.7 gives it (`lenses` and `filemap` are `query`, repo-scoped for sessions; `POST map/proposals` is `job`: it writes only drafts, like `map build`). `lenses` and `filemap` have no workflow block; `filemap` has no MCP tool (the app is its only client). Keys travel in query strings or bodies, never in the path (they hold `/` and `#`). Errors are ProblemDetails with the `SND-CONTEXT-*` code as `title` | 1 (query, sources), 3–4 (the rest; `lenses`, `filemap` file level and `map/proposals` in 4, the symbol column of `filemap` and `lenses` in 9) |
+| **CLI** | `$SINDRI context query "<q>" [--draft] [--node K \| --item ENG-1 \| --symbol S] [--depth N] [--budget N] [--json]`; `context show <key>`, `neighbors <key> [--depth N]`, `path <a> <b>`, `lenses <key> [--depth N] [--draft] [--json]`, `filemap [--repo R] [--path P] [--unmapped] [--draft] [--json]`, `filemap accept <link-id> \| reject <link-id>` (one `map_override` row each, through `map review`'s apply path), `map import <file> \| export <file> \| build \| status \| promote \| review [--export F \| --apply F \| --history \| --undo ID] \| proposals --run ADDR`, `sources status \| sync`, `eval backtest \| probes \| map` | as HTTP |
+| **MCP** | The shared Sindri endpoint `/sindri/mcp` (API §8): Streamable HTTP on the API port, **stateless mode** (so a Sindri restart doesn't break a session), behind the API guard. Read-only tools: `context_query {q, node?, item?, symbol?, depth?, budget?}`, `context_node {key}`, `context_neighbors {key, depth?}`, `context_lenses {anchor, depth?, draft?}`, `context_sources {}`. Results: `structuredContent` with the result JSON, and a short text summary (anchors, counts, conflicts, degraded; not the full text a second time). Errors map to tool errors carrying the `SND-CONTEXT-*` code and fix. The `context_*` tools are off when `context.sessions.enabled` is false; the endpoint itself stays up for the `sindri_*` tools | 1 (`context_query`, `context_sources`), 3 (the rest), 4 (`context_lenses`) |
 | **Workflow block** | `input.context.retrieve`, a `StepInput` block (engine §2): fills injection-plan sections before a recipe Step starts | 10 |
 
 **Telling sessions to use it:** Phase 1 ships an agent-rules snippet in `docs/sindri/context.md` for the work repo's
@@ -461,12 +466,16 @@ error (the profile is invalid, the store can't open, every source is down); **75
 | `SND-CONTEXT-011` | **Every** source is unavailable (exit 2, not "no results") | `context sources status`; start Onyx or check the repos |
 | `SND-CONTEXT-020` | MCP is disabled (`context.sessions.enabled: false`); the `context_*` tools answer this code and `context sources status` says so | Enable it in the profile and approve |
 | `SND-CONTEXT-030` | No map yet | `context map import` or `context map build` |
+| `SND-CONTEXT-031` | `draft` requested on `lenses` or `filemap` and no draft map exists (exit 1; HTTP 404) | `context map build`, then retry; or drop `--draft` |
+| `SND-CONTEXT-032` | `repo` (or an anchor's repo) is not in the profile's repos, or is outside the session caller's `X-Sindri-Repo` scope (exit 1; HTTP 404, the same answer for both so scope is not revealed) | Add the repo to the profile and `profile approve`, or use a listed repo |
 | `SND-CONTEXT-040` | The heavy-job lock stayed busy | Retry; the message names the holder |
 | `SND-CONTEXT-041` | Retired: applying a review, `import` and `promote` are `protected` commands and use the engine's challenge, refused with `SND-AUTH-002` | — |
 | `SND-CONTEXT-042` | Labeling disabled or over its token cap | Enable `context.labeling` or raise `maxTokens` |
 | `SND-CONTEXT-043` | No entry in the review file matches the latest draft | `map review --export` again |
 | `SND-CONTEXT-050` | A source's token lacks a needed read scope | Recreate the key read-only with the listed scope |
 | `SND-CONTEXT-055` | Onyx not on a loopback address, or its pinned version differs | §8.8 |
+
+`lenses` and `filemap` reuse `SND-CONTEXT-003` for an anchor, node or path that is not in the map (UI E-26's "anchor not found"; a second code for the same condition would duplicate it), with `suggestedAnchors` in the problem details.
 
 The full list, with HTTP status and MCP mapping, is kept in `docs/csharp/sindri-context.md` as phases add codes
 (`docs/sindri/errors.md` is generated from the TS build).
@@ -489,6 +498,7 @@ map v13 (draft, a41b07d) · 46 proposals · 3 orphaned links
 - **Map version lifecycle:** `map build` writes a `draft`; queries read the `current` version (`--draft` reads the draft);
   `map review` works on the latest draft; only `map promote`, a `protected` command (API §3.7), makes it `current`. An empty review queue, from review or from
   a build, only marks the draft ready to promote;
+  a scoping run's proposals (below) join the latest draft, or open one if none exists, and never `current`;
   `map import` writes `current` directly and, like `promote`, is a `protected` command (API §3.7); doctor `context:map` warns with the draft's age and how many commits `current`
   is behind HEAD; and the old
   one `retained`. `--apply` works on the latest draft only; entries whose targets still match are applied and the rest
@@ -502,6 +512,21 @@ map v13 (draft, a41b07d) · 46 proposals · 3 orphaned links
 - Quitting mid-queue keeps every decision made so far, and the next `map review` resumes the rest.
 - `map review --undo <override-id>` reverses one decision (a reject included), itself recorded as an override.
 - Rename, merge, move, add and delete are also available as `map review` subcommands for nodes outside the queue.
+- **Scoping proposals (UI E-31, decision R8-11; the scoping recipe spec owns the run's half).** A scoping run
+  submits the surfaces its brief cites that have no node with `POST /sindri/context/map/proposals`
+  (`{run, repo, surfaces[{label, kind, parent?, evidence[], briefQuote?}]}`; CLI `context map proposals --run ADDR`).
+  Each surface with a kind and evidence becomes a `propose` row in `map_override` (who: `service:engine`; evidence:
+  the run's address as a `SourceRef` plus the brief quote), applied to the **latest draft**; if none exists the call
+  opens one as a copy of `current`, so `current` is never written. Identity is (kind, label key, evidence canonical
+  keys), so repeating the call is idempotent and a rejected proposal is not re-proposed. A proposal is `model`
+  provenance, unconfirmed, and appears in the queue ordered like any other; accept makes it a node in the draft, and
+  it reaches `current` only through `map promote`. A `map build` replaces the draft and re-applies the pending
+  `propose` rows over it, like every override.
+- **Graph status** of a scoped surface is computed against the **current** map, at call time: `mapped` (resolves to a
+  node in `current`), `new` (no such node, but a proposal for it exists in the latest draft, from this run or
+  another), `unmapped` (cited in the brief, no node and no proposal: no kind or no evidence to propose one).
+  `GET /sindri/context/map/proposals?run=ADDR` recomputes it for the run's surfaces, so a promoted proposal turns
+  from `new` to `mapped` without re-running the scope. The POST returns the same statuses.
 
 ### 8.8 Profile and setup
 
@@ -542,6 +567,104 @@ product's spaces); an Onyx API key with the narrowest role that can search, stor
 `context:onyx` checks the loopback bind, the version and that the key can search. The no-cloud-provider and telemetry-off
 settings can't be read with a search-only key, so the setup doc lists them as a manual check on each Onyx version change. First indexing time is reported by
 `context sources status` from Onyx's own connector status.
+
+### 8.9 Lenses and the file map (UI E-26, E-27)
+
+Two reads for the app's Context page (UI §4.4), built from the same stored graph as `neighbors` and the cascade. Neither
+fetches record text: the intent band reads stored `mentions`, `decides`, `quotes` and `supersedes` edges and the
+`snippet` cache (scrubbed citation snippets, §6.2), so an Onyx or Linear outage degrades only the freshness of a
+citation (`cites[].state`), never the call.
+
+**`lenses`: the three bands for one anchor.** `GET /sindri/context/lenses?anchor=&depth=&draft=`; `anchor` is a node
+key, name or alias (an unknown one is `SND-CONTEXT-003`); `depth` defaults to `context.cascadeDepth`; `draft=true`
+reads the latest draft for the product band and its edges (`SND-CONTEXT-031` when there is none), `current` otherwise.
+Each band is capped at 100 items with `truncated` set. The anchor's **own scope** is §6.1's step 1 (the anchor, its
+descendant features, their surfaces and those surfaces' actions).
+
+```json
+{ "schemaVersion": 1, "anchor": { "key": "feature:tabs.tab-manager", "label": "Tab manager", "kind": "feature" },
+  "mapVersion": "v13@7c3e1a2", "draft": false, "depth": 2, "asOf": "2026-10-14T09:12:40Z",
+  "bands": {
+    "intent": { "records": [{ "key": "record:linear:issue/…", "label": "ENG-482", "source": "linear",
+                  "mentions": ["feature:tabs.tab-manager"], "trust": "untrusted", "state": "current", "cites": ["C1"] }],
+                "decisions": [{ "node": "decision:…", "text": "panes restore per window, not per workspace",
+                  "decides": ["feature:tabs.tab-manager"], "supersedes": ["decision:…"], "quotes": "C1",
+                  "provenance": "model", "confirmed": false }],
+                "counts": { "records": 5, "decisions": 2, "orphaned": 1 }, "truncated": false },
+    "product": { "own": [{ "node": "action:tab-manager.restore-layout", "kind": "action", "provenance": "deterministic", "confirmed": true }],
+                 "neighbors": [{ "node": "feature:layout.split-pane", "kind": "feature", "depth": 1, "path": ["part-of feature:layout"] }],
+                 "affects": [{ "node": "feature:session.restore", "kind": "feature", "depth": 2, "path": ["…"] }],
+                 "counts": { "own": 7, "affects": 3 }, "truncated": false },
+    "code": { "files": [{ "path": "src/tabs/Manager.ts", "implements": ["feature:tabs.tab-manager"], "tests": [],
+                "provenance": "deterministic", "confidence": 1.0, "confirmed": true, "suggested": false }],
+              "symbols": { "state": "unavailable", "reason": "index not built", "items": [] },
+              "counts": { "files": 6, "symbols": 0, "featuresWithNoCode": 1 }, "truncated": false } },
+  "edges": [{ "from": "record:linear:issue/…", "to": "decision:…", "type": "quotes", "provenance": "deterministic", "confirmed": true },
+            { "from": "code:src/session/restore.ts", "to": "feature:session.restore", "type": "implements",
+              "provenance": "model", "confidence": 0.74, "confirmed": false }],
+  "conflicts": [{ "kind": "supersedes | contradicts", "node": "feature:tabs.tab-manager", "decision": "decision:…",
+                  "other": "decision:… | C2", "summary": "…", "intent": ["C1"], "behavior": [] }],
+  "coverage": { "scope": 7,
+                "intent": { "covered": 5, "of": 7 }, "product": { "confirmed": 7, "of": 7 }, "code": { "implemented": 6, "of": 7, "level": "file" },
+                "gaps": [{ "node": "surface:dialog/restore-layout", "missing": ["code"], "note": "has a mention, no implements" }] },
+  "degraded": [], "cites": { "C1": { "key": "linear:issue/ENG-482", "permalink": "…", "trust": "untrusted", "state": "current" } } }
+```
+
+- **Intent band:** the records with a `mentions` edge, and the decisions with a `decides` edge, to any node in the
+  own scope; orphaned links to scope nodes are counted (their repoint is in `map review`). Every item carries the
+  `provenance`, `confirmed`, `trust` and `cites` of §8.4.
+- **Product band:** `own` is the own scope, `neighbors` is what `neighbors` returns at `depth`, `affects` is the
+  cascade (§6.1) from the anchor; the same node appears once, in the first list that holds it.
+- **Code band:** files with `implements` and `tests` edges to any own-scope node. `symbols` is
+  `{"state": "unavailable", "reason": "index not built", "items": []}` until Phase 9, and from then `ok` with the
+  symbol items (`path#name`, their edges); a code index that exists but is stale says `"state": "stale"` with its age.
+- **`edges`** are the cross-band edges (`mentions`, `decides`, `quotes`, `supersedes`, `implements`, `tests`) among the
+  items above, so the app draws them without a second call.
+- **Conflicts:** a `decision` that `supersedes` another, or that contradicts a cited record (the §8.4 intent-versus-
+  behavior check, file level from Phase 4, symbol level from Phase 9), on the node it decides. The `contradicts` kind
+  is empty until the conflict stage (S-CF, §14 A-F13) lands; `supersedes` needs only the edges.
+- **Coverage** is over the own scope only: `intent.covered` counts scope nodes with a citation (`mentions` or
+  `decides`), `product.confirmed` counts those that are not model-only (`human`, or `deterministic`, or an accepted
+  override), `code.implemented` counts those with an `implements` edge (`level` is `file` until Phase 9). `gaps` lists
+  nodes missing a lens, with what is missing. The same numbers drive the map review queue's `Open gaps` filter.
+- **MCP** `context_lenses {anchor, depth?, draft?}` returns this JSON as `structuredContent` and a text summary
+  (anchor, band counts, conflicts, the coverage line, degraded). The CLI prints the three bands as headings and the
+  coverage block with every status as a word (§8.4's rules).
+
+**`filemap`: the repository tree with its features.** `GET /sindri/context/filemap?repo=&path=&draft=`: `repo` is a
+repo name in the profile (`SND-CONTEXT-032` otherwise); `path` is a directory in the repo at the map's commit (default
+the root; a path that is not there is `SND-CONTEXT-003`). It returns the **direct children** of `path`, each
+directory rolled up, and the app requests a subtree when the user expands it.
+
+```json
+{ "schemaVersion": 1, "repo": "agentic-workflow", "sha": "7c3e1a2", "mapVersion": "v13", "draft": false, "path": "src/",
+  "entries": [
+    { "path": "src/layout/", "type": "dir", "status": "mapped", "files": 9,
+      "features": [{ "key": "feature:layout", "provenance": "deterministic", "confirmed": true }],
+      "intent": { "records": 4, "decisions": 1 } },
+    { "path": "src/session/restore.ts", "type": "file", "status": "suggested",
+      "features": [{ "key": "feature:session.restore", "provenance": "model", "confidence": 0.74, "confirmed": false,
+                    "linkId": "edge:…" }],
+      "intent": { "records": 0, "decisions": 0 }, "symbols": { "state": "unavailable", "reason": "index not built" } },
+    { "path": "src/billing/", "type": "dir", "status": "unmapped", "files": 14, "features": [], "intent": null } ],
+  "unmapped": [{ "path": "src/billing/", "files": 14 }],
+  "suggested": [{ "linkId": "edge:…", "file": "src/session/restore.ts", "feature": "feature:session.restore", "confidence": 0.74,
+                  "evidence": ["linear:issue/ENG-482"] }],
+  "totals": { "files": 212, "mapped": 190, "suggested": 3, "unmapped": 19 } }
+```
+
+- `status` is `mapped` (at least one confirmed `implements` edge), `suggested` (only unconfirmed model edges), or
+  `unmapped` (none). A directory's status is the worst of its children, its `features` the confirmed ones its files
+  implement, and `intent` the distinct `mentions` and `decides` edges onto those features. `unmapped=true` (CLI
+  `--unmapped`) keeps only unmapped and suggested entries. Counts come from stored edges, not live sources.
+- `Propose features` on an unmapped directory is not a route: it is `map build` scoped to the path by the extractor
+  (Phase 4), and the app shows it as the command to run.
+- **Accept and reject of a suggested link** are `POST /sindri/context/map/review` with a single entry
+  `{action: "accept" | "reject", target: <linkId>}` (CLI `context filemap accept <link-id>` or `reject <link-id>`):
+  exactly one `map_override` row each, undoable with `map review --undo`. The route keeps the `protected` class of
+  §8.5 and §3, so the app presents it the way it presents any protected action.
+- **Phase 9** fills the `symbols` column of each file (the symbols it defines and the features each implements);
+  until then the field reads `index not built`. The file-level tree is complete without it.
 
 ## 9. Evaluation
 
@@ -1089,8 +1212,18 @@ on the fixture app.
   `ReviewMap` (§8.7, interactive and `--export`/`--apply`); the `symbol` shape in its file-path form (`--symbol
   <path>`, MCP `symbol`); `IHeavyJobLock`; `ILabeler` over the provider port (the `claude` CLI adapter until #156)
   adapter; a scheduled rebuild. (The intent-vs-file conflict check is stage S-CF, §14 A-F13.)
+- **UI edits landing here (UI §6, §8.1):** E-26 (`GetLenses`, §8.9: the three bands, edges, conflicts and coverage for an
+  anchor; HTTP `lenses`, CLI `context lenses`, MCP `context_lenses`), E-27's file-level form (`GetFileMap`, §8.9;
+  HTTP `filemap`, CLI `context filemap`, with accept and reject through `ReviewMap`'s apply path; the `symbols` column
+  is empty with `index not built`), and E-31's context half (`ProposeFromScope`, `GET`/`POST map/proposals`, the
+  `propose` override action and graph status `mapped | new | unmapped`, §8.7; the scoping recipe spec owns the run
+  that calls it). Codes `SND-CONTEXT-031` and `-032`. Tests: lenses on the fixture map (a superseding decision, a
+  model-suggested file link, coverage counts equal to `context map status`), `draft` with and without a draft,
+  filemap rollups and unmapped directories, one `map_override` row per accept or reject, a proposal that survives a
+  rebuild, is idempotent, is not re-proposed after a reject and never changes `current`.
 - **Size:** M (stage **S-4**, wave 3: starts on S-3b; `map build`'s API P6 job route is added in the same PR when P6
-  merges, before it goes ready; one PR even if it measures L; owner 2026-10-12).
+  merges, before it goes ready; one PR even if it measures L; owner 2026-10-12; the UI edits above, `lenses`, `filemap` and
+  `proposals`, ride in the same PR).
 - **S1:** `IScheduledService`.
 - **Signal:** `$SINDRI context map build` prints proposed nodes with provenance, confidence and their files;
   `$SINDRI context map review` bulk-accepts deterministic ones and accepts or rejects model ones; a second build keeps
@@ -1157,7 +1290,9 @@ on the fixture app.
 
 - **Goal:** symbol-level implementation from the C# code index block; intent-vs-behavior conflicts at symbol level.
 - **Files:** `code` adapter over the block's read-only db, symbol-level `implements` refining file-level links,
-  `symbol` shape at symbol granularity, the symbol-level conflict check.
+  `symbol` shape at symbol granularity, the symbol-level conflict check; **E-27's symbol column and E-26's `symbols`
+  band** (§8.9): the `symbols` objects of `lenses` and `filemap` change from `index not built` to `ok`, and
+  `coverage.code.level` from `file` to `symbol`.
 - **Size:** S–M.
 - **S1:** none; **depends on the code index block**.
 - **Signal:** `$SINDRI context query --symbol src/layout/SplitPane.ts:setOrientation --json` returns the features it

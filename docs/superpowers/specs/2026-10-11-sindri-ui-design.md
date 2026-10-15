@@ -1,6 +1,7 @@
 # Sindri UI app design: the control plane's views, actions and launching sessions
 
 Status:
+- **Revision 8 note (owner session, 2026-10-13):** the app's contents were re-evaluated around five questions. `2026-10-13-sindri-ui-screens-design.md` supersedes this spec's §3, §4.2–§4.8, §10, §16, §18 and §19 with seven pages (Home · Workflows · Work · Recipes · Context · Agents · System), a recipe-driven instance frame, the context lens stack and phases U3', U5', U8–U13. Everything else here stands and is referenced from there.
 - **Revision 7 note (owner, 2026-10-11; README X55):** tmux owns every agent session and Warp attaches to it, so
   **Attach joins the live agent** and the human can type into whatever Step is running; the earlier "Sindri can't see
   inside Warp" limit in §6.2 and §6.6 no longer applies, and the `process` target kind is retired (API §8.1 rev 8).
