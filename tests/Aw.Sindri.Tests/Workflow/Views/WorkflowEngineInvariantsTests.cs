@@ -85,7 +85,12 @@ public sealed partial class WorkflowEngineInvariantsTests
 
         if (state.RunsAtDesk && !state.Desk)
         {
-            failures.Add(M($"{at}: no Block has an agent runtime until P8, so an active state is served as a desk task (WF 12, W5, W20)"));
+            failures.Add(M($"{at}: a state of a recipe under recipes/ has no agent runtime until P8, so it is served as a desk task (WF 12, W5, W20)"));
+        }
+
+        if (state.AgentBlock is not null && (state.Desk || state.Kind != StateKind.Active || state.Block is not null))
+        {
+            failures.Add(M($"{at}: an agent-runtime Block belongs to an active, non-desk state of a fixture-only recipe"));
         }
 
         if (state.Block is { } block && _catalog.Find(BlockId.From(block)) is not { DeskCapable: true })

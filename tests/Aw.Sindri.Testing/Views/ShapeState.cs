@@ -17,17 +17,18 @@ namespace Aw.Sindri.Testing.Views;
 /// <param name="OnParked">A child wait's reaction to a parked child.</param>
 /// <param name="Block">The Step block an active state uses, where the recipe is a file under recipes/.</param>
 /// <param name="ChildRecipe">The recipe a child wait starts.</param>
+/// <param name="AgentBlock">The agent-runtime Block an active state of a fixture-only recipe names (the P8-era product the screens fixture shows); null for the recipes that exist under recipes/, which run at the desk until P8.</param>
 public sealed record ShapeState(string Id, int? Order, string? BranchOf = null, bool Terminal = false, bool Desk = false, bool Child = false, bool Wait = false,
-    ShapeTimeout? Timeout = null, int? BudgetTokens = null, OnParked? OnParked = null, string? Block = null, string? ChildRecipe = null)
+    ShapeTimeout? Timeout = null, int? BudgetTokens = null, OnParked? OnParked = null, string? Block = null, string? ChildRecipe = null, string? AgentBlock = null)
 {
     /// <summary>The state kind the declaration has.</summary>
     public StateKind Kind => Terminal ? StateKind.Terminal : Child || Wait ? StateKind.Wait : StateKind.Active;
 
     /// <summary>
-    /// The engine runs the state on the desk runtime: an active state, since no Block has an agent runtime until P8 (WF 12 table: the
-    /// Steps are deskCapable; W5, W20).
+    /// The engine runs the state on the desk runtime: an active state of a recipe that exists under recipes/ (its Block is deskCapable and has
+    /// no agent runtime until P8; WF 12 table, W5, W20). A fixture-only recipe names an agent-runtime Block instead and runs the state as an agent.
     /// </summary>
-    public bool RunsAtDesk => Kind == StateKind.Active;
+    public bool RunsAtDesk => Kind == StateKind.Active && AgentBlock is null;
 
     /// <summary>The timeout the engine serves: at the desk at least the desk floor, and always ending in park (W20).</summary>
     public ShapeTimeout? Served => Timeout is null ? null : RunsAtDesk ? new ShapeTimeout(DeskTimeouts.Wait(new TimeoutSpec(RecipeDuration.From(M(Timeout.After)), Timeout.Then), DeskTimeouts.DefaultFloor), TimeoutAction.Park) : Timeout;
