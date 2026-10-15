@@ -1,6 +1,4 @@
-namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
-
-#pragma warning disable MA0182 // until the shell places it (U3' T5)
+namespace Aw.Sindri.Ui.ViewModels.Shell;
 
 /// <summary>
 /// The one polite live region's line when rows arrive (UI spec §5): "N now need you", once for each rise in the count. A

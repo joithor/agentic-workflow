@@ -1,9 +1,7 @@
 using Aw.Sindri.Ui.Platform;
-using Aw.Sindri.Ui.ViewModels.Shell;
+using Aw.Sindri.Ui.ViewModels.NeedsYou;
 
-namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
-
-#pragma warning disable MA0182 // until the shell places it (U3' T5)
+namespace Aw.Sindri.Ui.ViewModels.Shell;
 
 /// <summary>
 /// What the needs-you rows add up to outside the list (UI spec §5): the window title, the dock or taskbar badge, the tray
