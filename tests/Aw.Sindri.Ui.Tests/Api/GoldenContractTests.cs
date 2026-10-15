@@ -35,8 +35,13 @@ public sealed class GoldenContractTests
         ["items-id-close"] = As<CommandAcceptedView>,
     };
 
-    // Routes the app never calls yet: stop is Health's (U4), profile approve is protected (the app shows the CLI, §6.5), and the services, profile and views-rebuild routes are the later pages' (U2+).
-    private static readonly HashSet<string> _notRead = new(StringComparer.Ordinal) { "stop", "profile-approve", "services", "profile", "views-rebuild" };
+    // Routes the app never calls yet: stop is Health's (U4), profile approve is protected (the app shows the CLI, §6.5), the profile route is a later page's (U2+), and the
+    // rev-8 workflow views (API spec section 3.8) are read by the UI lanes that build on them (E-20, E-22, E-23).
+    private static readonly HashSet<string> _notRead = new(StringComparer.Ordinal)
+    {
+        "stop", "profile-approve", "profile",
+        "workflow-instances", "workflow-instance", "workflow-instance-fact", "workflow-status", "workflow-recipe",
+    };
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
