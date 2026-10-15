@@ -13,6 +13,9 @@ public static class AnchorMatch
 {
     private const int MaxSuggestions = 5;
 
+    /// <summary>The most keys an error's extension list holds (the host cuts longer arrays).</summary>
+    private const int MaxListed = 100;
+
     private static readonly HashSet<string> _small = new(StringComparer.Ordinal)
     {
         "a", "an", "and", "are", "as", "at", "be", "by", "can", "do", "does", "done", "for", "from", "how", "i", "if", "in", "is", "it", "its", "of", "on",
@@ -42,13 +45,17 @@ public static class AnchorMatch
 
         if (byLabel.Count > 1)
         {
-            return ContextErrors.AmbiguousAnchor.With(
-                $"'{Shown(trimmed)}' is the name of {byLabel.Count} nodes: {string.Join(", ", byLabel.Select(n => n.Key.Value))} (fix: ask by key)");
+            return ContextErrors.AmbiguousAnchor
+                .With($"'{Shown(trimmed)}' is the name of {byLabel.Count} nodes: {string.Join(", ", byLabel.Select(n => n.Key.Value))} (fix: ask by key)")
+                .WithExtension("candidates", [.. byLabel.Take(MaxListed).Select(n => n.Key.Value)], SettingsJsonContext.Default.ListString);
         }
 
         var suggested = Suggest(graph, Words(trimmed), except: []);
         var hint = suggested.Count == 0 ? "sindri context map status" : "try " + string.Join(", ", suggested.Select(k => k.Value));
-        return ContextErrors.UnknownAnchor.With($"no node is named '{Shown(trimmed)}' (fix: {hint})");
+        var unknown = ContextErrors.UnknownAnchor.With($"no node is named '{Shown(trimmed)}' (fix: {hint})");
+        return suggested.Count == 0
+            ? unknown
+            : unknown.WithExtension("suggestedAnchors", [.. suggested.Take(MaxListed).Select(k => k.Value)], SettingsJsonContext.Default.ListString);
     }
 
     /// <summary>The nodes a question names by their whole label, and others it comes close to.</summary>

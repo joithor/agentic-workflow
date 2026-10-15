@@ -103,7 +103,7 @@ and the status reads "never refreshed".
 |---|---|---|---|
 | `SND-CONTEXT-001` | Invalid (400) | 2 | The profile's `context:` section is invalid; the message starts with the key path |
 | `SND-CONTEXT-002` | Invalid (400) | 2 | A configured source isn't set up, or its secret pointer doesn't resolve (later stages) |
-| `SND-CONTEXT-003` | NotFound (404) | 1 | Unknown anchor, or a record or decision linked only to nodes outside a session's repo scope (the same answer) |
+| `SND-CONTEXT-003` | NotFound (404) | 1 | Unknown anchor, or a record or decision linked only to nodes outside a session's repo scope (the same answer). When the graph has near misses, the problem body also has the top-level member `suggestedAnchors` (an array of at most 100 node keys, in scope for the caller; the detail text still says `try …`) |
 | `SND-CONTEXT-004` | Unavailable (503) | 2 | The store can't be opened or migrated (the message keeps the AW-DATA code) |
 | `SND-CONTEXT-005` | Invalid (400) | 1 | A map file or an output path inside a git worktree (links resolved) |
 | `SND-CONTEXT-006` | Invalid (400) | 1 | The question is invalid: no words, two shapes, depth or budget out of range |
@@ -370,7 +370,7 @@ routes through the real pipeline (preview, protected import and its refusals, ev
 |---|---|---|---|
 | `SND-CONTEXT-035` | Invalid (400) | 1 | The probe file is invalid (shape, unknown key, duplicate or non-slug id, empty, wordless or over-long question (6000 characters percent-encoded), schema version); key path given; nothing run |
 | `SND-CONTEXT-036` | NotFound (404) | 1 | No probe file: the named one doesn't exist, or none was named and `context/eval/probes.json` doesn't exist |
-| `SND-CONTEXT-037` | Conflict (409) | 1 | A node name matches several nodes; the message lists their keys (fix: ask by key) |
+| `SND-CONTEXT-037` | Conflict (409) | 1 | A node name matches several nodes; the message lists their keys (fix: ask by key); the problem body also has `candidates`, an array of at most 100 keys the caller may see |
 | `SND-CONTEXT-038` | Conflict (409) | 1 | A probe run scored lower than the baseline of the same file (its newest complete run that did not regress) in precision@5 or citation correctness, or a probe returned more absent nodes than it did there |
 
 039 is reserved. A depth (neighbors, query) or a budget that is out of range (depth 0–4, budget 1 or more) is `SND-CONTEXT-006` on every transport, and one that is not a whole number is 006 in the CLI (exit 1) and HTTP (MCP's binder answers `SND-CONTEXT-022` for an argument that isn't a 32-bit JSON integer, even one that is only too large), parsed once in `QueryRules.ParseDepth` and `ParseBudget`; the CLI also refuses a question or `--node` over `QueryRules.MaxEncodedText` (6000) characters once percent-encoded with 006 before sending, so Kestrel's 8 KB request line never answers 414; the CLI adds its own `--depth` or `--budget` hint; a graph read with no map reuses 030; a key, alias

@@ -33,7 +33,7 @@ public sealed class ContextErrorExtensionsApiTests
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task A_shared_label_carries_candidates_for_a_human_and_a_session_lists_only_its_in_scope_keys()
+    public async Task A_shared_label_carries_candidates_for_a_human_and_a_session_never_sees_out_of_scope_ones()
     {
         await using var host = await ContextMapApiTests.Approved(sessions: true, TestContext.Current.CancellationToken);
         var file = Path.Combine(host.Home, "ambiguous-map.yaml");
@@ -47,8 +47,9 @@ public sealed class ContextErrorExtensionsApiTests
 
         Assert.Equal((HttpStatusCode.Conflict, "SND-CONTEXT-037"), (human.Status, human.Code));
         Assert.Equal(["feature:layout.a", "feature:layout.b"], Strings(human.Body, "candidates"));
-        Assert.Equal((HttpStatusCode.Conflict, "SND-CONTEXT-037"), (scoped.Status, scoped.Code));
-        Assert.Equal(["feature:layout.a", "feature:layout.b"], Strings(scoped.Body, "candidates"));
+        Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-003"), (scoped.Status, scoped.Code));   // why: the session's scope holds neither node, so it never learns they share a name
+        Assert.DoesNotContain("feature:layout.", scoped.Body, StringComparison.Ordinal);
+        Assert.DoesNotContain("candidates", scoped.Body, StringComparison.Ordinal);
         Assert.Contains("feature:layout.a, feature:layout.b", JsonDocument.Parse(human.Body).RootElement.GetProperty("detail").GetString(), StringComparison.Ordinal);
     }
 
