@@ -73,14 +73,23 @@ internal sealed partial class QueueViewModel
     internal void ShowHeld(QueueScope scope)
     {
         var known = Navigable(scope).Select(r => r.Id).ToHashSet(StringComparer.Ordinal);
-        if (Release() && Navigable(scope).FirstOrDefault(r => !known.Contains(r.Id)) is { } first)
+        if (!Release(byPill: true))
         {
+            return;
+        }
+
+        if (Navigable(scope).FirstOrDefault(r => !known.Contains(r.Id)) is { } first)
+        {
+            // The user asked for these rows: focus goes to the first, and the selection pushed off the page is no cleared row.
+            Select(first.Id, scope);
             FocusRequested?.Invoke(this, new FocusRequestedEventArgs(first.Id, onlyIfLost: false));
         }
     }
 
-    // Shows what is held; false when nothing was.
-    private bool Release()
+    // Shows what is held; false when nothing was. The pill's press passes a selection it pushes off the page on without a word,
+    // a focus move or the key guard: the user asked for the rows, and ShowHeld moves focus onto the first of them (the rows
+    // it shows come in front of the selection, so a new row is always drawn).
+    private bool Release(bool byPill = false)
     {
         if (_held is not { } view)
         {
@@ -88,9 +97,10 @@ internal sealed partial class QueueViewModel
         }
 
         (_held, HeldCount) = (null, 0);
-        Apply(view);
+        Apply(view, byPill);
         return true;
     }
+
 
     /// <summary>`/`: opens the filter field.</summary>
     internal void OpenFilter() => IsFiltering = true;

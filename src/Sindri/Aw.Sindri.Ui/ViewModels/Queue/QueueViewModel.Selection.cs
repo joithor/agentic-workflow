@@ -71,7 +71,7 @@ internal sealed partial class QueueViewModel
     }
 
     // A row hidden by the filter is not gone: it is checked against the unfiltered view.
-    private void Keep(List<(string Id, string Group)> before)
+    private void Keep(List<(string Id, string Group)> before, bool byPill)
     {
         if (SelectedId is not { } id)
         {
@@ -88,7 +88,20 @@ internal sealed partial class QueueViewModel
             return;
         }
 
+        Clear(id, before, byPill);
+    }
+
+    // The selected row left the page: the selection passes to the next row (see Keep).
+    private void Clear(string id, List<(string Id, string Group)> before, bool byPill)
+    {
         var next = Successor(id, before);
+        if (byPill)
+        {
+            SelectedId = next?.Id;
+            Mark();
+            return;
+        }
+
         _spoken = _spoken is { } held ? Labels.NewAndCleared(held, id) : Labels.Cleared(id);
         SelectedId = next?.Id;
         _movedAt = clock.GetUtcNow();
