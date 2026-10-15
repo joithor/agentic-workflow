@@ -9,4 +9,5 @@ namespace Aw.Context.Core.Graph;
 /// <param name="Provenance">Who produced it (after overrides: an accepted node is human).</param>
 /// <param name="Confirmed">True when a human confirmed it.</param>
 /// <param name="Trust">Whether its text can be trusted.</param>
-public sealed record NodeFact(NodeKey Key, NodeKind Kind, string Label, Provenance Provenance, bool Confirmed, Results.Trust Trust);
+/// <param name="Confidence">0 to 1.</param>
+public sealed record NodeFact(NodeKey Key, NodeKind Kind, string Label, Provenance Provenance, bool Confirmed, Results.Trust Trust, double Confidence);

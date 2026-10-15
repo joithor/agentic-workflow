@@ -1,10 +1,12 @@
 using Aw.Context.Core;
+using Aw.Context.Core.Models;
 using Aw.Context.Features;
 using Aw.Context.Infrastructure;
 using Aw.Kernel.Json;
 using Aw.Kernel.Telemetry;
 using Aw.Sindri.Core.Registration;
 using Aw.Sindri.Features;
+using Aw.Sindri.Host.Models;
 using Aw.Sindri.Host.Registration;
 using Aw.Sindri.Infrastructure.Registration;
 using Aw.Sindri.Infrastructure.Workflows;
@@ -26,6 +28,8 @@ internal static class Composition
             .AddContextCore()
             .AddContextFeatures()
             .AddContextInfrastructure(ContextEnvironment(environment))   // context engine: $AW_SINDRI_HOME/context (compose edge); pointers resolve here
+            .AddContextLabeling()   // the labeling pass over IModelPort; a build asks it only when the approved profile turns 'context.labeling' on
+            .AddSingleton<IModelPort>(sp => new JudgeModelPort(new JudgeCatalog(environment, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<System.Text.Json.JsonSerializerOptions>()).Get))
             .AddSindriHost();
 
     /// <summary>

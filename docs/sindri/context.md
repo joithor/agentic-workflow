@@ -346,7 +346,7 @@ imports.
 ### Status and export
 
 ```bash
-$SINDRI context map status [--json]
+$SINDRI context map status [--anchor <key>] [--json]
 # map v2 current · aw-split-panes · created 2026-10-12T17:02:11.0000000+00:00
 # 20 nodes, 21 edges, 1 aliases, 1 decisions, 2 overrides; 0 orphaned overrides; 1 retained versions
 $SINDRI context map export [<name-or-path>] [--json]
@@ -421,7 +421,8 @@ feature's other surfaces, so a sibling such as "Pane resize" is never pulled in.
 in the profile (0–4, default 2), and `--depth` overrides it. Each affected node shows its shortest path (between equally deep paths, the one with the fewest `owns` steps, then key order), starting at the anchor and naming the real hops: the `owns` steps down through the anchor's own scope to the surface or action that writes or depends, then the state, dependency or flow hops. A bad `--depth` (not a whole number, or outside 0–4) is `SND-CONTEXT-006`.
 
 **A session sees only its repo.** A session sees only the nodes its repo implements (`implements` edges with file
-evidence in its `X-Sindri-Repo`) and the edges among them, so its cascade, neighbors and paths stay inside that set;
+evidence in its `X-Sindri-Repo`), the code files those edges start from, and the edges among them (so `lenses` shows its code band and
+`query --symbol <file>` resolves its files), so its cascade, neighbors and paths stay inside that set;
 anything else is `SND-CONTEXT-003`.
 
 ### Text questions find anchors too
@@ -432,7 +433,7 @@ $SINDRI context query "What else is affected if I change how split orientation w
 
 A question anchors on every node whose whole name it uses (case ignored, plurals and small words and a parenthesized kind
 such as `(command)` ignored; the most specific name wins), adds that node's `graph` and `affects` sections, and still
-searches the sources with the question's words. `suggestedAnchors` lists close names. With no map, the answer is S-1A's. `--draft` with no draft map is `SND-CONTEXT-030` (fix: drop `--draft`); drafts come with `context map build` (S-4).
+searches the sources with the question's words. `suggestedAnchors` lists close names. With no map, the answer is S-1A's. `--draft` with no draft map is `SND-CONTEXT-030` (fix: drop `--draft`); drafts come from `context map propose <file>` and the `context-rebuild` service (S-4).
 
 ### One node, its neighbors, a path
 
@@ -502,6 +503,154 @@ running (`SND-API-001`), unknown anchor or out of scope (`003`), a bad depth (`0
 `context eval probes`: `0` no regression · `1` a regression (`038`), or an invalid or missing probe file (`035`, `036`),
 or a worktree path (`005`) · `2` a tool error, or an incomplete run: any probe's query failed, and Sindri not running or
 session reads off make every probe fail, so they are exit 2 here, not 1.
+
+## S-4: proposing the map, reviewing it, lenses, the file map
+
+Sindri reads the repo and proposes the product map: deterministic anchors (command ids, keybindings, settings keys,
+routes, UI names) each tied to the file that defines it, graphify clusters as candidate features, and an optional
+model pass that names the clusters. The result is a **draft** map; you review it, and only `map promote` makes it
+`current`. Every decision is one `map_override` row, so it survives the next build.
+
+### Profile
+
+```yaml
+index:
+  denyPaths: ["vendor/**", "**/*.generated.ts"]   # paths extraction never reads, for every repo
+repos:
+  - { name: work-app, path: /path/to/work-app, index: { denyPaths: ["private/**"] } }   # this repo's own, added to the above
+context:
+  labeling: { enabled: false, maxTokens: 400000 }  # name clusters with a model; over the cap is SND-CONTEXT-042
+services:
+  context-rebuild: { every: 24h }                  # proposes the map on a cadence; runs only when named here
+```
+
+- `index.denyPaths` adds to the built-in secret globs (`.env*`, `*.pem`, `**/secrets/**` and the like) and never
+  replaces them. A denied path never reaches the recognizers, graphify, the labeler or the graph. A glob added after a map exists hides that path from every read (lenses, file maps, queries, export, `map status`, the review queue and its counts, the bulk accept, the review history, a scoping run's proposal statuses, the CLI, HTTP and MCP) as soon as the profile with the glob is approved: its code nodes, their links, the features only they implement (even one a person accepted), the surfaces only it produced, the record nodes of denied repo documents and the decisions quoting them, and any evidence that names it. A node a person rejected, deleted, merged away or accepted is cut like any other (the cut judges the stored map and the proposals together, before the overrides are applied), and a reject written before the glob still names its proposal after it. Items it hides are neither listed, decided nor counted by the review, and do not block a promote. The path leaves the stored map when a draft is promoted (a promote writes the cut map, whether the draft came from a build or from a proposal), and a rebuild after the glob writes its draft without it. Both also undo, in the same write as the cut map, the person's accept, rename, move and merge decisions about the nodes the cut removes (and merges and moves into a node it removed), under a marker that hides the undone row and its undo from every view, the review history and export included, so no name a denied file produced is listed after the cut; if the glob is removed later those items come back undecided. Rejects and deletes are not undone: once their node is gone they are satisfied (never an orphan, never blocking a promote), no view lists them while it is gone, and they stay in the log, so the item stays rejected if the node comes back. The retained versions from before the cut and the export files written before the glob keep their copy of the path on disk until the `context-purge` service (when it is named under `services:`) removes retained versions past the newest 20 and exports older than 14 days; without that service they stay, and `doctor` warns on `context:retention`. No read shows either. A glob is relative
+  to the repo root, uses `/`, and has no `..`; `profile validate` names the bad one (`repos.work-app.index.denyPaths[1]: …`).
+- Labeling is off by default. When on, it runs through your own agent CLIs (Claude Code, Codex or Cursor, in that order), which send the scrubbed file paths to their provider, as any session does; it never uses Judge's remote API. It asks the CLI to name each cluster from its file paths, scrubbed (with your `context.scrub.extraPatterns` too), in batches of twenty, inside `maxTokens`. If no CLI
+  answers, the build goes on with unnamed clusters and reports `degraded: labels`.
+- Clusters need graphify (pinned) under a working sandbox: `bwrap` on Linux, `sandbox-exec` on macOS. Without either,
+  the build still proposes the deterministic anchors and reports `degraded: clusters`; it is not an error. On Linux
+  with an AppArmor profile that blocks unprivileged user namespaces, `bwrap` fails and so do clusters until the
+  system allows them (`scripts/install-deps.sh` probes it and prints the fix).
+
+### Building a draft
+
+`context map build` is a job that waits for the API's job runtime (catalog row `BuildContextMap`, `pending:API-P6`):
+the CLI answers `SND-CLI-001` (exit 2) until then, and nothing runs a map build inside the command gate. Drafts come
+from two places meanwhile:
+
+- the `context-rebuild` service (name it under `services:`), which runs the same build on its cadence and records
+  `context.map.built`;
+- a scoping run's surfaces: `context map propose <file>` (below).
+
+A build takes a slot of the box-wide heavy-job lock (`$AW_STATE_DIR/locks/heavy-job.lock`, `.2` for the second slot,
+`AW_HEAVY_SLOTS`; the same directory the shell tools and `ui-evidence` use). If every slot stays held for 60 seconds
+it answers `SND-CONTEXT-040` (exit 75) naming the holder, and writes nothing. A second build keeps every decision you made
+(rejected nodes are not proposed again, accepted ones stay accepted) and re-applies pending proposals.
+
+### Reviewing
+
+```
+$ sindri context map review                      # at a terminal: the loop
+draft v14@0a1b2c3: 46 undecided. Skipping writes nothing; quitting keeps what you decided.
+Accept all 31 deterministic proposals at once? [y]es / [n]o, go through them one by one / [q]uit: y
+[1/15] Orientation · model 0.82 · feature:layout.split-pane.orientation · code:src/layout/SplitPane.ts
+  [a]ccept / [r]eject / re[n]ame / [m]ove / [s]kip / [q]uit: a
+```
+
+| Command | What it does | Class |
+|---|---|---|
+| `context map review` | At a terminal, the loop above; otherwise (or with `--list`, `--limit` or `--json`) the queue, read-only; `--limit N` caps each group (default 100), so `review --limit 500` lists and does not run the loop | query |
+| `review accept\|reject <node\|edge:id>` | Decide one proposal or one suggested file link | desk |
+| `review rename <node> <name>`, `review move <node> --under <node>` | Edit a proposal | desk |
+| `review --accept-deterministic` | Accept every deterministic proposal at once | desk |
+| `review --undo <id>[,<id>…]`, `--history` | Reverse one decision (a reject too); list the log with the ids. A reject or delete of a node the map no longer holds (cut by a deny glob, or no longer found by a build or import) counts as satisfied and isn't listed until the node returns, and it still applies then | desk, query |
+| `review --drop <id>`, `--repoint <id> --to <node>` | An orphaned override (its node vanished): drop it, or point it at another node | desk |
+| `review --export [<path>]` | Write the queue as a review file under `$AW_SINDRI_HOME/context/exports/` | query |
+| `review --apply <file>` | Apply a review file you edited | protected |
+| `review merge <node> --into <node>`, `add <node> <name> [--under <node>]`, `delete <node>` | Edit nodes outside the queue | protected |
+| `context map promote` | Make the draft the current map | protected |
+
+- **Desk** actions run from a terminal or the app: one `map_override` row each, Undo is the recovery, and a session
+  (an agent) is refused with `SND-AUTH-002`. **Protected** ones need you at a terminal: the command shows what it will do and a
+  challenge (`review apply-file 3f0c9a`, `promote map v14`), and you type it back. The app never runs them.
+- Skip writes nothing: the item stays in the queue, and quitting mid-queue keeps every decision made so far.
+- A review file (`--export`, then edit each entry's `decision`: `accept`, `reject`, `rename` with a label, `move` or `merge` with an `other`) is
+  applied to the latest draft: entries whose target still matches are applied, the rest are listed as skipped, and
+  `SND-CONTEXT-043` only when none matches. The file must be outside every git worktree (`SND-CONTEXT-005`).
+- `promote` refuses while any proposal is undecided (`SND-CONTEXT-046`; skipping does not decide), and with no draft. The
+  accepted proposals become nodes of the new version, the previous current version is retained, and `context.map.promoted` is recorded. Under a deny glob the promote also undoes the person's accept, rename, move and merge decisions about the nodes it cuts (one marked undo row each, in the same write as the cut map); rejects and deletes stay.
+- Deciding something that is already decided or gone is `SND-CONTEXT-047` (stale); `map review` lists the queue again.
+
+### Scoping proposals
+
+```
+$ sindri context map propose scope-1.json        # {"run": "scope-1", "repo": "work-app", "surfaces": [{"name": "Zoom", "kind": "feature"}, …]}
+Proposed into draft v14: 1 added, 1 already mapped, 0 rejected earlier; recorded as event 13
+$ sindri context map proposals --run scope-1
+run scope-1 · map v13 · draft v14
+  new       Zoom → feature:zoom
+```
+
+A scoping run (the scoping recipe) posts the surfaces its brief cites with `POST /sindri/context/map/proposals`. The terminal,
+the app and the engine's own services may call it (a `job` command run synchronously: it only writes draft rows); a session
+may not. Each surface with a key, or a kind and a name, becomes a `propose` row in the latest draft (opened as a copy of
+`current` when there is none); `current` is never written. The call is idempotent and never re-proposes what you rejected.
+`GET /sindri/context/map/proposals?run=` reports each proposed surface as `new` (only the draft has it), `mapped` (the
+current map has it: after a promote) or `unmapped` (you rejected it). The `POST` answers with the same per-surface list
+(`surfaces`, with each label, node key and status) beside its counts.
+
+### Lenses and the file map
+
+```
+$ sindri context lenses feature:tabs.tab-manager [--depth <0-4>] [--draft] [--json]
+lenses of feature:tabs.tab-manager · map v13
+intent (2): …
+product (7): …
+code (3):
+  src/tabs/TabGroups.ts  own  model 0.74  suggested  code:src/tabs/TabGroups.ts  edge:0123456789abcdef
+symbols: unavailable (index not built)
+conflict supersedes: decision:… over decision:…
+coverage: 5 of 7 in scope have a record, 7 confirmed, 6 implemented in code
+
+$ sindri context filemap --repo work-app --path src/ [--unmapped] [--draft] [--json]
+work-app src/ · map v13
+  layout/                      mapped     9 files  feature:layout
+  session/restore.ts           suggested  1 file
+  suggested code:src/session/restore.ts implements feature:session.restore 0.74  accept: sindri context filemap accept edge:…
+$ sindri context filemap accept edge:0123456789abcdef      # or reject: one override row, a desk action
+```
+
+- `lenses` reads the three bands of one node from the stored graph (no live source is called): the intent records and
+  decisions that mention or decide it, the product nodes it owns, neighbors and affects, and the code files that implement or test it.
+  A model-suggested file link shows as `suggested` until you accept it. `coverage` counts only the node's own scope. The symbol
+  column reads `index not built` until the code index exists. `--draft` reads the draft (`SND-CONTEXT-044` when there is none);
+  an unknown anchor is `SND-CONTEXT-003` with suggestions.
+- `filemap` lists the direct children of a path with a status word each: `mapped`, `suggested` or `unmapped` (a directory
+  takes the worst of its children). A repo that is not in the profile, or outside a session's repo, is `SND-CONTEXT-045` with
+  the same answer for both, so a scope never reveals what is outside it.
+- `context query --symbol <path>` resolves a file to the features it implements, with an `affects` section; an unknown file is `003`.
+- MCP: `context_lenses {anchor}` returns the lenses as `structuredContent` and a short summary (band sizes, conflicts,
+  coverage). It never reads the draft. Off while `context.sessions.enabled` is false (`SND-CONTEXT-020`).
+
+### Exit codes and errors (S-4)
+
+`0` done · `1` attention: not running, refused (`SND-AUTH-002`), the file in a worktree (`005`), sessions off (`020`), no map
+(`030`), labeling over its cap or off (`042`), no entry matches the review file (`043`), no draft (`044`), a repo outside the
+scope (`045`), promote refused (`046`), a stale review target (`047`) · `2` a tool error: extraction can't read the repo from git (`048`),
+the store, a usage error · `75` the heavy-job lock stayed busy (`040`).
+
+| Code | Meaning | Fix |
+|---|---|---|
+| `SND-CONTEXT-040` | The heavy-job lock stayed busy (names the holder) | Retry when the other job finishes |
+| `SND-CONTEXT-042` | Labeling is on and the pass would pass `maxTokens` | Raise `context.labeling.maxTokens` or turn labeling off |
+| `SND-CONTEXT-043` | No entry in the review file matches the latest draft | `review --export` again |
+| `SND-CONTEXT-044` | A draft is needed and none exists (`--draft`, or `map review`) | `context map propose <file>` or the `context-rebuild` service, then retry; or drop `--draft` |
+| `SND-CONTEXT-045` | The repo is not in the profile, or is outside the session's repo | Name a listed repo |
+| `SND-CONTEXT-046` | `promote` refused: no draft, undecided items, or the draft changed after you confirmed it | `context map propose <file>` or the `context-rebuild` service, then `map review`; review the new draft with `map review`, then run `promote` again if the draft moved |
+| `SND-CONTEXT-047` | The node or link was decided already or is gone, or `--undo` names an unknown or undone override | `map review` lists the queue; `--history` the ids |
+| `SND-CONTEXT-048` | Git can't read the repo at the commit | Fix the repo path or fetch the commit |
 
 ## S-5A: the onyx source, secret pointers, doctor `context:onyx`
 

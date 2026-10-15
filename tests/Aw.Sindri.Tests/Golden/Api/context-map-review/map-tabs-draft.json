@@ -1,0 +1,50 @@
+{
+  "draft": "v2",
+  "version": {
+    "number": 2,
+    "commit": null
+  },
+  "entries": [
+    {
+      "node": "code:src/tabs/TabGroups.ts",
+      "link": "edge:402b8bed42f6611c",
+      "group": "model",
+      "label": "src/tabs/TabGroups.ts implements Tab groups",
+      "provenance": "model",
+      "confidence": 0.74,
+      "impact": 1,
+      "files": [
+        "code:src/tabs/TabGroups.ts"
+      ],
+      "parent": "feature:tabs.tab-groups",
+      "trust": "untrusted"
+    },
+    {
+      "node": "feature:tabs.pinned-tabs",
+      "link": null,
+      "group": "orphaned",
+      "label": "rename Pinned tabs",
+      "provenance": "human",
+      "confidence": 1,
+      "impact": 0,
+      "files": [],
+      "parent": null,
+      "override": "ovr_291d0b35e26230e5",
+      "trust": "trusted"
+    }
+  ],
+  "decided": 0,
+  "proposals": 1,
+  "counts": {
+    "deterministic": 0,
+    "model": 1,
+    "orphaned": 1
+  },
+  "byKind": {},
+  "truncated": {
+    "deterministic": false,
+    "model": false,
+    "orphaned": false
+  },
+  "undecided": 2
+}

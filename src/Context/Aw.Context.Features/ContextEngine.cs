@@ -3,8 +3,11 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
+using Aw.Context.Core.Review;
 using Aw.Context.Core.Trust;
 using Aw.Context.Features.EvalProbes;
 using Aw.Context.Features.QueryContext;
@@ -25,7 +28,7 @@ internal sealed class ContextEngine(
     IService<RefreshDocsRequest, RefreshReport> refresh,
     IScrubberFactory scrubbers,
     IContextMap map,
-    IContextGraph graph,
+    ContextGraph graph,
     IService<EvalProbesRequest, ProbeRun> probes) : IContextEngine
 {
     public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) =>
@@ -59,11 +62,43 @@ internal sealed class ContextEngine(
     public ValueTask<Result<MapExported>> ExportMap(string? path, ContextScope scope, CancellationToken cancellationToken) =>
         map.ExportMap(path, scope, cancellationToken);
 
-    public ValueTask<Result<MapStatusView>> MapStatus(ContextScope scope, CancellationToken cancellationToken) => map.MapStatus(scope, cancellationToken);
+    public ValueTask<Result<MapStatusView>> MapStatus(string? anchor, ContextScope scope, CancellationToken cancellationToken) => map.MapStatus(anchor, scope, cancellationToken);
 
-    public ValueTask<Result<MapHealth>> CheckMap(CancellationToken cancellationToken) => map.CheckMap(cancellationToken);
+    public ValueTask<Result<MapHealth>> CheckMap(ContextScope? scope, CancellationToken cancellationToken) => map.CheckMap(scope, cancellationToken);
 
     public ValueTask<Result<MapHealth>> CheckRetention(CancellationToken cancellationToken) => map.CheckRetention(cancellationToken);
 
     public ValueTask<Result<PurgeReport>> PurgeExpired(CancellationToken cancellationToken) => map.PurgeExpired(cancellationToken);
+
+    public ValueTask<Result<MapBuildReport>> BuildMap(IProgress<string>? progress, ContextScope scope, CancellationToken cancellationToken) =>
+        map.BuildMap(progress, scope, cancellationToken);
+
+    public ValueTask<Result<ReviewQueueView>> ReviewQueue(int? limit, ContextScope scope, CancellationToken cancellationToken) => map.ReviewQueue(limit, scope, cancellationToken);
+
+    public ValueTask<Result<ReviewResult>> ApplyReview(ReviewDecision decision, ContextScope scope, CancellationToken cancellationToken) =>
+        map.ApplyReview(decision, scope, cancellationToken);
+
+    public ValueTask<Result<ReviewHistoryView>> ReviewHistory(int? limit, ContextScope scope, CancellationToken cancellationToken) => map.ReviewHistory(limit, scope, cancellationToken);
+
+    public ValueTask<Result<ReviewExported>> ExportReview(string? path, ContextScope scope, CancellationToken cancellationToken) =>
+        map.ExportReview(path, scope, cancellationToken);
+
+    public ValueTask<Result<ReviewFilePreview>> PreviewReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) =>
+        map.PreviewReviewFile(path, scope, cancellationToken);
+
+    public ValueTask<Result<ReviewResult>> ApplyReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) =>
+        map.ApplyReviewFile(path, scope, cancellationToken);
+
+    public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken) => map.Promote(scope, cancellationToken);
+
+    public ValueTask<Result<ProposeResult>> Propose(ScopeProposal proposal, ContextScope scope, CancellationToken cancellationToken) =>
+        map.Propose(proposal, scope, cancellationToken);
+
+    public ValueTask<Result<ProposalsView>> Proposals(string run, ContextScope scope, CancellationToken cancellationToken) => map.Proposals(run, scope, cancellationToken);
+
+    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
+        graph.Lenses(anchor, draft, depth, scope, cancellationToken);
+
+    public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        graph.FileMap(query, scope, cancellationToken);
 }

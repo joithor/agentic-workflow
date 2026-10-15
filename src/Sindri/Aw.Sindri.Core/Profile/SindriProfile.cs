@@ -17,6 +17,7 @@ namespace Aw.Sindri.Core.Profile;
 /// The workflow engine's settings (engine spec S1-D11). Left out of the canonical JSON when absent, so a profile without
 /// a 'workflow:' block keeps the hash it was approved under.
 /// </param>
+/// <param name="Index">The 'index:' section (docs/sindri/profile.md): deny paths for every repo. Left out of the canonical JSON when absent, like Context.</param>
 /// <param name="Context">
 /// The context engine's section ('context:', context spec §8.8). Sindri can't type it (the engine owns its keys), so it
 /// keeps the JSON and the engine checks it (IContextEngine.CheckSettings) at validate and approve. Left out of the
@@ -31,7 +32,8 @@ public sealed record SindriProfile(
     IReadOnlyDictionary<string, ServiceSettings>? Services = null,
     ApiSettings? Api = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] WorkflowSettings? Workflow = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] JsonElement? Context = null)
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] JsonElement? Context = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IndexSettings? Index = null)
 {
     /// <summary>The tenant key until team mode.</summary>
     public const string DefaultTenant = "local";

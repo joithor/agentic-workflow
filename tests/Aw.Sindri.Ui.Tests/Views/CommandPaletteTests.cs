@@ -238,7 +238,7 @@ public sealed class CommandPaletteTests : IDisposable
     }
 
     private static Button EntryButton(Window window, string name) =>
-        Named<Control>(window, "PaletteSections").GetVisualDescendants().OfType<Button>().First(b => AutomationProperties.GetName(b)?.StartsWith(name, StringComparison.Ordinal) == true);
+        Named<Control>(window, "PaletteSections").GetVisualDescendants().OfType<Button>().First(b => AutomationProperties.GetName(b) is { } n && n.StartsWith(name, StringComparison.Ordinal) && (n.Length == name.Length || n[name.Length] is ',' or ':'));
 
     // F1: the palette opens, and each refilter shows, at the top with its first heading in view and the first entry
     // that runs selected; only ↑/↓ scroll the list to follow the selection.

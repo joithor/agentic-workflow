@@ -1,0 +1,55 @@
+using System.Diagnostics;
+using System.Globalization;
+using Aw.Context.Core.Engine;
+
+namespace Aw.Context.Tests.Infrastructure;
+
+/// <summary>A throwaway git repo with one commit holding the given files; Dispose deletes it.</summary>
+internal sealed class TempGitRepo : IDisposable
+{
+    public TempGitRepo(IReadOnlyDictionary<string, string> files)
+    {
+        _ = Run("init", "-q", "-b", "main");
+        foreach (var (path, text) in files)
+        {
+            var full = System.IO.Path.Combine(Path, path);
+            _ = Directory.CreateDirectory(System.IO.Path.GetDirectoryName(full)!);
+            File.WriteAllText(full, text);
+        }
+
+        _ = Run("add", "-A");
+        _ = Run("commit", "-q", "-m", "first");
+        Head = Run("rev-parse", "HEAD");
+        Repo = new ContextRepo(ContextRepoName.From("aw-split-panes"), Path);
+    }
+
+    public string Path { get; } = Directory.CreateTempSubdirectory("aw-ctx-git-").FullName;
+
+    public string Head { get; }
+
+    public ContextRepo Repo { get; }
+
+    public string Run(params string[] args)
+    {
+        var start = new ProcessStartInfo("git") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
+        foreach (var name in start.Environment.Keys.Where(k => k.StartsWith("GIT_", StringComparison.Ordinal)).ToList())
+        {
+            _ = start.Environment.Remove(name);
+        }
+
+        start.Environment["GIT_CONFIG_GLOBAL"] = "/dev/null";
+        start.Environment["GIT_CONFIG_NOSYSTEM"] = "1";
+        foreach (var arg in (string[])["-C", Path, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "commit.gpgsign=false", .. args])
+        {
+            start.ArgumentList.Add(arg);
+        }
+
+        using var git = Process.Start(start)!;   // why: git is on the test machine's PATH
+        var stderr = git.StandardError.ReadToEndAsync(CancellationToken.None);
+        var output = git.StandardOutput.ReadToEnd().Trim();
+        git.WaitForExit();
+        return git.ExitCode == 0 ? output : throw new InvalidOperationException(string.Create(CultureInfo.InvariantCulture, $"git {string.Join(' ', args)} exited {git.ExitCode}: {stderr.Result}"));
+    }
+
+    public void Dispose() => Directory.Delete(Path, recursive: true);
+}

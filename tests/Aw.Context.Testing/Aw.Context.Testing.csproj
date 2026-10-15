@@ -37,5 +37,7 @@
   <ItemGroup>
     <!-- The fixture travels inside the assembly, so a test in any project reads it without file paths. -->
     <EmbeddedResource Include="Fixtures/split-panes/**/*" LogicalName="split-panes/%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- The tabs map (S-4): a conflict, a suggested file link and an orphaned override, read by the lenses and file-map tests and imported at the head of MapTabsRepo. -->
+    <EmbeddedResource Include="Fixtures/map-tabs.json" LogicalName="map-tabs.json" />
   </ItemGroup>
 </Project>
