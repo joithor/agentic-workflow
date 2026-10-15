@@ -33,6 +33,19 @@ public sealed class GetStatusTests
         Assert.Equal(1, (await Service().Handle(new GetStatusRequest(), Token)).Value.ApiVersion);
 
     [Fact, Trait("Lane", "unit")]
+    public async Task GetStatus_reads_the_ledger_head_fresh_while_the_cursor_stays_the_projectors()
+    {
+        var grant = await _h.HoldLease();
+        _ = await new RecordHeartbeatService(_h.Store, _h.Events, _h.Clock).Handle(new RecordHeartbeatRequest(new ScheduledRun(grant, _h.Clock.GetUtcNow())), Token);
+        var head = (await _h.Store.Head(Token)).Value;
+
+        var views = (await Service().Handle(new GetStatusRequest(), Token)).Value.Views;   // the projector hasn't seen any of it
+
+        Assert.True(head > 0);
+        Assert.Equal((0L, head), (views!.Cursor, views.LedgerHead));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task GetStatus_reports_epoch_services_and_the_last_heartbeat()
     {
         var approved = SliceHarness.Profile("5s");

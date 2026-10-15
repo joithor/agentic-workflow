@@ -102,6 +102,16 @@ public sealed class InMemoryViewStore(JsonSerializerOptions options) : IViewStor
     }
 
     /// <inheritdoc/>
+    public ValueTask<Result<IReadOnlyList<TRow>>> Range<TRow>(string view, string afterKey, string? beforeKey, int max, CancellationToken cancellationToken)
+        where TRow : class
+    {
+        lock (_gate)
+        {
+            return ValueTask.FromResult(new InMemoryViewRows(_tables, options).Range<TRow>(view, afterKey, beforeKey, max));
+        }
+    }
+
+    /// <inheritdoc/>
     public ValueTask<Result<ProjectorState?>> State(CancellationToken cancellationToken)
     {
         lock (_gate)

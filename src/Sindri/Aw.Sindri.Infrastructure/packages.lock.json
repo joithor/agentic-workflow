@@ -95,6 +95,9 @@
           "Microsoft.Data.Sqlite": "[10.0.12, 10.0.12]"
         }
       },
+      "aw.redaction": {
+        "type": "Project"
+      },
       "aw.sindri.core": {
         "type": "Project",
         "dependencies": {
