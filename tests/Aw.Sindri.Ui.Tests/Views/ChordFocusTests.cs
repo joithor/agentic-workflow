@@ -156,4 +156,38 @@ public sealed class ChordFocusTests : IDisposable
         AssertOnPageRegion(window, shell);
         Assert.Equal(2, raised);   // the palette closing returns focus to the region, then the page change raises its fresh event
     });
+
+    // Review re-check Y1: the top-bar nav is a tabs pattern with automatic activation, so Right and Left select the next tab and
+    // focus stays on the tab (a chord, the palette and a pointer click still land on the region).
+    [Fact]
+    public Task Arrow_keys_in_the_nav_move_between_tabs_and_keep_focus_on_the_tab() => OnUi(async () =>
+    {
+        var (window, shell) = await Opened("nav");
+        var items = window.GetVisualDescendants().OfType<ListBoxItem>().Where(i => i.IsEffectivelyVisible).ToList();
+        Assert.True(items[0].Focus(NavigationMethod.Tab));
+        Dispatcher.UIThread.RunJobs();
+
+        for (var step = 1; step <= 2; step++)
+        {
+            Press(window, Key.Right);
+            for (var i = 0; i < 5; i++)
+            {
+                await Task.Delay(10, Token);
+                Dispatcher.UIThread.RunJobs();
+            }
+
+            Assert.Equal(shell.Navigation[step].Page, shell.CurrentPage);
+            Assert.Same(items[step], window.FocusManager?.GetFocusedElement());
+        }
+
+        Press(window, Key.Left);
+        for (var i = 0; i < 5; i++)
+        {
+            await Task.Delay(10, Token);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        Assert.Equal(shell.Navigation[1].Page, shell.CurrentPage);
+        Assert.Same(items[1], window.FocusManager?.GetFocusedElement());
+    });
 }

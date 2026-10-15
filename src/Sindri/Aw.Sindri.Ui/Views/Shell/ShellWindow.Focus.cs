@@ -1,5 +1,8 @@
 using System.ComponentModel;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Sindri.Ui.ViewModels.Shell;
@@ -10,6 +13,21 @@ namespace Aw.Sindri.Ui.Views.Shell;
 /// <summary>Keeping focus somewhere sensible, and what the window listens to (<see cref="ShellWindow"/>, continued).</summary>
 internal sealed partial class ShellWindow
 {
+    // Right, Left, Home or End pressed with focus on a nav tab selects a tab by itself (a tabs pattern with automatic
+    // activation, review re-check Y1): the page changes and focus stays on the tab. Any other key, or a pointer press, clears it.
+    private bool _navArrowing;
+
+    private void WatchNavigationKeys()
+    {
+        AddHandler(KeyDownEvent, OnNavigationKeyDown, RoutingStrategies.Tunnel);
+        AddHandler(PointerPressedEvent, (_, _) => _navArrowing = false, RoutingStrategies.Tunnel);
+    }
+
+    private void OnNavigationKeyDown(object? sender, KeyEventArgs e) =>
+        _navArrowing = e is { Key: Key.Left or Key.Right or Key.Home or Key.End, KeyModifiers: KeyModifiers.None }
+            && FocusManager?.GetFocusedElement() is Visual focused
+            && TopBar.Get<ListBox>("Navigation").IsVisualAncestorOf(focused);
+
     private void Listen(ShellViewModel? shell, bool on)
     {
         if (shell is null)

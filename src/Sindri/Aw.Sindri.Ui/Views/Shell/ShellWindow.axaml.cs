@@ -38,6 +38,7 @@ internal sealed partial class ShellWindow : Window
     {
         InitializeComponent();
         AddHandler(GotFocusEvent, OnGotFocus, handledEventsToo: true);
+        WatchNavigationKeys();
     }
 
     private ShellViewModel? Shell => DataContext as ShellViewModel;
@@ -226,9 +227,11 @@ internal sealed partial class ShellWindow : Window
                 break;
             case nameof(ShellViewModel.CurrentPage):
                 // A page switch (a G-chord) hides the page the focused control was on: focus goes to the page region, which is named, so the new page is spoken.
+                // Arrowing along the nav tabs keeps focus on the tab (Y1); every other page change lands on the region.
                 if (!_openingSettings)
                 {
-                    Dispatcher.UIThread.Post(KeepFocusOrReannounce, DispatcherPriority.Loaded);
+                    Dispatcher.UIThread.Post(_navArrowing ? KeepFocus : KeepFocusOrReannounce, DispatcherPriority.Loaded);
+                    _navArrowing = false;
                 }
 
                 break;

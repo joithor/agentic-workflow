@@ -162,13 +162,15 @@ the top bar, the page region in the page (`ShellWindow.KeepFocus`, `TopBar.KeepR
 The mechanics: the regions (Page, Sheet, the top bar, the shortcuts card) are Borders with `AccessibilityView=Control` and
 `ControlTypeOverride=Group` (the `focus-region` style) so they have a named peer; `SheetTitle` is a Border typed Text that wraps
 the raw `SheetSubjectText`, so its name is the kind noun and the subject. **A page change by a navigation command** (a G-chord,
-the palette's Go to, a nav tab) always lands focus on the new page's region wherever focus was (the pill, a nav item, a sheet
+the palette's Go to, a pointer click on a nav tab) always lands focus on the new page's region wherever focus was (the pill, a nav item, a sheet
 beside the page), and `ShellWindow.KeepFocusOrReannounce` does it: Avalonia 12.1.3 has no `ClearFocus`, so when the region
 already has focus it pulses `Page.IsEnabled` false and true (focus drops) and focuses it again, which raises the fresh event
 the screen reader speaks. From the palette it raises two (the palette's close hands focus back, then the re-announce). Over a
 covering sheet the page is disabled and the usual keep-focus rule applies. ⌘, keeps its own rule (Settings' first control,
-once, via `_openingSettings`). A page change that does not come from a navigation command does not exist today; any new one
-would take the same path unless it says otherwise. Whether the OS screen reader speaks it is not provable headless.
+once, via `_openingSettings`). The nav tabs are a tabs pattern with automatic activation: Right, Left, Home and End on a focused tab select the neighbouring
+tab and focus stays on that tab (`ShellWindow.WatchNavigationKeys`; only a pointer click on a tab moves focus to the region).
+Other page changes that are not a navigation command (`LeaveSettings`, the Home health strip, the pill's `GoTo(System)`) take the
+same path as a chord; any new one would too unless it says otherwise. Whether the OS screen reader speaks it is not provable headless.
 
 ### Settings and reduced motion (§3.3 ⌘,, §11.4, §14.2)
 
