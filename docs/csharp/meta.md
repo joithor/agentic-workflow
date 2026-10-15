@@ -96,7 +96,7 @@ its parent is `systemd --user` or init, and it is older than five minutes.
 | `repo` | Absolute path of the shared checkout (Warp needs an absolute cwd) |
 | `prompts` | Directory of `<lane>.md` kickoff prompts for fresh lane sessions |
 | `log` | The running log (default `$AW_STATE_DIR/meta/log.md`) |
-| `gate.always`, `gate.docsOnly`, `gate.scopes.<name>.{paths,steps}` | The merge gate. A step is `{name, run: argv, heavy}`; `heavy` runs it through the heavy-job wrapper |
+| `gate.always`, `gate.docsOnly`, `gate.scopes.<name>.{paths,steps}` | The merge gate. A step is `{name, run: argv, heavy, rerun?}`; `heavy` runs it through the heavy-job wrapper (`AW_HEAVY`, used when the file exists); `rerun` is the argv `gate-rerun` uses, with a `{test}` placeholder (default for a `dotnet test` step: its argv plus `--filter-method *<test>*`). Step names are unique across scopes |
 | `mergeOrder` | `[{before, after}]`: `after` can't merge while `before` is open |
 | `knownFlakes` | Test names a red is checked against before it counts as real |
 
@@ -106,7 +106,7 @@ its parent is `systemd --user` or init, and it is older than five minutes.
 |------|-----------|
 | `$AW_STATE_DIR/meta/meta.db` | `aw-meta` |
 | `$AW_STATE_DIR/meta/team.json` | `team-init` (then the owner) |
-| `$AW_STATE_DIR/meta/gates/<pr>/` | `gate-run`, `gate-rerun` (tree and step logs) |
+| `$AW_STATE_DIR/meta/gates/<pr>/` | `gate-run`, `gate-rerun`: `tree` (the gate tree, reused per PR), `main-tree` (plain main for reruns), `<run>/<step>.log` |
 | `$AW_STATE_DIR/meta/lane-sessions/<lane>` | `scripts/meta-lane.sh` (the lane's Claude session id) |
 | the running log | `aw-meta` (merges, owner decisions, lane maps, kills, `log-append`) |
 | `$XDG_DATA_HOME/warp-terminal/launch_configurations/<team>-team.yaml` | `scripts/meta-launch.sh` |
@@ -126,5 +126,7 @@ matches a pattern against every process.
 | `meta-launch.sh`, `meta-lane.sh` | `ILauncher` (API P10a/b, engine P8) |
 | obligations, owner queue | needs-you (API P4, P11) |
 | `watch`, `gate-run`, `merge-check`, `merge-run` | the PR babysitter (factory addendum §17.9–17.10) |
+
+`gh` is called as `AW_GH` (default `gh`; tests point it at a stub).
 
 Until then this package stays thin: no HTTP, no daemon, one SQLite file.
