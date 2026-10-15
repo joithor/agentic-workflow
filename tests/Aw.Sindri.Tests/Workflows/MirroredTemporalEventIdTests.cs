@@ -51,10 +51,9 @@ public sealed class MirroredTemporalEventIdTests(SindriTimeSkippingServer server
 
         var rows = Rows();
         var mirrored = rows.Where(static r => r.Type.StartsWith("workflow.", StringComparison.Ordinal)).ToList();
-        Assert.True(mirrored.Count >= 3, $"expected the start and two transitions, got {mirrored.Count}");
+        Assert.Equal(["workflow.started", "workflow.transition", "workflow.transition"], mirrored.Select(static r => r.Type), StringComparer.Ordinal);   // the start, the desk report, the cancel: nothing twice, nothing missing
         Assert.All(mirrored, static r => Assert.False(string.IsNullOrEmpty(r.TemporalEventId), $"{r.Type} {r.Key}"));
         Assert.All(mirrored, static r => Assert.Equal(r.Key.Split(':')[^1], r.TemporalEventId));   // the column and the key never disagree
-        Assert.Equal(mirrored.Count, mirrored.Select(static r => r.Key).Distinct(StringComparer.Ordinal).Count());   // a replay added no row
         Assert.Equal(mirrored.Count, mirrored.Select(static r => r.TemporalEventId).Distinct(StringComparer.Ordinal).Count());
         Assert.All(rows.Where(static r => !r.Type.StartsWith("workflow.", StringComparison.Ordinal)), static r => Assert.Null(r.TemporalEventId));
         Assert.Contains(rows, static r => string.Equals(r.Type, "service.heartbeat", StringComparison.Ordinal));
