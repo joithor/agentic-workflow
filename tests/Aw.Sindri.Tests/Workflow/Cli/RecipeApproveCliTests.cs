@@ -111,6 +111,7 @@ public sealed class RecipeApproveCliTests : IDisposable
         var step = await Register(app, ct);
         Assert.Equal(0, await Commands(app, human: true, "approve workflow.step 1").Approve($"workflow.step@{step.Hash.Display}", ct));
         _out.GetStringBuilder().Clear();
+        _error.GetStringBuilder().Clear();
         var file = await EditedCopy(ct);
 
         var code = await Commands(app, human: true, "approve workflow.step 1").Approve(file, ct);
