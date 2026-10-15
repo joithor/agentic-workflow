@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Json;
+using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Platform;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -46,6 +47,14 @@ internal sealed partial class SindriApiClient(HttpClient http, IHumanTokenSource
 
     public Task<Result<CommandAcceptedView>> RebuildViews(Uri api, CancellationToken cancellationToken) =>
         Call<CommandAcceptedView>(api, HttpMethod.Post, "/sindri/views/rebuild", cancellationToken);
+
+    public Task<Result<InstanceList>> Instances(Uri api, InstanceQuery query, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+    public Task<Result<InstanceDetail>> Instance(Uri api, string id, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+    public Task<Result<FactView>> InstanceFact(Uri api, string id, string key, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+    public Task<Result<RecipeView>> Recipe(Uri api, string recipe, string? hash, CancellationToken cancellationToken) => throw new NotSupportedException();
 
     public async IAsyncEnumerable<EventView> Events(Uri api, long after, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
