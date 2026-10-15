@@ -51,7 +51,7 @@ internal static partial class Labels
         ("C / R", "Create item / file a request"),
         ("/", "Filter the current list"),
         ("?", "Shortcuts sheet"),
-        ("⌘,", Settings),
+        ("⌘, / Ctrl+,", Settings),
         ("F6 / Shift+F6", "Next / previous region"),
     ];
 }
