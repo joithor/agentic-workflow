@@ -4,9 +4,9 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Text;
-using Aw.Sindri.Testing;
 using Aw.Sindri.Features.RecordHeartbeat;
 using Aw.Sindri.Features.StreamEvents;
+using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.StreamEvents;
 
