@@ -28,12 +28,16 @@ internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> u
         {
             Set(ref field, value);
             OnChanged(nameof(CanSubmit));
+            OnChanged(nameof(IsTitleBlank));
             if (!string.IsNullOrWhiteSpace(value))
             {
                 ClearTitleError();
             }
         }
     } = string.Empty;
+
+    /// <summary>True while the title is blank: the only state in which "Title is required" can be said, so the live region is in the tree from then on.</summary>
+    public bool IsTitleBlank => string.IsNullOrWhiteSpace(Title);
 
     /// <summary>The repo, or empty for the API's default.</summary>
     public string Repo { get; set => Set(ref field, value); } = string.Empty;
