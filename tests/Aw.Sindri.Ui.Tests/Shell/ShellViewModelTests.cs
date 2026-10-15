@@ -67,13 +67,13 @@ public sealed class ShellViewModelTests
         Assert.All(shell.Navigation, n => Assert.Equal(string.Empty, n.Count));
     }
 
-    // Screens spec §4.8: a page whose phase hasn't landed says which phase brings it, never faked content.
+    // Screens spec §4.8: a page whose phase hasn't landed says which phase brings it and the API it waits for, never faked content.
     [Theory]
-    [InlineData(PageId.Workflows, "arrives with U8")]
-    [InlineData(PageId.Work, "arrives with U3'")]
-    [InlineData(PageId.Recipes, "arrives with U10")]
-    [InlineData(PageId.Context, "arrives with U9")]
-    [InlineData(PageId.Agents, "arrives with U11")]
+    [InlineData(PageId.Workflows, "arrives with U8 and the workflow routes (API P11)")]
+    [InlineData(PageId.Work, "arrives with U3' and the workflow routes (API P11)")]
+    [InlineData(PageId.Recipes, "arrives with U10 and the recipe stats (API P12)")]
+    [InlineData(PageId.Context, "arrives with U9 and the context lens routes (CTX phase 4)")]
+    [InlineData(PageId.Agents, "arrives with U11 and the launch targets (API P10a)")]
     internal async Task Unbuilt_pages_show_arrives_with_their_phase(PageId page, string words)
     {
         await Task.CompletedTask;

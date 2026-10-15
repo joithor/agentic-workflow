@@ -130,6 +130,22 @@ public sealed class WorkflowGoldenTests
         Assert.Equal(FactType.ScopeMap, scope.Type);
     }
 
+    // API rev 8 added words over time: a tone or glyph this build doesn't know still reads, as the quietest look.
+    [Fact]
+    public void Unknown_chip_tone_reads_as_neutral_and_unknown_glyph_as_pending()
+    {
+        var list = JsonNode.Parse(GoldenFiles.Api("workflow-instances", "root"))!; // why: the golden is a JSON object
+        list["instances"]![0]!["chip"]!["tone"] = "mauve";
+        list["instances"]![0]!["states"]![0]!["glyph"] = "halfway";
+        list["instances"]![1]!["chip"]!["tone"] = 7;
+
+        var read = Read<InstanceList>(list);
+
+        Assert.Equal(ChipTone.Neutral, read.Instances[0].Chip.Tone);
+        Assert.Equal(ChipTone.Neutral, read.Instances[1].Chip.Tone);
+        Assert.Equal(StateGlyph.Pending, read.Instances[0].States[0].Glyph);
+    }
+
     private static T Read<T>(JsonNode node)
         where T : class =>
         AwJson.Deserialize<T>(Encoding.UTF8.GetBytes(node.ToJsonString()), SindriApiClient.Json).Value;

@@ -45,6 +45,16 @@ public sealed class StateChipViewTests
         Assert.True(visible);
     }
 
+    // arch-4: the control is named for what it is, a view, so the served record keeps the name StateChip on its own.
+    [Fact]
+    public void The_control_is_StateChipView_and_no_control_shares_the_served_records_name()
+    {
+        var views = typeof(Aw.Sindri.Ui.Views.AppLifetime).Assembly.GetTypes().Where(t => t.Namespace == "Aw.Sindri.Ui.Views.Controls").Select(t => t.Name).ToList();
+
+        Assert.Contains("StateChipView", views, StringComparer.Ordinal);
+        Assert.DoesNotContain("StateChip", views, StringComparer.Ordinal);
+    }
+
     [Fact]
     public async Task The_served_chip_wins_over_the_fallback_and_nothing_to_say_draws_nothing()
     {

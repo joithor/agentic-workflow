@@ -1,7 +1,9 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
@@ -159,5 +161,64 @@ public sealed class ChordKeysTests : IDisposable
         Assert.False(shell.IsChordPending);
         Press(window, Key.W);
         Assert.Equal(PageId.Home, shell.CurrentPage);
+    });
+
+    // The hint is an overlay: it takes no room in the bar, so it can be seen at the narrowest window and the largest text
+    // scale. It is drawn at its desired width (not squeezed to the spacer column's), inside the window, clear of the ⌘K field.
+    [Theory]
+    [InlineData(900, 1.0)]
+    [InlineData(900, 1.3)]
+    [InlineData(1100, 1.0)]
+    [InlineData(1100, 1.3)]
+    [InlineData(1280, 1.0)]
+    [InlineData(1280, 1.3)]
+    public Task The_chord_hint_is_drawn_at_its_width_clear_of_the_search_field(double width, double scale) => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(ShellState.Normal);
+        var resources = Application.Current!.Resources;
+        Aw.Sindri.Ui.Theme.TextScale.Apply(resources, scale);
+        try
+        {
+            window.Width = width;
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            var hint = window.GetVisualDescendants().OfType<Border>().First(b => b.Name == "ChordHint");
+            var search = window.GetVisualDescendants().OfType<Border>().First(b => b.Name == "SearchField");
+            Assert.False(hint.IsEffectivelyVisible);
+
+            Press(window, Key.G);
+            window.UpdateLayout();
+
+            Assert.True(shell.IsChordPending);
+            Assert.True(hint.IsEffectivelyVisible);
+            var at = new Rect(hint.TranslatePoint(default, window)!.Value, hint.Bounds.Size);
+            var field = new Rect(search.TranslatePoint(default, window)!.Value, search.Bounds.Size);
+            var label = hint.GetVisualDescendants().OfType<TextBlock>().First();
+            var detail = $"hint {at}, field {field}, window {window.ClientSize}";
+            Assert.True(hint.Bounds.Width >= hint.DesiredSize.Width - 0.5 && hint.Bounds.Width > 0, detail);
+            Assert.True(label.TextLayout.WidthIncludingTrailingWhitespace <= label.Bounds.Width + 0.5, "the hint's text is clipped: " + detail);
+            Assert.False(at.Intersects(field), "the hint overlaps the search field: " + detail);
+            Assert.True(new Rect(window.ClientSize).Contains(at), "the hint leaves the window: " + detail);
+        }
+        finally
+        {
+            Aw.Sindri.Ui.Theme.TextScale.Apply(resources, 1.0);
+        }
+    });
+
+    [Fact]
+    public Task The_chord_hint_is_exposed_as_text_named_for_the_chord() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, _) = await Show(ShellState.Normal);
+        var hint = window.GetVisualDescendants().OfType<Border>().First(b => b.Name == "ChordHint");
+        Press(window, Key.G);
+
+        var peer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(hint);
+
+        Assert.True(peer.IsControlElement());
+        Assert.Equal(Avalonia.Automation.Peers.AutomationControlType.Text, peer.GetAutomationControlType());
+        Assert.Equal("G …", peer.GetName());
     });
 }

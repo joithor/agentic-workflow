@@ -117,32 +117,41 @@ public abstract partial class SindriApiContract
         Expect.Equal(new Error("SND-ITEM-404", ErrorKind.NotFound, (string)golden["detail"]!), refused.Error); // why: a refusal has a detail
     }
 
+    // A fact is served only for an instance whose facts[] lists its key (API §3.8): the id used is the first instance golden that does.
     [Theory]
     [MemberData(nameof(FactScenarios))]
-    public async Task InstanceFact_answers_each_golden_by_its_key(string scenario)
+    public async Task InstanceFact_answers_each_golden_by_its_key_for_an_instance_that_lists_it(string scenario)
     {
         var golden = Golden("workflow-instance-fact", scenario);
-        var id = (string)Golden("workflow-instances", "root")["instances"]![0]!["id"]!; // why: the golden has rows
+        var key = (string)golden["key"]!; // why: every fact has a key
 
-        var fact = (await Reach(new FakeSindriApi()).InstanceFact(_api, id, (string)golden["key"]!, Token)).Value; // why: every fact has a key
+        var fact = (await Reach(new FakeSindriApi()).InstanceFact(_api, InstanceListing(key), key, Token)).Value;
 
-        Expect.Equal((string)golden["key"]!, fact.Key);
+        Expect.Equal(key, fact.Key);
         Expect.Equal((bool)golden["truncated"]!, fact.Truncated); // why: and says whether it is cut
     }
 
     [Fact]
-    public async Task InstanceFact_that_is_not_declared_is_the_goldens_not_found_refusal()
+    public async Task InstanceFact_of_an_instance_that_does_not_list_the_key_is_not_found()
     {
         var golden = Golden("workflow-instance-fact", "not-found");
-        var id = (string)Golden("workflow-instances", "root")["instances"]![0]!["id"]!; // why: the golden has rows
+        var listed = InstanceListing("fact:scope");
+        var other = Golden("workflow-instances", "root")["instances"]!.AsArray().Select(r => (string)r!["id"]!)
+            .First(id => id != listed && !InstanceFacts(id).Contains("fact:scope", StringComparer.Ordinal)); // why: rows have ids
         var api = Reach(new FakeSindriApi());
 
-        var unknownKey = await api.InstanceFact(_api, id, "fact:unknown", Token);
-        var unknownInstance = await api.InstanceFact(_api, "WFI-unknown", "fact:unknown", Token);
+        var refused = await api.InstanceFact(_api, other, "fact:scope", Token);
 
-        Expect.Equal(new Error("SND-ITEM-404", ErrorKind.NotFound, (string)golden["detail"]!), unknownKey.Error); // why: a refusal has a detail
-        Expect.Equal("SND-ITEM-404", unknownInstance.Error.Code);
+        Expect.Equal(new Error("SND-ITEM-404", ErrorKind.NotFound, (string)golden["detail"]!), refused.Error); // why: a refusal has a detail
     }
+
+    private static string InstanceListing(string key) =>
+        (string)GoldenFiles.All().Where(g => g.Kind == "Api" && g.Slug == "workflow-instance" && !IsRefusal(g.Body)).Select(g => JsonNode.Parse(g.Body)!)
+            .First(i => i["facts"]!.AsArray().Any(f => (string?)f!["key"] == key))["id"]!; // why: every instance has an id
+
+    private static string[] InstanceFacts(string id) =>
+        [.. GoldenFiles.All().Where(g => g.Kind == "Api" && g.Slug == "workflow-instance" && !IsRefusal(g.Body)).Select(g => JsonNode.Parse(g.Body)!)
+            .Where(i => (string?)i["id"] == id).SelectMany(i => i["facts"]!.AsArray().Select(f => (string)f!["key"]!))]; // why: facts have keys
 
     [Theory]
     [MemberData(nameof(RecipeScenarios))]
@@ -163,6 +172,65 @@ public abstract partial class SindriApiContract
 
         Expect.Equal(("SND-ITEM-404", ErrorKind.NotFound), (refused.Error.Code, refused.Error.Kind));
         Expect.True(refused.Error.Message.Length > 0);
+    }
+
+    [Fact]
+    public async Task Recipe_with_the_hash_an_instance_runs_answers_and_any_other_hash_is_not_found()
+    {
+        var running = Golden("workflow-instance", "project-build")["recipe"]!; // why: the instance names the recipe it runs
+        var (id, hash) = ((string)running["id"]!, (string)running["hash"]!); // why: both are always served
+        var api = Reach(new FakeSindriApi());
+
+        var named = await api.Recipe(_api, id, hash, Token);
+        var wrong = await api.Recipe(_api, id, "sha256:" + new string('0', 64), Token);
+
+        Expect.True(named.IsSuccess);
+        Expect.Equal(("SND-ITEM-404", ErrorKind.NotFound), (wrong.Error.Code, wrong.Error.Kind));
+    }
+
+    [Fact]
+    public async Task Instances_root_keeps_top_level_rows_and_without_it_the_child_rows_join()
+    {
+        var roots = Ids(Golden("workflow-instances", "root"));
+        var child = (string)Golden("workflow-instance", "item-produce")["id"]!; // why: the golden is a child instance, with an id
+        var api = Reach(new FakeSindriApi());
+
+        var onlyRoots = (await api.Instances(_api, new InstanceQuery(Root: true), Token)).Value;
+        var all = (await api.Instances(_api, new InstanceQuery(), Token)).Value;
+
+        Expect.Sequence(roots, onlyRoots.Instances.Select(i => i.Id));
+        Expect.True(all.Instances.Select(i => i.Id).Contains(child, StringComparer.Ordinal));
+        Expect.True(roots.All(r => all.Instances.Any(i => i.Id == r)));
+        Expect.Equal(onlyRoots.Counts, all.Counts);   // the counts stay root-wide
+    }
+
+    // The address filter finds the one instance by its address, its item id or its opaque id (the CLI's forms, API §3.8).
+    [Fact]
+    public async Task Instances_address_resolves_an_address_an_item_id_or_an_id()
+    {
+        var row = Golden("workflow-instances", "root")["instances"]![0]!; // why: the golden has rows
+        var api = Reach(new FakeSindriApi());
+
+        foreach (var form in new[] { (string)row["address"]!, (string)row["itemId"]!, (string)row["id"]! }) // why: a root row has all three
+        {
+            var found = (await api.Instances(_api, new InstanceQuery(Address: form), Token)).Value;
+
+            Expect.Equal(1, found.Instances.Count);
+            Expect.Equal((string)row["id"]!, found.Instances[0].Id);
+        }
+    }
+
+    // An empty filter narrows nothing, as an absent one does (a client that sends "recipe=" asks for all).
+    [Fact]
+    public async Task Instances_with_empty_filters_are_not_narrowed()
+    {
+        var api = Reach(new FakeSindriApi());
+
+        var bare = (await api.Instances(_api, new InstanceQuery(), Token)).Value;
+        var empty = (await api.Instances(_api, new InstanceQuery(Recipe: "", Subject: "", Address: ""), Token)).Value;
+
+        Expect.Sequence(bare.Instances.Select(i => i.Id), empty.Instances.Select(i => i.Id));
+        Expect.True(empty.Instances.Count > 0);
     }
 
     // F12 (test-0), as for the other routes: a refusal, a stopped server and an odd body reach every workflow route the same way.

@@ -128,6 +128,37 @@ public sealed class SindriApiClientHeaderTests
             handler.Requests.Select(r => (r.Method, r.After)));
     }
 
+    // API §3.8 / §2.4: the instance list and an instance are view reads, so after an accepted command the first of them
+    // carries its sequence and uses it up; a fact and a recipe are not view reads and never carry it.
+    [Fact]
+    public async Task The_first_workflow_view_read_after_a_command_carries_the_sequence_and_the_rest_do_not()
+    {
+        var handler = new FakeSindriHandler(new FakeSindriApi());
+        var client = new SindriApiClient(new HttpClient(handler), new InMemoryHumanToken("tok-1"), TimeProvider.System);
+        _ = await client.RebuildViews(_api, Token);
+
+        _ = await client.Instances(_api, new Aw.Sindri.Ui.Api.Workflow.InstanceQuery(), Token);
+        _ = await client.Instance(_api, "WFI-1", Token);
+        _ = await client.InstanceFact(_api, "WFI-1", "fact:a", Token);
+        _ = await client.Recipe(_api, "workflow.project", hash: null, Token);
+
+        Assert.Equal(["43", null, null, null], handler.Requests.Skip(1).Select(r => r.After), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_fact_and_a_recipe_never_carry_the_sequence_or_use_it_up_for_the_instance_read_after_them()
+    {
+        var handler = new FakeSindriHandler(new FakeSindriApi());
+        var client = new SindriApiClient(new HttpClient(handler), new InMemoryHumanToken("tok-1"), TimeProvider.System);
+        _ = await client.RebuildViews(_api, Token);
+
+        _ = await client.InstanceFact(_api, "WFI-1", "fact:a", Token);
+        _ = await client.Recipe(_api, "workflow.project", hash: null, Token);
+        _ = await client.Instance(_api, "WFI-1", Token);
+
+        Assert.Equal([null, null, "43"], handler.Requests.Skip(1).Select(r => r.After), StringComparer.Ordinal);
+    }
+
     // H3: the model answers views-behind only for a request that carries the header, so a client that forgot to send it fails.
     [Fact]
     public async Task A_view_read_without_the_header_is_never_held_whatever_the_model_remembers()
