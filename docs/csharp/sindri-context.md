@@ -232,9 +232,10 @@ Spec Phase 2 and §7 (D14: one scrubber). The profile's `context.scrub.extraPatt
   rules leave a regex lookaround (`(?<![0-9])`) alone unless a `(` or `]` follows it. The remote
   definition's label takes backslash escapes and one line break (not a blank line), and labels are matched as
   CommonMark does (whitespace runs collapsed, case ignored), so `[x][p q]` meets `[p\nq]: https://…`.
-- **Not here: the map's text.** S-3a's map export and status (and S-3b's `node`/`affects` answers) don't scrub yet;
-  they must build `Scrubbers` per call through `IScrubberFactory` and pass every text field through `Egress`, as the
-  repo-docs pipeline does (follow-up for S-3b).
+- **The map's text.** Graph answers (show, neighbors, path, and the query's graph, affects, decisions and code
+  sections) clean every label, wording and quote through `MapText` (S-3b). Human map text is stored as written in the
+  owner-only `context.db` and cleaned on every answer; map status carries no map text. The export is the owner's raw
+  round-trip copy (0600, purged after 14 days) and is deliberately not scrubbed (spec §7 "Stored text").
 - **Not here: telemetry.** Telemetry's redactor stays `Redactor.Default`: log lines and spans carry codes, counts and hashes,
   never record or query text (§7), and the telemetry redactor is fixed at start while the profile changes at run time.
 
@@ -267,7 +268,7 @@ Spec Phase 2 and §7 (D14: one scrubber). The profile's `context.scrub.extraPatt
 
 **Sindri's side** (`Aw.Sindri.Features.ContextCalls`): the queries `GetContextMapRequest` → `MapStatusView`
 (`GET /sindri/context/map`) and `ExportContextMapRequest` → `MapExported` (`GET /sindri/context/map/export?path=`);
-the command `ImportContextMapRequest(Path, Hash?, Confirmed)` → `ImportContextMapResponse`
+the command `ImportContextMapRequest(Path, Hash?, Answer: ChallengeAnswer?)` → `ImportContextMapResponse(Preview, Imported?, Sequence?, Challenge: MapImportChallenge?)`
 (`POST /sindri/context/map/import`; catalog row `ImportContextMap`: `protected`, terminal only,
 `cli-only:typed-confirmation`), which appends `context.map.imported` (`ContextMapImported`: version, repo, hash,
 counts); the scheduled service `ContextPurgeService` (`context-purge`); doctor rows `context:map` and
@@ -329,10 +330,10 @@ routes through the real pipeline (preview, protected import and its refusals, ev
   - `MapReader`, a domain service shared by every graph read: gate, then snapshot, then overrides applied, then
     `MapAccess.Visible`. A session's walks run on its scoped graph, so they can't leave it.
   - `VisibleMap`.
-- **Core `Trust/MapText`.** Every label, wording and quote crosses this call's `Scrubbers`: ingest (sanitize, the
+- **Core `Map/MapText`.** Every label, wording and quote crosses this call's `Scrubbers`: ingest (sanitize, the
   built-in rules, the extra patterns), then egress, one field at a time. Labels are capped at 200 characters and
   untrusted ones are fenced (`<untrusted source="map">`). The text is cleaned on the way out with the current rules and
-  nothing cleaned is stored, so the map needs no ruleset fingerprint (S-2W's follow-up, closed).
+  nothing cleaned is stored (human map text is stored as written), so the map needs no ruleset fingerprint (S-2W's follow-up, closed).
 - **Core `Eval/`.**
   - `ProbeSet`, `ProbeCase`, `ProbeExpect` and `ProbeDecision` (probes.json's shape plus an optional `schemaVersion`; unknown keys refused).
   - `ProbeId`.
@@ -343,16 +344,19 @@ routes through the real pipeline (preview, protected import and its refusals, ev
 - **Core settings and errors.** `ContextSettings.CascadeDepth` (`context.cascadeDepth`, 0–4, default 2).
   `ContextErrors.Attention`, the CLI's exit-1 set, moved here from the verbs (S-3a's follow-up).
 - **Features.** `IContextGraph` (`ShowNode`, `Neighbors`, `Path`; `IContextEngine` extends it) over the slices
-  `ShowNode`, `ListNeighbors` and `FindPath`. In `QueryContext`, `QueryRules` accepts the node shape (item and symbol
+  `ShowNode`, `ListNeighbors`, `FindPath` and `EvalProbes` (`IContextEngine.EvalProbes`, `EvalProbesService` over
+  `IProbeFileReader` and `IProbeReportStore`: reads the file, finds the baseline, scores, writes the report). In `QueryContext`, `QueryRules` accepts the node shape (item and symbol
   stay 003 until their phases), and `GraphAnswer` builds the `graph`, `affects`, `decisions` and `code` sections, all
   citing the map version as `C1`. An affects item takes the weakest provenance on its path and is confirmed only if
   every node and edge is. `ResultAssembly` puts the graph part first, then the records.
 - **Infrastructure.** `ProbeFileReader`: the named file or `context/eval/probes.json`; 036, 005, 035; SHA-256.
-  `FileProbeReportStore`: `context/eval/probes/probes-<time>.json`, 0600 in 0700 folders, the latest by probe file hash.
+  `FileProbeReportStore`: `context/eval/probes/probes-<time>.json`, 0600 in 0700 folders, the baseline by probe file hash: the newest run that was complete and did not regress.
 - **Sindri.**
-  - Query routes `GET /context/node`, `/neighbors` and `/path`, with their `ContextCalls` services.
+  - Query routes `GET /sindri/context/node`, `/neighbors` and `/path`, with their `ContextCalls` services.
   - CLI `context show | neighbors | path` (`ContextGraphVerbs`) and `context eval probes` (`ContextEvalVerbs`). Probes
-    have no route (a lead decision): the CLI scores over `GET /context/query` and writes the report itself.
+    have no route (a lead decision): the CLI asks each probe through `GET /sindri/context/query`; the engine's
+    `EvalProbes` slice reads the file, scores and writes the report. A run in which a probe's query failed is
+    incomplete: exit 2, nothing saved, never a baseline.
   - Text renderers in `Text/`. `ContextText` prints an affects item's depth and path.
 - **The map import's challenge.** Described in S-3a above. `ProtectedCommandTests` lost its `ImportContextMap`
   exemption, #192's context-lane waiver.

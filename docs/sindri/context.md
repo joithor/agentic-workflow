@@ -346,7 +346,7 @@ $SINDRI context map status [--json]
 # map v2 current · aw-split-panes · created 2026-10-12T17:02:11.0000000+00:00
 # 20 nodes, 21 edges, 1 aliases, 1 decisions, 2 overrides; 0 orphaned overrides; 1 retained versions
 $SINDRI context map export [<name-or-path>] [--json]
-# Exported map v2 to $AW_SINDRI_HOME/context/exports/map-v2-20261012T170400Z.json: 19 nodes, …
+# Exported map v2 to $AW_SINDRI_HOME/context/exports/map-v2-20261012T170400Z.json: 20 nodes, …
 ```
 
 - An export is JSON (`kind: export`) with nodes, edges with their evidence, aliases, decisions and overrides, each with
@@ -383,7 +383,7 @@ $SINDRI context query --node feature:layout.split-pane.orientation [--depth N] [
 # ## graph
 # [C1] Split orientation
 #     trust trusted · anchor
-#     part-of feature:layout.split-pane; implemented-by code:src/layout/SplitPane.ts
+#     implemented-by code:src/layout/SplitPane.ts; part-of feature:layout.split-pane
 # [C1] Toggle the split orientation
 #     trust trusted · own-scope of feature:layout.split-pane.orientation
 #     on surface:command/toggle-orientation; writes thing:pane-layout
@@ -425,7 +425,7 @@ $SINDRI context query "What else is affected if I change how split orientation w
 
 A question anchors on every node whose whole name it uses (case ignored, plurals and small words and a parenthesized kind
 such as `(command)` ignored; the most specific name wins), adds that node's `graph` and `affects` sections, and still
-searches the sources with the question's words. `suggestedAnchors` lists close names. With no map, the answer is S-1A's.
+searches the sources with the question's words. `suggestedAnchors` lists close names. With no map, the answer is S-1A's. `--draft` with no draft map is `SND-CONTEXT-030` (fix: drop `--draft`); drafts come with `context map build` (S-4).
 
 ### One node, its neighbors, a path
 
@@ -469,10 +469,13 @@ asks each question through `GET /sindri/context/query`, as whoever runs it, and 
 - **precision@5:** the expected nodes, records and files among the answer's first five keys. The keys are each item's
   node, the nodes on an affects path, and its citations; code and repo-doc keys count as their file paths.
 - **Citation correctness:** the share of items whose citations all resolve with a version.
-- **Absent nodes:** any absent node the answer names is flagged.
+- **Absent nodes:** any absent node the answer names is flagged, and a run that names more of them than the baseline did is a regression.
 
-The report is written at 0600 under `context/eval/probes/`. A run that scores lower than the previous run of the same
-file prints `REGRESSED: SND-CONTEXT-038` and exits 1. That's the "probes don't regress" line every later phase's signal
+The report is written at 0600 under `context/eval/probes/`; `--json` prints `{report, path}`. The run is compared with
+the baseline: the newest run of the same file that was complete and did not regress, so a regression stays one on an
+identical rerun. A run that scores lower than the baseline, or names more absent nodes, prints
+`REGRESSED: SND-CONTEXT-038` and exits 1. A run in which any probe's query failed is incomplete: it prints the failed
+probes, exits 2, and is neither saved nor a baseline. That's the "probes don't regress" line every later phase's signal
 carries.
 
 ### Exit codes (graph verbs and probes)
@@ -480,4 +483,4 @@ carries.
 `0` an answer (empty and "no path" included), or a run that didn't regress · `1` attention: not running
 (`SND-API-001`), unknown anchor or out of scope (`003`), a bad depth (`006`), session reads off (`020`), no map
 (`030`), a worktree path (`005`), an invalid or missing probe file (`035`, `036`), an ambiguous name (`037`), a
-regression (`038`) · `2` a tool error.
+regression (`038`) · `2` a tool error, or an incomplete probe run.

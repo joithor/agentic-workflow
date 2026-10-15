@@ -352,7 +352,7 @@ value. Untrusted text is wrapped in the core spec's pack fence (§8.3: `<untrust
 attribute values and body escaped by one escaper, so no field can close its own fence. The labeling pass scrubs code
 and doc text before sending it.
 
-**Stored text is already clean:** doc chunks, snippets, decision wording and model labels are scrubbed before storage.
+**Stored text:** text a model wrote (doc chunks, snippets, decision wording and labels from a model or a labeling pass) is scrubbed before storage. Human map text (an imported map's labels, decision wording and quotes) is stored as written in the owner-only `context.db`, because the owner wrote it; every answer cleans it again on the way out (`MapText`: the current rules, then the untrusted fence), so a rule change applies at once and no ruleset needs recording. A map export is a raw, owner-only copy of what is stored (0600, purged after 14 days), deliberately not scrubbed.
 
 **Logs and spans** carry codes, counts, hashes and timings, never query or record text (a Telemetry test plants
 work-like text and asserts it never reaches a log line).
