@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Events;
@@ -39,6 +40,36 @@ internal sealed partial class RecipeWorkflow
         await Workflow.WaitConditionAsync(() => _decided.ContainsKey(ticket)).ConfigureAwait(true);
         _ = _decided.Remove(ticket, out var decision);
         return decision ?? throw new InvalidOperationException("the loop settled the ticket without a decision");
+    }
+
+    /// <summary>
+    /// Lets every Update that is still waiting on the loop finish once the instance has ended (engine P5 review): a command
+    /// the Update that ended it left queued (a takeover validated beside a cancel) is decided on the ended instance, which
+    /// refuses it (SND-WF-003), and a desk report that was never applied is refused; then the handlers return their results.
+    /// </summary>
+    private async Task SettleLeftovers(WorkflowInstance ended, Interpreting context)
+    {
+        while (true)
+        {
+            while (_submitted.TryDequeue(out var left))
+            {
+                _decided[left.Ticket] = TransitionDecision.Decide(new DecisionInput(ended, context.Recipe, left.Trigger, GateAnswers.None, context.Decisions));
+            }
+
+            if (_reportId is { } reportId)
+            {
+                _report = null;
+                _reportId = null;
+                Settle(reportId, new Reported(Result: null, WorkflowErrors.TriggerNotAllowed.With($"{ended.Address.Value} ended before the report was applied (fix: run status)")));
+            }
+
+            if (Workflow.AllHandlersFinished)
+            {
+                return;
+            }
+
+            await Workflow.WaitConditionAsync(() => Workflow.AllHandlersFinished || _submitted.Count > 0 || _reportId is not null).ConfigureAwait(true);
+        }
     }
 
     /// <summary>

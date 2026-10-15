@@ -4989,3 +4989,5 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Id.get -> Aw.Sindri.Core.Wor
 Aw.Sindri.Core.Events.WorkflowEventPayload.Causation.get -> string?
 Aw.Sindri.Core.Events.WorkflowEventPayload.Causation.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Id.init -> void
+Aw.Sindri.Core.Workflow.Engine.EngineActor
+const Aw.Sindri.Core.Workflow.Engine.EngineActor.Name = "service:engine" -> string!

@@ -73,12 +73,16 @@ public static partial class TransitionDecision
                 $"the takeoverIdle timer of entry {fired.Entry} has no takeover to remind of: {instance.Address.Value} is {instance.State}"));
 
     /// <summary>
-    /// An 'open-request' (UI spec E-6; spec §5.2): a takeover with actor 'service:engine' wherever a takeover is allowed,
+    /// An 'open-request' (UI spec E-6; spec §5.2): a takeover with actor 'service:engine' (any other actor is SND-WF-003) wherever a takeover is allowed,
     /// exempt from the approval check; absorbed (a no-op) when the instance is already taken over; SND-WF-003 when it
     /// has ended, which the launcher reports as the launch's failure.
     /// </summary>
-    private static Decision OpenRequest(Deciding d, WorkflowInstance instance, OpenRequested open) =>
-        instance is { Ended: false, Suspension.Kind: SuspensionKind.Takeover }
-            ? new Absorbed(d.Key, $"{instance.Address.Value} is already taken over; launch {open.Launch} opens beside it")
-            : d.Rules.TakeOver(instance, open.Actor).Match<Decision>(d.Changed, e => new Rejected(d.Key, e));
+    private static Decision OpenRequest(Deciding d, WorkflowInstance instance, OpenRequested open) => open.Actor switch
+    {
+        not EngineActor.Name => new Rejected(d.Key, WorkflowErrors.TriggerNotAllowed.With(
+            $"an open-request comes from {EngineActor.Name}, not {open.Actor} (fix: the launcher sends it; run the launch from the desk)")),
+        _ when instance is { Ended: false, Suspension.Kind: SuspensionKind.Takeover } =>
+            new Absorbed(d.Key, $"{instance.Address.Value} is already taken over; launch {open.Launch} opens beside it"),
+        _ => d.Rules.TakeOver(instance, EngineActor.Name).Match<Decision>(d.Changed, e => new Rejected(d.Key, e)),
+    };
 }
