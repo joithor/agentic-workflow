@@ -56,14 +56,19 @@ internal sealed partial class RecipeWorkflow
     }
 
     /// <summary>
-    /// Rejects an open-request where no takeover is allowed: an ended instance, or any actor but 'service:engine'
-    /// (SND-WF-003). One that arrives while the instance is starting is accepted; the Update waits for the start.
+    /// Rejects an open-request where no takeover is allowed: an ended instance, any actor but 'service:engine', or a
+    /// launch that isn't a launch id (SND-WF-003). One that arrives while the instance is starting is accepted; the Update waits for the start.
     /// </summary>
     /// <param name="request">The open-request.</param>
     [WorkflowUpdateValidator(nameof(OpenRequestAsync))]
     public void ValidateOpenRequest(OpenRequested request)
     {
         ArgumentNullException.ThrowIfNull(request);
+        if (!LaunchId.TryFrom(request.Launch, out _))
+        {
+            throw Refusal(WorkflowErrors.TriggerNotAllowed.With($"an open-request names launch '{request.Launch}', not a launch id: 'LCH-' and 32 lower-case hex digits (fix: the launcher sends the id it minted)"));
+        }
+
         if (_instance is null)
         {
             if (!string.Equals(request.Actor, EngineActor.Name, StringComparison.Ordinal))

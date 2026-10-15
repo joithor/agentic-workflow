@@ -81,6 +81,8 @@ public static partial class TransitionDecision
     {
         not EngineActor.Name => new Rejected(d.Key, WorkflowErrors.TriggerNotAllowed.With(
             $"an open-request comes from {EngineActor.Name}, not {open.Actor} (fix: the launcher sends it; run the launch from the desk)")),
+        _ when !LaunchId.TryFrom(open.Launch, out _) => new Rejected(d.Key, WorkflowErrors.TriggerNotAllowed.With(
+            $"an open-request names launch '{open.Launch}', not a launch id: 'LCH-' and 32 lower-case hex digits (fix: the launcher sends the id it minted)")),
         _ when instance is { Ended: false, Suspension.Kind: SuspensionKind.Takeover } =>
             new Absorbed(d.Key, $"{instance.Address.Value} is already taken over; launch {open.Launch} opens beside it"),
         _ => d.Rules.TakeOver(instance, EngineActor.Name).Match<Decision>(d.Changed, e => new Rejected(d.Key, e)),
