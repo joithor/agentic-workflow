@@ -254,9 +254,9 @@ internal sealed partial class RecipeWorkflow
     }
 
     /// <summary>
-    /// Whether <paramref name="failure"/> is a local activity that ran out of attempts. The SDK raises a failed local activity as the activity's own
-    /// <see cref="ApplicationFailureException"/> (the history shows no ActivityFailure around it), a failed ordinary one as an <see cref="ActivityFailureException"/>;
-    /// a cancellation is neither, so it still ends the workflow.
+    /// Whether <paramref name="failure"/> is a failure of the local activity: it ran out of attempts (the SDK raises that as the activity's own
+    /// <see cref="ApplicationFailureException"/>), timed out (<see cref="TimeoutFailureException"/>), or was an ordinary activity's <see cref="ActivityFailureException"/>.
+    /// A cancellation is none of these, so it still ends the workflow.
     /// </summary>
-    internal static bool IsActivityFailure(Exception failure) => failure is ActivityFailureException or ApplicationFailureException;
+    internal static bool IsActivityFailure(Exception failure) => failure is FailureException and not CanceledFailureException;
 }

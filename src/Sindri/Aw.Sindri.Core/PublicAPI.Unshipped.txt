@@ -4513,17 +4513,17 @@ Aw.Sindri.Core.Workflow.Views.StepDeclaration.Ref.init -> void
 Aw.Sindri.Core.Workflow.Views.StepDeclaration.StepDeclaration(string! Kind, string! Ref, string! Declaration) -> void
 Aw.Sindri.Core.Workflow.Views.SubjectRef
 Aw.Sindri.Core.Workflow.Views.SubjectRef.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.SubjectRef!
-Aw.Sindri.Core.Workflow.Views.SubjectRef.Deconstruct(out string! Kind, out string! Key, out string! Label, out string? Href) -> void
+Aw.Sindri.Core.Workflow.Views.SubjectRef.Deconstruct(out string? Kind, out string! Key, out string! Label, out string? Href) -> void
 Aw.Sindri.Core.Workflow.Views.SubjectRef.Equals(Aw.Sindri.Core.Workflow.Views.SubjectRef? other) -> bool
 Aw.Sindri.Core.Workflow.Views.SubjectRef.Href.get -> string?
 Aw.Sindri.Core.Workflow.Views.SubjectRef.Href.init -> void
 Aw.Sindri.Core.Workflow.Views.SubjectRef.Key.get -> string!
 Aw.Sindri.Core.Workflow.Views.SubjectRef.Key.init -> void
-Aw.Sindri.Core.Workflow.Views.SubjectRef.Kind.get -> string!
+Aw.Sindri.Core.Workflow.Views.SubjectRef.Kind.get -> string?
 Aw.Sindri.Core.Workflow.Views.SubjectRef.Kind.init -> void
 Aw.Sindri.Core.Workflow.Views.SubjectRef.Label.get -> string!
 Aw.Sindri.Core.Workflow.Views.SubjectRef.Label.init -> void
-Aw.Sindri.Core.Workflow.Views.SubjectRef.SubjectRef(string! Kind, string! Key, string! Label, string? Href) -> void
+Aw.Sindri.Core.Workflow.Views.SubjectRef.SubjectRef(string? Kind, string! Key, string! Label, string? Href) -> void
 Aw.Sindri.Core.Workflow.Views.TimeoutKind
 Aw.Sindri.Core.Workflow.Views.TimeoutKind.Escalates = 2 -> Aw.Sindri.Core.Workflow.Views.TimeoutKind
 Aw.Sindri.Core.Workflow.Views.TimeoutKind.Parks = 1 -> Aw.Sindri.Core.Workflow.Views.TimeoutKind
@@ -6853,7 +6853,6 @@ static Aw.Sindri.Core.Profile.RepoDenyGlobs.Entries(Aw.Sindri.Core.Profile.Sindr
 static Aw.Sindri.Core.Profile.RepoDenyGlobs.For(Aw.Sindri.Core.Profile.SindriProfile! profile, Aw.Sindri.Core.Profile.RepoEntry! repo) -> System.Collections.Generic.IReadOnlyList<string!>?
 Aw.Sindri.Core.Profile.RepoDenyGlobs
 static Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.TypeOf(Aw.Sindri.Core.Workflow.Recipes.RecipeInput! input) -> string!
-static Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.KindOf(Aw.Sindri.Core.Workflow.Recipes.RecipeInput! input) -> string!
 Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles
 Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.For(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view) -> string?
 Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.ItemTitles(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! titles) -> void

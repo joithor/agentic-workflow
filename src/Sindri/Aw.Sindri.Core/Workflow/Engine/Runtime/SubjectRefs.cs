@@ -34,7 +34,7 @@ public static partial class SubjectRefs
         }
 
         var input = recipe.Recipe.Inputs[0];
-        var kind = SubjectKinds.KindOf(input);
+        var kind = SubjectKinds.Effective(input);
         var (key, label) = Named(recipe, input, item, content);
         return new SubjectRef(kind, key, label, Href: null);
     }
