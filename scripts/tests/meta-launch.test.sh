@@ -32,6 +32,14 @@ cfg="$AW_STATE_DIR/meta/team.json"
 jq -n --arg r "$WORK/repo" --arg p "$WORK/prompts" '{team:"demo", repo:$r, prompts:$p, metaLane:"meta", lanes:["api","ui"]}' > "$cfg"
 
 # meta-lane.sh: fresh start with a prompt, then resume once a transcript exists.
+cat > "$WORK/claude-env" <<'EOF2'
+#!/usr/bin/env bash
+env | grep -E '^(CLAUDECODE|CLAUDE_CODE_SESSION_ID|CLAUDE_CODE_MESSAGING_SOCKET|CLAUDE_CODE_USE_BEDROCK)=' | sort > "$CALLS.env"
+EOF2
+chmod +x "$WORK/claude-env"
+CLAUDECODE=1 CLAUDE_CODE_SESSION_ID=parent CLAUDE_CODE_MESSAGING_SOCKET=/s CLAUDE_CODE_USE_BEDROCK=1 \
+  AW_META_CLAUDE="$WORK/claude-env" bash "$DIR/meta-lane.sh" demo envcheck
+check "launched from a Claude session: its identity cleared, settings kept" "$(cat "$CALLS.env")" "CLAUDE_CODE_USE_BEDROCK=1"
 bash "$DIR/meta-lane.sh" demo api
 id="$(cat "$AW_STATE_DIR/meta/lane-sessions/api")"
 check "fresh: id recorded" "$(printf '%s' "$id" | grep -cE '^[0-9a-f-]{36}$')" "1"
