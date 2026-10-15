@@ -60,13 +60,7 @@ internal static class ContextText
         _ = text.AppendLine().Append("## ").AppendLine(section.Name);
         foreach (var item in section.Items)
         {
-            var draft = item.Node is not null && !item.Confirmed ? " (draft)" : string.Empty;
-            _ = text.AppendLine(Invariant($"{Markers(item.Cites)} {item.Title ?? item.Node ?? item.Kind}{draft}"));
-            _ = text.AppendLine(Invariant($"    trust {(item.Trust == Trust.Trusted ? "trusted" : "untrusted")} · {string.Join(", ", item.Why)}"));
-            foreach (var line in (item.Text ?? "(text withheld)").Split('\n'))
-            {
-                _ = text.Append("    ").AppendLine(line);
-            }
+            Item(text, item);
         }
 
         if (section.More.Count > 0)
@@ -76,6 +70,28 @@ internal static class ContextText
 
         _ = text.AppendLine();
     }
+
+    /// <summary>One item: its markers and title ('(draft)' when a map item isn't confirmed), trust and why, an affects item's depth and path, then its body.</summary>
+    private static void Item(StringBuilder text, ResultItem item)
+    {
+        var draft = item.Node is not null && !item.Confirmed ? " (draft)" : string.Empty;
+        _ = text.AppendLine(Invariant($"{Markers(item.Cites)} {item.Title ?? item.Node ?? item.Kind}{draft}"));
+        _ = text.AppendLine(Invariant($"    trust {TrustWord(item.Trust)} · {string.Join(", ", item.Why)}"));
+        if (item is { Depth: { } depth, Path: { } path })
+        {
+            _ = text.AppendLine(Invariant($"    depth {depth} · path {string.Join(" → ", path)}"));
+        }
+
+        foreach (var line in Body(item))
+        {
+            _ = text.Append("    ").AppendLine(line);
+        }
+    }
+
+    private static string TrustWord(Trust trust) => trust == Trust.Trusted ? "trusted" : "untrusted";
+
+    /// <summary>An item's body lines: its text; '(text withheld)' for a record with none; nothing for a map item with no facts line.</summary>
+    private static string[] Body(ResultItem item) => (item.Text ?? (item.Node is null ? "(text withheld)" : null))?.Split('\n') ?? [];
 
     private static void Citations(StringBuilder text, IReadOnlyDictionary<string, Citation> cites)
     {
