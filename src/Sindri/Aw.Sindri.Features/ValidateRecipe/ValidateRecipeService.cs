@@ -3,7 +3,6 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
-using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Core.Workflow.Validation;
 
 namespace Aw.Sindri.Features.ValidateRecipe;
@@ -41,7 +40,7 @@ internal sealed class ValidateRecipeService(IRecipeReader reader, IRecipeFiles f
             return approved.Error;
         }
 
-        var context = new ValidationContext(catalog, RecipeRegistryReader.ProfileFacts(approved.Value), children, BaseRecipe: null);
+        var context = new ValidationContext(catalog, ApprovedRecipeProfileFacts.Of(approved.Value), children, BaseRecipe: null);
         return new ValidateRecipeResponse([.. reading.Findings, .. RecipeValidator.Validate(document, context)], document.Hash)
         {
             Normalized = document.Recipe,

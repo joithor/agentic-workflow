@@ -1,3 +1,4 @@
+
 #nullable enable
 Aw.Sindri.Core.Auth.HeldHumanToken
 Aw.Sindri.Core.Auth.HeldHumanToken.Clear() -> void
@@ -896,6 +897,9 @@ Aw.Sindri.Core.Profile.ApiSettings.Deconstruct(out int Port) -> void
 Aw.Sindri.Core.Profile.ApiSettings.Equals(Aw.Sindri.Core.Profile.ApiSettings? other) -> bool
 Aw.Sindri.Core.Profile.ApiSettings.Port.get -> int
 Aw.Sindri.Core.Profile.ApiSettings.Port.init -> void
+Aw.Sindri.Core.Profile.ApprovedRecipeProfileFacts
+Aw.Sindri.Core.Profile.ApprovedRecipeProfileFacts.ApprovedRecipeProfileFacts(Aw.Sindri.Core.Profile.IApprovedProfile! profile) -> void
+Aw.Sindri.Core.Profile.ApprovedRecipeProfileFacts.Current(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Validation.RecipeProfileFacts!>!>
 Aw.Sindri.Core.Profile.Cadence
 Aw.Sindri.Core.Profile.Cadence.<Clone>$() -> Aw.Sindri.Core.Profile.Cadence!
 Aw.Sindri.Core.Profile.Cadence.Cadence(System.TimeSpan Interval) -> void
@@ -3443,7 +3447,7 @@ Aw.Sindri.Core.Workflow.Registry.RecipeRegistration.RecipeRegistration(Aw.Sindri
 Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader
 Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader.Children(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver!>!>
 Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader.Recipe(Aw.Sindri.Core.Workflow.Ids.RecipeHash hash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Recipes.Recipe?>!>
-Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader.RecipeRegistryReader(Aw.Sindri.Core.Workflow.Registry.IRecipeStore! store, Aw.Sindri.Core.Workflow.Registry.IRecipeApprovals! approvals, Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! catalog, System.Text.Json.JsonSerializerOptions! json, Aw.Sindri.Core.Profile.IApprovedProfile! profile) -> void
+Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader.RecipeRegistryReader(Aw.Sindri.Core.Workflow.Registry.IRecipeStore! store, Aw.Sindri.Core.Workflow.Registry.IRecipeApprovals! approvals, Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! catalog, System.Text.Json.JsonSerializerOptions! json, Aw.Sindri.Core.Workflow.Validation.IRecipeProfileFacts! profile) -> void
 Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader.Summaries(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeSummary!>!>!>
 Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader.Summary(Aw.Sindri.Core.Workflow.Registry.RegisteredRecipe! recipe, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.RecipeSummary!>!>
 Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader.Validation(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Validation.ValidationContext!>!>
@@ -3600,6 +3604,8 @@ Aw.Sindri.Core.Workflow.Validation.FindingSeverity.Information = 2 -> Aw.Sindri.
 Aw.Sindri.Core.Workflow.Validation.FindingSeverity.Skipped = 3 -> Aw.Sindri.Core.Workflow.Validation.FindingSeverity
 Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver
 Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver.Resolve(Aw.Sindri.Core.Workflow.Ids.RecipeId id) -> Aw.Sindri.Core.Workflow.Validation.ChildRecipe?
+Aw.Sindri.Core.Workflow.Validation.IRecipeProfileFacts
+Aw.Sindri.Core.Workflow.Validation.IRecipeProfileFacts.Current(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Validation.RecipeProfileFacts!>!>
 Aw.Sindri.Core.Workflow.Validation.RecipeDocument
 Aw.Sindri.Core.Workflow.Validation.RecipeDocument.<Clone>$() -> Aw.Sindri.Core.Workflow.Validation.RecipeDocument!
 Aw.Sindri.Core.Workflow.Validation.RecipeDocument.Deconstruct(out Aw.Sindri.Core.Workflow.Recipes.Recipe! Recipe, out Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, out Aw.Sindri.Core.Workflow.Validation.RecipeSource! Source) -> void
@@ -5659,6 +5665,7 @@ static Aw.Sindri.Core.Mcp.ProviderFileRead.operator !=(Aw.Sindri.Core.Mcp.Provid
 static Aw.Sindri.Core.Mcp.ProviderFileRead.operator ==(Aw.Sindri.Core.Mcp.ProviderFileRead? left, Aw.Sindri.Core.Mcp.ProviderFileRead? right) -> bool
 static Aw.Sindri.Core.Profile.ApiSettings.operator !=(Aw.Sindri.Core.Profile.ApiSettings? left, Aw.Sindri.Core.Profile.ApiSettings? right) -> bool
 static Aw.Sindri.Core.Profile.ApiSettings.operator ==(Aw.Sindri.Core.Profile.ApiSettings? left, Aw.Sindri.Core.Profile.ApiSettings? right) -> bool
+static Aw.Sindri.Core.Profile.ApprovedRecipeProfileFacts.Of(Aw.Sindri.Core.Profile.LoadedProfile? approved) -> Aw.Sindri.Core.Workflow.Validation.RecipeProfileFacts!
 static Aw.Sindri.Core.Profile.Cadence.Parse(string! text) -> Aw.Kernel.Result<Aw.Sindri.Core.Profile.Cadence!>!
 static Aw.Sindri.Core.Profile.Cadence.operator !=(Aw.Sindri.Core.Profile.Cadence? left, Aw.Sindri.Core.Profile.Cadence? right) -> bool
 static Aw.Sindri.Core.Profile.Cadence.operator ==(Aw.Sindri.Core.Profile.Cadence? left, Aw.Sindri.Core.Profile.Cadence? right) -> bool
@@ -6195,7 +6202,6 @@ static Aw.Sindri.Core.Workflow.Registry.RecipeRegistered.operator !=(Aw.Sindri.C
 static Aw.Sindri.Core.Workflow.Registry.RecipeRegistered.operator ==(Aw.Sindri.Core.Workflow.Registry.RecipeRegistered? left, Aw.Sindri.Core.Workflow.Registry.RecipeRegistered? right) -> bool
 static Aw.Sindri.Core.Workflow.Registry.RecipeRegistration.operator !=(Aw.Sindri.Core.Workflow.Registry.RecipeRegistration? left, Aw.Sindri.Core.Workflow.Registry.RecipeRegistration? right) -> bool
 static Aw.Sindri.Core.Workflow.Registry.RecipeRegistration.operator ==(Aw.Sindri.Core.Workflow.Registry.RecipeRegistration? left, Aw.Sindri.Core.Workflow.Registry.RecipeRegistration? right) -> bool
-static Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader.ProfileFacts(Aw.Sindri.Core.Profile.LoadedProfile? approved) -> Aw.Sindri.Core.Workflow.Validation.RecipeProfileFacts!
 static Aw.Sindri.Core.Workflow.Registry.RecipeRevocation.operator !=(Aw.Sindri.Core.Workflow.Registry.RecipeRevocation? left, Aw.Sindri.Core.Workflow.Registry.RecipeRevocation? right) -> bool
 static Aw.Sindri.Core.Workflow.Registry.RecipeRevocation.operator ==(Aw.Sindri.Core.Workflow.Registry.RecipeRevocation? left, Aw.Sindri.Core.Workflow.Registry.RecipeRevocation? right) -> bool
 static Aw.Sindri.Core.Workflow.Registry.RecipeRevoked.operator !=(Aw.Sindri.Core.Workflow.Registry.RecipeRevoked? left, Aw.Sindri.Core.Workflow.Registry.RecipeRevoked? right) -> bool

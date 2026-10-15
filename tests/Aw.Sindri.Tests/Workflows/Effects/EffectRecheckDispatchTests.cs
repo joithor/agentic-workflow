@@ -112,7 +112,7 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) 
         var env = server.Environment;
         _harness.Recipe("workflow.dev-notify", WorkflowsHarness.Shipped("dev/workflow.dev-notify.yaml"));
         await Allow(_notify);
-        _desk.Failure = Aw.Sindri.Core.Workflow.WorkflowErrors.NoRuntime.With("/repos/dev has no commit to point refs/sindri/me/T-95 at");
+        _desk.Failure = Core.Workflow.WorkflowErrors.NoRuntime.With("/repos/dev has no commit to point refs/sindri/me/T-95 at");
         await using var sindri = Sindri();
         await WorkflowsHarness.HoldLease(sindri, Token);
         using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
