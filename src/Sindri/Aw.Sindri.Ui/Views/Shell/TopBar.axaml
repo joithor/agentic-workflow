@@ -71,6 +71,13 @@
         </StackPanel>
       </Border>
 
+      <!-- The G-chord's wait (rev 7 §8): "G …" in a keycap in the spacer column while G waits for its second key. Transient and
+           named, not live: the key press is the user's own. -->
+      <Border x:Name="ChordHint" Grid.Column="3" Classes="kbd" HorizontalAlignment="Left" VerticalAlignment="Center"
+              IsVisible="{Binding IsChordPending}" AutomationProperties.Name="{Binding ChordHint}">
+        <TextBlock Classes="kbd" Text="{Binding ChordHint}" VerticalAlignment="Center" />
+      </Border>
+
       <!-- The ⌘K field (home.html): a magnifier, the placeholder, and the ⌘K keycap at the right; folded ("compact"), the
            magnifier alone, still named "Search or run a command". Inert until U1 brings the palette, so it is no Tab stop
            (a keyboard user never lands on a control that does nothing) and, like the decorative glyphs, Raw to assistive

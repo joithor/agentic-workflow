@@ -101,9 +101,17 @@ internal sealed partial class ShellWindow : Window
             Dispatcher.UIThread.Post(() => FirstFocusable(this.Get<Control>("SettingsSlot"))?.Focus(NavigationMethod.Tab), DispatcherPriority.Loaded);
             e.Handled = true;
         }
+        else
+        {
+            e.Handled = Chord(e);
+        }
 
         base.OnKeyDown(e);
     }
+
+    // Single keys never fire while typing in a text field (rev 7 §8).
+    private bool Chord(KeyEventArgs e) =>
+        e.KeyModifiers == KeyModifiers.None && e.Source is not TextBox && ChordKey(e.Key) is { } chord && Shell is { } shell && shell.PressKey(chord);
 
     // Esc closes the sheet when it shows, or Settings over the Not running card (focus then goes from its hidden control
     // to the page region); otherwise it does nothing here. A sheet hidden while Sindri isn't running stays open, so the
@@ -141,6 +149,12 @@ internal sealed partial class ShellWindow : Window
         var target = next.Focusable ? next : FirstFocusable(next) ?? next;
         return target.Focus(NavigationMethod.Tab);
     }
+
+    /// <summary>The text a plain key feeds the G-chord: a letter or '.', else null.</summary>
+    /// <param name="key">The key.</param>
+    /// <returns>Its text, or null.</returns>
+    internal static string? ChordKey(Key key) =>
+        key is >= Key.A and <= Key.Z ? key.ToString() : key is Key.OemPeriod or Key.Decimal ? "." : null;
 
     /// <summary>The step a key takes through the regions (§8, §11.2): 1 forward, -1 back, null when it isn't a region key.</summary>
     /// <param name="key">The key.</param>

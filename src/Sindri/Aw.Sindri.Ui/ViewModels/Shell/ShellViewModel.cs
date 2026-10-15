@@ -29,6 +29,7 @@ internal sealed partial class ShellViewModel : ObservableObject
     ];
 
     private readonly Preferences _store;
+    private readonly TimeProvider _clock;
     private UiPreferences _preferences = UiPreferences.Defaults;
 
     // The page Settings was opened from, where leaving it over the Not running card returns.
@@ -42,6 +43,7 @@ internal sealed partial class ShellViewModel : ObservableObject
     internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, Preferences preferences)
     {
         _store = preferences;
+        _clock = clock;
         Health = new HealthViewModel(records, api, clock);
         Health.PropertyChanged += OnHealthChanged;
         Health.Pill.PropertyChanged += OnPillChanged;
@@ -197,21 +199,6 @@ internal sealed partial class ShellViewModel : ObservableObject
         CurrentPage = page;
         Changed(_pageProperties);
         Remember(p => p with { LastPage = page.ToString() });
-    }
-
-    /// <summary>Goes where a deep link points: a page, or the detail sheet with its subject.</summary>
-    /// <param name="link">The link.</param>
-    internal void Navigate(DeepLink link)
-    {
-        if (link.Kind == DeepLinkKind.HomeNeedsYou || link.Subject is null)
-        {
-            GoTo(PageId.Home);
-            return;
-        }
-
-        SheetSubject = link.Subject;
-        IsSheetOpen = true;
-        Changed(nameof(SheetSubject), nameof(EdgeTabName), nameof(IsSheetOpen), nameof(HasEdgeTab), nameof(IsSheetShown), nameof(IsEdgeTabShown));
     }
 
     /// <summary>Closes the sheet (Esc); its subject stays on the edge tab.</summary>
