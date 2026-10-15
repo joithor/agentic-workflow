@@ -127,7 +127,11 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
         {
             return WorkflowErrors.InstanceNotFound.With($"{address.Value} isn't an instance (fix: sindri workflow list, or sindri workflow start)");
         }
-        catch (RpcException e) when (e.Code is RpcException.StatusCode.DeadlineExceeded or RpcException.StatusCode.Unavailable) // boundary: no worker answered
+        catch (RpcException e) when (e.Code == RpcException.StatusCode.Unavailable) // boundary: the dev server died under a live serve
+        {
+            return TemporalUpdates.Down(client.Value, e);
+        }
+        catch (RpcException e) when (e.Code == RpcException.StatusCode.DeadlineExceeded) // boundary: no worker answered
         {
             return SindriErrors.ApiTimeout.With($"no worker answered the status query for {address.Value} within {StatusText.Duration(QueryPatience)}: {e.Message} (fix: start sindri serve, which runs the worker)");
         }

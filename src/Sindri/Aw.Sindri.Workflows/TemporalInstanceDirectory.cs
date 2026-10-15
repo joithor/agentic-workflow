@@ -45,6 +45,10 @@ internal sealed class TemporalInstanceDirectory(TemporalFrontend frontend, Known
             {
                 return latest;
             }
+            catch (RpcException e) when (e.Code == RpcException.StatusCode.Unavailable) // boundary: the dev server died under a live serve
+            {
+                return TemporalUpdates.Down(client.Value, e);
+            }
         }
     }
 
@@ -104,6 +108,10 @@ internal sealed class TemporalInstanceDirectory(TemporalFrontend frontend, Known
         {
             return TemporalUpdates.NotServes(client.Value, e);
         }
+        catch (RpcException e) when (e.Code == RpcException.StatusCode.Unavailable) // boundary: the dev server died under a live serve
+        {
+            return TemporalUpdates.Down(client.Value, e);
+        }
 
         return WorkflowErrors.InstanceNotFound.With($"no instance has the id {id.Value} (fix: sindri workflow list)");
     }
@@ -111,13 +119,24 @@ internal sealed class TemporalInstanceDirectory(TemporalFrontend frontend, Known
     private static async ValueTask<Result<InstanceAddress>> Roots(Temporalio.Client.ITemporalClient client, ItemKey item, CancellationToken cancellationToken)
     {
         var roots = new Dictionary<string, (int Attempt, InstanceAddress Address)>(StringComparer.Ordinal);
-        await foreach (var execution in client.ListWorkflowsAsync($"WorkflowType = 'RecipeWorkflow' AND Item = '{item.Value}'").WithCancellation(cancellationToken).ConfigureAwait(false))
+        try
         {
-            if (execution.Id.Split('/') is [_, var recipe, var number] && int.TryParse(number, NumberStyles.None, CultureInfo.InvariantCulture, out var attempt)
-                && (!roots.TryGetValue(recipe, out var seen) || seen.Attempt < attempt))
+            await foreach (var execution in client.ListWorkflowsAsync($"WorkflowType = 'RecipeWorkflow' AND Item = '{item.Value}'").WithCancellation(cancellationToken).ConfigureAwait(false))
             {
-                roots[recipe] = (attempt, InstanceAddress.From(execution.Id));
+                if (execution.Id.Split('/') is [_, var recipe, var number] && int.TryParse(number, NumberStyles.None, CultureInfo.InvariantCulture, out var attempt)
+                    && (!roots.TryGetValue(recipe, out var seen) || seen.Attempt < attempt))
+                {
+                    roots[recipe] = (attempt, InstanceAddress.From(execution.Id));
+                }
             }
+        }
+        catch (RpcException e) when (TemporalUpdates.NoNamespace(e)) // boundary: not serve's Temporal
+        {
+            return TemporalUpdates.NotServes(client, e);
+        }
+        catch (RpcException e) when (e.Code == RpcException.StatusCode.Unavailable) // boundary: the dev server died under a live serve
+        {
+            return TemporalUpdates.Down(client, e);
         }
 
         return roots.Count switch
