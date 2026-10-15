@@ -40,7 +40,7 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFacto
         }
 
         var deadline = clock.GetUtcNow() + settings.Value.Deadline;
-        var sources = catalog.For(settings.Value, repos.Value, scrubbers.Value);
+        var sources = catalog.For(settings.Value, repos.Value, scrubbers.Value).Where(s => ScopeRules.MayRead(request.Scope.Caller, s.Describe())).ToList();
         var searched = await Search(sources, valid.Value.Terms, deadline, cancellationToken).ConfigureAwait(false);
         if (sources.Count > 0 && searched.Answers.Count == 0)
         {
@@ -110,7 +110,8 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFacto
                 ? new ScrubbedField(string.Empty, Redacted: false, Blocked: true)
                 : ingest.Clean(record.Value.Text, singleLine: false);   // cleaned whole, then cut, so a cut never splits a secret
             var cut = text with { Text = UntrustedFence.Prefix(text.Text, MaxRecordText) };
-            fetched.Add(new FetchedRecord(item, source, ingest.Clean(record.Value.Title, singleLine: true), cut));
+            var aliases = item.Aliases.Select(a => ingest.Clean(a, singleLine: true)).ToList();   // record text too: cleaned like the title
+            fetched.Add(new FetchedRecord(item, source, ingest.Clean(record.Value.Title, singleLine: true), cut, aliases));
         }
 
         return fetched;
