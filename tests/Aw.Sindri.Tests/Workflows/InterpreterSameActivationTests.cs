@@ -41,7 +41,7 @@ public sealed class InterpreterSameActivationTests(SindriTimeSkippingServer serv
         await skipping.CancelAsync();   // and no further: the next run's own timeout must not skip
         _ = await Assert.ThrowsAnyAsync<Exception>(() => ended.WaitAsync(TimeSpan.FromSeconds(30), ct));
         var update = handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(new string('a', 32)));   // waits for a worker
-        await Task.Delay(TimeSpan.FromSeconds(1), ct);   // the server has it queued (an Update can't be started 'admitted')
+        await Task.Delay(TimeSpan.FromSeconds(1), ct);   // the server has it queued (this server can't report an Update 'admitted', so there is nothing to poll for; the assertions below carry the history)
 
         using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
         await worker.ExecuteAsync(async () =>
@@ -51,9 +51,10 @@ public sealed class InterpreterSameActivationTests(SindriTimeSkippingServer serv
             var next = Report("2.1", "passed");
             var again = await handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(next), new WorkflowUpdateOptions(new string('b', 32)));
 
-            Assert.Equal("-> checks", done.Happened);
-            Assert.Equal("2.1", checks.Run?.Value);
-            Assert.Equal("-> verify", again.Happened);   // a stale report would have refused this one (SND-WF-005)
+            var history = await EventTypes(handle);   // the failure message names the history, since the sleep above can't prove the Update was queued
+            Assert.True(done.Happened == "-> checks", $"expected '-> checks', got '{done.Happened}'; history: {history}");
+            Assert.True(checks.Run?.Value == "2.1", $"expected run 2.1, got '{checks.Run?.Value}'; history: {history}");
+            Assert.True(again.Happened == "-> verify", $"expected '-> verify' (a stale report would have refused it, SND-WF-005), got '{again.Happened}'; history: {history}");
             await handle.TerminateAsync("test over");
         }, ct);
     }
@@ -68,7 +69,7 @@ public sealed class InterpreterSameActivationTests(SindriTimeSkippingServer serv
         var handle = await StartOnDesk(sindri, "T-54", ct);
         var first = Settled(handle.ExecuteUpdateAsync(wf => wf.CancelAsync(Cancel('a')), new WorkflowUpdateOptions(new string('a', 32))));   // waits for a worker
         var second = Settled(handle.ExecuteUpdateAsync(wf => wf.CancelAsync(Cancel('b')), new WorkflowUpdateOptions(new string('b', 32))));
-        await Task.Delay(TimeSpan.FromSeconds(1), ct);   // the server has both queued (an Update can't be started 'admitted')
+        await Task.Delay(TimeSpan.FromSeconds(1), ct);   // the server has both queued (no 'admitted' stage to poll for here; the assertions below carry the history)
 
         using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
         await worker.ExecuteAsync(async () =>
@@ -76,8 +77,9 @@ public sealed class InterpreterSameActivationTests(SindriTimeSkippingServer serv
             var outcomes = await Task.WhenAll(first, second).WaitAsync(TimeSpan.FromSeconds(30), ct);
             var result = await handle.GetResultAsync().WaitAsync(TimeSpan.FromSeconds(30), ct);
 
-            Assert.Equal(1, outcomes.Count(static o => o is null));   // one cancelled the instance
-            Assert.Equal("cancelled", result.State);
+            var history = await EventTypes(handle);   // the failure message names the history, since the sleep above can't prove both Updates were queued
+            Assert.True(outcomes.Take(2).Count(static o => o is null) == 1, $"one cancel should have ended the instance; history: {history}");
+            Assert.True(result.State == "cancelled", $"expected 'cancelled', got '{result.State}'; history: {history}");
         }, ct);
     }
 
@@ -108,6 +110,10 @@ public sealed class InterpreterSameActivationTests(SindriTimeSkippingServer serv
 
         await Task.Delay(TimeSpan.FromMilliseconds(500), ct);   // the workflow task that follows it
     }
+
+    /// <summary>The history's event types in order, for an assertion message.</summary>
+    private static async Task<string> EventTypes(WorkflowHandle handle) =>
+        string.Join(", ", (await handle.FetchHistoryAsync()).Events.Select(static e => e.EventType));
 
     /// <summary>Waits until the desk deadline's timer has fired in the history: the next worker's first activation carries it.</summary>
     private static async Task TimerFired(WorkflowHandle handle, CancellationToken ct)
