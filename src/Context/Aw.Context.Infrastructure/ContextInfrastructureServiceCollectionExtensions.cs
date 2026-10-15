@@ -1,7 +1,9 @@
 using Aw.Context.Core.Docs;
+using Aw.Context.Core.Eval;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Trust;
 using Aw.Context.Infrastructure.Docs;
+using Aw.Context.Infrastructure.Eval;
 using Aw.Context.Infrastructure.Git;
 using Aw.Context.Infrastructure.Graph;
 using Aw.Context.Infrastructure.Map;
@@ -20,8 +22,8 @@ public static class ContextInfrastructureServiceCollectionExtensions
     /// <summary>
     /// Adds the context store (context.db under $AW_SINDRI_HOME/context), git, the repo-docs index and source catalog,
     /// the scrubber factory over Aw.Redaction (each call's scrubbers carry the profile's extra patterns), the graph store,
-    /// the map file reader and the exports folder, and the factory that builds the onyx source from the profile's onyx
-    /// settings and Linear teams (doctor's 'context:onyx' check runs that source's probe). The onyx source reads its key by calling
+    /// the map file reader, the exports folder, the probe file reader and the probe reports folder, and the factory that builds the onyx source from the
+    /// profile's onyx settings and Linear teams (doctor's 'context:onyx' check runs that source's probe). The onyx source reads its key by calling
     /// <paramref name="environment"/> with the settings' pointer text (Sindri's Composition wraps the environment so
     /// pointers resolve there). Needs a TimeProvider, ILogger and the host's AwJson options (a JsonSerializerOptions
     /// singleton whose context holds the map types), all registered by the host.
@@ -40,6 +42,8 @@ public static class ContextInfrastructureServiceCollectionExtensions
             .AddSingleton<IGraphStore, SqliteGraphStore>()
             .AddSingleton<IMapFileReader, MapFileReader>()
             .AddSingleton<IExportStore, FileExportStore>()
+            .AddSingleton<IProbeFileReader, ProbeFileReader>()
+            .AddSingleton<IProbeReportStore, FileProbeReportStore>()
             .AddSingleton(sp => new OnyxSources(new OnyxSourceParts(
                 OnyxHttp.Client, environment, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILogger<OnyxClient>>())));
 }

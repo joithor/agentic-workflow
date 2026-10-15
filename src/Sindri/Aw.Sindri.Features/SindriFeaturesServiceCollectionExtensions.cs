@@ -1,3 +1,4 @@
+using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Kernel.Services;
@@ -75,6 +76,9 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<GetStatusRequest>, AcceptAllValidator<GetStatusRequest>>().AddQuery<GetStatusRequest, GetStatusResponse, GetStatusService>();
         _ = services.AddScoped<IValidator<ListCommandsRequest>, AcceptAllValidator<ListCommandsRequest>>().AddQuery<ListCommandsRequest, ListCommandsResponse, ListCommandsService>();
         _ = services.AddScoped<IValidator<PingProcessRequest>, AcceptAllValidator<PingProcessRequest>>().AddQuery<PingProcessRequest, Ping, PingProcessService>();
+        _ = services.AddScoped<IValidator<ShowContextNodeRequest>, AcceptAllValidator<ShowContextNodeRequest>>().AddQuery<ShowContextNodeRequest, NodeView, ShowContextNodeService>();
+        _ = services.AddScoped<IValidator<ListContextNeighborsRequest>, AcceptAllValidator<ListContextNeighborsRequest>>().AddQuery<ListContextNeighborsRequest, NeighborsView, ListContextNeighborsService>();
+        _ = services.AddScoped<IValidator<FindContextPathRequest>, AcceptAllValidator<FindContextPathRequest>>().AddQuery<FindContextPathRequest, PathView, FindContextPathService>();
         _ = services.AddScoped<IValidator<QueryContextRequest>, AcceptAllValidator<QueryContextRequest>>().AddQuery<QueryContextRequest, ContextResult, QueryContextService>();
         _ = services.AddScoped<IValidator<StreamEventsRequest>, AcceptAllValidator<StreamEventsRequest>>().AddQuery<StreamEventsRequest, StreamEventsResponse, StreamEventsService>();
         return services;
