@@ -46,6 +46,17 @@ public sealed class StatusTextTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Views_that_cannot_be_updated_name_no_event()
+    {
+        var failing = Render(Status(Fresh() with { Stalled = true, StalledType = "SND-VIEW-001: views.db can't be opened" }, Healthy()));
+        var ledger = Render(Status(Fresh() with { Stalled = true, StalledType = "SND-LEDGER-002: the ledger can't be read" }, Healthy()));
+
+        Assert.Contains("  views     can't be updated (SND-VIEW-001: views.db can't be opened): run `sindri views rebuild`\n", failing, StringComparison.Ordinal);
+        Assert.Contains("  views     can't be updated (SND-LEDGER-002: the ledger can't be read): run `sindri doctor`\n", ledger, StringComparison.Ordinal);
+        Assert.DoesNotContain("stalled at", failing, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Each_health_problem_prints_on_its_own_line_under_the_word()
     {
         var health = new HealthReport(HealthWord.Degraded,

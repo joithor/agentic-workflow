@@ -13,6 +13,9 @@ internal sealed class FlakyViewStore(InMemoryViewStore inner) : IViewStore, IVie
 
     public bool FailReads { get; set; }
 
+    /// <summary>The next this many Apply calls fail.</summary>
+    public int FailApplies { get; set; }
+
     public ValueTask<Result<ProjectorState>> Open(int schemaVersion, CancellationToken cancellationToken)
     {
         if (FailOpens > 0)
@@ -25,7 +28,16 @@ internal sealed class FlakyViewStore(InMemoryViewStore inner) : IViewStore, IVie
     }
 
     public ValueTask<Result<PageApplied>> Apply(IReadOnlyList<LedgerEvent> page, IReadOnlyList<IProjection> projections, DateTimeOffset at,
-        CancellationToken cancellationToken) => inner.Apply(page, projections, at, cancellationToken);
+        CancellationToken cancellationToken)
+    {
+        if (FailApplies > 0)
+        {
+            FailApplies--;
+            return ValueTask.FromResult<Result<PageApplied>>(SindriErrors.ViewsStalled.With("views.db can't be written (fixture)"));
+        }
+
+        return inner.Apply(page, projections, at, cancellationToken);
+    }
 
     public ValueTask<Result<ProjectorState>> Reset(IReadOnlyList<string> views, int schemaVersion, DateTimeOffset at, CancellationToken cancellationToken) =>
         inner.Reset(views, schemaVersion, at, cancellationToken);

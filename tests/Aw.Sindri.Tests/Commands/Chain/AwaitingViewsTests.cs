@@ -45,6 +45,20 @@ public sealed class AwaitingViewsTests : IAsyncDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_projector_that_cannot_run_is_named_without_an_event_number()
+    {
+        _ = await _c.H.HoldLease();
+        _c.Progress.Publish(new ViewsStatus(0, 5, ProjectedAt: null, Rebuilding: false, Stalled: true, StalledAt: null, StalledType: "SND-LEDGER-002: the ledger can't be read"));
+
+        var refused = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("accept"), Human);
+
+        Assert.Equal(SindriErrors.ViewsStalled.Code, refused.Error.Code);
+        Assert.Contains("views can't be updated (SND-LEDGER-002: the ledger can't be read)", refused.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("stalled at", refused.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("sindri doctor", refused.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_command_that_reads_views_runs_once_the_views_reach_the_ledger_head()
     {
         await AnEarlierCommand();

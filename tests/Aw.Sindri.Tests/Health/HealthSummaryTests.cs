@@ -119,4 +119,20 @@ public sealed class HealthSummaryTests
 
         Assert.Equal("SND-SCHED-001", problem.Code);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Views_that_cannot_be_updated_name_no_event_and_the_ledger_is_fixed_by_the_doctor()
+    {
+        var failing = Fresh() with { Stalled = true, StalledType = "SND-VIEW-001: views.db can't be opened" };
+        var ledger = Fresh() with { Stalled = true, StalledType = "SND-LEDGER-002: the ledger can't be read" };
+
+        Assert.Equal(
+            [("SND-VIEW-001", "The views can't be updated (SND-VIEW-001: views.db can't be opened): run `sindri views rebuild`", "the views can't be updated")],
+            For(views: failing).Problems.Select(p => (p.Code, p.Text, p.Clause)));
+        Assert.Equal("Sindri is stalled: the views can't be updated.", For(views: failing).Sentence);
+        Assert.Equal(
+            "The views can't be updated (SND-LEDGER-002: the ledger can't be read): run `sindri doctor`",
+            Assert.Single(For(views: ledger).Problems).Text);
+        Assert.Equal(failing.Text, Assert.Single(For(views: failing).Problems).Text);
+    }
 }

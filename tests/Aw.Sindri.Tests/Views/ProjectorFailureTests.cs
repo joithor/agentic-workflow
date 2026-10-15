@@ -15,12 +15,14 @@ public sealed class ProjectorFailureTests
     private readonly SliceHarness _h = new();
     private readonly InMemoryViewStore _memory = new(SliceHarness.Json);
     private readonly FlakyViewStore _views;
+    private readonly FlakyLedgerReader _ledger;
     private readonly ProjectorProgress _progress;
     private readonly ToggleProjection _projection = new();
 
     public ProjectorFailureTests()
     {
         _views = new FlakyViewStore(_memory);
+        _ledger = new FlakyLedgerReader(_h.Store);
         _progress = new ProjectorProgress(_h.Clock);
     }
 
@@ -63,7 +65,64 @@ public sealed class ProjectorFailureTests
         Assert.True(_progress.Current is { Cursor: 3, Rebuilding: false });
     }
 
-    private Projector Projector() => new(new CountingLedgerReader(_h.Store), _views, [_projection], _progress, _h.Callers, _h.Clock, new ListLogger<Projector>());
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_ledger_head_that_cannot_be_read_keeps_the_last_head_names_the_ledger_code_and_clears_on_the_same_instance()
+    {
+        var projector = Projector();
+        await Append(2);
+        _ = await projector.CatchUp(Token);
+        await Append(1);
+        _ledger.FailHead = true;
+
+        Assert.Equal(ProjectorPass.Failed, await projector.CatchUp(Token));
+
+        var shown = _progress.Current;
+        Assert.True(shown is { Stalled: true, StalledAt: null, LedgerHead: 2, Cursor: 2 });
+        Assert.StartsWith("SND-LEDGER-002: ", shown.StalledType, StringComparison.Ordinal);
+        Assert.Contains("sindri doctor", shown.Text, StringComparison.Ordinal);   // a rebuild can't fix the ledger
+        Assert.DoesNotContain("views rebuild", shown.Text, StringComparison.Ordinal);
+        _ledger.FailHead = false;
+        Assert.Equal(ProjectorPass.CaughtUp, await projector.CatchUp(Token));
+        Assert.True(_progress.Current is { Stalled: false, StalledType: null, Cursor: 3, LedgerHead: 3 });
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_page_that_cannot_be_read_or_applied_publishes_the_failing_status_with_its_code()
+    {
+        var projector = Projector();
+        await Append(2);
+        _ledger.FailReads = true;
+        Assert.Equal(ProjectorPass.Failed, await projector.CatchUp(Token));
+        var unread = _progress.Current;
+        _ledger.FailReads = false;
+        _views.FailApplies = 1;
+        Assert.Equal(ProjectorPass.Failed, await projector.CatchUp(Token));
+        var unwritten = _progress.Current;
+
+        Assert.True(unread is { Stalled: true, StalledAt: null, LedgerHead: 2 });
+        Assert.StartsWith("SND-LEDGER-002: ", unread.StalledType, StringComparison.Ordinal);
+        Assert.True(unwritten is { Stalled: true, StalledAt: null, LedgerHead: 2 });
+        Assert.StartsWith("SND-VIEW-001: ", unwritten.StalledType, StringComparison.Ordinal);
+        Assert.Contains("views rebuild", unwritten.Text, StringComparison.Ordinal);
+        Assert.Equal(ProjectorPass.CaughtUp, await projector.CatchUp(Token));
+        Assert.True(_progress.Current is { Stalled: false, Cursor: 2 });
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_failure_during_a_rebuild_keeps_the_rebuilding_flag()
+    {
+        var projector = Projector();
+        await Append(2);
+        _ = await projector.CatchUp(Token);
+        _progress.RequestRebuild();
+        _views.FailApplies = 1;
+
+        Assert.Equal(ProjectorPass.Failed, await projector.CatchUp(Token));
+
+        Assert.True(_progress.Current is { Stalled: true, Rebuilding: true });
+    }
+
+    private Projector Projector() => new(new CountingLedgerReader(_ledger), _views, [_projection], _progress, _h.Callers, _h.Clock, new ListLogger<Projector>());
 
     private async Task Append(int count)
     {
