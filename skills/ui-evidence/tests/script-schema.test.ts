@@ -99,4 +99,14 @@ describe("parseUiScript", () => {
     expect(describeExpectedState({ kind: "url-path", path: "/p" })).toContain("/p");
     expect(describeExpectedState({ kind: "input-value", testId: "t", value: "v" })).toContain('"v"');
   });
+
+  const withTarget = (action: "click" | "fill" | "goto", target: string) => parseUiScript({ route: "/x", role: "staff", viewports: ["desktop"], steps: [{ action, target, expectedState: { kind: "url-path", path: "/x" } }] });
+  it("accepts role: and text: targets on click and fill", () => {
+    expect("error" in withTarget("click", "role:button|Save")).toBe(false);
+    expect("error" in withTarget("fill", "role:textbox|Note")).toBe(false);
+    expect("error" in withTarget("click", "text:Unit 4200")).toBe(false);
+  });
+  it("rejects a malformed role: or text: target", () => {
+    for (const bad of ["role:button", "role:|Save", "role:button|", "text:", "Text:Save", "role:Button|Save"]) expect(withTarget("click", bad)).toHaveProperty("error");
+  });
 });
