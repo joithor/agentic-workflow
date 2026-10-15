@@ -34,6 +34,21 @@ internal static partial class Labels
     /// <summary>The text size slider.</summary>
     internal const string TextSize = "Text size";
 
+    /// <summary>The noun a sheet's name starts with for a link kind, or empty when the subject names itself (an item, decision, job or row id).</summary>
+    /// <param name="kind">The link's kind.</param>
+    /// <returns>The noun, capitalised ("Workflow"), or empty.</returns>
+    internal static string KindNoun(DeepLinkKind kind) => kind switch
+    {
+        DeepLinkKind.Workflow => "Workflow",
+        DeepLinkKind.Recipe => "Recipe",
+        DeepLinkKind.Node => "Node",
+        DeepLinkKind.Session => "Session",
+        DeepLinkKind.System => "System",
+        DeepLinkKind.Service => "Service",
+        DeepLinkKind.HomeNeedsYou or DeepLinkKind.NeedsYou or DeepLinkKind.Item or DeepLinkKind.Decision or DeepLinkKind.Job => string.Empty,
+        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, message: null),
+    };
+
     /// <summary>A page's name, as the top bar and the page region's accessible name say it (§11.2).</summary>
     /// <param name="page">The page.</param>
     /// <returns>The words.</returns>

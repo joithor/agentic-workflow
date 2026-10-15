@@ -224,7 +224,7 @@
 
         <!-- The detail sheet (§3.2): over the page at the right, 420–760 px wide; below 1100 px it covers the page. -->
         <Border x:Name="Sheet" Classes="sheet focus-region" IsVisible="{Binding IsSheetShown}" Focusable="True"
-                AutomationProperties.Name="{Binding SheetSubject}">
+                AutomationProperties.Name="{Binding SheetName}">
           <DockPanel>
             <Thumb x:Name="SheetGrip" Classes="sheet-grip" DockPanel.Dock="Left" Cursor="SizeWestEast"
                    DragDelta="OnSheetDrag" DragCompleted="OnSheetDragged"
@@ -234,7 +234,7 @@
                 <Button x:Name="SheetBack" Classes="back" Content="{Binding Text.Back}" Click="OnCloseSheet"
                         AutomationProperties.Name="{Binding Text.Back}" Margin="0,0,12,0" />
                 <TextBlock x:Name="SheetTitle" Grid.Column="1" Classes="detail-title mono" Focusable="True"
-                           Text="{Binding SheetSubject}" AutomationProperties.Name="{Binding SheetSubject}"
+                           Text="{Binding SheetSubject}" AutomationProperties.Name="{Binding SheetName}"
                            VerticalAlignment="Center" />
                 <Button x:Name="SheetClose" Grid.Column="2" Click="OnCloseSheet" Margin="12,0,0,0"
                         AutomationProperties.Name="{Binding Text.CloseSheet}">

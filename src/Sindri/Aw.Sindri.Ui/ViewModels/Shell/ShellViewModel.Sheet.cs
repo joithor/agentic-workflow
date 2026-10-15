@@ -21,10 +21,10 @@ internal sealed partial class ShellViewModel
     public bool IsSheetShown => IsSheetOpen && IsConnected;
 
     /// <summary>The sheet's accessible name: the kind's noun and the subject ("Workflow X"); an id that names itself stays bare.</summary>
-    public string SheetName => throw new NotSupportedException(SheetSubject);
+    public string SheetName => SheetLink is { } link && Labels.KindNoun(link.Kind) is { Length: > 0 } noun ? noun + " " + SheetSubject : SheetSubject;
 
-    /// <summary>The edge tab's accessible name: "Reopen" and its subject.</summary>
-    public string EdgeTabName => Labels.Reopen + " " + SheetSubject;
+    /// <summary>The edge tab's accessible name: "Reopen" and the sheet's name, its kind's noun in lower case.</summary>
+    public string EdgeTabName => Labels.Reopen + " " + (SheetName.Length > SheetSubject.Length ? char.ToLowerInvariant(SheetName[0]) + SheetName[1..] : SheetSubject);
 
     /// <summary>The edge tab shows when the sheet is closed and has a subject, over a visible page.</summary>
     public bool IsEdgeTabShown => !IsSheetOpen && HasEdgeTab && IsConnected;
@@ -45,7 +45,7 @@ internal sealed partial class ShellViewModel
     {
         SheetLink = link;
         IsSheetOpen = true;
-        Changed(nameof(SheetLink), nameof(SheetSubject), nameof(EdgeTabName), nameof(IsSheetOpen), nameof(HasEdgeTab), nameof(IsSheetShown), nameof(IsEdgeTabShown), nameof(IsSheetPlaceholderShown));
+        Changed(nameof(SheetLink), nameof(SheetSubject), nameof(SheetName), nameof(EdgeTabName), nameof(IsSheetOpen), nameof(HasEdgeTab), nameof(IsSheetShown), nameof(IsEdgeTabShown), nameof(IsSheetPlaceholderShown));
     }
 
     /// <summary>Closes the sheet (Esc); its subject stays on the edge tab.</summary>
