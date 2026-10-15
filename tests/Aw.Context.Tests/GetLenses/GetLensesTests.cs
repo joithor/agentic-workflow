@@ -178,6 +178,7 @@ public sealed class GetLensesTests : IDisposable
         var off = await Ask("feature:layout.split-pane", MapWorld.Session(FixtureMap.Repo, enabled: false));
 
         Assert.True(inside.IsSuccess);
+        Assert.Contains(inside.Value.Bands.Code.Files, f => string.Equals(f.Path, "src/layout/SplitPane.ts", StringComparison.Ordinal));   // why: "that repo's files and code" (spec §3): a session's code band is not empty
         Assert.Equal((ContextErrors.UnknownAnchor.Code, ContextErrors.SessionsDisabled.Code), (outside.Error.Code, off.Error.Code));
     }
 }

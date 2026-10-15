@@ -110,7 +110,7 @@ public sealed class ExportMapTests : IDisposable
 
         var document = _world.Exports.Documents[exported.Value.Path];
         Assert.Equal(string.Join(',', FixtureMap.ScopedNodes), string.Join(',', document.Nodes.Select(n => n.Key.Value).Order(StringComparer.Ordinal)));
-        Assert.Equal(2, document.Edges!.Count);
+        Assert.Equal(FixtureMap.ScopedEdges, document.Edges!.Count);
         Assert.Empty(document.Decisions!);
         _ = Assert.Single(document.Overrides!);
     }

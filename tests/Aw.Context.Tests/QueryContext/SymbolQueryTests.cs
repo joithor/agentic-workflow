@@ -58,6 +58,18 @@ public sealed class SymbolQueryTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_session_in_the_files_own_repo_resolves_it_to_the_features_it_implements()
+    {
+        _ = await _world.ImportFixture();
+
+        var result = await _world.Engine.Query(new ContextQuery(Text: null, Symbol: "src/layout/SplitPane.ts"), MapWorld.Session(Context.Testing.Map.FixtureMap.Repo), MapWorld.None);
+
+        Assert.True(result.IsSuccess, result.IsError ? result.Error.Code : string.Empty);
+        Assert.Equal(["feature:layout.split-pane", "feature:layout.split-pane.orientation"], result.Value.Anchors, StringComparer.Ordinal);
+        Assert.Contains(result.Value.Sections.Single(s => string.Equals(s.Name, "code", StringComparison.Ordinal)).Items, i => string.Equals(i.Node, "code:src/layout/SplitPane.ts", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_session_outside_the_files_repo_scope_gets_003_like_any_unknown_anchor()
     {
         _ = await _world.ImportFixture();

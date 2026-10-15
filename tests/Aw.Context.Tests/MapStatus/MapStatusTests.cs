@@ -41,7 +41,7 @@ public sealed class MapStatusTests : IDisposable
 
         var status = (await _world.Map.MapStatus(anchor: null, MapWorld.Session(FixtureMap.Repo), MapWorld.None)).Value;
 
-        Assert.Equal(new MapCounts(FixtureMap.ScopedNodes.Count, 2, 1, 0, 1), status.Counts);
+        Assert.Equal(new MapCounts(FixtureMap.ScopedNodes.Count, FixtureMap.ScopedEdges, 1, 0, 1), status.Counts);
         Assert.Equal(FixtureMap.Repo, status.ScopedTo?.Value);
     }
 
