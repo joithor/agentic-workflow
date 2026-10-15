@@ -70,7 +70,7 @@ internal static class ViewScenarios
 
     private static async Task<string> Ask(GoldenHost host, HttpRequestMessage request) => (await host.Http.Ask(request)).Body;
 
-    private static async Task<string> Read(GoldenHost host, string path) => await Ask(host, Get(path, Human(host.Token.Value)));
+    internal static async Task<string> Read(GoldenHost host, string path) => await Ask(host, Get(path, Human(host.Token.Value)));
 
     private static async Task<string> Views(GoldenHost host, string path, CancellationToken ct)
     {
@@ -147,7 +147,7 @@ internal static class ViewScenarios
         await CatchUp(host, ct);
     }
 
-    private static async Task Approve(GoldenHost host, CancellationToken ct)
+    internal static async Task Approve(GoldenHost host, CancellationToken ct)
     {
         var hash = (await host.LiveHash(ct)).Value;
         var setup = await host.Http.Ask(Post("/sindri/profile/approve", await ApiScenarios.Confirmed(host, hash), Human(host.Token.Value)));
@@ -157,10 +157,10 @@ internal static class ViewScenarios
         }
     }
 
-    private static async Task CatchUp(GoldenHost host, CancellationToken ct) =>
+    internal static async Task CatchUp(GoldenHost host, CancellationToken ct) =>
         _ = await host.App.Services.GetRequiredService<Projector>().CatchUp(ct);
 
-    private static async Task Append<TPayload>(GoldenHost host, string type, TPayload payload, string key, CancellationToken ct)
+    internal static async Task Append<TPayload>(GoldenHost host, string type, TPayload payload, string key, CancellationToken ct)
     {
         await using var scope = Service(host, out var grant);
         var events = scope.ServiceProvider.GetRequiredService<EventFactory>();
@@ -169,7 +169,7 @@ internal static class ViewScenarios
     }
 
     /// <summary>A scope entered as the caller 'service:host', with the lease grant the host holds.</summary>
-    private static AsyncServiceScope Service(GoldenHost host, out LeaseGrant grant)
+    internal static AsyncServiceScope Service(GoldenHost host, out LeaseGrant grant)
     {
         grant = host.App.Services.GetRequiredService<HeldLease>().Current ?? throw new InvalidOperationException("the host holds no lease");
         _ = host.App.Services.GetRequiredService<ICallerContextAccessor>().EnterService("host");
