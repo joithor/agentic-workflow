@@ -60,8 +60,8 @@ internal sealed class PaletteEntry : ObservableObject
     /// <summary>The refusal's detail as served, or empty.</summary>
     public string ErrorDetail => Control?.ErrorDetail ?? string.Empty;
 
-    // True when Enter does something with it at all (a pending row never does).
-    private bool Runs { get; }
+    /// <summary>True when Enter does something with it at all (a pending row never does), even while it sends.</summary>
+    internal bool Runs { get; }
 
     /// <summary>True when it has a status.</summary>
     public bool HasStatus => Control is not null;
