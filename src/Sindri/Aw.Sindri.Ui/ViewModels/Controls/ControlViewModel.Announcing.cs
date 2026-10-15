@@ -10,8 +10,10 @@ internal sealed partial class ControlViewModel
     public bool IsAnnouncing { get; private set => Set(ref field, value); }
 
     /// <summary>
-    /// True while something else speaks this control's lifecycle (the command palette, open over it): the control's own live
-    /// region stays dark, so a run from the palette is announced once. Clearing it lets the next announcement through.
+    /// True while the command palette speaks this control's current run (the palette ran it, and mutes this control only, for that
+    /// run): the control's own live region stays dark, so the run is announced once. The palette clears it when it has announced
+    /// the run's outcome, or when it closes while the run is still sending, and the control then speaks its own outcome. A run that
+    /// did not start from the palette is never muted. Clearing it lets the next announcement through.
     /// </summary>
     public bool IsMuted
     {

@@ -255,7 +255,7 @@ action id (labels in `Labels.Actions.cs`): `ready` is a button (it runs only whe
 Copy, `cli-only:<reason>` the copy block (the CLI, Copy, and "Needs a typed confirmation at a terminal." for
 `typed-confirmation`). A CLI with a control, bidi or invisible character is neither shown nor copied. Lifecycle (§4.1):
 sending (enabled for the keyboard so focus stays on it, the view model refuses a second run; label kept, spinner; "Sending…" announced after 300 ms; a second click does nothing), accepted
-("Rebuild views: done", 2 s), refused or failed (the code and `detail` inline, as served, and announced as "<code>: <detail>"; every run first rests the live region on the label so a repeat outcome is a change), Copy ("Copied", 1.5 s).
+("Rebuild views: done", 2 s), refused or failed (the code and `detail` inline, as served, and announced as "<code>: <detail>"; every run first rests the live region on the label so a repeat outcome is a change; a retry sets the phase to Sending before it clears the old outcome, so nothing reads half-cleared), Copy ("Copied", 1.5 s). The control's live region is dark (`IsMuted`) only for a run the command palette started and still announces; otherwise the control speaks its own lifecycle.
 The clipboard is a port (`Platform/IClipboard`, `Views/AvaloniaClipboard`; see the ports table).
 
 **Freshness (U10, E-14).** The pill reads `health.word` (Healthy, Degraded, Stalled, Rebuilding), its age from
@@ -274,7 +274,7 @@ answer of any kind, SND-API-011 included. A ping that shows another pid or epoch
 SND-API-011 ("views behind") is not trouble and never repeats: the follower reads the status once more at once, without
 the header, and shows what Sindri says (stalled, rebuilding); only if that is behind too does the last data stay and the
 next beat read again. On connect, a first status that is behind is read the same way, and the URL is followed once a
-status was shown. A manual Refresh that hears SND-API-011 is not a failed refresh (it doesn't count toward "not responding"). A services read that fails for any reason but the
+status was shown. A manual Refresh that hears SND-API-011 re-reads once more at once, without the header (two status calls: the first carries the sequence, the second does not), exactly as the follower does, and is not a failed refresh (it doesn't count toward "not responding"). A services read that fails for any reason but the
 missing route before P2 (SND-UI-003) leaves the banner as it was; a catalog that failed on connect is read again with
 the next refresh. The views banner has live regions (stalled sentence, "Rebuilding views", "Views are up to date"), flag
 then text. E-15's `invalidates` waits for P5.
@@ -293,8 +293,16 @@ selected; only ↑/↓ scroll the list to follow the selection (`FollowsSelectio
 command (Rebuild views) follows `CommandPaletteViewModel.RunPolicy`, the one place that decision lives (U1 finding F2,
 provisional until the owner decides): by default (`StayOpen`) the palette stays open and the entry shows §4.1's
 lifecycle in place, a spinner beside its kept label and "Sending…" (disabled, a second Enter does nothing), then
-"<label>: done" for 2 s, or Sindri's code as its status with the detail as served under it. Esc closes the palette at
-any point and the command keeps running. `CloseFirst` closes, then sends.
+"<label>: done" for 2 s, or Sindri's code as its status with the detail as served under it (an accepted entry's accessible
+name is the outcome alone: "Rebuild views: done"). Esc closes the palette at any point and the command keeps running.
+`CloseFirst` closes, then sends. **Who speaks a run.** The palette never mutes controls as a whole. When it runs an entry it
+mutes that entry's control only, for that run (`CommandPaletteViewModel.Runs.cs`), and it announces the lifecycle of every
+entry it ran, whatever the selection or the query became meanwhile: "Sending…" after 300 ms, then the outcome or the
+refusal; the selected entry is announced with its position ("Rebuild views: done, 3 of 14"), another ran entry by its name
+alone. Nothing is said in a send's first 300 ms and nothing when the outcome settles back to ready. The mute ends once the
+palette has announced the run's outcome (accepted or refused), or when the palette closes while it is still sending: the
+control then speaks its own outcome. A send that did not start from the palette is never muted: its control speaks the
+outcome even while the palette is open, and the palette says nothing about it.
 
 **The `?` sheet.** `?` (not while typing in a field, nor over the palette) opens §8's keys plus each catalog row's own
 `shortcut` (none yet); it takes focus, Tab cycles inside it, Esc closes it and returns focus. The sheet lists §8's

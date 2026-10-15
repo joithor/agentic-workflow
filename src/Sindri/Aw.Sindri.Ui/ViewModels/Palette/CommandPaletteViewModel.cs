@@ -11,7 +11,7 @@ namespace Aw.Sindri.Ui.ViewModels.Palette;
 /// fuzzy match on labels and ids; ↑/↓ move between entries that do something; Enter runs one and Esc closes. U1 has no
 /// selected row, so Actions lists the whole catalog. It decides nothing about an action: the catalog says what runs.
 /// </summary>
-internal sealed class CommandPaletteViewModel : ObservableObject
+internal sealed partial class CommandPaletteViewModel : ObservableObject
 {
     // The Sindri section's catalog rows, in its order.
     private static readonly string[] _sindri = ["RebuildViews", "StopProcess"];
@@ -87,18 +87,9 @@ internal sealed class CommandPaletteViewModel : ObservableObject
         get;
         private set
         {
-            if (field is { } previous)
-            {
-                previous.IsSelected = false;
-                previous.PropertyChanged -= OnSelectedChanged;
-            }
-
+            field?.IsSelected = false;
             Set(ref field, value);
-            if (field is { } now)
-            {
-                now.IsSelected = true;
-                now.PropertyChanged += OnSelectedChanged;
-            }
+            field?.IsSelected = true;
         }
     }
 
@@ -108,25 +99,14 @@ internal sealed class CommandPaletteViewModel : ObservableObject
         _all ??= Build();
         Query = string.Empty;
         IsOpen = true;
-        Mute(muted: true);
     }
 
     /// <summary>Closes it (Esc) and clears the query.</summary>
     internal void Close()
     {
         IsOpen = false;
-        Mute(muted: false);
+        ReleaseAll();   // a run still sending is then spoken by its own control
         Query = string.Empty;
-    }
-
-    // While it is open the palette speaks every command's lifecycle through its own live region, so the controls' regions
-    // stay dark (a run from the palette is announced once).
-    private void Mute(bool muted)
-    {
-        foreach (var control in _catalog.Controls)
-        {
-            control.IsMuted = muted;
-        }
     }
 
     /// <summary>Moves the selection over the entries that run (↑ −1, ↓ +1), stopping at either end.</summary>
@@ -169,19 +149,15 @@ internal sealed class CommandPaletteViewModel : ObservableObject
                 _goTo(page);
                 break;
             case { Control.IsCliOnly: true }:
-                await entry.Control.Copy(cancellationToken).ConfigureAwait(true);
+                await Copy(entry, entry.Control, cancellationToken).ConfigureAwait(true);
                 break;
             case { Control.Action: "StopProcess" }:
                 Close();
                 _goTo(PageId.Health);
                 break;
             default:
-                if (RunPolicy == PaletteRunPolicy.CloseFirst)
-                {
-                    Close();
-                }
-
-                await entry.Control!.Run(cancellationToken).ConfigureAwait(true);   // why: an enabled entry without a page has a control
+                // why: an enabled entry without a page has a control
+                await Send(entry, entry.Control!, cancellationToken).ConfigureAwait(true);
                 break;
         }
     }
@@ -234,16 +210,6 @@ internal sealed class CommandPaletteViewModel : ObservableObject
             : Labels.Palette;
     }
 
-    private void OnSelectedChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        // Not while the selection sends and "Sending…" isn't on yet: it would say "Rebuild views, 3 of 14" again (J2); nor when it
-        // settles back to rest (the accepted outcome after 2 s, "Copied" after 1.5 s): no unprompted "ready" (J4).
-        if (e.PropertyName == nameof(PaletteEntry.Name) && Selected?.Control is not ({ IsSending: true, IsAnnouncingSending: false } or { Phase: CommandPhase.Idle, CopyLabel: Labels.Copy }))
-        {
-            Announce();
-        }
-    }
-
     // A catalog read while it is open (a reconnect) replaces its entries.
     private void OnCatalogChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -253,11 +219,11 @@ internal sealed class CommandPaletteViewModel : ObservableObject
         }
 
         Selected = null;
+        ReleaseAll();
         _all?.SelectMany(s => s.Entries).ToList().ForEach(entry => entry.Detach());
         _all = null;
         if (IsOpen)
         {
-            Mute(muted: true);
             Filter();
         }
     }

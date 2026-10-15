@@ -267,8 +267,9 @@ public sealed class CommandPaletteViewModelTests
         return (int.Parse(tail[0], System.Globalization.CultureInfo.InvariantCulture), int.Parse(tail[1], System.Globalization.CultureInfo.InvariantCulture));
     }
 
-    // H6 (a11y-2): a run from the palette is announced once. While the palette is open it speaks the command's lifecycle, so
-    // the control's own live region stays dark; once it is closed (Esc while sending) the control speaks the outcome.
+    // H6 (a11y-2, J1): a run from the palette is announced once. The palette speaks the lifecycle of what it ran and mutes that
+    // control only, so the control's own live region stays dark; once the palette is closed (Esc while sending) the control
+    // speaks the outcome.
     [Fact]
     public async Task A_run_from_the_palette_is_announced_by_the_palette_and_not_by_the_control()
     {
