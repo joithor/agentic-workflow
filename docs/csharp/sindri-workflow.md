@@ -169,8 +169,10 @@ the audit row.
 4. It prints `approved workflow.step@<hash12>`.
 
 The server refuses before any challenge when the hash is revoked (`SND-RECIPE-005`), the recipe declares no evals
-(`SND-RECIPE-008`), a child it starts has no approved hash to pin (`SND-RECIPE-003`), or it is already approved with the
-same pins (`SND-CLI-003`). A wrong typed text, a challenge for another action, an expired one (5 minutes) or one whose
+(`SND-RECIPE-008`) or a child it starts has no approved hash to pin (`SND-RECIPE-003`). An approved hash approved again
+with the same pins is not refused: it records nothing, sends the approve wake to its running instances again and prints
+`already approved workflow.step@<hash12>; woke N instances` (exit 0). That is the remedy for a drift-parked instance a first
+wake missed (the wake failed with `SND-API-001`, or it was absorbed before the drift park existed). A wrong typed text, a challenge for another action, an expired one (5 minutes) or one whose
 subject changed (another hash, or other pins: a child approved while you read) is `SND-RECIPE-009` and records nothing.
 A generated recipe whose base was revoked after it was registered is refused too (`SND-RECIPE-005`). With a file whose
 id and version are registered with other content (edited without raising its version), the CLI refuses before the preview
@@ -644,9 +646,12 @@ The `--json` output is the response as the CLI's serializer prints it (`status` 
   (`SND-RECIPE-008`); the Core port `IApprovalEvals` names the hook and has no implementation or caller yet. Binding it
   (moving `EvalRecipe`'s case running into Core) is a later phase's work.
   `workflow events` reads the ledger directly until API P3's item timeline exists.
-- **The revoke and drift wake (P6):** `IRecipeWake` is `TemporalRecipeWake` (see "Registry wake (P6)"), so a revoke or a pin
-  drift parks the running instances. The approval check at each command, answer and `complete` still refuses a revoked or
-  drifted recipe with `SND-RECIPE-005`/`-006`.
+- **The revoke wake and the drift park (P6):** `IRecipeWake` is `TemporalRecipeWake` (see "Registry wake (P6)"), so a revoke
+  parks the running instances at once. A pin drift parks an instance lazily, as built: when one of its recipe effects hits
+  the effect recheck or the run-time check (`SND-RECIPE-006`). The startup drift sender (engine spec §5.8: "on startup when
+  the build's descriptor hashes differ from an approval's pins") is **not built in P6**; it is a named follow-up, so an
+  instance that sends no effect after a drift keeps running until one does. The approval check at each command, answer and
+  `complete` still refuses a revoked or drifted recipe with `SND-RECIPE-005`/`-006`.
 
 ## The event bridge (engine P4 unit (d))
 
@@ -815,20 +820,23 @@ Unit (d), as built:
 (which replaces every park: only `cancel` follows, and the `outbox.refused` rows keep the record): it is held by
 exactly one `spec-conflict` drift or dispatch park until a resume or approval re-sends it; a refusal joins the first such
 park of its own kind anywhere (current or queued), else the first of any, de-duplicated by identity, else a new dispatch
-park joins the queue. One rule ends every suspension (`Suspensions.EndCurrent`: answer, handback, drift approval, child
+park of its own, which becomes the suspension when the instance has none and otherwise joins the queue. One rule ends every suspension (`Suspensions.EndCurrent`: answer, handback, drift approval, child
 release): when a queued park takes effect, the ended park's effects stay queued as an approved holder; when nothing does,
 the effects of every approved holder are released and the caller sends them (`WithReleased`); none may drop them. (b) A takeover
 never drops a park: what it covers goes first in the queue, and the handback or the next ending makes the first queued
-park the suspension. (c) A revoke or drift wake always ends in a `spec-conflict` park (a revoke replaces a takeover by
-design; a drift wake queues behind other parks). (d) A drift approval ends the drift park wherever it sits; behind a
+park the suspension. (c) A revoke wake, and a drift wake when one is sent, always end in a `spec-conflict` park (a revoke
+replaces a takeover by design; a drift wake queues behind other parks). In P6 a drift park comes from the effect recheck
+(`SND-RECIPE-006`), not from a drift wake: nothing sends `RecipeWakeKind.Drifted` yet (a named follow-up). (d) A drift approval ends the drift park wherever it sits; behind a
 takeover or another park it is marked approved and its effects re-send once nothing else holds the instance.
 
-**Registry wake (P6).** A revoke, a drift or a drift approval wakes the running instances through the `wake` signal on
-`RecipeWorkflow`. `TemporalRecipeWake` finds them by the `RecipeHash` search attribute (open `RecipeWorkflow` executions
+**Registry wake (P6).** A revoke or an approval of a recipe that was already approved (a drift approval, or the same pins
+again) wakes the running instances through the `wake` signal on `RecipeWorkflow`. The signal also carries the `Drifted` kind
+for the startup drift sender (engine spec §5.8), which is not built in P6: nothing sends it. `TemporalRecipeWake` finds them by the `RecipeHash` search attribute (open `RecipeWorkflow` executions
 with that hash) and signals each as `service:engine`. A missing Temporal for the home means nobody runs and the wake
 succeeds; a listing that answers `NotFound` or `InvalidArgument` (not this home's Temporal, or no `RecipeHash` attribute
 yet) is an empty list; an instance that ended between the listing and its signal (`NotFound`) is skipped; any other
-signal failure doesn't stop the rest: every instance is tried, then one `SND-API-001` error names the failures.
+signal failure doesn't stop the rest: every instance is tried, then one `SND-API-001` error names the failures and the
+retry: `sindri recipe approve <recipe>` again (same pins records nothing and wakes again) or the revoke again.
 
 Unit (c), as built:
 

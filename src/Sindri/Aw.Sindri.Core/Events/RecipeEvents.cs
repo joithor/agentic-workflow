@@ -61,6 +61,15 @@ public sealed class RecipeEvents(ILedgerStore ledger, EventFactory events, HeldL
             string.Create(CultureInfo.InvariantCulture, $"{EventTypes.RecipeApproved}:{approval.Hash.Value}:after:{after}"), cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>The ledger sequence of the latest 'recipe.approved' event: the key of the wake an approval that records nothing sends again.</summary>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The sequence (0 when none was recorded), or the read's error.</returns>
+    public async ValueTask<Result<long>> LatestApproval(CancellationToken cancellationToken)
+    {
+        var latest = await ledger.Latest(EventTypes.RecipeApproved, cancellationToken).ConfigureAwait(false);
+        return latest.IsError ? latest.Error : latest.Value?.Sequence ?? 0;
+    }
+
     /// <summary>Appends 'recipe.revoked' for <paramref name="revocation"/>, with the base it cascaded from; revoking the same hash again records nothing.</summary>
     /// <param name="revocation">The stored revocation row.</param>
     /// <param name="cancellationToken">Cancels the write.</param>

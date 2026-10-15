@@ -120,8 +120,9 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
 
     /// <summary>
     /// The plan for approving <paramref name="recipe"/>. Refused when its hash or its base is revoked (SND-RECIPE-005), it declares no
-    /// evals (SND-RECIPE-008), a child it starts has no approved hash to pin (SND-RECIPE-003), or it is already approved
-    /// with the same pins (SND-CLI-003, nothing to do).
+    /// evals (SND-RECIPE-008) or a child it starts has no approved hash to pin (SND-RECIPE-003). A recipe already approved
+    /// with the same pins plans as <see cref="ApprovalPlan.AlreadyApproved"/>: approving it again records nothing and sends the
+    /// wake again, so an instance a first wake missed can still resume.
     /// </summary>
     /// <param name="recipe">The registered recipe.</param>
     /// <param name="cancellationToken">Cancels the reads.</param>
@@ -148,9 +149,7 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
             return latest.Error;
         }
 
-        return latest.Value is { } before && before.Pins == pins.Value
-            ? SindriErrors.InvalidInput.With($"{Name(recipe)} is already approved with these pins; nothing to approve (sindri recipe list shows it)")
-            : await Plan(recipe, standing.Value, pins.Value, latest.Value, cancellationToken).ConfigureAwait(false);
+        return await Plan(recipe, standing.Value, pins.Value, latest.Value, cancellationToken).ConfigureAwait(false);
     }
 
     private async ValueTask<Result<ApprovalPlan>> Plan(RegisteredRecipe recipe, (Recipe Parsed, IReadOnlyList<RecipeApproval> Current) standing, RecipePins pins,

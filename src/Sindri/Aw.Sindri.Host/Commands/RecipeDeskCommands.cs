@@ -139,9 +139,11 @@ internal sealed class RecipeDeskCommands(RecipeDesk desk, IServiceProvider servi
 
     private static string Route(RecipeId id, RecipeHash hash, string verb) => $"/sindri/workflow/recipes/{id.Value}@{hash.Digest}/{verb}";
 
-    private static string Approved(ApproveRecipeResponse r) => r.Resumed.Count == 0
-        ? $"approved {r.Approval.Id.Value}@{r.Approval.Hash.Display}\n"
-        : string.Create(CultureInfo.InvariantCulture, $"approved {r.Approval.Id.Value}@{r.Approval.Hash.Display}; {r.Resumed.Count} instances resumed\n");
+    private static string Approved(ApproveRecipeResponse r) => r.AlreadyApproved
+        ? string.Create(CultureInfo.InvariantCulture, $"already approved {r.Approval.Id.Value}@{r.Approval.Hash.Display}; woke {r.Resumed.Count} instances\n")
+        : r.Resumed.Count == 0
+            ? $"approved {r.Approval.Id.Value}@{r.Approval.Hash.Display}\n"
+            : string.Create(CultureInfo.InvariantCulture, $"approved {r.Approval.Id.Value}@{r.Approval.Hash.Display}; {r.Resumed.Count} instances resumed\n");
 
     private static string Revoked(RevokeRecipeResponse r) =>
         string.Create(CultureInfo.InvariantCulture, $"revoked {r.Revocation.Id.Value}@{r.Revocation.Hash.Display}; {r.Preview.Parks.Count} instances parked\n")
