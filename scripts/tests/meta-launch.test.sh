@@ -14,6 +14,7 @@ command -v tmux > /dev/null || { echo "ok - skipped: tmux not installed"; exit 0
 WORK="$(mktemp -d)"
 export TMUX_TMPDIR="$WORK/tmux"; mkdir -p "$TMUX_TMPDIR"; unset TMUX
 trap 'tmux kill-server 2> /dev/null; rm -rf "$WORK"' EXIT
+for v in $(compgen -e | grep '^AW_META_'); do unset "$v"; done   # the caller may be a meta session: its team config, bin and claude must not reach the stubs
 export HOME="$WORK/home" AW_STATE_DIR="$WORK/state" AW_WARP_LAUNCH_DIR="$WORK/warp"
 mkdir -p "$HOME/.claude/projects/p" "$WORK/repo" "$WORK/prompts" "$AW_STATE_DIR/meta"
 echo "API kickoff" > "$WORK/prompts/api.md"
