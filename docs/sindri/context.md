@@ -650,7 +650,8 @@ $ sindri context filemap accept edge:0123456789abcdef      # or reject: one over
   `/neighbors` under the session caller, so `structuredContent` equals the session's HTTP answer (labels fenced). The text gives
   counts only: for a node its key, map version and out and in edge counts; for neighbors the centre, depth and node and edge counts.
   A missing or blank `key`, an unknown argument (there is no `draft`) or a wrong type is `SND-CONTEXT-022` with a fix hint; a key
-  outside the session's repo or unknown is `003`; a depth out of range is the engine's `006`, as over HTTP; sessions off is `020`.
+  outside the session's repo or unknown is `003`; a name that matches several nodes is `037`; no map yet is `030`; a depth out of
+  range (0 to 4) is the engine's `006`, as over HTTP (a whole number too large for a 32-bit integer is `022`); sessions off is `020`.
 
 ### Exit codes and errors (S-4)
 
