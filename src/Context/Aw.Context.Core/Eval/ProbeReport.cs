@@ -8,10 +8,18 @@ namespace Aw.Context.Core.Eval;
 /// <param name="Probes">Each probe's score, in file order.</param>
 /// <param name="Totals">This run's means.</param>
 /// <param name="Previous">The previous run of the same file, or null for the first.</param>
-/// <param name="Regressed">True when a mean is lower than <paramref name="Previous"/>'s (SND-CONTEXT-038).</param>
+/// <param name="Regressed">True when a mean is lower than <paramref name="Previous"/>'s, or more absent nodes came back (SND-CONTEXT-038); never true for an incomplete run.</param>
 public sealed record ProbeReport(int SchemaVersion, string ProbeFile, string ProbeFileHash, string? MapVersion, IReadOnlyList<ProbeScore> Probes,
     ProbeTotals Totals, ProbeTotals? Previous, bool Regressed)
 {
     /// <summary>The report format this build writes.</summary>
     public const int CurrentSchemaVersion = 1;
+
+    /// <summary>True when any probe's query failed: the run says nothing about retrieval, so it is neither a regression nor a baseline, and it is not saved.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool Incomplete => Probes.Any(p => p.Error is not null);
+
+    /// <summary>True when a later run may be compared with this one: it is complete and did not regress.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsBaseline => !Regressed && !Incomplete;
 }

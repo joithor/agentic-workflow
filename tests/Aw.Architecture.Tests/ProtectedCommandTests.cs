@@ -18,10 +18,6 @@ public sealed class ProtectedCommandTests
 {
     /// <summary>
     /// Protected rows that still confirm another way, each with its reason; a stale entry fails, and review keeps new entries out.
-    /// ImportContextMap (context spec S-3a, merged before this challenge reached main) confirms with the previewed hash and
-    /// a 'confirmed' flag; the context spec has it adopt the engine's challenge once that ships, which this PR does, so the
-    /// move is the context lane's scheduled follow-up (needs owner for the timing, PR #191). It is still terminal-bound,
-    /// which the first assertion checks.
     /// </summary>
     private static readonly Dictionary<string, string> _confirmsOtherwise = new(StringComparer.Ordinal)
     {

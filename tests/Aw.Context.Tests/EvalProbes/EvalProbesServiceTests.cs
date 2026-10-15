@@ -39,6 +39,20 @@ public sealed class EvalProbesServiceTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_run_with_a_failed_probe_is_returned_incomplete_and_not_written()
+    {
+        var world = new World { TwoProbes = true };
+        static ValueTask<Result<ContextResult>> Ask(ProbeCase probe, CancellationToken ct) =>
+            probe.Id.Value == "p2" ? ValueTask.FromResult<Result<ContextResult>>(ContextErrors.SessionsDisabled.With("off")) : Hit(probe, ct);
+
+        var run = await world.Run(Ask);
+
+        Assert.True(run.Value.Report.Incomplete);
+        Assert.Null(run.Value.Path);
+        Assert.Empty(world.Written);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_refused_file_passes_through_as_the_error_and_nothing_is_asked_or_written()
     {
         var world = new World { Refusal = ContextErrors.ProbeFileInvalid.With("probes[0]: bad") };
@@ -58,16 +72,18 @@ public sealed class EvalProbesServiceTests
     private sealed class World : IProbeFileReader, IProbeReportStore
     {
         private static readonly ProbeFile _file = new("/probes.json", "hash-1", new ProbeSet(Probes: [Answers.Probe("p1", nodes: ["feature:x"])]));
+        private static readonly ProbeFile _two = new("/probes.json", "hash-1", new ProbeSet(Probes: [Answers.Probe("p1", nodes: ["feature:x"]), Answers.Probe("p2", nodes: ["feature:x"])]));
 
         public FakeTimeProvider Clock { get; } = new(startDateTime: _now);
         public List<ProbeReport> Written { get; } = [];
         public Error? Refusal { get; init; }
+        public bool TwoProbes { get; init; }
 
         public ValueTask<Result<ProbeRun>> Run(Func<ProbeCase, CancellationToken, ValueTask<Result<ContextResult>>> ask) =>
             new EvalProbesService(this, this, Clock).Handle(new EvalProbesRequest(File: null, ask), None);
 
         public ValueTask<Result<ProbeFile>> Read(string? path, CancellationToken cancellationToken) =>
-            ValueTask.FromResult(Refusal is { } refused ? (Result<ProbeFile>)refused : _file);
+            ValueTask.FromResult(Refusal is { } refused ? (Result<ProbeFile>)refused : TwoProbes ? _two : _file);
 
         public ValueTask<Result<ProbeReport?>> Latest(string probeFileHash, CancellationToken cancellationToken) =>
             ValueTask.FromResult<Result<ProbeReport?>>(Written.LastOrDefault(r => r.ProbeFileHash == probeFileHash));

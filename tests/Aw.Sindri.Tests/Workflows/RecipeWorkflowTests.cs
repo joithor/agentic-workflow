@@ -136,7 +136,7 @@ public sealed class RecipeWorkflowTests : IDisposable
         {
             Namespace = "default",   // a Temporal that isn't serve's: no 'sindri' namespace
             UI = false,
-            DevServerOptions = new DevServerOptions { ExistingPath = PinnedTemporal() },
+            DevServerOptions = new DevServerOptions { ExistingPath = PinnedTemporal.Path() },
         });
         await using var sindri = Sindri();
         sindri.GetRequiredService<TaskTokens>().Save(Address, "1.1", [1, 2, 3]);
@@ -269,7 +269,7 @@ public sealed class RecipeWorkflowTests : IDisposable
             UI = false,
             DevServerOptions = new DevServerOptions
             {
-                ExistingPath = PinnedTemporal(),
+                ExistingPath = PinnedTemporal.Path(),
 
                 // the search attributes serve registers on its server (SindriTemporal.SearchAttributes); the interpreter upserts them
                 ExtraArgs = [.. SindriTemporal.SearchAttributes.SelectMany(static a => new[] { "--search-attribute", $"{a.Name}={a.Type}" })],
@@ -298,24 +298,6 @@ public sealed class RecipeWorkflowTests : IDisposable
     }
 
     private string TaskFile(string run) => Path.Combine(_home.Path, "workflow", "tasks", Address.Replace('/', '~'), run);
-
-    /// <summary>The 'temporal' CLI pinned in binaries.lock, where scripts/binaries-lock.sh fetch installs it.</summary>
-    private static string PinnedTemporal()
-    {
-        var row = File.ReadLines(Path.Combine(RepoRoot(), "binaries.lock"))
-            .Select(l => l.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
-            .First(f => f.Length == 6 && f[0] == "temporal");
-        var stateDir = Environment.GetEnvironmentVariable("AW_STATE_DIR") is { Length: > 0 } dir
-            ? dir
-            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".agentic-workflow");
-        var path = Path.Combine(stateDir, "cache", "bin", $"temporal-{row[1]}", "temporal");
-        if (!File.Exists(path))
-        {
-            Assert.Fail($"the pinned temporal CLI {row[1]} is not installed at {path}: run scripts/binaries-lock.sh fetch temporal");
-        }
-
-        return path;
-    }
 
     private static string RepoRoot()
     {

@@ -41,7 +41,7 @@ public sealed class MapText(Scrubbers scrubbers)
     {
         ArgumentNullException.ThrowIfNull(node);
         var confirmed = node.Provenance == Provenance.Human;
-        var trust = Graph.TrustPolicy.For(node.Provenance, confirmed);
+        var trust = TrustPolicy.For(node.Provenance, confirmed);
         return new NodeFact(node.Key, node.Key.Kind, Label(node.Label, trust), node.Provenance, confirmed, trust);
     }
 

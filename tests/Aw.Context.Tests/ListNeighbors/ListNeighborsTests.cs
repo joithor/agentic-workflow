@@ -41,6 +41,6 @@ public sealed class ListNeighborsTests : IDisposable
 
         var view = (await _world.Engine.Neighbors("feature:layout.split-pane", depth: 4, MapWorld.Session("aw-split-panes"), MapWorld.None)).Value;
 
-        Assert.All(view.Nodes, n => Assert.Contains(n.Node.Key.Value, Aw.Context.Testing.Map.FixtureMap.ScopedNodes, StringComparer.Ordinal));
+        Assert.All(view.Nodes, n => Assert.Contains(n.Node.Key.Value, Testing.Map.FixtureMap.ScopedNodes, StringComparer.Ordinal));
     }
 }

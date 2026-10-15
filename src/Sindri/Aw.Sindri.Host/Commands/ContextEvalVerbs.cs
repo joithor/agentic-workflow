@@ -12,8 +12,9 @@ namespace Aw.Sindri.Host.Commands;
 /// 'sindri context eval probes [--file F] [--json]' (context spec §8.5, §9.2 item 3). No route: the CLI asks each probe's
 /// question through GET /sindri/context/query as whoever runs it; the engine (EvalProbes) reads the file, scores the
 /// answers and writes the report under $AW_SINDRI_HOME/context/eval/probes/ (0600). Exit 0 when the run is no
-/// worse than the previous run of the same file; 1 when it regressed (SND-CONTEXT-038) or the file is refused; 2 for a
-/// tool error.
+/// worse than the baseline (the newest complete run of the same file that did not regress); 1 when it regressed
+/// (SND-CONTEXT-038) or the file is refused; 2 when a probe's query failed (the run is incomplete and nothing is saved)
+/// or for a tool error. --json prints the run: the report and the path it was written to.
 /// </summary>
 /// <param name="client">The API client.</param>
 /// <param name="output">Where the verbs write.</param>
@@ -28,17 +29,22 @@ internal sealed class ContextEvalVerbs(ControlPlaneClient client, Output output,
 
     private async Task<int> Probes(string? file, bool json, CancellationToken ct)
     {
-        var run = await engine.EvalProbes(file is null ? null : System.IO.Path.GetFullPath(file), Ask, ct).ConfigureAwait(false);
+        var run = await engine.EvalProbes(file is null ? null : Path.GetFullPath(file), Ask, ct).ConfigureAwait(false);
         if (run.IsError)
         {
             return await Failed(run.Error).ConfigureAwait(false);
         }
 
-        var exit = run.Value.Report.Regressed ? 1 : 0;
+        var exit = Exit(run.Value);
         return json
-            ? await output.Json(run.Value.Report, exit).ConfigureAwait(false)
+            ? await output.Json(run.Value, exit).ConfigureAwait(false)
             : await output.Text(ContextEvalText.Report(run.Value.Report, run.Value.Path), exit).ConfigureAwait(false);
     }
+
+    /// <summary>The exit code of a finished run: 0 no worse, 1 regressed, 2 incomplete (a probe's query failed; nothing was saved).</summary>
+    /// <param name="run">The run.</param>
+    /// <returns>The code.</returns>
+    internal static int Exit(ProbeRun run) => run.Report.Incomplete ? 2 : run.Report.Regressed ? 1 : 0;
 
     private async ValueTask<Result<ContextResult>> Ask(ProbeCase probe, CancellationToken ct)
     {

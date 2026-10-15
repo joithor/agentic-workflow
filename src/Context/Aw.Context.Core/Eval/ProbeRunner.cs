@@ -15,11 +15,11 @@ public static partial class ProbeRunner
 
     /// <summary>Runs <paramref name="file"/>.</summary>
     /// <param name="file">The checked probe file.</param>
-    /// <param name="ask">Answers one probe's question; an error is scored 0 for that probe.</param>
+    /// <param name="ask">Answers one probe's question; an error is scored 0 for that probe and makes the run incomplete (never a regression, never a baseline).</param>
     /// <param name="previous">The previous run of the same file, or null.</param>
     /// <param name="runAt">The time now.</param>
     /// <param name="cancellationToken">Cancels the run.</param>
-    /// <returns>The report; the first error when every probe failed with one (the run says nothing then).</returns>
+    /// <returns>The report (<see cref="ProbeReport.Incomplete"/> when any probe failed); the first error when every probe failed with one.</returns>
     public static async ValueTask<Result<ProbeReport>> Run(ProbeFile file, Func<ProbeCase, CancellationToken, ValueTask<Result<ContextResult>>> ask, ProbeReport? previous,
         DateTimeOffset runAt, CancellationToken cancellationToken)
     {
@@ -47,11 +47,15 @@ public static partial class ProbeRunner
             return firstError;
         }
 
-        var totals = new ProbeTotals(ProbeScoring.Round(scores.Average(s => s.PrecisionAt5)), ProbeScoring.Round(scores.Average(s => s.CitationCorrectness)), scores.Count, runAt);
+        var totals = new ProbeTotals(ProbeScoring.Round(scores.Average(s => s.PrecisionAt5)), ProbeScoring.Round(scores.Average(s => s.CitationCorrectness)), scores.Count, runAt,
+            scores.Sum(s => s.AbsentReturned.Count));
         var before = previous?.Totals;
-        var regressed = before is not null && (totals.PrecisionAt5 < before.PrecisionAt5 || totals.CitationCorrectness < before.CitationCorrectness);
-        return new ProbeReport(ProbeReport.CurrentSchemaVersion, file.Path, file.Hash, mapVersion, scores, totals, before, regressed);
+        var report = new ProbeReport(ProbeReport.CurrentSchemaVersion, file.Path, file.Hash, mapVersion, scores, totals, before, Regressed: false);
+        return report.Incomplete || before is null ? report : report with { Regressed = Worse(totals, before) };
     }
+
+    private static bool Worse(ProbeTotals now, ProbeTotals before) =>
+        now.PrecisionAt5 < before.PrecisionAt5 || now.CitationCorrectness < before.CitationCorrectness || now.AbsentReturned > before.AbsentReturned;
 
     /// <summary>Checks a probe file's content: at least one probe, ids unique slugs, questions 1 to 2000 characters, schema version 1.</summary>
     /// <param name="set">The parsed file.</param>

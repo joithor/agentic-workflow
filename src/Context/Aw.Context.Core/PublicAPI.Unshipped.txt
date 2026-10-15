@@ -185,11 +185,8 @@ Aw.Context.Core.Eval.ProbeReport.Totals.get -> Aw.Context.Core.Eval.ProbeTotals!
 Aw.Context.Core.Eval.ProbeReport.Totals.init -> void
 Aw.Context.Core.Eval.ProbeRun
 Aw.Context.Core.Eval.ProbeRun.<Clone>$() -> Aw.Context.Core.Eval.ProbeRun!
-Aw.Context.Core.Eval.ProbeRun.Deconstruct(out Aw.Context.Core.Eval.ProbeReport! Report, out string! Path) -> void
 Aw.Context.Core.Eval.ProbeRun.Equals(Aw.Context.Core.Eval.ProbeRun? other) -> bool
-Aw.Context.Core.Eval.ProbeRun.Path.get -> string!
 Aw.Context.Core.Eval.ProbeRun.Path.init -> void
-Aw.Context.Core.Eval.ProbeRun.ProbeRun(Aw.Context.Core.Eval.ProbeReport! Report, string! Path) -> void
 Aw.Context.Core.Eval.ProbeRun.Report.get -> Aw.Context.Core.Eval.ProbeReport!
 Aw.Context.Core.Eval.ProbeRun.Report.init -> void
 Aw.Context.Core.Eval.ProbeRunner
@@ -226,11 +223,9 @@ Aw.Context.Core.Eval.ProbeTotals
 Aw.Context.Core.Eval.ProbeTotals.<Clone>$() -> Aw.Context.Core.Eval.ProbeTotals!
 Aw.Context.Core.Eval.ProbeTotals.CitationCorrectness.get -> double
 Aw.Context.Core.Eval.ProbeTotals.CitationCorrectness.init -> void
-Aw.Context.Core.Eval.ProbeTotals.Deconstruct(out double PrecisionAt5, out double CitationCorrectness, out int Probes, out System.DateTimeOffset RunAt) -> void
 Aw.Context.Core.Eval.ProbeTotals.Equals(Aw.Context.Core.Eval.ProbeTotals? other) -> bool
 Aw.Context.Core.Eval.ProbeTotals.PrecisionAt5.get -> double
 Aw.Context.Core.Eval.ProbeTotals.PrecisionAt5.init -> void
-Aw.Context.Core.Eval.ProbeTotals.ProbeTotals(double PrecisionAt5, double CitationCorrectness, int Probes, System.DateTimeOffset RunAt) -> void
 Aw.Context.Core.Eval.ProbeTotals.Probes.get -> int
 Aw.Context.Core.Eval.ProbeTotals.Probes.init -> void
 Aw.Context.Core.Eval.ProbeTotals.RunAt.get -> System.DateTimeOffset
@@ -2592,3 +2587,12 @@ static readonly Aw.Context.Core.ContextErrors.PromoteRefused -> Aw.Kernel.ErrorD
 static readonly Aw.Context.Core.ContextErrors.RepoOutsideScope -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.ReviewFileNoMatch -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.ReviewTargetStale -> Aw.Kernel.ErrorDefinition!
+Aw.Context.Core.Eval.ProbeReport.Incomplete.get -> bool
+Aw.Context.Core.Eval.ProbeReport.IsBaseline.get -> bool
+Aw.Context.Core.Eval.ProbeRun.Deconstruct(out Aw.Context.Core.Eval.ProbeReport! Report, out string? Path) -> void
+Aw.Context.Core.Eval.ProbeRun.Path.get -> string?
+Aw.Context.Core.Eval.ProbeRun.ProbeRun(Aw.Context.Core.Eval.ProbeReport! Report, string? Path) -> void
+Aw.Context.Core.Eval.ProbeTotals.AbsentReturned.get -> int
+Aw.Context.Core.Eval.ProbeTotals.AbsentReturned.init -> void
+Aw.Context.Core.Eval.ProbeTotals.Deconstruct(out double PrecisionAt5, out double CitationCorrectness, out int Probes, out System.DateTimeOffset RunAt, out int AbsentReturned) -> void
+Aw.Context.Core.Eval.ProbeTotals.ProbeTotals(double PrecisionAt5, double CitationCorrectness, int Probes, System.DateTimeOffset RunAt, int AbsentReturned = 0) -> void

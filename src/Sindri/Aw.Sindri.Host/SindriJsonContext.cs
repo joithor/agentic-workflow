@@ -89,6 +89,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(PathView))]
 [JsonSerializable(typeof(ProbeSet))]
 [JsonSerializable(typeof(ProbeReport))]
+[JsonSerializable(typeof(ProbeRun))]
 [JsonSerializable(typeof(SourcesView))]
 [JsonSerializable(typeof(McpToolError))]
 [JsonSerializable(typeof(McpSourcesAnswer))]
