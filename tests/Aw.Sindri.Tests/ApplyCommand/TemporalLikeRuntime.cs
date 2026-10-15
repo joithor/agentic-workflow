@@ -36,6 +36,12 @@ internal sealed class TemporalLikeRuntime : IInstanceDirectory, IInstanceRuntime
     /// <summary>What the approval check answers (Holds unless a test says otherwise).</summary>
     public ApprovalCheck Approval { get; set; } = ApprovalCheck.Holds;
 
+    /// <summary>When set, the instance's Query fails with it (Temporal down, no worker).</summary>
+    public Error? GetFails { get; set; }
+
+    /// <summary>When set, the approval check itself fails with it (the approvals can't be read).</summary>
+    public Error? CheckFails { get; set; }
+
     /// <summary>Every nonce a Send used, in order.</summary>
     public IReadOnlyList<CommandNonce> Sent => _sent;
 
@@ -71,7 +77,7 @@ internal sealed class TemporalLikeRuntime : IInstanceDirectory, IInstanceRuntime
     public ValueTask<Result<InstanceView>> Get(InstanceAddress address, CancellationToken cancellationToken)
     {
         Gets++;
-        return ValueTask.FromResult<Result<InstanceView>>(View());
+        return ValueTask.FromResult(GetFails is { } failure ? (Result<InstanceView>)failure : View());
     }
 
     public async ValueTask<Result<CommandResult>> Send(InstanceAddress address, CommandNonce nonce, Trigger command, CancellationToken cancellationToken)
@@ -122,7 +128,7 @@ internal sealed class TemporalLikeRuntime : IInstanceDirectory, IInstanceRuntime
         throw new NotSupportedException("not asked by these tests");
 
     public ValueTask<Result<ApprovalCheck>> Check(RecipeVersion recipe, CancellationToken cancellationToken) =>
-        ValueTask.FromResult<Result<ApprovalCheck>>(Approval);
+        ValueTask.FromResult(CheckFails is { } failure ? (Result<ApprovalCheck>)failure : Approval);
 
     public IDisposable Enter(CallerContext context) => throw new NotSupportedException("the caller is fixed");
 
