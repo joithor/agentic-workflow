@@ -54,6 +54,9 @@ internal sealed partial class ShellViewModel
         return true;
     }
 
+    /// <summary>Cancels a waiting chord (any other unmodified key, Esc).</summary>
+    internal void CancelChord() => _ = _clock;   // stub (red)
+
     private static (PageId Page, HomeFilter Filter)? SecondKey(string key) => key.ToUpperInvariant() switch
     {
         "H" or "N" => (PageId.Home, HomeFilter.All),
