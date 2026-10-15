@@ -1,8 +1,8 @@
 {
-  "address": "workflow/PRJ-sync",
-  "id": "WFI-481a066729618c2f93228cddb2c4d4e3",
+  "address": "ITM-01JK3/project/1",
+  "id": "WFI-b8af4435da648073ac3a2a152fab1f4b",
   "parent": null,
-  "itemId": null,
+  "itemId": "ITM-01JK3",
   "title": "Offline sync",
   "recipe": {
     "id": "workflow.project",
@@ -139,7 +139,7 @@
     "desk": null,
     "status": {
       "header": {
-        "address": "workflow/PRJ-sync",
+        "address": "ITM-01JK3/project/1",
         "recipe": "workflow.project",
         "hash12": "a8c21e7f0000",
         "version": 12,
@@ -173,18 +173,18 @@
           "verb": "takeover",
           "actionId": "ApplyCommand:takeover",
           "class": "pause",
-          "cli": "sindri workflow takeover workflow/PRJ-sync",
+          "cli": "sindri workflow takeover ITM-01JK3/project/1",
           "confirm": null
         },
         {
           "verb": "cancel",
           "actionId": "ApplyCommand:cancel",
           "class": "desk",
-          "cli": "sindri workflow cancel workflow/PRJ-sync",
-          "confirm": "Cancel workflow/PRJ-sync? 0 running steps stop; 5 children are cancelled."
+          "cli": "sindri workflow cancel ITM-01JK3/project/1",
+          "confirm": "Cancel ITM-01JK3/project/1? 0 running steps stop; 5 children are cancelled."
         }
       ],
-      "text": "workflow/PRJ-sync  workflow.project@a8c21e7f0000  v12  build: children 4 of 9  since 09:14 (3h 12m)\n  next      Waiting on 9 children: 4 done · 1 running · 1 parked · 3 queued.\n  timeout   escalates in 1d (build)\n  budget    tokens 1.2M / 4M (state), 1.9M / 6M (instance)\n  commands  takeover, cancel\n"
+      "text": "ITM-01JK3/project/1  workflow.project@a8c21e7f0000  v12  build: children 4 of 9  since 09:14 (3h 12m)\n  next      Waiting on 9 children: 4 done · 1 running · 1 parked · 3 queued.\n  timeout   escalates in 1d (build)\n  budget    tokens 1.2M / 4M (state), 1.9M / 6M (instance)\n  commands  takeover, cancel\n"
     }
   },
   "facts": [
@@ -315,7 +315,7 @@
   "children": [
     {
       "state": "build",
-      "recipe": "workflow.item",
+      "recipe": "workflow.step",
       "done": 4,
       "total": 9,
       "workstreams": [
@@ -324,7 +324,7 @@
           "label": "UI",
           "rows": [
             {
-              "address": "workflow/PRJ-sync/ITM-01JC3",
+              "address": "ITM-01JK3/project/1/step.1",
               "itemId": "ITM-01JC3",
               "title": "Sync status pill",
               "glyph": "done",
@@ -343,7 +343,7 @@
               ]
             },
             {
-              "address": "workflow/PRJ-sync/ITM-01JC5",
+              "address": "ITM-01JK3/project/1/step.2",
               "itemId": "ITM-01JC5",
               "title": "Conflict resolver dialog",
               "glyph": "done",
@@ -368,7 +368,7 @@
           "label": "Store",
           "rows": [
             {
-              "address": "workflow/PRJ-sync/ITM-01JC1",
+              "address": "ITM-01JK3/project/1/step.3",
               "itemId": "ITM-01JC1",
               "title": "PUT /sync/changes",
               "glyph": "done",
@@ -387,7 +387,7 @@
               ]
             },
             {
-              "address": "workflow/PRJ-sync/ITM-01JC2",
+              "address": "ITM-01JK3/project/1/step.4",
               "itemId": "ITM-01JC2",
               "title": "Outbox queue",
               "glyph": "done",
@@ -406,7 +406,7 @@
               ]
             },
             {
-              "address": "workflow/PRJ-sync/ITM-01JD6",
+              "address": "ITM-01JK3/project/1/step.5",
               "itemId": "ITM-01JD6",
               "title": "Services page job panel",
               "glyph": "active",
@@ -432,7 +432,7 @@
           "label": "Mobile",
           "rows": [
             {
-              "address": "workflow/PRJ-sync/ITM-01JD7",
+              "address": "ITM-01JK3/project/1/step.6",
               "itemId": "ITM-01JD7",
               "title": "Background sync (iOS)",
               "glyph": "active",
@@ -456,14 +456,14 @@
               ]
             },
             {
-              "address": "workflow/PRJ-sync/ITM-01JF3",
+              "address": "ITM-01JK3/project/1/step.7",
               "itemId": "ITM-01JF3",
               "title": "doctor views line",
               "glyph": "pending",
-              "state": "queued",
+              "state": "produce",
               "chip": {
-                "word": "QUEUED",
-                "tone": "neutral"
+                "word": "RUNNING",
+                "tone": "ok"
               },
               "round": null,
               "agent": null,
@@ -476,14 +476,14 @@
               ]
             },
             {
-              "address": "workflow/PRJ-sync/ITM-01JF4",
+              "address": "ITM-01JK3/project/1/step.8",
               "itemId": "ITM-01JF4",
               "title": "Tray badge on Linux",
               "glyph": "pending",
-              "state": "queued",
+              "state": "produce",
               "chip": {
-                "word": "QUEUED",
-                "tone": "neutral"
+                "word": "RUNNING",
+                "tone": "ok"
               },
               "round": null,
               "agent": null,
@@ -502,14 +502,14 @@
           "label": "Rollout",
           "rows": [
             {
-              "address": "workflow/PRJ-sync/ITM-01JF8",
+              "address": "ITM-01JK3/project/1/step.9",
               "itemId": "ITM-01JF8",
               "title": "Receipt verify route",
               "glyph": "pending",
-              "state": "queued",
+              "state": "produce",
               "chip": {
-                "word": "QUEUED",
-                "tone": "neutral"
+                "word": "RUNNING",
+                "tone": "ok"
               },
               "round": null,
               "agent": null,

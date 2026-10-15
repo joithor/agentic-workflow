@@ -1,8 +1,8 @@
 {
-  "address": "workflow/INC-14",
-  "id": "WFI-94b6ae3d7a1785f1bf27cca4fa325c7c",
+  "address": "ITM-01JK1/incident-response/1",
+  "id": "WFI-64ce8c300705888aad5d956eab15aa53",
   "parent": null,
-  "itemId": null,
+  "itemId": "ITM-01JK1",
   "title": "Outbox retry storm",
   "recipe": {
     "id": "workflow.incident-response",
@@ -121,7 +121,7 @@
     "desk": null,
     "status": {
       "header": {
-        "address": "workflow/INC-14",
+        "address": "ITM-01JK1/incident-response/1",
         "recipe": "workflow.incident-response",
         "hash12": "5d90e1b20000",
         "version": 4,
@@ -147,18 +147,18 @@
           "verb": "takeover",
           "actionId": "ApplyCommand:takeover",
           "class": "pause",
-          "cli": "sindri workflow takeover workflow/INC-14",
+          "cli": "sindri workflow takeover ITM-01JK1/incident-response/1",
           "confirm": null
         },
         {
           "verb": "cancel",
           "actionId": "ApplyCommand:cancel",
           "class": "desk",
-          "cli": "sindri workflow cancel workflow/INC-14",
-          "confirm": "Cancel workflow/INC-14? 1 running steps stop; 1 children are cancelled."
+          "cli": "sindri workflow cancel ITM-01JK1/incident-response/1",
+          "confirm": "Cancel ITM-01JK1/incident-response/1? 1 running steps stop; 1 children are cancelled."
         }
       ],
-      "text": "workflow/INC-14  workflow.incident-response@5d90e1b20000  v4  mitigate: round 1/3  since 11:02 (1h 24m)\n  next      agent rolling back in ITM-01JG2 · comms posting\n  timeout   escalates in 1h (mitigate)\n  commands  takeover, cancel\n"
+      "text": "ITM-01JK1/incident-response/1  workflow.incident-response@5d90e1b20000  v4  mitigate: round 1/3  since 11:02 (1h 24m)\n  next      agent rolling back in ITM-01JG2 · comms posting\n  timeout   escalates in 1h (mitigate)\n  commands  takeover, cancel\n"
     }
   },
   "facts": [
@@ -228,17 +228,17 @@
   "children": [
     {
       "state": "comms",
-      "recipe": "workflow.item",
+      "recipe": "workflow.step",
       "done": 0,
       "total": 1,
       "workstreams": [],
       "rows": [
         {
-          "address": "workflow/INC-14/ITM-01JG3",
+          "address": "ITM-01JK1/incident-response/1/step.1",
           "itemId": "ITM-01JG3",
           "title": "Post status updates",
           "glyph": "active",
-          "state": "post",
+          "state": "produce",
           "chip": {
             "word": "RUNNING",
             "tone": "ok"

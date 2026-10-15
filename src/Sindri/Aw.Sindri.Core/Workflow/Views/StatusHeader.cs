@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Views;
@@ -14,7 +15,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="AgeSeconds">Age in seconds.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record StatusHeader(
-    string Address,
+    InstanceAddress Address,
     RecipeId Recipe,
     string Hash12,
     int Version,

@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Core.Workflow.Views;
 
@@ -8,4 +9,4 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="Task">The packet task.</param>
 /// <param name="Workstream">The packet workstream.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed record ParentRef(string Address, string Title, string? Task, string? Workstream);
+public sealed record ParentRef(InstanceAddress Address, string Title, string? Task, string? Workstream);

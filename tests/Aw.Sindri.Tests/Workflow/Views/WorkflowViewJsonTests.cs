@@ -42,7 +42,7 @@ public sealed class WorkflowViewJsonTests
     {
         using var json = JsonDocument.Parse(JsonSerializer.Serialize(WorkflowViewFixtures.Done(), _options));
 
-        Assert.Equal(JsonValueKind.Null, json.RootElement.GetProperty("itemId").ValueKind);
+        Assert.Equal(JsonValueKind.Null, json.RootElement.GetProperty("parent").ValueKind);
         Assert.Equal(JsonValueKind.Null, json.RootElement.GetProperty("engineOwned").ValueKind);
         Assert.Equal(JsonValueKind.Array, json.RootElement.GetProperty("children").ValueKind);
         Assert.Equal(JsonValueKind.Null, json.RootElement.GetProperty("counts").GetProperty("context").ValueKind);
@@ -61,14 +61,14 @@ public sealed class WorkflowViewJsonTests
     [Fact, Trait("Lane", "unit")]
     public void The_root_list_is_unfinished_first_then_urgency_then_subject_label()
     {
-        var addresses = WorkflowViewFixtures.RootList().Instances.Select(r => r.Address);
+        var addresses = WorkflowViewFixtures.RootList().Instances.Select(r => r.Address.Value);
 
         // Unfinished rows first, the parked and escalated one behind the moving ones, the finished rows last; inside each, urgency, then the
         // subject label (spelled out, so a change of the sort key shows). The first five are the Home strip of the screens fixture.
         Assert.Equal(
             [
-                "workflow/INC-14", "workflow/sentry-8812", "workflow/PRJ-sync", "workflow/PRJ-exports", "workflow/PRJ-tabs", "workflow/LIN-APP",
-                "workflow/LIN-ENG", "workflow/pagerduty-P-2211", "workflow/sentry-8790", "workflow/sentry-8797", "workflow/sentry-8801", "workflow/sentry-8809",
+                "ITM-01JK1/incident-response/1", "ITM-01JK2/triage-alert/1", "ITM-01JK3/project/1", "ITM-01JK4/project/1", "ITM-01JK5/project/1", "ITM-01JKC/intake-linear/1",
+                "ITM-01JKB/intake-linear/1", "ITM-01JK6/triage-alert/1", "ITM-01JKA/triage-alert/1", "ITM-01JK9/triage-alert/1", "ITM-01JK8/triage-alert/1", "ITM-01JK7/triage-alert/1",
             ],
             addresses,
             StringComparer.Ordinal);

@@ -122,12 +122,12 @@ public sealed class WorkflowViewGoldenTests : IAsyncLifetime
     // one, as the host writes it (ApiProblems). SND-ITEM-404 is not a catalogue code yet; U7 swaps in the served body.
     private const string NotFound =
         "{\n  \"type\": \"https://tools.ietf.org/html/rfc9110#section-15.5.5\",\n  \"title\": \"SND-ITEM-404\",\n  \"status\": 404,\n"
-        + "  \"detail\": \"No workflow instance workflow/PRJ-unknown in this repo.\",\n  \"traceId\": \"<trace>\"\n}";
+        + "  \"detail\": \"No workflow instance ITM-01JZZ/project/1 in this repo.\",\n  \"traceId\": \"<trace>\"\n}";
 
     // The same for a key the recipe doesn't declare (plan row 29): the facts route answers the item's 404 until U7 gives it a code.
     private const string FactNotFound =
         "{\n  \"type\": \"https://tools.ietf.org/html/rfc9110#section-15.5.5\",\n  \"title\": \"SND-ITEM-404\",\n  \"status\": 404,\n"
-        + "  \"detail\": \"workflow/PRJ-sync declares no fact 'unknown'.\",\n  \"traceId\": \"<trace>\"\n}";
+        + "  \"detail\": \"ITM-01JK3/project/1 declares no fact 'unknown'.\",\n  \"traceId\": \"<trace>\"\n}";
 
     private static string Json<T>(T value, JsonSerializerOptions options) =>
         ApiGolden.Reindent(JsonSerializer.Serialize(value, options));

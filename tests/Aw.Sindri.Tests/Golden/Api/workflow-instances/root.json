@@ -1,9 +1,9 @@
 {
   "instances": [
     {
-      "address": "workflow/INC-14",
-      "id": "WFI-94b6ae3d7a1785f1bf27cca4fa325c7c",
-      "itemId": null,
+      "address": "ITM-01JK1/incident-response/1",
+      "id": "WFI-64ce8c300705888aad5d956eab15aa53",
+      "itemId": "ITM-01JK1",
       "recipe": {
         "id": "workflow.incident-response",
         "hash": "sha256:5d90e1b200000000000000000000000000000000000000000000000000000000",
@@ -130,9 +130,9 @@
       ]
     },
     {
-      "address": "workflow/sentry-8812",
-      "id": "WFI-0461ac4604c08a9cb696f4f6335a0868",
-      "itemId": null,
+      "address": "ITM-01JK2/triage-alert/1",
+      "id": "WFI-16f1f891aeeb8be887595e1e8e4a2d4e",
+      "itemId": "ITM-01JK2",
       "recipe": {
         "id": "workflow.triage-alert",
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
@@ -228,9 +228,9 @@
       ]
     },
     {
-      "address": "workflow/PRJ-sync",
-      "id": "WFI-481a066729618c2f93228cddb2c4d4e3",
-      "itemId": null,
+      "address": "ITM-01JK3/project/1",
+      "id": "WFI-b8af4435da648073ac3a2a152fab1f4b",
+      "itemId": "ITM-01JK3",
       "recipe": {
         "id": "workflow.project",
         "hash": "sha256:a8c21e7f00000000000000000000000000000000000000000000000000000000",
@@ -369,9 +369,9 @@
       ]
     },
     {
-      "address": "workflow/PRJ-exports",
-      "id": "WFI-0201cfc8b6dc87e6861bf35dd2064807",
-      "itemId": null,
+      "address": "ITM-01JK4/project/1",
+      "id": "WFI-e5a54b2d4b1280248b49f1cfeaeef2ed",
+      "itemId": "ITM-01JK4",
       "recipe": {
         "id": "workflow.project",
         "hash": "sha256:a8c21e7f00000000000000000000000000000000000000000000000000000000",
@@ -513,9 +513,9 @@
       ]
     },
     {
-      "address": "workflow/PRJ-tabs",
-      "id": "WFI-a4e936160bc288dd8eabd080cc471780",
-      "itemId": null,
+      "address": "ITM-01JK5/project/1",
+      "id": "WFI-859782dc072487e4aa6baa643206623d",
+      "itemId": "ITM-01JK5",
       "recipe": {
         "id": "workflow.project",
         "hash": "sha256:a8c21e7f00000000000000000000000000000000000000000000000000000000",
@@ -654,9 +654,9 @@
       ]
     },
     {
-      "address": "workflow/LIN-APP",
-      "id": "WFI-baa44e0633358beab0cd158d5da5348b",
-      "itemId": null,
+      "address": "ITM-01JKC/intake-linear/1",
+      "id": "WFI-39e9b69179ea8d279a5840e67f79e0a1",
+      "itemId": "ITM-01JKC",
       "recipe": {
         "id": "workflow.intake-linear",
         "hash": "sha256:0b7e44d300000000000000000000000000000000000000000000000000000000",
@@ -722,9 +722,9 @@
       ]
     },
     {
-      "address": "workflow/LIN-ENG",
-      "id": "WFI-2b509939d6a786fcaed8695ab66cebab",
-      "itemId": null,
+      "address": "ITM-01JKB/intake-linear/1",
+      "id": "WFI-b42d7e8e8c338b5e8d041253c48cc181",
+      "itemId": "ITM-01JKB",
       "recipe": {
         "id": "workflow.intake-linear",
         "hash": "sha256:0b7e44d300000000000000000000000000000000000000000000000000000000",
@@ -790,9 +790,9 @@
       ]
     },
     {
-      "address": "workflow/pagerduty-P-2211",
-      "id": "WFI-b71b3d84f36a897dae179eed2a4bb914",
-      "itemId": null,
+      "address": "ITM-01JK6/triage-alert/1",
+      "id": "WFI-9b8dab36eeb686a8b0f9cc3831826f95",
+      "itemId": "ITM-01JK6",
       "recipe": {
         "id": "workflow.triage-alert",
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
@@ -890,7 +890,7 @@
         "kind": "accept",
         "actionId": "ApplyCommand:answer-accept",
         "class": "protected",
-        "cli": "sindri workflow answer workflow/pagerduty-P-2211 --accept",
+        "cli": "sindri workflow answer ITM-01JK6/triage-alert/1 --accept",
         "atTerminal": true
       },
       "actions": [
@@ -900,9 +900,9 @@
       ]
     },
     {
-      "address": "workflow/sentry-8790",
-      "id": "WFI-2c5f663a716f8dbebd85c733a14e7edc",
-      "itemId": null,
+      "address": "ITM-01JKA/triage-alert/1",
+      "id": "WFI-b6e9ddec3a458b7aabafdcd9d4cac0a9",
+      "itemId": "ITM-01JKA",
       "recipe": {
         "id": "workflow.triage-alert",
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
@@ -918,7 +918,7 @@
       "engineOwned": null,
       "subject": {
         "kind": "webhook",
-        "key": "workflow/sentry-8790",
+        "key": "8790",
         "label": "sentry #8790",
         "href": null
       },
@@ -994,9 +994,9 @@
       "actions": []
     },
     {
-      "address": "workflow/sentry-8797",
-      "id": "WFI-4acfe3f377438bd8ab39d55ff7345f4e",
-      "itemId": null,
+      "address": "ITM-01JK9/triage-alert/1",
+      "id": "WFI-c16d43be4cc4832aad0f88bdd4e86a7c",
+      "itemId": "ITM-01JK9",
       "recipe": {
         "id": "workflow.triage-alert",
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
@@ -1012,7 +1012,7 @@
       "engineOwned": null,
       "subject": {
         "kind": "webhook",
-        "key": "workflow/sentry-8797",
+        "key": "8797",
         "label": "sentry #8797",
         "href": null
       },
@@ -1088,9 +1088,9 @@
       "actions": []
     },
     {
-      "address": "workflow/sentry-8801",
-      "id": "WFI-ef737bafed2d84038e7f8ae865347118",
-      "itemId": null,
+      "address": "ITM-01JK8/triage-alert/1",
+      "id": "WFI-e66f2acf465483ae83110574769d914a",
+      "itemId": "ITM-01JK8",
       "recipe": {
         "id": "workflow.triage-alert",
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
@@ -1106,7 +1106,7 @@
       "engineOwned": null,
       "subject": {
         "kind": "webhook",
-        "key": "workflow/sentry-8801",
+        "key": "8801",
         "label": "sentry #8801",
         "href": null
       },
@@ -1182,9 +1182,9 @@
       "actions": []
     },
     {
-      "address": "workflow/sentry-8809",
-      "id": "WFI-1c27917745e482bba90b58eff5286628",
-      "itemId": null,
+      "address": "ITM-01JK7/triage-alert/1",
+      "id": "WFI-9abca2e051458a73850462c51a95afa6",
+      "itemId": "ITM-01JK7",
       "recipe": {
         "id": "workflow.triage-alert",
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",

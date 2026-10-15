@@ -805,10 +805,7 @@ Aw.Sindri.Features.GetInstanceFact.FactView.Type.get -> Aw.Sindri.Core.Workflow.
 Aw.Sindri.Features.GetInstanceFact.FactView.Type.init -> void
 Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest
 Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.<Clone>$() -> Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest!
-Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.Deconstruct(out string! Instance, out string! Key) -> void
 Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.Equals(Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest? other) -> bool
-Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.GetInstanceFactRequest(string! Instance, string! Key) -> void
-Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.Instance.get -> string!
 Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.Instance.init -> void
 Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.Key.get -> string!
 Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.Key.init -> void
@@ -834,3 +831,6 @@ Aw.Sindri.Features.ContextCalls.ListContextNeighborsRequest.ListContextNeighbors
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Deconstruct(out string? Q, out string? Node, out string? Item, out string? Symbol, out string? Depth, out string? Budget, out bool Draft) -> void
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Depth.get -> string?
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.QueryContextRequest(string? Q, string? Node = null, string? Item = null, string? Symbol = null, string? Depth = null, string? Budget = null, bool Draft = false) -> void
+Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, out string! Key) -> void
+Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.Instance.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
+Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.GetInstanceFactRequest(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, string! Key) -> void

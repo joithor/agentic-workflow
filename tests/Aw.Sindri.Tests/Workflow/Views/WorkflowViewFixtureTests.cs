@@ -17,13 +17,13 @@ public sealed class WorkflowViewFixtureTests
         var rows = new TheoryData<string>();
         foreach (var detail in WorkflowViewFixtures.AllDetails())
         {
-            rows.Add(detail.Address);
+            rows.Add(detail.Address.Value);
         }
 
         return rows;
     }
 
-    private static InstanceDetail Detail(string address) => WorkflowViewFixtures.AllDetails().Single(d => d.Address == address);
+    private static InstanceDetail Detail(string address) => WorkflowViewFixtures.AllDetails().Single(d => d.Address.Value == address);
 
     [Theory, Trait("Lane", "unit")]
     [MemberData(nameof(Details))]
@@ -40,7 +40,7 @@ public sealed class WorkflowViewFixtureTests
         Assert.Equal(view.Since, status.Header.Since);
         Assert.All(status.Commands, command =>
         {
-            Assert.EndsWith(view.Address, command.Cli.Contains(" --", StringComparison.Ordinal) ? command.Cli[..command.Cli.IndexOf(" --", StringComparison.Ordinal)] : command.Cli, StringComparison.Ordinal);
+            Assert.EndsWith(view.Address.Value, command.Cli.Contains(" --", StringComparison.Ordinal) ? command.Cli[..command.Cli.IndexOf(" --", StringComparison.Ordinal)] : command.Cli, StringComparison.Ordinal);
             Assert.Contains(command.ActionId, view.Actions);
         });
         Assert.Equal(view.Actions.Count(a => a.Value != "OpenItem"), status.Commands.Count);
@@ -61,7 +61,7 @@ public sealed class WorkflowViewFixtureTests
         var open = view.Children.Sum(g => g.Rows.Concat(g.Workstreams.SelectMany(w => w.Rows)).Count(r => r.Glyph != StateGlyph.Done));
         var match = Regex.Match(cancel.Confirm!, @"^Cancel (?<address>\S+)\? (?<n>\d+) running steps stop; (?<m>\d+) children are cancelled\.$", RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
         Assert.True(match.Success, cancel.Confirm);
-        Assert.Equal(view.Address, match.Groups["address"].Value);
+        Assert.Equal(view.Address.Value, match.Groups["address"].Value);
         Assert.Equal(open, int.Parse(match.Groups["m"].Value, CultureInfo.InvariantCulture));
         Assert.All(view.Current.Status.Commands.Where(c => c.Verb.Value != "cancel"), c => Assert.Null(c.Confirm));
     }
@@ -73,7 +73,7 @@ public sealed class WorkflowViewFixtureTests
         {
             var lines = status.Text.Split('\n', StringSplitOptions.RemoveEmptyEntries);
             var header = status.Header;
-            Assert.StartsWith($"{header.Address}  {header.Recipe.Value}@{header.Hash12}  v{header.Version.ToString(CultureInfo.InvariantCulture)}  {header.State}", lines[0], StringComparison.Ordinal);
+            Assert.StartsWith($"{header.Address.Value}  {header.Recipe.Value}@{header.Hash12}  v{header.Version.ToString(CultureInfo.InvariantCulture)}  {header.State}", lines[0], StringComparison.Ordinal);
             Assert.Equal(status.Next is { Length: > 0 }, HasLine(lines, "next"));
             Assert.Equal(status.Child is not null, HasLine(lines, "child"));
             Assert.Equal(status.Drift is not null, HasLine(lines, "drift"));
@@ -126,7 +126,7 @@ public sealed class WorkflowViewFixtureTests
             Assert.All(view.States.Where(s => s.BranchOf is not null), s => Assert.Null(s.Order));
         }
 
-        Assert.Null(Detail("workflow/fork-demo-1").States.Single(s => s.State == "right").Order);
+        Assert.Null(Detail("ITM-01JL3/fork-demo/1").States.Single(s => s.State == "right").Order);
     }
 
     private static bool HasLine(string[] lines, string label) => lines.Any(l => l.StartsWith($"  {label} ", StringComparison.Ordinal));

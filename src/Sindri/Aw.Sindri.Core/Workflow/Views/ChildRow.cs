@@ -19,7 +19,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="Actions">Action ids.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record ChildRow(
-    string Address,
+    InstanceAddress Address,
     ItemKey? ItemId,
     string Title,
     StateGlyph Glyph,

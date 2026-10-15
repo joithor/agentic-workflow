@@ -1,6 +1,6 @@
 {
   "header": {
-    "address": "workflow/PRJ-reports",
+    "address": "ITM-01JKE/project/1",
     "recipe": "workflow.project",
     "hash12": "a8c21e7f0000",
     "version": 12,
@@ -14,7 +14,7 @@
     "kind": "resume",
     "actionId": "ApplyCommand:answer-resume",
     "class": "desk",
-    "cli": "sindri workflow answer workflow/PRJ-reports --resume --text <answer>",
+    "cli": "sindri workflow answer ITM-01JKE/project/1 --resume --text <answer>",
     "atTerminal": false
   },
   "child": null,
@@ -28,23 +28,23 @@
       "verb": "answer",
       "actionId": "ApplyCommand:answer-resume",
       "class": "desk",
-      "cli": "sindri workflow answer workflow/PRJ-reports --resume --text <answer>",
+      "cli": "sindri workflow answer ITM-01JKE/project/1 --resume --text <answer>",
       "confirm": null
     },
     {
       "verb": "takeover",
       "actionId": "ApplyCommand:takeover",
       "class": "pause",
-      "cli": "sindri workflow takeover workflow/PRJ-reports",
+      "cli": "sindri workflow takeover ITM-01JKE/project/1",
       "confirm": null
     },
     {
       "verb": "cancel",
       "actionId": "ApplyCommand:cancel",
       "class": "desk",
-      "cli": "sindri workflow cancel workflow/PRJ-reports",
-      "confirm": "Cancel workflow/PRJ-reports? 0 running steps stop; 0 children are cancelled."
+      "cli": "sindri workflow cancel ITM-01JKE/project/1",
+      "confirm": "Cancel ITM-01JKE/project/1? 0 running steps stop; 0 children are cancelled."
     }
   ],
-  "text": "workflow/PRJ-reports  workflow.project@a8c21e7f0000  v12  parked: needs-answer  since 10:30 (1h 56m)\n  next      Parked (needs-answer) in design: import the design output, then resume.\n  answer    sindri workflow answer workflow/PRJ-reports --resume --text <answer>\n  commands  answer, takeover, cancel\n"
+  "text": "ITM-01JKE/project/1  workflow.project@a8c21e7f0000  v12  parked: needs-answer  since 10:30 (1h 56m)\n  next      Parked (needs-answer) in design: import the design output, then resume.\n  answer    sindri workflow answer ITM-01JKE/project/1 --resume --text <answer>\n  commands  answer, takeover, cancel\n"
 }

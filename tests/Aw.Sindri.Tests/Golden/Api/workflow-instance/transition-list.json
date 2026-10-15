@@ -1,8 +1,8 @@
 {
-  "address": "workflow/fork-demo-1",
-  "id": "WFI-35960b5d059983ae8867765305ec4ee9",
+  "address": "ITM-01JL3/fork-demo/1",
+  "id": "WFI-721d3b99eecf81c7aed131d41b7460a0",
   "parent": null,
-  "itemId": null,
+  "itemId": "ITM-01JL3",
   "title": "Fork demo",
   "recipe": {
     "id": "workflow.fork-demo",
@@ -103,7 +103,7 @@
     "desk": null,
     "status": {
       "header": {
-        "address": "workflow/fork-demo-1",
+        "address": "ITM-01JL3/fork-demo/1",
         "recipe": "workflow.fork-demo",
         "hash12": "1f08c6a90000",
         "version": 1,
@@ -125,18 +125,18 @@
           "verb": "takeover",
           "actionId": "ApplyCommand:takeover",
           "class": "pause",
-          "cli": "sindri workflow takeover workflow/fork-demo-1",
+          "cli": "sindri workflow takeover ITM-01JL3/fork-demo/1",
           "confirm": null
         },
         {
           "verb": "cancel",
           "actionId": "ApplyCommand:cancel",
           "class": "desk",
-          "cli": "sindri workflow cancel workflow/fork-demo-1",
-          "confirm": "Cancel workflow/fork-demo-1? 1 running steps stop; 0 children are cancelled."
+          "cli": "sindri workflow cancel ITM-01JL3/fork-demo/1",
+          "confirm": "Cancel ITM-01JL3/fork-demo/1? 1 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "workflow/fork-demo-1  workflow.fork-demo@1f08c6a90000  v1  right: running  since 12:00 (26m)\n  next      branch.right is running.\n  commands  takeover, cancel\n"
+      "text": "ITM-01JL3/fork-demo/1  workflow.fork-demo@1f08c6a90000  v1  right: running  since 12:00 (26m)\n  next      branch.right is running.\n  commands  takeover, cancel\n"
     }
   },
   "facts": [

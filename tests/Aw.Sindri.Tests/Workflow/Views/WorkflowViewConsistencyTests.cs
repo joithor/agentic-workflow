@@ -59,8 +59,8 @@ public sealed class WorkflowViewConsistencyTests
 
         foreach (var status in WorkflowViewFixtures.AllStatuses().Where(s => s.Answer is not null))
         {
-            var root = Roots.SingleOrDefault(r => r.Address == status.Header.Address);
-            Assert.True(root is null || root.EngineOwned?.Kind != EngineOwnedKind.TakenOver, status.Header.Address);
+            var root = Roots.SingleOrDefault(r => r.Address.Value == status.Header.Address.Value);
+            Assert.True(root is null || root.EngineOwned?.Kind != EngineOwnedKind.TakenOver, status.Header.Address.Value);
         }
 
         var takenOver = WorkflowViewFixtures.StatusTakenOver();
@@ -73,7 +73,7 @@ public sealed class WorkflowViewConsistencyTests
     {
         foreach (var view in WorkflowViewFixtures.AllDetails())
         {
-            var row = Roots.SingleOrDefault(r => r.Address == view.Address);
+            var row = Roots.SingleOrDefault(r => r.Address.Value == view.Address.Value);
             if (row is null)
             {
                 continue;
@@ -169,7 +169,7 @@ public sealed class WorkflowViewConsistencyTests
     public void Now_is_a_short_sentence()
     {
         Assert.All(Roots, r => Assert.InRange(r.Now.Length, 1, 80));
-        Assert.Equal("agent rolling back in ITM-01JG2 · comms posting", Roots.Single(r => r.Address == "workflow/INC-14").Now);
+        Assert.Equal("agent rolling back in ITM-01JG2 · comms posting", Roots.Single(r => r.Address.Value == "ITM-01JK1/incident-response/1").Now);
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -197,7 +197,7 @@ public sealed class WorkflowViewConsistencyTests
                 Assert.StartsWith("workflow.", group.Recipe.Value, StringComparison.Ordinal);
                 foreach (var row in group.Rows.Concat(group.Workstreams.SelectMany(w => w.Rows)))
                 {
-                    Assert.StartsWith(view.Address + "/", row.Address, StringComparison.Ordinal);
+                    Assert.StartsWith(view.Address.Value + "/", row.Address.Value, StringComparison.Ordinal);
                     if (row.Glyph == StateGlyph.Done)
                     {
                         Assert.DoesNotContain(row.Actions, a => a.Value.StartsWith("ApplyCommand:", StringComparison.Ordinal));
@@ -208,7 +208,7 @@ public sealed class WorkflowViewConsistencyTests
                         Assert.Contains(row.Actions, a => a.Value.StartsWith("ApplyCommand:answer", StringComparison.Ordinal));
                     }
 
-                    Assert.True(row.MirroredPark is null || view.Current.Status.Child is not null, row.Address);
+                    Assert.True(row.MirroredPark is null || view.Current.Status.Child is not null, row.Address.Value);
                 }
             }
         }
@@ -226,12 +226,12 @@ public sealed class WorkflowViewConsistencyTests
         Assert.Equal(StateGlyph.Active, incident.States.Single(s => s.State == "comms").Glyph);
         foreach (var row in Roots)
         {
-            Assert.True(row.ItemId is not null || row.Actions.All(a => a.Value != "OpenItem"), row.Address);
+            Assert.True(row.ItemId is not null || row.Actions.All(a => a.Value != "OpenItem"), row.Address.Value);
         }
 
         foreach (var view in WorkflowViewFixtures.AllDetails())
         {
-            Assert.True(view.ItemId is not null || view.Actions.All(a => a.Value != "OpenItem"), view.Address);
+            Assert.True(view.ItemId is not null || view.Actions.All(a => a.Value != "OpenItem"), view.Address.Value);
         }
     }
 
@@ -274,15 +274,15 @@ public sealed class WorkflowViewConsistencyTests
     public void The_home_strip_is_the_first_five_rows_of_the_list()
     {
         Assert.Equal(
-            ["workflow/INC-14", "workflow/sentry-8812", "workflow/PRJ-sync", "workflow/PRJ-exports", "workflow/PRJ-tabs"],
-            Roots.Take(5).Select(r => r.Address),
+            ["ITM-01JK1/incident-response/1", "ITM-01JK2/triage-alert/1", "ITM-01JK3/project/1", "ITM-01JK4/project/1", "ITM-01JK5/project/1"],
+            Roots.Take(5).Select(r => r.Address.Value),
             StringComparer.Ordinal);
         Assert.Equal(12, Roots.Count);
     }
 
     [Fact, Trait("Lane", "unit")]
     public void The_budget_park_does_not_reuse_an_item_of_the_screens_fixture() =>
-        Assert.DoesNotContain("ITM-01JC8", WorkflowViewFixtures.StatusParkedBudget().Header.Address, StringComparison.Ordinal);
+        Assert.DoesNotContain("ITM-01JC8", WorkflowViewFixtures.StatusParkedBudget().Header.Address.Value, StringComparison.Ordinal);
 
     [Fact, Trait("Lane", "unit")]
     public void Instance_ids_carry_the_uuid_v8_version_and_variant_bits_of_the_engine()
@@ -325,7 +325,7 @@ public sealed class WorkflowViewConsistencyTests
     public void A_needs_answer_park_is_its_own_instance_not_the_taken_over_one()
     {
         var park = WorkflowViewFixtures.StatusNeedsAnswerWait();
-        Assert.NotEqual("workflow/PRJ-exports", park.Header.Address, StringComparer.Ordinal);
+        Assert.NotEqual("ITM-01JK4/project/1", park.Header.Address.Value, StringComparer.Ordinal);
         Assert.Equal("parked", park.Header.State);
         Assert.Equal("needs-answer", park.Header.Detail);
         Assert.Equal(JsonValueKind.Object, WorkflowViewFixtures.Fact("packet").Body.ValueKind);

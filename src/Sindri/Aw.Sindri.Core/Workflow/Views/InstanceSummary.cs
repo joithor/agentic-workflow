@@ -5,7 +5,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 namespace Aw.Sindri.Core.Workflow.Views;
 
 /// <summary>One row of the list (E-20).</summary>
-/// <param name="Address">The CLI address (see <see cref="InstanceDetail"/>): display text, not the engine's "InstanceAddress".</param>
+/// <param name="Address">The CLI address in the engine form (see <see cref="InstanceDetail"/>).</param>
 /// <param name="Id">The engine's WFI id, which the id routes take.</param>
 /// <param name="ItemId">The item id when the instance is an item's.</param>
 /// <param name="Recipe">The recipe stamp.</param>
@@ -21,7 +21,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="Actions">The action ids allowed now.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record InstanceSummary(
-    string Address,
+    InstanceAddress Address,
     WorkflowInstanceId Id,
     ItemKey? ItemId,
     InstanceRecipe Recipe,

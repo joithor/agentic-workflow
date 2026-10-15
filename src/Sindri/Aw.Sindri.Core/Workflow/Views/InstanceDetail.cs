@@ -5,7 +5,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 namespace Aw.Sindri.Core.Workflow.Views;
 
 /// <summary>One instance for the Workflows frame (API spec section 3.8, E-20, E-23); the spec calls it InstanceView, a name the engine's status view holds.</summary>
-/// <param name="Address">The CLI address ("workflow/PRJ-sync", "T-3/item/1"): a display path the API resolves, not the engine's "InstanceAddress", whose shape is narrower, so it stays text.</param>
+/// <param name="Address">The CLI address in the engine form ("ITM-01JK3/project/1"; a child "ITM-01JK3/project/1/step.5"); the app deep-links to workflow/{address}.</param>
 /// <param name="Id">The engine's WFI id.</param>
 /// <param name="Parent">The parent instance, for a child.</param>
 /// <param name="ItemId">The item id.</param>
@@ -25,7 +25,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="AsOf">When it was read.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record InstanceDetail(
-    string Address,
+    InstanceAddress Address,
     WorkflowInstanceId Id,
     ParentRef? Parent,
     ItemKey? ItemId,

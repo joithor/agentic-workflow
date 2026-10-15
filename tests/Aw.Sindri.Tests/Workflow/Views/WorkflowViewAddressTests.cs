@@ -1,4 +1,3 @@
-using System.Reflection;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.GetInstanceFact;
@@ -13,27 +12,27 @@ public sealed class WorkflowViewAddressTests
     {
         foreach (var row in WorkflowViewFixtures.RootList().Instances)
         {
-            yield return row.Address.ToString()!;
+            yield return row.Address.Value;
         }
 
         foreach (var detail in WorkflowViewFixtures.AllDetails())
         {
-            yield return detail.Address.ToString()!;
+            yield return detail.Address.Value;
             foreach (var group in detail.Children)
             {
                 foreach (var child in group.Rows.Concat(group.Workstreams.SelectMany(w => w.Rows)))
                 {
-                    yield return child.Address.ToString()!;
+                    yield return child.Address.Value;
                 }
             }
         }
 
         foreach (var status in WorkflowViewFixtures.AllStatuses())
         {
-            yield return status.Header.Address.ToString()!;
+            yield return status.Header.Address.Value;
             if (status.Child is { } child)
             {
-                yield return child.Address.ToString()!;
+                yield return child.Address.Value;
             }
         }
     }
@@ -41,7 +40,7 @@ public sealed class WorkflowViewAddressTests
     [Fact, Trait("Lane", "unit")]
     public void Every_golden_address_parses_as_an_engine_InstanceAddress()
     {
-        var all = Addresses().Distinct().ToList();
+        var all = Addresses().Distinct(StringComparer.Ordinal).ToList();
 
         Assert.NotEmpty(all);
         foreach (var address in all)
@@ -58,7 +57,7 @@ public sealed class WorkflowViewAddressTests
         {
             foreach (var child in detail.Children.SelectMany(g => g.Rows.Concat(g.Workstreams.SelectMany(w => w.Rows))))
             {
-                Assert.Matches($"^{System.Text.RegularExpressions.Regex.Escape(detail.Address.ToString()!)}/step\\.[1-9][0-9]*$", child.Address.ToString()!);
+                Assert.Matches($"^{System.Text.RegularExpressions.Regex.Escape(detail.Address.Value)}/step\\.[1-9][0-9]*$", child.Address.Value);
             }
         }
     }
@@ -81,13 +80,11 @@ public sealed class WorkflowViewAddressTests
         Assert.Equal("WFI-1de747c7239d87e2a87d1a16b585b6e3", WorkflowViewFixtures.IdOf("T-50/step/1").Value);
         foreach (var row in WorkflowViewFixtures.RootList().Instances)
         {
-            Assert.Equal(WorkflowViewFixtures.IdOf(row.Address.ToString()!), row.Id);
+            Assert.Equal(WorkflowViewFixtures.IdOf(row.Address.Value), row.Id);
         }
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Every_root_has_an_item()
-    {
-        Assert.All(WorkflowViewFixtures.RootList().Instances, r => Assert.NotNull(r.ItemId));
-    }
+    public void Every_root_has_an_item() =>
+         Assert.All(WorkflowViewFixtures.RootList().Instances, r => Assert.NotNull(r.ItemId));
 }

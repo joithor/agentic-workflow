@@ -23,7 +23,7 @@ public static class StatusText
         var text = new StringBuilder();
         var h = status.Header;
         var detail = h.Detail is null ? string.Empty : $": {h.Detail}";
-        text.Append(CultureInfo.InvariantCulture, $"{h.Address}  {h.Recipe.Value}@{h.Hash12}  v{h.Version}  {h.State}{detail}  since {Clock(h.Since, now)} ({Span(h.AgeSeconds)})\n");
+        text.Append(CultureInfo.InvariantCulture, $"{h.Address.Value}  {h.Recipe.Value}@{h.Hash12}  v{h.Version}  {h.State}{detail}  since {Clock(h.Since, now)} ({Span(h.AgeSeconds)})\n");
         foreach (var (label, value) in Rows(status))
         {
             Line(text, label, value);
@@ -44,7 +44,7 @@ public static class StatusText
 
         if (status.Child is { } child)
         {
-            yield return ("child", $"{child.Address}  {child.State}{(child.Reason is null ? string.Empty : $": {child.Reason}")}");
+            yield return ("child", $"{child.Address.Value}  {child.State}{(child.Reason is null ? string.Empty : $": {child.Reason}")}");
         }
 
         if (status.Drift is { } drift)

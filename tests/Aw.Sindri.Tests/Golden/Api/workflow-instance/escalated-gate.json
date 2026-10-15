@@ -1,8 +1,8 @@
 {
-  "address": "workflow/pagerduty-P-2211",
-  "id": "WFI-b71b3d84f36a897dae179eed2a4bb914",
+  "address": "ITM-01JK6/triage-alert/1",
+  "id": "WFI-9b8dab36eeb686a8b0f9cc3831826f95",
   "parent": null,
-  "itemId": null,
+  "itemId": "ITM-01JK6",
   "title": "PagerDuty P-2211",
   "recipe": {
     "id": "workflow.triage-alert",
@@ -102,7 +102,7 @@
     "desk": null,
     "status": {
       "header": {
-        "address": "workflow/pagerduty-P-2211",
+        "address": "ITM-01JK6/triage-alert/1",
         "recipe": "workflow.triage-alert",
         "hash12": "d41f2a070000",
         "version": 2,
@@ -116,7 +116,7 @@
         "kind": "accept",
         "actionId": "ApplyCommand:answer-accept",
         "class": "protected",
-        "cli": "sindri workflow answer workflow/pagerduty-P-2211 --accept",
+        "cli": "sindri workflow answer ITM-01JK6/triage-alert/1 --accept",
         "atTerminal": true
       },
       "child": null,
@@ -130,25 +130,25 @@
           "verb": "answer",
           "actionId": "ApplyCommand:answer-accept",
           "class": "protected",
-          "cli": "sindri workflow answer workflow/pagerduty-P-2211 --accept",
+          "cli": "sindri workflow answer ITM-01JK6/triage-alert/1 --accept",
           "confirm": null
         },
         {
           "verb": "takeover",
           "actionId": "ApplyCommand:takeover",
           "class": "pause",
-          "cli": "sindri workflow takeover workflow/pagerduty-P-2211",
+          "cli": "sindri workflow takeover ITM-01JK6/triage-alert/1",
           "confirm": null
         },
         {
           "verb": "cancel",
           "actionId": "ApplyCommand:cancel",
           "class": "desk",
-          "cli": "sindri workflow cancel workflow/pagerduty-P-2211",
-          "confirm": "Cancel workflow/pagerduty-P-2211? 0 running steps stop; 0 children are cancelled."
+          "cli": "sindri workflow cancel ITM-01JK6/triage-alert/1",
+          "confirm": "Cancel ITM-01JK6/triage-alert/1? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "workflow/pagerduty-P-2211  workflow.triage-alert@d41f2a070000  v2  escalated: gate  since 11:02 (1h 24m)\n  next      Escalated: gate.severity scored 0.91, above 0.8. Accept to override it (the other checks\n            still run before done), or reject (the Step re-runs within its loop, otherwise this\n            parks).\n  answer    sindri workflow answer workflow/pagerduty-P-2211 --accept     (at a terminal)\n  commands  answer, takeover, cancel\n"
+      "text": "ITM-01JK6/triage-alert/1  workflow.triage-alert@d41f2a070000  v2  escalated: gate  since 11:02 (1h 24m)\n  next      Escalated: gate.severity scored 0.91, above 0.8. Accept to override it (the other checks\n            still run before done), or reject (the Step re-runs within its loop, otherwise this\n            parks).\n  answer    sindri workflow answer ITM-01JK6/triage-alert/1 --accept     (at a terminal)\n  commands  answer, takeover, cancel\n"
     }
   },
   "facts": [

@@ -1,6 +1,6 @@
 {
   "header": {
-    "address": "workflow/ITM-01JH5/step",
+    "address": "ITM-01JH5/step/1",
     "recipe": "workflow.step",
     "hash12": "1b13bd920351",
     "version": 9,
@@ -14,7 +14,7 @@
     "kind": "grantTokens",
     "actionId": "ApplyCommand:answer-grant-tokens",
     "class": "protected",
-    "cli": "sindri workflow answer workflow/ITM-01JH5/step --grant-tokens 100k",
+    "cli": "sindri workflow answer ITM-01JH5/step/1 --grant-tokens 100k",
     "atTerminal": true
   },
   "child": null,
@@ -28,23 +28,23 @@
       "verb": "answer",
       "actionId": "ApplyCommand:answer-grant-tokens",
       "class": "protected",
-      "cli": "sindri workflow answer workflow/ITM-01JH5/step --grant-tokens 100k",
+      "cli": "sindri workflow answer ITM-01JH5/step/1 --grant-tokens 100k",
       "confirm": null
     },
     {
       "verb": "takeover",
       "actionId": "ApplyCommand:takeover",
       "class": "pause",
-      "cli": "sindri workflow takeover workflow/ITM-01JH5/step",
+      "cli": "sindri workflow takeover ITM-01JH5/step/1",
       "confirm": null
     },
     {
       "verb": "cancel",
       "actionId": "ApplyCommand:cancel",
       "class": "desk",
-      "cli": "sindri workflow cancel workflow/ITM-01JH5/step",
-      "confirm": "Cancel workflow/ITM-01JH5/step? 0 running steps stop; 0 children are cancelled."
+      "cli": "sindri workflow cancel ITM-01JH5/step/1",
+      "confirm": "Cancel ITM-01JH5/step/1? 0 running steps stop; 0 children are cancelled."
     }
   ],
-  "text": "workflow/ITM-01JH5/step  workflow.step@1b13bd920351  v9  parked: budget  since 11:54 (32m)\n  next      Parked (budget): produce used 200k of 200k tokens.\n  answer    sindri workflow answer workflow/ITM-01JH5/step --grant-tokens 100k     (at a terminal;\n            once per park)\n  commands  answer, takeover, cancel\n"
+  "text": "ITM-01JH5/step/1  workflow.step@1b13bd920351  v9  parked: budget  since 11:54 (32m)\n  next      Parked (budget): produce used 200k of 200k tokens.\n  answer    sindri workflow answer ITM-01JH5/step/1 --grant-tokens 100k     (at a terminal; once per\n            park)\n  commands  answer, takeover, cancel\n"
 }
