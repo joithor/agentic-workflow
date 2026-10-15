@@ -184,7 +184,7 @@ internal sealed class WorkflowsHarness : IDisposable
             {
                 last = await handle.QueryAsync(static wf => wf.GetInstance(), query);
             }
-            catch (Exception e) when (!ct.IsCancellationRequested && e is Temporalio.Exceptions.RpcException { Code: Temporalio.Exceptions.RpcException.StatusCode.DeadlineExceeded } or OperationCanceledException)
+            catch (Exception e) when (!ct.IsCancellationRequested && e is Temporalio.Exceptions.RpcException { Code: Temporalio.Exceptions.RpcException.StatusCode.DeadlineExceeded } or Temporalio.Exceptions.RpcTimeoutOrCanceledException)
             {
                 continue;   // boundary: one slow Query; the loop's deadline decides when to give up
             }
