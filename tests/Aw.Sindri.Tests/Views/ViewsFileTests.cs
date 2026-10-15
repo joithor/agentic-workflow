@@ -49,13 +49,13 @@ public sealed class ViewsFileTests : IDisposable
         var runner = new MigrationRunner(new SqliteConnectionFactory(new SqliteOptions(path)), new FakeTimeProvider(), backupBeforeUpgrade: false);
         Assert.True((await runner.Migrate([ViewsDatabase.Migrations[0]], Token)).IsSuccess);
         Exec(path, "INSERT INTO projector_state (id, cursor, schema_version, rebuilding) VALUES (1, 7, 1, 0)");
-        Assert.DoesNotContain("view_items", Tables(path));
+        Assert.DoesNotContain("view_items", Tables(path), StringComparer.Ordinal);
 
         using var views = new SqliteViews(_home.Path);
         var opened = (await views.Store.Open(ViewSchema.Version, Token)).Value;
 
         Assert.Equal(1, opened.SchemaVersion);   // the file's own version: the projector sees it differs and resets
-        Assert.Contains("view_items", Tables(path));
+        Assert.Contains("view_items", Tables(path), StringComparer.Ordinal);
         var reset = (await views.Store.Reset(ViewNames.All, ViewSchema.Version, new FakeTimeProvider().GetUtcNow(), Token)).Value;
         Assert.True(reset is { Cursor: 0, Rebuilding: true, SchemaVersion: ViewSchema.Version });
     }

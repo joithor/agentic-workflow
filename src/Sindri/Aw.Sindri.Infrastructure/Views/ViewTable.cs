@@ -8,10 +8,10 @@ internal sealed record ViewTable(string Name)
 
     public string SelectAll => $"SELECT row_json FROM {Name} ORDER BY key";
 
-    /// <summary>Keys after <c>$after</c> (exclusive), in order, at most <c>$max</c>.</summary>
+    /// <summary>Keys after <c lang="sql">$after</c> (exclusive), in order, at most <c lang="sql">$max</c>.</summary>
     public string SelectAfter => $"SELECT row_json FROM {Name} WHERE key > $after ORDER BY key LIMIT $max";
 
-    /// <summary>Keys between <c>$after</c> and <c>$before</c> (both exclusive), in order, at most <c>$max</c>.</summary>
+    /// <summary>Keys between <c lang="sql">$after</c> and <c lang="sql">$before</c> (both exclusive), in order, at most <c lang="sql">$max</c>.</summary>
     public string SelectBetween => $"SELECT row_json FROM {Name} WHERE key > $after AND key < $before ORDER BY key LIMIT $max";
 
     public string Upsert =>
