@@ -4,6 +4,8 @@ using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Testing;
 using Microsoft.Extensions.Time.Testing;
@@ -79,6 +81,26 @@ public sealed class RecordEventReplayTests
         Assert.False(retried.AlreadyRecorded);
         Assert.Equal(2, rows.Count);
         Assert.Matches("^" + Key + ":[0-9a-f]{12}$", rows[1].IdempotencyKey);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task A_secret_in_the_detail_is_scrubbed_before_the_row_is_appended_and_a_replay_still_matches_it()
+    {
+        var (activities, ledger) = await Open();
+        var ct = TestContext.Current.CancellationToken;
+        var secret = "ghp_" + new string('a', 36);
+        var bare = WorkflowEventDetail.Of(new DeadlineFired("service:workflow.timers", 1, DeadlineKind.State), WorkflowInstanceId.Of(InstanceAddress.From("T-1/step/1")), suspension: null);
+        var detail = bare with { Reason = $"the step failed with {secret}" };
+        var record = Moved("checks") with { Detail = detail };
+
+        var first = await activities.Record(record, Key, "event:3", ct);
+        var again = await activities.Record(record, Key, "event:3", ct);
+        var stored = Assert.Single((await ledger.ReadAfter(0, 100, ct)).Value).Envelope.Payload;
+
+        Assert.DoesNotContain(secret, stored, StringComparison.Ordinal);
+        Assert.Contains("[REDACTED:github-token]", stored, StringComparison.Ordinal);
+        Assert.Equal((false, true), (first.AlreadyRecorded, again.AlreadyRecorded));
+        _ = System.Text.Json.JsonDocument.Parse(stored);
     }
 
     /// <summary>The real ledger, except that once armed its next read fails (a busy file).</summary>
