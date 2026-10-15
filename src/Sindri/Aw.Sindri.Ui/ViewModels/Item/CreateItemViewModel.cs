@@ -26,7 +26,10 @@ internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> u
         {
             Set(ref field, value);
             OnChanged(nameof(CanSubmit));
-            OnChanged(nameof(IsGateOpen));
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                ClearTitleError();
+            }
         }
     } = string.Empty;
 
@@ -39,14 +42,12 @@ internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> u
     /// <summary>The catalog's CreateItem control (null when the catalog has no such row).</summary>
     public ControlViewModel? Control { get; private set => Set(ref field, value); }
 
-    /// <summary>True when the control can send and the title isn't blank.</summary>
-    public bool CanSubmit => Control is { CanRun: true } && !string.IsNullOrWhiteSpace(Title);
-
     /// <summary>
-    /// True when the form's control is usable: a ready control needs a title first; a pending or cli-only one stays usable
-    /// so its phase line and Copy work (§7).
+    /// True when a submit would send: the control can run, the title isn't blank and nothing was created yet (the 2 s the
+    /// accepted outcome shows, a second press must not make a second item). The button itself stays enabled: a blank title
+    /// is answered under the field (<see cref="TitleError"/>), not by a dead button.
     /// </summary>
-    public bool IsGateOpen => Control is not { IsReady: true } || !string.IsNullOrWhiteSpace(Title);
+    public bool CanSubmit => Control is { CanRun: true } && !string.IsNullOrWhiteSpace(Title) && CreatedId.Length == 0;
 
     /// <summary>"Title is required" after a blank submit, until a title is typed; else empty.</summary>
     public string TitleError { get; private set => Set(ref field, value); } = string.Empty;
@@ -64,7 +65,15 @@ internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> u
     public int TitleFocusRequests { get; private set => Set(ref field, value); }
 
     /// <summary>The new item's id once accepted, else empty.</summary>
-    public string CreatedId { get; private set => Set(ref field, value); } = string.Empty;
+    public string CreatedId
+    {
+        get;
+        private set
+        {
+            Set(ref field, value);
+            OnChanged(nameof(CanSubmit));
+        }
+    } = string.Empty;
 
     /// <summary>`C`: opens the form, empty, with the catalog's control as it is now.</summary>
     internal void Open()
@@ -78,12 +87,13 @@ internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> u
         if (Control is { } control)
         {
             control.PropertyChanged += OnControl;
+            control.Precondition = Ready;
         }
 
         (Title, Repo, Body, CreatedId) = (string.Empty, string.Empty, string.Empty, string.Empty);
+        ClearTitleError();
         IsOpen = true;
         OnChanged(nameof(CanSubmit));
-        OnChanged(nameof(IsGateOpen));
     }
 
     /// <summary>Esc or Cancel: closes the form; nothing is sent.</summary>
@@ -93,7 +103,60 @@ internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> u
     /// <param name="cancellationToken">Cancels the wait for the answer.</param>
     /// <returns>A task that completes when the answer is shown.</returns>
     internal Task Submit(CancellationToken cancellationToken) =>
-        CanSubmit && Control is { } control ? control.Press(cancellationToken) : Task.CompletedTask;
+        Control is { } control ? control.Press(cancellationToken) : Task.CompletedTask;
+
+    // The control's precondition, for every way a press reaches it (the button, Enter in the title): nothing is sent twice, and
+    // a blank title is said under the field, spoken once, and focus goes to the title.
+    private bool Ready()
+    {
+        if (CreatedId.Length > 0)
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(Title))
+        {
+            return true;
+        }
+
+        RequireTitle();
+        return false;
+    }
+
+    private void RequireTitle()
+    {
+        (TitleError, HasTitleError) = (Labels.TitleIsRequired, true);
+        Say(Labels.TitleIsRequired);
+        TitleFocusRequests++;
+    }
+
+    private void ClearTitleError()
+    {
+        if (HasTitleError)
+        {
+            (HasTitleError, TitleError) = (false, string.Empty);
+        }
+
+        IsAnnouncing = false;   // the region goes dark first; its text stays (never empty) and is not spoken
+    }
+
+    // Says a text through the polite region: dark first, the resting text set, then live, then the text (the flag changes
+    // before the text, as the shell's regions do), so the resting text is never spoken and a text is spoken once.
+    private void Say(string text)
+    {
+        if (IsAnnouncing && string.Equals(Announcement, text, StringComparison.Ordinal))
+        {
+            IsAnnouncing = false;
+        }
+
+        if (!IsAnnouncing)
+        {
+            Announcement = Labels.TitleRequired;
+            IsAnnouncing = true;
+        }
+
+        Announcement = text;
+    }
 
     private async Task<Result<CommandAcceptedView>> Send(CancellationToken cancellationToken)
     {

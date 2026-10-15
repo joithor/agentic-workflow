@@ -394,7 +394,10 @@ Tests key off the code and the golden's `detail`, never a copy of the sentence.
   `next` with **Load more** (a refresh re-reads the pages loaded so far).
 - **Create item** (`C`, the Queue page's button; `Views/Item/CreateItemDialog`): title, repo, body, sent by the
   catalog's `CreateItem` control; accepted shows "Create item: done" for 2 s, then the form closes. The new row comes
-  from the stream's re-query, never from the answer.
+  from the stream's re-query, never from the answer. The form is a modal dialog: counted as an overlay (F6, Ctrl+K,
+  Ctrl+, and `?` do nothing), Tab cycles in the card, focus returns to the opener (else the Create button) on Esc, Cancel
+  and auto-close. The title field is "Title (required)"; Create stays enabled, and a blank submit shows "Title is
+  required" under the field, speaks it once, focuses the title and sends nothing. No second create while the outcome shows.
 - **Destructive confirm** (E-8, all controls): a destructive row's press asks "<label> <subject>?" with **Confirm**
   and **Keep** (focused; Esc keeps). Controls on a subject are named with it ("Close item ITM-…", §11.2).
 - **Refresh:** `HealthViewModel.Follow` registers the queue and the open item; the follower re-reads them after the

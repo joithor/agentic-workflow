@@ -147,6 +147,12 @@ internal sealed partial class ControlViewModel : ObservableObject
         }
     } = Labels.Copy;
 
+    /// <summary>
+    /// Asked just before a run starts; false sends nothing (the owner has said why where it belongs, as the create form does for a
+    /// blank title). Null for a control with nothing to check.
+    /// </summary>
+    internal Func<bool>? Precondition { get; set; }
+
     /// <summary>Clears a shown refusal: the owner shows it elsewhere (the item sheet's SND-ITEM-409 line).</summary>
     internal void ClearError()
     {
@@ -162,7 +168,7 @@ internal sealed partial class ControlViewModel : ObservableObject
     /// <returns>A task that completes when the answer is shown.</returns>
     internal async Task Run(CancellationToken cancellationToken)
     {
-        if (!CanRun || _send is not { } send)
+        if (!CanRun || _send is not { } send || Precondition?.Invoke() == false)
         {
             return;
         }

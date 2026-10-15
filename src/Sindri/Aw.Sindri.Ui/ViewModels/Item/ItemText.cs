@@ -63,6 +63,9 @@ internal sealed class ItemText
     /// <summary><see cref="Labels.ItemTitle"/>.</summary>
     public string Title { get; } = Labels.ItemTitle;
 
+    /// <summary><see cref="Labels.TitleRequired"/>.</summary>
+    public string TitleRequired { get; } = Labels.TitleRequired;
+
     /// <summary><see cref="Labels.ItemRepo"/>.</summary>
     public string Repo { get; } = Labels.ItemRepo;
 

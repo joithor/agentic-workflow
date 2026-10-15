@@ -28,8 +28,8 @@ internal sealed partial class ShellWindow
             shell.Queue.FocusRequested -= OnFocusRow;
         }
 
-        PropertyChangedEventHandler[] handlers = [OnShellChanged, OnBannerChanged, OnOverlayChanged, OnOverlayChanged];
-        INotifyPropertyChanged[] sources = [shell, shell.Health.Banner, shell.Palette, shell.Shortcuts];
+        PropertyChangedEventHandler[] handlers = [OnShellChanged, OnBannerChanged, OnOverlayChanged, OnOverlayChanged, OnOverlayChanged];
+        INotifyPropertyChanged[] sources = [shell, shell.Health.Banner, shell.Palette, shell.Shortcuts, shell.Create];
         for (var i = 0; i < sources.Length; i++)
         {
             if (on)

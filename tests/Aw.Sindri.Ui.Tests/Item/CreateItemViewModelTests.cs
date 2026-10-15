@@ -122,8 +122,8 @@ public sealed class CreateItemViewModelTests
 
         Assert.Empty(_server.Created);
         Assert.Equal((true, "Title is required", 1, CommandPhase.Idle), (form.HasTitleError, form.TitleError, form.TitleFocusRequests, form.Control!.Phase));
-        Assert.Equal([(true, "Title is required")], spoken.Where(s => s.Live && !string.Equals(s.Text, "Title (required)", StringComparison.Ordinal)).Distinct());
-        Assert.DoesNotContain(spoken, s => s.Live && string.Equals(s.Text, "Title (required)", StringComparison.Ordinal));   // the resting text is never spoken
+        // The region goes live (on its resting text, unspoken) before the text changes, and the text is never empty.
+        Assert.Equal([(true, "Title (required)"), (true, "Title is required")], spoken);
         Assert.All(spoken, s => Assert.NotEmpty(s.Text));
 
         form.Title = "Now there is one";
