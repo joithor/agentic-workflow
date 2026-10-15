@@ -95,6 +95,11 @@ internal sealed partial class ItemSheetViewModel
         OnChanged(nameof(HasActions));
     }
 
+    /// <summary>True for an action only the item's sheet sends (it needs the version the sheet shows): the palette says "on the item's sheet" for it.</summary>
+    /// <param name="action">The catalog action.</param>
+    /// <returns>True when the sheet has a sender for it.</returns>
+    internal static bool IsSheetAction(string action) => throw new NotSupportedException();
+
     // What each action the sheet can send does. CloseItem's variants send the version shown at the click (§4.5); every
     // other action is drawn by the catalog (pending with its phase, or a copy block) and sends nothing from here.
     private Func<CancellationToken, Task<Result<CommandAcceptedView>>>? Sender(string action) => action switch

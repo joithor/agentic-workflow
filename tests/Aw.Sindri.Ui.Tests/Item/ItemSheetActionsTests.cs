@@ -397,4 +397,24 @@ public sealed class ItemSheetActionsTests
         var code = "SND-ITEM-409";
         Assert.Equal(1, spoken.Concat(controlSpoke).Count(t => t.Contains(code, StringComparison.Ordinal)));
     }
+
+    // R7: the sheet's action set has one source: what the sheet sends is what the palette calls "on the item's sheet".
+    [Theory]
+    [InlineData("CloseItem:done", true)]
+    [InlineData("CloseItem:cancelled", true)]
+    [InlineData("CloseItem", false)]
+    [InlineData("CloseItem:other", false)]
+    [InlineData("CreateItem", false)]
+    public void Only_the_actions_the_sheet_sends_are_the_sheets(string action, bool sheets) =>
+        Assert.Equal(sheets, ItemSheetViewModel.IsSheetAction(action));
+
+    [Fact]
+    public async Task Every_action_the_sheet_calls_its_own_has_a_sender_there()
+    {
+        var sheet = await Sheet();
+        await sheet.Open(_api, A.NewItem, Token);
+
+        Assert.Contains(sheet.Actions, c => ItemSheetViewModel.IsSheetAction(c.Action));
+        Assert.All(sheet.Actions.Where(c => ItemSheetViewModel.IsSheetAction(c.Action)), c => Assert.True(c.IsSendable));
+    }
 }
