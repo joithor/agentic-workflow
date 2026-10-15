@@ -105,9 +105,16 @@ internal sealed class NeedsYouSeenViewModel : ObservableObject
         _arrivals = _shown ? fresh : [];
         _shown = true;
         var reduced = ReducedMotion;
-        foreach (var entry in _entries.Where(e => fresh.Contains(e.Id)))
+        foreach (var entry in _entries)
         {
-            _byId[entry.Id] = new NeedsYouRowViewModel(entry, _tracker.IsSeen(entry.Id), reduced, _arrivals.Contains(entry.Id), _clock);
+            if (fresh.Contains(entry.Id))
+            {
+                _byId[entry.Id] = new NeedsYouRowViewModel(entry, _tracker.IsSeen(entry.Id), reduced, _arrivals.Contains(entry.Id), _clock);
+            }
+            else
+            {
+                _byId[entry.Id].Replace(entry);
+            }
         }
 
         Rows = [.. _entries.Select(e => _byId[e.Id])];
