@@ -25,6 +25,9 @@ internal static class SindriTemporal
         ("Repo", IndexedValueType.Keyword),
         ("Tenant", IndexedValueType.Keyword),
         ("Ring", IndexedValueType.Keyword),
+        ("Urgency", IndexedValueType.Keyword),
+        ("Subject", IndexedValueType.Keyword),
+        ("Root", IndexedValueType.Bool),
     ];
 
     /// <summary>The 'Item' search attribute: the work item.</summary>
@@ -47,4 +50,13 @@ internal static class SindriTemporal
 
     /// <summary>The 'Ring' search attribute: the instance's ring, as text.</summary>
     public static SearchAttributeKey<string> RingKey { get; } = SearchAttributeKey.CreateKeyword("Ring");
+
+    /// <summary>The 'Urgency' search attribute: the recipe's urgency, 'incident', 'triage' or 'work'.</summary>
+    public static SearchAttributeKey<string> UrgencyKey { get; } = SearchAttributeKey.CreateKeyword("Urgency");
+
+    /// <summary>The 'Subject' search attribute: the key of the recipe's first declared input fact; unset when it declares none.</summary>
+    public static SearchAttributeKey<string> SubjectKey { get; } = SearchAttributeKey.CreateKeyword("Subject");
+
+    /// <summary>The 'Root' search attribute: true for a top-level instance, false for a child.</summary>
+    public static SearchAttributeKey<bool> RootKey { get; } = SearchAttributeKey.CreateBool("Root");
 }

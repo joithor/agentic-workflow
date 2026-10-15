@@ -20,9 +20,17 @@ internal sealed partial record InstanceWords
         { Suspension: { Kind: SuspensionKind.Escalation } escalation } => Escalated(escalation),
         { Suspension.Kind: SuspensionKind.Takeover } =>
             $"With you since {Since.UtcDateTime.ToString("HH:mm", CultureInfo.InvariantCulture)}. Run `sindri workflow handback {Address}` when you're done.",
-        _ when task is not null => $"{RecipeNext().TrimEnd('.')}, then run:\n{Complete(task)}",
+        _ when task is not null => $"{BeforeRun(RecipeNext())}, then run:\n{Complete(task)}",
         _ => RecipeNext(),
     };
+
+    /// <summary>The recipe's desk text without its own closing 'then complete this Step', which the 'then run:' line that follows says.</summary>
+    private static string BeforeRun(string text)
+    {
+        var trimmed = text.TrimEnd('.');
+        var closing = trimmed.LastIndexOf(", then complete this Step", StringComparison.OrdinalIgnoreCase);
+        return closing >= 0 && closing + ", then complete this Step".Length == trimmed.Length ? trimmed[..closing] : trimmed;
+    }
 
     private string Parked(Suspension park)
     {

@@ -194,7 +194,7 @@
           "terminal": true
         }
       ],
-      "now": "accept at a terminal",
+      "now": "needs your answer",
       "answer": {
         "kind": "accept",
         "actionId": "ApplyCommand:answer-accept",
@@ -580,7 +580,7 @@
           "terminal": true
         }
       ],
-      "now": "done 12m → ITM-01JF0 startable",
+      "now": "done",
       "answer": null,
       "actions": []
     }

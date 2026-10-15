@@ -2,24 +2,32 @@ using System.Text;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Features.ListInstances;
 
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
-/// 'sindri workflow list [--needs-me | --item &lt;id&gt; | --state &lt;s&gt;] [--query &lt;visibility query&gt;] [--json]'
+/// 'sindri workflow list [--needs-me | --item &lt;id&gt; | --state &lt;s&gt;] [--recipe &lt;id&gt;] [--urgency incident|triage|work] [--subject &lt;fact&gt;] [--root true|false] [--query &lt;visibility query&gt;] [--json]'
 /// (engine spec §6.3; engine P4 unit (e)): one status header per line. A client of serve's 'GET /workflow/instances' (review run 2); it never starts serve. '--needs-me' shows <b>Decisions</b> and then
-/// <b>Tasks</b>, each under its heading; empty, it prints 'nothing needs you', and the other filters 'no instances match'.
+/// <b>Tasks</b>, each under its heading; the typed filters AND together and the list is in the API order (<see cref="InstanceOrder"/>:
+/// unfinished before finished, not parked or escalated before parked or escalated, incident, triage, then work, the subject label, the address); empty, it prints 'nothing needs you', and the other filters 'no instances match'.
 /// Exit 0, empty included; 1 when Sindri isn't running; 2 on any other error.
 /// </summary>
 internal static class ListCommand
 {
-    private const string Usage = "usage: sindri workflow list [--needs-me | --item <id> | --state <s>] [--query <visibility query>] [--json]";
+    private const string Usage = "usage: sindri workflow list [--needs-me | --item <id> | --state <s>] [--recipe <id>] [--urgency incident|triage|work] [--subject <fact>] [--root true|false] [--query <visibility query>] [--json]";
 
     internal static async Task<int> Run(string[] args, RecipeDesk desk, IServiceProvider services, Output output, CancellationToken ct)
     {
         var json = args.Contains("--json", StringComparer.Ordinal);
-        var request = Parse([.. args.Where(static a => a != "--json")]);
+        var rest = args.Where(static a => a != "--json").ToArray();
+        if (Misspelled(rest) is { } problem)
+        {
+            return await output.Error(SindriErrors.InvalidInput.With(problem)).ConfigureAwait(false);
+        }
+
+        var request = Parse(rest);
         if (request is null)
         {
             return await output.Error(SindriErrors.InvalidInput.With(Usage)).ConfigureAwait(false);
@@ -39,28 +47,20 @@ internal static class ListCommand
     /// <summary>'GET /workflow/instances' with each filter given as its query parameter.</summary>
     private static string Route(ListInstancesRequest request)
     {
-        var parts = new List<string>(4);
-        if (request.NeedsMe)
-        {
-            parts.Add("needsMe=true");
-        }
-
-        if (request.Item is { } item)
-        {
-            parts.Add("item=" + Uri.EscapeDataString(item.Value));
-        }
-
-        if (request.State is { } state)
-        {
-            parts.Add("state=" + Uri.EscapeDataString(state));
-        }
-
-        if (request.Query is { } query)
-        {
-            parts.Add("query=" + Uri.EscapeDataString(query));
-        }
-
-        return parts.Count == 0 ? InstanceReads.Instances : $"{InstanceReads.Instances}?{string.Join('&', parts)}";
+        (string Name, string? Value)[] filters =
+        [
+            ("needsMe", request.NeedsMe),
+            ("item", request.Item?.Value),
+            ("state", request.State),
+            ("recipe", request.Recipe),
+            ("urgency", request.Urgency),
+            ("subject", request.Subject),
+            ("root", request.Root),
+            ("query", request.Query),
+        ];
+        var parts = filters.Where(static f => f.Value is not null).Select(static f => $"{f.Name}={Uri.EscapeDataString(f.Value!)}");   // why: Where kept only the non-null values
+        var query = string.Join('&', parts);
+        return query.Length == 0 ? InstanceReads.Instances : $"{InstanceReads.Instances}?{query}";
     }
 
     /// <summary>The flags, each at most once, '--needs-me' alone of the filters it excludes; null when they don't parse.</summary>
@@ -79,17 +79,47 @@ internal static class ListCommand
             i += used ? 1 : 0;
         }
 
-        return request.NeedsMe && (request.Item is not null || request.State is not null) ? null : request;
+        return request.NeedsMe is not null && (request.Item is not null || request.State is not null) ? null : request;
     }
 
     /// <summary>One flag applied: the request after it (null when it doesn't parse) and whether it took the next argument.</summary>
     private static (ListInstancesRequest? Request, bool UsedValue) Apply(ListInstancesRequest request, string flag, string? value) => flag switch
     {
-        "--needs-me" when !request.NeedsMe => (request with { NeedsMe = true }, false),
+        "--needs-me" when request.NeedsMe is null => (request with { NeedsMe = "true" }, false),
         "--item" when request.Item is null && value is not null && ItemKey.TryFrom(value, out var key) => (request with { Item = key }, true),
         "--state" when request.State is null && value is not null => (request with { State = value }, true),
+        "--recipe" when request.Recipe is null && value is not null => (request with { Recipe = value }, true),
+        "--urgency" when request.Urgency is null && value is not null && Urgencies.IsKnown(value) => (request with { Urgency = value }, true),
+        "--subject" when request.Subject is null && value is not null => (request with { Subject = value }, true),
+        "--root" when request.Root is null && Boolean(value) is not null => (request with { Root = value }, true),
         "--query" when request.Query is null && value is not null => (request with { Query = value }, true),
         _ => (null, false),
+    };
+
+    /// <summary>The value of '--urgency' or '--root' that isn't one of its words, with the fix; null when they are fine.</summary>
+    private static string? Misspelled(string[] args)
+    {
+        for (var i = 0; i + 1 < args.Length; i++)
+        {
+            if (args[i] == "--urgency" && !Urgencies.IsKnown(args[i + 1]))
+            {
+                return $"'{args[i + 1]}' isn't an urgency (fix: --urgency incident, triage or work)";
+            }
+
+            if (args[i] == "--root" && Boolean(args[i + 1]) is null)
+            {
+                return $"'{args[i + 1]}' isn't true or false (fix: --root true for top-level instances, --root false for children)";
+            }
+        }
+
+        return null;
+    }
+
+    private static bool? Boolean(string? value) => value switch
+    {
+        "true" => true,
+        "false" => false,
+        _ => null,
     };
 
     private static string Text(ListInstancesResponse listed, DateTimeOffset now)

@@ -160,6 +160,9 @@ public sealed class EventBridgeFailureTests : IDisposable
 
     private sealed class FakeInstances(params InstanceRow[] rows) : IWorkflowInstances
     {
+        public ValueTask<Result<IReadOnlyList<InstanceRow>>> List(InstanceFilter filter, bool ended, CancellationToken cancellationToken) =>
+            List(InstanceFilters.ToQuery(filter), ended, cancellationToken);
+
         public ValueTask<Result<IReadOnlyList<InstanceRow>>> List(string? query, bool ended, CancellationToken cancellationToken) =>
             ValueTask.FromResult<Result<IReadOnlyList<InstanceRow>>>(Visible ? rows.ToList() : []);
 

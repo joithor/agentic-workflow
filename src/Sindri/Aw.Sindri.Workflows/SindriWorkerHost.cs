@@ -16,7 +16,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="events">The RecordEvent activity.</param>
 /// <param name="items">The ReadItemRepo activity.</param>
 /// <param name="logger">The log.</param>
-internal sealed partial class SindriWorkerHost(TemporalSettings settings, RunStepActivities steps, RecordEventActivities events, ItemFactActivities items, ILogger<SindriWorkerHost> logger) : ITemporalWorker
+internal sealed partial class SindriWorkerHost(TemporalSettings settings, RunStepActivities steps, RecordEventActivities events, FactReadActivities items, ILogger<SindriWorkerHost> logger) : ITemporalWorker
 {
     public async Task Run(TemporalEndpoint endpoint, CancellationToken cancellationToken)
     {
