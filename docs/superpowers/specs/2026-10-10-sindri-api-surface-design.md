@@ -459,7 +459,7 @@ action id, for example `ApplyCommand:answer`.
 | The item filter on `/sindri/events` (engine S1-D6) | **This spec**, in P5 | The engine's `workflow events` uses it. If engine P4 merges first, it adds the filter and P5 keeps it |
 | `ILauncher` | **This spec**, in P10 (`OpenItem`), with launch targets from the UI design spec | The engine replaces its desk runtime with it (engine W20) |
 | The shapes of the instance list and view, the recipe definition, stats and list, and the status fields (E-20, E-22…E-25) | **This spec**, §3.8: the screens spec asks for them, and they are served by the engine spec's `ListInstances`, `GetInstance`, `ListRecipes` and `ShowRecipe` | The engine spec computes path order, `loops`, `next` and the status layout (WF §3.5, §6.4) and registers the `outputs` and `inputs[].kind` schema (E-22). The CLI's `workflow status` and `recipe show` print from the same renderers |
-| The engine in depth (E-30): `GET /engine`, `/engine/instances`, `/engine/instances/{address}/history` | **This spec**, §3.8, P13, served from the Temporal SDK through Sindri | The engine spec's mirror writes the Temporal event id on each ledger row (WF §5.6, ERD), which the history lines join on |
+| The engine in depth (E-30): `GET /engine`, `/engine/instances`, `/engine/instances/{id}/history` | **This spec**, §3.8, P13, served from the Temporal SDK through Sindri | The engine spec's mirror writes the Temporal event id on each ledger row (WF §5.6, ERD), which the history lines join on |
 | The authorization model: caller, terminal flag, action classes, the chain, and `SND-AUTH-002` | **This spec**, in P1 | Every engine command goes through the same chain. The engine spec adopted it in its rev 5 (§6.2): its own caller classes and `SND-WF-007` are retired, takeover is `pause`, the `IClassifiedCommand` rule applies, its harness probe supplies the agent variables (§6), and idle takeovers and desk tasks are needs-you rows of kind `park`. Engine commands never evaluate gates in the handler (engine §5.3) and may append one event per instance they change (a parent and the child it creates) |
 | `EventFactory` reading the caller (C6) and the engine's S1-D7 | **This spec**, P1 | The engine uses it from P4 |
 | Starting the process from a verb | **This spec**, §7: never from inside an agent session | The engine spec's "starts if needed" follows §7 |
@@ -597,9 +597,9 @@ API serves, so the app never parses YAML or recomputes an order (README X52: the
 | `GET /workflow/recipes/{id}/stats?window=&hash=` | `GetRecipeStats` | `window` as above; `hash` re-scopes to runs under one approved version | `RecipeStats` (E-24) | query | P12 |
 | `GET /engine` | `GetEngine` | — | `EngineView` (E-30) | query | P13 |
 | `GET /engine/instances?state=&stuck=` | `ListEngineInstances` | — | `EngineInstanceList(instances, pending, asOf)` (E-30) | query | P13 |
-| `GET /engine/instances/{address}/history?page=` | `GetEngineHistory` | `page` from 1; 50 events a page, newest first | `EngineHistory(events, page, total, next)` (E-30) | query | P13 |
+| `GET /engine/instances/{id}/history?page=` (or `?address=`) | `GetEngineHistory` | `page` from 1; 50 events a page, newest first | `EngineHistory(events, page, total, next)` (E-30) | query | P13 |
 
-**The instance list (E-20).** `InstanceList.instances` is ordered by this key list, each key breaking the ties of the one before: (1) unfinished before finished; (2) not parked or escalated before parked or escalated (Needs you carries those; a `DECISION` or `WITH YOU` row is neither, so it stays in the strip); (3) the recipe's `urgency` (`incident`, then `triage`, then `work`; WF E-21); (4) `subject.label` (ordinal; the fixture's rows are not age-ordered, so the label is the stable tiebreak). The Home strip (screens §4.1) is the first five rows of that order, which reproduces the screens fixture's strip, and the Workflows page groups the same rows by `recipe.id`. `counts` is `{open, needsYou, withYou, running, done}`, computed over the whole root set before `recipe` or `open` narrows the rows, so every head count comes from rows. **`counts.open` is the rows that are not terminal** (owner decision, 2026-10-14): the Workflows head and the nav print `counts.open`, and the finished rows show as one collapsed "N done today" line, not as open ones. `counts.needsYou` counts workflow rows only; Home's own needs-you figure counts the whole needs-you list. Each `InstanceSummary`:
+**The instance list (E-20).** `InstanceList.instances` is ordered by this key list, each key breaking the ties of the one before: (1) unfinished before finished; (2) not parked or escalated before parked or escalated (only parked and escalated rows move to the Needs-you panel; a `DECISION` row counts as needs-you but stays in the strip, and a `WITH YOU` row is neither); (3) the recipe's `urgency` (`incident`, then `triage`, then `work`; WF E-21); (4) `subject.label` (ordinal; the fixture's rows are not age-ordered, so the label is the stable tiebreak). The Home strip (screens §4.1) is the first five rows of that order, which reproduces the screens fixture's strip, and the Workflows page groups the same rows by `recipe.id`. `counts` is `{open, needsYou, withYou, running, done}`, computed over the whole root set before `recipe` or `open` narrows the rows, so every head count comes from rows. **`counts.open` is the rows that are not terminal** (owner decision, 2026-10-14): the Workflows head and the nav print `counts.open`, and the finished rows show as one collapsed "N done today" line, not as open ones. `counts.needsYou` counts the `PARKED`, `ESCALATED` and `DECISION` rows, workflow rows only; Home's own needs-you figure counts the whole needs-you list. Each `InstanceSummary`:
 
 | Field | What it holds |
 |---|---|
@@ -625,8 +625,8 @@ The engine computes the order once per recipe hash and serves it, so a client ne
 | `branchOf?` | The state this one is folded under, for a branch (the app draws `⤷`) |
 | `glyph` | `done`, `active` or `pending` (the app draws ●, ◐, ○). A terminal state is `done` once reached |
 | `badge?` | `{kind: parked \| escalated \| taken-over, reason}` on the state the instance is interrupted in; it replaces the glyph |
-| `round?` | `{n, max}` for a state in a loop (`r2/3`) |
-| `loops` | `[{with: <stateId>, n, max}]`: the loop pairs this state belongs to (`mitigate ⇄ verify`). Loops belong to the recipe hash, so every instance of a hash serves the same pairs (`n` is 0 where the instance has not looped). A self-loop is `with` = the state itself (`scoping`, round 2 of 3) |
+| `round?` | `{n, max}` for the current state of a loop: the round it is in now (`r2/3`) |
+| `loops` | `[{with: <stateId>, n, max}]`: the loop pairs this state belongs to (`mitigate ⇄ verify`). Loops belong to the recipe hash, so every instance of a hash serves the same pairs (`n` is the **rounds completed** in that loop so far, 0 where the instance has not looped; `max` is the recipe's cap, the same for every instance of the hash). A self-loop is `with` = the state itself (`scoping`, round 2 of 3) |
 | `desk` | `true` for a desk state |
 | `child` | `true` when the state waits on children |
 | `children?` | `{done, total}`: progress for a children state (`4/9`) |
@@ -639,8 +639,8 @@ The view's top level adds `orderedBy`: `"path"`, or `"transition-list"` when the
 ```jsonc
 // GET /workflow/instances/WFI-b8af4435…   (InstanceView; E-20, E-23)
 {
-  "address": "ITM-01JK3/project/1", "id": "WFI-b8af4435…", "parent": null,   // parent?: {address, title, task?, workstream?}
-  "itemId": null, "title": "Offline sync",
+  "address": "ITM-01JK3/project/1", "id": "WFI-b8af4435…", "parent": null,   // parent?: {id, address, title, task?, workstream?}
+  "itemId": "ITM-01JK3", "title": "Offline sync",
   "recipe": { "id": "workflow.project", "hash": "a8c21e7f…", "version": 12, "urgency": "work" },
   "state": "build", "since": "2026-10-14T09:14:00Z",
   "engineOwned": null,
@@ -654,10 +654,10 @@ The view's top level adds `orderedBy`: `"path"`, or `"transition-list"` when the
   ],
   "current": {                      // the expanded state (the engine's status layout, WF §6.4, as fields)
     "state": "build",
-    "step": { "kind": "step.children", "ref": "workflow.step", "declaration": "one child per packet task" },   // the screens spec's builder.feature is illustrative: the children run workflow.step
+    "step": { "kind": "wait", "ref": "workflow.step", "declaration": "one child per packet task" },   // StepDeclaration, below
     "gates": [ { "id": "gate.evidence.all", "on": "exit", "threshold": null, "description": "…" },
                { "id": "gate.judge.verify", "on": "exit", "threshold": 0.8, "description": "…" } ],
-    "desk": null,                    // or {run:"1.1", outputs:[{key,type,required}], checks:[…], completeAction:"CompleteStep"}
+    "desk": null,                    // or {run:"3.1", outputs:[{key,type,required}], checks:[…], completeAction:"CompleteStep"}
     "status": { /* StatusFields, E-23, below */ }
   },
   "facts": [ /* FactRow, below */ ],
@@ -674,16 +674,16 @@ every §6.4 layout both ways. Lines the layout leaves out are `null` or `[]`.
 
 | Field | What it holds |
 |---|---|
-| `header` | `{address, recipe, hash12, version, state, detail?, since, ageSeconds}`: the header line's parts, as WF §6.4 prints them (`<state>[: <detail>]`). `state` is the reserved engine word while the engine owns the instance (`parked`, `escalated`, `taken-over`) and the recipe state otherwise; `detail` is the reason (`budget`, `no-progress (child)`, `gate`, `desk task`) and never contains the engine word. **`detail` is `null` for a running instance** (no `running`, round or children text: the engine never produces those) and for a finished one whose outcome equals its state The recipe state the instance is covered in stays on the view (`state`) and on the `states[]` badge |
+| `header` | `{address, recipe, hash12, version, state, detail?, since, ageSeconds}`: the header line's parts, as WF §6.4 prints them (`<state>[: <detail>]`). `state` is the reserved engine word while the engine owns the instance (`parked`, `escalated`, `taken-over`) and the recipe state otherwise; `detail` is the reason (`budget`, `no-progress (child)`, `gate`, `desk task`) and never contains the engine word. **`detail` is `null` for a running instance** (no `running`, round or children text: the engine never produces those) and for a finished one whose outcome equals its state. The recipe state the instance is covered in stays on the view (`state`) and on the `states[]` badge |
 | `next?` | The rendered `next` sentence, whole; `null` when the layout has none (a finished instance) |
 | `answer?` | `{kind: text \| resume \| grant \| grantTokens \| accept \| cancel-only, actionId, class, cli, atTerminal}`; `class` is `desk` or `protected`, and `cli` is the exact command the layout prints (a wait's is `--resume [--text <answer>]`). Only `accept` is served for an escalated gate: `reject` is CLI-only for now. **A drift park has no answer** (`null`): re-approving the changed block is the protected command `approve` (`sindri recipe approve <id>@<hash12>`, class `protected`) in `commands[]` beside `takeover` and `cancel`, and the approval resumes the instance. **A desk task has no answer row** either: `complete` is its first command (`--output fact:<key>=<file>`), because desk completion is the action, not an answer |
-| `child?` | `{address, state, reason?}` when the park mirrors a child |
+| `child?` | `{id, address, state, reason?}` when the park mirrors a child |
 | `drift?` | `{block, needsReapproval}` for a recorded drift (the line reads `<block> changed since <id>@<hash12> was approved`) |
 | `inputs[]` | `{key, name, hash?}` for the Step's inputs |
-| `timeout?` | `{kind: parks \| escalates, inSeconds, on}` (`parks in 1d 22h 48m (desk)`) |
+| `timeout?` | `{kind: parks \| escalates, inSeconds, on}` (`parks in 1d 22h 48m (desk)`). `on` is the id of the state the timeout belongs to, which is the current state: one meaning, never the state the timeout fires to |
 | `budget?` | `{scope: state, used, limit, instance: {used, limit}}` in tokens |
 | `paused?` | `{timeoutLeftSeconds}` on a taken-over instance |
-| `commands[]` | The instance's own verbs first, in `answer, complete, handback, takeover, cancel` order: `{verb, actionId, class, cli, confirm?}`, each a row of the catalog (§3.3). `confirm` is `null` except on `cancel`, where it is `Cancel <address>? <N> running steps stop; <M> children are cancelled.` (owner decision, 2026-10-14; N is the open run's running steps and M the open children; an open desk run is not a running step, so N excludes it). The sentence is singular at 1 (`1 running step stops; 1 child is cancelled`): a provisional owner default (2026-10-14 night) |
+| `commands[]` | The instance's own verbs first, in `answer, complete, handback, takeover, cancel, approve` order: `{verb, actionId, class, cli, confirm?}`; `verb` is that closed set (the engine's open recipe-command verbs are not served here), each a row of the catalog (§3.3). `confirm` is `null` except on `cancel`, where it is `Cancel <address>? <N> running steps stop; <M> children are cancelled.` (owner decision, 2026-10-14; N is the open run's running steps and M the open children; an open desk run is not a running step, so N excludes it). The sentence is singular at 1 (`1 running step stops; 1 child is cancelled`): a provisional owner default (2026-10-14 night) |
 | `text` | The CLI's text form, ASCII only (WF §6.4: hashes are cut with `...`, and a line is joined with `,`, never a middle dot) |
 
 **`FactRow` (E-20).** One per input and output the recipe declares, in declaration order (screens §5.2).
@@ -707,13 +707,20 @@ every §6.4 layout both ways. Lines the layout leaves out are `null` or `[]`.
 { "state": "build", "recipe": "workflow.step", "done": 4, "total": 9,
   "workstreams": [                     // [] unless the state's input is a packet; in the packet's order
     { "id": "ws-1", "label": "UI",
-      "rows": [ { "address": "ITM-01JK3/project/1/step.2", "itemId": "ITM-01JE7", "title": "Sync status pill",
-                  "glyph": "active", "state": "produce", "chip": { "word": "RUNNING", "tone": "ok" }, "round": { "n": 2, "max": 3 },
-                  "agent": "claude-code", "ageSeconds": 360,
-                  "engineOwned": null, "mirroredPark": null, "actions": [ "OpenItem", "ApplyCommand:takeover" ] } ] } ],
+      "rows": [ { "id": "WFI-205dbef9…", "address": "ITM-01JK3/project/1/step.2", "itemId": "ITM-01JE7", "title": "Sync status pill",
+                  "glyph": "active", "state": "produce", "chip": { "word": "DECISION", "tone": "attn" }, "round": null,
+                  "agent": null, "ageSeconds": 360,
+                  "engineOwned": null, "mirroredPark": null, "actions": [ "OpenItem", "ApplyCommand:takeover" ] } ] } ],   // illustrative: a workflow.step child is a desk task until P8 (below)
   "rows": [],                          // used instead of workstreams when there are none
   "more": 6 }                          // rows beyond the first 20; "Open all in Work" follows the items filter
 ```
+
+**What a served instance holds (invariants the goldens keep).**
+- **`current.step` (`StepDeclaration`).** `{kind: active | wait, ref, declaration}`: `kind` is `active` for a state that runs a Step block and `wait` for a state that waits on a child recipe or on a person; `ref` is the block id (`step.produce`) for `active` and the child recipe id (`workflow.step`) for `wait`; `declaration` is the recipe's own one-line description of the state. The screens spec's `builder.feature` is illustrative and never served.
+- **One current state.** Exactly one state of `states[]` is `active`, parked or escalated, as the instance's `state`; earlier path states are `done` and later ones `pending`. The screens fixture's INC-14 shows a comms child running beside `mitigate`; v1 cannot serve that (the golden shows `mitigate` only, `comms` pending), and the fixture's second live state is a schema v2 matter.
+- **Children (v1).** A child exists only under the parent's current state when it is a child wait, and a v1 child's address entry is the parent's entry of the state that created it (the parent's path entry count on a linear walk; at least that where the instance looped). `children[].rows` of one group are sequential children, and v1 serves **at most one live child per wait** (WF §3.9). **Fan-out (schema v2 preview).** Several live children per wait appear only in the PRJ-sync (9 children) and project-many-children (24 children) goldens, which the screens fixture needs for UI wave 1: "schema v2 preview; v1 serves at most one live child per wait; re-recorded when v2 lands". In v2 the fan-out is sequential in the entry order.
+- **Desk runtime until P8.** Until the agent runtime lands (WF §12), the deskCapable Steps of the recipes shipped under `recipes/` (`workflow.step` produce, checks and verify; the dev recipes' import) run as **desk tasks**: `current.desk` is set (`run` is `<entry of the state>.<n>`, `3.1`), the status detail is `desk task`, `complete` is the first command, the chip is `DECISION`, and a child row of such a state shows no agent. Fixture-only recipes (`incident-response`, `triage-alert`, `project`, `intake-linear`, `fork-demo`) stand for the P8-era product the screens fixture shows: their agent states name an agent-runtime block and are `RUNNING` with an agent, and their desk states stay desk tasks. P8 re-records the desk-runtime states.
+- **Timeouts and budgets.** Every active or wait state serves the recipe's timeout (desk at least `DeskTimeouts.DefaultFloor`) and its budget where the recipe declares one.
 
 **`RecipeView` (E-22).** `GET /workflow/recipes/{id}` and `sindri recipe show` return the same body: the engine spec's
 definition (states, transitions, evals, pins, open instances placed per state, the registry's approved hashes) plus:
@@ -786,13 +793,13 @@ the Temporal event id on each ledger row it mirrors (WF §5.6, ERD), so a histor
   "asOf": "…" }
 
 // GET /engine/instances   (each EngineInstance)
-{ "address": "ITM-01JE9", "recipe": { "id": "workflow.item", "hash": "3f1c09…" }, "state": "checks",
+{ "id": "WFI-29f1d759…", "address": "ITM-01JE9/item/1", "recipe": { "id": "workflow.item", "hash": "3f1c09…" }, "state": "checks",
   "waitingOn": { "kind": "activity", "name": "step.checks", "ageSeconds": 120 },   // activity | signal | update | child | timer
   "timers": [ { "name": "produce-timeout", "firesAt": "…", "kind": "timeout" } ],
   "retries": { "attempt": 2, "lastError": "exit 1" },
   "historyLength": 88, "stuck": false }
 
-// GET /engine/instances/ITM-01JE9/history?page=1   (each event, newest first)
+// GET /engine/instances/WFI-29f1d759…/history?page=1   (each event, newest first)
 { "eventId": 412, "time": "…", "type": "ActivityTaskScheduled", "name": "step.checks",
   "summary": "attempt 2 · retry after exit 1 (…) · backoff 10 s", "ledgerSequence": 4231 }   // null when not mirrored
 ```

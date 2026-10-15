@@ -9,8 +9,8 @@ namespace Aw.Sindri.Tests.ApiGoldens;
 /// <summary>
 /// The golden contract of the rev-8 views (API spec section 3.8; UI screens spec E-20, E-22, E-23): each scenario's fixture
 /// (<see cref="WorkflowViewFixtures"/>) serialized through the host's own JSON options, pinned at
-/// 'Golden/Api/&lt;slug&gt;/&lt;scenario&gt;.json'. The UI lanes build their fake ISindriApi on these files. API P11 U7 changes the
-/// body source to the real routes and leaves the files alone; a file that has to change is a contract change the UI lane is told.
+/// 'Golden/Api/&lt;slug&gt;/&lt;scenario&gt;.json'. The UI lanes build their fake ISindriApi on these files. The files change only
+/// at the points docs/csharp/sindri.md lists (engine P4b wording, real recipe hashes, the served not-found body, the P8 and schema v2 re-records); each is a contract change the UI lane is told.
 /// </summary>
 public sealed class WorkflowViewGoldenTests : IAsyncLifetime
 {

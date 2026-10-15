@@ -565,16 +565,16 @@ and the recipe declarations in `FixtureRecipes.cs`/`RecipeShape.cs`, one declara
 host's own JSON options and pinned at `tests/Aw.Sindri.Tests/Golden/Api/<slug>/<scenario>.json` (`workflow-instances`,
 `workflow-instance`, `workflow-instance-fact`, `workflow-status`, `workflow-recipe`; 34 files, in `WorkflowViewGoldenTests`).
 Addresses are the engine's form (`ITM-01JK3/project/1`, child `ITM-01JK3/project/1/step.1`), every root has an item, and a
-fixture's `id` is the engine's minting rule applied to its address (`IdOf`, pinned by a test vector). The UI lanes build
+fixture's `id` is the engine's minting rule applied to its address (`WorkflowInstanceId.Of`, pinned by a test vector); every child row, parent reference and status child carries that `id` beside its address. The UI lanes build
 their fake `ISindriApi` on these files, so a change to one is a contract change; re-record with `AW_GOLDEN_UPDATE=1`.
 
 **Who may change the files.** The files change only at these points, and each change is announced to the UI lane: (1) engine
 P4b, if its wording moves (the engine re-records); (2) when a recipe that still carries a placeholder hash lands, its hash
-becomes the real one; (3) the `not-found` files, when API P11 U7 (or P4) swaps in the served ProblemDetails body. Every
+becomes the real one; (3) the `not-found` files, when API P11 U7 (or P4) swaps in the served ProblemDetails body; (4) P8 re-records the desk-runtime states when the agent runtime lands, and schema v2 re-records the fan-out previews (PRJ-sync and project-many-children). Every
 instance fixture carries its own status (address, recipe stamp, commands and cancel sentence come from its row), the status
 text is rendered from the fields, and its commands are catalog rows of the same class (`WorkflowViewFixtureTests`).
 `WorkflowViewConsistencyTests` and `WorkflowViewRecipeShapeTests` pin that the files agree with each other and with
-`recipes/**` (ids, versions, hashes, states, orders, terminals, inputs and outputs), and the golden test reads every file
+`recipes/**` (ids, versions, hashes, states, orders, terminals, inputs and outputs, desk flags, child waits, loop caps, timeouts and kinds), and `WorkflowEngineInvariantsTests` walks every instance fixture against the engine's rules (one current state, v1 children, desk runtime, timeouts, run tokens, park answers), and the golden test reads every file
 back into its record. The composer and the `GetInstanceFact` service arrive with P11 U2 to U5 and their real inputs.
 
 The recipe files (`workflow-recipe/`) are partial: they hold the E-22 additions (inputs, outputs, urgency, `orderedBy`,
