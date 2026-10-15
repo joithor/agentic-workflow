@@ -233,8 +233,8 @@ needs re-approval.
 Fact type: `text`, `file`, `item`, `link`, `scope-map`, `packet`, `evidence`, `decision`, `payload` (`FactTypes`). It picks a viewer in
 the app and nothing else. Subject kind: `item`, `linear-project`, `webhook`, `file`, `text` (`SubjectKinds`); `item`, `file` and `text`
 pair with the type of the same name, `linear-project` and `webhook` with `payload`. Both are strings in the long form, so a bad value
-reaches its rule (`RCP-TYPE-001` to `-003`, `RCP-OUT-001` to `-003`, `RCP-URG-001`) instead of a reader error. Those rules are
-checked from P2b part B; until then a value of another spelling is read and hashed as written.
+reaches its rule (`RCP-TYPE-001` to `-003`, `RCP-OUT-001` to `-003`, `RCP-URG-001`) instead of a reader error. Those rules
+(the Declarations rows under Rules) run on every path that validates a recipe, so a value of another spelling is refused with its rule's line.
 
 ### Value grammars
 
@@ -363,6 +363,13 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-NEXT-002` | `next` names no approval-tier command | Leave it out |
 | `RCP-EFFECT-001` | Every effect is on the profile's effect allowlist. **Skipped** while the profile has no `workflow.effects` (P6) | Add it to `workflow.effects` |
 | `RCP-RES-001` | **Information:** a resource wait has no allocator in this build | None needed; it parks with `SND-WF-010` until one lands |
+| `RCP-URG-001` | `urgency` is `incident`, `triage` or `work` | Use one of them, or remove `urgency` (the default is `work`) |
+| `RCP-OUT-001` | An output's `from` names a state of the recipe | Name one of its states |
+| `RCP-OUT-002` | An output's `from` isn't a terminal or engine-owned state, and the state's Step, its leaving transitions' `produces` or its wait records the output's key. **Information** when the state waits on a child, whose outcome the validator can't read | Record the fact there, or name the state that does |
+| `RCP-OUT-003` | Output keys are unique and none is also an input key | Give each output its own key |
+| `RCP-TYPE-001` | An input's or output's `type` is a fact type | Use one of the nine types |
+| `RCP-TYPE-002` | An input's `kind` is a subject kind | Use one of the five kinds |
+| `RCP-TYPE-003` | An input's `kind` pairs with its `type` (an absent `type` is `text`); not reported for an entry with a bad type or kind | Set `type` to the kind's, or change `kind` |
 | `RCP-HASH-001` | A `hash` in the file matches the content | Set it to the hash the message names, or remove it |
 | `RCP-VERSION-001` | Same id and version, same hash (registry, P2) | Raise `version` |
 | `RCP-VERSION-002` | `version` is above the highest registered (registry, P2) | Raise `version` |
