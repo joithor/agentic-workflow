@@ -1,0 +1,597 @@
+{
+  "instances": [
+    {
+      "address": "workflow/sentry-8790",
+      "id": "WFI-2C5F663A71",
+      "itemId": null,
+      "recipe": {
+        "id": "triage.alert",
+        "hash": "d41f2a0700000000000000000000000000000000000000000000000000000000",
+        "version": 2,
+        "urgency": "triage"
+      },
+      "state": "done",
+      "chip": {
+        "word": "DONE",
+        "tone": "neutral"
+      },
+      "since": "2026-10-12T09:40:00.0000000Z",
+      "engineOwned": null,
+      "subject": {
+        "kind": "webhook",
+        "key": "workflow/sentry-8790",
+        "label": "sentry #8790",
+        "href": null
+      },
+      "inputs": [
+        {
+          "key": "alert",
+          "label": "Alert",
+          "kind": "webhook",
+          "required": true,
+          "present": true
+        }
+      ],
+      "states": [
+        {
+          "id": "ingest",
+          "order": 0,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "classify",
+          "order": 1,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "route",
+          "order": 2,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "done",
+          "order": 3,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": true
+        }
+      ],
+      "now": "done",
+      "answer": null,
+      "actions": []
+    },
+    {
+      "address": "workflow/sentry-8797",
+      "id": "WFI-4ACFE3F377",
+      "itemId": null,
+      "recipe": {
+        "id": "triage.alert",
+        "hash": "d41f2a0700000000000000000000000000000000000000000000000000000000",
+        "version": 2,
+        "urgency": "triage"
+      },
+      "state": "done",
+      "chip": {
+        "word": "DONE",
+        "tone": "neutral"
+      },
+      "since": "2026-10-12T10:05:00.0000000Z",
+      "engineOwned": null,
+      "subject": {
+        "kind": "webhook",
+        "key": "workflow/sentry-8797",
+        "label": "sentry #8797",
+        "href": null
+      },
+      "inputs": [
+        {
+          "key": "alert",
+          "label": "Alert",
+          "kind": "webhook",
+          "required": true,
+          "present": true
+        }
+      ],
+      "states": [
+        {
+          "id": "ingest",
+          "order": 0,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "classify",
+          "order": 1,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "route",
+          "order": 2,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "done",
+          "order": 3,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": true
+        }
+      ],
+      "now": "done",
+      "answer": null,
+      "actions": []
+    },
+    {
+      "address": "workflow/sentry-8801",
+      "id": "WFI-EF737BAFED",
+      "itemId": null,
+      "recipe": {
+        "id": "triage.alert",
+        "hash": "d41f2a0700000000000000000000000000000000000000000000000000000000",
+        "version": 2,
+        "urgency": "triage"
+      },
+      "state": "done",
+      "chip": {
+        "word": "DONE",
+        "tone": "neutral"
+      },
+      "since": "2026-10-12T10:30:00.0000000Z",
+      "engineOwned": null,
+      "subject": {
+        "kind": "webhook",
+        "key": "workflow/sentry-8801",
+        "label": "sentry #8801",
+        "href": null
+      },
+      "inputs": [
+        {
+          "key": "alert",
+          "label": "Alert",
+          "kind": "webhook",
+          "required": true,
+          "present": true
+        }
+      ],
+      "states": [
+        {
+          "id": "ingest",
+          "order": 0,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "classify",
+          "order": 1,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "route",
+          "order": 2,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "done",
+          "order": 3,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": true
+        }
+      ],
+      "now": "done",
+      "answer": null,
+      "actions": []
+    },
+    {
+      "address": "workflow/pagerduty-P-2211",
+      "id": "WFI-B71B3D84F3",
+      "itemId": null,
+      "recipe": {
+        "id": "triage.alert",
+        "hash": "d41f2a0700000000000000000000000000000000000000000000000000000000",
+        "version": 2,
+        "urgency": "triage"
+      },
+      "state": "route",
+      "chip": {
+        "word": "ESCALATED",
+        "tone": "attn"
+      },
+      "since": "2026-10-12T11:02:00.0000000Z",
+      "engineOwned": {
+        "kind": "escalated",
+        "reason": "gate.severity 0.91 → INC-14 opened"
+      },
+      "subject": {
+        "kind": "webhook",
+        "key": "P-2211",
+        "label": "PagerDuty P-2211",
+        "href": null
+      },
+      "inputs": [
+        {
+          "key": "alert",
+          "label": "Alert",
+          "kind": "webhook",
+          "required": true,
+          "present": true
+        }
+      ],
+      "states": [
+        {
+          "id": "ingest",
+          "order": 0,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "classify",
+          "order": 1,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "route",
+          "order": 2,
+          "branchOf": null,
+          "glyph": "active",
+          "badge": {
+            "kind": "escalated",
+            "reason": "gate.severity 0.91 → INC-14 opened"
+          },
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "done",
+          "order": 3,
+          "branchOf": null,
+          "glyph": "pending",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": true
+        }
+      ],
+      "now": "accept at a terminal",
+      "answer": {
+        "kind": "accept",
+        "actionId": "ApplyCommand:answer",
+        "class": "protected",
+        "cli": "sindri workflow answer workflow/pagerduty-P-2211 --accept",
+        "atTerminal": true
+      },
+      "actions": [
+        "ApplyCommand:answer",
+        "ApplyCommand:takeover",
+        "ApplyCommand:cancel"
+      ]
+    },
+    {
+      "address": "workflow/sentry-8809",
+      "id": "WFI-1C27917745",
+      "itemId": null,
+      "recipe": {
+        "id": "triage.alert",
+        "hash": "d41f2a0700000000000000000000000000000000000000000000000000000000",
+        "version": 2,
+        "urgency": "triage"
+      },
+      "state": "done",
+      "chip": {
+        "word": "DONE",
+        "tone": "neutral"
+      },
+      "since": "2026-10-12T11:58:00.0000000Z",
+      "engineOwned": null,
+      "subject": {
+        "kind": "webhook",
+        "key": "8809",
+        "label": "sentry #8809 429s on stream",
+        "href": null
+      },
+      "inputs": [
+        {
+          "key": "alert",
+          "label": "Alert",
+          "kind": "webhook",
+          "required": true,
+          "present": true
+        }
+      ],
+      "states": [
+        {
+          "id": "ingest",
+          "order": 0,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "classify",
+          "order": 1,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "route",
+          "order": 2,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "done",
+          "order": 3,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": true
+        }
+      ],
+      "now": "done 12m → ITM-01JF0 queued",
+      "answer": null,
+      "actions": []
+    },
+    {
+      "address": "workflow/sentry-8812",
+      "id": "WFI-0461AC4604",
+      "itemId": null,
+      "recipe": {
+        "id": "triage.alert",
+        "hash": "d41f2a0700000000000000000000000000000000000000000000000000000000",
+        "version": 2,
+        "urgency": "triage"
+      },
+      "state": "classify",
+      "chip": {
+        "word": "DECISION",
+        "tone": "attn"
+      },
+      "since": "2026-10-12T12:22:00.0000000Z",
+      "engineOwned": null,
+      "subject": {
+        "kind": "webhook",
+        "key": "8812",
+        "label": "sentry #8812 TypeError in tabs.layout",
+        "href": null
+      },
+      "inputs": [
+        {
+          "key": "alert",
+          "label": "Alert",
+          "kind": "webhook",
+          "required": true,
+          "present": true
+        }
+      ],
+      "states": [
+        {
+          "id": "ingest",
+          "order": 0,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "classify",
+          "order": 1,
+          "branchOf": null,
+          "glyph": "active",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": true,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "route",
+          "order": 2,
+          "branchOf": null,
+          "glyph": "pending",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "done",
+          "order": 3,
+          "branchOf": null,
+          "glyph": "pending",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": true
+        }
+      ],
+      "now": "needs your severity (desk answer)",
+      "answer": null,
+      "actions": [
+        "CompleteStep",
+        "ApplyCommand:takeover",
+        "ApplyCommand:cancel"
+      ]
+    }
+  ],
+  "counts": {
+    "open": 8,
+    "needsYou": 2,
+    "withYou": 1,
+    "running": 5,
+    "done": 4
+  },
+  "empty": null,
+  "asOf": "2026-10-12T12:26:00.0000000Z"
+}

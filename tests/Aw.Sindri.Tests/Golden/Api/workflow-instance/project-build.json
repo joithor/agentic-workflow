@@ -1,0 +1,559 @@
+{
+  "address": "workflow/PRJ-sync",
+  "id": "WFI-481A066729",
+  "parent": null,
+  "itemId": null,
+  "title": "Offline sync",
+  "recipe": {
+    "id": "workflow.project",
+    "hash": "a8c21e7f00000000000000000000000000000000000000000000000000000000",
+    "version": 12,
+    "urgency": "work"
+  },
+  "state": "build",
+  "since": "2026-10-12T09:14:00.0000000Z",
+  "engineOwned": null,
+  "subject": {
+    "kind": "linear-project",
+    "key": "APP",
+    "label": "APP · Offline sync",
+    "href": "https://linear.app/example/project/offline-sync"
+  },
+  "orderedBy": "path",
+  "states": [
+    {
+      "id": "intake",
+      "order": 0,
+      "branchOf": null,
+      "glyph": "done",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "scoping",
+      "order": 1,
+      "branchOf": null,
+      "glyph": "done",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "design",
+      "order": 2,
+      "branchOf": null,
+      "glyph": "done",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "build",
+      "order": 3,
+      "branchOf": null,
+      "glyph": "active",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": true,
+      "children": {
+        "done": 4,
+        "total": 9
+      },
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "verify",
+      "order": 4,
+      "branchOf": null,
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "done",
+      "order": 5,
+      "branchOf": null,
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": true
+    }
+  ],
+  "current": {
+    "state": "build",
+    "step": {
+      "kind": "step.children",
+      "ref": "builder.feature",
+      "declaration": "one child per packet task"
+    },
+    "gates": [
+      {
+        "id": "gate.evidence.all",
+        "on": "exit",
+        "threshold": null,
+        "description": "Every child has its evidence pack."
+      },
+      {
+        "id": "gate.judge.verify",
+        "on": "exit",
+        "threshold": 0.8,
+        "description": "The judge scores the build at least 0.8."
+      }
+    ],
+    "desk": null,
+    "status": {
+      "header": {
+        "address": "workflow/PRJ-sync",
+        "recipe": "workflow.project",
+        "hash12": "a8c21e7f0000",
+        "version": 12,
+        "state": "build",
+        "detail": "parked: no-progress (child)",
+        "since": "2026-10-12T11:54:00.0000000Z",
+        "ageSeconds": 1920
+      },
+      "next": "Parked (no-progress) in workflow/PRJ-sync/ITM-01JD7: checks failed twice with the same findings. Grant more rounds at a terminal, or cancel.",
+      "answer": {
+        "kind": "grant",
+        "actionId": "ApplyCommand:answer",
+        "class": "protected",
+        "cli": "sindri workflow answer workflow/PRJ-sync --grant 1",
+        "atTerminal": true
+      },
+      "child": {
+        "address": "workflow/PRJ-sync/ITM-01JD7",
+        "state": "parked",
+        "reason": "no-progress"
+      },
+      "drift": null,
+      "inputs": [],
+      "timeout": {
+        "kind": "escalates",
+        "inSeconds": 86400,
+        "on": "build"
+      },
+      "budget": {
+        "scope": "state",
+        "used": 1200000,
+        "limit": 4000000,
+        "instance": {
+          "used": 1900000,
+          "limit": 6000000
+        }
+      },
+      "paused": null,
+      "commands": [
+        {
+          "verb": "answer",
+          "actionId": "ApplyCommand:answer",
+          "class": "desk",
+          "cli": "sindri workflow answer workflow/PRJ-sync --grant 1",
+          "confirm": null
+        },
+        {
+          "verb": "takeover",
+          "actionId": "ApplyCommand:takeover",
+          "class": "protected",
+          "cli": "sindri workflow takeover workflow/PRJ-sync",
+          "confirm": null
+        },
+        {
+          "verb": "cancel",
+          "actionId": "ApplyCommand:cancel",
+          "class": "protected",
+          "cli": "sindri workflow cancel workflow/PRJ-sync",
+          "confirm": "Cancel workflow/PRJ-sync? 1 running steps stop; 5 children are cancelled."
+        }
+      ],
+      "text": "workflow/PRJ-sync  workflow.project@a8c21e7f0000  v12  parked: no-progress (child)  since 11:54 (32m)\n  next      Parked (no-progress) in workflow/PRJ-sync/ITM-01JD7: checks failed twice with the same findings.\n            Grant more rounds at a terminal, or cancel.\n  child     workflow/PRJ-sync/ITM-01JD7  parked: no-progress\n  answer    sindri workflow answer workflow/PRJ-sync --grant 1      (at a terminal; forwarded to the child)\n  commands  answer (forwarded), takeover, cancel\n"
+    }
+  },
+  "facts": [
+    {
+      "key": "project",
+      "label": "Linear project",
+      "type": "link",
+      "direction": "input",
+      "from": null,
+      "status": "produced",
+      "summary": "Linear APP · Offline sync",
+      "at": "2026-10-12T09:14:00.0000000Z",
+      "by": "human:cli",
+      "ref": {
+        "name": null,
+        "size": null,
+        "hash": null,
+        "path": null,
+        "itemId": null,
+        "url": "https://linear.app/example/project/offline-sync",
+        "host": "linear.app",
+        "title": "APP · Offline sync",
+        "factKey": null
+      },
+      "progress": null,
+      "pending": null
+    },
+    {
+      "key": "prd",
+      "label": "PRD",
+      "type": "file",
+      "direction": "input",
+      "from": null,
+      "status": "produced",
+      "summary": "PRD-sync.md",
+      "at": "2026-10-12T09:14:00.0000000Z",
+      "by": "human:cli",
+      "ref": {
+        "name": "PRD-sync.md",
+        "size": 18432,
+        "hash": "1c0e5a7700000000000000000000000000000000000000000000000000000000",
+        "path": "docs/PRD-sync.md",
+        "itemId": null,
+        "url": null,
+        "host": null,
+        "title": null,
+        "factKey": null
+      },
+      "progress": null,
+      "pending": null
+    },
+    {
+      "key": "scope",
+      "label": "Scope map",
+      "type": "scope-map",
+      "direction": "output",
+      "from": "scoping",
+      "status": "produced",
+      "summary": "12 areas, 31 cited files",
+      "at": "2026-10-12T09:40:00.0000000Z",
+      "by": "step.scope.draft",
+      "ref": {
+        "name": null,
+        "size": null,
+        "hash": null,
+        "path": null,
+        "itemId": null,
+        "url": null,
+        "host": null,
+        "title": null,
+        "factKey": "scope"
+      },
+      "progress": null,
+      "pending": null
+    },
+    {
+      "key": "packet",
+      "label": "Packet 3f1c09",
+      "type": "packet",
+      "direction": "output",
+      "from": "design",
+      "status": "produced",
+      "summary": "9 tasks in 4 workstreams, frozen",
+      "at": "2026-10-12T10:05:00.0000000Z",
+      "by": "step.packet.freeze",
+      "ref": {
+        "name": null,
+        "size": null,
+        "hash": null,
+        "path": null,
+        "itemId": null,
+        "url": null,
+        "host": null,
+        "title": null,
+        "factKey": "packet"
+      },
+      "progress": null,
+      "pending": null
+    },
+    {
+      "key": "evidence",
+      "label": "Evidence",
+      "type": "evidence",
+      "direction": "output",
+      "from": "build",
+      "status": "in-progress",
+      "summary": "4 of 9 packs",
+      "at": null,
+      "by": null,
+      "ref": {
+        "name": null,
+        "size": null,
+        "hash": null,
+        "path": null,
+        "itemId": null,
+        "url": null,
+        "host": null,
+        "title": null,
+        "factKey": "evidence"
+      },
+      "progress": {
+        "done": 4,
+        "total": 9
+      },
+      "pending": null
+    }
+  ],
+  "children": [
+    {
+      "state": "build",
+      "recipe": "builder.feature",
+      "done": 4,
+      "total": 9,
+      "workstreams": [
+        {
+          "id": "ws-1",
+          "label": "UI",
+          "rows": [
+            {
+              "address": "workflow/ITM-01JC3",
+              "itemId": "ITM-01JC3",
+              "title": "Sync status pill",
+              "glyph": "done",
+              "state": "done",
+              "chip": {
+                "word": "DONE",
+                "tone": "neutral"
+              },
+              "round": null,
+              "agent": null,
+              "ageSeconds": 600,
+              "engineOwned": null,
+              "mirroredPark": null,
+              "actions": [
+                "OpenItem",
+                "ApplyCommand:takeover"
+              ]
+            },
+            {
+              "address": "workflow/ITM-01JC5",
+              "itemId": "ITM-01JC5",
+              "title": "Conflict resolver dialog",
+              "glyph": "done",
+              "state": "done",
+              "chip": {
+                "word": "DONE",
+                "tone": "neutral"
+              },
+              "round": null,
+              "agent": null,
+              "ageSeconds": 600,
+              "engineOwned": null,
+              "mirroredPark": null,
+              "actions": [
+                "OpenItem",
+                "ApplyCommand:takeover"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ws-2",
+          "label": "Store",
+          "rows": [
+            {
+              "address": "workflow/ITM-01JC1",
+              "itemId": "ITM-01JC1",
+              "title": "PUT /sync/changes",
+              "glyph": "done",
+              "state": "done",
+              "chip": {
+                "word": "DONE",
+                "tone": "neutral"
+              },
+              "round": null,
+              "agent": null,
+              "ageSeconds": 600,
+              "engineOwned": null,
+              "mirroredPark": null,
+              "actions": [
+                "OpenItem",
+                "ApplyCommand:takeover"
+              ]
+            },
+            {
+              "address": "workflow/ITM-01JC2",
+              "itemId": "ITM-01JC2",
+              "title": "Outbox queue",
+              "glyph": "done",
+              "state": "done",
+              "chip": {
+                "word": "DONE",
+                "tone": "neutral"
+              },
+              "round": null,
+              "agent": null,
+              "ageSeconds": 600,
+              "engineOwned": null,
+              "mirroredPark": null,
+              "actions": [
+                "OpenItem",
+                "ApplyCommand:takeover"
+              ]
+            },
+            {
+              "address": "workflow/ITM-01JD6",
+              "itemId": "ITM-01JD6",
+              "title": "Services page job panel",
+              "glyph": "active",
+              "state": "checks",
+              "chip": {
+                "word": "RUNNING",
+                "tone": "ok"
+              },
+              "round": null,
+              "agent": null,
+              "ageSeconds": 0,
+              "engineOwned": null,
+              "mirroredPark": null,
+              "actions": [
+                "OpenItem",
+                "ApplyCommand:takeover"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ws-3",
+          "label": "Mobile",
+          "rows": [
+            {
+              "address": "workflow/ITM-01JD7",
+              "itemId": "ITM-01JD7",
+              "title": "Background sync (iOS)",
+              "glyph": "active",
+              "state": "produce",
+              "chip": {
+                "word": "PARKED",
+                "tone": "attn"
+              },
+              "round": null,
+              "agent": null,
+              "ageSeconds": 600,
+              "engineOwned": {
+                "kind": "parked",
+                "reason": "no-progress"
+              },
+              "mirroredPark": {
+                "kind": "parked",
+                "reason": "no-progress"
+              },
+              "actions": [
+                "OpenItem",
+                "ApplyCommand:takeover"
+              ]
+            },
+            {
+              "address": "workflow/ITM-01JF3",
+              "itemId": "ITM-01JF3",
+              "title": "doctor views line",
+              "glyph": "pending",
+              "state": "queued",
+              "chip": {
+                "word": "QUEUED",
+                "tone": "neutral"
+              },
+              "round": null,
+              "agent": null,
+              "ageSeconds": 600,
+              "engineOwned": null,
+              "mirroredPark": null,
+              "actions": [
+                "OpenItem",
+                "ApplyCommand:takeover"
+              ]
+            },
+            {
+              "address": "workflow/ITM-01JF4",
+              "itemId": "ITM-01JF4",
+              "title": "Tray badge on Linux",
+              "glyph": "pending",
+              "state": "queued",
+              "chip": {
+                "word": "QUEUED",
+                "tone": "neutral"
+              },
+              "round": null,
+              "agent": null,
+              "ageSeconds": 600,
+              "engineOwned": null,
+              "mirroredPark": null,
+              "actions": [
+                "OpenItem",
+                "ApplyCommand:takeover"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ws-4",
+          "label": "Rollout",
+          "rows": [
+            {
+              "address": "workflow/ITM-01JF8",
+              "itemId": "ITM-01JF8",
+              "title": "Receipt verify route",
+              "glyph": "pending",
+              "state": "queued",
+              "chip": {
+                "word": "QUEUED",
+                "tone": "neutral"
+              },
+              "round": null,
+              "agent": null,
+              "ageSeconds": 600,
+              "engineOwned": null,
+              "mirroredPark": null,
+              "actions": [
+                "OpenItem",
+                "ApplyCommand:takeover"
+              ]
+            }
+          ]
+        }
+      ],
+      "rows": [],
+      "more": 0
+    }
+  ],
+  "counts": {
+    "timeline": 41,
+    "decisions": 3,
+    "requests": 1,
+    "context": null
+  },
+  "actions": [
+    "ApplyCommand:takeover",
+    "ApplyCommand:cancel"
+  ],
+  "asOf": "2026-10-12T12:26:00.0000000Z"
+}

@@ -1,0 +1,54 @@
+{
+  "header": {
+    "address": "workflow/PRJ-sync",
+    "recipe": "workflow.project",
+    "hash12": "a8c21e7f0000",
+    "version": 12,
+    "state": "build",
+    "detail": "parked: no-progress (child)",
+    "since": "2026-10-12T11:54:00.0000000Z",
+    "ageSeconds": 1920
+  },
+  "next": "Parked (no-progress) in workflow/PRJ-sync/ITM-01JD7: checks failed twice with the same findings. Grant more rounds at a terminal, or cancel.",
+  "answer": {
+    "kind": "grant",
+    "actionId": "ApplyCommand:answer",
+    "class": "protected",
+    "cli": "sindri workflow answer workflow/PRJ-sync --grant 1",
+    "atTerminal": true
+  },
+  "child": {
+    "address": "workflow/PRJ-sync/ITM-01JD7",
+    "state": "parked",
+    "reason": "no-progress"
+  },
+  "drift": null,
+  "inputs": [],
+  "timeout": null,
+  "budget": null,
+  "paused": null,
+  "commands": [
+    {
+      "verb": "answer",
+      "actionId": "ApplyCommand:answer",
+      "class": "desk",
+      "cli": "sindri workflow answer workflow/PRJ-sync --grant 1",
+      "confirm": null
+    },
+    {
+      "verb": "takeover",
+      "actionId": "ApplyCommand:takeover",
+      "class": "protected",
+      "cli": "sindri workflow takeover workflow/PRJ-sync",
+      "confirm": null
+    },
+    {
+      "verb": "cancel",
+      "actionId": "ApplyCommand:cancel",
+      "class": "protected",
+      "cli": "sindri workflow cancel workflow/PRJ-sync",
+      "confirm": "Cancel workflow/PRJ-sync? 1 running steps stop; 5 children are cancelled."
+    }
+  ],
+  "text": "workflow/PRJ-sync  workflow.project@a8c21e7f0000  v12  parked: no-progress (child)  since 11:54 (32m)\n  next      Parked (no-progress) in workflow/PRJ-sync/ITM-01JD7: checks failed twice with the same findings.\n            Grant more rounds at a terminal, or cancel.\n  child     workflow/PRJ-sync/ITM-01JD7  parked: no-progress\n  answer    sindri workflow answer workflow/PRJ-sync --grant 1      (at a terminal; forwarded to the child)\n  commands  answer (forwarded), takeover, cancel\n"
+}

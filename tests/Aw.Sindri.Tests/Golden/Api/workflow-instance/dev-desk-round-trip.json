@@ -1,0 +1,201 @@
+{
+  "address": "workflow/desk-round-trip-1",
+  "id": "WFI-E2A5DA0E9C",
+  "parent": null,
+  "itemId": null,
+  "title": "Desk round trip",
+  "recipe": {
+    "id": "workflow.dev-desk-round-trip",
+    "hash": "93b5c0f400000000000000000000000000000000000000000000000000000000",
+    "version": 1,
+    "urgency": "work"
+  },
+  "state": "desk",
+  "since": "2026-10-12T12:00:00.0000000Z",
+  "engineOwned": null,
+  "subject": {
+    "kind": "text",
+    "key": "desk-round-trip-1",
+    "label": "desk-round-trip-1",
+    "href": null
+  },
+  "orderedBy": "path",
+  "states": [
+    {
+      "id": "intake",
+      "order": 0,
+      "branchOf": null,
+      "glyph": "done",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "desk",
+      "order": 1,
+      "branchOf": null,
+      "glyph": "active",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": true,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "done",
+      "order": 2,
+      "branchOf": null,
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": true
+    }
+  ],
+  "current": {
+    "state": "desk",
+    "step": {
+      "kind": "step.desk",
+      "ref": "desk.produce",
+      "declaration": "a person produces the file"
+    },
+    "gates": [],
+    "desk": {
+      "run": "1.1",
+      "outputs": [
+        {
+          "key": "report",
+          "type": "file",
+          "required": true
+        }
+      ],
+      "checks": [
+        "output.file"
+      ],
+      "completeAction": "CompleteStep"
+    },
+    "status": {
+      "header": {
+        "address": "workflow/sentry-8812/classify",
+        "recipe": "workflow.step",
+        "hash12": "9ab2d40c0000",
+        "version": 4,
+        "state": "classify",
+        "detail": "desk task",
+        "since": "2026-10-12T12:22:00.0000000Z",
+        "ageSeconds": 240
+      },
+      "next": "Produce the Step output for sentry-8812 (round 1/3), then run: sindri workflow complete workflow/sentry-8812/classify --run 1.1 --outcome done --output fact:severity=<text>",
+      "answer": null,
+      "child": null,
+      "drift": null,
+      "inputs": [
+        {
+          "key": "fact:alert",
+          "name": "alert.json",
+          "hash": "1c0e5a77"
+        }
+      ],
+      "timeout": {
+        "kind": "parks",
+        "inSeconds": 165000,
+        "on": "desk"
+      },
+      "budget": {
+        "scope": "state",
+        "used": 0,
+        "limit": 200000,
+        "instance": {
+          "used": 0,
+          "limit": 400000
+        }
+      },
+      "paused": null,
+      "commands": [
+        {
+          "verb": "complete",
+          "actionId": "ApplyCommand:complete",
+          "class": "desk",
+          "cli": "sindri workflow complete workflow/sentry-8812/classify --run 1.1 --outcome done --output fact:severity=<text>",
+          "confirm": null
+        },
+        {
+          "verb": "takeover",
+          "actionId": "ApplyCommand:takeover",
+          "class": "protected",
+          "cli": "sindri workflow takeover workflow/sentry-8812/classify",
+          "confirm": null
+        },
+        {
+          "verb": "cancel",
+          "actionId": "ApplyCommand:cancel",
+          "class": "protected",
+          "cli": "sindri workflow cancel workflow/sentry-8812/classify",
+          "confirm": "Cancel workflow/sentry-8812/classify? 1 running steps stop; 0 children are cancelled."
+        }
+      ],
+      "text": "workflow/sentry-8812/classify  workflow.step@9ab2d40c0000  v4  classify: desk task  since 12:22 (4m)\n  next      Produce the Step output for sentry-8812 (round 1/3), then run:\n            sindri workflow complete workflow/sentry-8812/classify --run 1.1 --outcome done --output fact:severity=<text>\n  inputs    fact:alert  alert.json  sha256:1c0e…\n  timeout   parks in 1d 22h 48m (desk)\n  budget    tokens 0 / 200k (state), 0 / 400k (instance)\n  commands  complete, takeover, cancel\n"
+    }
+  },
+  "facts": [
+    {
+      "key": "request",
+      "label": "Request",
+      "type": "text",
+      "direction": "input",
+      "from": null,
+      "status": "produced",
+      "summary": "Summarize the week",
+      "at": "2026-10-12T12:00:00.0000000Z",
+      "by": "human:cli",
+      "ref": null,
+      "progress": null,
+      "pending": null
+    },
+    {
+      "key": "report",
+      "label": "Report",
+      "type": "file",
+      "direction": "output",
+      "from": "desk",
+      "status": "pending",
+      "summary": "awaiting your file",
+      "at": null,
+      "by": null,
+      "ref": null,
+      "progress": null,
+      "pending": {
+        "required": true,
+        "checks": [
+          "output.file"
+        ],
+        "completeAction": "CompleteStep"
+      }
+    }
+  ],
+  "children": [],
+  "counts": {
+    "timeline": 2,
+    "decisions": 0,
+    "requests": 0,
+    "context": null
+  },
+  "actions": [
+    "CompleteStep",
+    "ApplyCommand:takeover",
+    "ApplyCommand:cancel"
+  ],
+  "asOf": "2026-10-12T12:26:00.0000000Z"
+}

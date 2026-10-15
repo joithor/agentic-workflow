@@ -1,0 +1,50 @@
+{
+  "header": {
+    "address": "workflow/PRJ-exports",
+    "recipe": "workflow.project",
+    "hash12": "a8c21e7f0000",
+    "version": 12,
+    "state": "design",
+    "detail": "parked: needs-answer",
+    "since": "2026-10-11T16:02:00.0000000Z",
+    "ageSeconds": 73440
+  },
+  "next": "Parked (needs-answer) in design: import the design output, then resume.",
+  "answer": {
+    "kind": "resume",
+    "actionId": "ApplyCommand:answer",
+    "class": "desk",
+    "cli": "sindri workflow answer workflow/PRJ-exports --resume --text <answer>",
+    "atTerminal": false
+  },
+  "child": null,
+  "drift": null,
+  "inputs": [],
+  "timeout": null,
+  "budget": null,
+  "paused": null,
+  "commands": [
+    {
+      "verb": "answer",
+      "actionId": "ApplyCommand:answer",
+      "class": "desk",
+      "cli": "sindri workflow answer workflow/PRJ-exports --resume --text <answer>",
+      "confirm": null
+    },
+    {
+      "verb": "takeover",
+      "actionId": "ApplyCommand:takeover",
+      "class": "protected",
+      "cli": "sindri workflow takeover workflow/PRJ-exports",
+      "confirm": null
+    },
+    {
+      "verb": "cancel",
+      "actionId": "ApplyCommand:cancel",
+      "class": "protected",
+      "cli": "sindri workflow cancel workflow/PRJ-exports",
+      "confirm": "Cancel workflow/PRJ-exports? 1 running steps stop; 0 children are cancelled."
+    }
+  ],
+  "text": "workflow/PRJ-exports  workflow.project@a8c21e7f0000  v12  parked: needs-answer  since 10-11 16:02 (20h 24m)\n  next      Parked (needs-answer) in design: import the design output, then resume.\n  answer    sindri workflow answer workflow/PRJ-exports --resume --text <answer>\n  commands  answer, takeover, cancel\n"
+}

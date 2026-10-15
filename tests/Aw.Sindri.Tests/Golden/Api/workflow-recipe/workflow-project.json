@@ -1,0 +1,72 @@
+{
+  "inputs": [
+    {
+      "key": "project",
+      "label": "Linear project",
+      "type": "text",
+      "kind": "linear-project",
+      "required": true
+    },
+    {
+      "key": "prd",
+      "label": "PRD",
+      "type": "file",
+      "kind": null,
+      "required": true
+    }
+  ],
+  "outputs": [
+    {
+      "key": "scope",
+      "label": "Scope map",
+      "type": "scope-map",
+      "from": "scoping"
+    },
+    {
+      "key": "packet",
+      "label": "Packet",
+      "type": "packet",
+      "from": "design"
+    },
+    {
+      "key": "evidence",
+      "label": "Evidence",
+      "type": "evidence",
+      "from": "build"
+    }
+  ],
+  "urgency": "work",
+  "states": [
+    {
+      "id": "intake",
+      "order": 0,
+      "branchOf": null
+    },
+    {
+      "id": "scoping",
+      "order": 1,
+      "branchOf": null
+    },
+    {
+      "id": "design",
+      "order": 2,
+      "branchOf": null
+    },
+    {
+      "id": "build",
+      "order": 3,
+      "branchOf": null
+    },
+    {
+      "id": "verify",
+      "order": 4,
+      "branchOf": null
+    },
+    {
+      "id": "done",
+      "order": 5,
+      "branchOf": null
+    }
+  ],
+  "loops": []
+}

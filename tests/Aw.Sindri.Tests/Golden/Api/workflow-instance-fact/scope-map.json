@@ -1,0 +1,22 @@
+{
+  "key": "scope",
+  "type": "scope-map",
+  "body": {
+    "areas": [
+      {
+        "name": "sync store",
+        "files": [
+          "src/sync/store.ts",
+          "src/sync/outbox.ts"
+        ]
+      },
+      {
+        "name": "status pill",
+        "files": [
+          "ui/sync-pill.tsx"
+        ]
+      }
+    ]
+  },
+  "truncated": false
+}

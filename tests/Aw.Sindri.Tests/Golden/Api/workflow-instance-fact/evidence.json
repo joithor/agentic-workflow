@@ -1,0 +1,19 @@
+{
+  "key": "evidence",
+  "type": "evidence",
+  "body": {
+    "packs": [
+      {
+        "task": "t1",
+        "verdict": "pass"
+      },
+      {
+        "task": "t2",
+        "verdict": "pass"
+      }
+    ],
+    "done": 4,
+    "total": 9
+  },
+  "truncated": false
+}

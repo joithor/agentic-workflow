@@ -1,0 +1,22 @@
+{
+  "header": {
+    "address": "workflow/sentry-8809",
+    "recipe": "triage.alert",
+    "hash12": "d41f2a070000",
+    "version": 2,
+    "state": "done",
+    "detail": "resolved",
+    "since": "2026-10-12T11:58:00.0000000Z",
+    "ageSeconds": 1680
+  },
+  "next": "",
+  "answer": null,
+  "child": null,
+  "drift": null,
+  "inputs": [],
+  "timeout": null,
+  "budget": null,
+  "paused": null,
+  "commands": [],
+  "text": "workflow/sentry-8809  triage.alert@d41f2a070000  v2  done: resolved  since 11:58 (28m)\n"
+}

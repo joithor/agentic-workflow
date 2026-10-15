@@ -1,0 +1,27 @@
+{
+  "key": "packet",
+  "type": "packet",
+  "body": {
+    "id": "3f1c09",
+    "tasks": [
+      {
+        "id": "t1",
+        "title": "PUT /sync/changes",
+        "workstream": "ws-2",
+        "checks": [
+          "unit",
+          "contract"
+        ]
+      },
+      {
+        "id": "t2",
+        "title": "Outbox queue",
+        "workstream": "ws-2",
+        "checks": [
+          "unit"
+        ]
+      }
+    ]
+  },
+  "truncated": false
+}

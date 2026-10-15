@@ -1,0 +1,6 @@
+{
+  "key": "alert",
+  "type": "payload",
+  "body": "{\"events\":[{\"n\":1},{\"n\":2}",
+  "truncated": true
+}

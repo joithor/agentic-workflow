@@ -1,0 +1,50 @@
+{
+  "header": {
+    "address": "workflow/pagerduty-P-2211",
+    "recipe": "workflow.step",
+    "hash12": "9ab2d40c0000",
+    "version": 5,
+    "state": "route",
+    "detail": "escalated: gate",
+    "since": "2026-10-12T09:10:00.0000000Z",
+    "ageSeconds": 11760
+  },
+  "next": "Escalated: gate.severity scored 0.91, above 0.8. Accept to override it (the other checks still run before done), or reject (the Step re-runs within its loop, otherwise this parks).",
+  "answer": {
+    "kind": "accept",
+    "actionId": "ApplyCommand:answer",
+    "class": "protected",
+    "cli": "sindri workflow answer workflow/pagerduty-P-2211 --accept",
+    "atTerminal": true
+  },
+  "child": null,
+  "drift": null,
+  "inputs": [],
+  "timeout": null,
+  "budget": null,
+  "paused": null,
+  "commands": [
+    {
+      "verb": "answer",
+      "actionId": "ApplyCommand:answer",
+      "class": "desk",
+      "cli": "sindri workflow answer workflow/pagerduty-P-2211 --accept",
+      "confirm": null
+    },
+    {
+      "verb": "takeover",
+      "actionId": "ApplyCommand:takeover",
+      "class": "protected",
+      "cli": "sindri workflow takeover workflow/pagerduty-P-2211",
+      "confirm": null
+    },
+    {
+      "verb": "cancel",
+      "actionId": "ApplyCommand:cancel",
+      "class": "protected",
+      "cli": "sindri workflow cancel workflow/pagerduty-P-2211",
+      "confirm": "Cancel workflow/pagerduty-P-2211? 1 running steps stop; 0 children are cancelled."
+    }
+  ],
+  "text": "workflow/pagerduty-P-2211  workflow.step@9ab2d40c0000  v5  escalated: gate  since 09:10 (3h 16m)\n  next      Escalated: gate.severity scored 0.91, above 0.8. Accept to override it (the other checks still run\n            before done), or reject (the Step re-runs within its loop, otherwise this parks).\n  answer    sindri workflow answer workflow/pagerduty-P-2211 --accept     (at a terminal)\n  commands  answer, takeover, cancel\n"
+}

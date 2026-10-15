@@ -1,0 +1,13 @@
+{
+  "key": "alert",
+  "type": "payload",
+  "body": {
+    "source": "sentry",
+    "issue": 8812,
+    "title": "TypeError in tabs.layout",
+    "tags": {
+      "env": "prod"
+    }
+  },
+  "truncated": false
+}

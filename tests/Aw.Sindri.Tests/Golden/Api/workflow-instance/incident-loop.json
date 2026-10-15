@@ -1,0 +1,282 @@
+{
+  "address": "workflow/INC-14",
+  "id": "WFI-94B6AE3D7A",
+  "parent": null,
+  "itemId": null,
+  "title": "Outbox retry storm",
+  "recipe": {
+    "id": "incident.response",
+    "hash": "5d90e1b200000000000000000000000000000000000000000000000000000000",
+    "version": 4,
+    "urgency": "incident"
+  },
+  "state": "mitigate",
+  "since": "2026-10-12T11:02:00.0000000Z",
+  "engineOwned": null,
+  "subject": {
+    "kind": "webhook",
+    "key": "P-2211",
+    "label": "PagerDuty P-2211 · Outbox retry storm",
+    "href": null
+  },
+  "orderedBy": "path",
+  "states": [
+    {
+      "id": "assess",
+      "order": 0,
+      "branchOf": null,
+      "glyph": "done",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": "sev2",
+      "terminal": false
+    },
+    {
+      "id": "mitigate",
+      "order": 1,
+      "branchOf": null,
+      "glyph": "active",
+      "badge": null,
+      "round": {
+        "n": 1,
+        "max": 3
+      },
+      "loops": [
+        {
+          "with": "verify",
+          "n": 1,
+          "max": 3
+        }
+      ],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "verify",
+      "order": 2,
+      "branchOf": null,
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [
+        {
+          "with": "mitigate",
+          "n": 1,
+          "max": 3
+        }
+      ],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "comms",
+      "order": 3,
+      "branchOf": null,
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": true,
+      "children": {
+        "done": 0,
+        "total": 1
+      },
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "resolved",
+      "order": 4,
+      "branchOf": null,
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": true
+    }
+  ],
+  "current": {
+    "state": "mitigate",
+    "step": {
+      "kind": "step.agent",
+      "ref": "mitigate.rollback",
+      "declaration": "roll back the last release"
+    },
+    "gates": [],
+    "desk": null,
+    "status": {
+      "header": {
+        "address": "workflow/INC-14",
+        "recipe": "incident.response",
+        "hash12": "5d90e1b20000",
+        "version": 4,
+        "state": "mitigate",
+        "detail": "round 1/3",
+        "since": "2026-10-12T11:02:00.0000000Z",
+        "ageSeconds": 5040
+      },
+      "next": "agent rolling back in ITM-01JG2 · comms posting",
+      "answer": null,
+      "child": null,
+      "drift": null,
+      "inputs": [
+        {
+          "key": "fact:alert",
+          "name": "alert.json",
+          "hash": "1c0e5a77"
+        }
+      ],
+      "timeout": {
+        "kind": "escalates",
+        "inSeconds": 3600,
+        "on": "mitigate"
+      },
+      "budget": {
+        "scope": "state",
+        "used": 0,
+        "limit": 200000,
+        "instance": {
+          "used": 0,
+          "limit": 400000
+        }
+      },
+      "paused": null,
+      "commands": [
+        {
+          "verb": "complete",
+          "actionId": "ApplyCommand:complete",
+          "class": "desk",
+          "cli": "sindri workflow complete workflow/sentry-8812/classify --run 1.1 --outcome done --output fact:severity=<text>",
+          "confirm": null
+        },
+        {
+          "verb": "takeover",
+          "actionId": "ApplyCommand:takeover",
+          "class": "protected",
+          "cli": "sindri workflow takeover workflow/sentry-8812/classify",
+          "confirm": null
+        },
+        {
+          "verb": "cancel",
+          "actionId": "ApplyCommand:cancel",
+          "class": "protected",
+          "cli": "sindri workflow cancel workflow/sentry-8812/classify",
+          "confirm": "Cancel workflow/sentry-8812/classify? 1 running steps stop; 0 children are cancelled."
+        }
+      ],
+      "text": "workflow/INC-14  incident.response@5d90e1b20000  v4  mitigate: round 1/3  since 11:02 (1h 24m)\n  next      agent rolling back in ITM-01JG2 · comms posting\n  timeout   escalates in 1h (mitigate)\n  commands  complete, takeover, cancel\n"
+    }
+  },
+  "facts": [
+    {
+      "key": "alert",
+      "label": "Alert",
+      "type": "link",
+      "direction": "input",
+      "from": null,
+      "status": "produced",
+      "summary": "PagerDuty P-2211",
+      "at": "2026-10-12T11:02:00.0000000Z",
+      "by": "human:webhook",
+      "ref": {
+        "name": null,
+        "size": null,
+        "hash": null,
+        "path": null,
+        "itemId": null,
+        "url": "https://pagerduty.example/incidents/P-2211",
+        "host": "pagerduty.example",
+        "title": "P-2211",
+        "factKey": null
+      },
+      "progress": null,
+      "pending": null
+    },
+    {
+      "key": "severity",
+      "label": "Severity",
+      "type": "decision",
+      "direction": "output",
+      "from": "assess",
+      "status": "produced",
+      "summary": "sev2",
+      "at": "2026-10-12T11:04:00.0000000Z",
+      "by": "step.assess",
+      "ref": null,
+      "progress": null,
+      "pending": null
+    },
+    {
+      "key": "postmortem",
+      "label": "Postmortem draft",
+      "type": "text",
+      "direction": "output",
+      "from": "resolved",
+      "status": "pending",
+      "summary": "not started",
+      "at": null,
+      "by": null,
+      "ref": null,
+      "progress": null,
+      "pending": null
+    }
+  ],
+  "children": [
+    {
+      "state": "comms",
+      "recipe": "builder.comms",
+      "done": 0,
+      "total": 1,
+      "workstreams": [],
+      "rows": [
+        {
+          "address": "workflow/ITM-01JG3",
+          "itemId": "ITM-01JG3",
+          "title": "Post status updates",
+          "glyph": "active",
+          "state": "post",
+          "chip": {
+            "word": "RUNNING",
+            "tone": "ok"
+          },
+          "round": null,
+          "agent": null,
+          "ageSeconds": 300,
+          "engineOwned": null,
+          "mirroredPark": null,
+          "actions": [
+            "OpenItem",
+            "ApplyCommand:takeover"
+          ]
+        }
+      ],
+      "more": 0
+    }
+  ],
+  "counts": {
+    "timeline": 12,
+    "decisions": 1,
+    "requests": 0,
+    "context": null
+  },
+  "actions": [
+    "ApplyCommand:takeover",
+    "ApplyCommand:cancel"
+  ],
+  "asOf": "2026-10-12T12:26:00.0000000Z"
+}

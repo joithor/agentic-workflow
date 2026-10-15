@@ -1,0 +1,168 @@
+{
+  "address": "workflow/sentry-8809",
+  "id": "WFI-1C27917745",
+  "parent": null,
+  "itemId": null,
+  "title": "429s on stream",
+  "recipe": {
+    "id": "triage.alert",
+    "hash": "d41f2a0700000000000000000000000000000000000000000000000000000000",
+    "version": 2,
+    "urgency": "triage"
+  },
+  "state": "done",
+  "since": "2026-10-12T11:58:00.0000000Z",
+  "engineOwned": null,
+  "subject": {
+    "kind": "webhook",
+    "key": "8809",
+    "label": "sentry #8809 429s on stream",
+    "href": null
+  },
+  "orderedBy": "path",
+  "states": [
+    {
+      "id": "ingest",
+      "order": 0,
+      "branchOf": null,
+      "glyph": "done",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "classify",
+      "order": 1,
+      "branchOf": null,
+      "glyph": "done",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "route",
+      "order": 2,
+      "branchOf": null,
+      "glyph": "done",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "done",
+      "order": 3,
+      "branchOf": null,
+      "glyph": "done",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": true
+    }
+  ],
+  "current": {
+    "state": "done",
+    "step": null,
+    "gates": [],
+    "desk": null,
+    "status": {
+      "header": {
+        "address": "workflow/sentry-8809",
+        "recipe": "triage.alert",
+        "hash12": "d41f2a070000",
+        "version": 2,
+        "state": "done",
+        "detail": "resolved",
+        "since": "2026-10-12T11:58:00.0000000Z",
+        "ageSeconds": 1680
+      },
+      "next": "",
+      "answer": null,
+      "child": null,
+      "drift": null,
+      "inputs": [],
+      "timeout": null,
+      "budget": null,
+      "paused": null,
+      "commands": [],
+      "text": "workflow/sentry-8809  triage.alert@d41f2a070000  v2  done: resolved  since 11:58 (28m)\n"
+    }
+  },
+  "facts": [
+    {
+      "key": "alert",
+      "label": "Alert",
+      "type": "payload",
+      "direction": "input",
+      "from": null,
+      "status": "produced",
+      "summary": "sentry #8809 429s on stream",
+      "at": "2026-10-12T11:40:00.0000000Z",
+      "by": "human:webhook",
+      "ref": {
+        "name": null,
+        "size": null,
+        "hash": null,
+        "path": null,
+        "itemId": null,
+        "url": null,
+        "host": null,
+        "title": null,
+        "factKey": "alert"
+      },
+      "progress": null,
+      "pending": null
+    },
+    {
+      "key": "item",
+      "label": "Item",
+      "type": "item",
+      "direction": "output",
+      "from": "route",
+      "status": "produced",
+      "summary": "ITM-01JF0 queued",
+      "at": "2026-10-12T11:58:00.0000000Z",
+      "by": "step.route",
+      "ref": {
+        "name": null,
+        "size": null,
+        "hash": null,
+        "path": null,
+        "itemId": "ITM-01JF0",
+        "url": null,
+        "host": null,
+        "title": null,
+        "factKey": null
+      },
+      "progress": null,
+      "pending": null
+    }
+  ],
+  "children": [],
+  "counts": {
+    "timeline": 7,
+    "decisions": 0,
+    "requests": 0,
+    "context": null
+  },
+  "actions": [],
+  "asOf": "2026-10-12T12:26:00.0000000Z"
+}
