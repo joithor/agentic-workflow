@@ -226,7 +226,7 @@ internal sealed partial class ShellWindow : Window
                 // A page switch (a G-chord) hides the page the focused control was on: focus goes to the page region, which is named, so the new page is spoken.
                 if (!_openingSettings)
                 {
-                    Dispatcher.UIThread.Post(KeepFocus, DispatcherPriority.Loaded);
+                    Dispatcher.UIThread.Post(KeepFocusOrReannounce, DispatcherPriority.Loaded);
                 }
 
                 break;

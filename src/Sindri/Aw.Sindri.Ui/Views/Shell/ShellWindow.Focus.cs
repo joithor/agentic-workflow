@@ -42,6 +42,24 @@ internal sealed partial class ShellWindow
         }
     }
 
+    // Focus already on the page region would not move on a page change, so the new page's name would go unspoken: drop
+    // focus and take it again so the region raises a fresh focus event (review run 4, a11y-2).
+    private void KeepFocusOrReannounce()
+    {
+        var page = this.Get<Border>("Page");
+        if (ReferenceEquals(FocusManager?.GetFocusedElement(), page))
+        {
+            // Avalonia drops focus from an element that is disabled and has no clear call: disable and enable it, then focus again.
+            var enabled = page.IsEnabled;
+            page.SetCurrentValue(IsEnabledProperty, value: false);
+            page.SetCurrentValue(IsEnabledProperty, enabled);
+            _ = page.Focus(Method());
+            return;
+        }
+
+        KeepFocus();
+    }
+
     // After a state change, a closed sheet or a change in its covering: if the focused control is gone (hidden, disabled,
     // or nothing has focus after something had it), focus its region's neighbour.
     private void KeepFocus()
