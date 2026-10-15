@@ -99,7 +99,7 @@ public static class WorkflowViewFixtures
     /// The engine's id of an address: a copy of WorkflowInstanceId.Of from engine #192 (feat/sindri-wf-p4-interpreter), a UUIDv8
     /// over the SHA-256 of the address, so the goldens carry the ids the engine mints. Delete this once #192 is on main.
     /// </summary>
-    private static WorkflowInstanceId IdOf(string address)
+    public static WorkflowInstanceId IdOf(string address)
     {
         Span<byte> digest = stackalloc byte[System.Security.Cryptography.SHA256.HashSizeInBytes];
         _ = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(address), digest);
