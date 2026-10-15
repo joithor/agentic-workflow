@@ -214,7 +214,7 @@ announcement is a change again) is set only while `LiveSetting` is Off; and a hi
 show it a moment before its text changes. Refresh's "Sending…" (`TopBar`'s `RefreshSending`) does both: the region is in
 the tree from the click (`!Health.CanRefresh`), is live (`Polite`, through its `live` class) only while
 `Health.IsSending`, which turns on before the text becomes "Sending…" and off before it goes back to its resting
-"Refresh"; it is zero-width and transparent, so it takes no room and shows nothing. The Unreadable banner, the Not responding banner and the Not running card follow the same rules (WCAG 4.1.3; review run 2): `ShellWindow`'s `UnreadableLive`, `NotRespondingLive` and `NotRunningLive` sit outside the banners, zero-width and transparent, so each is in the tree before its state comes; each is live only while its state holds (`IsUnreadable`, `IsNotRespondingBanner`, `IsNotRunning`), and `ShellViewModel` changes that flag before its announcement ("Unreadable: " or "Not running: " and the reason, or the not-responding sentence), resting at "Sindri" while Off. Two more follow the same rules (review run 5): `MismatchLive` announces the version-mismatch card's sentence, and the card's heading (`VersionMismatchText`, focusable) takes focus when the state is entered, also mid-session, since the card hides the whole shell and leaves no neighbour for `KeepFocus`; `RunningLive` says "Running" (the pill's own label; spec §12 has no recovery sentence) when the state returns to Normal after trouble (Not running, Unreadable, stale or not responding, a mismatch), is silent at the first connect, and rests when trouble comes again (`ShellViewModel.IsRecovered`, `RecoveredAnnouncement`). If the pass finds it silent, the fallback is a head adapter posting
+"Refresh"; it is zero-width and transparent, so it takes no room and shows nothing. The Unreadable banner, the Not responding banner and the Not running card follow the same rules (WCAG 4.1.3; review run 2): `ShellWindow`'s `UnreadableLive`, `NotRespondingLive` and `NotRunningLive` sit outside the banners, zero-width and transparent, so each is in the tree before its state comes; each is live only while its state holds (`IsUnreadable`, `IsNotRespondingBanner`, `IsNotRunning`), and `ShellViewModel` changes that flag before its announcement ("Unreadable: " or "Not running: " and the reason, or the not-responding sentence), resting at "Sindri" while Off. Two more follow the same rules (review run 5): `MismatchLive` announces the version-mismatch card's sentence, and the card's heading (`VersionMismatchText`, focusable) takes focus when the state is entered, also mid-session, since the card hides the whole shell and leaves no neighbour for `KeepFocus`; `RunningLive` says "Running" (the pill's own label; spec §12 has no recovery sentence) when the state returns to Normal after trouble (Not running, Unreadable, stale or not responding, a mismatch), is silent at the first connect, and rests when trouble comes again (`ShellViewModel.IsRecovered`, `RecoveredAnnouncement`). `CommandOutcomeLive` (review run 5, K2) follows the same rules: it speaks a command the palette started and closed on before its outcome (see "A closed palette" under the palette), flag (`CommandOutcome.IsLive`) then text. If the pass finds it silent, the fallback is a head adapter posting
 `NSAccessibilityAnnouncementRequestedNotification` through ObjC interop; no production seam is added before that.
 
 **The owner's VoiceOver pass** (a throwaway probe window: a polite `TextBlock` changing every 3 s, an assertive one, a
@@ -227,6 +227,12 @@ the tree from the click (`!Health.CanRefresh`), is live (`Polite`, through its `
    only once something has read the tree).
 5. Accessibility Inspector shows `AXARIALive` on the element and the `AXLiveRegionChanged` and announcement events.
 6. The app in the background: is the announcement still spoken?
+
+**Linux (owner question, provisional owner default (2026-10-14 night)).** The Linux real-app proof found that Avalonia's
+AT-SPI bridge exposes no live-region attribute and emits no announcement signal, only name changes, so Orca probably speaks
+none of the announcements above. macOS VoiceOver is the primary accessibility target; on Linux the announcements are a
+known platform limit, tracked for an Avalonia upstream fix or a later AT-SPI workaround. Nothing in U1 depends on it:
+every outcome is also shown on screen.
 
 ## U1: catalog, headers and freshness (UI spec §18 U1)
 
@@ -255,7 +261,7 @@ action id (labels in `Labels.Actions.cs`): `ready` is a button (it runs only whe
 Copy, `cli-only:<reason>` the copy block (the CLI, Copy, and "Needs a typed confirmation at a terminal." for
 `typed-confirmation`). A CLI with a control, bidi or invisible character is neither shown nor copied. Lifecycle (§4.1):
 sending (enabled for the keyboard so focus stays on it, the view model refuses a second run; label kept, spinner; "Sending…" announced after 300 ms; a second click does nothing), accepted
-("Rebuild views: done", 2 s), refused or failed (the code and `detail` inline, as served, and announced as "<code>: <detail>"; every run first rests the live region on the label so a repeat outcome is a change; a retry sets the phase to Sending before it clears the old outcome, so nothing reads half-cleared), Copy ("Copied", 1.5 s). The control's live region is dark (`IsMuted`) only for a run the command palette started and still announces; otherwise the control speaks its own lifecycle.
+("Rebuild views: done", 2 s), refused or failed (the code and `detail` inline, as served, and announced as "<code>: <detail>"; every run first rests the live region on the label so a repeat outcome is a change; a retry sets the phase to Sending before it clears the old outcome, so nothing reads half-cleared), Copy ("Copied", 1.5 s; a second Copy inside the 1.5 s rests the region and says it again). A send cancelled with its token (the window closing) leaves the phase Idle. The control's live region is dark (`IsMuted`) only for a run the command palette started and still announces; otherwise the control speaks its own lifecycle.
 The clipboard is a port (`Platform/IClipboard`, `Views/AvaloniaClipboard`; see the ports table).
 
 **Freshness (U10, E-14).** The pill reads `health.word` (Healthy, Degraded, Stalled, Rebuilding), its age from
@@ -299,10 +305,24 @@ name is the outcome alone: "Rebuild views: done"). Esc closes the palette at any
 mutes that entry's control only, for that run (`CommandPaletteViewModel.Runs.cs`), and it announces the lifecycle of every
 entry it ran, whatever the selection or the query became meanwhile: "Sending…" after 300 ms, then the outcome or the
 refusal; the selected entry is announced with its position ("Rebuild views: done, 3 of 14"), another ran entry by its name
-alone. Nothing is said in a send's first 300 ms and nothing when the outcome settles back to ready. The mute ends once the
-palette has announced the run's outcome (accepted or refused), or when the palette closes while it is still sending: the
-control then speaks its own outcome. A send that did not start from the palette is never muted: its control speaks the
-outcome even while the palette is open, and the palette says nothing about it.
+alone. Nothing is said in a send's first 300 ms and nothing when the outcome settles back to ready. Each run says an entry's status once
+(the outcome arrives through several property changes, and moving the selection off the entry after "Sending…" does not
+say "Sending…" again), and a run says its outcome even when it equals the last run's (a retry's same refusal, an
+accepted retry inside the 2 s, a second Copy inside the 1.5 s): the palette's region rests on a neutral text with its gate
+(`IsAnnouncing`) dark, then says it, flag before text. The mute ends when the palette has announced the run's outcome
+(accepted or refused) or, for a copy, when "Copied" clears. **A closed palette.** When the palette closes while a send is
+still in flight (Esc, or the `CloseFirst` policy), the control stays muted and the shell's command-outcome region
+(`ShellWindow`'s `CommandOutcomeLive`, `ShellViewModel.CommandOutcome`; always in the tree, zero-width and transparent,
+flag then text, never "") speaks the rest of the run once: "Sending…" if it was not said yet, then the outcome or the
+refusal. Only a control whose own view is on show (the Rebuild views control of the stalled banner while the banner
+shows) is handed back at the close and speaks itself; the Rebuild views control has no view otherwise, so its outcome
+would be spoken by nobody. The decision is made at the close: a view that appears or goes away mid-send is not
+re-decided. A cancelled send returns the control to Idle, so the palette lets go of it. Known limit: a catalog
+replaced mid-run (a reconnect) releases every run, so a send that was already in flight is spoken by no live region.
+A send that did not start from the palette is never muted: its control speaks the outcome even while the palette is
+open, and the palette says nothing about it. A ready row the app has no sender for (the catalog's `IssueChallenge`,
+`RegisterRecipe`) is shown as "not in the app yet" and skipped by Enter; every action id in the catalog has its own
+label, and an id without one shows a humanised form of itself, never the raw `X:y`.
 
 **The `?` sheet.** `?` (not while typing in a field, nor over the palette) opens §8's keys plus each catalog row's own
 `shortcut` (none yet); it takes focus, Tab cycles inside it, Esc closes it and returns focus. The sheet lists §8's
