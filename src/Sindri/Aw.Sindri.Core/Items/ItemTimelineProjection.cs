@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Sindri.Core.Ledger;
@@ -30,13 +29,6 @@ internal sealed class ItemTimelineProjection(JsonSerializerOptions json, ITextSc
         var envelope = recorded.Envelope;
         var line = SafeText.Clean(scrubber, TimelineLine.For(recorded, json), LineMax);
         var row = new TimelineRow(recorded.Sequence, envelope.OccurredAt, envelope.Type, envelope.Actor, line);
-        return await rows.Put(ViewNames.ItemTimeline, Key(item, recorded.Sequence), row, cancellationToken).ConfigureAwait(false);
+        return await rows.Put(ViewNames.ItemTimeline, ItemTimelineKeys.Of(item, recorded.Sequence), row, cancellationToken).ConfigureAwait(false);
     }
-
-    /// <summary>The timeline key of the event at <paramref name="sequence"/> about <paramref name="item"/>.</summary>
-    /// <param name="item">The item id.</param>
-    /// <param name="sequence">The ledger sequence.</param>
-    /// <returns>'&lt;item&gt;/&lt;sequence:D19&gt;'.</returns>
-    public static string Key(string item, long sequence)
-        => string.Create(CultureInfo.InvariantCulture, $"{item}/{sequence:D19}");
 }

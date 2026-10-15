@@ -9,5 +9,23 @@ public static class ItemSummaries
     /// <param name="row">The row.</param>
     /// <returns>The summary.</returns>
     public static ItemSummary From(ItemRow row)
-        => throw new NotSupportedException("ItemSummaries.From: P3 unit G makes Queue_returns_every_group_even_empty pass");
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        return new ItemSummary(row.Id, row.Title, row.Repo, row.State, row.Step, row.Since, ItemActions.Primary(row.State), ItemActions.For(row.State), row.Owner);
+    }
+
+    /// <summary>The rows <paramref name="caller"/> may see that pass <paramref name="keep"/>, as summaries, the oldest 'since' first (ties by id).</summary>
+    /// <param name="rows">The items view.</param>
+    /// <param name="caller">The caller, whose repo scope applies.</param>
+    /// <param name="keep">Which visible rows to show.</param>
+    /// <returns>The summaries, in display order.</returns>
+    public static IReadOnlyList<ItemSummary> Visible(IEnumerable<ItemRow> rows, Commands.CallerContext caller, Func<ItemRow, bool> keep)
+    {
+        ArgumentNullException.ThrowIfNull(rows);
+        ArgumentNullException.ThrowIfNull(caller);
+        ArgumentNullException.ThrowIfNull(keep);
+        return [.. rows.Where(r => ItemScope.Visible(caller, r.Repo) && keep(r))
+            .OrderBy(static r => r.Since).ThenBy(static r => r.Id.Value, StringComparer.Ordinal)
+            .Select(From)];
+    }
 }

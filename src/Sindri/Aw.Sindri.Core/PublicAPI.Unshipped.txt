@@ -844,6 +844,7 @@ Aw.Sindri.Core.Items.ItemSummary.Step.get -> string?
 Aw.Sindri.Core.Items.ItemSummary.Step.init -> void
 Aw.Sindri.Core.Items.ItemSummary.Title.get -> string!
 Aw.Sindri.Core.Items.ItemSummary.Title.init -> void
+Aw.Sindri.Core.Items.ItemTimelineKeys
 Aw.Sindri.Core.Items.QueueGroups
 Aw.Sindri.Core.Items.TimelineLine
 Aw.Sindri.Core.Items.Vocabulary.CloseReason
@@ -5725,8 +5726,11 @@ static Aw.Sindri.Core.Items.ItemDecisions.Close(Aw.Sindri.Core.Views.ItemRow! it
 static Aw.Sindri.Core.Items.ItemScope.Visible(Aw.Sindri.Core.Commands.CallerContext! caller, Aw.Sindri.Core.Ids.RepoName? itemRepo) -> bool
 static Aw.Sindri.Core.Items.ItemStates.IsClosed(Aw.Sindri.Core.Items.Vocabulary.ItemState state) -> bool
 static Aw.Sindri.Core.Items.ItemSummaries.From(Aw.Sindri.Core.Views.ItemRow! row) -> Aw.Sindri.Core.Items.ItemSummary!
+static Aw.Sindri.Core.Items.ItemSummaries.Visible(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Views.ItemRow!>! rows, Aw.Sindri.Core.Commands.CallerContext! caller, System.Func<Aw.Sindri.Core.Views.ItemRow!, bool>! keep) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Items.ItemSummary!>!
 static Aw.Sindri.Core.Items.ItemSummary.operator !=(Aw.Sindri.Core.Items.ItemSummary? left, Aw.Sindri.Core.Items.ItemSummary? right) -> bool
 static Aw.Sindri.Core.Items.ItemSummary.operator ==(Aw.Sindri.Core.Items.ItemSummary? left, Aw.Sindri.Core.Items.ItemSummary? right) -> bool
+static Aw.Sindri.Core.Items.ItemTimelineKeys.EndOf(string! item) -> string!
+static Aw.Sindri.Core.Items.ItemTimelineKeys.Of(string! item, long sequence) -> string!
 static Aw.Sindri.Core.Items.QueueGroups.GroupOf(Aw.Sindri.Core.Items.Vocabulary.ItemState state) -> Aw.Sindri.Core.Items.Vocabulary.QueueGroup?
 static Aw.Sindri.Core.Items.QueueGroups.Order.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Items.Vocabulary.QueueGroup>!
 static Aw.Sindri.Core.Items.TimelineLine.For(Aw.Sindri.Core.Ledger.LedgerEvent! recorded, System.Text.Json.JsonSerializerOptions! json) -> string!

@@ -121,7 +121,7 @@ public sealed class ItemProjectionTests
         Assert.Equal(["Created: Ship it", "new → done", "Linked to linear:issue/abc-123 (ENG-142)"], lines.Select(l => l.Line), StringComparer.Ordinal);
         Assert.Equal([1L, 2L, 3L], lines.Select(l => l.Sequence));
         Assert.Equal(["item.created", "item.state-changed", "item.linked"], lines.Select(l => l.Type), StringComparer.Ordinal);
-        Assert.Equal(ItemTimelineProjection.Key(_item.Value, 2), _item.Value + "/0000000000000000002");
+        Assert.Equal(ItemTimelineKeys.Of(_item.Value, 2), _item.Value + "/0000000000000000002");
     }
 
     [Fact, Trait("Lane", "unit")]
