@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Threading;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.ViewModels.Palette;
+using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Palette;
 
 namespace Aw.Sindri.Ui.Views.Shell;
@@ -32,9 +33,19 @@ internal sealed partial class ShellWindow
             return true;
         }
 
+        return OpenSettingsByKey(e, shell);
+    }
+
+    private bool OpenSettingsByKey(KeyEventArgs e, ShellViewModel shell)
+    {
         if (e.Key != Key.OemComma || e.KeyModifiers != _command)
         {
             return false;
+        }
+
+        if (OverlayOpen)
+        {
+            return true;   // the palette and the ? sheet are modal (§11.2): the chord is swallowed, focus stays in the card
         }
 
         shell.GoTo(PageId.Settings);
