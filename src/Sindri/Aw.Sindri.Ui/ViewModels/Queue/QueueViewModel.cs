@@ -188,21 +188,24 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
         return row;
     }
 
+    // The filter lets a group through (G R, G W; all of them on G Q).
+    private bool Picked(string group) => Showing switch
+    {
+        QueueFilter.Running => group == "running",
+        QueueFilter.WithYou => group == "withYou",
+        QueueFilter.All => true,
+        _ => true,
+    };
+
     private QueueGroupViewModel Group(QueueGroupView group, List<ItemRowViewModel> all)
     {
-        var picked = Showing switch
-        {
-            QueueFilter.Running => group.Group == "running",
-            QueueFilter.WithYou => group.Group == "withYou",
-            QueueFilter.All => true,
-            _ => true,
-        };
+        var picked = Picked(group.Group);
         if (!_groups.TryGetValue(group.Group, out var shown))
         {
             shown = _groups[group.Group] = new QueueGroupViewModel(group.Group);
         }
 
-        shown.Update([.. all.Where(Matches)], group.Empty, picked, filtered: picked && Showing != QueueFilter.All);
+        shown.Update([.. all.Where(r => Matches(r.Id, r.Title, r.Repo))], group.Empty, picked, filtered: picked && Showing != QueueFilter.All);
         return shown;
     }
 

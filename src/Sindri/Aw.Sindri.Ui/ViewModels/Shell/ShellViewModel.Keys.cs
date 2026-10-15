@@ -86,7 +86,7 @@ internal sealed partial class ShellViewModel
     // The pages with rows, and the rows the keys walk there: Home's panels or the Queue page's groups.
     private bool OnRowPage => IsHome || IsQueue;
 
-    private QueueScope RowScope => IsHome ? QueueScope.Home : QueueScope.Page;
+    private QueueScope RowScope => RowScopeOf(CurrentPage) ?? QueueScope.Page;
 
     // The rows' scope for a page the shell shows (the queue follows it, silently); null for a page that draws none.
     private static QueueScope? RowScopeOf(PageId page) => page == PageId.Home ? QueueScope.Home : page == PageId.Queue ? QueueScope.Page : null;

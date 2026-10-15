@@ -101,7 +101,6 @@ internal sealed partial class QueueViewModel
         return true;
     }
 
-
     /// <summary>`/`: opens the filter field.</summary>
     internal void OpenFilter() => IsFiltering = true;
 
@@ -117,8 +116,9 @@ internal sealed partial class QueueViewModel
     internal ControlViewModel? SelectedCopy() =>
         SelectedId is { } id && _rows.TryGetValue(id, out var row) && row.PrimaryAction is { CanCopy: true } control ? control : null;
 
-    // While holding, only rows the page doesn't show yet wait behind the pill (they would shift the rows under the
-    // pointer); removals and in-place updates show at once, so nothing stale sits under it. Returns what to show now.
+    // While holding, only rows the page doesn't show yet and will draw wait behind the pill (they would shift the rows under the
+    // pointer); removals, in-place updates and rows the page won't draw (past Home's cap, in a collapsed or filtered-out group)
+    // show at once, so nothing stale sits under it. Returns what to show now.
     private QueueView Hold(QueueView view)
     {
         if (!_holding || _view is not { } shown)
@@ -129,26 +129,44 @@ internal sealed partial class QueueViewModel
 
         var ids = shown.Groups.SelectMany(g => g.Items).Select(i => i.Id).ToHashSet(StringComparer.Ordinal);
         var added = view.Groups.SelectMany(g => g.Items).Select(i => i.Id).Where(id => !ids.Contains(id)).ToHashSet(StringComparer.Ordinal);
-        if (added.Count == 0)
+        var drawn = DrawnIn(view, _scope);
+        var counted = added.Count(drawn.Contains);
+        if (counted == 0)
         {
             (_held, HeldCount) = (null, 0);
             return view;
         }
 
         _held = view;
-        if (HeldCount != added.Count)
+        if (HeldCount != counted)
         {
-            HeldCount = added.Count;
+            HeldCount = counted;
             _spoken = HeldText;
         }
 
         return view with { Groups = [.. view.Groups.Select(g => g with { Items = [.. g.Items.Where(i => !added.Contains(i.Id))] })] };
     }
 
+    // The ids a page would draw for a view (what Navigable reads off the shown rows): Home's two panels at their cap, or the
+    // Queue page's picked, open groups' rows that pass the text filter.
+    private HashSet<string> DrawnIn(QueueView view, QueueScope scope)
+    {
+        if (scope != QueueScope.Home)
+        {
+            return view.Groups.Where(g => Picked(g.Group) && (!_groups.TryGetValue(g.Group, out var open) || open.IsExpanded))
+                .SelectMany(g => g.Items).Where(i => Matches(i.Id, i.Title, i.Repo ?? string.Empty))
+                .Select(i => i.Id).ToHashSet(StringComparer.Ordinal);
+        }
+
+        var groups = view.Groups.ToDictionary(g => g.Group, g => g.Items, StringComparer.Ordinal);
+        var left = (groups.GetValueOrDefault("withYou") ?? []).Concat(groups.GetValueOrDefault("running") ?? []).Take(PanelCap);
+        return left.Concat((groups.GetValueOrDefault("queued") ?? []).Take(PanelCap)).Select(i => i.Id).ToHashSet(StringComparer.Ordinal);
+    }
+
     // What this refresh has to say, so "N new" and "cleared" in one refresh are one sentence (Apply says it).
     private string? _spoken;
 
-    private bool Matches(ItemRowViewModel row) =>
-        FilterText.Length == 0 || row.Id.Contains(FilterText, StringComparison.OrdinalIgnoreCase)
-        || row.Title.Contains(FilterText, StringComparison.OrdinalIgnoreCase) || row.Repo.Contains(FilterText, StringComparison.OrdinalIgnoreCase);
+    private bool Matches(string id, string title, string repo) =>
+        FilterText.Length == 0 || id.Contains(FilterText, StringComparison.OrdinalIgnoreCase)
+        || title.Contains(FilterText, StringComparison.OrdinalIgnoreCase) || repo.Contains(FilterText, StringComparison.OrdinalIgnoreCase);
 }
