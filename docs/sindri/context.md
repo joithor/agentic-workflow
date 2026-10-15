@@ -421,7 +421,8 @@ feature's other surfaces, so a sibling such as "Pane resize" is never pulled in.
 in the profile (0–4, default 2), and `--depth` overrides it. Each affected node shows its shortest path (between equally deep paths, the one with the fewest `owns` steps, then key order), starting at the anchor and naming the real hops: the `owns` steps down through the anchor's own scope to the surface or action that writes or depends, then the state, dependency or flow hops. A bad `--depth` (not a whole number, or outside 0–4) is `SND-CONTEXT-006`.
 
 **A session sees only its repo.** A session sees only the nodes its repo implements (`implements` edges with file
-evidence in its `X-Sindri-Repo`) and the edges among them, so its cascade, neighbors and paths stay inside that set;
+evidence in its `X-Sindri-Repo`), the code files those edges start from, and the edges among them (so `lenses` shows its code band and
+`query --symbol <file>` resolves its files), so its cascade, neighbors and paths stay inside that set;
 anything else is `SND-CONTEXT-003`.
 
 ### Text questions find anchors too

@@ -146,7 +146,7 @@ public sealed class ContextMapApiTests
         Assert.Equal(HttpStatusCode.OK, export.Status);
         Assert.Contains(Path.Combine(host.Home, "context", "exports"), JsonDocument.Parse(export.Body).RootElement.GetProperty("path").GetString(), StringComparison.Ordinal);
         Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-033"), (outside.Status, outside.Code));
-        Assert.Contains("\"nodes\":5", scoped.Body, StringComparison.Ordinal);
+        Assert.Contains("\"nodes\":8", scoped.Body, StringComparison.Ordinal);
         Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-003"), (other.Status, other.Code));
     }
 
