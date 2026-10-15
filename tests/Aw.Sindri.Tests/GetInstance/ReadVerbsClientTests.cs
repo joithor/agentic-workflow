@@ -60,6 +60,62 @@ public sealed class ReadVerbsClientTests
         Assert.Equal(["/sindri/workflow/instances?needsMe=true"], api.Calls);
     }
 
+    [Fact(Timeout = 30_000)]
+    public async Task List_sends_the_recipe_urgency_subject_and_root_filters_to_the_route_in_that_order()
+    {
+        using var api = ReadApi.Over(new OneInstance(StatusCases.View("done")));
+
+        var (exit, stdout, _) = await Run(api, TestContext.Current.CancellationToken,
+            "list", "--root", "false", "--subject", "fact:spec", "--urgency", "incident", "--recipe", "workflow.step");
+
+        Assert.Equal((0, "no instances match\n"), (exit, stdout));
+        Assert.Equal(["/sindri/workflow/instances?recipe=workflow.step&urgency=incident&subject=fact%3Aspec&root=false"], api.Calls);
+    }
+
+    [Theory(Timeout = 30_000)]
+    [InlineData("--urgency", "urgent", "'urgent' isn't an urgency (fix: --urgency incident, triage or work)")]
+    [InlineData("--urgency", "Incident", "'Incident' isn't an urgency (fix: --urgency incident, triage or work)")]
+    [InlineData("--root", "maybe", "'maybe' isn't true or false (fix: --root true for top-level instances, --root false for children)")]
+    [InlineData("--root", "True", "'True' isn't true or false (fix: --root true for top-level instances, --root false for children)")]
+    public async Task A_misspelled_urgency_or_root_is_refused_by_the_client_as_SND_CLI_003_with_the_fix_and_asks_nothing(string flag, string value, string message)
+    {
+        using var api = ReadApi.Over(new OneInstance(StatusCases.View("done")));
+
+        var (exit, stdout, stderr) = await Run(api, TestContext.Current.CancellationToken, "list", flag, value);
+
+        Assert.Equal((2, string.Empty), (exit, stdout));
+        Assert.Contains(message, stderr, StringComparison.Ordinal);
+        Assert.StartsWith("SND-CLI-003 ", stderr, StringComparison.Ordinal);
+        Assert.Empty(api.Calls);
+    }
+
+    [Theory(Timeout = 30_000)]
+    [InlineData("--recipe", "a", "--recipe", "b")]
+    [InlineData("--urgency", "work", "--urgency", "triage")]
+    [InlineData("--subject", "a", "--subject", "b")]
+    [InlineData("--root", "true", "--root", "false")]
+    public async Task A_filter_given_twice_is_refused_with_the_usage_and_asks_nothing(params string[] flags)
+    {
+        using var api = ReadApi.Over(new OneInstance(StatusCases.View("done")));
+
+        var (exit, _, stderr) = await Run(api, TestContext.Current.CancellationToken, ["list", .. flags]);
+
+        Assert.Equal(2, exit);
+        Assert.Contains("usage: sindri workflow list", stderr, StringComparison.Ordinal);
+        Assert.Empty(api.Calls);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task A_filter_with_no_value_is_refused_with_the_usage()
+    {
+        using var api = ReadApi.Over(new OneInstance(StatusCases.View("done")));
+
+        var (exit, _, stderr) = await Run(api, TestContext.Current.CancellationToken, "list", "--recipe");
+
+        Assert.Equal(2, exit);
+        Assert.Contains("usage: sindri workflow list", stderr, StringComparison.Ordinal);
+    }
+
     private static async Task<(int Exit, string Stdout, string Stderr)> Run(ReadApi api, CancellationToken ct, params string[] args)
     {
         var stdout = new StringWriter();

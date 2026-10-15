@@ -166,7 +166,7 @@
       "direction": "input",
       "from": null,
       "status": "produced",
-      "summary": "PagerDuty P-2211",
+      "summary": "PagerDuty P-2211 · Outbox retry storm",
       "at": "2026-10-12T11:02:00.0000000Z",
       "by": "service:webhook",
       "ref": {

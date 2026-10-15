@@ -1,4 +1,6 @@
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Views;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 
@@ -56,4 +58,58 @@ public sealed record InstanceView(
 
     /// <summary>What was left of the state's timeout when a takeover paused it (§6.4 'paused'; engine P5 sets it).</summary>
     public TimeSpan? Paused { get; init; }
+
+    /// <summary>The runs of non-desk steps now executing, which a cancel stops (the cancel confirmation counts them; a desk run is not a running step).</summary>
+    public int RunningSteps { get; init; }
+
+    /// <summary>The active state's step declaration (API spec §3.8 'current.step'); null in a terminal state.</summary>
+    public StepDeclaration? Step { get; init; }
+
+    /// <summary>The gates on the active state's exits.</summary>
+    public IReadOnlyList<GateLine> Gates { get; init; } = [];
+
+    /// <summary>The desk form of the open task, if one is open.</summary>
+    public DeskForm? Desk { get; init; }
+
+    /// <summary>The item's id ('ITM-...') when the instance is an item's; null otherwise (UI screens E-20).</summary>
+    public ItemKey? ItemId { get; init; }
+
+    /// <summary>How soon the recipe's instances need a human (E-21); work unless the recipe says so.</summary>
+    public RecipeUrgency Urgency { get; init; } = RecipeUrgency.Work;
+
+    /// <summary>The badge that replaces the state's glyph when the engine interrupted the instance; null otherwise.</summary>
+    public EngineOwnedBadge? EngineOwned { get; init; }
+
+    /// <summary>What the instance is about, from the recipe's first input; null when the recipe has no input.</summary>
+    public SubjectRef? Subject { get; init; }
+
+    /// <summary>The recipe's inputs, in declaration order.</summary>
+    public IReadOnlyList<InputPresence> Inputs { get; init; } = [];
+
+    /// <summary>How <see cref="States"/> is ordered: the path, or the transition list when the graph has several initial paths.</summary>
+    public PathOrdering OrderedBy { get; init; } = PathOrdering.Path;
+
+    /// <summary>Every state of the recipe, in <see cref="OrderedBy"/> order.</summary>
+    public IReadOnlyList<StateCell> States { get; init; } = [];
+
+    /// <summary>The answer the open park or escalation takes, as the status record's field; null when none applies. Time-independent, so the view can carry it.</summary>
+    public StatusAnswer? AnswerLine { get; init; }
+
+    /// <summary>The first live child a park or escalation mirrors, as the status record's field.</summary>
+    public StatusChild? ChildPark { get; init; }
+
+    /// <summary>The drift recorded behind the open park, as the status record's field.</summary>
+    public StatusDrift? DriftNote { get; init; }
+
+    /// <summary>The re-approval a drift or a revoked child waits for: the protected 'approve' command row.</summary>
+    public StatusCommand? ApproveRow { get; init; }
+
+    /// <summary>What the active state asks of a person, as a short lower-case clause ('import the design output'); the list row's 'with you: ...' names it.</summary>
+    public string? Activity { get; init; }
+
+    /// <summary>One row per input and output the recipe declares, in declaration order.</summary>
+    public IReadOnlyList<FactRow> Facts { get; init; } = [];
+
+    /// <summary>The children, one group per state that declares child or runs step.children; empty until engine P7.</summary>
+    public IReadOnlyList<ChildGroup> ChildGroups { get; init; } = [];
 }

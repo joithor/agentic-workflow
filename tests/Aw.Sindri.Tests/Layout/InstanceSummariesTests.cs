@@ -1,0 +1,34 @@
+using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Tests.GetInstance;
+
+namespace Aw.Sindri.Tests.Layout;
+
+/// <summary>The list row's 'now' sentence is cut to 80 characters, ellipsis inside the 80, never between the halves of a surrogate pair (UI screens E-20).</summary>
+[Lane(TestLane.Unit)]
+public sealed class InstanceSummariesTests
+{
+    private const string Prefix = "with you: ";
+
+    private static string Now(string activity) =>
+        InstanceSummaries.Of(StatusCases.View("taken-over") with { Activity = activity }, new InstanceSummaryContext(StatusCases.Now)).Now;
+
+    [Fact]
+    public void A_cut_never_splits_a_surrogate_pair_so_the_text_stays_valid_unicode()
+    {
+        var activity = new string('x', 76 - Prefix.Length) + "\U0001F600" + new string('y', 10);   // the emoji's two UTF-16 units sit at 76 and 77, across the cut at 77
+
+        var now = Now(activity);
+
+        Assert.Equal(Prefix + new string('x', 76 - Prefix.Length) + "...", now);
+        Assert.True(now.Length <= InstanceSummaries.NowLength);
+    }
+
+    [Fact]
+    public void A_pair_that_ends_before_the_cut_is_kept()
+    {
+        var activity = new string('x', 75 - Prefix.Length) + "\U0001F600" + new string('y', 10);   // units at 75 and 76, both before the cut at 77
+
+        Assert.Equal(Prefix + new string('x', 75 - Prefix.Length) + "\U0001F600...", Now(activity));
+    }
+}

@@ -16,6 +16,7 @@ using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Workflow;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.GetInstance;
 
@@ -68,7 +69,7 @@ internal sealed class ReadApi : HttpMessageHandler
             .AddSingleton<IInstanceDirectory>(instances)
             .AddSingleton<IInstanceReader>(instances)
             .AddSingleton<IService<GetInstanceRequest, GetInstanceResponse>>(new GetInstanceService(instances, instances))
-            .AddSingleton<IService<ListInstancesRequest, ListInstancesResponse>>(new ListInstancesService(instances, new NoRows(), instances));
+            .AddSingleton<IService<ListInstancesRequest, ListInstancesResponse>>(new ListInstancesService(instances, new NoRows(), instances, new ListInstances.FixedItemViews(), new ListInstances.FixedCaller(current: null), clock: new FakeTimeProvider()));
         configure?.Invoke(services);
     }, running: true);
 
@@ -96,7 +97,7 @@ internal sealed class ReadApi : HttpMessageHandler
         if (uri.AbsolutePath == Instances)
         {
             var item = query["item"];
-            var list = new ListInstancesRequest(query["needsMe"] == "true", item is null ? null : ItemKey.From(item), query["state"], query["query"], query["address"]);
+            var list = new ListInstancesRequest(query["needsMe"], item is null ? null : ItemKey.From(item), query["state"], query["query"], query["address"], query["recipe"], query["urgency"], query["subject"], query["root"]);
             return Answer(await _services.GetRequiredService<IService<ListInstancesRequest, ListInstancesResponse>>().Handle(list, cancellationToken).ConfigureAwait(false), json);
         }
 
@@ -137,6 +138,9 @@ internal sealed class ReadApi : HttpMessageHandler
 
     private sealed class NoRows : IWorkflowInstances
     {
+        public ValueTask<Result<IReadOnlyList<InstanceRow>>> List(InstanceFilter filter, bool ended, CancellationToken cancellationToken) =>
+            List(InstanceFilters.ToQuery(filter), ended, cancellationToken);
+
         public ValueTask<Result<IReadOnlyList<InstanceRow>>> List(string? query, bool ended, CancellationToken cancellationToken) =>
             ValueTask.FromResult<Result<IReadOnlyList<InstanceRow>>>(Array.Empty<InstanceRow>());
     }

@@ -50,6 +50,34 @@ public sealed class InterpreterStateLoopTests(SindriTimeSkippingServer server) :
         }, ct);
     }
 
+    /// <summary>A first input of 'fact:item' whose content was never stored: the repo read fails, the instance still starts, and 'Repo' stays unset (engine spec §5.1).</summary>
+    [Fact(Timeout = 120_000)]
+    public async Task A_fact_item_with_no_stored_content_starts_the_instance_and_leaves_Repo_unset()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var env = server.Environment;
+        await using var sindri = _harness.Sindri();
+        await WorkflowsHarness.HoldLease(sindri, ct);
+        _harness.Recipe("workflow.item", WorkflowsHarness.Shipped("sindri/workflow.item.yaml"));
+        using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
+
+        await worker.ExecuteAsync(async () =>
+        {
+            var unstored = new FactValue("fact:sha256:" + new string('b', 64), new string('b', 64), HeadSha: null);
+            var start = await WorkflowsHarness.RecipeStart(sindri, "workflow.item", "T-32", ct) with
+            {
+                Inputs = new Dictionary<FactKey, InputFact> { [FactKey.From("fact:item")] = new InputFact("item.json", unstored) },
+            };
+            var handle = await WorkflowsHarness.Start(env.Client, start);
+            var started = await WorkflowsHarness.Until(handle, static v => v.State == "triaged");
+
+            var attributes = await Attributes(handle, static a => a.ContainsKey(SindriTemporal.StateKey));
+            Assert.Equal("triaged", started.State);
+            Assert.False(attributes.ContainsKey(SindriTemporal.RepoKey));
+            await handle.TerminateAsync("test over");
+        }, ct);
+    }
+
     [Fact(Timeout = 120_000)]
     public async Task A_delivered_event_moves_the_waiting_instance_and_repo_comes_from_fact_item()
     {

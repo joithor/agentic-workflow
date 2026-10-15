@@ -5,6 +5,7 @@ using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Temporalio.Common;
@@ -105,7 +106,7 @@ internal sealed partial class RecipeWorkflow
         var after = After(instance, decision);
         if (OwnChange(instance, decision) is { } change)
         {
-            after = Enter(after);
+            after = Enter(after, submission.Trigger.Actor);
             await Mirror(Record(instance, change, submission.Trigger), NeedsYou(after)).ConfigureAwait(true);
         }
 
@@ -188,8 +189,9 @@ internal sealed partial class RecipeWorkflow
     };
 
     /// <summary>
-    /// Sets the search attributes (spec §5.1) as they stand: 'Item', 'Recipe', 'State', 'NeedsYou', 'Tenant' and 'Ring'
-    /// from the input and the instance, and 'Repo' when 'fact:item' named one.
+    /// Sets the search attributes (spec §5.1) as they stand: 'Item', 'Recipe', 'State', 'NeedsYou', 'Tenant', 'Ring' and
+    /// 'Root' from the input and the instance, 'Urgency' from the recipe, 'Subject' (the key <see cref="SubjectRefs"/> names from the first declared input's value),
+    /// and 'Repo' when 'fact:item' named one.
     /// </summary>
     private void Upsert(string state, bool needsYou)
     {
@@ -202,7 +204,17 @@ internal sealed partial class RecipeWorkflow
             SindriTemporal.NeedsYouKey.ValueSet(needsYou),
             SindriTemporal.TenantKey.ValueSet(start.Tenant),
             SindriTemporal.RingKey.ValueSet(start.Ring.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            SindriTemporal.RootKey.ValueSet(Workflow.Info.Parent is null),
         ];
+        if (_recipe is { } recipe)
+        {
+            updates.Add(SindriTemporal.UrgencyKey.ValueSet(Urgencies.Word(RecipeUrgencies.UrgencyOf(recipe))));
+            if (_subject is { Key.Length: > 0 } subject)
+            {
+                updates.Add(SindriTemporal.SubjectKey.ValueSet(subject.Key));
+            }
+        }
+
         if (_repo is { } repo)
         {
             updates.Add(SindriTemporal.RepoKey.ValueSet(repo));
@@ -211,18 +223,40 @@ internal sealed partial class RecipeWorkflow
         Workflow.UpsertTypedSearchAttributes([.. updates]);
     }
 
+    /// <summary>The first input's stored content as text ('ReadSubject', a local activity on start); none when it can't be read.</summary>
+    private static async Task<string?> SubjectTextOf(FactValue fact)
+    {
+        try
+        {
+            return await Workflow.ExecuteLocalActivityAsync(
+                (FactReadActivities a) => a.ReadSubjectAsync(fact),
+                new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(10), RetryPolicy = new RetryPolicy { MaximumAttempts = 3 } }).ConfigureAwait(true);
+        }
+        catch (Exception failed) when (IsActivityFailure(failed))
+        {
+            return null; // boundary: content that can't be read leaves the subject named by its fact key; the start goes on
+        }
+    }
+
     /// <summary>The repo 'fact:item' names ('ReadItemRepo', a local activity on start); none when it can't be read.</summary>
     private static async Task<string?> RepoOf(FactValue item)
     {
         try
         {
             return await Workflow.ExecuteLocalActivityAsync(
-                (ItemFactActivities a) => a.ReadRepoAsync(item),
+                (FactReadActivities a) => a.ReadRepoAsync(item),
                 new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(10), RetryPolicy = new RetryPolicy { MaximumAttempts = 3 } }).ConfigureAwait(true);
         }
-        catch (ActivityFailureException)
+        catch (Exception failed) when (IsActivityFailure(failed))
         {
             return null; // boundary: a fact:item that can't be read leaves 'Repo' unset (spec §5.1); the start goes on
         }
     }
+
+    /// <summary>
+    /// Whether <paramref name="failure"/> is a failure of the local activity: it ran out of attempts (the SDK raises that as the activity's own
+    /// <see cref="ApplicationFailureException"/>), timed out (<see cref="TimeoutFailureException"/>), or was an ordinary activity's <see cref="ActivityFailureException"/>.
+    /// A cancellation is none of these, so it still ends the workflow.
+    /// </summary>
+    internal static bool IsActivityFailure(Exception failure) => failure is FailureException and not CanceledFailureException;
 }

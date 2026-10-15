@@ -25,7 +25,8 @@ public static class WorkflowViewFixtures
 
     private static DateTimeOffset Today(int hour, int minute) => At(10, 12, hour, minute);
 
-    private static string Hash(string prefix) => prefix.PadRight(64, '0');
+    /// <summary>A hash as every hash on the wire is written: 'sha256:' and 64 hex digits (the prefix padded with zeros).</summary>
+    private static string Hash(string prefix) => "sha256:" + prefix.PadRight(64, '0');
 
     private static ActionId Act(string id) => ActionId.From(id);
 
@@ -75,16 +76,16 @@ public static class WorkflowViewFixtures
     private static readonly InstanceSummary _p2211 = Row("ITM-01JK6/triage-alert/1", _triage, "route", Today(11, 2),
         new EngineOwnedBadge(EngineOwnedKind.Escalated, "gate.severity 0.62, below 0.8"),
         Subject("webhook", "P-2211", "PagerDuty P-2211"), _triage.Cells("route"),
-        "accept at a terminal", "ApplyCommand:answer-accept", "ApplyCommand:takeover", "ApplyCommand:cancel") with
+        "needs your answer", "ApplyCommand:answer-accept", "ApplyCommand:takeover", "ApplyCommand:cancel") with
     { Answer = Answer(AnswerKind.Accept, "ITM-01JK6/triage-alert/1"), };
 
     private static readonly InstanceSummary _sentry8809 = Row("ITM-01JK7/triage-alert/1", _triage, "done", Today(11, 58), null,
-        Subject("webhook", "8809", "sentry #8809 429s on stream"), _triage.Cells("done"), "done 12m → ITM-01JF0 startable");
+        Subject("webhook", "8809", "sentry #8809 429s on stream"), _triage.Cells("done"), "done");
 
     private static readonly InstanceSummary _prjSync = Row("ITM-01JK3/project/1", _project, "build", Today(9, 14), null,
         Subject("linear-project", "APP", "APP · Offline sync", "https://linear.app/example/project/offline-sync"),
         _project.Cells("build", change: Shape(("build", c => c with { Children = new Progress(4, 9) }))),
-        "ITM-01JD6 checks · 4 done · 1 running · 1 parked · 3 not started", "ApplyCommand:takeover", "ApplyCommand:cancel");
+        "engine waiting in ITM-01JK3", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
     private static readonly InstanceSummary _prjExports = Row("ITM-01JK4/project/1", _project, "design", At(10, 11, 16, 2),
         new EngineOwnedBadge(EngineOwnedKind.TakenOver, "with you since 10-11 16:02"),
@@ -95,11 +96,11 @@ public static class WorkflowViewFixtures
     private static readonly InstanceSummary _prjTabs = Row("ITM-01JK5/project/1", _project, "scoping", Today(11, 40), null,
         Subject("linear-project", "ENG", "ENG · Tab manager v2"),
         _project.Cells("scoping", round: 1, Shape(("scoping", c => c with { Round = new Round(2, 3) }))),
-        "challenger round 2 · 84k / 600k", "ApplyCommand:takeover", "ApplyCommand:cancel");
+        "agent challenging in ITM-01JK5", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
     // Instances only the status layouts name: none of them is a row of the root list, so the layouts don't contradict it.
     private static readonly InstanceSummary _itemParked = Row("ITM-01JC8/item/1", _item, "running", Today(11, 54), new EngineOwnedBadge(EngineOwnedKind.Parked, "no-progress (child)"),
-        Subject("text", "ITM-01JC8", "Retry storm in outbox dispatcher"),
+        Subject("text", "Retry storm in outbox dispatcher", "Retry storm in outbox dispatcher"),
         _item.Cells("running", change: Shape(("running", c => c with { Children = new Progress(0, 1) }))),
         "parked child", "ApplyCommand:answer-grant", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
@@ -114,19 +115,19 @@ public static class WorkflowViewFixtures
     // A needs-answer park of its own (PRJ-exports is the taken-over project): a project parked at its design desk. Not a row of the root list.
     private static readonly InstanceSummary _prjReports = Row("ITM-01JKE/project/1", _project, "design", Today(10, 30),
         new EngineOwnedBadge(EngineOwnedKind.Parked, "needs-answer"), Subject("linear-project", "ENG", "ENG · Reports"),
-        _project.Cells("design"), "parked: needs-answer",
+        _project.Cells("design"), "needs your answer",
         "ApplyCommand:answer-text", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
     // A PREVIEW (MissingInputPreviews): the intake agent parked asking for the PRD, so the PRD input is missing. v1 never starts an instance with a missing
     // input; the golden workflow-instances/preview-missing-input gives the UI data for the missing and blocked renders (not a root row, not in the screens fixture).
     private static readonly InstanceSummary _prjNoPrd = Row("ITM-01JKH/project/1", _project, "intake", Today(12, 5), new EngineOwnedBadge(EngineOwnedKind.Parked, "needs-answer"),
-        Subject("linear-project", "ENG", "ENG · Docs site"), _project.Cells("intake"), "parked: needs-answer",
+        Subject("linear-project", "ENG", "ENG · Docs site"), _project.Cells("intake"), "needs your answer",
         "ApplyCommand:answer-text", "ApplyCommand:takeover", "ApplyCommand:cancel") with
     { Inputs = _project.InputRows("fact:prd"), };
 
     // A wait park of its own: dev-triage-three-state at its 'answer' wait, the reply couldn't be read. Not a root row.
     private static readonly InstanceSummary _triageAnswer = Row("ITM-01JL4/dev-triage-three-state/1", _devTriage, "answer", Today(12, 3), new EngineOwnedBadge(EngineOwnedKind.Parked, "needs-answer"),
-        Subject("item", "ITM-01JL4", "dev-triage-three-state"), _devTriage.Cells("answer"), "parked: needs-answer",
+        Subject("item", "ITM-01JL4", "Three-state triage"), _devTriage.Cells("answer"), "needs your answer",
         "ApplyCommand:answer-resume", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
     private static readonly InstanceSummary _prjCache = Row("ITM-01JKF/project/1", _project, "scoping", Today(11, 50), new EngineOwnedBadge(EngineOwnedKind.Parked, "spec-conflict (drift)"),
@@ -135,7 +136,7 @@ public static class WorkflowViewFixtures
     private static string LinAddress(string team) => team == "ENG" ? "ITM-01JKB/intake-linear/1" : "ITM-01JKC/intake-linear/1";
 
     private static InstanceSummary Intake(string team, DateTimeOffset since, string now) =>
-        Row(LinAddress(team), _intake, "poll", since, null, Subject("text", team, $"Linear {team}"), _intake.Cells("poll"), now, "ApplyCommand:cancel");
+        Row(LinAddress(team), _intake, "poll", since, null, Subject("text", $"Linear {team}", $"Linear {team}"), _intake.Cells("poll"), now, "ApplyCommand:cancel");
 
     private static IReadOnlyList<InstanceSummary> Roots() =>
     [
@@ -143,8 +144,8 @@ public static class WorkflowViewFixtures
         DoneTriage("ITM-01JK8/triage-alert/1", "sentry #8801", Today(10, 30)),
         DoneTriage("ITM-01JK9/triage-alert/1", "sentry #8797", Today(10, 5)),
         DoneTriage("ITM-01JKA/triage-alert/1", "sentry #8790", Today(9, 40)),
-        Intake("ENG", Today(12, 10), "polling every 15m · last 12:15 · 2 new items"),
-        Intake("APP", Today(12, 15), "polling every 15m · last 12:15 · 2 new items"),
+        Intake("ENG", Today(12, 10), "engine waiting in ITM-01JKB"),
+        Intake("APP", Today(12, 15), "engine waiting in ITM-01JKC"),
     ];
 
     private static ListCounts CountsOf(IReadOnlyList<InstanceSummary> roots) => new(
@@ -288,13 +289,13 @@ public static class WorkflowViewFixtures
         public StatusPaused? Paused { get; init; }
     }
 
-    private static readonly StatusInput _alertInput = new("fact:alert", "alert.json", "1c0e5a77");
+    private static readonly StatusInput _alertInput = new("fact:alert", "alert.json", Hash("1c0e5a77"));
 
     // An open desk task: the declared timeout (at least the desk floor, ending in a park) and the state's budget, where the recipe declares one.
-    private static StatusFields DeskStatus(InstanceSummary row, string produce, string run, (string Key, string Sample)? output, StatusLines lines)
+    private static StatusFields DeskStatus(InstanceSummary row, string produce, string run, (string Key, string Sample)? output, StatusLines lines, bool lineBreak = false)
     {
         var complete = $"sindri workflow complete {row.Address.Value} --run {run} --outcome done" + (output is { } o ? $" --output {o.Key}={o.Sample}" : string.Empty);
-        return Status(row, "desk task", $"{produce}, then run: {complete}", new OpenWork(CompleteCli: complete), lines);
+        return Status(row, "desk task", $"{produce}, then run:{(lineBreak ? "\n" : " ")}{complete}", new OpenWork(CompleteCli: complete), lines);
     }
 
     private static StatusLines DeskLines(StatusInput input, long timeoutSeconds, string state, StatusBudget? budget = null) =>
@@ -482,7 +483,7 @@ public static class WorkflowViewFixtures
         return Detail(_inc14, "Outbox retry storm", PathOrdering.Path,
             new CurrentState("mitigate", new StepDeclaration("active", "step.agent", "roll back the last release"), [], null, status),
             _incident.Facts(
-                Produced(_incident, "fact:alert", "PagerDuty P-2211", At(10, 12, 11, 2), "service:webhook", Ref(factKey: "fact:alert")),
+                Produced(_incident, "fact:alert", "PagerDuty P-2211 · Outbox retry storm", At(10, 12, 11, 2), "service:webhook", Ref(factKey: "fact:alert")),
                 Produced(_incident, "fact:severity", "sev2", At(10, 12, 11, 4), "step.assess", Ref(factKey: "fact:severity")),
                 Produced(_incident, "fact:history", "2 of 40 events", At(10, 12, 11, 3), "service:webhook", Ref(factKey: "fact:history"))),
             [], Counts(12, 1, 0));
@@ -496,7 +497,7 @@ public static class WorkflowViewFixtures
             new CurrentState("classify", new StepDeclaration("active", "step.classify", "a person classifies the alert"),
                 [], new DeskForm(RunToken.From("2.1"), [new DeskOutput("fact:severity", FactType.Text, true)], ["output.nonempty"], Act("CompleteStep")), StatusDeskTask()),
             _triage.Facts(
-                Produced(_triage, "fact:alert", "sentry #8812 TypeError", At(10, 12, 12, 22), "service:webhook", Ref(factKey: "fact:alert")),
+                Produced(_triage, "fact:alert", "sentry #8812 TypeError in tabs.layout", At(10, 12, 12, 22), "service:webhook", Ref(factKey: "fact:alert")),
                 Fake(_triage, "fact:severity", FactStatus.Pending, "awaiting your answer", pending: pending)),
             [], Counts(3, 0, 1));
     }
@@ -519,11 +520,11 @@ public static class WorkflowViewFixtures
     /// </summary>
     public static InstanceDetail ItemProduce()
     {
-        var row = Row("ITM-01JE7/item/1/step.4", _step, "produce", Today(12, 20), null, Subject("text", "ITM-01JE7", "Linear ENG-511 · repo agentic-workflow · no project · feature:needs-you.ack"),
+        var row = Row("ITM-01JE7/item/1/step.4", _step, "produce", Today(12, 20), null, Subject("text", "Linear ENG-511 · repo agentic-workflow ·", "Linear ENG-511 · repo agentic-workflow · no project · feature:needs-you.ack"),
             _step.Cells("produce", round: 1, Shape(("produce", c => c with { Round = new Round(2, 3) }))),
             "your output for the Step (desk) · round 2/3", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
         var status = DeskStatus(row, "Produce the Step output for ITM-01JE7 (round 2/3)", "3.1", ("fact:output", "<file>"),
-            DeskLines(new StatusInput("fact:spec", "spec.md", "1c0e5a77"), 172_440, "produce", new StatusBudget("state", 0, 200_000, new BudgetFigures(0, 400_000))));
+            DeskLines(new StatusInput("fact:spec", "spec.md", Hash("1c0e5a77")), 172_440, "produce", new StatusBudget("state", 0, 200_000, new BudgetFigures(0, 400_000))));
         return Detail(row, "Add needs-you ack route", PathOrdering.Path,
             new CurrentState("produce", new StepDeclaration("active", "step.produce", "produce the output for the item"), [],
                 new DeskForm(RunToken.From("3.1"), [new DeskOutput("fact:output", FactType.File, true)], ["output.file"], Act("CompleteStep")), status),
@@ -535,12 +536,12 @@ public static class WorkflowViewFixtures
     /// <summary>The desk-round-trip dev recipe, desk open on its export (round 1 of 2): the P11 signal fixture.</summary>
     public static InstanceDetail DeskRoundTrip()
     {
-        var row = Row("ITM-01JL1/dev-desk-round-trip/1", _devDesk, "export", Today(12, 0), null, Subject("text", "desk-round-trip", "desk-round-trip"),
+        var row = Row("ITM-01JL1/dev-desk-round-trip/1", _devDesk, "export", Today(12, 0), null, Subject("text", "Summarize the week", "Summarize the week"),
             _devDesk.Cells("export", round: 0, Shape(("export", c => c with { Round = new Round(1, 2) }))), "next step", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
         return Detail(row, "Desk round trip", PathOrdering.Path,
             new CurrentState("export", new StepDeclaration("active", "step.produce", "a person exports the file"),
                 [], new DeskForm(RunToken.From("1.1"), [new DeskOutput("fact:output", FactType.File, true)], ["output.file"], Act("CompleteStep")),
-                DeskStatus(row, "Export the file for the request (round 1/2)", "1.1", ("fact:output", "<file>"), DeskLines(new StatusInput("fact:request", "request.txt", "7ab2c013"), 171_240, "export"))),
+                DeskStatus(row, "Export the file for the request (round 1/2)", "1.1", ("fact:output", "<file>"), lineBreak: true, lines: DeskLines(new StatusInput("fact:request", "request.txt", "sha256:d2a74649875cf790d548f1dfe2e5526b0632bd722a089ec69f89a129068bd9f1"), 171_240, "export"))),
             _devDesk.Facts(
                 Produced(_devDesk, "fact:request", "Summarize the week", At(10, 12, 12, 0), "human:cli"),
                 Fake(_devDesk, "fact:output", FactStatus.Pending, "awaiting your file", pending: new FactPending(true, ["output.file"], Act("CompleteStep")))),
@@ -550,12 +551,12 @@ public static class WorkflowViewFixtures
     /// <summary>The three-state triage dev recipe, at its desk.</summary>
     public static InstanceDetail TriageThreeState()
     {
-        var row = Row("ITM-01JL2/dev-triage-three-state/1", _devTriage, "desk", Today(12, 0), null, Subject("item", "ITM-01JL2", "dev-triage-three-state"),
+        var row = Row("ITM-01JL2/dev-triage-three-state/1", _devTriage, "desk", Today(12, 0), null, Subject("item", "ITM-01JL2", "Three-state triage"),
             _devTriage.Cells("desk"), "next step", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
         return Detail(row, "Three-state triage", PathOrdering.Path,
             new CurrentState("desk", new StepDeclaration("active", "step.produce", "a person writes the draft"),
                 [], new DeskForm(RunToken.From("1.1"), [new DeskOutput("fact:output", FactType.File, true)], ["output.file"], Act("CompleteStep")),
-                DeskStatus(row, "Write the draft for ITM-01JL2", "1.1", ("fact:output", "<file>"), DeskLines(new StatusInput("fact:item", "item.json", "5cd0e9a2"), 171_240, "desk"))),
+                DeskStatus(row, "Write the draft for ITM-01JL2", "1.1", ("fact:output", "<file>"), lineBreak: true, lines: DeskLines(new StatusInput("fact:item", "item.json", "sha256:b6c9cf9454914db27a93569f823751647192bdf84677126620b7f62b45e063fb"), 171_240, "desk"))),
             _devTriage.Facts(
                 Produced(_devTriage, "fact:item", "ITM-01JL2 Crash on launch", At(10, 12, 12, 0), "human:cli", Ref(item: "ITM-01JL2")),
                 Fake(_devTriage, "fact:output", FactStatus.Pending, "awaiting your file", pending: new FactPending(true, ["output.file"], Act("CompleteStep")))),
