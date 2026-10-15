@@ -19,6 +19,9 @@ internal static class CommandTable
         SyncInboxCommand.Entry,
         StopCheckCommand.Entry,
         OutboxRecordCommand.Entry,
+        InboxCommand.Entry,
+        InboxDismissCommand.Entry,
+        InboxDeferCommand.Entry,
         LanesRefreshCommand.Entry,
         LanesCommand.Entry,
     ];

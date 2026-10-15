@@ -1,4 +1,3 @@
-#pragma warning disable CA1822, IDE0052 // red stage: removed when the services take their ports
 using Aw.Meta.Core;
 using Aw.Meta.Core.Ids;
 using Aw.Meta.Features.Inbox;
@@ -12,11 +11,11 @@ public sealed class InboxTests
 {
     private readonly MetaWorld _world = new();
 
-    private ListInboxService List() => new();
+    private ListInboxService List() => new(_world.Config, _world.Messages, _world.Reader, _world.Clock);
 
-    private DismissInboxService Dismiss() => new();
+    private DismissInboxService Dismiss() => new(_world.Messages);
 
-    private DeferInboxService Defer() => new();
+    private DeferInboxService Defer() => new(_world.Messages, _world.Clock);
 
     private async Task Receive(params (string Id, string Name, string Body)[] messages)
     {

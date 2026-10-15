@@ -39,6 +39,29 @@ public sealed class StopCheckCommandTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task Dismissing_the_message_releases_a_blocked_stop_and_deferring_blocks_it_again_when_due()
+    {
+        await Ready();
+        await File.WriteAllTextAsync(Transcript, MetaWorld.PeerLine("m1", "sindri-api", "please rebase"), TestContext.Current.CancellationToken);
+        _ = await _cli.Run("inbox-sync", "--session", "s-meta", "--transcript", Transcript);
+        var listed = await _cli.Run("inbox");
+
+        var dismissed = await _cli.Run("inbox-dismiss", "m1", "--reason", "fyi");
+        var released = await Stop();
+        var deferred = await _cli.Run("inbox-defer", "m1", "--reason", "later", "--until", "+30m");
+        var snoozed = await Stop();
+        _cli.Clock.Advance(TimeSpan.FromMinutes(31));
+        var due = await Stop();
+        var all = await _cli.Run("inbox", "--all", "--json");
+
+        Assert.Contains("m1  sindri-api  Request  open  please rebase", listed.Out, StringComparison.Ordinal);
+        Assert.Equal(0, dismissed.Exit);
+        Assert.Equal((0, string.Empty), (released.Exit, released.Out));
+        Assert.Equal((0, 0, 1), (deferred.Exit, snoozed.Exit, due.Exit));
+        Assert.Contains("\"state\":\"open\"", all.Out.Replace(" ", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task The_loop_guard_limit_comes_from_AW_META_STOP_MAX_and_a_continuation_is_let_through_with_a_warning()
     {
         await Ready();

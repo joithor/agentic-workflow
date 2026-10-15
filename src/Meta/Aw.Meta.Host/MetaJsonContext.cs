@@ -2,6 +2,9 @@ using System.Text.Json.Serialization;
 using Aw.Kernel;
 using Aw.Meta.Core.Config;
 using Aw.Meta.Core.Messages;
+using Aw.Meta.Features.Inbox;
+using Aw.Meta.Features.InboxDefer;
+using Aw.Meta.Features.InboxDismiss;
 using Aw.Meta.Features.Lanes;
 using Aw.Meta.Features.OutboxRecord;
 using Aw.Meta.Features.Roles;
@@ -16,6 +19,9 @@ namespace Aw.Meta.Host;
 [JsonSerializable(typeof(TeamConfig))]
 [JsonSerializable(typeof(MetaRole))]
 [JsonSerializable(typeof(ShowRoleResponse))]
+[JsonSerializable(typeof(ListInboxResponse))]
+[JsonSerializable(typeof(DismissInboxResponse))]
+[JsonSerializable(typeof(DeferInboxResponse))]
 [JsonSerializable(typeof(LanesResponse))]
 [JsonSerializable(typeof(OutboxRecordResponse))]
 [JsonSerializable(typeof(StopCheckResponse))]
