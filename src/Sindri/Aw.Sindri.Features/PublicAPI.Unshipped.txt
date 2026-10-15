@@ -503,7 +503,6 @@ Aw.Sindri.Features.ListInstances.ListInstancesRequest.<Clone>$() -> Aw.Sindri.Fe
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Equals(Aw.Sindri.Features.ListInstances.ListInstancesRequest? other) -> bool
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Item.get -> Aw.Sindri.Core.Workflow.Engine.ItemKey?
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Item.init -> void
-Aw.Sindri.Features.ListInstances.ListInstancesRequest.NeedsMe.get -> bool
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.NeedsMe.init -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Query.get -> string?
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Query.init -> void
@@ -1272,13 +1271,14 @@ static Aw.Sindri.Features.ValidateRecipe.ValidateRecipeRequest.operator !=(Aw.Si
 static Aw.Sindri.Features.ValidateRecipe.ValidateRecipeRequest.operator ==(Aw.Sindri.Features.ValidateRecipe.ValidateRecipeRequest? left, Aw.Sindri.Features.ValidateRecipe.ValidateRecipeRequest? right) -> bool
 static Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse.operator !=(Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse? left, Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse? right) -> bool
 static Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse.operator ==(Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse? left, Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse? right) -> bool
-Aw.Sindri.Features.ListInstances.ListInstancesRequest.Deconstruct(out bool NeedsMe, out Aw.Sindri.Core.Workflow.Engine.ItemKey? Item, out string? State, out string? Query, out string? Address, out string? Recipe, out string? Urgency, out string? Subject, out bool? Root) -> void
-Aw.Sindri.Features.ListInstances.ListInstancesRequest.ListInstancesRequest(bool NeedsMe = false, Aw.Sindri.Core.Workflow.Engine.ItemKey? Item = null, string? State = null, string? Query = null, string? Address = null, string? Recipe = null, string? Urgency = null, string? Subject = null, bool? Root = null) -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Recipe.get -> string?
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Recipe.init -> void
-Aw.Sindri.Features.ListInstances.ListInstancesRequest.Root.get -> bool?
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Root.init -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Subject.get -> string?
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Subject.init -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Urgency.get -> string?
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Urgency.init -> void
+Aw.Sindri.Features.ListInstances.ListInstancesRequest.Deconstruct(out string? NeedsMe, out Aw.Sindri.Core.Workflow.Engine.ItemKey? Item, out string? State, out string? Query, out string? Address, out string? Recipe, out string? Urgency, out string? Subject, out string? Root) -> void
+Aw.Sindri.Features.ListInstances.ListInstancesRequest.ListInstancesRequest(string? NeedsMe = null, Aw.Sindri.Core.Workflow.Engine.ItemKey? Item = null, string? State = null, string? Query = null, string? Address = null, string? Recipe = null, string? Urgency = null, string? Subject = null, string? Root = null) -> void
+Aw.Sindri.Features.ListInstances.ListInstancesRequest.NeedsMe.get -> string?
+Aw.Sindri.Features.ListInstances.ListInstancesRequest.Root.get -> string?

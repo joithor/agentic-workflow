@@ -16,12 +16,12 @@ public interface IWorkflowInstances
     public ValueTask<Result<IReadOnlyList<InstanceRow>>> List(string? query, bool ended, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Lists the instances that match <paramref name="filter"/>, the typed filters of the Workflows list (UI rev 8), ordered
-    /// by urgency (incident, triage, work) and then oldest first (<see cref="InstanceFilters.Order"/>).
+    /// Lists the instances that match <paramref name="filter"/>, the typed filters of the Workflows list (UI rev 8), by
+    /// address; the list's order is <see cref="Runtime.InstanceOrder"/>, applied to the built views.
     /// </summary>
     /// <param name="filter">The filters, ANDed.</param>
     /// <param name="ended">Whether ended instances are listed as well.</param>
     /// <param name="cancellationToken">Cancels the query.</param>
-    /// <returns>The instances, in that order.</returns>
+    /// <returns>The instances, by address.</returns>
     public ValueTask<Result<IReadOnlyList<InstanceRow>>> List(InstanceFilter filter, bool ended, CancellationToken cancellationToken);
 }

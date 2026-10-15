@@ -1,3 +1,5 @@
+using Aw.Sindri.Core.Workflow.Engine.Instances;
+
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 
 /// <summary>
@@ -13,5 +15,29 @@ public sealed class InstanceOrder : IComparer<InstanceView>
     public static InstanceOrder Instance { get; } = new();
 
     /// <inheritdoc/>
-    public int Compare(InstanceView? x, InstanceView? y) => throw new NotSupportedException("red: the list order isn't built yet");
+    public int Compare(InstanceView? x, InstanceView? y)
+    {
+        if (ReferenceEquals(x, y))
+        {
+            return 0;
+        }
+
+        if (x is null || y is null)
+        {
+            return x is null ? 1 : -1;
+        }
+
+        var keys = (Finished(x), Interrupted(x), x.Urgency).CompareTo((Finished(y), Interrupted(y), y.Urgency));
+        if (keys != 0)
+        {
+            return keys;
+        }
+
+        var label = string.CompareOrdinal(x.Subject?.Label, y.Subject?.Label);
+        return label != 0 ? label : string.CompareOrdinal(x.Address.Value, y.Address.Value);
+    }
+
+    private static bool Finished(InstanceView view) => view.Outcome is not null;
+
+    private static bool Interrupted(InstanceView view) => view.Question is { Kind: SuspensionKind.Park or SuspensionKind.Escalation };
 }

@@ -49,7 +49,7 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             return views.Error;
         }
 
-        return Listed(request.NeedsMe, views.Value, byAddress: request.Query is { Length: > 0 });
+        return Listed(request.NeedsMe == "true", views.Value, byAddress: request.Query is { Length: > 0 });
     }
 
     /// <summary>Each row's 'GetInstance' view; one that ended between the list and its query is left out.</summary>
@@ -124,11 +124,11 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
     private static InstanceFilter Filter(ListInstancesRequest request) => new(
         request.Recipe,
         request.State,
-        request.NeedsMe ? true : null,
+        request.NeedsMe == "true" ? true : null,
         request.Urgency is { } urgency ? Urgencies.Parse(urgency) : null,
         request.Item?.Value,
         request.Subject,
-        request.Root);
+        request.Root == "true" ? true : request.Root == "false" ? false : null);
 
     /// <summary>The typed filters' query, ANDed with the caller's raw one.</summary>
     private static string Joined(string? typed, string query) => typed is null ? $"({query})" : $"{typed} AND ({query})";

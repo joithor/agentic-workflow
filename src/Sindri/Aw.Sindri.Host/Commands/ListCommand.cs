@@ -49,13 +49,13 @@ internal static class ListCommand
     {
         (string Name, string? Value)[] filters =
         [
-            ("needsMe", request.NeedsMe ? "true" : null),
+            ("needsMe", request.NeedsMe),
             ("item", request.Item?.Value),
             ("state", request.State),
             ("recipe", request.Recipe),
             ("urgency", request.Urgency),
             ("subject", request.Subject),
-            ("root", request.Root is { } root ? (root ? "true" : "false") : null),
+            ("root", request.Root),
             ("query", request.Query),
         ];
         var parts = filters.Where(static f => f.Value is not null).Select(static f => $"{f.Name}={Uri.EscapeDataString(f.Value!)}");   // why: Where kept only the non-null values
@@ -79,19 +79,19 @@ internal static class ListCommand
             i += used ? 1 : 0;
         }
 
-        return request.NeedsMe && (request.Item is not null || request.State is not null) ? null : request;
+        return request.NeedsMe is not null && (request.Item is not null || request.State is not null) ? null : request;
     }
 
     /// <summary>One flag applied: the request after it (null when it doesn't parse) and whether it took the next argument.</summary>
     private static (ListInstancesRequest? Request, bool UsedValue) Apply(ListInstancesRequest request, string flag, string? value) => flag switch
     {
-        "--needs-me" when !request.NeedsMe => (request with { NeedsMe = true }, false),
+        "--needs-me" when request.NeedsMe is null => (request with { NeedsMe = "true" }, false),
         "--item" when request.Item is null && value is not null && ItemKey.TryFrom(value, out var key) => (request with { Item = key }, true),
         "--state" when request.State is null && value is not null => (request with { State = value }, true),
         "--recipe" when request.Recipe is null && value is not null => (request with { Recipe = value }, true),
         "--urgency" when request.Urgency is null && value is not null && Urgencies.IsKnown(value) => (request with { Urgency = value }, true),
         "--subject" when request.Subject is null && value is not null => (request with { Subject = value }, true),
-        "--root" when request.Root is null && Boolean(value) is { } root => (request with { Root = root }, true),
+        "--root" when request.Root is null && Boolean(value) is not null => (request with { Root = value }, true),
         "--query" when request.Query is null && value is not null => (request with { Query = value }, true),
         _ => (null, false),
     };

@@ -12,9 +12,9 @@ internal static class ListInstancesEndpoint
 {
     internal static RouteGroupBuilder MapListInstances(this RouteGroupBuilder group)
     {
-        _ = group.MapGet("/workflow/instances", static async (string? address, string? item, string? state, bool? needsMe, string? recipe, string? urgency, string? subject, bool? root, string? query,
+        _ = group.MapGet("/workflow/instances", static async (string? address, string? item, string? state, string? needsMe, string? recipe, string? urgency, string? subject, string? root, string? query,
                 IService<ListInstancesRequest, ListInstancesResponse> service, CancellationToken ct)
-            => (await service.Handle(new ListInstancesRequest(needsMe ?? false, item is null ? null : ItemKey.From(item), state, query, address, recipe, urgency, subject, root), ct).ConfigureAwait(false)).ToHttpResult());
+            => (await service.Handle(new ListInstancesRequest(needsMe, item is null ? null : ItemKey.From(item), state, query, address, recipe, urgency, subject, root), ct).ConfigureAwait(false)).ToHttpResult());
         return group;
     }
 }

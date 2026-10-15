@@ -19,17 +19,9 @@ internal sealed class TemporalWorkflowInstances(TemporalFrontend frontend) : IWo
 
     private const string Open = Recipes + " AND ExecutionStatus = 'Running'";
 
-    public async ValueTask<Result<IReadOnlyList<InstanceRow>>> List(InstanceFilter filter, bool ended, CancellationToken cancellationToken)
-    {
-        // why: the query is built from quoted literals only (InstanceFilters.ToQuery), so it never fails as a query
-        var listed = await List(InstanceFilters.ToQuery(filter), ended, cancellationToken).ConfigureAwait(false);
-        if (listed.IsError)
-        {
-            return listed.Error;
-        }
-
-        return Results.Success(InstanceFilters.Order(listed.Value));
-    }
+    // why: the query is built from quoted literals only (InstanceFilters.ToQuery), so it never fails as a query
+    public ValueTask<Result<IReadOnlyList<InstanceRow>>> List(InstanceFilter filter, bool ended, CancellationToken cancellationToken) =>
+        List(InstanceFilters.ToQuery(filter), ended, cancellationToken);
 
     public async ValueTask<Result<IReadOnlyList<InstanceRow>>> List(string? query, bool ended, CancellationToken cancellationToken)
     {

@@ -20,30 +20,27 @@ public static class InstanceFilters
             parts.Add("NeedsYou = " + Bool(needsYou));
         }
 
-        Text(parts, "Urgency", filter.Urgency is { } urgency ? Urgencies.Word(urgency) : null);
+        if (filter.Urgency is { } urgency)
+        {
+            parts.Add(WithDefault("Urgency", $"Urgency = {Literal(Urgencies.Word(urgency))}", urgency == RecipeUrgency.Work));
+        }
+
         Text(parts, "Item", filter.Item);
         Text(parts, "Subject", filter.Subject);
         if (filter.Root is { } root)
         {
-            parts.Add("Root = " + Bool(root));
+            parts.Add(WithDefault("Root", "Root = " + Bool(root), root));
         }
 
         return parts.Count == 0 ? null : string.Join(" AND ", parts);
     }
 
-    /// <summary>The list's order: incidents, then triage, then work; within an urgency the oldest first, then by address.</summary>
-    /// <param name="rows">The rows.</param>
-    /// <returns>The rows, ordered.</returns>
-    public static IReadOnlyList<InstanceRow> Order(IEnumerable<InstanceRow> rows)
-    {
-        ArgumentNullException.ThrowIfNull(rows);
-        return [.. rows
-            .OrderBy(static r => Rank(r.Urgency))
-            .ThenBy(static r => r.StartedAt ?? DateTimeOffset.MaxValue)
-            .ThenBy(static r => r.Address, StringComparer.Ordinal)];
-    }
-
-    private static int Rank(RecipeUrgency urgency) => (int)urgency;
+    /// <summary>
+    /// A filter on an attribute the instance may never have set matches the instances without it when it asks for the
+    /// attribute's default: an instance started before the attribute existed reads as 'work' and as a root.
+    /// </summary>
+    private static string WithDefault(string attribute, string equals, bool isDefault) =>
+        isDefault ? $"({equals} OR {attribute} IS NULL)" : equals;
 
     private static string Bool(bool value) => value ? "true" : "false";
 
