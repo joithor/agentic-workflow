@@ -113,6 +113,7 @@ public sealed class CreateDialogLayoutTests : IDisposable
     public Task The_title_required_live_region_leaves_the_tree_once_a_title_is_typed() => OnUi(async () =>
     {
         var (window, shell) = await Opened();
+        Assert.True(Named<TextBlock>(window, "TitleLive").IsVisible);   // in the tree before any submit: its state arrives into a region that exists
         Create(window);
         Settle(window);
         Assert.Equal("Title is required", Named<TextBlock>(window, "TitleLive").Text);
