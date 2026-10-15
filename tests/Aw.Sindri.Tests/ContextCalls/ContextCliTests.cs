@@ -35,6 +35,42 @@ public sealed class ContextCliTests
         Assert.EndsWith(fix, shown.Message, StringComparison.Ordinal);
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("q")]
+    [InlineData("node")]
+    public void A_value_over_the_encoded_cap_is_006_before_anything_is_sent(string which)
+    {
+        var text = new string('\u6f22', 900);   // 900 characters, 8100 once percent-encoded
+        var args = which == "q" ? new[] { text } : ["x", "--node", text];
+
+        var parsed = ContextVerbs.QueryArguments.Parse(args);
+
+        Assert.Equal(ContextErrors.QueryInvalid.Code, parsed.Error.Code);
+        Assert.Contains(QueryRules.MaxEncodedText.ToString(System.Globalization.CultureInfo.InvariantCulture), parsed.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("percent-encoded", parsed.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("x", "--node", "feature:a")]
+    public void The_cli_spells_its_flags_in_the_shape_and_node_006s(string word, string flag, string value)
+    {
+        var shape = QueryFlagHints.Add(QueryRules.Check(new ContextQuery(word, Node: value), new()).Error);
+        var node = QueryFlagHints.Add(QueryRules.Check(new ContextQuery(Text: null, Node: new string('n', 2_001)), new()).Error);
+
+        Assert.Contains(flag, shape.Message, StringComparison.Ordinal);
+        Assert.Contains(flag, node.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_hint_matcher_follows_the_engines_own_rule_text()
+    {
+        var depth = QueryRules.ParseDepth("abc").Error;
+        var budget = QueryRules.ParseBudget("abc").Error;
+
+        Assert.StartsWith(QueryRules.DepthMessage, depth.Message, StringComparison.Ordinal);
+        Assert.StartsWith(QueryRules.BudgetMessage, budget.Message, StringComparison.Ordinal);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void Any_other_error_passes_through_the_cli_hints_unchanged()
     {

@@ -63,6 +63,42 @@ public sealed class GraphQueryTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Two_anchors_reaching_a_node_at_the_same_depth_show_the_path_with_the_fewest_owns_hops()
+    {
+        // Alpha comes first (anchors sort by key) and reaches feature:x through two owns hops; Beta reaches it through one.
+        _ = await _world.ImportYaml(MapWorld.Yaml(
+            "schemaVersion: 1",
+            "kind: authored",
+            "repo: aw-split-panes",
+            "nodes:",
+            "  - {key: \"feature:alpha\", label: \"Alpha\"}",
+            "  - {key: \"surface:screen/alpha\", label: \"Alpha screen\"}",
+            "  - {key: \"action:alpha1\", label: \"Alpha action\"}",
+            "  - {key: \"thing:t\", label: \"T\"}",
+            "  - {key: \"feature:beta\", label: \"Beta\"}",
+            "  - {key: \"surface:screen/beta\", label: \"Beta screen\"}",
+            "  - {key: \"thing:u\", label: \"U\"}",
+            "  - {key: \"feature:x\", label: \"Ex\"}",
+            "  - {key: \"surface:screen/x\", label: \"X screen\"}",
+            "  - {key: \"action:x1\", label: \"X action\"}",
+            "edges:",
+            "  - {from: \"surface:screen/alpha\", to: \"feature:alpha\", type: part-of}",
+            "  - {from: \"action:alpha1\", to: \"surface:screen/alpha\", type: on}",
+            "  - {from: \"action:alpha1\", to: \"thing:t\", type: writes}",
+            "  - {from: \"surface:screen/beta\", to: \"feature:beta\", type: part-of}",
+            "  - {from: \"surface:screen/beta\", to: \"thing:u\", type: writes}",
+            "  - {from: \"action:x1\", to: \"thing:t\", type: reads}",
+            "  - {from: \"action:x1\", to: \"thing:u\", type: reads}",
+            "  - {from: \"action:x1\", to: \"surface:screen/x\", type: on}",
+            "  - {from: \"surface:screen/x\", to: \"feature:x\", type: part-of}"));
+
+        var result = (await _world.Engine.Query(new ContextQuery("alpha beta"), MapWorld.Human, MapWorld.None)).Value;
+
+        var affects = Assert.Single(Section(result, "affects").Items, i => i.Node == "feature:x");
+        Assert.Equal(["feature:beta", "owns surface:screen/beta", "writes thing:u", "reads action:x1"], affects.Path, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Every_graph_item_says_where_it_came_from_and_cites_the_map_version()
     {
         _ = await _world.ImportFixture();

@@ -95,6 +95,25 @@ public sealed class CascadeTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_later_frontier_prefers_the_fewest_owns_hops_even_when_the_longer_path_sorts_first()
+    {
+        // z1 is reached with one owns hop, y1 with two; y1 sorts first by key. Both lead to x1 one step further.
+        var graph = new GraphBuilder()
+            .Edge("surface:screen/s", EdgeType.PartOf, "feature:a").Edge("action:s1", EdgeType.On, "surface:screen/s")
+            .Edge("surface:screen/s", EdgeType.Writes, "thing:t").Edge("action:z1", EdgeType.Reads, "thing:t")
+            .Edge("action:s1", EdgeType.Writes, "thing:u").Edge("action:y1", EdgeType.Reads, "thing:u")
+            .Edge("action:z1", EdgeType.Writes, "thing:v").Edge("action:y1", EdgeType.Writes, "thing:w")
+            .Edge("action:x1", EdgeType.Reads, "thing:v").Edge("action:x1", EdgeType.Reads, "thing:w")
+            .Build();
+
+        var result = Cascade.Affects(graph, NodeKey.From("feature:a"), depth: 2);
+
+        var x1 = Assert.Single(result.Affected, a => a.Node.Value == "action:x1");
+        Assert.Equal(2, x1.Depth);
+        Assert.Equal(["feature:a", "owns surface:screen/s", "writes thing:t", "reads action:z1", "writes thing:v", "reads action:x1"], x1.Path);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_sibling_is_not_affected_unless_a_step_reaches_it()
     {
         var graph = Features("a", "b").Edge("feature:a", EdgeType.PartOf, "feature:p").Edge("feature:b", EdgeType.PartOf, "feature:p")

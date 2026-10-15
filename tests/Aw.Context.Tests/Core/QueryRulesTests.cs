@@ -133,4 +133,32 @@ public sealed class QueryRulesTests
         Assert.Equal(5, QueryRules.Words(text, 5).Count);
         Assert.Equal(QueryRules.Words(text, QueryRules.MaxTerms), QueryRules.Terms(text));
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_shape_and_node_006_messages_name_no_cli_flag()
+    {
+        var shapes = QueryRules.Check(new ContextQuery("x", Node: "feature:a"), new()).Error.Message;
+        var node = QueryRules.Check(new ContextQuery(Text: null, Node: new string('n', 2_001)), new()).Error.Message;
+
+        Assert.DoesNotContain("--", shapes, StringComparison.Ordinal);
+        Assert.DoesNotContain("--", node, StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("split pane", true)]
+    [InlineData("", true)]
+    public void An_ascii_value_fits_the_query_url(string value, bool fits) =>
+        Assert.Equal(fits, QueryRules.FitsQueryUrl(value));
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_long_non_ascii_value_does_not_fit_the_query_url_though_it_fits_the_text_cap()
+    {
+        var text = new string('\u6f22', 900);
+
+        Assert.True(text.Length <= QueryRules.MaxTextLength);
+        Assert.False(QueryRules.FitsQueryUrl(text));
+        Assert.True(Uri.EscapeDataString(new string('a', QueryRules.MaxEncodedText)).Length == QueryRules.MaxEncodedText);
+        Assert.True(QueryRules.FitsQueryUrl(new string('a', QueryRules.MaxEncodedText)));
+        Assert.False(QueryRules.FitsQueryUrl(new string('a', QueryRules.MaxEncodedText + 1)));
+    }
 }

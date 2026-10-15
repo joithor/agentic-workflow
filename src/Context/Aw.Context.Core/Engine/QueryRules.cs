@@ -19,8 +19,23 @@ public static class QueryRules
     /// <summary>The deepest cascade a request may ask for (spec §8.3).</summary>
     public const int MaxDepth = 4;
 
-    private const string DepthRule = "depth must be a whole number from 0 to 4";
-    private const string BudgetRule = "budget must be a whole number of tokens, 1 or more";
+    /// <summary>The longest value, percent-encoded, a query URL carries: under Kestrel's 8 KB request line, with room for the rest of the URL. The CLI and probe files both refuse a longer one with a clear code.</summary>
+    public const int MaxEncodedText = 6_000;
+
+    /// <summary>What a bad depth's 006 starts with (a transport adds its own hint after it).</summary>
+    public const string DepthMessage = "depth must be a whole number from 0 to 4";
+
+    /// <summary>What a bad budget's 006 starts with (a transport adds its own hint after it).</summary>
+    public const string BudgetMessage = "budget must be a whole number of tokens, 1 or more";
+
+    /// <summary>Whether a value, percent-encoded, fits <see cref="MaxEncodedText"/>.</summary>
+    /// <param name="value">The question text or node name.</param>
+    /// <returns>True when a GET query string can carry it.</returns>
+    public static bool FitsQueryUrl(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        throw new NotSupportedException("review #212 run 5: FitsQueryUrl is not built yet");
+    }
 
     /// <summary>Checks <paramref name="query"/>.</summary>
     /// <param name="query">The question.</param>
@@ -43,7 +58,7 @@ public static class QueryRules
 
         if (query.Budget is <= 0 and var budget)
         {
-            return OutOfRange(BudgetRule, budget.ToString(CultureInfo.InvariantCulture));
+            return OutOfRange(BudgetMessage, budget.ToString(CultureInfo.InvariantCulture));
         }
 
         return Shaped(query, Math.Min(query.Budget ?? DefaultBudget, settings.MaxBudget));
@@ -52,18 +67,18 @@ public static class QueryRules
     /// <summary>A depth as a transport sent it: absent, or a whole number from 0 to <see cref="MaxDepth"/>.</summary>
     /// <param name="text">The text, or null.</param>
     /// <returns>The depth (null when absent); SND-CONTEXT-006 when it is not a whole number or is out of range. The message names no flag: a transport adds its own hint.</returns>
-    public static Result<int?> ParseDepth(string? text) => ParseWhole(text, DepthRule, 0, MaxDepth);
+    public static Result<int?> ParseDepth(string? text) => ParseWhole(text, DepthMessage, 0, MaxDepth);
 
     /// <summary>A token budget as a transport sent it: absent, or a whole number of 1 or more.</summary>
     /// <param name="text">The text, or null.</param>
     /// <returns>The budget (null when absent); SND-CONTEXT-006 when it is not a whole number or is out of range.</returns>
-    public static Result<int?> ParseBudget(string? text) => ParseWhole(text, BudgetRule, 1, int.MaxValue);
+    public static Result<int?> ParseBudget(string? text) => ParseWhole(text, BudgetMessage, 1, int.MaxValue);
 
     /// <summary>The 006 for a depth already a number, worded as <see cref="ParseDepth"/> words it.</summary>
     /// <param name="depth">The depth, or null.</param>
     /// <returns>Null when absent or 0 to <see cref="MaxDepth"/>, else the error.</returns>
     public static Error? CheckDepth(int? depth) =>
-        depth is { } value && value is < 0 or > MaxDepth ? OutOfRange(DepthRule, value.ToString(CultureInfo.InvariantCulture)) : null;
+        depth is { } value && value is < 0 or > MaxDepth ? OutOfRange(DepthMessage, value.ToString(CultureInfo.InvariantCulture)) : null;
 
     private static Result<int?> ParseWhole(string? text, string rule, int min, int max)
     {
