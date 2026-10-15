@@ -212,7 +212,7 @@ renders.
 the subject, shows "Cleared: <the timeline line that cleared it>" with **Close**, and disables any form while keeping
 its text, which can still be copied.
 
-Busy (`SND-API-009`) and read-your-writes timeouts (`SND-API-004`) after an accepted command keep the "done"
+Busy (`SND-API-009`) and read-your-writes timeouts (`SND-API-011`) after an accepted command keep the "done"
 confirmation and mark the view stale until the next event (API §2.4).
 
 ### 4.2 Home
@@ -242,9 +242,9 @@ row's text, so the row never offers to run it. Clicking the title, or `Enter`, o
 
 | Kind | Detail shows | Primary action | Others |
 |---|---|---|---|
-| `decision` | The question, the options with the recommended one marked, who filed it (a session or a human), the item, `recordedOnly` as "recorded; acted on once the workflow engine runs" | One button per option (`Decide`) | Open the item; an optional note field |
+| `decision` | The question, the options with the recommended one marked, who filed it (a session or a human), the item, `recordedOnly` as the served `notice` | One button per option (`Decide`) | Open the item; an optional note field |
 | `park` | The instance header (WF §6.4) and its rendered `next` sentence as it is; the input facts; the budget and loop lines; the answer form for the park reason (§4.4) | The reason's answer (§4.4) | Open in agent (§6), Take over, Cancel |
-| `failure` | The service, its last run (slot, outcome, code), and the code's fix | **Run again** (`RunService`, job) | Pause the service |
+| `failure` | The service, its last run (slot, outcome, code), and the code's fix | **Run again** (`RunService`, job, `pending:P6`) | Pause the service (`PauseService`); its CLI is the served `cli` |
 | `profile` | The changed key paths, approved and live hashes | Copy `sindri profile approve <hash>` (protected) | — |
 
 ### 4.4 The park and escalation states, each with its one useful answer
@@ -616,7 +616,7 @@ Linear's model: everything has a key, keys are shown where the action is, and `?
 | `O` | Open (or Attach / Resume) with the resolved target; `Shift+O` opens the target menu |
 | `A` | The row's primary action when it's a single `ready` button (Resume, Hand back, Run again). On a decision it applies the recommended option **only while the decision's sheet is open**. Never a protected action |
 | `Shift+A` | Mark all seen (§5) |
-| `X` / `Shift+X` | The row's reject-like action from the catalog's `shortcut` (E-8): `X` Reject or Decline, `Shift+X` Cancel the instance. Destructive rows confirm in-app |
+| `X` / `Shift+X` | The row's reject-like action: on a decision, the option whose `rejectLike` is true; elsewhere the catalog's `shortcut` (E-8): `X` Reject or Decline, `Shift+X` Cancel the instance. Destructive rows confirm in-app |
 | `T` | Take over; `B` hand back |
 | `Y` | Copy the selected row's CLI |
 | `C` / `R` | Create item / file a request |
