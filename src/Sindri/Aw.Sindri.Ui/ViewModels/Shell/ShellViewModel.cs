@@ -47,7 +47,8 @@ internal sealed partial class ShellViewModel : ObservableObject
         Health = new HealthViewModel(records, api, clock, clipboard);
         Health.PropertyChanged += OnHealthChanged;
         Health.Pill.PropertyChanged += OnPillChanged;
-        Palette = new CommandPaletteViewModel(Health.Catalog, GoTo, RememberRun);
+        CommandOutcome = new CommandOutcomeRegion(control => Health.Banner.HasRebuild && ReferenceEquals(Health.Banner.Rebuild, control));
+        Palette = new CommandPaletteViewModel(Health.Catalog, GoTo, RememberRun, CommandOutcome);
         Shortcuts = new ShortcutsViewModel(Health.Catalog);
     }
 

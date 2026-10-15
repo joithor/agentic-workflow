@@ -16,11 +16,15 @@ internal sealed partial class CommandPaletteViewModel
         public bool Copy { get; } = copy;
 
         public string? Said { get; set; }
+
+        // True once the palette closed on the run: the shell's region speaks the rest of it.
+        public bool Closed { get; set; }
     }
 
     // The palette speaks the lifecycle of the entries it runs through its own live region, so it mutes those entries' controls
     // for that run and no others (a run that did not start here is spoken by its control, whatever is open): the run is
-    // announced once. The mute ends when the run's outcome is announced here, or when the palette closes first.
+    // announced once. The mute ends when the run's outcome is announced. When the palette closes first, a run still sending is
+    // spoken on by the shell's command-outcome region, unless its control's own view is on show (then the control speaks it).
     private void Track(PaletteEntry entry, ControlViewModel control, bool copy)
     {
         Release(entry);
@@ -40,6 +44,23 @@ internal sealed partial class CommandPaletteViewModel
 
     private void ReleaseAll() => _ran.Keys.ToList().ForEach(Release);
 
+    // The palette closed. A copy is over with its "Copied". A send in flight stays muted and is spoken by the shell's region
+    // (it always is in the tree); with no region, or when the control's view is on show, its control speaks it.
+    private void HandBack()
+    {
+        foreach (var (entry, ran) in _ran.ToList())
+        {
+            if (Outcomes is { } region && !ran.Copy && entry.Control is { } control && !region.ViewSpeaks(control))
+            {
+                ran.Closed = true;
+            }
+            else
+            {
+                Release(entry);
+            }
+        }
+    }
+
     private async Task Copy(PaletteEntry entry, ControlViewModel control, CancellationToken cancellationToken)
     {
         Track(entry, control, copy: true);
@@ -56,13 +77,10 @@ internal sealed partial class CommandPaletteViewModel
 
     private async Task Send(PaletteEntry entry, ControlViewModel control, CancellationToken cancellationToken)
     {
+        Track(entry, control, copy: false);
         if (RunPolicy == PaletteRunPolicy.CloseFirst)
         {
             Close();
-        }
-        else
-        {
-            Track(entry, control, copy: false);
         }
 
         try
@@ -113,6 +131,12 @@ internal sealed partial class CommandPaletteViewModel
         }
 
         ran.Said = entry.Name;
+        if (ran.Closed)
+        {
+            Outcomes?.Say(entry.Name);
+            return;
+        }
+
         var text = entry == Selected ? Describe() : entry.Name;
         if (string.Equals(Announcement, text, StringComparison.Ordinal))
         {

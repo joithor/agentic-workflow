@@ -8,6 +8,9 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 /// </summary>
 internal sealed partial class ShellViewModel
 {
+    /// <summary>The polite live region for a command the palette started and closed on before its outcome (always in the tree).</summary>
+    public CommandOutcomeRegion CommandOutcome { get; }
+
     /// <summary>The Unreadable banner's live text: "Unreadable: " and the reason while unreadable, else its resting text.</summary>
     public string UnreadableAnnouncement { get; private set => Set(ref field, value); } = Labels.Sindri;
 

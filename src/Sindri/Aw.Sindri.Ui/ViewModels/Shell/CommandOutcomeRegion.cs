@@ -24,5 +24,19 @@ internal sealed class CommandOutcomeRegion(Func<ControlViewModel, bool> viewSpea
 
     /// <summary>Says a text.</summary>
     /// <param name="text">The text.</param>
-    internal void Say(string text) => throw new NotSupportedException();
+    internal void Say(string text)
+    {
+        if (IsLive && string.Equals(Text, text, StringComparison.Ordinal))
+        {
+            IsLive = false;   // the same text again is still a change: dark first, then the resting text
+        }
+
+        if (!IsLive)
+        {
+            Text = Labels.Sindri;
+            IsLive = true;
+        }
+
+        Text = text;
+    }
 }

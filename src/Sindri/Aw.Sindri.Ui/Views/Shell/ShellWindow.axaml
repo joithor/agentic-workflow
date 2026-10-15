@@ -268,6 +268,9 @@
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
     <TextBlock x:Name="ViewsRecoveredLive" Classes="live-region" Classes.live="{Binding Health.Banner.IsRecovered}" Text="{Binding Health.Banner.RecoveredAnnouncement}"
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <!-- A command the palette started and closed on before its outcome: no control has a view on show to say it, so this region does. -->
+    <TextBlock x:Name="CommandOutcomeLive" Classes="live-region" Classes.live="{Binding CommandOutcome.IsLive}" Text="{Binding CommandOutcome.Text}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
     <!-- The palette and the ? sheet (§8): layers over everything, shown by their view models; Esc closes the topmost. -->
     <Panel x:Name="PaletteLayer" IsVisible="{Binding Palette.IsOpen}">
       <root:CommandPalette x:Name="CommandPalette" DataContext="{Binding Palette}" />

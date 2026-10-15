@@ -113,7 +113,7 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
     internal void Close()
     {
         IsOpen = false;
-        ReleaseAll();   // a run still sending is then spoken by its own control
+        HandBack();   // a run still sending is then spoken by the shell's region, or by its own control when its view is on show
         Query = string.Empty;
     }
 
