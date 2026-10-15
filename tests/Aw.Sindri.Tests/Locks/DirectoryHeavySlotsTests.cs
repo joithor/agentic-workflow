@@ -380,7 +380,7 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
         Directory.CreateDirectory(Lock);
         await File.WriteAllTextAsync(Path.Combine(Lock, "owner"), $"{Pid} {Now} other\n", TestContext.Current.CancellationToken);
         var told = new SyncProgress();
-        var clock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider();
+        var clock = new FakeTimeProvider();
         var slots = new DirectoryHeavySlots(new HeavyLockSettings(Lock, 1, Held: false), clock);
 
         var waiting = slots.Take("x", TimeSpan.FromSeconds(3), told, TestContext.Current.CancellationToken).AsTask();

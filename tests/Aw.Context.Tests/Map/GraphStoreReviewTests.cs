@@ -1,4 +1,5 @@
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
 using Aw.Context.Infrastructure.Graph;
 using Aw.Context.Infrastructure.Store;
@@ -97,7 +98,7 @@ public sealed class GraphStoreReviewTests : IDisposable
 
         Assert.Equal("SND-CONTEXT-046", stale.Error.Code);
         Assert.Equal(0L, await Count("SELECT count(*) FROM map_version WHERE status = 'building'"));
-        Assert.Equal(newer.Number, Assert.Single((await store.Versions(Ct)).Value, v => v.Status == Aw.Context.Core.Map.MapVersionStatus.Draft).Number);
+        Assert.Equal(newer.Number, Assert.Single((await store.Versions(Ct)).Value, v => v.Status == MapVersionStatus.Draft).Number);
         Assert.Equal(0L, await Count("SELECT count(*) FROM node WHERE map_version NOT IN (SELECT id FROM map_version)"));
     }
 
