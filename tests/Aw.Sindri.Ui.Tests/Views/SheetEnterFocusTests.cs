@@ -152,6 +152,23 @@ public sealed class SheetEnterFocusTests : IDisposable
     });
 
     [Fact]
+    public Task The_page_reserve_follows_the_sheets_clamped_width_while_it_is_dragged() => OnUi(async () =>
+    {
+        var (window, _) = await OpenSheet(width: 1400);
+        var sheet = window.Get<Border>("Sheet");
+        var grip = window.Get<Thumb>("SheetGrip");
+
+        grip.RaiseEvent(new VectorEventArgs { RoutedEvent = Thumb.DragDeltaEvent, Vector = new Vector(-900, 0) });   // far past the widest
+        Settle(window);
+        var wide = window.Get<Border>("Page").Margin.Right;
+        grip.RaiseEvent(new VectorEventArgs { RoutedEvent = Thumb.DragDeltaEvent, Vector = new Vector(2000, 0) });   // far below the narrowest
+        Settle(window);
+        var narrow = window.Get<Border>("Page").Margin.Right;
+
+        Assert.Equal((sheet.MaxWidth, sheet.MinWidth), (wide, narrow));
+    });
+
+    [Fact]
     public Task The_focused_rows_ring_is_not_drawn_over_the_open_sheet() => OnUi(async () =>
     {
         var (window, _) = await OpenSheet(width: 1400);
