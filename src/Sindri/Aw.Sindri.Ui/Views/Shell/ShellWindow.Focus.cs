@@ -56,7 +56,7 @@ internal sealed partial class ShellWindow
     // The "N new" pill hides when what it held is shown, also when the pointer leaves: focus on it moves on.
     private void OnQueueChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (string.Equals(e.PropertyName, nameof(ViewModels.Queue.QueueViewModel.HasHeld), StringComparison.Ordinal) && Shell?.Queue.HasHeld == false)
+        if (string.Equals(e.PropertyName, nameof(QueueViewModel.HasHeld), StringComparison.Ordinal) && Shell?.Queue.HasHeld == false)
         {
             Dispatcher.UIThread.Post(KeepFocus, DispatcherPriority.Loaded);
         }
