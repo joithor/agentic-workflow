@@ -7,8 +7,9 @@
 #   AW_NO_CLAUDE_BYPASS=1              skip (opt out)
 #   AW_DRY_RUN=1                       print, write nothing
 #
-# A fresh install gets the key from config/settings.json; an existing settings.json (which setup.sh otherwise never
-# overwrites) gets only this key. A file jq can't parse is left alone with a warning.
+# setup.sh calls it after the provider install, so a fresh settings.json (copied from config/settings.json, which
+# doesn't carry the key) and an existing one both get only this key. A file jq can't parse is left alone with a
+# warning.
 aw_claude_bypass() {
   local settings="$1" tmp
   [ "${AW_NO_CLAUDE_BYPASS:-0}" = 1 ] && { echo "  permission mode: skipped (AW_NO_CLAUDE_BYPASS=1)"; return 0; }

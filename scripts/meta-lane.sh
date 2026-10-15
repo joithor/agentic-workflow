@@ -28,6 +28,10 @@ meta_bin="${AW_META_BIN:-$state_dir/bin/aw-meta}"
 ids="$state_dir/meta/lane-sessions"
 mkdir -p "$ids"
 cd "$repo" || exit 1
+# <lane>.exited marks a pane whose claude has exited and which fell back to its shell; meta-launch.sh restarts only
+# those. (tmux names a pane after this script, not claude, so the pane's command can't tell.)
+exited="$ids/$lane.exited"
+rm -f "$exited"
 
 has_transcript() { compgen -G "$HOME/.claude/projects/*/$1.jsonl" > /dev/null; }
 id=""
@@ -57,4 +61,6 @@ elif [ -n "$prompts" ] && [ -f "$prompts/$lane.md" ]; then
 else
   "$claude_cmd" ${claude_args[@]+"${claude_args[@]}"} --session-id "$id" -n "$name"
 fi
-[ "${AW_META_NO_SHELL:-0}" = 1 ] || exec bash -i
+[ "${AW_META_NO_SHELL:-0}" = 1 ] && exit 0
+: > "$exited"
+exec bash -i

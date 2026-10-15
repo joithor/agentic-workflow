@@ -39,6 +39,7 @@ EOF2
 chmod +x "$WORK/claude-env"
 CLAUDECODE=1 CLAUDE_CODE_SESSION_ID=parent CLAUDE_CODE_MESSAGING_SOCKET=/s CLAUDE_CODE_USE_BEDROCK=1 \
   AW_META_CLAUDE="$WORK/claude-env" bash "$DIR/meta-lane.sh" demo envcheck
+check "claude exited, no shell (tests): no exited marker" "$(test -e "$AW_STATE_DIR/meta/lane-sessions/envcheck.exited" && echo yes)" ""
 check "launched from a Claude session: its identity cleared, settings kept" "$(cat "$CALLS.env")" "CLAUDE_CODE_USE_BEDROCK=1"
 bash "$DIR/meta-lane.sh" demo api
 id="$(cat "$AW_STATE_DIR/meta/lane-sessions/api")"
@@ -69,7 +70,8 @@ check "launch: one attach per lane" "$(grep -c 'exec: tmux new -A -s demo-' "$ya
 check "launch: a pane that creates its session runs the lane, not a shell" "$(grep -c "exec: tmux new -A -s demo-api -c $WORK/repo -e AW_META_CONFIG=$cfg '$DIR/meta-lane.sh demo api'" "$yaml")" "1"
 check "launch: absolute cwd everywhere" "$(grep -c "cwd: $WORK/repo" "$yaml")" "3"
 check "launch: meta pane first" "$(grep -m1 -o 'demo-[a-z]*' "$yaml")" "demo-meta"
-tmux new-session -d -s demo-api "sleep 60" 2> /dev/null   # stands in for a live lane on the rerun
+# A live lane: a script running a child, as meta-lane.sh runs claude (tmux reports the pane's command as bash).
+tmux new-session -d -s demo-api "bash -c 'sleep 60; true'" 2> /dev/null
 OUT="$(bash "$DIR/meta-launch.sh" --no-open --lanes api)"
 check "rerun: live session kept" "$OUT" "$(printf 'tmux demo-api: running\nwarp: %s' "$yaml")"
 check "rerun with --lanes: the layout still has every lane" "$(grep -c 'exec: tmux new -A -s demo-' "$yaml")" "3"
@@ -78,6 +80,7 @@ OUT="$(PATH="$WORK/path:$PATH" bash "$DIR/meta-launch.sh" --lanes api)"
 for _ in $(seq 50); do [ -s "$WORK/opened" ] && break; sleep 0.1; done   # xdg-open runs in the background
 check "open: by the config's name, URI-encoded" "$(tail -1 <<< "$OUT"):$(cat "$WORK/opened" 2> /dev/null)" "warp: opening warp://launch/demo%20team:warp://launch/demo%20team"
 tmux kill-session -t demo-api; tmux new-session -d -s demo-api bash   # claude exited; the pane is back at its shell
+: > "$AW_STATE_DIR/meta/lane-sessions/api.exited"                       # as meta-lane.sh leaves it
 OUT="$(bash "$DIR/meta-launch.sh" --no-open --lanes api)"
 check "rerun: a lane whose claude exited is restarted in place" "$(head -1 <<< "$OUT")" "tmux demo-api: restarted (claude had exited)"
 tmux kill-server 2> /dev/null

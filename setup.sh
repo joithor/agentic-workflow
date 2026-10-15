@@ -283,15 +283,6 @@ fi
 echo ""
 bash "$SCRIPT_DIR/scripts/install-deps.sh" || { echo "FATAL: external tools missing (see above). Fix, then re-run setup.sh."; exit 1; }
 
-# --- Meta harness (opt-in: ./setup.sh --with-meta; owner decision 2026-10-14). After install-deps: its NativeAOT
-# publish needs the clang and zlib that install-deps checks for ---
-if [ "$WITH_META" = "1" ]; then
-  if aw_dry; then
-    echo "  [dry-run] would run scripts/install-meta.sh"
-  else
-    bash "$SCRIPT_DIR/scripts/install-meta.sh" --provider claude
-  fi
-fi
 
 # --- Skill packages (TypeScript helpers run by SKILL.md) ---
 echo ""
@@ -644,6 +635,19 @@ if [[ " $PROVIDERS " == *" claude "* ]]; then
   # shellcheck source=config/lib/claude-bypass.sh
   source "$SCRIPT_DIR/config/lib/claude-bypass.sh"
   aw_claude_bypass "$CLAUDE_DIR/settings.json"
+fi
+
+# --- Meta harness (opt-in: ./setup.sh --with-meta; owner decision 2026-10-14; Claude Code only). After install-deps
+# (its NativeAOT publish needs clang and zlib) and after the provider install (its hooks merge into the settings.json
+# that install copies from the template) ---
+if [ "$WITH_META" = "1" ]; then
+  if [[ " $PROVIDERS " != *" claude "* ]]; then
+    echo "  meta: skipped (Claude Code only; claude is not among the providers)"
+  elif aw_dry; then
+    echo "  [dry-run] would run scripts/install-meta.sh"
+  else
+    bash "$SCRIPT_DIR/scripts/install-meta.sh" --provider claude
+  fi
 fi
 
 # --- Provider registry (read by the skill preamble) ---

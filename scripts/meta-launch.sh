@@ -21,7 +21,8 @@ while [ $# -gt 0 ]; do
 done
 command -v jq > /dev/null || { echo "meta-launch: jq is not installed" >&2; exit 1; }
 command -v tmux > /dev/null || { echo "meta-launch: tmux is not installed" >&2; exit 1; }
-config="${AW_META_CONFIG:-${AW_STATE_DIR:-$HOME/.agentic-workflow}/meta/team.json}"
+state_dir="${AW_STATE_DIR:-$HOME/.agentic-workflow}"
+config="${AW_META_CONFIG:-$state_dir/meta/team.json}"
 [ -f "$config" ] || { echo "meta-launch: no team config at $config (run: aw-meta team-init --team <t> --repo <dir> --lanes a,b)" >&2; exit 1; }
 team="$(jq -r '.team // empty' "$config")"
 repo="$(jq -r '.repo // empty' "$config")"
@@ -42,16 +43,14 @@ yaml="$dir/$team-team.yaml"
 for l in "${L[@]}"; do
   s="$team-$l"
   if tmux has-session -t "=$s" 2> /dev/null; then
-    # Claude exited or crashed and the pane fell back to its shell: start the lane again in place (resumed by id).
-    case "$(tmux display-message -p -t "=$s:" '#{pane_current_command}' 2> /dev/null)" in
-      bash|zsh|sh|fish|dash)
-        if [ "$dry" = 1 ]; then echo "[dry-run] tmux respawn-pane -k -t $s $here/meta-lane.sh $team $l"
-        else
-          tmux respawn-pane -k -t "=$s:" -c "$repo" -e "AW_META_CONFIG=$config" "$here/meta-lane.sh $team $l"
-          echo "tmux $s: restarted (claude had exited)"
-        fi ;;
-      *) echo "tmux $s: running" ;;
-    esac
+    # Claude exited or crashed and the pane fell back to its shell (meta-lane.sh left <lane>.exited): start the lane
+    # again in place, resumed by id. A pane still running claude is never touched.
+    if [ ! -f "$state_dir/meta/lane-sessions/$l.exited" ]; then echo "tmux $s: running"
+    elif [ "$dry" = 1 ]; then echo "[dry-run] tmux respawn-pane -k -t $s $here/meta-lane.sh $team $l"
+    else
+      tmux respawn-pane -k -t "=$s:" -c "$repo" -e "AW_META_CONFIG=$config" "$here/meta-lane.sh $team $l"
+      echo "tmux $s: restarted (claude had exited)"
+    fi
   elif [ "$dry" = 1 ]; then echo "[dry-run] tmux new-session -d -s $s -c $repo $here/meta-lane.sh $team $l"
   else
     tmux new-session -d -s "$s" -c "$repo" -e "AW_META_CONFIG=$config" "$here/meta-lane.sh $team $l"
