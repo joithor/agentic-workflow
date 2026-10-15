@@ -24,7 +24,7 @@ public sealed class ApiGoldenTests
     public async Task Api_answer_matches_its_golden_file(string slug, string scenario)
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var host = await GoldenHost.Start(temporary: !ApiScenarios.NeedsNonTemporaryHome(slug, scenario), ct, ApiScenarios.ProfileYaml(slug, scenario));
+        await using var host = await ApiScenarios.Start(slug, scenario, ct);
 
         var body = await ApiScenarios.Body(host, slug, scenario, ct);
 

@@ -1,0 +1,38 @@
+{
+  "entries": [
+    {
+      "id": "ovr_291d0b35e26230e5",
+      "action": "rename",
+      "target": "feature:tabs.pinned-tabs",
+      "link": null,
+      "label": "Pinned tabs",
+      "who": "avery",
+      "at": "2026-07-30T09:10:00.0000000Z",
+      "undone": false,
+      "undoes": null
+    },
+    {
+      "id": "ovr_2d6d0c384f14ce44",
+      "action": "undo",
+      "target": "code:src/tabs/TabGroups.ts",
+      "link": null,
+      "label": null,
+      "who": "golden",
+      "at": "2026-01-01T00:02:00.0000000Z",
+      "undone": false,
+      "undoes": "ovr_75ee2331dc10ca70"
+    },
+    {
+      "id": "ovr_75ee2331dc10ca70",
+      "action": "accept",
+      "target": "code:src/tabs/TabGroups.ts",
+      "link": "edge:402b8bed42f6611c",
+      "label": null,
+      "who": "golden",
+      "at": "2026-01-01T00:01:00.0000000Z",
+      "undone": true,
+      "undoes": null
+    }
+  ],
+  "truncated": false
+}

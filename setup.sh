@@ -28,22 +28,19 @@ usage() {
   sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'
 }
 
-# Check for jq (required by the installer and the statusline at runtime)
+# System packages are installed when missing (config/lib/sys-pkg.sh: Homebrew on macOS, sudo + the distro's package
+# manager on Linux). AW_NO_SYSTEM_INSTALL=1 prints the commands instead; --dry-run runs nothing.
+# shellcheck source=config/lib/sys-pkg.sh
+source "$SCRIPT_DIR/config/lib/sys-pkg.sh"
+case " $* " in *" --dry-run "*) _aw_pre_dry=1 ;; *) _aw_pre_dry=0 ;; esac
+AW_DRY_RUN="$_aw_pre_dry" aw_ensure_brew || { echo "FATAL: Homebrew is required on macOS (https://brew.sh)."; exit 1; }
+
+# jq: required by the installer (settings/MCP config merges) and by the statusline
 if ! command -v jq &>/dev/null; then
-  echo ""
-  echo "╔══════════════════════════════════════════════════════════════╗"
-  echo "║                  MISSING REQUIRED DEPENDENCY                ║"
-  echo "║                                                              ║"
-  echo "║  jq is required by Agentic Workflow installer  ║"
-  echo "║  (settings/MCP config merges) and by the statusline.        ║"
-  echo "║                                                              ║"
-  echo "║  Install jq, then re-run setup:                             ║"
-  echo "║    brew install jq        (macOS)                           ║"
-  echo "║    apt-get install jq     (Debian/Ubuntu)                   ║"
-  echo "║    dnf install jq         (Fedora/RHEL)                     ║"
-  echo "╚══════════════════════════════════════════════════════════════╝"
-  echo ""
-  exit 1
+  echo "Installing jq (required by the installer and the statusline)..."
+  AW_DRY_RUN="$_aw_pre_dry" aw_sys_install jq || { echo "FATAL: jq could not be installed (see above)."; exit 1; }
+  if [ "$_aw_pre_dry" = "0" ] && ! command -v jq &>/dev/null; then echo "FATAL: jq is still missing after the install."; exit 1; fi
+  if [ "$_aw_pre_dry" = "1" ] && ! command -v jq &>/dev/null; then echo "  (dry run: jq is needed to go further)"; exit 0; fi
 fi
 
 # --- --profile <name> [--target <dir>] [--dry-run] ---
@@ -200,23 +197,20 @@ if [ "$MODE" = "agents" ]; then
   exit 0
 fi
 
-# Check for native build tools (required by better-sqlite3 when no prebuilt binary exists)
-if ! aw_dry && { ! command -v make &>/dev/null || ! command -v g++ &>/dev/null; }; then
-  echo ""
-  echo "╔══════════════════════════════════════════════════════════════╗"
-  echo "║                  MISSING BUILD TOOLS                        ║"
-  echo "║                                                              ║"
-  echo "║  make and g++ are required to compile native Node addons    ║"
-  echo "║  (better-sqlite3). Prebuilt binaries may not                ║"
-  echo "║  be available for your Node version.                        ║"
-  echo "║                                                              ║"
-  echo "║  Install build tools, then re-run setup:                    ║"
-  echo "║    xcode-select --install          (macOS)                  ║"
-  echo "║    sudo apt-get install build-essential  (Debian/Ubuntu)    ║"
-  echo "║    sudo dnf groupinstall 'Development Tools'  (Fedora)     ║"
-  echo "╚══════════════════════════════════════════════════════════════╝"
-  echo ""
-  exit 1
+# Native build tools (required by better-sqlite3 when no prebuilt binary exists). On macOS Homebrew brought the
+# Command Line Tools; on Linux build-essential (or the distro's equivalent) is installed.
+if ! command -v make &>/dev/null || ! command -v g++ &>/dev/null; then
+  if [ "$(uname)" = "Darwin" ]; then
+    if aw_dry; then echo "  [dry-run] would run: xcode-select --install"; else
+      echo "FATAL: make/g++ are missing: the Xcode Command Line Tools are not installed. Run: xcode-select --install"; exit 1
+    fi
+  else
+    echo "Installing build tools (make, g++) for native Node addons..."
+    aw_sys_install build-tools || { echo "FATAL: build tools could not be installed (see above)."; exit 1; }
+    if ! aw_dry && { ! command -v make &>/dev/null || ! command -v g++ &>/dev/null; }; then
+      echo "FATAL: make/g++ still missing after the install."; exit 1
+    fi
+  fi
 fi
 
 # Canonical list of skills managed by this toolkit.
@@ -278,8 +272,8 @@ if [ "$WITH_SINDRI" = "1" ]; then
   fi
 fi
 
-# --- External tools: uv, graphify (pinned), Temporal binaries, system-package checks ---
-# User-level installs happen here; a missing system package (needs root) prints its sudo command and stops setup.
+# --- External tools: uv, graphify (pinned), Temporal binaries, system packages ---
+# User-level installs happen here; missing system packages are installed through config/lib/sys-pkg.sh (sudo on Linux).
 echo ""
 bash "$SCRIPT_DIR/scripts/install-deps.sh" || { echo "FATAL: external tools missing (see above). Fix, then re-run setup.sh."; exit 1; }
 
@@ -293,10 +287,32 @@ aw_build_skill_packages "$SCRIPT_DIR"
 echo ""
 echo "=== Serena prerequisites ==="
 if ! command -v docker &>/dev/null; then
-  if aw_dry; then
-    echo "  WARN: Docker not installed (a real run would stop here)"
+  echo "Installing Docker (Serena runs in a container)..."
+  aw_sys_install docker || { echo "FATAL: Docker could not be installed (see above)."; exit 1; }
+  if ! aw_dry; then
+    # Homebrew links the CLI from the app bundle; make sure this shell sees it
+    [ -x /Applications/Docker.app/Contents/Resources/bin/docker ] && export PATH="$PATH:/Applications/Docker.app/Contents/Resources/bin"
+    command -v docker &>/dev/null || { echo "FATAL: docker is still missing after the install."; exit 1; }
+  fi
+fi
+# The daemon must be up: start it when it isn't (Docker Desktop on macOS, the systemd service on Linux).
+if ! aw_dry && command -v docker &>/dev/null && ! docker info &>/dev/null; then
+  if [ "$(uname)" = "Darwin" ]; then
+    echo "Starting Docker Desktop (the first start asks you to accept its terms)..."
+    open -a Docker 2>/dev/null || open -a "Docker Desktop" 2>/dev/null || true
   else
-    echo "FATAL: Docker not installed. Install Docker Desktop and re-run setup.sh."; exit 1
+    echo "Starting the Docker service and adding $USER to the docker group..."
+    aw_sys_root systemctl enable --now docker || true
+    id -nG "$USER" 2>/dev/null | tr ' ' '\n' | grep -qx docker || aw_sys_root usermod -aG docker "$USER" || true
+  fi
+  for _i in $(seq 1 60); do docker info &>/dev/null && break; sleep 2; done
+  if ! docker info &>/dev/null; then
+    if [ "$(uname)" != "Darwin" ] && aw_sys_root docker info &>/dev/null; then
+      echo "FATAL: Docker is running, but this shell is not in the docker group yet. Log out and back in (or run: newgrp docker), then re-run setup.sh."
+    else
+      echo "FATAL: the Docker daemon did not come up within 2 minutes. Start Docker, then re-run setup.sh."
+    fi
+    exit 1
   fi
 fi
 
@@ -339,8 +355,11 @@ else
   if [ "$_build_csharp" = "1" ]; then
     if ! docker image inspect "serena-local:${SERENA_VERSION}-csharp" &>/dev/null; then
       echo "Building serena-local:${SERENA_VERSION}-csharp (~15 min — .NET SDK download)..."
+      # No --pull here: this image's FROM is the local serena-local:${SERENA_VERSION}
+      # (not a registry image), so --pull would force Docker to resolve it against
+      # docker.io and fail with "pull access denied". The base build above uses --pull
+      # because its FROM is the remote ghcr.io/oraios/serena. (Matches the Swift build.)
       docker build \
-        --pull \
         --progress plain \
         --build-arg LOCAL_TAG="${SERENA_VERSION}" \
         -t "serena-local:${SERENA_VERSION}-csharp" \
@@ -369,15 +388,9 @@ else
   if [ "$_build_swift" = "1" ]; then
     # Ensure socat is available on the host — required for the host-side LSP bridge process
     if ! command -v socat &>/dev/null; then
-      if command -v brew &>/dev/null; then
-        echo "Installing socat (required for Swift LSP bridge)..."
-        brew install socat
-      else
-        echo "WARN: 'socat' not found and Homebrew is not available."
-        echo "      Install socat manually, then re-run setup.sh:"
-        echo "        brew install socat   (macOS with Homebrew)"
-        echo "        apt-get install socat (Debian/Ubuntu)"
-        echo "      Skipping Swift image build."
+      echo "Installing socat (required for Swift LSP bridge)..."
+      if ! aw_sys_install socat; then
+        echo "WARN: socat could not be installed (see above); skipping Swift image build."
         _build_swift=0
       fi
     fi
@@ -528,7 +541,7 @@ elif aw_dry; then
   echo "  [dry-run] would install rtk (brew on macOS, install.sh elsewhere)"
 else
   if [ "$(uname)" = "Darwin" ]; then
-    brew install rtk || { echo "FATAL: rtk installation failed. Install Homebrew and re-run."; exit 1; }
+    { aw_ensure_brew && brew install rtk; } || { echo "FATAL: rtk installation failed."; exit 1; }
   else
     curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh \
       || { echo "FATAL: rtk installation failed."; exit 1; }
@@ -546,17 +559,25 @@ echo "=== Installing headroom ==="
 
 # headroom-ai requires Python >= 3.10; pick the newest one on PATH, including
 # unversioned `python3` (e.g. a Homebrew or pyenv 3.14 install).
-HEADROOM_PYTHON=""
-_best_minor=-1
-for _py in python3.14 python3.13 python3.12 python3.11 python3.10 python3 python; do
-  command -v "$_py" &>/dev/null || continue
-  _minor=$("$_py" -c "import sys; print(sys.version_info.minor if sys.version_info.major == 3 else -1)" 2>/dev/null)
-  case "$_minor" in ''|*[!0-9-]*) continue ;; esac
-  if [ "$_minor" -ge 10 ] && [ "$_minor" -gt "$_best_minor" ]; then
-    HEADROOM_PYTHON="$_py"
-    _best_minor="$_minor"
-  fi
-done
+_aw_find_python() {
+  HEADROOM_PYTHON=""
+  local _best_minor=-1 _py _minor
+  for _py in python3.14 python3.13 python3.12 python3.11 python3.10 python3 python; do
+    command -v "$_py" &>/dev/null || continue
+    _minor=$("$_py" -c "import sys; print(sys.version_info.minor if sys.version_info.major == 3 else -1)" 2>/dev/null)
+    case "$_minor" in ''|*[!0-9-]*) continue ;; esac
+    if [ "$_minor" -ge 10 ] && [ "$_minor" -gt "$_best_minor" ]; then
+      HEADROOM_PYTHON="$_py"
+      _best_minor="$_minor"
+    fi
+  done
+}
+_aw_find_python
+if [ -z "$HEADROOM_PYTHON" ] && ! command -v headroom &>/dev/null; then
+  echo "Installing Python 3.10+ (required for headroom-ai)..."
+  aw_sys_install python3 pip || { echo "FATAL: Python could not be installed (see above)."; exit 1; }
+  _aw_find_python
+fi
 
 HEADROOM_CMD=""
 if command -v headroom &>/dev/null; then
@@ -566,8 +587,8 @@ elif [ -z "$HEADROOM_PYTHON" ]; then
   if aw_dry; then
     echo "  WARN: Python 3.10+ not found (a real run would stop here); headroom MCP skipped"
   else
-    echo "FATAL: Python 3.10+ is required for headroom-ai."
-    echo "  Install via: sudo apt-get install python3 (Debian/Ubuntu) or brew install python@3.13 (macOS)"
+    echo "FATAL: Python 3.10+ is required for headroom-ai, and the one the package manager installed is older."
+    echo "  Install Python 3.10 or newer, then re-run setup.sh."
     exit 1
   fi
 else
@@ -581,12 +602,8 @@ else
     # On Debian/Ubuntu, pip may not be bundled — try ensurepip bootstrap first
     if ! "$HEADROOM_PYTHON" -m pip --version &>/dev/null; then
       "$HEADROOM_PYTHON" -m ensurepip --user 2>/dev/null \
-        || { echo "FATAL: pip is not installed for $HEADROOM_PYTHON and ensurepip is unavailable."
-             echo "  Install pip, then re-run setup:"
-             echo "    sudo apt-get install python3-pip          (Debian/Ubuntu)"
-             echo "    sudo dnf install python3-pip              (Fedora/RHEL)"
-             echo "    brew install python@3.13                  (macOS)"
-             exit 1; }
+        || { echo "Installing pip for $HEADROOM_PYTHON..."; aw_sys_install pip && "$HEADROOM_PYTHON" -m pip --version &>/dev/null; } \
+        || { echo "FATAL: pip is not installed for $HEADROOM_PYTHON and could not be installed (see above)."; exit 1; }
     fi
     "$HEADROOM_PYTHON" -m pip install --break-system-packages --user "headroom-ai[all]" 2>/dev/null \
       || "$HEADROOM_PYTHON" -m pip install --user "headroom-ai[all]" \

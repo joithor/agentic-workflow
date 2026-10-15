@@ -10,13 +10,14 @@
 #                  ${AW_STATE_DIR:-~/.agentic-workflow}/cache/bin/<name>-<pin>/, where sindri serve and the tests look;
 #                  `temporal --version` is run afterwards and a failed fetch or a binary that won't run fails the script
 #   bwrap is also probed with a no-op sandbox (`bwrap --ro-bind / / true`); when that fails because AppArmor restricts
-#   user namespaces (Ubuntu 24.04), the exact /etc/apparmor.d/bwrap profile and `sudo apparmor_parser -r` are printed and the run exits 1.
-#   system packages, checked only (installing needs root, so the exact command is printed and this exits 1):
+#   user namespaces (Ubuntu 24.04), the /etc/apparmor.d/bwrap profile is written and loaded with sudo, then probed again.
+#   system packages, installed when missing through config/lib/sys-pkg.sh (sudo + apt-get/dnf/yum/pacman/zypper on
+#   Linux, Homebrew on macOS, installing Homebrew itself when needed); AW_NO_SYSTEM_INSTALL=1 only prints the command:
 #     Linux: bubblewrap (bwrap: graphify never runs unsandboxed), libsecret-tools (secret-tool: Sindri keychain:
 #            pointers), clang + zlib1g-dev (NativeAOT), lsof, tmux, curl, git
-#     macOS: tmux (brew)
+#     macOS: tmux
 #
-# Exit: 0 everything present or installed, 1 a system package is missing (or a user-level install failed).
+# Exit: 0 everything present or installed, 1 something could not be installed (system package, AppArmor fix, user-level tool).
 # Bash 3.2 compatible (macOS /bin/bash).
 set -uo pipefail
 
@@ -29,38 +30,59 @@ case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$P
 
 echo "=== External tools (uv, graphify, Temporal, system packages) ==="
 
-# --- system packages: check, never sudo ---
+# --- system packages: check, then install what is missing (config/lib/sys-pkg.sh: sudo on Linux, Homebrew on macOS) ---
+# shellcheck source=config/lib/sys-pkg.sh
+source "$ROOT/config/lib/sys-pkg.sh"
 MISSING_PKGS=""
 BWRAP_BROKEN=0
 BWRAP_RESTRICTED=""
-need() {   # <command> <apt package> [<what needs it>]
+need() {   # <command> <logical package (sys-pkg.sh)> [<what needs it>]
   if command -v "$1" &>/dev/null; then echo "  $1: found"; else
     echo "  $1: MISSING${3:+ ($3)}"; MISSING_PKGS="$MISSING_PKGS $2"
   fi
 }
-if [ "$OS" = "Linux" ]; then
-  need bwrap bubblewrap "network sandbox for graphify; it never runs unsandboxed"
-  # Present is not enough: Ubuntu 24.04 (kernel.apparmor_restrict_unprivileged_userns=1, no profile for bwrap) refuses
-  # the user namespace, so graphify could never run. Probe a no-op sandbox; AW_DEPS_BWRAP_PROBE replaces the command (tests).
-  if command -v bwrap &>/dev/null; then
-    if _why="$(eval "${AW_DEPS_BWRAP_PROBE:-bwrap --ro-bind / / true}" 2>&1)"; then echo "  bwrap: sandbox works"; else
-      echo "  bwrap: found but cannot create a sandbox (${_why:-no output})"; BWRAP_BROKEN=1
-      _restrict=""; read -r _restrict <"${AW_DEPS_USERNS_FILE:-/proc/sys/kernel/apparmor_restrict_unprivileged_userns}" 2>/dev/null || true
-      BWRAP_RESTRICTED="$_restrict"
+check_system() {
+  MISSING_PKGS=""
+  if [ "$OS" = "Linux" ]; then
+    need bwrap bubblewrap "network sandbox for graphify; it never runs unsandboxed"
+    need secret-tool secret-tool "Sindri keychain: pointers"
+    need clang clang "NativeAOT publish"
+    if [ -e "${AW_DEPS_ZLIB_H:-/usr/include/zlib.h}" ]; then echo "  zlib.h: found"; else
+      echo "  zlib.h: MISSING (NativeAOT publish)"; MISSING_PKGS="$MISSING_PKGS zlib-dev"
     fi
+    need lsof lsof "port and lock probes"
+    need tmux tmux "Sindri sessions"
+    need curl curl "downloads"
+    need git git
+  elif [ "$OS" = "Darwin" ]; then
+    need tmux tmux "Sindri sessions"
   fi
-  need secret-tool libsecret-tools "Sindri keychain: pointers"
-  need clang clang "NativeAOT publish"
-  if [ -e "${AW_DEPS_ZLIB_H:-/usr/include/zlib.h}" ]; then echo "  zlib.h: found"; else
-    echo "  zlib.h: MISSING (zlib1g-dev, NativeAOT publish)"; MISSING_PKGS="$MISSING_PKGS zlib1g-dev"
+}
+# bwrap present is not enough: Ubuntu 24.04 (kernel.apparmor_restrict_unprivileged_userns=1, no profile for bwrap) refuses
+# the user namespace, so graphify could never run. Probe a no-op sandbox; AW_DEPS_BWRAP_PROBE replaces the command (tests).
+probe_bwrap() {
+  BWRAP_BROKEN=0
+  [ "$OS" = "Linux" ] && command -v bwrap &>/dev/null || return 0
+  if _why="$(eval "${AW_DEPS_BWRAP_PROBE:-bwrap --ro-bind / / true}" 2>&1)"; then echo "  bwrap: sandbox works"; else
+    echo "  bwrap: found but cannot create a sandbox (${_why:-no output})"; BWRAP_BROKEN=1
+    _restrict=""; read -r _restrict <"${AW_DEPS_USERNS_FILE:-/proc/sys/kernel/apparmor_restrict_unprivileged_userns}" 2>/dev/null || true
+    BWRAP_RESTRICTED="$_restrict"
   fi
-  need lsof lsof "port and lock probes"
-  need tmux tmux "Sindri sessions"
-  need curl curl "downloads"
-  need git git
-elif [ "$OS" = "Darwin" ]; then
-  if command -v tmux &>/dev/null; then echo "  tmux: found"; else echo "  tmux: MISSING (brew install tmux)"; FAILED=1; fi
+}
+
+check_system
+if [ -n "$MISSING_PKGS" ]; then
+  echo ""
+  echo "  Installing missing system packages:$MISSING_PKGS"
+  if aw_sys_install $MISSING_PKGS && ! dry; then
+    echo "  Checking again:"
+    check_system
+    if [ -n "$MISSING_PKGS" ]; then echo "  WARN: still missing after the install:$MISSING_PKGS"; FAILED=1; fi
+  elif ! dry; then
+    FAILED=1
+  fi
 fi
+probe_bwrap
 
 # --- uv ---
 if command -v uv &>/dev/null; then
@@ -69,7 +91,7 @@ elif dry; then
   echo "  [dry-run] would install uv (brew on macOS, astral.sh/uv/install.sh elsewhere)"
 else
   echo "  Installing uv..."
-  if [ "$OS" = "Darwin" ] && command -v brew &>/dev/null; then brew install uv || true
+  if [ "$OS" = "Darwin" ]; then aw_ensure_brew && brew install uv || true
   elif command -v curl &>/dev/null; then curl -LsSf https://astral.sh/uv/install.sh | sh || true; fi
   if command -v uv &>/dev/null; then echo "  uv: installed"; else
     echo "  WARN: uv install failed; install it (https://docs.astral.sh/uv/getting-started/installation/) and rerun"; FAILED=1
@@ -113,36 +135,37 @@ for _bin in temporal temporal-test-server; do
   fi
 done
 
-# --- missing system packages: the exact command, then fail ---
-if [ -n "$MISSING_PKGS" ]; then
-  echo ""
-  echo "  Missing system packages; root is needed, so this script does not install them. Run:"
-  if command -v apt-get &>/dev/null; then echo "    sudo apt-get install -y$MISSING_PKGS"
-  else echo "    (install with your package manager:$MISSING_PKGS; Debian/Ubuntu package names)"; fi
-  if dry; then echo "  [dry-run] a real run would stop here"; else FAILED=1; fi
-fi
-
-# --- bwrap present but unusable: the exact root fix, then fail ---
-if [ "$BWRAP_BROKEN" = "1" ]; then
-  echo ""
-  if [ "$BWRAP_RESTRICTED" = "1" ]; then
-    echo "  AppArmor blocks unprivileged user namespaces (kernel.apparmor_restrict_unprivileged_userns=1) and has no profile"
-    echo "  for /usr/bin/bwrap, so graphify's sandbox cannot start. Root is needed, so this script does not apply it. Run:"
-    cat <<'FIX'
-    sudo tee /etc/apparmor.d/bwrap >/dev/null <<'PROFILE'
-abi <abi/4.0>,
+# --- bwrap present but unusable: apply the AppArmor profile (root), probe again ---
+BWRAP_PROFILE='abi <abi/4.0>,
 include <tunables/global>
 profile bwrap /usr/bin/bwrap flags=(unconfined) {
   userns,
   include if exists <local/bwrap>
-}
-PROFILE
-    sudo apparmor_parser -r /etc/apparmor.d/bwrap
-FIX
+}'
+if [ "$BWRAP_BROKEN" = "1" ]; then
+  echo ""
+  if [ "$BWRAP_RESTRICTED" = "1" ]; then
+    echo "  AppArmor blocks unprivileged user namespaces (kernel.apparmor_restrict_unprivileged_userns=1) and has no profile"
+    echo "  for /usr/bin/bwrap, so graphify's sandbox cannot start. Adding the profile /etc/apparmor.d/bwrap:"
+    printf '%s\n' "$BWRAP_PROFILE" | sed 's/^/    | /'
+    if dry; then
+      echo "  [dry-run] would run: sudo tee /etc/apparmor.d/bwrap; sudo apparmor_parser -r /etc/apparmor.d/bwrap"
+      echo "  [dry-run] a real run would apply it and probe again"
+    elif [ "${AW_NO_SYSTEM_INSTALL:-0}" = "1" ]; then
+      echo "  AW_NO_SYSTEM_INSTALL=1, so nothing is applied. Write that profile with sudo tee, then run:"
+      echo "    sudo apparmor_parser -r /etc/apparmor.d/bwrap"
+      FAILED=1
+    elif printf '%s\n' "$BWRAP_PROFILE" | aw_sys_root tee /etc/apparmor.d/bwrap >/dev/null \
+      && aw_sys_root apparmor_parser -r /etc/apparmor.d/bwrap; then
+      probe_bwrap
+      [ "$BWRAP_BROKEN" = "1" ] && FAILED=1
+    else
+      echo "  WARN: applying the AppArmor profile failed"; FAILED=1
+    fi
   else
     echo "  bwrap cannot create a sandbox and the AppArmor userns restriction is not the cause; run \`bwrap --ro-bind / / true\` and read its error."
+    if dry; then echo "  [dry-run] a real run would stop here"; else FAILED=1; fi
   fi
-  if dry; then echo "  [dry-run] a real run would stop here"; else FAILED=1; fi
 fi
 
 [ "$FAILED" = "0" ]

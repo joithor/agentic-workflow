@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "kind": "authored",
+  "repo": "aw-split-panes",
+  "nodes": [
+    {
+      "key": "feature:tabs.tab-manager",
+      "label": "Tab manager"
+    },
+    {
+      "key": "feature:tabs.tab-groups",
+      "label": "Tab groups"
+    },
+    {
+      "key": "surface:command/switch-tab",
+      "label": "Switch tab (command)"
+    },
+    {
+      "key": "surface:command/group-tabs",
+      "label": "Group tabs (command)"
+    },
+    {
+      "key": "action:tab-manager.restore-layout",
+      "label": "Restore a tab's pane layout"
+    },
+    {
+      "key": "action:tab-groups.group-selected",
+      "label": "Group the selected tabs"
+    },
+    {
+      "key": "thing:pane-layout",
+      "label": "Pane layout"
+    },
+    {
+      "key": "record:linear:issue/0e5a1b00-0000-4000-8000-000000000203",
+      "label": "Tab manager spec"
+    },
+    {
+      "key": "code:src/tabs/TabManager.ts",
+      "label": "TabManager.ts",
+      "provenance": "deterministic"
+    },
+    {
+      "key": "code:src/tabs/TabGroups.ts",
+      "label": "TabGroups.ts",
+      "provenance": "deterministic"
+    }
+  ],
+  "edges": [
+    {
+      "from": "feature:tabs.tab-groups",
+      "to": "feature:tabs.tab-manager",
+      "type": "part-of"
+    },
+    {
+      "from": "surface:command/switch-tab",
+      "to": "feature:tabs.tab-manager",
+      "type": "part-of"
+    },
+    {
+      "from": "surface:command/group-tabs",
+      "to": "feature:tabs.tab-groups",
+      "type": "part-of"
+    },
+    {
+      "from": "action:tab-manager.restore-layout",
+      "to": "surface:command/switch-tab",
+      "type": "on"
+    },
+    {
+      "from": "action:tab-groups.group-selected",
+      "to": "surface:command/group-tabs",
+      "type": "on"
+    },
+    {
+      "from": "action:tab-manager.restore-layout",
+      "to": "thing:pane-layout",
+      "type": "reads"
+    },
+    {
+      "from": "record:linear:issue/0e5a1b00-0000-4000-8000-000000000203",
+      "to": "feature:tabs.tab-manager",
+      "type": "mentions"
+    },
+    {
+      "from": "decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b",
+      "to": "feature:tabs.tab-groups",
+      "type": "decides"
+    },
+    {
+      "from": "decision:ef895edc359f6f847ce34baeacb3670a81a824b521e4cd14371b5dc8894ea1c2",
+      "to": "feature:tabs.tab-groups",
+      "type": "decides"
+    },
+    {
+      "from": "decision:ef895edc359f6f847ce34baeacb3670a81a824b521e4cd14371b5dc8894ea1c2",
+      "to": "decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b",
+      "type": "supersedes"
+    },
+    {
+      "from": "code:src/tabs/TabManager.ts",
+      "to": "feature:tabs.tab-manager",
+      "type": "implements",
+      "provenance": "deterministic",
+      "evidence": [
+        {
+          "key": "repo:aw-split-panes/src/tabs/TabManager.ts"
+        }
+      ]
+    },
+    {
+      "from": "code:src/tabs/TabManager.ts",
+      "to": "action:tab-manager.restore-layout",
+      "type": "implements",
+      "provenance": "deterministic",
+      "evidence": [
+        {
+          "key": "repo:aw-split-panes/src/tabs/TabManager.ts"
+        }
+      ]
+    },
+    {
+      "from": "code:src/tabs/TabGroups.ts",
+      "to": "feature:tabs.tab-groups",
+      "type": "implements",
+      "provenance": "model",
+      "evidence": [
+        {
+          "key": "repo:aw-split-panes/src/tabs/TabGroups.ts"
+        }
+      ],
+      "confidence": 0.74
+    }
+  ],
+  "decisions": [
+    {
+      "record": "linear:issue/0e5a1b00-0000-4000-8000-000000000201",
+      "quote": "a tab group collapses to a single tab in the strip",
+      "wording": "A tab group collapses to one tab in the strip.",
+      "at": "2026-07-10T10:00:00Z"
+    },
+    {
+      "record": "linear:issue/0e5a1b00-0000-4000-8000-000000000202",
+      "quote": "a tab group stays expanded; collapsing is a per-user setting",
+      "wording": "A tab group stays expanded; collapsing is a per-user setting.",
+      "at": "2026-07-20T10:00:00Z"
+    }
+  ],
+  "overrides": [
+    {
+      "action": "rename",
+      "target": "feature:tabs.pinned-tabs",
+      "label": "Pinned tabs",
+      "who": "avery",
+      "at": "2026-07-30T09:10:00Z"
+    }
+  ]
+}

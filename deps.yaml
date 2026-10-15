@@ -236,7 +236,7 @@ packages:
     files: [sindri-app/control.json, sindri-app/auth/human.token]
     namespace: sindri
     routes: [/sindri/]
-    note: "built new in C# as an application (control plane, workflow engine, context retrieval; addendum §17.29, Q7), not ported; ts: sindri (profile, ledger, scrub, observe, index, scope, evolve) is the reference and runs until the switch; S1 (app shell: CLI and control plane, host lease, ledger, profile, API, scheduler, doctor) and workflow engine P1 (the recipe model and validator, `sindri recipe validate`) are in src/Sindri; API P2 adds the projector and its views (views.db: services, profile; read-your-writes, health, `sindri views rebuild`); API P3 adds items and the queue (views.db: items, item-aliases, item-timeline; `sindri queue`, `items`, `item add`, `item close`); Aw.Sindri.Workflows is the Temporal adapter (Infrastructure layer, namespace Aw.Sindri.Infrastructure.Workflows, AwAotCompatible=false for temporalio/sdk-dotnet#286; engine rev 8 §0); reaches lower tiers only through Core contracts or CLIs, plus the tier-0 Redaction edge (RecordEvent's ledger scrub and, in Infrastructure, the desk notices' text); P6 adds effects (EffectActivities: RecordEffect, RecheckEffect, RunEffect with the outbox retry policy, outbox.* rows), the registry wake (TemporalRecipeWake over the RecipeHash search attribute), effect.notify.desk (notifications.jsonl, digest, OS banner) and effect.claim.ref (git update-ref through GitClaimRefs)"
+    note: "built new in C# as an application (control plane, workflow engine, context retrieval; addendum §17.29, Q7), not ported; ts: sindri (profile, ledger, scrub, observe, index, scope, evolve) is the reference and runs until the switch; S1 (app shell: CLI and control plane, host lease, ledger, profile, API, scheduler, doctor) and workflow engine P1 (the recipe model and validator, `sindri recipe validate`) are in src/Sindri; API P2 adds the projector and its views (views.db: services, profile; read-your-writes, health, `sindri views rebuild`); API P3 adds items and the queue (views.db: items, item-aliases, item-timeline; `sindri queue`, `items`, `item add`, `item close`); Aw.Sindri.Workflows is the Temporal adapter (Infrastructure layer, namespace Aw.Sindri.Infrastructure.Workflows, AwAotCompatible=false for temporalio/sdk-dotnet#286; engine rev 8 §0); reaches lower tiers only through Core contracts, CLIs and the compose edges to Context and Judge (registration only), plus the tier-0 Redaction edge (RecordEvent's ledger scrub and, in Infrastructure, the desk notices' text); P6 adds effects (EffectActivities: RecordEffect, RecheckEffect, RunEffect with the outbox retry policy, outbox.* rows), the registry wake (TemporalRecipeWake over the RecipeHash search attribute), effect.notify.desk (notifications.jsonl, digest, OS banner) and effect.claim.ref (git update-ref through GitClaimRefs)"
 
   # ---- tier 4 ----
   - id: SindriUi
@@ -523,6 +523,17 @@ edges:
     kind: compose
     status: current
     note: "Sindri's Host calls AddContextFeatures and AddContextInfrastructure (and nothing else from those projects) in Composition"
+  # ---- the labeler's model port (context spec §4, stage S-4) ----
+  - from: Sindri
+    to: Judge
+    kind: project
+    status: current
+    note: "Sindri's Host adapts Judge's provider catalog (IProviderCatalog, IModelProvider in Aw.Judge.Core) as the context engine's IModelPort, so the labeling pass runs through the owner's own agent CLIs (Claude Code, Codex, Cursor) and never the remote jev API"
+  - from: Sindri
+    to: Judge
+    kind: compose
+    status: current
+    note: "Sindri's Host calls AddJudgeInfrastructure (and nothing else from that project), in a container of its own: Judge's stores and ids never join Sindri's container (Host/Models/JudgeCatalog)"
   - from: Sindri
     to: SindriUi
     kind: cli

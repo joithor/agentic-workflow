@@ -151,13 +151,13 @@ public sealed class AnswerFitTests
     [Fact, Trait("Lane", "unit")]
     public void Answer_escalated_gate_runs_override_or_refuse()
     {
-        var escalated = Suspended(Escalate(EscalationKind.Gate, ResumeKind.Override, CheckFailed(), Judge));
+        var escalated = Suspended(Escalate(EscalationKind.Gate, ResumeKind.Override, CheckFailed(), FrameFixture.Judge));
 
         var accept = AnswerFit.Check(escalated, Recipe, Answer(AnswerVariant.Accept)).Value;
         var reject = AnswerFit.Check(escalated, Recipe, Answer(AnswerVariant.Reject)).Value;
 
-        Assert.Equal(new ResumeAction(ResumeKind.Override, CheckFailed(), Judge, Effects: []), accept);
-        Assert.Equal(new ResumeAction(ResumeKind.Refuse, CheckFailed(), Judge, Effects: []), reject);
+        Assert.Equal(new ResumeAction(ResumeKind.Override, CheckFailed(), FrameFixture.Judge, Effects: []), accept);
+        Assert.Equal(new ResumeAction(ResumeKind.Refuse, CheckFailed(), FrameFixture.Judge, Effects: []), reject);
         Refused(escalated, Answer(AnswerVariant.Resume), "--accept");
     }
 

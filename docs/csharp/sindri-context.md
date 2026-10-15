@@ -392,6 +392,102 @@ or name not in the caller's map reuses 003.
 - **Fixture.** `surface:command/switch-tab` (part-of the tab manager, restore-layout `on` it) lets the ascend reach the
   tab manager; S-3a's golden export follows.
 
+## S-4: the extractor, the draft, map review, lenses and the file map (X63)
+
+User-facing behaviour is in `docs/sindri/context.md` (S-4). This is where the code lives.
+
+### Shape
+
+- **Core `Extract/`.** `MapExtractor` composes the deterministic map from file text through table-driven `Recognizers` (command ids,
+  keybindings, settings keys, routes, UI names), each node with a file-level `implements` from `code:<path>`; `ClusterFeatures` turns
+  graphify clusters (`IClusterSource`) into candidate features, optionally named by `ILabeler.Label(clusters, extraPatterns, maxTokens, ct)` (the token cap
+  arrives with each pass, from `context.labeling.maxTokens`; the profile's `context.scrub.extraPatterns` scrub every path sent to the model). Ports: `IRepoReader` (files at a sha), `IClusterSource`, `ILabeler`.
+- **Core `Overrides/`, `Review/`, `Proposals/`, `Lenses/`.** Pure: `OverrideApplier`, `ReviewBacklog` (the queue), `ReviewPlanner` (one
+  decision to override rows; `Repoint` is an undo of the orphan plus the same decision on the new node), `ReviewFileMatcher`, `PromoteReadiness`,
+  `ReviewHistory`, `ProposalPlanner`, `GraphStatuses`, `LensesBuilder`, `FileMapBuilder`. `ReviewDrafts.Gate` (the whole-map paths: session callers
+  are `SND-CONTEXT-020`) and `ReviewDrafts.GateDecision` (a single decision is left to Sindri's class check; only the bulk accept keeps the gate).
+- **Core `Locks/IHeavyJobLock`** is the context engine's lock port; `Sindri.Core/Locks/IHeavySlots` is Sindri's own (one lock for the engine
+  and the shell tools today; the workflow engine's `heavy` allocator is meant to use it too and is not wired yet).
+- **Infrastructure.** `GitRepoReader` over `GitCli` (048), `GraphifyClusterSource` (pinned, sandboxed, fail-closed), `ModelLabeler` over `IModelPort`
+  (042), `FileReviewFileStore`, migration `0004_s4_map_review.sql` (`map_override` rebuilt with `propose` and `undo`, `link`, `undoes` and `payload` columns).
+- **Features.** Slices `BuildMap`, `ReviewQueue`, `ReviewMap`, `ReviewHistory`, `ExportReview`, `PreviewReviewFile`, `ApplyReviewFile`, `PromoteMap`,
+  `ProposeFromScope`, `GetProposals`, `GetLenses`, `GetFileMap`; the facade methods are on `IContextMap` and `IContextLenses`.
+- **Promote under a deny glob.** `MapAccess.View` decides the cut; `PromoteMap` replaces the draft with the cut graph and the undo rows for the person's accept, rename, move and merge decisions about what was cut (`MapView.UndoCutDecisions`, `who` = `service:deny-cut`) in one `ReplaceDraft` transaction, then promotes it, so `context.map.promoted` follows every committed promote. `BuildMap` writes the same rows with its `SaveDraft`. `DenyCut.Apply` drops a marked undo row and the row it undoes while their node is cut or gone (every view, history and export included); rejects and deletes are never undone, and a reject or delete whose node is gone is satisfied, not orphaned. The `context:map` doctor row counts over the same view. A store 046 from `ReplaceDraft` is neutral (the draft is no longer the open one); `PromoteMap` words it for a promote.
+- **Sindri Core.** `IHeavySlots`/`HeavySlotTaken`; the events `context.map.reviewed`, `context.map.promoted`, `context.map.proposed`
+  (the sixth public context event, added by S-4) and `context.map.built`; `IndexSettings` (`index.denyPaths` on the profile and on a repo).
+- **Sindri Infrastructure.** `DirectoryHeavySlots` over `locks/heavy-job.lock[.k]` (`mkdir` mutex, owner file `<pid> <utc> <who>`,
+  `AW_HEAVY_SLOTS` default 1 (the box cap, as the heavy wrapper reads it), `AW_HEAVY_LOCK_HELD=1` makes it a no-op, a dead owner's slot is reclaimed like the heavy wrapper does);
+  it interoperates with `config/lib/locks.sh` (an integration test takes both slots from bash).
+- **Sindri Features `ContextCalls/`.**
+  - Queries: `GetContextReview`, `GetContextReviewHistory`, `ExportContextReview`, `GetContextProposals`, `GetContextLenses`, `GetContextFileMap`.
+  - Commands: `ReviewContextMap` (classified: the variant is the verb), `PromoteContextMap`, `ProposeContextMap`.
+  - `ContextRebuildService` (`context-rebuild`), `SindriHeavyJobLock : IHeavyJobLock` over `IHeavySlots` (wait 60 s, then 040), `ContextChallenges` (the shared X30 challenge), `ReviewInput`.
+  - `ContextScopes.Entries` maps the profile's repos and `index.denyPaths` to the engine's `ProfileRepoEntry`.
+- **Sindri Host.** Routes: `GET /sindri/context/map/review`, `/review/history`, `/review/export`, `/map/proposals`, `/lenses`, `/filemap`; `POST /sindri/context/map/review`,
+  `/promote`, `/proposals`. CLI: `ContextReviewVerbs` (review, promote, propose, proposals), `ContextLensVerbs` (lenses, filemap), `ReviewArguments` (the pure parse),
+  `ReviewSession` (the review loop as a state machine; the TTY shell only reads lines and sends), `ContextExit` (040 is 75), text in `Text/ContextReviewText` and `ContextLensText`.
+  MCP: `context_lenses {anchor}` in `ContextTools`. `Models/JudgeModelPort` adapts Judge's `IProviderCatalog` as `IModelPort` (agent CLIs only, never `jev`), the catalog built in a container of its own (`JudgeCatalog`).
+
+### Classes (README X63)
+
+| Row | Class | Who may run it |
+|---|---|---|
+| `ReviewContextMap:accept`, `reject`, `rename`, `move`, `accept-deterministic`, `undo`, `drop`, `repoint` | desk | terminal, app |
+| `ReviewContextMap:apply-file`, `merge`, `add`, `delete` | protected (`NeedsTerminal`) | terminal, with the typed challenge `review <verb> <hash6>` bound to the request's fields (a file's content for apply-file) |
+| `PromoteContextMap` | protected (`NeedsTerminal`) | terminal, challenge `promote map v<N>` bound to the draft |
+| `ProposeContextMap` | job | terminal, app, `service:engine` |
+| `BuildContextMap` | job, `pending:API-P6`, no `CommandType`, no route | nobody yet |
+
+API P6 (the job runtime) has not merged, so `map build` has no route; the `BuildMap` slice is reachable through `ContextRebuildService` only, outside the command gate.
+
+### Errors (S-4 range 040, 042–048)
+
+| Code | Kind (HTTP) | CLI exit | Meaning |
+|---|---|---|---|
+| `SND-CONTEXT-040` | Unavailable (503) | 75 | The heavy-job lock stayed busy, or its directory can't be used; the message names the holder |
+| `SND-CONTEXT-042` | Invalid (400) | 1 | Labeling over its token cap (or the host has no model for it) |
+| `SND-CONTEXT-043` | Conflict (409) | 1 | No entry of the review file matches the latest draft |
+| `SND-CONTEXT-044` | NotFound (404) | 1 | A draft is needed and none exists (`draft` asked, or `map review` listing the queue) |
+| `SND-CONTEXT-045` | NotFound (404) | 1 | A repo outside the profile or the session's repo (one answer for both) |
+| `SND-CONTEXT-046` | Conflict (409) | 1 | Promote refused: no draft, undecided review items, or the draft changed after you confirmed it (review the new draft, then promote again) |
+| `SND-CONTEXT-047` | Conflict (409) | 1 | Stale review target, or an undo of an unknown or undone override |
+| `SND-CONTEXT-048` | Unavailable (503) | 2 | Git can't read the repo at the commit |
+
+041 is retired; 049 is reserved for findings in the review loop.
+
+### The app's wire (UI contract delta, D1–D14)
+
+The goldens under `tests/Aw.Sindri.Tests/Golden/Api/context-*/` pin every body below (`ApiScenarios`, `ContextApiScenarios`, the `MapTabsRepo` fixture). JSON is camelCase through AwJson.
+
+| Route | Request | Response |
+|---|---|---|
+| `GET /sindri/context/lenses` | `anchor`, `depth` (0–4, default `context.cascadeDepth`; else 006 / 400), `draft` | `{schemaVersion, anchor{key,label,kind,trust}, mapVersion, draft, depth, asOf, bands{intent,product,code}, edges[], conflicts[], coverage, degraded[], cites{}}` (spec §8.9) |
+| `GET /sindri/context/filemap` | `repo`, `path`, `unmapped`, `draft` | `{schemaVersion, repo, sha, mapVersion, draft, path, entries[{name,path,type,status,files,features[{key,provenance,confidence?,confirmed,linkId?,edge}],intent{records,decisions}\|null}], unmapped[], suggested[{linkId,file,feature,confidence,evidence[]}], totals{files,mapped,suggested,unmapped}, symbols}` |
+| `GET /sindri/context/map` | `anchor` (optional) | the map status; with an anchor also `coverage`, the lenses' record from the same Core function (`LensCoverageBuilder`) |
+| `GET /sindri/context/map/review` | `limit` (per group, default 100, max 1000; else 006) | `{draft, version{number,commit}, entries[…, trust], decided, proposals, counts{deterministic,model,orphaned}, byKind{}, truncated{…}, undecided}`; `decided` counts the proposals of this draft with a standing decision, `proposals` = decided + deterministic + model |
+| `GET /sindri/context/map/review/history` | `limit` (default 200, max 1000; else 006) | `{entries[], truncated}` |
+| `POST /sindri/context/map/review` | `{verb, node?, link?, override?, overrides?, label?, other?, path?, answer?}` | `{result{written[],skipped[],undecided}, sequence, challenge?, summary?}` |
+| `POST /sindri/context/map/proposals` | `{run, repo, surfaces[{name, key? or kind?, parent?, evidence?, quote?}]}` (a session is `SND-AUTH-002`, 403) | `{result{draft, added, existing, rejected}, sequence, surfaces[{surface, node, status, trust}]}`; `surfaces` is every surface of the run in the order submitted, each `mapped`, `new` or `unmapped` (spec §8.7) with its label and node key, the same list `GET` returns, so the counts are not the only answer; `context map propose` prints it under the counts |
+| `GET /sindri/context/map/proposals` | `run` | `{run, map, draft, surfaces[{surface, node, status, trust}]}`: every surface the run submitted (kept per run in `proposal_run`, migration 0005; a second submission replaces the list), each `mapped`, `new` or `unmapped` against the current map at call time, read through the same view as every other read (a denied path hides its nodes; a session sees only its repo). `trust` is always `untrusted`; `node` is null when unmapped, and for `new` when the caller is fenced (session, MCP, service). The POST row's list is the same one for a clean caller. |
+
+- **Repoint** (`verb: repoint`, `override` = the orphan, `node` = the new target) writes `[undo of the orphan, the same decision on the new node]`; undoing both rows restores the orphan. A target not in the draft is 047.
+- **Undo list** (`overrides`, 1–1000 ids, only with `undo`, not beside `override`): all or none in one transaction; 047 names the first stale id; one `context.map.reviewed` event with `rows` = n. CLI `--undo <id>[,<id>…]`. *Provisional owner default (2026-10-14 night).*
+- **Lenses** details. `own[]` is the anchor's own scope; `neighbors[]` and `affects[]` carry `depth` and `path`. A neighbor's hops read `<edge type> <key>` going with the edge and `<edge type>-by <key>` going against it, over structure edges where they reach (else any edge); an affects path is the cascade's own words. `product.edges` are the structure edges among product items. Intent: `records[]` (`source` from the key: `linear`, `linear:doc`, `slack`, `onyx`, `repo-doc`; `state` `unchecked`, `cites` empty until S-5A/S-6) and `decisions[]` (with `at` and `quote{record,text,trust:untrusted}`); `counts.orphaned` is `null` (follow-up F2). Code: `files[]`, one per file (`suggested` = every link of it unconfirmed, `linkId` = its best link then); `counts.featuresWithNoCode` counts scope features with no confirmed `implements`. Coverage counts a confirmed `implements` only as implemented (not `tests`, not a model suggestion); `code.suggested` counts scope nodes whose only `implements` are unconfirmed. Conflicts: one per decided node, `supersedes` only until S-CF. Provisional: all of the product `edges`, the `-by` paths, `featuresWithNoCode` and the gap notes.
+- **File map** details. A file's `features` include its suggested link (with `linkId`) and `tests` links (`edge: tests`; they never make a file mapped); a directory's hold the confirmed ones only. `intent` counts the distinct records and decisions on the entry's features, `null` with none. `unmapped[]` lists the unmapped entries even when `unmapped=true` filters `entries`. `sha` is the seven-character HEAD the tree was listed at.
+- **Trust and the fence (provisional owner default, 2026-10-14 night; CTX §7).** Every lens item, record, decision, queue entry and node fact carries `trust`. A human at the CLI or in the app (`FencePolicies.For`: human and client `cli` or `http`) gets the label clean beside `trust`; a session, MCP and in-process callers get untrusted text inside `<untrusted source="map">…</untrusted>` as before. The CLI's text output fences an untrusted label itself when it called as a human (a session's answer is already fenced), `--json` prints the body unchanged. Query `ResultItem`s stay fenced for everyone. The file map carries only repo paths and node keys, so it has no `trust`. If the owner refuses the policy, drop `FencePolicies` to always-fenced and document the fence grammar for the app.
+- **Anchor errors** carry their candidates in text: 003 ends `(fix: try <key>, <key>)` (up to five), 037 lists the keys (goldens `unknown-anchor-003`, `ambiguous-037`). Structured extensions are follow-up F1.
+- **HTTP status per code.** 003 404, 037 409, 030 404, 044 404, 045 404, 046 409, 047 409, 043 409, 005 and 006 400, 042 400, 040 503 (CLI 75), 048 503 (CLI 2), 020 403, `SND-AUTH-002` 403, `SND-CLI-003` 400.
+- **Heavy-job slots.** `HeavyLockSettings` reads `AW_HEAVY_SLOTS` as the heavy wrapper does: unset or empty is 1, a whole number of at least 1 is that many, anything else (`two`, `0`, `-1`) is 1 in the wrapper (and `AW_SESSION_HEAVY_SLOTS` likewise), in `config/lib/locks.sh`'s `acquire_any_lock` and here. The callers of `config/lib/locks.sh` (the ui-evidence skill, scaffold `e2e.sh`) pass `${AW_HEAVY_SLOTS:-2}`, so an unset variable is 2 slots there.
+
+### Tests
+
+- **Unit.** The planner (repoint, undo, bulk), `ReviewHistory`, the review-file preview, `ReviewDrafts` gating (a single decision from a session is not refused by the engine;
+  the bulk accept, apply, export, promote and build are 020), the catalog classes with `Authorization` for every caller, `ReviewInput`, `ReviewArguments`, `ReviewSession`,
+  `ContextExit`, the text renderers (every status a word), the verbs over a scripted API, `DirectoryHeavySlots` and `SindriHeavyJobLock`, `JudgeModelPort` over a fake catalog,
+  the profile's `index.denyPaths` (parse, hash stability, validation, the scope).
+- **Integration.** `ContextReviewApiTests` (the rebuild service, desk and protected review, promote and its challenge, apply-file, 005, 043, 048, 040 with the bash helper holding both slots),
+  `ContextLensesApiTests` (lenses, filemap, 003/044/045, MCP `context_lenses`, proposals), and the lock directory shared with `config/lib/locks.sh`.
+
 ## S-5A: the onyx adapter
 
 ### Shape

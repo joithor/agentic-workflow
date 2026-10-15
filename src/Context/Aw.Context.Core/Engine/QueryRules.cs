@@ -34,6 +34,9 @@ public static class QueryRules
     /// <summary>What the 006 for a bad node anchor says (2000 is <see cref="MaxTextLength"/>; a transport adds its own spelling after it).</summary>
     public const string NodeMessage = "a node anchor names a node key, alias or name of 1 to 2000 characters";
 
+    /// <summary>The 006 message for an empty or overlong symbol anchor.</summary>
+    public const string SymbolMessage = "a symbol anchor is a file path of 1 to 2000 characters";
+
     /// <summary>Whether a value, percent-encoded, fits <see cref="MaxEncodedText"/>.</summary>
     /// <param name="value">The question text or node name.</param>
     /// <returns>True when a GET query string can carry it.</returns>
@@ -110,7 +113,20 @@ public static class QueryRules
     private static Error OutOfRange(string rule, string shown) =>
         ContextErrors.QueryInvalid.With($"{rule}; {(shown.Length <= 12 ? shown : "that value")} is out of range");
 
-    /// <summary>The one shape's own checks: a node name's length; the text's words; item and symbol not yet (003).</summary>
+    // The symbol shape in its file-path form: a path in the repo. A symbol inside a file ('path#name') needs the code index (Phase 9).
+    private static Result<ValidQuery> FilePath(string symbol, int budget)
+    {
+        if (string.IsNullOrWhiteSpace(symbol) || symbol.Length > MaxTextLength || symbol.Any(char.IsControl))
+        {
+            return ContextErrors.QueryInvalid.With(SymbolMessage);
+        }
+
+        return symbol.Contains('#', StringComparison.Ordinal)
+            ? ContextErrors.UnknownAnchor.With("symbols inside a file need the code index (a later phase); ask by the file's path")
+            : new ValidQuery([], budget);
+    }
+
+    /// <summary>The one shape's own checks: a node name's length; a file path; the text's words; an item not yet (003).</summary>
     private static Result<ValidQuery> Shaped(ContextQuery query, int budget)
     {
         if (query.Node is { } node)
@@ -120,9 +136,14 @@ public static class QueryRules
                 : new ValidQuery([], budget);
         }
 
+        if (query.Symbol is { } symbol)
+        {
+            return FilePath(symbol, budget);
+        }
+
         if (query.Text is null)
         {
-            return ContextErrors.UnknownAnchor.With("item and symbol anchors arrive in later phases; ask by --node or a text question");
+            return ContextErrors.UnknownAnchor.With("item anchors arrive in a later phase; ask by --node, --symbol <file> or a text question");
         }
 
         var terms = Terms(query.Text);

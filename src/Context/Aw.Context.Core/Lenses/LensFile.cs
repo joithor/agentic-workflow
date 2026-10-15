@@ -1,0 +1,23 @@
+using Aw.Context.Core.Graph;
+using Aw.Context.Core.Results;
+
+namespace Aw.Context.Core.Lenses;
+
+/// <summary>A file with its links to scope nodes.</summary>
+/// <param name="Path">The path in the repo.</param>
+/// <param name="Implements">The scope nodes it implements.</param>
+/// <param name="Tests">The scope nodes it tests.</param>
+/// <param name="Provenance">Of its best link.</param>
+/// <param name="Confidence">Of its best link.</param>
+/// <param name="Confirmed">True when some link of it is confirmed.</param>
+/// <param name="Suggested">True when every link of it is an unconfirmed (model) suggestion.</param>
+/// <param name="LinkId">The best unconfirmed link, to accept or reject it; null unless suggested.</param>
+public sealed record LensFile(
+    string Path,
+    IReadOnlyList<NodeKey> Implements,
+    IReadOnlyList<NodeKey> Tests,
+    Provenance Provenance,
+    double Confidence,
+    bool Confirmed,
+    bool Suggested,
+    LinkId? LinkId);

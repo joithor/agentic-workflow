@@ -9,13 +9,16 @@ namespace Aw.Sindri.Tests.ApiGoldens;
 /// The API goldens (UI spec E-17, API spec §12): each route's response body per scenario, at
 /// 'Golden/Api/&lt;route-slug&gt;/&lt;scenario&gt;.json' in this project. The body is re-indented as served (same keys,
 /// order and values; only whitespace changes) and normalized only where a field can't be fixed: ProblemDetails'
-/// 'traceId', which AddProblemDetails draws at random (plan G18), and the temp home's path (status's 'profile.source'),
-/// written '&lt;home&gt;'. Everything else is fixed by the GoldenHost's clock, ids and pid. AW_GOLDEN_UPDATE=1 rewrites
+/// 'traceId', which AddProblemDetails draws at random (plan G18), the temp home's path (status's 'profile.source'),
+/// written '&lt;home&gt;', and the hash an apply-file challenge draws from that path. Everything else is fixed by the GoldenHost's clock, ids and pid. AW_GOLDEN_UPDATE=1 rewrites
 /// a file from the current answer (then review the diff).
 /// </summary>
 internal static class ApiGolden
 {
     private static readonly NormalizationRule _traceId = new("traceId", "\"traceId\": \"[^\"]*\"", "\"traceId\": \"<trace>\"");
+
+    // The apply-file challenge binds its six characters to the review file's path, which sits in the temp home.
+    private static readonly NormalizationRule _applyFile = new("apply-file", "review apply-file [0-9a-f]{6}", "review apply-file <hash6>");
 
     private static readonly JsonWriterOptions _indented = new()
     {
@@ -49,7 +52,7 @@ internal static class ApiGolden
             Reindent(body),
             typeof(ApiGolden).Assembly,
             PathOf(slug, scenario),
-            new Normalization(_traceId, new NormalizationRule("home", System.Text.RegularExpressions.Regex.Escape(home), "<home>")));
+            new Normalization(_traceId, _applyFile, new NormalizationRule("home", System.Text.RegularExpressions.Regex.Escape(home), "<home>")));
 
     /// <summary>The JSON re-indented with two spaces and a final newline; keys, order and values as served.</summary>
     public static string Reindent(string json)

@@ -1,0 +1,52 @@
+{
+  "mapVersion": "v1",
+  "node": {
+    "key": "feature:tabs.tab-manager",
+    "kind": "feature",
+    "label": "Tab manager",
+    "provenance": "human",
+    "confirmed": true,
+    "trust": "trusted",
+    "confidence": 1
+  },
+  "aliases": [],
+  "out": [],
+  "in": [
+    {
+      "from": "code:src/tabs/TabManager.ts",
+      "type": "implements",
+      "to": "feature:tabs.tab-manager",
+      "provenance": "deterministic",
+      "confirmed": false,
+      "trust": "trusted",
+      "order": null
+    },
+    {
+      "from": "feature:tabs.tab-groups",
+      "type": "part-of",
+      "to": "feature:tabs.tab-manager",
+      "provenance": "human",
+      "confirmed": true,
+      "trust": "trusted",
+      "order": null
+    },
+    {
+      "from": "record:linear:issue/0e5a1b00-0000-4000-8000-000000000203",
+      "type": "mentions",
+      "to": "feature:tabs.tab-manager",
+      "provenance": "human",
+      "confirmed": true,
+      "trust": "trusted",
+      "order": null
+    },
+    {
+      "from": "surface:command/switch-tab",
+      "type": "part-of",
+      "to": "feature:tabs.tab-manager",
+      "provenance": "human",
+      "confirmed": true,
+      "trust": "trusted",
+      "order": null
+    }
+  ]
+}

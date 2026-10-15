@@ -22,12 +22,15 @@ public static class FixtureMap
     /// <summary>The YAML text.</summary>
     public static string Yaml => SplitPanesFixture.ReadText(Path);
 
-    /// <summary>The nodes the 'implements' edges with aw-split-panes evidence point at: a session's scope.</summary>
+    /// <summary>The nodes the 'implements' edges with aw-split-panes evidence point at, and the code files they start from ("that repo's files and code", spec §3): a session's scope.</summary>
     public static IReadOnlyList<string> ScopedNodes { get; } =
     [
-        "action:tab-manager.restore-layout", "feature:layout.pane-resize", "feature:layout.split-pane",
-        "feature:layout.split-pane.orientation", "feature:tabs.tab-manager",
+        "action:tab-manager.restore-layout", "code:src/layout/PaneResize.ts", "code:src/layout/SplitPane.ts", "code:src/tabs/TabManager.ts",
+        "feature:layout.pane-resize", "feature:layout.split-pane", "feature:layout.split-pane.orientation", "feature:tabs.tab-manager",
     ];
+
+    /// <summary>The 'implements' edges among a session's scope: file to feature.</summary>
+    public const int ScopedEdges = 7;
 
     /// <summary>Writes the YAML to <paramref name="directory"/>/product-map.yaml.</summary>
     /// <param name="directory">An existing directory outside every repo.</param>

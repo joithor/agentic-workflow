@@ -1,0 +1,59 @@
+{
+  "id": "workflow.triage-alert",
+  "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
+  "version": 2,
+  "inputs": [
+    {
+      "key": "fact:alert",
+      "label": "Alert",
+      "type": "payload",
+      "kind": "webhook",
+      "required": true
+    }
+  ],
+  "outputs": [
+    {
+      "key": "fact:severity",
+      "label": "Severity",
+      "type": "text",
+      "from": "classify"
+    },
+    {
+      "key": "fact:route",
+      "label": "Route",
+      "type": "decision",
+      "from": "route"
+    },
+    {
+      "key": "fact:item",
+      "label": "Item",
+      "type": "item",
+      "from": "route"
+    }
+  ],
+  "urgency": "triage",
+  "orderedBy": "path",
+  "states": [
+    {
+      "id": "ingest",
+      "order": 1,
+      "branchOf": null
+    },
+    {
+      "id": "classify",
+      "order": 2,
+      "branchOf": null
+    },
+    {
+      "id": "route",
+      "order": 3,
+      "branchOf": null
+    },
+    {
+      "id": "done",
+      "order": 4,
+      "branchOf": null
+    }
+  ],
+  "loops": []
+}

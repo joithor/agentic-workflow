@@ -11,6 +11,6 @@ internal sealed class GetContextMapService(ContextScopes scopes, IContextEngine 
     public async ValueTask<Result<MapStatusView>> Handle(GetContextMapRequest request, CancellationToken cancellationToken)
     {
         var scope = await scopes.Current(cancellationToken).ConfigureAwait(false);
-        return scope.IsError ? scope.Error : await engine.MapStatus(scope.Value, cancellationToken).ConfigureAwait(false);
+        return scope.IsError ? scope.Error : await engine.MapStatus(request.Anchor, scope.Value, cancellationToken).ConfigureAwait(false);
     }
 }
