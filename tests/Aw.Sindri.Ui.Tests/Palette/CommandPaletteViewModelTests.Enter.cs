@@ -53,7 +53,7 @@ public sealed partial class CommandPaletteViewModelTests
     public async Task Create_item_opens_the_form_and_the_close_actions_point_at_the_sheet()
     {
         var created = 0;
-        var controls = new CatalogViewModel(_clipboard, _clock);   // P1's catalog keeps these at pending:P3; the spec-shaped one has them ready
+        var controls = new CatalogViewModel(_clipboard, _clock);   // the API's catalog has the P3 rows ready
         controls.Show(_api, _server, AwJson.Deserialize<CommandList>(Encoding.UTF8.GetBytes(GoldenFiles.Api("commands", "catalog")), SindriApiClient.Json).Value);
         var palette = new CommandPaletteViewModel(controls, _pages.Add, _history.Add, createItem: () => created++);
         palette.Open();

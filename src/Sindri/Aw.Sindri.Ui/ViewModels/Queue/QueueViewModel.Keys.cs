@@ -129,7 +129,7 @@ internal sealed partial class QueueViewModel
 
         var ids = shown.Groups.SelectMany(g => g.Items).Select(i => i.Id).ToHashSet(StringComparer.Ordinal);
         var added = view.Groups.SelectMany(g => g.Items).Select(i => i.Id).Where(id => !ids.Contains(id)).ToHashSet(StringComparer.Ordinal);
-        var drawn = DrawnIn(view, _scope);
+        var drawn = DrawnIn(view, shown, _scope);
         var counted = added.Count(drawn.Contains);
         if (counted == 0)
         {
@@ -148,12 +148,14 @@ internal sealed partial class QueueViewModel
     }
 
     // The ids a page would draw for a view (what Navigable reads off the shown rows): Home's two panels at their cap, or the
-    // Queue page's picked, open groups' rows that pass the text filter.
-    private HashSet<string> DrawnIn(QueueView view, QueueScope scope)
+    // Queue page's picked, open groups' rows that pass the text filter. A picked group that is collapsed but has no rows in the
+    // shown view has no heading yet, so a row that arrives in it brings the heading: the page moves, and the row counts.
+    private HashSet<string> DrawnIn(QueueView view, QueueView shown, QueueScope scope)
     {
         if (scope != QueueScope.Home)
         {
-            return view.Groups.Where(g => Picked(g.Group) && (!_groups.TryGetValue(g.Group, out var open) || open.IsExpanded))
+            var headingless = shown.Groups.Where(g => g.Items.Count == 0).Select(g => g.Group).ToHashSet(StringComparer.Ordinal);
+            return view.Groups.Where(g => Picked(g.Group) && (!_groups.TryGetValue(g.Group, out var open) || open.IsExpanded || headingless.Contains(g.Group)))
                 .SelectMany(g => g.Items).Where(i => Matches(i.Id, i.Title, i.Repo ?? string.Empty))
                 .Select(i => i.Id).ToHashSet(StringComparer.Ordinal);
         }
