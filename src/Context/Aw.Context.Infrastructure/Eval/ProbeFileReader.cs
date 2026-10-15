@@ -36,10 +36,32 @@ internal sealed class ProbeFileReader(ContextStoreSettings settings, JsonSeriali
         var set = AwJson.Deserialize<ProbeSet>(bytes.Value, options);
         if (set.IsError)
         {
-            return ContextErrors.ProbeFileInvalid.With($"{full}: {set.Error.Message}; nothing was run");
+            return ContextErrors.ProbeFileInvalid.With($"{full}: {Reason(bytes.Value, set.Error.Message)}; nothing was run");
         }
 
         return ProbeRunner.Check(set.Value) is { } invalid ? invalid : new ProbeFile(full, Convert.ToHexStringLower(SHA256.HashData(bytes.Value)), set.Value);
+    }
+
+    /// <summary>
+    /// Why the file didn't parse. An unknown key is named at its key path ('probes[0].expect.nodez: unknown key'), the way the
+    /// shape checks name theirs; any other parse error keeps the parser's message.
+    /// </summary>
+    private string Reason(byte[] bytes, string parserMessage)
+    {
+        try
+        {
+            _ = JsonSerializer.Deserialize(bytes, options.GetTypeInfo(typeof(ProbeSet)));
+        }
+        catch (JsonException e) when (e.Message.Contains("could not be mapped", StringComparison.Ordinal) && e.Path is { Length: > 2 } path)
+        {
+            return $"{path[2..]}: unknown key";
+        }
+        catch (JsonException)
+        {
+            // another parse error: the parser's own message below
+        }
+
+        return parserMessage;
     }
 
     /// <summary>The file's real path: absolute and printable (035), existing (036), outside every worktree (005).</summary>
