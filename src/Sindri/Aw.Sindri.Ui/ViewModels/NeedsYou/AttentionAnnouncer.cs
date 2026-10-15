@@ -1,17 +1,31 @@
 namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 
-#pragma warning disable MA0041, CA1822, MA0182 // red stub (U3' T5)
+#pragma warning disable MA0182 // until the shell places it (U3' T5)
 
-/// <summary>The one polite live region's line when rows arrive (UI spec §5): "N now need you", once for each rise.</summary>
+/// <summary>
+/// The one polite live region's line when rows arrive (UI spec §5): "N now need you", once for each rise in the count. A
+/// row leaving is announced by the list ("&lt;id&gt; cleared"), so a fall says nothing here.
+/// </summary>
 internal sealed class AttentionAnnouncer
 {
+    private int _last;
+
     /// <summary>The line; empty before the first announcement.</summary>
-    internal string Line => "";
+    internal string Line { get; private set; } = "";
 
     /// <summary>How many announcements were made.</summary>
-    internal int Announcements => 0;
+    internal int Announcements { get; private set; }
 
     /// <summary>Sees the count of rows that need the user now.</summary>
     /// <param name="count">The count.</param>
-    internal void Observe(int count) => throw new NotSupportedException();
+    internal void Observe(int count)
+    {
+        if (count > _last)
+        {
+            Line = Labels.NowNeedYou(count);
+            Announcements++;
+        }
+
+        _last = count;
+    }
 }

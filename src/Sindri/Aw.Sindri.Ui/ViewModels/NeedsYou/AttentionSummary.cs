@@ -21,5 +21,47 @@ internal sealed record AttentionSummary(string Title, int Badge, TrayView Tray, 
     /// <param name="state">The shell's state.</param>
     /// <param name="now">The time the ages are read at.</param>
     /// <returns>The summary.</returns>
-    internal static AttentionSummary For(NeedsYouFeed? feed, ShellState state, DateTimeOffset now) => throw new NotSupportedException();
+    internal static AttentionSummary For(NeedsYouFeed? feed, ShellState state, DateTimeOffset now)
+    {
+        var rows = feed?.Rows ?? [];
+        var counts = feed?.Counts ?? new HomeCounts(Running: 0, WithYou: 0, Queued: 0);
+
+        // Rows are kept while the views are stale; with no running Sindri, or none yet answering, there are none to count.
+        var badge = state is ShellState.Normal or ShellState.Stale or ShellState.Unreadable ? rows.Count : 0;
+        return new AttentionSummary(
+            badge > 0 ? Labels.TitleNeedsYou(badge) : Labels.Sindri,
+            badge,
+            TrayFor(feed, state, now),
+            feed is null ? "" : Labels.Summary(rows.Count, counts.Running, counts.WithYou, counts.Queued));
+    }
+
+    // The tray's own states win over the counts: only a running, fresh Sindri shows rows.
+    private static TrayView TrayFor(NeedsYouFeed? feed, ShellState state, DateTimeOffset now) => state switch
+    {
+        ShellState.Normal => feed is null ? Plain(TrayState.Neutral, Labels.TrayRunning) : Counted(feed, now),
+        ShellState.NotRunning => Plain(TrayState.NotRunning, Labels.TrayNotRunning),
+        ShellState.VersionMismatch or ShellState.Connecting or ShellState.Unreadable or ShellState.Stale => Plain(TrayState.Stale, Labels.TrayNotResponding),
+        _ => throw new ArgumentOutOfRangeException(nameof(state), state, message: null),
+    };
+
+    private static TrayView Plain(TrayState state, string tooltip) => new(state, tooltip, Labels.TrayOpen, Labels.TrayQuit);
+
+    private static TrayView Counted(NeedsYouFeed feed, DateTimeOffset now)
+    {
+        var rows = feed.Rows;
+        var urgent = rows.Any(r => r.Urgency is NeedsYouUrgency.Pulse or NeedsYouUrgency.Colour);
+        var (state, tooltip) =
+            urgent ? (TrayState.Attention, Labels.TrayNeedYou(rows.Count, feed.Counts.Running))
+            : rows.Count > 0 ? (TrayState.Calm, Labels.TrayToLookAt(rows.Count))
+            : (TrayState.Neutral, Labels.TrayNothingNeedsYou(feed.Counts.Running));
+        return Plain(state, tooltip) with
+        {
+            Count = rows.Count,
+            Rows = [.. rows.Take(TrayView.MaxRows).Select(r => new TrayRow(r.Id, Row(r, now)))],
+            RunningLabel = Labels.TrayRunningItem(feed.Counts.Running),
+        };
+    }
+
+    private static string Row(NeedsYouEntry row, DateTimeOffset now) =>
+        Labels.TrayRow(row.Chip.Word, row.ShownId, row.Title, row.Since == default ? "" : Labels.RowAge(now - row.Since));
 }
