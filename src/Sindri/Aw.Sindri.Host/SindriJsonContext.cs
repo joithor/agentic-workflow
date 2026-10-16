@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Onyx;
 using System.Text.Json.Serialization;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Graph;
@@ -118,6 +119,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ValidateProfileResponse))]
 [JsonSerializable(typeof(RunDoctorResponse))]
 [JsonSerializable(typeof(OnyxStatusResponse))]
+[JsonSerializable(typeof(OnyxSetupState))]
 [JsonSerializable(typeof(PublicEvent))]
 [JsonSerializable(typeof(LedgerPage))]
 [JsonSerializable(typeof(EventCatalogView))]

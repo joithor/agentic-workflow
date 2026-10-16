@@ -1,0 +1,25 @@
+namespace Aw.Sindri.Core.Onyx;
+
+/// <summary>The files `sindri onyx up` keeps under the Sindri home: the rendered .env and compose override, and the setup state.</summary>
+public interface IOnyxWorkspace
+{
+    /// <summary>Reads a text file.</summary>
+    /// <param name="path">The file's path (one of <see cref="OnyxPaths"/>).</param>
+    /// <returns>Its text, or null when it doesn't exist.</returns>
+    public string? Read(string path);
+
+    /// <summary>Writes a text file only when its content differs, atomically (a temporary file renamed over the target, so a reader sees the old or the new content, never a partial one).</summary>
+    /// <param name="path">The file's path; missing parent directories are created.</param>
+    /// <param name="content">The text.</param>
+    /// <param name="secret">The file holds a secret: it is created owner-only (0600) from the start, in a directory that is owner-only (0700) when it is created here.</param>
+    /// <returns>True when it wrote, false when the file already had this content.</returns>
+    public bool WriteIfChanged(string path, string content, bool secret);
+
+    /// <summary>Reads the setup state.</summary>
+    /// <returns>The state, or null when the file is missing or corrupt (never throws: a corrupt state is an empty one, every step is re-checked and each is idempotent).</returns>
+    public OnyxSetupState? ReadState();
+
+    /// <summary>Writes the setup state, atomically and owner-only.</summary>
+    /// <param name="state">The state.</param>
+    public void WriteState(OnyxSetupState state);
+}

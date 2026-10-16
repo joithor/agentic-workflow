@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Aw.Kernel.Ids;
 using Aw.Redaction;
 using Aw.Sindri.Core.Auth;
@@ -97,6 +98,8 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IOnyxPinsSource, EmbeddedOnyxPins>()                                            // context/onyx.lock, embedded
             .AddSingleton<IContainerRuntime>(_ => new DockerCliRuntime(new ProcessToolRunner(), environment))   // docker facts and compose operations
             .AddSingleton<IDeployFiles>(static _ => new HttpDeployFiles(new HttpClient(new SocketsHttpHandler { AllowAutoRedirect = false }), new Uri("https://raw.githubusercontent.com/onyx-dot-app/onyx/")))   // the pinned files, https, no redirect
+            .AddSingleton<IOnyxWorkspace>(sp => new FileOnyxWorkspace(sp.GetRequiredService<ISindriHome>(), sp.GetRequiredService<JsonSerializerOptions>()))   // onyx/ under the Sindri home
+            .AddSingleton<IComposeServices, YamlComposeServices>()                                       // the compose file's services, read only
             .AddSingleton<IHostProbes>(static _ => new HostProbes());                                     // free disk and loopback ports
 
     /// <summary>
