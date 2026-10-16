@@ -19,7 +19,6 @@ public static partial class TargetsReader
     {
         var problems = new Problems();
         problems.AddIf(file.Schema is not null && !TargetsFile.SchemaNames.Contains(file.Schema, StringComparer.Ordinal), "$.schema: must be evidence.targets/1 or evidence.repo/1 when given");
-        problems.AddIf(file.Databases is { ValueKind: not JsonValueKind.Object }, "$.databases: must be an object");
         var outputs = BuildOutputs(file.Cli?.BuildOutputs ?? [], problems);
         var allow = file.Cli?.Allow ?? [];
         for (var i = 0; i < allow.Count; i++)

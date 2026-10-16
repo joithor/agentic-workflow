@@ -1929,11 +1929,9 @@ Aw.Evidence.Core.Data.ResolvedTargets.Allow.init -> void
 Aw.Evidence.Core.Data.ResolvedTargets.AllowsNoProgram.get -> bool
 Aw.Evidence.Core.Data.ResolvedTargets.BuildOutputs.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Evidence.Core.Data.ResolvedTargets.BuildOutputs.init -> void
-Aw.Evidence.Core.Data.ResolvedTargets.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! BuildOutputs, out System.Collections.Generic.IReadOnlyList<string!>! Allow, out System.Collections.Generic.IReadOnlyList<string!>! PassEnv) -> void
 Aw.Evidence.Core.Data.ResolvedTargets.Equals(Aw.Evidence.Core.Data.ResolvedTargets? other) -> bool
 Aw.Evidence.Core.Data.ResolvedTargets.PassEnv.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Evidence.Core.Data.ResolvedTargets.PassEnv.init -> void
-Aw.Evidence.Core.Data.ResolvedTargets.ResolvedTargets(System.Collections.Generic.IReadOnlyList<string!>! BuildOutputs, System.Collections.Generic.IReadOnlyList<string!>! Allow, System.Collections.Generic.IReadOnlyList<string!>! PassEnv) -> void
 override Aw.Evidence.Core.Data.CliInvocation.Equals(object? obj) -> bool
 override Aw.Evidence.Core.Data.CliInvocation.GetHashCode() -> int
 override Aw.Evidence.Core.Data.CliInvocation.ToString() -> string!
@@ -1970,13 +1968,10 @@ Aw.Evidence.Core.Data.TargetsFile
 Aw.Evidence.Core.Data.TargetsFile.<Clone>$() -> Aw.Evidence.Core.Data.TargetsFile!
 Aw.Evidence.Core.Data.TargetsFile.Cli.get -> Aw.Evidence.Core.Data.CliTargets?
 Aw.Evidence.Core.Data.TargetsFile.Cli.init -> void
-Aw.Evidence.Core.Data.TargetsFile.Databases.get -> System.Text.Json.JsonElement?
 Aw.Evidence.Core.Data.TargetsFile.Databases.init -> void
-Aw.Evidence.Core.Data.TargetsFile.Deconstruct(out string? Schema, out Aw.Evidence.Core.Data.CliTargets? Cli, out System.Text.Json.JsonElement? Databases) -> void
 Aw.Evidence.Core.Data.TargetsFile.Equals(Aw.Evidence.Core.Data.TargetsFile? other) -> bool
 Aw.Evidence.Core.Data.TargetsFile.Schema.get -> string?
 Aw.Evidence.Core.Data.TargetsFile.Schema.init -> void
-Aw.Evidence.Core.Data.TargetsFile.TargetsFile(string? Schema = null, Aw.Evidence.Core.Data.CliTargets? Cli = null, System.Text.Json.JsonElement? Databases = null) -> void
 Aw.Evidence.Core.Data.TargetsReader
 const Aw.Evidence.Core.Data.TargetsFile.RepoRelativePath = ".agentic-workflow/evidence.json" -> string!
 override Aw.Evidence.Core.Data.CliTargets.Equals(object? obj) -> bool
@@ -2113,3 +2108,116 @@ virtual Aw.Evidence.Core.Data.DbTarget.EqualityContract.get -> System.Type!
 virtual Aw.Evidence.Core.Data.DbTarget.Equals(Aw.Evidence.Core.Data.DbTarget? other) -> bool
 virtual Aw.Evidence.Core.Data.DbTarget.PrintMembers(System.Text.StringBuilder! builder) -> bool
 static Aw.Evidence.Core.Data.SqlText.IsReadPragma(string! statement) -> bool
+Aw.Evidence.Core.Data.DatabaseEntry
+Aw.Evidence.Core.Data.DatabaseEntry.<Clone>$() -> Aw.Evidence.Core.Data.DatabaseEntry!
+Aw.Evidence.Core.Data.DatabaseEntry.Database.get -> string!
+Aw.Evidence.Core.Data.DatabaseEntry.Database.init -> void
+Aw.Evidence.Core.Data.DatabaseEntry.DatabaseEntry(string! Engine, string! Host, int Port, string! Database, string! User, string! PasswordEnv, bool Disposable, Aw.Evidence.Core.Data.ServerIdentity! Identity) -> void
+Aw.Evidence.Core.Data.DatabaseEntry.Deconstruct(out string! Engine, out string! Host, out int Port, out string! Database, out string! User, out string! PasswordEnv, out bool Disposable, out Aw.Evidence.Core.Data.ServerIdentity! Identity) -> void
+Aw.Evidence.Core.Data.DatabaseEntry.Disposable.get -> bool
+Aw.Evidence.Core.Data.DatabaseEntry.Disposable.init -> void
+Aw.Evidence.Core.Data.DatabaseEntry.Engine.get -> string!
+Aw.Evidence.Core.Data.DatabaseEntry.Engine.init -> void
+Aw.Evidence.Core.Data.DatabaseEntry.Equals(Aw.Evidence.Core.Data.DatabaseEntry? other) -> bool
+Aw.Evidence.Core.Data.DatabaseEntry.Host.get -> string!
+Aw.Evidence.Core.Data.DatabaseEntry.Host.init -> void
+Aw.Evidence.Core.Data.DatabaseEntry.Identity.get -> Aw.Evidence.Core.Data.ServerIdentity!
+Aw.Evidence.Core.Data.DatabaseEntry.Identity.init -> void
+Aw.Evidence.Core.Data.DatabaseEntry.PasswordEnv.get -> string!
+Aw.Evidence.Core.Data.DatabaseEntry.PasswordEnv.init -> void
+Aw.Evidence.Core.Data.DatabaseEntry.Port.get -> int
+Aw.Evidence.Core.Data.DatabaseEntry.Port.init -> void
+Aw.Evidence.Core.Data.DatabaseEntry.User.get -> string!
+Aw.Evidence.Core.Data.DatabaseEntry.User.init -> void
+Aw.Evidence.Core.Data.PostgresPreflight
+Aw.Evidence.Core.Data.PostgresTarget
+Aw.Evidence.Core.Data.PostgresTarget.Deconstruct(out Aw.Evidence.Core.Data.DatabaseEntry! Entry, out string! Password) -> void
+Aw.Evidence.Core.Data.PostgresTarget.Entry.get -> Aw.Evidence.Core.Data.DatabaseEntry!
+Aw.Evidence.Core.Data.PostgresTarget.Entry.init -> void
+Aw.Evidence.Core.Data.PostgresTarget.Equals(Aw.Evidence.Core.Data.PostgresTarget? other) -> bool
+Aw.Evidence.Core.Data.PostgresTarget.Password.get -> string!
+Aw.Evidence.Core.Data.PostgresTarget.Password.init -> void
+Aw.Evidence.Core.Data.PostgresTarget.PostgresTarget(Aw.Evidence.Core.Data.DatabaseEntry! Entry, string! Password) -> void
+Aw.Evidence.Core.Data.ReportedServer
+Aw.Evidence.Core.Data.ReportedServer.<Clone>$() -> Aw.Evidence.Core.Data.ReportedServer!
+Aw.Evidence.Core.Data.ReportedServer.Address.get -> string?
+Aw.Evidence.Core.Data.ReportedServer.Address.init -> void
+Aw.Evidence.Core.Data.ReportedServer.Database.get -> string!
+Aw.Evidence.Core.Data.ReportedServer.Database.init -> void
+Aw.Evidence.Core.Data.ReportedServer.Deconstruct(out string? Address, out int? Port, out string! Database) -> void
+Aw.Evidence.Core.Data.ReportedServer.Equals(Aw.Evidence.Core.Data.ReportedServer? other) -> bool
+Aw.Evidence.Core.Data.ReportedServer.Port.get -> int?
+Aw.Evidence.Core.Data.ReportedServer.Port.init -> void
+Aw.Evidence.Core.Data.ReportedServer.ReportedServer(string? Address, int? Port, string! Database) -> void
+Aw.Evidence.Core.Data.ResolvedTargets.DatabaseMap.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Evidence.Core.Data.DatabaseEntry!>!
+Aw.Evidence.Core.Data.ResolvedTargets.Databases.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Evidence.Core.Data.DatabaseEntry!>?
+Aw.Evidence.Core.Data.ResolvedTargets.Databases.init -> void
+Aw.Evidence.Core.Data.ResolvedTargets.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! BuildOutputs, out System.Collections.Generic.IReadOnlyList<string!>! Allow, out System.Collections.Generic.IReadOnlyList<string!>! PassEnv, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Evidence.Core.Data.DatabaseEntry!>? Databases) -> void
+Aw.Evidence.Core.Data.ResolvedTargets.ResolvedTargets(System.Collections.Generic.IReadOnlyList<string!>! BuildOutputs, System.Collections.Generic.IReadOnlyList<string!>! Allow, System.Collections.Generic.IReadOnlyList<string!>! PassEnv, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Evidence.Core.Data.DatabaseEntry!>? Databases = null) -> void
+Aw.Evidence.Core.Data.RoleFacts
+Aw.Evidence.Core.Data.RoleFacts.<Clone>$() -> Aw.Evidence.Core.Data.RoleFacts!
+Aw.Evidence.Core.Data.RoleFacts.BypassRowSecurity.get -> bool
+Aw.Evidence.Core.Data.RoleFacts.BypassRowSecurity.init -> void
+Aw.Evidence.Core.Data.RoleFacts.CreateDatabase.get -> bool
+Aw.Evidence.Core.Data.RoleFacts.CreateDatabase.init -> void
+Aw.Evidence.Core.Data.RoleFacts.CreateRole.get -> bool
+Aw.Evidence.Core.Data.RoleFacts.CreateRole.init -> void
+Aw.Evidence.Core.Data.RoleFacts.Deconstruct(out string! Name, out bool Superuser, out bool CreateRole, out bool CreateDatabase, out bool Replication, out bool BypassRowSecurity, out bool WritesServerFiles, out bool ExecutesServerPrograms, out int WritePrivileges) -> void
+Aw.Evidence.Core.Data.RoleFacts.Equals(Aw.Evidence.Core.Data.RoleFacts? other) -> bool
+Aw.Evidence.Core.Data.RoleFacts.ExecutesServerPrograms.get -> bool
+Aw.Evidence.Core.Data.RoleFacts.ExecutesServerPrograms.init -> void
+Aw.Evidence.Core.Data.RoleFacts.Name.get -> string!
+Aw.Evidence.Core.Data.RoleFacts.Name.init -> void
+Aw.Evidence.Core.Data.RoleFacts.Replication.get -> bool
+Aw.Evidence.Core.Data.RoleFacts.Replication.init -> void
+Aw.Evidence.Core.Data.RoleFacts.RoleFacts(string! Name, bool Superuser, bool CreateRole, bool CreateDatabase, bool Replication, bool BypassRowSecurity, bool WritesServerFiles, bool ExecutesServerPrograms, int WritePrivileges) -> void
+Aw.Evidence.Core.Data.RoleFacts.Superuser.get -> bool
+Aw.Evidence.Core.Data.RoleFacts.Superuser.init -> void
+Aw.Evidence.Core.Data.RoleFacts.WritePrivileges.get -> int
+Aw.Evidence.Core.Data.RoleFacts.WritePrivileges.init -> void
+Aw.Evidence.Core.Data.RoleFacts.WritesServerFiles.get -> bool
+Aw.Evidence.Core.Data.RoleFacts.WritesServerFiles.init -> void
+Aw.Evidence.Core.Data.ServerIdentity
+Aw.Evidence.Core.Data.ServerIdentity.<Clone>$() -> Aw.Evidence.Core.Data.ServerIdentity!
+Aw.Evidence.Core.Data.ServerIdentity.Database.get -> string!
+Aw.Evidence.Core.Data.ServerIdentity.Database.init -> void
+Aw.Evidence.Core.Data.ServerIdentity.Deconstruct(out string! ServerAddress, out string! Database, out int? ServerPort) -> void
+Aw.Evidence.Core.Data.ServerIdentity.Equals(Aw.Evidence.Core.Data.ServerIdentity? other) -> bool
+Aw.Evidence.Core.Data.ServerIdentity.ServerAddress.get -> string!
+Aw.Evidence.Core.Data.ServerIdentity.ServerAddress.init -> void
+Aw.Evidence.Core.Data.ServerIdentity.ServerIdentity(string! ServerAddress, string! Database, int? ServerPort = null) -> void
+Aw.Evidence.Core.Data.ServerIdentity.ServerPort.get -> int?
+Aw.Evidence.Core.Data.ServerIdentity.ServerPort.init -> void
+Aw.Evidence.Core.Data.TargetsFile.Databases.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Evidence.Core.Data.DatabaseEntry!>?
+Aw.Evidence.Core.Data.TargetsFile.Deconstruct(out string? Schema, out Aw.Evidence.Core.Data.CliTargets? Cli, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Evidence.Core.Data.DatabaseEntry!>? Databases) -> void
+Aw.Evidence.Core.Data.TargetsFile.TargetsFile(string? Schema = null, Aw.Evidence.Core.Data.CliTargets? Cli = null, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Evidence.Core.Data.DatabaseEntry!>? Databases = null) -> void
+const Aw.Evidence.Core.Data.DatabaseEntry.Postgres = "postgres" -> string!
+override Aw.Evidence.Core.Data.DatabaseEntry.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.DatabaseEntry.GetHashCode() -> int
+override Aw.Evidence.Core.Data.DatabaseEntry.ToString() -> string!
+override Aw.Evidence.Core.Data.PostgresTarget.<Clone>$() -> Aw.Evidence.Core.Data.PostgresTarget!
+override Aw.Evidence.Core.Data.PostgresTarget.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.PostgresTarget.GetHashCode() -> int
+override Aw.Evidence.Core.Data.PostgresTarget.ToString() -> string!
+override Aw.Evidence.Core.Data.ReportedServer.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.ReportedServer.GetHashCode() -> int
+override Aw.Evidence.Core.Data.ReportedServer.ToString() -> string!
+override Aw.Evidence.Core.Data.RoleFacts.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.RoleFacts.GetHashCode() -> int
+override Aw.Evidence.Core.Data.RoleFacts.ToString() -> string!
+override Aw.Evidence.Core.Data.ServerIdentity.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.ServerIdentity.GetHashCode() -> int
+override Aw.Evidence.Core.Data.ServerIdentity.ToString() -> string!
+override sealed Aw.Evidence.Core.Data.PostgresTarget.Equals(Aw.Evidence.Core.Data.DbTarget? other) -> bool
+static Aw.Evidence.Core.Data.DatabaseEntry.operator !=(Aw.Evidence.Core.Data.DatabaseEntry? left, Aw.Evidence.Core.Data.DatabaseEntry? right) -> bool
+static Aw.Evidence.Core.Data.DatabaseEntry.operator ==(Aw.Evidence.Core.Data.DatabaseEntry? left, Aw.Evidence.Core.Data.DatabaseEntry? right) -> bool
+static Aw.Evidence.Core.Data.PostgresPreflight.CheckIdentity(Aw.Evidence.Core.Data.ServerIdentity! expected, Aw.Evidence.Core.Data.ReportedServer! reported) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+static Aw.Evidence.Core.Data.PostgresPreflight.CheckRole(Aw.Evidence.Core.Data.RoleFacts! role) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+static Aw.Evidence.Core.Data.PostgresTarget.operator !=(Aw.Evidence.Core.Data.PostgresTarget? left, Aw.Evidence.Core.Data.PostgresTarget? right) -> bool
+static Aw.Evidence.Core.Data.PostgresTarget.operator ==(Aw.Evidence.Core.Data.PostgresTarget? left, Aw.Evidence.Core.Data.PostgresTarget? right) -> bool
+static Aw.Evidence.Core.Data.ReportedServer.operator !=(Aw.Evidence.Core.Data.ReportedServer? left, Aw.Evidence.Core.Data.ReportedServer? right) -> bool
+static Aw.Evidence.Core.Data.ReportedServer.operator ==(Aw.Evidence.Core.Data.ReportedServer? left, Aw.Evidence.Core.Data.ReportedServer? right) -> bool
+static Aw.Evidence.Core.Data.RoleFacts.operator !=(Aw.Evidence.Core.Data.RoleFacts? left, Aw.Evidence.Core.Data.RoleFacts? right) -> bool
+static Aw.Evidence.Core.Data.RoleFacts.operator ==(Aw.Evidence.Core.Data.RoleFacts? left, Aw.Evidence.Core.Data.RoleFacts? right) -> bool
+static Aw.Evidence.Core.Data.ServerIdentity.operator !=(Aw.Evidence.Core.Data.ServerIdentity? left, Aw.Evidence.Core.Data.ServerIdentity? right) -> bool
+static Aw.Evidence.Core.Data.ServerIdentity.operator ==(Aw.Evidence.Core.Data.ServerIdentity? left, Aw.Evidence.Core.Data.ServerIdentity? right) -> bool

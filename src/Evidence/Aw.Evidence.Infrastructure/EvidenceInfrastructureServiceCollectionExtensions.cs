@@ -62,8 +62,18 @@ public static class EvidenceInfrastructureServiceCollectionExtensions
             .AddSingleton<ICliRunner>(new ProcessCliRunner(TimeSpan.FromMinutes(2)))
             .AddSingleton<IExecutableLocator, FileExecutableLocator>()
             .AddSingleton<IEvidenceTargets, FileEvidenceTargets>()
-            .AddSingleton<IDatabaseReader, SqliteDatabaseReader>()
+            .AddSingleton<SqliteDatabaseReader>()
             .AddSingleton<ITextScrubber>(new RedactionScrubber(Redactor.Default))
             .AddSingleton<IIdGenerator, RandomIds>();
     }
+
+    /// <summary>
+    /// Adds the Postgres database reader (Npgsql) and the router that picks the SQLite or Postgres reader by target. A second technology for
+    /// a port gets its own method; <see cref="AddEvidenceInfrastructure"/> must have run first.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    public static IServiceCollection AddEvidencePostgresInfrastructure(this IServiceCollection services) => services
+        .AddSingleton<PostgresDatabaseReader>()
+        .AddSingleton<IDatabaseReader, DatabaseReaders>();
 }

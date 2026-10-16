@@ -220,7 +220,8 @@
           "Aw.Redaction": "[1.0.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.12, 10.0.12]",
-          "Microsoft.Playwright": "[1.63.0, 1.63.0]"
+          "Microsoft.Playwright": "[1.63.0, 1.63.0]",
+          "Npgsql": "[10.0.3, 10.0.3]"
         }
       },
       "aw.kernel": {
@@ -278,6 +279,15 @@
         "dependencies": {
           "Microsoft.Bcl.AsyncInterfaces": "6.0.0",
           "System.ComponentModel.Annotations": "5.0.0"
+        }
+      },
+      "Npgsql": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.3, 10.0.3]",
+        "resolved": "10.0.3",
+        "contentHash": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w==",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.0"
         }
       },
       "OpenTelemetry": {
