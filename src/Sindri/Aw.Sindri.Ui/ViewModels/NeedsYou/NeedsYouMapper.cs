@@ -1,4 +1,5 @@
 using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.ViewModels.Controls;
 
 namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 
@@ -26,12 +27,13 @@ internal static class NeedsYouMapper
         };
     }
 
-    // The catalog's ui word: 'ready', 'pending:<phase>' or 'cli-only:<reason>'. Anything else cannot run.
-    private static ActionReadiness Readiness(string ui) => ui switch
+    // The catalog's ui word, read once for the whole app (CatalogReadiness): anything it does not know cannot run.
+    private static ActionReadiness Readiness(string ui) => CatalogReadiness.Parse(ui).Kind switch
     {
-        "ready" => ActionReadiness.Ready,
-        _ when ui.StartsWith("cli-only", StringComparison.Ordinal) => ActionReadiness.CliOnly,
-        _ => ActionReadiness.Pending,
+        ControlKind.Ready => ActionReadiness.Ready,
+        ControlKind.Pending => ActionReadiness.Pending,
+        ControlKind.CliOnly => ActionReadiness.CliOnly,
+        _ => ActionReadiness.CliOnly,
     };
 
     private static NeedsYouEntry Entry(NeedsYouRowView row, Dictionary<string, ActionReadiness> readiness, DecisionList? decisions) =>
