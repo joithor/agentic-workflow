@@ -129,12 +129,59 @@ internal sealed partial class HomePage : UserControl
         }
     }
 
-    // A row is seen once it has been on screen and focused for a second (§5): focus in a row starts the count, focus out of it stops it.
+    // A row is seen once it has been on screen and focused, in the active window, for a second (§5): focus in a row starts the
+    // count, focus out of it stops it, and so does the window going inactive (it starts again when the window is activated).
     private void Look(RoutedEventArgs e, bool looking)
     {
-        if ((e.Source as Visual)?.GetSelfAndVisualAncestors().OfType<NeedsYouRow>().FirstOrDefault() is { RowId.Length: > 0 } row && DataContext is ShellViewModel shell)
+        if ((e.Source as Visual)?.GetSelfAndVisualAncestors().OfType<NeedsYouRow>().FirstOrDefault() is { } row)
         {
-            shell.NeedsYou.Seen.Watch(row.RowId, looking && row.IsEffectivelyVisible);
+            Watch(row, looking);
+        }
+    }
+
+    private void Watch(NeedsYouRow row, bool looking, bool? windowActive = null)
+    {
+        if (row.RowId is { Length: > 0 } id && DataContext is ShellViewModel shell)
+        {
+            shell.NeedsYou.Seen.Watch(id, looking && row.IsEffectivelyVisible && (windowActive ?? (TopLevel.GetTopLevel(this) is Window { IsActive: true })));
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        if (TopLevel.GetTopLevel(this) is Window window)
+        {
+            window.Activated += OnWindowActivated;
+            window.Deactivated += OnWindowDeactivated;
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        if (TopLevel.GetTopLevel(this) is Window window)
+        {
+            window.Activated -= OnWindowActivated;
+            window.Deactivated -= OnWindowDeactivated;
+        }
+
+        base.OnDetachedFromVisualTree(e);
+    }
+
+    private void OnWindowActivated(object? sender, EventArgs e) => WatchFocusedRow(active: true);
+
+    private void OnWindowDeactivated(object? sender, EventArgs e) => WatchFocusedRow(active: false);
+
+    // IsActive is not yet true inside Activated, so the event says which way the window went.
+    private void WatchFocusedRow(bool active)
+    {
+
+        if (TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is Visual focused
+            && focused.GetSelfAndVisualAncestors().OfType<NeedsYouRow>().FirstOrDefault() is { } row)
+        {
+            Watch(row, looking: active, windowActive: active);
         }
     }
 

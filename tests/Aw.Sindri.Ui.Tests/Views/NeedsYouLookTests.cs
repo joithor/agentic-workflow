@@ -77,6 +77,10 @@ public sealed class NeedsYouLookTests : IDisposable
     private static List<NeedsYouRow> Rows(Window window) =>
         [.. window.GetVisualDescendants().OfType<NeedsYouRow>().Where(r => r.IsEffectivelyVisible)];
 
+    // The headless platform has no way to deactivate a window, so the platform callback the window subscribed to is invoked.
+    private static void Raise(object impl, string callback) =>
+        ((Action?)impl.GetType().GetProperty(callback, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)?.GetValue(impl))?.Invoke();
+
     private static Border Frame(NeedsYouRow row) => row.GetVisualDescendants().OfType<Border>().First(b => string.Equals(b.Name, "RowFrame", StringComparison.Ordinal));
 
     [Fact]
@@ -99,6 +103,38 @@ public sealed class NeedsYouLookTests : IDisposable
         Assert.False(vm.IsPulsing);
         Assert.True(Rows(window)[1].DataContext is NeedsYouRowViewModel { IsPulsing: true });
         Assert.NotNull(shell);
+    });
+
+    [Fact]
+    public Task A_row_focused_in_an_inactive_window_stays_unseen_until_the_window_is_active() => OnUi(async () =>
+    {
+        var (window, _) = await WithRows(2);
+        var row = Rows(window)[0];
+        var vm = (NeedsYouRowViewModel)row.DataContext!;
+        Assert.True(Frame(row).Focus(NavigationMethod.Tab));
+        Settle(window);
+        var impl = window.PlatformImpl!;
+        Raise(impl, "Deactivated");
+        Settle(window);
+        Assert.False(window.IsActive);
+
+        _clock.Advance(SeenTracker.OnScreenFor);
+        await Task.Delay(50, Token);
+        Settle(window);
+        Assert.True(vm.IsPulsing);
+
+        Raise(impl, "Activated");
+        Settle(window);
+        Assert.True(window.IsActive, "active");
+        Assert.NotNull(window.FocusManager?.GetFocusedElement());
+        _clock.Advance(SeenTracker.OnScreenFor);
+        for (var i = 0; i < 50 && vm.IsPulsing; i++)
+        {
+            await Task.Delay(10, Token);
+            Settle(window);
+        }
+
+        Assert.False(vm.IsPulsing);
     });
 
     [Fact]
