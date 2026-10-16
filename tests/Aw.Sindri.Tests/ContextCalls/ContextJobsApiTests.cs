@@ -43,12 +43,12 @@ public sealed class ContextJobsApiTests : IDisposable
     private static IEnumerable<LedgerEvent> Of(IEnumerable<LedgerEvent> events, string type) => events.Where(e => string.Equals(e.Envelope.Type, type, StringComparison.Ordinal));
 
     /// <summary>A host that maps the fixture map's repo and names Onyx, with the fixture map imported (the sync's input).</summary>
-    private async Task<GoldenHost> SyncHost(FakeOnyxServer onyx)
+    private async Task<GoldenHost> SyncHost(FakeOnyxServer onyx, Action<IServiceCollection>? extra = null)
     {
         var yaml = $"schemaVersion: 1\nuser: golden\nrepos:\n  - {{ name: {FixtureMap.Repo}, path: \"{_repo.Path}\" }}\n"
             + "context:\n  docs: { globs: [\"docs/**/*.md\"] }\n  sources:\n"
             + $"    onyx: {{ url: \"{onyx.Url}\", token: \"env:{KeyVariable}\", version: \"{FakeOnyxServer.PinnedVersion}\" }}\n";
-        var host = await GoldenHost.Start(temporary: true, Token, yaml, new Dictionary<string, string>(StringComparer.Ordinal) { [KeyVariable] = onyx.Token });
+        var host = await GoldenHost.Start(temporary: true, Token, yaml, new Dictionary<string, string>(StringComparer.Ordinal) { [KeyVariable] = onyx.Token }, extra);
         var hash = (await host.LiveHash(Token)).Value;
         Assert.Equal(HttpStatusCode.OK, (await host.Http.Ask(Post("/sindri/profile/approve", await ApiScenarios.Confirmed(host, hash), Human(host.Token.Value)))).Status);
         await ContextMapApiTests.Import(host);
@@ -105,6 +105,7 @@ public sealed class ContextJobsApiTests : IDisposable
         await using var host = await SyncHost(onyx);
 
         _ = await Start(host, "/sindri/context/sources/sync", """{"source":"onyx"}""");
+        await JobHost.Settle(host, Token);
         _ = await Start(host, "/sindri/context/sources/sync", """{"source":"nothing"}""");
         await JobHost.Settle(host, Token);
 
@@ -142,6 +143,53 @@ public sealed class ContextJobsApiTests : IDisposable
         Assert.Equal(("SND-JOB-409", 409), (Core.SindriErrors.JobConflict.Code, (int)HttpStatusCode.Conflict));
         Assert.Equal(Kernel.ErrorKind.Conflict, Context.Core.ContextErrors.SyncRunning.Kind);   // 056 stays the in-run code of a sync that meets a running one (the scheduled service's); both are 409
         _ = Assert.Single(Of(await Ledger(host), EventTypes.JobStarted));
+    }
+
+    [Fact(Timeout = 90_000), Trait("Lane", "integration")]
+    public async Task A_one_source_sync_start_while_an_all_sources_sync_runs_is_SND_JOB_409()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { Delay = TimeSpan.FromMilliseconds(300) });
+        await using var host = await SyncHost(onyx);
+        var (first, _) = await Start(host, "/sindri/context/sources/sync", "{}");
+
+        var second = await host.Http.Ask(Post("/sindri/context/sources/sync", """{"source":"onyx"}""", Human(host.Token.Value)));
+
+        Assert.Equal((HttpStatusCode.Conflict, "SND-JOB-409"), (second.Status, second.Code));
+        Assert.Equal(first, Json(second.Body).GetProperty("runningJob").GetString());   // one key for every sync: the docs promise one sync job at a time
+    }
+
+    [Fact(Timeout = 90_000), Trait("Lane", "integration")]
+    public async Task Sources_sync_accepts_an_empty_body_like_map_build()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var onyx = await FakeOnyxServer.Start();
+        await using var host = await SyncHost(onyx);
+
+        var started = await host.Http.Ask(Post("/sindri/context/sources/sync", string.Empty, Human(host.Token.Value)));
+        await JobHost.Settle(host, Token);
+
+        Assert.True(started.Status == HttpStatusCode.OK, started.Body);
+    }
+
+    [Fact(Timeout = 90_000), Trait("Lane", "integration")]
+    public async Task An_all_sources_sync_that_meets_056_on_one_source_still_records_the_others_and_reports_it_as_that_sources_row()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var onyx = await FakeOnyxServer.Start();
+        await using var host = await SyncHost(onyx, services => SyncRunningOnZeta.Install(services));
+
+        _ = await Start(host, "/sindri/context/sources/sync", "{}");
+        await JobHost.Settle(host, Token);
+        var events = await Ledger(host);
+
+        var finished = Json(Assert.Single(Of(events, EventTypes.JobFinished)).Envelope.Payload);
+        Assert.Equal("succeeded", finished.GetProperty("outcome").GetString());
+        var rows = finished.GetProperty("result").GetProperty("sources").EnumerateArray().ToDictionary(r => r.GetProperty("source").GetString()!, r => r.GetProperty("links"), StringComparer.Ordinal);
+        Assert.True(rows["onyx"].GetProperty("linked").GetInt32() > 0);
+        Assert.Equal("SND-CONTEXT-056", rows["zeta"].GetProperty("code").GetString());
+        var synced = Of(events, EventTypes.ContextSourcesSynced).Select(e => Json(e.Envelope.Payload).GetProperty("source").GetString()).ToList();
+        Assert.Equal(["onyx"], synced);   // the source that finished has its event; the one that was running has the run that owns it
     }
 
     [Fact(Timeout = 90_000), Trait("Lane", "integration")]
