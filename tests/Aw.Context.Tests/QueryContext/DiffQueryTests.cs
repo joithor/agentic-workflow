@@ -169,7 +169,7 @@ public sealed class DiffQueryTests : IDisposable
     {
         var world = World();
         _ = await world.ImportFixture();
-        world.Docs.Failure = Aw.Context.Core.ContextErrors.SourceUnavailable.With("docs are down");
+        world.Docs.Failure = ContextErrors.SourceUnavailable.With("docs are down");
 
         var result = await world.Engine.Query(Ask(), MapWorld.Human, MapWorld.None);
 
@@ -202,7 +202,7 @@ public sealed class DiffQueryTests : IDisposable
         Assert.Equal(["src/layout/SplitPane.ts"], result.Diff!.Files.Select(f => f.Path), StringComparer.Ordinal);
         Assert.Empty(result.Diff.Unmapped);
         Assert.Equal(new DiffCounts(3, 1, 0, 0, 2), result.Diff.Counts);
-        var json = Encoding.UTF8.GetString(Aw.Kernel.Json.AwJson.Serialize(result, Aw.Kernel.Json.AwJson.CreateOptions(Aw.Context.Tests.Contract.ContractJsonContext.Default)));
+        var json = Encoding.UTF8.GetString(Kernel.Json.AwJson.Serialize(result, Kernel.Json.AwJson.CreateOptions(Contract.ContractJsonContext.Default)));
         Assert.DoesNotContain("0001.md", json, StringComparison.Ordinal);
         Assert.DoesNotContain(".env", json, StringComparison.Ordinal);
     }
@@ -249,12 +249,12 @@ public sealed class DiffQueryTests : IDisposable
     [Fact, Trait("Lane", "integration")]
     public async Task Diff_of_PR3_lists_its_files_maps_SplitPane_and_lists_the_rest_unmapped()
     {
-        var repo = Aw.Context.Testing.Fixtures.FixtureRepo.Build();
+        var repo = Testing.Fixtures.FixtureRepo.Build();
         _disposables.Add(repo);
         var pr = repo.PullRequests.Single(p => p.Number == 3);
         var gitBase = Git(repo, "rev-parse", pr.MergeCommit + "^1");
         var gitHead = Git(repo, "rev-parse", pr.MergeCommit + "^2");
-        var world = World(new Aw.Context.Infrastructure.Extract.GitRepoReader(new Aw.Context.Infrastructure.Git.GitCli()));
+        var world = World(new Context.Infrastructure.Extract.GitRepoReader(new Context.Infrastructure.Git.GitCli()));
         _ = await world.ImportFixture();
         var scope = MapWorld.HumanWith(MapWorld.OnlyFixtureRepo, [new ContextRepo(ContextRepoName.From(FixtureMap.Repo), repo.Path)]);
 
@@ -272,7 +272,7 @@ public sealed class DiffQueryTests : IDisposable
         Assert.Contains(result.Value.Sections, s => string.Equals(s.Name, "affects", StringComparison.Ordinal));
     }
 
-    private static string Git(Aw.Context.Testing.Fixtures.FixtureRepo repo, params string[] args)
+    private static string Git(Testing.Fixtures.FixtureRepo repo, params string[] args)
     {
         var start = new System.Diagnostics.ProcessStartInfo("git") { RedirectStandardOutput = true, UseShellExecute = false };
         start.ArgumentList.Add("-C");

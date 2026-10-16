@@ -24,7 +24,7 @@ public sealed class DiffAnchorsTests
     private static RepoChanges Changes(params (string Path, ChangeKind Change)[] files) =>
         new(Sha, Sha, Sha, [.. files.Select(f => new RepoChange(f.Path, f.Change))]);
 
-    private static (DiffPart Part, IReadOnlyList<Aw.Context.Core.Graph.GraphNode> Anchors) Build(RepoChanges changes, ContextRepo? repo = null, GraphBuilder? map = null) =>
+    private static (DiffPart Part, IReadOnlyList<GraphNode> Anchors) Build(RepoChanges changes, ContextRepo? repo = null, GraphBuilder? map = null) =>
         DiffAnchors.Build(changes, repo ?? _repo, (map ?? Map()).Build());
 
     [Fact, Trait("Lane", "unit")]

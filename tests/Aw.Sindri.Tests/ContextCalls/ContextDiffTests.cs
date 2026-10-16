@@ -144,7 +144,7 @@ public sealed class ContextDiffTests : IDisposable
     public async Task Context_query_repo_without_diff_is_006_exit_1()
     {
         using var error = new StringWriter();
-        var output = new Output(TextWriter.Null, error, Aw.Kernel.Json.AwJson.CreateOptions(SindriJsonContext.Default));
+        var output = new Output(TextWriter.Null, error, Kernel.Json.AwJson.CreateOptions(SindriJsonContext.Default));
         var verbs = new ContextVerbs(null!, output);   // why: the argument error returns before the client is touched
 
         var exit = await verbs.Run(["query", "x", "--repo", "aw-split-panes"], TestContext.Current.CancellationToken);
