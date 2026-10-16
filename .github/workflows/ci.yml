@@ -150,9 +150,6 @@ jobs:
       - name: Install the CI tools (the gate 7 checker's tests need typescript)
         if: env.CHANGED == 'true'
         run: npm ci --prefix .github/ci-tools --ignore-scripts --no-audit --no-fund
-      - name: Install tmux (meta-launch.test.sh skips itself without it)
-        if: env.CHANGED == 'true'
-        run: command -v tmux > /dev/null || brew install tmux
       - name: Run every tracked bash test suite
         if: env.CHANGED == 'true'
         run: bash scripts/ci/bash-tests.sh
