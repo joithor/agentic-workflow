@@ -82,8 +82,13 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton(McpSettings.Read(environment))
             .AddSingleton<IClaudeCli, ProcessClaudeCli>()
             .AddSingleton<IProviderFiles, ProviderConfigFiles>()
-            .AddSingleton<IOnyxPinsSource, EmbeddedOnyxPins>()       // Onyx P1: context/onyx.lock, embedded
+            .AddOnyxInfrastructure()
             .AddSingleton<ITextScrubber>(new RedactingScrubber(Redactor.Default));
+
+    private static IServiceCollection AddOnyxInfrastructure(this IServiceCollection services)
+        => services
+            .AddSingleton<IOnyxPinsSource, EmbeddedOnyxPins>()                                            // context/onyx.lock, embedded
+            .AddSingleton<IContainerRuntime>(static _ => new DockerCliRuntime(new ProcessToolRunner()));   // Docker facts, read-only
 
     /// <summary>
     /// Makes the secret-pointer resolver (env:, file:, keychain:, op:) over <paramref name="environment"/>, for Composition to

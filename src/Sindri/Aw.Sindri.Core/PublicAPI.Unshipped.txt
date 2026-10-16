@@ -7833,3 +7833,27 @@ static Aw.Sindri.Core.Onyx.OnyxPins.Parse(string! text) -> Aw.Kernel.Result<Aw.S
 static Aw.Sindri.Core.Onyx.OnyxPins.operator !=(Aw.Sindri.Core.Onyx.OnyxPins? left, Aw.Sindri.Core.Onyx.OnyxPins? right) -> bool
 static Aw.Sindri.Core.Onyx.OnyxPins.operator ==(Aw.Sindri.Core.Onyx.OnyxPins? left, Aw.Sindri.Core.Onyx.OnyxPins? right) -> bool
 static readonly Aw.Sindri.Core.SindriErrors.OnyxPinsMalformed -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.<Clone>$() -> Aw.Sindri.Core.Onyx.ContainerRuntimeFacts!
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.CliFound.get -> bool
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.CliFound.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeV2.get -> bool
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeV2.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeVersion.get -> string?
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeVersion.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ContainerRuntimeFacts(bool CliFound, bool DaemonAnswers, string? ServerVersion, bool ComposeV2, string? ComposeVersion, long? MemoryBytes) -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DaemonAnswers.get -> bool
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DaemonAnswers.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Deconstruct(out bool CliFound, out bool DaemonAnswers, out string? ServerVersion, out bool ComposeV2, out string? ComposeVersion, out long? MemoryBytes) -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Equals(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts? other) -> bool
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.MemoryBytes.get -> long?
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.MemoryBytes.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ServerVersion.get -> string?
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ServerVersion.init -> void
+Aw.Sindri.Core.Onyx.IContainerRuntime
+Aw.Sindri.Core.Onyx.IContainerRuntime.Inspect(System.Threading.CancellationToken cancellationToken) -> Aw.Sindri.Core.Onyx.ContainerRuntimeFacts!
+override Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ToString() -> string!
+static Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.operator !=(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts? left, Aw.Sindri.Core.Onyx.ContainerRuntimeFacts? right) -> bool
+static Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.operator ==(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts? left, Aw.Sindri.Core.Onyx.ContainerRuntimeFacts? right) -> bool
