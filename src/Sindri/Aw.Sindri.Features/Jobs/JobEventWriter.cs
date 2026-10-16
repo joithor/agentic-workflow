@@ -25,6 +25,9 @@ internal sealed class JobEventWriter(ILedgerStore ledger, HeldLease held, EventF
     private const string ResultUnreadable = " (result dropped: it could not be cleaned)";
     private const string InterruptedSummary = "interrupted: the process stopped while it ran";
 
+    /// <summary>Whether the control plane still holds the lease: a failed write with the lease held is the runner's to retry and then end the job over.</summary>
+    public bool HoldsLease() => held.Current is not null;
+
     /// <summary>Records one progress line (cleaned here) as round <paramref name="round"/>.</summary>
     /// <param name="start">The job.</param>
     /// <param name="round">Its number.</param>

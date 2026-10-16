@@ -93,6 +93,9 @@ public sealed class InMemorySindriStore(TimeProvider clock, IProcessProbe probe)
     /// <summary>Runs at the start of every <see cref="Append"/>, before its token is checked (a test aborts its request here).</summary>
     public Action<LedgerEntry>? BeforeAppend { get; set; }
 
+    /// <summary>When set and it answers an error for an entry, <see cref="Append"/> refuses that entry with it (a write that fails while the lease is still held).</summary>
+    public Func<LedgerEntry, Error?>? FailAppend { get; set; }
+
     /// <summary>When set, <see cref="Append"/> throws it (a ledger that fails in a way the contract doesn't model).</summary>
     public Exception? AppendFailure { get; set; }
 
@@ -101,6 +104,11 @@ public sealed class InMemorySindriStore(TimeProvider clock, IProcessProbe probe)
     {
         BeforeAppend?.Invoke(entry);
         cancellationToken.ThrowIfCancellationRequested();   // the real ledger passes the token to its connection
+        if (FailAppend?.Invoke(entry) is { } refused)
+        {
+            return ValueTask.FromResult<Result<LedgerAppend>>(refused);
+        }
+
         if (AppendFailure is { } failure)
         {
             throw failure;
