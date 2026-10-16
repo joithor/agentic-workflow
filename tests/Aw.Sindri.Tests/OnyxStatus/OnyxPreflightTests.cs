@@ -10,7 +10,7 @@ public sealed class OnyxPreflightTests
     private const long Gib = 1L << 30;
 
     private static readonly OnyxPins _pins = new(
-        "v4.9.0", new string('0', 40), [], [], DiskBytes: 30 * Gib, DockerMemoryBytes: 6 * Gib);
+        "v4.9.0", new string('0', 40), [], [], DiskBytes: 30 * Gib, DockerMemoryBytes: 5_905_580_032);   // the lock's floor: 5.5 GiB of MemTotal for a 6 GiB VM
 
     private static readonly DiskFacts _roomy = new("/h", 80 * Gib);
     private static readonly PortFacts _free = new(3000, PreferredFree: true, FirstFreeFallback: 3001);
@@ -27,7 +27,7 @@ public sealed class OnyxPreflightTests
         Assert.Equal(["docker", "compose", "memory", "disk", "port"], report.Checks.Select(static c => c.Name), StringComparer.Ordinal);
         Assert.Equal("29.4.0", Check(report, "docker").Detail);
         Assert.Equal("v2.40.3", Check(report, "compose").Detail);
-        Assert.Equal("15.7 GiB for Docker, needs 6.0 GiB", Check(report, "memory").Detail);
+        Assert.Equal("15.7 GiB for Docker, needs a 6 GiB setting", Check(report, "memory").Detail);
         Assert.Equal("80.0 GiB free at /h, needs 30.0 GiB", Check(report, "disk").Detail);
         Assert.Equal("3000 free", Check(report, "port").Detail);
     }
@@ -77,10 +77,32 @@ public sealed class OnyxPreflightTests
         var memory = Check(OnyxPreflight.Evaluate(docker, _roomy, _free, _pins), "memory");
 
         Assert.Equal(CheckState.Fail, memory.State);
-        Assert.Equal("4.0 GiB for Docker, needs 6.0 GiB", memory.Detail);
+        Assert.Equal("4.0 GiB for Docker, needs a 6 GiB setting", memory.Detail);
         Assert.Equal("SND-ONYX-003", memory.Problem?.Code);
-        Assert.Contains("Docker Desktop, Settings, Resources", memory.Problem?.Message, StringComparison.Ordinal);
-        Assert.Contains("6.0 GiB", memory.Problem?.Message, StringComparison.Ordinal);
+        Assert.Contains("set Docker's memory to at least 6 GiB in Docker Desktop → Settings → Resources", memory.Problem?.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Evaluate_passes_a_6_GiB_vm_whose_MemTotal_reads_5_8_GiB()
+    {
+        // Docker Desktop's `docker info` MemTotal sits a few percent below the VM limit the user set.
+        var docker = FakeContainerRuntime.Healthy with { MemoryBytes = (long)(5.8 * Gib) };
+
+        var memory = Check(OnyxPreflight.Evaluate(docker, _roomy, _free, _pins), "memory");
+
+        Assert.Equal(CheckState.Ok, memory.State);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Evaluate_fails_a_MemTotal_of_5_4_GiB_with_the_6_GiB_fix()
+    {
+        var docker = FakeContainerRuntime.Healthy with { MemoryBytes = (long)(5.4 * Gib) };
+
+        var memory = Check(OnyxPreflight.Evaluate(docker, _roomy, _free, _pins), "memory");
+
+        Assert.Equal(CheckState.Fail, memory.State);
+        Assert.Equal("5.4 GiB for Docker, needs a 6 GiB setting", memory.Detail);
+        Assert.Contains("at least 6 GiB in Docker Desktop", memory.Problem?.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

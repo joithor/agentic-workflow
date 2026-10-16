@@ -12,7 +12,7 @@ namespace Aw.Sindri.Core.Onyx;
 /// <param name="Files">The deployment files to fetch, with their sha256.</param>
 /// <param name="Images">Every image for each platform, by digest.</param>
 /// <param name="DiskBytes">Free disk the setup needs.</param>
-/// <param name="DockerMemoryBytes">Memory Docker must have.</param>
+/// <param name="DockerMemoryBytes">The floor for `docker info` MemTotal; the setting the user is told is this rounded up to a whole GiB.</param>
 public sealed record OnyxPins(
     string Version, string Commit, IReadOnlyList<OnyxFilePin> Files, IReadOnlyList<OnyxImagePin> Images, long DiskBytes, long DockerMemoryBytes)
 {

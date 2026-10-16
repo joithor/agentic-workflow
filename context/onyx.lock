@@ -17,7 +17,10 @@
 #            layers and volumes = 6782472222, + 10 GiB (10737418240) for models and data = 17519890462. A first estimate:
 #            P2 re-measures on a real pull and adjusts.
 #   need docker-memory-bytes
-#            6 GiB, the one-user sizing of docs/sindri/onyx.md.
+#            5905580032 = 5.5 GiB: the floor for `docker info` MemTotal. The one-user sizing of docs/sindri/onyx.md is a
+#            6 GiB Docker VM, and Docker Desktop reports MemTotal a few percent under the limit the user sets, so a 6 GiB
+#            VM reads about 5.8 GiB. Preflight compares MemTotal with this floor and tells the user the floor rounded up to
+#            a whole GiB (6 GiB) as the setting.
 
 version v4.9.0 f1738ed539dc69d3bb06520c96fa068f9bd45c31
 
@@ -50,4 +53,4 @@ image docker.io/onyxdotapp/code-interpreter linux/arm64 sha256:4fd52d3b18012fbfa
 image docker.io/onyxdotapp/code-interpreter linux/amd64 sha256:30b96dce1c5f60dfe138c19afb8737a5ec995803b7e26ca9c2907a2a59f0d6d2
 
 need disk-bytes 17519890462
-need docker-memory-bytes 6442450944
+need docker-memory-bytes 5905580032

@@ -57,18 +57,20 @@ public static class OnyxPreflight
         ? Ok("compose", docker.ComposeVersion ?? "v2")
         : Fail("compose", "Compose v2 not found", SindriErrors.OnyxComposeMissing, "Docker Compose v2 is missing (`docker compose version` fails; the legacy docker-compose isn't enough): update Docker Desktop or install the docker compose plugin");
 
+    // The lock's docker-memory-bytes is a floor for `docker info` MemTotal, which reads a few percent under the VM limit
+    // the user sets. The setting the user is told is that floor rounded up to a whole GiB (5.5 GiB floor, 6 GiB setting).
     private static PreflightCheck Memory(ContainerRuntimeFacts docker, OnyxPins pins)
     {
-        var need = Gib(pins.DockerMemoryBytes);
+        var setting = ((pins.DockerMemoryBytes + (1L << 30) - 1) >> 30).ToString(CultureInfo.InvariantCulture);
         if (docker.MemoryBytes is not { } have)
         {
-            return Warn("memory", $"Docker's memory is unknown, needs {need} GiB");
+            return Warn("memory", $"Docker's memory is unknown, needs a {setting} GiB setting");
         }
 
-        var detail = $"{Gib(have)} GiB for Docker, needs {need} GiB";
+        var detail = $"{Gib(have)} GiB for Docker, needs a {setting} GiB setting";
         return have >= pins.DockerMemoryBytes
             ? Ok("memory", detail)
-            : Fail("memory", detail, SindriErrors.OnyxNotEnoughResources, $"Docker has {Gib(have)} GiB and Onyx needs {need} GiB: raise it in Docker Desktop, Settings, Resources, Memory, to at least {need} GiB");
+            : Fail("memory", detail, SindriErrors.OnyxNotEnoughResources, $"Docker has {Gib(have)} GiB and Onyx needs a {setting} GiB limit: set Docker's memory to at least {setting} GiB in Docker Desktop → Settings → Resources");
     }
 
     private static PreflightCheck Disk(DiskFacts disk, OnyxPins pins)
