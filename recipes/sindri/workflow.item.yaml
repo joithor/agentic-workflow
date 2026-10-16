@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.item
 version: 1
-inputs: [fact:item]
+inputs:
+  - { key: fact:item, label: "Item", type: item, kind: item }
 initial: triaged
 states:
   triaged:   { kind: wait, waitFor: { event: item.routed }, timeout: { after: 7d, then: escalate },

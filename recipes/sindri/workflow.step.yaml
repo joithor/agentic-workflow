@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.step
 version: 1
-inputs: [fact:spec]
+inputs:
+  - { key: fact:spec, label: "Spec", type: text, kind: text }
 initial: produce
 states:
   produce: { kind: active, step: step.produce, loop: revisions, timeout: { after: 4h, then: park },
