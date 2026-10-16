@@ -16,7 +16,7 @@ internal sealed partial class WiringRules
             .Where(n => n.Transition.On == "wait.satisfied")
             .SelectMany(n => n.Transition.Produces.Select((entry, j) => (n.Transition, n.Number, Entry: entry, Index: j)))
             .SelectMany(p => ChildrenOf(recipe, p.Transition, context).Select(c => new ChildProduces(p.Transition, p.Number, p.Entry, p.Index, c.From, c.Child, c.Id)))
-            .Where(p => ChildOutputs.Declared(p.Child).Contains(p.Entry.SourceKey()))
+            .Where(p => !HasEmptyList(p.Transition.When) && ChildOutputs.Declared(p.Child).Contains(p.Entry.SourceKey()))   // why: an empty all/any is RCP-SCHEMA-001's, one fault gives one finding
             .Select(p => ChildOutputFinding(p, source))
             .OfType<RecipeFinding>()
             .DistinctBy(f => (f.Path, f.Rule));
@@ -130,6 +130,9 @@ internal sealed partial class WiringRules
         sets.ToList().ForEach(result.IntersectWith);
         return result;
     }
+
+    private static bool HasEmptyList(WhenClause? when) =>
+        when is not null && (when.All is { Count: 0 } || when.Any is { Count: 0 } || (when.All ?? []).Any(HasEmptyList) || (when.Any ?? []).Any(HasEmptyList) || HasEmptyList(when.Not));
 
     private static bool NamesOutcome(WhenClause? when) =>
         when is not null && (when.Outcome is not null || (when.All ?? []).Any(NamesOutcome) || (when.Any ?? []).Any(NamesOutcome) || NamesOutcome(when.Not));

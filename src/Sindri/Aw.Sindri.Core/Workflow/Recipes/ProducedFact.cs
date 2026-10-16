@@ -10,12 +10,12 @@ namespace Aw.Sindri.Core.Workflow.Recipes;
 /// canonical form lives in the type: a source equal to the fact is the bare key, however the entry is built or read.
 /// </summary>
 /// <param name="Fact">The fact the transition records.</param>
-/// <param name="From">The trigger's fact it takes the value from; null when it is the same key (a source equal to <paramref name="Fact"/> is stored as null).</param>
+/// <param name="From">The trigger's fact it takes the value from; a source equal to <paramref name="Fact"/> is the same key and reads as null, whether it is set here or by a <see langword="with"/>.</param>
 [JsonConverter(typeof(ProducedFactJsonConverter))]
 public sealed record ProducedFact(FactKey Fact, FactKey? From)
 {
     /// <summary>The trigger's fact it takes the value from; null when it is the same key.</summary>
-    public FactKey? From { get => field == Fact ? null : field; init; } = From;
+    public FactKey? From { get => field == Fact ? null : field; init; } = From == Fact ? null : From;
 
     /// <summary>The trigger's fact this entry reads: <see cref="From"/>, or <see cref="Fact"/> when it isn't renamed. A method, not a property: the record is written by its converter.</summary>
     public FactKey SourceKey() => From ?? Fact;
