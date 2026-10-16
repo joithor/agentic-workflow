@@ -1,0 +1,9 @@
+using Aw.Context.Core.Eval.Backtest;
+
+namespace Aw.Context.Features.Adjudicate;
+
+/// <summary>What the adjudicator concluded.</summary>
+/// <param name="Verdicts">One verdict per surface key.</param>
+/// <param name="Tokens">The model tokens spent.</param>
+/// <param name="Capped">True when the cap stopped it (SND-CONTEXT-083): the rest are <see cref="Verdict.Unjudged"/>.</param>
+internal sealed record Adjudication(IReadOnlyDictionary<string, Verdict> Verdicts, int Tokens, bool Capped);

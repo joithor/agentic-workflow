@@ -4347,3 +4347,29 @@ override Aw.Context.Core.Eval.Backtest.ArmQuestion.GetHashCode() -> int
 override Aw.Context.Core.Eval.Backtest.ArmQuestion.ToString() -> string!
 static Aw.Context.Core.Eval.Backtest.ArmQuestion.operator !=(Aw.Context.Core.Eval.Backtest.ArmQuestion? left, Aw.Context.Core.Eval.Backtest.ArmQuestion? right) -> bool
 static Aw.Context.Core.Eval.Backtest.ArmQuestion.operator ==(Aw.Context.Core.Eval.Backtest.ArmQuestion? left, Aw.Context.Core.Eval.Backtest.ArmQuestion? right) -> bool
+Aw.Context.Core.Engine.ContextSettings.Adjudicator.get -> bool
+Aw.Context.Core.Engine.ContextSettings.Adjudicator.init -> void
+Aw.Context.Core.Eval.Backtest.AdjudicatedScoring
+Aw.Context.Core.Eval.Backtest.SampleScore.AdjudicatedPrecision.get -> double?
+Aw.Context.Core.Eval.Backtest.SampleScore.AdjudicatedPrecision.init -> void
+Aw.Context.Core.Eval.Backtest.Surface
+Aw.Context.Core.Eval.Backtest.Surface.<Clone>$() -> Aw.Context.Core.Eval.Backtest.Surface!
+Aw.Context.Core.Eval.Backtest.Surface.Deconstruct(out string! Key, out string! Label) -> void
+Aw.Context.Core.Eval.Backtest.Surface.Equals(Aw.Context.Core.Eval.Backtest.Surface? other) -> bool
+Aw.Context.Core.Eval.Backtest.Surface.Key.get -> string!
+Aw.Context.Core.Eval.Backtest.Surface.Key.init -> void
+Aw.Context.Core.Eval.Backtest.Surface.Label.get -> string!
+Aw.Context.Core.Eval.Backtest.Surface.Label.init -> void
+Aw.Context.Core.Eval.Backtest.Surface.Surface(string! Key, string! Label) -> void
+Aw.Context.Core.Eval.Backtest.Verdict
+Aw.Context.Core.Eval.Backtest.Verdict.NotRelevant = 1 -> Aw.Context.Core.Eval.Backtest.Verdict
+Aw.Context.Core.Eval.Backtest.Verdict.Relevant = 0 -> Aw.Context.Core.Eval.Backtest.Verdict
+Aw.Context.Core.Eval.Backtest.Verdict.Unjudged = 3 -> Aw.Context.Core.Eval.Backtest.Verdict
+Aw.Context.Core.Eval.Backtest.Verdict.Unstable = 2 -> Aw.Context.Core.Eval.Backtest.Verdict
+override Aw.Context.Core.Eval.Backtest.Surface.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.Surface.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.Surface.ToString() -> string!
+static Aw.Context.Core.Eval.Backtest.AdjudicatedScoring.Precision(System.Collections.Generic.IReadOnlyList<string!>! predicted, System.Collections.Generic.IReadOnlyList<string!>! truth, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Eval.Backtest.Verdict>! verdicts) -> double?
+static Aw.Context.Core.Eval.Backtest.AdjudicatedScoring.Surfaces(System.Collections.Generic.IReadOnlyList<string!>! predicted, System.Collections.Generic.IReadOnlyList<string!>! truth, Aw.Context.Core.Graph.GraphSnapshot! graph) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.Surface!>!
+static Aw.Context.Core.Eval.Backtest.Surface.operator !=(Aw.Context.Core.Eval.Backtest.Surface? left, Aw.Context.Core.Eval.Backtest.Surface? right) -> bool
+static Aw.Context.Core.Eval.Backtest.Surface.operator ==(Aw.Context.Core.Eval.Backtest.Surface? left, Aw.Context.Core.Eval.Backtest.Surface? right) -> bool

@@ -12,4 +12,8 @@ namespace Aw.Context.Core.Eval.Backtest;
 /// <param name="PredictedFiles">The first 20 predicted files, in answer order.</param>
 /// <param name="Leaky">True when an input of this sample/arm saw something after the cut.</param>
 public sealed record SampleScore(string IssueKey, string Arm, bool Unmapped, double? NodeRecall, double? NodePrecision, double FileRecallAt20,
-    IReadOnlyList<string> PredictedNodes, IReadOnlyList<string> TruthNodes, IReadOnlyList<string> PredictedFiles, bool Leaky);
+    IReadOnlyList<string> PredictedNodes, IReadOnlyList<string> TruthNodes, IReadOnlyList<string> PredictedFiles, bool Leaky)
+{
+    /// <summary>Precision with the adjudicator's labels; null when it did not run or stopped before this sample.</summary>
+    public double? AdjudicatedPrecision { get; init; }
+}

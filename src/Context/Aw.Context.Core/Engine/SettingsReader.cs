@@ -43,7 +43,7 @@ public static partial class SettingsReader
 
         if (UnknownKey(element) is { } unknown)
         {
-            return Invalid("context." + unknown, "is not a context setting this build knows (repos, docs, cascadeDepth, deadline, maxBudget, minHits, labeling, scrub, sessions, sources)");
+            return Invalid("context." + unknown, "is not a context setting this build knows (repos, docs, cascadeDepth, deadline, maxBudget, minHits, labeling, scrub, sessions, sources, eval)");
         }
 
         if (SourcesReader.Shape(element) is { } shape)
@@ -79,9 +79,12 @@ public static partial class SettingsReader
                 LinearTeams = sources.Value.Teams,
                 ExtraPatterns = Patterns(section.Scrub),
                 Labeling = Labeling(section.Labeling),
+                Adjudicator = Adjudicates(section.Eval),
             },
         };
     }
+
+    private static bool Adjudicates(EvalSection? section) => section?.Adjudicator ?? false;
 
     private static LabelingSettings Labeling(LabelingSection? section) =>
         new()
@@ -141,7 +144,7 @@ public static partial class SettingsReader
 
     private static string? UnknownKey(JsonElement element)
     {
-        string[] known = ["repos", "docs", "cascadeDepth", "deadline", "maxBudget", "minHits", "labeling", "scrub", "sessions", "sources"];
+        string[] known = ["repos", "docs", "cascadeDepth", "deadline", "maxBudget", "minHits", "labeling", "scrub", "sessions", "sources", "eval"];
         return element.EnumerateObject().Select(p => p.Name).FirstOrDefault(n => !known.Contains(n, StringComparer.Ordinal)) is { } name ? Printable(name) : null;
     }
 

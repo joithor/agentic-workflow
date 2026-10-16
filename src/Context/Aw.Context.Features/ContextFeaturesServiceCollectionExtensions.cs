@@ -9,6 +9,7 @@ using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
+using Aw.Context.Features.Adjudicate;
 using Aw.Context.Features.ApplyReviewFile;
 using Aw.Context.Features.BuildMap;
 using Aw.Context.Features.CheckMap;
@@ -110,5 +111,6 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<AsOfMapBuilder>()
         .AddScoped<ArmRunner>()
         .AddScoped<CorpusLoader>()
+        .AddScoped<Adjudicator>()
         .AddScoped<SampleScorer>();
 }

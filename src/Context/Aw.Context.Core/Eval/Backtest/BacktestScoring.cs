@@ -69,8 +69,12 @@ public static class BacktestScoring
     {
         ArgumentNullException.ThrowIfNull(scores);
         var mapped = scores.Where(s => !s.Unmapped).ToList();
+        var judged = mapped.Count > 0 && mapped.TrueForAll(s => s.AdjudicatedPrecision is not null) ? Mean(mapped.Select(s => s.AdjudicatedPrecision)) : null;
         return new ArmScore(scores.Count, mapped.Count, Mean(mapped.Select(s => s.NodeRecall)), Mean(mapped.Select(s => s.NodePrecision)),
-            Mean(scores.Select(s => (double?)s.FileRecallAt20)), scores.Count == 0 ? 0 : Round((double)scores.Count(s => s.Leaky) / scores.Count), tokens);
+            Mean(scores.Select(s => (double?)s.FileRecallAt20)), scores.Count == 0 ? 0 : Round((double)scores.Count(s => s.Leaky) / scores.Count), tokens)
+        {
+            AdjudicatedPrecision = judged,
+        };
     }
 
     private static double? Mean(IEnumerable<double?> values)

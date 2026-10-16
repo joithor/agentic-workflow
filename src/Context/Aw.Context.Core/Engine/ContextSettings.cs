@@ -47,4 +47,7 @@ public sealed record ContextSettings
 
     /// <summary>'context.labeling': the optional labeling pass of a map build (S-4). Off by default.</summary>
     public LabelingSettings Labeling { get; init; } = new();
+
+    /// <summary>'context.eval.adjudicator' (S-7A): whether a backtest asks the model to label surfaces no PR touched, within 1.5M tokens per run. Off by default.</summary>
+    public bool Adjudicator { get; init; }
 }

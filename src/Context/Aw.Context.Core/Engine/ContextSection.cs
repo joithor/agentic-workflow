@@ -14,4 +14,5 @@ internal sealed record ContextSection(
     SourcesSection? Sources = null,
     ScrubSection? Scrub = null,
     int? CascadeDepth = null,
-    LabelingSection? Labeling = null);
+    LabelingSection? Labeling = null,
+    EvalSection? Eval = null);
