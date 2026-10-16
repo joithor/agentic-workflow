@@ -45,6 +45,9 @@ public sealed class ChildrenFramesTests : FrameHost
         _ = Assert.Single(Texts(window, "ChildMirrored"));
         Assert.Contains(Texts(window, "ChildGroupHeader"), t => t.Text!.Contains(served.Recipe, StringComparison.Ordinal));
         Named<Control>(window, "ChildrenBlock").BringIntoView();
+        var title = Buttons(window, "ChildRowOpen")[0];
+        var row = (ChildRowViewModel)title.DataContext!;
+        Assert.Equal(Labels.OpenInstanceName(row.Title, row.Address), Heard.Name(title));   // the drawn title leads the name (r3-3)
         Frame(window, "children-workstreams");
     });
 
@@ -75,5 +78,43 @@ public sealed class ChildrenFramesTests : FrameHost
 
         Assert.True(shell.IsSheetOpen);
         Assert.NotNull(window.FocusManager?.GetFocusedElement());
+
+        // Back to a parent that no longer draws the child (past the "N more" cut) falls back to the frame's first read action (r3-1)
+        await Until(window, () => string.Equals((window.FocusManager?.GetFocusedElement() as Button)?.Name, "ChildRowOpen", StringComparison.Ordinal), "focus never returned to the child's row");
+        Click((Button)window.FocusManager!.GetFocusedElement()!);
+        await Until(window, () => shell.Instance.Address == child.Address, "the child never opened");
+        var body = GoldenFiles.Node("workflow-instance", "project-build");
+        Without(body["children"]!, child.Address);
+        Server.WorkflowAnswer = new RouteAnswer(System.Net.HttpStatusCode.OK, body.ToJsonString());
+        Click(Named<Button>(window, "SheetBack"));
+        await Until(window, () => shell.Instance.Address == parent && shell.Instance.Phase == FramePhase.Shown, "parent never shown again");
+        Assert.DoesNotContain(Buttons(window, "ChildRowOpen"), b => ((ChildRowViewModel)b.DataContext!).Address == child.Address);
+        await Until(window, () => window.FocusManager?.GetFocusedElement() is Button { Name: { } name } && (string.Equals(name, "InstanceOpenIn", StringComparison.Ordinal) || string.Equals(name, "ExpandedCopyStatus", StringComparison.Ordinal)), "focus is on the frame's first read action");
     });
+
+    // Drops every object whose address is the given one, wherever it sits under the node.
+    private static void Without(System.Text.Json.Nodes.JsonNode node, string address)
+    {
+        if (node is System.Text.Json.Nodes.JsonArray array)
+        {
+            for (var i = array.Count - 1; i >= 0; i--)
+            {
+                if (array[i] is System.Text.Json.Nodes.JsonObject o && string.Equals((string?)o["address"], address, StringComparison.Ordinal))
+                {
+                    array.RemoveAt(i);
+                }
+                else
+                {
+                    Without(array[i]!, address);
+                }
+            }
+        }
+        else if (node is System.Text.Json.Nodes.JsonObject obj)
+        {
+            foreach (var value in obj.Select(p => p.Value).OfType<System.Text.Json.Nodes.JsonNode>().ToList())
+            {
+                Without(value, address);
+            }
+        }
+    }
 }

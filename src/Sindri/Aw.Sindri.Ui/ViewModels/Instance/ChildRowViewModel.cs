@@ -35,7 +35,7 @@ internal sealed class ChildRowViewModel : ObservableObject
         OpenName = Labels.OpenItemName(ItemId);
         LaunchChip = CanOpenItem && !IsDone ? Labels.AvailableWithP10a : string.Empty;
         Actions = IsDone ? [] : [.. row.Actions.Where(a => !a.StartsWith(OpenItemAction, StringComparison.Ordinal)).Select(a => new ChildActionViewModel(a, row.Address, clipboard, clock, catalog?.Row(a)))];
-        OpenFrameName = Labels.OpenInstanceName(row.Address);
+        OpenFrameName = Labels.OpenInstanceName(Title, row.Address);
     }
 
     /// <summary>Raised when the row asks to open the child's frame.</summary>

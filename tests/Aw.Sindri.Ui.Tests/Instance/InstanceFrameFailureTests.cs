@@ -1,5 +1,6 @@
 using System.Net;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels.Instance;
 using Microsoft.Extensions.Time.Testing;
@@ -76,5 +77,17 @@ public sealed class InstanceFrameFailureTests
         await frame.Open(_api, (string)rows[0]!["itemId"]!, id: null, Token);   // an item id: both rows match, neither is exact
 
         Assert.Equal(FramePhase.NotFound, frame.Phase);
+    }
+
+    [Fact]
+    public async Task A_stacked_open_that_cannot_be_read_focuses_Back()
+    {
+        _server.WorkflowAnswer = RouteAnswer.Problem(HttpStatusCode.NotFound, "SND-API-404", "no such instance");
+        var frame = new InstanceFrameViewModel(_server, new FakeClipboard(), _clock);
+        frame.Intend(Project.Address, FrameIntent.OpenInitial);
+
+        await frame.Open(_api, Project.Address, Project.Id, Token);
+
+        Assert.Equal(FrameFocus.Back, frame.WantedFocus?.Target);
     }
 }

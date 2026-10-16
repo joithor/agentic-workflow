@@ -50,19 +50,18 @@ public sealed class WorkflowsFramesTests : FrameHost
     // What assistive tech hears, from each control's automation peer (a TextBlock's peer ignores a Name, so these sit on wrappers): review run 2, W5 and W6.
     private static void AssistiveNames(Window window, ShellViewModel shell)
     {
-        static string Heard(Control control) => Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(control).GetName();
         List<Border> Wrappers(string name) => [.. window.GetVisualDescendants().OfType<Border>().Where(b => b.Name == name && b.IsEffectivelyVisible)];
 
-        Assert.Equal(WorkflowsLegend.Name, Heard(Assert.Single(Wrappers("WorkflowsLegendName"))));
+        Assert.Equal(WorkflowsLegend.Name, Heard.Wrapper(Assert.Single(Wrappers("WorkflowsLegendName"))));
         var current = Wrappers("WorkflowStageCell").First(b => ((StageCellViewModel)b.DataContext!).IsCurrent);
-        Assert.Equal(((StageCellViewModel)current.DataContext!).Name, Heard(current));
-        Assert.Contains(Labels.StageCurrent, Heard(current), StringComparison.Ordinal);
+        Assert.Equal(((StageCellViewModel)current.DataContext!).Name, Heard.Wrapper(current));
+        Assert.Contains(Labels.StageCurrent, Heard.Wrapper(current), StringComparison.Ordinal);
         var input = Wrappers("WorkflowInputCell")[0];
-        Assert.Equal(((InputCellViewModel)input.DataContext!).Name, Heard(input));
+        Assert.Equal(((InputCellViewModel)input.DataContext!).Name, Heard.Wrapper(input));
         var row = shell.Workflows.Groups[0].Rows[0];
         var title = window.GetVisualDescendants().OfType<Button>().First(b => b.Name == "WorkflowRowOpen" && b.IsEffectivelyVisible && ReferenceEquals(b.DataContext, row));
-        Assert.Equal(Labels.OpenInstanceName(row.Subject, row.Address), Heard(title));
-        Assert.Contains(row.Subject, Heard(title), StringComparison.Ordinal);
+        Assert.Equal(Labels.OpenInstanceName(row.Subject, row.Address), Heard.Name(title));
+        Assert.Contains(row.Subject, Heard.Name(title), StringComparison.Ordinal);
     }
 
     [Fact]

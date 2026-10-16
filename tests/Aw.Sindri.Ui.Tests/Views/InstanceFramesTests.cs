@@ -55,8 +55,7 @@ public sealed class InstanceFramesTests : FrameHost
     [Fact]
     public Task u8_frame_project_build() => OnUi(async () =>
     {
-        var (window, shell) = await Opened("project-build", served: PointerTo(Detail("item-produce")));
-        await FocusedOn(window, "InstanceOpenIn");
+        var (window, shell) = await Opened("project-build");
 
         var detail = Detail("project-build");
         Assert.Equal(detail.States.Count, Texts(window, "StateNodeText").Count);
@@ -69,7 +68,16 @@ public sealed class InstanceFramesTests : FrameHost
         var phases = Texts(window, "FrameTabPhase").Select(t => t.Text).ToList();
         Expect.Sequence(shell.Instance.Tabs!.Tabs.Select(t => t.Text), texts);
         Expect.Sequence(shell.Instance.Tabs.Tabs.Select(t => t.Phase), phases);
-        Frame(window, "project-build");
+        Frame(window, "project-build");   // the frame as the golden serves it, before the pointer is injected
+
+        // a child pointer arrives on a re-read: the button draws its words, and its name leads with them (r3-3)
+        Server.WorkflowAnswer = PointerTo(Detail("item-produce"));
+        await shell.Instance.Refresh(new Uri("http://127.0.0.1:7410/"), Token);
+        await Until(window, () => Visible(window, "ExpandedChild"));
+        var pointer = Named<Button>(window, "ExpandedChild");
+        Assert.Equal(Labels.OpenInstanceName(shell.Instance.Expanded!.Child!.Text, Detail("item-produce").Address), Heard.Name(pointer));
+        Assert.StartsWith(pointer.Content!.ToString()!, Heard.Name(pointer), StringComparison.Ordinal);
+        await FocusedOn(window, "InstanceOpenIn");
 
         // the child opened from the status line's pointer: its frame takes focus, and Back returns to the pointer (a11y-r2-5)
         var (parent, parentAnswer) = (shell.Instance.Address, Server.WorkflowAnswer);
@@ -120,7 +128,7 @@ public sealed class InstanceFramesTests : FrameHost
         Expect.Sequence(served.Select(c => c.Cli), Texts(window, "CommandCli").Select(t => t.Text));
         Assert.Equal(served.Count, Texts(window, "CommandPending").Count);
         var command = window.GetVisualDescendants().OfType<Border>().First(b => b.Name == "CommandLabelName" && b.IsEffectivelyVisible);   // the peer's name, not the view model's (a TextBlock's peer ignores one)
-        var heard = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(command).GetName();
+        var heard = Heard.Wrapper(command);
         Assert.Equal(((ExpandedCommandViewModel)command.DataContext!).Name, heard);
         Assert.Contains(Labels.AvailableWithU8b, heard, StringComparison.Ordinal);
         Frame(window, "triage-desk");

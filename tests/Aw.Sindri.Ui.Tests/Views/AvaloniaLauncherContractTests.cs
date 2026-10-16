@@ -41,6 +41,8 @@ public sealed class AvaloniaLauncherContractTests : LauncherContract
         public Task<bool> OpenFile(string path, CancellationToken cancellationToken) =>
             OnUi(() => new AvaloniaLauncher(Top).OpenFile(path, cancellationToken));
 
-        private Window? Top() => withWindow ? new Window() : null;
+        private Window? _window;
+
+        private Window? Top() => withWindow ? _window ??= new Window() : null;   // one window per launcher, made on the UI thread
     }
 }
