@@ -81,6 +81,8 @@ All hook scripts live in `config/hooks/`:
 | `prompt-sort.sh` | UserPromptSubmit | — |
 | `meta-stop-gate.sh` | Stop | — |
 | `meta-outbox.sh` | PostToolUse | `SendMessage` |
+| `meta-lane-gate.sh` | UserPromptSubmit, Stop (Codex); sessionStart, postToolUse, stop (Cursor) | — |
+| `session-id-report.sh` | SessionStart (Codex); sessionStart (Cursor) | — |
 
 Each provider's `install-hooks.sh` installs them by copying, not symlinking, so they survive repo moves. Claude Code's copies go to `~/.claude/hooks/`, and Codex and Cursor copies go to `~/.agentic-workflow/hooks/`. The script then registers the command in that provider's hook config, wrapped by the adapter for Codex and Cursor.
 
@@ -107,6 +109,8 @@ A hook **fails open** when its own error turns into an allow or a let-through: j
   - `outbox-flush`: `outbox-unreadable`
   - `meta-stop-gate`: `meta-exit-<N>` (aw-meta erroring; exit 1 is its block, not a failure)
   - `meta-outbox`: `meta-exit-<N>`
+  - `meta-lane-gate`: `lane-inbox-exit-<N>`, `lane-reply-exit-<N>`, `lane-stop-check-exit-<N>` (exit 1 is its block, not a failure)
+  - `session-id-report`: `field-missing`, `id-invalid`, `lane-name-invalid`, `launch-id-invalid`, `write-failed`
   - the three Bash safety hooks: the input causes only
   - the Codex/Cursor adapters (`<provider>-adapter`): the input causes, `args-invalid`, `payload-unparsable`, `hook-script-missing`, `hook-exit-<N>`, and `result-unparsable` (Cursor only)
 
@@ -138,11 +142,16 @@ The steps below apply to **PreToolUse hooks**. SessionStart hooks have different
 
 `sindri-nudge.sh` (`# aw:sindri-nudge`) is installed only by `scripts/install-sindri.sh --hook-only --provider X` (`setup.sh --with-sindri` runs it per provider); a plain `install-sindri.sh` prints the hint. It runs `sindri repo status --nudge`, which reads the approved profile read-only and never writes the ledger, prints at most one line, kills the CLI after `AW_SINDRI_NUDGE_BUDGET_MS` (default 1500), always exits 0, and is silent outside git, without sindri, before any approval, for an onboarded repo (a linked worktree counts), on any error, and for `AW_JUDGE_CHILD` / `AW_SINDRI_CHILD` sessions.
 
-## Meta harness hooks (`/meta`, Claude Code only)
+## Meta harness hooks (`/meta`)
 
-`meta-stop-gate.sh` (`# aw:meta-stop-gate`, Stop) and `meta-outbox.sh` (`# aw:meta-outbox`, PostToolUse matcher `SendMessage`) are installed only by `scripts/install-meta.sh` (`./setup.sh --with-meta`; Linux only for now, aw-meta reads /proc, so on macOS setup skips it), for Claude Code only: Codex and Cursor have no messages between sessions. Both exit 0 at once without `aw-meta` (`$AW_META_BIN`, default `$AW_STATE_DIR/bin/aw-meta`) and for every session except the one `aw-meta role-set` registered as the meta orchestrator (aw-meta decides that).
+`meta-stop-gate.sh` (`# aw:meta-stop-gate`, Stop) and `meta-outbox.sh` (`# aw:meta-outbox`, PostToolUse matcher `SendMessage`) are installed only by `scripts/install-meta.sh --provider claude` (`./setup.sh --with-meta`; Linux only for now, aw-meta reads /proc, so on macOS setup skips it), for Claude Code only: Codex and Cursor have no messages between sessions. Both exit 0 at once without `aw-meta` (`$AW_META_BIN`, default `$AW_STATE_DIR/bin/aw-meta`) and for every session except the one `aw-meta role-set` registered as the meta orchestrator (aw-meta decides that).
 
 - `meta-stop-gate.sh` runs `aw-meta stop-check --session <session_id> --transcript <transcript_path> [--hook-active]`, which reads new inbound messages from the transcript (they reach no hook any other way) and lists what the meta still owes. aw-meta exit 1 → the hook exits 2 with the list on stderr, so the meta can't go idle with a reply owed. It blocks even when `stop_hook_active` is set: aw-meta's own loop guard lets an unchanged list through after `AW_META_STOP_MAX` (default 3) re-blocks in one turn and logs an incident; its warning comes back with exit 0 and the hook shows it as a `systemMessage`. Any other aw-meta exit fails open (`meta-exit-<N>`).
 - `meta-outbox.sh` pipes the hook payload to `aw-meta outbox-record`, which closes the obligations a send answers. It always exits 0 and prints nothing.
 
-Contract: `docs/csharp/meta.md`. Tests: `config/hooks/tests/meta-hooks.test.sh` (a stub aw-meta).
+The non-Claude lane hooks are installed user-wide by `scripts/install-meta.sh --provider codex|cursor` (through the adapters; Codex then needs the `/hooks` trust step):
+
+- `meta-lane-gate.sh` (`# aw:meta-lane-gate`) acts only when `AW_META_TEAM` and `AW_META_LANE` are set (`scripts/meta-lane.sh` sets them in a lane's environment); anything else exits 0 at once, as does `AW_JUDGE_CHILD` or a missing aw-meta. UserPromptSubmit/sessionStart/postToolUse run `aw-meta lane-inbox` (Codex: plain stdout; Cursor: `additionalContext`). Stop pipes the text after the last `REPLY TO META:` line of `last_assistant_message` to `lane-reply --stdin`, then runs `lane-stop-check`: exit 1 → the hook exits 2 with the reason on stderr; every other exit passes (`lane-inbox-exit-<N>`, `lane-reply-exit-<N>`, `lane-stop-check-exit-<N>` are logged).
+- `session-id-report.sh` (`# aw:session-id-report`) writes the `session_id` atomically (0600) to `lane-sessions/<lane>` for a lane, and to `$AW_SINDRI_HOME/launches/<launchId>.session-id` when `AW_SINDRI_LAUNCH` is set; otherwise exit 0 at once. Causes: `field-missing`, `id-invalid`, `lane-name-invalid`, `launch-id-invalid`, `write-failed`, plus the input causes.
+
+Contract: `docs/csharp/meta.md`. Tests: `config/hooks/tests/meta-hooks.test.sh` (a stub aw-meta, directly and through both adapters) and `failopen.test.sh`.

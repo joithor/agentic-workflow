@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Tests for config/hooks/meta-stop-gate.sh and meta-outbox.sh against a stub aw-meta.
+# Tests for config/hooks/meta-stop-gate.sh and meta-outbox.sh (Claude Code), and for the non-Claude lane hooks
+# meta-lane-gate.sh and session-id-report.sh (directly and through the Codex and Cursor adapters), against a stub aw-meta.
 # Run: bash config/hooks/tests/meta-hooks.test.sh
 set -uo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -21,7 +22,7 @@ STUB="$WORK/aw-meta"
 cat > "$STUB" <<'EOF'
 #!/usr/bin/env bash
 echo "$*" >> "$CALLS"
-[ "$1" = outbox-record ] && cat > "$STDIN_SEEN"
+if [ "$1" = outbox-record ] || [ "$1" = lane-reply ]; then cat > "$STDIN_SEEN"; fi
 [ -n "${STUB_OUT:-}" ] && echo "$STUB_OUT"
 exit "${STUB_RC:-0}"
 EOF
@@ -81,5 +82,125 @@ OUT="$(printf '%s' "$SEND" | STUB_RC=2 bash "$HOOKS/meta-outbox.sh")"; RC=$?
 check "outbox: aw-meta failure never blocks" "$RC:$OUT" "0:"
 grep -q '"hook":"meta-outbox","cause":"meta-exit-2"' "$AW_STATE_DIR/logs/failopen.log"
 check "outbox: failure logged" "$?" "0"
+
+# --- meta-lane-gate.sh: the lane hook for a Codex or Cursor lane ---
+lane() { printf '%s' "$1" | AW_META_TEAM=t1 AW_META_LANE=api bash "$HOOKS/meta-lane-gate.sh" 2> "$WORK/err"; }
+UPS='{"hook_event_name":"UserPromptSubmit","session_id":"s-2","prompt":"hi"}'
+
+: > "$CALLS"
+OUT="$(printf '%s' "$UPS" | bash "$HOOKS/meta-lane-gate.sh")"; RC=$?
+check "outside a lane: exit 0, silent, aw-meta not called" "$RC:$OUT:$(cat "$CALLS")" "0::"
+: > "$CALLS"
+OUT="$(printf '%s' "$UPS" | AW_META_LANE=api bash "$HOOKS/meta-lane-gate.sh")"; RC=$?
+check "only AW_META_LANE set (no team): still a pass-through" "$RC:$OUT:$(cat "$CALLS")" "0::"
+
+: > "$CALLS"
+OUT="$(STUB_OUT=$'MESSAGE FROM THE META to lane api:\n- rebase' lane "$UPS")"; RC=$?
+check "UserPromptSubmit: the inbox is printed as plain text (Codex developer context)" "$RC:$OUT" "0:MESSAGE FROM THE META to lane api:
+- rebase"
+check "UserPromptSubmit: calls lane-inbox, nothing else" "$(cat "$CALLS")" "lane-inbox"
+OUT="$(lane "$UPS")"
+check "UserPromptSubmit with an empty inbox: prints nothing" "$OUT" ""
+OUT="$(STUB_OUT="a message" lane '{"hook_event_name":"PostToolUse","session_id":"s-2","tool_name":"Shell"}')"
+check "PostToolUse (Cursor): additionalContext JSON" "$(jq -c . <<< "$OUT")" '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"a message"}}'
+OUT="$(STUB_OUT="a message" lane '{"hook_event_name":"SessionStart","session_id":"s-2"}')"
+check "SessionStart (Cursor): additionalContext JSON" "$(jq -r .hookSpecificOutput.additionalContext <<< "$OUT")" "a message"
+STUB_RC=2 lane "$UPS" > /dev/null; RC=$?
+check "lane-inbox tool error (no lane variables, no team config): fails open" "$RC" "0"
+OUT="$(lane '{"hook_event_name":"PreToolUse","session_id":"s-2"}')"; RC=$?
+check "an event the hook does not handle: exit 0, silent" "$RC:$OUT" "0:"
+AW_JUDGE_CHILD=1 lane "$UPS" > /dev/null; RC=$?
+check "judge child: exit 0" "$RC" "0"
+
+STOP='{"hook_event_name":"Stop","session_id":"s-2","stop_hook_active":false,"last_assistant_message":"Rebased.\nREPLY TO META: rebased and pushed\nsecond line"}'
+: > "$CALLS"; : > "$STDIN_SEEN"
+lane "$STOP"; RC=$?
+check "Stop with a REPLY TO META: line: the reply is recorded, then the stop is checked" "$RC:$(paste -sd'|' "$CALLS")" "0:lane-reply --stdin|lane-stop-check"
+check "Stop: the reply text (marker removed, later lines kept) goes to lane-reply on stdin" "$(cat "$STDIN_SEEN")" "rebased and pushed
+second line"
+: > "$CALLS"
+lane '{"hook_event_name":"Stop","session_id":"s-2","last_assistant_message":"All done, nothing to answer."}'; RC=$?
+check "Stop without the marker: only lane-stop-check runs" "$RC:$(cat "$CALLS")" "0:lane-stop-check"
+: > "$CALLS"
+lane '{"hook_event_name":"Stop","session_id":"s-2","last_assistant_message":"I will end with REPLY TO META: later"}'
+check "Stop: the marker mid-line is not a reply" "$(cat "$CALLS")" "lane-stop-check"
+: > "$CALLS"
+lane '{"hook_event_name":"Stop","session_id":"s-2","last_assistant_message":"REPLY TO META:   "}'
+check "Stop: an empty reply is not recorded" "$(cat "$CALLS")" "lane-stop-check"
+: > "$CALLS"
+lane '{"hook_event_name":"Stop","session_id":"s-2","last_assistant_message":"REPLY TO META: first\nmore\nREPLY TO META: second"}'
+check "Stop: the last marker wins" "$(cat "$STDIN_SEEN")" "second"
+: > "$CALLS"
+lane '{"hook_event_name":"Stop","session_id":"s-2","stop_hook_active":true}'
+check "Stop on a continuation: --stop-hook-active" "$(cat "$CALLS")" "lane-stop-check --stop-hook-active"
+: > "$CALLS"
+STUB_RC=1 STUB_OUT="aw-meta: lane api owes the meta a reply (1 message(s)):" lane "$STOP"; RC=$?
+check "lane-stop-check exit 1 (a reply is owed): blocks with exit 2, the reason on stderr" "$RC:$(cat "$WORK/err")" "2:aw-meta: lane api owes the meta a reply (1 message(s)):"
+STUB_RC=2 lane "$STOP"; RC=$?
+check "lane-stop-check exit 2 (tool error, team config removed): the stop is not blocked" "$RC" "0"
+grep -q '"hook":"meta-lane-gate","cause":"lane-stop-check-exit-2"' "$AW_STATE_DIR/logs/failopen.log"
+check "lane-stop-check exit 2: logged as HOOK-FAILOPEN" "$?" "0"
+OUT="$(STUB_OUT="aw-meta: stop allowed after 3 identical blocks; lane api still owes: x" lane "$STOP")"; RC=$?
+check "loop guard let it through: exit 0, the warning shown as a systemMessage" "$RC:$(jq -r .systemMessage <<< "$OUT")" "0:aw-meta: stop allowed after 3 identical blocks; lane api still owes: x"
+AW_META_BIN="$WORK/missing" lane "$STOP"; RC=$?
+check "aw-meta not installed: exit 0" "$RC" "0"
+lane ""; RC=$?
+check "empty input: fails open" "$RC" "0"
+
+# through the real adapters (a stub aw-meta behind them)
+CODEX="$HOOKS/adapters/codex.sh"; CURSOR="$HOOKS/adapters/cursor.sh"
+CSTOP='{"hook_event_name":"Stop","session_id":"s-3","transcript_path":"/t/rollout.jsonl","stop_hook_active":false,"last_assistant_message":"REPLY TO META: ok"}'
+: > "$CALLS"
+OUT="$(printf '%s' "$CSTOP" | bash "$CODEX" "$HOOKS/meta-lane-gate.sh" 2> "$WORK/err")"; RC=$?
+check "codex Stop outside any lane: passes straight through (exit 0, silent, aw-meta not called)" "$RC:$OUT:$(cat "$CALLS")" "0::"
+OUT="$(printf '%s' "$UPS" | bash "$CODEX" "$HOOKS/meta-lane-gate.sh" 2> "$WORK/err")"; RC=$?
+check "codex UserPromptSubmit outside any lane: passes straight through" "$RC:$OUT:$(cat "$CALLS")" "0::"
+OUT="$(printf '%s' '{"hook_event_name":"SessionStart","session_id":"abc-1"}' | bash "$CODEX" "$HOOKS/session-id-report.sh" 2> "$WORK/err")"; RC=$?
+check "codex SessionStart outside any lane: passes straight through, writes nothing" "$RC:$OUT:$(ls "$AW_STATE_DIR/meta/lane-sessions" 2>/dev/null | wc -l | tr -d ' ')" "0::0"
+OUT="$(printf '%s' "$UPS" | STUB_OUT="a message" AW_META_TEAM=t1 AW_META_LANE=api bash "$CODEX" "$HOOKS/meta-lane-gate.sh" 2> "$WORK/err")"; RC=$?
+check "codex UserPromptSubmit in a lane: the inbox is plain stdout (developer context)" "$RC:$OUT" "0:a message"
+OUT="$(printf '%s' "$CSTOP" | STUB_RC=1 STUB_OUT="owes the meta a reply" AW_META_TEAM=t1 AW_META_LANE=api bash "$CODEX" "$HOOKS/meta-lane-gate.sh" 2> "$WORK/err")"; RC=$?
+check "codex Stop in a lane that owes a reply: blocked (exit 2), reason on stderr" "$RC:$OUT:$(cat "$WORK/err")" "2::owes the meta a reply"
+OUT="$(printf '%s' "$CSTOP" | AW_META_TEAM=t1 AW_META_LANE=api bash "$CODEX" "$HOOKS/meta-lane-gate.sh" 2> "$WORK/err")"; RC=$?
+check "codex Stop, nothing owed: allowed" "$RC:$OUT" "0:"
+
+TR="$WORK/cursor-transcript.jsonl"
+echo '{"role":"assistant","message":{"content":[{"type":"text","text":"Done.\nREPLY TO META: cursor reply"}]}}' > "$TR"
+CUSTOP="{\"hook_event_name\":\"stop\",\"conversation_id\":\"c-1\",\"loop_count\":0,\"transcript_path\":\"$TR\"}"
+: > "$CALLS"; : > "$STDIN_SEEN"
+OUT="$(printf '%s' "$CUSTOP" | STUB_RC=1 STUB_OUT="owes the meta a reply" AW_META_TEAM=t1 AW_META_LANE=api bash "$CURSOR" "$HOOKS/meta-lane-gate.sh" 2> "$WORK/err")"; RC=$?
+check "cursor stop in a lane that owes a reply: followup_message" "$RC:$(jq -r .followup_message <<< "$OUT")" "0:owes the meta a reply"
+check "cursor stop: the reply is taken from the transcript's last assistant text" "$(cat "$STDIN_SEEN")" "cursor reply"
+OUT="$(printf '%s' "$CUSTOP" | bash "$CURSOR" "$HOOKS/meta-lane-gate.sh" 2> "$WORK/err")"; RC=$?
+check "cursor stop outside any lane: {} and aw-meta not called" "$RC:$OUT" "0:{}"
+OUT="$(printf '%s' '{"hook_event_name":"postToolUse","conversation_id":"c-1","tool_name":"Shell","tool_input":{},"tool_output":"{}"}' | STUB_OUT="a message" AW_META_TEAM=t1 AW_META_LANE=api bash "$CURSOR" "$HOOKS/meta-lane-gate.sh")"; RC=$?
+check "cursor postToolUse in a lane: additional_context" "$RC:$(jq -r .additional_context <<< "$OUT")" "0:a message"
+OUT="$(printf '%s' '{"hook_event_name":"sessionStart","conversation_id":"c-1"}' | STUB_OUT="a message" AW_META_TEAM=t1 AW_META_LANE=api bash "$CURSOR" "$HOOKS/meta-lane-gate.sh")"; RC=$?
+check "cursor sessionStart in a lane: additional_context" "$RC:$(jq -r .additional_context <<< "$OUT")" "0:a message"
+
+# --- session-id-report.sh ---
+LS="$AW_STATE_DIR/meta/lane-sessions"
+report() { printf '%s' "$1" | bash "$HOOKS/session-id-report.sh" 2> "$WORK/err"; }
+OUT="$(report '{"hook_event_name":"SessionStart","session_id":"abc-123"}')"; RC=$?
+check "outside a lane or a Sindri launch: exit 0, nothing written" "$RC:$OUT:$(ls "$LS" 2>/dev/null | wc -l | tr -d ' ')" "0::0"
+OUT="$(printf '%s' '{"hook_event_name":"SessionStart","session_id":"0199aaaa-bbbb-4ccc-8ddd-eeeeffff0001"}' | AW_META_TEAM=t1 AW_META_LANE=api bash "$HOOKS/session-id-report.sh")"; RC=$?
+check "in a lane: exit 0, silent, the id is lane-sessions/<lane>" "$RC:$OUT:$(cat "$LS/api")" "0::0199aaaa-bbbb-4ccc-8ddd-eeeeffff0001"
+check "the lane file is 0600 and no temp file is left" "$(stat -c %a "$LS/api" 2>/dev/null || stat -f %Lp "$LS/api"):$(ls -A "$LS" | wc -l | tr -d ' ')" "600:1"
+printf '%s' '{"session_id":"0199aaaa-bbbb-4ccc-8ddd-eeeeffff0002"}' | AW_META_TEAM=t1 AW_META_LANE=api bash "$HOOKS/session-id-report.sh"
+check "a new session in the lane replaces the id" "$(cat "$LS/api")" "0199aaaa-bbbb-4ccc-8ddd-eeeeffff0002"
+printf '%s' '{"session_id":"id-ui"}' | AW_META_TEAM=t1 AW_META_LANE=ui bash "$HOOKS/session-id-report.sh"
+check "two lanes keep their own ids" "$(cat "$LS/api"):$(cat "$LS/ui")" "0199aaaa-bbbb-4ccc-8ddd-eeeeffff0002:id-ui"
+printf '%s' '{"session_id":"abc-1"}' | AW_SINDRI_LAUNCH=launch-7 AW_SINDRI_HOME="$WORK/sindri" bash "$HOOKS/session-id-report.sh"
+check "a Sindri launch: \$AW_SINDRI_HOME/launches/<id>.session-id" "$(cat "$WORK/sindri/launches/launch-7.session-id" 2>/dev/null)" "abc-1"
+printf '%s' '{"session_id":"abc-2"}' | AW_SINDRI_LAUNCH=launch-8 bash "$HOOKS/session-id-report.sh"
+check "a Sindri launch without AW_SINDRI_HOME: under the state directory's sindri-app" "$(cat "$AW_STATE_DIR/sindri-app/launches/launch-8.session-id" 2>/dev/null)" "abc-2"
+printf '%s' '{"session_id":"x; touch /tmp/pwn"}' | AW_META_TEAM=t1 AW_META_LANE=bad bash "$HOOKS/session-id-report.sh"
+check "an id that is not an id is never written" "$(test -e "$LS/bad" && echo written || echo no)" "no"
+printf '%s' '{"session_id":"abc-9"}' | AW_META_TEAM=t1 AW_META_LANE=../../escape bash "$HOOKS/session-id-report.sh"
+check "a lane name with a path in it is never written" "$(find "$WORK" -name escape | wc -l | tr -d ' ')" "0"
+printf '%s' '{"session_id":"abc-9"}' | AW_JUDGE_CHILD=1 AW_META_TEAM=t1 AW_META_LANE=judge bash "$HOOKS/session-id-report.sh"
+check "judge child: nothing written" "$(test -e "$LS/judge" && echo written || echo no)" "no"
+OUT="$(printf '%s' '{"hook_event_name":"sessionStart","conversation_id":"cur-1"}' | AW_META_TEAM=t1 AW_META_LANE=cur bash "$CURSOR" "$HOOKS/session-id-report.sh")"; RC=$?
+check "through the cursor adapter: conversation_id is the id, the output is {}" "$RC:$OUT:$(cat "$LS/cur")" "0:{}:cur-1"
 
 exit $fail
