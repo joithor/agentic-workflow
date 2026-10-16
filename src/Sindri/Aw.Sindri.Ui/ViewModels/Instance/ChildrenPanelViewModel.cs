@@ -1,5 +1,6 @@
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Controls;
 
 namespace Aw.Sindri.Ui.ViewModels.Instance;
 
@@ -9,11 +10,11 @@ namespace Aw.Sindri.Ui.ViewModels.Instance;
 /// </summary>
 internal sealed class ChildrenPanelViewModel : ObservableObject
 {
-    internal ChildrenPanelViewModel(InstanceDetail detail, IClipboard clipboard, TimeProvider clock)
+    internal ChildrenPanelViewModel(InstanceDetail detail, IClipboard clipboard, TimeProvider clock, CatalogViewModel? catalog = null)
     {
         ChildRowViewModel Make(ChildRow served)
         {
-            var row = new ChildRowViewModel(served, clipboard, clock);
+            var row = new ChildRowViewModel(served, clipboard, clock, catalog);
             row.Opened += (_, e) => Opened?.Invoke(this, e);
             row.ItemRequested += (_, e) => ItemRequested?.Invoke(this, e);
             return row;

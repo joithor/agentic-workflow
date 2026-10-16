@@ -4,6 +4,7 @@ using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.Facts;
 
 namespace Aw.Sindri.Ui.ViewModels.Instance;
@@ -15,7 +16,7 @@ namespace Aw.Sindri.Ui.ViewModels.Instance;
 /// instance's served fields; a not-found or unreadable answer shows its sentence with Back. A re-read keeps what is
 /// shown when the answer fails or the instance has ended, and the newest read wins.
 /// </summary>
-internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard clipboard, TimeProvider clock, FactViewerRegistry? viewers = null) : ObservableObject
+internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard clipboard, TimeProvider clock, FactViewerRegistry? viewers = null, CatalogViewModel? catalog = null) : ObservableObject
 {
     private Uri? _url;
     private string? _id;

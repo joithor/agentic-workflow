@@ -126,7 +126,7 @@ public sealed class ChildrenPanelViewModelTests
     {
         var parked = Rows("project-build").Single(r => r.MirroredPark is not null);
 
-        var row = new ChildRowViewModel(parked, _clipboard, _clock);
+        var row = new ChildRowViewModel(parked, _clipboard, _clock, Catalog(_ => { }));
 
         Assert.Contains(parked.MirroredPark!.Reason, row.MirroredText, StringComparison.Ordinal);
         Assert.Contains(Labels.MirroredHere, row.MirroredText, StringComparison.Ordinal);

@@ -1,22 +1,22 @@
+using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Components;
+using Aw.Sindri.Ui.ViewModels.Controls;
 
 namespace Aw.Sindri.Ui.ViewModels.Instance;
 
 /// <summary>
-/// One action a child row serves, other than opening its item. The app sends none of them yet (the send is U8b): a grant or an accept
-/// is the lock button with its popover (a child row serves no CLI, so the popover says so and the child's own frame has the command),
+/// One action a child row serves, other than opening its item. The app sends none of them yet (the send is U8b): an action the catalog
+/// classes as protected is the lock button with its popover (a child row serves no CLI, so the popover says so and the child's own frame has the command),
 /// and the rest show a chip that says the send arrives later.
 /// </summary>
 internal sealed class ChildActionViewModel
 {
-    private static readonly string[] _protectedActions = ["ApplyCommand:answer-grant", "ApplyCommand:answer-accept"];
-
-    internal ChildActionViewModel(string action, string address, IClipboard clipboard, TimeProvider clock)
+    internal ChildActionViewModel(string action, string address, IClipboard clipboard, TimeProvider clock, CommandRowView? served)
     {
         Label = Labels.Action(action);
-        Protected = _protectedActions.Any(p => action.StartsWith(p, StringComparison.Ordinal)) ? new ProtectedActionViewModel(new ProtectedAction(Label, Cli: string.Empty, address), clipboard, clock) : null;
-        PendingChip = Protected is null ? Labels.AvailableWithU8b : string.Empty;
+        Protected = served is not null && string.Equals(served.Class, "protected", StringComparison.Ordinal) ? new ProtectedActionViewModel(new ProtectedAction(Label, Cli: string.Empty, address), clipboard, clock) : null;
+        PendingChip = Protected is not null ? string.Empty : served is not null && CatalogReadiness.Parse(served.Ui) is (ControlKind.Pending, { } stage) ? Labels.Arrives(stage) : Labels.AvailableWithU8b;
         Name = Labels.ChildActionName(Label, address, PendingChip);
     }
 

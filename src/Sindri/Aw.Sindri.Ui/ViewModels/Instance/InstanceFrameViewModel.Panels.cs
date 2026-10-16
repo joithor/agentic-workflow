@@ -33,7 +33,7 @@ internal sealed partial class InstanceFrameViewModel
         }
 
         ShowTabs(detail);
-        var children = new ChildrenPanelViewModel(detail, clipboard, clock);
+        var children = new ChildrenPanelViewModel(detail, clipboard, clock, catalog);
         if (Children is null || !string.Equals(Children.Signature, children.Signature, StringComparison.Ordinal))
         {
             children.Opened += (_, e) => OpenRequested?.Invoke(this, e);

@@ -21,7 +21,6 @@ internal sealed class ChildRowViewModel : ObservableObject
     internal ChildRowViewModel(ChildRow row, IClipboard clipboard, TimeProvider clock, CatalogViewModel? catalog = null)
     {
         _row = row;
-        _ = catalog;   // read by the fix that follows this test commit
         ItemId = row.ItemId ?? string.Empty;
         Title = FactText.Scrub(row.Title);
         Glyph = StageCellViewModel.Mark(row.Glyph);
@@ -35,7 +34,7 @@ internal sealed class ChildRowViewModel : ObservableObject
         CanOpenItem = ItemId.Length > 0 && row.Actions.Contains(OpenItemAction, StringComparer.Ordinal);
         OpenName = Labels.OpenItemName(ItemId);
         LaunchChip = CanOpenItem && !IsDone ? Labels.AvailableWithP10a : string.Empty;
-        Actions = IsDone ? [] : [.. row.Actions.Where(a => !a.StartsWith(OpenItemAction, StringComparison.Ordinal)).Select(a => new ChildActionViewModel(a, row.Address, clipboard, clock))];
+        Actions = IsDone ? [] : [.. row.Actions.Where(a => !a.StartsWith(OpenItemAction, StringComparison.Ordinal)).Select(a => new ChildActionViewModel(a, row.Address, clipboard, clock, catalog?.Row(a)))];
         OpenFrameName = Labels.OpenInstanceName(row.Address);
     }
 

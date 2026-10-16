@@ -73,7 +73,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         InitStrip();
         Workflows = new WorkflowsViewModel(api, clipboard, clock);
         InitWorkflows();
-        Instance = new InstanceFrameViewModel(api, clipboard, clock);
+        Instance = new InstanceFrameViewModel(api, clipboard, clock, catalog: Health.Catalog);
         InitInstance();
         Queue.PropertyChanged += OnQueueChanged;
         InitAnnouncements();
