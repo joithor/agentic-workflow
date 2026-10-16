@@ -71,8 +71,9 @@ internal sealed class DbRunHarness
 
     internal ValueTask<Kernel.Result<DbRunResponse>> Run(DbRunRequest? request = null)
     {
-        _ = Files;   // red stub: the service takes its ports from the harness once it is written
-        var service = new ValidatingService<DbRunRequest, DbRunResponse>(new DbRunService(), new DbRunValidator());
+        var runFiles = new DataRunFiles(Files, Scrubber, TestJson.Options);
+        var service = new ValidatingService<DbRunRequest, DbRunResponse>(
+            new DbRunService(runFiles, new DbVetting(runFiles, Targets, Locator, new FakeSecrets(Environment)), new DbQueryRunner(Reader), Locks, Clock, Ids), new DbRunValidator());
         return service.Handle(request ?? Request(), TestContext.Current.CancellationToken);
     }
 

@@ -13,7 +13,7 @@ internal sealed class FileExecutableLocator : IExecutableLocator
         RealPath(path) is { } real && File.Exists(real) && IsExecutable(real) ? real : null;
 
     /// <inheritdoc/>
-    public string? RealFile(string path) => throw new NotSupportedException("FileExecutableLocator.RealFile is not written yet");
+    public string? RealFile(string path) => RealPath(path) is { } real && File.Exists(real) ? real : null;
 
     /// <inheritdoc/>
     public string? RealDirectory(string path) => RealPath(path) is { } real && Directory.Exists(real) ? real : null;

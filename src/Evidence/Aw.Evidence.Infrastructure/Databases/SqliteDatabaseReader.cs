@@ -35,8 +35,48 @@ internal sealed class SqliteDatabaseReader : IDatabaseReader
             return copied.Error;
         }
 
+        var seeded = await SeedAsync(sqlite.SeedSql, copy, cancellationToken).ConfigureAwait(false);
+        if (seeded.IsError)
+        {
+            return seeded.Error;
+        }
+
         var opened = await new SqliteConnectionFactory(new SqliteOptions(copy)).OpenReadOnly(cancellationToken).ConfigureAwait(false);
         return opened.IsError ? EvidenceErrors.DatabaseUnavailable.With($"can't open the copy {copy}: {opened.Error.Message}") : new SqliteReadSession(opened.Value);
+    }
+
+    // The seed runs on its own read-write connection to the copy, closed before the read-only one opens; the source is never touched.
+    private static async ValueTask<Result<Unit>> SeedAsync(string? seedSql, string copy, CancellationToken cancellationToken)
+    {
+        if (seedSql is null)
+        {
+            return Unit.Value;
+        }
+
+        var opened = await new SqliteConnectionFactory(new SqliteOptions(copy)).Open(cancellationToken).ConfigureAwait(false);
+        if (opened.IsError)
+        {
+            return EvidenceErrors.DatabaseUnavailable.With($"can't open the copy {copy} to seed it: {opened.Error.Message}");
+        }
+
+        await using (opened.Value.ConfigureAwait(false))
+        {
+            try
+            {
+                var command = opened.Value.CreateCommand();
+                await using (command.ConfigureAwait(false))
+                {
+                    command.CommandText = seedSql;
+                    _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                }
+            }
+            catch (SqliteException exception)
+            {
+                return EvidenceErrors.DbScriptInvalid.With($"the seed failed on the copy: {exception.Message}");
+            }
+        }
+
+        return Unit.Value;
     }
 
     private static async ValueTask<Result<Unit>> CopyAsync(SqliteTarget target, string copy, CancellationToken cancellationToken)

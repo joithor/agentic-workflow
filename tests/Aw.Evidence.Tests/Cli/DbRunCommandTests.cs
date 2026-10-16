@@ -173,7 +173,7 @@ public sealed class DbRunCommandTests : IDisposable
         var (exit, _, error) = await Run(script, extra);
 
         Assert.Equal(1, exit);
-        Assert.Contains("usage: db-run", error, StringComparison.Ordinal);
+        Assert.StartsWith("ui-evidence: usage: ui-evidence db-run ", error, StringComparison.Ordinal);
     }
 
     public void Dispose() => _root.Dispose();

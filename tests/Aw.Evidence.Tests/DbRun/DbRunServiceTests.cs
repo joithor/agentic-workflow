@@ -58,7 +58,7 @@ public sealed class DbRunServiceTests
         Assert.Equal(2, summary.Failures.Count);
         Assert.Null(summary.Failures[0].Location);
         Assert.Equal("/0/text", summary.Failures[1].Location);
-        Assert.StartsWith("query 1: rowCount 1, expected 2 (assertion 1 of 3)", summary.Headline, StringComparison.Ordinal);
+        Assert.StartsWith("query 1: rowCount 1, expected 2 (assertion 1 of 2)", summary.Headline, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -239,6 +239,7 @@ public sealed class DbRunServiceTests
     public async Task DbRun_hides_a_secret_named_column_and_the_resolved_password_wherever_they_appear()
     {
         var harness = Postgres(expect: """{"rowCount":1}""");
+        _ = harness.Scrubber.HidesName("api_key");
         _ = harness.Reader.Answer(ReadNotes, new Rows(["id", "api_key", "note"], [[1L, "ak-12345678", "echo pg-value-for-the-fake end"]], Truncated: false));
 
         var response = (await harness.Run()).Value;

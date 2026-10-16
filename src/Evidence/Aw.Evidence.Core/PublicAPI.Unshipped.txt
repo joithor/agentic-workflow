@@ -2309,3 +2309,31 @@ static Aw.Evidence.Core.Data.DbStep.operator !=(Aw.Evidence.Core.Data.DbStep? le
 static Aw.Evidence.Core.Data.DbStep.operator ==(Aw.Evidence.Core.Data.DbStep? left, Aw.Evidence.Core.Data.DbStep? right) -> bool
 static Aw.Evidence.Core.Data.DbSummary.operator !=(Aw.Evidence.Core.Data.DbSummary? left, Aw.Evidence.Core.Data.DbSummary? right) -> bool
 static Aw.Evidence.Core.Data.DbSummary.operator ==(Aw.Evidence.Core.Data.DbSummary? left, Aw.Evidence.Core.Data.DbSummary? right) -> bool
+Aw.Evidence.Core.Data.DbExpectationCheck
+static Aw.Evidence.Core.Data.DbExpectationCheck.Evaluate(int step, Aw.Evidence.Core.Data.DbExpectation! expect, int rowCount, string! rowsJson, string? goldenText) -> Aw.Evidence.Core.Data.CheckedExpectation!
+Aw.Evidence.Core.Data.DataRunFiles
+Aw.Evidence.Core.Data.DataRunFiles.DataRunFiles(Aw.Evidence.Core.Files.IRunFiles! files, Aw.Evidence.Core.Data.ITextScrubber! scrubber, System.Text.Json.JsonSerializerOptions! json) -> void
+Aw.Evidence.Core.Data.DataRunFiles.Parse(string! path, System.ReadOnlySpan<byte> bytes) -> Aw.Kernel.Result<Aw.Evidence.Core.Data.ApiScript!>!
+Aw.Evidence.Core.Data.DataRunFiles.ParseDb(string! path, System.ReadOnlySpan<byte> bytes) -> Aw.Kernel.Result<Aw.Evidence.Core.Data.DbScript!>!
+Aw.Evidence.Core.Data.DataRunFiles.PrepareRunDirectoryAsync(string! runDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Evidence.Core.Data.DataRunFiles.ReadAsync(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<byte[]!>!>
+Aw.Evidence.Core.Data.DataRunFiles.ScrubberFor(System.Collections.Generic.IEnumerable<string!>! secretValues) -> Aw.Evidence.Core.Data.ITextScrubber!
+Aw.Evidence.Core.Data.DataRunFiles.WriteDocumentAsync<TSummary>(string! runDirectory, TSummary summary, Aw.Evidence.Core.Data.ITextScrubber! runScrubber, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<(TSummary Summary, string! Document)>!>
+Aw.Evidence.Core.Data.Number
+Aw.Evidence.Core.Data.RecordedText
+Aw.Evidence.Core.Data.ValueScrubber
+Aw.Evidence.Core.Data.ValueScrubber.IsSecretName(string! name) -> bool
+Aw.Evidence.Core.Data.ValueScrubber.Scrub(string! text) -> string!
+Aw.Evidence.Core.Data.ValueScrubber.ValueScrubber(Aw.Evidence.Core.Data.ITextScrubber! patterns, System.Collections.Generic.IEnumerable<string!>! values) -> void
+const Aw.Evidence.Core.Data.DataRunFiles.SummaryFile = "summary.json" -> string!
+const Aw.Evidence.Core.Data.RecordedText.HeadlineLimit = 200 -> int
+const Aw.Evidence.Core.Data.RecordedText.OutputLimit = 2000 -> int
+const Aw.Evidence.Core.Data.RecordedText.SecretField = "[REDACTED:secret-field]" -> string!
+const Aw.Evidence.Core.Data.RecordedText.ValueLimit = 200 -> int
+const Aw.Evidence.Core.Data.ValueScrubber.MinimumLength = 6 -> int
+const Aw.Evidence.Core.Data.ValueScrubber.Placeholder = "[REDACTED:header-value]" -> string!
+static Aw.Evidence.Core.Data.Number.ShortPaths(string! text) -> string!
+static Aw.Evidence.Core.Data.Number.Text(int? value) -> string!
+static Aw.Evidence.Core.Data.Number.Text(string! text) -> string!
+static Aw.Evidence.Core.Data.RecordedText.Of(Aw.Evidence.Core.Data.ITextScrubber! scrubber, Aw.Evidence.Core.Data.ApiFailure! failure) -> Aw.Evidence.Core.Data.ApiFailure!
+static Aw.Evidence.Core.Data.RecordedText.Of(Aw.Evidence.Core.Data.ITextScrubber! scrubber, string! text, int limit) -> string!

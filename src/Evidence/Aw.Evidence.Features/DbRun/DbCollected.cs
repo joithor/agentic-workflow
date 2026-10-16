@@ -1,0 +1,61 @@
+using Aw.Evidence.Core.Data;
+
+namespace Aw.Evidence.Features.DbRun;
+
+/// <summary>What the run's queries produced so far: the steps, the failed assertions, how many assertions there were, the first failure and what stopped the run.</summary>
+internal sealed class DbCollected(ITextScrubber scrubber)
+{
+    private const int TargetLimit = 200;
+
+    internal List<DbStep> Steps { get; } = [];
+
+    internal List<ApiFailure> Failures { get; } = [];
+
+    internal int Assertions { get; private set; }
+
+    internal int? FirstFailedAssertion { get; private set; }
+
+    internal string? FirstFailureText { get; private set; }
+
+    internal CodedMessage? Refusal { get; set; }
+
+    internal CodedMessage? Error { get; set; }
+
+    internal bool Stopped => Refusal is not null || Error is not null;
+
+    internal string TargetOf(string sql) => RecordedText.Of(scrubber, string.Join(' ', sql.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)), TargetLimit);
+
+    internal void Skip(int index, string sql) => Steps.Add(new DbStep(index, DbQueryRunner.Action, TargetOf(sql), DbStepStatus.Skipped, RowCount: null, Truncated: false, Output: null));
+
+    internal void Stop(int index, string sql, DbStepStatus status, Kernel.Error error)
+    {
+        var coded = new CodedMessage(error.Code, scrubber.Scrub(error.Message));
+        if (status == DbStepStatus.Refused)
+        {
+            Refusal = coded;
+        }
+        else
+        {
+            Error = coded;
+        }
+
+        Steps.Add(new DbStep(index, DbQueryRunner.Action, TargetOf(sql), status, RowCount: null, Truncated: false, Output: null));
+    }
+
+    internal void Record(int index, string sql, DbExpectation expect, Rows rows, string? goldenText)
+    {
+        var json = rows.ToJson();
+        var checkedRows = DbExpectationCheck.Evaluate(index, expect, rows.Count, json, goldenText);
+        var failures = checkedRows.Failures.Select(failure => RecordedText.Of(scrubber, failure)).ToList();
+        if (checkedRows.FirstFailedOrdinal is { } ordinal && FirstFailedAssertion is null)
+        {
+            FirstFailedAssertion = Assertions + ordinal;
+            FirstFailureText = $"query {Number.Text(index)}: {failures[0].Describe()}";
+        }
+
+        Assertions += checkedRows.Count;
+        Failures.AddRange(failures);
+        var status = failures.Count == 0 ? DbStepStatus.Passed : DbStepStatus.Failed;
+        Steps.Add(new DbStep(index, DbQueryRunner.Action, TargetOf(sql), status, rows.Count, rows.Truncated, RecordedText.Of(scrubber, json, RecordedText.OutputLimit)));
+    }
+}

@@ -1,27 +1,39 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Aw.Evidence.Core.Data;
 
-namespace Aw.Evidence.Features.ApiRun;
+namespace Aw.Evidence.Core.Data;
 
 /// <summary>Text on its way into a summary: secret-named JSON members hidden, the rest scrubbed, then capped, so a cap never cuts a secret in half and leaves the rest unrecognisable.</summary>
-internal static class RecordedText
+public static class RecordedText
 {
-    internal const int OutputLimit = 2000;
-    internal const int ValueLimit = 200;
-    internal const int HeadlineLimit = 200;
+    /// <summary>The most characters of a body, stdout or rows a step records.</summary>
+    public const int OutputLimit = 2000;
+
+    /// <summary>The most characters of an expected or actual value a failure records.</summary>
+    public const int ValueLimit = 200;
+
+    /// <summary>The most characters a headline holds.</summary>
+    public const int HeadlineLimit = 200;
 
     /// <summary>What replaces the value of a secret-named member (Aw.Redaction's own text for it).</summary>
-    internal const string SecretField = "[REDACTED:secret-field]";
+    public const string SecretField = "[REDACTED:secret-field]";
 
-    internal static string Of(ITextScrubber scrubber, string text, int limit)
+    /// <summary>Text on its way into a summary: scrubbed, secret-named JSON members hidden, then capped.</summary>
+    /// <param name="scrubber">The run's scrubber.</param>
+    /// <param name="text">The text.</param>
+    /// <param name="limit">The most characters kept.</param>
+    /// <returns>The recorded text.</returns>
+    public static string Of(ITextScrubber scrubber, string text, int limit)
     {
         var scrubbed = Scrubbed(scrubber, text);
         return scrubbed.Length <= limit ? scrubbed : string.Concat(scrubbed.AsSpan(0, limit - 1), "…");
     }
 
     /// <summary>A failed assertion with its quoted values hidden when the pointer runs through a secret-named member, and scrubbed and capped otherwise.</summary>
-    internal static ApiFailure Of(ITextScrubber scrubber, ApiFailure failure)
+    /// <param name="scrubber">The run's scrubber.</param>
+    /// <param name="failure">The failure.</param>
+    /// <returns>The failure as recorded.</returns>
+    public static ApiFailure Of(ITextScrubber scrubber, ApiFailure failure)
     {
         var secret = failure.Location is not null && failure.Location.Split('/').Any(segment => scrubber.IsSecretName(segment.Replace("~1", "/", StringComparison.Ordinal).Replace("~0", "~", StringComparison.Ordinal)));
         return failure with
