@@ -25,10 +25,10 @@ public sealed class StripFoldTests : FrameHost
         Assert.Equal((5, 3), (shell.NeedsYou.Rows.Count, StripRows(window)));
         var rows = window.GetVisualDescendants().OfType<Border>().Where(b => b.Name == "StripRowFrame" && b.IsEffectivelyVisible);
         Assert.All(rows, r => Assert.InRange(r.Bounds.Height, 0, 56)); // why: screens §4.1 draws one line per instance
+        Assert.InRange((int)Top(window, "RunningPanel"), 0, 799); // why: the fold holds the columns' tops with 5 + 3 rows (provisional owner default: two-line Needs-you rows)
+        Assert.InRange((int)Top(window, "QueuedPanel"), 0, 799);
     });
 
-    // Open finding (U3'): with five Needs-you rows the column tops sit near y = 980 (those rows are ~120 px each: decision rows carry several
-    // controls), so screens §4.1's "tops of the columns above the fold" holds here only for the fixture list. The strip is one line a row.
     [Fact]
     public Task At_1280x800_the_fixture_list_and_five_strip_rows_keep_the_column_tops_above_the_fold() => OnUi(async () =>
     {
