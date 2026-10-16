@@ -571,7 +571,7 @@ public sealed class DbRunServiceTests
         harness.RealScrubber = new Evidence.Infrastructure.Redaction.RedactionScrubber(Redaction.Redactor.Default);
         _ = harness.Reader.Answer(ReadNotes, new Rows(["reset_token", "password", "n"], [[123456L, "abc", 1234567L]], Truncated: false));
 
-        var output = (await harness.Run()).Value.Summary.Steps[0].Output!;
+        var output = (await harness.Run()).Value.Summary.Steps[0].Output;
 
         Assert.DoesNotContain("abc", output, StringComparison.Ordinal);
         Assert.DoesNotContain("123456", output, StringComparison.Ordinal);
