@@ -591,8 +591,8 @@ the row, and a reply the pinned shape can't read degrades onyx (`010` with cause
   2-minute cap (`059`). `IContextEngine.Sync(source?, scope)` returns a `SyncReport` of counts and codes only.
 - Reads: `MapReader` merges the layer for every graph read; the `item` shape (`context query --item <KEY>`) anchors on the record a tracker
   key names (`ItemAnchors`) and answers `003` with suggestions when none is linked. The fix line follows the state: with `context-sync`
-  named in the profile (`ContextScope.SyncConfigured`) it says the record isn't linked yet or the key is unknown and to run `sindri context
-  sources sync`; without it, to name the service. Sindri resolves a Sindri item id (`ITM-…`) before the engine (`ItemKeys`): a linked item
+  named in the profile (`ContextScope.SyncConfigured`) it says the record isn't linked yet or the key is unknown and to check the key, wait for
+  the next context-sync slot or watch `sindri context sources status` (not `sources sync` until API P6 wires it); without it, to name the service. Sindri resolves a Sindri item id (`ITM-…`) before the engine (`ItemKeys`): a linked item
   asks for its record; one with no record yet answers `003` "has no tracker record linked yet"; an id no item has, or a session may not
   see, goes on unchanged and answers the same `003` as any unknown key.
 - Decisions and conflicts cite the record their quote comes from (`C<n>` of that record when the answer fetched it, else the map's `C1`);
