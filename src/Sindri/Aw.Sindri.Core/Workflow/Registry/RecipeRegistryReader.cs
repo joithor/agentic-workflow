@@ -191,6 +191,11 @@ public sealed class RecipeRegistryReader(IRecipeStore store, IRecipeApprovals ap
             stale.Add(StaleReason.ChildStale);
         }
 
+        if (SubjectKinds.Legacy(parsed) is not null)
+        {
+            stale.Add(StaleReason.LegacyShape);
+        }
+
         return (RecipeStanding.Approved, stale);
     }
 

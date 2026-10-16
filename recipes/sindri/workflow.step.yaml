@@ -1,6 +1,6 @@
 schema: 1
 id: workflow.step
-version: 1
+version: 2
 inputs:
   - { key: fact:spec, label: "Spec", type: text, kind: text }
 initial: produce

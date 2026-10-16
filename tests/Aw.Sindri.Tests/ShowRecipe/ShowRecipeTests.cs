@@ -23,7 +23,7 @@ public sealed class ShowRecipeTests
         Assert.True(shown.IsSuccess, shown.IsError ? shown.Error.ToString() : null);
         var (line, preview) = (shown.Value.Recipe, shown.Value.Preview);
         Assert.Equal((step.Hash, RecipeStanding.Unapproved), (line.Hash, line.Standing));
-        Assert.Equal((step.Id, 1, step.Hash), (preview.Id, preview.Version, preview.Hash));
+        Assert.Equal((step.Id, 2, step.Hash), (preview.Id, preview.Version, preview.Hash));
         Assert.Equal(["step.checks", "step.produce", "step.verify"], preview.Pins.Blocks.Select(b => b.Block.Value), StringComparer.Ordinal);
         Assert.Contains("3 declared", preview.Evals, StringComparison.Ordinal);
         Assert.Null(preview.Diff);

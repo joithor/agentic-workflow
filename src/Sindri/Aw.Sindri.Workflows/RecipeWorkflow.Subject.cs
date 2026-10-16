@@ -14,11 +14,16 @@ internal sealed partial class RecipeWorkflow
 
     /// <summary>
     /// The instance's subject (spec section 3.11): the first input names it, and the recipe's name, rendered once from the facts it
-    /// reads at the start time, is its label. Each fact is read by the 'ReadSubject' local activity; one that can't be read is its bare key.
+    /// reads at the start time, is its label. A recipe registered before input kinds is not named. Each fact is read by the 'ReadSubject' local activity; one that can't be read is its bare key.
     /// The stored text of the link inputs comes back too: a link fact's ref shows its URL, host and title from it.
     /// </summary>
-    private static async Task<(SubjectRef Subject, IReadOnlyDictionary<FactKey, string> Links)> NamedSubject(InterpretedRecipe recipe, InstanceStart start)
+    private static async Task<(SubjectRef? Subject, IReadOnlyDictionary<FactKey, string> Links)> NamedSubject(InterpretedRecipe recipe, InstanceStart start)
     {
+        if (SubjectKinds.Legacy(recipe.Recipe) is not null)
+        {
+            return (null, new Dictionary<FactKey, string>());   // a pre-P4c instance replayed: no kind to name it by (the start refuses such a recipe now), so it runs unnamed
+        }
+
         var inputs = recipe.Recipe.Inputs;
         List<FactKey> keys = [.. InstanceNames.FactsRead(recipe.Recipe)];
         if (SubjectRefs.NeedsContent(recipe))

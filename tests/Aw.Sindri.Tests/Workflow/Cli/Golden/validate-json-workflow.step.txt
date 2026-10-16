@@ -3,12 +3,12 @@ exit 0
 --- stdout
 {
   "passed": true,
-  "hash": "sha256:c3b7814f56b48b918e8f399481b44454627a6a2b10a9c26dc930826b1586cc2e",
+  "hash": "sha256:1c1173a162a77736c33620e985d6d75473cf3755963adc5c46eb9049434f5276",
   "findings": [],
   "normalized": {
     "schema": 1,
     "id": "workflow.step",
-    "version": 1,
+    "version": 2,
     "description": null,
     "base": null,
     "urgency": "work",

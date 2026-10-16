@@ -72,7 +72,7 @@ public sealed class InstanceViewProducerTests
     }
 
     [Fact]
-    public void An_input_the_instance_does_not_hold_is_not_present_and_a_recipe_without_inputs_cant_be_viewed()
+    public void An_input_the_instance_does_not_hold_is_not_present()
     {
         var absent = InstanceViews.Of(
             EngineFixture.At(_incident.Recipe, "produce"), _incident with { Inputs = new Dictionary<FactKey, InputFact>() }, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
@@ -80,10 +80,6 @@ public sealed class InstanceViewProducerTests
         Assert.False(Assert.Single(absent.Inputs).Present);
         Assert.Equal("Spec", absent.Subject?.Label);   // the declared label, as no file name was given
         Assert.Equal("Spec", absent.Subject?.Key);
-        _ = Assert.Throws<InvalidOperationException>(() => InstanceViews.Of(
-            EngineFixture.At(EngineFixture.Step with { Inputs = [] }, "produce"),
-            StatusCases.Recipe with { Recipe = EngineFixture.Step with { Inputs = [] }, Inputs = new Dictionary<FactKey, InputFact>() },
-            StatusCases.Now, timeoutAt: null, new InstanceViewContext()));
     }
 
     [Fact]

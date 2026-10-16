@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Features.StartInstance;
 
@@ -140,6 +141,11 @@ internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipe
         if (Refusal(recipe.Value.Version, approval.Value) is { } refused)
         {
             return refused;
+        }
+
+        if (SubjectKinds.Legacy(recipe.Value.Recipe) is { } legacy)
+        {
+            return WorkflowErrors.RecipeInvalid.With($"{recipe.Value.Version.Id.Value}@{recipe.Value.Version.Hash.Display} was registered before input kinds ({legacy}); nothing was started (fix: {SubjectKinds.LegacyFix})");
         }
 
         return recipe.Value.Recipe.Inputs.FirstOrDefault(i => i.Generate is null && !request.Facts.ContainsKey(i.Key)) is { } missing

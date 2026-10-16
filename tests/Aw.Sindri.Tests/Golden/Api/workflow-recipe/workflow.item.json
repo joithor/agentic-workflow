@@ -1,7 +1,7 @@
 {
   "id": "workflow.item",
-  "hash": "sha256:cb9a5b5e28c3dbfaa457ea21304c977b04e3d871cdbeca32252825b9a8c9d4fb",
-  "version": 1,
+  "hash": "sha256:85ecaff4781ee6cfd458a983861cf04a66228fde579c95722b03b353a3532d45",
+  "version": 2,
   "name": null,
   "inputs": [
     {

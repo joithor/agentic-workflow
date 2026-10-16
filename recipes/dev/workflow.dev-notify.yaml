@@ -1,6 +1,6 @@
 schema: 1
 id: workflow.dev-notify
-version: 1
+version: 2
 description: "A desk Step, then a desk notification, then a wait for its delivery: the effects signal (engine spec section 12, P6)."
 inputs:
   - { key: fact:run, label: "Run", type: text, kind: text, generate: "dev-notify {start:date} {start:time}" }

@@ -29,10 +29,29 @@ public static class SubjectKinds
         return input.Type ?? (input.Kind is { } kind ? PairedType(kind) : null) ?? FactTypes.Default;
     }
 
-    /// <summary>The kind an input has: the declared one. RCP-INPUT-001 makes it required, so a recipe that runs always has it.</summary>
+    /// <summary>The fix a pre-P4c recipe's refusals and marks name (RCP-VERSION-001 lets the new file register over the old row).</summary>
+    public const string LegacyFix = "register the current file at a new version and approve it";
+
+    /// <summary>
+    /// The finding a recipe registered before input kinds has (RCP-INPUT-002: no input; RCP-INPUT-001: an input with no kind), or null for a recipe that has
+    /// both. Such a row stays as registered (its hash is not rewritten), so the start, the list and the view check this before they read a kind.
+    /// </summary>
+    /// <param name="recipe">A registered recipe.</param>
+    /// <returns>The rule id with what is missing, or null.</returns>
+    public static string? Legacy(Recipe recipe)
+    {
+        ArgumentNullException.ThrowIfNull(recipe);
+        return recipe.Inputs.Count == 0
+            ? "RCP-INPUT-002: the recipe declares no input"
+            : recipe.Inputs.FirstOrDefault(static i => i.Kind is null) is { } bare
+                ? $"RCP-INPUT-001: input {bare.Key.Value} declares no kind"
+                : null;
+    }
+
+    /// <summary>The kind an input has: the declared one. RCP-INPUT-001 makes it required, so a recipe that passed <see cref="Legacy"/> always has it.</summary>
     /// <param name="input">A recipe input.</param>
     /// <returns>The kind.</returns>
-    /// <exception cref="InvalidOperationException">The recipe declares no kind (it fails RCP-INPUT-001, so it can't have been approved).</exception>
+    /// <exception cref="InvalidOperationException">The recipe declares no kind: the caller skipped <see cref="Legacy"/>.</exception>
     public static string Effective(RecipeInput input)
     {
         ArgumentNullException.ThrowIfNull(input);

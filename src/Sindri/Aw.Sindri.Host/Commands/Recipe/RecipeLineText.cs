@@ -19,7 +19,7 @@ internal static class RecipeLineText
         var via = s.Via is { } v && s.Standing != RecipeStanding.Unapproved ? $" ({Word(v)})" : string.Empty;
         var stale = s.Stale.Count == 0
             ? string.Empty
-            : $"; stale: {string.Join(", ", s.Stale.Select(Word))} (fix: sindri recipe approve {name})";
+            : $"; stale: {string.Join(", ", s.Stale.Select(Word))} (fix: {(s.Stale.Contains(StaleReason.LegacyShape) ? SubjectKinds.LegacyFix : $"sindri recipe approve {name}")})";
         return $"{name} {Word(s.Standing)}{via}{stale}";
     }
 
@@ -32,7 +32,7 @@ internal static class RecipeLineText
     internal static string Detail(RecipeSummary s) =>
         $"urgency: {s.Urgency}\n"
         + (s.Name is { } name ? $"name: {name}\n" : string.Empty)
-        + string.Concat(s.Inputs.Select(static i => $"input: {i.Key.Value} type={i.Type ?? SubjectKinds.TypeOf(i)} kind={i.Kind}{(i.Generate is { } generate ? $" generate=\"{generate}\"" : string.Empty)}\n"))
+        + string.Concat(s.Inputs.Select(static i => $"input: {i.Key.Value} type={i.Type ?? SubjectKinds.TypeOf(i)} kind={i.Kind ?? "-"}{(i.Generate is { } generate ? $" generate=\"{generate}\"" : string.Empty)}\n"))
         + string.Concat(s.Outputs.Select(static o => $"output: {o.Key.Value} type={o.Type ?? FactTypes.Default} from={o.From}\n"))
         + $"order: {s.OrderedBy}\n"
         + string.Concat(s.States.Select(static p => $"state: {p.State} {(p.BranchOf is { } b ? $"branch-of={b}" : $"order={p.Order?.ToString(CultureInfo.InvariantCulture) ?? "-"}")}\n"))
@@ -59,5 +59,10 @@ internal static class RecipeLineText
 
     private static string Word(ApprovalVia via) => via == ApprovalVia.Freeze ? "freeze" : "desk";
 
-    private static string Word(StaleReason reason) => reason == StaleReason.ChildStale ? "child-stale" : "pin-drift";
+    private static string Word(StaleReason reason) => reason switch
+    {
+        StaleReason.ChildStale => "child-stale",
+        StaleReason.LegacyShape => "legacy-shape",
+        StaleReason.PinDrift or _ => "pin-drift",
+    };
 }

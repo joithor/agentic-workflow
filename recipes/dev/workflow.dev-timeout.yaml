@@ -1,6 +1,6 @@
 schema: 1
 id: workflow.dev-timeout
-version: 1
+version: 2
 description: "A desk Step with a 1m timeout that parks: the timers signal (engine spec section 12, P5)."
 inputs:
   - { key: fact:run, label: "Run", type: text, kind: text, generate: "dev-timeout {start:date} {start:time}" }

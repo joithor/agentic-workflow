@@ -1,6 +1,6 @@
 schema: 1
 id: workflow.item
-version: 1
+version: 2
 inputs:
   - { key: fact:item, label: "Item", type: item, kind: item }
 initial: triaged
