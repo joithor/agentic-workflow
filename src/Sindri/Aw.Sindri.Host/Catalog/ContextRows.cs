@@ -46,7 +46,13 @@ internal static class ContextRows
         new(ActionId.From("SyncSources"), CommandType: null, Variant: null, ActionClass.Job, ServiceGrants: [],
             NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
             "POST", "/sindri/context/sources/sync", ShellRows.Form("sindri context sources sync"), "pending:API-P6"),
+        new(ActionId.From(BacktestAction), CommandType: null, Variant: null, ActionClass.Job, ServiceGrants: [],
+            NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
+            "POST", "/sindri/context/eval/backtest", ShellRows.Form("sindri context eval backtest"), "pending:API-P6"),
     ];
+
+    /// <summary>The backtest's action id (a shared contract with the UI lane: Verb+Context+noun); one constant, so a rename is one line.</summary>
+    internal const string BacktestAction = "RunContextBacktest";
 
     private const string EngineRowsTypedConfirmation = "cli-only:typed-confirmation";
 
