@@ -1,0 +1,50 @@
+schema: 1
+id: workflow.two-routes
+version: 1
+initial: route-a
+states:
+  route-a:
+    kind: active
+    step:
+      use: step.judge.choose
+      with:
+        prompt: "Which way is the first call?"
+        facts: [fact:change]
+        choices:
+          - "step: one"
+          - "other: two"
+    timeout: { after: 2d, then: park }
+    next: "Pick."
+  route-a-desk:
+    kind: active
+    step: { use: step.desk.choose, with: { from: route-a } }
+    timeout: { after: 2d, then: park }
+    next: "Pick."
+  route-b:
+    kind: active
+    step:
+      use: step.judge.choose
+      with:
+        prompt: "Which way is the second call?"
+        facts: [fact:change]
+        choices:
+          - "failed: one"
+          - "fine: two"
+    timeout: { after: 2d, then: park }
+    next: "Pick."
+  route-b-desk:
+    kind: active
+    step: { use: step.desk.choose, with: { from: route-b } }
+    timeout: { after: 2d, then: park }
+    next: "Pick."
+  done: { kind: terminal, outcome: resolved }
+transitions:
+  - { from: [route-a, route-a-desk], to: route-b, on: step.completed, when: { outcome: step }, produces: [fact:decision] }
+  - { from: [route-a, route-a-desk], to: route-b, on: step.completed, when: { outcome: other }, produces: [fact:decision] }
+  - { from: route-a, to: route-a-desk, on: step.completed, when: { outcome: uncertain }, produces: [fact:decision] }
+  - { from: route-a, to: route-a-desk, on: step.failed }
+  - { from: [route-b, route-b-desk], to: done, on: step.completed, when: { outcome: failed }, produces: [fact:decision] }
+  - { from: [route-b, route-b-desk], to: done, on: step.completed, when: { outcome: fine }, produces: [fact:decision] }
+  - { from: route-b, to: route-b-desk, on: step.completed, when: { outcome: uncertain }, produces: [fact:decision] }
+  - { from: route-b, to: route-b-desk, on: step.failed }
+inputs: [{ key: fact:change, label: "Change", type: text, kind: text }]

@@ -6,7 +6,7 @@ namespace Aw.Sindri.Tests.Workflow;
 /// <summary>The validate-only fixtures (spec §12): 'workflow.bugfix' (modes A and C) and 'workflow.direction', against the test catalog.</summary>
 public sealed partial class ValidRecipeFixturesTests
 {
-    public static TheoryData<string> Fixtures => ["valid/workflow.bugfix.yaml", "valid/workflow.direction.yaml"];
+    public static TheoryData<string> Fixtures => ["valid/workflow.bugfix.yaml", "valid/workflow.direction.yaml", "valid/workflow.two-routes.yaml"];
 
     [Theory, Trait("Lane", "unit")]
     [MemberData(nameof(Fixtures))]

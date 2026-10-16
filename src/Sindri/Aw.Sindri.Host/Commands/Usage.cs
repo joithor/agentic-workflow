@@ -47,7 +47,7 @@ internal static class Usage
         "       sindri context sources sync      pending:S-5B (repo docs refresh through the context-docs-refresh service)",
         "       sindri recipe validate <file> [--json]   check a recipe in-process: rule lines, then its hash (exit 0 pass, 1 fail, 2 error)",
         "       sindri recipe eval <file> [--json]       run a recipe's eval cases in-process (exit 0 pass, 1 fail, 2 error)",
-        "       sindri recipe eval --scaffold <file>     print a happy-path eval case for the recipe",
+        "       sindri recipe eval --scaffold <file> [--out <dir>]   print a happy-path eval case for the recipe; a route recipe has a case per path, and --out writes each to <dir>/<case>.jsonl (it refuses to overwrite)",
         "       sindri recipe eval --record <address> --out <file>   an instance's history as an eval case (needs the server, P4)",
         "       sindri recipe register <file>            register a recipe by hash: 'registered <id>@<hash> (unapproved)'",
         "       sindri recipe show <id@hash> [--json]    the recipe's line, its urgency, inputs, outputs and path order, and its approval preview; --json: the same as fields",

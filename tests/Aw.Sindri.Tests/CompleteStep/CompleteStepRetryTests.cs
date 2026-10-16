@@ -6,6 +6,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.CompleteStep;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.ApplyCommand;
+using Aw.Sindri.Tests.Workflow.Engine;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.CompleteStep;
@@ -22,7 +23,7 @@ public sealed class CompleteStepRetryTests
     [Fact(Timeout = 30_000)]
     public async Task A_report_retried_after_a_timeout_that_did_apply_is_applied_and_keeps_its_claim()
     {
-        var service = new CompleteStepService(_instance, _instance, _instance, new InMemoryFactStore(), _nonces, _instance);
+        var service = new CompleteStepService(_instance, _instance, _instance, new InMemoryFactStore(), _nonces, _instance, new EngineFilledReport(EvalComposition.Catalog, EvalComposition.Options));
         var request = Report();
         _instance.LoseNextResponse();
 
@@ -37,9 +38,25 @@ public sealed class CompleteStepRetryTests
     }
 
     [Fact(Timeout = 30_000)]
+    public async Task A_retry_with_a_pending_claim_is_sent_again_while_the_instance_cannot_be_read()
+    {
+        var service = new CompleteStepService(_instance, _instance, _instance, new InMemoryFactStore(), _nonces, _instance, new EngineFilledReport(EvalComposition.Catalog, EvalComposition.Options));
+        var request = Report();
+        _instance.LoseNextResponse();
+        _ = await service.Handle(request, TestContext.Current.CancellationToken);
+        _instance.GetFails = Core.SindriErrors.ApprovalsUnavailable.With("no worker (test)");
+
+        var retry = await service.Handle(request, TestContext.Current.CancellationToken);
+
+        Assert.False(retry.IsError, retry.IsError ? retry.Error.Message : null);
+        Assert.Equal([_nonce, _nonce], _instance.Sent);
+        Assert.Equal(1, _instance.Applied);
+    }
+
+    [Fact(Timeout = 30_000)]
     public async Task A_refused_report_gives_its_fresh_nonce_back()
     {
-        var service = new CompleteStepService(_instance, _instance, _instance, new InMemoryFactStore(), _nonces, _instance);
+        var service = new CompleteStepService(_instance, _instance, _instance, new InMemoryFactStore(), _nonces, _instance, new EngineFilledReport(EvalComposition.Catalog, EvalComposition.Options));
         _instance.RefuseNext();
 
         var refused = await service.Handle(Report(), TestContext.Current.CancellationToken);
@@ -55,7 +72,7 @@ public sealed class CompleteStepRetryTests
     public async Task A_report_on_an_instance_whose_recipe_is_no_longer_approved_is_refused_and_gives_its_nonce_back(ApprovalCheck approval, string code)
     {
         var facts = new InMemoryFactStore();
-        var service = new CompleteStepService(_instance, _instance, _instance, facts, _nonces, _instance);
+        var service = new CompleteStepService(_instance, _instance, _instance, facts, _nonces, _instance, new EngineFilledReport(EvalComposition.Catalog, EvalComposition.Options));
         _instance.Approval = approval;
 
         var refused = await service.Handle(Report(), TestContext.Current.CancellationToken);
@@ -73,7 +90,7 @@ public sealed class CompleteStepRetryTests
     public async Task A_report_whose_approval_check_cannot_be_made_gives_the_error_and_its_nonce_back_and_stores_nothing(bool instanceQueryFails)
     {
         var facts = new InMemoryFactStore();
-        var service = new CompleteStepService(_instance, _instance, _instance, facts, _nonces, _instance);
+        var service = new CompleteStepService(_instance, _instance, _instance, facts, _nonces, _instance, new EngineFilledReport(EvalComposition.Catalog, EvalComposition.Options));
         var failure = Core.SindriErrors.ApprovalsUnavailable.With("approved/latest can't be read (test)");
         _instance.GetFails = instanceQueryFails ? failure : null;
         _instance.CheckFails = instanceQueryFails ? null : failure;
