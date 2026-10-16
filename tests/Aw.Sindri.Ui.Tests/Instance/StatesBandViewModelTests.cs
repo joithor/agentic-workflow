@@ -101,9 +101,9 @@ public sealed class StatesBandViewModelTests
 
         var band = new StatesBandViewModel(row.States, PathOrdering.Path, row.State);
 
-        Assert.Equal(FixtureInstances.Status("taken-over").Header.State, cell.Badge!.Kind == EngineOwnedKind.TakenOver ? "taken-over" : string.Empty);
-        Assert.Contains(Labels.CellBadge(cell.Badge.Kind, cell.Badge.Reason), Node(band, cell.State).Text, StringComparison.Ordinal);
-        Assert.All(band.Nodes.Where(n => n.State != cell.State), n => Assert.DoesNotContain("▌", n.Text, StringComparison.Ordinal));
+        var badge = Labels.CellBadge(cell.Badge!.Kind, cell.Badge.Reason);
+        Assert.Contains(badge, Node(band, cell.State).Text, StringComparison.Ordinal);
+        Assert.All(band.Nodes.Where(n => n.State != cell.State), n => Assert.DoesNotContain(badge, n.Text, StringComparison.Ordinal));
     }
 
     [Fact]

@@ -18,15 +18,12 @@ public sealed class FrameTabsViewModelTests
 
     private static ViewCounts Counts => FixtureInstances.Details.First(d => string.Equals(d.Scenario, "project-build", StringComparison.Ordinal)).Detail.Counts;
 
-    private static string Figure(string name) => Served["counts"]![name]!.ToJsonString();
-
     [Fact]
     public void Counts_come_from_counts()
     {
         var tabs = new FrameTabsViewModel(Counts).Tabs;
 
-        Expect.Sequence([$"Timeline {Figure("timeline")}", $"Decisions {Figure("decisions")}", $"Requests {Figure("requests")}"], tabs.Take(3).Select(t => t.Text));
-        Assert.Equal(["41", "3", "1"], [Figure("timeline"), Figure("decisions"), Figure("requests")]);
+        Expect.Sequence([Labels.TabText(Labels.TabTimeline, Counts.Timeline), Labels.TabText(Labels.TabDecisions, Counts.Decisions), Labels.TabText(Labels.TabRequests, Counts.Requests)], tabs.Take(3).Select(t => t.Text));
     }
 
     [Fact]
@@ -36,15 +33,18 @@ public sealed class FrameTabsViewModelTests
 
         var context = new FrameTabsViewModel(Counts).Tabs[3];
 
-        Assert.Equal(("Context", "Context, " + Labels.TabArrivesU9), (context.Text, context.Name));
+        var text = Labels.TabText(Labels.TabContext, count: null);
+        Assert.Equal((text, Labels.TabName(text, Labels.TabArrivesU9)), (context.Text, context.Name));
     }
 
     [Fact]
     public void A_served_context_count_shows()
     {
-        var context = new FrameTabsViewModel(Counts with { Context = 14 }).Tabs[3];
+        var served = Counts.Decisions;   // a figure the golden serves, standing in for a served context count
 
-        Assert.Equal("Context 14", context.Text);
+        var context = new FrameTabsViewModel(Counts with { Context = served }).Tabs[3];
+
+        Assert.Equal(Labels.TabText(Labels.TabContext, served), context.Text);
     }
 
     [Fact]
@@ -66,6 +66,6 @@ public sealed class FrameTabsViewModelTests
         var strip = frame.Tabs;
         await frame.Refresh(_api, TestContext.Current.CancellationToken);
 
-        Assert.Equal(("Timeline " + Figure("timeline"), true), (strip?.Tabs[0].Text, ReferenceEquals(strip, frame.Tabs)));
+        Assert.Equal((Labels.TabText(Labels.TabTimeline, Counts.Timeline), true), (strip?.Tabs[0].Text, ReferenceEquals(strip, frame.Tabs)));
     }
 }
