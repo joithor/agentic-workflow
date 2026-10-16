@@ -1,5 +1,10 @@
+using Aw.Kernel.Ids;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Decisions;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Requests;
+using Aw.Sindri.Testing;
 using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -34,6 +39,25 @@ public sealed class ParkRowsClearingTests
         Assert.Equal(["park:"], parked);   // the desk task is replaced by the park
         Assert.Equal(["desk:"], resumed);
         Assert.Empty(ended);
+    }
+
+    [Fact]
+    public async Task An_item_ended_by_its_workflow_voids_what_it_waited_on_as_a_human_close_does()
+    {
+        var q = new ItemQueryHarness();
+        await q.Item('1', "the item", repo: "agentic-workflow");
+        var ids = q.Views.Slice.Ids;
+        await q.Views.Fold(EventTypes.RequestFiled, new RequestFiled(ids.New<CommandId>(), A.FirstRequestId, A.FirstDecisionId, RequestKind.Rescope, ItemQueryHarness.Id('1'), RepoName.From("agentic-workflow"), "widen the scope"), ItemQueryHarness.Id('1'));
+        await Fold(q, EventTypes.WorkflowStarted, Row("produce", new FrameSummary("produce", 1, "1.1", Child: null, StepRuntime.Desk), suspension: null));
+        var waiting = await Ids(q);
+
+        await Fold(q, EventTypes.WorkflowTransition, Row("done", new FrameSummary("done", 2, Run: null, Child: null), suspension: null, outcome: "resolved"));
+
+        Assert.Contains("decision:" + A.FirstDecisionId.Value, waiting, StringComparer.Ordinal);
+        Assert.Empty(await Ids(q));
+        var decision = (await q.Views.Views.Get<HumanDecisionRow>(ViewNames.Decisions, A.FirstDecisionId.Value, ItemQueryHarness.Token)).Value!;
+        var request = (await q.Views.Views.Get<RequestRow>(ViewNames.Requests, A.FirstRequestId.Value, ItemQueryHarness.Token)).Value!;
+        Assert.Equal((DecisionState.Voided, RequestState.Voided), (decision.State, request.State));
     }
 
     [Fact]
