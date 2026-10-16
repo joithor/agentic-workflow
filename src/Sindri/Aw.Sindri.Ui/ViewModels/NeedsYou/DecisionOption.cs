@@ -5,4 +5,9 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// <param name="Label">The label as served.</param>
 /// <param name="IsRecommended">True for the recommended option.</param>
 /// <param name="IsEnabled">True when it takes input.</param>
-internal sealed record DecisionOption(string Id, string Label, bool IsRecommended, bool IsEnabled);
+/// <param name="DecisionId">The decision the option belongs to, so its name says which one it decides.</param>
+internal sealed record DecisionOption(string Id, string Label, bool IsRecommended, bool IsEnabled, string DecisionId = "")
+{
+    /// <summary>The accessible name: the label and the decision's id (several decisions can be on screen, each with an "Accept").</summary>
+    internal string Name => DecisionId.Length > 0 ? Label + " " + DecisionId : Label;
+}

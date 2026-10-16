@@ -70,6 +70,9 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
         }
     }
 
+    /// <summary>The title button's accessible name; a stub until K10.</summary>
+    public string OpenName => Title;
+
     /// <summary>The row's controls, the primary first, then the others as served.</summary>
     public IReadOnlyList<NeedsYouActionControl> Controls { get; private set; }
 
