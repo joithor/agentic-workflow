@@ -12,6 +12,7 @@ public sealed class ServiceRunGuard
     private readonly Lock _gate = new();
     private readonly HashSet<ServiceName> _claimed = [];
     private readonly HashSet<ServiceName> _manual = [];
+    private readonly HashSet<ServiceName> _reserved = [];
     private readonly Dictionary<ServiceName, ServiceOutcome> _last = [];
 
     /// <summary>Claims <paramref name="service"/> for one run.</summary>
@@ -25,6 +26,57 @@ public sealed class ServiceRunGuard
     /// <param name="claim">Releases the claim when disposed (twice is harmless).</param>
     /// <returns>False when a run of that service is in flight.</returns>
     public bool TryClaimManual(ServiceName service, out IDisposable claim) => TryClaim(service, manual: true, out claim);
+
+    /// <summary>Takes the manual claim of <paramref name="service"/> at admission, before the job's work exists, so no scheduled tick can claim in between. The work then takes it over with <see cref="TryClaimReserved"/>; a refused start gives it back with <see cref="Unreserve"/>.</summary>
+    /// <param name="service">The service.</param>
+    /// <returns>False when a run of that service is in flight.</returns>
+    public bool TryReserveManual(ServiceName service)
+    {
+        lock (_gate)
+        {
+            if (!_claimed.Add(service))
+            {
+                return false;
+            }
+
+            _ = _manual.Add(service);
+            _ = _reserved.Add(service);
+            return true;
+        }
+    }
+
+    /// <summary>Takes over a claim reserved by <see cref="TryReserveManual"/>.</summary>
+    /// <param name="service">The service.</param>
+    /// <param name="claim">Releases the claim when disposed (twice is harmless).</param>
+    /// <returns>False when nothing is reserved for <paramref name="service"/>.</returns>
+    public bool TryClaimReserved(ServiceName service, out IDisposable claim)
+    {
+        lock (_gate)
+        {
+            if (!_reserved.Remove(service))
+            {
+                claim = NoClaim.Instance;
+                return false;
+            }
+        }
+
+        claim = new Claim(this, service);
+        return true;
+    }
+
+    /// <summary>Gives back a claim reserved by <see cref="TryReserveManual"/> that no work took over (the start was refused). Nothing happens when nothing is reserved.</summary>
+    /// <param name="service">The service.</param>
+    public void Unreserve(ServiceName service)
+    {
+        lock (_gate)
+        {
+            if (_reserved.Remove(service))
+            {
+                _ = _claimed.Remove(service);
+                _ = _manual.Remove(service);
+            }
+        }
+    }
 
     /// <summary>Whether the run in flight for <paramref name="service"/> is a manual one.</summary>
     /// <param name="service">The service.</param>

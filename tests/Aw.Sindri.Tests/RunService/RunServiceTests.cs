@@ -181,6 +181,18 @@ public sealed class RunServiceTests
     }
 
     [Fact]
+    public async Task A_start_the_ledger_refuses_gives_the_service_back_to_the_scheduler()
+    {
+        await using var runtime = await RunServiceRuntime.Open(new ScriptedService(ScriptedService.Worked));
+        runtime.H.Store.AppendFailure = new InvalidOperationException("the disk went away");
+
+        _ = await Assert.ThrowsAsync<InvalidOperationException>(() => runtime.Start(A.RunServiceRequest().ForService(_tidy).Build(), Human()));
+
+        Assert.True(runtime.Get<ServiceRunGuard>().TryClaim(_tidy, out var free));
+        free.Dispose();
+    }
+
+    [Fact]
     public async Task Manual_ok_after_failure_clears_the_needs_you_row_and_sets_lastRun_ok()
     {
         await using var runtime = await RunServiceRuntime.Open(new ScriptedService(ScriptedService.Failed, ScriptedService.Worked));

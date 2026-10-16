@@ -10,6 +10,8 @@ namespace Aw.Sindri.Features.Jobs;
 internal sealed class JobAdmitter<TRequest>(IEnumerable<JobDefinition> definitions, IJobAdmission<TRequest>? admission = null)
     where TRequest : notnull
 {
+    public void Rollback(TRequest request) => admission?.Rollback(request);
+
     public async ValueTask<Result<AdmittedJob>> Admit(TRequest request, CancellationToken cancellationToken)
     {
         var definition = definitions.Single(static d => d.Request == typeof(TRequest));
