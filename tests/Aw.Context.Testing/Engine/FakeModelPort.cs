@@ -9,6 +9,9 @@ public sealed class FakeModelPort : IModelPort
     /// <summary>The text every request is answered with.</summary>
     public string Answer { get; set; } = "fake answer";
 
+    /// <summary>When set, answers each request itself (the tests route on the purpose and the prompt) instead of <see cref="Answer"/>.</summary>
+    public Func<ModelRequest, string>? Responder { get; set; }
+
     /// <summary>The requests asked so far.</summary>
     public IList<ModelRequest> Requests { get; } = [];
 
@@ -18,7 +21,8 @@ public sealed class FakeModelPort : IModelPort
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
         Requests.Add(request);
-        var text = Answer.Length / 4 > request.MaxTokens ? Answer[..(request.MaxTokens * 4)] : Answer;
+        var answer = Responder?.Invoke(request) ?? Answer;
+        var text = answer.Length / 4 > request.MaxTokens ? answer[..(request.MaxTokens * 4)] : answer;
         return ValueTask.FromResult<Result<ModelAnswer>>(new ModelAnswer(text, (request.Prompt.Length + 3) / 4, (text.Length + 3) / 4));
     }
 }

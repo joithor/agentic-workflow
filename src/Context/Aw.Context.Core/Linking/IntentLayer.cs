@@ -16,6 +16,9 @@ public sealed record IntentLayer(
     IReadOnlyList<DecisionRow> Decisions,
     IReadOnlyList<GraphEdge> DecisionEdges)
 {
+    /// <summary>The checked decision pairs.</summary>
+    public IReadOnlyList<DecisionConflict> Conflicts { get; init; } = [];
+
     /// <summary>A layer with nothing in it.</summary>
     public static IntentLayer Empty { get; } = new([], [], [], []);
 }

@@ -29,4 +29,22 @@ public interface IIntentStore
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>Success, or SND-CONTEXT-004.</returns>
     public ValueTask<Result<Unit>> RecordFailure(SourceId source, string code, CancellationToken cancellationToken);
+
+    /// <summary>The records of a source whose latest version hasn't been extracted yet.</summary>
+    /// <param name="source">The source.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The queued record keys.</returns>
+    public ValueTask<Result<IReadOnlyList<RecordKey>>> Queued(SourceId source, CancellationToken cancellationToken);
+
+    /// <summary>Replaces a record's decisions and their edges, and marks its version extracted (only if the record still has that version).</summary>
+    /// <param name="batch">What extraction found.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    /// <returns>Unit, or SND-CONTEXT-004.</returns>
+    public ValueTask<Result<Unit>> SaveDecisions(DecisionBatch batch, CancellationToken cancellationToken);
+
+    /// <summary>Stores a checked pair (a pair is stored once).</summary>
+    /// <param name="conflict">The pair and its verdict.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    /// <returns>Unit, or SND-CONTEXT-004.</returns>
+    public ValueTask<Result<Unit>> SaveConflict(DecisionConflict conflict, CancellationToken cancellationToken);
 }

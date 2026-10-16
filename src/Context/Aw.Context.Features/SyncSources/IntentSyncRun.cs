@@ -4,6 +4,7 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Linking;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Models;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 using Aw.Context.Core.Trust;
@@ -17,7 +18,7 @@ namespace Aw.Context.Features.SyncSources;
 /// committed together with the cursor 'mapVersion:nodesDone', so a stopped run (the source down, the time cap) resumes where it was
 /// and a replay writes nothing new. A map version change re-links every record.
 /// </summary>
-internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (ContextSettings Settings, Scrubbers Scrubbers) context, (IIntentStore Store, TimeProvider Clock) ports)
+internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (ContextSettings Settings, Scrubbers Scrubbers) context, (IIntentStore Store, IModelPort Model, TimeProvider Clock) ports)
 {
     private readonly SourceId _id = source.Describe().Id;
     private readonly MapText _text = new(context.Scrubbers);

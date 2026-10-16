@@ -114,6 +114,12 @@ internal sealed class SqliteIntentStore(ContextDatabase database) : IIntentStore
         }
     }
 
+    public ValueTask<Result<IReadOnlyList<RecordKey>>> Queued(SourceId source, CancellationToken cancellationToken) => throw new NotSupportedException("S-5B slice 4");
+
+    public ValueTask<Result<Unit>> SaveDecisions(DecisionBatch batch, CancellationToken cancellationToken) => throw new NotSupportedException("S-5B slice 4");
+
+    public ValueTask<Result<Unit>> SaveConflict(DecisionConflict conflict, CancellationToken cancellationToken) => throw new NotSupportedException("S-5B slice 4");
+
     private static IEnumerable<SqlStatement> Statements(IntentPage page)
     {
         foreach (var record in page.Records)

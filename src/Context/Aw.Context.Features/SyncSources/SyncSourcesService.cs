@@ -1,9 +1,9 @@
-using System.Collections.Concurrent;
 using Aw.Context.Core;
 using Aw.Context.Core.Docs;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Linking;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Models;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 using Aw.Context.Core.Trust;
@@ -18,13 +18,11 @@ namespace Aw.Context.Features.SyncSources;
 /// of this profile SND-CONTEXT-058. It runs as the engine itself (spec §3): a session's reading rules don't apply, so the links it writes are the same whoever
 /// asks. The repo docs are refreshed by the facade next to it (ContextSources).
 /// </summary>
-internal sealed class SyncSourcesService(ISourceCatalog catalog, IScrubberFactory scrubberFactory, MapReader graphs, IIntentStore intents, TimeProvider clock)
+internal sealed class SyncSourcesService(ISourceCatalog catalog, IScrubberFactory scrubberFactory, MapReader graphs, IIntentStore intents, IModelPort model, SyncLocks locks, TimeProvider clock)
     : IService<SyncSourcesRequest, SyncReport>
 {
     /// <summary>The longest one run may take before it stops and saves its cursor (spec §8.8).</summary>
     internal static readonly TimeSpan RunCap = TimeSpan.FromMinutes(2);
-
-    private static readonly ConcurrentDictionary<string, byte> _running = new(StringComparer.Ordinal);
 
     public async ValueTask<Result<SyncReport>> Handle(SyncSourcesRequest request, CancellationToken cancellationToken)
     {
@@ -75,18 +73,18 @@ internal sealed class SyncSourcesService(ISourceCatalog catalog, IScrubberFactor
     private async ValueTask<Result<SourceSync>> Run(IContextSource source, VisibleMap map, (ContextSettings Settings, Scrubbers Scrubbers) context, CancellationToken cancellationToken)
     {
         var id = source.Describe().Id;
-        if (!_running.TryAdd(id.Value, 0))
+        if (!locks.TryEnter(id.Value))
         {
             return ContextErrors.SyncRunning.With($"{id.Value} is being synced already (fix: wait for it; sindri context sources status)");
         }
 
         try
         {
-            return await new IntentSyncRun(source, map, context, (intents, clock)).Execute(cancellationToken).ConfigureAwait(false);
+            return await new IntentSyncRun(source, map, context, (intents, model, clock)).Execute(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
-            _ = _running.TryRemove(id.Value, out _);
+            locks.Leave(id.Value);
         }
     }
 }

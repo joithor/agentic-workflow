@@ -65,6 +65,12 @@ public sealed class FakeIntentStore : IIntentStore
         return Unit.Value;
     });
 
+    public ValueTask<Result<IReadOnlyList<RecordKey>>> Queued(SourceId source, CancellationToken cancellationToken) => throw new NotSupportedException("S-5B slice 4");
+
+    public ValueTask<Result<Unit>> SaveDecisions(DecisionBatch batch, CancellationToken cancellationToken) => throw new NotSupportedException("S-5B slice 4");
+
+    public ValueTask<Result<Unit>> SaveConflict(DecisionConflict conflict, CancellationToken cancellationToken) => throw new NotSupportedException("S-5B slice 4");
+
     private ValueTask<Result<T>> Done<T>(Func<T> work) => Attempt(() => Results.Success(work()));
 
     private ValueTask<Result<T>> Attempt<T>(Func<Result<T>> work) => ValueTask.FromResult(Failure is { } failure ? failure : work());

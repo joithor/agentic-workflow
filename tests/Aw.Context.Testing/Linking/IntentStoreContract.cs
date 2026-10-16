@@ -1,6 +1,7 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Linking;
+using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 using Aw.Context.Testing.Map;
 using Xunit;
@@ -126,5 +127,91 @@ public abstract class IntentStoreContract
         var state = Expect.Ok(await store.State(_onyx, None), test);
 
         Expect.That(state.Cursor == "c1" && state.LastSync == _at && state.LastError == "SND-CONTEXT-010", test, $"state {state}");
+    }
+
+    private static (DecisionRow Decision, GraphEdge Decides) Decided(RecordKey record, string quote, string node)
+    {
+        var decision = new DecisionRow(record, quote, "Wording of " + quote, Provenance.Model, _at);
+        return (decision, new GraphEdge(decision.ToKey(), NodeKey.From(node), EdgeType.Decides, Provenance.Model, 0.8, At: _at));
+    }
+
+    /// <summary>A record is queued from its first commit until its decisions are saved; the saved decisions and edges read back.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_new_record_is_queued_until_its_decisions_are_saved()
+    {
+        const string test = nameof(A_new_record_is_queued_until_its_decisions_are_saved);
+        var store = CreateStore();
+        _ = Expect.Ok(await store.CommitPage(Page("c1", [Record(_r103, "v1", "SPL-103")], [Link(_r103, "feature:a")]), None), test);
+        var queued = Expect.Ok(await store.Queued(_onyx, None), test);
+        var (decision, decides) = Decided(_r103, "keeps the focused pane first", "feature:a");
+
+        _ = Expect.Ok(await store.SaveDecisions(new DecisionBatch(_r103, "v1", [decision], [decides]), None), test);
+        var after = Expect.Ok(await store.Queued(_onyx, None), test);
+        var layer = Expect.Ok(await store.Layer(None), test);
+        var state = Expect.Ok(await store.State(_onyx, None), test);
+
+        Expect.That(queued.Select(k => k.Value).SequenceEqual([_r103.Value], StringComparer.Ordinal) && after.Count == 0, test, $"queued {queued.Count} then {after.Count}");
+        Expect.That(layer.Decisions.Count == 1 && layer.Decisions[0].Quote == decision.Quote && layer.Decisions[0].Provenance == Provenance.Model, test, "the decision didn't read back");
+        Expect.That(layer.DecisionEdges.Count == 1 && layer.DecisionEdges[0].To.Value == "feature:a" && layer.DecisionEdges[0].Type == EdgeType.Decides, test, "the decides edge didn't read back");
+        Expect.That(state.Decisions == 1 && state.Queued == 0, test, $"state {state}");
+    }
+
+    /// <summary>Decisions extracted from an older version of a record are not saved.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Saving_decisions_for_a_stale_version_changes_nothing()
+    {
+        const string test = nameof(Saving_decisions_for_a_stale_version_changes_nothing);
+        var store = CreateStore();
+        _ = Expect.Ok(await store.CommitPage(Page("c1", [Record(_r103, "v1", "SPL-103")], [Link(_r103, "feature:a")]), None), test);
+        _ = Expect.Ok(await store.CommitPage(Page("c2", [Record(_r103, "v2", "SPL-103")], [Link(_r103, "feature:a")]), None), test);
+        var (decision, decides) = Decided(_r103, "old wording", "feature:a");
+
+        _ = Expect.Ok(await store.SaveDecisions(new DecisionBatch(_r103, "v1", [decision], [decides]), None), test);
+
+        var layer = Expect.Ok(await store.Layer(None), test);
+        var queued = Expect.Ok(await store.Queued(_onyx, None), test);
+        Expect.That(layer.Decisions.Count == 0 && layer.DecisionEdges.Count == 0 && queued.Count == 1, test, $"{layer.Decisions.Count} decisions, {queued.Count} queued");
+    }
+
+    /// <summary>A new version queues the record again, and saving replaces the old version's decisions and edges.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_new_version_queues_the_record_again_and_saving_replaces_its_decisions()
+    {
+        const string test = nameof(A_new_version_queues_the_record_again_and_saving_replaces_its_decisions);
+        var store = CreateStore();
+        _ = Expect.Ok(await store.CommitPage(Page("c1", [Record(_r103, "v1", "SPL-103")], [Link(_r103, "feature:a")]), None), test);
+        var (first, firstEdge) = Decided(_r103, "first", "feature:a");
+        _ = Expect.Ok(await store.SaveDecisions(new DecisionBatch(_r103, "v1", [first], [firstEdge]), None), test);
+
+        _ = Expect.Ok(await store.CommitPage(Page("c2", [Record(_r103, "v2", "SPL-103")], [Link(_r103, "feature:a")]), None), test);
+        var requeued = Expect.Ok(await store.Queued(_onyx, None), test);
+        var (second, secondEdge) = Decided(_r103, "second", "feature:a");
+        _ = Expect.Ok(await store.SaveDecisions(new DecisionBatch(_r103, "v2", [second], [secondEdge]), None), test);
+
+        var layer = Expect.Ok(await store.Layer(None), test);
+        Expect.That(requeued.Count == 1, test, "the new version wasn't queued");
+        Expect.That(layer.Decisions.Select(d => d.Quote).SequenceEqual(["second"], StringComparer.Ordinal) && layer.DecisionEdges.Select(e => e.From.Value).SequenceEqual([second.ToKey().Value], StringComparer.Ordinal), test, "the old decision stayed");
+    }
+
+    /// <summary>A checked pair is stored once, smaller key first, and shows in the layer.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_conflict_is_stored_once_per_pair_and_read_back_in_the_layer()
+    {
+        const string test = nameof(A_conflict_is_stored_once_per_pair_and_read_back_in_the_layer);
+        var store = CreateStore();
+        var a = NodeKey.From("decision:" + new string('a', 64));
+        var b = NodeKey.From("decision:" + new string('b', 64));
+
+        _ = Expect.Ok(await store.SaveConflict(DecisionConflict.Of(b, a, ConflictVerdict.Contradicts, _at), None), test);
+        _ = Expect.Ok(await store.SaveConflict(DecisionConflict.Of(a, b, ConflictVerdict.Agrees, _at), None), test);
+
+        var layer = Expect.Ok(await store.Layer(None), test);
+        Expect.That(layer.Conflicts.Count == 1, test, $"{layer.Conflicts.Count} conflicts");
+        var only = layer.Conflicts[0];
+        Expect.That(only.A.Value == a.Value && only.B.Value == b.Value && only.Verdict == ConflictVerdict.Contradicts, test, $"{only}");
     }
 }
