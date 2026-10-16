@@ -145,9 +145,9 @@ request() {
   url="$("$PROVE" url)" || return
   body="$(jq -nc --arg text "$1" --arg item "$item" '{kind: "rescope", text: $text} + (if $item == "" then {} else {item: $item} end)')"
   if [ -n "$repo" ]; then
-    curl -sS -X POST -H 'Content-Type: application/json' -H "X-Sindri-Repo: $repo" -d "$body" "$url/sindri/requests"
+    curl -sS --fail-with-body -X POST -H 'Content-Type: application/json' -H "X-Sindri-Repo: $repo" -d "$body" "$url/sindri/requests"
   else
-    curl -sS -X POST -H 'Content-Type: application/json' -d "$body" "$url/sindri/requests"
+    curl -sS --fail-with-body -X POST -H 'Content-Type: application/json' -d "$body" "$url/sindri/requests"
   fi
 }
 
