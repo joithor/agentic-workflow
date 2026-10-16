@@ -34,7 +34,7 @@ public sealed class InstanceFramesTests : FrameHost
         [.. window.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == name && t.IsEffectivelyVisible)];
 
     private static List<Button> Buttons(Window window, string name) =>
-        [.. window.GetVisualDescendants().OfType<Button>().Where(b => b.Name == name && b.IsEffectivelyVisible)];
+        [.. Named<Control>(window, "InstanceFrame").GetVisualDescendants().OfType<Button>().Where(b => b.Name == name && b.IsEffectivelyVisible)];   // the Workflows page behind the sheet has its own lock buttons
 
     private static void Frame(Window window, string name) => Frame(window, name, Prefix);
 
