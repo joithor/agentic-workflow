@@ -26,6 +26,11 @@
 #   sindri-ui-fixture.sh fail      add a service the build cannot run to the live profile and approve it (a failure row)
 #   sindri-ui-fixture.sh unfail    remove it again and approve (the row clears)
 #                                  (items --large also files 12 requests, 6 in FIXTURE_REPO and 6 in <FIXTURE_REPO>-two)
+#   sindri-ui-fixture.sh workflows [--large]
+#                                  start the strip's instances through the CLI (sindri workflow start, as the owner, each on a
+#                                  new item): one triage and two work instances; --large starts twelve roots across three recipes
+#   sindri-ui-fixture.sh incident start|stop
+#                                  start an incident-urgency instance (recipes/dev/incident-hold.yaml; it tops the strip) or cancel it
 #
 # FIXTURE_REPO names the items' repo (default: none, so the API's default applies).
 # Environment: AW_SINDRI_HOME (required: sindri-prove.sh's guard, a temp or proof folder), SINDRI (the built C# CLI,
@@ -43,7 +48,7 @@ STALL_ID="7f3c1a52-0b6e-4d1e-9a55-3c2f6d8e1b04"
 STALL_CORRELATION="7f3c1a52-0b6e-4d1e-9a55-3c2f6d8e1b05"
 
 die() { echo "sindri-ui-fixture: $*" >&2; exit 2; }
-usage() { sed -n '5,31p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '5,36p' "$0" | sed 's/^# \{0,1\}//'; }
 
 # sindri-prove.sh's guard alone: it runs before any verb, and SINDRI=true makes the verb a no-op.
 guard() { SINDRI=true "$PROVE" guard >/dev/null || exit 2; }
@@ -211,6 +216,55 @@ close() {
   if [ "${2:-}" = "--cancelled" ]; then "$PROVE" human item close "$1" --cancelled; else "$PROVE" human item close "$1"; fi
 }
 
+# A new item, its id printed (the id is the first ITM- token sindri item add prints).
+new_item() {
+  local out id
+  out="$(add "$1")" || return
+  id="$(printf '%s\n' "$out" | grep -o 'ITM-[A-Za-z0-9]*' | head -1)"
+  [ -n "$id" ] || die "item add printed no item id: $out"
+  printf '%s\n' "$id"
+}
+
+start_on_new_item() { # $1 recipe, $2 item title; prints the item
+  local item
+  item="$(new_item "$2")" || return
+  "$PROVE" human workflow start "$1" --item "$item" >/dev/null || return
+  printf '%s\n' "$item"
+}
+
+# One triage and two work instances (screens §8.2); --large: twelve roots, four on each of three recipes.
+workflows() {
+  local n r
+  if [ "${1:-}" = "--large" ]; then
+    for n in 1 2 3 4; do
+      for r in workflow.dev-triage-three-state workflow.dev-desk-round-trip workflow.dev-notify; do
+        start_on_new_item "$r" "Large fixture workflow $r $n" >/dev/null || return
+      done
+    done
+    return 0
+  fi
+  start_on_new_item workflow.dev-triage-three-state "Fixture triage" >/dev/null || return
+  start_on_new_item workflow.dev-desk-round-trip "Fixture work one" >/dev/null || return
+  start_on_new_item workflow.dev-desk-round-trip "Fixture work two" >/dev/null
+}
+
+incident_file() { printf '%s\n' "$AW_SINDRI_HOME/ui-fixture-incident-item"; }
+
+incident() {
+  local item file
+  file="$(incident_file)"
+  case "$1" in
+    start)
+      item="$(start_on_new_item workflow.dev-incident-hold "Fixture incident")" || return
+      printf '%s\n' "$item" > "$file"
+      printf '%s\n' "$item" ;;
+    stop)
+      [ -f "$file" ] || die "no incident started by this fixture: run 'incident start' first"
+      item="$(cat "$file")"
+      "$PROVE" human workflow cancel "$item" && rm -f -- "$file" && printf 'cancelled %s\n' "$item" ;;
+  esac
+}
+
 verb="${1:-}"
 case "$verb" in
   -h | --help) usage; exit 0 ;;
@@ -219,6 +273,8 @@ case "$verb" in
   up | stall | unstall | drift | down | fail | unfail) [ "$#" -eq 1 ] || die "'$verb' takes no arguments" ;;
   items) [ "$#" -eq 1 ] || { [ "$#" -eq 2 ] && [ "$2" = "--large" ]; } || die "usage: items [--large]" ;;
   close) [ "$#" -eq 2 ] || { [ "$#" -eq 3 ] && [ "$3" = "--cancelled" ]; } || die "usage: close <item> [--cancelled]" ;;
+  workflows) [ "$#" -eq 1 ] || { [ "$#" -eq 2 ] && [ "$2" = "--large" ]; } || die "usage: workflows [--large]" ;;
+  incident) { [ "$#" -eq 2 ] && { [ "$2" = start ] || [ "$2" = stop ]; }; } || die "usage: incident start|stop" ;;
   request) [ "$#" -ge 2 ] || die "usage: request [--item ID] [--repo R] <text>" ;;
   decide) [ "$#" -eq 3 ] || die "usage: decide <DEC-id> <choice>" ;;
   *) usage >&2; die "unknown verb: $verb" ;;
