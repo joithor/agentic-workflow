@@ -7777,3 +7777,59 @@ static Aw.Sindri.Core.Workflow.Blocks.DecisionFact.operator !=(Aw.Sindri.Core.Wo
 static Aw.Sindri.Core.Workflow.Blocks.DecisionFact.operator ==(Aw.Sindri.Core.Workflow.Blocks.DecisionFact? left, Aw.Sindri.Core.Workflow.Blocks.DecisionFact? right) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.EngineFilledOutputs.For(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.OutputSpec!>! outputs, Aw.Sindri.Core.Workflow.Ids.OutcomeName outcome, string! provider, string? actor) -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Blocks.DecisionFact!>!
 static Aw.Sindri.Core.Workflow.Blocks.EngineFilledOutputs.Refusal(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor!>! steps, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Ids.FactKey>! written) -> string?
+Aw.Sindri.Core.Onyx.IOnyxPinsSource
+Aw.Sindri.Core.Onyx.IOnyxPinsSource.Pins.get -> Aw.Sindri.Core.Onyx.OnyxPins!
+Aw.Sindri.Core.Onyx.OnyxFilePin
+Aw.Sindri.Core.Onyx.OnyxFilePin.<Clone>$() -> Aw.Sindri.Core.Onyx.OnyxFilePin!
+Aw.Sindri.Core.Onyx.OnyxFilePin.Deconstruct(out string! Path, out string! Sha256) -> void
+Aw.Sindri.Core.Onyx.OnyxFilePin.Equals(Aw.Sindri.Core.Onyx.OnyxFilePin? other) -> bool
+Aw.Sindri.Core.Onyx.OnyxFilePin.OnyxFilePin(string! Path, string! Sha256) -> void
+Aw.Sindri.Core.Onyx.OnyxFilePin.Path.get -> string!
+Aw.Sindri.Core.Onyx.OnyxFilePin.Path.init -> void
+Aw.Sindri.Core.Onyx.OnyxFilePin.Sha256.get -> string!
+Aw.Sindri.Core.Onyx.OnyxFilePin.Sha256.init -> void
+Aw.Sindri.Core.Onyx.OnyxImagePin
+Aw.Sindri.Core.Onyx.OnyxImagePin.<Clone>$() -> Aw.Sindri.Core.Onyx.OnyxImagePin!
+Aw.Sindri.Core.Onyx.OnyxImagePin.Deconstruct(out string! Repository, out string! Platform, out string! Digest) -> void
+Aw.Sindri.Core.Onyx.OnyxImagePin.Digest.get -> string!
+Aw.Sindri.Core.Onyx.OnyxImagePin.Digest.init -> void
+Aw.Sindri.Core.Onyx.OnyxImagePin.Equals(Aw.Sindri.Core.Onyx.OnyxImagePin? other) -> bool
+Aw.Sindri.Core.Onyx.OnyxImagePin.OnyxImagePin(string! Repository, string! Platform, string! Digest) -> void
+Aw.Sindri.Core.Onyx.OnyxImagePin.Platform.get -> string!
+Aw.Sindri.Core.Onyx.OnyxImagePin.Platform.init -> void
+Aw.Sindri.Core.Onyx.OnyxImagePin.Repository.get -> string!
+Aw.Sindri.Core.Onyx.OnyxImagePin.Repository.init -> void
+Aw.Sindri.Core.Onyx.OnyxPins
+Aw.Sindri.Core.Onyx.OnyxPins.<Clone>$() -> Aw.Sindri.Core.Onyx.OnyxPins!
+Aw.Sindri.Core.Onyx.OnyxPins.Commit.get -> string!
+Aw.Sindri.Core.Onyx.OnyxPins.Commit.init -> void
+Aw.Sindri.Core.Onyx.OnyxPins.Deconstruct(out string! Version, out string! Commit, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.OnyxFilePin!>! Files, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.OnyxImagePin!>! Images, out long DiskBytes, out long DockerMemoryBytes) -> void
+Aw.Sindri.Core.Onyx.OnyxPins.DiskBytes.get -> long
+Aw.Sindri.Core.Onyx.OnyxPins.DiskBytes.init -> void
+Aw.Sindri.Core.Onyx.OnyxPins.DockerMemoryBytes.get -> long
+Aw.Sindri.Core.Onyx.OnyxPins.DockerMemoryBytes.init -> void
+Aw.Sindri.Core.Onyx.OnyxPins.Equals(Aw.Sindri.Core.Onyx.OnyxPins? other) -> bool
+Aw.Sindri.Core.Onyx.OnyxPins.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.OnyxFilePin!>!
+Aw.Sindri.Core.Onyx.OnyxPins.Files.init -> void
+Aw.Sindri.Core.Onyx.OnyxPins.Images.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.OnyxImagePin!>!
+Aw.Sindri.Core.Onyx.OnyxPins.Images.init -> void
+Aw.Sindri.Core.Onyx.OnyxPins.OnyxPins(string! Version, string! Commit, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.OnyxFilePin!>! Files, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.OnyxImagePin!>! Images, long DiskBytes, long DockerMemoryBytes) -> void
+Aw.Sindri.Core.Onyx.OnyxPins.Version.get -> string!
+Aw.Sindri.Core.Onyx.OnyxPins.Version.init -> void
+override Aw.Sindri.Core.Onyx.OnyxFilePin.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.OnyxFilePin.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.OnyxFilePin.ToString() -> string!
+override Aw.Sindri.Core.Onyx.OnyxImagePin.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.OnyxImagePin.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.OnyxImagePin.ToString() -> string!
+override Aw.Sindri.Core.Onyx.OnyxPins.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.OnyxPins.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.OnyxPins.ToString() -> string!
+static Aw.Sindri.Core.Onyx.OnyxFilePin.operator !=(Aw.Sindri.Core.Onyx.OnyxFilePin? left, Aw.Sindri.Core.Onyx.OnyxFilePin? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxFilePin.operator ==(Aw.Sindri.Core.Onyx.OnyxFilePin? left, Aw.Sindri.Core.Onyx.OnyxFilePin? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxImagePin.operator !=(Aw.Sindri.Core.Onyx.OnyxImagePin? left, Aw.Sindri.Core.Onyx.OnyxImagePin? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxImagePin.operator ==(Aw.Sindri.Core.Onyx.OnyxImagePin? left, Aw.Sindri.Core.Onyx.OnyxImagePin? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxPins.Parse(string! text) -> Aw.Kernel.Result<Aw.Sindri.Core.Onyx.OnyxPins!>!
+static Aw.Sindri.Core.Onyx.OnyxPins.operator !=(Aw.Sindri.Core.Onyx.OnyxPins? left, Aw.Sindri.Core.Onyx.OnyxPins? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxPins.operator ==(Aw.Sindri.Core.Onyx.OnyxPins? left, Aw.Sindri.Core.Onyx.OnyxPins? right) -> bool
+static readonly Aw.Sindri.Core.SindriErrors.OnyxPinsMalformed -> Aw.Kernel.ErrorDefinition!

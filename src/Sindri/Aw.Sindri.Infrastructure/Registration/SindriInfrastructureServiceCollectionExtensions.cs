@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Locks;
 using Aw.Sindri.Core.Mcp;
+using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Secrets;
 using Aw.Sindri.Core.Text;
@@ -23,6 +24,7 @@ using Aw.Sindri.Infrastructure.Ledger;
 using Aw.Sindri.Infrastructure.Locks;
 using Aw.Sindri.Infrastructure.Mcp;
 using Aw.Sindri.Infrastructure.Notifications;
+using Aw.Sindri.Infrastructure.Onyx;
 using Aw.Sindri.Infrastructure.Profile;
 using Aw.Sindri.Infrastructure.Secrets;
 using Aw.Sindri.Infrastructure.Text;
@@ -80,6 +82,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton(McpSettings.Read(environment))
             .AddSingleton<IClaudeCli, ProcessClaudeCli>()
             .AddSingleton<IProviderFiles, ProviderConfigFiles>()
+            .AddSingleton<IOnyxPinsSource, EmbeddedOnyxPins>()       // Onyx P1: context/onyx.lock, embedded
             .AddSingleton<ITextScrubber>(new RedactingScrubber(Redactor.Default));
 
     /// <summary>
