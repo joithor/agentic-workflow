@@ -33,7 +33,7 @@ public sealed class JobRulesTests
     [InlineData(JobState.Cancelled)]
     public void Every_state_name_is_the_name_the_json_writes(JobState state)
     {
-        var json = System.Text.Encoding.UTF8.GetString(Aw.Kernel.Json.AwJson.Serialize(state, SliceHarness.Json));
+        var json = System.Text.Encoding.UTF8.GetString(Kernel.Json.AwJson.Serialize(state, SliceHarness.Json));
 
         Expect.Equal($"\"{JobStateNames.Of(state)}\"", json);   // the SQLite filter compares this name with the stored column
     }

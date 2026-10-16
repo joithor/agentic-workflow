@@ -87,9 +87,9 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
             precheck: static (r, _) => ValueTask.FromResult<Result<Unit>>(string.Equals(r.Mode, "refused", StringComparison.Ordinal) ? SindriErrors.ServiceNotFound.With("the precheck said no") : Unit.Value),
             repo: static r => RepoOf(r.Mode));
 
-    private static Aw.Sindri.Core.Ids.RepoName? RepoOf(string mode) => mode switch
+    private static RepoName? RepoOf(string mode) => mode switch
     {
-        "repo" => Aw.Sindri.Core.Ids.RepoName.From("demo"),
+        "repo" => RepoName.From("demo"),
         "repo-throws" => throw new InvalidOperationException("the repo lambda broke"),
         _ => null,
     };
@@ -195,7 +195,7 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
         }
         catch (TimeoutException e)
         {
-            throw new TimeoutException($"jobs still running {JobHost.Hang.TotalSeconds.ToString("0", System.Globalization.CultureInfo.InvariantCulture)} s after the test asked them to end: {string.Join(", ", Runner.Active)}", e);
+            throw new TimeoutException($"jobs still running {JobHost.Hang.TotalSeconds.ToString("0", CultureInfo.InvariantCulture)} s after the test asked them to end: {string.Join(", ", Runner.Active)}", e);
         }
     }
 

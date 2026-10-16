@@ -119,7 +119,7 @@ public sealed class CliServiceVerbsTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task A_run_refused_with_the_servers_own_fix_hint_gets_no_second_one()
     {
-        var served = System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(Aw.Kernel.Testing.Golden.SourcePath(typeof(CliServiceVerbsTests).Assembly, "Golden/Api/services-name-run/already-running.json"), TestContext.Current.CancellationToken))!;
+        var served = System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(Golden.SourcePath(typeof(CliServiceVerbsTests).Assembly, "Golden/Api/services-name-run/already-running.json"), TestContext.Current.CancellationToken))!;
         var api = new JobApi().On("POST", "/sindri/services/heartbeat/run", new Reply(HttpStatusCode.Conflict, served.ToJsonString()));
 
         var code = await Finished(_rig.RunServices(api, "run", "heartbeat"));

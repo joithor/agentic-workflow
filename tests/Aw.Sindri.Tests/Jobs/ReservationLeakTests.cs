@@ -27,7 +27,7 @@ public sealed class ReservationLeakTests
         _ = await Assert.ThrowsAsync<InvalidOperationException>(() => runtime.Start(new ProbeJobRequest("repo-throws"), A.Caller().Human().Build()));
 
         Expect.Equal(1, rollbacks.Rollbacks);
-        Expect.Equal(0, runtime.Get<Aw.Sindri.Features.Jobs.JobRegistry>().Count());
+        Expect.Equal(0, runtime.Get<Features.Jobs.JobRegistry>().Count());
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public sealed class ReservationLeakTests
 
     private sealed class RollbackCounter(CountingAdmission count) : IJobAdmission<ProbeJobRequest>
     {
-        public ValueTask<Aw.Kernel.Result<ServiceName?>> Admit(ProbeJobRequest request, CancellationToken cancellationToken) => ValueTask.FromResult<Aw.Kernel.Result<ServiceName?>>((ServiceName?)null);
+        public ValueTask<Kernel.Result<ServiceName?>> Admit(ProbeJobRequest request, CancellationToken cancellationToken) => ValueTask.FromResult<Kernel.Result<ServiceName?>>((ServiceName?)null);
 
         public void Rollback(ProbeJobRequest request) => count.Rolled();
     }
