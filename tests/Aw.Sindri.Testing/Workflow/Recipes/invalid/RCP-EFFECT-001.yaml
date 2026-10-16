@@ -14,3 +14,4 @@ states:
     outcome: resolved
 transitions:
   - { from: ask, to: done, on: step.completed, when: { outcome: done }, effects: [effect.notify.desk] }
+inputs: [{ key: fact:item, type: item, kind: item }]

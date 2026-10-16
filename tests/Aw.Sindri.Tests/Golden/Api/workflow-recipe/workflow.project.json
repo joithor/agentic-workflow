@@ -2,20 +2,23 @@
   "id": "workflow.project",
   "hash": "sha256:a8c21e7f00000000000000000000000000000000000000000000000000000000",
   "version": 12,
+  "name": null,
   "inputs": [
     {
       "key": "fact:project",
       "label": "Linear project",
       "type": "payload",
       "kind": "linear-project",
-      "required": true
+      "required": true,
+      "generate": null
     },
     {
       "key": "fact:prd",
       "label": "PRD",
       "type": "file",
-      "kind": null,
-      "required": true
+      "kind": "file",
+      "required": true,
+      "generate": null
     }
   ],
   "outputs": [

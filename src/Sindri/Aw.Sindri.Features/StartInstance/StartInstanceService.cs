@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Features.StartInstance;
 
@@ -22,11 +23,11 @@ namespace Aw.Sindri.Features.StartInstance;
 /// <param name="items">Resolves the item.</param>
 /// <param name="recipes">The approved recipes.</param>
 /// <param name="directory">The attempts that exist.</param>
-/// <param name="facts">Where the input facts are stored.</param>
+/// <param name="facts">Stores the input facts, and renders the generated ones.</param>
 /// <param name="runtime">The instances on Temporal.</param>
 /// <param name="launches">The item's launches (UI spec E-19): one still requested starts the instance taken over.</param>
 /// <param name="claims">The item claims and their holders' liveness, for '--attempt next'.</param>
-internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipes, IInstanceDirectory directory, IFactStore facts, IInstanceRuntime runtime, ILaunchRequests launches, ClaimHolders claims)
+internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipes, IInstanceDirectory directory, StartFacts facts, IInstanceRuntime runtime, ILaunchRequests launches, ClaimHolders claims)
     : IService<StartInstanceRequest, StartInstanceResponse>
 {
     /// <summary>The tenant and ring every start runs under until the profile names them (S1-D11).</summary>
@@ -63,11 +64,11 @@ internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipe
             return view.IsError ? view.Error : new StartInstanceResponse(view.Value, Existing: true, Finished: true);
         }
 
-        return await Begin(request, item, recipe.Version, plan.Value, cancellationToken).ConfigureAwait(false);
+        return await Begin(request, item, recipe, plan.Value, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Starts the instance: the launches are read before any write, so a read error leaves no facts behind (UI spec E-19).</summary>
-    private async ValueTask<Result<StartInstanceResponse>> Begin(StartInstanceRequest request, ResolvedItem item, RecipeVersion recipe, AttemptPlan plan, CancellationToken cancellationToken)
+    private async ValueTask<Result<StartInstanceResponse>> Begin(StartInstanceRequest request, ResolvedItem item, ApprovedRecipe recipe, AttemptPlan plan, CancellationToken cancellationToken)
     {
         var launch = await launches.Requested(item.Id, cancellationToken).ConfigureAwait(false);
         if (launch.IsError)
@@ -75,14 +76,14 @@ internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipe
             return launch.Error;
         }
 
-        var inputs = await Store(request, cancellationToken).ConfigureAwait(false);
+        var inputs = await facts.Store(request, recipe.Recipe, cancellationToken).ConfigureAwait(false);
         if (inputs.IsError)
         {
             return inputs.Error;
         }
 
         var started = await runtime.Start(
-            new InstanceStart(recipe, item.Id, plan.Attempt, inputs.Value, Tenant, Ring: 0) { OpenLaunch = launch.Value?.Value },
+            new InstanceStart(recipe.Version, item.Id, plan.Attempt, inputs.Value.Inputs, Tenant, Ring: 0) { OpenLaunch = launch.Value?.Value, StartedAt = inputs.Value.StartedAt },
             cancellationToken).ConfigureAwait(false);
         return started.IsError ? started.Error : new StartInstanceResponse(started.Value, plan.Existing, Finished: false);
     }
@@ -137,23 +138,31 @@ internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipe
             return approval.Error;
         }
 
-        if (Refusal(recipe.Value.Version, approval.Value) is { } refused)
+        if (Refusal(recipe.Value, approval.Value) is { } refused)
         {
             return refused;
         }
 
-        return recipe.Value.Recipe.Inputs.FirstOrDefault(i => !request.Facts.ContainsKey(i.Key)) is { } missing
+        return recipe.Value.Recipe.Inputs.FirstOrDefault(i => i.Generate is null && !request.Facts.ContainsKey(i.Key)) is { } missing
             ? SindriErrors.InvalidInput.With($"{recipe.Value.Version.Id.Value} needs input {missing.Key.Value} (fix: --fact {missing.Key.Value}=<file>)")
             : (item.Value, recipe.Value);
     }
 
-    /// <summary>RCP-CAP-003 at start: a pinned hash that was revoked is SND-RECIPE-005, pins that drifted from this build SND-RECIPE-006.</summary>
-    private static Error? Refusal(RecipeVersion recipe, ApprovalCheck check) => check switch
+    /// <summary>
+    /// RCP-CAP-003 at start: a pinned hash that was revoked is SND-RECIPE-005, a recipe registered before input kinds SND-RECIPE-001
+    /// (before drift: re-approving it can't fix it), pins that drifted from this build SND-RECIPE-006.
+    /// </summary>
+    private static Error? Refusal(ApprovedRecipe approved, ApprovalCheck check)
     {
-        ApprovalCheck.Revoked => WorkflowErrors.RecipeRevoked.With($"{recipe.Id.Value}@{recipe.Hash.Display} was revoked; nothing was started (fix: start the approved version: sindri recipe list)"),
-        ApprovalCheck.Drifted => WorkflowErrors.RecipePinDrift.With($"a block {recipe.Id.Value}@{recipe.Hash.Display} pins changed since approval; nothing was started (fix: re-approve it, see sindri recipe list --stale)"),
-        ApprovalCheck.Holds or _ => null,
-    };
+        var recipe = approved.Version;
+        return check switch
+        {
+            ApprovalCheck.Revoked => WorkflowErrors.RecipeRevoked.With($"{recipe.Id.Value}@{recipe.Hash.Display} was revoked; nothing was started (fix: start the approved version: sindri recipe list)"),
+            _ when SubjectKinds.Legacy(approved.Recipe) is { } legacy => WorkflowErrors.RecipeInvalid.With($"{recipe.Id.Value}@{recipe.Hash.Display} was registered before input kinds ({legacy}); nothing was started (fix: {SubjectKinds.LegacyFix})"),
+            ApprovalCheck.Drifted => WorkflowErrors.RecipePinDrift.With($"a block {recipe.Id.Value}@{recipe.Hash.Display} pins changed since approval; nothing was started (fix: re-approve it, see sindri recipe list --stale)"),
+            ApprovalCheck.Holds or _ => null,
+        };
+    }
 
     /// <summary>'fact:item' is '{ id, repo, spec }' (spec §12); its 'id' must be the item '--item' named (SND-WF-014).</summary>
     private static Error? SameItem(StartInstanceRequest request, ResolvedItem item)
@@ -210,22 +219,5 @@ internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipe
         return RecipeHash.TryFrom(hash.StartsWith("sha256:", StringComparison.Ordinal) ? hash : "sha256:" + hash, out var pinned)
             ? await recipes.Find(id, pinned, cancellationToken).ConfigureAwait(false)
             : WorkflowErrors.RecipeNotFound.With($"no approved {id.Value}@{hash} (fix: sindri recipe list)");
-    }
-
-    private async ValueTask<Result<IReadOnlyDictionary<FactKey, InputFact>>> Store(StartInstanceRequest request, CancellationToken cancellationToken)
-    {
-        var stored = new Dictionary<FactKey, InputFact>();
-        foreach (var (key, fact) in request.Facts)
-        {
-            var put = await facts.Put(fact.Content, cancellationToken).ConfigureAwait(false);
-            if (put.IsError)
-            {
-                return put.Error;
-            }
-
-            stored[key] = new InputFact(fact.Name, put.Value);
-        }
-
-        return stored;
     }
 }

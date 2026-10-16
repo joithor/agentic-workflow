@@ -92,7 +92,7 @@ public sealed class RecipeEvalCommandTests : IDisposable
 
         Assert.Equal(0, await Run("recipe", "eval", "--scaffold", Recipe));
         var scaffold = _out.ToString();
-        Assert.StartsWith("{\"start\":{\"inputs\":{}},\"scaffold\":true}\n", scaffold, StringComparison.Ordinal);
+        Assert.StartsWith("{\"start\":{\"inputs\":{\"fact:run\":", scaffold, StringComparison.Ordinal);   // the recipe's one input, which it generates at a real start; the pure engine takes the scaffold's text
 
         await File.WriteAllTextAsync(Happy, scaffold, TestContext.Current.CancellationToken);
         _out.GetStringBuilder().Clear();

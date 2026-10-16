@@ -587,7 +587,7 @@ together with `SindriErrors`. Retired codes stay reserved in `WorkflowErrors.Ret
 
 | Code | Kind | When |
 |---|---|---|
-| `SND-RECIPE-001` | invalid | Validation failed; fix each `RCP-*` line |
+| `SND-RECIPE-001` | invalid | Validation failed, or the recipe was registered before input kinds (a start or a first approval of it); fix each `RCP-*` line, or register the current file at a new version and approve it |
 | `SND-RECIPE-002` | notFound | No recipe with that id or hash (`sindri recipe list`) |
 | `SND-RECIPE-003` | conflict | Not approved (`sindri recipe approve`) |
 | `SND-RECIPE-004` | — | Retired: a caller without a terminal gets the API's `SND-AUTH-002` |
@@ -641,7 +641,7 @@ their fake `ISindriApi` on these files, so a change to one is a contract change;
 
 **Who may change the files.** The files change only at these points, and each change is announced to the UI lane: (1) engine
 P4b, if its wording moves (the engine re-records); (2) when a recipe that still carries a placeholder hash lands, its hash
-becomes the real one; (3) the `not-found` files, when API P11 U7 (or P4) swaps in the served ProblemDetails body; (4) P8 re-records the desk-runtime states when the agent runtime lands, and schema v2 re-records the fan-out previews (PRJ-sync and project-many-children); (5) `workflow-recipe/not-found.json` (already served; below) is re-recorded from `GET /workflow/recipes/{id}` when P11 serves that route: its code and status stay, its `detail` may change. Every
+becomes the real one; (3) the `not-found` files, when API P11 U7 (or P4) swaps in the served ProblemDetails body; (4) P8 re-records the desk-runtime states when the agent runtime lands, and schema v2 re-records the fan-out previews (PRJ-sync and project-many-children); (5) `workflow-recipe/not-found.json` (already served; below) is re-recorded from `GET /workflow/recipes/{id}` when P11 serves that route: its code and status stay, its `detail` may change; (6) P4c recipe schema: every hash, `name`, `inputs[].kind` / `required` / `generate`, the triage label. Every
 instance fixture carries its own status (address, recipe stamp, commands and cancel sentence come from its row), the status
 text is rendered from the fields, and its commands are catalog rows of the same class (`WorkflowViewFixtureTests`).
 `WorkflowViewConsistencyTests` and `WorkflowViewRecipeShapeTests` pin that the files agree with each other and with
@@ -658,9 +658,8 @@ and which layouts carry the timeout and budget lines (main prints them beside an
 are provisional until engine P4b confirms them (the change then goes through point (1) above). The cancel
 sentence is singular at 1 (a provisional owner default, 2026-10-14 night).
 
-**Marked previews.** v1 serves every input of a started instance as required and present. `workflow-instances/preview-missing-input` (ITM-01JKH) and the optional
-`fact:context` of `workflow-recipe/workflow.no-outputs` are previews of a future optional-input recipe schema, like the fan-out previews; they give the UI data for the missing and
-blocked renders and are re-recorded when that schema lands. `workflow-status/needs-answer-step` is a Step's text-answered park and `needs-answer-wait` a wait's `--resume` park.
+**Marked previews.** Since P4c a supplied input is served `required: true` and a `generate` input `required: false`; every input of a started instance is present. `workflow-instances/preview-missing-input` (ITM-01JKH) is still a preview (a started instance never misses an input), like the fan-out previews; it gives the UI data for the missing and
+blocked renders. `workflow-recipe/workflow.no-outputs`' `fact:context` is a real `generate` input. `workflow-status/needs-answer-step` is a Step's text-answered park and `needs-answer-wait` a wait's `--resume` park.
 
 ## Hook contract
 

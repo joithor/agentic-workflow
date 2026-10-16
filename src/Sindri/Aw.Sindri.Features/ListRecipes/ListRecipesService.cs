@@ -6,7 +6,7 @@ namespace Aw.Sindri.Features.ListRecipes;
 
 /// <summary>
 /// The registered recipes, or the stale ones (engine spec §4.1, §6.3 'recipe list [--stale]'; README X34): each with
-/// where it stands, how it was approved, why it is stale and its inputs. Stale means approved and either drifted from
+/// where it stands, how it was approved, why it is stale and its inputs. Stale means approved and either legacy-shape (an unapproved legacy row is marked but not listed here), drifted from
 /// this build's blocks or pinning a child that was revoked or superseded.
 /// </summary>
 /// <param name="registry">Reads where the registered recipes stand.</param>

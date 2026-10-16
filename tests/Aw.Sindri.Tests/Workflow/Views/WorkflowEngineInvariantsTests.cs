@@ -152,7 +152,7 @@ public sealed partial class WorkflowEngineInvariantsTests
     private static List<string> Subjects(View view, RecipeShape shape)
     {
         var first = shape.Inputs[0];
-        var expected = SubjectKinds.Effective(new RecipeInput(FactKey.From(first.Key), first.Label, Word(first.Type), first.Kind));
+        var expected = SubjectKinds.Effective(new RecipeInput(FactKey.From(first.Key), first.Label, Word(first.Type), first.Kind, Generate: null));
         return view.Subject.Kind == expected ? [] : [M($"subject kind '{view.Subject.Kind}', the first input {first.Key} gives '{expected}'")];
     }
 }

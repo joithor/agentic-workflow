@@ -6,4 +6,5 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// </summary>
 /// <param name="Name">The file name the fact's content came from.</param>
 /// <param name="Value">The stored content's reference and SHA-256.</param>
-public sealed record InputFact(string Name, FactValue Value);
+/// <param name="Generated">Whether the start filled it from the input's generate template (spec section 3.11); its producer is 'engine:generate'.</param>
+public sealed record InputFact(string Name, FactValue Value, bool Generated = false);

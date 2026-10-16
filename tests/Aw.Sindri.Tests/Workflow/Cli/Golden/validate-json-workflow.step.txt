@@ -3,21 +3,23 @@ exit 0
 --- stdout
 {
   "passed": true,
-  "hash": "sha256:1b13bd920351e56227141fe24e59f2f90cb46bc3549e1e90f2da2af1c3be9f5c",
+  "hash": "sha256:1c1173a162a77736c33620e985d6d75473cf3755963adc5c46eb9049434f5276",
   "findings": [],
   "normalized": {
     "schema": 1,
     "id": "workflow.step",
-    "version": 1,
+    "version": 2,
     "description": null,
     "base": null,
     "urgency": "work",
+    "name": null,
     "inputs": [
       {
         "key": "fact:spec",
-        "label": null,
-        "type": null,
-        "kind": null
+        "label": "Spec",
+        "type": "text",
+        "kind": "text",
+        "generate": null
       }
     ],
     "outputs": [],

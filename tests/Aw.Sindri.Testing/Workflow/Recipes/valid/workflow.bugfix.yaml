@@ -5,7 +5,7 @@ schema: 1
 id: workflow.bugfix
 version: 1
 description: "Drive a bug ticket to a proven fix: investigate, reproduce, fix (mode A or C), evaluate."
-inputs: [{ key: fact:ticket, label: "The ticket (Linear id or pasted text)", type: text }]
+inputs: [{ key: fact:ticket, label: "The ticket (Linear id or pasted text)", type: text, kind: text }]
 initial: investigate
 states:
   investigate:

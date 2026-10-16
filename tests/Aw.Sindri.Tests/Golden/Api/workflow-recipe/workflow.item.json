@@ -1,14 +1,16 @@
 {
   "id": "workflow.item",
-  "hash": "sha256:496cdcbfe884c70dce832d96d21883660f29fffe9b122fcfa72a04c98be8cae3",
-  "version": 1,
+  "hash": "sha256:85ecaff4781ee6cfd458a983861cf04a66228fde579c95722b03b353a3532d45",
+  "version": 2,
+  "name": null,
   "inputs": [
     {
       "key": "fact:item",
-      "label": null,
-      "type": "text",
-      "kind": null,
-      "required": true
+      "label": "Item",
+      "type": "item",
+      "kind": "item",
+      "required": true,
+      "generate": null
     }
   ],
   "outputs": [],

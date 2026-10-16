@@ -19,19 +19,20 @@ internal static class RecipeLineText
         var via = s.Via is { } v && s.Standing != RecipeStanding.Unapproved ? $" ({Word(v)})" : string.Empty;
         var stale = s.Stale.Count == 0
             ? string.Empty
-            : $"; stale: {string.Join(", ", s.Stale.Select(Word))} (fix: sindri recipe approve {name})";
+            : $"; stale: {string.Join(", ", s.Stale.Select(Word))} (fix: {(s.Stale.Contains(StaleReason.LegacyShape) ? SubjectKinds.LegacyFix : $"sindri recipe approve {name}")})";
         return $"{name} {Word(s.Standing)}{via}{stale}";
     }
 
     /// <summary>
-    /// What 'recipe show' adds under the line: 'urgency: &lt;urgency&gt;', then one 'input: &lt;key&gt; type=&lt;type&gt; kind=&lt;kind&gt;' line per input
-    /// (type text when none is declared; the kind is the declared one, else the one the type implies per spec §3.3, '-' when there is none) and one 'output: &lt;key&gt; type=&lt;type&gt; from=&lt;state&gt;' line per output, then the path order (spec §3.10): 'order: &lt;path|transition-list&gt;', one 'state: &lt;name&gt; order=&lt;n&gt;' (or 'branch-of=&lt;state&gt;', or 'order=-' for a state the walk never reaches) line per state and one 'loop: &lt;name|-&gt; &lt;from&gt; -&gt; &lt;to&gt;' line per loop edge.
+    /// What 'recipe show' adds under the line: 'urgency: &lt;urgency&gt;', 'name: &lt;template&gt;' when the recipe has one, then one 'input: &lt;key&gt; type=&lt;type&gt; kind=&lt;kind&gt;' line per input
+    /// (the type is the declared one, else the one the kind pairs with; a generate template is added as generate="...") and one 'output: &lt;key&gt; type=&lt;type&gt; from=&lt;state&gt;' line per output, then the path order (spec §3.10): 'order: &lt;path|transition-list&gt;', one 'state: &lt;name&gt; order=&lt;n&gt;' (or 'branch-of=&lt;state&gt;', or 'order=-' for a state the walk never reaches) line per state and one 'loop: &lt;name|-&gt; &lt;from&gt; -&gt; &lt;to&gt;' line per loop edge.
     /// </summary>
     /// <param name="s">The recipe's line.</param>
     /// <returns>The lines, each with its newline.</returns>
     internal static string Detail(RecipeSummary s) =>
         $"urgency: {s.Urgency}\n"
-        + string.Concat(s.Inputs.Select(static i => $"input: {i.Key.Value} type={i.Type ?? FactTypes.Default} kind={SubjectKinds.Effective(i) ?? "-"}\n"))
+        + (s.Name is { } name ? $"name: {name}\n" : string.Empty)
+        + string.Concat(s.Inputs.Select(static i => $"input: {i.Key.Value} type={i.Type ?? SubjectKinds.TypeOf(i)} kind={i.Kind ?? "-"}{(i.Generate is { } generate ? $" generate=\"{generate.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal)}\"" : string.Empty)}\n"))
         + string.Concat(s.Outputs.Select(static o => $"output: {o.Key.Value} type={o.Type ?? FactTypes.Default} from={o.From}\n"))
         + $"order: {s.OrderedBy}\n"
         + string.Concat(s.States.Select(static p => $"state: {p.State} {(p.BranchOf is { } b ? $"branch-of={b}" : $"order={p.Order?.ToString(CultureInfo.InvariantCulture) ?? "-"}")}\n"))
@@ -58,5 +59,10 @@ internal static class RecipeLineText
 
     private static string Word(ApprovalVia via) => via == ApprovalVia.Freeze ? "freeze" : "desk";
 
-    private static string Word(StaleReason reason) => reason == StaleReason.ChildStale ? "child-stale" : "pin-drift";
+    private static string Word(StaleReason reason) => reason switch
+    {
+        StaleReason.ChildStale => "child-stale",
+        StaleReason.LegacyShape => "legacy-shape",
+        StaleReason.PinDrift or _ => "pin-drift",
+    };
 }

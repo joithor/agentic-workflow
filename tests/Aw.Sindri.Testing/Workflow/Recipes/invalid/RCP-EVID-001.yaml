@@ -14,3 +14,4 @@ states:
 transitions:
   - { from: produce, to: done, on: step.completed, when: { outcome: done },
       evidence: [{ kind: parity, at: head, expect: pass }] }
+inputs: [{ key: fact:item, type: item, kind: item }]

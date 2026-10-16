@@ -13,3 +13,4 @@ states:
     outcome: resolved
 transitions:
   - { from: triaged, to: done, on: wait.satisfied, when: { outcome: startable } }
+inputs: [{ key: fact:item, type: item, kind: item }]

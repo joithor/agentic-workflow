@@ -258,7 +258,7 @@
         {
           "key": "fact:prd",
           "label": "PRD",
-          "kind": null,
+          "kind": "file",
           "required": true,
           "present": true
         }
@@ -402,7 +402,7 @@
         {
           "key": "fact:prd",
           "label": "PRD",
-          "kind": null,
+          "kind": "file",
           "required": true,
           "present": true
         }
@@ -543,7 +543,7 @@
         {
           "key": "fact:prd",
           "label": "PRD",
-          "kind": null,
+          "kind": "file",
           "required": true,
           "present": true
         }

@@ -2,13 +2,15 @@
   "id": "workflow.intake-linear",
   "hash": "sha256:0b7e44d300000000000000000000000000000000000000000000000000000000",
   "version": 1,
+  "name": null,
   "inputs": [
     {
       "key": "fact:team",
       "label": "Linear team",
       "type": "text",
       "kind": "text",
-      "required": true
+      "required": true,
+      "generate": null
     }
   ],
   "outputs": [],

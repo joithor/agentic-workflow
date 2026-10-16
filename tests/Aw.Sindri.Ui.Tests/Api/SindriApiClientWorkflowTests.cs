@@ -194,10 +194,10 @@ public sealed class SindriApiClientWorkflowTests
         }
     }
 
-    // Engine #227 (agreed with the API, 2026-10-15): subject.kind is null when the first input is a link or payload with no
-    // declared kind; the app then shows the input's key (API spec §3.8). Built from a real golden, not a new file.
+    // Engine P4c (agreed with the API, 2026-10-15): every input declares its kind (RCP-INPUT-001), so subject.kind is never null again.
+    // A body that carries one is not an instance the app can draw, and parses as an error rather than guessing a kind.
     [Fact]
-    public async Task An_instance_whose_subject_kind_is_null_parses_and_keeps_its_key()
+    public async Task An_instance_whose_subject_kind_is_null_is_refused()
     {
         var golden = Golden("workflow-instance", "project-build");
         golden["subject"]!["kind"] = null;
@@ -208,9 +208,7 @@ public sealed class SindriApiClientWorkflowTests
 
         foreach (var detail in new[] { viaClient, viaFake })
         {
-            Assert.True(detail.IsSuccess);
-            Assert.Null(detail.Value.Subject.Kind);
-            Assert.Equal((string)golden["subject"]!["key"]!, detail.Value.Subject.Key);
+            Assert.True(detail.IsError);
         }
     }
 }
