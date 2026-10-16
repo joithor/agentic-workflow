@@ -49,8 +49,12 @@ they are stored**: each document is cleaned whole (hidden comments, images, remo
 `context-docs-refresh` service brings it up to date, at serve start and on its cadence, and records
 `context.sources.synced` in the ledger. Name it under `services:`, or nothing is indexed.
 
-`sindri context sources sync` is **pending:S-5B**: it is a job, which needs API P6's job runtime, and stage S-5B adds
-its route once P6 merges. Until then it answers `SND-CLI-001` (exit 2) and the service above is the way to refresh.
+`sindri context sources sync` is **pending:API-P6**: it is a job, which needs API P6's job runtime, and the route is added
+once P6 merges. Until then it answers `SND-CLI-001` (exit 2), naming `pending:API-P6` and the `context-sync` service.
+The repo docs refresh through the service above, and the intent sources (Onyx records linked to the map, decisions
+extracted from them) sync through the `context-sync` service (`services: { context-sync: { every: 15m } }`; it runs only
+when named). `context sources status` shows each intent source's last sync, links, decisions and queued records, and
+`sindri doctor` warns (`context:sync`) when one never synced or its last run failed.
 
 ### Asking
 
@@ -533,7 +537,7 @@ index:
 repos:
   - { name: work-app, path: /path/to/work-app, index: { denyPaths: ["private/**"] } }   # this repo's own, added to the above
 context:
-  labeling: { enabled: false, maxTokens: 400000 }  # name clusters with a model; over the cap is SND-CONTEXT-042
+  labeling: { enabled: false, maxTokens: 400000, maxTokensPerSync: 50000 }  # name clusters with a model; over the cap is SND-CONTEXT-042; maxTokensPerSync caps decision extraction in one sync (the rest stays queued)
 services:
   context-rebuild: { every: 24h }                  # proposes the map on a cadence; runs only when named here
 ```
@@ -665,6 +669,10 @@ the store, a usage error · `75` the heavy-job lock stayed busy (`040`).
 |---|---|---|
 | `SND-CONTEXT-040` | The heavy-job lock stayed busy (names the holder) | Retry when the other job finishes |
 | `SND-CONTEXT-042` | Labeling is on and the pass would pass `maxTokens` | Raise `context.labeling.maxTokens` or turn labeling off |
+| `SND-CONTEXT-056` | A sync of that source is already running (409; one at a time per source) | Wait; `context sources status` shows it |
+| `SND-CONTEXT-057` | A model answer the engine refused (quote not verbatim, target outside the record's links, malformed); counted in `refused`, never fails the sync | None; persistent counts mean prompt drift |
+| `SND-CONTEXT-058` | `sources sync --source X` names a source that isn't configured or has nothing to sync (404) | `context sources status` for the names |
+| `SND-CONTEXT-059` | A sync stopped at its time cap: partial, it resumes from its cursor (degraded, exit 0) | None; raise the cadence if persistent |
 | `SND-CONTEXT-043` | No entry in the review file matches the latest draft | `review --export` again |
 | `SND-CONTEXT-044` | A draft is needed and none exists (`--draft`, or `map review`) | `context map propose <file>` or the `context-rebuild` service, then retry; or drop `--draft` |
 | `SND-CONTEXT-045` | The repo is not in the profile, or is outside the session's repo | Name a listed repo |

@@ -44,7 +44,7 @@ context use case: `ContextScopes` is shared, it can't move to Sindri Core (only 
 package's Core, DEPS-PROJ-008), and ARCH-SLICE-001 forbids sharing it across slice folders. Later stages add their
 context services here. The routes are `GET /sindri/context/query` and
 `GET /sindri/context/sources`. The CLI verbs are `Host/Commands/ContextVerbs`, with text output in `ContextText`.
-`Host/Catalog/ContextRows` holds `SyncSources` (`job`, `pending:S-5B`, no route mapped until S-5B, after API P6).
+`Host/Catalog/ContextRows` holds `SyncSources` (`job`, `pending:API-P6`, no `CommandType` and no route until API P6's job runtime; the S-5B part is in as the `context-sync` service below).
 
 ### Query pipeline (Phase 1, text shape)
 
@@ -575,3 +575,45 @@ the row, and a reply the pinned shape can't read degrades onyx (`010` with cause
 - `tests/Aw.Sindri.Tests/ContextCalls/OnyxContextTests` (integration, the real host with `env:` fixture pointers):
   fused query with `unchecked` onyx citations, the status row, doctor ok / warn / fail, Onyx down degrading only
   itself; `OnyxProfileTests` (validate and doctor without Onyx); `Secrets/*` for the pointers.
+
+## S-5B: the intent layer
+
+### Shape
+
+- `Aw.Context.Core/Linking`: `RulesLinker` (rules: key mention, alias, path, ...; one `LinkRule` per link), `IntentOverlay` (merges
+  `IntentLayer` into the visible map before the deny cut, so a deny path hides intent records too), `DecisionExtractor` and
+  `ConflictChecker` (quotes must be verbatim in the scrubbed text; an answer outside the record's linked nodes is refused, `057`),
+  `IIntentStore` (records, links, decisions, edges, conflicts, per-source cursor, last sync and last error).
+- `Aw.Context.Infrastructure/Intent/SqliteIntentStore` and migration `0006_s5b_intent_links.sql` (outside the map versions, so a build or
+  promote never drops it). `FakeIntentStore` and `IntentStoreContract` in `Aw.Context.Testing`.
+- `Aw.Context.Features/SyncSources`: `SyncSourcesService` walks each live intent source against the current map (`IntentSyncRun`: page,
+  link, commit with its cursor, then `DecisionPass` under `context.labeling.maxTokensPerSync`), one run per source at a time (`056`), a
+  2-minute cap (`059`). `IContextEngine.Sync(source?, scope)` returns a `SyncReport` of counts and codes only.
+- Reads: `MapReader` merges the layer for every graph read; the `item` shape (`context query --item <KEY>`) anchors on the record a tracker
+  key names (`ItemAnchors`) and answers `003` with suggestions when none is linked.
+- `SourcesStatusService` fills `SourceStatusRow.Sync` (`lastSync`, `state`, `records`, `linked`, `decisions`, `queued`, `code`) for each
+  intent source; labeling off (`042`) only queues extraction and stays `ok`.
+
+### Sindri: the `context-sync` service (slice 6)
+
+`ContextSyncService` (`context-sync`, `services: { context-sync: { every: 15m } }`, runs only when named, outside the command gate like
+`context-rebuild`) syncs each intent source and records `context.sources.synced` with an additive optional `Links` payload
+(`ContextLinksSynced`: counts and the code, never record text). The event key now names its source:
+`context.sources.synced:<epoch>:<source>:<slot>` (the docs refresh's key changed the same way). Doctor row `context:sync` warns when an
+intent source never synced or its last run failed. The `SyncSources` catalog row (`job`) is `pending:API-P6` with no route and no
+`CommandType`; `sindri context sources sync` answers `SND-CLI-001` naming `pending:API-P6` and the `context-sync` service.
+
+### Errors (056-059)
+
+| Code | Kind (HTTP) | Exit | Meaning |
+|---|---|---|---|
+| `SND-CONTEXT-056` | Conflict (409) | 1 | A sync of that source is already running |
+| `SND-CONTEXT-057` | Invalid | - | A model answer the engine refused; counted in `refused`, never fails the sync |
+| `SND-CONTEXT-058` | NotFound (404) | 1 | `--source X` isn't a configured source with a sync |
+| `SND-CONTEXT-059` | Unavailable | 0 | A sync stopped at its time cap; partial, resumes from the cursor |
+
+### Tests
+
+`tests/Aw.Context.Tests/{Linking,SyncSources,QueryContext}` (rules, overlay, store contracts, sync, decisions, conflicts, item shape,
+sources status); `tests/Aw.Sindri.Tests/ContextCalls/ContextSyncTests` (integration: service named or not, event with counts, event key,
+sources status, doctor row, item query), `ContextCliTests` and `ContextReviewRowsTests` (the pending form and the catalog row).
