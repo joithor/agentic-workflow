@@ -1,5 +1,6 @@
 namespace Aw.Meta.Tests.Cli;
 
+[System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
 public sealed class TeamAndRoleCommandTests : IDisposable
 {
     private readonly CliHarness _cli = new();
@@ -19,14 +20,14 @@ public sealed class TeamAndRoleCommandTests : IDisposable
     public async Task Role_commands_and_team_init_work_without_a_team_config()
     {
         var before = await _cli.Run("role-show");
-        var set = await _cli.Run("role-set", "--session", "s-1", "--name", "sindri-meta");
+        var set = await _cli.Run("role-set", "--session", "s-1", "--name", "t1-meta");
         var after = await _cli.Run("role-show", "--json");
-        var made = await _cli.Run("team-init", "--team", "sindri", "--repo", "/work/repo", "--lanes", "api,ui");
+        var made = await _cli.Run("team-init", "--team", "t1", "--repo", "/work/repo", "--lanes", "api,ui");
         var shown = await _cli.Run("team-show");
 
         Assert.Equal(1, before.Exit);
         Assert.Equal(0, set.Exit);
-        Assert.Contains("\"name\":\"sindri-meta\"", after.Out.Replace(" ", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
+        Assert.Contains("\"name\":\"t1-meta\"", after.Out.Replace(" ", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
         Assert.Equal(0, made.Exit);
         Assert.Contains("lanes meta, api, ui", shown.Out, StringComparison.Ordinal);
     }
@@ -34,7 +35,7 @@ public sealed class TeamAndRoleCommandTests : IDisposable
     [Fact, Trait("Lane", "integration")]
     public async Task A_second_team_init_is_refused_with_its_code_and_a_usage_error_names_the_command()
     {
-        _ = await _cli.Run("team-init", "--team", "sindri", "--repo", "/r", "--lanes", "api");
+        _ = await _cli.Run("team-init", "--team", "t1", "--repo", "/r", "--lanes", "api");
 
         var again = await _cli.Run("team-init", "--team", "x", "--repo", "/r", "--lanes", "api");
         var bad = await _cli.Run("role-set");

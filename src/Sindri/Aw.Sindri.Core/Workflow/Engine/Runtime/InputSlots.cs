@@ -4,7 +4,7 @@ using Aw.Sindri.Core.Workflow.Views;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 
-/// <summary>The recipe's inputs as the list row and the view show them (UI screens E-20): in declaration order, each required or present (v1 serves no optional input). A slot's kind is the subject adapter of the first input and null for the rest.</summary>
+/// <summary>The recipe's inputs as the list row and the view show them (UI screens E-20): in declaration order. A slot's kind is the input's subject adapter; it is required unless the input has a generate template.</summary>
 public static class InputSlots
 {
     /// <summary>The slots of <paramref name="instance"/>'s recipe.</summary>
@@ -17,11 +17,11 @@ public static class InputSlots
         ArgumentNullException.ThrowIfNull(recipe);
         return
         [
-            .. recipe.Recipe.Inputs.Select((i, index) => new InputPresence(
+            .. recipe.Recipe.Inputs.Select(i => new InputPresence(
                 i.Key.Value,
                 i.Label ?? SubjectRefs.Bare(i.Key.Value),
-                index == 0 ? SubjectKinds.Effective(i) : null,   // the subject adapter, as RecipeView.inputs[].kind serves it: the first input's only (API spec §3.8)
-                Required: true,
+                SubjectKinds.Effective(i),   // the subject adapter, as RecipeView.inputs[].kind serves it (API spec §3.8)
+                Required: i.Generate is null,
                 Present: instance.Facts.ContainsKey(i.Key) || recipe.Inputs.ContainsKey(i.Key))),
         ];
     }

@@ -2,6 +2,8 @@
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$DIR/../../.." && pwd)"
+# The installer puts its files under $AW_STATE_DIR when set, else under the HOME each case passes (a temp dir): never an inherited state dir.
+unset AW_STATE_DIR
 
 fake_judge_bin_dir() {
   local bin_dir; bin_dir="$(mktemp -d)"

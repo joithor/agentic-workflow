@@ -17,6 +17,16 @@ internal sealed partial class QueueViewModel
         Mark();
     }
 
+    /// <summary>True when the selected row is the first one Home draws (K goes up to Needs you from it).</summary>
+    internal bool IsFirstOnHome => Navigable(QueueScope.Home) is [{ } first, ..] && string.Equals(first.Id, SelectedId, StringComparison.Ordinal);
+
+    /// <summary>Selects no row (the selection moved to another list on Home).</summary>
+    internal void ClearSelection()
+    {
+        SelectedId = null;
+        Mark();
+    }
+
     /// <summary>The shell shows a page: the selection's scope follows it (silently); a page without rows (null) is no scope.</summary>
     /// <param name="scope">The page shown, or null for a page that draws no rows.</param>
     internal void PageShown(QueueScope? scope)

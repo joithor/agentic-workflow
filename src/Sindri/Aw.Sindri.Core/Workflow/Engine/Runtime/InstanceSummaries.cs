@@ -36,7 +36,8 @@ public static class InstanceSummaries
 
     /// <summary>
     /// The subject the list row and the detail show: the view's, with an item's title in place of its id when the subject is the
-    /// item and the caller knows the title; an instance whose recipe declares no input is about the item itself: kind 'item', the item's id as the key, its title (else the instance address) as the label.
+    /// item, the recipe declares no name and the caller knows the title; an empty rendered name shows the instance address. A view
+    /// with no subject yet (a starting instance) is about the item itself: kind 'item', the item's id as the key, its title (else the address) as the label.
     /// </summary>
     /// <param name="view">The instance view.</param>
     /// <param name="itemTitle">The title of the item the instance is on; null when the caller has none.</param>
@@ -47,7 +48,8 @@ public static class InstanceSummaries
         return view.Subject switch
         {
             null => new("item", view.ItemId?.Value ?? string.Empty, itemTitle is { Length: > 0 } ? itemTitle : view.Address.Value, Href: null),
-            { Kind: "item" } item when itemTitle is { Length: > 0 } && item.Key == view.ItemId?.Value => item with { Label = itemTitle },
+            { Kind: "item" } item when view.Name is null && itemTitle is { Length: > 0 } && item.Key == view.ItemId?.Value => item with { Label = itemTitle },
+            { Label.Length: 0 } unnamed => unnamed with { Label = view.Address.Value },
             { } subject => subject,
         };
     }

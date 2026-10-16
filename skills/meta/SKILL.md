@@ -31,6 +31,14 @@ it prints what you owe and the command that settles it. Settle it, don't argue w
 
 - **Reply**: **Message a running agent**: the sender (the name the inbox shows). The outbox hook records the send and closes
   the obligation. Send one reply per message, even when it's only "on it, gate running".
+- **Reply to a non-Claude lane** (the lane map marks a lane that runs Codex, Cursor or another agent): those lanes have no
+  cross-session messages, so send with `aw-meta lane-send --lane <lane> --text "<message>"` (or `--file <f>`), never with
+  the message tool. It stores the message in the lane's inbox, records the send (which closes your reply obligation, as
+  the outbox hook does for Claude), and wakes the lane if it is idle with its agent up and nobody attached; otherwise the
+  lane gets it at its next prompt. Exit 1 means the message is stored but the lane can't act on it (launch-only, or its
+  hooks aren't running: on Codex, trust them with `/hooks`). The lane answers by ending its turn with a line
+  `REPLY TO META: <reply>`, which its stop hook records as a message from `<team>-<lane>` and opens your reply
+  obligation, so `lane-send` it back like any other. Send the lane map and "main moved" texts to these lanes the same way.
 - A pure FYI that needs no reply: `aw-meta inbox-dismiss <id> --reason "<why>"`.
 - Work in flight (a gate, a review): `aw-meta inbox-defer <id> --reason "<what>" --until +30m`. It reopens when due.
 
@@ -44,8 +52,15 @@ it prints what you owe and the command that settles it. Settle it, don't argue w
    that lane's Claude session, named `<team>-<lane>` so its name never changes. Rerun it after a crash: it recreates
    the dead tmux sessions, restarts a lane whose Claude exited, and resumes each lane by its session id. From the
    meta session, recreate lanes with `aw-meta-launch --no-open`: the open Warp window reattaches by itself. When
-   `launcher.json` puts a lane on another agent, the launcher prints `lane <l>: <agent>, launch-only for now: no
-   obligations`: don't message a lane marked launch-only.
+   `launcher.json` puts a lane on another agent, the launcher prints `lane <l>: <agent>, takes part in the obligations
+   through its hooks` (the hooks come from `scripts/install-meta.sh --provider codex|cursor`) or, for a CLI with no
+   hook system, `lane <l>: <agent>, launch-only: no obligations`: don't message a lane marked launch-only.
+   `aw-meta-launch` refuses while the team's lanes still run on tmux's default socket (the pre-switch team). The meta
+   session must never pass `--allow-legacy` or set `AW_META_ALLOW_LEGACY`: they are for the owner only. Tell the owner.
+   The team runs on its own tmux socket, named after the team, so attach with `tmux -L <team> attach -t =<team>-<lane>`
+   (for example `tmux -L sindri attach -t sindri-ideas`), and list its sessions with `tmux -L <team> ls`. A bare
+   `tmux attach` looks at tmux's default socket, which the team no longer uses. A team launched before this change
+   stays on the default socket until it is relaunched.
 
 ## Start (or after any restart)
 
@@ -60,6 +75,8 @@ it prints what you owe and the command that settles it. Settle it, don't argue w
 5. `aw-meta status` and `aw-meta health`.
 
 ## A lane says `ready #N`
+
+A lane queues a pull request with exactly `ready #N <sha>` on the **first line** of its message (any case; the sha, 7 to 40 hex digits, may sit in backticks), details on the lines below. A bare `ready #N`, a ready in the middle of a sentence, or a first line with "not ready" or "follows" in it is **ignored**: it is an ordinary request. Put this in every lane's kickoff prompt (`prompts/<lane>.md`) so lanes use the format. If something else queued a pull request, `aw-meta queue-drop N --reason "…"` removes the entry and logs why; a pull request that already merged or ended has no entry (`AW-META-018`).
 
 1. `aw-meta merge-check N`. Read every FAIL line. A merge-order FAIL means wait: tell the lane why.
 2. `aw-meta gate-run N`. Scopes come from the diff and the team config; name them to override (`gate-run N repo`).

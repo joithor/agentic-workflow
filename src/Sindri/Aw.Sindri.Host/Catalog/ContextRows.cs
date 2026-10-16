@@ -11,9 +11,9 @@ namespace Aw.Sindri.Host.Catalog;
 /// applying a review file, merge, add, delete and promote are protected (the terminal and the typed confirmation of X30, like import).
 /// Proposing is a job run synchronously (it only writes draft rows). BuildContextMap is a job that waits for API P6's runtime:
 /// 'pending:API-P6' with no route mapped, and drafts come from proposals and the 'context-rebuild' scheduled service meanwhile.
-/// SyncSources is a job (API §4.1), which needs API P6's job runtime, so it is registered 'pending:S-5B' (the context stage
-/// that adds the job route once P6 merges, not P6's own sweep) with no route mapped yet; until then the
-/// 'context-docs-refresh' scheduled service refreshes repo-docs, and S-5B makes the row ready over the same refresh.
+/// SyncSources is a job (API §4.1), which needs API P6's job runtime, so it is registered 'pending:API-P6' (the S-5B part is in: the sync itself
+/// and the 'context-sync' scheduled service; only the job runtime is missing) with no route mapped yet; until then the
+/// 'context-docs-refresh' scheduled service refreshes repo-docs and 'context-sync' syncs the intent sources.
 /// </summary>
 internal static class ContextRows
 {
@@ -45,7 +45,7 @@ internal static class ContextRows
             "POST", "/sindri/context/map/import", ShellRows.Form("sindri context map import <file>"), "cli-only:typed-confirmation"),
         new(ActionId.From("SyncSources"), CommandType: null, Variant: null, ActionClass.Job, ServiceGrants: [],
             NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
-            "POST", "/sindri/context/sources/sync", ShellRows.Form("sindri context sources sync"), "pending:S-5B"),
+            "POST", "/sindri/context/sources/sync", ShellRows.Form("sindri context sources sync"), "pending:API-P6"),
     ];
 
     private const string EngineRowsTypedConfirmation = "cli-only:typed-confirmation";

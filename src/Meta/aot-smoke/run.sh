@@ -44,8 +44,13 @@ sed "s#@WORK@#$work#g" "$here/fixtures/team.json" >"$state/meta/team.json"
 sed "s#@PID@#$$#g" "$here/fixtures/sessions/session.json" >"$work/sessions/session.json"   # this script's pid is alive for the whole run
 cp "$here/fixtures/transcript.jsonl" "$work/meta.jsonl"
 
+# AW_TMUX is a fail-closed stub that records its arguments and exits 1: the smoke never reaches the real tmux, whose default
+# socket is the live team's server (PATH below still has /usr/bin/tmux).
+tmux_stub="$work/tmux-stub"
+printf '#!/bin/sh\necho "$@" >> "%s/tmux-stub.log"\nexit 1\n' "$work" >"$tmux_stub"
+chmod +x "$tmux_stub"
 # Each call gets only these variables: offline, deterministic, no gh on the path, the quiet log level.
-meta() { timeout 30 env -i HOME="$work" PATH=/usr/bin:/bin AW_STATE_DIR="$state" AW_CLAUDE_SESSIONS_DIR="$work/sessions" AW_LOG_LEVEL=none "$bin" "$@"; }
+meta() { timeout 30 env -i HOME="$work" PATH=/usr/bin:/bin AW_STATE_DIR="$state" AW_CLAUDE_SESSIONS_DIR="$work/sessions" AW_TMUX="$tmux_stub" AW_LOG_LEVEL=none "$bin" "$@"; }
 step() { echo "## $*"; meta "$@" || echo "exit $?"; }
 stepx() { echo "## $*"; local code=0; meta "$@" || code=$?; echo "exit $code"; }
 send() { printf '{"session_id":"s-meta","tool_name":"SendMessage","tool_input":{"to":"%s","message":"%s"}}' "$1" "$2"; }
@@ -67,6 +72,8 @@ send() { printf '{"session_id":"s-meta","tool_name":"SendMessage","tool_input":{
   step owner
   step owner-answer 1 --answer sqlite
   step log-append --kind note --text "smoke run"
+  step queue-drop 1 --reason "smoke drop" --json
+  stepx queue-drop 1 --reason "smoke again"
   step lanes
   step merge-check 1
   step merge-check

@@ -8,6 +8,9 @@ namespace Aw.Sindri.Core.Workflow.Validation;
 /// <summary>RCP-WIRE-001 (W2): every fact a block, a 'with:' value or a child input needs is there on every path into where it runs.</summary>
 internal sealed partial class WiringRules
 {
+    /// <summary>The recipe and catalog a block's needs are read against.</summary>
+    private sealed record NeedContext(Recipe Recipe, BlockCatalog Catalog);
+
     /// <summary>A fact something needs, and where.</summary>
     /// <param name="Path">The node that needs it.</param>
     /// <param name="What">How the finding names the needer: "step 'step.checks' in state 'checks'".</param>
@@ -97,9 +100,9 @@ internal sealed partial class WiringRules
     }
 
     private static IEnumerable<Need> StateNeeds(Recipe recipe, BlockCatalog catalog) =>
-        recipe.States.SelectMany(s => StepNeeds(s.Key, s.Value.Step, catalog).Concat(ChildNeeds(s.Key, s.Value.WaitFor?.Child)));
+        recipe.States.SelectMany(s => StepNeeds(recipe, s.Key, s.Value.Step, catalog).Concat(ChildNeeds(s.Key, s.Value.WaitFor?.Child)));
 
-    private static IEnumerable<Need> StepNeeds(string state, StepUse? step, BlockCatalog catalog)
+    private static IEnumerable<Need> StepNeeds(Recipe recipe, string state, StepUse? step, BlockCatalog catalog)
     {
         if (step is null)
         {
@@ -107,8 +110,8 @@ internal sealed partial class WiringRules
         }
 
         var where = $"in state '{state}'";
-        var inputs = step.Inputs.SelectMany((input, k) => BlockNeeds($"states.{state}.step.inputs[{Inv(k)}]", "input", input, catalog, where));
-        return BlockNeeds($"states.{state}.step", "step", new BlockUse(step.Use, step.With), catalog, where)
+        var inputs = step.Inputs.SelectMany((input, k) => BlockNeeds($"states.{state}.step.inputs[{Inv(k)}]", "input", input, new NeedContext(recipe, catalog), where));
+        return BlockNeeds($"states.{state}.step", "step", new BlockUse(step.Use, step.With), new NeedContext(recipe, catalog), where)
             .Concat(inputs)
             .Select(need => need with { State = state });
     }
@@ -127,8 +130,8 @@ internal sealed partial class WiringRules
             var transition = recipe.Transitions[i];
             var on = $"on transitions[{Inv(i)}]";
             var needs = transition.Gates
-                .SelectMany((g, j) => BlockNeeds($"transitions[{Inv(i)}].gates[{Inv(j)}]", "gate", new BlockUse(g.Use, g.With), catalog, on))
-                .Concat(transition.Effects.SelectMany((e, j) => BlockNeeds($"transitions[{Inv(i)}].effects[{Inv(j)}]", "effect", e, catalog, on)))
+                .SelectMany((g, j) => BlockNeeds($"transitions[{Inv(i)}].gates[{Inv(j)}]", "gate", new BlockUse(g.Use, g.With), new NeedContext(recipe, catalog), on))
+                .Concat(transition.Effects.SelectMany((e, j) => BlockNeeds($"transitions[{Inv(i)}].effects[{Inv(j)}]", "effect", e, new NeedContext(recipe, catalog), on)))
                 .Concat(transition.Evidence.SelectMany((e, j) => EvidenceNeeds($"transitions[{Inv(i)}].evidence[{Inv(j)}]", e.Kind, catalog, on)))
                 .ToList();
             foreach (var from in transition.From.Distinct(StringComparer.Ordinal))
@@ -145,10 +148,12 @@ internal sealed partial class WiringRules
     /// A block's declared inputs, at its 'use', and the facts its 'with:' values read. The state is filled in by the
     /// caller. A block of the wrong kind for its place (a Step named as a gate) is RCP-BLOCK-002's, so its inputs aren't read.
     /// </summary>
-    private static IEnumerable<Need> BlockNeeds(string path, string word, BlockUse use, BlockCatalog catalog, string where)
+    private static IEnumerable<Need> BlockNeeds(string path, string word, BlockUse use, NeedContext context, string where)
     {
         var what = $"{word} '{use.Use.Value}' {where}";
-        var inputs = catalog.Find(use.Use) is { } descriptor && descriptor.Kind == KindOf(word) ? descriptor.Inputs : [];
+        var inputs = context.Catalog.Find(use.Use) is { } descriptor && descriptor.Kind == KindOf(word)
+            ? (word == "step" ? StepInputs.Of(descriptor, use.With, context.Recipe) : descriptor.Inputs) ?? []   // a choice Step's facts come from its parameters; a list that doesn't resolve is RCP-CHOICE-004's
+            : [];
         var declared = inputs.Select(fact => new Need($"{path}.use", what, fact, State: string.Empty, Transition: null));
         var read = use.With
             .Where(w => w.Value.Fact is not null)

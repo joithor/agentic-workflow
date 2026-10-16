@@ -4,21 +4,95 @@
              xmlns:shell="using:Aw.Sindri.Ui.ViewModels.Shell"
              xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
              xmlns:queue="using:Aw.Sindri.Ui.ViewModels.Queue"
+             xmlns:nyvm="using:Aw.Sindri.Ui.ViewModels.NeedsYou"
+             xmlns:nyv="using:Aw.Sindri.Ui.Views.NeedsYou"
              xmlns:rows="using:Aw.Sindri.Ui.Views.Queue"
+             xmlns:wfv="using:Aw.Sindri.Ui.Views.Workflows"
+             xmlns:wfvm="using:Aw.Sindri.Ui.ViewModels.Workflows"
              x:Class="Aw.Sindri.Ui.Views.Shell.HomePage"
              x:DataType="shell:ShellViewModel">
   <!-- Home (UI spec §3.2, §4.2): four panels in a fixed order. Each panel is a header row (the eyebrow over a hairline,
        home.html .phead) and a body. Running and With you, and Queued, are GET /queue's groups (U2: at most five rows, then
-       "Show all N in Queue"; each group's own empty sentence, E-18); Needs you arrives with U3 and says "not served yet". The health strip is the status as labelled cells and opens Health. -->
+       "Show all N in Queue"; each group's own empty sentence, E-18); Needs you is the served list (U3'). The health strip is the status as labelled cells and opens Health. -->
   <StackPanel Spacing="{StaticResource Size.PanelGap}">
     <TextBlock Classes="page-title" Text="{Binding Text.Home}" AutomationProperties.Name="{Binding Text.Home}" />
 
-    <Border x:Name="NeedsYouPanel" Classes="panel" AutomationProperties.Name="{Binding Text.NeedsYouPanel}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
+    <Border x:Name="NeedsYouPanel" Classes="panel" PointerEntered="OnNeedsYouPanelEntered" PointerExited="OnNeedsYouPanelExited" AutomationProperties.Name="{Binding Text.NeedsYouPanel}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
       <StackPanel>
         <Border Classes="phead">
-          <TextBlock Classes="eyebrow" Text="{Binding Text.NeedsYouPanel}" AutomationProperties.Name="{Binding Text.NeedsYouPanel}" />
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Classes="eyebrow" Text="{Binding Text.NeedsYouPanel}" AutomationProperties.Name="{Binding Text.NeedsYouPanel}" />
+              <TextBlock x:Name="NeedsYouSummary" Classes="caption subtle" Text="{Binding Attention.SummaryLine}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Attention.SummaryLine}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+              <!-- B2: "N marked seen · Undo" for 10 s after Mark all seen; the Undo button is a plain tab stop, and its words are spoken once by NeedsYouSeenLive. -->
+              <StackPanel x:Name="NeedsYouUndo" Orientation="Horizontal" Spacing="6" IsVisible="{Binding NeedsYou.Seen.UndoOffered}" VerticalAlignment="Center">
+                <TextBlock x:Name="NeedsYouUndoText" Classes="caption subtle" Text="{Binding NeedsYou.Seen.UndoText}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                <TextBlock Classes="caption subtle" Text="·" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                <Button x:Name="NeedsYouUndoButton" Classes="copy" Click="OnUndoSeen" GotFocus="OnUndoHeld" LostFocus="OnUndoReleased" PointerEntered="OnUndoHeld" PointerExited="OnUndoReleased" AutomationProperties.Name="{Binding Text.UndoMarkAllSeen}">
+                  <TextBlock Classes="caption" Text="{Binding Text.Undo}" />
+                </Button>
+              </StackPanel>
+              <Button x:Name="MarkAllSeen" Classes="copy" Click="OnMarkAllSeen" IsVisible="{Binding !NeedsYou.IsEmpty}"
+                      AutomationProperties.Name="{Binding Text.MarkAllSeen}">
+                <TextBlock Classes="caption" Text="{Binding Text.MarkAllSeen}" />
+              </Button>
+            </StackPanel>
+          </Grid>
         </Border>
-        <TextBlock Classes="caption quiet" Text="{Binding Text.NotServedYet}" AutomationProperties.Name="{Binding Text.NotServedYet}" />
+        <TextBlock x:Name="NeedsYouBanner" Classes="caption" Text="{Binding NeedsYou.Banner}" IsVisible="{Binding NeedsYou.HasBanner}" Margin="16,6"
+                   TextWrapping="Wrap" AutomationProperties.Name="{Binding NeedsYou.Banner}" />
+        <Button x:Name="NeedsYouHeld" Classes="held-pill" Click="OnShowNeedsYouHeld" IsVisible="{Binding NeedsYou.HasHeld}" HorizontalAlignment="Center"
+                AutomationProperties.Name="{Binding NeedsYou.HeldText}">
+          <TextBlock Classes="caption" Text="{Binding NeedsYou.HeldText}" />
+        </Button>
+        <ItemsControl x:Name="NeedsYouRows" ItemsSource="{Binding NeedsYou.Rows}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="nyvm:NeedsYouRowViewModel">
+              <nyv:NeedsYouRow />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock x:Name="NeedsYouEmpty" Classes="caption quiet" Text="{Binding NeedsYou.EmptyText}" Margin="16,8"
+                   IsVisible="{Binding NeedsYou.IsEmpty}" AutomationProperties.Name="{Binding NeedsYou.EmptyText}" />
+        <Button x:Name="NeedsYouShowAll" HorizontalAlignment="Left" Classes="copy" Click="OnShowAllNeedsYou" IsVisible="{Binding NeedsYou.HasOverflow}"
+                AutomationProperties.Name="{Binding NeedsYou.OverflowText}" Margin="16,6">
+          <TextBlock Classes="caption" Text="{Binding NeedsYou.OverflowText}" />
+        </Button>
+      </StackPanel>
+    </Border>
+
+    <!-- The Workflows strip (screens spec §4.1): the open root instances as the API serves them, between Needs you and the columns. -->
+    <Border x:Name="WorkflowsPanel" Classes="panel" AutomationProperties.Name="{Binding Strip.Heading}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
+      <StackPanel>
+        <Border Classes="phead">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Classes="eyebrow" Text="{Binding Strip.Heading}" AutomationProperties.Name="{Binding Strip.Heading}" />
+            <TextBlock x:Name="WorkflowsOpen" Classes="caption subtle" Text="{Binding Strip.OpenText}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Strip.OpenText}" />
+            <StackPanel x:Name="WorkflowsStale" Orientation="Horizontal" Spacing="4" IsVisible="{Binding Health.Banner.IsStalled}">
+              <icons:StateIcon Glyph="Stale" VerticalAlignment="Center" />
+              <TextBlock Classes="caption subtle" Text="{Binding Text.Stale}" VerticalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+        <ItemsControl x:Name="WorkflowsRows" ItemsSource="{Binding Strip.Rows}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="wfvm:StripRowViewModel">
+              <wfv:StripRow />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock x:Name="WorkflowsEmpty" Classes="caption quiet" Text="{Binding Strip.EmptyText}" Margin="16,8"
+                   IsVisible="{Binding Strip.IsEmpty}" AutomationProperties.Name="{Binding Strip.EmptyText}" />
+        <TextBlock x:Name="WorkflowsNotServed" Classes="caption quiet" Text="{Binding Strip.NotServedText}" Margin="16,8"
+                   IsVisible="{Binding Strip.IsNotServed}" AutomationProperties.Name="{Binding Strip.NotServedText}" />
+        <TextBlock x:Name="WorkflowsUnreadable" Classes="caption quiet" Text="{Binding Strip.UnreadableText}" Margin="16,8" TextWrapping="Wrap"
+                   IsVisible="{Binding Strip.IsUnreadable}" AutomationProperties.Name="{Binding Strip.UnreadableText}" />
+        <Button x:Name="WorkflowsMore" HorizontalAlignment="Left" Classes="copy" Click="OnWorkflowsMore" IsVisible="{Binding Strip.HasMore}"
+                AutomationProperties.Name="{Binding Strip.MoreText}" Margin="16,6">
+          <TextBlock Classes="caption" Text="{Binding Strip.MoreText}" />
+        </Button>
       </StackPanel>
     </Border>
 

@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # Install the /meta harness (opt-in: ./setup.sh --with-meta; owner decision 2026-10-14): the aw-meta NativeAOT CLI,
-# its two Claude Code hooks, and the team launcher. aw-meta is a standalone pre-switch C# CLI like aw-readiness and
+# its hooks for the chosen provider, and the team launcher. aw-meta is a standalone pre-switch C# CLI like aw-readiness and
 # aw-packets (docs/csharp/meta.md): its state lives under $AW_STATE_DIR/meta, and
 # it appends to the team's running log; its gate and merge commands act on the team's checkout and PRs.
 #
-#   install-meta.sh [--provider claude|codex|cursor]   default claude
+#   install-meta.sh [--provider claude|codex|cursor] [--allow-worktree]   default claude
+#   --allow-worktree  install from this tree although it is not the canonical checkout: a linked worktree, a second clone, or any
+#                     tree other than the team config's repo (the name is historical; it covers all three)
+#   Exit codes: 0 installed; 1 failed (usage, macOS, a missing binary, a failed publish); 3 refused because this tree is not the
+#   canonical checkout (setup.sh --with-meta warns on 3 and carries on, and stops on every other non-zero exit)
 #   AW_DRY_RUN=1     print what would happen, write nothing
 #   AW_SKIP_BUILD=1  don't publish; install the binary already in $AW_STATE_DIR/bin (tests)
 #   CLAUDE_LOCAL_BIN where the aw-meta and aw-meta-launch links go (default ~/.local/bin)
@@ -12,9 +16,19 @@
 # 1. Publish src/Meta/Aw.Meta.Host with NativeAOT for the host RID, on a copy of the files it needs (a RID publish
 #    adds the host's ILCompiler packs to the lock files, so it never runs on the checkout), under the heavy-job lock
 #    when it exists. The binary and its bundled e_sqlite3 land in $AW_STATE_DIR/bin.
-# 2. Hooks (Claude Code only: cross-session messages exist only there): Stop → meta-stop-gate.sh, PostToolUse with
-#    matcher SendMessage → meta-outbox.sh. Both pass straight through for every session but the registered meta one.
-# 3. Links aw-meta and aw-meta-launch (scripts/meta-launch.sh) into CLAUDE_LOCAL_BIN.
+# 2. Hooks, per provider:
+#    claude: Stop → meta-stop-gate.sh, PostToolUse with matcher SendMessage → meta-outbox.sh. Both pass straight through for
+#      every session but the registered meta one.
+#    codex, cursor (the lane hooks for non-Claude Meta lanes, docs/csharp/meta.md "Non-Claude lanes"; user-wide, through the
+#      provider adapters in $AW_STATE_DIR/hooks): session-id-report.sh at SessionStart, meta-lane-gate.sh at UserPromptSubmit
+#      and Stop (Codex) or sessionStart, postToolUse and stop (Cursor). Both pass straight through for every session that is
+#      not a lane (AW_META_TEAM and AW_META_LANE, set by scripts/meta-lane.sh). Codex records trust against each hook's hash:
+#      the install prints the /hooks step.
+# 3. Links aw-meta and aw-meta-launch (scripts/meta-launch.sh) into CLAUDE_LOCAL_BIN. aw-meta-launch points into the canonical
+#    checkout only. Before anything is built or written: when the team config (team.json, $AW_META_CONFIG or
+#    $AW_STATE_DIR/meta/team.json) names a repo with scripts/meta-launch.sh, this script must run from that repo; with no team repo, a
+#    linked git worktree (git-dir differs from git-common-dir) is refused. --allow-worktree (the owner's call) permits either and
+#    links this tree.
 # The /meta skill itself is linked by setup.sh with the other skills.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -22,7 +36,9 @@ SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 source "$SCRIPT_DIR/config/hooks/adapters/install-lib.sh"
 aw_parse_provider_args "$@" || exit 1
 set -- ${AW_ARGS[@]+"${AW_ARGS[@]}"}
-[ $# -eq 0 ] || { echo "usage: install-meta.sh [--provider claude|codex|cursor]" >&2; exit 1; }
+allow_worktree=0
+[ "${1:-}" = --allow-worktree ] && { allow_worktree=1; shift; }
+[ $# -eq 0 ] || { echo "usage: install-meta.sh [--provider claude|codex|cursor] [--allow-worktree]" >&2; exit 1; }
 
 STATE="${AW_STATE_DIR:-$HOME/.agentic-workflow}"
 BIN="$STATE/bin"
@@ -30,15 +46,34 @@ LOCAL_BIN="${CLAUDE_LOCAL_BIN:-$HOME/.local/bin}"
 HEAVY="$STATE/bin-r1b/heavy"
 dry() { [ "${AW_DRY_RUN:-0}" = 1 ]; }
 
-if [ "$AW_PROVIDER" != claude ]; then
-  echo "  meta: skipped for $AW_PROVIDER (cross-session messaging is Claude Code only)"
-  exit 0
-fi
-
 # aw-meta reads Linux /proc (memory, uptime, the process table), so it does not run on macOS yet.
 if [ "$(uname)" = Darwin ]; then
   echo "install-meta: aw-meta is Linux-only for now (it reads /proc); not installing on macOS" >&2
   exit 1
+fi
+
+# Never silently install an unmerged build. The team config's repo (when it has the launcher) is the canonical checkout: this
+# script must run from it; from any other tree (a worktree, a second clone) it refuses. With no team repo, a linked git worktree
+# is refused. --allow-worktree is the explicit override, and then aw-meta-launch is linked into this tree.
+LAUNCH_DIR="$SCRIPT_DIR"
+team_json="${AW_META_CONFIG:-$STATE/meta/team.json}"
+team_repo="$(jq -r '.repo // empty' "$team_json" 2>/dev/null || true)"
+if [ "$allow_worktree" != 1 ]; then
+  if [ -n "$team_repo" ] && [ -f "$team_repo/scripts/meta-launch.sh" ]; then
+    if [ "$(cd "$team_repo" && pwd -P)" != "$(cd "$SCRIPT_DIR" && pwd -P)" ]; then
+      echo "install-meta: this tree ($SCRIPT_DIR) is not the team's repo ($team_repo); it would install an unmerged build." >&2
+      echo "  Run scripts/install-meta.sh from $team_repo, or pass --allow-worktree to install from this tree on purpose." >&2
+      exit 3
+    fi
+  else
+    gd="$(git -C "$SCRIPT_DIR" rev-parse --absolute-git-dir 2>/dev/null || true)"
+    gc="$(git -C "$SCRIPT_DIR" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+    if [ -n "$gd" ] && [ -n "$gc" ] && [ "$gd" != "$gc" ]; then
+      echo "install-meta: $SCRIPT_DIR is a linked git worktree, not the canonical checkout; aw-meta-launch would be linked into it." >&2
+      echo "  Run it from the canonical checkout, set the team config's repo (aw-meta team-init --repo <dir>), or pass --allow-worktree." >&2
+      exit 3
+    fi
+  fi
 fi
 
 # 1. Build.
@@ -76,21 +111,45 @@ else
 fi
 
 # 2. Hooks.
-aw_hooks_init claude
-if dry; then
-  echo "  [dry-run] would install meta-stop-gate (Stop) and meta-outbox (PostToolUse SendMessage) in $AW_HOOKS_CONFIG"
+aw_hooks_init "$AW_PROVIDER"
+if [ "$AW_PROVIDER" = claude ]; then
+  if dry; then
+    echo "  [dry-run] would install meta-stop-gate (Stop) and meta-outbox (PostToolUse SendMessage) in $AW_HOOKS_CONFIG"
+  else
+    mkdir -p "$AW_HOOKS_INSTALL_DIR/lib"
+    for h in meta-stop-gate.sh meta-outbox.sh; do
+      cp "$SCRIPT_DIR/config/hooks/$h" "$AW_HOOKS_INSTALL_DIR/$h"
+      chmod +x "$AW_HOOKS_INSTALL_DIR/$h"
+    done
+    cp "$SCRIPT_DIR/config/lib/failopen.sh" "$AW_HOOKS_INSTALL_DIR/lib/failopen.sh"
+    stop=$(jq -nc --arg c "$AW_HOOKS_INSTALL_DIR/meta-stop-gate.sh # aw:meta-stop-gate" '{hooks:[{type:"command",command:$c,timeout:20}]}')
+    out=$(jq -nc --arg c "$AW_HOOKS_INSTALL_DIR/meta-outbox.sh # aw:meta-outbox" '{matcher:"SendMessage",hooks:[{type:"command",command:$c,timeout:10}]}')
+    merge_hook "$AW_HOOKS_CONFIG" Stop aw:meta-stop-gate "$stop"
+    merge_hook "$AW_HOOKS_CONFIG" PostToolUse aw:meta-outbox "$out"
+    echo "  meta: hooks installed in $AW_HOOKS_CONFIG"
+  fi
 else
-  mkdir -p "$AW_HOOKS_INSTALL_DIR/lib"
-  for h in meta-stop-gate.sh meta-outbox.sh; do
-    cp "$SCRIPT_DIR/config/hooks/$h" "$AW_HOOKS_INSTALL_DIR/$h"
-    chmod +x "$AW_HOOKS_INSTALL_DIR/$h"
-  done
-  cp "$SCRIPT_DIR/config/lib/failopen.sh" "$AW_HOOKS_INSTALL_DIR/lib/failopen.sh"
-  stop=$(jq -nc --arg c "$AW_HOOKS_INSTALL_DIR/meta-stop-gate.sh # aw:meta-stop-gate" '{hooks:[{type:"command",command:$c,timeout:20}]}')
-  out=$(jq -nc --arg c "$AW_HOOKS_INSTALL_DIR/meta-outbox.sh # aw:meta-outbox" '{matcher:"SendMessage",hooks:[{type:"command",command:$c,timeout:10}]}')
-  merge_hook "$AW_HOOKS_CONFIG" Stop aw:meta-stop-gate "$stop"
-  merge_hook "$AW_HOOKS_CONFIG" PostToolUse aw:meta-outbox "$out"
-  echo "  meta: hooks installed in $AW_HOOKS_CONFIG"
+  if dry; then
+    echo "  [dry-run] would install session-id-report and meta-lane-gate (lane hooks) for $AW_PROVIDER in $AW_HOOKS_CONFIG"
+  else
+    mkdir -p "$(dirname "$AW_HOOKS_CONFIG")"
+    aw_hooks_stage
+    if [ "$AW_PROVIDER" = codex ]; then
+      aw_hook_set SessionStart aw:session-id-report session-id-report.sh "" 10
+      aw_hook_set UserPromptSubmit aw:meta-lane-gate meta-lane-gate.sh "" 10
+      aw_hook_set Stop aw:meta-lane-gate meta-lane-gate.sh "" 20
+    else
+      aw_hook_set sessionStart aw:session-id-report session-id-report.sh "" 10
+      aw_hook_set sessionStart aw:meta-lane-gate meta-lane-gate.sh "" 10
+      aw_hook_set postToolUse aw:meta-lane-gate meta-lane-gate.sh "" 10
+      aw_hook_set stop aw:meta-lane-gate meta-lane-gate.sh "" 20
+    fi
+    echo "  meta: lane hooks installed in $AW_HOOKS_CONFIG"
+  fi
+  # Codex records trust against each hook's hash and runs only trusted hooks: after every install (a changed command needs it again).
+  if [ "$AW_PROVIDER" = codex ]; then
+    echo "  meta: open \`codex\` and run \`/hooks\` to trust the \`aw:*\` hooks (until then a Codex lane shows \"hooks not running\" in aw-meta health)"
+  fi
 fi
 
 # 3. Links.
@@ -99,7 +158,7 @@ if dry; then
 else
   mkdir -p "$LOCAL_BIN"
   ln -sfn "$BIN/aw-meta" "$LOCAL_BIN/aw-meta"
-  ln -sfn "$SCRIPT_DIR/scripts/meta-launch.sh" "$LOCAL_BIN/aw-meta-launch"
+  ln -sfn "$LAUNCH_DIR/scripts/meta-launch.sh" "$LOCAL_BIN/aw-meta-launch"
   echo "  meta: aw-meta and aw-meta-launch in $LOCAL_BIN"
   [ -f "$STATE/meta/team.json" ] || echo "  meta: next, write a team config: aw-meta team-init --team <t> --repo <dir> --lanes a,b,c (example: skills/meta/examples/agentic-workflow.team.json)"
 fi

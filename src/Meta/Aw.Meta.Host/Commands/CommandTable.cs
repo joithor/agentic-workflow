@@ -29,6 +29,7 @@ internal static class CommandTable
         OwnerAskCommand.Entry,
         LogAppendCommand.Entry,
         StatusCommand.Entry,
+        QueueDropCommand.Entry,
         GateRunCommand.Entry,
         GateRerunCommand.Entry,
         MergeCheckCommand.Entry,
@@ -37,6 +38,10 @@ internal static class CommandTable
         WatchCommand.Entry,
         WorktreeListCommand.Entry,
         WorktreeSweepCommand.Entry,
+        LaneSendCommand.Entry,
+        LaneInboxCommand.Entry,
+        LaneStopCheckCommand.Entry,
+        LaneReplyCommand.Entry,
     ];
 
     internal static IReadOnlyList<CommandEntry> Entries => _entries;

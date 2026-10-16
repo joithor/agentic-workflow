@@ -78,9 +78,9 @@ public sealed class CheckContextTests
 
         var none = await checks.Run(TestContext.Current.CancellationToken);
 
-        Assert.Equal([ContextChecks.SourcesName, ContextChecks.McpScopeName], none.Select(c => c.Name), StringComparer.Ordinal);
+        Assert.Equal([ContextChecks.SourcesName, ContextChecks.SyncName, ContextChecks.McpScopeName], none.Select(c => c.Name), StringComparer.Ordinal);
         Assert.StartsWith("SND-PROFILE-005", none[0].Detail, StringComparison.Ordinal);   // why: nothing is approved yet
-        Assert.Equal(CheckState.Warn, none[1].State);
+        Assert.Equal(CheckState.Warn, none[2].State);
     }
 
     [Fact]

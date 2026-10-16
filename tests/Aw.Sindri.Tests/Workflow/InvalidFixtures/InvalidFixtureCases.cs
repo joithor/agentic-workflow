@@ -36,13 +36,13 @@ internal static class InvalidFixtureCases
             ]),
         ["RCP-CAP-003"] = new(
             FixtureSetup.CapabilityWithUnapprovedBase,
-            "RCP-CAP-003: base workflow.cap-base@84b1571f2b84 is registered but not approved at RCP-CAP-003.yaml:4:1 (base); approve the base at a terminal (sindri recipe approve workflow.cap-base@84b1571f2b84), or generate the recipe from an approved base",
+            "RCP-CAP-003: base workflow.cap-base@b8f01b2b6c69 is registered but not approved at RCP-CAP-003.yaml:4:1 (base); approve the base at a terminal (sindri recipe approve workflow.cap-base@b8f01b2b6c69), or generate the recipe from an approved base",
             [
                 "RCP-EFFECT-001: effect 'effect.repo.push' wasn't checked against an effect allowlist, since the profile has no workflow.effects at RCP-CAP-003.yaml:47:9 (transitions[2].effects[0].use); add workflow.effects to the profile; until then the effect is refused at run time [Skipped]",
             ]),
         ["RCP-CAP-004"] = new(
             FixtureSetup.Capability,
-            "RCP-CAP-004: hand-written recipe workflow.cap-handwritten names base workflow.cap-base@84b1571f2b84 at RCP-CAP-004.yaml:4:1 (base); remove base, which only Sindri's generator writes",
+            "RCP-CAP-004: hand-written recipe workflow.cap-handwritten names base workflow.cap-base@b8f01b2b6c69 at RCP-CAP-004.yaml:4:1 (base); remove base, which only Sindri's generator writes",
             []),
         ["RCP-CAP-005"] = new(
             FixtureSetup.CapabilityWithBase,
@@ -96,7 +96,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-HASH-001"] = new(
             FixtureSetup.Shipped,
-            "RCP-HASH-001: hash 000000000000 doesn't match the recipe's content, whose hash is e69eeb6a8547 at RCP-HASH-001.yaml:16:1 (hash); set hash to sha256:e69eeb6a8547f69896a6b6b63f18a392b5b999cd22705e9286e461c2f7071b2c, or remove it",
+            "RCP-HASH-001: hash 000000000000 doesn't match the recipe's content, whose hash is b2371052fdcf at RCP-HASH-001.yaml:16:1 (hash); set hash to sha256:b2371052fdcf9ed4a8dd9019036d5f3725abf3e5ec115746d3d47591cc72706e, or remove it",
             []),
         ["RCP-INIT-001"] = new(
             FixtureSetup.Shipped,
@@ -180,7 +180,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-VERSION-001"] = new(
             FixtureSetup.Registry,
-            "RCP-VERSION-001: workflow.version-taken version 1 is registered with hash 2bd784957be7, but this recipe's hash is 165194be5b2b at RCP-VERSION-001.yaml:3:1 (version); raise version to 2, one above the highest registered, or restore the content registered as version 1",
+            "RCP-VERSION-001: workflow.version-taken version 1 is registered with hash 2bd784957be7, but this recipe's hash is a993db8e5966 at RCP-VERSION-001.yaml:3:1 (version); raise version to 2, one above the highest registered, or restore the content registered as version 1",
             []),
         ["RCP-VERSION-002"] = new(
             FixtureSetup.Registry,
@@ -188,7 +188,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-WHEN-001"] = new(
             FixtureSetup.Shipped,
-            "RCP-WHEN-001: transition from 'produce' tests outcome 'finished', which step 'step.produce' doesn't report at RCP-WHEN-001.yaml:16:60 (transitions[1].when.outcome); test one of its outcomes: done",
+            "RCP-WHEN-001: transition from 'produce' tests outcome 'finished', which step 'step.produce' doesn't report (outcomes here: done) at RCP-WHEN-001.yaml:16:60 (transitions[1].when.outcome); test one of its outcomes: done",
             []),
         ["RCP-WHEN-002"] = new(
             FixtureSetup.Shipped,
@@ -224,11 +224,79 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-TYPE-002"] = new(
             FixtureSetup.Shipped,
-            "RCP-TYPE-002: input 'fact:item' has kind 'ticket', which isn't one of item, linear-project, webhook, file, text at RCP-TYPE-002.yaml:5:35 (inputs[0].kind); use one of them",
+            "RCP-TYPE-002: input 'fact:item' has kind 'ticket', which isn't one of item, linear-project, webhook, file, text, link at RCP-TYPE-002.yaml:5:35 (inputs[0].kind); use one of them",
             []),
         ["RCP-TYPE-003"] = new(
             FixtureSetup.Shipped,
             "RCP-TYPE-003: input 'fact:item' has kind 'item' but type 'file'; kind item pairs with type item at RCP-TYPE-003.yaml:5:35 (inputs[0].kind); set type to item, or change kind",
+            []),
+        ["RCP-INPUT-001"] = new(
+            FixtureSetup.Shipped,
+            "RCP-INPUT-001: input 'fact:item' declares no kind at RCP-INPUT-001.yaml:5:5 (inputs[0]); add kind: item | link | linear-project | webhook | file | text, paired with its type (item/item, file/file, text/text, link/link, linear-project and webhook/payload)",
+            []),
+        ["RCP-INPUT-002"] = new(
+            FixtureSetup.Shipped,
+            "RCP-INPUT-002: the recipe declares no input at RCP-INPUT-002.yaml:1:1 (inputs); declare at least one input; a scheduled recipe gives it generate: \"<template>\"",
+            []),
+        ["RCP-NAME-002"] = new(
+            FixtureSetup.Shipped,
+            "RCP-NAME-002: the name template is empty or longer than 200 characters at RCP-NAME-002.yaml:4:1 (name); write literal text with {fact:<input>} or {start:date|time}",
+            []),
+        ["RCP-NAME-003"] = new(
+            FixtureSetup.Shipped,
+            "RCP-NAME-003: unknown placeholder '{owner}' at RCP-NAME-003.yaml:4:1 (name); use {fact:<input>}, {start:date} or {start:time}, and write {{ or }} for a literal brace",
+            []),
+        ["RCP-NAME-004"] = new(
+            FixtureSetup.Shipped,
+            "RCP-NAME-004: '{fact:scope}' names no declared input at RCP-NAME-004.yaml:4:1 (name); declare fact:scope under inputs or remove the placeholder",
+            []),
+        ["RCP-NAME-005"] = new(
+            FixtureSetup.Shipped,
+            "RCP-NAME-005: generate may not read inputs ('{fact:note}') at RCP-NAME-005.yaml:5:47 (inputs[0].generate); use only literals, {start:date} and {start:time}",
+            []),
+        ["RCP-NAME-006"] = new(
+            FixtureSetup.Shipped,
+            "RCP-NAME-006: generate on an input of kind 'item' at RCP-NAME-006.yaml:5:47 (inputs[0].generate); only a text input can be generated; supply this input at start",
+            []),
+        ["RCP-CHOICE-001"] = new(
+            FixtureSetup.Shipped,
+            "RCP-CHOICE-001: state 'route' gives 'step.judge.choose' 1 choices at RCP-CHOICE-001.yaml:13:9 (states.route.step.with.choices); list 2 to 32 choices, each \"<outcome>: <criterion>\"",
+            []),
+        ["RCP-CHOICE-002"] = new(
+            FixtureSetup.Shipped,
+            "RCP-CHOICE-002: entry 1 of choices in state 'route' has no ': ' after its outcome at RCP-CHOICE-002.yaml:14:13 (states.route.step.with.choices[0]); write it as \"<outcome>: <criterion>\"",
+            []),
+        ["RCP-CHOICE-002-mapping"] = new(
+            FixtureSetup.Shipped,
+            "RCP-CHOICE-002: entry 1 of choices in state 'route' is a YAML mapping at RCP-CHOICE-002-mapping.yaml:14:13 (states.route.step.with.choices[0]); quote it: \"<key>: <value>\"",
+            []),
+        ["RCP-CHOICE-003"] = new(
+            FixtureSetup.Shipped,
+            "RCP-CHOICE-003: entries 1 and 2 of choices in state 'route' both name outcome 'api' at RCP-CHOICE-003.yaml:15:13 (states.route.step.with.choices[1]); give each choice its own outcome",
+            []),
+        ["RCP-CHOICE-004"] = new(
+            FixtureSetup.Shipped,
+            "RCP-CHOICE-004: state 'route' gives 'step.judge.choose' no facts to read at RCP-CHOICE-004.yaml:12:9 (states.route.step.with.facts); list at least one fact key under facts",
+            []),
+        ["RCP-CHOICE-005"] = new(
+            FixtureSetup.Shipped,
+            "RCP-CHOICE-005: state 'route' routes uncertain to 'prove', which isn't its desk twin at RCP-CHOICE-005.yaml:32:5 (transitions[2]); route it to a state with step: { use: step.desk.choose, with: { from: route } }",
+            []),
+        ["RCP-CHOICE-005-computed"] = new(
+            FixtureSetup.Shipped,
+            "RCP-CHOICE-005: from of state 'route-desk' is a { profile } value at RCP-CHOICE-005-computed.yaml:20:44 (states.route-desk.step.with.from); name the route state it twins as a literal: from: <state>",
+            []),
+        ["RCP-CHOICE-006"] = new(
+            FixtureSetup.Shipped,
+            "RCP-CHOICE-006: transitions[0] routes 'route' on step.failed before its branch transitions[1] at RCP-CHOICE-006.yaml:30:5 (transitions[0]); list the branch transitions first and the uncertain and step.failed ones last",
+            []),
+        ["RCP-OUTCOME-001-uncertain"] = new(
+            FixtureSetup.Shipped,
+            "RCP-OUTCOME-001: state 'route' has no transition for outcome 'uncertain' of step 'step.judge.choose' at RCP-OUTCOME-001-uncertain.yaml:6:3 (states.route); add a transition from 'route' on step.completed with when: { outcome: uncertain }",
+            []),
+        ["RCP-SCHEMA-002-camel"] = new(
+            FixtureSetup.Shipped,
+            "RCP-SCHEMA-002: 'fact:evidence-summary' isn't a fact key ('fact:<name>' or 'evidence:<kind>@<base|head>') at RCP-SCHEMA-002-camel.yaml:34:86 (transitions[4].produces[0]); fact names are camelCase: write fact:evidenceSummary",
             []),
     };
 }

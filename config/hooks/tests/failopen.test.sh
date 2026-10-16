@@ -217,6 +217,35 @@ run_case "meta-stop-gate: nothing owed logs nothing" meta-stop-gate.sh "$META_ST
 run_case "meta-outbox: empty stdin" meta-outbox.sh "" "meta-outbox empty-input" AW_META_BIN="$FAKE_BIN/aw-meta"
 run_case "meta-outbox: aw-meta errors" meta-outbox.sh "$META_SEND" "meta-outbox meta-exit-2" AW_META_BIN="$FAKE_BIN/aw-meta" META_MODE=2
 run_case "meta-outbox: recorded send logs nothing" meta-outbox.sh "$META_SEND" "-" AW_META_BIN="$FAKE_BIN/aw-meta"
+# --- meta-lane-gate.sh (non-Claude lane hook) and session-id-report.sh (SessionStart), in a lane ---
+LANE="AW_META_TEAM=t1 AW_META_LANE=api AW_META_LANE_PID=$$ AW_META_LANE_AGENT=codex AW_META_LANE_PROC=codex"
+META_LANE_PROMPT='{"hook_event_name":"UserPromptSubmit","session_id":"s1","prompt":"hi"}'
+META_LANE_STOP="{\"hook_event_name\":\"Stop\",\"session_id\":\"s1\",\"stop_hook_active\":false,\"last_assistant_message\":\"done\\nREPLY TO META: $SECRET ok\"}"
+# shellcheck disable=SC2086
+run_case "meta-lane-gate: unparsable stdin" meta-lane-gate.sh "$SECRET" "meta-lane-gate input-unparsable" $LANE AW_META_BIN="$FAKE_BIN/aw-meta"
+# shellcheck disable=SC2086
+run_case "meta-lane-gate: empty stdin" meta-lane-gate.sh "" "meta-lane-gate empty-input" $LANE AW_META_BIN="$FAKE_BIN/aw-meta"
+# shellcheck disable=SC2086
+run_case "meta-lane-gate: lane-inbox errors" meta-lane-gate.sh "$META_LANE_PROMPT" "meta-lane-gate lane-inbox-exit-2" $LANE AW_META_BIN="$FAKE_BIN/aw-meta" META_MODE=2
+# shellcheck disable=SC2086
+run_case "meta-lane-gate: lane-stop-check errors, lane-reply errors" meta-lane-gate.sh "$META_LANE_STOP" "meta-lane-gate lane-reply-exit-2;meta-lane-gate lane-stop-check-exit-2" $LANE AW_META_BIN="$FAKE_BIN/aw-meta" META_MODE=2
+# shellcheck disable=SC2086
+run_case "meta-lane-gate: nothing owed logs nothing" meta-lane-gate.sh "$META_LANE_STOP" "-" $LANE AW_META_BIN="$FAKE_BIN/aw-meta"
+# shellcheck disable=SC2086
+run_case "meta-lane-gate: outside a lane logs nothing" meta-lane-gate.sh "$SECRET" "-" AW_META_BIN="$FAKE_BIN/aw-meta" META_MODE=2
+# shellcheck disable=SC2086
+run_case "session-id-report: unparsable stdin" session-id-report.sh "$SECRET" "session-id-report input-unparsable" $LANE
+# shellcheck disable=SC2086
+run_case "session-id-report: empty stdin" session-id-report.sh "" "session-id-report empty-input" $LANE
+# shellcheck disable=SC2086
+run_case "session-id-report: no session_id" session-id-report.sh '{"hook_event_name":"SessionStart"}' "session-id-report field-missing" $LANE
+# shellcheck disable=SC2086
+run_case "session-id-report: an id that is not an id" session-id-report.sh '{"session_id":"../x y"}' "session-id-report id-invalid" $LANE
+# shellcheck disable=SC2086
+run_case "session-id-report: a lane name that is a path" session-id-report.sh '{"session_id":"abc-123"}' "session-id-report lane-name-invalid" AW_META_TEAM=t1 AW_META_LANE=.. AW_META_LANE_PID=$$
+# shellcheck disable=SC2086
+run_case "session-id-report: a recorded id logs nothing" session-id-report.sh '{"session_id":"abc-123"}' "-" $LANE
+run_case "session-id-report: outside a lane logs nothing" session-id-report.sh "$SECRET" "-"
 
 # --- Bash safety hooks (PreToolUse Bash) ---
 NO_CAT="$(path_without cat)"
@@ -295,6 +324,14 @@ hostile "done-gate: brief judge fails, then RF-2 denies" done-gate.sh "{\"sessio
 hostile "meta-stop-gate: unreadable payload" meta-stop-gate.sh "$SECRET" AW_META_BIN="$FAKE_BIN/aw-meta"
 hostile "meta-stop-gate: aw-meta errors" meta-stop-gate.sh "$META_STOP" AW_META_BIN="$FAKE_BIN/aw-meta" META_MODE=2
 hostile "meta-outbox: aw-meta errors" meta-outbox.sh "$META_SEND" AW_META_BIN="$FAKE_BIN/aw-meta" META_MODE=2
+# shellcheck disable=SC2086
+hostile "meta-lane-gate: aw-meta errors at stop" meta-lane-gate.sh "$META_LANE_STOP" $LANE AW_META_BIN="$FAKE_BIN/aw-meta" META_MODE=2
+# shellcheck disable=SC2086
+hostile "meta-lane-gate: unreadable payload" meta-lane-gate.sh "$SECRET" $LANE AW_META_BIN="$FAKE_BIN/aw-meta"
+# shellcheck disable=SC2086
+hostile "session-id-report: unreadable payload" session-id-report.sh "$SECRET" $LANE
+# shellcheck disable=SC2086
+hostile "session-id-report: a reported id" session-id-report.sh '{"session_id":"abc-123"}' $LANE
 hostile "outbox-flush: outbox unreadable" outbox-flush.sh '{"session_id":"s1","teammate_name":"t"}' AW_OUTBOX_DIR="$OUTBOX2"
 for h in block-destructive block-push-main detect-secrets; do
   hostile "$h: Bash call without a command" "$h.sh" '{"tool_name":"Bash","tool_input":{"cmd":"x"}}'

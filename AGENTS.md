@@ -51,7 +51,7 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 agentic-workflow/
 ├── skills/        # 52 provider-neutral skills (linked into each provider's skills dir)
 ├── bootstrap/     # /bootstrap skill — repo documentation generator
-├── config/        # Settings, MCP config, statusline, safety hooks, sindri-nudge SessionStart hook, meta Stop/outbox hooks (+ hooks/adapters/ per provider)
+├── config/        # Settings, MCP config, statusline, safety hooks, sindri-nudge SessionStart hook, meta Stop/outbox hooks, non-Claude lane hooks (meta-lane-gate, session-id-report) (+ hooks/adapters/ per provider)
 ├── providers/     # Per-provider installers (claude, codex, cursor)
 ├── scorer/        # Daily cost/involvement report from provider session transcripts
 ├── judge/         # Cheap-agent-harness judge CLI (decisions, config, health)
@@ -111,7 +111,7 @@ dotnet run --project src/BugFix/Aw.BugFix.Host -- <command> --state <dir> [optio
 bash src/BugFix/aot-smoke/run.sh         # bugfix-state under NativeAOT: publish (on a copy), run a bug fix in a temp repo, compare with expected.txt
 dotnet run --project src/Sindri/Aw.Sindri.Host -- [--headless | serve | status [--follow] [--json] | stop | profile validate|approve | views rebuild [--no-start] | queue [--json] | items [--state S] [--repo R] [--json] | item add <title> [--repo R] | item close <item> [--cancelled] [--version N] | ledger [--after N] [--item X] [--type T] [--max N] [--json] | doctor]   # the C# Sindri app (S1 app shell, docs/csharp/sindri.md; `views rebuild` replays the ledger into views.db, the fix when the projector stalls); state in AW_SINDRI_HOME (default $AW_STATE_DIR/sindri-app); exit 0 ok, 1 attention, 2 error
 dotnet run --project src/Sindri/Aw.Sindri.Host -- recipe validate <file> [--json]   # check a workflow recipe in-process, no serve needed (docs/csharp/sindri-workflow.md); exit 0 pass, 1 fail, 2 usage or tool error
-dotnet run --project src/Sindri/Aw.Sindri.Host -- recipe eval <file> [--json] | --scaffold <file>   # run a recipe's eval cases over the pure engine (docs/csharp/sindri-workflow.md); exit 0 pass, 1 a case fails, 2 usage or tool error; --record needs the server (P4)
+dotnet run --project src/Sindri/Aw.Sindri.Host -- recipe eval <file> [--json] | --scaffold <file> [--out <dir>]   # run a recipe's eval cases over the pure engine; --scaffold --out writes one case per path of a route recipe (docs/csharp/sindri-workflow.md); exit 0 pass, 1 a case fails, 2 usage or tool error; --record needs the server (P4)
 dotnet run --project src/Sindri/Aw.Sindri.Host -- workflow start|status|list|events|answer|command|cancel|complete …   # the recipe instances: all ten workflow verbs (these eight and takeover|handback on the next line) go through the running control plane (reads never start it: exit 1 SND-API-001 when it is down); only `recipe validate` and `recipe eval` run in process (docs/csharp/sindri-workflow.md; `sindri help` has each line); exit 0 ok, 1 not running, 2 invalid, refused or error
 dotnet run --project src/Sindri/Aw.Sindri.Host -- workflow takeover|handback <address> [--nonce <n>] [--json]   # P5: take an instance over (its timer pauses) or hand it back (its timer resumes); `sindri handback <item-or-address>` is the short form; exit 0 applied, 1 not running, 2 invalid, refused or error (docs/csharp/sindri-workflow.md)
 bash src/Sindri/aot-smoke/run.sh         # sindri, framework-dependent (the Temporal SDK has no NativeAOT; needs scripts/binaries-lock.sh fetch temporal): publish (on a copy), drive start, a refused second serve, the approve preview and its non-terminal refusal, a session's approve and stop refused (SND-AUTH-002), the human's typed approval and stop under a pty, views rebuild refused to a session and requested by the human, status (its views and health lines, and --json's apiVersion), /sindri/mcp's initialize and tools/list, stop and doctor (on a scratch HOME) in a temp home, then recipe validate on the shipped recipes and an invalid fixture (each call bounded to 30 s), compare with expected.txt
@@ -148,7 +148,7 @@ scripts/check-env-example.sh            # Every env var the code reads is in .en
 
 # Bash tests (CI: scripts/ci/bash-tests.sh runs every tracked suite, independent ones in parallel and
 # its SERIAL list, the timing-sensitive ones, one at a time afterwards; --serial prints them with reasons)
-bash scripts/ci/bash-tests.sh
+bash scripts/ci/bash-tests.sh   # each suite runs with its own fresh temp HOME and AW_STATE_DIR (tools keep working through GIT_CONFIG_GLOBAL, DOTNET_ROOT, NUGET_PACKAGES, npm_config_cache)
 bash providers/tests/install.test.sh
 bash scripts/tests/sync-rules.test.sh
 bash scripts/tests/check-deps.test.sh
@@ -175,6 +175,8 @@ bash scripts/tests/ci-changed-areas.test.sh
 bash scripts/tests/ci-bash-tests.test.sh
 bash scripts/tests/ci-lane-budgets.test.sh
 bash scripts/tests/ci-no-any.test.sh
+bash scripts/tests/tmux-isolation.test.sh   # scripts/ci/tmux-isolation.sh: no test runs a tmux outside scripts/test-tmux.sh, -L, -S or AW_TMUX
+bash scripts/tests/test-tmux.test.sh
 bash scripts/tests/sindri-smoke-normalize.test.sh
 bash scripts/tests/meta-launch.test.sh
 bash scripts/tests/install-meta.test.sh

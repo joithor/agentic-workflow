@@ -51,8 +51,10 @@ the `aw:*` entries.
 | `sindri-nudge.sh` | SessionStart (`install-sindri.sh --hook-only`) | SessionStart (`--provider codex`) | `sessionStart` → `additional_context` (`--provider cursor`) |
 | `context-guard.sh` | PostToolUse `.*` | PostToolUse `.*`: reads the rollout's latest `token_count.last_token_usage.input_tokens` | **unmapped**: Cursor transcripts carry no token usage, and no hook reports context size per tool call (`preCompact` fires only at compaction) |
 | `done-gate.sh` | Stop | Stop: reads `last_assistant_message`, exit 2 → continuation reason on stderr | `stop`: last assistant text from the transcript; exit 2 → `followup_message`; `stop_hook_active = loop_count > 0` |
-| `meta-stop-gate.sh` | Stop (only for the session `aw-meta role-set` registered) | **unmapped**: Codex has no cross-session messages to owe replies for | **unmapped**: no cross-session messages |
+| `meta-stop-gate.sh` | Stop (only for the session `aw-meta role-set` registered) | **unmapped**: Codex has no cross-session messages to owe replies for (a Codex lane uses `meta-lane-gate.sh`) | **unmapped**: no cross-session messages (a Cursor lane uses `meta-lane-gate.sh`) |
 | `meta-outbox.sh` | PostToolUse `SendMessage` | **unmapped**: as above | **unmapped**: as above |
+| `meta-lane-gate.sh` | **unmapped**: a Claude lane has `SendMessage` | UserPromptSubmit (plain stdout = developer context: the lane's inbox) and Stop (`last_assistant_message`; exit 2 → the stop is blocked, reason on stderr), installed by `scripts/install-meta.sh --provider codex`; only in a lane (`AW_META_TEAM` and `AW_META_LANE`), else exit 0 | `sessionStart` and `postToolUse` → `additional_context` (the inbox), `stop` → `followup_message` while a reply is owed (capped by `loop_limit`, default 5; the adapter reads the last assistant text from the transcript), `--provider cursor`; the same pass-through |
+| `session-id-report.sh` | **unmapped**: Claude lanes choose their id | SessionStart: writes `session_id` to `lane-sessions/<lane>` (lane) or `$AW_SINDRI_HOME/launches/<id>.session-id` (`AW_SINDRI_LAUNCH`), `--provider codex` | `sessionStart` (`conversation_id` is mapped to `session_id`), `--provider cursor`; exits 0 at once outside a lane or a Sindri launch |
 | `done-gate-annotate.sh` | PostToolUse `Agent` | **unmapped**: `spawn_agent` returns at once with an agent id. The result comes later through `wait_agent`, with no link back to the brief | **unmapped**: `subagentStop` has no dispatch id to look up the brief, and it can't annotate the parent's tool result |
 | `scope-gate.sh` | PreToolUse `Agent` | PreToolUse `^(Agent\|spawn_agent)$`: `message`→`prompt`, `agent_type`→`subagent_type`, `task_name`→`name`/`description`, `turn_id`→`prompt_id` | `subagentStart` (can block): `task`→`prompt`, `tool_call_id`→`tool_use_id` |
 | `subagent-start-map.sh` | SubagentStart | SubagentStart (`turn_id`→`prompt_id`, the same value scope-gate saved) | not needed: `subagentStart` gives scope-gate the dispatch's `tool_call_id` directly |
@@ -71,6 +73,7 @@ Canonical-script changes needed for the mapping (Claude Code behavior is unchang
 - `external-write-guard.sh` also matches `mcp__linear__…` / `mcp__slack__slack_send_…`. These are
   the server names Codex and Cursor users register.
 - `probe-log.sh` takes an optional provider argument and writes to `probe/<provider>/`.
+- `meta-lane-gate.sh` and `session-id-report.sh` are new canonical hooks with no Claude registration: they exist for Codex and Cursor lanes and read only fields every adapter already supplies (`hook_event_name`, `session_id`, `stop_hook_active`, `last_assistant_message`).
 
 ## Protocol facts the adapters rely on (verified 2026-09-28)
 

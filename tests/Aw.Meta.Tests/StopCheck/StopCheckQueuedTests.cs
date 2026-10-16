@@ -23,10 +23,10 @@ public sealed class StopCheckQueuedTests
     public async Task A_queued_message_blocks_the_stop_until_a_send_to_its_sender_closes_it()
     {
         await _world.Ready();
-        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.QueuedLine("m-2", "sindri-api", "ready #7"));
+        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.QueuedLine("m-2", "t1-api", "ready #7 079c2541"));
 
         var blocked = await Check();
-        _ = await _world.Messages.RecordOutbound(A.Sent("sindri-api", "ack", 30), CancellationToken.None);
+        _ = await _world.Messages.RecordOutbound(A.Sent("t1-api", "ack", 30), CancellationToken.None);
         var released = await Check();
 
         Assert.Equal((true, ObligationKind.Reply, "m-2"), (blocked.Blocked, blocked.Open.Single().Kind, blocked.Open.Single().Key));
@@ -37,8 +37,8 @@ public sealed class StopCheckQueuedTests
     public async Task A_reply_sent_in_the_same_turn_before_the_message_was_synced_still_closes_it()
     {
         await _world.Ready();
-        _ = await _world.Messages.RecordOutbound(A.Sent("sindri-api", "on it", 30), CancellationToken.None);   // after the message's 04:05, before any sync
-        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.QueuedLine("m-2", "sindri-api", "ready #7"));
+        _ = await _world.Messages.RecordOutbound(A.Sent("t1-api", "on it", 30), CancellationToken.None);   // after the message's 04:05, before any sync
+        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.QueuedLine("m-2", "t1-api", "ready #7 079c2541"));
 
         var response = await Check();
 
@@ -50,8 +50,8 @@ public sealed class StopCheckQueuedTests
     public async Task A_send_from_before_the_message_does_not_close_it()
     {
         await _world.Ready();
-        _ = await _world.Messages.RecordOutbound(A.Sent("sindri-api", "earlier", 1), CancellationToken.None);
-        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.QueuedLine("m-2", "sindri-api", "ready #7"));
+        _ = await _world.Messages.RecordOutbound(A.Sent("t1-api", "earlier", 1), CancellationToken.None);
+        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.QueuedLine("m-2", "t1-api", "ready #7 079c2541"));
 
         Assert.True((await Check()).Blocked);
     }
@@ -60,7 +60,7 @@ public sealed class StopCheckQueuedTests
     public async Task A_queued_message_with_only_a_delivery_id_is_keyed_by_it()
     {
         await _world.Ready();
-        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.QueuedLine(string.Empty, "sindri-api", "ready", deliveryId: "d-9"));
+        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.QueuedLine(string.Empty, "t1-api", "ready", deliveryId: "d-9"));
 
         var response = await Check();
 

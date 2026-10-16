@@ -1,5 +1,7 @@
+using Aw.Kernel.Json;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Features.Blocks.Effect;
 using Aw.Sindri.Features.Blocks.Gate;
 using Aw.Sindri.Host;
@@ -21,7 +23,10 @@ public sealed class ShippedBlocksTests
         var catalog = provider.GetRequiredService<BlockCatalog>();
 
         Assert.Equal(
-            ["effect.claim.ref", "effect.notify.desk", "gate.budget.available", "gate.route.startable", "step.checks", "step.produce", "step.verify"],
+            [
+                "effect.claim.ref", "effect.notify.desk", "gate.budget.available", "gate.route.startable", "step.checks", "step.desk.choose",
+                "step.judge.choose", "step.produce", "step.verify",
+            ],
             catalog.Blocks.Select(b => b.Id.Value).Order(StringComparer.Ordinal),
             StringComparer.Ordinal);
         Assert.Equal(["claim.created", "item.routed", "notify.delivered"], catalog.Events.Select(e => e.Kind.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
@@ -73,6 +78,66 @@ public sealed class ShippedBlocksTests
         Assert.Equal(route, e.Route);
         Assert.Equal(outcomes, e.Outcomes.Select(o => o.Value), StringComparer.Ordinal);
         Assert.Equal(facts, e.Facts.Select(f => f.Value), StringComparer.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("effect.claim.ref", "sha256:2a44426d862b3721014969dfcc03a7851f56551f2b9bec9f340e500353a9abd3")]
+    [InlineData("effect.notify.desk", "sha256:c3cb05f7d73c6c539b05acb87c15185c4a9b81d12fb27626b59f12b94e157b07")]
+    [InlineData("gate.budget.available", "sha256:2e11428fb8765eb8e43f62db6dce8dd654cddd1b6685e6c61080037174408135")]
+    [InlineData("gate.route.startable", "sha256:00a724a0231157eba73e8b90950bde6e40fb9e6f17f03f955d3896e6aa2fadf0")]
+    [InlineData("step.checks", "sha256:8d6a4302bc9aa7ab780620c014cbc2954c3b9e4cef153be63bb1a2eeb72c2fe8")]
+    [InlineData("step.produce", "sha256:b86ef5f788d73f55217a97d0158f1caea49b09d19f4878858acd040434505370")]
+    [InlineData("step.verify", "sha256:076936b6ec84ebf12669ca18a2525adb4c3922e86ed4c6cfc16c975e55944d3d")]
+    public void Every_shipped_descriptor_hashes_as_before_the_decision_tree_fields(string id, string hash) =>
+        Assert.Equal(hash, PinRules.Hash(FixtureCatalog.Shipped().Find(BlockId.From(id))!, SliceHarness.Json).Value);   // why: no approved recipe may drift-park because a nullable field was added
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_choice_steps_are_desk_capable_descriptors_without_runtimes()
+    {
+        await using var provider = Composed();
+        await using var scope = provider.CreateAsyncScope();
+        var catalog = provider.GetRequiredService<BlockCatalog>();
+
+        foreach (var id in new[] { "step.judge.choose", "step.desk.choose" })
+        {
+            var step = catalog.Find(BlockId.From(id))!;   // why: the catalog test pins both ids
+            Assert.True(step.DeskCapable);
+            Assert.Equal(BlockKind.Step, step.Kind);
+            var decision = Assert.Single(step.Outputs);
+            Assert.Equal(("fact:decision", true, true), (decision.Fact.Value, decision.Every, decision.EngineFilled));
+            Assert.Empty(decision.RequiredOn);
+        }
+
+        Assert.Empty(scope.ServiceProvider.GetServices<IStep>());   // no runtime until the block runtime (DT-J)
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Every_outcomes_from_and_inputs_from_names_a_list_parameter()
+    {
+        var from = FixtureCatalog.WithFixtures().Blocks.Where(b => b.OutcomesFrom is not null || b.InputsFrom is not null).ToList();
+
+        Assert.Equal(["step.desk.choose", "step.judge.choose"], from.Select(b => b.Id.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        foreach (var block in from)
+        {
+            foreach (var named in new[] { block.OutcomesFrom, block.InputsFrom }.OfType<string>())
+            {
+                // "choices", or "<stateParam>.<listParam>" for a twin: the first names a text parameter holding a state, the second a list parameter of that state's Step
+                var parameter = named.Contains('.', StringComparison.Ordinal) ? named[..named.IndexOf('.', StringComparison.Ordinal)] : named;
+                var type = Assert.Single(block.Parameters, p => p.Name == parameter).Type;
+                Assert.Equal(named.Contains('.', StringComparison.Ordinal) ? ParameterType.Text : ParameterType.List, type);
+            }
+        }
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_descriptor_without_the_new_fields_serializes_without_them()
+    {
+        var json = System.Text.Encoding.UTF8.GetString(AwJson.Serialize(FixtureCatalog.Shipped().Find(BlockId.From("step.produce")), SliceHarness.Json));
+
+        Assert.DoesNotContain("outcomesFrom", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("inputsFrom", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("every", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("engineFilled", json, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact, Trait("Lane", "unit")]

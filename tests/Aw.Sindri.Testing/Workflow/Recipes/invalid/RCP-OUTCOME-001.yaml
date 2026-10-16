@@ -19,3 +19,4 @@ states:
 transitions:
   - { from: produce, to: checks, on: step.completed, when: { outcome: done }, produces: [fact:output] }
   - { from: checks, to: done, on: step.completed, when: { outcome: passed } }
+inputs: [{ key: fact:item, type: item, kind: item }]

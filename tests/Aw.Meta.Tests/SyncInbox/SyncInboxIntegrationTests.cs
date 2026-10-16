@@ -22,7 +22,7 @@ public sealed class SyncInboxIntegrationTests : IDisposable
     public async Task A_transcript_on_disk_is_synced_into_meta_db_once_even_across_processes_restarts()
     {
         var transcript = Path.Combine(_dir.Path, "session.jsonl");
-        var peer = """{"type":"user","origin":{"kind":"peer","from":"uds:/s.sock","msg_id":"m1","name":"sindri-api","body":"ready #7"},"timestamp":"2026-10-15T04:05:00.000Z"}""";
+        var peer = """{"type":"user","origin":{"kind":"peer","from":"uds:/s.sock","msg_id":"m1","name":"t1-api","body":"ready #7 079c2541"},"timestamp":"2026-10-15T04:05:00.000Z"}""";
         await File.WriteAllTextAsync(transcript, "{\"type\":\"assistant\"}\n" + peer + "\n" + peer[..30], TestContext.Current.CancellationToken);
         var request = new SyncInboxRequest(SessionId.From("s-1"), transcript);
 

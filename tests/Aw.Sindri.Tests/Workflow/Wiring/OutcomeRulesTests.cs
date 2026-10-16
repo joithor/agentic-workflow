@@ -15,8 +15,44 @@ public sealed class OutcomeRulesTests
             [Go("produce", "done", when: Outcome("done")), Go("produce", "done", when: Outcome("finished"))], id: "workflow.when-outcome");
 
         Assert.Equal(
-            ["RCP-WHEN-001: transition from 'produce' tests outcome 'finished', which step 'step.produce' doesn't report at RCP-WHEN-001.yaml:16:60 (transitions[1].when.outcome); test one of its outcomes: done"],
+            ["RCP-WHEN-001: transition from 'produce' tests outcome 'finished', which step 'step.produce' doesn't report (outcomes here: done) at RCP-WHEN-001.yaml:16:60 (transitions[1].when.outcome); test one of its outcomes: done"],
             CheckWiring(recipe, new Located("RCP-WHEN-001.yaml", [("transitions[1].when.outcome", 16, 60)])).Lines());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_route_without_an_uncertain_transition_is_RCP_OUTCOME_001()
+    {
+        var lines = Choice.RouteRecipes.Lines(Choice.RouteRecipes.Fixture("RCP-OUTCOME-001-uncertain"));
+
+        var line = Assert.Single(lines);
+        Assert.StartsWith("RCP-OUTCOME-001: state 'route' has no transition for outcome 'uncertain' of step 'step.judge.choose' at ", line, StringComparison.Ordinal);
+        Assert.EndsWith("add a transition from 'route' on step.completed with when: { outcome: uncertain }", line, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void RCP_WHEN_001_lists_the_outcomes_available_there()
+    {
+        var yaml = Choice.RouteRecipes.Edit(Choice.RouteRecipes.Compact, "when: { outcome: ui }", "when: { outcome: sideways }");
+
+        var lines = Choice.RouteRecipes.Lines(yaml);
+
+        Assert.Contains(lines, l => l.StartsWith("RCP-WHEN-001: transition from 'route' tests outcome 'sideways', which step 'step.judge.choose' doesn't report (outcomes here: ui, api, uncertain) at ", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Branch_transitions_on_each_choice_handle_every_outcome() =>
+        Assert.Empty(Choice.RouteRecipes.Lines(ShippedRecipes.Read(Choice.RouteRecipes.Dev)));
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("RCP-CHOICE-002")]
+    [InlineData("RCP-CHOICE-002-mapping")]
+    [InlineData("RCP-CHOICE-003")]
+    public void Bad_choices_give_no_outcome_or_when_findings(string fixture)
+    {
+        var lines = Choice.RouteRecipes.Lines(Choice.RouteRecipes.Fixture(fixture));
+
+        Assert.NotEmpty(lines);
+        Assert.DoesNotContain(lines, l => l.StartsWith("RCP-WHEN-", StringComparison.Ordinal) || l.StartsWith("RCP-OUTCOME-", StringComparison.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -29,7 +65,7 @@ public sealed class OutcomeRulesTests
             ]);
 
         Assert.Equal(
-            ["RCP-WHEN-001: transition from 'triaged' tests outcome 'routed', which event 'item.routed' doesn't report at r.yaml:1:1 (transitions[0].when.any[1].outcome); test one of its outcomes: startable, notStartable"],
+            ["RCP-WHEN-001: transition from 'triaged' tests outcome 'routed', which event 'item.routed' doesn't report (outcomes here: startable, notStartable) at r.yaml:1:1 (transitions[0].when.any[1].outcome); test one of its outcomes: startable, notStartable"],
             CheckWiring(recipe).Lines());
     }
 
@@ -42,10 +78,10 @@ public sealed class OutcomeRulesTests
                 Go("running", "dropped", "wait.satisfied", AnyOf(Outcome("cancelled"), Outcome("escalated"))),
             ]);
         var children = new InMemoryChildRecipes().With(Child(Of("produce", [("produce", Active("step.produce")), ("done", Terminal())],
-            [Go("produce", "done", when: Outcome("done"))], id: "workflow.step")));
+            [Go("produce", "done", when: Outcome("done"))], inputs: [], id: "workflow.step")));
 
         Assert.Equal(
-            ["RCP-WHEN-001: transition from 'running' tests outcome 'escalated', which child 'workflow.step' doesn't report at r.yaml:1:1 (transitions[1].when.any[1].outcome); test one of its outcomes: resolved, cancelled"],
+            ["RCP-WHEN-001: transition from 'running' tests outcome 'escalated', which child 'workflow.step' doesn't report (outcomes here: resolved, cancelled) at r.yaml:1:1 (transitions[1].when.any[1].outcome); test one of its outcomes: resolved, cancelled"],
             CheckWiring(recipe, Located.Nowhere with { Children = children }).Lines());
     }
 
@@ -85,7 +121,7 @@ public sealed class OutcomeRulesTests
         Assert.Equal(
             [
                 "RCP-OUTCOME-001: state 'asked' has no transition for outcome 'answered' of answer 'go' at r.yaml:1:1 (states.asked); add a transition from 'asked' on wait.satisfied with when: { outcome: answered }",
-                "RCP-WHEN-001: transition from 'asked' tests outcome 'approved', which answer 'go' doesn't report at r.yaml:1:1 (transitions[0].when.outcome); test one of its outcomes: answered",
+                "RCP-WHEN-001: transition from 'asked' tests outcome 'approved', which answer 'go' doesn't report (outcomes here: answered) at r.yaml:1:1 (transitions[0].when.outcome); test one of its outcomes: answered",
             ],
             CheckWiring(recipe).Lines());
     }

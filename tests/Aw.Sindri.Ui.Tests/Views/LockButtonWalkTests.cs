@@ -16,6 +16,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// popover: no source draws the glyph by hand (XAML or C#), and no realized view of the library draws it outside one.
 /// </summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class LockButtonWalkTests
 {
     private const char Lock = '⌂';

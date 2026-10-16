@@ -55,6 +55,9 @@ public sealed class FakeContextEngine : IContextEngine
         ValueTask.FromResult<Result<RefreshReport>>(Down());
 
     /// <summary>No map: every map call answers SND-CONTEXT-030.</summary>
+    public ValueTask<Result<SyncReport>> Sync(string? source, ContextScope scope, CancellationToken cancellationToken) =>
+        ValueTask.FromResult<Result<SyncReport>>(Down());
+
     public ValueTask<Result<MapFilePreview>> PreviewMap(string path, ContextScope scope, CancellationToken cancellationToken) => NoMap<MapFilePreview>();
 
     /// <inheritdoc/>

@@ -27,4 +27,14 @@ public sealed class ContextErrorsTests
             [ContextErrors.LabelingUnavailable, ContextErrors.ReviewFileNoMatch, ContextErrors.NoDraftMap, ContextErrors.RepoOutsideScope, ContextErrors.PromoteRefused, ContextErrors.ReviewTargetStale];
         Assert.All(attention, e => Assert.Contains(e.Code, ContextErrors.Attention));
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_S5B_sync_codes_are_056_to_059_and_a_running_or_unknown_sync_is_attention()
+    {
+        Assert.Equal(["SND-CONTEXT-056", "SND-CONTEXT-057", "SND-CONTEXT-058", "SND-CONTEXT-059"],
+            new[] { ContextErrors.SyncRunning, ContextErrors.ModelAnswerRefused, ContextErrors.SyncSourceUnknown, ContextErrors.SyncCapped }.Select(e => e.Code), StringComparer.Ordinal);
+        Assert.Equal((ErrorKind.Conflict, ErrorKind.NotFound), (ContextErrors.SyncRunning.Kind, ContextErrors.SyncSourceUnknown.Kind));
+        Assert.All([ContextErrors.SyncRunning, ContextErrors.SyncSourceUnknown], e => Assert.Contains(e.Code, ContextErrors.Attention));
+        Assert.All([ContextErrors.ModelAnswerRefused, ContextErrors.SyncCapped], e => Assert.DoesNotContain(e.Code, ContextErrors.Attention));
+    }
 }

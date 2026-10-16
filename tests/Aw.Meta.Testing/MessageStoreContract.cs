@@ -37,7 +37,7 @@ public abstract class MessageStoreContract
     public async Task Recording_dedupes_on_the_message_id_and_moves_the_offset()
     {
         var store = await Create(_none);
-        var first = A.Inbox("m1", body: "ready #7", minute: 1);
+        var first = A.Inbox("m1", body: "ready #7 079c2541", minute: 1);
         var second = A.Inbox("m2", minute: 2);
 
         var added = await store.RecordInbound("/t/a.jsonl", 100, [first, second], _none);
@@ -56,7 +56,7 @@ public abstract class MessageStoreContract
     public async Task Messages_read_back_oldest_first_with_their_classification()
     {
         var store = await Create(_none);
-        var late = A.Inbox("late", name: "api-1", body: "ready #190", minute: 9);
+        var late = A.Inbox("late", name: "api-1", body: "ready #190 079c2541", minute: 9);
         var early = A.Inbox("early", name: "ui-1", body: "ui lane here", minute: 1);
         _ = await store.RecordInbound("/t/a.jsonl", 1, [late, early], _none);
 
@@ -92,8 +92,8 @@ public abstract class MessageStoreContract
     public async Task Sent_messages_read_back_in_order()
     {
         var store = await Create(_none);
-        var first = A.Sent("sindri-api", "ack", 1);
-        var second = A.Sent("sindri-ui", "LANE MAP v2", 2) with { Id = MessageId.From("out-1") };
+        var first = A.Sent("t1-api", "ack", 1);
+        var second = A.Sent("t1-ui", "LANE MAP v2", 2) with { Id = MessageId.From("out-1") };
 
         _ = await store.RecordOutbound(first, _none);
         _ = await store.RecordOutbound(second, _none);
@@ -109,7 +109,7 @@ public abstract class MessageStoreContract
     {
         var store = await Create(_none);
         var none = await store.Role(_none);
-        _ = await store.SetRole(new MetaRole(SessionId.From("s-1"), "sindri-meta"), _none);
+        _ = await store.SetRole(new MetaRole(SessionId.From("s-1"), "t1-meta"), _none);
         _ = await store.SetRole(new MetaRole(SessionId.From("s-2"), string.Empty), _none);
         var role = await store.Role(_none);
 

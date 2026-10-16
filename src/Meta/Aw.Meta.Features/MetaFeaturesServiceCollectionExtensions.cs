@@ -10,13 +10,18 @@ using Aw.Meta.Features.Health;
 using Aw.Meta.Features.Inbox;
 using Aw.Meta.Features.InboxDefer;
 using Aw.Meta.Features.InboxDismiss;
+using Aw.Meta.Features.LaneInbox;
+using Aw.Meta.Features.LaneReply;
 using Aw.Meta.Features.Lanes;
+using Aw.Meta.Features.LaneSend;
+using Aw.Meta.Features.LaneStopCheck;
 using Aw.Meta.Features.LogAppend;
 using Aw.Meta.Features.MergeRun;
 using Aw.Meta.Features.OutboxRecord;
 using Aw.Meta.Features.Owner;
 using Aw.Meta.Features.OwnerAnswer;
 using Aw.Meta.Features.OwnerAsk;
+using Aw.Meta.Features.QueueDrop;
 using Aw.Meta.Features.Roles;
 using Aw.Meta.Features.Status;
 using Aw.Meta.Features.StopCheck;
@@ -42,6 +47,7 @@ public static class MetaFeaturesServiceCollectionExtensions
         .AddOwnerSlices()
         .AddReportSlices()
         .AddGateSlices()
+        .AddLaneSlices()
         .AddHostSlices()
         .AddWorktreeSlices();
 
@@ -79,6 +85,18 @@ public static class MetaFeaturesServiceCollectionExtensions
         .AddScoped<RefreshLanesService>()
         .Plain<RefreshLanesService, RefreshLanesRequest, LanesResponse>();
 
+    private static IServiceCollection AddLaneSlices(this IServiceCollection services) => services
+        .AddScoped<LaneSendService>()
+        .AddScoped<IValidator<LaneSendRequest>, LaneSendValidator>()
+        .Validated<LaneSendService, LaneSendRequest, LaneSendResponse>()
+        .AddScoped<LaneInboxService>()
+        .Plain<LaneInboxService, LaneInboxRequest, LaneInboxResponse>()
+        .AddScoped<LaneStopCheckService>()
+        .AddScoped<IValidator<LaneStopCheckRequest>, LaneStopCheckValidator>()
+        .Validated<LaneStopCheckService, LaneStopCheckRequest, LaneStopCheckResponse>()
+        .AddScoped<LaneReplyService>()
+        .Plain<LaneReplyService, LaneReplyRequest, LaneReplyResponse>();
+
     private static IServiceCollection AddOwnerSlices(this IServiceCollection services) => services
         .AddScoped<ListOwnerService>()
         .Plain<ListOwnerService, ListOwnerRequest, ListOwnerResponse>()
@@ -93,6 +111,9 @@ public static class MetaFeaturesServiceCollectionExtensions
         .AddScoped<AppendLogService>()
         .AddScoped<IValidator<AppendLogRequest>, AppendLogValidator>()
         .Validated<AppendLogService, AppendLogRequest, AppendLogResponse>()
+        .AddScoped<QueueDropService>()
+        .AddScoped<IValidator<QueueDropRequest>, QueueDropValidator>()
+        .Validated<QueueDropService, QueueDropRequest, QueueDropResponse>()
         .AddScoped<StatusReader>()
         .AddScoped<StatusService>()
         .Plain<StatusService, StatusRequest, StatusResponse>();

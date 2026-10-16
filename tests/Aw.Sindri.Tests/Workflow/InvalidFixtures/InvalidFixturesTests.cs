@@ -21,17 +21,28 @@ public sealed class InvalidFixturesTests
         "RCP-TRIG-001", "RCP-WHEN-002", "RCP-THRESH-001", "RCP-THRESH-002", "RCP-NEXT-001", "RCP-NEXT-002", "RCP-CHILD-002",
         "RCP-CHILD-003", "RCP-VERSION-001", "RCP-VERSION-002", "RCP-TRIG-002", "RCP-TIME-002", "RCP-RES-001",
         "RCP-URG-001", "RCP-OUT-001", "RCP-OUT-002", "RCP-OUT-003", "RCP-TYPE-001", "RCP-TYPE-002", "RCP-TYPE-003",
+        "RCP-INPUT-001", "RCP-INPUT-002", "RCP-NAME-002", "RCP-NAME-003", "RCP-NAME-004", "RCP-NAME-005", "RCP-NAME-006",
     ];
+
+    /// <summary>The decision-tree rules (DT spec §3.2, §8.1).</summary>
+    private static readonly string[] _decisionTree =
+    [
+        "RCP-CHOICE-001", "RCP-CHOICE-002", "RCP-CHOICE-003", "RCP-CHOICE-004", "RCP-CHOICE-005", "RCP-CHOICE-006",
+    ];
+
+    /// <summary>Fixtures that are a second fault of a rule, named after it: RCP-CHOICE-002's unquoted entry, RCP-CHOICE-005's computed twin source, and a route without an uncertain transition.</summary>
+    private static readonly string[] _variants = ["RCP-CHOICE-002-mapping", "RCP-CHOICE-005-computed", "RCP-OUTCOME-001-uncertain", "RCP-SCHEMA-002-camel"];
 
     public static TheoryData<string> Rules => [.. InvalidFixtureCases.All.Keys.Order(StringComparer.Ordinal)];
 
     [Theory, Trait("Lane", "unit")]
     [MemberData(nameof(Rules))]
-    public async Task Each_invalid_fixture_reports_its_rule_once_at_its_position_and_nothing_unlisted(string rule)
+    public async Task Each_invalid_fixture_reports_its_rule_once_at_its_position_and_nothing_unlisted(string fixture)
     {
-        var expected = InvalidFixtureCases.All[rule];
+        var expected = InvalidFixtureCases.All[fixture];
+        var rule = string.Join('-', fixture.Split('-').Take(3));
 
-        var lines = await InvalidFixtureRun.Lines(rule, expected.Setup, TestContext.Current.CancellationToken);
+        var lines = await InvalidFixtureRun.Lines(fixture, expected.Setup, TestContext.Current.CancellationToken);
 
         var own = Assert.Single(lines, l => l.StartsWith(rule + ": ", StringComparison.Ordinal));
         Assert.Equal(expected.Own, own);
@@ -46,7 +57,7 @@ public sealed class InvalidFixturesTests
             .Select(n => Path.GetFileNameWithoutExtension(n))
             .Order(StringComparer.Ordinal);
 
-        Assert.Equal(_section91.Order(StringComparer.Ordinal), fixtures, StringComparer.Ordinal);
+        Assert.Equal(_section91.Concat(_decisionTree).Concat(_variants).Order(StringComparer.Ordinal), fixtures, StringComparer.Ordinal);
         Assert.Equal(fixtures, InvalidFixtureCases.All.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 

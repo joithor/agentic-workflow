@@ -157,6 +157,7 @@ public sealed class StartAndEngineTriggerTests
             "schema: 1",
             $"id: {id}",
             "version: 1",
+            "inputs: [{ key: fact:item, type: item, kind: item }]",
             "initial: running",
             "states:",
             "  running: { kind: wait, timeout: { after: 14d, then: park },",

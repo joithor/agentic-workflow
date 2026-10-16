@@ -31,7 +31,7 @@ public sealed class OutboxRecordTests
     {
         await _world.Ready();
 
-        var response = await Send("sindri-api", "hi", session: "s-other");
+        var response = await Send("t1-api", "hi", session: "s-other");
 
         Assert.False(response.Recorded);
         Assert.Empty((await _world.Messages.Sent(CancellationToken.None)).Value);
@@ -41,9 +41,9 @@ public sealed class OutboxRecordTests
     public async Task After_clear_a_send_from_the_new_session_id_under_the_registered_name_is_recorded()
     {
         await _world.Ready();
-        _world.Sessions.Add(A.Live("sindri-meta", "s-after-clear"));
+        _world.Sessions.Add(A.Live("t1-meta", "s-after-clear"));
 
-        var response = await Send("sindri-api", "hi", session: "s-after-clear");
+        var response = await Send("t1-api", "hi", session: "s-after-clear");
 
         Assert.True(response.Recorded);
         _ = Assert.Single((await _world.Messages.Sent(CancellationToken.None)).Value);
@@ -54,15 +54,15 @@ public sealed class OutboxRecordTests
     public async Task A_send_to_the_peer_closes_its_reply_obligation_and_names_what_it_closed()
     {
         await _world.Ready();
-        await Receive("m1", "sindri-api", "please rebase");
-        await Receive("m2", "sindri-ui", "and me");
+        await Receive("m1", "t1-api", "please rebase");
+        await Receive("m2", "t1-ui", "and me");
 
-        var response = await Send("sindri-api", "done", id: "out-1");
+        var response = await Send("t1-api", "done", id: "out-1");
 
         var sent = Assert.Single((await _world.Messages.Sent(CancellationToken.None)).Value);
         Assert.True(response.Recorded);
         Assert.Equal([(ObligationKind.Reply, "m1")], response.Closed.Select(o => (o.Kind, o.Key)));
-        Assert.Equal(("sindri-api", "done", "out-1"), (sent.To, sent.Message, sent.Id?.Value));
+        Assert.Equal(("t1-api", "done", "out-1"), (sent.To, sent.Message, sent.Id?.Value));
         Assert.Equal(["m2"], (await _world.Open()).Select(o => o.Key), StringComparer.Ordinal);
     }
 
@@ -70,9 +70,9 @@ public sealed class OutboxRecordTests
     public async Task A_send_addressed_to_the_peer_socket_closes_the_reply_too()
     {
         await _world.Ready();
-        await Receive("m1", "sindri-api", "please rebase");
+        await Receive("m1", "t1-api", "please rebase");
 
-        var response = await Send("uds:/run/sindri-api.sock", "done");
+        var response = await Send("uds:/run/t1-api.sock", "done");
 
         _ = Assert.Single(response.Closed);
     }
@@ -81,12 +81,12 @@ public sealed class OutboxRecordTests
     public async Task The_lane_map_broadcast_closes_only_when_every_lane_has_the_new_version()
     {
         await _world.Ready();
-        _world.Sessions.Add(A.Live("sindri-api", "s-api"));
-        _world.Sessions.Add(A.Live("sindri-ui", "s-ui"));
+        _world.Sessions.Add(A.Live("t1-api", "s-api"));
+        _world.Sessions.Add(A.Live("t1-ui", "s-ui"));
         _ = await _world.Refresher.Run((await _world.Config.Load(CancellationToken.None)).Value, _world.Clock.GetUtcNow(), CancellationToken.None);
 
-        var first = await Send("sindri-api", "LANE MAP v1: api=sindri-api, ui=sindri-ui");
-        var second = await Send("sindri-ui", "LANE MAP v1: api=sindri-api, ui=sindri-ui");
+        var first = await Send("t1-api", "LANE MAP v1: api=t1-api, ui=t1-ui");
+        var second = await Send("t1-ui", "LANE MAP v1: api=t1-api, ui=t1-ui");
 
         Assert.Empty(first.Closed);
         Assert.Equal([ObligationKind.BroadcastLanes], second.Closed.Select(o => o.Kind));
@@ -96,15 +96,15 @@ public sealed class OutboxRecordTests
     public async Task Telling_every_lane_where_main_moved_closes_the_announce_obligation()
     {
         await _world.Ready();
-        _world.Sessions.Add(A.Live("sindri-api", "s-api"));
-        _world.Sessions.Add(A.Live("sindri-ui", "s-ui"));
+        _world.Sessions.Add(A.Live("t1-api", "s-api"));
+        _world.Sessions.Add(A.Live("t1-ui", "s-ui"));
         _ = await _world.Refresher.Run((await _world.Config.Load(CancellationToken.None)).Value, _world.Clock.GetUtcNow(), CancellationToken.None);
         _ = await _world.Gates.RecordMerge(new MergeRecord(190, "abc1234def", _world.Clock.GetUtcNow()), CancellationToken.None);
-        _ = await Send("sindri-api", "LANE MAP v1: x");
-        _ = await Send("sindri-ui", "LANE MAP v1: x");
+        _ = await Send("t1-api", "LANE MAP v1: x");
+        _ = await Send("t1-ui", "LANE MAP v1: x");
 
-        var first = await Send("sindri-api", "main moved to abc1234: #190 merged. Merge main into your branches.");
-        var second = await Send("sindri-ui", "main moved to abc1234: #190 merged. Merge main into your branches.");
+        var first = await Send("t1-api", "main moved to abc1234: #190 merged. Merge main into your branches.");
+        var second = await Send("t1-ui", "main moved to abc1234: #190 merged. Merge main into your branches.");
 
         Assert.Empty(first.Closed);
         Assert.Equal([ObligationKind.AnnounceMain], second.Closed.Select(o => o.Kind));
@@ -114,12 +114,12 @@ public sealed class OutboxRecordTests
     public async Task Relaying_an_owner_answer_to_the_lane_that_asked_closes_the_relay()
     {
         await _world.Ready();
-        _ = await _world.Owner.Ask("sindri-api", "sqlite?", A.At(1), CancellationToken.None);
+        _ = await _world.Owner.Ask("t1-api", "sqlite?", A.At(1), CancellationToken.None);
         _ = await _world.Owner.Answer(1, "yes", _world.Clock.GetUtcNow(), CancellationToken.None);
         _world.Clock.Advance(TimeSpan.FromMinutes(1));
 
-        var wrong = await Send("sindri-ui", "OWNER ANSWER q1: yes");
-        var right = await Send("sindri-api", "OWNER ANSWER q1: yes");
+        var wrong = await Send("t1-ui", "OWNER ANSWER q1: yes");
+        var right = await Send("t1-api", "OWNER ANSWER q1: yes");
 
         Assert.Empty(wrong.Closed);
         Assert.Equal([ObligationKind.RelayOwner], right.Closed.Select(o => o.Kind));
@@ -138,12 +138,12 @@ public sealed class OutboxRecordTests
     public void The_hook_payload_gives_the_session_recipient_text_and_message_id()
     {
         var parsed = PostToolUseParser.Parse("""
-            {"session_id":"s-meta","tool_name":"SendMessage","tool_input":{"to":"sindri-api","message":"done","summary":"s"},"tool_response":{"msg_id":"out-7"}}
+            {"session_id":"s-meta","tool_name":"SendMessage","tool_input":{"to":"t1-api","message":"done","summary":"s"},"tool_response":{"msg_id":"out-7"}}
             """);
 
         var request = parsed.Value;
         Assert.NotNull(request);
-        Assert.Equal(("s-meta", "sindri-api", "done", "out-7"), (request.Session.Value, request.To, request.Message, request.Id?.Value));
+        Assert.Equal(("s-meta", "t1-api", "done", "out-7"), (request.Session.Value, request.To, request.Message, request.Id?.Value));
     }
 
     [Fact, Trait("Lane", "unit")]

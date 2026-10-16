@@ -8,14 +8,14 @@ not habits.
 
 It is a portable harness for any project. Everything team-specific (lanes, repo, gate scopes, merge order, known
 flakes, kickoff prompts, log file) lives in a team config. It runs before the C# switch as an opt-in standalone
-NativeAOT CLI (`./setup.sh --with-meta`; the meta and its obligations are Claude Code only, lanes can launch on other agent CLIs, see [Launcher](#launcher); Linux only for now, aw-meta reads /proc, so on macOS setup skips it) that keeps its state under `$AW_STATE_DIR/meta/` and
+NativeAOT CLI (`./setup.sh --with-meta`; the meta itself is Claude Code only, lanes can run other agent CLIs and take part in its obligations, see [Launcher](#launcher) and [Non-Claude lanes](#non-claude-lanes); Linux only for now, aw-meta reads /proc, so on macOS setup skips it) that keeps its state under `$AW_STATE_DIR/meta/` and
 appends to the configured running log. Its gate and merge commands act on the team's checkout and PRs: `git fetch`, a
 gate worktree registered in the repo, the configured gate steps, `gh pr merge`, and the removal of finished worktrees (`git worktree remove`, never forced; see "Worktree cleanup"). Sindri absorbs it later (see the
 last section).
 
 Source: `src/Meta` (full shape: `Core`, `Features`, `Infrastructure`, `Host`; NativeAOT binary `aw-meta`).
 Tests: `tests/Aw.Meta.Tests` (rules, slices, contract bindings) and `tests/Aw.Meta.Testing` (fakes and contract bases).
-AOT smoke: `bash src/Meta/aot-smoke/run.sh`. Shell side: `config/hooks/meta-stop-gate.sh`, `config/hooks/meta-outbox.sh`,
+AOT smoke: `bash src/Meta/aot-smoke/run.sh`. Shell side: `config/hooks/meta-stop-gate.sh`, `config/hooks/meta-outbox.sh` (Claude), `config/hooks/meta-lane-gate.sh`, `config/hooks/session-id-report.sh` (Codex, Cursor),
 `scripts/meta-launch.sh`, `scripts/meta-lane.sh`, `scripts/install-meta.sh`; skill `skills/meta/SKILL.md`.
 
 ## Pieces
@@ -25,7 +25,7 @@ AOT smoke: `bash src/Meta/aot-smoke/run.sh`. Shell side: `config/hooks/meta-stop
 | `aw-meta` | State in `$AW_STATE_DIR/meta/meta.db` (SQLite, WAL): messages, sends, lane map versions, gates, merges, owner questions |
 | Stop hook `aw:meta-stop-gate` | Runs `aw-meta stop-check` with the session id and transcript path; exit 1 from it blocks the stop (hook exit 2, the list on stderr) |
 | PostToolUse hook `aw:meta-outbox` (matcher `SendMessage`) | Pipes the hook payload to `aw-meta outbox-record`, which records the send and closes what it settles |
-| `aw-meta-launch` (`scripts/meta-launch.sh`) | By default one Warp window, a pane per lane, each attached to tmux session `<team>-<lane>` running `scripts/meta-lane.sh`; `launcher.json` can pick another viewer and other lane agents ([Launcher](#launcher)) |
+| `aw-meta-launch` (`scripts/meta-launch.sh`) | By default one Warp window, a pane per lane, each attached to tmux session `<team>-<lane>` (on the team's own socket, `tmux -L <team>`) running `scripts/meta-lane.sh`; `launcher.json` can pick another viewer and other lane agents ([Launcher](#launcher)) |
 | `scripts/meta-lane.sh` | Runs the lane's agent (Claude Code unless `launcher.json` says otherwise) as `claude -n <team>-<lane>`, resumed by its recorded session id, or fresh with `<prompts>/<lane>.md` |
 
 ## Why the transcript
@@ -63,11 +63,15 @@ session as the meta when its id is the registered one, or when the live session 
 (`AW_CLAUDE_SESSIONS_DIR`, `<pid>.json`) carries the registered name; the new id is then registered (as `role-set` would)
 and the hook carries on.
 
+## The ready message
+
+A lane queues a pull request for merge by sending a message whose **first line** is `ready #<n> <sha>`: the pull request number and a commit of 7 to 40 hex digits (the head the lane means). "Ready" and the hex digits are case-insensitive, and the sha may be wrapped in a pair of backticks (both or neither). The words "not ready" and "follows" disqualify the message only when they are on that first line. aw-meta checks the shape, not the head: it has no head lookup where the queue is read, and `merge-check` already refuses a pull request whose head moved after the gate, so a stale sha can't merge. Nothing else queues a pull request: a status line that merely mentions a later ready ("...then ready #250 <sha>", "ready #264 follows once the re-review is clean"), a ready without a sha, or any message containing `not ready` or `follows` is an ordinary request. This changes behaviour only for false positives and for ready messages that omit the sha; lanes now add it (`ready #269 079c2541` and details below). The rule applies to messages synced after the upgrade; entries queued under the old rule stay until a merge, the watch seeing the pull request end, or `queue-drop` removes them. `queue-drop` takes the same view as `status`: a pull request with a recorded merge, or one in `watch.ended-prs`, has no entry to drop (`AW-META-018`, exit 2). Tell every lane the format in its kickoff prompt (`prompts/<lane>.md`): `ready #N <sha>` on the first line, details below; a bare `ready #N` is ignored.
+
 ## Commands
 
 Every command takes `--json`. Exit 0 ok, 1 attention (read the output and act), 2 usage or tool error; an error is one
-stderr line `AW-META-NNN: <reason>`. Every command but `team-init`, `role-*`, `health`, `stop-check` and `outbox-record` needs
-the team config (`AW-META-002` otherwise); the two hook commands must let any session through when no team is set up.
+stderr line `AW-META-NNN: <reason>`. Every command but `team-init`, `role-*`, `health`, `stop-check`, `outbox-record` and the lane-side `lane-inbox`, `lane-stop-check` and `lane-reply` needs
+the team config (`AW-META-002` otherwise); the hook commands must let any session through when no team is set up.
 `stop-check` prints what is owed on stdout (the hook moves it to stderr for Claude Code).
 
 | Command | What it does |
@@ -79,6 +83,10 @@ the team config (`AW-META-002` otherwise); the two hook commands must let any se
 | `inbox [--all]` | Open reply obligations (or every message) |
 | `inbox-dismiss <id> --reason <r>` / `inbox-defer <id> --reason <r> --until <iso8601\|+30m>` | Settles a reply without sending one |
 | `outbox-record` | Stdin: the PostToolUse payload. Records a send and closes what it settles |
+| `lane-send --lane <l> (--text <t> \| --file <f>)` | The meta's send to a **non-Claude** lane (Codex, Cursor, an added agent): stores the message in the lane's inbox, records it as a send to `<team>-<lane>` (which closes the meta's reply obligation as `SendMessage` does), and wakes the lane when all three guards hold (see "Non-Claude lanes"). Exit 0 sent; 1 sent, but the lane is launch-only or its hooks haven't run since launch; 2 unknown lane (`AW-META-016`), a Claude lane (`AW-META-017`: use `SendMessage`) or usage |
+| `lane-inbox` | A lane's hook call (lane from `AW_META_TEAM` and `AW_META_LANE`): prints the meta's messages the lane hasn't seen (marks them delivered; they stay owed a reply) and records the heartbeat. Exit 0 (silent when empty or when no team is set up); 2 when the lane variables are unset (`AW-META-014`) |
+| `lane-stop-check [--stop-hook-active]` | A lane's stop hook call: exit 1 while the lane owes the meta a reply (prints the owed messages and how to reply), with the loop guard of `stop-check` (`AW_META_STOP_MAX`, default 3); exit 0 otherwise, or with one warning line once the cap lets the stop through. Records the heartbeat as a stop. Exit 2 when the lane variables are unset (`AW-META-014`) |
+| `lane-reply (--text <t> \| --file <f> \| --stdin)` | A lane's answer to the meta: records an inbound message `lane:<lane>:<n>` from `<team>-<lane>` (classified like any inbound message), clears what the lane owed, and logs team, lane, provider and session. Exit 0 (silent when no team is set up, or the reply is blank); 2 when the variables are unset (`AW-META-014`) or `lane-sessions/<lane>` has no record (`AW-META-015`) |
 | `stop-check --session <id> --transcript <path> [--hook-active]` | Syncs, refreshes the lane map, prints every open obligation with the command that settles it; exit 1 if any |
 | `lanes-refresh` / `lanes [--announce]` | Rebuilds the lane map from live sessions named `<team>-<lane>` (`~/.claude/sessions`), then lane announcements ("API lane: …"); `lanes` refreshes first; `--announce` prints the `LANE MAP v<n>:` text |
 | `gate-run <pr> [scope...]` | Runs the merge gate in a gate tree (PR head merged onto `origin/main`); scopes come from the changed paths and the team config |
@@ -92,6 +100,7 @@ the team config (`AW-META-002` otherwise); the two hook commands must let any se
 | `worktree-sweep [--dry-run] [--pr <n>]` | Removes the removable worktrees (see "Worktree cleanup"), all or just pull request n's (its head branch and its gate trees); prints each removed and each kept one with its reasons. `--dry-run` removes nothing. Exit 0, 1 when git refused a removal, 2 when nothing could be judged (git, gh or the process scan failed: nothing is removed) |
 | `log-append --kind merge\|decision\|lanes\|incident\|note --text <t>` | Appends a dated line to the running log |
 | `status` | Obligations, merge queue (ready pull requests; one leaves it when any merge is recorded for it, or when the watch saw it merged or closed on GitHub, kept under `watch.ended-prs`), owner queue, lanes |
+| `queue-drop <pr> --reason <text>` | Removes the pull request's merge-queue entry and appends a `NOTE` line (`queue-drop #N: <reason>`) to the running log. The inbox message stays; the drop is kept with its time under `queue.dropped`, so only a ready message sent after it queues the pull request again. Exit 0 dropped; 2 when the pull request has no queue entry (`AW-META-018`), the reason is blank or usage |
 
 The orphan rule: the command line has `temporal` and `server start-dev`, its `--db-filename` is under `/tmp/aw-sindri-`,
 its parent is `systemd --user` or init, and it is older than five minutes.
@@ -116,7 +125,7 @@ With `worktrees.enabled: false` the two automatic triggers only report ("would r
 
 **The rules.** A worktree is `removable` only when all of these hold; any other is `kept` with every failing reason:
 
-1. Finished: the work is proven finished by an ended pull request, not by reachability (a branch just cut from `origin/main` is reachable too: the 2026-10-16 incident removed a live worktree on such a branch, with no commits and no pull request yet). A worktree on a branch is removable only when that branch's pull request is MERGED (its HEAD is also reachable from `origin/main`; a fetch precedes every sweep) or CLOSED (and nothing is unpushed). A branch with no pull request is always kept ("no pull request: work not finished"), and one whose head is already in `origin/main` with no ended pull request is kept as a "fresh branch, no commits". A branch whose pull request is still open is kept even when its head is merged. A detached worktree that is not a gate tree is always kept ("detached, not a gate tree").
+1. Finished: the work is proven finished by an ended pull request, not by reachability (a branch just cut from `origin/main` is reachable too: the 2026-10-16 incident removed a live worktree on such a branch, with no commits and no pull request yet). A worktree on a branch is removable only when that branch's pull request is MERGED (its HEAD is also reachable from `origin/main`; a fetch precedes every sweep) or CLOSED (and nothing is unpushed). A branch with no pull request is always kept ("no pull request: work not finished"; the main checkout says "main checkout (never swept)" there instead), and one whose head is already in `origin/main` with no ended pull request is kept as a "fresh branch, no commits". A branch whose pull request is still open is kept even when its head is merged. A detached worktree that is not a gate tree is always kept ("detached, not a gate tree").
 2. Clean: `git status --porcelain --untracked-files=all` is empty, ignoring only untracked files under a directory named like a build output (`worktrees.buildOutputs`, default `bin`, `obj`, `artifacts`, `node_modules`, `dist`). Any other untracked file, and any change to a tracked file, keeps it.
 3. Nothing unpushed: every commit of its HEAD is reachable from a remote branch (`git rev-list HEAD --not --remotes` is empty).
 4. Idle: no live process has its working directory or an open file inside it (`/proc/<pid>/cwd` and `fd` on Linux, `lsof` where there is no `/proc`). This covers a lane or builder still sitting in it. A scan that cannot run fails the sweep: nothing is removed.
@@ -156,42 +165,48 @@ A worktree git cannot read is kept with the reason.
 | `$AW_STATE_DIR/meta/meta.db` | `aw-meta` |
 | `$AW_STATE_DIR/meta/team.json` | `team-init` (then the owner) |
 | `$AW_STATE_DIR/meta/gates/<pr>/` | `gate-run`, `gate-rerun`: `tree` (the gate tree, reused per PR), `main-tree` (plain main for reruns), `<run>/<step>.log` |
-| `$AW_STATE_DIR/meta/lane-sessions/<lane>` | `scripts/meta-lane.sh` (the lane's Claude session id) |
+| `$AW_STATE_DIR/meta/lane-sessions/<lane>` | `scripts/meta-lane.sh` (the lane's Claude session id), or `config/hooks/session-id-report.sh` at the SessionStart of a Codex or Cursor lane (its own session id, atomic, 0600) |
+| `$AW_STATE_DIR/meta/lane-sessions/<lane>.replied`, `.owed` | `config/hooks/meta-lane-gate.sh`: the checksum of the last reply it recorded and of the owed list the last block showed (cleared by a new delivery, a relaunch, a new session) |
+| `$AW_STATE_DIR/meta/lane-sessions/<lane>.agent` | `scripts/meta-lane.sh` (JSON: `agent`, `processName`, `hooks`, `transcripts`) for a lane whose agent isn't Claude Code; read by the lane commands and the lane source |
 | `$AW_STATE_DIR/meta/lane-sessions/<lane>.exited` | `scripts/meta-lane.sh` when the lane's claude exited and the pane fell back to its shell; `meta-launch.sh` restarts such a pane unless a claude runs in it again |
 | the running log | `aw-meta` (merges, owner decisions, lane maps, kills, worktree sweeps, `log-append`) |
 | `$XDG_DATA_HOME/warp-terminal/launch_configurations/<team>-team.yaml` | `scripts/meta-launch.sh` (the `warp` viewer only) |
 | `$AW_STATE_DIR/launcher.json` | the owner, or `aw-meta-launch --init-launcher` (read by `scripts/launcher-lib.sh`) |
 | `$AW_STATE_DIR/meta/lane-sessions/<lane>.ambiguous` | `scripts/meta-lane.sh` when an agent that reports its own session id left more than one candidate session file |
 | `$AW_STATE_DIR/meta/lane-sessions/<lane>.settled` | `scripts/meta-lane.sh` for a lane whose agent reports its own session id: left once the id is recorded or refused; `meta-launch.sh` waits for it before starting the next lane |
-| `$AW_STATE_DIR/meta/lane-sessions/.reported.lock/` | `scripts/meta-lane.sh`: the team start lock that serialises the start of lanes whose agent reports its own session id (`pid` names the holder) |
+| `$AW_STATE_DIR/meta/lane-sessions/.reported.flock` | `scripts/meta-lane.sh`: the team start lock (`flock`; the kernel drops it when the holder dies) that serialises the start of lanes whose agent reports its own session id |
 
 ## Launcher
 
 `aw-meta-launch` reads `launcher.json` (`$AW_LAUNCHER_CONFIG`, else `$AW_STATE_DIR/launcher.json`; the contract is
 `docs/csharp/sindri-launcher.md`, the design `docs/superpowers/specs/2026-10-15-sindri-session-launcher-design.md`, phase
-SL-1). With no file the launcher is exactly what it was: the Warp layout, Claude Code in every lane (a golden in
+SL-1). With no file the launcher is what it was apart from the team's own tmux socket (`-L <team>`, below): the Warp layout, Claude Code in every lane (a golden in
 `scripts/tests/meta-launch.test.sh` pins the Warp YAML, every tmux command and every claude command line).
 
 | Setting | Effect on `aw-meta-launch` |
 |---|---|
 | `viewer.kind: warp` (the default with no file) | The multi-pane Warp layout, written to `AW_WARP_LAUNCH_DIR` and opened |
-| `viewer.kind: exec-template` | One window per lane (the lanes of this run, so `--lanes` opens only those) running `viewer.argv` with `{title}` and `{name}` = `<team>-<lane>`, `{cwd}` = the repo, `{cmd...}` = `tmux attach -t =<team>-<lane>`; `--no-open` opens none, `--dry-run` prints each argv. A terminal that is not installed never stops the sessions: the attach command is printed |
-| `viewer.kind: print` | Prints `tmux attach -t =<team>-<lane>` per lane |
+| `viewer.kind: exec-template` | One window per lane (the lanes of this run, so `--lanes` opens only those) running `viewer.argv` with `{title}` and `{name}` = `<team>-<lane>`, `{cwd}` = the repo, `{cmd...}` = `tmux -L <team> attach -t =<team>-<lane>`; `--no-open` opens none, `--dry-run` prints each argv. A terminal that is not installed never stops the sessions: the attach command is printed |
+| `viewer.kind: print` | Prints `tmux -L <team> attach -t =<team>-<lane>` per lane |
 | `host` | Checked, not used: lanes always run in tmux |
 | `meta.lanesAgent`, `meta.lanes.<lane>` | The catalog agent that runs the lane (the meta lane is always Claude Code). The catalog is `config/launcher/builtins.json` plus the file's `agents` |
 | `agents.<id>` | `open`/`resume` argv templates (`{bin}`, `{cwd}`, `{name}`, `{seed}`, `{sessionId}`), `processName` (the pane check that restarts a lane whose agent exited) and `transcripts` (the glob that decides resume) |
 
-**Non-Claude lanes launch only.** A lane on `codex`, `cursor` or an added agent starts and resumes, and `aw-meta-launch`
-prints `lane <l>: <agent>, launch-only for now: no obligations`. The lane map and `aw-meta health` show such a lane as
-they show any lane with no Claude session; do not message a lane marked launch-only. An agent with `sessionId: reported`
+**Non-Claude lanes.** A lane on `codex`, `cursor` or an added agent starts and resumes. `aw-meta-launch` prints
+`lane <l>: <agent>, takes part in the obligations through its hooks (scripts/install-meta.sh installs them)` for an agent whose
+catalog entry has `reportedId.hook: true`, and `lane <l>: <agent>, launch-only: no obligations` for one without a hook system. A
+lane takes part once its hooks are installed and trusted (see [Non-Claude lanes](#non-claude-lanes)); a launch-only lane is not
+messaged (`lane-send` stores the message and exits 1). An agent with `sessionId: reported`
 chooses its own id: lanes of that kind start one at a time, each waiting up to `AW_META_ID_WAIT` seconds (30) for its id
 (the `lane-sessions/<lane>` file a hook writes, else the single new file the catalog's `newestFile` glob finds that no other
 lane has recorded; two candidates are refused and leave `<lane>.ambiguous`). "New" means a path that did not exist when
 the lane started (a snapshot taken before the agent runs), not a recently modified one. The one-at-a-time start is the
-lane's own: `meta-lane.sh` takes a team start lock (`lane-sessions/.reported.lock`) before the agent runs and releases it
+lane's own: `meta-lane.sh` takes a team start lock (`flock` on `lane-sessions/.reported.flock`) before the agent runs and releases it
 when the id is recorded or refused, or after a timeout plus a grace window (`AW_META_ID_GRACE` seconds, default 10, during which the lane still watches for its late file and keeps it if it arrives, so the next lane cannot take it), so lanes created together (a Warp pane that creates its session, a
 reboot, `--lanes`) are safe too. A lane that cannot start leaves `<lane>.failed` (the reason, the line the launcher prints as `lane <l> failed to start: ...`) and `<lane>.settled`, so the launcher reports it at once instead of waiting out the timeout. A lane refused by the launcher reader (a kickoff prompt starting with `-` once a
-`launcher.json` exists) starts no agent and records no id. Obligations for them arrive with SL-1b.
+`launcher.json` exists) starts no agent and records no id.
+
+**The team's own tmux socket.** `aw-meta-launch` runs every tmux call as `tmux -L <team>`, where `<team>` is `team.json`'s `team` (for example `-L sindri`): the has-session, new-session, respawn-pane and display-message calls, the `tmux -L <team> new -A` lines of the Warp layout, the printed attach lines and the exec-template viewer's attach argv. The team's server is therefore no longer tmux's default one, and a bare `tmux ls` or `tmux kill-server` in another terminal doesn't touch it. Attach by hand with `tmux -L sindri attach -t sindri-ideas`. The switch takes effect when the team is next relaunched: a server already running on the default socket is left alone (no migration, nothing kills it), but `aw-meta-launch` looks, read-only, for the lanes' `<team>-<lane>` sessions there before it creates anything and refuses (exit 1, naming them) while any exist, because starting them again would run a second agent on the same transcripts: stop the old team, then relaunch. `--allow-legacy` (or `AW_META_ALLOW_LEGACY=1`) skips the check; it is for the owner only, and the meta session never passes it; `AW_META_LEGACY_TMUX_SOCKET` names a `-L` socket to check instead of the default one (tests). Tests never run tmux directly: they source `scripts/test-tmux.sh`, which unsets `TMUX`, uses a temp `TMUX_TMPDIR` and a `-L` socket of its own (`ttmux`), and refuses a socket outside its temp dir.
 
 **Precedence** (environment, then the file, then the defaults): `AW_META_CLAUDE` replaces the `claude-code` entry's `bin`
 and `AW_META_CLAUDE_ARGS` is inserted after `{bin}`; both stay for tests and are deprecated for users in favour of an
@@ -200,7 +215,7 @@ such field). `AW_LAUNCHER_CONFIG` is passed on to every lane's tmux session.
 
 **Lane variables.** Every lane's environment has `AW_SINDRI_CHILD=1`, `AW_META_TEAM` and `AW_META_LANE`. `meta-lane.sh`
 exports them (L-12, SL-1 section 10.2) instead of passing `-e` to `new-session`, so tmux's global environment, the Warp
-layout and every tmux command stay byte-identical with no file (the owner's condition). The effect is the
+layout and every tmux command stay as they are with no file, `-L <team>` aside (the owner's condition). The effect is the
 same: a `sindri` run inside the lane is a session caller, whatever the agent. A shell left in the pane after the agent
 exits still carries them, so run the human's `sindri` approvals from another terminal.
 
@@ -209,6 +224,32 @@ terminal (no GUI session: `print`; Warp installed: `warp`; `$TERM_PROGRAM` namin
 `config/launcher/terminals.json`; else the first of those on PATH; else `print`) and writes `launcher.json` (0600, never over
 an existing file without `--force`; exit 0 ok, 1 refused, 2 usage). The reader refuses unknown keys, unknown placeholders
 and wrong JSON types with `SND-LAUNCH-011` before any session is created; `sindri launch show` is the full check.
+
+## Non-Claude lanes
+
+A lane on Codex, Cursor or an added agent has no `SendMessage` and no transcript the meta can read, so its obligations go through
+aw-meta's own files (SL-1b). The shell half calls them from the CLI's hooks: `scripts/install-meta.sh --provider codex|cursor`
+installs `config/hooks/session-id-report.sh` and `config/hooks/meta-lane-gate.sh` user-wide through the provider adapters, and
+`scripts/meta-lane.sh` writes the `.agent` record and exports `AW_STATE_DIR` and `AW_META_CONFIG` into the lane's environment.
+
+- **Install.** `install-meta.sh` takes any provider (the Claude-only check is gone) and publishes and links `aw-meta` and `aw-meta-launch` for each. Claude Code gets `meta-stop-gate.sh` and `meta-outbox.sh`, unchanged. Codex gets `session-id-report.sh` at SessionStart and `meta-lane-gate.sh` at UserPromptSubmit and Stop; Cursor gets `session-id-report.sh` and `meta-lane-gate.sh` at `sessionStart`, `meta-lane-gate.sh` at `postToolUse` and `stop`. The hook configs are `~/.codex/hooks.json` and `~/.cursor/hooks.json`, the scripts and adapters are staged in `$AW_STATE_DIR/hooks`. Codex records trust against each hook's hash, so every install prints "open `codex` and run `/hooks` to trust the `aw:*` hooks"; until then the lane shows "hooks not running" in `health`. The hooks are user-wide, so both pass straight through (exit 0, no work) for every session that is not a lane: `meta-lane-gate.sh` unless `AW_META_TEAM` and `AW_META_LANE` are set, `session-id-report.sh` unless those or `AW_SINDRI_LAUNCH` are. Both skip `AW_JUDGE_CHILD` and run fail-open (`HOOK-FAILOPEN`, `meta-lane-gate` and `session-id-report` causes). The lane never installs aw-meta itself.
+- **Session id.** `session-id-report.sh` writes the hook's `session_id` to `lane-sessions/<lane>` (and, for a Sindri launch, to `$AW_SINDRI_HOME/launches/<launchId>.session-id`), keyed on the variables the launcher set on that one session, so lanes started together record their own ids. `meta-lane.sh` waits for it as before and falls back to the newest-file glob only when the hook didn't fire.
+- **Delivery and stop.** `meta-lane-gate.sh` runs `lane-inbox` at Codex's UserPromptSubmit (plain stdout is developer context) and at Cursor's `sessionStart` and `postToolUse` (`additional_context`). At Stop it takes the turn's last assistant text (`last_assistant_message`; the Cursor adapter reads it from the transcript), pipes the text after the last line that starts `REPLY TO META:` to `lane-reply --stdin`, then runs `lane-stop-check` (`--stop-hook-active` on a continuation). Only `lane-stop-check` exit 1 blocks (Codex: the stop is blocked with the reason; Cursor: `followup_message`, capped by `loop_limit`); exit 0, exit 2 and anything else pass. The hook runs outside the agent's sandbox, so a Codex lane in `workspace-write` never needs to write the state directory. A reply is recorded once: the hook keeps a checksum of the last recorded reply in `lane-sessions/<lane>.replied` and skips a Stop whose reply text matches it (a continuation, a turn with no new text, Cursor's transcript tail). Any delivery makes the same words recordable again: mail that `lane-inbox` prints clears the marker, and so does a `lane-stop-check` block that shows a new owed list (checksummed in `<lane>.owed`; the same list blocked again, as in the stop-cap loop, does not), which is how a Codex lane busy mid-turn gets mail. A relaunch (`meta-lane.sh`) and a new session (`session-id-report.sh`) clear both files. The Cursor adapter reads the last assistant text of the transcript, so a lane that answers a new message without any new text re-sends its previous reply: the hook cannot tell, and `health` does not flag it.
+- **Only the lane's own agent acts.** A `codex exec` or `cursor-agent -p` that the lane's agent starts inherits the lane variables, and a Claude lane that runs one must not have it write the Claude lane's session id. `meta-lane.sh` exports `AW_META_LANE_PID` (its own pid), `AW_META_LANE_AGENT` (the catalog id) and `AW_META_LANE_PROC` (the agent's process name) in **every** lane, a Claude lane included (additive: nothing on the Claude path reads them). Both hooks pass straight through unless they run under the lane's own agent:
+  - no `AW_META_LANE_PID` (not started by a lane script) or `AW_META_LANE_AGENT=claude-code` (a Claude lane's hooks are Claude's) means not a lane;
+  - the lane's agent **root** is the ancestor of the hook whose parent is `AW_META_LANE_PID`, whatever it is called: a native binary (`lane script -> codex -> hook`) or the node wrapper of an npm install (`lane script -> node -> codex -> hook`);
+  - a **nested instance** is a second stretch of ancestors named like the agent (`AW_META_LANE_PROC`, by command name or argv[0]) below the first, behind a tool process such as a shell (`codex exec` run from the agent's shell tool); it passes straight through, so it neither takes the lane's session id nor consumes its inbox nor blocks at Stop. Forks of one instance share its command line and count as one stretch;
+  - no lane script among the ancestors passes through; a codex a human starts after the pane fell back to `exec bash -i` keeps the lane script's pid and counts as the lane's own; if `ps` can't answer, the hook acts.
+- **Pane name.** `lane-send`'s guard compares `#{pane_current_command}` with the agent's `processName`, and tmux reports the foreground process group's leader. `meta-lane.sh` therefore runs a non-Claude agent under job control (`set -m`), so the agent leads its own group and the pane reads the agent, not `bash`; a Claude lane runs exactly as before. The name the pane shows is not always the catalog's: the npm install of Codex is a node wrapper that spawns the native binary, so the pane reads `node`. Once the agent leads the foreground group, `meta-lane.sh` reads the leader's name the way tmux does and records it as `processName` in the lane's `.agent` record (never a shell's name, which is what a downed lane's fallback shell shows), so the guard compares against what tmux shows. The lane's id watcher polls the lane script's pid and ends when the script is gone (the pane closed: the kernel hangs up the agent, and the watcher stops on its own), so it never holds the team start lock for a lane that is gone; no signal traps are involved.
+- **Kickoff.** A non-Claude lane with hooks and a kickoff prompt file gets one extra paragraph at the end of it: end a turn that answers the meta with a `REPLY TO META:` line. The message `lane-inbox` shows says the same.
+
+- **Lane identity** is `AW_META_TEAM` and `AW_META_LANE` and nothing else: no lane command on the lane side has a `--lane` flag.
+- **Lane source.** The lane map and `health` see a non-Claude lane as `<team>-<lane>` when `lane-sessions/<lane>` holds a session id, `lane-sessions/<lane>.agent` names the agent, and the lane's tmux pane (`tmux display-message -p -t =<team>-<lane>:`) runs the agent's `processName`. With no `.agent` record nothing changes: a team of Claude lanes makes no tmux call and prints what it printed before.
+- **State** is in `meta.db` (`lane_mail`, `lane_replies`, and the replies as ordinary `messages` rows) and the key-value store (`lane.<lane>.beat`, `.woke`, `.stop-fingerprint`, `.stop-count`, `.stop-cap`). A reply is an inbound message of the meta with id `lane:<lane>:<n>` from `<team>-<lane>`, so the meta's `stop-check` opens a `reply` obligation from it; the next `lane-send` to that lane closes it. Its fix text is `aw-meta lane-send --lane <lane> ...`, not `SendMessage`.
+- **Wake.** `lane-send` types one fixed line into an idle lane only when all of: the lane is idle (its last hook was `lane-stop-check` and it hasn't been woken since), its pane runs the agent's `processName` (a bare shell is "lane down"), and no tmux client is attached. It sends `tmux send-keys -t =<team>-<lane>: -l '<line>'`, then `Enter` (literal mode, exact session; the trailing colon is what lets tmux resolve the pane). Otherwise the message waits for the lane's next hook. `AW_TMUX` names the tmux program. Every call runs on the team's own socket, `tmux -L <team>` (the same server the launcher starts the lanes on); `AW_META_TMUX_SOCKET` names another socket instead (tests and proofs). With no team config and no override there is no socket to look on, so a lane probes as down. Every aw-meta test and the AOT smoke set `AW_TMUX` to a fail-closed stub, never the real tmux.
+- **Stop gate.** `lane-stop-check` blocks a stop while the lane owes a reply. A check without `--stop-hook-active` starts a new turn (blocks, resets the count); each continuation with the same owed set counts one block; after `AW_META_STOP_MAX` (default 3) the next is let through with a warning, an incident in the running log and the mark `lane.<lane>.stop-cap`. Only exit 1 blocks; exit 2 (variables unset, a tool error) must pass.
+- **Health.** `health` and `lanes` show, for non-Claude lanes only: `taking part`; `launch-only: no obligations` (the CLI has no hook support, so `.agent` says `hooks: false`); `hooks not running: trust them with /hooks in codex` (no hook has run since the session id was recorded); `obligation not delivered (stop cap)`; `obligation not delivered (Cursor loop_limit)` (a Cursor lane blocked as many times as Cursor's default `loop_limit`, 5); `ambiguous session id`. A lane that needs attention makes `health` exit 1.
+- **Migration 0003 is one-way.** The first time a build with this change opens `meta.db` it applies migration 0003 (`lane_mail`, `lane_replies`; additive, in a transaction, after copying the database to `meta.db.bak-v2`). From then on an `aw-meta` that doesn't know 0003 refuses the database with `AW-DATA-007`, so the installed binary and the database move together: install the new build before anything else opens the live `meta.db` (run proofs and `dotnet run` against a temp `AW_STATE_DIR`). To roll back, stop the team, restore `meta.db.bak-v2` over `meta.db` and reinstall the old binary; the lane mail written since is lost.
 
 ## Threat model
 

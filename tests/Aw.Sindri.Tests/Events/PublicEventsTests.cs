@@ -69,6 +69,49 @@ public sealed class PublicEventsTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_payload_with_an_array_of_objects_arrives_scrubbed_not_thrown_on()
+    {
+        var row = Row(EventTypes.ContextSourcesSynced,
+            """{"source":"repo-docs","slot":"2026-10-15T00:00:00+00:00","repos":[{"repo":"aSECRETb","head":null,"added":1,"removed":0,"kept":2,"blocked":0,"code":null}]}""");
+
+        var shown = PublicEvents.For(row, SliceHarness.Json, new MaskingScrubber(), includeNonPublic: false).Value!;
+
+        Assert.Equal("a[masked]b", shown.Payload.GetProperty("repos")[0].GetProperty("repo").GetString());
+        Assert.Equal(1, shown.Payload.GetProperty("repos")[0].GetProperty("added").GetInt32());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_links_block_of_a_synced_event_arrives_scrubbed()
+    {
+        var row = Row(EventTypes.ContextSourcesSynced,
+            """{"source":"repo-docs","slot":"2026-10-15T00:00:00+00:00","repos":[],"links":{"records":3,"fetched":2,"unchanged":1,"linked":4,"unlinked":0,"orphaned":0,"decisions":1,"queued":0,"refused":0,"tokens":9,"code":"xSECRETy"}}""");
+
+        var shown = PublicEvents.For(row, SliceHarness.Json, new MaskingScrubber(), includeNonPublic: false).Value!;
+
+        var links = shown.Payload.GetProperty("links");
+        Assert.Equal(3, links.GetProperty("records").GetInt32());
+        Assert.Equal("x[masked]y", links.GetProperty("code").GetString());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_human_read_scrubs_strings_in_nested_objects_and_arrays_beside_numbers_and_booleans()
+    {
+        var row = Row(EventTypes.ContextSourcesSynced,
+            """{"source":"repo-docs","inner":{"note":"aSECRETb","n":[1,true,"cSECRETd",[2,"eSECRETf"],{"k":"gSECRETh"}]}}""");
+
+        var shown = PublicEvents.For(row, SliceHarness.Json, new MaskingScrubber(), includeNonPublic: true).Value!;
+
+        var inner = shown.Payload.GetProperty("inner");
+        var items = inner.GetProperty("n");
+        Assert.Equal("a[masked]b", inner.GetProperty("note").GetString());
+        Assert.Equal(1, items[0].GetInt32());
+        Assert.True(items[1].GetBoolean());
+        Assert.Equal("c[masked]d", items[2].GetString());
+        Assert.Equal("e[masked]f", items[3][1].GetString());
+        Assert.Equal("g[masked]h", items[4].GetProperty("k").GetString());
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Unparseable_payload_is_sent_with_a_null_payload()
     {
         var row = Row(EventTypes.ProcessStarted, "{not json");

@@ -58,7 +58,7 @@ public static class InstanceViews
             instance.Address,
             recipe.Version,
             instance.State,
-            task is not null ? "desk task" : words.Detail(),
+            LegacyDetail(recipe) ?? (task is not null ? "desk task" : words.Detail()),
             since,
             words.Next(task),
             Allowed(instance, task),
@@ -119,6 +119,10 @@ public static class InstanceViews
         return StatusRecords.Of(view, now);
     }
 
+    /// <summary>What a pre-P4c recipe's instance shows as its detail: the finding and the fix (the instance can't be named, so the row is marked, not failed); null for any other recipe.</summary>
+    private static string? LegacyDetail(InterpretedRecipe recipe) =>
+        SubjectKinds.Legacy(recipe.Recipe) is { } legacy ? $"recipe predates input kinds ({legacy}; fix: {SubjectKinds.LegacyFix})" : null;
+
     /// <summary>The state the layout members are built from.</summary>
     private sealed record Layout(WorkflowInstance Instance, InterpretedRecipe Recipe, DeskTask? Task, InstanceWords Words);
 
@@ -126,16 +130,19 @@ public static class InstanceViews
     private static InstanceView WithLayout(InstanceView view, Layout from, InstanceViewContext context)
     {
         var badge = from.Words.EngineBadge();
+        var legacy = SubjectKinds.Legacy(from.Recipe.Recipe) is not null;   // a pre-P4c row: no kind to name a subject or an input slot by
+        var subject = context.Subject ?? (legacy ? InstanceSummaries.SubjectOf(view with { ItemId = from.Instance.Item }, itemTitle: null) : SubjectRefs.Of(from.Recipe, from.Instance.Item));   // never null on the wire: a legacy instance shows the item, as its list row does
         var complete = view with
         {
             ItemId = from.Instance.Item,
             Urgency = RecipeUrgencies.UrgencyOf(from.Recipe),
             EngineOwned = badge,
-            Subject = context.Subject ?? SubjectRefs.Of(from.Recipe, from.Instance.Item),
-            Inputs = InputSlots.Of(from.Instance, from.Recipe),
+            Subject = subject,
+            Name = from.Recipe.Recipe.Name is null ? null : subject?.Label,
+            Inputs = legacy ? [] : InputSlots.Of(from.Instance, from.Recipe),
             OrderedBy = StatePathOrder.Of(from.Recipe.Recipe).OrderedBy == "transition-list" ? PathOrdering.TransitionList : PathOrdering.Path,
             States = StateCells.Of(from.Instance, from.Recipe, badge),
-            Facts = FactRows.Of(from.Instance, from.Recipe, from.Task, context.Provenance ?? new Dictionary<FactKey, FactProvenance>()),
+            Facts = FactRows.Of(from.Instance, from.Recipe, from.Task, context.Provenance ?? new Dictionary<FactKey, FactProvenance>(), context.Contents),
             ChildGroups = [],
             Step = CurrentStates.Step(from.Instance, from.Recipe),
             Gates = CurrentStates.Gates(from.Instance, from.Recipe),

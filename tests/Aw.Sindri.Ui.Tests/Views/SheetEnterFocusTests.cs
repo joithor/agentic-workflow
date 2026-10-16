@@ -22,6 +22,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// and the focused row's ring stays off the sheet (proof B2).
 /// </summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class SheetEnterFocusTests : IDisposable
 {
     private readonly List<Window> _windows = [];

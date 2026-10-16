@@ -72,19 +72,21 @@ Aw.Meta.Features.Health.HealthResponse
 Aw.Meta.Features.Health.HealthResponse.<Clone>$() -> Aw.Meta.Features.Health.HealthResponse!
 Aw.Meta.Features.Health.HealthResponse.Attention.get -> bool
 Aw.Meta.Features.Health.HealthResponse.Attention.init -> void
-Aw.Meta.Features.Health.HealthResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessGroup!>! Groups, out int ProcessCount, out Aw.Meta.Core.Health.HostResources! Host, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Orphans, out System.Collections.Generic.IReadOnlyList<int>! Killed, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.DuplicateServer!>! Duplicates, out System.Collections.Generic.IReadOnlyList<string!>? MissingLanes, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>! HeavyLocks, out bool MemoryLow, out bool Attention) -> void
+Aw.Meta.Features.Health.HealthResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessGroup!>! Groups, out int ProcessCount, out Aw.Meta.Core.Health.HostResources! Host, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Orphans, out System.Collections.Generic.IReadOnlyList<int>! Killed, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.DuplicateServer!>! Duplicates, out System.Collections.Generic.IReadOnlyList<string!>? MissingLanes, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>! HeavyLocks, out bool MemoryLow, out bool Attention, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneHealth!>? Lanes) -> void
 Aw.Meta.Features.Health.HealthResponse.Duplicates.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.DuplicateServer!>!
 Aw.Meta.Features.Health.HealthResponse.Duplicates.init -> void
 Aw.Meta.Features.Health.HealthResponse.Equals(Aw.Meta.Features.Health.HealthResponse? other) -> bool
 Aw.Meta.Features.Health.HealthResponse.Groups.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessGroup!>!
 Aw.Meta.Features.Health.HealthResponse.Groups.init -> void
-Aw.Meta.Features.Health.HealthResponse.HealthResponse(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessGroup!>! Groups, int ProcessCount, Aw.Meta.Core.Health.HostResources! Host, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Orphans, System.Collections.Generic.IReadOnlyList<int>! Killed, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.DuplicateServer!>! Duplicates, System.Collections.Generic.IReadOnlyList<string!>? MissingLanes, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>! HeavyLocks, bool MemoryLow, bool Attention) -> void
+Aw.Meta.Features.Health.HealthResponse.HealthResponse(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessGroup!>! Groups, int ProcessCount, Aw.Meta.Core.Health.HostResources! Host, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Orphans, System.Collections.Generic.IReadOnlyList<int>! Killed, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.DuplicateServer!>! Duplicates, System.Collections.Generic.IReadOnlyList<string!>? MissingLanes, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>! HeavyLocks, bool MemoryLow, bool Attention, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneHealth!>? Lanes = null) -> void
 Aw.Meta.Features.Health.HealthResponse.HeavyLocks.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>!
 Aw.Meta.Features.Health.HealthResponse.HeavyLocks.init -> void
 Aw.Meta.Features.Health.HealthResponse.Host.get -> Aw.Meta.Core.Health.HostResources!
 Aw.Meta.Features.Health.HealthResponse.Host.init -> void
 Aw.Meta.Features.Health.HealthResponse.Killed.get -> System.Collections.Generic.IReadOnlyList<int>!
 Aw.Meta.Features.Health.HealthResponse.Killed.init -> void
+Aw.Meta.Features.Health.HealthResponse.Lanes.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneHealth!>?
+Aw.Meta.Features.Health.HealthResponse.Lanes.init -> void
 Aw.Meta.Features.Health.HealthResponse.MemoryLow.get -> bool
 Aw.Meta.Features.Health.HealthResponse.MemoryLow.init -> void
 Aw.Meta.Features.Health.HealthResponse.MissingLanes.get -> System.Collections.Generic.IReadOnlyList<string!>?
@@ -162,17 +164,97 @@ Aw.Meta.Features.InboxDismiss.DismissInboxResponse.DismissInboxResponse(Aw.Meta.
 Aw.Meta.Features.InboxDismiss.DismissInboxResponse.Equals(Aw.Meta.Features.InboxDismiss.DismissInboxResponse? other) -> bool
 Aw.Meta.Features.InboxDismiss.DismissInboxResponse.Id.get -> Aw.Meta.Core.Ids.MessageId
 Aw.Meta.Features.InboxDismiss.DismissInboxResponse.Id.init -> void
+Aw.Meta.Features.LaneInbox.LaneInboxRequest
+Aw.Meta.Features.LaneInbox.LaneInboxRequest.<Clone>$() -> Aw.Meta.Features.LaneInbox.LaneInboxRequest!
+Aw.Meta.Features.LaneInbox.LaneInboxRequest.Deconstruct(out Aw.Meta.Core.Lanes.LaneIdentity! Identity) -> void
+Aw.Meta.Features.LaneInbox.LaneInboxRequest.Equals(Aw.Meta.Features.LaneInbox.LaneInboxRequest? other) -> bool
+Aw.Meta.Features.LaneInbox.LaneInboxRequest.Identity.get -> Aw.Meta.Core.Lanes.LaneIdentity!
+Aw.Meta.Features.LaneInbox.LaneInboxRequest.Identity.init -> void
+Aw.Meta.Features.LaneInbox.LaneInboxRequest.LaneInboxRequest(Aw.Meta.Core.Lanes.LaneIdentity! Identity) -> void
+Aw.Meta.Features.LaneInbox.LaneInboxResponse
+Aw.Meta.Features.LaneInbox.LaneInboxResponse.<Clone>$() -> Aw.Meta.Features.LaneInbox.LaneInboxResponse!
+Aw.Meta.Features.LaneInbox.LaneInboxResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneMessage!>! Messages) -> void
+Aw.Meta.Features.LaneInbox.LaneInboxResponse.Equals(Aw.Meta.Features.LaneInbox.LaneInboxResponse? other) -> bool
+Aw.Meta.Features.LaneInbox.LaneInboxResponse.LaneInboxResponse(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneMessage!>! Messages) -> void
+Aw.Meta.Features.LaneInbox.LaneInboxResponse.Messages.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneMessage!>!
+Aw.Meta.Features.LaneInbox.LaneInboxResponse.Messages.init -> void
+Aw.Meta.Features.LaneReply.LaneReplyRequest
+Aw.Meta.Features.LaneReply.LaneReplyRequest.<Clone>$() -> Aw.Meta.Features.LaneReply.LaneReplyRequest!
+Aw.Meta.Features.LaneReply.LaneReplyRequest.Deconstruct(out Aw.Meta.Core.Lanes.LaneIdentity! Identity, out string! Text) -> void
+Aw.Meta.Features.LaneReply.LaneReplyRequest.Equals(Aw.Meta.Features.LaneReply.LaneReplyRequest? other) -> bool
+Aw.Meta.Features.LaneReply.LaneReplyRequest.Identity.get -> Aw.Meta.Core.Lanes.LaneIdentity!
+Aw.Meta.Features.LaneReply.LaneReplyRequest.Identity.init -> void
+Aw.Meta.Features.LaneReply.LaneReplyRequest.LaneReplyRequest(Aw.Meta.Core.Lanes.LaneIdentity! Identity, string! Text) -> void
+Aw.Meta.Features.LaneReply.LaneReplyRequest.Text.get -> string!
+Aw.Meta.Features.LaneReply.LaneReplyRequest.Text.init -> void
+Aw.Meta.Features.LaneReply.LaneReplyResponse
+Aw.Meta.Features.LaneReply.LaneReplyResponse.<Clone>$() -> Aw.Meta.Features.LaneReply.LaneReplyResponse!
+Aw.Meta.Features.LaneReply.LaneReplyResponse.Deconstruct(out bool Recorded, out Aw.Meta.Core.Ids.MessageId? Id) -> void
+Aw.Meta.Features.LaneReply.LaneReplyResponse.Equals(Aw.Meta.Features.LaneReply.LaneReplyResponse? other) -> bool
+Aw.Meta.Features.LaneReply.LaneReplyResponse.Id.get -> Aw.Meta.Core.Ids.MessageId?
+Aw.Meta.Features.LaneReply.LaneReplyResponse.Id.init -> void
+Aw.Meta.Features.LaneReply.LaneReplyResponse.LaneReplyResponse(bool Recorded, Aw.Meta.Core.Ids.MessageId? Id) -> void
+Aw.Meta.Features.LaneReply.LaneReplyResponse.Recorded.get -> bool
+Aw.Meta.Features.LaneReply.LaneReplyResponse.Recorded.init -> void
+Aw.Meta.Features.LaneSend.LaneSendRequest
+Aw.Meta.Features.LaneSend.LaneSendRequest.<Clone>$() -> Aw.Meta.Features.LaneSend.LaneSendRequest!
+Aw.Meta.Features.LaneSend.LaneSendRequest.Deconstruct(out string! Lane, out string! Text) -> void
+Aw.Meta.Features.LaneSend.LaneSendRequest.Equals(Aw.Meta.Features.LaneSend.LaneSendRequest? other) -> bool
+Aw.Meta.Features.LaneSend.LaneSendRequest.Lane.get -> string!
+Aw.Meta.Features.LaneSend.LaneSendRequest.Lane.init -> void
+Aw.Meta.Features.LaneSend.LaneSendRequest.LaneSendRequest(string! Lane, string! Text) -> void
+Aw.Meta.Features.LaneSend.LaneSendRequest.Text.get -> string!
+Aw.Meta.Features.LaneSend.LaneSendRequest.Text.init -> void
+Aw.Meta.Features.LaneSend.LaneSendResponse
+Aw.Meta.Features.LaneSend.LaneSendResponse.<Clone>$() -> Aw.Meta.Features.LaneSend.LaneSendResponse!
+Aw.Meta.Features.LaneSend.LaneSendResponse.Attention.get -> string?
+Aw.Meta.Features.LaneSend.LaneSendResponse.Attention.init -> void
+Aw.Meta.Features.LaneSend.LaneSendResponse.Deconstruct(out string! Lane, out Aw.Meta.Core.Ids.MessageId Id, out bool Woken, out string? WakeSkipped, out string? Attention) -> void
+Aw.Meta.Features.LaneSend.LaneSendResponse.Equals(Aw.Meta.Features.LaneSend.LaneSendResponse? other) -> bool
+Aw.Meta.Features.LaneSend.LaneSendResponse.Id.get -> Aw.Meta.Core.Ids.MessageId
+Aw.Meta.Features.LaneSend.LaneSendResponse.Id.init -> void
+Aw.Meta.Features.LaneSend.LaneSendResponse.Lane.get -> string!
+Aw.Meta.Features.LaneSend.LaneSendResponse.Lane.init -> void
+Aw.Meta.Features.LaneSend.LaneSendResponse.LaneSendResponse(string! Lane, Aw.Meta.Core.Ids.MessageId Id, bool Woken, string? WakeSkipped, string? Attention) -> void
+Aw.Meta.Features.LaneSend.LaneSendResponse.WakeSkipped.get -> string?
+Aw.Meta.Features.LaneSend.LaneSendResponse.WakeSkipped.init -> void
+Aw.Meta.Features.LaneSend.LaneSendResponse.Woken.get -> bool
+Aw.Meta.Features.LaneSend.LaneSendResponse.Woken.init -> void
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest.<Clone>$() -> Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest!
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest.Deconstruct(out Aw.Meta.Core.Lanes.LaneIdentity! Identity, out bool HookActive, out int MaxBlocks) -> void
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest.Equals(Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest? other) -> bool
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest.HookActive.get -> bool
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest.HookActive.init -> void
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest.Identity.get -> Aw.Meta.Core.Lanes.LaneIdentity!
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest.Identity.init -> void
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest.LaneStopCheckRequest(Aw.Meta.Core.Lanes.LaneIdentity! Identity, bool HookActive, int MaxBlocks) -> void
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest.MaxBlocks.get -> int
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest.MaxBlocks.init -> void
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse.<Clone>$() -> Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse!
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse.Blocked.get -> bool
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse.Blocked.init -> void
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse.Deconstruct(out bool Blocked, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneMessage!>! Owed, out string? Warning) -> void
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse.Equals(Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse? other) -> bool
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse.LaneStopCheckResponse(bool Blocked, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneMessage!>! Owed, string? Warning) -> void
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse.Owed.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneMessage!>!
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse.Owed.init -> void
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse.Warning.get -> string?
+Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse.Warning.init -> void
 Aw.Meta.Features.Lanes.LanesResponse
 Aw.Meta.Features.Lanes.LanesResponse.<Clone>$() -> Aw.Meta.Features.Lanes.LanesResponse!
 Aw.Meta.Features.Lanes.LanesResponse.Announcement.get -> string!
 Aw.Meta.Features.Lanes.LanesResponse.Announcement.init -> void
 Aw.Meta.Features.Lanes.LanesResponse.Changed.get -> bool
 Aw.Meta.Features.Lanes.LanesResponse.Changed.init -> void
-Aw.Meta.Features.Lanes.LanesResponse.Deconstruct(out int Version, out bool Changed, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneAssignment!>! Entries, out System.Collections.Generic.IReadOnlyList<string!>! Unmapped, out string! Announcement) -> void
+Aw.Meta.Features.Lanes.LanesResponse.Deconstruct(out int Version, out bool Changed, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneAssignment!>! Entries, out System.Collections.Generic.IReadOnlyList<string!>! Unmapped, out string! Announcement, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneHealth!>? Standing) -> void
 Aw.Meta.Features.Lanes.LanesResponse.Entries.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneAssignment!>!
 Aw.Meta.Features.Lanes.LanesResponse.Entries.init -> void
 Aw.Meta.Features.Lanes.LanesResponse.Equals(Aw.Meta.Features.Lanes.LanesResponse? other) -> bool
-Aw.Meta.Features.Lanes.LanesResponse.LanesResponse(int Version, bool Changed, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneAssignment!>! Entries, System.Collections.Generic.IReadOnlyList<string!>! Unmapped, string! Announcement) -> void
+Aw.Meta.Features.Lanes.LanesResponse.LanesResponse(int Version, bool Changed, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneAssignment!>! Entries, System.Collections.Generic.IReadOnlyList<string!>! Unmapped, string! Announcement, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneHealth!>? Standing = null) -> void
+Aw.Meta.Features.Lanes.LanesResponse.Standing.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneHealth!>?
+Aw.Meta.Features.Lanes.LanesResponse.Standing.init -> void
 Aw.Meta.Features.Lanes.LanesResponse.Unmapped.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Meta.Features.Lanes.LanesResponse.Unmapped.init -> void
 Aw.Meta.Features.Lanes.LanesResponse.Version.get -> int
@@ -507,6 +589,30 @@ override Aw.Meta.Features.InboxDismiss.DismissInboxRequest.ToString() -> string!
 override Aw.Meta.Features.InboxDismiss.DismissInboxResponse.Equals(object? obj) -> bool
 override Aw.Meta.Features.InboxDismiss.DismissInboxResponse.GetHashCode() -> int
 override Aw.Meta.Features.InboxDismiss.DismissInboxResponse.ToString() -> string!
+override Aw.Meta.Features.LaneInbox.LaneInboxRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.LaneInbox.LaneInboxRequest.GetHashCode() -> int
+override Aw.Meta.Features.LaneInbox.LaneInboxRequest.ToString() -> string!
+override Aw.Meta.Features.LaneInbox.LaneInboxResponse.Equals(object? obj) -> bool
+override Aw.Meta.Features.LaneInbox.LaneInboxResponse.GetHashCode() -> int
+override Aw.Meta.Features.LaneInbox.LaneInboxResponse.ToString() -> string!
+override Aw.Meta.Features.LaneReply.LaneReplyRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.LaneReply.LaneReplyRequest.GetHashCode() -> int
+override Aw.Meta.Features.LaneReply.LaneReplyRequest.ToString() -> string!
+override Aw.Meta.Features.LaneReply.LaneReplyResponse.Equals(object? obj) -> bool
+override Aw.Meta.Features.LaneReply.LaneReplyResponse.GetHashCode() -> int
+override Aw.Meta.Features.LaneReply.LaneReplyResponse.ToString() -> string!
+override Aw.Meta.Features.LaneSend.LaneSendRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.LaneSend.LaneSendRequest.GetHashCode() -> int
+override Aw.Meta.Features.LaneSend.LaneSendRequest.ToString() -> string!
+override Aw.Meta.Features.LaneSend.LaneSendResponse.Equals(object? obj) -> bool
+override Aw.Meta.Features.LaneSend.LaneSendResponse.GetHashCode() -> int
+override Aw.Meta.Features.LaneSend.LaneSendResponse.ToString() -> string!
+override Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest.GetHashCode() -> int
+override Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest.ToString() -> string!
+override Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse.Equals(object? obj) -> bool
+override Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse.GetHashCode() -> int
+override Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse.ToString() -> string!
 override Aw.Meta.Features.Lanes.LanesResponse.Equals(object? obj) -> bool
 override Aw.Meta.Features.Lanes.LanesResponse.GetHashCode() -> int
 override Aw.Meta.Features.Lanes.LanesResponse.ToString() -> string!
@@ -633,6 +739,22 @@ static Aw.Meta.Features.InboxDismiss.DismissInboxRequest.operator !=(Aw.Meta.Fea
 static Aw.Meta.Features.InboxDismiss.DismissInboxRequest.operator ==(Aw.Meta.Features.InboxDismiss.DismissInboxRequest? left, Aw.Meta.Features.InboxDismiss.DismissInboxRequest? right) -> bool
 static Aw.Meta.Features.InboxDismiss.DismissInboxResponse.operator !=(Aw.Meta.Features.InboxDismiss.DismissInboxResponse? left, Aw.Meta.Features.InboxDismiss.DismissInboxResponse? right) -> bool
 static Aw.Meta.Features.InboxDismiss.DismissInboxResponse.operator ==(Aw.Meta.Features.InboxDismiss.DismissInboxResponse? left, Aw.Meta.Features.InboxDismiss.DismissInboxResponse? right) -> bool
+static Aw.Meta.Features.LaneInbox.LaneInboxRequest.operator !=(Aw.Meta.Features.LaneInbox.LaneInboxRequest? left, Aw.Meta.Features.LaneInbox.LaneInboxRequest? right) -> bool
+static Aw.Meta.Features.LaneInbox.LaneInboxRequest.operator ==(Aw.Meta.Features.LaneInbox.LaneInboxRequest? left, Aw.Meta.Features.LaneInbox.LaneInboxRequest? right) -> bool
+static Aw.Meta.Features.LaneInbox.LaneInboxResponse.operator !=(Aw.Meta.Features.LaneInbox.LaneInboxResponse? left, Aw.Meta.Features.LaneInbox.LaneInboxResponse? right) -> bool
+static Aw.Meta.Features.LaneInbox.LaneInboxResponse.operator ==(Aw.Meta.Features.LaneInbox.LaneInboxResponse? left, Aw.Meta.Features.LaneInbox.LaneInboxResponse? right) -> bool
+static Aw.Meta.Features.LaneReply.LaneReplyRequest.operator !=(Aw.Meta.Features.LaneReply.LaneReplyRequest? left, Aw.Meta.Features.LaneReply.LaneReplyRequest? right) -> bool
+static Aw.Meta.Features.LaneReply.LaneReplyRequest.operator ==(Aw.Meta.Features.LaneReply.LaneReplyRequest? left, Aw.Meta.Features.LaneReply.LaneReplyRequest? right) -> bool
+static Aw.Meta.Features.LaneReply.LaneReplyResponse.operator !=(Aw.Meta.Features.LaneReply.LaneReplyResponse? left, Aw.Meta.Features.LaneReply.LaneReplyResponse? right) -> bool
+static Aw.Meta.Features.LaneReply.LaneReplyResponse.operator ==(Aw.Meta.Features.LaneReply.LaneReplyResponse? left, Aw.Meta.Features.LaneReply.LaneReplyResponse? right) -> bool
+static Aw.Meta.Features.LaneSend.LaneSendRequest.operator !=(Aw.Meta.Features.LaneSend.LaneSendRequest? left, Aw.Meta.Features.LaneSend.LaneSendRequest? right) -> bool
+static Aw.Meta.Features.LaneSend.LaneSendRequest.operator ==(Aw.Meta.Features.LaneSend.LaneSendRequest? left, Aw.Meta.Features.LaneSend.LaneSendRequest? right) -> bool
+static Aw.Meta.Features.LaneSend.LaneSendResponse.operator !=(Aw.Meta.Features.LaneSend.LaneSendResponse? left, Aw.Meta.Features.LaneSend.LaneSendResponse? right) -> bool
+static Aw.Meta.Features.LaneSend.LaneSendResponse.operator ==(Aw.Meta.Features.LaneSend.LaneSendResponse? left, Aw.Meta.Features.LaneSend.LaneSendResponse? right) -> bool
+static Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest.operator !=(Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest? left, Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest? right) -> bool
+static Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest.operator ==(Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest? left, Aw.Meta.Features.LaneStopCheck.LaneStopCheckRequest? right) -> bool
+static Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse.operator !=(Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse? left, Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse? right) -> bool
+static Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse.operator ==(Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse? left, Aw.Meta.Features.LaneStopCheck.LaneStopCheckResponse? right) -> bool
 static Aw.Meta.Features.Lanes.LanesResponse.operator !=(Aw.Meta.Features.Lanes.LanesResponse? left, Aw.Meta.Features.Lanes.LanesResponse? right) -> bool
 static Aw.Meta.Features.Lanes.LanesResponse.operator ==(Aw.Meta.Features.Lanes.LanesResponse? left, Aw.Meta.Features.Lanes.LanesResponse? right) -> bool
 static Aw.Meta.Features.Lanes.RefreshLanesRequest.operator !=(Aw.Meta.Features.Lanes.RefreshLanesRequest? left, Aw.Meta.Features.Lanes.RefreshLanesRequest? right) -> bool
@@ -699,3 +821,31 @@ static Aw.Meta.Features.WorktreeSweep.SweepWorktreesRequest.operator !=(Aw.Meta.
 static Aw.Meta.Features.WorktreeSweep.SweepWorktreesRequest.operator ==(Aw.Meta.Features.WorktreeSweep.SweepWorktreesRequest? left, Aw.Meta.Features.WorktreeSweep.SweepWorktreesRequest? right) -> bool
 static Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse.operator !=(Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse? left, Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse? right) -> bool
 static Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse.operator ==(Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse? left, Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse? right) -> bool
+Aw.Meta.Features.QueueDrop.QueueDropRequest
+Aw.Meta.Features.QueueDrop.QueueDropRequest.<Clone>$() -> Aw.Meta.Features.QueueDrop.QueueDropRequest!
+Aw.Meta.Features.QueueDrop.QueueDropRequest.Deconstruct(out int Pr, out string! Reason) -> void
+Aw.Meta.Features.QueueDrop.QueueDropRequest.Equals(Aw.Meta.Features.QueueDrop.QueueDropRequest? other) -> bool
+Aw.Meta.Features.QueueDrop.QueueDropRequest.Pr.get -> int
+Aw.Meta.Features.QueueDrop.QueueDropRequest.Pr.init -> void
+Aw.Meta.Features.QueueDrop.QueueDropRequest.QueueDropRequest(int Pr, string! Reason) -> void
+Aw.Meta.Features.QueueDrop.QueueDropRequest.Reason.get -> string!
+Aw.Meta.Features.QueueDrop.QueueDropRequest.Reason.init -> void
+Aw.Meta.Features.QueueDrop.QueueDropResponse
+Aw.Meta.Features.QueueDrop.QueueDropResponse.<Clone>$() -> Aw.Meta.Features.QueueDrop.QueueDropResponse!
+Aw.Meta.Features.QueueDrop.QueueDropResponse.Deconstruct(out int Pr, out string! Line) -> void
+Aw.Meta.Features.QueueDrop.QueueDropResponse.Equals(Aw.Meta.Features.QueueDrop.QueueDropResponse? other) -> bool
+Aw.Meta.Features.QueueDrop.QueueDropResponse.Line.get -> string!
+Aw.Meta.Features.QueueDrop.QueueDropResponse.Line.init -> void
+Aw.Meta.Features.QueueDrop.QueueDropResponse.Pr.get -> int
+Aw.Meta.Features.QueueDrop.QueueDropResponse.Pr.init -> void
+Aw.Meta.Features.QueueDrop.QueueDropResponse.QueueDropResponse(int Pr, string! Line) -> void
+override Aw.Meta.Features.QueueDrop.QueueDropRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.QueueDrop.QueueDropRequest.GetHashCode() -> int
+override Aw.Meta.Features.QueueDrop.QueueDropRequest.ToString() -> string!
+override Aw.Meta.Features.QueueDrop.QueueDropResponse.Equals(object? obj) -> bool
+override Aw.Meta.Features.QueueDrop.QueueDropResponse.GetHashCode() -> int
+override Aw.Meta.Features.QueueDrop.QueueDropResponse.ToString() -> string!
+static Aw.Meta.Features.QueueDrop.QueueDropRequest.operator !=(Aw.Meta.Features.QueueDrop.QueueDropRequest? left, Aw.Meta.Features.QueueDrop.QueueDropRequest? right) -> bool
+static Aw.Meta.Features.QueueDrop.QueueDropRequest.operator ==(Aw.Meta.Features.QueueDrop.QueueDropRequest? left, Aw.Meta.Features.QueueDrop.QueueDropRequest? right) -> bool
+static Aw.Meta.Features.QueueDrop.QueueDropResponse.operator !=(Aw.Meta.Features.QueueDrop.QueueDropResponse? left, Aw.Meta.Features.QueueDrop.QueueDropResponse? right) -> bool
+static Aw.Meta.Features.QueueDrop.QueueDropResponse.operator ==(Aw.Meta.Features.QueueDrop.QueueDropResponse? left, Aw.Meta.Features.QueueDrop.QueueDropResponse? right) -> bool

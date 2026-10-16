@@ -44,6 +44,45 @@ public sealed class SindriApiClientWorkflowTests
     }
 
     [Fact]
+    public async Task Instances_sends_root_true_and_no_other_filter_for_the_strip()
+    {
+        var canned = Serving("workflow-instances", "root");
+
+        _ = await Client(canned).Instances(_api, new InstanceQuery(Root: true), Token);
+
+        var query = HttpUtility.ParseQueryString(Assert.Single(canned.Seen).Uri.Query);
+        Assert.Equal("root", Assert.Single(query.AllKeys));
+        Assert.Equal("true", query["root"]);
+    }
+
+    [Fact]
+    public async Task Instances_reads_rows_in_the_apis_order_with_recipe_urgency_and_the_current_state_cell()
+    {
+        var served = Golden("workflow-instances", "root");
+
+        var list = (await Client(Serving("workflow-instances", "root")).Instances(_api, new InstanceQuery(Root: true), Token)).Value;
+
+        Expect.Sequence(served["instances"]!.AsArray().Select(r => (string)r!["address"]!), list.Instances.Select(i => i.Address));
+        foreach (var (row, json) in list.Instances.Zip(served["instances"]!.AsArray()))
+        {
+            Assert.Equal(((string)json!["recipe"]!["urgency"]!, (string)json["state"]!), (row.Recipe.Urgency.ToString().ToLowerInvariant(), row.State));
+            Assert.Contains(row.States, c => string.Equals(c.State, row.State, StringComparison.Ordinal));
+        }
+    }
+
+    [Theory]
+    [InlineData("while-stalled", ErrorKind.Unavailable)]
+    public async Task Instances_maps_SND_VIEW_001_like_every_list(string scenario, ErrorKind kind)
+    {
+        var refusal = RouteAnswer.Problem("decisions-id", scenario);
+        var code = (string)JsonNode.Parse(refusal.Body)!["title"]!; // why: a refusal carries its code
+
+        var list = await Client(new Canned(refusal.Status, refusal.Body)).Instances(_api, new InstanceQuery(Root: true), Token);
+
+        Assert.Equal((code, kind), (list.Error.Code, list.Error.Kind));
+    }
+
+    [Fact]
     public async Task Instances_sends_only_the_members_that_narrow()
     {
         var canned = Serving("workflow-instances", "root");
@@ -194,10 +233,10 @@ public sealed class SindriApiClientWorkflowTests
         }
     }
 
-    // Engine #227 (agreed with the API, 2026-10-15): subject.kind is null when the first input is a link or payload with no
-    // declared kind; the app then shows the input's key (API spec §3.8). Built from a real golden, not a new file.
+    // Engine P4c (agreed with the API, 2026-10-15): every input declares its kind (RCP-INPUT-001), so subject.kind is never null again.
+    // A body that carries one is not an instance the app can draw, and parses as an error rather than guessing a kind.
     [Fact]
-    public async Task An_instance_whose_subject_kind_is_null_parses_and_keeps_its_key()
+    public async Task An_instance_whose_subject_kind_is_null_is_refused()
     {
         var golden = Golden("workflow-instance", "project-build");
         golden["subject"]!["kind"] = null;
@@ -208,9 +247,7 @@ public sealed class SindriApiClientWorkflowTests
 
         foreach (var detail in new[] { viaClient, viaFake })
         {
-            Assert.True(detail.IsSuccess);
-            Assert.Null(detail.Value.Subject.Kind);
-            Assert.Equal((string)golden["subject"]!["key"]!, detail.Value.Subject.Key);
+            Assert.True(detail.IsError);
         }
     }
 }

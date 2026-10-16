@@ -134,13 +134,25 @@ public static class ContextErrors
     /// </summary>
     public static readonly ErrorDefinition OnyxNotPinnedOrLoopback = new("SND-CONTEXT-055", ErrorKind.Invalid, "Onyx isn't on a loopback address, or its version differs from the pinned one");
 
+    /// <summary>SND-CONTEXT-056: a sync of that source is already running (one at a time per source; CLI exit 1, HTTP 409).</summary>
+    public static readonly ErrorDefinition SyncRunning = new("SND-CONTEXT-056", ErrorKind.Conflict, "A sync of that source is already running");
+
+    /// <summary>SND-CONTEXT-057: a model answer the engine refused (a quote that isn't verbatim, a target outside the record's linked nodes, a malformed shape). Counted in a sync's 'refused', never failing it.</summary>
+    public static readonly ErrorDefinition ModelAnswerRefused = new("SND-CONTEXT-057", ErrorKind.Invalid, "A model answer was refused");
+
+    /// <summary>SND-CONTEXT-058: 'sources sync --source X' names a source that isn't configured or has nothing to sync (CLI exit 1, HTTP 404).</summary>
+    public static readonly ErrorDefinition SyncSourceUnknown = new("SND-CONTEXT-058", ErrorKind.NotFound, "No such source to sync");
+
+    /// <summary>SND-CONTEXT-059: a sync stopped at its time cap: the run is partial and resumes from its cursor next time (degraded, exit 0).</summary>
+    public static readonly ErrorDefinition SyncCapped = new("SND-CONTEXT-059", ErrorKind.Unavailable, "A sync stopped at its time cap");
+
     /// <summary>Every Context error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
         [SettingsInvalid, SourceNotConfigured, UnknownAnchor, StoreUnavailable, PathInWorktree, QueryInvalid, SourceUnavailable, AllSourcesUnavailable, SessionsDisabled,
          McpRepoMissing, McpArgumentsInvalid, McpToolUnknown, McpRegisterRepoUnknown, McpRegisterFailed, McpUserWide,
          NoMap, MapFileInvalid, MapNodeUndefined, ExportOutsideHome, MapFileChanged, ProbeFileInvalid, NoProbeFile, AmbiguousAnchor, ProbesRegressed,
          HeavyLockBusy, LabelingUnavailable, ReviewFileNoMatch, NoDraftMap, RepoOutsideScope, PromoteRefused, ReviewTargetStale, ExtractionUnreadable,
-         OnyxKeyRefused, OnyxUnexpectedReply, OnyxDocumentNotFound, OnyxKeyNotServiceAccount, OnyxNotPinnedOrLoopback];
+         OnyxKeyRefused, OnyxUnexpectedReply, OnyxDocumentNotFound, OnyxKeyNotServiceAccount, OnyxNotPinnedOrLoopback, SyncRunning, ModelAnswerRefused, SyncSourceUnknown, SyncCapped];
 
     /// <summary>
     /// The codes the CLI answers with exit 1 (attention, spec §8.6): an unknown or ambiguous anchor, a refused input or
@@ -151,6 +163,6 @@ public static class ContextErrors
     {
         UnknownAnchor.Code, PathInWorktree.Code, QueryInvalid.Code, SessionsDisabled.Code, NoMap.Code, MapFileInvalid.Code, MapNodeUndefined.Code,
         ExportOutsideHome.Code, MapFileChanged.Code, ProbeFileInvalid.Code, NoProbeFile.Code, AmbiguousAnchor.Code, ProbesRegressed.Code,
-        LabelingUnavailable.Code, ReviewFileNoMatch.Code, NoDraftMap.Code, RepoOutsideScope.Code, PromoteRefused.Code, ReviewTargetStale.Code,
+        LabelingUnavailable.Code, ReviewFileNoMatch.Code, NoDraftMap.Code, RepoOutsideScope.Code, PromoteRefused.Code, ReviewTargetStale.Code, SyncRunning.Code, SyncSourceUnknown.Code,
     };
 }

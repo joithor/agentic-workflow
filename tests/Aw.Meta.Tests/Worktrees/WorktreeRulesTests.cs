@@ -49,7 +49,7 @@ public sealed class WorktreeRulesTests
     [Fact, Trait("Lane", "unit")]
     public void A_merged_worktree_with_a_process_inside_is_kept()
     {
-        var verdict = Judge(Merged() with { Occupants = [new ProcessLocation(4242, "claude -n sindri-api", ["/wt/feat-x"])] });
+        var verdict = Judge(Merged() with { Occupants = [new ProcessLocation(4242, "claude -n t1-api", ["/wt/feat-x"])] });
 
         AssertKept(verdict, "4242");
     }
@@ -92,6 +92,15 @@ public sealed class WorktreeRulesTests
 
         AssertKept(Judge(facts), "no pull request: work not finished");
         AssertKept(Judge(facts with { HeadMerged = false }), "no pull request: work not finished");
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_main_checkout_is_kept_as_the_main_checkout_not_as_a_branch_with_no_pull_request()
+    {
+        var verdict = Judge(new WorktreeFacts { Path = "/repo", Branch = "main", IsMainWorktree = true, HeadMerged = true });
+
+        AssertKept(verdict, "this is the main worktree", "main checkout (never swept)");
+        Assert.DoesNotContain(verdict.Reasons, reason => reason.Contains("no pull request", StringComparison.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]

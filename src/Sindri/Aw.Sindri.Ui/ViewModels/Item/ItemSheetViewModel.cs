@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.ViewModels.Controls;
+using Aw.Sindri.Ui.ViewModels.NeedsYou;
 
 namespace Aw.Sindri.Ui.ViewModels.Item;
 
@@ -10,7 +11,7 @@ namespace Aw.Sindri.Ui.ViewModels.Item;
 /// words; the actions are the item's 'actions' rendered from the catalog; Close item sends the version shown (§4.5). A
 /// SND-ITEM-409 re-reads the item and shows the API's detail (§9.1); SND-ITEM-404 shows its detail with Back.
 /// </summary>
-internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewModel catalog, TimeProvider clock) : ObservableObject
+internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewModel catalog, TimeProvider clock, DecisionSender? decisions = null) : ObservableObject
 {
     private const string Conflict = "SND-ITEM-409";
     private const string NotFound = "SND-ITEM-404";
@@ -26,6 +27,9 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     private string _conflictAction = string.Empty;   // the 409 line shown, if any: the action it refused and the version it was shown at
     private long _conflictVersion;
     private int _pages;
+
+    /// <summary>The item's decisions and requests (U3' T8).</summary>
+    internal ItemNeedsViewModel Needs { get; } = ItemNeedsViewModel.Create(api, decisions ?? new DecisionSender(api), catalog);
 
     /// <summary>The app's copy for the sheet's headings and buttons.</summary>
     public ItemText Text { get; } = ItemText.Instance;
@@ -205,6 +209,7 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     private void Clear()
     {
         _controls.Clear();
+        Needs.Reset();
         EndConflict();
         _subject++;
         _generation++;
