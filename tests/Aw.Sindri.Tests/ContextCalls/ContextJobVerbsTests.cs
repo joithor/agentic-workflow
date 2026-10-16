@@ -22,11 +22,13 @@ public sealed class ContextJobVerbsTests : IDisposable
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
+    private CancellationToken _interrupt = Token;
+
     private async Task<int> Run(ScriptedApi api, params string[] args)
     {
         using var client = new ControlPlaneClient(_probe, SliceHarness.Json, handler: api);
         var output = new Output(_out, _error, SliceHarness.Json);
-        return await new ContextJobVerbs(client, output, new JobFollower(client, output, TimeProvider.System)).Run(args, Token, Token);
+        return await new ContextJobVerbs(client, output, new JobFollower(client, output, TimeProvider.System)).Run(args, _interrupt, Token);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -40,6 +42,23 @@ public sealed class ContextJobVerbsTests : IDisposable
         var (method, route, _) = Assert.Single(api.Calls);
         Assert.Equal(("POST", "/sindri/context/sources/sync"), (method, route));
         Assert.Equal("job JOB-0000000000000000000000000000000e started\n", _out.ToString().Replace("\r\n", "\n", StringComparison.Ordinal));
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("sources", "sync")]
+    [InlineData("map", "build")]
+    public async Task A_Ctrl_C_during_the_start_does_not_cancel_the_POST_so_the_job_is_never_lost(params string[] args)
+    {
+        var api = new ScriptedApi((HttpStatusCode.OK, Started));
+        using var interrupted = new CancellationTokenSource();
+        await interrupted.CancelAsync();
+
+        _interrupt = interrupted.Token;
+
+        var exit = await Run(api, [.. args, "--detach"]);
+
+        Assert.True(exit == 0, _error.ToString());
+        _ = Assert.Single(api.Calls);
     }
 
     [Fact, Trait("Lane", "unit")]
