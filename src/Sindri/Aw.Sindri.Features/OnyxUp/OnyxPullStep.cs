@@ -9,13 +9,20 @@ internal sealed class OnyxPullStep(IContainerRuntime runtime, IOnyxWorkspace wor
 {
     public string Name => OnyxSteps.Pull;
 
+    public string? After => OnyxSteps.Config;
+
     public string Stamp(OnyxUpContext context) => OnyxSteps.Stamp(context.Done.GetValueOrDefault(OnyxSteps.Config, ""));
 
-    public ValueTask<bool> IsDone(OnyxUpContext context, string? recorded, CancellationToken cancellationToken)
-        => ValueTask.FromResult(string.Equals(recorded, Stamp(context), StringComparison.Ordinal));
+    public ValueTask<Result<OnyxStepOutcome>> Execute(OnyxUpContext context, string? recorded, CancellationToken cancellationToken)
+    {
+        if (string.Equals(recorded, Stamp(context), StringComparison.Ordinal))
+        {
+            return ValueTask.FromResult<Result<OnyxStepOutcome>>(OnyxStepOutcome.Skipped);
+        }
 
-    public ValueTask<Result<Unit>> Run(OnyxUpContext context, CancellationToken cancellationToken)
-        => ValueTask.FromResult(Pull(context, cancellationToken));
+        progress.Line($"{Name}: running");
+        return ValueTask.FromResult(Pull(context, cancellationToken).Map(static _ => OnyxStepOutcome.Ran));
+    }
 
     private Result<Unit> Pull(OnyxUpContext context, CancellationToken cancellationToken)
     {

@@ -12,9 +12,23 @@ internal sealed class OnyxStartStep(IContainerRuntime runtime, IOnyxHealth healt
 
     public string Name => OnyxSteps.Start;
 
+    public string? After => OnyxSteps.Pull;
+
     public string Stamp(OnyxUpContext context) => OnyxSteps.Stamp(context.Done.GetValueOrDefault(OnyxSteps.Pull, ""), "start");
 
-    public async ValueTask<bool> IsDone(OnyxUpContext context, string? recorded, CancellationToken cancellationToken)
+    public async ValueTask<Result<OnyxStepOutcome>> Execute(OnyxUpContext context, string? recorded, CancellationToken cancellationToken)
+    {
+        if (await IsDone(context, recorded, cancellationToken).ConfigureAwait(false))
+        {
+            return OnyxStepOutcome.Skipped;
+        }
+
+        progress.Line($"{Name}: running");
+        var ran = await Run(context, cancellationToken).ConfigureAwait(false);
+        return ran.IsError ? ran.Error : OnyxStepOutcome.Ran;
+    }
+
+    private async ValueTask<bool> IsDone(OnyxUpContext context, string? recorded, CancellationToken cancellationToken)
     {
         if (!string.Equals(recorded, Stamp(context), StringComparison.Ordinal))
         {
@@ -32,7 +46,7 @@ internal sealed class OnyxStartStep(IContainerRuntime runtime, IOnyxHealth healt
         return probe.Healthy && probe.BackendVersion is { } version && OnyxReadiness.SameVersion(version, context.Pins.Version);
     }
 
-    public async ValueTask<Result<Unit>> Run(OnyxUpContext context, CancellationToken cancellationToken)
+    private async ValueTask<Result<Unit>> Run(OnyxUpContext context, CancellationToken cancellationToken)
     {
         var begun = clock.GetUtcNow();
         var started = runtime.Up(context.Project, _ => progress.Tick(), cancellationToken);

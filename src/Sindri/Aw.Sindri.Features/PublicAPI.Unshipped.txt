@@ -2110,6 +2110,10 @@ Aw.Sindri.Features.OnyxUp.OnyxUpResponse.Version.get -> string!
 Aw.Sindri.Features.OnyxUp.OnyxUpResponse.Version.init -> void
 Aw.Sindri.Features.OnyxUp.OnyxUpResponse.Warnings.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Features.OnyxUp.OnyxUpResponse.Warnings.init -> void
+Aw.Sindri.Features.OnyxUp.OnyxStepOutcome
+Aw.Sindri.Features.OnyxUp.OnyxStepOutcome.NeedsHuman = 2 -> Aw.Sindri.Features.OnyxUp.OnyxStepOutcome
+Aw.Sindri.Features.OnyxUp.OnyxStepOutcome.Ran = 0 -> Aw.Sindri.Features.OnyxUp.OnyxStepOutcome
+Aw.Sindri.Features.OnyxUp.OnyxStepOutcome.Skipped = 1 -> Aw.Sindri.Features.OnyxUp.OnyxStepOutcome
 override Aw.Sindri.Features.OnyxUp.OnyxUpRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Features.OnyxUp.OnyxUpRequest.GetHashCode() -> int
 override Aw.Sindri.Features.OnyxUp.OnyxUpRequest.ToString() -> string!

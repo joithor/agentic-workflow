@@ -45,7 +45,8 @@ public sealed class OnyxUpResumeTests
         var rerun = (await rig.Up(Token)).Value;
         Assert.Equal(["pull", "start"], rerun.Ran, StringComparer.Ordinal);
         Assert.Equal(["fetch", "config"], rerun.Skipped, StringComparer.Ordinal);
-        Assert.Equal(1, rig.Files.Fetches);
+        Assert.Equal(2, rig.Files.Fetches);   // verified again, nothing downloaded
+        Assert.Equal(rig.Pins.Pins.Files.Count, rig.Files.Requested.Count);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -135,6 +136,65 @@ public sealed class OnyxUpResumeTests
         Assert.Equal(["config", "pull", "start"], rerun.Ran, StringComparer.Ordinal);
         Assert.Equal(["fetch"], rerun.Skipped, StringComparer.Ordinal);
         Assert.Contains(moved.Digest, rig.Workspace.Files[rig.Paths.Override], StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_deleted_pinned_file_is_fetched_again_without_rerunning_the_later_steps()
+    {
+        var rig = new OnyxUpRig();
+        _ = await rig.Up(Token);
+        const string nginx = "data/nginx/run-nginx.sh";
+        _ = rig.Files.Local.Remove(nginx);
+        _ = rig.Workspace.Files.Remove(rig.Paths.DeployDir + "/" + nginx);
+
+        var rerun = (await rig.Up(Token)).Value;
+
+        Assert.Equal(["fetch"], rerun.Ran, StringComparer.Ordinal);
+        Assert.Equal(["config", "pull", "start"], rerun.Skipped, StringComparer.Ordinal);
+        Assert.Equal(2, rig.Files.Fetches);
+        Assert.Contains(nginx, rig.Files.Requested.Skip(1), StringComparer.Ordinal);
+        Assert.True(rig.Workspace.Files.ContainsKey(rig.Paths.DeployDir + "/" + nginx));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_tampered_compose_file_is_restored_to_its_pin()
+    {
+        var rig = new OnyxUpRig();
+        _ = await rig.Up(Token);
+        rig.Files.Local[Compose] = "tampered\n"u8.ToArray();
+
+        var rerun = (await rig.Up(Token)).Value;
+
+        Assert.Equal(["fetch"], rerun.Ran, StringComparer.Ordinal);
+        Assert.Equal(OnyxFixtures.ReadText(Compose), rig.Workspace.Files[rig.Paths.Compose], StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_deleted_file_whose_download_fails_its_pin_is_004()
+    {
+        var rig = new OnyxUpRig();
+        _ = await rig.Up(Token);
+        _ = rig.Files.Local.Remove(Compose);
+        rig.Remote[Compose] = "tampered\n"u8.ToArray();
+
+        Assert.Equal("SND-ONYX-004", (await rig.Up(Token)).Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_hand_edited_override_is_rewritten_and_a_hand_edited_env_is_restored_with_its_key()
+    {
+        var rig = new OnyxUpRig();
+        _ = await rig.Up(Token);
+        var (env, over) = (rig.Workspace.Files[rig.Paths.Env], rig.Workspace.Files[rig.Paths.Override]);
+        rig.Workspace.Files[rig.Paths.Override] = over + "    ports: [\"0.0.0.0:80:80\"]\n";
+        rig.Workspace.Files[rig.Paths.Env] = env + "COMPOSE_PROFILES=everything\n";
+
+        var rerun = (await rig.Up(Token)).Value;
+
+        Assert.Equal(["config"], rerun.Ran, StringComparer.Ordinal);
+        Assert.Equal(over, rig.Workspace.Files[rig.Paths.Override], StringComparer.Ordinal);
+        Assert.Equal(env, rig.Workspace.Files[rig.Paths.Env], StringComparer.Ordinal);
+        Assert.Equal(1, rig.Random.Calls);
     }
 
     [Fact, Trait("Lane", "unit")]

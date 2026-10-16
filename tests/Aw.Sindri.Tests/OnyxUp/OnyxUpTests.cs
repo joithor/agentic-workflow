@@ -39,7 +39,7 @@ public sealed class OnyxUpTests
         var rig = new OnyxUpRig();
         var first = (await rig.Up(Token)).Value;
         var env = rig.Workspace.Files[rig.Paths.Env];
-        var (writes, stateWrites, fetches, calls) = (rig.Workspace.Writes.Count, rig.Workspace.StateWrites, rig.Files.Fetches, rig.Runtime.Calls.Count);
+        var (writes, stateWrites, fetches, calls, requested) = (rig.Workspace.Writes.Count, rig.Workspace.StateWrites, rig.Files.Fetches, rig.Runtime.Calls.Count, rig.Files.Requested.Count);
 
         var second = (await rig.Up(Token)).Value;
 
@@ -48,7 +48,8 @@ public sealed class OnyxUpTests
         Assert.Equal(first.Port, second.Port);
         Assert.Equal(writes, rig.Workspace.Writes.Count);
         Assert.Equal(stateWrites, rig.Workspace.StateWrites);
-        Assert.Equal(fetches, rig.Files.Fetches);
+        Assert.Equal(fetches + 1, rig.Files.Fetches);   // the pinned files are verified on every run
+        Assert.Equal(requested, rig.Files.Requested.Count);   // and nothing is downloaded when they are intact
         Assert.Equal(env, rig.Workspace.Files[rig.Paths.Env]);
         var again = rig.Runtime.Calls.Skip(calls).ToList();
         Assert.DoesNotContain("Pull", again, StringComparer.Ordinal);

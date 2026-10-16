@@ -76,8 +76,8 @@ public sealed class OnyxUpRig
         var readiness = new OnyxReadiness(Health, Runtime, Clock);
         IOnyxUpStep[] steps =
         [
-            new OnyxFetchStep(Files, Workspace, Progress),
-            new OnyxConfigStep(Workspace, compose, Random),
+            new OnyxFetchStep(Files, Progress),
+            new OnyxConfigStep(Workspace, compose, Random, Progress),
             new OnyxPullStep(Runtime, Workspace, compose, Progress),
             new OnyxStartStep(Runtime, Health, readiness, Progress, Clock),
         ];

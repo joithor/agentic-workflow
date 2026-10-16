@@ -44,30 +44,26 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
                 return outcome.Error;
             }
 
-            (outcome.Value ? ran : skipped).Add(step.Name);
+            (outcome.Value == OnyxStepOutcome.Ran ? ran : skipped).Add(step.Name);
         }
 
         return new OnyxUpResponse(port, string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}"), context.Version ?? pins.Version, warnings, ran, skipped);
     }
 
-    // True when the step did work, false when it was already done; its stamp is recorded once it holds.
-    private async ValueTask<Result<bool>> RunStep(IOnyxUpStep step, OnyxUpContext context, Dictionary<string, string> recorded, CancellationToken cancellationToken)
+    // The step makes its result hold; its stamp is recorded once it does.
+    private async ValueTask<Result<OnyxStepOutcome>> RunStep(IOnyxUpStep step, OnyxUpContext context, Dictionary<string, string> recorded, CancellationToken cancellationToken)
     {
         var stamp = step.Stamp(context);
         _ = recorded.TryGetValue(step.Name, out var before);
-        var done = await step.IsDone(context, before, cancellationToken).ConfigureAwait(false);
-        if (done)
+        var outcome = await step.Execute(context, before, cancellationToken).ConfigureAwait(false);
+        if (outcome.IsError)
+        {
+            return outcome.Error;
+        }
+
+        if (outcome.Value == OnyxStepOutcome.Skipped)
         {
             progress.Line($"{step.Name}: already done");
-        }
-        else
-        {
-            progress.Line($"{step.Name}: running");
-            var ran = await step.Run(context, cancellationToken).ConfigureAwait(false);
-            if (ran.IsError)
-            {
-                return ran.Error;
-            }
         }
 
         context.Done[step.Name] = stamp;
@@ -77,7 +73,7 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
             workspace.WriteState(new OnyxSetupState(context.Port, new Dictionary<string, string>(recorded, StringComparer.Ordinal)));
         }
 
-        return !done;
+        return outcome;
     }
 
     // Step 1. The port row accepts the port our own running nginx holds; a failed row stops everything before anything is fetched or written.
