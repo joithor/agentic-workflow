@@ -180,7 +180,9 @@ $out"
 test_a_suite_whose_sandbox_cannot_be_made_fails_instead_of_running() {
   local o out
   o="$(mktemp -d)"; : > "$o/x.test.sh"
-  out="$(TMPDIR=/nonexistent bash "$RUNNER" --run-one par "$o/x.test.sh" "$o" p001 2>&1)"
+  # A PATH stub makes mktemp fail the same way on every platform (BSD mktemp ignores a bad TMPDIR and falls back to /tmp).
+  mkdir -p "$o/stub"; printf '#!/bin/sh\nexit 1\n' > "$o/stub/mktemp"; chmod +x "$o/stub/mktemp"
+  out="$(PATH="$o/stub:$PATH" bash "$RUNNER" --run-one par "$o/x.test.sh" "$o" p001 2>&1)"
   [ "$(cat "$o/p001.rc")" = 2 ] || fail "a missing sandbox must fail the suite (rc file: $(cat "$o/p001.rc" 2>/dev/null)): $out"
   printf '%s\n' "$out" | grep -q 'FAIL  par' || fail "the failure is not reported: $out"
   rm -r "$o"
