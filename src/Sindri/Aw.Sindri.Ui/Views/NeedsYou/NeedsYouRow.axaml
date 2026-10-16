@@ -11,7 +11,7 @@
   <Border x:Name="RowFrame" Classes="item-row needs-you-row" Classes.selected="{Binding IsSelected}" Classes.pulsing="{Binding IsPulsing}"
           Classes.outlined="{Binding HasOutline}" Classes.stale="{Binding IsStale}" Focusable="True"
           AutomationProperties.Name="{Binding AccessibleName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
-    <StackPanel Spacing="4">
+    <StackPanel Spacing="2">
       <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto" VerticalAlignment="Center">
         <ctl:StateChipView x:Name="NeedsYouChip" Chip="{Binding StateChip}" VerticalAlignment="Center" Margin="0,0,8,0" />
         <TextBlock Grid.Column="1" Classes="mono subtle" Text="{Binding ShownId}" VerticalAlignment="Center" Margin="0,0,8,0" AutomationProperties.AccessibilityView="Raw" />
@@ -21,27 +21,29 @@
         <TextBlock x:Name="NewWord" Grid.Column="3" Classes="caption" Text="{Binding NewWord}" AutomationProperties.Name="{Binding NewWord}" IsVisible="{Binding HasOutline}" Margin="8,0" VerticalAlignment="Center" />
         <TextBlock Grid.Column="4" Classes="caption subtle" Text="{Binding Age}" VerticalAlignment="Center" TextAlignment="Right" AutomationProperties.AccessibilityView="Raw" />
       </Grid>
-      <StackPanel Orientation="Horizontal" Spacing="8">
-        <TextBlock Classes="caption subtle" Text="{Binding Reason}" TextTrimming="CharacterEllipsis" AutomationProperties.Name="{Binding Reason}" />
-        <TextBlock Classes="caption subtle mono" Text="{Binding Repo}" IsVisible="{Binding Repo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" AutomationProperties.Name="{Binding Repo}" />
-      </StackPanel>
-      <TextBlock x:Name="NeedsYouNotice" Classes="caption" Text="{Binding Notice}" IsVisible="{Binding HasNotice}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Notice}" />
-      <ItemsControl x:Name="NeedsYouControls" ItemsSource="{Binding Controls}">
-        <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate>
-            <WrapPanel Orientation="Horizontal" />
-          </ItemsPanelTemplate>
-        </ItemsControl.ItemsPanel>
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="ny:NeedsYouActionControl">
-            <StackPanel Margin="0,0,8,4">
-              <Button Classes="command-control" Classes.primary="{Binding IsPrimary}" IsEnabled="{Binding IsEnabled}" Content="{Binding Action.Label}"
-                      Click="OnAction" ToolTip.Tip="{Binding Tooltip}" AutomationProperties.Name="{Binding Action.Label}" />
-              <TextBlock Classes="caption subtle mono" Text="{Binding Action.Cli}" IsVisible="{Binding IsProtected}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Action.Cli}" />
-            </StackPanel>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
+      <DockPanel LastChildFill="True">
+        <ItemsControl x:Name="NeedsYouControls" DockPanel.Dock="Right" Margin="12,0,0,0" ItemsSource="{Binding Controls}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="ny:NeedsYouActionControl">
+              <StackPanel Orientation="Horizontal" Spacing="6" Margin="8,0,0,0">
+                <Button Classes="command-control" Classes.primary="{Binding IsPrimary}" IsEnabled="{Binding IsEnabled}" Content="{Binding Action.Label}"
+                        Click="OnAction" ToolTip.Tip="{Binding Tooltip}" AutomationProperties.Name="{Binding Action.Label}" />
+                <TextBlock Classes="caption subtle mono" Text="{Binding Action.Cli}" IsVisible="{Binding IsProtected}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Action.Cli}" />
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <TextBlock Classes="caption subtle" Text="{Binding Reason}" TextTrimming="CharacterEllipsis" AutomationProperties.Name="{Binding Reason}" />
+          <TextBlock Classes="caption subtle mono" Text="{Binding Repo}" IsVisible="{Binding Repo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" AutomationProperties.Name="{Binding Repo}" />
+          <TextBlock x:Name="NeedsYouNotice" Classes="caption" Text="{Binding Notice}" IsVisible="{Binding HasNotice}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Notice}" AutomationProperties.Name="{Binding Notice}" />
+        </StackPanel>
+      </DockPanel>
     </StackPanel>
   </Border>
 </UserControl>

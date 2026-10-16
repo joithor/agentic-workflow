@@ -25,6 +25,8 @@ public sealed class StripFoldTests : FrameHost
         Assert.Equal((5, 3), (shell.NeedsYou.Rows.Count, StripRows(window)));
         var rows = window.GetVisualDescendants().OfType<Border>().Where(b => b.Name == "StripRowFrame" && b.IsEffectivelyVisible);
         Assert.All(rows, r => Assert.InRange(r.Bounds.Height, 0, 56)); // why: screens §4.1 draws one line per instance
+        var needs = window.GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("needs-you-row") && b.IsEffectivelyVisible);
+        Assert.All(needs, r => Assert.InRange(r.Bounds.Height, 0, 64)); // why: two lines a row, the fold (provisional owner default)
         Assert.InRange((int)Top(window, "RunningPanel"), 0, 799); // why: the fold holds the columns' tops with 5 + 3 rows (provisional owner default: two-line Needs-you rows)
         Assert.InRange((int)Top(window, "QueuedPanel"), 0, 799);
     });

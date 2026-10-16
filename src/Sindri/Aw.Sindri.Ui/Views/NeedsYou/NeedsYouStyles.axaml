@@ -20,4 +20,13 @@
   <Style Selector="Border.needs-you-row.stale">
     <Setter Property="Opacity" Value="0.7" />
   </Style>
+  <!-- Two lines a row (the fold, screens spec §4.1): the row's buttons are as tall as their text plus a hairline, so a row stays near
+       64 px. Specificity beats the generic command-control look in the queue styles. -->
+  <Style Selector="Border.needs-you-row Button.command-control">
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Padding" Value="10,2" />
+  </Style>
+  <Style Selector="Border.needs-you-row Button.command-control:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Padding" Value="9,1" />
+  </Style>
 </Styles>
