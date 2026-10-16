@@ -65,7 +65,7 @@ public sealed class FakeDatabaseReader : IDatabaseReader
     private Result<Rows> Run(string sql, int rowLimit)
     {
         _queries.Add(sql);
-        if (_refused.Contains(sql) || Core.Data.SqlText.Statements(sql).Count > 1)
+        if (_refused.Contains(sql) || SqlText.Statements(sql).Count > 1)
         {
             return EvidenceErrors.DatabaseRefused.With($"the database refused a write: {sql}");
         }

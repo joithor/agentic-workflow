@@ -68,7 +68,7 @@ public sealed class SqliteDatabaseReaderContractTests : ReadOnlyDatabaseContract
 
         var opened = await new SqliteDatabaseReader().OpenAsync(new SqliteTarget(missing, _root.Combine("run/db")), TestContext.Current.CancellationToken);
 
-        Assert.Equal(Aw.Evidence.Core.EvidenceErrors.DatabaseUnavailable.Code, opened.Error.Code);
+        Assert.Equal(Core.EvidenceErrors.DatabaseUnavailable.Code, opened.Error.Code);
         Assert.False(File.Exists(missing));
     }
 

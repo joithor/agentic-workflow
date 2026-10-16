@@ -106,5 +106,5 @@ public abstract class ReadOnlyDatabaseContract
         Expect.That(result.IsError && result.Error.Code == EvidenceErrors.RunFailed.Code, $"a missing table is AW-EVIDENCE-015 (got {Describe(result)})");
     }
 
-    private static string Describe(Aw.Kernel.Result<Rows> result) => result.IsError ? result.Error.Code + " " + result.Error.Message : "success";
+    private static string Describe(Kernel.Result<Rows> result) => result.IsError ? result.Error.Code + " " + result.Error.Message : "success";
 }
