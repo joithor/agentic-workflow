@@ -13,8 +13,10 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 public sealed class EndedInstanceViews(IInstanceReader reader)
 {
     private readonly ConcurrentDictionary<(string Address, DateTimeOffset Started), InstanceView> _ended = new();
+    private readonly Lock _gate = new();
+    private (string Address, DateTimeOffset Started)? _newest;
 
-    /// <summary>The most ended views kept; past it the memory starts over.</summary>
+    /// <summary>The most ended views kept; past it the newest one is dropped to make room (a list longer than this keeps re-reading only the last few rows, where dropping the oldest would re-read all of them).</summary>
     public const int Capacity = 512;
 
     /// <summary>The view of <paramref name="address"/>, always read: this is the lookup of one instance, not a list row.</summary>
@@ -44,14 +46,23 @@ public sealed class EndedInstanceViews(IInstanceReader reader)
         var view = await reader.Get(address, cancellationToken).ConfigureAwait(false);
         if (view.IsSuccess && view.Value.Outcome is not null)
         {
-            if (_ended.Count >= Capacity)
-            {
-                _ended.Clear();
-            }
-
-            _ended[(address.Value, started)] = view.Value;
+            Remember((address.Value, started), view.Value);
         }
 
         return view;
+    }
+
+    private void Remember((string Address, DateTimeOffset Started) key, InstanceView view)
+    {
+        lock (_gate)
+        {
+            if (_ended.Count >= Capacity && !_ended.ContainsKey(key) && _newest is { } newest)
+            {
+                _ = _ended.TryRemove(newest, out _);
+            }
+
+            _ended[key] = view;
+            _newest = key;
+        }
     }
 }
