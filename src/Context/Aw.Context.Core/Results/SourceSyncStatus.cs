@@ -9,5 +9,5 @@ namespace Aw.Context.Core.Results;
 /// <param name="Linked">Links stored for them.</param>
 /// <param name="Decisions">Decisions extracted from them.</param>
 /// <param name="Queued">Records waiting for decision extraction.</param>
-/// <param name="Code">The code the last run failed with, or null.</param>
+/// <param name="Code">The last run's code, or null: a failure (State is Unavailable), SND-CONTEXT-059 when the time cap stopped it (partial, State unchanged), or SND-CONTEXT-042 while records wait for extraction (State unchanged).</param>
 public sealed record SourceSyncStatus(DateTimeOffset? LastSync, SourceState State, int Records, int Linked, int Decisions, int Queued, string? Code);

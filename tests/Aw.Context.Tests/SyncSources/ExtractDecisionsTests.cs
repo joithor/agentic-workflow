@@ -276,7 +276,6 @@ public sealed class ExtractDecisionsTests
         ScriptedSource? slow = null;
         await using var rig = await Rig.Start(wrap: inner => slow = new ScriptedSource(inner));
         slow!.AfterFetch = () => rig.World.Clock.Advance(SyncSourcesService.RunCap + TimeSpan.FromSeconds(1));   // every fetch alone takes longer than the whole run may
-        var queued = int.MaxValue;
         var runs = 0;
         SourceSync last;
 
@@ -284,8 +283,7 @@ public sealed class ExtractDecisionsTests
         {
             last = await rig.Sync(Scope());
             runs++;
-            Assert.True(last.Queued <= queued || last.Fetched > 0, "a capped run must move on");
-            queued = last.Queued;
+            Assert.True(last.Code is null || (last.Fetched == 1 && last.Queued == 0), "a capped run completes exactly one record (fetched, linked and extracted), no more and no less");
         }
         while (last.Code is not null && runs < 60);
 
@@ -334,5 +332,26 @@ public sealed class ExtractDecisionsTests
         Assert.Equal(0, afterThird.Queued);   // the third try gave up
         Assert.Equal([ConflictVerdict.Refused], afterThird.Item3);
         Assert.Equal((3, 0), (Asked(), fourth.Queued));   // and the pair is not asked again
+    }
+
+    [Fact]
+    public async Task A_pair_whose_answer_was_unreadable_once_is_decided_by_the_next_readable_answer_and_leaves_the_queue()
+    {
+        await using var rig = await Rig.Start("contradicts");
+        var routed = rig.World.Model.Responder!;
+        var unreadable = true;
+        rig.World.Model.Responder = r => r.Purpose == ModelPurpose.Adjudication && unreadable ? "no idea" : routed(r);
+
+        var first = await rig.Sync(Scope());
+        var pending = (await rig.Layer()).Conflicts.Select(c => (c.Verdict, c.Tries)).ToList();
+        unreadable = false;
+        var second = await rig.Sync(Scope());
+
+        Assert.True(first.Queued > 0);
+        Assert.Equal([(ConflictVerdict.Unread, 1)], pending);
+        var decided = Assert.Single((await rig.Layer()).Conflicts);
+        Assert.Equal((ConflictVerdict.Contradicts, 0), (decided.Verdict, decided.Tries));   // the readable answer replaced the unread row and reset the tries
+        Assert.Equal((0, null), (second.Queued, second.Code));
+        Assert.Equal(2, rig.World.Model.Requests.Count(r => r.Purpose == ModelPurpose.Adjudication));
     }
 }
