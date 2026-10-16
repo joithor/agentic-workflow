@@ -28,7 +28,10 @@ SELF="scripts/ci/tmux-isolation.sh"
 SELF_TEST="scripts/tests/tmux-isolation.test.sh"   # its fixtures are the violations
 # The file list: inside a git checkout, what git tracks or would track (so ignored directories and, from the main checkout, other
 # worktrees' files are never scanned); outside one, a find that skips .git, .claude/worktrees, node_modules, obj and bin.
-if [ "$(git -C "$ROOT" rev-parse --show-toplevel 2> /dev/null)" = "$ROOT" ]; then
+# "Is $ROOT the checkout's top?" compares physical paths: on macOS /var is a symlink to /private/var, so git's toplevel and the
+# cd-resolved root can spell the same directory differently.
+git_top="$(git -C "$ROOT" rev-parse --show-toplevel 2> /dev/null || true)"
+if [ -n "$git_top" ] && [ "$(cd "$git_top" && pwd -P)" = "$(pwd -P)" ]; then
   listing="$(git ls-files --cached --others --exclude-standard 2> /dev/null | sort -u)"
 else
   listing="$(find . \( -path ./.git -o -path ./.claude/worktrees -o -name node_modules -o -name obj -o -name bin \) -prune -o -type f \( -name '*.sh' -o -name '*.cs' \) -print 2> /dev/null | sed 's|^\./||' | sort -u)"

@@ -36,6 +36,12 @@ internal sealed class ItemText
     /// <summary><see cref="Labels.LoadMore"/>.</summary>
     public string LoadMore { get; } = Labels.LoadMore;
 
+    /// <summary><see cref="Labels.ItemDecisions"/>.</summary>
+    public string Decisions { get; } = Labels.ItemDecisions;
+
+    /// <summary><see cref="Labels.ItemRequests"/>.</summary>
+    public string Requests { get; } = Labels.ItemRequests;
+
     /// <summary><see cref="Labels.Timeline"/>.</summary>
     public string Timeline { get; } = Labels.Timeline;
 

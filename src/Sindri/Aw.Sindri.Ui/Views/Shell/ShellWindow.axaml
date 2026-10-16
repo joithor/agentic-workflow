@@ -8,9 +8,10 @@
         xmlns:root="using:Aw.Sindri.Ui.Views.Palette"
         xmlns:queue="using:Aw.Sindri.Ui.Views.Queue"
         xmlns:item="using:Aw.Sindri.Ui.Views.Item"
+        xmlns:ny="using:Aw.Sindri.Ui.Views.NeedsYou"
         x:Class="Aw.Sindri.Ui.Views.Shell.ShellWindow"
         x:DataType="shell:ShellViewModel"
-        Title="{Binding Text.Sindri}"
+        Title="{Binding WindowTitle}"
         Width="1280" Height="800"
         MinWidth="{StaticResource Size.WindowMinWidth}" MinHeight="{StaticResource Size.WindowMinHeight}">
   <!-- The shell (UI spec §3.2, §4.1): a top bar, the page, and the detail sheet over it; a version mismatch takes the whole
@@ -56,11 +57,6 @@
 
     <DockPanel IsVisible="{Binding IsChromeVisible}">
       <views:TopBar x:Name="TopBar" DockPanel.Dock="Top" ZIndex="1" />
-
-      <!-- The attention band (§3.2): hidden until needs-you is served (U3). -->
-      <Border x:Name="AttentionBand" DockPanel.Dock="Top" Height="{StaticResource Size.AttentionBand}"
-              Background="{DynamicResource Brush.Attention}" IsVisible="{Binding IsAttentionBandVisible}"
-              AutomationProperties.Name="{Binding Text.NeedsYouPanel}" />
 
       <!-- Stale after three failed refreshes (§4.1): "Sindri not responding: run sindri doctor" in full under the top bar,
            since the pill keeps ⌛ stale and its Refresh at the 900 px minimum. -->
@@ -259,6 +255,13 @@
                 <ScrollViewer x:Name="ItemSheetScroll" IsVisible="{Binding IsItemSheet}">
                   <item:ItemSheet x:Name="ItemSheet" DataContext="{Binding Item}" />
                 </ScrollViewer>
+                <!-- U3' T9: a Needs-you row's sheet (kind: NeedsYou); the decision sheet is kind Decision (T6). -->
+                <ScrollViewer x:Name="NeedsYouSheetScroll" IsVisible="{Binding IsNeedsYouSheet}">
+                  <ny:NeedsYouSheet x:Name="NeedsYouSheet" DataContext="{Binding NeedsYou.SheetRow}" />
+                </ScrollViewer>
+                <ScrollViewer x:Name="DecisionSheetScroll" IsVisible="{Binding IsDecisionSheet}">
+                  <ny:DecisionSheet x:Name="DecisionSheet" DataContext="{Binding Decision}" />
+                </ScrollViewer>
                 <!-- LANE ANCHOR U3': the sheet content for the kinds U3' claims (kinds: NeedsYou, Decision). Insert immediately above this marker, never between the markers. -->
                 <!-- LANE ANCHOR U8: the sheet content for the kinds U8 claims (kinds: Workflow); the item sheet's re-base is content only. Recipe, Node, Session, System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers. -->
               </Panel>
@@ -292,6 +295,15 @@
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
     <!-- The queue's polite region (§3.3): "ITM-… cleared" and "N new", live only while it speaks (the view model changes the flag first). -->
     <TextBlock x:Name="QueueLive" Classes="live-region" Classes.live="{Binding Queue.IsAnnouncing}" Text="{Binding Queue.Announcement}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <!-- Needs you (§5): "N now need you", once for each rise; the flag changes before the text. -->
+    <TextBlock x:Name="NeedsYouLive" Classes="live-region" Classes.live="{Binding IsNeedsYouAnnouncing}" Text="{Binding NeedsYouAnnouncement}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <!-- Mark all seen (B2): "N marked seen" once when its Undo is offered; the flag changes before the text. -->
+    <TextBlock x:Name="NeedsYouSeenLive" Classes="live-region" Classes.live="{Binding NeedsYou.Seen.UndoOffered}" Text="{Binding NeedsYou.Seen.UndoAnnouncement}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <!-- The decision sheet's polite region: what Decide answered or refused; the flag changes before the text. -->
+    <TextBlock x:Name="DecisionLive" Classes="live-region" Classes.live="{Binding Decision.IsAnnouncing}" Text="{Binding Decision.Announcement}"
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
     <!-- The item sheet's polite region (L8): the refusal a gone control leaves behind, spoken once; the flag changes before the text. -->
     <TextBlock x:Name="ItemLive" Classes="live-region" Classes.live="{Binding Item.IsAnnouncing}" Text="{Binding Item.Announcement}"

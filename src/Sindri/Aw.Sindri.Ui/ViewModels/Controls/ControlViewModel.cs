@@ -43,7 +43,7 @@ internal sealed partial class ControlViewModel : ObservableObject
         Action = row.Action;
         Label = Labels.Action(row.Action);
         Shortcut = row.Shortcut ?? string.Empty;
-        (Kind, Stage) = Parse(row.Ui);
+        (Kind, Stage) = CatalogReadiness.Parse(row.Ui);
         Cli = Safe(row.Cli) ? row.Cli : string.Empty;
         PendingLine = Kind == ControlKind.Pending ? Labels.Arrives(Stage) + " · " + Cli : string.Empty;
         CopyNote = row.Ui == "cli-only:typed-confirmation" ? Labels.TypedConfirmation : string.Empty;
@@ -267,13 +267,6 @@ internal sealed partial class ControlViewModel : ObservableObject
             Rest();
         }
     }
-
-    private static (ControlKind Kind, string Stage) Parse(string ui) => ui switch
-    {
-        "ready" => (ControlKind.Ready, string.Empty),
-        _ when ui.StartsWith("pending:", StringComparison.Ordinal) => (ControlKind.Pending, ui["pending:".Length..]),
-        _ => (ControlKind.CliOnly, string.Empty),
-    };
 
     // §7: the app refuses to show or copy a cli with a control, bidi or invisible character (E-16 makes this never happen).
     internal static bool Safe(string cli) => cli.Length > 0 && !cli.EnumerateRunes().Any(r => r.Value != ' ' && Rune.GetUnicodeCategory(r) is

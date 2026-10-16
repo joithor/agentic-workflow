@@ -14,6 +14,9 @@ internal static class SindriUiErrors
     /// <summary>SND-UI-003: the API answered, but not with the record this build reads.</summary>
     public static readonly ErrorDefinition BadAnswer = new("SND-UI-003", ErrorKind.Invalid, "Sindri's API gave an answer this app can't read");
 
+    /// <summary>SND-UI-003, for a status the API should not have answered with (a 500 with no problem body): the same code, but a server error is an unavailable one, not a body this build can't read.</summary>
+    public static readonly ErrorDefinition BadStatus = new("SND-UI-003", ErrorKind.Unavailable, "Sindri's API gave an answer this app can't read");
+
     /// <summary>SND-UI-004: the app's start-up, or its following of the control plane, threw; the app exits with code 2.</summary>
     public static readonly ErrorDefinition Failed = new("SND-UI-004", ErrorKind.Unavailable, "The Sindri app failed and exits");
 }
