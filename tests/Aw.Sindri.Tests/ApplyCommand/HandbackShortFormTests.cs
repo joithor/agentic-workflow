@@ -28,7 +28,7 @@ public sealed class HandbackShortFormTests(DevServer server) : IClassFixture<Dev
     }
 
     [Fact]
-    public async Task An_agent_session_is_refused_SND_AUTH_002_as_for_the_long_form()
+    public async Task An_agent_session_cannot_resolve_an_instance_on_no_item_in_either_form()
     {
         await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         var address = await TakenOver(served, "T-71");
@@ -37,8 +37,8 @@ public sealed class HandbackShortFormTests(DevServer server) : IClassFixture<Dev
         var longForm = await served.AsSession("agent-session", "handback", address);
 
         Assert.Equal(longForm.Exit, shortExit);
-        Assert.StartsWith("SND-AUTH-002 ", shortError, StringComparison.Ordinal);
-        Assert.StartsWith("SND-AUTH-002 ", longForm.Stderr, StringComparison.Ordinal);
+        Assert.StartsWith("SND-ITEM-404 ", shortError, StringComparison.Ordinal);   // both forms resolve the address first, and a session can't see an instance on no item (API spec 3.8 scope)
+        Assert.StartsWith("SND-ITEM-404 ", longForm.Stderr, StringComparison.Ordinal);
         Assert.Equal("taken-over", (await served.Until(address, static v => v.State == "taken-over")).State);
     }
 
