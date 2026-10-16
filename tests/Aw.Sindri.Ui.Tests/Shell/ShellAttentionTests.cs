@@ -13,7 +13,7 @@ namespace Aw.Sindri.Ui.Tests.Shell;
 public sealed class ShellAttentionTests
 {
     private readonly InMemoryEndpointRecords _records = new();
-    private readonly FakeSindriApi _server = new();
+    private readonly FakeSindriApi _server = new() { NeedsYouView = RouteAnswer.SpecShaped("needs-you", "empty") };
     private readonly FakeTimeProvider _clock = new(A.Noon);
     private readonly InMemoryPreferencesStore _preferences = new();
 
