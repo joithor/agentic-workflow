@@ -4325,3 +4325,25 @@ static Aw.Context.Core.Eval.Backtest.BacktestRequest.operator !=(Aw.Context.Core
 static Aw.Context.Core.Eval.Backtest.BacktestRequest.operator ==(Aw.Context.Core.Eval.Backtest.BacktestRequest? left, Aw.Context.Core.Eval.Backtest.BacktestRequest? right) -> bool
 static Aw.Context.Core.Eval.Backtest.BacktestRun.operator !=(Aw.Context.Core.Eval.Backtest.BacktestRun? left, Aw.Context.Core.Eval.Backtest.BacktestRun? right) -> bool
 static Aw.Context.Core.Eval.Backtest.BacktestRun.operator ==(Aw.Context.Core.Eval.Backtest.BacktestRun? left, Aw.Context.Core.Eval.Backtest.BacktestRun? right) -> bool
+Aw.Context.Core.Eval.Backtest.ArmQuestion
+Aw.Context.Core.Eval.Backtest.ArmQuestion.<Clone>$() -> Aw.Context.Core.Eval.Backtest.ArmQuestion!
+Aw.Context.Core.Eval.Backtest.ArmQuestion.ArmQuestion(Aw.Context.Core.Engine.ContextScope! Scope, Aw.Context.Core.Engine.ContextQuery! Query, Aw.Context.Core.Map.VisibleMap? Map, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.IContextSource!>! Sources, System.DateTimeOffset AsOf) -> void
+Aw.Context.Core.Eval.Backtest.ArmQuestion.AsOf.get -> System.DateTimeOffset
+Aw.Context.Core.Eval.Backtest.ArmQuestion.AsOf.init -> void
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Deconstruct(out Aw.Context.Core.Engine.ContextScope! Scope, out Aw.Context.Core.Engine.ContextQuery! Query, out Aw.Context.Core.Map.VisibleMap? Map, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.IContextSource!>! Sources, out System.DateTimeOffset AsOf) -> void
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Equals(Aw.Context.Core.Eval.Backtest.ArmQuestion? other) -> bool
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Map.get -> Aw.Context.Core.Map.VisibleMap?
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Map.init -> void
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Query.get -> Aw.Context.Core.Engine.ContextQuery!
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Query.init -> void
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Scope.get -> Aw.Context.Core.Engine.ContextScope!
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Scope.init -> void
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Sources.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.IContextSource!>!
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Sources.init -> void
+Aw.Context.Core.Eval.Backtest.IArmQuery
+Aw.Context.Core.Eval.Backtest.IArmQuery.Ask(Aw.Context.Core.Eval.Backtest.ArmQuestion! question, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.ContextResult!>!>
+override Aw.Context.Core.Eval.Backtest.ArmQuestion.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.ArmQuestion.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.ArmQuestion.ToString() -> string!
+static Aw.Context.Core.Eval.Backtest.ArmQuestion.operator !=(Aw.Context.Core.Eval.Backtest.ArmQuestion? left, Aw.Context.Core.Eval.Backtest.ArmQuestion? right) -> bool
+static Aw.Context.Core.Eval.Backtest.ArmQuestion.operator ==(Aw.Context.Core.Eval.Backtest.ArmQuestion? left, Aw.Context.Core.Eval.Backtest.ArmQuestion? right) -> bool

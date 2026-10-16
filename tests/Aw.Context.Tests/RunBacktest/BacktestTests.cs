@@ -155,15 +155,17 @@ public sealed class BacktestTests
     {
         await using var world = await BacktestWorld.Start(BacktestWorld.BeforeAllCuts);
         await world.ImportMap();
-        var progress = new List<string>();
+        var first = new ListProgress();
+        var second = new ListProgress();
 
-        var first = (await world.Run("all", configure: r => r with { Progress = new Progress<string>(progress.Add) })).Value.Report;
-        var cached = new List<string>();
-        var second = (await world.Run("all", configure: r => r with { Progress = new Progress<string>(cached.Add) })).Value.Report;
+        var one = (await world.Run("all", configure: r => r with { Progress = first })).Value.Report;
+        var two = (await world.Run("all", configure: r => r with { Progress = second })).Value.Report;
 
-        Assert.Equal(first.Arms.Select(a => a.Score), second.Arms.Select(a => a.Score));
-        Assert.Contains(progress, l => l.StartsWith("corpus: 5 samples", StringComparison.Ordinal));
-        Assert.Contains(cached, l => l.Contains("SPL-103", StringComparison.Ordinal) && l.Contains("map cached", StringComparison.Ordinal));
-        Assert.Contains(progress, l => l.Contains("SPL-103", StringComparison.Ordinal) && l.Contains("map built", StringComparison.Ordinal));
+        Assert.Equal(one.Arms.Select(a => a.Score), two.Arms.Select(a => a.Score));
+        Assert.Contains("corpus: 5 samples", first.Lines, StringComparer.Ordinal);
+        Assert.Contains("sample 1/5 SPL-101: map built", first.Lines, StringComparer.Ordinal);
+        Assert.Contains("sample 3/5 SPL-103: map cached", first.Lines, StringComparer.Ordinal);   // SPL-101..103 share the initial commit as their cut
+        Assert.All(second.Lines.Where(l => l.StartsWith("sample ", StringComparison.Ordinal) && l.Contains(": map", StringComparison.Ordinal)), l => Assert.EndsWith("map cached", l, StringComparison.Ordinal));
+        Assert.Contains(first.Lines, l => l.StartsWith("arm graph SPL-103", StringComparison.Ordinal));
     }
 }

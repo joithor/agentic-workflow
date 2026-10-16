@@ -58,6 +58,7 @@ public static class ContextFeaturesServiceCollectionExtensions
     }
 
     private static IServiceCollection AddContextSlices(this IServiceCollection services) => services
+        .AddBacktest()
         .AddScoped<IService<QueryContextRequest, ContextResult>, QueryContextService>()
         .AddScoped<IService<SourcesStatusRequest, SourcesView>, SourcesStatusService>()
         .AddScoped<IService<RefreshDocsRequest, RefreshReport>, RefreshDocsService>()
@@ -76,7 +77,6 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<FindPathRequest, PathView>, FindPathService>()
         .AddScoped<IService<EvalProbesRequest, ProbeRun>, EvalProbesService>()
         .AddScoped<IService<BacktestRequest, BacktestRun>, RunBacktestService>()
-        .AddScoped<AsOfMapBuilder>()
         .AddScoped<IService<BuildMapRequest, MapBuildReport>, BuildMapService>()
         .AddScoped<IService<ReviewQueueRequest, ReviewQueueView>, ReviewQueueService>()
         .AddScoped<IService<ReviewHistoryRequest, ReviewHistoryView>, ReviewHistoryService>()
@@ -98,4 +98,12 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IContextGraph>(static sp => sp.GetRequiredService<ContextGraph>())
         .AddScoped<IContextLenses>(static sp => sp.GetRequiredService<ContextGraph>())
         .AddScoped<IContextEngine, ContextEngine>();
+
+    private static IServiceCollection AddBacktest(this IServiceCollection services) => services
+        .AddScoped<QueryPipeline>()
+        .AddScoped<IArmQuery, ArmQuery>()
+        .AddScoped<AsOfMapBuilder>()
+        .AddScoped<ArmRunner>()
+        .AddScoped<CorpusLoader>()
+        .AddScoped<SampleScorer>();
 }
