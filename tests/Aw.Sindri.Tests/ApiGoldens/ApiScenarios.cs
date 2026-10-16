@@ -85,9 +85,8 @@ internal static class ApiScenarios
 
     private static (string Name, string Value)[] Session => [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")];
 
-    // An unknown recipe answers the engine's SND-RECIPE-002 (WorkflowErrors.RecipeNotFound; API spec §3.8). Served today by
-    // the recipe show route (id@hash); P11 serves GET /workflow/recipes/{id} and re-records this file from that route.
-    private static string UnknownRecipe => "/sindri/workflow/recipes/workflow.unknown@" + new string('0', 64);
+    // An unknown recipe answers the engine's SND-RECIPE-002 (WorkflowErrors.RecipeNotFound; API spec §3.8), from GET /workflow/recipes/{id} (API P11).
+    private static string UnknownRecipe => "/sindri/workflow/recipes/workflow.unknown";
 
     private static (string Name, string Value) Origin => ("Origin", "http://localhost:3000");
 
