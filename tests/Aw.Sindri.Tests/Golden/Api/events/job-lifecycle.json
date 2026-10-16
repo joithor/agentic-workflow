@@ -1,0 +1,114 @@
+[
+  {
+    "sequence": 5,
+    "id": "00000000-0000-0000-0000-00000000000e",
+    "type": "job.started",
+    "schemaVersion": 1,
+    "occurredAt": "2026-01-01T00:00:00.0000000Z",
+    "actor": "service:host",
+    "tenant": "local",
+    "ring": 0,
+    "item": null,
+    "correlationId": "00000000-0000-0000-0000-00000000000d",
+    "causationId": null,
+    "traceId": null,
+    "payload": {
+      "commandId": "000000c0-0000-0000-0000-000000000001",
+      "job": "JOB-00000000000000000000000000000001",
+      "kind": "RunService",
+      "key": "heartbeat",
+      "item": null,
+      "repo": null,
+      "service": "heartbeat"
+    }
+  },
+  {
+    "sequence": 6,
+    "id": "00000000-0000-0000-0000-000000000011",
+    "type": "job.progress",
+    "schemaVersion": 1,
+    "occurredAt": "2026-01-01T00:00:00.0000000Z",
+    "actor": "service:host",
+    "tenant": "local",
+    "ring": 0,
+    "item": null,
+    "correlationId": "00000000-0000-0000-0000-000000000010",
+    "causationId": null,
+    "traceId": null,
+    "payload": {
+      "commandId": "000000c0-0000-0000-0000-000000000001",
+      "job": "JOB-00000000000000000000000000000001",
+      "round": 1,
+      "line": "run heartbeat (manual)",
+      "item": null,
+      "repo": null
+    }
+  },
+  {
+    "sequence": 7,
+    "id": "00000000-0000-0000-0000-000000000014",
+    "type": "job.progress",
+    "schemaVersion": 1,
+    "occurredAt": "2026-01-01T00:00:00.0000000Z",
+    "actor": "service:host",
+    "tenant": "local",
+    "ring": 0,
+    "item": null,
+    "correlationId": "00000000-0000-0000-0000-000000000013",
+    "causationId": null,
+    "traceId": null,
+    "payload": {
+      "commandId": "000000c0-0000-0000-0000-000000000001",
+      "job": "JOB-00000000000000000000000000000001",
+      "round": 2,
+      "line": "second line",
+      "item": null,
+      "repo": null
+    }
+  },
+  {
+    "sequence": 8,
+    "id": "00000000-0000-0000-0000-000000000017",
+    "type": "job.finished",
+    "schemaVersion": 1,
+    "occurredAt": "2026-01-01T00:00:00.0000000Z",
+    "actor": "service:host",
+    "tenant": "local",
+    "ring": 0,
+    "item": null,
+    "correlationId": "00000000-0000-0000-0000-000000000016",
+    "causationId": null,
+    "traceId": null,
+    "payload": {
+      "commandId": "000000c0-0000-0000-0000-000000000001",
+      "job": "JOB-00000000000000000000000000000001",
+      "outcome": "succeeded",
+      "summary": "ok: worked",
+      "code": null,
+      "item": null,
+      "repo": null
+    }
+  },
+  {
+    "sequence": 9,
+    "id": "00000000-0000-0000-0000-00000000001a",
+    "type": "service.ran",
+    "schemaVersion": 1,
+    "occurredAt": "2026-01-01T00:00:00.0000000Z",
+    "actor": "service:host",
+    "tenant": "local",
+    "ring": 0,
+    "item": null,
+    "correlationId": "00000000-0000-0000-0000-000000000019",
+    "causationId": null,
+    "traceId": null,
+    "payload": {
+      "commandId": "000000c0-0000-0000-0000-000000000001",
+      "service": "heartbeat",
+      "slot": "2026-01-01T00:00:00.0000000Z",
+      "outcome": "ok",
+      "code": null,
+      "job": "JOB-00000000000000000000000000000001"
+    }
+  }
+]

@@ -33,7 +33,7 @@ public sealed class GoldenHost : IAsyncDisposable
     /// <summary>The profile every golden host starts with: one scheduled service, so status lists it.</summary>
     public const string ProfileYaml = "schemaVersion: 1\nuser: golden\nservices:\n  heartbeat: { every: 5s }\n";
 
-    private readonly TempHome _home = new();
+    private readonly TempHome? _ownHome;
     private readonly List<IDisposable> _owned = [];
     private readonly TempHome? _elsewhere;
     private WebApplication? _app;
@@ -41,9 +41,15 @@ public sealed class GoldenHost : IAsyncDisposable
     private readonly string _profileYaml;
     private readonly IReadOnlyDictionary<string, string>? _environment;
     private readonly Action<IServiceCollection>? _extra;
+    private readonly Action<WebApplication>? _map;
+    private readonly SequentialIdGenerator _ids;
 
-    private GoldenHost(bool temporary, string profileYaml, IReadOnlyDictionary<string, string>? environment, Action<IServiceCollection>? extra)
+    private GoldenHost(bool temporary, string profileYaml, IReadOnlyDictionary<string, string>? environment, Action<IServiceCollection>? extra, Action<WebApplication>? map, string? home, uint idScope)
     {
+        _ids = new SequentialIdGenerator(idScope);
+        _ownHome = home is null ? new TempHome() : null;
+        Home = home ?? _ownHome!.Path;   // why: _ownHome is set on the line above whenever home is null
+        _map = map;
         _elsewhere = temporary ? null : new TempHome();
         _profileYaml = profileYaml;
         _environment = environment;
@@ -54,7 +60,7 @@ public sealed class GoldenHost : IAsyncDisposable
     public HumanToken Token { get; } = new("golden-human-token");
 
     /// <summary>The temp home (normalized to '&lt;home&gt;' in the goldens).</summary>
-    public string Home => _home.Path;
+    public string Home { get; }
 
     /// <summary>A client on the host's loopback address.</summary>
     public HttpClient Http { get; private set; } = new();
@@ -72,11 +78,14 @@ public sealed class GoldenHost : IAsyncDisposable
     /// <param name="profileYaml">The live profile it starts with (<see cref="ProfileYaml"/> unless a test needs another).</param>
     /// <param name="environment">More environment variables the host reads (fixture secrets behind 'env:' pointers), or null.</param>
     /// <param name="extra">More service replacements, after the fixed ones (a test's log sink).</param>
+    /// <param name="map">More routes, mapped after the product's (a test-only route; never part of the production host), or null.</param>
+    /// <param name="idScope">The scope of the sequential ids; a second host on one home (a restart) takes another, so its ids don't repeat the first one's.</param>
+    /// <param name="home">An existing home to start on (a restart: a second host on the first one's home, which the caller removes), or null for a fresh temp home.</param>
     /// <returns>The started host.</returns>
     public static async Task<GoldenHost> Start(bool temporary, CancellationToken ct, string profileYaml = ProfileYaml,
-        IReadOnlyDictionary<string, string>? environment = null, Action<IServiceCollection>? extra = null)
+        IReadOnlyDictionary<string, string>? environment = null, Action<IServiceCollection>? extra = null, Action<WebApplication>? map = null, string? home = null, uint idScope = 0)
     {
-        var host = new GoldenHost(temporary, profileYaml, environment, extra);
+        var host = new GoldenHost(temporary, profileYaml, environment, extra, map, home, idScope);
         try
         {
             await host.Run(ct);
@@ -108,24 +117,25 @@ public sealed class GoldenHost : IAsyncDisposable
             await _app.DisposeAsync();
         }
 
-        _home.Dispose();
+        _ownHome?.Dispose();
         _elsewhere?.Dispose();
         _owned.ForEach(o => o.Dispose());
     }
 
     private async Task Run(CancellationToken ct)
     {
-        _ = Directory.CreateDirectory(Path.Combine(_home.Path, "profile"));
-        await File.WriteAllTextAsync(Path.Combine(_home.Path, "profile", "profile.yaml"), _profileYaml, ct);
+        _ = Directory.CreateDirectory(Path.Combine(Home, "profile"));
+        await File.WriteAllTextAsync(Path.Combine(Home, "profile", "profile.yaml"), _profileYaml, ct);
         var app = LoopbackBinding.Build([], Environment, new FakeTimeProvider(KnownInstants.Epoch), services =>
         {
             _extra?.Invoke(services);
-            _ = services.Replace(ServiceDescriptor.Singleton<IIdGenerator>(new SequentialIdGenerator()));
+            _ = services.Replace(ServiceDescriptor.Singleton<IIdGenerator>(_ids));
             _ = services.Replace(ServiceDescriptor.Singleton<IProcessProbe>(new FakeProcessProbe(Pid)));
             NoTemporal.Use(services);   // the Temporal side is faked: the goldens are about the API
         });
         _app = app;
         _ = Pipeline.Configure(app);
+        _map?.Invoke(app);
         using (app.Services.GetRequiredService<ICallerContextAccessor>().EnterService("host"))   // as serve starts it
         {
             await using var scope = app.Services.CreateAsyncScope();
@@ -140,9 +150,9 @@ public sealed class GoldenHost : IAsyncDisposable
 
     private string? Environment(string name) => name switch
     {
-        "AW_SINDRI_HOME" => _home.Path,
-        "HOME" => Path.Combine(_home.Path, "provider-home"),            // doctor's provider files: never the real ones
-        "AW_SINDRI_CLAUDE_BIN" => Path.Combine(_home.Path, "no-claude"),  // mcp register --apply: never the real claude
+        "AW_SINDRI_HOME" => Home,
+        "HOME" => Path.Combine(Home, "provider-home"),            // doctor's provider files: never the real ones
+        "AW_SINDRI_CLAUDE_BIN" => Path.Combine(Home, "no-claude"),  // mcp register --apply: never the real claude
         "TMPDIR" when _elsewhere is not null => Path.Combine(_elsewhere.Path, "tmp"),
         "AW_STATE_DIR" when _elsewhere is not null => Path.Combine(_elsewhere.Path, "state"),
         _ => _environment is not null && _environment.TryGetValue(name, out var value) ? value : null,
