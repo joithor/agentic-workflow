@@ -121,7 +121,7 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
     }
 
     /// <summary>
-    /// The plan for approving <paramref name="recipe"/>. Refused when its hash or its base is revoked (SND-RECIPE-005), it declares no
+    /// The plan for approving <paramref name="recipe"/>. Refused when it is legacy-shape, registered before input kinds, and not yet approved (SND-RECIPE-001; a first approval only), its hash or its base is revoked (SND-RECIPE-005), it declares no
     /// evals (SND-RECIPE-008) or a child it starts has no approved hash to pin (SND-RECIPE-003). A recipe already approved
     /// with the same pins plans as <see cref="ApprovalPlan.AlreadyApproved"/>: approving it again records nothing and sends the
     /// wake again, so an instance a first wake missed can still resume.
@@ -172,7 +172,7 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
         return new ApprovalPlan(recipe, preview, latest, ChallengeAction.Approve(recipe.Id, recipe.Version), subject);
     }
 
-    /// <summary>The recipe read back and the current approvals, unless the hash is revoked or the recipe declares no evals.</summary>
+    /// <summary>The recipe read back and the current approvals, unless the hash is revoked, the recipe declares no evals, or a first approval meets a legacy-shape row (SND-RECIPE-001).</summary>
     private async ValueTask<Result<(Recipe Parsed, IReadOnlyList<RecipeApproval> Current)>> Standing(RegisteredRecipe recipe, CancellationToken cancellationToken)
     {
         var revoked = await approvals.Revocation(recipe.Hash, cancellationToken).ConfigureAwait(false);
