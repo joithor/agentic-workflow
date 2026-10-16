@@ -1,10 +1,10 @@
 {
   "team": "sindri",
-  "repo": "/home/thor/repos/agentic-workflow",
-  "prompts": "/home/thor/.agentic-workflow/handoff/2026-10-14/prompts",
+  "repo": "/absolute/path/to/agentic-workflow",
+  "prompts": "/absolute/path/to/handoff/prompts",
   "metaLane": "meta",
   "lanes": ["api", "engine", "context", "ui"],
-  "log": "/home/thor/.agentic-workflow/digests/sindri-merge-orchestrator.md",
+  "log": "/absolute/path/to/digests/sindri-merge-orchestrator.md",
   "gate": {
     "always": ["repo"],
     "docsOnly": ["**/*.md", "docs/**", "planning/**"],

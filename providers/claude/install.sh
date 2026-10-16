@@ -157,6 +157,8 @@ SHELL_EOF
 }
 
 claude_install_legacy_mcp_json() {
+  # config/mcp.json holds only xcodebuildmcp, which needs Xcode: macOS only (the catalog in setup.sh gates it the same way)
+  [ "$(uname)" = "Darwin" ] || return 0
   echo ""
   echo "Installing MCP config..."
   local mcp_file="$CLAUDE_DIR/mcp.json"
