@@ -98,9 +98,7 @@ public sealed class CommandPaletteTests : IDisposable
     private static void Frame(Window window, string name)
     {
         Settle(window);
-        var dir = Path.Combine(AppContext.BaseDirectory, "frames");
-        _ = Directory.CreateDirectory(dir);
-        window.CaptureRenderedFrame()?.Save(Path.Combine(dir, name + ".png"), new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+        FrameFile.Save(window, name);
     }
 
     // The entries drawn (each a button named by its label and status), in order.

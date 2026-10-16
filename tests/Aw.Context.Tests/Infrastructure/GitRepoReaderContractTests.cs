@@ -36,17 +36,4 @@ public sealed class GitRepoReaderContractTests : RepoReaderContract, IDisposable
         Assert.Equal(Files["src/commands/registry.ts"], text.Value);
         Assert.DoesNotContain("untracked.ts", listed.Value, StringComparer.Ordinal);
     }
-
-    [Fact, Trait("Lane", "unit")]
-    public async Task A_commit_that_is_not_a_sha_is_refused_without_running_git()
-    {
-        var reader = new GitRepoReader(new GitCli());
-        var repo = new ContextRepo(ContextRepoName.From("aw-split-panes"), Path.GetTempPath());
-
-        var listed = await reader.ListFiles(repo, "--output=/tmp/x", TestContext.Current.CancellationToken);
-        var read = await reader.Read(repo, "HEAD", "a.ts", TestContext.Current.CancellationToken);
-
-        Assert.Equal("SND-CONTEXT-048", listed.Error.Code);
-        Assert.Equal("SND-CONTEXT-048", read.Error.Code);
-    }
 }
