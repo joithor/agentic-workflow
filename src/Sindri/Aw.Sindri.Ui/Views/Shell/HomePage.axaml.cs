@@ -23,6 +23,8 @@ internal sealed partial class HomePage : UserControl
         AddHandler(NeedsYouRow.OpenEvent, OnNeedsYouOpen);
         AddHandler(NeedsYouRow.SelectEvent, OnNeedsYouSelect);
         AddHandler(NeedsYouRow.ActionEvent, OnNeedsYouAction);
+        AddHandler(GotFocusEvent, (_, e) => Look(e, looking: true), handledEventsToo: true);
+        AddHandler(LostFocusEvent, (_, e) => Look(e, looking: false), handledEventsToo: true);
         AddHandler(StripRow.OpenEvent, OnStripOpen);
         AddHandler(StripRow.SelectEvent, OnStripSelect);
         AddHandler(StripRow.AnswerEvent, OnStripAnswer);
@@ -124,6 +126,28 @@ internal sealed partial class HomePage : UserControl
         if (e.Source is StripRow { Address.Length: > 0 } row && DataContext is ShellViewModel shell)
         {
             shell.AnswerStripRow(row.Address);
+        }
+    }
+
+    // A row is seen once it has been on screen and focused for a second (§5): focus in a row starts the count, focus out of it stops it.
+    private void Look(RoutedEventArgs e, bool looking)
+    {
+        if ((e.Source as Visual)?.GetSelfAndVisualAncestors().OfType<NeedsYouRow>().FirstOrDefault() is { RowId.Length: > 0 } row && DataContext is ShellViewModel shell)
+        {
+            shell.NeedsYou.Seen.Watch(row.RowId, looking && row.IsEffectivelyVisible);
+        }
+    }
+
+    // The pointer over the Needs-you panel holds new rows behind the "N new" control, so none arrives under it (§3.3).
+    private void OnNeedsYouPanelEntered(object? sender, Avalonia.Input.PointerEventArgs e) => SetNeedsYouHold(holding: true);
+
+    private void OnNeedsYouPanelExited(object? sender, Avalonia.Input.PointerEventArgs e) => SetNeedsYouHold(holding: false);
+
+    private void SetNeedsYouHold(bool holding)
+    {
+        if (DataContext is ShellViewModel shell)
+        {
+            shell.NeedsYou.PointerOver = holding;
         }
     }
 
