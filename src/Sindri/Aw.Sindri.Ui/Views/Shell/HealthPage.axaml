@@ -11,7 +11,7 @@
        and word at its right (on the eyebrow's baseline, S2: .head-eyebrow), over label/value rows at Body size. The same
        status 'sindri status' prints. -->
   <StackPanel Spacing="{StaticResource Size.PanelGap}">
-    <TextBlock Classes="page-title" Text="{Binding Text.Health}" AutomationProperties.Name="{Binding Text.Health}" />
+    <TextBlock Classes="page-title" Text="{Binding Text.System}" AutomationProperties.Name="{Binding Text.System}" />
 
     <Border Classes="panel">
       <StackPanel>

@@ -62,12 +62,12 @@ public sealed class ShellPreferencesTests
     {
         var shell = await Shell();
 
-        shell.GoTo(PageId.Services);
+        shell.GoTo(PageId.System);
         shell.ResizeSheet(500);
         shell.RememberWindow(new WindowBounds(0, 0, 1280, 800));
 
         var stored = await Stored();
-        Assert.Equal(("Services", 500d, new WindowBounds(0, 0, 1280, 800)), (stored.LastPage, stored.SheetWidth, stored.Window));
+        Assert.Equal(("System", 500d, new WindowBounds(0, 0, 1280, 800)), (stored.LastPage, stored.SheetWidth, stored.Window));
         Assert.Equal(3, _store.Writes);
     }
 
@@ -120,13 +120,13 @@ public sealed class ShellPreferencesTests
         var shell = await Shell();
         shell.Palette.Open();
 
-        await shell.Palette.Run(shell.Palette.Entries.First(e => e.Id == "go:Queue"), Token);
+        await shell.Palette.Run(shell.Palette.Entries.First(e => e.Id == "go:Work"), Token);
         shell.Palette.Open();
-        await shell.Palette.Run(shell.Palette.Entries.First(e => e.Id == "go:Decisions"), Token);
+        await shell.Palette.Run(shell.Palette.Entries.First(e => e.Id == "go:Recipes"), Token);
         shell.Palette.Open();
-        await shell.Palette.Run(shell.Palette.Entries.First(e => e.Id == "go:Queue"), Token);
+        await shell.Palette.Run(shell.Palette.Entries.First(e => e.Id == "go:Work"), Token);
 
-        Assert.Equal(["go:Decisions", "go:Queue"], (await Stored()).PaletteHistory, StringComparer.Ordinal);
-        Assert.Equal(PageId.Queue, shell.CurrentPage);
+        Assert.Equal(["go:Recipes", "go:Work"], (await Stored()).PaletteHistory, StringComparer.Ordinal);
+        Assert.Equal(PageId.Work, shell.CurrentPage);
     }
 }

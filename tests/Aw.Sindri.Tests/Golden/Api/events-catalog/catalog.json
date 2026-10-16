@@ -1,0 +1,79 @@
+{
+  "types": [
+    {
+      "type": "item.created",
+      "keyShape": "item.created:<itemId>",
+      "invalidates": [
+        "queue",
+        "items",
+        "item",
+        "timeline"
+      ]
+    },
+    {
+      "type": "item.linked",
+      "keyShape": "item.linked:<itemId>:<record>",
+      "invalidates": [
+        "items",
+        "item",
+        "timeline"
+      ]
+    },
+    {
+      "type": "item.state-changed",
+      "keyShape": "item.state-changed:<itemId>:v<version>",
+      "invalidates": [
+        "queue",
+        "items",
+        "item",
+        "timeline"
+      ]
+    },
+    {
+      "type": "process.started",
+      "keyShape": "process.started:<epoch>",
+      "invalidates": [
+        "status"
+      ]
+    },
+    {
+      "type": "process.stopped",
+      "keyShape": "process.stopped:<epoch>",
+      "invalidates": [
+        "status"
+      ]
+    },
+    {
+      "type": "profile.approved",
+      "keyShape": "profile.approved:<hash>:after:<seq>",
+      "invalidates": [
+        "status",
+        "profile",
+        "services"
+      ]
+    },
+    {
+      "type": "profile.checked",
+      "keyShape": "profile.checked:<previousCheckSequence>",
+      "invalidates": [
+        "status",
+        "profile"
+      ]
+    },
+    {
+      "type": "service.heartbeat",
+      "keyShape": "service.heartbeat:<epoch>:<slot>",
+      "invalidates": [
+        "status"
+      ]
+    },
+    {
+      "type": "service.ran",
+      "keyShape": "service.ran:<name>:<epoch>:<slot>",
+      "invalidates": [
+        "status",
+        "services"
+      ]
+    }
+  ]
+}

@@ -1,9 +1,8 @@
+using Aw.Sindri.Core.Events;
+
 namespace Aw.Sindri.Features.StreamEvents;
 
-/// <summary>A page of events, oldest first, and the last sequence read (with a filter, rows it skipped still move the cursor).</summary>
+/// <summary>A page of public events, oldest first.</summary>
 /// <param name="Events">The events.</param>
-public sealed record StreamEventsResponse(IReadOnlyList<EventView> Events)
-{
-    /// <summary>The last ledger sequence read for this page, whether or not the filter kept it; null when nothing was read.</summary>
-    public long? Scanned { get; init; }
-}
+/// <param name="ScannedTo">The last sequence the read looked at, sent or not: the stream's next cursor (with a filter, rows it skipped still move the cursor).</param>
+public sealed record StreamEventsResponse(IReadOnlyList<PublicEvent> Events, long ScannedTo);

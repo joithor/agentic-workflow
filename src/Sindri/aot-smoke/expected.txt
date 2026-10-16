@@ -104,6 +104,14 @@ running
   Nothing running.
 queued
   Nothing queued.
+## sindri ledger --json --after 0 | jq (human: command.handled is listed)
+true
+## sindri ledger --json --after 0 | jq (session: public types only)
+false
+## sindri ledger --item <closed item> --json | jq (the item's events)
+["item.created","item.state-changed"]
+## GET /sindri/events/catalog | jq (public types, their invalidates)
+{"commandHandled":false,"itemCreated":["queue","items","item","timeline"]}
 ## sindri stop (session)
 SND-AUTH-002 StopProcess is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri stop (this CLI ran as a session: CLAUDECODE is set)
 exit 2

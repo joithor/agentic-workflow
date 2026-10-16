@@ -63,7 +63,7 @@ public sealed partial class CommandPaletteViewModelTests
         Assert.Equal(kinds.Order(), kinds);
         Assert.DoesNotContain("RebuildViews", actions.Select(e => e.Id), StringComparer.Ordinal);
         Assert.DoesNotContain("StopProcess", actions.Select(e => e.Id), StringComparer.Ordinal);
-        Assert.Equal(["Rebuild views", "Stop Sindri", "Health"], _palette.Sections[2].Entries.Select(e => e.Label), StringComparer.Ordinal);
+        Assert.Equal(["Rebuild views", "Stop Sindri", "System"], _palette.Sections[2].Entries.Select(e => e.Label), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public sealed partial class CommandPaletteViewModelTests
         _palette.Open();
 
         Assert.Equal(
-            ["Home G H", "Queue G Q", "Decisions G D", "Services G S", "Health G .", "Settings ⌘,"],
+            ["Home G H", "Workflows G W", "Work G Q", "Recipes G R", "Context G C", "Agents G A", "System G .", "Settings ⌘,"],
             _palette.Sections[1].Entries.Select(e => e.Label + " " + e.Key),
             StringComparer.Ordinal);
     }
@@ -128,7 +128,7 @@ public sealed partial class CommandPaletteViewModelTests
 
         await _palette.Run(Entry("StopProcess"), Token);
 
-        Assert.Equal([PageId.Health], _pages);
+        Assert.Equal([PageId.System], _pages);
         Assert.False(_palette.IsOpen);
         Assert.Equal(["StopProcess"], _history, StringComparer.Ordinal);
     }
@@ -448,7 +448,7 @@ public sealed partial class CommandPaletteViewModelTests
 
     [Fact]
     public async Task A_refusal_is_spoken_once_by_the_palette_after_the_query_filtered_the_entry_out() =>
-        await RunRefusedWhile(() => _palette.Query = "queue");
+        await RunRefusedWhile(() => _palette.Query = "recipes");
 
     [Fact]
     public async Task A_run_on_a_control_the_catalog_replaced_before_the_run_is_spoken_once() =>
@@ -624,12 +624,12 @@ public sealed partial class CommandPaletteViewModelTests
     public async Task A_go_to_entry_shows_its_page()
     {
         _palette.Open();
-        _palette.Query = "queue";
+        _palette.Query = "recipes";
 
         await _palette.Run(_palette.Selected, Token);
 
-        Assert.Equal([PageId.Queue], _pages);
-        Assert.Equal(["go:Queue"], _history, StringComparer.Ordinal);
+        Assert.Equal([PageId.Recipes], _pages);
+        Assert.Equal(["go:Recipes"], _history, StringComparer.Ordinal);
         Assert.False(_palette.IsOpen);
     }
 
@@ -666,8 +666,8 @@ public sealed partial class CommandPaletteViewModelTests
         Assert.Contains(_palette.Selected!.Name, _palette.Announcement, StringComparison.Ordinal);
         Assert.Contains("2 of", _palette.Announcement, StringComparison.Ordinal);
 
-        _palette.Query = "queue";
-        Assert.Contains("Queue", _palette.Announcement, StringComparison.Ordinal);
+        _palette.Query = "recipes";
+        Assert.Contains("Recipes", _palette.Announcement, StringComparison.Ordinal);
 
         _palette.Query = "zzzz";
         Assert.Equal("Nothing matches", _palette.Announcement);

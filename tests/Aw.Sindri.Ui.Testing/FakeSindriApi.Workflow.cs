@@ -1,0 +1,48 @@
+using Aw.Kernel;
+using Aw.Sindri.Ui.Api.Workflow;
+
+namespace Aw.Sindri.Ui.Testing;
+
+/// <summary>The workflow reads of the fake: each answers the API's goldens (<see cref="WorkflowAnswers"/>), the same text the handler serves.</summary>
+internal sealed partial class FakeSindriApi
+{
+    /// <summary>When set, every workflow read answers this instead of the golden (a refusal, an odd body).</summary>
+    public RouteAnswer? WorkflowAnswer { get; set; }
+
+    public Task<Result<InstanceList>> Instances(Uri api, InstanceQuery query, CancellationToken cancellationToken) =>
+        Task.FromResult(Answer<InstanceList>(api, WorkflowRoutes.Instances(query), InstancesAnswer(query)));
+
+    public Task<Result<InstanceDetail>> Instance(Uri api, string id, CancellationToken cancellationToken) =>
+        Task.FromResult(Answer<InstanceDetail>(api, WorkflowRoutes.Instance(id), InstanceAnswer(id)));
+
+    public Task<Result<FactView>> InstanceFact(Uri api, string id, string key, CancellationToken cancellationToken) =>
+        Task.FromResult(Answer<FactView>(api, WorkflowRoutes.Fact(id, key), FactAnswer(id, key)));
+
+    public Task<Result<RecipeView>> Recipe(Uri api, string recipe, string? hash, CancellationToken cancellationToken) =>
+        Task.FromResult(Answer<RecipeView>(api, WorkflowRoutes.Recipe(recipe, hash), RecipeAnswer(recipe, hash)));
+
+    /// <summary>What GET /workflow/instances answers for a query.</summary>
+    /// <param name="query">The query.</param>
+    /// <returns>The answer.</returns>
+    internal RouteAnswer InstancesAnswer(InstanceQuery query) => WorkflowAnswer ?? WorkflowAnswers.Instances(query);
+
+    /// <summary>What GET /workflow/instances/{id} answers.</summary>
+    /// <param name="id">The id.</param>
+    /// <returns>The answer.</returns>
+    internal RouteAnswer InstanceAnswer(string id) => WorkflowAnswer ?? WorkflowAnswers.Instance(id);
+
+    /// <summary>What GET /workflow/instances/{id}/facts/{key} answers.</summary>
+    /// <param name="id">The id.</param>
+    /// <param name="key">The key.</param>
+    /// <returns>The answer.</returns>
+    internal RouteAnswer FactAnswer(string id, string key) => WorkflowAnswer ?? WorkflowAnswers.Fact(id, key);
+
+    /// <summary>What GET /workflow/recipes/{recipe} answers.</summary>
+    /// <param name="recipe">The recipe id.</param>
+    /// <param name="hash">The hash named, or null.</param>
+    /// <returns>The answer.</returns>
+    internal RouteAnswer RecipeAnswer(string recipe, string? hash) => WorkflowAnswer ?? WorkflowAnswers.Recipe(recipe, hash);
+
+    // LANE ANCHOR U3': U3' keeps its own fake in FakeSindriApi.Routes.cs; it adds nothing here. Insert immediately above this marker, never between the markers.
+    // LANE ANCHOR U8: new workflow answers (commands, complete) and their gates, answered from WorkflowAnswers. Insert immediately below this marker, never between the markers.
+}

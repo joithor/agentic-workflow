@@ -41,6 +41,10 @@ public sealed partial class ContrastTests
         { "Success", "Canvas", 6.6, TextAa },
         { "Attention", "Canvas", 9.4, TextAa },
         { "Attention", "Surface1", 8.6, TextAa },
+        { "Attention", "AttentionSoft", 7.9, TextAa },   // the attn chip
+        { "Error", "ErrorSoft", 5.3, TextAa },   // the fail chip
+        { "Success", "SuccessSoft", 5.8, TextAa },   // the ok chip
+        { "InkMuted", "Surface2", 12.5, TextAa },   // the neutral chip
         { "Hairline", "Canvas", 1.3, 0 },
         { "HairlineStrong", "Canvas", 1.7, 0 },
     };

@@ -21,7 +21,11 @@ internal sealed partial class Projector(
     private readonly SemaphoreSlim _gate = new(1, 1);
     private DateTimeOffset? _stalledSince;
     private string? _problem;
+    private long _seenHead;
     private ViewsStatus _last = new(0, 0, ProjectedAt: null, Rebuilding: false, Stalled: false, StalledAt: null, StalledType: null);
+
+    /// <summary>The ledger head the last pass saw; the host waits for an append past it.</summary>
+    internal long SeenHead => Volatile.Read(ref _seenHead);
 
     /// <inheritdoc/>
     public void Dispose() => _gate.Dispose();
@@ -174,6 +178,7 @@ internal sealed partial class Projector(
     private void Publish(ViewsStatus status)
     {
         _last = status;
+        Volatile.Write(ref _seenHead, status.LedgerHead);
         feed.Publish(status);
     }
 

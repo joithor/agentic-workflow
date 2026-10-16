@@ -181,7 +181,7 @@ internal sealed partial class TopBar : UserControl
     {
         if (DataContext is ShellViewModel { IsNavigationEnabled: true } shell)
         {
-            shell.GoTo(PageId.Health);
+            shell.GoTo(PageId.System);
         }
     }
 

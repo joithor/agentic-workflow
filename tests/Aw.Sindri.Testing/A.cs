@@ -55,4 +55,12 @@ public static class A
     /// <summary>A GetItemTimelineRequest builder with deterministic defaults.</summary>
     /// <returns>A new builder.</returns>
     public static GetItemTimelineRequestBuilder GetItemTimelineRequest() => new();
+
+    /// <summary>A ReadLedgerRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static ReadLedgerRequestBuilder ReadLedgerRequest() => new();
+
+    /// <summary>A GetEventCatalogRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static GetEventCatalogRequestBuilder GetEventCatalogRequest() => new();
 }

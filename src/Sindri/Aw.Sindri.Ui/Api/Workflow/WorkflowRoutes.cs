@@ -1,0 +1,49 @@
+using System.Text;
+
+namespace Aw.Sindri.Ui.Api.Workflow;
+
+/// <summary>
+/// The paths of the workflow reads (API §3.8). Routes take the instance's opaque id and nothing else (Q-API-2): an
+/// address is only ever a query value, escaped, so a slash in it never becomes a segment.
+/// </summary>
+internal static class WorkflowRoutes
+{
+    private const string Root = "/sindri/workflow";
+
+    internal static string Instances(InstanceQuery query)
+    {
+        var parts = new List<string>();
+        if (query.Root)
+        {
+            parts.Add("root=true");
+        }
+
+        if (query.Open)
+        {
+            parts.Add("open=true");
+        }
+
+        Add(parts, "recipe", query.Recipe);
+        Add(parts, "subject", query.Subject);
+        Add(parts, "address", query.Address);
+        return parts.Count == 0 ? $"{Root}/instances" : $"{Root}/instances?{string.Join('&', parts)}";
+    }
+
+    internal static string Instance(string id) => $"{Root}/instances/{Uri.EscapeDataString(id)}";
+
+    internal static string Fact(string id, string key) => $"{Instance(id)}/facts/{Uri.EscapeDataString(key)}";
+
+    internal static string Recipe(string recipe, string? hash)
+    {
+        var path = new StringBuilder(Root).Append("/recipes/").Append(Uri.EscapeDataString(recipe));
+        return (string.IsNullOrEmpty(hash) ? path : path.Append('@').Append(Uri.EscapeDataString(hash))).ToString();
+    }
+
+    private static void Add(List<string> parts, string name, string? value)
+    {
+        if (!string.IsNullOrEmpty(value))
+        {
+            parts.Add($"{name}={Uri.EscapeDataString(value)}");
+        }
+    }
+}
