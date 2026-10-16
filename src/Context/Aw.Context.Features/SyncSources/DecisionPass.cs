@@ -9,7 +9,7 @@ namespace Aw.Context.Features.SyncSources;
 /// <summary>
 /// Decision extraction and conflict checks for the records one sync page committed (spec §6.1, §8.8, §8.9; S-5B). The model sees only the scrubbed,
 /// fenced record text and the node keys its rules linked, and its answer is validated by <see cref="DecisionExtractor"/>. Everything it asks is counted
-/// against 'maxTokensPerSync': a call that would go over the cap is not made, and the record stays queued for the next sync.
+/// against 'maxTokensPerSync': a call that would go over the cap is not made, and the record stays queued for the next sync, until its conflict checks are through too.
 /// </summary>
 internal sealed class DecisionPass(IIntentStore store, IModelPort model, LabelingSettings labeling, (IIngestFilter Ingest, TimeProvider Clock) support)
 {
@@ -58,7 +58,9 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
         var read = DecisionExtractor.Read(asked, record.Record.Key, record.Text, linked, support.Clock.GetUtcNow());
         Refused += read.Refused;
         var decisions = read.Decisions.Select(d => d with { Wording = support.Ingest.Clean(d.Wording, singleLine: true) is { Blocked: false } clean ? clean.Text : d.Quote }).ToList();
-        var saved = await store.SaveDecisions(new DecisionBatch(record.Record.Key, record.Record.Version, decisions, read.Edges), cancellationToken).ConfigureAwait(false);
+        // The record stays queued until its conflict checks are through: a stopped check (the cap, the model down) leaves it to the next sync, which asks only the pairs not yet answered.
+        var batch = new DecisionBatch(record.Record.Key, record.Record.Version, decisions, read.Edges);
+        var saved = await store.SaveDecisions(decisions.Count == 0 ? batch : batch with { Pending = true }, cancellationToken).ConfigureAwait(false);
         if (saved.IsError)
         {
             Failure = saved.Error.Code;
@@ -66,15 +68,24 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
             return;
         }
 
-        await CheckConflicts(decisions, cancellationToken).ConfigureAwait(false);
+        if (decisions.Count > 0 && await CheckConflicts(decisions, cancellationToken).ConfigureAwait(false))
+        {
+            saved = await store.SaveDecisions(batch, cancellationToken).ConfigureAwait(false);
+            if (saved.IsError)
+            {
+                Failure = saved.Error.Code;
+                _stopped = true;
+            }
+        }
     }
 
-    private async ValueTask CheckConflicts(List<DecisionRow> added, CancellationToken cancellationToken)
+    /// <summary>Asks about each unanswered pair the added decisions make; false when the checks stopped before the last pair.</summary>
+    private async ValueTask<bool> CheckConflicts(List<DecisionRow> added, CancellationToken cancellationToken)
     {
         var layer = await store.Layer(cancellationToken).ConfigureAwait(false);
-        if (layer.IsError || added.Count == 0)
+        if (layer.IsError)
         {
-            return;
+            return false;
         }
 
         foreach (var (first, second, _) in ConflictChecker.Pairs(layer.Value, added))
@@ -82,7 +93,7 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
             var answer = await Ask(ModelPurpose.Adjudication, ConflictChecker.Prompt(first, second), VerdictAnswerTokens, cancellationToken).ConfigureAwait(false);
             if (answer is null)
             {
-                return;
+                return false;
             }
 
             if (ConflictChecker.Read(answer) is not { } verdict)
@@ -91,8 +102,16 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
                 continue;
             }
 
-            _ = await store.SaveConflict(DecisionConflict.Of(first.ToKey(), second.ToKey(), verdict, support.Clock.GetUtcNow()), cancellationToken).ConfigureAwait(false);
+            var stored = await store.SaveConflict(DecisionConflict.Of(first.ToKey(), second.ToKey(), verdict, support.Clock.GetUtcNow()), cancellationToken).ConfigureAwait(false);
+            if (stored.IsError)
+            {
+                Failure = stored.Error.Code;
+                _stopped = true;
+                return false;
+            }
         }
+
+        return true;
     }
 
     private async ValueTask<string?> Ask(ModelPurpose purpose, string prompt, int answerTokens, CancellationToken cancellationToken)
