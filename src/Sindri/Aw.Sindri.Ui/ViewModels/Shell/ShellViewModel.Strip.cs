@@ -1,4 +1,5 @@
 using Aw.Kernel;
+using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
@@ -27,7 +28,7 @@ internal sealed partial class ShellViewModel
         {
             Strip.MarkNotServed();
         }
-        else if (list.Error.Kind == ErrorKind.Invalid)
+        else if (string.Equals(list.Error.Code, SindriUiErrors.BadAnswer.Code, StringComparison.Ordinal) && list.Error.Kind == ErrorKind.Invalid)
         {
             Strip.MarkUnreadable();
         }
