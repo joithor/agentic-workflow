@@ -87,6 +87,8 @@ public sealed class TransitionDecisionTests
 
         Assert.Equal("SND-WF-008", rejected.Error.Code);
         Assert.Contains("without fact:decision", rejected.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("include the required output", rejected.Error.Message, StringComparison.Ordinal);   // CompleteStep refuses a hand-written engine-filled output
+        Assert.Contains("retry 'workflow complete' with the same --nonce", rejected.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

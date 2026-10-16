@@ -4,6 +4,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -76,6 +77,22 @@ public sealed class ChoiceReportTests
     }
 
     [Fact(Timeout = 30_000)]
+    public async Task A_choice_report_retried_without_the_view_after_a_lost_first_send_carries_the_retry_fix_when_the_engine_refuses_it()
+    {
+        var service = new CompleteStepService(_desk, _desk, _like, _facts, new InMemoryCommandNonces(new FakeTimeProvider()), _like, new EngineFilledReport(EvalComposition.Catalog, EvalComposition.Options));
+        _desk.LoseFirstSend = true;
+        var first = await service.Handle(Request(), TestContext.Current.CancellationToken);
+        _desk.Unreadable = true;
+
+        var retry = await service.Handle(Request(), TestContext.Current.CancellationToken);
+
+        Assert.Equal("SND-WF-010", first.Error.Code);
+        Assert.Equal("SND-WF-008", retry.Error.Code);
+        Assert.Contains("retry 'workflow complete' with the same --nonce", retry.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("include the required output", retry.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 30_000)]
     public async Task A_choice_report_for_a_stale_run_is_the_stale_run_error_and_attempts_no_engine_filled_output()
     {
         var service = new CompleteStepService(_desk, _desk, _like, _facts, new InMemoryCommandNonces(new FakeTimeProvider()), _like, new EngineFilledReport(EvalComposition.Catalog, EvalComposition.Options));
@@ -132,6 +149,9 @@ public sealed class ChoiceReportTests
 
         public bool Unreadable { get; set; }
 
+        /// <summary>The first Send is lost (unavailable), as a dropped connection after the claim; later ones reach the engine's decision.</summary>
+        public bool LoseFirstSend { get; set; }
+
         public IReadOnlyList<Trigger> Sent => _sent;
 
         /// <summary>Every command a Send was given, accepted or refused.</summary>
@@ -153,6 +173,22 @@ public sealed class ChoiceReportTests
         public ValueTask<Result<CommandResult>> Send(InstanceAddress at, CommandNonce nonce, Trigger command, CancellationToken cancellationToken)
         {
             _attempted.Add(command);
+            if (LoseFirstSend)
+            {
+                LoseFirstSend = false;
+                return ValueTask.FromResult<Result<CommandResult>>(WorkflowErrors.NoRuntime.With("connection lost"));
+            }
+
+            if (!_seen.Contains(nonce) && command is StepCompleted { Outputs.Count: 0 })
+            {
+                // The engine decides on what arrived: a choice report without fact:decision is malformed (its own fix text).
+                var route = EvalComposition.Recipe(Aw.Sindri.Tests.Workflow.Choice.RouteRecipes.Dev);
+                if (EngineFixture.Decide(EngineFixture.At(route, "route-evidence-desk"), route, command) is Rejected rejected)
+                {
+                    return ValueTask.FromResult<Result<CommandResult>>(rejected.Error);
+                }
+            }
+
             // Temporal answers an Update id it has seen with the first result; otherwise the workflow's validator checks the run.
             if (!_seen.Contains(nonce) && (_movedOn || command is not StepCompleted done || done.Run != RunToken.For(1, 1)))
             {
