@@ -251,6 +251,15 @@ OUT1="$(bash "$DIR/meta-launch.sh" --no-open --dry-run | sed "s#$WORK#W#g")"
 check "launcher.json at the default path with viewer warp: the same layout, byte for byte" "$OUT1" "$OUT0"
 unlink "$AW_STATE_DIR/launcher.json"
 
+# sessions (session collector CO-0): the key is the collector's; the bash reader accepts it and ignores it, so the layout is today's.
+reset
+cp "$FIX/sessions.json" "$LCFG"
+OUT1="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open --dry-run 2>&1 | sed "s#$WORK#W#g"; exit "${PIPESTATUS[0]}")"; RC=$?
+check "a launcher.json with sessions: accepted, the same layout as no file" "$RC:$(diff <(printf '%s\n' "$OUT0") <(printf '%s\n' "$OUT1" | sed 's# -e AW_LAUNCHER_CONFIG=[^ ]*##') > /dev/null && echo same)" "0:same"
+cp "$FIX/sessions-bogus.json" "$LCFG"
+OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open --dry-run 2>&1)"; RC=$?
+check "a sessions key with an unknown member: still accepted by the bash reader (sindri launch show refuses it)" "$RC:$(grep -c 'SND-LAUNCH-011' <<< "$OUT")" "0:0"
+
 # viewer: print — one attach line per lane, no Warp YAML.
 reset; unlink "$yaml" 2> /dev/null; cp "$FIX/viewer-print.json" "$LCFG"
 OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" 2>&1)"; RC=$?

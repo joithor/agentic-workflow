@@ -1,0 +1,7 @@
+Name:	claude
+Umask:	0022
+State:	S (sleeping)
+Pid:	1100
+PPid:	1
+Uid:	1000	1000	1000	1000
+Gid:	1000	1000	1000	1000
