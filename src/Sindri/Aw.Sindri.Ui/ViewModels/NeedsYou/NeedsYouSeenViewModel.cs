@@ -94,13 +94,15 @@ internal sealed class NeedsYouSeenViewModel : ObservableObject
     /// Takes the list as the API serves it now: forgets the seen state of rows that left, makes a row of each new id (it
     /// slides in unless the list is the first shown or motion is reduced) and pulses the header once for the whole batch.
     /// </summary>
-    /// <param name="entries">The rows, in order.</param>
-    internal void Update(IReadOnlyList<NeedsYouEntry> entries)
+    /// <param name="entries">The rows to show, in order.</param>
+    /// <param name="known">Every id the list has, shown or not (Home's filter, the hold): the seen state of those is kept. Null: the rows given.</param>
+    internal void Update(IReadOnlyList<NeedsYouEntry> entries, IReadOnlyCollection<string>? known = null)
     {
         var ids = entries.Select(e => e.Id).ToList();
+        var keep = known ?? ids;
         var fresh = ids.Where(id => !_byId.ContainsKey(id)).ToHashSet(StringComparer.Ordinal);
-        _tracker.Retain(ids);
-        foreach (var gone in _byId.Keys.Except(ids, StringComparer.Ordinal).ToList())
+        _tracker.Retain(keep);
+        foreach (var gone in _byId.Keys.Except(keep, StringComparer.Ordinal).ToList())
         {
             _ = _byId.Remove(gone);
         }

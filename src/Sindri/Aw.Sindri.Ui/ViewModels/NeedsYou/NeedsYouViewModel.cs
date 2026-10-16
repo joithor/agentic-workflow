@@ -30,7 +30,9 @@ internal sealed partial class NeedsYouViewModel : ObservableObject
     private NeedsYouFeed _feed = new([], "");
     private readonly TimeProvider _clock;
     private DateTimeOffset _lastAutoMove = DateTimeOffset.MinValue;
-    private List<NeedsYouEntry> _visible = [];
+    private List<NeedsYouEntry> _shown = [];   // the feed's rows the filter lets through
+    private List<NeedsYouEntry> _visible = [];   // those, less the ones held back
+    private Func<NeedsYouEntry, bool>? _filter;
     private HashSet<string> _shownIds = new(StringComparer.Ordinal);
     private bool _hasShown;
 
@@ -114,7 +116,7 @@ internal sealed partial class NeedsYouViewModel : ObservableObject
     }
 
     /// <summary>How many new rows are held back.</summary>
-    internal int HeldCount => _feed.Rows.Count - _visible.Count;
+    internal int HeldCount => _shown.Count - _visible.Count;
 
     /// <summary>The held rows' control ("2 new"); empty for none.</summary>
     internal string HeldText => HasHeld ? Labels.NewRows(HeldCount) : "";
@@ -134,9 +136,11 @@ internal sealed partial class NeedsYouViewModel : ObservableObject
     /// end) and the live region says so.
     /// </summary>
     /// <param name="feed">The list.</param>
-    internal void Update(NeedsYouFeed feed)
+    /// <param name="show">Which rows Home's filter lets through; null for all. The seen state is kept against the whole feed.</param>
+    internal void Update(NeedsYouFeed feed, Func<NeedsYouEntry, bool>? show = null)
     {
         _feed = feed;
+        _filter = show;
         Apply();
     }
 
@@ -150,7 +154,7 @@ internal sealed partial class NeedsYouViewModel : ObservableObject
     /// <summary>Shows the held rows now.</summary>
     internal void ShowHeld()
     {
-        _shownIds.UnionWith(_feed.Rows.Select(r => r.Id));
+        _shownIds.UnionWith(_shown.Select(r => r.Id));
         Apply();
     }
 
@@ -174,10 +178,11 @@ internal sealed partial class NeedsYouViewModel : ObservableObject
     {
         var before = Rows.Select(r => r.Entry).ToList();
         var holding = PointerOver && _hasShown;
-        _visible = [.. _feed.Rows.Where(e => !holding || _shownIds.Contains(e.Id))];
+        _shown = [.. _feed.Rows.Where(e => _filter is null || _filter(e))];
+        _visible = [.. _shown.Where(e => !holding || _shownIds.Contains(e.Id))];
         _shownIds = [.. _visible.Select(e => e.Id)];
         _hasShown = true;
-        Seen.Update(_visible);
+        Seen.Update(_visible, [.. _feed.Rows.Select(e => e.Id)]);
         var selected = SelectedId;
         if (selected is not null && !_visible.Exists(e => string.Equals(e.Id, selected, StringComparison.Ordinal)))
         {
