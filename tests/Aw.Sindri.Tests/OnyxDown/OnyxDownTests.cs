@@ -51,6 +51,53 @@ public sealed class OnyxDownTests
         Assert.False(again.WasRunning);
     }
 
+    // A start that didn't finish: containers up, no `start` step in state.json.
+    private static async Task<OnyxUpRig> FailedStartRig()
+    {
+        var rig = await RunningRig();
+        var state = rig.Workspace.State!;
+        rig.Workspace.State = state with { Steps = state.Steps.Where(static s => s.Key != "start").ToDictionary(static s => s.Key, static s => s.Value, StringComparer.Ordinal) };
+        return rig;
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Down_after_a_failed_start_stops_the_containers_the_project_has()
+    {
+        var rig = await FailedStartRig();
+
+        var response = (await Down(rig)).Value;
+
+        Assert.True(response.WasRunning);
+        Assert.Contains("nginx", response.Stopped, StringComparer.Ordinal);
+        Assert.Contains("Stop", rig.Runtime.Calls, StringComparer.Ordinal);
+        Assert.All(rig.Runtime.Containers, static c => Assert.Equal("exited", c.State, StringComparer.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Down_with_a_corrupt_state_still_stops_running_containers()
+    {
+        var rig = await RunningRig();
+        rig.Workspace.StateIsCorrupt = true;
+
+        var response = (await Down(rig)).Value;
+
+        Assert.True(response.WasRunning);
+        Assert.All(rig.Runtime.Containers, static c => Assert.Equal("exited", c.State, StringComparer.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Down_says_nothing_was_running_only_when_ps_shows_no_running_container()
+    {
+        var rig = await FailedStartRig();
+        rig.Runtime.Containers.Clear();
+
+        var response = (await Down(rig)).Value;
+
+        Assert.False(response.WasRunning);
+        Assert.Empty(response.Stopped);
+        Assert.DoesNotContain("Stop", rig.Runtime.Calls, StringComparer.Ordinal);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task Down_on_a_box_never_set_up_is_a_no_op()
     {

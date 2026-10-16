@@ -134,6 +134,20 @@ public sealed class OnyxUpResumeTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_rerun_after_a_failed_start_keeps_the_port_our_nginx_holds()
+    {
+        var rig = new OnyxUpRig();
+        _ = await rig.Up(Token);
+        var state = rig.Workspace.State!;
+        rig.Workspace.State = state with { Steps = state.Steps.Where(static s => s.Key != "start").ToDictionary(static s => s.Key, static s => s.Value, StringComparer.Ordinal) };
+        _ = rig.Probes.TakenPorts.Add(3000);
+
+        var rerun = (await rig.Up(Token)).Value;
+
+        Assert.Equal(3000, rerun.Port);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_taken_port_that_is_not_ours_is_not_kept()
     {
         var rig = new OnyxUpRig();

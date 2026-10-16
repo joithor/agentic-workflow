@@ -53,7 +53,7 @@ internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentS
         return json
             ? await output.Json(answer.Value, 0).ConfigureAwait(false)
             : await output.Text(answer.Value.WasRunning
-                ? "Onyx stopped (its data and images are kept; `sindri onyx up` starts it again).\n"
+                ? $"Onyx stopped: {string.Join(", ", answer.Value.Stopped)} (its data and images are kept; `sindri onyx up` starts it again).\n"
                 : "Onyx is stopped (nothing was running).\n", 0).ConfigureAwait(false);
     }
 
