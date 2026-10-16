@@ -193,6 +193,7 @@ public static class SindriFeaturesServiceCollectionExtensions
         .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>>(static sp =>
             new WithMoreChecks(sp.GetRequiredService<RunDoctorService>(), sp.GetServices<IDoctorChecks>()))
         .AddScoped<IDoctorChecks, ContextDoctorChecks>()
+        .AddScoped<IDoctorChecks, OnyxStackDoctor>()                                       // Onyx P2: `onyx:stack`, after the context rows, only once `onyx up` has run
         .AddScoped<IService<OnyxStatusRequest, OnyxStatusResponse>, OnyxStatusService>()   // Onyx P1: read-only, in process, like the doctor
         .AddSingleton<OnyxReadiness>()
         .AddSingleton<IOnyxUpStep, OnyxFetchStep>()                                         // Onyx P2: the steps of `onyx up`, in this order
