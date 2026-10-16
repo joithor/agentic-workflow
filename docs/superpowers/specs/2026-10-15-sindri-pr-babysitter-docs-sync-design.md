@@ -1,8 +1,8 @@
 # Sindri PR babysitter and docs sync: the last stations of the spec-to-proven-PR line
 
-**Status:** revision 2 (fitted to the line contract, #262) · **Date:** 2026-10-15 · **Owner decisions:** 2026-10-15
-(§2) · **Builds on:** the line spec `2026-10-15-sindri-spec-to-proven-pr-line-design.md` (LN, #262), rev 1, branch
-`docs/sindri-line-design-plan`: its §3 line contract, §5 packs, §7.6 interface and BD1–BD8 (§12.8); the scoping
+**Status:** revision 3 (aligned with the line spec's revision 2, #262) · **Date:** 2026-10-15 · **Owner decisions:** 2026-10-15
+(§2) · **Builds on:** the line spec `2026-10-15-sindri-spec-to-proven-pr-line-design.md` (LN, #262), rev 2, branch
+`docs/sindri-line-design-plan`: its §3 line contract, §5 packs, §7.6 interface and BD1–BD9 (§12.8); the scoping
 station spec `2026-10-15-sindri-scoping-station-design.md` (SC, #258), rev 3.1; the decision-tree recipes spec
 `2026-10-15-sindri-decision-tree-recipes-design.md` (DT, #240), rev 4; the workflow engine spec
 `2026-10-10-sindri-workflow-engine-design.md` (WF), rev 8.2, schema 1; `docs/csharp/sindri-workflow.md` (REF);
@@ -22,7 +22,7 @@ replaces `/syncDocs` for one PR. No skill prompt is reused (PB7): every agent St
 PR-R's rubric and evaluated before the recipe is approved (§9).
 
 Both recipes are schema 1 with closed templates, camelCase fact keys and outcomes (`fact:[a-z][A-Za-z0-9]*`,
-RCP-SCHEMA-002). They add no recipe field. The engine work they need is rows W23–W26 (§12).
+RCP-SCHEMA-002). They add no recipe field. The engine work they need is rows W23–W27 (§12); #262's rows are cited by their LN-* ids.
 
 ## 1. Where this sits in the line
 
@@ -34,7 +34,7 @@ RCP-SCHEMA-002). They add no recipe field. The engine work they need is rows W23
                                                       fact:handoff     ├─ CI fixes, comments, restacks
                                                                        ├─ workflow.prove-recheck (BD4, §8)
                                                                        ├─ workflow.docs-sync, once (BD5, §7)
-                                                                       └─ ready: stop 3 ── merge ──► merged (fact:mergedSha)
+                                                                       └─ ready: stop 3 ── merge ──► docs PR merged ─► merged (fact:mergedSha)
                                                                                      └── rework ─► rework (failed) ─► build
 ```
 
@@ -43,11 +43,11 @@ RCP-SCHEMA-002). They add no recipe field. The engine work they need is rows W23
 | §3.2 packet 7, the PR hand-off | The babysitter's input `fact:handoff`, verified by hash before it is read (LC-1, §4.2) |
 | §3.2 row 8, the merge record | Appended by the babysitter and docs sync to `babysit.jsonl` in the phase's run area (BD7, §4.7) |
 | §3.3 LC-1, LC-4, LC-6 | Inputs are hashes (§4.2); every row of the merge record names its head sha; comment text is untrusted (§5.5) |
-| §3.4 stop 3, ready-to-merge | The `ready` state, entered only with CI green on the head **and** docs sync ended (BD3, BD5, §4.5) |
+| §3.4 stop 3, ready-to-merge | The `ready` state, entered only with CI green on the head **and** docs sync ended with its docs PR green (BD3, BD5, §4.5); a `ready-to-merge` Needs-you row (LN-UI6) whose merge and rework are LN-API7's desk actions |
 | §5.2 lens packs | Cited, not redefined: the review loop with its injectable lenses runs before the PR opens (LN §7.4, DTC4); the babysitter handles what humans and bots say after it opens (PB5) |
-| §7.6 the interface | Start facts, the docs hand-over, stop 3, and the four ends, exactly as listed there (§4.2, §4.5) |
+| §7.6 the interface | Start facts, the docs hand-over, stop 3, and the four ends, exactly as listed there (§4.2, §4.5). The babysitter outputs `fact:mergedSha`; `workflow.phase` reports `merged` to the line (BD7) |
 | §8.3 stacks | `gate.pr.base-is-default` on the merge, and restacks when a base merges or moves (BD4, §4.6) |
-| §12.8 BD1–BD8 | Applied; §15 maps each to its section |
+| §12.8 BD1–BD9 | Applied; §15 maps each to its section |
 
 ## 2. Decisions
 
@@ -55,15 +55,15 @@ RCP-SCHEMA-002). They add no recipe field. The engine work they need is rows W23
 |---|---|---|
 | PB1 | **The babysitter and docs sync are the line's last stations** (owner, 2026-10-15; LN1). `workflow.phase` starts the babysitter as its `babysit` child with LN §7.6's facts; both recipes also start by hand | They run on every PR the line opens. Built last, after the stations whose packets they read (LN §13.1 step 5) |
 | PB2 | **The PR link is an input** (owner, 2026-10-15). The babysitter starts from `workflow.phase`, or by hand: `sindri workflow start workflow.pr-babysitter --item <item> --fact fact:pr=<url>` with empty `fact:handoff`, `fact:phasePacket` and `fact:lineContext` (LN Q13's convention). Nothing watches the forge for new PRs; the PR-state source (§6) watches only PRs a live instance names | The owner, or the line, chooses which PRs get a babysitter |
-| PB3 | **The merge is the owner's one click at ready-to-merge** (owner, 2026-10-15). `effect.pr.merge` runs only on `command.merge` from `ready`, only from a human caller (W23), and only while the PR's base is the default branch (BD4). The agent never merges | Merging is the one irreversible step |
+| PB3 | **The merge is the owner's one click at ready-to-merge** (owner, 2026-10-15). `effect.pr.merge` runs only on `command.merge` from `ready`, only from a human caller (LN-API7's `desk` class; W23 for the recipe side), and only while the PR's base is the default branch (BD4). The one click merges the phase PR, then its stacked docs PR (BD9). The agent never merges | Merging is the one irreversible step |
 | PB4 | **No stop before the PR opens; the line stops only at ready-to-merge** (owner, 2026-10-15; LN2). Ready-to-merge means the PR is open with its evidence pack, docs sync has ended (its docs PR opened, or nothing to sync) and CI is green on the head. Comments that need the owner are **held** to that stop, not raised one by one (§5.3). The only other owner desks are **exception desks** for a state the babysitter can't leave unattended (a conflict, a fix that can't be made, a refused push, a failed recheck, a docs sync that couldn't finish) | The owner reviews a finished PR at one stop, not a stream of questions about it |
 | PB5 | **Comments are classified by type, and each type has its own branch** (owner, 2026-10-15). `step.judge.choose` picks from nine content types; the author types (bot, untrusted) come from forge facts, not a model (§5.1). The review loop before the PR opens is the line's (LN §7.4): capped at 5, with each workspace's injectable lenses and their prompts (LN §5.2, LN14). This doc cites those packs and adds no lens of its own | A model only picks which approved branch fits. Lenses are configuration in one place |
-| PB6 | **Docs sync is a standalone recipe: a PR link in, a stacked docs PR out** (owner, 2026-10-15). It opens its own PR whose base is the source PR's head branch. The babysitter runs it once, at the first CI-green snapshot, passing the phase's `fact:designPacket` (BD5); a repo opts out with `workflow.docs.sync: off` | One run per PR bounds the cost; the design packet says which docs the design means to change |
+| PB6 | **Docs sync is a standalone recipe: a PR link in, a stacked docs PR out** (owner, 2026-10-15). It opens its own PR whose base is the source PR's head branch. The babysitter runs it once, at the first CI-green snapshot, passing the phase's `fact:phasePacket` (BD5); a repo opts out with `workflow.docs.sync: off` | One run per PR bounds the cost; the phase packet's `design.md` says which docs the design means to change |
 | PB7 | **No skill prompt is reused as-is** (owner, 2026-10-15; IDEA-098; LN12). Every agent Step's seed is written new, scored against PR-R's rubric (≥ 2 on R1, R2, R6, R9, R13) and evaluated before a recipe that uses it is approved (§9) | Today's prompts were never measured |
 | PB8 | **One comment thread per round, one push per pass.** The queue is a loop; fixes commit in the phase worktree, and one `effect.pr.push` sends them when the queue drains (§5.2) | Schema 1 has no fan-out (WF §3.9). One push per pass is one CI run per pass |
 | PB9 | **Events are hints; the snapshot is the truth.** Every forge event, including a merge, goes back to `step.pr.snapshot`, which reads the PR again (§6.3) | A stale or misrouted event costs one forge read. This lets v1 run before E3 (Q1) |
 | PB10 | **The forge is a port** (CFG-13). Recipes and blocks reach the forge only through `IForge` in a new `Aw.Forge` package; GitHub is the first adapter, a file-backed fake serves tests and proofs (§10.2). `effect.pr.open` (BD1) lives here and lands before the line's ship phase | Teams on other forges add an adapter; nothing in a recipe names GitHub |
-| PB11 | **Agents never hold the forge credential.** Pushes, replies, restacks and merges are effects run by Sindri with its own credential. Fix Steps run under capability `build` (LN W20), the reply Step read-only (SC W9) | A comment that talks an agent into "push to main" finds nothing to push with |
+| PB11 | **Agents never hold the forge credential.** Pushes, replies, restacks and merges are effects run by Sindri with its own credential. Fix Steps run under capability `build` (LN-WF6), the reply Step read-only (SC W9) | A comment that talks an agent into "push to main" finds nothing to push with |
 | PB12 | **A fix that touches non-test source re-proves the phase before `ready`** (BD4). The push reports `pushedSource`, and the babysitter runs `workflow.prove-recheck` on the new head (§8) | The evidence pack in the PR body must still hold on the head the owner merges |
 
 ## 3. Terms
@@ -74,7 +74,7 @@ RCP-SCHEMA-002). They add no recipe field. The engine work they need is rows W23
   trailer names it. **Held comment:** one marked `held`: handled for the queue, waiting for the owner at `ready`.
 - **Trusted author:** owner, member or collaborator association, the PR's author, or a bot in `workflow.pr.bots` (Q2).
 - **Stacked PR:** a PR whose base is another PR's head branch (LN §8.3).
-- **Workspace:** the phase's worktree and branch (LN W16) when `fact:lineContext` names a phase; otherwise a local
+- **Workspace:** the phase's worktree and branch (LN-WF2) when `fact:lineContext` names a phase; otherwise a local
   branch `sindri/pr/<instance>` cut from the PR head.
 
 ## 4. The PR babysitter
@@ -82,11 +82,12 @@ RCP-SCHEMA-002). They add no recipe field. The engine work they need is rows W23
 ### 4.1 Shape
 
 ```
-intake ─► snapshot ─┬─ merged ───────────────────────────────────────────────► merged (fact:mergedSha; report merged)
+intake ─► snapshot ─┬─ merged ─[docs PR open]─► docs-merging (BD9) ──────────► merged (fact:mergedSha)
    ▲                ├─ closed ───────────────────────────────────────────────► closed
    │                ├─ restack ─► restacking ─────────────────────────────────► snapshot
    │                ├─ conflict ─► owner (exception desk: retry ─► intake | stop)
    │                ├─ ciRed ─[autofix cap]─► ci-fix ─► pushing ─┬─ pushedSource ─► recheck ─► snapshot
+   │                ├─ docsRed ─► docs-owner (retry ─► docs | skip | stop)
    │                │                                            └─ pushed / nothing ─────────► snapshot
    │                ├─ comments ─► next-comment ─► classify ─► fix | fix-nit | reply | hold ─► next-comment
    │                │                  ├─ bot ─► fix-bot        └─ drainedUnpushed ─► pushing
@@ -107,16 +108,15 @@ The full YAML is Appendix C.1. Every state's `next` text uses only REF's variabl
 |---|---|---|
 | `fact:pr` | The PR `workflow.ship` opened | The PR link |
 | `fact:handoff` | The PR hand-off packet's hash (LN §3.2 row 7) | Empty |
-| `fact:phasePacket` | The phase packet's hash: allowed files, amendments, test paths | Empty |
+| `fact:phasePacket` | The hash of the phase packet in force: allowed files, test paths, `design.md`. After a scope grant it is the amended child packet (LN §3.2 row 4), so the grant needs no separate list | Empty |
 | `fact:lineContext` | `{ line, phase, stackParent, runArea }` | Empty |
 
 `step.pr.intake` (block) runs first and again on every owner `retry`:
-1. Verifies each non-empty packet hash with `aw-packets verify` (LN P3) before reading it (LC-1), and checks the hand-off's
+1. Verifies each non-empty packet hash with `aw-packets verify` (LN-PKT2) before reading it (LC-1), and checks the hand-off's
    `pr.json` head branch against the PR's (`handoffMismatch` otherwise).
-2. Reads `fact:designPacket` from the hand-off's `index.json` chain (packets 1–6), or writes it empty.
-3. Resolves the workspace (§3) and seeds empty `fact:decision`, `fact:ownerNote` and `fact:handoffNote`, as #258's intake
+2. Resolves the workspace (§3) and seeds empty `fact:decision`, `fact:ownerNote` and `fact:handoffNote`, as #258's intake
    seeds do (SC W10's fallback).
-4. Appends the merge record's `start` row (§4.7).
+3. Appends the merge record's `start` row (§4.7).
 
 Failure reasons (camelCase, like outcomes): `forgeUnreachable`, `forkHead` (the head lives where Sindri can't push),
 `repoNotInProfile`, `handoffMismatch`, `packetUnverified`. Each goes to the `owner` desk.
@@ -131,17 +131,20 @@ reports the first outcome that holds, in this order, and outputs `fact:prState` 
 
 | Outcome | Holds when | Goes to |
 |---|---|---|
-| `merged` | The PR is merged; also outputs `fact:mergedSha` | `merged` terminal, reporting `merged` (BD7) |
+| `merged` | The PR is merged; also outputs `fact:mergedSha` | `docs-merging` while a docs PR is open (BD9); else the `merged` terminal. `workflow.phase` reports `merged` (BD7) |
 | `closed` | Closed unmerged | `closed` terminal (`unresolved`) |
 | `restack` | Stacked, and its base PR merged or its base branch moved since the PR's last rebase (BD4) | `restacking` |
 | `conflict` | The forge reports a conflict with the base | `owner` |
 | `ciRed` | A required check failed on the head sha | `ci-fix`, through `gate.pr.autofix-cap` |
 | `comments` | The queue (§5.2) is not empty | `next-comment` |
-| `pending` | Checks running, or the forge reports the PR blocked (reviews missing, re-review requested) | `await` |
-| `green` | Required checks green **on the head sha**, the queue empty, the forge reports it mergeable apart from its base | `docs` while `fact:docsResult` is absent; else `ready` |
+| `docsRed` | Docs sync opened a docs PR and a required check failed on its head, unless the owner skipped the docs (`skippedByOwner`) | `docs-owner` |
+| `pending` | Checks running on the head or on the docs PR, or the forge reports the PR blocked (reviews missing, re-review requested) | `await` |
+| `green` | Required checks green **on the head sha** and on the docs PR's head when one is open, the queue empty, the forge reports it mergeable apart from its base | `docs` while `fact:docsResult` is absent; else `ready` |
 
 CI comes before comments: a fix pushed onto a red head can't be checked, and reviewers often wait for green. Restack
-comes before conflict, because a restack onto the new base often clears it.
+comes before conflict, because a restack onto the new base often clears it. The snapshot finds the docs PR itself
+(`FindPull(docs/<head>)`), so no state reads a `fact:docsPr` that may be absent. "Complete" in BD3 is the docs PR open
+with CI green on its head: `docsRed` and `pending` keep `ready` closed until it is.
 
 **"The first CI-green snapshot"** (LN §7.6) is the first `green`: CI green on the head with the queue drained. Docs
 synced then are synced against a settled head; a later fix that moves the head shows at `ready` as "docs synced against
@@ -153,7 +156,7 @@ synced then are synced against a settled head; a later fix that moves the head s
 |---|---|---|---|
 | `intake` | active | `step.pr.intake` | §4.2 |
 | `snapshot` | active, loop `cycles` | `step.pr.snapshot` | §4.3 |
-| `restacking` | wait | `pr.restacked` | Entered with `effect.pr.restack` `target: self` (§4.6) |
+| `restacking` | wait | `pr.restacked` | Entered with `effect.pr.restack` (§4.6) |
 | `ci-fix` | active, agent, loop `ci` | `step.pr.ci-fix` | Capability `build`; inputs `input.pr.context`, `input.handoff-note` |
 | `next-comment` | active, loop `comments` | `step.pr.next-comment` | §5.2 |
 | `classify` | active | `step.judge.choose` | Nine types (§5.1); `uncertain` is held, not desked (PB4) |
@@ -163,13 +166,14 @@ synced then are synced against a settled head; a later fix that moves the head s
 | `recheck` | wait, loop `rechecks` | child `workflow.prove-recheck` | §8 |
 | `recheck-owner` | active, exception desk | `step.owner.decide` | Retry the recheck, or stop |
 | `await` | wait | `pr.changed` | Back to `snapshot` on any change |
-| `docs` | wait, loop `docs` | child `workflow.docs-sync` | Inputs `fact:pr`, `fact:designPacket` (BD5) |
-| `docs-owner` | active, exception desk | `step.pr.docs-decide` | Docs sync ended `unresolved` or `failed`: retry, skip (records `fact:docsResult` as skipped by the owner), stop |
+| `docs` | wait, loop `docs` | child `workflow.docs-sync` | Inputs `fact:pr`, `fact:phasePacket` (BD5) |
+| `docs-owner` | active, exception desk | `step.pr.docs-decide` | Docs sync ended `unresolved` or `failed`, or its docs PR's CI is red (`docsRed`): retry, skip (records `fact:docsResult` as skipped by the owner), stop |
 | `ready` | wait | `pr.changed` | **Stop 3** (§4.5) |
 | `held-next` | active, loop `held` | `step.pr.held-comment` | The held queue, entered from `ready` by `command.comments` |
 | `owner-comment` | active, human-only | `step.pr.owner-comment` | Fix (with a note), reply (typed), skip, later |
 | `rework-notes` | active, human-only | `step.pr.rework-notes` | SC W2's fixed form, notes required (BD8) |
 | `merging` | wait | `pr.mergeResult` | Back to `snapshot`, which sees the merge (PB9) |
+| `docs-merging` | wait | `pr.docsMerged` | Entered with `effect.pr.merge-docs` (BD9, §4.6); every outcome ends in `merged` |
 | `owner` | active, exception desk | `step.owner.decide` | Retry (back to `intake`) or stop |
 | `merged` · `closed`, `stopped` · `rework` | terminals | — | `resolved` · `unresolved` · `failed` (LN §7.6) |
 
@@ -178,9 +182,11 @@ synced then are synced against a settled head; a later fix that moves the head s
 `snapshot → ready` needs outcome `green` **and** `fact:docsResult` present (BD3). Docs sync produces `fact:docsResult`
 only when it ends `opened` or `not-needed`; the owner's `skip` at `docs-owner` writes it too, saying so. A fix that
 touched source has passed its recheck by then, because `pushing → recheck → snapshot` is the only way back from such a
-push (§8). The transition notifies the desk; `ready`'s needs-you row is the stop.
+push (§8). The transition notifies the desk. `ready` stays a wait, so it keeps reacting to CI, restacks and
+`pr.changed` while it waits for the click; Home shows it as a `ready-to-merge` Needs-you row (LN-UI6), which opens
+`ReadyView`.
 
-**`ReadyView`** (LN API11, U9), with BD6's fields first:
+**`ReadyView`** (LN-API3, LN-UI3), with BD6's fields first:
 
 | Field | Source |
 |---|---|
@@ -188,16 +194,16 @@ push (§8). The transition notifies the desk; `ready`'s needs-you row is the sto
 | **CI on the head sha**: each required check, its state and the sha it ran on | `fact:prState.checks` |
 | **Not-proven count** and the list | The hand-off's chain: the proof pack's `not-proven.md` |
 | **Hidden-scenario verdicts**: counts passed, failed, spent (no text, LN §9.3) | The proof pack's `holdout.json` |
-| **The docs PR**, its state, and the head it was synced against | `fact:docsPr`, `fact:docsResult` |
+| **The docs PR**, its state, CI on its head, and the head it was synced against | `fact:docsPr`, `fact:docsResult`, `fact:prState.docs` |
 | Rechecks since the PR opened, each with its head sha and verdict | `fact:recheck`, the merge record |
 | Comments by type and outcome; **held comments** with the model's lean and the reason held | The mark table (§5.4) |
-| The merge method, and why merge is refused when it is (base not default, head moved) | Profile; the gates' last refusal |
+| The merge method, and why merge is refused when it is: LN-API3's `mergeBlockedBy` (`baseNotDefault`, `headMoved`, `ciRed`) | Profile; the gates' last refusal |
 | The merge record | `babysit.jsonl` (§4.7) |
 
 | Owner action | Command | What happens |
 |---|---|---|
-| **Merge** (one click) | `command.merge` | Gates `gate.pr.base-is-default` and `gate.revision-bound`; then `effect.pr.merge` with an expected-head check. Human caller only (W23). Refused while the base isn't the default branch: stop 3 comes in stack order (LN §8.3) |
-| **Rework** | `command.rework` | Opens `rework-notes` (human-only, notes required). `noted` ends in `rework` (`failed`) with `fact:reworkNotes`; the phase rebuilds in the same worktree and `effect.pr.open` updates the same PR (BD8, LN Q14). `back` returns to `snapshot` |
+| **Merge** (one click) | `command.merge` (`ApplyCommand:merge`, LN-API7) | Gates `gate.pr.base-is-default` and `gate.revision-bound`; then `effect.pr.merge` with an expected-head check, and once the snapshot sees the merge, `effect.pr.merge-docs` merges the stacked docs PR (BD9). Class `desk`, human caller only (LN-API7; W23 on the recipe side); a button behind LN-UI3's one-line confirm. Refused while the base isn't the default branch: stop 3 comes in stack order (LN §8.3) |
+| **Rework** | `command.rework` (`ApplyCommand:rework`, LN-API7, notes required) | Opens `rework-notes` (human-only, notes required). `noted` ends in `rework` (`failed`) with `fact:reworkNotes`; the phase rebuilds in the same worktree and `effect.pr.open` updates the same PR (BD8, LN Q14). `back` returns to `snapshot` |
 | **Held comments** | `command.comments` | `held-next` walks held comments oldest first; `owner-comment` decides each: fix (with `fact:ownerNote`), reply (typed), skip, or later (back to `snapshot`, the rest stay held) |
 | Resync docs | `command.resync-docs` | Runs docs sync again on the current head |
 | Check now | `command.check` | Back to `snapshot` |
@@ -214,9 +220,13 @@ A held comment doesn't block `ready`: merging with held comments is the owner's 
   dropping commits the base already has (squash merges leave them behind), then pushes with a lease. Outcomes
   `restacked`, `nothing`, `conflict` (`owner`: the PR is left as it was). A rework of a phase this PR is stacked on moves
   that base; the `pr.changed` event brings the snapshot, which restacks (LN §8.3).
-- **Restacking the docs PR.** On `merged`, `effect.pr.restack` with `target: docs` finds the open docs PR stacked on
-  this PR's head branch (`FindPull(docs/<head>)`) and does the same for it, so it becomes a PR against the default
-  branch; with none open it does nothing. A conflict raises a needs-you row on the docs PR (Q4).
+- **Merging the docs PR (BD9).** On `merged` with a docs PR open, `effect.pr.merge-docs` finds the docs PR stacked on
+  this PR's head branch (`FindPull(docs/<head>)`), retargets it to the default branch, rebases it as a restack does,
+  waits for its required checks on the new head (at most `workflow.pr.docsMergeWait`, default 30 m) and merges it with
+  the same method and an expected-head check. Outcomes `merged`, `pending` (CI failed or timed out after the retarget,
+  or a conflict: the docs PR stays open and the merge record gets `docsPending`) and `none` (no docs PR open). The phase
+  is merged either way; a pending docs PR shows on Home as a needs-you row on the docs PR (Q4). One click, both PRs, in
+  that order. A PR merged outside Sindri takes the same path, so its docs PR follows it.
 - **Stale proof.** A push whose commits touch any non-test source path (the phase packet's test-path convention, or the
   repo's when it is empty) confirms `pushedSource`, and the babysitter runs `workflow.prove-recheck` before it reads the
   PR again (§8). A restack moves the head without changing the change; CI runs again on it, and `ReadyView` shows the
@@ -238,16 +248,19 @@ when started by hand. It is appended, never edited, and never edits packets 1–
 | `docs` | `workflow.docs-sync`'s blocks | result, docs PR, synced head |
 | `restack` | `effect.pr.restack` | old base, new base, outcome |
 | `merge` | `effect.pr.merge` | method, merged sha, actor |
+| `docsMerge` | `effect.pr.merge-docs` | docs PR, outcome (`merged`, `docsPending`, `none`), merged sha |
 | `end` | the transition into a terminal | terminal, and `fact:reworkNotes`' hash on `rework` |
 
-The `merged` transition also carries `effect.line.report` with `status: merged` (LN W15), and the recipe outputs
-`fact:mergedSha` from `snapshot`. With an empty `fact:lineContext`, the report records nothing (LN Q13).
+The recipe outputs `fact:mergedSha` from `snapshot`, and its `merged` terminal is the end `workflow.phase` waits for.
+The babysitter reports nothing to the line itself: `workflow.phase`'s `babysit → merged` transition carries
+`effect.line.report` with `status: merged` (BD7, LN-WF1, LN C.6), which records nothing for a phase with no line (LN
+Q13).
 
 ### 4.8 Caps, timeouts and budgets
 
 - **Caps.** `ci` 3 per instance; `gate.pr.autofix-cap` bounds CI fixes per PR across instances (IDEA-016; profile
   `workflow.pr.autofixCap`, default 3, at most 5) and parks `needs-answer` (WF §5.8) with the failing check's log.
-  `comments` 60, `rounds` 6 pushes, `rechecks` 4, `docs` 3, `held` 40, `retries` 5 at the `owner` desk, `cycles` 150
+  `comments` 60, `rounds` 6 pushes, `rechecks` 4, `docs` 3 (docs sync runs and `docsRed` retries together), `held` 40, `retries` 5 at the `owner` desk, `cycles` 150
   snapshots (it stops a snapshot and a queue that disagree from looping). Each cap is an engine park, answered with `--grant` or `--resume` (WF §3.8). `ci`
   keeps the default `noProgress`, so the same failure twice parks early.
 - **Timeouts.** Block Steps and exception desks: 2 days, as DT §3.3, because before DT-J they run at the desk. Agent
@@ -308,7 +321,7 @@ The workflow store gets `pr_comment_marks (forge, repo, pr, comment_id, edited_a
 (W26). `effect.pr.reply` writes a row on delivery for every form (`thread`, `reaction`, `fixedReplies`, `none`, `hold`).
 A comment is handled when it has a row whose `edited_at` matches, or a trailer commit in the workspace. An edited
 comment is unhandled again. A resolved thread is skipped until it gets a new comment (Q3). IDEA-033's terminal cleanup
-deletes `sindri/pr/<instance>` for a hand-started babysitter; the phase workspace is the line's (LN W16).
+deletes `sindri/pr/<instance>` for a hand-started babysitter; the phase workspace is the line's (LN-WF2).
 
 ### 5.5 Comment text is untrusted
 
@@ -331,8 +344,9 @@ deletes `sindri/pr/<instance>` for a hand-started babysitter; the phase workspac
 | `pr.pushed` | `effect.pr.push` | causation | `pushed`, `pushedSource`, `nothing`, `headMoved`, `rejected` | `fact:push` `{ sha, commits[], comments[], source }` |
 | `pr.restacked` | `effect.pr.restack` | causation | `restacked`, `nothing`, `conflict` | `fact:restack` |
 | `pr.mergeResult` | `effect.pr.merge` | causation | `merged`, `blocked`, `headMoved` | `fact:merge` |
+| `pr.docsMerged` | `effect.pr.merge-docs` (BD9) | causation | `merged`, `pending`, `none` | `fact:docsMerge` |
 | `pr.stacked` | `effect.pr.create-stacked` | causation | `opened`, `updated`, `rejected` | `fact:docsPr` |
-| `pr.opened` | `effect.pr.open` (BD1; `workflow.ship` waits on it) | causation | `opened`, `updated`, `refused` | `fact:pr` |
+| `pr.opened` | `effect.pr.open` (BD1 registers it; `workflow.ship` waits on it) | causation | `opened`, `updated`, `refused` | `fact:pr` |
 
 A wait takes one event kind (REF), so the forge's changes are one kind with five outcomes; when several happen between
 two polls, the outcome is the first in the table's order and `changes[]` lists all of them. Every `pr.changed` outcome
@@ -374,39 +388,43 @@ scope ─┬─ candidates ─► route (judge: update | none | uncertain ─►
        └─ step.failed ─► owner (retry | stop ─► abandoned)                        └ check: fail at cap / rejected ─► not-done
 ```
 
-The full YAML is Appendix C.2. Inputs: `fact:pr` and `fact:designPacket` (empty when started by hand or when the
-babysitter has no hand-off). Outputs: `fact:docsResult` (`{ result, headSha, scanned, candidates, designPacket }`, from
-`scope`) and `fact:docsPr` (from `opening`).
+The full YAML is Appendix C.2. Inputs: `fact:pr` and `fact:phasePacket` (BD5; empty when started by hand). Outputs:
+`fact:docsResult` (`{ result, headSha, scanned, candidates, phasePacket }`, from `scope`) and `fact:docsPr` (from
+`opening`).
 
 ### 7.2 Notes
 
-- **What counts as a doc** is per repo: profile `workflow.docs.paths` (globs; default `README.md`, `CHANGELOG.md`,
-  `AGENTS.md`, `docs/**`, `planning/**`). `step.docs.scope` lists the docs that mention a changed path, symbol, command
-  or config key, by a plain text search. With a design packet, it also lists the docs the design's `contracts.json` and
-  sections say this change touches (BD5), marked `designNamed`. With nothing listed it reports `none` and no model runs.
+- **What counts as a doc** is per repo: #262's profile key `workflow.docs.globs` (default `docs/**`, `*.md`; a repo adds
+  `planning/**` in its profile). `step.docs.scope` lists the docs that mention a changed path, symbol, command or config
+  key, by a plain text search. With a phase packet, it also lists the docs its `design.md` names (BD5), marked
+  `designNamed`. With nothing listed it reports `none` and no model runs.
+- **Write scope (BD5).** `step.docs.update` runs under capability `build` (LN-WF6) in its own branch, and
+  `gate.pr.diff-scope` with `scope: docs` refuses any path outside `workflow.docs.globs` plus the `designNamed` docs.
 - **No mid-run desk.** `route`'s `uncertain` and a Judge failure go to `update`: the agent reports `noChange` when nothing
   is stale, and a needless docs PR is visible at stop 3, where the owner closes it. Only a `scope` failure reaches a desk.
 - **The stacked PR.** `step.docs.update` commits on `sindri/docs/<instance>`, cut from the source head.
   `effect.pr.create-stacked` pushes it as `docs/<source head branch>` and opens a PR whose base is the source head
   branch, or updates the open one for that head (outcome `updated`). The body says it is stacked and names the synced
-  head and, when given, the design packet's hash.
+  head and, when given, the phase packet's hash.
 - **Its end gates stop 3** (BD3, BD5): the babysitter takes `fact:docsResult` only from `resolved` (opened) and
-  `alreadySatisfied` (not needed). `unresolved` and `failed` go to `docs-owner`.
+  `alreadySatisfied` (not needed). `unresolved` and `failed` go to `docs-owner`. An opened docs PR must also be green:
+  the snapshot's `docsRed` and `pending` (§4.3) hold `ready` until it is.
 - **The merge record:** `step.docs.check` and the opening transition append `docs` rows to the phase's record (§4.7).
-- **When the source merges,** the babysitter restacks the docs PR (§4.6). Docs sync doesn't babysit its own PR (Q6).
+- **When the source merges,** the babysitter's `effect.pr.merge-docs` retargets and merges the docs PR (BD9, §4.6).
+  Docs sync doesn't fix its own PR's CI (Q6).
 
 ## 8. `workflow.prove-recheck`
 
 LN §7.6 names it; this doc specs it (ideas lane). It re-runs the phase's proof narrowly on the head a babysitter fix
 produced: **the verify journey and the recorded evidence scripts, no route, no hand test, no holdout.** It holds a heavy
-slot (LN W17). Full YAML: Appendix C.3.
+slot (LN-WF3). Full YAML: Appendix C.3.
 
 | State | Kind | Does |
 |---|---|---|
 | `plan` | block `step.recheck.plan` | Reads the hand-off's proof pack: the journeys and the scripts recorded with each passing artifact. `planned`, or `nothing` (an empty hand-off: started by hand) |
 | `slot` | wait `{ resource: heavy }` | — |
 | `verify` | child `workflow.verify` (DT, with DTC6's `fact:phasePacket`) | The journey over the phase's signals on the new head |
-| `scripts` | block `step.prove.rerun-scripts`, long (LN W21) | Each recorded evidence script on the new head; `pass` or `fail` |
+| `scripts` | block `step.prove.rerun-scripts`, long (LN-WF7) | Each recorded evidence script on the new head; `pass` or `fail` |
 | `log` | block `step.recheck.log` | Writes `fact:recheck` `{ headSha, verify, scripts[], verdict }` and the merge record's `recheck` row. `held` or `broken` |
 
 Terminals: `held` (`resolved`), `nothing` (`alreadySatisfied`), `broken` (`unresolved`). The babysitter sends `broken`
@@ -429,7 +447,7 @@ skill a Step replaces is used only as the A/B control and never ships. v0 texts 
 | `step.pr.ci-fix` | `/bugHunt`'s fix loop as /addressReview runs it | `fact:prState`, `input.pr.context`, `fact:handoffNote`, `fact:phasePacket` | `fixed`, `flaky`, `cannotFix`; `fact:handoffNote` |
 | `step.pr.fix-comment` | `/addressReview`'s implementer brief | `fact:comment`, `fact:decision`, `fact:ownerNote`, `fact:handoffNote`, `fact:phasePacket` | `fixed`, `declined`, `cannotFix`; `fact:fix`, `fact:handoffNote` |
 | `step.pr.reply-draft` | `/addressReview`'s reply text | `fact:comment`, `fact:decision`, `fact:fix`, `fact:prState` | `drafted` (`fact:reply`), `noReply`, `needsOwner` |
-| `step.docs.update` | `/syncDocs` | `fact:docsScope`, `fact:prState`, `fact:findings`, `fact:handoffNote`, `fact:designPacket` | `changed`, `noChange`, `blocked`; `fact:handoffNote` |
+| `step.docs.update` | `/syncDocs` | `fact:docsScope`, `fact:prState`, `fact:findings`, `fact:handoffNote`, `fact:phasePacket` | `changed`, `noChange`, `blocked`; `fact:handoffNote` |
 | `classify` and docs `route` criteria | `/review`'s triage | the judge input | one choice or `uncertain` |
 
 ### 9.2 Rubric scores (v0)
@@ -486,9 +504,8 @@ and run at the desk before DT-J and P8.
 |---|---|---|---|
 | `step.judge.choose` · `step.owner.decide` | Step | DT | DT §3.1 · outcomes `retry`, `stop`, human-only |
 | `effect.notify.desk` | Effect | exists | WF §5.7 |
-| `effect.line.report` | Effect | LN (W15) | `status: merged` on the `merged` transition |
-| `step.pr.intake` | Step, block, `Network` | new | §4.2. Params `pr`, `handoff`, `phase-packet`, `line-context`. Outcome `seeded`; outputs `fact:designPacket`, seeds |
-| `step.pr.snapshot` | Step, block, `Network` | new | §4.3. Output `fact:prState` `{ ref, url, state, draft, base{ref, sha, isDefault, stackParent}, head{ref, sha, fork}, mergeable, reviewDecision, checks{state, sha, failing[]}, queue{unhandled, held, untrusted, bots}, provenSha, at }`; `fact:mergedSha` on `merged` |
+| `step.pr.intake` | Step, block, `Network` | new | §4.2. Params `pr`, `handoff`, `phase-packet`, `line-context`. Outcome `seeded`; outputs the seeds |
+| `step.pr.snapshot` | Step, block, `Network` | new | §4.3. Output `fact:prState` `{ ref, url, state, draft, base{ref, sha, isDefault, stackParent}, head{ref, sha, fork}, mergeable, reviewDecision, checks{state, sha, failing[]}, queue{unhandled, held, untrusted, bots}, provenSha, at }`; `fact:mergedSha` on `merged`; `docs{ ref, sha, checks }` when a docs PR is open; outcomes §4.3 |
 | `input.pr.context` | StepInput | new | Title, body, diff summary, failing check log excerpts (capped, scrubbed), the comment thread (fenced). Needs the StepInput runtime (SC W6) |
 | `input.handoff-note` | StepInput | new (W24) | Injects the latest `fact:handoffNote` |
 | `step.pr.next-comment` · `step.pr.held-comment` | Step, block, `Network` | new | §5.2 · §5.3 |
@@ -496,17 +513,18 @@ and run at the desk before DT-J and P8.
 | `step.pr.owner-comment` | Step, desk, human-only | new | Outcomes `fix` (`fact:ownerNote`), `reply` (`fact:reply`, typed), `skip`, `later`. Shows the comment as quoted plain text, author, association, the lean and the reason held |
 | `step.pr.rework-notes` | Step, desk, human-only | new | SC W2 fixed form: notes (required, scrubbed at entry). `noted` (`fact:reworkNotes`), `back` |
 | `step.pr.docs-decide` | Step, desk, human-only | new | `retry`, `skip` (`fact:docsResult` `{ result: skippedByOwner }`), `stop` |
-| `step.docs.scope` · `step.docs.update` · `step.docs.check` | Step: block · agent · block | new | §7.2. Scope outcomes `candidates`, `none`, `disabled`, `notOpen`; check `pass`, `fail` (`fact:findings`) |
+| `step.docs.scope` · `step.docs.update` · `step.docs.check` | Step: block · agent (capability `build`) · block | new | §7.2. Scope param `phase-packet`; outcomes `candidates`, `none`, `disabled`, `notOpen`; check `pass`, `fail` (`fact:findings`) |
 | `step.recheck.plan` · `step.prove.rerun-scripts` · `step.recheck.log` | Step, block | new | §8 |
 | `gate.revision-bound` | Gate | new | IDEA-009. Passes only when the forge's head is still `at.head.sha` and the required checks are green for that sha |
 | `gate.pr.base-is-default` | Gate | new | BD4. Refuses while the PR's base isn't the repo's default branch |
 | `gate.pr.autofix-cap` | Gate | new | IDEA-016. Counts `pr.pushed` with `cause: ci` for this PR across instances; refuses at `cap` with the last log |
-| `gate.pr.diff-scope` | Gate | new | `scope: phase` (BD2): every changed path matches the phase packet's `allowedFiles`, its amendments, or a test path by convention, and no CI config changes; an empty phase packet falls back to the PR's changed files and their tests. `scope: docs`: only `paths` |
+| `gate.pr.diff-scope` | Gate | new | `scope: phase` (BD2): every changed path matches the `allowedFiles` of the phase packet in force (an amended child packet carries its grant), or a test path by convention, and no CI config changes; an empty phase packet falls back to the PR's changed files and their tests. `scope: docs`: only `paths` (`workflow.docs.globs`) and the docs the phase packet's `design.md` names (BD5) |
 | `effect.pr.open` | Effect, `Effects` | new (BD1) | Pushes the head branch with a lease on a given sha, then opens a PR with a base, title, body and labels, or updates the open one for that branch. Confirms `pr.opened`. Used by `workflow.ship` |
 | `effect.pr.push` | Effect, `Effects` | new | Pushes the workspace branch to the PR head with a lease on `lease.head.sha`; if the head moved and a rebase applies cleanly, rebases and pushes with a lease on the new head. Reports `pushedSource` when any commit touches non-test source |
 | `effect.pr.reply` | Effect, `Effects` | new | Forms `thread`, `reaction`, `fixedReplies`, `none`, `hold`. Writes the mark on delivery. Idempotent by effect identity and mark; a failure shows in `outbox list` and the mark stays absent |
-| `effect.pr.rerun-checks` · `effect.pr.restack` · `effect.pr.create-stacked` | Effect | new | §4.6, §7.2. `effect.pr.restack` param `target: self \| docs` (literal): this PR, or the docs PR stacked on its head |
-| `effect.pr.merge` | Effect, `Effects`, **human trigger** (W23) | new | Params `pr`, `at`, `method`. Merges with the forge's expected-head check. Confirms `pr.mergeResult` |
+| `effect.pr.rerun-checks` · `effect.pr.restack` · `effect.pr.create-stacked` | Effect | new | §4.6, §7.2. `effect.pr.restack` retargets and rebases this PR |
+| `effect.pr.merge-docs` | Effect, `Effects` | new (BD9) | Param `pr`. Finds the docs PR stacked on its head branch, retargets it to the default branch, waits for its checks (`workflow.pr.docsMergeWait`) and merges it with an expected-head check. Confirms `pr.docsMerged` (§4.6) |
+| `effect.pr.merge` | Effect, `Effects`, **human trigger** (W23; `command.merge` is LN-API7's desk action) | new | Params `pr`, `at`, `method`. Merges with the forge's expected-head check. Confirms `pr.mergeResult` |
 | `pr.*` event descriptors | Event | new (W25) | §6.1 |
 | `IForge` | Port (`Aw.Forge`) | new | §10.2 |
 
@@ -533,7 +551,7 @@ Forge kind: project`. CFG-13 proposes the same port for Meta and Readiness; this
   git repo and a JSON state file, with `aw-forge-fake comment|check|merge|push-as` for proofs.
 - **Tests:** `ForgeContract` in `Aw.Forge.Testing` runs over `FakeForge` (in memory), `FileForge` and, in the heavy
   lane, `GitHubForge` against a scratch repo.
-- **Credentials** live with Sindri's services and effects; agent Steps never get them (PB11, LN L-18).
+- **Credentials** live with Sindri's services and effects; agent Steps never get them (PB11, LN-LCH1).
 
 ## 11. Data and privacy
 
@@ -542,40 +560,55 @@ Forge kind: project`. CFG-13 proposes the same port for Meta and Readiness; this
 | Concern | Rule |
 |---|---|
 | **Comment text** | Untrusted, fenced, capped and scrubbed at entry (§5.5). Rendered as quoted plain text with links inactive and images not loaded (U12) |
-| **Forge writes** | Only effects push, reply, restack, open or merge, with Sindri's credential and a lease on a known head (FA §17.23.11). Replies carry a footer naming Sindri's account |
+| **Forge writes** | Only effects push, reply, restack, open or merge (the phase PR and, after it, its docs PR), with Sindri's credential and a lease on a known head (FA §17.23.11). Replies carry a footer naming Sindri's account |
 | **Rework notes** | Owner text, scrubbed at entry (SC W7); the merge record keeps their hash, not their text |
 | **The merge record** | Ids, shas, outcomes and counts; never comment, log or note text |
 | **Logs** | Codes, counts and hashes (CTX §7) |
 
 ## 12. Requests to other lanes
 
-Every ask is a row; this doc edits no other spec. Ids continue #262's (W15–W22, C15–C16, U7–U11, API9–API14, P2–P5,
-L-18–L-19). Rows already filed are cited, never re-filed:
+Every ask is a row; this doc edits no other spec. #262 rev 2 files its rows as LN-* (LN-WF, LN-CTX, LN-UI, LN-API,
+LN-PKT, LN-LCH, LN-SC; its Appendix E maps rev 1's W15–W22, C15–C16, U7–U11, API9–API14, P2–P5 and L-18–L-19). This
+doc's own rows keep their ids (W23–W27, API15, U12), which collide with none of #258's or #262's. Rows already filed
+are cited, never re-filed:
 
 | Already filed | Used here for |
 |---|---|
 | SC W2 (fixed forms), W3/DT §8.5 (`HumanOnly`), W6 (Step-input data), W7 (fence and scrub), W8 (per-Step model), W9 (read-only), W10 (optional inputs), W11 (run area); L-17 | Rework form, human-only desks, `input.pr.context`, comment and note text, the agent Steps, the reply Step, intake seeds, the merge record's home |
-| LN W15 (`effect.line.report`), W16 (phase workspace), W17 (heavy resource), W20 (capability `build`), W21 (long block Steps); L-18 | The `merged` report, fix commits, the recheck slot, fix Steps, `rerun-scripts` |
-| LN API11 (`ReadyView`), U9 (stop 3's view), P3 (`aw-packets verify`) | §4.5's fields (BD6), intake |
+| LN-WF1 (`effect.line.report`, `route: parent`), LN-WF2 (phase workspace), LN-WF3 (heavy resource), LN-WF6 (capability `build`), LN-WF7 (long block Steps); LN-LCH1 | `workflow.phase`'s `merged` report (BD7: not the babysitter's), fix and docs commits, the recheck slot, fix Steps, `rerun-scripts` |
+| LN-API3 (`ReadyView`), LN-UI3 (stop 3's view and its buttons), LN-UI6 (the `ready-to-merge` Needs-you row), LN-API7 (`ApplyCommand:merge` and `:rework`, class `desk`, human caller only), LN-PKT2 (`aw-packets verify`) | §4.5's fields (BD6), stop 3 on Home, the merge and rework clicks, intake |
+| LN-WF9 (the line's profile keys), with `workflow.docs.globs` | Docs sync's write scope (BD5); this doc's own keys are W27 |
 | E3 (IDEA-051, engine triage) | PB-M; Q1 |
 
 ### 12.1 Engine (W-rows)
 
 | # | Request | Needed by |
 |---|---|---|
-| W23 | **Human-trigger effects and commands** (rev 1's PB-A). `BlockDescriptor` gains `HumanTrigger` (`bool?`, written only when true, so no shipped hash moves, DT §8.1). The validator refuses a human-trigger effect on any transition whose `on` isn't `command.<verb>` (`RCP-HUMAN-001`, with an invalid fixture). The engine refuses from any caller class but `human`, with `SND-AUTH-002`, a `command.<verb>` whose transition carries a human-trigger effect **or enters a `HumanOnly` Step** (BD8's `command.rework`). No typed challenge: the merge is one click. A test pins that no shipped recipe has a command into a `HumanOnly` Step today | PB-R, PB-E |
+| W23 | **Human-trigger effects** (rev 1's PB-A; narrowed in rev 3). `BlockDescriptor` gains `HumanTrigger` (`bool?`, written only when true, so no shipped hash moves, DT §8.1). The validator refuses a human-trigger effect on any transition whose `on` isn't `command.<verb>` (`RCP-HUMAN-001`, with an invalid fixture), and the engine refuses such a command from any caller class but `human` (`SND-AUTH-002`), so a recipe can't carry `effect.pr.merge` anywhere a session reaches. **The merge and rework actions themselves** (catalog rows, class `desk`, human caller only, action ids, goldens, the UI buttons) **are LN-API7, LN-UI3 and LN-UI6**, not this row | PB-R, PB-E |
 | W24 | **The agent hand-off note** (IDEA-028; rev 1's PB-H). `input.handoff-note` injects the latest `fact:handoffNote` `{ done, next, risks, files }`; every agent Step declares `fact:handoffNote` as an output on every outcome and a report without it is refused; `handback` asks the human for one. Named `handoffNote` because `fact:handoff` is the line's PR hand-off packet (BD2) | PB-P2 |
 | W25 | **The `pr.*` event descriptors** of §6.1: registration, routing (`pr.changed` by `item` until E3; the others by causation) and the outcome sets | PB-W, PB-E |
 | W26 | **The `pr_comment_marks` table** (§5.4) in the workflow store: a migration, purge with the instance's PR rows kept while another instance names the PR | PB-E |
+| W27 | **This doc's profile keys**, as LN-WF9 files the line's: `workflow.pr.bots`, `.autofixCap`, `.pollInterval`, `.replies`, `.mergeMethod`, `.heldBlocksMerge`, `.docsMergeWait` and `workflow.docs.sync` in `SindriProfile`'s schema, `ProfileRules` and `ProfileDiff`, documented in `docs/csharp/sindri-profile.md`; and the `workflow.effects` allowlist additions `effect.pr.push`, `.reply`, `.rerun-checks`, `.restack`, `.create-stacked`, `.merge` and `.merge-docs` (`effect.pr.open` is LN's). Each is a re-approval | PB-R |
 
 ### 12.2 API (API-rows) and UI (U-rows)
 
 | # | Request | Needed by |
 |---|---|---|
 | API15 | **`service:pr-watch`** (§6.2): a scheduler service listed by `GET /sindri/services`, its interval in the profile (`workflow.pr.pollInterval`, default 60 s), its state file, quiet runs; tested against `FileForge` | PB-W |
-| U12 | **Comment text and held comments.** Comment text renders as quoted plain text (links shown, not active; images not loaded); `ReadyView`'s held-comments list opens `owner-comment` per comment; a wait state that offers a human-trigger command renders that command as the needs-you row's primary button, with the head sha it will merge | PB-P1 |
+| U12 | **Comment text and held comments** (narrowed in rev 3). Comment text renders as quoted plain text (links shown, not active; images not loaded); `ReadyView`'s held-comments list opens `owner-comment` per comment. Stop 3 on Home and its merge and rework buttons are LN-UI6 and LN-UI3, not this row | PB-P1 |
 
 No new C-, P- or L-rows.
+
+### 12.3 Where this doc and #262 rev 2 differ
+
+| This doc (rev 2) | #262 rev 2 | Resolved |
+|---|---|---|
+| W23: the engine refuses a session's command into a `HumanOnly` Step; "no typed challenge, one click" | LN-API7: merge and rework are catalog actions of class `desk`, human caller only; LN-UI3 puts merge behind R8-13's one-line confirm | #262's: LN-API7 owns the caller check for both commands and the confirm stays (it isn't a typed challenge). W23 keeps only the recipe-side human-trigger flag and its validator rule |
+| U12: any wait offering a human-trigger command renders it as the needs-you row's primary button | LN-UI6: one new Needs-you kind, `ready-to-merge`, for an instance whose wait accepts `ApplyCommand:merge` | #262's: U12's generic rule is dropped |
+| The babysitter reports `merged` through `effect.line.report` | BD7, LN-WF1: `workflow.phase` reports `shipped` and `merged` through `route: parent` | #262's (§4.7) |
+| The owner merges the docs PR after the source (Q6) | BD9: the merge click merges the phase PR, then its docs PR | #262's (§4.6, `effect.pr.merge-docs`) |
+| Docs sync takes `fact:designPacket`; profile `workflow.docs.paths` with `planning/**` | BD5: `fact:phasePacket`'s `design.md`; `workflow.docs.globs` (`docs/**`, `*.md`) under capability `build` | #262's; a repo adds `planning/**` in its profile |
+| `ready` once docs sync ended `opened` | BD3: the docs PR open **with CI green** | #262's: the snapshot's `docsRed` (§4.3) |
 
 ## 13. Phases
 
@@ -589,12 +622,12 @@ P8 (agent Steps) are not.
 | **PB-O** | `effect.pr.open` and `pr.opened` (BD1). **Lands before LN-SH** | S | PB-F, W25's `pr.opened` row | On `FileForge`: a push with a stale lease is refused; a second open for the same branch updates the PR (`updated`); the body passes `Aw.Redaction` | ideas, engine review |
 | **PB-X** | The fixture PR set and `forge-fixture.sh` | S | PB-F | `up --fake comments` prints a link whose `GetPull` and `ListThreads` show every judge type and queue outcome; **(owner)** `--github` does the same on a scratch repo | ideas |
 | **PB-S** | Seeds, cases, error analysis, graders, baselines, scores, A/B reports, adoption | M | PB-X; SC-E's runner | Each seed's report scores ≥ 2 on R1, R2, R6, R9, R13 and beats its controls; classify meets its bar; every injection case passes | ideas |
-| **PB-R** | All three recipes and their engine evals; every new descriptor (`deskCapable` or human-only); `SeedsAdoptedTests` | M | DT-V, DT-R, DT-C, W23; PB-S before `recipe approve` | `recipe validate` exits 0 on all three; `recipe eval` passes every Appendix B.1 file; `SeedsAdoptedTests` fails while a seed lacks an adopted report | ideas |
+| **PB-R** | All three recipes and their engine evals; every new descriptor (`deskCapable` or human-only); `SeedsAdoptedTests`; W27's keys | M | DT-V, DT-R, DT-C, W23; PB-S before `recipe approve` | `recipe validate` exits 0 on all three; `recipe eval` passes every Appendix B.1 file; `SeedsAdoptedTests` fails while a seed lacks an adopted report | ideas |
 | **PB-B** | Deterministic blocks: intake, snapshot, both queues, docs scope and check, recheck plan and log, the four gates, `MergeRecord`, `input.pr.context` | M | PB-F, PB-R; DT-J to run off the desk; SC W6 for `input.pr.context` | Contract tests over `FakeForge`: the snapshot's order over each fixture variant; queue and snapshot agree; each gate's refusal and pass; `MergeRecord` idempotent under replay | ideas |
 | **PB-W** | `pr-watch` (API15) and W25's `pr.changed` with `route: item` | S | PB-F, W25 | Against `FileForge`: one added comment gives one `pr.changed review`; ten unchanged polls give none; the bridge signals the watched instance | API, engine |
-| **PB-E** | The remaining effects, W26's table, W23's human trigger on `effect.pr.merge` | M | PB-F, W23, W25, W26 | On `FileForge`: push refuses `headMoved` on a conflicting push and rebases a clean one; `pushedSource` on a source change; two dispatches of one reply post once; a session's `command merge` and `command rework` exit 2 `SND-AUTH-002`; restack drops the base's commits after a squash merge | ideas, engine review |
-| **PB-P1** | End to end at the desk on the fake forge | S | PB-R, PB-B, PB-E, PB-W, PB-O; engine P7 | **(owner)** On a real serve with `FileForge`: `comments` goes through every type, the desk playing the agents, and parks at `ready` with three held comments; `sourceFix` runs a recheck before `ready`; `stacked` refuses merge until its base merges, then restacks; `ReadyView` shows not-proven, holdout verdicts, the docs PR and CI on the head; the human's merge merges; a rework ends `rework` with the notes | ideas |
-| **PB-P2** | End to end with agents, then under the line | S | PB-P1, PB-S adopted, W24; engine P8; LN-L | **(owner)** The agent Steps run (`via: agent`) and the instance reaches `ready` with no desk task except held comments; the owner merges; the docs PR is restacked to the default branch; under LN-P, a phase's babysitter reports `merged` to the line | ideas |
+| **PB-E** | The remaining effects (with `effect.pr.merge-docs`, BD9), W26's table, W23's human trigger on `effect.pr.merge` | M | PB-F, W23, W25, W26; LN-API7's catalog rows | On `FileForge`: push refuses `headMoved` on a conflicting push and rebases a clean one; `pushedSource` on a source change; two dispatches of one reply post once; a session's `command merge` and `command rework` exit 2 `SND-AUTH-002` (LN-API7); restack drops the base's commits after a squash merge; `merge-docs` merges the docs PR after its source, and leaves it open with `docsPending` when its CI fails after the retarget | ideas, engine review |
+| **PB-P1** | End to end at the desk on the fake forge | S | PB-R, PB-B, PB-E, PB-W, PB-O; engine P7 | **(owner)** On a real serve with `FileForge`: `comments` goes through every type, the desk playing the agents, and parks at `ready` with three held comments; `sourceFix` runs a recheck before `ready`; `stacked` refuses merge until its base merges, then restacks; `ReadyView` shows not-proven, holdout verdicts, the docs PR and CI on both heads; a red docs PR holds `ready` until `docs-owner`; the human's merge merges the PR, then its docs PR; a rework ends `rework` with the notes | ideas |
+| **PB-P2** | End to end with agents, then under the line | S | PB-P1, PB-S adopted, W24; engine P8; LN-L | **(owner)** The agent Steps run (`via: agent`) and the instance reaches `ready` with no desk task except held comments; the owner's one click merges the PR and its docs PR; under LN-P, the babysitter ends `merged` and its `workflow.phase` reports `merged` to the line (BD7) | ideas |
 | **PB-M** | Version 2 of every PR wait: `match: fact:pr` | S | **E3** | Two babysitters on one item, on two PRs: an event for one never wakes the other (`workflow events`) | ideas |
 
 ### 13.1 Parallelization plan
@@ -611,7 +644,7 @@ E3 ──► PB-M
 
 | Wave | Runs in parallel | Starts when |
 |---|---|---|
-| 0 | PB-F ∥ PB-S's seed drafts and cases ∥ the recipe YAML with `recipe eval` on the pure engine ∥ engine W23–W26 | All three specs approved (LN §13.3 wave 1) |
+| 0 | PB-F ∥ PB-S's seed drafts and cases ∥ the recipe YAML with `recipe eval` on the pure engine ∥ engine W23–W27 | All three specs approved (LN §13.3 wave 1) |
 | 1 | PB-O ∥ PB-X ∥ PB-W ∥ PB-R | PB-F; PB-R also DT-V, DT-R, DT-C and W23 |
 | 2 | PB-S's runs ∥ PB-B ∥ PB-E | PB-X; PB-R; W25, W26 |
 | 3 | PB-P1 | P7 and wave 2 |
@@ -632,9 +665,9 @@ Each has a recommended default. All are reversible unless marked.
 | Q1 | **OWNER QUESTION. Pull E3 (IDEA-051, matched waits) forward?** The engine triage places E3 after DT-P, so PB-M can't land until then. **(a)** Keep the engine's order and ship every other phase with the interim path; **(b)** pull E3 ahead of P7 or DT-J | **(a).** E3 is size S but needs WF §5.4's bridge routing change and drops the triage's "review loop live" precondition; it costs the single engine builder one unit ahead of P7 or DT-J, moving P7, P8 and DT-P back one each. It buys little: the babysitter can't run live before P7 and P8 anyway, and under the line it can't run before LN-L. **Interim path:** `pr.changed` routed by `item`, the poller writing each watched instance's item (§6.3). Because the snapshot is the truth (PB9), a misdelivered event costs one forge read, never a wrong action. **Limits:** (1) every live instance of the item wakes, including its docs and recheck children and a second babysitter on another PR of the item; under the line every phase is its own item, so this is rare there; (2) a signal buffered before a push wakes the next `await` once more; (3) the per-instance event log is noisier; (4) the held-item window doesn't apply. Revisit if PB-P2's event logs show waste |
 | Q2 | Which reviewers count as trusted? | Owner, member, collaborator, the PR author, and bots in `workflow.pr.bots`. Everyone else is held, never fixed |
 | Q3 | Are resolved threads classified again? | No, until a new comment arrives; an edited comment counts as new |
-| Q4 | When the source PR merges, retarget or rebase the docs PR? | Both, by `effect.pr.restack`; a conflict leaves it untouched and raises a needs-you row |
+| Q4 | When the source PR merges, what happens to the docs PR? | BD9: `effect.pr.merge-docs` retargets and rebases it, then merges it once its CI is green; a conflict or red CI leaves it open (`docsPending`) and raises a needs-you row |
 | Q5 | Replies post on their own, or through the desk? | On their own, from Sindri's account with a footer; `workflow.pr.replies: post \| desk` lets a repo hold every reply for stop 3 |
-| Q6 | Does docs sync babysit its own docs PR? | No in v1; the owner merges it after the source (it is restacked onto the default branch). Revisit if docs PRs pile up |
+| Q6 | Does docs sync babysit its own docs PR? | No in v1: nothing fixes its CI. The babysitter only reads it: a red docs PR goes to `docs-owner` before `ready` (BD3), and the merge click merges it after the source (BD9). Revisit if docs PRs pile up |
 | Q7 | Does `outOfScope` open the follow-up issue? | No. The reply offers it; the owner files it |
 | Q8 | How do webhooks feed `pr.changed`? | Later, through `POST /webhooks/{source}`; `EventDescriptor.Producer` becomes a list (engine), the poller stays as a reconcile pass |
 | Q9 | One thread a round, or batches? | One (PB8). Revisit with P12's stats if Judge calls per PR become a measurable cost |
@@ -645,7 +678,25 @@ Each has a recommended default. All are reversible unless marked.
 
 ## 15. Revision notes
 
-Rev 2 fits rev 1 (parked) to the line contract, #262.
+**Rev 3 aligns with #262 rev 2** (head `76307858`):
+
+| Change | #262 rows | Where |
+|---|---|---|
+| Every #262 id renamed to its LN-* form (W15–W22 → LN-WF1–WF8, U7–U11 → LN-UI1–UI5, API9–14 → LN-API1–6, P2–P5 → LN-PKT1–4, L-18/19 → LN-LCH1–2) | Appendix E | §1–§12 |
+| The babysitter no longer reports `merged`; `workflow.phase` does, through `route: parent`. `effect.line.report` left the babysitter's recipe and inventory | BD7, LN-WF1 | §4.3, §4.7, §10.1, C.1 |
+| The merge click merges the phase PR, then its docs PR: new `docs-merging` state, `effect.pr.merge-docs`, event `pr.docsMerged`, merge-record row `docsMerge`; `effect.pr.restack` loses `target` | BD9 | §4.1, §4.5, §4.6, §4.7, §6.1, §10.1, C.1, B.1 |
+| Merge and rework are LN-API7's desk actions and stop 3 is LN-UI6's `ready-to-merge` row; W23 and U12 narrowed to what #262 doesn't cover; §12.3 records the differences | LN-API7, LN-UI3, LN-UI6 | §2, §4.5, §12 |
+| Docs sync takes `fact:phasePacket` (its `design.md`), writes inside `workflow.docs.globs` under capability `build`; intake no longer derives `fact:designPacket` | BD5, LN-WF9 | §4.2, §7, C.1, C.2 |
+| `ready` needs the docs PR green too: snapshot outcome `docsRed` → `docs-owner` | BD3 | §4.3, §4.4, C.1 |
+| An amendment is a new child phase packet; `fact:phasePacket` is the one in force, so the diff-scope gate reads no amendment list | BD2, LN §3.2 row 4 | §4.2, §10.1 |
+| New W27 (this doc's profile keys and effect allowlist, as LN-WF9) | — | §12.1 |
+
+**Validation (rev 3, `recipe validate --json` at `f37bbcfc`).** All three recipes report only the expected classes:
+unregistered blocks and events (`RCP-BLOCK-001`, `RCP-EVENT-001`, now including `effect.pr.merge-docs` and
+`pr.docsMerged`; PB-R, W25), the effect allowlist note (`RCP-EFFECT-001`, W27), child outputs (`RCP-WIRE-002`, DT-C),
+the `workflow.verify` child (`RCP-CHILD-001`, DT-R) and the heavy resource (`RCP-RES-001`, LN-WF3).
+
+Rev 2 fit rev 1 (parked) to the line contract, #262 rev 1.
 
 | Change | Rows | Where |
 |---|---|---|
@@ -653,9 +704,9 @@ Rev 2 fits rev 1 (parked) to the line contract, #262.
 | Inputs `fact:handoff`, `fact:phasePacket`, `fact:lineContext`; camelCase keys and outcomes (rev 1 had about 44 hyphenated); the agent note renamed `fact:handoffNote`; `gate.pr.diff-scope` `scope: phase` | BD2 | §4.2, §10.1, W24 |
 | `ready` is stop 3: CI green on the head and `fact:docsResult` present | BD3 | §4.3, §4.5 |
 | `gate.pr.base-is-default`, restacks for stacked phase PRs, `workflow.prove-recheck` after a source fix | BD4 | §4.6, §8 |
-| Docs sync takes `fact:designPacket`, runs once at the first CI-green snapshot, gates `ready` | BD5 | §4.3, §7 |
+| Docs sync takes `fact:designPacket` (rev 3: `fact:phasePacket`), runs once at the first CI-green snapshot, gates `ready` | BD5 | §4.3, §7 |
 | `ReadyView`'s fields | BD6 | §4.5 |
-| The merge record, `effect.line.report` `merged`, `fact:mergedSha` | BD7 | §4.7 |
+| The merge record, `effect.line.report` `merged` (rev 3: reported by `workflow.phase`), `fact:mergedSha` | BD7 | §4.7 |
 | `command.rework` (human-only, notes required) → `rework` (`failed`) with `fact:reworkNotes` | BD8 | §4.5, W23 |
 | No mid-run comment desks: `design`, `directive`, `untrusted`, `uncertain` and failed branches are held for stop 3; docs `uncertain` goes to `update` | PB4 | §5.3, §7.2 |
 | Engine asks moved from phases PB-A and PB-H into rows W23 and W24; new W25, W26, API15, U12 | — | §12 |
@@ -665,11 +716,11 @@ Rev 2 fits rev 1 (parked) to the line contract, #262.
 block ids take one area (`step.pr.comments.next` became `step.pr.next-comment`), event names are camelCase
 (`pr.merge-result` became `pr.mergeResult`), and `with:` keys are kebab-case (`phase-packet`, `line-context`). It also
 required a loop on an `owner` desk whose `retry` re-enters the graph (`retries`), and refused an effect parameter fed by
-a fact that only a `when` guard proves present (`effect.pr.restack` now takes `target: docs` and finds the docs PR
-itself). What remains is expected until other phases land: unregistered blocks (`RCP-BLOCK-001`, PB-R), unregistered
+a fact that only a `when` guard proves present (rev 2's `effect.pr.restack` took `target: docs` and found the docs PR
+itself; rev 3's `effect.pr.merge-docs` finds it the same way). What remains is expected until other phases land: unregistered blocks (`RCP-BLOCK-001`, PB-R), unregistered
 `pr.*` events (`RCP-EVENT-001`, W25), facts produced from a child's outputs (`RCP-WIRE-002`, DT-C), the `workflow.verify`
-child (`RCP-CHILD-001`, DT-R), and the heavy resource (`RCP-RES-001`, LN W17). For #262: `line.phase-changed` fails
-the same event-name rule; `line.phaseChanged` passes.
+child (`RCP-CHILD-001`, DT-R), and the heavy resource (`RCP-RES-001`, LN-WF3). For #262: `line.phase-changed` failed
+the same event-name rule; #262 rev 2 adopted `line.phaseChanged`.
 
 ## Appendix A. The seeds (v0)
 
@@ -727,14 +778,14 @@ and the tool bound. Lists live in `<block id>.reference.md`. PB-S rewrites them 
 
 - **Goal:** the docs this PR makes wrong or incomplete, corrected, and nothing else.
 - **Reads:** `fact:docsScope` (the listed docs, why each was listed, which the design names), `fact:prState` (the diff),
-  `fact:findings` (the check's last findings), `fact:handoffNote`, `fact:designPacket` (when present: the sections
-  that describe this change).
+  `fact:findings` (the check's last findings), `fact:handoffNote`, `fact:phasePacket` (when present: its `design.md`,
+  the sections that describe this change).
 - **Do:** for each listed doc, change only the lines the diff makes untrue or the new behaviour needs, in the doc's
   existing voice, because a docs PR is reviewed line by line. Describe only behaviour the diff shows. Commit once. Run
   `sindri docs check --facts "$AW_SINDRI_RUN_DIR" --json` and fix what it finds.
 - **Report:** `changed` (commit sha), `noChange` (nothing listed is stale, with one line per doc saying why) or
   `blocked`; `fact:handoffNote`.
-- **Never:** edit outside `workflow.docs.paths`; describe behaviour the diff doesn't show; rewrite unrelated sections.
+- **Never:** edit outside `workflow.docs.globs` and the docs `design.md` names; describe behaviour the diff doesn't show; rewrite unrelated sections.
 - **Done when:** the check passes, or each remaining finding is listed with why.
 
 ### A.5 The judge criteria
@@ -751,7 +802,7 @@ polite `directive`) are the first examples PB-S writes.
 | `ci-fix` | R9 = 2: `cannotFix`'s "what the owner would need to decide" has no schema field yet. R13 = 2: the repo's check commands must be found in the reference, not inline |
 | `fix-comment` | R6 = 2: the comment's change vs the phase's scope (§9.2). R5 = 2: `cheap`'s "a few lines" needs a number from the error analysis |
 | `reply-draft` | R12 = 1: no check it can run on its own output beyond length; a reply schema check is the fix. R1 = 2: "accurate" needs a grader |
-| `docs.update` | R9 = 2: `noChange`'s per-doc lines need a schema field. R13 = 2: `workflow.docs.paths` must reach it through the reference |
+| `docs.update` | R9 = 2: `noChange`'s per-doc lines need a schema field. R13 = 2: `workflow.docs.globs` must reach it through the reference |
 | criteria | R12 = 0: judges have no self-check by design (the gate is the eval set). R11 = 2: `directive` vs a reviewer asking for a merge-ready status |
 
 ## Appendix B. Eval cases
@@ -766,7 +817,9 @@ polite `directive`) are the first examples PB-S writes.
 | babysitter | `source-fix-recheck-broken` | pushing `pushedSource` → recheck `unresolved` → recheck-owner `retry` → recheck `resolved` | snapshot |
 | babysitter | `push-head-moved` | pushing `headMoved` | `owner` |
 | babysitter | `docs-gates-ready` | snapshot `green` → docs `unresolved` → docs-owner `skip` → snapshot `green` | `ready` |
-| babysitter | `ready-merge` · `merge-blocked` · `merged-elsewhere` | `command.merge` → merging `merged` → snapshot `merged` · merging `blocked` · await `merged` → snapshot `merged` | `merged` with `fact:mergedSha` · `owner` · `merged` |
+| babysitter | `ready-merge` · `merge-blocked` · `merged-elsewhere` | `command.merge` → merging `merged` → snapshot `merged` (no docs PR) · merging `blocked` · await `merged` → snapshot `merged` | `merged` with `fact:mergedSha` · `owner` · `merged` |
+| babysitter | `ready-merge-docs` · `docs-pending` | `command.merge` → merging `merged` → snapshot `merged` with a docs PR → docs-merging `merged` · docs-merging `pending` | `merged` with `fact:docsMerge` · `merged`, the record's `docsPending` |
+| babysitter | `docs-red` | docs `resolved` → snapshot `docsRed` → docs-owner `retry` → docs `resolved` → snapshot `green` | `ready` |
 | babysitter | `stacked` | snapshot `restack` → restacking `restacked` → snapshot `green` → ready → merge refused (`gate.pr.base-is-default`) | refusal, stays `ready` |
 | babysitter | `rework` · `rework-back` | `command.rework` → rework-notes `noted` · `back` | `rework` (`failed`) with `fact:reworkNotes` · snapshot |
 | babysitter | `held-comments-fix` | `command.comments` → held-next → owner-comment `fix` → fix `fixed` → next-comment `drainedUnpushed` | pushing |
@@ -903,7 +956,7 @@ states:
     next: "Waiting for checks, reviews or pushes on {item}'s pull request."
   docs:
     kind: wait
-    waitFor: { child: { recipe: workflow.docs-sync, onParked: propagate, inputs: { "fact:pr": { fact: fact:pr }, "fact:designPacket": { fact: fact:designPacket } } } }
+    waitFor: { child: { recipe: workflow.docs-sync, onParked: propagate, inputs: { "fact:pr": { fact: fact:pr }, "fact:phasePacket": { fact: fact:phasePacket } } } }
     loop: docs
     timeout: { after: 1d, then: park }
     next: "Waiting for {child}: the stacked docs PR for {item}."
@@ -938,6 +991,11 @@ states:
     waitFor: { event: pr.mergeResult }
     timeout: { after: 30m, then: park }
     next: "Waiting for the forge to merge {item}'s pull request."
+  docs-merging:
+    kind: wait
+    waitFor: { event: pr.docsMerged }
+    timeout: { after: 2h, then: park }
+    next: "{item}'s pull request is merged; waiting for its stacked docs PR to be retargeted, checked and merged."
   owner:
     kind: active
     step: step.owner.decide
@@ -949,19 +1007,22 @@ states:
   stopped: { kind: terminal, outcome: unresolved }
   rework:  { kind: terminal, outcome: failed }
 transitions:
-  - { from: intake, to: snapshot, on: step.completed, when: { outcome: seeded }, produces: [fact:designPacket, fact:decision, fact:ownerNote, fact:handoffNote] }
+  - { from: intake, to: snapshot, on: step.completed, when: { outcome: seeded }, produces: [fact:decision, fact:ownerNote, fact:handoffNote] }
   - { from: intake, to: owner,    on: step.failed }
 
   # snapshot: the first row whose `when` holds is taken, so row order is §4.3's priority
-  - { from: snapshot, to: merged,     on: step.completed, when: { outcome: merged },   produces: [fact:prState, fact:mergedSha],
-      effects: [{ use: effect.line.report, with: { status: merged, line: { fact: fact:lineContext } } },
-                { use: effect.pr.restack, with: { pr: { fact: fact:pr }, target: docs } }] }
+  # BD7: no line report here; workflow.phase reports merged. BD9: an open docs PR is merged after the source
+  - { from: snapshot, to: docs-merging, on: step.completed, produces: [fact:prState, fact:mergedSha],
+      when: { all: [ { outcome: merged }, { fact: fact:docsPr, is: present } ] },
+      effects: [{ use: effect.pr.merge-docs, with: { pr: { fact: fact:pr } } }] }
+  - { from: snapshot, to: merged,     on: step.completed, when: { outcome: merged },   produces: [fact:prState, fact:mergedSha] }
   - { from: snapshot, to: closed,     on: step.completed, when: { outcome: closed },   produces: [fact:prState] }
   - { from: snapshot, to: restacking, on: step.completed, when: { outcome: restack },  produces: [fact:prState],
-      effects: [{ use: effect.pr.restack, with: { pr: { fact: fact:pr }, target: self } }] }
+      effects: [{ use: effect.pr.restack, with: { pr: { fact: fact:pr } } }] }
   - { from: snapshot, to: owner,      on: step.completed, when: { outcome: conflict }, produces: [fact:prState] }
   - { from: snapshot, to: ci-fix,     on: step.completed, when: { outcome: ciRed },    produces: [fact:prState],
       gates: [{ use: gate.pr.autofix-cap, with: { pr: { fact: fact:pr }, cap: { profile: workflow.pr.autofixCap } } }] }
+  - { from: snapshot, to: docs-owner, on: step.completed, when: { outcome: docsRed },  produces: [fact:prState] }
   - { from: snapshot, to: next-comment, on: step.completed, when: { outcome: comments }, produces: [fact:prState] }
   - { from: snapshot, to: await,      on: step.completed, when: { outcome: pending },  produces: [fact:prState] }
   - { from: snapshot, to: docs,       on: step.completed, produces: [fact:prState],
@@ -1048,7 +1109,7 @@ transitions:
   - { from: docs-owner, to: snapshot, on: step.completed, when: { outcome: skip }, produces: [fact:docsResult] }
   - { from: docs-owner, to: stopped,  on: step.completed, when: { outcome: stop } }
 
-  # stop 3: ready-to-merge; merge and rework are human-only (W23)
+  # stop 3: ready-to-merge, a ready-to-merge Needs-you row (LN-UI6); merge and rework are desk actions, human caller only (LN-API7, W23)
   - { from: ready, to: snapshot, on: wait.satisfied }
   - { from: ready, to: merging,  on: command.merge,
       gates: [{ use: gate.pr.base-is-default, with: { pr: { fact: fact:pr } } },
@@ -1074,6 +1135,7 @@ transitions:
 
   - { from: merging, to: snapshot, on: wait.satisfied, when: { any: [ { outcome: merged }, { outcome: headMoved } ] }, produces: [fact:merge] }
   - { from: merging, to: owner,    on: wait.satisfied, when: { outcome: blocked }, produces: [fact:merge] }
+  - { from: docs-merging, to: merged, on: wait.satisfied, when: { any: [ { outcome: merged }, { outcome: pending }, { outcome: none } ] }, produces: [fact:docsMerge] }
 
   - { from: owner, to: intake,  on: step.completed, when: { outcome: retry } }
   - { from: owner, to: stopped, on: step.completed, when: { outcome: stop } }
@@ -1099,6 +1161,9 @@ evals:
   - evals/workflow.pr-babysitter/ready-merge.jsonl
   - evals/workflow.pr-babysitter/merge-blocked.jsonl
   - evals/workflow.pr-babysitter/merged-elsewhere.jsonl
+  - evals/workflow.pr-babysitter/ready-merge-docs.jsonl
+  - evals/workflow.pr-babysitter/docs-pending.jsonl
+  - evals/workflow.pr-babysitter/docs-red.jsonl
   - evals/workflow.pr-babysitter/stacked.jsonl
   - evals/workflow.pr-babysitter/rework.jsonl
   - evals/workflow.pr-babysitter/rework-back.jsonl
@@ -1114,7 +1179,7 @@ version: 1
 description: "Block recipe: update the docs a pull request leaves stale, in a docs PR stacked on that pull request's head branch."
 inputs:
   - { key: fact:pr,           label: "Source pull request", type: link }
-  - { key: fact:designPacket, label: "Design packet (empty when started by hand)", type: packet }
+  - { key: fact:phasePacket, label: "Phase packet (empty when started by hand)", type: packet }
 outputs:
   - { key: fact:docsResult, label: "Docs sync result", type: payload, from: scope }
   - { key: fact:docsPr,     label: "Stacked docs PR",  type: link,    from: opening }
@@ -1122,7 +1187,7 @@ initial: scope
 states:
   scope:
     kind: active
-    step: { use: step.docs.scope, with: { pr: { fact: fact:pr }, design: { fact: fact:designPacket }, paths: { profile: workflow.docs.paths }, enabled: { profile: workflow.docs.sync } } }
+    step: { use: step.docs.scope, with: { pr: { fact: fact:pr }, phase-packet: { fact: fact:phasePacket }, paths: { profile: workflow.docs.globs }, enabled: { profile: workflow.docs.sync } } }
     timeout: { after: 2d, then: park }
     next: "List the docs that {item}'s pull request might leave stale."
   route:
@@ -1133,7 +1198,7 @@ states:
         prompt: "Does this pull request make any of the listed docs wrong or incomplete?"
         facts: [fact:docsScope, fact:prState]
         choices:
-          - "update: a listed doc describes a behaviour, command, flag, path, config key or setup step that this diff changes, adds or removes, or the design names it as changing"
+          - "update: a listed doc describes a behaviour, command, flag, path, config key or setup step that this diff changes, adds or removes, or the phase packet's design.md names it as changing"
           - "none: the diff changes nothing a listed doc describes, or the PR already updates those docs"
     timeout: { after: 2d, then: park }
     next: "Decide whether {item}'s pull request needs a docs update: run `sindri workflow status {instance}`."
@@ -1146,7 +1211,7 @@ states:
     next: "Update the listed docs for {item}'s pull request (try {loop.edits}/{loop.edits.cap}). Commit locally; Sindri opens the PR."
   check:
     kind: active
-    step: { use: step.docs.check, with: { paths: { profile: workflow.docs.paths } } }
+    step: { use: step.docs.check, with: { paths: { profile: workflow.docs.globs } } }
     timeout: { after: 2d, then: park }
     next: "Check the docs commit: doc paths only, links resolve, the markdown parses."
   opening:
@@ -1177,7 +1242,7 @@ transitions:
   - { from: update, to: not-done,   on: step.completed, when: { outcome: blocked },  produces: [fact:handoffNote] }
   - { from: update, to: not-done,   on: step.failed }
   - { from: check, to: opening, on: step.completed, when: { outcome: pass },
-      gates: [{ use: gate.pr.diff-scope, with: { scope: docs, paths: { profile: workflow.docs.paths } } }],
+      gates: [{ use: gate.pr.diff-scope, with: { scope: docs, paths: { profile: workflow.docs.globs }, phase: { fact: fact:phasePacket } } }],
       effects: [{ use: effect.pr.create-stacked, with: { pr: { fact: fact:pr }, on: { fact: fact:prState }, title: "docs: sync for the source pull request" } }] }
   - { from: check, to: update,   on: step.completed, when: { all: [ { outcome: fail }, { loop: edits, below: cap } ] }, produces: [fact:findings] }
   - { from: check, to: not-done, on: step.completed, when: { outcome: fail }, produces: [fact:findings] }
