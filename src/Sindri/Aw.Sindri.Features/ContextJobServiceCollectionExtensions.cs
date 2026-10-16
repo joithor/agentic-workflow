@@ -11,10 +11,7 @@ namespace Aw.Sindri.Features;
 /// <summary>Registers the context engine's two jobs on the P6 job runtime: 'SyncSources' and 'BuildContextMap'.</summary>
 internal static class ContextJobServiceCollectionExtensions
 {
-    /// <summary>The key of a sync that names no source; a source id can't hold a ':', so no source collides with it.</summary>
-    internal const string AllSources = "all:";
-
-    /// <summary>Adds both jobs: a sync is keyed by its source (every source is one key), a build by the repo it builds (the profile's one build at a time).</summary>
+    /// <summary>Adds both jobs, each keyed by a constant: one sync at a time, whatever it names, and one build at a time (the profile's one map).</summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
     internal static IServiceCollection AddContextJobs(this IServiceCollection services)
@@ -22,7 +19,7 @@ internal static class ContextJobServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         return services
             .AddJob<SyncContextSourcesRequest, SyncContextSourcesResult, SyncContextSourcesService>(
-                static r => JobKey.From(r.Source ?? AllSources), static r => SyncSummary(r), PrecheckSync)
+                static _ => JobKey.From("sync"), static r => SyncSummary(r), PrecheckSync)
             .AddJob<BuildContextMapRequest, BuildContextMapResult, BuildContextMapService>(
                 static _ => JobKey.From("build"), static r => string.Create(CultureInfo.InvariantCulture, $"draft v{r.Draft}: {r.Proposed} proposed"));
     }

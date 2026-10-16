@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using Microsoft.AspNetCore.Http.Features;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
@@ -19,10 +20,11 @@ internal static class JobEndpoints
     /// <param name="group">The commands group (Origin refused before binding).</param>
     /// <param name="route">The route, for example '/context/sources/sync'.</param>
     /// <param name="bind">Builds the request from the call when it is not the JSON body (RunService reads its '{name}' route value); null binds the body.</param>
+    /// <param name="whenEmpty">The request a call with no body means (every field optional), or null when an empty body is refused.</param>
     /// <typeparam name="TRequest">The job request.</typeparam>
     /// <typeparam name="TResult">What the work returns.</typeparam>
     /// <returns>The same group.</returns>
-    internal static RouteGroupBuilder MapJob<TRequest, TResult>(this RouteGroupBuilder group, string route, Func<HttpContext, Result<TRequest>>? bind = null)
+    internal static RouteGroupBuilder MapJob<TRequest, TResult>(this RouteGroupBuilder group, string route, Func<HttpContext, Result<TRequest>>? bind = null, Func<TRequest>? whenEmpty = null)
         where TRequest : class, IJob<TResult>
     {
         ArgumentNullException.ThrowIfNull(group);
@@ -41,6 +43,8 @@ internal static class JobEndpoints
 
                 request = bound.Value;
             }
+
+            request ??= whenEmpty is not null && EmptyBody(http) ? whenEmpty() : null;
 
             try
             {
@@ -61,4 +65,8 @@ internal static class JobEndpoints
         _ = mapped.WithMetadata(new JobRouteMetadata(typeof(TRequest)));
         return group;
     }
+
+    /// <summary>A call that sent no body (an explicit zero length, or a request the server knows can't have one).</summary>
+    private static bool EmptyBody(HttpContext http) =>
+        http.Request.ContentLength == 0 || http.Features.Get<IHttpRequestBodyDetectionFeature>()?.CanHaveBody == false;
 }

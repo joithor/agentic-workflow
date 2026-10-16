@@ -131,7 +131,7 @@ public sealed class ContextJobsApiTests : IDisposable
     public async Task A_second_sync_start_while_one_runs_is_SND_JOB_409_naming_the_running_job_and_056_maps_onto_it()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
-        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { Delay = TimeSpan.FromMilliseconds(300) });
+        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { Delay = TimeSpan.FromMilliseconds(40) });
         await using var host = await SyncHost(onyx);
         var (first, _) = await Start(host, "/sindri/context/sources/sync", "{}");
 
@@ -149,7 +149,7 @@ public sealed class ContextJobsApiTests : IDisposable
     public async Task A_one_source_sync_start_while_an_all_sources_sync_runs_is_SND_JOB_409()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
-        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { Delay = TimeSpan.FromMilliseconds(300) });
+        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { Delay = TimeSpan.FromMilliseconds(40) });
         await using var host = await SyncHost(onyx);
         var (first, _) = await Start(host, "/sindri/context/sources/sync", "{}");
 
