@@ -4,6 +4,9 @@
 # (scripts/meta-lane.sh: resumed by id when one exists, else started from its kickoff prompt). Missing tmux sessions
 # are recreated first (tmux may have died with the box), and a lane whose claude exited is restarted in place, so
 # the panes only attach. Writes the Warp launch configuration and opens it. One command restores the whole team.
+# The team runs on its own tmux socket, named after the team (`tmux -L <team>`): every tmux call here, the Warp layout's
+# `tmux new -A` lines, the printed attach lines and the exec-template viewer's attach argv. Attach by hand with
+# `tmux -L <team> attach -t =<team>-<lane>`. A team started before this change stays on tmux's default socket until it is relaunched.
 # launcher.json (scripts/launcher-lib.sh; docs/csharp/sindri-launcher.md) changes two things, and with no file nothing
 # changes: the viewer (warp, the layout above; exec-template, one window per lane running the file's argv; print, one
 # `tmux attach` line per lane) and each lane's agent (meta.lanesAgent, meta.lanes.<lane>; Claude Code by default).
@@ -91,6 +94,7 @@ config="${AW_META_CONFIG:-$state_dir/meta/team.json}"
 team="$(jq -r '.team // empty' "$config")"
 repo="$(jq -r '.repo // empty' "$config")"
 all="$(jq -r '[(.metaLane // "meta")] + (.lanes // []) | reduce .[] as $l ([]; if index([$l]) then . else . + [$l] end) | join(",")' "$config")"
+tmux_t=(tmux -L "$team")            # every tmux call of this launcher: the team's own socket
 IFS=, read -r -a A <<< "$all"        # every lane: the Warp layout always has a pane for each
 IFS=, read -r -a L <<< "${only:-$all}"   # the lanes whose tmux sessions this run checks (--lanes)
 for n in "$team" "${A[@]}" "${L[@]}"; do
@@ -118,7 +122,7 @@ if [ "$viewer" = exec-template ] && [ "$(jq -r '.viewer.argv | type' <<< "$LAUNC
 fi
 # viewer_argv <lane> <name>: the exec-template argv for one lane, NUL-separated (the attach command is {cmd...})
 viewer_argv() {
-  launcher_expand "$(jq -c .viewer.argv <<< "$LAUNCHER_DOC")" "$repo" "$team-$1" "$team-$1" "" "" "" tmux attach -t "=$team-$1"
+  launcher_expand "$(jq -c .viewer.argv <<< "$LAUNCHER_DOC")" "$repo" "$team-$1" "$team-$1" "" "" "" "${tmux_t[@]}" attach -t "=$team-$1"
 }
 if [ "$viewer" = exec-template ]; then   # a refusal (an expansion starting with "-") stops the launch before any session exists
   for l in "${L[@]}"; do viewer_argv "$l" > /dev/null || exit 1; done
@@ -135,7 +139,7 @@ yaml="$dir/$team-team.yaml"
 # claude_in_pane <session> <process name>: the lane's agent process (claude, or the catalog's processName) runs under the
 # pane (started by meta-lane.sh, or by hand from the fallback shell after an exit, which leaves the .exited marker behind).
 claude_in_pane() {
-  local root; root="$(tmux display-message -p -t "=$1:" '#{pane_pid}' 2> /dev/null)" || return 1
+  local root; root="$("${tmux_t[@]}" display-message -p -t "=$1:" '#{pane_pid}' 2> /dev/null)" || return 1
   [ -n "$root" ] || return 1
   ps -A -o pid= -o ppid= -o comm= 2> /dev/null | awk -v root="$root" -v pn="$2" '
     { pid[NR] = $1; ppid[NR] = $2; comm[NR] = $3 }
@@ -172,21 +176,21 @@ wait_reported() { # lane
 # 1. tmux sessions: create the missing ones (detached), keep the live ones.
 for l in "${L[@]}"; do
   s="$team-$l"
-  if tmux has-session -t "=$s" 2> /dev/null; then
+  if "${tmux_t[@]}" has-session -t "=$s" 2> /dev/null; then
     # Claude exited or crashed and the pane fell back to its shell (meta-lane.sh left <lane>.exited): start the lane
     # again in place, resumed by id. A pane still running claude is never touched.
     if [ ! -f "$state_dir/meta/lane-sessions/$l.exited" ] || claude_in_pane "$s" "$(proc_of "$l")"; then echo "tmux $s: running"
-    elif [ "$dry" = 1 ]; then echo "[dry-run] tmux respawn-pane -k -t $s $here/meta-lane.sh $team $l"
+    elif [ "$dry" = 1 ]; then echo "[dry-run] ${tmux_t[*]} respawn-pane -k -t $s $here/meta-lane.sh $team $l"
     else
       mark_start "$l"
-      tmux respawn-pane -k -t "=$s:" -c "$repo" -e "AW_META_CONFIG=$config" ${lc_env[@]+"${lc_env[@]}"} "$here/meta-lane.sh $team $l"
+      "${tmux_t[@]}" respawn-pane -k -t "=$s:" -c "$repo" -e "AW_META_CONFIG=$config" ${lc_env[@]+"${lc_env[@]}"} "$here/meta-lane.sh $team $l"
       echo "tmux $s: restarted (claude had exited)"
       wait_reported "$l"
     fi
-  elif [ "$dry" = 1 ]; then echo "[dry-run] tmux new-session -d -s $s -c $repo $here/meta-lane.sh $team $l"
+  elif [ "$dry" = 1 ]; then echo "[dry-run] ${tmux_t[*]} new-session -d -s $s -c $repo $here/meta-lane.sh $team $l"
   else
     mark_start "$l"
-    tmux new-session -d -s "$s" -c "$repo" -e "AW_META_CONFIG=$config" ${lc_env[@]+"${lc_env[@]}"} "$here/meta-lane.sh $team $l"
+    "${tmux_t[@]}" new-session -d -s "$s" -c "$repo" -e "AW_META_CONFIG=$config" ${lc_env[@]+"${lc_env[@]}"} "$here/meta-lane.sh $team $l"
     echo "tmux $s: started"
     wait_reported "$l"
   fi
@@ -195,7 +199,7 @@ done
 # 2. Warp launch configuration: the first lane on the left, the others stacked on the right.
 # The pane attaches, or creates the session itself with the same command as step 1, so a session that is missing when
 # Warp opens (a --lanes run, a lane that exited) still runs the lane instead of a plain shell under its name.
-attach() { printf 'tmux new -A -s %s -c %s -e AW_META_CONFIG=%s%s %s' "$team-$1" "$repo" "$config" "$lc_str" "'$here/meta-lane.sh $team $1'"; }
+attach() { printf 'tmux -L %s new -A -s %s -c %s -e AW_META_CONFIG=%s%s %s' "$team" "$team-$1" "$repo" "$config" "$lc_str" "'$here/meta-lane.sh $team $1'"; }
 pane() { # indent lane
   printf '%s- cwd: %s\n%s  commands:\n%s    - exec: %s\n' "$1" "$repo" "$1" "$1" "$(attach "$2")"
 }
@@ -239,7 +243,7 @@ viewer_warp() {
 # The print viewer: nothing opens; one attach command per lane (the lanes this run covers).
 viewer_print() {
   [ "$dry" = 1 ] && echo "[dry-run] would print:"
-  for l in "${L[@]}"; do echo "tmux attach -t =$team-$l"; done
+  for l in "${L[@]}"; do echo "${tmux_t[*]} attach -t =$team-$l"; done
   return 0
 }
 
@@ -255,7 +259,7 @@ viewer_exec() {
     [ "$open" = 1 ] || continue
     if ! command -v "${argv[0]}" > /dev/null 2>&1; then
       echo "meta-launch: viewer $name: ${argv[0]} not found; attach by hand:" >&2
-      echo "tmux attach -t =$team-$l"
+      echo "${tmux_t[*]} attach -t =$team-$l"
       continue
     fi
     ( "${argv[@]}" > /dev/null 2>&1 < /dev/null & )
