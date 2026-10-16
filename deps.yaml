@@ -211,7 +211,7 @@ packages:
     binPaths: [ui-evidence/dist/bin.js]
     files: [ui-evidence/runs, locks/heavy-job.lock, locks/qa-stack.lock]
     namespace: ui-evidence
-    note: "Playwright UI evidence; owns the box-wide heavy-job lock (AW_HEAVY_SLOTS slots, default 2: locks/heavy-job.lock and .2) and the one-slot QA-stack lock. In the C# build they sit behind Evidence's own Core port IMachineLocks, with a directory adapter (atomic mkdir, owner file) that interoperates with config/lib/locks.sh and the heavy wrapper. A tier-0 or tier-1 package can't take those locks (that would be an upward file edge, DEPS-TIER-002)"
+    note: "Playwright UI evidence and the db-run/api-run data evidence (third-party packages in Aw.Evidence.Infrastructure: Playwright for the browser, Npgsql 10.0.3 for a Postgres target, behind the IDatabaseReader port); owns the box-wide heavy-job lock (AW_HEAVY_SLOTS slots, default 2: locks/heavy-job.lock and .2) and the one-slot QA-stack lock. In the C# build they sit behind Evidence's own Core port IMachineLocks, with a directory adapter (atomic mkdir, owner file) that interoperates with config/lib/locks.sh and the heavy wrapper. A tier-0 or tier-1 package can't take those locks (that would be an upward file edge, DEPS-TIER-002)"
   - id: BugFix
     kind: package
     tier: 2
@@ -481,6 +481,11 @@ edges:
     kind: project
     status: current
     note: "api-run summaries (bodies, stdout, expected and actual values, the whole document) are scrubbed before they are written (RedactionScrubber behind ITextScrubber; spec DT-E1, section 5.2 Secrets)"
+  - from: Evidence
+    to: KernelData
+    kind: project
+    status: current
+    note: "db-run opens SQLite evidence copies read-only through SqliteConnectionFactory (SqliteDatabaseReader); a Postgres target goes through Npgsql behind the same IDatabaseReader port (spec section 5.2)"
   - from: BugFix
     to: Kernel
     kind: project
