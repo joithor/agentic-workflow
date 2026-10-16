@@ -14,14 +14,13 @@ namespace Aw.Sindri.Features.Jobs;
 /// <param name="events">Builds the entry.</param>
 internal sealed class JobStartRecorder(HeldLease held, ILedgerStore ledger, EventFactory events)
 {
-    /// <summary>Records the start of <paramref name="job"/>.</summary>
-    /// <param name="job">The new job.</param>
-    /// <param name="kind">Its kind.</param>
-    /// <param name="key">Its key.</param>
+    /// <summary>Records the start of the job.</summary>
+    /// <param name="ticket">The new job: its id, kind and key.</param>
     /// <param name="caller">The starting caller (the event carries its actor and correlation).</param>
+    /// <param name="service">The background service the job runs (RunService), or null.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
     /// <returns>The grant it wrote under, the sequence of 'job.started' and its envelope id; or why it could not be written.</returns>
-    public async ValueTask<Result<RecordedStart>> Record(JobId job, JobKind kind, JobKey key, CallerContext caller, CancellationToken cancellationToken)
+    public async ValueTask<Result<RecordedStart>> Record(JobTicket ticket, CallerContext caller, ServiceName? service, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(caller);
         if (held.Current is not { } grant)
@@ -29,8 +28,8 @@ internal sealed class JobStartRecorder(HeldLease held, ILedgerStore ledger, Even
             return SindriErrors.NotRunning.With("the control plane doesn't hold the lease (fix: sindri)");
         }
 
-        var started = new JobStarted(caller.CommandId, job, kind, key, Item: null, caller.Repo, Service: null);
-        var entry = events.Entry(EventTypes.JobStarted, started, $"{EventTypes.JobStarted}:{job.Value}");
+        var started = new JobStarted(caller.CommandId, ticket.Job, ticket.Kind, ticket.Key, Item: null, caller.Repo, service);
+        var entry = events.Entry(EventTypes.JobStarted, started, $"{EventTypes.JobStarted}:{ticket.Job.Value}");
         var appended = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
         return appended.IsError ? appended.Error : new RecordedStart(grant, appended.Value.Sequence, EventId.From(entry.Envelope.Id));
     }

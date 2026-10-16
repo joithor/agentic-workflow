@@ -1,5 +1,5 @@
 using Aw.Kernel.Testing;
-using Aw.Sindri.Features.Jobs;
+using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.Jobs;

@@ -1,7 +1,7 @@
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 
-namespace Aw.Sindri.Features.Jobs;
+namespace Aw.Sindri.Core.Scheduling;
 
 /// <summary>
 /// Makes a scheduled run and a manual run of the same service exclusive, and shares the last outcome between them (API P6, plan 1.5): the scheduler's

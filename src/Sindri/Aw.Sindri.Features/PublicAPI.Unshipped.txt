@@ -793,11 +793,9 @@ Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Apply.get -> bool
 Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Apply.init -> void
 Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest
 Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.<Clone>$() -> Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest!
-Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Deconstruct(out Aw.Sindri.Core.Ids.ServiceName Service, out Aw.Sindri.Core.Scheduling.ScheduledRun! Run, out Aw.Kernel.Result<Aw.Kernel.Unit>! Outcome) -> void
 Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Equals(Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest? other) -> bool
 Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Outcome.get -> Aw.Kernel.Result<Aw.Kernel.Unit>!
 Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Outcome.init -> void
-Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.RecordServiceRunRequest(Aw.Sindri.Core.Ids.ServiceName Service, Aw.Sindri.Core.Scheduling.ScheduledRun! Run, Aw.Kernel.Result<Aw.Kernel.Unit>! Outcome) -> void
 Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Run.get -> Aw.Sindri.Core.Scheduling.ScheduledRun!
 Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Run.init -> void
 Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Service.get -> Aw.Sindri.Core.Ids.ServiceName
@@ -2048,7 +2046,6 @@ Aw.Sindri.Features.Jobs.IJobRunner.Running.get -> int
 Aw.Sindri.Features.Jobs.IJobRunner.Start(Aw.Sindri.Features.Jobs.JobStart! start, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 Aw.Sindri.Features.Jobs.JobDefinition
 Aw.Sindri.Features.Jobs.JobDefinition.KeyOf(object! request) -> Aw.Sindri.Core.Ids.JobKey
-Aw.Sindri.Features.Jobs.JobDefinition.Precheck(object! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Sindri.Features.Jobs.JobDefinition.Request.get -> System.Type!
 Aw.Sindri.Features.Jobs.JobRegistry
 Aw.Sindri.Features.Jobs.JobRegistry.JobRegistry() -> void
@@ -2088,12 +2085,6 @@ Aw.Sindri.Features.Jobs.JobWorkResult.Result.get -> System.Text.Json.JsonElement
 Aw.Sindri.Features.Jobs.JobWorkResult.Result.init -> void
 Aw.Sindri.Features.Jobs.JobWorkResult.Summary.get -> string!
 Aw.Sindri.Features.Jobs.JobWorkResult.Summary.init -> void
-Aw.Sindri.Features.Jobs.ServiceRunGuard
-Aw.Sindri.Features.Jobs.ServiceRunGuard.Forget(Aw.Sindri.Core.Ids.ServiceName service) -> void
-Aw.Sindri.Features.Jobs.ServiceRunGuard.LastOutcome(Aw.Sindri.Core.Ids.ServiceName service) -> Aw.Sindri.Core.Events.ServiceOutcome?
-Aw.Sindri.Features.Jobs.ServiceRunGuard.Record(Aw.Sindri.Core.Ids.ServiceName service, Aw.Sindri.Core.Events.ServiceOutcome outcome) -> void
-Aw.Sindri.Features.Jobs.ServiceRunGuard.ServiceRunGuard() -> void
-Aw.Sindri.Features.Jobs.ServiceRunGuard.TryClaim(Aw.Sindri.Core.Ids.ServiceName service, out System.IDisposable! claim) -> bool
 override Aw.Sindri.Features.Jobs.JobStart.Equals(object? obj) -> bool
 override Aw.Sindri.Features.Jobs.JobStart.GetHashCode() -> int
 override Aw.Sindri.Features.Jobs.JobStart.ToString() -> string!
@@ -2286,3 +2277,8 @@ static Aw.Sindri.Features.RunService.RunServiceRequest.operator ==(Aw.Sindri.Fea
 Aw.Sindri.Features.SindriJobServiceCollectionExtensions
 static Aw.Sindri.Features.SindriJobServiceCollectionExtensions.AddJob<TRequest, TResult, TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Func<TRequest!, Aw.Sindri.Core.Ids.JobKey>! key, System.Func<TResult, string!>! summary, System.Func<TRequest!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>>? precheck = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 Aw.Sindri.Features.Jobs.JobDefinition.Run(System.Func<System.Type!, object!>! resolve, object! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Features.Jobs.JobWorkResult!>
+Aw.Sindri.Features.Jobs.JobDefinition.Admit(System.IServiceProvider! services, object! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Ids.ServiceName?>!>
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Deconstruct(out Aw.Sindri.Core.Ids.ServiceName Service, out Aw.Sindri.Core.Scheduling.ScheduledRun! Run, out Aw.Kernel.Result<Aw.Kernel.Unit>! Outcome, out Aw.Sindri.Core.Ids.JobId? Job) -> void
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Job.get -> Aw.Sindri.Core.Ids.JobId?
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Job.init -> void
+Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.RecordServiceRunRequest(Aw.Sindri.Core.Ids.ServiceName Service, Aw.Sindri.Core.Scheduling.ScheduledRun! Run, Aw.Kernel.Result<Aw.Kernel.Unit>! Outcome, Aw.Sindri.Core.Ids.JobId? Job = null) -> void

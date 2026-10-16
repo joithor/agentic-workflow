@@ -33,15 +33,34 @@ public static class SindriJobServiceCollectionExtensions
         where TRequest : class, IJob<TResult>
         where TService : class, IService<TRequest, TResult>
     {
+        return AddJob<TRequest, TResult, TService>(services, key, summary, async (_, request, ct) =>
+        {
+            if (precheck is not null && await precheck(request, ct).ConfigureAwait(false) is { IsError: true } refused)
+            {
+                return refused.Error;
+            }
+
+            Result<ServiceName?> none = default(ServiceName?);
+            return none;
+        });
+    }
+
+    /// <summary>The registration behind <see cref="AddJob{TRequest, TResult, TService}(IServiceCollection, Func{TRequest, JobKey}, Func{TResult, string}, Func{TRequest, CancellationToken, ValueTask{Result{Unit}}}?)"/>, for a job whose admission needs the start's services and names the service it runs.</summary>
+    internal static IServiceCollection AddJob<TRequest, TResult, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection services, Func<TRequest, JobKey> key, Func<TResult, string> summary,
+        Func<IServiceProvider, TRequest, CancellationToken, ValueTask<Result<ServiceName?>>> admit)
+        where TRequest : class, IJob<TResult>
+        where TService : class, IService<TRequest, TResult>
+    {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(summary);
+        ArgumentNullException.ThrowIfNull(admit);
         services.TryAddSingleton<JobRegistry>();
         services.TryAddScoped<IValidator<TRequest>, JobAcceptAllValidator<TRequest>>();
         _ = services
             .AddScoped<TService>()
             .AddSingleton(new JobDefinition(typeof(TRequest), request => key((TRequest)request),
-                (request, ct) => precheck is null ? ValueTask.FromResult<Result<Unit>>(Unit.Value) : precheck((TRequest)request, ct),
+                (provider, request, ct) => admit(provider, (TRequest)request, ct),
                 async (resolve, request, ct) => await Work<TRequest, TResult, TService>(resolve, (TRequest)request, summary, ct).ConfigureAwait(false)));
         return services.AddCommand<TRequest, JobStartedResponse, JobStartService<TRequest, TResult>>();
     }

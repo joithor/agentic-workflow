@@ -134,7 +134,7 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
             var scope = openScope();
             await using (scope.Lifetime.ConfigureAwait(false))
             {
-                using var caller = callers.Enter(start.Caller);
+                using var caller = start.Service is { } service ? callers.EnterService(service.Value) : callers.Enter(start.Caller);   // RunService's work is the service's own run (D6)
                 using var job = jobs.Enter(new JobContext(start.Job, start.Kind, new QueueProgress(queue)));
                 return await start.Definition.Run(scope.Resolve, start.Request, run.Source.Token).ConfigureAwait(false);
             }

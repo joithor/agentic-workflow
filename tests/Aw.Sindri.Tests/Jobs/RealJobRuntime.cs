@@ -34,14 +34,23 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
     private readonly ServiceProvider _provider;
     private readonly HeavyTakes _heavy = new();
 
-    public RealJobRuntime(ITextScrubber? scrubber = null)
+    /// <summary>Wires the runtime; a test adds the catalog rows and services of the job it exercises through <paramref name="rows"/> and <paramref name="configure"/>.</summary>
+    /// <param name="scrubber">Cleans what the writer records; a pass-through by default.</param>
+    /// <param name="rows">More catalog rows.</param>
+    /// <param name="configure">More registrations, made before the provider is built.</param>
+    public RealJobRuntime(ITextScrubber? scrubber = null, IEnumerable<CommandRow>? rows = null, Action<IServiceCollection, SliceHarness>? configure = null)
     {
         var options = AwJson.CreateOptions(JsonTypeInfoResolver.Combine(SindriJsonContext.Default, EchoJsonContext.Default));
-        var catalog = new InMemoryCommandCatalog(
+        CommandRow[] own =
+        [
             Rows.Of(ActionClass.Job, "EchoJob", typeof(EchoJobRequest)),
             Rows.Of(ActionClass.Job, "ProbeJob", typeof(ProbeJobRequest)),
-            Rows.Of(ActionClass.Desk, "FixtureCommand", typeof(FixtureCommand)));
-        _provider = new ServiceCollection()
+            Rows.Of(ActionClass.Desk, "FixtureCommand", typeof(FixtureCommand)),
+        ];
+        var catalog = new InMemoryCommandCatalog([.. own, .. rows ?? []]);
+        var services = new ServiceCollection();
+        configure?.Invoke(services, H);
+        _provider = services
             .AddSingleton<TimeProvider>(H.Clock)
             .AddSingleton<Kernel.Ids.IIdGenerator>(H.Ids)
             .AddSingleton<ILedgerStore>(H.Store)
@@ -73,6 +82,12 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
     public SliceHarness H { get; } = new();
 
     public FixtureLatch Latch { get; } = new();
+
+    /// <summary>Resolves a singleton the runtime was built with.</summary>
+    /// <typeparam name="T">The service.</typeparam>
+    /// <returns>The service.</returns>
+    public T Get<T>()
+        where T : notnull => _provider.GetRequiredService<T>();
 
     public JobRunner Runner => _provider.GetRequiredService<JobRunner>();
 

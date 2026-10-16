@@ -10,15 +10,16 @@ namespace Aw.Sindri.Features.Jobs;
 public sealed class JobDefinition
 {
     private readonly Func<object, JobKey> _key;
-    private readonly Func<object, CancellationToken, ValueTask<Result<Unit>>> _precheck;
+    private readonly Func<IServiceProvider, object, CancellationToken, ValueTask<Result<ServiceName?>>> _admit;
     private readonly Func<Func<Type, object>, object, CancellationToken, ValueTask<JobWorkResult>> _run;
 
-    internal JobDefinition(Type request, Func<object, JobKey> key, Func<object, CancellationToken, ValueTask<Result<Unit>>> precheck,
+    internal JobDefinition(Type request, Func<object, JobKey> key,
+        Func<IServiceProvider, object, CancellationToken, ValueTask<Result<ServiceName?>>> admit,
         Func<Func<Type, object>, object, CancellationToken, ValueTask<JobWorkResult>> run)
     {
         Request = request;
         _key = key;
-        _precheck = precheck;
+        _admit = admit;
         _run = run;
     }
 
@@ -34,14 +35,19 @@ public sealed class JobDefinition
         return _key(request);
     }
 
-    /// <summary>Checks <paramref name="request"/> inside the gate before the start is accepted (a 404 or 409 the HTTP caller must see synchronously).</summary>
+    /// <summary>
+    /// Checks <paramref name="request"/> inside the gate before the start is accepted (a 404 or 409 the HTTP caller must see synchronously) and says which
+    /// background service the job runs, if any (RunService: its events and its work then carry that service's actor).
+    /// </summary>
+    /// <param name="services">The services of the start's scope, for a check that needs the profile or the build's services.</param>
     /// <param name="request">The request.</param>
     /// <param name="cancellationToken">Cancels the check.</param>
-    /// <returns>Success, or the error that refuses the start.</returns>
-    public ValueTask<Result<Unit>> Precheck(object request, CancellationToken cancellationToken)
+    /// <returns>The service the job runs (or null), or the error that refuses the start.</returns>
+    public ValueTask<Result<ServiceName?>> Admit(IServiceProvider services, object request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(request);
-        return _precheck(request, cancellationToken);
+        return _admit(services, request, cancellationToken);
     }
 
     /// <summary>Runs the work of <paramref name="request"/>, resolving its service through a DI scope the caller owns.</summary>

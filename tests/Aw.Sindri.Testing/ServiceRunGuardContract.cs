@@ -1,6 +1,6 @@
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
-using Aw.Sindri.Features.Jobs;
+using Aw.Sindri.Core.Scheduling;
 using Xunit;
 
 namespace Aw.Sindri.Testing;

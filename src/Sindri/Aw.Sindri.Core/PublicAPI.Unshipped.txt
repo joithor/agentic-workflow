@@ -8049,3 +8049,9 @@ static readonly Aw.Sindri.Core.SindriErrors.JobNotFound -> Aw.Kernel.ErrorDefini
 static readonly Aw.Sindri.Core.SindriErrors.JobsRateLimited -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.ServiceNotFound -> Aw.Kernel.ErrorDefinition!
 const Aw.Sindri.Core.Views.ViewSchema.Version = 4 -> int
+Aw.Sindri.Core.Scheduling.ServiceRunGuard
+Aw.Sindri.Core.Scheduling.ServiceRunGuard.Forget(Aw.Sindri.Core.Ids.ServiceName service) -> void
+Aw.Sindri.Core.Scheduling.ServiceRunGuard.LastOutcome(Aw.Sindri.Core.Ids.ServiceName service) -> Aw.Sindri.Core.Events.ServiceOutcome?
+Aw.Sindri.Core.Scheduling.ServiceRunGuard.Record(Aw.Sindri.Core.Ids.ServiceName service, Aw.Sindri.Core.Events.ServiceOutcome outcome) -> void
+Aw.Sindri.Core.Scheduling.ServiceRunGuard.ServiceRunGuard() -> void
+Aw.Sindri.Core.Scheduling.ServiceRunGuard.TryClaim(Aw.Sindri.Core.Ids.ServiceName service, out System.IDisposable! claim) -> bool
