@@ -1,6 +1,7 @@
 using Aw.Context.Core.Docs;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
+using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Core.Extract;
 using Aw.Context.Core.Linking;
 using Aw.Context.Core.Map;
@@ -61,6 +62,10 @@ public static class ContextInfrastructureServiceCollectionExtensions
             .AddSingleton<IClusterSource, GraphifyClusterSource>()
             .AddSingleton<IProbeFileReader, ProbeFileReader>()
             .AddSingleton<IProbeReportStore, FileProbeReportStore>()
+            .AddSingleton<IMergeHistory, GitMergeHistory>()
+            .AddSingleton<IBriefSource, OnyxBriefSource>()
+            .AddSingleton<IAsOfDocs, AsOfDocsFactory>()
+            .AddSingleton<IEvalStore, FileEvalStore>()
             .AddSingleton(sp => new OnyxSources(new OnyxSourceParts(
                 OnyxHttp.Client, environment, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILogger<OnyxClient>>())));
 

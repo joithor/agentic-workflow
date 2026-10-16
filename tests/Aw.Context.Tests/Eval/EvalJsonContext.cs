@@ -6,4 +6,5 @@ namespace Aw.Context.Tests.Eval;
 /// <summary>The probe file and report types for tests (in production the Sindri host's JSON context holds them).</summary>
 [JsonSerializable(typeof(ProbeSet))]
 [JsonSerializable(typeof(ProbeReport))]
+[JsonSerializable(typeof(Aw.Context.Core.Extract.ExtractedMap))]
 internal sealed partial class EvalJsonContext : JsonSerializerContext;

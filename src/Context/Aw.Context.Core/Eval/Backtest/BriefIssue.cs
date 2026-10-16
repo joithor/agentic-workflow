@@ -6,4 +6,5 @@ namespace Aw.Context.Core.Eval.Backtest;
 /// <param name="Version">The record's version when listed.</param>
 /// <param name="CreatedAt">When the issue was created: the sample's cut.</param>
 /// <param name="UpdatedAt">When it was last edited; after the cut the brief is leaky.</param>
-public sealed record BriefIssue(string Key, string RecordRef, string? Version, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt);
+/// <param name="Title">The issue title as the source gave it. Held in memory for the run; a report never carries it.</param>
+public sealed record BriefIssue(string Key, string RecordRef, string? Version, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, string Title = "");

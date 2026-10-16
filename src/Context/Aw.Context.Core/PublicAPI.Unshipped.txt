@@ -3954,10 +3954,8 @@ Aw.Context.Core.Eval.Backtest.Arms
 Aw.Context.Core.Eval.Backtest.BacktestScoring
 Aw.Context.Core.Eval.Backtest.BriefIssue
 Aw.Context.Core.Eval.Backtest.BriefIssue.<Clone>$() -> Aw.Context.Core.Eval.Backtest.BriefIssue!
-Aw.Context.Core.Eval.Backtest.BriefIssue.BriefIssue(string! Key, string! RecordRef, string? Version, System.DateTimeOffset CreatedAt, System.DateTimeOffset UpdatedAt) -> void
 Aw.Context.Core.Eval.Backtest.BriefIssue.CreatedAt.get -> System.DateTimeOffset
 Aw.Context.Core.Eval.Backtest.BriefIssue.CreatedAt.init -> void
-Aw.Context.Core.Eval.Backtest.BriefIssue.Deconstruct(out string! Key, out string! RecordRef, out string? Version, out System.DateTimeOffset CreatedAt, out System.DateTimeOffset UpdatedAt) -> void
 Aw.Context.Core.Eval.Backtest.BriefIssue.Equals(Aw.Context.Core.Eval.Backtest.BriefIssue? other) -> bool
 Aw.Context.Core.Eval.Backtest.BriefIssue.Key.get -> string!
 Aw.Context.Core.Eval.Backtest.BriefIssue.Key.init -> void
@@ -4144,3 +4142,90 @@ static readonly Aw.Context.Core.ContextErrors.AdjudicationCapped -> Aw.Kernel.Er
 static readonly Aw.Context.Core.ContextErrors.NoBriefSource -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.NoEligibleSample -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.UnknownArm -> Aw.Kernel.ErrorDefinition!
+Aw.Context.Core.Eval.Backtest.AsOfMapCache
+Aw.Context.Core.Eval.Backtest.Brief
+Aw.Context.Core.Eval.Backtest.Brief.<Clone>$() -> Aw.Context.Core.Eval.Backtest.Brief!
+Aw.Context.Core.Eval.Backtest.Brief.Brief(string! Key, string! Text) -> void
+Aw.Context.Core.Eval.Backtest.Brief.Deconstruct(out string! Key, out string! Text) -> void
+Aw.Context.Core.Eval.Backtest.Brief.Equals(Aw.Context.Core.Eval.Backtest.Brief? other) -> bool
+Aw.Context.Core.Eval.Backtest.Brief.Key.get -> string!
+Aw.Context.Core.Eval.Backtest.Brief.Key.init -> void
+Aw.Context.Core.Eval.Backtest.Brief.Text.get -> string!
+Aw.Context.Core.Eval.Backtest.Brief.Text.init -> void
+Aw.Context.Core.Eval.Backtest.BriefIssue.BriefIssue(string! Key, string! RecordRef, string? Version, System.DateTimeOffset CreatedAt, System.DateTimeOffset UpdatedAt, string! Title = "") -> void
+Aw.Context.Core.Eval.Backtest.BriefIssue.Deconstruct(out string! Key, out string! RecordRef, out string? Version, out System.DateTimeOffset CreatedAt, out System.DateTimeOffset UpdatedAt, out string! Title) -> void
+Aw.Context.Core.Eval.Backtest.BriefIssue.Title.get -> string!
+Aw.Context.Core.Eval.Backtest.BriefIssue.Title.init -> void
+Aw.Context.Core.Eval.Backtest.BriefScope
+Aw.Context.Core.Eval.Backtest.BriefScope.<Clone>$() -> Aw.Context.Core.Eval.Backtest.BriefScope!
+Aw.Context.Core.Eval.Backtest.BriefScope.BriefScope(Aw.Context.Core.Engine.ContextSettings! Settings, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! Repos, Aw.Context.Core.Trust.Scrubbers! Scrubbers) -> void
+Aw.Context.Core.Eval.Backtest.BriefScope.Deconstruct(out Aw.Context.Core.Engine.ContextSettings! Settings, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! Repos, out Aw.Context.Core.Trust.Scrubbers! Scrubbers) -> void
+Aw.Context.Core.Eval.Backtest.BriefScope.Equals(Aw.Context.Core.Eval.Backtest.BriefScope? other) -> bool
+Aw.Context.Core.Eval.Backtest.BriefScope.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>!
+Aw.Context.Core.Eval.Backtest.BriefScope.Repos.init -> void
+Aw.Context.Core.Eval.Backtest.BriefScope.Scrubbers.get -> Aw.Context.Core.Trust.Scrubbers!
+Aw.Context.Core.Eval.Backtest.BriefScope.Scrubbers.init -> void
+Aw.Context.Core.Eval.Backtest.BriefScope.Settings.get -> Aw.Context.Core.Engine.ContextSettings!
+Aw.Context.Core.Eval.Backtest.BriefScope.Settings.init -> void
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.<Clone>$() -> Aw.Context.Core.Eval.Backtest.EvalPurgeReport!
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.CacheFiles.get -> int
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.CacheFiles.init -> void
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.Deconstruct(out int Reports, out int CacheFiles, out int ProbeReports) -> void
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.Equals(Aw.Context.Core.Eval.Backtest.EvalPurgeReport? other) -> bool
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.EvalPurgeReport(int Reports, int CacheFiles, int ProbeReports) -> void
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.ProbeReports.get -> int
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.ProbeReports.init -> void
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.Reports.get -> int
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.Reports.init -> void
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.Total.get -> int
+Aw.Context.Core.Eval.Backtest.EvalReportKind
+Aw.Context.Core.Eval.Backtest.EvalReportKind.Backtest = 0 -> Aw.Context.Core.Eval.Backtest.EvalReportKind
+Aw.Context.Core.Eval.Backtest.EvalReportKind.Map = 1 -> Aw.Context.Core.Eval.Backtest.EvalReportKind
+Aw.Context.Core.Eval.Backtest.IBriefSource
+Aw.Context.Core.Eval.Backtest.IBriefSource.Brief(Aw.Context.Core.Eval.Backtest.BriefScope! scope, Aw.Context.Core.Eval.Backtest.BriefIssue! issue, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.Backtest.Brief?>!>
+Aw.Context.Core.Eval.Backtest.IBriefSource.Issues(Aw.Context.Core.Eval.Backtest.BriefScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.BriefIssue!>!>!>
+Aw.Context.Core.Eval.Backtest.IEvalStore
+Aw.Context.Core.Eval.Backtest.IEvalStore.Expired(System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.Backtest.EvalPurgeReport!>!>
+Aw.Context.Core.Eval.Backtest.IEvalStore.Purge(System.DateTimeOffset now, bool all, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.Backtest.EvalPurgeReport!>!>
+Aw.Context.Core.Eval.Backtest.IEvalStore.ReadMap(string! key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Extract.ExtractedMap?>!>
+Aw.Context.Core.Eval.Backtest.IEvalStore.WriteMap(string! key, Aw.Context.Core.Extract.ExtractedMap! map, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Context.Core.Eval.Backtest.IEvalStore.WriteReport<T>(Aw.Context.Core.Eval.Backtest.EvalReportKind kind, T! report, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Context.Core.Eval.Backtest.IMergeHistory
+Aw.Context.Core.Eval.Backtest.IMergeHistory.History(Aw.Context.Core.Engine.ContextRepo! repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.Backtest.RepoHistory!>!>
+override Aw.Context.Core.Eval.Backtest.Brief.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.Brief.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.Brief.ToString() -> string!
+override Aw.Context.Core.Eval.Backtest.BriefScope.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.BriefScope.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.BriefScope.ToString() -> string!
+override Aw.Context.Core.Eval.Backtest.EvalPurgeReport.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.EvalPurgeReport.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.EvalPurgeReport.ToString() -> string!
+static Aw.Context.Core.Eval.Backtest.AsOfMapCache.Key(Aw.Context.Core.Engine.ContextRepoName repo, string! commit, int extractorVersion, bool clustered) -> string!
+static Aw.Context.Core.Eval.Backtest.Brief.operator !=(Aw.Context.Core.Eval.Backtest.Brief? left, Aw.Context.Core.Eval.Backtest.Brief? right) -> bool
+static Aw.Context.Core.Eval.Backtest.Brief.operator ==(Aw.Context.Core.Eval.Backtest.Brief? left, Aw.Context.Core.Eval.Backtest.Brief? right) -> bool
+static Aw.Context.Core.Eval.Backtest.BriefScope.operator !=(Aw.Context.Core.Eval.Backtest.BriefScope? left, Aw.Context.Core.Eval.Backtest.BriefScope? right) -> bool
+static Aw.Context.Core.Eval.Backtest.BriefScope.operator ==(Aw.Context.Core.Eval.Backtest.BriefScope? left, Aw.Context.Core.Eval.Backtest.BriefScope? right) -> bool
+static Aw.Context.Core.Eval.Backtest.EvalPurgeReport.operator !=(Aw.Context.Core.Eval.Backtest.EvalPurgeReport? left, Aw.Context.Core.Eval.Backtest.EvalPurgeReport? right) -> bool
+static Aw.Context.Core.Eval.Backtest.EvalPurgeReport.operator ==(Aw.Context.Core.Eval.Backtest.EvalPurgeReport? left, Aw.Context.Core.Eval.Backtest.EvalPurgeReport? right) -> bool
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.<Clone>$() -> Aw.Context.Core.Eval.Backtest.AsOfDocsRequest!
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.AsOfDocsRequest(Aw.Context.Core.Engine.ContextRepo! Repo, string! Commit, System.Collections.Generic.IReadOnlyList<string!>! Globs, Aw.Context.Core.Trust.Scrubbers! Scrubbers) -> void
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Commit.get -> string!
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Commit.init -> void
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Deconstruct(out Aw.Context.Core.Engine.ContextRepo! Repo, out string! Commit, out System.Collections.Generic.IReadOnlyList<string!>! Globs, out Aw.Context.Core.Trust.Scrubbers! Scrubbers) -> void
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Equals(Aw.Context.Core.Eval.Backtest.AsOfDocsRequest? other) -> bool
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Globs.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Globs.init -> void
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Repo.get -> Aw.Context.Core.Engine.ContextRepo!
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Repo.init -> void
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Scrubbers.get -> Aw.Context.Core.Trust.Scrubbers!
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Scrubbers.init -> void
+Aw.Context.Core.Eval.Backtest.IAsOfDocs
+Aw.Context.Core.Eval.Backtest.IAsOfDocs.Open(Aw.Context.Core.Eval.Backtest.AsOfDocsRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Sources.IContextSource!>!>
+override Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.ToString() -> string!
+static Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.operator !=(Aw.Context.Core.Eval.Backtest.AsOfDocsRequest? left, Aw.Context.Core.Eval.Backtest.AsOfDocsRequest? right) -> bool
+static Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.operator ==(Aw.Context.Core.Eval.Backtest.AsOfDocsRequest? left, Aw.Context.Core.Eval.Backtest.AsOfDocsRequest? right) -> bool

@@ -77,7 +77,7 @@ internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, 
 
         var facts = _seen.GetValueOrDefault(document);
         return new SourceRecord(reference, OnyxRecordKeys.KindOf(reference.Canonical), facts?.Title ?? document, text.Value,
-            facts?.Author, CreatedAt: null, facts?.UpdatedAt ?? UpdatedAt(reference.Version));
+            facts?.Author, facts?.CreatedAt, facts?.UpdatedAt ?? UpdatedAt(reference.Version));
     }
 
     /// <inheritdoc />
@@ -161,7 +161,7 @@ internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, 
             _seen.Clear();
         }
 
-        _seen[document.DocumentId] = new OnyxHitFacts(document.SemanticIdentifier, document.PrimaryOwners is [var first, ..] ? first : null, document.UpdatedAt);
+        _seen[document.DocumentId] = new OnyxHitFacts(document.SemanticIdentifier, document.PrimaryOwners is [var first, ..] ? first : null, document.UpdatedAt, document.CreatedAt);
     }
 
     /// <summary>The document's chunks in order, joined with blank lines; stops fetching once 64 KB are in and cuts there.</summary>

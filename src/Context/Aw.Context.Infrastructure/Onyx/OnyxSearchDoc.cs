@@ -21,4 +21,17 @@ internal sealed record OnyxSearchDoc(
     [property: JsonPropertyName("source_type")] string SourceType,
     [property: JsonPropertyName("updated_at")] DateTimeOffset? UpdatedAt,
     [property: JsonPropertyName("primary_owners")] IReadOnlyList<string>? PrimaryOwners,
-    [property: JsonPropertyName("hidden")] bool Hidden);
+    [property: JsonPropertyName("hidden")] bool Hidden)
+{
+    /// <summary>The connector's metadata as Onyx returns it (strings or lists); 'created_at' gives a Linear issue's creation time.</summary>
+    [JsonPropertyName("metadata")]
+    public IReadOnlyDictionary<string, System.Text.Json.JsonElement>? Metadata { get; init; }
+
+    /// <summary>The issue's creation time from the connector metadata, or null when it names none that parses.</summary>
+    [JsonIgnore]
+    public DateTimeOffset? CreatedAt =>
+        Metadata is not null && Metadata.TryGetValue("created_at", out var value) && value.ValueKind == System.Text.Json.JsonValueKind.String
+        && DateTimeOffset.TryParse(value.GetString(), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind, out var at)
+            ? at
+            : null;
+}
