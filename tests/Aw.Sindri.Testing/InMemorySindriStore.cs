@@ -90,9 +90,18 @@ public sealed class InMemorySindriStore(TimeProvider clock, IProcessProbe probe)
         }
     }
 
+    /// <summary>When set, <see cref="Append"/> throws it (a ledger that fails in a way the contract doesn't model).</summary>
+    public Exception? AppendFailure { get; set; }
+
     /// <inheritdoc/>
     public ValueTask<Result<LedgerAppend>> Append(LedgerEntry entry, LeaseGrant grant, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();   // the real ledger passes the token to its connection
+        if (AppendFailure is { } failure)
+        {
+            throw failure;
+        }
+
         var appended = Record(entry, grant);
         if (appended is { IsSuccess: true, Value.AlreadyRecorded: false })
         {

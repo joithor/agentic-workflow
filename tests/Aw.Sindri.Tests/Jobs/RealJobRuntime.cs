@@ -122,6 +122,17 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
         return await scope.ServiceProvider.GetRequiredService<IService<TRequest, JobStartedResponse>>().Handle(request, TestContext.Current.CancellationToken);
     }
 
+    /// <summary>Starts an echo job as <paramref name="caller"/> with a request token of the test's choosing (an aborted POST).</summary>
+    /// <param name="caller">The starting caller.</param>
+    /// <param name="cancellationToken">The request's token.</param>
+    /// <returns>The answer.</returns>
+    public async Task<Result<JobStartedResponse>> StartWith(CallerContext caller, CancellationToken cancellationToken)
+    {
+        using var entered = H.Callers.Enter(caller);
+        await using var scope = _provider.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<IService<EchoJobRequest, JobStartedResponse>>().Handle(new EchoJobRequest(Lines: 1, DelayMs: 0), cancellationToken);
+    }
+
     /// <summary>Runs any registered command through its chain as <paramref name="caller"/>.</summary>
     /// <typeparam name="TRequest">The request.</typeparam>
     /// <typeparam name="TResponse">The response.</typeparam>
