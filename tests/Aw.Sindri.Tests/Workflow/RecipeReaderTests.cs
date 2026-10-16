@@ -105,6 +105,12 @@ public sealed class RecipeReaderTests
         Assert.Equal("\"fact:output\"", JsonSerializer.Serialize(toSelf));
         Assert.Equal(renamed, toOther);
         Assert.Equal("{\"fact\":\"fact:output\",\"from\":\"fact:result\"}", JsonSerializer.Serialize(toOther));
+
+        // a with that changes the fact leaves a source equal to the new fact normalized too
+        var y = FactKey.From("fact:result");
+        var moved = new ProducedFact(x, x) with { Fact = y };
+        Assert.Equal(new ProducedFact(y, From: null), moved);
+        Assert.Equal("\"fact:result\"", JsonSerializer.Serialize(moved));
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -197,4 +197,26 @@ public sealed class ChildOutputRulesTests
     [Fact, Trait("Lane", "unit")]
     public void Not_of_an_outcome_and_a_fact_together_can_still_fire_on_cancelled() =>
         _ = Assert.Single(Wire003(CheckWiring(ParentOf("workflow.steady", NotOf(AllOf(Outcome("resolved"), FactPresent)), Bare("fact:output")), Steady).Lines()), l => l.Contains("outcome 'cancelled'", StringComparison.Ordinal));
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_when_with_an_empty_all_or_any_anywhere_is_RCP_SCHEMA_001s_alone()
+    {
+        // one fault, one finding: RCP-SCHEMA-001 owns the empty list, so RCP-WIRE-003 stays quiet
+        Assert.Empty(Wire003(CheckWiring(Parent(AnyOf(), Bare("fact:output")), WithKid).Lines()));
+        Assert.Empty(Wire003(CheckWiring(Parent(AllOf(), Bare("fact:output")), WithKid).Lines()));
+        Assert.Empty(Wire003(CheckWiring(Parent(AllOf(Outcome("unresolved"), NotOf(AnyOf())), Bare("fact:output")), WithKid).Lines()));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_intersection_of_must_sets_keeps_the_gap_on_unresolved()
+    {
+        // must(all) is the intersection: unresolved is not forced by the 'all' branch, yet may still fire there
+        var present = new WhenClause(Outcome: null, FactKey.From("fact:output"), FactPresence.Present, Loop: null, Below: null, All: null, Any: null, Not: null);
+        var when = NotOf(AnyOf(Outcome("cancelled"), AllOf(Outcome("unresolved"), present)));
+
+        var lines = Wire003(CheckWiring(Parent(when, Bare("fact:output")), WithKid).Lines());
+
+        _ = Assert.Single(lines, l => l.Contains("outcome 'unresolved'", StringComparison.Ordinal));
+        _ = Assert.Single(lines);
+    }
 }
