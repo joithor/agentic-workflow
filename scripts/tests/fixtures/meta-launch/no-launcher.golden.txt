@@ -95,11 +95,15 @@ tmux -L t1 has-session -t =t1-api
 tmux -L t1 new-session -d -s t1-api -c @WORK@/repo -e AW_META_CONFIG=@WORK@/state/meta/team.json @SCRIPTS@/meta-lane.sh\ t1\ api
 tmux -L t1 has-session -t =t1-ui
 tmux -L t1 new-session -d -s t1-ui -c @WORK@/repo -e AW_META_CONFIG=@WORK@/state/meta/team.json @SCRIPTS@/meta-lane.sh\ t1\ ui
+tmux -L legacy-golden has-session -t =t1-meta
 tmux -L legacy-golden has-session -t =t1-api
+tmux -L legacy-golden has-session -t =t1-ui
 tmux -L t1 has-session -t =t1-api
 tmux kill-session -t t1-api
 tmux new-session -d -s t1-api bash
+tmux -L legacy-golden has-session -t =t1-meta
 tmux -L legacy-golden has-session -t =t1-api
+tmux -L legacy-golden has-session -t =t1-ui
 tmux -L t1 has-session -t =t1-api
 tmux -L t1 display-message -p -t =t1-api: \#\{pane_pid\}
 == lane api, fresh

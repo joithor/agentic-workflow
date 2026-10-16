@@ -21,8 +21,9 @@ AW_TEST_TMUX=t1
 # golden_transcript <scripts-dir>: what scripts/meta-launch.sh and scripts/meta-lane.sh do with NO launcher.json, as one
 # normalized transcript: the dry-run, the Warp YAML, every tmux command the launcher issues (a recording shim in front of
 # tmux), and the claude command lines meta-lane.sh runs (fresh with a multi-line prompt, resumed, no prompt, with
-# AW_META_CLAUDE_ARGS, the meta lane's role-set). The committed golden was made by the scripts as they were before
-# SL-1 (`bash meta-launch.test.sh --print-golden <dir of the old scripts>`); the test compares the current scripts to it.
+# AW_META_CLAUDE_ARGS, the meta lane's role-set). The committed golden began as the scripts' output before SL-1 and
+# has since gained only the team's `-L <team>` and the legacy-socket check lines (`bash meta-launch.test.sh --print-golden
+# <scripts dir>` regenerates it; review the diff); the test compares the current scripts to it.
 golden_transcript() {
   local S="$1" G; G="$(mktemp -d)"
   (
@@ -70,9 +71,9 @@ if [ "${1:-}" = "--print-golden" ]; then golden_transcript "${2:?--print-golden 
 GOLDEN="$DIR/tests/fixtures/meta-launch/no-launcher.golden.txt"
 golden_transcript "$DIR" > "${TMPDIR:-/tmp}/meta-launch-golden.$$"
 if diff -u "$GOLDEN" "${TMPDIR:-/tmp}/meta-launch-golden.$$" > "${TMPDIR:-/tmp}/meta-launch-golden.diff.$$"; then
-  echo "ok - no launcher.json: dry-run, Warp YAML, tmux commands and claude command lines match the pre-SL-1 golden"
+  echo "ok - no launcher.json: dry-run, Warp YAML, tmux commands and claude command lines match the committed golden"
 else
-  echo "not ok - no launcher.json: output differs from the pre-SL-1 golden"; sed 's/^/  /' "${TMPDIR:-/tmp}/meta-launch-golden.diff.$$"; fail=1
+  echo "not ok - no launcher.json: output differs from the committed golden"; sed 's/^/  /' "${TMPDIR:-/tmp}/meta-launch-golden.diff.$$"; fail=1
 fi
 unlink "${TMPDIR:-/tmp}/meta-launch-golden.$$"; unlink "${TMPDIR:-/tmp}/meta-launch-golden.diff.$$"
 
@@ -182,7 +183,10 @@ check "legacy-socket session present: nothing was created" "$(tmux list-sessions
 OUT="$(bash "$DIR/meta-launch.sh" --no-open --dry-run 2>&1)"; RC=$?
 check "legacy-socket session present: --dry-run prints the check and refuses too" "$RC:$(grep -c '^\[dry-run\] legacy-socket check: tmux -L t1-legacy has-session' <<< "$OUT")" "1:1"
 OUT="$(bash "$DIR/meta-launch.sh" --no-open --lanes ui 2>&1)"; RC=$?
-check "legacy session of another lane: a --lanes run for ui proceeds" "$RC:$(grep -c 'tmux t1-ui: started' <<< "$OUT")" "0:1"
+check "warp viewer, legacy t1-api, --lanes ui: refused (the layout's panes cover every lane)" "$RC:$(grep -c 't1-api' <<< "$OUT"):$(tmux list-sessions -F '#S' 2> /dev/null | grep -c '^t1-')" "1:1:0"
+echo '{"schema":1,"viewer":{"kind":"print"}}' > "$WORK/print.json"
+OUT="$(AW_LAUNCHER_CONFIG="$WORK/print.json" bash "$DIR/meta-launch.sh" --no-open --lanes ui 2>&1)"; RC=$?
+check "print viewer, legacy t1-api, --lanes ui: proceeds (it only attaches the lanes of the run)" "$RC:$(grep -c 'tmux t1-ui: started' <<< "$OUT")" "0:1"
 tmux kill-server 2> /dev/null; sleep 0.3
 OUT="$(bash "$DIR/meta-launch.sh" --no-open --allow-legacy 2>&1)"; RC=$?
 check "legacy-socket session present, --allow-legacy: proceeds" "$RC:$(grep -c 'tmux t1-api: started' <<< "$OUT")" "0:1"
@@ -403,18 +407,19 @@ check "an id that never arrives: the timeout message, exit 0, the next lane star
 check "an id that never arrives: nothing recorded" "$(test -s "$ids/idle" && echo id || echo none)" "none"
 tmux kill-server 2> /dev/null; killstubs
 
-# Two reported lanes started at the same moment (as Warp's panes do) still start one at a time.
-reset; : > "$CALLS.events"; : > "$CALLS.codex"; rm -f "$ids/p1" "$ids/p2" "$ids/p1.settled" "$ids/p2.settled"
+# Three reported lanes started at the same moment (as Warp's panes do) still start one at a time.
+reset; : > "$CALLS.events"; : > "$CALLS.codex"; rm -f "$ids/p1" "$ids/p2" "$ids/p3" "$ids/p1.settled" "$ids/p2.settled" "$ids/p3.settled"
 export -n OLD_ROLLOUT
-( : ) & deadpid=$!; wait "$deadpid"; mkdir "$ids/.reported.lock"; echo "$deadpid" > "$ids/.reported.lock/pid"   # a crashed holder's stale lock: both starters try to break it at once
+( : ) > "$ids/.reported.flock"   # a lock file left by a crashed start: flock holds nothing on it, so it is no obstacle
 AW_LAUNCHER_CONFIG="$LCFG" AW_META_ID_WAIT=10 bash "$DIR/meta-lane.sh" t1 p1 > /dev/null 2>&1 & p1=$!
 AW_LAUNCHER_CONFIG="$LCFG" AW_META_ID_WAIT=10 bash "$DIR/meta-lane.sh" t1 p2 > /dev/null 2>&1 & p2=$!
-waitfor '[ -s "$ids/p1" ] && [ -s "$ids/p2" ]'
-a1="$(tr -d '[:space:]' < "$ids/p1")"; a2="$(tr -d '[:space:]' < "$ids/p2")"
-check "two lanes starting at once: one at a time (each id recorded before the other agent starts)" "$(awk '{print $1}' "$CALLS.events" | tr '\n' ';')" "start;wrote;start;wrote;"
-check "two lanes starting at once: each lane recorded its own rollout's id" "$(grep -c "wrote p1 $a1" "$CALLS.events"):$(grep -c "wrote p2 $a2" "$CALLS.events"):$([ "$a1" != "$a2" ] && echo distinct)" "1:1:distinct"
-kill "$p1" "$p2" 2> /dev/null; killstubs; wait 2> /dev/null
-check "the start lock is released afterwards" "$(test -d "$ids/.reported.lock" && echo held || echo free)" "free"
+AW_LAUNCHER_CONFIG="$LCFG" AW_META_ID_WAIT=10 bash "$DIR/meta-lane.sh" t1 p3 > /dev/null 2>&1 & p3=$!
+waitfor '[ -s "$ids/p1" ] && [ -s "$ids/p2" ] && [ -s "$ids/p3" ]'
+a1="$(tr -d '[:space:]' < "$ids/p1")"; a2="$(tr -d '[:space:]' < "$ids/p2")"; a3="$(tr -d '[:space:]' < "$ids/p3")"
+check "three lanes starting at once: one at a time (each id recorded before the next agent starts)" "$(awk '{print $1}' "$CALLS.events" | tr '\n' ';')" "start;wrote;start;wrote;start;wrote;"
+check "three lanes starting at once: each lane recorded its own rollout's id" "$(grep -c "wrote p1 $a1" "$CALLS.events"):$(grep -c "wrote p2 $a2" "$CALLS.events"):$(grep -c "wrote p3 $a3" "$CALLS.events"):$(printf '%s\n' "$a1" "$a2" "$a3" | sort -u | wc -l | tr -d ' ')" "1:1:1:3"
+kill "$p1" "$p2" "$p3" 2> /dev/null; killstubs; wait 2> /dev/null
+check "the start lock is released afterwards" "$(flock -n "$ids/.reported.flock" true && echo free || echo held)" "free"
 
 # Precedence: AW_META_CLAUDE ranks above the file's claude-code bin; without it the file's bin is used.
 jq -n '{schema:1, agents:{"claude-code":{override:true, bin:"/nonexistent/claude"}}}' > "$LCFG"

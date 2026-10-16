@@ -12,7 +12,7 @@
 # `tmux attach` line per lane) and each lane's agent (meta.lanesAgent, meta.lanes.<lane>; Claude Code by default).
 # Before it creates anything it looks (read-only: has-session) for `<team>-<lane>` sessions of the lanes it would start on tmux's
 # DEFAULT socket, where a team started before the switch still runs, and refuses (exit 1) if any exist: starting them again
-# would run a second claude on the same transcripts. Stop the old team, then relaunch; --allow-legacy skips the check.
+# would run a second claude on the same transcripts. The owner stops the old team, then relaunches; --allow-legacy (owner only) skips the check.
 #   meta-launch.sh [--lanes a,b,...] [--no-open] [--dry-run] [--allow-legacy]
 #   meta-launch.sh --init-launcher [--viewer warp|print|<terminal id>] [--force] [--stdout]   write launcher.json for this box
 #   AW_META_CONFIG      team config (default $AW_STATE_DIR/meta/team.json; `aw-meta team-init` writes it)
@@ -186,10 +186,13 @@ if [ "$allow_legacy" != 1 ] && [ "$team" != default ]; then
   if [ -n "${AW_META_LEGACY_TMUX_SOCKET:-}" ]; then legacy_t=(env -u TMUX tmux -L "$AW_META_LEGACY_TMUX_SOCKET"); legacy_s="tmux -L $AW_META_LEGACY_TMUX_SOCKET"; else legacy_t=(env -u TMUX tmux); legacy_s=tmux; fi
   [ "$dry" = 1 ] && echo "[dry-run] legacy-socket check: $legacy_s has-session -t =$team-<lane> for each lane (refuses if any exists)"
   legacy_found=()
-  for l in "${L[@]}"; do "${legacy_t[@]}" has-session -t "=$team-$l" 2> /dev/null && legacy_found+=("$team-$l"); done
+  # The Warp layout has a pane (tmux new -A) for every lane, so with that viewer every lane is checked; print and
+  # exec-template only attach to the lanes of this run.
+  if [ "$viewer" = exec-template ] || [ "$viewer" = print ]; then legacy_lanes=("${L[@]}"); else legacy_lanes=("${A[@]}"); fi
+  for l in "${legacy_lanes[@]}"; do "${legacy_t[@]}" has-session -t "=$team-$l" 2> /dev/null && legacy_found+=("$team-$l"); done
   if [ "${#legacy_found[@]}" -gt 0 ]; then
     echo "meta-launch: team $team still runs on tmux's default socket (${legacy_found[*]}). Starting its lanes here would run each agent twice on the same transcripts." >&2
-    echo "meta-launch: stop the old team (kill those sessions on the default socket), then run this again; or pass --allow-legacy to start the new ones anyway." >&2
+    echo "meta-launch: the owner must stop the old team (kill those sessions on the default socket or close their panes), then relaunch." >&2
     exit 1
   fi
 fi
