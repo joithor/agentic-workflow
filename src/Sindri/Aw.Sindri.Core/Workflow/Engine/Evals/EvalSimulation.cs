@@ -202,6 +202,11 @@ internal sealed record EvalSimulation(
             return Missing($"'{frame.State}' doesn't wait for anything");
         }
 
+        if (EvalChildLine.Refusal(wait, line, outputs.Keys, Children) is { } refused)
+        {
+            return Missing(refused);
+        }
+
         WaitSource? source = wait switch
         {
             { Event: { } kind } => new EventWaitSource(kind, number),
