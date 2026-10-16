@@ -10,6 +10,13 @@ internal sealed partial class FakeSindriApi
     public RouteAnswer? WorkflowAnswer { get; set; }
 
     private int _instancesCalls;
+    private readonly List<InstanceQuery> _instanceQueries = [];
+
+    /// <summary>Every instance-list query made, in order: which reader made a call is told by its query (the Workflows page asks Root and Open; the strip asks Root).</summary>
+    public IReadOnlyList<InstanceQuery> InstanceQueries { get { lock (_instanceQueries) { return [.. _instanceQueries]; } } }
+
+    /// <summary>How many times the Workflows page's list was read (the root, open query).</summary>
+    public int WorkflowsListReads => InstanceQueries.Count(q => q is { Root: true, Open: true, Recipe: null, Subject: null });
 
     /// <summary>How many times the instance list was read.</summary>
     public int InstancesCalls => Volatile.Read(ref _instancesCalls);
@@ -24,6 +31,11 @@ internal sealed partial class FakeSindriApi
     {
         _ = Interlocked.Increment(ref _instancesCalls);
         LastInstancesQuery = query;
+        lock (_instanceQueries)
+        {
+            _instanceQueries.Add(query);
+        }
+
         var answer = Answer<InstanceList>(api, WorkflowRoutes.Instances(query), InstancesAnswer(query));
         if (InstancesGates.TryGetValue(query, out var gate))
         {

@@ -95,10 +95,11 @@ public sealed class WorkflowsKeysViewTests : FrameHost
         var address = Served[3].Address;
         Assert.True(shell.Workflows.Select(address));
         Assert.True(RowFrame(window, address).Focus(NavigationMethod.Tab));
-        var reads = shell.Health.ViewReads;
+        var reads = Server.WorkflowsListReads;
 
         Server.Push(A.Event(90, "workflow.started"));
-        await Until(window, () => shell.Health.ViewReads > reads, "the views were not read again");
+        await Until(window, () => Server.WorkflowsListReads > reads, "the Workflows list was not read again");
+        Settle(window);
 
         Assert.Equal(address, shell.Workflows.SelectedAddress);
         Assert.Same(RowFrame(window, address), Focused(window));

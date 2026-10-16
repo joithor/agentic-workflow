@@ -53,18 +53,17 @@ public sealed class ShellWorkflowsTests : FrameHost
     {
         var (window, shell) = await Connected(s => s.Workflows.Groups.Count > 0);
         shell.GoTo(PageId.Workflows);
-        var (calls, reads) = (Server.InstancesCalls, shell.Health.ViewReads);
+        var reads = Server.WorkflowsListReads;
 
         Server.Push(A.Event(80, "workflow.started"));
 
-        await Until(window, () => shell.Health.ViewReads > reads && Server.InstancesCalls >= calls + 2, "the list was not read again");
-        Assert.True(Server.LastInstancesQuery is { Root: true });
+        await Until(window, () => Server.WorkflowsListReads > reads, "the Workflows list was not read again");
     });
 
     [Fact]
     public Task Refresh_never_moves_focus_scroll_or_input() => OnUi(async () =>
     {
-        var (window, shell) = await Connected(s => s.Workflows.Groups.Count > 0);
+        var (window, shell) = await Connected(s => s.Workflows.Groups.Count > 0, height: 420);
         shell.GoTo(PageId.Workflows);
         Settle(window);
         var open = Named<Button>(window, "WorkflowRowOpen");
@@ -72,10 +71,14 @@ public sealed class ShellWorkflowsTests : FrameHost
         var filter = Named<TextBox>(window, "SubjectFilter");
         filter.Text = "typed, not yet applied";
         var scroll = Named<ScrollViewer>(window, "Pages");
-        var (focused, offset, reads) = (window.FocusManager?.GetFocusedElement(), scroll.Offset, shell.Health.ViewReads);
+        scroll.Offset = new Avalonia.Vector(0, 40);
+        Settle(window);
+        Assert.True(scroll.Offset.Y > 0, "the page must be scrolled for the check to mean anything");
+        var (focused, offset, reads) = (window.FocusManager?.GetFocusedElement(), scroll.Offset, Server.WorkflowsListReads);
 
         Server.Push(A.Event(81, "workflow.started"));
-        await Until(window, () => shell.Health.ViewReads > reads, "the views were not read again");
+        await Until(window, () => Server.WorkflowsListReads > reads, "the Workflows list was not read again");
+        Settle(window);
 
         Assert.Same(focused, window.FocusManager?.GetFocusedElement());
         Assert.Equal(("typed, not yet applied", offset), (Named<TextBox>(window, "SubjectFilter").Text, scroll.Offset));
