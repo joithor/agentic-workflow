@@ -15,8 +15,14 @@ namespace Aw.Sindri.Core.Workflow.Recipes;
 public sealed record ProducedFact(FactKey Fact, FactKey? From)
 {
     /// <summary>The trigger's fact it takes the value from; null when it is the same key.</summary>
-    public FactKey? From { get; init; } = From == Fact ? null : From;
+    public FactKey? From { get => field == Fact ? null : field; init; } = From;
 
     /// <summary>The trigger's fact this entry reads: <see cref="From"/>, or <see cref="Fact"/> when it isn't renamed. A method, not a property: the record is written by its converter.</summary>
     public FactKey SourceKey() => From ?? Fact;
+
+    /// <summary>Equal on the fact and the normalized source, so a <see langword="with"/> that sets the source to the fact equals the bare key (the generated one compares the backing field).</summary>
+    public bool Equals(ProducedFact? other) => other is not null && Fact == other.Fact && From == other.From;
+
+    /// <inheritdoc/>
+    public override int GetHashCode() => HashCode.Combine(Fact, From);
 }

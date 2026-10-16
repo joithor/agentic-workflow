@@ -95,6 +95,16 @@ public sealed class RecipeReaderTests
         Assert.Equal("\"fact:output\"", JsonSerializer.Serialize(built));
         Assert.Equal(new ProducedFact(x, From: null), JsonSerializer.Deserialize<ProducedFact>("{\"fact\":\"fact:output\",\"from\":\"fact:output\"}"));
         Assert.Equal(new ProducedFact(x, FactKey.From("fact:result")), JsonSerializer.Deserialize<ProducedFact>("{\"fact\":\"fact:output\",\"from\":\"fact:result\"}"));
+
+        // with-expressions go through the same normalization, in both directions
+        var renamed = new ProducedFact(x, FactKey.From("fact:result"));
+        var toSelf = renamed with { From = x };
+        var toOther = new ProducedFact(x, From: null) with { From = FactKey.From("fact:result") };
+        Assert.Equal(new ProducedFact(x, From: null), toSelf);
+        Assert.Null(toSelf.From);
+        Assert.Equal("\"fact:output\"", JsonSerializer.Serialize(toSelf));
+        Assert.Equal(renamed, toOther);
+        Assert.Equal("{\"fact\":\"fact:output\",\"from\":\"fact:result\"}", JsonSerializer.Serialize(toOther));
     }
 
     [Fact, Trait("Lane", "unit")]

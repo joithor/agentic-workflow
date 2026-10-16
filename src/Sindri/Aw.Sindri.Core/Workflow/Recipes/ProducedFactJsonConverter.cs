@@ -34,7 +34,7 @@ public sealed class ProducedFactJsonConverter : JsonConverter<ProducedFact>
     {
         ArgumentNullException.ThrowIfNull(writer);
         ArgumentNullException.ThrowIfNull(value);
-        if (value.From is not { } from)
+        if (value.From is not { } from || from == value.Fact)
         {
             writer.WriteStringValue(value.Fact.Value);
             return;
