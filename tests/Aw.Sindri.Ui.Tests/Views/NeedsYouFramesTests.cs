@@ -1,0 +1,126 @@
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Avalonia.VisualTree;
+using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.Views.NeedsYou;
+
+namespace Aw.Sindri.Ui.Tests.Views;
+
+/// <summary>
+/// U3' key frames (UI spec §18.2: one per state in the integration lane) for the Needs-you panel, against the in-memory API
+/// serving P4's goldens: the fixture, empty, stalled and rebuilding lists, the pulse and what clears it, reduced motion, Show
+/// all, held rows and Home at 5 s and with the large profile. Saved under frames/ as u3-needs-you-*.png.
+/// </summary>
+[Lane(TestLane.Integration)]
+public sealed class NeedsYouFramesTests : FrameHost
+{
+    private static List<NeedsYouRow> Rows(Avalonia.Controls.Window window) =>
+        [.. Named<Control>(window, "NeedsYouPanel").GetVisualDescendants().OfType<NeedsYouRow>().Where(r => r.IsEffectivelyVisible)];
+
+    [Fact]
+    public Task The_fixture_list_draws_the_served_rows_in_order() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected(s => s.NeedsYou.Count > 0);
+
+        var titles = Rows(window).Select(r => Named<Button>(r, "NeedsYouTitle")).Select(b => Avalonia.Automation.AutomationProperties.GetName(b)).Count();
+        Assert.Equal(GoldenFiles.Node("needs-you", "fixture")["rows"]!.AsArray().Count, Rows(window).Count);
+        Assert.True(titles > 0);
+        Assert.Equal(shell.Attention.SummaryLine, Named<TextBlock>(window, "NeedsYouSummary").Text);
+        Frame(window, "needs-you-fixture");
+    });
+
+    [Fact]
+    public Task An_empty_list_shows_the_served_sentence() => OnUi(async () =>
+    {
+        Server.NeedsYouView = RouteAnswer.Api("needs-you", "empty");
+        var (window, _) = await Connected();
+
+        Assert.Equal((true, (string)GoldenFiles.Node("needs-you", "empty")["empty"]!), (Visible(window, "NeedsYouEmpty"), Named<TextBlock>(window, "NeedsYouEmpty").Text));
+        Assert.Empty(Rows(window));
+        Frame(window, "needs-you-empty");
+    });
+
+    [Fact]
+    public Task A_stalled_list_keeps_its_rows_and_says_so() => OnUi(async () =>
+    {
+        Server.NeedsYouView = RouteAnswer.Api("needs-you", "stalled");
+        var (window, shell) = await Connected(s => s.NeedsYou.HasBanner);
+
+        Assert.True(Visible(window, "NeedsYouBanner"));
+        Assert.NotEmpty(Rows(window));
+        Assert.Equal(shell.NeedsYou.Banner, Named<TextBlock>(window, "NeedsYouBanner").Text);
+        Frame(window, "needs-you-stalled");
+    });
+
+    [Fact]
+    public Task A_rebuilding_list_says_so_above_its_rows() => OnUi(async () =>
+    {
+        Server.NeedsYouView = RouteAnswer.Api("needs-you", "rebuilding");
+        var (window, shell) = await Connected(s => s.NeedsYou.HasBanner);
+
+        Assert.True(Visible(window, "NeedsYouBanner"));
+        Assert.Equal(shell.NeedsYou.Banner, Named<TextBlock>(window, "NeedsYouBanner").Text);
+        Frame(window, "needs-you-rebuilding");
+    });
+
+    [Fact]
+    public Task New_rows_pulse_the_header_once_and_stay_unseen() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected(s => s.NeedsYou.Count > 0);
+
+        Assert.Equal(1, shell.NeedsYou.Seen.HeaderPulses);
+        Assert.Contains(shell.NeedsYou.Seen.Rows, r => r.IsPulsing);
+        Frame(window, "needs-you-pulse-unseen");
+    });
+
+    [Fact]
+    public Task Mark_all_seen_clears_the_new_words_and_offers_undo() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected(s => s.NeedsYou.Count > 0);
+
+        Named<Button>(window, "MarkAllSeen").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Settle(window);
+
+        Assert.All(shell.NeedsYou.Seen.Rows, r => Assert.False(r.IsPulsing || r.HasOutline));
+        Assert.True(shell.NeedsYou.Seen.UndoOffered);
+        Frame(window, "needs-you-seen");
+    });
+
+    [Fact]
+    public Task Reduced_motion_pulses_nothing_and_marks_arrivals_without_it() => OnUi(async () =>
+    {
+        Motion.Set(reduce: true);
+        var (window, shell) = await Connected(s => s.NeedsYou.Count > 0);
+
+        Assert.True(shell.NeedsYou.Seen.ReducedMotion);
+        Assert.Contains(shell.NeedsYou.Seen.Rows, r => r.HasOutline);
+        Assert.DoesNotContain(shell.NeedsYou.Seen.Rows, r => r.IsPulsing);
+        Frame(window, "needs-you-reduced-motion");
+    });
+
+    [Fact]
+    public Task Seven_rows_show_five_then_Show_all_draws_them_all() => OnUi(async () =>
+    {
+        Server.NeedsYouView = RouteAnswer.Api("needs-you", "large");
+        var (window, shell) = await Connected(s => s.NeedsYou.Count > 5);
+
+        Assert.Equal(ViewModels.NeedsYou.NeedsYouViewModel.Cap, Rows(window).Count);
+        Frame(window, "needs-you-show-all-collapsed");
+        Named<Button>(window, "NeedsYouShowAll").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Settle(window);
+
+        Assert.Equal(shell.NeedsYou.Count, Rows(window).Count);
+        Frame(window, "needs-you-show-all");
+    });
+
+    [Fact]
+    public Task Home_with_the_large_profile_keeps_its_panels_in_view() => OnUi(async () =>
+    {
+        Server.NeedsYouView = RouteAnswer.Api("needs-you", "large");
+        var (window, _) = await Connected(s => s.NeedsYou.Count > 5, width: 1400);
+
+        Assert.True(Visible(window, "NeedsYouPanel") && Visible(window, "RunningPanel") && Visible(window, "QueuedPanel"));
+        Frame(window, "home-large");
+    });
+}
