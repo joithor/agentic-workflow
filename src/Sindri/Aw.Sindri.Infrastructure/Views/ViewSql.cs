@@ -32,7 +32,36 @@ internal static class ViewSql
         [ViewNames.Items] = new ViewTable("view_items"),
         [ViewNames.ItemAliases] = new ViewTable("view_item_aliases"),
         [ViewNames.ItemTimeline] = new ViewTable("view_item_timeline"),
+        [ViewNames.Requests] = new ViewTable("view_requests", Columns(item: true, state: true, repo: true, kind: false)),
+        [ViewNames.Decisions] = new ViewTable("view_decisions", Columns(item: true, state: true, repo: true, kind: false)),
+        [ViewNames.NeedsYou] = new ViewTable("view_needs_you", Columns(item: true, state: false, repo: true, kind: true)),
     };
+
+    private static Dictionary<ViewColumn, string> Columns(bool item, bool state, bool repo, bool kind)
+    {
+        var columns = new Dictionary<ViewColumn, string>();
+        if (item)
+        {
+            columns[ViewColumn.Item] = "item";
+        }
+
+        if (state)
+        {
+            columns[ViewColumn.State] = "state";
+        }
+
+        if (repo)
+        {
+            columns[ViewColumn.Repo] = "repo";
+        }
+
+        if (kind)
+        {
+            columns[ViewColumn.Kind] = "kind";
+        }
+
+        return columns;
+    }
 
     /// <summary>The table behind <paramref name="view"/>, or null when it isn't a view.</summary>
     /// <param name="view">A <see cref="ViewNames"/> name.</param>

@@ -1,6 +1,7 @@
 using Aw.Kernel.Events;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Views;
 using Microsoft.Extensions.Time.Testing;
@@ -149,6 +150,53 @@ public abstract class ViewStoreContract
         Expect.True(!(await Keys("l-01", before: null, max: 10)).Any());
     }
 
+    /// <summary>The decisions view is filtered by its indexed columns (state, item, repo), in key order, and a column the view doesn't index is refused.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Decisions_view_filters_by_pending_and_item()
+    {
+        var (store, reader) = Create();
+        _ = await store.Open(ViewSchema.Version, Token);
+        var other = ItemId.From("ITM-00000000000000000000000000000002");
+        var rows = new Dictionary<string, HumanDecisionRow>(StringComparer.Ordinal)
+        {
+            ["d1"] = A.Decision().Build(),
+            ["d2"] = A.Decision().WithIds(DecisionId.From("DEC-00000000000000000000000000000002"), A.FirstRequestId).About(A.FirstItemId, 2, RepoName.From("agentic-workflow")).Build(),
+            ["d3"] = A.Decision().WithIds(DecisionId.From("DEC-00000000000000000000000000000003"), A.FirstRequestId).About(other, 1, RepoName.From("agentic-workflow"))
+                .Decided(DecisionOption.From("accept"), "human:ui", Clock.GetUtcNow(), "decision accepted by human:ui").Build(),
+        };
+
+        _ = await store.Apply([Event(1, "fixture.decision", "d3"), Event(2, "fixture.decision", "d1"), Event(3, "fixture.decision", "d2")],
+            [new PutDecisions(rows)], Clock.GetUtcNow(), Token);
+
+        async Task<IEnumerable<string>> Ids(ViewColumn column, string value) =>
+            (await reader.Where<HumanDecisionRow>(ViewNames.Decisions, column, value, Token)).Value.Select(r => r.Id.Value[^1..]);
+
+        Expect.Sequence(["1", "2"], await Ids(ViewColumn.State, "pending"));
+        Expect.Sequence(["3"], await Ids(ViewColumn.State, "decided"));
+        Expect.Sequence(["2"], await Ids(ViewColumn.Item, A.FirstItemId.Value));
+        Expect.Sequence(["2", "3"], await Ids(ViewColumn.Repo, "agentic-workflow"));
+        Expect.True(!(await Ids(ViewColumn.State, "voided")).Any());
+        Expect.Equal(SindriErrors.InvalidInput.Code, (await reader.Where<HumanDecisionRow>(ViewNames.Decisions, ViewColumn.Kind, "x", Token)).Error.Code);
+        Expect.Equal(SindriErrors.InvalidInput.Code, (await reader.Where<ServiceRow>(ViewNames.Services, ViewColumn.State, "x", Token)).Error.Code);
+    }
+
+    /// <summary>The same filter inside the page a projection folds sees the page's own earlier writes (the voiding of an item's decisions).</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Where_inside_a_page_sees_the_pages_earlier_writes()
+    {
+        var (store, reader) = Create();
+        _ = await store.Open(ViewSchema.Version, Token);
+        var rows = new Dictionary<string, HumanDecisionRow>(StringComparer.Ordinal) { ["d1"] = A.Decision().About(A.FirstItemId, 1, repo: null).Build() };
+        var seen = new List<int>();
+
+        _ = await store.Apply([Event(1, "fixture.decision", "d1"), Event(2, "fixture.count", "item")], [new PutDecisions(rows), new CountForItem(seen)], Clock.GetUtcNow(), Token);
+
+        Expect.Sequence([1], seen);
+        Expect.Equal(1, (await reader.Where<HumanDecisionRow>(ViewNames.Decisions, ViewColumn.Item, A.FirstItemId.Value, Token)).Value.Count);
+    }
+
     private static IReadOnlyList<IProjection> Projections() =>
         [new FixtureProjection(ViewNames.Services, Put), new FixtureProjection(ViewNames.Profile, Put), new FixtureProjection(ViewNames.Services, Fail, fails: true)];
 
@@ -157,6 +205,30 @@ public abstract class ViewStoreContract
         var context = EventContext.Create("host:sindri", "local", 0, _ids.NewId()).Value;
         Clock.Advance(TimeSpan.FromMilliseconds(1));
         return new LedgerEvent(sequence, 1, context.Envelope(type, """{"n":1}""", Clock, _ids), key, Item: null);
+    }
+
+    private sealed class PutDecisions(Dictionary<string, HumanDecisionRow> rows) : IProjection
+    {
+        public IReadOnlyList<string> Views => [ViewNames.Decisions];
+
+        public bool Handles(string eventType) => string.Equals(eventType, "fixture.decision", StringComparison.Ordinal);
+
+        public ValueTask<Kernel.Result<Kernel.Unit>> Apply(LedgerEvent recorded, IViewRows target, CancellationToken cancellationToken) =>
+            target.Put(ViewNames.Decisions, rows[recorded.IdempotencyKey].Id.Value, rows[recorded.IdempotencyKey], cancellationToken);
+    }
+
+    private sealed class CountForItem(List<int> seen) : IProjection
+    {
+        public IReadOnlyList<string> Views => [];
+
+        public bool Handles(string eventType) => string.Equals(eventType, "fixture.count", StringComparison.Ordinal);
+
+        public async ValueTask<Kernel.Result<Kernel.Unit>> Apply(LedgerEvent recorded, IViewRows target, CancellationToken cancellationToken)
+        {
+            var found = await target.Where<HumanDecisionRow>(ViewNames.Decisions, ViewColumn.Item, A.FirstItemId.Value, cancellationToken).ConfigureAwait(false);
+            seen.Add(found.Value.Count);
+            return Kernel.Unit.Value;
+        }
     }
 
     private sealed class Throwing : IProjection

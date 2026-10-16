@@ -4593,7 +4593,7 @@ const Aw.Sindri.Core.Views.ViewNames.ItemTimeline = "item-timeline" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Items = "items" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Profile = "profile" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Services = "services" -> string!
-const Aw.Sindri.Core.Views.ViewSchema.Version = 2 -> int
+const Aw.Sindri.Core.Views.ViewSchema.Version = 3 -> int
 const Aw.Sindri.Core.Workflow.Engine.EngineStates.Cancelled = "cancelled" -> string!
 const Aw.Sindri.Core.Workflow.Engine.EngineStates.Escalated = "escalated" -> string!
 const Aw.Sindri.Core.Workflow.Engine.EngineStates.Parked = "parked" -> string!
@@ -7445,3 +7445,12 @@ static Aw.Sindri.Core.NeedsYou.NeedsYouRows.ForProfile(Aw.Sindri.Core.Views.Prof
 static Aw.Sindri.Core.Requests.RequestRules.Cap(int openForRepo, int openTotal) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
 static Aw.Sindri.Core.Requests.RequestRules.RecordedOnly() -> bool
 static Aw.Sindri.Core.Requests.RequestRules.Validate(Aw.Sindri.Core.Requests.RequestKind kind, string? text) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+Aw.Sindri.Core.Views.IViewReader.Where<TRow>(string! view, Aw.Sindri.Core.Views.ViewColumn column, string! value, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<TRow!>!>!>
+Aw.Sindri.Core.Views.IViewRows.Where<TRow>(string! view, Aw.Sindri.Core.Views.ViewColumn column, string! value, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<TRow!>!>!>
+Aw.Sindri.Core.Views.ViewColumn
+Aw.Sindri.Core.Views.ViewColumn.Item = 0 -> Aw.Sindri.Core.Views.ViewColumn
+Aw.Sindri.Core.Views.ViewColumn.Kind = 3 -> Aw.Sindri.Core.Views.ViewColumn
+Aw.Sindri.Core.Views.ViewColumn.Repo = 2 -> Aw.Sindri.Core.Views.ViewColumn
+Aw.Sindri.Core.Views.ViewColumn.State = 1 -> Aw.Sindri.Core.Views.ViewColumn
+Aw.Sindri.Core.Views.ViewColumns
+static Aw.Sindri.Core.Views.ViewColumns.JsonPath(string! view, Aw.Sindri.Core.Views.ViewColumn column) -> System.Collections.Generic.IReadOnlyList<string!>?
