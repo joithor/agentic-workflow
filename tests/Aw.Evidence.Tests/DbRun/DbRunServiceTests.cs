@@ -250,6 +250,21 @@ public sealed class DbRunServiceTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task DbRun_a_password_equal_to_a_fixed_field_scrubs_the_free_text_and_leaves_the_field_intact()
+    {
+        var harness = Postgres(expect: """{"rowCount":1}""");
+        harness.Environment["EVIDENCE_PG_SECRET"] = "fixture-pg";
+        _ = harness.Reader.Answer(ReadNotes, new Rows(["id", "note"], [[1L, "echo fixture-pg end"]], Truncated: false));
+
+        var response = (await harness.Run()).Value;
+
+        Assert.Equal("fixture-pg", response.Summary.Target);
+        Assert.Equal(ApiOutcome.Passed, response.Summary.Outcome);
+        Assert.Contains("[REDACTED:env-value]", response.Summary.Steps[0].Output, StringComparison.Ordinal);
+        Assert.DoesNotContain("echo fixture-pg", response.Document, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task DbRun_seeds_only_into_the_run_copy_never_through_the_evidence_connection()
     {
         var harness = new DbRunHarness().WithScript(DbRunHarness.SqliteScript(DbRunHarness.Query(ReadNotes, Count(1)), "\"seed\":\"seed.sql\",")).WithSqliteFile();

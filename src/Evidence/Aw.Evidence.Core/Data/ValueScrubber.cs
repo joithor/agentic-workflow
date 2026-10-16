@@ -8,7 +8,10 @@ namespace Aw.Evidence.Core.Data;
 /// wherever they appear, in the text and in its JSON-escaped forms, before the pattern scrub runs; each kind has its own placeholder.
 /// A value too short to be told from ordinary text is left to the patterns.
 /// </summary>
-public sealed class ValueScrubber : ITextScrubber
+/// <param name="patterns">The pattern scrubber.</param>
+/// <param name="headerValues">Header values the run resolved (a credential with a scheme is hidden whole and by its credential alone).</param>
+/// <param name="envValues">Values of passed-through variables and other resolved secrets.</param>
+public sealed class ValueScrubber(ITextScrubber patterns, IEnumerable<string> headerValues, IEnumerable<string> envValues) : ITextScrubber
 {
     /// <summary>What replaces a header value.</summary>
     public const string Placeholder = "[REDACTED:header-value]";
@@ -19,30 +22,19 @@ public sealed class ValueScrubber : ITextScrubber
     /// <summary>Values shorter than this are not scrubbed by value: they would hit ordinary words.</summary>
     public const int MinimumLength = 6;
 
-    private readonly ITextScrubber _patterns;
-    private readonly (string Value, string Placeholder)[] _values;
-
-    /// <summary>Creates the scrubber.</summary>
-    /// <param name="patterns">The pattern scrubber.</param>
-    /// <param name="headerValues">Header values the run resolved (a credential with a scheme is hidden whole and by its credential alone).</param>
-    /// <param name="envValues">Values of passed-through variables and other resolved secrets.</param>
-    public ValueScrubber(ITextScrubber patterns, IEnumerable<string> headerValues, IEnumerable<string> envValues)
-    {
-        _patterns = patterns;
-        _values =
-        [
-            .. headerValues.SelectMany(CredentialForms).Select(static v => (Value: v, Placeholder)).Concat(envValues.Select(static v => (Value: v, Placeholder: EnvPlaceholder)))
-                .Where(static e => e.Value.Length >= MinimumLength).SelectMany(static e => Forms(e.Value).Select(form => (Value: form, e.Placeholder)))
-                .Distinct().OrderByDescending(static e => e.Value.Length),
-        ];
-    }
+    private readonly (string Value, string Placeholder)[] _values =
+    [
+        .. headerValues.SelectMany(CredentialForms).Select(static v => (Value: v, Placeholder)).Concat(envValues.Select(static v => (Value: v, Placeholder: EnvPlaceholder)))
+            .Where(static e => e.Value.Length >= MinimumLength).SelectMany(static e => Forms(e.Value).Select(form => (Value: form, e.Placeholder)))
+            .Distinct().OrderByDescending(static e => e.Value.Length),
+    ];
 
     /// <inheritdoc/>
     public string Scrub(string text) =>
-        _patterns.Scrub(_values.Aggregate(text, static (current, entry) => current.Replace(entry.Value, entry.Placeholder, StringComparison.Ordinal)));
+        patterns.Scrub(_values.Aggregate(text, static (current, entry) => current.Replace(entry.Value, entry.Placeholder, StringComparison.Ordinal)));
 
     /// <inheritdoc/>
-    public bool IsSecretName(string name) => _patterns.IsSecretName(name);
+    public bool IsSecretName(string name) => patterns.IsSecretName(name);
 
     // A '<scheme> <credential>' value (Bearer abc) is hidden whole and by its credential alone, which an app may echo without the scheme.
     private static IEnumerable<string> CredentialForms(string value)
