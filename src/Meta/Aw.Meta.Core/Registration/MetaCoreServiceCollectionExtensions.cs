@@ -1,4 +1,5 @@
 using Aw.Meta.Core.Coordination;
+using Aw.Meta.Core.Worktrees;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Meta.Core.Registration;
@@ -19,5 +20,7 @@ public static class MetaCoreServiceCollectionExtensions
         .AddScoped<RepoCommands>()
         .AddScoped<GateTree>()
         .AddScoped<GateWorkspace>()
-        .AddScoped<MergeReadiness>();
+        .AddScoped<MergeReadiness>()
+        .AddScoped<WorktreeInspector>()
+        .AddScoped<WorktreeSweeper>();
 }

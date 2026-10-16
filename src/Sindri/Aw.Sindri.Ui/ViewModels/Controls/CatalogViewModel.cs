@@ -13,6 +13,8 @@ namespace Aw.Sindri.Ui.ViewModels.Controls;
 /// <param name="clock">The clock for the controls' timings.</param>
 internal sealed class CatalogViewModel(IClipboard clipboard, TimeProvider clock) : ObservableObject
 {
+    private Dictionary<string, CommandRowView> _rows = new(StringComparer.Ordinal);
+
     /// <summary>Every catalog row, in the API's order.</summary>
     public IReadOnlyList<ControlViewModel> Controls { get; private set => Set(ref field, value); } = [];
 
@@ -30,12 +32,21 @@ internal sealed class CatalogViewModel(IClipboard clipboard, TimeProvider clock)
     /// <returns>The control.</returns>
     internal ControlViewModel? For(string action) => Controls.FirstOrDefault(c => string.Equals(c.Action, action, StringComparison.Ordinal));
 
+    /// <summary>A control for one catalog row acting on one subject (an item's actions, a row's primary action), or null when the catalog has no such row.</summary>
+    /// <param name="action">The action id.</param>
+    /// <param name="subject">The subject's id, named in the control's accessible name.</param>
+    /// <param name="send">Sends the command once; null when nothing is wired to it.</param>
+    /// <returns>The control, or null.</returns>
+    internal ControlViewModel? On(string action, string subject, Func<CancellationToken, Task<Result<CommandAcceptedView>>>? send) =>
+        _rows.TryGetValue(action, out var row) ? new ControlViewModel(row, send, clipboard, clock, subject) : null;
+
     /// <summary>Shows a catalog read from the API at <paramref name="api"/>.</summary>
     /// <param name="api">Where the API answers (the senders call it).</param>
     /// <param name="client">The API.</param>
     /// <param name="catalog">The catalog.</param>
     internal void Show(Uri api, ISindriApi client, CommandList catalog)
     {
+        _rows = catalog.Rows.ToDictionary(r => r.Action, StringComparer.Ordinal);
         Controls = [.. catalog.Rows.Select(row => new ControlViewModel(row, Sender(api, client, row.Action), clipboard, clock))];
         var pending = Controls.Where(c => c.IsPending).ToList();
         Pending = [.. pending.GroupBy(c => c.Stage, StringComparer.Ordinal).Select(g => new PendingPhase(Labels.Arrives(g.Key), [.. g]))];

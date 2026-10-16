@@ -4,6 +4,7 @@ using Aw.Meta.Core.Coordination;
 using Aw.Meta.Core.Ids;
 using Aw.Meta.Core.Messages;
 using Aw.Meta.Core.Obligations;
+using Aw.Meta.Core.Worktrees;
 
 namespace Aw.Meta.Testing;
 
@@ -58,11 +59,20 @@ public sealed class MetaWorld
     /// <summary>Processes.</summary>
     public InMemoryProcessTable Processes { get; } = new();
 
+    /// <summary>Where processes are (working directories, open files).</summary>
+    public InMemoryProcessLocations Locations { get; } = new();
+
     /// <summary>The delay between polls; waiting moves <see cref="Clock"/>.</summary>
     public InMemoryDelay Delay { get; }
 
     /// <summary>Where files live and which programs run: the gate directory is /state/meta/gates, the heavy wrapper /bin/heavy.</summary>
     public MetaPaths Paths { get; } = new("/state/meta", "/state/meta/gates", "/bin/heavy", "gh");
+
+    /// <summary>The worktree inspector over <see cref="Runner"/> and <see cref="Locations"/>.</summary>
+    public WorktreeInspector Inspector => new(Repo, Locations, Paths);
+
+    /// <summary>The worktree sweeper over the fakes.</summary>
+    public WorktreeSweeper Sweeper => new(Inspector, Repo, Log, Values, Clock);
 
     /// <summary>The git and gh calls over <see cref="Runner"/>.</summary>
     public RepoCommands Repo => new(Runner, Paths);

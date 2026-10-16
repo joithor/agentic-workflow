@@ -1,0 +1,59 @@
+{
+  "groups": [
+    {
+      "group": "waitingOnYou",
+      "items": [],
+      "empty": "Nothing is waiting on you."
+    },
+    {
+      "group": "withYou",
+      "items": [],
+      "empty": "Nothing is with you."
+    },
+    {
+      "group": "running",
+      "items": [],
+      "empty": "Nothing running."
+    },
+    {
+      "group": "queued",
+      "items": [
+        {
+          "id": "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a301",
+          "title": "Stream limits 429 fallback",
+          "repo": "agentic-workflow",
+          "state": "new",
+          "step": null,
+          "since": "2026-10-11T10:58:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ]
+        },
+        {
+          "id": "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a302",
+          "title": "Retry storm in outbox dispatcher",
+          "repo": "agentic-workflow",
+          "state": "new",
+          "step": null,
+          "since": "2026-10-11T11:20:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ]
+        }
+      ],
+      "empty": null
+    }
+  ],
+  "empty": "Views are stalled at 57: run `sindri views rebuild`",
+  "asOf": {
+    "cursor": 56,
+    "ledgerHead": 57,
+    "projectedAt": "2026-10-11T11:59:58.0000000Z",
+    "rebuilding": false,
+    "stalled": true
+  }
+}

@@ -16,6 +16,6 @@ internal static class SettingsFromEnvironment
             environment("AW_META_CONFIG") is { Length: > 0 } config ? config : Path.Combine(state, "team.json"),
             environment("AW_CLAUDE_SESSIONS_DIR") is { Length: > 0 } sessions ? sessions : Path.Combine(home, ".claude", "sessions"),
             environment("AW_HEAVY_JOB_LOCK") is { Length: > 0 } heavyLock ? heavyLock : Path.Combine(root, "locks", "heavy-job.lock"),
-            new MetaPaths(state, Path.Combine(state, "gates"), File.Exists(heavy) ? heavy : null, environment("AW_GH") is { Length: > 0 } gh ? gh : "gh"));
+            new MetaPaths(state, Path.Combine(state, "gates"), File.Exists(heavy) ? heavy : null, environment("AW_GH") is { Length: > 0 } gh ? gh : "gh", home));
     }
 }

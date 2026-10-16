@@ -57,7 +57,9 @@ public sealed class SindriApiClientHeaderTests
         var again = await client.Status(_api, Token);
 
         Assert.Equal("SND-AUTH-001", status.Error.Code);
-        Assert.Equal("A human caller needs this start's token in X-Sindri-Token (fix: restart the app or rerun the command)", status.Error.Message);
+        // The detail is the API's, as served (keyed off the golden, never a copy of its sentence, which P2 rewords).
+        var served = System.Text.Json.JsonDocument.Parse(GoldenFiles.Api("status", "human-no-token")).RootElement.GetProperty("detail").GetString();
+        Assert.Equal(served, status.Error.Message);
         Assert.Equal("SND-AUTH-001", again.Error.Code);
         Assert.All(handler.Requests, r => Assert.Null(r.Token));
     }
@@ -78,6 +80,23 @@ public sealed class SindriApiClientHeaderTests
 
         Assert.Equal(
             [("GET", "/sindri/status", null), ("POST", "/sindri/views/rebuild", null), ("GET", "/sindri/events", null), ("GET", "/sindri/services", "43"), ("GET", "/sindri/status", null)],
+            handler.Requests.Select(r => (r.Method, r.Path, r.After)));
+    }
+
+    // API §2.4 for CreateItem: its answer nests the accepted command, whose sequence the next query waits for.
+    [Fact]
+    public async Task The_query_after_a_created_item_waits_for_its_sequence()
+    {
+        var handler = new FakeSindriHandler(new FakeSindriApi());
+        var client = new SindriApiClient(new HttpClient(handler), new InMemoryHumanToken("tok-1"), TimeProvider.System);
+
+        _ = await client.CreateItem(_api, new CreateItemRequest("A title", Repo: null, Body: null, Link: null), Token);
+        _ = await client.Queue(_api, Token);
+        _ = await client.CloseItem(_api, A.NewItem, new CloseItemRequest("done", 1), Token);
+        _ = await client.Item(_api, A.NewItem, Token);
+
+        Assert.Equal(
+            [("POST", "/sindri/items", null), ("GET", "/sindri/queue", "58"), ("POST", "/sindri/items/" + A.NewItem + "/close", null), ("GET", "/sindri/items/" + A.NewItem, "59")],
             handler.Requests.Select(r => (r.Method, r.Path, r.After)));
     }
 

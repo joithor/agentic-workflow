@@ -86,7 +86,7 @@ internal sealed partial class CommandPaletteViewModel
 
         try
         {
-            await control.Run(cancellationToken).ConfigureAwait(true);
+            await control.Press(cancellationToken).ConfigureAwait(true);
         }
         finally
         {
