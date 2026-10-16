@@ -31,10 +31,10 @@ public sealed class ListInstancesServiceTests
             Subject = subjectKey is null ? null : new SubjectRef("file", subjectKey, label ?? subjectKey, Href: null),
         };
 
-    private static async Task<(Result<ListInstancesResponse> Result, RecordingInstances Port)> Run(ListInstancesRequest request, params InstanceView[] views)
+    private static async Task<(Result<InstanceList> Result, RecordingInstances Port)> Run(ListInstancesRequest request, params InstanceView[] views)
     {
         var port = new RecordingInstances([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]);
-        var service = new ListInstancesService(new NoDirectory(), port, new FixedReader(views), new FixedItemViews(), new FixedCaller(current: null), clock: new FakeTimeProvider());
+        var service = new ListInstancesService(new NoDirectory(), port, new EndedInstanceViews(new FixedReader(views)), new FixedItemViews(), new FixedRepos(), new FixedCaller(current: null), clock: new FakeTimeProvider());
         return (await service.Handle(request, CancellationToken.None), port);
     }
 
@@ -68,7 +68,7 @@ public sealed class ListInstancesServiceTests
         var (result, port) = await Run(new ListInstancesRequest(Root: root));
 
         Assert.True(result.IsSuccess);
-        _ = Assert.Single(port.Calls);
+        Assert.Equal(3, port.Calls.Count);   // the list, then the root set the counts come from, all and running
     }
 
     [Fact]
@@ -86,19 +86,21 @@ public sealed class ListInstancesServiceTests
             NeedsMe: "true", Recipe: "workflow.step", Urgency: "incident", Subject: "fact:spec", Root: "false"));
 
         Assert.True(result.IsSuccess);
-        var call = Assert.Single(port.Calls);
+        var call = port.Calls[0];
         Assert.Equal(new InstanceFilter("workflow.step", State: null, NeedsYou: true, RecipeUrgency.Incident, Item: null, Subject: null, Root: false), call.Filter);
     }
 
     [Fact]
-    public async Task The_item_and_the_state_reach_the_port_and_list_ended_instances_too()
+    public async Task Ended_instances_are_listed_unless_open_is_true()
     {
         var (_, byItem) = await Run(new ListInstancesRequest(Item: ItemKey.From("ITM-1")));
         var (_, byState) = await Run(new ListInstancesRequest(State: "done"));
         var (_, neither) = await Run(new ListInstancesRequest(Recipe: "workflow.step"));
+        var (_, open) = await Run(new ListInstancesRequest(Recipe: "workflow.step", Open: "true"));
 
         Assert.Equal([("ITM-1", true), ("done", true)], [(byItem.Calls[0].Filter!.Item!, byItem.Calls[0].Ended), (byState.Calls[0].Filter!.State!, byState.Calls[0].Ended)]);
-        Assert.False(neither.Calls[0].Ended);
+        Assert.True(neither.Calls[0].Ended);
+        Assert.False(open.Calls[0].Ended);
     }
 
     [Fact]
@@ -106,7 +108,7 @@ public sealed class ListInstancesServiceTests
     {
         var (_, port) = await Run(new ListInstancesRequest(NeedsMe: "false", State: "parked"));
 
-        var call = Assert.Single(port.Calls);
+        var call = port.Calls[0];
         Assert.Equal((new InstanceFilter(State: "parked"), true), (call.Filter, call.Ended));
     }
 
@@ -155,14 +157,15 @@ public sealed class ListInstancesServiceTests
         var service = new ListInstancesService(
             new NoDirectory(),
             new RecordingInstances([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]),
-            new FixedReader(views),
+            new EndedInstanceViews(new FixedReader(views)),
             titles,
+            new FixedRepos(),
             new FixedCaller(new CallerContextBuilder().Human().Build()),
             clock: new FakeTimeProvider());
 
         var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
 
-        Assert.Equal(["Alpha", "Zeta"], result.Value.Rows.Select(static r => r.Subject.Label), StringComparer.Ordinal);   // by title; by id it would be Zeta, Alpha
+        Assert.Equal(["Alpha", "Zeta"], result.Value.Instances.Select(static r => r.Subject.Label), StringComparer.Ordinal);   // by title; by id it would be Zeta, Alpha
         Assert.Equal(["ITM-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb/step/1", "ITM-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/step/1"], result.Value.Instances.Select(static v => v.Address.Value), StringComparer.Ordinal);
     }
 
@@ -179,15 +182,16 @@ public sealed class ListInstancesServiceTests
     }
 
     [Fact]
-    public async Task Needs_me_keeps_its_sections_with_decisions_first_by_address()
+    public async Task Needs_me_is_a_filter_on_the_port_and_the_rows_stay_in_the_api_order()
     {
-        var (result, _) = await Run(
+        var (result, port) = await Run(
             new ListInstancesRequest(NeedsMe: "true"),
             View("desk-task", "T-1/step/1", RecipeUrgency.Incident),
             View("parked-rounds", "T-3/step/1"),
             View("escalated-gate", "T-2/step/1"));
 
-        Assert.Equal(["T-2/step/1", "T-3/step/1", "T-1/step/1"], result.Value.Instances.Select(static v => v.Address.Value), StringComparer.Ordinal);
+        Assert.True(port.Calls[0].Filter!.NeedsYou);
+        Assert.Equal(["T-1/step/1", "T-2/step/1", "T-3/step/1"], result.Value.Instances.Select(static v => v.Address.Value), StringComparer.Ordinal);   // not parked first; the parked ones by their label
     }
 
     [Fact]
@@ -198,36 +202,65 @@ public sealed class ListInstancesServiceTests
         var (result, _) = await Run(new ListInstancesRequest(Recipe: "workflow.step"), View("desk-task", "T-3/step/1"), starting, View("taken-over", "T-4/step/1"));
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(3, result.Value.Rows.Count);
-        var row = Assert.Single(result.Value.Rows, static r => r.Address.Value == "T-9/step/1");
+        Assert.Equal(3, result.Value.Instances.Count);
+        var row = Assert.Single(result.Value.Instances, static r => r.Address.Value == "T-9/step/1");
         Assert.Equal(("QUEUED", "queued", "starting"), (row.Chip.Word, row.Now, row.State));
-        Assert.Contains(result.Value.Rows, static r => r.Chip.Word == "DECISION");
-        Assert.Contains(result.Value.Rows, static r => r.Chip.Word == "WITH YOU");
+        Assert.Contains(result.Value.Instances, static r => r.Chip.Word == "DECISION");
+        Assert.Contains(result.Value.Instances, static r => r.Chip.Word == "WITH YOU");
     }
 
     [Fact]
-    public async Task The_rows_are_the_summaries_of_the_listed_views_in_the_same_order()
+    public async Task The_rows_are_the_summaries_of_the_listed_views_in_the_api_order()
     {
-        var (result, _) = await Run(
-            new ListInstancesRequest(Recipe: "workflow.step"),
-            View("desk-task", "T-3/step/1"),
-            View("desk-task", "T-4/step/1", RecipeUrgency.Triage));
+        var views = new[] { View("desk-task", "T-3/step/1"), View("desk-task", "T-4/step/1", RecipeUrgency.Triage) };
 
-        Assert.Equal(
-            result.Value.Instances.Select(static v => InstanceSummaries.Of(v, new InstanceSummaryContext(new FakeTimeProvider().GetUtcNow()))).Select(static r => (r.Address, r.State, r.Now, r.Recipe, r.Since)),
-            result.Value.Rows.Select(static r => (r.Address, r.State, r.Now, r.Recipe, r.Since)));
-        Assert.Equal(["T-4/step/1", "T-3/step/1"], result.Value.Rows.Select(static r => r.Address.Value), StringComparer.Ordinal);
+        var (result, _) = await Run(new ListInstancesRequest(Recipe: "workflow.step"), views);
+
+        var expected = new[] { views[1], views[0] }.Select(static v => InstanceSummaries.Of(v, new InstanceSummaryContext(new FakeTimeProvider().GetUtcNow())));
+        Assert.Equal(expected.Select(static r => (r.Address, r.State, r.Now, r.Recipe, r.Since)), result.Value.Instances.Select(static r => (r.Address, r.State, r.Now, r.Recipe, r.Since)));
     }
 
     [Fact]
-    public async Task A_needs_me_list_has_the_rows_of_its_sections_in_their_order()
+    public async Task Counts_cover_the_root_set_before_recipe_or_open_narrows()
     {
-        var (result, _) = await Run(
-            new ListInstancesRequest(NeedsMe: "true"),
+        var (result, port) = await Run(
+            new ListInstancesRequest(Recipe: "workflow.step", Open: "true"),
             View("desk-task", "T-1/step/1"),
-            View("parked-rounds", "T-3/step/1"));
+            View("parked-rounds", "T-2/step/1"),
+            View("taken-over", "T-3/step/1"),
+            View("done", "T-4/step/1"));
 
-        Assert.Equal(["T-3/step/1", "T-1/step/1"], result.Value.Rows.Select(static r => r.Address.Value), StringComparer.Ordinal);
+        Assert.Equal(new ListCounts(Open: 3, NeedsYou: 2, WithYou: 1, Running: 0, Done: 1), result.Value.Counts);
+        Assert.Equal(new InstanceFilter(Root: true), port.Calls[1].Filter);   // the second call is the whole root set
+        Assert.True(port.Calls[1].Ended);
+    }
+
+    [Fact]
+    public async Task Open_true_drops_terminal_rows()
+    {
+        var (result, _) = await Run(new ListInstancesRequest(Open: "true"), View("desk-task", "T-1/step/1"), View("done", "T-2/step/1"));
+
+        Assert.Equal(["T-1/step/1"], result.Value.Instances.Select(static v => v.Address.Value), StringComparer.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("yes")]
+    [InlineData("")]
+    public async Task An_open_that_is_not_true_or_false_is_invalid_input(string open)
+    {
+        var (result, port) = await Run(new ListInstancesRequest(Open: open));
+
+        Assert.Equal(SindriErrors.InvalidInput.Code, result.Error.Code);
+        Assert.Empty(port.Calls);
+    }
+
+    [Fact]
+    public async Task Empty_list_says_No_workflows_are_open()
+    {
+        var (result, _) = await Run(new ListInstancesRequest(Open: "true"));
+
+        Assert.Equal((InstanceList.EmptyText, 0, new ListCounts(0, 0, 0, 0, 0)), (result.Value.Empty, result.Value.Instances.Count, result.Value.Counts));
+        Assert.Equal(new FakeTimeProvider().GetUtcNow(), result.Value.AsOf);
     }
 
     [Fact]
@@ -246,7 +279,7 @@ public sealed class ListInstancesServiceTests
 
         Assert.Equal(["T-2/step/1"], byKey.Value.Instances.Select(static v => v.Address.Value), StringComparer.Ordinal);
         Assert.Equal(["T-1/step/1"], byLabel.Value.Instances.Select(static v => v.Address.Value), StringComparer.Ordinal);
-        Assert.Equal(("no instances match", 0), (none.Value.Empty, none.Value.Instances.Count));
+        Assert.Equal((InstanceList.NoMatchText, 0), (none.Value.Empty, none.Value.Instances.Count));
         Assert.Null(port.Calls[0].Filter!.Subject);
     }
 
@@ -259,12 +292,13 @@ public sealed class ListInstancesServiceTests
     private static ItemRow Titled(string id, string title, string? repo = null) =>
         new ItemRowBuilder().WithId(ItemId.From(id)).InRepo(repo is null ? null : RepoName.From(repo)).Build() with { Title = title };
 
-    private static ListInstancesService Service(IReadOnlyList<InstanceView> views, FixedItemViews items, CallerContext? caller, string? directoryAddress = null) =>
+    private static ListInstancesService Service(IReadOnlyList<InstanceView> views, FixedItemViews items, CallerContext? caller, string? directoryAddress = null, FixedRepos? repos = null, RecordingInstances? port = null, FixedReader? reader = null) =>
         new(
             directoryAddress is null ? new NoDirectory() : new FixedDirectory(directoryAddress),
-            new RecordingInstances([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]),
-            new FixedReader(views),
+            port ?? new RecordingInstances([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]),
+            new EndedInstanceViews(reader ?? new FixedReader(views)),
             items,
+            repos ?? new FixedRepos(),
             new FixedCaller(caller),
             clock: new FakeTimeProvider());
 
@@ -279,9 +313,9 @@ public sealed class ListInstancesServiceTests
         var byId = await service.Handle(new ListInstancesRequest(Subject: ItemB), CancellationToken.None);
         var byIdAsLabel = await service.Handle(new ListInstancesRequest(Subject: "ITM-aaaa"), CancellationToken.None);
 
-        Assert.Equal([$"{ItemA}/step/1"], byTitle.Value.Rows.Select(static r => r.Address.Value), StringComparer.Ordinal);
-        Assert.Equal([$"{ItemB}/step/1"], byId.Value.Rows.Select(static r => r.Address.Value), StringComparer.Ordinal);
-        Assert.Empty(byIdAsLabel.Value.Rows);   // the row shows the title, not the id, as its label: one label for display, order and filter
+        Assert.Equal([$"{ItemA}/step/1"], byTitle.Value.Instances.Select(static r => r.Address.Value), StringComparer.Ordinal);
+        Assert.Equal([$"{ItemB}/step/1"], byId.Value.Instances.Select(static r => r.Address.Value), StringComparer.Ordinal);
+        Assert.Empty(byIdAsLabel.Value.Instances);   // the row shows the title, not the id, as its label: one label for display, order and filter
     }
 
     [Fact]
@@ -289,7 +323,7 @@ public sealed class ListInstancesServiceTests
     {
         var (result, _) = await Run(new ListInstancesRequest(Subject: "T-3/step"), View("desk-task", "T-3/step/1"), View("desk-task", "T-4/step/1"));
 
-        Assert.Equal(["T-3/step/1"], result.Value.Rows.Select(static r => r.Address.Value), StringComparer.Ordinal);
+        Assert.Equal(["T-3/step/1"], result.Value.Instances.Select(static r => r.Address.Value), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -303,9 +337,9 @@ public sealed class ListInstancesServiceTests
         var byTitle = await service.Handle(new ListInstancesRequest(Subject: "pager"), CancellationToken.None);
         var byId = await service.Handle(new ListInstancesRequest(Subject: ItemA), CancellationToken.None);
 
-        var row = Assert.Single(byTitle.Value.Rows);
+        var row = Assert.Single(byTitle.Value.Instances);
         Assert.Equal(new SubjectRef("item", ItemA, "Pager storm", Href: null), row.Subject);
-        Assert.Equal([$"{ItemA}/step/1"], byId.Value.Rows.Select(static r => r.Address.Value), StringComparer.Ordinal);
+        Assert.Equal([$"{ItemA}/step/1"], byId.Value.Instances.Select(static r => r.Address.Value), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -317,19 +351,91 @@ public sealed class ListInstancesServiceTests
         var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal([ItemA, ItemB], result.Value.Rows.Select(static r => r.Subject.Label), StringComparer.Ordinal);
+        Assert.Equal([ItemA, ItemB], result.Value.Instances.Select(static r => r.Subject.Label), StringComparer.Ordinal);
     }
 
     [Fact]
-    public async Task A_session_of_another_repo_sees_the_id_not_the_title()
+    public async Task A_session_lists_only_its_own_repos_instances_rows_and_counts()
     {
         var views = new[] { OnItem(ItemA, $"{ItemA}/step/1"), OnItem(ItemB, $"{ItemB}/step/1") };
         var items = new FixedItemViews(failing: false, Titled(ItemA, "Mine", repo: "alpha"), Titled(ItemB, "Theirs", repo: "beta"));
-        var service = Service(views, items, new CallerContextBuilder().Session().InRepo("alpha").Build());
+        var service = Service(views, items, new CallerContextBuilder().Session().InRepo("alpha").Build(), repos: new FixedRepos((ItemA, "alpha"), (ItemB, "beta")));
 
         var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
 
-        Assert.Equal([ItemB, "Mine"], result.Value.Rows.Select(static r => r.Subject.Label), StringComparer.Ordinal);
+        Assert.Equal(["Mine"], result.Value.Instances.Select(static r => r.Subject.Label), StringComparer.Ordinal);
+        Assert.Equal(1, result.Value.Counts.Open);   // the other repo's instance isn't in the root set the counts cover
+    }
+
+    [Fact]
+    public async Task A_human_lists_every_repos_instances()
+    {
+        var views = new[] { OnItem(ItemA, $"{ItemA}/step/1"), OnItem(ItemB, $"{ItemB}/step/1") };
+        var service = Service(views, new FixedItemViews(failing: false), new CallerContextBuilder().Human().Build(), repos: new FixedRepos((ItemA, "alpha"), (ItemB, "beta")));
+
+        var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
+
+        Assert.Equal(2, result.Value.Instances.Count);
+    }
+
+    [Fact]
+    public async Task A_session_looking_up_an_address_in_another_repo_gets_item_404_and_its_own_repo_is_served()
+    {
+        var views = new[] { OnItem(ItemA, $"{ItemA}/step/1"), OnItem(ItemB, $"{ItemB}/step/1") };
+        var repos = new FixedRepos((ItemA, "alpha"), (ItemB, "beta"));
+        var session = new CallerContextBuilder().Session().InRepo("alpha").Build();
+
+        var theirs = await Service(views, new FixedItemViews(failing: false), session, directoryAddress: $"{ItemB}/step/1", repos: repos).Handle(new ListInstancesRequest(Address: $"{ItemB}/step/1"), CancellationToken.None);
+        var mine = await Service(views, new FixedItemViews(failing: false), session, directoryAddress: $"{ItemA}/step/1", repos: repos).Handle(new ListInstancesRequest(Address: $"{ItemA}/step/1"), CancellationToken.None);
+
+        Assert.Equal(SindriErrors.ItemNotFound.Code, theirs.Error.Code);
+        Assert.Equal([$"{ItemA}/step/1"], mine.Value.Instances.Select(static r => r.Address.Value), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task Needs_me_lists_a_parent_mirroring_a_listed_child_once_under_the_child()
+    {
+        var parent = StatusCases.View("parked-no-progress-child");
+        var child = StatusCases.View("parked-rounds") with { Address = InstanceAddress.From(parent.Address.Value + "/step.4") };
+        var service = Service([parent, child], new FixedItemViews(failing: false), new CallerContextBuilder().Human().Build());
+
+        var result = await service.Handle(new ListInstancesRequest(NeedsMe: "true"), CancellationToken.None);
+
+        Assert.Equal([child.Address.Value], result.Value.Instances.Select(static r => r.Address.Value), StringComparer.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("needsMe", "nothing needs you")]
+    [InlineData("open", "No workflows are open.")]
+    [InlineData("neither", "No workflows match.")]
+    public async Task An_empty_list_says_the_sentence_that_matches_its_filter(string filter, string sentence)
+    {
+        var request = filter switch
+        {
+            "needsMe" => new ListInstancesRequest(NeedsMe: "true", Open: "true"),
+            "open" => new ListInstancesRequest(Open: "true"),
+            _ => new ListInstancesRequest(State: "produce"),
+        };
+
+        var result = await Service([], new FixedItemViews(failing: false), new CallerContextBuilder().Human().Build()).Handle(request, CancellationToken.None);
+
+        Assert.Equal(sentence, result.Value.Empty);
+    }
+
+    [Fact]
+    public async Task The_counts_ask_only_running_roots_for_their_view_and_count_the_ended_ones_from_the_listing()
+    {
+        var running = View("desk-task", "T-1/step/1");
+        var ended = new[] { View("done", "T-2/step/1"), View("done", "T-3/step/1"), View("done", "T-4/step/1") };
+        InstanceView[] all = [running, .. ended];
+        var reader = new FixedReader(all);
+        var port = new RecordingInstances([.. all.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))], running: [running.Address.Value]);
+        var service = Service(all, new FixedItemViews(failing: false), new CallerContextBuilder().Human().Build(), port: port, reader: reader);
+
+        var result = await service.Handle(new ListInstancesRequest(Open: "true"), CancellationToken.None);
+
+        Assert.Equal((1, 3), (result.Value.Counts.Open, result.Value.Counts.Done));
+        Assert.Equal(["T-1/step/1"], reader.Reads, StringComparer.Ordinal);   // one Query, for the one running root
     }
 
     [Fact]
@@ -340,7 +446,7 @@ public sealed class ListInstancesServiceTests
 
         var result = await service.Handle(new ListInstancesRequest(Address: $"{ItemA}/step/1"), CancellationToken.None);
 
-        Assert.Equal("Offline sync spec", Assert.Single(result.Value.Rows).Subject.Label);
+        Assert.Equal("Offline sync spec", Assert.Single(result.Value.Instances).Subject.Label);
     }
 
     [Fact]
@@ -355,5 +461,25 @@ public sealed class ListInstancesServiceTests
         Assert.True(withItems.IsSuccess && withoutItems.IsSuccess);
         Assert.Equal([ItemA, ItemB], items.Reads);
         Assert.Empty(none.Reads);
+    }
+
+    [Fact]
+    public async Task An_ended_instance_is_read_once_across_lists_and_a_running_one_every_time()
+    {
+        var started = new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero);
+        var ended = View("done", "T-1/step/1");
+        var running = View("desk-task", "T-2/step/1");
+        Assert.True(ended.Outcome is not null && running.Outcome is null);
+        var views = new[] { ended, running };
+        var rows = views.Select(v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false, StartedAt: started)).ToList();
+        var reader = new FixedReader(views);
+        var service = Service(views, new FixedItemViews(), caller: null, port: new RecordingInstances(rows), reader: reader);
+
+        _ = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
+        reader.Reads.Clear();
+        var again = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
+
+        Assert.Equal(["T-2/step/1"], reader.Reads, StringComparer.Ordinal);
+        Assert.Equal(["T-1/step/1", "T-2/step/1"], again.Value.Instances.Select(static r => r.Address.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 }
