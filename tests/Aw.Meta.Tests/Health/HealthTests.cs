@@ -29,8 +29,8 @@ public sealed class HealthTests
 
     private void AllLanesLive()
     {
-        _world.Sessions.Add(A.Live("sindri-api", "s-api"));
-        _world.Sessions.Add(A.Live("sindri-ui", "s-ui"));
+        _world.Sessions.Add(A.Live("t1-api", "s-api"));
+        _world.Sessions.Add(A.Live("t1-ui", "s-ui"));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -99,7 +99,7 @@ public sealed class HealthTests
     public async Task A_configured_lane_with_no_live_session_is_missing()
     {
         await _world.Ready();
-        _world.Sessions.Add(A.Live("sindri-api", "s-api"));
+        _world.Sessions.Add(A.Live("t1-api", "s-api"));
 
         var health = await Check();
 
@@ -149,7 +149,7 @@ public sealed class HealthTests
     public async Task The_last_result_is_kept_for_status()
     {
         await _world.Ready();
-        _world.Sessions.Add(A.Live("sindri-api", "s-api"));
+        _world.Sessions.Add(A.Live("t1-api", "s-api"));
         Orphan();
 
         _ = await Check();

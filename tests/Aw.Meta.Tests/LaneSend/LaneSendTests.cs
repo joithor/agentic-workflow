@@ -35,7 +35,7 @@ public sealed class LaneSendTests
         await _world.Ready();
         _ = _world.PutLane("api");
         await Heartbeat("api", stopped: false);
-        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "sindri-api", "need a rebase"));
+        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "t1-api", "need a rebase"));
         _ = await _world.Sync.Run(MetaWorld.Transcript, CancellationToken.None);
         _ = Assert.Single(await _world.Open());
 
@@ -43,7 +43,7 @@ public sealed class LaneSendTests
 
         Assert.Equal("rebase please", Assert.Single((await _world.LaneMail.Owed("api", CancellationToken.None)).Value).Text);
         var sent = Assert.Single((await _world.Messages.Sent(CancellationToken.None)).Value);
-        Assert.Equal(("sindri-api", "rebase please"), (sent.To, sent.Message));
+        Assert.Equal(("t1-api", "rebase please"), (sent.To, sent.Message));
         Assert.Equal("lane-send:api:1", response.Id.Value);
         Assert.Empty(await _world.Open());
         Assert.Null(response.Attention);
@@ -112,7 +112,7 @@ public sealed class LaneSendTests
         Assert.True(first.Woken);
         Assert.False(second.Woken);
         var (session, line) = Assert.Single(_world.Panes.Woken);
-        Assert.Equal("sindri-api", session);
+        Assert.Equal("t1-api", session);
         Assert.Contains("aw-meta", line, StringComparison.Ordinal);
     }
 
@@ -127,12 +127,12 @@ public sealed class LaneSendTests
         await Heartbeat("api", stopped: guard != "busy");
         if (guard == "down")
         {
-            _world.Panes.Put("sindri-api", "bash");
+            _world.Panes.Put("t1-api", "bash");
         }
 
         if (guard == "client")
         {
-            _world.Panes.Put("sindri-api", "codex", clients: 1);
+            _world.Panes.Put("t1-api", "codex", clients: 1);
         }
 
         var response = await Send("api");
@@ -148,7 +148,7 @@ public sealed class LaneSendTests
     {
         await _world.Ready();
         _ = _world.PutLane("api");
-        _world.Panes.Remove("sindri-api");
+        _world.Panes.Remove("t1-api");
         await Heartbeat("api", stopped: true);
 
         var response = await Send("api");

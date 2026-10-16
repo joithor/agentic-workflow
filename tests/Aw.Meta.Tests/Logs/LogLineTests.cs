@@ -11,7 +11,7 @@ public sealed class LogLineTests
 
     [Fact, Trait("Lane", "unit")]
     public void The_owner_line_names_the_date_and_who_asked() =>
-        Assert.Equal("- OWNER (2026-10-15): use sqlite (asked by sindri-api)", LogLine.Owner(A.At(5), "use sqlite", "sindri-api"));
+        Assert.Equal("- OWNER (2026-10-15): use sqlite (asked by t1-api)", LogLine.Owner(A.At(5), "use sqlite", "t1-api"));
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("merge", true)]

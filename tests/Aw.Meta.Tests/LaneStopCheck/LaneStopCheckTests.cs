@@ -73,7 +73,7 @@ public sealed class LaneStopCheckTests
 
         Assert.Equal([true, true, true, false], [start.Blocked, first.Blocked, second.Blocked, third.Blocked]);
         Assert.StartsWith("aw-meta: stop allowed after 2 identical blocks", third.Warning, StringComparison.Ordinal);
-        Assert.Contains(_world.Log.Lines, l => l.Contains("INCIDENT", StringComparison.Ordinal) && l.Contains("sindri-api", StringComparison.Ordinal));
+        Assert.Contains(_world.Log.Lines, l => l.Contains("INCIDENT", StringComparison.Ordinal) && l.Contains("t1-api", StringComparison.Ordinal));
         var health = (await _world.LaneHealth.Read((await _world.Config.Load(CancellationToken.None)).Value, CancellationToken.None)).Value;
         Assert.Equal("obligation not delivered (stop cap)", Assert.Single(health, h => h.Lane == "api").State);
     }
@@ -97,7 +97,7 @@ public sealed class LaneStopCheckTests
     [Fact, Trait("Lane", "unit")]
     public async Task With_no_team_config_it_lets_the_stop_through_silently()
     {
-        var response = await Check(new Core.Lanes.LaneIdentity("sindri", "api"));
+        var response = await Check(new Core.Lanes.LaneIdentity("t1", "api"));
 
         Assert.False(response.Blocked);
         Assert.Null((await _world.Beats.Last("api", CancellationToken.None)).Value);

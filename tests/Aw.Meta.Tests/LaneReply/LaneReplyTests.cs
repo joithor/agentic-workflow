@@ -29,7 +29,7 @@ public sealed class LaneReplyTests
         Assert.Contains("aw-meta lane-send --lane api", open.NextCommand, StringComparison.Ordinal);
         Assert.Empty((await _world.LaneMail.Owed("api", CancellationToken.None)).Value);
         _world.Clock.Advance(TimeSpan.FromMinutes(1));
-        _ = await _world.Messages.RecordOutbound(new Outbound("sindri-api", "thanks", _world.Clock.GetUtcNow()), CancellationToken.None);
+        _ = await _world.Messages.RecordOutbound(new Outbound("t1-api", "thanks", _world.Clock.GetUtcNow()), CancellationToken.None);
         Assert.Empty(await _world.Open());
     }
 
@@ -42,7 +42,7 @@ public sealed class LaneReplyTests
         _ = await Service().Handle(new LaneReplyRequest(lane, "ok"), CancellationToken.None);
 
         var line = Assert.Single(_world.Log.Lines);
-        foreach (var part in (string[])["sindri", "api", "cursor", "sess-api"])
+        foreach (var part in (string[])["t1", "api", "cursor", "sess-api"])
         {
             Assert.Contains(part, line, StringComparison.Ordinal);
         }
@@ -53,7 +53,7 @@ public sealed class LaneReplyTests
     {
         await _world.Ready();
 
-        var result = await Service().Handle(new LaneReplyRequest(new LaneIdentity("sindri", "api"), "ok"), CancellationToken.None);
+        var result = await Service().Handle(new LaneReplyRequest(new LaneIdentity("t1", "api"), "ok"), CancellationToken.None);
 
         Assert.Equal(MetaErrors.LaneNotRecorded.Code, result.Error.Code);
         Assert.Empty((await _world.Messages.Messages(CancellationToken.None)).Value);
@@ -62,7 +62,7 @@ public sealed class LaneReplyTests
     [Fact, Trait("Lane", "unit")]
     public async Task With_no_team_config_it_records_nothing_and_succeeds()
     {
-        var result = await Service().Handle(new LaneReplyRequest(new LaneIdentity("sindri", "api"), "ok"), CancellationToken.None);
+        var result = await Service().Handle(new LaneReplyRequest(new LaneIdentity("t1", "api"), "ok"), CancellationToken.None);
 
         Assert.False(result.Value.Recorded);
     }

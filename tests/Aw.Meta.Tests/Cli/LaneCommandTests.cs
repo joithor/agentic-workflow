@@ -16,8 +16,8 @@ public sealed class LaneCommandTests : IDisposable
 
     private async Task Ready(bool hooks = true, string agent = "codex")
     {
-        _ = await _cli.Run("team-init", "--team", "sindri", "--repo", "/r", "--lanes", "meta,api");
-        _ = await _cli.Run("role-set", "--session", "s-meta", "--name", "sindri-meta");
+        _ = await _cli.Run("team-init", "--team", "t1", "--repo", "/r", "--lanes", "meta,api");
+        _ = await _cli.Run("role-set", "--session", "s-meta", "--name", "t1-meta");
         _ = Directory.CreateDirectory(LaneSessions);
         var session = Path.Combine(LaneSessions, "api");
         await File.WriteAllTextAsync(session, "sess-api\n", TestContext.Current.CancellationToken);
@@ -30,7 +30,7 @@ public sealed class LaneCommandTests : IDisposable
         var tmux = _cli.File("tmux");
         await File.WriteAllTextAsync(
             tmux,
-            $"#!/bin/sh\necho \"$@\" >> '{TmuxLog}'\ncase \"$1\" in display-message) echo {agent};; esac\n",
+            $"#!/bin/sh\necho \"$@\" >> '{TmuxLog}'\n[ \"$1\" = -L ] && shift 2\ncase \"$1\" in display-message) echo {agent};; esac\n",
             TestContext.Current.CancellationToken);
         File.SetUnixFileMode(tmux, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         _cli.SetEnv("AW_TMUX", tmux);
@@ -38,7 +38,7 @@ public sealed class LaneCommandTests : IDisposable
 
     private void AsLane(string lane = "api")
     {
-        _cli.SetEnv("AW_META_TEAM", "sindri");
+        _cli.SetEnv("AW_META_TEAM", "t1");
         _cli.SetEnv("AW_META_LANE", lane);
     }
 
@@ -57,7 +57,7 @@ public sealed class LaneCommandTests : IDisposable
         var released = await _cli.Run("lane-stop-check");
         var owed = await MetaStop();
         _cli.Clock.Advance(TimeSpan.FromMinutes(1));
-        var answered = await _cli.Run("lane-send", "--lane", "api", "--text", "thanks. LANE MAP v1: api=sindri-api");   // the lane map now has the Codex lane: its broadcast is owed too
+        var answered = await _cli.Run("lane-send", "--lane", "api", "--text", "thanks. LANE MAP v1: api=t1-api");   // the lane map now has the Codex lane: its broadcast is owed too
         var cleared = await MetaStop();
 
         Assert.Equal(1, first.Exit);
@@ -72,7 +72,7 @@ public sealed class LaneCommandTests : IDisposable
         Assert.Equal((0, "recorded lane:api:1" + Environment.NewLine), (reply.Exit, reply.Out));
         Assert.Equal((0, string.Empty), (released.Exit, released.Out));
         Assert.Equal(1, owed.Exit);
-        Assert.Contains("reply to sindri-api (lane:api:1): rebased and pushed", owed.Out, StringComparison.Ordinal);
+        Assert.Contains("reply to t1-api (lane:api:1): rebased and pushed", owed.Out, StringComparison.Ordinal);
         Assert.Contains("aw-meta lane-send --lane api", owed.Out, StringComparison.Ordinal);
         Assert.Equal(0, answered.Exit);
         Assert.Equal((0, string.Empty), (cleared.Exit, cleared.Out));
@@ -109,7 +109,7 @@ public sealed class LaneCommandTests : IDisposable
         var lanes = await _cli.Run("lanes");
 
         Assert.Contains("lane api (aider): launch-only: no obligations", health.Out, StringComparison.Ordinal);
-        Assert.Contains("api          sindri-api (Direct) [aider: launch-only: no obligations]", lanes.Out, StringComparison.Ordinal);
+        Assert.Contains("api          t1-api (Direct) [aider: launch-only: no obligations]", lanes.Out, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -125,8 +125,8 @@ public sealed class LaneCommandTests : IDisposable
         Assert.Equal(0, sent.Exit);
         Assert.Contains("woken", sent.Out, StringComparison.Ordinal);
         var log = await File.ReadAllLinesAsync(TmuxLog, TestContext.Current.CancellationToken);
-        Assert.Contains(log, l => l.StartsWith("send-keys -t =sindri-api: -l ", StringComparison.Ordinal));
-        Assert.Contains(log, l => string.Equals(l, "send-keys -t =sindri-api: Enter", StringComparison.Ordinal));
+        Assert.Contains(log, l => l.StartsWith("-L t1 send-keys -t =t1-api: -l ", StringComparison.Ordinal));
+        Assert.Contains(log, l => string.Equals(l, "-L t1 send-keys -t =t1-api: Enter", StringComparison.Ordinal));
     }
 
     [Fact, Trait("Lane", "integration")]

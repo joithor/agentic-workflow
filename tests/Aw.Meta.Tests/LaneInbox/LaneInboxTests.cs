@@ -42,7 +42,7 @@ public sealed class LaneInboxTests
     [Fact, Trait("Lane", "unit")]
     public async Task With_no_team_config_it_answers_empty_and_records_nothing()
     {
-        var result = await Service().Handle(new LaneInboxRequest(new LaneIdentity("sindri", "api")), CancellationToken.None);
+        var result = await Service().Handle(new LaneInboxRequest(new LaneIdentity("t1", "api")), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Empty(result.Value.Messages);

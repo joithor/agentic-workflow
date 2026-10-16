@@ -26,14 +26,14 @@ public sealed class RefreshLanesTests
     }
 
     private async Task Configure() =>
-        _ = await _config.Save(new("sindri", "/work", ["meta", "api", "ui"], "meta"), CancellationToken.None);
+        _ = await _config.Save(new("t1", "/work", ["meta", "api", "ui"], "meta"), CancellationToken.None);
 
     [Fact, Trait("Lane", "unit")]
     public async Task A_live_session_named_team_lane_is_mapped_and_the_map_gets_version_one()
     {
         await Configure();
-        _sessions.Add(A.Live("sindri-api", "s-api"));
-        _sessions.Add(A.Live("sindri-meta", "s-meta"));
+        _sessions.Add(A.Live("t1-api", "s-api"));
+        _sessions.Add(A.Live("t1-meta", "s-meta"));
 
         var map = await Refresh();
 
@@ -47,7 +47,7 @@ public sealed class RefreshLanesTests
     public async Task Refreshing_again_with_nothing_changed_keeps_the_version()
     {
         await Configure();
-        _sessions.Add(A.Live("sindri-api", "s-api"));
+        _sessions.Add(A.Live("t1-api", "s-api"));
         _ = await Refresh();
 
         var again = await Refresh();
@@ -59,9 +59,9 @@ public sealed class RefreshLanesTests
     public async Task A_new_session_bumps_the_version()
     {
         await Configure();
-        _sessions.Add(A.Live("sindri-api", "s-api"));
+        _sessions.Add(A.Live("t1-api", "s-api"));
         _ = await Refresh();
-        _sessions.Add(A.Live("sindri-ui", "s-ui"));
+        _sessions.Add(A.Live("t1-ui", "s-ui"));
 
         var map = await Refresh();
 
@@ -86,12 +86,12 @@ public sealed class RefreshLanesTests
     public async Task The_announcement_text_starts_with_the_version_and_names_every_mapped_lane_and_the_unmapped_ones()
     {
         await Configure();
-        _sessions.Add(A.Live("sindri-api", "s-api"));
-        _sessions.Add(A.Live("sindri-meta", "s-meta"));
+        _sessions.Add(A.Live("t1-api", "s-api"));
+        _sessions.Add(A.Live("t1-meta", "s-meta"));
 
         var map = await Refresh();
 
-        Assert.Equal("LANE MAP v1: meta=sindri-meta, api=sindri-api (unmapped: ui)", map.Announcement);
+        Assert.Equal("LANE MAP v1: meta=t1-meta, api=t1-api (unmapped: ui)", map.Announcement);
     }
 
     [Fact, Trait("Lane", "unit")]

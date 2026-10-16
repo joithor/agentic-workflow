@@ -135,12 +135,12 @@ public sealed class MetaWorld
     /// <summary>The loop guard.</summary>
     public StopGuard Guard => new(Values, Log);
 
-    /// <summary>Saves a config for team "sindri" with the lanes meta, api and ui, and registers the meta session.</summary>
+    /// <summary>Saves a config for team "t1" with the lanes meta, api and ui, and registers the meta session.</summary>
     /// <returns>A task.</returns>
     public async Task Ready()
     {
-        _ = await Config.Save(new TeamConfig("sindri", "/work", ["meta", "api", "ui"], "meta"), CancellationToken.None);
-        _ = await Messages.SetRole(new MetaRole(SessionId.From(MetaSessionId), "sindri-meta"), CancellationToken.None);
+        _ = await Config.Save(new TeamConfig("t1", "/work", ["meta", "api", "ui"], "meta"), CancellationToken.None);
+        _ = await Messages.SetRole(new MetaRole(SessionId.From(MetaSessionId), "t1-meta"), CancellationToken.None);
     }
 
     /// <summary>Saves a config with a repo at /work, a "repo" scope (always; sync-rules) and a "dotnet" scope (src/**, tests/**; heavy build and unit), docs-only paths, a merge order #190 before #192 and one known flake.</summary>
@@ -156,7 +156,7 @@ public sealed class MetaWorld
                 ["repo"] = new(["**"], [new StepConfig("sync-rules", ["scripts/sync-rules.sh", "--check"])]),
                 ["dotnet"] = new(["src/**", "tests/**"], [new StepConfig("build", ["dotnet", "build", "X.slnx"], Heavy: true), new StepConfig("unit", ["dotnet", "test", "--solution", "X.slnx"], Heavy: true)]),
             });
-        _ = await Config.Save(new TeamConfig("sindri", "/work", ["meta", "api", "ui"], "meta") { Gate = gate, MergeOrder = [new MergeOrderRule(190, 192)], KnownFlakes = ["SpikeEvalTests"] }, CancellationToken.None);
+        _ = await Config.Save(new TeamConfig("t1", "/work", ["meta", "api", "ui"], "meta") { Gate = gate, MergeOrder = [new MergeOrderRule(190, 192)], KnownFlakes = ["SpikeEvalTests"] }, CancellationToken.None);
     }
 
     /// <summary>The open obligations now.</summary>
@@ -193,7 +193,7 @@ public sealed class MetaWorld
     public LaneIdentity PutLane(string lane, string agent = "codex", bool hooks = true, int recordedMinute = 10)
     {
         LaneFiles.Put(new LaneRecord(lane, SessionId.From("sess-" + lane), new LaneAgent(agent, agent, hooks), A.At(recordedMinute)));
-        Panes.Put("sindri-" + lane, agent);
-        return new LaneIdentity("sindri", lane);
+        Panes.Put("t1-" + lane, agent);
+        return new LaneIdentity("t1", lane);
     }
 }
