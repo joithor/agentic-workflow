@@ -19,6 +19,11 @@ internal sealed class FileExportStore(ContextStoreSettings settings, JsonSeriali
         }
 
         var target = resolved.Value;
+        return Done(WriteFile(target, document));
+    }
+
+    private Result<string> WriteFile(string target, MapDocument document)
+    {
         var lexical = Path.GetFullPath(settings.ExportsDirectory);
         try
         {
@@ -26,11 +31,11 @@ internal sealed class FileExportStore(ContextStoreSettings settings, JsonSeriali
             OwnerOnly.EnsureDirectory(lexical);
             OwnerOnly.EnsureDirectory(Path.GetDirectoryName(target)!);   // why: target is an absolute file path inside folder
             OwnerOnly.WriteAtomically(target, AwJson.Serialize(document, options));
-            return Done(Results.Success(target));
+            return Results.Success(target);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return Done<string>(ContextErrors.StoreUnavailable.With($"{target} can't be written: {e.Message}"));
+            return ContextErrors.StoreUnavailable.With($"{target} can't be written: {e.Message}");
         }
     }
 
@@ -42,16 +47,21 @@ internal sealed class FileExportStore(ContextStoreSettings settings, JsonSeriali
             return Done(Results.Success<IReadOnlyList<ExportedFile>>([]));
         }
 
+        return Done(Enumerate(folder));
+    }
+
+    private static Result<IReadOnlyList<ExportedFile>> Enumerate(string folder)
+    {
         try
         {
             IReadOnlyList<ExportedFile> files = [.. Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories)
                 .Select(f => new ExportedFile(f, new DateTimeOffset(File.GetLastWriteTimeUtc(f), TimeSpan.Zero)))
                 .OrderBy(f => f.Path, StringComparer.Ordinal)];
-            return Done(Results.Success(files));
+            return Results.Success(files);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return Done<IReadOnlyList<ExportedFile>>(ContextErrors.StoreUnavailable.With($"{folder} can't be listed: {e.Message}"));
+            return ContextErrors.StoreUnavailable.With($"{folder} can't be listed: {e.Message}");
         }
     }
 
@@ -63,14 +73,19 @@ internal sealed class FileExportStore(ContextStoreSettings settings, JsonSeriali
             return Done(Results.Success(value: false));
         }
 
+        return Done(DeleteFile(full));
+    }
+
+    private static Result<bool> DeleteFile(string full)
+    {
         try
         {
             File.Delete(full);
-            return Done(Results.Success(value: true));
+            return Results.Success(value: true);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return Done<bool>(ContextErrors.StoreUnavailable.With($"{full} can't be deleted: {e.Message}"));
+            return ContextErrors.StoreUnavailable.With($"{full} can't be deleted: {e.Message}");
         }
     }
 

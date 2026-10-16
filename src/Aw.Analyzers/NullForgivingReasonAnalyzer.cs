@@ -60,15 +60,19 @@ internal sealed class NullForgivingReasonAnalyzer : DiagnosticAnalyzer
     private static bool HasReasonAbove(SyntaxNode node)
     {
         var holder = node.AncestorsAndSelf().FirstOrDefault(n => n is StatementSyntax or MemberDeclarationSyntax);
+        if (holder is null)
+        {
+            return false;
+        }
+
         var attributes = holder switch
         {
             MemberDeclarationSyntax member => member.AttributeLists,
             StatementSyntax statement => statement.AttributeLists,
             _ => default,
         };
-        return holder is not null
-            && (HasReasonDirectlyAbove(holder.GetLeadingTrivia())
-                || (attributes.Count > 0 && HasReasonDirectlyAbove(attributes.Last().GetLastToken().GetNextToken().LeadingTrivia)));
+        return HasReasonDirectlyAbove(holder.GetLeadingTrivia())
+            || (attributes.Count > 0 && HasReasonDirectlyAbove(attributes.Last().GetLastToken().GetNextToken().LeadingTrivia));
     }
 
     // A reason in the comment lines right before the token: walking up, a blank line ends the search.

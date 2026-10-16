@@ -28,3 +28,6 @@ dotnet_diagnostic.xUnit1051.severity = none
 dotnet_diagnostic.CA2000.severity = none
 dotnet_diagnostic.CA2213.severity = none
 dotnet_diagnostic.CA2100.severity = none
+# CA1508 (dead-condition) guards production flow. Tests assert deliberately redundant conditions in contracts and
+# build values from fakes that flow analysis can't see through.
+dotnet_diagnostic.CA1508.severity = none

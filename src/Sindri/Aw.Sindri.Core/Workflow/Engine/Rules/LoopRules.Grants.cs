@@ -73,6 +73,7 @@ internal static partial class LoopRules
         WorkflowInstance instance, Recipe recipe, string answer, params ReadOnlySpan<ParkReason> reasons)
     {
         var park = instance.Suspension is { Kind: SuspensionKind.Park } parked ? parked : null;
+#pragma warning disable CA1508 // park is null for any suspension that is not a park, which the ternary above decides
         if (park?.Reason is not { } reason || !reasons.Contains(reason))
         {
             var fix = park?.Reason == ParkReason.Rounds
@@ -80,6 +81,7 @@ internal static partial class LoopRules
                 : "use an answer from allowedCommands in status";
             return WorkflowErrors.TriggerNotAllowed.With($"{answer} doesn't answer {Shown(instance)} (fix: {fix})");
         }
+#pragma warning restore CA1508
 
         if (park.Mirrors is { } child)
         {

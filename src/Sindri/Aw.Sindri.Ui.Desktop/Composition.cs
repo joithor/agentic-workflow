@@ -25,9 +25,11 @@ internal static class Composition
             new FileEndpointRecords(ControlFilePath.From(environment, userHome)),
             new FileHumanToken(ControlFilePath.TokenFrom(environment, userHome)),
             new FilePreferencesStore(ui.Preferences),
+#pragma warning disable CA2000 // the motion poll, the single-instance claim and the tray live for the process: the platform record is the app's for its lifetime
             new PolledMotionPreference(MotionReader(), clock, MotionPoll),
             new SocketSingleInstance(ui, clock),
             new AvaloniaTray())
+#pragma warning restore CA2000
         {
             DockBadge = DockBadge(),
         };

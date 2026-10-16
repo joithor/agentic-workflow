@@ -90,7 +90,7 @@ public sealed class EndpointCqrsTests : IDisposable
         return app;
     }
 
-    public sealed record FixtureQuery : IQuery<string>;
+    internal sealed record FixtureQuery : IQuery<string>;
 
-    public sealed record FixtureIssue : IIssue<string>;
+    internal sealed record FixtureIssue : IIssue<string>;
 }

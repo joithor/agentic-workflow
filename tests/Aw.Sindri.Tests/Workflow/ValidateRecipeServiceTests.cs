@@ -12,7 +12,7 @@ namespace Aw.Sindri.Tests.Workflow;
 /// <summary>recipe validate's service over real files in a temp directory (spec §9.1): the reader, the validator, the hash and the same-directory children.</summary>
 public sealed class ValidateRecipeServiceTests : IDisposable
 {
-    private static readonly string _kid =
+    private const string Kid =
         "schema: 1\n"
         + "id: workflow.kid\n"
         + "version: 1\n"
@@ -69,7 +69,7 @@ public sealed class ValidateRecipeServiceTests : IDisposable
     public async Task A_child_recipe_resolves_from_the_same_directory_with_its_hash()
     {
         var parent = _directory.Write("workflow.parent.yaml", RecipeReaderTests.Minimal);
-        _ = _directory.Write("workflow.kid.yaml", _kid);
+        _ = _directory.Write("workflow.kid.yaml", Kid);
         var recipe = RecipeReaderTests.Reader.Read(RecipeReaderTests.Minimal, "p.yaml").Document!.Recipe;
         var waiting = recipe with
         {
@@ -84,7 +84,7 @@ public sealed class ValidateRecipeServiceTests : IDisposable
 
         var children = await SameDirectoryChildren.Load(parent, waiting, RecipeReaderTests.Reader, _files, TestContext.Current.CancellationToken);
 
-        Assert.Equal(RecipeReaderTests.Reader.Read(_kid, "k.yaml").Document!.Hash, children.Resolve(RecipeId.From("workflow.kid"))!.Hash);
+        Assert.Equal(RecipeReaderTests.Reader.Read(Kid, "k.yaml").Document!.Hash, children.Resolve(RecipeId.From("workflow.kid"))!.Hash);
         Assert.Null(children.Resolve(RecipeId.From("workflow.absent")));
     }
 

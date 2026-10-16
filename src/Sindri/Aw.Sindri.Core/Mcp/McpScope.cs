@@ -40,9 +40,11 @@ public static partial class McpScope
             (registered, malformed) = (false, "too slow to check");
         }
 
+#pragma warning disable CA1508 // flow analysis loses that the tuple assignment above can leave malformed null
         return malformed is not null
             ? new McpScopeFinding(read.File, read.Path, McpScopeState.Unreadable, malformed)
             : registered ? new McpScopeFinding(read.File, read.Path, McpScopeState.UserWide, Problem: null) : null;
+#pragma warning restore CA1508
     }
 
     /// <summary>Claude Code's and Cursor's files: a top-level mcpServers object with a 'sindri' member (Claude Code's local scope sits under projects, which is fine).</summary>

@@ -25,7 +25,9 @@ public sealed class SqliteConnectionFactory(SqliteOptions options) : ISqliteConn
         Func<SqliteConnection, CancellationToken, Task<Result<Unit>>> pragmas,
         CancellationToken cancellationToken)
     {
+#pragma warning disable CA2000 // disposed on every failure path below; on success it is handed to the caller (handedOver)
         var connection = new SqliteConnection(ConnectionString(mode));
+#pragma warning restore CA2000
         var handedOver = false;
         try
         {
@@ -90,7 +92,9 @@ public sealed class SqliteConnectionFactory(SqliteOptions options) : ISqliteConn
     {
         var command = connection.CreateCommand();
         await using var commandScope = command.ConfigureAwait(false);
+#pragma warning disable CA2100 // the callers pass fixed PRAGMA text; the one interpolated value is an int
         command.CommandText = sql;
+#pragma warning restore CA2100
         return await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
     }
 }

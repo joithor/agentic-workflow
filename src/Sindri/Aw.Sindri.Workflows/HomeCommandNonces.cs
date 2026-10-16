@@ -113,7 +113,9 @@ internal sealed class HomeCommandNonces(WorkflowsHome home, TimeProvider clock) 
         FileStream stream;
         try
         {
+#pragma warning disable CA2000 // disposed by the await using below
             stream = new FileStream(file, options);
+#pragma warning restore CA2000
         }
         catch (IOException) when (File.Exists(file))
         {

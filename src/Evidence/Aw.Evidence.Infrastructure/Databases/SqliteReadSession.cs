@@ -32,7 +32,9 @@ internal sealed class SqliteReadSession(SqliteConnection connection) : IReadSess
             var command = connection.CreateCommand();
             await using (command.ConfigureAwait(false))
             {
+#pragma warning disable CA2100 // running the caller's own SQL is this tool's job; the session is read-only and WriteStatements refuses writes first
                 command.CommandText = sql;
+#pragma warning restore CA2100
                 var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
                 await using (reader.ConfigureAwait(false))
                 {

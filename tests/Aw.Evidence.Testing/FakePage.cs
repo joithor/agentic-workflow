@@ -36,7 +36,9 @@ public sealed class FakePage
     public IDictionary<string, Box> Boxes { get; } = new Dictionary<string, Box>(StringComparer.Ordinal);
 
     /// <summary>The screenshot bytes returned for every capture.</summary>
+#pragma warning disable CA1819 // a fake hands back the exact bytes a test sets
     public byte[] Screenshot { get; set; } = [1, 2, 3];
+#pragma warning restore CA1819
 
     /// <summary>The lint snapshot.</summary>
     public PageSnapshot Snapshot { get; set; } = new([], new ViewportSize(1280, 800));

@@ -49,24 +49,51 @@ internal sealed class SystemCommandRunner : ICommandRunner
             return MetaErrors.CommandNotStarted.With($"{request.Argv[0]}: {exception.Message}");
         }
 
+#pragma warning disable CA2000 // disposed in the finally below
         var log = OpenLog(request.LogFile);
+#pragma warning restore CA2000
         try
         {
-            var stdout = new TailBuffer(TailCharacters);
-            var stderr = new TailBuffer(TailCharacters);
-            process.StandardInput.Close();
-            using var stopPumping = new CancellationTokenSource();
-            var reading = Task.WhenAll(
-                Pump(process.StandardOutput, stdout, log, stopPumping.Token), Pump(process.StandardError, stderr, log, stopPumping.Token));
-            var timedOut = await Wait(process, request.Timeout, cancellationToken).ConfigureAwait(false);
-            await DrainOrStop(reading, stopPumping).ConfigureAwait(false);
-            return new CommandResult(timedOut ? -1 : process.ExitCode, stdout.ToString(), stderr.ToString(), timedOut);
+            return await Collect(process, request, log, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
             if (log is not null)
             {
                 await log.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+    }
+
+    private async Task<Result<CommandResult>> Collect(Process process, CommandRequest request, StreamWriter? log, CancellationToken cancellationToken)
+    {
+        using var stopPumping = new CancellationTokenSource();
+        var reading = Task.CompletedTask;
+        try
+        {
+            var stdout = new TailBuffer(TailCharacters);
+            var stderr = new TailBuffer(TailCharacters);
+            process.StandardInput.Close();
+#pragma warning disable CA2025 // awaited in the finally below, before the caller disposes the process and stopPumping goes out of scope
+            reading = Task.WhenAll(
+                Pump(process.StandardOutput, stdout, log, stopPumping.Token), Pump(process.StandardError, stderr, log, stopPumping.Token));
+#pragma warning restore CA2025
+            var timedOut = await Wait(process, request.Timeout, cancellationToken).ConfigureAwait(false);
+            _ = await Task.WhenAny(reading, Task.Delay(_drainGrace, CancellationToken.None)).ConfigureAwait(false);
+            return new CommandResult(timedOut ? -1 : process.ExitCode, stdout.ToString(), stderr.ToString(), timedOut);
+        }
+        finally
+        {
+            // A grandchild can keep the pipes open after the command ended: after the grace the pumps are cancelled and
+            // awaited, so none still reads the process's streams or writes the log once the caller disposes them.
+            await stopPumping.CancelAsync().ConfigureAwait(false);
+            try
+            {
+                await reading.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // The output a grandchild produced after the grace is dropped.
             }
         }
     }
@@ -129,22 +156,6 @@ internal sealed class SystemCommandRunner : ICommandRunner
             await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
             return true;
-        }
-    }
-
-    // A grandchild can keep the pipes open after the command ended. After the grace the pumps are cancelled and awaited,
-    // so none still reads the process's streams or writes the log once the caller disposes them.
-    private async Task DrainOrStop(Task reading, CancellationTokenSource stopPumping)
-    {
-        _ = await Task.WhenAny(reading, Task.Delay(_drainGrace, CancellationToken.None)).ConfigureAwait(false);
-        await stopPumping.CancelAsync().ConfigureAwait(false);
-        try
-        {
-            await reading.ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-            // The output a grandchild produced after the grace is dropped.
         }
     }
 

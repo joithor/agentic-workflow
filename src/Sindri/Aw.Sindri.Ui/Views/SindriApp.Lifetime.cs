@@ -15,7 +15,9 @@ public sealed partial class SindriApp
             return;
         }
 
+#pragma warning disable CA2000 // disposed by the desktop's Exit handler below
         var lifetime = new AppLifetime(window, platform.Tray, shell.Navigate, () => End(desktop, 0), () => Settle(window, preferences), clock, platform.DockBadge);
+#pragma warning restore CA2000
         lifetime.Quitting += (_, _) => platform.Instance.Retire();
         lifetime.Start(desktop, shell);
         _listener?.Deliver(lifetime.Receive);

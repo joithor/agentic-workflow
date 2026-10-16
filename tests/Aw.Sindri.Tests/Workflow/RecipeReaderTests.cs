@@ -12,7 +12,7 @@ namespace Aw.Sindri.Tests.Workflow;
 /// <summary>The YAML recipe reader (spec §3.1): core-schema scalars, every node's position, every finding, and normalization of each short form.</summary>
 public sealed class RecipeReaderTests
 {
-    internal static readonly string Minimal =
+    internal const string Minimal =
         "schema: 1\n"
         + "id: workflow.minimal\n"
         + "version: 1\n"

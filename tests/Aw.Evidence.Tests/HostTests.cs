@@ -9,7 +9,7 @@ namespace Aw.Evidence.Tests;
 
 public sealed class HostTests
 {
-    private static readonly string _stateRoot = "/nonexistent/aw-evidence-di-test";   // Compose writes nothing; a unique-looking path that never exists
+    private const string StateRoot = "/nonexistent/aw-evidence-di-test";   // Compose writes nothing; a unique-looking path that never exists
 
     [Fact, Trait("Lane", "unit")]
     public async Task Every_registered_service_resolves_in_a_scope()
@@ -60,6 +60,6 @@ public sealed class HostTests
     private static IServiceCollection Compose(string? logLevel = null)
         => Composition.Compose(
             new ServiceCollection(),
-            name => name switch { "AW_STATE_DIR" => _stateRoot, "AW_LOG_LEVEL" => logLevel, _ => null },
+            name => name switch { "AW_STATE_DIR" => StateRoot, "AW_LOG_LEVEL" => logLevel, _ => null },
             new FakeTimeProvider());
 }

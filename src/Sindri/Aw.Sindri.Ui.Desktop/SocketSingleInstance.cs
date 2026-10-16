@@ -45,7 +45,9 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
         FileStream claim;
         try
         {
+#pragma warning disable CA2000 // kept in _claim and released by Dispose
             claim = OwnerOnly.Open(paths.InstanceLock, FileMode.OpenOrCreate, FileShare.None);
+#pragma warning restore CA2000
         }
         catch (IOException)
         {

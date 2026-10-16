@@ -98,7 +98,9 @@ internal sealed class SqliteDatabaseReader : IDatabaseReader
                 var command = opened.Value.CreateCommand();
                 await using (command.ConfigureAwait(false))
                 {
+#pragma warning disable CA2100 // the seed script is the caller's own SQL, applied to a throwaway copy of the database
                     command.CommandText = seedSql;
+#pragma warning restore CA2100
                     _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
