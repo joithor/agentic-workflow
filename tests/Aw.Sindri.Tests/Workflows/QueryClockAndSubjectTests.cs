@@ -4,8 +4,8 @@ using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Infrastructure.Workflows;
-using Temporalio.Worker;
 using Microsoft.Extensions.DependencyInjection;
+using Temporalio.Worker;
 
 namespace Aw.Sindri.Tests.Workflows;
 
