@@ -431,8 +431,16 @@ literals, never another input (owner answer, 2026-10-15), and the time is UTC (o
 of UI §5.4. A `link` subject's label is the `title`, else the URL's host, and its `href` is the URL (it matches
 `FactRow.ref {url, host, title}`). The `Subject` search attribute stays `subject.key`. `--subject` and `?subject=`
 match the key exactly or the label, which is the name, as a case-insensitive substring. The views do this
-filtering, as they do today, so no new search attribute is needed. Every instance has a subject. An instance with
-no subject no longer exists.
+filtering, as they do today, so no new search attribute is needed. Every instance has a subject on the wire.
+
+**A pre-P4c instance.** A recipe registered before input kinds has an input with no `kind` (or no input at all), so
+nothing names its subject. Its approved row still loads and an instance already running on it keeps running, with the
+commands it made before P4c (a replay must match the history it recorded, so it still reads its first input once and
+drops the text). That instance is not named: it has no `name` and its `subject` is the item itself, `kind: item`,
+`key` the item id, `label` the item's title, else the instance address, which is what the list row shows too (the
+detail and the list agree). It has no `inputs[]`, and its `detail` names `RCP-INPUT-001` or `-002` and the fix. A new
+start on such a recipe is refused (`SND-RECIPE-001`, before a pin-drift refusal: re-approving can't fix it), and so is
+approving it. `recipe list` marks the row `legacy-shape`, approved or not.
 
 ## 4. Approval and invariant 13
 
@@ -445,7 +453,7 @@ no subject no longer exists.
 
 `IRecipeStore` keeps the normalized text by hash. Register, approve and revoke write `recipe.registered`,
 `recipe.approved` and `recipe.revoked` events. Approvals live in `ledger.db` and travel with a host handover.
-`recipe list --stale` lists approved recipes whose pins no longer match the build. Re-approving the **same hash**
+`recipe list --stale` lists approved recipes whose pins no longer match the build, or that are `legacy-shape` (registered before input kinds: register the current file at a new version and approve it). Re-approving the **same hash**
 appends a new approval row and event with the new pins (a **drift approval**; a revoked hash can't be re-approved
 this way, `SND-RECIPE-005`). It re-runs the validator and evals, and its preview shows:
 - which blocks changed, with a capability diff;
@@ -990,7 +998,7 @@ Outside S1:
 
 | Code | Kind | Meaning | Fix |
 |---|---|---|---|
-| SND-RECIPE-001 | invalid | Validation failed | Fix each `RCP-*` line |
+| SND-RECIPE-001 | invalid | Validation failed, or the recipe was registered before input kinds (a start or an approval of it) | Fix each `RCP-*` line; for a legacy row, register the current file at a new version and approve it |
 | SND-RECIPE-002 | notFound | No recipe with that id or hash | `sindri recipe list` |
 | SND-RECIPE-003 | conflict | Not approved | `sindri recipe approve` |
 | SND-RECIPE-004 | — | Retired: a caller without a terminal gets API's `SND-AUTH-002` | — |
