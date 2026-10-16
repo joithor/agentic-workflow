@@ -79,7 +79,7 @@ public sealed class WorkflowsViewModelTests
 
         var counts = GoldenFiles.Node("workflow-instances", "open")["counts"]!;
         Assert.Equal($"{counts["open"]} open · {counts["needsYou"]} need you · {counts["withYou"]} with you", list.Head);
-        Assert.Equal(Text(counts["open"]), list.NavCount);
+        Assert.Equal(counts["open"]!.ToJsonString(), list.NavCount);
     }
 
     [Fact]

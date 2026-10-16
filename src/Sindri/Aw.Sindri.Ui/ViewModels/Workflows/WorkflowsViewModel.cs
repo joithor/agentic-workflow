@@ -1,74 +1,215 @@
 using System.Collections.ObjectModel;
 using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.ViewModels.Workflows;
 
-#pragma warning disable MA0182 // a red stub until the shell holds it
-/// <summary>The Workflows page (screens §4.2): the open root instances grouped by recipe, as the API serves them.</summary>
-internal sealed class WorkflowsViewModel : ObservableObject
+/// <summary>
+/// The Workflows page (screens §4.2): the open root instances grouped by recipe, as the API serves them. Group order, row order, the counts
+/// and the empty sentence are the API's; the app groups the rows by their recipe id, keeps what the human collapsed, and maps fields to words.
+/// </summary>
+#pragma warning disable MA0182 // the shell holds it from T2
+internal sealed class WorkflowsViewModel(ISindriApi api) : ObservableObject
 {
-    internal WorkflowsViewModel(ISindriApi api)
-    {
-        _ = api;
-    }
+    private readonly Dictionary<string, RecipeGroupViewModel> _groups = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, InstanceRowViewModel> _rows = new(StringComparer.Ordinal);
+    private Uri? Url { get; set; }
+
+    /// <summary>Raised when a row asks to open its instance.</summary>
+    internal event EventHandler<OpenRequestedEventArgs>? OpenRequested;
 
     /// <summary>The groups, in the order the API first served their recipes.</summary>
     public ObservableCollection<RecipeGroupViewModel> Groups { get; } = [];
 
-    /// <summary>"8 open · 2 need you · 1 with you".</summary>
-    public string Head { get; } = string.Empty;
+    /// <summary>The recipes the list has shown, kept while one is chosen so the filter can go back.</summary>
+    public ObservableCollection<string> KnownRecipes { get; } = [];
 
-    /// <summary>The nav tab's count.</summary>
-    public string NavCount { get; } = string.Empty;
+    /// <summary>"8 open · 2 need you · 1 with you", root-wide whatever the filters; empty before the first list.</summary>
+    public string Head { get; private set => Set(ref field, value); } = string.Empty;
+
+    /// <summary>The nav tab's count: the open figure; empty before the first list.</summary>
+    public string NavCount { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>True when finished instances exist.</summary>
-    public bool HasDone { get; }
+    public bool HasDone { get; private set => Set(ref field, value); }
 
-    /// <summary>"4 done today".</summary>
-    public string DoneText { get; } = string.Empty;
+    /// <summary>"4 done today", from the served finished count (provisional until the API serves a per-day figure, Q-API-3).</summary>
+    public string DoneText { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>True while the finished rows show.</summary>
-    public bool IsDoneExpanded { get; }
+    public bool IsDoneExpanded { get; private set => Set(ref field, value); }
 
     /// <summary>The finished root rows, once the line is expanded.</summary>
     public ObservableCollection<InstanceRowViewModel> DoneRows { get; } = [];
 
     /// <summary>True when the list is empty and served.</summary>
-    public bool IsEmpty { get; }
+    public bool IsEmpty { get; private set => Set(ref field, value); }
 
-    /// <summary>The served empty sentence.</summary>
-    public string EmptyText { get; } = string.Empty;
+    /// <summary>The served empty sentence (the app's own when a filter leaves no row and none was served); empty unless the page is empty.</summary>
+    public string EmptyText { get; private set => Set(ref field, value); } = string.Empty;
 
-    /// <summary>True while the list answers in a shape this build can't read.</summary>
-    public bool IsUnreadable { get; }
+    /// <summary>True while the list answers in a shape this build can't read (an older Sindri).</summary>
+    public bool IsUnreadable { get; private set => Set(ref field, value); }
 
-    /// <summary>What the page says then.</summary>
-    public string UnreadableText { get; } = string.Empty;
+    /// <summary>What the page says then: the same sentence as Home's strip.</summary>
+    public string UnreadableText => IsUnreadable ? Labels.StripUnreadable : string.Empty;
 
-    /// <summary>Re-reads the list.</summary>
+    /// <summary>True while the views are stalled or rebuilding.</summary>
+    public bool IsStale { get; private set => Set(ref field, value); }
+
+    /// <summary>The recipe the list is narrowed to; null for all.</summary>
+    public string? RecipeFilter { get; private set => Set(ref field, value); }
+
+    /// <summary>The subject the list is narrowed to; null for all.</summary>
+    public string? SubjectFilter { get; private set => Set(ref field, value); }
+
+    /// <summary>Re-reads the list (on connect and on every event).</summary>
     /// <param name="url">The API's base URL.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>A task that completes when the list is shown.</returns>
-    internal Task Refresh(Uri url, CancellationToken cancellationToken) => throw new NotSupportedException();
+    internal async Task Refresh(Uri url, CancellationToken cancellationToken)
+    {
+        Url = url;
+        var list = await api.Instances(url, new InstanceQuery(Root: true, Open: true, Recipe: RecipeFilter, Subject: SubjectFilter), cancellationToken).ConfigureAwait(true);
+        if (list.IsSuccess)
+        {
+            Show(list.Value);
+            if (IsDoneExpanded)
+            {
+                await ReadDone(cancellationToken).ConfigureAwait(true);
+            }
+        }
+        else if (string.Equals(list.Error.Code, SindriUiErrors.BadAnswer.Code, StringComparison.Ordinal) && list.Error.Kind == Aw.Kernel.ErrorKind.Invalid)
+        {
+            MarkUnreadable();
+        }
+    }
 
     /// <summary>Narrows the list to one recipe, or to all.</summary>
     /// <param name="recipe">A recipe id, or null.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>A task that completes when the list is shown.</returns>
-    internal Task FilterRecipe(string? recipe, CancellationToken cancellationToken) => throw new NotSupportedException();
+    internal Task FilterRecipe(string? recipe, CancellationToken cancellationToken)
+    {
+        RecipeFilter = string.IsNullOrEmpty(recipe) ? null : recipe;
+        return Reread(cancellationToken);
+    }
 
     /// <summary>Narrows the list to one subject, or to all.</summary>
     /// <param name="subject">A subject key or label, or null.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>A task that completes when the list is shown.</returns>
-    internal Task FilterSubject(string? subject, CancellationToken cancellationToken) => throw new NotSupportedException();
+    internal Task FilterSubject(string? subject, CancellationToken cancellationToken)
+    {
+        SubjectFilter = string.IsNullOrEmpty(subject) ? null : subject;
+        return Reread(cancellationToken);
+    }
 
-    /// <summary>Expands or collapses the finished line.</summary>
+    /// <summary>Expands the finished line (reading the finished root rows), or collapses it.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>A task that completes when the line is shown.</returns>
-    internal Task ToggleDone(CancellationToken cancellationToken) => throw new NotSupportedException();
+    internal async Task ToggleDone(CancellationToken cancellationToken)
+    {
+        IsDoneExpanded = !IsDoneExpanded;
+        if (IsDoneExpanded)
+        {
+            await ReadDone(cancellationToken).ConfigureAwait(true);
+        }
+        else
+        {
+            DoneRows.Clear();
+        }
+    }
 
     /// <summary>Marks the rows stale while the views are stalled or rebuilding.</summary>
     /// <param name="stale">True while stale.</param>
-    internal void SetStale(bool stale) => throw new NotSupportedException();
+    internal void SetStale(bool stale)
+    {
+        IsStale = stale;
+        foreach (var row in _rows.Values.Concat(DoneRows))
+        {
+            row.SetStale(stale);
+        }
+    }
+
+    /// <summary>Asks to open a row's instance.</summary>
+    /// <param name="address">The instance's address.</param>
+    internal void Open(string address)
+    {
+        if (Groups.SelectMany(g => g.Rows).Concat(DoneRows).FirstOrDefault(r => string.Equals(r.Address, address, StringComparison.Ordinal)) is { } row)
+        {
+            OpenRequested?.Invoke(this, new OpenRequestedEventArgs(row.Link));
+        }
+    }
+
+    private Task Reread(CancellationToken cancellationToken) => Url is { } url ? Refresh(url, cancellationToken) : Task.CompletedTask;
+
+    private void Show(InstanceList list)
+    {
+        IsUnreadable = false;
+        OnChanged(nameof(UnreadableText));
+        (Head, NavCount) = (InstanceHeads.Workflows(list.Counts), InstanceHeads.Nav(list.Counts));
+        (HasDone, DoneText) = (list.Counts.Done > 0, list.Counts.Done > 0 ? InstanceHeads.DoneLine(list.Counts.Done) : string.Empty);
+        var rows = list.Instances.Select(Row).ToList();
+        _rows.Clear();
+        rows.ForEach(r => _rows[r.Address] = r);
+        var shown = rows.GroupBy(r => r.Recipe, StringComparer.Ordinal).Select(g => Group(g.Key, [.. g])).ToList();
+        Patch.To(Groups, shown);
+        if (RecipeFilter is null && SubjectFilter is null)
+        {
+            Patch.To(KnownRecipes, [.. shown.Select(g => g.Recipe)]);
+        }
+
+        IsEmpty = rows.Count == 0;
+        EmptyText = IsEmpty ? list.Empty ?? Labels.NoWorkflowsMatch : string.Empty;
+    }
+
+    private RecipeGroupViewModel Group(string recipe, List<InstanceRowViewModel> rows)
+    {
+        if (!_groups.TryGetValue(recipe, out var group))
+        {
+            group = new RecipeGroupViewModel(recipe);
+            _groups[recipe] = group;
+        }
+
+        group.Show(rows);
+        return group;
+    }
+
+    // A re-read serves the same row again: it stays (so does the control with focus) unless something it draws changed.
+    private InstanceRowViewModel Row(InstanceSummary summary)
+    {
+        var row = new InstanceRowViewModel(summary);
+        var old = Groups.SelectMany(g => g.Rows).FirstOrDefault(r => string.Equals(r.Address, row.Address, StringComparison.Ordinal));
+        var kept = old is not null && string.Equals(old.Signature, row.Signature, StringComparison.Ordinal) ? old : row;
+        kept.SetStale(IsStale);
+        return kept;
+    }
+
+    private async Task ReadDone(CancellationToken cancellationToken)
+    {
+        if (Url is not { } url)
+        {
+            return;
+        }
+
+        var all = await api.Instances(url, new InstanceQuery(Root: true, Recipe: RecipeFilter, Subject: SubjectFilter), cancellationToken).ConfigureAwait(true);
+        if (all.IsSuccess)
+        {
+            var finished = all.Value.Instances.Where(r => r.States.Any(s => s.Terminal && string.Equals(s.State, r.State, StringComparison.Ordinal))).Select(r => new InstanceRowViewModel(r)).ToList();
+            finished.ForEach(r => r.SetStale(IsStale));
+            DoneRows.Clear();
+            finished.ForEach(DoneRows.Add);
+        }
+    }
+
+    private void MarkUnreadable()
+    {
+        IsUnreadable = true;
+        OnChanged(nameof(UnreadableText));
+        (Head, NavCount, HasDone, DoneText, IsEmpty, EmptyText) = (string.Empty, string.Empty, false, string.Empty, false, string.Empty);
+        _rows.Clear();
+        Groups.Clear();
+        DoneRows.Clear();
+    }
 }

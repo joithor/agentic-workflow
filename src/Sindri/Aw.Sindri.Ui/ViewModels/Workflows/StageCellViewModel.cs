@@ -1,19 +1,38 @@
+using System.Globalization;
+using Aw.Sindri.Ui.Api.Workflow;
+
 namespace Aw.Sindri.Ui.ViewModels.Workflows;
 
-/// <summary>One stage cell of a Workflows row (screens §4.2): a glyph, or the engine badge or the blocked dash in its place, then what the cell serves.</summary>
+/// <summary>
+/// One stage cell of a Workflows row (screens §4.2): a glyph, then what the cell serves (the round, desk, child or progress). An engine
+/// badge takes the glyph's place; so does the blocked dash on the state the instance waits in while a required input is missing.
+/// Every part is a served field; the cell works nothing out from the recipe.
+/// </summary>
 internal sealed class StageCellViewModel
 {
+    private readonly StateCell _cell;
+
+    internal StageCellViewModel(StateCell cell, bool isCurrent, bool isBlocked)
+    {
+        _cell = cell;
+        IsCurrent = isCurrent;
+        IsBlocked = isBlocked;
+        var badge = cell.Badge is { } b ? Labels.CellBadge(b.Kind, b.Reason) : string.Empty;
+        Glyph = isBlocked ? Labels.BlockedMark : badge.Length > 0 ? badge : Mark(cell.Glyph);
+        Detail = string.Join(' ', new[] { isBlocked ? badge : string.Empty, Parts(cell) }.Where(p => p.Length > 0));
+    }
+
     /// <summary>The state this cell is.</summary>
-    public string State { get; } = string.Empty;
+    public string State => _cell.State;
 
     /// <summary>The leading mark: the progress glyph, the engine badge, or the blocked dash.</summary>
-    public string Glyph { get; } = string.Empty;
+    public string Glyph { get; }
 
     /// <summary>What follows the mark: the round, desk, child or progress.</summary>
-    public string Detail { get; } = string.Empty;
+    public string Detail { get; }
 
     /// <summary>The cell's words, the mark then the detail.</summary>
-    public string Text { get; } = string.Empty;
+    public string Text => Detail.Length > 0 ? $"{Glyph} {Detail}" : Glyph;
 
     /// <summary>True when a required input is missing and this is the state the instance waits in.</summary>
     public bool IsBlocked { get; }
@@ -21,6 +40,37 @@ internal sealed class StageCellViewModel
     /// <summary>True for the state the instance is in.</summary>
     public bool IsCurrent { get; }
 
-    /// <summary>The name screen readers hear: the state and what the cell says.</summary>
-    public string Name { get; } = string.Empty;
+    /// <summary>The name screen readers hear: the state, then what the cell says in words.</summary>
+    public string Name => $"{_cell.State}, {Words()}";
+
+    private static string Mark(Api.Workflow.StateGlyph glyph) => glyph switch
+    {
+        Api.Workflow.StateGlyph.Done => "●",
+        Api.Workflow.StateGlyph.Active => "◐",
+        Api.Workflow.StateGlyph.Pending => "○",
+        _ => "○",
+    };
+
+    private static string Parts(StateCell cell) => string.Join(
+        ' ',
+        new[]
+        {
+            cell.Round is { } r ? string.Create(CultureInfo.InvariantCulture, $"r{r.N}/{r.Max}") : string.Empty,
+            cell.Children is { } c ? string.Create(CultureInfo.InvariantCulture, $"{c.Done}/{c.Total}") : string.Empty,
+            cell.Desk ? "desk" : string.Empty,
+            cell.Child && cell.Children is null ? "child" : string.Empty,
+        }.Where(p => p.Length > 0));
+
+    // Glyphs are never the only sign (spec §11): the same cell in words.
+    private string Words()
+    {
+        var progress = _cell.Glyph switch
+        {
+            Api.Workflow.StateGlyph.Done => Labels.StageDone,
+            Api.Workflow.StateGlyph.Active => Labels.StageActive,
+            Api.Workflow.StateGlyph.Pending => Labels.StagePending,
+            _ => Labels.StagePending,
+        };
+        return string.Join(", ", new[] { IsBlocked ? Labels.StageBlocked : progress, Detail }.Where(p => p.Length > 0));
+    }
 }

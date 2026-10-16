@@ -3,38 +3,63 @@ using Aw.Sindri.Ui.Navigation;
 
 namespace Aw.Sindri.Ui.ViewModels.Workflows;
 
-/// <summary>One row of the Workflows list (screens §4.2): the subject, the inputs, a cell per state, and the served now and chip.</summary>
+/// <summary>
+/// One row of the Workflows list (screens §4.2): the subject, the inputs, a cell per state, and the served now and chip. It decides
+/// nothing: every word is the row's own.
+/// </summary>
 internal sealed class InstanceRowViewModel : ObservableObject
 {
+    private readonly InstanceSummary _row;
+
     internal InstanceRowViewModel(InstanceSummary row)
     {
-        _ = row;
+        _row = row;
+        var blocked = row.Inputs.Any(i => i is { Required: true, Present: false });
+        Inputs = [.. row.Inputs.Select(i => new InputCellViewModel(i))];
+        Stages = [.. row.States.Select(s =>
+        {
+            var current = string.Equals(s.State, row.State, StringComparison.Ordinal);
+            return new StageCellViewModel(s, current, blocked && current);
+        })];
     }
 
     /// <summary>The instance's address, as served.</summary>
-    public string Address { get; } = string.Empty;
+    public string Address => _row.Address;
 
-    /// <summary>The subject: its served label.</summary>
-    public string Subject { get; } = string.Empty;
+    /// <summary>The instance's own id, as served.</summary>
+    public string InstanceId => _row.Id;
+
+    /// <summary>The recipe's id, as served.</summary>
+    public string Recipe => _row.Recipe.Id;
+
+    /// <summary>The subject: its served label, or its key when it has none.</summary>
+    public string Subject => _row.Subject.Label.Length > 0 ? _row.Subject.Label : _row.Subject.Key;
 
     /// <summary>The served chip.</summary>
-    public StateChip Chip { get; } = new(string.Empty, ChipTone.Neutral);
+    public StateChip Chip => _row.Chip;
 
     /// <summary>The served now sentence, unchanged.</summary>
-    public string Now { get; } = string.Empty;
+    public string Now => _row.Now;
 
     /// <summary>A cell per declared input.</summary>
-    public IReadOnlyList<InputCellViewModel> Inputs { get; } = [];
+    public IReadOnlyList<InputCellViewModel> Inputs { get; }
 
     /// <summary>A cell per state, in the served order.</summary>
-    public IReadOnlyList<StageCellViewModel> Stages { get; } = [];
+    public IReadOnlyList<StageCellViewModel> Stages { get; }
 
     /// <summary>The name screen readers hear: the subject and the address.</summary>
-    public string AccessibleName { get; } = string.Empty;
+    public string AccessibleName => $"{Subject} {_row.Address}";
 
-    /// <summary>Where Enter and a click go.</summary>
-    public DeepLink Link { get; } = new(DeepLinkKind.Workflow, string.Empty);
+    /// <summary>Where Enter and a click go: the instance in the Workflows frame.</summary>
+    public DeepLink Link => new(DeepLinkKind.Workflow, _row.Address);
 
-    /// <summary>True while the views are stalled or rebuilding.</summary>
-    public bool IsStale { get; }
+    /// <summary>True while the views are stalled or rebuilding: the row stays, marked stale.</summary>
+    public bool IsStale { get; private set => Set(ref field, value); }
+
+    /// <summary>Everything the row draws: two rows with the same signature look the same.</summary>
+    internal string Signature => string.Join('|', Address, Subject, Chip, Now, string.Join(',', Inputs.Select(i => i.Name)), string.Join(',', Stages.Select(s => s.Name)));
+
+    /// <summary>Sets what the list knows of the row.</summary>
+    /// <param name="stale">The views are stalled or rebuilding.</param>
+    internal void SetStale(bool stale) => IsStale = stale;
 }
