@@ -37,7 +37,7 @@ public sealed class DecisionsFramesTests : FrameHost
         var (window, _) = await WithDecisionOpen();
 
         var served = GoldenFiles.Node("decisions", "pending")["decisions"]![0]!;
-        Assert.Equal((string)GoldenFiles.Node("needs-you", "large")["rows"]![0]!["title"]!, Named<TextBlock>(window, "DecisionQuestion").Text);
+        Assert.Equal((string)served["question"]!, Named<TextBlock>(window, "DecisionQuestion").Text);   // the served question (proof B4), not the row's title
         Assert.Equal(served["options"]!.AsArray().Select(o => (string)o!["label"]!), Named<Control>(window, "DecisionSheet").GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("decision-option")).Select(b => (string?)b.Content ?? ""), StringComparer.Ordinal);
         Frame(window, "decision-sheet");
         Frame(window, "decisions-pending");
