@@ -22,7 +22,7 @@ internal sealed class ProbeJobService(IJobContextAccessor jobs, Commands.Chain.F
                 latch.Start();
                 await latch.Release.Task.ConfigureAwait(false);
                 return new ProbeReport("late");
-            case "fail" or "throw" or "big" or "secret":
+            case "fail" or "throw" or "big" or "secret" or "repo":
                 return Immediate(request.Mode);
             default:
                 await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);

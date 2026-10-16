@@ -50,19 +50,20 @@ internal sealed class JobStartService<TRequest, TResult>(JobAdmitter<TRequest> a
         var definition = admitted.Value.Definition;
         var key = definition.KeyOf(request);
         var job = JobId.New(ids);
+        var repo = caller.Class == CallerClass.Session ? caller.Repo : definition.RepoOf(request);   // a session works in its own repo; a human says which repo the work is about
         if (!registry.TryClaim(kind, key, job, out var running))
         {
             return Conflict(kind, key, running);
         }
 
-        var recorded = await recorder.Record(new JobTicket(job, kind, key), caller, admitted.Value.Service, caller.Repo, cancellationToken).ConfigureAwait(false);
+        var recorded = await recorder.Record(new JobTicket(job, kind, key), caller, admitted.Value.Service, repo, cancellationToken).ConfigureAwait(false);
         if (recorded.IsError)
         {
             registry.Release(job);
             return recorded.Error;
         }
 
-        await runner.Start(new JobStart(job, kind, key, definition, request, caller, recorded.Value.Grant, admitted.Value.Service, recorded.Value.Cause, caller.Repo), cancellationToken).ConfigureAwait(false);
+        await runner.Start(new JobStart(job, kind, key, definition, request, caller, recorded.Value.Grant, admitted.Value.Service, recorded.Value.Cause, repo), cancellationToken).ConfigureAwait(false);
         return Response(caller, job, recorded.Value.Sequence);
     }
 

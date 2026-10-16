@@ -885,6 +885,7 @@ Aw.Sindri.Features.Jobs.IJobRunner.Start(Aw.Sindri.Features.Jobs.JobStart! start
 Aw.Sindri.Features.Jobs.JobDefinition
 Aw.Sindri.Features.Jobs.JobDefinition.KeyOf(object! request) -> Aw.Sindri.Core.Ids.JobKey
 Aw.Sindri.Features.Jobs.JobDefinition.Precheck(object! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Features.Jobs.JobDefinition.RepoOf(object! request) -> Aw.Sindri.Core.Ids.RepoName?
 Aw.Sindri.Features.Jobs.JobDefinition.Request.get -> System.Type!
 Aw.Sindri.Features.Jobs.JobDefinition.Run(System.Func<System.Type!, object!>! resolve, object! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Features.Jobs.JobWorkResult!>
 Aw.Sindri.Features.Jobs.JobRecovery
@@ -2273,7 +2274,7 @@ static Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest.operator ==(Aw.Sindri.Fea
 static Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse.operator !=(Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse? left, Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse? right) -> bool
 static Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse.operator ==(Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse? left, Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse? right) -> bool
 static Aw.Sindri.Features.SindriFeaturesServiceCollectionExtensions.AddSindriFeatures(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
-static Aw.Sindri.Features.SindriJobServiceCollectionExtensions.AddJob<TRequest, TResult, TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Func<TRequest!, Aw.Sindri.Core.Ids.JobKey>! key, System.Func<TResult, string!>! summary, System.Func<TRequest!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>>? precheck = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Sindri.Features.SindriJobServiceCollectionExtensions.AddJob<TRequest, TResult, TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Func<TRequest!, Aw.Sindri.Core.Ids.JobKey>! key, System.Func<TResult, string!>! summary, System.Func<TRequest!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>>? precheck = null, System.Func<TRequest!, Aw.Sindri.Core.Ids.RepoName?>? repo = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Sindri.Features.StartInstance.StartFact.operator !=(Aw.Sindri.Features.StartInstance.StartFact? left, Aw.Sindri.Features.StartInstance.StartFact? right) -> bool
 static Aw.Sindri.Features.StartInstance.StartFact.operator ==(Aw.Sindri.Features.StartInstance.StartFact? left, Aw.Sindri.Features.StartInstance.StartFact? right) -> bool
 static Aw.Sindri.Features.StartInstance.StartInstanceRequest.operator !=(Aw.Sindri.Features.StartInstance.StartInstanceRequest? left, Aw.Sindri.Features.StartInstance.StartInstanceRequest? right) -> bool

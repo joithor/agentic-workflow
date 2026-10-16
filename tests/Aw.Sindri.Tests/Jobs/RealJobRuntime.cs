@@ -76,7 +76,8 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
                 sp.GetRequiredService<ICallerContextAccessor>(), sp.GetRequiredService<JobEventWriter>(), sp.GetRequiredService<JobRegistry>(), sp.GetRequiredService<IShutdown>()))
             .AddSingleton<IJobRunner>(static sp => sp.GetRequiredService<JobRunner>())
             .AddJob<EchoJobRequest, EchoReport, EchoJobService>(static _ => JobKey.From("echo"), static r => string.Create(CultureInfo.InvariantCulture, $"echoed {r.Lines}"))
-            .AddJob<ProbeJobRequest, ProbeReport, ProbeJobService>(static r => JobKey.From(r.Mode), static r => string.Create(CultureInfo.InvariantCulture, $"probed {r.Text.Length}"))
+            .AddJob<ProbeJobRequest, ProbeReport, ProbeJobService>(static r => JobKey.From(r.Mode), static r => string.Create(CultureInfo.InvariantCulture, $"probed {r.Text.Length}"),
+                repo: static r => r.Mode == "repo" ? Aw.Sindri.Core.Ids.RepoName.From("demo") : null)
             .AddScoped<IValidator<FixtureCommand>, FixtureValidator>().AddCommand<FixtureCommand, CommandAccepted, FixtureService>()
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
     }

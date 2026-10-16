@@ -10,14 +10,16 @@ namespace Aw.Sindri.Features.Jobs;
 public sealed class JobDefinition
 {
     private readonly Func<object, JobKey> _key;
+    private readonly Func<object, RepoName?> _repo;
     private readonly Func<object, CancellationToken, ValueTask<Result<Unit>>> _precheck;
     private readonly Func<Func<Type, object>, object, CancellationToken, ValueTask<JobWorkResult>> _run;
 
-    internal JobDefinition(Type request, Func<object, JobKey> key, Func<object, CancellationToken, ValueTask<Result<Unit>>> precheck,
+    internal JobDefinition(Type request, Func<object, JobKey> key, Func<object, RepoName?> repo, Func<object, CancellationToken, ValueTask<Result<Unit>>> precheck,
         Func<Func<Type, object>, object, CancellationToken, ValueTask<JobWorkResult>> run)
     {
         Request = request;
         _key = key;
+        _repo = repo;
         _precheck = precheck;
         _run = run;
     }
@@ -32,6 +34,15 @@ public sealed class JobDefinition
     {
         ArgumentNullException.ThrowIfNull(request);
         return _key(request);
+    }
+
+    /// <summary>The repo a start of <paramref name="request"/> by a human is about, or null.</summary>
+    /// <param name="request">The request.</param>
+    /// <returns>The repo, or null.</returns>
+    public RepoName? RepoOf(object request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return _repo(request);
     }
 
     /// <summary>Checks <paramref name="request"/> inside the gate before the start is accepted (a 404 or 409 the HTTP caller must see synchronously).</summary>
