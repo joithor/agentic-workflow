@@ -125,4 +125,33 @@ public sealed class StripRequeryTests
         Expect.Sequence(shown, shell.Strip.Rows.Select(r => r.Address));
         Assert.False(shell.Strip.IsNotServed);
     }
+
+    // Proof B6: main's list still serves P4's shape (no counts): the strip says so in a sentence, never an empty box.
+    [Fact]
+    public async Task A_list_in_a_shape_this_build_cant_read_shows_the_unreadable_sentence_and_no_rows()
+    {
+        var shell = await Connected();
+
+        _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, """{"instances":[],"needsYou":[],"empty":"nothing","rows":[]}""");
+        _server.Push(A.Event(73, "workflow.started"));
+        await Until(() => shell.Strip.IsUnreadable);
+
+        Assert.Equal((Labels.StripUnreadable, 0, false), (shell.Strip.UnreadableText, shell.Strip.Rows.Count, shell.Strip.IsNotServed));
+        Assert.Equal(ShellState.Normal, shell.State);
+    }
+
+    [Fact]
+    public async Task The_sentence_goes_when_the_list_can_be_read_again()
+    {
+        var shell = await Connected();
+        _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, """{"instances":[],"needsYou":[],"empty":"nothing","rows":[]}""");
+        _server.Push(A.Event(73, "workflow.started"));
+        await Until(() => shell.Strip.IsUnreadable);
+
+        _server.WorkflowAnswer = null;
+        _server.Push(A.Event(74, "workflow.started"));
+        await Until(() => !shell.Strip.IsUnreadable);
+
+        Assert.True(shell.Strip.Rows.Count > 0);
+    }
 }

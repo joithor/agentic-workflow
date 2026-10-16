@@ -68,6 +68,14 @@ internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider
     /// <summary>What the strip says then.</summary>
     public string NotServedText => IsNotServed ? Labels.ArrivesWorkflowStrip : string.Empty;
 
+#pragma warning disable CA1822, MA0041 // stub until the fix
+    /// <summary>True while the workflow list answers in a shape this build can't read.</summary>
+    public bool IsUnreadable => false;
+
+    /// <summary>What the strip says then.</summary>
+    public string UnreadableText => string.Empty;
+#pragma warning restore CA1822, MA0041
+
     /// <summary>The text scale; at 1.3 and over the cap drops to two.</summary>
     internal double TextScale
     {

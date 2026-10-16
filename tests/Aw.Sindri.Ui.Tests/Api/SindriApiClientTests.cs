@@ -57,6 +57,43 @@ public sealed class SindriApiClientTests
         Assert.Contains("BytePosition", entry.Message, StringComparison.Ordinal);
     }
 
+    // Proof B6: the shell re-reads on every event; one unreadable route is one log line, not one for each event.
+    [Fact]
+    public async Task The_same_unreadable_answer_is_logged_once_and_a_different_one_again()
+    {
+        var handler = new FakeSindriHandler(new FakeSindriApi()) { Override = (HttpStatusCode.OK, """{"pid":"not-a-number","version":7}""") };
+        var log = new RecordingLogger();
+        var client = new SindriApiClient(new HttpClient(handler), _token, TimeProvider.System, log);
+
+        _ = await client.Status(_api, Token);
+        _ = await client.Status(_api, Token);
+        _ = await client.Status(_api, Token);
+        _ = Assert.Single(log.Entries);
+
+        handler.Override = (HttpStatusCode.OK, """{"pid":1,"version":{"x":1}}""");
+        _ = await client.Status(_api, Token);
+
+        Assert.Equal(2, log.Entries.Count);
+    }
+
+    // The line comes back when the route has been readable in between: a recurrence is news.
+    [Fact]
+    public async Task A_recurrence_after_a_good_answer_is_logged_again()
+    {
+        var api = new FakeSindriApi();
+        var handler = new FakeSindriHandler(api) { Override = (HttpStatusCode.OK, """{"pid":"not-a-number","version":7}""") };
+        var log = new RecordingLogger();
+        var client = new SindriApiClient(new HttpClient(handler), _token, TimeProvider.System, log);
+        _ = await client.Status(_api, Token);
+
+        handler.Override = null;
+        Assert.True((await client.Status(_api, Token)).IsSuccess);
+        handler.Override = (HttpStatusCode.OK, """{"pid":"not-a-number","version":7}""");
+        _ = await client.Status(_api, Token);
+
+        Assert.Equal(2, log.Entries.Count);
+    }
+
     // API §6: a refused call never carries the token into its error or the log (the token goes only into its header).
     [Fact]
     public async Task A_refusal_names_no_token_in_its_error_or_the_log()
