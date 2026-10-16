@@ -22,7 +22,7 @@ internal sealed class CheckRetentionService(IGraphStore store, IExportStore expo
         }
 
         var expired = MapRetention.ExpiredExports(files.Value, clock.GetUtcNow()).Count;
-        var excess = MapRetention.ExcessVersions(versions.Value).Count;
+        var excess = MapRetention.ExcessVersions(versions.Value, clock.GetUtcNow()).Count;
         var old = await eval.Expired(clock.GetUtcNow(), cancellationToken).ConfigureAwait(false);   // an unreadable eval folder is not a map problem: counted as none
         var evalFiles = old.IsSuccess ? old.Value.Total : 0;
         if (expired + excess + evalFiles == 0)

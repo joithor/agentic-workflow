@@ -3587,7 +3587,7 @@ static Aw.Context.Core.Map.MapImported.operator !=(Aw.Context.Core.Map.MapImport
 static Aw.Context.Core.Map.MapImported.operator ==(Aw.Context.Core.Map.MapImported? left, Aw.Context.Core.Map.MapImported? right) -> bool
 static Aw.Context.Core.Map.MapPromoted.operator !=(Aw.Context.Core.Map.MapPromoted? left, Aw.Context.Core.Map.MapPromoted? right) -> bool
 static Aw.Context.Core.Map.MapPromoted.operator ==(Aw.Context.Core.Map.MapPromoted? left, Aw.Context.Core.Map.MapPromoted? right) -> bool
-static Aw.Context.Core.Map.MapRetention.ExcessVersions(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Map.MapVersion!>! versions) -> System.Collections.Generic.IReadOnlyList<int>!
+static Aw.Context.Core.Map.MapRetention.ExcessVersions(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Map.MapVersion!>! versions, System.DateTimeOffset now) -> System.Collections.Generic.IReadOnlyList<int>!
 static Aw.Context.Core.Map.MapRetention.ExpiredExports(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Map.ExportedFile!>! files, System.DateTimeOffset now) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Map.ExportedFile!>!
 static Aw.Context.Core.Map.MapRetention.ExportLifetime.get -> System.TimeSpan
 static Aw.Context.Core.Map.MapSnapshot.operator !=(Aw.Context.Core.Map.MapSnapshot? left, Aw.Context.Core.Map.MapSnapshot? right) -> bool
@@ -4503,3 +4503,4 @@ static Aw.Context.Core.Eval.MapQuality.MapQualityRun.operator !=(Aw.Context.Core
 static Aw.Context.Core.Eval.MapQuality.MapQualityRun.operator ==(Aw.Context.Core.Eval.MapQuality.MapQualityRun? left, Aw.Context.Core.Eval.MapQuality.MapQualityRun? right) -> bool
 static Aw.Context.Core.Eval.MapQuality.Ratio.operator !=(Aw.Context.Core.Eval.MapQuality.Ratio? left, Aw.Context.Core.Eval.MapQuality.Ratio? right) -> bool
 static Aw.Context.Core.Eval.MapQuality.Ratio.operator ==(Aw.Context.Core.Eval.MapQuality.Ratio? left, Aw.Context.Core.Eval.MapQuality.Ratio? right) -> bool
+static Aw.Context.Core.Map.MapRetention.EvalWindow.get -> System.TimeSpan

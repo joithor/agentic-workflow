@@ -276,6 +276,13 @@ counts); the scheduled service `ContextPurgeService` (`context-purge`); doctor r
 `RunDoctorService` stays within AW1007's dependency limit). CLI: `Host/Commands/ContextMapVerbs` and `ContextMapText`. The map JSON
 types are in `SindriJsonContext`; the reader and the exports folder take its `JsonSerializerOptions`.
 
+**Version retention (`MapRetention.ExcessVersions(versions, now)`).** The purge deletes a `Retained` version only when it is
+beyond the newest 20 retained **and** its successor (the next Current-or-Retained version by number) was created more than
+90 days ago. A version is what an as-of read (`AsOfMapBuilder.Authored`, newest Current-or-Retained created at or before a
+sample's date) returns for the dates from its own creation to its successor's, and the backtest's eval window is 90 days (the
+eval cache and report expiry), so a version replaced inside the window may still be read. No migration: `map_version.created`
+is enough. `CheckRetention` counts the same set.
+
 `GET /sindri/context/map/export` is the one query that writes: a file under `exports/` (owner-only, purged after 14
 days), never the store or the ledger. It is a query because the API spec lists it as one, and it changes no state a
 command or event describes; a later file-writing route should not take it as a precedent without the same reasons.

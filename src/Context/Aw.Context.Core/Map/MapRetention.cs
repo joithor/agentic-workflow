@@ -16,9 +16,27 @@ public static class MapRetention
     public static IReadOnlyList<ExportedFile> ExpiredExports(IReadOnlyList<ExportedFile> files, DateTimeOffset now) =>
         [.. files.Where(f => now - f.Written > ExportLifetime)];
 
-    /// <summary>The retained versions beyond the newest <see cref="RetainedVersions"/>.</summary>
+    /// <summary>How far back a backtest can read a map version: the eval cache and report lifetime.</summary>
+    public static TimeSpan EvalWindow { get; } = TimeSpan.FromDays(90);
+
+    /// <summary>
+    /// The retained versions that nothing needs: beyond the newest <see cref="RetainedVersions"/> and not read by an as-of lookup
+    /// inside <see cref="EvalWindow"/>. A version is read for the dates from its own creation until its successor's, so one
+    /// stays while its successor was created within the window.
+    /// </summary>
     /// <param name="versions">Every version.</param>
+    /// <param name="now">The time now.</param>
     /// <returns>The versions to delete.</returns>
-    public static IReadOnlyList<int> ExcessVersions(IReadOnlyList<MapVersion> versions) =>
-        [.. versions.Where(v => v.Status == MapVersionStatus.Retained).OrderByDescending(v => v.Number).Skip(RetainedVersions).Select(v => v.Number)];
+    public static IReadOnlyList<int> ExcessVersions(IReadOnlyList<MapVersion> versions, DateTimeOffset now)
+    {
+        var readable = versions.Where(v => v.Status is MapVersionStatus.Current or MapVersionStatus.Retained).OrderBy(v => v.Number).ToList();
+        var windowStart = now - EvalWindow;
+        var surplus = readable.Where(v => v.Status == MapVersionStatus.Retained).OrderByDescending(v => v.Number).Skip(RetainedVersions).Select(v => v.Number).ToHashSet();
+        return
+        [
+            .. readable.Select((v, i) => (Version: v, Next: i + 1 < readable.Count ? readable[i + 1] : null))
+                .Where(x => surplus.Contains(x.Version.Number) && x.Next is not null && x.Next.Created < windowStart)
+                .Select(x => x.Version.Number),
+        ];
+    }
 }

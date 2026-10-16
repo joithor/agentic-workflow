@@ -390,7 +390,7 @@ $SINDRI context map export [<name-or-path>] [--json]
 
 `$SINDRI doctor` adds `context:map` (warns with no map or with orphaned overrides; how far the map is behind HEAD is
 unknown until a build records its commit, S-4) and `context:retention` (warns while exports older than 14 days or
-retained versions past the newest 20 are still there). The `context-purge` service removes both: name it under
+retained versions past the newest 20 are still there, except those replaced within the last 90 days, which a backtest can still read). The `context-purge` service removes both: name it under
 `services:` in the profile.
 
 ### Exit codes (map verbs)
