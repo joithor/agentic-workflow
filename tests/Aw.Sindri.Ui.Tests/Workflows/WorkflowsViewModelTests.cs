@@ -262,4 +262,18 @@ public sealed class WorkflowsViewModelTests
 
         Assert.Equal((false, 0), (list.IsDoneExpanded, list.DoneRows.Count));
     }, Token);
+
+    [Fact]
+    public void The_legend_names_every_mark_the_rows_draw_and_the_keys_in_words()
+    {
+        var list = new WorkflowsViewModel(_server, new FakeClipboard(), TimeProvider.System);
+        var marks = new[] { StageCellViewModel.Mark(Aw.Sindri.Ui.Api.Workflow.StateGlyph.Done), StageCellViewModel.Mark(Aw.Sindri.Ui.Api.Workflow.StateGlyph.Active), StageCellViewModel.Mark(Aw.Sindri.Ui.Api.Workflow.StateGlyph.Pending), Labels.LoopMark };
+        var words = new[] { Labels.StageDone, Labels.StageActive, Labels.StagePending, Labels.LegendLoop, Labels.LegendEscalated, Labels.LegendTakenOver };
+
+        Assert.All(marks, m => Assert.Contains(m, list.LegendText, StringComparison.Ordinal));
+        Assert.All(words, w => Assert.Contains(w, list.LegendText, StringComparison.Ordinal));
+        Assert.All(words, w => Assert.Contains(w, list.LegendName, StringComparison.Ordinal));
+        Assert.All(marks, m => Assert.DoesNotContain(m, list.LegendName, StringComparison.Ordinal));
+        Assert.All((string[])["Enter", "A", "B", "X"], k => Assert.Contains(k, list.LegendText, StringComparison.Ordinal));
+    }
 }

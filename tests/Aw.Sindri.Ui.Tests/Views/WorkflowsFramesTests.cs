@@ -38,6 +38,7 @@ public sealed class WorkflowsFramesTests : FrameHost
 
         Expect.Sequence(shell.Workflows.Groups.SelectMany(g => g.Rows).Select(r => r.Address), Rows(window).Select(Address));
         Assert.Equal(shell.Workflows.Head, Named<TextBlock>(window, "WorkflowsHead").Text);
+        Assert.Equal((true, shell.Workflows.LegendText), (Visible(window, "WorkflowsLegend"), Named<TextBlock>(window, "WorkflowsLegend").Text));
         Assert.Equal(shell.Workflows.Groups.Count, window.GetVisualDescendants().OfType<Button>().Count(t => t.Name == "WorkflowGroupToggle"));
         Frame(window, "u8-workflows-open", Prefix);
     });

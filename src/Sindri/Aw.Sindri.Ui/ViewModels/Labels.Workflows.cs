@@ -63,6 +63,15 @@ internal static partial class Labels
     /// <summary>The page's heading while it has no counts yet.</summary>
     internal const string WorkflowsHeading = "Workflows";
 
+    /// <summary>The legend's word for the loop mark.</summary>
+    internal const string LegendLoop = "loop";
+
+    /// <summary>The legend's word for the mark of an escalated or parked stage.</summary>
+    internal const string LegendEscalated = "escalated or parked";
+
+    /// <summary>The legend's word for the mark of a taken-over stage.</summary>
+    internal const string LegendTakenOver = "taken over";
+
     /// <summary>B on a row: handing an instance back is sent from the app in U8b.</summary>
     internal static readonly string HandBackArrives = $"Hand back {Arrives("U8b")}. Copy its command from the instance and run it at a terminal.";
 
