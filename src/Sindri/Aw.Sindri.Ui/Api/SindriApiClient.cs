@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Json;
+using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Platform;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -46,6 +47,24 @@ internal sealed partial class SindriApiClient(HttpClient http, IHumanTokenSource
 
     public Task<Result<CommandAcceptedView>> RebuildViews(Uri api, CancellationToken cancellationToken) =>
         Call<CommandAcceptedView>(api, HttpMethod.Post, "/sindri/views/rebuild", cancellationToken);
+
+    public Task<Result<InstanceList>> Instances(Uri api, InstanceQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        return Get<InstanceList>(api, WorkflowRoutes.Instances(query), cancellationToken, view: true);
+    }
+
+    public Task<Result<InstanceDetail>> Instance(Uri api, string id, CancellationToken cancellationToken) =>
+        Get<InstanceDetail>(api, WorkflowRoutes.Instance(id), cancellationToken, view: true);
+
+    public Task<Result<FactView>> InstanceFact(Uri api, string id, string key, CancellationToken cancellationToken) =>
+        Get<FactView>(api, WorkflowRoutes.Fact(id, key), cancellationToken);
+
+    public Task<Result<RecipeView>> Recipe(Uri api, string recipe, string? hash, CancellationToken cancellationToken) =>
+        Get<RecipeView>(api, WorkflowRoutes.Recipe(recipe, hash), cancellationToken);
+
+    // LANE ANCHOR U3': the U3' public reads, one method each; their routes go in a routes class of their own, like WorkflowRoutes. Insert immediately above this marker, never between the markers.
+    // LANE ANCHOR U8: the U8 public sends; the workflow reads already have their routes in WorkflowRoutes. Insert immediately below this marker, never between the markers.
 
     public async IAsyncEnumerable<EventView> Events(Uri api, long after, [EnumeratorCancellation] CancellationToken cancellationToken)
     {

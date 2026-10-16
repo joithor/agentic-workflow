@@ -10,8 +10,14 @@
 #   sindri-ui-fixture.sh unstall   delete that row again (then Rebuild views recovers)
 #   sindri-ui-fixture.sh drift     edit the live profile so it no longer matches the approval (a profile row)
 #   sindri-ui-fixture.sh down      stop the control plane (sindri stop, as the owner)
-#   sindri-ui-fixture.sh --large   reserved for U2/U3 (30 items, 12 needs-you rows); exits 2 until then
+#   sindri-ui-fixture.sh items [--large]
+#                                  add the default fixture's 4 items (sindri item add, as the owner; U2, API P3);
+#                                  --large adds 30 more for the fold test (U3 adds its 12 needs-you rows)
+#   sindri-ui-fixture.sh close <item> [--cancelled]
+#                                  close an item at the CLI (sindri item close, as the owner): with the app open on
+#                                  the same item, the app's own Close then sends a stale version (SND-ITEM-409)
 #
+# FIXTURE_REPO names the items' repo (default: none, so the API's default applies).
 # Environment: AW_SINDRI_HOME (required: sindri-prove.sh's guard, a temp or proof folder), SINDRI (the built C# CLI,
 # as sindri-prove.sh reads it), STALL_TYPE (the stalled row's type; default service.ran, a type the projector reads),
 # SINDRI_UI_FIXTURE_SQL=python (use python3's sqlite3 module even when the sqlite3 CLI is installed; without the CLI it is
@@ -27,7 +33,7 @@ STALL_ID="7f3c1a52-0b6e-4d1e-9a55-3c2f6d8e1b04"
 STALL_CORRELATION="7f3c1a52-0b6e-4d1e-9a55-3c2f6d8e1b05"
 
 die() { echo "sindri-ui-fixture: $*" >&2; exit 2; }
-usage() { sed -n '5,16p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '5,21p' "$0" | sed 's/^# \{0,1\}//'; }
 
 # sindri-prove.sh's guard alone: it runs before any verb, and SINDRI=true makes the verb a no-op.
 guard() { SINDRI=true "$PROVE" guard >/dev/null || exit 2; }
@@ -114,15 +120,36 @@ drift() {
 
 down() { "$PROVE" human stop; }
 
+# The default fixture's items (UI spec §16's queue, U2's spec-shaped queue/fixture.json), oldest first.
+ITEMS=("Stream limits 429 fallback" "Retry storm in outbox dispatcher" "Context map review for tabs.layout" "Try the queue")
+
+add() {
+  if [ -n "${FIXTURE_REPO:-}" ]; then "$PROVE" human item add "$1" --repo "$FIXTURE_REPO"; else "$PROVE" human item add "$1"; fi
+}
+
+items() {
+  local title n
+  for title in "${ITEMS[@]}"; do add "$title" || return; done
+  [ "${1:-}" = "--large" ] || return 0
+  for n in $(seq 1 30); do add "Large fixture item $n" || return; done
+}
+
+close() {
+  [[ "$1" =~ ^[A-Za-z]+-[A-Za-z0-9]+$ ]] || die "close: '$1' is not an item id"
+  if [ "${2:-}" = "--cancelled" ]; then "$PROVE" human item close "$1" --cancelled; else "$PROVE" human item close "$1"; fi
+}
+
 verb="${1:-}"
 case "$verb" in
   -h | --help) usage; exit 0 ;;
   "") usage >&2; exit 2 ;;
-  --large) die "--large is reserved for U2/U3 (items and needs-you rows); it builds nothing yet" ;;
-  up | stall | unstall | drift | down) ;;
+  --large) die "--large belongs to 'items': sindri-ui-fixture.sh items --large" ;;
+  up | stall | unstall | drift | down) [ "$#" -eq 1 ] || die "'$verb' takes no arguments" ;;
+  items) [ "$#" -eq 1 ] || { [ "$#" -eq 2 ] && [ "$2" = "--large" ]; } || die "usage: items [--large]" ;;
+  close) [ "$#" -eq 2 ] || { [ "$#" -eq 3 ] && [ "$3" = "--cancelled" ]; } || die "usage: close <item> [--cancelled]" ;;
   *) usage >&2; die "unknown verb: $verb" ;;
 esac
-[ "$#" -eq 1 ] || die "'$verb' takes no arguments"
 
 guard
-"$verb"
+shift
+"$verb" "$@"

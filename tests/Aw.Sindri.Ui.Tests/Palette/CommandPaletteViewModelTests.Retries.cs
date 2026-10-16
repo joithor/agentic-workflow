@@ -262,4 +262,27 @@ public sealed partial class CommandPaletteViewModelTests
         _clock.Advance(ControlViewModel.CopiedFor);
         Assert.Equal((false, false), (control.IsMuted, controlSpoke));
     }
+
+    // arch-0: a destructive command is confirmed in its own control, never from the palette: its entry is not a runnable stop,
+    // arrowing skips it, and Enter on it neither asks nor sends.
+    [Fact]
+    public async Task A_destructive_entry_is_not_a_runnable_stop_and_enter_does_nothing_with_it()
+    {
+        var rows = _catalog.Rows.Select(r => string.Equals(r.Action, "RebuildViews", StringComparison.Ordinal) ? r with { Destructive = true } : r).ToList();
+        var controls = new CatalogViewModel(_clipboard, _clock);
+        controls.Show(_api, _server, _catalog with { Rows = rows });
+        var palette = new CommandPaletteViewModel(controls, _pages.Add, _history.Add);
+        palette.Open();
+        var entry = palette.Entries.Single(e => e.Id == "RebuildViews");
+        var stops = new List<string>();
+        for (var i = 0; i < 200; i++)
+        {
+            palette.Move(1);
+            stops.Add(palette.Selected!.Id);
+        }
+
+        await palette.Run(entry, Token);
+
+        Assert.Equal((false, false, 0, 0), (entry.IsEnabled, stops.Contains("RebuildViews"), _server.RebuildCalls, entry.Control!.IsConfirming ? 1 : 0));
+    }
 }

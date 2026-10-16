@@ -25,7 +25,7 @@
        gives way down to 160 px. Below that the bar steps down (TopBar.axaml.cs): first the ⌘K field folds to its
        magnifier, then the pill's age drops (its accessible name keeps it), then the brand keeps its mark alone, so the
        navigation and the pill's word fit at the 900 px minimum in every state and at text scale 1.3. -->
-  <Border Classes="topbar focus-region" Focusable="True" AutomationProperties.Name="{Binding Text.Sindri}">
+  <Border Classes="topbar focus-region" Focusable="True" AutomationProperties.Name="{Binding Text.Sindri}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
     <Grid x:Name="BarGrid" VerticalAlignment="Center">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="Auto" />
@@ -42,8 +42,7 @@
       </StackPanel>
 
       <!-- The segmented navigation (§3.2, home.html): one group on Surface1 with a hairline; unselected labels muted, the
-           selected segment on PrimarySoft with a Primary dot and its label in PrimaryHover. Later ▾ is a flat segment of
-           the same group. Dimmed and disabled while Sindri isn't running (states.html). -->
+           selected segment on PrimarySoft with a Primary dot and its label in PrimaryHover. Dimmed and disabled while Sindri isn't running (states.html). -->
       <Border x:Name="NavSegments" Grid.Column="1" Grid.ColumnSpan="2" Classes="seg" HorizontalAlignment="Left">
         <StackPanel x:Name="NavigationGroup" Orientation="Horizontal" Spacing="2" IsEnabled="{Binding IsNavigationEnabled}">
           <ListBox x:Name="Navigation" Classes="nav" ItemsSource="{Binding Navigation}"
@@ -58,38 +57,27 @@
               <Style Selector="ListBoxItem" x:DataType="shell:NavEntry">
                 <Setter Property="AutomationProperties.Name" Value="{Binding Label}" />
               </Style>
+              <!-- A count shows when there is one, and not at all once the bar has stepped down to its last step (TopBar.Counts.cs). -->
+              <Style Selector="TextBlock.nav-count">
+                <Setter Property="IsVisible" Value="False" />
+              </Style>
+              <Style Selector="TextBlock.nav-count.has">
+                <Setter Property="IsVisible" Value="True" />
+              </Style>
+              <Style Selector="ListBox.no-counts TextBlock.nav-count">
+                <Setter Property="IsVisible" Value="False" />
+              </Style>
             </ListBox.Styles>
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="shell:NavEntry">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <Ellipse Classes="nav-dot" VerticalAlignment="Center" />
                   <TextBlock Classes="body-strong nav-label" Text="{Binding Label}" AutomationProperties.Name="{Binding Label}" />
-                  <TextBlock Classes="caption subtle" Text="{Binding Count}" AutomationProperties.Name="{Binding Count}" />
+                  <TextBlock Classes="caption subtle nav-count" Classes.has="{Binding HasCount}" Text="{Binding Count}" AutomationProperties.Name="{Binding Count}" />
                 </StackPanel>
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
-
-          <Button x:Name="LaterButton" Classes="later" AutomationProperties.Name="{Binding Text.Later}">
-            <StackPanel Orientation="Horizontal" Spacing="4">
-              <TextBlock Classes="body-strong nav-label" Text="{Binding Text.Later}" AutomationProperties.Name="{Binding Text.Later}" />
-              <TextBlock Classes="caption nav-label" Text="▾" VerticalAlignment="Center" />
-            </StackPanel>
-            <Button.Flyout>
-              <Flyout Placement="BottomEdgeAlignedLeft">
-                <ItemsControl x:Name="LaterList" ItemsSource="{Binding Later}" AutomationProperties.Name="{Binding Text.Later}">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="shell:LaterEntry">
-                      <Grid ColumnDefinitions="140,Auto" Margin="4,6" AutomationProperties.Name="{Binding Label}">
-                        <TextBlock Classes="body muted" Text="{Binding Label}" AutomationProperties.Name="{Binding Label}" />
-                        <TextBlock Grid.Column="1" Classes="caption subtle" Text="{Binding Note}" AutomationProperties.Name="{Binding Note}" />
-                      </Grid>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </Flyout>
-            </Button.Flyout>
-          </Button>
         </StackPanel>
       </Border>
 
@@ -97,7 +85,7 @@
            magnifier alone, still named "Search or run a command". -->
       <Border x:Name="SearchField" Grid.Column="4" Classes="search" Margin="12,0,12,0" Focusable="True" Cursor="Hand"
               PointerPressed="OnSearch" KeyDown="OnSearchKey"
-              AutomationProperties.Name="{Binding Text.Search}">
+              AutomationProperties.Name="{Binding Text.Search}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Button">
         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" VerticalAlignment="Center">
           <Path Classes="magnifier" Data="M5.5,1 A4.5,4.5 0 1 1 5.5,10 A4.5,4.5 0 1 1 5.5,1 Z M8.8,8.8 L12,12" VerticalAlignment="Center" />
           <TextBlock x:Name="SearchText" Grid.Column="1" Classes="caption subtle search-text" Text="{Binding Text.Search}" AutomationProperties.Name="{Binding Text.Search}" VerticalAlignment="Center"
@@ -154,6 +142,16 @@
           </StackPanel>
         </Button>
       </StackPanel>
+      <!-- The G-chord's wait (rev 7 §8): "G …" in a keycap while G waits for its second key. It sits inside the bar, vertically
+           centred over the ⌘K field's right end, where its keycap is (re-check R1: laid out below the bar, the page region painted over
+           it; the bar has no spare room for a column of its own at 900 px). Last in the grid so nothing in the bar draws over it; transient and exposed as text, not live: the key press is the
+           user's own. -->
+      <Border x:Name="ChordHint" Grid.Column="4" Classes="kbd" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,20,0"
+              IsHitTestVisible="False" IsVisible="{Binding IsChordPending}"
+              AutomationProperties.Name="{Binding ChordHint}" AutomationProperties.AccessibilityView="Control"
+              AutomationProperties.ControlTypeOverride="Text">
+        <TextBlock Classes="kbd" Text="{Binding ChordHint}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+      </Border>
     </Grid>
   </Border>
 </UserControl>

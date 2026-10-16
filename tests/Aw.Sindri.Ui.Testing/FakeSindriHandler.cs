@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using System.Text;
 using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.Testing;
 
@@ -75,8 +76,53 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
             "/sindri/commands" => Answer(Counted(await server.Commands(uri, cancellationToken), server.Catalog)),
             "/sindri/services" => Answer(Counted(await server.Services(uri, after), server.ServiceView)),
             "/sindri/views/rebuild" when request.Method == HttpMethod.Post => Answer(Counted(await server.RebuildViews(uri, cancellationToken), server.Rebuild)),
+            "/sindri/queue" => Answer(Counted(await server.Queue(uri, after, cancellationToken), server.QueueView)),
+            "/sindri/items" when request.Method == HttpMethod.Post =>
+                Answer(Counted(await server.CreateItem(uri, await Body<CreateItemRequest>(request, cancellationToken), cancellationToken), server.Create)),
+            var path when path.StartsWith("/sindri/items/", StringComparison.Ordinal) => await Item(request, path["/sindri/items/".Length..], after, cancellationToken),
+            // LANE ANCHOR U3': add the Needs you routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately above this marker, never between the markers.
+            // LANE ANCHOR U8: add the workflow command routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately below this marker, never between the markers.
+            { } path when request.Method == HttpMethod.Get && path.StartsWith("/sindri/workflow/", StringComparison.Ordinal) => await Workflow(uri, cancellationToken),
             _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
         };
+    }
+
+    // The workflow reads (API §3.8): the call goes through the model (so a down server or a refusal answers as it does there),
+    // then the route's golden is served as the model has it. An address is only ever a query value, so every segment is an id, a key or a recipe.
+    private async Task<HttpResponseMessage> Workflow(Uri uri, CancellationToken cancellationToken)
+    {
+        var parts = uri.AbsolutePath["/sindri/workflow/".Length..].Split('/').Select(Uri.UnescapeDataString).ToArray();
+        switch (parts)
+        {
+            case ["instances"]:
+                var query = Query(uri);
+                _ = await server.Instances(uri, query, cancellationToken);
+                return Answer(server.InstancesAnswer(query));
+            case ["instances", var id]:
+                _ = await server.Instance(uri, id, cancellationToken);
+                return Answer(server.InstanceAnswer(id));
+            case ["instances", var id, "facts", var key]:
+                _ = await server.InstanceFact(uri, id, key, cancellationToken);
+                return Answer(server.FactAnswer(id, key));
+            case ["recipes", var named]:
+                var at = named.IndexOf('@', StringComparison.Ordinal);
+                var (recipe, hash) = at < 0 ? (named, null) : (named[..at], named[(at + 1)..]);
+                _ = await server.Recipe(uri, recipe, hash, cancellationToken);
+                return Answer(server.RecipeAnswer(recipe, hash));
+            default:
+                return Text(HttpStatusCode.NotFound, "{}", "application/json");
+        }
+    }
+
+    private static InstanceQuery Query(Uri uri)
+    {
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        return new InstanceQuery(
+            Root: query["root"] == "true",
+            Open: query["open"] == "true",
+            Recipe: query["recipe"],
+            Subject: query["subject"],
+            Address: query["address"]);
     }
 
     // The ping goes through the model (its count, and the new epoch that drops a pending sequence); a failing ping is a transport failure.
@@ -97,6 +143,27 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
             : status.IsError
                 ? Answer(RouteAnswer.Problem(HttpStatusCode.ServiceUnavailable, status.Error.Code, status.Error.Message))
                 : Text(HttpStatusCode.OK, Status(status.Value), "application/json");
+    }
+
+    // /sindri/items/{id}, /sindri/items/{id}/timeline and POST /sindri/items/{id}/close (API P3).
+    private async Task<HttpResponseMessage> Item(HttpRequestMessage request, string rest, long sequence, CancellationToken cancellationToken)
+    {
+        var uri = request.RequestUri!; // why: HttpClient always sets it on a sent request
+        var parts = rest.Split('/');
+        return parts switch
+        {
+            [var id] => Answer(Counted(await server.Item(uri, id, sequence, cancellationToken), server.ItemAnswer(id))),
+            [var id, "timeline"] => Answer(Counted(await server.Timeline(uri, id, After(uri), sequence, cancellationToken), server.TimelineAnswer(id, After(uri)))),
+            [var id, "close"] when request.Method == HttpMethod.Post =>
+                Answer(Counted(await server.CloseItem(uri, id, await Body<CloseItemRequest>(request, cancellationToken), cancellationToken), server.Close)),
+            _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
+        };
+    }
+
+    private static async Task<T> Body<T>(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var bytes = await request.Content!.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false); // why: the client always sends a body on these POSTs
+        return Kernel.Json.AwJson.Deserialize<T>(bytes, SindriApiClient.Json).Value;
     }
 
     // Sindri's caller check (API P1 §6: a human without this start's token, ping, status and the stream included), then the model's own refusal: 403 with ProblemDetails.
@@ -149,9 +216,14 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
     /// <summary>A ping body as this handler writes it.</summary>
     internal static string Ping(PingView p) => string.Create(CultureInfo.InvariantCulture, $$"""{"pid":{{p.Pid}},"epoch":{{p.Epoch}}}""");
 
-    /// <summary>An event's data line as this handler writes it.</summary>
+    /// <summary>An event's data line as this handler writes it: the PublicEvent envelope (API spec §5.3), an empty payload.</summary>
     internal static string Event(EventView e) => string.Create(CultureInfo.InvariantCulture,
-        $$"""{"sequence":{{e.Sequence}},"type":"{{e.Type}}","occurredAt":"{{Time(e.OccurredAt)}}","actor":"sindri","tenant":"local","ring":0,"epoch":7,"payload":"{}"}""");
+        $$"""{"sequence":{{e.Sequence}},"id":"{{Id(e.Sequence * 2)}}","type":"{{e.Type}}","schemaVersion":1,"occurredAt":"{{Time(e.OccurredAt)}}","actor":"sindri","tenant":"local","ring":0,"item":null,"correlationId":"{{Id((e.Sequence * 2) + 1)}}","causationId":null,"traceId":null,"payload":{{EmptyObject}}}""");
+
+    private const string EmptyObject = "{}";
+
+    // The PublicEvent envelope's ids are Guids; the app never reads them, so a number-derived one is enough.
+    private static string Id(long n) => "00000000-0000-0000-0000-" + n.ToString("D12", CultureInfo.InvariantCulture);
 
     /// <summary>A status body as this handler writes it.</summary>
     internal static string Status(StatusView s) => string.Create(CultureInfo.InvariantCulture,

@@ -46,6 +46,15 @@ public sealed class RepoCommands(ICommandRunner runner, MetaPaths paths)
         return json.IsError ? json.Error : GhJson.List(json.Value) is { } list ? Results.Success(list) : Unexpected("gh pr list");
     }
 
+    /// <summary>Lists pull requests in every state with their head branches (the newest 200).</summary>
+    /// <param name="repo">The repo directory.</param>
+    /// <returns>The pull requests, or an error.</returns>
+    public async ValueTask<Result<IReadOnlyList<PrBranch>>> Branches(string repo)
+    {
+        var json = await Gh(repo, "pr", "list", "--state", "all", "--limit", "200", "--json", "number,state,headRefName,headRefOid").ConfigureAwait(false);
+        return json.IsError ? json.Error : GhJson.Branches(json.Value) is { } list ? Results.Success(list) : Unexpected("gh pr list");
+    }
+
     /// <summary>Fetches origin, and the pull request's head when one is given.</summary>
     /// <param name="repo">The repo directory.</param>
     /// <param name="pr">The pull request number, or null for origin only.</param>

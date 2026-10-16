@@ -7,7 +7,8 @@ namespace Aw.Meta.Core;
 /// <param name="GatesDirectory">Gate trees and step logs: &lt;state&gt;/gates.</param>
 /// <param name="Heavy">The heavy-job wrapper, or null when it isn't installed (heavy steps then run directly).</param>
 /// <param name="Gh">The GitHub CLI program.</param>
-public sealed record MetaPaths(string StateDirectory, string GatesDirectory, string? Heavy, string Gh)
+/// <param name="Home">The user's home directory ("~" in a worktree root); empty when unknown.</param>
+public sealed record MetaPaths(string StateDirectory, string GatesDirectory, string? Heavy, string Gh, string Home = "")
 {
     /// <summary>One pull request's gate directory: gates/&lt;pr&gt;.</summary>
     /// <param name="pr">The pull request number.</param>

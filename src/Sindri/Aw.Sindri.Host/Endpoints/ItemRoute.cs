@@ -15,6 +15,20 @@ internal static class ItemRoute
     internal static Result<ItemRef> Item(string itemId) =>
         ItemRef.TryParse(itemId, out var item) ? item : SindriErrors.InvalidInput.With("'" + Echo(itemId) + "' isn't an item id (ITM-…) or a tracker key (ENG-142)");
 
+    /// <summary>The '?item=' filter of the event reads (an id or alias), or null when absent.</summary>
+    /// <param name="item">The query value.</param>
+    /// <returns>The reference, or SND-CLI-003.</returns>
+    internal static Result<ItemRef?> ItemFilter(string? item)
+    {
+        if (string.IsNullOrEmpty(item))
+        {
+            return (ItemRef?)null;
+        }
+
+        var parsed = Item(item);
+        return parsed.IsError ? parsed.Error : (ItemRef?)parsed.Value;
+    }
+
     /// <summary>The kebab-case '?state=' filter, or null when absent.</summary>
     /// <param name="state">The query value.</param>
     /// <returns>The state, or SND-CLI-003.</returns>

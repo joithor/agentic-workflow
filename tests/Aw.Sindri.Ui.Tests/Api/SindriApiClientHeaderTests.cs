@@ -2,6 +2,7 @@ using System.Net;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
 
 namespace Aw.Sindri.Ui.Tests.Api;
@@ -56,7 +57,9 @@ public sealed class SindriApiClientHeaderTests
         var again = await client.Status(_api, Token);
 
         Assert.Equal("SND-AUTH-001", status.Error.Code);
-        Assert.Equal("A human caller needs this start's token in X-Sindri-Token (fix: restart the app or rerun the command)", status.Error.Message);
+        // The detail is the API's, as served (keyed off the golden, never a copy of its sentence, which P2 rewords).
+        var served = System.Text.Json.JsonDocument.Parse(GoldenFiles.Api("status", "human-no-token")).RootElement.GetProperty("detail").GetString();
+        Assert.Equal(served, status.Error.Message);
         Assert.Equal("SND-AUTH-001", again.Error.Code);
         Assert.All(handler.Requests, r => Assert.Null(r.Token));
     }
@@ -77,6 +80,23 @@ public sealed class SindriApiClientHeaderTests
 
         Assert.Equal(
             [("GET", "/sindri/status", null), ("POST", "/sindri/views/rebuild", null), ("GET", "/sindri/events", null), ("GET", "/sindri/services", "43"), ("GET", "/sindri/status", null)],
+            handler.Requests.Select(r => (r.Method, r.Path, r.After)));
+    }
+
+    // API §2.4 for CreateItem: its answer nests the accepted command, whose sequence the next query waits for.
+    [Fact]
+    public async Task The_query_after_a_created_item_waits_for_its_sequence()
+    {
+        var handler = new FakeSindriHandler(new FakeSindriApi());
+        var client = new SindriApiClient(new HttpClient(handler), new InMemoryHumanToken("tok-1"), TimeProvider.System);
+
+        _ = await client.CreateItem(_api, new CreateItemRequest("A title", Repo: null, Body: null, Link: null), Token);
+        _ = await client.Queue(_api, Token);
+        _ = await client.CloseItem(_api, A.NewItem, new CloseItemRequest("done", 1), Token);
+        _ = await client.Item(_api, A.NewItem, Token);
+
+        Assert.Equal(
+            [("POST", "/sindri/items", null), ("GET", "/sindri/queue", "58"), ("POST", "/sindri/items/" + A.NewItem + "/close", null), ("GET", "/sindri/items/" + A.NewItem, "59")],
             handler.Requests.Select(r => (r.Method, r.Path, r.After)));
     }
 
@@ -126,6 +146,37 @@ public sealed class SindriApiClientHeaderTests
         Assert.Equal(
             [("POST", null), ("GET", null), ("GET", null), ("GET", "43"), ("GET", null)],
             handler.Requests.Select(r => (r.Method, r.After)));
+    }
+
+    // API §3.8 / §2.4: the instance list and an instance are view reads, so after an accepted command the first of them
+    // carries its sequence and uses it up; a fact and a recipe are not view reads and never carry it.
+    [Fact]
+    public async Task The_first_workflow_view_read_after_a_command_carries_the_sequence_and_the_rest_do_not()
+    {
+        var handler = new FakeSindriHandler(new FakeSindriApi());
+        var client = new SindriApiClient(new HttpClient(handler), new InMemoryHumanToken("tok-1"), TimeProvider.System);
+        _ = await client.RebuildViews(_api, Token);
+
+        _ = await client.Instances(_api, new InstanceQuery(), Token);
+        _ = await client.Instance(_api, "WFI-1", Token);
+        _ = await client.InstanceFact(_api, "WFI-1", "fact:a", Token);
+        _ = await client.Recipe(_api, "workflow.project", hash: null, Token);
+
+        Assert.Equal(["43", null, null, null], handler.Requests.Skip(1).Select(r => r.After), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_fact_and_a_recipe_never_carry_the_sequence_or_use_it_up_for_the_instance_read_after_them()
+    {
+        var handler = new FakeSindriHandler(new FakeSindriApi());
+        var client = new SindriApiClient(new HttpClient(handler), new InMemoryHumanToken("tok-1"), TimeProvider.System);
+        _ = await client.RebuildViews(_api, Token);
+
+        _ = await client.InstanceFact(_api, "WFI-1", "fact:a", Token);
+        _ = await client.Recipe(_api, "workflow.project", hash: null, Token);
+        _ = await client.Instance(_api, "WFI-1", Token);
+
+        Assert.Equal([null, null, "43"], handler.Requests.Skip(1).Select(r => r.After), StringComparer.Ordinal);
     }
 
     // H3: the model answers views-behind only for a request that carries the header, so a client that forgot to send it fails.

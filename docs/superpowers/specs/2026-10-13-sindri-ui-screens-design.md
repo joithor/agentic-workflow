@@ -117,7 +117,7 @@ groups differ on purpose. The Linear group sorts first; groups with a running in
 it while one runs.
 
 ```
-Workflows   12 open · 3 need you · 2 running at a desk                            [Recipe ▾] [Subject ▾]      [Start… ⌘N]
+Workflows    8 open · 2 need you · 1 with you                                     [Recipe ▾] [Subject ▾]      [Start… ⌘N]
 ┌ workflow.project · Linear projects  3 ─────────────────────────────────────────────────────────────────────────────────────┐
 │ SUBJECT                 INPUTS            intake  studio  scoping  design   build      verify  ship     NOW                 │
 │ ENG · Tab manager v2    PRD-tabs.md ✓     ●       ●       ◐ r2/3   ○        ○          ○       ○        challenger round 2  │
@@ -132,6 +132,7 @@ Workflows   12 open · 3 need you · 2 running at a desk                        
 │ SUBJECT                 INPUTS            detected  triage  mitigate ⇄ verify  comms   postmortem  closed  NOW             │
 │ INC-14 outbox retry storm  P-2211 ✓       ●         ●       ◐ r1/3          ◐ child  ○           ○       mitigation running│
 ├ intake.linear  2  ·  scoping.project (standalone)  0 ────────────────────────────────────────────────────────── show all ▾ ┤
+│ 4 done today ▸ (collapsed)                                                                                                │
 └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
    ● done   ◐ in progress   ○ not started   ▲ escalated   ▌parked   ⇄ loop        Enter opens · A answer · B hand back · X cancel
 ```

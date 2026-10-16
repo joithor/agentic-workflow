@@ -22,7 +22,7 @@
   <Panel>
     <Border x:Name="ShortcutsScrim" Classes="scrim" PointerPressed="OnScrim" />
     <Border x:Name="ShortcutsCard" Classes="shortcuts focus-region" Width="600" HorizontalAlignment="Center" VerticalAlignment="Center"
-            Focusable="True" KeyboardNavigation.TabNavigation="Cycle" AutomationProperties.Name="{Binding Title}">
+            Focusable="True" KeyboardNavigation.TabNavigation="Cycle" AutomationProperties.Name="{Binding Title}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Window">
       <DockPanel>
         <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
           <TextBlock x:Name="ShortcutsTitle" Classes="detail-title" Text="{Binding Title}" AutomationProperties.Name="{Binding Title}" />

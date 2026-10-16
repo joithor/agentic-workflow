@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using System.Globalization;
 
 namespace Aw.Sindri.Ui.ViewModels;
 
@@ -114,11 +115,16 @@ internal static partial class Labels
     /// <returns>The words.</returns>
     internal static string Done(string label) => label + ": done";
 
+    /// <summary>A destructive control's in-app question (§8): its name, asked ("Close as cancelled ITM-…?").</summary>
+    /// <param name="named">The control's label and subject.</param>
+    /// <returns>The question.</returns>
+    internal static string ConfirmQuestion(string named) => named + "?";
+
     /// <summary>Health's line over the pending rows (§4.8): "12 actions arrive in later phases".</summary>
     /// <param name="count">How many rows are pending.</param>
     /// <returns>The words.</returns>
     internal static string PendingSummary(int count) =>
-        string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{count} {(count == 1 ? "action arrives" : "actions arrive")} in later phases");
+        string.Create(CultureInfo.InvariantCulture, $"{count} {(count == 1 ? "action arrives" : "actions arrive")} in later phases");
 
     /// <summary>The health pill's word for the status's health.word (E-14); a word this build doesn't know shows as served.</summary>
     /// <param name="word">'healthy', 'degraded', 'stalled' or 'rebuilding'.</param>

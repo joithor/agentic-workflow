@@ -15,7 +15,7 @@ gate and merge their PRs, relay between them and the owner, and keep the box hea
 Every step below is an `aw-meta` call. Don't improvise a step the CLI has a command for, and never edit its state
 (`$AW_STATE_DIR/meta/`) by hand. Works for any project: everything team-specific is in the team config.
 
-`aw-meta` is on PATH after `./setup.sh --with-meta` (else `$HOME/.agentic-workflow/bin/aw-meta`). Every command takes
+`aw-meta` is on PATH after `./setup.sh --with-meta` (Linux only for now: aw-meta reads /proc; on macOS setup skips it) (else `$HOME/.agentic-workflow/bin/aw-meta`). Every command takes
 `--json`. Exit 0 ok, 1 attention (read the output and act on it), 2 usage or tool error. Reference:
 `$HOME/.agentic-workflow/toolkit/docs/csharp/meta.md`.
 
@@ -66,7 +66,9 @@ it prints what you owe and the command that settles it. Settle it, don't argue w
 3. For each red test the PR doesn't touch: `aw-meta gate-rerun N --step <step> --test <filter>`. It reruns the test
    alone and on plain main, and records `flake` or `real`. Only `real` reds go back to the lane.
 4. `aw-meta merge-check N` again (the PR head and main must not have moved since the gate), then `aw-meta merge-run N`.
-5. Send the printed "main moved to <sha>" text to **every lane**.
+5. Send the printed "main moved to <sha>" text to **every lane**. `merge-run` has already swept that PR's worktrees (its
+   branch's and its gate trees); the `WORKTREES …` line it printed says what was removed and what was kept and why. A kept
+   one is not an error: it has work, a process or an unpushed commit in it, and nothing removes it by age.
 
 ## OWNER QUESTION messages
 
@@ -74,6 +76,20 @@ it prints what you owe and the command that settles it. Settle it, don't argue w
 `aw-meta owner-answer <q> --answer "<the owner's words>"`, which dates it in the decision log and the running log, and
 send the printed `OWNER ANSWER` text back to the asking lane. Your own question for the owner: `aw-meta owner-ask
 --text "…"`.
+
+## Worktrees
+
+Nobody removes worktrees by hand. `aw-meta` does it on **triggers**, never on a timer (work builds up over time, and a
+worktree that has sat untouched may still be someone's work in progress): `merge-run N` sweeps PR N's worktrees, the watch
+sweeps a PR it sees merged or closed (a `WORKTREES …` line), and **you** run `aw-meta worktree-sweep` when a lane reports a
+builder done or finished. It removes only a worktree whose branch is merged into `origin/main` (or whose PR is closed with
+everything pushed) and that has no uncommitted or untracked file (build output aside), no unpushed commit and no process in
+it, and is not the main worktree, the shared checkout or locked. It never forces, never deletes a branch, and prints each
+kept worktree with every reason.
+
+- `aw-meta worktree-list`: every worktree with its verdict and reasons (read-only; `--no-fetch` skips the git fetch).
+- `aw-meta worktree-sweep [--dry-run] [--pr N]`: remove the removable ones. `--dry-run` first when unsure.
+- A lane that finds its worktree kept for a reason it can clear (stop the process, commit and push) can ask you for a sweep.
 
 ## Health
 

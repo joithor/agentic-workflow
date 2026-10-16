@@ -2,7 +2,9 @@ using System.ComponentModel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Item;
 using Aw.Sindri.Ui.ViewModels.Palette;
+using Aw.Sindri.Ui.ViewModels.Queue;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -25,11 +27,12 @@ internal sealed partial class ShellViewModel : ObservableObject
 
     private static readonly string[] _pageProperties =
     [
-        nameof(CurrentPage), nameof(PageName), nameof(SelectedNav), nameof(IsHome), nameof(IsQueue), nameof(IsDecisions), nameof(IsServices),
-        nameof(IsHealth), nameof(IsSettings), nameof(IsNotRunningPanel), nameof(IsPageVisible),
+        nameof(CurrentPage), nameof(PageName), nameof(SelectedNav), nameof(IsHome), nameof(IsWorkflows), nameof(IsWork), nameof(IsRecipes), nameof(IsContext),
+        nameof(IsAgents), nameof(IsSystem), nameof(IsSettings), nameof(IsNotRunningPanel), nameof(IsPageVisible),
     ];
 
     private readonly Preferences _store;
+    private readonly TimeProvider _clock;
     private UiPreferences _preferences = UiPreferences.Defaults;
 
     // The page Settings was opened from, where leaving it over the Not running card returns.
@@ -44,12 +47,20 @@ internal sealed partial class ShellViewModel : ObservableObject
     internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, Preferences preferences, IClipboard clipboard)
     {
         _store = preferences;
+        _clock = clock;
         Health = new HealthViewModel(records, api, clock, clipboard);
         Health.PropertyChanged += OnHealthChanged;
         Health.Pill.PropertyChanged += OnPillChanged;
         CommandOutcome = new CommandOutcomeRegion(control => Health.Banner.HasRebuild && ReferenceEquals(Health.Banner.Rebuild, control));
-        Palette = new CommandPaletteViewModel(Health.Catalog, GoTo, RememberRun, CommandOutcome);
+        Create = new CreateItemViewModel(Health.Catalog, () => Health.ApiUrl(), api);
+        Palette = new CommandPaletteViewModel(Health.Catalog, GoTo, RememberRun, CommandOutcome, () => Create.Open());
         Shortcuts = new ShortcutsViewModel(Health.Catalog);
+        Queue = new QueueViewModel(api, Health.Catalog, clock);
+        Queue.PageShown(RowScopeOf(CurrentPage));
+        Item = new ItemSheetViewModel(api, Health.Catalog, clock);
+        Health.Follow(Queue.Refresh);
+        Health.Follow(Item.Refresh);
+        Queue.PropertyChanged += OnQueueChanged;
     }
 
     /// <summary>The app's copy, for the view.</summary>
@@ -58,31 +69,25 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <summary>The connection and the Health page's status card.</summary>
     public HealthViewModel Health { get; }
 
-    /// <summary>The top bar's segments, in order: Home, Queue, Decisions, Services.</summary>
+    /// <summary>The top bar's segments, in order: Home, Workflows, Work, Recipes, Context, Agents, System (screens spec §3).</summary>
     public IReadOnlyList<NavEntry> Navigation { get; } =
     [
         new(PageId.Home, Labels.Home, "H", string.Empty),
-        new(PageId.Queue, Labels.Queue, "Q", string.Empty),
-        new(PageId.Decisions, Labels.Decisions, "D", string.Empty),
-        new(PageId.Services, Labels.Services, "S", string.Empty),
+        new(PageId.Workflows, Labels.Workflows, "W", string.Empty),
+        new(PageId.Work, Labels.Work, "Q", string.Empty),
+        new(PageId.Recipes, Labels.Recipes, "R", string.Empty),
+        new(PageId.Context, Labels.Context, "C", string.Empty),
+        new(PageId.Agents, Labels.Agents, "A", string.Empty),
+        new(PageId.System, Labels.System, ".", string.Empty),
     ];
 
-    /// <summary>"Later ▾": Agents, Repos, Today, Automatic work, each "not served yet".</summary>
-    public IReadOnlyList<LaterEntry> Later { get; } =
-    [
-        new(Labels.Agents, Labels.NotServedYet),
-        new(Labels.Repos, Labels.NotServedYet),
-        new(Labels.Today, Labels.NotServedYet),
-        new(Labels.AutomaticWork, Labels.NotServedYet),
-    ];
-
-    /// <summary>Every page the window can show, in order: Home, Queue, Decisions, Services, Health, Settings.</summary>
+    /// <summary>Every page the window can show, in order: the seven tabs, then Settings.</summary>
     public IReadOnlyList<PageId> Pages { get; } = Enum.GetValues<PageId>();
 
     /// <summary>The page shown.</summary>
     public PageId CurrentPage { get; private set; } = PageId.Home;
 
-    /// <summary>The top bar's segment for the page shown; null on Health and Settings. Setting it goes to its page.</summary>
+    /// <summary>The top bar's segment for the page shown; null on Settings. Setting it goes to its page.</summary>
     public NavEntry? SelectedNav
     {
         get => Navigation.FirstOrDefault(n => n.Page == CurrentPage);
@@ -101,17 +106,23 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <summary>True on Home.</summary>
     public bool IsHome => CurrentPage == PageId.Home;
 
-    /// <summary>True on Queue.</summary>
-    public bool IsQueue => CurrentPage == PageId.Queue;
+    /// <summary>True on Workflows.</summary>
+    public bool IsWorkflows => CurrentPage == PageId.Workflows;
 
-    /// <summary>True on Decisions.</summary>
-    public bool IsDecisions => CurrentPage == PageId.Decisions;
+    /// <summary>True on Work.</summary>
+    public bool IsWork => CurrentPage == PageId.Work;
 
-    /// <summary>True on Services.</summary>
-    public bool IsServices => CurrentPage == PageId.Services;
+    /// <summary>True on Recipes.</summary>
+    public bool IsRecipes => CurrentPage == PageId.Recipes;
 
-    /// <summary>True on Health.</summary>
-    public bool IsHealth => CurrentPage == PageId.Health;
+    /// <summary>True on Context.</summary>
+    public bool IsContext => CurrentPage == PageId.Context;
+
+    /// <summary>True on Agents.</summary>
+    public bool IsAgents => CurrentPage == PageId.Agents;
+
+    /// <summary>True on System.</summary>
+    public bool IsSystem => CurrentPage == PageId.System;
 
     /// <summary>True on Settings.</summary>
     public bool IsSettings => CurrentPage == PageId.Settings;
@@ -158,24 +169,6 @@ internal sealed partial class ShellViewModel : ObservableObject
     // Connected: the API's pages (and the sheet over them) have something to show.
     private bool IsConnected => State is ShellState.Normal or ShellState.Stale or ShellState.Unreadable;
 
-    /// <summary>True while the detail sheet is open.</summary>
-    public bool IsSheetOpen { get; private set; }
-
-    /// <summary>The sheet's subject (the deep link's subject); kept after the sheet closes for the edge tab; empty before the first.</summary>
-    public string SheetSubject { get; private set; } = string.Empty;
-
-    /// <summary>True when the closed sheet shows its edge tab (a subject was opened before).</summary>
-    public bool HasEdgeTab => SheetSubject.Length > 0;
-
-    /// <summary>The sheet shows when it's open over a visible page.</summary>
-    public bool IsSheetShown => IsSheetOpen && IsConnected;
-
-    /// <summary>The edge tab's accessible name: "Reopen" and its subject.</summary>
-    public string EdgeTabName => Labels.Reopen + " " + SheetSubject;
-
-    /// <summary>The edge tab shows when the sheet is closed and has a subject, over a visible page.</summary>
-    public bool IsEdgeTabShown => !IsSheetOpen && HasEdgeTab && IsConnected;
-
     /// <summary>The attention band under the top bar (§3.2): always false in U0, since needs-you arrives in U3.</summary>
     public bool IsAttentionBandVisible { get; }
 
@@ -185,10 +178,26 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <summary>The detail sheet's width (420–760).</summary>
     public double SheetWidth => _preferences.SheetWidth;
 
-    /// <summary>Shows a page (the G-chords, the top bar, the pill) and remembers it.</summary>
+    /// <summary>Shows a page (the G-chords, the top bar, the pill) and remembers it. Any way to a page but G D clears the Home filter.</summary>
     /// <param name="page">The page.</param>
-    internal void GoTo(PageId page)
+    internal void GoTo(PageId page) => GoTo(page, HomeFilter.All);
+
+    /// <summary>Shows a page with a Home filter, which is set once (G D is the one way to a filter but All).</summary>
+    /// <param name="page">The page.</param>
+    /// <param name="filter">The Home filter.</param>
+    internal void GoTo(PageId page, HomeFilter filter)
     {
+        if (page == PageId.Work)
+        {
+            Queue.Filter(QueueFilter.All);   // G Q, the palette and the tab show the whole queue; only GoToQueue narrows it
+        }
+
+        ShowPage(page, filter);
+    }
+
+    internal void ShowPage(PageId page, HomeFilter filter)
+    {
+        SetHomeFilter(filter);
         if (page == CurrentPage)
         {
             return;
@@ -200,30 +209,9 @@ internal sealed partial class ShellViewModel : ObservableObject
         }
 
         CurrentPage = page;
+        Queue.PageShown(RowScopeOf(page));
         Changed(_pageProperties);
         Remember(p => p with { LastPage = page.ToString() });
-    }
-
-    /// <summary>Goes where a deep link points: a page, or the detail sheet with its subject.</summary>
-    /// <param name="link">The link.</param>
-    internal void Navigate(DeepLink link)
-    {
-        if (link.Kind == DeepLinkKind.HomeNeedsYou || link.Subject is null)
-        {
-            GoTo(PageId.Home);
-            return;
-        }
-
-        SheetSubject = link.Subject;
-        IsSheetOpen = true;
-        Changed(nameof(SheetSubject), nameof(EdgeTabName), nameof(IsSheetOpen), nameof(HasEdgeTab), nameof(IsSheetShown), nameof(IsEdgeTabShown));
-    }
-
-    /// <summary>Closes the sheet (Esc); its subject stays on the edge tab.</summary>
-    internal void CloseSheet()
-    {
-        IsSheetOpen = false;
-        Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
     }
 
     /// <summary>
@@ -242,17 +230,8 @@ internal sealed partial class ShellViewModel : ObservableObject
         return true;
     }
 
-    /// <summary>Opens the sheet again on its last subject (the edge tab).</summary>
-    internal void ReopenSheet()
-    {
-        if (!HasEdgeTab)
-        {
-            return;
-        }
-
-        IsSheetOpen = true;
-        Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
-    }
+    // LANE ANCHOR U3': new Needs you state belongs in its own partial (ShellViewModel.<Slice>.cs), not in this file (cap 300 lines); only a hook-up line goes here. Insert immediately above this marker, never between the markers.
+    // LANE ANCHOR U8: new workflow state belongs in its own partial (ShellViewModel.<Slice>.cs), not in this file (cap 300 lines); only a hook-up line goes here. Insert immediately below this marker, never between the markers.
 
     /// <summary>Follows the control plane until cancelled (S1b's loop: control.json, ping, status, events).</summary>
     /// <param name="cancellationToken">Stops following.</param>
