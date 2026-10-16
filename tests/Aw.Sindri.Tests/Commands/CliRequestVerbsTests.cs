@@ -5,11 +5,13 @@ using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Decisions;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Requests;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.FileRequest;
 using Aw.Sindri.Features.GetNeedsYou;
+using Aw.Sindri.Features.ListDecisions;
 using Aw.Sindri.Features.ListRequests;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
@@ -224,9 +226,110 @@ public sealed class CliRequestVerbsTests : IDisposable
         Assert.Equal("7,7", string.Join(',', api.Calls.Where(static c => !string.Equals(c.Path, "/sindri/status", StringComparison.Ordinal)).Select(static c => c.Headers.GetValueOrDefault(SindriHeaders.After))));
     }
 
+    private static DecisionView PendingDecision() => new(A.FirstDecisionId, DecisionKind.AcceptRequest, ActionClass.Decision, "decision · re-scope", A.FirstItemId, ItemVersion: 3, RepoName.From("demo"),
+        "Accept this re-scope request?\nSplit the work.", [new OptionView(DecisionOption.From("accept"), "Accept", RejectLike: false, $"sindri decide {A.FirstDecisionId.Value} accept"), new OptionView(DecisionOption.From("decline"), "Decline", RejectLike: true, $"sindri decide {A.FirstDecisionId.Value} decline")],
+        DecisionOption.From("accept"), DecisionState.Pending, "session:cli", KnownInstants.Epoch, DecidedBy: null, DecidedAt: null, Choice: null, Note: null, RecordedOnly: true, Notice: "recorded; acted on once the workflow engine runs",
+        [ActionId.From("Decide")], $"sindri decide {A.FirstDecisionId.Value} accept", Cleared: null);
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_decisions_prints_one_block_per_decision_with_question_and_command()
+    {
+        var view = PendingDecision();
+        var api = new RoutedApi().On("/sindri/decisions", HttpStatusCode.OK, new ListDecisionsResponse([view], Empty: null, _fresh));
+
+        var code = await Verbs(api, Human).Run(["decisions"], Token);
+
+        Assert.Equal((0, ""), (code, api.Calls[^1].Query));
+        Assert.Equal($"{A.FirstDecisionId.Value}  decision · re-scope  pending  [demo]  {A.FirstItemId.Value}  by session:cli  since 2026-01-01T00:00:00Z\n  Accept this re-scope request?\n  Split the work.\n  {view.Notice}\n  {view.Cli}\n", Out);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_decisions_of_a_decided_one_says_who_chose_what_and_no_command()
+    {
+        var view = PendingDecision() with { State = DecisionState.Decided, DecidedBy = "human", DecidedAt = KnownInstants.Epoch, Choice = DecisionOption.From("decline"), Note = "Not now.", Actions = [], Cleared = "declined" };
+        var api = new RoutedApi().On("/sindri/decisions", HttpStatusCode.OK, new ListDecisionsResponse([view], Empty: null, _fresh));
+
+        var code = await Verbs(api, Human).Run(["decisions", "--decided"], Token);
+
+        Assert.Equal((0, "?pending=false"), (code, api.Calls[^1].Query));
+        Assert.Equal($"{A.FirstDecisionId.Value}  decision · re-scope  decided  [demo]  {A.FirstItemId.Value}  by session:cli  since 2026-01-01T00:00:00Z\n  Accept this re-scope request?\n  Split the work.\n  decided decline by human at 2026-01-01T00:00:00Z: Not now.\n  {view.Notice}\n", Out);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("--pending", "?pending=true")]
+    [InlineData("--decided", "?pending=false")]
+    public async Task Cli_decisions_maps_the_state_flags_to_the_routes_pending_filter(string flag, string query)
+    {
+        var api = new RoutedApi().On("/sindri/decisions", HttpStatusCode.OK, new ListDecisionsResponse([], "No pending decisions.", _fresh));
+
+        var code = await Verbs(api, Human).Run(["decisions", flag, "--item", A.FirstItemId.Value], Token);
+
+        Assert.Equal((0, query + "&item=" + A.FirstItemId.Value, "No pending decisions.\n"), (code, api.Calls[^1].Query, Out));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_decisions_passes_only_the_item_when_given_alone()
+    {
+        var api = new RoutedApi().On("/sindri/decisions", HttpStatusCode.OK, new ListDecisionsResponse([], "No decisions.", _fresh));
+
+        _ = await Verbs(api, Human).Run(["decisions", "--item", A.FirstItemId.Value], Token);
+
+        Assert.Equal("?item=" + A.FirstItemId.Value, api.Calls[^1].Query);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_decisions_json_is_the_route_body()
+    {
+        var list = new ListDecisionsResponse([PendingDecision()], Empty: null, _fresh);
+        var api = new RoutedApi().On("/sindri/decisions", HttpStatusCode.OK, list);
+
+        var code = await Verbs(api, Human).Run(["decisions", "--pending", "--json"], Token);
+
+        Assert.Equal((0, Body(list)), (code, Out));
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task Cli_decisions_exits_1_while_the_views_rebuild_or_stall(bool rebuilding, bool stalled)
+    {
+        var asOf = new AsOf(3, 7, KnownInstants.Epoch, rebuilding, stalled);
+        var api = new RoutedApi().On("/sindri/decisions", HttpStatusCode.OK, new ListDecisionsResponse([], EmptyText.Rebuilding(3, 7), asOf));
+
+        var code = await Verbs(api, Human).Run(["decisions"], Token);
+
+        Assert.Equal((1, EmptyText.Rebuilding(3, 7) + "\n"), (code, Out));
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("decisions --pending --decided")]
+    [InlineData("decisions --item not-an-item")]
+    [InlineData("decisions extra")]
+    [InlineData("decisions --state open")]
+    public async Task Cli_decisions_with_bad_arguments_exits_2_and_calls_nothing(string line)
+    {
+        var api = new RoutedApi();
+
+        var code = await Verbs(api, Human).Run(line.Split(' '), Token);
+
+        Assert.Equal((2, 0), (code, api.Calls.Count));
+        Assert.StartsWith("SND-CLI-003 ", _error.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_decisions_sends_the_ledger_head_as_x_sindri_after()
+    {
+        var api = new RoutedApi().On("/sindri/decisions", HttpStatusCode.OK, new ListDecisionsResponse([], "No decisions.", _fresh));
+
+        _ = await Verbs(api, Human).Run(["decisions"], Token);
+
+        Assert.Equal("7", api.Calls.Single(static c => c.Path == "/sindri/decisions").Headers.GetValueOrDefault(SindriHeaders.After));
+    }
+
     [Theory(Timeout = 10_000), Trait("Lane", "unit")]
     [InlineData("needs-you")]
     [InlineData("requests")]
+    [InlineData("decisions")]
     [InlineData("decide")]
     public async Task Cli_in_an_agent_session_never_starts_the_process(string verb)
     {
@@ -245,12 +348,13 @@ public sealed class CliRequestVerbsTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Usage_names_the_four_verbs_as_the_catalog_does()
+    public void Usage_names_the_five_verbs_as_the_catalog_does()
     {
         var forms = new[]
         {
             "sindri request <kind> [--item <item>] <text> [--json] [--no-start]",
             "sindri requests [--state <s>] [--item <item>] [--json] [--no-start]",
+            "sindri decisions [--pending | --decided] [--item <item>] [--json] [--no-start]",
             "sindri decide <decisionId> <choice> [--note <note>] [--json] [--no-start]",
             "sindri needs-you [--json] [--no-start]",
         };
