@@ -19,7 +19,7 @@ internal static class FailureDetails
             new(Labels.SheetService, entry.Subject?.Id ?? entry.ShownId),
             new(Labels.SheetFailed, age),
             new(Labels.SheetWhy, entry.Reason),
-            .. entry.Actions.Select(a => new SheetDetail(a.Label, Value(a))),
+            .. entry.Actions.Select(a => new SheetDetail(a.Label, Value(a), a.FillInHint)),
         ];
     }
 

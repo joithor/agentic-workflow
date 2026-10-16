@@ -23,9 +23,11 @@ internal static partial class ActionCommand
             return (rowCli, "");
         }
 
-        // An optional [group] is filled whole or shown as served (never half-filled); it never asks for a fill-in.
+        // An optional [group] is filled whole or shown as served (never half-filled) and never asks for a fill-in: Token reads a
+        // group as one match, so only placeholders outside a group are collected as open.
         var filled = Token.Replace(catalogCli, m => m.Groups["body"].Success ? FillGroup(m, subject, itemId) : Value(m.Groups["word"].Value, subject, itemId) ?? m.Value);
-        return (filled, "");
+        var open = Token.Matches(filled).Where(m => m.Groups["word"].Success).Select(m => m.Groups["word"].Value).Distinct(StringComparer.Ordinal).ToList();
+        return (filled, open.Count == 0 ? "" : Labels.FillInHint(open));
     }
 
     // A group whose placeholders all resolve loses its brackets; any other group is left exactly as served.
