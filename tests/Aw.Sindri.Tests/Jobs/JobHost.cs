@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Text.Json;
@@ -31,8 +32,11 @@ namespace Aw.Sindri.Tests.Jobs;
 /// </summary>
 internal static class JobHost
 {
-    /// <summary>Two repos (a session can sit outside a job's repo), the scheduled 'heartbeat' and 'stuck'.</summary>
-    public const string ProfileYaml = "schemaVersion: 1\nuser: golden\nrepos:\n  - { name: demo, path: /work/demo }\n  - { name: other, path: /work/other }\nservices:\n  heartbeat: { every: 5s }\n  stuck: { every: 5s }\n";
+    /// <summary>Two repos (a session can sit outside a job's repo), the scheduled 'heartbeat' and 'stuck', and 'phantom', a profile service this build lacks.</summary>
+    public const string ProfileYaml = "schemaVersion: 1\nuser: golden\nrepos:\n  - { name: demo, path: /work/demo }\n  - { name: other, path: /work/other }\nservices:\n  heartbeat: { every: 5s }\n  stuck: { every: 5s }\n  phantom: { every: 5s }\n";
+
+    /// <summary>An echo with this delay or more is keyed by its line count, so several can run at once (the cap golden); the others share the key 'echo'.</summary>
+    public const int LongDelayMs = 1_000;
 
     /// <summary>The test-only route.</summary>
     public const string EchoRoute = "/sindri/test/echo";
@@ -62,7 +66,7 @@ internal static class JobHost
     /// <summary>Starts an echo job as the human.</summary>
     /// <param name="host">The host.</param>
     /// <param name="lines">How many lines it writes.</param>
-    /// <param name="delayMs">The pause after each, in real time.</param>
+    /// <param name="delayMs">The pause after each, on the host's fake clock: nothing advances it, so the job writes one line and runs until it is cancelled.</param>
     /// <returns>The job and the sequence of its start.</returns>
     public static async Task<(JobId Job, long Sequence)> StartEcho(GoldenHost host, int lines, int delayMs)
     {
@@ -72,14 +76,60 @@ internal static class JobHost
         return (JobId.From(json.RootElement.GetProperty("jobId").GetString()!), json.RootElement.GetProperty("accepted").GetProperty("sequence").GetInt64());   // why: a started job answers its id
     }
 
-    /// <summary>Waits until every job this host started has ended and its last event is appended, then lets the views catch up.</summary>
+    /// <summary>A hang guard on the real clock for what a job or the views should do at once: the host's own clock is fake and would never fire it.</summary>
+    public static readonly TimeSpan Hang = TimeSpan.FromSeconds(10);
+
+    /// <summary>Waits until every job this host started has ended and its last event is appended, then lets the views catch up. A job that does not end fails the wait by name after <see cref="Hang"/>.</summary>
     /// <param name="host">The host.</param>
     /// <param name="ct">Cancellation.</param>
     /// <returns>A task that completes then.</returns>
     public static async Task Settle(GoldenHost host, CancellationToken ct)
     {
-        await host.App.Services.GetRequiredService<JobRunner>().Idle().WaitAsync(ct);
+        var runner = host.App.Services.GetRequiredService<JobRunner>();
+        try
+        {
+            await runner.Idle().WaitAsync(Hang, TimeProvider.System, ct);
+        }
+        catch (TimeoutException e)
+        {
+            throw new TimeoutException($"jobs still running {Hang.TotalSeconds.ToString("0", CultureInfo.InvariantCulture)} s after the test asked them to end: {string.Join(", ", runner.Active)}", e);
+        }
+
         await ViewScenarios.CatchUp(host, ct);
+    }
+
+    /// <summary>
+    /// Asks, and asks again while the views are behind, rebuilding or stalled on a pass that failed under load (503 SND-API-010, SND-API-011 or SND-VIEW-001,
+    /// with a catch-up between the tries), for at most <see cref="Hang"/> of real time. Any other answer, and the last refusal, is returned as it is.
+    /// </summary>
+    /// <param name="host">The host.</param>
+    /// <param name="ask">The request.</param>
+    /// <param name="ct">Cancellation.</param>
+    /// <returns>The answer.</returns>
+    public static async Task<Answer> Retrying(GoldenHost host, Func<Task<Answer>> ask, CancellationToken ct)
+    {
+        var started = Stopwatch.GetTimestamp();
+        while (true)
+        {
+            var answer = await ask();
+            if (answer.Status != HttpStatusCode.ServiceUnavailable || answer.Code is not ("SND-API-010" or "SND-API-011" or "SND-VIEW-001") || Stopwatch.GetElapsedTime(started) > Hang)
+            {
+                return answer;
+            }
+
+            await ViewScenarios.CatchUp(host, ct);
+        }
+    }
+
+    /// <summary>Cancels a job as the human and fails at once, naming the answer, unless it is a 200.</summary>
+    /// <param name="host">The host.</param>
+    /// <param name="job">The job.</param>
+    /// <param name="ct">Cancellation.</param>
+    /// <returns>A task that completes then.</returns>
+    public static async Task Cancel(GoldenHost host, JobId job, CancellationToken ct)
+    {
+        var answer = await Retrying(host, () => host.Http.Ask(Post($"/sindri/jobs/{job.Value}/cancel", json: null, Human(host))), ct);
+        Assert.True(answer.Status == HttpStatusCode.OK, $"cancelling {job.Value} answered {answer.Status} {answer.Code}: {answer.Body}");
     }
 
     /// <summary>GETs <paramref name="path"/> as the human.</summary>
@@ -110,7 +160,7 @@ internal static class JobHost
             .AddSingleton<EchoJobProbe>()
             .Replace(ServiceDescriptor.Singleton(options))
             .Replace(ServiceDescriptor.Singleton<ICommandCatalog>(new InMemoryCommandCatalog([.. new CommandCatalog().Rows, echo])))
-            .AddJob<EchoJobRequest, EchoReport, EchoJobService>(static _ => JobKey.From("echo"), static r => string.Create(CultureInfo.InvariantCulture, $"echoed {r.Lines}"));
+            .AddJob<EchoJobRequest, EchoReport, EchoJobService>(static r => JobKey.From(r.DelayMs >= LongDelayMs ? string.Create(CultureInfo.InvariantCulture, $"echo-{r.Lines}") : "echo"), static r => string.Create(CultureInfo.InvariantCulture, $"echoed {r.Lines}"));
     }
 
     private static void Map(WebApplication app) =>
@@ -133,6 +183,7 @@ internal static class JobHost
 
         private static async Task Pump(GoldenHost host, CancellationToken stop)
         {
+            var logged = false;
             while (!stop.IsCancellationRequested)
             {
                 try
@@ -140,11 +191,21 @@ internal static class JobHost
                     await ViewScenarios.CatchUp(host, stop);
                     await Task.Delay(10, stop);
                 }
-#pragma warning disable CA1031 // a pump that outlives its host just stops
-                catch (Exception)
-#pragma warning restore CA1031
+                catch (OperationCanceledException) when (stop.IsCancellationRequested)
                 {
                     return;
+                }
+#pragma warning disable CA1031 // a pass that fails (the host going away, a busy file) is tried again on the next beat: the pump never quits on its own
+                catch (Exception e)
+#pragma warning restore CA1031
+                {
+                    if (!logged)
+                    {
+                        logged = true;
+                        await Console.Error.WriteLineAsync($"JobHost.ViewsPump: a catch-up failed, trying again: {e.GetType().Name}: {e.Message}");
+                    }
+
+                    await Task.Delay(10, CancellationToken.None);
                 }
             }
         }

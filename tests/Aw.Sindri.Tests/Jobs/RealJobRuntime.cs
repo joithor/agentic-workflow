@@ -3,6 +3,7 @@ using System.Text.Json.Serialization.Metadata;
 using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
@@ -51,6 +52,7 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
         var catalog = new InMemoryCommandCatalog([.. own, .. rows ?? []]);
         var services = new ServiceCollection();
         configure?.Invoke(services, H);
+        AddProbeJob(services);
         _provider = services
             .AddSingleton<TimeProvider>(H.Clock)
             .AddSingleton<Kernel.Ids.IIdGenerator>(H.Ids)
@@ -76,11 +78,21 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
                 sp.GetRequiredService<ICallerContextAccessor>(), sp.GetRequiredService<JobEventWriter>(), sp.GetRequiredService<JobRegistry>(), sp.GetRequiredService<IShutdown>()))
             .AddSingleton<IJobRunner>(static sp => sp.GetRequiredService<JobRunner>()).AddSingleton<IJobCancellation>(static sp => sp.GetRequiredService<JobRunner>())
             .AddJob<EchoJobRequest, EchoReport, EchoJobService>(static _ => JobKey.From("echo"), static r => string.Create(CultureInfo.InvariantCulture, $"echoed {r.Lines}"))
-            .AddJob<ProbeJobRequest, ProbeReport, ProbeJobService>(static r => JobKey.From(r.Mode), static r => string.Create(CultureInfo.InvariantCulture, $"probed {r.Text.Length}"),
-                repo: static r => r.Mode == "repo" ? Aw.Sindri.Core.Ids.RepoName.From("demo") : null)
             .AddScoped<IValidator<FixtureCommand>, FixtureValidator>().AddCommand<FixtureCommand, CommandAccepted, FixtureService>()
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
     }
+
+    private static void AddProbeJob(IServiceCollection services) =>
+        services.AddJob<ProbeJobRequest, ProbeReport, ProbeJobService>(static r => JobKey.From(r.Mode), static r => string.Create(CultureInfo.InvariantCulture, $"probed {r.Text.Length}"),
+            precheck: static (r, _) => ValueTask.FromResult<Result<Unit>>(string.Equals(r.Mode, "refused", StringComparison.Ordinal) ? SindriErrors.ServiceNotFound.With("the precheck said no") : Unit.Value),
+            repo: static r => RepoOf(r.Mode));
+
+    private static RepoName? RepoOf(string mode) => mode switch
+    {
+        "repo" => RepoName.From("demo"),
+        "repo-throws" => throw new InvalidOperationException("the repo lambda broke"),
+        _ => null,
+    };
 
     public SliceHarness H { get; } = new();
 
@@ -153,17 +165,39 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
         using var entered = H.Callers.Enter(caller);
         Runner.Cancelling(job);
         var entry = H.Events.Entry(EventTypes.JobCancelled, new JobCancelled(caller.CommandId, job, caller.Actor), $"{EventTypes.JobCancelled}:{job.Value}");
-        var appended = await H.Store.Append(entry, H.Held.Current!, TestContext.Current.CancellationToken);
-        if (appended.IsError)
+        var recorded = false;
+        try
         {
-            return appended.Error;
-        }
+            var appended = await H.Store.Append(entry, H.Held.Current!, CancellationToken.None);
+            if (appended.IsError)
+            {
+                return appended.Error;
+            }
 
-        _ = Runner.Cancel(job);
-        return new CommandAccepted(caller.CommandId, appended.Value.Sequence);
+            _ = Runner.Cancel(job);
+            recorded = true;
+            return new CommandAccepted(caller.CommandId, appended.Value.Sequence);
+        }
+        finally
+        {
+            if (!recorded)
+            {
+                Runner.Withdraw(job);   // as CancelJob does: the job writes its own end
+            }
+        }
     }
 
-    public Task Quiesce() => Runner.Idle();
+    public async Task Quiesce()
+    {
+        try
+        {
+            await Runner.Idle().WaitAsync(JobHost.Hang, TimeProvider.System, TestContext.Current.CancellationToken);   // a hang guard on the real clock: the harness clock is fake and would never fire
+        }
+        catch (TimeoutException e)
+        {
+            throw new TimeoutException($"jobs still running {JobHost.Hang.TotalSeconds.ToString("0", CultureInfo.InvariantCulture)} s after the test asked them to end: {string.Join(", ", Runner.Active)}", e);
+        }
+    }
 
     public async Task<bool> CommandGateIsFree()
     {
@@ -176,7 +210,7 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
         });
         try
         {
-            return (await run.WaitAsync(TimeSpan.FromSeconds(2), TimeProvider.System, TestContext.Current.CancellationToken)).IsSuccess;   // a hang guard on the real clock, not a wait: the harness clock is fake and would never fire
+            return (await run.WaitAsync(JobHost.Hang, TimeProvider.System, TestContext.Current.CancellationToken)).IsSuccess;   // a hang guard on the real clock, not a wait: the harness clock is fake and would never fire
         }
         catch (TimeoutException)
         {

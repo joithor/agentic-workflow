@@ -24,12 +24,12 @@ public sealed class CancelJobTests
 
     private static CallerContext Human() => A.Caller().Human().Build();
 
-    private static RealJobRuntime Runtime(InMemoryJobViews views) => new(scrubber: null, rows: ServiceRows.All, configure: (services, h) =>
+    internal static RealJobRuntime Runtime(InMemoryJobViews views) => new(scrubber: null, rows: ServiceRows.All, configure: (services, h) =>
         _ = services.AddSingleton<IJobViews>(views).AddSingleton<IJobCancellation>(sp => sp.GetRequiredService<IJobRunner>())
             .AddScoped<IValidator<CancelJobRequest>, AcceptAllValidator<CancelJobRequest>>()
             .AddCommand<CancelJobRequest, CommandAccepted, CancelJobService>());
 
-    private static CancelJobService Service(RealJobRuntime runtime, InMemoryJobViews views) =>
+    internal static CancelJobService Service(RealJobRuntime runtime, InMemoryJobViews views) =>
         new(views, runtime.H.Store, runtime.H.Held, runtime.H.Events, runtime.H.Callers, runtime.Runner);
 
     [Fact]
@@ -50,6 +50,22 @@ public sealed class CancelJobTests
         var row = Assert.Single(runtime.Events, e => string.Equals(e.Envelope.Type, EventTypes.JobCancelled, StringComparison.Ordinal));
         Expect.Equal(($"job.cancelled:{started.Value.JobId.Value}", "human:http", cancelled.Value.Sequence), (row.IdempotencyKey, row.Envelope.Actor, row.Sequence));
         Assert.DoesNotContain(runtime.Events, e => string.Equals(e.Envelope.Type, EventTypes.JobFinished, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task The_cancelled_event_carries_the_repo_of_the_job()
+    {
+        var views = new InMemoryJobViews();
+        await using var runtime = Runtime(views);
+        await runtime.Open();
+        views.Put(A.Job().InRepo(Core.Ids.RepoName.From("demo")).Build());
+        using var entered = runtime.H.Callers.Enter(Human());
+
+        var cancelled = await Service(runtime, views).Handle(new CancelJobRequest(A.FirstJobId), Token);
+
+        Assert.True(cancelled.IsSuccess);
+        var row = Assert.Single(runtime.Events, e => string.Equals(e.Envelope.Type, EventTypes.JobCancelled, StringComparison.Ordinal));
+        Expect.Equal(Core.Ids.RepoName.From("demo"), runtime.H.Events.Payload<JobCancelled>(row).Value.Repo);
     }
 
     [Fact]

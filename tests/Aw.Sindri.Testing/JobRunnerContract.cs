@@ -14,6 +14,9 @@ namespace Aw.Sindri.Testing;
 public abstract class JobRunnerContract
 {
     private static readonly JobId _job = A.FirstJobId;
+    private static readonly TimeSpan _hang = TimeSpan.FromSeconds(10);   // a runner that ignores a cancel would wait for ever on its fake clock: the bound turns that into a failure
+
+    private static Task Bounded(Task task) => task.WaitAsync(_hang, TimeProvider.System, TestContext.Current.CancellationToken);
 
     /// <summary>A fresh runner.</summary>
     /// <returns>The subject.</returns>
@@ -99,7 +102,7 @@ public abstract class JobRunnerContract
 
         Expect.Equal(1, subject.Runner.Running);
         Expect.True(subject.Runner.Cancel(_job));
-        await run;
+        await Bounded(run);
         await subject.Settle();
 
         Expect.Equal(1, subject.Probe.Cancelled);
@@ -132,7 +135,7 @@ public abstract class JobRunnerContract
         Expect.True(!subject.Runner.IsCancelling(_job));
 
         _ = subject.Runner.Cancel(_job);
-        await run;
+        await Bounded(run);
         await subject.Settle();
     }
 }

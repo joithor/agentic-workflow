@@ -39,7 +39,7 @@ public sealed class CliServiceVerbsTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Cli_json_equals_route_body()
+    public async Task Cli_json_passes_the_routes_bodies_through_unchanged()
     {
         var list = List();
         var api = new JobApi().Ok("GET", "/sindri/services", list).Ok("POST", "/sindri/services/heartbeat/run", Body(Started))
@@ -107,13 +107,39 @@ public sealed class CliServiceVerbsTests : IDisposable
     public async Task A_run_refused_because_the_service_is_running_names_the_running_job()
     {
         var conflict = new Reply(HttpStatusCode.Conflict,
-            $$"""{"title":"SND-JOB-409","status":409,"detail":"A RunService job is already running for heartbeat","runningJob":"{{Id}}"}""");
+            $$"""{"title":"SND-JOB-409","status":409,"detail":"A RunService job is already running for heartbeat","runningJob":"{{Id}}"}""");   // a server older than the fix hint: the CLI adds its own
         var api = new JobApi().On("POST", "/sindri/services/heartbeat/run", conflict);
 
         var code = await Finished(_rig.RunServices(api, "run", "heartbeat"));
 
         Assert.Equal(2, code);
         Assert.Equal($"SND-JOB-409 A RunService job is already running for heartbeat (fix: sindri jobs show {Id})\n", _rig.Error.ToString().ReplaceLineEndings("\n"));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_run_refused_with_the_servers_own_fix_hint_gets_no_second_one()
+    {
+        var served = System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(Golden.SourcePath(typeof(CliServiceVerbsTests).Assembly, "Golden/Api/services-name-run/already-running.json"), TestContext.Current.CancellationToken))!;
+        var api = new JobApi().On("POST", "/sindri/services/heartbeat/run", new Reply(HttpStatusCode.Conflict, served.ToJsonString()));
+
+        var code = await Finished(_rig.RunServices(api, "run", "heartbeat"));
+
+        Assert.Equal(2, code);
+        var error = _rig.Error.ToString().ReplaceLineEndings("\n");
+        Assert.Equal($"SND-JOB-409 {(string)served["detail"]!}\n", error);
+        Assert.Equal(1, error.Split("(fix:").Length - 1);   // the detail's hint only: the CLI's would be a second
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_run_refused_because_a_scheduled_run_is_in_flight_has_no_running_job_to_show()
+    {
+        var conflict = new Reply(HttpStatusCode.Conflict, """{"title":"SND-JOB-409","status":409,"detail":"A scheduled run of heartbeat is in flight (fix: wait for it to end, then run it again)"}""");
+        var api = new JobApi().On("POST", "/sindri/services/heartbeat/run", conflict);
+
+        var code = await Finished(_rig.RunServices(api, "run", "heartbeat"));
+
+        Assert.Equal(2, code);
+        Assert.Equal("SND-JOB-409 A scheduled run of heartbeat is in flight (fix: wait for it to end, then run it again)\n", _rig.Error.ToString().ReplaceLineEndings("\n"));   // the detail's hint only: there is no job to show
     }
 
     [Theory, Trait("Lane", "unit")]

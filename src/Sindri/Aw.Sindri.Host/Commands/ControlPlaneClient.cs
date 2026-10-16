@@ -179,7 +179,7 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
     {
         var problem = AwJson.Deserialize<ApiProblem>(bytes, options);
         return problem.IsSuccess && problem.Value.Title is { } code
-            ? new Error(code, Kind(status), Refusal(code, problem.Value.Detail ?? code) + RunningJob(code, problem.Value.RunningJob))
+            ? new Error(code, Kind(status), Refusal(code, problem.Value.Detail ?? code) + RunningJob(code, problem.Value.Detail, problem.Value.RunningJob))
             : SindriErrors.ApiNoCode.With(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"the API answered HTTP {status} without an error code"));
     }
 
@@ -190,9 +190,9 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
         _ => ErrorKind.Invalid,
     };
 
-    /// <summary>A refused start names the job that is already running and the command that shows it (the route's detail stays as it is).</summary>
-    private static string RunningJob(string code, string? job) =>
-        code == SindriErrors.JobConflict.Code && !string.IsNullOrEmpty(job) ? $" (fix: sindri jobs show {SafeText.Line(SafeText.Escape(job), 60)})" : string.Empty;
+    /// <summary>A refused start names the job that is already running and the command that shows it, unless the route's detail already says so.</summary>
+    private static string RunningJob(string code, string? detail, string? job) =>
+        code == SindriErrors.JobConflict.Code && !string.IsNullOrEmpty(job) && detail?.Contains("(fix:", StringComparison.Ordinal) != true ? $" (fix: sindri jobs show {SafeText.Line(SafeText.Escape(job), 60)})" : string.Empty;
 
     /// <summary>A refused action class names why this CLI called as a session (workflow spec §4.2), so the reader knows what to change.</summary>
     private string Refusal(string code, string detail) =>

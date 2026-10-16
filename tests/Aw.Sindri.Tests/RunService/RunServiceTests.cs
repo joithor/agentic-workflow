@@ -7,6 +7,7 @@ using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Tests.Jobs;
 using Aw.Sindri.Tests.Server;
 
 namespace Aw.Sindri.Tests.RunService;
@@ -169,12 +170,40 @@ public sealed class RunServiceTests
         await appending.Task.WaitAsync(Token);
 
         stuck.Release();   // the service returns now, past the point a tripped token would have stopped it
-        await runtime.Quiesce();
-        _ = proceed.TrySetResult();
+        WorkReturned.Await(stuck.Returned.Task);   // and the run is parked in CancelRecorded before the cancel is allowed to settle: with the token tripped first it would throw at its first check instead
+        _ = proceed.TrySetResult();   // the run waits for the cancel to settle before it decides, so the record goes through first
         _ = await cancel;
+        await runtime.Quiesce().WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, Token);
 
         Assert.Empty(runtime.Of(EventTypes.ServiceRan));
         Assert.Empty(runtime.Of(EventTypes.JobFinished));
+    }
+
+    [Fact]
+    public async Task A_run_that_returns_while_its_cancel_fails_to_record_writes_its_service_ran_and_its_finish()
+    {
+        var stuck = new BlockedService();
+        await using var runtime = await RunServiceRuntime.Open(stuck);
+        var started = await runtime.Start(A.RunServiceRequest().ForService(BlockedService.Name).Build(), Human());
+        await stuck.Entered.Task.WaitAsync(Token);
+        runtime.H.Store.FailAppend = entry =>
+        {
+            if (entry.Envelope.Type != EventTypes.JobCancelled)
+            {
+                return null;
+            }
+
+            stuck.Release();   // the service returns while the cancel is being recorded, then the record fails
+            return SindriErrors.LedgerUnavailable.With("busy");
+        };
+
+        var cancelled = await runtime.Cancel(started.Value.JobId);
+        await runtime.Quiesce().WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, Token);
+
+        Assert.True(cancelled.IsError);
+        _ = Assert.Single(runtime.Of(EventTypes.ServiceRan));
+        _ = Assert.Single(runtime.Of(EventTypes.JobFinished));
+        Assert.Empty(runtime.Of(EventTypes.JobCancelled));
     }
 
     [Fact]

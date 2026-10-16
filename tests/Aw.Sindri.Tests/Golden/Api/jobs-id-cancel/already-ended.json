@@ -2,6 +2,6 @@
   "type": "https://tools.ietf.org/html/rfc9110#section-15.5.10",
   "title": "SND-JOB-409",
   "status": 409,
-  "detail": "the job already ended",
+  "detail": "The job already ended (fix: run `sindri jobs show JOB-00000000000000000000000000000001` to see how)",
   "traceId": "<trace>"
 }

@@ -3,6 +3,7 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
@@ -49,16 +50,33 @@ internal sealed class CancelJobService(IJobViews jobs, ILedgerStore ledger, Held
             return allowed.Error;
         }
 
-        runtime.Cancelling(request.Job);   // before the append, so the work sees it coming and records nothing of its own
         var entry = events.Entry(EventTypes.JobCancelled, new JobCancelled(caller.CommandId, request.Job, caller.Actor, row.Value?.Item, row.Value?.Repo), $"{EventTypes.JobCancelled}:{request.Job.Value}");
-        var appended = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
-        if (appended.IsError)
-        {
-            runtime.Withdraw(request.Job);
-            return appended.Error;
-        }
+        runtime.Cancelling(request.Job);   // before the append, so the work sees it coming and records nothing of its own; nothing that can throw sits between this and Record's try
+        return await Record(request.Job, entry, grant, caller.CommandId).ConfigureAwait(false);
+    }
 
-        _ = runtime.Cancel(request.Job);
-        return new CommandAccepted(caller.CommandId, appended.Value.Sequence);
+    /// <summary>Appends 'job.cancelled' and trips the token. The mark is set, so the append is no longer the request's to abort (an aborted POST must not leave a job whose cancel was half done); on an error or a throw the mark is withdrawn and the job writes its own end.</summary>
+    private async ValueTask<Result<CommandAccepted>> Record(JobId job, LedgerEntry entry, LeaseGrant grant, CommandId command)
+    {
+        var recorded = false;
+        try
+        {
+            var appended = await ledger.Append(entry, grant, CancellationToken.None).ConfigureAwait(false);
+            if (appended.IsError)
+            {
+                return appended.Error;
+            }
+
+            _ = runtime.Cancel(job);
+            recorded = true;
+            return new CommandAccepted(command, appended.Value.Sequence);
+        }
+        finally
+        {
+            if (!recorded)
+            {
+                runtime.Withdraw(job);
+            }
+        }
     }
 }

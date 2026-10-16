@@ -1,6 +1,8 @@
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Features.Jobs;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Jobs;
 
@@ -60,5 +62,19 @@ public sealed class JobStartClaimTests
         var again = await runtime.Start(new EchoJobRequest(Lines: 1, DelayMs: 0), Human());   // the key is free once the job has ended
         Assert.True(again.IsSuccess);
         await runtime.Quiesce();
+    }
+
+    [Fact]
+    public async Task A_precheck_that_refuses_starts_nothing_and_takes_no_claim()
+    {
+        await using var runtime = new RealJobRuntime();
+        await runtime.Open();
+
+        var refused = await runtime.Start(new ProbeJobRequest("refused"), Human());
+
+        Expect.Equal(SindriErrors.ServiceNotFound.Code, refused.Error.Code);   // AddJob's precheck is the context lane's synchronous 404 or 409
+        Assert.DoesNotContain(runtime.Events, static e => string.Equals(e.Envelope.Type, EventTypes.JobStarted, StringComparison.Ordinal));
+        Expect.Equal(0, runtime.Get<JobRegistry>().Count());
+        Expect.Equal(0, runtime.Runner.Running);
     }
 }

@@ -22,7 +22,6 @@ namespace Aw.Sindri.Features.Jobs;
 internal sealed class JobEventWriter(ILedgerStore ledger, HeldLease held, EventFactory events, ITextScrubber scrubber, ICallerContextAccessor callers)
 {
     private const string ResultTooLarge = " (result too large)";
-    private const string ResultUnreadable = " (result dropped: it could not be cleaned)";
     private const string InterruptedSummary = "interrupted: the process stopped while it ran";
 
     /// <summary>Whether the control plane still holds the lease: a failed write with the lease held is the runner's to retry and then end the job over.</summary>
@@ -60,8 +59,8 @@ internal sealed class JobEventWriter(ILedgerStore ledger, HeldLease held, EventF
     /// <summary>Records that a job the previous process left running was interrupted by that process's end (recovery, API P6 unit F). The key is the job's end key, so a replay writes nothing.</summary>
     /// <param name="job">The row of the job that was running.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
-    /// <returns>Success, or why the end was not recorded (no lease, or a lost one).</returns>
-    public async ValueTask<Result<Unit>> Interrupted(JobRow job, CancellationToken cancellationToken)
+    /// <returns>True when the end was written now, false when it was there already, or why it was not recorded (no lease, or a lost one).</returns>
+    public async ValueTask<Result<bool>> Interrupted(JobRow job, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(job);
         if (held.Current is not { } grant)
@@ -77,7 +76,7 @@ internal sealed class JobEventWriter(ILedgerStore ledger, HeldLease held, EventF
 
         var payload = new JobFinished(caller.CommandId, job.Id, JobOutcome.Failed, InterruptedSummary, SindriErrors.JobInterrupted.Code, Result: null, job.Item, job.Repo);
         var appended = await ledger.Append(events.Entry(EventTypes.JobFinished, payload, $"{EventTypes.JobFinished}:{job.Id.Value}"), grant, cancellationToken).ConfigureAwait(false);
-        return appended.IsError ? appended.Error : Unit.Value;
+        return appended.IsError ? appended.Error : !appended.Value.AlreadyRecorded;
     }
 
     private JobFinished Succeeded(JobStart start, JobWorkResult work)
@@ -96,28 +95,20 @@ internal sealed class JobEventWriter(ILedgerStore ledger, HeldLease held, EventF
             return null;
         }
 
-        try
+        using var buffer = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(buffer))
         {
-            using var buffer = new MemoryStream();
-            using (var writer = new Utf8JsonWriter(buffer))
-            {
-                Write(element, writer);
-            }
-
-            if (buffer.Length > JobLimits.ResultBytes)
-            {
-                note = ResultTooLarge;
-                return null;
-            }
-
-            using var document = JsonDocument.Parse(buffer.ToArray());
-            return document.RootElement.Clone();
+            Write(element, writer);
         }
-        catch (Exception e) when (e is JsonException or InvalidOperationException)
+
+        if (buffer.Length > JobLimits.ResultBytes)
         {
-            note = ResultUnreadable;
+            note = ResultTooLarge;
             return null;
         }
+
+        using var document = JsonDocument.Parse(buffer.ToArray());   // what the writer wrote is JSON: AddJob already turned the result into an element
+        return document.RootElement.Clone();
     }
 
     private string Safe(string text) => SafeText.Escape(scrubber.Scrub(text));

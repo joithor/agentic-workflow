@@ -311,7 +311,7 @@ Every list view also returns `empty`, the `EmptyText` sentence (§3.6) for its c
 | `GET /events?after=&item=&types=` | `StreamEvents` (S1, extended) | `StreamEventsQuery(long, ItemId?, TypeFilter?)` | An SSE stream of `PublicEvent` (§5) | S1; extended in P5 |
 | `GET /ledger?after=&item=&type=&max=` | `ReadLedger` | `ReadLedgerQuery(long, ItemId?, string?, int)`, with `max` ≤ 500 | `LedgerPage(events, next)`: public envelopes with sanitized payloads. It's an audit read, so `human` callers also get the non-public types. For `session` callers it is repo-scoped like every other query (only events whose item is in the session's repo, or that have no item) | P5 |
 | `GET /jobs/{jobId}` | `GetJob` | `GetJobQuery(JobId)` | `JobView`: <ul><li>id, kind, key, item?, repo?, service?;</li><li>state: `running`, `succeeded`, `failed` or `cancelled`, `startedBy`, and when it started and ended;</li><li>the last 200 progress lines, each `{round, line, at}` (cleaned when written: scrubbed, escaped, one line, at most 200 characters), and `rounds`;</li><li>result summary, `code`, `result` (the work's bounded, scrubbed result) and `cancelledBy`;</li><li>`actions` (`CancelJob` while running) and `cli` (`sindri jobs cancel JOB-…` while running);</li><li>`asOf`.</li></ul> | P6 |
-| `GET /jobs?state=&kind=` | `ListJobs` | `state?`, `kind?` | `JobList`: `{jobs: [JobSummary], empty, asOf}`, newest first; a `JobSummary` is the `JobView` without its lines, result, actions and cli. **(provisional owner default, 2026-10-15)**: the route, `sindri jobs` and `ServiceView.job` are an additive owner default awaiting confirmation | P6 |
+| `GET /jobs?state=&kind=` | `ListJobs` | `state?`, `kind?` | `JobList`: `{jobs: [JobSummary], empty, asOf}`, newest start first (never latest activity; a tie goes by job id); a `JobSummary` is the `JobView` without its lines, result, actions and cli. **(provisional owner default, 2026-10-15)**: the route, `sindri jobs` and `ServiceView.job` are an additive owner default awaiting confirmation | P6 |
 
 **Session callers are scoped to one repo.**
 - A `session` caller's list and item queries are filtered to the repo named in `X-Sindri-Repo`, which the CLI sets from
@@ -422,9 +422,9 @@ catalog itself lands in P1. Every domain payload carries `commandId` (or the `se
 | `decision.recorded` | decision, choice, note?, by, repo? (the decision's repo, copied from its row) | `decision.recorded:<decisionId>` | yes (note left out; a human's ledger read keeps it) | P4 |
 | `job.started` | job, kind, key, item?, repo?, service? | `job.started:<jobId>` | yes | P6 |
 | `service.ran` (manual) | as above, plus `job`; `slot` is the run's start time, and the key carries the job instead | `service.ran:<name>:manual:<jobId>` | yes | P6: a `RunService` job appends it when it ends, so a manual run updates `lastRun` and clears a failure row |
-| `job.progress` | job, round, line | `job.progress:<jobId>:<n>` | yes | P6 |
-| `job.finished` | job, outcome, summary, code? | `job.finished:<jobId>` | yes | P6 |
-| `job.cancelled` | job | `job.cancelled:<jobId>` | yes | P6 |
+| `job.progress` | job, round, line, item?, repo? | `job.progress:<jobId>:<n>` | yes | P6 |
+| `job.finished` | job, outcome, summary, code?, result?, item?, repo? | `job.finished:<jobId>` | yes (result left out of the public form) | P6 |
+| `job.cancelled` | job, by, item?, repo? | `job.cancelled:<jobId>` | yes | P6 |
 | `service.paused`, `service.resumed` | service | `service.paused:<name>:<commandId>` | yes | P6 |
 | `item.linked` | item, record key, alias | `item.linked:<itemId>:<record>` | yes | context Phase 6 only (`service:context-sync`); a `CreateItem` with `link` stores it on `item.created` and gives no alias, so `GET /items/<tracker key>` resolves only after a later `item.linked` |
 | `item.open-requested` | item, target, mode, launch | `item.open-requested:<itemId>:<launch>` | yes | P10 |
@@ -534,7 +534,7 @@ How items move through the states:
 | `recordedOnly` | Whether the decision is recorded only (before S2) |
 | `notice` | The sentence that says so, served by the API (`recorded; acted on once the workflow engine runs`) so no client keeps its own copy; `null` when `recordedOnly` is false. A `DecisionView` voided by closing its item carries the voided sentence (`voided: the item was closed`) in `notice` and `cleared` |
 | `answerKind` | For `park` rows: `text`, `resume`, `grant`, `grantTokens`, `accept` (with reject), or `cancel-only`, taken from the engine's resume action (engine §5.8), so the app shows the right control |
-| `primaryAction` | A catalog action id (no P4 row is `cli-only`, so none serves `copy:<cli>`). Per kind: <ul><li>`decision` → `Decide`;</li><li>`park` → the engine's action id;</li><li>`failure` → `RunService` (served since P6, with `cli` `sindri services run <name>`);</li><li>`profile` → `ApproveProfile` (protected: terminal-only, so the app copies the row's `cli`, `sindri profile approve <hash>`, instead of calling it).</li></ul> |
+| `primaryAction` | A catalog action id (no P4 row is `cli-only`, so none serves `copy:<cli>`). Per kind: <ul><li>`decision` → `Decide`;</li><li>`park` → the engine's action id;</li><li>`failure` → `RunService` (served since P6, with `cli` `sindri services run <name>`), or **null** for a failure of a service this build doesn't have (`SND-SVC-404`: `actions` is `[PauseService]` and `cli` is `sindri profile validate`; golden `needs-you/unknown-service`);</li><li>`profile` → `ApproveProfile` (protected: terminal-only, so the app copies the row's `cli`, `sindri profile approve <hash>`, instead of calling it).</li></ul> |
 | `cli` | The CLI form |
 
 **Rows by kind.** A filed request appears **once**, as its `decision` row; there is no separate request row.
@@ -1169,7 +1169,7 @@ of **`docs/csharp/sindri.md`**. Not `docs/sindri/errors.md`, which is generated 
 | `SND-API-012` | RateLimited (429) | The stream limits (§5.4) | P5 |
 | `SND-JOB-404` | NotFound (404) | No such job | P6 |
 | `SND-SVC-404` | NotFound (404) | No such service in the approved profile | P6 |
-| `SND-JOB-409` | Conflict (409) | A job of that kind and key is already running (extension `runningJob`), or `CancelJob` met a job that already ended | P6 |
+| `SND-JOB-409` | Conflict (409) | Three causes: a job of that kind and key is already running (the only one with the extension `runningJob`); a scheduled run of the service is in flight (`RunService`, no job to name); `CancelJob` met a job that already ended | P6 |
 | `SND-JOB-001` | Unavailable | The process stopped while the job ran; only ever a job's `code`, never an HTTP response | P6 |
 | `SND-JOB-002` | RateLimited (429) | Too many jobs are running (8) | P6 |
 | `SND-LAUNCH-001` | Unavailable (503) | The launcher couldn't open the terminal | P10 |

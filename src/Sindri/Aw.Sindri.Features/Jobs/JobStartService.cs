@@ -46,18 +46,28 @@ internal sealed class JobStartService<TRequest, TResult>(JobAdmitter<TRequest> a
             return admitted.Error;
         }
 
-        var kind = JobKind.From(ActionClassifier.Classify(catalog, request).Action.Value);
-        var definition = admitted.Value.Definition;
-        var key = definition.KeyOf(request);
-        var job = JobId.New(ids);
-        var repo = caller.Class == CallerClass.Session ? caller.Repo : definition.RepoOf(request);   // a session works in its own repo; a human says which repo the work is about
-        if (!registry.TryClaim(kind, key, job, out var running))
+        JobTicket ticket;
+        RepoName? repo;
+        try
         {
-            admitter.Rollback(request);
-            return Conflict(kind, key, running);
+            var kind = JobKind.From(ActionClassifier.Classify(catalog, request).Action.Value);
+            var key = admitted.Value.Definition.KeyOf(request);
+            ticket = new JobTicket(JobId.New(ids), kind, key);
+            repo = caller.Class == CallerClass.Session ? caller.Repo : admitted.Value.Definition.RepoOf(request);   // a session works in its own repo; a human says which repo the work is about
+        }
+        catch
+        {
+            admitter.Rollback(request);   // the admission took something the work will never use
+            throw;
         }
 
-        return await Begin(new JobTicket(job, kind, key), admitted.Value, request, caller, repo).ConfigureAwait(false);
+        if (!registry.TryClaim(ticket.Kind, ticket.Key, ticket.Job, out var running))
+        {
+            admitter.Rollback(request);
+            return Conflict(ticket.Kind, ticket.Key, running);
+        }
+
+        return await Begin(ticket, admitted.Value, request, caller, repo).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -94,6 +104,6 @@ internal sealed class JobStartService<TRequest, TResult>(JobAdmitter<TRequest> a
     private static Error Conflict(JobKind kind, JobKey key, JobId running)
     {
         using var id = JsonDocument.Parse($"\"{running.Value}\"");   // a job id is 'JOB-' and hex digits: nothing to escape
-        return SindriErrors.JobConflict.With($"A {kind.Value} job is already running for {key.Value}").WithExtension("runningJob", id.RootElement.Clone());
+        return SindriErrors.JobConflict.With($"A {kind.Value} job is already running for {key.Value} (fix: run `sindri jobs show {running.Value}`, or wait for it to end)").WithExtension("runningJob", id.RootElement.Clone());
     }
 }

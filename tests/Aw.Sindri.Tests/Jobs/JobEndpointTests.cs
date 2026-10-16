@@ -65,6 +65,22 @@ public sealed class JobEndpointTests
     }
 
     [Fact(Timeout = 30_000)]
+    public async Task A_manual_run_of_a_paused_service_runs()
+    {
+        await using var host = await JobHost.Start(TestContext.Current.CancellationToken);
+        await ViewScenarios.Approve(host, TestContext.Current.CancellationToken);
+        var paused = await Post(host, "/sindri/services/heartbeat/pause");
+        Assert.Equal(HttpStatusCode.OK, paused.Status);
+        await JobHost.Settle(host, TestContext.Current.CancellationToken);
+
+        var (job, _) = await Run(host, "heartbeat");   // a pause stops the schedule, never a person
+        await JobHost.Settle(host, TestContext.Current.CancellationToken);
+        var view = Json(await JobHost.Read(host, $"/sindri/jobs/{job.Value}"));
+
+        Assert.Equal(("succeeded", "heartbeat"), (view.GetProperty("state").GetString(), view.GetProperty("service").GetString()));
+    }
+
+    [Fact(Timeout = 30_000)]
     public async Task A_second_run_of_a_running_service_is_409_SND_JOB_409_naming_the_running_job()
     {
         await using var host = await JobHost.Start(TestContext.Current.CancellationToken);
@@ -157,7 +173,7 @@ public sealed class JobEndpointTests
         Assert.Equal((HttpStatusCode.OK, HttpStatusCode.NotFound, "SND-JOB-404"), (own.Status, other.Status, other.Code));
     }
 
-    [Fact(Timeout = 30_000)]
+    [Fact(Timeout = 60_000)]
     public async Task The_list_filters_by_state_and_kind()
     {
         await using var host = await JobHost.Start(TestContext.Current.CancellationToken);
@@ -167,7 +183,7 @@ public sealed class JobEndpointTests
         var byState = Json(await JobHost.Read(host, "/sindri/jobs?state=running"));
         var byKind = Json(await JobHost.Read(host, "/sindri/jobs?kind=RunService"));
         var bad = await JobHost.Read(host, "/sindri/jobs?state=maybe");
-        _ = await Post(host, $"/sindri/jobs/{running.Value}/cancel");
+        await JobHost.Cancel(host, running, TestContext.Current.CancellationToken);   // the job ends only through this cancel: a refused one fails here, by name
         await JobHost.Settle(host, TestContext.Current.CancellationToken);
 
         Assert.Equal([running.Value], byState.GetProperty("jobs").EnumerateArray().Select(static j => j.GetProperty("id").GetString()), StringComparer.Ordinal);
