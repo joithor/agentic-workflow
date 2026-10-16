@@ -7,7 +7,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 public static class RecipeViews
 {
     /// <summary>
-    /// The view of <paramref name="recipe"/>: its inputs (with the effective subject kind and whether each is required), its outputs, the urgency,
+    /// The view of <paramref name="recipe"/>: its inputs (with the declared subject kind, or the placeholder a pre-P4c row gets, and whether each is required), its outputs, the urgency,
     /// and the states in path order with the loops that carry a cap, all from the same <see cref="StatePathOrder"/> the instance cells use.
     /// </summary>
     /// <param name="recipe">The recipe as registered.</param>
@@ -23,7 +23,7 @@ public static class RecipeViews
             stamp.Hash,
             stamp.Version,
             recipe.Name,
-            [.. recipe.Inputs.Select(static i => new RecipeInputView(i.Key.Value, i.Label, Declared(i.Type), SubjectKinds.Effective(i), Required: i.Generate is null, i.Generate))],
+            [.. recipe.Inputs.Select(static i => new RecipeInputView(i.Key.Value, i.Label, Declared(i.Type), i.Kind ?? SubjectKinds.NoKind, Required: i.Generate is null, i.Generate))],
             [.. recipe.Outputs.Select(static o => new RecipeOutputView(o.Key.Value, o.Label, Declared(o.Type), o.From))],
             Urgencies.IsKnown(recipe.Urgency) ? Urgencies.Parse(recipe.Urgency) : RecipeUrgency.Work,
             path.OrderedBy == "transition-list" ? PathOrdering.TransitionList : PathOrdering.Path,
