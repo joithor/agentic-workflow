@@ -21,7 +21,7 @@ public sealed class RecommendedOptionTests
         {
             Actions =
             [
-                row.Actions[0],
+                row.Actions[0] with { Recommended = false },
                 row.Actions[1] with { Recommended = true },
             ],
         };

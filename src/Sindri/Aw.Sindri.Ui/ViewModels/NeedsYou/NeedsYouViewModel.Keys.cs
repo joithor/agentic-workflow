@@ -114,8 +114,8 @@ internal sealed partial class NeedsYouViewModel
     // open (the sheet shows what is being accepted). A protected or pending primary is never run.
     private bool RunPrimary(NeedsYouRowViewModel row)
     {
-        var primary = row.Controls.FirstOrDefault(c => c.IsPrimary && c.IsEnabled);
         var decision = string.Equals(row.Entry.Subject?.Kind, "decision", StringComparison.Ordinal);
+        var primary = row.Controls.FirstOrDefault(c => c.IsPrimary && c.IsEnabled && (!decision || c.Action.Recommended));
         return primary is not null && (!decision || string.Equals(SheetRowId, row.Id, StringComparison.Ordinal)) && Act(row, primary.Action);
     }
 

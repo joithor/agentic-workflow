@@ -38,7 +38,7 @@ internal static class NeedsYouRows
         PrimaryAction = "Decide",
         Actions =
         [
-            new NeedsYouAction("Decide", "Accept", ActionReadiness.Ready, "sindri decide DEC-1 accept", RejectLike: false) { OptionId = "accept" },
+            new NeedsYouAction("Decide", "Accept", ActionReadiness.Ready, "sindri decide DEC-1 accept", RejectLike: false) { OptionId = "accept", Recommended = true },
             new NeedsYouAction("Decide", "Decline", ActionReadiness.Ready, "sindri decide DEC-1 decline", RejectLike: true) { OptionId = "decline" },
         ],
         Subject = new NeedsYouSubject("decision", "DEC-1"),

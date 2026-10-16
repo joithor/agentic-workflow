@@ -75,7 +75,7 @@ internal static class NeedsYouMapper
 
         foreach (var option in decision.Options)
         {
-            yield return new NeedsYouAction(id, option.Label, ready, option.Cli, option.RejectLike) { OptionId = option.Id };
+            yield return new NeedsYouAction(id, option.Label, ready, option.Cli, option.RejectLike) { OptionId = option.Id, Recommended = string.Equals(option.Id, decision.Recommended, StringComparison.Ordinal) };
         }
     }
 
