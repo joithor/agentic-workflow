@@ -7659,6 +7659,10 @@ Aw.Sindri.Core.Events.DecisionRecordedPublic.Deconstruct(out Aw.Sindri.Core.Ids.
 Aw.Sindri.Core.Events.DecisionRecordedPublic.Equals(Aw.Sindri.Core.Events.DecisionRecordedPublic? other) -> bool
 Aw.Sindri.Core.Events.DecisionRecordedPublic.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
 Aw.Sindri.Core.Events.DecisionRecordedPublic.Repo.init -> void
+Aw.Sindri.Core.Requests.RequestKindConverter
+Aw.Sindri.Core.Requests.RequestKindConverter.RequestKindConverter() -> void
+override Aw.Sindri.Core.Requests.RequestKindConverter.Write(System.Text.Json.Utf8JsonWriter! writer, Aw.Sindri.Core.Requests.RequestKind value, System.Text.Json.JsonSerializerOptions! options) -> void
+override Aw.Sindri.Core.Requests.RequestKindConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Aw.Sindri.Core.Requests.RequestKind
 static Aw.Sindri.Core.Events.DecisionRecordedPublic.operator ==(Aw.Sindri.Core.Events.DecisionRecordedPublic? left, Aw.Sindri.Core.Events.DecisionRecordedPublic? right) -> bool
 static Aw.Sindri.Core.Events.DecisionRecordedPublic.operator !=(Aw.Sindri.Core.Events.DecisionRecordedPublic? left, Aw.Sindri.Core.Events.DecisionRecordedPublic? right) -> bool
 override Aw.Sindri.Core.Events.DecisionRecordedPublic.ToString() -> string!

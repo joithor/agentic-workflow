@@ -1,10 +1,9 @@
 using System.Text.Json.Serialization;
-using Aw.Sindri.Core.Json;
 
 namespace Aw.Sindri.Core.Requests;
 
 /// <summary>What a session asks a human for (API spec §3.2 'FileRequest'); written in kebab case.</summary>
-[JsonConverter(typeof(StrictEnumConverter<RequestKind>))]
+[JsonConverter(typeof(RequestKindConverter))]
 public enum RequestKind
 {
     /// <summary>Change the scope of the item.</summary>

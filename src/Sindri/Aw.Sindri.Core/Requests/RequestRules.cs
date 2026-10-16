@@ -24,7 +24,7 @@ public static class RequestRules
     {
         if (!Enum.IsDefined(kind))
         {
-            return SindriErrors.RequestInvalid.With(string.Create(CultureInfo.InvariantCulture, $"{(int)kind} isn't a request kind (fix: rescope, add-task, note or handback)"));
+            return SindriErrors.RequestInvalid.With("That isn't a request kind (fix: rescope, add-task, note or handback)");
         }
 
         if (string.IsNullOrWhiteSpace(text))
