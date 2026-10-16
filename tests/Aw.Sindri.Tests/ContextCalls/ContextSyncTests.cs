@@ -115,6 +115,23 @@ public sealed class ContextSyncTests : IDisposable
         Assert.Equal(CheckState.Ok, synced.State);
         Assert.Equal(CheckState.Warn, failed.State);
         Assert.Contains("SND-CONTEXT-010", failed.Detail, StringComparison.Ordinal);
+        Assert.Contains("next context-sync slot", never.Fix, StringComparison.Ordinal);   // the service is named, and no command runs a sync by hand yet
+        Assert.DoesNotContain("run it once", never.Fix, StringComparison.Ordinal);
+        Assert.Contains("retries", failed.Fix, StringComparison.Ordinal);   // a failed run's fix does not send the operator to name a service that is named
+        Assert.DoesNotContain("name the context-sync service", failed.Fix, StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 90_000), Trait("Lane", "integration")]
+    public async Task Doctor_context_sync_fix_names_the_service_only_when_the_profile_lacks_it()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var onyx = await FakeOnyxServer.Start();
+        await using var host = await Approved(onyx, ct, services: false);
+
+        var never = await Doctor(host, ct);
+
+        Assert.Contains("name the context-sync service", never.Fix, StringComparison.Ordinal);
+        Assert.DoesNotContain("run it once", never.Fix, StringComparison.Ordinal);
     }
 
     [Fact(Timeout = 90_000), Trait("Lane", "integration")]

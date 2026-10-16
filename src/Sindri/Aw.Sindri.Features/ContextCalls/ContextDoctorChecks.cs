@@ -15,7 +15,7 @@ internal sealed class ContextDoctorChecks(ContextScopes scopes, IContextEngine e
         var scope = await scopes.Current(cancellationToken).ConfigureAwait(false);
         var view = scope.IsError || scope.Value.Settings is null ? null : await engine.Sources(scope.Value, cancellationToken).ConfigureAwait(false);
         var sources = scope.IsError ? ContextChecks.NoProfile(scope.Error) : view is null ? ContextChecks.NoSection() : ContextChecks.Sources(view);
-        var sync = view is null ? new DoctorCheck(ContextChecks.SyncName, CheckState.Ok, "no context sources, so nothing syncs", Fix: null) : ContextChecks.Sync(view);
+        var sync = view is null ? new DoctorCheck(ContextChecks.SyncName, CheckState.Ok, "no context sources, so nothing syncs", Fix: null) : ContextChecks.Sync(view, scope.Value.SyncConfigured);
         var findings = new List<McpScopeFinding>();
         foreach (var file in Enum.GetValues<ProviderFile>())
         {

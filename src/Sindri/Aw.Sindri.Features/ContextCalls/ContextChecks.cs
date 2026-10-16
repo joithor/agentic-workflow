@@ -48,8 +48,8 @@ internal static class ContextChecks
             : $"{counts}; session reads off (context.sessions.enabled), so MCP calls answer {ContextErrors.SessionsDisabled.Code}", Fix: null);
     }
 
-    /// <summary>The intent sources' sync (S-5B): warn when one was never synced or its last run failed; nothing to check without an intent source or a profile.</summary>
-    internal static DoctorCheck Sync(Result<SourcesView> view)
+    /// <summary>The intent sources' sync (S-5B): warn when one was never synced or its last run failed; nothing to check without an intent source or a profile. The fix fits the state and names only what runs today.</summary>
+    internal static DoctorCheck Sync(Result<SourcesView> view, bool serviceNamed)
     {
         if (view.IsError)
         {
@@ -65,9 +65,15 @@ internal static class ContextChecks
         var problems = intent.Select(r => (r.Source.Value, r.Sync)).Where(p => p.Sync is null or { LastSync: null } or { State: SourceState.Unavailable })
             .Select(p => p.Sync?.Code is { } code ? $"{p.Value} last sync failed ({code})" : $"{p.Value} never synced").ToList();
         return problems.Count > 0
-            ? new DoctorCheck(SyncName, CheckState.Warn, string.Join("; ", problems), "name the context-sync service under services: in the profile, or run it once, then sindri context sources status")
+            ? new DoctorCheck(SyncName, CheckState.Warn, string.Join("; ", problems), SyncFix(serviceNamed, failed: problems.Exists(p => p.Contains("last sync failed", StringComparison.Ordinal))))
             : new DoctorCheck(SyncName, CheckState.Ok, $"{intent.Count} intent source(s) synced", Fix: null);
     }
+
+    private static string SyncFix(bool serviceNamed, bool failed) => !serviceNamed
+        ? "name the context-sync service under services: in the profile, then sindri context sources status"
+        : failed
+            ? "sindri context sources status shows the code; the next context-sync slot retries"
+            : "wait for the next context-sync slot, then sindri context sources status";
 
     /// <summary>Warn on any user-wide sindri entry (026) or a provider file that couldn't be checked.</summary>
     internal static DoctorCheck McpScope(IReadOnlyList<McpScopeFinding> findings)
