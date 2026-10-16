@@ -33,10 +33,13 @@ public sealed class ContextEvalVerbsTests
         Assert.Contains("report /home/x/backtest.json", text, StringComparison.Ordinal);
     }
 
-    private static async Task<(int Code, string Out)> Verb(params string[] args)
+    private static Task<(int Code, string Out)> Verb(params string[] args) => VerbAs(session: null, args);
+
+    private static async Task<(int Code, string Out)> VerbAs(AgentSession? session, params string[] args)
     {
         var (stdout, stderr) = (new StringWriter(), new StringWriter());
-        using var client = new ControlPlaneClient(new FakeControlPlaneProbe(), SliceHarness.Json);
+        var headers = session is null ? null : CallerHeaders.For(session, new InMemoryHumanTokenStore(), static _ => ValueTask.FromResult<Core.Ids.RepoName?>(null));
+        using var client = new ControlPlaneClient(new FakeControlPlaneProbe(), SliceHarness.Json, headers);
         var code = await new ContextEvalVerbs(client, new Output(stdout, stderr, SliceHarness.Json), FakeContextEngine.Instance).Run(args, TestContext.Current.CancellationToken);
         return (code, stdout + stderr.ToString());
     }
@@ -64,6 +67,20 @@ public sealed class ContextEvalVerbsTests
         Assert.Equal((0, 0), (plainCode, allCode));
         Assert.DoesNotContain("probe baselines", plain, StringComparison.Ordinal);
         Assert.Contains("the probe baselines are cleared too", all, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Eval_cli_purge_is_refused_to_a_session_with_SND_CONTEXT_020_and_open_to_a_human_at_a_terminal()
+    {
+        var session = new AgentSession("CLAUDECODE is set", Terminal: true, Prover: false);
+        var human = new AgentSession(Signal: null, Terminal: true, Prover: false);
+
+        var (sessionCode, refused) = await VerbAs(session, "purge", "--all");
+        var (humanCode, _) = await VerbAs(human, "purge", "--all");
+
+        Assert.NotEqual(0, sessionCode);
+        Assert.Contains(ContextErrors.SessionsDisabled.Code, refused, StringComparison.Ordinal);
+        Assert.Equal(0, humanCode);
     }
 
     [Fact, Trait("Lane", "unit")]
