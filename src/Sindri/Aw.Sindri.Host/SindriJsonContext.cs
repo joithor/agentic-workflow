@@ -288,5 +288,6 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ContextMapPromoted)), JsonSerializable(typeof(ContextMapProposed))]
 [JsonSerializable(typeof(ContextMapBuilt)), JsonSerializable(typeof(SyncContextSourcesRequest))]
 [JsonSerializable(typeof(SyncContextSourcesResult)), JsonSerializable(typeof(BuildContextMapRequest))]
-[JsonSerializable(typeof(BuildContextMapResult))]
+[JsonSerializable(typeof(BuildContextMapResult)), JsonSerializable(typeof(RunContextBacktestRequest)), JsonSerializable(typeof(RunContextBacktestResult))]
+[JsonSerializable(typeof(BacktestArmLine))]
 internal sealed partial class SindriJsonContext : JsonSerializerContext;

@@ -45,20 +45,6 @@ public sealed class ContextEvalVerbsTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Eval_cli_backtest_is_pending_API_P6_but_checks_the_arms_first()
-    {
-        var (_, pending) = await Verb("backtest", "--arms", "all");
-        var (badCode, bad) = await Verb("backtest", "--arms", "bogus");
-        var (_, ranker) = await Verb("backtest", "--arms", "ranker");
-
-        Assert.Contains("SND-CLI-001", pending, StringComparison.Ordinal);
-        Assert.Contains("pending:API-P6", pending, StringComparison.Ordinal);
-        Assert.Equal(1, badCode);
-        Assert.Contains(ContextErrors.UnknownArm.Code, bad, StringComparison.Ordinal);
-        Assert.Contains("S-8", ranker, StringComparison.Ordinal);
-    }
-
-    [Fact, Trait("Lane", "unit")]
     public async Task Eval_cli_purge_runs_in_process_and_all_says_the_probe_baselines_are_cleared()
     {
         var (plainCode, plain) = await Verb("purge");

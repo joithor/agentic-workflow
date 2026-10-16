@@ -65,6 +65,51 @@ public sealed class ContextJobVerbsTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Eval_backtest_posts_the_arms_and_window_to_its_route_and_with_detach_prints_the_job()
+    {
+        var api = new ScriptedApi((HttpStatusCode.OK, Started));
+
+        var exit = await Run(api, "eval", "backtest", "--arms", "brief,graph", "--since", "2026-07-01", "--until", "2026-09-30", "--limit", "10", "--detach");
+
+        Assert.True(exit == 0, _error.ToString());
+        var (method, route, body) = Assert.Single(api.Calls);
+        Assert.Equal(("POST", "/sindri/context/eval/backtest"), (method, route));
+        Assert.Contains("\"arms\":\"brief,graph\"", body, StringComparison.Ordinal);
+        Assert.Contains("\"since\":\"2026-07-01T00:00:00", body, StringComparison.Ordinal);
+        Assert.Contains("\"until\":\"2026-09-30T00:00:00", body, StringComparison.Ordinal);
+        Assert.Contains("\"limit\":10", body, StringComparison.Ordinal);
+        Assert.Equal("job JOB-0000000000000000000000000000000e started\n", _out.ToString().Replace("\r\n", "\n", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Eval_backtest_with_json_and_detach_prints_the_JobStarted_body_and_a_second_start_is_SND_JOB_409()
+    {
+        var started = await Run(new ScriptedApi((HttpStatusCode.OK, Started)), "eval", "backtest", "--detach", "--json");
+        var conflict = await Run(new ScriptedApi((HttpStatusCode.Conflict,
+            """{"type":"x","title":"SND-JOB-409","status":409,"detail":"A RunContextBacktest job is running (JOB-0000000000000000000000000000000e)","runningJob":"JOB-0000000000000000000000000000000e"}""")), "eval", "backtest", "--detach");
+
+        Assert.Equal((0, 2), (started, conflict));
+        Assert.Contains("\"jobId\":\"JOB-0000000000000000000000000000000e\"", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("SND-JOB-409", _error.ToString(), StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("eval", "backtest", "--limit", "many")]
+    [InlineData("eval", "backtest", "--since", "yesterday-ish")]
+    [InlineData("eval", "backtest", "--arms")]
+    [InlineData("eval", "backtest", "stray")]
+    public async Task Eval_backtest_with_a_bad_option_is_invalid_input_and_posts_nothing(params string[] args)
+    {
+        var api = new ScriptedApi((HttpStatusCode.OK, Started));
+
+        var exit = await Run(api, args);
+
+        Assert.Equal(2, exit);
+        Assert.Empty(api.Calls);
+        Assert.Contains("context eval backtest", _error.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_second_start_prints_SND_JOB_409_and_exits_2()
     {
         var api = new ScriptedApi((HttpStatusCode.Conflict,

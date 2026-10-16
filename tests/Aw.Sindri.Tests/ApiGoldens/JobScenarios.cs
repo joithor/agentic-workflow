@@ -1,9 +1,11 @@
 using System.Globalization;
 using System.Text.Json;
+using Aw.Context.Core.Eval.Backtest;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Host;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Jobs;
@@ -30,7 +32,7 @@ internal static class JobScenarios
         ("services-name-resume", "accepted"), ("services-name-resume", "refused-session"), ("services-name-resume", "unknown-service"),
         ("services", "paused"), ("services", "running-job"), ("services", "manual-ok"), ("needs-you", "after-manual-run"), ("events", "job-lifecycle"),
         ("jobs-id", "running"), ("jobs-id", "succeeded"), ("jobs-id", "failed"), ("jobs-id", "cancelled"), ("jobs-id", "interrupted"), ("jobs-id", "progress-capped"),
-        ("jobs-id", "ansi-escaped"), ("jobs-id", "result"), ("jobs-id", "not-found"), ("jobs-id", "bad-id"), ("jobs-id", "session-other-repo"), ("jobs-id", "stalled"),
+        ("jobs-id", "context-backtest"), ("jobs-id", "ansi-escaped"), ("jobs-id", "result"), ("jobs-id", "not-found"), ("jobs-id", "bad-id"), ("jobs-id", "session-other-repo"), ("jobs-id", "stalled"),
         ("jobs-id-cancel", "accepted"), ("jobs-id-cancel", "already-ended"), ("jobs-id-cancel", "not-found"), ("jobs-id-cancel", "refused-session"),
         ("jobs", "running"), ("jobs", "empty"), ("jobs", "by-kind"),
     ];
@@ -195,6 +197,16 @@ internal static class JobScenarios
                 await Progress(h, j, n, "line " + n.ToString(CultureInfo.InvariantCulture), ct);
             }
         },
+        ["context-backtest"] = static async (h, j, ct) =>
+        {
+            await Progress(h, j, 1, "corpus: 5 samples", ct);
+            await Progress(h, j, 2, "arm graph 5/5", ct);
+            var result = new RunContextBacktestResult(5, SmallSample: true, LeftOut: 1,
+                [new BacktestArmLine("brief", NotAvailable: null, Verdicts.OwnerDecision), new BacktestArmLine("graph", NotAvailable: null, Verdicts.OwnerDecision), new BacktestArmLine("linear", "S-6", Overall: null)],
+                Verdicts.OwnerDecision, "<home>/context/eval/backtest/20260101T000000Z.json", ["clusters unavailable"]);
+            var element = JsonSerializer.SerializeToElement(result, h.App.Services.GetRequiredService<JsonSerializerOptions>());
+            await Finished(h, j, JobOutcome.Succeeded, "5 samples, brief and graph, " + Verdicts.OwnerDecision, code: null, element, ct);
+        },
         ["ansi-escaped"] = static (h, j, ct) => Progress(h, j, 1, "\u001b[31mred\u001b[0m \u001b]0;title\u0007done", ct),
         ["stalled"] = static (h, _, ct) => ViewScenarios.Stall(h, ct),
     };
@@ -209,7 +221,8 @@ internal static class JobScenarios
         }
 
         var repo = scenario == "session-other-repo" ? "demo" : null;
-        await Started(host, job, "EchoJob", "echo", ct, repo);
+        var backtest = string.Equals(scenario, "context-backtest", StringComparison.Ordinal);
+        await Started(host, job, backtest ? "RunContextBacktest" : "EchoJob", backtest ? "backtest" : "echo", ct, repo);
         if (_shapes.TryGetValue(scenario, out var shape))
         {
             await shape(host, job, ct);

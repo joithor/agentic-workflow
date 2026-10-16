@@ -24,7 +24,8 @@ internal static class ContextJobServiceCollectionExtensions
             .AddJob<SyncContextSourcesRequest, SyncContextSourcesResult, SyncContextSourcesService>(
                 static r => JobKey.From(r.Source ?? AllSources), static r => SyncSummary(r), PrecheckSync)
             .AddJob<BuildContextMapRequest, BuildContextMapResult, BuildContextMapService>(
-                static _ => JobKey.From("build"), static r => string.Create(CultureInfo.InvariantCulture, $"draft v{r.Draft}: {r.Proposed} proposed"));
+                static _ => JobKey.From("build"), static r => string.Create(CultureInfo.InvariantCulture, $"draft v{r.Draft}: {r.Proposed} proposed"))
+            .AddJob<RunContextBacktestRequest, RunContextBacktestResult, RunContextBacktestService>(static _ => JobKey.From("backtest"), static r => r.PassLine ?? "no arm ran");
     }
 
     private static string SyncSummary(SyncContextSourcesResult result)
