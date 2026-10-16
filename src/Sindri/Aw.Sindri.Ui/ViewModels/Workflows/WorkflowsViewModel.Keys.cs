@@ -43,7 +43,11 @@ internal sealed partial class WorkflowsViewModel
             return false;
         }
 
-        KeyNote = string.Empty;
+        if (!string.Equals(SelectedAddress, address, StringComparison.Ordinal))
+        {
+            ClearNote();   // a note belongs to the row it was said on; focus arriving on the selected row leaves it
+        }
+
         SelectedAddress = address;
         Mark();
         return true;
@@ -52,6 +56,7 @@ internal sealed partial class WorkflowsViewModel
     /// <summary>Clears the selection.</summary>
     internal void Deselect()
     {
+        ClearNote();
         SelectedAddress = null;
         Mark();
     }
@@ -61,20 +66,27 @@ internal sealed partial class WorkflowsViewModel
     /// <returns>True when the key was used.</returns>
     internal bool Press(string key)
     {
-        KeyNote = string.Empty;
+        if (key is not ("B" or "N"))
+        {
+            ClearNote();
+        }
+
         switch (key)
         {
             case "J" or "K":
                 return Move(key == "J" ? 1 : -1);
             case "N":
-                KeyNote = Labels.StartArrives;
+                Say(Labels.StartArrives);
+                return true;
+            case "B":
+                Say(Labels.HandBackArrives);   // never a dead key: the note says where hand-back is
                 return true;
             default:
                 return SelectedRow is { } row && PressOn(row, key);
         }
     }
 
-    // Enter opens the row; A answers it (a protected answer is the lock's popover, a desk task its pending output); X asks to cancel it; B names its phase.
+    // Enter opens the row; A answers it (a protected answer is the lock's popover, a desk task its pending output); X asks to cancel it.
     private bool PressOn(InstanceRowViewModel row, string key)
     {
         switch (key)
@@ -91,12 +103,23 @@ internal sealed partial class WorkflowsViewModel
             case "X" when row.CanCancel:
                 OpenRequested?.Invoke(this, new OpenRequestedEventArgs(row.Link, FrameIntent.AskCancel));
                 return true;
-            case "B":
-                KeyNote = Labels.HandBackArrives;
-                return true;
             default:
                 return false;
         }
+    }
+
+    // A note is seen at once and said once: the live region goes live before its words change, and goes dark by its flag, never by an empty text.
+    private void Say(string words)
+    {
+        KeyNote = words;
+        KeyNoteVoice.Say(words);
+    }
+
+    /// <summary>Takes the note away (the selection moved, the page changed, a sheet opened).</summary>
+    internal void ClearNote()
+    {
+        KeyNoteVoice.Quiet();
+        KeyNote = string.Empty;
     }
 
     // From no row J goes to the first and K to the last; at either end the selection stays.

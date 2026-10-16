@@ -172,6 +172,7 @@ internal sealed class ExpandedStateViewModel : ObservableObject
     {
         if (_cancel is not null)
         {
+            PendingVoice.Quiet();
             PendingNote = string.Empty;
             IsConfirmingCancel = true;
         }
@@ -187,6 +188,7 @@ internal sealed class ExpandedStateViewModel : ObservableObject
         {
             IsConfirmingCancel = false;
             PendingNote = Labels.SendingArrivesNote;
+            PendingVoice.Say(Labels.SendingArrivesNote);
         }
     }
 

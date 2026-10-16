@@ -72,6 +72,7 @@ internal sealed partial class ShellViewModel
     // the strip showed, else the list resolves the address.
     private void OnInstanceSheetOpened(DeepLink link)
     {
+        Workflows.ClearNote();
         if (!_stacking)
         {
             _trail.Clear();   // a sheet opened from anywhere but a frame starts a new trail

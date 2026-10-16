@@ -27,7 +27,9 @@
 
     <!-- A key that only names a later phase (B, N) says so here, politely, and changes nothing. -->
     <TextBlock x:Name="WorkflowsKeyNote" Classes="caption" Text="{Binding KeyNote}" IsVisible="{Binding HasKeyNote}" TextWrapping="Wrap"
-               AutomationProperties.LiveSetting="Polite" AutomationProperties.Name="{Binding KeyNote}" />
+               AutomationProperties.Name="{Binding KeyNote}" />
+    <TextBlock x:Name="WorkflowsKeyNoteAnnouncement" Classes="caption live-region" Classes.live="{Binding KeyNoteVoice.IsAnnouncing}" Width="0" Opacity="0"
+               IsHitTestVisible="False" Text="{Binding KeyNoteVoice.Announcement}" />
 
     <Border x:Name="WorkflowsPanel" Classes="panel" AutomationProperties.Name="Workflows" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
       <StackPanel>

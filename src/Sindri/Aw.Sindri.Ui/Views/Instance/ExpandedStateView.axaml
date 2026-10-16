@@ -68,6 +68,8 @@
           </StackPanel>
         </StackPanel>
       </Border>
+      <TextBlock x:Name="ExpandedPendingAnnouncement" Classes="caption live-region" Classes.live="{Binding PendingVoice.IsAnnouncing}" Width="0" Opacity="0"
+                 IsHitTestVisible="False" Text="{Binding PendingVoice.Announcement}" />
       <TextBlock x:Name="ExpandedPendingNote" Classes="caption subtle" Text="{Binding PendingNote}" TextWrapping="Wrap"
                  IsVisible="{Binding PendingNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
     </StackPanel>
