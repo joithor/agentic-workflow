@@ -257,6 +257,19 @@ public sealed class DeclarationRulesTests
             [$"RCP-NAME-003: {what} at r.yaml:4:1 (name); use {{fact:<input>}}, {{start:date}} or {{start:time}}, and write {{{{ or }}}} for a literal brace"],
             CheckDeclarations(Base(name: name), At(("name", 4, 1))).Lines());
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("line one\nline two")]
+    [InlineData("tab\there")]
+    public void A_control_character_in_a_name_or_generate_template_is_RCP_NAME_003(string text)
+    {
+        Assert.Equal(
+            ["RCP-NAME-003: a control character (a line break or tab) in the template at r.yaml:4:1 (name); keep the template on one line, without control characters"],
+            CheckDeclarations(Base(name: text), At(("name", 4, 1))).Lines());
+        Assert.Equal(
+            ["RCP-NAME-003: a control character (a line break or tab) in the template at r.yaml:5:30 (inputs[0].generate); keep the template on one line, without control characters"],
+            CheckDeclarations(Base(inputs: [In("fact:note", generate: text)]), At(("inputs[0].generate", 5, 30))).Lines());
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void A_name_placeholder_that_names_no_declared_input_is_reported_once_per_input()
     {

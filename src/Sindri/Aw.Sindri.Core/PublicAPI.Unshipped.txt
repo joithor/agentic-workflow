@@ -7284,3 +7284,5 @@ static Aw.Sindri.Core.Events.EventSubject.operator ==(Aw.Sindri.Core.Events.Even
 static Aw.Sindri.Core.Workflow.Engine.Runtime.FactRows.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! interpreted, Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask? task, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>! provenance, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>? contents = null) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.FactRow!>!
 const Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.LegacyFix = "register the current file at a new version and approve it" -> string!
 static Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.Legacy(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> string?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceStart.StartedAt.get -> System.DateTimeOffset
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceStart.StartedAt.init -> void

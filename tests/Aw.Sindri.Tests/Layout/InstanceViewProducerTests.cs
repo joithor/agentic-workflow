@@ -3,6 +3,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
+using FactTypes = Aw.Sindri.Core.Workflow.Engine.Runtime.FactTypes;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Tests.GetInstance;
 using Aw.Sindri.Tests.Workflow.Engine;
@@ -410,5 +411,21 @@ public sealed class InstanceViewProducerTests
         var view = InstanceViews.Of(EngineFixture.At(legacy.Recipe, "produce"), legacy, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
 
         Assert.Contains("RCP-INPUT-002", view.Detail, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("link", "link")]
+    [InlineData("item", "item")]
+    [InlineData("file", "file")]
+    [InlineData("webhook", "payload")]
+    [InlineData("linear-project", "payload")]
+    [InlineData("text", "text")]
+    public void An_input_with_no_declared_type_has_the_type_its_kind_pairs_with_in_its_fact_row(string kind, string expected)
+    {
+        var recipe = _incident with { Recipe = _incident.Recipe with { Inputs = [new RecipeInput(_spec, "Spec", Type: null, kind, Generate: null)] } };
+
+        var view = InstanceViews.Of(EngineFixture.At(recipe.Recipe, "produce"), recipe, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
+
+        Assert.Equal(FactTypes.Parse(expected), Assert.Single(view.Facts, static f => f.Key == "fact:spec").Type);
     }
 }

@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Infrastructure.Workflows;
+using Temporalio.Worker;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Tests.Workflows;
@@ -164,7 +165,86 @@ public sealed class QueryClockAndSubjectTests : IDisposable
         Assert.Equal(("text", "Crash on launch", view.Subject!.Label), (subject.GetProperty("kind").GetString(), subject.GetProperty("key").GetString(), subject.GetProperty("label").GetString()));
         var producers = delta.GetProperty("producers");
         Assert.Equal("engine:generate", producers.GetProperty("fact:run").GetString());
-        Assert.NotEqual("engine:generate", producers.GetProperty("fact:scope").GetString(), StringComparer.Ordinal);
+        Assert.Equal("human:desk", producers.GetProperty("fact:scope").GetString());   // a supplied fact is the trigger's actor, which the start's trigger names
+        await handle.TerminateAsync("test over");
+    }
+
+    [Fact(Timeout = 120_000)]
+    public async Task The_name_reads_the_start_time_the_instance_was_stamped_with_not_the_workflows_own_clock()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _harness.Recipe("workflow.named", Named);
+        await using var env = await WorkflowsHarness.StartDevServer(ct: ct);
+        await using var served = await ApplyCommand.Served.Start(_harness.Home, env, ct);
+        var start = await WorkflowsHarness.RecipeStart(served.Sindri, "workflow.named", "T-1", ct);
+        var handle = await WorkflowsHarness.Start(env.Client, start with
+        {
+            StartedAt = new DateTimeOffset(2020, 1, 2, 3, 4, 0, TimeSpan.Zero),
+            Inputs = new Dictionary<FactKey, InputFact>
+            {
+                [FactKey.From("fact:scope")] = new("scope.txt", _harness.Fact("Crash on launch")),
+                [FactKey.From("fact:run")] = new("generated", _harness.Fact("run 2020-01-02"), Generated: true),
+            },
+        });
+
+        var view = await WorkflowsHarness.Until(handle, static v => v.Task is not null);
+
+        Assert.Equal("Crash on launch \u00b7 2020-01-02", view.Subject!.Label);
+        await handle.TerminateAsync("test over");
+    }
+
+    [Fact(Timeout = 120_000)]
+    public async Task A_named_instance_replays_cleanly_and_keeps_its_name_after_the_stored_fact_changed()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _harness.Recipe("workflow.named", Named);
+        await using var env = await WorkflowsHarness.StartDevServer(ct: ct);
+        await using var served = await ApplyCommand.Served.Start(_harness.Home, env, ct);
+        var start = await WorkflowsHarness.RecipeStart(served.Sindri, "workflow.named", "T-1", ct);
+        var scope = _harness.Fact("Crash on launch");
+        var handle = await WorkflowsHarness.Start(env.Client, start with
+        {
+            StartedAt = new DateTimeOffset(2026, 10, 15, 7, 5, 0, TimeSpan.Zero),
+            Inputs = new Dictionary<FactKey, InputFact>
+            {
+                [FactKey.From("fact:scope")] = new("scope.txt", scope),
+                [FactKey.From("fact:run")] = new("generated", _harness.Fact("run 2026-10-15"), Generated: true),
+            },
+        });
+        var named = (await WorkflowsHarness.Until(handle, static v => v.Task is not null)).Subject!.Label;
+
+        await File.WriteAllTextAsync(Path.Combine(_harness.Home, "workflow", "facts", scope.Sha256), "Something else entirely", ct);   // the stored scope changed under the instance
+        var later = await handle.QueryAsync(static wf => wf.GetInstance());
+        var replayed = await new WorkflowReplayer(new WorkflowReplayerOptions().AddWorkflow<RecipeWorkflow>())
+            .ReplayWorkflowAsync(await handle.FetchHistoryAsync(), throwOnReplayFailure: false, ct);
+
+        Assert.Equal("Crash on launch \u00b7 2026-10-15", named);
+        Assert.Equal(named, later.Subject!.Label);
+        Assert.Null(replayed.ReplayFailure);
+        await handle.TerminateAsync("test over");
+    }
+
+    [Fact(Timeout = 120_000)]
+    public async Task The_started_row_records_the_address_when_the_rendered_name_is_empty()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _harness.Recipe("workflow.named", Named.Replace("name: \"{fact:scope} \u00b7 {start:date}\"", $"name: \"{new string(' ', 85)}{{start:date}}\"", StringComparison.Ordinal));   // the cut to 80 characters leaves only spaces
+        await using var env = await WorkflowsHarness.StartDevServer(ct: ct);
+        await using var served = await ApplyCommand.Served.Start(_harness.Home, env, ct);
+        var start = await WorkflowsHarness.RecipeStart(served.Sindri, "workflow.named", "T-1", ct);
+        var handle = await WorkflowsHarness.Start(env.Client, start with
+        {
+            Inputs = new Dictionary<FactKey, InputFact>
+            {
+                [FactKey.From("fact:scope")] = new("scope.txt", _harness.Fact("Crash on launch")),
+                [FactKey.From("fact:run")] = new("generated", _harness.Fact("run"), Generated: true),
+            },
+        });
+        _ = await WorkflowsHarness.Until(handle, static v => v.Task is not null);
+
+        var delta = await StartedDelta(served.Sindri, ct);
+
+        Assert.Equal(handle.Id, delta.GetProperty("subject").GetProperty("label").GetString());
         await handle.TerminateAsync("test over");
     }
 

@@ -57,7 +57,7 @@ public sealed class InstanceNamesTests
     {
         Assert.Equal(new string('a', 40) + "!", Render("{fact:scope}!", new string('a', 100)));
         Assert.Equal(new string('a', 39), Render("{fact:scope}", new string('a', 39) + "\U0001F600tail"));
-        Assert.Equal(80, Render(new string('b', 150), "x")!.Length);
+        Assert.Equal(new string('b', 80), Render(new string('b', 150), "x"));
     }
 
     [Fact]

@@ -55,4 +55,12 @@ public sealed class RecipeLineTextTests
         Assert.Contains("input: fact:spec type=text kind=-\n", RecipeLineText.Detail(summary), StringComparison.Ordinal);
         Assert.EndsWith("stale: legacy-shape (fix: register the current file at a new version and approve it)", RecipeLineText.Line(summary), StringComparison.Ordinal);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_generate_template_is_printed_with_its_quotes_and_backslashes_escaped()
+    {
+        var summary = Summary([new RecipeInput(FactKey.From("fact:note"), Label: null, Type: null, Kind: "text", Generate: "say \"hi\" \\ {start:date}")], []);
+
+        Assert.Contains("input: fact:note type=text kind=text generate=\"say \\\"hi\\\" \\\\ {start:date}\"\n", RecipeLineText.Detail(summary), StringComparison.Ordinal);
+    }
 }

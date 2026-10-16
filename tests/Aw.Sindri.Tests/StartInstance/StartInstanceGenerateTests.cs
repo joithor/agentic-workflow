@@ -39,6 +39,22 @@ public sealed class StartInstanceGenerateTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task The_start_stamps_one_instant_and_the_generated_input_reads_it_across_a_date_boundary()
+    {
+        var clock = new SteppingClock(new DateTimeOffset(2026, 10, 15, 23, 59, 59, TimeSpan.Zero));   // every read is a minute later: a second read crosses midnight
+        var facts = new InMemoryFactStore();
+        var runtime = new Capturing();
+        var service = new StartInstanceService(new OneItem(), new OneRecipe(), new NoInstances(), new StartFacts(facts, clock), runtime, new NoLaunches(), new ClaimHolders(new InMemoryWorkflowClaims(), new FakeInstanceLiveness()));
+
+        _ = await service.Handle(new StartInstanceRequest("workflow.gen", "T-1", NextAttempt: false, Item()), Token);
+
+        var start = Assert.IsType<InstanceStart>(runtime.Started);
+        Assert.Equal(new DateTimeOffset(2026, 10, 15, 23, 59, 59, TimeSpan.Zero), start.StartedAt);
+        Assert.Equal("run 2026-10-15 23:59", Encoding.UTF8.GetString(facts.Stored[start.Inputs[_run].Value.Sha256]));
+        Assert.Equal(1, clock.Reads);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_supplied_value_wins_over_the_template()
     {
         var (service, facts, runtime) = Service();
@@ -69,6 +85,13 @@ public sealed class StartInstanceGenerateTests
         var facts = new InMemoryFactStore();
         var runtime = new Capturing();
         return (new StartInstanceService(new OneItem(), new OneRecipe(), new NoInstances(), new StartFacts(facts, new FixedClock()), runtime, new NoLaunches(), new ClaimHolders(new InMemoryWorkflowClaims(), new FakeInstanceLiveness())), facts, runtime);
+    }
+
+    private sealed class SteppingClock(DateTimeOffset first) : TimeProvider
+    {
+        public int Reads { get; private set; }
+
+        public override DateTimeOffset GetUtcNow() => first.AddMinutes(Reads++);
     }
 
     private sealed class FixedClock : TimeProvider

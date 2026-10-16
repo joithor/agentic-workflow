@@ -11,7 +11,7 @@ namespace Aw.Sindri.Features.StartInstance;
 internal sealed class StartFacts(IFactStore facts, TimeProvider clock)
 {
     /// <summary>Stores the supplied facts and, for each input with a generate template the start gave no value for, the rendered text (spec section 3.11): a supplied value always wins.</summary>
-    public async ValueTask<Result<IReadOnlyDictionary<FactKey, InputFact>>> Store(StartInstanceRequest request, Recipe recipe, CancellationToken cancellationToken)
+    public async ValueTask<Result<StartedFacts>> Store(StartInstanceRequest request, Recipe recipe, CancellationToken cancellationToken)
     {
         var stored = new Dictionary<FactKey, InputFact>();
         var now = clock.GetUtcNow();
@@ -42,6 +42,6 @@ internal sealed class StartFacts(IFactStore facts, TimeProvider clock)
             stored[key] = new InputFact(fact.Name, put.Value);
         }
 
-        return stored;
+        return new StartedFacts(stored, clock.GetUtcNow());
     }
 }
