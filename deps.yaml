@@ -616,8 +616,8 @@ edges:
   - from: Sindri
     to: Launcher
     kind: file
-    status: planned
-    note: "SL-2: Aw.Sindri.Infrastructure embeds config/launcher/builtins.json (a linked EmbeddedResource) and reads $AW_STATE_DIR/launcher.json, checked against schemas/launcher.schema.json by the shared fixtures in its tests"
+    status: current
+    note: "session collector CO-2a (CA-0): Aw.Sindri.Infrastructure embeds config/launcher/builtins.json (a linked EmbeddedResource) and reads $AW_STATE_DIR/launcher.json (AW_LAUNCHER_CONFIG), its agents and sessions sections, checked against schemas/launcher.schema.json by the shared fixtures in its tests; SL-2 extends the same reader with the launch argv, the viewer and host sections"
 
 exceptions:
   - rule: DEPS-CYCLE-001

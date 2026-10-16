@@ -86,6 +86,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(CommandHandled))]
 [JsonSerializable(typeof(ServiceRan))]
 [JsonSerializable(typeof(ProfileChecked))]
+[JsonSerializable(typeof(FleetChanged))]
 [JsonSerializable(typeof(ViewsRebuilt))]
 [JsonSerializable(typeof(ItemCreated))]
 [JsonSerializable(typeof(ItemCreatedPublic))]

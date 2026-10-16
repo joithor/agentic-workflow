@@ -119,6 +119,18 @@ public static class SindriErrors
     /// <summary>SND-DEC-001: the choice isn't one of the decision's options, or the note is too long.</summary>
     public static readonly ErrorDefinition DecisionInvalid = new("SND-DEC-001", ErrorKind.Invalid, "The decision's choice isn't valid");
 
+    /// <summary>SND-LAUNCH-011: launcher.json or an agent entry in it isn't valid (launcher spec §4); the defaults are used.</summary>
+    public static readonly ErrorDefinition LauncherInvalid = new("SND-LAUNCH-011", ErrorKind.Invalid, "launcher.json isn't valid");
+
+    /// <summary>SND-SESSION-001: one of the collector's sources failed or overran in a pass; a problem row beside a normal list.</summary>
+    public static readonly ErrorDefinition SessionSourceFailed = new("SND-SESSION-001", ErrorKind.Unavailable, "A session source failed in the last pass");
+
+    /// <summary>SND-SESSION-002: the session collector can't run here (collector spec CA-5): unsupported-platform, proc-unreadable or disabled.</summary>
+    public static readonly ErrorDefinition SessionsUnavailable = new("SND-SESSION-002", ErrorKind.Unavailable, "The session collector can't run here");
+
+    /// <summary>SND-SESSION-003: a test override (AW_SESSIONS_PROC_ROOT, AW_SESSIONS_CLAUDE_DIR) is set in this run; informational, one problem row beside a normal list.</summary>
+    public static readonly ErrorDefinition SessionsTestOverride = new("SND-SESSION-003", ErrorKind.Unavailable, "A test override is set in this run");
+
     /// <summary>Every Sindri error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
@@ -126,5 +138,6 @@ public static class SindriErrors
         ProfileNotApproved, ApprovalsUnavailable, LedgerSchema, LedgerUnavailable, NotRunning, ApiTimeout, PortInUse, ApiNoCode, ApiInternal,
         CallerUnknown, OriginRefused, CommandBusy, AuthTokenRequired, AuthRefused, UnknownVerb, StartFailed,
         InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, RequestInvalid, RequestsRateLimited, DecisionNotFound, DecisionInvalid, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe,
+        LauncherInvalid, SessionSourceFailed, SessionsUnavailable, SessionsTestOverride,
     ];
 }

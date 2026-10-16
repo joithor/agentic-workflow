@@ -1,0 +1,64 @@
+using Aw.Sindri.Core;
+using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Sessions;
+
+namespace Aw.Sindri.Infrastructure.Launch;
+
+/// <summary>Reads the built-in catalog and the box's launcher.json once at start (collector spec CO13, §9).</summary>
+internal static class LauncherStartup
+{
+    /// <summary>The catalog and sessions settings; an invalid launcher.json leaves the built-ins and the defaults, with the reason as the config problem.</summary>
+    /// <param name="environment">Reads an environment variable.</param>
+    /// <param name="settings">Sindri's settings (the state directory locates launcher.json).</param>
+    /// <returns>The loaded catalog, settings and the sessions directory.</returns>
+    internal static LauncherLoad Load(Func<string, string?> environment, SindriSettings settings)
+    {
+        var builtins = Builtins();
+        var path = Set(environment, "AW_LAUNCHER_CONFIG") ?? Path.Combine(settings.StateDirectory, "launcher.json");
+        var (bytes, unreadable) = ReadFile(path);
+        var read = LauncherFile.Read(builtins, bytes);
+        var problem = unreadable ?? (read.IsError ? read.Error.Message : null);
+        var config = read.IsError ? LauncherFile.Read(builtins, user: null).Value : read.Value;
+        var section = problem is null ? config.Sessions : null;
+        return new LauncherLoad(new AgentCatalog(config.Agents), Sessions(section, problem, TestOverride(environment)), ClaudeDirectory(environment, section?.ClaudeSessionsDir));
+    }
+
+    private static bool TestOverride(Func<string, string?> environment) =>
+        Set(environment, "AW_SESSIONS_PROC_ROOT") is not null || Set(environment, "AW_SESSIONS_CLAUDE_DIR") is not null;
+
+    private static SessionSettings Sessions(SessionsSection? section, string? problem, bool overridden) =>
+        new(section?.Enabled ?? true, section?.PollSeconds ?? 2, Providers(section), overridden) { ConfigProblem = problem };
+
+    private static IReadOnlyList<AgentId>? Providers(SessionsSection? section) =>
+        section?.Providers is { } named ? [.. named.Select(AgentId.From)] : null;
+
+    internal static string? Set(Func<string, string?> environment, string name) => environment(name) is { Length: > 0 } value ? value : null;
+
+    private static string ClaudeDirectory(Func<string, string?> environment, string? configured)
+    {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var chosen = Set(environment, "AW_SESSIONS_CLAUDE_DIR") ?? configured ?? "~/.claude/sessions";
+        return chosen.StartsWith('~') ? home + chosen[1..] : chosen;
+    }
+
+    private static byte[] Builtins()
+    {
+        using var stream = typeof(LauncherStartup).Assembly.GetManifestResourceStream("builtins.json")
+            ?? throw new InvalidOperationException("builtins.json isn't embedded in Aw.Sindri.Infrastructure");
+        using var copy = new MemoryStream();
+        stream.CopyTo(copy);
+        return copy.ToArray();
+    }
+
+    private static (byte[]? Bytes, string? Problem) ReadFile(string path)
+    {
+        try
+        {
+            return File.Exists(path) ? (File.ReadAllBytes(path), null) : (null, null);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return (null, SindriErrors.LauncherInvalid.With("launcher.json can't be read: " + e.GetType().Name).Message);
+        }
+    }
+}

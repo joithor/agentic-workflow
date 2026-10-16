@@ -71,6 +71,9 @@ public static class EventTypes
     /// <summary>A human asked for the views to be rebuilt (not public).</summary>
     public const string ViewsRebuilt = "views.rebuilt";
 
+    /// <summary>A session appeared, started asking for approval, or went (the session collector; collector spec CO3).</summary>
+    public const string FleetChanged = "fleet.changed";
+
     /// <summary>A human created a work item.</summary>
     public const string ItemCreated = "item.created";
 
