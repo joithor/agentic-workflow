@@ -39,7 +39,7 @@ internal sealed class FileEvalStore(ContextStoreSettings settings, JsonSerialize
         try
         {
             var read = AwJson.Deserialize<ExtractedMap>(await File.ReadAllBytesAsync(path, cancellationToken).ConfigureAwait(false), options);
-            return Results.Success<ExtractedMap?>(read.IsSuccess ? read.Value : null);   // a file that doesn't parse is rebuilt
+            return Results.Success(read.IsSuccess ? read.Value : null);   // a file that doesn't parse is rebuilt
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {

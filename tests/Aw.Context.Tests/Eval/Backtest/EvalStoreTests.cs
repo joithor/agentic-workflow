@@ -35,7 +35,7 @@ public sealed class EvalStoreTests : IDisposable
     public async Task AsOfMapCache_round_trips_and_keys_on_sha_extractor_version_and_clusters()
     {
         var store = Store();
-        var repo = Aw.Context.Core.Engine.ContextRepoName.From("aw-split-panes");
+        var repo = Context.Core.Engine.ContextRepoName.From("aw-split-panes");
         var plain = AsOfMapCache.Key(repo, "0123456789abcdef0123", MapExtractor.Version, clustered: false);
         var clustered = AsOfMapCache.Key(repo, "0123456789abcdef0123", MapExtractor.Version, clustered: true);
 

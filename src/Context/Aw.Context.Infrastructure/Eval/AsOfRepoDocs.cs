@@ -110,7 +110,7 @@ internal sealed partial class AsOfRepoDocs : IContextSource
         }
 
         var size = await git.Size(request.Repo.Path, entry.Blob, cancellationToken).ConfigureAwait(false);
-        if (size.IsError || size.Value > Docs.SqliteDocIndex.MaxDocumentBytes)
+        if (size.IsError || size.Value > SqliteDocIndex.MaxDocumentBytes)
         {
             return null;
         }

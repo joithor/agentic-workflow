@@ -25,8 +25,8 @@ using Aw.Context.Testing.Linking;
 using Aw.Context.Testing.Locks;
 using Aw.Context.Testing.Map;
 using Aw.Context.Testing.Review;
-using Aw.Context.Tests.EvalProbes;
 using Aw.Context.Tests.Eval;
+using Aw.Context.Tests.EvalProbes;
 using Aw.Context.Tests.Map;
 using Aw.Context.Tests.Onyx;
 using Aw.Kernel.Ids;
@@ -70,7 +70,7 @@ internal sealed class BacktestWorld : IAsyncDisposable
             .AddSingleton<IIdGenerator>(new SequentialIdGenerator())
             .AddSingleton<IProbeFileReader>(new NoProbes())
             .AddSingleton<IProbeReportStore>(new NoProbes())
-            .AddSingleton<IRepoReader>(wrap?.Invoke(new GitRepoReader(git)) ?? new GitRepoReader(git))
+            .AddSingleton(wrap?.Invoke(new GitRepoReader(git)) ?? new GitRepoReader(git))
             .AddSingleton<IIntentStore>(Intents)
             .AddSingleton<IModelPort>(Model)
             .AddSingleton<IClusterSource>(Clusters)
@@ -184,7 +184,7 @@ internal sealed class BacktestWorld : IAsyncDisposable
     /// <param name="scope">The scope (default: the human's).</param>
     /// <param name="configure">Changes the request (window, limit).</param>
     /// <returns>The result.</returns>
-    public Task<Aw.Kernel.Result<BacktestRun>> Run(string arms = "all", ContextScope? scope = null, Func<BacktestRequest, BacktestRequest>? configure = null) =>
+    public Task<Kernel.Result<BacktestRun>> Run(string arms = "all", ContextScope? scope = null, Func<BacktestRequest, BacktestRequest>? configure = null) =>
         RunWith(TestContext.Current.CancellationToken, arms, scope, configure);
 
     /// <summary>Runs the backtest under <paramref name="cancellationToken"/>.</summary>
@@ -193,7 +193,7 @@ internal sealed class BacktestWorld : IAsyncDisposable
     /// <param name="scope">The scope.</param>
     /// <param name="configure">Changes the request.</param>
     /// <returns>The result.</returns>
-    public async Task<Aw.Kernel.Result<BacktestRun>> RunWith(CancellationToken cancellationToken, string arms = "all", ContextScope? scope = null, Func<BacktestRequest, BacktestRequest>? configure = null)
+    public async Task<Kernel.Result<BacktestRun>> RunWith(CancellationToken cancellationToken, string arms = "all", ContextScope? scope = null, Func<BacktestRequest, BacktestRequest>? configure = null)
     {
         var request = new BacktestRequest(scope ?? Human(), Arms.Parse(arms).Value);
         return await Engine.EvalBacktest(configure?.Invoke(request) ?? request, cancellationToken);

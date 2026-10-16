@@ -1,7 +1,7 @@
 using Aw.Context.Core.Eval.Backtest;
+using Aw.Context.Core.Graph;
 using Aw.Context.Core.Results;
 using Aw.Context.Testing.Graph;
-using Aw.Context.Core.Graph;
 
 namespace Aw.Context.Tests.Eval.Backtest;
 

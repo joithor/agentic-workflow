@@ -349,10 +349,10 @@ public sealed class ContextLensesApiTests : IDisposable
         File.SetLastWriteTimeUtc(made, now.AddDays(-100));
         File.SetLastWriteTimeUtc(fresh, now);
         await using var scope = host.App.Services.CreateAsyncScope();
-        var service = scope.ServiceProvider.GetServices<Aw.Sindri.Core.Scheduling.IScheduledService>().Single(s => s.Identity().Value == "context-purge");
+        var service = scope.ServiceProvider.GetServices<Core.Scheduling.IScheduledService>().Single(s => s.Identity().Value == "context-purge");
         var grant = host.App.Services.GetRequiredService<HeldLease>().Current!;   // why: the started host holds the lease
 
-        var ran = await service.Run(new Aw.Sindri.Core.Scheduling.ScheduledRun(grant, Clock(host).GetUtcNow()), TestContext.Current.CancellationToken);
+        var ran = await service.Run(new Core.Scheduling.ScheduledRun(grant, Clock(host).GetUtcNow()), TestContext.Current.CancellationToken);
 
         Assert.True(ran.IsSuccess);
         Assert.False(File.Exists(made));

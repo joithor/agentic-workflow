@@ -98,7 +98,7 @@ internal sealed class SampleScorer(IBriefSource briefs, AsOfMapBuilder maps, IAs
     }
 
     // With the adjudicator on, the surfaces no PR touched are judged within the run's token cap; the rest stay unjudged and precision is not measured (083).
-    private async ValueTask<SampleScore> Adjudicated(SampleScore score, (Arm Arm, IReadOnlyList<string> Truth, Aw.Context.Core.Graph.GraphSnapshot Graph) what, (Brief Brief, Opened Opened, Spend Spend) text,
+    private async ValueTask<SampleScore> Adjudicated(SampleScore score, (Arm Arm, IReadOnlyList<string> Truth, Core.Graph.GraphSnapshot Graph) what, (Brief Brief, Opened Opened, Spend Spend) text,
         CancellationToken cancellationToken)
     {
         var spend = text.Spend;
@@ -129,5 +129,5 @@ internal sealed class SampleScorer(IBriefSource briefs, AsOfMapBuilder maps, IAs
         CutUnreadable,
     }
 
-    private sealed record Opened(AsOfGraph Graph, IContextSource Docs, Aw.Context.Core.Trust.IEgressScrubber Egress);
+    private sealed record Opened(AsOfGraph Graph, IContextSource Docs, Core.Trust.IEgressScrubber Egress);
 }

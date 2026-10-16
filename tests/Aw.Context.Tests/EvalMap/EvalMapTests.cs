@@ -13,7 +13,7 @@ public sealed class EvalMapTests
     private static async Task Decide(BacktestWorld world, params (OverrideAction Action, string Target)[] decisions) =>
         _ = await world.Store.AppendOverrides([.. decisions.Select((d, i) => new MapOverride(d.Action, NodeKey.From(d.Target), "avery", _at.AddMinutes(i)))], TestContext.Current.CancellationToken);
 
-    private static Task<Aw.Kernel.Result<MapQualityRun>> Measure(BacktestWorld world, Aw.Context.Core.Engine.ContextScope? scope = null) =>
+    private static Task<Kernel.Result<MapQualityRun>> Measure(BacktestWorld world, Context.Core.Engine.ContextScope? scope = null) =>
         world.Engine.EvalMap(new MapQualityRequest(scope ?? world.Human()), TestContext.Current.CancellationToken).AsTask();
 
     [Fact, Trait("Lane", "integration")]

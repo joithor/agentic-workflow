@@ -61,5 +61,5 @@ public sealed class GrownBacktestTests
     }
 
     private static string Serialize(BacktestReport report) =>
-        System.Text.Encoding.UTF8.GetString(Aw.Kernel.Json.AwJson.Serialize(report, Eval.EvalJson.Options)) + "\n";
+        System.Text.Encoding.UTF8.GetString(Kernel.Json.AwJson.Serialize(report, Eval.EvalJson.Options)) + "\n";
 }
