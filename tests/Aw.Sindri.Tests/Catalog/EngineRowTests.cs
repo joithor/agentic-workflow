@@ -22,15 +22,6 @@ public sealed class EngineRowTests
         });
     }
 
-    /// <summary>rc2-3: the challenge row serves approve and revoke, so a refusal naming its command names both verbs.</summary>
-    [Fact, Trait("Lane", "unit")]
-    public void The_challenge_row_names_both_the_approve_and_the_revoke_command()
-    {
-        var row = Assert.Single(new CommandCatalog().Rows, r => r.Action.Value == "IssueChallenge");
-
-        Assert.Equal("sindri recipe approve <recipe> or sindri recipe revoke <recipe>", row.Cli.Text);
-    }
-
     [Fact, Trait("Lane", "unit")]
     public void One_command_row_serves_every_recipe_verb_with_the_verb_in_the_payload()
     {

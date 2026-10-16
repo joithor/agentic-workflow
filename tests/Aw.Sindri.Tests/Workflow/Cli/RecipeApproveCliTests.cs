@@ -91,7 +91,7 @@ public sealed class RecipeApproveCliTests : IDisposable
         Assert.Null((await app.Services.GetRequiredService<IRecipeApprovals>().Latest(step.Id, 1, step.Hash, ct)).Value);
     }
 
-    /// <summary>PR 232 proof F6: a session told to run the revoke is told it is a revoke (the row names both verbs).</summary>
+    /// <summary>PR 232 proof F6: a session told to run the revoke is told it is a revoke (the server names the one command).</summary>
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task A_session_revoke_is_refused_naming_the_revoke_command()
     {
@@ -104,7 +104,7 @@ public sealed class RecipeApproveCliTests : IDisposable
         Assert.Equal(2, session);
         Assert.StartsWith("SND-AUTH-002 ", _error.ToString(), StringComparison.Ordinal);
         Assert.Contains("sindri recipe revoke <recipe>", _error.ToString(), StringComparison.Ordinal);
-        Assert.StartsWith("SND-AUTH-002 Revoking a recipe is a human decision", _error.ToString(), StringComparison.Ordinal);   // rc2-3: the challenge row names both verbs, the message names the revoke
+        Assert.DoesNotContain("recipe approve", _error.ToString(), StringComparison.Ordinal);
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
