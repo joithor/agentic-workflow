@@ -17,7 +17,7 @@ public static partial class EvalScaffold
     /// <param name="recipe">The recipe.</param>
     /// <param name="catalog">The build's descriptors.</param>
     /// <param name="children">The recipe's child recipes.</param>
-    /// <returns>The cases, each marked '"scaffold": true': 'scaffold' for a recipe without a route, otherwise 'scaffold-&lt;branch&gt;' for each path (the outcome picked at each route, or 'step-failed').</returns>
+    /// <returns>The cases, each marked '"scaffold": true': 'scaffold' for a recipe without a route, otherwise 'scaffold-&lt;branch&gt;' for each path (the outcome picked at each route, or 'step_failed'; branches are joined with '-', which an outcome name can't contain, and 'step_failed' has an underscore, which none can, so no two paths share a name).</returns>
     public static IReadOnlyList<EvalCase> GenerateAll(Recipe recipe, BlockCatalog catalog, IChildRecipeResolver children)
     {
         ArgumentNullException.ThrowIfNull(recipe);
@@ -88,7 +88,7 @@ public static partial class EvalScaffold
         return
         [
             .. outcomes.Select(o => (o.Value, new EvalTrigger(TriggerNames.StepCompleted, o, Outputs(descriptor, o), Park: null))),
-            ("step-failed", new EvalTrigger(TriggerNames.StepFailed)),
+            ("step_failed", new EvalTrigger(TriggerNames.StepFailed)),
         ];
     }
 }

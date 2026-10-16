@@ -50,7 +50,7 @@ public sealed class ScaffoldRouteTests
         var names = cases.Select(c => c.Name).ToList();
         Assert.Equal(names.Count, names.Distinct(StringComparer.Ordinal).Count());
         Assert.Contains("scaffold-step-failed", names, StringComparer.Ordinal);        // route A picks 'step', route B picks 'failed'
-        Assert.Contains("scaffold-step_failed", names, StringComparer.Ordinal);        // route A's own step.failed path
+        Assert.Contains("scaffold-step_failed-failed", names, StringComparer.Ordinal);   // route A fails its step, the desk picks, route B picks failed
     }
 
     private static string TwoRoutes { get; } = RecipeFixtures.Read("valid/workflow.two-routes.yaml");

@@ -142,8 +142,24 @@ public sealed class RecipeEvalCommandTests : IDisposable
 
         Assert.Equal(2, await Run("recipe", "eval", "--scaffold", route, "--out", occupied));
 
+        Assert.Contains("SND-CLI-003", _error.ToString(), StringComparison.Ordinal);
         Assert.Contains("(fix: ", _error.ToString(), StringComparison.Ordinal);
         Assert.Equal("a file\n", await File.ReadAllTextAsync(occupied, TestContext.Current.CancellationToken));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Scaffold_out_that_fails_part_way_removes_the_files_it_wrote()
+    {
+        var route = Path.Combine(_home.Path, "recipes", "workflow.dev-evidence-route.yaml");
+        var directory = Path.Combine(_home.Path, "scaffolds");
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(route)!); // why: the recipe's directory
+        await File.WriteAllTextAsync(route, ShippedRecipes.Read("dev/workflow.dev-evidence-route.yaml"), TestContext.Current.CancellationToken);
+        _ = Directory.CreateDirectory(Path.Combine(directory, "scaffold-step_failed.jsonl"));   // the last case's file can't be written: a directory is there
+
+        Assert.Equal(2, await Run("recipe", "eval", "--scaffold", route, "--out", directory));
+
+        Assert.Contains("SND-CLI-003", _error.ToString(), StringComparison.Ordinal);
+        Assert.Empty(Directory.GetFiles(directory));
     }
 
     [Fact, Trait("Lane", "integration")]

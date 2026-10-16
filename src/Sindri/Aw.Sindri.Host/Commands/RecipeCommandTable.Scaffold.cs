@@ -32,7 +32,7 @@ internal static partial class RecipeCommandTable
         var files = (result.Value.Files ?? []).Select(f => (Path: Path.Combine(directory, f.Name + ".jsonl"), f.Text)).ToList();
         if (files.GroupBy(static f => f.Path, StringComparer.Ordinal).FirstOrDefault(static g => g.Skip(1).Any()) is { Key: { } twice })
         {
-            return await output.Error(SindriErrors.InvalidInput.With($"two scaffold cases would be written to {twice} (fix: this is a sindri bug; report it with the recipe file)")).ConfigureAwait(false);
+            return await output.Error(SindriErrors.ApiInternal.With($"two scaffold cases would be written to {twice} (fix: this is a sindri bug; report it with the recipe file)")).ConfigureAwait(false);
         }
 
         if (files.Find(f => File.Exists(f.Path)) is { Path: { } existing })
@@ -48,22 +48,45 @@ internal static partial class RecipeCommandTable
         return await output.Text(string.Concat(files.Select(static f => f.Path + "\n")), 0).ConfigureAwait(false);
     }
 
-    /// <summary>Writes each file under <paramref name="directory"/>; the refusal when the directory or a file can't be written, else null.</summary>
+    /// <summary>
+    /// Writes each file under <paramref name="directory"/>; the refusal when the directory or a file can't be written, else null.
+    /// A failure part-way removes the files this call wrote (none of them existed before: the caller checked).
+    /// </summary>
     private static async Task<Error?> Write(string directory, List<(string Path, string Text)> files, CancellationToken ct)
     {
+        List<string> written = [];
         try
         {
             _ = Directory.CreateDirectory(directory);
             foreach (var (path, text) in files)
             {
                 await File.WriteAllTextAsync(path, text, ct).ConfigureAwait(false);
+                written.Add(path);
             }
 
             return null;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
+            foreach (var path in written)
+            {
+                TryDelete(path);
+            }
+
             return SindriErrors.InvalidInput.With($"can't write the scaffold to {directory}: {e.Message} (fix: choose an --out directory you can create and write)");
+        }
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // why: best effort; the refusal already names the directory, and a file we can't remove is one the owner can
+            _ = e;
         }
     }
 }
