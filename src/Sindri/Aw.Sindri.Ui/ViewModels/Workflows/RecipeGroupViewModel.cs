@@ -43,6 +43,11 @@ internal sealed class RecipeGroupViewModel(string recipe) : ObservableObject
     {
         Patch.To(Rows, rows);
         Columns = [.. rows.SelectMany(r => r.Stages.Select(s => s.State)).Distinct(StringComparer.Ordinal)];
+        foreach (var row in rows)
+        {
+            row.Align(Columns);   // each cell under the head of its own state, a blank where the row has none
+        }
+
         OnChanged(nameof(Count));
         OnChanged(nameof(Header));
         OnChanged(nameof(ToggleName));

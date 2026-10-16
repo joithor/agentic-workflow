@@ -72,13 +72,14 @@ internal sealed class InstanceRowViewModel : ObservableObject
 
     /// <summary>Lines the cells up under the group's columns.</summary>
     /// <param name="columns">The group's columns.</param>
-    internal void Align(IReadOnlyList<string> columns) => _ = (columns, _row);
+    internal void Align(IReadOnlyList<string> columns) =>
+        Cells = [.. columns.Select(column => Stages.FirstOrDefault(s => string.Equals(s.State, column, StringComparison.Ordinal)) ?? StageCellViewModel.Missing(column))];
 
     /// <summary>The title button's accessible name.</summary>
-    public string OpenName => AccessibleName;
+    public string OpenName => Labels.OpenInstanceName(_row.Address);
 
-    /// <summary>The name screen readers hear: the subject and the address.</summary>
-    public string AccessibleName => $"{Subject} {_row.Address}";
+    /// <summary>The name screen readers hear: the subject and the address, then the state and the chip's word.</summary>
+    public string AccessibleName => $"{Subject} {_row.Address}, {_row.State}, {_row.Chip.Word}";
 
     /// <summary>Where Enter and a click go: the instance in the Workflows frame.</summary>
     public DeepLink Link => new(DeepLinkKind.Workflow, _row.Address);
@@ -99,7 +100,7 @@ internal sealed class InstanceRowViewModel : ObservableObject
     public bool IsStale { get; private set => Set(ref field, value); }
 
     /// <summary>Everything the row draws: two rows with the same signature look the same.</summary>
-    internal string Signature => string.Join('|', Address, Subject, Chip, Now, string.Join(',', Inputs.Select(i => i.Name)), string.Join(',', Stages.Select(s => s.Name)), Protected?.Cli, CanAnswerAtDesk, CanCancel);
+    internal string Signature => string.Join('|', Address, Subject, Chip, Now, string.Join(',', Inputs.Select(i => i.Name)), string.Join(',', Stages.Select(s => s.Name)), StateWord, Chip.Word, Protected?.Cli, CanAnswerAtDesk, CanCancel);
 
     /// <summary>Sets what the list knows of the row.</summary>
     /// <param name="stale">The views are stalled or rebuilding.</param>

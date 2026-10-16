@@ -12,14 +12,15 @@ internal sealed class StageCellViewModel
 {
     private readonly StateCell _cell;
 
-    internal StageCellViewModel(StateCell cell, bool isCurrent, bool isBlocked)
+    internal StageCellViewModel(StateCell cell, bool isCurrent, bool isBlocked, bool isMissing = false)
     {
+        IsMissing = isMissing;
         _cell = cell;
         IsCurrent = isCurrent;
         IsBlocked = isBlocked;
         var badge = cell.Badge is { } b ? Labels.CellBadge(b.Kind, b.Reason) : string.Empty;
-        Glyph = isBlocked ? Labels.BlockedMark : badge.Length > 0 ? badge : Mark(cell.Glyph);
-        Detail = string.Join(' ', new[] { isBlocked ? badge : string.Empty, Parts(cell) }.Where(p => p.Length > 0));
+        Glyph = isMissing ? string.Empty : isBlocked ? Labels.BlockedMark : badge.Length > 0 ? badge : Mark(cell.Glyph);
+        Detail = isMissing ? string.Empty : string.Join(' ', new[] { isBlocked ? badge : string.Empty, Parts(cell) }.Where(p => p.Length > 0));
     }
 
     /// <summary>The state this cell is.</summary>
@@ -40,8 +41,17 @@ internal sealed class StageCellViewModel
     /// <summary>True for the state the instance is in.</summary>
     public bool IsCurrent { get; }
 
-    /// <summary>The name screen readers hear: the state, then what the cell says in words.</summary>
-    public string Name => $"{_cell.State}, {Words()}";
+    /// <summary>The name screen readers hear: the state, what the cell says in words, and "current" for the state the instance is in.</summary>
+    public string Name => IsMissing ? string.Empty : $"{_cell.State}, {Words()}{(IsCurrent ? ", " + Labels.StageCurrent : string.Empty)}";
+
+    /// <summary>True for the blank under a column head whose state this row does not have (a row on another hash of the recipe).</summary>
+    public bool IsMissing { get; }
+
+    /// <summary>The blank for a column this row has no state for.</summary>
+    /// <param name="state">The column's state.</param>
+    /// <returns>A cell that draws nothing.</returns>
+    internal static StageCellViewModel Missing(string state) =>
+        new(new StateCell(state, Order: null, BranchOf: null, Api.Workflow.StateGlyph.Pending, Badge: null, Round: null, Loops: [], Desk: false, Child: false, Children: null, Outcome: null, Terminal: false), isCurrent: false, isBlocked: false, isMissing: true);
 
     internal static string Mark(Api.Workflow.StateGlyph glyph) => glyph switch
     {

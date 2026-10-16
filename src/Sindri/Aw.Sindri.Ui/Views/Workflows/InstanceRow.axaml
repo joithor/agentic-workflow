@@ -12,7 +12,7 @@
           AutomationProperties.Name="{Binding AccessibleName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
     <Grid x:Name="WorkflowRowGrid" ColumnDefinitions="220,150,*,180" VerticalAlignment="Top">
       <StackPanel Spacing="4" Margin="0,0,8,0">
-        <Button x:Name="WorkflowRowOpen" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding AccessibleName}">
+        <Button x:Name="WorkflowRowOpen" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding OpenName}">
           <TextBlock Classes="body-strong" Text="{Binding Subject}" TextTrimming="CharacterEllipsis" AutomationProperties.AccessibilityView="Raw" />
         </Button>
         <ctl:StateChipView x:Name="WorkflowRowChip" Chip="{Binding Chip}" HorizontalAlignment="Left" />
@@ -32,7 +32,7 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
-      <ItemsControl x:Name="WorkflowRowStages" Grid.Column="2" ItemsSource="{Binding Stages}">
+      <ItemsControl x:Name="WorkflowRowStages" Grid.Column="2" ItemsSource="{Binding Cells}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>

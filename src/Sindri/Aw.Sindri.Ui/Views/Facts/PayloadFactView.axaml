@@ -6,6 +6,7 @@
   <!-- A payload fact (and every type with no viewer of its own): the first three keys, then the whole body as a tree you can walk with the arrow keys. -->
   <StackPanel Spacing="6">
     <TextBlock x:Name="PayloadLoading" Classes="caption muted" Text="{Binding LoadingText}" IsVisible="{Binding IsLoading}" />
+    <TextBlock x:Name="PayloadAnnouncement" Classes="caption live-region" Classes.live="{Binding Voice.IsAnnouncing}" Width="0" Opacity="0" IsHitTestVisible="False" Text="{Binding Voice.Announcement}" />
     <TextBlock x:Name="PayloadProblem" Classes="body" Text="{Binding ProblemText}" IsVisible="{Binding HasProblem}" TextWrapping="Wrap" AutomationProperties.Name="{Binding ProblemText}" />
     <StackPanel Spacing="6" IsVisible="{Binding IsShown}">
       <ItemsControl x:Name="PayloadPreview" ItemsSource="{Binding Preview}">

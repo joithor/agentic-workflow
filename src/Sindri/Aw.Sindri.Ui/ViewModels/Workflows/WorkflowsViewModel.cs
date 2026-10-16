@@ -155,7 +155,7 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
         IsStale = stale;
         foreach (var row in _rows.Values.Concat(DoneRows))
         {
-            row.SetStale(stale);
+            row.SetStale(stale || IsUnreadable);
         }
     }
 
@@ -260,10 +260,10 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
     {
         IsUnreadable = true;
         OnChanged(nameof(UnreadableText));
-        (Head, NavCount, HasDone, DoneText, IsEmpty, EmptyText) = (string.Empty, string.Empty, false, string.Empty, false, string.Empty);
-        _rows.Clear();
-        Groups.Clear();
-        DoneRows.Clear();
-        SelectedAddress = null;
+        // The last good data stays, marked stale (screens §4.1): the next readable answer rebuilds nothing the human was on.
+        foreach (var row in _rows.Values.Concat(DoneRows))
+        {
+            row.SetStale(stale: true);
+        }
     }
 }

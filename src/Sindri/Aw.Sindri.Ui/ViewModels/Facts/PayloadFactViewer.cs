@@ -61,6 +61,8 @@ internal sealed class PayloadFactViewer : ObservableObject, IFactViewer
     {
         if (_context.ApiUrl() is not { } url)
         {
+            ProblemText = Labels.PayloadNotRunning;   // not an empty body that reads as loaded
+            Voice.Say(ProblemText);
             IsLoading = false;
             return;
         }
@@ -69,10 +71,12 @@ internal sealed class PayloadFactViewer : ObservableObject, IFactViewer
         if (answer.IsError)
         {
             ProblemText = string.Equals(answer.Error.Code, SindriUiErrors.BadAnswer.Code, StringComparison.Ordinal) ? Labels.StripUnreadable : answer.Error.Message;
+            Voice.Say(ProblemText);
         }
         else
         {
             Show(answer.Value);
+            Voice.Say(TruncatedNote.Length > 0 ? TruncatedNote : Labels.PayloadLoaded(Row.Label));
         }
 
         IsLoading = false;

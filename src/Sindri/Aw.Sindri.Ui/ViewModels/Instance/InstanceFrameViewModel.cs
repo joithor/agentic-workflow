@@ -162,11 +162,12 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         var (address, generation) = (Address, ++_generation);
         if (_id is null)
         {
-            _id = await Resolve(url, address, generation, cancellationToken).ConfigureAwait(true);
-            if (_id is null)
+            if (await Resolve(url, address, generation, cancellationToken).ConfigureAwait(true) is not { } resolved)
             {
-                return;
+                return;   // not found, failed, or another instance took over: whatever it was, it must not clear the id of the newer one
             }
+
+            _id = resolved;
         }
 
         var answer = await api.Instance(url, _id, cancellationToken).ConfigureAwait(true);
@@ -201,7 +202,8 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         }
 
         var rows = found.Value.Instances;
-        if ((rows.FirstOrDefault(r => string.Equals(r.Address, address, StringComparison.Ordinal)) ?? (rows.Count > 0 ? rows[0] : null)) is not { } row)
+        // The row whose address it is; else the one row the link matches (an item id, an instance id); a link that matches several opens none of them.
+        if ((rows.FirstOrDefault(r => string.Equals(r.Address, address, StringComparison.Ordinal)) ?? (rows.Count == 1 ? rows[0] : null)) is not { } row)
         {
             Problem(FramePhase.NotFound, Labels.InstanceNotFound(address));
             return null;

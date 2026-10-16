@@ -132,11 +132,26 @@ internal sealed partial class WorkflowsViewModel
         }
 
         var at = rows.FindIndex(r => string.Equals(r.Address, SelectedAddress, StringComparison.Ordinal));
-        var to = at < 0 ? (step > 0 ? 0 : rows.Count - 1) : Math.Clamp(at + step, 0, rows.Count - 1);
+        var to = at >= 0 ? Math.Clamp(at + step, 0, rows.Count - 1) : NearestDrawn(rows, step);
         SelectedAddress = rows[to].Address;
         Mark();
         FocusRequested?.Invoke(this, new WorkflowFocusEventArgs(rows[to].Address, onlyIfLost: false));
         return true;
+    }
+
+    // From no row J goes to the first and K to the last; from a row in a group the human collapsed, to the nearest drawn row in the key's direction.
+    private int NearestDrawn(List<InstanceRowViewModel> drawn, int step)
+    {
+        var all = Shown.Select(r => r.Address).ToList();
+        var from = all.FindIndex(a => string.Equals(a, SelectedAddress, StringComparison.Ordinal));
+        if (from < 0)
+        {
+            return step > 0 ? 0 : drawn.Count - 1;
+        }
+
+        var order = drawn.Select(r => all.IndexOf(r.Address)).ToList();
+        var next = step > 0 ? order.FindIndex(i => i > from) : order.FindLastIndex(i => i < from);
+        return next >= 0 ? next : (step > 0 ? drawn.Count - 1 : 0);
     }
 
     // After a read: the selection stays on the same address (and asks for focus back if the re-read took it away with the old rows), or, when
