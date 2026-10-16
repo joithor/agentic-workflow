@@ -61,6 +61,38 @@ public sealed class SqliteDatabaseReaderContractTests : ReadOnlyDatabaseContract
     }
 
     [Fact]
+    public async Task A_seed_that_attaches_the_source_or_vacuums_into_a_file_outside_the_run_is_refused_and_touches_nothing()
+    {
+        var db = await ArrangeAsync();
+        var source = ((SqliteTarget)db.Target).SourcePath;
+        var outside = _root.Combine("repo/seed-vacuum.db");
+        var seed = $"ATTACH '{source}' AS src;\nINSERT INTO src.notes(text) VALUES ('x');\nDETACH src;\nVACUUM INTO '{outside}';\n";
+        var before = Sha(source);
+
+        var opened = await new SqliteDatabaseReader().OpenAsync(((SqliteTarget)db.Target) with { SeedSql = seed }, TestContext.Current.CancellationToken);
+
+        Assert.True(opened.IsError);
+        Assert.Equal(Core.EvidenceErrors.DatabaseRefused.Code, opened.Error.Code);
+        Assert.Equal(before, Sha(source));
+        Assert.False(File.Exists(outside));
+    }
+
+    [Theory]
+    [InlineData("ATTACH ':memory:' AS m")]
+    [InlineData("DETACH m")]
+    [InlineData("VACUUM")]
+    [InlineData("SELECT load_extension('x')")]
+    public async Task A_seed_statement_that_reaches_another_file_is_refused(string seed)
+    {
+        var db = await ArrangeAsync();
+
+        var opened = await new SqliteDatabaseReader().OpenAsync(((SqliteTarget)db.Target) with { SeedSql = seed }, TestContext.Current.CancellationToken);
+
+        Assert.True(opened.IsError);
+        Assert.Equal(Core.EvidenceErrors.DatabaseRefused.Code, opened.Error.Code);
+    }
+
+    [Fact]
     public async Task A_missing_source_is_unavailable_and_creates_no_file_there()
     {
         var missing = _root.Combine("repo/none.db");

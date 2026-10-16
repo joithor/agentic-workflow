@@ -2070,11 +2070,13 @@ Aw.Evidence.Core.Data.Rows.<Clone>$() -> Aw.Evidence.Core.Data.Rows!
 Aw.Evidence.Core.Data.Rows.Columns.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Evidence.Core.Data.Rows.Columns.init -> void
 Aw.Evidence.Core.Data.Rows.Count.get -> int
-Aw.Evidence.Core.Data.Rows.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Columns, out System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<object?>!>! Values, out bool Truncated) -> void
+Aw.Evidence.Core.Data.Rows.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Columns, out System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<object?>!>! Values, out bool Truncated, out System.Collections.Generic.IReadOnlyList<string?>? SourceColumns) -> void
 Aw.Evidence.Core.Data.Rows.Equals(Aw.Evidence.Core.Data.Rows? other) -> bool
-Aw.Evidence.Core.Data.Rows.Rows(System.Collections.Generic.IReadOnlyList<string!>! Columns, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<object?>!>! Values, bool Truncated) -> void
+Aw.Evidence.Core.Data.Rows.Rows(System.Collections.Generic.IReadOnlyList<string!>! Columns, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<object?>!>! Values, bool Truncated, System.Collections.Generic.IReadOnlyList<string?>? SourceColumns = null) -> void
 Aw.Evidence.Core.Data.Rows.ToJson() -> string!
 Aw.Evidence.Core.Data.Rows.Truncated.get -> bool
+Aw.Evidence.Core.Data.Rows.SourceColumns.get -> System.Collections.Generic.IReadOnlyList<string?>?
+Aw.Evidence.Core.Data.Rows.SourceColumns.init -> void
 Aw.Evidence.Core.Data.Rows.Truncated.init -> void
 Aw.Evidence.Core.Data.Rows.Values.get -> System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<object?>!>!
 Aw.Evidence.Core.Data.Rows.Values.init -> void

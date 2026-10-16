@@ -71,6 +71,7 @@ public sealed class PostgresDatabaseReaderTests(PostgresContainer container) : R
     [InlineData("postgres", "superuser")]
     [InlineData("evidence_rw", "INSERT, UPDATE, DELETE or TRUNCATE")]
     [InlineData("evidence_files", "pg_write_server_files")]
+    [InlineData("evidence_member", "INSERT, UPDATE, DELETE or TRUNCATE")]
     public async Task A_role_that_can_write_is_refused_before_any_script_query(string user, string reason)
     {
         var secret = user == "postgres" ? container.AdminSecret : container.ReaderSecret;

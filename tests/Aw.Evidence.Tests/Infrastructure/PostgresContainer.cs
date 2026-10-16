@@ -151,5 +151,9 @@ public sealed class PostgresContainer : IAsyncLifetime
         "GRANT SELECT, INSERT ON notes TO evidence_rw;",
         $"CREATE ROLE evidence_files LOGIN NOSUPERUSER PASSWORD '{ReaderSecret}';",
         "GRANT SELECT ON notes TO evidence_files;",
-        "GRANT pg_write_server_files TO evidence_files;");
+        "GRANT pg_write_server_files TO evidence_files;",
+        "CREATE ROLE writers NOLOGIN;",
+        "GRANT INSERT, DELETE ON notes TO writers;",
+        $"CREATE ROLE evidence_member LOGIN NOSUPERUSER PASSWORD '{ReaderSecret}' IN ROLE writers;",
+        "GRANT SELECT ON notes TO evidence_member;");
 }

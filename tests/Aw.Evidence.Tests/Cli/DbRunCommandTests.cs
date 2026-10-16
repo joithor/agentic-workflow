@@ -162,6 +162,54 @@ public sealed class DbRunCommandTests : IDisposable
         Assert.False(File.Exists(SummaryFile));
     }
 
+    [Fact]
+    public async Task DbRunCommand_a_sqlite_script_with_a_missing_config_exits_1_with_AW_EVIDENCE_010()
+    {
+        var script = await Script(Query("SELECT 1", """{"rowCount":1}"""));
+
+        var (exit, _, error) = await Run(script, "--at", "head", "--config", _root.Combine("nope.json"));
+
+        Assert.Equal(1, exit);
+        Assert.StartsWith("ui-evidence: AW-EVIDENCE-010", error, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DbRunCommand_a_sqlite_script_with_an_invalid_config_exits_1_with_022(bool throughConfigFlag)
+    {
+        var script = await Script(Query("SELECT 1", """{"rowCount":1}"""));
+        var broken = throughConfigFlag ? _root.Combine("broken.json") : Path.Combine(Repo, ".agentic-workflow", "evidence.json");
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(broken)!);
+        await File.WriteAllTextAsync(broken, "{ not json", TestContext.Current.CancellationToken);
+
+        var (exit, _, error) = await Run(script, throughConfigFlag ? ["--at", "head", "--config", broken] : ["--at", "head"]);
+
+        Assert.Equal(1, exit);
+        Assert.StartsWith("ui-evidence: AW-EVIDENCE-022", error, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("SELECT api_key AS copy_of_key FROM accounts")]
+    [InlineData("SELECT name, api_key, 'key is ' || api_key AS sentence FROM accounts")]
+    public async Task DbRunCommand_a_secret_named_column_s_value_is_not_recorded_under_another_name(string sql)
+    {
+        var script = await Script(Query(sql, """{"rowCount":1}"""));
+        await using (var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={Source}"))
+        {
+            await connection.OpenAsync(TestContext.Current.CancellationToken);
+            var command = connection.CreateCommand();
+            command.CommandText = "CREATE TABLE accounts(name TEXT, api_key TEXT); INSERT INTO accounts VALUES ('ann', 'ak-PLANTED-col-123456')";
+            _ = await command.ExecuteNonQueryAsync(TestContext.Current.CancellationToken);
+        }
+
+        var (exit, output, _) = await Run(script, "--at", "head");
+
+        Assert.Equal(0, exit);
+        Assert.DoesNotContain("ak-PLANTED-col-123456", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("ak-PLANTED-col-123456", await File.ReadAllTextAsync(SummaryFile, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData]
     [InlineData("--at", "sideways")]

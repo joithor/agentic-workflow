@@ -265,6 +265,54 @@ public sealed class DbRunServiceTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task DbRun_a_seed_that_attaches_or_vacuums_is_refused_before_any_lock_or_connection()
+    {
+        var harness = new DbRunHarness().WithScript(DbRunHarness.SqliteScript(DbRunHarness.Query(ReadNotes, Count(1)), "\"seed\":\"seed.sql\",")).WithSqliteFile();
+        _ = harness.Files.With("/work/seed.sql", Encoding.UTF8.GetBytes("ATTACH '/work/repo/data/notes.db' AS src; INSERT INTO src.notes(text) VALUES ('x');"));
+
+        var summary = (await harness.Run()).Value.Summary;
+
+        Assert.Equal((ApiOutcome.Refused, 1), (summary.Outcome, summary.ExitCode()));
+        Assert.Equal(EvidenceErrors.DatabaseRefused.Code, summary.Refusal!.Code);
+        Assert.Contains("seed", summary.Refusal.Message, StringComparison.Ordinal);
+        Assert.Empty(harness.Reader.Opened);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task DbRun_sqlite_still_reads_the_targets_config_so_a_missing_or_invalid_one_is_reported()
+    {
+        var harness = Sqlite();
+
+        _ = await harness.Run();
+
+        _ = Assert.Single(harness.Targets.Loads);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task DbRun_hides_a_secret_value_under_another_name_when_the_column_is_traced_to_a_secret_named_one()
+    {
+        var harness = Postgres(expect: """{"rowCount":1}""");
+        _ = harness.Scrubber.HidesName("api_key");
+        _ = harness.Reader.Answer(ReadNotes, new Rows(["copy_of_key", "sentence"], [["ak-PLANTED-pgcol-123456", "key is ak-PLANTED-pgcol-123456!"]], Truncated: false, SourceColumns: ["api_key", null]));
+
+        var response = (await harness.Run()).Value;
+
+        Assert.DoesNotContain("ak-PLANTED-pgcol-123456", response.Document, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task DbRun_hides_a_secret_column_s_value_inside_a_computed_column_of_the_same_result()
+    {
+        var harness = Sqlite();
+        _ = harness.Scrubber.HidesName("api_key");
+        _ = harness.Reader.Answer(ReadNotes, new Rows(["api_key", "sentence"], [["ak-PLANTED-col-123456", "key is ak-PLANTED-col-123456"]], Truncated: false));
+
+        var response = (await harness.Run()).Value;
+
+        Assert.DoesNotContain("ak-PLANTED-col-123456", response.Document, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task DbRun_seeds_only_into_the_run_copy_never_through_the_evidence_connection()
     {
         var harness = new DbRunHarness().WithScript(DbRunHarness.SqliteScript(DbRunHarness.Query(ReadNotes, Count(1)), "\"seed\":\"seed.sql\",")).WithSqliteFile();

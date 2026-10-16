@@ -9,7 +9,8 @@ namespace Aw.Evidence.Core.Data;
 /// <param name="Columns">The column names, in order.</param>
 /// <param name="Values">The rows; each holds one value per column (null, bool, a number, string, bytes, a date or time, or an array).</param>
 /// <param name="Truncated">True when the row limit cut the result.</param>
-public sealed record Rows(IReadOnlyList<string> Columns, IReadOnlyList<IReadOnlyList<object?>> Values, bool Truncated)
+/// <param name="SourceColumns">For each column, the name of the table column it reads when the engine can say (null for a computed one); null when the engine can't say at all.</param>
+public sealed record Rows(IReadOnlyList<string> Columns, IReadOnlyList<IReadOnlyList<object?>> Values, bool Truncated, IReadOnlyList<string?>? SourceColumns = null)
 {
     /// <summary>The number of rows kept.</summary>
     public int Count => Values.Count;
