@@ -45,7 +45,8 @@ public sealed class RecipeQueryRoutesTests : IAsyncLifetime
         Assert.Equal("fact:spec", Assert.Single(recipe.GetProperty("inputs").EnumerateArray()).GetProperty("key").GetString());
         Assert.Empty(JsonDocument.Parse(stale.Body).RootElement.GetProperty("recipes").EnumerateArray());
         Assert.True(shown.Status == HttpStatusCode.OK, shown.Body);
-        Assert.Equal(3, JsonDocument.Parse(shown.Body).RootElement.GetProperty("preview").GetProperty("pins").GetProperty("blocks").GetArrayLength());
+        var view = JsonDocument.Parse(shown.Body).RootElement;
+        Assert.Equal((hash, "fact:spec"), (view.GetProperty("hash").GetString(), Assert.Single(view.GetProperty("inputs").EnumerateArray()).GetProperty("key").GetString()));
         Assert.Equal((HttpStatusCode.NotFound, "SND-RECIPE-002"), (missing.Status, missing.Code));
         var ledger = _host.App.Services.GetRequiredService<ILedgerStore>();
         var types = (await ledger.ReadAfter(0, 100, TestContext.Current.CancellationToken)).Value.Select(e => e.Envelope.Type).ToList();

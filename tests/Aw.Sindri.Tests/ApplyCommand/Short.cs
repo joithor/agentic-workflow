@@ -11,7 +11,10 @@ namespace Aw.Sindri.Tests.ApplyCommand;
 internal static class Short
 {
     /// <summary>Runs <paramref name="args"/>; without a control plane to ask, the client is wired to a probe that finds none.</summary>
-    internal static async Task<(int Exit, string Stderr)> Run(IServiceProvider services, string? signal, params string[] args)
+    internal static Task<(int Exit, string Stderr)> Run(IServiceProvider services, string? signal, params string[] args) => Run(services, signal, repo: null, args);
+
+    /// <summary>Runs <paramref name="args"/> from a session working in <paramref name="repo"/> (the X-Sindri-Repo it sends), or from no repo.</summary>
+    internal static async Task<(int Exit, string Stderr)> Run(IServiceProvider services, string? signal, RepoName? repo, params string[] args)
     {
         var json = SliceHarness.Json;
         var stderr = new StringWriter();
@@ -19,7 +22,7 @@ internal static class Short
         var probe = services.GetService<IControlPlaneProbe>() ?? new FakeControlPlaneProbe();
         var tokens = services.GetService<IHumanTokenStore>() ?? new InMemoryHumanTokenStore();
         using var client = new ControlPlaneClient(probe, json,
-            CallerHeaders.For(new AgentSession(signal, Terminal: true, Prover: false), tokens, static _ => ValueTask.FromResult<RepoName?>(null)), TimeSpan.FromSeconds(30));
+            CallerHeaders.For(new AgentSession(signal, Terminal: true, Prover: false), tokens, _ => ValueTask.FromResult(repo)), TimeSpan.FromSeconds(30));
         var desk = new RecipeDesk(client, new StringReader(string.Empty), static _ => Task.FromResult<Kernel.Error?>(null));
         var exit = await WorkflowCommandTable.RunShort(args, services, output, desk, TestContext.Current.CancellationToken);
         return (exit, stderr.ToString());

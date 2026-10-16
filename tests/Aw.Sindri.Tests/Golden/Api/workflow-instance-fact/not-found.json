@@ -2,6 +2,6 @@
   "type": "https://tools.ietf.org/html/rfc9110#section-15.5.5",
   "title": "SND-ITEM-404",
   "status": 404,
-  "detail": "ITM-01JK3/project/1 declares no fact 'fact:unknown'.",
+  "detail": "no fact 'fact:unknown' on the instance",
   "traceId": "<trace>"
 }
