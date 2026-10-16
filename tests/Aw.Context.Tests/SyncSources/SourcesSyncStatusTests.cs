@@ -134,4 +134,16 @@ public sealed class SourcesSyncStatusTests
         Assert.Equal(ContextErrors.StoreUnavailable.Code, row.Code);
         Assert.Equal(0, row.Fetched);   // not "nothing linked yet": that would fetch and re-extract every record
     }
+
+    [Fact]
+    public async Task A_failed_read_of_the_queued_records_fails_the_run_with_its_code_and_fetches_nothing()
+    {
+        await using var rig = await Rig.Start();
+        rig.World.Intents.QueuedFailure = ContextErrors.StoreUnavailable.With("the queued read failed");
+
+        var row = await rig.Sync(Scope());
+
+        Assert.Equal(ContextErrors.StoreUnavailable.Code, row.Code);
+        Assert.Equal(0, row.Fetched);   // not "nothing waiting": a record still waiting for extraction would be skipped as unchanged
+    }
 }

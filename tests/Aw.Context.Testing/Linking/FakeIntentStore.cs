@@ -29,18 +29,40 @@ public sealed class FakeIntentStore : IIntentStore
     /// <summary>When set, <see cref="LinkedUnder"/> alone fails with it.</summary>
     public Error? LinkedUnderFailure { get; set; }
 
+    /// <summary>When set, <see cref="Queued"/> alone fails with it.</summary>
+    public Error? QueuedFailure { get; set; }
+
+    /// <summary>When set, <see cref="SaveConflict"/> alone fails with it.</summary>
+    public Error? SaveConflictFailure { get; set; }
+
+    /// <summary>When set, the <see cref="Layer"/> call with this number (1 is the first) alone fails with <see cref="LayerFailure"/>.</summary>
+    public int? LayerFailureOnCall { get; set; }
+
+    /// <summary>The error the numbered <see cref="Layer"/> call fails with.</summary>
+    public Error? LayerFailure { get; set; }
+
+    private int _layerCalls;
+
     /// <summary>When set, a <see cref="SaveDecisions"/> of a batch with no decisions alone fails with it (the pass's refusal of an oversized record).</summary>
     public Error? EmptyBatchFailure { get; set; }
 
     /// <inheritdoc/>
-    public ValueTask<Result<IntentLayer>> Layer(CancellationToken cancellationToken) => Done(() => new IntentLayer(
-        [.. _records.Values.OrderBy(r => r.Key.Value, StringComparer.Ordinal)],
-        [.. _links.Values.SelectMany(l => l).OrderBy(l => l.Record.Value, StringComparer.Ordinal).ThenBy(l => l.Target.Value, StringComparer.Ordinal).ThenBy(l => l.Rule)],
-        [.. _decisions.Values.SelectMany(d => d).OrderBy(d => d.ToKey().Value, StringComparer.Ordinal)],
-        [.. _edges.OrderBy(e => e.From.Value, StringComparer.Ordinal).ThenBy(e => e.To.Value, StringComparer.Ordinal).ThenBy(e => e.Type)])
+    public ValueTask<Result<IntentLayer>> Layer(CancellationToken cancellationToken)
     {
-        Conflicts = [.. _conflicts.Values.OrderBy(c => c.A.Value, StringComparer.Ordinal).ThenBy(c => c.B.Value, StringComparer.Ordinal)],
-    });
+        if (++_layerCalls == LayerFailureOnCall && LayerFailure is { } failure)
+        {
+            return ValueTask.FromResult<Result<IntentLayer>>(failure);
+        }
+
+        return Done(() => new IntentLayer(
+            [.. _records.Values.OrderBy(r => r.Key.Value, StringComparer.Ordinal)],
+            [.. _links.Values.SelectMany(l => l).OrderBy(l => l.Record.Value, StringComparer.Ordinal).ThenBy(l => l.Target.Value, StringComparer.Ordinal).ThenBy(l => l.Rule)],
+            [.. _decisions.Values.SelectMany(d => d).OrderBy(d => d.ToKey().Value, StringComparer.Ordinal)],
+            [.. _edges.OrderBy(e => e.From.Value, StringComparer.Ordinal).ThenBy(e => e.To.Value, StringComparer.Ordinal).ThenBy(e => e.Type)])
+        {
+            Conflicts = [.. _conflicts.Values.OrderBy(c => c.A.Value, StringComparer.Ordinal).ThenBy(c => c.B.Value, StringComparer.Ordinal)],
+        });
+    }
 
     /// <inheritdoc/>
     public ValueTask<Result<IntentSourceState>> State(SourceId source, CancellationToken cancellationToken) => Done(() =>
@@ -96,7 +118,9 @@ public sealed class FakeIntentStore : IIntentStore
         return Unit.Value;
     });
 
-    public ValueTask<Result<IReadOnlyList<RecordKey>>> Queued(SourceId source, CancellationToken cancellationToken) => Done<IReadOnlyList<RecordKey>>(() =>
+    public ValueTask<Result<IReadOnlyList<RecordKey>>> Queued(SourceId source, CancellationToken cancellationToken) => QueuedFailure is { } queuedFailure
+        ? ValueTask.FromResult<Result<IReadOnlyList<RecordKey>>>(queuedFailure)
+        : Done<IReadOnlyList<RecordKey>>(() =>
         [.. _records.Values.Where(r => r.Source.Value == source.Value && IsQueued(r.Key.Value)).OrderBy(r => r.Key.Value, StringComparer.Ordinal).Select(r => r.Key)]);
 
     public ValueTask<Result<IReadOnlyList<RecordKey>>> LinkedUnder(SourceId source, int mapVersion, CancellationToken cancellationToken) => LinkedUnderFailure is { } failure
@@ -167,6 +191,11 @@ public sealed class FakeIntentStore : IIntentStore
     public ValueTask<Result<Unit>> SaveConflict(DecisionConflict conflict, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(conflict);
+        if (SaveConflictFailure is { } failure)
+        {
+            return ValueTask.FromResult<Result<Unit>>(failure);
+        }
+
         return Done(() =>
         {
             var pair = (conflict.A.Value, conflict.B.Value);
