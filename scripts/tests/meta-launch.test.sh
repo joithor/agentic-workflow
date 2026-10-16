@@ -297,6 +297,7 @@ mkdir -p "$HOME/.codex/sessions/2026/10/15"
 echo "wrote $AW_META_LANE $id" >> "$CALLS.events"
 args=("$@"); printf '%s|' "${args[@]//$'\n'/ }" >> "$CALLS.codex"; echo "$AW_SINDRI_CHILD|$AW_META_TEAM|$AW_META_LANE" >> "$CALLS.codex"
 echo "$AW_STATE_DIR|${AW_META_CONFIG:-}" >> "$CALLS.state"
+echo "parent=$([ "$AW_META_LANE_PID" = "$PPID" ] && echo lane-script || echo other)|proc=$AW_META_LANE_PROC" >> "$CALLS.pid"
 sleep 600
 EOF
 chmod +x "$WORK/codex"
@@ -313,6 +314,7 @@ check "codex lanes: two distinct ids" "$([ "$a" != "$u" ] && [ -n "$a" ] && echo
 check "codex lanes: the built-in open argv, the prompt as the last argument, none without one" "$(grep -h -- '-C' "$CALLS.codex" | sort | tr '\n' ';')" "-C|$WORK/repo|1|t1|ui;-C|$WORK/repo|API kickoff  When you answer a message from the meta (aw-meta lane-inbox shows it), end your turn with a line starting REPLY TO META: followed by your reply.|1|t1|api;"
 check "codex lanes: <lane>.agent records the catalog facts the lane map needs" "$(jq -cS . "$ids/api.agent")" '{"agent":"codex","hooks":true,"processName":"codex","transcripts":"~/.codex/sessions/*/*/*/rollout-*-{sessionId}.jsonl"}'
 check "codex lanes: the meta lane (Claude) has no .agent record" "$(ls "$ids" | grep -c '^meta.agent$')" "0"
+check "codex lanes: AW_META_LANE_PID is the agent's parent (the lane script) and AW_META_LANE_PROC the agent's process name" "$(sort -u "$CALLS.pid" | tr '\n' ';')" "parent=lane-script|proc=codex;"
 check "codex lanes: the agent's environment names the state directory and the team config" "$(sort -u "$CALLS.state" | tr '\n' ';')" "$AW_STATE_DIR|$cfg;"
 check "codex lanes: two codex sessions, not three (the meta lane is Claude)" "$(wc -l < "$CALLS.codex" | tr -d ' ')" "2"
 check "the lane variables are in the lane's environment and not in tmux's global one" "$(tmux show-environment -g 2>&1 | grep -c 'AW_SINDRI_CHILD\|AW_META_TEAM\|AW_META_LANE')" "0"
@@ -332,6 +334,19 @@ tmux new-session -d -s t1-api "env AW_LAUNCHER_CONFIG=$WORK/l4.json AW_META_NO_S
 waitfor '[ "$(tmux display-message -p -t =t1-api: "#{pane_current_command}")" = codex ]'
 check "a non-Claude lane's pane is named after the agent (processName)" "$(tmux display-message -p -t =t1-api: '#{pane_current_command}')" "codex"
 tmux kill-session -t =t1-api 2> /dev/null
+# The id watcher ends with the lane: a hangup that reaches the script and the agent (a closed pane) must not leave it running.
+printf '#!/usr/bin/env bash\nexec -a codex sleep 60\n' > "$WORK/codex-quiet"; chmod +x "$WORK/codex-quiet"
+jq --arg c "$WORK/codex-quiet" '.agents.codex.bin = $c' "$LCFG" > "$WORK/l5.json"
+find "$AW_STATE_DIR/meta/lane-sessions" -mindepth 1 -delete 2> /dev/null
+AW_LAUNCHER_CONFIG="$WORK/l5.json" AW_META_NO_SHELL=1 AW_META_ID_WAIT=20 AW_META_ID_GRACE=1 bash "$DIR/meta-lane.sh" t1 api > /dev/null 2>&1 &
+lp=$!
+waitfor '[ "$(pgrep -P "$lp" | wc -l)" -ge 2 ]'
+kids="$(pgrep -P "$lp")"; agent_pid="$(pgrep -P "$lp" -f 'sleep 60' | head -1)"
+watcher_pid="$(for k in $kids; do [ "$k" = "$agent_pid" ] || echo "$k"; done | head -1)"
+check "an id watcher runs beside the agent while the lane waits for its id" "$(kill -0 "$watcher_pid" 2> /dev/null && echo alive)" "alive"
+kill -HUP "$agent_pid" "$lp" 2> /dev/null; wait "$lp" 2> /dev/null
+waitfor '! kill -0 "$watcher_pid" 2> /dev/null'
+check "after a hangup the id watcher is gone with the lane" "$(kill -0 "$watcher_pid" 2> /dev/null && echo alive || echo gone)" "gone"
 # no processName/transcripts surprises: the pane check uses the catalog's processName.
 mkdir -p "$WORK/fakebin2"; cp "$(command -v sleep)" "$WORK/fakebin2/codex"
 : > "$ids/api.exited"

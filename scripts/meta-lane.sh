@@ -193,8 +193,10 @@ unset CLAUDECODE CLAUDE_PID CLAUDE_CODE_SESSION_ID CLAUDE_CODE_CHILD_SESSION CLA
 export AW_SINDRI_CHILD=1 AW_META_TEAM="$team" AW_META_LANE="$lane"
 # A non-Claude lane's hooks and its lane-* commands run in the agent's process: they find the state directory and the team
 # config from here, not from a Claude-style settings file. A Claude lane's environment stays as it was.
+# AW_META_LANE_PID (this script, the agent's parent) and AW_META_LANE_PROC (the agent's process name) let a hook tell the lane's own
+# agent from one the agent started itself (codex exec, cursor-agent -p), which inherits the lane variables.
 if [ "$agent" != claude-code ]; then
-  export AW_STATE_DIR="$state_dir"
+  export AW_STATE_DIR="$state_dir" AW_META_LANE_PID="$$" AW_META_LANE_PROC="$(field processName)"
   [ ! -f "$config" ] || export AW_META_CONFIG="$config"
 fi
 if [ "$id_mode" = reported ] && [ "$mode" = fresh ]; then
@@ -208,7 +210,17 @@ if [ "$id_mode" = reported ] && [ "$mode" = fresh ]; then
     watch_reported_id || [ -e "$ids/$lane.settled" ] || watch_reported_id "${AW_META_ID_GRACE:-10}"
     unlink "$snapfile" 2> /dev/null
   ) > /dev/null 2>&1 &
+  watcher=$!
   [ "$have_lock" = 0 ] || exec {lock_fd}>&-   # the watcher subshell keeps the lock; this shell, and so the agent, must not
+fi
+# The id watcher belongs to this lane: with the agent under job control it is no longer in the terminal's foreground group, so a
+# hangup (the pane closed) would reach the agent and this script but not the watcher, which would hold the team start lock and might
+# still write lane-sessions/<lane> for a lane that is gone. It ends with the script, and with the agent.
+watcher="${watcher:-}"
+stop_watcher() { [ -z "$watcher" ] || kill "$watcher" 2> /dev/null; watcher=""; }
+if [ -n "$watcher" ]; then   # only a lane with a watcher (never a Claude lane) gets traps: a Claude lane's signals behave as before
+  trap 'stop_watcher; exit 129' HUP
+  trap 'stop_watcher; exit 143' TERM
 fi
 if [ "$agent" = claude-code ]; then
   "${args[@]}"
@@ -220,6 +232,8 @@ else
   "${args[@]}"
   set +m
 fi
+stop_watcher
+trap - HUP TERM
 [ "${AW_META_NO_SHELL:-0}" = 1 ] && exit 0
 : > "$exited"
 exec bash -i
