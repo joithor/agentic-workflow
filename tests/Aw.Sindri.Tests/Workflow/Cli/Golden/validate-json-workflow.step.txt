@@ -12,12 +12,14 @@ exit 0
     "description": null,
     "base": null,
     "urgency": "work",
+    "name": null,
     "inputs": [
       {
         "key": "fact:spec",
-        "label": null,
-        "type": null,
-        "kind": null
+        "label": "Spec",
+        "type": "text",
+        "kind": "text",
+        "generate": null
       }
     ],
     "outputs": [],

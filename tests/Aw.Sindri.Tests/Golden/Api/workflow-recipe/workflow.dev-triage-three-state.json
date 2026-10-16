@@ -2,13 +2,23 @@
   "id": "workflow.dev-triage-three-state",
   "hash": "sha256:e2b4140155120cafa130bb544bca8938d587f5aa8a303027796d2bfce7e01dde",
   "version": 1,
+  "name": "{fact:scope} · {start:date}",
   "inputs": [
+    {
+      "key": "fact:scope",
+      "label": "Scope",
+      "type": "text",
+      "kind": "text",
+      "required": true,
+      "generate": null
+    },
     {
       "key": "fact:item",
       "label": "Item",
       "type": "item",
       "kind": "item",
-      "required": true
+      "required": true,
+      "generate": null
     }
   ],
   "outputs": [

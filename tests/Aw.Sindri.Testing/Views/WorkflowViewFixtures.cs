@@ -100,7 +100,7 @@ public static class WorkflowViewFixtures
 
     // Instances only the status layouts name: none of them is a row of the root list, so the layouts don't contradict it.
     private static readonly InstanceSummary _itemParked = Row("ITM-01JC8/item/1", _item, "running", Today(11, 54), new EngineOwnedBadge(EngineOwnedKind.Parked, "no-progress (child)"),
-        Subject("text", "Retry storm in outbox dispatcher", "Retry storm in outbox dispatcher"),
+        Subject("item", "ITM-01JC8", "Retry storm in outbox dispatcher"),
         _item.Cells("running", change: Shape(("running", c => c with { Children = new Progress(0, 1) }))),
         "parked child", "ApplyCommand:answer-grant", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
@@ -204,7 +204,8 @@ public static class WorkflowViewFixtures
         var header = new StatusHeader(row.Address, recipe.Id, recipe.Hash.Display, recipe.Version, HeaderState(row), detail, row.Since, (long)(Now - row.Since).TotalSeconds);
         var fields = new StatusFields(header, next, lines.Answer, lines.Child, lines.Drift, lines.Inputs, lines.Timeout, lines.Budget, lines.Paused,
             Commands(row, lines.Answer, open), string.Empty);
-        return fields with { Text = StatusText.Render(fields, Now) };
+        var name = FixtureRecipes.All.SingleOrDefault(r => r.Id == recipe.Id.Value)?.Name is null ? null : row.Subject.Label;
+        return fields with { Text = StatusText.Render(fields, Now, name) };
     }
 
     /// <summary>WF section 6.4's state slot: the reserved engine word while the engine owns the instance, else the recipe state.</summary>

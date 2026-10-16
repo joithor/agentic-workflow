@@ -2,13 +2,15 @@
   "id": "workflow.incident-response",
   "hash": "sha256:5d90e1b200000000000000000000000000000000000000000000000000000000",
   "version": 4,
+  "name": null,
   "inputs": [
     {
       "key": "fact:alert",
       "label": "Alert",
       "type": "payload",
       "kind": "webhook",
-      "required": true
+      "required": true,
+      "generate": null
     }
   ],
   "outputs": [

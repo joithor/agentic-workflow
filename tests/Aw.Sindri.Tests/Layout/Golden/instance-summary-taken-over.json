@@ -27,7 +27,7 @@
   "inputs": [
     {
       "key": "fact:spec",
-      "label": "spec",
+      "label": "Spec",
       "kind": "text",
       "required": true,
       "present": true

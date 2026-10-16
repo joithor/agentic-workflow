@@ -198,7 +198,7 @@
   "facts": [
     {
       "key": "fact:spec",
-      "label": "spec",
+      "label": "Spec",
       "type": "text",
       "direction": "input",
       "from": null,
