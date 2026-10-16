@@ -20,7 +20,7 @@
         ]
       },
       "dotnet": {
-        "paths": ["src/**", "tests/**", "*.props", "*.targets", "*.slnx", "global.json", "nuget.config", ".editorconfig", "BannedSymbols.txt", "CodeMetricsConfig.txt"],
+        "paths": ["src/**", "tests/**", "*.props", "*.targets", "*.slnx", "global.json", "nuget.config", ".editorconfig", "BannedSymbols*.txt", "CodeMetricsConfig.txt"],
         "steps": [
           { "name": "build", "run": ["dotnet", "build", "AgenticWorkflow.slnx", "-warnaserror", "-v", "q"], "heavy": true },
           { "name": "unit", "run": ["dotnet", "test", "--solution", "AgenticWorkflow.slnx", "--no-build", "--filter-trait", "Lane=unit", "--ignore-exit-code", "8"], "heavy": true },

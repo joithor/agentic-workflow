@@ -1,0 +1,19 @@
+schemaVersion: 1
+id: engineering.csharp.port-methods-take-token
+kind: engineering
+section: "4b.3"
+text: "Every Task or ValueTask method on a port interface (an interface in a Core project) takes a CancellationToken. DisposeAsync is exempt."
+why: "A port call that can't be cancelled can't be timed out or shut down."
+select:
+  languages: [csharp]
+  paths: ["src/**/*.Core/**"]
+checks:
+  - type: archunit
+    id: "ARCH-ASYNC-001"
+    status: active
+    ref: "tests/Aw.Architecture.Tests"
+gap: closed
+source:
+  type: desk
+  ref: "https://azure.github.io/azure-sdk/dotnet_introduction.html"
+status: active

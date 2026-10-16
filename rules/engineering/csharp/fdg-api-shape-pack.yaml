@@ -1,0 +1,59 @@
+schemaVersion: 1
+id: engineering.csharp.fdg-api-shape-pack
+kind: engineering
+section: "4b.3"
+text: "Public API shape follows the Framework Design Guidelines: read-only collection properties, no array properties, IEquatable with Equals, equality on value types, sealed attributes, static holders, no virtual calls in constructors, a correct IDisposable."
+why: "Consistent API shape is the cheapest part of a design review to automate."
+select:
+  languages: [csharp]
+  paths: ["src/**", "tests/**"]
+checks:
+  - type: analyzer
+    id: "CA2227"
+    status: active
+  - type: analyzer
+    id: "CA1065"
+    status: active
+  - type: analyzer
+    id: "CA1066"
+    status: active
+  - type: analyzer
+    id: "CA1815"
+    status: active
+  - type: analyzer
+    id: "CA1052"
+    status: active
+  - type: analyzer
+    id: "CA2214"
+    status: active
+  - type: analyzer
+    id: "CA1033"
+    status: active
+  - type: analyzer
+    id: "CA1044"
+    status: active
+  - type: analyzer
+    id: "CA1813"
+    status: active
+  - type: analyzer
+    id: "CA1027"
+    status: active
+  - type: analyzer
+    id: "CA1819"
+    severity: suggestion
+    status: active
+  - type: analyzer
+    id: "CA1034"
+    severity: suggestion
+    status: active
+  - type: analyzer
+    id: "CA1063"
+    severity: suggestion
+    status: active
+gap: partial
+gapNote: "CA1819 (1 src and 1 test site), CA1034 (2 test sites) and CA1063 (2 test sites) are at suggestion until the cleanup PR fixes them and raises them to error."
+relatedIds: ["CA1062"]
+source:
+  type: desk
+  ref: "https://learn.microsoft.com/dotnet/standard/design-guidelines/"
+status: active

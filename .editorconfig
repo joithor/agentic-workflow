@@ -154,6 +154,45 @@ dotnet_diagnostic.CA1515.severity = error    # internal by default in executable
 dotnet_diagnostic.MA0048.severity = error    # file name matches the type name
 dotnet_diagnostic.MA0026.severity = error    # no TODO comments: finish the work or open an item
 
+#### Style-guide rules (research 2026-10-16; one record each in rules/engineering/csharp/) ####
+# Async and lifetime bugs. At suggestion until the cleanup PR fixes their sites, then error.
+dotnet_diagnostic.CA2025.severity = suggestion   # no-dispose-before-task-completes: never dispose what a running task uses
+dotnet_diagnostic.RCS1229.severity = suggestion  # await-when-state-needs-it: await, don't return, the task inside using/try
+dotnet_diagnostic.CA2000.severity = suggestion   # dispose-owned-resources: dispose what you create and own (tests/.editorconfig: off)
+dotnet_diagnostic.CA2213.severity = suggestion   # dispose-owned-resources: dispose disposable fields (tests/.editorconfig: off)
+dotnet_diagnostic.CA2100.severity = suggestion   # sql-is-constant: command text is const, never concatenated (tests/.editorconfig: off)
+dotnet_diagnostic.MA0155.severity = suggestion   # no-async-void: async void only for UI event handlers, with a // why:
+dotnet_diagnostic.CA1508.severity = suggestion   # dead-condition: no always-true/false branches (flow analysis)
+dotnet_diagnostic.CA2008.severity = error        # scheduler-explicit: no StartNew/ContinueWith without a TaskScheduler
+# Null and async bug-class opt-ins (RCS1215 and the others above sit with the Roslynator opt-ins).
+dotnet_diagnostic.RCS1210.severity = error   # return a completed task, not null
+dotnet_diagnostic.RCS1202.severity = error   # avoid NullReferenceException after FirstOrDefault/as
+dotnet_diagnostic.RCS1256.severity = error   # invalid null check on a non-nullable value
+dotnet_diagnostic.RCS1234.severity = error   # duplicate enum value
+dotnet_diagnostic.RCS1257.severity = error   # use the enum member, not its number
+dotnet_diagnostic.RCS1096.severity = error   # bitwise operation instead of a HasFlag call
+dotnet_diagnostic.RCS1252.severity = error   # one form for an infinite loop
+# Framework Design Guidelines API shape (CA1062 stays off: validation is at the boundary).
+dotnet_diagnostic.CA2227.severity = error    # collection properties are read-only
+dotnet_diagnostic.CA1819.severity = suggestion  # properties don't return arrays
+dotnet_diagnostic.CA1065.severity = error    # no exceptions in unexpected places
+dotnet_diagnostic.CA1066.severity = error    # implement IEquatable when overriding Equals
+dotnet_diagnostic.CA1815.severity = error    # override Equals and == on value types
+dotnet_diagnostic.CA1034.severity = suggestion  # no visible nested types
+dotnet_diagnostic.CA1052.severity = error    # static holder types are static
+dotnet_diagnostic.CA2214.severity = error    # no virtual calls in constructors
+dotnet_diagnostic.CA1063.severity = suggestion  # implement IDisposable correctly
+dotnet_diagnostic.CA1033.severity = error    # interface methods are callable by child types
+dotnet_diagnostic.CA1044.severity = error    # properties are not write-only
+dotnet_diagnostic.CA1813.severity = error    # attributes are sealed
+dotnet_diagnostic.CA1027.severity = error    # mark enums with FlagsAttribute where they are flags
+# Performance and dead code.
+dotnet_diagnostic.CA1851.severity = error    # no multiple enumeration of an IEnumerable
+dotnet_diagnostic.CA1823.severity = error    # no unused private fields
+dotnet_diagnostic.CA1802.severity = suggestion  # const, not static readonly, for literals
+dotnet_diagnostic.CA1810.severity = error    # initialize static fields inline
+dotnet_diagnostic.CA2207.severity = error    # initialize value-type static fields inline
+
 #### Turned off, with the reason ####
 dotnet_diagnostic.CA1303.severity = none     # literal strings: no localization in a CLI toolkit
 dotnet_diagnostic.RCS1046.severity = none    # Async suffix: services use intent names (Handle, Get) per spec §4b.2

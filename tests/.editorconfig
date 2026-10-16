@@ -22,3 +22,9 @@ dotnet_diagnostic.CS1591.severity = none
 # Forward the CancellationToken — owner: MA0040 (root .editorconfig). xUnit1051 reports the same call with
 # TestContext.Current.CancellationToken as the fix (measured: both fired on one `await Task.Delay(1)`).
 dotnet_diagnostic.xUnit1051.severity = none
+# Style-guide rules that guard production lifetimes and SQL (root .editorconfig). Test code builds throwaway
+# fixtures: xUnit owns the disposal of fixture fields (CA2000, CA2213 can't see it) and tests write literal setup SQL
+# and table names of their own making (CA2100).
+dotnet_diagnostic.CA2000.severity = none
+dotnet_diagnostic.CA2213.severity = none
+dotnet_diagnostic.CA2100.severity = none

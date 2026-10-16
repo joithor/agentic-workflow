@@ -1,0 +1,18 @@
+schemaVersion: 1
+id: engineering.csharp.no-multiple-enumeration
+kind: engineering
+section: "4b.3"
+text: "Enumerate an IEnumerable once: materialize it first when it is read twice."
+why: "A second enumeration repeats side effects and queries."
+select:
+  languages: [csharp]
+  paths: ["src/**", "tests/**"]
+checks:
+  - type: analyzer
+    id: "CA1851"
+    status: active
+gap: closed
+source:
+  type: desk
+  ref: "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1851"
+status: active

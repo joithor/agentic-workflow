@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.small-bans
+kind: engineering
+section: "4b.6"
+text: "Only a Host ends the process or forces a collection: Environment.Exit and GC.Collect are banned in every other production project."
+why: "A library that exits or collects takes decisions that belong to the program."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: banned-symbols
+    id: "RS0030"
+    ref: "BannedSymbols.NonHost.txt"
+    entries: ["M:System.Environment.Exit(System.Int32)", "M:System.GC.Collect", "M:System.GC.Collect(System.Int32)", "M:System.GC.Collect(System.Int32,System.GCCollectionMode)", "M:System.GC.Collect(System.Int32,System.GCCollectionMode,System.Boolean)", "M:System.GC.Collect(System.Int32,System.GCCollectionMode,System.Boolean,System.Boolean)"]
+    status: active
+gap: closed
+source:
+  type: desk
+  ref: "https://learn.microsoft.com/dotnet/api/system.environment.exit"
+status: active

@@ -174,7 +174,7 @@
           "minLength": 1
         },
         "ref": {
-          "description": "A repo-relative path: test (a file, or a directory when the test moves between PRs; say so in note), script, ci (the workflow file)",
+          "description": "A repo-relative path: test (a file, or a directory when the test moves between PRs; say so in note), script, ci (the workflow file), banned-symbols (the list file; default BannedSymbols.txt)",
           "type": "string",
           "minLength": 1
         },

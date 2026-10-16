@@ -1,0 +1,36 @@
+schemaVersion: 1
+id: engineering.csharp.bug-class-roslynator-pack
+kind: engineering
+section: "4b.6"
+text: "The Roslynator null and async bug-class rules are errors: RCS1210, RCS1202, RCS1256, RCS1234, RCS1257, RCS1096, RCS1252."
+why: "Each catches a real defect that no CA, IDE or Meziantou rule covers; all are clean on main, so the guard is free."
+select:
+  languages: [csharp]
+  paths: ["src/**", "tests/**"]
+checks:
+  - type: analyzer
+    id: "RCS1210"
+    status: active
+  - type: analyzer
+    id: "RCS1202"
+    status: active
+  - type: analyzer
+    id: "RCS1256"
+    status: active
+  - type: analyzer
+    id: "RCS1234"
+    status: active
+  - type: analyzer
+    id: "RCS1257"
+    status: active
+  - type: analyzer
+    id: "RCS1096"
+    status: active
+  - type: analyzer
+    id: "RCS1252"
+    status: active
+gap: closed
+source:
+  type: desk
+  ref: "https://github.com/dotnet/roslynator/blob/main/docs/analyzers/README.md"
+status: active
