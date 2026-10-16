@@ -11,6 +11,9 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// <param name="RejectLike">True for the option that turns the request down (X picks it).</param>
 internal sealed record NeedsYouAction(string CatalogId, string Label, ActionReadiness Readiness, string Cli, bool RejectLike)
 {
+    /// <summary>For a pending action: the phase that brings it ("P4"); empty otherwise.</summary>
+    internal string Stage { get; init; } = "";
+
     /// <summary>True for the option the decision serves as recommended (A runs it).</summary>
     internal bool Recommended { get; init; }
 

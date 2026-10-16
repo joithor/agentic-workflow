@@ -24,6 +24,9 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
     /// <summary>The recorded-only sentence as served; empty for none.</summary>
     internal string Notice => _row?.Notice ?? "";
 
+    /// <summary>The phase and command line under the options when Decide is not ready; empty when it is.</summary>
+    internal string DecideLine => _row?.Id[..0] ?? "";
+
     /// <summary>The id of the decision shown.</summary>
     internal string DecisionId { get; private set; } = "";
 
