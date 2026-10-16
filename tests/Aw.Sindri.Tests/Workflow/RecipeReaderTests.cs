@@ -71,7 +71,7 @@ public sealed class RecipeReaderTests
         Assert.Equal(
             [new ProducedFact(FactKey.From("fact:output"), From: null), new ProducedFact(FactKey.From("fact:exported"), FactKey.From("fact:result"))],
             recipe.Transitions[0].Produces);
-        Assert.Equal(FactKey.From("fact:result"), recipe.Transitions[0].Produces[1].Source);
+        Assert.Equal(FactKey.From("fact:result"), recipe.Transitions[0].Produces[1].SourceKey());
     }
 
     [Fact, Trait("Lane", "unit")]

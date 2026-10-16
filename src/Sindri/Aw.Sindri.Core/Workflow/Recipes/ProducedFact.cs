@@ -13,6 +13,6 @@ namespace Aw.Sindri.Core.Workflow.Recipes;
 [JsonConverter(typeof(ProducedFactJsonConverter))]
 public sealed record ProducedFact(FactKey Fact, FactKey? From)
 {
-    /// <summary>The trigger's fact this entry reads: <see cref="From"/>, or <see cref="Fact"/> when it isn't renamed.</summary>
-    public FactKey Source => From ?? Fact;
+    /// <summary>The trigger's fact this entry reads: <see cref="From"/>, or <see cref="Fact"/> when it isn't renamed. A method, not a property: the record is written by its converter.</summary>
+    public FactKey SourceKey() => From ?? Fact;
 }

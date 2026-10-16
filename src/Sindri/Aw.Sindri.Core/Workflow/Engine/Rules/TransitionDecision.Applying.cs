@@ -134,7 +134,7 @@ public static partial class TransitionDecision
     private static IReadOnlyDictionary<FactKey, FactValue> Produce(IReadOnlyDictionary<FactKey, FactValue> facts, RecipeTransition transition, Trigger trigger)
     {
         var outputs = Outputs(trigger);
-        var produced = transition.Produces.Where(p => outputs.ContainsKey(p.Source)).ToList();
+        var produced = transition.Produces.Where(p => outputs.ContainsKey(p.SourceKey())).ToList();
         if (produced.Count == 0)
         {
             return facts;
@@ -143,7 +143,7 @@ public static partial class TransitionDecision
         var merged = new Dictionary<FactKey, FactValue>(facts);
         foreach (var entry in produced)
         {
-            merged[entry.Fact] = outputs[entry.Source];
+            merged[entry.Fact] = outputs[entry.SourceKey()];
         }
 
         return merged;

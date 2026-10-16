@@ -7786,7 +7786,7 @@ Aw.Sindri.Core.Workflow.Recipes.ProducedFact.Fact.init -> void
 Aw.Sindri.Core.Workflow.Recipes.ProducedFact.From.get -> Aw.Sindri.Core.Workflow.Ids.FactKey?
 Aw.Sindri.Core.Workflow.Recipes.ProducedFact.From.init -> void
 Aw.Sindri.Core.Workflow.Recipes.ProducedFact.ProducedFact(Aw.Sindri.Core.Workflow.Ids.FactKey Fact, Aw.Sindri.Core.Workflow.Ids.FactKey? From) -> void
-Aw.Sindri.Core.Workflow.Recipes.ProducedFact.Source.get -> Aw.Sindri.Core.Workflow.Ids.FactKey
+Aw.Sindri.Core.Workflow.Recipes.ProducedFact.SourceKey() -> Aw.Sindri.Core.Workflow.Ids.FactKey
 override Aw.Sindri.Core.Workflow.Recipes.ProducedFact.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Recipes.ProducedFact.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Recipes.ProducedFact.ToString() -> string!

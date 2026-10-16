@@ -30,19 +30,19 @@ internal sealed partial class WiringRules
                 $"write the bare key '{renamed.Value}', or rename on a transition from a child wait");
         }
 
-        if (trigger.Facts.Contains(entry.Source))
+        if (trigger.Facts.Contains(entry.SourceKey()))
         {
             return null;
         }
 
-        var produces = entry.From is null ? $"produces '{entry.Fact.Value}'" : $"produces '{entry.Fact.Value}' from '{entry.Source.Value}'";
+        var produces = entry.From is null ? $"produces '{entry.Fact.Value}'" : $"produces '{entry.Fact.Value}' from '{entry.SourceKey().Value}'";
         var at = entry.From is null ? path : path + ".from";
         if (trigger.ChildId is { } child)
         {
             return trigger.Facts.Count == 0
                 ? source.Finding("RCP-WIRE-002", at, $"transition from '{from}' {produces}, which {trigger.Name} declares no outputs", $"remove it, or declare it in {child}'s outputs")
                 : source.Finding("RCP-WIRE-002", at, $"transition from '{from}' {produces}, which {trigger.Name} doesn't declare as an output",
-                    $"list only its outputs ({List(trigger.Facts)}), or declare '{entry.Source.Value}' in {child}'s outputs");
+                    $"list only its outputs ({List(trigger.Facts)}), or declare '{entry.SourceKey().Value}' in {child}'s outputs");
         }
 
         return source.Finding(

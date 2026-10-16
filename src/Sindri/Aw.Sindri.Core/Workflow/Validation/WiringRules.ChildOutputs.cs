@@ -16,7 +16,7 @@ internal sealed partial class WiringRules
             .Where(n => n.Transition.On == "wait.satisfied")
             .SelectMany(n => n.Transition.Produces.Select((entry, j) => (n.Transition, n.Number, Entry: entry, Index: j)))
             .SelectMany(p => ChildrenOf(recipe, p.Transition, context).Select(c => new ChildProduces(p.Transition, p.Number, p.Entry, p.Index, c.From, c.Child, c.Id)))
-            .Where(p => ChildOutputs.Declared(p.Child).Contains(p.Entry.Source))
+            .Where(p => ChildOutputs.Declared(p.Child).Contains(p.Entry.SourceKey()))
             .Select(p => ChildOutputFinding(p, source))
             .OfType<RecipeFinding>()
             .DistinctBy(f => (f.Path, f.Rule));
@@ -35,7 +35,7 @@ internal sealed partial class WiringRules
     {
         var (transition, number, entry, index, from, child, id) = at;
         var path = $"transitions[{Inv(number)}].produces[{Inv(index)}]";
-        var fact = entry.Source;
+        var fact = entry.SourceKey();
         var produces = entry.From is null ? $"produces '{entry.Fact.Value}'" : $"produces '{entry.Fact.Value}' from '{fact.Value}'";
         var present = ChildOutputs.PresentOn(child);
         var carrying = present.Where(p => p.Key != _cancelled && p.Value.Contains(fact)).Select(p => p.Key).ToList();
@@ -61,7 +61,7 @@ internal sealed partial class WiringRules
     private static RecipeFinding? MissingFinding(ChildProduces at, IReadOnlyDictionary<OutcomeName, IReadOnlySet<FactKey>> present, List<OutcomeName> carrying, RecipeSource source)
     {
         var (transition, number, entry, index, from, child, id) = at;
-        var fact = entry.Source;
+        var fact = entry.SourceKey();
         var outcomes = Matches(transition.When) ?? [];
         var missing = present.Where(p => p.Key != _cancelled && outcomes.Contains(p.Key) && !p.Value.Contains(fact)).Select(p => (OutcomeName?)p.Key).FirstOrDefault();
         if (missing is not { } gap)
