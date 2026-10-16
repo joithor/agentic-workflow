@@ -1,6 +1,6 @@
+using System.Text;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Jobs;
-using System.Text;
 using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Features.GetJob;
 using Aw.Sindri.Host.Text;

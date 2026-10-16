@@ -32,17 +32,37 @@
       {
         "arm": "brief",
         "notAvailable": null,
-        "overall": "owner decision needed (small sample)"
+        "overall": "owner decision needed (small sample)",
+        "leaky": false,
+        "score": {
+          "samples": 5,
+          "nodeRecall": 0.5,
+          "nodePrecision": 0.4,
+          "fileRecallAt20": 0.3,
+          "leakyShare": 1,
+          "tokens": 0
+        }
       },
       {
         "arm": "graph",
         "notAvailable": null,
-        "overall": "owner decision needed (small sample)"
+        "overall": "owner decision needed (small sample)",
+        "leaky": false,
+        "score": {
+          "samples": 5,
+          "nodeRecall": 0,
+          "nodePrecision": null,
+          "fileRecallAt20": 0,
+          "leakyShare": 1,
+          "tokens": 0
+        }
       },
       {
         "arm": "linear",
         "notAvailable": "S-6",
-        "overall": null
+        "overall": null,
+        "leaky": false,
+        "score": null
       }
     ],
     "passLine": "owner decision needed (small sample)",

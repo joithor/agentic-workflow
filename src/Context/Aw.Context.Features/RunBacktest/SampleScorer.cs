@@ -31,12 +31,17 @@ internal sealed class SampleScorer(IBriefSource briefs, AsOfMapBuilder maps, IAs
             var sample = loaded.Samples[i];
             var step = string.Create(CultureInfo.InvariantCulture, $"sample {i + 1}/{loaded.Samples.Count} {sample.IssueKey}");
             var outcome = await One(request, (world, loaded.Issues[sample.IssueKey], sample), (running, scores, step), spend, cancellationToken).ConfigureAwait(false);
-            if (outcome == Outcome.Scored)
+            if (outcome.IsError)
+            {
+                return outcome.Error;   // a refused store (005) stops the run: every other sample would fail the same way
+            }
+
+            if (outcome.Value == Outcome.Scored)
             {
                 kept.Add(sample);
             }
 
-            dropped[outcome] = dropped.GetValueOrDefault(outcome) + 1;
+            dropped[outcome.Value] = dropped.GetValueOrDefault(outcome.Value) + 1;
         }
 
         return dropped.GetValueOrDefault(Outcome.SourceDown) > 0 && kept.Count == 0
@@ -44,7 +49,7 @@ internal sealed class SampleScorer(IBriefSource briefs, AsOfMapBuilder maps, IAs
             : new Collected(kept, scores, dropped.GetValueOrDefault(Outcome.CutUnreadable), dropped.GetValueOrDefault(Outcome.NoBrief)) { Tokens = spend.ByArm, AdjudicationCapped = spend.Capped };
     }
 
-    private async ValueTask<Outcome> One(BacktestRequest request, (BriefScope World, BriefIssue Issue, CorpusSample Sample) what,
+    private async ValueTask<Result<Outcome>> One(BacktestRequest request, (BriefScope World, BriefIssue Issue, CorpusSample Sample) what,
         (List<Arm> Running, Dictionary<Arm, List<SampleScore>> Scores, string Step) how, Spend spend, CancellationToken cancellationToken)
     {
         var (world, issue, sample) = what;
@@ -58,6 +63,11 @@ internal sealed class SampleScorer(IBriefSource briefs, AsOfMapBuilder maps, IAs
         var opened = await Open(world.Repos.First(r => r.Name == sample.Repo), sample, world, cancellationToken).ConfigureAwait(false);
         if (opened.IsError)
         {
+            if (opened.Error.Code == ContextErrors.PathInWorktree.Code)
+            {
+                return opened.Error;
+            }
+
             request.Progress?.Report($"{how.Step}: dropped, git can't read the cut");
             return Outcome.CutUnreadable;
         }
