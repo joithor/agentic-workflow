@@ -169,9 +169,9 @@ public sealed class RunServiceTests
         await appending.Task.WaitAsync(Token);
 
         stuck.Release();   // the service returns now, past the point a tripped token would have stopped it
-        await runtime.Quiesce();
-        _ = proceed.TrySetResult();
+        _ = proceed.TrySetResult();   // the run waits for the cancel to settle before it decides, so the record goes through first
         _ = await cancel;
+        await runtime.Quiesce().WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, Token);
 
         Assert.Empty(runtime.Of(EventTypes.ServiceRan));
         Assert.Empty(runtime.Of(EventTypes.JobFinished));

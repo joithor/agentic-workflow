@@ -104,6 +104,9 @@ public sealed class InlineJobRunner(IServiceScopeFactory scopes, IJobContextAcce
     }
 
     /// <inheritdoc />
+    public ValueTask<bool> CancelRecorded(JobId job) => ValueTask.FromResult(IsCancelling(job));   // the inline runner has no append in flight: a mark is a record
+
+    /// <inheritdoc />
     public bool IsCancelling(JobId job) => _runs.TryGetValue(job.Value, out var run) && run.Cancelled;
 
     /// <summary>Reports on the calling thread, so the lines are there when Start returns (Progress&lt;T&gt; would post them to the pool).</summary>

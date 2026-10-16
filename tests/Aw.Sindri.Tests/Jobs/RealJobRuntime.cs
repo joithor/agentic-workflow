@@ -158,14 +158,26 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
         using var entered = H.Callers.Enter(caller);
         Runner.Cancelling(job);
         var entry = H.Events.Entry(EventTypes.JobCancelled, new JobCancelled(caller.CommandId, job, caller.Actor), $"{EventTypes.JobCancelled}:{job.Value}");
-        var appended = await H.Store.Append(entry, H.Held.Current!, TestContext.Current.CancellationToken);
-        if (appended.IsError)
+        var recorded = false;
+        try
         {
-            return appended.Error;
-        }
+            var appended = await H.Store.Append(entry, H.Held.Current!, CancellationToken.None);
+            if (appended.IsError)
+            {
+                return appended.Error;
+            }
 
-        _ = Runner.Cancel(job);
-        return new CommandAccepted(caller.CommandId, appended.Value.Sequence);
+            _ = Runner.Cancel(job);
+            recorded = true;
+            return new CommandAccepted(caller.CommandId, appended.Value.Sequence);
+        }
+        finally
+        {
+            if (!recorded)
+            {
+                Runner.Withdraw(job);   // as CancelJob does: the job writes its own end
+            }
+        }
     }
 
     public Task Quiesce() => Runner.Idle();
