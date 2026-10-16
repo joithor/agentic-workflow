@@ -137,7 +137,7 @@ public sealed class ExtractDecisionsTests
         Assert.Equal(ContextErrors.LabelingUnavailable.Code, row.Code);
         var layer = await rig.Layer();
         Assert.Empty(layer.Decisions);
-        Assert.Equal(layer.Records.Count(r => layer.Links.Any(l => l.Record.Value == r.Key.Value)), row.Queued);   // linked records wait; records no rule linked have nothing to extract
+        Assert.Equal(layer.Records.Count(r => layer.Links.Any(l => l.Record.Value == r.Key.Value && l.Target.Kind != NodeKind.Record)), row.Queued);   // linked records wait; records no rule linked have nothing to extract
         Assert.True(row.Queued > 0);
     }
 

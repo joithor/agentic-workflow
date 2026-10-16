@@ -1,4 +1,5 @@
 using Aw.Context.Core;
+using Aw.Context.Core.Graph;
 using Aw.Context.Core.Linking;
 using Aw.Context.Core.Sources;
 using Aw.Kernel;
@@ -13,21 +14,30 @@ public sealed class FakeIntentStore : IIntentStore
     private readonly Dictionary<string, (string? Cursor, DateTimeOffset? LastSync, string? LastError)> _cursors = new(StringComparer.Ordinal);
 
     /// <summary>When set, every call fails with it (a store that can't open).</summary>
+    private readonly Dictionary<string, string> _extracted = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, List<DecisionRow>> _decisions = new(StringComparer.Ordinal);
+    private readonly List<GraphEdge> _edges = [];
+    private readonly Dictionary<(string, string), DecisionConflict> _conflicts = [];
+
     public Error? Failure { get; set; }
 
     /// <inheritdoc/>
     public ValueTask<Result<IntentLayer>> Layer(CancellationToken cancellationToken) => Done(() => new IntentLayer(
         [.. _records.Values.OrderBy(r => r.Key.Value, StringComparer.Ordinal)],
         [.. _links.Values.SelectMany(l => l).OrderBy(l => l.Record.Value, StringComparer.Ordinal).ThenBy(l => l.Target.Value, StringComparer.Ordinal).ThenBy(l => l.Rule)],
-        [],
-        []));
+        [.. _decisions.Values.SelectMany(d => d).OrderBy(d => d.ToKey().Value, StringComparer.Ordinal)],
+        [.. _edges.OrderBy(e => e.From.Value, StringComparer.Ordinal).ThenBy(e => e.To.Value, StringComparer.Ordinal).ThenBy(e => e.Type)])
+    {
+        Conflicts = [.. _conflicts.Values.OrderBy(c => c.A.Value, StringComparer.Ordinal).ThenBy(c => c.B.Value, StringComparer.Ordinal)],
+    });
 
     /// <inheritdoc/>
     public ValueTask<Result<IntentSourceState>> State(SourceId source, CancellationToken cancellationToken) => Done(() =>
     {
         _ = _cursors.TryGetValue(source.Value, out var cursor);
         var mine = _records.Values.Where(r => r.Source.Value == source.Value).Select(r => r.Key.Value).ToHashSet(StringComparer.Ordinal);
-        return new IntentSourceState(cursor.Cursor, cursor.LastSync, cursor.LastError, mine.Count, _links.Where(l => mine.Contains(l.Key)).Sum(l => l.Value.Count), 0, mine.Count);
+        return new IntentSourceState(cursor.Cursor, cursor.LastSync, cursor.LastError, mine.Count, _links.Where(l => mine.Contains(l.Key)).Sum(l => l.Value.Count),
+            _decisions.Where(d => mine.Contains(d.Key)).Sum(d => d.Value.Count), mine.Count(k => IsQueued(k)));
     });
 
     /// <inheritdoc/>
@@ -65,11 +75,44 @@ public sealed class FakeIntentStore : IIntentStore
         return Unit.Value;
     });
 
-    public ValueTask<Result<IReadOnlyList<RecordKey>>> Queued(SourceId source, CancellationToken cancellationToken) => throw new NotSupportedException("S-5B slice 4");
+    public ValueTask<Result<IReadOnlyList<RecordKey>>> Queued(SourceId source, CancellationToken cancellationToken) => Done<IReadOnlyList<RecordKey>>(() =>
+        [.. _records.Values.Where(r => r.Source.Value == source.Value && IsQueued(r.Key.Value)).OrderBy(r => r.Key.Value, StringComparer.Ordinal).Select(r => r.Key)]);
 
-    public ValueTask<Result<Unit>> SaveDecisions(DecisionBatch batch, CancellationToken cancellationToken) => throw new NotSupportedException("S-5B slice 4");
+    public ValueTask<Result<Unit>> SaveDecisions(DecisionBatch batch, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(batch);
+        return Done(() =>
+        {
+            if (!_records.TryGetValue(batch.Record.Value, out var stored) || stored.Version != batch.Version)
+            {
+                return Unit.Value;
+            }
 
-    public ValueTask<Result<Unit>> SaveConflict(DecisionConflict conflict, CancellationToken cancellationToken) => throw new NotSupportedException("S-5B slice 4");
+            var removed = _decisions.GetValueOrDefault(batch.Record.Value, []).Select(d => d.ToKey().Value).ToHashSet(StringComparer.Ordinal);
+            _ = _edges.RemoveAll(e => removed.Contains(e.From.Value));
+            foreach (var gone in _conflicts.Keys.Where(k => removed.Contains(k.Item1) || removed.Contains(k.Item2)).ToList())
+            {
+                _ = _conflicts.Remove(gone);
+            }
+
+            _decisions[batch.Record.Value] = [.. batch.Decisions];
+            _edges.AddRange(batch.Edges);
+            _extracted[batch.Record.Value] = batch.Version;
+            return Unit.Value;
+        });
+    }
+
+    public ValueTask<Result<Unit>> SaveConflict(DecisionConflict conflict, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(conflict);
+        return Done(() =>
+        {
+            _ = _conflicts.TryAdd((conflict.A.Value, conflict.B.Value), conflict);
+            return Unit.Value;
+        });
+    }
+
+    private bool IsQueued(string key) => !_extracted.TryGetValue(key, out var version) || version != _records[key].Version;
 
     private ValueTask<Result<T>> Done<T>(Func<T> work) => Attempt(() => Results.Success(work()));
 

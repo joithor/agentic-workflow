@@ -33,6 +33,28 @@ internal static class IntentSql
 
     internal const string Edges = "SELECT from_key, to_key, type, provenance, confidence, at FROM intent_edge ORDER BY from_key, to_key, type";
 
+    internal const string Conflicts = "SELECT a, b, verdict, at FROM intent_conflict ORDER BY a, b";
+
+    internal const string QueuedKeys = "SELECT key FROM intent_record WHERE source = @source AND extraction_state = 'queued' ORDER BY key";
+
+    internal const string MarkExtracted =
+        "UPDATE intent_record SET extracted_version = version, extraction_state = 'done' WHERE key = @record AND version = @version";
+
+    internal const string DropConflicts =
+        "DELETE FROM intent_conflict WHERE a IN (SELECT key FROM intent_decision WHERE record = @record) OR b IN (SELECT key FROM intent_decision WHERE record = @record)";
+
+    internal const string DropEdges = "DELETE FROM intent_edge WHERE from_key IN (SELECT key FROM intent_decision WHERE record = @record)";
+
+    internal const string DropDecisions = "DELETE FROM intent_decision WHERE record = @record";
+
+    internal const string InsertDecision =
+        "INSERT INTO intent_decision (key, record, quote, wording, provenance, at) VALUES (@key, @record, @quote, @wording, @provenance, @at) ON CONFLICT DO NOTHING";
+
+    internal const string InsertEdge =
+        "INSERT INTO intent_edge (from_key, to_key, type, provenance, confidence, at) VALUES (@from, @to, @type, @provenance, @confidence, @at) ON CONFLICT DO NOTHING";
+
+    internal const string InsertConflict = "INSERT INTO intent_conflict (a, b, verdict, at) VALUES (@a, @b, @verdict, @at) ON CONFLICT DO NOTHING";
+
     internal const string State =
         "SELECT (SELECT cursor FROM source_cursor WHERE source = @source AND repo = '*'), " +
         "(SELECT last_sync FROM source_cursor WHERE source = @source AND repo = '*'), " +

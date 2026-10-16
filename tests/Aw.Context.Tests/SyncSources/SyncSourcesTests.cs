@@ -22,7 +22,7 @@ public sealed class SyncSourcesTests
 {
     private const string Spl103 = "linear:issue/0e5a1b00-0000-4000-8000-000000000103";
     private const string Toggle = "surface:command/toggle-orientation";
-    private static readonly ContextScope _scope = MapWorld.HumanWith("""{"sources":{"linear":{"teams":["SPL"]}}}""");
+    private static readonly ContextScope _scope = MapWorld.HumanWith("""{"sources":{"linear":{"teams":["SPL"]}},"labeling":{"enabled":true}}""");
     private static readonly SourceId _onyx = SourceId.From("onyx");
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
