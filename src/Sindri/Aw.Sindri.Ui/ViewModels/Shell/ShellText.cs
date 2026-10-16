@@ -9,6 +9,9 @@ internal sealed class ShellText
     /// <summary>The one instance.</summary>
     internal static ShellText Instance { get; } = new();
 
+    /// <summary>U2's copy: the queue and the item sheet.</summary>
+    public Item.ItemText Items { get; } = Item.ItemText.Instance;
+
     /// <summary><see cref="Labels.ActionsCard"/>.</summary>
     public string ActionsCard { get; } = Labels.ActionsCard;
 
@@ -20,6 +23,9 @@ internal sealed class ShellText
 
     /// <summary><see cref="Labels.CloseSheet"/>.</summary>
     public string CloseSheet { get; } = Labels.CloseSheet;
+
+    /// <summary><see cref="Labels.CloseSheetName"/>.</summary>
+    public string CloseSheetName { get; } = Labels.CloseSheetName;
 
     /// <summary><see cref="Labels.Connecting"/>.</summary>
     public string Connecting { get; } = Labels.Connecting;

@@ -8,11 +8,6 @@
        disabled, and its phase and CLI on the next line in InkSubtle, focusable and copyable (disabled ink never carries
        information); cli-only: the copy block (terminal glyph, the CLI, Copy, and its one line). -->
   <StackPanel Spacing="{StaticResource Space.XXS}">
-    <!-- The button stays enabled while it sends (a disabled control drops keyboard focus; the view model refuses a second
-         run). The polite live region for "Sending…", the outcome, a refusal's code and detail and "Copied" (U0's LiveSetting rules): zero-width, never "". -->
-    <TextBlock x:Name="Announcer" Classes="caption live-region" Classes.live="{Binding IsAnnouncing}" Width="0" Opacity="0" IsHitTestVisible="False"
-               Text="{Binding Announcement}" HorizontalAlignment="Left" />
-
     <StackPanel x:Name="ButtonRow" Orientation="Horizontal" Spacing="{StaticResource Space.XS}" IsVisible="{Binding !IsCliOnly}">
       <Button x:Name="RunButton" Classes="command-control" IsEnabled="{Binding IsSendable}" Click="OnRun"
               AutomationProperties.Name="{Binding Name}">
@@ -29,15 +24,29 @@
       </StackPanel>
     </StackPanel>
 
+    <!-- A destructive control asks first (§8, E-8): its question, Confirm (sends once) and Keep (Esc; nothing sent). -->
+    <StackPanel x:Name="ConfirmRow" Spacing="{StaticResource Space.XXS}" IsVisible="{Binding IsConfirming}">
+      <TextBlock x:Name="ConfirmText" Classes="caption" Text="{Binding ConfirmQuestion}" TextWrapping="Wrap"
+                 AutomationProperties.AccessibilityView="Raw" />
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button x:Name="ConfirmButton" Classes="command-control destructive" Click="OnConfirm" AutomationProperties.Name="{Binding ConfirmName}">
+          <TextBlock Classes="button" Text="{Binding ConfirmLabel}" />
+        </Button>
+        <Button x:Name="KeepButton" Classes="copy" Click="OnKeep" VerticalAlignment="Center" AutomationProperties.Name="{Binding KeepName}">
+          <TextBlock Classes="caption" Text="{Binding KeepLabel}" />
+        </Button>
+      </StackPanel>
+    </StackPanel>
+
     <!-- pending: the phase and the CLI, focusable so the keyboard reaches it, with Copy. -->
-    <StackPanel x:Name="PendingRow" Orientation="Horizontal" Spacing="{StaticResource Space.XS}" IsVisible="{Binding IsPending}">
-      <Border x:Name="PendingLine" Classes="pending-line" Focusable="True" AutomationProperties.Name="{Binding PendingName}">
-        <TextBlock x:Name="PendingText" Classes="caption subtle" Text="{Binding PendingLine}" AutomationProperties.AccessibilityView="Raw" />
+    <WrapPanel x:Name="PendingRow" Orientation="Horizontal" IsVisible="{Binding IsPending}">
+      <Border x:Name="PendingLine" Classes="pending-line" Focusable="True" AutomationProperties.Name="{Binding PendingName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+        <TextBlock x:Name="PendingText" Classes="caption subtle" TextWrapping="Wrap" Margin="0,0,6,0" Text="{Binding PendingLine}" AutomationProperties.AccessibilityView="Raw" />
       </Border>
       <Button x:Name="PendingCopy" Classes="copy" Click="OnCopy" IsEnabled="{Binding CanCopy}" AutomationProperties.Name="{Binding CopyName}">
         <TextBlock Classes="caption" Text="{Binding CopyLabel}" />
       </Button>
-    </StackPanel>
+    </WrapPanel>
 
     <!-- cli-only: the copy block. It never offers to run the command. -->
     <StackPanel x:Name="CopyBlock" Spacing="{StaticResource Space.XXS}" IsVisible="{Binding IsCliOnly}">
@@ -56,11 +65,16 @@
     </StackPanel>
 
     <!-- refused / failed: the API's title (the SND code) and detail as served, under the control. -->
-    <StackPanel x:Name="ErrorLine" Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsFailed}">
-      <icons:StateIcon Glyph="Down" Classes="error" VerticalAlignment="Top" />
-      <TextBlock x:Name="ErrorCodeText" Classes="caption error" Text="{Binding ErrorCode}" AutomationProperties.Name="{Binding ErrorCode}" />
-      <TextBlock x:Name="ErrorDetailText" Classes="caption" Text="{Binding ErrorDetail}" TextWrapping="Wrap" MaxWidth="560"
-                 AutomationProperties.Name="{Binding ErrorDetail}" />
-    </StackPanel>
+    <Grid x:Name="ErrorLine" ColumnDefinitions="Auto,Auto,*" IsVisible="{Binding IsFailed}">
+      <icons:StateIcon Glyph="Down" Classes="error" VerticalAlignment="Top" Margin="0,0,6,0" />
+      <TextBlock x:Name="ErrorCodeText" Grid.Column="1" Classes="caption error" Text="{Binding ErrorCode}" Margin="0,0,6,0"
+                 AutomationProperties.Name="{Binding ErrorCode}" />
+      <TextBlock x:Name="ErrorDetailText" Grid.Column="2" Classes="caption" Text="{Binding ErrorDetail}" TextWrapping="Wrap" MaxWidth="560"
+                 HorizontalAlignment="Left" AutomationProperties.Name="{Binding ErrorDetail}" />
+    </Grid>
+
+    <!-- The polite live region for "Sending…", the outcome, a refusal's code and detail and "Copied" (U0's LiveSetting rules): zero-width, never "". -->
+    <TextBlock x:Name="Announcer" Classes="caption live-region" Classes.live="{Binding IsAnnouncing}" Width="0" Height="0" Opacity="0" IsHitTestVisible="False"
+               Text="{Binding Announcement}" HorizontalAlignment="Left" />
   </StackPanel>
 </UserControl>

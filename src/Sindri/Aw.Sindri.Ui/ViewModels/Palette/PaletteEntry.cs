@@ -17,11 +17,14 @@ internal sealed class PaletteEntry : ObservableObject
         nameof(ControlViewModel.ErrorCode), nameof(ControlViewModel.ErrorDetail), nameof(ControlViewModel.IsAnnouncingSending),
     ];
 
-    private PaletteEntry(string id, string label, string key, bool enabled, ControlViewModel? control, PageId? page)
+    private PaletteEntry(string id, string label, string key, bool enabled, ControlViewModel? control, PageId? page, string notRun = Labels.NotInApp)
     {
-        (Id, Label, Key, Runs, Control, Page) = (id, label, key, enabled, control, page);
+        (Id, Label, Key, Runs, Control, Page, NotRun) = (id, label, key, enabled, control, page, notRun);
         control?.PropertyChanged += OnControlChanged;
     }
+
+    // What a ready row that Enter skips says instead of "ready".
+    private string NotRun { get; }
 
     /// <summary>Stops listening to its control (the palette rebuilt its entries; the control outlives them).</summary>
     internal void Detach() => Control?.PropertyChanged -= OnControlChanged;
@@ -45,7 +48,7 @@ internal sealed class PaletteEntry : ObservableObject
         { IsSending: true } => Control.IsAnnouncingSending ? Labels.Sending : string.Empty,   // "Sending…" after 300 ms, as the control's own live region says it; silent before, never "ready"
         { IsAccepted: true } => Control.Outcome,
         { IsFailed: true } => Control.ErrorCode,
-        { IsReady: true } => Runs ? Labels.Ready : Labels.NotInApp,   // a ready row is called ready only when Enter does something with it
+        { IsReady: true } => Runs ? Labels.Ready : NotRun,   // a ready row is called ready only when Enter does something with it
         { IsPending: true } => Labels.Arrives(Control.Stage),
         { CopyLabel: Labels.Copied } => Labels.Copied,
         _ => Labels.CopyCli(Control.Cli),
@@ -89,8 +92,10 @@ internal sealed class PaletteEntry : ObservableObject
     /// <summary>A catalog row's entry: it runs when ready and wired, or for Stop Sindri (which goes to Health), and copies when cli-only.</summary>
     /// <param name="control">The row's control.</param>
     /// <param name="runs">True when Enter does something with it.</param>
+    /// <param name="notRun">What a ready row that Enter skips says instead of "ready".</param>
     /// <returns>The entry.</returns>
-    internal static PaletteEntry For(ControlViewModel control, bool runs) => new(control.Action, control.Label, control.Shortcut, runs, control, page: null);
+    internal static PaletteEntry For(ControlViewModel control, bool runs, string notRun = Labels.NotInApp) =>
+        new(control.Action, control.Label, control.Shortcut, runs, control, page: null, notRun);
 
     /// <summary>A page's entry.</summary>
     /// <param name="page">The page.</param>

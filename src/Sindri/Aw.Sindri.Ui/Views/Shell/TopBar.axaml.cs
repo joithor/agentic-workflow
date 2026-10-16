@@ -48,6 +48,7 @@ internal sealed partial class TopBar : UserControl
         CompactSearch,
         NoAge,
         NoBrandWord,
+        NoCounts,
     }
 
     /// <inheritdoc />
@@ -92,13 +93,26 @@ internal sealed partial class TopBar : UserControl
         var pill = PillGroup.DesiredSize.Width - (PillAge.IsVisible ? age : 0);
         var word = _brandWordWidth + Brand.Spacing;
         var padding = Content is Border bar ? bar.Padding.Left + bar.Padding.Right : 0;
-        var fixedWidth = padding + Brand.DesiredSize.Width - (BrandWord.IsVisible ? word : 0) + NavSegments.DesiredSize.Width;
+        var navigation = NavigationWidthWithCounts;
+        var fixedWidth = padding + Brand.DesiredSize.Width - (BrandWord.IsVisible ? word : 0) + navigation;
         bool Fits(double brand, double search, double pillAge, Fit step) => fixedWidth + brand + search + pill + pillAge <= width - (step < _fit ? Slack : 0);
 
-        return Fits(word, SearchMin, age, Fit.Full) ? Fit.Full
-            : Fits(word, _compactSearch, age, Fit.CompactSearch) ? Fit.CompactSearch
-            : Fits(word, _compactSearch, 0, Fit.NoAge) ? Fit.NoAge
-            : Fit.NoBrandWord;
+        (Fit Step, double Brand, double Search, double PillAge)[] steps =
+        [
+            (Fit.Full, word, SearchMin, age),
+            (Fit.CompactSearch, word, _compactSearch, age),
+            (Fit.NoAge, word, _compactSearch, 0),
+            (Fit.NoBrandWord, 0, _compactSearch, 0),
+        ];
+        foreach (var (step, brand, search, pillAge) in steps)
+        {
+            if (Fits(brand, search, pillAge, step))
+            {
+                return step;
+            }
+        }
+
+        return Fit.NoCounts;
     }
 
     // The ⌘K field's column (the fifth).
@@ -114,6 +128,7 @@ internal sealed partial class TopBar : UserControl
         SearchColumn.MaxWidth = compact ? double.PositiveInfinity : SearchMax;
         PillAge.IsVisible = fit < Fit.NoAge;
         BrandWord.IsVisible = fit < Fit.NoBrandWord;
+        NavigationList.Classes.Set("no-counts", fit == Fit.NoCounts);
     }
 
     // The widths a dropped part would need again.
@@ -129,6 +144,7 @@ internal sealed partial class TopBar : UserControl
             _brandWordWidth = BrandWord.DesiredSize.Width;
         }
 
+        RememberCounts();
         if (_fit != Fit.Full && SearchField.DesiredSize.Width > 0)
         {
             _compactSearch = SearchField.DesiredSize.Width;
