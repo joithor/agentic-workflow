@@ -76,6 +76,21 @@ public sealed class RecipeHashingTests
         Assert.Equal("fact:output", produces[0]!.GetValue<string>());
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void A_renamed_entry_hashes_as_an_object_and_bare_entries_dont_move()
+    {
+        var bare = RecipeReaderTests.Reader.Read(RecipeReaderTests.Minimal, "a.yaml").Document!;
+        var renamed = RecipeReaderTests.Reader.Read(
+            RecipeReaderTests.Minimal.Replace("produces: [fact:output]", "produces: [fact:output, { fact: fact:exported, from: fact:result }]", StringComparison.Ordinal), "a.yaml").Document!;
+
+        var produces = JsonNode.Parse(AwJson.Serialize(renamed.Recipe, SliceHarness.Json))!["transitions"]![0]!["produces"]!.AsArray();
+
+        Assert.Equal("fact:output", produces[0]!.GetValue<string>());
+        Assert.Equal("{\"fact\":\"fact:exported\",\"from\":\"fact:result\"}", Encoding.UTF8.GetString(CanonicalJson.Of(produces[1])));
+        Assert.NotEqual(bare.Hash, renamed.Hash);
+        Assert.Equal(KnownHash, bare.Hash.Value);
+    }
+
     private const string KnownCanonical =
         "{\"base\":null,\"budget\":null,\"description\":null,\"evals\":[],\"id\":\"workflow.minimal\",\"initial\":\"produce\",\"inputs\":[],\"loops\":{},\"name\":null,\"outputs\":[],\"schema\":1,\"states\":{\"done\":{\"budget\":null,\"kind\":\"terminal\",\"loop\":null,\"next\":null,\"outcome\":\"resolved\",\"step\":null,\"timeout\":null,\"waitFor\":null},\"produce\":{\"budget\":null,\"kind\":\"active\",\"loop\":null,\"next\":\"Produce the Step output.\",\"outcome\":null,\"step\":{\"inputs\":[],\"use\":\"step.produce\",\"with\":{}},\"timeout\":{\"after\":\"4h\",\"then\":\"park\"},\"waitFor\":null}},\"transitions\":[{\"effects\":[],\"evidence\":[],\"from\":[\"produce\"],\"gates\":[],\"on\":\"step.completed\",\"produces\":[\"fact:output\"],\"to\":\"done\",\"when\":{\"all\":null,\"any\":null,\"below\":null,\"fact\":null,\"is\":null,\"loop\":null,\"not\":null,\"outcome\":\"done\"}}],\"urgency\":\"work\",\"version\":1}";
 
