@@ -275,6 +275,7 @@ packages:
     bins: [aw-meta]
     ts: null
     src: src/Meta
+    scan: [scripts/meta-launch.sh, scripts/meta-lane.sh, scripts/launcher-lib.sh]
     note: "aw-meta CLI for the /meta skill: the meta orchestrator's obligations (inbox/outbox), lane map, gate and merge runner, owner queue, health and running log; state under $AW_STATE_DIR/meta; a thin harness Sindri absorbs later"
 
   - id: Launcher
@@ -284,7 +285,7 @@ packages:
     ts: null
     src: null
     files: [launcher.json]
-    note: "the session launcher's machine file and its contract (spec 2026-10-15-sindri-session-launcher-design.md, SL-0): $AW_STATE_DIR/launcher.json is read by aw-meta-launch (bash, SL-1) and by the C# Sindri launcher (SL-2). The repo-side contract files are schemas/launcher.schema.json, config/launcher/builtins.json and config/launcher/terminals.json (shared fixtures: tests/fixtures/launcher); no code of its own, so no projects"
+    note: "the session launcher's machine file and its contract (spec 2026-10-15-sindri-session-launcher-design.md, SL-0): $AW_STATE_DIR/launcher.json is read by aw-meta-launch (bash, SL-1) and by the C# Sindri launcher (SL-2). The repo-side contract files are schemas/launcher.schema.json, config/launcher/builtins.json and config/launcher/terminals.json (shared fixtures: tests/fixtures/launcher); no C# code of its own, so no projects. The bash reader lives with its only user, Meta (scripts/launcher-lib.sh), and is declared by the Meta -> Launcher file edge"
 
 edges:
   # ---- current: found in the source today ----
@@ -605,8 +606,8 @@ edges:
   - from: Meta
     to: Launcher
     kind: file
-    status: planned
-    note: "SL-1: aw-meta-launch (bash) reads $AW_STATE_DIR/launcher.json for its viewer and lanes' agents, with the key lists and placeholder set from x-aw-keys in schemas/launcher.schema.json and the built-in entries from config/launcher/builtins.json (and the terminal templates from config/launcher/terminals.json for --init-launcher)"
+    status: current
+    note: "SL-1 (scripts/launcher-lib.sh, sourced by meta-launch.sh and meta-lane.sh; the scan reads those three scripts): aw-meta-launch (bash) reads $AW_STATE_DIR/launcher.json for its viewer and lanes' agents, with the key lists and placeholder set from x-aw-keys in schemas/launcher.schema.json and the built-in entries from config/launcher/builtins.json (and the terminal templates from config/launcher/terminals.json for --init-launcher)"
   - from: Sindri
     to: Launcher
     kind: file
