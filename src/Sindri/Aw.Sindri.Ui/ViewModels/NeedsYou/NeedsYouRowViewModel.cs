@@ -99,7 +99,7 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
     {
         if (!entry.Equals(Entry))
         {
-            var before = (Tint, HasOutline, SlidesIn);
+            var before = (Tint, HasOutline, SlidesIn, HasNewWord);
             Entry = entry;
             foreach (var name in _content)
             {
@@ -243,19 +243,13 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
     /// <param name="arrived">Whether the row arrived in the latest update.</param>
     internal void Apply(bool seen, bool reducedMotion, bool arrived)
     {
-        var before = (Tint, HasOutline, SlidesIn);
-        var wasNew = HasNewWord;
+        var before = (Tint, HasOutline, SlidesIn, HasNewWord);
         (_seen, _reduced, _arrived) = (seen, reducedMotion, arrived);
         ReportLook(before);
-        if (wasNew != HasNewWord)
-        {
-            OnChanged(nameof(HasNewWord));
-            OnChanged(nameof(NewWord));
-        }
     }
 
-    // Reports the look properties (tint, outline, slide-in) that differ from how they were.
-    private void ReportLook((RowTint Tint, bool HasOutline, bool SlidesIn) before)
+    // Reports the look properties (tint, outline, slide-in, the word new) that differ from how they were.
+    private void ReportLook((RowTint Tint, bool HasOutline, bool SlidesIn, bool HasNewWord) before)
     {
         if (before.Tint != Tint)
         {
@@ -274,6 +268,12 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
         if (before.SlidesIn != SlidesIn)
         {
             OnChanged(nameof(SlidesIn));
+        }
+
+        if (before.HasNewWord != HasNewWord)
+        {
+            OnChanged(nameof(HasNewWord));
+            OnChanged(nameof(NewWord));
         }
     }
 }
