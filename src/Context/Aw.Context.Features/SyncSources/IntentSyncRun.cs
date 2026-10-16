@@ -1,0 +1,160 @@
+using System.Globalization;
+using Aw.Context.Core;
+using Aw.Context.Core.Engine;
+using Aw.Context.Core.Graph;
+using Aw.Context.Core.Linking;
+using Aw.Context.Core.Map;
+using Aw.Context.Core.Results;
+using Aw.Context.Core.Sources;
+using Aw.Context.Core.Trust;
+using Aw.Kernel;
+
+namespace Aw.Context.Features.SyncSources;
+
+/// <summary>
+/// One live intent source against the current map (spec §8.2 step 3 sub-queries, §6.2): each map node's terms are searched, the hits whose
+/// version is new are fetched, cleaned at the ingest boundary and linked by <see cref="RulesLinker"/>, and each node's page of records and links is
+/// committed together with the cursor 'mapVersion:nodesDone', so a stopped run (the source down, the time cap) resumes where it was
+/// and a replay writes nothing new. A map version change re-links every record.
+/// </summary>
+internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (ContextSettings Settings, Scrubbers Scrubbers) context, (IIntentStore Store, TimeProvider Clock) ports)
+{
+    private readonly SourceId _id = source.Describe().Id;
+    private readonly MapText _text = new(context.Scrubbers);
+    private readonly DateTimeOffset _started = ports.Clock.GetUtcNow();
+    private int _fetched;
+    private int _unchanged;
+    private int _linked;
+    private int _unlinked;
+
+    public async ValueTask<SourceSync> Execute(CancellationToken cancellationToken)
+    {
+        var layer = await ports.Store.Layer(cancellationToken).ConfigureAwait(false);
+        var state = await ports.Store.State(_id, cancellationToken).ConfigureAwait(false);
+        if (layer.IsError || state.IsError)
+        {
+            return Row(0, (layer.IsError ? layer : state.Bind(_ => layer)).Error.Code);
+        }
+
+        var version = map.Snapshot.Version.Number;
+        var nodes = map.Graph.Nodes.Where(n => n.Key.Kind is not (NodeKind.Record or NodeKind.Decision)).OrderBy(n => n.Key.Value, StringComparer.Ordinal).ToList();
+        var (offset, sameMap) = Resume(state.Value.Cursor, version, nodes.Count);
+        var known = layer.Value.Records.Where(r => r.Source == _id).ToDictionary(r => r.Key.Value, StringComparer.Ordinal);
+        var stored = sameMap ? new Dictionary<string, string>(known.Select(p => KeyValuePair.Create(p.Key, p.Value.Version)), StringComparer.Ordinal) : [];
+        var code = await Walk(nodes, offset, (version, stored, known), cancellationToken).ConfigureAwait(false);
+        if (code is not null && code != ContextErrors.SyncCapped.Code)
+        {
+            _ = await ports.Store.RecordFailure(_id, code, cancellationToken).ConfigureAwait(false);
+        }
+
+        return await Summary(code, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static (int Offset, bool SameMap) Resume(string? cursor, int version, int total)
+    {
+        var parts = cursor?.Split(':');
+        var read = parts is [var mv, var done] && int.TryParse(mv, NumberStyles.None, CultureInfo.InvariantCulture, out var v) && int.TryParse(done, NumberStyles.None, CultureInfo.InvariantCulture, out var d)
+            ? (v, d)
+            : (-1, 0);
+        return (read.Item1 == version && read.Item2 > 0 && read.Item2 < total ? read.Item2 : 0, read.Item1 == version);
+    }
+
+    private async ValueTask<string?> Walk(List<GraphNode> nodes, int offset, (int Version, Dictionary<string, string> Stored, Dictionary<string, IntentRecord> Known) seen, CancellationToken ct)
+    {
+        var fetchedThisRun = new HashSet<string>(StringComparer.Ordinal);
+        for (var i = offset; i < nodes.Count; i++)
+        {
+            if (ports.Clock.GetUtcNow() - _started >= SyncSourcesService.RunCap)
+            {
+                return ContextErrors.SyncCapped.Code;
+            }
+
+            var terms = _text.SearchTerms(nodes[i].Label);
+            if (terms.Count == 0)
+            {
+                continue;
+            }
+
+            var hits = await Within(t => source.Search(new SourceQuery(terms, AsOf: null, Limit: 50, context.Settings.Deadline), t), ct).ConfigureAwait(false);
+            if (hits.IsError)
+            {
+                return hits.Error.Code;
+            }
+
+            var page = await Page([.. hits.Value.Where(h => fetchedThisRun.Add(h.Ref.Canonical.Value))], seen, ct).ConfigureAwait(false);
+            if (page.IsError)
+            {
+                return page.Error.Code;
+            }
+
+            var cursor = string.Create(CultureInfo.InvariantCulture, $"{seen.Version}:{i + 1}");
+            var committed = await ports.Store.CommitPage(new IntentPage(_id, page.Value.Records, page.Value.Links, cursor, ports.Clock.GetUtcNow()), ct).ConfigureAwait(false);
+            if (committed.IsError)
+            {
+                return committed.Error.Code;
+            }
+        }
+
+        return null;
+    }
+
+    private async ValueTask<Result<(List<IntentRecord> Records, List<IntentLink> Links)>> Page(IReadOnlyList<SourceHit> hits,
+        (int Version, Dictionary<string, string> Stored, Dictionary<string, IntentRecord> Known) seen, CancellationToken ct)
+    {
+        var records = new List<IntentRecord>();
+        var links = new List<IntentLink>();
+        foreach (var hit in hits)
+        {
+            if (seen.Stored.TryGetValue(hit.Ref.Canonical.Value, out var version) && string.Equals(version, hit.Ref.Version.Value, StringComparison.Ordinal))
+            {
+                _unchanged++;
+                continue;
+            }
+
+            var fetched = await Within(t => source.Fetch(hit.Ref, t), ct).ConfigureAwait(false);
+            if (fetched.IsError)
+            {
+                if (fetched.Error.Kind == ErrorKind.NotFound)
+                {
+                    continue;   // gone since the search
+                }
+
+                return fetched.Error;
+            }
+
+            var record = Record(hit, fetched.Value);
+            seen.Known[record.Key.Value] = record;
+            var found = RulesLinker.Link(record.Key, Text(fetched.Value), map.Graph, [.. seen.Known.Values], new HashSet<string>(context.Settings.LinearTeams, StringComparer.Ordinal));
+            records.Add(record);
+            links.AddRange(found);
+            _fetched++;
+            _linked += found.Count;
+            _unlinked += found.Count == 0 ? 1 : 0;
+        }
+
+        return (records, links);
+    }
+
+    private IntentRecord Record(SourceHit hit, SourceRecord fetched)
+    {
+        var title = context.Scrubbers.Ingest.Clean(fetched.Title, singleLine: true);
+        var aliases = hit.Aliases.Select(a => context.Scrubbers.Ingest.Clean(a, singleLine: true)).Where(a => !a.Blocked).Select(a => a.Text).ToList();
+        return new IntentRecord(hit.Ref.Canonical, _id, hit.Ref.Version.Value, title.Blocked ? "(withheld by the scrubber)" : title.Text, aliases);
+    }
+
+    private string Text(SourceRecord fetched) => fetched.Blocked ? string.Empty : context.Scrubbers.Ingest.Clean(fetched.Text, singleLine: false) is { Blocked: false } clean ? clean.Text : string.Empty;
+
+    private async ValueTask<Result<T>> Within<T>(Func<CancellationToken, ValueTask<Result<T>>> call, CancellationToken ct) =>
+        await SourceCalls.Within(source, (context.Settings.Deadline, ports.Clock), call, ct).ConfigureAwait(false);
+
+    private async ValueTask<SourceSync> Summary(string? code, CancellationToken ct)
+    {
+        var layer = await ports.Store.Layer(ct).ConfigureAwait(false);
+        var state = await ports.Store.State(_id, ct).ConfigureAwait(false);
+        var orphaned = layer.IsError ? 0 : IntentOverlay.Apply(map.Graph, layer.Value).Orphaned.Count;
+        return Row(state.IsError ? 0 : state.Value.Records, code, orphaned, state.IsError ? (0, 0) : (state.Value.Decisions, state.Value.Queued));
+    }
+
+    private SourceSync Row(int records, string? code, int orphaned = 0, (int Decisions, int Queued) extraction = default) =>
+        new(_id, records, _fetched, _unchanged, _linked, _unlinked, orphaned, extraction.Decisions, extraction.Queued, 0, 0, code);
+}

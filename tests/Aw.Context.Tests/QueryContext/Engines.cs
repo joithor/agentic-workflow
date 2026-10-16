@@ -33,6 +33,7 @@ using Aw.Context.Features.SourcesStatus;
 using Aw.Context.Features.SyncSources;
 using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Extract;
+using Aw.Context.Testing.Linking;
 using Aw.Context.Testing.Locks;
 using Aw.Context.Testing.Map;
 using Aw.Context.Testing.Review;
@@ -56,7 +57,7 @@ internal static class Engines
         var graphs = new MapReader(store);
         var repos = new FakeRepoReader(Repos[0], "0a1b2c3d4e5f60718293a4b5c6d7e8f901234567", new Dictionary<string, string>(StringComparer.Ordinal));
         return new ContextEngine(new QueryContextService(catalog, scrubbers, new SequentialIdGenerator(), clock, graphs),
-            new ContextSources(new SourcesStatusService(docs, catalog, scrubbers, clock), new RefreshDocsService(docs, scrubbers), new SyncSourcesService()), scrubbers, Map(clock, store, scrubbers),
+            new ContextSources(new SourcesStatusService(docs, catalog, scrubbers, clock), new RefreshDocsService(docs, scrubbers), new SyncSourcesService(catalog, scrubbers, graphs, new FakeIntentStore(), clock)), scrubbers, Map(clock, store, scrubbers),
             new ContextGraph(new ShowNodeService(graphs, scrubbers), new ListNeighborsService(graphs, scrubbers), new FindPathService(graphs, scrubbers),
                 new GetLensesService(graphs, scrubbers, clock), new GetFileMapService(graphs, repos)),
             Probes(clock));

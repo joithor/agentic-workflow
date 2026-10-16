@@ -1,4 +1,5 @@
 using Aw.Context.Core;
+using Aw.Context.Core.Docs;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
@@ -22,15 +23,40 @@ internal sealed class ContextSources(
     public ValueTask<Result<RefreshReport>> Refresh(ContextScope scope, CancellationToken cancellationToken) =>
         refresh.Handle(new RefreshDocsRequest(scope), cancellationToken);
 
-    public ValueTask<Result<SyncReport>> Sync(string? source, ContextScope scope, CancellationToken cancellationToken)
+    public async ValueTask<Result<SyncReport>> Sync(string? source, ContextScope scope, CancellationToken cancellationToken)
     {
-        if (source is null)
+        if (source is not null && !SourceId.TryFrom(source, out _))
         {
-            return sync.Handle(new SyncSourcesRequest(scope, Source: null), cancellationToken);
+            return ContextErrors.SyncSourceUnknown.With($"'{source}' isn't a source id (fix: sindri context sources status)");
         }
 
-        return SourceId.TryFrom(source, out var id)
-            ? sync.Handle(new SyncSourcesRequest(scope, id), cancellationToken)
-            : ValueTask.FromResult<Result<SyncReport>>(ContextErrors.SyncSourceUnknown.With($"'{source}' isn't a source id (fix: sindri context sources status)"));
+        var rows = new List<SourceSync>();
+        if (source is null || string.Equals(source, RepoDocs.Id.Value, StringComparison.Ordinal))
+        {
+            var refreshed = await refresh.Handle(new RefreshDocsRequest(scope), cancellationToken).ConfigureAwait(false);
+            if (refreshed.IsError)
+            {
+                return refreshed.Error;
+            }
+
+            rows.Add(DocsRow(refreshed.Value));
+        }
+
+        if (source is null || !string.Equals(source, RepoDocs.Id.Value, StringComparison.Ordinal))
+        {
+            var synced = await sync.Handle(new SyncSourcesRequest(scope, source is null ? null : SourceId.From(source)), cancellationToken).ConfigureAwait(false);
+            if (synced.IsError)
+            {
+                return synced.Error;
+            }
+
+            rows.AddRange(synced.Value.Sources);
+        }
+
+        return new SyncReport(rows);
     }
+
+    private static SourceSync DocsRow(RefreshReport report) =>
+        new(report.Source, report.Repos.Sum(r => r.Added + r.Kept), report.Repos.Sum(r => r.Added), report.Repos.Sum(r => r.Skipped), 0, 0, 0, 0, 0, 0, 0,
+            report.Repos.Select(r => r.Code).FirstOrDefault(c => c is not null));
 }

@@ -1,9 +1,12 @@
 using System.Text.Json.Nodes;
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Graph;
 using Aw.Context.Core.Linking;
+using Aw.Context.Core.Map;
 using Aw.Context.Core.Sources;
 using Aw.Context.Features.SyncSources;
+using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Fakes;
 using Aw.Context.Tests.Map;
 using Aw.Context.Tests.Onyx;
@@ -69,12 +72,9 @@ public sealed class SyncSourcesTests
         var source = new ScriptedSource(harness.Source);
         using var world = new MapWorld(intent: source);
         _ = await world.ImportFixture();
-        var total = (await world.Store.Snapshot(draft: false, Ct)).Value!.Graph.Nodes.Count;
-        source.OnSearch = _ =>
-        {
-            world.Clock.Advance(SyncSourcesService.RunCap + TimeSpan.FromSeconds(1));   // every search takes longer than the whole run may
-            return Task.CompletedTask;
-        };
+        var text = new MapText(new FakeScrubberFactory().For([]).Value);
+        var total = (await new MapReader(world.Store).Read(_scope, draft: false, Ct)).Value.Graph.Nodes.Count(n => n.Key.Kind is not (NodeKind.Record or NodeKind.Decision) && text.SearchTerms(n.Label).Count > 0);   // a label with no search terms is never searched
+        source.AfterSearch = () => world.Clock.Advance(SyncSourcesService.RunCap + TimeSpan.FromSeconds(1));   // every search takes longer than the whole run may
 
         var capped = (await world.Engine.Sync("onyx", _scope, Ct)).Value.Sources[0];
 
@@ -83,7 +83,7 @@ public sealed class SyncSourcesTests
         Assert.InRange(searchedFirst, 1, total - 1);
         Assert.NotNull((await world.Intents.State(_onyx, Ct)).Value.Cursor);
 
-        source.OnSearch = null;
+        source.AfterSearch = null;
         var resumed = (await world.Engine.Sync("onyx", _scope, Ct)).Value.Sources[0];
 
         Assert.Null(resumed.Code);
@@ -137,7 +137,7 @@ public sealed class SyncSourcesTests
         _ = await world.Engine.Sync("onyx", _scope, Ct);
 
         var title = (await world.Intents.Layer(Ct)).Value.Records.Single(r => r.Key.Value == Spl103).Title;
-        Assert.DoesNotContain(Testing.Engine.FakeScrubber.Secret, title, StringComparison.Ordinal);
+        Assert.DoesNotContain(FakeScrubber.Secret, title, StringComparison.Ordinal);
         Assert.Contains("[REDACTED:fake]", title, StringComparison.Ordinal);
     }
 

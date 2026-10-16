@@ -3,7 +3,7 @@ using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 using Aw.Kernel;
 
-namespace Aw.Context.Features.QueryContext;
+namespace Aw.Context.Features;
 
 /// <summary>
 /// Calls one source under the query's deadline: an error or a missed deadline makes it degraded for this query
