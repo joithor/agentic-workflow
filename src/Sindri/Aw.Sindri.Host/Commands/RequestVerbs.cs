@@ -6,6 +6,7 @@ using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Features.FileRequest;
 using Aw.Sindri.Features.GetNeedsYou;
+using Aw.Sindri.Features.ListDecisions;
 using Aw.Sindri.Features.ListRequests;
 using Aw.Sindri.Host.Endpoints;
 
@@ -14,7 +15,7 @@ namespace Aw.Sindri.Host.Commands;
 /// <summary>
 /// 'sindri request', 'requests', 'decide' and 'needs-you' (API P4 unit H): clients of the request, decision and needs-you routes. Human
 /// verbs start the control plane unless --no-start; inside an agent session they never do (API spec §7). 'request' is a session's verb; 'decide'
-/// is the human's (the API refuses a session, SND-AUTH-002). 'requests' and 'needs-you' exit 1 while the views rebuild or stall, so a script
+/// is the human's (the API refuses a session, SND-AUTH-002). 'requests', 'decisions' and 'needs-you' exit 1 while the views rebuild or stall, so a script
 /// doesn't read a partial list as the truth (API spec §3.6); --json prints the route's body as received.
 /// </summary>
 /// <param name="client">The API client.</param>
@@ -41,6 +42,7 @@ internal sealed class RequestVerbs(ControlPlaneClient client, Output output, Fun
         {
             RequestVerbArguments.Verb.Request => await File(command, ct).ConfigureAwait(false),
             RequestVerbArguments.Verb.Requests => await List(command, ct).ConfigureAwait(false),
+            RequestVerbArguments.Verb.Decisions => await Decisions(command, ct).ConfigureAwait(false),
             RequestVerbArguments.Verb.Decide => await Decide(command, ct).ConfigureAwait(false),
             RequestVerbArguments.Verb.NeedsYou => await NeedsYou(command, ct).ConfigureAwait(false),
             RequestVerbArguments.Verb.None => await output.Error(SindriErrors.UnknownVerb.With(RequestVerbArguments.Usage)).ConfigureAwait(false),
@@ -86,6 +88,31 @@ internal sealed class RequestVerbs(ControlPlaneClient client, Output output, Fun
         return command.Json
             ? await output.Raw(answer.Value.Body, code).ConfigureAwait(false)
             : await output.Text(RequestText.Requests(list), code).ConfigureAwait(false);
+    }
+
+    private async Task<int> Decisions(RequestVerbArguments.Parsed command, CancellationToken ct)
+    {
+        var pending = command.Pending is { } p ? (p ? "true" : "false") : null;
+        var query = new StringBuilder();
+        foreach (var (key, value) in new[] { ("pending", pending), ("item", command.Item) })
+        {
+            if (value is not null)
+            {
+                _ = query.Append(query.Length == 0 ? '?' : '&').Append(key).Append('=').Append(Uri.EscapeDataString(value));
+            }
+        }
+
+        var answer = await client.GetView<ListDecisionsResponse>("/sindri/decisions" + query, ct).ConfigureAwait(false);
+        if (answer.IsError)
+        {
+            return await output.Error(answer.Error).ConfigureAwait(false);
+        }
+
+        var list = answer.Value.Value;
+        var code = list.AsOf.Rebuilding || list.AsOf.Stalled ? 1 : 0;
+        return command.Json
+            ? await output.Raw(answer.Value.Body, code).ConfigureAwait(false)
+            : await output.Text(RequestText.Decisions(list), code).ConfigureAwait(false);
     }
 
     private async Task<int> Decide(RequestVerbArguments.Parsed command, CancellationToken ct)

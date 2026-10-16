@@ -21,6 +21,7 @@ internal static class Usage
         "       sindri item close <item> [--cancelled] [--version <n>] [--no-start]   close an item (id or tracker key) as done, or cancelled; without --version it closes the version it reads first",
         "       sindri request <kind> [--item <item>] <text> [--json] [--no-start]   ask a human (rescope, add-task, note or handback), about an item or none: 'REQ-… filed; DEC-… waits for a human'; it is a session's verb",
         "       sindri requests [--state <s>] [--item <item>] [--json] [--no-start]   the requests, newest first, with their text; exit 1 while the views rebuild or stall",
+        "       sindri decisions [--pending | --decided] [--item <item>] [--json] [--no-start]   the decisions: pending oldest first, decided newest first, each with its question and the command that decides it; exit 1 while the views rebuild or stall",
         "       sindri decide <decisionId> <choice> [--note <note>] [--json] [--no-start]   settle a decision (accept or decline): the human's verb, a session is refused (SND-AUTH-002)",
         "       sindri needs-you [--json] [--no-start]   what needs a human: decisions, failures, a drifted profile, each with the command that does it; exit 1 while the views rebuild or stall",
         "       sindri doctor [--json]        lease, ledger, views, profile, api, temporal and context checks, and the pinned harness probe; runs without the control plane",

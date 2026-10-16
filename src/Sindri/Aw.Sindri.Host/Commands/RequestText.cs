@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Text;
+using Aw.Sindri.Core.Decisions;
 using Aw.Sindri.Features.GetNeedsYou;
+using Aw.Sindri.Features.ListDecisions;
 using Aw.Sindri.Features.ListRequests;
 
 namespace Aw.Sindri.Host.Commands;
@@ -30,6 +32,56 @@ internal static class RequestText
 
         return text.ToString();
     }
+
+    /// <summary>One block per decision: its line, the question indented, who chose what when it is decided, the notice, and the command that decides it while it waits; the list's sentence first when it has one.</summary>
+    /// <param name="list">The list.</param>
+    /// <returns>The text.</returns>
+    internal static string Decisions(ListDecisionsResponse list)
+    {
+        var text = new StringBuilder();
+        if (list.Empty is { } sentence)
+        {
+            _ = text.AppendLine(sentence);
+        }
+
+        foreach (var decision in list.Decisions)
+        {
+            var repo = decision.Repo is { } r ? $"  [{r.Value}]" : string.Empty;
+            var item = decision.Item is { } i ? $"  {i.Value}" : string.Empty;
+            _ = text.AppendLine(string.Create(CultureInfo.InvariantCulture,
+                $"{decision.Id.Value}  {decision.Label}  {StateName(decision.State)}{repo}{item}  by {decision.FiledBy}  since {decision.FiledAt.UtcDateTime:yyyy-MM-ddTHH:mm:ssZ}"));
+            foreach (var line in decision.Question.Split('\n'))
+            {
+                _ = text.Append("  ").AppendLine(line);
+            }
+
+            if (decision.Choice is { } choice)
+            {
+                var note = decision.Note is { } n ? $": {n}" : string.Empty;
+                _ = text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"  decided {choice.Value} by {decision.DecidedBy} at {decision.DecidedAt:yyyy-MM-ddTHH:mm:ssZ}{note}"));
+            }
+
+            if (decision.Notice is { } notice)
+            {
+                _ = text.Append("  ").AppendLine(notice);
+            }
+
+            if (decision.State == DecisionState.Pending)
+            {
+                _ = text.Append("  ").AppendLine(decision.Cli);
+            }
+        }
+
+        return text.ToString();
+    }
+
+    private static string StateName(DecisionState state) => state switch
+    {
+        DecisionState.Pending => "pending",
+        DecisionState.Decided => "decided",
+        DecisionState.Voided => "voided",
+        _ => throw new ArgumentOutOfRangeException(nameof(state), state, "not a decision state"),
+    };
 
     /// <summary>One block per row: label, title and since, then why, the notice when there is one, and the command that does it; the sentence when there is none.</summary>
     /// <param name="list">The list.</param>

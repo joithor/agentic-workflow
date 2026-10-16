@@ -7,16 +7,17 @@ using Aw.Sindri.Host.Endpoints;
 
 namespace Aw.Sindri.Host.Commands;
 
-/// <summary>Reads the arguments of 'request', 'requests', 'decide' and 'needs-you' into one <see cref="Parsed"/>, or the usage error.</summary>
+/// <summary>Reads the arguments of 'request', 'requests', 'decisions', 'decide' and 'needs-you' into one <see cref="Parsed"/>, or the usage error.</summary>
 internal static class RequestVerbArguments
 {
-    internal const string Usage = "request <kind> [--item <item>] <text> [--json] [--no-start] | requests [--state <s>] [--item <item>] [--json] [--no-start] | decide <decisionId> <choice> [--note <note>] [--json] [--no-start] | needs-you [--json] [--no-start]";
+    internal const string Usage = "request <kind> [--item <item>] <text> [--json] [--no-start] | requests [--state <s>] [--item <item>] [--json] [--no-start] | decisions [--pending | --decided] [--item <item>] [--json] [--no-start] | decide <decisionId> <choice> [--note <note>] [--json] [--no-start] | needs-you [--json] [--no-start]";
 
     internal enum Verb
     {
         None,
         Request,
         Requests,
+        Decisions,
         Decide,
         NeedsYou,
     }
@@ -27,6 +28,7 @@ internal static class RequestVerbArguments
         {
             ["request", .. var r] => (Verb.Request, r),
             ["requests", .. var r] => (Verb.Requests, r),
+            ["decisions", .. var r] => (Verb.Decisions, r),
             ["decide", .. var r] => (Verb.Decide, r),
             ["needs-you", .. var r] => (Verb.NeedsYou, r),
             _ => (Verb.None, args),
@@ -88,6 +90,8 @@ internal static class RequestVerbArguments
             case "--no-start":
                 parsed.NoStart = true;
                 return 0;
+            case "--pending" or "--decided" when parsed.Verb == Verb.Decisions:
+                return Pending(parsed, rest[i] == "--pending");
             case "--item" or "--state" or "--note" when value is not null && Takes(parsed.Verb, rest[i]):
                 Valued(parsed, rest[i], value);
                 return 1;
@@ -99,9 +103,20 @@ internal static class RequestVerbArguments
         }
     }
 
+    private static Result<int> Pending(Parsed parsed, bool pending)
+    {
+        if (parsed.Pending is { } earlier && earlier != pending)
+        {
+            return SindriErrors.InvalidInput.With($"--pending and --decided are alternatives; give one: {Usage}");
+        }
+
+        parsed.Pending = pending;
+        return 0;
+    }
+
     private static bool Takes(Verb verb, string flag) => flag switch
     {
-        "--item" => verb is Verb.Request or Verb.Requests,
+        "--item" => verb is Verb.Request or Verb.Requests or Verb.Decisions,
         "--state" => verb == Verb.Requests,
         _ => verb == Verb.Decide,
     };
@@ -130,7 +145,7 @@ internal static class RequestVerbArguments
                 return Request(parsed, words);
             case Verb.Decide:
                 return Decide(parsed, words);
-            case Verb.None or Verb.Requests or Verb.NeedsYou:
+            case Verb.None or Verb.Requests or Verb.Decisions or Verb.NeedsYou:
             default:
                 if (words.Count > 0)
                 {
@@ -201,6 +216,9 @@ internal static class RequestVerbArguments
         public bool Json { get; set; }
 
         public bool NoStart { get; set; }
+
+        /// <summary>For 'decisions': true for --pending, false for --decided, null for neither.</summary>
+        public bool? Pending { get; set; }
 
         public string? Item { get; set; }
 
