@@ -142,8 +142,7 @@ public sealed class DeclarationRulesTests
     private static Recipe WaitingOnKid() => Of(
         "running",
         [("running", WaitForChild("workflow.kid")), ("done", Terminal())],
-        [Go("running", "done", "wait.satisfied", AnyOf(Outcome("resolved"), Outcome("cancelled")))],
-        inputs: []) with
+        [Go("running", "done", "wait.satisfied", AnyOf(Outcome("resolved"), Outcome("cancelled")))]) with
     {
         Outputs = [Out("fact:result", "running")],
     };
