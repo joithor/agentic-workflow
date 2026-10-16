@@ -44,7 +44,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddSindriInfrastructure(this IServiceCollection services, Func<string, string?> environment)
         => services
-            .AddSingleton(SettingsFromEnvironment.Read(environment))
+            .AddSettings(environment)
             .AddSingleton<IIdGenerator, GuidV7Ids>()
             .AddSingleton<IProcessProbe, PosixProcessProbe>()
             .AddSingleton<LedgerDatabase>()
@@ -85,11 +85,16 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddOnyxInfrastructure()
             .AddSingleton<ITextScrubber>(new RedactingScrubber(Redactor.Default));
 
+    // The settings and the one place that reads Sindri's home from them.
+    private static IServiceCollection AddSettings(this IServiceCollection services, Func<string, string?> environment)
+        => services
+            .AddSingleton(SettingsFromEnvironment.Read(environment))
+            .AddSingleton<ISindriHome, SettingsSindriHome>();
+
     private static IServiceCollection AddOnyxInfrastructure(this IServiceCollection services)
         => services
             .AddSingleton<IOnyxPinsSource, EmbeddedOnyxPins>()                                            // context/onyx.lock, embedded
             .AddSingleton<IContainerRuntime>(static _ => new DockerCliRuntime(new ProcessToolRunner()))   // Docker facts, read-only
-            .AddSingleton<ISindriHome, SettingsSindriHome>()
             .AddSingleton<IHostProbes, HostProbes>();                                                      // free disk and loopback ports
 
     /// <summary>
