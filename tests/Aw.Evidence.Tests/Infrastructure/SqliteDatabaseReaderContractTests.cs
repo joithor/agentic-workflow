@@ -104,6 +104,119 @@ public sealed class SqliteDatabaseReaderContractTests : ReadOnlyDatabaseContract
         Assert.False(File.Exists(missing));
     }
 
+    [Fact]
+    public async Task A_WAL_mode_source_leaves_its_directory_exactly_as_it_was()
+    {
+        var source = _root.Combine("repo/data/wal.db");
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(source)!);
+        _ = await MakeWalAsync(source, pageSize: 4096, keepOpen: false);
+        var before = Listing(Path.GetDirectoryName(source)!);
+
+        await using (var session = (await new SqliteDatabaseReader().OpenAsync(new SqliteTarget(source, _root.Combine("run/db")), TestContext.Current.CancellationToken)).Value)
+        {
+            var rows = await session.QueryAsync(ReadAll, 10, TestContext.Current.CancellationToken);
+            Assert.Equal(3, rows.Value.Count);
+        }
+
+        Assert.Equal(before, Listing(Path.GetDirectoryName(source)!));
+    }
+
+    [Fact]
+    public async Task A_WAL_source_with_committed_rows_still_in_its_wal_file_reads_them_and_stays_untouched()
+    {
+        var source = _root.Combine("repo/data/live.db");
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(source)!);
+        await using var holder = await MakeWalAsync(source, pageSize: 4096, keepOpen: true);
+        var before = Listing(Path.GetDirectoryName(source)!);
+
+        await using var session = (await new SqliteDatabaseReader().OpenAsync(new SqliteTarget(source, _root.Combine("run/db")), TestContext.Current.CancellationToken)).Value;
+        var rows = await session.QueryAsync(ReadAll, 10, TestContext.Current.CancellationToken);
+
+        Assert.Equal(3, rows.Value.Count);
+        Assert.Equal(before, Listing(Path.GetDirectoryName(source)!));
+    }
+
+    [Theory]
+    [InlineData(1024)]
+    [InlineData(8192)]
+    public async Task A_source_whose_page_size_is_not_4096_is_copied_and_read(int pageSize)
+    {
+        var source = _root.Combine("repo/data/pages.db");
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(source)!);
+        _ = await MakeWalAsync(source, pageSize, keepOpen: false);
+
+        var opened = await new SqliteDatabaseReader().OpenAsync(new SqliteTarget(source, _root.Combine("run/db")), TestContext.Current.CancellationToken);
+
+        Assert.True(opened.IsSuccess, opened.IsError ? opened.Error.Message : "");
+        await using var session = opened.Value;
+        Assert.Equal(3, (await session.QueryAsync(ReadAll, 10, TestContext.Current.CancellationToken)).Value.Count);
+    }
+
+    [Fact]
+    public async Task A_source_inside_the_work_directory_is_refused_and_not_deleted()
+    {
+        var work = _root.Combine("run/db");
+        _ = Directory.CreateDirectory(work);
+        var source = Path.Combine(work, SqliteDatabaseReader.CopyName);
+        await MakeNotesAsync(source);
+
+        var opened = await new SqliteDatabaseReader().OpenAsync(new SqliteTarget(source, work), TestContext.Current.CancellationToken);
+
+        Assert.Equal(Core.EvidenceErrors.DatabaseRefused.Code, opened.Error.Code);
+        Assert.True(File.Exists(source));
+    }
+
+    [Fact]
+    public async Task A_seed_that_fails_on_the_copy_is_018_and_leaves_the_source_alone()
+    {
+        var db = await ArrangeAsync();
+        var source = ((SqliteTarget)db.Target).SourcePath;
+        var before = Sha(source);
+
+        var opened = await new SqliteDatabaseReader().OpenAsync(((SqliteTarget)db.Target) with { SeedSql = "INSERT INTO no_such_table VALUES (1)" }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(Core.EvidenceErrors.DbScriptInvalid.Code, opened.Error.Code);
+        Assert.Equal(before, Sha(source));
+    }
+
+    [Fact]
+    public async Task The_seed_connection_allows_no_attached_database()
+    {
+        var db = await ArrangeAsync();
+        var copy = _root.Combine("run/db/seed-copy.sqlite");
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(copy)!);
+        File.Copy(((SqliteTarget)db.Target).SourcePath, copy);
+
+        var opened = await SqliteDatabaseReader.OpenSeedConnectionAsync(copy, TestContext.Current.CancellationToken);
+
+        await using var connection = opened.Value;
+        Assert.Equal(0, SQLitePCL.raw.sqlite3_limit(connection.Handle, 7, -1));
+    }
+
+    private static async Task<Microsoft.Data.Sqlite.SqliteConnection> MakeWalAsync(string path, int pageSize, bool keepOpen)
+    {
+        var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={path};Pooling=False");
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
+        var command = connection.CreateCommand();
+        await using (command.ConfigureAwait(false))
+        {
+            command.CommandText = $"PRAGMA page_size = {pageSize.ToString(System.Globalization.CultureInfo.InvariantCulture)}; PRAGMA journal_mode = WAL; PRAGMA wal_autocheckpoint = 0; CREATE TABLE notes(id INTEGER PRIMARY KEY, text TEXT); INSERT INTO notes(text) VALUES ('hello'), ('world'), ('again')";
+            _ = await command.ExecuteNonQueryAsync(TestContext.Current.CancellationToken);
+        }
+
+        if (!keepOpen)
+        {
+            await connection.DisposeAsync();
+        }
+
+        return connection;
+    }
+
+    // Names, sizes and modification times of everything in the directory, sidecar files included.
+    private static string Listing(string directory) => string.Join(
+        '\n',
+        new DirectoryInfo(directory).EnumerateFiles().OrderBy(static f => f.Name, StringComparer.Ordinal).Select(static f => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{f.Name} {f.Length} {f.LastWriteTimeUtc.Ticks}")));
+
     private static string Sha(string path) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
 
     // The main files and the names of everything else beside them; SQLite's -wal and -shm files come and go with a connection.

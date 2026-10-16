@@ -62,7 +62,7 @@ internal sealed class SqliteDatabaseReader : IDatabaseReader
             return allowed.Error;
         }
 
-        var opened = await new SqliteConnectionFactory(new SqliteOptions(copy)).Open(cancellationToken).ConfigureAwait(false);
+        var opened = await OpenSeedConnectionAsync(copy, cancellationToken).ConfigureAwait(false);
         if (opened.IsError)
         {
             return EvidenceErrors.DatabaseUnavailable.With($"can't open the copy {copy} to seed it: {opened.Error.Message}");
@@ -72,7 +72,6 @@ internal sealed class SqliteDatabaseReader : IDatabaseReader
         {
             try
             {
-                _ = SQLitePCL.raw.sqlite3_limit(opened.Value.Handle, NoAttachedDatabases, 0);
                 var command = opened.Value.CreateCommand();
                 await using (command.ConfigureAwait(false))
                 {
@@ -87,6 +86,18 @@ internal sealed class SqliteDatabaseReader : IDatabaseReader
         }
 
         return Unit.Value;
+    }
+
+    // Read-write on the copy with no attached database allowed (SQLITE_LIMIT_ATTACHED = 0).
+    internal static async ValueTask<Result<Microsoft.Data.Sqlite.SqliteConnection>> OpenSeedConnectionAsync(string copy, CancellationToken cancellationToken)
+    {
+        var opened = await new SqliteConnectionFactory(new SqliteOptions(copy)).Open(cancellationToken).ConfigureAwait(false);
+        if (opened.IsSuccess)
+        {
+            _ = SQLitePCL.raw.sqlite3_limit(opened.Value.Handle, NoAttachedDatabases, 0);
+        }
+
+        return opened;
     }
 
     private static async ValueTask<Result<Unit>> CopyAsync(SqliteTarget target, string copy, CancellationToken cancellationToken)
