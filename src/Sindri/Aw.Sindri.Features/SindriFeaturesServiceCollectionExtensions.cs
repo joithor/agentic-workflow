@@ -179,6 +179,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IScheduledService, ContextDocsRefreshService>()
             .AddScoped<IScheduledService, ContextPurgeService>()
             .AddScoped<IScheduledService, ContextRebuildService>()
+            .AddScoped<IScheduledService, ContextSyncService>()
             .AddSingleton<IHeavyJobLock>(static sp => new SindriHeavyJobLock(sp.GetRequiredService<IHeavySlots>(), SindriHeavyJobLock.DefaultWait));
         _ = services.AddScoped<IValidator<PromoteContextMapRequest>, AcceptAllValidator<PromoteContextMapRequest>>().AddCommand<PromoteContextMapRequest, PromoteContextMapResponse, PromoteContextMapService>();
         _ = services.AddScoped<IValidator<ProposeContextMapRequest>, AcceptAllValidator<ProposeContextMapRequest>>().AddCommand<ProposeContextMapRequest, ProposeContextMapResponse, ProposeContextMapService>();

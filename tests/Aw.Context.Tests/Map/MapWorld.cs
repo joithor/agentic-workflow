@@ -3,15 +3,19 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Extract;
 using Aw.Context.Core.Facade;
+using Aw.Context.Core.Linking;
 using Aw.Context.Core.Locks;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Models;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Review;
+using Aw.Context.Core.Sources;
 using Aw.Context.Core.Trust;
 using Aw.Context.Features;
 using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Extract;
 using Aw.Context.Testing.Fixtures;
+using Aw.Context.Testing.Linking;
 using Aw.Context.Testing.Locks;
 using Aw.Context.Testing.Map;
 using Aw.Context.Testing.Review;
@@ -54,9 +58,9 @@ internal sealed class MapWorld : IDisposable
         ["README.md"] = "# Split panes",
     };
 
-    public MapWorld(IRepoReader? repoReader = null)
+    public MapWorld(IRepoReader? repoReader = null, IContextSource? intent = null)
     {
-        Sources = new FixedSourceCatalog(Docs);
+        Sources = new FixedSourceCatalog(intent is null ? [Docs] : [Docs, intent]);
         Exports = new FakeExportStore(Clock);
         Reader.Put(MapPath, Maps.Fixture(), FixtureMap.Yaml);
         _provider = new ServiceCollection()
@@ -72,6 +76,8 @@ internal sealed class MapWorld : IDisposable
             .AddSingleton<IProbeFileReader>(new NoProbes())
             .AddSingleton<IProbeReportStore>(new NoProbes())
             .AddSingleton(repoReader ?? new FakeRepoReader(Repos[0], Head, BuildFiles))
+            .AddSingleton<IIntentStore>(Intents)
+            .AddSingleton<IModelPort>(Model)
             .AddSingleton<IClusterSource>(Clusters)
             .AddSingleton<ILabeler>(Labeler)
             .AddSingleton<IHeavyJobLock>(HeavyLock)
@@ -85,6 +91,10 @@ internal sealed class MapWorld : IDisposable
     public FakeTimeProvider Clock { get; } = new(DateTimeOffset.Parse("2026-08-01T12:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
 
     public FakeGraphStore Store { get; } = new();
+
+    public FakeIntentStore Intents { get; } = new();
+
+    public FakeModelPort Model { get; } = new();
 
     public FakeExportStore Exports { get; }
 

@@ -6,4 +6,5 @@ namespace Aw.Context.Core.Engine;
 /// <param name="Settings">The profile's 'context:' section, or null when it has none.</param>
 /// <param name="Repos">The profile's repos (name and checkout path).</param>
 /// <param name="Caller">The caller.</param>
-public sealed record ContextScope(JsonElement? Settings, IReadOnlyList<ContextRepo> Repos, ContextCaller Caller);
+/// <param name="SyncConfigured">True when the host runs an intent sync (Sindri: the profile names context-sync), so an unmatched item key is explained by the state, not by a missing service.</param>
+public sealed record ContextScope(JsonElement? Settings, IReadOnlyList<ContextRepo> Repos, ContextCaller Caller, bool SyncConfigured = false);

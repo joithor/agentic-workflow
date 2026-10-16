@@ -49,8 +49,12 @@ they are stored**: each document is cleaned whole (hidden comments, images, remo
 `context-docs-refresh` service brings it up to date, at serve start and on its cadence, and records
 `context.sources.synced` in the ledger. Name it under `services:`, or nothing is indexed.
 
-`sindri context sources sync` is **pending:S-5B**: it is a job, which needs API P6's job runtime, and stage S-5B adds
-its route once P6 merges. Until then it answers `SND-CLI-001` (exit 2) and the service above is the way to refresh.
+`sindri context sources sync` is **pending:API-P6**: it is a job, which needs API P6's job runtime, and the route is added
+once P6 merges. Until then it answers `SND-CLI-001` (exit 2), naming `pending:API-P6` and the `context-sync` service.
+The repo docs refresh through the service above, and the intent sources (Onyx records linked to the map, decisions
+extracted from them) sync through the `context-sync` service (`services: { context-sync: { every: 15m } }`; it runs only
+when named). `context sources status` shows each intent source's last sync, links, decisions and queued records, and
+`sindri doctor` warns (`context:sync`) when one never synced or its last run failed.
 
 ### Asking
 
@@ -59,11 +63,18 @@ $SINDRI context query "split pane orientation"            # text
 $SINDRI context query "split pane orientation" --json     # the API's JSON, unchanged
 $SINDRI context query "…" --budget 4000                   # tokens; default 8000, capped at context.maxBudget (32000)
 $SINDRI context sources status [--json]                   # each source's state; whether sessions may read
+$SINDRI context query --item SPL-103                      # a tracker key, or a Sindri item id (ITM-...): its record, decisions and conflicts, with citations
 ```
 
 HTTP: `GET /sindri/context/query?q=…&budget=…` and `GET /sindri/context/sources`, behind the loopback guard (a
-foreign `Host` is 400, a foreign browser `Origin` 403) and the API's caller rules. `--node`, `--item` and `--symbol`
-(graph anchors) answer `SND-CONTEXT-003` until the product map exists (S-3).
+foreign `Host` is 400, a foreign browser `Origin` 403) and the API's caller rules. `--node` and `--symbol` (graph anchors) answer
+`SND-CONTEXT-003` when the anchor is unknown.
+
+`--item <KEY>` takes a tracker key (`SPL-103`) or a Sindri item id (`ITM-...`) and answers with the anchors, the synced records, the decisions
+and the conflicts that concern it, each cited. A tracker key needs a `context-sync` run that linked the record; before that, or for a key no
+synced record carries, it answers `003` and says which (with `context-sync` named in the profile: wait for its next slot or watch
+`sindri context sources status`; without it: name the service). A Sindri item id resolves to the tracker record linked to that item; one with
+no record yet answers `003` ("has no tracker record linked yet"). A session never falls back to Onyx for an item: only a human's query may.
 
 The CLI sends the question and `--node` on the query string, so each must be at most 6000 characters once percent-encoded (about 660 CJK characters reach that cap; Kestrel's request line is 8 KB). A longer one is refused before sending with `SND-CONTEXT-006` ("shorten it"); the 2000-character text cap still applies on every transport.
 
@@ -533,7 +544,7 @@ index:
 repos:
   - { name: work-app, path: /path/to/work-app, index: { denyPaths: ["private/**"] } }   # this repo's own, added to the above
 context:
-  labeling: { enabled: false, maxTokens: 400000 }  # name clusters with a model; over the cap is SND-CONTEXT-042
+  labeling: { enabled: false, maxTokens: 400000, maxTokensPerSync: 50000 }  # name clusters with a model; over the cap is SND-CONTEXT-042; maxTokensPerSync caps decision extraction in one sync (the rest stays queued); a record whose extraction prompt alone is over it can never be extracted, so it is skipped: counted in `refused`, no decisions, not queued (raise the cap to extract it; it is retried when its version changes)
 services:
   context-rebuild: { every: 24h }                  # proposes the map on a cadence; runs only when named here
 ```
@@ -664,13 +675,17 @@ the store, a usage error · `75` the heavy-job lock stayed busy (`040`).
 | Code | Meaning | Fix |
 |---|---|---|
 | `SND-CONTEXT-040` | The heavy-job lock stayed busy (names the holder) | Retry when the other job finishes |
-| `SND-CONTEXT-042` | Labeling is on and the pass would pass `maxTokens` | Raise `context.labeling.maxTokens` or turn labeling off |
+| `SND-CONTEXT-042` | Labeling is on and the pass would pass `maxTokens`, or labeling is off with decisions still queued (`sources status` shows it per source while records wait; a query that reaches such a record lists `decisions` as degraded) | Raise `context.labeling.maxTokens`, turn labeling on, then wait for the next context-sync slot |
 | `SND-CONTEXT-043` | No entry in the review file matches the latest draft | `review --export` again |
 | `SND-CONTEXT-044` | A draft is needed and none exists (`--draft`, or `map review`) | `context map propose <file>` or the `context-rebuild` service, then retry; or drop `--draft` |
 | `SND-CONTEXT-045` | The repo is not in the profile, or is outside the session's repo | Name a listed repo |
 | `SND-CONTEXT-046` | `promote` refused: no draft, undecided items, or the draft changed after you confirmed it | `context map propose <file>` or the `context-rebuild` service, then `map review`; review the new draft with `map review`, then run `promote` again if the draft moved |
 | `SND-CONTEXT-047` | The node or link was decided already or is gone, or `--undo` names an unknown or undone override | `map review` lists the queue; `--history` the ids |
 | `SND-CONTEXT-048` | Git can't read the repo at the commit | Fix the repo path or fetch the commit |
+| `SND-CONTEXT-056` | A sync of that source is already running (409; one at a time per source) | Wait; `context sources status` shows it |
+| `SND-CONTEXT-057` | A model answer the engine refused (quote not verbatim, target outside the record's links, malformed), or a record skipped because its extraction prompt alone is over `maxTokensPerSync` (no decisions, not queued; the same when its conflict checks can't fit even one pair under the cap as the run's first call: the pairs are refused, and not retried on a version change unless the decision's quote changes); counted in `refused`, never fails the sync. A conflict verdict that can't be read keeps the pair pending (the record stays queued) and is asked at most 3 times, then the pair is marked refused | None for answers (persistent counts mean prompt drift); for a skipped record raise `maxTokensPerSync`: a record skipped for its prompt is retried when its version changes, but refused conflict pairs are not (unless the quote changes), so raise the cap before the give-up happens |
+| `SND-CONTEXT-058` | `sources sync --source X` names a source that isn't configured or has nothing to sync (404) | `context sources status` for the names |
+| `SND-CONTEXT-059` | A sync stopped at its time cap: partial, it resumes from its cursor (`sources status` shows `059`, the source stays `ok` or `degraded`, exit 0). Every run completes at least one record, so a slow source still finishes across runs. A model or store failure in the same run shows instead of `059` | None; the next run continues. Raise the cadence if persistent |
 
 ## S-5A: the onyx source, secret pointers, doctor `context:onyx`
 

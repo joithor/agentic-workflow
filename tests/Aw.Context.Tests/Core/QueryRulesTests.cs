@@ -99,11 +99,17 @@ public sealed class QueryRulesTests
         Assert.Equal(QueryRules.ParseDepth("-1").Error, QueryRules.CheckDepth(-1));
     }
 
-    [Theory, Trait("Lane", "unit")]
-    [InlineData("ENG-1", null)]
-    [InlineData(null, "src/a.ts#render")]
-    public void An_item_anchor_and_a_symbol_inside_a_file_are_unknown_until_their_phases(string? item, string? symbol) =>
-        Assert.Equal(ContextErrors.UnknownAnchor.Code, QueryRules.Check(new ContextQuery(Text: null, Node: null, item, symbol), new()).Error.Code);
+    [Fact, Trait("Lane", "unit")]
+    public void A_symbol_inside_a_file_is_unknown_until_the_code_index_phase() =>
+        Assert.Equal(ContextErrors.UnknownAnchor.Code, QueryRules.Check(new ContextQuery(Text: null, Node: null, Item: null, Symbol: "src/a.ts#render"), new()).Error.Code);
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_item_anchor_is_a_key_with_no_terms_of_its_own_and_a_blank_or_control_one_is_006()
+    {
+        Assert.Empty(QueryRules.Check(new ContextQuery(Text: null, Item: "ENG-1"), new()).Value.Terms);
+        Assert.Equal(ContextErrors.QueryInvalid.Code, QueryRules.Check(new ContextQuery(Text: null, Item: "  "), new()).Error.Code);
+        Assert.Equal(ContextErrors.QueryInvalid.Code, QueryRules.Check(new ContextQuery(Text: null, Item: "ENG-1\nx"), new()).Error.Code);
+    }
 
     [Fact, Trait("Lane", "unit")]
     public void A_symbol_in_its_file_path_form_passes_with_no_terms_of_its_own_and_an_empty_one_is_006()

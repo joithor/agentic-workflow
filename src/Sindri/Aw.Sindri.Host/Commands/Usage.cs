@@ -50,7 +50,7 @@ internal static class Usage
         "       sindri context map build         pending:API-P6 (drafts come from 'propose' and the context-rebuild service)",
         "       sindri context lenses <anchor> [--depth <0-4>] [--draft] [--json]   the intent, product and code lenses of one node, with conflicts and coverage",
         "       sindri context filemap --repo <repo> [--path <dir>] [--unmapped] [--draft] [--json]   a directory's children with their map status; filemap accept|reject <link-id> decides a suggested file link",
-        "       sindri context sources sync      pending:S-5B (repo docs refresh through the context-docs-refresh service)",
+        "       sindri context sources sync      pending:API-P6 (the context-docs-refresh and context-sync services sync meanwhile)",
         "       sindri recipe validate <file> [--json]   check a recipe in-process: rule lines, then its hash (exit 0 pass, 1 fail, 2 error)",
         "       sindri recipe eval <file> [--json]       run a recipe's eval cases in-process (exit 0 pass, 1 fail, 2 error)",
         "       sindri recipe eval --scaffold <file> [--out <dir>]   print a happy-path eval case for the recipe; a route recipe has a case per path, and --out writes each to <dir>/<case>.jsonl (it refuses to overwrite)",

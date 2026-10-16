@@ -34,6 +34,7 @@ using Aw.Context.Features.ReviewQueue;
 using Aw.Context.Features.ShowMapStatus;
 using Aw.Context.Features.ShowNode;
 using Aw.Context.Features.SourcesStatus;
+using Aw.Context.Features.SyncSources;
 using Aw.Kernel.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -58,6 +59,9 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<QueryContextRequest, ContextResult>, QueryContextService>()
         .AddScoped<IService<SourcesStatusRequest, SourcesView>, SourcesStatusService>()
         .AddScoped<IService<RefreshDocsRequest, RefreshReport>, RefreshDocsService>()
+        .AddScoped<IService<SyncSourcesRequest, SyncReport>, SyncSourcesService>()
+        .AddScoped<ContextSources>()
+        .AddSingleton<SyncLocks>()
         .AddScoped<IService<PreviewMapRequest, MapFilePreview>, PreviewMapService>()
         .AddScoped<IService<ImportMapRequest, MapImported>, ImportMapService>()
         .AddScoped<IService<ExportMapRequest, MapExported>, ExportMapService>()

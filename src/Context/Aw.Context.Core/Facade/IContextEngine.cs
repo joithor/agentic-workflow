@@ -48,4 +48,14 @@ public interface IContextEngine : IContextMap, IContextGraph, IContextLenses
     /// <param name="cancellationToken">Cancels the refresh.</param>
     /// <returns>What changed per repo.</returns>
     public ValueTask<Result<RefreshReport>> Refresh(ContextScope scope, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Syncs the intent sources (and refreshes the repo docs): walks the current map's nodes, searches each intent source for them, links what it finds by rule and, with labeling on, extracts decisions (spec §8.8, S-5B).
+    /// A source that is down is a row with its code, not an error.
+    /// </summary>
+    /// <param name="source">One source's id, or null for every source.</param>
+    /// <param name="scope">The caller's scope.</param>
+    /// <param name="cancellationToken">Cancels the run.</param>
+    /// <returns>One row per source, or SND-CONTEXT-030 (no map), 056 (already running), 058 (unknown source).</returns>
+    public ValueTask<Result<SyncReport>> Sync(string? source, ContextScope scope, CancellationToken cancellationToken);
 }
