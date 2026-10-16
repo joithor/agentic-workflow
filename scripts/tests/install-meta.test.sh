@@ -42,4 +42,13 @@ check "another provider: skipped, exit 0" "$RC:$(printf '%s' "$OUT" | grep -c 'C
 rm "$AW_STATE_DIR/bin/aw-meta"
 bash "$DIR/install-meta.sh" --provider claude > /dev/null 2>&1; RC=$?
 check "AW_SKIP_BUILD with no binary: exit 1" "$RC" "1"
+
+# aw-meta reads Linux /proc (memory, uptime, process table): the installer refuses on macOS, before touching anything
+mkdir -p "$WORK/fakebin"
+printf '#!/usr/bin/env bash\necho Darwin\n' > "$WORK/fakebin/uname"; chmod +x "$WORK/fakebin/uname"
+OUT="$(PATH="$WORK/fakebin:$PATH" CLAUDE_LOCAL_BIN="$WORK/darwin-bin" bash "$DIR/install-meta.sh" --provider claude 2>&1)"; RC=$?
+check "Darwin: refused with the Linux-only message, exit 1" "$RC:$(printf '%s' "$OUT" | grep -c 'Linux-only')" "1:1"
+check "Darwin: nothing linked" "$(ls "$WORK/darwin-bin" 2>/dev/null | wc -l | tr -d ' ')" "0"
+OUT="$(PATH="$WORK/fakebin:$PATH" bash "$DIR/install-meta.sh" --provider codex 2>&1)"; RC=$?
+check "Darwin, another provider: still skipped, exit 0" "$RC" "0"
 exit $fail
