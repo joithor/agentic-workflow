@@ -86,20 +86,38 @@ internal sealed class JobFollower(ControlPlaneClient client, Output output, Time
 
             if (winner == signals.FirstSignal)
             {
-                await PostCancel(run).ConfigureAwait(false);
+                if (!await PostCancel(run, signals.Second).ConfigureAwait(false))
+                {
+                    return await Left(run).ConfigureAwait(false);   // the second Ctrl-C came while the request was in flight
+                }
+
                 grace = Task.Delay(CancelGrace, clock, signals.Second);
                 continue;
             }
 
             next = null;
             hold(null);
-            var more = await ((Task<bool>)winner).ConfigureAwait(false);
-            var done = more ? await Handle(frames.Current, run, signals).ConfigureAwait(false) : SindriErrors.NotRunning.With("not running: the control plane stopped while the job ran");
-            if (done is { } result)
+            if (await Frame((Task<bool>)winner, frames, run, signals).ConfigureAwait(false) is { } result)
             {
                 return result;
             }
         }
+    }
+
+    /// <summary>The next frame, or the stream's end: null to keep reading, otherwise how following ended.</summary>
+    private async Task<Result<JobEnd>?> Frame(Task<bool> read, IAsyncEnumerator<Result<StreamFrame>> frames, JobFollowed run, JobInterrupts signals)
+    {
+        bool more;
+        try
+        {
+            more = await read.ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (signals.Second.IsCancellationRequested)
+        {
+            return await Left(run).ConfigureAwait(false);   // the stream was cancelled by the second Ctrl-C before its signal was seen
+        }
+
+        return more ? await Handle(frames.Current, run, signals).ConfigureAwait(false) : SindriErrors.NotRunning.With("not running: the control plane stopped while the job ran");
     }
 
     /// <summary>Takes the frame the stream gave: null to keep reading, otherwise how following ended.</summary>
@@ -132,9 +150,9 @@ internal sealed class JobFollower(ControlPlaneClient client, Output output, Time
             while (true)
             {
                 await Task.Delay(Poll, clock, signals.Second).ConfigureAwait(false);
-                if (signals.First.IsCancellationRequested && run.CancelledAt is null)
+                if (signals.First.IsCancellationRequested && run.CancelledAt is null && !await PostCancel(run, signals.Second).ConfigureAwait(false))
                 {
-                    await PostCancel(run).ConfigureAwait(false);
+                    return await Left(run).ConfigureAwait(false);
                 }
 
                 if (run.CancelledAt is { } at && clock.GetUtcNow() - at >= CancelGrace)
@@ -142,15 +160,9 @@ internal sealed class JobFollower(ControlPlaneClient client, Output output, Time
                     return await Left(run).ConfigureAwait(false);
                 }
 
-                var read = await client.Get<JobView>(run.Started.Links.Job, signals.Second).ConfigureAwait(false);
-                if (read.IsError)
+                if (await ReadOnce(run, signals).ConfigureAwait(false) is { } done)
                 {
-                    return read.Error;
-                }
-
-                if (await Print(run, read.Value).ConfigureAwait(false) is { } end)
-                {
-                    return end;
+                    return done;
                 }
             }
         }
@@ -158,6 +170,23 @@ internal sealed class JobFollower(ControlPlaneClient client, Output output, Time
         {
             return await Left(run).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>One read of the job at the start's sequence (so a view that has not folded 'job.started' yet waits instead of answering 404): the end or the error that ends following, null to read again.</summary>
+    private async Task<Result<JobEnd>?> ReadOnce(JobFollowed run, JobInterrupts signals)
+    {
+        var read = await client.GetAfter<JobView>(run.Started.Links.Job, run.Started.Accepted.Sequence, signals.Second).ConfigureAwait(false);
+        if (read.IsError)
+        {
+            if (Transient(read.Error))
+            {
+                return null;
+            }
+
+            return read.Error;
+        }
+
+        return await Print(run, read.Value).ConfigureAwait(false) is { } end ? Kernel.Results.Success(end) : null;
     }
 
     /// <summary>Prints the lines of <paramref name="read"/> not printed yet; the end when the job has one.</summary>
@@ -185,13 +214,26 @@ internal sealed class JobFollower(ControlPlaneClient client, Output output, Time
         return signal.Ended ? new JobEnd(signal.Exit, after) : null;
     }
 
-    private async Task PostCancel(JobFollowed run)
+    /// <summary>A read the next poll can answer: the views hadn't reached the start yet, or the control plane was slow.</summary>
+    private static bool Transient(Error error) => error.Code == SindriErrors.ViewsBehind.Code || error.Code == SindriErrors.ApiTimeout.Code;
+
+    /// <summary>Asks the job to cancel; false when the second Ctrl-C came while the request was in flight (the request is dropped, the follower leaves).</summary>
+    private async Task<bool> PostCancel(JobFollowed run, CancellationToken second)
     {
         run.CancelledAt = clock.GetUtcNow();
-        var posted = await client.Post<CancelJobRequest, CommandAccepted>(run.Started.Links.Cancel, body: null, CancellationToken.None).ConfigureAwait(false);
-        if (posted.IsError)
+        try
         {
-            _ = await output.Error(posted.Error).ConfigureAwait(false);   // the end still arrives as the job's own event
+            var posted = await client.Post<CancelJobRequest, CommandAccepted>(run.Started.Links.Cancel, body: null, second).ConfigureAwait(false);
+            if (posted.IsError)
+            {
+                _ = await output.Error(posted.Error).ConfigureAwait(false);   // the end still arrives as the job's own event
+            }
+
+            return true;
+        }
+        catch (OperationCanceledException) when (second.IsCancellationRequested)
+        {
+            return false;
         }
     }
 
