@@ -109,7 +109,7 @@ A hook **fails open** when its own error turns into an allow or a let-through: j
   - `outbox-flush`: `outbox-unreadable`
   - `meta-stop-gate`: `meta-exit-<N>` (aw-meta erroring; exit 1 is its block, not a failure)
   - `meta-outbox`: `meta-exit-<N>`
-  - `meta-lane-gate`: `lane-inbox-exit-<N>`, `lane-reply-exit-<N>`, `lane-stop-check-exit-<N>` (exit 1 is its block, not a failure)
+  - `meta-lane-gate`: `lane-inbox-exit-<N>`, `lane-reply-exit-<N>`, `lane-stop-check-exit-<N>` (exit 1 is its block, not a failure), each followed by `-AW-META-NNN` when aw-meta printed a coded error (the code only, never its text), and `lane-name-invalid`
   - `session-id-report`: `field-missing`, `id-invalid`, `lane-name-invalid`, `launch-id-invalid`, `write-failed`
   - the three Bash safety hooks: the input causes only
   - the Codex/Cursor adapters (`<provider>-adapter`): the input causes, `args-invalid`, `payload-unparsable`, `hook-script-missing`, `hook-exit-<N>`, and `result-unparsable` (Cursor only)
@@ -151,7 +151,7 @@ The steps below apply to **PreToolUse hooks**. SessionStart hooks have different
 
 The non-Claude lane hooks are installed user-wide by `scripts/install-meta.sh --provider codex|cursor` (through the adapters; Codex then needs the `/hooks` trust step):
 
-- `meta-lane-gate.sh` (`# aw:meta-lane-gate`) acts only when `AW_META_TEAM` and `AW_META_LANE` are set (`scripts/meta-lane.sh` sets them in a lane's environment); anything else exits 0 at once, as does `AW_JUDGE_CHILD` or a missing aw-meta. UserPromptSubmit/sessionStart/postToolUse run `aw-meta lane-inbox` (Codex: plain stdout; Cursor: `additionalContext`). Stop pipes the text after the last `REPLY TO META:` line of `last_assistant_message` to `lane-reply --stdin`, then runs `lane-stop-check`: exit 1 → the hook exits 2 with the reason on stderr; every other exit passes (`lane-inbox-exit-<N>`, `lane-reply-exit-<N>`, `lane-stop-check-exit-<N>` are logged).
+- `meta-lane-gate.sh` (`# aw:meta-lane-gate`) acts only when `AW_META_TEAM` and `AW_META_LANE` are set (`scripts/meta-lane.sh` sets them in a lane's environment); anything else exits 0 at once, as does `AW_JUDGE_CHILD`, a missing aw-meta, or an agent instance that is not the lane's own (a `codex exec` the lane's agent started: both lane hooks check their process ancestry against `AW_META_LANE_PID` and `AW_META_LANE_PROC`, which `scripts/meta-lane.sh` exports). UserPromptSubmit/sessionStart/postToolUse run `aw-meta lane-inbox` (Codex: plain stdout; Cursor: `additionalContext`). Stop pipes the text after the last `REPLY TO META:` line of `last_assistant_message` to `lane-reply --stdin`, (once per reply: a checksum in `lane-sessions/<lane>.replied`, cleared when new mail is delivered), then runs `lane-stop-check`: exit 1 → the hook exits 2 with the reason on stderr; every other exit passes (`lane-inbox-exit-<N>`, `lane-reply-exit-<N>`, `lane-stop-check-exit-<N>` are logged).
 - `session-id-report.sh` (`# aw:session-id-report`) writes the `session_id` atomically (0600) to `lane-sessions/<lane>` for a lane, and to `$AW_SINDRI_HOME/launches/<launchId>.session-id` when `AW_SINDRI_LAUNCH` is set; otherwise exit 0 at once. Causes: `field-missing`, `id-invalid`, `lane-name-invalid`, `launch-id-invalid`, `write-failed`, plus the input causes.
 
 Contract: `docs/csharp/meta.md`. Tests: `config/hooks/tests/meta-hooks.test.sh` (a stub aw-meta, directly and through both adapters) and `failopen.test.sh`.

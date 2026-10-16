@@ -35,6 +35,39 @@ write_id() {
   return 1
 }
 
+# own_agent: false when this hook runs for another agent instance started inside the lane (a `codex exec` or `cursor-agent -p` that
+# the lane's agent ran; it inherits the lane variables). scripts/meta-lane.sh exports AW_META_LANE_PID (its own pid, the parent of the
+# lane's agent) and AW_META_LANE_PROC (the agent's process name). Walking up from this hook, the lane's agent is the ancestor whose
+# parent is the lane script; another ancestor named like the agent means a nested instance. A hook with no lane script among its
+# ancestors (a human's codex in the pane after the lane's agent exited) is not the lane's either. Without the variables (a lane
+# started by an older meta-lane.sh) every session in the lane counts as the lane's; if ps can't tell, the hook acts.
+named_like_agent() { # <pid>: its command name or its argv[0] is the agent's process name
+  local c a
+  c="$(ps -o comm= -p "$1" 2>/dev/null)"; a="$(ps -o args= -p "$1" 2>/dev/null)"; a="${a%% *}"; a="${a##*/}"
+  [ "$c" = "$AW_META_LANE_PROC" ] || [ "$a" = "$AW_META_LANE_PROC" ]
+}
+own_agent() {
+  [ -n "${AW_META_LANE_PID:-}" ] && [ -n "${AW_META_LANE_PROC:-}" ] || return 0
+  local cur=$$ par matches=0 root_named=0 i=0
+  while [ "$i" -lt 50 ]; do
+    i=$((i + 1))
+    par="$(ps -o ppid= -p "$cur" 2>/dev/null | tr -d '[:space:]')"
+    case "$par" in ''|*[!0-9]*) return 0 ;; esac
+    if [ "$par" = "$AW_META_LANE_PID" ]; then
+      [ "$cur" != "$$" ] || return 0
+      named_like_agent "$cur" && root_named=1
+      [ $((matches - root_named)) -le 0 ]
+      return
+    fi
+    [ "$par" -gt 1 ] || return 1
+    cur="$par"
+    if named_like_agent "$cur"; then matches=$((matches + 1)); fi
+  done
+  return 1
+}
+
+# A nested agent instance inside the lane (codex exec, cursor-agent -p) must not take the lane's session id.
+if [ "$lane_mode" = 1 ] && ! own_agent; then lane_mode=0; fi
 STATE="${AW_STATE_DIR:-$HOME/.agentic-workflow}"
 if [ "$lane_mode" = 1 ]; then
   safe_name "$AW_META_LANE" || { failopen lane-name-invalid; exit 0; }
