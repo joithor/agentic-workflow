@@ -395,6 +395,7 @@ Aw.Context.Core.Facade.IContextEngine.EvalProbes(string? file, System.Func<Aw.Co
 Aw.Context.Core.Facade.IContextEngine.Query(Aw.Context.Core.Engine.ContextQuery! query, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.ContextResult!>!>
 Aw.Context.Core.Facade.IContextEngine.Refresh(Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.RefreshReport!>!>
 Aw.Context.Core.Facade.IContextEngine.Sources(Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.SourcesView!>!>
+Aw.Context.Core.Facade.IContextEngine.Sync(string? source, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.SyncReport!>!>
 Aw.Context.Core.Facade.IContextGraph
 Aw.Context.Core.Facade.IContextGraph.Neighbors(string! key, int? depth, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Graph.NeighborsView!>!>
 Aw.Context.Core.Facade.IContextGraph.Path(string! from, string! to, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Graph.PathView!>!>
@@ -2132,6 +2133,35 @@ Aw.Context.Core.Results.SourceStatusRow.Source.init -> void
 Aw.Context.Core.Results.SourceStatusRow.SourceStatusRow(Aw.Context.Core.Sources.SourceId Source, Aw.Context.Core.Sources.SourceKind Kind, Aw.Context.Core.Engine.ContextRepoName? Repo, Aw.Context.Core.Sources.SourceState State, string! Detail, string? Code, System.DateTimeOffset? LastSync, int Records) -> void
 Aw.Context.Core.Results.SourceStatusRow.State.get -> Aw.Context.Core.Sources.SourceState
 Aw.Context.Core.Results.SourceStatusRow.State.init -> void
+Aw.Context.Core.Results.SourceSync
+Aw.Context.Core.Results.SourceSync.<Clone>$() -> Aw.Context.Core.Results.SourceSync!
+Aw.Context.Core.Results.SourceSync.Code.get -> string?
+Aw.Context.Core.Results.SourceSync.Code.init -> void
+Aw.Context.Core.Results.SourceSync.Decisions.get -> int
+Aw.Context.Core.Results.SourceSync.Decisions.init -> void
+Aw.Context.Core.Results.SourceSync.Deconstruct(out Aw.Context.Core.Sources.SourceId Source, out int Records, out int Fetched, out int Unchanged, out int Linked, out int Unlinked, out int Orphaned, out int Decisions, out int Queued, out int Refused, out int Tokens, out string? Code) -> void
+Aw.Context.Core.Results.SourceSync.Equals(Aw.Context.Core.Results.SourceSync? other) -> bool
+Aw.Context.Core.Results.SourceSync.Fetched.get -> int
+Aw.Context.Core.Results.SourceSync.Fetched.init -> void
+Aw.Context.Core.Results.SourceSync.Linked.get -> int
+Aw.Context.Core.Results.SourceSync.Linked.init -> void
+Aw.Context.Core.Results.SourceSync.Orphaned.get -> int
+Aw.Context.Core.Results.SourceSync.Orphaned.init -> void
+Aw.Context.Core.Results.SourceSync.Queued.get -> int
+Aw.Context.Core.Results.SourceSync.Queued.init -> void
+Aw.Context.Core.Results.SourceSync.Records.get -> int
+Aw.Context.Core.Results.SourceSync.Records.init -> void
+Aw.Context.Core.Results.SourceSync.Refused.get -> int
+Aw.Context.Core.Results.SourceSync.Refused.init -> void
+Aw.Context.Core.Results.SourceSync.Source.get -> Aw.Context.Core.Sources.SourceId
+Aw.Context.Core.Results.SourceSync.Source.init -> void
+Aw.Context.Core.Results.SourceSync.SourceSync(Aw.Context.Core.Sources.SourceId Source, int Records, int Fetched, int Unchanged, int Linked, int Unlinked, int Orphaned, int Decisions, int Queued, int Refused, int Tokens, string? Code) -> void
+Aw.Context.Core.Results.SourceSync.Tokens.get -> int
+Aw.Context.Core.Results.SourceSync.Tokens.init -> void
+Aw.Context.Core.Results.SourceSync.Unchanged.get -> int
+Aw.Context.Core.Results.SourceSync.Unchanged.init -> void
+Aw.Context.Core.Results.SourceSync.Unlinked.get -> int
+Aw.Context.Core.Results.SourceSync.Unlinked.init -> void
 Aw.Context.Core.Results.SourcesView
 Aw.Context.Core.Results.SourcesView.<Clone>$() -> Aw.Context.Core.Results.SourcesView!
 Aw.Context.Core.Results.SourcesView.AsOf.get -> System.DateTimeOffset
@@ -2143,6 +2173,13 @@ Aw.Context.Core.Results.SourcesView.SessionsEnabled.init -> void
 Aw.Context.Core.Results.SourcesView.Sources.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SourceStatusRow!>!
 Aw.Context.Core.Results.SourcesView.Sources.init -> void
 Aw.Context.Core.Results.SourcesView.SourcesView(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SourceStatusRow!>! Sources, bool SessionsEnabled, System.DateTimeOffset AsOf) -> void
+Aw.Context.Core.Results.SyncReport
+Aw.Context.Core.Results.SyncReport.<Clone>$() -> Aw.Context.Core.Results.SyncReport!
+Aw.Context.Core.Results.SyncReport.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SourceSync!>! Sources) -> void
+Aw.Context.Core.Results.SyncReport.Equals(Aw.Context.Core.Results.SyncReport? other) -> bool
+Aw.Context.Core.Results.SyncReport.Sources.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SourceSync!>!
+Aw.Context.Core.Results.SyncReport.Sources.init -> void
+Aw.Context.Core.Results.SyncReport.SyncReport(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SourceSync!>! Sources) -> void
 Aw.Context.Core.Results.Trust
 Aw.Context.Core.Results.Trust.Trusted = 0 -> Aw.Context.Core.Results.Trust
 Aw.Context.Core.Results.Trust.Untrusted = 1 -> Aw.Context.Core.Results.Trust
@@ -3044,9 +3081,15 @@ override Aw.Context.Core.Results.ResultSection.ToString() -> string!
 override Aw.Context.Core.Results.SourceStatusRow.Equals(object? obj) -> bool
 override Aw.Context.Core.Results.SourceStatusRow.GetHashCode() -> int
 override Aw.Context.Core.Results.SourceStatusRow.ToString() -> string!
+override Aw.Context.Core.Results.SourceSync.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.SourceSync.GetHashCode() -> int
+override Aw.Context.Core.Results.SourceSync.ToString() -> string!
 override Aw.Context.Core.Results.SourcesView.Equals(object? obj) -> bool
 override Aw.Context.Core.Results.SourcesView.GetHashCode() -> int
 override Aw.Context.Core.Results.SourcesView.ToString() -> string!
+override Aw.Context.Core.Results.SyncReport.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.SyncReport.GetHashCode() -> int
+override Aw.Context.Core.Results.SyncReport.ToString() -> string!
 override Aw.Context.Core.Review.QueueCounts.Equals(object? obj) -> bool
 override Aw.Context.Core.Review.QueueCounts.GetHashCode() -> int
 override Aw.Context.Core.Review.QueueCounts.ToString() -> string!
@@ -3536,8 +3579,12 @@ static Aw.Context.Core.Results.ResultSection.operator !=(Aw.Context.Core.Results
 static Aw.Context.Core.Results.ResultSection.operator ==(Aw.Context.Core.Results.ResultSection? left, Aw.Context.Core.Results.ResultSection? right) -> bool
 static Aw.Context.Core.Results.SourceStatusRow.operator !=(Aw.Context.Core.Results.SourceStatusRow? left, Aw.Context.Core.Results.SourceStatusRow? right) -> bool
 static Aw.Context.Core.Results.SourceStatusRow.operator ==(Aw.Context.Core.Results.SourceStatusRow? left, Aw.Context.Core.Results.SourceStatusRow? right) -> bool
+static Aw.Context.Core.Results.SourceSync.operator !=(Aw.Context.Core.Results.SourceSync? left, Aw.Context.Core.Results.SourceSync? right) -> bool
+static Aw.Context.Core.Results.SourceSync.operator ==(Aw.Context.Core.Results.SourceSync? left, Aw.Context.Core.Results.SourceSync? right) -> bool
 static Aw.Context.Core.Results.SourcesView.operator !=(Aw.Context.Core.Results.SourcesView? left, Aw.Context.Core.Results.SourcesView? right) -> bool
 static Aw.Context.Core.Results.SourcesView.operator ==(Aw.Context.Core.Results.SourcesView? left, Aw.Context.Core.Results.SourcesView? right) -> bool
+static Aw.Context.Core.Results.SyncReport.operator !=(Aw.Context.Core.Results.SyncReport? left, Aw.Context.Core.Results.SyncReport? right) -> bool
+static Aw.Context.Core.Results.SyncReport.operator ==(Aw.Context.Core.Results.SyncReport? left, Aw.Context.Core.Results.SyncReport? right) -> bool
 static Aw.Context.Core.Review.PromoteReadiness.Check(Aw.Context.Core.Review.ReviewQueueView? queue) -> Aw.Kernel.Result<Aw.Context.Core.Review.ReviewQueueView!>!
 static Aw.Context.Core.Review.QueueCounts.Of(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Review.ReviewEntry!>! entries) -> Aw.Context.Core.Review.QueueCounts!
 static Aw.Context.Core.Review.QueueCounts.operator !=(Aw.Context.Core.Review.QueueCounts? left, Aw.Context.Core.Review.QueueCounts? right) -> bool
@@ -3660,6 +3707,7 @@ static readonly Aw.Context.Core.ContextErrors.McpRegisterRepoUnknown -> Aw.Kerne
 static readonly Aw.Context.Core.ContextErrors.McpRepoMissing -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.McpToolUnknown -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.McpUserWide -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.ModelAnswerRefused -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.NoDraftMap -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.NoMap -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.NoProbeFile -> Aw.Kernel.ErrorDefinition!
@@ -3681,6 +3729,9 @@ static readonly Aw.Context.Core.ContextErrors.SettingsInvalid -> Aw.Kernel.Error
 static readonly Aw.Context.Core.ContextErrors.SourceNotConfigured -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.SourceUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.StoreUnavailable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.SyncCapped -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.SyncRunning -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.SyncSourceUnknown -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.UnknownAnchor -> Aw.Kernel.ErrorDefinition!
 Aw.Context.Core.Map.MapView
 Aw.Context.Core.Map.MapView.Applied.get -> Aw.Context.Core.Graph.GraphSnapshot!

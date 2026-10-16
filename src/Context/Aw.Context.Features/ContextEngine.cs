@@ -11,8 +11,6 @@ using Aw.Context.Core.Review;
 using Aw.Context.Core.Trust;
 using Aw.Context.Features.EvalProbes;
 using Aw.Context.Features.QueryContext;
-using Aw.Context.Features.RefreshDocs;
-using Aw.Context.Features.SourcesStatus;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 
@@ -24,8 +22,7 @@ namespace Aw.Context.Features;
 /// </summary>
 internal sealed class ContextEngine(
     IService<QueryContextRequest, ContextResult> query,
-    IService<SourcesStatusRequest, SourcesView> sources,
-    IService<RefreshDocsRequest, RefreshReport> refresh,
+    ContextSources sources,
     IScrubberFactory scrubbers,
     IContextMap map,
     ContextGraph graph,
@@ -38,10 +35,12 @@ internal sealed class ContextEngine(
         query.Handle(new QueryContextRequest(query1, scope), cancellationToken);
 
     public ValueTask<Result<SourcesView>> Sources(ContextScope scope, CancellationToken cancellationToken) =>
-        sources.Handle(new SourcesStatusRequest(scope), cancellationToken);
+        sources.Status(scope, cancellationToken);
 
     public ValueTask<Result<RefreshReport>> Refresh(ContextScope scope, CancellationToken cancellationToken) =>
-        refresh.Handle(new RefreshDocsRequest(scope), cancellationToken);
+        sources.Refresh(scope, cancellationToken);
+
+    public ValueTask<Result<SyncReport>> Sync(string? source, ContextScope scope, CancellationToken cancellationToken) => sources.Sync(source, scope, cancellationToken);
 
     public ValueTask<Result<ProbeRun>> EvalProbes(string? file, Func<ProbeCase, CancellationToken, ValueTask<Result<ContextResult>>> ask, CancellationToken cancellationToken) =>
         probes.Handle(new EvalProbesRequest(file, ask), cancellationToken);
