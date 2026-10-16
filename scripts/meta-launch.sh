@@ -135,7 +135,14 @@ if [ "$viewer" = exec-template ]; then   # a refusal (an expansion starting with
 fi
 for l in "${L[@]}"; do
   a="$(agent_of "$l")"
-  [ "$a" = claude-code ] || echo "lane $l: $a, launch-only for now: no obligations"
+  [ "$a" = claude-code ] && continue
+  # A CLI with a hook system (the catalog's reportedId.hook) takes part through the lane hooks scripts/install-meta.sh installs;
+  # one without can only be launched.
+  if [ "$(jq -r --arg id "$a" '(.[$id].reportedId.hook // false) == true' <<< "$LAUNCHER_CAT")" = true ]; then
+    echo "lane $l: $a, takes part in the obligations through its hooks (scripts/install-meta.sh installs them)"
+  else
+    echo "lane $l: $a, launch-only: no obligations"
+  fi
 done
 if [ "$(uname -s)" = Darwin ]; then default_dir="$HOME/.warp/launch_configurations"
 else default_dir="${XDG_DATA_HOME:-$HOME/.local/share}/warp-terminal/launch_configurations"; fi
