@@ -1,6 +1,7 @@
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Meta.Core;
+using Aw.Meta.Core.Merge;
 using Aw.Meta.Core.Ports;
 using Aw.Meta.Core.Watch;
 
@@ -27,7 +28,13 @@ internal sealed class StatusService(IMetaConfig config, StatusReader status, IKe
             return ended.Error;
         }
 
-        var read = await status.Read(team.Value.MetaLane, clock.GetUtcNow(), EndedPrs.Parse(ended.Value), cancellationToken).ConfigureAwait(false);
+        var dropped = await values.Get(KvKeys.QueueDropped, cancellationToken).ConfigureAwait(false);
+        if (dropped.IsError)
+        {
+            return dropped.Error;
+        }
+
+        var read = await status.Read(team.Value.MetaLane, clock.GetUtcNow(), EndedPrs.Parse(ended.Value), QueueDrops.Parse(dropped.Value), cancellationToken).ConfigureAwait(false);
         var health = await values.Get(KvKeys.HealthLast, cancellationToken).ConfigureAwait(false);
         return read.IsError || health.IsError ? read.IsError ? read.Error : health.Error : read.Value with { LastHealth = health.Value };
     }

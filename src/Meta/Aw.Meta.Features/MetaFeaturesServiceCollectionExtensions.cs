@@ -16,6 +16,7 @@ using Aw.Meta.Features.Lanes;
 using Aw.Meta.Features.LaneSend;
 using Aw.Meta.Features.LaneStopCheck;
 using Aw.Meta.Features.LogAppend;
+using Aw.Meta.Features.QueueDrop;
 using Aw.Meta.Features.MergeRun;
 using Aw.Meta.Features.OutboxRecord;
 using Aw.Meta.Features.Owner;
@@ -110,6 +111,9 @@ public static class MetaFeaturesServiceCollectionExtensions
         .AddScoped<AppendLogService>()
         .AddScoped<IValidator<AppendLogRequest>, AppendLogValidator>()
         .Validated<AppendLogService, AppendLogRequest, AppendLogResponse>()
+        .AddScoped<QueueDropService>()
+        .AddScoped<IValidator<QueueDropRequest>, QueueDropValidator>()
+        .Validated<QueueDropService, QueueDropRequest, QueueDropResponse>()
         .AddScoped<StatusReader>()
         .AddScoped<StatusService>()
         .Plain<StatusService, StatusRequest, StatusResponse>();

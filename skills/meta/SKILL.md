@@ -76,6 +76,8 @@ it prints what you owe and the command that settles it. Settle it, don't argue w
 
 ## A lane says `ready #N`
 
+Only a message whose first line is `ready #N <sha>` queues a pull request. If something else queued one, `aw-meta queue-drop N --reason "…"` removes the entry and logs why.
+
 1. `aw-meta merge-check N`. Read every FAIL line. A merge-order FAIL means wait: tell the lane why.
 2. `aw-meta gate-run N`. Scopes come from the diff and the team config; name them to override (`gate-run N repo`).
    Defer the lane's message while it runs. A docs-only delta on an already-gated head needs only the `always` scopes;

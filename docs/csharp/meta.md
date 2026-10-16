@@ -63,6 +63,10 @@ session as the meta when its id is the registered one, or when the live session 
 (`AW_CLAUDE_SESSIONS_DIR`, `<pid>.json`) carries the registered name; the new id is then registered (as `role-set` would)
 and the hook carries on.
 
+## The ready message
+
+A lane queues a pull request for merge by sending a message whose **first line** is `ready #<n> <sha>`: the pull request number and a commit of 7 to 40 lowercase hex digits (the head the lane means; compared with the pull request's head at gate time, since `merge-check` already refuses a head that moved after the gate). Nothing else queues a pull request: a status line that merely mentions a later ready ("...then ready #250 <sha>", "ready #264 follows once the re-review is clean"), a ready without a sha, or any message containing `not ready` or `follows` is an ordinary request. This changes behaviour only for false positives and for ready messages that omit the sha; lanes now add it (`ready #269 079c2541` and details below). `queue-drop` removes an entry that slipped through anyway.
+
 ## Commands
 
 Every command takes `--json`. Exit 0 ok, 1 attention (read the output and act), 2 usage or tool error; an error is one
@@ -96,6 +100,7 @@ the team config (`AW-META-002` otherwise); the hook commands must let any sessio
 | `worktree-sweep [--dry-run] [--pr <n>]` | Removes the removable worktrees (see "Worktree cleanup"), all or just pull request n's (its head branch and its gate trees); prints each removed and each kept one with its reasons. `--dry-run` removes nothing. Exit 0, 1 when git refused a removal, 2 when nothing could be judged (git, gh or the process scan failed: nothing is removed) |
 | `log-append --kind merge\|decision\|lanes\|incident\|note --text <t>` | Appends a dated line to the running log |
 | `status` | Obligations, merge queue (ready pull requests; one leaves it when any merge is recorded for it, or when the watch saw it merged or closed on GitHub, kept under `watch.ended-prs`), owner queue, lanes |
+| `queue-drop <pr> --reason <text>` | Removes the pull request's merge-queue entry and appends a `NOTE` line (`queue-drop #N: <reason>`) to the running log. The inbox message stays; the drop is kept with its time under `queue.dropped`, so only a ready message sent after it queues the pull request again. Exit 0 dropped; 2 when the pull request has no queue entry (`AW-META-018`), the reason is blank or usage |
 
 The orphan rule: the command line has `temporal` and `server start-dev`, its `--db-filename` is under `/tmp/aw-sindri-`,
 its parent is `systemd --user` or init, and it is older than five minutes.

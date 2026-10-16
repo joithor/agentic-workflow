@@ -17,7 +17,7 @@ public sealed class ObligationEvaluatorTests
     [Fact, Trait("Lane", "unit")]
     public void An_unanswered_message_opens_a_reply_with_the_next_command()
     {
-        var facts = A.Facts() with { Messages = [A.Inbox("m1", name: "t1-api", body: "ready #190")] };
+        var facts = A.Facts() with { Messages = [A.Inbox("m1", name: "t1-api", body: "ready #190 079c2541")] };
 
         var open = Assert.Single(ObligationEvaluator.Evaluate(facts));
 

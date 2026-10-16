@@ -23,7 +23,7 @@ public sealed class StopCheckQueuedTests
     public async Task A_queued_message_blocks_the_stop_until_a_send_to_its_sender_closes_it()
     {
         await _world.Ready();
-        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.QueuedLine("m-2", "t1-api", "ready #7"));
+        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.QueuedLine("m-2", "t1-api", "ready #7 079c2541"));
 
         var blocked = await Check();
         _ = await _world.Messages.RecordOutbound(A.Sent("t1-api", "ack", 30), CancellationToken.None);
@@ -38,7 +38,7 @@ public sealed class StopCheckQueuedTests
     {
         await _world.Ready();
         _ = await _world.Messages.RecordOutbound(A.Sent("t1-api", "on it", 30), CancellationToken.None);   // after the message's 04:05, before any sync
-        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.QueuedLine("m-2", "t1-api", "ready #7"));
+        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.QueuedLine("m-2", "t1-api", "ready #7 079c2541"));
 
         var response = await Check();
 
@@ -51,7 +51,7 @@ public sealed class StopCheckQueuedTests
     {
         await _world.Ready();
         _ = await _world.Messages.RecordOutbound(A.Sent("t1-api", "earlier", 1), CancellationToken.None);
-        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.QueuedLine("m-2", "t1-api", "ready #7"));
+        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.QueuedLine("m-2", "t1-api", "ready #7 079c2541"));
 
         Assert.True((await Check()).Blocked);
     }

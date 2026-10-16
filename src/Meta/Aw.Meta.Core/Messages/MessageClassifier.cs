@@ -21,7 +21,8 @@ public static partial class MessageClassifier
         }
 
         if (Matches(ReadyPattern, text) is { } ready
-            && int.TryParse(ready.Groups["pr"].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var pr))
+            && int.TryParse(ready.Groups["pr"].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var pr)
+            && Matches(NotReadyPattern, text) is null)
         {
             return new Classification(MessageKind.Ready, Pr: pr);
         }
@@ -44,8 +45,12 @@ public static partial class MessageClassifier
         }
     }
 
-    [GeneratedRegex(@"\bready #(?<pr>[0-9]+)", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
+    // Only the first line counts, and it must be exactly "ready #N <sha>": a status line that merely mentions a later ready never queues the pull request.
+    [GeneratedRegex(@"\Aready #(?<pr>[0-9]+) (?<sha>[0-9a-f]{7,40})\b", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
     private static partial Regex ReadyPattern { get; }
+
+    [GeneratedRegex(@"not ready|follows", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, matchTimeoutMilliseconds: 100)]
+    private static partial Regex NotReadyPattern { get; }
 
     [GeneratedRegex(@"^\s*(?!(?:the|a|an|this|that|my|your|our|each|every|which|one|same|new|old|whole)\s)(?<lane>[a-z][a-z-]*)\s+lane\b", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
     private static partial Regex AnnouncePattern { get; }

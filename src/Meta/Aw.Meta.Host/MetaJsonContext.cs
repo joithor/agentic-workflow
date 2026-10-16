@@ -15,6 +15,7 @@ using Aw.Meta.Features.Lanes;
 using Aw.Meta.Features.LaneSend;
 using Aw.Meta.Features.LaneStopCheck;
 using Aw.Meta.Features.LogAppend;
+using Aw.Meta.Features.QueueDrop;
 using Aw.Meta.Features.MergeRun;
 using Aw.Meta.Features.OutboxRecord;
 using Aw.Meta.Features.Owner;
@@ -45,6 +46,7 @@ namespace Aw.Meta.Host;
 [JsonSerializable(typeof(AnswerOwnerResponse))]
 [JsonSerializable(typeof(AskOwnerResponse))]
 [JsonSerializable(typeof(AppendLogResponse))]
+[JsonSerializable(typeof(QueueDropResponse))]
 [JsonSerializable(typeof(StatusResponse))]
 [JsonSerializable(typeof(StopCheckResponse))]
 [JsonSerializable(typeof(GateRunResponse))]
