@@ -13,7 +13,7 @@
           AutomationProperties.Name="{Binding AccessibleName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
     <StackPanel Spacing="2">
       <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto" VerticalAlignment="Center">
-        <ctl:StateChipView x:Name="NeedsYouChip" Chip="{Binding StateChip}" VerticalAlignment="Center" Margin="0,0,8,0" />
+        <ctl:StateChipView x:Name="NeedsYouChip" Chip="{Binding Chip}" VerticalAlignment="Center" Margin="0,0,8,0" />
         <TextBlock Grid.Column="1" Classes="mono subtle" Text="{Binding ShownId}" VerticalAlignment="Center" Margin="0,0,8,0" AutomationProperties.AccessibilityView="Raw" />
         <Button x:Name="NeedsYouTitle" Grid.Column="2" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding OpenName}">
           <TextBlock Classes="body-strong" Text="{Binding Title}" TextTrimming="CharacterEllipsis" AutomationProperties.AccessibilityView="Raw" />

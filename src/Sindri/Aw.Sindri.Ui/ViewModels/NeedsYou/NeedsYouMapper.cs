@@ -1,4 +1,5 @@
 using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.ViewModels.Controls;
 
 namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
@@ -39,8 +40,9 @@ internal static class NeedsYouMapper
     private static NeedsYouEntry Entry(NeedsYouRowView row, Dictionary<string, ActionReadiness> readiness, DecisionList? decisions) =>
         new(row.Id, UrgencyOf(row.Urgency))
         {
-            Chip = row.Chip is { } served ? new NeedsYouChip(served.Word, ToneOf(served.Tone)) : Derived(row.Kind),
-            ShownId = string.Equals(row.Kind, "decision", StringComparison.Ordinal) ? row.Subject?.Id ?? string.Empty : row.Item ?? string.Empty,
+            Kind = row.Kind,
+            Chip = row.Chip ?? Derived(row.Kind),
+            ShownId = string.Equals(row.Kind, NeedsYouKinds.Decision, StringComparison.Ordinal) ? row.Subject?.Id ?? string.Empty : row.Item ?? string.Empty,
             Title = row.Title,
             Repo = row.Repo ?? string.Empty,
             Label = row.Label,
@@ -60,7 +62,7 @@ internal static class NeedsYouMapper
 
     // The pending decision a decision row stands for, when the list has it.
     private static DecisionView? PendingDecision(NeedsYouRowView row, DecisionList? decisions) =>
-        row.Subject is { } subject && string.Equals(subject.Kind, "decision", StringComparison.Ordinal)
+        row.Subject is { } subject && string.Equals(subject.Kind, NeedsYouKinds.Decision, StringComparison.Ordinal)
             ? decisions?.Decisions.FirstOrDefault(d => string.Equals(d.Id, subject.Id, StringComparison.Ordinal))
             : null;
 
@@ -89,22 +91,13 @@ internal static class NeedsYouMapper
         _ => NeedsYouUrgency.Pulse,
     };
 
-    private static NeedsYouChipTone ToneOf(Api.Workflow.ChipTone tone) => tone switch
+    // Until the API serves a chip on the row (U3'-API-9): the one word for the kind, from the chip table. Documented fallback, not a rule of the app.
+    private static StateChip Derived(string kind) => kind switch
     {
-        Api.Workflow.ChipTone.Fail => NeedsYouChipTone.Fail,
-        Api.Workflow.ChipTone.Ok => NeedsYouChipTone.Ok,
-        Api.Workflow.ChipTone.Neutral => NeedsYouChipTone.Neutral,
-        Api.Workflow.ChipTone.Attn => NeedsYouChipTone.Attn,
-        _ => NeedsYouChipTone.Attn,
-    };
-
-    // Until the API serves a chip on the row (U3'-API-9): the one word for the kind, from the chip table.
-    private static NeedsYouChip Derived(string kind) => kind switch
-    {
-        "decision" => new NeedsYouChip("DECISION", NeedsYouChipTone.Attn),
-        "failure" => new NeedsYouChip("FAILED", NeedsYouChipTone.Fail),
-        "profile" => new NeedsYouChip("PROFILE", NeedsYouChipTone.Attn),
-        "park" => new NeedsYouChip("PARKED", NeedsYouChipTone.Attn),
-        _ => new NeedsYouChip(kind.ToUpperInvariant(), NeedsYouChipTone.Attn),
+        NeedsYouKinds.Decision => new StateChip("DECISION", ChipTone.Attn),
+        NeedsYouKinds.Failure => new StateChip("FAILED", ChipTone.Fail),
+        NeedsYouKinds.Profile => new StateChip("PROFILE", ChipTone.Attn),
+        NeedsYouKinds.Park => new StateChip("PARKED", ChipTone.Attn),
+        _ => new StateChip(kind.ToUpperInvariant(), ChipTone.Attn),
     };
 }

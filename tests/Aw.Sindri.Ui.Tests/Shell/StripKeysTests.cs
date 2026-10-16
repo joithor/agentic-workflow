@@ -173,4 +173,21 @@ public sealed class StripKeysTests
         Assert.Equal(park.Id, shell.NeedsYou.SelectedId);
         Assert.Null(shell.Strip.SelectedAddress);
     }
+
+    // review run 1, K18: the park row is found by its served kind, never by the words its chip happens to show.
+    [Fact]
+    public async Task The_park_row_is_found_by_its_kind_and_not_by_its_chip_word()
+    {
+        var shell = await Connected();
+        var row = Where(IsDeskAnswer);
+        var park = NeedsYouRows.Park("park:" + row.Address) with { Subject = new NeedsYouSubject("workflow", row.Address), Chip = new StateChip("WAITING ON YOU", ChipTone.Attn) };
+        var lookalike = NeedsYouRows.Failure("failure:" + row.Address) with { Subject = new NeedsYouSubject("workflow", row.Address), Chip = new StateChip("PARKED", ChipTone.Attn) };
+        shell.ShowNeedsYou(Feed(lookalike, park));
+        shell.Strip.Update(Listing(row));
+        _ = shell.Strip.Select(row.Address);
+
+        Assert.True(shell.Press("A"));
+
+        Assert.Equal(new DeepLink(DeepLinkKind.NeedsYou, park.Id), shell.SheetLink);
+    }
 }

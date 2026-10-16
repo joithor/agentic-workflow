@@ -104,12 +104,12 @@ internal sealed partial class ShellViewModel
         }
     }
 
-    // The Needs-you row for an instance's park (rule, source: the P4 needs-you goldens serve no park row yet, so this reads
-    // the shape the plan names): a PARKED or ESCALATED row whose subject is the instance (its address or its id), else the
-    // row of the same item. None: the caller opens the workflow link.
+    // The Needs-you row for an instance's park (the P4 needs-you goldens serve no park row yet, so this reads the shape the plan
+    // names): a row of the served kind "park" whose subject is the instance (its address or its id), else the park row of the same
+    // item. It keys on the served kind, never on the chip's word. None: the caller opens the workflow link.
     private NeedsYouRowViewModel? ParkRowFor(StripRowViewModel row)
     {
-        var parks = NeedsYou.Seen.Rows.Where(r => IsParkChip(r.Entry.Chip.Word)).ToList();
+        var parks = NeedsYou.Seen.Rows.Where(r => string.Equals(r.Entry.Kind, NeedsYouKinds.Park, StringComparison.Ordinal)).ToList();
         return parks.Find(r => r.Entry.Subject is { } s && (string.Equals(s.Id, row.Address, StringComparison.Ordinal) || string.Equals(s.Id, row.InstanceId, StringComparison.Ordinal)))
             ?? parks.Find(r => row.ItemId is { } item && string.Equals(r.Entry.ItemId, item, StringComparison.Ordinal));
     }
@@ -119,8 +119,6 @@ internal sealed partial class ShellViewModel
         Strip.Deselect();
         Navigate(ParkRowFor(row) is { } park ? LinkOf(park.Id) : row.Link);
     }
-
-    private static bool IsParkChip(string word) => string.Equals(word, "PARKED", StringComparison.Ordinal) || string.Equals(word, "ESCALATED", StringComparison.Ordinal);
 
     // J / K on Home walk Needs you, then the strip, then Running, then Queued (and back); true when the key was used.
     private bool MoveOnHome(int step)

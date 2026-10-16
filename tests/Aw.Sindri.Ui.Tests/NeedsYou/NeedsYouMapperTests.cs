@@ -42,7 +42,7 @@ public sealed class NeedsYouMapperTests
     {
         var row = Feed().Rows[0];
 
-        Assert.Equal((NeedsYouUrgency.Pulse, new NeedsYouChip("DECISION", NeedsYouChipTone.Attn)), (row.Urgency, row.Chip));
+        Assert.Equal((NeedsYouUrgency.Pulse, new StateChip("DECISION", ChipTone.Attn)), (row.Urgency, row.Chip));
         var served = _served[0]!;
         Assert.Equal(((string)served["title"]!, (string)served["repo"]!, (string)served["label"]!), (row.Title, row.Repo, row.Label));
         Assert.Equal(((string?)served["item"], _dec, "Decide"), (row.ItemId, row.ShownId, row.PrimaryAction));
@@ -101,7 +101,7 @@ public sealed class NeedsYouMapperTests
 
         Assert.Equal(["RunService", "PauseService"], rows[1].Actions.Select(a => a.CatalogId), StringComparer.Ordinal);
         Assert.All(rows[1].Actions, a => Assert.Equal(ActionReadiness.Pending, a.Readiness));
-        Assert.Equal((NeedsYouUrgency.Colour, new NeedsYouChip("FAILED", NeedsYouChipTone.Fail), (string)_served[1]!["cli"]!), (rows[1].Urgency, rows[1].Chip, rows[1].Cli));
+        Assert.Equal((NeedsYouUrgency.Colour, new StateChip("FAILED", ChipTone.Fail), (string)_served[1]!["cli"]!), (rows[1].Urgency, rows[1].Chip, rows[1].Cli));
         Assert.Equal((NeedsYouUrgency.Calm, ActionReadiness.CliOnly, "ApproveProfile"), (rows[2].Urgency, rows[2].Actions[0].Readiness, rows[2].PrimaryAction));
     }
 
@@ -130,7 +130,7 @@ public sealed class NeedsYouMapperTests
 
         var row = NeedsYouMapper.Map(served, Catalog(), decisions: null, _counts).Rows[0];
 
-        Assert.Equal(new NeedsYouChip("WITH YOU", NeedsYouChipTone.Ok), row.Chip);
+        Assert.Equal(new StateChip("WITH YOU", ChipTone.Ok), row.Chip);
     }
 
     [Fact]
@@ -192,7 +192,7 @@ public sealed class NeedsYouMapperTests
 
         var feed = NeedsYouMapper.Map(list with { Rows = [served] }, Catalog(), Pending(), _counts);
 
-        Assert.Equal(("DECISION", 99), (feed.Rows[0].Chip.Word, (int)feed.Rows[0].Chip.Tone));
+        Assert.Equal(("DECISION", 99), (feed.Rows[0].Chip!.Word, (int)feed.Rows[0].Chip!.Tone));
         Assert.Null(typeof(NeedsYouEntry).Assembly.GetType("Aw.Sindri.Ui.ViewModels.NeedsYou.NeedsYouChip"));
         Assert.Null(typeof(NeedsYouEntry).Assembly.GetType("Aw.Sindri.Ui.ViewModels.NeedsYou.NeedsYouChipTone"));
     }

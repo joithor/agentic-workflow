@@ -1,3 +1,4 @@
+using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
@@ -45,8 +46,8 @@ public sealed class NeedsYouViewModelTests
         var list = await List(NeedsYouRows.Park(minutes: 12), NeedsYouRows.Profile(), NeedsYouRows.Failure());
 
         var park = list.Rows[0];
-        Assert.Equal(("PARKED", NeedsYouChipTone.Attn, "ITM-01JC8", "Retry storm in outbox dispatcher", "agentic-workflow"),
-            (park.Chip.Word, park.Chip.Tone, park.ShownId, park.Title, park.Repo));
+        Assert.Equal(("PARKED", ChipTone.Attn, "ITM-01JC8", "Retry storm in outbox dispatcher", "agentic-workflow"),
+            (park.Chip!.Word, park.Chip!.Tone, park.ShownId, park.Title, park.Repo));
         Assert.Equal(("checks failed twice with the same findings", "12m"), (park.Label, park.Age));
         Assert.Equal(["12m", "2h", "9h"], [.. list.Rows.Select(r => r.Age)]);
     }

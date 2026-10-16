@@ -23,18 +23,8 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
         Controls = BuildControls();
     }
 
-    /// <summary>The row's chip (D5: the chip, not the label, names its state).</summary>
-    public NeedsYouChip Chip => Entry.Chip;
-
-    /// <summary>The row's chip as the one chip control draws it.</summary>
-    public StateChip? StateChip => Entry.Chip.Word.Length == 0 ? null : new StateChip(Entry.Chip.Word, Entry.Chip.Tone switch
-    {
-        NeedsYouChipTone.Attn => ChipTone.Attn,
-        NeedsYouChipTone.Fail => ChipTone.Fail,
-        NeedsYouChipTone.Ok => ChipTone.Ok,
-        NeedsYouChipTone.Neutral => ChipTone.Neutral,
-        _ => ChipTone.Neutral,
-    });
+    /// <summary>The row's chip as served, the one chip control draws it; null for none.</summary>
+    public StateChip? Chip => Entry.Chip;
 
     /// <summary>The id shown at rest; empty when the row shows none.</summary>
     public string ShownId => Entry.ShownId;
@@ -61,7 +51,7 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
     public string Age => Entry.Since == default ? "" : Labels.RowAge(_clock.GetUtcNow() - Entry.Since);
 
     /// <summary>The name screen readers hear: the urgency word, the chip, the title and the id, and "new" while the row is unseen (§11.3).</summary>
-    public string AccessibleName => Labels.NeedsYouRowName(UrgencyWord, Entry.Chip.Word, Entry.Title, IdShown, Entry.Urgency == NeedsYouUrgency.Pulse && !_seen);
+    public string AccessibleName => Labels.NeedsYouRowName(UrgencyWord, Entry.Chip?.Word ?? "", Entry.Title, IdShown, Entry.Urgency == NeedsYouUrgency.Pulse && !_seen);
 
     private string UrgencyWord => Entry.Urgency switch
     {
@@ -191,8 +181,8 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
     /// <summary>The labelled lines of the row's sheet beyond its title and reason: a failure's service and actions, a profile's changes.</summary>
     public IReadOnlyList<SheetDetail> Details => Entry.Subject?.Kind switch
     {
-        "service" => new FailureSheetViewModel(Entry, Age).Details,
-        "profile" => new ProfileSheetViewModel(Entry).Details,
+        NeedsYouKinds.Service => new FailureSheetViewModel(Entry, Age).Details,
+        NeedsYouKinds.Profile => new ProfileSheetViewModel(Entry).Details,
         _ => [],
     };
 

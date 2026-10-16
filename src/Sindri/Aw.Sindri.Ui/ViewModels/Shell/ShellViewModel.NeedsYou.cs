@@ -28,6 +28,6 @@ internal sealed partial class ShellViewModel
     private static HomeCounts CountsFor(QueueViewModel queue)
     {
         int Of(string group) => queue.Groups.Where(g => string.Equals(g.Group, group, StringComparison.Ordinal)).Sum(g => g.Count);
-        return new HomeCounts(Running: Of("running"), WithYou: Of("withYou"), Queued: Of("queued"));
+        return new HomeCounts(Running: Of(NeedsYouKinds.Running), WithYou: Of(NeedsYouKinds.WithYou), Queued: Of(NeedsYouKinds.Queued));
     }
 }

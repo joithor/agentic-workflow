@@ -41,7 +41,7 @@ internal sealed partial class ShellViewModel
         FollowDecision();
     }
 
-    private static bool IsDecisionRow(NeedsYouEntry row) => string.Equals(row.Subject?.Kind, "decision", StringComparison.Ordinal);
+    private static bool IsDecisionRow(NeedsYouEntry row) => string.Equals(row.Subject?.Kind, NeedsYouKinds.Decision, StringComparison.Ordinal);
 
     private void HookNeedsYou(IClipboard clipboard)
     {

@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
 
 namespace Aw.Sindri.Ui.Testing;
@@ -11,7 +12,8 @@ internal static class NeedsYouRows
     /// <summary>A parked item: a protected primary and its command.</summary>
     internal static NeedsYouEntry Park(string id = "park:ITM-01JC8", int minutes = 12) => new(id, NeedsYouUrgency.Pulse)
     {
-        Chip = new NeedsYouChip("PARKED", NeedsYouChipTone.Attn),
+        Kind = "park",
+        Chip = new StateChip("PARKED", ChipTone.Attn),
         ShownId = "ITM-01JC8",
         Title = "Retry storm in outbox dispatcher",
         Repo = "agentic-workflow",
@@ -28,7 +30,8 @@ internal static class NeedsYouRows
     /// <summary>A decision: Accept (recommended, first) and Decline (rejectLike).</summary>
     internal static NeedsYouEntry Decision(string id = "decision:DEC-1", string? item = "ITM-01JD2") => new(id, NeedsYouUrgency.Pulse)
     {
-        Chip = new NeedsYouChip("DECISION", NeedsYouChipTone.Attn),
+        Kind = "decision",
+        Chip = new StateChip("DECISION", ChipTone.Attn),
         ShownId = "REQ-01JD4",
         Title = "Re-scope: drop the iOS head from this item",
         Repo = "sindri-app",
@@ -49,7 +52,8 @@ internal static class NeedsYouRows
     /// <summary>A failed service: RunService and PauseService are not available yet.</summary>
     internal static NeedsYouEntry Failure(string id = "failure:service:index") => new(id, NeedsYouUrgency.Colour)
     {
-        Chip = new NeedsYouChip("FAILED", NeedsYouChipTone.Fail),
+        Kind = "failure",
+        Chip = new StateChip("FAILED", ChipTone.Fail),
         Title = "Nightly index build",
         Label = "failure · index",
         Reason = "SND-SCHED-001: A background service failed",
@@ -67,7 +71,8 @@ internal static class NeedsYouRows
     /// <summary>A drifted profile: calm, a protected approve, and the subject optional.</summary>
     internal static NeedsYouEntry Profile(NeedsYouSubject? subject = null) => new("profile:drift", NeedsYouUrgency.Calm)
     {
-        Chip = new NeedsYouChip("PROFILE", NeedsYouChipTone.Attn),
+        Kind = "profile",
+        Chip = new StateChip("PROFILE", ChipTone.Attn),
         Title = "Profile changed since approval · 2 keys",
         Label = "profile · drifted",
         Reason = "1 key path changed: services.scorer.every",

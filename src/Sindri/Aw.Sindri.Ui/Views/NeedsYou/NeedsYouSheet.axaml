@@ -8,7 +8,7 @@
        about it. Its controls are the row's; this sheet shows the command to copy (Y on the row copies it too). -->
   <StackPanel Spacing="8">
     <StackPanel Orientation="Horizontal" Spacing="8">
-      <ctl:StateChipView Chip="{Binding StateChip}" VerticalAlignment="Center" />
+      <ctl:StateChipView Chip="{Binding Chip}" VerticalAlignment="Center" />
       <TextBlock Classes="mono subtle" Text="{Binding ShownId}" VerticalAlignment="Center" AutomationProperties.Name="{Binding ShownId}" />
     </StackPanel>
     <TextBlock x:Name="SheetRowTitle" Classes="body-strong" Text="{Binding Title}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Title}" />

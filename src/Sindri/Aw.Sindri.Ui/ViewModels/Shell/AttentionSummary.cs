@@ -66,5 +66,5 @@ internal sealed record AttentionSummary(string Title, int Badge, TrayView Tray, 
     }
 
     private static string Row(NeedsYouEntry row, DateTimeOffset now) =>
-        Labels.TrayRow(row.Chip.Word, row.ShownId, row.Title, row.Since == default ? "" : Labels.RowAge(now - row.Since));
+        Labels.TrayRow(row.Chip?.Word ?? "", row.ShownId, row.Title, row.Since == default ? "" : Labels.RowAge(now - row.Since));
 }

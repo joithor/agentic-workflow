@@ -1,3 +1,5 @@
+using Aw.Sindri.Ui.Api.Workflow;
+
 namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 
 /// <summary>
@@ -10,8 +12,11 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// <param name="Urgency">The API's urgency.</param>
 internal sealed record NeedsYouEntry(string Id, NeedsYouUrgency Urgency)
 {
-    /// <summary>The row's chip: one word and its tone (D5: the chip replaces the label and the urgency word).</summary>
-    internal NeedsYouChip Chip { get; init; } = NeedsYouChip.None;
+    /// <summary>The row's chip as served (D5: the chip replaces the label and the urgency word); null for none.</summary>
+    internal StateChip? Chip { get; init; }
+
+    /// <summary>The row's kind as served (decision, failure, profile, park); empty for a row built without one.</summary>
+    internal string Kind { get; init; } = "";
 
     /// <summary>The id shown at rest and named to screen readers (an item, request or service id); empty when the row shows none.</summary>
     internal string ShownId { get; init; } = "";

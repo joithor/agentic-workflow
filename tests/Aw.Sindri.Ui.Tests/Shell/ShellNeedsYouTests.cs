@@ -138,6 +138,6 @@ public sealed class ShellNeedsYouTests
     {
         var park = new NeedsYouRowViewModel(NeedsYouRows.Park(), seen: false, reducedMotion: false, arrived: false, new FakeTimeProvider(A.Noon));
 
-        Assert.Equal(new StateChip("PARKED", ChipTone.Attn), park.StateChip);
+        Assert.Equal(new StateChip("PARKED", ChipTone.Attn), park.Chip);
     }
 }
