@@ -11,7 +11,7 @@ internal sealed partial class ChoiceRules
 
     /// <summary>The state a desk twin state names in 'from', or null when it names none or isn't a twin.</summary>
     private static string? TwinOf(RecipeState state, BlockCatalog catalog) =>
-        state.Step is { } step && catalog.Find(step.Use) is { OutcomesFrom: { } from } && from.Contains('.', StringComparison.Ordinal)
+        state.Step is { } step && catalog.Find(step.Use) is { OutcomesFrom: { } from } && ParameterLists.IsTwin(from)
         && step.With.TryGetValue("from", out var named) && named.Literal is { ValueKind: System.Text.Json.JsonValueKind.String } text
             ? text.GetString()
             : null;

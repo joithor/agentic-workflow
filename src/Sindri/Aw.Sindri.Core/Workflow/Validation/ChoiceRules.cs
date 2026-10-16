@@ -37,7 +37,7 @@ internal sealed partial class ChoiceRules : IRecipeRules
 
     private static IEnumerable<Route> Routes(Recipe recipe, BlockCatalog catalog) =>
         recipe.States
-            .Where(s => s.Value.Step is { } step && catalog.Find(step.Use) is { OutcomesFrom: { } from } && !from.Contains('.', StringComparison.Ordinal))
+            .Where(s => s.Value.Step is { } step && catalog.Find(step.Use) is { OutcomesFrom: { } from } && !ParameterLists.IsTwin(from))
             .Select(s => new Route(s.Key, s.Value.Step!, catalog.Find(s.Value.Step!.Use)!)); // why: the Where keeps states with a catalogued Step
 
     private static string Inv(int value) => value.ToString(CultureInfo.InvariantCulture);

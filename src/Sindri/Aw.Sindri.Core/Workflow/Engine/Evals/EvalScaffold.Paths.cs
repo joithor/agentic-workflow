@@ -79,7 +79,7 @@ public static partial class EvalScaffold
     private static List<(string Branch, EvalTrigger Trigger)>? Alternatives(EvalSimulation simulation)
     {
         if (!simulation.Recipe.States.TryGetValue(simulation.Instance.State, out var state) || state.Step is not { } step
-            || simulation.Catalog.Find(step.Use) is not { OutcomesFrom: { } from } descriptor || from.Contains('.', StringComparison.Ordinal)
+            || simulation.Catalog.Find(step.Use) is not { OutcomesFrom: { } from } descriptor || ParameterLists.IsTwin(from)
             || StepOutcomes.Of(descriptor, step, simulation.Recipe) is not { } outcomes)
         {
             return null;
