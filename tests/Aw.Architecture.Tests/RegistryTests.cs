@@ -4,7 +4,7 @@ using Aw.Architecture.Tests.Rules;
 namespace Aw.Architecture.Tests;
 
 /// <summary>The registry (Packages.cs) matches the solution, so a new package can't skip the architecture rules.</summary>
-[Trait("Lane", "unit")]
+[Trait("Lane", "integration")]
 public sealed class RegistryTests
 {
     /// <summary>A production project in the solution that Packages.cs doesn't list.</summary>

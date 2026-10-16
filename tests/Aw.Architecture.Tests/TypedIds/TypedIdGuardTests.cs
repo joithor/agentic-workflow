@@ -3,7 +3,7 @@ using Aw.Kernel;
 
 namespace Aw.Architecture.Tests.TypedIds;
 
-[Trait("Lane", "unit")]
+[Trait("Lane", "integration")]
 public sealed class TypedIdGuardTests
 {
     [Fact]
