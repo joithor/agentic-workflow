@@ -114,7 +114,7 @@ internal sealed class ChildRowViewModel : ObservableObject
     public string OpenFrameName { get; }
 
     /// <summary>What the row draws, so a re-read of the same keeps it.</summary>
-    internal string Signature => string.Join('|', Id, Address, Title, Chip, Glyph, _still, MirroredText, BadgeText, ItemId, string.Join(',', Actions.Select(a => a.Label)));
+    internal string Signature => string.Join('|', Id, Address, Title, Chip, Glyph, _still, MirroredText, BadgeText, ItemId, string.Join(',', Actions.Select(a => $"{a.Label}={a.Name}")));
 
     /// <summary>Takes a re-read of the same row: only the age moves, and the row (with the control that has focus) stays.</summary>
     /// <param name="row">The row as served now; its <see cref="Signature"/> equals this one's.</param>
