@@ -86,13 +86,14 @@ public sealed class TemporalRecipeWakeTests : IDisposable
         Assert.Contains("again", missed.Error.Message, StringComparison.Ordinal);
     }
 
-    /// <summary>A revoke can't be rerun (the planner refuses a revoked hash first), so its fix says what happens instead: the recording stands and the instance parks at its next step.</summary>
+    /// <summary>A revoke can be rerun while a cascade is unfinished (the planner refuses only when nothing is left), so its fix says to run it again, and that a missed instance is refused and parks at its next step.</summary>
     private static async Task AssertRevokeFixIsHonest(TemporalRecipeWake failing, RecipeWakeNotice drifted)
     {
         var missed = await failing.Wake(drifted with { Kind = RecipeWakeKind.Revoked, Sequence = 9 }, Token);
         Assert.Contains("SND-RECIPE-005", missed.Error.Message, StringComparison.Ordinal);
-        Assert.Contains("revocation is recorded", missed.Error.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain("revoke again", missed.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("is recorded; run the revoke again to finish any cascade it didn't reach and send the wake again", missed.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("refused SND-RECIPE-005 when nothing is left", missed.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("parks then", missed.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
