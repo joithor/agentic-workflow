@@ -3,12 +3,12 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Core.Onyx;
 using Aw.Context.Core.Sources;
-using Aw.Kernel;
 using Aw.Context.Infrastructure.Eval;
 using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Fakes;
 using Aw.Context.Tests.Infrastructure;
 using Aw.Context.Tests.Onyx;
+using Aw.Kernel;
 
 namespace Aw.Context.Tests.Eval.Backtest;
 

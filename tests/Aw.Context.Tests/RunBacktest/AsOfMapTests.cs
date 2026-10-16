@@ -133,7 +133,7 @@ public sealed class AsOfMapTests
         public ValueTask<Result<ExtractedMap?>> ReadMap(string key, CancellationToken cancellationToken) => ValueTask.FromResult(Results.Success<ExtractedMap?>(value: null));   // nothing cached: the map is built
 
         public ValueTask<Result<Unit>> WriteMap(string key, ExtractedMap map, CancellationToken cancellationToken) =>
-            ValueTask.FromResult<Result<Unit>>(Aw.Context.Core.ContextErrors.StoreUnavailable.With("the cache folder is read-only"));
+            ValueTask.FromResult<Result<Unit>>(Context.Core.ContextErrors.StoreUnavailable.With("the cache folder is read-only"));
 
         public ValueTask<Result<EvalPurgeReport>> Purge(DateTimeOffset now, bool all, CancellationToken cancellationToken) => inner.Purge(now, all, cancellationToken);
 
