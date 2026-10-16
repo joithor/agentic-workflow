@@ -412,10 +412,13 @@ without an `id`, or an item whose title is unavailable after the id fallback. Su
 input's bare key (`scope`). The literals, the date and the other values stay in the name, and the reader sees
 which part is missing. If the rendered name is empty after trimming, the instance address is used.
 
-**When `name` is rendered.** It is rendered once, at start, by the `ReadSubject` local activity. The activity now
-returns `{ key, label }`, and the label is the rendered name. Temporal history keeps the result as the local
-activity's marker, and `workflow.started` records it (`subject`). The name is never rendered again. Renaming the
-item or editing the fact later doesn't change it.
+**When `name` is rendered.** The workflow renders it, on every replay, from deterministic inputs: the text each
+input's `ReadSubject` local activity returned (one recorded marker per fact) and `InstanceStart.StartedAt`. The
+activity returns the subject text of one fact, not the name, so the history keeps the texts and `workflow.started`
+records the rendered result (`subject`). Because the inputs are fixed at start, the name is the same on every replay
+and is never re-read from the item or the facts: renaming the item or editing the fact later doesn't change it.
+`InstanceNames.Render` runs inside the workflow, so any later change to what it returns for the same inputs needs a
+`Workflow.Patched` guard (it would otherwise change the name of a running instance on replay).
 
 **`generate`.** It is allowed only on an input of `kind: text`. An item, file or link refers to something that
 already exists, and a `linear-project` or `webhook` payload comes from outside, so none of these is made from a
@@ -453,7 +456,7 @@ approving it. `recipe list` marks the row `legacy-shape`, approved or not.
 
 `IRecipeStore` keeps the normalized text by hash. Register, approve and revoke write `recipe.registered`,
 `recipe.approved` and `recipe.revoked` events. Approvals live in `ledger.db` and travel with a host handover.
-`recipe list --stale` lists approved recipes whose pins no longer match the build, or that are `legacy-shape` (registered before input kinds: register the current file at a new version and approve it). Re-approving the **same hash**
+`recipe list --stale` lists approved recipes whose pins no longer match the build, or that are `legacy-shape` (registered before input kinds: register the current file at a new version and approve it; an unapproved legacy row shows `legacy-shape` in `recipe list` but not under `--stale`, which lists approved recipes only). Re-approving the **same hash**
 appends a new approval row and event with the new pins (a **drift approval**; a revoked hash can't be re-approved
 this way, `SND-RECIPE-005`). It re-runs the validator and evals, and its preview shows:
 - which blocks changed, with a capability diff;
@@ -542,8 +545,8 @@ what the interpreter must do; the **mechanism** is Temporal's. Rev 7's text is i
   gate, every effect and every ledger write is an activity. The SDK's analyzer and the replayer test (§10) enforce it.
   *Versioning:* P4b's start now also runs the local activity `ReadSubject` (it names the `Subject` attribute) and has no
   `Workflow.Patched` guard: a workflow started before it would not replay. That is accepted before the cutover, as nothing
-  is installed; from the cutover on, a change to what start runs is guarded with `Workflow.Patched`. P4c's `ReadSubject` also renders the
-  recipe's `name` (§3.11); the no-`Patched` acceptance is unchanged.
+  is installed; from the cutover on, a change to what start runs is guarded with `Workflow.Patched`. P4c's start also renders the
+  recipe's `name` (§3.11) in the workflow from the per-fact `ReadSubject` markers and `StartedAt`; the no-`Patched` acceptance is unchanged, and from the cutover on a change to `InstanceNames.Render` is guarded with `Workflow.Patched`.
 - **Search attributes**, set on start and on every transition: `Item`, `Recipe`, `State`, `NeedsYou` (true while
   parked, escalated or holding an open desk task), `Repo`, `Tenant`, `Ring`, `Urgency`, `Root`, and `Subject` (the subject key of §3.11; never the name). *Rev 8.2:* `Repo` is the `repo` field of
   the instance's `fact:item`, read once on start; an instance without that fact, or whose item names no repo, leaves

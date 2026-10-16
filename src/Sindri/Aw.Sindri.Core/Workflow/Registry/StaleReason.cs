@@ -14,7 +14,7 @@ public enum StaleReason
     [JsonStringEnumMemberName("child-stale")]
     ChildStale = 2,
 
-    /// <summary>The approved recipe was registered before input kinds (RCP-INPUT-001/002): it can't start or be named; register the current file at a new version and approve it.</summary>
+    /// <summary>The recipe was registered before input kinds (RCP-INPUT-001/002), approved or not (only an approved row is listed by --stale): it can't start or be named; register the current file at a new version and approve it.</summary>
     [JsonStringEnumMemberName("legacy-shape")]
     LegacyShape = 3,
 }
