@@ -77,6 +77,17 @@ public sealed class DockerCliRuntimeTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Inspect_reports_a_version_that_is_not_plain_text_as_unreadable_with_the_fact_still_true()
+    {
+        var facts = new DockerCliRuntime(Docker(Ok("29.4.0\u001b[2J\u001b]0;pwned\a"), Ok("v2.40.3 \u001b[31m"), Ok("16818978816"))).Inspect(Token);
+
+        Assert.True(facts.DaemonAnswers);
+        Assert.Null(facts.ServerVersion);
+        Assert.True(facts.ComposeV2);
+        Assert.Null(facts.ComposeVersion);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Inspect_reads_the_data_root()
     {
         var facts = new DockerCliRuntime(DockerWithInfo("29.4.0", "16818978816", "/var/lib/docker")).Inspect(Token);

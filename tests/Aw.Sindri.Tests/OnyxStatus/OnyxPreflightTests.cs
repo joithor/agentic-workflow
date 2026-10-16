@@ -158,6 +158,18 @@ public sealed class OnyxPreflightTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Evaluate_shows_an_unreadable_version_for_a_runtime_that_answers_without_one()
+    {
+        var docker = FakeContainerRuntime.Healthy with { ServerVersion = null, ComposeVersion = null };
+
+        var report = OnyxPreflight.Evaluate(docker, _roomy, dataRootDisk: null, _free, _pins);
+
+        Assert.Equal("unreadable version", Check(report, "docker").Detail);
+        Assert.Equal("unreadable version", Check(report, "compose").Detail);
+        Assert.Equal(CheckState.Ok, Check(report, "docker").State);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Evaluate_fails_003_when_disk_is_short()
     {
         var disk = Check(OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new DiskFacts("/h", 11 * Gib), dataRootDisk: null, _free, _pins), "disk");

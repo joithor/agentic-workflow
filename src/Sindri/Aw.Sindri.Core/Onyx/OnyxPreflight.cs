@@ -51,11 +51,11 @@ public static class OnyxPreflight
     {
         { CliFound: false } => Fail("docker", "docker CLI not found", SindriErrors.OnyxDockerUnavailable, "Docker isn't installed: install Docker Desktop (or Docker Engine), then run this again"),
         { DaemonAnswers: false } => Fail("docker", "docker CLI found, daemon not answering", SindriErrors.OnyxDockerUnavailable, "Docker isn't running: start Docker Desktop (or the docker service) and wait until it is ready, then run this again"),
-        _ => Ok("docker", docker.ServerVersion ?? "running"),
+        _ => Ok("docker", docker.ServerVersion ?? "unreadable version"),
     };
 
     private static PreflightCheck Compose(ContainerRuntimeFacts docker) => docker.ComposeV2
-        ? Ok("compose", docker.ComposeVersion ?? "v2")
+        ? Ok("compose", docker.ComposeVersion ?? "unreadable version")
         : Fail("compose", "Compose v2 not found", SindriErrors.OnyxComposeMissing, "Docker Compose v2 is missing (`docker compose version` fails; the legacy docker-compose isn't enough): update Docker Desktop or install the docker compose plugin");
 
     // The lock's docker-memory-bytes is a floor for `docker info` MemTotal, which reads a few percent under the VM limit
