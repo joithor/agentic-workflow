@@ -164,7 +164,7 @@ public static class QueryRules
     private static string Fix(IReadOnlyList<string> suggested, bool syncConfigured)
     {
         var next = syncConfigured
-            ? "the record isn't linked yet or the key is unknown: check the key, wait for the next context-sync slot, or watch sindri context sources status"
+            ? "the record isn't linked yet or the key is unknown: check the key, run sindri context sources sync, wait for the next context-sync slot, or watch sindri context sources status"
             : "name the context-sync service under services: in the profile";
         return suggested.Count == 0 ? next : syncConfigured ? $"try {string.Join(", ", suggested)}; {next}" : "try " + string.Join(", ", suggested);
     }

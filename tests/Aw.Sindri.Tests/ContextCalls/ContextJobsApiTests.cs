@@ -90,8 +90,9 @@ public sealed class ContextJobsApiTests : IDisposable
         var row = finished.GetProperty("result").GetProperty("sources").EnumerateArray().Single(r => r.GetProperty("source").GetString() == "onyx");
         Assert.True(row.GetProperty("links").GetProperty("linked").GetInt32() > 0);
         Assert.DoesNotContain("Toggle split orientation", finished.GetRawText(), StringComparison.Ordinal);   // counts and codes only, never record text
-        var synced = Json(Assert.Single(Of(events, EventTypes.ContextSourcesSynced)).Envelope.Payload);
-        Assert.Equal("onyx", synced.GetProperty("source").GetString());
+        var synced = Of(events, EventTypes.ContextSourcesSynced).Select(e => Json(e.Envelope.Payload).GetProperty("source").GetString()).ToList();
+        Assert.Equal(finished.GetProperty("result").GetProperty("sources").GetArrayLength(), synced.Count);   // one event per source the job synced
+        Assert.Contains(synced, s => s == "onyx");
         var jobView = Json((await host.Http.Ask(Get($"/sindri/jobs/{job}", Human(host.Token.Value)))).Body);
         Assert.Equal(("succeeded", "SyncSources"), (jobView.GetProperty("state").GetString(), jobView.GetProperty("kind").GetString()));
     }

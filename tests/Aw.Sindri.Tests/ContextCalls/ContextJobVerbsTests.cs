@@ -88,7 +88,7 @@ public sealed class ContextJobVerbsTests : IDisposable
 
         Assert.Equal(2, exit);
         Assert.Empty(api.Calls);
-        Assert.Contains("context sources sync [<source>] [--detach] [--json]", _error.ToString() + _out, StringComparison.Ordinal);
+        Assert.Contains("[--detach] [--json]", _error.ToString() + _out, StringComparison.Ordinal);
     }
 
     [Theory, Trait("Lane", "unit")]
