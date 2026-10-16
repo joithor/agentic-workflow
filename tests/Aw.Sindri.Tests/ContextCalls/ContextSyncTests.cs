@@ -3,14 +3,14 @@ using System.Text.Json;
 using Aw.Context.Testing.Fakes;
 using Aw.Context.Testing.Fixtures;
 using Aw.Context.Testing.Map;
+using Aw.Kernel.Services;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Events;
-using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Tests.ApiGoldens;
-using Aw.Kernel.Services;
 using Microsoft.Extensions.DependencyInjection;
 using static Aw.Sindri.Tests.Callers.CallerRequests;
 
@@ -134,7 +134,7 @@ public sealed class ContextSyncTests : IDisposable
         Assert.Contains("\"anchors\":[\"record:linear:issue/", byKey.Body, StringComparison.Ordinal);
     }
 
-    private static async Task<Aw.Kernel.Result<ScheduledResult>> RunSync(GoldenHost host, DateTimeOffset slot, CancellationToken ct)
+    private static async Task<Kernel.Result<ScheduledResult>> RunSync(GoldenHost host, DateTimeOffset slot, CancellationToken ct)
     {
         await using var scope = host.App.Services.CreateAsyncScope();
         var sync = scope.ServiceProvider.GetServices<IScheduledService>().Single(s => s.Identity().Value == "context-sync");
