@@ -48,10 +48,10 @@ internal sealed class FollowRig : IDisposable
 
     public static async Task WaitUntil(Func<bool> condition)
     {
-        var until = DateTime.UtcNow.AddSeconds(15);
+        var until = RealTime.NowDateTime.AddSeconds(15);
         while (!condition())
         {
-            Assert.True(DateTime.UtcNow < until, "timed out waiting");
+            Assert.True(RealTime.NowDateTime < until, "timed out waiting");
             await Task.Delay(10, TestContext.Current.CancellationToken);
         }
     }

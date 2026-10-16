@@ -80,7 +80,7 @@ The test framework is decided (R7, R1a spike): xUnit v3 on Microsoft.Testing.Pla
 ## Test data
 
 - Builders with sensible defaults: `AnItem().WithSize(S).Build()`.
-- Deterministic ids (a fake `IIdGenerator`) and `FakeTimeProvider`; never the wall clock, `Guid.NewGuid` or `Thread.Sleep` in a test (`BannedSymbols.Tests.txt` checks it once the cleanup PR lands). `CA2000`, `CA2213` and `CA2100` are off under `tests/` (`tests/.editorconfig`).
+- Deterministic ids (a fake `IIdGenerator`) and `FakeTimeProvider`; never the wall clock, `Guid.NewGuid` or `Thread.Sleep` in a test (`BannedSymbols.Tests.txt` checks it; `Aw.Kernel.Testing.RealTime` is the named exception for real time, GUID names and sleeps). `CA2000`, `CA2213`, `CA2100` and `CA1508` are off under `tests/` (`tests/.editorconfig`).
 - No shared mutable fixtures; each test builds its own state.
 - Golden files for CLI output and JSON contracts, recorded from the **C# build** (the golden-file assertions live in `Aw.Kernel.Testing`). Compare after the declared normalization (ids, times), never by loose matching. Update a golden file only in a reviewed change that says why the contract changed.
 

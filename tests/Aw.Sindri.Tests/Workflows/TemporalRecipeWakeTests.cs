@@ -132,12 +132,12 @@ public sealed class TemporalRecipeWakeTests : IDisposable
     /// <summary>The ids <see cref="IRecipeWake.Running"/> lists, polled until the visibility store has them.</summary>
     private static async Task<string[]> Listed(TemporalRecipeWake wake, RecipeHash hash)
     {
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
+        var deadline = RealTime.NowDateTime + TimeSpan.FromSeconds(20);
         while (true)
         {
             var running = await wake.Running(hash, Token);
             Assert.True(running.IsSuccess);
-            if (running.Value.Count > 0 || DateTime.UtcNow > deadline)
+            if (running.Value.Count > 0 || RealTime.NowDateTime > deadline)
             {
                 return [.. running.Value.Select(static i => i.Value)];
             }
@@ -151,11 +151,11 @@ public sealed class TemporalRecipeWakeTests : IDisposable
     /// <summary>The 'wake' signals in the instance's history, polled until there are <paramref name="atLeast"/> (history is read from the visible store).</summary>
     private static async Task<int> Signals(WorkflowHandle handle, int atLeast = 0)
     {
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+        var deadline = RealTime.NowDateTime + TimeSpan.FromSeconds(10);
         while (true)
         {
             var signals = (await handle.FetchHistoryAsync()).Events.Count(static e => e.EventType == EventType.WorkflowExecutionSignaled && e.WorkflowExecutionSignaledEventAttributes.SignalName == "wake");
-            if (signals >= atLeast || DateTime.UtcNow > deadline)
+            if (signals >= atLeast || RealTime.NowDateTime > deadline)
             {
                 return signals;
             }

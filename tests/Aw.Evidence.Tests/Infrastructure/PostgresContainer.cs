@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
+using Aw.Kernel.Testing;
 using Npgsql;
 
 namespace Aw.Evidence.Tests.Infrastructure;
@@ -20,9 +21,9 @@ public sealed class PostgresContainer : IAsyncLifetime
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    internal string AdminSecret { get; } = "a" + Guid.NewGuid().ToString("N");
+    internal string AdminSecret { get; } = "a" + RealTime.NewGuid().ToString("N");
 
-    internal string ReaderSecret { get; } = "r" + Guid.NewGuid().ToString("N");
+    internal string ReaderSecret { get; } = "r" + RealTime.NewGuid().ToString("N");
 
     internal int Port { get; private set; }
 
@@ -101,7 +102,7 @@ public sealed class PostgresContainer : IAsyncLifetime
 
     private async Task WaitUntilReadyAsync()
     {
-        var deadline = DateTime.UtcNow.AddSeconds(90);
+        var deadline = RealTime.NowDateTime.AddSeconds(90);
         while (true)
         {
             try
@@ -115,7 +116,7 @@ public sealed class PostgresContainer : IAsyncLifetime
             }
             catch (Exception exception) when (exception is NpgsqlException or SocketException or IOException)
             {
-                if (DateTime.UtcNow > deadline)
+                if (RealTime.NowDateTime > deadline)
                 {
                     throw new TimeoutException("the throwaway postgres did not accept connections in 90 s", exception);
                 }

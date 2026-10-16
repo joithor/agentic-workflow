@@ -82,7 +82,7 @@ public sealed class TakeoverIdleTests(SindriTimeSkippingServer server) : IClassF
     /// <summary>The instance's 'takeoverIdle' 'workflow.notified' rows, once there are at least <paramref name="atLeast"/> (the mirror is a local activity).</summary>
     private static async Task<int> Notified(IServiceProvider sindri, string address, int atLeast, CancellationToken ct)
     {
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
+        var deadline = RealTime.NowDateTime + TimeSpan.FromSeconds(20);
         while (true)
         {
             var read = await sindri.GetRequiredService<ILedgerStore>().ReadAfter(0, 1000, ct);
@@ -90,7 +90,7 @@ public sealed class TakeoverIdleTests(SindriTimeSkippingServer server) : IClassF
             var count = read.Value.Count(e => e.Envelope.Type == "workflow.notified"
                 && e.Envelope.Payload.Contains($"\"{address}\"", StringComparison.Ordinal)
                 && e.Envelope.Payload.Contains("takeoverIdle", StringComparison.Ordinal));
-            if (count >= atLeast || DateTime.UtcNow >= deadline)
+            if (count >= atLeast || RealTime.NowDateTime >= deadline)
             {
                 return count;
             }

@@ -40,18 +40,14 @@ checks:
     status: active
   - type: analyzer
     id: "CA1819"
-    severity: suggestion
     status: active
   - type: analyzer
     id: "CA1034"
-    severity: suggestion
     status: active
   - type: analyzer
     id: "CA1063"
-    severity: suggestion
     status: active
-gap: partial
-gapNote: "CA1819 (1 src and 1 test site), CA1034 (2 test sites) and CA1063 (2 test sites) are at suggestion until the cleanup PR fixes them and raises them to error."
+gap: closed
 relatedIds: ["CA1062"]
 source:
   type: desk

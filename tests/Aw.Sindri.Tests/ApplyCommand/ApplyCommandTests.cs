@@ -209,9 +209,9 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
     /// <summary>Runs a verb until <paramref name="holds"/> (visibility is eventually consistent).</summary>
     private static async Task<CliRun> Eventually(Served served, Func<CliRun, bool> holds, params string[] args)
     {
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
+        var deadline = RealTime.NowDateTime + TimeSpan.FromSeconds(20);
         var run = await served.Cli(args);
-        while (!holds(run) && DateTime.UtcNow < deadline)
+        while (!holds(run) && RealTime.NowDateTime < deadline)
         {
             await Task.Delay(200, TestContext.Current.CancellationToken);
             run = await served.Cli(args);

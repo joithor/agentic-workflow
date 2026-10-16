@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Aw.Kernel.Testing;
 
 namespace Aw.Meta.Tests.Cli;
 
@@ -47,7 +48,7 @@ public sealed class WorktreeCommandTests : IDisposable
             (1, "MERGED", "merged-clean"), (2, "MERGED", "merged-notes"), (3, "MERGED", "merged-untracked-obj"), (4, "MERGED", "merged-busy"),
             (5, "MERGED", "merged-locked"), (6, "MERGED", "outside-root"), (7, "OPEN", "unmerged-open"), (8, "CLOSED", "closed-pushed"), (9, "CLOSED", "closed-unpushed"));
         await _lab.Team(buildOutputs: ["bin", "obj"]);
-        _lab.Cli.Clock.SetUtcNow(DateTimeOffset.UtcNow.AddMinutes(1));   // a sweep records its start after the trees were made, so the next one sees them unchanged
+        _lab.Cli.Clock.SetUtcNow(RealTime.NowOffset.AddMinutes(1));   // a sweep records its start after the trees were made, so the next one sees them unchanged
     }
 
     private static Dictionary<string, JsonElement> ByBranch(string json)

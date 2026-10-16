@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using Aw.Kernel.Testing;
 
 namespace Aw.Evidence.Tests.Cli;
 
@@ -28,7 +29,7 @@ internal sealed class RunningCli : IDisposable
         {
             Assert.False(_process.HasExited, $"ui-evidence exited before writing '{text}': {Snapshot(_err)}");
             Assert.True(deadline.Elapsed < CliWorkspace.Limit, $"no '{text}' on stderr within {CliWorkspace.Limit}: {Snapshot(_err)}");
-            Thread.Sleep(20);
+            RealTime.Sleep(TimeSpan.FromMilliseconds(20));
         }
     }
 

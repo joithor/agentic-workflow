@@ -189,9 +189,9 @@ public sealed class InterpreterStateLoopTests(SindriTimeSkippingServer server) :
     /// <summary>The instance's search attributes, described until <paramref name="holds"/> (visibility follows the workflow task).</summary>
     private static async Task<SearchAttributeCollection> Attributes(WorkflowHandle handle, Func<SearchAttributeCollection, bool> holds)
     {
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
+        var deadline = RealTime.NowDateTime + TimeSpan.FromSeconds(20);
         var last = SearchAttributeCollection.Empty;
-        while (DateTime.UtcNow < deadline)
+        while (RealTime.NowDateTime < deadline)
         {
             last = (await handle.DescribeAsync()).TypedSearchAttributes;
             if (holds(last))

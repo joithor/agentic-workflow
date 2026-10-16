@@ -109,8 +109,8 @@ public sealed class DeskNotificationsTests(SindriTimeSkippingServer server) : IC
     /// <summary>The effect of <paramref name="origin"/> in <paramref name="state"/>, read through 'outbox list' until it is there.</summary>
     private static async Task<OutboxCommandView> Effect(IServiceProvider sindri, EffectState state, CommandOrigin origin)
     {
-        var deadline = DateTime.UtcNow + _patience;
-        while (DateTime.UtcNow < deadline)
+        var deadline = RealTime.NowDateTime + _patience;
+        while (RealTime.NowDateTime < deadline)
         {
             await using var scope = sindri.CreateAsyncScope();
             var listed = await scope.ServiceProvider.GetRequiredService<IService<ListOutboxRequest, ListOutboxResponse>>().Handle(new ListOutboxRequest(state), Token);
@@ -130,8 +130,8 @@ public sealed class DeskNotificationsTests(SindriTimeSkippingServer server) : IC
     /// <summary>The lines of notifications.jsonl, read until there are <paramref name="count"/>.</summary>
     private async Task<IReadOnlyList<JsonElement>> Notices(int count)
     {
-        var deadline = DateTime.UtcNow + _patience;
-        while (DateTime.UtcNow < deadline)
+        var deadline = RealTime.NowDateTime + _patience;
+        while (RealTime.NowDateTime < deadline)
         {
             if (All() is { } lines && lines.Count >= count)
             {

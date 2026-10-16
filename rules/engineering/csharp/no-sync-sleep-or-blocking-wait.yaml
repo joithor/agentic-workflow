@@ -8,12 +8,12 @@ select:
   languages: [csharp]
   paths: ["src/**"]
 checks:
-  - type: review
-    id: "blocking waits"
+  - type: banned-symbols
+    id: "RS0030"
+    ref: "BannedSymbols.All.txt"
+    entries: ["P:System.Threading.Tasks.Task`1.Result", "M:System.Threading.Tasks.Task.Wait", "M:System.Threading.Tasks.Task.Wait(System.Int32)", "M:System.Threading.Tasks.Task.Wait(System.TimeSpan)", "M:System.Threading.Tasks.Task.Wait(System.Threading.CancellationToken)", "M:System.Threading.Tasks.Task.Wait(System.Int32,System.Threading.CancellationToken)", "M:System.Threading.Tasks.Task.Wait(System.TimeSpan,System.Threading.CancellationToken)", "M:System.Threading.Thread.Sleep(System.Int32)", "M:System.Threading.Thread.Sleep(System.TimeSpan)", "M:System.Runtime.CompilerServices.TaskAwaiter.GetResult", "M:System.Runtime.CompilerServices.TaskAwaiter`1.GetResult"]
     status: active
-    note: "RS0030 entries land in BannedSymbols.All.txt with the cleanup PR"
-gap: open
-gapNote: "About 11 call sites on main (Sleep, GetResult, Task.Wait). The RS0030 entries join BannedSymbols.All.txt in the cleanup PR together with their fixes, because a banned symbol with a live use fails the build."
+gap: closed
 source:
   type: desk
   ref: "https://github.com/davidfowl/AspNetCoreDiagnosticScenarios/blob/master/AsyncGuidance.md"

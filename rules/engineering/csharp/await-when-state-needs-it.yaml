@@ -10,10 +10,8 @@ select:
 checks:
   - type: analyzer
     id: "RCS1229"
-    severity: suggestion
     status: active
-gap: open
-gapNote: "3 sites on main (Context FileExportStore). Set to suggestion until the cleanup PR (branch chore/style-cleanup) fixes the flagged sites and raises it to error; followed by hand until then."
+gap: closed
 source:
   type: desk
   ref: "https://github.com/davidfowl/AspNetCoreDiagnosticScenarios/blob/master/AsyncGuidance.md"

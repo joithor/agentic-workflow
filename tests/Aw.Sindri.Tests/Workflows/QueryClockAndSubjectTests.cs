@@ -39,10 +39,10 @@ public sealed class QueryClockAndSubjectTests : IDisposable
         _ = await WorkflowsHarness.Until(handle, static v => v.Task is not null);
 
         var first = await handle.QueryAsync(static wf => wf.GetInstance());
-        var firstRead = DateTimeOffset.UtcNow;
+        var firstRead = RealTime.NowOffset;
         await Task.Delay(TimeSpan.FromSeconds(2.2), ct);
         var second = await handle.QueryAsync(static wf => wf.GetInstance());
-        var secondRead = DateTimeOffset.UtcNow;
+        var secondRead = RealTime.NowOffset;
 
         var before = InstanceViews.Status(first, firstRead);
         var after = InstanceViews.Status(second, secondRead);
@@ -250,7 +250,7 @@ public sealed class QueryClockAndSubjectTests : IDisposable
         var legacy = RegisterLegacyStep();
         await using var env = await WorkflowsHarness.StartDevServer(ct: ct);
         await using var served = await ApplyCommand.Served.Start(_harness.Home, env, ct);
-        var start = new InstanceStart(new RecipeVersion(legacy.Id, legacy.Version, legacy.Hash), Core.Workflow.Engine.ItemKey.From("T-1"), Attempt: 1, new Dictionary<FactKey, InputFact> { [FactKey.From("fact:spec")] = new("notes.txt", _harness.Fact("Fix it")) }, Tenant: "local", Ring: 0) { StartedAt = DateTimeOffset.UtcNow };
+        var start = new InstanceStart(new RecipeVersion(legacy.Id, legacy.Version, legacy.Hash), Core.Workflow.Engine.ItemKey.From("T-1"), Attempt: 1, new Dictionary<FactKey, InputFact> { [FactKey.From("fact:spec")] = new("notes.txt", _harness.Fact("Fix it")) }, Tenant: "local", Ring: 0) { StartedAt = RealTime.NowOffset };
         var handle = await WorkflowsHarness.Start(env.Client, start);
         _ = await WorkflowsHarness.Until(handle, static v => v.Task is not null);
 
@@ -293,7 +293,7 @@ public sealed class QueryClockAndSubjectTests : IDisposable
     /// <summary>The 'detail.delta' of the workflow.started row, read once the mirror has written it.</summary>
     private static async Task<System.Text.Json.JsonElement> StartedDelta(IServiceProvider sindri, CancellationToken ct)
     {
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
+        var deadline = RealTime.NowDateTime + TimeSpan.FromSeconds(20);
         while (true)
         {
             var row = (await sindri.GetRequiredService<Core.Ledger.ILedgerStore>().ReadAfter(0, 100, ct)).Value.FirstOrDefault(static e => e.Envelope.Type == "workflow.started");
@@ -302,7 +302,7 @@ public sealed class QueryClockAndSubjectTests : IDisposable
                 return System.Text.Json.JsonDocument.Parse(row.Envelope.Payload).RootElement.GetProperty("detail").GetProperty("delta").Clone();
             }
 
-            Assert.True(DateTime.UtcNow < deadline, "the workflow.started row was not mirrored in 20 s");
+            Assert.True(RealTime.NowDateTime < deadline, "the workflow.started row was not mirrored in 20 s");
             await Task.Delay(200, ct);
         }
     }

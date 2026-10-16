@@ -169,8 +169,8 @@ public sealed class EffectDispatchTests(SindriTimeSkippingServer server) : IClas
     /// <summary>Waits until the instance's history has the dispatch delay's timer (it follows the pending row's local activity).</summary>
     private static async Task Armed(WorkflowHandle handle)
     {
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
-        while (DateTime.UtcNow < deadline)
+        var deadline = RealTime.NowDateTime + TimeSpan.FromSeconds(20);
+        while (RealTime.NowDateTime < deadline)
         {
             if ((await Timers(handle)).Contains(_delay))
             {
