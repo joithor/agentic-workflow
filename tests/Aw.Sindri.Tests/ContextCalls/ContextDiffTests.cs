@@ -9,6 +9,7 @@ using Aw.Context.Testing.Fixtures;
 using Aw.Context.Testing.Map;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Host.Mcp;
 using Aw.Sindri.Host.Text;
 using Aw.Sindri.Tests.ApiGoldens;
 using ModelContextProtocol.Protocol;
@@ -163,7 +164,7 @@ public sealed class ContextDiffTests : IDisposable
 
         Assert.Contains("file list truncated to the first 0", text, StringComparison.Ordinal);
         Assert.Contains($"anchors: the first {DiffAnchors.MaxAnchors} of 45", text, StringComparison.Ordinal);
-        Assert.Contains("(file list truncated)", Aw.Sindri.Host.Mcp.McpSummaries.Query(result), StringComparison.Ordinal);
+        Assert.Contains("(file list truncated)", McpSummaries.Query(result), StringComparison.Ordinal);
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
