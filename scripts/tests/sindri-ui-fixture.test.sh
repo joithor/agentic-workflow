@@ -204,6 +204,28 @@ PATH="$WORK/bin:$PATH" AW_SINDRI_HOME="$U" SINDRI="$STUB" FIXTURE_REPO=agentic-f
 check "items --large with FIXTURE_REPO files its 12 requests in that repo only" "$(grep '^curl .*sindri/requests' "$STUB_LOG" | grep -c 'X-Sindri-Repo: agentic-fixture -d')" "12"
 absent "no request names a repo of its own invention" "$(cat "$STUB_LOG")" "demo"
 
+# A refused request (review run 1, test-4): a curl that behaves as curl does answers a 4xx problem body with exit 22 only when told
+# to fail on HTTP errors (--fail or --fail-with-body), else prints it and exits 0. The fixture must ask, or a refusal looks like success.
+mkdir -p "$WORK/refuse"
+cat > "$WORK/refuse/curl" <<'EOF'
+#!/usr/bin/env bash
+echo "curl $*" >> "$STUB_LOG"
+case "$*" in
+  *--fail-with-body*|*--fail\ *) echo '{"code":"SND-API-409","detail":"repo demo is not in the approved profile"}'; exit 22 ;;
+  *) echo '{"code":"SND-API-409","detail":"repo demo is not in the approved profile"}'; exit 0 ;;
+esac
+EOF
+chmod +x "$WORK/refuse/curl"
+: > "$STUB_LOG"
+out="$(PATH="$WORK/refuse:$PATH" AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" request --repo demo "Refused" 2>&1)"; rc=$?
+check "a refused request exits non-zero" "$([ "$rc" -ne 0 ] && echo yes || echo no)" "yes"
+contains "a refused request shows the problem detail" "$out" "repo demo is not in the approved profile"
+: > "$STUB_LOG"
+out="$(PATH="$WORK/refuse:$PATH" AW_SINDRI_HOME="$U" SINDRI="$STUB" FIXTURE_REPO=demo bash "$FIXTURE" items --large 2>&1)"; rc=$?
+check "items --large with every request refused exits non-zero" "$([ "$rc" -ne 0 ] && echo yes || echo no)" "yes"
+contains "items --large shows the problem detail" "$out" "repo demo is not in the approved profile"
+check "items --large stops at the first refused request" "$(grep -c '^curl .*sindri/requests' "$STUB_LOG")" "1"
+
 # --- U3' T20: the Workflows strip's instances (sindri workflow start / cancel as the owner) ---
 : > "$STUB_LOG"; echo 0 > "$STUB_LOG.n"
 AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" workflows >/dev/null 2>&1; check "workflows exits 0" "$?" "0"
@@ -225,7 +247,6 @@ out="$(STUB_FAIL_START=1 AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" work
 check "a refused start exits non-zero" "$([ "$rc" -ne 0 ] && echo yes || echo no)" "yes"
 contains "a refused start says which one and why" "$out" "workflow.dev-triage-three-state"
 contains "a refused start carries the CLI's refusal" "$out" "SND-CLI-003 refused"
-: > "$STUB_LOG"; echo 0 > "$STUB_LOG.n"
 : > "$STUB_LOG"; echo 0 > "$STUB_LOG.n"
 AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" workflows --large >/dev/null 2>&1; check "workflows --large exits 0" "$?" "0"
 starts="$(grep '^workflow start' "$STUB_LOG")"
