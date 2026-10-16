@@ -11,6 +11,11 @@ internal static partial class Labels
     /// <summary>The Needs-you panel's Mark all seen button.</summary>
     internal const string MarkAllSeen = "Mark all seen";
 
+    /// <summary>What Decide did, spoken and shown once it is accepted.</summary>
+    /// <param name="label">The option's label.</param>
+    /// <returns>The line.</returns>
+    internal static string Decided(string label) => "Decided: " + label;
+
     /// <summary>The Undo button after Mark all seen.</summary>
     internal const string Undo = "Undo";
 

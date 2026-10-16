@@ -11,10 +11,8 @@ internal sealed partial class ShellViewModel
     /// <summary>Home's Needs-you list.</summary>
     public NeedsYouViewModel NeedsYou { get; }
 
-#pragma warning disable MA0041, CA1822 // red stub
     /// <summary>The decision sheet.</summary>
-    public DecisionSheetViewModel Decision => throw new NotSupportedException();
-#pragma warning restore MA0041, CA1822
+    public DecisionSheetViewModel Decision { get; }
 
     /// <summary>True when the sheet's subject is a Needs-you row.</summary>
     public bool IsNeedsYouSheet => SheetLink?.Kind == DeepLinkKind.NeedsYou;
@@ -34,6 +32,7 @@ internal sealed partial class ShellViewModel
         }
 
         NeedsYou.Update(HomeFilter == HomeFilter.Decisions ? feed with { Rows = [.. feed.Rows.Where(IsDecisionRow)] } : feed);
+        FollowDecision();
     }
 
     private static bool IsDecisionRow(NeedsYouEntry row) => string.Equals(row.Subject?.Kind, "decision", StringComparison.Ordinal);
@@ -41,7 +40,33 @@ internal sealed partial class ShellViewModel
     private void HookNeedsYou(IClipboard clipboard)
     {
         NeedsYou.SheetRequested += (_, e) => Navigate(LinkOf(e.RowId));
+        NeedsYou.ActionRequested += (_, e) => Decide(e);
+        Decision.Refused += (_, _) => Navigate(new DeepLink(DeepLinkKind.Decision, Decision.DecisionId));
         NeedsYou.CopyRequested += (_, e) => _ = clipboard.SetText(e.Text, CancellationToken.None);
+    }
+
+    // The decision sheet follows its row: updated in place while the row is listed, cleared (form disabled, text kept) when it is gone.
+    private void FollowDecision()
+    {
+        var shown = NeedsYou.Seen.Rows.FirstOrDefault(r => Decision.Shows(r.Id));
+        if (shown is not null)
+        {
+            Decision.Show(shown);
+        }
+        else
+        {
+            Decision.Clear();
+        }
+    }
+
+    // A key or a button asks to run a decision option: Decide, sent once with the option; the sheet shows what came back.
+    private void Decide(NeedsYouActionEventArgs request)
+    {
+        if (request.Action.OptionId.Length > 0 && NeedsYou.Seen.Rows.FirstOrDefault(r => string.Equals(r.Id, request.RowId, StringComparison.Ordinal)) is { } row)
+        {
+            Decision.Show(row);
+            _ = Decision.Choose(request.Action.OptionId);
+        }
     }
 
     // A decision row opens the decision sheet (by the decision's id); every other row opens its own, keyed on the row id.
@@ -60,6 +85,10 @@ internal sealed partial class ShellViewModel
         {
             Queue.ClearSelection();
             NeedsYou.OpenSheetOn(row.Id);
+            if (link.Kind == DeepLinkKind.Decision)
+            {
+                Decision.Show(row);
+            }
         }
     }
 
