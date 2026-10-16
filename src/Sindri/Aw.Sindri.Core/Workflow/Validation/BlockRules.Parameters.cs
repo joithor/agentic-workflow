@@ -21,7 +21,7 @@ internal sealed partial class BlockRules
                     "RCP-BLOCK-003", path, $"block '{id}' has no parameter '{name}'",
                     parameters.Count == 0 ? $"remove it, since '{id}' takes no parameters" : $"remove it, since '{id}' takes {string.Join(", ", parameters.Keys)}");
             }
-            else if (value.Literal is { } literal && Mismatch(parameter.Type, literal) is { } given)
+            else if (value.Literal is { } literal && !IsChoiceList(descriptor, name) && Mismatch(parameter.Type, literal) is { } given)
             {
                 yield return source.Finding(
                     "RCP-BLOCK-003", path, $"parameter '{name}' of '{id}' takes {Expected(parameter.Type)}, not {given}", $"give it {Expected(parameter.Type)}");
@@ -35,6 +35,10 @@ internal sealed partial class BlockRules
                 $"add with: {{ {missing.Name}: <{Placeholder(missing.Type)}> }}");
         }
     }
+
+    /// <summary>The list a descriptor takes its outcomes or inputs from: RCP-CHOICE-002 and -004 check its entries, so the type check leaves them alone.</summary>
+    private static bool IsChoiceList(BlockDescriptor descriptor, string name) =>
+        string.Equals(descriptor.OutcomesFrom, name, StringComparison.Ordinal) || string.Equals(descriptor.InputsFrom, name, StringComparison.Ordinal);
 
     /// <summary>What a literal is when it doesn't fit <paramref name="type"/>, or null when it fits. A fact or profile value is read at run time, so only literals are checked.</summary>
     private static string? Mismatch(ParameterType type, JsonElement literal)
