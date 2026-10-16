@@ -183,7 +183,7 @@ A request:
 | Key | Type | Required | Holds and rules |
 |---|---|---|---|
 | `method` | `GET` \| `HEAD` \| `POST` \| `PUT` \| `PATCH` \| `DELETE` \| `OPTIONS` | yes | upper case |
-| `path` | string | yes | a path on the host: one leading `/`, not `//`, no backslash, no space, no `#`; it can never name another host |
+| `path` | string | yes | a path on the host: one leading `/`, not `//`, no backslash, no space, no `?` or `#`; it can never name another host |
 | `headers` | `{ <name>: { "env": "<VAR>" } }` | no | a header's value comes only from the named environment variable (UPPER_SNAKE). A literal string is refused (AW-EVIDENCE-017) so no secret sits in a script. A variable that is unset is AW-EVIDENCE-006, naming the variable, never a value |
 | `body` | any JSON value | no | sent as `application/json`; not on `GET` or `HEAD` |
 | `expect` | expectation | yes | below; `status` is required |

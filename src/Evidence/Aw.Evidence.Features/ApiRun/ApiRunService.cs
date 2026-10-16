@@ -33,7 +33,7 @@ internal sealed class ApiRunService(ApiRunFiles files, ApiVetting vetting, Reque
             return bytes.Error;
         }
 
-        var run = new RunFacts(request, ContentHash.Sha256Hex(bytes.Value), RunInstanceId.From(ids.NewId().ToString("D")), clock.GetUtcNow(), files.ScrubberFor([]));
+        var run = new RunFacts(request, ContentHash.Sha256Hex(bytes.Value), RunInstanceId.From(ids.NewId().ToString("D")), clock.GetUtcNow(), files.ScrubberFor([], []));
         var script = files.Parse(request.ScriptPath, bytes.Value);
         if (script.IsError)
         {
@@ -46,7 +46,7 @@ internal sealed class ApiRunService(ApiRunFiles files, ApiVetting vetting, Reque
             return await StopAsync(run, new Stopped(script.Value, Host: null, vetted.Error), cancellationToken).ConfigureAwait(false);
         }
 
-        return await RunLockedAsync(run with { Scrubber = files.ScrubberFor(vetted.Value.SecretValues) }, vetted.Value, cancellationToken).ConfigureAwait(false);
+        return await RunLockedAsync(run with { Scrubber = files.ScrubberFor(vetted.Value.HeaderValues, vetted.Value.EnvValues) }, vetted.Value, cancellationToken).ConfigureAwait(false);
     }
 
     private async ValueTask<Result<ApiRunResponse>> RunLockedAsync(RunFacts run, VettedRun vetted, CancellationToken cancellationToken)

@@ -74,12 +74,25 @@ internal static class ProcessRunner
         var error = process.StandardError.ReadToEndAsync(cancellationToken);
         if (standardInput is not null)
         {
-            await process.StandardInput.WriteAsync(standardInput.AsMemory(), cancellationToken).ConfigureAwait(false);
-            process.StandardInput.Close();
+            await WriteInputAsync(process, standardInput, cancellationToken).ConfigureAwait(false);
         }
 
         await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
         return new(process.ExitCode, await output.ConfigureAwait(false), await error.ConfigureAwait(false));
+    }
+
+    // A program that exits (or closes its input) before reading it all breaks the pipe: that is its answer, not a failure to run it, so its output and exit code are still collected.
+    private static async Task WriteInputAsync(Process process, string standardInput, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await process.StandardInput.WriteAsync(standardInput.AsMemory(), cancellationToken).ConfigureAwait(false);
+            process.StandardInput.Close();
+        }
+        catch (IOException)
+        {
+            // Broken pipe: the program stopped reading.
+        }
     }
 
     private static ProcessStartInfo StartInfo(ProcessSpec spec)

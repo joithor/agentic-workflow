@@ -18,7 +18,9 @@ internal static class JsonEquality
         };
 
     private static bool NumbersEqual(JsonElement left, JsonElement right) =>
-        left.TryGetDecimal(out var a) && right.TryGetDecimal(out var b) ? a == b : left.GetDouble().Equals(right.GetDouble());
+        left.TryGetDecimal(out var a) && right.TryGetDecimal(out var b) ? a == b
+        : left.TryGetDouble(out var x) && right.TryGetDouble(out var y) ? x.Equals(y)
+        : string.Equals(left.GetRawText(), right.GetRawText(), StringComparison.Ordinal);
 
     private static bool ObjectsEqual(JsonElement left, JsonElement right)
     {
