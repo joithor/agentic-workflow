@@ -6,13 +6,6 @@ using Aw.Sindri.Features.GetJob;
 
 namespace Aw.Sindri.Host.Commands;
 
-/// <summary>What a job frame says to the follower: a progress line (<see cref="Round"/> of it), or the end of the job.</summary>
-/// <param name="Round">The progress line's number, or 0 for an end.</param>
-/// <param name="Text">The line, or the end in words ('succeeded: ok', 'failed: … SND-…', 'cancelled').</param>
-/// <param name="Exit">The exit code an end means (0 succeeded, 1 failed or cancelled); 0 for a line.</param>
-/// <param name="Ended">Whether the job ended.</param>
-internal sealed record JobSignal(int Round, string Text, int Exit, bool Ended);
-
 /// <summary>Reads the 'job.*' frames of the event stream, and a job view, as the words the follower prints (API P6 unit H).</summary>
 internal static class JobFrames
 {
@@ -52,9 +45,10 @@ internal static class JobFrames
         return view.State switch
         {
             JobState.Running => null,
+            JobState.Cancelled => new JobSignal(Round: 0, "cancelled", Exit: 1, Ended: true),
             JobState.Succeeded => End(JobOutcome.Succeeded, view.Summary ?? string.Empty, view.Code),
             JobState.Failed => End(JobOutcome.Failed, view.Summary ?? string.Empty, view.Code),
-            _ => new JobSignal(Round: 0, "cancelled", Exit: 1, Ended: true),
+            _ => null,
         };
     }
 

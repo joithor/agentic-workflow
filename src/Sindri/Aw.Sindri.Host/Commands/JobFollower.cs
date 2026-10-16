@@ -8,12 +8,12 @@ using Aw.Sindri.Features.GetJob;
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
-/// Follows a started job to its end (API spec §3.2, P6 unit H): <c>services run</c> uses it, and so do the context lane's <c>context sources sync</c> and
-/// <c>context map build</c>, with the <see cref="JobStartedResponse"/> their job route answered. It prints 'job JOB-… started', opens the links' event
+/// Follows a started job to its end (API spec §3.2, P6 unit H): 'services run' uses it, and so do the context lane's 'context sources sync' and
+/// 'context map build', with the <see cref="JobStartedResponse"/> their job route answered. It prints 'job JOB-… started', opens the links' event
 /// stream (client-side filter on the job: the stream carries every job's events), prints each progress line as served (already escaped by the server),
 /// then the end: '&lt;outcome&gt;: &lt;summary&gt;[ &lt;code&gt;]' or 'cancelled'. A full stream list (SND-API-012) or an error frame falls back to reading
 /// the job every second. The stream ending first is 'not running'. The first Ctrl-C posts CancelJob once and waits up to 5 s for the job to end; the second
-/// leaves at once. Exit 0 succeeded, 1 failed, cancelled, left or not running, 2 refused or invalid. With <c>json</c> it prints the JobStarted body, then
+/// leaves at once. Exit 0 succeeded, 1 failed, cancelled, left or not running, 2 refused or invalid. With json it prints the JobStarted body, then
 /// the final job view, as NDJSON, and no progress lines.
 /// </summary>
 /// <param name="client">The API client.</param>
@@ -87,42 +87,41 @@ internal sealed class JobFollower(ControlPlaneClient client, Output output, Time
             if (winner == signals.FirstSignal)
             {
                 await PostCancel(run).ConfigureAwait(false);
-                grace = Task.Delay(CancelGrace, clock);
+                grace = Task.Delay(CancelGrace, clock, signals.Second);
                 continue;
             }
 
             next = null;
             hold(null);
-            var step = await Step(frames, await ((Task<bool>)winner).ConfigureAwait(false), run, signals).ConfigureAwait(false);
-            if (step is null || step.Value.IsError || step.Value.Value is not null)
+            var more = await ((Task<bool>)winner).ConfigureAwait(false);
+            var done = more ? await Handle(frames.Current, run, signals).ConfigureAwait(false) : SindriErrors.NotRunning.With("not running: the control plane stopped while the job ran");
+            if (done is { } result)
             {
-                return step?.Value ?? SindriErrors.NotRunning.With("not running: the control plane stopped while the job ran");
+                return result;
             }
         }
     }
 
-    /// <summary>Takes the frame the stream gave: null when the stream is over; a result holding null to keep reading; the end otherwise.</summary>
-    private async Task<(Result<JobEnd?> Value, bool Open)?> Step(IAsyncEnumerator<Result<StreamFrame>> frames, bool more, JobFollowed run, JobInterrupts signals)
+    /// <summary>Takes the frame the stream gave: null to keep reading, otherwise how following ended.</summary>
+    private async Task<Result<JobEnd>?> Handle(Result<StreamFrame> frame, JobFollowed run, JobInterrupts signals)
     {
-        if (!more)
+        if (frame.IsError && frame.Error.Code != SindriErrors.StreamsFull.Code)
         {
-            return null;
-        }
-
-        var frame = frames.Current;
-        if (frame.IsError ? frame.Error.Code != SindriErrors.StreamsFull.Code : false)
-        {
-            return (frame.Error, false);
+            return frame.Error;
         }
 
         if (frame.IsError || frame.Value.Event == "error")
         {
-            var polled = await PollInstead(run, signals).ConfigureAwait(false);
-            return (polled.IsError ? polled.Error : polled.Value, false);
+            return await PollInstead(run, signals).ConfigureAwait(false);
         }
 
-        var signal = JobFrames.Read(output, frame.Value, run.Started.JobId);
-        return (signal is null ? Results.Success<JobEnd?>(value: null) : await Show(run, signal, frame.Value.Id).ConfigureAwait(false), true);
+        if (JobFrames.Read(output, frame.Value, run.Started.JobId) is not { } signal)
+        {
+            return null;
+        }
+
+        var end = await Show(run, signal, frame.Value.Id).ConfigureAwait(false);
+        return end is null ? null : Kernel.Results.Success(end);
     }
 
     /// <summary>No stream to follow: read the job every second until it ends. Ctrl-C works as it does on the stream.</summary>
@@ -169,30 +168,21 @@ internal sealed class JobFollower(ControlPlaneClient client, Output output, Time
             _ = await Show(run, new JobSignal(line.Round, line.Line, Exit: 0, Ended: false), after: 0).ConfigureAwait(false);
         }
 
-        return JobFrames.Ended(read.Value) is { } ended
-            ? (await Show(run, ended, after: 0).ConfigureAwait(false)).Value! with { View = read.Body }
+        return JobFrames.Ended(read.Value) is { } ended && await Show(run, ended, after: 0).ConfigureAwait(false) is { } end
+            ? end with { View = read.Body }
             : null;
     }
 
-    private async Task<Result<JobEnd?>> Show(JobFollowed run, JobSignal signal, long after)
+    /// <summary>Prints a progress line or the end; the end as a result, null for a line.</summary>
+    private async Task<JobEnd?> Show(JobFollowed run, JobSignal signal, long after)
     {
-        if (!signal.Ended)
-        {
-            if (signal.Round > run.Printed && !run.Json)
-            {
-                _ = await output.Text(signal.Text + "\n", 0).ConfigureAwait(false);
-            }
-
-            run.Printed = Math.Max(run.Printed, signal.Round);
-            return Results.Success<JobEnd?>(value: null);
-        }
-
-        if (!run.Json)
+        if (!run.Json && (signal.Ended || signal.Round > run.Printed))
         {
             _ = await output.Text(signal.Text + "\n", 0).ConfigureAwait(false);
         }
 
-        return new JobEnd(signal.Exit, after);
+        run.Printed = Math.Max(run.Printed, signal.Round);
+        return signal.Ended ? new JobEnd(signal.Exit, after) : null;
     }
 
     private async Task PostCancel(JobFollowed run)
