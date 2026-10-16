@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
 
@@ -11,6 +12,8 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// <param name="reader">The 'GetInstance' Query.</param>
 public sealed class EndedInstanceViews(IInstanceReader reader)
 {
+    private readonly ConcurrentDictionary<(string Address, DateTimeOffset Started), InstanceView> _ended = new();
+
     /// <summary>The most ended views kept; past it the memory starts over.</summary>
     public const int Capacity = 512;
 
@@ -25,9 +28,30 @@ public sealed class EndedInstanceViews(IInstanceReader reader)
     /// <param name="address">The row's instance address.</param>
     /// <param name="cancellationToken">Cancels the query.</param>
     /// <returns>The view, or the reader's error.</returns>
-    public ValueTask<Result<InstanceView>> Get(InstanceRow row, InstanceAddress address, CancellationToken cancellationToken)
+    public async ValueTask<Result<InstanceView>> Get(InstanceRow row, InstanceAddress address, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(row);
-        return reader.Get(address, cancellationToken);
+        if (row.StartedAt is not { } started)
+        {
+            return await reader.Get(address, cancellationToken).ConfigureAwait(false);   // no start time to tell this run from a later one on the address: always read
+        }
+
+        if (_ended.TryGetValue((address.Value, started), out var remembered))
+        {
+            return remembered;
+        }
+
+        var view = await reader.Get(address, cancellationToken).ConfigureAwait(false);
+        if (view.IsSuccess && view.Value.Outcome is not null)
+        {
+            if (_ended.Count >= Capacity)
+            {
+                _ended.Clear();
+            }
+
+            _ended[(address.Value, started)] = view.Value;
+        }
+
+        return view;
     }
 }
