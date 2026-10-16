@@ -113,6 +113,19 @@ public sealed class NeedsYouKeysTests
         Assert.Empty(_actions);
     }
 
+    // Review run 3 (corr-2): a decision served without its options has no option to send, so A does nothing and marks nothing seen.
+    [Fact]
+    public async Task A_on_a_decision_row_without_an_option_does_nothing()
+    {
+        var served = NeedsYouRows.Decision();
+        var list = await List(served with { Actions = [new NeedsYouAction("Decide", "Decide", ActionReadiness.Ready, "sindri decide DEC-1 <choice>", RejectLike: false)], PrimaryAction = "Decide" });
+        list.Select("decision:DEC-1");
+        Tap(list, NeedsYouKey.Enter);
+
+        Assert.False(list.Press(NeedsYouKey.A));
+        Assert.Empty(_actions);
+    }
+
     [Fact]
     public async Task A_on_a_decision_row_does_nothing_unless_its_sheet_is_open()
     {
