@@ -25,7 +25,7 @@ internal static class HomeFold
     /// <summary>The strip's share of the fold at scale 1.0: 3 rows.</summary>
     internal const int StripShare = 3;
 
-    /// <summary>The strip's share of the fold at <see cref="LargeTextScale"/> and over: the large Needs-you cap plus <see cref="StripLargeCap"/>.</summary>
+    /// <summary>The strip's share of the fold at <see cref="LargeTextScale"/> and over: the most strip rows there (<see cref="StripLargeCap"/>, 2); <see cref="LargeBudget"/> adds the large Needs-you cap to it.</summary>
     internal const int StripLargeShare = StripLargeCap;
 
     /// <summary>Rows above the fold at scale 1.0 (Needs you plus strip): 8.</summary>

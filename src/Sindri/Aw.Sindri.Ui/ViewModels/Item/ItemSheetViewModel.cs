@@ -29,7 +29,7 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     private int _pages;
 
     /// <summary>The item's decisions and requests (U3' T8).</summary>
-    internal ItemNeedsViewModel Needs { get; } = new(api, decisions ?? new DecisionSender(api), () => catalog.Listed?.Rows.FirstOrDefault(r => string.Equals(r.Action, "Decide", StringComparison.Ordinal)) is { } row ? NeedsYouMapper.ReadinessOf(row.Ui) : ActionReadiness.Pending);
+    internal ItemNeedsViewModel Needs { get; } = ItemNeedsViewModel.Create(api, decisions ?? new DecisionSender(api), catalog);
 
     /// <summary>The app's copy for the sheet's headings and buttons.</summary>
     public ItemText Text { get; } = ItemText.Instance;

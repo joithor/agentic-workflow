@@ -1,4 +1,5 @@
 using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
 
 namespace Aw.Sindri.Ui.ViewModels.Item;
@@ -11,7 +12,8 @@ internal sealed class ItemNeedsViewModel : ObservableObject
 {
     private readonly ISindriApi _api;
     private readonly DecisionSender _sender;
-    private readonly Func<ActionReadiness> _readiness;
+    private readonly Func<DecideState> _readiness;
+    private DecisionList? _served;
     private Uri? _url;
     private string _item = "";
 
@@ -19,10 +21,38 @@ internal sealed class ItemNeedsViewModel : ObservableObject
     /// <param name="api">The API.</param>
     /// <param name="sender">Sends Decide, with the guard the decision sheet shares.</param>
     /// <param name="readiness">What the catalog says of Decide now; the options take input only when it is ready.</param>
-    internal ItemNeedsViewModel(ISindriApi api, DecisionSender sender, Func<ActionReadiness> readiness)
+    internal ItemNeedsViewModel(ISindriApi api, DecisionSender sender, Func<DecideState> readiness)
     {
         (_api, _sender, _readiness) = (api, sender, readiness);
     }
+
+    /// <summary>The item's needs, reading Decide from <paramref name="catalog"/> and rebuilding the options when the catalog arrives or changes.</summary>
+    /// <param name="api">The API.</param>
+    /// <param name="sender">Sends Decide.</param>
+    /// <param name="catalog">The command catalog.</param>
+    /// <returns>The needs.</returns>
+    internal static ItemNeedsViewModel Create(ISindriApi api, DecisionSender sender, CatalogViewModel catalog)
+    {
+        ArgumentNullException.ThrowIfNull(catalog);
+        var needs = new ItemNeedsViewModel(api, sender, () => StateOf(catalog.For("Decide")));
+        catalog.PropertyChanged += (_, e) =>
+        {
+            if (string.Equals(e.PropertyName, nameof(CatalogViewModel.Controls), StringComparison.Ordinal))
+            {
+                needs.Rebuild();
+            }
+        };
+        return needs;
+    }
+
+    // A catalog that has not named Decide yet is read as pending, as the mapper reads an action it has no row for.
+    private static DecideState StateOf(ControlViewModel? decide) => decide switch
+    {
+        null => new DecideState(ActionReadiness.Pending, "", ""),
+        { Kind: ControlKind.Ready } => new DecideState(ActionReadiness.Ready, "", decide.Cli),
+        { Kind: ControlKind.Pending } => new DecideState(ActionReadiness.Pending, decide.Stage, decide.Cli),
+        _ => new DecideState(ActionReadiness.CliOnly, "", decide.Cli),
+    };
 
     /// <summary>The item's pending decisions, in the API's order.</summary>
     internal IReadOnlyList<ItemDecisionRow> Decisions { get; private set => Set(ref field, value); } = [];
@@ -42,7 +72,7 @@ internal sealed class ItemNeedsViewModel : ObservableObject
     /// <summary>The sheet moved to another item: nothing of the last one stays (its decisions, requests, empty sentences and refusal).</summary>
     internal void Reset()
     {
-        (_url, _item) = (null, "");
+        (_url, _item, _served) = (null, "", null);
         Decisions = [];
         Requests = [];
         (DecisionsEmpty, RequestsEmpty, Refusal) = ("", "", "");
@@ -66,12 +96,8 @@ internal sealed class ItemNeedsViewModel : ObservableObject
         if (decisions.IsSuccess)
         {
             // The rows are replaced only when one differs, so the buttons (and the focus on one) survive a re-read (§3.3).
-            IReadOnlyList<ItemDecisionRow> built = [.. decisions.Value.Decisions.Select(d => new ItemDecisionRow(d.Id, d.Question, d.FiledBy, DecisionOptions.From(d, _readiness(), _sender)))];
-            if (!built.SequenceEqual(Decisions, ItemDecisionRowComparer.Instance))
-            {
-                Decisions = built;
-            }
-
+            _served = decisions.Value;
+            Rebuild();
             DecisionsEmpty = decisions.Value.Empty ?? "";
         }
 
@@ -79,6 +105,18 @@ internal sealed class ItemNeedsViewModel : ObservableObject
         {
             Requests = [.. requests.Value.Requests.Select(r => new ItemRequestRow(r.Id, r.Kind, r.Text, r.Actor, r.State, r.DecisionId))];
             RequestsEmpty = requests.Value.Empty ?? "";
+        }
+    }
+
+    /// <summary>Builds the decision rows again from the last read, as the catalog now reads Decide (it can arrive after the decisions).</summary>
+    internal void Rebuild()
+    {
+        // The rows are replaced only when one differs, so the buttons (and the focus on one) survive a re-read (§3.3).
+        var state = _readiness();
+        IReadOnlyList<ItemDecisionRow> built = [.. (_served?.Decisions ?? []).Select(d => new ItemDecisionRow(d.Id, d.Question, d.FiledBy, DecisionOptions.From(d, state, _sender), state.Line))];
+        if (!built.SequenceEqual(Decisions, ItemDecisionRowComparer.Instance))
+        {
+            Decisions = built;
         }
     }
 

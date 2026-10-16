@@ -19,7 +19,7 @@ internal static class NeedsYouMapper
     {
         ArgumentNullException.ThrowIfNull(list);
         ArgumentNullException.ThrowIfNull(catalog);
-        var readiness = catalog.Rows.ToDictionary(r => r.Action, r => ReadinessOf(r.Ui), StringComparer.Ordinal);
+        var readiness = catalog.Rows.ToDictionary(r => r.Action, r => (ReadinessOf(r.Ui), CatalogReadiness.Parse(r.Ui).Stage), StringComparer.Ordinal);
         return new NeedsYouFeed([.. list.Rows.Select(row => Entry(row, readiness, decisions))], list.Empty ?? string.Empty)
         {
             Stalled = list.AsOf.Stalled,
@@ -37,7 +37,7 @@ internal static class NeedsYouMapper
         _ => ActionReadiness.CliOnly,
     };
 
-    private static NeedsYouEntry Entry(NeedsYouRowView row, Dictionary<string, ActionReadiness> readiness, DecisionList? decisions)
+    private static NeedsYouEntry Entry(NeedsYouRowView row, Dictionary<string, (ActionReadiness Readiness, string Stage)> readiness, DecisionList? decisions)
     {
         var subject = row.Subject is { } s ? new NeedsYouSubject(s.Kind, s.Id) : null;
         return new NeedsYouEntry(row.Id, UrgencyOf(row.Urgency))
@@ -69,19 +69,19 @@ internal static class NeedsYouMapper
         decisionId is null ? null : decisions?.Decisions.FirstOrDefault(d => string.Equals(d.Id, decisionId, StringComparison.Ordinal));
 
     // A Decide on a decision row is one button per option the pending list offers; every other action is one button as served.
-    private static IEnumerable<NeedsYouAction> Actions(NeedsYouRowView row, string? decisionId, string id, Dictionary<string, ActionReadiness> readiness, DecisionList? decisions)
+    private static IEnumerable<NeedsYouAction> Actions(NeedsYouRowView row, string? decisionId, string id, Dictionary<string, (ActionReadiness Readiness, string Stage)> readiness, DecisionList? decisions)
     {
-        var ready = readiness.GetValueOrDefault(id, ActionReadiness.Pending);
+        var (ready, stage) = readiness.GetValueOrDefault(id, (ActionReadiness.Pending, ""));
         var decision = string.Equals(id, Decide, StringComparison.Ordinal) ? PendingDecision(decisionId, decisions) : null;
         if (decision is null)
         {
-            yield return new NeedsYouAction(id, Labels.Action(id), ready, row.Cli, RejectLike: false);
+            yield return new NeedsYouAction(id, Labels.Action(id), ready, row.Cli, RejectLike: false) { Stage = stage };
             yield break;
         }
 
         foreach (var option in decision.Options)
         {
-            yield return new NeedsYouAction(id, option.Label, ready, option.Cli, option.RejectLike) { OptionId = option.Id, Recommended = string.Equals(option.Id, decision.Recommended, StringComparison.Ordinal) };
+            yield return new NeedsYouAction(id, option.Label, ready, option.Cli, option.RejectLike) { Stage = stage, OptionId = option.Id, Recommended = string.Equals(option.Id, decision.Recommended, StringComparison.Ordinal) };
         }
     }
 

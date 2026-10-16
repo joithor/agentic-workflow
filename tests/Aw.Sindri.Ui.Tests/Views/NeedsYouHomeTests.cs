@@ -267,4 +267,28 @@ public sealed class NeedsYouHomeTests : IDisposable
         Assert.Equal(served["options"]!.AsArray().Select(o => (string)o!["label"]!), sheet.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("decision-option")).Select(b => (string?)b.Content ?? ""), StringComparer.Ordinal);
         Assert.Equal((string)GoldenFiles.Node("requests", "list-by-item")["requests"]![0]!["text"]!, Named<Control>(window, "ItemRequestList").GetVisualDescendants().OfType<TextBlock>().First(t => t.Classes.Contains("body")).Text);
     });
+
+    // Review run 3 (a11y-r3-0): a pending Decide leaves the options disabled with their help text and one focusable line naming the phase.
+    [Fact]
+    public Task A_pending_Decide_gives_the_item_sheet_options_help_text_and_a_focusable_line() => OnUi(async () =>
+    {
+        const string item = "ITM-0000000000000000000000000000000e";
+        var catalog = GoldenFiles.Node("commands", "catalog");
+        catalog["rows"]!.AsArray().First(r => (string?)r!["action"] == "Decide")!["ui"] = "pending:P4";
+        _server.Catalog = new RouteAnswer(System.Net.HttpStatusCode.OK, catalog.ToJsonString());
+        _server.DecisionsByItem[item] = RouteAnswer.Api("decisions", "by-item");
+        _server.RequestsByItem[item] = RouteAnswer.Api("requests", "list-by-item");
+        _server.Items[item] = _server.Items[A.NewItem];
+        var (window, shell) = await Connected(width: 1400);
+
+        shell.Navigate(new DeepLink(DeepLinkKind.Item, item));
+        await Until(window, () => shell.Item.HasItem && shell.Item.Needs.Decisions.Count == 1);
+
+        var options = Named<Control>(window, "ItemDecisionList").GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("decision-option")).ToList();
+        Assert.All(options, b => Assert.False(b.IsEnabled));
+        Assert.All(options, b => Assert.Contains("sindri decide", Avalonia.Automation.AutomationProperties.GetHelpText(b), StringComparison.Ordinal));
+        var line = Named<Control>(window, "ItemDecisionList").GetVisualDescendants().OfType<Border>().First(b => b.Classes.Contains("pending-line"));
+        Assert.True(line.IsEffectivelyVisible && line.Focusable);
+        Assert.Contains("P4", Avalonia.Automation.AutomationProperties.GetName(line), StringComparison.Ordinal);
+    });
 }

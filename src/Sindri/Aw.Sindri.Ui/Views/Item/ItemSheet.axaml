@@ -93,10 +93,13 @@
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="ny:DecisionOption">
                       <Button Classes="command-control decision-option" Classes.primary="{Binding IsRecommended}" Content="{Binding Label}" IsEnabled="{Binding IsEnabled}"
-                              Click="OnDecisionOption" Margin="0,0,8,8" AutomationProperties.Name="{Binding Name}" />
+                              Click="OnDecisionOption" Margin="0,0,8,8" ToolTip.Tip="{Binding Reason}" ToolTip.ShowOnDisabled="True" AutomationProperties.HelpText="{Binding Reason}" AutomationProperties.Name="{Binding Name}" />
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
+                <Border Classes="pending-line" Focusable="True" IsVisible="{Binding DecideLine, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" AutomationProperties.Name="{Binding DecideLine}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                  <TextBlock Classes="caption subtle" TextWrapping="Wrap" Text="{Binding DecideLine}" AutomationProperties.AccessibilityView="Raw" />
+                </Border>
               </StackPanel>
             </DataTemplate>
           </ItemsControl.ItemTemplate>

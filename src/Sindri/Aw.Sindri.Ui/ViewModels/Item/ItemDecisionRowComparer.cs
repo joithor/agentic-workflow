@@ -6,7 +6,7 @@ internal sealed class ItemDecisionRowComparer : IEqualityComparer<ItemDecisionRo
     internal static ItemDecisionRowComparer Instance { get; } = new();
 
     public bool Equals(ItemDecisionRow? x, ItemDecisionRow? y) =>
-        ReferenceEquals(x, y) || (x is not null && y is not null && x.Id == y.Id && x.Question == y.Question && x.FiledBy == y.FiledBy && x.Options.SequenceEqual(y.Options));
+        ReferenceEquals(x, y) || (x is not null && y is not null && x.Id == y.Id && x.Question == y.Question && x.FiledBy == y.FiledBy && x.DecideLine == y.DecideLine && x.Options.SequenceEqual(y.Options));
 
     public int GetHashCode(ItemDecisionRow obj) => HashCode.Combine(obj?.Id);
 }

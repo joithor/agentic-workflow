@@ -25,7 +25,7 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
     internal string Notice => _row?.Notice ?? "";
 
     /// <summary>The phase and command line under the options when Decide is not ready; empty when it is.</summary>
-    internal string DecideLine => _row?.Id[..0] ?? "";
+    internal string DecideLine => _row is null ? "" : DecisionOptions.Line(_row.Controls);
 
     /// <summary>The id of the decision shown.</summary>
     internal string DecisionId { get; private set; } = "";
@@ -203,6 +203,7 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
 
         OnChanged(nameof(Question));
         OnChanged(nameof(Notice));
+        OnChanged(nameof(DecideLine));
     }
 
     // The flag changes before the text, and an announcement already live is dropped first so the next one is spoken again.
