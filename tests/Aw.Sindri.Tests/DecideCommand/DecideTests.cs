@@ -62,7 +62,7 @@ public sealed class DecideTests
         Expect.Equal($"decision.recorded:{A.FirstDecisionId.Value}", recorded.IdempotencyKey);
         Expect.Equal(A.FirstItemId.Value, recorded.Item);
         var payload = _h.Slice.Events.Payload<DecisionRecorded>(recorded).Value;
-        Expect.Equal((A.FirstDecisionId, _accept, "Looks right.", "human:cli"), (payload.Decision, payload.Choice, payload.Note, payload.By));
+        Expect.Equal((A.FirstDecisionId, _accept, "Looks right.", "human:http"), (payload.Decision, payload.Choice, payload.Note, payload.By));
         Expect.Equal(recorded.Envelope.Actor, payload.By);
         Expect.Equal(payload.CommandId, result.Value.CommandId);
     }
