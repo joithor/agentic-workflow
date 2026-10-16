@@ -87,7 +87,6 @@ public sealed class NeedsYouHomeTests : IDisposable
     private static T Named<T>(Visual within, string name)
         where T : Control => within.GetVisualDescendants().OfType<T>().First(c => c.Name == name);
 
-    private static Control? Focused(Window window) => window.FocusManager?.GetFocusedElement() as Control;
 
     private static List<NeedsYouRow> Rows(Window window) =>
         [.. Named<Control>(window, "NeedsYouPanel").GetVisualDescendants().OfType<NeedsYouRow>().Where(r => r.IsEffectivelyVisible)];
@@ -95,7 +94,7 @@ public sealed class NeedsYouHomeTests : IDisposable
     private async Task<(ShellWindow Window, ShellViewModel Shell)> WithRows(int count)
     {
         var (window, shell) = await Connected();
-        shell.ShowNeedsYou(new ViewModels.NeedsYou.NeedsYouFeed([.. Enumerable.Range(0, count).Select(i => NeedsYouRows.Park($"park:ITM-{i}"))], ""));
+        shell.ShowNeedsYou(new ViewModels.NeedsYou.NeedsYouFeed([.. Enumerable.Range(0, count).Select(i => NeedsYouRows.Park("park:ITM-" + i.ToString(System.Globalization.CultureInfo.InvariantCulture)))], ""));
         Settle(window);
         return (window, shell);
     }
@@ -129,7 +128,6 @@ public sealed class NeedsYouHomeTests : IDisposable
 
         var showAll = Named<Button>(window, "NeedsYouShowAll");
         Assert.True(showAll.IsEffectivelyVisible);
-        showAll.Command?.Execute(null);
         showAll.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
         Settle(window);
 
