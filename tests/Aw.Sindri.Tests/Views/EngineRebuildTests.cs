@@ -10,6 +10,7 @@ using Aw.Sindri.Core.Requests;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Ledger;
 
@@ -34,10 +35,33 @@ public sealed class EngineRebuildTests : IDisposable
     [Fact(Timeout = 60_000)]
     public async Task A_replay_into_emptied_views_gives_the_same_items_and_needs_you_rows_byte_for_byte()
     {
-        var ct = TestContext.Current.CancellationToken;
+        var (incremental, rebuilt) = await Both(Ledger(), TestContext.Current.CancellationToken);
+
+        Assert.Contains("park:", incremental.NeedsYou, StringComparison.Ordinal);   // the scenario leaves the first root parked behind the ended second
+        Assert.Contains("\"earlier\"", incremental.Items, StringComparison.Ordinal);
+        Assert.Contains("\"state\":\"voided\"", incremental.Decisions, StringComparison.Ordinal);   // the item ended by its workflow voided the decision it waited on
+        Assert.DoesNotContain("decision:", incremental.NeedsYou, StringComparison.Ordinal);
+        Assert.Equal(incremental.Decisions, rebuilt.Decisions);
+        Assert.Equal(incremental.Items, rebuilt.Items);
+        Assert.Equal(incremental.NeedsYou, rebuilt.NeedsYou);
+    }
+
+    [Fact(Timeout = 60_000)]
+    public async Task A_replay_gives_the_same_rows_across_a_re_put_park_a_takeover_with_its_idle_reminder_a_detail_less_row_and_a_child_row()
+    {
+        var (incremental, rebuilt) = await Both(Lifecycle(), TestContext.Current.CancellationToken);
+
+        Assert.Contains("takeover:", incremental.NeedsYou, StringComparison.Ordinal);   // the takeover is still idle when the ledger stops
+        Assert.DoesNotContain("park:", incremental.NeedsYou, StringComparison.Ordinal);   // the park, re-put as an escalation, was replaced by the takeover
+        Assert.Equal(incremental.Items, rebuilt.Items);
+        Assert.Equal(incremental.NeedsYou, rebuilt.NeedsYou);
+        Assert.Equal(incremental.Decisions, rebuilt.Decisions);
+    }
+
+    private async Task<((string Items, string NeedsYou, string Decisions) Incremental, (string Items, string NeedsYou, string Decisions) Rebuilt)> Both(List<LedgerEvent> ledger, CancellationToken ct)
+    {
         using var views = new SqliteViews(_home.Path);
         var projections = Projections();
-        var ledger = Ledger();
         _ = (await views.Store.Open(ViewSchema.Version, ct)).Value;
         foreach (var recorded in ledger)
         {
@@ -50,13 +74,7 @@ public sealed class EngineRebuildTests : IDisposable
         _ = (await views.Store.FinishRebuild(ct)).Value;
         var rebuilt = await Snapshot(views, ct);
 
-        Assert.Contains("park:", incremental.NeedsYou, StringComparison.Ordinal);   // the scenario leaves the first root parked behind the ended second
-        Assert.Contains("\"earlier\"", incremental.Items, StringComparison.Ordinal);
-        Assert.Contains("\"state\":\"voided\"", incremental.Decisions, StringComparison.Ordinal);   // the item ended by its workflow voided the decision it waited on
-        Assert.DoesNotContain("decision:", incremental.NeedsYou, StringComparison.Ordinal);
-        Assert.Equal(incremental.Decisions, rebuilt.Decisions);
-        Assert.Equal(incremental.Items, rebuilt.Items);
-        Assert.Equal(incremental.NeedsYou, rebuilt.NeedsYou);
+        return (incremental, rebuilt);
     }
 
     private static async Task<(string Items, string NeedsYou, string Decisions)> Snapshot(SqliteViews views, CancellationToken ct)
@@ -90,6 +108,36 @@ public sealed class EngineRebuildTests : IDisposable
             Recorded.Of(_slice.Events, EventTypes.WorkflowStarted, Row(_second, "produce", "start", produce, suspension: null), 4, _item),
             Recorded.Of(_slice.Events, EventTypes.WorkflowTransition, Row(_first, "produce", "step.completed", frame: null, park), 5, _item),
             Recorded.Of(_slice.Events, EventTypes.WorkflowTransition, Row(_second, "done", "step.completed", new FrameSummary("done", 2, Run: null, Child: null), suspension: null, outcome: "resolved"), 6, _item),
+        ];
+    }
+
+    /// <summary>One root instance's life with the clock moving a minute per row: desk task, park, the park re-put as an escalation, a child's row, a takeover, its idle reminder, a command row and a row stored without its detail.</summary>
+    private List<LedgerEvent> Lifecycle()
+    {
+        var sequence = 0L;
+        LedgerEvent Next<TPayload>(string type, TPayload payload)
+        {
+            _slice.Clock.Advance(TimeSpan.FromMinutes(1));
+            return Recorded.Of(_slice.Events, type, payload, ++sequence, _item);
+        }
+
+        var created = new ItemCreated(_slice.Ids.New<CommandId>(), _item, "the item", RepoName.From("agentic-workflow"), Link: null, Body: "the body", Owner: null);
+        var produce = new FrameSummary("produce", 1, "1.1", Child: null, StepRuntime.Desk);
+        var park = new SuspensionSummary(SuspensionKind.Park, ParkReason.Rounds, ParkKind.Loop, Escalation: null, Mirrors: null);
+        var escalation = new SuspensionSummary(SuspensionKind.Escalation, Reason: null, ParkKind: null, EscalationKind.Gate, Mirrors: null);
+        var takeover = new SuspensionSummary(SuspensionKind.Takeover, Reason: null, ParkKind: null, Escalation: null, Mirrors: null);
+        var child = _first + "/child/1";
+        return
+        [
+            Next(EventTypes.ItemCreated, created),
+            Next(EventTypes.WorkflowStarted, Row(_first, "produce", "start", produce, suspension: null)),
+            Next(EventTypes.WorkflowTransition, Row(_first, "produce", "step.completed", frame: null, park)),
+            Next(EventTypes.WorkflowTransition, Row(_first, "produce", "child.escalated", frame: null, escalation)),
+            Next(EventTypes.WorkflowStarted, Row(child, "review", "start", produce, suspension: null)),
+            Next(EventTypes.WorkflowTransition, Row(_first, "produce", TriggerNames.Takeover, frame: null, takeover)),
+            Next(EventTypes.WorkflowNotified, Row(_first, "produce", TriggerNames.TakeoverIdle, frame: null, takeover)),
+            Next(EventTypes.WorkflowTransition, Row(_first, "produce", "command.note", frame: null, takeover)),
+            Next(EventTypes.WorkflowTransition, new WorkflowEventPayload(_first, "produce", "produce", "command.note", Outcome: null, Run: null, Detail: null)),
         ];
     }
 
