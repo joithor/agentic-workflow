@@ -101,7 +101,7 @@ internal sealed partial class RecipeWorkflow
     /// carries its own text in its arguments, so it has none here.
     /// </summary>
     private string? TextOf(WorkflowInstance after, EffectCommand effect) =>
-        effect.Origin == CommandOrigin.Recipe && _recipe is { } recipe ? InstanceViews.Of(after, recipe, _since, timeoutAt: null, new InstanceViewContext(_mirrored, _provenance, Subject: _subject)).Next : null;
+        effect.Origin == CommandOrigin.Recipe && _recipe is { } recipe ? InstanceViews.Of(after, recipe, _since, timeoutAt: null, new InstanceViewContext(_mirrored, _provenance, Subject: _subject, Contents: _contents)).Next : null;
 
     /// <summary>Waits until every effect the instance emitted has settled (the run's end), surfacing a failed one.</summary>
     private async Task Settle()

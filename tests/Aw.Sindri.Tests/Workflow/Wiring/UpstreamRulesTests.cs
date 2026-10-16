@@ -54,7 +54,7 @@ public sealed class UpstreamRulesTests
         Assert.Equal(
             ["RCP-WIRE-001: step 'step.checks' in state 'checks' needs 'fact:output', but the start doesn't supply it at r.yaml:1:1 (states.checks.step.use); produce it on every path into 'checks', or add it to the recipe's inputs"],
             CheckWiring(recipe).Lines());
-        Assert.Empty(CheckWiring(recipe with { Inputs = [new RecipeInput(Core.Workflow.Ids.FactKey.From("fact:output"), Label: null, Type: null, Kind: null)] }));
+        Assert.Empty(CheckWiring(recipe with { Inputs = [new RecipeInput(Core.Workflow.Ids.FactKey.From("fact:output"), Label: null, Type: null, Kind: null, Generate: null)] }));
     }
 
     [Fact, Trait("Lane", "unit")]

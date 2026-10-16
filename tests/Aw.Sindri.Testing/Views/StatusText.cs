@@ -16,14 +16,20 @@ public static class StatusText
     /// <summary>Renders the status the way "sindri workflow status" prints it.</summary>
     /// <param name="status">The fields (their "Text" is ignored).</param>
     /// <param name="now">The clock the ages are measured against.</param>
+    /// <param name="name">The instance's rendered name when its recipe has one (WF section 6.4's first labelled line); the fields carry none.</param>
     /// <returns>The lines, each ended by a line feed.</returns>
-    public static string Render(StatusFields status, DateTimeOffset now)
+    public static string Render(StatusFields status, DateTimeOffset now, string? name = null)
     {
         ArgumentNullException.ThrowIfNull(status);
         var text = new StringBuilder();
         var h = status.Header;
         var detail = h.Detail is null ? string.Empty : $": {h.Detail}";
         text.Append(CultureInfo.InvariantCulture, $"{h.Address.Value}  {h.Recipe.Value}@{h.Hash12}  v{h.Version}  {h.State}{detail}  since {Clock(h.Since, now)} ({Span(h.AgeSeconds)})\n");
+        if (name is not null)
+        {
+            Line(text, "name", name);
+        }
+
         foreach (var (label, value) in Rows(status))
         {
             Line(text, label, value);
@@ -52,9 +58,10 @@ public static class StatusText
             yield return ("drift", Drift(status.Header, drift));
         }
 
-        foreach (var input in status.Inputs)
+        if (status.Inputs.Count > 0)
         {
-            yield return ("inputs", $"{input.Key}  {input.Name}{(input.Hash is null ? string.Empty : $"  sha256:{Digits(input.Hash)}...")}");
+            // one labelled block: the label sits on the first input and the others are indented under it, like the engine's layout
+            yield return ("inputs", string.Join('\n', status.Inputs.Select(input => $"{input.Key}  {input.Name}{(input.Hash is null ? string.Empty : $"  sha256:{Digits(input.Hash)}...")}")));
         }
     }
 

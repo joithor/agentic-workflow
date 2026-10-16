@@ -219,10 +219,10 @@ public interface IDescribedBlock { public static abstract BlockDescriptor Descri
 - **Hash:** `sha256:` over RFC 8785 (JCS) of the normalized document without `hash`, so a short form and its long
   form hash the same. Hashes are shown as 12 hex characters, and input accepts a prefix of 8 or more. The normalized
   document writes every absent optional value as `null` and every absent list or map as empty (owner decision, 2026-10-11), so adding an optional field to the
-  format re-hashes every recipe, and each needs re-approval. Adding `outputs`, `urgency` or an input's `kind` to an
+  format re-hashes every recipe, and each needs re-approval. Adding `outputs`, `urgency`, `name`, an input's `kind` or an input's `generate` to an
   already approved recipe is therefore a new hash and a re-approval too: the registry's approved hash covers the whole
   normalized file, and these fields are part of it (they are presentation, but the app renders from the approved
-  document). The fields themselves land in P2 for this reason (Phases, P2).
+  document). `name` and `generate` are hashed because they change what an instance is called and which value it starts with. The fields themselves land in P2 for this reason (Phases, P2).
 
 ### 3.2 Top level
 
@@ -234,7 +234,8 @@ public interface IDescribedBlock { public static abstract BlockDescriptor Descri
 | `description` | no | |
 | `base` | generated only | Written by Sindri's generator. A hand-written recipe with `base` is `RCP-CAP-004` |
 | `urgency` | no | `incident \| triage \| work`, default `work` (UI E-21). The app orders Home's Workflows strip and the Workflows list's groups by it, `incident` first. It changes no engine behaviour: no timer, escalation or notification reads it. `RCP-URG-001` (any other value). The normalized document writes the default, so an absent `urgency` and `urgency: work` hash the same |
-| `inputs` | no | Fact keys. The long form is `{ key, label?, type?, kind? }` with `type` one of the fact types in §3.3 (default `text`) and `kind` one of the subject kinds in §3.3 (UI E-22). The **first** declared input is the instance's subject (UI §5.4). `recipe show` and `GET /workflow/recipes` return them so the app can render a start form and a subject line |
+| `inputs` | **yes** | At least one (`RCP-INPUT-002`). The long form is `{ key, label?, type?, kind, generate? }`. `kind` is one of the subject kinds in §3.3 and is required (`RCP-INPUT-001`). `type` is one of the fact types in §3.3 and defaults to the type `kind` pairs with. `generate` is a template (§3.11) that supplies the value when the start doesn't. The bare-string short form (`[fact:item]`) normalizes to `{ key }` with no `kind`, so it fails `RCP-INPUT-001`. The **first** declared input is the instance's subject (UI §5.4). `recipe show` and `GET /workflow/recipes` return the inputs so the app can render a start form and a subject line |
+| `name` | no | A template (§3.11) for the instance's name, rendered once at start. The name becomes `subject.label`. `RCP-NAME-002`–`006` |
 | `outputs` | no | What the recipe produces for a human, in the long form `[{ key, label?, type?, from }]` (UI E-22). `key` is a fact key; `type` is one of §3.3's fact types (default `text`); `from` names the state that produces the fact. The app places the fact under that state in the states band and in the facts panel (UI §5.2). Declarations only: they add no wiring (`produces` and Step outputs still do), and an undeclared fact is still recorded and still shown, as `payload`. `RCP-OUT-001`–`003`, `RCP-TYPE-001`–`003` (§9.1) |
 | `initial` | yes | An `active` or `wait` state |
 | `states` | yes | At least one non-terminal and one terminal state; reserved names refused |
@@ -255,7 +256,7 @@ Reserved state names: `cancelled`, `escalated`, `parked`, `taken-over`.
 | Duration | `<n>m`, `<n>h` or `<n>d`, at least `1m` |
 | Tokens | int, or with a `k`/`M` suffix |
 | Fact type | `text \| file \| item \| link \| scope-map \| packet \| evidence \| decision \| payload` (UI E-22, §5.2). `text`, `file` and `item` are the input types of rev 7; the rest are for outputs and for inputs that carry a structured value. The type picks a viewer in the app and nothing else: the engine stores every fact as a hashed blob, and a type it doesn't know is `RCP-TYPE-001`, not a runtime error |
-| Subject kind | `item \| linear-project \| webhook \| file \| text` (UI E-22, §5.4). `item` pairs with type `item`, `file` with `file`, `text` with `text`, and `linear-project` and `webhook` with `payload`; any other pairing is `RCP-TYPE-003`. Without `kind`, the kind is the one the type implies, and a `payload`, `link` or other structured type with no `kind` has none (the app shows the key) |
+| Subject kind | `item \| linear-project \| webhook \| file \| text \| link` (UI E-22, §5.4). Each input declares one (`RCP-INPUT-001`). `item` pairs with type `item`, `file` with `file`, `text` with `text`, `link` with `link`, and `linear-project` and `webhook` with `payload`. Any other pairing is `RCP-TYPE-003` |
 | `with:` value | A literal (string, number, bool or a list of these), `{ fact }` or `{ profile }`. Capability parameters take only literals or `{ profile }` (`RCP-CAP-007`) |
 
 ### 3.4 States
@@ -351,6 +352,8 @@ names come from the trigger's source: a Step, an event, or a child's terminal ou
 - **Fan-out children** come in schema v2, with the Step graph and stacks (A 17.28.6 steps 3 and 6).
 - **Per-transition timeouts** come only if a recipe needs one.
 - **A free expression language:** never.
+- `name` and `generate` (§3.11) are closed templates: literals and fixed placeholders. They have no operators,
+  functions or conditions.
 - **Variables and includes:** not planned.
 
 ### 3.10 Path order of states (UI E-20, §5.1)
@@ -379,6 +382,69 @@ parses YAML. It is derived from the normalized document, is not part of the hash
 A state the walk never reaches is already `RCP-REACH-001`, so every state of a valid recipe has an `order` or a
 `branchOf`.
 
+### 3.11 Instance names and generated inputs (P4c)
+
+**Grammar.** A template is literal text with placeholders in braces. `{{` and `}}` write literal braces. These
+are the placeholders:
+
+| Placeholder | Renders | In `name` | In `generate` |
+|---|---|---|---|
+| `{fact:<name>}` | The value of a declared input, rendered by its kind (below) | yes | no |
+| `{start:date}` | The start time in UTC, as `yyyy-MM-dd` | yes | yes |
+| `{start:time}` | The start time in UTC, as `HH:mm` | yes | yes |
+
+Example: `name: "{fact:scope} · {start:date}"` and `generate: "triage {start:date}"`.
+
+**Rendering by kind** (for `{fact:…}`):
+- `item`: its `ITM-` id (not the title).
+- `text`: the first non-empty line, trimmed.
+- `file`: the file name.
+- `link`: the `title` field, else the URL's host.
+- `linear-project` and `webhook`: the payload's `id` field, else `number`, else the bare key.
+
+Each value has its control characters and newlines replaced by a space. The value is then cut to 40 characters
+and the whole name to 80 characters. Both cuts use `SubjectRefs.Cut`, which never splits a surrogate pair and
+adds no ellipsis.
+
+**Missing values.** `StartInstance` refuses a missing input, and `generate` fills the absent ones. So the only
+value that can be missing at render time is content that can't be read: a fact that isn't stored, a payload
+without an `id`, or an item whose title is unavailable after the id fallback. Such a placeholder renders as the
+input's bare key (`scope`). The literals, the date and the other values stay in the name, and the reader sees
+which part is missing. If the rendered name is empty after trimming, the instance address is used.
+
+**When `name` is rendered.** The workflow renders it, on every replay, from deterministic inputs: the text each
+input's `ReadSubject` local activity returned (one recorded marker per fact) and `InstanceStart.StartedAt`. The
+activity returns the subject text of one fact, not the name, so the history keeps the texts and `workflow.started`
+records the rendered result (`subject`). Because the inputs are fixed at start, the name is the same on every replay
+and is never re-read from the item or the facts: renaming the item or editing the fact later doesn't change it.
+`InstanceNames.Render` runs inside the workflow, so any later change to what it returns for the same inputs needs a
+`Workflow.Patched` guard (it would otherwise change the name of a running instance on replay).
+
+**`generate`.** It is allowed only on an input of `kind: text`. An item, file or link refers to something that
+already exists, and a `linear-project` or `webhook` payload comes from outside, so none of these is made from a
+template. `StartInstance` renders `generate` when the start supplies no value for that input. It uses the start
+time it stamps on the instance and runs before the workflow starts. The result is stored as that input's fact,
+like any supplied fact. Its producer is `engine:generate`, so the ledger, `facts[]` and `status`'s `inputs` line
+show that the value was generated. A supplied value always wins. A scheduler passes only the start time and no
+facts. An input with `generate` is served with `required: false`. `generate` reads only the start time and
+literals, never another input (owner answer, 2026-10-15), and the time is UTC (owner answer, 2026-10-15).
+
+**Subject.** `subject.kind` and `subject.key` are those of the first input, as before (the key rules of
+`SubjectRefs`). `subject.label` is the rendered name when the recipe has `name`, and otherwise the per-kind rule
+of UI §5.4. A `link` subject's label is the `title`, else the URL's host, and its `href` is the URL (it matches
+`FactRow.ref {url, host, title}`). The `Subject` search attribute stays `subject.key`. `--subject` and `?subject=`
+match the key exactly or the label, which is the name, as a case-insensitive substring. The views do this
+filtering, as they do today, so no new search attribute is needed. Every instance has a subject on the wire.
+
+**A pre-P4c instance.** A recipe registered before input kinds has an input with no `kind` (or no input at all), so
+nothing names its subject. Its approved row still loads and an instance already running on it keeps running, with the
+commands it made before P4c (a replay must match the history it recorded, so it still reads its first input once and
+drops the text). That instance is not named: it has no `name` and its `subject` is the item itself, `kind: item`,
+`key` the item id, `label` the item's title, else the instance address, which is what the list row shows too (the
+detail and the list agree). It has no `inputs[]`, and its `detail` names `RCP-INPUT-001` or `-002` and the fix. A new
+start on such a recipe is refused (`SND-RECIPE-001`, before a pin-drift refusal: re-approving can't fix it), and so is a first
+approval of it (before the no-evals check). A row already approved can still be re-approved or woken, so an instance parked on it can resume. `recipe list` marks the row `legacy-shape`, approved or not.
+
 ## 4. Approval and invariant 13
 
 ### 4.1 Store and events
@@ -390,7 +456,7 @@ A state the walk never reaches is already `RCP-REACH-001`, so every state of a v
 
 `IRecipeStore` keeps the normalized text by hash. Register, approve and revoke write `recipe.registered`,
 `recipe.approved` and `recipe.revoked` events. Approvals live in `ledger.db` and travel with a host handover.
-`recipe list --stale` lists approved recipes whose pins no longer match the build. Re-approving the **same hash**
+`recipe list --stale` lists approved recipes whose pins no longer match the build, or that are `legacy-shape` (registered before input kinds: register the current file at a new version and approve it; an unapproved legacy row shows `legacy-shape` in `recipe list` but not under `--stale`, which lists approved recipes only). Re-approving the **same hash**
 appends a new approval row and event with the new pins (a **drift approval**; a revoked hash can't be re-approved
 this way, `SND-RECIPE-005`). It re-runs the validator and evals, and its preview shows:
 - which blocks changed, with a capability diff;
@@ -479,9 +545,10 @@ what the interpreter must do; the **mechanism** is Temporal's. Rev 7's text is i
   gate, every effect and every ledger write is an activity. The SDK's analyzer and the replayer test (§10) enforce it.
   *Versioning:* P4b's start now also runs the local activity `ReadSubject` (it names the `Subject` attribute) and has no
   `Workflow.Patched` guard: a workflow started before it would not replay. That is accepted before the cutover, as nothing
-  is installed; from the cutover on, a change to what start runs is guarded with `Workflow.Patched`.
+  is installed; from the cutover on, a change to what start runs is guarded with `Workflow.Patched`. P4c's start also renders the
+  recipe's `name` (§3.11) in the workflow from the per-fact `ReadSubject` markers and `StartedAt`; the no-`Patched` acceptance is unchanged, and from the cutover on a change to `InstanceNames.Render` is guarded with `Workflow.Patched`.
 - **Search attributes**, set on start and on every transition: `Item`, `Recipe`, `State`, `NeedsYou` (true while
-  parked, escalated or holding an open desk task), `Repo`, `Tenant`, `Ring`. *Rev 8.2:* `Repo` is the `repo` field of
+  parked, escalated or holding an open desk task), `Repo`, `Tenant`, `Ring`, `Urgency`, `Root`, and `Subject` (the subject key of §3.11; never the name). *Rev 8.2:* `Repo` is the `repo` field of
   the instance's `fact:item`, read once on start; an instance without that fact, or whose item names no repo, leaves
   `Repo` unset.
 - **Queries.** `GetInstance` (§6.3) is a workflow **Query** returning the state, the rendered `next`, `allowedCommands`,
@@ -792,7 +859,8 @@ Instance ids are opaque (`WFI-…`, a typed id); the CLI's `/`-separated address
 
 The header is always
 `<address>  <recipe>@<hash12>  v<n>  <state>[: <detail>]  since <hh:mm> (<age>)`. Then come labelled lines; the
-order is fixed and empty lines are left out.
+order is fixed and empty lines are left out. When the recipe has `name`, the first labelled line is
+`name      <rendered name>` (the CLI reads it from `subject.label`; `status.header` has no name field). The `inputs` line marks a generated value `(generated)`.
 
 ```
 T-3/item/1  workflow.item@3f1c09a2b4d1  v7  parked: no-progress (child)  since 11:54 (12m)
@@ -850,7 +918,7 @@ The answer line depends on the park reason:
 - a park mirroring a child names the child.
 
 Durations are shown as `1d 22h 48m`, or `40s` under a minute. `since` adds the date (`since 10-09 11:54`) once the
-age is a day or more. Plain output is ASCII, and `commands` always lists the instance's own verbs first, in the
+age is a day or more. Plain output is ASCII (the exception is the `name` line: it renders the recipe's name template, and the values it names, such as a scope text, may be non-ASCII), and `commands` always lists the instance's own verbs first, in the
 order `answer`, `complete`, `handback`, `takeover`, `cancel`. Golden files pin every layout in §6.4, plus one per
 §3.8 row.
 
@@ -933,7 +1001,7 @@ Outside S1:
 
 | Code | Kind | Meaning | Fix |
 |---|---|---|---|
-| SND-RECIPE-001 | invalid | Validation failed | Fix each `RCP-*` line |
+| SND-RECIPE-001 | invalid | Validation failed, or the recipe was registered before input kinds (a start or a first approval of it) | Fix each `RCP-*` line; for a legacy row, register the current file at a new version and approve it |
 | SND-RECIPE-002 | notFound | No recipe with that id or hash | `sindri recipe list` |
 | SND-RECIPE-003 | conflict | Not approved | `sindri recipe approve` |
 | SND-RECIPE-004 | — | Retired: a caller without a terminal gets API's `SND-AUTH-002` | — |
@@ -980,7 +1048,20 @@ directory when not (so `workflow.item.yaml` finds `workflow.step.yaml`).
 | Allowlisted effects | `RCP-EFFECT-001` (`skipped` without the profile key) |
 | Hash | `RCP-HASH-001` |
 | Added | `RCP-TRIG-001`, `RCP-WHEN-002`, `RCP-THRESH-001`, `-002`, `RCP-NEXT-001`, `-002`, `RCP-CHILD-002` (cycle), `-003` (depth > 4), `RCP-VERSION-001`, `-002`, `RCP-TRIG-002` (reserved verb), `RCP-TIME-002` (`retry` on a child wait), `RCP-RES-001` (information: a resource with no allocator in this build) |
-| Added (UI E-21, E-22) | `RCP-URG-001` (`urgency` is not `incident`, `triage` or `work`) · `RCP-OUT-001` (`outputs[].from` names no state of the recipe) · `RCP-OUT-002` (`outputs[].from` names a terminal or engine-owned state, or a state whose Step descriptor and transitions never produce `key`; information when the fact only arrives through a child) · `RCP-OUT-003` (duplicate output `key`, or an output `key` that is also an input `key`) · `RCP-TYPE-001` (a fact `type`, on an input or an output, is not one of the nine in §3.3) · `RCP-TYPE-002` (an input `kind` is not one of the five in §3.3) · `RCP-TYPE-003` (a `kind` and `type` that don't pair, §3.3) |
+| Added (UI E-21, E-22) | `RCP-URG-001` (`urgency` is not `incident`, `triage` or `work`) · `RCP-OUT-001` (`outputs[].from` names no state of the recipe) · `RCP-OUT-002` (`outputs[].from` names a terminal or engine-owned state, or a state whose Step descriptor and transitions never produce `key`; information when the fact only arrives through a child) · `RCP-OUT-003` (duplicate output `key`, or an output `key` that is also an input `key`) · `RCP-TYPE-001` (a fact `type`, on an input or an output, is not one of the nine in §3.3) · `RCP-TYPE-002` (an input `kind` is not one of the six in §3.3) · `RCP-TYPE-003` (a `kind` and `type` that don't pair, §3.3) |
+| Added (P4c) | `RCP-INPUT-001` (an input declares no `kind`) · `RCP-INPUT-002` (the recipe declares no input) · `RCP-NAME-002` (`name` or `generate` is empty, only whitespace, or longer than 200 characters) · `RCP-NAME-003` (an unknown placeholder, or an unbalanced `{` or `}`) · `RCP-NAME-004` (`{fact:x}` in `name` names no declared input) · `RCP-NAME-005` (a `{fact:…}` placeholder in `generate`) · `RCP-NAME-006` (`generate` on an input whose kind isn't `text`) |
+
+Error lines for the P4c rules, in this section's format (`RCP-NAME-001` is taken by state names, §3.4, so the template rules start at `002`):
+
+```
+RCP-INPUT-001: input 'fact:spec' declares no kind at workflow.step.yaml:4:9 (inputs[0]); fix: add kind: item | link | linear-project | webhook | file | text, paired with its type (item/item, file/file, text/text, link/link, linear-project and webhook/payload)
+RCP-INPUT-002: the recipe declares no input at workflow.x.yaml:1:1 (inputs); fix: declare at least one input; a scheduled recipe gives it generate: "<template>"
+RCP-NAME-002: the name template is empty or longer than 200 characters at …:5:7 (name); fix: write literal text with {fact:<input>} or {start:date|time}
+RCP-NAME-003: unknown placeholder '{owner}' at …:5:7 (name); fix: use {fact:<input>}, {start:date} or {start:time}, and write {{ or }} for a literal brace
+RCP-NAME-004: '{fact:scope}' names no declared input at …:5:7 (name); fix: declare fact:scope under inputs or remove the placeholder
+RCP-NAME-005: generate may not read inputs ('{fact:item}') at …:7:9 (inputs[0].generate); fix: use only literals, {start:date} and {start:time}
+RCP-NAME-006: generate on an input of kind 'item' at …:7:9 (inputs[0].generate); fix: only a text input can be generated; supply this input at start
+```
 
 ### 9.2 Eval format
 
@@ -1134,7 +1215,7 @@ These feed A §17.2, and all of it is scrubbed.
 schema: 1
 id: workflow.item
 version: 1
-inputs: [fact:item]
+inputs: [{ key: fact:item, label: "Item", type: item, kind: item }]
 initial: triaged
 states:
   triaged:   { kind: wait, waitFor: { event: item.routed }, timeout: { after: 7d, then: escalate },
@@ -1164,7 +1245,7 @@ evals: [evals/workflow.item/happy.jsonl, evals/workflow.item/child-parks.jsonl, 
 schema: 1
 id: workflow.step
 version: 1
-inputs: [fact:spec]
+inputs: [{ key: fact:spec, label: "Spec", type: text, kind: text }]
 initial: produce
 states:
   produce: { kind: active, step: step.produce, loop: revisions, timeout: { after: 4h, then: park },

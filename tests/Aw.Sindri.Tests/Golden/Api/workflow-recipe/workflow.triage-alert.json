@@ -2,13 +2,15 @@
   "id": "workflow.triage-alert",
   "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
   "version": 2,
+  "name": null,
   "inputs": [
     {
       "key": "fact:alert",
       "label": "Alert",
       "type": "payload",
       "kind": "webhook",
-      "required": true
+      "required": true,
+      "generate": null
     }
   ],
   "outputs": [

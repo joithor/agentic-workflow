@@ -1,4 +1,3 @@
-
 #nullable enable
 Aw.Sindri.Core.Auth.HeldHumanToken
 Aw.Sindri.Core.Auth.HeldHumanToken.Clear() -> void
@@ -600,7 +599,6 @@ Aw.Sindri.Core.Events.ViewsRebuilt.EventsReplayed.init -> void
 Aw.Sindri.Core.Events.ViewsRebuilt.ViewsRebuilt(Aw.Sindri.Core.Ids.CommandId CommandId, long CursorBefore, long EventsReplayed) -> void
 Aw.Sindri.Core.Events.WorkflowEventDelta
 Aw.Sindri.Core.Events.WorkflowEventDelta.<Clone>$() -> Aw.Sindri.Core.Events.WorkflowEventDelta!
-Aw.Sindri.Core.Events.WorkflowEventDelta.Deconstruct(out Aw.Sindri.Core.Events.FrameSummary? Frame, out Aw.Sindri.Core.Events.SuspensionSummary? Suspension, out Aw.Sindri.Core.Events.SuspensionSummary? PendingPark, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Events.LoopCounter!>? Loops, out int? TokensSpent, out int? TokensGranted, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Facts, out string? Outcome) -> void
 Aw.Sindri.Core.Events.WorkflowEventDelta.Equals(Aw.Sindri.Core.Events.WorkflowEventDelta? other) -> bool
 Aw.Sindri.Core.Events.WorkflowEventDelta.Facts.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
 Aw.Sindri.Core.Events.WorkflowEventDelta.Facts.init -> void
@@ -618,7 +616,6 @@ Aw.Sindri.Core.Events.WorkflowEventDelta.TokensGranted.get -> int?
 Aw.Sindri.Core.Events.WorkflowEventDelta.TokensGranted.init -> void
 Aw.Sindri.Core.Events.WorkflowEventDelta.TokensSpent.get -> int?
 Aw.Sindri.Core.Events.WorkflowEventDelta.TokensSpent.init -> void
-Aw.Sindri.Core.Events.WorkflowEventDelta.WorkflowEventDelta(Aw.Sindri.Core.Events.FrameSummary? Frame, Aw.Sindri.Core.Events.SuspensionSummary? Suspension, Aw.Sindri.Core.Events.SuspensionSummary? PendingPark, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Events.LoopCounter!>? Loops, int? TokensSpent, int? TokensGranted, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Facts, string? Outcome) -> void
 Aw.Sindri.Core.Events.WorkflowEventDetail
 Aw.Sindri.Core.Events.WorkflowEventDetail.<Clone>$() -> Aw.Sindri.Core.Events.WorkflowEventDetail!
 Aw.Sindri.Core.Events.WorkflowEventDetail.Amount.get -> int?
@@ -2522,9 +2519,7 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.ILaunchRequests
 Aw.Sindri.Core.Workflow.Engine.Runtime.ILaunchRequests.Requested(Aw.Sindri.Core.Workflow.Engine.ItemKey item, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.LaunchId?>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.InputFact
 Aw.Sindri.Core.Workflow.Engine.Runtime.InputFact.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.InputFact!
-Aw.Sindri.Core.Workflow.Engine.Runtime.InputFact.Deconstruct(out string! Name, out Aw.Sindri.Core.Workflow.Engine.FactValue! Value) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InputFact.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.InputFact? other) -> bool
-Aw.Sindri.Core.Workflow.Engine.Runtime.InputFact.InputFact(string! Name, Aw.Sindri.Core.Workflow.Engine.FactValue! Value) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InputFact.Name.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InputFact.Name.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InputFact.Value.get -> Aw.Sindri.Core.Workflow.Engine.FactValue!
@@ -3101,7 +3096,6 @@ Aw.Sindri.Core.Workflow.Recipes.Recipe.Base.get -> Aw.Sindri.Core.Workflow.Recip
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Base.init -> void
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Budget.get -> Aw.Sindri.Core.Workflow.Recipes.BudgetSpec?
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Budget.init -> void
-Aw.Sindri.Core.Workflow.Recipes.Recipe.Deconstruct(out int Schema, out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out int Version, out string? Description, out Aw.Sindri.Core.Workflow.Recipes.RecipeRef? Base, out string! Urgency, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeInput!>! Inputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeOutput!>! Outputs, out string! Initial, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.RecipeState!>! States, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeTransition!>! Transitions, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.LoopSpec!>! Loops, out Aw.Sindri.Core.Workflow.Recipes.BudgetSpec? Budget, out System.Collections.Generic.IReadOnlyList<string!>! Evals, out Aw.Sindri.Core.Workflow.Ids.RecipeHash? Hash) -> void
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Description.get -> string?
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Description.init -> void
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Equals(Aw.Sindri.Core.Workflow.Recipes.Recipe? other) -> bool
@@ -3119,7 +3113,6 @@ Aw.Sindri.Core.Workflow.Recipes.Recipe.Loops.get -> System.Collections.Generic.I
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Loops.init -> void
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Outputs.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeOutput!>!
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Outputs.init -> void
-Aw.Sindri.Core.Workflow.Recipes.Recipe.Recipe(int Schema, Aw.Sindri.Core.Workflow.Ids.RecipeId Id, int Version, string? Description, Aw.Sindri.Core.Workflow.Recipes.RecipeRef? Base, string! Urgency, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeInput!>! Inputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeOutput!>! Outputs, string! Initial, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.RecipeState!>! States, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeTransition!>! Transitions, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.LoopSpec!>! Loops, Aw.Sindri.Core.Workflow.Recipes.BudgetSpec? Budget, System.Collections.Generic.IReadOnlyList<string!>! Evals, Aw.Sindri.Core.Workflow.Ids.RecipeHash? Hash) -> void
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Schema.get -> int
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Schema.init -> void
 Aw.Sindri.Core.Workflow.Recipes.Recipe.States.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.RecipeState!>!
@@ -3141,7 +3134,6 @@ Aw.Sindri.Core.Workflow.Recipes.RecipeDuration.ToString(System.IFormatProvider? 
 Aw.Sindri.Core.Workflow.Recipes.RecipeDuration.Value.get -> string!
 Aw.Sindri.Core.Workflow.Recipes.RecipeInput
 Aw.Sindri.Core.Workflow.Recipes.RecipeInput.<Clone>$() -> Aw.Sindri.Core.Workflow.Recipes.RecipeInput!
-Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.FactKey Key, out string? Label, out string? Type, out string? Kind) -> void
 Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Equals(Aw.Sindri.Core.Workflow.Recipes.RecipeInput? other) -> bool
 Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Key.get -> Aw.Sindri.Core.Workflow.Ids.FactKey
 Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Key.init -> void
@@ -3149,7 +3141,6 @@ Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Kind.get -> string?
 Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Kind.init -> void
 Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Label.get -> string?
 Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Label.init -> void
-Aw.Sindri.Core.Workflow.Recipes.RecipeInput.RecipeInput(Aw.Sindri.Core.Workflow.Ids.FactKey Key, string? Label, string? Type, string? Kind) -> void
 Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Type.get -> string?
 Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Type.init -> void
 Aw.Sindri.Core.Workflow.Recipes.RecipeOutput
@@ -3559,7 +3550,6 @@ Aw.Sindri.Core.Workflow.Registry.RecipeStanding.Revoked = 3 -> Aw.Sindri.Core.Wo
 Aw.Sindri.Core.Workflow.Registry.RecipeStanding.Unapproved = 1 -> Aw.Sindri.Core.Workflow.Registry.RecipeStanding
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.<Clone>$() -> Aw.Sindri.Core.Workflow.Registry.RecipeSummary!
-Aw.Sindri.Core.Workflow.Registry.RecipeSummary.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out int Version, out Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, out Aw.Sindri.Core.Workflow.Registry.RecipeStanding Standing, out Aw.Sindri.Core.Workflow.Registry.ApprovalVia? Via, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.StaleReason>! Stale, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeInput!>! Inputs, out string! Urgency, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeOutput!>! Outputs, out string! OrderedBy, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.StatePlace!>! States, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.PathLoop!>! Loops) -> void
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.Equals(Aw.Sindri.Core.Workflow.Registry.RecipeSummary? other) -> bool
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.Hash.get -> Aw.Sindri.Core.Workflow.Ids.RecipeHash
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.Hash.init -> void
@@ -3573,7 +3563,6 @@ Aw.Sindri.Core.Workflow.Registry.RecipeSummary.OrderedBy.get -> string!
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.OrderedBy.init -> void
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.Outputs.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeOutput!>!
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.Outputs.init -> void
-Aw.Sindri.Core.Workflow.Registry.RecipeSummary.RecipeSummary(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, int Version, Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, Aw.Sindri.Core.Workflow.Registry.RecipeStanding Standing, Aw.Sindri.Core.Workflow.Registry.ApprovalVia? Via, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.StaleReason>! Stale, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeInput!>! Inputs, string! Urgency, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeOutput!>! Outputs, string! OrderedBy, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.StatePlace!>! States, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.PathLoop!>! Loops) -> void
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.Stale.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.StaleReason>!
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.Stale.init -> void
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.Standing.get -> Aw.Sindri.Core.Workflow.Registry.RecipeStanding
@@ -3653,6 +3642,7 @@ Aw.Sindri.Core.Workflow.Registry.RevokePreview.Version.get -> int
 Aw.Sindri.Core.Workflow.Registry.RevokePreview.Version.init -> void
 Aw.Sindri.Core.Workflow.Registry.StaleReason
 Aw.Sindri.Core.Workflow.Registry.StaleReason.ChildStale = 2 -> Aw.Sindri.Core.Workflow.Registry.StaleReason
+Aw.Sindri.Core.Workflow.Registry.StaleReason.LegacyShape = 3 -> Aw.Sindri.Core.Workflow.Registry.StaleReason
 Aw.Sindri.Core.Workflow.Registry.StaleReason.PinDrift = 1 -> Aw.Sindri.Core.Workflow.Registry.StaleReason
 Aw.Sindri.Core.Workflow.SameDirectoryChildren
 Aw.Sindri.Core.Workflow.SameDirectoryChildren.Resolve(Aw.Sindri.Core.Workflow.Ids.RecipeId id) -> Aw.Sindri.Core.Workflow.Validation.ChildRecipe?
@@ -3993,12 +3983,9 @@ Aw.Sindri.Core.Workflow.Views.GateLine.Threshold.get -> double?
 Aw.Sindri.Core.Workflow.Views.GateLine.Threshold.init -> void
 Aw.Sindri.Core.Workflow.Views.InputPresence
 Aw.Sindri.Core.Workflow.Views.InputPresence.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.InputPresence!
-Aw.Sindri.Core.Workflow.Views.InputPresence.Deconstruct(out string! Key, out string! Label, out string? Kind, out bool Required, out bool Present) -> void
 Aw.Sindri.Core.Workflow.Views.InputPresence.Equals(Aw.Sindri.Core.Workflow.Views.InputPresence? other) -> bool
-Aw.Sindri.Core.Workflow.Views.InputPresence.InputPresence(string! Key, string! Label, string? Kind, bool Required, bool Present) -> void
 Aw.Sindri.Core.Workflow.Views.InputPresence.Key.get -> string!
 Aw.Sindri.Core.Workflow.Views.InputPresence.Key.init -> void
-Aw.Sindri.Core.Workflow.Views.InputPresence.Kind.get -> string?
 Aw.Sindri.Core.Workflow.Views.InputPresence.Kind.init -> void
 Aw.Sindri.Core.Workflow.Views.InputPresence.Label.get -> string!
 Aw.Sindri.Core.Workflow.Views.InputPresence.Label.init -> void
@@ -4161,15 +4148,12 @@ Aw.Sindri.Core.Workflow.Views.Progress.Total.get -> int
 Aw.Sindri.Core.Workflow.Views.Progress.Total.init -> void
 Aw.Sindri.Core.Workflow.Views.RecipeInputView
 Aw.Sindri.Core.Workflow.Views.RecipeInputView.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.RecipeInputView!
-Aw.Sindri.Core.Workflow.Views.RecipeInputView.Deconstruct(out string! Key, out string? Label, out Aw.Sindri.Core.Workflow.Views.FactType Type, out string? Kind, out bool Required) -> void
 Aw.Sindri.Core.Workflow.Views.RecipeInputView.Equals(Aw.Sindri.Core.Workflow.Views.RecipeInputView? other) -> bool
 Aw.Sindri.Core.Workflow.Views.RecipeInputView.Key.get -> string!
 Aw.Sindri.Core.Workflow.Views.RecipeInputView.Key.init -> void
-Aw.Sindri.Core.Workflow.Views.RecipeInputView.Kind.get -> string?
 Aw.Sindri.Core.Workflow.Views.RecipeInputView.Kind.init -> void
 Aw.Sindri.Core.Workflow.Views.RecipeInputView.Label.get -> string?
 Aw.Sindri.Core.Workflow.Views.RecipeInputView.Label.init -> void
-Aw.Sindri.Core.Workflow.Views.RecipeInputView.RecipeInputView(string! Key, string? Label, Aw.Sindri.Core.Workflow.Views.FactType Type, string? Kind, bool Required) -> void
 Aw.Sindri.Core.Workflow.Views.RecipeInputView.Required.get -> bool
 Aw.Sindri.Core.Workflow.Views.RecipeInputView.Required.init -> void
 Aw.Sindri.Core.Workflow.Views.RecipeInputView.Type.get -> Aw.Sindri.Core.Workflow.Views.FactType
@@ -4213,7 +4197,6 @@ Aw.Sindri.Core.Workflow.Views.RecipeStateView.State.get -> string!
 Aw.Sindri.Core.Workflow.Views.RecipeStateView.State.init -> void
 Aw.Sindri.Core.Workflow.Views.RecipeView
 Aw.Sindri.Core.Workflow.Views.RecipeView.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.RecipeView!
-Aw.Sindri.Core.Workflow.Views.RecipeView.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, out int Version, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeInputView!>! Inputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeOutputView!>! Outputs, out Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency, out Aw.Sindri.Core.Workflow.Views.PathOrdering OrderedBy, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeStateView!>! States, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeLoopView!>! Loops) -> void
 Aw.Sindri.Core.Workflow.Views.RecipeView.Equals(Aw.Sindri.Core.Workflow.Views.RecipeView? other) -> bool
 Aw.Sindri.Core.Workflow.Views.RecipeView.Id.get -> Aw.Sindri.Core.Workflow.Ids.RecipeId
 Aw.Sindri.Core.Workflow.Views.RecipeView.Id.init -> void
@@ -4229,7 +4212,6 @@ Aw.Sindri.Core.Workflow.Views.RecipeView.OrderedBy.get -> Aw.Sindri.Core.Workflo
 Aw.Sindri.Core.Workflow.Views.RecipeView.OrderedBy.init -> void
 Aw.Sindri.Core.Workflow.Views.RecipeView.Outputs.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeOutputView!>!
 Aw.Sindri.Core.Workflow.Views.RecipeView.Outputs.init -> void
-Aw.Sindri.Core.Workflow.Views.RecipeView.RecipeView(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, int Version, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeInputView!>! Inputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeOutputView!>! Outputs, Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency, Aw.Sindri.Core.Workflow.Views.PathOrdering OrderedBy, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeStateView!>! States, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeLoopView!>! Loops) -> void
 Aw.Sindri.Core.Workflow.Views.RecipeView.States.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeStateView!>!
 Aw.Sindri.Core.Workflow.Views.RecipeView.States.init -> void
 Aw.Sindri.Core.Workflow.Views.RecipeView.Urgency.get -> Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency
@@ -4445,17 +4427,14 @@ Aw.Sindri.Core.Workflow.Views.StepDeclaration.Ref.init -> void
 Aw.Sindri.Core.Workflow.Views.StepDeclaration.StepDeclaration(string! Kind, string! Ref, string! Declaration) -> void
 Aw.Sindri.Core.Workflow.Views.SubjectRef
 Aw.Sindri.Core.Workflow.Views.SubjectRef.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.SubjectRef!
-Aw.Sindri.Core.Workflow.Views.SubjectRef.Deconstruct(out string? Kind, out string! Key, out string! Label, out string? Href) -> void
 Aw.Sindri.Core.Workflow.Views.SubjectRef.Equals(Aw.Sindri.Core.Workflow.Views.SubjectRef? other) -> bool
 Aw.Sindri.Core.Workflow.Views.SubjectRef.Href.get -> string?
 Aw.Sindri.Core.Workflow.Views.SubjectRef.Href.init -> void
 Aw.Sindri.Core.Workflow.Views.SubjectRef.Key.get -> string!
 Aw.Sindri.Core.Workflow.Views.SubjectRef.Key.init -> void
-Aw.Sindri.Core.Workflow.Views.SubjectRef.Kind.get -> string?
 Aw.Sindri.Core.Workflow.Views.SubjectRef.Kind.init -> void
 Aw.Sindri.Core.Workflow.Views.SubjectRef.Label.get -> string!
 Aw.Sindri.Core.Workflow.Views.SubjectRef.Label.init -> void
-Aw.Sindri.Core.Workflow.Views.SubjectRef.SubjectRef(string? Kind, string! Key, string! Label, string? Href) -> void
 Aw.Sindri.Core.Workflow.Views.TimeoutKind
 Aw.Sindri.Core.Workflow.Views.TimeoutKind.Escalates = 2 -> Aw.Sindri.Core.Workflow.Views.TimeoutKind
 Aw.Sindri.Core.Workflow.Views.TimeoutKind.Parks = 1 -> Aw.Sindri.Core.Workflow.Views.TimeoutKind
@@ -6424,7 +6403,6 @@ static Aw.Sindri.Core.Workflow.Recipes.StatePlace.operator ==(Aw.Sindri.Core.Wor
 static Aw.Sindri.Core.Workflow.Recipes.StepUse.operator !=(Aw.Sindri.Core.Workflow.Recipes.StepUse? left, Aw.Sindri.Core.Workflow.Recipes.StepUse? right) -> bool
 static Aw.Sindri.Core.Workflow.Recipes.StepUse.operator ==(Aw.Sindri.Core.Workflow.Recipes.StepUse? left, Aw.Sindri.Core.Workflow.Recipes.StepUse? right) -> bool
 static Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.All.get -> System.Collections.Generic.IReadOnlyList<string!>!
-static Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.Effective(Aw.Sindri.Core.Workflow.Recipes.RecipeInput! input) -> string?
 static Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.IsKnown(string! kind) -> bool
 static Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.PairedType(string! kind) -> string?
 static Aw.Sindri.Core.Workflow.Recipes.TimeoutSpec.operator !=(Aw.Sindri.Core.Workflow.Recipes.TimeoutSpec? left, Aw.Sindri.Core.Workflow.Recipes.TimeoutSpec? right) -> bool
@@ -7042,7 +7020,6 @@ static readonly Aw.Sindri.Core.SindriErrors.ItemNotFound -> Aw.Kernel.ErrorDefin
 static Aw.Sindri.Core.Profile.RepoDenyGlobs.Entries(Aw.Sindri.Core.Profile.SindriProfile! profile) -> System.Collections.Generic.IReadOnlyList<(string! Name, string! Path, System.Collections.Generic.IReadOnlyList<string!>? DenyPaths)>!
 static Aw.Sindri.Core.Profile.RepoDenyGlobs.For(Aw.Sindri.Core.Profile.SindriProfile! profile, Aw.Sindri.Core.Profile.RepoEntry! repo) -> System.Collections.Generic.IReadOnlyList<string!>?
 Aw.Sindri.Core.Profile.RepoDenyGlobs
-
 Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance.LaterParks.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Instances.Suspension!>?
 Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance.LaterParks.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.Suspension.Approved.get -> bool
@@ -7097,8 +7074,6 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.FactTypes.Of(string? declared) -> 
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceHeader.Line(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view, System.DateTimeOffset now) -> string!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext? right) -> bool
-Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Deconstruct(out int Version, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>? Provenance, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>? Children, out Aw.Sindri.Core.Workflow.Views.SubjectRef? Subject) -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.InstanceViewContext(int Version = 0, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>? Provenance = null, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>? Children = null, Aw.Sindri.Core.Workflow.Views.SubjectRef? Subject = null) -> void
 static Aw.Sindri.Core.Workflow.Engine.Runtime.StatusLayout.Commands(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view) -> string!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.StatusLayout.Render(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view, System.DateTimeOffset now) -> string!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.StatusLayout.Verb(string! action) -> string!
@@ -7152,7 +7127,6 @@ override Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext.ToString()
 override Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.ToString() -> string!
-static Aw.Sindri.Core.Workflow.Engine.Runtime.FactRows.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! interpreted, Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask? task, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>! provenance) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.FactRow!>!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.FactTypes.Parse(string? declared) -> Aw.Sindri.Core.Workflow.Views.FactType
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InputSlots.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! recipe) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InputPresence!>!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext? right) -> bool
@@ -7173,7 +7147,6 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Subject.get -> Aw.Sin
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Subject.init -> void
 const Aw.Sindri.Core.Workflow.Engine.Runtime.SubjectRefs.KeyLength = 40 -> int
 const Aw.Sindri.Core.Workflow.Engine.Runtime.SubjectRefs.LabelLength = 80 -> int
-static Aw.Sindri.Core.Workflow.Engine.Runtime.SubjectRefs.Of(Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! recipe, Aw.Sindri.Core.Workflow.Engine.ItemKey item, string? content = null) -> Aw.Sindri.Core.Workflow.Views.SubjectRef?
 static Aw.Sindri.Core.Workflow.Engine.Runtime.SubjectRefs.NeedsContent(Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! recipe) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.AnswerLine.get -> Aw.Sindri.Core.Workflow.Views.StatusAnswer?
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.AnswerLine.init -> void
@@ -7234,6 +7207,81 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.For(Aw.Sindri.Core.Workflow.En
 Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.ItemTitles(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! titles) -> void
 static Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.None.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViews.Starting(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeVersion! recipe, System.DateTimeOffset since, Aw.Sindri.Core.Workflow.Engine.ItemKey item, Aw.Sindri.Core.Workflow.Views.SubjectRef? subject) -> Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!
+Aw.Sindri.Core.Workflow.Recipes.Recipe.Deconstruct(out int Schema, out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out int Version, out string? Description, out Aw.Sindri.Core.Workflow.Recipes.RecipeRef? Base, out string! Urgency, out string? Name, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeInput!>! Inputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeOutput!>! Outputs, out string! Initial, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.RecipeState!>! States, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeTransition!>! Transitions, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.LoopSpec!>! Loops, out Aw.Sindri.Core.Workflow.Recipes.BudgetSpec? Budget, out System.Collections.Generic.IReadOnlyList<string!>! Evals, out Aw.Sindri.Core.Workflow.Ids.RecipeHash? Hash) -> void
+Aw.Sindri.Core.Workflow.Recipes.Recipe.Name.get -> string?
+Aw.Sindri.Core.Workflow.Recipes.Recipe.Name.init -> void
+Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.FactKey Key, out string? Label, out string? Type, out string? Kind, out string? Generate) -> void
+Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Generate.get -> string?
+Aw.Sindri.Core.Workflow.Recipes.RecipeInput.Generate.init -> void
+Aw.Sindri.Core.Workflow.Recipes.RecipeInput.RecipeInput(Aw.Sindri.Core.Workflow.Ids.FactKey Key, string? Label, string? Type, string? Kind, string? Generate) -> void
+Aw.Sindri.Core.Workflow.Recipes.Recipe.Recipe(int Schema, Aw.Sindri.Core.Workflow.Ids.RecipeId Id, int Version, string? Description, Aw.Sindri.Core.Workflow.Recipes.RecipeRef? Base, string! Urgency, string? Name, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeInput!>! Inputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeOutput!>! Outputs, string! Initial, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.RecipeState!>! States, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeTransition!>! Transitions, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.LoopSpec!>! Loops, Aw.Sindri.Core.Workflow.Recipes.BudgetSpec? Budget, System.Collections.Generic.IReadOnlyList<string!>! Evals, Aw.Sindri.Core.Workflow.Ids.RecipeHash? Hash) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputFact.Deconstruct(out string! Name, out Aw.Sindri.Core.Workflow.Engine.FactValue! Value, out bool Generated) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputFact.Generated.get -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputFact.Generated.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputFact.InputFact(string! Name, Aw.Sindri.Core.Workflow.Engine.FactValue! Value, bool Generated = false) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceNames
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Name.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Name.init -> void
+Aw.Sindri.Core.Workflow.Registry.RecipeSummary.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out int Version, out Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, out Aw.Sindri.Core.Workflow.Registry.RecipeStanding Standing, out Aw.Sindri.Core.Workflow.Registry.ApprovalVia? Via, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.StaleReason>! Stale, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeInput!>! Inputs, out string! Urgency, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeOutput!>! Outputs, out string! OrderedBy, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.StatePlace!>! States, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.PathLoop!>! Loops, out string? Name) -> void
+Aw.Sindri.Core.Workflow.Registry.RecipeSummary.Name.get -> string?
+Aw.Sindri.Core.Workflow.Registry.RecipeSummary.Name.init -> void
+Aw.Sindri.Core.Workflow.Registry.RecipeSummary.RecipeSummary(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, int Version, Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, Aw.Sindri.Core.Workflow.Registry.RecipeStanding Standing, Aw.Sindri.Core.Workflow.Registry.ApprovalVia? Via, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.StaleReason>! Stale, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeInput!>! Inputs, string! Urgency, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeOutput!>! Outputs, string! OrderedBy, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.StatePlace!>! States, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.PathLoop!>! Loops, string? Name = null) -> void
+Aw.Sindri.Core.Workflow.Views.InputPresence.Deconstruct(out string! Key, out string! Label, out string! Kind, out bool Required, out bool Present) -> void
+Aw.Sindri.Core.Workflow.Views.InputPresence.InputPresence(string! Key, string! Label, string! Kind, bool Required, bool Present) -> void
+Aw.Sindri.Core.Workflow.Views.InputPresence.Kind.get -> string!
+Aw.Sindri.Core.Workflow.Views.RecipeInputView.Deconstruct(out string! Key, out string? Label, out Aw.Sindri.Core.Workflow.Views.FactType Type, out string! Kind, out bool Required, out string? Generate) -> void
+Aw.Sindri.Core.Workflow.Views.RecipeInputView.Generate.get -> string?
+Aw.Sindri.Core.Workflow.Views.RecipeInputView.Generate.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeInputView.Kind.get -> string!
+Aw.Sindri.Core.Workflow.Views.RecipeInputView.RecipeInputView(string! Key, string? Label, Aw.Sindri.Core.Workflow.Views.FactType Type, string! Kind, bool Required, string? Generate) -> void
+Aw.Sindri.Core.Workflow.Views.RecipeView.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, out int Version, out string? Name, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeInputView!>! Inputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeOutputView!>! Outputs, out Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency, out Aw.Sindri.Core.Workflow.Views.PathOrdering OrderedBy, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeStateView!>! States, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeLoopView!>! Loops) -> void
+Aw.Sindri.Core.Workflow.Views.RecipeView.Name.get -> string?
+Aw.Sindri.Core.Workflow.Views.RecipeView.Name.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeView.RecipeView(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, int Version, string? Name, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeInputView!>! Inputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeOutputView!>! Outputs, Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency, Aw.Sindri.Core.Workflow.Views.PathOrdering OrderedBy, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeStateView!>! States, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeLoopView!>! Loops) -> void
+Aw.Sindri.Core.Workflow.Views.SubjectRef.Deconstruct(out string! Kind, out string! Key, out string! Label, out string? Href) -> void
+Aw.Sindri.Core.Workflow.Views.SubjectRef.Kind.get -> string!
+Aw.Sindri.Core.Workflow.Views.SubjectRef.SubjectRef(string! Kind, string! Key, string! Label, string? Href) -> void
+const Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceNames.NameLength = 80 -> int
+const Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceNames.ValueLength = 40 -> int
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceNames.FactsRead(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceNames.Generate(string! template, System.DateTimeOffset start) -> string?
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceNames.Render(Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! recipe, Aw.Sindri.Core.Workflow.Engine.ItemKey item, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string?>! contents, System.DateTimeOffset start) -> string?
+static Aw.Sindri.Core.Workflow.Engine.Runtime.SubjectRefs.Of(Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! recipe, Aw.Sindri.Core.Workflow.Engine.ItemKey item, string? content = null, string? name = null) -> Aw.Sindri.Core.Workflow.Views.SubjectRef!
+static Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.Effective(Aw.Sindri.Core.Workflow.Recipes.RecipeInput! input) -> string!
+Aw.Sindri.Core.Events.RecipeEvents.LatestApproval(Aw.Sindri.Core.Workflow.Ids.RecipeHash hash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<long>!>
+Aw.Sindri.Core.Commands.IRefusalCli
+Aw.Sindri.Core.Commands.IRefusalCli.RefusalCli.get -> string?
+Aw.Sindri.Core.Events.EventSubject
+Aw.Sindri.Core.Events.EventSubject.<Clone>$() -> Aw.Sindri.Core.Events.EventSubject!
+Aw.Sindri.Core.Events.EventSubject.Deconstruct(out string! Kind, out string! Key, out string! Label) -> void
+Aw.Sindri.Core.Events.EventSubject.Equals(Aw.Sindri.Core.Events.EventSubject? other) -> bool
+Aw.Sindri.Core.Events.EventSubject.EventSubject(string! Kind, string! Key, string! Label) -> void
+Aw.Sindri.Core.Events.EventSubject.Key.get -> string!
+Aw.Sindri.Core.Events.EventSubject.Key.init -> void
+Aw.Sindri.Core.Events.EventSubject.Kind.get -> string!
+Aw.Sindri.Core.Events.EventSubject.Kind.init -> void
+Aw.Sindri.Core.Events.EventSubject.Label.get -> string!
+Aw.Sindri.Core.Events.EventSubject.Label.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDelta.Deconstruct(out Aw.Sindri.Core.Events.FrameSummary? Frame, out Aw.Sindri.Core.Events.SuspensionSummary? Suspension, out Aw.Sindri.Core.Events.SuspensionSummary? PendingPark, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Events.LoopCounter!>? Loops, out int? TokensSpent, out int? TokensGranted, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Facts, out string? Outcome, out Aw.Sindri.Core.Events.EventSubject? Subject, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Producers) -> void
+Aw.Sindri.Core.Events.WorkflowEventDelta.Producers.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
+Aw.Sindri.Core.Events.WorkflowEventDelta.Producers.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDelta.Subject.get -> Aw.Sindri.Core.Events.EventSubject?
+Aw.Sindri.Core.Events.WorkflowEventDelta.Subject.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDelta.WorkflowEventDelta(Aw.Sindri.Core.Events.FrameSummary? Frame, Aw.Sindri.Core.Events.SuspensionSummary? Suspension, Aw.Sindri.Core.Events.SuspensionSummary? PendingPark, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Events.LoopCounter!>? Loops, int? TokensSpent, int? TokensGranted, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Facts, string? Outcome, Aw.Sindri.Core.Events.EventSubject? Subject = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Producers = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Contents.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Contents.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Deconstruct(out int Version, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>? Provenance, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>? Children, out Aw.Sindri.Core.Workflow.Views.SubjectRef? Subject, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>? Contents) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.InstanceViewContext(int Version = 0, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>? Provenance = null, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>? Children = null, Aw.Sindri.Core.Workflow.Views.SubjectRef? Subject = null, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>? Contents = null) -> void
+override Aw.Sindri.Core.Events.EventSubject.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.EventSubject.GetHashCode() -> int
+override Aw.Sindri.Core.Events.EventSubject.ToString() -> string!
+static Aw.Sindri.Core.Events.EventSubject.operator !=(Aw.Sindri.Core.Events.EventSubject? left, Aw.Sindri.Core.Events.EventSubject? right) -> bool
+static Aw.Sindri.Core.Events.EventSubject.operator ==(Aw.Sindri.Core.Events.EventSubject? left, Aw.Sindri.Core.Events.EventSubject? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.FactRows.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! interpreted, Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask? task, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>! provenance, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>? contents = null) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.FactRow!>!
+const Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.LegacyFix = "register the current file at a new version and approve it" -> string!
+static Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.Legacy(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> string?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceStart.StartedAt.get -> System.DateTimeOffset
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceStart.StartedAt.init -> void
 Aw.Sindri.Core.Ids.DecisionId
 Aw.Sindri.Core.Ids.DecisionId.DecisionId() -> void
 Aw.Sindri.Core.Ids.DecisionId.Equals(Aw.Sindri.Core.Ids.DecisionId other) -> bool
@@ -7632,9 +7680,6 @@ Aw.Sindri.Core.Views.ViewColumn.State = 1 -> Aw.Sindri.Core.Views.ViewColumn
 Aw.Sindri.Core.Views.ViewColumns
 static Aw.Sindri.Core.Views.ViewColumns.JsonPath(string! view, Aw.Sindri.Core.Views.ViewColumn column) -> System.Collections.Generic.IReadOnlyList<string!>?
 static Aw.Sindri.Core.Items.TimelineLine.DecisionLine(Aw.Sindri.Core.Events.DecisionRecorded! recorded) -> string!
-Aw.Sindri.Core.Events.RecipeEvents.LatestApproval(Aw.Sindri.Core.Workflow.Ids.RecipeHash hash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<long>!>
-Aw.Sindri.Core.Commands.IRefusalCli
-Aw.Sindri.Core.Commands.IRefusalCli.RefusalCli.get -> string?
 Aw.Sindri.Core.Events.DecisionRecorded.DecisionRecorded(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.DecisionId Decision, Aw.Sindri.Core.Ids.DecisionOption Choice, string? Note, string! By, Aw.Sindri.Core.Ids.RepoName? Repo = null) -> void
 Aw.Sindri.Core.Events.DecisionRecorded.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.DecisionId Decision, out Aw.Sindri.Core.Ids.DecisionOption Choice, out string? Note, out string! By, out Aw.Sindri.Core.Ids.RepoName? Repo) -> void
 Aw.Sindri.Core.Events.DecisionRecorded.Repo.get -> Aw.Sindri.Core.Ids.RepoName?

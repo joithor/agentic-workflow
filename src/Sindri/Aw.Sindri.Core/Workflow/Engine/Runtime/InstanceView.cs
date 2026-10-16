@@ -80,8 +80,11 @@ public sealed record InstanceView(
     /// <summary>The badge that replaces the state's glyph when the engine interrupted the instance; null otherwise.</summary>
     public EngineOwnedBadge? EngineOwned { get; init; }
 
-    /// <summary>What the instance is about, from the recipe's first input; null when the recipe has no input.</summary>
+    /// <summary>What the instance is about, from the recipe's first input; null only before the workflow has named it (a view of a starting instance).</summary>
     public SubjectRef? Subject { get; init; }
+
+    /// <summary>The instance's rendered name (spec section 3.11) when the recipe declares one, else null: the first labelled line of status, and the subject's label.</summary>
+    public string? Name { get; init; }
 
     /// <summary>The recipe's inputs, in declaration order.</summary>
     public IReadOnlyList<InputPresence> Inputs { get; init; } = [];

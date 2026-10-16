@@ -26,7 +26,7 @@ public sealed class OneFaultOneFindingTests
     [MemberData(nameof(Faults))]
     public void One_fault_gives_one_finding_from_its_specific_rule(string fault, string find, string replace, string rule)
     {
-        var yaml = RecipeReaderTests.Minimal.Replace(find, replace, StringComparison.Ordinal) + Loops(fault);
+        var yaml = RecipeReaderTests.Minimal.Replace(find, replace, StringComparison.Ordinal) + Loops(fault) + "inputs: [{ key: fact:item, type: item, kind: item }]\n";
         var reading = RecipeComposition.Read(yaml, "fault.yaml");
         var document = Assert.IsType<RecipeDocument>(reading.Document);
 

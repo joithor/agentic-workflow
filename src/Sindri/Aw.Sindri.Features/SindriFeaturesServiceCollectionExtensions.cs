@@ -194,7 +194,7 @@ public static class SindriFeaturesServiceCollectionExtensions
     private static IServiceCollection AddEngineSlices(this IServiceCollection services)
     {
         _ = services.AddScoped<IValidator<StartInstanceRequest>, AcceptAllValidator<StartInstanceRequest>>().AddCommand<StartInstanceRequest, StartInstanceResponse, StartInstanceService>();
-        _ = services.AddScoped<ClaimHolders>();   // engine P6 unit (d): SND-WF-012 against workflow_claims
+        _ = services.AddScoped<StartFacts>().AddScoped<ClaimHolders>();   // engine P6 unit (d): SND-WF-012 against workflow_claims
         _ = services.AddScoped<IValidator<ApplyCommandRequest>, AcceptAllValidator<ApplyCommandRequest>>().AddCommand<ApplyCommandRequest, ApplyCommandResponse, ApplyCommandService>();
         _ = services.AddScoped<IValidator<CompleteStepRequest>, AcceptAllValidator<CompleteStepRequest>>().AddCommand<CompleteStepRequest, CompleteStepResponse, CompleteStepService>();
         _ = services.AddScoped<IValidator<IssueNonceRequest>, AcceptAllValidator<IssueNonceRequest>>().AddIssue<IssueNonceRequest, IssueNonceResponse, IssueNonceService>();

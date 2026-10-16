@@ -3,7 +3,7 @@ exit 1
 --- stdout
 {
   "passed": false,
-  "hash": "sha256:346f124fedcb483d8c30d8f447d3a7e1d087bc358bc2d94b173a247d7415a275",
+  "hash": "sha256:5762407d6fea0ed6f351b88559a6f13a8fbba098d613f88ff5192d5904ed5d46",
   "findings": [
     {
       "code": "RCP-REACH-001",
@@ -23,7 +23,16 @@ exit 1
     "description": null,
     "base": null,
     "urgency": "work",
-    "inputs": [],
+    "name": null,
+    "inputs": [
+      {
+        "key": "fact:item",
+        "label": null,
+        "type": "item",
+        "kind": "item",
+        "generate": null
+      }
+    ],
     "outputs": [],
     "initial": "produce",
     "states": {

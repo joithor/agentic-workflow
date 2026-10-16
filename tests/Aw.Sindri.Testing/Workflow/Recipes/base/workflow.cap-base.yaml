@@ -1,6 +1,7 @@
 schema: 1
 id: workflow.cap-base
 version: 1
+inputs: [{ key: fact:item, type: item, kind: item }]
 initial: produce
 states:
   produce:

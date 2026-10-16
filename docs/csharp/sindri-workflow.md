@@ -124,16 +124,15 @@ form under its hash: `registered <id>@<hash12> (unapproved)`, or `already regist
 `recipe.registered` event per hash). Other content under a registered id and version is `SND-RECIPE-007`; any other
 failing rule is `SND-RECIPE-001`, each followed by its rule lines.
 
-`sindri recipe show <id@hash> [--json]` (a query; the hash by 8 or more digits) prints the recipe's line, then `urgency: <urgency>`, one
-`input: <key> type=<type> kind=<kind|->` line per input and one `output: <key> type=<type> from=<state>` line per output, then the path order (below), then the approval preview;
-an unknown hash is `SND-RECIPE-002`. `show --json` prints the server's body, `{"recipe":{id, version, hash, standing, via, stale, inputs, urgency, outputs, orderedBy, states, loops},"preview":{…}}`: the recipe object has the same fields as a `recipe list --json` row, so a client reads urgency, inputs, outputs and the path order the same way from either. `sindri recipe list [--stale] [--json]` prints one line per registered recipe,
+`sindri recipe show <id@hash> [--json]` (a query; the hash by 8 or more digits) prints the recipe's line, then `urgency: <urgency>`, `name: <template>` when the recipe has a `name`, one
+`input: <key> type=<type> kind=<kind|-> [generate="<template>"]` line per input (the type is the declared one, else the one the kind pairs with; a row registered before input kinds shows `kind=-`) and one `output: <key> type=<type> from=<state>` line per output, then the path order (below), then the approval preview;
+an unknown hash is `SND-RECIPE-002`. `show --json` prints the server's body, `{"recipe":{id, version, hash, standing, via, stale, inputs, urgency, name, outputs, orderedBy, states, loops},"preview":{…}}`: the recipe object has the same fields as a `recipe list --json` row, so a client reads urgency, inputs, outputs and the path order the same way from either. `sindri recipe list [--stale] [--json]` prints one line per registered recipe,
 `<id>@<hash12> <standing> (<via>)[; stale: …]`, where standing is `approved`, `unapproved` or `revoked` and stale names
-`pin-drift` (a pinned block's descriptor changed in this build) or `child-stale` (a pinned child was revoked);
+`pin-drift` (a pinned block's descriptor changed in this build), `child-stale` (a pinned child was revoked or has a newer approved version) or `legacy-shape` (registered before input kinds; the line's fix is `register the current file at a new version and approve it`, and an unapproved row of that shape carries the mark too);
 `--stale` keeps only the approved ones that are stale. `--json` prints the server's body,
-`{"recipes":[{id, version, hash, standing, via, stale, inputs, urgency, outputs, orderedBy, states, loops}]}`, where an input is `{key, label, type, kind}`
-(type and kind `null` when not declared) and an output is `{key, label, type, from}`. A row registered before `urgency`, `outputs` and
-`inputs[].kind` existed keeps its stored text and hash and lists with the defaults (`work`, no outputs, no kinds); registering the same
-file again hashes differently and is `SND-RECIPE-007` naming `RCP-VERSION-001` until the author raises `version`. The queries never start the control plane: when it
+`{"recipes":[{id, version, hash, standing, via, stale, inputs, urgency, name, outputs, orderedBy, states, loops}]}`, where an input is `{key, label, type, kind, generate}`
+(`type` `null` when not declared, `kind` `null` only on a legacy row, `generate` `null` when the input has no template; `name` is the instance-name template or `null`) and an output is `{key, label, type, from}`. A row registered before `urgency`, `outputs`, `name` and the inputs' `kind` and `generate` existed keeps its stored text and hash and lists with the defaults (`work`, no outputs, no name, no kinds); registering the same
+file again hashes differently and is `SND-RECIPE-007` naming `RCP-VERSION-001` until the author raises `version`. Such a row (an input with no `kind`, or no input: `RCP-INPUT-001`/`-002`) is *legacy-shape*: it can't name a subject, so a start on it is `SND-RECIPE-001` (checked before a pin-drift refusal, since re-approving can't fix it), a first approval of it is `SND-RECIPE-001` too (before the no-evals check; a row already approved can still be re-approved or woken, so a parked instance resumes), and an instance already running on it keeps running unnamed, with the commands it made before (engine spec §3.11, "A pre-P4c instance"). Revoking it works as for any row. The queries never start the control plane: when it
 isn't running they print `SND-API-001 not running: …` and exit 1.
 
 **Path order (spec §3.10, UI E-20).** `recipe show` and `recipe list --json` carry the recipe's states in path order, computed from the
@@ -211,7 +210,7 @@ JSON Schemas: `schemas/recipes/recipe.schema.json` is the long form, generated f
 | Short form | Long form |
 |---|---|
 | `step: step.produce` | `step: { use: step.produce, with: {}, inputs: [] }` |
-| `inputs: [fact:item]` | `inputs: [{ key: fact:item, label: null, type: null }]` |
+| `inputs: [{ key: fact:item, kind: item }]` | `inputs: [{ key: fact:item, label: null, type: null, kind: item, generate: null }]` |
 | `from: produce` | `from: [produce]` |
 | `gates: [gate.budget.available]` | `gates: [{ use: gate.budget.available, threshold: null, with: {} }]` |
 | `effects: [effect.notify.desk]` | `effects: [{ use: effect.notify.desk, with: {} }]` |
@@ -234,7 +233,8 @@ needs re-approval.
 | `description` | no | |
 | `base` | generated recipes only | Written by Sindri's generator; on a hand-written recipe it is `RCP-CAP-004`, and `recipe validate` treats every recipe as hand-written |
 | `urgency` | no | `incident`, `triage` or `work` (default `work`; UI E-21). The app orders its Workflows strip by it; the engine never reads it. The normalizer writes `work` when it is absent, so an absent urgency and `urgency: work` hash the same. Any other value is `RCP-URG-001` |
-| `inputs` | no | The facts a start supplies: `{ key, label?, type?, kind? }`. `type` is a fact type (default `text`), `kind` a subject kind; the first input is the instance's subject (UI E-22) |
+| `inputs` | yes | At least one (`RCP-INPUT-002`): `{ key, label?, type?, kind, generate? }`. `kind` is a subject kind and required (`RCP-INPUT-001`); `type` is a fact type and defaults to the type `kind` pairs with; `generate` is a template that supplies the value when the start gives none (text inputs only, `RCP-NAME-005`/`-006`). The bare-key short form (`[fact:item]`) normalizes to an input with no `kind`, so it fails `RCP-INPUT-001`. The first input is the instance's subject (UI E-22) |
+| `name` | no | A template for the instance's name, rendered once at start: literals, `{fact:<input>}`, `{start:date}`, `{start:time}`, `{{` and `}}` (engine spec §3.11). The name is the subject's label. `RCP-NAME-002` to `-004` |
 | `outputs` | no | What the recipe produces for a human: `{ key, label?, type?, from }`. `from` names the state that produces the fact. Declarations only: they add no wiring (UI E-22) |
 | `initial` | yes | An `active` or `wait` state (`RCP-INIT-001`) |
 | `states` | yes | At least one non-terminal and one terminal state. `cancelled`, `escalated`, `parked` and `taken-over` are reserved (`RCP-STATE-001`) |
@@ -246,9 +246,9 @@ needs re-approval.
 ### Fact types and subject kinds
 
 Fact type: `text`, `file`, `item`, `link`, `scope-map`, `packet`, `evidence`, `decision`, `payload` (`FactTypes`). It picks a viewer in
-the app and nothing else. Subject kind: `item`, `linear-project`, `webhook`, `file`, `text` (`SubjectKinds`); `item`, `file` and `text`
-pair with the type of the same name, `linear-project` and `webhook` with `payload`. Both are strings in the long form, so a bad value
-reaches its rule (`RCP-TYPE-001` to `-003`, `RCP-OUT-001` to `-003`, `RCP-URG-001`) instead of a reader error. Those rules
+the app and nothing else. Subject kind: `item`, `linear-project`, `webhook`, `file`, `text`, `link` (`SubjectKinds`); `item`, `file`, `text` and `link`
+pair with the type of the same name, `linear-project` and `webhook` with `payload`; an input with no `type` has its kind's. Both are strings in the long form, so a bad value
+reaches its rule (`RCP-TYPE-001` to `-003`, `RCP-INPUT-001`/`-002`, `RCP-NAME-002` to `-006`, `RCP-OUT-001` to `-003`, `RCP-URG-001`) instead of a reader error. Those rules
 (the Declarations rows under Rules) run on every path that validates a recipe, so a value of another spelling is refused with its rule's line.
 
 ### Value grammars
@@ -383,8 +383,15 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-OUT-002` | An output's `from` isn't a terminal or engine-owned state, and the state's Step, its leaving transitions' `produces` or its wait records the output's key. **Information** when the state waits on a child, whose outcome the validator can't read | Record the fact there, or name the state that does |
 | `RCP-OUT-003` | Output keys are unique and none is also an input key | Give each output its own key |
 | `RCP-TYPE-001` | An input's or output's `type` is a fact type | Use one of the nine types |
-| `RCP-TYPE-002` | An input's `kind` is a subject kind | Use one of the five kinds |
-| `RCP-TYPE-003` | An input's `kind` pairs with its `type` (an absent `type` is `text`); not reported for an entry with a bad type or kind | Set `type` to the kind's, or change `kind` |
+| `RCP-TYPE-002` | An input's `kind` is a subject kind | Use one of the six kinds |
+| `RCP-TYPE-003` | An input's `kind` pairs with its `type` (an absent `type` takes its kind's); not reported for an entry with a bad type or kind | Set `type` to the kind's, or change `kind` |
+| `RCP-INPUT-001` | Every input declares a `kind` | Add `kind: item \| link \| linear-project \| webhook \| file \| text`, paired with its type |
+| `RCP-INPUT-002` | The recipe declares at least one input | Declare one; a scheduled recipe gives it `generate: "<template>"` |
+| `RCP-NAME-002` | A `name` or `generate` template isn't empty and is at most 200 characters | Write literal text with placeholders |
+| `RCP-NAME-003` | A template has no unknown placeholder, unbalanced `{` or `}`, or control character | Use `{fact:<input>}`, `{start:date}`, `{start:time}`; write `{{` or `}}` for a literal brace |
+| `RCP-NAME-004` | `{fact:x}` in `name` names a declared input | Declare it under `inputs`, or remove the placeholder |
+| `RCP-NAME-005` | A `generate` template has no `{fact:…}` placeholder | Use only literals, `{start:date}` and `{start:time}` |
+| `RCP-NAME-006` | `generate` is only on an input of kind `text` | Supply that input at start |
 | `RCP-HASH-001` | A `hash` in the file matches the content | Set it to the hash the message names, or remove it |
 | `RCP-VERSION-001` | Same id and version, same hash (registry, P2) | Raise `version` |
 | `RCP-VERSION-002` | `version` is above the highest registered (registry, P2) | Raise `version` |
@@ -577,8 +584,11 @@ nothing. The row's payload is `WorkflowEventPayload` (instance, from, to, trigge
 the decision's event (`WorkflowEventDetail`, §5.6): the trigger's id (its key: a command's nonce and arguments digest, a
 report's run and digest, an event's source sequence), actor, source sequence, answer variant and amount, any gates, evidence,
 grant, override and refusal records, the effect identities and the post-state delta (state names, reasons, counters and fact
-digests). It never holds an answer's text, a parked question or a fact's content. The `started` row carries the start's key
-and actor; a held event's expiry and the desk deadline's park, which have no decision, carry no `detail`. Gates have no runtime in the interpreter yet, so a matched transition's gate refuses (fail closed, W5) and the
+digests). It never holds an answer's text or a parked question, and no row but `started` holds text from a fact. The `started`
+row carries the start's key and actor, plus the subject as named at start (`delta.subject`: kind, key and the label or rendered
+name, §3.11: a text subject's key and label are cut to 40/80 and the rendered name to 40 per value and 80 in all, while a
+link or payload subject's key and label are copied as stored) and each input's producer (`delta.producers`,
+`engine:generate` for a generated input); a held event's expiry and the desk deadline's park, which have no decision, carry no `detail`. Gates have no runtime in the interpreter yet, so a matched transition's gate refuses (fail closed, W5) and the
 refusal follows §5.8's precedence. A wait state's timer wakes the wait like a delivered event, and `TransitionDecision.Expired` decides the expiry (park, escalate, or retry once); a child wait doesn't
 start its child until P7.
 
@@ -679,7 +689,7 @@ Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
 
 - **`workflow start <recipe> --item <id> [--attempt next] [--fact <key>=<file>]…`** runs the `StartInstance` slice: it
   resolves the item (`IItems`) and the approved recipe (the latest, or `id@hash`, a hash prefix of 8 or more digits),
-  refuses a `fact:item` whose `id` isn't the item (`SND-WF-014`) and a missing declared input (`SND-CLI-003`), stores
+  refuses a recipe registered before input kinds (`SND-RECIPE-001` with the fix; checked before a pin-drift refusal), a `fact:item` whose `id` isn't the item (`SND-WF-014`) and a missing declared input (`SND-CLI-003`; an input with a `generate` template is exempt, the start renders it, produced by `engine:generate`), stores
   each fact owner-only (`IFactStore`, at most 1 MiB, the CLI sends name and content, never the path), and starts
   `RecipeWorkflow` with the address as its workflow id (`WorkflowIdConflictPolicy.UseExisting`,
   `WorkflowIdReusePolicy.RejectDuplicate`). The attempts come from `IInstanceDirectory.Latest`, which describes

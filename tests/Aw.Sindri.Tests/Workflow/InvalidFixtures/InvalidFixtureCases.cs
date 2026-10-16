@@ -36,13 +36,13 @@ internal static class InvalidFixtureCases
             ]),
         ["RCP-CAP-003"] = new(
             FixtureSetup.CapabilityWithUnapprovedBase,
-            "RCP-CAP-003: base workflow.cap-base@84b1571f2b84 is registered but not approved at RCP-CAP-003.yaml:4:1 (base); approve the base at a terminal (sindri recipe approve workflow.cap-base@84b1571f2b84), or generate the recipe from an approved base",
+            "RCP-CAP-003: base workflow.cap-base@b8f01b2b6c69 is registered but not approved at RCP-CAP-003.yaml:4:1 (base); approve the base at a terminal (sindri recipe approve workflow.cap-base@b8f01b2b6c69), or generate the recipe from an approved base",
             [
                 "RCP-EFFECT-001: effect 'effect.repo.push' wasn't checked against an effect allowlist, since the profile has no workflow.effects at RCP-CAP-003.yaml:47:9 (transitions[2].effects[0].use); add workflow.effects to the profile; until then the effect is refused at run time [Skipped]",
             ]),
         ["RCP-CAP-004"] = new(
             FixtureSetup.Capability,
-            "RCP-CAP-004: hand-written recipe workflow.cap-handwritten names base workflow.cap-base@84b1571f2b84 at RCP-CAP-004.yaml:4:1 (base); remove base, which only Sindri's generator writes",
+            "RCP-CAP-004: hand-written recipe workflow.cap-handwritten names base workflow.cap-base@b8f01b2b6c69 at RCP-CAP-004.yaml:4:1 (base); remove base, which only Sindri's generator writes",
             []),
         ["RCP-CAP-005"] = new(
             FixtureSetup.CapabilityWithBase,
@@ -96,7 +96,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-HASH-001"] = new(
             FixtureSetup.Shipped,
-            "RCP-HASH-001: hash 000000000000 doesn't match the recipe's content, whose hash is e69eeb6a8547 at RCP-HASH-001.yaml:16:1 (hash); set hash to sha256:e69eeb6a8547f69896a6b6b63f18a392b5b999cd22705e9286e461c2f7071b2c, or remove it",
+            "RCP-HASH-001: hash 000000000000 doesn't match the recipe's content, whose hash is b2371052fdcf at RCP-HASH-001.yaml:16:1 (hash); set hash to sha256:b2371052fdcf9ed4a8dd9019036d5f3725abf3e5ec115746d3d47591cc72706e, or remove it",
             []),
         ["RCP-INIT-001"] = new(
             FixtureSetup.Shipped,
@@ -180,7 +180,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-VERSION-001"] = new(
             FixtureSetup.Registry,
-            "RCP-VERSION-001: workflow.version-taken version 1 is registered with hash 2bd784957be7, but this recipe's hash is 165194be5b2b at RCP-VERSION-001.yaml:3:1 (version); raise version to 2, one above the highest registered, or restore the content registered as version 1",
+            "RCP-VERSION-001: workflow.version-taken version 1 is registered with hash 2bd784957be7, but this recipe's hash is a993db8e5966 at RCP-VERSION-001.yaml:3:1 (version); raise version to 2, one above the highest registered, or restore the content registered as version 1",
             []),
         ["RCP-VERSION-002"] = new(
             FixtureSetup.Registry,
@@ -224,11 +224,39 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-TYPE-002"] = new(
             FixtureSetup.Shipped,
-            "RCP-TYPE-002: input 'fact:item' has kind 'ticket', which isn't one of item, linear-project, webhook, file, text at RCP-TYPE-002.yaml:5:35 (inputs[0].kind); use one of them",
+            "RCP-TYPE-002: input 'fact:item' has kind 'ticket', which isn't one of item, linear-project, webhook, file, text, link at RCP-TYPE-002.yaml:5:35 (inputs[0].kind); use one of them",
             []),
         ["RCP-TYPE-003"] = new(
             FixtureSetup.Shipped,
             "RCP-TYPE-003: input 'fact:item' has kind 'item' but type 'file'; kind item pairs with type item at RCP-TYPE-003.yaml:5:35 (inputs[0].kind); set type to item, or change kind",
+            []),
+        ["RCP-INPUT-001"] = new(
+            FixtureSetup.Shipped,
+            "RCP-INPUT-001: input 'fact:item' declares no kind at RCP-INPUT-001.yaml:5:5 (inputs[0]); add kind: item | link | linear-project | webhook | file | text, paired with its type (item/item, file/file, text/text, link/link, linear-project and webhook/payload)",
+            []),
+        ["RCP-INPUT-002"] = new(
+            FixtureSetup.Shipped,
+            "RCP-INPUT-002: the recipe declares no input at RCP-INPUT-002.yaml:1:1 (inputs); declare at least one input; a scheduled recipe gives it generate: \"<template>\"",
+            []),
+        ["RCP-NAME-002"] = new(
+            FixtureSetup.Shipped,
+            "RCP-NAME-002: the name template is empty or longer than 200 characters at RCP-NAME-002.yaml:4:1 (name); write literal text with {fact:<input>} or {start:date|time}",
+            []),
+        ["RCP-NAME-003"] = new(
+            FixtureSetup.Shipped,
+            "RCP-NAME-003: unknown placeholder '{owner}' at RCP-NAME-003.yaml:4:1 (name); use {fact:<input>}, {start:date} or {start:time}, and write {{ or }} for a literal brace",
+            []),
+        ["RCP-NAME-004"] = new(
+            FixtureSetup.Shipped,
+            "RCP-NAME-004: '{fact:scope}' names no declared input at RCP-NAME-004.yaml:4:1 (name); declare fact:scope under inputs or remove the placeholder",
+            []),
+        ["RCP-NAME-005"] = new(
+            FixtureSetup.Shipped,
+            "RCP-NAME-005: generate may not read inputs ('{fact:note}') at RCP-NAME-005.yaml:5:47 (inputs[0].generate); use only literals, {start:date} and {start:time}",
+            []),
+        ["RCP-NAME-006"] = new(
+            FixtureSetup.Shipped,
+            "RCP-NAME-006: generate on an input of kind 'item' at RCP-NAME-006.yaml:5:47 (inputs[0].generate); only a text input can be generated; supply this input at start",
             []),
     };
 }

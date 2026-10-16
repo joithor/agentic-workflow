@@ -23,7 +23,7 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
         "schema: 1",
         "id: workflow.skip",
         "version: 1",
-        "inputs: [fact:spec]",
+        "inputs: [{ key: fact:spec, type: text, kind: text }]",
         "initial: produce",
         "states:",
         "  produce: { kind: active, step: step.produce, timeout: { after: 4h, then: park }, next: \"Produce the output.\" }",

@@ -37,7 +37,7 @@
         {
           "key": "fact:prd",
           "label": "PRD",
-          "kind": null,
+          "kind": "file",
           "required": true,
           "present": false
         }

@@ -6,17 +6,17 @@
   "title": "Three-state triage",
   "recipe": {
     "id": "workflow.dev-triage-three-state",
-    "hash": "sha256:88a0e8fc810fb8dbdccb244b1a601e16743ade3c4230b57c7c0cf782b3ed0f66",
-    "version": 1,
+    "hash": "sha256:94c0c28e21ca37b9f9ad16233e33c9620b70e940c0fc19f3fb14cc9dfc51f002",
+    "version": 2,
     "urgency": "triage"
   },
   "state": "desk",
   "since": "2026-10-12T12:00:00.0000000Z",
   "engineOwned": null,
   "subject": {
-    "kind": "item",
-    "key": "ITM-01JL2",
-    "label": "Three-state triage",
+    "kind": "text",
+    "key": "Crash on launch",
+    "label": "Crash on launch - 2026-10-12",
     "href": null
   },
   "orderedBy": "path",
@@ -90,8 +90,8 @@
       "header": {
         "address": "ITM-01JL2/dev-triage-three-state/1",
         "recipe": "workflow.dev-triage-three-state",
-        "hash12": "88a0e8fc810f",
-        "version": 1,
+        "hash12": "94c0c28e21ca",
+        "version": 2,
         "state": "desk",
         "detail": "desk task",
         "since": "2026-10-12T12:00:00.0000000Z",
@@ -102,6 +102,11 @@
       "child": null,
       "drift": null,
       "inputs": [
+        {
+          "key": "fact:scope",
+          "name": "scope.txt",
+          "hash": "sha256:2e04b3fa448da3f273578bebd2c8eca04b716240a009837e1d22735e7873c58f"
+        },
         {
           "key": "fact:item",
           "name": "item.json",
@@ -138,10 +143,24 @@
           "confirm": "Cancel ITM-01JL2/dev-triage-three-state/1? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JL2/dev-triage-three-state/1  workflow.dev-triage-three-state@88a0e8fc810f  v1  desk: desk task  since 12:00 (26m)\n  next      Write the draft for ITM-01JL2, then run:\n            sindri workflow complete ITM-01JL2/dev-triage-three-state/1 --run 1.1 --outcome done --output\n            fact:output=<file>\n  inputs    fact:item  item.json  sha256:b6c9...\n  timeout   parks in 1d 23h 34m (desk)\n  commands  complete, takeover, cancel\n"
+      "text": "ITM-01JL2/dev-triage-three-state/1  workflow.dev-triage-three-state@94c0c28e21ca  v2  desk: desk task  since 12:00 (26m)\n  name      Crash on launch - 2026-10-12\n  next      Write the draft for ITM-01JL2, then run:\n            sindri workflow complete ITM-01JL2/dev-triage-three-state/1 --run 1.1 --outcome done --output\n            fact:output=<file>\n  inputs    fact:scope  scope.txt  sha256:2e04...\n            fact:item  item.json  sha256:b6c9...\n  timeout   parks in 1d 23h 34m (desk)\n  commands  complete, takeover, cancel\n"
     }
   },
   "facts": [
+    {
+      "key": "fact:scope",
+      "label": "Scope",
+      "type": "text",
+      "direction": "input",
+      "from": null,
+      "status": "produced",
+      "summary": "Crash on launch",
+      "at": "2026-10-12T12:00:00.0000000Z",
+      "by": "human:cli",
+      "ref": null,
+      "progress": null,
+      "pending": null
+    },
     {
       "key": "fact:item",
       "label": "Item",

@@ -1,7 +1,7 @@
 schema: 1
 id: workflow.cap-fact-parameter
 version: 1
-inputs: [fact:remote]
+inputs: [{ key: fact:remote, type: text, kind: text }]
 initial: produce
 states:
   produce:

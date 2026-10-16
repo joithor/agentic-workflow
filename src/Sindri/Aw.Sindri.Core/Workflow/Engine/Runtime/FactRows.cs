@@ -21,18 +21,20 @@ public static class FactRows
     /// <param name="interpreted">The recipe it runs and its input facts.</param>
     /// <param name="task">The open desk task, if any.</param>
     /// <param name="provenance">Who produced each fact and when.</param>
+    /// <param name="contents">The stored text of the link inputs; a link's ref shows its URL, host and title from it.</param>
     /// <returns>The rows.</returns>
     public static IReadOnlyList<FactRow> Of(
         WorkflowInstance instance,
         InterpretedRecipe interpreted,
         DeskTask? task,
-        IReadOnlyDictionary<FactKey, FactProvenance> provenance)
+        IReadOnlyDictionary<FactKey, FactProvenance> provenance,
+        IReadOnlyDictionary<FactKey, string>? contents = null)
     {
         ArgumentNullException.ThrowIfNull(instance);
         ArgumentNullException.ThrowIfNull(interpreted);
         ArgumentNullException.ThrowIfNull(provenance);
         var recipe = interpreted.Recipe;
-        var held = new Held(instance, interpreted, task, provenance);
+        var held = new Held(instance, interpreted, task, provenance, contents);
         return
         [
             .. recipe.Inputs.Select(i => Row(new Declared(i.Key, i.Label, SubjectKinds.TypeOf(i), FactDirection.Input, From: null), held)),
@@ -57,7 +59,7 @@ public static class FactRows
             Summary(status, value, name),
             stamp?.At,
             stamp?.By,
-            Ref(fact, value, name, held.Instance.Item),
+            Ref(fact, value, name, held.Instance.Item, held.Contents?.GetValueOrDefault(fact.Key)),
             Progress: null,   // why: evidence progress is engine P7's
             Pending(spec, held, fact.Key));
     }
@@ -69,7 +71,7 @@ public static class FactRows
             : new FactPending(spec.RequiredOn.Count > 0, DeskChecks.Applies(task, spec) ? [DeskChecks.Id(held.Interpreted, key)] : [], ActionId.From("CompleteStep"));
 
     /// <summary>The per-type handle (API spec §3.8): a file's name and hash, an item's id, nothing for text, and the fact key for the types a viewer fetches through the facts route.</summary>
-    private static FactRef? Ref(Declared fact, FactValue? value, string? name, ItemKey item)
+    private static FactRef? Ref(Declared fact, FactValue? value, string? name, ItemKey item, string? content)
     {
         if (value is null)
         {
@@ -81,9 +83,17 @@ public static class FactRows
             FactType.Text => null,
             FactType.File => new FactRef(name, Size: null, StatusText.Prefixed(value.Sha256), Path: null, ItemId: null, Url: null, Host: null, Title: null, FactKey: null),
             FactType.Item => new FactRef(Name: null, Size: null, Hash: null, Path: null, item, Url: null, Host: null, Title: null, FactKey: null),
+            FactType.Link when content is not null => LinkRef(fact.Key, content),
             FactType.Link or FactType.ScopeMap or FactType.Packet or FactType.Evidence or FactType.Decision or FactType.Payload or _ =>
                 new FactRef(Name: null, Size: null, Hash: null, Path: null, ItemId: null, Url: null, Host: null, Title: null, fact.Key.Value),
         };
+    }
+
+    /// <summary>A link's handle: its URL, host and title, the same fields the subject's href and label come from, and the fact key.</summary>
+    private static FactRef LinkRef(FactKey key, string content)
+    {
+        var (url, title) = SubjectRefs.LinkOf(content);
+        return new FactRef(Name: null, Size: null, Hash: null, Path: null, ItemId: null, url.Length > 0 ? url : null, SubjectRefs.Host(url), title, key.Value);
     }
 
     private static string Summary(FactStatus status, FactValue? value, string? name) => status switch
@@ -94,5 +104,5 @@ public static class FactRows
 
     private sealed record Declared(FactKey Key, string? Label, string? Type, FactDirection Direction, string? From);
 
-    private sealed record Held(WorkflowInstance Instance, InterpretedRecipe Interpreted, DeskTask? Task, IReadOnlyDictionary<FactKey, FactProvenance> Provenance);
+    private sealed record Held(WorkflowInstance Instance, InterpretedRecipe Interpreted, DeskTask? Task, IReadOnlyDictionary<FactKey, FactProvenance> Provenance, IReadOnlyDictionary<FactKey, string>? Contents);
 }

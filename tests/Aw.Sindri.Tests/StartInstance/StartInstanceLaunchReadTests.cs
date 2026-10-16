@@ -25,9 +25,9 @@ public sealed class StartInstanceLaunchReadTests
     public async Task A_launches_read_that_fails_leaves_no_facts_behind()
     {
         var facts = new InMemoryFactStore();
-        var service = new StartInstanceService(new OneItem(), new OneRecipe(), new NoInstances(), facts, new NoInstances(), new FailingLaunches(), new ClaimHolders(new InMemoryWorkflowClaims(), new FakeInstanceLiveness()));
+        var service = new StartInstanceService(new OneItem(), new OneRecipe(), new NoInstances(), new StartFacts(facts, TimeProvider.System), new NoInstances(), new FailingLaunches(), new ClaimHolders(new InMemoryWorkflowClaims(), new FakeInstanceLiveness()));
         var request = new StartInstanceRequest("workflow.step", "T-1", NextAttempt: false,
-            new Dictionary<FactKey, StartFact> { [FactKey.From("fact:spec")] = new("spec.md", Encoding.UTF8.GetBytes("the spec")) });
+            new Dictionary<FactKey, StartFact> { [FactKey.From("fact:item")] = new("spec.md", Encoding.UTF8.GetBytes("{\"id\":\"T-1\"}")) });
 
         var started = await service.Handle(request, Token);
 

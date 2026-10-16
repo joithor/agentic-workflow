@@ -29,7 +29,7 @@ public sealed class DeskGatedReportTests(TimeSkippingServer server) : IClassFixt
         await using var sindri = _harness.Sindri();
         await WorkflowsHarness.HoldLease(sindri, ct);
         var gated = WorkflowsHarness.Shipped("sindri/workflow.step.yaml")
-            .Replace("version: 1", "version: 2", StringComparison.Ordinal)
+            .Replace("version: 2", "version: 3", StringComparison.Ordinal)
             .Replace("on: step.completed, when: { outcome: done }, produces", "on: step.completed, when: { outcome: done }, gates: [gate.route.startable], produces", StringComparison.Ordinal);
         _harness.Recipe("workflow.step", gated);
         await DeskTimeoutTests.RegisterAttributes(env);
