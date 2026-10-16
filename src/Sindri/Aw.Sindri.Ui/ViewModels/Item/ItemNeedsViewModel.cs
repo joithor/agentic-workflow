@@ -1,0 +1,82 @@
+using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.ViewModels.NeedsYou;
+
+namespace Aw.Sindri.Ui.ViewModels.Item;
+
+/// <summary>
+/// The decisions and requests of one item on its sheet (U3' T8): the pending decisions with one button per served option, the
+/// requests filed against the item, and the served empty sentence of each list. A decision is decided once from here and never retried.
+/// </summary>
+internal sealed class ItemNeedsViewModel : ObservableObject
+{
+    private readonly ISindriApi _api;
+    private readonly HashSet<string> _sent = new(StringComparer.Ordinal);
+    private Uri? _url;
+    private string _item = "";
+
+    /// <summary>Reads the item's decisions and requests from <paramref name="api"/>.</summary>
+    /// <param name="api">The API.</param>
+    internal ItemNeedsViewModel(ISindriApi api)
+    {
+        _api = api;
+    }
+
+    /// <summary>The item's pending decisions, in the API's order.</summary>
+    internal IReadOnlyList<ItemDecisionRow> Decisions { get; private set => Set(ref field, value); } = [];
+
+    /// <summary>The requests filed against the item, in the API's order.</summary>
+    internal IReadOnlyList<ItemRequestRow> Requests { get; private set => Set(ref field, value); } = [];
+
+    /// <summary>The served sentence when the item has no decisions; empty when it has some.</summary>
+    internal string DecisionsEmpty { get; private set => Set(ref field, value); } = "";
+
+    /// <summary>The served sentence when the item has no requests; empty when it has some.</summary>
+    internal string RequestsEmpty { get; private set => Set(ref field, value); } = "";
+
+    /// <summary>The refusal Decide came back with, as served; empty for none.</summary>
+    internal string Refusal { get; private set => Set(ref field, value); } = "";
+
+    /// <summary>Reads the item's pending decisions and its requests; a failed read keeps what was shown.</summary>
+    /// <param name="url">The API.</param>
+    /// <param name="itemId">The item.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    /// <returns>A task that completes when both lists are shown.</returns>
+    internal async Task Read(Uri url, string itemId, CancellationToken cancellationToken)
+    {
+        (_url, _item) = (url, itemId);
+        var decisions = await _api.Decisions(url, pending: true, itemId, cancellationToken).ConfigureAwait(true);
+        var requests = await _api.Requests(url, state: null, itemId, cancellationToken).ConfigureAwait(true);
+        if (!string.Equals(itemId, _item, StringComparison.Ordinal))
+        {
+            return;   // the sheet moved to another item while these were on their way
+        }
+
+        if (decisions.IsSuccess)
+        {
+            Decisions = [.. decisions.Value.Decisions.Select(d => new ItemDecisionRow(d.Id, d.Question, d.FiledBy, [.. d.Options.Select((o, i) => new DecisionOption(o.Id, o.Label, i == 0, !_sent.Contains(d.Id)))]))];
+            DecisionsEmpty = decisions.Value.Empty ?? "";
+        }
+
+        if (requests.IsSuccess)
+        {
+            Requests = [.. requests.Value.Requests.Select(r => new ItemRequestRow(r.Id, r.Kind, r.Text, r.Actor, r.State, r.DecisionId))];
+            RequestsEmpty = requests.Value.Empty ?? "";
+        }
+    }
+
+    /// <summary>Decides one of the item's decisions with an option: sent once, never retried; a refusal shows as served.</summary>
+    /// <param name="decisionId">The decision.</param>
+    /// <param name="optionId">The option.</param>
+    /// <returns>A task that completes when Decide was answered and the lists re-read.</returns>
+    internal async Task Choose(string decisionId, string optionId)
+    {
+        if (_url is not { } url || !_sent.Add(decisionId))
+        {
+            return;
+        }
+
+        var answer = await _api.Decide(url, decisionId, new DecideRequest(optionId, Note: null), CancellationToken.None).ConfigureAwait(true);
+        Refusal = answer.IsError ? answer.Error.Message : "";
+        await Read(url, _item, CancellationToken.None).ConfigureAwait(true);
+    }
+}

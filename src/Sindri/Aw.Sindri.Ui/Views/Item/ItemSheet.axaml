@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:item="using:Aw.Sindri.Ui.ViewModels.Item"
+             xmlns:ny="using:Aw.Sindri.Ui.ViewModels.NeedsYou"
              xmlns:vmc="using:Aw.Sindri.Ui.ViewModels.Controls"
              xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
              xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
@@ -71,6 +72,54 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vmc:ControlViewModel">
               <controls:CommandControl />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+
+      <StackPanel x:Name="ItemDecisions" Spacing="6">
+        <TextBlock Classes="eyebrow" Text="{Binding Text.Decisions}" />
+        <TextBlock x:Name="ItemDecisionsEmpty" Classes="body muted" Text="{Binding Needs.DecisionsEmpty}" TextWrapping="Wrap"
+                   IsVisible="{Binding Needs.DecisionsEmpty, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        <ItemsControl x:Name="ItemDecisionList" ItemsSource="{Binding Needs.Decisions}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="item:ItemDecisionRow">
+              <StackPanel Spacing="4" Margin="0,0,0,8" AutomationProperties.Name="{Binding Id}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
+                <TextBlock Classes="body" Text="{Binding Question}" TextWrapping="Wrap" />
+                <ItemsControl ItemsSource="{Binding Options}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="ny:DecisionOption">
+                      <Button Classes="command-control decision-option" Classes.primary="{Binding IsRecommended}" Content="{Binding Label}" IsEnabled="{Binding IsEnabled}"
+                              Click="OnDecisionOption" Margin="0,0,8,8" AutomationProperties.Name="{Binding Label}" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock x:Name="ItemDecisionRefusal" Classes="caption" Text="{Binding Needs.Refusal}" TextWrapping="Wrap"
+                   IsVisible="{Binding Needs.Refusal, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+      </StackPanel>
+
+      <StackPanel x:Name="ItemRequests" Spacing="6">
+        <TextBlock Classes="eyebrow" Text="{Binding Text.Requests}" />
+        <TextBlock x:Name="ItemRequestsEmpty" Classes="body muted" Text="{Binding Needs.RequestsEmpty}" TextWrapping="Wrap"
+                   IsVisible="{Binding Needs.RequestsEmpty, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        <ItemsControl x:Name="ItemRequestList" ItemsSource="{Binding Needs.Requests}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="item:ItemRequestRow">
+              <StackPanel Spacing="2" Margin="0,0,0,6" AutomationProperties.Name="{Binding Id}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Classes="mono" Text="{Binding Kind}" />
+                  <TextBlock Classes="caption subtle" Text="{Binding State}" />
+                  <TextBlock Classes="caption subtle" Text="{Binding Actor}" />
+                </StackPanel>
+                <TextBlock Classes="body" Text="{Binding Text}" TextWrapping="Wrap" />
+              </StackPanel>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>

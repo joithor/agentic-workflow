@@ -27,6 +27,9 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     private long _conflictVersion;
     private int _pages;
 
+    /// <summary>The item's decisions and requests (U3' T8).</summary>
+    internal ItemNeedsViewModel Needs { get; } = new(api);
+
     /// <summary>The app's copy for the sheet's headings and buttons.</summary>
     public ItemText Text { get; } = ItemText.Instance;
 

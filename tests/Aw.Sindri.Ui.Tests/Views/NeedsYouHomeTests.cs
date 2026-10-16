@@ -220,4 +220,23 @@ public sealed class NeedsYouHomeTests : IDisposable
 
         Assert.True(ReferenceEquals(window.FocusManager?.GetFocusedElement(), Named<Control>(window, "SheetTitle")));
     });
+
+    // U3' T8: the item's sheet lists its pending decisions with their option buttons and the requests filed against it.
+    [Fact]
+    public Task The_item_sheet_draws_the_items_decisions_and_requests() => OnUi(async () =>
+    {
+        const string item = "ITM-0000000000000000000000000000000e";
+        _server.DecisionsByItem[item] = RouteAnswer.Api("decisions", "by-item");
+        _server.RequestsView = RouteAnswer.Api("requests", "list-by-item");
+        _server.Items[item] = _server.Items[A.NewItem];
+        var (window, shell) = await Connected(width: 1400);
+
+        shell.Navigate(new DeepLink(DeepLinkKind.Item, item));
+        await Until(window, () => shell.Item.HasItem && shell.Item.Needs.Decisions.Count == 1);
+
+        var served = GoldenFiles.Node("decisions", "by-item")["decisions"]![0]!;
+        var sheet = Named<Control>(window, "ItemDecisionList");
+        Assert.Equal(served["options"]!.AsArray().Select(o => (string)o!["label"]!), sheet.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("decision-option")).Select(b => (string?)b.Content ?? ""), StringComparer.Ordinal);
+        Assert.Equal((string)GoldenFiles.Node("requests", "list-by-item")["requests"]![0]!["text"]!, Named<Control>(window, "ItemRequestList").GetVisualDescendants().OfType<TextBlock>().First(t => t.Classes.Contains("body")).Text);
+    });
 }

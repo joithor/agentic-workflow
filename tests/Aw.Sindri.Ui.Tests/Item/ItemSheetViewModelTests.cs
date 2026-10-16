@@ -472,4 +472,83 @@ public sealed class ItemSheetViewModelTests
 
         Assert.Equal((101, 152L, false), (sheet.Timeline.Count, sheet.Timeline[^1].Sequence, sheet.HasMore));
     }
+
+    // U3' T8: the item's decisions and requests, read with the item.
+    private const string DecisionItem = "ITM-0000000000000000000000000000000e";
+
+    private async Task<ItemSheetViewModel> SheetWithNeeds()
+    {
+        _server.DecisionsByItem[DecisionItem] = RouteAnswer.Api("decisions", "by-item");
+        _server.RequestsView = RouteAnswer.Api("requests", "list-by-item");
+        _server.Items[DecisionItem] = _server.Items[A.NewItem];
+        var sheet = await Sheet();
+        await sheet.Open(_api, DecisionItem, Token);
+        return sheet;
+    }
+
+    [Fact]
+    public async Task Lists_pending_decisions_for_the_item_with_option_buttons()
+    {
+        var sheet = await SheetWithNeeds();
+        var served = GoldenFiles.Node("decisions", "by-item")["decisions"]![0]!;
+
+        var decision = Assert.Single(sheet.Needs.Decisions);
+
+        Assert.Equal(((string)served["id"]!, (string)served["question"]!, (string)served["filedBy"]!), (decision.Id, decision.Question, decision.FiledBy));
+        Assert.Equal(served["options"]!.AsArray().Select(o => (string)o!["label"]!), decision.Options.Select(o => o.Label), StringComparer.Ordinal);
+        Assert.Equal([true, false], decision.Options.Select(o => o.IsRecommended));
+        Assert.Contains(_server.DecisionQueries, q => q.Pending == true && string.Equals(q.Item, DecisionItem, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Lists_requests_filed_against_the_item()
+    {
+        var sheet = await SheetWithNeeds();
+        var served = GoldenFiles.Node("requests", "list-by-item")["requests"]![0]!;
+
+        var request = Assert.Single(sheet.Needs.Requests);
+
+        Assert.Equal(((string)served["id"]!, (string)served["kind"]!, (string)served["text"]!, (string)served["actor"]!, (string)served["state"]!),
+            (request.Id, request.Kind, request.Text, request.Actor, request.State));
+        Assert.Contains(_server.RequestQueries, q => q.Item == DecisionItem);
+    }
+
+    [Fact]
+    public async Task Shows_the_served_empty_sentences_for_the_item()
+    {
+        _server.DecisionsByItem[DecisionItem] = RouteAnswer.Api("decisions", "empty");
+        _server.RequestsView = RouteAnswer.Api("requests", "list-empty");
+        _server.Items[DecisionItem] = _server.Items[A.NewItem];
+        var sheet = await Sheet();
+
+        await sheet.Open(_api, DecisionItem, Token);
+
+        Assert.Empty(sheet.Needs.Decisions);
+        Assert.Empty(sheet.Needs.Requests);
+        Assert.Equal((GoldenFiles.Node("decisions", "empty")["empty"]!.ToString(), GoldenFiles.Node("requests", "list-empty")["empty"]!.ToString()), (sheet.Needs.DecisionsEmpty, sheet.Needs.RequestsEmpty));
+    }
+
+    [Fact]
+    public async Task An_option_press_decides_once_and_rereads_the_lists()
+    {
+        var sheet = await SheetWithNeeds();
+        var decision = sheet.Needs.Decisions[0];
+
+        await sheet.Needs.Choose(decision.Id, decision.Options[0].Id);
+        await sheet.Needs.Choose(decision.Id, decision.Options[0].Id);
+
+        Assert.Equal([(decision.Id, decision.Options[0].Id)], [.. _server.DecideCalls.Select(c => (c.Decision, c.Request.Choice))]);
+        Assert.All(sheet.Needs.Decisions[0].Options, o => Assert.False(o.IsEnabled));
+    }
+
+    [Fact]
+    public async Task A_refused_Decide_shows_the_served_detail_inline()
+    {
+        var sheet = await SheetWithNeeds();
+        _server.Decided = RouteAnswer.Problem("decisions-id", "decided-elsewhere");
+
+        await sheet.Needs.Choose(sheet.Needs.Decisions[0].Id, "accept");
+
+        Assert.Contains((string)GoldenFiles.Node("decisions-id", "decided-elsewhere")["detail"]!, sheet.Needs.Refusal, StringComparison.Ordinal);
+    }
 }

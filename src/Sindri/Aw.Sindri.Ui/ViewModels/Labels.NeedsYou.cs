@@ -119,4 +119,10 @@ internal static partial class Labels
     /// <param name="cli">The command that does it.</param>
     /// <returns>The words.</returns>
     internal static string NotInTheAppYet(string cli) => cli.Length > 0 ? "Not in the app yet · " + cli : "Not in the app yet";
+
+    /// <summary>The item sheet's heading for the item's pending decisions.</summary>
+    internal static string ItemDecisions => "Decisions";
+
+    /// <summary>The item sheet's heading for the requests filed against the item.</summary>
+    internal static string ItemRequests => "Requests";
 }
