@@ -121,6 +121,15 @@ Aw.Meta.Core.Coordination.GateWorkspace.TreePath(int pr) -> string!
 Aw.Meta.Core.Coordination.InboxSync
 Aw.Meta.Core.Coordination.InboxSync.InboxSync(Aw.Meta.Core.Ports.ITranscriptReader! transcripts, Aw.Meta.Core.Ports.IMessageStore! messages, Aw.Meta.Core.Ports.IOwnerStore! owner, System.TimeProvider! clock) -> void
 Aw.Meta.Core.Coordination.InboxSync.Run(string! transcript, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Ids.MessageId>!>!>
+Aw.Meta.Core.Coordination.LaneBeats
+Aw.Meta.Core.Coordination.LaneBeats.IsIdle(string! lane, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
+Aw.Meta.Core.Coordination.LaneBeats.LaneBeats(Aw.Meta.Core.Ports.IKeyValueStore! values) -> void
+Aw.Meta.Core.Coordination.LaneBeats.Last(string! lane, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Lanes.LaneBeat?>!>
+Aw.Meta.Core.Coordination.LaneBeats.Record(string! lane, bool stopped, System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Meta.Core.Coordination.LaneBeats.Woke(string! lane, System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Meta.Core.Coordination.LaneHealthReader
+Aw.Meta.Core.Coordination.LaneHealthReader.LaneHealthReader(Aw.Meta.Core.Ports.ILaneFiles! files, Aw.Meta.Core.Coordination.LaneBeats! beats, Aw.Meta.Core.Ports.ILaneMail! mail, Aw.Meta.Core.Coordination.LaneStopGuard! guard) -> void
+Aw.Meta.Core.Coordination.LaneHealthReader.Read(Aw.Meta.Core.Config.TeamConfig! team, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneHealth!>!>!>
 Aw.Meta.Core.Coordination.LaneRefresh
 Aw.Meta.Core.Coordination.LaneRefresh.<Clone>$() -> Aw.Meta.Core.Coordination.LaneRefresh!
 Aw.Meta.Core.Coordination.LaneRefresh.Changed.get -> bool
@@ -133,6 +142,10 @@ Aw.Meta.Core.Coordination.LaneRefresh.Map.init -> void
 Aw.Meta.Core.Coordination.LaneRefresher
 Aw.Meta.Core.Coordination.LaneRefresher.LaneRefresher(Aw.Meta.Core.Ports.ISessionDirectory! sessions, Aw.Meta.Core.Ports.IMessageStore! messages, Aw.Meta.Core.Ports.ILaneStore! lanes) -> void
 Aw.Meta.Core.Coordination.LaneRefresher.Run(Aw.Meta.Core.Config.TeamConfig! config, System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Coordination.LaneRefresh!>!>
+Aw.Meta.Core.Coordination.LaneStopGuard
+Aw.Meta.Core.Coordination.LaneStopGuard.Decide(Aw.Meta.Core.Lanes.LaneStop! stop, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Coordination.StopOutcome!>!>
+Aw.Meta.Core.Coordination.LaneStopGuard.LaneStopGuard(Aw.Meta.Core.Ports.IKeyValueStore! values, Aw.Meta.Core.Ports.IRunningLog! log) -> void
+Aw.Meta.Core.Coordination.LaneStopGuard.State(string! lane, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneMessage!>! owed, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<(int Blocks, bool Capped)>!>
 Aw.Meta.Core.Coordination.MergeAssessment
 Aw.Meta.Core.Coordination.MergeAssessment.<Clone>$() -> Aw.Meta.Core.Coordination.MergeAssessment!
 Aw.Meta.Core.Coordination.MergeAssessment.Checks.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Merge.MergeCheck!>!
@@ -412,6 +425,20 @@ Aw.Meta.Core.Ids.SessionId.SessionId() -> void
 Aw.Meta.Core.Ids.SessionId.ToString(System.IFormatProvider? provider) -> string!
 Aw.Meta.Core.Ids.SessionId.Value.get -> string!
 Aw.Meta.Core.KvKeys
+Aw.Meta.Core.Lanes.LaneAgent
+Aw.Meta.Core.Lanes.LaneAgent.<Clone>$() -> Aw.Meta.Core.Lanes.LaneAgent!
+Aw.Meta.Core.Lanes.LaneAgent.Agent.get -> string!
+Aw.Meta.Core.Lanes.LaneAgent.Agent.init -> void
+Aw.Meta.Core.Lanes.LaneAgent.Deconstruct(out string! Agent, out string! ProcessName, out bool Hooks, out string? Transcripts) -> void
+Aw.Meta.Core.Lanes.LaneAgent.Equals(Aw.Meta.Core.Lanes.LaneAgent? other) -> bool
+Aw.Meta.Core.Lanes.LaneAgent.Hooks.get -> bool
+Aw.Meta.Core.Lanes.LaneAgent.Hooks.init -> void
+Aw.Meta.Core.Lanes.LaneAgent.IsClaude.get -> bool
+Aw.Meta.Core.Lanes.LaneAgent.LaneAgent(string! Agent, string! ProcessName, bool Hooks, string? Transcripts = null) -> void
+Aw.Meta.Core.Lanes.LaneAgent.ProcessName.get -> string!
+Aw.Meta.Core.Lanes.LaneAgent.ProcessName.init -> void
+Aw.Meta.Core.Lanes.LaneAgent.Transcripts.get -> string?
+Aw.Meta.Core.Lanes.LaneAgent.Transcripts.init -> void
 Aw.Meta.Core.Lanes.LaneAssignment
 Aw.Meta.Core.Lanes.LaneAssignment.<Clone>$() -> Aw.Meta.Core.Lanes.LaneAssignment!
 Aw.Meta.Core.Lanes.LaneAssignment.Deconstruct(out string! Lane, out string! SessionName, out Aw.Meta.Core.Ids.SessionId? Session, out Aw.Meta.Core.Lanes.LaneSource Source) -> void
@@ -425,6 +452,38 @@ Aw.Meta.Core.Lanes.LaneAssignment.SessionName.get -> string!
 Aw.Meta.Core.Lanes.LaneAssignment.SessionName.init -> void
 Aw.Meta.Core.Lanes.LaneAssignment.Source.get -> Aw.Meta.Core.Lanes.LaneSource
 Aw.Meta.Core.Lanes.LaneAssignment.Source.init -> void
+Aw.Meta.Core.Lanes.LaneBeat
+Aw.Meta.Core.Lanes.LaneBeat.<Clone>$() -> Aw.Meta.Core.Lanes.LaneBeat!
+Aw.Meta.Core.Lanes.LaneBeat.At.get -> System.DateTimeOffset
+Aw.Meta.Core.Lanes.LaneBeat.At.init -> void
+Aw.Meta.Core.Lanes.LaneBeat.Deconstruct(out System.DateTimeOffset At, out bool Stopped) -> void
+Aw.Meta.Core.Lanes.LaneBeat.Equals(Aw.Meta.Core.Lanes.LaneBeat? other) -> bool
+Aw.Meta.Core.Lanes.LaneBeat.LaneBeat(System.DateTimeOffset At, bool Stopped) -> void
+Aw.Meta.Core.Lanes.LaneBeat.Stopped.get -> bool
+Aw.Meta.Core.Lanes.LaneBeat.Stopped.init -> void
+Aw.Meta.Core.Lanes.LaneHealth
+Aw.Meta.Core.Lanes.LaneHealth.<Clone>$() -> Aw.Meta.Core.Lanes.LaneHealth!
+Aw.Meta.Core.Lanes.LaneHealth.Agent.get -> string!
+Aw.Meta.Core.Lanes.LaneHealth.Agent.init -> void
+Aw.Meta.Core.Lanes.LaneHealth.Attention.get -> bool
+Aw.Meta.Core.Lanes.LaneHealth.Attention.init -> void
+Aw.Meta.Core.Lanes.LaneHealth.Deconstruct(out string! Lane, out string! Agent, out string! State, out bool Attention) -> void
+Aw.Meta.Core.Lanes.LaneHealth.Equals(Aw.Meta.Core.Lanes.LaneHealth? other) -> bool
+Aw.Meta.Core.Lanes.LaneHealth.Lane.get -> string!
+Aw.Meta.Core.Lanes.LaneHealth.Lane.init -> void
+Aw.Meta.Core.Lanes.LaneHealth.LaneHealth(string! Lane, string! Agent, string! State, bool Attention) -> void
+Aw.Meta.Core.Lanes.LaneHealth.State.get -> string!
+Aw.Meta.Core.Lanes.LaneHealth.State.init -> void
+Aw.Meta.Core.Lanes.LaneIdentity
+Aw.Meta.Core.Lanes.LaneIdentity.<Clone>$() -> Aw.Meta.Core.Lanes.LaneIdentity!
+Aw.Meta.Core.Lanes.LaneIdentity.Deconstruct(out string! Team, out string! Lane) -> void
+Aw.Meta.Core.Lanes.LaneIdentity.Equals(Aw.Meta.Core.Lanes.LaneIdentity? other) -> bool
+Aw.Meta.Core.Lanes.LaneIdentity.Lane.get -> string!
+Aw.Meta.Core.Lanes.LaneIdentity.Lane.init -> void
+Aw.Meta.Core.Lanes.LaneIdentity.LaneIdentity(string! Team, string! Lane) -> void
+Aw.Meta.Core.Lanes.LaneIdentity.SessionName.get -> string!
+Aw.Meta.Core.Lanes.LaneIdentity.Team.get -> string!
+Aw.Meta.Core.Lanes.LaneIdentity.Team.init -> void
 Aw.Meta.Core.Lanes.LaneMap
 Aw.Meta.Core.Lanes.LaneMapState
 Aw.Meta.Core.Lanes.LaneMapState.<Clone>$() -> Aw.Meta.Core.Lanes.LaneMapState!
@@ -435,9 +494,55 @@ Aw.Meta.Core.Lanes.LaneMapState.Equals(Aw.Meta.Core.Lanes.LaneMapState? other) -
 Aw.Meta.Core.Lanes.LaneMapState.LaneMapState(int Version, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneAssignment!>! Entries) -> void
 Aw.Meta.Core.Lanes.LaneMapState.Version.get -> int
 Aw.Meta.Core.Lanes.LaneMapState.Version.init -> void
+Aw.Meta.Core.Lanes.LaneMessage
+Aw.Meta.Core.Lanes.LaneMessage.<Clone>$() -> Aw.Meta.Core.Lanes.LaneMessage!
+Aw.Meta.Core.Lanes.LaneMessage.At.get -> System.DateTimeOffset
+Aw.Meta.Core.Lanes.LaneMessage.At.init -> void
+Aw.Meta.Core.Lanes.LaneMessage.Deconstruct(out long Seq, out string! Lane, out string! Text, out System.DateTimeOffset At, out bool Delivered) -> void
+Aw.Meta.Core.Lanes.LaneMessage.Delivered.get -> bool
+Aw.Meta.Core.Lanes.LaneMessage.Delivered.init -> void
+Aw.Meta.Core.Lanes.LaneMessage.Equals(Aw.Meta.Core.Lanes.LaneMessage? other) -> bool
+Aw.Meta.Core.Lanes.LaneMessage.Lane.get -> string!
+Aw.Meta.Core.Lanes.LaneMessage.Lane.init -> void
+Aw.Meta.Core.Lanes.LaneMessage.LaneMessage(long Seq, string! Lane, string! Text, System.DateTimeOffset At, bool Delivered) -> void
+Aw.Meta.Core.Lanes.LaneMessage.Seq.get -> long
+Aw.Meta.Core.Lanes.LaneMessage.Seq.init -> void
+Aw.Meta.Core.Lanes.LaneMessage.Text.get -> string!
+Aw.Meta.Core.Lanes.LaneMessage.Text.init -> void
+Aw.Meta.Core.Lanes.LaneRecord
+Aw.Meta.Core.Lanes.LaneRecord.<Clone>$() -> Aw.Meta.Core.Lanes.LaneRecord!
+Aw.Meta.Core.Lanes.LaneRecord.Agent.get -> Aw.Meta.Core.Lanes.LaneAgent?
+Aw.Meta.Core.Lanes.LaneRecord.Agent.init -> void
+Aw.Meta.Core.Lanes.LaneRecord.Ambiguous.get -> bool
+Aw.Meta.Core.Lanes.LaneRecord.Ambiguous.init -> void
+Aw.Meta.Core.Lanes.LaneRecord.Deconstruct(out string! Lane, out Aw.Meta.Core.Ids.SessionId? Session, out Aw.Meta.Core.Lanes.LaneAgent? Agent, out System.DateTimeOffset? RecordedAt, out bool Ambiguous) -> void
+Aw.Meta.Core.Lanes.LaneRecord.Equals(Aw.Meta.Core.Lanes.LaneRecord? other) -> bool
+Aw.Meta.Core.Lanes.LaneRecord.IsNonClaude.get -> bool
+Aw.Meta.Core.Lanes.LaneRecord.Lane.get -> string!
+Aw.Meta.Core.Lanes.LaneRecord.Lane.init -> void
+Aw.Meta.Core.Lanes.LaneRecord.LaneRecord(string! Lane, Aw.Meta.Core.Ids.SessionId? Session, Aw.Meta.Core.Lanes.LaneAgent? Agent, System.DateTimeOffset? RecordedAt = null, bool Ambiguous = false) -> void
+Aw.Meta.Core.Lanes.LaneRecord.RecordedAt.get -> System.DateTimeOffset?
+Aw.Meta.Core.Lanes.LaneRecord.RecordedAt.init -> void
+Aw.Meta.Core.Lanes.LaneRecord.Session.get -> Aw.Meta.Core.Ids.SessionId?
+Aw.Meta.Core.Lanes.LaneRecord.Session.init -> void
 Aw.Meta.Core.Lanes.LaneSource
 Aw.Meta.Core.Lanes.LaneSource.Announcement = 2 -> Aw.Meta.Core.Lanes.LaneSource
 Aw.Meta.Core.Lanes.LaneSource.Direct = 1 -> Aw.Meta.Core.Lanes.LaneSource
+Aw.Meta.Core.Lanes.LaneStop
+Aw.Meta.Core.Lanes.LaneStop.<Clone>$() -> Aw.Meta.Core.Lanes.LaneStop!
+Aw.Meta.Core.Lanes.LaneStop.Deconstruct(out Aw.Meta.Core.Lanes.LaneIdentity! Identity, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneMessage!>! Owed, out bool HookActive, out int MaxBlocks, out System.DateTimeOffset Now) -> void
+Aw.Meta.Core.Lanes.LaneStop.Equals(Aw.Meta.Core.Lanes.LaneStop? other) -> bool
+Aw.Meta.Core.Lanes.LaneStop.HookActive.get -> bool
+Aw.Meta.Core.Lanes.LaneStop.HookActive.init -> void
+Aw.Meta.Core.Lanes.LaneStop.Identity.get -> Aw.Meta.Core.Lanes.LaneIdentity!
+Aw.Meta.Core.Lanes.LaneStop.Identity.init -> void
+Aw.Meta.Core.Lanes.LaneStop.LaneStop(Aw.Meta.Core.Lanes.LaneIdentity! Identity, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneMessage!>! Owed, bool HookActive, int MaxBlocks, System.DateTimeOffset Now) -> void
+Aw.Meta.Core.Lanes.LaneStop.MaxBlocks.get -> int
+Aw.Meta.Core.Lanes.LaneStop.MaxBlocks.init -> void
+Aw.Meta.Core.Lanes.LaneStop.Now.get -> System.DateTimeOffset
+Aw.Meta.Core.Lanes.LaneStop.Now.init -> void
+Aw.Meta.Core.Lanes.LaneStop.Owed.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneMessage!>!
+Aw.Meta.Core.Lanes.LaneStop.Owed.init -> void
 Aw.Meta.Core.Lanes.LiveSession
 Aw.Meta.Core.Lanes.LiveSession.<Clone>$() -> Aw.Meta.Core.Lanes.LiveSession!
 Aw.Meta.Core.Lanes.LiveSession.Cwd.get -> string!
@@ -453,6 +558,15 @@ Aw.Meta.Core.Lanes.LiveSession.Session.get -> Aw.Meta.Core.Ids.SessionId
 Aw.Meta.Core.Lanes.LiveSession.Session.init -> void
 Aw.Meta.Core.Lanes.LiveSession.Status.get -> string!
 Aw.Meta.Core.Lanes.LiveSession.Status.init -> void
+Aw.Meta.Core.Lanes.PaneState
+Aw.Meta.Core.Lanes.PaneState.<Clone>$() -> Aw.Meta.Core.Lanes.PaneState!
+Aw.Meta.Core.Lanes.PaneState.Clients.get -> int
+Aw.Meta.Core.Lanes.PaneState.Clients.init -> void
+Aw.Meta.Core.Lanes.PaneState.Command.get -> string!
+Aw.Meta.Core.Lanes.PaneState.Command.init -> void
+Aw.Meta.Core.Lanes.PaneState.Deconstruct(out string! Command, out int Clients) -> void
+Aw.Meta.Core.Lanes.PaneState.Equals(Aw.Meta.Core.Lanes.PaneState? other) -> bool
+Aw.Meta.Core.Lanes.PaneState.PaneState(string! Command, int Clients) -> void
 Aw.Meta.Core.Logs.LogKind
 Aw.Meta.Core.Logs.LogKind.Decision = 2 -> Aw.Meta.Core.Logs.LogKind
 Aw.Meta.Core.Logs.LogKind.Incident = 4 -> Aw.Meta.Core.Logs.LogKind
@@ -724,6 +838,16 @@ Aw.Meta.Core.Ports.IHostResources.Read(System.Threading.CancellationToken cancel
 Aw.Meta.Core.Ports.IKeyValueStore
 Aw.Meta.Core.Ports.IKeyValueStore.Get(string! key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string?>!>
 Aw.Meta.Core.Ports.IKeyValueStore.Set(string! key, string! value, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Meta.Core.Ports.ILaneFiles
+Aw.Meta.Core.Ports.ILaneFiles.Record(string! lane, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Lanes.LaneRecord?>!>
+Aw.Meta.Core.Ports.ILaneMail
+Aw.Meta.Core.Ports.ILaneMail.Deliver(System.Collections.Generic.IReadOnlyList<long>! seqs, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Meta.Core.Ports.ILaneMail.Owed(string! lane, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneMessage!>!>!>
+Aw.Meta.Core.Ports.ILaneMail.Reply(Aw.Meta.Core.Lanes.LaneIdentity! identity, string! text, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Ids.MessageId>!>
+Aw.Meta.Core.Ports.ILaneMail.Send(string! lane, string! text, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<long>!>
+Aw.Meta.Core.Ports.ILanePane
+Aw.Meta.Core.Ports.ILanePane.Probe(string! session, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Lanes.PaneState?>!>
+Aw.Meta.Core.Ports.ILanePane.Wake(string! session, string! line, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Meta.Core.Ports.ILaneStore
 Aw.Meta.Core.Ports.ILaneStore.Current(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Lanes.LaneMapState!>!>
 Aw.Meta.Core.Ports.ILaneStore.Save(Aw.Meta.Core.Lanes.LaneMapState! map, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
@@ -757,6 +881,8 @@ Aw.Meta.Core.Ports.ISessionDirectory
 Aw.Meta.Core.Ports.ISessionDirectory.Live(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LiveSession!>!>!>
 Aw.Meta.Core.Ports.ITranscriptReader
 Aw.Meta.Core.Ports.ITranscriptReader.ReadFrom(string! path, long offset, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Messages.TranscriptChunk!>!>
+Aw.Meta.Core.Ports.IWorktreeFiles
+Aw.Meta.Core.Ports.IWorktreeFiles.NewestChange(string! directory, System.Collections.Generic.IReadOnlyCollection<string!>! skipNames, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.DateTimeOffset>!>
 Aw.Meta.Core.Ports.ProcessLocation
 Aw.Meta.Core.Ports.ProcessLocation.<Clone>$() -> Aw.Meta.Core.Ports.ProcessLocation!
 Aw.Meta.Core.Ports.ProcessLocation.Command.get -> string!
@@ -892,6 +1018,7 @@ Aw.Meta.Core.Worktrees.WorktreeSweeper
 Aw.Meta.Core.Worktrees.WorktreeSweeper.Sweep(Aw.Meta.Core.Config.TeamConfig! team, Aw.Meta.Core.Worktrees.WorktreeScope! scope, Aw.Meta.Core.Worktrees.SweepMode mode, string! trigger, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Worktrees.SweepOutcome!>!>
 Aw.Meta.Core.Worktrees.WorktreeSweeper.Triggered(Aw.Meta.Core.Config.TeamConfig! team, System.Collections.Generic.IReadOnlyCollection<int>! prs, string! trigger, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 Aw.Meta.Core.Worktrees.WorktreeSweeper.WorktreeSweeper(Aw.Meta.Core.Worktrees.WorktreeInspector! inspector, Aw.Meta.Core.Coordination.RepoCommands! repo, Aw.Meta.Core.Ports.IRunningLog! log, Aw.Meta.Core.Ports.IKeyValueStore! values, System.TimeProvider! clock) -> void
+const Aw.Meta.Core.Coordination.LaneHealthReader.CursorLoopLimit = 5 -> int
 const Aw.Meta.Core.Health.HostRules.LowMemoryPercent = 10 -> int
 const Aw.Meta.Core.Health.OrphanRule.MinimumAgeSeconds = 300 -> long
 const Aw.Meta.Core.Health.ProcessGroups.Claude = "claude" -> string!
@@ -906,6 +1033,8 @@ const Aw.Meta.Core.KvKeys.WatchHeartbeat = "watch.heartbeat" -> string!
 const Aw.Meta.Core.KvKeys.WatchInterval = "watch.interval" -> string!
 const Aw.Meta.Core.KvKeys.WorktreesLast = "worktrees.last" -> string!
 const Aw.Meta.Core.KvKeys.WorktreesPending = "worktrees.pending-prs" -> string!
+const Aw.Meta.Core.KvKeys.WorktreesSweepStart = "worktrees.sweep-start" -> string!
+const Aw.Meta.Core.Lanes.LaneAgent.ClaudeCode = "claude-code" -> string!
 const Aw.Meta.Core.Obligations.MergeRecord.Unknown = "unknown" -> string!
 override Aw.Meta.Core.Commands.CommandRequest.Equals(object? obj) -> bool
 override Aw.Meta.Core.Commands.CommandRequest.GetHashCode() -> int
@@ -991,15 +1120,39 @@ override Aw.Meta.Core.Ids.MessageId.ToString() -> string!
 override Aw.Meta.Core.Ids.SessionId.Equals(object? obj) -> bool
 override Aw.Meta.Core.Ids.SessionId.GetHashCode() -> int
 override Aw.Meta.Core.Ids.SessionId.ToString() -> string!
+override Aw.Meta.Core.Lanes.LaneAgent.Equals(object? obj) -> bool
+override Aw.Meta.Core.Lanes.LaneAgent.GetHashCode() -> int
+override Aw.Meta.Core.Lanes.LaneAgent.ToString() -> string!
 override Aw.Meta.Core.Lanes.LaneAssignment.Equals(object? obj) -> bool
 override Aw.Meta.Core.Lanes.LaneAssignment.GetHashCode() -> int
 override Aw.Meta.Core.Lanes.LaneAssignment.ToString() -> string!
+override Aw.Meta.Core.Lanes.LaneBeat.Equals(object? obj) -> bool
+override Aw.Meta.Core.Lanes.LaneBeat.GetHashCode() -> int
+override Aw.Meta.Core.Lanes.LaneBeat.ToString() -> string!
+override Aw.Meta.Core.Lanes.LaneHealth.Equals(object? obj) -> bool
+override Aw.Meta.Core.Lanes.LaneHealth.GetHashCode() -> int
+override Aw.Meta.Core.Lanes.LaneHealth.ToString() -> string!
+override Aw.Meta.Core.Lanes.LaneIdentity.Equals(object? obj) -> bool
+override Aw.Meta.Core.Lanes.LaneIdentity.GetHashCode() -> int
+override Aw.Meta.Core.Lanes.LaneIdentity.ToString() -> string!
 override Aw.Meta.Core.Lanes.LaneMapState.Equals(object? obj) -> bool
 override Aw.Meta.Core.Lanes.LaneMapState.GetHashCode() -> int
 override Aw.Meta.Core.Lanes.LaneMapState.ToString() -> string!
+override Aw.Meta.Core.Lanes.LaneMessage.Equals(object? obj) -> bool
+override Aw.Meta.Core.Lanes.LaneMessage.GetHashCode() -> int
+override Aw.Meta.Core.Lanes.LaneMessage.ToString() -> string!
+override Aw.Meta.Core.Lanes.LaneRecord.Equals(object? obj) -> bool
+override Aw.Meta.Core.Lanes.LaneRecord.GetHashCode() -> int
+override Aw.Meta.Core.Lanes.LaneRecord.ToString() -> string!
+override Aw.Meta.Core.Lanes.LaneStop.Equals(object? obj) -> bool
+override Aw.Meta.Core.Lanes.LaneStop.GetHashCode() -> int
+override Aw.Meta.Core.Lanes.LaneStop.ToString() -> string!
 override Aw.Meta.Core.Lanes.LiveSession.Equals(object? obj) -> bool
 override Aw.Meta.Core.Lanes.LiveSession.GetHashCode() -> int
 override Aw.Meta.Core.Lanes.LiveSession.ToString() -> string!
+override Aw.Meta.Core.Lanes.PaneState.Equals(object? obj) -> bool
+override Aw.Meta.Core.Lanes.PaneState.GetHashCode() -> int
+override Aw.Meta.Core.Lanes.PaneState.ToString() -> string!
 override Aw.Meta.Core.Merge.MergeCheck.Equals(object? obj) -> bool
 override Aw.Meta.Core.Merge.MergeCheck.GetHashCode() -> int
 override Aw.Meta.Core.Merge.MergeCheck.ToString() -> string!
@@ -1165,14 +1318,31 @@ static Aw.Meta.Core.Ids.SessionId.TryFrom(string? value, out Aw.Meta.Core.Ids.Se
 static Aw.Meta.Core.Ids.SessionId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Meta.Core.Ids.SessionId result) -> bool
 static Aw.Meta.Core.Ids.SessionId.operator !=(Aw.Meta.Core.Ids.SessionId left, Aw.Meta.Core.Ids.SessionId right) -> bool
 static Aw.Meta.Core.Ids.SessionId.operator ==(Aw.Meta.Core.Ids.SessionId left, Aw.Meta.Core.Ids.SessionId right) -> bool
+static Aw.Meta.Core.Lanes.LaneAgent.operator !=(Aw.Meta.Core.Lanes.LaneAgent? left, Aw.Meta.Core.Lanes.LaneAgent? right) -> bool
+static Aw.Meta.Core.Lanes.LaneAgent.operator ==(Aw.Meta.Core.Lanes.LaneAgent? left, Aw.Meta.Core.Lanes.LaneAgent? right) -> bool
 static Aw.Meta.Core.Lanes.LaneAssignment.operator !=(Aw.Meta.Core.Lanes.LaneAssignment? left, Aw.Meta.Core.Lanes.LaneAssignment? right) -> bool
 static Aw.Meta.Core.Lanes.LaneAssignment.operator ==(Aw.Meta.Core.Lanes.LaneAssignment? left, Aw.Meta.Core.Lanes.LaneAssignment? right) -> bool
+static Aw.Meta.Core.Lanes.LaneBeat.operator !=(Aw.Meta.Core.Lanes.LaneBeat? left, Aw.Meta.Core.Lanes.LaneBeat? right) -> bool
+static Aw.Meta.Core.Lanes.LaneBeat.operator ==(Aw.Meta.Core.Lanes.LaneBeat? left, Aw.Meta.Core.Lanes.LaneBeat? right) -> bool
+static Aw.Meta.Core.Lanes.LaneHealth.operator !=(Aw.Meta.Core.Lanes.LaneHealth? left, Aw.Meta.Core.Lanes.LaneHealth? right) -> bool
+static Aw.Meta.Core.Lanes.LaneHealth.operator ==(Aw.Meta.Core.Lanes.LaneHealth? left, Aw.Meta.Core.Lanes.LaneHealth? right) -> bool
+static Aw.Meta.Core.Lanes.LaneIdentity.FromEnvironment(System.Func<string!, string?>! environment) -> Aw.Kernel.Result<Aw.Meta.Core.Lanes.LaneIdentity!>!
+static Aw.Meta.Core.Lanes.LaneIdentity.operator !=(Aw.Meta.Core.Lanes.LaneIdentity? left, Aw.Meta.Core.Lanes.LaneIdentity? right) -> bool
+static Aw.Meta.Core.Lanes.LaneIdentity.operator ==(Aw.Meta.Core.Lanes.LaneIdentity? left, Aw.Meta.Core.Lanes.LaneIdentity? right) -> bool
 static Aw.Meta.Core.Lanes.LaneMap.Refresh(string! team, System.Collections.Generic.IReadOnlyList<string!>! lanes, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LiveSession!>! live, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Messages.InboxMessage!>! announcements, Aw.Meta.Core.Lanes.LaneMapState! previous) -> Aw.Meta.Core.Lanes.LaneMapState!
 static Aw.Meta.Core.Lanes.LaneMapState.Empty.get -> Aw.Meta.Core.Lanes.LaneMapState!
 static Aw.Meta.Core.Lanes.LaneMapState.operator !=(Aw.Meta.Core.Lanes.LaneMapState? left, Aw.Meta.Core.Lanes.LaneMapState? right) -> bool
 static Aw.Meta.Core.Lanes.LaneMapState.operator ==(Aw.Meta.Core.Lanes.LaneMapState? left, Aw.Meta.Core.Lanes.LaneMapState? right) -> bool
+static Aw.Meta.Core.Lanes.LaneMessage.operator !=(Aw.Meta.Core.Lanes.LaneMessage? left, Aw.Meta.Core.Lanes.LaneMessage? right) -> bool
+static Aw.Meta.Core.Lanes.LaneMessage.operator ==(Aw.Meta.Core.Lanes.LaneMessage? left, Aw.Meta.Core.Lanes.LaneMessage? right) -> bool
+static Aw.Meta.Core.Lanes.LaneRecord.operator !=(Aw.Meta.Core.Lanes.LaneRecord? left, Aw.Meta.Core.Lanes.LaneRecord? right) -> bool
+static Aw.Meta.Core.Lanes.LaneRecord.operator ==(Aw.Meta.Core.Lanes.LaneRecord? left, Aw.Meta.Core.Lanes.LaneRecord? right) -> bool
+static Aw.Meta.Core.Lanes.LaneStop.operator !=(Aw.Meta.Core.Lanes.LaneStop? left, Aw.Meta.Core.Lanes.LaneStop? right) -> bool
+static Aw.Meta.Core.Lanes.LaneStop.operator ==(Aw.Meta.Core.Lanes.LaneStop? left, Aw.Meta.Core.Lanes.LaneStop? right) -> bool
 static Aw.Meta.Core.Lanes.LiveSession.operator !=(Aw.Meta.Core.Lanes.LiveSession? left, Aw.Meta.Core.Lanes.LiveSession? right) -> bool
 static Aw.Meta.Core.Lanes.LiveSession.operator ==(Aw.Meta.Core.Lanes.LiveSession? left, Aw.Meta.Core.Lanes.LiveSession? right) -> bool
+static Aw.Meta.Core.Lanes.PaneState.operator !=(Aw.Meta.Core.Lanes.PaneState? left, Aw.Meta.Core.Lanes.PaneState? right) -> bool
+static Aw.Meta.Core.Lanes.PaneState.operator ==(Aw.Meta.Core.Lanes.PaneState? left, Aw.Meta.Core.Lanes.PaneState? right) -> bool
 static Aw.Meta.Core.Logs.LogLine.Event(Aw.Meta.Core.Logs.LogKind kind, System.DateTimeOffset at, string! text) -> string!
 static Aw.Meta.Core.Logs.LogLine.Owner(System.DateTimeOffset at, string! text, string! askedBy) -> string!
 static Aw.Meta.Core.Logs.LogLine.TryParseKind(string! text, out Aw.Meta.Core.Logs.LogKind kind) -> bool
@@ -1241,6 +1411,7 @@ static Aw.Meta.Core.Worktrees.WorktreeScope.All.get -> Aw.Meta.Core.Worktrees.Wo
 static Aw.Meta.Core.Worktrees.WorktreeScope.ForPrs(System.Collections.Generic.IEnumerable<int>! prs) -> Aw.Meta.Core.Worktrees.WorktreeScope!
 static Aw.Meta.Core.Worktrees.WorktreeScope.operator !=(Aw.Meta.Core.Worktrees.WorktreeScope? left, Aw.Meta.Core.Worktrees.WorktreeScope? right) -> bool
 static Aw.Meta.Core.Worktrees.WorktreeScope.operator ==(Aw.Meta.Core.Worktrees.WorktreeScope? left, Aw.Meta.Core.Worktrees.WorktreeScope? right) -> bool
+static readonly Aw.Meta.Core.MetaErrors.ClaudeLane -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.CommandFailed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.CommandNotStarted -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.ConfigExists -> Aw.Kernel.ErrorDefinition!
@@ -1248,12 +1419,12 @@ static readonly Aw.Meta.Core.MetaErrors.ConfigInvalid -> Aw.Kernel.ErrorDefiniti
 static readonly Aw.Meta.Core.MetaErrors.GateStepNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.HostUnreadable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.Invalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Meta.Core.MetaErrors.LaneNotRecorded -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Meta.Core.MetaErrors.LaneVariablesUnset -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.LogUnreadable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.LogUnwritable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.MessageNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.NoTeamConfig -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.QuestionNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.TranscriptUnreadable -> Aw.Kernel.ErrorDefinition!
-Aw.Meta.Core.Ports.IWorktreeFiles
-Aw.Meta.Core.Ports.IWorktreeFiles.NewestChange(string! directory, System.Collections.Generic.IReadOnlyCollection<string!>! skipNames, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.DateTimeOffset>!>
-const Aw.Meta.Core.KvKeys.WorktreesSweepStart = "worktrees.sweep-start" -> string!
+static readonly Aw.Meta.Core.MetaErrors.UnknownLane -> Aw.Kernel.ErrorDefinition!

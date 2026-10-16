@@ -2,6 +2,7 @@ using Aw.Meta.Core;
 using Aw.Meta.Core.Config;
 using Aw.Meta.Core.Coordination;
 using Aw.Meta.Core.Ids;
+using Aw.Meta.Core.Lanes;
 using Aw.Meta.Core.Messages;
 using Aw.Meta.Core.Obligations;
 using Aw.Meta.Core.Worktrees;
@@ -40,6 +41,12 @@ public sealed class MetaWorld
 
     /// <summary>Live sessions.</summary>
     public InMemorySessionDirectory Sessions { get; } = new();
+
+    /// <summary>The lane records the launcher and the session-id hook left.</summary>
+    public InMemoryLaneFiles LaneFiles { get; } = new();
+
+    /// <summary>The lanes' tmux sessions.</summary>
+    public InMemoryLanePane Panes { get; } = new();
 
     /// <summary>The running log.</summary>
     public InMemoryRunningLog Log { get; } = new();
@@ -83,11 +90,24 @@ public sealed class MetaWorld
     /// <summary>The gate worktrees over <see cref="Runner"/>.</summary>
     public GateTree Trees => new(Repo);
 
+    /// <summary>The messages to and from the non-Claude lanes, over <see cref="Messages"/>.</summary>
+    public InMemoryLaneMail LaneMail { get; }
+
     /// <summary>A world with all its fakes.</summary>
     public MetaWorld()
     {
         Delay = new InMemoryDelay(Clock);
+        LaneMail = new InMemoryLaneMail(Messages);
     }
+
+    /// <summary>The lane hook heartbeats.</summary>
+    public LaneBeats Beats => new(Values);
+
+    /// <summary>The lane stop gate's loop guard.</summary>
+    public LaneStopGuard LaneGuard => new(Values, Log);
+
+    /// <summary>The non-Claude lanes' standing.</summary>
+    public LaneHealthReader LaneHealth => new(LaneFiles, Beats, LaneMail, LaneGuard);
 
     /// <summary>The inbox sync.</summary>
     public InboxSync Sync => new(Transcripts, Messages, Owner, Clock);
@@ -154,5 +174,18 @@ public sealed class MetaWorld
     {
         var msgId = id.Length > 0 ? "\"msg_id\":\"" + id + "\"," : string.Empty;
         return $$$"""{"type":"attachment","attachment":{"type":"queued_command","prompt":"p","delivery_id":"{{{deliveryId}}}","origin":{"kind":"peer","from":"uds:/run/{{{name}}}.sock",{{{msgId}}}"name":"{{{name}}}","body":"{{{body}}}"}},"timestamp":"2026-10-15T04:05:00.000Z"}""" + "\n";
+    }
+
+    /// <summary>Records a non-Claude lane with a session, as the launcher and the session-id hook would, with its tmux session running the agent.</summary>
+    /// <param name="lane">The lane.</param>
+    /// <param name="agent">The catalog id (the process name is the same).</param>
+    /// <param name="hooks">Whether the CLI has hook support.</param>
+    /// <param name="recordedMinute">Minutes after T0 the session id was recorded.</param>
+    /// <returns>The identity the lane's hooks run as.</returns>
+    public LaneIdentity PutLane(string lane, string agent = "codex", bool hooks = true, int recordedMinute = 10)
+    {
+        LaneFiles.Put(new LaneRecord(lane, SessionId.From("sess-" + lane), new LaneAgent(agent, agent, hooks), A.At(recordedMinute)));
+        Panes.Put("sindri-" + lane, agent);
+        return new LaneIdentity("sindri", lane);
     }
 }
