@@ -1,0 +1,59 @@
+using Aw.Kernel;
+using Aw.Sindri.Core;
+using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Items;
+using Aw.Sindri.Core.Items.Vocabulary;
+using Aw.Sindri.Core.Requests;
+using Aw.Sindri.Core.Views;
+
+namespace Aw.Sindri.Features.FileRequest;
+
+/// <summary>What a request is filed about (API spec §3.2): the item it names, if open and visible to the caller, the repo that follows from it, and the caps a session's request meets.</summary>
+/// <param name="items">Resolves the item by id or alias, in the caller's repo scope.</param>
+/// <param name="views">The 'requests' view, for the open ones.</param>
+internal sealed class RequestTarget(IItemResolver items, IViewReader views)
+{
+    /// <summary>Settles the item and repo of <paramref name="request"/> for <paramref name="caller"/>.</summary>
+    /// <param name="request">The request.</param>
+    /// <param name="caller">Who files it.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    /// <returns>The item (or null) and the repo (the item's, else the caller's header; or null); SND-ITEM-404 for an item the caller can't see, SND-ITEM-409 for a closed one, SND-REQ-002 over the caps (a session caller only).</returns>
+    public async ValueTask<Result<(ItemId? Item, RepoName? Repo)>> Resolve(FileRequestRequest request, CallerContext caller, CancellationToken cancellationToken)
+    {
+        ItemId? item = null;
+        var repo = caller.Repo;
+        if (request.Item is { } reference)
+        {
+            var resolved = await items.Resolve(reference, caller, cancellationToken).ConfigureAwait(false);
+            if (resolved.IsError)
+            {
+                return resolved.Error;
+            }
+
+            if (ItemStates.IsClosed(resolved.Value.State))
+            {
+                return SindriErrors.ItemConflict.With($"{resolved.Value.Id.Value} is already {ItemStateNames.Of(resolved.Value.State)}");
+            }
+
+            (item, repo) = (resolved.Value.Id, resolved.Value.Repo);
+        }
+
+        if (caller.Class == CallerClass.Session)
+        {
+            var capped = await Capped(repo, cancellationToken).ConfigureAwait(false);
+            if (capped.IsError)
+            {
+                return capped.Error;
+            }
+        }
+
+        return (item, repo);
+    }
+
+    private async ValueTask<Result<Unit>> Capped(RepoName? repo, CancellationToken cancellationToken)
+    {
+        var open = await views.Where<RequestRow>(ViewNames.Requests, ViewColumn.State, "open", cancellationToken).ConfigureAwait(false);
+        return open.IsError ? open.Error : RequestRules.Cap(repo is { } named ? open.Value.Count(r => r.Repo == named) : 0, open.Value.Count);
+    }
+}
