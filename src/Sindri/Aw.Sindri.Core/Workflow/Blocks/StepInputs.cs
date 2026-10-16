@@ -4,7 +4,7 @@ using Aw.Sindri.Core.Workflow.Recipes;
 namespace Aw.Sindri.Core.Workflow.Blocks;
 
 /// <summary>The one resolver of a Step's inputs (DT spec §8.1).</summary>
-public static class StepInputs
+internal static class StepInputs
 {
     /// <summary>The facts a Step reads.</summary>
     /// <param name="descriptor">The Step's descriptor.</param>

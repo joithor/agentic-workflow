@@ -1,7 +1,7 @@
 namespace Aw.Sindri.Core.Workflow.Blocks;
 
 /// <summary>What is wrong with one entry of a choice list.</summary>
-public enum ChoiceFaultKind
+internal enum ChoiceFaultKind
 {
     /// <summary>The entry is a YAML mapping (an unquoted "ui: ...").</summary>
     Mapping = 1,

@@ -31,6 +31,11 @@ public sealed class ChoiceRulesTests
             "RCP-CHOICE-002: choices of state 'route' is a { fact } value", "write the choices as a literal list, so approving the recipe fixes its branches");
 
     [Fact, Trait("Lane", "unit")]
+    public void A_choices_value_that_is_not_a_list_is_RCP_CHOICE_002() =>
+        Only("RCP-CHOICE-002", RouteRecipes.Edit(RouteRecipes.Compact, Choices, "").Replace("        choices:\n", "        choices: nothing\n", StringComparison.Ordinal),
+            "RCP-CHOICE-002: choices of state 'route' isn't a list", "write the choices as a literal list, so approving the recipe fixes its branches", allowMore: true);
+
+    [Fact, Trait("Lane", "unit")]
     public void A_choice_that_is_a_number_is_RCP_CHOICE_002() =>
         Only("RCP-CHOICE-002", RouteRecipes.Edit(RouteRecipes.Compact, "          - \"ui: what a user sees changed\"\n", "          - 5\n"),
             "RCP-CHOICE-002: entry 1 of choices in state 'route' is a number, not text", "write it as \"<outcome>: <criterion>\"");
@@ -73,6 +78,11 @@ public sealed class ChoiceRulesTests
             "RCP-CHOICE-004: facts of state 'route' is a { profile } value", "write facts as a literal list of fact keys");
 
     [Fact, Trait("Lane", "unit")]
+    public void A_facts_value_that_is_not_a_list_is_RCP_CHOICE_004() =>
+        Only("RCP-CHOICE-004", RouteRecipes.Edit(RouteRecipes.Compact, "facts: [fact:change]", "facts: nothing"),
+            "RCP-CHOICE-004: facts of state 'route' isn't a list", "write facts as a literal list of fact keys", allowMore: true);
+
+    [Fact, Trait("Lane", "unit")]
     public void A_hyphenated_fact_in_facts_is_RCP_CHOICE_004_with_a_camelCase_fix() =>
         Only("RCP-CHOICE-004", RouteRecipes.Edit(RouteRecipes.Compact, "facts: [fact:change]", "facts: [\"fact:evidence-summary\"]"),
             "RCP-CHOICE-004: entry 1 of facts in state 'route', 'fact:evidence-summary', isn't a fact key", "fact names are camelCase: write fact:evidenceSummary");
@@ -86,6 +96,17 @@ public sealed class ChoiceRulesTests
     public void A_route_without_step_failed_is_RCP_CHOICE_005() =>
         Only("RCP-CHOICE-005", RouteRecipes.Edit(RouteRecipes.Compact, "  - { from: route, to: route-desk, on: step.failed }\n", string.Empty),
             "RCP-CHOICE-005: state 'route' has no step.failed transition to its desk twin", "add { from: route, to: route-desk, on: step.failed }", allowMore: true);
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_route_with_no_desk_twin_at_all_says_to_add_one()
+    {
+        var noTwin = RouteRecipes.Edit(RouteRecipes.Compact, "  route-desk:\n    kind: active\n    step: { use: step.desk.choose, with: { from: route } }\n    timeout: { after: 2d, then: park }\n    next: \"Pick the evidence.\"\n", string.Empty);
+
+        var lines = RouteRecipes.Lines(noTwin);
+
+        Assert.Contains(lines, l => l.StartsWith("RCP-CHOICE-005: state 'route' has no step.failed transition to its desk twin at ", StringComparison.Ordinal)
+            && l.EndsWith("; add { from: route, to: <its desk twin>, on: step.failed }", StringComparison.Ordinal));
+    }
 
     [Fact, Trait("Lane", "unit")]
     public void A_desk_twin_from_a_non_route_state_is_RCP_CHOICE_005() =>

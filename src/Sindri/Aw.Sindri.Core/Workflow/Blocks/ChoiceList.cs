@@ -4,7 +4,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 namespace Aw.Sindri.Core.Workflow.Blocks;
 
 /// <summary>The choice grammar (DT spec §3.2): "&lt;outcome&gt;: &lt;criterion&gt;", split at the first ": ".</summary>
-public static class ChoiceList
+internal static class ChoiceList
 {
     /// <summary>The longest criterion.</summary>
     public const int MaxCriterion = 400;

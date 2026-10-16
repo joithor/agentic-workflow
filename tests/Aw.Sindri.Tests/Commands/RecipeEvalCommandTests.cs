@@ -121,6 +121,14 @@ public sealed class RecipeEvalCommandTests : IDisposable
         Assert.Equal(2, await Run("recipe", "eval", "--scaffold", route, "--out", directory));
         Assert.Contains("SND-CLI-003", _error.ToString(), StringComparison.Ordinal);
         Assert.Equal("mine\n", await File.ReadAllTextAsync(Path.Combine(directory, "scaffold-api.jsonl"), TestContext.Current.CancellationToken));
+
+        foreach (var name in names.Where(static n => !string.Equals(n, "scaffold-step-failed", StringComparison.Ordinal)))
+        {
+            File.Delete(Path.Combine(directory, name + ".jsonl"));
+        }
+
+        Assert.Equal(2, await Run("recipe", "eval", "--scaffold", route, "--out", directory));   // the last file still exists: nothing is written, not even the missing ones
+        Assert.Equal(["scaffold-step-failed"], Directory.GetFiles(directory).Select(static f => Path.GetFileNameWithoutExtension(f)), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "integration")]

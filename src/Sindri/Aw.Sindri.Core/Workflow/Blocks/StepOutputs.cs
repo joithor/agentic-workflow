@@ -1,7 +1,7 @@
 namespace Aw.Sindri.Core.Workflow.Blocks;
 
 /// <summary>Reads of <see cref="OutputSpec.RequiredOn"/> go through here, so the "every outcome" form (DT spec §8.1) is honoured everywhere.</summary>
-public static class StepOutputs
+internal static class StepOutputs
 {
     /// <summary>Whether <paramref name="spec"/> must be written when the Step reports <paramref name="outcome"/>.</summary>
     /// <param name="spec">One of the Step's declared outputs.</param>

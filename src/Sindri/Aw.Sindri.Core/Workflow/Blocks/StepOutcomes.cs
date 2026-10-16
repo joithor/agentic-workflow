@@ -4,7 +4,7 @@ using Aw.Sindri.Core.Workflow.Recipes;
 namespace Aw.Sindri.Core.Workflow.Blocks;
 
 /// <summary>The one resolver of a Step's outcomes (DT spec §8.1): every read of <see cref="BlockDescriptor.Outcomes"/> for a Step in a recipe goes through it.</summary>
-public static class StepOutcomes
+internal static class StepOutcomes
 {
     /// <summary>The outcomes <paramref name="step"/> reports.</summary>
     /// <param name="descriptor">The Step's descriptor.</param>
