@@ -1,6 +1,7 @@
 using System.Globalization;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Items.Vocabulary;
+using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Requests;
 
 namespace Aw.Sindri.Core.Views;
@@ -11,6 +12,17 @@ public static class EmptyText
     /// <summary>The services list is empty.</summary>
     /// <returns>The sentence.</returns>
     public static string Services() => "No services are approved: run `sindri profile approve`.";
+
+    private static string Jobs() => "No jobs have run yet. Start one with `sindri services run <name>`.";
+
+    /// <summary>The sentence for a jobs list a filter left empty ('No running RunService jobs.'); the unfiltered sentence when neither filter is set.</summary>
+    /// <param name="state">The state filter, or null.</param>
+    /// <param name="kind">The kind filter, or null.</param>
+    /// <returns>The sentence.</returns>
+    public static string Jobs(JobState? state, JobKind? kind) =>
+        state is null && kind is null
+            ? Jobs()
+            : string.Join(' ', new[] { "No", state is { } named ? JobStateNames.Of(named) : null, kind?.Value, "jobs." }.Where(static w => w is { Length: > 0 }));
 
     /// <summary>The queue has no open item in any group.</summary>
     /// <returns>The sentence.</returns>
