@@ -352,7 +352,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-EVENT-001` | A waited-for event is registered | Wait for a registered event |
 | `RCP-WIRE-001` | A block's inputs are produced on every path into its state, or are recipe inputs | Produce it on every path, or add it to `inputs` |
 | `RCP-WIRE-002` | `produces` lists only what the trigger's source records (for a child, a declared output); only a child's output is renamed; no fact is written twice on one transition | List only its outputs |
-| `RCP-WIRE-003` | A transition from a child wait produces a child output only on outcomes whose every path inside the child produces it, never on `cancelled`, and never on any outcome | Produce it on that path in the child, or `when: { outcome: <o> }` an outcome that always carries it |
+| `RCP-WIRE-003` | A transition from a child wait produces a child output only on outcomes whose every path inside the child produces it, never on `cancelled`, and never on a `when` that names no outcome (it matches every outcome, `cancelled` among them) | Produce it on that path in the child, or `when: { outcome: <o> }` an outcome that always carries it |
 | `RCP-WHEN-001` | `when: { outcome }` names an outcome the source reports; the message lists the outcomes available there (`outcomes here: ui, api, uncertain`) | Test one of its outcomes |
 | `RCP-WHEN-002` | `when: { loop }` names a declared loop, and `when: { outcome }` isn't used on a trigger that reports no outcome | Declare the loop |
 | `RCP-OUTCOME-001` | Every outcome a Step, event or child reports is handled by a transition, and terminal outcomes are `resolved`, `unresolved`, `alreadySatisfied` or `failed` | Add a transition for it, or use one of those outcomes |
@@ -484,10 +484,13 @@ transition decides which to keep (decision-tree spec §8.4, DT-C). The complete 
   `{ fact: fact:exported, from: fact:output }` (both required; `from` is the child's key). A rename is only for a child's output.
 - **Where it is there:** an output is present on an outcome only if every path inside the child to a terminal state that ends
   with it produces it. Produce it on `resolved`, not on `unresolved` if some path skips it (`RCP-WIRE-003` names the path), and
-  never on `cancelled`; a `when` that names no outcome counts as any outcome. Route `cancelled` with a transition of its own.
+  never on `cancelled`. The `when` is resolved against the child's outcomes (its terminal outcomes and `cancelled`): `not` is the
+  complement, `all` the intersection, `any` the union, and a fact or loop test narrows nothing, so `not: { outcome: cancelled }`
+  is fine when the output is on every other outcome. A `when` that names no outcome matches every outcome, `cancelled` among
+  them, and is refused. Route `cancelled` with a transition of its own.
 - **Eval:** a child's `wait.satisfied` line gives the outputs the child would (`"outputs":{"fact:output":"..."}`), under the
   child's keys. A parent branch that tests the renamed fact (`when: { fact: fact:exported, is: present }`) is reached only
-  if the line carried it. The test of a `when` runs before the transition's own `produces`, so it reads facts recorded earlier.
+  if the line carried it. The test of a `when` runs before the transition's own `produces`, so it reads facts recorded earlier. A `when` reads the trigger's outputs under the child's keys, not the renamed ones.
 
 ## Temporal foundation
 

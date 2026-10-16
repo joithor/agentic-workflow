@@ -368,6 +368,22 @@ public sealed class EvalRecipeTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_child_line_with_outputs_from_a_child_that_declares_none_says_so()
+    {
+        const string ChildFile = "dev/workflow.dev-child-summary.yaml";
+        const string Declared = "  - { key: fact:output, label: \"Exported file\", type: file, from: export }\n";
+        var child = ShippedRecipes.Read(ChildFile);
+        Assert.Contains(Declared, child, StringComparison.Ordinal);
+        _ = _files.With(ChildFile, child.Replace("outputs:\n" + Declared, "outputs: []\n", StringComparison.Ordinal));
+        _ = _files.With(ParentHappy, string.Join('\n', ParentStart, ChildResolved) + "\n");
+
+        var failed = (await Eval(Parent)).Cases[0];
+
+        Assert.False(failed.Passed);
+        Assert.Contains("which workflow.dev-child-summary doesn't declare as outputs (fix: remove outputs; workflow.dev-child-summary declares none)", failed.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_cancelled_child_line_with_outputs_fails()
     {
         const string Cancelled = """{"trigger":{"kind":"wait.satisfied","outcome":"cancelled","outputs":{"fact:output":"x"}},"expect":{"state":"dropped","outcome":"unresolved"}}""";

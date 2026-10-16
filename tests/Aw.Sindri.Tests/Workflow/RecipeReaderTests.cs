@@ -85,6 +85,19 @@ public sealed class RecipeReaderTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_produced_fact_whose_source_is_itself_is_the_bare_key_in_the_type_and_the_converter()
+    {
+        var x = FactKey.From("fact:output");
+        var built = new ProducedFact(x, x);
+
+        Assert.Equal(new ProducedFact(x, From: null), built);
+        Assert.Null(built.From);
+        Assert.Equal("\"fact:output\"", JsonSerializer.Serialize(built));
+        Assert.Equal(new ProducedFact(x, From: null), JsonSerializer.Deserialize<ProducedFact>("{\"fact\":\"fact:output\",\"from\":\"fact:output\"}"));
+        Assert.Equal(new ProducedFact(x, FactKey.From("fact:result")), JsonSerializer.Deserialize<ProducedFact>("{\"fact\":\"fact:output\",\"from\":\"fact:result\"}"));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_long_form_entry_without_from_is_RCP_SCHEMA_001()
     {
         var line = Assert.Single(Lines(WithProduces("[{ fact: fact:exported }]")));

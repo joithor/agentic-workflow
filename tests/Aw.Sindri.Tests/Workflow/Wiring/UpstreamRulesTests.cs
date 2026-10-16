@@ -246,6 +246,27 @@ public sealed class UpstreamRulesTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_bare_key_written_twice_on_a_Step_transition_is_RCP_WIRE_002()
+    {
+        var recipe = Of("produce", [("produce", Active("step.produce")), ("done", Terminal())],
+            [Go("produce", "done", when: Outcome("done"), produces: ["fact:output", "fact:output"])]);
+
+        Assert.Equal(
+            ["RCP-WIRE-002: transition from 'produce' writes 'fact:output' twice (produces[0] and produces[1]) at r.yaml:1:1 (transitions[0].produces[1]); write each fact once; rename one of them"],
+            CheckWiring(recipe).Lines());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_bare_key_and_a_rename_writing_the_same_key_is_RCP_WIRE_002()
+    {
+        var recipe = Parent(Bare("fact:output"), Rename("fact:output", "fact:other"));
+
+        Assert.Equal(
+            ["RCP-WIRE-002: transition from 'running' writes 'fact:output' twice (produces[0] and produces[1]) at r.yaml:1:1 (transitions[0].produces[1]); write each fact once; rename one of them"],
+            CheckWiring(recipe, WithKid(Kid("fact:output", "fact:other"))).Lines());
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_child_output_satisfies_a_parent_steps_input()
     {
         // step.checks needs fact:output; only the child's end can supply it here.

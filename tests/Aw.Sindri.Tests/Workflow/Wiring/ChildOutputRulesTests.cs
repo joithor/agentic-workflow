@@ -119,6 +119,25 @@ public sealed class ChildOutputRulesTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Two_terminal_states_ending_resolved_with_only_one_producing_is_RCP_WIRE_003_with_a_witness()
+    {
+        var split = new InMemoryChildRecipes().With(Child(
+            Of(
+                "produce",
+                [("produce", Active("step.produce")), ("done", Terminal()), ("also", Terminal())],
+                [Go("produce", "done", when: Outcome("done"), produces: ["fact:output"]), Go("produce", "also", "command.skip")],
+                inputs: [],
+                id: "workflow.kid") with
+            {
+                Outputs = [OutputOf("fact:output", "produce")],
+            }));
+
+        Assert.Equal(
+            ["RCP-WIRE-003: transition from 'running' produces 'fact:output' on outcome 'resolved' of child 'workflow.kid', which doesn't produce 'fact:output' on every path to 'resolved' (in workflow.kid, the path through transitions[1] from 'produce' doesn't produce it) at r.yaml:1:1 (transitions[0].produces[0]); produce it on that path in workflow.kid, or remove it, since no outcome of workflow.kid always carries it"],
+            Wire003(CheckWiring(Parent(Outcome("resolved"), Bare("fact:output")), Located.Nowhere with { Children = split }).Lines()));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void An_undeclared_output_gives_only_RCP_WIRE_002()
     {
         var lines = CheckWiring(Parent(Outcome("unresolved"), Bare("fact:findings")), WithKid).Lines();

@@ -66,6 +66,18 @@ public sealed class RecipeSchemaTests
     }
 
     [Fact, Trait("Lane", "integration")]   // reads schemas/recipes/
+    public void The_editor_overlay_describes_a_produces_entry_as_the_readers_fact_and_from()
+    {
+        var overlay = JsonNode.Parse(File.ReadAllText(Path.Combine(RepoRoot(), "schemas", "recipes", "recipe.editor.schema.json")))!;
+
+        var rename = overlay["$defs"]!["RecipeTransition"]!["properties"]!["produces"]!["items"]!["oneOf"]!.AsArray()[1]!;
+
+        Assert.Equal(["fact", "from"], rename["properties"]!.AsObject().Select(p => p.Key).Order(StringComparer.Ordinal));
+        Assert.Equal(["fact", "from"], rename["required"]!.AsArray().Select(n => n!.GetValue<string>()).Order(StringComparer.Ordinal));
+        Assert.False(rename["additionalProperties"]!.GetValue<bool>());
+    }
+
+    [Fact, Trait("Lane", "integration")]   // reads schemas/recipes/
     public void The_editor_overlay_accepts_only_declared_inputs_and_at_least_one()
     {
         var overlay = JsonNode.Parse(File.ReadAllText(Path.Combine(RepoRoot(), "schemas", "recipes", "recipe.editor.schema.json")))!;

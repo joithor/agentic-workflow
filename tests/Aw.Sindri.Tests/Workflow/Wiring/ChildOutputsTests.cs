@@ -72,4 +72,21 @@ public sealed class ChildOutputsTests
 
         Assert.Equal([_output], ChildOutputs.PresentOn(child)[_resolved]);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Two_terminal_states_ending_the_same_outcome_must_both_carry_the_output()
+    {
+        // produce -> done (resolved, with the output) and produce -> also (resolved, without it).
+        var child = Of(
+            "produce",
+            [("produce", Active("step.produce")), ("done", Terminal()), ("also", Terminal())],
+            [Go("produce", "done", when: Outcome("done"), produces: ["fact:output"]), Go("produce", "also", "command.skip")],
+            inputs: [],
+            id: "workflow.kid") with
+        {
+            Outputs = [OutputOf("fact:output", "produce")],
+        };
+
+        Assert.Empty(ChildOutputs.PresentOn(child)[_resolved]);
+    }
 }
