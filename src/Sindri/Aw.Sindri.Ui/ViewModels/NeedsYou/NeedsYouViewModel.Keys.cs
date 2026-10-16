@@ -52,7 +52,7 @@ internal sealed partial class NeedsYouViewModel
     /// <param name="action">The control's action.</param>
     internal void Press(string rowId, NeedsYouAction action)
     {
-        if (Seen.Rows.FirstOrDefault(r => string.Equals(r.Id, rowId, StringComparison.Ordinal)) is { } row && action.IsReady)
+        if (Row(rowId) is { } row && action.IsReady)
         {
             _ = Act(row, action);
         }
@@ -74,7 +74,7 @@ internal sealed partial class NeedsYouViewModel
             return false;
         }
 
-        var row = Seen.Rows.FirstOrDefault(r => string.Equals(r.Id, SelectedId, StringComparison.Ordinal));
+        var row = SelectedId is { } selected ? Row(selected) : null;
         return key switch
         {
             NeedsYouKey.J => Move(1),
@@ -114,7 +114,7 @@ internal sealed partial class NeedsYouViewModel
     // open (the sheet shows what is being accepted). A protected or pending primary is never run.
     private bool RunPrimary(NeedsYouRowViewModel row)
     {
-        var decision = string.Equals(row.Entry.Subject?.Kind, NeedsYouKinds.Decision, StringComparison.Ordinal);
+        var decision = row.Entry.DecisionId is not null;
         var primary = row.Controls.FirstOrDefault(c => c.IsPrimary && c.IsEnabled);
         return primary is not null && (!decision || string.Equals(SheetRowId, row.Id, StringComparison.Ordinal)) && Act(row, primary.Action);
     }
@@ -132,6 +132,16 @@ internal sealed partial class NeedsYouViewModel
         ActionRequested?.Invoke(this, new NeedsYouActionEventArgs(row.Id, action));
         return true;
     }
+
+    /// <summary>The listed row with an id.</summary>
+    /// <param name="id">The row's id.</param>
+    /// <returns>The row, or null when it is not listed.</returns>
+    internal NeedsYouRowViewModel? Row(string id) => Seen.Rows.FirstOrDefault(r => string.Equals(r.Id, id, StringComparison.Ordinal));
+
+    /// <summary>The listed row that stands for a decision.</summary>
+    /// <param name="decisionId">The decision's id.</param>
+    /// <returns>The row, or null when no listed row stands for it.</returns>
+    internal NeedsYouRowViewModel? RowOfDecision(string decisionId) => Seen.Rows.FirstOrDefault(r => string.Equals(r.Entry.DecisionId, decisionId, StringComparison.Ordinal));
 
     private bool Copy(NeedsYouRowViewModel row)
     {

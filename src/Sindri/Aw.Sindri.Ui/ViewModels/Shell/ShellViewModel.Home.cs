@@ -37,11 +37,9 @@ internal sealed partial class ShellViewModel
             return;
         }
 
-        NeedsYou.Update(feed, HomeFilter == HomeFilter.Decisions ? IsDecisionRow : null);
+        NeedsYou.Update(feed, HomeFilter == HomeFilter.Decisions ? row => row.DecisionId is not null : null);
         FollowDecision();
     }
-
-    private static bool IsDecisionRow(NeedsYouEntry row) => string.Equals(row.Subject?.Kind, NeedsYouKinds.Decision, StringComparison.Ordinal);
 
     // Everything the Needs-you list needs once it and the decision sheet exist (ShellViewModel's constructor calls this one line).
     private void InitNeedsYou(IClipboard clipboard)
@@ -70,7 +68,7 @@ internal sealed partial class ShellViewModel
     // A key or a button asks to run a decision option: Decide, sent once with the option; the sheet shows what came back.
     private void Decide(NeedsYouActionEventArgs request)
     {
-        if (request.Action.OptionId.Length > 0 && NeedsYou.Seen.Rows.FirstOrDefault(r => string.Equals(r.Id, request.RowId, StringComparison.Ordinal)) is { } row)
+        if (request.Action.OptionId.Length > 0 && NeedsYou.Row(request.RowId) is { } row)
         {
             Decision.Show(row);
             _ = Decision.Choose(request.Action.OptionId);
@@ -83,9 +81,8 @@ internal sealed partial class ShellViewModel
     // A deep link to a row or a decision selects its row on Home (the sheet shows beside it).
     private void SelectRowOf(DeepLink link)
     {
-        var row = link.Kind == DeepLinkKind.Decision
-            ? NeedsYou.Seen.Rows.FirstOrDefault(r => IsDecisionRow(r.Entry) && string.Equals(r.Entry.Subject?.Id, link.Subject, StringComparison.Ordinal))
-            : NeedsYou.Seen.Rows.FirstOrDefault(r => string.Equals(r.Id, link.Subject, StringComparison.Ordinal));
+        var row = link.Subject is not { } subject ? null
+            : link.Kind == DeepLinkKind.Decision ? NeedsYou.RowOfDecision(subject) : NeedsYou.Row(subject);
         if (row is not null)
         {
             Queue.ClearSelection();
@@ -129,9 +126,8 @@ internal sealed partial class ShellViewModel
             return;
         }
 
-        var row = NeedsYou.Seen.Rows.FirstOrDefault(r => string.Equals(r.Id, open, StringComparison.Ordinal));
         var own = (link.Kind == DeepLinkKind.NeedsYou && string.Equals(link.Subject, open, StringComparison.Ordinal))
-            || (link.Kind == DeepLinkKind.Decision && row is not null && IsDecisionRow(row.Entry) && string.Equals(row.Entry.Subject?.Id, link.Subject, StringComparison.Ordinal));
+            || (link.Kind == DeepLinkKind.Decision && NeedsYou.Row(open) is { } row && string.Equals(row.Entry.DecisionId, link.Subject, StringComparison.Ordinal));
         if (!own)
         {
             NeedsYou.ForgetSheet();

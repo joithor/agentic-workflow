@@ -37,40 +37,42 @@ internal static class NeedsYouMapper
         _ => ActionReadiness.CliOnly,
     };
 
-    private static NeedsYouEntry Entry(NeedsYouRowView row, Dictionary<string, ActionReadiness> readiness, DecisionList? decisions) =>
-        new(row.Id, UrgencyOf(row.Urgency))
+    private static NeedsYouEntry Entry(NeedsYouRowView row, Dictionary<string, ActionReadiness> readiness, DecisionList? decisions)
+    {
+        var subject = row.Subject is { } s ? new NeedsYouSubject(s.Kind, s.Id) : null;
+        return new NeedsYouEntry(row.Id, UrgencyOf(row.Urgency))
         {
             Kind = row.Kind,
             Chip = row.Chip ?? Derived(row.Kind),
-            ShownId = string.Equals(row.Kind, NeedsYouKinds.Decision, StringComparison.Ordinal) ? row.Subject?.Id ?? string.Empty : row.Item ?? string.Empty,
+            ShownId = ShownOf(row, subject),
             Title = row.Title,
             Repo = row.Repo ?? string.Empty,
             Label = row.Label,
             Reason = row.Reason,
             Since = row.Since,
             PrimaryAction = row.PrimaryAction,
-            Actions = [.. row.Actions.SelectMany(id => Actions(row, id, readiness, decisions))],
-            Subject = row.Subject is { } s ? new NeedsYouSubject(s.Kind, s.Id) : null,
+            Actions = [.. row.Actions.SelectMany(id => Actions(row, subject?.DecisionId, id, readiness, decisions))],
+            Subject = subject,
             ItemId = row.Item,
             Cli = row.Cli,
             RecordedOnly = row.RecordedOnly,
             Notice = row.Notice ?? string.Empty,
-            Question = QuestionOf(row, decisions),
+            Question = PendingDecision(subject?.DecisionId, decisions)?.Question ?? string.Empty,
         };
+    }
 
-    private static string QuestionOf(NeedsYouRowView row, DecisionList? decisions) => PendingDecision(row, decisions)?.Question ?? string.Empty;
+    // The id shown at rest: the decision's own on a decision row, else the row's item.
+    private static string ShownOf(NeedsYouRowView row, NeedsYouSubject? subject) => subject?.DecisionId ?? row.Item ?? string.Empty;
 
-    // The pending decision a decision row stands for, when the list has it.
-    private static DecisionView? PendingDecision(NeedsYouRowView row, DecisionList? decisions) =>
-        row.Subject is { } subject && string.Equals(subject.Kind, NeedsYouKinds.Decision, StringComparison.Ordinal)
-            ? decisions?.Decisions.FirstOrDefault(d => string.Equals(d.Id, subject.Id, StringComparison.Ordinal))
-            : null;
+    // The pending decision a decision row stands for (its DecisionId), when the list has it.
+    private static DecisionView? PendingDecision(string? decisionId, DecisionList? decisions) =>
+        decisionId is null ? null : decisions?.Decisions.FirstOrDefault(d => string.Equals(d.Id, decisionId, StringComparison.Ordinal));
 
     // A Decide on a decision row is one button per option the pending list offers; every other action is one button as served.
-    private static IEnumerable<NeedsYouAction> Actions(NeedsYouRowView row, string id, Dictionary<string, ActionReadiness> readiness, DecisionList? decisions)
+    private static IEnumerable<NeedsYouAction> Actions(NeedsYouRowView row, string? decisionId, string id, Dictionary<string, ActionReadiness> readiness, DecisionList? decisions)
     {
         var ready = readiness.GetValueOrDefault(id, ActionReadiness.Pending);
-        var decision = string.Equals(id, Decide, StringComparison.Ordinal) ? PendingDecision(row, decisions) : null;
+        var decision = string.Equals(id, Decide, StringComparison.Ordinal) ? PendingDecision(decisionId, decisions) : null;
         if (decision is null)
         {
             yield return new NeedsYouAction(id, Labels.Action(id), ready, row.Cli, RejectLike: false);

@@ -1,21 +1,26 @@
 namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 
-/// <summary>The kinds the API serves on a Needs-you row and on its subject, and the queue groups Home counts: the words the app matches on, in one place.</summary>
+/// <summary>
+/// The words the app matches on, in one place, each with the field it is compared with. Against a subject's kind: <see cref="Decision"/>
+/// (the one test for a decision row, read through <see cref="NeedsYouEntry.DecisionId"/>), <see cref="Service"/> and <see cref="Profile"/>
+/// (which details a row shows). Against a row's own kind: <see cref="Decision"/>, <see cref="Failure"/>, <see cref="Profile"/> and
+/// <see cref="Park"/> only pick the fallback chip, and <see cref="Park"/> picks the strip's park rows. The queue groups are Home's counts.
+/// </summary>
 internal static class NeedsYouKinds
 {
-    /// <summary>A row's kind: a decision.</summary>
+    /// <summary>A decision: a subject's kind (the decision-row test) and a row's kind (its fallback chip).</summary>
     internal const string Decision = "decision";
 
-    /// <summary>A row's kind: a park (the instance waits on the human).</summary>
+    /// <summary>A park (the instance waits on the human): a row's kind.</summary>
     internal const string Park = "park";
 
-    /// <summary>A subject's kind: a service (a failure row).</summary>
+    /// <summary>A service (a failure row): a subject's kind.</summary>
     internal const string Service = "service";
 
-    /// <summary>A subject's kind: the profile (a drift row).</summary>
+    /// <summary>The profile (a drift row): a subject's kind and a row's kind.</summary>
     internal const string Profile = "profile";
 
-    /// <summary>A row's kind: a failure.</summary>
+    /// <summary>A failure: a row's kind.</summary>
     internal const string Failure = "failure";
 
     /// <summary>The queue's running group.</summary>

@@ -59,7 +59,7 @@ public sealed class NeedsYouMapperTests
 
         var row = NeedsYouMapper.Map(odd, Catalog(), Pending(), _counts).Rows[0];
 
-        Assert.Equal((list.Rows[0].Item, string.Empty), (row.ShownId, row.Question));   // the kind word alone does not make it one
+        Assert.Equal((list.Rows[0].Item ?? string.Empty, string.Empty), (row.ShownId, row.Question));   // the kind word alone does not make it one
     }
 
     [Fact]

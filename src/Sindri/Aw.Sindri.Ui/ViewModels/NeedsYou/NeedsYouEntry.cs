@@ -45,6 +45,9 @@ internal sealed record NeedsYouEntry(string Id, NeedsYouUrgency Urgency)
     /// <summary>The served subject; null when the API serves none (a profile row before its owner decision).</summary>
     internal NeedsYouSubject? Subject { get; init; }
 
+    /// <summary>The decision this row stands for (its subject's id when the subject is a decision), null when it is not a decision row; every "is this a decision row" test reads this.</summary>
+    internal string? DecisionId => Subject?.DecisionId;
+
     /// <summary>The item the row names, when it names one.</summary>
     internal string? ItemId { get; init; }
 
