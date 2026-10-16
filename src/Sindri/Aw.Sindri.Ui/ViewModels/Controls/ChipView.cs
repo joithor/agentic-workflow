@@ -2,7 +2,6 @@ using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.ViewModels.Controls;
 
-#pragma warning disable MA0182 // until the U8 pages place the chip
 /// <summary>
 /// The one chip every state word is drawn as (fixture.md "State chips", rev 8): the API serves the chip's word and its tone
 /// (API §3.8), so the app maps the tone to a look and shows the word exactly as served. It never maps a word to a tone of
@@ -29,4 +28,3 @@ internal sealed record ChipView(string Word, ChipTone Tone)
     internal static ChipView? Resolve(StateChip? served, StateChip? fallback = null) =>
         (served ?? fallback) is { } chip ? new ChipView(chip.Word, chip.Tone) : null;
 }
-#pragma warning restore MA0182

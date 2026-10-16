@@ -2,8 +2,6 @@ using Aw.Sindri.Ui.Platform;
 
 namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 
-#pragma warning disable MA0182 // until the Needs-you list places it (U3' T3)
-
 /// <summary>
 /// The Needs-you panel's presentation state (UI spec §5): each row's look, the header's single pulse when rows arrive,
 /// Mark all seen and its Undo, and the reduced-motion switch (the OS setting or the in-app switch). No attention band
@@ -158,5 +156,3 @@ internal sealed class NeedsYouSeenViewModel : ObservableObject
         }
     }
 }
-
-#pragma warning restore MA0182

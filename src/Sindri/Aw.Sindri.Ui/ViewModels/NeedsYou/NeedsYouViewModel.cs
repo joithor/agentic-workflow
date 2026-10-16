@@ -3,8 +3,6 @@ using Aw.Sindri.Ui.Platform;
 
 namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 
-#pragma warning disable MA0182 // until Home places the list (U3' T1 maps the API's rows onto it)
-
 /// <summary>
 /// Home's Needs you list (U3' T3): the rows as served, capped, with the overflow, selection that survives refreshes, the
 /// hold while the pointer is over the panel, and the stalled and rebuilding banners. The app never sorts or filters the

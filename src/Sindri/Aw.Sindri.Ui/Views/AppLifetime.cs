@@ -66,11 +66,6 @@ internal sealed class AppLifetime : IDisposable
         Follow(shell);
     }
 
-    /// <summary>What the tray shows for a shell state: "running" only once connected and fresh; hollow until then.</summary>
-    /// <param name="state">The shell's state.</param>
-    /// <returns>The tray's view.</returns>
-    internal static TrayView TrayViewFor(ShellState state) => AttentionSummary.For(feed: null, state, default).Tray;
-
     /// <summary>Shows what the needs-you rows add up to in the tray and on the dock or taskbar badge.</summary>
     /// <param name="summary">The summary.</param>
     internal void ShowAttention(AttentionSummary summary)
@@ -92,10 +87,6 @@ internal sealed class AppLifetime : IDisposable
             }
         };
     }
-
-    /// <summary>Shows the shell's state in the tray.</summary>
-    /// <param name="state">The state.</param>
-    internal void ShowState(ShellState state) => _tray.Show(TrayViewFor(state));
 
     /// <summary>Handles one message from a later launch (on the UI thread; <see cref="InstanceListener"/> hands them over): focus, or a deep link; nothing else.</summary>
     /// <param name="message">The message's text, unparsed.</param>

@@ -183,9 +183,6 @@ internal sealed partial class ShellViewModel : ObservableObject
     // Connected: the API's pages (and the sheet over them) have something to show.
     private bool IsConnected => State is ShellState.Normal or ShellState.Stale or ShellState.Unreadable;
 
-    /// <summary>The attention band under the top bar (§3.2): always false in U0, since needs-you arrives in U3.</summary>
-    public bool IsAttentionBandVisible { get; }
-
     /// <summary>The window's remembered bounds, or null to let the platform place it.</summary>
     public WindowBounds? Window => _preferences.Window;
 

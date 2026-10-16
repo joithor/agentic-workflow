@@ -390,9 +390,10 @@ public sealed class AppLifetimeTests
         var (_, lifetime, _) = Start();
         using (lifetime)
         {
-            lifetime.ShowState(ShellState.NotRunning);
+            var summary = AttentionSummary.For(feed: null, ShellState.NotRunning, default);
+            lifetime.ShowAttention(summary);
 
-            Assert.Equal(AppLifetime.TrayViewFor(ShellState.NotRunning), _tray.Shown);
+            Assert.Equal(summary.Tray, _tray.Shown);
         }
     });
 

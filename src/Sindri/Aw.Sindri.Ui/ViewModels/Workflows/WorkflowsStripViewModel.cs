@@ -4,8 +4,6 @@ using Aw.Sindri.Ui.Platform;
 
 namespace Aw.Sindri.Ui.ViewModels.Workflows;
 
-#pragma warning disable MA0182 // until Home places the strip (T19)
-
 /// <summary>
 /// Home's Workflows strip (screens §4.1, E-20): the open root instances as the API serves them, in its order (incident, then
 /// triage, then work, then oldest; the app never sorts), capped, with "… N more" that opens Workflows. The fold rule gives
