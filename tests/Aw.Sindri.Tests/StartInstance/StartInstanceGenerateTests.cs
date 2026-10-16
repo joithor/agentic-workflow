@@ -68,7 +68,7 @@ public sealed class StartInstanceGenerateTests
     {
         var facts = new InMemoryFactStore();
         var runtime = new Capturing();
-        return (new StartInstanceService(new OneItem(), new OneRecipe(), new NoInstances(), facts, runtime, new NoLaunches(), new FixedClock()), facts, runtime);
+        return (new StartInstanceService(new OneItem(), new OneRecipe(), new NoInstances(), new StartFacts(facts, new FixedClock()), runtime, new NoLaunches(), new ClaimHolders(new InMemoryWorkflowClaims(), new FakeInstanceLiveness())), facts, runtime);
     }
 
     private sealed class FixedClock : TimeProvider

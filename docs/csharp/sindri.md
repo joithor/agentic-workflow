@@ -91,9 +91,11 @@ repos:                    # optional
 services:                 # optional: background services by name, each with a cadence
   heartbeat: { every: 30s }   # <n>s|m|h, 5s to 24h
 api: { port: 7410 }       # optional, default 7410; 0 (a free port) or 1024..65535; AW_SINDRI_PORT overrides it
-workflow:                 # optional (engine S1-D11); each a duration <n>m|h|d
+workflow:                 # optional (engine S1-D11); the times are durations <n>m|h|d
   deskTimeout: 2d         # default 2d: the floor of every desk Step's timeout
   eventHold: 24h          # default 24h: how long a buffered event waits for its wait
+  effects: [effect.notify.desk]   # engine P6: the effect allowlist (effect.* ids); absent, RCP-EFFECT-001 is skipped and every recipe effect is refused (SND-WF-011)
+  dispatchDelay: 10s      # engine P6: default 10s, the undo window before each effect runs (<n>s|m|h, 5s to 24h, like a cadence)
 context: { ... }          # optional: the context engine's section, checked by the engine (docs/sindri/context.md)
 ```
 
@@ -586,6 +588,7 @@ together with `SindriErrors`. Retired codes stay reserved in `WorkflowErrors.Ret
 | `SND-WF-012` | conflict | An earlier attempt of this item is still live |
 | `SND-WF-013` | conflict | A workflow challenge expired, or its subject changed |
 | `SND-WF-014` | invalid | `--item` and `fact:item`'s `id` differ |
+| `SND-WF-015` | unavailable | An effect couldn't be sent: its block replied an undeclared outcome, or every retry failed; the instance parks (dispatch) |
 
 `sindri recipe validate <file> [--json]` and `sindri recipe eval <file>` are local checker verbs (engine spec W27): exit
 0 pass, 1 fail, 2 usage or tool error. The recipe reference, the eval format, the `RCP-*` rule table and how to add
@@ -648,3 +651,5 @@ dotnet test --project tests/Aw.Sindri.Tests --filter-trait "Lane=integration"   
 scripts/binaries-lock.sh fetch temporal && scripts/binaries-lock.sh fetch temporal-test-server   # the Temporal tests and the smoke run these pins
 bash src/Sindri/aot-smoke/run.sh                                                # publish framework-dependent and drive the published apphost (expected.txt)
 ```
+
+The session launcher (`launcher.json`, the agent catalog, terminal templates and the T3 Code fallback) is in `docs/csharp/sindri-launcher.md`; the profile reference is in `docs/csharp/sindri-profile.md`.
