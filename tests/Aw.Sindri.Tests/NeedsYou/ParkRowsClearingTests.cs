@@ -13,6 +13,7 @@ namespace Aw.Sindri.Tests.NeedsYou;
 public sealed class ParkRowsClearingTests
 {
     private static readonly string _address = "ITM-" + new string('1', 32) + "/step/1";
+    private static readonly string _other = "ITM-" + new string('1', 32) + "/review/1";
 
     [Fact]
     public async Task Row_clears_when_the_instance_resumes_or_ends()
@@ -35,6 +36,49 @@ public sealed class ParkRowsClearingTests
         Assert.Empty(ended);
     }
 
+    [Fact]
+    public async Task Two_roots_on_one_item_each_keep_and_clear_their_own_rows()
+    {
+        var q = new ItemQueryHarness();
+        await q.Item('1', "the item", repo: "agentic-workflow");
+
+        await Fold(q, EventTypes.WorkflowStarted, Row("produce", new FrameSummary("produce", 1, "1.1", Child: null, StepRuntime.Desk), suspension: null));
+        await Fold(q, EventTypes.WorkflowStarted, Row("review", new FrameSummary("review", 1, "2.1", Child: null, StepRuntime.Desk), suspension: null, address: _other));
+        var both = await Ids(q);
+        await Fold(q, EventTypes.WorkflowTransition, Row("produce", frame: null, Parked()));   // the first root, no longer the latest, parks
+        var firstParked = await Ids(q);
+        await Fold(q, EventTypes.WorkflowTransition, Row("done", new FrameSummary("done", 2, Run: null, Child: null), suspension: null, outcome: "resolved"));
+        var firstEnded = await Ids(q);
+        await Fold(q, EventTypes.WorkflowTransition, Row("done", new FrameSummary("done", 2, Run: null, Child: null), suspension: null, outcome: "resolved", address: _other));
+        var bothEnded = await Ids(q);
+
+        Assert.Equal(["desk:" + Instance(_address), "desk:" + Instance(_other)], both);
+        Assert.Equal(["desk:" + Instance(_other), "park:" + Instance(_address)], firstParked);
+        Assert.Equal(["desk:" + Instance(_other)], firstEnded);
+        Assert.Empty(bothEnded);
+    }
+
+    [Fact]
+    public async Task A_row_stored_without_detail_leaves_the_park_row_alone()
+    {
+        var q = new ItemQueryHarness();
+        await q.Item('1', "the item", repo: "agentic-workflow");
+        await Fold(q, EventTypes.WorkflowStarted, Row("produce", new FrameSummary("produce", 1, "1.1", Child: null, StepRuntime.Desk), suspension: null));
+        await Fold(q, EventTypes.WorkflowTransition, Row("produce", frame: null, Parked()));
+
+        await Fold(q, EventTypes.WorkflowTransition, new WorkflowEventPayload(_address, "produce", "produce", "deadline", Outcome: null, Run: null, Detail: null));
+
+        Assert.Equal(["park:"], await Kinds(q));
+    }
+
+    private static string Instance(string address) => WorkflowInstanceId.Of(InstanceAddress.From(address)).Value;
+
+    private static async Task<string[]> Ids(ItemQueryHarness q)
+    {
+        var rows = await q.Views.Views.List<NeedsYouRowRecord>(ViewNames.NeedsYou, ItemQueryHarness.Token);
+        return [.. rows.Value.Select(static r => r.Row.Id.Value).Order(StringComparer.Ordinal)];
+    }
+
     private static async Task<string[]> Kinds(ItemQueryHarness q)
     {
         var rows = await q.Views.Views.List<NeedsYouRowRecord>(ViewNames.NeedsYou, ItemQueryHarness.Token);
@@ -45,11 +89,11 @@ public sealed class ParkRowsClearingTests
 
     private static SuspensionSummary Parked() => new(SuspensionKind.Park, ParkReason.Rounds, ParkKind.Loop, Escalation: null, Mirrors: null);
 
-    private static WorkflowEventPayload Row(string to, FrameSummary? frame, SuspensionSummary? suspension, string? outcome = null)
+    private static WorkflowEventPayload Row(string to, FrameSummary? frame, SuspensionSummary? suspension, string? outcome = null, string? address = null)
     {
         var delta = new WorkflowEventDelta(frame, suspension, PendingPark: null, Loops: null, TokensSpent: null, TokensGranted: null, Facts: null, outcome);
         var detail = new WorkflowEventDetail(TriggerKey.For(WorkflowInstanceId.From("WFI-" + new string('a', 32)), "t"), "human:cli", SourceSequence: null, ArgumentsSha256: null, ReportSha256: null,
             Answer: null, Amount: null, Reason: null, [], [], Grant: null, Override: null, Refusal: null, [], delta);
-        return new WorkflowEventPayload(_address, "from", to, "step.completed", Outcome: null, Run: null, detail);
+        return new WorkflowEventPayload(address ?? _address, "from", to, "step.completed", Outcome: null, Run: null, detail);
     }
 }

@@ -7787,6 +7787,8 @@ Aw.Sindri.Core.Views.EngineItemPart.Address.init -> void
 Aw.Sindri.Core.Views.EngineItemPart.Cancelled.get -> bool
 Aw.Sindri.Core.Views.EngineItemPart.Cancelled.init -> void
 Aw.Sindri.Core.Views.EngineItemPart.Deconstruct(out string! Address, out string! State, out bool RunOpen, out Aw.Sindri.Core.Workflow.Engine.StepRuntime? Runtime, out Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind? Suspension, out bool Ended, out bool Cancelled) -> void
+Aw.Sindri.Core.Views.EngineItemPart.Earlier.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.EngineItemPart!>?
+Aw.Sindri.Core.Views.EngineItemPart.Earlier.init -> void
 Aw.Sindri.Core.Views.EngineItemPart.Ended.get -> bool
 Aw.Sindri.Core.Views.EngineItemPart.Ended.init -> void
 Aw.Sindri.Core.Views.EngineItemPart.EngineItemPart(string! Address, string! State, bool RunOpen, Aw.Sindri.Core.Workflow.Engine.StepRuntime? Runtime, Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind? Suspension, bool Ended, bool Cancelled) -> void

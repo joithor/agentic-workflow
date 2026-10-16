@@ -86,6 +86,48 @@ public sealed class EngineItemStatesTests
         Assert.Null(child);
     }
 
+    private const string Second = "ITM-11111111111111111111111111111111/other/1";
+
+    [Fact]
+    public void A_second_root_keeps_the_first_live_and_the_item_follows_the_latest()
+    {
+        var first = EngineItemStates.Next(prior: null, EventTypes.WorkflowStarted, Row("produce", frame: new FrameSummary("produce", 1, "1.1", Child: null, StepRuntime.Desk)));
+
+        var both = EngineItemStates.Next(first, EventTypes.WorkflowStarted, Row("triaged", address: Second, frame: new FrameSummary("triaged", 1, Run: null, Child: null)));
+
+        Assert.Equal((Second, ItemState.Running), (both!.Address, EngineItemStates.StateOf(both)));
+        Assert.Equal([Address], both.Earlier!.Select(static p => p.Address), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void An_earlier_root_moves_and_leaves_the_set_when_it_ends_while_the_latest_stays()
+    {
+        var first = EngineItemStates.Next(prior: null, EventTypes.WorkflowStarted, Row("produce", frame: new FrameSummary("produce", 1, "1.1", Child: null, StepRuntime.Desk)));
+        var both = EngineItemStates.Next(first, EventTypes.WorkflowStarted, Row("triaged", address: Second, frame: new FrameSummary("triaged", 1, Run: null, Child: null)));
+
+        var parked = EngineItemStates.Next(both, EventTypes.WorkflowTransition, Row("produce", suspension: new SuspensionSummary(SuspensionKind.Park, ParkReason.Rounds, ParkKind.Loop, Escalation: null, Mirrors: null)));
+        var ended = EngineItemStates.Next(parked, EventTypes.WorkflowTransition, Row("done", trigger: TriggerNames.Cancel, frame: new FrameSummary("done", 2, Run: null, Child: null), outcome: "cancelled"));
+
+        Assert.Equal((Second, ItemState.Running, SuspensionKind.Park), (parked!.Address, EngineItemStates.StateOf(parked), parked.Earlier!.Single().Suspension));
+        Assert.Equal((Second, ItemState.Running), (ended!.Address, EngineItemStates.StateOf(ended)));
+        Assert.Null(ended.Earlier);
+    }
+
+    [Fact]
+    public void A_cancel_row_stored_without_detail_still_ends_the_instance_and_a_park_survives_a_row_without_detail()
+    {
+        var started = EngineItemStates.Next(prior: null, EventTypes.WorkflowStarted, Row("produce", frame: new FrameSummary("produce", 1, "1.1", Child: null, StepRuntime.Desk)));
+        var parked = EngineItemStates.Next(started, EventTypes.WorkflowTransition, Row("produce", suspension: new SuspensionSummary(SuspensionKind.Park, ParkReason.Rounds, ParkKind.Loop, Escalation: null, Mirrors: null)));
+
+        var bare = EngineItemStates.Next(parked, EventTypes.WorkflowTransition, Bare("produce", "deadline"));
+        var cancelled = EngineItemStates.Next(parked, EventTypes.WorkflowTransition, Bare(EngineStates.Cancelled, TriggerNames.Cancel));
+
+        Assert.Equal(ItemState.Parked, EngineItemStates.StateOf(bare!));
+        Assert.Equal(ItemState.Cancelled, EngineItemStates.StateOf(cancelled!));
+    }
+
+    private static WorkflowEventPayload Bare(string to, string trigger) => new(Address, "from", to, trigger, Outcome: null, Run: null, Detail: null);
+
     private static WorkflowEventPayload Row(string to, string? address = null, string trigger = "step.completed", FrameSummary? frame = null, SuspensionSummary? suspension = null, string? outcome = null)
     {
         var delta = new WorkflowEventDelta(frame, suspension, PendingPark: null, Loops: null, TokensSpent: null, TokensGranted: null, Facts: null, outcome);

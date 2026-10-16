@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 
@@ -14,4 +15,13 @@ namespace Aw.Sindri.Core.Views;
 /// <param name="Suspension">The suspension the instance is under, or none.</param>
 /// <param name="Ended">Whether the instance ended.</param>
 /// <param name="Cancelled">Whether it ended by a cancel.</param>
-public sealed record EngineItemPart(string Address, string State, bool RunOpen, StepRuntime? Runtime, SuspensionKind? Suspension, bool Ended, bool Cancelled);
+public sealed record EngineItemPart(string Address, string State, bool RunOpen, StepRuntime? Runtime, SuspensionKind? Suspension, bool Ended, bool Cancelled)
+{
+    /// <summary>
+    /// The item's other root instances that are still live (a second recipe started on the item), each as this record without its own
+    /// <see cref="Earlier"/>. The item's state follows this part, the latest root; these keep their own needs-you rows settling and keep
+    /// the item from being closed under them. Not written when there are none.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<EngineItemPart>? Earlier { get; init; }
+}
