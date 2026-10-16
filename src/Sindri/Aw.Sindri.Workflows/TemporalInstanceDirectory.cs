@@ -119,13 +119,13 @@ internal sealed class TemporalInstanceDirectory(TemporalFrontend frontend, Known
 
         try
         {
-            foreach (var execution in await TemporalReads.List(client.Value, "WorkflowType = 'RecipeWorkflow'", cancellationToken).ConfigureAwait(false))
+            var match = await TemporalReads.Find(client.Value, "WorkflowType = 'RecipeWorkflow'",
+                execution => InstanceAddress.TryFrom(execution.Id, out var address) && WorkflowInstanceId.Of(address) == id, cancellationToken).ConfigureAwait(false);
+            if (match is not null)
             {
-                if (InstanceAddress.TryFrom(execution.Id, out var address) && WorkflowInstanceId.Of(address) == id)
-                {
-                    known.Remember(address);
-                    return address;
-                }
+                var address = InstanceAddress.From(match.Id);
+                known.Remember(address);
+                return address;
             }
         }
         catch (RpcException e) when (TemporalUpdates.NoNamespace(e)) // boundary: not serve's Temporal

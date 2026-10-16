@@ -21,7 +21,7 @@ internal static class TemporalReads
     internal static RpcOptions Rpc(CancellationToken cancellationToken, TimeSpan? timeout = null) =>
         new() { Retry = false, Timeout = timeout, CancellationToken = cancellationToken };
 
-    /// <summary>Runs <paramref name="read"/>, again after a pause while the frontend answers Unavailable; the last Unavailable is thrown.</summary>
+    /// <summary>Runs <paramref name="read"/>, again after a pause while the frontend answers with a transient code (the codes the SDK retries, but never DeadlineExceeded: a Query's own patience is one attempt); the last failure is thrown.</summary>
     /// <typeparam name="T">What the read returns.</typeparam>
     /// <param name="read">The read, from the RPC options to use; it must be safe to run again from the start.</param>
     /// <param name="cancellationToken">The caller's token.</param>
@@ -35,11 +35,38 @@ internal static class TemporalReads
             {
                 return await read(Rpc(cancellationToken)).ConfigureAwait(false);
             }
-            catch (RpcException e) when (e.Code == RpcException.StatusCode.Unavailable && attempt < Pauses.Count) // boundary: the frontend may be coming back
+            catch (RpcException e) when (Transient(e.Code) && attempt < Pauses.Count) // boundary: the frontend may be coming back
             {
                 await Task.Delay(Pauses[attempt], cancellationToken).ConfigureAwait(false);
             }
         }
+    }
+
+    private static bool Transient(RpcException.StatusCode code) => code is RpcException.StatusCode.Unavailable or RpcException.StatusCode.Internal
+        or RpcException.StatusCode.Unknown or RpcException.StatusCode.Aborted or RpcException.StatusCode.ResourceExhausted or RpcException.StatusCode.DataLoss;
+
+    /// <summary>The first execution of a visibility query that <paramref name="match"/> accepts (the listing stops paging there), or null.</summary>
+    /// <param name="client">The client.</param>
+    /// <param name="query">The visibility query.</param>
+    /// <param name="match">Which execution is wanted.</param>
+    /// <param name="cancellationToken">The caller's token.</param>
+    /// <returns>The execution, or null when none matches.</returns>
+    internal static Task<WorkflowExecution?> Find(ITemporalClient client, string query, Func<WorkflowExecution, bool> match, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        ArgumentNullException.ThrowIfNull(match);
+        return Run(async rpc =>
+        {
+            await foreach (var execution in client.ListWorkflowsAsync(query, new WorkflowListOptions { Rpc = rpc }).WithCancellation(cancellationToken).ConfigureAwait(false))
+            {
+                if (match(execution))
+                {
+                    return execution;
+                }
+            }
+
+            return null;
+        }, cancellationToken);
     }
 
     /// <summary>The executions of a visibility query, listed whole by <see cref="Run{T}"/>.</summary>
