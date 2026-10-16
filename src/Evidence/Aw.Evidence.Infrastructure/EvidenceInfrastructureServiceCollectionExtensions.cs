@@ -1,4 +1,5 @@
 using Aw.Evidence.Core.Browser;
+using Aw.Evidence.Core.Data;
 using Aw.Evidence.Core.Files;
 using Aw.Evidence.Core.Guard;
 using Aw.Evidence.Core.Images;
@@ -10,14 +11,19 @@ using Aw.Evidence.Core.Visual;
 using Aw.Evidence.Infrastructure.Browser;
 using Aw.Evidence.Infrastructure.Files;
 using Aw.Evidence.Infrastructure.Guard;
+using Aw.Evidence.Infrastructure.Http;
 using Aw.Evidence.Infrastructure.Ids;
 using Aw.Evidence.Infrastructure.Images;
 using Aw.Evidence.Infrastructure.Judging;
 using Aw.Evidence.Infrastructure.Locks;
+using Aw.Evidence.Infrastructure.Processes;
+using Aw.Evidence.Infrastructure.Redaction;
 using Aw.Evidence.Infrastructure.Settings;
 using Aw.Evidence.Infrastructure.Stack;
+using Aw.Evidence.Infrastructure.Targets;
 using Aw.Evidence.Infrastructure.Visual;
 using Aw.Kernel.Ids;
+using Aw.Redaction;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Evidence.Infrastructure;
@@ -51,6 +57,11 @@ public static class EvidenceInfrastructureServiceCollectionExtensions
             .AddSingleton<IBrowser, PlaywrightBrowser>()
             .AddSingleton<IBrowserInstaller, PlaywrightInstaller>()
             .AddSingleton<IJudge, UnavailableJudge>()
+            .AddSingleton<IApiTransport>(new HttpApiTransport(TimeSpan.FromSeconds(30)))
+            .AddSingleton<ICliRunner>(new ProcessCliRunner(TimeSpan.FromMinutes(2)))
+            .AddSingleton<IExecutableLocator, FileExecutableLocator>()
+            .AddSingleton<IEvidenceTargets, FileEvidenceTargets>()
+            .AddSingleton<ITextScrubber>(new RedactionScrubber(Redactor.Default))
             .AddSingleton<IIdGenerator, RandomIds>();
     }
 }

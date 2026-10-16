@@ -53,10 +53,35 @@ public static class EvidenceErrors
     /// <summary>AW-EVIDENCE-016: publishing is refused (data provenance unknown: evidence stays local).</summary>
     public static readonly ErrorDefinition PublishRefused = new("AW-EVIDENCE-016", ErrorKind.Forbidden, "Publish refused");
 
+    /// <summary>AW-EVIDENCE-017: an API script is malformed or breaks a script rule (unknown key, literal header value, bad pointer).</summary>
+    public static readonly ErrorDefinition ApiScriptInvalid = new("AW-EVIDENCE-017", ErrorKind.Invalid, "API script is invalid");
+
+    /// <summary>AW-EVIDENCE-018: a database script is malformed or breaks a script rule.</summary>
+    public static readonly ErrorDefinition DbScriptInvalid = new("AW-EVIDENCE-018", ErrorKind.Invalid, "Database script is invalid");
+
+    /// <summary>AW-EVIDENCE-019: a CLI call is refused (target outside the build outputs and the allowlist, found through PATH, an undeclared write verb, a secret pass-through).</summary>
+    public static readonly ErrorDefinition CliRefused = new("AW-EVIDENCE-019", ErrorKind.Forbidden, "CLI call refused");
+
+    /// <summary>AW-EVIDENCE-020: a database is refused (outside the repo, not disposable, role not read-only, a write statement).</summary>
+    public static readonly ErrorDefinition DatabaseRefused = new("AW-EVIDENCE-020", ErrorKind.Forbidden, "Database refused");
+
+    /// <summary>AW-EVIDENCE-021: the server's identity is not the configured one.</summary>
+    public static readonly ErrorDefinition IdentityMismatch = new("AW-EVIDENCE-021", ErrorKind.Forbidden, "Server identity mismatch");
+
+    /// <summary>AW-EVIDENCE-022: the targets config is invalid.</summary>
+    public static readonly ErrorDefinition TargetsInvalid = new("AW-EVIDENCE-022", ErrorKind.Invalid, "Targets config is invalid");
+
+    /// <summary>AW-EVIDENCE-023: a request failed (connection, timeout, or a redirect off the origin).</summary>
+    public static readonly ErrorDefinition RequestFailed = new("AW-EVIDENCE-023", ErrorKind.Unavailable, "Request failed");
+
+    /// <summary>AW-EVIDENCE-024: a database can't be reached or copied.</summary>
+    public static readonly ErrorDefinition DatabaseUnavailable = new("AW-EVIDENCE-024", ErrorKind.Unavailable, "Database unavailable");
+
     /// <summary>Every Evidence error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
         Invalid, ScriptInvalid, ManifestInvalid, HostRefused, StepsRefused, CredentialsMissing, RegionOutside,
         SizeMismatch, LockBusy, FileNotFound, FileUnavailable, ImageInvalid, BrowserFailed, ProbeFailed, RunFailed, PublishRefused,
+        ApiScriptInvalid, DbScriptInvalid, CliRefused, DatabaseRefused, IdentityMismatch, TargetsInvalid, RequestFailed, DatabaseUnavailable,
     ];
 }
