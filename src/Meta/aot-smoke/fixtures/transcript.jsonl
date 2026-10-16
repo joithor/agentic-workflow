@@ -1,3 +1,3 @@
-{"type":"user","origin":{"kind":"peer","from":"uds:/run/smoke-api.sock","msg_id":"m-idle","name":"smoke-api","body":"ready #1"},"timestamp":"2026-10-15T04:05:00.000Z"}
+{"type":"user","origin":{"kind":"peer","from":"uds:/run/smoke-api.sock","msg_id":"m-idle","name":"smoke-api","body":"ready #1 079c2541"},"timestamp":"2026-10-15T04:05:00.000Z"}
 {"type":"assistant","message":{"content":"working"}}
 {"type":"attachment","attachment":{"type":"queued_command","delivery_id":"d-queued","origin":{"kind":"peer","from":"uds:/run/smoke-ui.sock","name":"smoke-ui","body":"can you rebase me"}},"timestamp":"2026-10-15T04:06:00.000Z"}

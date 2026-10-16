@@ -40,7 +40,7 @@ public abstract class LaneMailContract
         var sent = await mail.Send("api", "status?", A.At(1), _none);
         _ = await mail.Deliver([sent.Value], A.At(1), _none);
 
-        var first = await mail.Reply(new LaneIdentity("t1", "api"), "ready #12", A.At(2), _none);
+        var first = await mail.Reply(new LaneIdentity("t1", "api"), "ready #12 079c2541", A.At(2), _none);
         var second = await mail.Reply(new LaneIdentity("t1", "api"), "more", A.At(3), _none);
         var inbox = await messages.Messages(_none);
         var owed = await mail.Owed("api", _none);
@@ -48,7 +48,7 @@ public abstract class LaneMailContract
         Expect.That(first.Value.Value == "lane:api:1" && second.Value.Value == "lane:api:2", "ids count per lane");
         Expect.That(inbox.Value.Count == 2, "both replies are inbound messages");
         Expect.That(inbox.Value[0].From == "t1-api" && inbox.Value[0].FromName == "t1-api", "from is team-lane");
-        Expect.That(inbox.Value[0].Body == "ready #12" && inbox.Value[0].Class.Kind == Core.Messages.MessageKind.Ready && inbox.Value[0].Class.Pr == 12, "classified like any inbound message");
+        Expect.That(inbox.Value[0].Body == "ready #12 079c2541" && inbox.Value[0].Class.Kind == Core.Messages.MessageKind.Ready && inbox.Value[0].Class.Pr == 12, "classified like any inbound message");
         Expect.That(owed.Value.Count == 0, "nothing owed after a reply");
     }
 
