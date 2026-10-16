@@ -1,6 +1,8 @@
 using Aw.Kernel.Services;
 using Aw.Meta.Core.Config;
 using Aw.Meta.Core.Messages;
+using Aw.Meta.Core.Ports;
+using Aw.Meta.Core.Worktrees;
 using Aw.Meta.Features.CheckMerge;
 using Aw.Meta.Features.GateRerun;
 using Aw.Meta.Features.GateRun;
@@ -21,6 +23,8 @@ using Aw.Meta.Features.StopCheck;
 using Aw.Meta.Features.SyncInbox;
 using Aw.Meta.Features.Team;
 using Aw.Meta.Features.Watch;
+using Aw.Meta.Features.WorktreeList;
+using Aw.Meta.Features.WorktreeSweep;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Meta.Features;
@@ -38,7 +42,8 @@ public static class MetaFeaturesServiceCollectionExtensions
         .AddOwnerSlices()
         .AddReportSlices()
         .AddGateSlices()
-        .AddHostSlices();
+        .AddHostSlices()
+        .AddWorktreeSlices();
 
     private static IServiceCollection AddSetupSlices(this IServiceCollection services) => services
         .AddScoped<SetRoleService>()
@@ -106,7 +111,9 @@ public static class MetaFeaturesServiceCollectionExtensions
         .Validated<CheckMergeService, CheckMergeRequest, CheckMergeResponse>()
         .AddScoped<MergeRunService>()
         .AddScoped<IValidator<MergeRunRequest>, MergeRunValidator>()
-        .Validated<MergeRunService, MergeRunRequest, MergeRunResponse>();
+        .AddScoped<IService<MergeRunRequest, MergeRunResponse>>(static sp => new ValidatingService<MergeRunRequest, MergeRunResponse>(
+            new SweepAfterMergeService(sp.GetRequiredService<MergeRunService>(), sp.GetRequiredService<IMetaConfig>(), sp.GetRequiredService<WorktreeSweeper>()),
+            sp.GetRequiredService<IValidator<MergeRunRequest>>()));
 
     private static IServiceCollection AddHostSlices(this IServiceCollection services) => services
         .AddScoped<HostProbe>()
@@ -114,10 +121,18 @@ public static class MetaFeaturesServiceCollectionExtensions
         .AddScoped<OrphanKiller>()
         .AddScoped<HealthService>()
         .Plain<HealthService, HealthRequest, HealthResponse>()
+        .AddScoped<WatchSweeper>()
         .AddScoped<WatchPoller>()
         .AddScoped<WatchService>()
         .AddScoped<IValidator<WatchRequest>, WatchValidator>()
         .Validated<WatchService, WatchRequest, WatchResponse>();
+
+    private static IServiceCollection AddWorktreeSlices(this IServiceCollection services) => services
+        .AddScoped<ListWorktreesService>()
+        .Plain<ListWorktreesService, ListWorktreesRequest, ListWorktreesResponse>()
+        .AddScoped<SweepWorktreesService>()
+        .AddScoped<IValidator<SweepWorktreesRequest>, SweepWorktreesValidator>()
+        .Validated<SweepWorktreesService, SweepWorktreesRequest, SweepWorktreesResponse>();
 
     // Exposes an already registered service as its IService.
     private static IServiceCollection Plain<TService, TRequest, TResponse>(this IServiceCollection services)

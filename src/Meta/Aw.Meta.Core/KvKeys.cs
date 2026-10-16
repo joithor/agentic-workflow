@@ -20,4 +20,10 @@ public static class KvKeys
 
     /// <summary>The pull requests the watch saw merged or closed on GitHub, comma separated; the merge queue leaves them out.</summary>
     public const string EndedPrs = "watch.ended-prs";
+
+    /// <summary>The last worktree sweep's one-line summary (a trigger's or an explicit sweep's).</summary>
+    public const string WorktreesLast = "worktrees.last";
+
+    /// <summary>Pull requests the watch saw end whose worktrees it could not yet sweep (the sweep could not run), comma separated; retried on each poll.</summary>
+    public const string WorktreesPending = "worktrees.pending-prs";
 }

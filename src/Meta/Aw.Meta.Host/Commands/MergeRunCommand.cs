@@ -19,6 +19,6 @@ internal static class MergeRunCommand
 
     private static string Text(MergeRunResponse response) =>
         response.Merged
-            ? string.Create(CultureInfo.InvariantCulture, $"MERGED #{response.Pr}: main is now {response.Sha}{Environment.NewLine}{response.Announce}")
+            ? string.Create(CultureInfo.InvariantCulture, $"MERGED #{response.Pr}: main is now {response.Sha}{Environment.NewLine}{response.Announce}") + (response.Worktrees is { } worktrees ? Environment.NewLine + worktrees : string.Empty)
             : string.Join(Environment.NewLine, [.. MergeCheckCommand.Lines(response.Checks), string.Create(CultureInfo.InvariantCulture, $"NOT MERGED #{response.Pr}")]);
 }

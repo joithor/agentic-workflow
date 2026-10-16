@@ -44,6 +44,27 @@ public static class GhJson
         }
     }
 
+    /// <summary>Reads `gh pr list --json number,state,headRefName,headRefOid`.</summary>
+    /// <param name="json">The output.</param>
+    /// <returns>The pull requests, or null when the output is not a JSON array.</returns>
+    public static IReadOnlyList<PrBranch>? Branches(string json)
+    {
+        ArgumentNullException.ThrowIfNull(json);
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            return document.RootElement.ValueKind == JsonValueKind.Array
+                ? [.. document.RootElement.EnumerateArray()
+                    .Where(item => item.ValueKind == JsonValueKind.Object && item.TryGetProperty("number", out var number) && number.TryGetInt32(out _))
+                    .Select(item => new PrBranch(item.GetProperty("number").GetInt32(), State(Text(item, "state")), Text(item, "headRefName"), Text(item, "headRefOid")))]
+                : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
     /// <summary>Reads the sha from `git ls-remote origin main`.</summary>
     /// <param name="output">The output: "&lt;sha&gt;&lt;tab&gt;refs/heads/main".</param>
     /// <returns>The sha, or null when the output has none.</returns>

@@ -37,6 +37,7 @@ public static class MetaInfrastructureServiceCollectionExtensions
             .AddSingleton<ITranscriptReader, FileTranscriptReader>()
             .AddSingleton<ISessionDirectory>(new DirectorySessionDirectory(settings.SessionsDirectory))
             .AddSingleton<IProcessTable>(new ProcProcessTable(settings.StateDirectory))
+            .AddSingleton<IProcessLocations, ProcessScanner>()
             .AddSingleton<IHostResources>(new ProcHostResources(settings.StateDirectory, settings.HeavyLock))
             .AddSingleton<ILogFiles, FileLogFiles>()
             .AddSingleton<IDelay>(sp => new ClockDelay(sp.GetRequiredService<TimeProvider>()))

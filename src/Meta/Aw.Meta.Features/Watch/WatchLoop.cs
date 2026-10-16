@@ -43,6 +43,11 @@ internal sealed class WatchLoop(string repo, WatchPoller poller, Func<string, Va
             await Say(line).ConfigureAwait(false);
         }
 
+        foreach (var line in polled.Value.Worktrees)
+        {
+            await Say(line).ConfigureAwait(false);
+        }
+
         if (_inbox is { } before && polled.Value.Inbox > before)
         {
             await Say(string.Create(CultureInfo.InvariantCulture, $"INBOX {polled.Value.Inbox - before} new message(s)")).ConfigureAwait(false);
