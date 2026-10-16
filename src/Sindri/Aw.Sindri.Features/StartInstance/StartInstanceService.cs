@@ -138,14 +138,14 @@ internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipe
             return approval.Error;
         }
 
+        if (approval.Value != ApprovalCheck.Revoked && SubjectKinds.Legacy(recipe.Value.Recipe) is { } legacy)
+        {
+            return WorkflowErrors.RecipeInvalid.With($"{recipe.Value.Version.Id.Value}@{recipe.Value.Version.Hash.Display} was registered before input kinds ({legacy}); nothing was started (fix: {SubjectKinds.LegacyFix})");   // before drift: re-approving a legacy row can't fix it
+        }
+
         if (Refusal(recipe.Value.Version, approval.Value) is { } refused)
         {
             return refused;
-        }
-
-        if (SubjectKinds.Legacy(recipe.Value.Recipe) is { } legacy)
-        {
-            return WorkflowErrors.RecipeInvalid.With($"{recipe.Value.Version.Id.Value}@{recipe.Value.Version.Hash.Display} was registered before input kinds ({legacy}); nothing was started (fix: {SubjectKinds.LegacyFix})");
         }
 
         return recipe.Value.Recipe.Inputs.FirstOrDefault(i => i.Generate is null && !request.Facts.ContainsKey(i.Key)) is { } missing

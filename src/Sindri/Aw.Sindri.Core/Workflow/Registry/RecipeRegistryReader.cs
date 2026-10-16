@@ -177,7 +177,8 @@ public sealed class RecipeRegistryReader(IRecipeStore store, IRecipeApprovals ap
     {
         if (revoked is not null || latest is null)
         {
-            return (revoked is null ? RecipeStanding.Unapproved : RecipeStanding.Revoked, []);
+            // An unapproved legacy-shape row is marked too: it can't be approved as it stands, and the fix is the same.
+            return (revoked is null ? RecipeStanding.Unapproved : RecipeStanding.Revoked, revoked is null && SubjectKinds.Legacy(parsed) is not null ? [StaleReason.LegacyShape] : []);
         }
 
         var stale = new List<StaleReason>();

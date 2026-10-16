@@ -131,7 +131,7 @@ public static class InstanceViews
     {
         var badge = from.Words.EngineBadge();
         var legacy = SubjectKinds.Legacy(from.Recipe.Recipe) is not null;   // a pre-P4c row: no kind to name a subject or an input slot by
-        var subject = context.Subject ?? (legacy ? null : SubjectRefs.Of(from.Recipe, from.Instance.Item));
+        var subject = context.Subject ?? (legacy ? InstanceSummaries.SubjectOf(view with { ItemId = from.Instance.Item }, itemTitle: null) : SubjectRefs.Of(from.Recipe, from.Instance.Item));   // never null on the wire: a legacy instance shows the item, as its list row does
         var complete = view with
         {
             ItemId = from.Instance.Item,

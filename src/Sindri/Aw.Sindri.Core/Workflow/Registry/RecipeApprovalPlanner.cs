@@ -193,6 +193,11 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
                 $"{Name(recipe)} declares no evals; approving needs them (fix: write one with sindri recipe eval --scaffold <file>, list it under evals:, register again)");
         }
 
+        if (SubjectKinds.Legacy(parsed.Value) is { } legacy)
+        {
+            return WorkflowErrors.RecipeInvalid.With($"{Name(recipe)} was registered before input kinds ({legacy}) and can't be approved (fix: {SubjectKinds.LegacyFix})");
+        }
+
         var current = await approvals.Current(cancellationToken).ConfigureAwait(false);
         return current.IsError ? current.Error : (parsed.Value, current.Value);
     }
