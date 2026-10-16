@@ -15,11 +15,11 @@ public sealed class RoleTests
     [Fact, Trait("Lane", "unit")]
     public async Task SetRole_registers_the_session_and_ShowRole_reads_it_back()
     {
-        var set = await Set().Handle(new SetRoleRequest(SessionId.From("s-1"), "sindri-meta"), CancellationToken.None);
+        var set = await Set().Handle(new SetRoleRequest(SessionId.From("s-1"), "t1-meta"), CancellationToken.None);
         var shown = await Show().Handle(new ShowRoleRequest(), CancellationToken.None);
 
         Assert.True(set.IsSuccess);
-        Assert.Equal("sindri-meta", shown.Value.Role?.Name);
+        Assert.Equal("t1-meta", shown.Value.Role?.Name);
         Assert.Equal("s-1", shown.Value.Role?.Session.Value);
     }
 

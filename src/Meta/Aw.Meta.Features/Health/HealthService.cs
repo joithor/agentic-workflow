@@ -24,9 +24,10 @@ internal sealed class HealthService(HostProbe probe, LaneCheck lanes, OrphanKill
         ArgumentNullException.ThrowIfNull(request);
         var host = await probe.Read(cancellationToken).ConfigureAwait(false);
         var missing = await lanes.Missing(cancellationToken).ConfigureAwait(false);
-        if (host.IsError || missing.IsError)
+        var standing = await lanes.Standing(cancellationToken).ConfigureAwait(false);
+        if (host.IsError || missing.IsError || standing.IsError)
         {
-            return host.IsError ? host.Error : missing.Error;
+            return host.IsError ? host.Error : missing.IsError ? missing.Error : standing.Error;
         }
 
         var processes = host.Value.Snapshot.Processes;
@@ -39,12 +40,15 @@ internal sealed class HealthService(HostProbe probe, LaneCheck lanes, OrphanKill
 
         var low = HostRules.MemoryLow(host.Value.Resources);
         var remaining = orphans.Count(o => !killed.Value.Contains(o.Pid));
-        var attention = remaining > 0 || low || missing.Value is { Count: > 0 };
+        var attention = NeedsAttention(remaining, low, missing.Value, standing.Value);
         var response = new HealthResponse(
-            ProcessGroups.Group(processes), processes.Count, host.Value.Resources, orphans, killed.Value, HostRules.Duplicates(processes), missing.Value, host.Value.Locks, low, attention);
+            ProcessGroups.Group(processes), processes.Count, host.Value.Resources, orphans, killed.Value, HostRules.Duplicates(processes), missing.Value, host.Value.Locks, low, attention, standing.Value);
         var kept = await values.Set(KvKeys.HealthLast, Summary(response, remaining), cancellationToken).ConfigureAwait(false);
         return kept.IsError ? kept.Error : response;
     }
+
+    private static bool NeedsAttention(int orphans, bool memoryLow, IReadOnlyList<string>? missingLanes, IReadOnlyList<Core.Lanes.LaneHealth>? standing) =>
+        orphans > 0 || memoryLow || missingLanes is { Count: > 0 } || standing?.Any(static l => l.Attention) == true;
 
     private string Summary(HealthResponse health, int orphans) => string.Create(
         CultureInfo.InvariantCulture,

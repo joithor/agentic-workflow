@@ -1,0 +1,21 @@
+using Aw.Kernel;
+using Aw.Meta.Core.Lanes;
+
+namespace Aw.Meta.Core.Ports;
+
+/// <summary>A lane's tmux session: what runs in it, who is attached, and the one wake line.</summary>
+public interface ILanePane
+{
+    /// <summary>Looks at the session.</summary>
+    /// <param name="session">The session name ("team-lane"); targeted exactly.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The pane's state, or null when there is no such session (or tmux is not available).</returns>
+    public ValueTask<Result<PaneState?>> Probe(string session, CancellationToken cancellationToken);
+
+    /// <summary>Types one line into the session's pane and presses Enter: literal mode, exact target.</summary>
+    /// <param name="session">The session name.</param>
+    /// <param name="line">The line, sent literally.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>Success, or the failure to run tmux.</returns>
+    public ValueTask<Result<Unit>> Wake(string session, string line, CancellationToken cancellationToken);
+}

@@ -10,7 +10,11 @@ using Aw.Meta.Features.Health;
 using Aw.Meta.Features.Inbox;
 using Aw.Meta.Features.InboxDefer;
 using Aw.Meta.Features.InboxDismiss;
+using Aw.Meta.Features.LaneInbox;
+using Aw.Meta.Features.LaneReply;
 using Aw.Meta.Features.Lanes;
+using Aw.Meta.Features.LaneSend;
+using Aw.Meta.Features.LaneStopCheck;
 using Aw.Meta.Features.LogAppend;
 using Aw.Meta.Features.MergeRun;
 using Aw.Meta.Features.OutboxRecord;
@@ -42,6 +46,7 @@ public static class MetaFeaturesServiceCollectionExtensions
         .AddOwnerSlices()
         .AddReportSlices()
         .AddGateSlices()
+        .AddLaneSlices()
         .AddHostSlices()
         .AddWorktreeSlices();
 
@@ -78,6 +83,18 @@ public static class MetaFeaturesServiceCollectionExtensions
         .Validated<OutboxRecordService, OutboxRecordRequest, OutboxRecordResponse>()
         .AddScoped<RefreshLanesService>()
         .Plain<RefreshLanesService, RefreshLanesRequest, LanesResponse>();
+
+    private static IServiceCollection AddLaneSlices(this IServiceCollection services) => services
+        .AddScoped<LaneSendService>()
+        .AddScoped<IValidator<LaneSendRequest>, LaneSendValidator>()
+        .Validated<LaneSendService, LaneSendRequest, LaneSendResponse>()
+        .AddScoped<LaneInboxService>()
+        .Plain<LaneInboxService, LaneInboxRequest, LaneInboxResponse>()
+        .AddScoped<LaneStopCheckService>()
+        .AddScoped<IValidator<LaneStopCheckRequest>, LaneStopCheckValidator>()
+        .Validated<LaneStopCheckService, LaneStopCheckRequest, LaneStopCheckResponse>()
+        .AddScoped<LaneReplyService>()
+        .Plain<LaneReplyService, LaneReplyRequest, LaneReplyResponse>();
 
     private static IServiceCollection AddOwnerSlices(this IServiceCollection services) => services
         .AddScoped<ListOwnerService>()

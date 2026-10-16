@@ -28,6 +28,7 @@ internal static class HealthCommand
                     { Count: 0 } => "lanes: all have a live session",
                     var missing => "lanes with no live session: " + string.Join(", ", missing),
                 },
+                .. (health.Lanes ?? []).Select(static l => $"lane {l.Lane} ({l.Agent}): {l.State}"),
                 .. HeavyLocks(health),
                 health.Attention ? "HEALTH ATTENTION" : "HEALTH OK",
             ]);

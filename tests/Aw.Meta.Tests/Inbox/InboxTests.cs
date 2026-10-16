@@ -34,28 +34,28 @@ public sealed class InboxTests
     public async Task The_default_list_holds_only_messages_still_owed_a_reply()
     {
         await _world.Ready();
-        await Receive(("m1", "sindri-api", "please rebase"), ("m2", "sindri-ui", "ready #190"));
-        _ = await _world.Messages.RecordOutbound(A.Sent("sindri-api", "done", 61), CancellationToken.None);
+        await Receive(("m1", "t1-api", "please rebase"), ("m2", "t1-ui", "ready #190"));
+        _ = await _world.Messages.RecordOutbound(A.Sent("t1-api", "done", 61), CancellationToken.None);
 
         var open = await Items(all: false);
 
         var only = Assert.Single(open);
-        Assert.Equal(("m2", "sindri-ui", "Ready", "open"), (only.Id.Value, only.From, only.Kind, only.State));
+        Assert.Equal(("m2", "t1-ui", "Ready", "open"), (only.Id.Value, only.From, only.Kind, only.State));
     }
 
     [Fact, Trait("Lane", "unit")]
     public async Task All_lists_every_message_with_its_state()
     {
         await _world.Ready();
-        await Receive(("m1", "sindri-api", "a"), ("m2", "sindri-ui", "b"), ("m3", "sindri-api", "c"), ("m4", "sindri-ui", "d"));
+        await Receive(("m1", "t1-api", "a"), ("m2", "t1-ui", "b"), ("m3", "t1-api", "c"), ("m4", "t1-ui", "d"));
         _ = await _world.Messages.Resolve(MessageId.From("m2"), new(Core.Messages.MessageResolutionKind.Dismissed, "fyi"), CancellationToken.None);
         var until = _world.Clock.GetUtcNow().AddHours(1);
         _ = await _world.Messages.Resolve(MessageId.From("m3"), new(Core.Messages.MessageResolutionKind.Deferred, "later", until), CancellationToken.None);
-        _ = await _world.Messages.RecordOutbound(A.Sent("sindri-api", "ok", 61), CancellationToken.None);
+        _ = await _world.Messages.RecordOutbound(A.Sent("t1-api", "ok", 61), CancellationToken.None);
 
         var all = await Items(all: true);
 
-        // m1 and m3 are both from sindri-api, so the send answers m1; m3 is deferred, which still shows as deferred.
+        // m1 and m3 are both from t1-api, so the send answers m1; m3 is deferred, which still shows as deferred.
         Assert.Equal(["answered", "dismissed", "deferred", "open"], all.Select(i => i.State), StringComparer.Ordinal);
         Assert.Equal(until, all[2].Until);
     }
@@ -72,7 +72,7 @@ public sealed class InboxTests
     public async Task A_dismissed_message_stops_being_owed()
     {
         await _world.Ready();
-        await Receive(("m1", "sindri-api", "fyi only"));
+        await Receive(("m1", "t1-api", "fyi only"));
 
         var result = await Dismiss().Handle(new DismissInboxRequest(MessageId.From("m1"), "no reply needed"), CancellationToken.None);
 
@@ -99,7 +99,7 @@ public sealed class InboxTests
     public async Task A_deferred_message_reopens_when_it_is_due()
     {
         await _world.Ready();
-        await Receive(("m1", "sindri-api", "later please"));
+        await Receive(("m1", "t1-api", "later please"));
 
         var deferred = await Defer().Handle(new DeferInboxRequest(MessageId.From("m1"), "after the merge", "+30m"), CancellationToken.None);
         var snoozed = await _world.Open();
@@ -115,7 +115,7 @@ public sealed class InboxTests
     public async Task An_ISO_time_sets_the_due_time_exactly()
     {
         await _world.Ready();
-        await Receive(("m1", "sindri-api", "x"));
+        await Receive(("m1", "t1-api", "x"));
 
         var deferred = await Defer().Handle(new DeferInboxRequest(MessageId.From("m1"), "r", "2026-10-16T09:00:00Z"), CancellationToken.None);
 
