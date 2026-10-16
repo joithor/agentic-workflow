@@ -42,7 +42,7 @@ public sealed class StripRowViewModelTests
     [Fact]
     public void A_subject_without_a_label_shows_its_key()
     {
-        var row = Where(r => r.Subject.Label.Length > 0) with { Subject = new SubjectRef(Kind: null, Key: "K-1", Label: "", Href: null) };
+        var row = Where(r => r.Subject.Label.Length > 0) with { Subject = new SubjectRef(Kind: "item", Key: "K-1", Label: "", Href: null) };
 
         Assert.Equal("K-1", Of(row).Subject);
     }
