@@ -20,6 +20,7 @@ internal sealed partial class ShellViewModel
                 Instance.Intend(address, e.Intent);   // before the sheet opens: the frame does it when the instance is read
                 if (IsSheetOpen && IsInstanceSheet && string.Equals(Instance.Address, address, StringComparison.Ordinal))
                 {
+                    OpenerWorkflow = address;   // Esc comes back to this row, whatever opened the frame first
                     Instance.FocusInitial();   // Enter again (or a click) on the row whose frame is open goes into the frame, which stays as it is
                     return;
                 }
