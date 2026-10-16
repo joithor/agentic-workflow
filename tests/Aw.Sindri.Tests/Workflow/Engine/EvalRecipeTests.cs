@@ -1,5 +1,7 @@
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine.Evals;
+using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.EvalRecipe;
 using Aw.Sindri.Testing.Workflow;
@@ -229,9 +231,25 @@ public sealed class EvalRecipeTests
 
         Assert.True(response.Cases[0].Passed, response.Cases[0].ToLine());
         var recipe = EvalComposition.Recipe(Choice.RouteRecipes.Dev);
-        var filled = EngineFilledOutputs.For(EvalComposition.Catalog.Find(BlockId.From("step.judge.choose"))!.Outputs, OutcomeName.From("ui"), "eval", actor: null);
-        Assert.Equal(new DecisionFact("ui", "eval"), Assert.Single(filled).Value);
+        var line = new EvalStepLine(new EvalTrigger(TriggerNames.StepCompleted, OutcomeName.From("ui")), new EvalExpectation("evidence-ui"));
+        var started = EvalSimulation.Start(new EvalCase("c", new EvalStartLine(new EvalStart(recipe.Inputs.ToDictionary(static i => i.Key, static i => EvalFacts.OfText("x"))), Scaffold: false), []), recipe, EvalComposition.Catalog, InMemoryChildRecipes.None).Value;
+        var stepped = started.Step(line, 2).Value.Next;
+        Assert.Equal(EvalFacts.Value(new DecisionFact("ui", "eval")), stepped.Instance.Facts[FactKey.From("fact:decision")]);
         Assert.Contains("fact:decision", recipe.Transitions[0].Produces.Select(f => f.Value), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_step_completed_line_that_writes_the_engine_filled_output_itself_is_refused()
+    {
+        var recipe = EvalComposition.Recipe(Choice.RouteRecipes.Dev);
+        var written = new Dictionary<FactKey, System.Text.Json.JsonElement> { [FactKey.From("fact:decision")] = EvalFacts.OfText("db") };
+        var line = new EvalStepLine(new EvalTrigger(TriggerNames.StepCompleted, OutcomeName.From("ui"), written), new EvalExpectation("evidence-ui"));
+        var started = EvalSimulation.Start(new EvalCase("c", new EvalStartLine(new EvalStart(recipe.Inputs.ToDictionary(static i => i.Key, static i => EvalFacts.OfText("x"))), Scaffold: false), []), recipe, EvalComposition.Catalog, InMemoryChildRecipes.None).Value;
+
+        var refused = started.Step(line, 2);
+
+        Assert.True(refused.IsError);
+        Assert.Equal("fact:decision is written by the engine on 'step.judge.choose' (fix: drop --output fact:decision)", refused.Error.Message);
     }
 
     [Fact, Trait("Lane", "unit")]

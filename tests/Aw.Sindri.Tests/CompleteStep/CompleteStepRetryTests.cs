@@ -38,6 +38,22 @@ public sealed class CompleteStepRetryTests
     }
 
     [Fact(Timeout = 30_000)]
+    public async Task A_retry_with_a_pending_claim_is_sent_again_while_the_instance_cannot_be_read()
+    {
+        var service = new CompleteStepService(_instance, _instance, _instance, new InMemoryFactStore(), _nonces, _instance, EvalComposition.Options);
+        var request = Report();
+        _instance.LoseNextResponse();
+        _ = await service.Handle(request, TestContext.Current.CancellationToken);
+        _instance.GetFails = Core.SindriErrors.ApprovalsUnavailable.With("no worker (test)");
+
+        var retry = await service.Handle(request, TestContext.Current.CancellationToken);
+
+        Assert.False(retry.IsError, retry.IsError ? retry.Error.Message : null);
+        Assert.Equal([_nonce, _nonce], _instance.Sent);
+        Assert.Equal(1, _instance.Applied);
+    }
+
+    [Fact(Timeout = 30_000)]
     public async Task A_refused_report_gives_its_fresh_nonce_back()
     {
         var service = new CompleteStepService(_instance, _instance, _instance, new InMemoryFactStore(), _nonces, _instance, EvalComposition.Options);

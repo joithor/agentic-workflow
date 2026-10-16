@@ -76,28 +76,46 @@ public sealed class ChoiceReportTests
     }
 
     [Fact(Timeout = 30_000)]
-    public async Task A_choice_report_for_a_stale_run_is_the_stale_run_error_and_sends_no_engine_filled_output()
+    public async Task A_choice_report_for_a_stale_run_is_the_stale_run_error_and_attempts_no_engine_filled_output()
     {
         var service = new CompleteStepService(_desk, _desk, _like, _facts, new InMemoryCommandNonces(new FakeTimeProvider()), _like, EvalComposition.Options);
-        var stale = new CompleteStepRequest(_address.Value, RunToken.For(2, 1), OutcomeName.From("api"), new Dictionary<FactKey, ReadOnlyMemory<byte>> { [FactKey.From("fact:decision")] = """{"choice":"db"}"""u8.ToArray() }, _nonce);
+        var stale = new CompleteStepRequest(_address.Value, RunToken.For(2, 1), OutcomeName.From("api"), new Dictionary<FactKey, ReadOnlyMemory<byte>>(), _nonce);
 
         var refused = await service.Handle(stale, TestContext.Current.CancellationToken);
 
         Assert.Equal("SND-WF-005", refused.Error.Code);
         Assert.Empty(_desk.Sent);
+        var attempted = Assert.IsType<StepCompleted>(Assert.Single(_desk.Attempted));   // the refused Send is recorded too
+        Assert.Empty(attempted.Outputs);
     }
 
     [Fact(Timeout = 30_000)]
-    public async Task A_report_on_an_instance_that_cant_be_read_is_that_error_and_passes_nothing_through()
+    public async Task A_hand_written_engine_filled_output_is_refused_without_reading_the_instance()
     {
-        var service = new CompleteStepService(_desk, _desk, _like, _facts, new InMemoryCommandNonces(new FakeTimeProvider()), _like, EvalComposition.Options);
+        var nonces = new InMemoryCommandNonces(new FakeTimeProvider());
+        var service = new CompleteStepService(_desk, _desk, _like, _facts, nonces, _like, EvalComposition.Options);
         var written = new Dictionary<FactKey, ReadOnlyMemory<byte>> { [FactKey.From("fact:decision")] = """{"choice":"db"}"""u8.ToArray() };
         _desk.Unreadable = true;
 
         var refused = await service.Handle(Request(written), TestContext.Current.CancellationToken);
 
+        Assert.Equal("SND-CLI-003", refused.Error.Code);
+        Assert.Empty(_desk.Sent);
+        Assert.Equal(NonceClaim.Fresh, (await nonces.Claim(_nonce, "another command", TestContext.Current.CancellationToken)).Value);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task A_fresh_report_on_an_instance_that_cant_be_read_is_that_error_and_claims_no_nonce()
+    {
+        var nonces = new InMemoryCommandNonces(new FakeTimeProvider());
+        var service = new CompleteStepService(_desk, _desk, _like, _facts, nonces, _like, EvalComposition.Options);
+        _desk.Unreadable = true;
+
+        var refused = await service.Handle(Request(), TestContext.Current.CancellationToken);
+
         Assert.Equal("SND-WF-010", refused.Error.Code);
         Assert.Empty(_desk.Sent);
+        Assert.Equal(NonceClaim.Fresh, (await nonces.Claim(_nonce, "another command", TestContext.Current.CancellationToken)).Value);   // nothing claimed it, or the claim was given back
     }
 
     private static CompleteStepRequest Request(Dictionary<FactKey, ReadOnlyMemory<byte>>? outputs = null) =>
@@ -108,12 +126,16 @@ public sealed class ChoiceReportTests
     {
         private static readonly BlockDescriptor _descriptor = FixtureCatalog.Shipped().Find(BlockId.From("step.desk.choose"))!;
         private readonly List<Trigger> _sent = [];
+        private readonly List<Trigger> _attempted = [];
         private readonly HashSet<CommandNonce> _seen = [];
         private bool _movedOn;
 
         public bool Unreadable { get; set; }
 
         public IReadOnlyList<Trigger> Sent => _sent;
+
+        /// <summary>Every command a Send was given, accepted or refused.</summary>
+        public IReadOnlyList<Trigger> Attempted => _attempted;
 
         public ValueTask<Result<AttemptState?>> Latest(ItemKey item, RecipeId recipe, CancellationToken cancellationToken) =>
             ValueTask.FromResult<Result<AttemptState?>>((AttemptState?)null);
@@ -130,6 +152,7 @@ public sealed class ChoiceReportTests
 
         public ValueTask<Result<CommandResult>> Send(InstanceAddress at, CommandNonce nonce, Trigger command, CancellationToken cancellationToken)
         {
+            _attempted.Add(command);
             // Temporal answers an Update id it has seen with the first result; otherwise the workflow's validator checks the run.
             if (!_seen.Contains(nonce) && (_movedOn || command is not StepCompleted done || done.Run != RunToken.For(1, 1)))
             {
