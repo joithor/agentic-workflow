@@ -224,7 +224,7 @@ expect "verify reports an image digest that differs" 1 'ONYX-LOCK-011 docker.io/
 vrun --file "$(vlock vbadfile "$ARM" "$(printf 'f%.0s' $(seq 64))")"
 expect "verify reports a file sha256 that differs" 1 'ONYX-LOCK-010 docker_compose/docker-compose.yml: expected f+, got '"$CSHA"
 
-grep -q -- " -g " "$STUB/curl.log" || grep -q -- "-fsSLg" "$STUB/curl.log" && ok "verify's curl turns URL globbing off (-g)" || fail "verify's curl lacks -g"
+grep -q -- "-fsSLg" "$STUB/curl.log" && ok "verify's curl turns URL globbing off (-g)" || fail "verify's curl lacks -g"
 
 grep -q -- "buildx imagetools inspect docker.io/library/redis@$INDEXD --raw" "$STUB/docker.log" && ok "a digest-pinned compose line is inspected as <repository>@<digest>" || fail "no inspect of redis@digest"
 

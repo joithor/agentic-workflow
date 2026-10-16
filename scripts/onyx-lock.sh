@@ -150,7 +150,7 @@ check_pinned_digest() {
   if [ -z "$arm" ] || [ -z "$amd" ]; then
     echo "ONYX-LOCK-012 docker-compose.yml: line \"$value\" names $repo, which the lock has no image rows for"; return 1
   fi
-  raw="$(docker buildx imagetools inspect "$repo@$digest" --raw 2>"$tmp/error")" \
+  raw="$(docker buildx imagetools inspect "$repo@$digest" --raw 2>"$tmp/error" </dev/null)" \
     || { echo "onyx-lock verify: cannot inspect $repo@$digest: $(head -c 300 "$tmp/error")" >&2; exit 2; }
   if printf '%s' "$raw" | jq -e 'type == "object" and (.manifests | type) == "array"' >/dev/null 2>&1; then
     got_arm="$(printf '%s' "$raw" | jq -r '[.manifests[]? | select(.platform.os == "linux" and .platform.architecture == "arm64") | .digest] | (first // "absent")')"
@@ -198,7 +198,7 @@ do_verify() {
   local repo tag platform last="" raw os arch
   while read -r _kind repo tag platform want; do
     if [ "$repo:$tag" != "$last" ]; then
-      raw="$(docker buildx imagetools inspect "$repo:$tag" --raw 2>"$tmp/error")" \
+      raw="$(docker buildx imagetools inspect "$repo:$tag" --raw 2>"$tmp/error" </dev/null)" \
         || { echo "onyx-lock verify: cannot inspect $repo:$tag: $(head -c 300 "$tmp/error")" >&2; exit 2; }
       last="$repo:$tag"
     fi
