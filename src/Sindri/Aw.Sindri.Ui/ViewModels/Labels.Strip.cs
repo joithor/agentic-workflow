@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Sindri.Ui.Api.Workflow;
 namespace Aw.Sindri.Ui.ViewModels;
 
 /// <summary>The app's own copy (<see cref="Labels"/>, continued): the Home Workflows strip (screens §4.1).</summary>
@@ -14,4 +15,30 @@ internal static partial class Labels
     /// <param name="count">How many open rows are not shown.</param>
     /// <returns>The words.</returns>
     internal static string MoreRows(int count) => string.Create(CultureInfo.InvariantCulture, $"… {count} more");
+
+    /// <summary>The verb of a protected answer's lock button ("Accept", "Grant rounds").</summary>
+    /// <param name="kind">How the answer is given.</param>
+    /// <returns>The verb.</returns>
+    internal static string AnswerVerb(AnswerKind kind) => kind switch
+    {
+        AnswerKind.Accept => "Accept",
+        AnswerKind.Grant => "Grant rounds",
+        AnswerKind.GrantTokens => "Grant tokens",
+        AnswerKind.Resume => "Resume",
+        AnswerKind.CancelOnly => "Cancel",
+        AnswerKind.Text => Answer,
+        _ => Answer,
+    };
+
+    /// <summary>The engine badge of a row that waits on the human: a triangle, the word the engine gave and its reason.</summary>
+    /// <param name="kind">Why the engine owns the state.</param>
+    /// <param name="reason">The reason, as served.</param>
+    /// <returns>The words, or empty for a kind that has no badge (a taken-over row says WITH YOU in its chip).</returns>
+    internal static string EngineBadge(EngineOwnedKind kind, string reason) => kind switch
+    {
+        EngineOwnedKind.Escalated => $"▲ escalated: {reason}",
+        EngineOwnedKind.Parked => $"▲ parked: {reason}",
+        EngineOwnedKind.TakenOver => string.Empty,
+        _ => string.Empty,
+    };
 }

@@ -46,7 +46,8 @@ public sealed class StageTagTests
     [Fact]
     public void Child_reads_child()
     {
-        var row = Row(c => c.Child && c.Children is null);
+        var withChildren = Row(c => c.Child && c.Children is not null);
+        var row = withChildren with { States = [.. withChildren.States.Select(c => c.Child ? c with { Children = null } : c)] }; // a child with no tally yet
         var plain = FixtureInstances.Rows.First(r => !Current(r).Child && !Current(r).Desk && Current(r).Round is null && Current(r).Children is null);
 
         Assert.EndsWith(" · child", StageTag.For(row), StringComparison.Ordinal);

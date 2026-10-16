@@ -3,26 +3,146 @@ using Aw.Sindri.Ui.Platform;
 
 namespace Aw.Sindri.Ui.ViewModels.Workflows;
 
-#pragma warning disable MA0182, CA1801, IDE0060, CA1822, S1172, CA1070, MA0041, CS9113 // red stub
-/// <summary>The strip.</summary>
+#pragma warning disable MA0182 // until Home places the strip (T19)
+
+/// <summary>
+/// Home's Workflows strip (screens §4.1, E-20): the open root instances as the API serves them, in its order (incident, then
+/// triage, then work, then oldest; the app never sorts), capped, with "… N more" that opens Workflows. The fold rule gives
+/// rows back to Needs you first: the cap is what is left of the page's row budget after the Needs-you rows shown.
+/// </summary>
 internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider clock) : ObservableObject
 {
+    /// <summary>The most rows the strip shows (screens §4.1).</summary>
     internal const int Cap = 5;
-    public IReadOnlyList<StripRowViewModel> Rows => throw new NotSupportedException();
-    public bool HasMore => throw new NotSupportedException();
-    public string MoreText => throw new NotSupportedException();
-    public string Heading => throw new NotSupportedException();
-    public string OpenText => throw new NotSupportedException();
-    public double TextScale { get; set; }
-    public bool IsEmpty => throw new NotSupportedException();
-    public string EmptyText => throw new NotSupportedException();
-    public bool IsNotServed => throw new NotSupportedException();
-    public string NotServedText => throw new NotSupportedException();
+
+    // Rows that fit above the fold at 1280 × 800: Needs-you rows plus strip rows (5 + 3 at scale 1.0; 4 + 2 at 1.3).
+    private const int FoldBudget = 8;
+    private const int LargeFoldBudget = 6;
+    private const int LargeCap = 2;
+
+    /// <summary>The text scale from which the cap drops to two.</summary>
+    internal const double LargeTextScale = 1.3;
+
+    private static readonly string[] _listProperties =
+    [
+        nameof(Rows), nameof(HasMore), nameof(MoreText), nameof(IsEmpty), nameof(EmptyText), nameof(IsNotServed), nameof(NotServedText), nameof(OpenText),
+    ];
+
+    private List<InstanceSummary> _open = [];
+    private List<StripRowViewModel> _shown = [];
+    private ListCounts? Counts { get; set; }
+    private string? Empty { get; set; }
+    private int NeedsYouShown { get; set; }
+    private bool Stale { get; set; }
+
+    /// <summary>Raised when "… N more" or "Open Workflows" is pressed.</summary>
     internal event EventHandler? WorkflowsRequested;
-    internal void Update(InstanceList list) => throw new NotSupportedException();
-    internal void SetNeedsYouShown(int count) => throw new NotSupportedException();
-    internal void SetStale(bool stale) => throw new NotSupportedException();
-    internal void MarkNotServed() => throw new NotSupportedException();
+
+#pragma warning disable CA1822, MA0041 // a fixed sentence is a property because the view binds it
+    /// <summary>The strip's title.</summary>
+    public string Heading => Labels.Workflows;
+#pragma warning restore CA1822, MA0041
+
+    /// <summary>"8 open", from the list's served counts; empty before the first list.</summary>
+    public string OpenText => Counts is { } counts ? InstanceHeads.Strip(counts) : string.Empty;
+
+    /// <summary>The rows shown, in the API's order.</summary>
+    public IReadOnlyList<StripRowViewModel> Rows => _shown;
+
+    /// <summary>True when the cap leaves open rows out.</summary>
+    public bool HasMore => !IsNotServed && _open.Count > _shown.Count;
+
+    /// <summary>"… 3 more"; empty without overflow.</summary>
+    public string MoreText => HasMore ? Labels.MoreRows(_open.Count - _shown.Count) : string.Empty;
+
+    /// <summary>True when the list is empty and served.</summary>
+    public bool IsEmpty => !IsNotServed && Counts is not null && _open.Count == 0;
+
+    /// <summary>The served empty sentence; empty unless the strip is empty.</summary>
+    public string EmptyText => IsEmpty ? Empty ?? string.Empty : string.Empty;
+
+    /// <summary>True while the workflow list route is not served yet; only the strip is marked, never Home.</summary>
+    public bool IsNotServed { get; private set; }
+
+    /// <summary>What the strip says then.</summary>
+    public string NotServedText => IsNotServed ? Labels.ArrivesWorkflowStrip : string.Empty;
+
+    /// <summary>The text scale; at 1.3 and over the cap drops to two.</summary>
+    internal double TextScale
+    {
+        get;
+        set
+        {
+            field = value;
+            Reshow();
+        }
+    } = 1.0;
+
+    /// <summary>The selected row's address; null for none.</summary>
+    internal string? SelectedAddress { get; private set; }
+
+    /// <summary>Takes the list as the API serves it: finished instances leave, the rest keep their order.</summary>
+    /// <param name="list">The list.</param>
+    internal void Update(InstanceList list)
+    {
+        IsNotServed = false;
+        Counts = list.Counts;
+        Empty = list.Empty;
+        _open = [.. list.Instances.Where(IsOpen)];
+        Reshow();
+    }
+
+    /// <summary>The list route is not there yet (a 404 before P11): the strip says so, Home is unaffected.</summary>
+    internal void MarkNotServed()
+    {
+        IsNotServed = true;
+        _open = [];
+        Counts = null;
+        Reshow();
+    }
+
+    /// <summary>Tells the strip how many Needs-you rows Home shows, so it gives up its rows first.</summary>
+    /// <param name="count">The Needs-you rows shown.</param>
+    internal void SetNeedsYouShown(int count)
+    {
+        NeedsYouShown = count;
+        Reshow();
+    }
+
+    /// <summary>Marks the rows stale while the views are stalled.</summary>
+    /// <param name="stale">True while stalled.</param>
+    internal void SetStale(bool stale)
+    {
+        Stale = stale;
+        foreach (var row in _shown)
+        {
+            row.SetContext(Stale, IsSelectedRow(row));
+        }
+    }
+
+    /// <summary>Asks to open the Workflows page.</summary>
     internal void OpenWorkflows() => WorkflowsRequested?.Invoke(this, EventArgs.Empty);
+
+    private int CurrentCap => TextScale >= LargeTextScale
+        ? Math.Clamp(LargeFoldBudget - NeedsYouShown, 0, LargeCap)
+        : Math.Clamp(FoldBudget - NeedsYouShown, 0, Cap);
+
+    // An instance is open unless its current state's cell is terminal (the one rule counts.open is computed by).
+    private static bool IsOpen(InstanceSummary row) => !row.States.Any(s => s.Terminal && string.Equals(s.State, row.State, StringComparison.Ordinal));
+
+    private bool IsSelectedRow(StripRowViewModel row) => SelectedAddress is { } address && string.Equals(row.Address, address, StringComparison.Ordinal);
+
+    private void Reshow()
+    {
+        _shown = [.. _open.Take(CurrentCap).Select(r => new StripRowViewModel(r, clipboard, clock))];
+        foreach (var row in _shown)
+        {
+            row.SetContext(Stale, IsSelectedRow(row));
+        }
+
+        foreach (var name in _listProperties)
+        {
+            OnChanged(name);
+        }
+    }
 }
-#pragma warning restore MA0182, CA1801, IDE0060, CA1822, S1172, CA1070, MA0041, CS9113
