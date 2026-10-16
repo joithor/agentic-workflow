@@ -132,11 +132,11 @@ internal sealed class RecipeDeskCommands(RecipeDesk desk, IServiceProvider servi
     }
 
     /// <summary>
-    /// The challenge row is shared by approve and revoke and names the approve command; a refused revoke names the revoke instead.
+    /// The challenge row is shared by approve and revoke and names both commands; a refused revoke names itself.
     /// </summary>
     private static Error ForVerb(Error error, string action) =>
         error.Code == SindriErrors.AuthRefused.Code && action.StartsWith("revoke ", StringComparison.Ordinal)
-            ? error with { Message = error.Message.Replace("IssueChallenge", "Revoking a recipe", StringComparison.Ordinal).Replace("sindri recipe approve <recipe>", "sindri recipe revoke <recipe>", StringComparison.Ordinal) }
+            ? error with { Message = error.Message.Replace("IssueChallenge", "Revoking a recipe", StringComparison.Ordinal) }
             : error;
 
     private async Task<string> Prompt(string action)

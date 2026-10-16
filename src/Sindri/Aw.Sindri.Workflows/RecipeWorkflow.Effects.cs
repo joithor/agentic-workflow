@@ -1,3 +1,4 @@
+using Aw.Redaction;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
@@ -156,10 +157,13 @@ internal sealed partial class RecipeWorkflow
     /// <summary>The code and message an ended 'RunEffect' is refused with: its own SND code, else SND-WF-015.</summary>
     private static (string Code, string Reason) FailureOf(ActivityFailureException failure) => failure.InnerException switch
     {
-        ApplicationFailureException { ErrorType: { } type } app when type.StartsWith("SND-", StringComparison.Ordinal) => (type, app.Message),
-        { } inner => (WorkflowErrors.EffectFailed.Code, inner.Message),
-        _ => (WorkflowErrors.EffectFailed.Code, failure.Message),
+        ApplicationFailureException { ErrorType: { } type } app when type.StartsWith("SND-", StringComparison.Ordinal) => (type, Scrubbed(app.Message)),
+        { } inner => (WorkflowErrors.EffectFailed.Code, Scrubbed(inner.Message)),
+        _ => (WorkflowErrors.EffectFailed.Code, Scrubbed(failure.Message)),
     };
+
+    /// <summary>Whatever a block threw can carry a secret: every path into the outbox row and the park question is scrubbed here (the activity scrubs a returned error too).</summary>
+    private static string Scrubbed(string reason) => Redactor.Default.Scrub(reason).Text;
 
     /// <summary>
     /// A recipe effect's undo window and recheck (§5.7): false when a cancel aborted it within the delay (an
