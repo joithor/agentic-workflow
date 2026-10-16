@@ -36,12 +36,17 @@
     <Setter Property="Padding" Value="14,7,14,6" />
   </Style>
   <!-- Avalonia picks between matching styles by the order they are declared, and this file is included after the queue's: the focus
-       ring and the selection bar are restated after the outline so they win over it. A selected row shows its Primary bar all round. -->
+       ring and the selection bar are restated after the outline so they win over it. A selected row keeps the selection's shape, a thicker
+       Primary left edge (the padding makes up the difference, so the content stays put); the focus ring is the same width all round. -->
   <Style Selector="Border.needs-you-row.outlined.selected">
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Primary}" />
+    <Setter Property="BorderThickness" Value="4,2,2,2" />
+    <Setter Property="Padding" Value="12,7,14,6" />
   </Style>
   <Style Selector="Border.needs-you-row.outlined:focus-visible">
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.PrimaryHover}" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="Padding" Value="14,7,14,6" />
   </Style>
   <Style Selector="Border.needs-you-row.stale">
     <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />

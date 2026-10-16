@@ -73,7 +73,9 @@ public sealed class NeedsYouOutlineTests : FrameHost
         var before = Inset(frame);
 
         shell.SelectNeedsYouRow(((ViewModels.NeedsYou.NeedsYouRowViewModel)row.DataContext!).Id);
-        _ = window.Focus();
+        Settle(window);
+        var elsewhere = window.GetVisualDescendants().OfType<Button>().First(b => b.Focusable && b.IsEffectivelyVisible && !row.IsVisualAncestorOf(b));
+        Assert.True(elsewhere.Focus(NavigationMethod.Pointer));   // focus sits on another control
         Settle(window);
 
         Assert.Contains("selected", frame.Classes, StringComparer.Ordinal);
