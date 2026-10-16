@@ -40,11 +40,13 @@ internal sealed class SchedulerRig : IAsyncDisposable
         Progress = new ProjectorProgress(H.Clock);
         _provider = collection.BuildServiceProvider();
         _clock = new SteppedClock(H.Clock);
-        _scheduler = new SchedulerHost(_provider.GetRequiredService<IServiceScopeFactory>(), new ScheduleInputs(H.Profiles, [], new ViewServicePauses(_views, Progress)), Guard, H.Held, H.Callers, _clock,
-            new ListLogger<SchedulerHost>());
+        _scheduler = new SchedulerHost(_provider.GetRequiredService<IServiceScopeFactory>(), new ScheduleInputs(H.Profiles, [], new ViewServicePauses(_views, Progress)), Guard, H.Held, H.Callers, _clock, Log);
     }
 
     public SliceHarness H { get; } = new();
+
+    /// <summary>What the scheduler logged.</summary>
+    public ListLogger<SchedulerHost> Log { get; } = new();
 
     /// <summary>The projector status the pause view reads.</summary>
     internal ProjectorProgress Progress { get; }

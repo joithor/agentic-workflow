@@ -15,7 +15,7 @@ internal sealed class SqliteJobViews(IViewReader reader) : IJobViews
     public async ValueTask<Result<IReadOnlyList<JobRow>>> Running(CancellationToken cancellationToken)
     {
         var rows = await reader.Where<JobRow>(ViewNames.Jobs, ViewColumn.State, Wire(JobState.Running), cancellationToken).ConfigureAwait(false);
-        return rows.IsError ? rows.Error : Results.Success<IReadOnlyList<JobRow>>([.. rows.Value.OrderBy(static r => r.Sequence)]);
+        return rows.IsError ? rows.Error : Results.Success(JobOrder.OldestFirst(rows.Value));
     }
 
     public async ValueTask<Result<IReadOnlyList<JobRow>>> List(JobState? state, JobKind? kind, CancellationToken cancellationToken)
@@ -27,7 +27,7 @@ internal sealed class SqliteJobViews(IViewReader reader) : IJobViews
                 : await reader.List<JobRow>(ViewNames.Jobs, cancellationToken).ConfigureAwait(false);
         return rows.IsError
             ? rows.Error
-            : Results.Success<IReadOnlyList<JobRow>>([.. rows.Value.Where(r => kind is null || r.Kind == kind).OrderByDescending(static r => r.Sequence)]);
+            : Results.Success(JobOrder.NewestFirst(rows.Value.Where(r => kind is null || r.Kind == kind)));
     }
 
     /// <summary>The state as the row's JSON writes it (the 'state' column is generated from that text).</summary>

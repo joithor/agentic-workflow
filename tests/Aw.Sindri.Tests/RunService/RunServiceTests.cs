@@ -137,10 +137,7 @@ public sealed class RunServiceTests
         var stuck = new BlockedService();
         await using var runtime = await RunServiceRuntime.Open(stuck);
         var started = await runtime.Start(A.RunServiceRequest().ForService(BlockedService.Name).Build(), Human());
-        while (stuck.Started == 0)
-        {
-            await Task.Delay(5, TestContext.Current.CancellationToken);
-        }
+        await stuck.Entered.Task.WaitAsync(TestContext.Current.CancellationToken);
 
         _ = await runtime.Cancel(started.Value.JobId);
         await runtime.Quiesce();

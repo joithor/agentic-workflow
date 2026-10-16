@@ -39,7 +39,7 @@ internal sealed class ListJobsService(IJobViews jobs, IProjectorStatus status, I
             return rows.Error;
         }
 
-        IReadOnlyList<JobSummary> shown = [.. rows.Value.Where(r => ItemScope.VisibleOrRepoless(caller, r.Repo)).OrderByDescending(static r => r.Sequence)
+        IReadOnlyList<JobSummary> shown = [.. rows.Value.Where(r => ItemScope.VisibleOrRepoless(caller, r.Repo))
             .Select(static r => new JobSummary(r.Id, r.Kind, r.Key, r.Item, r.Repo, r.Service, r.State, r.StartedBy, r.StartedAt, r.EndedAt, r.Rounds, r.Summary, r.Code))];
         return new JobList(shown, EmptyText.For(current, shown.Count == 0, () => EmptyText.Jobs(request.State, request.Kind)), current.AsOf);
     }

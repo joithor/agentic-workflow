@@ -22,6 +22,7 @@ public sealed class InlineJobRunnerTests
     private ServiceProvider Provider() => new ServiceCollection()
         .AddSingleton(AwJson.CreateOptions(EchoJsonContext.Default))
         .AddSingleton(_h.Callers)
+        .AddSingleton<TimeProvider>(_h.Clock)
         .AddSingleton<IJobContextAccessor>(new FakeJobContextAccessor())
         .AddSingleton<EchoJobProbe>()
         .AddJob<EchoJobRequest, EchoReport, EchoJobService>(static _ => JobKey.From("echo"), static r => string.Create(CultureInfo.InvariantCulture, $"echoed {r.Lines}"))

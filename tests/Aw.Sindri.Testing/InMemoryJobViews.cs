@@ -41,8 +41,7 @@ public sealed class InMemoryJobViews : IJobViews
         lock (_rows)
         {
             var rows = _rows.Values.Where(r => (state is null || r.State == state) && (kind is null || r.Kind == kind));
-            IReadOnlyList<JobRow> ordered = [.. oldestFirst ? rows.OrderBy(static r => r.Sequence) : rows.OrderByDescending(static r => r.Sequence)];
-            return ValueTask.FromResult(Results.Success(ordered));
+            return ValueTask.FromResult(Results.Success(oldestFirst ? JobOrder.OldestFirst(rows) : JobOrder.NewestFirst(rows)));
         }
     }
 }
