@@ -1,0 +1,81 @@
+using Aw.Kernel.Testing;
+using Aw.Sindri.Core;
+using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Features.PauseService;
+using Aw.Sindri.Testing;
+
+namespace Aw.Sindri.Tests.PauseService;
+
+/// <summary>Pauseing a service (API P6 unit D): a human's desk command that appends 'service.paused' for a service of the approved profile.</summary>
+[Lane(TestLane.Unit)]
+public sealed class PauseServiceTests
+{
+    private readonly SliceHarness _h = new();
+
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
+    private PauseServiceService Service() => new(_h.Profiles, _h.Store, _h.Held, _h.Events, _h.Callers);
+
+    private async Task Approve()
+    {
+        _ = await _h.Profiles.Save(SliceHarness.Profile("5s"), Token);
+        _ = await _h.HoldLease();
+    }
+
+    private IDisposable Human() => _h.Callers.Enter(CallerContext.Http(CallerClass.Human, terminal: false, ClientLabel.None, repo: null, _h.Ids));   // a fresh command id each time, as the chain gives
+
+    [Fact]
+    public async Task PauseService_appends_service_paused_for_the_named_service()
+    {
+        await Approve();
+        using var entered = Human();
+
+        var result = await Service().Handle(A.PauseServiceRequest().Build(), Token);
+
+        Assert.True(result.IsSuccess, result.IsError ? result.Error.ToString() : null);
+        var recorded = Assert.Single(_h.Store.Events);
+        Expect.Equal("service.paused", recorded.Envelope.Type);
+        var payload = _h.Events.Payload<ServicePaused>(recorded).Value;
+        Expect.Equal(ServiceName.From("heartbeat"), payload.Service);
+        Expect.Equal($"service.paused:heartbeat:{payload.CommandId.Value}", recorded.IdempotencyKey);
+        Expect.Equal((payload.CommandId, recorded.Sequence), (result.Value.CommandId, result.Value.Sequence));
+    }
+
+    [Fact]
+    public async Task Pause_unknown_service_is_SND_SVC_404_and_records_nothing()
+    {
+        await Approve();
+        using var entered = Human();
+
+        var result = await Service().Handle(A.PauseServiceRequest().ForService(ServiceName.From("ghost")).Build(), Token);
+
+        Expect.Equal(SindriErrors.ServiceNotFound.Code, result.Error.Code);
+        Assert.Empty(_h.Store.Events);
+    }
+
+    [Fact]
+    public async Task Pause_with_no_approved_profile_is_SND_SVC_404()
+    {
+        _ = await _h.HoldLease();
+        using var entered = Human();
+
+        var result = await Service().Handle(A.PauseServiceRequest().Build(), Token);
+
+        Expect.Equal(SindriErrors.ServiceNotFound.Code, result.Error.Code);
+    }
+
+    [Fact]
+    public async Task Pause_twice_is_accepted_and_appended_twice()
+    {
+        await Approve();
+        for (var n = 0; n < 2; n++)
+        {
+            using var entered = Human();   // each command has its own id, so each is its own record
+            Assert.True((await Service().Handle(A.PauseServiceRequest().Build(), Token)).IsSuccess);
+        }
+
+        Expect.Equal(2, _h.Store.Events.Count(e => string.Equals(e.Envelope.Type, "service.paused", StringComparison.Ordinal)));
+    }
+}

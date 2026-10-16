@@ -102,6 +102,16 @@ public sealed class NeedsYouProjectionTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Manual_ok_run_clears_the_failure_row_in_the_view()
+    {
+        await Ran(_heartbeat, ServiceOutcome.Failed, "SND-SCHED-001");
+
+        await _v.Fold(EventTypes.ServiceRan, new ServiceRan(H.Ids.New<CommandId>(), _heartbeat, H.Clock.GetUtcNow(), ServiceOutcome.Ok, Code: null, A.FirstJobId));
+
+        Assert.Empty(await Rows());
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task An_ok_run_with_no_failure_row_adds_nothing()
     {
         await Ran(_heartbeat, ServiceOutcome.Ok);

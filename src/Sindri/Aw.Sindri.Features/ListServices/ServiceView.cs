@@ -8,5 +8,6 @@ namespace Aw.Sindri.Features.ListServices;
 /// <param name="Every">Its cadence, as the profile writes it.</param>
 /// <param name="Paused">True when paused (P6).</param>
 /// <param name="LastRun">Its last run, or null before the first.</param>
-/// <param name="NextSlot">The last slot plus the cadence, or null before the first run.</param>
-public sealed record ServiceView(ServiceName Name, string Every, bool Paused, LastRun? LastRun, DateTimeOffset? NextSlot);
+/// <param name="NextSlot">The last scheduled slot plus the cadence, or null before the first scheduled run and while paused.</param>
+/// <param name="Job">The running job of this service (a manual run), or null: the app's way back into the job panel.</param>
+public sealed record ServiceView(ServiceName Name, string Every, bool Paused, LastRun? LastRun, DateTimeOffset? NextSlot, JobId? Job = null);

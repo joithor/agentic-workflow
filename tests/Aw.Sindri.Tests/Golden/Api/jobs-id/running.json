@@ -1,0 +1,29 @@
+{
+  "id": "JOB-00000000000000000000000000000001",
+  "kind": "EchoJob",
+  "key": "echo",
+  "item": null,
+  "repo": null,
+  "service": null,
+  "state": "running",
+  "startedBy": "service:host",
+  "startedAt": "2026-01-01T00:00:00.0000000Z",
+  "endedAt": null,
+  "progress": [],
+  "rounds": 0,
+  "summary": null,
+  "code": null,
+  "result": null,
+  "cancelledBy": null,
+  "actions": [
+    "CancelJob"
+  ],
+  "cli": "sindri jobs cancel JOB-00000000000000000000000000000001",
+  "asOf": {
+    "cursor": 5,
+    "ledgerHead": 5,
+    "projectedAt": "2026-01-01T00:00:00.0000000Z",
+    "rebuilding": false,
+    "stalled": false
+  }
+}

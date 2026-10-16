@@ -12,10 +12,6 @@ internal static class PendingRows
 {
     internal static IReadOnlyList<CommandRow> All { get; } =
     [
-        Pending("RunService", ActionClass.Job, "POST /sindri/services/{name}/run", "sindri services run <name>", "P6"),
-        Pending("PauseService", ActionClass.Desk, "POST /sindri/services/{name}/pause", "sindri services pause <name>", "P6"),
-        Pending("ResumeService", ActionClass.Desk, "POST /sindri/services/{name}/resume", "sindri services resume <name>", "P6"),
-        Pending("CancelJob", ActionClass.Job, "POST /sindri/jobs/{jobId}/cancel", "sindri jobs cancel <jobId>", "P6") with { ReadsViews = true },
         Pending("OpenItem:open", ActionClass.Desk, "POST /sindri/items/{itemId}/open", "sindri open <itemId> [--agent <agent>]", "P10a") with { ReadsViews = true },
         Pending("OpenItem:attach", ActionClass.Desk, "POST /sindri/items/{itemId}/open", "sindri open <itemId> --attach [--agent <agent>]", "P10a") with { ReadsViews = true },
         Pending("OpenItem:resume", ActionClass.Desk, "POST /sindri/items/{itemId}/open", "sindri open <itemId> --resume [--agent <agent>]", "P10a") with { ReadsViews = true },

@@ -12,6 +12,10 @@ public static class EmptyText
     /// <returns>The sentence.</returns>
     public static string Services() => "No services are approved: run `sindri profile approve`.";
 
+    /// <summary>The sentence for a jobs list with no rows.</summary>
+    /// <returns>The sentence.</returns>
+    public static string Jobs() => "No jobs have run yet. Start one with `sindri services run <name>`.";
+
     /// <summary>The queue has no open item in any group.</summary>
     /// <returns>The sentence.</returns>
     public static string Queue() => "Nothing in the queue. Add one with `sindri item add`.";

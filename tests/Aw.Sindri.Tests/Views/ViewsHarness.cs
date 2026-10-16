@@ -27,6 +27,7 @@ internal sealed class ViewsHarness
             new ItemAliasesProjection(Slice.Events),
             new ItemTimelineProjection(SliceHarness.Json, new PassThroughScrubber()),
             new NeedsYouProjection(Slice.Events, new PassThroughScrubber()),
+            new JobsProjection(Slice.Events),
         ];
     }
 

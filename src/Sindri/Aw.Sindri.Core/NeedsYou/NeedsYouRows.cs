@@ -70,7 +70,7 @@ public static class NeedsYouRows
             return SindriErrors.InvalidInput.With($"{service.Name.Value}'s last run didn't fail, so it has no failure row");
         }
 
-        var cli = CliForm.Parse("sindri status");   // 'sindri services run <name>' arrives with RunService (P6); until then the human looks at the status
+        var cli = Cli("sindri services run <name>", "name", service.Name);
         if (cli.IsError)
         {
             return cli.Error;

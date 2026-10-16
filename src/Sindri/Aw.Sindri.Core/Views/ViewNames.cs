@@ -27,6 +27,9 @@ public static class ViewNames
     /// <summary>The human's list, keyed by the row's id (API P4).</summary>
     public const string NeedsYou = "needs_you";
 
+    /// <summary>Jobs, keyed by job id (API P6).</summary>
+    public const string Jobs = "jobs";
+
     /// <summary>Every view that has a table.</summary>
-    public static IReadOnlyList<string> All { get; } = [Services, Profile, Items, ItemAliases, ItemTimeline, Requests, Decisions, NeedsYou];
+    public static IReadOnlyList<string> All { get; } = [Services, Profile, Items, ItemAliases, ItemTimeline, Requests, Decisions, NeedsYou, Jobs];
 }
