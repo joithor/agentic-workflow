@@ -3,6 +3,8 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.NeedsYou;
+using Aw.Sindri.Core.Requests;
 using Aw.Sindri.Core.Views;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
@@ -19,6 +21,12 @@ public abstract class ViewStoreContract
     private const string Put = "fixture.put";
     private const string Fail = "fixture.fail";
     private const string Throw = "fixture.throw";
+    private const string PutRows = "fixture.rows";
+    private const string HitRepo = "hit-repo";
+    private static readonly ItemId _hitItem = ItemId.From("ITM-00000000000000000000000000000002");
+    private static readonly RequestId _hitRequest = RequestId.From("REQ-00000000000000000000000000000002");
+    private static readonly DecisionId _hitDecision = DecisionId.From("DEC-00000000000000000000000000000002");
+    private static readonly NeedsYouRowId _hitNeedsYou = NeedsYouRowId.From("failure:service:hit");
     private readonly SequentialIdGenerator _ids = new();
 
     /// <summary>The contract's clock.</summary>
@@ -197,6 +205,62 @@ public abstract class ViewStoreContract
         Expect.Equal(1, (await reader.Where<HumanDecisionRow>(ViewNames.Decisions, ViewColumn.Item, A.FirstItemId.Value, Token)).Value.Count);
     }
 
+    /// <summary>Every (view, column) pair, for the filter theory.</summary>
+    /// <returns>The pairs.</returns>
+    public static TheoryData<string, ViewColumn> EveryViewAndColumn()
+    {
+        var pairs = new TheoryData<string, ViewColumn>();
+        foreach (var view in ViewNames.All)
+        {
+            foreach (var column in Enum.GetValues<ViewColumn>())
+            {
+                pairs.Add(view, column);
+            }
+        }
+
+        return pairs;
+    }
+
+    /// <summary>
+    /// A column <see cref="ViewColumns"/> maps for a view finds exactly the one row of that view whose value matches (real rows, so
+    /// the store's own index on the JSON path is what answers); a column it doesn't map, and every column of a view that indexes
+    /// none, is refused. The in-memory fake and SQLite's generated columns both follow that one map.
+    /// </summary>
+    /// <param name="view">A view.</param>
+    /// <param name="column">A column.</param>
+    /// <returns>The test.</returns>
+    [Theory]
+    [MemberData(nameof(EveryViewAndColumn))]
+    public async Task Where_follows_the_column_map_for_every_view_and_column(string view, ViewColumn column)
+    {
+        var (store, reader) = Create();
+        _ = await store.Open(ViewSchema.Version, Token);
+        _ = await store.Apply([Event(1, PutRows, "all")], [new PutRealRows()], Clock.GetUtcNow(), Token);
+
+        if (ViewColumns.JsonPath(view, column) is null)
+        {
+            Expect.Equal(SindriErrors.InvalidInput.Code, (await reader.Where<ServiceRow>(view, column, "x", Token)).Error.Code);
+            return;
+        }
+
+        var value = column switch
+        {
+            ViewColumn.Item => _hitItem.Value,
+            ViewColumn.Repo => HitRepo,
+            ViewColumn.Kind => "failure",
+            ViewColumn.State => view == ViewNames.Requests ? "accepted" : "decided",
+            _ => throw new ArgumentOutOfRangeException(nameof(column), column, "not a view column"),
+        };
+        var found = view switch
+        {
+            ViewNames.Requests => (await reader.Where<RequestRow>(view, column, value, Token)).Value.Select(r => r.Id.Value),
+            ViewNames.Decisions => (await reader.Where<HumanDecisionRow>(view, column, value, Token)).Value.Select(r => r.Id.Value),
+            ViewNames.NeedsYou => (await reader.Where<NeedsYouRowRecord>(view, column, value, Token)).Value.Select(r => r.Row.Id.Value),
+            _ => throw new InvalidOperationException($"{view} indexes no column"),
+        };
+        Expect.Sequence([view switch { ViewNames.Requests => _hitRequest.Value, ViewNames.Decisions => _hitDecision.Value, _ => _hitNeedsYou.Value }], found);
+    }
+
     private static IReadOnlyList<IProjection> Projections() =>
         [new FixtureProjection(ViewNames.Services, Put), new FixtureProjection(ViewNames.Profile, Put), new FixtureProjection(ViewNames.Services, Fail, fails: true)];
 
@@ -205,6 +269,45 @@ public abstract class ViewStoreContract
         var context = EventContext.Create("host:sindri", "local", 0, _ids.NewId()).Value;
         Clock.Advance(TimeSpan.FromMilliseconds(1));
         return new LedgerEvent(sequence, 1, context.Envelope(type, """{"n":1}""", Clock, _ids), key, Item: null);
+    }
+
+    /// <summary>Puts a row that matches every filter value and one that matches none into each view that indexes columns.</summary>
+    private sealed class PutRealRows : IProjection
+    {
+        public IReadOnlyList<string> Views => [ViewNames.Requests, ViewNames.Decisions, ViewNames.NeedsYou];
+
+        public bool Handles(string eventType) => string.Equals(eventType, PutRows, StringComparison.Ordinal);
+
+        public async ValueTask<Kernel.Result<Kernel.Unit>> Apply(LedgerEvent recorded, IViewRows target, CancellationToken cancellationToken)
+        {
+            var repo = RepoName.From(HitRepo);
+            var rows = new (string View, string Key, object Row)[]
+            {
+                (ViewNames.Requests, _hitRequest.Value, A.Request().WithIds(_hitRequest, _hitDecision).About(_hitItem, repo).InState(RequestState.Accepted).Build()),
+                (ViewNames.Requests, A.FirstRequestId.Value, A.Request().About(A.FirstItemId, RepoName.From("miss-repo")).Build()),
+                (ViewNames.Decisions, _hitDecision.Value, A.Decision().WithIds(_hitDecision, _hitRequest).About(_hitItem, 1, repo)
+                    .Decided(DecisionOption.From("accept"), "human:ui", KnownInstants.Epoch, "decision accepted by human:ui").Build()),
+                (ViewNames.Decisions, A.FirstDecisionId.Value, A.Decision().About(A.FirstItemId, 1, RepoName.From("miss-repo")).Build()),
+                (ViewNames.NeedsYou, _hitNeedsYou.Value, new NeedsYouRowRecord(A.NeedsYouRow().InRepo(repo).Build() with { Id = _hitNeedsYou, Kind = NeedsYouKind.Failure, Item = _hitItem }, 1)),
+                (ViewNames.NeedsYou, "decision:miss", new NeedsYouRowRecord(A.NeedsYouRow().InRepo(RepoName.From("miss-repo")).Build() with { Item = A.FirstItemId }, 1)),
+            };
+            foreach (var (view, key, row) in rows)
+            {
+                var put = row switch
+                {
+                    RequestRow r => await target.Put(view, key, r, cancellationToken).ConfigureAwait(false),
+                    HumanDecisionRow d => await target.Put(view, key, d, cancellationToken).ConfigureAwait(false),
+                    NeedsYouRowRecord n => await target.Put(view, key, n, cancellationToken).ConfigureAwait(false),
+                    _ => throw new InvalidOperationException("not a row of these views"),
+                };
+                if (put.IsError)
+                {
+                    return put.Error;
+                }
+            }
+
+            return Kernel.Unit.Value;
+        }
     }
 
     private sealed class PutDecisions(Dictionary<string, HumanDecisionRow> rows) : IProjection
