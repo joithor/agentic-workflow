@@ -157,6 +157,11 @@
       "note": "env names are upper case"
     },
     {
+      "file": "invalid/provider-claude-not-agent-id.json",
+      "schema": "invalid",
+      "note": "provider claude: the hook maps it to claude-code"
+    },
+    {
       "file": "invalid/not-json.json",
       "schema": "invalid",
       "note": "does not parse"

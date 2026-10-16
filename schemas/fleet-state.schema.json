@@ -11,7 +11,8 @@
     "provider": {
       "type": "string",
       "pattern": "^[a-z][a-z0-9-]{1,31}$",
-      "description": "An AgentId (launcher.schema.json $defs.agentId)."
+      "not": { "const": "claude" },
+      "description": "An AgentId (launcher.schema.json $defs.agentId). Claude Code is claude-code: the hook maps AW_HOOK_PROVIDER claude or unset to it, so claude itself never appears."
     },
     "sessionId": {
       "type": "string",

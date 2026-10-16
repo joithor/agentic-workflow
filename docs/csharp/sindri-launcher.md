@@ -84,7 +84,7 @@ template omits `{title}`.
 ## Terminal process names
 
 Each `config/launcher/terminals.json` row also carries `processNames`: the names its terminal runs as (`wezterm-gui`,
-`gnome-terminal-server`), which the session collector's host detection matches against a session's parent chain
+`gnome-terminal-server`), which the session collector's host detection matches against a session's parent chain (by argv[0] or exe basename, not `comm`, which the kernel cuts to 15 characters)
 (`docs/csharp/sindri-sessions.md`). The launch argv does not use them. `node scripts/check-launcher.mjs` fails a row
 without a non-empty `processNames` and a name two rows share. The `focus` argv templates are CO-4c's, not part of this file's contract yet.
 

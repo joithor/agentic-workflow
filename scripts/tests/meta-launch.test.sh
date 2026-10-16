@@ -254,7 +254,7 @@ unlink "$AW_STATE_DIR/launcher.json"
 # sessions (session collector CO-0): the key is the collector's; the bash reader accepts it and ignores it, so the layout is today's.
 reset
 cp "$FIX/sessions.json" "$LCFG"
-OUT1="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open --dry-run 2>&1 | sed "s#$WORK#W#g")"; RC=$?
+OUT1="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open --dry-run 2>&1 | sed "s#$WORK#W#g"; exit "${PIPESTATUS[0]}")"; RC=$?
 check "a launcher.json with sessions: accepted, the same layout as no file" "$RC:$(diff <(printf '%s\n' "$OUT0") <(printf '%s\n' "$OUT1" | sed 's# -e AW_LAUNCHER_CONFIG=[^ ]*##') > /dev/null && echo same)" "0:same"
 cp "$FIX/sessions-bogus.json" "$LCFG"
 OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open --dry-run 2>&1)"; RC=$?

@@ -79,7 +79,7 @@ nothing reads.
 ## Terminals' process names
 
 Each row of `config/launcher/terminals.json` has `processNames`, the names the terminal runs as (`kitty`, `wezterm-gui`,
-`gnome-terminal-server`, `alacritty`, `konsole`, `foot`, `xterm`). Host detection (spec §6.1) walks a session's parent
+`gnome-terminal-server`, `alacritty`, `konsole`, `foot`, `xterm`). They are matched against argv[0]'s basename or the exe's, as spec §4.1 step 2 does for agents, because the kernel truncates `comm` to 15 characters and `gnome-terminal-server` is longer. Host detection (spec §6.1) walks a session's parent
 chain and calls it host `terminal` when a process name is in a row's `processNames`. `node scripts/check-launcher.mjs`
 fails a row without them.
 

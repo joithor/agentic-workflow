@@ -93,6 +93,23 @@ try {
     if (/^[0-9]+$/.test(e) && !procs.has(Number(e))) fail(`${sdir}/proc/${e}`, "not listed in manifest.json");
   }
   if (!sm.processes?.length) fail(`${sdir}/manifest.json`, "lists no processes");
+
+  // Claude records: the manifest lists the directory; a .json record's procStart is the start ticks (stat field 22) of its pid's
+  // process, except a record the manifest calls stale (no such process, or a recycled pid whose ticks differ).
+  const cdir = `${sdir}/claude-sessions`;
+  const recs = new Set((sm.claudeSessions ?? []).map((r) => r.file));
+  for (const f of fs.readdirSync(path.join(ROOT, cdir))) if (!recs.has(f)) fail(`${cdir}/${f}`, "not listed in manifest.json");
+  for (const r of sm.claudeSessions ?? []) {
+    const where = `${cdir}/${r.file}`;
+    if (!fs.existsSync(path.join(ROOT, where))) { fail(where, "listed in manifest.json but missing"); continue; }
+    if (!r.file.endsWith(".json")) continue;
+    const rec = readJson(where);
+    const statPath = path.join(ROOT, sdir, "proc", String(rec.pid), "stat");
+    const ticks = fs.existsSync(statPath) ? fs.readFileSync(statPath, "utf8").replace(/^.*\) /, "").split(" ")[19] : null;
+    const live = ticks !== null && String(rec.procStart) === ticks;
+    if (/^matches/.test(r.kind) && !live) fail(where, `listed as matching process ${rec.pid} but procStart ${rec.procStart} is not its start ticks (${ticks})`);
+    if (/^stale/.test(r.kind) && live) fail(where, `listed as stale but procStart ${rec.procStart} matches process ${rec.pid}`);
+  }
 } catch (e) {
   console.error(`check-fleet: ${e.message}`);
   process.exit(2);

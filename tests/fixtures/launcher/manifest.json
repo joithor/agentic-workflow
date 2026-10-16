@@ -262,7 +262,7 @@
       "file": "sessions-bogus.json",
       "schema": "invalid",
       "bash": "accept",
-      "note": "an unknown key inside sessions; the bash reader ignores the whole key, sindri launch show and the schema refuse it"
+      "note": "an unknown key inside sessions; the bash reader ignores the whole key; the schema refuses it, and so will the C# reader once it lands (CO-2a)"
     },
     {
       "file": "sessions-poll-out-of-range.json",
