@@ -97,8 +97,9 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
     /// <param name="entry">The row.</param>
     internal void Replace(NeedsYouEntry entry)
     {
-        if (!ReferenceEquals(entry, Entry))
+        if (!entry.Equals(Entry))
         {
+            var before = (Tint, HasOutline, SlidesIn);
             Entry = entry;
             foreach (var name in _content)
             {
@@ -106,6 +107,7 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
             }
 
             RebuildControls();
+            ReportLook(before);
         }
         else
         {
@@ -140,7 +142,7 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
 
     private static readonly string[] _content =
     [
-        nameof(Chip), nameof(ShownId), nameof(Title), nameof(Repo), nameof(Label), nameof(Reason), nameof(HasReasonLine), nameof(Cli), nameof(Age), nameof(AccessibleName),
+        nameof(Chip), nameof(Details), nameof(ShownId), nameof(Title), nameof(Repo), nameof(Label), nameof(Reason), nameof(HasReasonLine), nameof(Cli), nameof(Age), nameof(AccessibleName),
         nameof(CanOpenItem), nameof(ItemLink), nameof(Notice), nameof(HasNotice),
     ];
 
@@ -240,6 +242,12 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
     {
         var before = (Tint, HasOutline, SlidesIn);
         (_seen, _reduced, _arrived) = (seen, reducedMotion, arrived);
+        ReportLook(before);
+    }
+
+    // Reports the look properties (tint, outline, slide-in) that differ from how they were.
+    private void ReportLook((RowTint Tint, bool HasOutline, bool SlidesIn) before)
+    {
         if (before.Tint != Tint)
         {
             OnChanged(nameof(AccessibleName));

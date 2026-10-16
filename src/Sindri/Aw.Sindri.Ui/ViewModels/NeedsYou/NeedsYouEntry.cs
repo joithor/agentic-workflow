@@ -59,4 +59,16 @@ internal sealed record NeedsYouEntry(string Id, NeedsYouUrgency Urgency)
 
     /// <summary>The served recorded-only sentence; empty for none.</summary>
     internal string Notice { get; init; } = "";
+
+    /// <summary>Value equality, the action list by its contents: a re-read serves new records for rows that did not change, and the row must see that.</summary>
+    /// <param name="other">The other entry.</param>
+    /// <returns>True when every field is equal.</returns>
+    public bool Equals(NeedsYouEntry? other) =>
+        other is not null
+        && ((Id, Urgency, Kind, Chip, ShownId, Title, Repo, Label, Reason) == (other.Id, other.Urgency, other.Kind, other.Chip, other.ShownId, other.Title, other.Repo, other.Label, other.Reason))
+        && ((Since, PrimaryAction, Subject, ItemId, Cli, Question, RecordedOnly, Notice) == (other.Since, other.PrimaryAction, other.Subject, other.ItemId, other.Cli, other.Question, other.RecordedOnly, other.Notice))
+        && Actions.SequenceEqual(other.Actions);
+
+    /// <inheritdoc />
+    public override int GetHashCode() => HashCode.Combine(Id, Urgency, Title, Reason, Since);
 }
