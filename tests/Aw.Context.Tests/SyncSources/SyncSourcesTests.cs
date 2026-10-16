@@ -88,7 +88,7 @@ public sealed class SyncSourcesTests
         var resumed = (await world.Engine.Sync("onyx", _scope, Ct)).Value.Sources[0];
 
         Assert.Null(resumed.Code);
-        Assert.Equal(total, source.Searches);   // the second run searched only the nodes the first one didn't reach
+        Assert.InRange(source.Searches, total, total + 1);   // the second run searched the nodes the first one didn't reach, and the node the cap cut short again
     }
 
     [Fact]
@@ -112,8 +112,8 @@ public sealed class SyncSourcesTests
         var resumed = (await world.Engine.Sync("onyx", _scope, Ct)).Value.Sources[0];
 
         Assert.Null(resumed.Code);
-        Assert.Equal(all, capped.Fetched + resumed.Fetched);   // nothing fetched twice, nothing lost
-        Assert.Equal(all, (await world.Intents.Layer(Ct)).Value.Records.Count);
+        Assert.Equal(all, (await world.Intents.Layer(Ct)).Value.Records.Count);   // nothing lost; the cut-off record waited for its extraction, so it was fetched again
+        Assert.Equal(0, resumed.Queued);
     }
 
     [Fact]

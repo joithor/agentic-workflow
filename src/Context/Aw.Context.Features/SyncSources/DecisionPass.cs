@@ -11,7 +11,7 @@ namespace Aw.Context.Features.SyncSources;
 /// fenced record text and the node keys its rules linked, and its answer is validated by <see cref="DecisionExtractor"/>. Everything it asks is counted
 /// against 'maxTokensPerSync': a call that would go over the cap is not made, and the record stays queued for the next sync, until its conflict checks are through too.
 /// </summary>
-internal sealed class DecisionPass(IIntentStore store, IModelPort model, LabelingSettings labeling, (IIngestFilter Ingest, TimeProvider Clock) support)
+internal sealed class DecisionPass(IIntentStore store, IModelPort model, LabelingSettings labeling, (IIngestFilter Ingest, TimeProvider Clock, Func<bool> OverCap) support)
 {
     private const int ExtractAnswerTokens = 600;
     private const int VerdictAnswerTokens = 60;
@@ -26,6 +26,9 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
     public bool HeldBack { get; private set; }
 
     public string? Failure { get; private set; }
+
+    /// <summary>Whether the run's time cap passed before a call: no further call is made.</summary>
+    public bool Capped { get; private set; }
 
     public async ValueTask Run(IReadOnlyList<PendingRecord> pending, CancellationToken cancellationToken)
     {
@@ -116,7 +119,12 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
 
     private async ValueTask<string?> Ask(ModelPurpose purpose, string prompt, int answerTokens, CancellationToken cancellationToken)
     {
-        if (_stopped || Tokens + ((prompt.Length + 3) / 4) + answerTokens > labeling.MaxTokensPerSync)
+        if (!_stopped && support.OverCap())
+        {
+            Capped = true;
+        }
+
+        if (_stopped || Capped || Tokens + ((prompt.Length + 3) / 4) + answerTokens > labeling.MaxTokensPerSync)
         {
             HeldBack = true;
             _stopped = true;
