@@ -175,7 +175,7 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
     private static string Tooltip(NeedsYouAction action, bool rebuilding) => action.Readiness switch
     {
         ActionReadiness.Ready when rebuilding => Labels.RetryAfterRebuild,
-        ActionReadiness.CliOnly => Labels.ProtectedTooltip,
+        ActionReadiness.CliOnly => Labels.WithHint(Labels.ProtectedTooltip, action.FillInHint),
         ActionReadiness.Pending => Labels.WithHint(action.Cli, action.FillInHint),
         _ => "",
     };
