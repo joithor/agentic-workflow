@@ -66,3 +66,4 @@ AW_HEAVY_LOCK_HELD # set to 1 by a caller that already holds a heavy-job lock sl
 LAUNCHER_KEEP_EMPTY_SEED # a shell variable meta-lane.sh sets for launcher_expand (1: an existing but empty prompt file still passes ""); not user configuration
 TMUX # set by tmux inside a client; scripts/test-tmux.sh unsets it so tests can never reach the box's own server
 TMUX_TMPDIR # tmux's socket directory; tests point it at a temp dir (scripts/test-tmux.sh)
+NUGET_PACKAGES # NuGet's own variable; scripts/ci/bash-tests.sh keeps the real package cache reachable from a suite's temp HOME
