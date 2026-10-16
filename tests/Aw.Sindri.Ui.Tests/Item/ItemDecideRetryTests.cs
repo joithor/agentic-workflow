@@ -58,4 +58,45 @@ public sealed class ItemDecideRetryTests
         Assert.Same(before, sheet.Needs.Decisions);
         Assert.Equal(0, changes);
     }, Token);
+
+    // Review run 2 (L3 / corr-2): the sheet shows only its own item's needs.
+    private async Task<ItemSheetViewModel> SheetRefusedOnDecisionItem()
+    {
+        _server.DecisionsByItem[DecisionItem] = RouteAnswer.Api("decisions", "by-item");
+        _server.RequestsByItem[DecisionItem] = RouteAnswer.Api("requests", "list-by-item");
+        _server.Items[DecisionItem] = _server.Items[A.NewItem];
+        var catalog = new CatalogViewModel(new FakeClipboard(), _clock);
+        catalog.Show(_api, _server, (await _server.Commands(_api, Token)).Value);
+        var sheet = new ItemSheetViewModel(_server, catalog, _clock);
+        await sheet.Open(_api, DecisionItem, Token);
+        _server.Decided = RouteAnswer.Problem("decisions-id", "while-stalled");
+        await sheet.Needs.Choose(sheet.Needs.Decisions[0].Id, "accept");
+        Assert.NotEmpty(sheet.Needs.Refusal);
+        return sheet;
+    }
+
+    [Fact]
+    public Task Opening_another_item_drops_the_first_ones_decisions_and_refusal_at_once() => UiThread.Run(async () =>
+    {
+        var sheet = await SheetRefusedOnDecisionItem();
+
+        sheet.Show(A.NewItem);
+
+        Assert.Empty(sheet.Needs.Decisions);
+        Assert.Empty(sheet.Needs.Requests);
+        Assert.Equal(string.Empty, sheet.Needs.Refusal);
+        Assert.Equal(string.Empty, sheet.Needs.DecisionsEmpty);
+    }, Token);
+
+    [Fact]
+    public Task Another_items_failed_read_does_not_leave_the_first_ones_decisions() => UiThread.Run(async () =>
+    {
+        var sheet = await SheetRefusedOnDecisionItem();
+        _server.DecisionsByItem[A.NewItem] = RouteAnswer.Problem("decisions-id", "while-stalled");
+
+        await sheet.Open(_api, A.NewItem, Token);
+
+        Assert.Empty(sheet.Needs.Decisions);
+        Assert.Equal(string.Empty, sheet.Needs.Refusal);
+    }, Token);
 }
