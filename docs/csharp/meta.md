@@ -8,7 +8,7 @@ not habits.
 
 It is a portable harness for any project. Everything team-specific (lanes, repo, gate scopes, merge order, known
 flakes, kickoff prompts, log file) lives in a team config. It runs before the C# switch as an opt-in standalone
-NativeAOT CLI (`./setup.sh --with-meta`, Claude Code only) that keeps its state under `$AW_STATE_DIR/meta/` and
+NativeAOT CLI (`./setup.sh --with-meta`, Claude Code only; Linux only for now, aw-meta reads /proc, so on macOS setup skips it) that keeps its state under `$AW_STATE_DIR/meta/` and
 appends to the configured running log. Its gate and merge commands act on the team's checkout and PRs: `git fetch`, a
 gate worktree registered in the repo, the configured gate steps, `gh pr merge`, and the removal of finished worktrees (`git worktree remove`, never forced; see "Worktree cleanup"). Sindri absorbs it later (see the
 last section).
