@@ -1,0 +1,2 @@
+{"start":{"inputs":{"fact:request":"Export the weekly summary."}}}
+{"trigger":{"kind":"wait.satisfied","outcome":"resolved","outputs":{"fact:output":"summary-week-41.csv"}},"expect":{"state":"review"}}

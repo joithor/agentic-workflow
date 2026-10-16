@@ -202,6 +202,26 @@ internal static class InvalidFixtureCases
             FixtureSetup.Shipped,
             "RCP-WIRE-002: transition from 'produce' produces 'fact:findings', which step 'step.produce' doesn't record at RCP-WIRE-002.yaml:15:88 (transitions[0].produces[0]); list only what it records (fact:output), or remove it",
             []),
+        ["RCP-WIRE-003"] = new(
+            FixtureSetup.Shipped,
+            "RCP-WIRE-003: transition from 'run' produces 'fact:output' on outcome 'unresolved' of child 'workflow.dev-child-summary', which doesn't produce 'fact:output' on every path to 'unresolved' (in workflow.dev-child-summary, the path through transitions[4] from 'export' doesn't produce it) at RCP-WIRE-003.yaml:12:93 (transitions[1].produces[0]); produce it on that path in workflow.dev-child-summary, or produce it here only on outcomes that always carry it (resolved)",
+            []),
+        ["RCP-WIRE-003-cancelled"] = new(
+            FixtureSetup.Shipped,
+            "RCP-WIRE-003: transition from 'run' produces 'fact:output' on outcome 'cancelled' of child 'workflow.dev-child-summary', which carries no outputs at RCP-WIRE-003-cancelled.yaml:13:92 (transitions[2].produces[0]); route cancelled with a transition of its own that produces nothing",
+            []),
+        ["RCP-WIRE-002-child"] = new(
+            FixtureSetup.Shipped,
+            "RCP-WIRE-002: transition from 'run' produces 'fact:findings', which child 'workflow.dev-child-summary' doesn't declare as an output at RCP-WIRE-002-child.yaml:11:88 (transitions[0].produces[0]); list only its outputs (fact:output), or declare 'fact:findings' in workflow.dev-child-summary's outputs",
+            []),
+        ["RCP-WIRE-002-rename"] = new(
+            FixtureSetup.Shipped,
+            "RCP-WIRE-002: transition from 'produce' renames 'fact:output' to 'fact:exported', but only a child's outputs can be renamed at RCP-WIRE-002-rename.yaml:15:88 (transitions[0].produces[0]); write the bare key 'fact:output', or rename on a transition from a child wait",
+            []),
+        ["RCP-SCHEMA-001-produces"] = new(
+            FixtureSetup.Shipped,
+            "RCP-SCHEMA-001: a produces entry has no 'from' at RCP-SCHEMA-001-produces.yaml:15:88 (transitions[0].produces[0].from); add 'from': the child's output key, or write the bare key",
+            []),
         ["RCP-URG-001"] = new(
             FixtureSetup.Shipped,
             "RCP-URG-001: urgency 'urgent' isn't one of incident, triage, work at RCP-URG-001.yaml:4:1 (urgency); use incident, triage or work, or remove urgency (the default is work)",

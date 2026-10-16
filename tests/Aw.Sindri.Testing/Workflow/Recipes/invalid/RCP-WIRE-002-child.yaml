@@ -1,0 +1,13 @@
+schema: 1
+id: workflow.child-output-undeclared
+version: 1
+inputs: [{ key: fact:request, label: "Request", type: text, kind: text }]
+initial: run
+states:
+  run: { kind: wait, waitFor: { child: { recipe: workflow.dev-child-summary, inputs: { "fact:request": { fact: fact:request } }, onParked: propagate } }, timeout: { after: 2d, then: park }, next: "Waiting for the child." }
+  done: { kind: terminal, outcome: resolved }
+  dropped: { kind: terminal, outcome: unresolved }
+transitions:
+  - { from: run, to: done, on: wait.satisfied, when: { outcome: resolved }, produces: [fact:findings] }
+  - { from: run, to: dropped, on: wait.satisfied, when: { outcome: unresolved } }
+  - { from: run, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }

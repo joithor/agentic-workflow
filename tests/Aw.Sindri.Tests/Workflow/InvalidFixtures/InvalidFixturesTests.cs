@@ -30,8 +30,11 @@ public sealed class InvalidFixturesTests
         "RCP-CHOICE-001", "RCP-CHOICE-002", "RCP-CHOICE-003", "RCP-CHOICE-004", "RCP-CHOICE-005", "RCP-CHOICE-006",
     ];
 
+    /// <summary>The child-output rule (DT spec §8.4).</summary>
+    private static readonly string[] _childOutputs = ["RCP-WIRE-003"];
+
     /// <summary>Fixtures that are a second fault of a rule, named after it: RCP-CHOICE-002's unquoted entry, RCP-CHOICE-005's computed twin source, and a route without an uncertain transition.</summary>
-    private static readonly string[] _variants = ["RCP-CHOICE-002-mapping", "RCP-CHOICE-005-computed", "RCP-OUTCOME-001-uncertain", "RCP-SCHEMA-002-camel"];
+    private static readonly string[] _variants = ["RCP-CHOICE-002-mapping", "RCP-CHOICE-005-computed", "RCP-OUTCOME-001-uncertain", "RCP-SCHEMA-002-camel", "RCP-WIRE-003-cancelled", "RCP-WIRE-002-child", "RCP-WIRE-002-rename", "RCP-SCHEMA-001-produces"];
 
     public static TheoryData<string> Rules => [.. InvalidFixtureCases.All.Keys.Order(StringComparer.Ordinal)];
 
@@ -57,7 +60,7 @@ public sealed class InvalidFixturesTests
             .Select(n => Path.GetFileNameWithoutExtension(n))
             .Order(StringComparer.Ordinal);
 
-        Assert.Equal(_section91.Concat(_decisionTree).Concat(_variants).Order(StringComparer.Ordinal), fixtures, StringComparer.Ordinal);
+        Assert.Equal(_section91.Concat(_decisionTree).Concat(_childOutputs).Concat(_variants).Order(StringComparer.Ordinal), fixtures, StringComparer.Ordinal);
         Assert.Equal(fixtures, InvalidFixtureCases.All.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
