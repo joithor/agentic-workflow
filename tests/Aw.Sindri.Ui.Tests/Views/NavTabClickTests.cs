@@ -94,7 +94,7 @@ public sealed class NavTabClickTests : IDisposable
         var shown = _pages
             .Where(n => window.GetVisualDescendants().OfType<Control>().First(c => c.Name == n).IsEffectivelyVisible).ToList();
         Assert.Equal([Own(target)], shown);
-        if (Labels.ArrivesWith(target) is { } arrives)
+        if (target != PageId.Work && Labels.ArrivesWith(target) is { } arrives)   // Work is the queue (U2), not a placeholder
         {
             var page = window.GetVisualDescendants().OfType<PlaceholderPage>().Single(p => p.Name == Own(target));
             Assert.Equal(arrives, page.Note);
@@ -102,7 +102,7 @@ public sealed class NavTabClickTests : IDisposable
         }
     });
 
-    private static readonly string[] _pages = ["HomePage", "WorkflowsPage", "WorkPage", "RecipesPage", "ContextPage", "AgentsPage", "HealthPage"];
+    private static readonly string[] _pages = ["HomePage", "WorkflowsPage", "QueuePage", "RecipesPage", "ContextPage", "AgentsPage", "HealthPage"];
 
     // Re-check N1: the System page's region is named "System", so its heading says the same word.
     [Fact]
@@ -122,7 +122,7 @@ public sealed class NavTabClickTests : IDisposable
     {
         PageId.Home => "HomePage",
         PageId.Workflows => "WorkflowsPage",
-        PageId.Work => "WorkPage",
+        PageId.Work => "QueuePage",
         PageId.Recipes => "RecipesPage",
         PageId.Context => "ContextPage",
         PageId.Agents => "AgentsPage",

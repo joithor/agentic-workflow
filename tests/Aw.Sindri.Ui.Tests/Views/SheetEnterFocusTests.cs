@@ -161,7 +161,7 @@ public sealed class SheetEnterFocusTests : IDisposable
         var content = window.Get<Panel>("SheetContent");
         var body = window.Get<TextBlock>("SheetBody");
 
-        Assert.Contains(content.GetVisualDescendants(), v => v is Aw.Sindri.Ui.Views.Item.ItemSheet);
+        Assert.Contains(content.GetVisualDescendants(), v => v is Ui.Views.Item.ItemSheet);
         Assert.False(body.IsEffectivelyVisible);
         Assert.True(window.Get<Control>("ItemSheet").IsEffectivelyVisible);
         var peer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(window.Get<Control>("SheetTitle"));

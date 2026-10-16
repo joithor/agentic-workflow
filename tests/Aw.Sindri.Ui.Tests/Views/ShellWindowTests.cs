@@ -1815,7 +1815,7 @@ public sealed class ShellWindowTests : IDisposable
         var card = Named<Border>(window, "ShortcutsCard");
         var cardPeer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(card);
         Assert.True(cardPeer.IsControlElement());
-        Assert.Equal(Avalonia.Automation.Peers.AutomationControlType.Group, cardPeer.GetAutomationControlType());
+        Assert.Equal(Avalonia.Automation.Peers.AutomationControlType.Window, cardPeer.GetAutomationControlType());   // a modal layer is a dialog (U2 review), the regions behind it are groups
         Assert.False(string.IsNullOrEmpty(cardPeer.GetName()));
     });
 

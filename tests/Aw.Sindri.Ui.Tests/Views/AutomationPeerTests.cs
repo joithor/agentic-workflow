@@ -157,8 +157,9 @@ public sealed class AutomationPeerTests : IDisposable
         var (window, _) = await Connected();
         var hint = First(window, b => b.Name == "ChordHint");
 
+        // Rev 8 (R1): the hint is a Text-typed element in the bar, shown only while a chord waits; never a live region.
         Assert.Equal(
-            (Avalonia.Automation.AutomationLiveSetting.Off, Avalonia.Automation.AccessibilityView.Raw, null),
-            (Avalonia.Automation.AutomationProperties.GetLiveSetting(hint), Avalonia.Automation.AutomationProperties.GetAccessibilityView(hint), Avalonia.Automation.AutomationProperties.GetName(hint)));
+            (Avalonia.Automation.AutomationLiveSetting.Off, Avalonia.Automation.AccessibilityView.Control, AutomationControlType.Text, false),
+            (Avalonia.Automation.AutomationProperties.GetLiveSetting(hint), Avalonia.Automation.AutomationProperties.GetAccessibilityView(hint), Avalonia.Automation.AutomationProperties.GetControlTypeOverride(hint), hint.IsEffectivelyVisible));
     });
 }
