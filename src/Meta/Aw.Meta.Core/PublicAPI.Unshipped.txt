@@ -1244,6 +1244,7 @@ static Aw.Meta.Core.Config.TeamConfig.operator ==(Aw.Meta.Core.Config.TeamConfig
 static Aw.Meta.Core.Config.WorktreeConfig.DefaultBuildOutputs.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Meta.Core.Config.WorktreeConfig.operator !=(Aw.Meta.Core.Config.WorktreeConfig? left, Aw.Meta.Core.Config.WorktreeConfig? right) -> bool
 static Aw.Meta.Core.Config.WorktreeConfig.operator ==(Aw.Meta.Core.Config.WorktreeConfig? left, Aw.Meta.Core.Config.WorktreeConfig? right) -> bool
+static Aw.Meta.Core.Coordination.LaneHealthReader.HooksNotRunning(Aw.Meta.Core.Lanes.LaneAgent! agent) -> string!
 static Aw.Meta.Core.Coordination.LaneRefresh.operator !=(Aw.Meta.Core.Coordination.LaneRefresh? left, Aw.Meta.Core.Coordination.LaneRefresh? right) -> bool
 static Aw.Meta.Core.Coordination.LaneRefresh.operator ==(Aw.Meta.Core.Coordination.LaneRefresh? left, Aw.Meta.Core.Coordination.LaneRefresh? right) -> bool
 static Aw.Meta.Core.Coordination.MergeAssessment.operator !=(Aw.Meta.Core.Coordination.MergeAssessment? left, Aw.Meta.Core.Coordination.MergeAssessment? right) -> bool

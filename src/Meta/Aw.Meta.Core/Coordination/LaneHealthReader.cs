@@ -93,7 +93,10 @@ public sealed class LaneHealthReader(ILaneFiles files, LaneBeats beats, ILaneMai
         };
     }
 
-    private static string HooksNotRunning(LaneAgent agent) =>
+    /// <summary>The line for a lane whose hooks never reported.</summary>
+    /// <param name="agent">The lane's agent.</param>
+    /// <returns>The line, naming the fix.</returns>
+    public static string HooksNotRunning(LaneAgent agent) =>
         string.Equals(agent.Agent, "codex", StringComparison.Ordinal)
             ? "hooks not running: trust them with /hooks in codex"
             : "hooks not running: check the " + agent.Agent + " hooks are installed";
