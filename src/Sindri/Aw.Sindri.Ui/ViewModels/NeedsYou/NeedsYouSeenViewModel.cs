@@ -38,7 +38,7 @@ internal sealed class NeedsYouSeenViewModel : ObservableObject
             Reapply();
         };
         // The OS setting is polled on a timer's thread: the rows and what is bound to them change on the UI thread.
-        _motion.Changed += (_, _) => _ui.Post(() =>
+        _motion.Changed += (_, _) => _ui.PostOrInline(() =>
         {
             OnChanged(nameof(ReducedMotion));
             Reapply();

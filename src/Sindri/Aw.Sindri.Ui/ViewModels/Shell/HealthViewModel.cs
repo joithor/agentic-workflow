@@ -104,7 +104,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     /// <returns>A task that ends when cancelled.</returns>
     internal async Task Run(CancellationToken cancellationToken)
     {
-        var ticker = clock.CreateTimer(_ => _ui.Post(Age), state: null, _tick, _tick);
+        var ticker = clock.CreateTimer(_ => _ui.PostOrInline(Age), state: null, _tick, _tick);
         await using (ticker.ConfigureAwait(true))
         {
             await new ControlPlaneFollower(records, api, clock, this).Run(cancellationToken).ConfigureAwait(true);

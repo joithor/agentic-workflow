@@ -146,7 +146,7 @@ internal sealed partial class SeenTracker : ObservableObject
 
             var gen = ++_epoch;
             _dwellGen[id] = gen;
-            _watching[id] = _clock.CreateTimer(_ => _ui.Post(() => DwellElapsed(id, gen)), state: null, OnScreenFor, Timeout.InfiniteTimeSpan);
+            _watching[id] = _clock.CreateTimer(_ => _ui.PostOrInline(() => DwellElapsed(id, gen)), state: null, OnScreenFor, Timeout.InfiniteTimeSpan);
         }
     }
 

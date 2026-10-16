@@ -36,7 +36,7 @@ internal sealed partial class SeenTracker
     private void StartUndoTimer()
     {
         var gen = ++_undoGen;
-        _undoTimer = _clock.CreateTimer(_ => _ui.Post(() => ExpireUndo(gen)), state: null, UndoFor, Timeout.InfiniteTimeSpan);
+        _undoTimer = _clock.CreateTimer(_ => _ui.PostOrInline(() => ExpireUndo(gen)), state: null, UndoFor, Timeout.InfiniteTimeSpan);
     }
 
     private void StopUndoTimer()

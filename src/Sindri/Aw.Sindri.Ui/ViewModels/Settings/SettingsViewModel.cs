@@ -153,7 +153,7 @@ internal sealed class SettingsViewModel : ObservableObject, IDisposable
         _ = _preferences.Update(p => p with { TextScale = scale, ReduceMotion = reduce });
     }
 
-    private void OnMotionChanged(object? sender, EventArgs e) => _ui.Post(Reread);
+    private void OnMotionChanged(object? sender, EventArgs e) => _ui.PostOrInline(Reread);
 
     private void Reread()
     {
