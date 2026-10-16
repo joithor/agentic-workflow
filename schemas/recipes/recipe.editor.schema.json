@@ -8,7 +8,7 @@
     "Recipe": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schema", "id", "version", "initial", "states", "transitions"],
+      "required": ["schema", "id", "version", "inputs", "initial", "states", "transitions"],
       "properties": {
         "schema": { "const": 1 },
         "id": { "$ref": "#/$defs/RecipeId" },
@@ -16,6 +16,7 @@
         "description": { "type": ["string", "null"] },
         "base": { "oneOf": [{ "$ref": "#/$defs/RecipeRef" }, { "type": "null" }] },
         "urgency": { "enum": ["incident", "triage", "work"] },
+        "name": { "type": ["string", "null"], "maxLength": 200, "description": "A template for the instance's name: literals, {fact:<input>}, {start:date}, {start:time}; {{ and }} write a brace (spec section 3.11)." },
         "inputs": { "type": "array", "items": { "oneOf": [{ "$ref": "#/$defs/FactKey" }, { "$ref": "#/$defs/RecipeInput" }] } },
         "outputs": { "type": "array", "items": { "$ref": "#/$defs/RecipeOutput" } },
         "initial": { "type": "string" },
@@ -34,12 +35,13 @@
     "RecipeInput": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["key"],
+      "required": ["key", "kind"],
       "properties": {
         "key": { "$ref": "#/$defs/FactKey" },
         "label": { "type": ["string", "null"] },
         "type": { "enum": ["text", "file", "item", "link", "scope-map", "packet", "evidence", "decision", "payload", null] },
-        "kind": { "enum": ["item", "linear-project", "webhook", "file", "text", null] }
+        "kind": { "enum": ["item", "linear-project", "webhook", "file", "text", "link"] },
+        "generate": { "type": ["string", "null"], "maxLength": 200, "description": "A template for the value when the start supplies none: literals, {start:date}, {start:time}; kind text only (spec section 3.11)." }
       }
     },
     "RecipeOutput": {

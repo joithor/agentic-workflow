@@ -29,10 +29,11 @@ public sealed class ApiGoldenContractTests
 
     [Theory]
     [InlineData("dev-desk-round-trip", "desk-round-trip.yaml", "export", "ITM-01JL1", "Desk round trip", "fact:request", "Summarize the week", "request.txt")]
-    [InlineData("dev-triage-three-state", "triage-three-state.yaml", "desk", "ITM-01JL2", "Three-state triage", "fact:item", "ITM-01JL2 Crash on launch", "item.json")]
+    [InlineData("dev-triage-three-state", "triage-three-state.yaml", "desk", "ITM-01JL2", "Three-state triage", "fact:scope", "Crash on launch", "scope.txt")]
     public void The_detail_of_a_dev_recipe_matches_its_api_golden_field_for_field(string scenario, string file, string state, string item, string title, string fact, string text, string inputName)
     {
-        var (_, detail) = DevInstances.Produce(file, state, item, title, fact, text, inputName);
+        var second = file.StartsWith("triage", StringComparison.Ordinal) ? ("fact:item", "ITM-01JL2 Crash on launch", "item.json") : default((string, string, string)?);
+        var (_, detail) = DevInstances.Produce(file, state, item, title, fact, text, inputName, second);
 
         var actual = JsonNode.Parse(JsonSerializer.Serialize(detail, _options));
         var differences = _diff.Between(GoldenOf(scenario), actual);

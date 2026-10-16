@@ -15,7 +15,7 @@ internal static class DevInstances
     public static readonly DateTimeOffset Since = new(2026, 10, 12, 12, 0, 0, TimeSpan.Zero);
     public static readonly DateTimeOffset AsOf = new(2026, 10, 12, 12, 26, 0, TimeSpan.Zero);
 
-    public static (InstanceView View, InstanceDetail Detail) Produce(string file, string state, string item, string title, string requestFact, string requestText, string inputName = "request.txt")
+    public static (InstanceView View, InstanceDetail Detail) Produce(string file, string state, string item, string title, string requestFact, string requestText, string inputName = "request.txt", (string Fact, string Text, string Name)? second = null)
     {
         var path = ShippedRecipes.Recipes.Single(p => p.EndsWith(file, StringComparison.Ordinal));
         var loaded = RecipeComposition.ReadClean(ShippedRecipes.Read(path), path);
@@ -26,19 +26,26 @@ internal static class DevInstances
             Address = InstanceAddress.Root(ItemKey.From(item), loaded.Recipe.Id, 1),
             Item = ItemKey.From(item),
             Recipe = new PinnedRecipe(loaded.Recipe.Id, loaded.Recipe.Version, loaded.Hash, new Dictionary<RecipeId, RecipeHash>()),
-            Facts = new Dictionary<FactKey, FactValue> { [key] = value },
+            Facts = Facts(),
         };
         var recipe = new InterpretedRecipe(
-            new RecipeVersion(loaded.Recipe.Id, loaded.Recipe.Version, loaded.Hash), loaded.Recipe, EngineFixture.Catalog, new Dictionary<FactKey, InputFact> { [key] = new(inputName, value) });
-        var provenance = new Dictionary<FactKey, FactProvenance> { [key] = new("human:cli", Since) };
-        var view = InstanceViews.Of(instance, recipe, Since, Since.AddDays(2), new InstanceViewContext(Version: 1, provenance, Subject: SubjectRefs.Of(recipe, ItemKey.From(item), requestText)));
+            new RecipeVersion(loaded.Recipe.Id, loaded.Recipe.Version, loaded.Hash), loaded.Recipe, EngineFixture.Catalog, Inputs());
+        var provenance = Inputs().ToDictionary(static i => i.Key, static _ => new FactProvenance("human:cli", Since));
+        var name = InstanceNames.Render(recipe, ItemKey.From(item), new Dictionary<FactKey, string?> { [key] = requestText }, Since);
+        var view = InstanceViews.Of(instance, recipe, Since, Since.AddDays(2), new InstanceViewContext(Version: 1, provenance, Subject: SubjectRefs.Of(recipe, ItemKey.From(item), requestText, name)));
         return (view, InstanceViews.Detail(view, new InstanceDetailContext(title, Parent: null, new ViewCounts(2, 0, 0, Context: null), AsOf)));
+
+        Dictionary<FactKey, FactValue> Facts() => Inputs().ToDictionary(static i => i.Key, static i => i.Value.Value);
+
+        Dictionary<FactKey, InputFact> Inputs() => second is { } more
+            ? new() { [key] = new(inputName, value), [FactKey.From(more.Fact)] = new(more.Name, EngineFixture.Fact(more.Text)) }
+            : new() { [key] = new(inputName, value) };
     }
 
     /// <summary>Both dev scenarios.</summary>
     public static IReadOnlyList<(InstanceView View, InstanceDetail Detail)> All { get; } =
     [
         Produce("desk-round-trip.yaml", "export", "ITM-01JL1", "Desk round trip", "fact:request", "Summarize the week"),
-        Produce("triage-three-state.yaml", "desk", "ITM-01JL2", "Three-state triage", "fact:item", "ITM-01JL2 Crash on launch", "item.json"),
+        Produce("triage-three-state.yaml", "desk", "ITM-01JL2", "Three-state triage", "fact:scope", "Crash on launch", "scope.txt", ("fact:item", "ITM-01JL2 Crash on launch", "item.json")),
     ];
 }

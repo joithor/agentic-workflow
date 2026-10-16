@@ -20,12 +20,16 @@ public sealed class LegacyRecipeRowTests
     {
         var registry = new RegistryHarness();
         _ = await registry.H.HoldLease();
-        var source = ShippedRecipes.Read("sindri/workflow.step.yaml");
+        var source = LegacyStep();
         var row = new RegisteredRecipe(RecipeId.From("workflow.step"), 1, RecipeDeclarationsTests.LegacyHash(source),
             RecipeDeclarationsTests.LegacyJson(source).ToJsonString(), Base: null, registry.H.Clock.GetUtcNow());
         _ = await registry.Recipes.Add(row, TestContext.Current.CancellationToken);
         return (registry, row);
     }
+
+    /// <summary>workflow.step as it was registered before P2b: the file with its inputs in the bare-key short form it had then.</summary>
+    private static string LegacyStep() => ShippedRecipes.Read("sindri/workflow.step.yaml")
+        .Replace("inputs:\n  - { key: fact:spec, label: \"Spec\", type: text, kind: text }\n", "inputs: [fact:spec]\n", StringComparison.Ordinal);
 
     [Fact, Trait("Lane", "unit")]
     public async Task An_old_row_still_lists_with_its_stored_hash_and_the_defaults()
@@ -60,7 +64,7 @@ public sealed class LegacyRecipeRowTests
     {
         await using var r = new RegistryHarness();
         _ = await r.H.HoldLease();
-        var yaml = RecipeReaderTests.Minimal.Replace("initial: produce\n", "urgency: incident\noutputs: [{ key: fact:output, type: file, from: produce }]\ninitial: produce\n", StringComparison.Ordinal);
+        var yaml = RecipeReaderTests.Minimal.Replace("initial: produce\n", "urgency: incident\ninputs: [{ key: fact:item, type: item, kind: item }]\noutputs: [{ key: fact:output, type: file, from: produce }]\ninitial: produce\n", StringComparison.Ordinal);
         var registered = await r.RegisterText(yaml, "minimal.yaml");
         Assert.True(registered.IsSuccess, registered.IsError ? registered.Error.ToString() : null);
 
@@ -91,7 +95,7 @@ public sealed class LegacyRecipeRowTests
     {
         Assert.Equal(
             "sha256:12e030dc92a0f827d4da641c65f023d5e547e15e9c1b29a9a427a603e0f50d40",
-            RecipeDeclarationsTests.LegacyHash(ShippedRecipes.Read("sindri/workflow.step.yaml")).Value);
+            RecipeDeclarationsTests.LegacyHash(LegacyStep()).Value);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -124,7 +128,7 @@ public sealed class LegacyRecipeRowTests
         await using var _ = r;
         var approved = await r.Approve(row);
         Assert.True(approved.IsSuccess, approved.IsError ? approved.Error.ToString() : null);
-        var next = await r.Register(RecipeReaderTests.Bind(ShippedRecipes.Read("sindri/workflow.step.yaml")) with { Version = 2, Description = "A reworded step." });
+        var next = await r.Register(RecipeReaderTests.Bind(LegacyStep()) with { Version = 2, Description = "A reworded step." });
 
         var shown = await r.Show(next.Id, next.Hash.Display);
 

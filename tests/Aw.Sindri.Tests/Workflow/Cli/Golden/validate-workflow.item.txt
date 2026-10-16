@@ -3,5 +3,5 @@ exit 0
 --- stdout
 information: RCP-RES-001: resource 'slot' has no allocator in this build at workflow.item.yaml:9:39 (states.startable.waitFor.resource); it parks with SND-WF-010 until the session-slot stub lands (P7)
 skipped: RCP-EFFECT-001: effect 'effect.claim.ref' wasn't checked against an effect allowlist, since the profile has no workflow.effects at workflow.item.yaml:22:101 (transitions[2].effects[0].use); add workflow.effects to the profile; until then the effect is refused at run time
-hash sha256:496cdcbfe884c70dce832d96d21883660f29fffe9b122fcfa72a04c98be8cae3
+hash sha256:cb9a5b5e28c3dbfaa457ea21304c977b04e3d871cdbeca32252825b9a8c9d4fb
 --- stderr

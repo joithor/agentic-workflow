@@ -32,14 +32,14 @@ public sealed class SubjectRefsTests
     [Theory]
     [InlineData("Summarize the week\nand then some", "Summarize the week", "Summarize the week")]
     [InlineData("\n\n  second line after blanks \nthird", "second line after blanks", "second line after blanks")]
-    public void A_text_is_its_first_line(string content, string key, string label) => Assert.Equal((key, label), SubjectRefs.Of(Recipe("text"), _item, content) is { } subject ? (subject.Key, subject.Label) : default);
+    public void A_text_is_its_first_line(string content, string key, string label) => Assert.Equal((key, label), SubjectRefs.Of(Recipe("text"), _item, content) is var subject ? (subject.Key, subject.Label) : default);
 
     [Fact]
     public void A_long_first_line_is_cut_to_40_for_the_key_and_80_for_the_label()
     {
         var line = new string('a', 100);
 
-        var subject = SubjectRefs.Of(Recipe("text"), _item, line)!;
+        var subject = SubjectRefs.Of(Recipe("text"), _item, line);
 
         Assert.Equal((new string('a', 40), new string('a', 80)), (subject.Key, subject.Label));
     }
@@ -49,22 +49,22 @@ public sealed class SubjectRefsTests
     {
         var line = new string('a', 39) + "\U0001F600" + "tail";   // the emoji's two units sit at 39 and 40, across the key's cut at 40
 
-        var subject = SubjectRefs.Of(Recipe("text"), _item, line)!;
+        var subject = SubjectRefs.Of(Recipe("text"), _item, line);
 
         Assert.Equal(new string('a', 39), subject.Key);
         Assert.Equal(line, subject.Label);
     }
 
     [Theory]
-    [InlineData("https://linear.app/acme/issue/ENG-142/crash-on-launch", "ENG-142", "ENG-142")]
-    [InlineData("https://example.com/docs/page", "https://example.com/docs/page", "https://example.com/docs/page")]
-    [InlineData("""{"url":"https://example.com/p/9","title":"Design brief"}""", "https://example.com/p/9", "Design brief")]
-    [InlineData("""{"url":"https://example.com/p/9","key":"APP-7","title":"Design brief"}""", "APP-7", "Design brief")]
-    public void A_link_is_its_tracker_key_else_its_url_and_labelled_by_its_title_else_its_key(string content, string key, string label)
+    [InlineData("https://linear.app/acme/issue/ENG-142/crash-on-launch", "ENG-142", "linear.app", "https://linear.app/acme/issue/ENG-142/crash-on-launch")]
+    [InlineData("https://example.com/docs/page", "https://example.com/docs/page", "example.com", "https://example.com/docs/page")]
+    [InlineData("""{"url":"https://example.com/p/9","title":"Design brief"}""", "https://example.com/p/9", "Design brief", "https://example.com/p/9")]
+    [InlineData("""{"url":"https://example.com/p/9","key":"APP-7","title":"Design brief"}""", "APP-7", "Design brief", "https://example.com/p/9")]
+    public void A_link_is_its_tracker_key_else_its_url_labelled_by_its_title_else_its_host_and_opens_its_url(string content, string key, string label, string href)
     {
-        var subject = SubjectRefs.Of(Recipe("link"), _item, content)!;
+        var subject = SubjectRefs.Of(Recipe("link"), _item, content);
 
-        Assert.Equal((key, label), (subject.Key, subject.Label));
+        Assert.Equal(("link", key, label, href), (subject.Kind, subject.Key, subject.Label, subject.Href));
     }
 
     [Theory]
@@ -74,22 +74,22 @@ public sealed class SubjectRefsTests
     [InlineData("not json", "fact:in", "fact:in")]
     public void A_payload_is_its_id_or_number_and_its_title_or_summary_else_the_fact_key(string content, string key, string label)
     {
-        var subject = SubjectRefs.Of(Recipe("payload", kind: "webhook"), _item, content)!;
+        var subject = SubjectRefs.Of(Recipe("payload", kind: "webhook"), _item, content);
 
         Assert.Equal(("webhook", key, label), (subject.Kind, subject.Key, subject.Label));
     }
 
     [Theory]
-    [InlineData("link", """{"url":"https://example.com/p/9","key":"P-1","title":"A title"}""")]
-    [InlineData("payload", """{"id":"P-1","title":"A title"}""")]
-    public void A_first_input_with_a_type_and_no_declared_kind_has_a_null_subject_kind_equal_to_the_input_kind(string type, string content)
+    [InlineData("link", "link", """{"url":"https://example.com/p/9","key":"P-1","title":"A title"}""")]
+    [InlineData("payload", "webhook", """{"id":"P-1","title":"A title"}""")]
+    public void A_first_inputs_declared_kind_is_the_subject_kind_equal_to_the_input_kind(string type, string kind, string content)
     {
-        var recipe = StatusCases.Recipe with { Recipe = EngineFixture.Step with { Inputs = [new RecipeInput(_fact, "Input", type, Kind: null, Generate: null)] } };
+        var recipe = StatusCases.Recipe with { Recipe = EngineFixture.Step with { Inputs = [new RecipeInput(_fact, "Input", type, kind, Generate: null)] } };
         var view = InstanceViews.Of(EngineFixture.At(recipe.Recipe, "produce"), recipe, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
 
-        var subject = SubjectRefs.Of(recipe, _item, content)!;
+        var subject = SubjectRefs.Of(recipe, _item, content);
 
-        Assert.Null(subject.Kind);
+        Assert.Equal(kind, subject.Kind);
         Assert.Equal(Assert.Single(view.Inputs).Kind, subject.Kind);
         Assert.Equal(("P-1", "A title"), (subject.Key, subject.Label));
     }
@@ -97,7 +97,7 @@ public sealed class SubjectRefsTests
     [Fact]
     public void Content_that_was_not_read_leaves_a_text_named_by_its_fact_key_and_file_name()
     {
-        var subject = SubjectRefs.Of(Recipe("text", name: "request.txt"), _item)!;
+        var subject = SubjectRefs.Of(Recipe("text", name: "request.txt"), _item);
 
         Assert.Equal(("fact:in", "request.txt"), (subject.Key, subject.Label));
     }
@@ -111,12 +111,21 @@ public sealed class SubjectRefsTests
     public void Only_a_text_a_link_and_a_payload_need_their_content_read(string type, bool needs) => Assert.Equal(needs, SubjectRefs.NeedsContent(Recipe(type)));
 
     [Fact]
-    public void A_recipe_without_an_input_has_no_subject() => Assert.Null(SubjectRefs.Of(StatusCases.Recipe with { Recipe = EngineFixture.Step with { Inputs = [] } }, _item));
+    public void A_recipe_without_an_input_has_no_subject_because_it_cant_run() =>
+        Assert.Throws<InvalidOperationException>(() => SubjectRefs.Of(StatusCases.Recipe with { Recipe = EngineFixture.Step with { Inputs = [] } }, _item));
 
     [Fact]
-    public void An_undeclared_type_is_the_declared_default_text_in_the_subject_the_slot_and_the_fact_row()
+    public void A_rendered_name_is_the_label_and_the_key_stays_the_inputs()
     {
-        var recipe = Recipe(type: null);
+        var subject = SubjectRefs.Of(Recipe("text"), _item, "Summarize the week", name: "Summarize the week · 2026-10-15");
+
+        Assert.Equal(("Summarize the week", "Summarize the week · 2026-10-15"), (subject.Key, subject.Label));
+    }
+
+    [Fact]
+    public void An_undeclared_type_is_the_type_the_kind_pairs_with_in_the_subject_the_slot_and_the_fact_row()
+    {
+        var recipe = Recipe(type: null, kind: "text");
         var view = InstanceViews.Of(EngineFixture.At(recipe.Recipe, "produce"), recipe, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
 
         Assert.Equal("text", view.Subject?.Kind);

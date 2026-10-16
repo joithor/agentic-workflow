@@ -2,7 +2,7 @@
   "header": {
     "address": "ITM-01JH5/step/1",
     "recipe": "workflow.step",
-    "hash12": "1b13bd920351",
+    "hash12": "c3b7814f56b4",
     "version": 1,
     "state": "parked",
     "detail": "budget",
@@ -54,5 +54,5 @@
       "confirm": "Cancel ITM-01JH5/step/1? 0 running steps stop; 0 children are cancelled."
     }
   ],
-  "text": "ITM-01JH5/step/1  workflow.step@1b13bd920351  v1  parked: budget  since 11:54 (32m)\n  next      Parked (budget): produce used 200k of 200k tokens.\n  budget    tokens 200k / 200k (state), 200k / 400k (instance)\n  answer    sindri workflow answer ITM-01JH5/step/1 --grant-tokens 100k     (at a terminal; once per park)\n  commands  answer, takeover, cancel\n"
+  "text": "ITM-01JH5/step/1  workflow.step@c3b7814f56b4  v1  parked: budget  since 11:54 (32m)\n  next      Parked (budget): produce used 200k of 200k tokens.\n  budget    tokens 200k / 200k (state), 200k / 400k (instance)\n  answer    sindri workflow answer ITM-01JH5/step/1 --grant-tokens 100k     (at a terminal; once per park)\n  commands  answer, takeover, cancel\n"
 }

@@ -42,7 +42,7 @@ public sealed class OutcomeRulesTests
                 Go("running", "dropped", "wait.satisfied", AnyOf(Outcome("cancelled"), Outcome("escalated"))),
             ]);
         var children = new InMemoryChildRecipes().With(Child(Of("produce", [("produce", Active("step.produce")), ("done", Terminal())],
-            [Go("produce", "done", when: Outcome("done"))], id: "workflow.step")));
+            [Go("produce", "done", when: Outcome("done"))], inputs: [], id: "workflow.step")));
 
         Assert.Equal(
             ["RCP-WHEN-001: transition from 'running' tests outcome 'escalated', which child 'workflow.step' doesn't report at r.yaml:1:1 (transitions[1].when.any[1].outcome); test one of its outcomes: resolved, cancelled"],

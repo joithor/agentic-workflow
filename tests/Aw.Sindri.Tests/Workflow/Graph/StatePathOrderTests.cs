@@ -205,13 +205,13 @@ public sealed class StatePathOrderTests
 
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("sindri/workflow.item.yaml", "sha256:496cdcbfe884c70dce832d96d21883660f29fffe9b122fcfa72a04c98be8cae3")]
-    [InlineData("sindri/workflow.step.yaml", "sha256:1b13bd920351e56227141fe24e59f2f90cb46bc3549e1e90f2da2af1c3be9f5c")]
-    [InlineData("dev/desk-round-trip.yaml", "sha256:42e9e8ab897f90e38c74f9a3a5aa499f9a56475b4c1a416c0ad5b01a79bb2346")]
-    [InlineData("dev/incident-hold.yaml", "sha256:6913fd55ce71cfcdf6dc8892ad1e5968480506af640cf065b4fece88307af6b4")]
-    [InlineData("dev/triage-three-state.yaml", "sha256:88a0e8fc810fb8dbdccb244b1a601e16743ade3c4230b57c7c0cf782b3ed0f66")]
-    [InlineData("dev/workflow.dev-notify.yaml", "sha256:a37120f25686700c1c0ad665eed881b851bfdcd55f7605fcd5aef46fb3988e87")]
-    [InlineData("dev/workflow.dev-timeout.yaml", "sha256:8156a3b02f9e0d824cf56be5ade5f0b7be81c0ff4a9a5a49c882d68132f3a043")]
+    [InlineData("sindri/workflow.item.yaml", "sha256:cb9a5b5e28c3dbfaa457ea21304c977b04e3d871cdbeca32252825b9a8c9d4fb")]
+    [InlineData("sindri/workflow.step.yaml", "sha256:c3b7814f56b48b918e8f399481b44454627a6a2b10a9c26dc930826b1586cc2e")]
+    [InlineData("dev/desk-round-trip.yaml", "sha256:90d97fc7ac4c79284d743986abd59a03bf67bc54c4abb8581d711496669c695f")]
+    [InlineData("dev/incident-hold.yaml", "sha256:bc5999c62f5e4ae59b3104eacdc049f76756b619bf7425b1171966e9d543a4fe")]
+    [InlineData("dev/triage-three-state.yaml", "sha256:e2b4140155120cafa130bb544bca8938d587f5aa8a303027796d2bfce7e01dde")]
+    [InlineData("dev/workflow.dev-notify.yaml", "sha256:09a2b31dec3b0865cf2f108c179d01fc4b7e1d7e5889340903d5c96d9439de74")]
+    [InlineData("dev/workflow.dev-timeout.yaml", "sha256:63b2e0ece7db196e311fa6cf54265f3d227b8d8855bd28a7b3150f282b2737f3")]
     public void The_path_order_is_not_hashed_so_every_shipped_recipe_keeps_its_hash(string path, string hash)
     {
         var document = RecipeComposition.ReadClean(ShippedRecipes.Read(path), Path.GetFileName(path));

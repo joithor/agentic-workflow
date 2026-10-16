@@ -8,7 +8,7 @@ public static class ARecipe
 {
     /// <summary>
     /// The smallest valid long form: one desk Step 'produce' (step.produce, a 4h park timeout) that goes to the
-    /// terminal 'done' (resolved) on outcome 'done'.
+    /// terminal 'done' (resolved) on outcome 'done'. It takes one input, 'fact:item' (RCP-INPUT-002).
     /// </summary>
     /// <param name="id">The recipe's id.</param>
     /// <returns>The recipe.</returns>
@@ -20,7 +20,7 @@ public static class ARecipe
         Base: null,
         Urgency: "work",
         Name: null,
-        Inputs: [],
+        Inputs: [new RecipeInput(FactKey.From("fact:item"), Label: null, Type: "item", Kind: "item", Generate: null)],
         Outputs: [],
         Initial: "produce",
         States: new Dictionary<string, RecipeState>(StringComparer.Ordinal)

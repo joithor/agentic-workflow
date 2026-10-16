@@ -283,6 +283,7 @@ public sealed class StateTimerTests(SindriTimeSkippingServer server) : IClassFix
         "schema: 1",
         "id: workflow.timer-" + then,
         "version: 1",
+        "inputs: [{ key: fact:item, type: item, kind: item }]",
         "initial: waiting",
         "states:",
         "  waiting: { kind: wait, waitFor: { event: item.routed }, timeout: { after: 10m, then: " + then + " },",

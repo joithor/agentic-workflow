@@ -21,26 +21,26 @@ public static class FixtureRecipes
     private static ShapeOutput Out(string key, string label, FactType type, string from) => new(key, label, type, from);
 
     /// <summary>workflow.step v1 (recipes/sindri/workflow.step.yaml): produce, checks, verify, done; the revisions loop returns to produce.</summary>
-    public static RecipeShape Step { get; } = new("workflow.step", 1, "1b13bd920351e56227141fe24e59f2f90cb46bc3549e1e90f2da2af1c3be9f5c", RecipeUrgency.Work,
+    public static RecipeShape Step { get; } = new("workflow.step", 1, "c3b7814f56b48b918e8f399481b44454627a6a2b10a9c26dc930826b1586cc2e", RecipeUrgency.Work,
         [S("produce", 1, desk: true, timeout: T(4 * Hour, TimeoutAction.Park), tokens: 200_000, block: "step.produce"), S("checks", 2, desk: true, timeout: T(30, TimeoutAction.Retry), block: "step.checks"),
             S("verify", 3, desk: true, timeout: T(Hour, TimeoutAction.Park), block: "step.verify"), S("done", 4, terminal: true)],
         [new ShapeLoop("revisions", "checks", "produce", 3), new ShapeLoop("revisions", "verify", "produce", 3)],
         [In("fact:spec", "Spec", FactType.Text, "text")], [], BudgetTokens: 400_000);
 
     /// <summary>workflow.dev-desk-round-trip v1: export (desk), import, done; the rounds loop returns from import to export.</summary>
-    public static RecipeShape DevDesk { get; } = new("workflow.dev-desk-round-trip", 1, "42e9e8ab897f90e38c74f9a3a5aa499f9a56475b4c1a416c0ad5b01a79bb2346", RecipeUrgency.Work,
+    public static RecipeShape DevDesk { get; } = new("workflow.dev-desk-round-trip", 1, "90d97fc7ac4c79284d743986abd59a03bf67bc54c4abb8581d711496669c695f", RecipeUrgency.Work,
         [S("export", 1, desk: true, timeout: T(Hour, TimeoutAction.Park), block: "step.produce"), S("import", 2, desk: true, timeout: T(30, TimeoutAction.Retry), block: "step.checks"), S("done", 3, terminal: true)],
         [new ShapeLoop("rounds", "import", "export", 2)],
         [In("fact:request", "Request", FactType.Text, "text")], [Out("fact:output", "Exported file", FactType.File, "export")]);
 
     /// <summary>workflow.dev-triage-three-state v1: desk, answer, done.</summary>
-    public static RecipeShape DevTriage { get; } = new("workflow.dev-triage-three-state", 1, "88a0e8fc810fb8dbdccb244b1a601e16743ade3c4230b57c7c0cf782b3ed0f66", RecipeUrgency.Triage,
+    public static RecipeShape DevTriage { get; } = new("workflow.dev-triage-three-state", 1, "e2b4140155120cafa130bb544bca8938d587f5aa8a303027796d2bfce7e01dde", RecipeUrgency.Triage,
         [S("desk", 1, desk: true, timeout: T(Hour, TimeoutAction.Park), block: "step.produce"), S("answer", 2, wait: true, timeout: T(Day, TimeoutAction.Park)), S("done", 3, terminal: true)], [],
         [In("fact:scope", "Scope", FactType.Text, "text"), In("fact:item", "Item", FactType.Item, "item")],
         [Out("fact:output", "Draft", FactType.File, "desk"), Out("fact:answer", "Decision", FactType.Decision, "answer")], Name: "{fact:scope} · {start:date}");
 
     /// <summary>workflow.item v1 (recipes/sindri/workflow.item.yaml): the item's own instance; its running wait starts the workflow.step child and propagates a park.</summary>
-    public static RecipeShape Item { get; } = new("workflow.item", 1, "496cdcbfe884c70dce832d96d21883660f29fffe9b122fcfa72a04c98be8cae3", RecipeUrgency.Work,
+    public static RecipeShape Item { get; } = new("workflow.item", 1, "cb9a5b5e28c3dbfaa457ea21304c977b04e3d871cdbeca32252825b9a8c9d4fb", RecipeUrgency.Work,
         [S("triaged", 1, wait: true, timeout: T(7 * Day, TimeoutAction.Escalate)), S("startable", 2, wait: true, timeout: T(3 * Day, TimeoutAction.Escalate)),
             S("claimed", 3, wait: true, timeout: T(10, TimeoutAction.Retry)),
             S("running", 4, child: true, timeout: T(14 * Day, TimeoutAction.Park), onParked: OnParked.Propagate, childRecipe: "workflow.step"),

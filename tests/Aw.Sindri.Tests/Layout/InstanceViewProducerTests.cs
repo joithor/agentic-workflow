@@ -58,20 +58,18 @@ public sealed class InstanceViewProducerTests
     }
 
     [Fact]
-    public void An_input_the_instance_does_not_hold_is_not_present_and_a_recipe_without_inputs_has_no_subject()
+    public void An_input_the_instance_does_not_hold_is_not_present_and_a_recipe_without_inputs_cant_be_viewed()
     {
         var absent = InstanceViews.Of(
             EngineFixture.At(_incident.Recipe, "produce"), _incident with { Inputs = new Dictionary<FactKey, InputFact>() }, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
-        var none = InstanceViews.Of(
-            EngineFixture.At(EngineFixture.Step with { Inputs = [] }, "produce"),
-            StatusCases.Recipe with { Recipe = EngineFixture.Step with { Inputs = [] }, Inputs = new Dictionary<FactKey, InputFact>() },
-            StatusCases.Now, timeoutAt: null, new InstanceViewContext());
 
         Assert.False(Assert.Single(absent.Inputs).Present);
         Assert.Equal("Spec", absent.Subject?.Label);   // the declared label, as no file name was given
         Assert.Equal("Spec", absent.Subject?.Key);
-        Assert.Null(none.Subject);
-        Assert.Empty(none.Inputs);
+        _ = Assert.Throws<InvalidOperationException>(() => InstanceViews.Of(
+            EngineFixture.At(EngineFixture.Step with { Inputs = [] }, "produce"),
+            StatusCases.Recipe with { Recipe = EngineFixture.Step with { Inputs = [] }, Inputs = new Dictionary<FactKey, InputFact>() },
+            StatusCases.Now, timeoutAt: null, new InstanceViewContext()));
     }
 
     [Fact]
@@ -361,19 +359,22 @@ public sealed class InstanceViewProducerTests
     }
 
     [Fact]
-    public void Only_the_first_input_has_a_kind_the_subject_adapter_as_the_recipe_view_serves_it()
+    public void Every_input_has_its_kind_the_subject_adapter_as_the_recipe_view_serves_it()
     {
         var slots = Slots(
             new RecipeInput(FactKey.From("fact:project"), "Project", "payload", "linear-project", Generate: null),
             new RecipeInput(FactKey.From("fact:notes"), "Notes", "file", "file", Generate: null));
 
-        Assert.Equal((string?[])["linear-project", null], slots.Select(static s => s.Kind), StringComparer.Ordinal);
+        Assert.Equal((string[])["linear-project", "file"], slots.Select(static s => s.Kind), StringComparer.Ordinal);
     }
 
     [Fact]
-    public void A_first_input_typed_link_with_no_declared_kind_has_no_kind_and_a_text_one_is_a_text_subject()
+    public void A_slot_is_required_unless_its_input_generates_and_carries_its_declared_kind()
     {
-        Assert.Null(Assert.Single(Slots(new RecipeInput(FactKey.From("fact:url"), "Url", "link", Kind: null, Generate: null))).Kind);
-        Assert.Equal("text", Assert.Single(Slots(new RecipeInput(FactKey.From("fact:note"), "Note", Type: null, Kind: null, Generate: null))).Kind);
+        var slots = Slots(
+            new RecipeInput(FactKey.From("fact:url"), "Url", "link", "link", Generate: null),
+            new RecipeInput(FactKey.From("fact:note"), "Note", Type: null, "text", Generate: "note {start:date}"));
+
+        Assert.Equal([("link", true), ("text", false)], slots.Select(static s => (s.Kind, s.Required)));
     }
 }

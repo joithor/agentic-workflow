@@ -127,7 +127,7 @@ public static class WorkflowViewFixtures
 
     // A wait park of its own: dev-triage-three-state at its 'answer' wait, the reply couldn't be read. Not a root row.
     private static readonly InstanceSummary _triageAnswer = Row("ITM-01JL4/dev-triage-three-state/1", _devTriage, "answer", Today(12, 3), new EngineOwnedBadge(EngineOwnedKind.Parked, "needs-answer"),
-        Subject("item", "ITM-01JL4", "Three-state triage"), _devTriage.Cells("answer"), "needs your answer",
+        Subject("text", "Crash on launch", "Crash on launch · 2026-10-12"), _devTriage.Cells("answer"), "needs your answer",
         "ApplyCommand:answer-resume", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
     private static readonly InstanceSummary _prjCache = Row("ITM-01JKF/project/1", _project, "scoping", Today(11, 50), new EngineOwnedBadge(EngineOwnedKind.Parked, "spec-conflict (drift)"),
@@ -551,13 +551,14 @@ public static class WorkflowViewFixtures
     /// <summary>The three-state triage dev recipe, at its desk.</summary>
     public static InstanceDetail TriageThreeState()
     {
-        var row = Row("ITM-01JL2/dev-triage-three-state/1", _devTriage, "desk", Today(12, 0), null, Subject("item", "ITM-01JL2", "Three-state triage"),
+        var row = Row("ITM-01JL2/dev-triage-three-state/1", _devTriage, "desk", Today(12, 0), null, Subject("text", "Crash on launch", "Crash on launch · 2026-10-12"),
             _devTriage.Cells("desk"), "next step", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
         return Detail(row, "Three-state triage", PathOrdering.Path,
             new CurrentState("desk", new StepDeclaration("active", "step.produce", "a person writes the draft"),
                 [], new DeskForm(RunToken.From("1.1"), [new DeskOutput("fact:output", FactType.File, true)], ["output.file"], Act("CompleteStep")),
-                DeskStatus(row, "Write the draft for ITM-01JL2", "1.1", ("fact:output", "<file>"), lineBreak: true, lines: DeskLines(new StatusInput("fact:item", "item.json", "sha256:b6c9cf9454914db27a93569f823751647192bdf84677126620b7f62b45e063fb"), 171_240, "desk"))),
+                DeskStatus(row, "Write the draft for ITM-01JL2", "1.1", ("fact:output", "<file>"), lineBreak: true, lines: DeskLines(new StatusInput("fact:scope", "scope.txt", "sha256:2e04b3fa448da3f273578bebd2c8eca04b716240a009837e1d22735e7873c58f"), 171_240, "desk") with { Inputs = [new StatusInput("fact:scope", "scope.txt", "sha256:2e04b3fa448da3f273578bebd2c8eca04b716240a009837e1d22735e7873c58f"), new StatusInput("fact:item", "item.json", "sha256:b6c9cf9454914db27a93569f823751647192bdf84677126620b7f62b45e063fb")] })),
             _devTriage.Facts(
+                Produced(_devTriage, "fact:scope", "Crash on launch", At(10, 12, 12, 0), "human:cli"),
                 Produced(_devTriage, "fact:item", "ITM-01JL2 Crash on launch", At(10, 12, 12, 0), "human:cli", Ref(item: "ITM-01JL2")),
                 Fake(_devTriage, "fact:output", FactStatus.Pending, "awaiting your file", pending: new FactPending(true, ["output.file"], Act("CompleteStep")))),
             [], Counts(2, 0, 0));
