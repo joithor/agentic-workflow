@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text;
 using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
@@ -68,14 +67,7 @@ internal sealed class RequestVerbs(ControlPlaneClient client, Output output, Fun
 
     private async Task<int> List(RequestVerbArguments.Parsed command, CancellationToken ct)
     {
-        var query = new StringBuilder();
-        foreach (var (key, value) in new[] { ("state", command.State), ("item", command.Item) })
-        {
-            if (value is not null)
-            {
-                _ = query.Append(query.Length == 0 ? '?' : '&').Append(key).Append('=').Append(Uri.EscapeDataString(value));
-            }
-        }
+        var query = QueryString.Of([("state", command.State), ("item", command.Item)]);
 
         var answer = await client.GetView<ListRequestsResponse>("/sindri/requests" + query, ct).ConfigureAwait(false);
         if (answer.IsError)
@@ -93,14 +85,7 @@ internal sealed class RequestVerbs(ControlPlaneClient client, Output output, Fun
     private async Task<int> Decisions(RequestVerbArguments.Parsed command, CancellationToken ct)
     {
         var pending = command.Pending is { } p ? (p ? "true" : "false") : null;
-        var query = new StringBuilder();
-        foreach (var (key, value) in new[] { ("pending", pending), ("item", command.Item) })
-        {
-            if (value is not null)
-            {
-                _ = query.Append(query.Length == 0 ? '?' : '&').Append(key).Append('=').Append(Uri.EscapeDataString(value));
-            }
-        }
+        var query = QueryString.Of([("pending", pending), ("item", command.Item)]);
 
         var answer = await client.GetView<ListDecisionsResponse>("/sindri/decisions" + query, ct).ConfigureAwait(false);
         if (answer.IsError)
