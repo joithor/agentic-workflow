@@ -13,7 +13,7 @@ namespace Aw.Architecture.Tests;
 /// app, an MCP server) references a protected request or route. Read from the Sindri host's catalog, the one table the
 /// command chain and the API both read.
 /// </summary>
-[Trait("Lane", "unit")]
+[Trait("Lane", "integration")]
 public sealed class ProtectedCommandTests
 {
     /// <summary>
