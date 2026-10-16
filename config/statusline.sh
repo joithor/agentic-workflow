@@ -373,8 +373,9 @@ if [ -n "$RATE5H_PCT" ] && [ "$RATE5H_PCT" != "null" ] && [ "$RATE5H_PCT" != "" 
   # Format reset time as 12-hour clock: "4pm", "12am", etc.
   RESET5H=""
   if [ -n "$RATE5H_RESET" ] && [ "$RATE5H_RESET" != "null" ] && [ "$RATE5H_RESET" != "" ]; then
-    RESET5H=$(date -r "$RATE5H_RESET" "+%I%p" 2>/dev/null | sed 's/^0//' | tr '[:upper:]' '[:lower:]' || \
-              date -d "@$RATE5H_RESET" "+%I%p" 2>/dev/null | sed 's/^0//' | tr '[:upper:]' '[:lower:]')
+    # `date -d @N` is GNU (Linux); `date -r N` is BSD (macOS). On GNU, -r wants a file, so try -d first.
+    RESET5H=$(LC_TIME=C date -d "@$RATE5H_RESET" "+%I%p" 2>/dev/null || LC_TIME=C date -r "$RATE5H_RESET" "+%I%p" 2>/dev/null)
+    RESET5H=$(printf '%s' "$RESET5H" | sed 's/^0//' | tr '[:upper:]' '[:lower:]')
   fi
 
   if [ -n "$RESET5H" ]; then
@@ -399,7 +400,7 @@ if [ -n "$RATE7D_PCT" ] && [ "$RATE7D_PCT" != "null" ] && [ "$RATE7D_PCT" != "" 
   # Format reset as day-of-week: "Fri", "Mon", etc.
   RESET7D=""
   if [ -n "$RATE7D_RESET" ] && [ "$RATE7D_RESET" != "null" ] && [ "$RATE7D_RESET" != "" ]; then
-    RESET7D=$(date -r "$RATE7D_RESET" "+%a" 2>/dev/null || date -d "@$RATE7D_RESET" "+%a" 2>/dev/null)
+    RESET7D=$(LC_TIME=C date -d "@$RATE7D_RESET" "+%a" 2>/dev/null || LC_TIME=C date -r "$RATE7D_RESET" "+%a" 2>/dev/null)
   fi
 
   if [ -n "$RESET7D" ]; then
