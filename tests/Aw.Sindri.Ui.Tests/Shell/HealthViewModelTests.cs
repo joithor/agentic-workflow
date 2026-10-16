@@ -22,6 +22,7 @@ public sealed class HealthViewModelTests : IDisposable
         _vm = new HealthViewModel(_records, _server, _clock, new FakeClipboard());
     }
 
+    private readonly InlineUiContext _ui = new();
     private Task _run = Task.CompletedTask;
 
     public void Dispose()
@@ -29,6 +30,7 @@ public sealed class HealthViewModelTests : IDisposable
         _stop.Cancel();
         Assert.True(_run.Wait(TimeSpan.FromSeconds(2), CancellationToken.None), "Run ended when cancelled");
         _stop.Dispose();
+        _ui.Dispose();
     }
 
     private void Start() => _run = _vm.Run(_stop.Token);

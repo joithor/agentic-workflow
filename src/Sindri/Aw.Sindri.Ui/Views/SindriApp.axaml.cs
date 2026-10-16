@@ -48,6 +48,10 @@ public sealed partial class SindriApp : Application
     /// <returns>The app.</returns>
     public static SindriApp Create(SindriPlatform platform, TimeProvider clock)
     {
+        // AppBuilder.Configure runs this factory before Avalonia installs its synchronization context, and the view models
+        // capture the current one when they are built: install it first, or every timer callback would run on its own thread.
+        Avalonia.Threading.AvaloniaSynchronizationContext.InstallIfNeeded();
+
         // One writer of the preferences for the whole app: the shell and Settings share it, so their writes queue.
         var preferences = new Preferences(platform.Preferences);
         var clipboard = new AvaloniaClipboard(static () => (Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow);
