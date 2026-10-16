@@ -25,6 +25,16 @@ internal static partial class Labels
     /// <summary>A command the app does not send yet.</summary>
     internal const string AvailableWithU8b = "Available with U8b";
 
+    /// <summary>What a loop mark says in words: the state loops with the next one.</summary>
+    /// <param name="next">The state it loops with.</param>
+    /// <returns>The words.</returns>
+    internal static string LoopsWith(string next) => $"loops with {next}";
+
+    /// <summary>What a branch's indent says in words.</summary>
+    /// <param name="source">The state it branches from.</param>
+    /// <returns>The words.</returns>
+    internal static string BranchOf(string source) => $"branch of {source}";
+
     /// <summary>The note's live region while it says nothing (never empty).</summary>
     internal const string PendingNoteResting = "Cancel";
 

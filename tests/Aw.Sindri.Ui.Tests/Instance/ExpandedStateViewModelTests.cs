@@ -154,6 +154,8 @@ public sealed class ExpandedStateViewModelTests
 
         Expect.Sequence(served.Select(c => c.Cli), expanded.Commands.Select(c => c.Cli));
         Assert.All(expanded.Commands, c => Assert.Equal((Labels.AvailableWithU8b, null), (c.PendingChip, c.Protected)));
+        Assert.Equal(Labels.AvailableWithU8b, Labels.Arrives("U8b"));   // one wording for what U8b brings
+        Assert.All(expanded.Commands, c => Assert.Contains(c.PendingChip, c.Name, StringComparison.Ordinal));
         await expanded.Commands[0].Copy(Token);
         Assert.Equal(served[0].Cli, _clipboard.Text);
     }

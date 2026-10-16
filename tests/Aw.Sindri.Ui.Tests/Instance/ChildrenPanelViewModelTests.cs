@@ -134,6 +134,7 @@ public sealed class ChildrenPanelViewModelTests
         Assert.Equal(parked.Actions.Count - 1, row.Actions.Count);
         _ = Assert.Single(row.Actions, a => a.Protected is not null);
         Assert.Contains(row.Actions, a => a.PendingChip == Labels.AvailableWithU8b);
+        Assert.All(row.Actions.Where(a => a.IsPending), a => Assert.Contains(a.PendingChip, a.Name, StringComparison.Ordinal));
     }
 
     [Fact]

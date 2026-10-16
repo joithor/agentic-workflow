@@ -129,4 +129,20 @@ public sealed class StatesBandViewModelTests
             Assert.DoesNotContain(Labels.StepLink, string.Join(' ', nodes.Select(n => n.Text)), StringComparison.Ordinal);
         });
     }
+
+    [Fact]
+    public void A_loop_node_and_a_branch_node_say_it_in_words()
+    {
+        var incident = Band(FixtureInstances.Detail("incident-loop"));
+        var detail = FixtureInstances.Detail("transition-list");
+        var branch = detail.States.First(s => s.BranchOf is not null);
+        var band = Band(detail);
+
+        var loop = Node(incident, "mitigate");
+        var next = incident.Nodes[incident.Nodes.ToList().IndexOf(loop) + 1].State;
+
+        Assert.Contains(Labels.LoopsWith(next), loop.Name, StringComparison.Ordinal);
+        Assert.Contains(Labels.BranchOf(branch.BranchOf!), Node(band, branch.State).Name, StringComparison.Ordinal);
+        Assert.DoesNotContain("loops with", Node(incident, "assess").Name, StringComparison.Ordinal);
+    }
 }
