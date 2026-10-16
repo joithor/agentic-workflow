@@ -836,7 +836,9 @@ with that hash) and signals each as `service:engine`. A missing Temporal for the
 succeeds; a listing that answers `NotFound` or `InvalidArgument` (not this home's Temporal, or no `RecipeHash` attribute
 yet) is an empty list; an instance that ended between the listing and its signal (`NotFound`) is skipped; any other
 signal failure doesn't stop the rest: every instance is tried, then one `SND-API-001` error names the failures and the
-retry: `sindri recipe approve <recipe>` again (same pins records nothing and wakes again) or the revoke again.
+retry: for an approval, `sindri recipe approve <recipe>` again (same pins records nothing and wakes again); for a
+revoke there is no retry (a rerun is refused, SND-RECIPE-005): the revocation is recorded, and an instance the wake
+missed is refused at its next command, answer, complete or effect (SND-RECIPE-005) and parks then.
 
 Unit (c), as built:
 

@@ -68,11 +68,11 @@ internal sealed class ApproveRecipeService(
 
     /// <summary>
     /// The recipe already stands approved with these pins: records nothing and sends the 'approved' wake again, under the
-    /// sequence of the latest approval event, so a drift-parked instance the first wake missed resumes.
+    /// sequence of this hash's own standing approval event (not another recipe's later one), so a drift-parked instance the first wake missed resumes.
     /// </summary>
     private async ValueTask<Result<ApproveRecipeResponse>> WakeAgain(ApprovalPlan plan, RecipeApproval standing, CallerContext caller, CancellationToken cancellationToken)
     {
-        var sequence = await events.LatestApproval(cancellationToken).ConfigureAwait(false);
+        var sequence = await events.LatestApproval(plan.Recipe.Hash, cancellationToken).ConfigureAwait(false);
         if (sequence.IsError)
         {
             return sequence.Error;

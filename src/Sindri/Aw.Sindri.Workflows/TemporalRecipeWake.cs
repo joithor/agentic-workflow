@@ -59,9 +59,12 @@ internal class TemporalRecipeWake(TemporalFrontend frontend) : IRecipeWake
             : SindriErrors.NotRunning.With($"Temporal didn't take the {notice.Kind} wake for {failed.Count} instance(s): {string.Join("; ", failed)} (fix: {Retry(notice.Kind)})");
     }
 
-    /// <summary>How to send the wake again: an approval with the same pins and a repeated revoke both send it again.</summary>
+    /// <summary>
+    /// What to do about a wake that missed an instance: an approval with the same pins sends it again; a revoke can't be rerun
+    /// (a revoked hash is refused first), so the instance parks lazily at its next step instead.
+    /// </summary>
     private static string Retry(RecipeWakeKind kind) => kind == RecipeWakeKind.Revoked
-        ? "run the revoke again; it sends the wake again"
+        ? "the revocation is recorded; an instance the wake missed is refused at its next command, answer, complete or effect (SND-RECIPE-005) and parks then"
         : "run `sindri recipe approve <recipe>` again; approving with the same pins records nothing and sends the wake again";
 
     /// <summary>Delivers <paramref name="wake"/> to the instance at <paramref name="address"/>.</summary>

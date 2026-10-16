@@ -98,7 +98,7 @@ internal sealed class RecipeDeskCommands(RecipeDesk desk, IServiceProvider servi
         }
 
         // Registering the file names the real reason when its id and version hold other content (SND-RECIPE-007), even
-        // where the server refused the registered content first (already approved, revoked); a file it doesn't know yet is
+        // where the server refused the registered content first (revoked); a file it doesn't know yet is
         // registered and asked for again.
         var registered = await desk.Client.Post<RegisterRecipeRequest, RegisterRecipeResponse>("/sindri/workflow/recipes",
             new RegisterRecipeRequest(file.Text, file.File), ct).ConfigureAwait(false);
