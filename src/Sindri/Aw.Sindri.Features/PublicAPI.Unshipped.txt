@@ -2060,3 +2060,15 @@ override Aw.Sindri.Features.EvalRecipe.ScaffoldFile.GetHashCode() -> int
 override Aw.Sindri.Features.EvalRecipe.ScaffoldFile.ToString() -> string!
 static Aw.Sindri.Features.EvalRecipe.ScaffoldFile.operator !=(Aw.Sindri.Features.EvalRecipe.ScaffoldFile? left, Aw.Sindri.Features.EvalRecipe.ScaffoldFile? right) -> bool
 static Aw.Sindri.Features.EvalRecipe.ScaffoldFile.operator ==(Aw.Sindri.Features.EvalRecipe.ScaffoldFile? left, Aw.Sindri.Features.EvalRecipe.ScaffoldFile? right) -> bool
+Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest
+Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.<Clone>$() -> Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest!
+Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id) -> void
+Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.Equals(Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest? other) -> bool
+Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.Id.get -> Aw.Sindri.Core.Workflow.Ids.RecipeId
+Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.Id.init -> void
+Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.ShowRecipeByIdRequest(Aw.Sindri.Core.Workflow.Ids.RecipeId Id) -> void
+override Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.ToString() -> string!
+static Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.operator !=(Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest? left, Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest? right) -> bool
+static Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.operator ==(Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest? left, Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest? right) -> bool
