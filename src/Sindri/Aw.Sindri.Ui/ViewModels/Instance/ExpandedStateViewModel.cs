@@ -155,9 +155,9 @@ internal sealed class ExpandedStateViewModel : ObservableObject
 
     /// <summary>
     /// What the state draws as controls and structure, so a re-read of the same keeps them (and the focus, the open confirm and a Copied label).
-    /// The child pointer's drawn words are in it (the child's state moves them). The words that move with time (the status text, the timeout, the budget, the next sentence) are not: <see cref="Update"/> changes them in place.
+    /// The words that move with time (the status text, the timeout, the budget, the next sentence, the child pointer's state) are not: <see cref="Update"/> changes them in place.
     /// </summary>
-    internal string Signature => string.Join('|', _current.State, StepLine, string.Join(',', Gates), string.Join(',', Commands.Select(c => c.Signature)), _current.Status.Child is { } child ? $"{child.Id}={Labels.ChildLine(child)}" : null, HasNext, HasBudget, HasTimeout, IsPaused, HasDrift);
+    internal string Signature => string.Join('|', _current.State, StepLine, string.Join(',', Gates), string.Join(',', Commands.Select(c => c.Signature)), _current.Status.Child?.Id, HasNext, HasBudget, HasTimeout, IsPaused, HasDrift);
 
     /// <summary>Takes a re-read of the same state: the moving words change, the controls stay.</summary>
     /// <param name="current">The state as served now; its <see cref="Signature"/> equals this one's.</param>
@@ -165,6 +165,10 @@ internal sealed class ExpandedStateViewModel : ObservableObject
     {
         _current = current;
         (BudgetLine, TimeoutLine, PausedLine, DriftLine, Next) = Moving(current);
+        if (current.Status.Child is { } child)
+        {
+            Child?.Update(child);
+        }
     }
 
     /// <summary>Asks to cancel: shows the confirm. Without a Cancel command there is nothing to ask.</summary>
