@@ -51,7 +51,7 @@ they are stored**: each document is cleaned whole (hidden comments, images, remo
 
 `sindri context sources sync [<source>] [--detach] [--json]` syncs the intent sources now, as a job: it prints `job JOB-… started`, follows
 the job to its end (Ctrl-C cancels it, a second Ctrl-C leaves) and exits 0 when it succeeded, 1 when it failed or was cancelled, 2 when the
-start was refused. A second start while one runs answers `SND-JOB-409` naming the running job. The job's result is the counts per source
+start was refused. One sync job runs at a time, whatever it names: a second start while one runs answers `SND-JOB-409` naming the running job. A sync of every source goes source by source and records each source's event as it finishes; a source that is running already (`SND-CONTEXT-056`) is its own row with that code and the others go on. POST with no body syncs every source. The job's result is the counts per source
 and the code each ended with, never record text; the same `context.sources.synced` events are recorded as for the service below. A
 session can't start it (`SND-AUTH-002`).
 The repo docs refresh through the service above, and the intent sources (Onyx records linked to the map, decisions
@@ -461,7 +461,7 @@ $SINDRI context query "What else is affected if I change how split orientation w
 
 A question anchors on every node whose whole name it uses (case ignored, plurals and small words and a parenthesized kind
 such as `(command)` ignored; the most specific name wins), adds that node's `graph` and `affects` sections, and still
-searches the sources with the question's words. `suggestedAnchors` lists close names. With no map, the answer is S-1A's. `--draft` with no draft map is `SND-CONTEXT-030` (fix: drop `--draft`); drafts come from `context map propose <file>` and the `context-rebuild` service (S-4).
+searches the sources with the question's words. `suggestedAnchors` lists close names. With no map, the answer is S-1A's. `--draft` with no draft map is `SND-CONTEXT-030` (fix: drop `--draft`); drafts come from `context map build`, `context map propose <file>` and the `context-rebuild` service (S-4).
 
 ### One node, its neighbors, a path
 
@@ -681,9 +681,9 @@ the store, a usage error · `75` the heavy-job lock stayed busy (`040`).
 | `SND-CONTEXT-040` | The heavy-job lock stayed busy (names the holder) | Retry when the other job finishes |
 | `SND-CONTEXT-042` | Labeling is on and the pass would pass `maxTokens`, or labeling is off with decisions still queued (`sources status` shows it per source while records wait; a query that reaches such a record lists `decisions` as degraded) | Raise `context.labeling.maxTokens`, turn labeling on, then run `sindri context sources sync` or wait for the next context-sync slot |
 | `SND-CONTEXT-043` | No entry in the review file matches the latest draft | `review --export` again |
-| `SND-CONTEXT-044` | A draft is needed and none exists (`--draft`, or `map review`) | `context map propose <file>` or the `context-rebuild` service, then retry; or drop `--draft` |
+| `SND-CONTEXT-044` | A draft is needed and none exists (`--draft`, or `map review`) | `context map build`, `context map propose <file>` or the `context-rebuild` service, then retry; or drop `--draft` |
 | `SND-CONTEXT-045` | The repo is not in the profile, or is outside the session's repo | Name a listed repo |
-| `SND-CONTEXT-046` | `promote` refused: no draft, undecided items, or the draft changed after you confirmed it | `context map propose <file>` or the `context-rebuild` service, then `map review`; review the new draft with `map review`, then run `promote` again if the draft moved |
+| `SND-CONTEXT-046` | `promote` refused: no draft, undecided items, or the draft changed after you confirmed it | `context map build`, `context map propose <file>` or the `context-rebuild` service, then `map review`; review the new draft with `map review`, then run `promote` again if the draft moved |
 | `SND-CONTEXT-047` | The node or link was decided already or is gone, or `--undo` names an unknown or undone override | `map review` lists the queue; `--history` the ids |
 | `SND-CONTEXT-048` | Git can't read the repo at the commit | Fix the repo path or fetch the commit |
 | `SND-CONTEXT-056` | A sync of that source is already running (409; one at a time per source) | Wait; `context sources status` shows it |
