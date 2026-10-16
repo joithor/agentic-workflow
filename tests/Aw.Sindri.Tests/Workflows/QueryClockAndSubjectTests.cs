@@ -216,6 +216,7 @@ public sealed class QueryClockAndSubjectTests : IDisposable
         var named = (await WorkflowsHarness.Until(handle, static v => v.Task is not null)).Subject!.Label;
 
         await File.WriteAllTextAsync(Path.Combine(_harness.Home, "workflow", "facts", scope.Sha256), "Something else entirely", ct);   // the stored scope changed under the instance
+        await served.RestartWorker();   // a new worker holds no cached workflow: the query below replays the history, so it can't be answered from memory
         var later = await handle.QueryAsync(static wf => wf.GetInstance());
         var replayed = await new WorkflowReplayer(new WorkflowReplayerOptions().AddWorkflow<RecipeWorkflow>())
             .ReplayWorkflowAsync(await handle.FetchHistoryAsync(), throwOnReplayFailure: false, ct);

@@ -1,4 +1,6 @@
 using Aw.Sindri.Core.Challenges;
+using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Features.RevokeRecipe;
@@ -24,6 +26,14 @@ public sealed class LegacyRecipeRowTests
             RecipeDeclarationsTests.LegacyJson(source).ToJsonString(), Base: null, registry.H.Clock.GetUtcNow());
         _ = await registry.Recipes.Add(row, TestContext.Current.CancellationToken);
         return (registry, row);
+    }
+
+    /// <summary>The approval such a row was given before P4c: recorded directly, since approving a legacy-shape row is refused now.</summary>
+    private static async Task<RecipeApproval> ApprovedBefore(RegistryHarness r, RegisteredRecipe row)
+    {
+        var approval = RegistryData.Approval(row);
+        _ = await r.Approvals.Approve(approval, TestContext.Current.CancellationToken);
+        return approval;
     }
 
     /// <summary>workflow.step as it was registered before P2b: the file with its inputs in the bare-key short form it had then.</summary>
@@ -63,8 +73,7 @@ public sealed class LegacyRecipeRowTests
     {
         var (r, row) = await Seeded();
         await using var _ = r;
-        var approved = await r.Approve(row);
-        Assert.True(approved.IsSuccess);
+        _ = await ApprovedBefore(r, row);
 
         var stale = Assert.Single(await r.List(stale: true));
 
@@ -128,15 +137,14 @@ public sealed class LegacyRecipeRowTests
         var (r, row) = await Seeded();
         await using var _ = r;
 
-        var approved = await r.Approve(row);
+        var approved = await ApprovedBefore(r, row);
         var line = await r.Line(row);
         var shown = await r.Show(row.Id, row.Hash.Display);
         var issued = (await r.Issue($"revoke workflow.step@{row.Hash.Display}")).Value;
         var revoked = await r.Run<RevokeRecipeRequest, RevokeRecipeResponse>(
             new RevokeRecipeRequest(row.Id, row.Hash, new ChallengeAnswer(issued.Challenge, issued.Action)), RegistryHarness.Human);
 
-        Assert.True(approved.IsSuccess, approved.IsError ? approved.Error.ToString() : null);
-        Assert.Equal(row.Hash, approved.Value.Approval.Hash);
+        Assert.Equal(row.Hash, approved.Hash);
         Assert.Equal(RecipeStanding.Approved, line.Standing);
         Assert.Equal([StaleReason.LegacyShape], line.Stale);
         Assert.True(shown.IsSuccess, shown.IsError ? shown.Error.ToString() : null);
@@ -151,8 +159,7 @@ public sealed class LegacyRecipeRowTests
     {
         var (r, row) = await Seeded();
         await using var _ = r;
-        var approved = await r.Approve(row);
-        Assert.True(approved.IsSuccess, approved.IsError ? approved.Error.ToString() : null);
+        _ = await ApprovedBefore(r, row);
         var next = await r.Register(RecipeReaderTests.Bind(LegacyStep()) with { Version = 2, Description = "A reworded step." });
 
         var shown = await r.Show(next.Id, next.Hash.Display);
@@ -161,5 +168,31 @@ public sealed class LegacyRecipeRowTests
         var changed = shown.Value.Preview.Diff!.Split('\n').Where(l => (l.StartsWith('+') || l.StartsWith('-')) && !l.StartsWith("+++", StringComparison.Ordinal) && !l.StartsWith("---", StringComparison.Ordinal)).ToList();
         Assert.Contains(changed, l => l.Contains("A reworded step.", StringComparison.Ordinal));
         Assert.DoesNotContain(changed, l => l.Contains("urgency", StringComparison.Ordinal) || l.Contains("outputs", StringComparison.Ordinal) || l.Contains("\"kind\": null", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Approving_a_legacy_shape_row_is_refused_naming_the_fix_and_records_no_approval()
+    {
+        var (r, row) = await Seeded();
+        await using var _ = r;
+
+        var approved = await r.Approve(row);
+
+        Assert.True(approved.IsError);
+        Assert.Equal(WorkflowErrors.RecipeInvalid.Code, approved.Error.Code);
+        Assert.Contains(SubjectKinds.LegacyFix, approved.Error.Message, StringComparison.Ordinal);
+        Assert.Equal(RecipeStanding.Unapproved, (await r.Line(row)).Standing);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_unapproved_legacy_shape_row_is_marked_legacy_shape_in_the_list_too()
+    {
+        var (r, row) = await Seeded();
+        await using var _ = r;
+
+        var line = await r.Line(row);
+
+        Assert.Equal(RecipeStanding.Unapproved, line.Standing);
+        Assert.Equal([StaleReason.LegacyShape], line.Stale);
     }
 }

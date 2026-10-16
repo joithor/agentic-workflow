@@ -397,7 +397,8 @@ public sealed class InstanceViewProducerTests
 
         var view = InstanceViews.Of(instance, legacy, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
 
-        Assert.Null(view.Subject);
+        Assert.Equal("item", view.Subject?.Kind);   // never null on the wire: the list row's fallback, the item itself
+        Assert.Equal(instance.Item.Value, view.Subject?.Key);
         Assert.Empty(view.Inputs);
         Assert.Contains("RCP-INPUT-001", view.Detail, StringComparison.Ordinal);
         Assert.Contains("register the current file at a new version and approve it", view.Detail, StringComparison.Ordinal);
