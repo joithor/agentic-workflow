@@ -8055,3 +8055,5 @@ Aw.Sindri.Core.Scheduling.ServiceRunGuard.LastOutcome(Aw.Sindri.Core.Ids.Service
 Aw.Sindri.Core.Scheduling.ServiceRunGuard.Record(Aw.Sindri.Core.Ids.ServiceName service, Aw.Sindri.Core.Events.ServiceOutcome outcome) -> void
 Aw.Sindri.Core.Scheduling.ServiceRunGuard.ServiceRunGuard() -> void
 Aw.Sindri.Core.Scheduling.ServiceRunGuard.TryClaim(Aw.Sindri.Core.Ids.ServiceName service, out System.IDisposable! claim) -> bool
+Aw.Sindri.Core.Scheduling.IServiceRunRecorder
+Aw.Sindri.Core.Scheduling.IServiceRunRecorder.Record(Aw.Sindri.Core.Ids.ServiceName service, Aw.Sindri.Core.Scheduling.ScheduledRun! run, Aw.Kernel.Result<Aw.Kernel.Unit>! outcome, Aw.Sindri.Core.Ids.JobId? job, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<long>!>

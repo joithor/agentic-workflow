@@ -105,7 +105,7 @@ public sealed class RunServiceTests
         var started = await runtime.Start(A.RunServiceRequest().ForService(_tidy).Build(), Human());
 
         Expect.Equal(SindriErrors.JobConflict.Code, started.Error.Code);
-        Assert.Contains("scheduled run is in flight", started.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("A scheduled run of tidy is in flight", started.Error.Message, StringComparison.Ordinal);
         Assert.Null(started.Error.Extensions);   // there is no running job to name
         Assert.Empty(runtime.Of(EventTypes.JobStarted));
     }

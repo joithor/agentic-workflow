@@ -97,7 +97,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<RequestTarget>()
             .AddScoped<IService<StartProcessRequest, StartProcessResponse>, StartProcessService>()
             .AddScoped<IService<RecordHeartbeatRequest, RecordHeartbeatResponse>, RecordHeartbeatService>()
-            .AddScoped<IService<RecordServiceRunRequest, RecordServiceRunResponse>, RecordServiceRunService>()
+            .AddRecordServiceRun()
             .AddScoped<IService<CheckProfileRequest, CheckProfileResponse>, CheckProfileService>()
             .AddScoped<IService<ValidateProfileRequest, ValidateProfileResponse>, ValidateProfileService>()
             .AddDoctor()

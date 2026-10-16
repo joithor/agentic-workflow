@@ -1,4 +1,3 @@
-using Aw.Kernel.Services;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features.RecordServiceRun;
@@ -21,7 +20,7 @@ internal static class RunServiceRuntime
         {
             _ = collection.AddRunService()
                 .AddSingleton<IApprovedProfile>(h.Profiles)
-                .AddScoped<IService<RecordServiceRunRequest, RecordServiceRunResponse>, RecordServiceRunService>();
+                .AddRecordServiceRun();
             foreach (var service in services)
             {
                 _ = collection.AddSingleton(service);
