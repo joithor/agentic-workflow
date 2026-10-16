@@ -57,7 +57,7 @@ public abstract class IntentStoreContract
         var state = Expect.Ok(await store.State(_onyx, None), test);
 
         Expect.That(commit == new IntentCommit(1, 1, 1), test, $"commit {commit}");
-        Expect.That(layer.Records.SequenceEqual([record]) && layer.Links.SequenceEqual([link]), test, "records or links read back differently");
+        Expect.That(layer.Records.Count == 1 && layer.Records[0] is var got && got.Key == record.Key && got.Version == record.Version && got.Title == record.Title && got.Aliases.SequenceEqual(record.Aliases, StringComparer.Ordinal) && layer.Links.SequenceEqual([link]), test, "records or links read back differently");
         Expect.That(state.Cursor == "{\"nodeOffset\":4}" && state.LastSync == _at && state.LastError is null && state is { Records: 1, Links: 1, Queued: 1 }, test, $"state {state}");
     }
 
