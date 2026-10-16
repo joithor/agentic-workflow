@@ -112,4 +112,18 @@ public sealed class ShellTrailTests
 
         Assert.Equal((FrameFocus.ChildPointer, childDetail.Address), (shell.Instance.WantedFocus?.Target, shell.Instance.WantedFocus?.Key));
     }, Token);
+
+    [Fact]
+    public Task Enter_on_the_row_of_a_frame_opened_another_way_makes_that_row_the_one_Esc_returns_to() => UiThread.Run(async () =>
+    {
+        var shell = await Connected();
+        await Open(shell, "project-build");
+        Assert.Null(shell.OpenerWorkflow);
+        var address = shell.Instance.Address;
+        Assert.True(shell.Workflows.Select(address));
+
+        Assert.True(shell.Press("Enter"));
+
+        Assert.Equal(address, shell.OpenerWorkflow);
+    }, Token);
 }
