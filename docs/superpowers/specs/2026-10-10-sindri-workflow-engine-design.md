@@ -181,6 +181,10 @@ public sealed record EventDescriptor(
 public interface IDescribedBlock { public static abstract BlockDescriptor Descriptor { get; } }
 ```
 
+- **Parameter-declared outcomes and inputs (decision-tree spec §8.1, DT-V1):** `BlockDescriptor` also has optional
+  `OutcomesFrom` and `InputsFrom` (a list parameter's name, or `<stateParam>.<listParam>` for a twin), and `OutputSpec`
+  optional `Every` and `EngineFilled`. Each is written only when set, so a descriptor without them hashes as before.
+  Outcomes and inputs of a Step in a recipe are read through `StepOutcomes.Of` and `StepInputs.Of`.
 - **Capability-bearing:** `Capabilities != None`, a parameter with `IsCapabilityField`, or (in a generated recipe) a
   child.
 - **Runtime interfaces:**
