@@ -2,9 +2,9 @@ using System.Globalization;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Validation;
 using Aw.Sindri.Core.Workflow.Views;
+using Aw.Sindri.Tests.Workflow.Engine;
 using Aw.Sindri.Testing.Workflow;
 
 namespace Aw.Sindri.Tests.ShowRecipe;
@@ -81,6 +81,9 @@ public sealed class RecipeViewsTests
 
         var view = RecipeViews.Of(recipe, new RecipeVersion(recipe.Id, recipe.Version, RecipeHash.From("sha256:" + new string('a', 64))));
 
-        Assert.Equal([.. recipe.Inputs.Select(static i => Core.Workflow.Engine.Runtime.FactTypes.Parse(SubjectKinds.TypeOf(i)))], [.. view.Inputs.Select(static i => i.Type)]);
+        var interpreted = GetInstance.StatusCases.Recipe with { Recipe = recipe };
+        var rows = FactRows.Of(EngineFixture.At(EngineFixture.Step, "produce"), interpreted, task: null, new Dictionary<FactKey, FactProvenance>());
+
+        Assert.Equal([.. rows.Where(static r => r.Direction == FactDirection.Input).Select(static r => r.Type)], [.. view.Inputs.Select(static i => i.Type)]);
     }
 }

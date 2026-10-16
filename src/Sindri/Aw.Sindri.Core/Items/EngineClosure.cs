@@ -9,6 +9,7 @@ namespace Aw.Sindri.Core.Items;
 /// only (no 'item.state-changed' row, decision Q6), and what a human close does (void the pending decisions and open requests, clear the
 /// decision rows) must follow the item row reaching a closed state. The requests projection folds before the items one, so it asks
 /// <see cref="EndsItem"/> with the row as it is; the needs-you projection folds after, so it asks <see cref="IsEnded"/> of the row as written.
+/// The void and the clear re-run on every later row of an ended item; that is idempotent by design (they act only on Pending decisions and Open requests).
 /// </summary>
 internal static class EngineClosure
 {

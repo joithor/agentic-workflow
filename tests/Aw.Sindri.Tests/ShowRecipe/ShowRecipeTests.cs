@@ -2,6 +2,7 @@ using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Registry;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Tests.ApproveRecipe;
 using Aw.Sindri.Tests.ListRecipes;
 using Aw.Sindri.Tests.Workflow;
@@ -47,6 +48,7 @@ public sealed class ShowRecipeTests
         Assert.True(byId.IsSuccess, byId.IsError ? byId.Error.ToString() : null);
         var input = Assert.Single(byHash.Value.Inputs);
         Assert.Equal(("fact:spec", SubjectKinds.NoKind), (input.Key, input.Kind));
+        Assert.Equal(FactType.Text, input.Type);
         Assert.Equal(row.Hash, byId.Value.Hash);
     }
 

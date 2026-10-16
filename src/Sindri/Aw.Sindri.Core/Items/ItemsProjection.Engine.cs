@@ -23,7 +23,7 @@ internal sealed partial class ItemsProjection
         ArgumentNullException.ThrowIfNull(row);
         ArgumentNullException.ThrowIfNull(recorded);
         var started = string.Equals(type, EventTypes.WorkflowStarted, StringComparison.Ordinal);
-        if (row.State is ItemState.Done or ItemState.Cancelled && !started && row.Engine is not { Earlier.Count: > 0 })
+        if (row.State is ItemState.Done or ItemState.Cancelled && !started && EngineClosure.LiveRoot(row) is null)
         {
             return row;   // closed by a human, or by the instance this part already reads; an earlier root that is still live keeps moving
         }

@@ -53,6 +53,8 @@ public sealed class EngineRebuildTests : IDisposable
 
         Assert.Contains("\"state\":\"voided\"", incremental.Decisions, StringComparison.Ordinal);
         Assert.DoesNotContain("decision:", incremental.NeedsYou, StringComparison.Ordinal);
+        Assert.DoesNotContain("park:", incremental.NeedsYou, StringComparison.Ordinal);   // the earlier root ended too, so its park is gone
+        Assert.DoesNotContain("\"earlier\"", incremental.Items, StringComparison.Ordinal);
         Assert.Equal(incremental.Decisions, rebuilt.Decisions);
         Assert.Equal(incremental.Items, rebuilt.Items);
         Assert.Equal(incremental.NeedsYou, rebuilt.NeedsYou);
