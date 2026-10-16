@@ -1,4 +1,5 @@
 using Aw.Sindri.Ui.Api.Workflow;
+using Aw.Sindri.Ui.Platform;
 
 namespace Aw.Sindri.Ui.ViewModels.Facts;
 
@@ -7,9 +8,12 @@ internal sealed class FileFactViewer : ObservableObject, IFactViewer
 {
     private const int HashChars = 12;
 
-    internal FileFactViewer(FactRow row)
+    private readonly ILauncher _launcher;
+
+    internal FileFactViewer(FactRow row, ILauncher launcher)
     {
         Row = row;
+        _launcher = launcher;
         var file = row.Ref;
         Name = FactText.Scrub(file?.Name ?? row.Summary);
         SizeText = file?.Size is { } size ? Labels.FileSize(size) : string.Empty;
@@ -49,6 +53,15 @@ internal sealed class FileFactViewer : ObservableObject, IFactViewer
     /// <param name="cancellationToken">Cancels nothing.</param>
     /// <returns>A completed task.</returns>
     public Task Load(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <summary>Asks the system to open the file the fact names, and says so when it could not (a path that is not absolute is never opened).</summary>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <returns>A task that completes once the system answered.</returns>
+    public Task Open(CancellationToken cancellationToken)
+    {
+        _ = (_launcher, cancellationToken);   // used by the fix that follows this test commit
+        throw new NotSupportedException();
+    }
 
     /// <summary>Records what Open found.</summary>
     /// <param name="opened">True when the platform opened the file.</param>

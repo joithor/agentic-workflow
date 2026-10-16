@@ -25,7 +25,7 @@ internal sealed partial class InstanceFrameViewModel
     // A re-read serves the same facts again: the panel stays (and its open viewers with it) unless a row changed, and then the open ones stay open.
     private void ShowPanels(InstanceDetail detail)
     {
-        var context = new FactViewerContext(api, clipboard, clock, () => _url, detail.Id, id => ItemRequested?.Invoke(this, new ItemOpenEventArgs(id)));
+        var context = new FactViewerContext(api, clipboard, clock, () => _url, detail.Id, id => ItemRequested?.Invoke(this, new ItemOpenEventArgs(id))) { Launcher = _launcher };
         var fresh = new FactsPanelViewModel(detail, Viewers, context);
         if (Facts is null || !string.Equals(Facts.Signature, fresh.Signature, StringComparison.Ordinal))
         {

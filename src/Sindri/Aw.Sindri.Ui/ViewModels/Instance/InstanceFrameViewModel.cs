@@ -1,5 +1,4 @@
 using System.Globalization;
-using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Navigation;
@@ -16,8 +15,9 @@ namespace Aw.Sindri.Ui.ViewModels.Instance;
 /// instance's served fields; a not-found or unreadable answer shows its sentence with Back. A re-read keeps what is
 /// shown when the answer fails or the instance has ended, and the newest read wins.
 /// </summary>
-internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard clipboard, TimeProvider clock, FactViewerRegistry? viewers = null, CatalogViewModel? catalog = null) : ObservableObject
+internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard clipboard, TimeProvider clock, FactViewerRegistry? viewers = null, CatalogViewModel? catalog = null, ILauncher? launcher = null) : ObservableObject
 {
+    private readonly ILauncher _launcher = launcher ?? NullLauncher.Instance;
     private Uri? _url;
     private string? _id;
     private int _generation;
@@ -229,7 +229,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
     // A re-read serves the same parts again: they stay (and the control with focus does) unless something they draw changed.
     private void ShowParts(InstanceDetail detail)
     {
-        var subject = new SubjectLineViewModel(detail.Subject, detail.Address);
+        var subject = new SubjectLineViewModel(detail.Subject, detail.Address, _launcher);
         if (Subject is null || !string.Equals(Subject.Signature, subject.Signature, StringComparison.Ordinal))
         {
             Subject = subject;
@@ -252,40 +252,6 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         {
             Expanded.Update(detail.Current);
         }
-    }
-
-    private void Failed(Error error)
-    {
-        if (Phase == FramePhase.Shown)
-        {
-            // What was shown stays; a refusal says the instance is no longer served, any other failure changes nothing.
-            Note = error.Kind == ErrorKind.NotFound ? Labels.InstanceGone : Note;
-        }
-        else if (error.Kind == ErrorKind.NotFound)
-        {
-            Problem(FramePhase.NotFound, error.Message);
-        }
-        else if (string.Equals(error.Code, SindriUiErrors.BadAnswer.Code, StringComparison.Ordinal))
-        {
-            Problem(FramePhase.Unreadable, Labels.StripUnreadable);
-        }
-        else
-        {
-            Problem(FramePhase.Refused, Labels.InstanceRefused(error));   // a refusal, a rebuild, a timeout: never a skeleton that never ends
-        }
-    }
-
-    private void Problem(FramePhase phase, string text)
-    {
-        if (Phase == FramePhase.Shown)
-        {
-            Note = Labels.InstanceGone;
-            return;
-        }
-
-        ProblemText = text;
-        _intent = null;   // nothing to act on
-        Phase = phase;
     }
 
     private void Clear()

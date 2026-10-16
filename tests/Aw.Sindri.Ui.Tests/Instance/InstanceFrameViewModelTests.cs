@@ -178,4 +178,21 @@ public sealed class InstanceFrameViewModelTests
 
         Assert.Equal((FramePhase.Shown, Labels.InstanceGone, Text(Golden("project-build")["title"])), (frame.Phase, frame.Note, frame.Title));
     }
+
+    [Fact]
+    public async Task Open_in_hands_the_subjects_link_to_the_launcher()
+    {
+        var launcher = new FakeLauncher();
+        var scenario = "project-build";
+        var detail = FixtureInstances.Detail(scenario);
+        var line = new SubjectLineViewModel(detail.Subject, detail.Address, launcher);
+
+        await line.OpenIn(Token);
+
+        Assert.True(line.HasHref);
+        Expect.Sequence([new Uri(line.Href).AbsoluteUri], launcher.Opened);
+        var plain = new SubjectLineViewModel(detail.Subject with { Href = "ftp://example.test/x" }, detail.Address, launcher);
+        await plain.OpenIn(Token);
+        _ = Assert.Single(launcher.Opened);
+    }
 }

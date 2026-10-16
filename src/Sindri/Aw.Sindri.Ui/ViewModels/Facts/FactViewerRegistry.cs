@@ -17,9 +17,9 @@ internal sealed class FactViewerRegistry
     {
         var registry = new FactViewerRegistry();
         registry.Register(FactType.Text, (row, context) => new TextFactViewer(row, context));
-        registry.Register(FactType.File, (row, _) => new FileFactViewer(row));
+        registry.Register(FactType.File, (row, context) => new FileFactViewer(row, context.Launcher));
         registry.Register(FactType.Item, (row, context) => new ItemFactViewer(row, context));
-        registry.Register(FactType.Link, (row, _) => new LinkFactViewer(row));
+        registry.Register(FactType.Link, (row, context) => new LinkFactViewer(row, context.Launcher));
         registry.Register(FactType.Payload, (row, context) => new PayloadFactViewer(row, context));
         return registry;
     }

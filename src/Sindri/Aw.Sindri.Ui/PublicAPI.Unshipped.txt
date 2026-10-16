@@ -137,3 +137,8 @@ Aw.Sindri.Ui.Platform.TrayView.RunningLabel.get -> string!
 Aw.Sindri.Ui.Platform.TrayView.RunningLabel.init -> void
 Aw.Sindri.Ui.Views.MainWindowHandle
 static Aw.Sindri.Ui.Views.MainWindowHandle.Current() -> nint
+Aw.Sindri.Ui.Platform.ILauncher
+Aw.Sindri.Ui.Platform.ILauncher.OpenFile(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!
+Aw.Sindri.Ui.Platform.ILauncher.OpenUri(System.Uri! uri, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!
+Aw.Sindri.Ui.Platform.SindriPlatform.Launcher.get -> Aw.Sindri.Ui.Platform.ILauncher!
+Aw.Sindri.Ui.Platform.SindriPlatform.Launcher.init -> void

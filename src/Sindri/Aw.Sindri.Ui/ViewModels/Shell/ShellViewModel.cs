@@ -48,7 +48,8 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <param name="preferences">The app's local preferences, shared with Settings (the shell keeps its window, sheet width and last page there).</param>
     /// <param name="clipboard">Where Copy puts a CLI (the window's clipboard).</param>
     /// <param name="motion">The OS reduce-motion setting; none means motion is allowed.</param>
-    internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, Preferences preferences, IClipboard clipboard, IMotionPreference? motion = null)
+    /// <param name="launcher">Opens links and files in the system's apps; none opens nothing.</param>
+    internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, Preferences preferences, IClipboard clipboard, IMotionPreference? motion = null, ILauncher? launcher = null)
     {
         _store = preferences;
         _clock = clock;
@@ -73,7 +74,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         InitStrip();
         Workflows = new WorkflowsViewModel(api, clipboard, clock);
         InitWorkflows();
-        Instance = new InstanceFrameViewModel(api, clipboard, clock, catalog: Health.Catalog);
+        Instance = new InstanceFrameViewModel(api, clipboard, clock, catalog: Health.Catalog, launcher: launcher);
         InitInstance();
         Queue.PropertyChanged += OnQueueChanged;
         InitAnnouncements();

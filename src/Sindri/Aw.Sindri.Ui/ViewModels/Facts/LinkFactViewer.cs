@@ -1,13 +1,17 @@
 using Aw.Sindri.Ui.Api.Workflow;
+using Aw.Sindri.Ui.Platform;
 
 namespace Aw.Sindri.Ui.ViewModels.Facts;
 
 /// <summary>A link fact: its host and title as served, and Open, which hands an http or https link to the platform (no other scheme is opened).</summary>
 internal sealed class LinkFactViewer : ObservableObject, IFactViewer
 {
-    internal LinkFactViewer(FactRow row)
+    private readonly ILauncher _launcher;
+
+    internal LinkFactViewer(FactRow row, ILauncher launcher)
     {
         Row = row;
+        _launcher = launcher;
         var link = row.Ref;
         Url = link?.Url ?? string.Empty;
         CanOpen = Uri.TryCreate(Url, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp);
@@ -37,6 +41,15 @@ internal sealed class LinkFactViewer : ObservableObject, IFactViewer
 
     /// <summary>Open's accessible name.</summary>
     public string OpenName { get; }
+
+    /// <summary>Hands the link to the system. Only an http or https link is opened.</summary>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <returns>A task that completes once the system answered.</returns>
+    public Task Open(CancellationToken cancellationToken)
+    {
+        _ = (_launcher, cancellationToken);   // used by the fix that follows this test commit
+        throw new NotSupportedException();
+    }
 
     /// <summary>A link viewer needs nothing beyond the row.</summary>
     /// <param name="cancellationToken">Cancels nothing.</param>

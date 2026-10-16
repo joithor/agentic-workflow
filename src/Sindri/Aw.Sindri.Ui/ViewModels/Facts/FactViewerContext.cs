@@ -10,4 +10,8 @@ namespace Aw.Sindri.Ui.ViewModels.Facts;
 /// <param name="ApiUrl">Where the API is now; null while it is not known.</param>
 /// <param name="InstanceId">The opaque id of the instance whose fact is shown.</param>
 /// <param name="OpenItem">Opens an item's sheet.</param>
-internal sealed record FactViewerContext(ISindriApi Api, IClipboard Clipboard, TimeProvider Clock, Func<Uri?> ApiUrl, string InstanceId, Action<string> OpenItem);
+internal sealed record FactViewerContext(ISindriApi Api, IClipboard Clipboard, TimeProvider Clock, Func<Uri?> ApiUrl, string InstanceId, Action<string> OpenItem)
+{
+    /// <summary>Opens a link or a file in the system's apps; opens nothing until the head hands one over.</summary>
+    public ILauncher Launcher { get; init; } = NullLauncher.Instance;
+}

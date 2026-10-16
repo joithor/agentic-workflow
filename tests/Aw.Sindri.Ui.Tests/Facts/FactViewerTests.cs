@@ -40,7 +40,7 @@ public sealed class FactViewerTests
     {
         var row = FactFixtures.Row("project-build", "fact:prd");
 
-        var viewer = new FileFactViewer(row);
+        var viewer = new FileFactViewer(row, new FakeLauncher());
 
         Assert.Equal((row.Ref!.Name, row.Ref.Path, true), (viewer.Name, viewer.Path, viewer.CanOpen));
         Assert.Contains((row.Ref.Size!.Value / 1024).ToString(System.Globalization.CultureInfo.InvariantCulture), viewer.SizeText, StringComparison.Ordinal);
@@ -70,14 +70,51 @@ public sealed class FactViewerTests
     public void Link_shows_host_and_title_and_Open_external()
     {
         var fixture = FactFixtures.Fixture()["body"]!;
-        var viewer = new LinkFactViewer(FactFixtures.Link());
+        var viewer = new LinkFactViewer(FactFixtures.Link(), new FakeLauncher());
 
         Assert.Equal(((string?)fixture["host"], (string?)fixture["title"], (string?)fixture["url"], true), (viewer.Host, viewer.Title, viewer.Url, viewer.CanOpen));
         Assert.Contains(viewer.Host, viewer.OpenText, StringComparison.Ordinal);
         Assert.Contains(viewer.Host, viewer.OpenName, StringComparison.Ordinal);
 
         var row = FactFixtures.Link();
-        var unsafeLink = new LinkFactViewer(row with { Ref = row.Ref! with { Url = "file:///etc/hosts" } });
+        var unsafeLink = new LinkFactViewer(row with { Ref = row.Ref! with { Url = "file:///etc/hosts" } }, new FakeLauncher());
         Assert.False(unsafeLink.CanOpen);
+    }
+
+    [Fact]
+    public async Task Link_Open_hands_an_http_or_https_link_to_the_launcher_and_nothing_else()
+    {
+        var launcher = new FakeLauncher();
+        var link = FactFixtures.Link();
+        var good = new LinkFactViewer(link, launcher);
+        var unsafeLink = new LinkFactViewer(link with { Ref = link.Ref! with { Url = "file:///etc/hosts" } }, launcher);
+
+        await good.Open(TestContext.Current.CancellationToken);
+        await unsafeLink.Open(TestContext.Current.CancellationToken);
+
+        Expect.Sequence([new Uri(good.Url).AbsoluteUri], launcher.Opened);
+    }
+
+    [Fact]
+    public async Task File_Open_reports_what_the_launcher_answered_and_never_opens_a_relative_path()
+    {
+        var launcher = new FakeLauncher();
+        var row = FactFixtures.Row("project-build", "fact:prd");
+        var rooted = row with { Ref = row.Ref! with { Path = "/work/docs/prd.md" } };
+        var viewer = new FileFactViewer(rooted, launcher);
+
+        await viewer.Open(TestContext.Current.CancellationToken);
+        Expect.Sequence(["/work/docs/prd.md"], launcher.Opened);
+        Assert.Equal(string.Empty, viewer.OpenNote);
+
+        launcher.Refuse = true;
+        await viewer.Open(TestContext.Current.CancellationToken);
+        Assert.Equal(Labels.FileNotOpened(viewer.Path), viewer.OpenNote);
+
+        launcher.Refuse = false;
+        var relative = new FileFactViewer(rooted with { Ref = rooted.Ref! with { Path = "docs/prd.md" } }, launcher);
+        await relative.Open(TestContext.Current.CancellationToken);
+        Expect.Sequence(["/work/docs/prd.md"], launcher.Opened);
+        Assert.Equal(Labels.FileNotOpened(relative.Path), relative.OpenNote);
     }
 }

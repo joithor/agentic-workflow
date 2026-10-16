@@ -1,4 +1,5 @@
 using Aw.Sindri.Ui.Api.Workflow;
+using Aw.Sindri.Ui.Platform;
 
 namespace Aw.Sindri.Ui.ViewModels.Instance;
 
@@ -9,9 +10,11 @@ namespace Aw.Sindri.Ui.ViewModels.Instance;
 internal sealed class SubjectLineViewModel
 {
     private readonly string _host = string.Empty;
+    private readonly ILauncher _launcher;
 
-    internal SubjectLineViewModel(SubjectRef subject, string address)
+    internal SubjectLineViewModel(SubjectRef subject, string address, ILauncher launcher)
     {
+        _launcher = launcher;
         Label = subject.Label.Length > 0 ? subject.Label : subject.Key;
         Kind = subject.Kind;
         if (subject.Href is { Length: > 0 } href && Controls.ControlViewModel.Safe(href)
@@ -40,6 +43,15 @@ internal sealed class SubjectLineViewModel
 
     /// <summary>The link's accessible name; it carries the instance.</summary>
     public string OpenInName { get; }
+
+    /// <summary>Hands the subject's link to the system.</summary>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <returns>A task that completes once the system answered.</returns>
+    public Task OpenIn(CancellationToken cancellationToken)
+    {
+        _ = (_launcher, cancellationToken);   // used by the fix that follows this test commit
+        throw new NotSupportedException();
+    }
 
     /// <summary>What the line is made of, to keep the control when a re-read serves the same.</summary>
     internal string Signature => string.Join('|', Label, Kind, Href);
