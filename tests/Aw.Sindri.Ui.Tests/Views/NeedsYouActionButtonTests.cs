@@ -78,36 +78,43 @@ public sealed class NeedsYouActionButtonTests : IDisposable
         [.. window.GetVisualDescendants().OfType<NeedsYouRow>().Where(r => r.IsEffectivelyVisible)];
 
 
-    private static Button Accept(NeedsYouRow row) =>
-        row.GetVisualDescendants().OfType<Button>().First(b => b.IsEffectivelyVisible && string.Equals(b.Content as string, "Accept", StringComparison.OrdinalIgnoreCase));
+    // Decline, not the first option: a button that sent the wrong option would pass with Accept.
+    private static Button Decline(NeedsYouRow row) =>
+        row.GetVisualDescendants().OfType<Button>().First(b => b.IsEffectivelyVisible && string.Equals(b.Content as string, "Decline", StringComparison.OrdinalIgnoreCase));
+
+    private async Task SentOnce(Window window)
+    {
+        for (var i = 0; i < 300 && _server.DecideCalls.Count == 0; i++)
+        {
+            await Task.Delay(10, Token);
+            Settle(window);
+        }
+
+        var (decision, request) = Assert.Single(_server.DecideCalls);
+        Assert.Equal("DEC-1", decision.Replace("decision:", "", StringComparison.Ordinal));
+        Assert.Equal("decline", request.Choice);
+    }
 
     [Fact]
-    public Task A_click_on_a_rows_own_option_button_sends_that_option_once() => OnUi(async () =>
+    public Task A_click_on_a_rows_own_option_button_sends_decline_once() => OnUi(async () =>
     {
         var (window, _) = await WithRows(1);
-        var button = Accept(Rows(window)[0]);
+        var button = Decline(Rows(window)[0]);
 
         button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-        await Task.Delay(100, Token);
-        Settle(window);
-
-        var (decision, _) = Assert.Single(_server.DecideCalls);
-        Assert.Equal("DEC-1", decision.Replace("decision:", "", StringComparison.Ordinal));
+        await SentOnce(window);
     });
 
     [Fact]
-    public Task Space_on_the_focused_option_button_sends_that_option_once() => OnUi(async () =>
+    public Task Space_on_the_focused_option_button_sends_decline_once() => OnUi(async () =>
     {
         var (window, _) = await WithRows(1);
-        var button = Accept(Rows(window)[0]);
+        var button = Decline(Rows(window)[0]);
         Assert.True(button.Focus(NavigationMethod.Tab));
         Settle(window);
 
         window.KeyPress(Key.Space, RawInputModifiers.None, PhysicalKey.Space, " ");
         window.KeyRelease(Key.Space, RawInputModifiers.None, PhysicalKey.Space, " ");
-        await Task.Delay(100, Token);
-        Settle(window);
-
-        _ = Assert.Single(_server.DecideCalls);
+        await SentOnce(window);
     });
 }
