@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Workflow.Validation;
@@ -11,6 +12,10 @@ internal sealed partial class ChoiceRules
         state.Step is { } step && catalog.Find(step.Use) is { OutcomesFrom: { } from } && ParameterLists.IsTwin(from)
             ? ParameterLists.NamedState(from, step.With)
             : null;
+
+    /// <summary>The state parameter of the desk twin Step, from its descriptor.</summary>
+    private static string TwinParameter(BlockCatalog catalog) =>
+        catalog.Find(BlockId.From(TwinId)) is { OutcomesFrom: { } from } ? ParameterLists.StateParameter(from) : "from";
 
     /// <summary>The twin states whose state parameter is a { fact } or { profile } value: they twin no route that validation can name.</summary>
     private static IEnumerable<RecipeFinding> Unresolved(Recipe recipe, BlockCatalog catalog, RecipeSource source)
@@ -46,9 +51,10 @@ internal sealed partial class ChoiceRules
         {
             if (TwinOf(state, catalog) is { } from && !routes.Exists(r => string.Equals(r.State, from, StringComparison.Ordinal)))
             {
+                var parameter = TwinParameter(catalog);
                 yield return source.Finding(
-                    "RCP-CHOICE-005", $"states.{name}.step.with.from", $"state '{name}' runs '{TwinId}' from '{from}', which isn't a '{RouteId}' state",
-                    "set from: to the route state it twins");
+                    "RCP-CHOICE-005", $"states.{name}.step.with.{parameter}", $"state '{name}' runs '{TwinId}' from '{from}', which isn't a '{RouteId}' state",
+                    $"set {parameter}: to the route state it twins");
             }
         }
 
@@ -74,7 +80,7 @@ internal sealed partial class ChoiceRules
 
             yield return source.Finding(
                 "RCP-CHOICE-005", $"transitions[{Inv(i)}]", $"state '{route.State}' routes uncertain to '{t.To}', which isn't its desk twin",
-                $"route it to a state with step: {{ use: {TwinId}, with: {{ from: {route.State} }} }}");
+                $"route it to a state with step: {{ use: {TwinId}, with: {{ {TwinParameter(catalog)}: {route.State} }} }}");
         }
     }
 

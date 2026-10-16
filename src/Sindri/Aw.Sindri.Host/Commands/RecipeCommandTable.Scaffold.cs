@@ -60,11 +60,16 @@ internal static partial class RecipeCommandTable
             _ = Directory.CreateDirectory(directory);
             foreach (var (path, text) in files)
             {
+                written.Add(path);   // before the write: a write that fails part-way leaves a partial file this call made
                 await File.WriteAllTextAsync(path, text, ct).ConfigureAwait(false);
-                written.Add(path);
             }
 
             return null;
+        }
+        catch (OperationCanceledException)
+        {
+            written.ForEach(TryDelete);
+            throw;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {

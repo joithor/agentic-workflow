@@ -159,6 +159,7 @@ public sealed class RecipeEvalCommandTests : IDisposable
         Assert.Equal(2, await Run("recipe", "eval", "--scaffold", route, "--out", directory));
 
         Assert.Contains("SND-CLI-003", _error.ToString(), StringComparison.Ordinal);
+        Assert.Contains("can't write the scaffold to", _error.ToString(), StringComparison.Ordinal);
         Assert.Empty(Directory.GetFiles(directory));
     }
 

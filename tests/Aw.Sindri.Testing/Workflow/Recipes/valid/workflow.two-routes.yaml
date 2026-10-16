@@ -41,10 +41,10 @@ states:
 transitions:
   - { from: [route-a, route-a-desk], to: route-b, on: step.completed, when: { outcome: step }, produces: [fact:decision] }
   - { from: [route-a, route-a-desk], to: route-b, on: step.completed, when: { outcome: other }, produces: [fact:decision] }
-  - { from: route-a, to: route-b, on: step.completed, when: { outcome: uncertain }, produces: [fact:decision] }
+  - { from: route-a, to: route-a-desk, on: step.completed, when: { outcome: uncertain }, produces: [fact:decision] }
   - { from: route-a, to: route-a-desk, on: step.failed }
   - { from: [route-b, route-b-desk], to: done, on: step.completed, when: { outcome: failed }, produces: [fact:decision] }
   - { from: [route-b, route-b-desk], to: done, on: step.completed, when: { outcome: fine }, produces: [fact:decision] }
-  - { from: route-b, to: done, on: step.completed, when: { outcome: uncertain }, produces: [fact:decision] }
+  - { from: route-b, to: route-b-desk, on: step.completed, when: { outcome: uncertain }, produces: [fact:decision] }
   - { from: route-b, to: route-b-desk, on: step.failed }
 inputs: [{ key: fact:change, label: "Change", type: text, kind: text }]

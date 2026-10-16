@@ -359,7 +359,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-CHOICE-002` | `choices` is a literal list (not `{ fact }` or `{ profile }`) and each entry is text `"<outcome>: <criterion>"`: the outcome is `[a-z][a-z0-9]{0,31}`, the criterion 1 to 400 characters. An unquoted `- ui: ...` is a YAML mapping and gets the quote fix | Quote the entry; write the choices as a literal list |
 | `RCP-CHOICE-003` | Outcome names are distinct, and none is `uncertain` (the Step adds it) | Give each choice its own outcome |
 | `RCP-CHOICE-004` | `facts` is a literal list of at least one fact key; a hyphenated key gets the camelCase fix | List the facts the question reads |
-| `RCP-CHOICE-005` | Every route state routes `uncertain`, if it does, to a `step.desk.choose` state whose `from` names it, and has a `step.failed` transition to that twin; a twin's `from` is a route state | Route to the desk twin; set `from:` to the route state |
+| `RCP-CHOICE-005` | Every route state routes `uncertain`, if it does, to a `step.desk.choose` state whose `from` names it, and has a `step.failed` transition to that twin; a twin's `from` is a literal naming a route state (not `{ fact }` or `{ profile }`) | Route to the desk twin; set `from:` to the route state |
 | `RCP-CHOICE-006` | A route state's `uncertain` and `step.failed` transitions come after its branch transitions (the app takes the first transition as the main path) | List the branches first |
 | `RCP-CHILD-001` | A child recipe resolves (registered, or next to the recipe) and gets its inputs | Register it, or put `<id>.yaml` beside the recipe; pass the inputs it declares |
 | `RCP-CHILD-002` | Child recipes form no cycle | Remove a child wait |
@@ -465,7 +465,8 @@ complete example is `recipes/dev/workflow.dev-evidence-route.yaml`.
   `{ from: <route>, to: <twin>, on: step.failed }`, last (`RCP-CHOICE-006`). A missing branch or `uncertain` is `RCP-OUTCOME-001`.
 - **`fact:decision`** is written by the engine, never typed: at the desk `complete --outcome <choice>` stores
   `{ "choice", "provider": "desk", "actor" }`, and `complete --output fact:decision=...` is refused. `recipe eval` fills it
-  with provider `eval` when a line leaves it out.
+  with provider `eval` when a line leaves it out; an eval line on a desk twin that writes `fact:decision` itself fails with the same
+  "is written by the engine" text.
 - **Evals:** `recipe eval --scaffold <file>` prints the first path; `--scaffold <file> --out <dir>` writes one
   `<dir>/scaffold-<branch>.jsonl` per path (each choice, `uncertain`, and `step_failed`) and refuses to overwrite a file.
 - Until DT-V2, `status` on a choice state doesn't list the choices; read them in the recipe.
