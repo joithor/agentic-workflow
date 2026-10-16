@@ -1,5 +1,7 @@
 using System.Globalization;
 using Aw.Sindri.Ui.Api.Workflow;
+using Progress = Aw.Sindri.Ui.Api.Workflow.StateGlyph;
+using StageCell = Aw.Sindri.Ui.ViewModels.Workflows.StageCellViewModel;
 
 namespace Aw.Sindri.Ui.ViewModels;
 
@@ -72,6 +74,22 @@ internal static partial class Labels
     /// <summary>The legend's word for the mark of a taken-over stage.</summary>
     internal const string LegendTakenOver = "taken over";
 
+    /// <summary>The legend line (screens §4.2): each mark the rows draw with its word, then the page's keys. The marks come from where the rows get them.</summary>
+    internal static readonly string WorkflowsLegend =
+        $"{StageCell.Mark(Progress.Done)} {StageDone}   {StageCell.Mark(Progress.Active)} {StageActive}   "
+        + $"{StageCell.Mark(Progress.Pending)} {StagePending}   {MarkEscalated} {LegendEscalated}   {MarkTakenOver} {LegendTakenOver}   {LoopMark} {LegendLoop}"
+        + "        Enter opens · A answer · B hand back · X cancel";
+
+    /// <summary>The legend in words: no glyph, because a screen reader gets the words.</summary>
+    internal static readonly string WorkflowsLegendName =
+        $"{StageDone}, {StageActive}, {StagePending}, {LegendEscalated}, {LegendTakenOver}, {LegendLoop}. Keys: Enter opens, A answer, B hand back, X cancel";
+
+    /// <summary>The mark of an escalated or parked stage.</summary>
+    internal const string MarkEscalated = "▲";
+
+    /// <summary>The mark of a taken-over stage.</summary>
+    internal const string MarkTakenOver = "▌";
+
     /// <summary>B on a row: handing an instance back is sent from the app in U8b.</summary>
     internal static readonly string HandBackArrives = $"Hand back {Arrives("U8b")}. Copy its command from the instance and run it at a terminal.";
 
@@ -117,7 +135,7 @@ internal static partial class Labels
     /// <returns>The words; a taken-over state reads its served reason behind a mark.</returns>
     internal static string CellBadge(EngineOwnedKind kind, string reason) => kind switch
     {
-        EngineOwnedKind.TakenOver => $"▌ {reason}",
+        EngineOwnedKind.TakenOver => $"{MarkTakenOver} {reason}",
         EngineOwnedKind.Escalated => EngineBadge(kind, reason),
         EngineOwnedKind.Parked => EngineBadge(kind, reason),
         _ => string.Empty,

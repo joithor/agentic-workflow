@@ -54,6 +54,7 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
+        <TextBlock x:Name="WorkflowsLegend" Classes="caption subtle" Text="{Binding LegendText}" Margin="16,8" TextWrapping="Wrap" AutomationProperties.Name="{Binding LegendName}" />
       </StackPanel>
     </Border>
   </StackPanel>
