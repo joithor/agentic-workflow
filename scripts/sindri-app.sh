@@ -96,7 +96,7 @@ trap 'rm -f "$inputs"' EXIT
 # A tracked file deleted in the working tree is left out: it isn't part of the build, and tar would fail on it.
 git -C "$root" ls-files -z --cached --others --exclude-standard -- global.json nuget.config .editorconfig 'Directory.*' \
   BannedSymbols.txt CodeMetricsConfig.txt src/Aw.Kernel src/Aw.Kernel.Data src/Aw.Kernel.Telemetry src/Redaction \
-  src/Aw.Analyzers src/Context src/Judge src/Sindri \
+  src/Aw.Analyzers src/Context src/Judge src/Sindri context \
   | while IFS= read -r -d '' f; do if [ -f "$root/$f" ]; then printf '%s\n' "$f"; fi; done | LC_ALL=C sort -u > "$inputs"
 [ -s "$inputs" ] || die "no build inputs found under $root"
 stamp="$( { printf '%s\n' "$sdk" "$platform"; cat "$inputs"; (cd "$root" && git hash-object --stdin-paths < "$inputs"); } | sha256 | cut -c1-16)"
