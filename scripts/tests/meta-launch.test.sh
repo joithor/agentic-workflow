@@ -129,6 +129,7 @@ check "launch: a pane that creates its session runs the lane, not a shell" "$(gr
 check "launch: absolute cwd everywhere" "$(grep -c "cwd: $WORK/repo" "$yaml")" "3"
 check "launch: meta pane first" "$(grep -m1 -o 'demo-[a-z]*' "$yaml")" "demo-meta"
 # A live lane: a script running a child, as meta-lane.sh runs claude (tmux reports the pane's command as bash).
+tmux kill-session -t demo-api 2> /dev/null
 tmux new-session -d -s demo-api "bash -c 'sleep 60; true'" 2> /dev/null
 OUT="$(bash "$DIR/meta-launch.sh" --no-open --lanes api)"
 check "rerun: live session kept" "$OUT" "$(printf 'tmux demo-api: running\nwarp: %s' "$yaml")"
@@ -156,10 +157,184 @@ check "no team config: exit 1 with the fix" "$RC:$(printf '%s' "$OUT" | grep -c 
 jq '.repo = "relative/path"' "$cfg" > "$WORK/rel.json"
 OUT="$(AW_META_CONFIG="$WORK/rel.json" bash "$DIR/meta-launch.sh" --no-open 2>&1)"; RC=$?
 check "relative repo refused (Warp needs absolute cwd)" "$RC" "1"
+tmux kill-server 2> /dev/null   # the stub lane may still be winding down: no session may exist for this dry run
 mkdir -p "$WORK/bin"; ln -s "$DIR/meta-launch.sh" "$WORK/bin/aw-meta-launch"   # as install-meta.sh links it
 OUT="$("$WORK/bin/aw-meta-launch" --no-open --dry-run --lanes api)"
 check "run through a symlink: finds meta-lane.sh beside the real script" "$(printf '%s\n' "$OUT" | grep -c "^\[dry-run\] tmux new-session .* $DIR/meta-lane.sh demo api")" "1"
 jq '.lanes = ["meta", "api"]' "$cfg" > "$WORK/dup.json"   # team-init lists the meta lane in lanes too
 OUT="$(AW_META_CONFIG="$WORK/dup.json" bash "$DIR/meta-launch.sh" --no-open --dry-run)"
 check "meta lane listed in lanes: one pane, not two" "$(printf '%s\n' "$OUT" | grep -c 'exec: tmux new -A -s demo-meta')" "1"
+
+# ---- launcher.json (SL-1; docs/csharp/sindri-launcher.md) ----
+FIX="$DIR/../tests/fixtures/launcher"
+LCFG="$WORK/launcher.json"
+reset() { # a fresh tmux server and lane state
+  tmux kill-server 2> /dev/null; sleep 0.3
+  find "$AW_STATE_DIR/meta/lane-sessions" -type f -delete 2> /dev/null
+  tmux new-session -d -s keepalive "sleep 600"
+}
+waitfor() { for _ in $(seq 100); do eval "$1" && return 0; sleep 0.1; done; return 1; }
+
+# Every shared fixture against its bash: tag (the reader accepts the file or refuses it with SND-LAUNCH-011).
+( . "$DIR/launcher-lib.sh"
+  bad=""; n=0
+  while IFS=' ' read -r f tag; do
+    n=$((n + 1))
+    if out="$(launcher_validate "$FIX/$f")"; then got=accept; else got=refuse; fi
+    [ "$got" = "$tag" ] || bad="$bad $f(want $tag)"
+    [ "$got" = accept ] || case "$out" in SND-LAUNCH-011:*) ;; *) bad="$bad $f(wording)" ;; esac
+  done < <(jq -r '.fixtures[] | "\(.file) \(.bash)"' "$FIX/manifest.json")
+  echo "$n:$bad" > "$WORK/fixture-verdicts" )
+check "every shared fixture honours its bash: tag" "$(cut -d: -f2 "$WORK/fixture-verdicts")" ""
+check "the whole fixture set ran" "$([ "$(cut -d: -f1 "$WORK/fixture-verdicts")" -ge 40 ] && echo yes)" "yes"
+
+# A file that is refused stops the launch before any session exists.
+reset
+cp "$FIX/unknown-top-key.json" "$LCFG"
+OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open 2>&1)"; RC=$?
+check "invalid launcher.json: exit 1, SND-LAUNCH-011 with the file and the key" "$RC:$(grep -c "SND-LAUNCH-011: unknown key \"terminal\".*" <<< "$OUT"):$(grep -c "$LCFG" <<< "$OUT")" "1:1:1"
+check "invalid launcher.json: no tmux session was created" "$(tmux list-sessions -F '#S' | grep -c '^demo-')" "0"
+OUT="$(AW_LAUNCHER_CONFIG="$WORK/missing.json" bash "$DIR/meta-launch.sh" --no-open 2>&1)"; RC=$?
+check "AW_LAUNCHER_CONFIG naming a missing file: exit 1" "$RC" "1"
+echo '{"schema":1,"meta":{"lanesAgent":"nonesuch"}}' > "$LCFG"
+OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open 2>&1)"; RC=$?
+check "a lane agent the catalog lacks: exit 1 with SND-LAUNCH-003" "$RC:$(grep -c 'SND-LAUNCH-003' <<< "$OUT")" "1:1"
+echo '{"schema":1,"agents":{"codex":{"bin":"x"}},"meta":{"lanesAgent":"codex"}}' > "$LCFG"
+OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open 2>&1)"; RC=$?
+check "a built-in id without override: true is named" "$RC:$(grep -c 'codex is built in: add "override": true' <<< "$OUT")" "1:1"
+
+# viewer: warp written explicitly equals the no-file layout.
+reset
+OUT0="$(bash "$DIR/meta-launch.sh" --no-open --dry-run | sed "s#$WORK#W#g")"
+cp "$FIX/viewer-warp.json" "$LCFG"
+OUT1="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open --dry-run | sed "s#$WORK#W#g")"
+OUT2="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open --dry-run | sed "s#$WORK#W#g" | grep -c 'AW_LAUNCHER_CONFIG')"
+check "viewer warp in the file: today's layout, plus the file's path for each pane" "$(diff <(printf '%s\n' "$OUT0") <(printf '%s\n' "$OUT1" | sed 's# -e AW_LAUNCHER_CONFIG=[^ ]*##') > /dev/null && echo same):$OUT2" "same:3"
+# The file at the default path ($AW_STATE_DIR/launcher.json) needs no variable and adds nothing to the panes.
+cp "$FIX/viewer-warp.json" "$AW_STATE_DIR/launcher.json"
+OUT1="$(bash "$DIR/meta-launch.sh" --no-open --dry-run | sed "s#$WORK#W#g")"
+check "launcher.json at the default path with viewer warp: the same layout, byte for byte" "$OUT1" "$OUT0"
+unlink "$AW_STATE_DIR/launcher.json"
+
+# viewer: print — one attach line per lane, no Warp YAML.
+reset; unlink "$yaml" 2> /dev/null; cp "$FIX/viewer-print.json" "$LCFG"
+OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" 2>&1)"; RC=$?
+check "viewer print: exit 0, three sessions started" "$RC:$(grep -c ': started' <<< "$OUT")" "0:3"
+check "viewer print: one tmux attach line per lane, meta first" "$(grep '^tmux attach' <<< "$OUT" | tr '\n' ';')" "tmux attach -t =demo-meta;tmux attach -t =demo-api;tmux attach -t =demo-ui;"
+check "viewer print: no Warp YAML written" "$(test -e "$yaml" && echo yes || echo no)" "no"
+OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --lanes api 2>&1)"
+check "viewer print with --lanes: only that lane" "$(grep -c '^tmux attach' <<< "$OUT"):$(grep '^tmux attach' <<< "$OUT")" "1:tmux attach -t =demo-api"
+
+# viewer: exec-template — one window per lane, the placeholders expanded into separate arguments.
+cat > "$WORK/viewer" <<'EOF'
+#!/usr/bin/env bash
+printf '%s|' "$@" >> "$VIEWER_CALLS"; echo >> "$VIEWER_CALLS"
+EOF
+chmod +x "$WORK/viewer"; export VIEWER_CALLS="$WORK/viewer-calls"
+jq -n --arg v "$WORK/viewer" '{schema:1, viewer:{kind:"exec-template", name:"rec", argv:[$v,"--title","{title}","--directory","{cwd}","--","{cmd...}"]}}' > "$LCFG"
+reset; : > "$VIEWER_CALLS"
+OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" 2>&1)"; RC=$?
+waitfor '[ "$(wc -l < "$VIEWER_CALLS")" -ge 3 ]'
+check "exec-template: exit 0, one window per lane" "$RC:$(wc -l < "$VIEWER_CALLS")" "0:3"
+check "exec-template: title, cwd and the attach argv as separate arguments" "$(grep -- '-demo-api\|demo-api' "$VIEWER_CALLS")" "--title|demo-api|--directory|$WORK/repo|--|tmux|attach|-t|=demo-api|"
+check "exec-template: no Warp YAML written" "$(test -e "$yaml" && echo yes || echo no)" "no"
+: > "$VIEWER_CALLS"
+OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open 2>&1)"; sleep 0.3
+check "exec-template with --no-open: no window is opened" "$(wc -c < "$VIEWER_CALLS" | tr -d ' ')" "0"
+OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --dry-run 2>&1)"; sleep 0.3
+check "exec-template --dry-run: one argv line per lane, nothing run" "$(grep -c '^\[dry-run\] viewer rec: ' <<< "$OUT"):$(wc -c < "$VIEWER_CALLS" | tr -d ' ')" "3:0"
+jq -n '{schema:1, viewer:{kind:"exec-template", name:"ghost", argv:["no-such-terminal-xyz","{title}"]}}' > "$LCFG"
+OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" 2>&1)"; RC=$?
+check "a viewer that is not installed never stops the sessions (exit 0, the attach line is shown)" "$RC:$(grep -c 'ghost: no-such-terminal-xyz not found' <<< "$OUT"):$(grep -c '^tmux attach -t =demo-api' <<< "$OUT")" "0:3:1"
+jq -n --arg v "$WORK/viewer" '{schema:1, viewer:{kind:"exec-template", name:"rec", argv:[$v,"{title}"]}}' > "$LCFG"
+OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --lanes api --dry-run 2>&1)"
+jq '.viewer.argv[1] = "{cmd...}x"' "$LCFG" > "$WORK/l2.json"
+OUT2="$(AW_LAUNCHER_CONFIG="$WORK/l2.json" bash "$DIR/meta-launch.sh" --dry-run 2>&1)"; RC=$?
+check "a {cmd...} inside an argument is refused" "$RC:$(grep -c 'SND-LAUNCH-011' <<< "$OUT2")" "1:1"
+
+# Lane agents from the catalog: a non-Claude lane, and ids reported one lane at a time.
+cat > "$WORK/codex" <<'EOF'
+#!/usr/bin/env bash
+echo "start $AW_META_LANE" >> "$CALLS.events"
+sleep 0.4
+id="$(cat /proc/sys/kernel/random/uuid)"
+mkdir -p "$HOME/.codex/sessions/2026/10/15"
+: > "$HOME/.codex/sessions/2026/10/15/rollout-2026-10-15T00-00-00-$id.jsonl"
+echo "wrote $AW_META_LANE $id" >> "$CALLS.events"
+printf '%s|' "$@" >> "$CALLS.codex"; echo "$AW_SINDRI_CHILD|$AW_META_TEAM|$AW_META_LANE" >> "$CALLS.codex"
+sleep 600
+EOF
+chmod +x "$WORK/codex"
+jq -n --arg c "$WORK/codex" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex"}}' > "$LCFG"
+reset; : > "$CALLS.events"; : > "$CALLS.codex"
+OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open 2>&1)"; RC=$?
+check "codex lanes: the launch notes that they are launch-only" "$RC:$(grep -x 'lane api: codex, launch-only for now: no obligations' <<< "$OUT" | wc -l):$(grep -c '^lane meta' <<< "$OUT")" "0:1:0"
+ids="$AW_STATE_DIR/meta/lane-sessions"
+waitfor '[ -s "$ids/api" ] && [ -s "$ids/ui" ] && [ "$(wc -l < "$CALLS.codex")" -ge 2 ]'
+check "codex lanes: started one at a time (each id is reported before the next lane starts)" "$(awk '{print $1" "$2}' "$CALLS.events" | tr '\n' ';')" "start api;wrote api;start ui;wrote ui;"
+a="$(tr -d '[:space:]' < "$ids/api")"; u="$(tr -d '[:space:]' < "$ids/ui")"
+check "codex lanes: each lane recorded the id its own rollout file carries" "$(grep -c "wrote api $a" "$CALLS.events"):$(grep -c "wrote ui $u" "$CALLS.events")" "1:1"
+check "codex lanes: two distinct ids" "$([ "$a" != "$u" ] && [ -n "$a" ] && echo yes)" "yes"
+check "codex lanes: the built-in open argv, the prompt as the last argument, none without one" "$(grep -h -- '-C' "$CALLS.codex" | sort | tr '\n' ';')" "-C|$WORK/repo|1|demo|ui;-C|$WORK/repo|API kickoff|1|demo|api;"
+check "codex lanes: two codex sessions, not three (the meta lane is Claude)" "$(wc -l < "$CALLS.codex" | tr -d ' ')" "2"
+check "the lane variables are in the lane's environment and not in tmux's global one" "$(tmux show-environment -g 2>&1 | grep -c 'AW_SINDRI_CHILD\|AW_META_TEAM\|AW_META_LANE')" "0"
+# The meta lane stays Claude Code even when lanesAgent says otherwise; its claude is the stub.
+check "the meta lane runs the claude stub, not codex" "$(grep -c 'meta' "$CALLS.events")" "0"
+# Resume: a lane whose rollout exists resumes by the reported id.
+tmux kill-server 2> /dev/null; : > "$CALLS.codex"
+AW_LAUNCHER_CONFIG="$LCFG" AW_META_NO_SHELL=1 timeout 3 bash "$DIR/meta-lane.sh" demo api; true
+check "codex lane with a recorded id and its rollout: resumes it" "$(head -1 "$CALLS.codex" | cut -d'|' -f1-2)" "resume|$a"
+# no processName/transcripts surprises: the pane check uses the catalog's processName.
+mkdir -p "$WORK/fakebin2"; cp "$(command -v sleep)" "$WORK/fakebin2/codex"
+: > "$ids/api.exited"
+tmux kill-server 2> /dev/null; tmux new-session -d -s keepalive "sleep 600"
+tmux new-session -d -s demo-api "bash -c '$WORK/fakebin2/codex 60; true'"
+waitfor 'pgrep -f "$WORK/fakebin2/codex 60" > /dev/null'
+OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open --lanes api 2>&1 | head -2)"
+check "a codex lane whose codex runs under a stale marker is left alone (processName from the catalog)" "$(grep -c 'tmux demo-api: running' <<< "$OUT")" "1"
+jq '.agents.codex.processName = "other"' "$LCFG" > "$WORK/l3.json"
+OUT="$(AW_LAUNCHER_CONFIG="$WORK/l3.json" bash "$DIR/meta-launch.sh" --no-open --dry-run --lanes api 2>&1)"
+check "with another processName that pane counts as exited and is restarted" "$(grep -c 'respawn-pane' <<< "$OUT")" "1"
+pkill -f "$WORK/fakebin2/codex 60" 2> /dev/null
+
+# Precedence: AW_META_CLAUDE ranks above the file's claude-code bin; without it the file's bin is used.
+jq -n '{schema:1, agents:{"claude-code":{override:true, bin:"/nonexistent/claude"}}}' > "$LCFG"
+: > "$CALLS"; rm -f "$ids/api" "$ids/ui"
+AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-lane.sh" demo ui
+check "AW_META_CLAUDE wins over the file's claude-code bin" "$(cut -d'|' -f3 "$CALLS")" "-n"
+jq -n --arg c "$WORK/claude" '{schema:1, agents:{"claude-code":{override:true, bin:$c}}}' > "$LCFG"
+: > "$CALLS"; rm -f "$ids/ui"
+( unset AW_META_CLAUDE; AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-lane.sh" demo ui )
+check "without AW_META_CLAUDE the file's bin is the command" "$(cut -d'|' -f3,4 "$CALLS")" "-n|demo-ui"
+jq -n --arg c "$WORK/claude" '{schema:1, agents:{"claude-code":{override:true, open:["{bin}","--sid","{sessionId}","--label={name}","{seed}"]}}}' > "$LCFG"
+: > "$CALLS"; rm -f "$ids/api"
+AW_META_CLAUDE_ARGS="--model x" AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-lane.sh" demo api
+check "an override's open template is used; AW_META_CLAUDE_ARGS go right after {bin}" "$(sed -E 's/[0-9a-f]{8}-[0-9a-f-]{27}/ID/' "$CALLS" | head -1)" "--model|x|--sid|ID|--label=demo-api|API kickoff|"
+
+# --init-launcher: the detection under a PATH holding only the named terminals.
+tools="jq mkdir mv chmod cat dirname readlink uname tr head tail grep sed awk date rm printf env bash sh mktemp cp ls basename wc sort"
+kd="$WORK/kitty-only"; mkdir -p "$kd"; for t in $tools; do p="$(command -v "$t" 2> /dev/null)" && ln -sf "$p" "$kd/$t"; done
+printf '#!/bin/sh\nexit 0\n' > "$kd/kitty"; chmod +x "$kd/kitty"
+INIT="$WORK/init.json"
+OUT="$(env -i HOME="$HOME" PATH="$kd" DISPLAY=:0 AW_LAUNCHER_CONFIG="$INIT" bash "$DIR/meta-launch.sh" --init-launcher 2>&1)"; RC=$?
+check "init-launcher with only kitty on PATH and a display: writes the kitty template" "$RC:$(jq -c '[.viewer.kind, .viewer.name, .viewer.argv[0]]' "$INIT")" '0:["exec-template","kitty","kitty"]'
+check "init-launcher: the file is 0600 and passes the reader" "$(stat -c %a "$INIT"):$( ( . "$DIR/launcher-lib.sh"; launcher_validate "$INIT" > /dev/null && echo ok ) )" "600:ok"
+check "init-launcher says what it chose and why" "$(grep -c 'Wrote .*init.json: kitty (first on PATH)' <<< "$OUT")" "1"
+OUT="$(env -i HOME="$HOME" PATH="$kd" DISPLAY=:0 AW_LAUNCHER_CONFIG="$INIT" bash "$DIR/meta-launch.sh" --init-launcher 2>&1)"; RC=$?
+check "init-launcher refuses to replace a file without --force" "$RC" "1"
+OUT="$(env -i HOME="$HOME" PATH="$kd" DISPLAY=:0 AW_LAUNCHER_CONFIG="$INIT" bash "$DIR/meta-launch.sh" --init-launcher --viewer print --force 2>&1)"; RC=$?
+check "init-launcher --viewer print --force replaces it" "$RC:$(jq -c .viewer "$INIT")" '0:{"kind":"print"}'
+unlink "$INIT"
+OUT="$(env -i HOME="$HOME" PATH="$kd" AW_LAUNCHER_CONFIG="$INIT" bash "$DIR/meta-launch.sh" --init-launcher --stdout 2>&1)"
+check "init-launcher with no GUI session picks print; --stdout writes no file" "$(jq -c .viewer <<< "$OUT"):$(test -e "$INIT" && echo file || echo none)" '{"kind":"print"}:none'
+OUT="$(env -i HOME="$HOME" PATH="$kd" DISPLAY=:0 TERM_PROGRAM=kitty AW_LAUNCHER_CONFIG="$INIT" bash "$DIR/meta-launch.sh" --init-launcher 2>&1)"
+check "init-launcher names \$TERM_PROGRAM when it picks by it" "$(grep -c 'kitty (from \$TERM_PROGRAM)' <<< "$OUT")" "1"
+unlink "$INIT"
+OUT="$(env -i HOME="$HOME" PATH="$kd" DISPLAY=:0 AW_LAUNCHER_CONFIG="$INIT" bash "$DIR/meta-launch.sh" --init-launcher --viewer nonesuch 2>&1)"; RC=$?
+check "init-launcher with an unknown --viewer: exit 2" "$RC" "2"
+mkdir -p "$WORK/warpbin"; for t in $tools; do p="$(command -v "$t" 2> /dev/null)" && ln -sf "$p" "$WORK/warpbin/$t"; done
+printf '#!/bin/sh\nexit 0\n' > "$WORK/warpbin/warp-terminal"; chmod +x "$WORK/warpbin/warp-terminal"
+OUT="$(env -i HOME="$HOME" PATH="$WORK/warpbin" DISPLAY=:0 AW_LAUNCHER_CONFIG="$INIT" bash "$DIR/meta-launch.sh" --init-launcher --stdout 2>&1)"
+check "init-launcher picks Warp when it is installed" "$(jq -c .viewer <<< "$OUT")" '{"kind":"warp"}'
+tmux kill-server 2> /dev/null
 exit $fail
