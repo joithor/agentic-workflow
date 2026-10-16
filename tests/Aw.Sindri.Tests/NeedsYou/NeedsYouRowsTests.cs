@@ -81,7 +81,7 @@ public sealed class NeedsYouRowsTests
 
         var row = NeedsYouRows.ForFailure(failed, _t, _plain).Value;
 
-        Expect.Equal("sindri profile validate", row.Cli);
+        Expect.Equal(("sindri profile validate", true), (row.Cli, row.PrimaryAction is null));
         Expect.Sequence([ActionId.From("PauseService")], row.Actions);
         Assert.Contains("remove or rename", row.Reason, StringComparison.Ordinal);
         Assert.StartsWith("SND-SVC-404", row.Reason, StringComparison.Ordinal);
@@ -155,7 +155,7 @@ public sealed class NeedsYouRowsTests
 
         foreach (var row in rows)
         {
-            Expect.True(row.Actions.Contains(row.PrimaryAction) && !row.PrimaryAction.Value.StartsWith("copy", StringComparison.Ordinal));
+            Expect.True(row.PrimaryAction is { } primary && row.Actions.Contains(primary) && !primary.Value.StartsWith("copy", StringComparison.Ordinal));
             Expect.True(row.Cli.StartsWith("sindri ", StringComparison.Ordinal));
         }
     }

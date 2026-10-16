@@ -1638,7 +1638,7 @@ Aw.Sindri.Core.NeedsYou.NeedsYouRow.AnswerKind.get -> Aw.Sindri.Core.Workflow.Vi
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.AnswerKind.init -> void
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Cli.get -> string!
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Cli.init -> void
-Aw.Sindri.Core.NeedsYou.NeedsYouRow.Deconstruct(out Aw.Sindri.Core.Ids.NeedsYouRowId Id, out Aw.Sindri.Core.NeedsYou.NeedsYouKind Kind, out string! Label, out Aw.Sindri.Core.NeedsYou.NeedsYouSubject! Subject, out Aw.Sindri.Core.Ids.ItemId? Item, out string! Title, out string! Reason, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.NeedsYou.Urgency Urgency, out System.DateTimeOffset Since, out bool RecordedOnly, out string? Notice, out Aw.Sindri.Core.Workflow.Views.AnswerKind? AnswerKind, out Aw.Sindri.Core.Ids.ActionId PrimaryAction, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, out string! Cli) -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouRow.Deconstruct(out Aw.Sindri.Core.Ids.NeedsYouRowId Id, out Aw.Sindri.Core.NeedsYou.NeedsYouKind Kind, out string! Label, out Aw.Sindri.Core.NeedsYou.NeedsYouSubject! Subject, out Aw.Sindri.Core.Ids.ItemId? Item, out string! Title, out string! Reason, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.NeedsYou.Urgency Urgency, out System.DateTimeOffset Since, out bool RecordedOnly, out string? Notice, out Aw.Sindri.Core.Workflow.Views.AnswerKind? AnswerKind, out Aw.Sindri.Core.Ids.ActionId? PrimaryAction, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, out string! Cli) -> void
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Equals(Aw.Sindri.Core.NeedsYou.NeedsYouRow? other) -> bool
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Id.get -> Aw.Sindri.Core.Ids.NeedsYouRowId
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Id.init -> void
@@ -1648,10 +1648,10 @@ Aw.Sindri.Core.NeedsYou.NeedsYouRow.Kind.get -> Aw.Sindri.Core.NeedsYou.NeedsYou
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Kind.init -> void
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Label.get -> string!
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Label.init -> void
-Aw.Sindri.Core.NeedsYou.NeedsYouRow.NeedsYouRow(Aw.Sindri.Core.Ids.NeedsYouRowId Id, Aw.Sindri.Core.NeedsYou.NeedsYouKind Kind, string! Label, Aw.Sindri.Core.NeedsYou.NeedsYouSubject! Subject, Aw.Sindri.Core.Ids.ItemId? Item, string! Title, string! Reason, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.NeedsYou.Urgency Urgency, System.DateTimeOffset Since, bool RecordedOnly, string? Notice, Aw.Sindri.Core.Workflow.Views.AnswerKind? AnswerKind, Aw.Sindri.Core.Ids.ActionId PrimaryAction, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, string! Cli) -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouRow.NeedsYouRow(Aw.Sindri.Core.Ids.NeedsYouRowId Id, Aw.Sindri.Core.NeedsYou.NeedsYouKind Kind, string! Label, Aw.Sindri.Core.NeedsYou.NeedsYouSubject! Subject, Aw.Sindri.Core.Ids.ItemId? Item, string! Title, string! Reason, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.NeedsYou.Urgency Urgency, System.DateTimeOffset Since, bool RecordedOnly, string? Notice, Aw.Sindri.Core.Workflow.Views.AnswerKind? AnswerKind, Aw.Sindri.Core.Ids.ActionId? PrimaryAction, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, string! Cli) -> void
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Notice.get -> string?
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Notice.init -> void
-Aw.Sindri.Core.NeedsYou.NeedsYouRow.PrimaryAction.get -> Aw.Sindri.Core.Ids.ActionId
+Aw.Sindri.Core.NeedsYou.NeedsYouRow.PrimaryAction.get -> Aw.Sindri.Core.Ids.ActionId?
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.PrimaryAction.init -> void
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Reason.get -> string!
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Reason.init -> void

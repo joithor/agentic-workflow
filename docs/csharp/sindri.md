@@ -554,7 +554,7 @@ API P6. A job is work a command starts and does not wait for: the command is acc
 The control plane runs the services the **approved** profile names, on their cadence. It re-reads the approval once a
 second, so an approval takes effect without a restart. Missed slots after a sleep are skipped, not replayed in a burst. A
 failed run (an error or an exception) is logged (`SND-SCHED-001`) and the next slot still runs; an approval it can't read
-is logged once (`SND-SCHED-001`) and the current schedule keeps running. Nothing runs while the process holds no lease. S1
+is logged once (`SND-SCHED-001`) and the current schedule keeps running. A profile service this build doesn't have is logged and recorded as a failed `service.ran` with `SND-SVC-404` (not `SND-SCHED-001`): its needs-you row has no `RunService` (running it answers the same 404), offers only `PauseService`, and points at `sindri profile validate` and the profile (remove or rename the service); health still lists it as a failed service. Nothing runs while the process holds no lease. S1
 ships one service, `heartbeat` (API P6 adds the opt-in `job-probe`, see Jobs), which records `service.heartbeat` per slot; the index, intake and scorer join later as
 blocks.
 

@@ -174,14 +174,14 @@ internal sealed partial class SchedulerHost(
         }
     }
 
-    /// <summary>Runs the service and returns how it ended: its result, a throw as SND-SCHED-001, or SND-SCHED-001 when this build lacks it (G8).</summary>
+    /// <summary>Runs the service and returns how it ended: its result, a throw as SND-SCHED-001, or SND-SVC-404 when this build lacks it (G8).</summary>
     private async Task<Result<ScheduledResult>> Outcome(IServiceProvider services, ServiceName name, ScheduledRun run, CancellationToken ct)
     {
         var service = services.GetServices<IScheduledService>().FirstOrDefault(s => s.Identity() == name);
         if (service is null)
         {
             LogUnknownService(log, name.Value);
-            return SindriErrors.ServiceFailed.With($"the profile names service '{name.Value}', which this build doesn't have");
+            return SindriErrors.ServiceNotFound.With($"the profile names service '{name.Value}', which this build doesn't have");
         }
 
         try
@@ -267,7 +267,7 @@ internal sealed partial class SchedulerHost(
     [LoggerMessage(Level = LogLevel.Warning, Message = "SND-SCHED-001 the paused services couldn't be read ({Detail}); keeping the last known set")]
     private static partial void LogPausesFailed(ILogger logger, string detail);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "SND-SCHED-001 the profile names service '{Service}', which this build doesn't have")]
+    [LoggerMessage(Level = LogLevel.Warning, Message = "SND-SVC-404 the profile names service '{Service}', which this build doesn't have")]
     private static partial void LogUnknownService(ILogger logger, string service);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "SND-SCHED-001 service '{Service}' ran but its service.ran wasn't recorded: {Code} {Detail}")]
