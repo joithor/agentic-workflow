@@ -107,7 +107,7 @@ public sealed class RecipeEvalCommandTests : IDisposable
         var directory = Path.Combine(_home.Path, "scaffolds");
         _ = Directory.CreateDirectory(Path.GetDirectoryName(route)!); // why: the recipe's directory
         await File.WriteAllTextAsync(route, ShippedRecipes.Read("dev/workflow.dev-evidence-route.yaml"), TestContext.Current.CancellationToken);
-        string[] names = ["scaffold-ui", "scaffold-api", "scaffold-db", "scaffold-all", "scaffold-none", "scaffold-other", "scaffold-uncertain", "scaffold-failed"];
+        string[] names = ["scaffold-ui", "scaffold-api", "scaffold-db", "scaffold-all", "scaffold-none", "scaffold-other", "scaffold-uncertain", "scaffold-step-failed"];
 
         Assert.Equal(0, await Run("recipe", "eval", "--scaffold", route, "--out", directory));
 
@@ -121,6 +121,21 @@ public sealed class RecipeEvalCommandTests : IDisposable
         Assert.Equal(2, await Run("recipe", "eval", "--scaffold", route, "--out", directory));
         Assert.Contains("SND-CLI-003", _error.ToString(), StringComparison.Ordinal);
         Assert.Equal("mine\n", await File.ReadAllTextAsync(Path.Combine(directory, "scaffold-api.jsonl"), TestContext.Current.CancellationToken));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Scaffold_out_to_a_path_that_is_a_file_is_exit_2_with_a_fix_and_not_a_crash()
+    {
+        var route = Path.Combine(_home.Path, "recipes", "workflow.dev-evidence-route.yaml");
+        var occupied = Path.Combine(_home.Path, "occupied");
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(route)!); // why: the recipe's directory
+        await File.WriteAllTextAsync(route, ShippedRecipes.Read("dev/workflow.dev-evidence-route.yaml"), TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(occupied, "a file\n", TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, await Run("recipe", "eval", "--scaffold", route, "--out", occupied));
+
+        Assert.Contains("(fix: ", _error.ToString(), StringComparison.Ordinal);
+        Assert.Equal("a file\n", await File.ReadAllTextAsync(occupied, TestContext.Current.CancellationToken));
     }
 
     [Fact, Trait("Lane", "integration")]
