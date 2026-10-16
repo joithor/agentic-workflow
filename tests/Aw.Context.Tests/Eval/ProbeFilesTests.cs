@@ -3,6 +3,7 @@ using Aw.Context.Core.Eval;
 using Aw.Context.Infrastructure.Eval;
 using Aw.Context.Infrastructure.Store;
 using Aw.Context.Testing.Fixtures;
+using TempGitRepo = Aw.Context.Tests.Infrastructure.TempGitRepo;
 using Aw.Context.Tests.Map;
 using Aw.Kernel;
 
@@ -81,6 +82,19 @@ public sealed class ProbeFilesTests : IDisposable
             Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(first.Value));
             Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute, File.GetUnixFileMode(_settings.ProbesDirectory));
         }
+    }
+
+    [Fact]
+    public async Task A_report_is_refused_with_005_inside_a_git_worktree_and_nothing_is_written()
+    {
+        using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal) { ["a.txt"] = "a" });
+        var inside = new ContextStoreSettings(Path.Combine(repo.Path, "ctx"));
+        var at = new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
+
+        var written = await new FileProbeReportStore(inside).Write(Report("hash-a", 0.4, at), at, None);
+
+        Assert.Equal(ContextErrors.PathInWorktree.Code, written.Error.Code);
+        Assert.False(Directory.Exists(Path.Combine(repo.Path, "ctx")));
     }
 
     [Fact]
