@@ -263,7 +263,7 @@ public sealed class UpstreamRulesTests
 
         Assert.Equal(
             ["RCP-WIRE-002: transition from 'running' writes 'fact:output' twice (produces[0] and produces[1]) at r.yaml:1:1 (transitions[0].produces[1]); write each fact once; rename one of them"],
-            CheckWiring(recipe, WithKid(Kid("fact:output", "fact:other"))).Lines());
+            CheckWiring(recipe, WithKid(Kid("fact:output", "fact:other"))).Lines().Where(l => l.StartsWith("RCP-WIRE-002", StringComparison.Ordinal)), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

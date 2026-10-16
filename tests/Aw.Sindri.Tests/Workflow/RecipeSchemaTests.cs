@@ -72,8 +72,8 @@ public sealed class RecipeSchemaTests
 
         var rename = overlay["$defs"]!["RecipeTransition"]!["properties"]!["produces"]!["items"]!["oneOf"]!.AsArray()[1]!;
 
-        Assert.Equal(["fact", "from"], rename["properties"]!.AsObject().Select(p => p.Key).Order(StringComparer.Ordinal));
-        Assert.Equal(["fact", "from"], rename["required"]!.AsArray().Select(n => n!.GetValue<string>()).Order(StringComparer.Ordinal));
+        Assert.Equal(["fact", "from"], rename["properties"]!.AsObject().Select(p => p.Key).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal(["fact", "from"], rename["required"]!.AsArray().Select(n => n!.GetValue<string>()).Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.False(rename["additionalProperties"]!.GetValue<bool>());
     }
 
