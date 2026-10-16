@@ -60,11 +60,11 @@ internal class TemporalRecipeWake(TemporalFrontend frontend) : IRecipeWake
     }
 
     /// <summary>
-    /// What to do about a wake that missed an instance: an approval with the same pins sends it again; a revoke can't be rerun
-    /// (a revoked hash is refused first), so the instance parks lazily at its next step instead.
+    /// What to do about a wake that missed an instance: an approval with the same pins sends it again; a revoke runs again
+    /// to finish any cascade it didn't reach (refused only when nothing is left), and an instance still missed parks lazily at its next step.
     /// </summary>
     private static string Retry(RecipeWakeKind kind) => kind == RecipeWakeKind.Revoked
-        ? "the revocation is recorded; an instance the wake missed is refused at its next command, answer, complete or effect (SND-RECIPE-005) and parks then"
+        ? "the revocation of the hash is recorded; run the revoke again to finish any cascade it didn't reach and send the wake again (refused SND-RECIPE-005 when nothing is left); an instance the wake missed is refused at its next command, answer, complete or effect (SND-RECIPE-005) and parks then"
         : "run `sindri recipe approve <recipe>` again; approving with the same pins records nothing and sends the wake again";
 
     /// <summary>Delivers <paramref name="wake"/> to the instance at <paramref name="address"/>.</summary>
