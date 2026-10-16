@@ -153,17 +153,19 @@ internal sealed partial class ControlPlaneFollower(IEndpointRecordSource records
     {
         var events = 0;
         var dirty = Channel.CreateBounded<bool>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropWrite });
-        using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         if (_again)
         {
             _ = dirty.Writer.TryWrite(item: true);
         }
 
-        var refresher = RefreshOnSignal(url, dirty, stop);
-        var watcher = WatchRecord(stop);
-        var pinger = PingWhileFollowing(url, stop);
+        // The helpers read `stop`, so it is disposed only after they have all finished (the finally below).
+        Task refresher = Task.CompletedTask, watcher = Task.CompletedTask, pinger = Task.CompletedTask;
         try
         {
+            refresher = RefreshOnSignal(url, dirty, stop);
+            watcher = WatchRecord(stop);
+            pinger = PingWhileFollowing(url, stop);
             await foreach (var e in api.Events(url, _cursor, stop.Token).ConfigureAwait(true))
             {
                 events++;
@@ -180,6 +182,7 @@ internal sealed partial class ControlPlaneFollower(IEndpointRecordSource records
         {
             await stop.CancelAsync().ConfigureAwait(true);
             await Task.WhenAll(refresher, watcher, pinger).ConfigureAwait(true);
+            stop.Dispose();
         }
 
         return events;

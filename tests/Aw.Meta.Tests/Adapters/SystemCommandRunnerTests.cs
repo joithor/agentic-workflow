@@ -64,6 +64,41 @@ public sealed class SystemCommandRunnerTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task Output_a_grandchild_writes_after_the_run_ended_is_not_pumped_into_disposed_streams()
+    {
+        var unobserved = new List<Exception>();
+        void Record(object? sender, UnobservedTaskExceptionEventArgs e)
+        {
+            lock (unobserved)
+            {
+                unobserved.Add(e.Exception);
+            }
+        }
+
+        TaskScheduler.UnobservedTaskException += Record;
+        try
+        {
+            var log = Path.Combine(_dir.Path, "late.log");
+            var request = new CommandRequest(["sh", "-c", "(sleep 1; echo late) & echo early"], TimeSpan.FromSeconds(20)) { LogFile = log };
+
+            var result = await new SystemCommandRunner(TimeSpan.FromMilliseconds(100)).Run(request, CancellationToken.None);
+            await Task.Delay(TimeSpan.FromMilliseconds(1800), TestContext.Current.CancellationToken);
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            Assert.Contains("early", result.Value.Stdout, StringComparison.Ordinal);
+            lock (unobserved)
+            {
+                Assert.Empty(unobserved);
+            }
+        }
+        finally
+        {
+            TaskScheduler.UnobservedTaskException -= Record;
+        }
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task A_missing_working_directory_is_a_start_failure()
     {
         var request = new CommandRequest(["true"], TimeSpan.FromSeconds(5)) { Cwd = Path.Combine(_dir.Path, "absent") };
