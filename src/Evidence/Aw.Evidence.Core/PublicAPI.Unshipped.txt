@@ -2341,3 +2341,9 @@ static Aw.Evidence.Core.Data.Number.Text(int? value) -> string!
 static Aw.Evidence.Core.Data.Number.Text(string! text) -> string!
 static Aw.Evidence.Core.Data.RecordedText.Of(Aw.Evidence.Core.Data.ITextScrubber! scrubber, Aw.Evidence.Core.Data.ApiFailure! failure) -> Aw.Evidence.Core.Data.ApiFailure!
 static Aw.Evidence.Core.Data.RecordedText.Of(Aw.Evidence.Core.Data.ITextScrubber! scrubber, string! text, int limit) -> string!
+Aw.Evidence.Core.Data.SeedStatements
+static Aw.Evidence.Core.Data.SeedStatements.Check(string! sql) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+Aw.Evidence.Core.Data.FieldValueScrubber
+Aw.Evidence.Core.Data.FieldValueScrubber.FieldValueScrubber(Aw.Evidence.Core.Data.ITextScrubber! inner, System.Collections.Generic.IEnumerable<string!>! values) -> void
+Aw.Evidence.Core.Data.FieldValueScrubber.IsSecretName(string! name) -> bool
+Aw.Evidence.Core.Data.FieldValueScrubber.Scrub(string! text) -> string!

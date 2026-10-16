@@ -66,7 +66,8 @@ internal sealed class DbRunService(DataRunFiles files, DbVetting vetting, DbQuer
             return await StopAsync(run, vetted.Script, opened.Error, cancellationToken).ConfigureAwait(false);
         }
 
-        return await WriteAsync(run, Compose(run, vetted.Script, collected, vetted.SeedSha256), cancellationToken).ConfigureAwait(false);
+        var scrubbed = run with { Scrubber = collected.Scrubber };
+        return await WriteAsync(scrubbed, Compose(scrubbed, vetted.Script, collected, vetted.SeedSha256), cancellationToken).ConfigureAwait(false);
     }
 
     // An error of the input or a refusal stops the run as exit 1; a failure of the environment (unavailable) as exit 4. No query ran either way.

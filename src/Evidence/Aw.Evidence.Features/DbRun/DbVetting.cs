@@ -14,6 +14,46 @@ internal sealed class DbVetting(DataRunFiles files, IEvidenceTargets targets, IE
 
     internal async ValueTask<Result<VettedDb>> VetAsync(DbRunRequest request, DbScript script, CancellationToken cancellationToken)
     {
+        // The targets config is read for every run (as api-run does), so a missing --config (010) or an invalid file (022) is reported for a SQLite script too.
+        var loaded = await targets.LoadAsync(request.Repo, request.ConfigPath, cancellationToken).ConfigureAwait(false);
+        if (loaded.IsError)
+        {
+            return loaded.Error;
+        }
+
+        var queries = CheckQueries(script);
+        if (queries.IsError)
+        {
+            return queries.Error;
+        }
+
+        var inputs = await ReadInputsAsync(request, script, cancellationToken).ConfigureAwait(false);
+        if (inputs.IsError)
+        {
+            return inputs.Error;
+        }
+
+        var (goldens, seed) = inputs.Value;
+        var target = script.Connection is { } name ? Postgres(loaded.Value, name) : Sqlite(request, script, seed);
+        return target.Map(t => new VettedDb(script, t, goldens, seed is null ? null : ContentHash.Sha256Hex(Encoding.UTF8.GetBytes(seed)), t is PostgresTarget p ? [p.Password] : []));
+    }
+
+    // The goldens and the seed text; a seed that reaches beyond the run's copy is refused here, before any lock.
+    private async ValueTask<Result<(IReadOnlyList<string?> Goldens, string? Seed)>> ReadInputsAsync(DbRunRequest request, DbScript script, CancellationToken cancellationToken)
+    {
+        var goldens = await ReadGoldensAsync(request, script, cancellationToken).ConfigureAwait(false);
+        var seed = await ReadTextAsync(request.ScriptPath, script.Seed, cancellationToken).ConfigureAwait(false);
+        if (goldens.IsError || seed.IsError)
+        {
+            return goldens.IsError ? goldens.Error : seed.Error;
+        }
+
+        var guarded = seed.Value is null ? Unit.Value : SeedStatements.Check(seed.Value);
+        return guarded.IsError ? guarded.Error with { Message = "seed: " + guarded.Error.Message } : (goldens.Value, seed.Value);
+    }
+
+    private static Result<Unit> CheckQueries(DbScript script)
+    {
         for (var i = 0; i < script.QueryList.Count; i++)
         {
             var allowed = WriteStatements.Check(script.QueryList[i].Sql);
@@ -23,6 +63,11 @@ internal sealed class DbVetting(DataRunFiles files, IEvidenceTargets targets, IE
             }
         }
 
+        return Unit.Value;
+    }
+
+    private async ValueTask<Result<IReadOnlyList<string?>>> ReadGoldensAsync(DbRunRequest request, DbScript script, CancellationToken cancellationToken)
+    {
         var goldens = new List<string?>();
         foreach (var query in script.QueryList)
         {
@@ -35,16 +80,7 @@ internal sealed class DbVetting(DataRunFiles files, IEvidenceTargets targets, IE
             goldens.Add(golden.Value);
         }
 
-        var seed = await ReadTextAsync(request.ScriptPath, script.Seed, cancellationToken).ConfigureAwait(false);
-        if (seed.IsError)
-        {
-            return seed.Error;
-        }
-
-        var target = script.Connection is { } name
-            ? await PostgresAsync(request, name, cancellationToken).ConfigureAwait(false)
-            : Sqlite(request, script, seed.Value);
-        return target.Map(t => new VettedDb(script, t, goldens, seed.Value is null ? null : ContentHash.Sha256Hex(Encoding.UTF8.GetBytes(seed.Value)), t is PostgresTarget p ? [p.Password] : []));
+        return goldens;
     }
 
     private Result<DbTarget> Sqlite(DbRunRequest request, DbScript script, string? seedSql)
@@ -66,17 +102,11 @@ internal sealed class DbVetting(DataRunFiles files, IEvidenceTargets targets, IE
         return new SqliteTarget(real, RunPath.Combine(request.RunDirectory, WorkFolder), seedSql);
     }
 
-    private async ValueTask<Result<DbTarget>> PostgresAsync(DbRunRequest request, string name, CancellationToken cancellationToken)
+    private Result<DbTarget> Postgres(ResolvedTargets loaded, string name)
     {
-        var loaded = await targets.LoadAsync(request.Repo, request.ConfigPath, cancellationToken).ConfigureAwait(false);
-        if (loaded.IsError)
+        if (!loaded.DatabaseMap.TryGetValue(name, out var entry))
         {
-            return loaded.Error;
-        }
-
-        if (!loaded.Value.DatabaseMap.TryGetValue(name, out var entry))
-        {
-            var known = loaded.Value.DatabaseMap.Count == 0 ? "none" : string.Join(", ", loaded.Value.DatabaseMap.Keys.Order(StringComparer.Ordinal));
+            var known = loaded.DatabaseMap.Count == 0 ? "none" : string.Join(", ", loaded.DatabaseMap.Keys.Order(StringComparer.Ordinal));
             return EvidenceErrors.DatabaseRefused.With($"no database entry '{name}' in the targets config (it names: {known}); add it to <repo>/{TargetsFile.RepoRelativePath} or pass --config");
         }
 

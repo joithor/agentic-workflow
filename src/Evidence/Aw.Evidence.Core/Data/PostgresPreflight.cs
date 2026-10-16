@@ -33,7 +33,7 @@ public static class PostgresPreflight
         AddIf(reasons, role.BypassRowSecurity, "it has rolbypassrls");
         AddIf(reasons, role.WritesServerFiles, "it is a member of pg_write_server_files");
         AddIf(reasons, role.ExecutesServerPrograms, "it is a member of pg_execute_server_program");
-        AddIf(reasons, role.WritePrivileges > 0, string.Create(CultureInfo.InvariantCulture, $"it holds {role.WritePrivileges} INSERT, UPDATE, DELETE or TRUNCATE privileges"));
+        AddIf(reasons, role.WritePrivileges > 0, string.Create(CultureInfo.InvariantCulture, $"it can INSERT, UPDATE, DELETE or TRUNCATE in {role.WritePrivileges} tables (its own grants, PUBLIC's, or inherited through a role it is a member of)"));
         return reasons.Count == 0
             ? Unit.Value
             : EvidenceErrors.DatabaseRefused.With($"role {role.Name} is not read-only: {string.Join("; ", reasons)}. db-run needs a role that can write nothing");

@@ -1,3 +1,4 @@
+using System.Data.Common;
 using System.Globalization;
 using Aw.Evidence.Core;
 using Aw.Evidence.Core.Data;
@@ -85,6 +86,19 @@ internal sealed class SqliteReadSession(SqliteConnection connection) : IReadSess
             rows.Add([.. Enumerable.Range(0, columns.Count).Select(i => reader.IsDBNull(i) ? null : reader.GetValue(i))]);
         }
 
-        return new Rows(columns, rows, truncated);
+        return new Rows(columns, rows, truncated, SourceColumns(reader));
+    }
+
+    // The table column each result column reads, when SQLite can say (a direct column reference; a computed column has none).
+    private static List<string?> SourceColumns(SqliteDataReader reader)
+    {
+        try
+        {
+            return [.. reader.GetColumnSchema().Select(static column => column.BaseColumnName)];
+        }
+        catch (NotSupportedException)
+        {
+            return [.. Enumerable.Repeat<string?>(element: null, count: reader.FieldCount)];
+        }
     }
 }

@@ -77,7 +77,15 @@ internal sealed class PostgresReadSession(NpgsqlConnection connection) : IReadSe
         }
     }
 
+    // The rows, then the table column behind each result column (the server's RowDescription gives a table OID and attribute number; pg_attribute names it).
+    // A computed column has none. Runs inside the same read-only transaction, once the result reader is closed.
     private async ValueTask<Result<Rows>> ReadAsync(string sql, int rowLimit, CancellationToken cancellationToken)
+    {
+        var (rows, origins) = await ReadRowsAsync(sql, rowLimit, cancellationToken).ConfigureAwait(false);
+        return rows with { SourceColumns = await NamesAsync(origins, cancellationToken).ConfigureAwait(false) };
+    }
+
+    private async ValueTask<(Rows Rows, List<(uint Table, short Number)?> Origins)> ReadRowsAsync(string sql, int rowLimit, CancellationToken cancellationToken)
     {
         var command = new NpgsqlCommand(sql, connection);
         await using (command.ConfigureAwait(false))
@@ -87,18 +95,54 @@ internal sealed class PostgresReadSession(NpgsqlConnection connection) : IReadSe
             {
                 var columns = Enumerable.Range(0, reader.FieldCount).Select(reader.GetName).ToList();
                 var rows = new List<IReadOnlyList<object?>>();
+                var truncated = false;
                 while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 {
                     if (rows.Count == rowLimit)
                     {
-                        return new Rows(columns, rows, Truncated: true);
+                        truncated = true;
+                        break;
                     }
 
                     rows.Add([.. Enumerable.Range(0, columns.Count).Select(i => reader.IsDBNull(i) ? null : reader.GetValue(i))]);
                 }
 
-                return new Rows(columns, rows, Truncated: false);
+                return (new Rows(columns, rows, truncated), Origins(reader));
             }
+        }
+    }
+
+    private static List<(uint Table, short Number)?> Origins(NpgsqlDataReader reader)
+    {
+        try
+        {
+            return [.. reader.GetColumnSchema().Select(static column => column is { TableOID: > 0, ColumnAttributeNumber: { } number } ? ((uint, short)?)(column.TableOID, number) : null)];
+        }
+        catch (NotSupportedException)
+        {
+            return [.. Enumerable.Repeat<(uint, short)?>(element: null, count: reader.FieldCount)];
+        }
+    }
+
+    private async ValueTask<List<string?>> NamesAsync(List<(uint Table, short Number)?> origins, CancellationToken cancellationToken)
+    {
+        var names = new List<string?>();
+        foreach (var origin in origins)
+        {
+            names.Add(origin is { } o ? await NameAsync(o, cancellationToken).ConfigureAwait(false) : null);
+        }
+
+        return names;
+    }
+
+    private async ValueTask<string?> NameAsync((uint Table, short Number) origin, CancellationToken cancellationToken)
+    {
+        var command = new NpgsqlCommand("SELECT attname::text FROM pg_attribute WHERE attrelid = @table AND attnum = @number", connection);
+        await using (command.ConfigureAwait(false))
+        {
+            _ = command.Parameters.AddWithValue("table", NpgsqlTypes.NpgsqlDbType.Oid, origin.Table);
+            _ = command.Parameters.AddWithValue("number", NpgsqlTypes.NpgsqlDbType.Smallint, origin.Number);
+            return await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) as string;
         }
     }
 }

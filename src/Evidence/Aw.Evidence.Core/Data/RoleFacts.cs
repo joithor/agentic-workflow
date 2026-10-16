@@ -9,7 +9,7 @@ namespace Aw.Evidence.Core.Data;
 /// <param name="BypassRowSecurity">rolbypassrls.</param>
 /// <param name="WritesServerFiles">The role is a member of pg_write_server_files.</param>
 /// <param name="ExecutesServerPrograms">The role is a member of pg_execute_server_program.</param>
-/// <param name="WritePrivileges">How many INSERT, UPDATE, DELETE or TRUNCATE privileges information_schema.table_privileges shows for the role or PUBLIC.</param>
+/// <param name="WritePrivileges">How many non-system tables, views and the like the role can INSERT, UPDATE, DELETE or TRUNCATE, counting its own grants, PUBLIC's and those inherited through role membership (has_table_privilege).</param>
 public sealed record RoleFacts(
     string Name,
     bool Superuser,

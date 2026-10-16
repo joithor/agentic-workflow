@@ -47,6 +47,16 @@ public sealed class PostgresDatabaseReaderTests(PostgresContainer container) : R
     }
 
     [Fact]
+    public async Task A_column_that_reads_a_table_column_reports_the_table_column_s_name_and_a_computed_one_none()
+    {
+        await using var session = (await new PostgresDatabaseReader().OpenAsync(Target(Entry()), TestContext.Current.CancellationToken)).Value;
+
+        var rows = await session.QueryAsync("SELECT api_key AS copy_of_key, 'key is ' || api_key AS sentence FROM secrets", 5, TestContext.Current.CancellationToken);
+
+        Assert.Equal(["api_key", null], rows.Value.SourceColumns);
+    }
+
+    [Fact]
     public async Task A_server_that_is_not_the_one_named_is_refused_before_any_script_query()
     {
         var before = Count(await container.LogAsync(), "notes");

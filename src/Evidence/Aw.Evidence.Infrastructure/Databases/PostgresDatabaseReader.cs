@@ -19,8 +19,9 @@ internal sealed class PostgresDatabaseReader : IDatabaseReader
         "SELECT r.rolsuper, r.rolcreaterole, r.rolcreatedb, r.rolreplication, r.rolbypassrls, "
         + "pg_has_role(current_user, 'pg_write_server_files', 'member'), "
         + "pg_has_role(current_user, 'pg_execute_server_program', 'member'), "
-        + "(SELECT count(*) FROM information_schema.table_privileges p WHERE p.grantee IN (current_user, 'PUBLIC') "
-        + "AND p.table_schema NOT IN ('pg_catalog', 'information_schema') AND p.privilege_type IN ('INSERT', 'UPDATE', 'DELETE', 'TRUNCATE')), r.rolname "
+        + "(SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace "
+        + "WHERE c.relkind IN ('r', 'p', 'v', 'm', 'f') AND n.nspname NOT IN ('pg_catalog', 'information_schema') AND n.nspname NOT LIKE 'pg\\_toast%' AND n.nspname NOT LIKE 'pg\\_temp\\_%' "
+        + "AND (has_table_privilege(c.oid, 'INSERT') OR has_table_privilege(c.oid, 'UPDATE') OR has_table_privilege(c.oid, 'DELETE') OR has_table_privilege(c.oid, 'TRUNCATE'))), r.rolname "
         + "FROM pg_roles r WHERE r.rolname = current_user";
 
     /// <inheritdoc/>

@@ -15,6 +15,8 @@ internal sealed class SqliteDatabaseReader : IDatabaseReader
 {
     internal const string CopyName = "evidence-copy.sqlite";
 
+    private const int NoAttachedDatabases = 7;   // SQLITE_LIMIT_ATTACHED
+
     /// <inheritdoc/>
     public async ValueTask<Result<IReadSession>> OpenAsync(DbTarget target, CancellationToken cancellationToken)
     {
@@ -45,12 +47,19 @@ internal sealed class SqliteDatabaseReader : IDatabaseReader
         return opened.IsError ? EvidenceErrors.DatabaseUnavailable.With($"can't open the copy {copy}: {opened.Error.Message}") : new SqliteReadSession(opened.Value);
     }
 
-    // The seed runs on its own read-write connection to the copy, closed before the read-only one opens; the source is never touched.
+    // The seed runs on its own read-write connection to the copy, closed before the read-only one opens; the source is never touched. The statement guard
+    // refuses ATTACH, DETACH, VACUUM and load_extension, and the connection allows no attached database at all (SQLITE_LIMIT_ATTACHED = 0), so no other file is reachable.
     private static async ValueTask<Result<Unit>> SeedAsync(string? seedSql, string copy, CancellationToken cancellationToken)
     {
         if (seedSql is null)
         {
             return Unit.Value;
+        }
+
+        var allowed = SeedStatements.Check(seedSql);
+        if (allowed.IsError)
+        {
+            return allowed.Error;
         }
 
         var opened = await new SqliteConnectionFactory(new SqliteOptions(copy)).Open(cancellationToken).ConfigureAwait(false);
@@ -63,6 +72,7 @@ internal sealed class SqliteDatabaseReader : IDatabaseReader
         {
             try
             {
+                _ = SQLitePCL.raw.sqlite3_limit(opened.Value.Handle, NoAttachedDatabases, 0);
                 var command = opened.Value.CreateCommand();
                 await using (command.ConfigureAwait(false))
                 {
