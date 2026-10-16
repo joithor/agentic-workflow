@@ -46,15 +46,15 @@ run "$d"; expect_rc "a fixture missing from the manifest fails" 1; expect_out "n
 
 d="$(copy hash)"
 g="$(ls "$d"/tests/fixtures/launcher/argv-hash/*.json | head -1)"
-sed -i 's/"argvHash": "sha256:\(.\)/"argvHash": "sha256:z\1/' "$g"
+perl -pi -e 's/"argvHash": "sha256:(.)/"argvHash": "sha256:z$1/' "$g"
 run "$d"; expect_rc "a tampered argvHash golden fails" 1; expect_out "reports the right hash" "argvHash is sha256:"
 
 d="$(copy builtin)"
-sed -i 's/"--resume", "{sessionId}"/"--resume", "{sessionid}"/' "$d/config/launcher/builtins.json"
+perl -pi -e 's/"--resume", "\{sessionId\}"/"--resume", "{sessionid}"/' "$d/config/launcher/builtins.json"
 run "$d"; expect_rc "a built-in with an unknown placeholder fails" 1; expect_out "names the entry" "builtins.json: claude-code"
 
 d="$(copy terminal)"
-sed -i 's/"--title", "{title}", "--directory"/"--directory"/' "$d/config/launcher/terminals.json"
+perl -pi -e 's/"--title", "\{title\}", "--directory"/"--directory"/' "$d/config/launcher/terminals.json"
 run "$d"; expect_rc "a terminal template without {title} fails" 1; expect_out "names it" "kitty: argv has no {title}"
 
 d="$(copy keys)"
@@ -62,7 +62,7 @@ perl -0pi -e 's/"mcpForms": \[[^]]*\]/"mcpForms": ["none"]/' "$d/schemas/launche
 run "$d"; expect_rc "x-aw-keys out of step with the schema fails" 1; expect_out "names the list" "x-aw-keys.mcpForms"
 
 d="$(copy doc)"
-sed -i 's/"--directory", "{cwd}", "--"/"--dir", "{cwd}", "--"/' "$d/docs/csharp/sindri-launcher.md"
+perl -pi -e 's/"--directory", "\{cwd\}", "--"/"--dir", "{cwd}", "--"/' "$d/docs/csharp/sindri-launcher.md"
 run "$d"; expect_rc "a worked example that differs from terminals.json fails" 1; expect_out "names the terminal" "kitty: the worked example"
 
 echo
