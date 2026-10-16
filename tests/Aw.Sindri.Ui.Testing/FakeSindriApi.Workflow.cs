@@ -14,11 +14,23 @@ internal sealed partial class FakeSindriApi
     /// <summary>How many times the instance list was read.</summary>
     public int InstancesCalls => Volatile.Read(ref _instancesCalls);
 
-    public Task<Result<InstanceList>> Instances(Uri api, InstanceQuery query, CancellationToken cancellationToken)
+    /// <summary>
+    /// Held open until set, per query: the answer is decided when the request is made and arrives when the gate is set, so a test can have
+    /// an older read finish after a newer one (the fake otherwise answers at once, in request order).
+    /// </summary>
+    public Dictionary<InstanceQuery, TaskCompletionSource> InstancesGates { get; } = [];
+
+    public async Task<Result<InstanceList>> Instances(Uri api, InstanceQuery query, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _instancesCalls);
         LastInstancesQuery = query;
-        return Task.FromResult(Answer<InstanceList>(api, WorkflowRoutes.Instances(query), InstancesAnswer(query)));
+        var answer = Answer<InstanceList>(api, WorkflowRoutes.Instances(query), InstancesAnswer(query));
+        if (InstancesGates.TryGetValue(query, out var gate))
+        {
+            await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(true);
+        }
+
+        return answer;
     }
 
     public Task<Result<InstanceDetail>> Instance(Uri api, string id, CancellationToken cancellationToken)

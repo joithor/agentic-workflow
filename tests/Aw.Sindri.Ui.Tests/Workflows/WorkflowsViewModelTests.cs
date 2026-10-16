@@ -205,4 +205,61 @@ public sealed class WorkflowsViewModelTests
         Expect.Sequence(all, list.KnownRecipes);
         Assert.Equal(all[1], list.RecipeFilter);
     }
+
+    // A read the server answers late: its gate is set after a newer read has finished.
+    private TaskCompletionSource Hold(InstanceQuery query)
+    {
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _server.InstancesGates[query] = gate;
+        return gate;
+    }
+
+    [Fact]
+    public Task An_older_unfiltered_answer_arriving_after_a_filtered_one_is_dropped() => UiThread.Run(async () =>
+    {
+        var list = await Shown();
+        var recipe = Recipe(Served("recipe-filter")[0]!);
+        var late = Hold(new InstanceQuery(Root: true, Open: true));
+        var older = list.Refresh(_api, Token);
+
+        await list.FilterRecipe(recipe, Token);
+        _server.InstancesGates.Clear();
+        late.SetResult();
+        await older;
+
+        Assert.All(list.Groups, g => Assert.Equal(recipe, g.Recipe));
+        Assert.Equal(recipe, list.RecipeFilter);
+    }, Token);
+
+    [Fact]
+    public Task A_late_recipe_answer_after_All_recipes_does_not_shrink_the_known_recipes() => UiThread.Run(async () =>
+    {
+        var list = await Shown();
+        var all = list.KnownRecipes.ToList();
+        var recipe = Recipe(Served("recipe-filter")[0]!);
+        var late = Hold(new InstanceQuery(Root: true, Open: true, Recipe: recipe));
+        var narrowing = list.FilterRecipe(recipe, Token);
+
+        await list.FilterRecipe(recipe: null, Token);
+        late.SetResult();
+        await narrowing;
+
+        Expect.Sequence(all, list.KnownRecipes);
+        Expect.Sequence(all, list.Groups.Select(g => g.Recipe));
+        Assert.Null(list.RecipeFilter);
+    }, Token);
+
+    [Fact]
+    public Task Expanding_then_collapsing_the_finished_line_does_not_refill_it() => UiThread.Run(async () =>
+    {
+        var list = await Shown();
+        var late = Hold(new InstanceQuery(Root: true));
+        var expanding = list.ToggleDone(Token);
+
+        await list.ToggleDone(Token);
+        late.SetResult();
+        await expanding;
+
+        Assert.Equal((false, 0), (list.IsDoneExpanded, list.DoneRows.Count));
+    }, Token);
 }
