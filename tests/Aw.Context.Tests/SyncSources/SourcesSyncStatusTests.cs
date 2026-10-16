@@ -116,7 +116,7 @@ public sealed class SourcesSyncStatusTests
         await using var rig = await Rig.Start(wrap: inner => slow = new ScriptedSource(inner));
         slow!.AfterFetch = () => rig.World.Clock.Advance(SyncSourcesService.RunCap + TimeSpan.FromSeconds(1));
 
-        var capped = await rig.Sync(ExtractDecisionsTests.Scope(labeling: false));
+        var capped = await rig.Sync(Scope(labeling: false));
         var sync = (await Onyx(rig)).Sync;
 
         Assert.Equal(ContextErrors.SyncCapped.Code, capped.Code);   // the walk was cut short, and the records held back for labeling do not hide it
