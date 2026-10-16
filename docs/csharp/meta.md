@@ -100,7 +100,7 @@ its parent is `systemd --user` or init, and it is older than five minutes.
 
 Worktrees pile up (a gate tree per pull request, a worktree per lane or builder). `aw-meta` removes the finished ones
 itself, on **triggers**, never on a timer: work builds up over time, so how long a worktree has sat there is no reason to
-remove it, and nothing in the rules reads a file time or a commit date.
+remove it, and no rule reads a commit date or an age. The one time rule is a change trigger, not an age timer (rule 7).
 
 **Triggers.** Each one sweeps only the worktrees that belong to the pull requests it concerns (their head branches and
 their gate trees `gates/<pr>/tree` and `gates/<pr>/main-tree`), then logs one `NOTE` line to the running log ("worktrees
@@ -116,12 +116,14 @@ With `worktrees.enabled: false` the two automatic triggers only report ("would r
 
 **The rules.** A worktree is `removable` only when all of these hold; any other is `kept` with every failing reason:
 
-1. Merged: its HEAD is reachable from `origin/main` (a fetch precedes every sweep), or its pull request is CLOSED and nothing is unpushed. A detached worktree counts only when its HEAD is reachable from `origin/main`. A branch whose pull request is still open is kept even when its head is merged.
+1. Finished: the work is proven finished by an ended pull request, not by reachability (a branch just cut from `origin/main` is reachable too: the 2026-10-16 incident removed a live worktree on such a branch, with no commits and no pull request yet). A worktree on a branch is removable only when that branch's pull request is MERGED (its HEAD is also reachable from `origin/main`; a fetch precedes every sweep) or CLOSED (and nothing is unpushed). A branch with no pull request is always kept ("no pull request: work not finished"), and one whose head is already in `origin/main` with no ended pull request is kept as a "fresh branch, no commits". A branch whose pull request is still open is kept even when its head is merged. A detached worktree that is not a gate tree is always kept ("detached, not a gate tree").
 2. Clean: `git status --porcelain --untracked-files=all` is empty, ignoring only untracked files under a directory named like a build output (`worktrees.buildOutputs`, default `bin`, `obj`, `artifacts`, `node_modules`, `dist`). Any other untracked file, and any change to a tracked file, keeps it.
 3. Nothing unpushed: every commit of its HEAD is reachable from a remote branch (`git rev-list HEAD --not --remotes` is empty).
 4. Idle: no live process has its working directory or an open file inside it (`/proc/<pid>/cwd` and `fd` on Linux, `lsof` where there is no `/proc`). This covers a lane or builder still sitting in it. A scan that cannot run fails the sweep: nothing is removed.
 5. Not protected: not the main worktree, not the team's shared checkout (`repo`), not locked (`git worktree lock`), its directory not missing.
 6. Under an allowed root: `worktrees.roots` (default `~/repos/aw-wt`, `<repo>/.claude/worktrees`), plus the gate directory `$AW_STATE_DIR/meta/gates` always. A path outside every root, a root itself, or a sibling that shares a root's name prefix is kept.
+
+7. Not changed since the last sweep: the directory, or any file in its top two levels (build output and `.git` left out), has a modification time later than the start of the previous removing sweep (`worktrees.sweep-start` in aw-meta state; a sweep records its start after it removes, and `--dry-run` and `worktree-list` record nothing). This is a change trigger, not an age timer: it protects only trees that changed after the previous sweep, so a tree untouched since then is judged by rules 1 to 6. With no recorded sweep it has nothing to compare with. A tree whose files can't be read is kept. Gate trees are exempt (they are aw-meta's own and rule 1 for them already needs an ended pull request).
 
 A **gate tree** (`gates/<pr>/tree`, `gates/<pr>/main-tree`) is aw-meta's own throwaway checkout, so rule 1 reads: its pull request is merged or closed (looked up on GitHub; unknown or open keeps it), and its HEAD is reachable from `origin/main` or is the merge commit the gate made itself (committer `aw-meta@localhost`); rule 3 does not apply. It is also kept while a `gate-run`, `gate-rerun` or `merge-run` of that pull request runs (found by command line, leaving out `aw-meta` itself and its parent shells).
 
