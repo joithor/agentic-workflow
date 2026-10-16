@@ -183,7 +183,7 @@ public sealed class ItemShapeTests
         var conflict = Assert.Single(result.Conflicts);
         Assert.All(conflict.Intent, marker => Assert.True(result.Cites.ContainsKey(marker), marker + " is not a citation of the result"));
         Assert.DoesNotContain(conflict.Intent, m => m.StartsWith("decision:", StringComparison.Ordinal));
-        Assert.Contains(result.Cites.Single(c => c.Value.Key.Value == R103).Key, conflict.Intent);   // the 103 decision's quote comes from the 103 record
+        Assert.Contains(result.Cites.Single(c => c.Value.Key.Value == R103).Key, conflict.Intent, StringComparer.Ordinal);   // the 103 decision's quote comes from the 103 record
         Assert.Empty(conflict.Behavior);
     }
 

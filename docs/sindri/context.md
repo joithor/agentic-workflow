@@ -668,7 +668,7 @@ the store, a usage error · `75` the heavy-job lock stayed busy (`040`).
 | Code | Meaning | Fix |
 |---|---|---|
 | `SND-CONTEXT-040` | The heavy-job lock stayed busy (names the holder) | Retry when the other job finishes |
-| `SND-CONTEXT-042` | Labeling is on and the pass would pass `maxTokens` | Raise `context.labeling.maxTokens` or turn labeling off |
+| `SND-CONTEXT-042` | Labeling is on and the pass would pass `maxTokens`, or labeling is off with decisions still queued (`sources status` shows it per source while records wait; a query that reaches such a record lists `decisions` as degraded) | Raise `context.labeling.maxTokens`, turn labeling on, then `sindri context sources sync` |
 | `SND-CONTEXT-056` | A sync of that source is already running (409; one at a time per source) | Wait; `context sources status` shows it |
 | `SND-CONTEXT-057` | A model answer the engine refused (quote not verbatim, target outside the record's links, malformed); counted in `refused`, never fails the sync | None; persistent counts mean prompt drift |
 | `SND-CONTEXT-058` | `sources sync --source X` names a source that isn't configured or has nothing to sync (404) | `context sources status` for the names |

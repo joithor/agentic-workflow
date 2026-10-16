@@ -15,5 +15,11 @@ internal sealed record GraphPart(IReadOnlyList<PackCandidate> Candidates, IReadO
     /// <summary>Intent against intent: checked decision pairs that contradict on a reached node (spec §8.4).</summary>
     internal IReadOnlyList<ResultConflict> Conflicts { get; init; } = [];
 
+    /// <summary>Per decision item key, the key of the record its quote comes from (so the answer can cite that record instead of the map).</summary>
+    internal IReadOnlyDictionary<string, string> DecisionRecords { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
+
+    /// <summary>The keys of the records the answer's nodes are linked to, to tell whether any still waits for decision extraction.</summary>
+    internal IReadOnlyList<string> LinkedRecords { get; init; } = [];
+
     internal static GraphPart None { get; } = new([], new Dictionary<string, Citation>(StringComparer.Ordinal), [], MapVersion: null, []);
 }

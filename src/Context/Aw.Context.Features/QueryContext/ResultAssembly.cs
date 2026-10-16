@@ -29,10 +29,28 @@ internal sealed class ResultAssembly(IEgressScrubber egress, QueryId queryId, Da
             candidates.Add(new PackCandidate("records", Item(record, marker), marker));
         }
 
+        var recordMarkers = cites.Where(c => c.Key != GraphAnswer.MapMarker).GroupBy(c => c.Value.Key.Value, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First().Key, StringComparer.Ordinal);
+        candidates = [.. candidates.Select(c => CiteRecord(c, graph, recordMarkers))];
+        var conflicts = graph.Conflicts.Select(c => c with { Intent = [.. c.Intent.Select(k => MarkerOf(k, graph, recordMarkers)).Distinct(StringComparer.Ordinal)] }).ToList();
         var packed = Packer.Pack(candidates, budget);
         return new ContextResult(ContextResult.CurrentSchemaVersion, queryId, query, graph.Anchors, graph.MapVersion, asOf, packed.Sections,
-            graph.Conflicts, graph.Suggested, [.. records.Degraded.Select(d => d with { Message = egress.Scrub(d.Message).Text })], packed.Truncated,
+            conflicts, graph.Suggested, [.. records.Degraded.Select(d => d with { Message = egress.Scrub(d.Message).Text })], packed.Truncated,
             new BudgetUse(budget, packed.Used, Estimate: true), cites);
+    }
+
+    // A decision's quote comes from a record: when the answer carries that record's citation, the decision cites it instead of the map (spec §8.4).
+    private static string MarkerOf(string decision, GraphPart graph, Dictionary<string, string> recordMarkers) =>
+        graph.DecisionRecords.TryGetValue(decision, out var record) && recordMarkers.TryGetValue(record, out var marker) ? marker : GraphAnswer.MapMarker;
+
+    private static PackCandidate CiteRecord(PackCandidate candidate, GraphPart graph, Dictionary<string, string> recordMarkers)
+    {
+        if (candidate.Section != "decisions" || candidate.Item.Node is not { } decision)
+        {
+            return candidate;
+        }
+
+        var marker = MarkerOf(decision, graph, recordMarkers);
+        return marker == candidate.Marker ? candidate : candidate with { Item = candidate.Item with { Cites = [marker] }, Marker = marker };
     }
 
     private ResultItem Item(FetchedRecord record, string marker)

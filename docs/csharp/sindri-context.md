@@ -590,9 +590,19 @@ the row, and a reply the pinned shape can't read degrades onyx (`010` with cause
   link, commit with its cursor, then `DecisionPass` under `context.labeling.maxTokensPerSync`), one run per source at a time (`056`), a
   2-minute cap (`059`). `IContextEngine.Sync(source?, scope)` returns a `SyncReport` of counts and codes only.
 - Reads: `MapReader` merges the layer for every graph read; the `item` shape (`context query --item <KEY>`) anchors on the record a tracker
-  key names (`ItemAnchors`) and answers `003` with suggestions when none is linked.
+  key names (`ItemAnchors`) and answers `003` with suggestions when none is linked. The fix line follows the state: with `context-sync`
+  named in the profile (`ContextScope.SyncConfigured`) it says the record isn't linked yet or the key is unknown and to run `sindri context
+  sources sync`; without it, to name the service. Sindri resolves a Sindri item id (`ITM-…`) before the engine (`ItemKeys`): a linked item
+  asks for its record; one with no record yet answers `003` "has no tracker record linked yet"; an id no item has, or a session may not
+  see, goes on unchanged and answers the same `003` as any unknown key.
+- Decisions and conflicts cite the record their quote comes from (`C<n>` of that record when the answer fetched it, else the map's `C1`);
+  `conflicts[].intent` holds those citation markers (never decision keys) and `behavior` stays empty. A feature the record's text does not
+  name is not an anchor (the rules link only what the text names), and the feature lens's intent band lists records with a `mentions` edge
+  to its own scope, so a record that only reaches it through an `issue-key` link to another record shows on that record's lens.
 - `SourcesStatusService` fills `SourceStatusRow.Sync` (`lastSync`, `state`, `records`, `linked`, `decisions`, `queued`, `code`) for each
-  intent source; labeling off (`042`) only queues extraction and stays `ok`.
+  intent source; labeling off (`042`) only queues extraction and stays `ok`. While any record is queued `code` stays `042` after every run
+  (derived from the queue, so a run that fetches nothing does not clear it). A query whose answer reaches a queued record carries
+  `degraded` `042` for source `decisions` (`QueryContextService.NoteQueuedDecisions`); nothing is asked of the model.
 
 ### Sindri: the `context-sync` service (slice 6)
 

@@ -4,6 +4,7 @@ using Aw.Context.Core.Docs;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
+using Aw.Context.Core.Linking;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Ranking;
 using Aw.Context.Core.Results;
@@ -25,7 +26,7 @@ namespace Aw.Context.Features.QueryContext;
 /// scrubbers, built from the approved profile's extra patterns, and so does the map's text. A text question asked with no
 /// map (or by a session whose repo implements none of it) is answered from the sources alone. No model is called.
 /// </summary>
-internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFactory scrubberFactory, IIdGenerator ids, TimeProvider clock, MapReader graphs)
+internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFactory scrubberFactory, IIdGenerator ids, TimeProvider clock, MapReader graphs, IIntentStore intents)
     : IService<QueryContextRequest, ContextResult>
 {
     /// <summary>The most fused items fetched (and so cited) per query.</summary>
@@ -69,6 +70,7 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFacto
             return Unknown(miss, request.Scope);   // not linked by any sync, and no live record carries that tracker key
         }
 
+        await NoteQueuedDecisions(graph, sources, degraded, cancellationToken).ConfigureAwait(false);
         var versions = await Versions(fetched, sources, deadline, cancellationToken).ConfigureAwait(false);
         var assembly = new ResultAssembly(scrubbers.Value.Egress, QueryId.From("q_" + ids.NewId().ToString("N", CultureInfo.InvariantCulture)), clock.GetUtcNow());
         return assembly.Build(request.Query, valid.Value.Budget, new RecordPart(fetched, versions, degraded), graph);
@@ -245,6 +247,31 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFacto
         }
 
         return fetched;
+    }
+
+    /// <summary>
+    /// A record linked to the answer's nodes whose decisions are still queued (labeling off or over its cap) is told as degraded 042 for 'decisions',
+    /// so a missing decision is not read as no decision (verification plan J2.3). Nothing is asked of the model.
+    /// </summary>
+    private async Task NoteQueuedDecisions(GraphPart graph, IReadOnlyList<IContextSource> sources, List<DegradedSource> degraded, CancellationToken ct)
+    {
+        if (graph.LinkedRecords.Count == 0)
+        {
+            return;
+        }
+
+        var waiting = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var source in sources.Select(s => s.Describe()).Where(d => d.Kind == SourceKind.Intent))
+        {
+            var queued = await intents.Queued(source.Id, ct).ConfigureAwait(false);
+            waiting.UnionWith(queued.IsError ? [] : queued.Value.Select(k => k.Value));
+        }
+
+        if (graph.LinkedRecords.Any(waiting.Contains))
+        {
+            degraded.Add(new DegradedSource(SourceId.From("decisions"), ContextErrors.LabelingUnavailable.Code,
+                "decisions of a linked record are not extracted yet: labeling is off or over its token cap (fix: turn on 'context.labeling.enabled' or raise 'maxTokensPerSync', then sindri context sources sync)", clock.GetUtcNow()));
+        }
     }
 
     /// <summary>One batched version check per source, under what is left of the deadline (spec §8.2 step 8).</summary>

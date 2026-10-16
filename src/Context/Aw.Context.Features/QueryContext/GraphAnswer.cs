@@ -51,8 +51,20 @@ internal static class GraphAnswer
             cites[MapMarker] = Cite(map, candidates);
         }
 
-        return new GraphPart(candidates, cites, [.. anchors.Select(a => a.Key.Value)], map.Snapshot.Label, [.. suggested.Select(k => k.Value)]) { Conflicts = Conflicts(map, reached, text) };
+        return new GraphPart(candidates, cites, [.. anchors.Select(a => a.Key.Value)], map.Snapshot.Label, [.. suggested.Select(k => k.Value)]) { Conflicts = Conflicts(map, reached, text), DecisionRecords = DecisionRecords(graph, reached), LinkedRecords = LinkedRecords(graph, anchors, reached) };
     }
+
+    private static Dictionary<string, string> DecisionRecords(GraphSnapshot graph, HashSet<string> reached)
+    {
+        var deciding = graph.Edges.Where(e => e.Type == EdgeType.Decides && reached.Contains(e.To.Value)).Select(e => e.From.Value).ToHashSet(StringComparer.Ordinal);
+        return graph.Decisions.Select(d => (Key: d.ToKey().Value, Record: d.Record.Value)).Where(d => deciding.Contains(d.Key)).ToDictionary(d => d.Key, d => d.Record, StringComparer.Ordinal);
+    }
+
+    private const string RecordPrefix = "record:";
+
+    private static List<string> LinkedRecords(GraphSnapshot graph, IReadOnlyList<GraphNode> anchors, HashSet<string> reached) =>
+        [.. anchors.Select(a => a.Key.Value).Concat(graph.Edges.Where(e => e.Type == EdgeType.Mentions && reached.Contains(e.To.Value)).Select(e => e.From.Value))
+            .Where(k => k.StartsWith(RecordPrefix, StringComparison.Ordinal)).Select(k => k[RecordPrefix.Length..]).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
 
     // Two decisions on a reached node that a model check found contradicting: the answer lists them by the decisions' item ids (spec §8.4, A-F13).
     private static List<ResultConflict> Conflicts(VisibleMap map, HashSet<string> reached, MapText text)
