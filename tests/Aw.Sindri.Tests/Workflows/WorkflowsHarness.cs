@@ -14,6 +14,7 @@ using Aw.Sindri.Infrastructure.Notifications;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Tests.Ledger;
 using Aw.Sindri.Tests.Notifications;
+using Aw.Sindri.Tests.Workflows.Spike;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Time.Testing;
@@ -121,8 +122,7 @@ internal sealed class WorkflowsHarness : IDisposable
         }
     }
 
-    private static bool IsPortTaken(Exception e) =>
-        e.ToString().Contains("address already in use", StringComparison.OrdinalIgnoreCase);
+    private static bool IsPortTaken(Exception e) => TemporalServerFixture.IsPortTaken(e);
 
     public static string Target(WorkflowEnvironment env) => env.Client.Connection.Options.TargetHost!;
 

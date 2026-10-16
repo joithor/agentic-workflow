@@ -35,7 +35,7 @@ internal sealed class TemporalInstanceDirectory(TemporalFrontend frontend, Known
             var address = InstanceAddress.Root(item, recipe, attempt);
             try
             {
-                var described = await client.Value.GetWorkflowHandle(address.Value).DescribeAsync(new() { Rpc = new() { CancellationToken = cancellationToken } }).ConfigureAwait(false);
+                var described = await TemporalReads.Run(rpc => client.Value.GetWorkflowHandle(address.Value).DescribeAsync(new() { Rpc = rpc }), cancellationToken).ConfigureAwait(false);
                 latest = new AttemptState(address, attempt, described.Status == WorkflowExecutionStatus.Running);
             }
             catch (RpcException e) when (TemporalUpdates.NoNamespace(e)) // boundary: not serve's Temporal, not a missing attempt
@@ -63,7 +63,7 @@ internal sealed class TemporalInstanceDirectory(TemporalFrontend frontend, Known
 
         try
         {
-            var described = await client.Value.GetWorkflowHandle(address.Value).DescribeAsync(new() { Rpc = new() { CancellationToken = cancellationToken } }).ConfigureAwait(false);
+            var described = await client.Value.GetWorkflowHandle(address.Value).DescribeAsync(new() { Rpc = new() { CancellationToken = cancellationToken } }).ConfigureAwait(false);   // why: the worker's effects ask this too, so it keeps the SDK's retry
             return described.Status == WorkflowExecutionStatus.Running;
         }
         catch (RpcException e) when (TemporalUpdates.NoNamespace(e)) // boundary: not serve's Temporal, not a missing instance
@@ -119,7 +119,7 @@ internal sealed class TemporalInstanceDirectory(TemporalFrontend frontend, Known
 
         try
         {
-            await foreach (var execution in client.Value.ListWorkflowsAsync("WorkflowType = 'RecipeWorkflow'").WithCancellation(cancellationToken).ConfigureAwait(false))
+            foreach (var execution in await TemporalReads.List(client.Value, "WorkflowType = 'RecipeWorkflow'", cancellationToken).ConfigureAwait(false))
             {
                 if (InstanceAddress.TryFrom(execution.Id, out var address) && WorkflowInstanceId.Of(address) == id)
                 {
@@ -145,7 +145,7 @@ internal sealed class TemporalInstanceDirectory(TemporalFrontend frontend, Known
         var roots = new Dictionary<string, (int Attempt, InstanceAddress Address)>(StringComparer.Ordinal);
         try
         {
-            await foreach (var execution in client.ListWorkflowsAsync($"WorkflowType = 'RecipeWorkflow' AND Item = '{item.Value}'").WithCancellation(cancellationToken).ConfigureAwait(false))
+            foreach (var execution in await TemporalReads.List(client, $"WorkflowType = 'RecipeWorkflow' AND Item = '{item.Value}'", cancellationToken).ConfigureAwait(false))
             {
                 if (execution.Id.Split('/') is [_, var recipe, var number] && int.TryParse(number, NumberStyles.None, CultureInfo.InvariantCulture, out var attempt)
                     && (!roots.TryGetValue(recipe, out var seen) || seen.Attempt < attempt))
