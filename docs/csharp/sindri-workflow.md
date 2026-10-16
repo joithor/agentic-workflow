@@ -441,7 +441,7 @@ A block is a class with a static descriptor, registered explicitly (no assembly 
    unavailable. Add it to `ShippedBlocksTests`, which pins the catalog.
    A Step whose outcomes or inputs depend on its parameters sets `OutcomesFrom` and `InputsFrom`: a list parameter's name
    (`choices`), or `<stateParam>.<listParam>` for a twin that reads another state's Step (`from.choices`). Read outcomes
-   and inputs through `StepOutcomes.Of` and `StepInputs.Of`, never from the descriptor directly. An output that every
+   and inputs through `StepOutcomes.Of` and `StepInputs.Of`, never from the descriptor directly: the validator, the report validation and the eval read through them (the desk's views still read the descriptor and move onto them in DT-V2). An output that every
    outcome must carry is `Every: true` (read it with `StepOutputs.RequiredOn`), and one the engine writes when a report
    omits it is `EngineFilled: true`. These descriptor fields are written only when set, so a descriptor without them
    keeps its hash; `ShippedBlocksTests` pins every shipped hash.

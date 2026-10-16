@@ -317,9 +317,12 @@ public sealed class RecipeReaderTests
         var yaml = Minimal.Replace("step: step.produce", "step: { use: step.produce, with: { files: [a: 1] } }", StringComparison.Ordinal);
 
         var document = RecipeComposition.ReadClean(yaml, "test.yaml");
-        var errors = RecipeComposition.Errors(document, new BlockCatalog([TestBlocks.Step("step.produce")], []), InMemoryChildRecipes.None);
+        var step = TestBlocks.Step("step.produce") with { Parameters = [new ParameterSpec("files", ParameterType.List, Required: false, IsCapabilityField: false)] };
+        var errors = RecipeComposition.Errors(document, new BlockCatalog([step], []), InMemoryChildRecipes.None);
 
-        Assert.Contains(errors, l => l.StartsWith("RCP-BLOCK-003", StringComparison.Ordinal));
+        Assert.Equal(
+            "RCP-BLOCK-003: parameter 'files' of 'step.produce' takes a list of strings, numbers or flags, not a list with an object or a list in it at test.yaml:8:40 (states.produce.step.with.files); give it a list of strings, numbers or flags",
+            Assert.Single(errors, static l => l.StartsWith("RCP-BLOCK-003", StringComparison.Ordinal)));
     }
 
     [Fact, Trait("Lane", "unit")]
