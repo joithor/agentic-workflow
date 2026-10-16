@@ -59,7 +59,7 @@ internal static class RecipeNormalizer
 
         if (state["step"] is JsonObject step)
         {
-            With(step["with"] as JsonObject, path + ".step.with", findings);
+            With(step["with"] as JsonObject, path + ".step.with", findings, allowUnquotedEntry: true);
             Wrap(step["inputs"] as JsonArray, "use");
             Uses(step["inputs"] as JsonArray, path + ".step.inputs", findings);
         }
@@ -67,7 +67,7 @@ internal static class RecipeNormalizer
         Tokens(state["budget"] as JsonObject, path + ".budget", findings);
         if (state["waitFor"] is JsonObject { } waitFor && waitFor["child"] is JsonObject child)
         {
-            With(child["inputs"] as JsonObject, path + ".waitFor.child.inputs", findings);
+            With(child["inputs"] as JsonObject, path + ".waitFor.child.inputs", findings, allowUnquotedEntry: false);
         }
     }
 
@@ -97,7 +97,7 @@ internal static class RecipeNormalizer
         {
             if (items[i] is JsonObject item)
             {
-                With(item["with"] as JsonObject, string.Create(CultureInfo.InvariantCulture, $"{path}[{i}].with"), findings);
+                With(item["with"] as JsonObject, string.Create(CultureInfo.InvariantCulture, $"{path}[{i}].with"), findings, allowUnquotedEntry: true);
             }
         }
     }
@@ -114,8 +114,12 @@ internal static class RecipeNormalizer
         }
     }
 
-    /// <summary>Each bare value of a 'with:' map or child inputs becomes '{ literal: value }'; a mapping is already long.</summary>
-    private static void With(JsonObject? values, string path, ReaderFindings findings)
+    /// <summary>
+    /// Each bare value of a 'with:' map or child inputs becomes '{ literal: value }'; a mapping is already long.
+    /// <paramref name="allowUnquotedEntry"/> keeps a one-key mapping in a list for the block's rule to refuse; it is set for the
+    /// blocks' 'with:' maps only, since nothing downstream reads a child input list.
+    /// </summary>
+    private static void With(JsonObject? values, string path, ReaderFindings findings, bool allowUnquotedEntry)
     {
         foreach (var key in values?.Select(static p => p.Key).ToList() ?? [])
         {
@@ -125,7 +129,7 @@ internal static class RecipeNormalizer
                 continue;
             }
 
-            if (value is JsonArray list && list.Any(static item => item is JsonArray || (item is JsonObject entry && !IsUnquotedEntry(entry))))
+            if (value is JsonArray list && !IsLiteralList(list, allowUnquotedEntry))
             {
                 findings.Add("RCP-SCHEMA-002", $"{path}.{key}", $"the list '{key}' holds more than strings, numbers and bools",
                     "a literal list holds only strings, numbers and bools; use { fact } or { profile } for anything else");
@@ -136,6 +140,9 @@ internal static class RecipeNormalizer
             values[key] = new JsonObject { ["literal"] = value?.DeepClone() };
         }
     }
+
+    private static bool IsLiteralList(JsonArray list, bool allowUnquotedEntry) =>
+        list.All(item => item is not JsonArray && (item is not JsonObject entry || (allowUnquotedEntry && IsUnquotedEntry(entry))));
 
     /// <summary>
     /// A one-key mapping with a plain value: an entry written "- ui: text" without its quotes. It stays in the list so the
