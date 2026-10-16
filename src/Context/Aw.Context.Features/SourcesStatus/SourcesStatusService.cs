@@ -79,12 +79,13 @@ internal sealed class SourcesStatusService(IDocIndex index, ISourceCatalog catal
     }
 
     /// <summary>
-    /// Unavailable after a failed run; labeling being off (042) only queues the extraction, so the links synced and it stays ok. While records
-    /// are queued the code stays 042, run after run (a run that fetches nothing records no failure of its own).
+    /// Unavailable after a failed run; labeling being off or over its token cap (042) only queues the extraction, so the links synced and it stays ok. A run the time
+    /// cap stopped (059) is partial, not failed: it stays ok (or degraded before the first sync) and shows 059 until a run goes on; the next run continues. While
+    /// records are queued and no other code is recorded the code stays 042, run after run (a run that fetches nothing records no failure of its own).
     /// </summary>
     private static SourceSyncStatus SyncStatus(IntentSourceState state)
     {
-        var failed = state.LastError is { } code && code != ContextErrors.LabelingUnavailable.Code;
+        var failed = state.LastError is { } code && code != ContextErrors.LabelingUnavailable.Code && code != ContextErrors.SyncCapped.Code;
         var health = failed ? SourceState.Unavailable : state.LastSync is null ? SourceState.Degraded : SourceState.Ok;
         return new SourceSyncStatus(state.LastSync, health, state.Records, state.Links, state.Decisions, state.Queued, state.LastError ?? (state.Queued > 0 ? ContextErrors.LabelingUnavailable.Code : null));
     }

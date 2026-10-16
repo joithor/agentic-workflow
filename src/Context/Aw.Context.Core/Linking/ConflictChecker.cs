@@ -10,7 +10,7 @@ namespace Aw.Context.Core.Linking;
 /// </summary>
 public static class ConflictChecker
 {
-    /// <summary>The pairs to ask about: each added decision against every other current decision on a node it decides, unless the pair was already checked.</summary>
+    /// <summary>The pairs to ask about: each added decision against every other current decision on a node it decides, unless the pair was already checked (a pair whose answers could not be read yet is asked again).</summary>
     /// <param name="layer">The intent layer after the added decisions were saved.</param>
     /// <param name="added">The decisions just saved.</param>
     /// <returns>The pairs, in key order, with the node they share.</returns>
@@ -21,7 +21,7 @@ public static class ConflictChecker
         var byKey = layer.Decisions.ToDictionary(d => d.ToKey().Value, StringComparer.Ordinal);
         var superseded = layer.DecisionEdges.Where(e => e.Type == EdgeType.Supersedes).Select(e => e.To.Value).ToHashSet(StringComparer.Ordinal);
         var onNode = layer.DecisionEdges.Where(e => e.Type == EdgeType.Decides).ToLookup(e => e.To.Value, e => e.From.Value, StringComparer.Ordinal);
-        var checkedPairs = layer.Conflicts.Select(c => (c.A.Value, c.B.Value)).ToHashSet();
+        var checkedPairs = layer.Conflicts.Where(c => c.Verdict != ConflictVerdict.Unread).Select(c => (c.A.Value, c.B.Value)).ToHashSet();
         var found = new Dictionary<(string, string), (DecisionRow, DecisionRow, NodeKey)>();
         foreach (var decision in added.Where(d => !superseded.Contains(d.ToKey().Value)))
         {

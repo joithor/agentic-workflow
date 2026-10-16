@@ -586,13 +586,18 @@ the row, and a reply the pinned shape can't read degrades onyx (`010` with cause
   `IIntentStore` (records, links, decisions, edges, conflicts, per-source cursor, last sync and last error).
 - `Aw.Context.Infrastructure/Intent/SqliteIntentStore` and migration `0006_s5b_intent_links.sql` (outside the map versions, so a build or
   promote never drops it). `FakeIntentStore` and `IntentStoreContract` in `Aw.Context.Testing`.
-- `Aw.Context.Features/SyncSources`: `SyncSourcesService` walks each live intent source against the current map (`IntentSyncRun`: page,
-  link, commit with its cursor, then `DecisionPass` under `context.labeling.maxTokensPerSync`), one run per source at a time (`056`), a
-  2-minute cap (`059`) checked before each node, before each fetch after the run's first (so every run makes progress) and before each model call: the
-  page fetched so far is committed with its cursor at the node (walked again, its stored hits skipped), the records not yet extracted stay queued, and a finished
-  walk commits the end cursor so trailing nodes without search terms don't stall the next run. A record stays queued until its conflict checks are
-  through too (a stopped check, the cap or a model failure, leaves the pair to the next sync); a re-extraction keeps the verdicts of pairs whose
-  decision keys survive and never replaces a human decision (`DecisionBatch.Pending`). `IContextEngine.Sync(source?, scope)` returns a `SyncReport` of counts and codes only.
+- `Aw.Context.Features/SyncSources`: `SyncSourcesService` walks each live intent source against the current map (`IntentSyncRun`: search a node,
+  then for each new hit fetch, link, commit the record with its links and run `DecisionPass` on it under `context.labeling.maxTokensPerSync`, before
+  the next fetch; the node's cursor commits when the node is through), one run per source at a time (`056`). A 2-minute cap (`059`) is checked before
+  each node and before each fetch after the run's first, so every run completes at least one record and a slow source can't starve: a record in
+  hand is always extracted (the cap never cuts a model call), so no record waits queued because of the cap. A node the cap cuts short keeps its
+  cursor at the node and is walked again, its stored hits skipped as unchanged. A capped run records `059` as the source's last code without
+  failing it (status: `ok`/`degraded` with code `059`; the next run continues and clears it). A finished walk commits the end cursor so trailing
+  nodes without search terms don't stall the next run. A record stays queued until its conflict checks are through too (a stopped check, the token cap
+  or a model failure leaves the pair to the next time the walk reaches the record; a save with the checks pending queues a done record again, so a map
+  change that re-extracts it is retried too); a re-extraction keeps the verdicts of pairs whose decision keys survive and never replaces a human
+  decision (`DecisionBatch.Pending`). A verdict answer that can't be read leaves the pair unanswered (`unread`, `tries` 1-2, the record stays queued,
+  `057` counted); the third unreadable answer marks it `refused` and it is not asked again. `IContextEngine.Sync(source?, scope)` returns a `SyncReport` of counts and codes only.
 - Reads: `MapReader` merges the layer for every graph read; the `item` shape (`context query --item <KEY>`) anchors on the record a tracker
   key names (`ItemAnchors`) and answers `003` with suggestions when none is linked. The fix line follows the state: with `context-sync`
   named in the profile (`ContextScope.SyncConfigured`) it says the record isn't linked yet or the key is unknown and to check the key, wait for
@@ -604,8 +609,9 @@ the row, and a reply the pinned shape can't read degrades onyx (`010` with cause
   name is not an anchor (the rules link only what the text names), and the feature lens's intent band lists records with a `mentions` edge
   to its own scope, so a record that only reaches it through an `issue-key` link to another record shows on that record's lens.
 - `SourcesStatusService` fills `SourceStatusRow.Sync` (`lastSync`, `state`, `records`, `linked`, `decisions`, `queued`, `code`) for each
-  intent source; labeling off (`042`) only queues extraction and stays `ok`. While any record is queued `code` stays `042` after every run
-  (derived from the queue, so a run that fetches nothing does not clear it). A query whose answer reaches a queued record carries
+  intent source; labeling off or over its token cap (`042`) only queues extraction and stays `ok`. While any record is queued and no other code is
+  recorded, `code` stays `042` after every run (derived from the queue, so a run that fetches nothing does not clear it). A run the time cap stopped
+  shows `059` (state unchanged, `ok` or `degraded`; the fix is to wait, the next run continues), and `042` only when labeling is off or over its cap. A query whose answer reaches a queued record carries
   `degraded` `042` for source `decisions` (`QueryContextService.NoteQueuedDecisions`); nothing is asked of the model.
 
 ### Sindri: the `context-sync` service (slice 6)
@@ -622,9 +628,9 @@ intent source never synced or its last run failed. The `SyncSources` catalog row
 | Code | Kind (HTTP) | Exit | Meaning |
 |---|---|---|---|
 | `SND-CONTEXT-056` | Conflict (409) | 1 | A sync of that source is already running |
-| `SND-CONTEXT-057` | Invalid | - | A model answer the engine refused; counted in `refused`, never fails the sync |
+| `SND-CONTEXT-057` | Invalid | - | A model answer the engine refused; counted in `refused`, never fails the sync. A verdict that can't be read is retried (3 tries per pair), then the pair is `refused` |
 | `SND-CONTEXT-058` | NotFound (404) | 1 | `--source X` isn't a configured source with a sync |
-| `SND-CONTEXT-059` | Unavailable | 0 | A sync stopped at its time cap; partial, resumes from the cursor |
+| `SND-CONTEXT-059` | Unavailable | 0 | A sync stopped at its time cap; partial, resumes from the cursor; shown in `sources status` without failing the source |
 
 ### Tests
 

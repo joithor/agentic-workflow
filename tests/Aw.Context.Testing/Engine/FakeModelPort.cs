@@ -12,10 +12,10 @@ public sealed class FakeModelPort : IModelPort
     /// <summary>When set, answers each request itself (the tests route on the purpose and the prompt) instead of <see cref="Answer"/>.</summary>
     public Func<ModelRequest, string>? Responder { get; set; }
 
-    /// <summary>The requests asked so far.</summary>
-    /// <summary>When it returns an error for a request, the call fails with it (a model that is down for some purposes).</summary>
+    /// <summary>When it returns an error for a request, the call fails with it (a model that is down for some purposes). The failed request is still recorded in <see cref="Requests"/>.</summary>
     public Func<ModelRequest, Error?>? Fail { get; set; }
 
+    /// <summary>The requests asked so far, failed ones included.</summary>
     public IList<ModelRequest> Requests { get; } = [];
 
     /// <inheritdoc />

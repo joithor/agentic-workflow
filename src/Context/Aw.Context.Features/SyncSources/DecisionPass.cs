@@ -11,10 +11,11 @@ namespace Aw.Context.Features.SyncSources;
 /// fenced record text and the node keys its rules linked, and its answer is validated by <see cref="DecisionExtractor"/>. Everything it asks is counted
 /// against 'maxTokensPerSync': a call that would go over the cap is not made, and the record stays queued for the next sync, until its conflict checks are through too.
 /// </summary>
-internal sealed class DecisionPass(IIntentStore store, IModelPort model, LabelingSettings labeling, (IIngestFilter Ingest, TimeProvider Clock, Func<bool> OverCap) support)
+internal sealed class DecisionPass(IIntentStore store, IModelPort model, LabelingSettings labeling, (IIngestFilter Ingest, TimeProvider Clock) support)
 {
     private const int ExtractAnswerTokens = 600;
     private const int VerdictAnswerTokens = 60;
+    private const int VerdictTries = 3;
     private static readonly TimeSpan _askBudget = TimeSpan.FromSeconds(60);
 
     private bool _stopped;
@@ -26,9 +27,6 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
     public bool HeldBack { get; private set; }
 
     public string? Failure { get; private set; }
-
-    /// <summary>Whether the run's time cap passed before a call: no further call is made.</summary>
-    public bool Capped { get; private set; }
 
     public async ValueTask Run(IReadOnlyList<PendingRecord> pending, CancellationToken cancellationToken)
     {
@@ -82,7 +80,7 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
         }
     }
 
-    /// <summary>Asks about each unanswered pair the added decisions make; false when the checks stopped before the last pair.</summary>
+    /// <summary>Asks about each unanswered pair the added decisions make; false when the checks stopped before the last pair or an answer could not be read yet.</summary>
     private async ValueTask<bool> CheckConflicts(List<DecisionRow> added, CancellationToken cancellationToken)
     {
         var layer = await store.Layer(cancellationToken).ConfigureAwait(false);
@@ -91,6 +89,8 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
             return false;
         }
 
+        var tried = layer.Value.Conflicts.Where(c => c.Verdict == ConflictVerdict.Unread).ToDictionary(c => (c.A.Value, c.B.Value), c => c.Tries);
+        var complete = true;
         foreach (var (first, second, _) in ConflictChecker.Pairs(layer.Value, added))
         {
             var answer = await Ask(ModelPurpose.Adjudication, ConflictChecker.Prompt(first, second), VerdictAnswerTokens, cancellationToken).ConfigureAwait(false);
@@ -99,13 +99,18 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
                 return false;
             }
 
-            if (ConflictChecker.Read(answer) is not { } verdict)
+            var now = support.Clock.GetUtcNow();
+            var pair = DecisionConflict.Of(first.ToKey(), second.ToKey(), ConflictChecker.Read(answer) ?? ConflictVerdict.Unread, now);
+            if (pair.Verdict == ConflictVerdict.Unread)
             {
+                // An answer that can't be read leaves the pair unanswered and the record queued; the third unreadable answer gives the pair up (057), so it isn't asked forever.
                 Refused++;
-                continue;
+                var tries = tried.GetValueOrDefault((pair.A.Value, pair.B.Value)) + 1;
+                pair = pair with { Verdict = tries >= VerdictTries ? ConflictVerdict.Refused : ConflictVerdict.Unread, Tries = tries };
+                complete &= pair.Verdict == ConflictVerdict.Refused;
             }
 
-            var stored = await store.SaveConflict(DecisionConflict.Of(first.ToKey(), second.ToKey(), verdict, support.Clock.GetUtcNow()), cancellationToken).ConfigureAwait(false);
+            var stored = await store.SaveConflict(pair, cancellationToken).ConfigureAwait(false);
             if (stored.IsError)
             {
                 Failure = stored.Error.Code;
@@ -114,17 +119,12 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
             }
         }
 
-        return true;
+        return complete;
     }
 
     private async ValueTask<string?> Ask(ModelPurpose purpose, string prompt, int answerTokens, CancellationToken cancellationToken)
     {
-        if (!_stopped && support.OverCap())
-        {
-            Capped = true;
-        }
-
-        if (_stopped || Capped || Tokens + ((prompt.Length + 3) / 4) + answerTokens > labeling.MaxTokensPerSync)
+        if (_stopped || Tokens + ((prompt.Length + 3) / 4) + answerTokens > labeling.MaxTokensPerSync)
         {
             HeldBack = true;
             _stopped = true;

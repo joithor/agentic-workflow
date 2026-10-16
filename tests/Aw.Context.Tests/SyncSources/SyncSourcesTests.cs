@@ -81,14 +81,16 @@ public sealed class SyncSourcesTests
 
         Assert.Equal(ContextErrors.SyncCapped.Code, capped.Code);
         var searchedFirst = source.Searches;
-        Assert.InRange(searchedFirst, 1, total - 1);
+        Assert.Equal(1, searchedFirst);   // the cap is checked before each node: the first search took longer than the run may
+        Assert.Equal(1, capped.Fetched);   // that node has several new hits: the cap cut it short after its first fetch, so its cursor stays at the node
         Assert.NotNull((await world.Intents.State(_onyx, Ct)).Value.Cursor);
 
         source.AfterSearch = null;
         var resumed = (await world.Engine.Sync("onyx", _scope, Ct)).Value.Sources[0];
 
         Assert.Null(resumed.Code);
-        Assert.InRange(source.Searches, total, total + 1);   // the second run searched the nodes the first one didn't reach, and the node the cap cut short again
+        Assert.Equal(total + 1, source.Searches);   // the second run searched the nodes the first one didn't reach, and the node the cap cut short again
+        Assert.Equal(source.Searched[0], source.Searched[1]);   // ... and that node came first
     }
 
     [Fact]
@@ -112,7 +114,7 @@ public sealed class SyncSourcesTests
         var resumed = (await world.Engine.Sync("onyx", _scope, Ct)).Value.Sources[0];
 
         Assert.Null(resumed.Code);
-        Assert.Equal(all, (await world.Intents.Layer(Ct)).Value.Records.Count);   // nothing lost; the cut-off record waited for its extraction, so it was fetched again
+        Assert.Equal(all, (await world.Intents.Layer(Ct)).Value.Records.Count);   // nothing lost; the record the cap cut the node after was extracted before the run stopped, so it was not fetched again
         Assert.Equal(0, resumed.Queued);
     }
 

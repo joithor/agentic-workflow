@@ -224,7 +224,7 @@ public sealed class ExtractDecisionsTests
     }
 
     [Fact]
-    public async Task The_time_cap_also_stops_the_model_calls_within_a_node_and_the_rest_waits_queued()
+    public async Task A_time_cap_passing_during_a_model_call_lets_the_record_in_hand_finish_and_stops_before_the_next_fetch()
     {
         await using var whole = await Rig.Start();
         var all = (await whole.Sync(Scope())).Decisions;
@@ -239,7 +239,8 @@ public sealed class ExtractDecisionsTests
 
         Assert.Equal(ContextErrors.SyncCapped.Code, capped.Code);
         _ = Assert.Single(rig.World.Model.Requests, r => r.Purpose == ModelPurpose.DecisionExtraction);
-        Assert.True(capped.Queued > 0);
+        Assert.Equal(0, capped.Queued);   // the record in hand was extracted; the others were not fetched yet, so none waits queued
+        Assert.Equal(1, capped.Fetched);
         rig.World.Model.Fail = null;
 
         var resumed = await rig.Sync(Scope());

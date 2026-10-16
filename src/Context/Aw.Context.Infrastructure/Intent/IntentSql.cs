@@ -33,7 +33,7 @@ internal static class IntentSql
 
     internal const string Edges = "SELECT from_key, to_key, type, provenance, confidence, at FROM intent_edge ORDER BY from_key, to_key, type";
 
-    internal const string Conflicts = "SELECT a, b, verdict, at FROM intent_conflict ORDER BY a, b";
+    internal const string Conflicts = "SELECT a, b, verdict, at, tries FROM intent_conflict ORDER BY a, b";
 
     internal const string QueuedKeys = "SELECT key FROM intent_record WHERE source = @source AND extraction_state = 'queued' ORDER BY key";
 
@@ -58,7 +58,10 @@ internal static class IntentSql
     internal const string InsertEdge =
         "INSERT INTO intent_edge (from_key, to_key, type, provenance, confidence, at) VALUES (@from, @to, @type, @provenance, @confidence, @at) ON CONFLICT DO NOTHING";
 
-    internal const string InsertConflict = "INSERT INTO intent_conflict (a, b, verdict, at) VALUES (@a, @b, @verdict, @at) ON CONFLICT DO NOTHING";
+    // A pair is stored once; only an 'unread' row (answers that could not be read yet) is overwritten, by the next try or the verdict.
+    internal const string InsertConflict =
+        "INSERT INTO intent_conflict (a, b, verdict, at, tries) VALUES (@a, @b, @verdict, @at, @tries) " +
+        "ON CONFLICT (a, b) DO UPDATE SET verdict = excluded.verdict, at = excluded.at, tries = excluded.tries WHERE intent_conflict.verdict = 'unread'";
 
     internal const string State =
         "SELECT (SELECT cursor FROM source_cursor WHERE source = @source AND repo = '*'), " +

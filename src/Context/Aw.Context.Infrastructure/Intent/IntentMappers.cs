@@ -10,7 +10,7 @@ namespace Aw.Context.Infrastructure.Intent;
 /// <summary>The intent rows' mappers, one per row shape.</summary>
 internal static class IntentMappers
 {
-    private static readonly string[] _verdicts = ["contradicts", "agrees", "supersedes"];
+    private static readonly string[] _verdicts = ["contradicts", "agrees", "supersedes", "unread", "refused"];
     private static readonly string[] _rules = ["issue-key", "url", "path", "identifier", "quoted-title"];
 
     internal static IRowMapper<IntentRecord> Record { get; } = new Mapper<IntentRecord>(r =>
@@ -28,7 +28,7 @@ internal static class IntentMappers
     internal static IRowMapper<RecordKey> Key { get; } = new Mapper<RecordKey>(r => RecordKey.From(r.GetString(0)));
 
     internal static IRowMapper<DecisionConflict> Conflict { get; } = new Mapper<DecisionConflict>(r =>
-        new(NodeKey.From(r.GetString(0)), NodeKey.From(r.GetString(1)), VerdictOf(r.GetString(2)), SqliteRead.GetTimestamp(r, 3)));
+        new(NodeKey.From(r.GetString(0)), NodeKey.From(r.GetString(1)), VerdictOf(r.GetString(2)), SqliteRead.GetTimestamp(r, 3)) { Tries = r.GetInt32(4) });
 
     internal static IRowMapper<IntentSourceState> State { get; } = new Mapper<IntentSourceState>(r =>
         new(r.IsDBNull(0) ? null : r.GetString(0), r.IsDBNull(1) ? null : SqliteRead.GetTimestamp(r, 1), r.IsDBNull(2) ? null : r.GetString(2),

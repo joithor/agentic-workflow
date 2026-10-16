@@ -172,7 +172,7 @@ internal sealed class SqliteIntentStore(ContextDatabase database) : IIntentStore
         return Write(async (session, token) =>
         {
             var done = await SqliteQueries.Execute(session, new SqlStatement(IntentSql.InsertConflict, c => c.Bind("@a", conflict.A.Value).Bind("@b", conflict.B.Value)
-                .Bind("@verdict", IntentMappers.Of(conflict.Verdict)).Bind("@at", conflict.At)), token).ConfigureAwait(false);
+                .Bind("@verdict", IntentMappers.Of(conflict.Verdict)).Bind("@at", conflict.At).Bind("@tries", conflict.Tries)), token).ConfigureAwait(false);
             return done.IsError ? done.Error : Unit.Value;
         }, cancellationToken);
     }

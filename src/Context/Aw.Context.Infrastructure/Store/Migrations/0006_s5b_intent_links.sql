@@ -50,8 +50,9 @@ CREATE INDEX intent_edge_by_to ON intent_edge (to_key);
 CREATE TABLE intent_conflict (
     a       TEXT NOT NULL,
     b       TEXT NOT NULL,
-    verdict TEXT NOT NULL CHECK (verdict IN ('contradicts', 'agrees', 'supersedes')),
+    verdict TEXT NOT NULL CHECK (verdict IN ('contradicts', 'agrees', 'supersedes', 'unread', 'refused')),
     at      TEXT NOT NULL,
+    tries   INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (a, b),
     CHECK (a < b)
 ) STRICT;

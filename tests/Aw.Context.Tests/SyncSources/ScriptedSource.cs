@@ -10,6 +10,9 @@ internal sealed class ScriptedSource(IContextSource inner) : IContextSource
 
     public int Searches => _searches;
 
+    /// <summary>The search terms of each search, in order, one string per search.</summary>
+    public List<string> Searched { get; } = [];
+
     public Func<CancellationToken, Task>? OnSearch { get; set; }
 
     /// <summary>Runs after the inner search answered, so a clock it advances can't cancel that search.</summary>
@@ -23,6 +26,7 @@ internal sealed class ScriptedSource(IContextSource inner) : IContextSource
     public async ValueTask<Result<IReadOnlyList<SourceHit>>> Search(SourceQuery query, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _searches);
+        Searched.Add(string.Join(' ', query.Terms));
         if (OnSearch is { } hook)
         {
             await hook(cancellationToken).ConfigureAwait(false);

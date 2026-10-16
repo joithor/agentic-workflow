@@ -121,7 +121,11 @@ public sealed class FakeIntentStore : IIntentStore
         ArgumentNullException.ThrowIfNull(conflict);
         return Done(() =>
         {
-            _ = _conflicts.TryAdd((conflict.A.Value, conflict.B.Value), conflict);
+            var pair = (conflict.A.Value, conflict.B.Value);
+            if (!_conflicts.TryGetValue(pair, out var stored) || stored.Verdict == ConflictVerdict.Unread)
+            {
+                _conflicts[pair] = conflict;   // SQLite: stored once; only an unread row is overwritten
+            }
             return Unit.Value;
         });
     }

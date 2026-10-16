@@ -14,9 +14,10 @@ namespace Aw.Context.Features.SyncSources;
 
 /// <summary>
 /// One live intent source against the current map (spec §8.2 step 3 sub-queries, §6.2): each map node's terms are searched, the hits whose
-/// version is new are fetched, cleaned at the ingest boundary and linked by <see cref="RulesLinker"/>, and each node's page of records and links is
-/// committed together with the cursor 'mapVersion:nodesDone', so a stopped run (the source down, the time cap) resumes where it was
-/// and a replay writes nothing new. A map version change re-links every record.
+/// version is new are fetched, cleaned at the ingest boundary and linked by <see cref="RulesLinker"/>. Each record is committed with its links and its
+/// decisions are extracted before the next one is fetched, so a run that the time cap stops has finished every record it fetched, and the next run skips them
+/// as unchanged (a slow source can't starve: every run completes at least one record). A node's cursor 'mapVersion:nodesDone' moves when the node is through,
+/// so a stopped run (the source down, the time cap) resumes where it was and a replay writes nothing new. A map version change re-links every record.
 /// </summary>
 internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (ContextSettings Settings, Scrubbers Scrubbers) context, (IIntentStore Store, IModelPort Model, TimeProvider Clock) ports)
 {
@@ -28,7 +29,7 @@ internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (Cont
     private int _linked;
     private int _unlinked;
 
-    private DecisionPass Decisions => field ??= new(ports.Store, ports.Model, context.Settings.Labeling, (context.Scrubbers.Ingest, ports.Clock, OverCap));
+    private DecisionPass Decisions => field ??= new(ports.Store, ports.Model, context.Settings.Labeling, (context.Scrubbers.Ingest, ports.Clock));
 
     private bool OverCap() => ports.Clock.GetUtcNow() - _started >= SyncSourcesService.RunCap;
 
@@ -48,7 +49,7 @@ internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (Cont
         var stored = sameMap ? await StoredVersions(known, cancellationToken).ConfigureAwait(false) : [];
         var code = await Walk(nodes, offset, (version, stored, known), cancellationToken).ConfigureAwait(false);
         code ??= Decisions.Failure ?? (Decisions.HeldBack ? ContextErrors.LabelingUnavailable.Code : null);
-        if (code is not null && code != ContextErrors.SyncCapped.Code)
+        if (code is not null)
         {
             _ = await ports.Store.RecordFailure(_id, code, cancellationToken).ConfigureAwait(false);
         }
@@ -101,7 +102,7 @@ internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (Cont
         return finished.IsError ? finished.Error.Code : null;
     }
 
-    /// <summary>Searches one node, commits its page and extracts its decisions; a code when the run must stop.</summary>
+    /// <summary>Searches one node, then fetches, commits and extracts its new hits one record at a time; a code when the run must stop.</summary>
     private async ValueTask<string?> Node(IReadOnlyList<string> terms, int index, ((int Version, Dictionary<string, string> Stored, Dictionary<string, IntentRecord> Known) Seen, HashSet<string> Fetched) walk, CancellationToken ct)
     {
         var hits = await Within(t => source.Search(new SourceQuery(terms, AsOf: null, Limit: 50, context.Settings.Deadline), t), ct).ConfigureAwait(false);
@@ -110,30 +111,24 @@ internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (Cont
             return hits.Error.Code;
         }
 
-        var page = await Page([.. hits.Value.Where(h => walk.Fetched.Add(h.Ref.Canonical.Value))], walk.Seen, ct).ConfigureAwait(false);
-        if (page.IsError)
+        var (stopped, failure) = await Pull([.. hits.Value.Where(h => walk.Fetched.Add(h.Ref.Canonical.Value))], walk.Seen, ct).ConfigureAwait(false);
+        if (failure is not null)
         {
-            return page.Error.Code;
+            return failure;
         }
 
-        var cursor = string.Create(CultureInfo.InvariantCulture, $"{walk.Seen.Version}:{(page.Value.Stopped ? index : index + 1)}");   // a node the cap cut short is walked again: its stored hits are skipped as unchanged
-        var committed = await ports.Store.CommitPage(new IntentPage(_id, page.Value.Records, page.Value.Links, cursor, ports.Clock.GetUtcNow()), ct).ConfigureAwait(false);
-        if (committed.IsError)
-        {
-            return committed.Error.Code;
-        }
-
-        await Decisions.Run(page.Value.Pending, ct).ConfigureAwait(false);
-        return page.Value.Stopped || Decisions.Capped ? ContextErrors.SyncCapped.Code : null;   // what was committed stays; records not yet extracted stay queued for the next run
+        var cursor = string.Create(CultureInfo.InvariantCulture, $"{walk.Seen.Version}:{(stopped ? index : index + 1)}");   // a node the cap cut short is walked again: its stored hits are skipped as unchanged
+        var committed = await ports.Store.CommitPage(new IntentPage(_id, [], [], cursor, ports.Clock.GetUtcNow()), ct).ConfigureAwait(false);
+        return committed.IsError ? committed.Error.Code : stopped ? ContextErrors.SyncCapped.Code : null;   // what was committed stays; a held-back record stays queued for the next run
     }
 
-    private async ValueTask<Result<(List<IntentRecord> Records, List<IntentLink> Links, List<PendingRecord> Pending, bool Stopped)>> Page(IReadOnlyList<SourceHit> hits,
+    /// <summary>
+    /// Fetches the hits whose version is new, one at a time: each record is committed with its links and its decisions extracted before the next fetch, so the cap
+    /// (checked before each fetch after the run's first, so every run completes a record) never leaves a fetched record without its extraction.
+    /// </summary>
+    private async ValueTask<(bool Stopped, string? Code)> Pull(IReadOnlyList<SourceHit> hits,
         (int Version, Dictionary<string, string> Stored, Dictionary<string, IntentRecord> Known) seen, CancellationToken ct)
     {
-        var records = new List<IntentRecord>();
-        var links = new List<IntentLink>();
-        var pending = new List<PendingRecord>();
-        var stopped = false;
         foreach (var hit in hits)
         {
             if (seen.Stored.TryGetValue(hit.Ref.Canonical.Value, out var version) && string.Equals(version, hit.Ref.Version.Value, StringComparison.Ordinal))
@@ -144,8 +139,7 @@ internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (Cont
 
             if (_fetched > 0 && OverCap())
             {
-                stopped = true;   // checked before each fetch, after the run's first (so every run makes progress): a run stops near the cap, not a whole page after it
-                break;
+                return (true, null);
             }
 
             var fetched = await Within(t => source.Fetch(hit.Ref, t), ct).ConfigureAwait(false);
@@ -156,16 +150,20 @@ internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (Cont
                     continue;   // gone since the search
                 }
 
-                return fetched.Error;
+                return (false, fetched.Error.Code);
             }
 
             var one = Linked(hit, fetched.Value, seen.Known);
-            records.Add(one.Record);
-            pending.Add(one);
-            links.AddRange(one.Links);
+            var committed = await ports.Store.CommitPage(new IntentPage(_id, [one.Record], one.Links, Cursor: null, ports.Clock.GetUtcNow()), ct).ConfigureAwait(false);
+            if (committed.IsError)
+            {
+                return (false, committed.Error.Code);
+            }
+
+            await Decisions.Run([one], ct).ConfigureAwait(false);
         }
 
-        return (records, links, pending, stopped);
+        return (false, null);
     }
 
     private PendingRecord Linked(SourceHit hit, SourceRecord fetched, Dictionary<string, IntentRecord> known)

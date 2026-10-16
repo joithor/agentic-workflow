@@ -300,4 +300,25 @@ public abstract class IntentStoreContract
         Expect.That(only is { Provenance: Provenance.Human } && only.Wording == human.Wording, test, $"{layer.Decisions.Count} decisions: {string.Join(',', layer.Decisions.Select(d => d.Provenance + ":" + d.Wording))}");
         Expect.That(layer.DecisionEdges.Count == 1 && layer.DecisionEdges[0].Provenance == Provenance.Human, test, $"{layer.DecisionEdges.Count} edges");
     }
+
+    /// <summary>An unread pair is overwritten by the next try and by the verdict; a verdict or a refusal is never replaced.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task An_unread_pair_is_overwritten_by_the_next_try_and_a_settled_pair_never()
+    {
+        const string test = nameof(An_unread_pair_is_overwritten_by_the_next_try_and_a_settled_pair_never);
+        var store = CreateStore();
+        var a = NodeKey.From("decision:" + new string('a', 64));
+        var b = NodeKey.From("decision:" + new string('b', 64));
+
+        _ = Expect.Ok(await store.SaveConflict(DecisionConflict.Of(a, b, ConflictVerdict.Unread, _at) with { Tries = 1 }, None), test);
+        _ = Expect.Ok(await store.SaveConflict(DecisionConflict.Of(a, b, ConflictVerdict.Unread, _at) with { Tries = 2 }, None), test);
+        var unread = Expect.Ok(await store.Layer(None), test).Conflicts.Single();
+        _ = Expect.Ok(await store.SaveConflict(DecisionConflict.Of(a, b, ConflictVerdict.Refused, _at) with { Tries = 3 }, None), test);
+        _ = Expect.Ok(await store.SaveConflict(DecisionConflict.Of(a, b, ConflictVerdict.Agrees, _at), None), test);
+        var settled = Expect.Ok(await store.Layer(None), test).Conflicts.Single();
+
+        Expect.That(unread.Verdict == ConflictVerdict.Unread && unread.Tries == 2, test, "unread: " + unread.Verdict + " " + unread.Tries.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Expect.That(settled.Verdict == ConflictVerdict.Refused && settled.Tries == 3, test, "settled: " + settled.Verdict + " " + settled.Tries.ToString(System.Globalization.CultureInfo.InvariantCulture));
+    }
 }
