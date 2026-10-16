@@ -49,8 +49,11 @@ they are stored**: each document is cleaned whole (hidden comments, images, remo
 `context-docs-refresh` service brings it up to date, at serve start and on its cadence, and records
 `context.sources.synced` in the ledger. Name it under `services:`, or nothing is indexed.
 
-`sindri context sources sync` is **pending:API-P6**: it is a job, which needs API P6's job runtime, and the route is added
-once P6 merges. Until then it answers `SND-CLI-001` (exit 2), naming `pending:API-P6` and the `context-sync` service.
+`sindri context sources sync [<source>] [--detach] [--json]` syncs the intent sources now, as a job: it prints `job JOB-… started`, follows
+the job to its end (Ctrl-C cancels it, a second Ctrl-C leaves) and exits 0 when it succeeded, 1 when it failed or was cancelled, 2 when the
+start was refused. A second start while one runs answers `SND-JOB-409` naming the running job. The job's result is the counts per source
+and the code each ended with, never record text; the same `context.sources.synced` events are recorded as for the service below. A
+session can't start it (`SND-AUTH-002`).
 The repo docs refresh through the service above, and the intent sources (Onyx records linked to the map, decisions
 extracted from them) sync through the `context-sync` service (`services: { context-sync: { every: 15m } }`; it runs only
 when named). `context sources status` shows each intent source's last sync, links, decisions and queued records, and
@@ -72,7 +75,7 @@ foreign `Host` is 400, a foreign browser `Origin` 403) and the API's caller rule
 
 `--item <KEY>` takes a tracker key (`SPL-103`) or a Sindri item id (`ITM-...`) and answers with the anchors, the synced records, the decisions
 and the conflicts that concern it, each cited. A tracker key needs a `context-sync` run that linked the record; before that, or for a key no
-synced record carries, it answers `003` and says which (with `context-sync` named in the profile: wait for its next slot or watch
+synced record carries, it answers `003` and says which (with `context-sync` named in the profile: run `sindri context sources sync` or wait for its next slot, and watch
 `sindri context sources status`; without it: name the service). A Sindri item id resolves to the tracker record linked to that item; one with
 no record yet answers `003` ("has no tracker record linked yet"). A session never falls back to Onyx for an item: only a human's query may.
 
@@ -561,10 +564,11 @@ services:
 
 ### Building a draft
 
-`context map build` is a job that waits for the API's job runtime (catalog row `BuildContextMap`, `pending:API-P6`):
-the CLI answers `SND-CLI-001` (exit 2) until then, and nothing runs a map build inside the command gate. Drafts come
-from two places meanwhile:
+`sindri context map build [--detach] [--json]` is a job (catalog row `BuildContextMap`): it prints `job JOB-… started`, follows the
+job (the engine's step lines are the job's progress), and exits 0, 1 or 2 as `sources sync` does; a second start while one runs is
+`SND-JOB-409`. Drafts come from three places:
 
+- the build job itself;
 - the `context-rebuild` service (name it under `services:`), which runs the same build on its cadence and records
   `context.map.built`;
 - a scoping run's surfaces: `context map propose <file>` (below).
@@ -675,7 +679,7 @@ the store, a usage error · `75` the heavy-job lock stayed busy (`040`).
 | Code | Meaning | Fix |
 |---|---|---|
 | `SND-CONTEXT-040` | The heavy-job lock stayed busy (names the holder) | Retry when the other job finishes |
-| `SND-CONTEXT-042` | Labeling is on and the pass would pass `maxTokens`, or labeling is off with decisions still queued (`sources status` shows it per source while records wait; a query that reaches such a record lists `decisions` as degraded) | Raise `context.labeling.maxTokens`, turn labeling on, then wait for the next context-sync slot |
+| `SND-CONTEXT-042` | Labeling is on and the pass would pass `maxTokens`, or labeling is off with decisions still queued (`sources status` shows it per source while records wait; a query that reaches such a record lists `decisions` as degraded) | Raise `context.labeling.maxTokens`, turn labeling on, then run `sindri context sources sync` or wait for the next context-sync slot |
 | `SND-CONTEXT-043` | No entry in the review file matches the latest draft | `review --export` again |
 | `SND-CONTEXT-044` | A draft is needed and none exists (`--draft`, or `map review`) | `context map propose <file>` or the `context-rebuild` service, then retry; or drop `--draft` |
 | `SND-CONTEXT-045` | The repo is not in the profile, or is outside the session's repo | Name a listed repo |
