@@ -2,6 +2,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Components;
 using Aw.Sindri.Ui.ViewModels.Instance;
 using Microsoft.Extensions.Time.Testing;
 
@@ -247,5 +248,49 @@ public sealed class ExpandedStateViewModelTests
         Assert.Equal((true, Labels.AvailableWithP10a), (agent.HasAttach, agent.AttachChip));
         Assert.Contains(FixtureInstances.Detail("incident-loop").Address, agent.AttachName, StringComparison.Ordinal);
         Assert.Equal((false, string.Empty), (desk.HasAttach, desk.AttachChip));
+    }
+
+    // What a screen reader gets from the live region: the flag goes on before the text changes, the text is "Copied" once, and never "".
+    private static List<(bool Live, string Text)> Heard(CopyAction copy)
+    {
+        var heard = new List<(bool Live, string Text)>();
+        copy.PropertyChanged += (_, e) =>
+        {
+            if (string.Equals(e.PropertyName, nameof(CopyAction.Announcement), StringComparison.Ordinal) || string.Equals(e.PropertyName, nameof(CopyAction.IsAnnouncing), StringComparison.Ordinal))
+            {
+                heard.Add((copy.IsAnnouncing, copy.Announcement));
+            }
+        };
+        return heard;
+    }
+
+    [Fact]
+    public async Task Copy_status_sets_the_live_region_once_and_rests_after_1_5_seconds()
+    {
+        var expanded = Expanded("escalated-gate");
+        var heard = Heard(expanded.StatusCopy);
+
+        await expanded.CopyStatus(Token);
+
+        Assert.Equal(1, heard.Count(h => h.Live && string.Equals(h.Text, Labels.Copied, StringComparison.Ordinal)));
+        Assert.DoesNotContain(heard, h => h.Text.Length == 0);
+        Assert.Equal(Labels.Copied, expanded.StatusCopy.Label);
+        _clock.Advance(ProtectedActionViewModel.CopiedFor);
+        Assert.Equal((Labels.Copy, false), (expanded.StatusCopy.Label, expanded.StatusCopy.IsAnnouncing));
+        Assert.DoesNotContain(heard, h => h.Text.Length == 0);
+    }
+
+    [Fact]
+    public async Task A_commands_Copy_sets_the_live_region_once()
+    {
+        var expanded = Expanded("dev-desk-round-trip");
+        var command = expanded.Commands[0];
+        var heard = Heard(command.CliCopy);
+
+        await command.Copy(Token);
+
+        Assert.Equal(1, heard.Count(h => h.Live && string.Equals(h.Text, Labels.Copied, StringComparison.Ordinal)));
+        Assert.DoesNotContain(heard, h => h.Text.Length == 0);
+        Assert.Equal(Labels.Copied, command.CliCopy.Label);
     }
 }

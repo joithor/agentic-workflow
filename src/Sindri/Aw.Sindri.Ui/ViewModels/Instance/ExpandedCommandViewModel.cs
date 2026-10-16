@@ -28,6 +28,7 @@ internal sealed class ExpandedCommandViewModel : ObservableObject
         Protected = isProtected ? new ProtectedActionViewModel(new ProtectedAction(Label, command.Cli, address), clipboard, clock) : null;
         PendingChip = isProtected ? string.Empty : Labels.AvailableWithU8b;
         CopyName = $"{Labels.Copy}: {(Cli.Length > 0 ? Cli : Labels.NoCommandServed)}";
+        CliCopy = new CopyAction(clipboard, clock, Name);
     }
 
     /// <summary>The verb.</summary>
@@ -59,6 +60,9 @@ internal sealed class ExpandedCommandViewModel : ObservableObject
 
     /// <summary>True when the command shows its own CLI and Copy (a protected one does it in its popover).</summary>
     public bool ShowsCli => Protected is null && Cli.Length > 0;
+
+    /// <summary>The Copy control: its words and the live region that says "Copied".</summary>
+    public CopyAction CliCopy { get; }
 
     /// <summary>"Copy", or "Copied" for 1.5 s after a copy.</summary>
     public string CopyLabel { get; private set => Set(ref field, value); } = Labels.Copy;
