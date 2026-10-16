@@ -15,6 +15,7 @@ internal sealed class JobApi : HttpMessageHandler
     private readonly Dictionary<string, Reply[]> _replies = new(StringComparer.Ordinal);
     private readonly Dictionary<string, int> _served = new(StringComparer.Ordinal);
     private readonly List<string> _calls = [];
+    private readonly List<(Func<bool> Condition, TaskCompletionSource Met)> _waiting = [];
     private int _streams;
 
     /// <summary>Every call made, as 'METHOD /path?query'.</summary>
@@ -38,6 +39,27 @@ internal sealed class JobApi : HttpMessageHandler
 
     /// <summary>Every call fails as a stopped server does.</summary>
     public bool Down { get; set; }
+
+    /// <summary>A task that completes once <paramref name="condition"/> holds, checked now and after each call the verb makes (no polling); bounded so a hang fails.</summary>
+    /// <param name="condition">The condition, over this handler's counters.</param>
+    /// <returns>The task.</returns>
+    public Task Until(Func<bool> condition)
+    {
+        Task met;
+        lock (_waiting)
+        {
+            if (condition())
+            {
+                return Task.CompletedTask;
+            }
+
+            var source = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            _waiting.Add((condition, source));
+            met = source.Task;
+        }
+
+        return met.WaitAsync(TimeSpan.FromSeconds(15), TestContext.Current.CancellationToken);
+    }
 
     public JobApi On(string method, string path, params Reply[] replies)
     {
@@ -69,11 +91,13 @@ internal sealed class JobApi : HttpMessageHandler
         {
             _ = Interlocked.Increment(ref _streams);
             StreamQuery = uri.PathAndQuery;
+            Notify();
             return Task.FromResult(StreamsFull
                 ? Problem(HttpStatusCode.TooManyRequests, "SND-API-012")
                 : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(_stream.Reader.AsStream()) { Headers = { ContentType = new("text/event-stream") } } });
         }
 
+        Notify();
         if (Down)
         {
             throw new HttpRequestException("connection refused");
@@ -86,6 +110,18 @@ internal sealed class JobApi : HttpMessageHandler
         }
 
         return Task.FromResult(_replies.TryGetValue(key, out var replies) ? Answer(Next(key, replies)) : Problem(HttpStatusCode.NotFound, "SND-TEST-404"));
+    }
+
+    private void Notify()
+    {
+        lock (_waiting)
+        {
+            foreach (var (condition, met) in _waiting.Where(static w => w.Condition()).ToList())
+            {
+                _ = met.TrySetResult();
+                _ = _waiting.Remove((condition, met));
+            }
+        }
     }
 
     private Reply Next(string key, Reply[] replies)

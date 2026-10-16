@@ -110,13 +110,13 @@ public sealed class CancelJobTests
     [Fact]
     public async Task Race_finish_and_cancel_one_terminal_state()
     {
-        var views = new InMemoryJobViews();
-        await using var runtime = Runtime(views);
-        await runtime.Open();
-        var projection = new JobsProjection(runtime.H.Events);
         for (var n = 0; n < 30; n++)
         {
-            var started = await runtime.Start(new EchoJobRequest(Lines: 0, DelayMs: 0), Human());
+            var views = new InMemoryJobViews();
+            await using var runtime = Runtime(views);
+            await runtime.Open();
+            var started = await runtime.Start(new ProbeJobRequest("stubborn"), Human());   // the work ignores its token and returns when the latch is released
+            await runtime.Latch.Entered.Task.WaitAsync(Token);
             views.Put(A.Job().WithId(started.Value.JobId).Build());
             using var barrier = new Barrier(2);
             var cancel = Task.Run(async () =>
@@ -125,16 +125,32 @@ public sealed class CancelJobTests
                 using var entered = runtime.H.Callers.Enter(Human());
                 return await Service(runtime, views).Handle(new CancelJobRequest(started.Value.JobId), Token);
             }, Token);
-            barrier.SignalAndWait(Token);
-            _ = await cancel;
-            await runtime.Quiesce();
-        }
+            var finish = Task.Run(() =>
+            {
+                barrier.SignalAndWait(Token);
+                _ = runtime.Latch.Release.TrySetResult();
+            }, Token);
 
-        var views2 = new InMemoryViewStore(SliceHarness.Json);
-        _ = (await views2.Open(ViewSchema.Version, Token)).Value;
-        _ = (await views2.Apply(runtime.Events, [projection], runtime.H.Clock.GetUtcNow(), Token)).Value;
-        var rows = (await views2.List<JobRow>(ViewNames.Jobs, Token)).Value;
-        Expect.Equal(30, rows.Count);
-        Assert.All(rows, row => Assert.NotEqual(JobState.Running, row.State));   // every job ended in exactly one state, whoever won
+            _ = await cancel;
+            await finish;
+            await runtime.Quiesce();
+
+            await AssertOneTerminalState(runtime, started.Value.JobId);
+        }
+    }
+
+    // At most one job.finished and one job.cancelled, the view takes the first terminal event in ledger order, and nothing is left registered.
+    private static async Task AssertOneTerminalState(RealJobRuntime runtime, Core.Ids.JobId job)
+    {
+        var terminals = runtime.Events.Where(e => string.Equals(e.Envelope.Type, EventTypes.JobFinished, StringComparison.Ordinal) || string.Equals(e.Envelope.Type, EventTypes.JobCancelled, StringComparison.Ordinal)).ToList();
+        Assert.InRange(terminals.Count(static e => string.Equals(e.Envelope.Type, EventTypes.JobFinished, StringComparison.Ordinal)), 0, 1);
+        Assert.InRange(terminals.Count(static e => string.Equals(e.Envelope.Type, EventTypes.JobCancelled, StringComparison.Ordinal)), 0, 1);
+        Assert.NotEmpty(terminals);   // the job did end
+        var views = new InMemoryViewStore(SliceHarness.Json);
+        _ = (await views.Open(ViewSchema.Version, Token)).Value;
+        _ = (await views.Apply(runtime.Events, [new JobsProjection(runtime.H.Events)], runtime.H.Clock.GetUtcNow(), Token)).Value;
+        var row = (await views.List<JobRow>(ViewNames.Jobs, Token)).Value.Single(r => r.Id == job);
+        Expect.Equal(string.Equals(terminals[0].Envelope.Type, EventTypes.JobFinished, StringComparison.Ordinal) ? JobState.Succeeded : JobState.Cancelled, row.State);
+        Expect.Equal(0, runtime.Get<JobRegistry>().Count());
     }
 }

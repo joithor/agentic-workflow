@@ -48,7 +48,7 @@ public sealed class CliServiceVerbsTests : IDisposable
         var listed = await Finished(_rig.RunServices(api, "--json"));
         var listText = _rig.Out.ToString();
         var run = _rig.RunServices(api, "run", "heartbeat", "--json");
-        await FollowRig.WaitUntil(() => api.Streams == 1);
+        await api.Until(() => api.Streams == 1);
         await api.Frame(11, "job.finished", Finished("succeeded", "ok"));
         var ran = await Finished(run);
 

@@ -17,16 +17,26 @@ public abstract class JobRuntimeContract
     /// <returns>The subject.</returns>
     protected abstract ValueTask<IJobRuntimeSubject> Create();
 
+    private static readonly TimeSpan _hang = TimeSpan.FromSeconds(10);
+
     private static CallerContext Human() => A.Caller().Human().Build();
 
-    /// <summary>A job that runs for seconds leaves the command gate free: another command passes at once.</summary>
+    private static Task<T> Bounded<T>(Task<T> task) => task.WaitAsync(_hang, TimeProvider.System, TestContext.Current.CancellationToken);   // a hang guard on the real clock, never the wait itself: the runtime's clock is a fake one
+
+    private static Task Bounded(Task task) => task.WaitAsync(_hang, TimeProvider.System, TestContext.Current.CancellationToken);
+
+    /// <summary>
+    /// A job whose work is still running leaves the command gate free: Start returns although the work has not ended (the work waits on the runtime's fake clock, which
+    /// nobody moves), and another command passes. A start that held the gate for the work would not return, and the bound fails the test.
+    /// </summary>
     /// <returns>The test.</returns>
     [Fact]
     public async Task A_started_job_runs_outside_the_command_gate()
     {
         await using var runtime = await Create();
 
-        var started = await runtime.Start(new EchoJobRequest(Lines: 100, DelayMs: 100), Human());
+        var started = await Bounded(runtime.Start(new EchoJobRequest(Lines: 100, DelayMs: 100), Human()));
+        await Bounded(runtime.Probe.WaitStarted);
 
         Expect.True(started.IsSuccess);
         Expect.True(await runtime.CommandGateIsFree());
@@ -100,16 +110,22 @@ public abstract class JobRuntimeContract
         await runtime.Quiesce();
     }
 
-    /// <summary>The runtime holds no heavy-job slot while a job runs: a job that needs one (BuildMapService) takes it itself.</summary>
+    /// <summary>
+    /// The runtime holds no heavy-job slot while a job runs: a job that needs one (BuildMapService) takes it itself. Read once the work is running, and
+    /// the job must not have failed for want of one.
+    /// </summary>
     /// <returns>The test.</returns>
     [Fact]
     public async Task The_runtime_takes_no_heavy_slot()
     {
         await using var runtime = await Create();
         var started = await runtime.Start(new EchoJobRequest(Lines: 100, DelayMs: 100), Human());
+        await Bounded(runtime.Probe.WaitStarted);   // the work runs: a runtime that took a slot first would not have got here, or would have failed the job
 
         Expect.Equal(0, runtime.HeavySlotsHeld);
         _ = await runtime.Cancel(started.Value.JobId);
         await runtime.Quiesce();
+        Expect.Equal(0, runtime.HeavySlotsHeld);
+        Expect.Equal(0, runtime.Events.Count(static e => string.Equals(e.Envelope.Type, EventTypes.JobFinished, StringComparison.Ordinal)));   // no failed end either
     }
 }

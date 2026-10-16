@@ -20,7 +20,7 @@ public sealed class CliJobFollowTests : IDisposable
     {
         var api = Api();
         var run = _rig.RunServices(api, "run", "heartbeat");
-        await FollowRig.WaitUntil(() => api.Streams == 1);
+        await api.Until(() => api.Streams == 1);
 
         await api.Frame(11, "job.progress", Progress(1, "reading"));
         await api.Frame(12, "job.progress", Progress(1, "somebody else's line").Replace(Id, "JOB-ffffffffffffffffffffffffffffffff", StringComparison.Ordinal));
@@ -37,7 +37,7 @@ public sealed class CliJobFollowTests : IDisposable
     {
         var api = Api();
         var run = _rig.RunServices(api, "run", "heartbeat");
-        await FollowRig.WaitUntil(() => api.Streams == 1);
+        await api.Until(() => api.Streams == 1);
 
         await api.Frame(11, "job.finished", Finished("failed", "the service threw", "SND-SCHED-001"));
 
@@ -50,7 +50,7 @@ public sealed class CliJobFollowTests : IDisposable
     {
         var api = Api();
         var run = _rig.RunServices(api, "run", "heartbeat");
-        await FollowRig.WaitUntil(() => api.Streams == 1);
+        await api.Until(() => api.Streams == 1);
 
         await api.Frame(11, "job.finished", Finished("failed", "tidy: the ledger was busy", "SND-LEDGER-002"));
 
@@ -87,10 +87,10 @@ public sealed class CliJobFollowTests : IDisposable
     {
         var api = Api().Ok("POST", "/sindri/jobs/" + Id + "/cancel", Body(new Core.Commands.CommandAccepted(Core.Ids.CommandId.From(new Guid(8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)), 12)));
         var run = _rig.RunServices(api, "run", "heartbeat");
-        await FollowRig.WaitUntil(() => api.Streams == 1);
+        await api.Until(() => api.Streams == 1);
 
         await _rig.Interrupt();
-        await FollowRig.WaitUntil(() => api.Count(CancelRoute) == 1);
+        await api.Until(() => api.Count(CancelRoute) == 1);
         await api.Frame(12, "job.cancelled", Cancelled());
 
         Assert.Equal(1, await Finished(run));
@@ -103,10 +103,10 @@ public sealed class CliJobFollowTests : IDisposable
     {
         var api = Api().Ok("POST", "/sindri/jobs/" + Id + "/cancel", Body(new Core.Commands.CommandAccepted(Core.Ids.CommandId.From(new Guid(8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)), 12)));
         var run = _rig.RunServices(api, "run", "heartbeat");
-        await FollowRig.WaitUntil(() => api.Streams == 1);
+        await api.Until(() => api.Streams == 1);
 
         await _rig.Interrupt();
-        await FollowRig.WaitUntil(() => api.Count(CancelRoute) == 1);
+        await api.Until(() => api.Count(CancelRoute) == 1);
         await _rig.SecondInterrupt();   // no frame, and the clock never moves: the 5 s wait for the cancel is not waited out
 
         Assert.Equal(1, await Finished(run));
@@ -120,7 +120,7 @@ public sealed class CliJobFollowTests : IDisposable
             .Ok("GET", JobRoute, View(JobState.Running, rounds: 1), View(JobState.Running, rounds: 2), View(JobState.Succeeded, rounds: 3, summary: "ok: 3 lines"));
         var run = _rig.RunServices(api, "run", "heartbeat");
 
-        await _rig.Tick(JobFollower.Poll, () => run.IsCompleted);
+        await _rig.AdvanceOnTimers(JobFollower.Poll, run);
 
         Assert.Equal(0, await Finished(run));
         Assert.Equal($"job {Id} started\nline 1\nline 2\nline 3\nsucceeded: ok: 3 lines\n", _rig.Out.ToString().ReplaceLineEndings("\n"));
@@ -132,7 +132,7 @@ public sealed class CliJobFollowTests : IDisposable
     {
         var api = Api();
         var run = _rig.RunServices(api, "run", "heartbeat");
-        await FollowRig.WaitUntil(() => api.Streams == 1);
+        await api.Until(() => api.Streams == 1);
 
         await api.Frame(11, "job.progress", Progress(1, "reading"));
         await api.End();
