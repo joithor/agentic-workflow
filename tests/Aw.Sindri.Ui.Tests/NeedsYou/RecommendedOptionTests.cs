@@ -57,4 +57,14 @@ public sealed class RecommendedOptionTests
 
         Assert.Equal([false, true], feed.Rows[0].Actions.Select(a => a.Recommended));
     }
+
+    [Fact]
+    public void Only_the_recommended_option_of_a_decision_row_is_primary()
+    {
+        var row = new NeedsYouRowViewModel(DeclineRecommended(), seen: false, reducedMotion: false, arrived: false, new FakeTimeProvider(A.Noon));
+
+        var primary = row.Controls.Where(c => c.IsPrimary).Select(c => c.Action.OptionId);
+
+        Assert.Equal(["decline"], primary, StringComparer.Ordinal);
+    }
 }
