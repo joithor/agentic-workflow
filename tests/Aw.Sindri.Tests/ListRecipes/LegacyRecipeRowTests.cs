@@ -1,10 +1,14 @@
 using Aw.Sindri.Core.Challenges;
+using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Features.RevokeRecipe;
 using Aw.Sindri.Testing.Workflow;
+using Aw.Sindri.Testing.Workflow.Registry;
 using Aw.Sindri.Tests.ApproveRecipe;
 using Aw.Sindri.Tests.Workflow;
 
@@ -188,15 +192,22 @@ public sealed class LegacyRecipeRowTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Approving_an_already_approved_legacy_shape_row_again_still_plans_so_a_parked_instance_can_resume()
+    public async Task Approving_an_already_approved_legacy_shape_row_with_drifted_pins_still_completes_and_resumes_a_parked_instance()
     {
         var (r, row) = await Seeded();
-        await using var _ = r;
-        await r.ApproveAsInThePast(row);
+        await using var disposable = r;
+        _ = await r.Approvals.Approve(RegistryData.Approval(row, new RecipePins([new BlockPin(BlockId.From("step.produce"), RegistryData.Descriptor("old"))], [])), TestContext.Current.CancellationToken);
+        var parked = WorkflowInstanceId.For(new Guid(7, 0, 0, new byte[8]));
+        r.Wake.Run(row.Hash, parked);
 
-        var again = await r.Issue(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"approve workflow.step {row.Version}"));
+        var approved = await r.Approve(row);   // the drift path: the stored pins differ from this build's, so it records a new approval
 
-        Assert.True(again.IsSuccess, again.IsError ? again.Error.ToString() : null);
+        Assert.True(approved.IsSuccess, approved.IsError ? approved.Error.ToString() : null);
+        Assert.Equal([parked], approved.Value.Resumed);
+        var recorded = Assert.Single(r.Events(EventTypes.RecipeApproved));
+        Assert.True(r.H.Events.Payload<RecipeApproved>(recorded).Value.Drift);
+        Assert.Equal(2, (await r.Approvals.History(row.Id, row.Version, row.Hash, TestContext.Current.CancellationToken)).Value.Count);
+        Assert.Equal(RecipeWakeKind.Approved, Assert.Single(r.Wake.Sent).Kind);
         Assert.Equal(RecipeStanding.Approved, (await r.Line(row)).Standing);
     }
 
