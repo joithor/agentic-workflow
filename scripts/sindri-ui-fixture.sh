@@ -25,7 +25,7 @@
 #                                  decision, the app's own Decide is then refused (SND-ITEM-409)
 #   sindri-ui-fixture.sh fail      add a service the build cannot run to the live profile and approve it (a failure row)
 #   sindri-ui-fixture.sh unfail    remove it again and approve (the row clears)
-#                                  (items --large also files 12 requests, 6 in FIXTURE_REPO and 6 in <FIXTURE_REPO>-two)
+#                                  (items --large also files 12 requests, in FIXTURE_REPO when set, else with no repo)
 #   sindri-ui-fixture.sh workflows [--large]
 #                                  start the strip's instances through the CLI (sindri workflow start, as the owner, each on a
 #                                  new item): one triage and two work instances; --large starts twelve roots across three recipes
@@ -143,7 +143,7 @@ request() {
   if [ -n "$item" ] && ! [[ "$item" =~ ^[A-Za-z]+-[A-Za-z0-9]+$ ]]; then die "request: '$item' is not an item id"; fi
   if [ -n "$repo" ] && ! [[ "$repo" =~ ^[A-Za-z0-9._-]+$ ]]; then die "request: '$repo' is not a repo name"; fi
   url="$("$PROVE" url)" || return
-  body="$(jq -nc --arg text "$1" --arg item "$item" '{kind: "rescope", text: $text} + (if $item == "" then {} else {itemId: $item} end)')"
+  body="$(jq -nc --arg text "$1" --arg item "$item" '{kind: "rescope", text: $text} + (if $item == "" then {} else {item: $item} end)')"
   if [ -n "$repo" ]; then
     curl -sS -X POST -H 'Content-Type: application/json' -H "X-Sindri-Repo: $repo" -d "$body" "$url/sindri/requests"
   else
@@ -203,11 +203,14 @@ items() {
   for title in "${ITEMS[@]}"; do add "$title" || return; done
   [ "${1:-}" = "--large" ] || return 0
   for n in $(seq 1 30); do add "Large fixture item $n" || return; done
-  # 12 requests across two repos (U3's large Needs-you list): six each, filed as a session.
-  local repo="${FIXTURE_REPO:-demo}"
-  for n in $(seq 1 6); do
-    request --repo "$repo" "Large fixture request $n for $repo" || return
-    request --repo "$repo-two" "Large fixture request $n for $repo-two" || return
+  # 12 requests (U3's large Needs-you list), filed as a session. The API refuses a repo the approved profile lacks and the
+  # fixture's profile has none, so they name FIXTURE_REPO when it is set (a repo the profile has) and no repo otherwise.
+  for n in $(seq 1 12); do
+    if [ -n "${FIXTURE_REPO:-}" ]; then
+      request --repo "$FIXTURE_REPO" "Large fixture request $n" || return
+    else
+      request "Large fixture request $n" || return
+    fi
   done
 }
 
@@ -225,10 +228,31 @@ new_item() {
   printf '%s\n' "$id"
 }
 
+# The inputs the dev recipes declare: triage-three-state takes fact:item (JSON naming the item), desk-round-trip takes
+# fact:request (text). The files live in the guarded home, one folder for all of them.
+fact_args() { # $1 recipe, $2 item, $3 title; prints the --fact arguments, one for each line
+  local dir="$AW_SINDRI_HOME/ui-fixture-facts"
+  mkdir -p "$dir" || return
+  case "$1" in
+    *triage-three-state)
+      jq -nc --arg id "$2" '{id: $id}' > "$dir/$2.item.json" || return
+      printf '%s\n%s\n' --fact "fact:item=$dir/$2.item.json" ;;
+    *desk-round-trip)
+      printf 'Fixture request for %s\n' "$3" > "$dir/$2.request.txt" || return
+      printf '%s\n%s\n' --fact "fact:request=$dir/$2.request.txt" ;;
+  esac
+}
+
 start_on_new_item() { # $1 recipe, $2 item title; prints the item
-  local item
+  local item facts=() line out
+  need jq
   item="$(new_item "$2")" || return
-  "$PROVE" human workflow start "$1" --item "$item" >/dev/null || return
+  while IFS= read -r line; do facts+=("$line"); done < <(fact_args "$1" "$item" "$2")
+  # The pty the owner's verbs run under joins stderr into stdout, so the output is kept to show on a refusal.
+  if ! out="$("$PROVE" human workflow start "$1" --item "$item" "${facts[@]}" 2>&1)"; then
+    die "workflow start $1 on $item was refused: $out"
+  fi
+  printf 'started %s on %s\n' "$1" "$item" >&2
   printf '%s\n' "$item"
 }
 
