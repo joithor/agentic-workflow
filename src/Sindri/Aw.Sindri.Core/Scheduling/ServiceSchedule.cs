@@ -46,4 +46,28 @@ public sealed record ServiceSchedule(ServiceName Name, Cadence Cadence, DateTime
         var named = profile is null ? [] : From(profile, start);
         return [.. named, .. builtIns.Where(b => named.All(n => n.Name != b.Name)).Select(b => new ServiceSchedule(b.Name, b.Cadence, start))];
     }
+
+    /// <summary>
+    /// The schedules as <see cref="From(SindriProfile?, IEnumerable{BuiltInService}, DateTimeOffset)"/> builds them, each
+    /// first slot anchored on the service's latest recorded run in <paramref name="lastRuns"/> (see <see cref="FirstSlot"/>).
+    /// </summary>
+    /// <param name="profile">The approved profile, or null when none is approved.</param>
+    /// <param name="builtIns">The services the build runs without a profile entry.</param>
+    /// <param name="now">The current time.</param>
+    /// <param name="lastRuns">The slot of each service's latest recorded run; a service missing here has none.</param>
+    /// <returns>One schedule per service.</returns>
+    public static IReadOnlyList<ServiceSchedule> From(SindriProfile? profile, IEnumerable<BuiltInService> builtIns, DateTimeOffset now, IReadOnlyDictionary<ServiceName, DateTimeOffset> lastRuns) =>
+        throw new NotSupportedException();
+
+    /// <summary>
+    /// Where a service's series starts when the schedule is (re)built: now when it has no recorded run or its next slot
+    /// since the last run is past (one catch-up run, never a burst); else the slot after its last run, so a restart or a
+    /// re-approval doesn't run it again early.
+    /// </summary>
+    /// <param name="lastRun">The slot of its latest recorded run, or null.</param>
+    /// <param name="cadence">Its current cadence.</param>
+    /// <param name="now">The current time.</param>
+    /// <returns>The first slot.</returns>
+    public static DateTimeOffset FirstSlot(DateTimeOffset? lastRun, Cadence cadence, DateTimeOffset now) =>
+        throw new NotSupportedException();
 }
