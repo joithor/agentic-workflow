@@ -40,29 +40,29 @@ internal sealed partial class WiringRules
         var present = ChildOutputs.PresentOn(child);
         var carrying = present.Where(p => p.Key != _cancelled && p.Value.Contains(fact)).Select(p => p.Key).ToList();
         var carries = carrying.Count == 0 ? $"remove it, since no outcome of {id} always carries it" : null;
-        if (Matches(transition.When) is not { } outcomes)
-        {
-            var join = entry.From is null ? $"{produces} from child '{id}'" : $"{produces} (child '{id}')";
-            return source.Finding(
-                "RCP-WIRE-003", path, $"transition from '{from}' {join} on any outcome, 'cancelled' among them",
-                carries ?? $"add when: {{ outcome: <o> }} naming outcomes that always carry it ({List(carrying)})");
-        }
-
+        var outcomes = ChildOutcomes(transition.When, [.. present.Keys]);
         if (outcomes.Contains(_cancelled))
         {
+            if (!NamesOutcome(transition.When))
+            {
+                var join = entry.From is null ? $"{produces} from child '{id}'" : $"{produces} (child '{id}')";
+                return source.Finding(
+                    "RCP-WIRE-003", path, $"transition from '{from}' {join} on a when that names no outcome (it matches every outcome, 'cancelled' among them)",
+                    carries ?? $"add when: {{ outcome: <o> }} naming outcomes that always carry it ({List(carrying)})");
+            }
+
             return source.Finding(
                 "RCP-WIRE-003", path, $"transition from '{from}' {produces} on outcome 'cancelled' of child '{id}', which carries no outputs",
                 "route cancelled with a transition of its own that produces nothing");
         }
 
-        return MissingFinding(at, present, carrying, source);
+        return MissingFinding(at, present, outcomes, carrying, source);
     }
 
-    private static RecipeFinding? MissingFinding(ChildProduces at, IReadOnlyDictionary<OutcomeName, IReadOnlySet<FactKey>> present, List<OutcomeName> carrying, RecipeSource source)
+    private static RecipeFinding? MissingFinding(ChildProduces at, IReadOnlyDictionary<OutcomeName, IReadOnlySet<FactKey>> present, HashSet<OutcomeName> outcomes, List<OutcomeName> carrying, RecipeSource source)
     {
-        var (transition, number, entry, index, from, child, id) = at;
+        var (_, number, entry, index, from, child, id) = at;
         var fact = entry.SourceKey();
-        var outcomes = Matches(transition.When) ?? [];
         var missing = present.Where(p => p.Key != _cancelled && outcomes.Contains(p.Key) && !p.Value.Contains(fact)).Select(p => (OutcomeName?)p.Key).FirstOrDefault();
         if (missing is not { } gap)
         {
@@ -77,6 +77,45 @@ internal sealed partial class WiringRules
                 ? $"produce it on that path in {id}, or remove it, since no outcome of {id} always carries it"
                 : $"produce it on that path in {id}, or produce it here only on outcomes that always carry it ({List(carrying)})");
     }
+
+    /// <summary>
+    /// The outcomes of the child a 'when' holds for, out of <paramref name="universe"/> (its terminal outcomes and 'cancelled'):
+    /// an outcome test is that outcome, 'not' the complement of its inner set, 'all' the intersection and 'any' the union;
+    /// a fact or loop test narrows nothing.
+    /// </summary>
+    private static HashSet<OutcomeName> ChildOutcomes(WhenClause? when, HashSet<OutcomeName> universe)
+    {
+        if (when is null)
+        {
+            return [.. universe];
+        }
+
+        HashSet<OutcomeName> set = [.. universe];
+        if (when.Outcome is { } outcome)
+        {
+            set.IntersectWith([outcome]);
+        }
+
+        if (when.All is { Count: > 0 } all)
+        {
+            all.ToList().ForEach(c => set.IntersectWith(ChildOutcomes(c, universe)));
+        }
+
+        if (when.Any is { } any)
+        {
+            set.IntersectWith(any.SelectMany(c => ChildOutcomes(c, universe)));
+        }
+
+        if (when.Not is { } not)
+        {
+            set.ExceptWith(ChildOutcomes(not, universe));
+        }
+
+        return set;
+    }
+
+    private static bool NamesOutcome(WhenClause? when) =>
+        when is not null && (when.Outcome is not null || (when.All ?? []).Any(NamesOutcome) || (when.Any ?? []).Any(NamesOutcome) || NamesOutcome(when.Not));
 
     /// <summary>The first path inside <paramref name="child"/> into a state that ends with <paramref name="outcome"/> that doesn't produce <paramref name="fact"/>.</summary>
     private static string MissingOn(Recipe child, OutcomeName outcome, FactKey fact)
