@@ -28,7 +28,7 @@ internal static class JobScenarios
         ("services-name-run", "unknown-service"), ("services-name-run", "already-running"), ("services-name-run", "scheduled-in-flight"),
         ("services-name-pause", "accepted"), ("services-name-pause", "refused-session"), ("services-name-pause", "unknown-service"),
         ("services-name-resume", "accepted"), ("services-name-resume", "refused-session"), ("services-name-resume", "unknown-service"),
-        ("services", "paused"), ("services", "running-job"),
+        ("services", "paused"), ("services", "running-job"), ("services", "manual-ok"), ("needs-you", "after-manual-run"), ("events", "job-lifecycle"),
         ("jobs-id", "running"), ("jobs-id", "succeeded"), ("jobs-id", "failed"), ("jobs-id", "cancelled"), ("jobs-id", "interrupted"), ("jobs-id", "progress-capped"),
         ("jobs-id", "ansi-escaped"), ("jobs-id", "result"), ("jobs-id", "not-found"), ("jobs-id", "bad-id"), ("jobs-id", "session-other-repo"), ("jobs-id", "stalled"),
         ("jobs-id-cancel", "accepted"), ("jobs-id-cancel", "already-ended"), ("jobs-id-cancel", "not-found"), ("jobs-id-cancel", "refused-session"),
@@ -46,6 +46,9 @@ internal static class JobScenarios
         {
             "services-name-run" => await Run(host, scenario),
             "services-name-pause" or "services-name-resume" => await PauseOrResume(host, slug[(slug.LastIndexOf('-') + 1)..], scenario),
+            "services" when scenario == "manual-ok" => await AfterManualRun(host, "/sindri/services", ct),
+            "needs-you" => await AfterManualRun(host, "/sindri/needs-you", ct),
+            "events" => await Lifecycle(host, ct),
             "services" => await Services(host, scenario, ct),
             "jobs-id" => await JobBody(host, scenario, ct),
             "jobs-id-cancel" => await Cancel(host, scenario, ct),
@@ -106,6 +109,34 @@ internal static class JobScenarios
 
         await ViewScenarios.CatchUp(host, ct);
         return await ViewScenarios.Read(host, "/sindri/services");
+    }
+
+    /// <summary>
+    /// A scheduled run of 'heartbeat' failed a minute ago; a person runs it by hand and it succeeds. The next slot stays the scheduled one's plus the cadence
+    /// (a manual run fills no slot), and the failure's needs-you row is gone (API P6 S5).
+    /// </summary>
+    private static async Task<string> AfterManualRun(GoldenHost host, string path, CancellationToken ct)
+    {
+        await ViewScenarios.Append(host, EventTypes.ServiceRan,
+            new ServiceRan(Command(3), ServiceName.From("heartbeat"), host.Now().AddMinutes(-1), ServiceOutcome.Failed, "SND-SCHED-001"), "service.ran:golden-failed", ct);
+        await ViewScenarios.CatchUp(host, ct);
+        _ = await Ask(host, Post("/sindri/services/heartbeat/run", json: null, JobHost.Human(host)));
+        await JobHost.Settle(host, ct);
+        return await ViewScenarios.Read(host, path);
+    }
+
+    /// <summary>The events of one manual run, as the stream sends them: started, two lines, finished, and the run's manual 'service.ran' naming the job.</summary>
+    private static async Task<string> Lifecycle(GoldenHost host, CancellationToken ct)
+    {
+        var job = Job(1);
+        await Started(host, job, "RunService", "heartbeat", ct, service: "heartbeat");
+        await Progress(host, job, 1, "run heartbeat (manual)", ct);
+        await Progress(host, job, 2, "second line", ct);
+        await Finished(host, job, JobOutcome.Succeeded, "ok: worked", code: null, result: null, ct);
+        await ViewScenarios.Append(host, EventTypes.ServiceRan,
+            new ServiceRan(Command(1), ServiceName.From("heartbeat"), host.Now(), ServiceOutcome.Ok, Code: null, job), $"service.ran:heartbeat:manual:{job.Value}", ct);
+        await ViewScenarios.CatchUp(host, ct);
+        return await StreamScenarios.Frames(host, "/sindri/events?types=job.*,service.ran", JobHost.Human(host), ct);
     }
 
     private static async Task<string> List(GoldenHost host, string scenario, CancellationToken ct)
