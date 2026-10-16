@@ -11,7 +11,8 @@ namespace Aw.Meta.Features.Watch;
 /// <param name="resources">The disk.</param>
 /// <param name="messages">The inbox.</param>
 /// <param name="values">Keeps the pull requests seen merged or closed, which the merge queue drops.</param>
-internal sealed class WatchPoller(RepoCommands repo, IHostResources resources, IMessageStore messages, IKeyValueStore values)
+/// <param name="sweeper">Sweeps the worktrees of the pull requests seen to end.</param>
+internal sealed class WatchPoller(RepoCommands repo, IHostResources resources, IMessageStore messages, IKeyValueStore values, WatchSweeper sweeper)
 {
     /// <summary>Disk is low below this many free bytes.</summary>
     internal const long DiskLowBytes = 5L * 1024 * 1024 * 1024;
@@ -33,15 +34,21 @@ internal sealed class WatchPoller(RepoCommands repo, IHostResources resources, I
             return remembered.Error;
         }
 
-        return new Polled(new WatchSnapshot(prs.Value, main.Value, disk.Value.DiskFreeBytes < DiskLowBytes), inbox.Value.Count);
+        var worktrees = await sweeper.Sweep(remembered.Value, cancellationToken).ConfigureAwait(false);
+        return new Polled(new WatchSnapshot(prs.Value, main.Value, disk.Value.DiskFreeBytes < DiskLowBytes), inbox.Value.Count, worktrees);
     }
 
-    // Keeps the pull requests GitHub shows merged or closed, so the merge queue can drop them.
-    private async ValueTask<Result<Unit>> Remember(IReadOnlyList<PrView> prs, CancellationToken cancellationToken)
+    // Keeps the pull requests GitHub shows merged or closed, so the merge queue can drop them; returns the ones not seen ended before.
+    private async ValueTask<Result<IReadOnlyList<int>>> Remember(IReadOnlyList<PrView> prs, CancellationToken cancellationToken)
     {
         var kept = await values.Get(KvKeys.EndedPrs, cancellationToken).ConfigureAwait(false);
-        return kept.IsError ? kept.Error
-            : EndedPrs.Merge(kept.Value, prs) is { } ended ? await values.Set(KvKeys.EndedPrs, ended, cancellationToken).ConfigureAwait(false)
-            : Results.Ok();
+        if (kept.IsError)
+        {
+            return kept.Error;
+        }
+
+        var added = EndedPrs.Added(kept.Value, prs);
+        var stored = EndedPrs.Merge(kept.Value, prs) is { } ended ? await values.Set(KvKeys.EndedPrs, ended, cancellationToken).ConfigureAwait(false) : Results.Ok();
+        return stored.IsError ? stored.Error : Results.Success(added);
     }
 }

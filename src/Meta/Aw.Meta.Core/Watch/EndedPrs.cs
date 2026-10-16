@@ -27,4 +27,15 @@ public static class EndedPrs
         known.UnionWith(prs.Where(static pr => pr.State != PrState.Open).Select(static pr => pr.Number));
         return known.Count == before ? null : string.Join(',', known.Order().Select(static n => n.ToString(CultureInfo.InvariantCulture)));
     }
+
+    /// <summary>The pull requests of one poll that ended and were not in the stored list yet.</summary>
+    /// <param name="stored">The stored value, or null.</param>
+    /// <param name="prs">The pull requests the poll saw.</param>
+    /// <returns>Their numbers, ascending.</returns>
+    public static IReadOnlyList<int> Added(string? stored, IEnumerable<PrView> prs)
+    {
+        ArgumentNullException.ThrowIfNull(prs);
+        var known = Read(stored);
+        return [.. prs.Where(pr => pr.State != PrState.Open && !known.Contains(pr.Number)).Select(static pr => pr.Number).Distinct().Order()];
+    }
 }

@@ -18,6 +18,7 @@ public sealed record TeamConfig
     /// <param name="gate">The gate scopes; none when absent.</param>
     /// <param name="mergeOrder">Merge-order rules; none when absent.</param>
     /// <param name="knownFlakes">Names of tests known to be flaky; none when absent.</param>
+    /// <param name="worktrees">The worktree sweep's settings; the defaults when absent.</param>
     [JsonConstructor]
     public TeamConfig(
         string team,
@@ -28,7 +29,8 @@ public sealed record TeamConfig
         string? prompts = null,
         GateConfig? gate = null,
         IReadOnlyList<MergeOrderRule>? mergeOrder = null,
-        IReadOnlyList<string>? knownFlakes = null)
+        IReadOnlyList<string>? knownFlakes = null,
+        WorktreeConfig? worktrees = null)
     {
         Team = team;
         Repo = repo;
@@ -39,6 +41,7 @@ public sealed record TeamConfig
         Gate = gate ?? GateConfig.Empty;
         MergeOrder = mergeOrder ?? [];
         KnownFlakes = knownFlakes ?? [];
+        Worktrees = worktrees ?? new WorktreeConfig();
     }
 
     /// <summary>The team name; session names are "team-lane".</summary>
@@ -67,4 +70,7 @@ public sealed record TeamConfig
 
     /// <summary>Names of tests known to be flaky.</summary>
     public IReadOnlyList<string> KnownFlakes { get; init; }
+
+    /// <summary>The worktree sweep's settings.</summary>
+    public WorktreeConfig Worktrees { get; init; }
 }

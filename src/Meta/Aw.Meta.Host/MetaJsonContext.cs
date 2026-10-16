@@ -21,6 +21,8 @@ using Aw.Meta.Features.Status;
 using Aw.Meta.Features.StopCheck;
 using Aw.Meta.Features.SyncInbox;
 using Aw.Meta.Features.Watch;
+using Aw.Meta.Features.WorktreeList;
+using Aw.Meta.Features.WorktreeSweep;
 
 namespace Aw.Meta.Host;
 
@@ -47,6 +49,8 @@ namespace Aw.Meta.Host;
 [JsonSerializable(typeof(MergeRunResponse))]
 [JsonSerializable(typeof(HealthResponse))]
 [JsonSerializable(typeof(WatchResponse))]
+[JsonSerializable(typeof(ListWorktreesResponse))]
+[JsonSerializable(typeof(SweepWorktreesResponse))]
 [JsonSerializable(typeof(SyncInboxRequest))]
 [JsonSerializable(typeof(SyncInboxResponse))]
 internal sealed partial class MetaJsonContext : JsonSerializerContext;
