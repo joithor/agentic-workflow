@@ -52,6 +52,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<ViewsDatabase>()
             .AddSingleton<IViewStore, SqliteViewStore>()
             .AddSingleton<IViewReader, SqliteViewReader>()
+            .AddSingleton<IJobViews, SqliteJobViews>()
             .AddSingleton<IProfileSource, YamlProfileSource>()
             .AddSingleton<IApprovals, FileApprovals>()
             .AddSingleton<IApprovedProfile>(static sp => sp.GetRequiredService<IApprovals>())

@@ -94,6 +94,27 @@ public sealed class ViewsFileTests : IDisposable
         Assert.Equal(0, Count(path, "view_items"));
     }
 
+    [Fact, Trait("Lane", "integration")]
+    public async Task Schema_bump_rebuilds_on_start()
+    {
+        var path = Path.Combine(_home.Path, "views.db");
+        var runner = new MigrationRunner(new SqliteConnectionFactory(new SqliteOptions(path)), new FakeTimeProvider(), backupBeforeUpgrade: false);
+        Assert.True((await runner.Migrate([.. ViewsDatabase.Migrations.Take(3)], Token)).IsSuccess);
+        Exec(path, "INSERT INTO projector_state (id, cursor, schema_version, rebuilding) VALUES (1, 12, 3, 0)");
+        Exec(path, "INSERT INTO view_services (key, row_json, seq) VALUES ('heartbeat', '{}', 4)");
+        Assert.DoesNotContain("view_jobs", Tables(path), StringComparer.Ordinal);
+
+        using var views = new SqliteViews(_home.Path);
+        var opened = (await views.Store.Open(ViewSchema.Version, Token)).Value;
+
+        Assert.Equal(3, opened.SchemaVersion);   // the file's own version: the projector sees it differs and resets
+        Assert.Contains("view_jobs", Tables(path), StringComparer.Ordinal);
+        Assert.Equal(1, Count(path, "view_services"));   // the migration only adds the table
+        var reset = (await views.Store.Reset(ViewNames.All, ViewSchema.Version, new FakeTimeProvider().GetUtcNow(), Token)).Value;
+        Assert.True(reset is { Cursor: 0, Rebuilding: true, SchemaVersion: ViewSchema.Version });
+        Assert.Equal(0, Count(path, "view_services"));
+    }
+
     private static long Count(string path, string table)
     {
         using var connection = new SqliteConnection($"Data Source={path};Mode=ReadOnly;Pooling=False");
