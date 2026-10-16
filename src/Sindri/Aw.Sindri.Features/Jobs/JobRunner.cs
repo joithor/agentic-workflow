@@ -19,7 +19,7 @@ namespace Aw.Sindri.Features.Jobs;
 /// <param name="writer">Appends the job's own events.</param>
 /// <param name="registry">Releases a job's (kind, key) claim when it ends.</param>
 internal sealed class JobRunner(IServiceScopeFactory scopes, IJobContextAccessor jobs, ICallerContextAccessor callers, JobEventWriter writer, JobRegistry registry)
-    : IJobRunner, IAsyncDisposable
+    : IJobRunner, IAsyncDisposable, IDisposable
 {
     private readonly ConcurrentDictionary<string, Run> _runs = new(StringComparer.Ordinal);
     private readonly CancellationTokenSource _stopping = new();
@@ -77,6 +77,15 @@ internal sealed class JobRunner(IServiceScopeFactory scopes, IJobContextAccessor
             }
 
             await Task.WhenAll(pending).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>Trips every running job's token (the host is stopping) without waiting; a container disposed synchronously calls this.</summary>
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) == 0)
+        {
+            _stopping.Cancel();
         }
     }
 
