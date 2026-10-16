@@ -10,7 +10,7 @@ public sealed class TranscriptRecordParserTests
         """{"type":"user","origin":{"kind":"peer","from":"uds:/run/user/1000/cc-socks/100149.sock","verifiedPeerPid":100149,"msg_id":"1f95a","name":"agentic-workflow-4c","fromMode":"prompting","body":"CONTEXT lane api"},"promptSource":"system","message":{"role":"user","content":"x"},"uuid":"u1","timestamp":"2026-10-15T03:57:25.087Z"}""";
 
     private const string Queued =
-        """{"type":"attachment","attachment":{"type":"queued_command","prompt":"p","delivery_id":"d-9","origin":{"kind":"peer","from":"uds:/s/1.sock","name":"agentic-workflow-9a","msg_id":"m-2","body":"ready #7"}},"timestamp":"2026-10-15T04:00:00.000Z"}""";
+        """{"type":"attachment","attachment":{"type":"queued_command","prompt":"p","delivery_id":"d-9","origin":{"kind":"peer","from":"uds:/s/1.sock","name":"agentic-workflow-9a","msg_id":"m-2","body":"ready #7 079c2541"}},"timestamp":"2026-10-15T04:00:00.000Z"}""";
 
     [Fact, Trait("Lane", "unit")]
     public void A_user_record_with_a_peer_origin_is_a_message()
@@ -32,7 +32,7 @@ public sealed class TranscriptRecordParserTests
 
         Assert.NotNull(message);
         Assert.Equal("m-2", message.Id.Value);
-        Assert.Equal("ready #7", message.Body);
+        Assert.Equal("ready #7 079c2541", message.Body);
     }
 
     [Fact, Trait("Lane", "unit")]

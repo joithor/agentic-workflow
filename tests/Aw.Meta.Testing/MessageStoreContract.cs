@@ -37,7 +37,7 @@ public abstract class MessageStoreContract
     public async Task Recording_dedupes_on_the_message_id_and_moves_the_offset()
     {
         var store = await Create(_none);
-        var first = A.Inbox("m1", body: "ready #7", minute: 1);
+        var first = A.Inbox("m1", body: "ready #7 079c2541", minute: 1);
         var second = A.Inbox("m2", minute: 2);
 
         var added = await store.RecordInbound("/t/a.jsonl", 100, [first, second], _none);
@@ -56,7 +56,7 @@ public abstract class MessageStoreContract
     public async Task Messages_read_back_oldest_first_with_their_classification()
     {
         var store = await Create(_none);
-        var late = A.Inbox("late", name: "api-1", body: "ready #190", minute: 9);
+        var late = A.Inbox("late", name: "api-1", body: "ready #190 079c2541", minute: 9);
         var early = A.Inbox("early", name: "ui-1", body: "ui lane here", minute: 1);
         _ = await store.RecordInbound("/t/a.jsonl", 1, [late, early], _none);
 

@@ -72,6 +72,8 @@ send() { printf '{"session_id":"s-meta","tool_name":"SendMessage","tool_input":{
   step owner
   step owner-answer 1 --answer sqlite
   step log-append --kind note --text "smoke run"
+  step queue-drop 1 --reason "smoke drop" --json
+  stepx queue-drop 1 --reason "smoke again"
   step lanes
   step merge-check 1
   step merge-check

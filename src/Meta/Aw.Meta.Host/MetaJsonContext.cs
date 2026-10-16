@@ -20,6 +20,7 @@ using Aw.Meta.Features.OutboxRecord;
 using Aw.Meta.Features.Owner;
 using Aw.Meta.Features.OwnerAnswer;
 using Aw.Meta.Features.OwnerAsk;
+using Aw.Meta.Features.QueueDrop;
 using Aw.Meta.Features.Roles;
 using Aw.Meta.Features.Status;
 using Aw.Meta.Features.StopCheck;
@@ -45,6 +46,7 @@ namespace Aw.Meta.Host;
 [JsonSerializable(typeof(AnswerOwnerResponse))]
 [JsonSerializable(typeof(AskOwnerResponse))]
 [JsonSerializable(typeof(AppendLogResponse))]
+[JsonSerializable(typeof(QueueDropResponse))]
 [JsonSerializable(typeof(StatusResponse))]
 [JsonSerializable(typeof(StopCheckResponse))]
 [JsonSerializable(typeof(GateRunResponse))]
