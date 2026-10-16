@@ -214,4 +214,48 @@ public abstract class IntentStoreContract
         var only = layer.Conflicts[0];
         Expect.That(only.A.Value == a.Value && only.B.Value == b.Value && only.Verdict == ConflictVerdict.Contradicts, test, $"{only}");
     }
+
+    /// <summary>A pending save keeps the record queued, so a stopped conflict check is retried by the next sync.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_pending_save_stores_the_decisions_but_keeps_the_record_queued()
+    {
+        const string test = nameof(A_pending_save_stores_the_decisions_but_keeps_the_record_queued);
+        var store = CreateStore();
+        _ = Expect.Ok(await store.CommitPage(Page("c1", [Record(_r103, "v1", "SPL-103")], [Link(_r103, "feature:a")]), None), test);
+        var (decision, decides) = Decided(_r103, "first", "feature:a");
+
+        _ = Expect.Ok(await store.SaveDecisions(new DecisionBatch(_r103, "v1", [decision], [decides]) { Pending = true }, None), test);
+        var pending = Expect.Ok(await store.Queued(_onyx, None), test);
+        var layer = Expect.Ok(await store.Layer(None), test);
+        _ = Expect.Ok(await store.SaveDecisions(new DecisionBatch(_r103, "v1", [decision], [decides]), None), test);
+        var done = Expect.Ok(await store.Queued(_onyx, None), test);
+
+        Expect.That(pending.Count == 1 && layer.Decisions.Count == 1, test, $"{pending.Count} queued, {layer.Decisions.Count} decisions after a pending save");
+        Expect.That(done.Count == 0, test, "the final save didn't mark the record extracted");
+    }
+
+    /// <summary>Saving a record's decisions again keeps the verdicts of pairs whose decision keys survive and drops the ones that went away.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Saving_again_keeps_the_verdicts_of_decisions_whose_keys_survive()
+    {
+        const string test = nameof(Saving_again_keeps_the_verdicts_of_decisions_whose_keys_survive);
+        var store = CreateStore();
+        _ = Expect.Ok(await store.CommitPage(Page("c1", [Record(_r103, "v1", "SPL-103"), Record(_r104, "v1", "SPL-104")], [Link(_r103, "feature:a"), Link(_r104, "feature:a")]), None), test);
+        var (kept, keptEdge) = Decided(_r103, "kept", "feature:a");
+        var (other, otherEdge) = Decided(_r104, "other", "feature:a");
+        var (replacement, replacementEdge) = Decided(_r103, "replacement", "feature:a");
+        _ = Expect.Ok(await store.SaveDecisions(new DecisionBatch(_r103, "v1", [kept], [keptEdge]), None), test);
+        _ = Expect.Ok(await store.SaveDecisions(new DecisionBatch(_r104, "v1", [other], [otherEdge]), None), test);
+        _ = Expect.Ok(await store.SaveConflict(DecisionConflict.Of(kept.ToKey(), other.ToKey(), ConflictVerdict.Contradicts, _at), None), test);
+
+        _ = Expect.Ok(await store.SaveDecisions(new DecisionBatch(_r103, "v1", [kept, replacement], [keptEdge, replacementEdge]), None), test);
+        var same = Expect.Ok(await store.Layer(None), test);
+        _ = Expect.Ok(await store.SaveDecisions(new DecisionBatch(_r103, "v1", [replacement], [replacementEdge]), None), test);
+        var gone = Expect.Ok(await store.Layer(None), test);
+
+        Expect.That(same.Conflicts.Count == 1 && same.Conflicts[0].Verdict == ConflictVerdict.Contradicts, test, $"{same.Conflicts.Count} verdicts after a re-save with the same key");
+        Expect.That(gone.Conflicts.Count == 0 && gone.Decisions.Count == 2, test, $"{gone.Conflicts.Count} verdicts and {gone.Decisions.Count} decisions after the key went away");
+    }
 }

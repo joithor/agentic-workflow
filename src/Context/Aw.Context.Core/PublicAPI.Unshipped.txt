@@ -1276,6 +1276,8 @@ Aw.Context.Core.Linking.DecisionBatch.Deconstruct(out Aw.Context.Core.Sources.Re
 Aw.Context.Core.Linking.DecisionBatch.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>!
 Aw.Context.Core.Linking.DecisionBatch.Edges.init -> void
 Aw.Context.Core.Linking.DecisionBatch.Equals(Aw.Context.Core.Linking.DecisionBatch? other) -> bool
+Aw.Context.Core.Linking.DecisionBatch.Pending.get -> bool
+Aw.Context.Core.Linking.DecisionBatch.Pending.init -> void
 Aw.Context.Core.Linking.DecisionBatch.Record.get -> Aw.Context.Core.Sources.RecordKey
 Aw.Context.Core.Linking.DecisionBatch.Record.init -> void
 Aw.Context.Core.Linking.DecisionBatch.Version.get -> string!
