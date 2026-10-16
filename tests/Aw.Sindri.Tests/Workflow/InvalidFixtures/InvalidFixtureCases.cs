@@ -282,6 +282,10 @@ internal static class InvalidFixtureCases
             FixtureSetup.Shipped,
             "RCP-CHOICE-005: state 'route' routes uncertain to 'prove', which isn't its desk twin at RCP-CHOICE-005.yaml:32:5 (transitions[2]); route it to a state with step: { use: step.desk.choose, with: { from: route } }",
             []),
+        ["RCP-CHOICE-005-computed"] = new(
+            FixtureSetup.Shipped,
+            "RCP-CHOICE-005: from of state 'route-desk' is a { profile } value at RCP-CHOICE-005-computed.yaml:0:0 (states.route-desk.step.with.from); name the route state it twins as a literal: from: <state>",
+            []),
         ["RCP-CHOICE-006"] = new(
             FixtureSetup.Shipped,
             "RCP-CHOICE-006: transitions[0] routes 'route' on step.failed before its branch transitions[1] at RCP-CHOICE-006.yaml:30:5 (transitions[0]); list the branch transitions first and the uncertain and step.failed ones last",

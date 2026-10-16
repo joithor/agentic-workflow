@@ -113,6 +113,13 @@ public sealed class ChoiceRulesTests
         Only("RCP-CHOICE-005", RouteRecipes.Edit(RouteRecipes.Compact, "with: { from: route }", "with: { from: prove }"),
             "RCP-CHOICE-005: state 'route-desk' runs 'step.desk.choose' from 'prove', which isn't a 'step.judge.choose' state", "set from: to the route state it twins", allowMore: true);
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("{ profile: workflow.routeState }", "{ profile }")]
+    [InlineData("{ fact: fact:change }", "{ fact }")]
+    public void A_desk_twin_whose_from_is_not_a_literal_state_is_RCP_CHOICE_005(string from, string called) =>
+        Only("RCP-CHOICE-005", RouteRecipes.Edit(RouteRecipes.Compact, "with: { from: route }", $"with: {{ from: {from} }}"),
+            $"RCP-CHOICE-005: from of state 'route-desk' is a {called} value", "name the route state it twins as a literal: from: <state>");
+
     [Fact, Trait("Lane", "unit")]
     public void Step_failed_before_a_branch_is_RCP_CHOICE_006() =>
         Only("RCP-CHOICE-006", RouteRecipes.Fixture("RCP-CHOICE-006"), "RCP-CHOICE-006: transitions[0] routes 'route' on step.failed before its branch transitions[1]",
