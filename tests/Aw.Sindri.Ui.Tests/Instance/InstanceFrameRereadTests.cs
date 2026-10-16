@@ -150,4 +150,19 @@ public sealed class InstanceFrameRereadTests
         Assert.Contains("parked", frame.Expanded!.Child!.Text, StringComparison.Ordinal);
         Assert.DoesNotContain("running", frame.Expanded.Child.Text, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task A_catalog_that_arrives_after_the_frame_shows_gives_the_protected_child_actions_their_lock_button()
+    {
+        var catalog = new ViewModels.Controls.CatalogViewModel(_clipboard, _clock);
+        var golden = GoldenFiles.Node("workflow-instance", "project-build");
+        var frame = new InstanceFrameViewModel(_server, _clipboard, _clock, catalog: catalog);
+        await frame.Open(_api, (string)golden["address"]!, (string)golden["id"]!, Token);
+        Assert.DoesNotContain(frame.Children!.Groups[0].AllRows.SelectMany(r => r.Actions), a => a.Protected is not null);
+
+        catalog.Show(_api, _server, (await _server.Commands(_api, Token)).Value);
+        await frame.Refresh(_api, Token);
+
+        Assert.Contains(frame.Children!.Groups[0].AllRows.SelectMany(r => r.Actions), a => a.Protected is not null);
+    }
 }
