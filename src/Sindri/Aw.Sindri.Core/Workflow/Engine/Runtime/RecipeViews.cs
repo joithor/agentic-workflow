@@ -1,7 +1,7 @@
-using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Views;
 
-namespace Aw.Sindri.Core.Workflow.Views;
+namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 
 /// <summary>Builds the API's <see cref="RecipeView"/> (API spec §3.8, E-22) from a recipe: a pure function of the recipe and its stamp.</summary>
 public static class RecipeViews
@@ -31,5 +31,5 @@ public static class RecipeViews
             [.. path.Loops.Where(l => l.Name is { } name && recipe.Loops.ContainsKey(name)).Select(l => new RecipeLoopView(l.Name, l.From, l.To, recipe.Loops[l.Name!].Cap))]);   // why: the Where kept only the named ones
     }
 
-    private static FactType Declared(string? type) => Engine.Runtime.FactTypes.Parse(type ?? Recipes.FactTypes.Default);
+    private static FactType Declared(string? type) => FactTypes.Parse(type ?? Recipes.FactTypes.Default);
 }

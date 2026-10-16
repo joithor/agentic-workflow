@@ -2,7 +2,6 @@ using System.Globalization;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Validation;
-using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Testing.Workflow;
 
 namespace Aw.Sindri.Tests.ShowRecipe;

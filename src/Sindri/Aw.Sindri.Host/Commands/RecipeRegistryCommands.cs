@@ -1,8 +1,8 @@
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.RegisterRecipe;
-using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Host.Commands.Recipe;
 
 namespace Aw.Sindri.Host.Commands;
