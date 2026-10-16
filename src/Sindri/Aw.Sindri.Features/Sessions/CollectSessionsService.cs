@@ -15,7 +15,7 @@ internal sealed class CollectSessionsService(SessionDiscovery discovery, Session
     {
         ArgumentNullException.ThrowIfNull(request);
         var now = clock.GetUtcNow();
-        if (!discovery.Enabled)
+        if (!discovery.IsEnabled())
         {
             Publish([], [], [SessionProblems.Disabled], now);
             return Bad();
@@ -68,5 +68,5 @@ internal sealed class CollectSessionsService(SessionDiscovery discovery, Session
     }
 
     private void Publish(IReadOnlyList<ObservedSession> sessions, IReadOnlyList<EndedSession> ended, IReadOnlyList<SessionProblem> problems, DateTimeOffset at) =>
-        snapshot.Publish(new SessionSnapshot(sessions, ended, [.. discovery.StaticProblems, .. problems], at));
+        snapshot.Publish(new SessionSnapshot(sessions, ended, [.. discovery.StaticProblems(), .. problems], at));
 }

@@ -20,6 +20,7 @@ internal sealed partial class SessionCollectorHost(
     private static readonly TimeSpan _budget = TimeSpan.FromMilliseconds(500);
     private bool _restored;
     private string? _problem;
+    private string? _problemCodes;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -52,6 +53,19 @@ internal sealed partial class SessionCollectorHost(
             {
                 Report(Core.SindriErrors.ServiceFailed.With(e.GetType().Name));
             }
+        }
+
+        ReportProblems();
+    }
+
+    /// <summary>Logs the snapshot's problem codes (codes only, never text from a process) when they change, so a run's log shows what the snapshot says.</summary>
+    private void ReportProblems()
+    {
+        var codes = string.Join(',', (snapshot.Current?.Problems ?? []).Select(static p => p.Code).Distinct(StringComparer.Ordinal));
+        if (!string.Equals(_problemCodes, codes, StringComparison.Ordinal))
+        {
+            _problemCodes = codes;
+            LogProblems(log, snapshot.Current?.Sessions.Count ?? 0, codes.Length == 0 ? "none" : codes);
         }
     }
 
@@ -114,6 +128,9 @@ internal sealed partial class SessionCollectorHost(
             // shutting down
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "session collector: {Sessions} live sessions, problems: {Codes}")]
+    private static partial void LogProblems(ILogger logger, int sessions, string codes);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "SND-SCHED-001 the session collector couldn't finish a pass: {Code} {Detail}")]
     private static partial void LogFailed(ILogger logger, string code, string detail);

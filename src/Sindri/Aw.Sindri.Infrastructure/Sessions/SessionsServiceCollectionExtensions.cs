@@ -17,8 +17,8 @@ internal static class SessionsServiceCollectionExtensions
     {
         var load = LauncherStartup.Load(environment, settings);
         var providers = load.Sessions.Providers ?? [.. load.Catalog.All.Select(static a => a.Id)];
-        var procRoot = LauncherStartup.Set(environment, "AW_SESSIONS_PROC_ROOT") ?? "/proc";
-        var fleet = LauncherStartup.Set(environment, "AW_FLEET_DIR") ?? Path.Combine(settings.StateDirectory, "fleet");
+        var procRoot = LauncherStartup.NonEmpty(environment("AW_SESSIONS_PROC_ROOT")) ?? "/proc";
+        var fleet = LauncherStartup.NonEmpty(environment("AW_FLEET_DIR")) ?? Path.Combine(settings.StateDirectory, "fleet");
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         return services
             .AddSingleton<IAgentCatalog>(load.Catalog)

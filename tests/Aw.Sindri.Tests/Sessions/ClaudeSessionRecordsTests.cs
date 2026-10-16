@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Runtime.Versioning;
-using System.Text;
 using Aw.Sindri.Infrastructure.Sessions;
 
 namespace Aw.Sindri.Tests.Sessions;
@@ -75,7 +74,7 @@ public sealed class ClaudeSessionRecordsTests
         {
             for (var pid = 1; pid <= ClaudeSessionRecords.MaxFiles + 10; pid++)
             {
-                File.WriteAllText(Path.Combine(directory, pid.ToString("D4", CultureInfo.InvariantCulture) + ".json"), string.Create(CultureInfo.InvariantCulture, $$"""{ "pid": {{pid}} }"""), Encoding.UTF8);
+                File.WriteAllText(Path.Combine(directory, pid.ToString("D4", CultureInfo.InvariantCulture) + ".json"), string.Create(CultureInfo.InvariantCulture, $$"""{ "pid": {{pid}} }"""));
             }
 
             Assert.Equal(ClaudeSessionRecords.MaxFiles, Read(directory).Count);

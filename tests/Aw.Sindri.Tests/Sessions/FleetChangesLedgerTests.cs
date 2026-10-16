@@ -52,7 +52,8 @@ public sealed class FleetChangesLedgerTests
     {
         var entry = EventCatalog.All.Single(static e => e.Type == "fleet.changed");
 
-        Assert.Equal((true, typeof(FleetChanged), ["status"]), (entry.Public, entry.PublicPayload, entry.Invalidates));
+        Assert.Equal((true, typeof(FleetChanged)), (entry.Public, entry.PublicPayload));
+        Assert.Equal(["status"], entry.Invalidates, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -14,7 +14,7 @@ internal static class LauncherStartup
     internal static LauncherLoad Load(Func<string, string?> environment, SindriSettings settings)
     {
         var builtins = Builtins();
-        var path = Set(environment, "AW_LAUNCHER_CONFIG") ?? Path.Combine(settings.StateDirectory, "launcher.json");
+        var path = NonEmpty(environment("AW_LAUNCHER_CONFIG")) ?? Path.Combine(settings.StateDirectory, "launcher.json");
         var (bytes, unreadable) = ReadFile(path);
         var read = LauncherFile.Read(builtins, bytes);
         var problem = unreadable ?? (read.IsError ? read.Error.Message : null);
@@ -24,7 +24,7 @@ internal static class LauncherStartup
     }
 
     private static bool TestOverride(Func<string, string?> environment) =>
-        Set(environment, "AW_SESSIONS_PROC_ROOT") is not null || Set(environment, "AW_SESSIONS_CLAUDE_DIR") is not null;
+        NonEmpty(environment("AW_SESSIONS_PROC_ROOT")) is not null || NonEmpty(environment("AW_SESSIONS_CLAUDE_DIR")) is not null;
 
     private static SessionSettings Sessions(SessionsSection? section, string? problem, bool overridden) =>
         new(section?.Enabled ?? true, section?.PollSeconds ?? 2, Providers(section), overridden) { ConfigProblem = problem };
@@ -32,12 +32,12 @@ internal static class LauncherStartup
     private static IReadOnlyList<AgentId>? Providers(SessionsSection? section) =>
         section?.Providers is { } named ? [.. named.Select(AgentId.From)] : null;
 
-    internal static string? Set(Func<string, string?> environment, string name) => environment(name) is { Length: > 0 } value ? value : null;
+    internal static string? NonEmpty(string? value) => value is { Length: > 0 } ? value : null;
 
     private static string ClaudeDirectory(Func<string, string?> environment, string? configured)
     {
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var chosen = Set(environment, "AW_SESSIONS_CLAUDE_DIR") ?? configured ?? "~/.claude/sessions";
+        var chosen = NonEmpty(environment("AW_SESSIONS_CLAUDE_DIR")) ?? configured ?? "~/.claude/sessions";
         return chosen.StartsWith('~') ? home + chosen[1..] : chosen;
     }
 
