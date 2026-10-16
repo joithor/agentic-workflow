@@ -235,7 +235,7 @@ public sealed class EvalRecipeTests
         var started = EvalSimulation.Start(new EvalCase("c", new EvalStartLine(new EvalStart(recipe.Inputs.ToDictionary(static i => i.Key, static i => EvalFacts.OfText("x"))), Scaffold: false), []), recipe, EvalComposition.Catalog, InMemoryChildRecipes.None).Value;
         var stepped = started.Step(line, 2).Value.Next;
         Assert.Equal(EvalFacts.Value(new DecisionFact("ui", "eval")), stepped.Instance.Facts[FactKey.From("fact:decision")]);
-        Assert.Contains("fact:decision", recipe.Transitions[0].Produces.Select(f => f.Value), StringComparer.Ordinal);
+        Assert.Contains("fact:decision", recipe.Transitions[0].Produces.Select(p => p.Fact.Value), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

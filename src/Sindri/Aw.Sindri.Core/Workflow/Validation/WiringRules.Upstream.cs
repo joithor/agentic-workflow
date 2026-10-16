@@ -24,7 +24,7 @@ internal sealed partial class WiringRules
         var available = Reaching(recipe);
         return StateNeeds(recipe, catalog)
             .Concat(TransitionNeeds(recipe, catalog))
-            .Where(n => available.TryGetValue(n.State, out var facts) && !facts.Contains(n.Fact) && !(n.Transition?.Produces.Contains(n.Fact) ?? false))
+            .Where(n => available.TryGetValue(n.State, out var facts) && !facts.Contains(n.Fact) && !(n.Transition?.Produces.Any(p => p.Fact == n.Fact) ?? false))
             .DistinctBy(n => (n.Path, n.Fact))
             .Select(n => source.Finding(
                 "RCP-WIRE-001",
@@ -71,7 +71,7 @@ internal sealed partial class WiringRules
             return false;
         }
 
-        HashSet<FactKey> carried = [.. facts, .. transition.Produces];
+        HashSet<FactKey> carried = [.. facts, .. transition.Produces.Select(p => p.Fact)];
         if (!available.TryGetValue(transition.To, out var current))
         {
             available[transition.To] = carried;
@@ -93,7 +93,7 @@ internal sealed partial class WiringRules
 
         var path = recipe.Transitions
             .Select((t, i) => (Transition: t, Index: i))
-            .Where(p => p.Transition.To == state && !p.Transition.Produces.Contains(fact))
+            .Where(p => p.Transition.To == state && !p.Transition.Produces.Any(q => q.Fact == fact))
             .SelectMany(p => p.Transition.From.Select(from => (p.Index, From: from)))
             .FirstOrDefault(p => available.TryGetValue(p.From, out var facts) && !facts.Contains(fact));
         return path.From is null ? "not every path into it produces it" : $"the path through transitions[{Inv(path.Index)}] from '{path.From}' doesn't produce it";

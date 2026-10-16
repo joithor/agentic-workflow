@@ -107,11 +107,11 @@ internal static class LoopFixture
         return new Recipe(
             1, RecipeId.From("workflow.step"), 1, Description: null, Base: null, Urgency: "work", Name: null, Inputs: [], Outputs: [], "produce", states,
             [
-                new(["produce"], "checks", "step.completed", ARecipe.When(OutcomeName.From("done")), [], [], [], [FactKey.From("fact:output")]),
+                new(["produce"], "checks", "step.completed", ARecipe.When(OutcomeName.From("done")), [], [], [], [new ProducedFact(FactKey.From("fact:output"), From: null)]),
                 new(["checks"], "verify", "step.completed", ARecipe.When(OutcomeName.From("passed")), [], [], [], []),
-                new(["checks"], "produce", "step.completed", ARecipe.When(OutcomeName.From("failed")), [], [], [], [FactKey.From("fact:findings")]),
+                new(["checks"], "produce", "step.completed", ARecipe.When(OutcomeName.From("failed")), [], [], [], [new ProducedFact(FactKey.From("fact:findings"), From: null)]),
                 new(["verify"], "done", "step.completed", ARecipe.When(OutcomeName.From("accepted")), [], [], [], []),
-                new(["verify"], "produce", "step.completed", ARecipe.When(OutcomeName.From("rejected")), [], [], [], [FactKey.From("fact:findings")]),
+                new(["verify"], "produce", "step.completed", ARecipe.When(OutcomeName.From("rejected")), [], [], [], [new ProducedFact(FactKey.From("fact:findings"), From: null)]),
             ],
             new Dictionary<string, LoopSpec>(StringComparer.Ordinal) { [Revisions] = new(3, LoopSpec.DefaultNoProgress) },
             new BudgetSpec(400_000), Evals: [], Hash: null);

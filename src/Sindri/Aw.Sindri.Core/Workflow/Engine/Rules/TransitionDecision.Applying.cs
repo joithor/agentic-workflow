@@ -134,7 +134,7 @@ public static partial class TransitionDecision
     private static IReadOnlyDictionary<FactKey, FactValue> Produce(IReadOnlyDictionary<FactKey, FactValue> facts, RecipeTransition transition, Trigger trigger)
     {
         var outputs = Outputs(trigger);
-        var produced = transition.Produces.Where(outputs.ContainsKey).ToList();
+        var produced = transition.Produces.Select(p => p.Fact).Where(outputs.ContainsKey).ToList();
         if (produced.Count == 0)
         {
             return facts;

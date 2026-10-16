@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Kernel.Json;
 using Aw.Sindri.Core.Workflow;
@@ -62,6 +63,17 @@ public sealed class RecipeHashingTests
 
         Assert.Equal(KnownCanonical, Encoding.UTF8.GetString(CanonicalJson.Of(node)));
         Assert.Equal(KnownHash, document.Hash.Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_bare_produces_entry_is_written_as_a_plain_string()
+    {
+        var document = RecipeReaderTests.Reader.Read(RecipeReaderTests.Minimal, "test.yaml").Document!;
+        var node = JsonNode.Parse(AwJson.Serialize(document.Recipe, SliceHarness.Json))!.AsObject();
+
+        var produces = node["transitions"]!.AsArray()[0]!["produces"]!.AsArray();
+        Assert.Equal(JsonValueKind.String, produces[0]!.GetValueKind());
+        Assert.Equal("fact:output", produces[0]!.GetValue<string>());
     }
 
     private const string KnownCanonical =

@@ -36,7 +36,7 @@ internal static class WiringRecipe
         string on = "step.completed",
         WhenClause? when = null,
         string[]? produces = null) =>
-        new([from], to, on, when, [], [], [], [.. (produces ?? []).Select(FactKey.From)]);
+        new([from], to, on, when, [], [], [], [.. (produces ?? []).Select(p => new ProducedFact(FactKey.From(p), From: null))]);
 
     public static WhenClause Outcome(string outcome) => ARecipe.When(OutcomeName.From(outcome));
 

@@ -31,6 +31,12 @@ internal sealed class RecipeShape(JsonSerializerOptions options, ReaderFindings 
             return;
         }
 
+        if (type == typeof(ProducedFact))
+        {
+            ProducedEntry(node, path);
+            return;
+        }
+
         var info = options.GetTypeInfo(type);   // a nullable value type is a leaf, read as itself
         switch (info.Kind)
         {
@@ -49,6 +55,9 @@ internal sealed class RecipeShape(JsonSerializerOptions options, ReaderFindings 
                 break;
         }
     }
+
+    /// <summary>A 'produces' entry: a bare fact key (checked as one, so its hint stays) or, from DT-C, '{ fact, from }'.</summary>
+    private void ProducedEntry(JsonNode node, string path) => Check(node, typeof(FactKey), path, nullable: false);
 
     private void Empty(Type type, string path, bool nullable)
     {

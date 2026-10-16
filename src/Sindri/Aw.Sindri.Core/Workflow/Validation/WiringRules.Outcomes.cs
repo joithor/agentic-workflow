@@ -15,13 +15,13 @@ internal sealed partial class WiringRules
 
     private static IEnumerable<RecipeFinding> Produced(Recipe recipe, ValidationContext context, RecipeSource source) =>
         recipe.Transitions
-            .SelectMany((t, i) => t.Produces.SelectMany((fact, j) => Sources(recipe, t, context)
-                .Where(s => !s.Source.Facts.Contains(fact))
+            .SelectMany((t, i) => t.Produces.SelectMany((entry, j) => Sources(recipe, t, context)
+                .Where(s => !s.Source.Facts.Contains(entry.Fact))
                 .Take(1)
                 .Select(s => source.Finding(
                     "RCP-WIRE-002",
                     $"transitions[{Inv(i)}].produces[{Inv(j)}]",
-                    $"transition from '{s.From}' produces '{fact.Value}', which {s.Source.Name} doesn't record",
+                    $"transition from '{s.From}' produces '{entry.Fact.Value}', which {s.Source.Name} doesn't record",
                     s.Source.Facts.Count == 0
                         ? $"remove it, since {s.Source.Name} records no facts"
                         : $"list only what it records ({List(s.Source.Facts)}), or remove it"))));

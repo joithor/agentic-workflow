@@ -238,7 +238,7 @@ internal sealed class DeclarationRules : IRecipeRules
         var key = output.Key.Value;
         var name = output.From;
         // an input is a fact the recipe starts with, so it needs no state to record it
-        var produced = recipe.Transitions.Where(t => t.From.Contains(name, StringComparer.Ordinal)).SelectMany(t => t.Produces);
+        var produced = recipe.Transitions.Where(t => t.From.Contains(name, StringComparer.Ordinal)).SelectMany(t => t.Produces).Select(p => p.Fact);
         if (produced.Contains(output.Key) || recipe.Inputs.Any(i => i.Key == output.Key))
         {
             return null;
