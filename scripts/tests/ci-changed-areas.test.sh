@@ -70,8 +70,12 @@ expect "the launcher checks' inputs run the bash tests (check-launcher.mjs and c
   "$(printf 'tests/fixtures/launcher/manifest.json\nconfig/launcher/builtins.json\nschemas/launcher.schema.json\ndocs/csharp/sindri-profile.md\ndocs/csharp/sindri-launcher.md\n')" \
   "$(printf 'bash=true\ndotnet=true\npackages=[]')"
 
-expect "SindriProfile.cs runs bash and dotnet; a launcher doc alone runs bash only" \
+expect "SindriProfile.cs runs bash and dotnet" \
   "$(printf 'src/Sindri/Aw.Sindri.Core/Profile/SindriProfile.cs\n')" \
+  "$(printf 'bash=true\ndotnet=true\npackages=[]')"
+
+expect "WorkflowSettings.cs (any Profile record) runs bash and dotnet" \
+  "$(printf 'src/Sindri/Aw.Sindri.Core/Profile/WorkflowSettings.cs\n')" \
   "$(printf 'bash=true\ndotnet=true\npackages=[]')"
 
 expect "a launcher doc alone runs bash only" \
