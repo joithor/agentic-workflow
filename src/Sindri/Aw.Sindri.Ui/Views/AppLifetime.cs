@@ -2,7 +2,6 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
-using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Shell;
 
 namespace Aw.Sindri.Ui.Views;
@@ -23,6 +22,7 @@ internal sealed class AppLifetime : IDisposable
     private readonly Action _shutdown;
     private readonly Func<Task> _settle;
     private readonly TimeProvider _clock;
+    private readonly IDockBadge _badge;
     /// <summary>Raised on the UI thread the moment Quit, or the OS ending the app, begins (the single instance retires on it).</summary>
     internal event EventHandler? Quitting
     {
@@ -41,12 +41,15 @@ internal sealed class AppLifetime : IDisposable
     /// <param name="shutdown">Ends the app (the lifetime's Shutdown).</param>
     /// <param name="settle">Records the window's bounds and returns the preferences writes still pending; the app ends once they are done, or after <see cref="SettleWithin"/>.</param>
     /// <param name="clock">The clock <see cref="SettleWithin"/> runs on.</param>
-    internal AppLifetime(Window window, ITray tray, Action<DeepLink> navigate, Action shutdown, Func<Task> settle, TimeProvider clock)
+    /// <param name="badge">The dock or taskbar badge; none when null.</param>
+    internal AppLifetime(Window window, ITray tray, Action<DeepLink> navigate, Action shutdown, Func<Task> settle, TimeProvider clock, IDockBadge? badge = null)
     {
+        _badge = badge ?? new NullDockBadge();
         (_window, _tray, _navigate, _shutdown, _settle, _clock) = (window, tray, navigate, shutdown, settle, clock);
         _window.Closing += OnClosing;
         _tray.OpenRequested += OnOpen;
         _tray.QuitRequested += OnQuit;
+        _tray.RowRequested += OnRow;
     }
 
     /// <summary>
@@ -60,32 +63,30 @@ internal sealed class AppLifetime : IDisposable
         desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
         _desktop = desktop;
         desktop.ShutdownRequested += OnShutdownRequested;
-        ShowState(shell.State);
+        Follow(shell);
+    }
+
+    /// <summary>Shows what the needs-you rows add up to in the tray and on the dock or taskbar badge.</summary>
+    /// <param name="summary">The summary.</param>
+    internal void ShowAttention(AttentionSummary summary)
+    {
+        _tray.Show(summary.Tray);
+        _badge.Show(summary.Badge);
+    }
+
+    /// <summary>Follows the shell's attention summary from now on, whether or not the window is shown.</summary>
+    /// <param name="shell">The shell.</param>
+    internal void Follow(ShellViewModel shell)
+    {
+        ShowAttention(shell.Attention);
         shell.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(ShellViewModel.State))
+            if (string.Equals(e.PropertyName, nameof(ShellViewModel.Attention), StringComparison.Ordinal))
             {
-                ShowState(shell.State);
+                ShowAttention(shell.Attention);
             }
         };
     }
-
-    /// <summary>What the tray shows for a shell state: "running" only once connected and fresh; hollow until then.</summary>
-    /// <param name="state">The shell's state.</param>
-    /// <returns>The tray's view.</returns>
-    internal static TrayView TrayViewFor(ShellState state) => state switch
-    {
-        ShellState.Normal => new TrayView(TrayState.Neutral, Labels.TrayRunning, Labels.TrayOpen, Labels.TrayQuit),
-        ShellState.NotRunning => new TrayView(TrayState.NotRunning, Labels.TrayNotRunning, Labels.TrayOpen, Labels.TrayQuit),
-        ShellState.VersionMismatch or ShellState.Connecting or ShellState.Unreadable or ShellState.Stale => Hollow,
-        _ => throw new ArgumentOutOfRangeException(nameof(state), state, message: null),
-    };
-
-    private static TrayView Hollow { get; } = new(TrayState.Stale, Labels.TrayNotResponding, Labels.TrayOpen, Labels.TrayQuit);
-
-    /// <summary>Shows the shell's state in the tray.</summary>
-    /// <param name="state">The state.</param>
-    internal void ShowState(ShellState state) => _tray.Show(TrayViewFor(state));
 
     /// <summary>Handles one message from a later launch (on the UI thread; <see cref="InstanceListener"/> hands them over): focus, or a deep link; nothing else.</summary>
     /// <param name="message">The message's text, unparsed.</param>
@@ -114,6 +115,7 @@ internal sealed class AppLifetime : IDisposable
         _window.Closing -= OnClosing;
         _tray.OpenRequested -= OnOpen;
         _tray.QuitRequested -= OnQuit;
+        _tray.RowRequested -= OnRow;
     }
 
     private void BringForward()
@@ -140,6 +142,18 @@ internal sealed class AppLifetime : IDisposable
     }
 
     private void OnOpen(object? sender, EventArgs e) => BringForward();
+
+    // A row picked in the tray's menu opens the app at needs-you/<rowId>: it navigates and runs nothing (UI spec §5).
+    private void OnRow(object? sender, TrayRowEventArgs e)
+    {
+        if (_quitting)
+        {
+            return;
+        }
+
+        BringForward();
+        _navigate(new DeepLink(DeepLinkKind.NeedsYou, e.RowId));
+    }
 
     private void OnQuit(object? sender, EventArgs e) => _ = Quit();
 

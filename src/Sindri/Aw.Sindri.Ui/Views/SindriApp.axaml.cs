@@ -18,7 +18,6 @@ namespace Aw.Sindri.Ui.Views;
 /// </summary>
 public sealed partial class SindriApp : Application
 {
-    private readonly ShellViewModel? _shell;
     private readonly Preferences? _preferences;
     private readonly TimeProvider? _clock;
     private InstanceListener? _listener;
@@ -36,7 +35,7 @@ public sealed partial class SindriApp : Application
 
     private SindriApp(ShellViewModel shell, Preferences preferences, SindriPlatform platform, TimeProvider clock)
     {
-        _shell = shell;
+        Shell = shell;
         _preferences = preferences;
         _clock = clock;
         Platform = platform;
@@ -48,12 +47,19 @@ public sealed partial class SindriApp : Application
     /// <returns>The app.</returns>
     public static SindriApp Create(SindriPlatform platform, TimeProvider clock)
     {
+        // AppBuilder.Configure runs this factory before Avalonia installs its synchronization context, and the view models
+        // capture the current one when they are built: install it first, or every timer callback would run on its own thread.
+        Avalonia.Threading.AvaloniaSynchronizationContext.InstallIfNeeded();
+
         // One writer of the preferences for the whole app: the shell and Settings share it, so their writes queue.
         var preferences = new Preferences(platform.Preferences);
         var clipboard = new AvaloniaClipboard(static () => (Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow);
         var api = new SindriApiClient(Loopback(), platform.Token, clock, platform.Log);
-        return new(new ShellViewModel(platform.Records, api, clock, preferences, clipboard), preferences, platform, clock);
+        return new(new ShellViewModel(platform.Records, api, clock, preferences, clipboard, platform.Motion), preferences, platform, clock);
     }
+
+    /// <summary>The shell the app was built over; null for the theme-only app.</summary>
+    internal ShellViewModel? Shell { get; }
 
     /// <summary>The head's adapters, or null for the theme-only app.</summary>
     internal SindriPlatform? Platform { get; }
@@ -75,7 +81,7 @@ public sealed partial class SindriApp : Application
     /// <inheritdoc />
     public override void OnFrameworkInitializationCompleted()
     {
-        if (_shell is not null && _preferences is not null && Platform is { } platform && ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        if (Shell is not null && _preferences is not null && Platform is { } platform && ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             // A later launch is answered from now on, while the window is still being built (ShellOpened hands the
             // messages to the window's lifetime); reading ends when the head disposes the instance.
@@ -84,7 +90,7 @@ public sealed partial class SindriApp : Application
 
             // Started on the UI thread, so the view models' awaits come back to it. Its failure is observed there: logged,
             // then the app ends with FailedExitCode.
-            _ = Open(desktop, _shell, _preferences, platform).ContinueWith(
+            _ = Open(desktop, Shell, _preferences, platform).ContinueWith(
                 opened => Fail(desktop, platform, opened.Exception),
                 CancellationToken.None,
                 TaskContinuationOptions.OnlyOnFaulted,
@@ -98,7 +104,7 @@ public sealed partial class SindriApp : Application
     // its bounds, the sheet width and the last page), then follows.
     private async Task Open(IClassicDesktopStyleApplicationLifetime desktop, ShellViewModel shell, Preferences preferences, SindriPlatform platform)
     {
-        var settings = await Settings(preferences, platform).ConfigureAwait(true);
+        var settings = await Settings(shell, preferences, platform).ConfigureAwait(true);
         desktop.Exit += (_, _) => settings.Dispose();
         await shell.Restore(CancellationToken.None).ConfigureAwait(true);
         var window = new ShellWindow { DataContext = shell };
@@ -118,11 +124,16 @@ public sealed partial class SindriApp : Application
         End(desktop, FailedExitCode);
     }
 
-    // Settings (⌘,) over the preferences and the OS setting, applying to this app's resources. A preferences file that
+    // Settings (⌘,) over the preferences and the OS setting, applying to this app's resources and the shell's lists. A preferences file that
     // can't be read leaves the theme's own values (the defaults) in place.
-    private async Task<SettingsViewModel> Settings(Preferences preferences, SindriPlatform platform)
+    private async Task<SettingsViewModel> Settings(ShellViewModel shell, Preferences preferences, SindriPlatform platform)
     {
-        var settings = new SettingsViewModel(preferences, platform.Motion, SettingsTheme.For(Resources));
+        var theme = SettingsTheme.For(Resources);
+        var settings = new SettingsViewModel(preferences, platform.Motion, appearance =>
+        {
+            theme(appearance);
+            shell.ApplyAppearance(appearance); // the lists' caps follow the text scale (screens §4.1)
+        });
         try
         {
             await settings.Load(CancellationToken.None).ConfigureAwait(true);

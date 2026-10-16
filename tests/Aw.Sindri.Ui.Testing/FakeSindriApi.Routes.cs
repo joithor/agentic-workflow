@@ -88,8 +88,12 @@ internal sealed partial class FakeSindriApi
             return refused;
         }
 
-        return answer.IsSuccess
-            ? AwJson.Deserialize<T>(body, SindriApiClient.Json)
-            : SindriUiErrors.BadAnswer.With(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{path} answered {(int)answer.Status}"));
+        if (!answer.IsSuccess)
+        {
+            return SindriUiErrors.BadStatus.With(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{path} answered {(int)answer.Status}"));
+        }
+
+        var read = AwJson.Deserialize<T>(body, SindriApiClient.Json);
+        return read.IsSuccess ? read : SindriUiErrors.BadAnswer.With($"{path} answered with something this build can't read");   // as the client's Read does
     }
 }

@@ -142,7 +142,6 @@
   <x:Double x:Key="Size.SheetCoversBelow">1100</x:Double>
   <x:Double x:Key="Size.WindowMinWidth">900</x:Double>
   <x:Double x:Key="Size.WindowMinHeight">600</x:Double>
-  <x:Double x:Key="Size.AttentionBand">2</x:Double>
   <x:Double x:Key="Size.PanelGap">16</x:Double>
   <x:Double x:Key="Size.Control">30</x:Double>
   <x:Double x:Key="Size.FocusRing">2</x:Double>

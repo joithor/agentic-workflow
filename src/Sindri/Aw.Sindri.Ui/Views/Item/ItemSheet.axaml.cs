@@ -57,6 +57,31 @@ internal sealed partial class ItemSheet : UserControl
         }
     }
 
+    private void OnCopyDecide(object? sender, RoutedEventArgs e)
+    {
+        if (_sheet is { } sheet && sender is Button { DataContext: ItemDecisionRow row })
+        {
+            _ = sheet.Needs.CopyDecide(row.Id);
+        }
+    }
+
+    // An option on one of the item's pending decisions: Decide, once; the buttons are rebuilt by the re-read, so focus
+    // goes to the sheet's title when the pressed one is gone (focus is never lost).
+    private async void OnDecisionOption(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: ViewModels.NeedsYou.DecisionOption option } button || _sheet is not { } sheet
+            || button.FindAncestorOfType<ItemsControl>()?.FindAncestorOfType<StackPanel>()?.DataContext is not ItemDecisionRow row)
+        {
+            return;
+        }
+
+        await sheet.Needs.Choose(row.Id, option.Id).ConfigureAwait(true);
+        if (TopLevel.GetTopLevel(this) is Window window && window.FocusManager?.GetFocusedElement() is not { IsEffectivelyEnabled: true })
+        {
+            _ = window.FindControl<Control>("SheetTitle")?.Focus(NavigationMethod.Tab);
+        }
+    }
+
     // Back (the 404 state) is Esc on the sheet: the shell closes it and moves focus to the opener or the page.
     private void OnBack(object? sender, RoutedEventArgs e) => (TopLevel.GetTopLevel(this)?.DataContext as ViewModels.Shell.ShellViewModel)?.CloseSheet();
 

@@ -14,6 +14,21 @@
     <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
   </Style>
+  <!-- The primary command button (the recommended option, a row's primary action): the primary fill, white text; hover and
+       pressed use the derived fills (§11.1). A disabled one keeps the disabled look above. -->
+  <Style Selector="Button.command-control.primary:not(:disabled) /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.Primary}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Primary}" />
+    <Setter Property="Foreground" Value="{DynamicResource Brush.OnPrimary}" />
+  </Style>
+  <Style Selector="Button.command-control.primary:pointerover:not(:disabled) /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.PrimaryHoverFill}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.PrimaryHoverFill}" />
+  </Style>
+  <Style Selector="Button.command-control.primary:pressed:not(:disabled) /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.PrimaryPressed}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.PrimaryPressed}" />
+  </Style>
   <Style Selector="Button.command-control:disabled TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource Brush.InkTertiary}" />
   </Style>

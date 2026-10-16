@@ -23,6 +23,12 @@ namespace Aw.Sindri.Ui.Api;
 [JsonSerializable(typeof(Workflow.FactView))]
 [JsonSerializable(typeof(Workflow.RecipeView))]
 [JsonSerializable(typeof(Workflow.StatusFields))]
+[JsonSerializable(typeof(NeedsYouList))]
+[JsonSerializable(typeof(DecisionList))]
+[JsonSerializable(typeof(RequestList))]
+[JsonSerializable(typeof(DecideRequest))]
+[JsonSerializable(typeof(FileRequestRequest))]
+[JsonSerializable(typeof(RequestFiledView))]
 // LANE ANCHOR U3': one [JsonSerializable] per Needs you record. Insert immediately above this marker, never between the markers.
 // LANE ANCHOR U8: one [JsonSerializable] per command send body and reply. Insert immediately below this marker, never between the markers.
 internal sealed partial class SindriUiJsonContext : JsonSerializerContext;
