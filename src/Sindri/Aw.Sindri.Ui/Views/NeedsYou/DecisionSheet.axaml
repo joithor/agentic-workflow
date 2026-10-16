@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ny="using:Aw.Sindri.Ui.ViewModels.NeedsYou"
+             x:Class="Aw.Sindri.Ui.Views.NeedsYou.DecisionSheet"
+             x:DataType="ny:DecisionSheetViewModel">
+  <!-- The decision sheet (screens spec §4.1): the question, the notice when it is only recorded now, one button per option as
+       served (the first is recommended, A while the sheet is open), a note, and what Decide answered. A refusal shows as
+       served, inline, under the buttons; a cleared decision disables the form and keeps its text. -->
+  <StackPanel x:Name="DecisionForm" Spacing="10">
+    <TextBlock x:Name="DecisionQuestion" Classes="body-strong" Text="{Binding Question}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Question}" />
+    <TextBlock Classes="caption subtle" Text="{Binding Notice}" IsVisible="{Binding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+               TextWrapping="Wrap" AutomationProperties.Name="{Binding Notice}" />
+    <ItemsControl x:Name="DecisionOptions" ItemsSource="{Binding Options}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <WrapPanel Orientation="Horizontal" />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="ny:DecisionOption">
+          <Button Classes="command-control decision-option" Classes.primary="{Binding IsRecommended}" Content="{Binding Label}" IsEnabled="{Binding IsEnabled}"
+                  Click="OnOption" Margin="0,0,8,8" AutomationProperties.Name="{Binding Label}" />
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <TextBox x:Name="DecisionNote" Text="{Binding Note}" AcceptsReturn="False" IsEnabled="{Binding !IsCleared}" AutomationProperties.Name="Note" />
+    <TextBlock x:Name="DecisionRefusal" Classes="caption" Text="{Binding Refusal}" IsVisible="{Binding Refusal, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+               TextWrapping="Wrap" AutomationProperties.Name="{Binding Refusal}" />
+    <TextBlock x:Name="DecisionOutcome" Classes="caption" Text="{Binding Outcome}" IsVisible="{Binding Outcome, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+               TextWrapping="Wrap" AutomationProperties.Name="{Binding Outcome}" />
+    <TextBlock x:Name="DecisionCleared" Classes="caption subtle" Text="{Binding ClearedLine}" IsVisible="{Binding IsCleared}"
+               AutomationProperties.Name="{Binding ClearedLine}" />
+  </StackPanel>
+</UserControl>

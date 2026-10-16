@@ -157,4 +157,35 @@ public sealed class NeedsYouHomeTests : IDisposable
 
         Assert.Equal(("park:ITM-1", true), (shell.NeedsYou.SelectedId, shell.IsSheetOpen));
     });
+
+    [Fact]
+    public Task A_decision_link_shows_the_decision_sheet_with_one_button_per_option() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        shell.ShowNeedsYou(new ViewModels.NeedsYou.NeedsYouFeed([NeedsYouRows.Decision()], ""));
+
+        shell.Navigate(new DeepLink(DeepLinkKind.Decision, "DEC-1"));
+        Settle(window);
+
+        var sheet = Named<Control>(window, "DecisionSheet");
+        Assert.True(sheet.IsEffectivelyVisible);
+        Assert.Equal(["Accept", "Decline"], [.. sheet.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("decision-option")).Select(b => (string?)b.Content ?? "")]);
+        Assert.Equal("Re-scope: drop the iOS head from this item", Named<TextBlock>(sheet, "DecisionQuestion").Text);
+    });
+
+    [Fact]
+    public Task Pressing_an_option_sends_Decide_and_the_outcome_shows() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        shell.ShowNeedsYou(new ViewModels.NeedsYou.NeedsYouFeed([NeedsYouRows.Decision()], ""));
+        shell.Navigate(new DeepLink(DeepLinkKind.Decision, "DEC-1"));
+        Settle(window);
+
+        Named<Control>(window, "DecisionSheet").GetVisualDescendants().OfType<Button>().Single(b => string.Equals((string?)b.Content, "Decline", StringComparison.Ordinal))
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        await shell.Decision.Settled;
+        Settle(window);
+
+        Assert.Equal("Decided: Decline", Named<TextBlock>(window, "DecisionOutcome").Text);
+    });
 }

@@ -33,10 +33,14 @@ internal sealed partial class ShellWindow
     // J / K (or the row after a cleared one) moved the selection: the row's frame takes focus, on the keyboard's ring.
     private void OnNeedsYouChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (string.Equals(e.PropertyName, nameof(NeedsYouViewModel.SelectedId), StringComparison.Ordinal) && Shell?.NeedsYou.SelectedId is { } id)
+        if (!string.Equals(e.PropertyName, nameof(NeedsYouViewModel.SelectedId), StringComparison.Ordinal))
         {
-            Dispatcher.UIThread.Post(() => FocusNeedsYouRow(id), DispatcherPriority.Loaded);
+            return;
         }
+
+        // No row left to select (the last one cleared): focus still goes somewhere (the page region).
+        var id = Shell?.NeedsYou.SelectedId;
+        Dispatcher.UIThread.Post(() => (id is null ? KeepFocus : (Action)(() => FocusNeedsYouRow(id)))(), DispatcherPriority.Loaded);
     }
 
     private void FocusNeedsYouRow(string rowId)

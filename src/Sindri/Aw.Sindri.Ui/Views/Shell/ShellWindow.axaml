@@ -255,12 +255,13 @@
                 <ScrollViewer x:Name="ItemSheetScroll" IsVisible="{Binding IsItemSheet}">
                   <item:ItemSheet x:Name="ItemSheet" DataContext="{Binding Item}" />
                 </ScrollViewer>
-                <!-- U3' T9: a Needs-you row's sheet (kind: NeedsYou); the decision sheet (kind: Decision) is T6's and says "not served yet" until then. -->
+                <!-- U3' T9: a Needs-you row's sheet (kind: NeedsYou); the decision sheet is kind Decision (T6). -->
                 <ScrollViewer x:Name="NeedsYouSheetScroll" IsVisible="{Binding IsNeedsYouSheet}">
                   <ny:NeedsYouSheet x:Name="NeedsYouSheet" DataContext="{Binding NeedsYou.SheetRow}" />
                 </ScrollViewer>
-                <TextBlock x:Name="DecisionSheetBody" Classes="body muted" Text="{Binding Text.NotServedYet}" IsVisible="{Binding IsDecisionSheet}"
-                           AutomationProperties.Name="{Binding Text.NotServedYet}" />
+                <ScrollViewer x:Name="DecisionSheetScroll" IsVisible="{Binding IsDecisionSheet}">
+                  <ny:DecisionSheet x:Name="DecisionSheet" DataContext="{Binding Decision}" />
+                </ScrollViewer>
                 <!-- LANE ANCHOR U3': the sheet content for the kinds U3' claims (kinds: NeedsYou, Decision). Insert immediately above this marker, never between the markers. -->
                 <!-- LANE ANCHOR U8: the sheet content for the kinds U8 claims (kinds: Workflow); the item sheet's re-base is content only. Recipe, Node, Session, System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers. -->
               </Panel>
@@ -297,6 +298,9 @@
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
     <!-- Needs you (§5): "N now need you", once for each rise; the flag changes before the text. -->
     <TextBlock x:Name="NeedsYouLive" Classes="live-region" Classes.live="{Binding IsNeedsYouAnnouncing}" Text="{Binding NeedsYouAnnouncement}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <!-- The decision sheet's polite region: what Decide answered or refused; the flag changes before the text. -->
+    <TextBlock x:Name="DecisionLive" Classes="live-region" Classes.live="{Binding Decision.IsAnnouncing}" Text="{Binding Decision.Announcement}"
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
     <!-- The item sheet's polite region (L8): the refusal a gone control leaves behind, spoken once; the flag changes before the text. -->
     <TextBlock x:Name="ItemLive" Classes="live-region" Classes.live="{Binding Item.IsAnnouncing}" Text="{Binding Item.Announcement}"
