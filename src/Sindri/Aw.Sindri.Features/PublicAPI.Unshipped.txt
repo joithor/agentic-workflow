@@ -2041,7 +2041,6 @@ static Aw.Sindri.Features.ListRequests.ListRequestsResponse.operator ==(Aw.Sindr
 static Aw.Sindri.Features.ListRequests.RequestView.operator !=(Aw.Sindri.Features.ListRequests.RequestView? left, Aw.Sindri.Features.ListRequests.RequestView? right) -> bool
 static Aw.Sindri.Features.ListRequests.RequestView.operator ==(Aw.Sindri.Features.ListRequests.RequestView? left, Aw.Sindri.Features.ListRequests.RequestView? right) -> bool
 Aw.Sindri.Features.Jobs.IJobRunner
-Aw.Sindri.Features.Jobs.IJobRunner.Cancel(Aw.Sindri.Core.Ids.JobId job) -> bool
 Aw.Sindri.Features.Jobs.IJobRunner.Running.get -> int
 Aw.Sindri.Features.Jobs.IJobRunner.Start(Aw.Sindri.Features.Jobs.JobStart! start, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 Aw.Sindri.Features.Jobs.JobDefinition

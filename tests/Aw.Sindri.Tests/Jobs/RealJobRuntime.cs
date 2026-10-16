@@ -116,6 +116,20 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
         return await scope.ServiceProvider.GetRequiredService<IService<TRequest, JobStartedResponse>>().Handle(request, TestContext.Current.CancellationToken);
     }
 
+    /// <summary>Runs any registered command through its chain as <paramref name="caller"/>.</summary>
+    /// <typeparam name="TRequest">The request.</typeparam>
+    /// <typeparam name="TResponse">The response.</typeparam>
+    /// <param name="request">The request.</param>
+    /// <param name="caller">The caller.</param>
+    /// <returns>The answer.</returns>
+    public async Task<Result<TResponse>> Run<TRequest, TResponse>(TRequest request, CallerContext caller)
+        where TRequest : notnull
+    {
+        using var entered = H.Callers.Enter(caller);
+        await using var scope = _provider.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<IService<TRequest, TResponse>>().Handle(request, TestContext.Current.CancellationToken);
+    }
+
     public async Task<Result<CommandAccepted>> Cancel(JobId job)
     {
         var caller = A.Caller().Human().Build();

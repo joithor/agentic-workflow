@@ -5,7 +5,7 @@ namespace Aw.Sindri.Features.Jobs;
 /// It runs the work outside the command gate, queues its progress lines for a writer that appends 'job.progress' as 'service:jobs', and
 /// appends the one terminal event ('job.finished' unless CancelJob already wrote 'job.cancelled'). It takes no heavy-job slot.
 /// </summary>
-public interface IJobRunner
+public interface IJobRunner : Core.Jobs.IJobCancellation
 {
     /// <summary>Jobs whose work is running now.</summary>
     public int Running { get; }
@@ -15,9 +15,4 @@ public interface IJobRunner
     /// <param name="cancellationToken">Cancels only the hand-over, never the work.</param>
     /// <returns>A task that completes when the work was started.</returns>
     public ValueTask Start(JobStart start, CancellationToken cancellationToken);
-
-    /// <summary>Trips the work token of a running job.</summary>
-    /// <param name="job">The job.</param>
-    /// <returns>True when this runner had the job running; false for a job it does not have (ended, or from before a restart).</returns>
-    public bool Cancel(Core.Ids.JobId job);
 }
