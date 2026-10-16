@@ -755,7 +755,7 @@ cited, never re-filed. DTC and BD rows keep their names; Appendix E maps the rev
 | LN-API1 | `GET /sindri/workflow/instances/{id}/line` (`query`): `LineView` `{ stations[{ station, instance, packet{ kind, hash, frozen } }], phases[{ id, attempt, address, state, parkReason?, pr?, base, worktree, now, tokens, wallMinutes }], parallel, maxOpenPrs }`; `sindri line show <address> [--json]`. Another recipe's instance is `SND-LINE-003`; a purged run area shows its frozen packets only (LC-8). Catalog row, golden; the gate runs `Aw.Sindri.Ui.Tests` | LN-L |
 | LN-API2 | `GET …/{id}/design-stop` on a `workflow.plan` instance: `DesignStopView` `{ accepted[], models, decisions[], acceptance{ added[], superseded[] }, escapes[], graph, trace[], coverage[], spec, contracts[], lensRounds[], freezeRefused? }`, live before `evidence` (`notYet` per section), untrusted text fenced for sessions; another recipe's instance is `SND-LINE-003` | LN-K |
 | LN-API3 | `GET …/{id}/ready` on a babysitter instance: `ReadyView` (BD6's fields) plus `mergeBlockedBy?` (`baseNotDefault`, `headMoved`, `ciRed`); `SND-LINE-003` otherwise | LN-U |
-| LN-API4 | API §3.1/§4.1's `local` class gains `design check|show --facts`, `plan check|show --facts`, `prove check --facts`, `pack check`, `line desk` and `line doctor` (Appendix D); `<address>` forms are `query` clients, exit 2 on `SND-API-001` as API3 | LN-K |
+| LN-API4 | API §3.1/§4.1's `local` class gains `design check\|show --facts`, `plan check\|show --facts`, `prove check --facts`, `pack check`, `line desk` and `line doctor` (Appendix D); `<address>` forms are `query` clients, exit 2 on `SND-API-001` as API3 | LN-K |
 | LN-API5 | `sindri line holdout show <line> <phase>` and `add <line> <phase>` (`protected`, typed confirm; `show` marks what it shows `spent`); catalog rows and goldens | LN-H |
 | LN-API6 | **Stats under `workflow.line` only** (`workflow.design` stays child-only with null figures, API §3.8): PRs per scope packet (`prsPerPacket`, whose one owner is `workflow.line`, LN-SC2), escapes by station, lens rounds to clean per design (the measure for LN3's "/autoplan about five times"), review iterations per phase, spent hidden scenarios, and tokens by model, estimated cost and wall clock per station and per phase | LN-P |
 | LN-API7 | **Merge and rework as desk actions.** `ApplyCommand:merge` and `ApplyCommand:rework` (notes required) get catalog rows of class `desk`, human caller only: a session gets `SND-AUTH-002`, even on its own Step's instance; action ids `workflow.command.merge` and `workflow.command.rework`, with goldens. Without them E-12 classes both `protected`, and the UI shows a CLI line instead of LN8's one click | LN-U |
@@ -1131,7 +1131,7 @@ Provisional until the error analysis; gating judges ★.
 ## Appendix C. The recipes
 
 All in `recipes/sindri/`. `intake` and `seed` states write the round-1 value of every fact a later Step declares as an
-input, `RequiredOn` every outcome (#258 §6.1, `RCP-WIRE-001`). Child-output renames use DT §8.4's long form. Effects
+input, `RequiredOn` every outcome (#258 §6.1, `RCP-WIRE-001`). Child-output renames use DT §8.4's long form (DTC11). Effects
 run through P6's outbox (#232). Every child wait routes `cancelled` on its own transition.
 
 ### C.1 `workflow.design`
@@ -1668,3 +1668,81 @@ The CLI verbs, error codes and profile keys the line adds, as LN-API4, LN-API8 a
 | `workflow.steps.longMax` | 2h | LN-WF7 |
 | `workflow.docs.globs` | `docs/**`, `*.md` | Docs sync's write scope (BD5) |
 | `workflow.effects` additions | `effect.line.start-phase`, `effect.line.report`, `effect.pr.open` | P6's allowlist |
+
+## Appendix E. Review notes: MEDIUMs, LOWs and the id map
+
+### E.1 MEDIUM findings (pass 1), deduplicated
+
+| Finding (lens ids) | What changed |
+|---|---|
+| Row ids collide with WF, UI and LCH ids (arch F3) | Every request row is `LN-<lane><n>` (§12, E.3) |
+| Event contract gaps: undeclared `building`, no `fact:phaseEvent`, `pr.opened` unregistered, fixed phase id on retry (arch F4) | `line.phaseChanged` declares its six outcomes and `fact:phaseEvent`; the seed's `building` report is gone; BD1 registers `pr.opened`; ids carry `<attempt>` (LN-WF1, §8.2, C.6) |
+| Child input wiring: `fact:change` from `fact:built`, optional inputs, undeclared hand-test/verify/evidence inputs (arch F5, devex M5) | `workflow.build` outputs `fact:change` `{ repo, branch, base, head }`, `drift` refreshes it; DTC4 makes both review-loop inputs required; DTC6 names every input (C.3, C.6) |
+| #240's hyphenated outcomes (arch F6) | DTC8 renames them |
+| `verify` of a candidate packet (arch F8) | `aw-packets verify --candidate` (LN-PKT2, LC-1, §6.1) |
+| What the PKT hash covers (arch F9) | Every kind has a `packet.json` linking all its files (LN-PKT1) |
+| aw-packets reading the profile, and `amend` writing outside `packets/` (arch F10, security M5) | `--sizes <file>` (LN-PKT3); no `aw-packets amend`: Sindri writes the amended packet (LN-PKT4) |
+| Heavy slots: none for prove, held through desks (arch F11, security L4) | `workflow.prove` has a `slot`; desks and takeovers release it (LN-WF3, §8.4, C.4) |
+| Worktree owned by the build child (arch F12) | `workflow.phase`'s `seed` owns it; `AW_SINDRI_WORKTREE` through LN-LCH1 (LN-WF2, §7.1) |
+| L-18 can't enforce deny-reads or the scrub (arch F13, devex M9) | `session wrap` scrubs forge variables and `GH_CONFIG_DIR`, a refusing `pre-push` hook, `SND-LAUNCH-013` when a form can't express it (LN-LCH1) |
+| `parallel` counts PRs waiting on the merge click (arch F14, product M2) | Only `running` phases count; `workflow.line.maxOpenPrs` caps open PRs; eval `merge-wait` (§8.2, LN11's text, B.1) |
+| Line board placement; linked phases flooding root lists (design M1, M2) | A `plan-graph` viewer plus CHILDREN grouped by stack (LN-UI1); linked instances leave `root=true` (LN-WF1) |
+| Stop 2's state when freeze fails after the approve; "not yet" lines (design M3, M7) | A "freeze refused" banner; U2's rule carried over (§6.1, §6.4, LN-UI2) |
+| ReadyView's refusal states (design M4) | Base not default, head moved, CI regressed, docs not needed (LN-UI3, LN-API3) |
+| The plan graph has no text alternative (design M5) | A table in wave-then-stack order (§6.4, LN-UI1, LN-UI2) |
+| Packet kinds not filed as fact types (design M6, arch F24) | LN-UI4 |
+| Views without fields or codes (devex M1) | Field lists and `SND-LINE-003` (LN-API1–3) |
+| CLI verbs unspecified (devex M2) | Appendix D's verb table; holdout verbs take `<line> <phase>` |
+| Error codes unregistered (devex M3) | Appendix D's code table; LN-API8 registers them |
+| `--fact` passes a hash (devex M4, arch F16) | `--fact key=<file>` with the fact's JSON (§7.1) |
+| Pack pins: no rule for unpinned or built-in packs; `severities` vs fixed exits (devex M6) | Built-ins pinned by the build; repo and machine packs need a pin; `pack check` prints it; severities follow `applies` (§5.1–§5.3) |
+| Seed hash vs pasted lens prompt; two path schemes (devex M7) | The Lens section points at `lens/prompt.md`; one `lens/` layout; the run record holds the seed and lens hashes (§5.2, A.3) |
+| A.5–A.8 have no output schema (devex M8) | `findings.json`, `holdout-sets.json`, `red-tests.json`, `built.json`, and A.2's (Appendix A) |
+| The evaluator can't run the app read-only (devex M10) | Its own scratch checkout at the head sha (LN-LCH2, LN-WF4, §9.2, A.9) |
+| A parked phase is invisible to the line (devex M11) | `parked` and `resumed` events; the board shows the reason (LN-WF1, B.1 `parked-phase`) |
+| Profile keys without a table or owner row (devex M12) | Appendix D's key table; LN-WF9 |
+| No docs deliverables (devex M13) | §13.2's Docs column (`sindri-line.md`, `packs.md`, REF rows) |
+| LN-B is size L (devex M14, product M7) | LN-B1 (workspace, slots) and LN-B2 (build capability, launcher, rules), each M |
+| Long Steps capped at 60 minutes, below `ship.green`'s 2h (devex M15, arch F17) | `workflow.steps.longMax`, default 2h; the list names `step.ship.green` (LN-WF7) |
+| First value only at LN-P (product M1) | Frozen packets from LN-W on feed today's skill by hand (§13.3) |
+| No takeover of a phase (product M3) | §7.7 |
+| Cost and wall clock not measured (product M4) | LN-API6, LN-API1's `tokens` and `wallMinutes` |
+| Seed A treats owner answers as never instructions (product M5) | Appendix A's data rule separates owner answers (decisions) from evidence; A.1's Never; A.2's hard example |
+| What one merge click merges (product M6) | The phase PR, then its docs PR (BD9, §3.4); "complete" is the docs PR open with CI green (BD3) |
+| No readiness check per repo (product M8) | `sindri line doctor`, also run at `seed` (`SND-LINE-004`, §3.5, Appendix D) |
+| Secrets in diffs reach a lens model and the forge (security M1) | `BLD-SECRET-001` before review and `SHIP-SECRET-001` before the push (§7.2, §7.5, §11, DTC4) |
+| Evidence artifacts that leave the box (security M2) | `Aw.Redaction` on every published or non-local artifact (§11) |
+| A hand-started phase skips readiness and idempotency (security M3) | `seed` refuses a held packet hash or unmet dependencies (`SND-LINE-002`, §7.1) |
+| Docs sync's write scope (security M4) | `workflow.docs.globs` plus the design's docs, capability `build`, a diff-scope gate (BD5) |
+| Surfaces proposed from an unapproved design (security M6) | Proposed at `step.plan.freeze`, after the approve (LN-CTX1) |
+| #240 §8.4's rename must survive (validate) | DTC11 |
+
+### E.2 LOW findings
+
+Fixed: the `stage` and `redesign` cap arithmetic (§3.5, §7.1); `ticks` sized at 400 from five entries a phase (C.7);
+API §3.1/§4.1 cited for the `local` class; LN-CTX2 lands as `workflow.plan` version 2; phase-packet ids unique per
+line (LN-PKT1); `GateDominanceTests` named in DTC1; engine P7 in LN-Y1's Needs and step 1; one ReadyView list (BD6);
+the broken §9.4 citation; each LN-WF row has one home (§13.1); `lens-desk`'s form says a revise needs `--grant`; the
+TS skill's sunset (§13.3); the `phase.*` ledger rows listed (§11); a repo pack read at the scope packet's base sha and
+kept out of `allowedFiles` (§5.1); title and labels redacted (§7.5, §11); v0 seeds example-free on purpose
+(Appendix A); a provenance footer in the PR body (§7.5); stop-3 rows grouped by line in stack order (LN-UI6).
+
+Left open, by choice: product L1 (LN2's reason column is owner text; desks other than the stops are exception parks,
+counted by LN-API6); product L4 (which human may act at a stop in a team: the profile owner until multiplayer is
+specced); design L3 (spent-scenario display beyond counts); design L4 (DT-UI-5's target in UI rev 8); devex L4 (self-run
+checks for A.3, A.5, A.6, A.9 come with LN-S1); security L5 (registry access through locked manifests waits on FA
+§17.5's dependency rule).
+
+### E.3 Rev 1 → rev 2 ids
+
+| Rev 1 | Rev 2 |
+|---|---|
+| W15, W16, W17, W18, W19, W20, W21, W22 | LN-WF1 … LN-WF8 (new: LN-WF9) |
+| C15, C16 | LN-CTX1, LN-CTX2 |
+| U7, U8, U9, U10, U11 | LN-UI1 … LN-UI5 (new: LN-UI6) |
+| API9 … API14 | LN-API1 … LN-API6 (new: LN-API7, LN-API8) |
+| P2, P3, P4, P5 | LN-PKT1 … LN-PKT4 |
+| L-18, L-19 | LN-LCH1, LN-LCH2 |
+| — | LN-SC1, LN-SC2, DTC11, BD9 (new) |
+| LN-B (phase) | LN-B1, LN-B2 |
+| `SND-LINE-001` | `SND-LINE-001` (new: `-002` … `-004`) |
