@@ -38,12 +38,16 @@ public static class IntentOverlay
         public void AddNodes()
         {
             var linked = layer.Links.Select(l => l.Record.Value).Concat(layer.Decisions.Select(d => d.Record.Value)).ToHashSet(StringComparer.Ordinal);
-            foreach (var record in layer.Records.Where(r => linked.Contains(r.Key.Value)))   // a record no rule linked is stored (so it isn't fetched again) but is not part of the graph
+            var targeted = layer.Links.Where(l => l.Target.Kind == NodeKind.Record).Select(l => l.Target.Value).ToHashSet(StringComparer.Ordinal);
+            // A record no rule linked, and no link names, is stored (so it isn't fetched again) but is not part of the graph.
+            foreach (var record in layer.Records.Where(r => linked.Contains(r.Key.Value) || targeted.Contains(RecordNode(r.Key).Value) || r.Aliases.Any(a => targeted.Contains("record:" + a))))
             {
                 AddNode(new GraphNode(RecordNode(record.Key), record.Title, Provenance.Deterministic));
                 foreach (var alias in record.Aliases.Where(a => NodeKey.TryFrom("record:" + a, out _)))
                 {
-                    _newAliases.Add(new NodeAlias(NodeKey.From("record:" + alias), RecordNode(record.Key)));
+                    var aliasKey = NodeKey.From("record:" + alias);
+                    _newAliases.Add(new NodeAlias(aliasKey, RecordNode(record.Key)));
+                    _ = _aliases.TryAdd(aliasKey.Value, RecordNode(record.Key));   // so a link by issue key resolves to the record, whichever was fetched first
                 }
             }
 
@@ -60,7 +64,11 @@ public static class IntentOverlay
             {
                 if (Resolve(link.Target) is not { } target)
                 {
-                    _orphaned.Add(link);
+                    if (link.Target.Kind != NodeKind.Record)
+                    {
+                        _orphaned.Add(link);   // a link to a record that isn't synced yet waits for it; it isn't orphaned
+                    }
+
                     continue;
                 }
 

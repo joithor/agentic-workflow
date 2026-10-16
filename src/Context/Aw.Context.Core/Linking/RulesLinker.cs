@@ -10,7 +10,7 @@ namespace Aw.Context.Core.Linking;
 
 /// <summary>
 /// The rules-first linker (spec §13): issue keys and URLs, repo paths, identifier tokens and quoted titles in a record's scrubbed text, matched to the map's nodes and to other records.
-/// Pure and idempotent: the same text and graph give the same links. Plain English words never link.
+/// Pure and idempotent: the same text and graph give the same links (an issue key whose record isn't known links by the key, so fetch order never changes the result). Plain English words never link.
 /// </summary>
 public static partial class RulesLinker
 {
@@ -50,7 +50,7 @@ public static partial class RulesLinker
 
         public void Urls()
         {
-            foreach (var match in LinearUrl.Matches(_rest.ToString()).Where(m => RecordFor(m.Groups["key"].Value, known, teams) is not null).ToList())
+            foreach (var match in LinearUrl.Matches(_rest.ToString()).Where(m => IsTeamKey(m.Groups["key"].Value, teams)).ToList())
             {
                 LinkRecord(match, key: match.Groups["key"].Value, LinkRule.Url);
                 Mask(match);
@@ -106,9 +106,22 @@ public static partial class RulesLinker
 
         private void LinkRecord(Match m, string key, LinkRule rule)
         {
-            if (RecordFor(key, known, teams) is { } target && target.Key.Value != record.Value)
+            if (!IsTeamKey(key, teams))
             {
-                Add("record:" + target.Key.Value, rule, Exact, m.Value);
+                return;
+            }
+
+            // A record not fetched yet is linked by its issue key, which the overlay resolves through the record's aliases whenever it arrives: the links never depend on fetch order.
+            if (RecordFor(key, known, teams) is { } target)
+            {
+                if (target.Key.Value != record.Value)
+                {
+                    Add("record:" + target.Key.Value, rule, Exact, m.Value);
+                }
+            }
+            else
+            {
+                Add("record:" + key, rule, Exact, m.Value);
             }
         }
 
@@ -131,10 +144,10 @@ public static partial class RulesLinker
         private void Mask(Match match) => _ = _rest.Remove(match.Index, match.Length).Insert(match.Index, new string(' ', match.Length));
     }
 
+    private static bool IsTeamKey(string issueKey, IReadOnlySet<string> teams) => teams.Contains(issueKey[..issueKey.IndexOf('-', StringComparison.Ordinal)]);
+
     private static IntentRecord? RecordFor(string issueKey, IReadOnlyList<IntentRecord> known, IReadOnlySet<string> teams) =>
-        teams.Contains(issueKey[..issueKey.IndexOf('-', StringComparison.Ordinal)])
-            ? known.FirstOrDefault(r => r.Aliases.Contains(issueKey, StringComparer.Ordinal))
-            : null;
+        IsTeamKey(issueKey, teams) ? known.FirstOrDefault(r => r.Aliases.Contains(issueKey, StringComparer.Ordinal)) : null;
 
     private static Dictionary<string, SortedSet<string>> Identifiers(GraphSnapshot graph)
     {
