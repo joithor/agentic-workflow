@@ -15,7 +15,6 @@ internal sealed class StartFacts(IFactStore facts, TimeProvider clock)
     {
         var stored = new Dictionary<FactKey, InputFact>();
         var now = clock.GetUtcNow();   // the one start time: generated inputs read it, the instance is stamped with it, the workflow renders the name from it
-        var now = clock.GetUtcNow();
         foreach (var input in recipe.Inputs.Where(static i => i.Generate is not null))
         {
             if (request.Facts.ContainsKey(input.Key) || InstanceNames.Generate(input.Generate!, now) is not { } text) // why: GeneratedInputs lists only inputs with a template

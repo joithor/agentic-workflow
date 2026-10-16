@@ -7685,9 +7685,6 @@ Aw.Sindri.Core.Views.ViewColumn.State = 1 -> Aw.Sindri.Core.Views.ViewColumn
 Aw.Sindri.Core.Views.ViewColumns
 static Aw.Sindri.Core.Views.ViewColumns.JsonPath(string! view, Aw.Sindri.Core.Views.ViewColumn column) -> System.Collections.Generic.IReadOnlyList<string!>?
 static Aw.Sindri.Core.Items.TimelineLine.DecisionLine(Aw.Sindri.Core.Events.DecisionRecorded! recorded) -> string!
-Aw.Sindri.Core.Events.RecipeEvents.LatestApproval(Aw.Sindri.Core.Workflow.Ids.RecipeHash hash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<long>!>
-Aw.Sindri.Core.Commands.IRefusalCli
-Aw.Sindri.Core.Commands.IRefusalCli.RefusalCli.get -> string?
 Aw.Sindri.Core.Events.DecisionRecorded.DecisionRecorded(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.DecisionId Decision, Aw.Sindri.Core.Ids.DecisionOption Choice, string? Note, string! By, Aw.Sindri.Core.Ids.RepoName? Repo = null) -> void
 Aw.Sindri.Core.Events.DecisionRecorded.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.DecisionId Decision, out Aw.Sindri.Core.Ids.DecisionOption Choice, out string? Note, out string! By, out Aw.Sindri.Core.Ids.RepoName? Repo) -> void
 Aw.Sindri.Core.Events.DecisionRecorded.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
