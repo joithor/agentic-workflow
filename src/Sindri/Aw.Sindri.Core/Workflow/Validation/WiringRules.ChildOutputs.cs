@@ -41,16 +41,16 @@ internal sealed partial class WiringRules
         var carrying = present.Where(p => p.Key != _cancelled && p.Value.Contains(fact)).Select(p => p.Key).ToList();
         var carries = carrying.Count == 0 ? $"remove it, since no outcome of {id} always carries it" : null;
         var outcomes = ChildOutcomes(transition.When, [.. present.Keys]);
+        if (!NamesOutcome(transition.When))
+        {
+            var join = entry.From is null ? $"{produces} from child '{id}'" : $"{produces} (child '{id}')";
+            return source.Finding(
+                "RCP-WIRE-003", path, $"transition from '{from}' {join} on a when that names no outcome (it matches every outcome, 'cancelled' among them)",
+                carries ?? $"add when: {{ outcome: <o> }} naming outcomes that always carry it ({List(carrying)})");
+        }
+
         if (outcomes.Contains(_cancelled))
         {
-            if (!NamesOutcome(transition.When))
-            {
-                var join = entry.From is null ? $"{produces} from child '{id}'" : $"{produces} (child '{id}')";
-                return source.Finding(
-                    "RCP-WIRE-003", path, $"transition from '{from}' {join} on a when that names no outcome (it matches every outcome, 'cancelled' among them)",
-                    carries ?? $"add when: {{ outcome: <o> }} naming outcomes that always carry it ({List(carrying)})");
-            }
-
             return source.Finding(
                 "RCP-WIRE-003", path, $"transition from '{from}' {produces} on outcome 'cancelled' of child '{id}', which carries no outputs",
                 "route cancelled with a transition of its own that produces nothing");
@@ -79,39 +79,56 @@ internal sealed partial class WiringRules
     }
 
     /// <summary>
-    /// The outcomes of the child a 'when' holds for, out of <paramref name="universe"/> (its terminal outcomes and 'cancelled'):
-    /// an outcome test is that outcome, 'not' the complement of its inner set, 'all' the intersection and 'any' the union;
-    /// a fact or loop test narrows nothing.
+    /// The outcomes of the child a 'when' may hold for, out of <paramref name="universe"/> (its terminal outcomes and 'cancelled').
     /// </summary>
-    private static HashSet<OutcomeName> ChildOutcomes(WhenClause? when, HashSet<OutcomeName> universe)
-    {
-        if (when is null)
-        {
-            return [.. universe];
-        }
+    private static HashSet<OutcomeName> ChildOutcomes(WhenClause? when, HashSet<OutcomeName> universe) =>
+        when is null ? [.. universe] : OutcomeBounds(when, universe).May;
 
-        HashSet<OutcomeName> set = [.. universe];
+    /// <summary>
+    /// The outcomes a clause may hold for, and the ones it must hold for whatever the facts are. An outcome test is that
+    /// outcome in both; a fact or loop test may hold anywhere and must hold nowhere; 'not' is the complement across the two
+    /// (may = universe minus must, must = universe minus may); 'all' intersects both, 'any' unites both.
+    /// </summary>
+    private static (HashSet<OutcomeName> May, HashSet<OutcomeName> Must) OutcomeBounds(WhenClause when, HashSet<OutcomeName> universe)
+    {
+        var bounds = new List<(HashSet<OutcomeName> May, HashSet<OutcomeName> Must)>();
         if (when.Outcome is { } outcome)
         {
-            set.IntersectWith([outcome]);
+            bounds.Add(([.. universe.Where(o => o == outcome)], [.. universe.Where(o => o == outcome)]));
         }
 
-        if (when.All is { Count: > 0 } all)
+        if (when.Fact is not null || when.Loop is not null)
         {
-            all.ToList().ForEach(c => set.IntersectWith(ChildOutcomes(c, universe)));
-        }
-
-        if (when.Any is { } any)
-        {
-            set.IntersectWith(any.SelectMany(c => ChildOutcomes(c, universe)));
+            bounds.Add(([.. universe], []));
         }
 
         if (when.Not is { } not)
         {
-            set.ExceptWith(ChildOutcomes(not, universe));
+            var (innerMay, innerMust) = OutcomeBounds(not, universe);
+            bounds.Add(([.. universe.Except(innerMust)], [.. universe.Except(innerMay)]));
         }
 
-        return set;
+        if (when.All is { Count: > 0 } all)
+        {
+            var parts = all.Select(c => OutcomeBounds(c, universe)).ToList();
+            bounds.Add((Intersect(parts.Select(p => p.May), universe), Intersect(parts.Select(p => p.Must), universe)));
+        }
+
+        if (when.Any is { Count: > 0 } any)
+        {
+            var parts = any.Select(c => OutcomeBounds(c, universe)).ToList();
+            bounds.Add(([.. parts.SelectMany(p => p.May)], [.. parts.SelectMany(p => p.Must)]));
+        }
+
+        // why: the keys of one clause all have to hold, so the keys present combine as an 'all'
+        return (Intersect(bounds.Select(b => b.May), universe), Intersect(bounds.Select(b => b.Must), universe));
+    }
+
+    private static HashSet<OutcomeName> Intersect(IEnumerable<HashSet<OutcomeName>> sets, HashSet<OutcomeName> universe)
+    {
+        HashSet<OutcomeName> result = [.. universe];
+        sets.ToList().ForEach(result.IntersectWith);
+        return result;
     }
 
     private static bool NamesOutcome(WhenClause? when) =>

@@ -485,9 +485,10 @@ transition decides which to keep (decision-tree spec §8.4, DT-C). The complete 
 - **Where it is there:** an output is present on an outcome only if every path inside the child to a terminal state that ends
   with it produces it. Produce it on `resolved`, not on `unresolved` if some path skips it (`RCP-WIRE-003` names the path), and
   never on `cancelled`. The `when` is resolved against the child's outcomes (its terminal outcomes and `cancelled`): `not` is the
-  complement, `all` the intersection, `any` the union, and a fact or loop test narrows nothing, so `not: { outcome: cancelled }`
-  is fine when the output is on every other outcome. A `when` that names no outcome matches every outcome, `cancelled` among
-  them, and is refused. Route `cancelled` with a transition of its own.
+  complement, `all` the intersection, `any` the union, and a fact or loop test **may** hold on any outcome and **must** hold on
+  none: the check runs over the outcomes the `when` may fire on, so `not: { outcome: cancelled }` is fine when the output is on
+  every other outcome, and `all: [{ outcome: resolved }, { not: { fact: ... } }]` is still checked as `resolved`. A `when` with
+  no outcome test anywhere (`not: { fact: ... }` included) matches every outcome, `cancelled` among them, and is refused. Route `cancelled` with a transition of its own.
 - **Eval:** a child's `wait.satisfied` line gives the outputs the child would (`"outputs":{"fact:output":"..."}`), under the
   child's keys. A parent branch that tests the renamed fact (`when: { fact: fact:exported, is: present }`) is reached only
   if the line carried it. The test of a `when` runs before the transition's own `produces`, so it reads facts recorded earlier. A `when` reads the trigger's outputs under the child's keys, not the renamed ones.
