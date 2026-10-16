@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text.Json;
 using Aw.Context.Core;
 using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Core.Extract;
@@ -15,7 +14,7 @@ namespace Aw.Context.Infrastructure.Eval;
 /// the as-of map cache in eval/cache/maps, and the purge. Nothing is written when the context home is inside a git worktree (SND-CONTEXT-005).
 /// A file past <see cref="TimeToLive"/> by its modified time is expired.
 /// </summary>
-internal sealed class FileEvalStore(ContextStoreSettings settings, JsonSerializerOptions options) : IEvalStore
+internal sealed class FileEvalStore(ContextStoreSettings settings) : IEvalStore
 {
     /// <summary>How long eval files are kept (spec §9.1).</summary>
     internal static readonly TimeSpan TimeToLive = TimeSpan.FromDays(90);
@@ -25,7 +24,7 @@ internal sealed class FileEvalStore(ContextStoreSettings settings, JsonSerialize
     {
         var (folder, prefix) = kind == EvalReportKind.Backtest ? (settings.BacktestDirectory, "backtest-") : (settings.MapQualityDirectory, "map-");
         var path = Path.Combine(folder, prefix + at.UtcDateTime.ToString("yyyyMMdd'T'HHmmssfff'Z'", CultureInfo.InvariantCulture) + ".json");
-        return ValueTask.FromResult(Write(path, AwJson.Serialize(report, options)).Map(_ => path));
+        return ValueTask.FromResult(Write(path, AwJson.Serialize(report, EvalFileJson.Options)).Map(_ => path));
     }
 
     public async ValueTask<Result<ExtractedMap?>> ReadMap(string key, CancellationToken cancellationToken)
@@ -38,7 +37,7 @@ internal sealed class FileEvalStore(ContextStoreSettings settings, JsonSerialize
 
         try
         {
-            var read = AwJson.Deserialize<ExtractedMap>(await File.ReadAllBytesAsync(path, cancellationToken).ConfigureAwait(false), options);
+            var read = AwJson.Deserialize<ExtractedMap>(await File.ReadAllBytesAsync(path, cancellationToken).ConfigureAwait(false), EvalFileJson.Options);
             return Results.Success(read.IsSuccess ? read.Value : null);   // a file that doesn't parse is rebuilt
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
@@ -48,7 +47,7 @@ internal sealed class FileEvalStore(ContextStoreSettings settings, JsonSerialize
     }
 
     public ValueTask<Result<Unit>> WriteMap(string key, ExtractedMap map, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(Write(CachePath(key), AwJson.Serialize(map, options)));
+        ValueTask.FromResult(Write(CachePath(key), AwJson.Serialize(map, EvalFileJson.Options)));
 
     public ValueTask<Result<EvalPurgeReport>> Purge(DateTimeOffset now, bool all, CancellationToken cancellationToken) => ValueTask.FromResult(Sweep(now, all, delete: true));
 

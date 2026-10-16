@@ -14,7 +14,7 @@ namespace Aw.Context.Infrastructure.Eval;
 /// written by temp file and rename at 0600. The baseline of a probe file is the newest report carrying its hash that was
 /// complete and did not regress; a report that doesn't parse is skipped.
 /// </summary>
-internal sealed class FileProbeReportStore(ContextStoreSettings settings, JsonSerializerOptions options) : IProbeReportStore
+internal sealed class FileProbeReportStore(ContextStoreSettings settings) : IProbeReportStore
 {
     public async ValueTask<Result<ProbeReport?>> Baseline(string probeFileHash, CancellationToken cancellationToken)
     {
@@ -28,7 +28,7 @@ internal sealed class FileProbeReportStore(ContextStoreSettings settings, JsonSe
         {
             foreach (var file in Directory.EnumerateFiles(folder, "probes-*.json").Order(StringComparer.Ordinal).Reverse())
             {
-                var read = AwJson.Deserialize<ProbeReport>(WithBaselineName(await File.ReadAllBytesAsync(file, cancellationToken).ConfigureAwait(false)), options);
+                var read = AwJson.Deserialize<ProbeReport>(WithBaselineName(await File.ReadAllBytesAsync(file, cancellationToken).ConfigureAwait(false)), EvalFileJson.Options);
                 if (read.IsSuccess && read.Value.IsBaseline && string.Equals(read.Value.ProbeFileHash, probeFileHash, StringComparison.Ordinal))
                 {
                     return read.Value;
@@ -70,7 +70,7 @@ internal sealed class FileProbeReportStore(ContextStoreSettings settings, JsonSe
             OwnerOnly.EnsureDirectory(settings.Home);
             OwnerOnly.EnsureDirectory(settings.EvalDirectory);
             OwnerOnly.EnsureDirectory(settings.ProbesDirectory);
-            OwnerOnly.WriteAtomically(path, AwJson.Serialize(report, options));
+            OwnerOnly.WriteAtomically(path, AwJson.Serialize(report, EvalFileJson.Options));
             return ValueTask.FromResult(Results.Success(path));
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)

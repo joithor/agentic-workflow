@@ -25,7 +25,6 @@ using Aw.Context.Testing.Linking;
 using Aw.Context.Testing.Locks;
 using Aw.Context.Testing.Map;
 using Aw.Context.Testing.Review;
-using Aw.Context.Tests.Eval;
 using Aw.Context.Tests.EvalProbes;
 using Aw.Context.Tests.Map;
 using Aw.Context.Tests.Onyx;
@@ -81,7 +80,7 @@ internal sealed class BacktestWorld : IAsyncDisposable
             .AddSingleton<IMergeHistory>(new GitMergeHistory(git))
             .AddSingleton<IBriefSource>(new OnyxBriefSource(catalog))
             .AddSingleton<IAsOfDocs>(new AsOfDocsFactory(git, Clock))
-            .AddSingleton<IEvalStore>(new FileEvalStore(Settings, EvalJson.Options))
+            .AddSingleton<IEvalStore>(new FileEvalStore(Settings))
             .AddContextFeatures()
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = false, ValidateScopes = true });
         _scope = _provider.CreateScope();

@@ -23,7 +23,7 @@ public sealed class EvalStoreTests : IDisposable
 
     public void Dispose() => Directory.Delete(_root, recursive: true);
 
-    private FileEvalStore Store(ContextStoreSettings? settings = null) => new(settings ?? _settings, EvalJson.Options);
+    private FileEvalStore Store(ContextStoreSettings? settings = null) => new(settings ?? _settings);
 
     private static ProbeReport Report() => new(ProbeReport.CurrentSchemaVersion, "probes.json", "hash", MapVersion: null, [], new ProbeTotals(0, 0, 0, _now), Baseline: null, Regressed: false);
 
@@ -48,6 +48,20 @@ public sealed class EvalStoreTests : IDisposable
         Assert.Null((await store.ReadMap(clustered, TestContext.Current.CancellationToken)).Value);   // a machine without graphify never reuses a clustered map, and the reverse
         Assert.Equal(Map().Nodes.Select(n => n.Key.Value), read!.Nodes.Select(n => n.Key.Value), StringComparer.Ordinal);
         Assert.Equal(Map().Edges.Select(e => e.To.Value), read.Edges.Select(e => e.To.Value), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task The_store_serialises_the_real_backtest_and_map_quality_reports_and_the_map_cache_through_its_own_context()
+    {
+        var store = Store();
+        var backtest = new BacktestReport(1, _now, "all", 5, SmallSample: true, 1.0, new LeftOut(1, 0, 0, ["SPL-106"]), [], [], Verdicts.OwnerDecision, ["clusters unavailable"]);
+        var quality = new Context.Core.Eval.MapQuality.MapQualityReport(1, _now, "v1", new(4, 5), new(3, 3), new(1, 2), new(2, 2), 0, new(1, 10), Window: null, ["node precision: met"]);
+
+        var b = await store.WriteReport(EvalReportKind.Backtest, backtest, _now, TestContext.Current.CancellationToken);
+        var m = await store.WriteReport(EvalReportKind.Map, quality, _now, TestContext.Current.CancellationToken);
+
+        Assert.Contains("\"sampleCount\":5", await File.ReadAllTextAsync(b.Value, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        Assert.True(m.IsSuccess);
     }
 
     [Fact, Trait("Lane", "integration")]
