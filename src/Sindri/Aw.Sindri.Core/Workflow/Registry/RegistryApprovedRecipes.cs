@@ -1,13 +1,10 @@
 using System.Globalization;
-using System.Text;
 using System.Text.Json;
 using Aw.Kernel;
-using Aw.Kernel.Json;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Workflow.Registry;
 
@@ -103,7 +100,7 @@ internal sealed class RegistryApprovedRecipes(IRecipeStore store, IRecipeApprova
     /// <summary>The registered text read back, carrying its hash.</summary>
     private Result<ApprovedRecipe> Parse(RegisteredRecipe registered)
     {
-        var recipe = AwJson.Deserialize<Recipe>(Encoding.UTF8.GetBytes(registered.Text), json);
+        var recipe = registered.Read(json);   // a row from before input kinds keeps its stored text: Read fills what it lacks
         return recipe.IsError
             ? recipe.Error
             : new ApprovedRecipe(new RecipeVersion(registered.Id, registered.Version, registered.Hash), recipe.Value with { Hash = registered.Hash });

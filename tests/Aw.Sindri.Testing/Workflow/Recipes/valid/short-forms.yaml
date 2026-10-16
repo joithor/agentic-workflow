@@ -2,7 +2,7 @@
 schema: 1
 id: workflow.forms
 version: 1
-inputs: [fact:item]
+inputs: [{ key: fact:item, label: "Item", type: item, kind: item }]
 initial: produce
 states:
   produce:

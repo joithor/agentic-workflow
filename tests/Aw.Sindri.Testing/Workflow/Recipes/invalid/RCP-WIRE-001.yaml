@@ -22,3 +22,4 @@ transitions:
   - { from: checks, to: done, on: step.completed, when: { outcome: passed } }
   - { from: checks, to: produce, on: step.completed, when: { outcome: failed }, produces: [fact:findings] }
 loops: { revisions: { cap: 3 } }
+inputs: [{ key: fact:item, type: item, kind: item }]

@@ -14,6 +14,7 @@ namespace Aw.Sindri.Core.Workflow.Recipes;
 /// <param name="Description">What the recipe is for.</param>
 /// <param name="Base">The recipe a generated recipe was made from (written by Sindri's generator; RCP-CAP-004 on a hand-written one).</param>
 /// <param name="Urgency">'incident', 'triage' or 'work' (spec §3.2, UI E-21); the normalizer writes 'work' when absent, so both hash the same.</param>
+/// <param name="Name">A template (spec §3.11) for the instance's name, rendered once at start; null when the recipe doesn't name its instances.</param>
 /// <param name="Inputs">The facts a start supplies, with how the app's start form asks for them (the first is the subject).</param>
 /// <param name="Outputs">What the recipe produces for a human, each placed under its 'from' state (spec §3.2, UI E-22); declarations only.</param>
 /// <param name="Initial">The state an instance starts in: an active or wait state.</param>
@@ -31,6 +32,7 @@ public sealed record Recipe(
     string? Description,
     RecipeRef? Base,
     string Urgency,
+    string? Name,
     IReadOnlyList<RecipeInput> Inputs,
     IReadOnlyList<RecipeOutput> Outputs,
     string Initial,

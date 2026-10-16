@@ -258,7 +258,7 @@ public sealed class WorkflowViewConsistencyTests
 
         foreach (var row in Roots.Where(r => r.Recipe.Id.Value == recipeId))
         {
-            Assert.Equal(recipe.Inputs.Select(i => (i.Key, i.Label, i.Kind)), row.Inputs.Select(i => (i.Key, (string?)i.Label, (string?)i.Kind)));
+            Assert.Equal(recipe.Inputs.Select(i => (i.Key, i.Label, i.Kind)), row.Inputs.Select(i => (i.Key, (string?)i.Label, i.Kind)));
         }
     }
 

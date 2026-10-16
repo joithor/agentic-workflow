@@ -24,22 +24,24 @@ public static partial class SubjectRefs
     /// <param name="recipe">The recipe and its input facts.</param>
     /// <param name="item">The item the instance is on.</param>
     /// <param name="content">The first input's stored content as text; null when it was not read (then the key is the fact key for a text, link or payload).</param>
-    /// <returns>The subject, or null when the recipe declares no input.</returns>
-    public static SubjectRef? Of(InterpretedRecipe recipe, ItemKey item, string? content = null)
+    /// <param name="name">The recipe's rendered name (<see cref="InstanceNames.Render"/>) when it declares one; it is the label. An empty name is kept: the readers show the instance address for it.</param>
+    /// <returns>The subject.</returns>
+    /// <exception cref="InvalidOperationException">The recipe declares no input (RCP-INPUT-002), so it can't have been approved.</exception>
+    public static SubjectRef Of(InterpretedRecipe recipe, ItemKey item, string? content = null, string? name = null)
     {
         ArgumentNullException.ThrowIfNull(recipe);
         if (recipe.Recipe.Inputs.Count == 0)
         {
-            return null;
+            throw new InvalidOperationException($"recipe {recipe.Recipe.Id.Value} declares no input (RCP-INPUT-002)");
         }
 
         var input = recipe.Recipe.Inputs[0];
         var kind = SubjectKinds.Effective(input);
-        var (key, label) = Named(recipe, input, item, content);
-        return new SubjectRef(kind, key, label, Href: null);
+        var (key, label, href) = Named(recipe, input, item, content);
+        return new SubjectRef(kind, key, name ?? label, href);
     }
 
-    private static (string Key, string Label) Named(InterpretedRecipe recipe, RecipeInput input, ItemKey item, string? content)
+    private static (string Key, string Label, string? Href) Named(InterpretedRecipe recipe, RecipeInput input, ItemKey item, string? content)
     {
         var fact = input.Key.Value;
         var type = ValueKind(input);
@@ -54,7 +56,7 @@ public static partial class SubjectRefs
         }
 
         return content is null
-            ? (fact, recipe.Inputs.TryGetValue(input.Key, out var named) ? named.Name : input.Label ?? Bare(fact))
+            ? (fact, recipe.Inputs.TryGetValue(input.Key, out var named) ? named.Name : input.Label ?? Bare(fact), null)
             : type switch
             {
                 FactType.Text => Text(content),
@@ -87,19 +89,41 @@ public static partial class SubjectRefs
     /// <summary>The kind of the fact's value: its declared type, else the subject kind the recipe names, else text.</summary>
     private static FactType ValueKind(RecipeInput input) => FactTypes.Parse(SubjectKinds.TypeOf(input));
 
-    private static (string Key, string Label) Same(string value) => (value, value);
+    private static (string Key, string Label, string? Href) Same(string value) => (value, value, null);
 
-    private static (string Key, string Label) Text(string content)
+    private static (string Key, string Label, string? Href) Text(string content)
     {
-        var line = content.Split('\n').Select(static l => l.Trim()).FirstOrDefault(static l => l.Length > 0) ?? string.Empty;
-        return (Cut(line, KeyLength), Cut(line, LabelLength));
+        var line = FirstLine(content);
+        return (Cut(line, KeyLength), Cut(line, LabelLength), null);
     }
 
-    private static (string Key, string Label) Link(string content)
+    /// <summary>The first non-empty line of a text, trimmed.</summary>
+    /// <param name="content">The text.</param>
+    /// <returns>The line; empty when there is none.</returns>
+    internal static string FirstLine(string content) =>
+        content.Split('\n').Select(static l => l.Trim()).FirstOrDefault(static l => l.Length > 0) ?? string.Empty;
+
+    /// <summary>A link: the key is its tracker key (else the URL); the label is its title, else the URL's host; the href is the URL.</summary>
+    private static (string Key, string Label, string? Href) Link(string content)
     {
         var (url, title, tracker) = LinkFields(content.Trim());
         var key = tracker ?? Tracker(url) ?? url;
-        return (key, title ?? key);
+        return (key, title ?? Host(url) ?? key, url.Length > 0 ? url : null);
+    }
+
+    /// <summary>The host of an absolute URL, or null when it isn't one.</summary>
+    /// <param name="url">The URL.</param>
+    /// <returns>The host.</returns>
+    internal static string? Host(string url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Host.Length > 0 ? uri.Host : null;
+
+    /// <summary>A link's title and URL: a JSON object with 'url' (and 'title'), or the URL itself.</summary>
+    /// <param name="content">The stored content.</param>
+    /// <returns>The URL and the title, if there is one.</returns>
+    internal static (string Url, string? Title) LinkOf(string content)
+    {
+        var (url, title, _) = LinkFields(content.Trim());
+        return (url, title);
     }
 
     /// <summary>A link's fields: a JSON object with 'url' (and 'key', 'title'), or the URL itself.</summary>
@@ -122,18 +146,34 @@ public static partial class SubjectRefs
         }
     }
 
-    private static (string Key, string Label) Payload(string content, string fact)
+    /// <summary>A payload's id: its 'id' field, else its 'number', else null.</summary>
+    /// <param name="content">The stored content.</param>
+    /// <returns>The id, or null when the content isn't JSON or has neither.</returns>
+    internal static string? PayloadId(string content)
+    {
+        try
+        {
+            using var json = JsonDocument.Parse(content);
+            return Field(json.RootElement, "id") ?? Field(json.RootElement, "number");
+        }
+        catch (JsonException)
+        {
+            return null;   // boundary: a payload that isn't JSON has no id
+        }
+    }
+
+    private static (string Key, string Label, string? Href) Payload(string content, string fact)
     {
         try
         {
             using var json = JsonDocument.Parse(content);
             var root = json.RootElement;
             var key = Field(root, "id") ?? Field(root, "number") ?? fact;
-            return (key, Field(root, "title") ?? Field(root, "summary") ?? key);
+            return (key, Field(root, "title") ?? Field(root, "summary") ?? key, null);
         }
         catch (JsonException)
         {
-            return (fact, fact);   // boundary: a payload that isn't JSON names nothing but its fact
+            return (fact, fact, null);   // boundary: a payload that isn't JSON names nothing but its fact
         }
     }
 

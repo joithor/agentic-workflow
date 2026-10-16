@@ -22,6 +22,7 @@ public sealed class AnswerWaitTests
         "schema: 1",
         "id: workflow.ask",
         "version: 1",
+        "inputs: [{ key: fact:item, type: item, kind: item }]",
         "initial: asking",
         "states:",
         "  asking: { kind: wait, timeout: { after: 1d, then: park }, waitFor: { answer: { id: scope, question: \"Which scope?\" } },",

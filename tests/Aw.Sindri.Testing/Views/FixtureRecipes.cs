@@ -16,36 +16,36 @@ public static class FixtureRecipes
 
     private static ShapeTimeout T(int minutes, TimeoutAction then) => new(TimeSpan.FromMinutes(minutes), then);
 
-    private static ShapeInput In(string key, string? label, FactType type, string? kind) => new(key, label, type, kind);
+    private static ShapeInput In(string key, string? label, FactType type, string kind, string? generate = null) => new(key, label, type, kind, generate);
 
     private static ShapeOutput Out(string key, string label, FactType type, string from) => new(key, label, type, from);
 
     /// <summary>workflow.step v1 (recipes/sindri/workflow.step.yaml): produce, checks, verify, done; the revisions loop returns to produce.</summary>
-    public static RecipeShape Step { get; } = new("workflow.step", 1, "1b13bd920351e56227141fe24e59f2f90cb46bc3549e1e90f2da2af1c3be9f5c", RecipeUrgency.Work,
+    public static RecipeShape Step { get; } = new("workflow.step", 2, "1c1173a162a77736c33620e985d6d75473cf3755963adc5c46eb9049434f5276", RecipeUrgency.Work,
         [S("produce", 1, desk: true, timeout: T(4 * Hour, TimeoutAction.Park), tokens: 200_000, block: "step.produce"), S("checks", 2, desk: true, timeout: T(30, TimeoutAction.Retry), block: "step.checks"),
             S("verify", 3, desk: true, timeout: T(Hour, TimeoutAction.Park), block: "step.verify"), S("done", 4, terminal: true)],
         [new ShapeLoop("revisions", "checks", "produce", 3), new ShapeLoop("revisions", "verify", "produce", 3)],
-        [In("fact:spec", null, FactType.Text, null)], [], BudgetTokens: 400_000);
+        [In("fact:spec", "Spec", FactType.Text, "text")], [], BudgetTokens: 400_000);
 
     /// <summary>workflow.dev-desk-round-trip v1: export (desk), import, done; the rounds loop returns from import to export.</summary>
-    public static RecipeShape DevDesk { get; } = new("workflow.dev-desk-round-trip", 1, "42e9e8ab897f90e38c74f9a3a5aa499f9a56475b4c1a416c0ad5b01a79bb2346", RecipeUrgency.Work,
+    public static RecipeShape DevDesk { get; } = new("workflow.dev-desk-round-trip", 2, "459f0bb87b5ab29e00fe744561f13e95e8a5819debcd065a1c52b0ad3aba27ac", RecipeUrgency.Work,
         [S("export", 1, desk: true, timeout: T(Hour, TimeoutAction.Park), block: "step.produce"), S("import", 2, desk: true, timeout: T(30, TimeoutAction.Retry), block: "step.checks"), S("done", 3, terminal: true)],
         [new ShapeLoop("rounds", "import", "export", 2)],
         [In("fact:request", "Request", FactType.Text, "text")], [Out("fact:output", "Exported file", FactType.File, "export")]);
 
     /// <summary>workflow.dev-triage-three-state v1: desk, answer, done.</summary>
-    public static RecipeShape DevTriage { get; } = new("workflow.dev-triage-three-state", 1, "88a0e8fc810fb8dbdccb244b1a601e16743ade3c4230b57c7c0cf782b3ed0f66", RecipeUrgency.Triage,
+    public static RecipeShape DevTriage { get; } = new("workflow.dev-triage-three-state", 2, "94c0c28e21ca37b9f9ad16233e33c9620b70e940c0fc19f3fb14cc9dfc51f002", RecipeUrgency.Triage,
         [S("desk", 1, desk: true, timeout: T(Hour, TimeoutAction.Park), block: "step.produce"), S("answer", 2, wait: true, timeout: T(Day, TimeoutAction.Park)), S("done", 3, terminal: true)], [],
-        [In("fact:item", "Item", FactType.Item, "item")],
-        [Out("fact:output", "Draft", FactType.File, "desk"), Out("fact:answer", "Decision", FactType.Decision, "answer")]);
+        [In("fact:scope", "Scope", FactType.Text, "text"), In("fact:item", "Item", FactType.Item, "item")],
+        [Out("fact:output", "Draft", FactType.File, "desk"), Out("fact:answer", "Decision", FactType.Decision, "answer")], Name: "{fact:scope} - {start:date}");
 
     /// <summary>workflow.item v1 (recipes/sindri/workflow.item.yaml): the item's own instance; its running wait starts the workflow.step child and propagates a park.</summary>
-    public static RecipeShape Item { get; } = new("workflow.item", 1, "496cdcbfe884c70dce832d96d21883660f29fffe9b122fcfa72a04c98be8cae3", RecipeUrgency.Work,
+    public static RecipeShape Item { get; } = new("workflow.item", 2, "85ecaff4781ee6cfd458a983861cf04a66228fde579c95722b03b353a3532d45", RecipeUrgency.Work,
         [S("triaged", 1, wait: true, timeout: T(7 * Day, TimeoutAction.Escalate)), S("startable", 2, wait: true, timeout: T(3 * Day, TimeoutAction.Escalate)),
             S("claimed", 3, wait: true, timeout: T(10, TimeoutAction.Retry)),
             S("running", 4, child: true, timeout: T(14 * Day, TimeoutAction.Park), onParked: OnParked.Propagate, childRecipe: "workflow.step"),
             S("done", 5, terminal: true), S("dropped", 6, terminal: true)],
-        [], [In("fact:item", null, FactType.Text, null)], []);
+        [], [In("fact:item", "Item", FactType.Item, "item")], []);
 
     /// <summary>workflow.incident-response (fixture-only): the remediate loop is recorded as its back edge, verify to mitigate.</summary>
     public static RecipeShape Incident { get; } = new("workflow.incident-response", 4, "5d90e1b2", RecipeUrgency.Incident,
@@ -67,7 +67,7 @@ public static class FixtureRecipes
             S("build", 4, child: true, timeout: T(Day, TimeoutAction.Escalate), tokens: 4_000_000, onParked: OnParked.Ignore, childRecipe: "workflow.step"),
             S("verify", 5, timeout: T(2 * Hour, TimeoutAction.Park), agent: true), S("done", 6, terminal: true)],
         [new ShapeLoop("challenge", "scoping", "scoping", 3)],
-        [In("fact:project", "Linear project", FactType.Payload, "linear-project"), In("fact:prd", "PRD", FactType.File, null)],
+        [In("fact:project", "Linear project", FactType.Payload, "linear-project"), In("fact:prd", "PRD", FactType.File, "file")],
         [Out("fact:scope", "Scope map", FactType.ScopeMap, "scoping"), Out("fact:packet", "Packet", FactType.Packet, "design"), Out("fact:evidence", "Evidence", FactType.Evidence, "build")], BudgetTokens: 6_000_000);
 
     /// <summary>workflow.intake-linear (fixture-only): polls a team and emits items.</summary>

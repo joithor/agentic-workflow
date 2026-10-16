@@ -65,6 +65,17 @@ public sealed class RecipeSchemaTests
         }
     }
 
+    [Fact, Trait("Lane", "integration")]   // reads schemas/recipes/
+    public void The_editor_overlay_accepts_only_declared_inputs_and_at_least_one()
+    {
+        var overlay = JsonNode.Parse(File.ReadAllText(Path.Combine(RepoRoot(), "schemas", "recipes", "recipe.editor.schema.json")))!;
+
+        var inputs = overlay["$defs"]!["Recipe"]!["properties"]!["inputs"]!;
+
+        Assert.Equal("#/$defs/RecipeInput", inputs["items"]!["$ref"]!.GetValue<string>());   // the bare-key short form is refused (RCP-INPUT-001)
+        Assert.Equal(1, inputs["minItems"]!.GetValue<int>());   // and so is an empty list (RCP-INPUT-002)
+    }
+
     private static void Collect(Type type, Dictionary<string, JsonTypeInfo> records)
     {
         var info = SliceHarness.Json.GetTypeInfo(Nullable.GetUnderlyingType(type) ?? type);

@@ -9,6 +9,6 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 internal sealed record InputPresence(
     string Key,
     string Label,
-    string? Kind,
+    string Kind,
     bool Required,
     bool Present);

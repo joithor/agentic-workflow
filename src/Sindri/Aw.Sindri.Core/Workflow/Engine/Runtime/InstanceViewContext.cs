@@ -7,9 +7,11 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// <param name="Version">The instance's version: the count of events mirrored into the ledger.</param>
 /// <param name="Provenance">Who produced each fact and when; a fact with no entry shows no 'by' and 'at'.</param>
 /// <param name="Children">The live children (a park or escalation mirroring a child names the first); the group rows of the view wait for engine P7.</param>
+/// <param name="Contents">The stored text of the link inputs, read at the start; a link fact's ref shows its URL, host and title from it (API spec §3.8); none leaves the ref at its fact key.</param>
 /// <param name="Subject">The subject the workflow named from the first input's stored content; null names it from the recipe alone (the fact key for a text, link or payload).</param>
 public sealed record InstanceViewContext(
     int Version = 0,
     IReadOnlyDictionary<FactKey, FactProvenance>? Provenance = null,
     IReadOnlyList<ChildView>? Children = null,
-    SubjectRef? Subject = null);
+    SubjectRef? Subject = null,
+    IReadOnlyDictionary<FactKey, string>? Contents = null);
