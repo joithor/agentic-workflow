@@ -1,0 +1,110 @@
+== dry-run, no sessions
+[dry-run] tmux new-session -d -s demo-meta -c @WORK@/repo @SCRIPTS@/meta-lane.sh demo meta
+[dry-run] tmux new-session -d -s demo-api -c @WORK@/repo @SCRIPTS@/meta-lane.sh demo api
+[dry-run] tmux new-session -d -s demo-ui -c @WORK@/repo @SCRIPTS@/meta-lane.sh demo ui
+[dry-run] would write @WORK@/warp/demo-team.yaml:
+# Written by scripts/meta-launch.sh from @WORK@/state/meta/team.json; rerun it rather than editing.
+name: demo team
+windows:
+  - tabs:
+      - title: demo
+        layout:
+          split_direction: vertical
+          panes:
+            - cwd: @WORK@/repo
+              commands:
+                - exec: tmux new -A -s demo-meta -c @WORK@/repo -e AW_META_CONFIG=@WORK@/state/meta/team.json '@SCRIPTS@/meta-lane.sh demo meta'
+            - split_direction: horizontal
+              panes:
+                - cwd: @WORK@/repo
+                  commands:
+                    - exec: tmux new -A -s demo-api -c @WORK@/repo -e AW_META_CONFIG=@WORK@/state/meta/team.json '@SCRIPTS@/meta-lane.sh demo api'
+                - cwd: @WORK@/repo
+                  commands:
+                    - exec: tmux new -A -s demo-ui -c @WORK@/repo -e AW_META_CONFIG=@WORK@/state/meta/team.json '@SCRIPTS@/meta-lane.sh demo ui'
+rc=0
+== launch
+tmux demo-meta: started
+tmux demo-api: started
+tmux demo-ui: started
+warp: @WORK@/warp/demo-team.yaml
+rc=0
+== yaml
+# Written by scripts/meta-launch.sh from @WORK@/state/meta/team.json; rerun it rather than editing.
+name: demo team
+windows:
+  - tabs:
+      - title: demo
+        layout:
+          split_direction: vertical
+          panes:
+            - cwd: @WORK@/repo
+              commands:
+                - exec: tmux new -A -s demo-meta -c @WORK@/repo -e AW_META_CONFIG=@WORK@/state/meta/team.json '@SCRIPTS@/meta-lane.sh demo meta'
+            - split_direction: horizontal
+              panes:
+                - cwd: @WORK@/repo
+                  commands:
+                    - exec: tmux new -A -s demo-api -c @WORK@/repo -e AW_META_CONFIG=@WORK@/state/meta/team.json '@SCRIPTS@/meta-lane.sh demo api'
+                - cwd: @WORK@/repo
+                  commands:
+                    - exec: tmux new -A -s demo-ui -c @WORK@/repo -e AW_META_CONFIG=@WORK@/state/meta/team.json '@SCRIPTS@/meta-lane.sh demo ui'
+== rerun with --lanes
+tmux demo-api: running
+warp: @WORK@/warp/demo-team.yaml
+rc=0
+== dry-run, exited lane
+[dry-run] tmux respawn-pane -k -t demo-api @SCRIPTS@/meta-lane.sh demo api
+[dry-run] would write @WORK@/warp/demo-team.yaml:
+# Written by scripts/meta-launch.sh from @WORK@/state/meta/team.json; rerun it rather than editing.
+name: demo team
+windows:
+  - tabs:
+      - title: demo
+        layout:
+          split_direction: vertical
+          panes:
+            - cwd: @WORK@/repo
+              commands:
+                - exec: tmux new -A -s demo-meta -c @WORK@/repo -e AW_META_CONFIG=@WORK@/state/meta/team.json '@SCRIPTS@/meta-lane.sh demo meta'
+            - split_direction: horizontal
+              panes:
+                - cwd: @WORK@/repo
+                  commands:
+                    - exec: tmux new -A -s demo-api -c @WORK@/repo -e AW_META_CONFIG=@WORK@/state/meta/team.json '@SCRIPTS@/meta-lane.sh demo api'
+                - cwd: @WORK@/repo
+                  commands:
+                    - exec: tmux new -A -s demo-ui -c @WORK@/repo -e AW_META_CONFIG=@WORK@/state/meta/team.json '@SCRIPTS@/meta-lane.sh demo ui'
+rc=0
+== tmux calls
+tmux has-session -t =demo-meta
+tmux has-session -t =demo-api
+tmux has-session -t =demo-ui
+tmux new-session -d -s keepalive sleep\ 600
+tmux has-session -t =demo-meta
+tmux new-session -d -s demo-meta -c @WORK@/repo -e AW_META_CONFIG=@WORK@/state/meta/team.json @SCRIPTS@/meta-lane.sh\ demo\ meta
+tmux has-session -t =demo-api
+tmux new-session -d -s demo-api -c @WORK@/repo -e AW_META_CONFIG=@WORK@/state/meta/team.json @SCRIPTS@/meta-lane.sh\ demo\ api
+tmux has-session -t =demo-ui
+tmux new-session -d -s demo-ui -c @WORK@/repo -e AW_META_CONFIG=@WORK@/state/meta/team.json @SCRIPTS@/meta-lane.sh\ demo\ ui
+tmux has-session -t =demo-api
+tmux kill-session -t demo-api
+tmux new-session -d -s demo-api bash
+tmux has-session -t =demo-api
+tmux display-message -p -t =demo-api: \#\{pane_pid\}
+== lane api, fresh
+--session-id|@ID@|-n|demo-api|API kickoff
+line two $HOME "quoted" 'single'|
+== lane api, resumed
+--resume|@ID@|-n|demo-api|
+== lane api, resumed, AW_META_CLAUDE_ARGS
+--model|x|--verbose|--resume|@ID@|-n|demo-api|
+== lane ui, no prompt
+--session-id|@ID@|-n|demo-ui|
+== lane ui, fresh, AW_META_CLAUDE_ARGS
+--model|x|--session-id|@ID@|-n|demo-ui|
+== lane meta
+role-set --session @ID@ --name demo-meta
+== bad lane
+meta-lane: bad name 'Bad Lane' (lowercase letters, digits, dashes)
+rc=2
