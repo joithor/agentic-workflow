@@ -1,75 +1,45 @@
 # Sindri profile reference
 
-The profile of the C# Sindri app (`src/Sindri`), schema version 1. It documents the keys of `SindriProfile`
-(`src/Sindri/Aw.Sindri.Core/Profile/`), read through `AwJson`. It replaces the reference of the TypeScript profile
-(`sindri/src/profile/schema.ts`), which is generated separately and stays until the switch. Unknown keys are errors;
-new optional keys join version 1, renames and removals bump it. `node scripts/check-profile-doc.mjs` fails when a
-`SindriProfile` key is missing from this page.
+Generated from `sindri/src/profile/schema.ts` by `cd sindri && npm run gen`. Do not edit by hand.
+Editor autocomplete: point your YAML extension at `sindri/schema/profile.schema.json` and `repo.schema.json`.
 
-The profile is a YAML file, by default `$AW_SINDRI_HOME/profile/profile.yaml` (`AW_SINDRI_PROFILE`). A changed profile
-takes effect only after `sindri profile approve` (a human approval). The machine's terminal and extra agent entries are
-not in the profile: they live in `launcher.json` (`docs/csharp/sindri-launcher.md`).
+Precedence: `repos/<repo>.yaml` `overrides` > `profile.yaml` > core default (`sindri profile explain <key> [--repo <name>]`).
+A changed profile takes effect only after `sindri profile approve <hash>` (spec §8.7).
 
 ## profile.yaml
 
 | Key | Type | Required | Default | Meaning |
 |---|---|---|---|---|
-| `schemaVersion` | `1` | yes |  | The format version; this build reads 1 |
-| `user` | string | yes |  | Who runs this Sindri: claim refs `sindri/<user>/<item>` and the event actor's owner |
-| `tenant` | string | no | `"local"` | The tenant key every row carries (factory addendum §17.20); one value until team mode |
-| `repos` | `RepoEntry[]` | no | none | The repos in the path |
-| `services` | map of service name to `ServiceSettings` | no | none | Background services by name, each with its cadence |
-| `api` | `ApiSettings` | no | `{ port: 7410 }` | The local API's settings |
-| `workflow` | `WorkflowSettings` | no | all defaults | The workflow engine's times (engine spec S1-D11). Left out of the canonical JSON when absent, so a profile without it keeps its approved hash |
-| `context` | object | no | none | The context engine's section (context spec §8.8). Sindri keeps the JSON and the engine checks its keys at validate and approve |
-| `index` | `IndexSettings` | no | none | Deny paths for every repo's map extraction |
+| `schemaVersion` | `1` | yes |  | Profile format version |
+| `mode` | `shadow` \| `assist` \| `auto-small` | no | `"shadow"` | What sindri may do on its own (spec §7.1) |
+| `user` | string | yes |  | Namespace for claim refs sindri/&lt;user&gt;/&lt;item&gt; (spec §9.4) |
+| `hosts` | object | yes |  | hosts.active: the one host allowed to run ticks |
+| `tracker` | object (one of 1 shapes) | yes |  | Where work items come from. Plan 2 ships type: plan-file |
+| `repos` | string[] | yes |  | Repo names; each needs repos/&lt;name&gt;.yaml |
+| `trustedAuthors` | string[] | no | `[]` | Author ids whose items may auto-start (spec §8.3). For plan-file these are git author emails, which anyone can forge; signed commits are required before auto-small |
+| `trustedBots` | string[] | no | `[]` | Bot ids whose review comments feed fix rounds |
+| `providers` | object | no | `{}` | providers.allowed: model providers sindri may call (spec §6.1) |
+| `budget` | object | no | `{}` | Token budgets; unset until rollout step 3a enforces them |
+| `autoStartMaxSize` | `XS` \| `S` \| `M` \| `L` \| `XL` | no | `"XS"` | Largest size auto-small may start |
+| `selfMerge` | `human` \| `auto` | no | `"human"` | Who merges toolkit PRs (spec §7.7); protected modules always wait for the human |
+| `scrub` | object | no | `{}` | scrub.extraPatterns: extra secret shapes, added to the built-ins (never removes one) |
+| `index` | object | no | `{}` | Code index (spec §6.2) |
+| `shape` | object | no | `{}` | Shape signals (spec §6.2) |
+| `sources` | object | no | `{}` |  |
+| `models` | object | no | `{}` |  |
+| `evolve` | object | no | `{}` | Self-evolution budgets and limits (sindri evolve) |
+| `privacy` | object | no | `{}` | Privacy gate for published proposal tasks |
+| `scope` | object | no | `{}` |  |
 
-### `repos[]`
-
-| Key | Type | Required | Default | Meaning |
-|---|---|---|---|---|
-| `name` | string | yes |  | The repo's short name |
-| `path` | string | yes |  | The absolute path of its checkout |
-| `index` | `IndexSettings` | no | none | This repo's `index:` section; its deny paths join the profile's |
-
-### `services.<name>`
-
-| Key | Type | Required | Default | Meaning |
-|---|---|---|---|---|
-| `every` | string | yes |  | The cadence: a whole number and a unit, `s`, `m` or `h` (for example `30s`), from `5s` to `24h` |
-
-### `api`
+## `repos/<name>.yaml`
 
 | Key | Type | Required | Default | Meaning |
 |---|---|---|---|---|
-| `port` | integer | no | `7410` | The loopback port; 0 picks a free one |
-
-### `workflow`
-
-| Key | Type | Required | Default | Meaning |
-|---|---|---|---|---|
-| `deskTimeout` | duration (`1m`, `4h`, `2d`) | no | `2d` | The floor of every desk Step's timeout (W20) |
-| `eventHold` | duration | no | `24h` | How long a buffered event signal waits for its wait before it is dropped with `workflow.expired` (§5.4) |
-
-### `index`
-
-| Key | Type | Required | Default | Meaning |
-|---|---|---|---|---|
-| `denyPaths` | string[] | no | none | Repo-relative globs map extraction never reads (`private/**`, `**/*.generated.ts`), added to the built-in secret globs and never replacing them (context spec §6.2). A repo's own are added to the profile's |
-
-## Keys specified, not yet in `SindriProfile`
-
-These keys are specified by other lanes' specs and join the profile in their phases. Until then the C# profile
-refuses them as unknown keys. They are listed here so the launcher's files and the profile agree on names. Every key that
-names an agent takes any `AgentId` (pattern `^[a-z][a-z0-9-]{1,31}$`); the profile checks the pattern and never the
-catalog, because the catalog is per box.
-
-| Key | Meaning | Specified in |
-|---|---|---|
-| `launch.default` | The default launch target (an agent id) | UI spec E-4 |
-| `launch.repos.<repo>.default` | A repo's default launch target | UI spec E-4 |
-| `launch.confirmWindow` | How long a started launch asks for confirmation before another (a duration, default `2h`) | UI spec E-4 |
-| `agents.<id>.dailyBudget` | The agent's daily token budget; a target with no usage reader and a budget is refused (`SND-LAUNCH-010`) | screens spec E-28 |
-| `agents.<id>.stepArgvHash` | One `argvHash` or a list: the hashes an unattended Step may run for this agent when its entry isn't built in (SL8) | session-launcher spec L-11 |
-| `agents.softLimit` | Reserved sibling of the agent ids; it can't match the id pattern | screens spec E-28 |
-| `workflow.agent.target` | The agent a Step launches | workflow engine spec §6.5 |
+| `schemaVersion` | `1` | yes |  | Profile format version |
+| `name` | string | yes |  | Must match the file name repos/&lt;name&gt;.yaml |
+| `path` | string | yes |  | Absolute path of the local checkout |
+| `defaultBranch` | string | no | `"main"` | Base branch for claims and indexes |
+| `protectedPaths` | string[] | no | `[]` | Globs; a diff touching one parks for approval (spec §8.5) |
+| `overrides` | object | no | `{}` | Per-repo values that win over profile.yaml |
+| `index` | object | no | `{}` | index.denyPaths for this repo, added to the profile's |
+| `private` | boolean | no |  | true: sindri evolve publish holds any proposal that names this repo's code identifiers (read from its index). Unset counts as false, and sindri doctor warns until it is set |

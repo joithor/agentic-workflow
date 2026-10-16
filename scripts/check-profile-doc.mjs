@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// scripts/check-profile-doc.mjs — docs/sindri/profile.md names every key of the C# SindriProfile (spec 2026-10-15
+// scripts/check-profile-doc.mjs — docs/csharp/sindri-profile.md names every key of the C# SindriProfile (spec 2026-10-15
 // session-launcher L-8, phase SL-0).
 //
 //   node scripts/check-profile-doc.mjs [--root DIR]
 //
 // Reads the sealed records of src/Sindri/Aw.Sindri.Core/Profile/*.cs that refuse unknown keys
 // ([JsonUnmappedMemberHandling(Disallow)]: SindriProfile and the records it nests), camel-cases their constructor
-// parameters (the profile's key names) and fails for each one docs/sindri/profile.md doesn't show as `key`.
+// parameters (the profile's key names) and fails for each one docs/csharp/sindri-profile.md doesn't show as `key`.
 // Not a C# test on purpose: a new profile key in another lane's PR fails this doc check with its fix line, never the
 // C# unit lane.
 // Exit codes: 0 ok, 1 a key is missing, 2 a tool error. Node builtins only.
@@ -19,7 +19,7 @@ const args = process.argv.slice(2);
 const rootArg = args.indexOf("--root");
 const ROOT = rootArg >= 0 ? path.resolve(args[rootArg + 1]) : path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DIR = path.join(ROOT, "src/Sindri/Aw.Sindri.Core/Profile");
-const DOC = path.join(ROOT, "docs/sindri/profile.md");
+const DOC = path.join(ROOT, "docs/csharp/sindri-profile.md");
 
 const camel = (s) => s[0].toLowerCase() + s.slice(1);
 
@@ -58,7 +58,7 @@ try {
   const keys = fs.readdirSync(DIR).filter((f) => f.endsWith(".cs")).flatMap((f) => recordKeys(fs.readFileSync(path.join(DIR, f), "utf8")));
   if (!keys.some((k) => k.record === "SindriProfile")) throw new Error("found no SindriProfile record");
   const missing = keys.filter((k) => !doc.includes(`\`${k.key}\``));
-  for (const k of missing) console.error(`FAIL ${k.record}.${k.key} is not in docs/sindri/profile.md: add ${k.key} to docs/sindri/profile.md (a row with the key in backticks)`);
+  for (const k of missing) console.error(`FAIL ${k.record}.${k.key} is not in docs/csharp/sindri-profile.md: add ${k.key} to docs/csharp/sindri-profile.md (a row with the key in backticks)`);
   if (missing.length) process.exit(1);
   console.log(`check-profile-doc: ok (${keys.length} keys)`);
 } catch (e) {

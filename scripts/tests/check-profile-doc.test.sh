@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tests for scripts/check-profile-doc.mjs: docs/sindri/profile.md names every key of the C# SindriProfile.
+# Tests for scripts/check-profile-doc.mjs: docs/csharp/sindri-profile.md names every key of the C# SindriProfile.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -16,16 +16,16 @@ expect_rc() { if [ "$RC" -eq "$2" ]; then ok "$1 (exit $RC)"; else fail "$1: exi
 expect_out() { if printf '%s\n' "$OUT" | grep -qF -- "$2"; then ok "$1"; else fail "$1: output lacks '$2'"; printf '%s\n' "$OUT" | sed 's/^/      | /'; fi; }
 
 echo "repo"
-run "$REPO"; expect_rc "docs/sindri/profile.md names every SindriProfile key" 0
+run "$REPO"; expect_rc "docs/csharp/sindri-profile.md names every SindriProfile key" 0
 
 echo "drift"
 d="$TMPROOT/new-key"
-mkdir -p "$d/src/Sindri/Aw.Sindri.Core" "$d/docs/sindri"
+mkdir -p "$d/src/Sindri/Aw.Sindri.Core" "$d/docs/csharp"
 cp -R "$REPO/src/Sindri/Aw.Sindri.Core/Profile" "$d/src/Sindri/Aw.Sindri.Core/"
-cp "$REPO/docs/sindri/profile.md" "$d/docs/sindri/"
-sed -i 's/IndexSettings? Index = null)$/IndexSettings? Index = null,\n    string? Launch = null)/' "$d/src/Sindri/Aw.Sindri.Core/Profile/SindriProfile.cs"
+cp "$REPO/docs/csharp/sindri-profile.md" "$d/docs/csharp/"
+perl -pi -e 's/IndexSettings\? Index = null\)\n/IndexSettings? Index = null,\n    string? Launch = null)\n/' "$d/src/Sindri/Aw.Sindri.Core/Profile/SindriProfile.cs"
 run "$d"; expect_rc "a new profile key the doc lacks fails" 1
-expect_out "names the key and the fix" "add launch to docs/sindri/profile.md"
+expect_out "names the key and the fix" "add launch to docs/csharp/sindri-profile.md"
 
 echo
 echo "check-profile-doc.test.sh: $PASS passed, $FAIL failed"
