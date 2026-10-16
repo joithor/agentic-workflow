@@ -8060,3 +8060,5 @@ Aw.Sindri.Core.Scheduling.IServiceRunRecorder.Record(Aw.Sindri.Core.Ids.ServiceN
 Aw.Sindri.Core.Jobs.IJobCancellation
 Aw.Sindri.Core.Jobs.IJobCancellation.Cancel(Aw.Sindri.Core.Ids.JobId job) -> bool
 static Aw.Sindri.Core.Views.EmptyText.Jobs() -> string!
+Aw.Sindri.Core.Jobs.IJobAdmission<TRequest>
+Aw.Sindri.Core.Jobs.IJobAdmission<TRequest>.Admit(TRequest request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Ids.ServiceName?>!>

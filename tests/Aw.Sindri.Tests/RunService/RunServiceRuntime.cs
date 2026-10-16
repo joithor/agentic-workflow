@@ -1,7 +1,6 @@
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
-using Aw.Sindri.Features.RecordServiceRun;
-using Aw.Sindri.Features.RunService;
+using Aw.Sindri.Features;
 using Aw.Sindri.Host.Catalog;
 using Aw.Sindri.Tests.Jobs;
 using Microsoft.Extensions.DependencyInjection;

@@ -16,7 +16,8 @@ internal static class SindriHostServiceCollectionExtensions
         .AddSingleton<IShutdown>(static sp => sp.GetRequiredService<ProcessShutdown>())
         .AddSingleton<IExitCode, ProcessExitCode>()
         .AddSingleton<ICommandCatalog, CommandCatalog>()
-        .AddSingleton<Projector>();
+        .AddSingleton<Projector>()
+        .AddSingleton<ScheduleInputs>();
 
     /// <summary>
     /// Adds what only 'sindri serve' runs: the port it chooses before it binds (and the check that refuses to start without
@@ -27,7 +28,6 @@ internal static class SindriHostServiceCollectionExtensions
     internal static IServiceCollection AddSindriServe(this IServiceCollection services) => services
         .AddSingleton<ServePort>()
         .AddHostedService<ServeListenerCheck>()
-        .AddSingleton<ScheduleInputs>()
         .AddHostedService<SchedulerHost>()
         .AddHostedService<ProjectorHost>()
         .AddHostedService<ProfileWatch>()

@@ -7,7 +7,6 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Features.Jobs;
 
@@ -15,7 +14,7 @@ namespace Aw.Sindri.Features.Jobs;
 /// The chained service of a job-class command (API P6, plan Unit C): inside the gate it checks the running cap (SND-JOB-002), the definition's admission,
 /// claims (kind, key) (SND-JOB-409 with 'runningJob'), appends 'job.started' and hands the work to <see cref="IJobRunner"/>. It never runs the work.
 /// </summary>
-/// <param name="services">The start's scope: every registered job definition (this request's is found by its type) and what its admission reads.</param>
+/// <param name="admitter">Finds this request's definition and runs its checks.</param>
 /// <param name="registry">The running claims.</param>
 /// <param name="runner">Runs the work.</param>
 /// <param name="recorder">Appends 'job.started'.</param>
@@ -24,7 +23,7 @@ namespace Aw.Sindri.Features.Jobs;
 /// <param name="catalog">Names the job's kind (the request's action).</param>
 /// <typeparam name="TRequest">The job request.</typeparam>
 /// <typeparam name="TResult">What the work returns.</typeparam>
-internal sealed class JobStartService<TRequest, TResult>(IServiceProvider services, JobRegistry registry, IJobRunner runner, JobStartRecorder recorder,
+internal sealed class JobStartService<TRequest, TResult>(JobAdmitter<TRequest> admitter, JobRegistry registry, IJobRunner runner, JobStartRecorder recorder,
     IIdGenerator ids, ICallerContextAccessor callers, ICommandCatalog catalog) : IService<TRequest, JobStartedResponse>
     where TRequest : IJob<TResult>
 {
@@ -41,14 +40,14 @@ internal sealed class JobStartService<TRequest, TResult>(IServiceProvider servic
             return SindriErrors.JobsRateLimited.With(string.Create(CultureInfo.InvariantCulture, $"{JobLimits.MaxRunning} jobs are running (fix: wait for one to end, or cancel one)"));
         }
 
-        var definition = services.GetServices<JobDefinition>().Single(static d => d.Request == typeof(TRequest));
-        var admitted = await definition.Admit(services, request, cancellationToken).ConfigureAwait(false);
+        var admitted = await admitter.Admit(request, cancellationToken).ConfigureAwait(false);
         if (admitted.IsError)
         {
             return admitted.Error;
         }
 
         var kind = JobKind.From(ActionClassifier.Classify(catalog, request).Action.Value);
+        var definition = admitted.Value.Definition;
         var key = definition.KeyOf(request);
         var job = JobId.New(ids);
         if (!registry.TryClaim(kind, key, job, out var running))
@@ -56,14 +55,14 @@ internal sealed class JobStartService<TRequest, TResult>(IServiceProvider servic
             return Conflict(kind, key, running);
         }
 
-        var recorded = await recorder.Record(new JobTicket(job, kind, key), caller, admitted.Value, cancellationToken).ConfigureAwait(false);
+        var recorded = await recorder.Record(new JobTicket(job, kind, key), caller, admitted.Value.Service, cancellationToken).ConfigureAwait(false);
         if (recorded.IsError)
         {
             registry.Release(job);
             return recorded.Error;
         }
 
-        await runner.Start(new JobStart(job, kind, key, definition, request, caller, recorded.Value.Grant, admitted.Value, recorded.Value.Cause), cancellationToken).ConfigureAwait(false);
+        await runner.Start(new JobStart(job, kind, key, definition, request, caller, recorded.Value.Grant, admitted.Value.Service, recorded.Value.Cause), cancellationToken).ConfigureAwait(false);
         return Response(caller, job, recorded.Value.Sequence);
     }
 
