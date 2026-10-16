@@ -162,6 +162,14 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
         _ => "",
     };
 
+    /// <summary>The labelled lines of the row's sheet beyond its title and reason: a failure's service and actions, a profile's changes.</summary>
+    public IReadOnlyList<SheetDetail> Details => Entry.Subject?.Kind switch
+    {
+        "service" => new FailureSheetViewModel(Entry, Age).Details,
+        "profile" => new ProfileSheetViewModel(Entry).Details,
+        _ => [],
+    };
+
     /// <summary>The row's id.</summary>
     public string Id => Entry.Id;
 

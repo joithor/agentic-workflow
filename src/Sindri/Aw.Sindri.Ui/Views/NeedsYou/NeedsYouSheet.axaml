@@ -14,6 +14,16 @@
     <TextBlock x:Name="SheetRowTitle" Classes="body-strong" Text="{Binding Title}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Title}" />
     <TextBlock Classes="body muted" Text="{Binding Reason}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Reason}" />
     <TextBlock Classes="caption subtle" Text="{Binding Notice}" IsVisible="{Binding HasNotice}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Notice}" />
+    <ItemsControl x:Name="SheetRowDetails" ItemsSource="{Binding Details}" IsVisible="{Binding Details.Count}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="ny:SheetDetail">
+          <StackPanel Spacing="2" Margin="0,0,0,6" AutomationProperties.Name="{Binding Label}">
+            <TextBlock Classes="caption subtle" Text="{Binding Label}" />
+            <TextBlock Classes="mono" Text="{Binding Value}" TextWrapping="Wrap" />
+          </StackPanel>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
     <TextBlock x:Name="SheetRowCli" Classes="mono" Text="{Binding Cli}" IsVisible="{Binding Cli, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Cli}" />
   </StackPanel>
 </UserControl>

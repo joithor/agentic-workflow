@@ -96,4 +96,27 @@ internal static partial class Labels
     /// <param name="count">How many rows need the user now.</param>
     /// <returns>The words.</returns>
     internal static string NowNeedYou(int count) => string.Create(CultureInfo.InvariantCulture, $"{count} now need you");
+
+    /// <summary>A failure sheet's line for the service.</summary>
+    internal static string SheetService => "Service";
+
+    /// <summary>A failure sheet's line for how long ago it failed.</summary>
+    internal static string SheetFailed => "Failed";
+
+    /// <summary>A failure sheet's line for why.</summary>
+    internal static string SheetWhy => "Why";
+
+    /// <summary>A profile sheet's line for what changed.</summary>
+    internal static string SheetChanged => "Changed";
+
+    /// <summary>A profile sheet's line for the profile's hash.</summary>
+    internal static string SheetHash => "Profile hash";
+
+    /// <summary>A profile sheet's line for the command that approves it.</summary>
+    internal static string SheetApprove => "Approve with";
+
+    /// <summary>An action's value on a sheet while the app cannot run it yet.</summary>
+    /// <param name="cli">The command that does it.</param>
+    /// <returns>The words.</returns>
+    internal static string NotInTheAppYet(string cli) => cli.Length > 0 ? "Not in the app yet · " + cli : "Not in the app yet";
 }
