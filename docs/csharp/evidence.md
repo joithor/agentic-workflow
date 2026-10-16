@@ -223,7 +223,7 @@ script is the plan Step's job; `db-run` only reads and checks it.
 | `schema` | string | no | `evidence.db.run/1` when given |
 | `connection` | string | one of the two | the name of an entry in the targets config's `databases` (Postgres). Not together with `sqlite` |
 | `sqlite` | string | one of the two | a SQLite file: a path below `--repo`, or an absolute path that, after every symlink, is inside the repo or the run directory (else AW-EVIDENCE-020). Not together with `connection` |
-| `seed` | string | no | a `.sql` file (relative to the script's directory) run against the run's copy of a SQLite file before the queries (below). Not with `connection`: Postgres is never seeded |
+| `seed` | string | no | a `.sql` file (relative to the script's directory) run against the run's copy of a SQLite file before the queries (below); it may not `ATTACH`, `DETACH`, `VACUUM` or `load_extension` (AW-EVIDENCE-020). Not with `connection`: Postgres is never seeded |
 | `rowLimit` | integer 1 to 1000 | no | rows kept per query; default 200. More rows than that end the query's rows there and set `truncated` |
 | `queries` | query[] | yes | at least one, run in order |
 
@@ -327,13 +327,30 @@ The same engine contract as `api-run`: every key always written (`null` or `[]`,
 directory made and an earlier `summary.json` deleted first; a summary on every exit except 75, an unreadable script, a
 run directory that cannot be made, an unexpected exception and 130; stdout exactly the file's content; logs on stderr;
 nothing written outside the absolute `<run-dir>` and the box-wide locks; the exit code alone decides the outcome (a test
-pins that they agree). Every free-text field (the `headline`, each step's recorded rows and `target`, each failure's `expected` and
-`actual`, the refusal and error messages) goes through `Aw.Redaction` as it is recorded: first the role's password, resolved from
-the entry's `passwordEnv`, is replaced by value with `[REDACTED:env-value]` (including its JSON-escaped forms; a value under 6
-characters is left to the patterns; a header-value placeholder, `[REDACTED:header-value]`, exists in the shared scrubber but a
-db-run has no headers), then the value of a secret-named column (`password`, `api_key`, `accessToken`, …) is hidden wherever
-it appears in a row and the pattern scrub runs. Fixed fields (`schema`, `kind`, `at`, `outcome`, `engine`, the top-level `target` (the connection name), `provenance`,
-`seedSha256`, statuses, codes) are written as they are: a password that happens to equal the connection name leaves that field intact.
+pins that they agree). Recorded text — each step's `output` (the rows as JSON), each step's `target` (the SQL), each failure's
+`pointer`, `expected` and `actual`, and the `headline` (built from them, or from the refusal or error message) — goes through the run's
+scrubber and `Aw.Redaction` as it is recorded, in this order: (1) the run's own values are replaced by value, together with the pattern scrub:
+the role's password, resolved from the entry's `passwordEnv`, with `[REDACTED:env-value]` (including its JSON-escaped forms), and every value
+read from a secret-named column (below) with `[REDACTED:secret-field]`; a value under 6 characters is left to the patterns (a header-value
+placeholder, `[REDACTED:header-value]`, exists in the shared scrubber but a db-run has no headers); (2) the value of every secret-named
+JSON member (a result column called `password`, `api_key`, `accessToken`, …) is hidden with `[REDACTED:secret-field]`; (3) the value and
+pattern scrub runs again; (4) the text is capped. A failure whose `pointer` runs through a secret-named column has its `expected` and `actual`
+replaced whole by `[REDACTED:secret-field]`. The refusal and error messages are the tool's own text, not rows: they get the value and
+pattern scrub, not member hiding or the cap.
+
+Which values count as secret column values. A value is hidden by value, in every text recorded from that query on, when it was read from a
+column that is secret-named by its output name, or by the table column it reads when the engine can say: Postgres reports each result
+column's table and attribute number (RowDescription), which the session looks up in `pg_attribute`; SQLite reports the origin column of a
+direct column reference. So `SELECT api_key AS copy_of_key` is hidden in both engines, and `'key is ' || api_key AS sentence` is hidden when
+`api_key` is in the same result set (its value is learned from that column). **The limit:** a value that comes out of a computed
+expression, under a name that is not secret, from a column the query does not also select, can't be traced to its source (`SELECT 'key is ' || api_key
+AS sentence FROM accounts` alone). Such a value is caught only if it matches a secret pattern (a token shape, an `Authorization`
+value, …) or is the role's password. The scrub does not claim to hide a secret wherever it sits in the database, only the values this run
+read from secret-named columns. Every other field is written as it is: it comes from the command line, the repo, the script or the tool itself
+(`schema`, `kind`, `at`, `appBuild`, `runId`, `runInstance`, timestamps, `scriptSha256`, `seedSha256`, `engine`, the top-level `target` (the connection name or the
+SQLite path as the script gave it), `provenance`, step `index`, `action`, `failures[].step`, a refusal's or error's `code`, the always-empty
+`invocations`), or it is a number or enum value that can't carry text (a step's `status`, `rowCount` and `truncated`, the run's `outcome`).
+A password that happens to equal the connection name leaves that field intact.
 
 | Field | Type | Holds |
 |---|---|---|
@@ -404,7 +421,7 @@ something), not a determined agent.
 ### Database guards (`db-run`)
 
 Read-only is enforced where the database accepts a connection, not by parsing statements; the statement check below
-exists only to give a clear early error. Order: the script and targets are read, the write statements are refused, the
+exists only to give a clear early error. Order: the script and the targets config are read (for every run, SQLite too: a missing `--config` is AW-EVIDENCE-010, an invalid file 022), the write statements and the seed's reaching statements are refused, the
 target is resolved and its file or entry checked, then the locks are taken, then the database is opened, and only then does a
 query run. Each refusal is exit 1 with its code and the summary says `refused`.
 
@@ -415,10 +432,10 @@ query run. Each refusal is exit 1 with its code and the summary says `refused`.
 | SQLite connection | the source is read through `Mode=ReadOnly` into an online-backup copy in `<run-dir>/db/`; the query connection is that copy opened `Mode=ReadOnly` with `query_only` (`Aw.Kernel.Data`'s `OpenReadOnly`). The evidence connection never holds a write handle on the source. SQLite has no connection setting that stops `ATTACH` or `VACUUM INTO` from creating a file, so the adapter refuses a statement that is not a single read, or that attaches, detaches, vacuums or assigns a pragma, before SQLite sees it | AW-EVIDENCE-020 |
 | Postgres entry | only an entry in the targets config, with `disposable: true` and an `identity`; the password comes from the environment variable `passwordEnv` names, never the script, and only that variable's name is recorded | AW-EVIDENCE-020 |
 | Postgres identity | before any script query, `inet_server_addr()`, optionally `inet_server_port()`, and `current_database()` must equal the entry's `identity`; a mismatch sends no query and ends the run | AW-EVIDENCE-021 |
-| Postgres role | the role must not be a superuser or hold `rolcreaterole`, `rolcreatedb`, `rolreplication` or `rolbypassrls`; must not be a member of `pg_write_server_files` or `pg_execute_server_program`; and must hold no `INSERT`, `UPDATE`, `DELETE` or `TRUNCATE` privilege visible in `information_schema.table_privileges` (its own or `PUBLIC`'s). That is what makes `COPY … TO` fail at the server | AW-EVIDENCE-020 |
+| Postgres role | the role must not be a superuser or hold `rolcreaterole`, `rolcreatedb`, `rolreplication` or `rolbypassrls`; must not be a member of `pg_write_server_files` or `pg_execute_server_program`; and must hold no `INSERT`, `UPDATE`, `DELETE` or `TRUNCATE` privilege on any table, view or the like outside `pg_catalog`, `information_schema` and the toast and temp schemas, as `has_table_privilege` answers it, so a grant to the role itself, to `PUBLIC` and one inherited through a group it is a member of (`IN ROLE writers`) all count (column-level and sequence grants are not counted). That is what makes `COPY … TO` fail at the server | AW-EVIDENCE-020 |
 | Postgres connection | every connection field is set explicitly, so no `PG*` environment variable or password file applies; `Options=-c default_transaction_read_only=on` and a statement timeout; no pooling; each query runs on its own in `BEGIN READ ONLY` (followed by a `SELECT 1`, because Postgres lets the first statement of a transaction switch it back to read-write) over the extended protocol, one statement per command: the adapter refuses a second statement (`COMMIT; INSERT …`) before sending it and the server refuses it again. The transaction is always rolled back. A write the server refuses (SQLSTATE 25006, 42501) is recorded as a refused step, the message naming the SQLSTATE | AW-EVIDENCE-020 |
-| Seeds | SQLite only, and only into the run's copy, over a separate read-write connection that is closed before the read-only one opens. The seed file's SHA-256 is the summary's `seedSha256` and `provenance` is `seeded`. The source is never written | AW-EVIDENCE-018 (a seed with `connection`) |
-| Rows | at most `rowLimit` rows per query are read; the recorded rows are scrubbed, secret-named columns hidden, and capped at 2,000 characters | |
+| Seeds | SQLite only, and only into the run's copy, over a separate read-write connection that is closed before the read-only one opens. The seed gets the statement guard before any lock (a statement that uses `ATTACH`, `DETACH`, `VACUUM` or `load_extension` is refused with its code, so a seed can't name another file) and the connection allows no attached database at all (`SQLITE_LIMIT_ATTACHED` 0), so no other database file is reachable. The seed file's SHA-256 is the summary's `seedSha256` and `provenance` is `seeded`. The source is never written | AW-EVIDENCE-018 (a seed with `connection`), AW-EVIDENCE-020 (a seed that reaches beyond the copy) |
+| Rows | at most `rowLimit` rows per query are read; the recorded rows are scrubbed (secret column values by value, then secret-named columns hidden, in the order the summary section gives) and capped at 2,000 characters | |
 
 A Postgres `host` must be a TCP host (a Unix socket directory is not supported by this stage).
 
