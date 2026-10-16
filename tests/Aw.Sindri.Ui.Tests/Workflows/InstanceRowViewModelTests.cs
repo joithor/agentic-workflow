@@ -136,7 +136,7 @@ public sealed class InstanceRowViewModelTests
             var current = row.Stages.Single(s => s.State == served.State);
             Assert.EndsWith(", " + Labels.StageCurrent, current.Name, StringComparison.Ordinal);
             Assert.All(row.Stages.Where(s => s.State != served.State), s => Assert.DoesNotContain(Labels.StageCurrent, s.Name, StringComparison.Ordinal));
-            Assert.Equal(Labels.OpenInstanceName(served.Address), row.OpenName);
+            Assert.Equal(Labels.OpenInstanceName(row.Subject, served.Address), row.OpenName);
         });
     }
 }
