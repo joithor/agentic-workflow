@@ -1,14 +1,14 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <!-- The Needs-you rows' tint (screens spec R8-13): the urgency, not a side bar. Tokens only. A pulse row that is unseen keeps
-       the attention tint and pulses its border; under reduced motion it keeps a steady outline instead (HasOutline). -->
+       the attention tint and pulses its tint between two tokens (the text is never faded: contrast); under reduced motion it keeps a steady outline instead (HasOutline). -->
   <Style Selector="Border.needs-you-row.pulsing">
     <Setter Property="Background" Value="{DynamicResource Brush.AttentionSoft}" />
     <Style.Animations>
       <Animation Duration="0:0:1.6" IterationCount="Infinite" Easing="SineEaseInOut">
-        <KeyFrame Cue="0%"><Setter Property="Opacity" Value="1" /></KeyFrame>
-        <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.75" /></KeyFrame>
-        <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+        <KeyFrame Cue="0%"><Setter Property="Background" Value="{StaticResource Brush.AttentionSoft}" /></KeyFrame>
+        <KeyFrame Cue="50%"><Setter Property="Background" Value="{StaticResource Brush.Surface1}" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Background" Value="{StaticResource Brush.AttentionSoft}" /></KeyFrame>
       </Animation>
     </Style.Animations>
   </Style>
@@ -27,7 +27,7 @@
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.PrimaryHover}" />
   </Style>
   <Style Selector="Border.needs-you-row.stale">
-    <Setter Property="Opacity" Value="0.7" />
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
   </Style>
   <!-- Two lines a row (the fold, screens spec §4.1): the row's buttons are as tall as their text plus a hairline, so a row stays near
        64 px. Specificity beats the generic command-control look in the queue styles. -->
