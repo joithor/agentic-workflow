@@ -169,6 +169,7 @@ bash scripts/tests/install-scorer-audit.test.sh
 bash scripts/tests/install-sindri.test.sh
 bash scripts/tests/sindri-prove.test.sh
 bash scripts/tests/sindri-ui-fixture.test.sh
+bash scripts/tests/sindri-app.test.sh
 bash scripts/tests/readiness-baseline.test.sh
 bash scripts/tests/agent-token.test.sh
 bash scripts/tests/ci-changed-areas.test.sh
@@ -210,6 +211,7 @@ scripts/install-sindri.sh               # Build sindri, install the CLI wrapper 
 GH_TOKEN="$(scripts/agent-token.sh [--repo NAME])"  # Owner/session launcher only, never inside an agent session: 1h agent App token
 AW_DENYLIST=<file:ABSPATH|env:VAR> scripts/denylist-check.sh <file>...   # Work identifiers in PR text; the list is injected through AW_DENYLIST (0600-or-stricter file or env var), never an argument: prints only file:line and a hit count; exit 0 none, 1 hits, 2 fails closed (unset/invalid pointer, bad or missing list; see the script header)
 scripts/owner-check.sh <stage> up [--seed] [--services a,b] [--labeling] [--session] [--repo NAME] | down   # Owner only: the scratch Sindri instance (port 7480) for a stage's owner check (context spec, owner-check outline steps 1-4 and 7)
+scripts/sindri-app.sh [--rebuild] [<sindri args>]   # `sindri-app`: the C# Sindri in one command; publishes sindri (framework-dependent) + sindri-ui (NativeAOT) for this platform into $AW_STATE_DIR/bin/sindri-app/<stamp>/ when the source changed, then runs it (bare: start the control plane and open the app); links ~/.local/bin/sindri-app (AW_SINDRI_APP_NO_LINK=1 skips). The TS `sindri` is untouched
 scripts/sindri-ui-fixture.sh up|stall|unstall|drift|down   # The Sindri UI's proof fixture in a guarded temp AW_SINDRI_HOME, through sindri-prove.sh (UI spec §18.2; --large reserved)
 
 # Setup (from repo root)
