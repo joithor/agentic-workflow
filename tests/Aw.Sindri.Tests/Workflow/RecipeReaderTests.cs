@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Validation;
@@ -308,6 +309,29 @@ public sealed class RecipeReaderTests
                 "RCP-SCHEMA-002: 'lots' isn't a token count at test.yaml:10:15 (states.produce.budget.tokens); write a whole number of at least 1, or one with k or M ('1500', '200k', '2M')",
             ],
             lines);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_one_key_mapping_in_a_step_with_list_stays_for_the_block_rule_to_refuse()
+    {
+        var yaml = Minimal.Replace("step: step.produce", "step: { use: step.produce, with: { files: [a: 1] } }", StringComparison.Ordinal);
+
+        var document = RecipeComposition.ReadClean(yaml, "test.yaml");
+        var errors = RecipeComposition.Errors(document, new BlockCatalog([TestBlocks.Step("step.produce")], []), InMemoryChildRecipes.None);
+
+        Assert.Contains(errors, l => l.StartsWith("RCP-BLOCK-003", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_one_key_mapping_in_a_child_input_list_is_still_a_wrong_type()
+    {
+        var yaml = RecipeReaderTests.Minimal.Replace(
+            "    step: step.produce\n",
+            "    waitFor: { child: { recipe: workflow.step, inputs: { \"fact:x\": [ok: yes] }, onParked: propagate } }\n",
+            StringComparison.Ordinal);
+
+        var line = Assert.Single(Lines(yaml), l => l.StartsWith("RCP-SCHEMA-002", StringComparison.Ordinal));
+        Assert.Contains("holds more than strings, numbers and bools", line, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
