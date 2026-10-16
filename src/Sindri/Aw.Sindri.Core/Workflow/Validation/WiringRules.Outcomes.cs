@@ -71,7 +71,7 @@ internal sealed partial class WiringRules
             yield return trigger.Outcomes.Count == 0
                 ? source.Finding("RCP-WHEN-002", $"{path}.outcome", $"{tests}, but {trigger.Name} reports no outcome",
                     "remove the outcome test, since this trigger has none")
-                : source.Finding("RCP-WHEN-001", $"{path}.outcome", $"{tests}, which {trigger.Name} doesn't report",
+                : source.Finding("RCP-WHEN-001", $"{path}.outcome", $"{tests}, which {trigger.Name} doesn't report (outcomes here: {List(trigger.Outcomes)})",
                     $"test one of its outcomes: {List(trigger.Outcomes)}");
         }
     }

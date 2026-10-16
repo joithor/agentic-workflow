@@ -5,6 +5,7 @@ using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -28,15 +29,16 @@ namespace Aw.Sindri.Features.CompleteStep;
 /// <param name="facts">Where the outputs are stored.</param>
 /// <param name="nonces">The nonce table.</param>
 /// <param name="callers">The caller the API chain classed: its actor reports.</param>
-internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanceRuntime runtime, IApprovedRecipes recipes, IFactStore facts, ICommandNonces nonces, ICallerContextAccessor callers)
+/// <param name="engineFilled">Which outputs the engine fills, and how it writes them.</param>
+internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanceRuntime runtime, IApprovedRecipes recipes, IFactStore facts, ICommandNonces nonces, ICallerContextAccessor callers, EngineFilledReport engineFilled)
     : IService<CompleteStepRequest, CompleteStepResponse>
 {
     public async ValueTask<Result<CompleteStepResponse>> Handle(CompleteStepRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        if (request.Outputs.Where(static o => o.Value.Length > IFactStore.MaxBytes).Select(static o => o.Key.Value).FirstOrDefault() is { } large)
+        if ((Refused(request) ?? engineFilled.Refusal(request.Outputs.Keys)) is { } refusal)   // a hand-written engine-filled output is named from the catalog: no instance read, nothing claimed
         {
-            return SindriErrors.InvalidInput.With($"{large} is larger than 1 MiB (fix: report a smaller file; outputs travel as content, at most 1 MiB each)");
+            return refusal;
         }
 
         if (callers.Current is not { } caller)
@@ -52,7 +54,7 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
 
         var address = resolved.Value;
         var nonce = request.Nonce ?? nonces.Issue();
-        var reportSha = ReportSha(request, request.Outputs.ToDictionary(static o => o.Key, static o => Convert.ToHexStringLower(SHA256.HashData(o.Value.Span))));
+        var reportSha = ReportSha(request, request.Outputs.ToDictionary(static o => o.Key, static o => Convert.ToHexStringLower(SHA256.HashData(o.Value.Span))));   // the caller's outputs: a retry after the engine-filled ones stopped applying hashes the same
         var subject = address.Value + "\n" + reportSha;
         var claim = await nonces.Claim(nonce, subject, cancellationToken).ConfigureAwait(false);
         if (claim.IsError)
@@ -60,17 +62,38 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
             return claim.Error;
         }
 
-        var stored = claim.Value == NonceClaim.Fresh && await Approved(address, cancellationToken).ConfigureAwait(false) is { IsError: true } refused   // only a fresh claim is checked, as ApplyCommand does
-            ? refused.Error
-            : await Store(request, cancellationToken).ConfigureAwait(false);
-        if (stored.IsError)
+        var filled = await Filled(address, request, caller.Actor, claim.Value, cancellationToken).ConfigureAwait(false);
+        if (filled.IsError)
         {
-            return await GiveBack(nonce, claim.Value, stored.Error, cancellationToken).ConfigureAwait(false);
+            return await GiveBack(nonce, claim.Value, filled.Error, cancellationToken).ConfigureAwait(false);
         }
 
-        var report = new StepCompleted(caller.Actor, request.Run, request.Outcome, stored.Value, Tokens: 0, StepRuntime.Desk, reportSha);
-        return await Send(address, new SentReport(nonce, subject, claim.Value), report, cancellationToken).ConfigureAwait(false);
+        var outputs = engineFilled.Merge(request.Outputs, filled.Value);
+        return await Report(address, new SentReport(nonce, subject, claim.Value), new StepReport(request, caller.Actor, reportSha, outputs), cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>Checks approval (a fresh claim only, as ApplyCommand does), stores the outputs and sends the report.</summary>
+    private async ValueTask<Result<CompleteStepResponse>> Report(InstanceAddress address, SentReport sentReport, StepReport step, CancellationToken cancellationToken)
+    {
+        var stored = sentReport.Claim == NonceClaim.Fresh && await Approved(address, cancellationToken).ConfigureAwait(false) is { IsError: true } refused
+            ? refused.Error
+            : await Store(step.Outputs, cancellationToken).ConfigureAwait(false);
+        if (stored.IsError)
+        {
+            return await GiveBack(sentReport.Nonce, sentReport.Claim, stored.Error, cancellationToken).ConfigureAwait(false);
+        }
+
+        var report = new StepCompleted(step.Actor, step.Request.Run, step.Request.Outcome, stored.Value, Tokens: 0, StepRuntime.Desk, step.Sha);
+        return await Send(address, sentReport, report, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>What a report says: the request, the actor reporting, the digest of the caller's outputs and the outputs to store (the caller's plus the engine-filled ones).</summary>
+    private readonly record struct StepReport(CompleteStepRequest Request, string Actor, string Sha, IReadOnlyDictionary<FactKey, ReadOnlyMemory<byte>> Outputs);
+
+    private static Error? Refused(CompleteStepRequest request) =>
+        request.Outputs.Where(static o => o.Value.Length > IFactStore.MaxBytes).Select(static o => o.Key.Value).FirstOrDefault() is { } large
+            ? SindriErrors.InvalidInput.With($"{large} is larger than 1 MiB (fix: report a smaller file; outputs travel as content, at most 1 MiB each)")
+            : null;
 
     /// <summary>A report is not exempt from the approval check (spec §5.2): the instance's recipe must still hold, else nothing is stored or sent.</summary>
     private async ValueTask<Result<Unit>> Approved(InstanceAddress address, CancellationToken cancellationToken)
@@ -114,10 +137,38 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
     /// <summary>The nonce a report went out with, the subject it claimed it for and what the claim found.</summary>
     private readonly record struct SentReport(CommandNonce Nonce, string Subject, NonceClaim Claim);
 
-    private async ValueTask<Result<IReadOnlyDictionary<FactKey, FactValue>>> Store(CompleteStepRequest request, CancellationToken cancellationToken)
+    /// <summary>The engine-filled outputs; a retry (a pending or applied claim) needs no view and sends without them when the instance can't be read: Temporal answers its Update id with the first result.</summary>
+    private async ValueTask<Result<IReadOnlyDictionary<FactKey, DecisionFact>>> Filled(InstanceAddress address, CompleteStepRequest request, string actor, NonceClaim claim, CancellationToken cancellationToken)
+    {
+        var filled = await EngineFilled(address, request, actor, cancellationToken).ConfigureAwait(false);
+        return filled.IsError && claim != NonceClaim.Fresh
+            ? Results.Success<IReadOnlyDictionary<FactKey, DecisionFact>>(new Dictionary<FactKey, DecisionFact>())
+            : filled;
+    }
+
+    /// <summary>
+    /// The outputs the engine writes for this report (DT spec §8.1: 'fact:decision' of the choice Steps, from --outcome and the
+    /// caller's actor, provider "desk"); none when the instance's open task isn't the one reported on (a retry after it moved
+    /// on, or a stale run: the send answers). Reads the instance, so a fresh report on an instance that can't be read is that
+    /// error; a retry sends without (see <see cref="Handle"/>). A hand-written engine-filled output was refused before this.
+    /// </summary>
+    private async ValueTask<Result<IReadOnlyDictionary<FactKey, DecisionFact>>> EngineFilled(InstanceAddress address, CompleteStepRequest request, string actor, CancellationToken cancellationToken)
+    {
+        var view = await runtime.Get(address, cancellationToken).ConfigureAwait(false);
+        if (view.IsError)
+        {
+            return view.Error;
+        }
+
+        return view.Value.Task is not { } task || task.Run != request.Run
+            ? Results.Success<IReadOnlyDictionary<FactKey, DecisionFact>>(new Dictionary<FactKey, DecisionFact>())
+            : Results.Success(EngineFilledOutputs.For(task.Outputs, request.Outcome, "desk", actor));
+    }
+
+    private async ValueTask<Result<IReadOnlyDictionary<FactKey, FactValue>>> Store(IReadOnlyDictionary<FactKey, ReadOnlyMemory<byte>> outputs, CancellationToken cancellationToken)
     {
         var stored = new Dictionary<FactKey, FactValue>();
-        foreach (var (key, content) in request.Outputs)
+        foreach (var (key, content) in outputs)
         {
             var put = await facts.Put(content, cancellationToken).ConfigureAwait(false);
             if (put.IsError)

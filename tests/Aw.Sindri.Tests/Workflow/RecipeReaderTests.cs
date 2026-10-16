@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Validation;
@@ -47,6 +48,16 @@ public sealed class RecipeReaderTests
         Assert.Empty(reading.Findings);
         Assert.Equal("workflow.minimal", reading.Document!.Recipe.Id.Value);
         Assert.Equal("test.yaml", reading.Document.Source.File);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_hyphenated_fact_key_is_RCP_SCHEMA_002_with_a_camelCase_fix()
+    {
+        var lines = Lines(Minimal.Replace("produces: [fact:output]", "produces: [fact:evidence-summary]", StringComparison.Ordinal));
+
+        var line = Assert.Single(lines);
+        Assert.StartsWith("RCP-SCHEMA-002: 'fact:evidence-summary' isn't a fact key (", line, StringComparison.Ordinal);
+        Assert.EndsWith("; fact names are camelCase: write fact:evidenceSummary", line, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -290,7 +301,7 @@ public sealed class RecipeReaderTests
     {
         var lines = Lines(Minimal
             .Replace("    next: \"Produce", "    budget: { tokens: lots }\n    next: \"Produce", StringComparison.Ordinal)
-            .Replace("step: step.produce", "step: { use: step.produce, with: { files: [{ a: 1 }] } }", StringComparison.Ordinal));
+            .Replace("step: step.produce", "step: { use: step.produce, with: { files: [{ a: 1, b: 2 }] } }", StringComparison.Ordinal));
 
         Assert.Equal(
             [
@@ -298,6 +309,32 @@ public sealed class RecipeReaderTests
                 "RCP-SCHEMA-002: 'lots' isn't a token count at test.yaml:10:15 (states.produce.budget.tokens); write a whole number of at least 1, or one with k or M ('1500', '200k', '2M')",
             ],
             lines);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_one_key_mapping_in_a_step_with_list_stays_for_the_block_rule_to_refuse()
+    {
+        var yaml = Minimal.Replace("step: step.produce", "step: { use: step.produce, with: { files: [a: 1] } }", StringComparison.Ordinal);
+
+        var document = RecipeComposition.ReadClean(yaml, "test.yaml");
+        var step = TestBlocks.Step("step.produce") with { Parameters = [new ParameterSpec("files", ParameterType.List, Required: false, IsCapabilityField: false)] };
+        var errors = RecipeComposition.Errors(document, new BlockCatalog([step], []), InMemoryChildRecipes.None);
+
+        Assert.Equal(
+            "RCP-BLOCK-003: parameter 'files' of 'step.produce' takes a list of strings, numbers or flags, not a list with an object or a list in it at test.yaml:8:40 (states.produce.step.with.files); give it a list of strings, numbers or flags",
+            Assert.Single(errors, static l => l.StartsWith("RCP-BLOCK-003", StringComparison.Ordinal)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_one_key_mapping_in_a_child_input_list_is_still_a_wrong_type()
+    {
+        var yaml = Minimal.Replace(
+            "    step: step.produce\n",
+            "    waitFor: { child: { recipe: workflow.step, inputs: { \"fact:x\": [ok: yes] }, onParked: propagate } }\n",
+            StringComparison.Ordinal);
+
+        var line = Assert.Single(Lines(yaml), l => l.StartsWith("RCP-SCHEMA-002", StringComparison.Ordinal));
+        Assert.Contains("holds more than strings, numbers and bools", line, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
