@@ -1,8 +1,6 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization.Metadata;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
@@ -31,14 +29,14 @@ namespace Aw.Sindri.Features.CompleteStep;
 /// <param name="facts">Where the outputs are stored.</param>
 /// <param name="nonces">The nonce table.</param>
 /// <param name="callers">The caller the API chain classed: its actor reports.</param>
-/// <param name="json">Writes the engine-filled facts.</param>
-internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanceRuntime runtime, IApprovedRecipes recipes, IFactStore facts, ICommandNonces nonces, ICallerContextAccessor callers, JsonSerializerOptions json)
+/// <param name="engineFilled">Which outputs the engine fills, and how it writes them.</param>
+internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanceRuntime runtime, IApprovedRecipes recipes, IFactStore facts, ICommandNonces nonces, ICallerContextAccessor callers, EngineFilledReport engineFilled)
     : IService<CompleteStepRequest, CompleteStepResponse>
 {
     public async ValueTask<Result<CompleteStepResponse>> Handle(CompleteStepRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        if (Refused(request) is { } refusal)
+        if ((Refused(request) ?? engineFilled.Refusal(request.Outputs.Keys)) is { } refusal)   // a hand-written engine-filled output is named from the catalog: no instance read, nothing claimed
         {
             return refusal;
         }
@@ -55,12 +53,6 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
         }
 
         var address = resolved.Value;
-        var filled = await EngineFilled(address, request, caller.Actor, cancellationToken).ConfigureAwait(false);
-        if (filled.IsError)
-        {
-            return filled.Error;
-        }
-
         var nonce = request.Nonce ?? nonces.Issue();
         var reportSha = ReportSha(request, request.Outputs.ToDictionary(static o => o.Key, static o => Convert.ToHexStringLower(SHA256.HashData(o.Value.Span))));   // the caller's outputs: a retry after the engine-filled ones stopped applying hashes the same
         var subject = address.Value + "\n" + reportSha;
@@ -70,7 +62,13 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
             return claim.Error;
         }
 
-        var outputs = Merge(request.Outputs, filled.Value);
+        var filled = await Filled(address, request, caller.Actor, claim.Value, cancellationToken).ConfigureAwait(false);
+        if (filled.IsError)
+        {
+            return await GiveBack(nonce, claim.Value, filled.Error, cancellationToken).ConfigureAwait(false);
+        }
+
+        var outputs = engineFilled.Merge(request.Outputs, filled.Value);
         return await Report(address, new SentReport(nonce, subject, claim.Value), new StepReport(request, caller.Actor, reportSha, outputs), cancellationToken).ConfigureAwait(false);
     }
 
@@ -139,11 +137,20 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
     /// <summary>The nonce a report went out with, the subject it claimed it for and what the claim found.</summary>
     private readonly record struct SentReport(CommandNonce Nonce, string Subject, NonceClaim Claim);
 
+    /// <summary>The engine-filled outputs; a retry (a pending or applied claim) needs no view and sends without them when the instance can't be read: Temporal answers its Update id with the first result.</summary>
+    private async ValueTask<Result<IReadOnlyDictionary<FactKey, DecisionFact>>> Filled(InstanceAddress address, CompleteStepRequest request, string actor, NonceClaim claim, CancellationToken cancellationToken)
+    {
+        var filled = await EngineFilled(address, request, actor, cancellationToken).ConfigureAwait(false);
+        return filled.IsError && claim != NonceClaim.Fresh
+            ? Results.Success<IReadOnlyDictionary<FactKey, DecisionFact>>(new Dictionary<FactKey, DecisionFact>())
+            : filled;
+    }
+
     /// <summary>
     /// The outputs the engine writes for this report (DT spec §8.1: 'fact:decision' of the choice Steps, from --outcome and the
     /// caller's actor, provider "desk"); none when the instance's open task isn't the one reported on (a retry after it moved
-    /// on, or a stale run: the send answers). A report that gives one itself is refused, before anything is claimed. An
-    /// instance that can't be read is that error: a hand-written engine-filled output is never passed through unchecked.
+    /// on, or a stale run: the send answers). Reads the instance, so a fresh report on an instance that can't be read is that
+    /// error; a retry sends without (see <see cref="Handle"/>). A hand-written engine-filled output was refused before this.
     /// </summary>
     private async ValueTask<Result<IReadOnlyDictionary<FactKey, DecisionFact>>> EngineFilled(InstanceAddress address, CompleteStepRequest request, string actor, CancellationToken cancellationToken)
     {
@@ -153,27 +160,9 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
             return view.Error;
         }
 
-        if (view.Value.Task is not { } task || task.Run != request.Run)
-        {
-            return Results.Success<IReadOnlyDictionary<FactKey, DecisionFact>>(new Dictionary<FactKey, DecisionFact>());
-        }
-
-        var filled = EngineFilledOutputs.For(task.Outputs, request.Outcome, "desk", actor);
-        var written = request.Outputs.Keys.Where(filled.ContainsKey).ToList();
-        return written.Count > 0
-            ? SindriErrors.InvalidInput.With($"{written[0].Value} is written by the engine on '{task.Step.Value}' (fix: drop --output {written[0].Value})")
-            : Results.Success(filled);
-    }
-
-    private Dictionary<FactKey, ReadOnlyMemory<byte>> Merge(IReadOnlyDictionary<FactKey, ReadOnlyMemory<byte>> given, IReadOnlyDictionary<FactKey, DecisionFact> filled)
-    {
-        var merged = new Dictionary<FactKey, ReadOnlyMemory<byte>>(given);
-        foreach (var (fact, decision) in filled)
-        {
-            merged[fact] = JsonSerializer.SerializeToUtf8Bytes(decision, (JsonTypeInfo<DecisionFact>)json.GetTypeInfo(typeof(DecisionFact)));
-        }
-
-        return merged;
+        return view.Value.Task is not { } task || task.Run != request.Run
+            ? Results.Success<IReadOnlyDictionary<FactKey, DecisionFact>>(new Dictionary<FactKey, DecisionFact>())
+            : Results.Success(EngineFilledOutputs.For(task.Outputs, request.Outcome, "desk", actor));
     }
 
     private async ValueTask<Result<IReadOnlyDictionary<FactKey, FactValue>>> Store(IReadOnlyDictionary<FactKey, ReadOnlyMemory<byte>> outputs, CancellationToken cancellationToken)

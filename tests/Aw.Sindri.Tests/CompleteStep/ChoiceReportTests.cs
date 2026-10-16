@@ -34,7 +34,7 @@ public sealed class ChoiceReportTests
     [Fact(Timeout = 30_000)]
     public async Task CompleteStep_on_a_choice_step_stores_an_engine_filled_decision()
     {
-        var service = new CompleteStepService(_desk, _desk, _like, _facts, new InMemoryCommandNonces(new FakeTimeProvider()), _like, EvalComposition.Options);
+        var service = new CompleteStepService(_desk, _desk, _like, _facts, new InMemoryCommandNonces(new FakeTimeProvider()), _like, new EngineFilledReport(EvalComposition.Catalog, EvalComposition.Options));
 
         var done = await service.Handle(Request(), TestContext.Current.CancellationToken);
 
@@ -50,13 +50,13 @@ public sealed class ChoiceReportTests
     public async Task CompleteStep_refuses_a_hand_written_engine_filled_output()
     {
         var nonces = new InMemoryCommandNonces(new FakeTimeProvider());
-        var service = new CompleteStepService(_desk, _desk, _like, _facts, nonces, _like, EvalComposition.Options);
+        var service = new CompleteStepService(_desk, _desk, _like, _facts, nonces, _like, new EngineFilledReport(EvalComposition.Catalog, EvalComposition.Options));
         var written = new Dictionary<FactKey, ReadOnlyMemory<byte>> { [FactKey.From("fact:decision")] = """{"choice":"db"}"""u8.ToArray() };
 
         var refused = await service.Handle(Request(written), TestContext.Current.CancellationToken);
 
         Assert.Equal("SND-CLI-003", refused.Error.Code);
-        Assert.Equal("fact:decision is written by the engine on 'step.desk.choose' (fix: drop --output fact:decision)", refused.Error.Message);
+        Assert.Equal("fact:decision is written by the engine on 'step.desk.choose' and 'step.judge.choose' (fix: drop --output fact:decision)", refused.Error.Message);
         Assert.Empty(_desk.Sent);
         Assert.Equal(NonceClaim.Fresh, (await nonces.Claim(_nonce, "another command", TestContext.Current.CancellationToken)).Value);
     }
@@ -64,7 +64,7 @@ public sealed class ChoiceReportTests
     [Fact(Timeout = 30_000)]
     public async Task A_choice_report_retried_with_its_nonce_after_the_instance_moved_on_is_already_applied()
     {
-        var service = new CompleteStepService(_desk, _desk, _like, _facts, new InMemoryCommandNonces(new FakeTimeProvider()), _like, EvalComposition.Options);
+        var service = new CompleteStepService(_desk, _desk, _like, _facts, new InMemoryCommandNonces(new FakeTimeProvider()), _like, new EngineFilledReport(EvalComposition.Catalog, EvalComposition.Options));
         var first = await service.Handle(Request(), TestContext.Current.CancellationToken);
         _desk.MoveOn();
 
@@ -78,7 +78,7 @@ public sealed class ChoiceReportTests
     [Fact(Timeout = 30_000)]
     public async Task A_choice_report_for_a_stale_run_is_the_stale_run_error_and_attempts_no_engine_filled_output()
     {
-        var service = new CompleteStepService(_desk, _desk, _like, _facts, new InMemoryCommandNonces(new FakeTimeProvider()), _like, EvalComposition.Options);
+        var service = new CompleteStepService(_desk, _desk, _like, _facts, new InMemoryCommandNonces(new FakeTimeProvider()), _like, new EngineFilledReport(EvalComposition.Catalog, EvalComposition.Options));
         var stale = new CompleteStepRequest(_address.Value, RunToken.For(2, 1), OutcomeName.From("api"), new Dictionary<FactKey, ReadOnlyMemory<byte>>(), _nonce);
 
         var refused = await service.Handle(stale, TestContext.Current.CancellationToken);
@@ -93,7 +93,7 @@ public sealed class ChoiceReportTests
     public async Task A_hand_written_engine_filled_output_is_refused_without_reading_the_instance()
     {
         var nonces = new InMemoryCommandNonces(new FakeTimeProvider());
-        var service = new CompleteStepService(_desk, _desk, _like, _facts, nonces, _like, EvalComposition.Options);
+        var service = new CompleteStepService(_desk, _desk, _like, _facts, nonces, _like, new EngineFilledReport(EvalComposition.Catalog, EvalComposition.Options));
         var written = new Dictionary<FactKey, ReadOnlyMemory<byte>> { [FactKey.From("fact:decision")] = """{"choice":"db"}"""u8.ToArray() };
         _desk.Unreadable = true;
 
@@ -108,7 +108,7 @@ public sealed class ChoiceReportTests
     public async Task A_fresh_report_on_an_instance_that_cant_be_read_is_that_error_and_claims_no_nonce()
     {
         var nonces = new InMemoryCommandNonces(new FakeTimeProvider());
-        var service = new CompleteStepService(_desk, _desk, _like, _facts, nonces, _like, EvalComposition.Options);
+        var service = new CompleteStepService(_desk, _desk, _like, _facts, nonces, _like, new EngineFilledReport(EvalComposition.Catalog, EvalComposition.Options));
         _desk.Unreadable = true;
 
         var refused = await service.Handle(Request(), TestContext.Current.CancellationToken);

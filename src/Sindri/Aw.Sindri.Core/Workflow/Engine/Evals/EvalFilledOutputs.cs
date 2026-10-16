@@ -1,3 +1,4 @@
+using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
@@ -12,12 +13,18 @@ internal static class EvalFilledOutputs
     /// <param name="recipe">The recipe.</param>
     /// <param name="catalog">The build's descriptors.</param>
     /// <param name="at">The state the Step is open in, and the outcome the line reports.</param>
-    /// <returns>The outputs, filled.</returns>
-    public static Dictionary<FactKey, FactValue> Add(Dictionary<FactKey, FactValue> outputs, Recipe recipe, BlockCatalog catalog, (string State, OutcomeName Outcome) at)
+    /// <returns>The outputs, filled; the refusal when the line reports on a desk twin and wrote an engine-filled output itself.</returns>
+    public static Result<Dictionary<FactKey, FactValue>> Add(Dictionary<FactKey, FactValue> outputs, Recipe recipe, BlockCatalog catalog, (string State, OutcomeName Outcome) at)
     {
         if (!recipe.States.TryGetValue(at.State, out var state) || state.Step is not { } step || catalog.Find(step.Use) is not { } descriptor)
         {
             return outputs;
+        }
+
+        // why: only the desk never writes the decision itself; a judge Step's own report carries its decision (an 'uncertain' one has the probabilities)
+        if (descriptor.OutcomesFrom is { } from && ParameterLists.IsTwin(from) && EngineFilledOutputs.Refusal([descriptor], outputs.Keys) is { } refusal)
+        {
+            return KernelErrors.Invalid.With(refusal);
         }
 
         foreach (var (fact, decision) in EngineFilledOutputs.For(descriptor.Outputs, at.Outcome, "eval", actor: null))
