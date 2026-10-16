@@ -26,8 +26,8 @@ lock() { local f="$TMPROOT/$1.lock"; cat >"$f"; echo "$f"; }
 good_body() {   # a valid file, one line per row
   echo "version v4.9.0 $COMMIT"
   echo "file docker_compose/docker-compose.yml $SHA"
-  echo "image docker.io/o/app linux/arm64 $DIGEST"
-  echo "image docker.io/o/app linux/amd64 $DIGEST"
+  echo "image docker.io/o/app v1 linux/arm64 $DIGEST"
+  echo "image docker.io/o/app v1 linux/amd64 $DIGEST"
   echo "need disk-bytes 100"
   echo "need docker-memory-bytes 200"
 }
@@ -63,7 +63,7 @@ f="$(good_body | sed 's/^file \(.*\) .*/file \1 ABCDEF/' | lock badfilesha)"
 run check --file "$f"
 expect "a bad file sha256 fails" 1 'ONYX-LOCK-002 .*sha256'
 
-f="$(good_body | sed 's/^image docker.io\/o\/app linux\/amd64 .*/image docker.io\/o\/app linux\/amd64 sha256:abc/' | lock baddigest)"
+f="$(good_body | sed 's/^image docker.io\/o\/app v1 linux\/amd64 .*/image docker.io\/o\/app v1 linux\/amd64 sha256:abc/' | lock baddigest)"
 run check --file "$f"
 expect "a digest that is not sha256: and 64 hex fails" 1 'ONYX-LOCK-002 .*digest'
 
@@ -71,7 +71,7 @@ f="$(good_body | grep -v 'linux/amd64' | lock missingplatform)"
 run check --file "$f"
 expect "an image missing a platform fails" 1 'ONYX-LOCK-003 docker.io/o/app: no linux/amd64 row'
 
-f="$( { good_body; echo "image docker.io/o/app linux/arm64 $DIGEST"; } | lock dupplatform)"
+f="$( { good_body; echo "image docker.io/o/app v1 linux/arm64 $DIGEST"; } | lock dupplatform)"
 run check --file "$f"
 expect "an image platform listed twice fails" 1 'ONYX-LOCK-003 .*listed twice'
 
@@ -105,12 +105,12 @@ f="$( { good_body; echo "file docker_compose/docker-compose.yml $SHA"; } | lock 
 run check --file "$f"
 expect "a file path listed twice fails" 1 'ONYX-LOCK-002 .*listed twice'
 
-f="$( { good_body; echo "image docker.io/o/app linux/arm64 $DIGEST"; } | lock dupimage)"
+f="$( { good_body; echo "image docker.io/o/app v1 linux/arm64 $DIGEST"; } | lock dupimage)"
 run check --file "$f"
 expect "a (repository, platform) listed twice fails" 1 'ONYX-LOCK-003 .*listed twice'
 
 for repo in Bad_Repo -lead; do
-  f="$( { good_body; echo "image $repo linux/arm64 $DIGEST"; echo "image $repo linux/amd64 $DIGEST"; } | lock badrepo)"
+  f="$( { good_body; echo "image $repo v1 linux/arm64 $DIGEST"; echo "image $repo v1 linux/amd64 $DIGEST"; } | lock badrepo)"
   run check --file "$f"
   expect "repository name $repo fails" 1 'ONYX-LOCK-002 .*repository'
 done
@@ -125,9 +125,72 @@ f="$( { good_body; printf 'file a\0b %s\n' "$SHA"; } | lock nulpath)"
 run check --file "$f"
 expect "a NUL byte fails" 1 'ONYX-LOCK-002 .*NUL'
 
-f="$( { good_body; echo "image docker.io/library/postgres linux/arm64 $DIGEST"; echo "image docker.io/library/postgres linux/amd64 $DIGEST"; echo "image ghcr.io/o/a_b-c.d/e linux/arm64 $DIGEST"; echo "image ghcr.io/o/a_b-c.d/e linux/amd64 $DIGEST"; echo "file data/nginx/app.conf.template $SHA"; } | lock accepted)"
+f="$( { good_body; echo "image docker.io/library/postgres 15.2-alpine linux/arm64 $DIGEST"; echo "image docker.io/library/postgres 15.2-alpine linux/amd64 $DIGEST"; echo "image ghcr.io/o/a_b-c.d/e RELEASE.2025-07-23T15-54-02Z-cpuv1 linux/arm64 $DIGEST"; echo "image ghcr.io/o/a_b-c.d/e RELEASE.2025-07-23T15-54-02Z-cpuv1 linux/amd64 $DIGEST"; echo "file data/nginx/app.conf.template $SHA"; } | lock accepted)"
 run check --file "$f"
 expect "dotted, nested repositories and nested file paths pass" 0
+
+echo
+echo "onyx-lock verify (stubbed curl and docker on PATH)"
+
+# A fake curl that serves $STUB/<basename of the URL> to -o <file>, and a fake docker that answers every
+# `buildx imagetools inspect ... --raw` with $STUB/index.json. jq is the real one.
+STUB="$TMPROOT/stub"; mkdir -p "$STUB/bin"
+cat >"$STUB/bin/curl" <<'EOS'
+#!/usr/bin/env bash
+out=""; url=""
+while [ $# -gt 0 ]; do case "$1" in -o) out="$2"; shift 2 ;; -*) shift ;; *) url="$1"; shift ;; esac; done
+[ -f "$STUB/$(basename "$url")" ] || exit 22
+cp "$STUB/$(basename "$url")" "$out"
+EOS
+cat >"$STUB/bin/docker" <<'EOS'
+#!/usr/bin/env bash
+[ -f "$STUB/index.json" ] || { echo "no such manifest" >&2; exit 1; }
+cat "$STUB/index.json"
+EOS
+chmod +x "$STUB/bin/curl" "$STUB/bin/docker"
+printf 'services:\n  a:\n    image: ${A_IMAGE:-o/app:${IMAGE_TAG:-latest}}\n  b:\n    image: ${REG:-docker.io}/library/redis:7.4-alpine@sha256:abc\n  # image: unused/thing:1\n' >"$STUB/docker-compose.yml"
+DEV="sha256:1111111111111111111111111111111111111111111111111111111111111111"
+ARM="sha256:2222222222222222222222222222222222222222222222222222222222222222"
+cat >"$STUB/index.json" <<EOS
+{"manifests":[{"digest":"$ARM","platform":{"os":"linux","architecture":"arm64"}},{"digest":"$DEV","platform":{"os":"linux","architecture":"amd64"}},{"digest":"sha256:3333333333333333333333333333333333333333333333333333333333333333","platform":{"os":"unknown","architecture":"unknown"}}]}
+EOS
+CSHA="$(shasum -a 256 "$STUB/docker-compose.yml" | cut -d' ' -f1)"
+vlock() {   # <name> [<image digest for arm64>] — a lock the stubs satisfy
+  { echo "version v4.9.0 $COMMIT"; echo "file docker_compose/docker-compose.yml ${3:-$CSHA}"
+    echo "image docker.io/o/app v4.9.0 linux/arm64 ${2:-$ARM}"; echo "image docker.io/o/app v4.9.0 linux/amd64 $DEV"
+    echo "image docker.io/library/redis 7.4-alpine linux/arm64 $ARM"; echo "image docker.io/library/redis 7.4-alpine linux/amd64 $DEV"
+    echo "need disk-bytes 100"; echo "need docker-memory-bytes 200"; } | lock "$1"
+}
+vrun() { set +e; OUT="$(STUB="$STUB" PATH="$STUB/bin:$PATH" bash "$SCRIPT" verify "$@" 2>&1)"; RC=$?; set -e; }
+
+vrun --file "$(vlock vgood)"
+expect "verify passes when the files, images and compose all match" 0 'verify: ok \(1 files, 4 image rows, 2 compose image lines\)'
+
+vrun --file "$(vlock vbadimage "$DEV")"
+expect "verify reports an image digest that differs" 1 'ONYX-LOCK-011 docker.io/o/app:v4.9.0 linux/arm64: expected sha256:1111.*got sha256:2222'
+
+vrun --file "$(vlock vbadfile "$ARM" "$(printf 'f%.0s' $(seq 64))")"
+expect "verify reports a file sha256 that differs" 1 'ONYX-LOCK-010 docker_compose/docker-compose.yml: expected f+, got '"$CSHA"
+
+sed '/^image docker.io\/library\/redis/d' "$(vlock vsrc)" >"$TMPROOT/vunpinned.lock"
+vrun --file "$TMPROOT/vunpinned.lock"
+expect "verify reports a compose image that is not pinned" 1 'ONYX-LOCK-012 .*names docker.io/library/redis:7.4-alpine'
+
+sed 's/^version .*/version 4.9 x/' "$(vlock vsrc2)" >"$TMPROOT/vbadshape.lock"
+vrun --file "$TMPROOT/vbadshape.lock"
+expect "verify refuses a file that fails check" 1 'ONYX-LOCK-001'
+
+rm "$STUB/docker-compose.yml"
+vrun --file "$(vlock voffline)"
+expect "verify with an unreachable download is a network error" 2 'cannot download'
+printf 'x' >"$STUB/docker-compose.yml"
+
+rm "$STUB/index.json"
+vrun --file "$(vlock vnoindex "$ARM" "$(shasum -a 256 "$STUB/docker-compose.yml" | cut -d' ' -f1)")"
+expect "verify with an unanswering registry is a network error" 2 'cannot inspect'
+
+run verify --bogus
+expect "verify with an unknown flag is a usage error" 2
 
 echo
 echo "$PASS passed, $FAIL failed"

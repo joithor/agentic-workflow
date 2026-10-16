@@ -7790,11 +7790,13 @@ Aw.Sindri.Core.Onyx.OnyxFilePin.Sha256.get -> string!
 Aw.Sindri.Core.Onyx.OnyxFilePin.Sha256.init -> void
 Aw.Sindri.Core.Onyx.OnyxImagePin
 Aw.Sindri.Core.Onyx.OnyxImagePin.<Clone>$() -> Aw.Sindri.Core.Onyx.OnyxImagePin!
-Aw.Sindri.Core.Onyx.OnyxImagePin.Deconstruct(out string! Repository, out string! Platform, out string! Digest) -> void
+Aw.Sindri.Core.Onyx.OnyxImagePin.Deconstruct(out string! Repository, out string! Tag, out string! Platform, out string! Digest) -> void
 Aw.Sindri.Core.Onyx.OnyxImagePin.Digest.get -> string!
 Aw.Sindri.Core.Onyx.OnyxImagePin.Digest.init -> void
 Aw.Sindri.Core.Onyx.OnyxImagePin.Equals(Aw.Sindri.Core.Onyx.OnyxImagePin? other) -> bool
-Aw.Sindri.Core.Onyx.OnyxImagePin.OnyxImagePin(string! Repository, string! Platform, string! Digest) -> void
+Aw.Sindri.Core.Onyx.OnyxImagePin.OnyxImagePin(string! Repository, string! Tag, string! Platform, string! Digest) -> void
+Aw.Sindri.Core.Onyx.OnyxImagePin.Tag.get -> string!
+Aw.Sindri.Core.Onyx.OnyxImagePin.Tag.init -> void
 Aw.Sindri.Core.Onyx.OnyxImagePin.Platform.get -> string!
 Aw.Sindri.Core.Onyx.OnyxImagePin.Platform.init -> void
 Aw.Sindri.Core.Onyx.OnyxImagePin.Repository.get -> string!

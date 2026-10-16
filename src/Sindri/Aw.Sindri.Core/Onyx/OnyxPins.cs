@@ -129,18 +129,22 @@ public sealed record OnyxPins(
 
         private string? ReadImage(string[] fields)
         {
-            if (fields.Length != 4 || !IsRepository(fields[1]) || !_platforms.Contains(fields[2], StringComparer.Ordinal)
-                || !fields[3].StartsWith("sha256:", StringComparison.Ordinal) || !IsHex(fields[3][7..], 64))
+            if (!IsImageRow(fields))
             {
-                return "image wants a repository (^[a-z0-9][a-z0-9._/-]*$), linux/arm64 or linux/amd64, and a sha256: digest";
+                return "image wants a repository (^[a-z0-9][a-z0-9._/-]*$), a tag, linux/arm64 or linux/amd64, and a sha256: digest";
             }
 
-            if (_images.Exists(i => i.Repository == fields[1] && i.Platform == fields[2]))
+            if (_images.Exists(i => i.Repository == fields[1] && i.Platform == fields[3]))
             {
-                return $"{fields[1]} {fields[2]} is listed twice";
+                return $"{fields[1]} {fields[3]} is listed twice";
             }
 
-            _images.Add(new OnyxImagePin(fields[1], fields[2], fields[3]));
+            if (_images.Find(i => i.Repository == fields[1]) is { } other && other.Tag != fields[2])
+            {
+                return $"{fields[1]} is listed with tags {other.Tag} and {fields[2]}";
+            }
+
+            _images.Add(new OnyxImagePin(fields[1], fields[2], fields[3], fields[4]));
             return null;
         }
 
@@ -155,12 +159,20 @@ public sealed record OnyxPins(
             return _needs.TryAdd(fields[1], bytes) ? null : $"{fields[1]} is listed twice";
         }
 
+        private static bool IsImageRow(string[] fields)
+            => fields.Length == 5 && IsRepository(fields[1]) && IsImageTag(fields[2]) && _platforms.Contains(fields[3], StringComparer.Ordinal)
+                && fields[4].StartsWith("sha256:", StringComparison.Ordinal) && IsHex(fields[4][7..], 64);
+
         private static bool IsRelativePath(string path)
             => !path.StartsWith('/') && !path.Contains('\\', StringComparison.Ordinal) && path.Split('/').All(static s => s.Length > 0 && s != "..");
 
         private static bool IsRepository(string name)
             => name.Length > 0 && (char.IsAsciiLetterLower(name[0]) || char.IsAsciiDigit(name[0]))
                 && name.All(static c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c is '.' or '_' or '/' or '-');
+
+        private static bool IsImageTag(string tag)
+            => tag.Length is > 0 and <= 128 && (char.IsAsciiLetterOrDigit(tag[0]) || tag[0] == '_')
+                && tag.All(static c => char.IsAsciiLetterOrDigit(c) || c is '_' or '.' or '-');
 
         private static bool IsTag(string tag)
         {

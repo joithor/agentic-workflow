@@ -15,8 +15,8 @@ public sealed class OnyxPinsParseTests
         "",
         $"version v4.9.0 {Commit}",
         $"file docker_compose/docker-compose.yml {_sha}",
-        $"image docker.io/o/app linux/arm64 {_digest}",
-        $"image docker.io/o/app linux/amd64 {_digest}",
+        $"image docker.io/o/app v1 linux/arm64 {_digest}",
+        $"image docker.io/o/app v1 linux/amd64 {_digest}",
         "need disk-bytes 100",
         "need docker-memory-bytes 200",
         extra);
@@ -30,7 +30,7 @@ public sealed class OnyxPinsParseTests
         Assert.Equal(Commit, pins.Commit);
         Assert.Equal([new OnyxFilePin("docker_compose/docker-compose.yml", _sha)], pins.Files);
         Assert.Equal(
-            [new OnyxImagePin("docker.io/o/app", "linux/arm64", _digest), new OnyxImagePin("docker.io/o/app", "linux/amd64", _digest)],
+            [new OnyxImagePin("docker.io/o/app", "v1", "linux/arm64", _digest), new OnyxImagePin("docker.io/o/app", "v1", "linux/amd64", _digest)],
             pins.Images);
         Assert.Equal(100, pins.DiskBytes);
         Assert.Equal(200, pins.DockerMemoryBytes);
@@ -50,7 +50,7 @@ public sealed class OnyxPinsParseTests
     [InlineData("version v4.9.0 notacommit")]
     [InlineData("frobnicate x")]
     [InlineData("file /abs/path aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
-    [InlineData("image docker.io/o/app linux/arm64 sha256:abc")]
+    [InlineData("image docker.io/o/app v1 linux/arm64 sha256:abc")]
     [InlineData("need disk-bytes lots")]
     [InlineData("need cpu-cores 4")]
     public void Parse_refuses_a_row_the_bash_check_would_refuse(string row)
@@ -69,9 +69,12 @@ public sealed class OnyxPinsParseTests
     [Theory, Trait("Lane", "unit")]
     [InlineData("need disk-bytes", "need disk-bytes 1234567890123456789")]
     [InlineData("", "file docker_compose/docker-compose.yml " + Sha64)]
-    [InlineData("", "image docker.io/o/app linux/arm64 " + Digest)]
-    [InlineData("", "image Bad_Repo linux/arm64 " + Digest + "\nimage Bad_Repo linux/amd64 " + Digest)]
-    [InlineData("", "image -lead linux/arm64 " + Digest + "\nimage -lead linux/amd64 " + Digest)]
+    [InlineData("", "image docker.io/o/app v1 linux/arm64 " + Digest)]
+    [InlineData("", "image Bad_Repo v1 linux/arm64 " + Digest + "\nimage Bad_Repo v1 linux/amd64 " + Digest)]
+    [InlineData("", "image -lead v1 linux/arm64 " + Digest + "\nimage -lead v1 linux/amd64 " + Digest)]
+    [InlineData("", "image docker.io/o/other bad:tag linux/arm64 " + Digest + "\nimage docker.io/o/other bad:tag linux/amd64 " + Digest)]
+    [InlineData("", "image docker.io/o/other -v1 linux/arm64 " + Digest + "\nimage docker.io/o/other -v1 linux/amd64 " + Digest)]
+    [InlineData("image docker.io/o/app v1 linux/amd64", "image docker.io/o/app v2 linux/amd64 " + Digest)]
     [InlineData("", "file a\\b " + Sha64)]
     [InlineData("", "file a//b " + Sha64)]
     [InlineData("", "file a/ " + Sha64)]
@@ -91,8 +94,8 @@ public sealed class OnyxPinsParseTests
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("image docker.io/library/postgres linux/arm64 " + Digest + "\nimage docker.io/library/postgres linux/amd64 " + Digest)]
-    [InlineData("image ghcr.io/o/a_b-c.d/e linux/arm64 " + Digest + "\nimage ghcr.io/o/a_b-c.d/e linux/amd64 " + Digest)]
+    [InlineData("image docker.io/library/postgres 15.2-alpine linux/arm64 " + Digest + "\nimage docker.io/library/postgres 15.2-alpine linux/amd64 " + Digest)]
+    [InlineData("image ghcr.io/o/a_b-c.d/e RELEASE.2025-07-23T15-54-02Z-cpuv1 linux/arm64 " + Digest + "\nimage ghcr.io/o/a_b-c.d/e RELEASE.2025-07-23T15-54-02Z-cpuv1 linux/amd64 " + Digest)]
     [InlineData("file data/nginx/app.conf.template " + Sha64)]
     public void Parse_accepts_what_the_bash_check_accepts(string rows)
         => Assert.True(OnyxPins.Parse(Fixture(rows)).IsSuccess);
@@ -100,7 +103,7 @@ public sealed class OnyxPinsParseTests
     [Fact, Trait("Lane", "unit")]
     public void Parse_refuses_an_image_missing_a_platform()
     {
-        var result = OnyxPins.Parse(Fixture().Replace($"image docker.io/o/app linux/amd64 {_digest}", "", StringComparison.Ordinal));
+        var result = OnyxPins.Parse(Fixture().Replace($"image docker.io/o/app v1 linux/amd64 {_digest}", "", StringComparison.Ordinal));
 
         Assert.Equal(SindriErrors.OnyxPinsMalformed.Code, result.Error.Code);
         Assert.Contains("docker.io/o/app has no linux/amd64 row", result.Error.Message, StringComparison.Ordinal);

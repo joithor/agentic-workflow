@@ -136,6 +136,7 @@ scripts/binaries-lock.sh fetch <name>   # Download this platform's row, verify i
 
 # Onyx pins (context/onyx.lock: the Onyx version and commit, deployment-file sha256s, image digests per platform, preflight needs; spec docs/superpowers/specs/2026-10-16-sindri-onyx-managed-design.md §6)
 scripts/onyx-lock.sh check              # Shape of context/onyx.lock: one version row, every image on both platforms, both need rows; exit 0 ok, 1 a check failed
+scripts/onyx-lock.sh verify             # Maintainer-run, network, never in CI: recompute each file sha256 from raw.githubusercontent.com and each image digest from `docker buildx imagetools inspect`, and check the compose names only pinned images; exit 0 all match, 1 a mismatch, 2 usage or network
 
 # External tools, once per box (setup.sh runs it): uv, graphify at sindri's pin, both Temporal binaries, system packages (installed when missing)
 scripts/install-deps.sh                 # AW_DRY_RUN=1 prints only; missing system packages are installed (brew on macOS; sudo + apt-get, dnf, yum, pacman or zypper on Linux); AW_NO_SYSTEM_INSTALL=1 prints the commands and exits 1 instead
