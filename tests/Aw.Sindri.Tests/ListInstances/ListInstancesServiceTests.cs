@@ -34,7 +34,7 @@ public sealed class ListInstancesServiceTests
     private static async Task<(Result<InstanceList> Result, RecordingInstances Port)> Run(ListInstancesRequest request, params InstanceView[] views)
     {
         var port = new RecordingInstances([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]);
-        var service = new ListInstancesService(new NoDirectory(), port, new FixedReader(views), new FixedItemViews(), new FixedCaller(current: null), clock: new FakeTimeProvider());
+        var service = new ListInstancesService(new NoDirectory(), port, new FixedReader(views), new FixedItemViews(), new FixedRepos(), new FixedCaller(current: null), clock: new FakeTimeProvider());
         return (await service.Handle(request, CancellationToken.None), port);
     }
 
@@ -68,7 +68,7 @@ public sealed class ListInstancesServiceTests
         var (result, port) = await Run(new ListInstancesRequest(Root: root));
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(2, port.Calls.Count);   // the list, then the root set the counts come from
+        Assert.Equal(3, port.Calls.Count);   // the list, then the root set the counts come from, all and running
     }
 
     [Fact]
@@ -159,6 +159,7 @@ public sealed class ListInstancesServiceTests
             new RecordingInstances([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]),
             new FixedReader(views),
             titles,
+            new FixedRepos(),
             new FixedCaller(new CallerContextBuilder().Human().Build()),
             clock: new FakeTimeProvider());
 
@@ -256,7 +257,7 @@ public sealed class ListInstancesServiceTests
     [Fact]
     public async Task Empty_list_says_No_workflows_are_open()
     {
-        var (result, _) = await Run(new ListInstancesRequest());
+        var (result, _) = await Run(new ListInstancesRequest(Open: "true"));
 
         Assert.Equal((InstanceList.EmptyText, 0, new ListCounts(0, 0, 0, 0, 0)), (result.Value.Empty, result.Value.Instances.Count, result.Value.Counts));
         Assert.Equal(new FakeTimeProvider().GetUtcNow(), result.Value.AsOf);
@@ -278,7 +279,7 @@ public sealed class ListInstancesServiceTests
 
         Assert.Equal(["T-2/step/1"], byKey.Value.Instances.Select(static v => v.Address.Value), StringComparer.Ordinal);
         Assert.Equal(["T-1/step/1"], byLabel.Value.Instances.Select(static v => v.Address.Value), StringComparer.Ordinal);
-        Assert.Equal((InstanceList.EmptyText, 0), (none.Value.Empty, none.Value.Instances.Count));
+        Assert.Equal((InstanceList.NoMatchText, 0), (none.Value.Empty, none.Value.Instances.Count));
         Assert.Null(port.Calls[0].Filter!.Subject);
     }
 
@@ -291,12 +292,13 @@ public sealed class ListInstancesServiceTests
     private static ItemRow Titled(string id, string title, string? repo = null) =>
         new ItemRowBuilder().WithId(ItemId.From(id)).InRepo(repo is null ? null : RepoName.From(repo)).Build() with { Title = title };
 
-    private static ListInstancesService Service(IReadOnlyList<InstanceView> views, FixedItemViews items, CallerContext? caller, string? directoryAddress = null) =>
+    private static ListInstancesService Service(IReadOnlyList<InstanceView> views, FixedItemViews items, CallerContext? caller, string? directoryAddress = null, FixedRepos? repos = null, RecordingInstances? port = null, FixedReader? reader = null) =>
         new(
             directoryAddress is null ? new NoDirectory() : new FixedDirectory(directoryAddress),
-            new RecordingInstances([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]),
-            new FixedReader(views),
+            port ?? new RecordingInstances([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]),
+            reader ?? new FixedReader(views),
             items,
+            repos ?? new FixedRepos(),
             new FixedCaller(caller),
             clock: new FakeTimeProvider());
 
@@ -353,15 +355,87 @@ public sealed class ListInstancesServiceTests
     }
 
     [Fact]
-    public async Task A_session_of_another_repo_sees_the_id_not_the_title()
+    public async Task A_session_lists_only_its_own_repos_instances_rows_and_counts()
     {
         var views = new[] { OnItem(ItemA, $"{ItemA}/step/1"), OnItem(ItemB, $"{ItemB}/step/1") };
         var items = new FixedItemViews(failing: false, Titled(ItemA, "Mine", repo: "alpha"), Titled(ItemB, "Theirs", repo: "beta"));
-        var service = Service(views, items, new CallerContextBuilder().Session().InRepo("alpha").Build());
+        var service = Service(views, items, new CallerContextBuilder().Session().InRepo("alpha").Build(), repos: new FixedRepos((ItemA, "alpha"), (ItemB, "beta")));
 
         var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
 
-        Assert.Equal([ItemB, "Mine"], result.Value.Instances.Select(static r => r.Subject.Label), StringComparer.Ordinal);
+        Assert.Equal(["Mine"], result.Value.Instances.Select(static r => r.Subject.Label), StringComparer.Ordinal);
+        Assert.Equal(1, result.Value.Counts.Open);   // the other repo's instance isn't in the root set the counts cover
+    }
+
+    [Fact]
+    public async Task A_human_lists_every_repos_instances()
+    {
+        var views = new[] { OnItem(ItemA, $"{ItemA}/step/1"), OnItem(ItemB, $"{ItemB}/step/1") };
+        var service = Service(views, new FixedItemViews(failing: false), new CallerContextBuilder().Human().Build(), repos: new FixedRepos((ItemA, "alpha"), (ItemB, "beta")));
+
+        var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
+
+        Assert.Equal(2, result.Value.Instances.Count);
+    }
+
+    [Fact]
+    public async Task A_session_looking_up_an_address_in_another_repo_gets_item_404_and_its_own_repo_is_served()
+    {
+        var views = new[] { OnItem(ItemA, $"{ItemA}/step/1"), OnItem(ItemB, $"{ItemB}/step/1") };
+        var repos = new FixedRepos((ItemA, "alpha"), (ItemB, "beta"));
+        var session = new CallerContextBuilder().Session().InRepo("alpha").Build();
+
+        var theirs = await Service(views, new FixedItemViews(failing: false), session, directoryAddress: $"{ItemB}/step/1", repos: repos).Handle(new ListInstancesRequest(Address: $"{ItemB}/step/1"), CancellationToken.None);
+        var mine = await Service(views, new FixedItemViews(failing: false), session, directoryAddress: $"{ItemA}/step/1", repos: repos).Handle(new ListInstancesRequest(Address: $"{ItemA}/step/1"), CancellationToken.None);
+
+        Assert.Equal(SindriErrors.ItemNotFound.Code, theirs.Error.Code);
+        Assert.Equal([$"{ItemA}/step/1"], mine.Value.Instances.Select(static r => r.Address.Value), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task Needs_me_lists_a_parent_mirroring_a_listed_child_once_under_the_child()
+    {
+        var parent = StatusCases.View("parked-no-progress-child");
+        var child = StatusCases.View("parked-rounds") with { Address = InstanceAddress.From(parent.Address.Value + "/step.4") };
+        var service = Service([parent, child], new FixedItemViews(failing: false), new CallerContextBuilder().Human().Build());
+
+        var result = await service.Handle(new ListInstancesRequest(NeedsMe: "true"), CancellationToken.None);
+
+        Assert.Equal([child.Address.Value], result.Value.Instances.Select(static r => r.Address.Value), StringComparer.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("needsMe", "nothing needs you")]
+    [InlineData("open", "No workflows are open.")]
+    [InlineData("neither", "No workflows match.")]
+    public async Task An_empty_list_says_the_sentence_that_matches_its_filter(string filter, string sentence)
+    {
+        var request = filter switch
+        {
+            "needsMe" => new ListInstancesRequest(NeedsMe: "true", Open: "true"),
+            "open" => new ListInstancesRequest(Open: "true"),
+            _ => new ListInstancesRequest(State: "produce"),
+        };
+
+        var result = await Service([], new FixedItemViews(failing: false), new CallerContextBuilder().Human().Build()).Handle(request, CancellationToken.None);
+
+        Assert.Equal(sentence, result.Value.Empty);
+    }
+
+    [Fact]
+    public async Task The_counts_ask_only_running_roots_for_their_view_and_count_the_ended_ones_from_the_listing()
+    {
+        var running = View("desk-task", "T-1/step/1");
+        var ended = new[] { View("done", "T-2/step/1"), View("done", "T-3/step/1"), View("done", "T-4/step/1") };
+        InstanceView[] all = [running, .. ended];
+        var reader = new FixedReader(all);
+        var port = new RecordingInstances([.. all.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))], running: [running.Address.Value]);
+        var service = Service(all, new FixedItemViews(failing: false), new CallerContextBuilder().Human().Build(), port: port, reader: reader);
+
+        var result = await service.Handle(new ListInstancesRequest(Open: "true"), CancellationToken.None);
+
+        Assert.Equal((1, 3), (result.Value.Counts.Open, result.Value.Counts.Done));
+        Assert.Equal(["T-1/step/1"], reader.Reads, StringComparer.Ordinal);   // one Query, for the one running root
     }
 
     [Fact]

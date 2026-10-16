@@ -12,7 +12,7 @@ namespace Aw.Sindri.Host.Commands;
 /// 'sindri workflow list [--needs-me | --item &lt;id&gt; | --state &lt;s&gt;] [--recipe &lt;id&gt;] [--urgency incident|triage|work] [--subject &lt;fact&gt;] [--root true|false] [--query &lt;visibility query&gt;] [--json]'
 /// (engine spec §6.3; engine P4 unit (e)): one header line per instance, built from the served 'InstanceList' rows; '--json' prints that list. A client of serve's 'GET /workflow/instances' (review run 2); it never starts serve. '--needs-me' shows <b>Decisions</b> and then
 /// <b>Tasks</b>, each under its heading; the typed filters AND together and the list is in the API order (<see cref="InstanceOrder"/>:
-/// unfinished before finished, not parked or escalated before parked or escalated, incident, triage, then work, the subject label, the address); empty, it prints 'nothing needs you', and the other filters 'no instances match'.
+/// unfinished before finished, not parked or escalated before parked or escalated, incident, triage, then work, the subject label, the address); empty, it prints the sentence the server served for the filter ('nothing needs you', 'No workflows are open.' or 'No workflows match.'), and 'nothing needs you' when no row falls under either heading.
 /// Exit 0, empty included; 1 when Sindri isn't running; 2 on any other error.
 /// </summary>
 internal static class ListCommand
@@ -130,15 +130,15 @@ internal static class ListCommand
     {
         if (listed.Instances.Count == 0)
         {
-            return (request.NeedsMe is not null ? NeedsYouList.Nothing : "no instances match") + "\n";
+            return (listed.Empty ?? InstanceList.NoMatchText) + "\n";   // the served sentence matches the filter
         }
 
         var text = new StringBuilder();
         if (request.NeedsMe is not null)
         {
-            Section(text, "Decisions", [.. listed.Instances.Where(static r => Chip(r, "PARKED") || Chip(r, "ESCALATED") || Chip(r, "WITH YOU"))], now);
-            Section(text, "Tasks", [.. listed.Instances.Where(static r => Chip(r, "DECISION"))], now);
-            return text.ToString();
+            Section(text, "Decisions", [.. listed.Instances.Where(static r => Chip(r, StateChip.Parked) || Chip(r, StateChip.Escalated) || Chip(r, StateChip.WithYou))], now);
+            Section(text, "Tasks", [.. listed.Instances.Where(static r => Chip(r, StateChip.Decision))], now);
+            return text.Length == 0 ? NeedsYouList.Nothing + "\n" : text.ToString();   // rows that are in neither section (queued, running) need nobody
         }
 
         foreach (var row in listed.Instances)
@@ -162,7 +162,7 @@ internal static class ListCommand
         }
 
         _ = text.Append(heading).Append('\n');
-        foreach (var row in rows)
+        foreach (var row in rows.OrderBy(static r => r.Address.Value, StringComparer.Ordinal))   // spec §6.3: each section by address
         {
             _ = text.Append("  ").Append(Line(row, now)).Append('\n');
         }

@@ -4564,6 +4564,14 @@ const Aw.Sindri.Core.Workflow.Recipes.FactTypes.Default = "text" -> string!
 const Aw.Sindri.Core.Workflow.Recipes.StatePathOrder.FirstOrder = 1 -> int
 const Aw.Sindri.Core.Workflow.Recipes.Urgencies.Default = "work" -> string!
 const Aw.Sindri.Core.Workflow.Views.InstanceList.EmptyText = "No workflows are open." -> string!
+const Aw.Sindri.Core.Workflow.Views.InstanceList.NoMatchText = "No workflows match." -> string!
+const Aw.Sindri.Core.Workflow.Views.StateChip.Decision = "DECISION" -> string!
+const Aw.Sindri.Core.Workflow.Views.StateChip.Done = "DONE" -> string!
+const Aw.Sindri.Core.Workflow.Views.StateChip.Escalated = "ESCALATED" -> string!
+const Aw.Sindri.Core.Workflow.Views.StateChip.Parked = "PARKED" -> string!
+const Aw.Sindri.Core.Workflow.Views.StateChip.Queued = "QUEUED" -> string!
+const Aw.Sindri.Core.Workflow.Views.StateChip.Running = "RUNNING" -> string!
+const Aw.Sindri.Core.Workflow.Views.StateChip.WithYou = "WITH YOU" -> string!
 override Aw.Sindri.Core.Auth.HumanToken.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Auth.HumanToken.GetHashCode() -> int
 override Aw.Sindri.Core.Auth.HumanToken.ToString() -> string!
@@ -6267,6 +6275,7 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViews.Allowed(Aw.Sindri.Co
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.Of(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>! views) -> Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.Shown(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>! views) -> System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList? left, Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList? left, Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.OpenQuestion.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.OpenQuestion? left, Aw.Sindri.Core.Workflow.Engine.Runtime.OpenQuestion? right) -> bool
@@ -7840,7 +7849,10 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceCounts.Of(System.Collectio
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.FactShas.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.FactShas.init -> void
 Aw.Sindri.Core.Items.InstanceScope
-static Aw.Sindri.Core.Items.InstanceScope.Refusal(Aw.Sindri.Core.Commands.CallerContext! caller, Aw.Sindri.Core.Workflow.Engine.ItemKey? item, Aw.Sindri.Core.Items.IItemRepos! repos, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Error?>
+static Aw.Sindri.Core.Items.InstanceScope.NotFound(string! reference) -> Aw.Kernel.Error!
+static Aw.Sindri.Core.Items.InstanceScope.Refusal(Aw.Sindri.Core.Commands.CallerContext! caller, Aw.Sindri.Core.Workflow.Engine.ItemKey? item, string! reference, Aw.Sindri.Core.Items.IItemRepos! repos, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Error?>
+static Aw.Sindri.Core.Items.InstanceScope.Unknown(Aw.Kernel.Error! error, string! reference) -> Aw.Kernel.Error!
+static Aw.Sindri.Core.Items.InstanceScope.Visible(Aw.Sindri.Core.Commands.CallerContext! caller, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow!>! rows, Aw.Sindri.Core.Items.IItemRepos! repos, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow!>!>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeViews
 static Aw.Sindri.Core.Workflow.Views.FactTypeJsonConverter.Word(Aw.Sindri.Core.Workflow.Views.FactType type) -> string!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeViews.Of(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeVersion! stamp) -> Aw.Sindri.Core.Workflow.Views.RecipeView!

@@ -61,6 +61,20 @@ public sealed class GetInstanceServiceTests
         Assert.True(human.IsSuccess);
     }
 
+    [Fact]
+    public async Task An_unknown_instance_and_another_repos_answer_the_same_not_found()
+    {
+        var view = StatusCases.View("done") with { ItemId = ItemKey.From(ItemA) };
+        var instances = new SomeInstances(view);
+        var unknown = WorkflowInstanceId.From("WFI-" + new string('9', 32));
+
+        var missing = await Service(instances).Handle(new GetInstanceRequest(unknown.Value), CancellationToken.None);
+        var elsewhere = await Service(instances, repos: new FixedRepos((ItemA, "beta")), caller: new CallerContextBuilder().Session().InRepo("alpha").Build()).Handle(new GetInstanceRequest(view.Id.Value), CancellationToken.None);
+
+        Assert.Equal((SindriErrors.ItemNotFound.Code, $"No workflow instance {unknown.Value} in this repo."), (missing.Error.Code, missing.Error.Message));
+        Assert.Equal((SindriErrors.ItemNotFound.Code, $"No workflow instance {view.Id.Value} in this repo."), (elsewhere.Error.Code, elsewhere.Error.Message));
+    }
+
     [Theory]
     [MemberData(nameof(Cases))]
     public async Task Status_text_equals_what_workflow_status_prints(string name)

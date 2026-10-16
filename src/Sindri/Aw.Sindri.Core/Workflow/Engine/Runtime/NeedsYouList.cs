@@ -21,11 +21,23 @@ public sealed record NeedsYouList(IReadOnlyList<InstanceView> Decisions, IReadOn
     public static NeedsYouList Of(IEnumerable<InstanceView> views)
     {
         ArgumentNullException.ThrowIfNull(views);
-        var all = views.OrderBy(static v => v.Address.Value, StringComparer.Ordinal).ToList();
-        var listed = all.Select(static v => v.Address.Value).ToHashSet(StringComparer.Ordinal);
-        var shown = all.Where(v => !(v.Question is not null && v.Children.Any(c => listed.Contains(c.Address.Value)))).ToList();
+        var shown = Shown(views).OrderBy(static v => v.Address.Value, StringComparer.Ordinal).ToList();
         return new NeedsYouList(
             [.. shown.Where(static v => v.Outcome is null && v.Question is not null)],
             [.. shown.Where(static v => v.Outcome is null && v.Question is null && v.Task is not null)]);
+    }
+
+    /// <summary>
+    /// The views that stay when a parent whose open question mirrors a child that is also listed is dropped (engine spec §6.3: once, under the
+    /// child). The order of <paramref name="views"/> is kept; the list route applies this to its rows, then orders them as every list is ordered.
+    /// </summary>
+    /// <param name="views">The instances the NeedsYou search attribute found.</param>
+    /// <returns>The views, each question once.</returns>
+    public static IEnumerable<InstanceView> Shown(IEnumerable<InstanceView> views)
+    {
+        ArgumentNullException.ThrowIfNull(views);
+        var all = views.ToList();
+        var listed = all.Select(static v => v.Address.Value).ToHashSet(StringComparer.Ordinal);
+        return all.Where(v => !(v.Question is not null && v.Children.Any(c => listed.Contains(c.Address.Value))));
     }
 }

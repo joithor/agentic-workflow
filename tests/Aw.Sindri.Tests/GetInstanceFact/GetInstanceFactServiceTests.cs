@@ -4,6 +4,7 @@ using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -38,11 +39,11 @@ public sealed class GetInstanceFactServiceTests
         return view with { Facts = [row], FactShas = produced ? new Dictionary<string, string>(StringComparer.Ordinal) { [key] = Sha } : null };
     }
 
-    private static async Task<Result<FactView>> Read(InstanceView view, string key, string content)
+    private static async Task<Result<FactView>> Read(InstanceView view, string key, string content, CallerContext? caller = null, FixedRepos? repos = null, WorkflowInstanceId? asking = null)
     {
         var instances = new SomeInstances(view);
-        var service = new GetInstanceFactService(instances, instances, new Contents(content), new Redacting(), new FixedRepos(), new ListInstances.FixedCaller(new CallerContextBuilder().Human().Build()));
-        return await service.Handle(new GetInstanceFactRequest(view.Id, key), CancellationToken.None);
+        var service = new GetInstanceFactService(instances, instances, new Contents(content), new Redacting(), repos ?? new FixedRepos(), new ListInstances.FixedCaller(caller ?? new CallerContextBuilder().Human().Build()));
+        return await service.Handle(new GetInstanceFactRequest(asking ?? view.Id, key), CancellationToken.None);
     }
 
     [Fact]
@@ -105,5 +106,65 @@ public sealed class GetInstanceFactServiceTests
 
         Assert.Equal("token [redacted] here", text.Value.Body.GetString());
         Assert.Equal("[redacted]", packet.Value.Body.GetProperty("env").GetProperty("KEY").GetString());
+    }
+
+    private const string Item = "ITM-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+    [Fact]
+    public async Task A_session_reads_a_fact_of_its_own_repo_and_gets_item_404_for_another()
+    {
+        var view = With("fact:spec", FactType.Text) with { ItemId = ItemKey.From(Item) };
+        var repos = new FixedRepos((Item, "alpha"));
+
+        var own = await Read(view, "fact:spec", "the spec", new CallerContextBuilder().Session().InRepo("alpha").Build(), repos);
+        var other = await Read(view, "fact:spec", "the spec", new CallerContextBuilder().Session().InRepo("beta").Build(), repos);
+
+        Assert.Equal("the spec", own.Value.Body.GetString());
+        Assert.Equal(SindriErrors.ItemNotFound.Code, other.Error.Code);
+    }
+
+    [Fact]
+    public async Task An_unknown_instance_and_another_repos_answer_the_same_not_found_with_the_id_asked_for()
+    {
+        var view = With("fact:spec", FactType.Text) with { ItemId = ItemKey.From(Item) };
+        var unknown = WorkflowInstanceId.From("WFI-" + new string('9', 32));
+
+        var missing = await Read(view, "fact:spec", "x", asking: unknown);
+        var elsewhere = await Read(view, "fact:spec", "x", new CallerContextBuilder().Session().InRepo("beta").Build(), new FixedRepos((Item, "alpha")));
+
+        Assert.Equal((SindriErrors.ItemNotFound.Code, $"No workflow instance {unknown.Value} in this repo."), (missing.Error.Code, missing.Error.Message));
+        Assert.Equal((SindriErrors.ItemNotFound.Code, $"No workflow instance {view.Id.Value} in this repo."), (elsewhere.Error.Code, elsewhere.Error.Message));
+    }
+
+    [Fact]
+    public async Task A_packet_whose_stored_content_is_not_json_is_served_as_text()
+    {
+        var result = await Read(With("fact:plan", FactType.Packet), "fact:plan", "not { json");
+
+        Assert.Equal(("not { json", JsonValueKind.String, false), (result.Value.Body.GetString(), result.Value.Body.ValueKind, result.Value.Truncated));
+    }
+
+    [Fact]
+    public async Task A_very_large_text_is_cut_in_one_pass()
+    {
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+
+        var result = await Read(With("fact:spec", FactType.Text), "fact:spec", new string('é', 4_000_000));
+
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(1), $"cutting took {clock.Elapsed}");
+        Assert.Equal((true, 256 * 1024 / 2), (result.Value.Truncated, result.Value.Body.GetString()!.Length));   // 2 bytes a character, cut exactly at the budget
+    }
+
+    [Fact]
+    public async Task An_object_of_very_many_small_entries_is_cut_in_one_pass_to_the_exact_budget()
+    {
+        var entries = string.Join(',', Enumerable.Range(0, 120_000).Select(static i => string.Create(CultureInfo.InvariantCulture, $"\"k{i}\":1")));
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+
+        var result = await Read(With("fact:plan", FactType.Packet), "fact:plan", "{" + entries + "}");
+
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(1), $"cutting took {clock.Elapsed}");
+        Assert.True(result.Value.Truncated);
+        Assert.InRange(Encoding.UTF8.GetByteCount(result.Value.Body.GetRawText()), (256 * 1024) - 16, 256 * 1024);
     }
 }

@@ -16,4 +16,7 @@ public sealed record InstanceList(
 {
     /// <summary>The sentence <see cref="Empty"/> holds when there are no rows.</summary>
     public const string EmptyText = "No workflows are open.";
+
+    /// <summary>The sentence <see cref="Empty"/> holds when a list that isn't limited to the open instances has no rows.</summary>
+    public const string NoMatchText = "No workflows match.";
 }

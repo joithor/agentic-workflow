@@ -13,7 +13,7 @@ namespace Aw.Sindri.Features.GetInstance;
 /// <summary>
 /// Resolves the instance a reference names (its id, its address, or a bare item: spec §6.1, §6.3), asks its workflow for its view (the
 /// 'GetInstance' Query; SND-WF-001 when there is no such instance), and answers the API's <see cref="InstanceDetail"/> (API spec §3.8).
-/// A session caller reads only its own repo's instances: another repo's answers SND-ITEM-404, by the item's repo from the ledger
+/// A session caller reads only its own repo's instances: another repo's answers SND-ITEM-404, the answer for an unknown id too (one not-found, so an id never says it exists elsewhere), by the item's repo from the ledger
 /// (<see cref="IItemRepos"/>, never the views, as the item routes' scope does). The title is the item's, else the address; the parent is
 /// resolved by its id; the counts come from the timeline, decisions and requests views.
 /// </summary>
@@ -37,16 +37,16 @@ internal sealed class GetInstanceService(IInstanceDirectory directory, IInstance
         var address = await directory.Resolve(request.Instance, cancellationToken).ConfigureAwait(false);
         if (address.IsError)
         {
-            return address.Error;
+            return InstanceScope.Unknown(address.Error, request.Instance);
         }
 
         var view = await runtime.Get(address.Value, cancellationToken).ConfigureAwait(false);
         if (view.IsError)
         {
-            return view.Error;
+            return InstanceScope.Unknown(view.Error, request.Instance);
         }
 
-        if (await InstanceScope.Refusal(caller, view.Value.ItemId, repos, cancellationToken).ConfigureAwait(false) is { } refused)
+        if (await InstanceScope.Refusal(caller, view.Value.ItemId, request.Instance, repos, cancellationToken).ConfigureAwait(false) is { } refused)
         {
             return refused;
         }

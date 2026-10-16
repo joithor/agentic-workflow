@@ -21,16 +21,16 @@ public static class InstanceCounts
             var chip = StateChip.For(view.EngineOwned, deskOpen: view.Task is not null, terminal: view.Outcome is not null, view.State == InstanceViews.StartingState);
             switch (chip.Word)
             {
-                case "DONE":
+                case StateChip.Done:
                     done++;
                     continue;
-                case "PARKED" or "ESCALATED" or "DECISION":
+                case StateChip.Parked or StateChip.Escalated or StateChip.Decision:
                     needsYou++;
                     break;
-                case "WITH YOU":
+                case StateChip.WithYou:
                     withYou++;
                     break;
-                case "RUNNING":
+                case StateChip.Running:
                     running++;
                     break;
                 default:

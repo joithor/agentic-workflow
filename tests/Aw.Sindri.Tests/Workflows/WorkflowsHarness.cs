@@ -317,7 +317,7 @@ internal sealed class WorkflowsHarness : IDisposable
         while (DateTime.UtcNow < deadline)
         {
             last = await Cli(sindri, args);
-            if (last.Exit != 0 || (last.Stdout.Length > 0 && last.Stdout is not ("no instances match\n" or "nothing needs you\n")))
+            if (last.Exit != 0 || (last.Stdout.Length > 0 && last.Stdout is not ("No workflows match.\n" or "No workflows are open.\n" or "nothing needs you\n")))
             {
                 break;
             }

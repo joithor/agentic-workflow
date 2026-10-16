@@ -42,7 +42,7 @@ public sealed class WorkflowReadVerbsTests : IDisposable
 
             Assert.Matches(@"^Tasks\n  T-1/step/1  workflow\.step@[0-9a-f]{12}  produce: .+  since .+\n$", needsMe);
             Assert.Matches(@"^T-1/step/1  workflow\.step@", byItem);
-            Assert.Equal("no instances match\n", otherState);
+            Assert.Equal("No workflows match.\n", otherState);
             Assert.Equal(0, eventsExit);
             Assert.Matches(@"^\d+  \d\d-\d\d \d\d:\d\d:\d\d  workflow\.started  -> produce  start  \S+\n\d+  \d\d-\d\d \d\d:\d\d:\d\d  outbox\.pending  \S+\n\d+  \d\d-\d\d \d\d:\d\d:\d\d  outbox\.dispatched  \S+\n$", events);   // the first desk task's engine notice: both its rows (P6 units (c), (d))
             await handle.TerminateAsync("test over");

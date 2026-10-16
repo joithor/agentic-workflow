@@ -8,6 +8,27 @@ namespace Aw.Sindri.Core.Workflow.Views;
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record StateChip(string Word, ChipTone Tone)
 {
+    /// <summary>An instance parked: it waits for an answer.</summary>
+    public const string Parked = "PARKED";
+
+    /// <summary>An instance escalated: a human decides.</summary>
+    public const string Escalated = "ESCALATED";
+
+    /// <summary>An instance a person took over.</summary>
+    public const string WithYou = "WITH YOU";
+
+    /// <summary>An instance whose desk answer is open.</summary>
+    public const string Decision = "DECISION";
+
+    /// <summary>An instance that has not started.</summary>
+    public const string Queued = "QUEUED";
+
+    /// <summary>An instance that is finished.</summary>
+    public const string Done = "DONE";
+
+    /// <summary>An instance that is running.</summary>
+    public const string Running = "RUNNING";
+
     /// <summary>The chip of an instance: an engine-owned badge decides first, then an open desk answer, then not started, terminal and running.</summary>
     /// <param name="engineOwned">The engine-owned badge, if any; a taken-over instance arrives here as the "taken-over" badge (the plan's "takenOver" flag).</param>
     /// <param name="deskOpen">Whether a desk answer is open.</param>
@@ -16,12 +37,12 @@ public sealed record StateChip(string Word, ChipTone Tone)
     /// <returns>The chip.</returns>
     public static StateChip For(EngineOwnedBadge? engineOwned, bool deskOpen, bool terminal, bool notStarted = false) => engineOwned?.Kind switch
     {
-        EngineOwnedKind.Parked => new StateChip("PARKED", ChipTone.Attn),
-        EngineOwnedKind.Escalated => new StateChip("ESCALATED", ChipTone.Attn),
-        EngineOwnedKind.TakenOver => new StateChip("WITH YOU", ChipTone.Neutral),
-        _ when deskOpen => new StateChip("DECISION", ChipTone.Attn),
-        _ when notStarted => new StateChip("QUEUED", ChipTone.Neutral),
-        _ when terminal => new StateChip("DONE", ChipTone.Neutral),
-        _ => new StateChip("RUNNING", ChipTone.Ok),
+        EngineOwnedKind.Parked => new StateChip(Parked, ChipTone.Attn),
+        EngineOwnedKind.Escalated => new StateChip(Escalated, ChipTone.Attn),
+        EngineOwnedKind.TakenOver => new StateChip(WithYou, ChipTone.Neutral),
+        _ when deskOpen => new StateChip(Decision, ChipTone.Attn),
+        _ when notStarted => new StateChip(Queued, ChipTone.Neutral),
+        _ when terminal => new StateChip(Done, ChipTone.Neutral),
+        _ => new StateChip(Running, ChipTone.Ok),
     };
 }

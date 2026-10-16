@@ -34,7 +34,7 @@ public sealed class ReadVerbsClientTests
 
         var (exit, stdout, stderr) = await Run(api, TestContext.Current.CancellationToken, "list", "--item", "T-3", "--state", "done", "--query", "NeedsYou = false");
 
-        Assert.Equal((0, "no instances match\n", string.Empty), (exit, stdout, stderr));
+        Assert.Equal((0, "No workflows match.\n", string.Empty), (exit, stdout, stderr));
         Assert.Equal(["/sindri/workflow/instances?item=T-3&state=done&query=NeedsYou%20%3D%20false"], api.Calls);
     }
 
@@ -68,7 +68,7 @@ public sealed class ReadVerbsClientTests
         var (exit, stdout, _) = await Run(api, TestContext.Current.CancellationToken,
             "list", "--root", "false", "--subject", "fact:spec", "--urgency", "incident", "--recipe", "workflow.step");
 
-        Assert.Equal((0, "no instances match\n"), (exit, stdout));
+        Assert.Equal((0, "No workflows are open.\n"), (exit, stdout));
         Assert.Equal(["/sindri/workflow/instances?recipe=workflow.step&urgency=incident&subject=fact%3Aspec&root=false&open=true"], api.Calls);
     }
 

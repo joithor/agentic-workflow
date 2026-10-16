@@ -17,7 +17,7 @@ namespace Aw.Sindri.Features.GetInstanceFact;
 /// The scrubbed body behind one fact row (API spec §3.8): the instance's view names the declared facts and their stored digests, the
 /// fact store reads the content, the scrubber removes secrets, and the body is capped at <see cref="CapBytes"/>. A text fact is a
 /// string; any other type is its stored JSON, which stays an object when cut (it loses its tail entries). A key the recipe doesn't
-/// declare, or one not produced yet, answers SND-ITEM-404, as does another repo's instance for a session caller.
+/// declare, or one not produced yet, answers SND-ITEM-404, as does an unknown instance or another repo's for a session caller (one not-found answer).
 /// </summary>
 /// <param name="directory">Resolves the instance id to its address.</param>
 /// <param name="runtime">The instances on Temporal.</param>
@@ -42,16 +42,16 @@ internal sealed class GetInstanceFactService(IInstanceDirectory directory, IInst
         var address = await directory.Resolve(request.Instance.Value, cancellationToken).ConfigureAwait(false);
         if (address.IsError)
         {
-            return address.Error;
+            return InstanceScope.Unknown(address.Error, request.Instance.Value);
         }
 
         var view = await runtime.Get(address.Value, cancellationToken).ConfigureAwait(false);
         if (view.IsError)
         {
-            return view.Error;
+            return InstanceScope.Unknown(view.Error, request.Instance.Value);
         }
 
-        if (await InstanceScope.Refusal(caller, view.Value.ItemId, repos, cancellationToken).ConfigureAwait(false) is { } refused)
+        if (await InstanceScope.Refusal(caller, view.Value.ItemId, request.Instance.Value, repos, cancellationToken).ConfigureAwait(false) is { } refused)
         {
             return refused;
         }
@@ -97,7 +97,10 @@ internal sealed class GetInstanceFactService(IInstanceDirectory directory, IInst
         }
     }
 
-    /// <summary>The node cut to the cap by dropping its tail entries; unchanged when it fits.</summary>
+    /// <summary>
+    /// The node cut to the cap by dropping its tail entries; unchanged when it fits. One pass: each entry's serialized size (compact, as the
+    /// body is written) is added to a running total, so the cut costs the node's size once, not once per entry kept.
+    /// </summary>
     private static (JsonNode Node, bool Truncated) Cap(JsonNode node)
     {
         if (Size(node) <= CapBytes)
@@ -105,42 +108,50 @@ internal sealed class GetInstanceFactService(IInstanceDirectory directory, IInst
             return (node, false);
         }
 
-        switch (node)
-        {
-            case JsonObject obj:
-                var keys = obj.Select(static p => p.Key).ToList();
-                var copy = new JsonObject();
-                foreach (var key in keys)
-                {
-                    copy[key] = obj[key]?.DeepClone();
-                    if (Size(copy) > CapBytes)
-                    {
-                        _ = copy.Remove(key);
-                        break;
-                    }
-                }
-
-                return (copy, true);
-            default:
-                var array = (JsonArray)node;
-                var kept = new JsonArray();
-                foreach (var item in array)
-                {
-                    kept.Add(item?.DeepClone());
-                    if (Size(kept) > CapBytes)
-                    {
-                        kept.RemoveAt(kept.Count - 1);
-                        break;
-                    }
-                }
-
-                return (kept, true);
-        }
+        return node is JsonObject obj ? (CapObject(obj), true) : (CapArray((JsonArray)node), true);
     }
 
-    private static int Size(JsonNode node) => Encoding.UTF8.GetByteCount(node.ToJsonString());
+    private static JsonObject CapObject(JsonObject obj)
+    {
+        var copy = new JsonObject();
+        var used = 2;   // the braces
+        foreach (var (key, value) in obj)
+        {
+            var entry = (copy.Count > 0 ? 1 : 0) + Size(JsonValue.Create(key)) + 1 + Size(value);   // comma, "key", colon, value
+            if (used + entry > CapBytes)
+            {
+                break;
+            }
 
-    /// <summary>The text cut to the cap on a character boundary.</summary>
+            used += entry;
+            copy[key] = value?.DeepClone();
+        }
+
+        return copy;
+    }
+
+    private static JsonArray CapArray(JsonArray array)
+    {
+        var kept = new JsonArray();
+        var used = 2;   // the brackets
+        foreach (var item in array)
+        {
+            var entry = (kept.Count > 0 ? 1 : 0) + Size(item);
+            if (used + entry > CapBytes)
+            {
+                break;
+            }
+
+            used += entry;
+            kept.Add(item?.DeepClone());
+        }
+
+        return kept;
+    }
+
+    private static int Size(JsonNode? node) => node is null ? 4 : Encoding.UTF8.GetByteCount(node.ToJsonString());   // 'null' is 4 bytes
+
+    /// <summary>The text cut to the cap on a character boundary, in one pass over its characters against the byte budget.</summary>
     private static (string Text, bool Truncated) CutText(string text)
     {
         if (Encoding.UTF8.GetByteCount(text) <= CapBytes)
@@ -148,10 +159,16 @@ internal sealed class GetInstanceFactService(IInstanceDirectory directory, IInst
             return (text, false);
         }
 
-        var length = Math.Min(text.Length, CapBytes);
-        while (Encoding.UTF8.GetByteCount(text.AsSpan(0, length)) > CapBytes || (length > 0 && char.IsHighSurrogate(text[length - 1])))
+        int bytes = 0, length = 0;
+        foreach (var rune in text.EnumerateRunes())
         {
-            length--;
+            if (bytes + rune.Utf8SequenceLength > CapBytes)
+            {
+                break;
+            }
+
+            bytes += rune.Utf8SequenceLength;
+            length += rune.Utf16SequenceLength;
         }
 
         return (text[..length], true);
