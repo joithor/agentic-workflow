@@ -131,4 +131,24 @@ public sealed class NeedsYouFocusTests : IDisposable
         Assert.NotNull(focused);
         Assert.Equal("park:ITM-2", (focused.DataContext as NeedsYouRowViewModel)?.Id);
     });
+
+    // review run 1, K13: a refresh takes focus only when it was in the row that cleared or is lost.
+    [Fact]
+    public Task A_row_clearing_elsewhere_does_not_pull_focus_from_the_search_field() => OnUi(async () =>
+    {
+        var (window, shell) = await WithFeed(() => Parks(3));
+        shell.SelectNeedsYouRow("park:ITM-1");
+        Settle(window);
+        var search = window.GetVisualDescendants().OfType<Border>().First(b => string.Equals(b.Name, "SearchField", StringComparison.Ordinal));
+        Assert.True(search.Focus(NavigationMethod.Tab));
+
+        shell.ShowNeedsYou(new NeedsYouFeed([.. Parks(3).Where(e => !string.Equals(e.Id, "park:ITM-1", StringComparison.Ordinal))], ""));
+        for (var i = 0; i < 30; i++)
+        {
+            await Task.Delay(10, Token);
+            Settle(window);
+        }
+
+        Assert.Same(search, Focused(window));
+    });
 }
