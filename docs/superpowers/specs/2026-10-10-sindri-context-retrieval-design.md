@@ -389,7 +389,7 @@ Every shape resolves to **anchors**, then runs the same pipeline.
 | `node` | a node key, name or alias | direct | 3 |
 | `item` | a Sindri `ItemId` or one of its tracker-key aliases (API §3) | the record's `decides` and `mentions` links, keys in its text | 5 |
 | `symbol` | a file path (Phase 4) or a symbol / `path[:line]` (Phase 9) | `implements` from the code unit | 4 (files), 9 (symbols) |
-| `diff` | a ref range | changed files → nodes → cascade | not in this spec's phases |
+| `diff` | a ref range `<base>..<head>` (two shas; refs only) | changed files (from the merge base) → nodes → cascade, plus the paths no node claims | S-D (scoping C7) |
 
 ### 8.2 Pipeline
 
@@ -468,6 +468,8 @@ by hand, once S-1M's owner check shows the work repo returns useful results (if 
 snippet until S-6 brings the Linear documents); `context sources status` prints the registration and snippet status, and the number of MCP queries in the
 last 7 days (counts from `query_log`, client `mcp`), so it's visible whether sessions actually use it.
 
+**S-D addition (diff shape).** `GET /sindri/context/query?diff=<base>..<head>&repo=<name>`, CLI `context query --diff A..B [--repo R]`, MCP `context_query {diff}` (a session's repo is its `X-Sindri-Repo`, so MCP has no `repo`). Refs only: two shas, never a branch, `HEAD`, `~`, `^` or `...`. The result gains an optional `diff` member (omitted for every other shape).
+
 ### 8.6 Exit codes and errors
 
 CLI exit codes (S1's and the API's): **0** results returned, possibly degraded or empty; **1** attention: the process
@@ -504,6 +506,8 @@ error (the profile is invalid, the store can't open, every source is down); **75
 | `SND-CONTEXT-046` | `map promote` refused: there is no draft, or the draft still has undecided review items; a skipped item is not decided; or the latest draft is no longer the one you confirmed (exit 1; HTTP 409) | `map propose <file>` or the `context-rebuild` service (`map build` once API P6 lands), or `map review`, then promote; if the draft moved, run promote again |
 | `SND-CONTEXT-047` | A review target is stale: the node or link is not in the latest draft's queue (decided already, or gone), or `--undo` names an override that is unknown or already undone (exit 1; HTTP 409) | `map review` to list the queue, or `--history` for the ids |
 | `SND-CONTEXT-048` | Extraction cannot read the repo from git at the commit (a missing repo or sha; exit 2; HTTP 503) | Fix the repo path in the profile, or fetch the commit |
+| `SND-CONTEXT-110` | A sha of a `diff` range is not a commit in the repo's clone (exit 1; HTTP 404) | Fetch that commit into the profile repo's checkout, or pass shas it holds |
+| `SND-CONTEXT-111` | The two commits of a `diff` range share no merge base (exit 1; HTTP 400) | Pass a base on the head's history |
 | `SND-CONTEXT-049` | Reserved for findings in the S-4 review loop | — |
 | `SND-CONTEXT-050` | A source's token lacks a needed read scope | Recreate the key read-only with the listed scope |
 | `SND-CONTEXT-055` | Onyx not on a loopback address, or its pinned version differs | §8.8 |
@@ -1167,7 +1171,7 @@ team ever reads work data:
 |---|---|
 | `context.db` migrations | **Named, not pre-numbered.** A stage's migration file is `NNNN_<stage>_<name>.sql` (the loader's form: four digits, letters, digits and
 `_` only, e.g. `0003_s5a_linear_cursor.sql`) with `NNNN` set to the next free number **on the branch it sits on**, and renumbered when it rebases onto a new base (a stage's migrations stay contiguous on top of its base, as `Aw.Kernel.Data`'s gap check requires). Number and content freeze at merge. Only throwaway homes ever ran an unmerged migration, so renumbering never touches a real `context.db` |
-| `SND-CONTEXT-*` codes | Ranges per stage: S-1A `001–019`, S-1M `020–029`, S-3a `030–034` (030 "No map yet" is defined in S-3a; S-3b reuses it), S-3b/S-3M `035–039`, S-4 `040–049`, S-5A/B (Onyx) `050–069`, S-6 (native Linear) `070–079`, S-7A/B `080–089`, S-8 `090–099`, S-CF `100–109`. §8.6 follows these ranges |
+| `SND-CONTEXT-*` codes | Ranges per stage: S-1A `001–019`, S-1M `020–029`, S-3a `030–034` (030 "No map yet" is defined in S-3a; S-3b reuses it), S-3b/S-3M `035–039`, S-4 `040–049`, S-5A/B (Onyx) `050–069`, S-6 (native Linear) `070–079`, S-7A/B `080–089`, S-8 `090–099`, S-CF `100–109`, S-D `110–119` (S-LB 120–129, S-SK 130–139, S-CH 140–149, S-CL 150–159, S-H 160–169, S-TR 170–179 are booked for the scoping-station stages). §8.6 follows these ranges |
 | `deps.yaml`, `Directory.Packages.props`, `AgenticWorkflow.slnx`, `.env.example` | Append-only edits within the stage's own block; the later PR's rebase resolves conflicts |
 | `PublicAPI.Unshipped.txt`, Sindri's `EndpointTable`, `CommandTable`, JSON context, MCP tool list | One line or one block per slice; the later rebase keeps both |
 | `docs/sindri/context.md`, `docs/csharp/sindri-context.md` | One section per stage, headed by the stage id |

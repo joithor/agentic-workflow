@@ -803,3 +803,11 @@ $SINDRI context sources status
 $SINDRI context query "split pane orientation"
 $SINDRI stop                                    # free the port before going back to your real home
 ```
+
+## Asking about a change (S-D)
+
+```
+sindri context query --diff <base>..<head> [--repo <name>] [--json]
+```
+
+`<base>` and `<head>` are commit shas (7 to 64 hex characters), never branch names. Sindri lists the files changed from the merge base to `<head>`, the product-map nodes they implement, and what those nodes affect. The text output starts with a count line, then `UNMAPPED`: changed files no node claims, a gap to look at. Files only a model suggested are `suggested`, not `unmapped`. Paths under your deny globs are counted (`denied`) and never listed. An empty range answers with no files. `repo` can be left out when one repo is mapped. Exit 1 with `SND-CONTEXT-110` means the clone does not hold a sha: fetch it first; `111` means the commits share no history.

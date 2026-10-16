@@ -641,3 +641,15 @@ intent source never synced or its last run failed. The `SyncSources` catalog row
 `tests/Aw.Context.Tests/{Linking,SyncSources,QueryContext}` (rules, overlay, store contracts, sync, decisions, conflicts, item shape,
 sources status); `tests/Aw.Sindri.Tests/ContextCalls/ContextSyncTests` (integration: service named or not, event with counts, event key,
 sources status, doctor row, item query), `ContextCliTests` and `ContextReviewRowsTests` (the pending form and the catalog row).
+
+## S-D: the diff shape
+
+The fifth query shape (`ContextQuery.Diff = new DiffRange(base, head)`, optional `Repo`): the files changed from the merge base of two commits to the second, mapped to nodes, then the same cascade, packing, sources and citations as the other shapes.
+
+- **Refs only.** `DiffRange` is two lower-case hex shas of 7 to 64 characters. A branch, tag, `HEAD`, `~`, `^`, `...` or upper case is `SND-CONTEXT-006` ("resolve the refs to shas first"); the engine reads no refs and makes no forge calls. Resolving a PR to its shas is the caller's job.
+- **Git.** `IRepoReader.Changes` runs `rev-parse --verify --quiet <sha>^{commit}` per side, `merge-base`, then `diff --name-status -z --no-renames --no-ext-diff --no-textconv <mergeBase> <head> --` (ArgumentList, `GIT_*` removed, 30 s). Nothing is read from the working tree or from file content. A rename is a deletion plus an addition.
+- **Result.** `diff` holds `repo`, `base`, `head`, `mergeBase` (full shas), `files[]` (`path`, `change` of added, modified, deleted or typeChanged, `status` of mapped, suggested or unmapped as `filemap` says, `nodes[]` of `key` and `confirmed`), `unmapped[]`, `counts` (`changed = mapped + suggested + unmapped + denied`), `truncated` (at most 1000 files kept), `anchorsTotal` and `anchorsTruncated`. `anchors` are the first 20 nodes: confirmed before suggested, then by key; `files[].nodes` always lists every node.
+- **Deny globs.** A changed path under the repo's deny or secret globs is only counted in `counts.denied`, never named, for every caller. A session's paths also go through the egress scrub (scrubbed, not fenced).
+- **Repo.** `repo` may be left out when the caller's scope holds one repo (always for a session); otherwise it is required (006). A repo outside the profile or the session's scope is 045. No map is 030; `draft` with no draft is 044.
+- **Errors.** `SND-CONTEXT-110` (NotFound, exit 1): the clone does not hold a sha. `111` (Invalid, exit 1): no merge base. 112 to 119 are reserved. An unreadable checkout is 048.
+- **Tests.** `QueryRulesDiffTests`, `DiffAnchorsTests`, `DiffQueryTests`, the `RepoReaderContract` Changes cases (fake and git), `ContextDiffTests` and the `context-query` API goldens (`diff-spl-103`, `diff-unknown-sha-110`).
