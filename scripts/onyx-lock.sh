@@ -9,8 +9,8 @@
 #   verify maintainer-run, needs the network and docker buildx, never in CI: runs check, then downloads every `file` row from
 #          raw.githubusercontent.com/onyx-dot-app/onyx/<commit>/deployment/<path> and compares its sha256, compares every
 #          `image` row with `docker buildx imagetools inspect <repository>:<tag> --raw` for its platform, and confirms the
-#          compose file at the commit names only pinned images (each `image:` line, with ${VAR:-default} resolved and
-#          ${IMAGE_TAG...} taken as the version, is a repository and tag of an image row). Prints one line per mismatch
+#          compose file at the commit names only pinned images (each `image:` line, with its shell-style defaults resolved and
+#          the image tag variable taken as the version, is a repository and tag of an image row). Prints one line per mismatch
 #          'ONYX-LOCK-01n <what>: expected X, got Y'. Needs curl, jq, docker and a sha256 tool. Exit: 0 all match, 1 a
 #          mismatch (or check fails), 2 usage, I/O or network error.
 # Rows (whitespace-separated; '#' comments and blank lines are ignored):
@@ -107,7 +107,7 @@ awk '
 ' "$file"
 }
 
-# resolve <image: value>: ${IMAGE_TAG:-...} is the pinned version, every other ${VAR:-default} its default, innermost first.
+# resolve <image: value>: the image tag variable's default becomes the pinned version, every other variable its own default, innermost first.
 resolve() {
   local value="$1" next
   value="$(printf '%s' "$value" | sed -E 's/\$\{IMAGE_TAG:-[^${}]*\}/'"$version"'/g')"
