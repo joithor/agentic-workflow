@@ -1,4 +1,5 @@
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing.Workflow;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,26 +20,26 @@ public sealed class StatusCommandTests
     [InlineData("T-3")]
     public async Task Status_of_an_address_or_a_bare_item_prints_the_instance_through_the_routes(string reference)
     {
-        using var api = ReadApi.Over(Instances());
+        using var api = ReadApi.OverAt(Instances(), new FakeTimeProvider(StatusCases.Now));
 
         var (exit, stdout, stderr) = await Run(api, TestContext.Current.CancellationToken, reference);
 
         Assert.Equal((0, string.Empty), (exit, stderr));
-        Assert.Contains("T-3/step/1", stdout, StringComparison.Ordinal);
+        Assert.Equal(StatusLayout.Render(StatusCases.View("done"), StatusCases.Now), stdout);   // the served 'current.status.text', which is the §6.4 layout
         Assert.Equal(2, api.Calls.Count);
         Assert.StartsWith("/sindri/workflow/instances?address=", api.Calls[0], StringComparison.Ordinal);
         Assert.Equal("/sindri/workflow/instances/" + StatusCases.View("done").Id.Value, api.Calls[1]);
     }
 
     [Fact(Timeout = 30_000)]
-    public async Task Status_json_prints_the_instance_as_the_view_serializes()
+    public async Task Status_json_prints_the_served_status_fields()
     {
-        using var api = ReadApi.Over(Instances());
+        using var api = ReadApi.OverAt(Instances(), new FakeTimeProvider(StatusCases.Now));
 
         var (exit, stdout, _) = await Run(api, TestContext.Current.CancellationToken, "T-3/step/1", "--json");
 
         Assert.Equal(0, exit);
-        Assert.Equal(System.Text.Encoding.UTF8.GetString(Kernel.Json.AwJson.Serialize(StatusCases.View("done"), SliceHarness.Json)) + "\n", stdout);
+        Assert.Equal(System.Text.Encoding.UTF8.GetString(Kernel.Json.AwJson.Serialize(InstanceViews.Status(StatusCases.View("done"), StatusCases.Now), SliceHarness.Json)) + "\n", stdout);
     }
 
     [Theory(Timeout = 30_000)]
@@ -65,7 +66,7 @@ public sealed class StatusCommandTests
         var output = new Output(stdout, stderr, SliceHarness.Json);
 
         var exit = verb == "status"
-            ? await StatusCommand.Run(["not-an-address"], api.Desk, services, output, TestContext.Current.CancellationToken)
+            ? await StatusCommand.Run(["not-an-address"], api.Desk, output, TestContext.Current.CancellationToken)
             : await EventsCommand.Run(["not-an-address"], api.Desk, services, output, TestContext.Current.CancellationToken);
 
         Assert.Equal((2, string.Empty), (exit, stdout.ToString()));
@@ -89,9 +90,7 @@ public sealed class StatusCommandTests
     {
         var stdout = new StringWriter();
         var stderr = new StringWriter();
-        var clock = new FakeTimeProvider(StatusCases.Now);
-
-        var exit = await StatusCommand.Run(args, api.Desk, new ServiceCollection().AddSingleton<TimeProvider>(clock).BuildServiceProvider(), new Output(stdout, stderr, SliceHarness.Json), ct);
+        var exit = await StatusCommand.Run(args, api.Desk, new Output(stdout, stderr, SliceHarness.Json), ct);
 
         return (exit, stdout.ToString(), stderr.ToString());
     }

@@ -57,7 +57,7 @@ public sealed class ReadVerbsClientTests
         var (exit, stdout, _) = await Run(api, TestContext.Current.CancellationToken, "list", "--needs-me");
 
         Assert.Equal((0, "nothing needs you\n"), (exit, stdout));
-        Assert.Equal(["/sindri/workflow/instances?needsMe=true"], api.Calls);
+        Assert.Equal(["/sindri/workflow/instances?needsMe=true&open=true"], api.Calls);
     }
 
     [Fact(Timeout = 30_000)]
@@ -69,7 +69,7 @@ public sealed class ReadVerbsClientTests
             "list", "--root", "false", "--subject", "fact:spec", "--urgency", "incident", "--recipe", "workflow.step");
 
         Assert.Equal((0, "no instances match\n"), (exit, stdout));
-        Assert.Equal(["/sindri/workflow/instances?recipe=workflow.step&urgency=incident&subject=fact%3Aspec&root=false"], api.Calls);
+        Assert.Equal(["/sindri/workflow/instances?recipe=workflow.step&urgency=incident&subject=fact%3Aspec&root=false&open=true"], api.Calls);
     }
 
     [Theory(Timeout = 30_000)]

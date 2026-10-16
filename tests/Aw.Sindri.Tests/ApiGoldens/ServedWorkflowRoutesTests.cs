@@ -88,12 +88,13 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
     public async Task Get_recipe_by_id_serves_RecipeView_with_outputs_and_every_input_kind()
     {
         await using var env = await WorkflowsHarness.StartDevServer(ct: TestContext.Current.CancellationToken);
+        _ = _harness.Approve(WorkflowsHarness.Shipped("dev/desk-round-trip.yaml"));
         await using var served = await Served.Start(_harness.Home, env, TestContext.Current.CancellationToken);
 
-        var body = await Read(served, "/sindri/workflow/recipes/workflow.step");
+        var body = await Read(served, "/sindri/workflow/recipes/workflow.dev-desk-round-trip");
 
         var view = JsonSerializer.Deserialize<RecipeView>(body, served.Sindri.GetRequiredService<JsonSerializerOptions>())!;
-        Assert.Equal("workflow.step", view.Id.Value);
+        Assert.Equal("workflow.dev-desk-round-trip", view.Id.Value);
         Assert.Contains(view.Outputs, o => o.Key == "fact:output");
         Assert.All(view.Inputs, i => Assert.False(string.IsNullOrEmpty(i.Kind)));
     }
@@ -124,7 +125,7 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
             ("workflow.dev-triage-three-state", "T-4", "dev-triage-three-state", ["fact:scope", "fact:item"]),
         })
         {
-            var started = await served.Cli(["start", recipe, "--item", item, .. facts.SelectMany(f => new[] { "--fact", f + "=" + _harness.File(item + f[5..] + ".md", "text of " + f) })]);
+            var started = await served.Cli(["start", recipe, "--item", item, .. facts.SelectMany(f => new[] { "--fact", f + "=" + _harness.File(item + f[5..] + ".md", f == "fact:item" ? $"{{ \"id\": \"{item}\", \"repo\": \"app\", \"spec\": \"the spec\" }}" : "text of " + f) })]);
             Assert.True(started.Exit == 0, started.Stderr);
             var id = await IdOfItem(served, item);
 
@@ -154,7 +155,7 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
     private static string[] Keys(JsonElement e) => [.. e.EnumerateObject().Select(static p => p.Name).Order(StringComparer.Ordinal)];
 
     private static string[] Cells(JsonElement e) => [.. e.GetProperty("states").EnumerateArray().Select(static s =>
-        $"{s.GetProperty("order")}/{(s.TryGetProperty("loops", out var l) ? l.ToString() : "-")}/{(s.TryGetProperty("desk", out var d) ? d.ValueKind.ToString() : "-")}")];
+        $"{s.GetProperty("order")}/{(s.TryGetProperty("loops", out var l) ? string.Join(',', l.EnumerateArray().Select(static p => $"{p.GetProperty("with")}:{p.GetProperty("max")}")) : "-")}/{(s.TryGetProperty("desk", out var d) ? d.ValueKind.ToString() : "-")}")];
 
     private static string[] FactStatuses(JsonElement e) => [.. e.GetProperty("facts").EnumerateArray().Select(static f => $"{f.GetProperty("key")}={f.GetProperty("status")}")];
 

@@ -38,9 +38,9 @@ public sealed class WorkflowReadVerbsTests : IDisposable
             AssertDeskTaskLayout(status);
             Assert.Equal(0, jsonExit);
             using var document = JsonDocument.Parse(json);
-            Assert.Equal(("CompleteStep", 1), (document.RootElement.GetProperty("allowedCommands")[0].GetProperty("actionId").GetString(), document.RootElement.GetProperty("version").GetInt32()));
+            Assert.Equal(("CompleteStep", 1), (document.RootElement.GetProperty("commands")[0].GetProperty("actionId").GetString(), document.RootElement.GetProperty("header").GetProperty("version").GetInt32()));
 
-            Assert.Matches(@"^Tasks\n  T-1/step/1  workflow\.step@[0-9a-f]{12}  v1  produce: desk task  since .+\n$", needsMe);
+            Assert.Matches(@"^Tasks\n  T-1/step/1  workflow\.step@[0-9a-f]{12}  produce: .+  since .+\n$", needsMe);
             Assert.Matches(@"^T-1/step/1  workflow\.step@", byItem);
             Assert.Equal("no instances match\n", otherState);
             Assert.Equal(0, eventsExit);
