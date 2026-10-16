@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "provider": "cursor",
+  "sessionId": "conv-4f2a9c",
+  "event": "stop",
+  "state": "idle",
+  "at": "2026-10-16T11:02:03.123Z",
+  "cwd": "/home/dev/repo",
+  "transcript": null,
+  "agentPid": 3023421,
+  "agentStartTicks": 13279367,
+  "env": {}
+}
