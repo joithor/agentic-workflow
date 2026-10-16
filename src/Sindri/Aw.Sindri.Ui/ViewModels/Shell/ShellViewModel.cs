@@ -70,6 +70,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         Strip = new WorkflowsStripViewModel(clipboard, clock);
         HookStrip();
         Health.Follow(ReadNeedsYou);
+        Health.Follow(ReadStrip);
         Queue.PropertyChanged += OnQueueChanged;
         Attention = AttentionSummary.For(feed: null, State, _clock.GetUtcNow());
     }

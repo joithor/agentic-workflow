@@ -11,6 +11,11 @@ internal sealed partial class ShellViewModel
     /// <summary>Home's Workflows strip.</summary>
     public WorkflowsStripViewModel Strip { get; }
 
+    // The workflow list is read with every event, whatever page is visible (until P5's invalidates): the stub is red.
+#pragma warning disable CA1822, IDE0060 // red stub, replaced by the green commit
+    private Task ReadStrip(Uri url, CancellationToken cancellationToken) => Task.CompletedTask;
+#pragma warning restore CA1822, IDE0060
+
     // The strip gives rows back to Needs you first and marks its rows stale with the views; "… N more" opens Workflows.
     private void HookStrip()
     {
