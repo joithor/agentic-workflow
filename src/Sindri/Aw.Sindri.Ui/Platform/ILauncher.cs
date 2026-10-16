@@ -1,6 +1,6 @@
 namespace Aw.Sindri.Ui.Platform;
 
-/// <summary>Port: hands a link or a file to the system to open (UI spec §7: opening apps). A head supplies one adapter; the view models guard what they pass.</summary>
+/// <summary>Port: hands a link or a file to the system to open (UI spec §7: opening apps). The app supplies one adapter (the Avalonia one, which every head shares); the view models guard what they pass. An adapter answers false for a refusal and never throws.</summary>
 public interface ILauncher
 {
     /// <summary>Opens a link in the system's browser or app.</summary>

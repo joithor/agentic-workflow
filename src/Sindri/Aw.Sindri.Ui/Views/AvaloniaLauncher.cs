@@ -10,17 +10,33 @@ namespace Aw.Sindri.Ui.Views;
 /// <param name="window">The top-level the request goes through, or null before it shows.</param>
 internal sealed class AvaloniaLauncher(Func<TopLevel?> window) : Platform.ILauncher
 {
-    public async Task<bool> OpenUri(Uri uri, CancellationToken cancellationToken) =>
-        window() is { } top && await top.Launcher.LaunchUriAsync(uri).ConfigureAwait(true);
+    public async Task<bool> OpenUri(Uri uri, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return window() is { } top && await top.Launcher.LaunchUriAsync(uri).ConfigureAwait(true);
+        }
+        catch (Exception e) when (e is InvalidOperationException or NotSupportedException or UriFormatException or IOException or System.ComponentModel.Win32Exception)
+        {
+            return false;   // the platform's refusal is an answer, not a fault the caller's discarded task would swallow
+        }
+    }
 
     public async Task<bool> OpenFile(string path, CancellationToken cancellationToken)
     {
-        if (window() is not { } top || !Path.IsPathRooted(path))
+        try
+        {
+            if (window() is not { } top || !Path.IsPathRooted(path))
+            {
+                return false;
+            }
+
+            var file = await top.StorageProvider.TryGetFileFromPathAsync(new Uri(path)).ConfigureAwait(true);
+            return file is not null && await top.Launcher.LaunchFileAsync(file).ConfigureAwait(true);
+        }
+        catch (Exception e) when (e is InvalidOperationException or NotSupportedException or UriFormatException or IOException or System.ComponentModel.Win32Exception)
         {
             return false;
         }
-
-        var file = await top.StorageProvider.TryGetFileFromPathAsync(new Uri(path)).ConfigureAwait(true);
-        return file is not null && await top.Launcher.LaunchFileAsync(file).ConfigureAwait(true);
     }
 }
