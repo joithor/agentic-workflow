@@ -91,6 +91,7 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
     {
         Url = url;
         var read = ++_reads;
+        _doneReads++;   // a finished read for the filter before this one (or from before this refresh) is no longer wanted
         var list = await api.Instances(url, new InstanceQuery(Root: true, Open: true, Recipe: RecipeFilter, Subject: SubjectFilter), cancellationToken).ConfigureAwait(true);
         if (read != _reads)
         {
