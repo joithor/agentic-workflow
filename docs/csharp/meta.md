@@ -162,6 +162,8 @@ A worktree git cannot read is kept with the reason.
 | `$XDG_DATA_HOME/warp-terminal/launch_configurations/<team>-team.yaml` | `scripts/meta-launch.sh` (the `warp` viewer only) |
 | `$AW_STATE_DIR/launcher.json` | the owner, or `aw-meta-launch --init-launcher` (read by `scripts/launcher-lib.sh`) |
 | `$AW_STATE_DIR/meta/lane-sessions/<lane>.ambiguous` | `scripts/meta-lane.sh` when an agent that reports its own session id left more than one candidate session file |
+| `$AW_STATE_DIR/meta/lane-sessions/<lane>.settled` | `scripts/meta-lane.sh` for a lane whose agent reports its own session id: left once the id is recorded or refused; `meta-launch.sh` waits for it before starting the next lane |
+| `$AW_STATE_DIR/meta/lane-sessions/.reported.lock/` | `scripts/meta-lane.sh`: the team start lock that serialises the start of lanes whose agent reports its own session id (`pid` names the holder) |
 
 ## Launcher
 
@@ -184,7 +186,12 @@ prints `lane <l>: <agent>, launch-only for now: no obligations`. The lane map an
 they show any lane with no Claude session; do not message a lane marked launch-only. An agent with `sessionId: reported`
 chooses its own id: lanes of that kind start one at a time, each waiting up to `AW_META_ID_WAIT` seconds (30) for its id
 (the `lane-sessions/<lane>` file a hook writes, else the single new file the catalog's `newestFile` glob finds that no other
-lane has recorded; two candidates are refused and leave `<lane>.ambiguous`). Obligations for them arrive with SL-1b.
+lane has recorded; two candidates are refused and leave `<lane>.ambiguous`). "New" means a path that did not exist when
+the lane started (a snapshot taken before the agent runs), not a recently modified one. The one-at-a-time start is the
+lane's own: `meta-lane.sh` takes a team start lock (`lane-sessions/.reported.lock`) before the agent runs and releases it
+when the id is recorded, refused or timed out, so lanes created together (a Warp pane that creates its session, a
+reboot, `--lanes`) are safe too. A lane refused by the launcher reader (a kickoff prompt starting with `-` once a
+`launcher.json` exists) starts no agent and records no id. Obligations for them arrive with SL-1b.
 
 **Precedence** (environment, then the file, then the defaults): `AW_META_CLAUDE` replaces the `claude-code` entry's `bin`
 and `AW_META_CLAUDE_ARGS` is inserted after `{bin}`; both stay for tests and are deprecated for users in favour of an
