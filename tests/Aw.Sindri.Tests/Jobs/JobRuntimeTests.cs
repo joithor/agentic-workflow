@@ -97,7 +97,7 @@ public sealed class JobRuntimeTests
     }
 
     [Fact]
-    public async Task A_secret_and_an_escape_in_a_line_are_cleaned_before_the_event_is_written()
+    public async Task A_line_is_scrubbed_escaped_and_cut_by_the_writer_before_the_event_is_written()
     {
         await using var runtime = await Open(new RedactingScrubber(Redactor.Default));
 
@@ -105,7 +105,24 @@ public sealed class JobRuntimeTests
         await runtime.Quiesce();
 
         var line = runtime.H.Events.Payload<JobProgress>(Assert.Single(runtime.Events, e => string.Equals(e.Envelope.Type, EventTypes.JobProgress, StringComparison.Ordinal))).Value.Line;
-        Assert.DoesNotContain("ghp_", line, StringComparison.Ordinal);
+        Assert.DoesNotContain("ghp_", line, StringComparison.Ordinal);   // scrubbed
+        Assert.DoesNotContain('\u001b', line);   // escaped
+        Assert.DoesNotContain('\u0007', line);
+        Assert.StartsWith("\\x1B]8;;x\\x07", line, StringComparison.Ordinal);
+        Expect.Equal(JobLimits.LineChars, line.Length);   // cut to 200
+    }
+
+    [Fact]
+    public async Task A_secret_in_a_result_string_is_scrubbed_where_it_is_stored()
+    {
+        await using var runtime = await Open(new RedactingScrubber(Redactor.Default));
+
+        _ = await runtime.Start(new ProbeJobRequest("keyed"), Human());
+        await runtime.Quiesce();
+
+        var finished = Finished(runtime);
+        Assert.DoesNotContain("ghp_", finished.Result!.Value.GetProperty("text").GetString(), StringComparison.Ordinal);
+        Expect.Equal(JobOutcome.Succeeded, finished.Outcome);
     }
 
     [Fact]
