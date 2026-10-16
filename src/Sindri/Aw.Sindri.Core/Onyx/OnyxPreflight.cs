@@ -18,11 +18,12 @@ public static class OnyxPreflight
 
     /// <summary>Judges the facts against the pins.</summary>
     /// <param name="docker">What the container runtime reports.</param>
-    /// <param name="disk">Free disk where Onyx would live.</param>
+    /// <param name="disk">Free disk at the Sindri home, where Onyx's files live.</param>
+    /// <param name="dataRootDisk">Free disk at Docker's data root when that is a directory on this host (a Linux engine); null when it is unknown or inside a VM.</param>
     /// <param name="port">Which loopback ports are free.</param>
     /// <param name="pins">What the pinned release needs.</param>
     /// <returns>The five checks and the port setup would use.</returns>
-    public static PreflightReport Evaluate(ContainerRuntimeFacts docker, DiskFacts disk, PortFacts port, OnyxPins pins)
+    public static PreflightReport Evaluate(ContainerRuntimeFacts docker, DiskFacts disk, DiskFacts? dataRootDisk, PortFacts port, OnyxPins pins)
     {
         ArgumentNullException.ThrowIfNull(docker);
         ArgumentNullException.ThrowIfNull(disk);
@@ -35,7 +36,7 @@ public static class OnyxPreflight
             dockerCheck,
             needsDocker ? Warn("compose", "needs docker") : Compose(docker),
             needsDocker ? Warn("memory", "needs docker") : Memory(docker, pins),
-            Disk(disk, pins),
+            Disk(docker, disk, dataRootDisk, pins),
             Port(port),
         ];
         return new PreflightReport(checks, port.PreferredFree ? port.Preferred : port.FirstFreeFallback ?? port.Preferred);
@@ -73,10 +74,15 @@ public static class OnyxPreflight
             : Fail("memory", detail, SindriErrors.OnyxNotEnoughResources, $"Docker has {Gib(have)} GiB and Onyx needs a {setting} GiB limit: set Docker's memory to at least {setting} GiB in Docker Desktop → Settings → Resources");
     }
 
-    private static PreflightCheck Disk(DiskFacts disk, OnyxPins pins)
+    // Spec §4.1 step 1: free disk at the Sindri home and, when Docker's data root is a directory on this host, there too; the
+    // smaller one counts. When the data root is known but isn't a host directory it is inside Docker Desktop's VM, whose disk
+    // image sits on the host volume and has a cap of its own, which no host probe can read: the row says so.
+    private static PreflightCheck Disk(ContainerRuntimeFacts docker, DiskFacts home, DiskFacts? dataRoot, OnyxPins pins)
     {
-        var detail = $"{Gib(disk.FreeBytes)} GiB free at {disk.MeasuredPath}, needs {Gib(pins.DiskBytes)} GiB";
-        return disk.FreeBytes >= pins.DiskBytes
+        var measured = dataRoot is not null && dataRoot.FreeBytes < home.FreeBytes ? dataRoot : home;
+        var note = docker.DataRoot is not null && dataRoot is null ? "; Docker Desktop also caps its disk image (Settings → Resources)" : "";
+        var detail = $"{Gib(measured.FreeBytes)} GiB free at {measured.MeasuredPath}, needs {Gib(pins.DiskBytes)} GiB{note}";
+        return measured.FreeBytes >= pins.DiskBytes
             ? Ok("disk", detail)
             : Fail("disk", detail, SindriErrors.OnyxNotEnoughResources, $"Not enough disk: {detail}. Free space on that volume, then run this again");
     }

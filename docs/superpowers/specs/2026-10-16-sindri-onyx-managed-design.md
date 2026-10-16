@@ -98,7 +98,9 @@ Each step is idempotent and checks before it acts; the run records each complete
 
 1. **Preflight.** Docker CLI present and the daemon answering (`docker version`), Compose v2 (`docker compose
    version`); Docker's memory limit ≥ the one-user sizing needs (builder measures; the manual page says ~6 GB with the VM
-   capped at 6 GB); free disk on Docker's data root and `$AW_SINDRI_HOME` ≥ the pinned total image size plus headroom
+   capped at 6 GB); free disk at `$AW_SINDRI_HOME` and, where Docker's data root is a directory on this host (a Linux engine), at the data root
+   (`docker info` DockerRootDir), the smaller of the two ≥ the pinned total image size plus headroom; on Docker Desktop the
+   data root lives in its VM, so the host measurement stands and the row notes that Docker Desktop caps its disk image too
    (the builder measures the real pull and model download on v4.9.0 and records the number in the pins). The chosen
    port (default 3000, §7) free or already ours.
 2. **Fetch the deployment files** listed in the pins (the compose file, `env.template`, the nginx config files the

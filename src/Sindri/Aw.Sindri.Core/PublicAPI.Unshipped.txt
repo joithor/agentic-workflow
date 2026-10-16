@@ -7843,10 +7843,12 @@ Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeV2.get -> bool
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeV2.init -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeVersion.get -> string?
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeVersion.init -> void
-Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ContainerRuntimeFacts(bool CliFound, bool DaemonAnswers, string? ServerVersion, bool ComposeV2, string? ComposeVersion, long? MemoryBytes) -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ContainerRuntimeFacts(bool CliFound, bool DaemonAnswers, string? ServerVersion, bool ComposeV2, string? ComposeVersion, long? MemoryBytes, string? DataRoot) -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DaemonAnswers.get -> bool
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DaemonAnswers.init -> void
-Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Deconstruct(out bool CliFound, out bool DaemonAnswers, out string? ServerVersion, out bool ComposeV2, out string? ComposeVersion, out long? MemoryBytes) -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DataRoot.get -> string?
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DataRoot.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Deconstruct(out bool CliFound, out bool DaemonAnswers, out string? ServerVersion, out bool ComposeV2, out string? ComposeVersion, out long? MemoryBytes, out string? DataRoot) -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Equals(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts? other) -> bool
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.MemoryBytes.get -> long?
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.MemoryBytes.init -> void
@@ -7923,7 +7925,7 @@ override Aw.Sindri.Core.Onyx.PreflightReport.GetHashCode() -> int
 override Aw.Sindri.Core.Onyx.PreflightReport.ToString() -> string!
 static Aw.Sindri.Core.Onyx.DiskFacts.operator !=(Aw.Sindri.Core.Onyx.DiskFacts? left, Aw.Sindri.Core.Onyx.DiskFacts? right) -> bool
 static Aw.Sindri.Core.Onyx.DiskFacts.operator ==(Aw.Sindri.Core.Onyx.DiskFacts? left, Aw.Sindri.Core.Onyx.DiskFacts? right) -> bool
-static Aw.Sindri.Core.Onyx.OnyxPreflight.Evaluate(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! docker, Aw.Sindri.Core.Onyx.DiskFacts! disk, Aw.Sindri.Core.Onyx.PortFacts! port, Aw.Sindri.Core.Onyx.OnyxPins! pins) -> Aw.Sindri.Core.Onyx.PreflightReport!
+static Aw.Sindri.Core.Onyx.OnyxPreflight.Evaluate(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! docker, Aw.Sindri.Core.Onyx.DiskFacts! disk, Aw.Sindri.Core.Onyx.DiskFacts? dataRootDisk, Aw.Sindri.Core.Onyx.PortFacts! port, Aw.Sindri.Core.Onyx.OnyxPins! pins) -> Aw.Sindri.Core.Onyx.PreflightReport!
 static Aw.Sindri.Core.Onyx.OnyxPreflight.Gib(long bytes) -> string!
 static Aw.Sindri.Core.Onyx.PortFacts.operator !=(Aw.Sindri.Core.Onyx.PortFacts? left, Aw.Sindri.Core.Onyx.PortFacts? right) -> bool
 static Aw.Sindri.Core.Onyx.PortFacts.operator ==(Aw.Sindri.Core.Onyx.PortFacts? left, Aw.Sindri.Core.Onyx.PortFacts? right) -> bool

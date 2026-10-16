@@ -65,7 +65,7 @@ public sealed class OnyxStatusCommandTests : IDisposable
                 "docker    ok 29.4.0",
                 "compose   ok v2.40.3",
                 "memory    ok 15.7 GiB for Docker, needs a 6 GiB setting",
-                "disk      fail 11.0 GiB free at /sindri-home, needs 16.3 GiB (SND-ONYX-003: Not enough disk: 11.0 GiB free at /sindri-home, needs 16.3 GiB. Free space on that volume, then run this again)",
+                "disk      fail 11.0 GiB free at /sindri-home, needs 16.3 GiB; Docker Desktop also caps its disk image (Settings → Resources) (SND-ONYX-003: Not enough disk: 11.0 GiB free at /sindri-home, needs 16.3 GiB; Docker Desktop also caps its disk image (Settings → Resources). Free space on that volume, then run this again)",
                 "port      ok 3000 free",
             ],
             lines,

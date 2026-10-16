@@ -19,6 +19,42 @@ public sealed class OnyxStatusTests
         return (await service.Handle(new OnyxStatusRequest(), TestContext.Current.CancellationToken)).Value;
     }
 
+    private static async Task<OnyxStatusResponse> StatusWithDataRoot(bool onThisHost)
+    {
+        var probes = new FakeHostProbes { FreeBytes = 100 * Gib };
+        _ = probes.Directories.Add("/sindri-home");
+        if (onThisHost)
+        {
+            _ = probes.Directories.Add("/var/lib/docker");
+            probes.VolumeFreeBytes["/var/lib/docker"] = 12 * Gib;
+        }
+
+        var service = new OnyxStatusService(new EmbeddedOnyxPins(), new FakeContainerRuntime(FakeContainerRuntime.Healthy), probes, new FakeSindriHome("/sindri-home"));
+
+        return (await service.Handle(new OnyxStatusRequest(), TestContext.Current.CancellationToken)).Value;
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Status_measures_a_data_root_that_is_a_directory_on_this_host()
+    {
+        var status = await StatusWithDataRoot(onThisHost: true);
+
+        var disk = Assert.Single(status.Checks, static c => c.Name == "disk");
+        Assert.Equal(CheckState.Fail, disk.State);
+        Assert.Equal(1, status.ExitCode);
+        Assert.StartsWith("12.0 GiB free at /var/lib/docker", disk.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Status_keeps_the_home_measurement_and_notes_docker_desktop_when_the_data_root_is_in_a_vm()
+    {
+        var status = await StatusWithDataRoot(onThisHost: false);
+
+        var disk = Assert.Single(status.Checks, static c => c.Name == "disk");
+        Assert.Equal(CheckState.Ok, disk.State);
+        Assert.Equal("100.0 GiB free at /sindri-home, needs 16.3 GiB; Docker Desktop also caps its disk image (Settings → Resources)", disk.Detail);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task Status_is_not_set_up_with_the_pins_version()
     {

@@ -11,6 +11,9 @@ public sealed class FakeHostProbes : IHostProbes
     /// <summary>Gets or sets the free bytes every directory reports.</summary>
     public long FreeBytes { get; set; } = 100L << 30;
 
+    /// <summary>Gets the free bytes of a directory that sits on a volume of its own, keyed by the measured directory; the others report <see cref="FreeBytes"/>.</summary>
+    public IDictionary<string, long> VolumeFreeBytes { get; } = new Dictionary<string, long>(StringComparer.Ordinal);
+
     /// <summary>Gets the ports that can't be bound.</summary>
     public ISet<int> TakenPorts { get; } = new HashSet<int>();
 
@@ -23,7 +26,8 @@ public sealed class FakeHostProbes : IHostProbes
             measured = parent;
         }
 
-        return new DiskFacts(Directories.Contains(measured) ? measured : "/", FreeBytes);
+        var at = Directories.Contains(measured) ? measured : "/";
+        return new DiskFacts(at, VolumeFreeBytes.TryGetValue(at, out var volume) ? volume : FreeBytes);
     }
 
     /// <inheritdoc />

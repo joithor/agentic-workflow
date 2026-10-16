@@ -77,9 +77,25 @@ public sealed class DockerCliRuntimeTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Inspect_runs_exactly_the_three_commands_with_a_five_second_timeout_each()
+    public void Inspect_reads_the_data_root()
     {
-        var runner = Docker(Ok("29.4.0"), Ok("v2.40.3"), Ok("16818978816"));
+        var facts = new DockerCliRuntime(DockerWithInfo("29.4.0", "16818978816", "/var/lib/docker")).Inspect(Token);
+
+        Assert.Equal("/var/lib/docker", facts.DataRoot);
+        Assert.Equal(16_818_978_816, facts.MemoryBytes);
+    }
+
+    private static FakeToolRunner DockerWithInfo(string version, string memory, string dataRoot) => new((_, arguments) => arguments[0] switch
+    {
+        "version" => Ok(version),
+        "compose" => Ok("v2.40.3"),
+        _ => arguments[2] == "{{.DockerRootDir}}" ? Ok(dataRoot) : Ok(memory),
+    });
+
+    [Fact, Trait("Lane", "unit")]
+    public void Inspect_runs_exactly_the_four_commands_with_a_five_second_timeout_each()
+    {
+        var runner = DockerWithInfo("29.4.0", "16818978816", "/var/lib/docker");
 
         _ = new DockerCliRuntime(runner).Inspect(Token);
 
@@ -88,6 +104,7 @@ public sealed class DockerCliRuntimeTests
                 ["version", "--format", "{{.Server.Version}}"],
                 ["compose", "version", "--short"],
                 ["info", "--format", "{{.MemTotal}}"],
+                ["info", "--format", "{{.DockerRootDir}}"],
             ],
             runner.Calls.Select(static c => c.Arguments));
         Assert.All(runner.Calls, static c => Assert.Equal("docker", c.FileName));
