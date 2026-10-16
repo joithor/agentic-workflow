@@ -13,7 +13,7 @@ setup_env() {
   mkdir -p "$HOME"
   export TOOLKIT_DIR="$ROOT"
   export AW_DRY_RUN=0
-  unset AW_STATE_ROOT CODEX_HOME CLAUDE_DIR CURSOR_DIR
+  unset AW_STATE_ROOT AW_STATE_DIR CODEX_HOME CLAUDE_DIR CURSOR_DIR
   # shellcheck source=../lib.sh
   source "$ROOT/providers/lib.sh"
   source "$ROOT/config/lib/install-agents.sh"
@@ -356,7 +356,22 @@ JSON
   echo "PASS: test_resize_hooks_migrate_to_tagged_per_tty_entries"
 }
 
+test_state_root_follows_aw_state_dir() {
+  setup_env
+  local want="$SANDBOX/state"
+  ( unset AW_STATE_ROOT; export AW_STATE_DIR="$want"; source "$ROOT/providers/lib.sh"; [ "$AW_STATE_ROOT" = "$want" ] ) \
+    || fail "AW_STATE_ROOT does not default from AW_STATE_DIR"
+  ( unset AW_STATE_DIR; export AW_STATE_ROOT="$want/alias"; source "$ROOT/providers/lib.sh"; [ "$AW_STATE_ROOT" = "$want/alias" ] ) \
+    || fail "AW_STATE_ROOT alias no longer works"
+  ( export AW_STATE_DIR="$want" AW_STATE_ROOT="$want/alias"; source "$ROOT/providers/lib.sh"; [ "$AW_STATE_ROOT" = "$want" ] ) \
+    || fail "AW_STATE_DIR should win over the AW_STATE_ROOT alias"
+  ( source "$ROOT/providers/lib.sh"; [ "$AW_STATE_ROOT" = "$HOME/.agentic-workflow" ] ) || fail "default state root changed"
+  teardown_env
+  echo "PASS: test_state_root_follows_aw_state_dir"
+}
+
 test_links_managed_and_bootstrap_then_is_idempotent
+test_state_root_follows_aw_state_dir
 test_refreshes_legacy_link_and_removes_deprecated
 test_foreign_collision_is_kept_when_stdin_closed
 test_stale_cleanup_only_removes_our_links
