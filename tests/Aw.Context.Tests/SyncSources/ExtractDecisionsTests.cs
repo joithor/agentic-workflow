@@ -8,6 +8,7 @@ using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 using Aw.Context.Features.SyncSources;
 using Aw.Context.Testing.Fakes;
+using Aw.Context.Testing.Map;
 using Aw.Context.Tests.Map;
 using Aw.Context.Tests.Onyx;
 
@@ -126,6 +127,25 @@ public sealed class ExtractDecisionsTests
         Assert.True(row.Tokens <= 1_100);
         Assert.Equal(linked - asked, row.Queued);
         Assert.Equal(ContextErrors.LabelingUnavailable.Code, row.Code);
+    }
+
+    [Fact]
+    public async Task A_done_record_held_back_when_a_map_change_re_extracts_it_is_queued_again_with_its_old_decisions_kept()
+    {
+        await using var rig = await Rig.Start();
+        _ = await rig.Sync(Scope());
+        var before = await rig.Layer();
+        var linked = rig.World.Model.Requests.Count(r => r.Purpose == ModelPurpose.DecisionExtraction);
+        _ = await rig.World.ImportYaml(FixtureMap.Yaml.Replace("edges:", "  - key: thing:zzz-added\n    label: \"Added by the new map\"\nedges:", StringComparison.Ordinal));   // a new map version re-extracts every record
+        rig.World.Model.Requests.Clear();
+
+        var row = await rig.Sync(Scope(perSync: 1_100));   // room for one extraction only
+
+        var asked = rig.World.Model.Requests.Count(r => r.Purpose == ModelPurpose.DecisionExtraction);
+        Assert.InRange(asked, 1, linked - 1);
+        Assert.Equal(linked - asked, row.Queued);   // the held-back done records wait again: they were not re-extracted against the new map
+        Assert.Equal(ContextErrors.LabelingUnavailable.Code, row.Code);
+        Assert.Equal(before.Decisions.Count, (await rig.Layer()).Decisions.Count);   // and keep their old decisions meanwhile
     }
 
     [Fact]
