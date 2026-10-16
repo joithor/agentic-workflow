@@ -3,6 +3,7 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Features.CancelJob;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Jobs;
@@ -89,6 +90,7 @@ public sealed class CancelJobFailureTests
             }
 
             _ = runtime.Latch.Release.TrySetResult();   // the work returns while the cancel is being recorded, then the record fails
+            WorkReturned.Await(runtime.Latch.Returned.Task, () => runtime.Runner.Running == 0);   // the job is parked on the pending cancel, or (red) already gone
             return SindriErrors.LedgerUnavailable.With("busy");
         };
         using var entered = runtime.H.Callers.Enter(Human());
@@ -110,6 +112,7 @@ public sealed class CancelJobFailureTests
             if (IsCancel(entry))
             {
                 _ = runtime.Latch.Release.TrySetResult();
+                WorkReturned.Await(runtime.Latch.Returned.Task, () => runtime.Runner.Running == 0);   // the job is parked on the pending cancel, or (red) already gone
                 throw new InvalidOperationException("the request went away");
             }
         };
@@ -118,6 +121,64 @@ public sealed class CancelJobFailureTests
         _ = await Assert.ThrowsAsync<InvalidOperationException>(async () => await CancelJobTests.Service(runtime, views).Handle(new CancelJobRequest(job), Token));
         await runtime.Quiesce().WaitAsync(_bound, TimeProvider.System, Token);
 
+        AssertOnlyTheFinish(runtime);
+    }
+
+    [Fact]
+    public async Task A_work_that_throws_a_cancellation_of_its_own_while_its_cancel_fails_to_record_gets_a_failed_end()
+    {
+        var views = new InMemoryJobViews();
+        await using var runtime = CancelJobTests.Runtime(views);
+        await runtime.Open();
+        var started = await runtime.Start(new ProbeJobRequest("own-cancel"), Human());
+        await runtime.Latch.Entered.Task.WaitAsync(_bound, TimeProvider.System, Token);
+        views.Put(A.Job().WithId(started.Value.JobId).Build());
+        using var released = new LatchRelease(runtime);
+        runtime.H.Store.FailAppend = entry =>
+        {
+            if (!IsCancel(entry))
+            {
+                return null;
+            }
+
+            _ = runtime.Latch.Release.TrySetResult();   // the work throws its own cancellation while the cancel is pending, then the cancel is withdrawn
+            WorkReturned.Await(runtime.Latch.Returned.Task);
+            return SindriErrors.LedgerUnavailable.With("busy");
+        };
+        using var entered = runtime.H.Callers.Enter(Human());
+
+        _ = await CancelJobTests.Service(runtime, views).Handle(new CancelJobRequest(started.Value.JobId), Token);
+        await runtime.Quiesce().WaitAsync(_bound, TimeProvider.System, Token);
+
+        var finished = Assert.Single(runtime.Events, static e => string.Equals(e.Envelope.Type, EventTypes.JobFinished, StringComparison.Ordinal));   // no cancel, no token trip: the job is not left running
+        Expect.Equal(JobOutcome.Failed, runtime.H.Events.Payload<JobFinished>(finished).Value.Outcome);
+        Assert.DoesNotContain(runtime.Events, static e => string.Equals(e.Envelope.Type, EventTypes.JobCancelled, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_cancel_mark_that_arrives_after_the_job_decided_to_finish_is_ignored()
+    {
+        var (runtime, views, job) = await StartStubborn();
+        await using var disposing = runtime;
+        using var released = new LatchRelease(runtime);
+        using var finishing = new ManualResetEventSlim();
+        using var proceed = new ManualResetEventSlim();
+        runtime.H.Store.BeforeAppend = entry =>
+        {
+            if (string.Equals(entry.Envelope.Type, EventTypes.JobFinished, StringComparison.Ordinal))
+            {
+                finishing.Set();
+                _ = proceed.Wait(_bound, Token);   // the end has decided and is writing
+            }
+        };
+        _ = runtime.Latch.Release.TrySetResult();
+        Assert.True(finishing.Wait(_bound, Token));
+
+        runtime.Runner.Cancelling(job);   // too late to turn the end into "recorded elsewhere": no terminal event would follow if its append failed
+
+        Assert.False(runtime.Runner.IsCancelling(job));
+        proceed.Set();
+        await runtime.Quiesce().WaitAsync(_bound, TimeProvider.System, Token);
         AssertOnlyTheFinish(runtime);
     }
 

@@ -7,6 +7,7 @@ using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Tests.Jobs;
 using Aw.Sindri.Tests.Server;
 
 namespace Aw.Sindri.Tests.RunService;
@@ -169,6 +170,7 @@ public sealed class RunServiceTests
         await appending.Task.WaitAsync(Token);
 
         stuck.Release();   // the service returns now, past the point a tripped token would have stopped it
+        WorkReturned.Await(stuck.Returned.Task);   // and the run is parked in CancelRecorded before the cancel is allowed to settle: with the token tripped first it would throw at its first check instead
         _ = proceed.TrySetResult();   // the run waits for the cancel to settle before it decides, so the record goes through first
         _ = await cancel;
         await runtime.Quiesce().WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, Token);

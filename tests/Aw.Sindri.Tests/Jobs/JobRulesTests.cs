@@ -26,11 +26,10 @@ public sealed class JobRulesTests
         Expect.Equal(250, lines[^1].Round);
     }
 
+    public static TheoryData<JobState> States => [.. Enum.GetValues<JobState>()];
+
     [Theory]
-    [InlineData(JobState.Running)]
-    [InlineData(JobState.Succeeded)]
-    [InlineData(JobState.Failed)]
-    [InlineData(JobState.Cancelled)]
+    [MemberData(nameof(States))]
     public void Every_state_name_is_the_name_the_json_writes(JobState state)
     {
         var json = System.Text.Encoding.UTF8.GetString(Kernel.Json.AwJson.Serialize(state, SliceHarness.Json));
