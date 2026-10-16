@@ -149,11 +149,15 @@ internal sealed class BacktestWorld : IAsyncDisposable
 
     /// <summary>Imports the authored fixture map at the clock's time.</summary>
     /// <returns>The task.</returns>
-    public async Task ImportMap()
+    /// <param name="commit">The commit the map says it was authored at, or null.</param>
+    public async Task ImportMap(string? commit = null)
     {
+        const string path = "/maps/at-commit.yaml";
+        var yaml = commit is null ? FixtureMap.Yaml : "commit: " + commit + "\n" + FixtureMap.Yaml;
+        Reader.Put(path, Maps.Parse(yaml), yaml);
         var human = Human();
-        var preview = await Map.PreviewMap(MapPath, human, TestContext.Current.CancellationToken);
-        var imported = await Map.ImportMap(MapPath, preview.Value.Hash, human, TestContext.Current.CancellationToken);
+        var preview = await Map.PreviewMap(path, human, TestContext.Current.CancellationToken);
+        var imported = await Map.ImportMap(path, preview.Value.Hash, human, TestContext.Current.CancellationToken);
         Assert.True(imported.IsSuccess, imported.IsError ? imported.Error.Message : null);
     }
 

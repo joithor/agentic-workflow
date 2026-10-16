@@ -4409,3 +4409,97 @@ static Aw.Context.Core.Eval.Backtest.Adjudication.operator !=(Aw.Context.Core.Ev
 static Aw.Context.Core.Eval.Backtest.Adjudication.operator ==(Aw.Context.Core.Eval.Backtest.Adjudication? left, Aw.Context.Core.Eval.Backtest.Adjudication? right) -> bool
 static Aw.Context.Core.Eval.Backtest.AdjudicationRequest.operator !=(Aw.Context.Core.Eval.Backtest.AdjudicationRequest? left, Aw.Context.Core.Eval.Backtest.AdjudicationRequest? right) -> bool
 static Aw.Context.Core.Eval.Backtest.AdjudicationRequest.operator ==(Aw.Context.Core.Eval.Backtest.AdjudicationRequest? left, Aw.Context.Core.Eval.Backtest.AdjudicationRequest? right) -> bool
+Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest
+Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.<Clone>$() -> Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest!
+Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.All.get -> bool
+Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.All.init -> void
+Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.Deconstruct(out Aw.Context.Core.Engine.ContextScope! Scope, out bool All) -> void
+Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.Equals(Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest? other) -> bool
+Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.EvalPurgeRequest(Aw.Context.Core.Engine.ContextScope! Scope, bool All) -> void
+Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.Scope.get -> Aw.Context.Core.Engine.ContextScope!
+Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.Scope.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityBars
+Aw.Context.Core.Eval.MapQuality.MapQualityReport
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.<Clone>$() -> Aw.Context.Core.Eval.MapQuality.MapQualityReport!
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.Bars.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.Bars.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.CreatedAt.get -> System.DateTimeOffset
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.CreatedAt.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.Deconstruct(out int SchemaVersion, out System.DateTimeOffset CreatedAt, out string! MapVersion, out Aw.Context.Core.Eval.MapQuality.Ratio! NodePrecision, out Aw.Context.Core.Eval.MapQuality.Ratio! NodePrecisionDeterministic, out Aw.Context.Core.Eval.MapQuality.Ratio! NodePrecisionModel, out Aw.Context.Core.Eval.MapQuality.Ratio! LinkPrecision, out int Undecided, out Aw.Context.Core.Eval.MapQuality.Ratio! UnmappedRate, out string? Window, out System.Collections.Generic.IReadOnlyList<string!>! Bars) -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.Equals(Aw.Context.Core.Eval.MapQuality.MapQualityReport? other) -> bool
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.LinkPrecision.get -> Aw.Context.Core.Eval.MapQuality.Ratio!
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.LinkPrecision.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.MapQualityReport(int SchemaVersion, System.DateTimeOffset CreatedAt, string! MapVersion, Aw.Context.Core.Eval.MapQuality.Ratio! NodePrecision, Aw.Context.Core.Eval.MapQuality.Ratio! NodePrecisionDeterministic, Aw.Context.Core.Eval.MapQuality.Ratio! NodePrecisionModel, Aw.Context.Core.Eval.MapQuality.Ratio! LinkPrecision, int Undecided, Aw.Context.Core.Eval.MapQuality.Ratio! UnmappedRate, string? Window, System.Collections.Generic.IReadOnlyList<string!>! Bars) -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.MapVersion.get -> string!
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.MapVersion.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.NodePrecision.get -> Aw.Context.Core.Eval.MapQuality.Ratio!
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.NodePrecision.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.NodePrecisionDeterministic.get -> Aw.Context.Core.Eval.MapQuality.Ratio!
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.NodePrecisionDeterministic.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.NodePrecisionModel.get -> Aw.Context.Core.Eval.MapQuality.Ratio!
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.NodePrecisionModel.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.SchemaVersion.get -> int
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.SchemaVersion.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.Undecided.get -> int
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.Undecided.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.UnmappedRate.get -> Aw.Context.Core.Eval.MapQuality.Ratio!
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.UnmappedRate.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.Window.get -> string?
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.Window.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityRequest
+Aw.Context.Core.Eval.MapQuality.MapQualityRequest.<Clone>$() -> Aw.Context.Core.Eval.MapQuality.MapQualityRequest!
+Aw.Context.Core.Eval.MapQuality.MapQualityRequest.Deconstruct(out Aw.Context.Core.Engine.ContextScope! Scope) -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityRequest.Equals(Aw.Context.Core.Eval.MapQuality.MapQualityRequest? other) -> bool
+Aw.Context.Core.Eval.MapQuality.MapQualityRequest.MapQualityRequest(Aw.Context.Core.Engine.ContextScope! Scope) -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityRequest.Scope.get -> Aw.Context.Core.Engine.ContextScope!
+Aw.Context.Core.Eval.MapQuality.MapQualityRequest.Scope.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityRun
+Aw.Context.Core.Eval.MapQuality.MapQualityRun.<Clone>$() -> Aw.Context.Core.Eval.MapQuality.MapQualityRun!
+Aw.Context.Core.Eval.MapQuality.MapQualityRun.Deconstruct(out Aw.Context.Core.Eval.MapQuality.MapQualityReport! Report, out string! Path) -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityRun.Equals(Aw.Context.Core.Eval.MapQuality.MapQualityRun? other) -> bool
+Aw.Context.Core.Eval.MapQuality.MapQualityRun.MapQualityRun(Aw.Context.Core.Eval.MapQuality.MapQualityReport! Report, string! Path) -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityRun.Path.get -> string!
+Aw.Context.Core.Eval.MapQuality.MapQualityRun.Path.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityRun.Report.get -> Aw.Context.Core.Eval.MapQuality.MapQualityReport!
+Aw.Context.Core.Eval.MapQuality.MapQualityRun.Report.init -> void
+Aw.Context.Core.Eval.MapQuality.Ratio
+Aw.Context.Core.Eval.MapQuality.Ratio.<Clone>$() -> Aw.Context.Core.Eval.MapQuality.Ratio!
+Aw.Context.Core.Eval.MapQuality.Ratio.Deconstruct(out int Hits, out int Total) -> void
+Aw.Context.Core.Eval.MapQuality.Ratio.Equals(Aw.Context.Core.Eval.MapQuality.Ratio? other) -> bool
+Aw.Context.Core.Eval.MapQuality.Ratio.Hits.get -> int
+Aw.Context.Core.Eval.MapQuality.Ratio.Hits.init -> void
+Aw.Context.Core.Eval.MapQuality.Ratio.Ratio(int Hits, int Total) -> void
+Aw.Context.Core.Eval.MapQuality.Ratio.Total.get -> int
+Aw.Context.Core.Eval.MapQuality.Ratio.Total.init -> void
+Aw.Context.Core.Eval.MapQuality.Ratio.Value.get -> double?
+Aw.Context.Core.Facade.IContextEngine.EvalMap(Aw.Context.Core.Eval.MapQuality.MapQualityRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.MapQuality.MapQualityRun!>!>
+Aw.Context.Core.Facade.IContextEngine.EvalPurge(Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.Backtest.EvalPurgeReport!>!>
+const Aw.Context.Core.Eval.MapQuality.MapQualityBars.NodePrecision = 0.8 -> double
+const Aw.Context.Core.Eval.MapQuality.MapQualityBars.UnmappedRate = 0.2 -> double
+const Aw.Context.Core.Eval.MapQuality.MapQualityReport.CurrentSchemaVersion = 1 -> int
+override Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.GetHashCode() -> int
+override Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.ToString() -> string!
+override Aw.Context.Core.Eval.MapQuality.MapQualityReport.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.MapQuality.MapQualityReport.GetHashCode() -> int
+override Aw.Context.Core.Eval.MapQuality.MapQualityReport.ToString() -> string!
+override Aw.Context.Core.Eval.MapQuality.MapQualityRequest.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.MapQuality.MapQualityRequest.GetHashCode() -> int
+override Aw.Context.Core.Eval.MapQuality.MapQualityRequest.ToString() -> string!
+override Aw.Context.Core.Eval.MapQuality.MapQualityRun.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.MapQuality.MapQualityRun.GetHashCode() -> int
+override Aw.Context.Core.Eval.MapQuality.MapQualityRun.ToString() -> string!
+override Aw.Context.Core.Eval.MapQuality.Ratio.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.MapQuality.Ratio.GetHashCode() -> int
+override Aw.Context.Core.Eval.MapQuality.Ratio.ToString() -> string!
+static Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.operator !=(Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest? left, Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest? right) -> bool
+static Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.operator ==(Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest? left, Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest? right) -> bool
+static Aw.Context.Core.Eval.MapQuality.MapQualityBars.Judge(Aw.Context.Core.Eval.MapQuality.Ratio! nodePrecision, Aw.Context.Core.Eval.MapQuality.Ratio! unmapped) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Context.Core.Eval.MapQuality.MapQualityReport.operator !=(Aw.Context.Core.Eval.MapQuality.MapQualityReport? left, Aw.Context.Core.Eval.MapQuality.MapQualityReport? right) -> bool
+static Aw.Context.Core.Eval.MapQuality.MapQualityReport.operator ==(Aw.Context.Core.Eval.MapQuality.MapQualityReport? left, Aw.Context.Core.Eval.MapQuality.MapQualityReport? right) -> bool
+static Aw.Context.Core.Eval.MapQuality.MapQualityRequest.operator !=(Aw.Context.Core.Eval.MapQuality.MapQualityRequest? left, Aw.Context.Core.Eval.MapQuality.MapQualityRequest? right) -> bool
+static Aw.Context.Core.Eval.MapQuality.MapQualityRequest.operator ==(Aw.Context.Core.Eval.MapQuality.MapQualityRequest? left, Aw.Context.Core.Eval.MapQuality.MapQualityRequest? right) -> bool
+static Aw.Context.Core.Eval.MapQuality.MapQualityRun.operator !=(Aw.Context.Core.Eval.MapQuality.MapQualityRun? left, Aw.Context.Core.Eval.MapQuality.MapQualityRun? right) -> bool
+static Aw.Context.Core.Eval.MapQuality.MapQualityRun.operator ==(Aw.Context.Core.Eval.MapQuality.MapQualityRun? left, Aw.Context.Core.Eval.MapQuality.MapQualityRun? right) -> bool
+static Aw.Context.Core.Eval.MapQuality.Ratio.operator !=(Aw.Context.Core.Eval.MapQuality.Ratio? left, Aw.Context.Core.Eval.MapQuality.Ratio? right) -> bool
+static Aw.Context.Core.Eval.MapQuality.Ratio.operator ==(Aw.Context.Core.Eval.MapQuality.Ratio? left, Aw.Context.Core.Eval.MapQuality.Ratio? right) -> bool

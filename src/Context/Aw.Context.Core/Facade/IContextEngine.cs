@@ -2,6 +2,7 @@ using System.Text.Json;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Eval.Backtest;
+using Aw.Context.Core.Eval.MapQuality;
 using Aw.Context.Core.Results;
 using Aw.Kernel;
 
@@ -65,4 +66,16 @@ public interface IContextEngine : IContextMap, IContextGraph, IContextLenses
     /// <param name="cancellationToken">Cancels the run; a cancelled run writes no report.</param>
     /// <returns>The report and its path, SND-CONTEXT-080 with no eligible sample, 081 with no brief source, 040 with the heavy lock busy, or another context error.</returns>
     public ValueTask<Result<BacktestRun>> EvalBacktest(BacktestRequest request, CancellationToken cancellationToken);
+
+    /// <summary>Measures the current map against the owner's decisions (spec §9.2 item 2). A human or service call.</summary>
+    /// <param name="request">The scope.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The report and its path, SND-CONTEXT-030 with no map, or SND-CONTEXT-020 for a session.</returns>
+    public ValueTask<Result<MapQualityRun>> EvalMap(MapQualityRequest request, CancellationToken cancellationToken);
+
+    /// <summary>Deletes eval reports and cache files past 90 days, or all with <see cref="EvalPurgeRequest.All"/> (probe baselines too).</summary>
+    /// <param name="request">The scope and the mode.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>What was removed.</returns>
+    public ValueTask<Result<EvalPurgeReport>> EvalPurge(EvalPurgeRequest request, CancellationToken cancellationToken);
 }

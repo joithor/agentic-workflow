@@ -1,5 +1,6 @@
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Eval.Backtest;
+using Aw.Context.Core.Eval.MapQuality;
 using Aw.Context.Core.Extract;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
@@ -14,7 +15,9 @@ using Aw.Context.Features.ApplyReviewFile;
 using Aw.Context.Features.BuildMap;
 using Aw.Context.Features.CheckMap;
 using Aw.Context.Features.CheckRetention;
+using Aw.Context.Features.EvalMap;
 using Aw.Context.Features.EvalProbes;
+using Aw.Context.Features.EvalPurge;
 using Aw.Context.Features.ExportMap;
 using Aw.Context.Features.ExportReview;
 using Aw.Context.Features.FindPath;
@@ -81,8 +84,6 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<ShowNodeRequest, NodeView>, ShowNodeService>()
         .AddScoped<IService<ListNeighborsRequest, NeighborsView>, ListNeighborsService>()
         .AddScoped<IService<FindPathRequest, PathView>, FindPathService>()
-        .AddScoped<IService<EvalProbesRequest, ProbeRun>, EvalProbesService>()
-        .AddScoped<IService<BacktestRequest, BacktestRun>, RunBacktestService>()
         .AddScoped<IService<BuildMapRequest, MapBuildReport>, BuildMapService>()
         .AddScoped<IService<ReviewQueueRequest, ReviewQueueView>, ReviewQueueService>()
         .AddScoped<IService<ReviewHistoryRequest, ReviewHistoryView>, ReviewHistoryService>()
@@ -106,6 +107,11 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IContextEngine, ContextEngine>();
 
     private static IServiceCollection AddBacktest(this IServiceCollection services) => services
+        .AddScoped<IService<EvalProbesRequest, ProbeRun>, EvalProbesService>()
+        .AddScoped<IService<BacktestRequest, BacktestRun>, RunBacktestService>()
+        .AddScoped<IService<MapQualityRequest, MapQualityRun>, EvalMapService>()
+        .AddScoped<IService<EvalPurgeRequest, EvalPurgeReport>, EvalPurgeService>()
+        .AddScoped<ContextEval>()
         .AddScoped<QueryPipeline>()
         .AddScoped<IArmQuery, ArmQuery>()
         .AddScoped<AsOfMapBuilder>()

@@ -3,6 +3,7 @@ using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Eval.Backtest;
+using Aw.Context.Core.Eval.MapQuality;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
@@ -85,6 +86,13 @@ public sealed class FakeContextEngine : IContextEngine
     /// <summary>The fake keeps no history or issues: a backtest finds no eligible sample (SND-CONTEXT-080).</summary>
     public ValueTask<Result<BacktestRun>> EvalBacktest(BacktestRequest request, CancellationToken cancellationToken) =>
         ValueTask.FromResult<Result<BacktestRun>>(ContextErrors.NoEligibleSample.With("this test engine has no merge history or issues"));
+
+    /// <summary>The fake has no map: SND-CONTEXT-030.</summary>
+    public ValueTask<Result<MapQualityRun>> EvalMap(MapQualityRequest request, CancellationToken cancellationToken) => NoMap<MapQualityRun>();
+
+    /// <summary>The fake keeps no eval files.</summary>
+    public ValueTask<Result<EvalPurgeReport>> EvalPurge(EvalPurgeRequest request, CancellationToken cancellationToken) =>
+        ValueTask.FromResult<Result<EvalPurgeReport>>(new EvalPurgeReport(0, 0, 0));
 
     /// <inheritdoc/>
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) => NoMap<NodeView>();
