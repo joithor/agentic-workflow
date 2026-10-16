@@ -32,6 +32,9 @@
       <Panel IsVisible="{Binding Expanded, Converter={x:Static ObjectConverters.IsNotNull}}">
         <iv:ExpandedStateView x:Name="Expanded" DataContext="{Binding Expanded}" />
       </Panel>
+      <Panel IsVisible="{Binding Facts, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <iv:FactsPanel x:Name="Facts" DataContext="{Binding Facts}" />
+      </Panel>
     </StackPanel>
   </StackPanel>
 </UserControl>

@@ -25,6 +25,8 @@ public sealed class FactsFramesTests : FrameHost
         return (window, shell);
     }
 
+    private static void Frame(Window window, string name) => Frame(window, name, "u8-frame-");
+
     private static Button ViewButton(Window window, FactRowViewModel row) =>
         window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "FactView" && Avalonia.Automation.AutomationProperties.GetName(b) == row.ViewName);
 
@@ -73,7 +75,7 @@ public sealed class FactsFramesTests : FrameHost
         var (window, shell) = await Opened("dev-desk-round-trip");
         var pending = shell.Instance.Facts!.Rows.Single(r => r.IsAwaiting);
 
-        Assert.Equal(pending.PendingCli, Named<TextBlock>(window, "FactPendingCli").Text);
+        Assert.Equal(pending.PendingCli, window.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "FactPendingCli" && t.IsEffectivelyVisible).Text);
         Assert.DoesNotContain(window.GetVisualDescendants().OfType<Button>(), b => b.Name == "FactView" && b.IsEffectivelyVisible && Avalonia.Automation.AutomationProperties.GetName(b) == pending.ViewName);
         Frame(window, "facts-pending-desk");
     });
