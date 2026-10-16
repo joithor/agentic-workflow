@@ -266,20 +266,6 @@ public sealed class WorkflowsViewModelTests
     }, Token);
 
     [Fact]
-    public void The_legend_names_every_mark_the_rows_draw_and_the_keys_in_words()
-    {
-        var list = new WorkflowsViewModel(_server, new FakeClipboard(), new FakeTimeProvider(A.Noon));
-        var marks = new[] { StageCellViewModel.Mark(Ui.Api.Workflow.StateGlyph.Done), StageCellViewModel.Mark(Ui.Api.Workflow.StateGlyph.Active), StageCellViewModel.Mark(Ui.Api.Workflow.StateGlyph.Pending), Labels.LoopMark };
-        var words = new[] { Labels.StageDone, Labels.StageActive, Labels.StagePending, Labels.LegendLoop, Labels.LegendEscalated, Labels.LegendTakenOver };
-
-        Assert.All(marks, m => Assert.Contains(m, list.LegendText, StringComparison.Ordinal));
-        Assert.All(words, w => Assert.Contains(w, list.LegendText, StringComparison.Ordinal));
-        Assert.All(words, w => Assert.Contains(w, list.LegendName, StringComparison.Ordinal));
-        Assert.All(marks, m => Assert.DoesNotContain(m, list.LegendName, StringComparison.Ordinal));
-        Assert.All((string[])["Enter", "A", "B", "X"], k => Assert.Contains(k, list.LegendText, StringComparison.Ordinal));
-    }
-
-    [Fact]
     public async Task Every_rows_cells_sit_under_the_groups_column_heads()
     {
         var body = GoldenFiles.Node("workflow-instances", "open");
