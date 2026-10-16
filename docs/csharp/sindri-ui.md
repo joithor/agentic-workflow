@@ -664,5 +664,48 @@ dotnet test --project tests/Aw.Sindri.Ui.Tests --filter-trait "Lane=integration"
 bash src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh [<dir>]   # NativeAOT sindri-ui on a copy (CI's AOT step); copies it to <dir> when given
 ```
 
+## U3': Needs you, decisions and requests (UI spec rev 7 §18 U3, screens spec §8)
+
+What needs the human, drawn from API P4's routes (`GET /sindri/needs-you`, `/decisions`, `/requests`, `POST /sindri/decisions/{id}`
+and `/sindri/requests`). The app holds no logic of its own: every row, label, option, refusal and "cleared" line is as the API served it,
+and the tests read their expected values from the recorded goldens under `tests/Aw.Sindri.Tests/Golden/Api/`.
+
+- **Needs you (Home).** Rows in the API's order, at most five (`NeedsYouViewModel.Cap`, four at large text), then "Show all N" expands them in
+  place. A row has one state chip (`StateChipView`), the served title, reason, repo and age, and its controls: the primary action first, then
+  the rest. A control is ready, pending (the catalog's phase tag) or CLI-only, from `GET /sindri/commands/catalog`; a protected action
+  shows the served CLI with Copy instead of running. New rows while the pointer is over the panel are held behind "N new" until you leave it.
+  The summary line, `stalled` and `rebuilding` banners and the empty sentence are the served ones.
+- **Decide.** The decision sheet shows the served question, one button per option (the first is the recommended one), the note and what
+  Decide answered. Decide is sent once and never retried. A refusal (decided elsewhere, voided: SND-ITEM-409; SND-DEC-404) shows inline as
+  served and re-reads the rows. **Focus stays on the control pressed**: the buttons are rebuilt when the options change, so the sheet puts
+  focus back on the same option's new button (`DecisionSheet.RestoreFocus`). An accepted outcome shows for 2 s. A row that clears under an
+  open sheet disables the form and shows the cleared line from `GET /decisions?pending=false`, else "<id> cleared".
+- **Requests.** The item sheet lists the item's pending decisions (option buttons) and the requests filed against it, or the served
+  empty sentence. Filing a request from the UI is not built; the fixture's `request` verb files one as a session.
+- **Failure and profile rows** open `FailureSheetViewModel` and `ProfileSheetViewModel`: the served details and CLI, no action the app may
+  not take. A profile row with a null subject keys on its own id.
+- **The pulse and Mark all seen.** A new pulse-urgency row tints its row and pulses the header once; a row is seen after 1 s on screen and
+  focused. Mark all seen marks every row and offers Undo ("N marked seen"). Reduced motion (the OS setting or the in-app switch) replaces
+  the pulse with a steady tint and an outline plus the word "New".
+- **Dock badge and tray.** The count of rows that need you goes to the badge through `IDockBadge`: `MacDockBadge` (NSDockTile),
+  `WindowsDockBadge` (ITaskbarList3 overlay on the main window), `NullDockBadge` elsewhere. The tray menu lists at most five rows, then Open,
+  the disabled Running line and Quit; picking a row only raises `RowRequested`, which opens that row's sheet. The Desktop head composes
+  the adapters (`Composition.DockBadge`); it holds no views or view models (ARCH-UI-001).
+- **Keys** (the list has focus): `J`/`K` next and previous row, `A` primary action when the app may, `X` the option that turns a decision
+  down, `Y` copy the row's command, `Enter` opens the sheet (again: moves into it), `Esc` closes it and returns to the row.
+- **Deep links.** `needs-you/<row id>` and `decision/<DEC id>` open the sheet; the tray, the palette and the item sheet use them.
+- **Focus is never lost**: closing a sheet returns to the row; a refused control keeps focus or, if its action is gone, moves to the sheet title.
+
+Key frames (integration lane, saved under `frames/u3-*.png`): `NeedsYouFramesTests` (fixture, empty, stalled, rebuilding, pulse,
+seen, reduced motion, show all, Home large) and `DecisionsFramesTests` (decision sheet, decided, 409 decided elsewhere, voided, cleared,
+requests, failure and profile sheets). A decision-filing form is not in this PR, so there is no `u3-file-request` frame.
+
+Fixture (`scripts/sindri-ui-fixture.sh`, guarded temp home only): `request [--item ID] [--repo R] <text>` (a session POST with no
+caller header), `decide <DEC> <choice>` (as the owner), `fail` / `unfail` (add or remove a service the build cannot run, then approve),
+`items --large` (34 items and 12 requests across `<repo>` and `<repo>-two`). `decide` and `request` need #253's routes; `fail` assumes
+`profile validate` accepts a profile naming a service the build lacks. Not yet run against a live P4 server.
+
+Left: the CliText control/bidi backstop (`CliText` does not exist in this tree), `PublicAPI.Unshipped.txt` needs no entries (the new types are internal).
+
 <!-- LANE ANCHOR U3': document the Needs you screens. Insert immediately above this marker, never between the markers. -->
 <!-- LANE ANCHOR U8: document the instance screens. Insert immediately below this marker, never between the markers. -->
