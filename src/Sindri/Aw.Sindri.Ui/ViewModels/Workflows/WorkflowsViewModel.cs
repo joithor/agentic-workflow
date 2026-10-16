@@ -158,6 +158,7 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
 
     private void Show(InstanceList list)
     {
+        var before = WalkAddresses();
         IsUnreadable = false;
         OnChanged(nameof(UnreadableText));
         (Head, NavCount) = (InstanceHeads.Workflows(list.Counts), InstanceHeads.Nav(list.Counts));
@@ -173,7 +174,7 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
             ReplaceIfChanged(RecipeChoices, [Labels.AllRecipes, .. KnownRecipes]);
         }
 
-        Reselect();
+        Reselect(before);
         IsEmpty = rows.Count == 0;
         EmptyText = IsEmpty ? list.Empty ?? Labels.NoWorkflowsMatch : string.Empty;
     }
@@ -225,11 +226,12 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
         var all = await api.Instances(url, new InstanceQuery(Root: true, Recipe: RecipeFilter, Subject: SubjectFilter), cancellationToken).ConfigureAwait(true);
         if (all.IsSuccess)
         {
+            var before = WalkAddresses();
             var finished = all.Value.Instances.Where(r => r.States.Any(s => s.Terminal && string.Equals(s.State, r.State, StringComparison.Ordinal))).Select(r => new InstanceRowViewModel(r, clipboard, clock)).ToList();
             finished.ForEach(r => r.SetStale(IsStale));
             DoneRows.Clear();
             finished.ForEach(DoneRows.Add);
-            Reselect();
+            Reselect(before);
         }
     }
 

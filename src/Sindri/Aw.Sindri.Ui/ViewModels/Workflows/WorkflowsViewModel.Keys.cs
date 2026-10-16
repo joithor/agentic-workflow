@@ -9,10 +9,8 @@ namespace Aw.Sindri.Ui.ViewModels.Workflows;
 /// </summary>
 internal sealed partial class WorkflowsViewModel
 {
-#pragma warning disable CS0067 // raised by the fix that follows this test commit
-    /// <summary>Raised when the page should put focus on a row's frame.</summary>
+    /// <summary>Raised when the page should put focus on a row's frame: a key moved the selection, or a re-read changed the rows under it.</summary>
     internal event EventHandler<WorkflowFocusEventArgs>? FocusRequested;
-#pragma warning restore CS0067
 
     /// <summary>The address of the row the keys act on; null for none.</summary>
     public string? SelectedAddress { get; private set => Set(ref field, value); }
@@ -110,18 +108,37 @@ internal sealed partial class WorkflowsViewModel
         var to = at < 0 ? (step > 0 ? 0 : rows.Count - 1) : Math.Clamp(at + step, 0, rows.Count - 1);
         SelectedAddress = rows[to].Address;
         Mark();
+        FocusRequested?.Invoke(this, new WorkflowFocusEventArgs(rows[to].Address, onlyIfLost: false));
         return true;
     }
 
-    // After a read: the selection stays on the same address, or clears when its row is gone.
-    private void Reselect()
+    // After a read: the selection stays on the same address (and asks for focus back if the re-read took it away with the old rows), or, when
+    // its row is gone, moves to the row that followed it in the walk (the one before it at the end) so focus has somewhere to go.
+    private void Reselect(IReadOnlyList<string> before)
     {
-        if (SelectedAddress is not null && !Shown.Any(r => string.Equals(r.Address, SelectedAddress, StringComparison.Ordinal)))
+        if (SelectedAddress is { } at)
         {
-            SelectedAddress = null;
+            if (!Shown.Any(r => string.Equals(r.Address, at, StringComparison.Ordinal)))
+            {
+                SelectedAddress = Successor(before, at);
+            }
+
+            if (SelectedAddress is { } now)
+            {
+                FocusRequested?.Invoke(this, new WorkflowFocusEventArgs(now, onlyIfLost: true));
+            }
         }
 
         Mark();
+    }
+
+    private List<string> WalkAddresses() => [.. Walk.Select(r => r.Address)];
+
+    private string? Successor(IReadOnlyList<string> before, string gone)
+    {
+        var now = new HashSet<string>(Walk.Select(r => r.Address), StringComparer.Ordinal);
+        var at = before.ToList().FindIndex(a => string.Equals(a, gone, StringComparison.Ordinal));
+        return at < 0 ? null : before.Skip(at + 1).FirstOrDefault(now.Contains) ?? before.Take(at).Reverse().FirstOrDefault(now.Contains);
     }
 
     private void Mark()

@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -25,27 +24,23 @@ internal sealed partial class WorkflowsPage : UserControl
     /// <inheritdoc />
     protected override void OnDataContextChanged(EventArgs e)
     {
-        List?.PropertyChanged -= OnListChanged;
+        List?.FocusRequested -= OnFocusRequested;
         base.OnDataContextChanged(e);
-        List?.PropertyChanged += OnListChanged;
+        List?.FocusRequested += OnFocusRequested;
     }
 
-    // J / K moved the selection onto a row: its frame takes focus, on the keyboard's ring, and scrolls into view. A selection that
-    // cleared (the row went) leaves focus where it is; the window keeps it somewhere usable.
-    private void OnListChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (string.Equals(e.PropertyName, nameof(WorkflowsViewModel.SelectedAddress), StringComparison.Ordinal) && List?.SelectedAddress is { } address)
-        {
-            Dispatcher.UIThread.Post(() => FocusRow(address), DispatcherPriority.Loaded);
-        }
-    }
+    // A key moved the selection onto a row, or a re-read changed the rows under it: the row's frame takes focus, on the keyboard's ring, and
+    // scrolls into view. A re-read only takes it when focus was lost with the old rows (a reorder drops the containers), never from a control
+    // the human is on.
+    private void OnFocusRequested(object? sender, WorkflowFocusEventArgs request) =>
+        Dispatcher.UIThread.Post(() => FocusRow(request), DispatcherPriority.Loaded);
 
-    private void FocusRow(string address)
+    private void FocusRow(WorkflowFocusEventArgs request)
     {
-        var row = this.GetVisualDescendants().OfType<InstanceRow>().FirstOrDefault(r => r.IsEffectivelyVisible && string.Equals(r.Address, address, StringComparison.Ordinal));
-        if (row is null || row.IsKeyboardFocusWithin)
+        var row = this.GetVisualDescendants().OfType<InstanceRow>().FirstOrDefault(r => r.IsEffectivelyVisible && string.Equals(r.Address, request.Address, StringComparison.Ordinal));
+        if (row is null || row.IsKeyboardFocusWithin || (request.OnlyIfLost && HasUsableFocus()))
         {
-            return;   // not drawn, or focus is already in the row (a click or its control): it stays where it is
+            return;   // not drawn, or focus is already in the row (a click or its control), or a re-read must leave a usable focus alone
         }
 
         if (row.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => string.Equals(b.Name, "WorkflowRowFrame", StringComparison.Ordinal)) is { } frame)
@@ -54,6 +49,10 @@ internal sealed partial class WorkflowsPage : UserControl
             frame.BringIntoView();
         }
     }
+
+    // Focus on a control that is still in the tree, shown and enabled.
+    private bool HasUsableFocus() =>
+        TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is Control { IsEffectivelyVisible: true, IsEffectivelyEnabled: true } focused && TopLevel.GetTopLevel(focused) is not null;
 
     // Focus arriving on a row, or a control in it, selects it: the keys act on the row the human is on.
     private void OnSelect(object? sender, RoutedEventArgs e)

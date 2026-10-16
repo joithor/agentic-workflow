@@ -51,6 +51,10 @@ public sealed class WorkflowsKeysViewTests : FrameHost
     private static Border RowFrame(Window window, string address) =>
         window.GetVisualDescendants().OfType<Border>().First(b => b.Name == "WorkflowRowFrame" && b.IsEffectivelyVisible && ((InstanceRowViewModel)b.DataContext!).Address == address);
 
+    // True while focus is on the address's row frame, also while a re-read has not yet drawn the row.
+    private static bool FocusIsOn(Window window, string address) =>
+        Focused(window) is Border { IsEffectivelyVisible: true, DataContext: InstanceRowViewModel row } frame && string.Equals(frame.Name, "WorkflowRowFrame", StringComparison.Ordinal) && string.Equals(row.Address, address, StringComparison.Ordinal);
+
     // Waits for a state; when it never comes, the failure says where focus is and what the frame holds.
     private static async Task Reach(Window window, ShellViewModel shell, Func<bool> condition)
     {
@@ -114,7 +118,7 @@ public sealed class WorkflowsKeysViewTests : FrameHost
 
         await shell.Workflows.Refresh(_api, Token);
         var next = flat[4];
-        await Reach(window, shell, () => ReferenceEquals(Focused(window), RowFrame(window, next)));
+        await Reach(window, shell, () => FocusIsOn(window, next));
 
         Assert.Equal(next, shell.Workflows.SelectedAddress);
     });
@@ -131,7 +135,7 @@ public sealed class WorkflowsKeysViewTests : FrameHost
         Server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, body.ToJsonString());
 
         await shell.Workflows.Refresh(_api, Token);
-        await Reach(window, shell, () => ReferenceEquals(Focused(window), RowFrame(window, address)));
+        await Reach(window, shell, () => FocusIsOn(window, address));
 
         Assert.Equal(address, shell.Workflows.SelectedAddress);
     });
