@@ -1,5 +1,6 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -11,7 +12,7 @@ namespace Aw.Sindri.Core.NeedsYou;
 /// <summary>
 /// The engine part of the needs-you fold (API P11): a root instance's 'workflow.*' rows put or clear its 'park' row. The items projection
 /// folds the same event first, so the item row's engine part is the instance as the event left it; this reads it (and the item's title and
-/// repo) and never the other way round. A child instance's row and a row of an earlier attempt leave the list alone.
+/// repo) and never the other way round. A child instance's row leaves the list alone; each root of the item (the latest, or an earlier one still live) settles its own rows, and a root the item no longer holds has ended, so its rows clear.
 /// </summary>
 internal sealed partial class NeedsYouProjection
 {
@@ -28,29 +29,34 @@ internal sealed partial class NeedsYouProjection
             return Unit.Value;
         }
 
+        if (!EngineItemStates.IsRoot(payload.Value.Instance))
+        {
+            return Unit.Value;   // a child instance's row
+        }
+
         var item = await rows.Get<ItemRow>(ViewNames.Items, key, cancellationToken).ConfigureAwait(false);
         if (item.IsError)
         {
             return item.Error;
         }
 
-        // no item row, a child, or an earlier attempt: skipped, not a stall
-        return item.Value?.Engine is { } part && string.Equals(part.Address, payload.Value.Instance, StringComparison.Ordinal)
-            ? await Settle(rows, (item.Value, part), payload.Value, recorded, cancellationToken).ConfigureAwait(false)
+        // no item row: skipped, not a stall. Otherwise the row is settled by the root's own part (the latest root's, or an earlier live one's); a root the item no longer holds ended, so its rows clear
+        return item.Value is { } row
+            ? await Settle(rows, (row, EngineItemStates.PartOf(row.Engine, payload.Value.Instance)), payload.Value, recorded, cancellationToken).ConfigureAwait(false)
             : Unit.Value;
     }
 
-    private async ValueTask<Result<Unit>> Settle(IViewRows rows, (ItemRow Item, EngineItemPart Part) at, WorkflowEventPayload payload, LedgerEvent recorded, CancellationToken cancellationToken)
+    private async ValueTask<Result<Unit>> Settle(IViewRows rows, (ItemRow Item, EngineItemPart? Part) at, WorkflowEventPayload payload, LedgerEvent recorded, CancellationToken cancellationToken)
     {
-        var instance = WorkflowInstanceId.Of(InstanceAddress.From(at.Part.Address)).Value;
-        var wanted = Wanted(at.Item, at.Part, payload);
-        var keepsTakeover = at.Part is { Suspension: SuspensionKind.Takeover, Ended: false };   // a takeover row stays until the handback or the end
+        var instance = WorkflowInstanceId.Of(InstanceAddress.From(payload.Instance)).Value;
+        var wanted = at.Part is { } part ? Wanted(at.Item, part, payload) : null;
+        var keeps = at.Part is { Ended: false } live ? Kept(live, payload) : null;   // a takeover row stays until the handback or the end; a park row stays across a row that doesn't say
         foreach (var prefix in new[] { "park:", "desk:", "takeover:" })
         {
             var id = prefix + instance;
             var outcome = wanted is { } w && string.Equals(w.Prefix, prefix, StringComparison.Ordinal)
                 ? await PutEngine(rows, id, w.Build, recorded, cancellationToken).ConfigureAwait(false)
-                : keepsTakeover && prefix == "takeover:"
+                : string.Equals(keeps, prefix, StringComparison.Ordinal)
                     ? Unit.Value
                     : await rows.Delete(ViewNames.NeedsYou, id, cancellationToken).ConfigureAwait(false);
             if (outcome.IsError)
@@ -61,6 +67,14 @@ internal sealed partial class NeedsYouProjection
 
         return Unit.Value;
     }
+
+    /// <summary>The row prefix that stays as it is: a takeover's while the instance is taken over, a park's or escalation's when this row carries no detail to say what changed.</summary>
+    private static string? Kept(EngineItemPart part, WorkflowEventPayload payload) => part.Suspension switch
+    {
+        SuspensionKind.Takeover => "takeover:",
+        SuspensionKind.Park or SuspensionKind.Escalation when payload.Detail is null => "park:",
+        _ => null,
+    };
 
     private (string Prefix, Func<DateTimeOffset, NeedsYouRow> Build)? Wanted(ItemRow item, EngineItemPart part, WorkflowEventPayload payload)
     {

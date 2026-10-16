@@ -15,7 +15,11 @@ namespace Aw.Sindri.Core.Items;
 /// </summary>
 public static class EngineItemStates
 {
-    /// <summary>The part after an event, or null when the event leaves the item alone: a child instance's row, a row of an earlier attempt, or a row after the instance ended.</summary>
+    /// <summary>
+    /// The part after an event, or null when the event leaves the item alone: a child instance's row, a row of an earlier attempt that already ended,
+    /// or a row after the instance ended. The part is the latest root's, which the item's state follows; another root of the item that is still live
+    /// (a second recipe started on it) rides in <see cref="EngineItemPart.Earlier"/>, moves with its own rows and leaves when it ends.
+    /// </summary>
     /// <param name="prior">The part so far, or null before the first row.</param>
     /// <param name="eventType">The ledger event type.</param>
     /// <param name="payload">The event's payload.</param>
@@ -24,20 +28,96 @@ public static class EngineItemStates
     {
         ArgumentNullException.ThrowIfNull(eventType);
         ArgumentNullException.ThrowIfNull(payload);
-        var started = string.Equals(eventType, EventTypes.WorkflowStarted, StringComparison.Ordinal);
-        if (!IsRoot(payload.Instance) || !(started || Continues(prior, payload.Instance)))
+        if (!IsRoot(payload.Instance))
         {
             return null;
         }
 
-        return Build(payload, started ? null : prior);
+        if (string.Equals(eventType, EventTypes.WorkflowStarted, StringComparison.Ordinal))
+        {
+            return Started(prior, payload);
+        }
+
+        if (prior is null)
+        {
+            return null;
+        }
+
+        if (Continues(prior, payload.Instance))
+        {
+            return Build(payload, prior) with { Earlier = prior.Earlier };
+        }
+
+        return Moved(prior, payload);
     }
+
+    /// <summary>A root started: the new latest. The root it replaces stays in the set while it is live.</summary>
+    private static EngineItemPart Started(EngineItemPart? prior, WorkflowEventPayload payload)
+    {
+        var fresh = Build(payload, carried: null);
+        if (prior is null)
+        {
+            return fresh;
+        }
+
+        var kept = prior.Earlier?.Where(p => !SameAddress(p.Address, payload.Instance)).ToList() ?? [];
+        if (!prior.Ended && !SameAddress(prior.Address, payload.Instance))
+        {
+            kept.Insert(0, prior with { Earlier = null });
+        }
+
+        return kept.Count == 0 ? fresh : fresh with { Earlier = kept };
+    }
+
+    /// <summary>An earlier live root's row: that root moves, or leaves the set when it ended; null when the row is no live root's.</summary>
+    private static EngineItemPart? Moved(EngineItemPart prior, WorkflowEventPayload payload)
+    {
+        var earlier = prior.Earlier;
+        var at = earlier?.ToList().FindIndex(p => SameAddress(p.Address, payload.Instance)) ?? -1;
+        if (earlier is null || at < 0)
+        {
+            return null;
+        }
+
+        var moved = Build(payload, earlier[at]);
+        var rest = earlier.ToList();
+        if (moved.Ended)
+        {
+            rest.RemoveAt(at);
+        }
+        else
+        {
+            rest[at] = moved;
+        }
+
+        return prior with { Earlier = rest.Count == 0 ? null : rest };
+    }
+
+    /// <summary>The root instance <paramref name="address"/> as the item's part holds it: the latest root's part or an earlier live root's; null when the item holds no such root.</summary>
+    /// <param name="part">The item's engine part, or null.</param>
+    /// <param name="address">The root instance's address.</param>
+    /// <returns>That root's part, or null.</returns>
+    internal static EngineItemPart? PartOf(EngineItemPart? part, string address) =>
+        part is null ? null
+        : SameAddress(part.Address, address) ? part
+        : part.Earlier?.FirstOrDefault(p => SameAddress(p.Address, address));
+
+    /// <summary>The addresses of the item's root instances that are not finished: the latest root's when it is live, then the earlier live ones.</summary>
+    /// <param name="part">The item's engine part.</param>
+    /// <returns>The addresses.</returns>
+    internal static IEnumerable<string> Live(EngineItemPart part)
+    {
+        ArgumentNullException.ThrowIfNull(part);
+        return (part.Ended ? [] : new[] { part.Address }).Concat(part.Earlier?.Select(static p => p.Address) ?? []);
+    }
+
+    private static bool SameAddress(string left, string right) => string.Equals(left, right, StringComparison.Ordinal);
 
     private static EngineItemPart Build(WorkflowEventPayload payload, EngineItemPart? carried)
     {
         var frame = payload.Detail?.Delta.Frame;
         var (runOpen, runtime) = Run(frame, carried);
-        var ended = payload.Detail?.Delta.Outcome is not null;
+        var ended = Ends(payload);
         return new EngineItemPart(
             payload.Instance,
             frame?.State ?? carried?.State ?? payload.To,
@@ -48,13 +128,21 @@ public static class EngineItemStates
             ended && Cancels(payload.Trigger));
     }
 
+    /// <summary>
+    /// Whether the row ended the instance: its delta names an outcome, or (a row stored without its detail, as the scrub's fallback does) its
+    /// trigger is the cancel, which always ends it. Another terminal move whose detail was dropped can't be told from the row, which names only
+    /// the state entered.
+    /// </summary>
+    private static bool Ends(WorkflowEventPayload payload) =>
+        payload.Detail is { } detail ? detail.Delta.Outcome is not null : Cancels(payload.Trigger);
+
     private static bool Cancels(string trigger) => string.Equals(trigger, TriggerNames.Cancel, StringComparison.Ordinal);
 
     private static SuspensionKind? Suspension(WorkflowEventDetail? detail, EngineItemPart? carried) =>
         detail is null ? carried?.Suspension : detail.Delta.Suspension?.Kind;
 
-    private static bool Continues(EngineItemPart? prior, string address) =>
-        prior is { Ended: false } && string.Equals(prior.Address, address, StringComparison.Ordinal);
+    private static bool Continues(EngineItemPart prior, string address) =>
+        !prior.Ended && SameAddress(prior.Address, address);
 
     private static (bool Open, StepRuntime? Runtime) Run(FrameSummary? frame, EngineItemPart? carried) => frame switch
     {
