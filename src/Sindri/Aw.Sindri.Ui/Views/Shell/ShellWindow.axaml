@@ -299,6 +299,9 @@
     <!-- Needs you (§5): "N now need you", once for each rise; the flag changes before the text. -->
     <TextBlock x:Name="NeedsYouLive" Classes="live-region" Classes.live="{Binding IsNeedsYouAnnouncing}" Text="{Binding NeedsYouAnnouncement}"
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <!-- Mark all seen (B2): "N marked seen" once when its Undo is offered; the flag changes before the text. -->
+    <TextBlock x:Name="NeedsYouSeenLive" Classes="live-region" Classes.live="{Binding NeedsYou.Seen.UndoOffered}" Text="{Binding NeedsYou.Seen.UndoAnnouncement}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
     <!-- The decision sheet's polite region: what Decide answered or refused; the flag changes before the text. -->
     <TextBlock x:Name="DecisionLive" Classes="live-region" Classes.live="{Binding Decision.IsAnnouncing}" Text="{Binding Decision.Announcement}"
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />

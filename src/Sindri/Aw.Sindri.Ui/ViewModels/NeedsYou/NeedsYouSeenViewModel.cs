@@ -32,6 +32,7 @@ internal sealed class NeedsYouSeenViewModel : ObservableObject
             {
                 OnChanged(nameof(UndoOffered));
                 OnChanged(nameof(UndoText));
+                OnChanged(nameof(UndoAnnouncement));
             }
 
             Reapply();
@@ -57,6 +58,9 @@ internal sealed class NeedsYouSeenViewModel : ObservableObject
 
     /// <summary>The Undo line, "N marked seen"; empty when none is offered.</summary>
     internal string UndoText => UndoOffered ? Labels.MarkedSeen(_tracker.UndoCount) : "";
+
+    /// <summary>The polite live region's text: the Undo line while it is offered (the flag, <see cref="UndoOffered"/>, changes first), else the resting text, never empty.</summary>
+    internal string UndoAnnouncement => UndoOffered ? UndoText : Labels.Sindri;
 
     /// <summary>Reads the seen ids and the in-app Reduce motion switch from the preference file.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>

@@ -18,11 +18,13 @@ internal sealed partial class ShellWindow
         {
             shell.NeedsYou.FocusRequested += OnNeedsYouFocus;
             shell.NeedsYou.PropertyChanged += OnNeedsYouChanged;
+            shell.NeedsYou.Seen.PropertyChanged += OnSeenChanged;
         }
         else
         {
             shell.NeedsYou.FocusRequested -= OnNeedsYouFocus;
             shell.NeedsYou.PropertyChanged -= OnNeedsYouChanged;
+            shell.NeedsYou.Seen.PropertyChanged -= OnSeenChanged;
         }
     }
 
@@ -41,6 +43,15 @@ internal sealed partial class ShellWindow
         // No row left to select (the last one cleared): focus still goes somewhere (the page region).
         var id = Shell?.NeedsYou.SelectedId;
         Dispatcher.UIThread.Post(() => (id is null ? KeepFocus : (Action)(() => FocusNeedsYouRow(id)))(), DispatcherPriority.Loaded);
+    }
+
+    // The Undo offer ends (pressed, or ten seconds): a focus on its button moves on.
+    private void OnSeenChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (string.Equals(e.PropertyName, nameof(NeedsYouSeenViewModel.UndoOffered), StringComparison.Ordinal) && Shell?.NeedsYou.Seen.UndoOffered == false)
+        {
+            Dispatcher.UIThread.Post(KeepFocus, DispatcherPriority.Loaded);
+        }
     }
 
     private void FocusNeedsYouRow(string rowId)

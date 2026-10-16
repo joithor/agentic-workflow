@@ -67,6 +67,8 @@ internal sealed partial class HomePage : UserControl
 
     private void OnMarkAllSeen(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.MarkAllSeen();
 
+    private void OnUndoSeen(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.NeedsYou.Seen.Undo();
+
     private void OnShowAllNeedsYou(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.NeedsYou.ShowAll();
 
     private void OnShowNeedsYouHeld(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.NeedsYou.ShowHeld();
