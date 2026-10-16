@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -19,6 +20,25 @@ internal sealed partial class WorkflowsPage : UserControl
         AddHandler(RecipeGroup.ToggleEvent, OnToggle);
     }
 
+    private bool _focusWasHere;
+
+    /// <inheritdoc />
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        TopLevel.GetTopLevel(this)?.AddHandler(GotFocusEvent, OnFocusMoved, RoutingStrategies.Bubble, handledEventsToo: true);
+    }
+
+    /// <inheritdoc />
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        TopLevel.GetTopLevel(this)?.RemoveHandler(GotFocusEvent, OnFocusMoved);
+        base.OnDetachedFromVisualTree(e);
+    }
+
+    // Where focus last went: a re-read only claims lost focus for the page when the human was last on it.
+    private void OnFocusMoved(object? sender, RoutedEventArgs e) => _focusWasHere = e.Source is Visual source && this.IsVisualAncestorOf(source);
+
     private WorkflowsViewModel? List => DataContext as WorkflowsViewModel;
 
     /// <inheritdoc />
@@ -38,9 +58,9 @@ internal sealed partial class WorkflowsPage : UserControl
     private void FocusRow(WorkflowFocusEventArgs request)
     {
         var row = this.GetVisualDescendants().OfType<InstanceRow>().FirstOrDefault(r => r.IsEffectivelyVisible && string.Equals(r.Address, request.Address, StringComparison.Ordinal));
-        if (row is null || row.IsKeyboardFocusWithin || (request.OnlyIfLost && HasUsableFocus()))
+        if (row is null || row.IsKeyboardFocusWithin || (request.OnlyIfLost && (HasUsableFocus() || !_focusWasHere)))
         {
-            return;   // not drawn, or focus is already in the row (a click or its control), or a re-read must leave a usable focus alone
+            return;   // not drawn, or focus is already in the row (a click or its control), or a re-read must leave a usable focus alone, and a focus that was elsewhere (the sheet)
         }
 
         if (row.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => string.Equals(b.Name, "WorkflowRowFrame", StringComparison.Ordinal)) is { } frame)
