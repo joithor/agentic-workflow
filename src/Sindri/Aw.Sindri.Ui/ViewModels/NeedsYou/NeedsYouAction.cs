@@ -23,6 +23,9 @@ internal sealed record NeedsYouAction(string CatalogId, string Label, ActionRead
     /// <summary>For a decision option: the option's id.</summary>
     internal string OptionId { get; init; } = "";
 
+    /// <summary>True when <see cref="Cli"/> still has a placeholder the row's subject could not fill (shown as served, marked "fill in").</summary>
+    internal bool FillIn { get; init; }
+
     /// <summary>True when the app can run it (the catalog says ready).</summary>
     internal bool IsReady => Readiness == ActionReadiness.Ready;
 

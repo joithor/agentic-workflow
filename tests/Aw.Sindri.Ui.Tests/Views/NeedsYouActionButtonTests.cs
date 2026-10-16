@@ -1,10 +1,14 @@
+using System.Text;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
@@ -53,7 +57,10 @@ public sealed class NeedsYouActionButtonTests : IDisposable
         Dispatcher.UIThread.RunJobs();
     }
 
-    private async Task<(ShellWindow Window, ShellViewModel Shell)> WithRows(int n)
+    private Task<(ShellWindow Window, ShellViewModel Shell)> WithRows(int n) =>
+        WithFeed(new NeedsYouFeed([.. Enumerable.Range(0, n).Select(i => NeedsYouRows.Decision("decision:DEC-" + i.ToString(System.Globalization.CultureInfo.InvariantCulture)))], ""));
+
+    private async Task<(ShellWindow Window, ShellViewModel Shell)> WithFeed(NeedsYouFeed feed)
     {
         _records.Write(A.Record());
         var shell = new ShellViewModel(_records, _server, _clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
@@ -69,7 +76,7 @@ public sealed class NeedsYouActionButtonTests : IDisposable
         }
 
         Assert.Equal(ShellState.Normal, shell.State);
-        shell.ShowNeedsYou(new NeedsYouFeed([.. Enumerable.Range(0, n).Select(i => NeedsYouRows.Decision("decision:DEC-" + i.ToString(System.Globalization.CultureInfo.InvariantCulture)))], ""));
+        shell.ShowNeedsYou(feed);
         Settle(window);
         return (window, shell);
     }
@@ -116,5 +123,24 @@ public sealed class NeedsYouActionButtonTests : IDisposable
         window.KeyPress(Key.Space, RawInputModifiers.None, PhysicalKey.Space, " ");
         window.KeyRelease(Key.Space, RawInputModifiers.None, PhysicalKey.Space, " ");
         await SentOnce(window);
+    });
+
+    [Fact]
+    public Task A_failure_rows_Pause_button_tooltip_help_text_and_sheet_line_carry_the_pause_command() => OnUi(async () =>
+    {
+        var list = AwJson.Deserialize<NeedsYouList>(Encoding.UTF8.GetBytes(GoldenFiles.Api("needs-you", "fixture")), SindriApiClient.Json).Value;
+        var catalog = AwJson.Deserialize<CommandList>(Encoding.UTF8.GetBytes(GoldenFiles.Api("commands", "catalog")), SindriApiClient.Json).Value;
+        var service = list.Rows.Single(r => r.Kind == "failure").Subject!.Id;
+        var pause = catalog.Rows.Single(r => r.Action == "PauseService").Cli.Replace("<name>", service, StringComparison.Ordinal);
+        var feed = NeedsYouMapper.Map(list with { Rows = [list.Rows.Single(r => r.Kind == "failure")] }, catalog, decisions: null, new HomeCounts(0, 0, 0));
+        var (window, _) = await WithFeed(feed);
+
+        var row = Rows(window).Single();
+        var button = row.GetVisualDescendants().OfType<Button>().First(b => string.Equals(b.Content as string, "Pause", StringComparison.Ordinal));
+
+        Assert.Equal(pause, ToolTip.GetTip(button));
+        Assert.Equal(pause, AutomationProperties.GetHelpText(button));
+        var line = ((NeedsYouRowViewModel)row.DataContext!).Details.Single(d => d.Label == "Pause");
+        Assert.Contains(pause, line.Value, StringComparison.Ordinal);
     });
 }
