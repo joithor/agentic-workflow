@@ -51,7 +51,7 @@ public sealed class InMemoryLaneMail(InMemoryMessageStore messages) : ILaneMail
         var stored = await messages.RecordInbound("lane:" + identity.Lane, 0, [message], cancellationToken);
         for (var i = 0; i < _sent.Count; i++)
         {
-            if (_sent[i].Message.Lane == identity.Lane)
+            if (_sent[i].Message.Lane == identity.Lane && _sent[i].Message.Delivered)
             {
                 _sent[i] = (_sent[i].Message, Settled: true);
             }

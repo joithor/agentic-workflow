@@ -19,6 +19,7 @@ public sealed class LaneReplyTests
         await _world.Ready();
         var lane = _world.PutLane("api");
         _ = await _world.LaneMail.Send("api", "status?", A.At(5), CancellationToken.None);
+        _ = await _world.LaneMail.Deliver([1], A.At(5), CancellationToken.None);
 
         var result = await Service().Handle(new LaneReplyRequest(lane, "all green"), CancellationToken.None);
 

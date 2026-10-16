@@ -31,13 +31,14 @@ public abstract class LaneMailContract
         Expect.That(owed.Value[0].Delivered && !owed.Value[1].Delivered, "delivery is per message");
     }
 
-    /// <summary>A reply becomes an inbound message with the lane id and the team-lane sender, and clears the lane's owed messages.</summary>
+    /// <summary>A reply becomes an inbound message with the lane id and the team-lane sender, and clears the lane's delivered messages.</summary>
     /// <returns>A task.</returns>
     [Fact]
     public async Task A_reply_is_recorded_as_an_inbound_message_and_clears_what_the_lane_owed()
     {
         var (mail, messages) = await Create();
-        _ = await mail.Send("api", "status?", A.At(1), _none);
+        var sent = await mail.Send("api", "status?", A.At(1), _none);
+        _ = await mail.Deliver([sent.Value], A.At(1), _none);
 
         var first = await mail.Reply(new LaneIdentity("t1", "api"), "ready #12", A.At(2), _none);
         var second = await mail.Reply(new LaneIdentity("t1", "api"), "more", A.At(3), _none);
@@ -49,5 +50,21 @@ public abstract class LaneMailContract
         Expect.That(inbox.Value[0].From == "t1-api" && inbox.Value[0].FromName == "t1-api", "from is team-lane");
         Expect.That(inbox.Value[0].Body == "ready #12" && inbox.Value[0].Class.Kind == Core.Messages.MessageKind.Ready && inbox.Value[0].Class.Pr == 12, "classified like any inbound message");
         Expect.That(owed.Value.Count == 0, "nothing owed after a reply");
+    }
+
+    /// <summary>A reply settles only what the lane has seen: a message sent mid-turn, not yet delivered, stays owed.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task A_reply_leaves_a_message_the_lane_has_not_been_shown_owed()
+    {
+        var (mail, _) = await Create();
+        var seen = await mail.Send("api", "first", A.At(1), _none);
+        _ = await mail.Deliver([seen.Value], A.At(2), _none);
+        _ = await mail.Send("api", "sent mid-turn", A.At(3), _none);
+
+        _ = await mail.Reply(new LaneIdentity("t1", "api"), "done with the first", A.At(4), _none);
+        var owed = await mail.Owed("api", _none);
+
+        Expect.That(owed.Value.Count == 1 && owed.Value[0].Text == "sent mid-turn" && !owed.Value[0].Delivered, "only the message that was never shown is still owed");
     }
 }

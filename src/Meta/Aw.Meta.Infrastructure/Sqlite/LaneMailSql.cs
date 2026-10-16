@@ -36,7 +36,7 @@ internal static class LaneMailSql
         "lane reply counter " + lane);
 
     internal static SqlStatement Settle(string lane, DateTimeOffset at) => new(
-        "UPDATE lane_mail SET settled_at = $at WHERE lane = $lane AND settled_at IS NULL",
+        "UPDATE lane_mail SET settled_at = $at WHERE lane = $lane AND settled_at IS NULL AND delivered_at IS NOT NULL",
         c => c.Bind("$at", at).Bind("$lane", lane),
         "lane mail of " + lane);
 
