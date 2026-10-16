@@ -2,7 +2,7 @@ schemaVersion: 1
 id: engineering.csharp.architecture-tests
 kind: engineering
 section: "4b.5"
-text: "Architecture tests (ArchUnitNET) run in the unit lane over every registered Aw.* assembly, and the registry matches the solution."
+text: "Architecture tests (ArchUnitNET) run in the integration lane (owner, 2026-10-16: four of them take 22 to 27 s each, over the unit lane's per-test cap) over every registered Aw.* assembly, and the registry matches the solution."
 why: "The §4b.1 rules are executable, not prose."
 select:
   languages: [csharp]
