@@ -513,6 +513,15 @@ U3' and U8.
   (`IsNavigationEnabled` and `IsChromeVisible`, in `PressKey`), never fires while a text field has focus or an overlay
   is open, and any other unmodified key (Esc included) cancels a waiting chord. Any navigation but G D clears the Home
   filter. The top bar shows `G …` while one waits, in a keycap inside the bar over the ⌘K field's right end (drawn in the bar, not below it, where the page region would paint over it).
+- **What the Needs-you live region says** (`NeedsYouLive`, one polite region; the flag goes off, the text to its resting word, the flag on, then the
+  sentence, so a repeat is spoken again): "N now need you" for each rise in the count (a second rise to the same N speaks again; rows that were
+  there before a reconnect do not; the first list at startup does, since its rows are new to the user), "<id> cleared" when the selected row leaves
+  and "<address> done" when the selected strip instance finishes. Row names say the urgency, the chip, the title and the id ("needs you now, PARKED,
+  Retry storm, ITM-01JC8, new"), controls and options say which row they act on ("Accept DEC-…"), and an incident strip row says "incident".
+- **Client presentation rules** (the only decisions the app makes; everything else is as served): `G D` shows the rows whose served subject kind is
+  `decision` (the summary and the badge still count them all, and the seen state is kept against the whole feed); the strip drops terminal instances;
+  a row the API serves without a `chip` gets the word for its kind (`NeedsYouMapper.Derived`, a fallback tied to U3'-API-9); the strip's park lookup keys
+  on the served kind `park`, never on a chip word.
 - **Deep links.** `workflow/<address>` (an address, which may contain `/`), `recipe/<id>`, `node/<key>`, `session/<id>`
   and `system/<dependency>` go to Workflows, Recipes, Context, Agents and System; `item/`, `decision/`, `service/` and
   `job/` open their sheet over the page shown; `needs-you/<row>` (the row's item, decision, service or job) opens that row's sheet;
@@ -667,38 +676,47 @@ bash src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh [<dir>]   # NativeAOT sindri-ui on 
 ## U3': Needs you, decisions and requests (UI spec rev 7 §18 U3, screens spec §8)
 
 What needs the human, drawn from API P4's routes (`GET /sindri/needs-you`, `/decisions`, `/requests`, `POST /sindri/decisions/{id}`
-and `/sindri/requests`). The app holds no logic of its own: every row, label, option, refusal and "cleared" line is as the API served it,
+and `/sindri/requests`). The app holds no logic of its own beyond the presentation rules listed below: every row, label, option, refusal and "cleared" line is as the API served it,
 and the tests read their expected values from the recorded goldens under `tests/Aw.Sindri.Tests/Golden/Api/`.
 
-- **Needs you (Home).** Rows in the API's order, at most five (`NeedsYouViewModel.Cap`, four at large text), then "Show all N" expands them in
+- **Needs you (Home).** Rows in the API's order, at most five (`NeedsYouViewModel.Cap`, four at large text), then "all N →" expands them in
   place. A row has one state chip (`StateChipView`), the served title, reason, repo and age, and its controls: the primary action first, then
-  the rest. A control is ready, pending (the catalog's phase tag) or CLI-only, from `GET /sindri/commands/catalog`; a protected action
+  the rest. A control is ready, pending (the catalog's phase tag) or CLI-only, from `GET /sindri/commands` (the catalog; its `ui` word is read once, by `CatalogReadiness`, and a word this build does not know is CLI-only); a protected action
   shows the served CLI with Copy instead of running. New rows while the pointer is over the panel are held behind "N new" until you leave it.
   The summary line, `stalled` and `rebuilding` banners and the empty sentence are the served ones.
-- **Decide.** The decision sheet shows the served question, one button per option (the first is the recommended one), the note and what
-  Decide answered. Decide is sent once and never retried. A refusal (decided elsewhere, voided: SND-ITEM-409; SND-DEC-404) shows inline as
-  served and re-reads the rows. **Focus stays on the control pressed**: the buttons are rebuilt when the options change, so the sheet puts
-  focus back on the same option's new button (`DecisionSheet.RestoreFocus`). An accepted outcome shows for 2 s. A row that clears under an
-  open sheet disables the form and shows the cleared line from `GET /decisions?pending=false`, else "<id> cleared".
+- **Decide.** The decision sheet shows the served question, one button per option (the recommended one is the option the decision serves as
+  `recommended`, and the one `A` runs), the note (with a caption saying it is sent with the choice) and what Decide answered. One
+  `DecisionSender` serves the decision sheet and the item sheet: a decision is sent once and never retried by the app; the decision and its
+  label are taken at the press; only an accepted Decide marks it sent; a refusal or a lost answer leaves it pressable. A refusal (decided
+  elsewhere, voided: SND-ITEM-409; SND-DEC-404) shows inline as served and re-reads the rows. **Focus is never lost on a press**: the options
+  are one list, replaced only when an option differs, so a re-read keeps the button the user tabbed to; an accepted decision disables the
+  options and `DecisionSheet.RestoreFocus` moves focus to the sheet heading (the ring follows the way the press was made). An accepted outcome shows for 2 s. A row that clears under an
+  open sheet disables the form and shows the cleared line from `GET /decisions?pending=false`, else "<id> cleared". A needs-you link whose row is a decision (the tray, a deep link) is canonicalized to `decision/<id>` in `Navigate`, so it opens the same sheet as a click.
 - **Requests.** The item sheet lists the item's pending decisions (option buttons) and the requests filed against it, or the served
   empty sentence. Filing a request from the UI is not built; the fixture's `request` verb files one as a session.
-- **Failure and profile rows** open `FailureSheetViewModel` and `ProfileSheetViewModel`: the served details and CLI, no action the app may
+- **Failure and profile rows** open the sheets built by `FailureDetails` and `ProfileDetails` (static builders, computed when the row or its age changes): the served reason sentence (`reason`, as "Why" and "Changed"; the served `label` is the row's secondary line) and CLI, no action the app may
   not take. A profile row with a null subject keys on its own id.
 - **The pulse and Mark all seen.** A new pulse-urgency row tints its row and pulses the header once; a row is seen after 1 s on screen and
-  focused. Mark all seen marks every row and offers Undo for 10 s: the panel header shows "N marked seen · Undo" (the Undo button is a plain
+  focused (`HomePage` reports focus in a row to `Seen.Watch`; the tracker's timers hop to the UI thread before anything bound changes), and a row under the pointer
+  holds new rows (`NeedsYou.PointerOver`). The pulse moves the row's background between `Brush.AttentionSoft` and `Brush.Surface1`, never its opacity (text
+  contrast, WCAG 1.4.3); a failure keeps a steady attention tint, a calm row a subtle `Brush.Surface2` one; a stale row has a muted background; a row that
+  arrives after the first list slides in over 180 ms (never under reduced motion). Mark all seen marks every row and offers Undo for 10 s (it waits while the
+  Undo button has focus or the pointer): the panel header shows "N marked seen · Undo" (the button is named "Undo mark all seen", a plain
   tab stop; a polite live region, `NeedsYouSeenLive`, speaks the line once when it is offered; focus on Undo moves on when the offer goes).
   Reduced motion (the OS setting or the in-app switch) replaces the pulse with a steady tint and an outline plus the word "new"; Settings'
   switch reaches the rows through `ShellViewModel.ApplyAppearance` like the text scale.
 - **A refresh never moves focus.** The Needs-you list and the Workflows strip each hold one `ObservableCollection` that every re-read patches
   in place (`Patch.To`, as U2's queue): a row that stays keeps its view model, so the control with focus is not rebuilt; a row's buttons
-  are rebuilt only when the served actions differ, and a strip row is kept while what it draws (all but its age) is unchanged. A row that
-  clears hands the selection, and focus, to the next row.
+  are rebuilt only when the served actions differ, and a strip row is kept while what it draws (its served `since` included) is unchanged. A row that
+  clears hands the selection to the next row, and focus follows only when it was in the cleared row or is lost: a refresh never takes focus from the
+  search field, the top bar or Mark all seen. There is one selection on Home: choosing a queue row (click, focus, `J`/`K`) clears the Needs-you and
+  strip selections, and the open-sheet marker (`SheetRowId`) goes when another sheet replaces the row's.
 - **Dock badge and tray.** The count of rows that need you goes to the badge through `IDockBadge`: `MacDockBadge` (NSDockTile),
   `WindowsDockBadge` (ITaskbarList3 overlay on the main window), `NullDockBadge` elsewhere. The tray menu lists at most five rows, then Open,
   the disabled Running line and Quit; picking a row only raises `RowRequested`, which opens that row's sheet. The Desktop head composes
   the adapters (`Composition.DockBadge`); it holds no views or view models (ARCH-UI-001).
-- **Keys** (the list has focus): `J`/`K` next and previous row, `A` primary action when the app may, `X` the option that turns a decision
-  down, `Y` copy the row's command, `Enter` opens the sheet (again: moves into it), `Esc` closes it and returns to the row.
+- **Keys** (Home is shown and focus is not in the sheet; `Esc` is never held back, the other keys wait 500 ms after a refresh moved the selection on its own): `J`/`K` next and previous row, `A` primary action when the app may, `X` the option that turns a decision
+  down, `Y` copy the row's command, `Enter` opens the sheet (again: moves into it; so does `Tab` from the row's last stop), `Esc` closes it and returns to the row (to the strip row when `Answer` opened it from there).
 - **Deep links.** `needs-you/<row id>` and `decision/<DEC id>` open the sheet; the tray, the palette and the item sheet use them.
 - **Focus is never lost**: closing a sheet returns to the row; a refused control keeps focus or, if its action is gone, moves to the sheet title.
 
@@ -711,11 +729,11 @@ caller header), `decide <DEC> <choice>` (as the owner), `fail` / `unfail` (add o
 `items --large` (34 items and 12 requests, all in `FIXTURE_REPO` when it is set and with no repo otherwise: the fixture profile has none, and the API refuses a repo the profile lacks), `workflows` (starts each recipe with the inputs it declares, `fact:item` as JSON and `fact:request` as text, prints what it started and exits non-zero with the CLI's message when a start is refused). A request names its item with `item`. `decide` and `request` need #253's routes; `fail` assumes
 `profile validate` accepts a profile naming a service the build lacks. Not yet run against a live P4 server.
 
-Left: the CliText control/bidi backstop (`CliText` does not exist in this tree), `PublicAPI.Unshipped.txt` needs no entries (the new types are internal).
+Left: the CliText control/bidi backstop (`CliText` does not exist in this tree). `PublicAPI.Unshipped.txt` lists the public members U3' adds to the platform seam (`IDockBadge`, `NullDockBadge`, `TrayRow`, `TrayRowEventArgs`, `TrayView.Count`/`Rows`/`MenuRows`/`RunningLabel`, `ITray.RowRequested`, `TrayState.Attention`/`Calm`, `MainWindowHandle`); the view models are internal.
 
 ### The Workflows strip (U3' T15-T20, screens spec §4.1)
 
-Home draws the open root instances between Needs you and the two columns (`WorkflowsStripViewModel`, `StripRowViewModel`, `Views/Workflows/StripRow`). Every event re-reads `GET /workflow/instances?root=true` (`ShellViewModel.ReadStrip`) whatever page is visible, a 404 marks only the strip "arrives with API P11", a list in a shape this build can't read (SND-UI-003; main still serves engine P4's `{instances, needsYou, empty, rows}` with no counts or `asOf` until API P11 and the UI target #250's shape) shows the sentence "The workflow list can't be read from this Sindri yet (arrives with API P11)." and no rows, and any other failure keeps the rows. The API client logs one unreadable answer once for each route and distinct failure (until the route reads well again), not on every event. The app never sorts: rows come in the API's order (incident, triage, work, oldest). The cap is what is left of eight rows after the Needs-you rows shown, at most five (six and two at text scale 1.3 or more), and "... N more" opens Workflows. Each row is one line (chip, subject, recipe, stage tag, age, the served "now" sentence) with at most one control: the desk Answer, or for a protected answer the lock button and its popover; on a narrow page the detail drops to a second line. J / K walk Needs you, the strip, Running and Queued in that order; Enter opens `workflow/<address>`; A answers a desk row (never a protected one): it opens the Needs-you park row for the same instance (a PARKED or ESCALATED row whose subject is the instance's address or id, else the row of the same item), and when there is none the instance itself. The selection is kept by address across refreshes; a row that turns terminal leaves and is announced as "<address> done". The fold (provisional owner default): a Needs-you row is two lines (about 61 px at scale 1.0; line 1 the chip, id, title and age, line 2 the served sentence, repo, notice and the row's controls; a protected control shows its CLI beside it), so at 1280 × 800 five rows and three strip rows leave the column tops at y = 712. Settings' text scale reaches both lists through `ShellViewModel.ApplyAppearance` (called from Settings' apply callback in `SindriApp`), so the 1.3 caps hold in the app. Fixture verbs: `sindri-ui-fixture.sh workflows [--large]` and `incident start|stop`.
+Home draws the open root instances between Needs you and the two columns (`WorkflowsStripViewModel`, `StripRowViewModel`, `Views/Workflows/StripRow`). Every event re-reads `GET /workflow/instances?root=true` (`ShellViewModel.ReadStrip`) whatever page is visible, a 404 marks only the strip "arrives with API P11", a list in a shape this build can't read (SND-UI-003; main still serves engine P4's `{instances, needsYou, empty, rows}` with no counts or `asOf` until API P11 and the UI target #250's shape) shows the sentence "The workflow list can't be read from this Sindri yet (arrives with API P11)." and no rows, and any other failure keeps the rows. The API client logs one unreadable answer once for each route and distinct failure (until the route reads well again), not on every event. The app never sorts: rows come in the API's order (incident, triage, work, oldest). The cap is what is left of eight rows after the Needs-you rows shown, at most five (six and two at text scale 1.3 or more), and "... N more" opens Workflows. Each row is one line (chip, subject, recipe, stage tag, age, the served "now" sentence) with at most one control: the desk Answer, or for a protected answer the lock button and its popover; on a narrow page the detail drops to a second line. J / K walk Needs you, the strip, Running and Queued in that order; Enter opens `workflow/<address>`; A answers a desk row (never a protected one): it opens the Needs-you park row for the same instance (a row of the served kind `park` whose subject is the instance's address or id, else the park row of the same item), and when there is none the instance itself. The selection is kept by address across refreshes; a row that turns terminal leaves and is announced as "<address> done". The fold (provisional owner default): a Needs-you row is two lines (about 61 px at scale 1.0; line 1 the chip, id, title and age, line 2 the served sentence, repo, notice and the row's controls; a protected control shows its CLI beside it), so at 1280 × 800 five rows and three strip rows leave the column tops at y = 712. Settings' text scale reaches both lists through `ShellViewModel.ApplyAppearance` (called from Settings' apply callback in `SindriApp`), so the 1.3 caps hold in the app. Fixture verbs: `sindri-ui-fixture.sh workflows [--large]` and `incident start|stop`.
 
 <!-- LANE ANCHOR U3': document the Needs you screens. Insert immediately above this marker, never between the markers. -->
 <!-- LANE ANCHOR U8: document the instance screens. Insert immediately below this marker, never between the markers. -->
