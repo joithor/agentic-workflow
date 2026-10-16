@@ -149,4 +149,52 @@ public sealed class ChildOutputRulesTests
     [Fact, Trait("Lane", "unit")]
     public void An_unresolved_child_gives_only_RCP_CHILD_001() =>
         Assert.All(CheckWiring(Parent(Outcome("resolved"), Bare("fact:output"))).Lines(), l => Assert.StartsWith("RCP-CHILD-001", l, StringComparison.Ordinal));
+
+    private const string NamesNoOutcome = "names no outcome (it matches every outcome, 'cancelled' among them)";
+
+    private static WhenClause FactPresent => new(Outcome: null, FactKey.From("fact:output"), FactPresence.Present, Loop: null, Below: null, All: null, Any: null, Not: null);
+
+    private static WhenClause LoopTest => new(Outcome: null, Fact: null, Is: null, Loop: "retry", Below: null, All: null, Any: null, Not: null);
+
+    /// <summary>workflow.kid whose two terminal states both end resolved, only one producing the output.</summary>
+    private static Located SplitResolved => Located.Nowhere with
+    {
+        Children = new InMemoryChildRecipes().With(Child(
+            Of(
+                "produce",
+                [("produce", Active("step.produce")), ("done", Terminal()), ("also", Terminal())],
+                [Go("produce", "done", when: Outcome("done"), produces: ["fact:output"]), Go("produce", "also", "command.skip")],
+                inputs: [],
+                id: "workflow.kid") with
+            {
+                Outputs = [OutputOf("fact:output", "produce")],
+            })),
+    };
+
+    [Fact, Trait("Lane", "unit")]
+    public void Not_of_a_fact_test_names_no_outcome_and_is_refused() =>
+        _ = Assert.Single(Wire003(CheckWiring(Parent(NotOf(FactPresent), Bare("fact:output")), WithKid).Lines()), l => l.Contains(NamesNoOutcome, StringComparison.Ordinal));
+
+    [Fact, Trait("Lane", "unit")]
+    public void Not_of_a_loop_test_names_no_outcome_and_is_refused() =>
+        _ = Assert.Single(Wire003(CheckWiring(Parent(NotOf(LoopTest), Bare("fact:output")), WithKid).Lines()), l => l.Contains(NamesNoOutcome, StringComparison.Ordinal));
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_outcome_and_the_absence_of_a_fact_still_checks_the_outcome() =>
+        Assert.Equal(
+            ["RCP-WIRE-003: transition from 'running' produces 'fact:output' on outcome 'resolved' of child 'workflow.kid', which doesn't produce 'fact:output' on every path to 'resolved' (in workflow.kid, the path through transitions[1] from 'produce' doesn't produce it) at r.yaml:1:1 (transitions[0].produces[0]); produce it on that path in workflow.kid, or remove it, since no outcome of workflow.kid always carries it"],
+            Wire003(CheckWiring(Parent(AllOf(Outcome("resolved"), NotOf(FactPresent)), Bare("fact:output")), SplitResolved).Lines()));
+
+    [Fact, Trait("Lane", "unit")]
+    public void Not_of_cancelled_or_a_fact_still_checks_the_outcomes_it_leaves()
+    {
+        // may = everything but cancelled (cancelled makes the inner any true), so unresolved's gap is reported.
+        var lines = Wire003(CheckWiring(Parent(NotOf(AnyOf(Outcome("cancelled"), FactPresent)), Bare("fact:output")), WithKid).Lines());
+
+        _ = Assert.Single(lines, l => l.Contains("outcome 'unresolved'", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Not_of_an_outcome_and_a_fact_together_can_still_fire_on_cancelled() =>
+        _ = Assert.Single(Wire003(CheckWiring(ParentOf("workflow.steady", NotOf(AllOf(Outcome("resolved"), FactPresent)), Bare("fact:output")), Steady).Lines()), l => l.Contains("outcome 'cancelled'", StringComparison.Ordinal));
 }
