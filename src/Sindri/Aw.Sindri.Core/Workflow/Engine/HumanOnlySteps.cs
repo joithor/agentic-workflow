@@ -12,5 +12,9 @@ public static class HumanOnlySteps
     /// <param name="step">The Step's descriptor.</param>
     /// <param name="runOn">Who runs the Step now.</param>
     /// <returns>True when only a human may complete it.</returns>
-    public static bool Applies(BlockDescriptor step, StepRuntime runOn) => throw new NotSupportedException("DT-R1 U2");
+    public static bool Applies(BlockDescriptor step, StepRuntime runOn)
+    {
+        ArgumentNullException.ThrowIfNull(step);
+        return runOn == StepRuntime.Desk && (step.HumanOnly == true || step.Runtime == BlockRuntime.Block);
+    }
 }
