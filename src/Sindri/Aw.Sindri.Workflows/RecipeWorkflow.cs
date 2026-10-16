@@ -48,6 +48,7 @@ internal sealed partial class RecipeWorkflow
     private TimeSpan _deskTimeout;
     private string? _repo;
     private SubjectRef? _subject;
+    private IReadOnlyDictionary<FactKey, string>? _contents;
     private string? _recorded;
     private StepCompleted? _report;
     private string? _reportId;
@@ -99,7 +100,7 @@ internal sealed partial class RecipeWorkflow
         var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, new HashSet<BlockId>(), NoChildRecipes.Instance) { DeskTimeout = loaded.DeskTimeout };
         _context = new Interpreting(loaded.Recipe, decisions);
         _repo = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : null;
-        _subject = await NamedSubject(_recipe, start).ConfigureAwait(true);
+        (_subject, _contents) = await NamedSubject(_recipe, start).ConfigureAwait(true);
         var change = Started(TransitionDecision.Start(StartOf(start, loaded), loaded.Recipe, decisions));
         var instance = Enter(change.After, Desk);
         foreach (var key in start.Inputs.Where(static i => i.Value.Generated).Select(static i => i.Key))
@@ -107,7 +108,7 @@ internal sealed partial class RecipeWorkflow
             _provenance[key] = new FactProvenance(GenerateActor, Now);   // a generated input was made by the engine, not supplied (spec section 3.11)
         }
 
-        await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null, Detail: WorkflowEventDetail.Of(change.Event, trigger: null), Causation: start.OpenLaunch), NeedsYou(instance)).ConfigureAwait(true);
+        await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null, Detail: Named(WorkflowEventDetail.Of(change.Event, trigger: null), start), Causation: start.OpenLaunch), NeedsYou(instance)).ConfigureAwait(true);
         Emit(before: null, instance, []);
         return (instance, _context);
     }
@@ -119,7 +120,7 @@ internal sealed partial class RecipeWorkflow
     {
         var start = _start ?? throw new InvalidOperationException("the instance has no input yet");
         return (_instance, _recipe) is ({ } instance, { } recipe)
-            ? InstanceViews.Of(instance, recipe, _since, _timers.FiresAt(), new InstanceViewContext(_mirrored, _provenance, Subject: _subject)) with { Id = instance.Id }
+            ? InstanceViews.Of(instance, recipe, _since, _timers.FiresAt(), new InstanceViewContext(_mirrored, _provenance, Subject: _subject, Contents: _contents)) with { Id = instance.Id }
             : InstanceViews.Starting(start.WorkflowId(), start.Recipe, _since, start.Item, _subject);
     }
 

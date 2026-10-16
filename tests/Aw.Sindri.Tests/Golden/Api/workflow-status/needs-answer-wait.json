@@ -2,7 +2,7 @@
   "header": {
     "address": "ITM-01JL4/dev-triage-three-state/1",
     "recipe": "workflow.dev-triage-three-state",
-    "hash12": "e2b414015512",
+    "hash12": "3618e0f86338",
     "version": 1,
     "state": "parked",
     "detail": "needs-answer",
@@ -46,5 +46,5 @@
       "confirm": "Cancel ITM-01JL4/dev-triage-three-state/1? 0 running steps stop; 0 children are cancelled."
     }
   ],
-  "text": "ITM-01JL4/dev-triage-three-state/1  workflow.dev-triage-three-state@e2b414015512  v1  parked: needs-answer  since 12:03 (23m)\n  name      Crash on launch · 2026-10-12\n  next      Parked: the reply to 'Accept the draft?' was not understood.\n            Fix the cause, then resume to check again, or cancel.\n  answer    sindri workflow answer ITM-01JL4/dev-triage-three-state/1 --resume [--text <answer>]\n  commands  answer, takeover, cancel\n"
+  "text": "ITM-01JL4/dev-triage-three-state/1  workflow.dev-triage-three-state@3618e0f86338  v1  parked: needs-answer  since 12:03 (23m)\n  name      Crash on launch - 2026-10-12\n  next      Parked: the reply to 'Accept the draft?' was not understood.\n            Fix the cause, then resume to check again, or cancel.\n  answer    sindri workflow answer ITM-01JL4/dev-triage-three-state/1 --resume [--text <answer>]\n  commands  answer, takeover, cancel\n"
 }

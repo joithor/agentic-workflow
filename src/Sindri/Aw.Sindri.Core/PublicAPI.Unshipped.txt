@@ -7130,7 +7130,6 @@ override Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext.ToString()
 override Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.ToString() -> string!
-static Aw.Sindri.Core.Workflow.Engine.Runtime.FactRows.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! interpreted, Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask? task, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>! provenance) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.FactRow!>!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.FactTypes.Parse(string? declared) -> Aw.Sindri.Core.Workflow.Views.FactType
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InputSlots.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! recipe) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InputPresence!>!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext? right) -> bool
@@ -7281,3 +7280,4 @@ override Aw.Sindri.Core.Events.EventSubject.GetHashCode() -> int
 override Aw.Sindri.Core.Events.EventSubject.ToString() -> string!
 static Aw.Sindri.Core.Events.EventSubject.operator !=(Aw.Sindri.Core.Events.EventSubject? left, Aw.Sindri.Core.Events.EventSubject? right) -> bool
 static Aw.Sindri.Core.Events.EventSubject.operator ==(Aw.Sindri.Core.Events.EventSubject? left, Aw.Sindri.Core.Events.EventSubject? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.FactRows.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! interpreted, Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask? task, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>! provenance, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>? contents = null) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.FactRow!>!

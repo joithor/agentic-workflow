@@ -125,7 +125,7 @@ public sealed class RecipeRegistryCliTests : IDisposable
         Assert.True(code == 0, _error.ToString());
         var recipe = JsonDocument.Parse(_out.ToString()).RootElement.GetProperty("recipe");
         Assert.Equal("triage", recipe.GetProperty("urgency").GetString());
-        Assert.Equal("{fact:scope} · {start:date}", recipe.GetProperty("name").GetString());
+        Assert.Equal("{fact:scope} - {start:date}", recipe.GetProperty("name").GetString());
         Assert.Equal([("fact:scope", "text"), ("fact:item", "item")], recipe.GetProperty("inputs").EnumerateArray().Select(i => (i.GetProperty("key").GetString(), i.GetProperty("kind").GetString())));
         Assert.Equal(
             [("fact:output", "file", "desk"), ("fact:answer", "decision", "answer")],

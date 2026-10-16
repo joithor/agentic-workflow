@@ -34,10 +34,10 @@ public static class FixtureRecipes
         [In("fact:request", "Request", FactType.Text, "text")], [Out("fact:output", "Exported file", FactType.File, "export")]);
 
     /// <summary>workflow.dev-triage-three-state v1: desk, answer, done.</summary>
-    public static RecipeShape DevTriage { get; } = new("workflow.dev-triage-three-state", 1, "e2b4140155120cafa130bb544bca8938d587f5aa8a303027796d2bfce7e01dde", RecipeUrgency.Triage,
+    public static RecipeShape DevTriage { get; } = new("workflow.dev-triage-three-state", 1, "3618e0f863383d3018199adb7bd5433494e7caaeaf3df72fe086354913087236", RecipeUrgency.Triage,
         [S("desk", 1, desk: true, timeout: T(Hour, TimeoutAction.Park), block: "step.produce"), S("answer", 2, wait: true, timeout: T(Day, TimeoutAction.Park)), S("done", 3, terminal: true)], [],
         [In("fact:scope", "Scope", FactType.Text, "text"), In("fact:item", "Item", FactType.Item, "item")],
-        [Out("fact:output", "Draft", FactType.File, "desk"), Out("fact:answer", "Decision", FactType.Decision, "answer")], Name: "{fact:scope} · {start:date}");
+        [Out("fact:output", "Draft", FactType.File, "desk"), Out("fact:answer", "Decision", FactType.Decision, "answer")], Name: "{fact:scope} - {start:date}");
 
     /// <summary>workflow.item v1 (recipes/sindri/workflow.item.yaml): the item's own instance; its running wait starts the workflow.step child and propagates a park.</summary>
     public static RecipeShape Item { get; } = new("workflow.item", 1, "cb9a5b5e28c3dbfaa457ea21304c977b04e3d871cdbeca32252825b9a8c9d4fb", RecipeUrgency.Work,

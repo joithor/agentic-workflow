@@ -137,7 +137,7 @@ public static class InstanceViews
             Inputs = InputSlots.Of(from.Instance, from.Recipe),
             OrderedBy = StatePathOrder.Of(from.Recipe.Recipe).OrderedBy == "transition-list" ? PathOrdering.TransitionList : PathOrdering.Path,
             States = StateCells.Of(from.Instance, from.Recipe, badge),
-            Facts = FactRows.Of(from.Instance, from.Recipe, from.Task, context.Provenance ?? new Dictionary<FactKey, FactProvenance>()),
+            Facts = FactRows.Of(from.Instance, from.Recipe, from.Task, context.Provenance ?? new Dictionary<FactKey, FactProvenance>(), context.Contents),
             ChildGroups = [],
             Step = CurrentStates.Step(from.Instance, from.Recipe),
             Gates = CurrentStates.Gates(from.Instance, from.Recipe),

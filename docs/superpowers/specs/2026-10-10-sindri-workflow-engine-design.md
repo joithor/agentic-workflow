@@ -396,7 +396,7 @@ are the placeholders:
 Example: `name: "{fact:scope} · {start:date}"` and `generate: "triage {start:date}"`.
 
 **Rendering by kind** (for `{fact:…}`):
-- `item`: the item's title, else its `ITM-` id.
+- `item`: its `ITM-` id (not the title).
 - `text`: the first non-empty line, trimmed.
 - `file`: the file name.
 - `link`: the `title` field, else the URL's host.
@@ -907,7 +907,7 @@ The answer line depends on the park reason:
 - a park mirroring a child names the child.
 
 Durations are shown as `1d 22h 48m`, or `40s` under a minute. `since` adds the date (`since 10-09 11:54`) once the
-age is a day or more. Plain output is ASCII, and `commands` always lists the instance's own verbs first, in the
+age is a day or more. Plain output is ASCII (the exception is the `name` line: it renders the recipe's name template, and the values it names, such as a scope text, may be non-ASCII), and `commands` always lists the instance's own verbs first, in the
 order `answer`, `complete`, `handback`, `takeover`, `cancel`. Golden files pin every layout in §6.4, plus one per
 §3.8 row.
 

@@ -3,7 +3,7 @@ id: workflow.dev-triage-three-state
 version: 1
 description: "A triage item through a desk Step, a question to the human and a terminal: three states, a file output and a decision output (UI screens, E-21 and E-22)."
 urgency: triage
-name: "{fact:scope} · {start:date}"
+name: "{fact:scope} - {start:date}"
 inputs:
   - { key: fact:scope, label: "Scope", type: text, kind: text }
   - { key: fact:item, label: "Item", type: item, kind: item }
