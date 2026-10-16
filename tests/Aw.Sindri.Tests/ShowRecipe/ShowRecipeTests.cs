@@ -2,9 +2,9 @@ using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Registry;
+using Aw.Sindri.Tests.ApproveRecipe;
 using Aw.Sindri.Tests.ListRecipes;
 using Aw.Sindri.Tests.Workflow;
-using Aw.Sindri.Tests.ApproveRecipe;
 
 namespace Aw.Sindri.Tests.ShowRecipe;
 

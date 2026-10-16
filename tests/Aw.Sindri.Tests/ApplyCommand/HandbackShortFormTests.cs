@@ -4,9 +4,9 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
-using Microsoft.Extensions.DependencyInjection;
 using Aw.Sindri.Tests.CompleteStep;
 using Aw.Sindri.Tests.Workflows;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Tests.ApplyCommand;
 
