@@ -64,7 +64,7 @@ internal sealed partial class HealthViewModel
 
         CanRefresh = false;
         var attempt = ++_refreshes;
-        var sending = clock.CreateTimer(_ => OnUi(() => IsSending = !CanRefresh && attempt == _refreshes), state: null, SendingAfter, Timeout.InfiniteTimeSpan);
+        var sending = clock.CreateTimer(_ => _ui.Post(() => IsSending = !CanRefresh && attempt == _refreshes), state: null, SendingAfter, Timeout.InfiniteTimeSpan);
         try
         {
             await using (sending.ConfigureAwait(true))

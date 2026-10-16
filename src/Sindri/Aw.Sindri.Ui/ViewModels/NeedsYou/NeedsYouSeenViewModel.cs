@@ -20,20 +20,7 @@ internal sealed class NeedsYouSeenViewModel : ObservableObject
 
     private bool InApp { get; set; }
 
-    private SynchronizationContext? _ui;
-
-    // Runs on the UI thread's context (taken when the list is first updated or restored, which is on it); inline when there is none or already there.
-    private void OnUi(Action action)
-    {
-        if (_ui is { } ui && SynchronizationContext.Current != ui)
-        {
-            ui.Post(_ => action(), state: null);
-        }
-        else
-        {
-            action();
-        }
-    }
+    private readonly UiContext _ui = new();
 
     internal NeedsYouSeenViewModel(Preferences preferences, IMotionPreference motion, TimeProvider clock)
     {
@@ -51,7 +38,7 @@ internal sealed class NeedsYouSeenViewModel : ObservableObject
             Reapply();
         };
         // The OS setting is polled on a timer's thread: the rows and what is bound to them change on the UI thread.
-        _motion.Changed += (_, _) => OnUi(() =>
+        _motion.Changed += (_, _) => _ui.Post(() =>
         {
             OnChanged(nameof(ReducedMotion));
             Reapply();
@@ -81,7 +68,6 @@ internal sealed class NeedsYouSeenViewModel : ObservableObject
     /// <returns>A task that completes when they are applied.</returns>
     internal async Task Restore(CancellationToken cancellationToken)
     {
-        _ui ??= SynchronizationContext.Current;
         await _tracker.Restore(cancellationToken).ConfigureAwait(true);
         try
         {
@@ -113,7 +99,6 @@ internal sealed class NeedsYouSeenViewModel : ObservableObject
     /// <param name="known">Every id the list has, shown or not (Home's filter, the hold): the seen state of those is kept. Null: the rows given.</param>
     internal void Update(IReadOnlyList<NeedsYouEntry> entries, IReadOnlyCollection<string>? known = null)
     {
-        _ui ??= SynchronizationContext.Current;
         var ids = entries.Select(e => e.Id).ToList();
         var keep = known ?? ids;
         var fresh = ids.Where(id => !_byId.ContainsKey(id)).ToHashSet(StringComparer.Ordinal);

@@ -4,10 +4,11 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// Which needs-you rows the user has seen (UI spec §5): presentation state, kept by row id, never the API's. A row is seen
 /// once it has been on screen and focused for <see cref="OnScreenFor"/>, or acted on, or marked by Mark all seen. The ids
 /// are kept in memory and in the preference file, and dropped when the row leaves the list. Timers run on the injected
-/// clock; their callbacks arrive on a pool thread, so they hop to the UI thread's context (captured when the timer is created, which
-/// is always on it) before anything changes: a bound property or a view handler never runs on the timer's thread.
+/// clock; their callbacks arrive on a pool thread, so they hop to the UI thread's context (captured at construction) before
+/// anything changes: a bound property or a view handler never runs on the timer's thread. A hop runs a turn later, so each
+/// timer carries a generation and a callback whose timer was replaced or cancelled meanwhile is dropped.
 /// </summary>
-internal sealed class SeenTracker : ObservableObject
+internal sealed partial class SeenTracker : ObservableObject
 {
     /// <summary>How long a row must be on screen and focused to count as seen.</summary>
     internal static readonly TimeSpan OnScreenFor = TimeSpan.FromSeconds(1);
@@ -22,7 +23,10 @@ internal sealed class SeenTracker : ObservableObject
     private readonly Dictionary<string, ITimer> _watching = new(StringComparer.Ordinal);
     private List<string> _undo = [];
     private ITimer? _undoTimer;
-    private SynchronizationContext? _ui;
+    private readonly UiContext _ui = new();
+    private readonly Dictionary<string, long> _dwellGen = new(StringComparer.Ordinal);
+    private long _epoch;
+    private long _undoGen;
 
     internal SeenTracker(Preferences preferences, TimeProvider clock)
     {
@@ -100,6 +104,7 @@ internal sealed class SeenTracker : ObservableObject
             changed = _seen.RemoveAll(id => !keep.Contains(id)) > 0;
             foreach (var gone in _watching.Keys.Where(id => !keep.Contains(id)).ToList())
             {
+                _ = _dwellGen.Remove(gone);
                 _ = _watching.Remove(gone, out var timer);
                 timer!.Dispose(); // why: the key came from this dictionary a line above
             }
@@ -139,8 +144,9 @@ internal sealed class SeenTracker : ObservableObject
                 return;
             }
 
-            _ui ??= SynchronizationContext.Current;
-            _watching[id] = _clock.CreateTimer(_ => OnUi(() => MarkSeen(id)), state: null, OnScreenFor, Timeout.InfiniteTimeSpan);
+            var gen = ++_epoch;
+            _dwellGen[id] = gen;
+            _watching[id] = _clock.CreateTimer(_ => _ui.Post(() => DwellElapsed(id, gen)), state: null, OnScreenFor, Timeout.InfiniteTimeSpan);
         }
     }
 
@@ -157,13 +163,11 @@ internal sealed class SeenTracker : ObservableObject
 
             if (holding)
             {
-                _undoTimer?.Dispose();
-                _undoTimer = null;
+                StopUndoTimer();
             }
             else if (_undoTimer is null)
             {
-                _ui ??= SynchronizationContext.Current;
-                _undoTimer = _clock.CreateTimer(_ => OnUi(ExpireUndo), state: null, UndoFor, Timeout.InfiniteTimeSpan);
+                StartUndoTimer();
             }
         }
     }
@@ -178,8 +182,7 @@ internal sealed class SeenTracker : ObservableObject
     {
         lock (_gate)
         {
-            _undoTimer?.Dispose();
-            _undoTimer = null;
+            StopUndoTimer();
             _undo = [.. current.Distinct(StringComparer.Ordinal).Where(id => !_seen.Contains(id, StringComparer.Ordinal))];
             _seen.AddRange(_undo);
             foreach (var id in _undo)
@@ -192,8 +195,7 @@ internal sealed class SeenTracker : ObservableObject
 
             if (_undo.Count > 0)
             {
-                _ui ??= SynchronizationContext.Current;
-                _undoTimer = _clock.CreateTimer(_ => OnUi(ExpireUndo), state: null, UndoFor, Timeout.InfiniteTimeSpan);
+                StartUndoTimer();
             }
         }
 
@@ -215,8 +217,7 @@ internal sealed class SeenTracker : ObservableObject
 
             _ = _seen.RemoveAll(id => _undo.Contains(id, StringComparer.Ordinal));
             _undo = [];
-            _undoTimer?.Dispose();
-            _undoTimer = null;
+            StopUndoTimer();
         }
 
         Persist();
@@ -225,23 +226,11 @@ internal sealed class SeenTracker : ObservableObject
         return true;
     }
 
-    // A timer's callback runs on a pool thread: it continues on the UI thread's context when there is one (none: a test with no UI thread).
-    private void OnUi(Action action)
-    {
-        if (_ui is { } ui && SynchronizationContext.Current != ui)
-        {
-            ui.Post(_ => action(), state: null);
-        }
-        else
-        {
-            action();
-        }
-    }
-
     private void MarkSeen(string id)
     {
         lock (_gate)
         {
+            _ = _dwellGen.Remove(id);
             if (_watching.Remove(id, out var timer))
             {
                 timer.Dispose();
@@ -257,18 +246,6 @@ internal sealed class SeenTracker : ObservableObject
 
         Persist();
         OnChanged(nameof(Seen));
-    }
-
-    private void ExpireUndo()
-    {
-        lock (_gate)
-        {
-            _undo = [];
-            _undoTimer?.Dispose();
-            _undoTimer = null;
-        }
-
-        OnChanged(nameof(UndoCount));
     }
 
     // Written over whatever the file holds by then, through the app's one write queue.

@@ -13,7 +13,7 @@ internal sealed class SettingsViewModel : ObservableObject, IDisposable
     private readonly Preferences _preferences;
     private readonly IMotionPreference _motion;
     private readonly Action<AppearanceSettings> _apply;
-    private readonly SynchronizationContext? _ui;
+    private readonly UiContext _ui = new();
     private bool _disposed;
     private bool _loading;
 
@@ -26,7 +26,6 @@ internal sealed class SettingsViewModel : ObservableObject, IDisposable
         _preferences = preferences;
         _motion = motion;
         _apply = apply;
-        _ui = SynchronizationContext.Current;
         SystemReducesMotion = motion.ReduceMotion;
         motion.Changed += OnMotionChanged;
     }
@@ -154,17 +153,7 @@ internal sealed class SettingsViewModel : ObservableObject, IDisposable
         _ = _preferences.Update(p => p with { TextScale = scale, ReduceMotion = reduce });
     }
 
-    private void OnMotionChanged(object? sender, EventArgs e)
-    {
-        if (_ui is null || SynchronizationContext.Current == _ui)
-        {
-            Reread();
-        }
-        else
-        {
-            _ui.Post(_ => Reread(), state: null);
-        }
-    }
+    private void OnMotionChanged(object? sender, EventArgs e) => _ui.Post(Reread);
 
     private void Reread()
     {
