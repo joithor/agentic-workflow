@@ -39,15 +39,29 @@ public sealed class InstanceViewsTests
     }
 
     [Theory]
-    [InlineData("parked-revoked", "spec-conflict (revoked)", "cancel")]
-    [InlineData("parked-drift", "spec-conflict (drift)", "approve")]
-    public void A_spec_conflict_park_takes_no_answer_and_names_its_way_out(string name, string detail, string way)
+    [InlineData("parked-revoked", "spec-conflict (revoked)", "cancel", "cancel")]
+    [InlineData("parked-drift", "spec-conflict (drift)", "approve", "takeover, cancel")]
+    public void A_spec_conflict_park_takes_no_answer_and_names_its_way_out(string name, string detail, string way, string commands)
     {
         var view = StatusCases.View(name);
 
         Assert.Equal(detail, view.Detail);
-        Assert.Equal("takeover, cancel", StatusLayout.Commands(view));
+        Assert.Equal(commands, StatusLayout.Commands(view));   // spec 6.4: a revoked park offers only cancel (PR 232 proof F4)
         Assert.Contains(way, view.Answer, StringComparison.Ordinal);
+    }
+
+    /// <summary>PR 232 proof F2: a dispatch park's reason already ends in its own fix, so the status says it once and adds the allowlist sentence only for SND-WF-011.</summary>
+    [Theory]
+    [InlineData("parked-dispatch-no-runtime", false)]
+    [InlineData("parked-dispatch-effect-failed", false)]
+    [InlineData("parked-dispatch-allowlist", true)]
+    public void A_dispatch_park_says_its_reason_and_its_fix_once(string name, bool allowlist)
+    {
+        var next = StatusCases.View(name).Next;
+
+        Assert.Equal(1, next.Split("resume to send it again", StringSplitOptions.None).Length - 1);
+        Assert.Equal(allowlist ? 1 : 0, next.Split("isn't on the profile's effect allowlist", StringSplitOptions.None).Length - 1);
+        Assert.StartsWith("effect.claim.ref ", next, StringComparison.Ordinal);
     }
 
     [Fact]

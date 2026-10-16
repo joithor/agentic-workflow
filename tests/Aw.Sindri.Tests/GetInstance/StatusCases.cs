@@ -41,6 +41,9 @@ internal static class StatusCases
         "parked-needs-answer-wait" => Of(Park(ParkReason.NeedsAnswer, ParkKind.Wait, "gate.test.check refused produce -> checks (no output)"), Ago(8)),
         "parked-timeout" => Of(Park(ParkReason.Timeout, kind: null, "produce ran past 2d"), Ago(60 * 26)),
         "parked-revoked" => Of(Park(ParkReason.SpecConflict, ParkKind.Revoked, "workflow.step was revoked."), Ago(4)),
+        "parked-dispatch-no-runtime" => Of(DispatchPark("effect.claim.ref can't run: repo 'x' isn't in the approved profile (SND-WF-010). Fix that, then resume to send it again."), Ago(4)),
+        "parked-dispatch-effect-failed" => Of(DispatchPark("effect.claim.ref can't run: the ref could not be created. Fix that, then resume to send it again."), Ago(4)),
+        "parked-dispatch-allowlist" => Of(DispatchPark("effect.claim.ref isn't on the profile's effect allowlist. Add it and approve the profile, then resume to send it again."), Ago(4)),
         "parked-drift" => Of(Park(ParkReason.SpecConflict, ParkKind.Drift, "step.produce"), Ago(4)),
         "parked-no-runtime" => Of(Park(ParkReason.NoRuntime, kind: null, "step.test.agent"), Ago(2)),
         "parked-rounds-with-drift" => Of(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds") with { PendingPark = Suspended(ParkReason.SpecConflict, ParkKind.Drift, "step.produce") }, Ago(30)),
@@ -63,6 +66,9 @@ internal static class StatusCases
 
     private static WorkflowInstance Park(ParkReason reason, ParkKind? kind, string question) =>
         Produce() with { Suspension = Suspended(reason, kind, question) };
+
+    private static WorkflowInstance DispatchPark(string question) =>
+        Produce() with { Suspension = Suspended(ParkReason.SpecConflict, ParkKind.Dispatch, question) };
 
     private static Suspension Suspended(ParkReason reason, ParkKind? kind, string question) =>
         new(SuspensionKind.Park, reason, kind, Escalation: null, question, "service:workflow", Mirrors: null, Resume(ResumeKind.Rerun));
