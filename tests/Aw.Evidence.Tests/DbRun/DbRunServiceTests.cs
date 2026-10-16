@@ -7,6 +7,8 @@ namespace Aw.Evidence.Tests.DbRun;
 
 public sealed class DbRunServiceTests
 {
+    private static readonly string[] _tokens = ["tok-one-123456", "tok-two-123456"];
+
     private const string ReadNotes = "SELECT id, text FROM notes ORDER BY id";
 
     private static string Count(int n) => """{"rowCount":""" + n.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}";
@@ -349,8 +351,122 @@ public sealed class DbRunServiceTests
         var summary = (await harness.Run()).Value.Summary;
 
         Assert.Equal(ApiOutcome.Refused, summary.Outcome);
-        Assert.Contains("missing.sql", summary.Refusal!.Message, StringComparison.Ordinal);
+        Assert.Equal(EvidenceErrors.FileNotFound.Code, summary.Refusal!.Code);
+        Assert.Contains("missing.sql", summary.Refusal.Message, StringComparison.Ordinal);
         Assert.Empty(harness.Reader.Opened);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task DbRun_hides_the_bytes_of_a_secret_named_blob_column_under_any_alias()
+    {
+        var harness = Sqlite("""{"rowCount":1}""");
+        _ = harness.Scrubber.HidesName("password_hash");
+        _ = harness.Reader.Answer(ReadNotes, new Rows(["h"], [[Convert.FromHexString("DEADBEEF1234")]], Truncated: false, SourceColumns: ["password_hash"]));
+
+        var response = (await harness.Run()).Value;
+
+        Assert.DoesNotContain("deadbeef1234", response.Document, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task DbRun_hides_every_element_of_a_secret_named_array_column_under_any_alias()
+    {
+        var harness = Postgres(expect: """{"rowCount":1}""");
+        _ = harness.Scrubber.HidesName("api_tokens");
+        _ = harness.Reader.Answer(ReadNotes, new Rows(["t", "when"], [[_tokens, new DateTime(2026, 10, 15, 9, 0, 0, DateTimeKind.Utc)]], Truncated: false, SourceColumns: ["api_tokens", null]));
+
+        var response = (await harness.Run()).Value;
+
+        Assert.DoesNotContain("tok-one-123456", response.Document, StringComparison.Ordinal);
+        Assert.DoesNotContain("tok-two-123456", response.Document, StringComparison.Ordinal);
+        Assert.DoesNotContain("System.String[]", response.Document, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task DbRun_hashes_the_seed_file_s_own_bytes_even_when_they_are_not_valid_text()
+    {
+        var harness = new DbRunHarness().WithScript(DbRunHarness.SqliteScript(DbRunHarness.Query(ReadNotes, Count(1)), "\"seed\":\"seed.sql\",")).WithSqliteFile();
+        byte[] seed = [.. Encoding.UTF8.GetBytes("SELECT 1; -- "), 0xFF, 0xFE];
+        _ = harness.Files.With("/work/seed.sql", seed);
+        _ = harness.Reader.Answer(ReadNotes, DbRunHarness.OneNote);
+
+        var summary = (await harness.Run()).Value.Summary;
+
+        Assert.Equal(Convert.ToHexStringLower(SHA256.HashData(seed)), summary.SeedSha256);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task DbRun_checks_a_golden_file_that_sits_next_to_the_script()
+    {
+        var harness = Sqlite("""{"golden":"gold.json"}""");
+        _ = harness.Files.With("/work/gold.json", Encoding.UTF8.GetBytes("""[ { "id": 1, "text": "hello" } ]"""));
+
+        var summary = (await harness.Run()).Value.Summary;
+
+        Assert.Equal(ApiOutcome.Passed, summary.Outcome);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task DbRun_a_golden_file_that_differs_fails_the_run_exit_2_naming_the_file()
+    {
+        var harness = Sqlite("""{"golden":"gold.json"}""");
+        _ = harness.Files.With("/work/gold.json", Encoding.UTF8.GetBytes("""[{"id":1,"text":"bye"}]"""));
+
+        var summary = (await harness.Run()).Value.Summary;
+
+        Assert.Equal((ApiOutcome.Failed, 2), (summary.Outcome, summary.ExitCode()));
+        Assert.Contains("gold.json", Assert.Single(summary.Failures).Expected, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task DbRun_a_missing_golden_file_is_a_refusal_before_any_lock_or_connection()
+    {
+        var harness = Sqlite("""{"golden":"nowhere.json"}""");
+
+        var summary = (await harness.Run()).Value.Summary;
+
+        Assert.Equal(EvidenceErrors.FileNotFound.Code, summary.Refusal!.Code);
+        Assert.Empty(harness.Reader.Opened);
+        Assert.Empty(harness.Locks.Events);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task DbRun_a_golden_path_resolves_against_the_script_s_directory_and_an_absolute_one_stands()
+    {
+        var harness = Sqlite("""{"golden":"/elsewhere/gold.json"}""");
+        _ = harness.Files.With("/elsewhere/gold.json", Encoding.UTF8.GetBytes("""[{"id":1,"text":"hello"}]"""));
+
+        var absolute = (await harness.Run()).Value.Summary;
+        var relative = Sqlite("""{"golden":"sub/gold.json"}""");
+        _ = relative.Files.With("/work/sub/gold.json", Encoding.UTF8.GetBytes("""[{"id":1,"text":"hello"}]"""));
+
+        Assert.Equal(ApiOutcome.Passed, absolute.Outcome);
+        Assert.Equal(ApiOutcome.Passed, (await relative.Run()).Value.Summary.Outcome);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task DbRun_a_row_count_that_holds_and_a_pointer_that_fails_counts_the_pointer_as_assertion_2_of_2()
+    {
+        var harness = Sqlite("""{"rowCount":1,"pointers":[{"pointer":"/0/text","equals":"bye"}]}""");
+
+        var summary = (await harness.Run()).Value.Summary;
+
+        Assert.Contains("(assertion 2 of 2)", summary.Headline, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task DbRun_a_value_learned_from_a_secret_column_is_hidden_in_a_later_query_s_failure()
+    {
+        var harness = Postgres(expect: """{"rowCount":1}""");
+        _ = harness.Scrubber.HidesName("api_key");
+        _ = harness.Reader.Answer(ReadNotes, new Rows(["api_key"], [["ak-PLANTED-two-query-1"]], Truncated: false));
+        const string second = "SELECT text FROM notes";
+        _ = harness.WithScript($$"""{"connection":"fixture-pg","queries":[{{DbRunHarness.Query(ReadNotes, """{"rowCount":1}""")}},{{DbRunHarness.Query(second, """{"pointers":[{"pointer":"/0/x","equals":"ak-PLANTED-two-query-1"}]}""")}}]}""");
+        _ = harness.Reader.Answer(second, new Rows(["x"], [["ak-PLANTED-two-query-1"]], Truncated: false));
+
+        var response = (await harness.Run()).Value;
+
+        Assert.DoesNotContain("ak-PLANTED-two-query-1", response.Document, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

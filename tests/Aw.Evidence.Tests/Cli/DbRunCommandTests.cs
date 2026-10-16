@@ -101,8 +101,8 @@ public sealed class DbRunCommandTests : IDisposable
     [InlineData("INSERT INTO notes(text) VALUES ('w')")]
     [InlineData("WITH x AS (SELECT 1) INSERT INTO notes(text) SELECT 'w' FROM x")]
     [InlineData("PRAGMA user_version = 9")]
-    [InlineData("ATTACH ''new.db'' AS n")]
-    [InlineData("VACUUM INTO ''copy.db''")]
+    [InlineData("ATTACH 'new.db' AS n")]
+    [InlineData("VACUUM INTO 'copy.db'")]
     public async Task DbRunCommand_exits_1_with_AW_EVIDENCE_020_for_each_bypass_and_changes_nothing(string sql)
     {
         var script = await Script(Query(sql, """{"rowCount":1}"""));
@@ -116,6 +116,34 @@ public sealed class DbRunCommandTests : IDisposable
         Assert.Equal("refused", JsonNode.Parse(output)!["outcome"]!.GetValue<string>());
         Assert.Equal(before, Sha(Source));
         Assert.Equal(files.Count + 1, Files().Count);   // only the summary is new
+    }
+
+    [Fact]
+    public async Task DbRunCommand_checks_a_golden_file_against_real_sqlite_rows()
+    {
+        var script = await Script(Query("SELECT id, text FROM notes ORDER BY id LIMIT 1", """{"golden":"gold.json"}"""));
+        await File.WriteAllTextAsync(_root.Combine("gold.json"), """[{"id":1,"text":"hello"}]""", TestContext.Current.CancellationToken);
+        var (passedExit, _, _) = await Run(script, "--at", "head");
+        await File.WriteAllTextAsync(_root.Combine("gold.json"), """[{"id":"1","text":"hello"}]""", TestContext.Current.CancellationToken);
+
+        var (failedExit, output, _) = await Run(script, "--at", "head");
+
+        Assert.Equal((0, 2), (passedExit, failedExit));
+        Assert.Equal("failed", JsonNode.Parse(output)!["outcome"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task DbRunCommand_exits_1_with_AW_EVIDENCE_018_when_the_seed_fails_on_the_copy()
+    {
+        var script = await Script(Query("SELECT 1", """{"rowCount":1}"""), "\"seed\":\"seed.sql\",");
+        await File.WriteAllTextAsync(_root.Combine("seed.sql"), "INSERT INTO no_such_table VALUES (1)", TestContext.Current.CancellationToken);
+        var before = Sha(Source);
+
+        var (exit, _, error) = await Run(script, "--at", "head");
+
+        Assert.Equal(1, exit);
+        Assert.StartsWith("ui-evidence: AW-EVIDENCE-018", error, StringComparison.Ordinal);
+        Assert.Equal(before, Sha(Source));
     }
 
     [Fact]

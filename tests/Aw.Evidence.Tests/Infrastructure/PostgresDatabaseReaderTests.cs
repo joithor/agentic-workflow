@@ -57,6 +57,54 @@ public sealed class PostgresDatabaseReaderTests(PostgresContainer container) : R
     }
 
     [Fact]
+    public async Task A_server_message_that_quotes_a_value_does_not_carry_the_value()
+    {
+        await using var session = (await new PostgresDatabaseReader().OpenAsync(Target(Entry()), TestContext.Current.CancellationToken)).Value;
+
+        var failed = await session.QueryAsync("SELECT api_key::uuid FROM secrets", 5, TestContext.Current.CancellationToken);
+
+        Assert.Equal(EvidenceErrors.RunFailed.Code, failed.Error.Code);
+        Assert.Contains("22P02", failed.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("ak-PLANTED-pgcol-123456", failed.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_value_npgsql_cannot_map_to_an_object_is_read_as_text_and_the_run_goes_on()
+    {
+        await using var session = (await new PostgresDatabaseReader().OpenAsync(Target(Entry()), TestContext.Current.CancellationToken)).Value;
+
+        var rows = await session.QueryAsync("SELECT 'NaN'::numeric AS n, '0044-03-15 BC'::date AS d, 7 AS seven", 5, TestContext.Current.CancellationToken);
+        var after = await session.QueryAsync(ReadAll, 5, TestContext.Current.CancellationToken);
+
+        Assert.True(rows.IsSuccess, rows.IsError ? rows.Error.Message : "");
+        Assert.Contains("NaN", rows.Value.ToJson(), StringComparison.Ordinal);
+        Assert.Contains("7", rows.Value.ToJson(), StringComparison.Ordinal);
+        Assert.Equal(3, after.Value.Count);
+    }
+
+    [Fact]
+    public async Task A_bytea_and_a_text_array_come_back_as_bytes_and_strings()
+    {
+        await using var session = (await new PostgresDatabaseReader().OpenAsync(Target(Entry()), TestContext.Current.CancellationToken)).Value;
+
+        var rows = await session.QueryAsync("SELECT secret_key, api_tokens FROM blobs", 5, TestContext.Current.CancellationToken);
+
+        Assert.Equal("""[{"secret_key":"\\xdeadbeef1234","api_tokens":["tok-one-123456","tok-two-123456"]}]""", rows.Value.ToJson());
+    }
+
+    [Fact]
+    public async Task A_select_the_role_may_not_read_is_a_failed_query_not_a_refused_write()
+    {
+        await using var session = (await new PostgresDatabaseReader().OpenAsync(Target(Entry()), TestContext.Current.CancellationToken)).Value;
+
+        var failed = await session.QueryAsync("SELECT * FROM hidden", 5, TestContext.Current.CancellationToken);
+
+        Assert.Equal(EvidenceErrors.RunFailed.Code, failed.Error.Code);
+        Assert.Contains("42501", failed.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("write", failed.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task A_server_that_is_not_the_one_named_is_refused_before_any_script_query()
     {
         var before = Count(await container.LogAsync(), "notes");
