@@ -12,7 +12,7 @@ namespace Aw.Sindri.Ui.Tests.Workflows;
 [Lane(TestLane.Unit)]
 public sealed class InstanceRowViewModelTests
 {
-    private static InstanceRowViewModel Row(InstanceSummary row) => new(row);
+    private static InstanceRowViewModel Row(InstanceSummary row) => new(row, new FakeClipboard(), TimeProvider.System);
 
     private static IReadOnlyList<InstanceSummary> Open => FixtureInstances.List("open").Instances;
 

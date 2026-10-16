@@ -1,4 +1,6 @@
+#pragma warning disable CA1822, MA0041, IDE0060, CS0067 // red stub: replaced by the green commit
 using Aw.Sindri.Ui.Api.Workflow;
+using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.ViewModels.Facts;
 
 namespace Aw.Sindri.Ui.ViewModels.Instance;
@@ -39,6 +41,19 @@ internal sealed partial class InstanceFrameViewModel
             children.WorkRequested += (_, _) => WorkRequested?.Invoke(this, EventArgs.Empty);
             Children = children;
         }
+    }
+
+    /// <summary>Raised when the frame asks the view to put focus on one of its parts.</summary>
+    internal event EventHandler<FrameFocusEventArgs>? FocusRequested;
+
+    /// <summary>The tab strip; null before a read.</summary>
+    public FrameTabsViewModel? Tabs { get; private set => Set(ref field, value); }
+
+    /// <summary>Names what the key that opened this frame wants done once the instance is read.</summary>
+    /// <param name="address">The instance's address.</param>
+    /// <param name="intent">The intent.</param>
+    internal void Intend(string address, FrameIntent intent)
+    {
     }
 
     private void ClearPanels() => (Facts, Children) = (null, null);

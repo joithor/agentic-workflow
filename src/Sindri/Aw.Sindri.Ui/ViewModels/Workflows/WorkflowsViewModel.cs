@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
+using Aw.Sindri.Ui.Platform;
 
 namespace Aw.Sindri.Ui.ViewModels.Workflows;
 
@@ -9,7 +10,7 @@ namespace Aw.Sindri.Ui.ViewModels.Workflows;
 /// The Workflows page (screens §4.2): the open root instances grouped by recipe, as the API serves them. Group order, row order, the counts
 /// and the empty sentence are the API's; the app groups the rows by their recipe id, keeps what the human collapsed, and maps fields to words.
 /// </summary>
-internal sealed class WorkflowsViewModel(ISindriApi api) : ObservableObject
+internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clipboard, TimeProvider clock) : ObservableObject
 {
     private readonly Dictionary<string, RecipeGroupViewModel> _groups = new(StringComparer.Ordinal);
     private readonly Dictionary<string, InstanceRowViewModel> _rows = new(StringComparer.Ordinal);
@@ -206,7 +207,7 @@ internal sealed class WorkflowsViewModel(ISindriApi api) : ObservableObject
     // A re-read serves the same row again: it stays (so does the control with focus) unless something it draws changed.
     private InstanceRowViewModel Row(InstanceSummary summary)
     {
-        var row = new InstanceRowViewModel(summary);
+        var row = new InstanceRowViewModel(summary, clipboard, clock);
         var old = Groups.SelectMany(g => g.Rows).FirstOrDefault(r => string.Equals(r.Address, row.Address, StringComparison.Ordinal));
         var kept = old is not null && string.Equals(old.Signature, row.Signature, StringComparison.Ordinal) ? old : row;
         kept.SetStale(IsStale);
@@ -223,7 +224,7 @@ internal sealed class WorkflowsViewModel(ISindriApi api) : ObservableObject
         var all = await api.Instances(url, new InstanceQuery(Root: true, Recipe: RecipeFilter, Subject: SubjectFilter), cancellationToken).ConfigureAwait(true);
         if (all.IsSuccess)
         {
-            var finished = all.Value.Instances.Where(r => r.States.Any(s => s.Terminal && string.Equals(s.State, r.State, StringComparison.Ordinal))).Select(r => new InstanceRowViewModel(r)).ToList();
+            var finished = all.Value.Instances.Where(r => r.States.Any(s => s.Terminal && string.Equals(s.State, r.State, StringComparison.Ordinal))).Select(r => new InstanceRowViewModel(r, clipboard, clock)).ToList();
             finished.ForEach(r => r.SetStale(IsStale));
             DoneRows.Clear();
             finished.ForEach(DoneRows.Add);

@@ -29,7 +29,7 @@ public sealed class WorkflowsViewModelTests
 
     private async Task<WorkflowsViewModel> Shown()
     {
-        var list = new WorkflowsViewModel(_server);
+        var list = new WorkflowsViewModel(_server, new FakeClipboard(), TimeProvider.System);
         await list.Refresh(_api, Token);
         return list;
     }

@@ -9,6 +9,9 @@ internal enum FrameFocus
     /// <summary>Copy status.</summary>
     CopyStatus,
 
+    /// <summary>The output a desk step awaits (A on a desk task).</summary>
+    PendingOutput,
+
     /// <summary>Back, when there is nothing else to read.</summary>
     Back,
 }

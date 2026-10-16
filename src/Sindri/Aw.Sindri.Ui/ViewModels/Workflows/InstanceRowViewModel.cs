@@ -1,5 +1,8 @@
+#pragma warning disable CA1822, MA0041, IDE0060 // red stub: replaced by the green commit
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Navigation;
+using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Components;
 
 namespace Aw.Sindri.Ui.ViewModels.Workflows;
 
@@ -11,7 +14,7 @@ internal sealed class InstanceRowViewModel : ObservableObject
 {
     private readonly InstanceSummary _row;
 
-    internal InstanceRowViewModel(InstanceSummary row)
+    internal InstanceRowViewModel(InstanceSummary row, IClipboard clipboard, TimeProvider clock)
     {
         _row = row;
         var blocked = row.Inputs.Any(i => i is { Required: true, Present: false });
@@ -58,6 +61,12 @@ internal sealed class InstanceRowViewModel : ObservableObject
 
     /// <summary>Where Enter and a click go: the instance in the Workflows frame.</summary>
     public DeepLink Link => new(DeepLinkKind.Workflow, _row.Address);
+
+    /// <summary>The lock button for a protected answer; null for none.</summary>
+    public ProtectedActionViewModel? Protected => null;
+
+    /// <summary>True for the row the keys act on.</summary>
+    public bool IsSelected { get; internal set => Set(ref field, value); }
 
     /// <summary>True while the views are stalled or rebuilding: the row stays, marked stale.</summary>
     public bool IsStale { get; private set => Set(ref field, value); }

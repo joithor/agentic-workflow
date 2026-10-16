@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.ViewModels;
@@ -61,6 +62,38 @@ internal static partial class Labels
 
     /// <summary>The page's heading while it has no counts yet.</summary>
     internal const string WorkflowsHeading = "Workflows";
+
+    /// <summary>B on a row: handing an instance back is sent from the app in U8b.</summary>
+    internal const string HandBackArrives = "Hand back arrives with U8b. Copy its command from the instance and run it at a terminal.";
+
+    /// <summary>N: starting a workflow from the app arrives with U5'.</summary>
+    internal const string StartArrives = "Start arrives with U5'.";
+
+    /// <summary>The frame tab strip's heading for screen readers.</summary>
+    internal const string TabsHeading = "Instance views";
+
+    /// <summary>The phase of the Timeline, Decisions and Requests tabs.</summary>
+    internal const string TabsArriveU8b = "arrives with U8b";
+
+    /// <summary>The phase of the Context tab.</summary>
+    internal const string TabArrivesU9 = "arrives with U9";
+
+    /// <summary>The frame tab strip's accessible name for one instance.</summary>
+    /// <param name="address">The instance's address.</param>
+    /// <returns>The words.</returns>
+    internal static string TabsName(string address) => $"{TabsHeading} of {address}";
+
+    /// <summary>A tab's text: the label and, when the API serves one, the count.</summary>
+    /// <param name="label">The tab's word.</param>
+    /// <param name="count">The count, or null.</param>
+    /// <returns>The words.</returns>
+    internal static string TabText(string label, int? count) => count is { } n ? $"{label} {n.ToString(CultureInfo.InvariantCulture)}" : label;
+
+    /// <summary>A tab's accessible name: its text and the phase that makes it live.</summary>
+    /// <param name="text">The tab's text.</param>
+    /// <param name="phase">The phase note.</param>
+    /// <returns>The words.</returns>
+    internal static string TabName(string text, string phase) => $"{text}, {phase}";
 
     /// <summary>The badge a stage cell shows in place of its glyph.</summary>
     /// <param name="kind">Why the engine owns the state.</param>

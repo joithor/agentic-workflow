@@ -71,7 +71,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         InitNeedsYou(clipboard);
         Strip = new WorkflowsStripViewModel(clipboard, clock);
         InitStrip();
-        Workflows = new WorkflowsViewModel(api);
+        Workflows = new WorkflowsViewModel(api, clipboard, clock);
         InitWorkflows();
         Instance = new InstanceFrameViewModel(api, clipboard, clock);
         InitInstance();
