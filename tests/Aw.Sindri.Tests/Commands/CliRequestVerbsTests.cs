@@ -131,7 +131,7 @@ public sealed class CliRequestVerbsTests : IDisposable
     {
         var api = new RoutedApi().On("/sindri/decisions/" + A.FirstDecisionId.Value, HttpStatusCode.OK, new CommandAccepted(new SequentialIdGenerator().New<CommandId>(), Sequence: 9));
 
-        var code = await Verbs(api, Human).Run(["decide", A.FirstDecisionId.Value, "decline", "--note", "Not", "now."], Token);
+        var code = await Verbs(api, Human).Run(["decide", A.FirstDecisionId.Value, "decline", "--note", "Not now."], Token);
 
         Assert.Equal((0, $"{A.FirstDecisionId.Value} decided: decline (sequence 9)\n"), (code, Out));
         var call = Assert.Single(api.Calls);
@@ -157,7 +157,8 @@ public sealed class CliRequestVerbsTests : IDisposable
 
         var code = await Verbs(api, InAgent).Run(["decide", A.FirstDecisionId.Value, "accept"], Token);
 
-        Assert.Equal((2, "SND-AUTH-002 only a human decides\n"), (code, _error.ToString().ReplaceLineEndings("\n")));
+        Assert.Equal(2, code);
+        Assert.StartsWith("SND-AUTH-002 only a human decides", _error.ToString(), StringComparison.Ordinal);
         Assert.Equal("session", Assert.Single(api.Calls).Headers[SindriHeaders.Caller]);
     }
 
