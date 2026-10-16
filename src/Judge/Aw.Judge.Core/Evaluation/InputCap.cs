@@ -57,9 +57,8 @@ public static class InputCap
         JsonObject obj => new JsonObject(obj.Select(pair => KeyValuePair.Create(pair.Key, CutStrings(pair.Value)))),
         JsonArray array => new JsonArray([.. array.Select(CutStrings)]),
         JsonValue value when value.TryGetValue<string>(out var text) => JsonValue.Create(Truncate(text, StringLimit)),
-#pragma warning disable CA1508 // flow analysis reads the type patterns as excluding null, but a null node reaches the default arm
-        _ => node?.DeepClone(),
-#pragma warning restore CA1508
+        null => null,
+        _ => node.DeepClone(),
     };
 
     // A prefix of the full text as one string; halved until its escaped form fits.

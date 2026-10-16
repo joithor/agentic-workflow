@@ -64,7 +64,7 @@ public sealed class SystemCommandRunnerTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
-    public async Task Output_a_grandchild_writes_after_the_run_ended_is_not_pumped_into_disposed_streams()
+    public async Task A_grandchild_holding_the_pipes_open_does_not_hang_the_run_or_fail_it_afterwards()
     {
         var unobserved = new List<Exception>();
         void Record(object? sender, UnobservedTaskExceptionEventArgs e)
@@ -73,19 +73,24 @@ public sealed class SystemCommandRunnerTests : IDisposable
             {
                 if (e.Exception.ToString().Contains(nameof(SystemCommandRunner), StringComparison.Ordinal))
                 {
-                    unobserved.Add(e.Exception);   // only this runner's: the handler is process-wide and other tests run beside this one
+                    unobserved.Add(e.Exception);   // only this runner's: the handler is process-wide
                 }
             }
         }
 
+        var pidFile = Path.Combine(_dir.Path, "grandchild.pid");
         TaskScheduler.UnobservedTaskException += Record;
         try
         {
-            var log = Path.Combine(_dir.Path, "late.log");
-            var request = new CommandRequest(["sh", "-c", "(sleep 1; echo late) & echo early"], TimeSpan.FromSeconds(20)) { LogFile = log };
+            // The grandchild inherits stdout and stderr and holds them 30 s: the run must end without it.
+            var script = $"sh -c 'echo $$ > \"{pidFile}\"; exec sleep 30' & echo early";
+            var request = new CommandRequest(["sh", "-c", script], TimeSpan.FromSeconds(20)) { LogFile = Path.Combine(_dir.Path, "late.log") };
 
-            var result = await new SystemCommandRunner(TimeSpan.FromMilliseconds(100)).Run(request, CancellationToken.None);
-            await Task.Delay(TimeSpan.FromMilliseconds(1800), TestContext.Current.CancellationToken);
+            var run = new SystemCommandRunner(TimeSpan.FromMilliseconds(100)).Run(request, CancellationToken.None).AsTask();
+            var finished = await Task.WhenAny(run, Task.Delay(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken));
+            Assert.Same(run, finished);
+            var result = await run;
+            await Task.Delay(TimeSpan.FromMilliseconds(500), TestContext.Current.CancellationToken);
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
@@ -98,6 +103,28 @@ public sealed class SystemCommandRunnerTests : IDisposable
         finally
         {
             TaskScheduler.UnobservedTaskException -= Record;
+            KillGrandchild(pidFile);
+        }
+    }
+
+    // By PID only: the sleeping grandchild outlives its parent shell, so the test ends it itself.
+    private static void KillGrandchild(string pidFile)
+    {
+        if (File.Exists(pidFile) && int.TryParse(File.ReadAllText(pidFile).Trim(), System.Globalization.CultureInfo.InvariantCulture, out var pid))
+        {
+            try
+            {
+                using var process = System.Diagnostics.Process.GetProcessById(pid);
+                process.Kill();
+            }
+            catch (ArgumentException)
+            {
+                // already gone
+            }
+            catch (InvalidOperationException)
+            {
+                // already gone
+            }
         }
     }
 

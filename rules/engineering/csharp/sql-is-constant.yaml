@@ -11,7 +11,8 @@ checks:
   - type: analyzer
     id: "CA2100"
     status: active
-gap: closed
+gap: partial
+gapNote: "CA2100 is suppressed once, inside SqliteQueries.Prepare, so it cannot see the text a SqlStatement carries: callers that build a SqlStatement are review-checked for constant text with values bound as parameters."
 source:
   type: desk
   ref: "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca2100"

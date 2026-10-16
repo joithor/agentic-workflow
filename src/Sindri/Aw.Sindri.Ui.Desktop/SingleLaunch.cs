@@ -53,7 +53,9 @@ internal sealed class SingleLaunch(TimeSpan holderWait)
             finally
             {
                 // Ending the instance (removing its socket and pid files) is inside the boundary too: ui/ may be gone.
-#pragma warning disable RS0030 // the launcher is synchronous and runs on the main thread before any UI or synchronization context exists, so nothing can deadlock
+                // This runs after runApp returned, so Avalonia's synchronization context is installed: it is safe only because
+                // SocketSingleInstance.DisposeAsync uses ConfigureAwait(false) throughout. Removing one there would deadlock on exit.
+#pragma warning disable RS0030 // safe to block: SocketSingleInstance.DisposeAsync awaits with ConfigureAwait(false) throughout, so it never needs this thread's context
                 instance.DisposeAsync().AsTask().GetAwaiter().GetResult();
 #pragma warning restore RS0030
             }

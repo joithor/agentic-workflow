@@ -26,9 +26,8 @@ internal sealed partial class AwInputRedactor(IRedactor redactor) : IInputRedact
         JsonObject obj => Object(obj),
         JsonArray array => new JsonArray([.. array.Select(Redact)]),
         JsonValue value when value.TryGetValue<string>(out var text) => JsonValue.Create(Text(text)),
-#pragma warning disable CA1508 // flow analysis reads the type patterns as excluding null, but a null node reaches the default arm
-        _ => input?.DeepClone(),
-#pragma warning restore CA1508
+        null => null,
+        _ => input.DeepClone(),
     };
 
     // An Anthropic or OpenAI key; a GitHub token; an AWS access key id; a Slack token; a JWT; a standalone 40+ hex run

@@ -182,16 +182,12 @@ internal sealed partial class RecipeWorkflow
     /// The instance waits on a human (spec §5.1 'NeedsYou'): it is parked or escalated, or it holds an open desk task. A
     /// takeover doesn't: the human already has it.
     /// </summary>
-#pragma warning disable CA1508 // the null arm is reachable: Suspension is null while an instance is running
-#pragma warning disable CA1508 // the null arm is reachable: Suspension is null while an instance is running
     private static bool NeedsYou(WorkflowInstance instance) => !instance.Ended && instance.Suspension switch
     {
         { Kind: SuspensionKind.Takeover } => false,
         not null => true,
-        null => instance.Frame.Run is { Runtime: StepRuntime.Desk },
+        _ => instance.Frame.Run is { Runtime: StepRuntime.Desk },
     };
-#pragma warning restore CA1508
-#pragma warning restore CA1508
 
     /// <summary>
     /// Takes <paramref name="instance"/> as the instance after a decided change, and does what the change asks of the
