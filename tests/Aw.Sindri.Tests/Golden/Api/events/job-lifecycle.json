@@ -39,7 +39,9 @@
       "commandId": "000000c0-0000-0000-0000-000000000001",
       "job": "JOB-00000000000000000000000000000001",
       "round": 1,
-      "line": "run heartbeat (manual)"
+      "line": "run heartbeat (manual)",
+      "item": null,
+      "repo": null
     }
   },
   {
@@ -59,7 +61,9 @@
       "commandId": "000000c0-0000-0000-0000-000000000001",
       "job": "JOB-00000000000000000000000000000001",
       "round": 2,
-      "line": "second line"
+      "line": "second line",
+      "item": null,
+      "repo": null
     }
   },
   {
@@ -80,7 +84,9 @@
       "job": "JOB-00000000000000000000000000000001",
       "outcome": "succeeded",
       "summary": "ok: worked",
-      "code": null
+      "code": null,
+      "item": null,
+      "repo": null
     }
   },
   {

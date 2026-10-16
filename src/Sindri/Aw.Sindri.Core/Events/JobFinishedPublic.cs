@@ -9,4 +9,6 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="Outcome">How the work ended.</param>
 /// <param name="Summary">How it ended in one cleaned line.</param>
 /// <param name="Code">The error code when it failed, otherwise null.</param>
-public sealed record JobFinishedPublic(CommandId CommandId, JobId Job, JobOutcome Outcome, string Summary, string? Code);
+/// <param name="Item">The job's item, copied from its start, or null.</param>
+/// <param name="Repo">The job's repo, copied from its start (the session filter reads it), or null.</param>
+public sealed record JobFinishedPublic(CommandId CommandId, JobId Job, JobOutcome Outcome, string Summary, string? Code, ItemId? Item = null, RepoName? Repo = null);
