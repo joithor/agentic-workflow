@@ -125,6 +125,15 @@ f="$( { good_body; printf 'file a\0b %s\n' "$SHA"; } | lock nulpath)"
 run check --file "$f"
 expect "a NUL byte fails" 1 'ONYX-LOCK-002 .*NUL'
 
+# Fields split on space and tab only (as awk does): CRLF line endings and a no-break space are refused, as OnyxPins.Parse refuses them.
+f="$(good_body | awk '{ printf "%s\r\n", $0 }' | lock crlf)"
+run check --file "$f"
+expect "CRLF line endings fail" 1 'ONYX-LOCK-00'
+
+f="$(good_body | sed $'s/^need disk-bytes 100/need disk-bytes\xc2\xa0100/' | lock nbsp)"
+run check --file "$f"
+expect "a no-break space between fields fails" 1 'ONYX-LOCK-00'
+
 f="$( { good_body; echo "image docker.io/library/postgres 15.2-alpine linux/arm64 $DIGEST"; echo "image docker.io/library/postgres 15.2-alpine linux/amd64 $DIGEST"; echo "image ghcr.io/o/a_b-c.d/e RELEASE.2025-07-23T15-54-02Z-cpuv1 linux/arm64 $DIGEST"; echo "image ghcr.io/o/a_b-c.d/e RELEASE.2025-07-23T15-54-02Z-cpuv1 linux/amd64 $DIGEST"; echo "file data/nginx/app.conf.template $SHA"; } | lock accepted)"
 run check --file "$f"
 expect "dotted, nested repositories and nested file paths pass" 0

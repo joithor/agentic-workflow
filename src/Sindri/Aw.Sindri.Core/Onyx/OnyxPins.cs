@@ -5,7 +5,7 @@ namespace Aw.Sindri.Core.Onyx;
 
 /// <summary>
 /// The pins of Sindri-managed Onyx: the release, the commit its tag points to, the deployment files and images with
-/// their hashes, and what the box needs (context/onyx.lock; spec §6). scripts/onyx-lock.sh check is the same check in bash: the two refuse the same malformed fixtures (scripts/tests/onyx-lock.test.sh and OnyxPinsParseTests run them side by side), and the C# parser reports each refusal as SND-ONYX-004.
+/// their hashes, and what the box needs (context/onyx.lock; spec §6). scripts/onyx-lock.sh check is the same check in bash: the two are held to the same malformed fixtures listed in scripts/tests/onyx-lock.test.sh and OnyxPinsParseTests (both split fields on space and tab only), which says nothing about input outside them, and the C# parser reports each refusal as SND-ONYX-004.
 /// </summary>
 /// <param name="Version">The release tag, vX.Y.Z.</param>
 /// <param name="Commit">The commit the tag points to, 40 lowercase hex digits.</param>
@@ -16,6 +16,7 @@ namespace Aw.Sindri.Core.Onyx;
 public sealed record OnyxPins(
     string Version, string Commit, IReadOnlyList<OnyxFilePin> Files, IReadOnlyList<OnyxImagePin> Images, long DiskBytes, long DockerMemoryBytes)
 {
+    private static readonly char[] _separators = [' ', '\t'];
     private static readonly string[] _platforms = ["linux/arm64", "linux/amd64"];
 
     /// <summary>Reads the text of a lock file.</summary>
@@ -35,7 +36,7 @@ public sealed record OnyxPins(
         foreach (var line in text.Split('\n'))
         {
             number++;
-            var fields = line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+            var fields = line.Split(_separators, StringSplitOptions.RemoveEmptyEntries);   // space and tab only, as awk splits: a CR or a no-break space stays in its field
             if (fields.Length == 0 || fields[0].StartsWith('#'))
             {
                 continue;

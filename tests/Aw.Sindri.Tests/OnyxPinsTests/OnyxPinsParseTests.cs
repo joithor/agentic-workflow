@@ -82,6 +82,7 @@ public sealed class OnyxPinsParseTests
     [InlineData("", "file a/../x " + Sha64)]
     [InlineData("", "file /x " + Sha64)]
     [InlineData("", "file a\0b " + Sha64)]
+    [InlineData("need disk-bytes", "need disk-bytes\u00a0100")]
     public void Parse_refuses_the_malformed_fixtures_the_bash_check_refuses(string dropPrefix, string rows)
     {
         var kept = Fixture().Split('\n').Where(l => dropPrefix.Length == 0 || !l.StartsWith(dropPrefix, StringComparison.Ordinal));
@@ -91,6 +92,15 @@ public sealed class OnyxPinsParseTests
 
         Assert.Equal(SindriErrors.OnyxPinsMalformed.Code, result.Error.Code);
         Assert.Contains("line ", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    // awk splits fields on space and tab only: a CRLF file leaves "\r" on every row's last field, and a no-break space joins two fields.
+    [Fact, Trait("Lane", "unit")]
+    public void Parse_refuses_a_file_with_crlf_line_endings()
+    {
+        var result = OnyxPins.Parse(Fixture().Replace("\n", "\r\n", StringComparison.Ordinal));
+
+        Assert.Equal(SindriErrors.OnyxPinsMalformed.Code, result.Error.Code);
     }
 
     [Theory, Trait("Lane", "unit")]
