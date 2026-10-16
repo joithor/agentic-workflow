@@ -10,15 +10,16 @@ namespace Aw.Sindri.Ui.ViewModels.Item;
 internal sealed class ItemNeedsViewModel : ObservableObject
 {
     private readonly ISindriApi _api;
-    private readonly HashSet<string> _sent = new(StringComparer.Ordinal);
+    private readonly DecisionSender _sender;
     private Uri? _url;
     private string _item = "";
 
     /// <summary>Reads the item's decisions and requests from <paramref name="api"/>.</summary>
     /// <param name="api">The API.</param>
-    internal ItemNeedsViewModel(ISindriApi api)
+    /// <param name="sender">Sends Decide, with the guard the decision sheet shares.</param>
+    internal ItemNeedsViewModel(ISindriApi api, DecisionSender sender)
     {
-        _api = api;
+        (_api, _sender) = (api, sender);
     }
 
     /// <summary>The item's pending decisions, in the API's order.</summary>
@@ -53,7 +54,7 @@ internal sealed class ItemNeedsViewModel : ObservableObject
 
         if (decisions.IsSuccess)
         {
-            Decisions = [.. decisions.Value.Decisions.Select(d => new ItemDecisionRow(d.Id, d.Question, d.FiledBy, [.. d.Options.Select((o, i) => new DecisionOption(o.Id, o.Label, i == 0, !_sent.Contains(d.Id)))]))];
+            Decisions = [.. decisions.Value.Decisions.Select(d => new ItemDecisionRow(d.Id, d.Question, d.FiledBy, [.. d.Options.Select((o, i) => new DecisionOption(o.Id, o.Label, i == 0, _sender.CanSend(d.Id)))]))];
             DecisionsEmpty = decisions.Value.Empty ?? "";
         }
 
@@ -70,12 +71,11 @@ internal sealed class ItemNeedsViewModel : ObservableObject
     /// <returns>A task that completes when Decide was answered and the lists re-read.</returns>
     internal async Task Choose(string decisionId, string optionId)
     {
-        if (_url is not { } url || !_sent.Add(decisionId))
+        if (_url is not { } url || await _sender.Send(url, decisionId, optionId, note: null).ConfigureAwait(true) is not { } answer)
         {
             return;
         }
 
-        var answer = await _api.Decide(url, decisionId, new DecideRequest(optionId, Note: null), CancellationToken.None).ConfigureAwait(true);
         Refusal = answer.IsError ? answer.Error.Message : "";
         await Read(url, _item, CancellationToken.None).ConfigureAwait(true);
     }

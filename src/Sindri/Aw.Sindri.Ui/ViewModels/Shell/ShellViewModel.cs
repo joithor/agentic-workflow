@@ -60,12 +60,13 @@ internal sealed partial class ShellViewModel : ObservableObject
         Shortcuts = new ShortcutsViewModel(Health.Catalog);
         Queue = new QueueViewModel(api, Health.Catalog, clock);
         Queue.PageShown(RowScopeOf(CurrentPage));
-        Item = new ItemSheetViewModel(api, Health.Catalog, clock);
+        var decisions = new DecisionSender(api);
+        Item = new ItemSheetViewModel(api, Health.Catalog, clock, decisions);
         Health.Follow(Queue.Refresh);
         Health.Follow(Item.Refresh);
         _api = api;
         NeedsYou = new NeedsYouViewModel(preferences, motion ?? new StillMotion(), clock);
-        Decision = new DecisionSheetViewModel(api, () => Health.ApiUrl(), clock);
+        Decision = new DecisionSheetViewModel(api, () => Health.ApiUrl(), clock, decisions);
         HookNeedsYou(clipboard);
         Strip = new WorkflowsStripViewModel(clipboard, clock);
         HookStrip();

@@ -7,9 +7,8 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// sent once and never retried; a refusal (decided elsewhere, voided, not found) shows as served, inline. When the row clears
 /// while the sheet is open the form is disabled and keeps its text.
 /// </summary>
-internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, TimeProvider clock) : ObservableObject
+internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, TimeProvider clock, DecisionSender sender) : ObservableObject
 {
-    private readonly HashSet<string> _sent = new(StringComparer.Ordinal);
     private static readonly TimeSpan _outcomeShown = TimeSpan.FromSeconds(2);
     private NeedsYouRowViewModel? _row;
 
@@ -46,7 +45,7 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
     internal string Outcome { get; private set => Set(ref field, value); } = "";
 
     /// <summary>True while a Decide is in flight.</summary>
-    internal bool IsSending { get; private set => Set(ref field, value); }
+    internal bool IsSending => sender.IsInFlight(DecisionId);
 
     /// <summary>True when the row left the list while the sheet was open.</summary>
     internal bool IsCleared { get; private set => Set(ref field, value); }
@@ -68,7 +67,7 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
 
     private string ServedCleared { get; set; } = "";
 
-    private bool CanSend => !IsSending && !IsCleared && !_sent.Contains(DecisionId);
+    private bool CanSend => !IsCleared && sender.CanSend(DecisionId);
 
     /// <summary>Shows a row's decision; another decision starts a fresh form, the same one is updated in place.</summary>
     /// <param name="row">The decision row.</param>
@@ -129,36 +128,51 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
     /// <returns>A task that completes when Decide was answered.</returns>
     internal Task Choose(string optionId)
     {
-        if (!CanSend || _row is null || _sent.Contains(DecisionId) || apiUrl() is not { } url)
+        if (!CanSend || _row is null || apiUrl() is not { } url)
         {
             return Task.CompletedTask;
         }
 
-        IsSending = true;
-        Raise();
-        Settled = Send(url, optionId);
+        // The decision and its words are taken now: the sheet may show another decision before the answer comes.
+        var (id, label, note) = (DecisionId, Options.FirstOrDefault(o => string.Equals(o.Id, optionId, StringComparison.Ordinal))?.Label ?? optionId, Note);
+        Settled = Send(url, id, optionId, label, note);
         return Settled;
     }
 
-    private async Task Send(Uri url, string optionId)
+    private async Task Send(Uri url, string id, string optionId, string label, string note)
     {
-        var label = Options.FirstOrDefault(o => string.Equals(o.Id, optionId, StringComparison.Ordinal))?.Label ?? optionId;
-        var answer = await api.Decide(url, DecisionId, new DecideRequest(optionId, Note.Length == 0 ? null : Note), CancellationToken.None).ConfigureAwait(true);
-        IsSending = false;
-        if (answer.IsError)
+        var sending = sender.Send(url, id, optionId, note);
+        Raise();
+        OnChanged(nameof(IsSending));
+        var answer = await sending.ConfigureAwait(true);
+        OnChanged(nameof(IsSending));
+        if (answer is null)
         {
-            (RefusalCode, Refusal) = (answer.Error.Code, answer.Error.Message);
-            Say(Refusal);
-            Raise();
-            Refused?.Invoke(this, EventArgs.Empty);
             return;
         }
 
-        _ = _sent.Add(DecisionId);
-        Outcome = Labels.Decided(label);
-        Say(Outcome);
+        var shown = string.Equals(DecisionId, id, StringComparison.Ordinal);
+        if (answer.IsError)
+        {
+            if (shown)
+            {
+                (RefusalCode, Refusal) = (answer.Error.Code, answer.Error.Message);
+                Say(Refusal);
+                Raise();
+                Refused?.Invoke(this, EventArgs.Empty);
+            }
+
+            return;
+        }
+
+        if (shown)
+        {
+            Outcome = Labels.Decided(label);
+            Say(Outcome);
+        }
+
         Raise();
-        Expiry = DropOutcome(DecisionId);
+        Expiry = DropOutcome(id);
     }
 
     // The outcome shows for 2 s; the row clears on the refresh the accepted command brings.
