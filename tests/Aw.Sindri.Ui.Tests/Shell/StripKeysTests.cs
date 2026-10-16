@@ -37,10 +37,7 @@ public sealed class StripKeysTests
         var shell = new ShellViewModel(_records, _server, _clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
         await shell.Restore(Token);
         _ = shell.Run(Token);
-        for (var i = 0; i < 400 && !(shell.State == ShellState.Normal && shell.Queue.RunningRows.Count + shell.Queue.QueuedRows.Count > 0); i++)
-        {
-            await Task.Delay(5, Token);
-        }
+        await ShellWait.Until(shell, () => shell.State == ShellState.Normal && shell.Queue.RunningRows.Count + shell.Queue.QueuedRows.Count > 0, Token);
 
         Assert.Equal(ShellState.Normal, shell.State);
         return shell;
@@ -53,7 +50,7 @@ public sealed class StripKeysTests
         : "none";
 
     [Fact]
-    public async Task J_K_move_needs_you_then_strip_then_running_then_queued()
+    public Task J_K_move_needs_you_then_strip_then_running_then_queued() => UiThread.Run(async () =>
     {
         var shell = await Connected();
         shell.ShowNeedsYou(Feed(NeedsYouRows.Park(), NeedsYouRows.Failure()));
@@ -80,10 +77,10 @@ public sealed class StripKeysTests
         }
 
         Expect.Sequence(forward.Reverse().Skip(1), back);
-    }
+    }, Token);
 
     [Fact]
-    public async Task K_from_the_first_queue_row_goes_to_the_strips_last_row_and_from_nothing_to_the_strip_when_needs_you_is_empty()
+    public Task K_from_the_first_queue_row_goes_to_the_strips_last_row_and_from_nothing_to_the_strip_when_needs_you_is_empty() => UiThread.Run(async () =>
     {
         var shell = await Connected();
         shell.Strip.Update(FixtureInstances.Root);
@@ -96,10 +93,10 @@ public sealed class StripKeysTests
         Assert.True(shell.Queue.IsFirstOnHome);
         Assert.True(shell.Press("K"));
         Assert.Equal($"strip:{shell.Strip.Rows[^1].Address}", Where(shell));
-    }
+    }, Token);
 
     [Fact]
-    public async Task Selecting_a_needs_you_or_queue_row_leaves_the_strip()
+    public Task Selecting_a_needs_you_or_queue_row_leaves_the_strip() => UiThread.Run(async () =>
     {
         var shell = await Connected();
         shell.ShowNeedsYou(Feed(NeedsYouRows.Park()));
@@ -109,10 +106,10 @@ public sealed class StripKeysTests
         shell.SelectNeedsYouRow(shell.NeedsYou.Rows[0].Id);
 
         Assert.Null(shell.Strip.SelectedAddress);
-    }
+    }, Token);
 
     [Fact]
-    public async Task Enter_opens_workflow_address()
+    public Task Enter_opens_workflow_address() => UiThread.Run(async () =>
     {
         var shell = await Connected();
         shell.Strip.Update(FixtureInstances.Root);
@@ -123,10 +120,10 @@ public sealed class StripKeysTests
 
         Assert.Equal(new DeepLink(DeepLinkKind.Workflow, address), shell.SheetLink);
         Assert.Equal(PageId.Workflows, shell.CurrentPage);
-    }
+    }, Token);
 
     [Fact]
-    public async Task A_on_a_strip_row_without_a_park_row_opens_its_workflow_link()
+    public Task A_on_a_strip_row_without_a_park_row_opens_its_workflow_link() => UiThread.Run(async () =>
     {
         var shell = await Connected();
         var row = Where(IsDeskAnswer);
@@ -136,10 +133,10 @@ public sealed class StripKeysTests
         Assert.True(shell.Press("A"));
 
         Assert.Equal(new DeepLink(DeepLinkKind.Workflow, row.Address), shell.SheetLink);
-    }
+    }, Token);
 
     [Fact]
-    public async Task A_never_answers_a_protected_row_and_does_nothing_on_a_row_without_a_ready_answer()
+    public Task A_never_answers_a_protected_row_and_does_nothing_on_a_row_without_a_ready_answer() => UiThread.Run(async () =>
     {
         var shell = await Connected();
         var locked = Where(IsProtected);
@@ -155,10 +152,10 @@ public sealed class StripKeysTests
         Assert.Equal(quiet.Address, shell.Strip.SelectedAddress);
         Assert.False(shell.Press("A"));
         Assert.Null(shell.SheetLink);
-    }
+    }, Token);
 
     [Fact]
-    public async Task Answer_opens_the_park_rows_sheet_for_the_same_instance()
+    public Task Answer_opens_the_park_rows_sheet_for_the_same_instance() => UiThread.Run(async () =>
     {
         var shell = await Connected();
         var row = Where(IsDeskAnswer);
@@ -172,11 +169,11 @@ public sealed class StripKeysTests
         Assert.Equal(new DeepLink(DeepLinkKind.NeedsYou, park.Id), shell.SheetLink);
         Assert.Equal(park.Id, shell.NeedsYou.SelectedId);
         Assert.Null(shell.Strip.SelectedAddress);
-    }
+    }, Token);
 
     // review run 1, K18: the park row is found by its served kind, never by the words its chip happens to show.
     [Fact]
-    public async Task The_park_row_is_found_by_its_kind_and_not_by_its_chip_word()
+    public Task The_park_row_is_found_by_its_kind_and_not_by_its_chip_word() => UiThread.Run(async () =>
     {
         var shell = await Connected();
         var row = Where(IsDeskAnswer);
@@ -189,5 +186,5 @@ public sealed class StripKeysTests
         Assert.True(shell.Press("A"));
 
         Assert.Equal(new DeepLink(DeepLinkKind.NeedsYou, park.Id), shell.SheetLink);
-    }
+    }, Token);
 }

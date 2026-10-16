@@ -30,17 +30,14 @@ public sealed class ShellNeedsYouTests
         var shell = new ShellViewModel(_records, _server, _clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
         await shell.Restore(Token);
         _ = shell.Run(Token);
-        for (var i = 0; i < 400 && !(shell.State == ShellState.Normal && shell.Queue.Total > 0 && shell.Queue.RunningRows.Count + shell.Queue.QueuedRows.Count > 0); i++)
-        {
-            await Task.Delay(5, Token);
-        }
+        await ShellWait.Until(shell, () => shell.State == ShellState.Normal && shell.Queue.Total > 0 && shell.Queue.RunningRows.Count + shell.Queue.QueuedRows.Count > 0, Token);
 
         Assert.Equal(ShellState.Normal, shell.State);
         return shell;
     }
 
     [Fact]
-    public async Task The_shell_hosts_the_list_the_read_fills()
+    public Task The_shell_hosts_the_list_the_read_fills() => UiThread.Run(async () =>
     {
         var shell = await Connected();
 
@@ -48,10 +45,10 @@ public sealed class ShellNeedsYouTests
 
         Assert.Equal(["park:ITM-01JC8", "failure:service:index"], Ids(shell));
         Assert.Equal(2, shell.NeedsYou.Count);
-    }
+    }, Token);
 
     [Fact]
-    public async Task G_D_filters_Home_to_the_decision_rows_and_any_other_chord_clears_it()
+    public Task G_D_filters_Home_to_the_decision_rows_and_any_other_chord_clears_it() => UiThread.Run(async () =>
     {
         var shell = await Connected();
         shell.ShowNeedsYou(Feed(NeedsYouRows.Park(), NeedsYouRows.Decision(), NeedsYouRows.Failure()));
@@ -64,10 +61,10 @@ public sealed class ShellNeedsYouTests
 
         shell.GoTo(PageId.Home);
         Assert.Equal(4, shell.NeedsYou.Count);
-    }
+    }, Token);
 
     [Fact]
-    public async Task The_filter_does_not_change_the_badge()
+    public Task The_filter_does_not_change_the_badge() => UiThread.Run(async () =>
     {
         var shell = await Connected();
         shell.ShowNeedsYou(Feed(NeedsYouRows.Park(), NeedsYouRows.Decision()));
@@ -75,10 +72,10 @@ public sealed class ShellNeedsYouTests
         shell.GoTo(PageId.Home, HomeFilter.Decisions);
 
         Assert.Equal(2, shell.Attention.Badge);
-    }
+    }, Token);
 
     [Fact]
-    public async Task Deep_link_needs_you_rowId_selects_the_row_and_opens_its_sheet()
+    public Task Deep_link_needs_you_rowId_selects_the_row_and_opens_its_sheet() => UiThread.Run(async () =>
     {
         var shell = await Connected();
         shell.ShowNeedsYou(Feed(NeedsYouRows.Park(), NeedsYouRows.Failure()));
@@ -87,10 +84,10 @@ public sealed class ShellNeedsYouTests
 
         Assert.Equal(("failure:service:index", "failure:service:index", true, false), (shell.NeedsYou.SelectedId, shell.NeedsYou.SheetRowId, shell.IsSheetOpen, shell.IsSheetPlaceholderShown));
         Assert.True(shell.IsNeedsYouSheet);
-    }
+    }, Token);
 
     [Fact]
-    public async Task Deep_link_decision_id_selects_its_row_and_opens_the_decision_sheet()
+    public Task Deep_link_decision_id_selects_its_row_and_opens_the_decision_sheet() => UiThread.Run(async () =>
     {
         var shell = await Connected();
         shell.ShowNeedsYou(Feed(NeedsYouRows.Park(), NeedsYouRows.Decision()));
@@ -99,10 +96,10 @@ public sealed class ShellNeedsYouTests
 
         Assert.Equal(("decision:DEC-1", true, false), (shell.NeedsYou.SelectedId, shell.IsSheetOpen, shell.IsSheetPlaceholderShown));
         Assert.True(shell.IsDecisionSheet);
-    }
+    }, Token);
 
     [Fact]
-    public async Task J_and_K_walk_Needs_you_then_Running_then_Queued_and_back()
+    public Task J_and_K_walk_Needs_you_then_Running_then_Queued_and_back() => UiThread.Run(async () =>
     {
         var shell = await Connected();
         shell.ShowNeedsYou(Feed(NeedsYouRows.Park(), NeedsYouRows.Failure()));
@@ -118,10 +115,10 @@ public sealed class ShellNeedsYouTests
 
         Assert.True(shell.Press("K"));
         Assert.Equal(("failure:service:index", false), (shell.NeedsYou.SelectedId, shell.Queue.HasSelectionOn(QueueScope.Home)));
-    }
+    }, Token);
 
     [Fact]
-    public async Task Mark_all_seen_marks_the_current_rows_and_none_that_arrive_later()
+    public Task Mark_all_seen_marks_the_current_rows_and_none_that_arrive_later() => UiThread.Run(async () =>
     {
         var shell = await Connected();
         shell.ShowNeedsYou(Feed(NeedsYouRows.Park()));
@@ -131,7 +128,7 @@ public sealed class ShellNeedsYouTests
         shell.ShowNeedsYou(Feed(NeedsYouRows.Park(), NeedsYouRows.Park("park:ITM-NEW")));
 
         Assert.Equal([RowTint.None, RowTint.Pulsing], [.. shell.NeedsYou.Rows.Select(r => r.Tint)]);
-    }
+    }, Token);
 
     [Fact]
     public void A_row_chip_is_the_served_state_chip_the_one_chip_control_draws()

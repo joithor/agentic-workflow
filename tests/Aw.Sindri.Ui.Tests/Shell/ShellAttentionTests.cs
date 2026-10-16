@@ -29,10 +29,7 @@ public sealed class ShellAttentionTests
         {
             _records.Write(A.Record());
             _ = shell.Run(Token);
-            for (var i = 0; i < 400 && shell.State != ShellState.Normal; i++)
-            {
-                await Task.Delay(5, Token);
-            }
+            await ShellWait.Until(shell, () => shell.State == ShellState.Normal, Token);
 
             Assert.Equal(ShellState.Normal, shell.State);
         }
@@ -41,7 +38,7 @@ public sealed class ShellAttentionTests
     }
 
     [Fact]
-    public async Task The_window_title_follows_the_needs_you_count()
+    public Task The_window_title_follows_the_needs_you_count() => UiThread.Run(async () =>
     {
         var shell = await Shell(running: true);
         var changed = new List<string?>();
@@ -56,10 +53,10 @@ public sealed class ShellAttentionTests
         shell.ShowNeedsYou(Feed());
 
         Assert.Equal("Sindri", shell.WindowTitle);
-    }
+    }, Token);
 
     [Fact]
-    public async Task The_summary_is_the_trays_and_the_badges_source()
+    public Task The_summary_is_the_trays_and_the_badges_source() => UiThread.Run(async () =>
     {
         var shell = await Shell(running: true);
 
@@ -67,10 +64,10 @@ public sealed class ShellAttentionTests
 
         Assert.Equal((2, TrayState.Attention), (shell.Attention.Badge, shell.Attention.Tray.State));
         Assert.Equal("2 need you · 2 running · 0 with you · 1 queued", shell.Attention.SummaryLine);
-    }
+    }, Token);
 
     [Fact]
-    public async Task Before_the_first_answer_the_tray_is_hollow_and_nothing_is_counted()
+    public Task Before_the_first_answer_the_tray_is_hollow_and_nothing_is_counted() => UiThread.Run(async () =>
     {
         var shell = await Shell(running: false);
 
@@ -78,10 +75,10 @@ public sealed class ShellAttentionTests
 
         Assert.Equal(ShellState.Connecting, shell.State);
         Assert.Equal((0, TrayState.Stale, "Sindri"), (shell.Attention.Badge, shell.Attention.Tray.State, shell.WindowTitle));
-    }
+    }, Token);
 
     [Fact]
-    public async Task The_live_region_says_N_now_need_you_once_for_each_rise()
+    public Task The_live_region_says_N_now_need_you_once_for_each_rise() => UiThread.Run(async () =>
     {
         var shell = await Shell(running: true);
         Assert.Equal(Labels.Sindri, shell.NeedsYouAnnouncement);
@@ -91,5 +88,5 @@ public sealed class ShellAttentionTests
 
         shell.ShowNeedsYou(Feed(NeedsYouRows.Park()));
         Assert.Equal("2 now need you", shell.NeedsYouAnnouncement);   // a fall is the list's "<id> cleared"
-    }
+    }, Token);
 }

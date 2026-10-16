@@ -25,7 +25,13 @@ internal sealed partial class HealthViewModel
         {
             await view(url, cancellationToken).ConfigureAwait(true);
         }
+
+        ViewReads++;
+        OnChanged(nameof(ViewReads));
     }
+
+    /// <summary>How many times every followed view has been re-read; a test (or a view) waits on it to know a read, answered or refused, was handled.</summary>
+    internal int ViewReads { get; private set; }
 
     // Bumped each time the follow decides a state (a status shown, Not running, Unreadable, a mismatch), so a Refresh
     // whose answer comes after one knows it is late; and the lease the follow checked with ping (pid, epoch).
