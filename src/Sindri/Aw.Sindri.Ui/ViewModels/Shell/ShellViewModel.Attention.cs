@@ -9,6 +9,8 @@ internal sealed partial class ShellViewModel
     private readonly AttentionAnnouncer _announcer = new();
     private readonly LiveLine _line = new(Labels.Sindri);
     private NeedsYouFeed? _needsYou;
+    private string? _heldClear;   // while one feed update runs: the "<id> cleared" it has to say, joined with the rise (one sentence, as the queue's)
+    private bool _collecting;
 
     /// <summary>The window's title: "(N) Needs you · Sindri" while rows need the user, else "Sindri".</summary>
     public string WindowTitle => Attention.Title;
@@ -26,7 +28,7 @@ internal sealed partial class ShellViewModel
     private void InitAnnouncements()
     {
         _line.PropertyChanged += (_, e) => OnChanged(string.Equals(e.PropertyName, nameof(LiveLine.IsLive), StringComparison.Ordinal) ? nameof(IsNeedsYouAnnouncing) : nameof(NeedsYouAnnouncement));
-        NeedsYou.PropertyChanged += (_, e) => SayIf(e.PropertyName, nameof(NeedsYouViewModel.Announcement), NeedsYou.Announcement);
+        NeedsYou.PropertyChanged += (_, e) => SayNeedsYou(e.PropertyName);
         Strip.PropertyChanged += (_, e) => SayIf(e.PropertyName, nameof(WorkflowsStripViewModel.Announcement), Strip.Announcement);
     }
 
@@ -38,25 +40,58 @@ internal sealed partial class ShellViewModel
         }
     }
 
+    private void SayNeedsYou(string? changed)
+    {
+        if (_collecting && string.Equals(changed, nameof(NeedsYouViewModel.Announcement), StringComparison.Ordinal))
+        {
+            _heldClear = NeedsYou.Announcement;
+            return;
+        }
+
+        SayIf(changed, nameof(NeedsYouViewModel.Announcement), NeedsYou.Announcement);
+    }
+
     /// <summary>Takes the needs-you list as the API serves it now.</summary>
     /// <param name="feed">The list.</param>
     internal void ShowNeedsYou(NeedsYouFeed feed)
     {
         _needsYou = feed;
-        UpdateNeedsYou();
-        Reattend();
+        _collecting = true;
+        _heldClear = null;
+        try
+        {
+            UpdateNeedsYou();
+        }
+        finally
+        {
+            _collecting = false;
+        }
+
+        var rise = Observe();
+        var sentence = _heldClear is { } cleared ? (rise is null ? cleared : $"{cleared}, {rise}") : rise;
+        _heldClear = null;
+        if (sentence is not null)
+        {
+            _line.Say(sentence);
+        }
     }
 
     // Works the summary out again from the last list and the current state; the title, the badge and the tray follow it.
     private void Reattend()
     {
+        if (Observe() is { } sentence)
+        {
+            _line.Say(sentence);
+        }
+    }
+
+    // The summary again; the rise it has to announce, if any.
+    private string? Observe()
+    {
         var before = _announcer.Announcements;
         Attention = AttentionSummary.For(_needsYou, State, _clock.GetUtcNow());
         _announcer.Observe(Attention.Badge, AttentionSummary.IsCounted(State));
         Changed(nameof(Attention), nameof(WindowTitle));
-        if (_announcer.Announcements != before)
-        {
-            _line.Say(_announcer.Line);
-        }
+        return _announcer.Announcements != before ? _announcer.Line : null;
     }
 }
