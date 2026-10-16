@@ -24,8 +24,13 @@ public sealed class ShippedBlocksTests
 
         Assert.Equal(
             [
-                "effect.claim.ref", "effect.notify.desk", "gate.budget.available", "gate.route.startable", "step.checks", "step.desk.choose",
-                "step.judge.choose", "step.produce", "step.verify",
+                "effect.claim.ref", "effect.notify.desk", "evidence.check", "gate.budget.available", "gate.route.startable", "step.bugfix.judge",
+                "step.bugfix.recheck", "step.bugfix.record-candidate", "step.bugfix.start-attempt", "step.checks", "step.desk.choose",
+                "step.evidence.api-plan", "step.evidence.api-run", "step.evidence.combine", "step.evidence.db-plan", "step.evidence.db-run",
+                "step.evidence.desk", "step.evidence.none", "step.evidence.ui-plan", "step.evidence.ui-run", "step.handtest.run",
+                "step.intake.ticket", "step.judge.choose", "step.owner.decide", "step.produce", "step.report.write", "step.reproduce.test-check",
+                "step.reproduce.ui-check", "step.review.fix", "step.review.recheck", "step.review.run", "step.rootcause.investigate",
+                "step.verify", "step.verify.design", "step.verify.journey",
             ],
             catalog.Blocks.Select(b => b.Id.Value).Order(StringComparer.Ordinal),
             StringComparer.Ordinal);
@@ -107,6 +112,9 @@ public sealed class ShippedBlocksTests
             Assert.Equal(("fact:decision", true, true), (decision.Fact.Value, decision.Every, decision.EngineFilled));
             Assert.Empty(decision.RequiredOn);
         }
+
+        Assert.True(catalog.Find(BlockId.From("step.desk.choose"))!.HumanOnly);   // why: the catalog test pins both ids
+        Assert.Equal(BlockRuntime.Block, catalog.Find(BlockId.From("step.judge.choose"))!.Runtime);
 
         Assert.Empty(scope.ServiceProvider.GetServices<IStep>());   // no runtime until the block runtime (DT-J)
     }
