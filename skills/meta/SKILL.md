@@ -46,6 +46,12 @@ it prints what you owe and the command that settles it. Settle it, don't argue w
    meta session, recreate lanes with `aw-meta-launch --no-open`: the open Warp window reattaches by itself. When
    `launcher.json` puts a lane on another agent, the launcher prints `lane <l>: <agent>, launch-only for now: no
    obligations`: don't message a lane marked launch-only.
+   `aw-meta-launch` refuses while the team's lanes still run on tmux's default socket (the pre-switch team). The meta
+   session must never pass `--allow-legacy` or set `AW_META_ALLOW_LEGACY`: they are for the owner only. Tell the owner.
+   The team runs on its own tmux socket, named after the team, so attach with `tmux -L <team> attach -t =<team>-<lane>`
+   (for example `tmux -L sindri attach -t sindri-ideas`), and list its sessions with `tmux -L <team> ls`. A bare
+   `tmux attach` looks at tmux's default socket, which the team no longer uses. A team launched before this change
+   stays on the default socket until it is relaunched.
 
 ## Start (or after any restart)
 
