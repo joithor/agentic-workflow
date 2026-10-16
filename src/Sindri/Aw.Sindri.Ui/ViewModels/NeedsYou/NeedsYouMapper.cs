@@ -19,7 +19,7 @@ internal static class NeedsYouMapper
     {
         ArgumentNullException.ThrowIfNull(list);
         ArgumentNullException.ThrowIfNull(catalog);
-        var readiness = catalog.Rows.ToDictionary(r => r.Action, r => Readiness(r.Ui), StringComparer.Ordinal);
+        var readiness = catalog.Rows.ToDictionary(r => r.Action, r => ReadinessOf(r.Ui), StringComparer.Ordinal);
         return new NeedsYouFeed([.. list.Rows.Select(row => Entry(row, readiness, decisions))], list.Empty ?? string.Empty)
         {
             Stalled = list.AsOf.Stalled,
@@ -29,7 +29,7 @@ internal static class NeedsYouMapper
     }
 
     // The catalog's ui word, read once for the whole app (CatalogReadiness): anything it does not know cannot run.
-    private static ActionReadiness Readiness(string ui) => CatalogReadiness.Parse(ui).Kind switch
+    internal static ActionReadiness ReadinessOf(string ui) => CatalogReadiness.Parse(ui).Kind switch
     {
         ControlKind.Ready => ActionReadiness.Ready,
         ControlKind.Pending => ActionReadiness.Pending,

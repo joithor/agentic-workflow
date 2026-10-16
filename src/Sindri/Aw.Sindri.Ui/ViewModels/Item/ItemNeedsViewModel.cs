@@ -11,15 +11,17 @@ internal sealed class ItemNeedsViewModel : ObservableObject
 {
     private readonly ISindriApi _api;
     private readonly DecisionSender _sender;
+    private readonly Func<ActionReadiness> _readiness;
     private Uri? _url;
     private string _item = "";
 
     /// <summary>Reads the item's decisions and requests from <paramref name="api"/>.</summary>
     /// <param name="api">The API.</param>
     /// <param name="sender">Sends Decide, with the guard the decision sheet shares.</param>
-    internal ItemNeedsViewModel(ISindriApi api, DecisionSender sender)
+    /// <param name="readiness">What the catalog says of Decide now; the options take input only when it is ready.</param>
+    internal ItemNeedsViewModel(ISindriApi api, DecisionSender sender, Func<ActionReadiness> readiness)
     {
-        (_api, _sender) = (api, sender);
+        (_api, _sender, _readiness) = (api, sender, readiness);
     }
 
     /// <summary>The item's pending decisions, in the API's order.</summary>
@@ -64,7 +66,7 @@ internal sealed class ItemNeedsViewModel : ObservableObject
         if (decisions.IsSuccess)
         {
             // The rows are replaced only when one differs, so the buttons (and the focus on one) survive a re-read (§3.3).
-            IReadOnlyList<ItemDecisionRow> built = [.. decisions.Value.Decisions.Select(d => new ItemDecisionRow(d.Id, d.Question, d.FiledBy, [.. d.Options.Select(o => new DecisionOption(o.Id, o.Label, string.Equals(o.Id, d.Recommended, StringComparison.Ordinal), !_sender.IsSent(d.Id), d.Id))]))];
+            IReadOnlyList<ItemDecisionRow> built = [.. decisions.Value.Decisions.Select(d => new ItemDecisionRow(d.Id, d.Question, d.FiledBy, DecisionOptions.From(d, _readiness(), _sender)))];
             if (!built.SequenceEqual(Decisions, ItemDecisionRowComparer.Instance))
             {
                 Decisions = built;
