@@ -89,9 +89,7 @@ public sealed class QueueFramesTests : IDisposable
     private static void Frame(Window window, string name)
     {
         Settle(window);
-        var dir = Path.Combine(AppContext.BaseDirectory, "frames");
-        _ = Directory.CreateDirectory(dir);
-        window.CaptureRenderedFrame()?.Save(Path.Combine(dir, "u2-" + name + ".png"), new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+        FrameFile.Save(window, "u2-" + name);
     }
 
     private static async Task Until(Window window, Func<bool> condition)

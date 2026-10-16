@@ -78,6 +78,10 @@ expect "the sessions doc alone runs bash only" \
   "$(printf 'docs/csharp/sindri-sessions.md\n')" \
   "$(printf 'bash=true\ndotnet=false\npackages=[]')"
 
+expect "the scoping fixture runs the bash tests (scoping-fixture.test.sh builds its history)" \
+  "$(printf 'tests/fixtures/scoping/gold/expiry.json\ntests/fixtures/scoping/history/build.sh\n')" \
+  "$(printf 'bash=true\ndotnet=true\npackages=[]')"
+
 expect "SindriProfile.cs runs bash and dotnet" \
   "$(printf 'src/Sindri/Aw.Sindri.Core/Profile/SindriProfile.cs\n')" \
   "$(printf 'bash=true\ndotnet=true\npackages=[]')"
