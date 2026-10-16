@@ -9,7 +9,8 @@
 //    schema verdict; a file that does not parse is invalid. The manifest's `bash` tags are well formed.
 // 3. config/launcher/builtins.json (each agent, no "override") and the argv of every entry in config/launcher/terminals.json
 //    (as an exec-template viewer) validate against the schema.
-// 4. Each golden in tests/fixtures/launcher/argv-hash/ names its inputs (a built-in, with an optional launcher.json override,
+// 4. docs/csharp/sindri-launcher.md shows each terminals.json argv as its worked example.
+// 4b. Each golden in tests/fixtures/launcher/argv-hash/ names its inputs (a built-in, with an optional launcher.json override,
 //    or a full entry); its canonical text and argvHash equal the RFC 8785 (JCS) form and SHA-256 of the merged entry (spec §2).
 // 5. x-aw-keys agrees with the schema (key lists, placeholder set).
 // Exit codes: 0 ok, 1 a check failed, 2 a tool error (missing Ajv: run `npm ci --prefix scripts`). One line per failure.
@@ -106,6 +107,11 @@ try {
     if (!validateViewer(viewer)) fail("config/launcher/terminals.json", `${t.id}: ${ajv.errorsText(validateViewer.errors)}`);
     if (!t.argv.includes("{cmd...}")) fail("config/launcher/terminals.json", `${t.id}: argv has no {cmd...}`);
     if (!t.titleless && !t.argv.some((a) => a.includes("{title}"))) fail("config/launcher/terminals.json", `${t.id}: argv has no {title}`);
+  }
+
+  const doc = fs.readFileSync(path.join(ROOT, "docs/csharp/sindri-launcher.md"), "utf8");
+  for (const t of terminals.terminals ?? []) {
+    if (!doc.includes(`[${t.argv.map((a) => JSON.stringify(a)).join(", ")}]`)) fail("docs/csharp/sindri-launcher.md", `${t.id}: the worked example is not config/launcher/terminals.json's argv`);
   }
 
   // 4. goldens

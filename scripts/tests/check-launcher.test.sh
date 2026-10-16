@@ -24,7 +24,8 @@ expect_out() { if printf '%s\n' "$OUT" | grep -qF -- "$2"; then ok "$1"; else fa
 # A throwaway copy of the files the check reads.
 copy() {
   local d="$TMPROOT/$1"
-  mkdir -p "$d/schemas" "$d/config" "$d/tests/fixtures"
+  mkdir -p "$d/schemas" "$d/config" "$d/tests/fixtures" "$d/docs/csharp"
+  cp "$REPO/docs/csharp/sindri-launcher.md" "$d/docs/csharp/"
   cp "$REPO/schemas/launcher.schema.json" "$d/schemas/"
   cp -R "$REPO/config/launcher" "$d/config/"
   cp -R "$REPO/tests/fixtures/launcher" "$d/tests/fixtures/"
@@ -59,6 +60,10 @@ run "$d"; expect_rc "a terminal template without {title} fails" 1; expect_out "n
 d="$(copy keys)"
 perl -0pi -e 's/"mcpForms": \[[^]]*\]/"mcpForms": ["none"]/' "$d/schemas/launcher.schema.json"
 run "$d"; expect_rc "x-aw-keys out of step with the schema fails" 1; expect_out "names the list" "x-aw-keys.mcpForms"
+
+d="$(copy doc)"
+sed -i 's/"--directory", "{cwd}", "--"/"--dir", "{cwd}", "--"/' "$d/docs/csharp/sindri-launcher.md"
+run "$d"; expect_rc "a worked example that differs from terminals.json fails" 1; expect_out "names the terminal" "kitty: the worked example"
 
 echo
 echo "check-launcher.test.sh: $PASS passed, $FAIL failed"
