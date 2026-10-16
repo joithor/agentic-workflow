@@ -16,6 +16,7 @@ using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Aw.Sindri.Core.Workflow.Engine.Evals;
 using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -44,6 +45,7 @@ using Aw.Sindri.Features.IssueNonce;
 using Aw.Sindri.Features.ListCommands;
 using Aw.Sindri.Features.ListInstances;
 using Aw.Sindri.Features.ListItems;
+using Aw.Sindri.Features.ListOutbox;
 using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Features.ReadLedger;
@@ -138,6 +140,10 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(InstanceView))]
 [JsonSerializable(typeof(GetInstanceResponse))]
 [JsonSerializable(typeof(ListInstancesResponse))]
+[JsonSerializable(typeof(ListOutboxResponse))]   // engine P6 unit (c): outbox list
+[JsonSerializable(typeof(DeskNotice))]   // engine P6 unit (c): a line of notifications.jsonl
+[JsonSerializable(typeof(EffectRow))]            // engine P6: an effect's ledger row (§5.7)
+[JsonSerializable(typeof(EffectReply))]          // engine P6 unit (a): an effect's reply event (notify.delivered, claim.created)
 [JsonSerializable(typeof(GetInstanceEventsResponse))]
 [JsonSerializable(typeof(InstanceEventView))]
 [JsonSerializable(typeof(InstanceEventFields))]
