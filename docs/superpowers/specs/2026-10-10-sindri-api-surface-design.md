@@ -550,7 +550,7 @@ How items move through the states:
 - Rows are ordered by urgency, then oldest first.
 
 **Empty, loading and error text.** One `EmptyText` table in `Core` holds the sentences for each list: its empty
-sentence (for example "Nothing is waiting on you. 3 running, 1 queued."), plus `rebuilding` ("Rebuilding views (cursor
+sentence (for example "Nothing needs you. 3 running, 1 queued."), plus `rebuilding` ("Rebuilding views (cursor
 N of M)…"), `stalled` ("Views are stalled at N: run `sindri views rebuild`") and, for a projector that can't run, "The views can't be updated (<code>: <detail>)" with `sindri views rebuild` or `sindri doctor` as its fix.
 - The CLI prints them, and every list view returns the right one in `empty`. The UI never keeps its own copy.
 - The CLI exits 1 (attention) when a view answers `rebuilding` or `stalled`, so a script can tell those apart from an

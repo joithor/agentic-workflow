@@ -1757,3 +1757,236 @@ Aw.Sindri.Features.ListInstances.ListInstancesResponse.Rows.init -> void
 Aw.Sindri.Features.ApplyCommand.ApplyCommandKind.Takeover = 4 -> Aw.Sindri.Features.ApplyCommand.ApplyCommandKind
 Aw.Sindri.Features.ApplyCommand.ApplyCommandKind.Handback = 5 -> Aw.Sindri.Features.ApplyCommand.ApplyCommandKind
 Aw.Sindri.Features.ListInstances.ListInstancesResponse.Rows.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InstanceSummary!>!
+Aw.Sindri.Features.Decide.DecideRequest
+Aw.Sindri.Features.Decide.DecideRequest.<Clone>$() -> Aw.Sindri.Features.Decide.DecideRequest!
+Aw.Sindri.Features.Decide.DecideRequest.Choice.get -> Aw.Sindri.Core.Ids.DecisionOption
+Aw.Sindri.Features.Decide.DecideRequest.Choice.init -> void
+Aw.Sindri.Features.Decide.DecideRequest.DecideRequest(Aw.Sindri.Core.Ids.DecisionId Decision, Aw.Sindri.Core.Ids.DecisionOption Choice, string? Note) -> void
+Aw.Sindri.Features.Decide.DecideRequest.Decision.get -> Aw.Sindri.Core.Ids.DecisionId
+Aw.Sindri.Features.Decide.DecideRequest.Decision.init -> void
+Aw.Sindri.Features.Decide.DecideRequest.Deconstruct(out Aw.Sindri.Core.Ids.DecisionId Decision, out Aw.Sindri.Core.Ids.DecisionOption Choice, out string? Note) -> void
+Aw.Sindri.Features.Decide.DecideRequest.Equals(Aw.Sindri.Features.Decide.DecideRequest? other) -> bool
+Aw.Sindri.Features.Decide.DecideRequest.Note.get -> string?
+Aw.Sindri.Features.Decide.DecideRequest.Note.init -> void
+Aw.Sindri.Features.FileRequest.FileRequestRequest
+Aw.Sindri.Features.FileRequest.FileRequestRequest.<Clone>$() -> Aw.Sindri.Features.FileRequest.FileRequestRequest!
+Aw.Sindri.Features.FileRequest.FileRequestRequest.Deconstruct(out Aw.Sindri.Core.Requests.RequestKind Kind, out Aw.Sindri.Core.Ids.ItemRef? Item, out string! Text) -> void
+Aw.Sindri.Features.FileRequest.FileRequestRequest.Equals(Aw.Sindri.Features.FileRequest.FileRequestRequest? other) -> bool
+Aw.Sindri.Features.FileRequest.FileRequestRequest.FileRequestRequest(Aw.Sindri.Core.Requests.RequestKind Kind, Aw.Sindri.Core.Ids.ItemRef? Item, string! Text) -> void
+Aw.Sindri.Features.FileRequest.FileRequestRequest.Item.get -> Aw.Sindri.Core.Ids.ItemRef?
+Aw.Sindri.Features.FileRequest.FileRequestRequest.Item.init -> void
+Aw.Sindri.Features.FileRequest.FileRequestRequest.Kind.get -> Aw.Sindri.Core.Requests.RequestKind
+Aw.Sindri.Features.FileRequest.FileRequestRequest.Kind.init -> void
+Aw.Sindri.Features.FileRequest.FileRequestRequest.Text.get -> string!
+Aw.Sindri.Features.FileRequest.FileRequestRequest.Text.init -> void
+Aw.Sindri.Features.FileRequest.RequestFiledResponse
+Aw.Sindri.Features.FileRequest.RequestFiledResponse.<Clone>$() -> Aw.Sindri.Features.FileRequest.RequestFiledResponse!
+Aw.Sindri.Features.FileRequest.RequestFiledResponse.Accepted.get -> Aw.Sindri.Core.Commands.CommandAccepted!
+Aw.Sindri.Features.FileRequest.RequestFiledResponse.Accepted.init -> void
+Aw.Sindri.Features.FileRequest.RequestFiledResponse.DecisionId.get -> Aw.Sindri.Core.Ids.DecisionId
+Aw.Sindri.Features.FileRequest.RequestFiledResponse.DecisionId.init -> void
+Aw.Sindri.Features.FileRequest.RequestFiledResponse.Deconstruct(out Aw.Sindri.Core.Commands.CommandAccepted! Accepted, out Aw.Sindri.Core.Ids.RequestId RequestId, out Aw.Sindri.Core.Ids.DecisionId DecisionId) -> void
+Aw.Sindri.Features.FileRequest.RequestFiledResponse.Equals(Aw.Sindri.Features.FileRequest.RequestFiledResponse? other) -> bool
+Aw.Sindri.Features.FileRequest.RequestFiledResponse.RequestFiledResponse(Aw.Sindri.Core.Commands.CommandAccepted! Accepted, Aw.Sindri.Core.Ids.RequestId RequestId, Aw.Sindri.Core.Ids.DecisionId DecisionId) -> void
+Aw.Sindri.Features.FileRequest.RequestFiledResponse.RequestId.get -> Aw.Sindri.Core.Ids.RequestId
+Aw.Sindri.Features.FileRequest.RequestFiledResponse.RequestId.init -> void
+Aw.Sindri.Features.GetNeedsYou.GetNeedsYouRequest
+Aw.Sindri.Features.GetNeedsYou.GetNeedsYouRequest.<Clone>$() -> Aw.Sindri.Features.GetNeedsYou.GetNeedsYouRequest!
+Aw.Sindri.Features.GetNeedsYou.GetNeedsYouRequest.Equals(Aw.Sindri.Features.GetNeedsYou.GetNeedsYouRequest? other) -> bool
+Aw.Sindri.Features.GetNeedsYou.GetNeedsYouRequest.GetNeedsYouRequest() -> void
+Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse
+Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse.<Clone>$() -> Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse!
+Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse.AsOf.get -> Aw.Sindri.Core.Views.AsOf!
+Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse.AsOf.init -> void
+Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.NeedsYou.NeedsYouRow!>! Rows, out string? Empty, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse.Empty.get -> string?
+Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse.Empty.init -> void
+Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse.Equals(Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse? other) -> bool
+Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse.GetNeedsYouResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.NeedsYou.NeedsYouRow!>! Rows, string? Empty, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse.Rows.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.NeedsYou.NeedsYouRow!>!
+Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse.Rows.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView
+Aw.Sindri.Features.ListDecisions.DecisionView.<Clone>$() -> Aw.Sindri.Features.ListDecisions.DecisionView!
+Aw.Sindri.Features.ListDecisions.DecisionView.Actions.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>!
+Aw.Sindri.Features.ListDecisions.DecisionView.Actions.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.Choice.get -> Aw.Sindri.Core.Ids.DecisionOption?
+Aw.Sindri.Features.ListDecisions.DecisionView.Choice.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.Class.get -> Aw.Sindri.Core.Commands.ActionClass
+Aw.Sindri.Features.ListDecisions.DecisionView.Class.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.Cleared.get -> string?
+Aw.Sindri.Features.ListDecisions.DecisionView.Cleared.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.Cli.get -> string!
+Aw.Sindri.Features.ListDecisions.DecisionView.Cli.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.DecidedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Features.ListDecisions.DecisionView.DecidedAt.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.DecidedBy.get -> string?
+Aw.Sindri.Features.ListDecisions.DecisionView.DecidedBy.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.DecisionView(Aw.Sindri.Core.Ids.DecisionId Id, Aw.Sindri.Core.Decisions.DecisionKind Kind, Aw.Sindri.Core.Commands.ActionClass Class, string! Label, Aw.Sindri.Core.Ids.ItemId? Item, long ItemVersion, Aw.Sindri.Core.Ids.RepoName? Repo, string! Question, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ListDecisions.OptionView!>! Options, Aw.Sindri.Core.Ids.DecisionOption Recommended, Aw.Sindri.Core.Decisions.DecisionState State, string! FiledBy, System.DateTimeOffset FiledAt, string? DecidedBy, System.DateTimeOffset? DecidedAt, Aw.Sindri.Core.Ids.DecisionOption? Choice, string? Note, bool RecordedOnly, string? Notice, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, string! Cli, string? Cleared) -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.Deconstruct(out Aw.Sindri.Core.Ids.DecisionId Id, out Aw.Sindri.Core.Decisions.DecisionKind Kind, out Aw.Sindri.Core.Commands.ActionClass Class, out string! Label, out Aw.Sindri.Core.Ids.ItemId? Item, out long ItemVersion, out Aw.Sindri.Core.Ids.RepoName? Repo, out string! Question, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ListDecisions.OptionView!>! Options, out Aw.Sindri.Core.Ids.DecisionOption Recommended, out Aw.Sindri.Core.Decisions.DecisionState State, out string! FiledBy, out System.DateTimeOffset FiledAt, out string? DecidedBy, out System.DateTimeOffset? DecidedAt, out Aw.Sindri.Core.Ids.DecisionOption? Choice, out string? Note, out bool RecordedOnly, out string? Notice, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, out string! Cli, out string? Cleared) -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.Equals(Aw.Sindri.Features.ListDecisions.DecisionView? other) -> bool
+Aw.Sindri.Features.ListDecisions.DecisionView.FiledAt.get -> System.DateTimeOffset
+Aw.Sindri.Features.ListDecisions.DecisionView.FiledAt.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.FiledBy.get -> string!
+Aw.Sindri.Features.ListDecisions.DecisionView.FiledBy.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.Id.get -> Aw.Sindri.Core.Ids.DecisionId
+Aw.Sindri.Features.ListDecisions.DecisionView.Id.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.Item.get -> Aw.Sindri.Core.Ids.ItemId?
+Aw.Sindri.Features.ListDecisions.DecisionView.Item.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.ItemVersion.get -> long
+Aw.Sindri.Features.ListDecisions.DecisionView.ItemVersion.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.Kind.get -> Aw.Sindri.Core.Decisions.DecisionKind
+Aw.Sindri.Features.ListDecisions.DecisionView.Kind.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.Label.get -> string!
+Aw.Sindri.Features.ListDecisions.DecisionView.Label.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.Note.get -> string?
+Aw.Sindri.Features.ListDecisions.DecisionView.Note.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.Notice.get -> string?
+Aw.Sindri.Features.ListDecisions.DecisionView.Notice.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.Options.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ListDecisions.OptionView!>!
+Aw.Sindri.Features.ListDecisions.DecisionView.Options.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.Question.get -> string!
+Aw.Sindri.Features.ListDecisions.DecisionView.Question.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.Recommended.get -> Aw.Sindri.Core.Ids.DecisionOption
+Aw.Sindri.Features.ListDecisions.DecisionView.Recommended.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.RecordedOnly.get -> bool
+Aw.Sindri.Features.ListDecisions.DecisionView.RecordedOnly.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Features.ListDecisions.DecisionView.Repo.init -> void
+Aw.Sindri.Features.ListDecisions.DecisionView.State.get -> Aw.Sindri.Core.Decisions.DecisionState
+Aw.Sindri.Features.ListDecisions.DecisionView.State.init -> void
+Aw.Sindri.Features.ListDecisions.ListDecisionsRequest
+Aw.Sindri.Features.ListDecisions.ListDecisionsRequest.<Clone>$() -> Aw.Sindri.Features.ListDecisions.ListDecisionsRequest!
+Aw.Sindri.Features.ListDecisions.ListDecisionsRequest.Deconstruct(out bool? Pending, out Aw.Sindri.Core.Ids.ItemRef? Item) -> void
+Aw.Sindri.Features.ListDecisions.ListDecisionsRequest.Equals(Aw.Sindri.Features.ListDecisions.ListDecisionsRequest? other) -> bool
+Aw.Sindri.Features.ListDecisions.ListDecisionsRequest.Item.get -> Aw.Sindri.Core.Ids.ItemRef?
+Aw.Sindri.Features.ListDecisions.ListDecisionsRequest.Item.init -> void
+Aw.Sindri.Features.ListDecisions.ListDecisionsRequest.ListDecisionsRequest(bool? Pending, Aw.Sindri.Core.Ids.ItemRef? Item) -> void
+Aw.Sindri.Features.ListDecisions.ListDecisionsRequest.Pending.get -> bool?
+Aw.Sindri.Features.ListDecisions.ListDecisionsRequest.Pending.init -> void
+Aw.Sindri.Features.ListDecisions.ListDecisionsResponse
+Aw.Sindri.Features.ListDecisions.ListDecisionsResponse.<Clone>$() -> Aw.Sindri.Features.ListDecisions.ListDecisionsResponse!
+Aw.Sindri.Features.ListDecisions.ListDecisionsResponse.AsOf.get -> Aw.Sindri.Core.Views.AsOf!
+Aw.Sindri.Features.ListDecisions.ListDecisionsResponse.AsOf.init -> void
+Aw.Sindri.Features.ListDecisions.ListDecisionsResponse.Decisions.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ListDecisions.DecisionView!>!
+Aw.Sindri.Features.ListDecisions.ListDecisionsResponse.Decisions.init -> void
+Aw.Sindri.Features.ListDecisions.ListDecisionsResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ListDecisions.DecisionView!>! Decisions, out string? Empty, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.ListDecisions.ListDecisionsResponse.Empty.get -> string?
+Aw.Sindri.Features.ListDecisions.ListDecisionsResponse.Empty.init -> void
+Aw.Sindri.Features.ListDecisions.ListDecisionsResponse.Equals(Aw.Sindri.Features.ListDecisions.ListDecisionsResponse? other) -> bool
+Aw.Sindri.Features.ListDecisions.ListDecisionsResponse.ListDecisionsResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ListDecisions.DecisionView!>! Decisions, string? Empty, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.ListDecisions.OptionView
+Aw.Sindri.Features.ListDecisions.OptionView.<Clone>$() -> Aw.Sindri.Features.ListDecisions.OptionView!
+Aw.Sindri.Features.ListDecisions.OptionView.Cli.get -> string!
+Aw.Sindri.Features.ListDecisions.OptionView.Cli.init -> void
+Aw.Sindri.Features.ListDecisions.OptionView.Deconstruct(out Aw.Sindri.Core.Ids.DecisionOption Id, out string! Label, out bool RejectLike, out string! Cli) -> void
+Aw.Sindri.Features.ListDecisions.OptionView.Equals(Aw.Sindri.Features.ListDecisions.OptionView? other) -> bool
+Aw.Sindri.Features.ListDecisions.OptionView.Id.get -> Aw.Sindri.Core.Ids.DecisionOption
+Aw.Sindri.Features.ListDecisions.OptionView.Id.init -> void
+Aw.Sindri.Features.ListDecisions.OptionView.Label.get -> string!
+Aw.Sindri.Features.ListDecisions.OptionView.Label.init -> void
+Aw.Sindri.Features.ListDecisions.OptionView.OptionView(Aw.Sindri.Core.Ids.DecisionOption Id, string! Label, bool RejectLike, string! Cli) -> void
+Aw.Sindri.Features.ListDecisions.OptionView.RejectLike.get -> bool
+Aw.Sindri.Features.ListDecisions.OptionView.RejectLike.init -> void
+Aw.Sindri.Features.ListRequests.ListRequestsRequest
+Aw.Sindri.Features.ListRequests.ListRequestsRequest.<Clone>$() -> Aw.Sindri.Features.ListRequests.ListRequestsRequest!
+Aw.Sindri.Features.ListRequests.ListRequestsRequest.Deconstruct(out Aw.Sindri.Core.Requests.RequestState? State, out Aw.Sindri.Core.Ids.ItemRef? Item) -> void
+Aw.Sindri.Features.ListRequests.ListRequestsRequest.Equals(Aw.Sindri.Features.ListRequests.ListRequestsRequest? other) -> bool
+Aw.Sindri.Features.ListRequests.ListRequestsRequest.Item.get -> Aw.Sindri.Core.Ids.ItemRef?
+Aw.Sindri.Features.ListRequests.ListRequestsRequest.Item.init -> void
+Aw.Sindri.Features.ListRequests.ListRequestsRequest.ListRequestsRequest(Aw.Sindri.Core.Requests.RequestState? State, Aw.Sindri.Core.Ids.ItemRef? Item) -> void
+Aw.Sindri.Features.ListRequests.ListRequestsRequest.State.get -> Aw.Sindri.Core.Requests.RequestState?
+Aw.Sindri.Features.ListRequests.ListRequestsRequest.State.init -> void
+Aw.Sindri.Features.ListRequests.ListRequestsResponse
+Aw.Sindri.Features.ListRequests.ListRequestsResponse.<Clone>$() -> Aw.Sindri.Features.ListRequests.ListRequestsResponse!
+Aw.Sindri.Features.ListRequests.ListRequestsResponse.AsOf.get -> Aw.Sindri.Core.Views.AsOf!
+Aw.Sindri.Features.ListRequests.ListRequestsResponse.AsOf.init -> void
+Aw.Sindri.Features.ListRequests.ListRequestsResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ListRequests.RequestView!>! Requests, out string? Empty, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.ListRequests.ListRequestsResponse.Empty.get -> string?
+Aw.Sindri.Features.ListRequests.ListRequestsResponse.Empty.init -> void
+Aw.Sindri.Features.ListRequests.ListRequestsResponse.Equals(Aw.Sindri.Features.ListRequests.ListRequestsResponse? other) -> bool
+Aw.Sindri.Features.ListRequests.ListRequestsResponse.ListRequestsResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ListRequests.RequestView!>! Requests, string? Empty, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.ListRequests.ListRequestsResponse.Requests.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ListRequests.RequestView!>!
+Aw.Sindri.Features.ListRequests.ListRequestsResponse.Requests.init -> void
+Aw.Sindri.Features.ListRequests.RequestView
+Aw.Sindri.Features.ListRequests.RequestView.<Clone>$() -> Aw.Sindri.Features.ListRequests.RequestView!
+Aw.Sindri.Features.ListRequests.RequestView.Actor.get -> string!
+Aw.Sindri.Features.ListRequests.RequestView.Actor.init -> void
+Aw.Sindri.Features.ListRequests.RequestView.DecisionId.get -> Aw.Sindri.Core.Ids.DecisionId
+Aw.Sindri.Features.ListRequests.RequestView.DecisionId.init -> void
+Aw.Sindri.Features.ListRequests.RequestView.Deconstruct(out Aw.Sindri.Core.Ids.RequestId Id, out Aw.Sindri.Core.Requests.RequestKind Kind, out Aw.Sindri.Core.Ids.ItemId? Item, out Aw.Sindri.Core.Ids.RepoName? Repo, out string! Text, out string! Actor, out Aw.Sindri.Core.Requests.RequestState State, out Aw.Sindri.Core.Ids.DecisionId DecisionId, out System.DateTimeOffset FiledAt) -> void
+Aw.Sindri.Features.ListRequests.RequestView.Equals(Aw.Sindri.Features.ListRequests.RequestView? other) -> bool
+Aw.Sindri.Features.ListRequests.RequestView.FiledAt.get -> System.DateTimeOffset
+Aw.Sindri.Features.ListRequests.RequestView.FiledAt.init -> void
+Aw.Sindri.Features.ListRequests.RequestView.Id.get -> Aw.Sindri.Core.Ids.RequestId
+Aw.Sindri.Features.ListRequests.RequestView.Id.init -> void
+Aw.Sindri.Features.ListRequests.RequestView.Item.get -> Aw.Sindri.Core.Ids.ItemId?
+Aw.Sindri.Features.ListRequests.RequestView.Item.init -> void
+Aw.Sindri.Features.ListRequests.RequestView.Kind.get -> Aw.Sindri.Core.Requests.RequestKind
+Aw.Sindri.Features.ListRequests.RequestView.Kind.init -> void
+Aw.Sindri.Features.ListRequests.RequestView.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Features.ListRequests.RequestView.Repo.init -> void
+Aw.Sindri.Features.ListRequests.RequestView.RequestView(Aw.Sindri.Core.Ids.RequestId Id, Aw.Sindri.Core.Requests.RequestKind Kind, Aw.Sindri.Core.Ids.ItemId? Item, Aw.Sindri.Core.Ids.RepoName? Repo, string! Text, string! Actor, Aw.Sindri.Core.Requests.RequestState State, Aw.Sindri.Core.Ids.DecisionId DecisionId, System.DateTimeOffset FiledAt) -> void
+Aw.Sindri.Features.ListRequests.RequestView.State.get -> Aw.Sindri.Core.Requests.RequestState
+Aw.Sindri.Features.ListRequests.RequestView.State.init -> void
+Aw.Sindri.Features.ListRequests.RequestView.Text.get -> string!
+Aw.Sindri.Features.ListRequests.RequestView.Text.init -> void
+override Aw.Sindri.Features.Decide.DecideRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Decide.DecideRequest.GetHashCode() -> int
+override Aw.Sindri.Features.Decide.DecideRequest.ToString() -> string!
+override Aw.Sindri.Features.FileRequest.FileRequestRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.FileRequest.FileRequestRequest.GetHashCode() -> int
+override Aw.Sindri.Features.FileRequest.FileRequestRequest.ToString() -> string!
+override Aw.Sindri.Features.FileRequest.RequestFiledResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.FileRequest.RequestFiledResponse.GetHashCode() -> int
+override Aw.Sindri.Features.FileRequest.RequestFiledResponse.ToString() -> string!
+override Aw.Sindri.Features.GetNeedsYou.GetNeedsYouRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetNeedsYou.GetNeedsYouRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetNeedsYou.GetNeedsYouRequest.ToString() -> string!
+override Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse.GetHashCode() -> int
+override Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse.ToString() -> string!
+override Aw.Sindri.Features.ListDecisions.DecisionView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ListDecisions.DecisionView.GetHashCode() -> int
+override Aw.Sindri.Features.ListDecisions.DecisionView.ToString() -> string!
+override Aw.Sindri.Features.ListDecisions.ListDecisionsRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ListDecisions.ListDecisionsRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ListDecisions.ListDecisionsRequest.ToString() -> string!
+override Aw.Sindri.Features.ListDecisions.ListDecisionsResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ListDecisions.ListDecisionsResponse.GetHashCode() -> int
+override Aw.Sindri.Features.ListDecisions.ListDecisionsResponse.ToString() -> string!
+override Aw.Sindri.Features.ListDecisions.OptionView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ListDecisions.OptionView.GetHashCode() -> int
+override Aw.Sindri.Features.ListDecisions.OptionView.ToString() -> string!
+override Aw.Sindri.Features.ListRequests.ListRequestsRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ListRequests.ListRequestsRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ListRequests.ListRequestsRequest.ToString() -> string!
+override Aw.Sindri.Features.ListRequests.ListRequestsResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ListRequests.ListRequestsResponse.GetHashCode() -> int
+override Aw.Sindri.Features.ListRequests.ListRequestsResponse.ToString() -> string!
+override Aw.Sindri.Features.ListRequests.RequestView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ListRequests.RequestView.GetHashCode() -> int
+override Aw.Sindri.Features.ListRequests.RequestView.ToString() -> string!
+static Aw.Sindri.Features.Decide.DecideRequest.operator !=(Aw.Sindri.Features.Decide.DecideRequest? left, Aw.Sindri.Features.Decide.DecideRequest? right) -> bool
+static Aw.Sindri.Features.Decide.DecideRequest.operator ==(Aw.Sindri.Features.Decide.DecideRequest? left, Aw.Sindri.Features.Decide.DecideRequest? right) -> bool
+static Aw.Sindri.Features.FileRequest.FileRequestRequest.operator !=(Aw.Sindri.Features.FileRequest.FileRequestRequest? left, Aw.Sindri.Features.FileRequest.FileRequestRequest? right) -> bool
+static Aw.Sindri.Features.FileRequest.FileRequestRequest.operator ==(Aw.Sindri.Features.FileRequest.FileRequestRequest? left, Aw.Sindri.Features.FileRequest.FileRequestRequest? right) -> bool
+static Aw.Sindri.Features.FileRequest.RequestFiledResponse.operator !=(Aw.Sindri.Features.FileRequest.RequestFiledResponse? left, Aw.Sindri.Features.FileRequest.RequestFiledResponse? right) -> bool
+static Aw.Sindri.Features.FileRequest.RequestFiledResponse.operator ==(Aw.Sindri.Features.FileRequest.RequestFiledResponse? left, Aw.Sindri.Features.FileRequest.RequestFiledResponse? right) -> bool
+static Aw.Sindri.Features.GetNeedsYou.GetNeedsYouRequest.operator !=(Aw.Sindri.Features.GetNeedsYou.GetNeedsYouRequest? left, Aw.Sindri.Features.GetNeedsYou.GetNeedsYouRequest? right) -> bool
+static Aw.Sindri.Features.GetNeedsYou.GetNeedsYouRequest.operator ==(Aw.Sindri.Features.GetNeedsYou.GetNeedsYouRequest? left, Aw.Sindri.Features.GetNeedsYou.GetNeedsYouRequest? right) -> bool
+static Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse.operator !=(Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse? left, Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse? right) -> bool
+static Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse.operator ==(Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse? left, Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse? right) -> bool
+static Aw.Sindri.Features.ListDecisions.DecisionView.operator !=(Aw.Sindri.Features.ListDecisions.DecisionView? left, Aw.Sindri.Features.ListDecisions.DecisionView? right) -> bool
+static Aw.Sindri.Features.ListDecisions.DecisionView.operator ==(Aw.Sindri.Features.ListDecisions.DecisionView? left, Aw.Sindri.Features.ListDecisions.DecisionView? right) -> bool
+static Aw.Sindri.Features.ListDecisions.ListDecisionsRequest.operator !=(Aw.Sindri.Features.ListDecisions.ListDecisionsRequest? left, Aw.Sindri.Features.ListDecisions.ListDecisionsRequest? right) -> bool
+static Aw.Sindri.Features.ListDecisions.ListDecisionsRequest.operator ==(Aw.Sindri.Features.ListDecisions.ListDecisionsRequest? left, Aw.Sindri.Features.ListDecisions.ListDecisionsRequest? right) -> bool
+static Aw.Sindri.Features.ListDecisions.ListDecisionsResponse.operator !=(Aw.Sindri.Features.ListDecisions.ListDecisionsResponse? left, Aw.Sindri.Features.ListDecisions.ListDecisionsResponse? right) -> bool
+static Aw.Sindri.Features.ListDecisions.ListDecisionsResponse.operator ==(Aw.Sindri.Features.ListDecisions.ListDecisionsResponse? left, Aw.Sindri.Features.ListDecisions.ListDecisionsResponse? right) -> bool
+static Aw.Sindri.Features.ListDecisions.OptionView.operator !=(Aw.Sindri.Features.ListDecisions.OptionView? left, Aw.Sindri.Features.ListDecisions.OptionView? right) -> bool
+static Aw.Sindri.Features.ListDecisions.OptionView.operator ==(Aw.Sindri.Features.ListDecisions.OptionView? left, Aw.Sindri.Features.ListDecisions.OptionView? right) -> bool
+static Aw.Sindri.Features.ListRequests.ListRequestsRequest.operator !=(Aw.Sindri.Features.ListRequests.ListRequestsRequest? left, Aw.Sindri.Features.ListRequests.ListRequestsRequest? right) -> bool
+static Aw.Sindri.Features.ListRequests.ListRequestsRequest.operator ==(Aw.Sindri.Features.ListRequests.ListRequestsRequest? left, Aw.Sindri.Features.ListRequests.ListRequestsRequest? right) -> bool
+static Aw.Sindri.Features.ListRequests.ListRequestsResponse.operator !=(Aw.Sindri.Features.ListRequests.ListRequestsResponse? left, Aw.Sindri.Features.ListRequests.ListRequestsResponse? right) -> bool
+static Aw.Sindri.Features.ListRequests.ListRequestsResponse.operator ==(Aw.Sindri.Features.ListRequests.ListRequestsResponse? left, Aw.Sindri.Features.ListRequests.ListRequestsResponse? right) -> bool
+static Aw.Sindri.Features.ListRequests.RequestView.operator !=(Aw.Sindri.Features.ListRequests.RequestView? left, Aw.Sindri.Features.ListRequests.RequestView? right) -> bool
+static Aw.Sindri.Features.ListRequests.RequestView.operator ==(Aw.Sindri.Features.ListRequests.RequestView? left, Aw.Sindri.Features.ListRequests.RequestView? right) -> bool

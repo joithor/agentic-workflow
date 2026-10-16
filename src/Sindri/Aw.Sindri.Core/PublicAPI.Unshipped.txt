@@ -7400,3 +7400,6 @@ override Aw.Sindri.Core.Views.HumanDecisionRow.GetHashCode() -> int
 override Aw.Sindri.Core.Views.HumanDecisionRow.ToString() -> string!
 static Aw.Sindri.Core.Views.HumanDecisionRow.operator !=(Aw.Sindri.Core.Views.HumanDecisionRow? left, Aw.Sindri.Core.Views.HumanDecisionRow? right) -> bool
 static Aw.Sindri.Core.Views.HumanDecisionRow.operator ==(Aw.Sindri.Core.Views.HumanDecisionRow? left, Aw.Sindri.Core.Views.HumanDecisionRow? right) -> bool
+const Aw.Sindri.Core.Events.ApiViews.Decisions = "decisions" -> string!
+const Aw.Sindri.Core.Events.ApiViews.NeedsYou = "needs-you" -> string!
+const Aw.Sindri.Core.Events.ApiViews.Requests = "requests" -> string!

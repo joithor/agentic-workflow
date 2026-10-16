@@ -1,6 +1,19 @@
 {
   "types": [
     {
+      "type": "decision.recorded",
+      "keyShape": "decision.recorded:<decisionId>",
+      "invalidates": [
+        "needs-you",
+        "requests",
+        "decisions",
+        "queue",
+        "items",
+        "item",
+        "timeline"
+      ]
+    },
+    {
       "type": "item.created",
       "keyShape": "item.created:<itemId>",
       "invalidates": [
@@ -58,6 +71,19 @@
       "invalidates": [
         "status",
         "profile"
+      ]
+    },
+    {
+      "type": "request.filed",
+      "keyShape": "request.filed:<requestId>",
+      "invalidates": [
+        "needs-you",
+        "requests",
+        "decisions",
+        "queue",
+        "items",
+        "item",
+        "timeline"
       ]
     },
     {
