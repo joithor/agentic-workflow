@@ -228,7 +228,7 @@ new_item() {
   printf '%s\n' "$id"
 }
 
-# The inputs the dev recipes declare: triage-three-state takes fact:item (JSON naming the item), desk-round-trip takes
+# The inputs the dev recipes declare: triage-three-state takes fact:item (JSON naming the item) and fact:scope (text, its name), desk-round-trip takes
 # fact:request (text). The files live in the guarded home, one folder for all of them.
 fact_args() { # $1 recipe, $2 item, $3 title; prints the --fact arguments, one for each line
   local dir="$AW_SINDRI_HOME/ui-fixture-facts"
@@ -236,7 +236,8 @@ fact_args() { # $1 recipe, $2 item, $3 title; prints the --fact arguments, one f
   case "$1" in
     *triage-three-state)
       jq -nc --arg id "$2" '{id: $id}' > "$dir/$2.item.json" || return
-      printf '%s\n%s\n' --fact "fact:item=$dir/$2.item.json" ;;
+      printf 'Fixture scope for %s\n' "$3" > "$dir/$2.scope.txt" || return
+      printf '%s\n%s\n%s\n%s\n' --fact "fact:item=$dir/$2.item.json" --fact "fact:scope=$dir/$2.scope.txt" ;;
     *desk-round-trip)
       printf 'Fixture request for %s\n' "$3" > "$dir/$2.request.txt" || return
       printf '%s\n%s\n' --fact "fact:request=$dir/$2.request.txt" ;;

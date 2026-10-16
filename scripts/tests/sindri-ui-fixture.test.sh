@@ -239,6 +239,8 @@ check "the triage start passes fact:item" "$(printf '%s\n' "$starts" | grep 'dev
 check "each work start passes fact:request" "$(printf '%s\n' "$starts" | grep 'dev-desk-round-trip' | grep -c -- '--fact fact:request=')" "2"
 facts="$(grep '^fact ' "$STUB_LOG")"
 check "fact:item is JSON with the item's id" "$(printf '%s\n' "$facts" | grep '^fact fact:item ' | sed 's/^fact fact:item //' | jq -r '.id')" "ITM-01"
+check "the triage start passes fact:scope" "$(printf '%s\n' "$starts" | grep 'dev-triage-three-state' | grep -c -- '--fact fact:scope=')" "1"
+check "fact:scope is text" "$(printf '%s\n' "$facts" | grep -c '^fact fact:scope Fixture')" "1"
 check "fact:request is text" "$(printf '%s\n' "$facts" | grep -c '^fact fact:request Fixture')" "2"
 out="$(AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" workflows 2>&1)"
 contains "workflows prints what it started" "$out" "started workflow.dev-triage-three-state on ITM-"
