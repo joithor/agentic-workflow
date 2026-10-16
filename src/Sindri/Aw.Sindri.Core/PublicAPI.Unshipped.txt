@@ -8232,3 +8232,5 @@ static Aw.Sindri.Core.Jobs.JobOrder.OldestFirst(System.Collections.Generic.IEnum
 Aw.Sindri.Core.Jobs.JobStateNames
 static Aw.Sindri.Core.Jobs.JobStateNames.Of(Aw.Sindri.Core.Jobs.JobState state) -> string!
 const Aw.Sindri.Core.Jobs.JobRules.NoSuchJob = "No such job (fix: run `sindri jobs` to list them)" -> string!
+static Aw.Sindri.Core.Scheduling.ServiceSchedule.From(Aw.Sindri.Core.Profile.SindriProfile? profile, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Scheduling.BuiltInService!>! builtIns, System.DateTimeOffset now, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Ids.ServiceName, System.DateTimeOffset>! lastRuns) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.ServiceSchedule!>!
+static Aw.Sindri.Core.Scheduling.ServiceSchedule.FirstSlot(System.DateTimeOffset? lastRun, Aw.Sindri.Core.Profile.Cadence! cadence, System.DateTimeOffset now) -> System.DateTimeOffset
