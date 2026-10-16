@@ -66,6 +66,65 @@ public sealed class ApiRunSecretValueTests
         var response = (await harness.Run(ApiRunHarness.Request(host: null))).Value;
 
         Assert.DoesNotContain("north-region-77", response.Document, StringComparison.Ordinal);
-        Assert.Equal("region=[REDACTED:header-value]", response.Summary.Steps[0].Output);
+        Assert.Equal("region=[REDACTED:env-value]", response.Summary.Steps[0].Output);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task ApiRun_hides_the_token_of_a_scheme_credential_header_the_app_echoes_alone()
+    {
+        const string Token = "tok-9f8c2d41ab7e";
+        var harness = new ApiRunHarness().WithScript("""{"requests":[{"method":"GET","path":"/api/notes","headers":{"Authorization":{"env":"AUTH"}},"expect":{"status":200}}]}""");
+        harness.Environment["AUTH"] = "Bearer " + Token;
+        _ = harness.Transport.Reply("GET", Notes, new HttpReply(401, Location: null, $$"""{"error":"bad token {{Token}}"}"""));
+
+        var response = (await harness.Run()).Value;
+
+        Assert.DoesNotContain(Token, response.Document, StringComparison.Ordinal);
+        Assert.DoesNotContain(Token, response.Summary.Headline, StringComparison.Ordinal);
+        Assert.NotEmpty(response.Summary.Failures);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task ApiRun_hides_a_value_that_json_escapes_and_leaves_one_below_the_minimum_length()
+    {
+        const string Tricky = "ab+\"cd\\ef==";
+        var harness = With("""{"echo":"ab+\"cd\\ef==","short":"abcde"}""");
+        harness.Environment["API_KEY"] = Tricky;
+
+        var response = (await harness.Run()).Value;
+
+        Assert.DoesNotContain("ef==", response.Document, StringComparison.Ordinal);
+        Assert.Contains("\"short\":\"abcde\"", response.Summary.Steps[0].Output, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task ApiRun_records_the_host_intact_when_a_passed_through_value_equals_it()
+    {
+        var harness = new ApiRunHarness().WithScript("""{"passEnv":["NOTES_REGION"],"requests":[{"method":"GET","path":"/api/notes","expect":{"status":200}}],"cli":[{"argv":["out/tool"],"expect":{"exitCode":0}}]}""");
+        harness.Targets.Targets = new ResolvedTargets(["out"], [], []);
+        _ = harness.Locator.Directory("/work/repo/out").Executable("/work/repo/out/tool");
+        harness.Environment["NOTES_REGION"] = ApiRunHarness.Origin;
+        _ = harness.Transport.Reply("GET", Notes, new HttpReply(200, Location: null, "{}"));
+        _ = harness.Cli.Program("/work/repo/out/tool", _ => new CliOutcome(0, "ok", string.Empty));
+
+        var response = (await harness.Run()).Value;
+
+        Assert.Equal(ApiRunHarness.Origin, response.Summary.Host);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task ApiRun_keeps_the_summary_valid_when_a_passed_through_value_equals_an_enum_name()
+    {
+        var harness = new ApiRunHarness().WithScript("""{"passEnv":["NOTES_REGION"],"cli":[{"argv":["out/tool"],"expect":{"exitCode":0}}]}""");
+        harness.Targets.Targets = new ResolvedTargets(["out"], [], []);
+        _ = harness.Locator.Directory("/work/repo/out").Executable("/work/repo/out/tool");
+        harness.Environment["NOTES_REGION"] = "passed";
+        _ = harness.Cli.Program("/work/repo/out/tool", _ => new CliOutcome(0, "ok", string.Empty));
+
+        var result = await harness.Run(ApiRunHarness.Request(host: null));
+
+        Assert.False(result.IsError);
+        Assert.Equal(ApiOutcome.Passed, result.Value.Summary.Outcome);
+        Assert.Equal(0, result.Value.Summary.ExitCode());
     }
 }
