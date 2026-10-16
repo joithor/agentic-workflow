@@ -3,9 +3,9 @@ using Aw.Context.Core.Eval;
 using Aw.Context.Infrastructure.Eval;
 using Aw.Context.Infrastructure.Store;
 using Aw.Context.Testing.Fixtures;
-using TempGitRepo = Aw.Context.Tests.Infrastructure.TempGitRepo;
 using Aw.Context.Tests.Map;
 using Aw.Kernel;
+using TempGitRepo = Aw.Context.Tests.Infrastructure.TempGitRepo;
 
 namespace Aw.Context.Tests.Eval;
 
