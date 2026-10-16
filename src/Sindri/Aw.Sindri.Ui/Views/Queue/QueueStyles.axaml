@@ -52,6 +52,10 @@
   <Style Selector="Border.item-row Button.command-control:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Padding" Value="9,3" />
   </Style>
+  <!-- A primary button's fill is Primary, so a PrimaryHover rim reads 1.6:1 against it: its ring in a row is Ink (4.7:1 on the fill, 17:1 on the row). -->
+  <Style Selector="Border.item-row Button.command-control.primary:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Ink}" />
+  </Style>
   <Style Selector="Button.row-title">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
