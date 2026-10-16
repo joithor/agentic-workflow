@@ -8,7 +8,7 @@ public interface IHostProbes
     /// <returns>The free bytes of the nearest existing ancestor (the path itself when it exists), and which one that was.</returns>
     public DiskFacts FreeDisk(string path);
 
-    /// <summary>Probes loopback ports by binding them on 127.0.0.1 and releasing them at once.</summary>
+    /// <summary>Probes loopback ports: a connect to 127.0.0.1 and [::1], then a brief bind on 127.0.0.1. The fallback range is probed only when the preferred port is taken; a probe that can't tell counts as taken.</summary>
     /// <param name="preferred">The port Onyx wants.</param>
     /// <param name="fallbackFirst">The first port of the fallback range.</param>
     /// <param name="fallbackLast">The last port of the fallback range, inclusive.</param>

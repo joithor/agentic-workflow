@@ -29,7 +29,12 @@ public sealed class FakeHostProbes : IHostProbes
     /// <inheritdoc />
     public PortFacts Ports(int preferred, int fallbackFirst, int fallbackLast)
     {
+        if (!TakenPorts.Contains(preferred))
+        {
+            return new PortFacts(preferred, PreferredFree: true, FirstFreeFallback: null);
+        }
+
         var fallback = Enumerable.Range(fallbackFirst, Math.Max(0, fallbackLast - fallbackFirst + 1)).Where(p => !TakenPorts.Contains(p)).Cast<int?>().FirstOrDefault();
-        return new PortFacts(preferred, !TakenPorts.Contains(preferred), fallback);
+        return new PortFacts(preferred, PreferredFree: false, fallback);
     }
 }
