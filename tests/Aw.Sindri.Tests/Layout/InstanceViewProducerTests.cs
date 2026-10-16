@@ -391,4 +391,28 @@ public sealed class InstanceViewProducerTests
 
         Assert.Equal([("link", true), ("text", false)], slots.Select(static s => (s.Kind, s.Required)));
     }
+
+    [Fact]
+    public void A_recipe_registered_before_input_kinds_builds_a_view_that_names_the_fix_instead_of_throwing()
+    {
+        var legacy = _incident with { Recipe = _incident.Recipe with { Inputs = [new RecipeInput(_spec, "Spec", Type: null, Kind: null, Generate: null)] } };
+        var instance = EngineFixture.At(legacy.Recipe, "produce");
+
+        var view = InstanceViews.Of(instance, legacy, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
+
+        Assert.Null(view.Subject);
+        Assert.Empty(view.Inputs);
+        Assert.Contains("RCP-INPUT-001", view.Detail, StringComparison.Ordinal);
+        Assert.Contains("register the current file at a new version and approve it", view.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_recipe_with_no_inputs_builds_a_view_too()
+    {
+        var legacy = _incident with { Recipe = _incident.Recipe with { Inputs = [] } };
+
+        var view = InstanceViews.Of(EngineFixture.At(legacy.Recipe, "produce"), legacy, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
+
+        Assert.Contains("RCP-INPUT-002", view.Detail, StringComparison.Ordinal);
+    }
 }

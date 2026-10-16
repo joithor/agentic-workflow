@@ -46,4 +46,13 @@ public sealed class RecipeLineTextTests
 
         Assert.Equal("urgency: work\norder: path\n", text);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_input_with_no_kind_prints_a_dash_and_a_legacy_row_names_its_own_fix()
+    {
+        var summary = Summary([new RecipeInput(FactKey.From("fact:spec"), Label: null, Type: null, Kind: null, Generate: null)], []) with { Standing = RecipeStanding.Approved, Stale = [StaleReason.LegacyShape] };
+
+        Assert.Contains("input: fact:spec type=text kind=-\n", RecipeLineText.Detail(summary), StringComparison.Ordinal);
+        Assert.EndsWith("stale: legacy-shape (fix: register the current file at a new version and approve it)", RecipeLineText.Line(summary), StringComparison.Ordinal);
+    }
 }

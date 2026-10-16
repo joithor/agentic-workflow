@@ -1,5 +1,4 @@
 using Aw.Sindri.Core.Challenges;
-using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Features.RevokeRecipe;
@@ -46,17 +45,40 @@ public sealed class LegacyRecipeRowTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Registering_the_same_file_again_names_the_taken_version()
+    public async Task The_shipped_file_registers_over_an_old_row_because_its_version_moved_past_it()
     {
         var (r, row) = await Seeded();
         await using var _ = r;
 
         var again = await r.RegisterShipped("sindri/workflow.step.yaml");
 
-        Assert.True(again.IsError);
-        Assert.Equal(WorkflowErrors.RecipeVersionTaken.Code, again.Error.Code);
-        Assert.Contains("RCP-VERSION-001", again.Error.Message, StringComparison.Ordinal);
-        Assert.Equal([row.Hash], (await r.List()).Select(s => s.Hash));
+        Assert.True(again.IsSuccess, again.IsError ? again.Error.ToString() : null);
+        Assert.NotEqual(row.Hash, again.Value.Hash);
+        Assert.Equal(2, (await r.List()).Count);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_stale_list_names_an_approved_old_row_as_legacy_shape()
+    {
+        var (r, row) = await Seeded();
+        await using var _ = r;
+        var approved = await r.Approve(row);
+        Assert.True(approved.IsSuccess);
+
+        var stale = Assert.Single(await r.List(stale: true));
+
+        Assert.Equal((row.Hash, [StaleReason.LegacyShape]), (stale.Hash, stale.Stale));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_current_shipped_row_is_not_stale()
+    {
+        await using var r = new RegistryHarness();
+        _ = await r.H.HoldLease();
+        var current = await r.Shipped("sindri/workflow.step.yaml");
+        _ = await r.Approve(current);
+
+        Assert.Empty((await r.Line(current)).Stale);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -99,7 +121,7 @@ public sealed class LegacyRecipeRowTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task An_approved_old_row_lists_approved_and_not_stale_shows_its_preview_and_revokes_by_its_stored_hash()
+    public async Task An_approved_old_row_lists_approved_and_legacy_shape_stale_shows_its_preview_and_revokes_by_its_stored_hash()
     {
         var (r, row) = await Seeded();
         await using var _ = r;
@@ -113,7 +135,8 @@ public sealed class LegacyRecipeRowTests
 
         Assert.True(approved.IsSuccess, approved.IsError ? approved.Error.ToString() : null);
         Assert.Equal(row.Hash, approved.Value.Approval.Hash);
-        Assert.Equal((RecipeStanding.Approved, 0), (line.Standing, line.Stale.Count));
+        Assert.Equal(RecipeStanding.Approved, line.Standing);
+        Assert.Equal([StaleReason.LegacyShape], line.Stale);
         Assert.True(shown.IsSuccess, shown.IsError ? shown.Error.ToString() : null);
         Assert.Equal(row.Hash, shown.Value.Recipe.Hash);
         Assert.True(revoked.IsSuccess, revoked.IsError ? revoked.Error.ToString() : null);
