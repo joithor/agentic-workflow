@@ -303,6 +303,18 @@ public sealed class DbRunServiceTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task DbRun_a_repeated_secret_column_keeps_hiding_under_its_renamed_key()
+    {
+        var harness = Sqlite();
+        _ = harness.Scrubber.HidesName("cookie");
+        _ = harness.Reader.Answer(ReadNotes, new Rows(["cookie", "cookie"], [["c1", "c2"]], Truncated: false));
+
+        var response = (await harness.Run()).Value;
+
+        Assert.Contains("\"cookie_2\":\"[REDACTED:secret-field]\"", response.Summary.Steps[0].Output, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task DbRun_hides_a_secret_column_s_value_inside_a_computed_column_of_the_same_result()
     {
         var harness = Sqlite();

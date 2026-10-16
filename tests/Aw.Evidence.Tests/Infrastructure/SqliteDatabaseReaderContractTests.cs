@@ -220,7 +220,7 @@ public sealed class SqliteDatabaseReaderContractTests : ReadOnlyDatabaseContract
     }
 
     [Fact]
-    public async Task A_source_that_is_not_a_database_is_unavailable()
+    public async Task A_source_that_is_not_a_database_is_an_input_error_not_unavailable()
     {
         var source = _root.Combine("repo/data/junk.db");
         _ = Directory.CreateDirectory(Path.GetDirectoryName(source)!);
@@ -229,7 +229,8 @@ public sealed class SqliteDatabaseReaderContractTests : ReadOnlyDatabaseContract
 
         var opened = await new SqliteDatabaseReader().OpenAsync(new SqliteTarget(source, _root.Combine("run/db")), TestContext.Current.CancellationToken);
 
-        Assert.Equal(Core.EvidenceErrors.DatabaseUnavailable.Code, opened.Error.Code);
+        Assert.Equal(Core.EvidenceErrors.DbScriptInvalid.Code, opened.Error.Code);
+        Assert.DoesNotContain("stop the app", opened.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
