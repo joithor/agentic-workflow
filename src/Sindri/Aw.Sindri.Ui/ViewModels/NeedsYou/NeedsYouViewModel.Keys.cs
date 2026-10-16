@@ -115,7 +115,7 @@ internal sealed partial class NeedsYouViewModel
     private bool RunPrimary(NeedsYouRowViewModel row)
     {
         var decision = string.Equals(row.Entry.Subject?.Kind, NeedsYouKinds.Decision, StringComparison.Ordinal);
-        var primary = row.Controls.FirstOrDefault(c => c.IsPrimary && c.IsEnabled && (!decision || c.Action.Recommended));
+        var primary = row.Controls.FirstOrDefault(c => c.IsPrimary && c.IsEnabled);
         return primary is not null && (!decision || string.Equals(SheetRowId, row.Id, StringComparison.Ordinal)) && Act(row, primary.Action);
     }
 

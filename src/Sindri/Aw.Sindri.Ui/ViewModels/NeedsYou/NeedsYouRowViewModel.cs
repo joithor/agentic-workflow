@@ -160,17 +160,17 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
         }
     }
 
-    private NeedsYouActionControl[] BuildControls()
-    {
-        var primary = Entry.PrimaryAction;
-        var first = Entry.Actions.Where(a => string.Equals(a.CatalogId, primary, StringComparison.Ordinal));
-        var rest = Entry.Actions.Where(a => !string.Equals(a.CatalogId, primary, StringComparison.Ordinal));
-        return
-        [
-            .. first.Select(a => new NeedsYouActionControl(a, IsPrimary: true, a.IsReady && !_rebuilding, Tooltip(a, _rebuilding), IdShown)),
-            .. rest.Select(a => new NeedsYouActionControl(a, IsPrimary: false, a.IsReady && !_rebuilding, Tooltip(a, _rebuilding), IdShown)),
-        ];
-    }
+    // A decision's options keep their served order; only the recommended one is primary. Any other action is primary when it is the
+    // row's primary action, and goes first.
+    private NeedsYouActionControl[] BuildControls() =>
+    [
+        .. Entry.Actions
+            .Select(a => new NeedsYouActionControl(a, IsPrimary(a), a.IsReady && !_rebuilding, Tooltip(a, _rebuilding), IdShown))
+            .OrderByDescending(c => c.IsPrimary && c.Action.OptionId.Length == 0),
+    ];
+
+    private bool IsPrimary(NeedsYouAction action) =>
+        action.OptionId.Length > 0 ? action.Recommended : string.Equals(action.CatalogId, Entry.PrimaryAction, StringComparison.Ordinal);
 
     private static string Tooltip(NeedsYouAction action, bool rebuilding) => action.Readiness switch
     {
