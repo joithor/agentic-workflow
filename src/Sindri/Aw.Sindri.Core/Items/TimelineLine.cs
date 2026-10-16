@@ -27,10 +27,19 @@ public static class TimelineLine
             EventTypes.ItemStateChanged => AwJson.Deserialize<ItemStateChanged>(bytes, json).Map(static changed => $"{ItemStateNames.Of(changed.From)} → {ItemStateNames.Of(changed.To)}"),
             EventTypes.ItemLinked => AwJson.Deserialize<ItemLinked>(bytes, json).Map(static linked => linked.Alias is { } alias ? $"Linked to {linked.Record.Value} ({alias.Value})" : $"Linked to {linked.Record.Value}"),
             EventTypes.RequestFiled => AwJson.Deserialize<RequestFiled>(bytes, json).Map(filed => $"{RequestKindWords.Of(filed.Kind)} request filed by {recorded.Envelope.Actor}"),
-            EventTypes.DecisionRecorded => AwJson.Deserialize<DecisionRecorded>(bytes, json).Map(static recordedDecision => $"decision {recordedDecision.Decision.Value} {Past(recordedDecision.Choice)} by {recordedDecision.By}"),
+            EventTypes.DecisionRecorded => AwJson.Deserialize<DecisionRecorded>(bytes, json).Map(DecisionLine),
             _ => type,
         };
         return line.IsError ? type : line.Value;
+    }
+
+    /// <summary>The line for a recorded decision: 'decision DEC-… accepted by human:prover' (also what the decision's view says cleared it).</summary>
+    /// <param name="recorded">The 'decision.recorded' payload.</param>
+    /// <returns>The line, before scrubbing.</returns>
+    public static string DecisionLine(DecisionRecorded recorded)
+    {
+        ArgumentNullException.ThrowIfNull(recorded);
+        return $"decision {recorded.Decision.Value} {Past(recorded.Choice)} by {recorded.By}";
     }
 
     private static string Past(DecisionOption choice) => choice.Value switch

@@ -1,5 +1,7 @@
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Items;
+using Aw.Sindri.Core.NeedsYou;
+using Aw.Sindri.Core.Requests;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Testing;
 
@@ -21,9 +23,11 @@ internal sealed class ViewsHarness
         [
             new ServicesProjection(Slice.Events),
             new ProfileProjection(Slice.Events),
+            new RequestsProjection(Slice.Events, new PassThroughScrubber()),
             new ItemsProjection(Slice.Events, new PassThroughScrubber()),
             new ItemAliasesProjection(Slice.Events),
             new ItemTimelineProjection(SliceHarness.Json, new PassThroughScrubber()),
+            new NeedsYouProjection(Slice.Events, new PassThroughScrubber()),
         ];
     }
 

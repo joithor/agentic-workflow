@@ -7454,3 +7454,4 @@ Aw.Sindri.Core.Views.ViewColumn.Repo = 2 -> Aw.Sindri.Core.Views.ViewColumn
 Aw.Sindri.Core.Views.ViewColumn.State = 1 -> Aw.Sindri.Core.Views.ViewColumn
 Aw.Sindri.Core.Views.ViewColumns
 static Aw.Sindri.Core.Views.ViewColumns.JsonPath(string! view, Aw.Sindri.Core.Views.ViewColumn column) -> System.Collections.Generic.IReadOnlyList<string!>?
+static Aw.Sindri.Core.Items.TimelineLine.DecisionLine(Aw.Sindri.Core.Events.DecisionRecorded! recorded) -> string!

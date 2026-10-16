@@ -70,7 +70,8 @@
       "keyShape": "profile.checked:<previousCheckSequence>",
       "invalidates": [
         "status",
-        "profile"
+        "profile",
+        "needs-you"
       ]
     },
     {
@@ -98,7 +99,8 @@
       "keyShape": "service.ran:<name>:<epoch>:<slot>",
       "invalidates": [
         "status",
-        "services"
+        "services",
+        "needs-you"
       ]
     }
   ]
