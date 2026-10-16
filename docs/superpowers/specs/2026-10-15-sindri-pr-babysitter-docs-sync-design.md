@@ -66,6 +66,7 @@ their LN-* ids.
 | PB10 | **The forge is a port** (CFG-13). Recipes and blocks reach the forge only through `IForge` in `Aw.Forge`; GitHub is the first adapter, a file-backed fake serves tests and proofs (§10.2). `effect.pr.open` (BD1) lives here | Nothing in a recipe names GitHub |
 | PB11 | **Agents never hold the forge credential.** Pushes, replies, restacks and merges are effects run by Sindri with its own credential. Fix Steps run under capability `build` (LN-WF6), the reply Step read-only (SC W9) | A comment that talks an agent into "push to main" finds nothing to push with |
 | PB12 | **The PR's source must still match its proof before `ready`** (BD4). When the head's non-test source differs from the proven head's, whoever pushed it, the snapshot reports `stale` and `workflow.prove-recheck` runs on the head (§4.6, §8) | The evidence pack in the PR body must hold on the head the owner merges |
+| PB13 | **The line spec set is approved for build** (owner, 2026-10-16: "approved. build that shit"). The approval covers #258 (scoping station, rev 3.2), #262 (the line, rev 2.3) and #263 (PR babysitter and docs sync); Q16 stays as specced (the pinned view draws from `lenses.json`) | The owner read the set together. The build follows each spec's phases and waves, starting with the phases provable on what main holds |
 
 ## 3. Terms
 
