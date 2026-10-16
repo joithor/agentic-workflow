@@ -78,13 +78,7 @@ public sealed class SettingsViewTests
     private static T Find<T>(Window window, string name)
         where T : Control => window.GetLogicalDescendants().OfType<T>().Single(c => c.Name == name);
 
-    private static void Capture(Window window, string name)
-    {
-        var frame = window.CaptureRenderedFrame();
-        var dir = Path.Combine(AppContext.BaseDirectory, "frames");
-        _ = Directory.CreateDirectory(dir);
-        frame?.Save(Path.Combine(dir, name + ".png"), new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
-    }
+    private static void Capture(Window window, string name) => FrameFile.Save(window, name);
 
     [Fact]
     public Task The_switch_turns_every_motion_duration_to_zero_and_back() => OnUi(async () =>

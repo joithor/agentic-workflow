@@ -70,6 +70,10 @@ expect "the launcher checks' inputs run the bash tests (check-launcher.mjs and c
   "$(printf 'tests/fixtures/launcher/manifest.json\nconfig/launcher/builtins.json\nschemas/launcher.schema.json\ndocs/csharp/sindri-profile.md\ndocs/csharp/sindri-launcher.md\n')" \
   "$(printf 'bash=true\ndotnet=true\npackages=[]')"
 
+expect "the scoping fixture runs the bash tests (scoping-fixture.test.sh builds its history)" \
+  "$(printf 'tests/fixtures/scoping/gold/expiry.json\ntests/fixtures/scoping/history/build.sh\n')" \
+  "$(printf 'bash=true\ndotnet=true\npackages=[]')"
+
 expect "SindriProfile.cs runs bash and dotnet" \
   "$(printf 'src/Sindri/Aw.Sindri.Core/Profile/SindriProfile.cs\n')" \
   "$(printf 'bash=true\ndotnet=true\npackages=[]')"
