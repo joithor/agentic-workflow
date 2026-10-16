@@ -54,7 +54,13 @@ internal sealed class ItemNeedsViewModel : ObservableObject
 
         if (decisions.IsSuccess)
         {
-            Decisions = [.. decisions.Value.Decisions.Select(d => new ItemDecisionRow(d.Id, d.Question, d.FiledBy, [.. d.Options.Select((o, i) => new DecisionOption(o.Id, o.Label, i == 0, _sender.CanSend(d.Id)))]))];
+            // The rows are replaced only when one differs, so the buttons (and the focus on one) survive a re-read (§3.3).
+            IReadOnlyList<ItemDecisionRow> built = [.. decisions.Value.Decisions.Select(d => new ItemDecisionRow(d.Id, d.Question, d.FiledBy, [.. d.Options.Select((o, i) => new DecisionOption(o.Id, o.Label, i == 0, !_sender.IsSent(d.Id)))]))];
+            if (!built.SequenceEqual(Decisions, ItemDecisionRowComparer.Instance))
+            {
+                Decisions = built;
+            }
+
             DecisionsEmpty = decisions.Value.Empty ?? "";
         }
 
