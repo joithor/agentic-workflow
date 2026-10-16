@@ -122,6 +122,12 @@ internal sealed class ExpandedStateViewModel : ObservableObject
     /// <summary>Where focus lands in the confirm: Keep, the safe answer.</summary>
 #pragma warning disable CA1822, MA0041 // a fixed answer is a property because the view reads it
     public ConfirmChoice ConfirmFocus => ConfirmChoice.Keep;
+
+    /// <summary>The Keep button's words.</summary>
+    public string KeepLabel => Labels.KeepStep;
+
+    /// <summary>The go-ahead button's words.</summary>
+    public string ConfirmCancelLabel => Labels.ConfirmCancel;
 #pragma warning restore CA1822, MA0041
 
     /// <summary>The confirm's accessible name for going ahead.</summary>

@@ -33,6 +33,9 @@ internal static partial class Labels
     /// <summary>The frame's note when a re-read no longer finds the instance it shows.</summary>
     internal const string InstanceGone = "This instance is no longer served; what is shown was its last state.";
 
+    /// <summary>The subject line's lead word.</summary>
+    internal const string SubjectLead = "subject";
+
     /// <summary>The paused state's heading word.</summary>
     internal const string Paused = "paused";
 

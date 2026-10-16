@@ -13,7 +13,11 @@ internal sealed partial class ShellViewModel
     private void InitWorkflows()
     {
         Health.Follow(Workflows.Refresh);
-        Workflows.OpenRequested += (_, e) => Navigate(e.Link);
+        Workflows.OpenRequested += (_, e) =>
+        {
+            Navigate(e.Link);
+            OpenerWorkflow = e.Link.Subject;
+        };
         Workflows.PropertyChanged += (_, e) =>
         {
             if (string.Equals(e.PropertyName, nameof(WorkflowsViewModel.NavCount), StringComparison.Ordinal))

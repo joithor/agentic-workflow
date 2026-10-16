@@ -8,6 +8,7 @@
         xmlns:root="using:Aw.Sindri.Ui.Views.Palette"
         xmlns:queue="using:Aw.Sindri.Ui.Views.Queue"
         xmlns:wfv="using:Aw.Sindri.Ui.Views.Workflows"
+        xmlns:iv="using:Aw.Sindri.Ui.Views.Instance"
         xmlns:item="using:Aw.Sindri.Ui.Views.Item"
         xmlns:ny="using:Aw.Sindri.Ui.Views.NeedsYou"
         x:Class="Aw.Sindri.Ui.Views.Shell.ShellWindow"
@@ -265,6 +266,9 @@
                 </ScrollViewer>
                 <!-- LANE ANCHOR U3': the sheet content for the kinds U3' claims (kinds: NeedsYou, Decision). Insert immediately above this marker, never between the markers. -->
                 <!-- LANE ANCHOR U8: the sheet content for the kinds U8 claims (kinds: Workflow); the item sheet's re-base is content only. Recipe, Node, Session, System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers. -->
+                <ScrollViewer x:Name="InstanceSheetScroll" IsVisible="{Binding IsInstanceSheet}">
+                  <iv:InstanceFrameView x:Name="InstanceSheetFrame" DataContext="{Binding Instance}" />
+                </ScrollViewer>
               </Panel>
             </DockPanel>
           </DockPanel>

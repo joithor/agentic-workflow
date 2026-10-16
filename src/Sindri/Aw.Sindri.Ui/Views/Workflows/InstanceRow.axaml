@@ -9,12 +9,15 @@
        the address. The row draws its own focus border (item-row), not the adorner. -->
   <Border x:Name="WorkflowRowFrame" Classes="item-row workflow-row" Classes.stale="{Binding IsStale}" Focusable="True"
           AutomationProperties.Name="{Binding AccessibleName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
-    <Grid ColumnDefinitions="220,150,*,180" VerticalAlignment="Top">
+    <Grid x:Name="WorkflowRowGrid" ColumnDefinitions="220,150,*,180" VerticalAlignment="Top">
       <StackPanel Spacing="4" Margin="0,0,8,0">
         <Button x:Name="WorkflowRowOpen" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding AccessibleName}">
           <TextBlock Classes="body-strong" Text="{Binding Subject}" TextTrimming="CharacterEllipsis" AutomationProperties.AccessibilityView="Raw" />
         </Button>
         <ctl:StateChipView x:Name="WorkflowRowChip" Chip="{Binding Chip}" HorizontalAlignment="Left" />
+        <!-- Behind a sheet the page is narrow: the row keeps the id, the title (the button above) and the state. -->
+        <TextBlock x:Name="WorkflowRowCompact" Classes="caption mono subtle" Text="{Binding Compact}" IsVisible="False" TextTrimming="CharacterEllipsis"
+                   AutomationProperties.AccessibilityView="Raw" />
       </StackPanel>
       <ItemsControl x:Name="WorkflowRowInputs" Grid.Column="1" ItemsSource="{Binding Inputs}" Margin="0,0,8,0">
         <ItemsControl.ItemTemplate>

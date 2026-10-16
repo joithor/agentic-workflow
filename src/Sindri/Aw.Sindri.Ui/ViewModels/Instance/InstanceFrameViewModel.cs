@@ -13,7 +13,6 @@ namespace Aw.Sindri.Ui.ViewModels.Instance;
 /// instance's served fields; a not-found or unreadable answer shows its sentence with Back. A re-read keeps what is
 /// shown when the answer fails or the instance has ended, and the newest read wins.
 /// </summary>
-#pragma warning disable MA0182 // until the shell places the frame (U8 T4)
 internal sealed class InstanceFrameViewModel(ISindriApi api, IClipboard clipboard, TimeProvider clock) : ObservableObject
 {
     private Uri? _url;
@@ -97,6 +96,9 @@ internal sealed class InstanceFrameViewModel(ISindriApi api, IClipboard clipboar
     /// <summary>Back's words.</summary>
 #pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
     public string BackText => Labels.Back;
+
+    /// <summary>The subject line's lead word.</summary>
+    public string SubjectText => Labels.SubjectLead;
 
     /// <summary>The heading of the loading skeleton.</summary>
     public string LoadingText => Labels.LoadingInstance;

@@ -1,6 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Aw.Sindri.Ui.ViewModels.Workflows;
+using Aw.Sindri.Ui.Views.Layout;
 
 namespace Aw.Sindri.Ui.Views.Workflows;
 
@@ -17,6 +19,16 @@ internal sealed partial class RecipeGroup : UserControl
 
     /// <summary>The group's view model; null before it has a data context.</summary>
     internal RecipeGroupViewModel? Group => DataContext as RecipeGroupViewModel;
+
+    /// <inheritdoc />
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == PageLayout.TierProperty)
+        {
+            this.FindControl<Control>("WorkflowColumnHeads")?.IsVisible = change.GetNewValue<PageTier>() < PageTier.Narrow;   // the rows keep id, title and state behind a sheet
+        }
+    }
 
     private void OnToggle(object? sender, RoutedEventArgs e) => RaiseEvent(new RoutedEventArgs(ToggleEvent, this));
 }

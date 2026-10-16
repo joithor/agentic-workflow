@@ -185,7 +185,7 @@ internal sealed partial class ShellWindow
         var page = Usable(this.Get<Control>("Page")) ?? (Covering ? Usable(this.Get<Border>("SheetTitle")) : null);
         if (SheetPanel == last || SheetPanel.IsVisualAncestorOf(last))
         {
-            return OpenerStripFrame() ?? OpenerRowFrame() ?? Usable(_sheetOpener) ?? SelectedRowFrame() ?? page;
+            return SheetOpenerFrame() ?? page;
         }
 
         return TopBar.IsVisualAncestorOf(last) ? Usable(TopBar.Get<Control>("HealthPill")) : page;

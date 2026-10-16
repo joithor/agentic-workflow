@@ -32,6 +32,9 @@ internal sealed class InstanceRowViewModel : ObservableObject
     /// <summary>The state the instance is in, as served.</summary>
     public string StateWord => _row.State;
 
+    /// <summary>The compact line a narrow page shows instead of the columns: the id and the state.</summary>
+    public string Compact => $"{_row.Address} · {_row.State}";
+
     /// <summary>The recipe's id, as served.</summary>
     public string Recipe => _row.Recipe.Id;
 

@@ -17,7 +17,7 @@
       </Grid>
     </Button>
     <StackPanel IsVisible="{Binding IsExpanded}">
-      <Border Classes="column-heads">
+      <Border x:Name="WorkflowColumnHeads" Classes="column-heads">
         <Grid ColumnDefinitions="220,150,*,180">
           <TextBlock Classes="eyebrow" Text="SUBJECT" />
           <TextBlock Grid.Column="1" Classes="eyebrow" Text="INPUTS" />

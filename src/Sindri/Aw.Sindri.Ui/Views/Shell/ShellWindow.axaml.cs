@@ -160,7 +160,7 @@ internal sealed partial class ShellWindow : Window
         var covers = width > 0 && width < below;
         var changed = covers != SheetPanel.Classes.Contains("covers");
         SheetPanel.Classes.Set("covers", covers);
-        SheetPanel.Width = covers ? double.NaN : Shell?.SheetWidth ?? double.NaN;
+        SheetPanel.Width = covers ? double.NaN : Shell?.ShownSheetWidth ?? double.NaN;
         CoverPage();
         if (changed && Shell is { IsSheetShown: true })
         {
@@ -193,7 +193,7 @@ internal sealed partial class ShellWindow : Window
     {
         switch (e.PropertyName)
         {
-            case nameof(ShellViewModel.SheetWidth):
+            case nameof(ShellViewModel.SheetWidth) or nameof(ShellViewModel.ShownSheetWidth):
                 Cover(Bounds.Width);
                 break;
             case nameof(ShellViewModel.State):

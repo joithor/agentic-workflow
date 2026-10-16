@@ -72,6 +72,7 @@ internal sealed partial class ShellViewModel
         if (Strip.Rows.FirstOrDefault(r => string.Equals(r.Address, address, StringComparison.Ordinal)) is { } row)
         {
             Navigate(row.Link);
+            OpenerStrip = row.Address;
         }
     }
 
@@ -98,6 +99,7 @@ internal sealed partial class ShellViewModel
         {
             case "Enter":
                 Navigate(row.Link);
+                OpenerStrip = row.Address;
                 return true;
             case "A" when row.CanAnswer:
                 Answer(row);
