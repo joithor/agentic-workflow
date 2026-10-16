@@ -104,7 +104,8 @@ public sealed class WorkflowsKeysViewTests : FrameHost
     public Task A_selected_row_that_goes_never_leaves_focus_nowhere() => OnUi(async () =>
     {
         var (window, shell) = await OnWorkflows();
-        var gone = Served[3].Address;
+        var flat = shell.Workflows.Groups.SelectMany(g => g.Rows).Select(r => r.Address).ToList();
+        var gone = flat[3];
         Assert.True(shell.Workflows.Select(gone));
         Assert.True(RowFrame(window, gone).Focus(NavigationMethod.Tab));
         var body = GoldenFiles.Node("workflow-instances", "open");
@@ -112,9 +113,27 @@ public sealed class WorkflowsKeysViewTests : FrameHost
         Server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, body.ToJsonString());
 
         await shell.Workflows.Refresh(_api, Token);
-        await Reach(window, shell, () => Focused(window) is Control { IsEffectivelyVisible: true, IsEffectivelyEnabled: true });
+        var next = flat[4];
+        await Reach(window, shell, () => ReferenceEquals(Focused(window), RowFrame(window, next)));
 
-        Assert.Null(shell.Workflows.SelectedAddress);
+        Assert.Equal(next, shell.Workflows.SelectedAddress);
+    });
+
+    [Fact]
+    public Task A_refresh_that_reorders_the_groups_keeps_focus_on_the_same_address() => OnUi(async () =>
+    {
+        var (window, shell) = await OnWorkflows();
+        var address = shell.Workflows.Groups.SelectMany(g => g.Rows).ElementAt(3).Address;
+        Assert.True(shell.Workflows.Select(address));
+        Assert.True(RowFrame(window, address).Focus(NavigationMethod.Tab));
+        var body = GoldenFiles.Node("workflow-instances", "open");
+        body["instances"] = new JsonArray([.. body["instances"]!.AsArray().Reverse().Select(r => r!.DeepClone())]);
+        Server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, body.ToJsonString());
+
+        await shell.Workflows.Refresh(_api, Token);
+        await Reach(window, shell, () => ReferenceEquals(Focused(window), RowFrame(window, address)));
+
+        Assert.Equal(address, shell.Workflows.SelectedAddress);
     });
 
     [Fact]

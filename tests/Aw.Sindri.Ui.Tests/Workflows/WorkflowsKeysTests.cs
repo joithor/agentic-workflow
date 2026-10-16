@@ -208,11 +208,49 @@ public sealed class WorkflowsKeysTests
         Serve(rows => rows.Where(r => !string.Equals((string)r!["address"]!, Locked.Address, StringComparison.Ordinal)));
         await shell.Workflows.Refresh(_api, Token);
 
-        Assert.Null(shell.Workflows.SelectedAddress);
-        Assert.False(shell.Press("Enter"));
-        Assert.False(shell.Press("A"));
-        Assert.False(shell.Press("X"));
+        Assert.NotEqual(Locked.Address, shell.Workflows.SelectedAddress, StringComparer.Ordinal);
         Assert.False(shell.IsSheetOpen);
+    }, Token);
+
+    [Fact]
+    public Task The_selected_row_going_selects_the_row_that_followed_it() => UiThread.Run(async () =>
+    {
+        var shell = await OnWorkflows();
+        var flat = Flat(shell);
+        Assert.True(shell.Workflows.Select(flat[3]));
+
+        Serve(rows => rows.Where(r => !string.Equals((string)r!["address"]!, flat[3], StringComparison.Ordinal)));
+        await shell.Workflows.Refresh(_api, Token);
+
+        Assert.Equal(flat[4], shell.Workflows.SelectedAddress, StringComparer.Ordinal);
+        Expect.Sequence([flat[4]], shell.Workflows.Groups.SelectMany(g => g.Rows).Where(r => r.IsSelected).Select(r => r.Address));
+    }, Token);
+
+    [Fact]
+    public Task The_last_row_going_selects_the_row_before_it() => UiThread.Run(async () =>
+    {
+        var shell = await OnWorkflows();
+        var flat = Flat(shell);
+        Assert.True(shell.Workflows.Select(flat[^1]));
+
+        Serve(rows => rows.Where(r => !string.Equals((string)r!["address"]!, flat[^1], StringComparison.Ordinal)));
+        await shell.Workflows.Refresh(_api, Token);
+
+        Assert.Equal(flat[^2], shell.Workflows.SelectedAddress, StringComparer.Ordinal);
+    }, Token);
+
+    [Fact]
+    public Task A_read_asks_for_focus_on_the_selection_only_if_it_was_lost() => UiThread.Run(async () =>
+    {
+        var shell = await OnWorkflows();
+        var asked = new List<(string Address, bool OnlyIfLost)>();
+        shell.Workflows.FocusRequested += (_, e) => asked.Add((e.Address, e.OnlyIfLost));
+        var keep = Flat(shell)[3];
+        Assert.True(shell.Workflows.Select(keep));
+
+        await shell.Workflows.Refresh(_api, Token);
+
+        Assert.Equal([(keep, true)], asked);
     }, Token);
 
     [Fact]

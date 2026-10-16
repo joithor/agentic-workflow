@@ -9,6 +9,11 @@ namespace Aw.Sindri.Ui.ViewModels.Workflows;
 /// </summary>
 internal sealed partial class WorkflowsViewModel
 {
+#pragma warning disable CS0067 // raised by the fix that follows this test commit
+    /// <summary>Raised when the page should put focus on a row's frame.</summary>
+    internal event EventHandler<WorkflowFocusEventArgs>? FocusRequested;
+#pragma warning restore CS0067
+
     /// <summary>The address of the row the keys act on; null for none.</summary>
     public string? SelectedAddress { get; private set => Set(ref field, value); }
 
