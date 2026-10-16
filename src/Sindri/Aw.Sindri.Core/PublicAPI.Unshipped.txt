@@ -7668,3 +7668,55 @@ static Aw.Sindri.Core.Events.DecisionRecordedPublic.operator !=(Aw.Sindri.Core.E
 override Aw.Sindri.Core.Events.DecisionRecordedPublic.ToString() -> string!
 override Aw.Sindri.Core.Events.DecisionRecordedPublic.GetHashCode() -> int
 override Aw.Sindri.Core.Events.DecisionRecordedPublic.Equals(object? obj) -> bool
+Aw.Sindri.Core.Ids.JobId
+Aw.Sindri.Core.Ids.JobId.Equals(Aw.Sindri.Core.Ids.JobId other) -> bool
+Aw.Sindri.Core.Ids.JobId.Equals(Aw.Sindri.Core.Ids.JobId other, System.Collections.Generic.IEqualityComparer<Aw.Sindri.Core.Ids.JobId>! comparer) -> bool
+Aw.Sindri.Core.Ids.JobId.GetTypeCode() -> System.TypeCode
+Aw.Sindri.Core.Ids.JobId.IsInitialized() -> bool
+Aw.Sindri.Core.Ids.JobId.JobId() -> void
+Aw.Sindri.Core.Ids.JobId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Sindri.Core.Ids.JobId.Value.get -> string!
+Aw.Sindri.Core.Ids.JobKey
+Aw.Sindri.Core.Ids.JobKey.Equals(Aw.Sindri.Core.Ids.JobKey other) -> bool
+Aw.Sindri.Core.Ids.JobKey.Equals(Aw.Sindri.Core.Ids.JobKey other, System.Collections.Generic.IEqualityComparer<Aw.Sindri.Core.Ids.JobKey>! comparer) -> bool
+Aw.Sindri.Core.Ids.JobKey.GetTypeCode() -> System.TypeCode
+Aw.Sindri.Core.Ids.JobKey.IsInitialized() -> bool
+Aw.Sindri.Core.Ids.JobKey.JobKey() -> void
+Aw.Sindri.Core.Ids.JobKey.ToString(System.IFormatProvider? provider) -> string!
+Aw.Sindri.Core.Ids.JobKey.Value.get -> string!
+Aw.Sindri.Core.Ids.JobKind
+Aw.Sindri.Core.Ids.JobKind.Equals(Aw.Sindri.Core.Ids.JobKind other) -> bool
+Aw.Sindri.Core.Ids.JobKind.Equals(Aw.Sindri.Core.Ids.JobKind other, System.Collections.Generic.IEqualityComparer<Aw.Sindri.Core.Ids.JobKind>! comparer) -> bool
+Aw.Sindri.Core.Ids.JobKind.GetTypeCode() -> System.TypeCode
+Aw.Sindri.Core.Ids.JobKind.IsInitialized() -> bool
+Aw.Sindri.Core.Ids.JobKind.JobKind() -> void
+Aw.Sindri.Core.Ids.JobKind.ToString(System.IFormatProvider? provider) -> string!
+Aw.Sindri.Core.Ids.JobKind.Value.get -> string!
+override Aw.Sindri.Core.Ids.JobId.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Ids.JobId.GetHashCode() -> int
+override Aw.Sindri.Core.Ids.JobId.ToString() -> string!
+override Aw.Sindri.Core.Ids.JobKey.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Ids.JobKey.GetHashCode() -> int
+override Aw.Sindri.Core.Ids.JobKey.ToString() -> string!
+override Aw.Sindri.Core.Ids.JobKind.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Ids.JobKind.GetHashCode() -> int
+override Aw.Sindri.Core.Ids.JobKind.ToString() -> string!
+static Aw.Sindri.Core.Ids.JobId.From(string! value) -> Aw.Sindri.Core.Ids.JobId
+static Aw.Sindri.Core.Ids.JobId.New(Aw.Kernel.Ids.IIdGenerator! ids) -> Aw.Sindri.Core.Ids.JobId
+static Aw.Sindri.Core.Ids.JobId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Ids.JobId
+static Aw.Sindri.Core.Ids.JobId.TryFrom(string? value, out Aw.Sindri.Core.Ids.JobId vo) -> bool
+static Aw.Sindri.Core.Ids.JobId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Ids.JobId result) -> bool
+static Aw.Sindri.Core.Ids.JobId.operator !=(Aw.Sindri.Core.Ids.JobId left, Aw.Sindri.Core.Ids.JobId right) -> bool
+static Aw.Sindri.Core.Ids.JobId.operator ==(Aw.Sindri.Core.Ids.JobId left, Aw.Sindri.Core.Ids.JobId right) -> bool
+static Aw.Sindri.Core.Ids.JobKey.From(string! value) -> Aw.Sindri.Core.Ids.JobKey
+static Aw.Sindri.Core.Ids.JobKey.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Ids.JobKey
+static Aw.Sindri.Core.Ids.JobKey.TryFrom(string? value, out Aw.Sindri.Core.Ids.JobKey vo) -> bool
+static Aw.Sindri.Core.Ids.JobKey.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Ids.JobKey result) -> bool
+static Aw.Sindri.Core.Ids.JobKey.operator !=(Aw.Sindri.Core.Ids.JobKey left, Aw.Sindri.Core.Ids.JobKey right) -> bool
+static Aw.Sindri.Core.Ids.JobKey.operator ==(Aw.Sindri.Core.Ids.JobKey left, Aw.Sindri.Core.Ids.JobKey right) -> bool
+static Aw.Sindri.Core.Ids.JobKind.From(string! value) -> Aw.Sindri.Core.Ids.JobKind
+static Aw.Sindri.Core.Ids.JobKind.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Ids.JobKind
+static Aw.Sindri.Core.Ids.JobKind.TryFrom(string? value, out Aw.Sindri.Core.Ids.JobKind vo) -> bool
+static Aw.Sindri.Core.Ids.JobKind.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Ids.JobKind result) -> bool
+static Aw.Sindri.Core.Ids.JobKind.operator !=(Aw.Sindri.Core.Ids.JobKind left, Aw.Sindri.Core.Ids.JobKind right) -> bool
+static Aw.Sindri.Core.Ids.JobKind.operator ==(Aw.Sindri.Core.Ids.JobKind left, Aw.Sindri.Core.Ids.JobKind right) -> bool
