@@ -64,7 +64,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         Health.Follow(Item.Refresh);
         _api = api;
         NeedsYou = new NeedsYouViewModel(preferences, motion ?? new StillMotion(), clock);
-        Decision = new DecisionSheetViewModel(api, () => Health.ApiUrl());
+        Decision = new DecisionSheetViewModel(api, () => Health.ApiUrl(), clock);
         HookNeedsYou(clipboard);
         Health.Follow(ReadNeedsYou);
         Queue.PropertyChanged += OnQueueChanged;

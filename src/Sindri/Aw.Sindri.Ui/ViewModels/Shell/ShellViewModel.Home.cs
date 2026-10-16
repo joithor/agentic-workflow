@@ -61,7 +61,7 @@ internal sealed partial class ShellViewModel
         }
         else
         {
-            Decision.Clear();
+            _ = Decision.Clear();
         }
     }
 

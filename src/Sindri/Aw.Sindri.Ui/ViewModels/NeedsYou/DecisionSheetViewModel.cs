@@ -7,9 +7,10 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// sent once and never retried; a refusal (decided elsewhere, voided, not found) shows as served, inline. When the row clears
 /// while the sheet is open the form is disabled and keeps its text.
 /// </summary>
-internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl) : ObservableObject
+internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, TimeProvider clock) : ObservableObject
 {
     private readonly HashSet<string> _sent = new(StringComparer.Ordinal);
+    private static readonly TimeSpan _outcomeShown = TimeSpan.FromSeconds(2);
     private NeedsYouRowViewModel? _row;
 
     /// <summary>Raised when Decide was refused, so the shell can open the sheet where the refusal shows.</summary>
@@ -51,7 +52,7 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl) 
     internal bool IsCleared { get; private set => Set(ref field, value); }
 
     /// <summary>The cleared line, once the row is gone.</summary>
-    internal string ClearedLine => IsCleared ? Labels.Cleared(DecisionId) : "";
+    internal string ClearedLine => !IsCleared ? "" : ServedCleared.Length > 0 ? ServedCleared : Labels.Cleared(DecisionId);
 
     /// <summary>The polite live region: set true before the text, spoken once.</summary>
     internal bool IsAnnouncing { get; private set => Set(ref field, value); }
@@ -62,7 +63,12 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl) 
     /// <summary>The last send; completes when Decide was answered.</summary>
     internal Task Settled { get; private set; } = Task.CompletedTask;
 
-    private bool CanSend => !IsSending && !IsCleared && Outcome.Length == 0;
+    /// <summary>Completes when the accepted outcome has been shown for 2 s and dropped.</summary>
+    internal Task Expiry { get; private set; } = Task.CompletedTask;
+
+    private string ServedCleared { get; set; } = "";
+
+    private bool CanSend => !IsSending && !IsCleared && !_sent.Contains(DecisionId);
 
     /// <summary>Shows a row's decision; another decision starts a fresh form, the same one is updated in place.</summary>
     /// <param name="row">The decision row.</param>
@@ -71,7 +77,7 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl) 
         var id = row.Entry.Subject?.Id ?? row.Id;
         if (!string.Equals(id, DecisionId, StringComparison.Ordinal) || IsCleared)
         {
-            (Note, Refusal, RefusalCode, Outcome, IsCleared) = ("", "", "", "", false);
+            (Note, Refusal, RefusalCode, Outcome, IsCleared, ServedCleared) = ("", "", "", "", false, "");
             DecisionId = id;
             OnChanged(nameof(ClearedLine));
         }
@@ -80,17 +86,37 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl) 
         Raise();
     }
 
-    /// <summary>The row left the list: the form is disabled and keeps its text.</summary>
-    internal void Clear()
+    /// <summary>The row left the list: the form is disabled and keeps its text; the cleared line is the one the decided list serves.</summary>
+    /// <returns>A task that completes when the cleared line was read.</returns>
+    internal Task Clear()
     {
         if (_row is null || IsCleared)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         IsCleared = true;
         OnChanged(nameof(ClearedLine));
         Raise();
+        Settled = ReadClearedLine(DecisionId);
+        return Settled;
+    }
+
+    // The decision is found by id in GET /decisions?pending=false (no route by id); not held there, the line stays "<id> cleared".
+    private async Task ReadClearedLine(string id)
+    {
+        if (apiUrl() is not { } url)
+        {
+            return;
+        }
+
+        var decided = await api.Decisions(url, pending: false, item: null, CancellationToken.None).ConfigureAwait(true);
+        var served = decided.IsSuccess ? decided.Value.Decisions.FirstOrDefault(d => string.Equals(d.Id, id, StringComparison.Ordinal))?.Cleared : null;
+        if (served is { Length: > 0 } && string.Equals(DecisionId, id, StringComparison.Ordinal))
+        {
+            ServedCleared = served;
+            OnChanged(nameof(ClearedLine));
+        }
     }
 
     /// <summary>True when this row is the decision shown.</summary>
@@ -132,6 +158,17 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl) 
         Outcome = Labels.Decided(label);
         Say(Outcome);
         Raise();
+        Expiry = DropOutcome(DecisionId);
+    }
+
+    // The outcome shows for 2 s; the row clears on the refresh the accepted command brings.
+    private async Task DropOutcome(string id)
+    {
+        await Task.Delay(_outcomeShown, clock).ConfigureAwait(true);
+        if (string.Equals(DecisionId, id, StringComparison.Ordinal))
+        {
+            Outcome = "";
+        }
     }
 
     private void Raise()

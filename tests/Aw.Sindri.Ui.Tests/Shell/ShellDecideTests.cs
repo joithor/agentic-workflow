@@ -123,4 +123,52 @@ public sealed class ShellDecideTests
         Assert.Equal("half written", shell.Decision.Note);
         Assert.Equal("Re-scope: drop the iOS head from this item", shell.Decision.Question);
     }
+
+    [Fact]
+    public async Task Accepted_shows_the_outcome_for_2_s_then_drops_it_and_keeps_the_form_closed()
+    {
+        var shell = await WithDecision();
+        shell.Navigate(new DeepLink(DeepLinkKind.Decision, "DEC-1"));
+        await shell.Decision.Choose("accept");
+        var shown = shell.Decision.Outcome;
+
+        _clock.Advance(TimeSpan.FromMilliseconds(1999));
+        Assert.Equal(shown, shell.Decision.Outcome);
+        _clock.Advance(TimeSpan.FromMilliseconds(1));
+        await shell.Decision.Expiry;
+
+        Assert.NotEmpty(shown);
+        Assert.Empty(shell.Decision.Outcome);
+        Assert.All(shell.Decision.Options, o => Assert.False(o.IsEnabled));
+    }
+
+    [Theory]
+    [InlineData("decided")]
+    [InlineData("voided")]
+    public async Task A_cleared_decision_shows_the_cleared_line_the_decided_list_serves(string scenario)
+    {
+        var shell = await WithDecision();
+        var served = GoldenFiles.Node("decisions", scenario)["decisions"]![0]!;
+        var body = GoldenFiles.Api("decisions", scenario).Replace((string)served["id"]!, "DEC-1", StringComparison.Ordinal);
+        _server.DecidedDecisions = new RouteAnswer(System.Net.HttpStatusCode.OK, body);
+        shell.Navigate(new DeepLink(DeepLinkKind.Decision, "DEC-1"));
+
+        shell.ShowNeedsYou(new NeedsYouFeed([], ""));
+        await shell.Decision.Settled;
+
+        Assert.Equal(((string)served["cleared"]!).Replace((string)served["id"]!, "DEC-1", StringComparison.Ordinal), shell.Decision.ClearedLine);
+        Assert.Contains(_server.DecisionQueries, q => q.Pending == false);
+    }
+
+    [Fact]
+    public async Task A_cleared_decision_the_decided_list_does_not_hold_falls_back_to_the_id_and_cleared()
+    {
+        var shell = await WithDecision();
+        shell.Navigate(new DeepLink(DeepLinkKind.Decision, "DEC-1"));
+
+        shell.ShowNeedsYou(new NeedsYouFeed([], ""));
+        await shell.Decision.Settled;
+
+        Assert.Equal(Labels.Cleared("DEC-1"), shell.Decision.ClearedLine);
+    }
 }
