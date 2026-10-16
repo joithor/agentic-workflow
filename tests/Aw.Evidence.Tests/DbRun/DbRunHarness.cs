@@ -35,6 +35,9 @@ internal sealed class DbRunHarness
 
     internal FakeTextScrubber Scrubber { get; } = new();
 
+    /// <summary>When set, the run uses this scrubber (a real one) instead of <see cref="Scrubber"/>.</summary>
+    internal ITextScrubber? RealScrubber { get; set; }
+
     internal SequentialIds Ids { get; } = new();
 
     internal FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 10, 15, 9, 0, 0, TimeSpan.Zero));
@@ -71,7 +74,7 @@ internal sealed class DbRunHarness
 
     internal ValueTask<Kernel.Result<DbRunResponse>> Run(DbRunRequest? request = null)
     {
-        var runFiles = new DataRunFiles(Files, Scrubber, TestJson.Options);
+        var runFiles = new DataRunFiles(Files, RealScrubber ?? Scrubber, TestJson.Options);
         var service = new ValidatingService<DbRunRequest, DbRunResponse>(
             new DbRunService(runFiles, new DbVetting(runFiles, Targets, Locator, new FakeSecrets(Environment)), new DbQueryRunner(Reader), Locks, Clock, Ids), new DbRunValidator());
         return service.Handle(request ?? Request(), TestContext.Current.CancellationToken);

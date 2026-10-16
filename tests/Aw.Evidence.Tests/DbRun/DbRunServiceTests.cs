@@ -138,15 +138,15 @@ public sealed class DbRunServiceTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task DbRun_a_sqlite_file_that_is_not_there_is_unavailable_exit_4()
+    public async Task DbRun_a_sqlite_file_that_is_not_there_is_file_not_found_exit_1()
     {
         var harness = new DbRunHarness().WithScript(DbRunHarness.SqliteScript(DbRunHarness.Query(ReadNotes, Count(1))));
         _ = harness.Locator.Directory(DbRunHarness.Repo).Directory(DbRunHarness.RunDirectory);
 
         var summary = (await harness.Run()).Value.Summary;
 
-        Assert.Equal((ApiOutcome.Errored, 4), (summary.Outcome, summary.ExitCode()));
-        Assert.Equal(EvidenceErrors.DatabaseUnavailable.Code, summary.Error!.Code);
+        Assert.Equal((ApiOutcome.Refused, 1), (summary.Outcome, summary.ExitCode()));
+        Assert.Equal(EvidenceErrors.FileNotFound.Code, summary.Refusal!.Code);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -503,5 +503,64 @@ public sealed class DbRunServiceTests
         Assert.Contains("acquire QaStack", harness.Locks.Events, StringComparer.Ordinal);
         Assert.False(harness.Locks.IsHeld(Core.Locks.LockKind.QaStack));
         Assert.False(harness.Locks.IsHeld(Core.Locks.LockKind.HeavyJob));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task DbRun_a_result_with_the_same_column_name_twice_is_recorded_with_unique_keys_on_both_engines()
+    {
+        foreach (var harness in new[] { Sqlite("""{"rowCount":1,"pointers":[{"pointer":"/0/id_2","equals":"2"}]}"""), Postgres(expect: """{"rowCount":1,"pointers":[{"pointer":"/0/id_2","equals":"2"}]}""") })
+        {
+            _ = harness.Scrubber.HidesName("password");
+            _ = harness.Reader.Answer(ReadNotes, new Rows(["id", "id", "password"], [[1L, 2L, "pw-value-123456"]], Truncated: false));
+
+            var result = await harness.Run();
+
+            Assert.True(result.IsSuccess, result.IsError ? result.Error.Message : "");
+            var summary = result.Value.Summary;
+            Assert.Equal(ApiOutcome.Passed, summary.Outcome);
+            Assert.Contains("\"id_2\":2", summary.Steps[0].Output, StringComparison.Ordinal);
+            Assert.DoesNotContain("pw-value-123456", result.Value.Document, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task DbRun_records_a_date_and_a_time_in_iso_and_hides_a_secret_named_date_in_that_form()
+    {
+        var harness = Sqlite("""{"rowCount":1}""");
+        _ = harness.Scrubber.HidesName("birth_secret");
+        _ = harness.Reader.Answer(ReadNotes, new Rows(["birth_secret", "born", "at", "note"], [[new DateOnly(2020, 1, 31), new DateOnly(2021, 2, 3), new TimeOnly(13, 5, 9), "was born 2020-01-31"]], Truncated: false));
+
+        var response = (await harness.Run()).Value;
+
+        Assert.Contains("\"born\":\"2021-02-03\"", response.Summary.Steps[0].Output, StringComparison.Ordinal);
+        Assert.Contains("\"at\":\"13:05:09\"", response.Summary.Steps[0].Output, StringComparison.Ordinal);
+        Assert.DoesNotContain("2020-01-31", response.Document, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task DbRun_with_the_real_name_rule_hides_a_hashed_password_column_and_a_plural_token_array()
+    {
+        var harness = Postgres(expect: """{"rowCount":1}""");
+        harness.RealScrubber = new Aw.Evidence.Infrastructure.Redaction.RedactionScrubber(Aw.Redaction.Redactor.Default);
+        _ = harness.Reader.Answer(ReadNotes, new Rows(["password_hash", "api_tokens", "plain"], [[Convert.FromHexString("DEADBEEF1234"), _tokens, "visible"]], Truncated: false));
+
+        var response = (await harness.Run()).Value;
+
+        Assert.DoesNotContain("deadbeef1234", response.Document, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("tok-one-123456", response.Document, StringComparison.Ordinal);
+        Assert.DoesNotContain("tok-two-123456", response.Document, StringComparison.Ordinal);
+        Assert.Contains("visible", response.Document, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task DbRun_gives_the_reader_a_work_directory_under_the_run_directory_s_real_path()
+    {
+        var harness = Sqlite();
+        _ = harness.Locator.Directory(DbRunHarness.RunDirectory, "/private/runs/db-1");
+
+        _ = await harness.Run();
+
+        var target = Assert.IsType<SqliteTarget>(Assert.Single(harness.Reader.Opened));
+        Assert.StartsWith("/private/runs/db-1/", target.WorkDirectory, StringComparison.Ordinal);
     }
 }

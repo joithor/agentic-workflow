@@ -153,6 +153,134 @@ public sealed class SqliteDatabaseReaderContractTests : ReadOnlyDatabaseContract
     }
 
     [Fact]
+    public async Task A_source_with_a_hot_journal_reads_only_what_was_committed()
+    {
+        var source = _root.Combine("repo/data/hot.db");
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(source)!);
+        await MakeNotesAsync(source);
+        await using (var writer = await OpenWriterAsync(source))
+        {
+            await ExecuteAsync(writer, "PRAGMA cache_size = 10; BEGIN; INSERT INTO notes(text) WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c WHERE x < 600) SELECT hex(randomblob(2000)) FROM c");
+            // The writer is still mid-transaction: what is on disk now is a crashed commit (spilled pages plus a hot journal).
+            File.Copy(source, source + ".crash");
+            File.Copy(source + "-journal", source + ".crash-journal");
+            await ExecuteAsync(writer, "ROLLBACK");
+        }
+
+        File.Move(source + ".crash", source, overwrite: true);
+        File.Move(source + ".crash-journal", source + "-journal", overwrite: true);
+        var before = Listing(Path.GetDirectoryName(source)!);
+
+        await using var session = (await new SqliteDatabaseReader().OpenAsync(new SqliteTarget(source, _root.Combine("run/db")), TestContext.Current.CancellationToken)).Value;
+        var rows = await session.QueryAsync(ReadAll, 1000, TestContext.Current.CancellationToken);
+
+        Assert.Equal(3, rows.Value.Count);
+        Assert.Equal(before, Listing(Path.GetDirectoryName(source)!));
+    }
+
+    [Fact]
+    public async Task A_source_that_changes_while_it_is_copied_is_copied_again()
+    {
+        var db = await ArrangeAsync();
+        var source = ((SqliteTarget)db.Target).SourcePath;
+        var attempts = new List<int>();
+        var reader = new SqliteDatabaseReader(attempt =>
+        {
+            attempts.Add(attempt);
+            if (attempt == 1)
+            {
+                File.SetLastWriteTimeUtc(source, DateTime.UtcNow.AddMinutes(5));
+            }
+        });
+
+        var opened = await reader.OpenAsync(db.Target, TestContext.Current.CancellationToken);
+
+        Assert.True(opened.IsSuccess, opened.IsError ? opened.Error.Message : "");
+        Assert.Equal([1, 2], attempts);
+    }
+
+    [Fact]
+    public async Task A_source_that_never_settles_is_unavailable_after_a_few_tries()
+    {
+        var db = await ArrangeAsync();
+        var source = ((SqliteTarget)db.Target).SourcePath;
+        var attempts = 0;
+        var reader = new SqliteDatabaseReader(attempt =>
+        {
+            attempts = attempt;
+            File.SetLastWriteTimeUtc(source, DateTime.UtcNow.AddMinutes(attempt));
+        });
+
+        var opened = await reader.OpenAsync(db.Target, TestContext.Current.CancellationToken);
+
+        Assert.Equal(Core.EvidenceErrors.DatabaseUnavailable.Code, opened.Error.Code);
+        Assert.Contains("changed while", opened.Error.Message, StringComparison.Ordinal);
+        Assert.Equal(3, attempts);
+    }
+
+    [Fact]
+    public async Task A_source_that_is_not_a_database_is_unavailable()
+    {
+        var source = _root.Combine("repo/data/junk.db");
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(source)!);
+        await File.WriteAllBytesAsync(source, new byte[8192], TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(source, new string('x', 9000), TestContext.Current.CancellationToken);
+
+        var opened = await new SqliteDatabaseReader().OpenAsync(new SqliteTarget(source, _root.Combine("run/db")), TestContext.Current.CancellationToken);
+
+        Assert.Equal(Core.EvidenceErrors.DatabaseUnavailable.Code, opened.Error.Code);
+    }
+
+    [Fact]
+    public async Task A_source_inside_a_symlinked_run_directory_is_refused_and_not_deleted()
+    {
+        var real = _root.Combine("run-real");
+        _ = Directory.CreateDirectory(Path.Combine(real, "db"));
+        var link = _root.Combine("run-link");
+        _ = Directory.CreateSymbolicLink(link, real);
+        var source = Path.Combine(real, "db", SqliteDatabaseReader.CopyName);
+        await MakeNotesAsync(source);
+
+        var opened = await new SqliteDatabaseReader().OpenAsync(new SqliteTarget(source, Path.Combine(link, "db")), TestContext.Current.CancellationToken);
+
+        Assert.Equal(Core.EvidenceErrors.DatabaseRefused.Code, opened.Error.Code);
+        Assert.True(File.Exists(source));
+    }
+
+    [Fact]
+    public async Task A_source_that_is_a_symlink_into_the_work_directory_is_refused_and_not_deleted()
+    {
+        var work = _root.Combine("run/db");
+        _ = Directory.CreateDirectory(work);
+        var inside = Path.Combine(work, SqliteDatabaseReader.CopyName);
+        await MakeNotesAsync(inside);
+        _ = Directory.CreateDirectory(_root.Combine("repo"));
+        var source = _root.Combine("repo/linked.db");
+        _ = File.CreateSymbolicLink(source, inside);
+
+        var opened = await new SqliteDatabaseReader().OpenAsync(new SqliteTarget(source, work), TestContext.Current.CancellationToken);
+
+        Assert.Equal(Core.EvidenceErrors.DatabaseRefused.Code, opened.Error.Code);
+        Assert.True(File.Exists(inside));
+    }
+
+    [Fact]
+    public async Task A_source_reached_through_a_symlinked_directory_into_the_work_directory_is_refused()
+    {
+        var work = _root.Combine("run/db");
+        _ = Directory.CreateDirectory(work);
+        var inside = Path.Combine(work, SqliteDatabaseReader.CopyName);
+        await MakeNotesAsync(inside);
+        _ = Directory.CreateDirectory(_root.Combine("repo"));
+        _ = Directory.CreateSymbolicLink(_root.Combine("repo/linkdir"), work);
+
+        var opened = await new SqliteDatabaseReader().OpenAsync(new SqliteTarget(_root.Combine("repo/linkdir/" + SqliteDatabaseReader.CopyName), work), TestContext.Current.CancellationToken);
+
+        Assert.Equal(Core.EvidenceErrors.DatabaseRefused.Code, opened.Error.Code);
+        Assert.True(File.Exists(inside));
+    }
+
+    [Fact]
     public async Task A_source_inside_the_work_directory_is_refused_and_not_deleted()
     {
         var work = _root.Combine("run/db");
@@ -191,6 +319,23 @@ public sealed class SqliteDatabaseReaderContractTests : ReadOnlyDatabaseContract
 
         await using var connection = opened.Value;
         Assert.Equal(0, SQLitePCL.raw.sqlite3_limit(connection.Handle, 7, -1));
+    }
+
+    private static async Task<Microsoft.Data.Sqlite.SqliteConnection> OpenWriterAsync(string path)
+    {
+        var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={path};Pooling=False");
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
+        return connection;
+    }
+
+    private static async Task ExecuteAsync(Microsoft.Data.Sqlite.SqliteConnection connection, string sql)
+    {
+        var command = connection.CreateCommand();
+        await using (command.ConfigureAwait(false))
+        {
+            command.CommandText = sql;
+            _ = await command.ExecuteNonQueryAsync(TestContext.Current.CancellationToken);
+        }
     }
 
     private static async Task<Microsoft.Data.Sqlite.SqliteConnection> MakeWalAsync(string path, int pageSize, bool keepOpen)

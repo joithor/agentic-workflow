@@ -24,4 +24,21 @@ public sealed class SqlTextTests
         Assert.DoesNotContain("INSERT", words, StringComparer.Ordinal);
         Assert.DoesNotContain("DROP", words, StringComparer.Ordinal);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void SqlText_nests_block_comments_for_postgres_and_not_for_sqlite()
+    {
+        const string Sql = "SELECT 1 /* /* */ ; VACUUM INTO 'x' /* */";
+
+        Assert.Single(SqlText.Statements(Sql));
+        Assert.Equal(["SELECT 1", "VACUUM INTO 'x'"], SqlText.Statements(Sql, nestedComments: false));
+        Assert.Equal(["SELECT 2"], SqlText.Statements("/* a /* b */ SELECT 2", nestedComments: false));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_write_check_for_sqlite_sees_the_statement_a_non_nesting_comment_hides_from_the_nesting_scan()
+    {
+        Assert.True(WriteStatements.Check("SELECT 1 /* /* */ ; VACUUM INTO 'x' /* */", nestedComments: false).IsError);
+        Assert.False(WriteStatements.Check("SELECT 1 /* /* */ ; VACUUM INTO 'x' /* */").IsError);
+    }
 }

@@ -69,6 +69,39 @@ public sealed class PostgresDatabaseReaderTests(PostgresContainer container) : R
     }
 
     [Fact]
+    public async Task A_server_message_that_quotes_a_value_with_a_double_quote_does_not_carry_its_tail()
+    {
+        await using var session = (await new PostgresDatabaseReader().OpenAsync(Target(Entry()), TestContext.Current.CancellationToken)).Value;
+
+        var failed = await session.QueryAsync("SELECT 'ab\"cdefgh-tail-secret'::uuid", 5, TestContext.Current.CancellationToken);
+
+        Assert.Equal(EvidenceErrors.RunFailed.Code, failed.Error.Code);
+        Assert.DoesNotContain("cdefgh-tail-secret", failed.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_join_with_the_same_column_name_twice_and_two_unnamed_columns_come_back_with_unique_keys()
+    {
+        await using var session = (await new PostgresDatabaseReader().OpenAsync(Target(Entry()), TestContext.Current.CancellationToken)).Value;
+
+        var rows = await session.QueryAsync("SELECT a.id, b.id, 1, 2 FROM notes a JOIN notes b ON a.id = b.id ORDER BY a.id", 5, TestContext.Current.CancellationToken);
+
+        Assert.True(rows.IsSuccess, rows.IsError ? rows.Error.Message : "");
+        Assert.StartsWith("""[{"id":1,"id_2":1,"?column?":1,"?column?_2":2}""", rows.Value.ToJson(), StringComparison.Ordinal);
+        Assert.NotEmpty(Core.Data.RecordedText.Of(new Aw.Evidence.Infrastructure.Redaction.RedactionScrubber(Aw.Redaction.Redactor.Default), rows.Value.ToJson(), 2000));
+    }
+
+    [Fact]
+    public async Task A_postgres_date_and_time_come_back_in_iso()
+    {
+        await using var session = (await new PostgresDatabaseReader().OpenAsync(Target(Entry()), TestContext.Current.CancellationToken)).Value;
+
+        var rows = await session.QueryAsync("SELECT '2020-01-31'::date AS d, '13:05:09'::time AS t", 5, TestContext.Current.CancellationToken);
+
+        Assert.Equal("""[{"d":"2020-01-31","t":"13:05:09"}]""", rows.Value.ToJson());
+    }
+
+    [Fact]
     public async Task A_value_npgsql_cannot_map_to_an_object_is_named_by_its_type_and_the_run_goes_on()
     {
         await using var session = (await new PostgresDatabaseReader().OpenAsync(Target(Entry()), TestContext.Current.CancellationToken)).Value;
