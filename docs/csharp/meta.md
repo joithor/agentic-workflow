@@ -199,8 +199,8 @@ and `AW_META_CLAUDE_ARGS` is inserted after `{bin}`; both stay for tests and are
 such field). `AW_LAUNCHER_CONFIG` is passed on to every lane's tmux session.
 
 **Lane variables.** Every lane's environment has `AW_SINDRI_CHILD=1`, `AW_META_TEAM` and `AW_META_LANE`. `meta-lane.sh`
-exports them, so tmux's global environment is untouched; the spec's wording is `new-session -e`, which would have changed
-the Warp layout and every tmux command that must stay byte-identical with no file (the owner's condition). The effect is the
+exports them (L-12, SL-1 section 10.2) instead of passing `-e` to `new-session`, so tmux's global environment, the Warp
+layout and every tmux command stay byte-identical with no file (the owner's condition). The effect is the
 same: a `sindri` run inside the lane is a session caller, whatever the agent. A shell left in the pane after the agent
 exits still carries them, so run the human's `sindri` approvals from another terminal.
 

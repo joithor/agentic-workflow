@@ -147,11 +147,13 @@ claude_in_pane() {
 
 # A lane whose agent reports its own session id (sessionId: reported) is waited for: meta-lane.sh leaves
 # lane-sessions/<lane>.settled once the id is recorded (or refused as ambiguous), and the next lane is started after that.
+# A lane that exits before it can watch (a refused prompt, an empty argv) leaves <lane>.failed with the reason and .settled,
+# and the launcher prints that reason at once.
 # meta-lane.sh serialises such lanes itself too (a start lock), so a Warp pane that creates its session is safe as well.
 # AW_META_ID_WAIT seconds at most.
 mark_start() { # lane: clear the previous start's markers
   mkdir -p "$state_dir/meta/lane-sessions"
-  rm -f "$state_dir/meta/lane-sessions/$1.settled" "$state_dir/meta/lane-sessions/$1.ambiguous"
+  rm -f "$state_dir/meta/lane-sessions/$1.settled" "$state_dir/meta/lane-sessions/$1.ambiguous" "$state_dir/meta/lane-sessions/$1.failed"
 }
 wait_reported() { # lane
   local d="$state_dir/meta/lane-sessions" n
@@ -161,7 +163,8 @@ wait_reported() { # lane
       [ -e "$d/$1.settled" ] && break
       sleep 0.1; n=$((n - 1))
     done
-    if [ "$n" -le 0 ]; then echo "meta-launch: lane $1 has not reported its session id after ${AW_META_ID_WAIT:-30}s" >&2
+    if [ -s "$d/$1.failed" ]; then echo "meta-launch: lane $1 failed to start: $(cat "$d/$1.failed")" >&2
+    elif [ "$n" -le 0 ]; then echo "meta-launch: lane $1 has not reported its session id after ${AW_META_ID_WAIT:-30}s" >&2
     elif [ -e "$d/$1.ambiguous" ]; then echo "meta-launch: lane $1: ambiguous session id (more than one new session file); no id recorded" >&2; fi
   fi
 }
