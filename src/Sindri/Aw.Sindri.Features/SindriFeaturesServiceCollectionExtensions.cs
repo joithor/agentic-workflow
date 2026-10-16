@@ -81,6 +81,7 @@ public static class SindriFeaturesServiceCollectionExtensions
     {
         _ = services
             .AddScoped<IItemResolver, ViewItemResolver>()
+            .AddScoped<RequestTarget>()
             .AddScoped<IService<StartProcessRequest, StartProcessResponse>, StartProcessService>()
             .AddScoped<IService<RecordHeartbeatRequest, RecordHeartbeatResponse>, RecordHeartbeatService>()
             .AddScoped<IService<RecordServiceRunRequest, RecordServiceRunResponse>, RecordServiceRunService>()
