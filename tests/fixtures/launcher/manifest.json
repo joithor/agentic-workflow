@@ -191,7 +191,8 @@
     {
       "file": "bad-lane-agent-id.json",
       "schema": "invalid",
-      "bash": "accept",
+      "bash": "refuse",
+      "tagWhy": "SL-1 resolves meta.lanesAgent through the catalog, and a bad meta makes aw-meta-launch refuse (section 4)",
       "note": "meta agent ids are AgentIds"
     },
     {
@@ -238,6 +239,18 @@
       "schema": "invalid",
       "bash": "accept",
       "note": "a built-in override that nulls sessionIdPattern without sessionId: none leaves a reported/pre-chosen-uuid agent with no pattern (section 4); not a field the bash reader checks"
+    },
+    {
+      "file": "override-null-reportedid-codex.json",
+      "schema": "invalid",
+      "bash": "accept",
+      "note": "codex's built-in is sessionId: reported; nulling reportedId without moving sessionId leaves a reported agent with no reportedId (section 4: the merged entry gets the added entry's verdict)"
+    },
+    {
+      "file": "override-reported-without-reportedid-claude.json",
+      "schema": "invalid",
+      "bash": "accept",
+      "note": "claude-code's built-in has no reportedId; an override to sessionId: reported without one leaves a reported agent with no reportedId (section 4)"
     }
   ]
 }

@@ -117,13 +117,100 @@
       },
       "properties": {
         "claude-code": {
-          "$ref": "#/$defs/builtinOverride"
+          "allOf": [
+            {
+              "$ref": "#/$defs/builtinOverride"
+            },
+            {
+              "if": {
+                "properties": {
+                  "sessionId": {
+                    "const": "reported"
+                  }
+                },
+                "required": [
+                  "sessionId"
+                ]
+              },
+              "then": {
+                "required": [
+                  "reportedId"
+                ],
+                "properties": {
+                  "reportedId": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          ],
+          "description": "The built-in has no reportedId, so an override that sets sessionId: reported must bring one."
         },
         "codex": {
-          "$ref": "#/$defs/builtinOverride"
+          "allOf": [
+            {
+              "$ref": "#/$defs/builtinOverride"
+            },
+            {
+              "if": {
+                "properties": {
+                  "reportedId": {
+                    "type": "null"
+                  }
+                },
+                "required": [
+                  "reportedId"
+                ]
+              },
+              "then": {
+                "required": [
+                  "sessionId"
+                ],
+                "properties": {
+                  "sessionId": {
+                    "enum": [
+                      "pre-chosen-uuid",
+                      "none"
+                    ]
+                  }
+                }
+              }
+            }
+          ],
+          "description": "The built-in is sessionId: reported with a reportedId, so an override that nulls reportedId must move sessionId off reported."
         },
         "cursor": {
-          "$ref": "#/$defs/builtinOverride"
+          "allOf": [
+            {
+              "$ref": "#/$defs/builtinOverride"
+            },
+            {
+              "if": {
+                "properties": {
+                  "reportedId": {
+                    "type": "null"
+                  }
+                },
+                "required": [
+                  "reportedId"
+                ]
+              },
+              "then": {
+                "required": [
+                  "sessionId"
+                ],
+                "properties": {
+                  "sessionId": {
+                    "enum": [
+                      "pre-chosen-uuid",
+                      "none"
+                    ]
+                  }
+                }
+              }
+            }
+          ],
+          "description": "The built-in is sessionId: reported with a reportedId, so an override that nulls reportedId must move sessionId off reported."
         }
       }
     },
