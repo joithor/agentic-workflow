@@ -37,6 +37,15 @@ internal sealed class ItemNeedsViewModel : ObservableObject
     /// <summary>The refusal Decide came back with, as served; empty for none.</summary>
     internal string Refusal { get; private set => Set(ref field, value); } = "";
 
+    /// <summary>The sheet moved to another item: nothing of the last one stays (its decisions, requests, empty sentences and refusal).</summary>
+    internal void Reset()
+    {
+        (_url, _item) = (null, "");
+        Decisions = [];
+        Requests = [];
+        (DecisionsEmpty, RequestsEmpty, Refusal) = ("", "", "");
+    }
+
     /// <summary>Reads the item's pending decisions and its requests; a failed read keeps what was shown.</summary>
     /// <param name="url">The API.</param>
     /// <param name="itemId">The item.</param>
@@ -77,9 +86,11 @@ internal sealed class ItemNeedsViewModel : ObservableObject
     /// <returns>A task that completes when Decide was answered and the lists re-read.</returns>
     internal async Task Choose(string decisionId, string optionId)
     {
-        if (_url is not { } url || await _sender.Send(url, decisionId, optionId, note: null).ConfigureAwait(true) is not { } answer)
+        var pressedOn = _item;
+        if (_url is not { } url || await _sender.Send(url, decisionId, optionId, note: null).ConfigureAwait(true) is not { } answer
+            || !string.Equals(pressedOn, _item, StringComparison.Ordinal))
         {
-            return;
+            return;   // not sent, or the sheet moved to another item while Decide was on its way: its refusal is not this item's
         }
 
         Refusal = answer.IsError ? answer.Error.Message : "";

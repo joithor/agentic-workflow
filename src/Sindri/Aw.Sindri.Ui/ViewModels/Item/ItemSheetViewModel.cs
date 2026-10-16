@@ -209,6 +209,7 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     private void Clear()
     {
         _controls.Clear();
+        Needs.Reset();
         EndConflict();
         _subject++;
         _generation++;
