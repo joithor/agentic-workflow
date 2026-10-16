@@ -16,7 +16,7 @@ public sealed class RefreshLanesTests
     private readonly InMemoryLaneStore _lanes = new();
     private readonly FakeTimeProvider _clock = new(A.T0);
 
-    private RefreshLanesService Service() => new(_config, new LaneRefresher(_sessions, _messages, _lanes), _clock);
+    private RefreshLanesService Service() => new(_config, new LaneRefresher(_sessions, _messages, _lanes), _clock, MetaWorld.NoNonClaudeLanes());
 
     private async Task<LanesResponse> Refresh()
     {

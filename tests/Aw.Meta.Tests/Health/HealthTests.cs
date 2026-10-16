@@ -13,7 +13,7 @@ public sealed class HealthTests
 
     private HealthService Service() => new(
         new HostProbe(_world.Processes, _world.Resources),
-        new LaneCheck(_world.Config, _world.Sessions, _world.Messages, _world.Lanes),
+        new LaneCheck(_world.Config, _world.Sessions, _world.Messages, _world.Lanes, _world.LaneHealth),
         new OrphanKiller(_world.Processes, _world.Log, _world.Clock),
         _world.Values,
         _world.Clock);

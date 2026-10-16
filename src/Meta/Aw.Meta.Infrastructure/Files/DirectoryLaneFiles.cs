@@ -1,0 +1,82 @@
+using System.Text.Json;
+using Aw.Kernel;
+using Aw.Meta.Core.Ids;
+using Aw.Meta.Core.Lanes;
+using Aw.Meta.Core.Ports;
+
+namespace Aw.Meta.Infrastructure.Files;
+
+/// <summary>
+/// ILaneFiles over $AW_STATE_DIR/meta/lane-sessions: &lt;lane&gt; holds the session id the CLI's hook reported, &lt;lane&gt;.agent the agent facts the
+/// launcher recorded (JSON: agent, processName, hooks, transcripts), &lt;lane&gt;.ambiguous marks a refused guess. Every file is read
+/// defensively: one that can't be read counts as absent.
+/// </summary>
+/// <param name="directory">The lane-sessions directory.</param>
+internal sealed class DirectoryLaneFiles(string directory) : ILaneFiles
+{
+    public async ValueTask<Result<LaneRecord?>> Record(string lane, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(lane);
+        if (!IsLaneName(lane))
+        {
+            return Results.Success<LaneRecord?>(value: null);
+        }
+
+        var session = await ReadSession(Path.Combine(directory, lane), cancellationToken).ConfigureAwait(false);
+        var agent = await ReadAgent(Path.Combine(directory, lane + ".agent"), cancellationToken).ConfigureAwait(false);
+        var ambiguous = File.Exists(Path.Combine(directory, lane + ".ambiguous"));
+        return session is null && agent is null && !ambiguous
+            ? Results.Success<LaneRecord?>(value: null)
+            : Results.Success<LaneRecord?>(new LaneRecord(lane, session?.Id, agent, session?.At, ambiguous));
+    }
+
+    // Lane names are lowercase letters, digits and dashes (meta-lane.sh enforces it); anything else never names a file here.
+    private static bool IsLaneName(string lane) =>
+        lane.Length > 0 && lane.All(static c => char.IsAsciiLetterOrDigit(c) || c == '-');
+
+    private static async ValueTask<(SessionId Id, DateTimeOffset At)?> ReadSession(string path, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (!File.Exists(path))
+            {
+                return null;
+            }
+
+            var text = (await File.ReadAllTextAsync(path, cancellationToken).ConfigureAwait(false)).Trim();
+            return text.Length == 0 ? null : (SessionId.From(text), new DateTimeOffset(File.GetLastWriteTimeUtc(path), TimeSpan.Zero));
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    private static async ValueTask<LaneAgent?> ReadAgent(string path, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (!File.Exists(path))
+            {
+                return null;
+            }
+
+            using var document = JsonDocument.Parse(await File.ReadAllBytesAsync(path, cancellationToken).ConfigureAwait(false));
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object || Text(root, "agent") is not { Length: > 0 } agent)
+            {
+                return null;
+            }
+
+            var hooks = root.TryGetProperty("hooks", out var flag) && flag.ValueKind == JsonValueKind.True;
+            return new LaneAgent(agent, Text(root, "processName") ?? agent, hooks, Text(root, "transcripts"));
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static string? Text(JsonElement element, string name) =>
+        element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+}

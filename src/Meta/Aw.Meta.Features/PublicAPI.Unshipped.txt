@@ -72,19 +72,21 @@ Aw.Meta.Features.Health.HealthResponse
 Aw.Meta.Features.Health.HealthResponse.<Clone>$() -> Aw.Meta.Features.Health.HealthResponse!
 Aw.Meta.Features.Health.HealthResponse.Attention.get -> bool
 Aw.Meta.Features.Health.HealthResponse.Attention.init -> void
-Aw.Meta.Features.Health.HealthResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessGroup!>! Groups, out int ProcessCount, out Aw.Meta.Core.Health.HostResources! Host, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Orphans, out System.Collections.Generic.IReadOnlyList<int>! Killed, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.DuplicateServer!>! Duplicates, out System.Collections.Generic.IReadOnlyList<string!>? MissingLanes, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>! HeavyLocks, out bool MemoryLow, out bool Attention) -> void
+Aw.Meta.Features.Health.HealthResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessGroup!>! Groups, out int ProcessCount, out Aw.Meta.Core.Health.HostResources! Host, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Orphans, out System.Collections.Generic.IReadOnlyList<int>! Killed, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.DuplicateServer!>! Duplicates, out System.Collections.Generic.IReadOnlyList<string!>? MissingLanes, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>! HeavyLocks, out bool MemoryLow, out bool Attention, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneHealth!>? Lanes) -> void
 Aw.Meta.Features.Health.HealthResponse.Duplicates.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.DuplicateServer!>!
 Aw.Meta.Features.Health.HealthResponse.Duplicates.init -> void
 Aw.Meta.Features.Health.HealthResponse.Equals(Aw.Meta.Features.Health.HealthResponse? other) -> bool
 Aw.Meta.Features.Health.HealthResponse.Groups.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessGroup!>!
 Aw.Meta.Features.Health.HealthResponse.Groups.init -> void
-Aw.Meta.Features.Health.HealthResponse.HealthResponse(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessGroup!>! Groups, int ProcessCount, Aw.Meta.Core.Health.HostResources! Host, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Orphans, System.Collections.Generic.IReadOnlyList<int>! Killed, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.DuplicateServer!>! Duplicates, System.Collections.Generic.IReadOnlyList<string!>? MissingLanes, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>! HeavyLocks, bool MemoryLow, bool Attention) -> void
+Aw.Meta.Features.Health.HealthResponse.HealthResponse(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessGroup!>! Groups, int ProcessCount, Aw.Meta.Core.Health.HostResources! Host, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Orphans, System.Collections.Generic.IReadOnlyList<int>! Killed, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.DuplicateServer!>! Duplicates, System.Collections.Generic.IReadOnlyList<string!>? MissingLanes, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>! HeavyLocks, bool MemoryLow, bool Attention, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneHealth!>? Lanes = null) -> void
 Aw.Meta.Features.Health.HealthResponse.HeavyLocks.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>!
 Aw.Meta.Features.Health.HealthResponse.HeavyLocks.init -> void
 Aw.Meta.Features.Health.HealthResponse.Host.get -> Aw.Meta.Core.Health.HostResources!
 Aw.Meta.Features.Health.HealthResponse.Host.init -> void
 Aw.Meta.Features.Health.HealthResponse.Killed.get -> System.Collections.Generic.IReadOnlyList<int>!
 Aw.Meta.Features.Health.HealthResponse.Killed.init -> void
+Aw.Meta.Features.Health.HealthResponse.Lanes.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneHealth!>?
+Aw.Meta.Features.Health.HealthResponse.Lanes.init -> void
 Aw.Meta.Features.Health.HealthResponse.MemoryLow.get -> bool
 Aw.Meta.Features.Health.HealthResponse.MemoryLow.init -> void
 Aw.Meta.Features.Health.HealthResponse.MissingLanes.get -> System.Collections.Generic.IReadOnlyList<string!>?
@@ -246,11 +248,13 @@ Aw.Meta.Features.Lanes.LanesResponse.Announcement.get -> string!
 Aw.Meta.Features.Lanes.LanesResponse.Announcement.init -> void
 Aw.Meta.Features.Lanes.LanesResponse.Changed.get -> bool
 Aw.Meta.Features.Lanes.LanesResponse.Changed.init -> void
-Aw.Meta.Features.Lanes.LanesResponse.Deconstruct(out int Version, out bool Changed, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneAssignment!>! Entries, out System.Collections.Generic.IReadOnlyList<string!>! Unmapped, out string! Announcement) -> void
+Aw.Meta.Features.Lanes.LanesResponse.Deconstruct(out int Version, out bool Changed, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneAssignment!>! Entries, out System.Collections.Generic.IReadOnlyList<string!>! Unmapped, out string! Announcement, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneHealth!>? Standing) -> void
 Aw.Meta.Features.Lanes.LanesResponse.Entries.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneAssignment!>!
 Aw.Meta.Features.Lanes.LanesResponse.Entries.init -> void
 Aw.Meta.Features.Lanes.LanesResponse.Equals(Aw.Meta.Features.Lanes.LanesResponse? other) -> bool
-Aw.Meta.Features.Lanes.LanesResponse.LanesResponse(int Version, bool Changed, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneAssignment!>! Entries, System.Collections.Generic.IReadOnlyList<string!>! Unmapped, string! Announcement) -> void
+Aw.Meta.Features.Lanes.LanesResponse.LanesResponse(int Version, bool Changed, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneAssignment!>! Entries, System.Collections.Generic.IReadOnlyList<string!>! Unmapped, string! Announcement, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneHealth!>? Standing = null) -> void
+Aw.Meta.Features.Lanes.LanesResponse.Standing.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneHealth!>?
+Aw.Meta.Features.Lanes.LanesResponse.Standing.init -> void
 Aw.Meta.Features.Lanes.LanesResponse.Unmapped.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Meta.Features.Lanes.LanesResponse.Unmapped.init -> void
 Aw.Meta.Features.Lanes.LanesResponse.Version.get -> int

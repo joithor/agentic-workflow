@@ -106,6 +106,14 @@ public sealed class MetaWorld
     /// <summary>The lane stop gate's loop guard.</summary>
     public LaneStopGuard LaneGuard => new(Values, Log);
 
+    /// <summary>A lane-health reader over empty fakes: a team with no non-Claude lane.</summary>
+    /// <returns>The reader.</returns>
+    public static LaneHealthReader NoNonClaudeLanes()
+    {
+        var values = new InMemoryKeyValueStore();
+        return new LaneHealthReader(new InMemoryLaneFiles(), new LaneBeats(values), new InMemoryLaneMail(new InMemoryMessageStore()), new LaneStopGuard(values, new InMemoryRunningLog()));
+    }
+
     /// <summary>The non-Claude lanes' standing.</summary>
     public LaneHealthReader LaneHealth => new(LaneFiles, Beats, LaneMail, LaneGuard);
 

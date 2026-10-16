@@ -1,5 +1,6 @@
 using Aw.Kernel;
 using Aw.Meta.Core;
+using Aw.Meta.Core.Coordination;
 using Aw.Meta.Core.Lanes;
 using Aw.Meta.Core.Messages;
 using Aw.Meta.Core.Ports;
@@ -11,8 +12,22 @@ namespace Aw.Meta.Features.Health;
 /// <param name="sessions">Live Claude sessions.</param>
 /// <param name="messages">The recorded lane announcements.</param>
 /// <param name="lanes">The current lane map.</param>
-internal sealed class LaneCheck(IMetaConfig config, ISessionDirectory sessions, IMessageStore messages, ILaneStore lanes)
+/// <param name="standing">How each non-Claude lane stands.</param>
+internal sealed class LaneCheck(IMetaConfig config, ISessionDirectory sessions, IMessageStore messages, ILaneStore lanes, LaneHealthReader standing)
 {
+    /// <summary>How each non-Claude lane stands (taking part, launch-only, hooks not running...); null for a team of Claude lanes or with no team config.</summary>
+    internal async ValueTask<Result<IReadOnlyList<LaneHealth>?>> Standing(CancellationToken cancellationToken)
+    {
+        var team = await config.Load(cancellationToken).ConfigureAwait(false);
+        if (team.IsError)
+        {
+            return team.Error.Code == MetaErrors.NoTeamConfig.Code ? Results.Success<IReadOnlyList<LaneHealth>?>(value: null) : team.Error;
+        }
+
+        var rows = await standing.Read(team.Value, cancellationToken).ConfigureAwait(false);
+        return rows.IsError ? rows.Error : Results.Success<IReadOnlyList<LaneHealth>?>(rows.Value.Count == 0 ? null : rows.Value);
+    }
+
     /// <summary>The lanes with no live session; null when there is no team config to check against.</summary>
     internal async ValueTask<Result<IReadOnlyList<string>?>> Missing(CancellationToken cancellationToken)
     {

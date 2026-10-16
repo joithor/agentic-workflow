@@ -13,7 +13,8 @@ namespace Aw.Meta.Features.Lanes;
 /// <param name="config">The team config.</param>
 /// <param name="refresher">Maps and saves.</param>
 /// <param name="clock">Dates a changed map.</param>
-internal sealed class RefreshLanesService(IMetaConfig config, LaneRefresher refresher, TimeProvider clock) : IService<RefreshLanesRequest, LanesResponse>
+/// <param name="standing">How each non-Claude lane stands.</param>
+internal sealed class RefreshLanesService(IMetaConfig config, LaneRefresher refresher, TimeProvider clock, LaneHealthReader standing) : IService<RefreshLanesRequest, LanesResponse>
 {
     public async ValueTask<Result<LanesResponse>> Handle(RefreshLanesRequest request, CancellationToken cancellationToken)
     {
@@ -24,6 +25,12 @@ internal sealed class RefreshLanesService(IMetaConfig config, LaneRefresher refr
         }
 
         var refreshed = await refresher.Run(team.Value, clock.GetUtcNow(), cancellationToken).ConfigureAwait(false);
-        return refreshed.IsError ? refreshed.Error : LanesReport.Of(team.Value, refreshed.Value);
+        if (refreshed.IsError)
+        {
+            return refreshed.Error;
+        }
+
+        var rows = await standing.Read(team.Value, cancellationToken).ConfigureAwait(false);
+        return rows.IsError ? rows.Error : LanesReport.Of(team.Value, refreshed.Value, rows.Value.Count == 0 ? null : rows.Value);
     }
 }
