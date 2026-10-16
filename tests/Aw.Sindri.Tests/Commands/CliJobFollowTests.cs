@@ -48,7 +48,7 @@ public sealed class CliJobFollowTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Ctrl_c_cancels_and_prints_cancelled()
     {
-        var api = Api().Ok("POST", "/sindri/jobs/" + Id + "/cancel", Body(new Aw.Sindri.Core.Commands.CommandAccepted(Aw.Sindri.Core.Ids.CommandId.From(new Guid(8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)), 12)));
+        var api = Api().Ok("POST", "/sindri/jobs/" + Id + "/cancel", Body(new Core.Commands.CommandAccepted(Core.Ids.CommandId.From(new Guid(8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)), 12)));
         var run = _rig.RunServices(api, "run", "heartbeat");
         await FollowRig.WaitUntil(() => api.Streams == 1);
 
@@ -64,7 +64,7 @@ public sealed class CliJobFollowTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Second_ctrl_c_exits_at_once()
     {
-        var api = Api().Ok("POST", "/sindri/jobs/" + Id + "/cancel", Body(new Aw.Sindri.Core.Commands.CommandAccepted(Aw.Sindri.Core.Ids.CommandId.From(new Guid(8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)), 12)));
+        var api = Api().Ok("POST", "/sindri/jobs/" + Id + "/cancel", Body(new Core.Commands.CommandAccepted(Core.Ids.CommandId.From(new Guid(8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)), 12)));
         var run = _rig.RunServices(api, "run", "heartbeat");
         await FollowRig.WaitUntil(() => api.Streams == 1);
 

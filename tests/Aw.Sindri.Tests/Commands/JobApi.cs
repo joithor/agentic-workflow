@@ -1,5 +1,5 @@
-using System.IO.Pipelines;
 using System.Globalization;
+using System.IO.Pipelines;
 using System.Net;
 using System.Text;
 
@@ -104,5 +104,5 @@ internal sealed class JobApi : HttpMessageHandler
     };
 
     private static HttpResponseMessage Problem(HttpStatusCode status, string code) =>
-        Answer(new Reply(status, string.Create(System.Globalization.CultureInfo.InvariantCulture, $$"""{"title":"{{code}}","status":{{(int)status}},"detail":"refused"}""")));
+        Answer(new Reply(status, string.Create(CultureInfo.InvariantCulture, $$"""{"title":"{{code}}","status":{{(int)status}},"detail":"refused"}""")));
 }
