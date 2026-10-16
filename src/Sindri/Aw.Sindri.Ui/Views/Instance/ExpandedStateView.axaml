@@ -12,8 +12,10 @@
     <StackPanel Spacing="8">
       <Grid ColumnDefinitions="*,Auto">
         <TextBlock Classes="eyebrow" Text="{Binding State}" VerticalAlignment="Center" />
-        <Button x:Name="ExpandedCopyStatus" Grid.Column="1" Classes="copy" Content="{Binding CopyStatusLabel}" Click="OnCopyStatus"
+        <Button x:Name="ExpandedCopyStatus" Grid.Column="1" Classes="copy" Content="{Binding StatusCopy.Label}" Click="OnCopyStatus"
                 AutomationProperties.Name="{Binding CopyStatusName}" />
+        <TextBlock x:Name="ExpandedCopyAnnouncement" Grid.Column="1" Classes="caption live-region" Classes.live="{Binding StatusCopy.IsAnnouncing}" Width="0" Opacity="0"
+                   IsHitTestVisible="False" Text="{Binding StatusCopy.Announcement}" />
       </Grid>
       <TextBlock x:Name="ExpandedStep" Classes="caption mono" Text="{Binding StepLine}" IsVisible="{Binding HasStep}" TextWrapping="Wrap" />
       <ItemsControl x:Name="ExpandedGates" ItemsSource="{Binding Gates}" IsVisible="{Binding HasGates}">
@@ -46,8 +48,10 @@
               </Panel>
               <TextBlock Name="CommandCli" Classes="caption mono" Text="{Binding Cli}" IsVisible="{Binding ShowsCli}" VerticalAlignment="Center" Margin="0,0,8,0"
                          AutomationProperties.Name="{Binding Cli}" />
-              <Button Name="CommandCopy" Classes="copy" Content="{Binding CopyLabel}" IsVisible="{Binding ShowsCli}" Click="OnCopyCommand" Margin="0,0,8,0"
+              <Button Name="CommandCopy" Classes="copy" Content="{Binding CliCopy.Label}" IsVisible="{Binding ShowsCli}" Click="OnCopyCommand" Margin="0,0,8,0"
                       AutomationProperties.Name="{Binding CopyName}" />
+              <TextBlock Name="CommandCopyAnnouncement" Classes="caption live-region" Classes.live="{Binding CliCopy.IsAnnouncing}" Width="0" Opacity="0"
+                         IsHitTestVisible="False" Text="{Binding CliCopy.Announcement}" />
               <Border Classes="pending-chip" IsVisible="{Binding ShowsCli}" AutomationProperties.AccessibilityView="Raw">
                 <TextBlock Name="CommandPending" Classes="caption subtle" Text="{Binding PendingChip}" AutomationProperties.AccessibilityView="Raw" />
               </Border>

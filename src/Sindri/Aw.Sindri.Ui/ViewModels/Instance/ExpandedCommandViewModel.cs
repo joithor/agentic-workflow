@@ -12,13 +12,8 @@ namespace Aw.Sindri.Ui.ViewModels.Instance;
 /// </summary>
 internal sealed class ExpandedCommandViewModel : ObservableObject
 {
-    private readonly IClipboard _clipboard;
-    private readonly TimeProvider _clock;
-    private int _copies;
-
     internal ExpandedCommandViewModel(StatusCommand command, AnswerKind? answer, string address, IClipboard clipboard, TimeProvider clock)
     {
-        (_clipboard, _clock) = (clipboard, clock);
         Verb = command.Verb;
         Label = Labels.CommandLabel(command.Verb, command.Verb == StatusVerb.Answer ? answer : null);
         Name = Labels.CommandName(Label, address);
@@ -64,42 +59,13 @@ internal sealed class ExpandedCommandViewModel : ObservableObject
     /// <summary>The Copy control: its words and the live region that says "Copied".</summary>
     public CopyAction CliCopy { get; }
 
-    /// <summary>"Copy", or "Copied" for 1.5 s after a copy.</summary>
-    public string CopyLabel { get; private set => Set(ref field, value); } = Labels.Copy;
-
     /// <summary>The Copy button's accessible name: it carries the CLI.</summary>
     public string CopyName { get; }
 
     /// <summary>Copies the CLI.</summary>
     /// <param name="cancellationToken">Cancels the write.</param>
     /// <returns>A task that completes once the clipboard answered.</returns>
-    public async Task Copy(CancellationToken cancellationToken)
-    {
-        if (Cli.Length == 0 || !await _clipboard.SetText(Cli, cancellationToken).ConfigureAwait(true))
-        {
-            return;
-        }
-
-        CopyLabel = Labels.Copied;
-        _ = Uncopy(++_copies, cancellationToken);
-    }
-
-    private async Task Uncopy(int copy, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await Task.Delay(ProtectedActionViewModel.CopiedFor, _clock, cancellationToken).ConfigureAwait(true);
-        }
-        catch (OperationCanceledException)
-        {
-            return;
-        }
-
-        if (copy == _copies)
-        {
-            CopyLabel = Labels.Copy;
-        }
-    }
+    public Task Copy(CancellationToken cancellationToken) => CliCopy.Run(Cli, cancellationToken);
 
     /// <summary>What the command shows, so a re-read of the same keeps the control.</summary>
     internal string Signature => string.Join('|', Verb, Label, Cli, Confirm, Protected is null);

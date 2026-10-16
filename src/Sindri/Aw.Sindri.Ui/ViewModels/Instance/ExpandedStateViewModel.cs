@@ -13,14 +13,11 @@ internal sealed class ExpandedStateViewModel : ObservableObject
 {
     private CurrentState _current;
     private readonly string _address;
-    private readonly IClipboard _clipboard;
-    private readonly TimeProvider _clock;
     private readonly ExpandedCommandViewModel? _cancel;
-    private int _copies;
 
     internal ExpandedStateViewModel(CurrentState current, string address, IClipboard clipboard, TimeProvider clock)
     {
-        (_current, _address, _clipboard, _clock) = (current, address, clipboard, clock);
+        (_current, _address) = (current, address);
         var status = current.Status;
         Commands = [.. status.Commands.Select(c => new ExpandedCommandViewModel(c, status.Answer?.Kind, address, clipboard, clock))];
         _cancel = Commands.FirstOrDefault(c => c.Verb == StatusVerb.Cancel);
@@ -147,9 +144,6 @@ internal sealed class ExpandedStateViewModel : ObservableObject
     /// <summary>The Copy status control: its words and the live region that says "Copied".</summary>
     public CopyAction StatusCopy { get; }
 
-    /// <summary>The Copy status button's words.</summary>
-    public string CopyStatusLabel { get; private set => Set(ref field, value); } = Labels.CopyStatus;
-
     /// <summary>The Copy status button's accessible name.</summary>
     public string CopyStatusName { get; }
 
@@ -196,31 +190,5 @@ internal sealed class ExpandedStateViewModel : ObservableObject
     /// <summary>Copies the engine's status text, whole.</summary>
     /// <param name="cancellationToken">Cancels the write.</param>
     /// <returns>A task that completes once the clipboard answered.</returns>
-    public async Task CopyStatus(CancellationToken cancellationToken)
-    {
-        if (!await _clipboard.SetText(_current.Status.Text, cancellationToken).ConfigureAwait(true))
-        {
-            return;
-        }
-
-        CopyStatusLabel = Labels.Copied;
-        _ = Uncopy(++_copies, cancellationToken);
-    }
-
-    private async Task Uncopy(int copy, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await Task.Delay(ProtectedActionViewModel.CopiedFor, _clock, cancellationToken).ConfigureAwait(true);
-        }
-        catch (OperationCanceledException)
-        {
-            return;
-        }
-
-        if (copy == _copies)
-        {
-            CopyStatusLabel = Labels.CopyStatus;
-        }
-    }
+    public Task CopyStatus(CancellationToken cancellationToken) => StatusCopy.Run(_current.Status.Text, cancellationToken);
 }

@@ -205,7 +205,7 @@ public sealed class ExpandedStateViewModelTests
         await expanded.CopyStatus(Token);
 
         Assert.Equal(FixtureInstances.Detail("escalated-gate").Current.Status.Text, _clipboard.Text);
-        Assert.Equal(Labels.Copied, expanded.CopyStatusLabel);
+        Assert.Equal(Labels.Copied, expanded.StatusCopy.Label);
         Assert.Contains(FixtureInstances.Detail("escalated-gate").Address, expanded.CopyStatusName, StringComparison.Ordinal);
     }
 
