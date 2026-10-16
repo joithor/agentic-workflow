@@ -1999,3 +1999,67 @@ Aw.Evidence.Core.Data.PointerCheck.EqualTo.get -> System.Text.Json.JsonElement?
 Aw.Evidence.Core.Data.PointerCheck.PointerCheck(string! Location, System.Text.Json.JsonElement? EqualTo = null, bool? Exists = null, string? Matches = null) -> void
 override Aw.Evidence.Core.Data.OptionalElementConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> System.Text.Json.JsonElement?
 override Aw.Evidence.Core.Data.OptionalElementConverter.Write(System.Text.Json.Utf8JsonWriter! writer, System.Text.Json.JsonElement? value, System.Text.Json.JsonSerializerOptions! options) -> void
+Aw.Evidence.Core.Data.DbExpectation
+Aw.Evidence.Core.Data.DbExpectation.<Clone>$() -> Aw.Evidence.Core.Data.DbExpectation!
+Aw.Evidence.Core.Data.DbExpectation.DbExpectation(int? RowCount = null, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.PointerCheck!>? Pointers = null, string? Golden = null) -> void
+Aw.Evidence.Core.Data.DbExpectation.Deconstruct(out int? RowCount, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.PointerCheck!>? Pointers, out string? Golden) -> void
+Aw.Evidence.Core.Data.DbExpectation.Equals(Aw.Evidence.Core.Data.DbExpectation? other) -> bool
+Aw.Evidence.Core.Data.DbExpectation.Golden.get -> string?
+Aw.Evidence.Core.Data.DbExpectation.Golden.init -> void
+Aw.Evidence.Core.Data.DbExpectation.Pointers.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.PointerCheck!>?
+Aw.Evidence.Core.Data.DbExpectation.Pointers.init -> void
+Aw.Evidence.Core.Data.DbExpectation.RowCount.get -> int?
+Aw.Evidence.Core.Data.DbExpectation.RowCount.init -> void
+Aw.Evidence.Core.Data.DbQuery
+Aw.Evidence.Core.Data.DbQuery.<Clone>$() -> Aw.Evidence.Core.Data.DbQuery!
+Aw.Evidence.Core.Data.DbQuery.DbQuery(string! Sql, Aw.Evidence.Core.Data.DbExpectation! Expect) -> void
+Aw.Evidence.Core.Data.DbQuery.Deconstruct(out string! Sql, out Aw.Evidence.Core.Data.DbExpectation! Expect) -> void
+Aw.Evidence.Core.Data.DbQuery.Equals(Aw.Evidence.Core.Data.DbQuery? other) -> bool
+Aw.Evidence.Core.Data.DbQuery.Expect.get -> Aw.Evidence.Core.Data.DbExpectation!
+Aw.Evidence.Core.Data.DbQuery.Expect.init -> void
+Aw.Evidence.Core.Data.DbQuery.Sql.get -> string!
+Aw.Evidence.Core.Data.DbQuery.Sql.init -> void
+Aw.Evidence.Core.Data.DbScript
+Aw.Evidence.Core.Data.DbScript.<Clone>$() -> Aw.Evidence.Core.Data.DbScript!
+Aw.Evidence.Core.Data.DbScript.Connection.get -> string?
+Aw.Evidence.Core.Data.DbScript.Connection.init -> void
+Aw.Evidence.Core.Data.DbScript.DbScript(string? Schema = null, string? Connection = null, string? Sqlite = null, string? Seed = null, int? RowLimit = null, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.DbQuery!>? Queries = null) -> void
+Aw.Evidence.Core.Data.DbScript.Deconstruct(out string? Schema, out string? Connection, out string? Sqlite, out string? Seed, out int? RowLimit, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.DbQuery!>? Queries) -> void
+Aw.Evidence.Core.Data.DbScript.EffectiveRowLimit.get -> int
+Aw.Evidence.Core.Data.DbScript.Equals(Aw.Evidence.Core.Data.DbScript? other) -> bool
+Aw.Evidence.Core.Data.DbScript.Queries.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.DbQuery!>?
+Aw.Evidence.Core.Data.DbScript.Queries.init -> void
+Aw.Evidence.Core.Data.DbScript.QueryList.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.DbQuery!>!
+Aw.Evidence.Core.Data.DbScript.RowLimit.get -> int?
+Aw.Evidence.Core.Data.DbScript.RowLimit.init -> void
+Aw.Evidence.Core.Data.DbScript.Schema.get -> string?
+Aw.Evidence.Core.Data.DbScript.Schema.init -> void
+Aw.Evidence.Core.Data.DbScript.Seed.get -> string?
+Aw.Evidence.Core.Data.DbScript.Seed.init -> void
+Aw.Evidence.Core.Data.DbScript.Sqlite.get -> string?
+Aw.Evidence.Core.Data.DbScript.Sqlite.init -> void
+Aw.Evidence.Core.Data.DbScriptReader
+Aw.Evidence.Core.Data.SqlText
+Aw.Evidence.Core.Data.WriteStatements
+const Aw.Evidence.Core.Data.DbScript.DefaultRowLimit = 200 -> int
+const Aw.Evidence.Core.Data.DbScript.MaxRowLimit = 1000 -> int
+const Aw.Evidence.Core.Data.DbScript.SchemaName = "evidence.db.run/1" -> string!
+override Aw.Evidence.Core.Data.DbExpectation.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.DbExpectation.GetHashCode() -> int
+override Aw.Evidence.Core.Data.DbExpectation.ToString() -> string!
+override Aw.Evidence.Core.Data.DbQuery.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.DbQuery.GetHashCode() -> int
+override Aw.Evidence.Core.Data.DbQuery.ToString() -> string!
+override Aw.Evidence.Core.Data.DbScript.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.DbScript.GetHashCode() -> int
+override Aw.Evidence.Core.Data.DbScript.ToString() -> string!
+static Aw.Evidence.Core.Data.DbExpectation.operator !=(Aw.Evidence.Core.Data.DbExpectation? left, Aw.Evidence.Core.Data.DbExpectation? right) -> bool
+static Aw.Evidence.Core.Data.DbExpectation.operator ==(Aw.Evidence.Core.Data.DbExpectation? left, Aw.Evidence.Core.Data.DbExpectation? right) -> bool
+static Aw.Evidence.Core.Data.DbQuery.operator !=(Aw.Evidence.Core.Data.DbQuery? left, Aw.Evidence.Core.Data.DbQuery? right) -> bool
+static Aw.Evidence.Core.Data.DbQuery.operator ==(Aw.Evidence.Core.Data.DbQuery? left, Aw.Evidence.Core.Data.DbQuery? right) -> bool
+static Aw.Evidence.Core.Data.DbScript.operator !=(Aw.Evidence.Core.Data.DbScript? left, Aw.Evidence.Core.Data.DbScript? right) -> bool
+static Aw.Evidence.Core.Data.DbScript.operator ==(Aw.Evidence.Core.Data.DbScript? left, Aw.Evidence.Core.Data.DbScript? right) -> bool
+static Aw.Evidence.Core.Data.DbScriptReader.Read(System.ReadOnlySpan<byte> utf8Json, System.Text.Json.JsonSerializerOptions! options) -> Aw.Kernel.Result<Aw.Evidence.Core.Data.DbScript!>!
+static Aw.Evidence.Core.Data.SqlText.Statements(string! sql) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Evidence.Core.Data.SqlText.Words(string! statement) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Evidence.Core.Data.WriteStatements.Check(string! sql) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
