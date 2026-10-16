@@ -15,6 +15,11 @@ internal sealed partial class InstanceFrameViewModel
     /// <summary>The facts panel; null before a read.</summary>
     public FactsPanelViewModel? Facts { get; private set => Set(ref field, value); }
 
+    /// <summary>The children panel; null before a read.</summary>
+#pragma warning disable CA1822, MA0041 // red stub
+    public ChildrenPanelViewModel? Children => throw new NotSupportedException();
+#pragma warning restore CA1822, MA0041
+
     // A re-read serves the same facts again: the panel stays (and its open viewers with it) unless a row changed, and then the open ones stay open.
     private void ShowPanels(InstanceDetail detail)
     {

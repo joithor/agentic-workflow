@@ -34,6 +34,9 @@ internal sealed partial class ShellViewModel
         Navigate(new DeepLink(DeepLinkKind.Workflow, address));
     }
 
+    /// <summary>Back: returns to the frame or sheet this one was opened from, else closes the sheet.</summary>
+    internal void Back() => throw new NotSupportedException();   // red stub
+
     // Everything the frame needs once it exists (ShellViewModel's constructor calls this one line).
     private void InitInstance()
     {
