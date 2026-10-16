@@ -45,7 +45,7 @@
         "RunService",
         "PauseService"
       ],
-      "cli": "sindri services run heartbeat"
+      "cli": "sindri status"
     }
   ],
   "empty": null,
