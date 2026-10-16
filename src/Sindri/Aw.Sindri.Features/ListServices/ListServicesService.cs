@@ -11,11 +11,12 @@ namespace Aw.Sindri.Features.ListServices;
 /// last run, and the next slot (the last slot plus the cadence; null before the first run). Paused is false until P6.
 /// A service the approval dropped leaves the list, though its row stays in the view.
 /// </summary>
-internal sealed class ListServicesService(IApprovedProfile approvals, IViewReader views, IProjectorStatus status)
+internal sealed class ListServicesService(IApprovedProfile approvals, IViewReader views, IProjectorStatus status, IJobViews jobs)
     : IService<ListServicesRequest, ListServicesResponse>
 {
     public async ValueTask<Result<ListServicesResponse>> Handle(ListServicesRequest request, CancellationToken cancellationToken)
     {
+        _ = jobs;   // red until API P6 unit D
         var current = status.Current;
         var asOf = current.AsOf;
         var approved = await approvals.Latest(cancellationToken).ConfigureAwait(false);
