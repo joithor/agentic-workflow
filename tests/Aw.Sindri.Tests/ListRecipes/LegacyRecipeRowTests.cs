@@ -186,4 +186,34 @@ public sealed class LegacyRecipeRowTests
         Assert.Equal(RecipeStanding.Unapproved, line.Standing);
         Assert.Equal([StaleReason.LegacyShape], line.Stale);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Approving_an_already_approved_legacy_shape_row_again_still_plans_so_a_parked_instance_can_resume()
+    {
+        var (r, row) = await Seeded();
+        await using var _ = r;
+        await r.ApproveAsInThePast(row);
+
+        var again = await r.Issue(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"approve workflow.step {row.Version}"));
+
+        Assert.True(again.IsSuccess, again.IsError ? again.Error.ToString() : null);
+        Assert.Equal(RecipeStanding.Approved, (await r.Line(row)).Standing);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_legacy_shape_row_without_evals_is_refused_as_legacy_with_a_fix_that_works_not_as_missing_evals()
+    {
+        await using var r = new RegistryHarness();
+        _ = await r.H.HoldLease();
+        var node = RecipeDeclarationsTests.LegacyJson(LegacyStep());
+        _ = node.Remove("evals");
+        var row = new RegisteredRecipe(RecipeId.From("workflow.step"), 1, Core.Workflow.Ids.RecipeHash.Of(CanonicalJson.Of(node)), node.ToJsonString(), Base: null, r.H.Clock.GetUtcNow());
+        _ = await r.Recipes.Add(row, TestContext.Current.CancellationToken);
+
+        var approved = await r.Issue(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"approve workflow.step {row.Version}"));
+
+        Assert.True(approved.IsError);
+        Assert.Equal(WorkflowErrors.RecipeInvalid.Code, approved.Error.Code);
+        Assert.Contains(SubjectKinds.LegacyFix, approved.Error.Message, StringComparison.Ordinal);
+    }
 }

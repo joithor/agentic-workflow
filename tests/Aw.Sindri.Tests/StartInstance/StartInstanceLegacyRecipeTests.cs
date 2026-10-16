@@ -50,12 +50,35 @@ public sealed class StartInstanceLegacyRecipeTests
         Assert.Null(runtime.Started);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_legacy_recipe_whose_pins_drifted_is_refused_as_legacy_not_as_drift()
+    {
+        var (service, runtime) = Service([], ApprovalCheck.Drifted);
+
+        var started = await service.Handle(Request(), Token);
+
+        Assert.Equal(WorkflowErrors.RecipeInvalid.Code, started.Error.Code);
+        Assert.Contains(SubjectKinds.LegacyFix, started.Error.Message, StringComparison.Ordinal);
+        Assert.Null(runtime.Started);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_revoked_legacy_recipe_is_refused_as_revoked_before_legacy()
+    {
+        var (service, runtime) = Service([], ApprovalCheck.Revoked);
+
+        var started = await service.Handle(Request(), Token);
+
+        Assert.Equal(WorkflowErrors.RecipeRevoked.Code, started.Error.Code);
+        Assert.Null(runtime.Started);
+    }
+
     private static StartInstanceRequest Request() => new("workflow.old", "T-1", NextAttempt: false, new Dictionary<FactKey, StartFact> { [_item] = new("item.json", Encoding.UTF8.GetBytes("{\"id\":\"T-1\"}")) });
 
-    private static (StartInstanceService Service, Capturing Runtime) Service(IReadOnlyList<RecipeInput> inputs)
+    private static (StartInstanceService Service, Capturing Runtime) Service(IReadOnlyList<RecipeInput> inputs, ApprovalCheck check = ApprovalCheck.Holds)
     {
         var runtime = new Capturing();
-        return (new StartInstanceService(new OneItem(), new OneRecipe(inputs), new NoInstances(), new StartFacts(new InMemoryFactStore(), TimeProvider.System), runtime, new NoLaunches(), new ClaimHolders(new InMemoryWorkflowClaims(), new FakeInstanceLiveness())), runtime);
+        return (new StartInstanceService(new OneItem(), new OneRecipe(inputs, check), new NoInstances(), new StartFacts(new InMemoryFactStore(), TimeProvider.System), runtime, new NoLaunches(), new ClaimHolders(new InMemoryWorkflowClaims(), new FakeInstanceLiveness())), runtime);
     }
 
     private sealed class Capturing : IInstanceRuntime
@@ -88,7 +111,7 @@ public sealed class StartInstanceLegacyRecipeTests
         public ValueTask<Result<LaunchId?>> Requested(ItemKey item, CancellationToken cancellationToken) => ValueTask.FromResult<Result<LaunchId?>>((LaunchId?)null);
     }
 
-    private sealed class OneRecipe(IReadOnlyList<RecipeInput> inputs) : IApprovedRecipes
+    private sealed class OneRecipe(IReadOnlyList<RecipeInput> inputs, ApprovalCheck check) : IApprovedRecipes
     {
         private static readonly RecipeId _id = RecipeId.From("workflow.old");
 
@@ -98,6 +121,6 @@ public sealed class StartInstanceLegacyRecipeTests
 
         public ValueTask<Result<ApprovedRecipe>> Find(RecipeId id, RecipeHash hash, CancellationToken cancellationToken) => ValueTask.FromResult<Result<ApprovedRecipe>>(_recipe);
 
-        public ValueTask<Result<ApprovalCheck>> Check(RecipeVersion recipe, CancellationToken cancellationToken) => ValueTask.FromResult<Result<ApprovalCheck>>(ApprovalCheck.Holds);
+        public ValueTask<Result<ApprovalCheck>> Check(RecipeVersion recipe, CancellationToken cancellationToken) => ValueTask.FromResult<Result<ApprovalCheck>>(check);
     }
 }
