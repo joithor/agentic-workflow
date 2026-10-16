@@ -28,6 +28,9 @@ public sealed class InMemoryMachineLocks(int heavyJobSlots = 2) : IMachineLocks
     /// <summary>Kinds whose acquire throws an IOException (an adapter failing outside its Result, such as a closed stderr).</summary>
     public ISet<LockKind> Throws { get; } = new HashSet<LockKind>();
 
+    /// <summary>Kinds whose acquire fails with AW-EVIDENCE-011 (a lock directory that cannot be made): an error that is not busy.</summary>
+    public ISet<LockKind> Fails { get; } = new HashSet<LockKind>();
+
     /// <summary>'acquire QaStack', 'release QaStack', … in order.</summary>
     public IReadOnlyList<string> Events
     {
@@ -51,6 +54,11 @@ public sealed class InMemoryMachineLocks(int heavyJobSlots = 2) : IMachineLocks
         if (Throws.Contains(kind))
         {
             throw new IOException($"{kind}: the lock adapter failed");
+        }
+
+        if (Fails.Contains(kind))
+        {
+            return EvidenceErrors.FileUnavailable.With($"{kind}: the lock directory could not be made");
         }
 
         if (AlwaysBusy.Contains(kind) || !await _locks[kind].Slots.WaitAsync(timeout, cancellationToken))

@@ -21,6 +21,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <AssemblyMetadata Include="AwGoldenSourceRoot" Value="$(MSBuildProjectDirectory)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 </Project>

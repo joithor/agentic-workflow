@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Aw.Evidence.Core.Data;
 using Aw.Evidence.Core.Design;
 using Aw.Evidence.Core.Publishing;
 using Aw.Evidence.Core.Runs;
@@ -15,6 +16,9 @@ namespace Aw.Evidence.Host;
 /// <summary>The package's one source-generated JSON context (spec §4b.3): through AwJson.CreateOptions, and an http host's resolver after ASP.NET's ProblemDetails context.</summary>
 [JsonSerializable(typeof(Error))]
 [JsonSerializable(typeof(UiScript))]
+[JsonSerializable(typeof(ApiScript))]
+[JsonSerializable(typeof(ApiSummary))]
+[JsonSerializable(typeof(TargetsFile))]
 [JsonSerializable(typeof(DesignManifest))]
 [JsonSerializable(typeof(RunSummary))]
 [JsonSerializable(typeof(ParitySummary))]
