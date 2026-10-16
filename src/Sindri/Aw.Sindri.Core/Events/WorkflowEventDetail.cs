@@ -8,8 +8,9 @@ namespace Aw.Sindri.Core.Events;
 /// <summary>
 /// What a mirrored workflow event carries beyond the state change (engine spec rev 8.1 §5.6): the trigger's kind, id and
 /// actor, any gate, evidence, grant or override data, the effects it runs, and the post-state delta. A public projection of
-/// the decision's <see cref="WorkflowEvent"/>: ids, digests, reasons and counters only. It never holds an answer's text, a
-/// parked question or a fact's content (RecordEvent scrubs the serialized payload before it is appended, and the rows stay free of such text by construction).
+/// the decision's <see cref="WorkflowEvent"/>: ids, digests, reasons and counters only. It never holds an answer's text or a
+/// parked question, and only <c>workflow.started</c>'s subject carries text taken from facts (RecordEvent scrubs the
+/// serialized payload before it is appended).
 /// </summary>
 /// <param name="TriggerId">The trigger's key, 'wf:{instance}:{trigger}': carries a command's nonce and arguments digest, a report's run and digest, an event's source sequence.</param>
 /// <param name="TriggerActor">Who fired the trigger.</param>

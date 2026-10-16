@@ -698,7 +698,7 @@ every §6.4 layout both ways. Lines the layout leaves out are `null` or `[]`.
 | `from?` | The state that produces it (E-22 `outputs[].from`), which places the band's ◐ mark |
 | `status` | `produced`, `in-progress` or `pending` |
 | `summary` | The one-line summary the viewer shows |
-| `at?`, `by?` | When it was produced, and by whom. `by` is the actor string (README X61, never parsed by the API): `human:<client>`, `step.<id>`, `agent:<name>` or `service:<name>` (a webhook is `service:webhook`); the UI renders `human:*` as "you" |
+| `at?`, `by?` | When it was produced, and by whom. `by` is the actor string (README X61, never parsed by the API): `human:<client>`, `step.<id>`, `agent:<name>`, `service:<name>` (a webhook is `service:webhook`) or `engine:generate` (an input the start generated from its template, WF §3.11); the UI renders `human:*` as "you" |
 | `ref?` | The per-type handle: `{name, size, hash, path}` for `file`; `{itemId}`; `{url, host, title}`; `{factKey}` for the viewers that call `GetInstanceFact` |
 | `progress?` | `{done, total}` for `evidence` (`4 of 9 packs`) |
 | `pending?` | On a pending output of an open desk state: `{required, checks[], completeAction}`, which the complete form needs |

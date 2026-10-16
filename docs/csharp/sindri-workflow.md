@@ -584,8 +584,10 @@ nothing. The row's payload is `WorkflowEventPayload` (instance, from, to, trigge
 the decision's event (`WorkflowEventDetail`, §5.6): the trigger's id (its key: a command's nonce and arguments digest, a
 report's run and digest, an event's source sequence), actor, source sequence, answer variant and amount, any gates, evidence,
 grant, override and refusal records, the effect identities and the post-state delta (state names, reasons, counters and fact
-digests). It never holds an answer's text, a parked question or a fact's content. The `started` row carries the start's key
-and actor; a held event's expiry and the desk deadline's park, which have no decision, carry no `detail`. Gates have no runtime in the interpreter yet, so a matched transition's gate refuses (fail closed, W5) and the
+digests). It never holds an answer's text or a parked question, and no row but `started` holds text from a fact. The `started`
+row carries the start's key and actor, plus the subject as named at start (`delta.subject`: kind, key and the label or rendered
+name, taken from the first input's and the name's facts, cut to 40/80, §3.11) and each input's producer (`delta.producers`,
+`engine:generate` for a generated input); a held event's expiry and the desk deadline's park, which have no decision, carry no `detail`. Gates have no runtime in the interpreter yet, so a matched transition's gate refuses (fail closed, W5) and the
 refusal follows §5.8's precedence. A wait state's timer wakes the wait like a delivered event, and `TransitionDecision.Expired` decides the expiry (park, escalate, or retry once); a child wait doesn't
 start its child until P7.
 
