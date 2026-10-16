@@ -45,6 +45,7 @@ internal sealed class BacktestWorld : IAsyncDisposable
     public const string MapPath = "/maps/product-map.yaml";
     private readonly ServiceProvider _provider;
     private readonly IServiceScope _scope;
+    private GrownCorpus? _grown;
     private readonly string _home = Directory.CreateTempSubdirectory("aw-backtest-home-").FullName;
 
     private BacktestWorld(FixtureRepo repo, (FakeOnyxServer Onyx, OnyxSourceHarness Harness) onyx, FakeTimeProvider clock, Func<IRepoReader, IRepoReader>? wrap)
@@ -128,6 +129,23 @@ internal sealed class BacktestWorld : IAsyncDisposable
     public static async Task<BacktestWorld> Start(DateTimeOffset now, FakeServerOptions? onyx = null, Func<IRepoReader, IRepoReader>? wrap = null)
     {
         var repo = FixtureRepo.Build();
+        return await Start(repo, now, onyx, wrap).ConfigureAwait(false);
+    }
+
+    /// <summary>Starts the world over the grown synthetic corpus (32 pull requests, SPL-201 and up) and the fake Onyx serving its issues.</summary>
+    /// <param name="now">The clock.</param>
+    /// <param name="grown">The corpus; the world owns it and disposes it.</param>
+    /// <returns>The world.</returns>
+    public static async Task<BacktestWorld> Start(DateTimeOffset now, GrownCorpus grown)
+    {
+        ArgumentNullException.ThrowIfNull(grown);
+        var world = await Start(grown.Repo, now, new FakeServerOptions { OnyxDocuments = grown.Issues }, wrap: null).ConfigureAwait(false);
+        world._grown = grown;
+        return world;
+    }
+
+    private static async Task<BacktestWorld> Start(FixtureRepo repo, DateTimeOffset now, FakeServerOptions? onyx, Func<IRepoReader, IRepoReader>? wrap)
+    {
         var server = await FakeOnyxServer.Start(onyx).ConfigureAwait(false);
         var harness = new OnyxSourceHarness(server.Url, server.Token);
         return new BacktestWorld(repo, (server, harness), new FakeTimeProvider(now), wrap);
@@ -187,7 +205,15 @@ internal sealed class BacktestWorld : IAsyncDisposable
         await _provider.DisposeAsync();
         Harness.Dispose();
         await Onyx.DisposeAsync();
-        Repo.Dispose();
+        if (_grown is null)
+        {
+            Repo.Dispose();
+        }
+        else
+        {
+            _grown.Dispose();
+        }
+
         Directory.Delete(_home, recursive: true);
     }
 
