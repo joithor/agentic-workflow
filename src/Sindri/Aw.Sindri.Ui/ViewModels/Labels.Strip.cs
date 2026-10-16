@@ -16,6 +16,11 @@ internal static partial class Labels
     /// <returns>The words.</returns>
     internal static string MoreRows(int count) => string.Create(CultureInfo.InvariantCulture, $"… {count} more");
 
+    /// <summary>What is said when the selected strip row finished and left.</summary>
+    /// <param name="address">The instance's address.</param>
+    /// <returns>The words.</returns>
+    internal static string StripDone(string address) => $"{address} done";
+
     /// <summary>The verb of a protected answer's lock button ("Accept", "Grant rounds").</summary>
     /// <param name="kind">How the answer is given.</param>
     /// <returns>The verb.</returns>

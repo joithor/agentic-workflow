@@ -1,7 +1,6 @@
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
-using Aw.Sindri.Ui.ViewModels.Queue;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -90,6 +89,7 @@ internal sealed partial class ShellViewModel
         if (row is not null)
         {
             Queue.ClearSelection();
+            Strip.Deselect();
             NeedsYou.OpenSheetOn(row.Id);
             if (link.Kind == DeepLinkKind.Decision)
             {
@@ -103,6 +103,7 @@ internal sealed partial class ShellViewModel
     internal void SelectNeedsYouRow(string rowId)
     {
         Queue.ClearSelection();
+        Strip.Deselect();
         NeedsYou.Select(rowId);
     }
 
@@ -129,37 +130,10 @@ internal sealed partial class ShellViewModel
         return string.Equals(key, "J", StringComparison.Ordinal) || string.Equals(key, "K", StringComparison.Ordinal) ? MoveOnHome(string.Equals(key, "J", StringComparison.Ordinal) ? 1 : -1) : named is { } k && NeedsYou.SelectedId is not null && NeedsYou.Press(k);
     }
 
-    // From the queue's first row (K) or with nothing selected, the keys go to Needs you when it has rows.
-    private bool EntersNeedsYou(int step) =>
-        NeedsYou.Rows.Count > 0 && (!Queue.HasSelectionOn(QueueScope.Home) || (step < 0 && Queue.IsFirstOnHome));
-
     private int IndexOfSelected()
     {
         var id = NeedsYou.SelectedId;
         var rows = NeedsYou.Rows;
         return id is null ? -1 : rows.ToList().FindIndex(r => string.Equals(r.Id, id, StringComparison.Ordinal));
-    }
-
-    // J / K on Home walk Needs you, then Running, then Queued (and back); true when the key was used.
-    private bool MoveOnHome(int step)
-    {
-        var rows = NeedsYou.Rows;
-        var at = IndexOfSelected();
-        if (at >= 0 && (step < 0 || at < rows.Count - 1))
-        {
-            _ = NeedsYou.Press(step > 0 ? NeedsYouKey.J : NeedsYouKey.K);
-        }
-        else if (at < 0 && EntersNeedsYou(step))
-        {
-            Queue.ClearSelection();
-            NeedsYou.Select(rows[step < 0 ? rows.Count - 1 : 0].Id);
-        }
-        else
-        {
-            NeedsYou.Deselect();
-            Queue.Move(step, QueueScope.Home);
-        }
-
-        return true;
     }
 }

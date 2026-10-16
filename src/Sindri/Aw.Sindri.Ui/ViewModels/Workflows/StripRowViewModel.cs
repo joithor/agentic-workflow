@@ -75,6 +75,12 @@ internal sealed class StripRowViewModel : ObservableObject
     /// <summary>The instance's address, as served: the row's id and its selection key.</summary>
     public string Address => _row.Address;
 
+    /// <summary>The instance's own id (WFI-…), as served.</summary>
+    public string InstanceId => _row.Id;
+
+    /// <summary>The item the instance belongs to, as served; null for none.</summary>
+    public string? ItemId => _row.ItemId;
+
     /// <summary>The name screen readers hear: the subject and the address.</summary>
     public string AccessibleName => $"{Subject} {_row.Address}";
 

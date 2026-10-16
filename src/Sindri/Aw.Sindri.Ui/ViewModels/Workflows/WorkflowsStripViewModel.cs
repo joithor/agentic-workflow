@@ -89,6 +89,13 @@ internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider
         Counts = list.Counts;
         Empty = list.Empty;
         _open = [.. list.Instances.Where(IsOpen)];
+        if (SelectedAddress is { } selected && !_open.Exists(r => string.Equals(r.Address, selected, StringComparison.Ordinal)))
+        {
+            SelectedAddress = null;
+            Announcement = Labels.StripDone(selected);
+            OnChanged(nameof(Announcement));
+        }
+
         Reshow();
     }
 
@@ -123,18 +130,41 @@ internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider
     /// <summary>What a screen reader hears when the selected row finished ("ITM-01JC8 done"); empty until then.</summary>
     internal string Announcement { get; private set; } = string.Empty;
 
+    /// <summary>The shown row that is selected; null for none.</summary>
+    internal StripRowViewModel? SelectedRow => _shown.Find(IsSelectedRow);
+
     /// <summary>Selects the shown row with this address.</summary>
     /// <param name="address">The address.</param>
     /// <returns>True when a shown row has it.</returns>
-    internal bool Select(string address) => throw new NotSupportedException();
+    internal bool Select(string address)
+    {
+        if (!_shown.Exists(r => string.Equals(r.Address, address, StringComparison.Ordinal)))
+        {
+            return false;
+        }
+
+        SetSelected(address);
+        return true;
+    }
 
     /// <summary>Selects no row.</summary>
-    internal void Deselect() => throw new NotSupportedException();
+    internal void Deselect() => SetSelected(address: null);
 
-    /// <summary>Moves the selection by one shown row.</summary>
+    /// <summary>Moves the selection by one shown row; with none selected it enters at the first row (down) or the last (up).</summary>
     /// <param name="step">1 for down, -1 for up.</param>
     /// <returns>False when the move would leave the strip (the shell moves on to the next panel).</returns>
-    internal bool Move(int step) => throw new NotSupportedException();
+    internal bool Move(int step)
+    {
+        var at = _shown.FindIndex(IsSelectedRow);
+        var target = at < 0 ? (step < 0 ? _shown.Count - 1 : 0) : at + step;
+        if (target < 0 || target >= _shown.Count)
+        {
+            return false;
+        }
+
+        SetSelected(_shown[target].Address);
+        return true;
+    }
 
     /// <summary>Asks to open the Workflows page.</summary>
     internal void OpenWorkflows() => WorkflowsRequested?.Invoke(this, EventArgs.Empty);
@@ -147,6 +177,15 @@ internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider
     private static bool IsOpen(InstanceSummary row) => !row.States.Any(s => s.Terminal && string.Equals(s.State, row.State, StringComparison.Ordinal));
 
     private bool IsSelectedRow(StripRowViewModel row) => SelectedAddress is { } address && string.Equals(row.Address, address, StringComparison.Ordinal);
+
+    private void SetSelected(string? address)
+    {
+        SelectedAddress = address;
+        foreach (var row in _shown)
+        {
+            row.SetContext(Stale, IsSelectedRow(row));
+        }
+    }
 
     private void Reshow()
     {
