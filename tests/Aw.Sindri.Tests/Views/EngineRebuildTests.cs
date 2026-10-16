@@ -6,6 +6,7 @@ using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.NeedsYou;
+using Aw.Sindri.Core.Requests;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
@@ -51,19 +52,24 @@ public sealed class EngineRebuildTests : IDisposable
 
         Assert.Contains("park:", incremental.NeedsYou, StringComparison.Ordinal);   // the scenario leaves the first root parked behind the ended second
         Assert.Contains("\"earlier\"", incremental.Items, StringComparison.Ordinal);
+        Assert.Contains("\"state\":\"voided\"", incremental.Decisions, StringComparison.Ordinal);   // the item ended by its workflow voided the decision it waited on
+        Assert.DoesNotContain("decision:", incremental.NeedsYou, StringComparison.Ordinal);
+        Assert.Equal(incremental.Decisions, rebuilt.Decisions);
         Assert.Equal(incremental.Items, rebuilt.Items);
         Assert.Equal(incremental.NeedsYou, rebuilt.NeedsYou);
     }
 
-    private static async Task<(string Items, string NeedsYou)> Snapshot(SqliteViews views, CancellationToken ct)
+    private static async Task<(string Items, string NeedsYou, string Decisions)> Snapshot(SqliteViews views, CancellationToken ct)
     {
         var items = await views.Reader.List<ItemRow>(ViewNames.Items, ct);
         var needs = await views.Reader.List<NeedsYouRowRecord>(ViewNames.NeedsYou, ct);
-        return (string.Join('\n', items.Value.Select(static r => JsonSerializer.Serialize(r, SliceHarness.Json))), string.Join('\n', needs.Value.Select(static r => JsonSerializer.Serialize(r, SliceHarness.Json))));
+        var decisions = await views.Reader.List<HumanDecisionRow>(ViewNames.Decisions, ct);
+        return (string.Join('\n', items.Value.Select(static r => JsonSerializer.Serialize(r, SliceHarness.Json))), string.Join('\n', needs.Value.Select(static r => JsonSerializer.Serialize(r, SliceHarness.Json))), string.Join('\n', decisions.Value.Select(static r => JsonSerializer.Serialize(r, SliceHarness.Json))));
     }
 
     private IReadOnlyList<IProjection> Projections() =>
     [
+        new RequestsProjection(_slice.Events, new PassThroughScrubber()),   // before the items one, as registered
         new ItemsProjection(_slice.Events, new PassThroughScrubber()),
         new ItemAliasesProjection(_slice.Events),
         new NeedsYouProjection(_slice.Events, new PassThroughScrubber()),
@@ -73,15 +79,17 @@ public sealed class EngineRebuildTests : IDisposable
     private List<LedgerEvent> Ledger()
     {
         var created = new ItemCreated(_slice.Ids.New<CommandId>(), _item, "the item", RepoName.From("agentic-workflow"), Link: null, Body: "the body", Owner: null);
+        var filed = new RequestFiled(_slice.Ids.New<CommandId>(), A.FirstRequestId, A.FirstDecisionId, RequestKind.Rescope, _item, RepoName.From("agentic-workflow"), "widen the scope");
         var park = new SuspensionSummary(SuspensionKind.Park, ParkReason.Rounds, ParkKind.Loop, Escalation: null, Mirrors: null);
         var produce = new FrameSummary("produce", 1, "1.1", Child: null, StepRuntime.Desk);
         return
         [
             Recorded.Of(_slice.Events, EventTypes.ItemCreated, created, 1, _item),
-            Recorded.Of(_slice.Events, EventTypes.WorkflowStarted, Row(_first, "produce", "start", produce, suspension: null), 2, _item),
-            Recorded.Of(_slice.Events, EventTypes.WorkflowStarted, Row(_second, "produce", "start", produce, suspension: null), 3, _item),
-            Recorded.Of(_slice.Events, EventTypes.WorkflowTransition, Row(_first, "produce", "step.completed", frame: null, park), 4, _item),
-            Recorded.Of(_slice.Events, EventTypes.WorkflowTransition, Row(_second, "done", "step.completed", new FrameSummary("done", 2, Run: null, Child: null), suspension: null, outcome: "resolved"), 5, _item),
+            Recorded.Of(_slice.Events, EventTypes.RequestFiled, filed, 2, _item),
+            Recorded.Of(_slice.Events, EventTypes.WorkflowStarted, Row(_first, "produce", "start", produce, suspension: null), 3, _item),
+            Recorded.Of(_slice.Events, EventTypes.WorkflowStarted, Row(_second, "produce", "start", produce, suspension: null), 4, _item),
+            Recorded.Of(_slice.Events, EventTypes.WorkflowTransition, Row(_first, "produce", "step.completed", frame: null, park), 5, _item),
+            Recorded.Of(_slice.Events, EventTypes.WorkflowTransition, Row(_second, "done", "step.completed", new FrameSummary("done", 2, Run: null, Child: null), suspension: null, outcome: "resolved"), 6, _item),
         ];
     }
 

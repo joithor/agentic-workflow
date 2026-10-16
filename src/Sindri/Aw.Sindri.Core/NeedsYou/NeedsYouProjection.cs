@@ -80,7 +80,12 @@ internal sealed partial class NeedsYouProjection(EventFactory events, ITextScrub
             return Unit.Value;
         }
 
-        var concerned = await rows.Where<NeedsYouRowRecord>(ViewNames.NeedsYou, ViewColumn.Item, changed.Value.Item.Value, cancellationToken).ConfigureAwait(false);
+        return await ClearDecisions(rows, changed.Value.Item.Value, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<Result<Unit>> ClearDecisions(IViewRows rows, string item, CancellationToken cancellationToken)
+    {
+        var concerned = await rows.Where<NeedsYouRowRecord>(ViewNames.NeedsYou, ViewColumn.Item, item, cancellationToken).ConfigureAwait(false);
         return concerned.IsError
             ? concerned.Error
             : await DeleteAll(rows, concerned.Value.Where(static r => r.Row.Kind == NeedsYouKind.Decision), cancellationToken).ConfigureAwait(false);

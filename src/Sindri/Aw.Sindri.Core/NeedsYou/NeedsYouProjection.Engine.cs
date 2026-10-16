@@ -41,6 +41,15 @@ internal sealed partial class NeedsYouProjection
         }
 
         // no item row: skipped, not a stall. Otherwise the row is settled by the root's own part (the latest root's, or an earlier live one's); a root the item no longer holds ended, so its rows clear
+        if (item.Value is { } ended && EngineClosure.IsEnded(ended))
+        {
+            var voided = await ClearDecisions(rows, key, cancellationToken).ConfigureAwait(false);   // the items projection already folded this row: the item ended, so what it waited on is void (as a human close does)
+            if (voided.IsError)
+            {
+                return voided;
+            }
+        }
+
         return item.Value is { } row
             ? await Settle(rows, (row, EngineItemStates.PartOf(row.Engine, payload.Value.Instance)), payload.Value, recorded, cancellationToken).ConfigureAwait(false)
             : Unit.Value;
