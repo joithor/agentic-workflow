@@ -87,7 +87,7 @@ public sealed class SindriApiClientTests
         for (var i = 0; i < 3; i++)
         {
             _ = await client.Status(_api, Token);
-            _ = await client.Instances(_api, new Aw.Sindri.Ui.Api.Workflow.InstanceQuery(Root: true), Token);
+            _ = await client.Instances(_api, new Ui.Api.Workflow.InstanceQuery(Root: true), Token);
         }
 
         Assert.Equal(2, log.Entries.Count);

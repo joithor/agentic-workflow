@@ -177,10 +177,10 @@ public sealed class NeedsYouMapperTests
     {
         var catalog = Catalog() with { Rows = [.. Catalog().Rows.Select(r => r.Action == "Decide" ? r with { Ui = "from-the-future" } : r)] };
         var feed = NeedsYouMapper.Map(Golden<NeedsYouList>("needs-you", "fixture"), catalog, Pending(), _counts);
-        var control = new Aw.Sindri.Ui.ViewModels.Controls.ControlViewModel(catalog.Rows.First(r => r.Action == "Decide"), send: null, new FakeClipboard(), new Microsoft.Extensions.Time.Testing.FakeTimeProvider(A.Noon));
+        var control = new ViewModels.Controls.ControlViewModel(catalog.Rows.First(r => r.Action == "Decide"), send: null, new FakeClipboard(), new Microsoft.Extensions.Time.Testing.FakeTimeProvider(A.Noon));
 
         Assert.All(feed.Rows[0].Actions, a => Assert.Equal(ActionReadiness.CliOnly, a.Readiness));
-        Assert.Equal(Aw.Sindri.Ui.ViewModels.Controls.ControlKind.CliOnly, control.Kind);
+        Assert.Equal(ViewModels.Controls.ControlKind.CliOnly, control.Kind);
     }
 
     // review run 1, K17: one chip type. The served chip goes onto the row as it is served, tone included.
