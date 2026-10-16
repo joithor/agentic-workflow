@@ -2,6 +2,7 @@ using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Scheduling;
@@ -28,7 +29,25 @@ internal sealed class RunServiceService(IEnumerable<IScheduledService> scheduled
         ArgumentNullException.ThrowIfNull(request);
         var name = request.Name;
         var service = scheduled.FirstOrDefault(s => s.Identity() == name);
-        if (service is null || jobs.Current is not { } job)
+        if (service is null)
+        {
+            return SindriErrors.ServiceNotFound.With($"This build doesn't have service '{name.Value}'");
+        }
+
+        if (!guard.TryClaimReserved(name, out var claim) && !guard.TryClaimManual(name, out claim))   // the admission reserved it; a direct call claims for itself
+        {
+            return RunServiceMessages.ScheduledInFlight(name);
+        }
+
+        using (claim)   // taken before anything else can refuse the run, so every way out gives the reservation back
+        {
+            return await Run(service, name, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private async ValueTask<Result<ScheduledResult>> Run(IScheduledService service, ServiceName name, CancellationToken cancellationToken)
+    {
+        if (jobs.Current is not { } job)
         {
             return SindriErrors.ServiceNotFound.With($"This build doesn't have service '{name.Value}'");
         }
@@ -38,32 +57,24 @@ internal sealed class RunServiceService(IEnumerable<IScheduledService> scheduled
             return SindriErrors.NotRunning.With("the control plane doesn't hold the lease (fix: sindri)");
         }
 
-        if (!guard.TryClaimReserved(name, out var claim) && !guard.TryClaimManual(name, out claim))   // the admission reserved it; a direct call claims for itself
+        job.Progress.Report($"run {name.Value} (manual)");
+        var run = new ScheduledRun(grant, clock.GetUtcNow());
+        var outcome = await Outcome(service, run, cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();   // a cancelled run writes no 'service.ran'
+        if (await cancellation.CancelRecorded(job.Job).ConfigureAwait(false))
         {
-            return RunServiceMessages.ScheduledInFlight(name);
+            throw new OperationCanceledException(cancellationToken);   // CancelJob is recording the cancel and has not yet tripped the token; a cancel that could not be recorded is withdrawn and the run is recorded as usual
         }
 
-        using (claim)
+        var recorded = await record.Record(name, run, outcome.Map(static _ => Unit.Value), job.Job, cancellationToken).ConfigureAwait(false);
+        if (recorded.IsError)
         {
-            job.Progress.Report($"run {name.Value} (manual)");
-            var run = new ScheduledRun(grant, clock.GetUtcNow());
-            var outcome = await Outcome(service, run, cancellationToken).ConfigureAwait(false);
-            cancellationToken.ThrowIfCancellationRequested();   // a cancelled run writes no 'service.ran'
-            if (await cancellation.CancelRecorded(job.Job).ConfigureAwait(false))
-            {
-                throw new OperationCanceledException(cancellationToken);   // CancelJob is recording the cancel and has not yet tripped the token; a cancel that could not be recorded is withdrawn and the run is recorded as usual
-            }
-
-            var recorded = await record.Record(name, run, outcome.Map(static _ => Unit.Value), job.Job, cancellationToken).ConfigureAwait(false);
-            if (recorded.IsError)
-            {
-                guard.Forget(name);   // what the ledger holds is unknown now; the scheduler reads it back if its next run is idle
-                return recorded.Error;
-            }
-
-            guard.Record(name, outcome.IsError ? ServiceOutcome.Failed : ServiceOutcome.Ok);
-            return outcome;   // a failure keeps the service's own message (the job event cleans it) and its code
+            guard.Forget(name);   // what the ledger holds is unknown now; the scheduler reads it back if its next run is idle
+            return recorded.Error;
         }
+
+        guard.Record(name, outcome.IsError ? ServiceOutcome.Failed : ServiceOutcome.Ok);
+        return outcome;   // a failure keeps the service's own message (the job event cleans it) and its code
     }
 
     /// <summary>How the run ended: the service's result, or a throw as SND-SCHED-001 (a cancellation is not an outcome and passes through).</summary>
