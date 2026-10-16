@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Registry;
@@ -66,5 +67,15 @@ public sealed class RecipeLineTextTests
         var summary = Summary([new RecipeInput(FactKey.From("fact:spec"), Label: null, Type: null, Kind: null, Generate: null)]) with { Standing = RecipeStanding.Approved, Stale = [StaleReason.LegacyShape] };
 
         Assert.EndsWith("stale: legacy-shape (fix: register the current file at a new version and approve it)", RecipeLineText.Line(summary), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Show_prints_the_paired_type_of_a_kind_only_input()
+    {
+        var recipe = RecipeReaderTests.Bind(RecipeReaderTests.Minimal + "inputs: [{ key: fact:doc, kind: file }]\n");
+
+        var text = RecipeLineText.Show(RecipeViews.Of(recipe, new RecipeVersion(recipe.Id, recipe.Version, _hash)));
+
+        Assert.Contains("input: fact:doc type=file kind=file\n", text, StringComparison.Ordinal);
     }
 }

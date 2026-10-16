@@ -1,7 +1,10 @@
 using System.Globalization;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Validation;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Testing.Workflow;
 
 namespace Aw.Sindri.Tests.ShowRecipe;
@@ -55,5 +58,29 @@ public sealed class RecipeViewsTests
         Assert.NotEmpty(view.Inputs);
         Assert.All(view.Inputs, static i => Assert.False(string.IsNullOrEmpty(i.Kind)));
         Assert.Contains(view.Loops, static l => l.Name == "revisions" && l.Cap == 3);
+    }
+
+    private static RecipeView ViewOf(string inputs)
+    {
+        var recipe = Workflow.RecipeReaderTests.Bind(Workflow.RecipeReaderTests.Minimal + inputs);
+        return RecipeViews.Of(recipe, new RecipeVersion(recipe.Id, recipe.Version, RecipeHash.From("sha256:" + new string('a', 64))));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_kind_only_input_serves_the_type_its_kind_pairs_with()
+    {
+        var view = ViewOf("inputs: [{ key: fact:doc, kind: file }, { key: fact:hook, kind: webhook }, { key: fact:plain }, { key: fact:typed, type: link, kind: file }]\n");
+
+        Assert.Equal([FactType.File, FactType.Payload, FactType.Text, FactType.Link], [.. view.Inputs.Select(static i => i.Type)]);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_view_type_of_each_input_is_the_type_an_instance_fact_row_serves()
+    {
+        var recipe = Workflow.RecipeReaderTests.Bind(Workflow.RecipeReaderTests.Minimal + "inputs: [{ key: fact:doc, kind: file }, { key: fact:hook, kind: webhook }, { key: fact:plain }]\n");
+
+        var view = RecipeViews.Of(recipe, new RecipeVersion(recipe.Id, recipe.Version, RecipeHash.From("sha256:" + new string('a', 64))));
+
+        Assert.Equal([.. recipe.Inputs.Select(static i => Aw.Sindri.Core.Workflow.Engine.Runtime.FactTypes.Parse(SubjectKinds.TypeOf(i)))], [.. view.Inputs.Select(static i => i.Type)]);
     }
 }
