@@ -95,7 +95,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
         => services
             .AddSingleton<IOnyxPinsSource, EmbeddedOnyxPins>()                                            // context/onyx.lock, embedded
             .AddSingleton<IContainerRuntime>(static _ => new DockerCliRuntime(new ProcessToolRunner()))   // Docker facts, read-only
-            .AddSingleton<IHostProbes>(_ => new HostProbes());                                                      // free disk and loopback ports
+            .AddSingleton<IHostProbes>(static _ => new HostProbes());                                     // free disk and loopback ports
 
     /// <summary>
     /// Makes the secret-pointer resolver (env:, file:, keychain:, op:) over <paramref name="environment"/>, for Composition to

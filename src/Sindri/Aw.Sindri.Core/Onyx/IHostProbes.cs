@@ -8,6 +8,11 @@ public interface IHostProbes
     /// <returns>The free bytes of the nearest existing ancestor (the path itself when it exists), and which one that was.</returns>
     public DiskFacts FreeDisk(string path);
 
+    /// <summary>Measures free disk at a directory only when it exists on this host; it never walks up to an ancestor.</summary>
+    /// <param name="path">The directory, such as Docker's data root.</param>
+    /// <returns>The free bytes of that directory, or null when it isn't a directory on this host (it lives inside a VM, or is gone).</returns>
+    public DiskFacts? FreeDiskIfExists(string path);
+
     /// <summary>Probes loopback ports: a connect to 127.0.0.1 and [::1], then a brief bind on 127.0.0.1. The fallback range is probed only when the preferred port is taken; a probe that can't tell counts as taken.</summary>
     /// <param name="preferred">The port Onyx wants.</param>
     /// <param name="fallbackFirst">The first port of the fallback range.</param>

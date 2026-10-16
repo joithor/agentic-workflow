@@ -35,6 +35,21 @@ public abstract class HostProbesContract
         Expect.True(facts.FreeBytes > 0);
     }
 
+    /// <summary>An existing directory is measured as itself, and a missing one is not walked up from.</summary>
+    [Fact]
+    public void FreeDiskIfExists_measures_an_existing_directory_and_is_null_for_a_missing_one()
+    {
+        var scene = Create(out var holder);
+        using var _ = holder;
+
+        var present = scene.Probes.FreeDiskIfExists(scene.Directory);
+        var absent = scene.Probes.FreeDiskIfExists(Path.Combine(scene.Directory, "absent"));
+
+        Expect.Equal(scene.Directory, present?.MeasuredPath);
+        Expect.True(present?.FreeBytes > 0);
+        Expect.True(absent is null);
+    }
+
     /// <summary>A bound port is taken, and the fallback is the first free one.</summary>
     [Fact]
     public void A_taken_preferred_port_names_the_free_fallback()

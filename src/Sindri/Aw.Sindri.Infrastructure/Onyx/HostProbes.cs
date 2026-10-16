@@ -24,6 +24,13 @@ internal sealed class HostProbes(bool ipv6Available) : IHostProbes
     }
 
     /// <inheritdoc />
+    public DiskFacts? FreeDiskIfExists(string path)
+    {
+        var full = Path.GetFullPath(path);
+        return Directory.Exists(full) ? new DiskFacts(full, new DriveInfo(full).AvailableFreeSpace) : null;
+    }
+
+    /// <inheritdoc />
     public PortFacts Ports(int preferred, int fallbackFirst, int fallbackLast) => Ports(preferred, fallbackFirst, fallbackLast, IsFree);
 
     // The probe is a parameter so a test can record the order: the preferred port first, the fallbacks only when it is taken.

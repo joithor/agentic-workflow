@@ -8,7 +8,7 @@ namespace Aw.Sindri.Tests.OnyxStatus;
 public sealed class OnyxPreflightTests
 {
     private const long Gib = 1L << 30;
-    private const string DesktopNote = "; Docker Desktop also caps its disk image (Settings → Resources)";
+    private const string VmNote = "; Docker's data lives in a VM here; its disk image size is capped separately (Docker Desktop: Settings → Resources)";
 
     private static readonly OnyxPins _pins = new(
         "v4.9.0", new string('0', 40), [], [], DiskBytes: 30 * Gib, DockerMemoryBytes: 5_905_580_032);   // the lock's floor: 5.5 GiB of MemTotal for a 6 GiB VM
@@ -21,7 +21,7 @@ public sealed class OnyxPreflightTests
     [Fact, Trait("Lane", "unit")]
     public void Evaluate_all_ok_returns_port_3000()
     {
-        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, _roomy, dataRootDisk: null, _free, _pins);
+        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new HostFacts(_roomy, DataRoot: null, _free), _pins);
 
         Assert.True(report.Ok);
         Assert.Equal(3000, report.Port);
@@ -29,14 +29,14 @@ public sealed class OnyxPreflightTests
         Assert.Equal("29.4.0", Check(report, "docker").Detail);
         Assert.Equal("v2.40.3", Check(report, "compose").Detail);
         Assert.Equal("15.7 GiB for Docker, needs a 6 GiB setting", Check(report, "memory").Detail);
-        Assert.Equal("80.0 GiB free at /h, needs 30.0 GiB" + DesktopNote, Check(report, "disk").Detail);
+        Assert.Equal("80.0 GiB free at /h, needs 30.0 GiB" + VmNote, Check(report, "disk").Detail);
         Assert.Equal("3000 free", Check(report, "port").Detail);
     }
 
     [Fact, Trait("Lane", "unit")]
     public void Evaluate_fails_001_with_an_install_fix_when_the_cli_is_missing()
     {
-        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.NoCli, _roomy, dataRootDisk: null, _free, _pins);
+        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.NoCli, new HostFacts(_roomy, DataRoot: null, _free), _pins);
 
         var docker = Check(report, "docker");
         Assert.Equal(CheckState.Fail, docker.State);
@@ -49,7 +49,7 @@ public sealed class OnyxPreflightTests
     public void Evaluate_fails_001_with_a_start_fix_when_the_daemon_is_not_answering()
     {
         // Docker installed, Docker Desktop not started: the fix says start it, not install it.
-        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.DaemonDown, _roomy, dataRootDisk: null, _free, _pins);
+        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.DaemonDown, new HostFacts(_roomy, DataRoot: null, _free), _pins);
 
         var docker = Check(report, "docker");
         Assert.Equal("SND-ONYX-001", docker.Problem?.Code);
@@ -63,7 +63,7 @@ public sealed class OnyxPreflightTests
     [Fact, Trait("Lane", "unit")]
     public void Evaluate_fails_002_when_only_compose_v1_is_present()
     {
-        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.ComposeV1Only, _roomy, dataRootDisk: null, _free, _pins);
+        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.ComposeV1Only, new HostFacts(_roomy, DataRoot: null, _free), _pins);
 
         var compose = Check(report, "compose");
         Assert.Equal(CheckState.Fail, compose.State);
@@ -75,7 +75,7 @@ public sealed class OnyxPreflightTests
     {
         var docker = FakeContainerRuntime.Healthy with { MemoryBytes = 4 * Gib };
 
-        var memory = Check(OnyxPreflight.Evaluate(docker, _roomy, dataRootDisk: null, _free, _pins), "memory");
+        var memory = Check(OnyxPreflight.Evaluate(docker, new HostFacts(_roomy, DataRoot: null, _free), _pins), "memory");
 
         Assert.Equal(CheckState.Fail, memory.State);
         Assert.Equal("4.0 GiB for Docker, needs a 6 GiB setting", memory.Detail);
@@ -89,7 +89,7 @@ public sealed class OnyxPreflightTests
         // Docker Desktop's `docker info` MemTotal sits a few percent below the VM limit the user set.
         var docker = FakeContainerRuntime.Healthy with { MemoryBytes = (long)(5.8 * Gib) };
 
-        var memory = Check(OnyxPreflight.Evaluate(docker, _roomy, dataRootDisk: null, _free, _pins), "memory");
+        var memory = Check(OnyxPreflight.Evaluate(docker, new HostFacts(_roomy, DataRoot: null, _free), _pins), "memory");
 
         Assert.Equal(CheckState.Ok, memory.State);
     }
@@ -99,7 +99,7 @@ public sealed class OnyxPreflightTests
     {
         var docker = FakeContainerRuntime.Healthy with { MemoryBytes = (long)(5.4 * Gib) };
 
-        var memory = Check(OnyxPreflight.Evaluate(docker, _roomy, dataRootDisk: null, _free, _pins), "memory");
+        var memory = Check(OnyxPreflight.Evaluate(docker, new HostFacts(_roomy, DataRoot: null, _free), _pins), "memory");
 
         Assert.Equal(CheckState.Fail, memory.State);
         Assert.Equal("5.4 GiB for Docker, needs a 6 GiB setting", memory.Detail);
@@ -111,7 +111,7 @@ public sealed class OnyxPreflightTests
     {
         var docker = FakeContainerRuntime.Healthy with { MemoryBytes = null };
 
-        var memory = Check(OnyxPreflight.Evaluate(docker, _roomy, dataRootDisk: null, _free, _pins), "memory");
+        var memory = Check(OnyxPreflight.Evaluate(docker, new HostFacts(_roomy, DataRoot: null, _free), _pins), "memory");
 
         Assert.Equal(CheckState.Warn, memory.State);
         Assert.Null(memory.Problem);
@@ -120,7 +120,7 @@ public sealed class OnyxPreflightTests
     [Fact, Trait("Lane", "unit")]
     public void Evaluate_reports_the_smaller_of_the_sindri_home_and_a_data_root_on_this_host()
     {
-        var disk = Check(OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, _roomy, new DiskFacts("/var/lib/docker", 11 * Gib), _free, _pins), "disk");
+        var disk = Check(OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new HostFacts(_roomy, new DiskFacts("/var/lib/docker", 11 * Gib), _free), _pins), "disk");
 
         Assert.Equal(CheckState.Fail, disk.State);
         Assert.Equal("11.0 GiB free at /var/lib/docker, needs 30.0 GiB", disk.Detail);
@@ -130,20 +130,20 @@ public sealed class OnyxPreflightTests
     [Fact, Trait("Lane", "unit")]
     public void Evaluate_keeps_the_sindri_home_when_it_is_the_smaller()
     {
-        var disk = Check(OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new DiskFacts("/h", 40 * Gib), new DiskFacts("/var/lib/docker", 90 * Gib), _free, _pins), "disk");
+        var disk = Check(OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new HostFacts(new DiskFacts("/h", 40 * Gib), new DiskFacts("/var/lib/docker", 90 * Gib), _free), _pins), "disk");
 
         Assert.Equal(CheckState.Ok, disk.State);
         Assert.Equal("40.0 GiB free at /h, needs 30.0 GiB", disk.Detail);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Evaluate_notes_docker_desktops_disk_image_when_the_data_root_is_not_on_this_host()
+    public void Evaluate_notes_the_vm_disk_image_cap_when_the_data_root_is_not_on_this_host()
     {
-        var ok = Check(OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, _roomy, dataRootDisk: null, _free, _pins), "disk");
-        var fail = Check(OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new DiskFacts("/h", 11 * Gib), dataRootDisk: null, _free, _pins), "disk");
+        var ok = Check(OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new HostFacts(_roomy, DataRoot: null, _free), _pins), "disk");
+        var fail = Check(OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new HostFacts(new DiskFacts("/h", 11 * Gib), DataRoot: null, _free), _pins), "disk");
 
-        Assert.Equal("80.0 GiB free at /h, needs 30.0 GiB" + DesktopNote, ok.Detail);
-        Assert.Equal("11.0 GiB free at /h, needs 30.0 GiB" + DesktopNote, fail.Detail);
+        Assert.Equal("80.0 GiB free at /h, needs 30.0 GiB" + VmNote, ok.Detail);
+        Assert.Equal("11.0 GiB free at /h, needs 30.0 GiB" + VmNote, fail.Detail);
         Assert.Equal("SND-ONYX-003", fail.Problem?.Code);
     }
 
@@ -152,7 +152,7 @@ public sealed class OnyxPreflightTests
     {
         var docker = FakeContainerRuntime.Healthy with { DataRoot = null };
 
-        var disk = Check(OnyxPreflight.Evaluate(docker, _roomy, dataRootDisk: null, _free, _pins), "disk");
+        var disk = Check(OnyxPreflight.Evaluate(docker, new HostFacts(_roomy, DataRoot: null, _free), _pins), "disk");
 
         Assert.Equal("80.0 GiB free at /h, needs 30.0 GiB", disk.Detail);
     }
@@ -162,7 +162,7 @@ public sealed class OnyxPreflightTests
     {
         var docker = FakeContainerRuntime.Healthy with { ServerVersion = null, ComposeVersion = null };
 
-        var report = OnyxPreflight.Evaluate(docker, _roomy, dataRootDisk: null, _free, _pins);
+        var report = OnyxPreflight.Evaluate(docker, new HostFacts(_roomy, DataRoot: null, _free), _pins);
 
         Assert.Equal("unreadable version", Check(report, "docker").Detail);
         Assert.Equal("unreadable version", Check(report, "compose").Detail);
@@ -172,18 +172,18 @@ public sealed class OnyxPreflightTests
     [Fact, Trait("Lane", "unit")]
     public void Evaluate_fails_003_when_disk_is_short()
     {
-        var disk = Check(OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new DiskFacts("/h", 11 * Gib), dataRootDisk: null, _free, _pins), "disk");
+        var disk = Check(OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new HostFacts(new DiskFacts("/h", 11 * Gib), DataRoot: null, _free), _pins), "disk");
 
         Assert.Equal(CheckState.Fail, disk.State);
-        Assert.Equal("11.0 GiB free at /h, needs 30.0 GiB" + DesktopNote, disk.Detail);
+        Assert.Equal("11.0 GiB free at /h, needs 30.0 GiB" + VmNote, disk.Detail);
         Assert.Equal("SND-ONYX-003", disk.Problem?.Code);
-        Assert.Contains("11.0 GiB free at /h, needs 30.0 GiB" + DesktopNote, disk.Problem?.Message, StringComparison.Ordinal);
+        Assert.Contains("11.0 GiB free at /h, needs 30.0 GiB" + VmNote, disk.Problem?.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
     public void Evaluate_uses_the_first_free_fallback()
     {
-        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, _roomy, dataRootDisk: null, new PortFacts(3000, PreferredFree: false, FirstFreeFallback: 3002), _pins);
+        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new HostFacts(_roomy, DataRoot: null, new PortFacts(3000, PreferredFree: false, FirstFreeFallback: 3002)), _pins);
 
         var port = Check(report, "port");
         Assert.Equal(CheckState.Ok, port.State);
@@ -194,7 +194,7 @@ public sealed class OnyxPreflightTests
     [Fact, Trait("Lane", "unit")]
     public void Evaluate_fails_006_when_no_port_is_free()
     {
-        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, _roomy, dataRootDisk: null, new PortFacts(3000, PreferredFree: false, FirstFreeFallback: null), _pins);
+        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new HostFacts(_roomy, DataRoot: null, new PortFacts(3000, PreferredFree: false, FirstFreeFallback: null)), _pins);
 
         var port = Check(report, "port");
         Assert.Equal(CheckState.Fail, port.State);

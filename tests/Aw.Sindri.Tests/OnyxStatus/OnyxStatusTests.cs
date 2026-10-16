@@ -46,13 +46,13 @@ public sealed class OnyxStatusTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Status_keeps_the_home_measurement_and_notes_docker_desktop_when_the_data_root_is_in_a_vm()
+    public async Task Status_keeps_the_home_measurement_and_notes_the_vm_cap_when_the_data_root_is_in_a_vm()
     {
         var status = await StatusWithDataRoot(onThisHost: false);
 
         var disk = Assert.Single(status.Checks, static c => c.Name == "disk");
         Assert.Equal(CheckState.Ok, disk.State);
-        Assert.Equal("100.0 GiB free at /sindri-home, needs 16.3 GiB; Docker Desktop also caps its disk image (Settings → Resources)", disk.Detail);
+        Assert.Equal("100.0 GiB free at /sindri-home, needs 16.3 GiB; Docker's data lives in a VM here; its disk image size is capped separately (Docker Desktop: Settings → Resources)", disk.Detail);
     }
 
     [Fact, Trait("Lane", "unit")]

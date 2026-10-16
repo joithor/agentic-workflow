@@ -31,6 +31,10 @@ public sealed class FakeHostProbes : IHostProbes
     }
 
     /// <inheritdoc />
+    public DiskFacts? FreeDiskIfExists(string path)
+        => Directories.Contains(path) ? new DiskFacts(path, VolumeFreeBytes.TryGetValue(path, out var volume) ? volume : FreeBytes) : null;
+
+    /// <inheritdoc />
     public PortFacts Ports(int preferred, int fallbackFirst, int fallbackLast)
     {
         if (!TakenPorts.Contains(preferred))
