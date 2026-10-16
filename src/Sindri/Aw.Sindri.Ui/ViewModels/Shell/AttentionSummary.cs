@@ -25,13 +25,18 @@ internal sealed record AttentionSummary(string Title, int Badge, TrayView Tray, 
         var counts = feed?.Counts ?? new HomeCounts(Running: 0, WithYou: 0, Queued: 0);
 
         // Rows are kept while the views are stale; with no running Sindri, or none yet answering, there are none to count.
-        var badge = state is ShellState.Normal or ShellState.Stale or ShellState.Unreadable ? rows.Count : 0;
+        var badge = IsCounted(state) ? rows.Count : 0;
         return new AttentionSummary(
             badge > 0 ? Labels.TitleNeedsYou(badge) : Labels.Sindri,
             badge,
             TrayFor(feed, state, now),
             feed is null ? "" : Labels.Summary(rows.Count, counts.Running, counts.WithYou, counts.Queued));
     }
+
+    /// <summary>True when the state shows the list's rows (a running Sindri, fresh or not); else the count is 0 because there is no list to count.</summary>
+    /// <param name="state">The shell's state.</param>
+    /// <returns>True when the rows count.</returns>
+    internal static bool IsCounted(ShellState state) => state is ShellState.Normal or ShellState.Stale or ShellState.Unreadable;
 
     // The tray's own states win over the counts: only a running, fresh Sindri shows rows.
     private static TrayView TrayFor(NeedsYouFeed? feed, ShellState state, DateTimeOffset now) => state switch

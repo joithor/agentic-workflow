@@ -73,6 +73,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         Health.Follow(ReadNeedsYou);
         Health.Follow(ReadStrip);
         Queue.PropertyChanged += OnQueueChanged;
+        InitAnnouncements();
         Attention = AttentionSummary.For(feed: null, State, _clock.GetUtcNow());
     }
 

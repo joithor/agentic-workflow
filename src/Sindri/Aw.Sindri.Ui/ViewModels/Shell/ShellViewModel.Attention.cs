@@ -1,4 +1,5 @@
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
+using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -6,6 +7,7 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 internal sealed partial class ShellViewModel
 {
     private readonly AttentionAnnouncer _announcer = new();
+    private readonly LiveLine _line = new(Labels.Sindri);
     private NeedsYouFeed? _needsYou;
 
     /// <summary>The window's title: "(N) Needs you · Sindri" while rows need the user, else "Sindri".</summary>
@@ -14,11 +16,27 @@ internal sealed partial class ShellViewModel
     /// <summary>The summary the title, the dock badge and the tray follow; it changes with the list and with the shell's state.</summary>
     internal AttentionSummary Attention { get; private set; }
 
-    /// <summary>True once the polite live region has something to say (the flag changes before the text).</summary>
-    public bool IsNeedsYouAnnouncing => _announcer.Line.Length > 0;
+    /// <summary>True while the Needs-you live region speaks (the flag changes before the text).</summary>
+    public bool IsNeedsYouAnnouncing => _line.IsLive;
 
-    /// <summary>The polite live region's line: "N now need you" once for each rise, else its resting text.</summary>
-    public string NeedsYouAnnouncement => _announcer.Line.Length > 0 ? _announcer.Line : Labels.Sindri;
+    /// <summary>The Needs-you live region's text: "N now need you" for each rise, "&lt;id&gt; cleared" for a selected row that left, "&lt;address&gt; done" for an instance that finished; else its resting text.</summary>
+    public string NeedsYouAnnouncement => _line.Text;
+
+    // The one Needs-you region: the three kinds of line share it, each said once (LiveLine).
+    private void InitAnnouncements()
+    {
+        _line.PropertyChanged += (_, e) => OnChanged(string.Equals(e.PropertyName, nameof(LiveLine.IsLive), StringComparison.Ordinal) ? nameof(IsNeedsYouAnnouncing) : nameof(NeedsYouAnnouncement));
+        NeedsYou.PropertyChanged += (_, e) => SayIf(e.PropertyName, nameof(NeedsYouViewModel.Announcement), NeedsYou.Announcement);
+        Strip.PropertyChanged += (_, e) => SayIf(e.PropertyName, nameof(WorkflowsStripViewModel.Announcement), Strip.Announcement);
+    }
+
+    private void SayIf(string? changed, string name, string sentence)
+    {
+        if (string.Equals(changed, name, StringComparison.Ordinal))
+        {
+            _line.Say(sentence);
+        }
+    }
 
     /// <summary>Takes the needs-you list as the API serves it now.</summary>
     /// <param name="feed">The list.</param>
@@ -32,14 +50,13 @@ internal sealed partial class ShellViewModel
     // Works the summary out again from the last list and the current state; the title, the badge and the tray follow it.
     private void Reattend()
     {
-        var before = _announcer.Line;
+        var before = _announcer.Announcements;
         Attention = AttentionSummary.For(_needsYou, State, _clock.GetUtcNow());
-        _announcer.Observe(Attention.Badge);
+        _announcer.Observe(Attention.Badge, AttentionSummary.IsCounted(State));
         Changed(nameof(Attention), nameof(WindowTitle));
-        if (!string.Equals(before, _announcer.Line, StringComparison.Ordinal) || _announcer.Announcements > 0)
+        if (_announcer.Announcements != before)
         {
-            OnChanged(nameof(IsNeedsYouAnnouncing));
-            OnChanged(nameof(NeedsYouAnnouncement));
+            _line.Say(_announcer.Line);
         }
     }
 }
