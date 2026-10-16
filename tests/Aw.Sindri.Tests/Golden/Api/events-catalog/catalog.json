@@ -39,7 +39,10 @@
         "queue",
         "items",
         "item",
-        "timeline"
+        "timeline",
+        "needs-you",
+        "requests",
+        "decisions"
       ]
     },
     {
@@ -62,7 +65,8 @@
       "invalidates": [
         "status",
         "profile",
-        "services"
+        "services",
+        "needs-you"
       ]
     },
     {
