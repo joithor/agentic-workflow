@@ -10,7 +10,6 @@ using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Shell;
-using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Ui.Tests.Views;
 
@@ -22,7 +21,7 @@ public sealed class NeedsYouUndoTests : IDisposable
     private readonly CancellationTokenSource _stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
     private readonly InMemoryEndpointRecords _records = new();
     private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.Api("commands", "catalog") };
-    private readonly FakeTimeProvider _clock = new(A.Noon);
+    private readonly OffThreadTimers _clock = new(A.Noon);   // timers fire on a pool thread, as the system clock's do (review run 1, B7)
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
