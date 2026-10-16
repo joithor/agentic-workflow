@@ -22,7 +22,7 @@ internal sealed class SchedulerRig : IAsyncDisposable
     private readonly InMemoryViewStore _views = new(SliceHarness.Json);
     private long _sequence;
 
-    private SchedulerRig(IEnumerable<IScheduledService> services)
+    private SchedulerRig(IEnumerable<IScheduledService> services, IEnumerable<BuiltInService> builtIns)
     {
         var collection = new ServiceCollection()
             .AddSingleton<ILedgerStore>(H.Store)
@@ -40,7 +40,7 @@ internal sealed class SchedulerRig : IAsyncDisposable
         Progress = new ProjectorProgress(H.Clock);
         _provider = collection.BuildServiceProvider();
         _clock = new SteppedClock(H.Clock);
-        _scheduler = new SchedulerHost(_provider.GetRequiredService<IServiceScopeFactory>(), new ScheduleInputs(H.Profiles, [], new ViewServicePauses(_views, Progress)), Guard, H.Held, H.Callers, _clock, Log);
+        _scheduler = new SchedulerHost(_provider.GetRequiredService<IServiceScopeFactory>(), new ScheduleInputs(H.Profiles, builtIns, new ViewServicePauses(_views, Progress)), Guard, H.Held, H.Callers, _clock, Log);
     }
 
     public SliceHarness H { get; } = new();
@@ -57,9 +57,16 @@ internal sealed class SchedulerRig : IAsyncDisposable
     /// <param name="services">The services this build has.</param>
     /// <param name="every">The services the profile names, each with its cadence.</param>
     /// <returns>The running rig.</returns>
-    public static async Task<SchedulerRig> Start(IEnumerable<IScheduledService> services, params (string Name, string Every)[] every)
+    public static Task<SchedulerRig> Start(IEnumerable<IScheduledService> services, params (string Name, string Every)[] every) => Start(services, [], every);
+
+    /// <summary>As the overload without built-ins, with built-in services the profile does not name.</summary>
+    /// <param name="services">The services this build has.</param>
+    /// <param name="builtIns">The built-in services.</param>
+    /// <param name="every">The services the profile names, each with its cadence.</param>
+    /// <returns>The running rig.</returns>
+    public static async Task<SchedulerRig> Start(IEnumerable<IScheduledService> services, IEnumerable<BuiltInService> builtIns, params (string Name, string Every)[] every)
     {
-        var rig = new SchedulerRig(services);
+        var rig = new SchedulerRig(services, builtIns);
         _ = await rig.H.Profiles.Save(SliceHarness.ProfileOf("thor", every), TestContext.Current.CancellationToken);
         _ = await rig.H.HoldLease();
         return rig;
