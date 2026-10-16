@@ -2,6 +2,9 @@
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOOK="$DIR/../../hooks/done-gate.sh"
+# The hook logs fail-open events under $AW_STATE_DIR (default ~/.agentic-workflow): this suite gets its own, never an inherited one.
+AW_STATE_DIR="$(mktemp -d)" || exit 2; export AW_STATE_DIR
+trap 'find "$AW_STATE_DIR" -delete 2> /dev/null' EXIT
 
 write_transcript_with_assistant_text() {
   local file="$1" text="$2"
