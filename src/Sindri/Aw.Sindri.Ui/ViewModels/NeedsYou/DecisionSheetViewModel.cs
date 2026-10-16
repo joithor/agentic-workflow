@@ -27,6 +27,11 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
     /// <summary>The id of the decision shown.</summary>
     internal string DecisionId { get; private set; } = "";
 
+    /// <summary>The note field's caption and name: it says the note is sent with the choice.</summary>
+#pragma warning disable CA1822, MA0041 // a fixed sentence is a property because the view binds it
+    internal string NoteLabel => Labels.DecisionNoteLabel;
+#pragma warning restore CA1822, MA0041
+
     /// <summary>The note sent with the choice.</summary>
     internal string Note
     {

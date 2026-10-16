@@ -30,7 +30,7 @@
               <StackPanel x:Name="NeedsYouUndo" Orientation="Horizontal" Spacing="6" IsVisible="{Binding NeedsYou.Seen.UndoOffered}" VerticalAlignment="Center">
                 <TextBlock x:Name="NeedsYouUndoText" Classes="caption subtle" Text="{Binding NeedsYou.Seen.UndoText}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
                 <TextBlock Classes="caption subtle" Text="·" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
-                <Button x:Name="NeedsYouUndoButton" Classes="copy" Click="OnUndoSeen" AutomationProperties.Name="{Binding Text.Undo}">
+                <Button x:Name="NeedsYouUndoButton" Classes="copy" Click="OnUndoSeen" AutomationProperties.Name="{Binding Text.UndoMarkAllSeen}">
                   <TextBlock Classes="caption" Text="{Binding Text.Undo}" />
                 </Button>
               </StackPanel>

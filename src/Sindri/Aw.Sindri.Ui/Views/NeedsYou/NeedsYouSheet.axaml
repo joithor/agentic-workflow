@@ -18,7 +18,7 @@
     <ItemsControl x:Name="SheetRowDetails" ItemsSource="{Binding Details}" IsVisible="{Binding Details.Count}">
       <ItemsControl.ItemTemplate>
         <DataTemplate x:DataType="ny:SheetDetail">
-          <StackPanel Spacing="2" Margin="0,0,0,6" AutomationProperties.Name="{Binding Label}">
+          <StackPanel Spacing="2" Margin="0,0,0,6">
             <TextBlock Classes="caption subtle" Text="{Binding Label}" />
             <TextBlock Classes="mono" Text="{Binding Value}" TextWrapping="Wrap" />
           </StackPanel>

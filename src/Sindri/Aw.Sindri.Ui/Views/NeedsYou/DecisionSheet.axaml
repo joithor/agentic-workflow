@@ -23,7 +23,8 @@
         </DataTemplate>
       </ItemsControl.ItemTemplate>
     </ItemsControl>
-    <TextBox x:Name="DecisionNote" Text="{Binding Note}" AcceptsReturn="False" IsEnabled="{Binding !IsCleared}" AutomationProperties.Name="Note" />
+    <TextBlock x:Name="DecisionNoteCaption" Classes="caption subtle" Text="{Binding NoteLabel}" AutomationProperties.AccessibilityView="Raw" />
+    <TextBox x:Name="DecisionNote" Text="{Binding Note}" AcceptsReturn="False" IsEnabled="{Binding !IsCleared}" AutomationProperties.Name="{Binding NoteLabel}" />
     <TextBlock x:Name="DecisionRefusal" Classes="caption" Text="{Binding Refusal}" IsVisible="{Binding Refusal, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                TextWrapping="Wrap" AutomationProperties.Name="{Binding Refusal}" />
     <TextBlock x:Name="DecisionOutcome" Classes="caption" Text="{Binding Outcome}" IsVisible="{Binding Outcome, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
