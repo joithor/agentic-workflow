@@ -54,6 +54,7 @@ using Aw.Sindri.Features.ListOutbox;
 using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.ListRequests;
 using Aw.Sindri.Features.ListServices;
+using Aw.Sindri.Features.OnyxStatus;
 using Aw.Sindri.Features.ReadLedger;
 using Aw.Sindri.Features.RebuildViews;
 using Aw.Sindri.Features.RegisterMcp;
@@ -116,6 +117,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ApproveProfileResponse))]
 [JsonSerializable(typeof(ValidateProfileResponse))]
 [JsonSerializable(typeof(RunDoctorResponse))]
+[JsonSerializable(typeof(OnyxStatusResponse))]
 [JsonSerializable(typeof(PublicEvent))]
 [JsonSerializable(typeof(LedgerPage))]
 [JsonSerializable(typeof(EventCatalogView))]

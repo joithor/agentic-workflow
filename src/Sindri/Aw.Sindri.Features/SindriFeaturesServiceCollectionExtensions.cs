@@ -45,6 +45,7 @@ using Aw.Sindri.Features.ListOutbox;
 using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.ListRequests;
 using Aw.Sindri.Features.ListServices;
+using Aw.Sindri.Features.OnyxStatus;
 using Aw.Sindri.Features.PingProcess;
 using Aw.Sindri.Features.ReadLedger;
 using Aw.Sindri.Features.RebuildViews;
@@ -189,7 +190,8 @@ public static class SindriFeaturesServiceCollectionExtensions
         .AddScoped<RunDoctorService>()
         .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>>(static sp =>
             new WithMoreChecks(sp.GetRequiredService<RunDoctorService>(), sp.GetServices<IDoctorChecks>()))
-        .AddScoped<IDoctorChecks, ContextDoctorChecks>();
+        .AddScoped<IDoctorChecks, ContextDoctorChecks>()
+        .AddScoped<IService<OnyxStatusRequest, OnyxStatusResponse>, OnyxStatusService>();   // Onyx P1: read-only, in process, like the doctor
 
     /// <summary>The registry's slices (engine P2): register, approve and revoke (commands), the challenge (an issue), list and show (queries).</summary>
     private static IServiceCollection AddRegistrySlices(this IServiceCollection services)

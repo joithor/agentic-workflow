@@ -17,14 +17,16 @@ namespace Aw.Sindri.Host.Commands;
 /// </summary>
 internal static class CommandTable
 {
-    internal static async Task<int> Run(string[] args, Func<string, string?> environment, TimeProvider clock)
+    internal static async Task<int> Run(string[] args, Func<string, string?> environment, TimeProvider clock, Action<IServiceCollection>? overrides = null)
     {
         if (args is ["serve"])
         {
             return await Serve(environment, clock).ConfigureAwait(false);
         }
 
-        var provider = Composition.Compose(new ServiceCollection(), environment, clock).BuildServiceProvider();
+        var services = Composition.Compose(new ServiceCollection(), environment, clock);
+        overrides?.Invoke(services);   // a test replaces a port with its fake; Program passes none
+        var provider = services.BuildServiceProvider();
         await using (provider.ConfigureAwait(false))
         {
             _ = provider.GetRequiredService<TelemetryRuntime>();
@@ -83,9 +85,9 @@ internal static class CommandTable
             ["queue" or "items" or "item", ..] => await new ItemVerbs(client, output, (launch, c) => start.EnsureRunning(launch, c)).Run(args, ct).ConfigureAwait(false),
             ["request" or "requests" or "decisions" or "decide" or "needs-you", ..] => await new RequestVerbs(client, output, (launch, c) => start.EnsureRunning(launch, c)).Run(args, ct).ConfigureAwait(false),
             ["ledger", .. var rest] => await new LedgerVerbs(client, output, (launch, c) => start.EnsureRunning(launch, c)).Run(rest, ct).ConfigureAwait(false),
-            ["doctor", "--probe"] or ["doctor", "--probe", "--json"] => await output.Json(await harnesses.Probe(harness: null, ct).ConfigureAwait(false), 0).ConfigureAwait(false),
-            ["doctor", "--probe", "--harness", var name, .. var rest] when Json(rest) is not null => await output.Json(await harnesses.Probe(name, ct).ConfigureAwait(false), 0).ConfigureAwait(false),
+            ["doctor", "--probe", .. var rest] when ProbeHarness(rest) is (true, var harness) => await output.Json(await harnesses.Probe(harness, ct).ConfigureAwait(false), 0).ConfigureAwait(false),
             ["doctor", .. var rest] when Json(rest) is { } json => await verbs.Doctor(json, ct, harnesses.DoctorChecks).ConfigureAwait(false),
+            ["onyx", "status", .. var rest] when Json(rest) is { } json => await verbs.OnyxStatus(json, ct).ConfigureAwait(false),
             ["mcp", .. var rest] => await new McpVerbs(services, output, session).Run(rest, ct).ConfigureAwait(false),
             ["context", ..] => await Context(args, client, output, services, ct).ConfigureAwait(false),
             ["recipe", .. var rest] => await RecipeCommandTable.Run(rest, services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), ct).ConfigureAwait(false),
@@ -129,6 +131,14 @@ internal static class CommandTable
         ["--follow"] => false,
         ["--follow", "--json"] or ["--json", "--follow"] => true,
         _ => null,
+    };
+
+    /// <summary>'doctor --probe [--harness &lt;name&gt;] [--json]': whether it is a probe, and the harness it names, if any.</summary>
+    private static (bool IsProbe, string? Harness) ProbeHarness(string[] rest) => rest switch
+    {
+        [] or ["--json"] => (true, null),
+        ["--harness", var name, .. var tail] when Json(tail) is not null => (true, name),
+        _ => (false, null),
     };
 
     private static bool? Json(string[] rest) => rest switch

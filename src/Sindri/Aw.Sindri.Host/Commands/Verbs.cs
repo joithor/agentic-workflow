@@ -9,6 +9,7 @@ using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.IssueChallenge;
+using Aw.Sindri.Features.OnyxStatus;
 using Aw.Sindri.Features.RebuildViews;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.StopProcess;
@@ -101,6 +102,24 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
 
         var lines = report.Checks.Select(c => $"{Word(c.State),-5} {c.Name,-17} {c.Detail}{(c.Fix is null ? string.Empty : $" (fix: {c.Fix})")}");
         return await output.Text(string.Join('\n', lines) + "\n", report.ExitCode).ConfigureAwait(false);
+    }
+
+    internal async Task<int> OnyxStatus(bool json, CancellationToken ct)
+    {
+        var status = (await scope.GetRequiredService<IService<OnyxStatusRequest, OnyxStatusResponse>>().Handle(new OnyxStatusRequest(), ct).ConfigureAwait(false)).Value;
+        if (json)
+        {
+            return await output.Json(status, status.ExitCode).ConfigureAwait(false);
+        }
+
+        var state = status.State == "not-set-up" ? "not set up (run `sindri-app onyx up`)" : status.State;
+        var rows = new List<string>
+        {
+            $"{"onyx",-10}{state}",
+            $"{"pinned",-10}{status.PinnedVersion} ({status.PinnedCommit[..7]})",
+        };
+        rows.AddRange(status.Checks.Select(c => $"{c.Name,-10}{Word(c.State)} {c.Detail}{(c.Problem is null ? string.Empty : $" ({c.Problem.Code}: {c.Problem.Message})")}"));
+        return await output.Text(string.Join('\n', rows) + "\n", status.ExitCode).ConfigureAwait(false);
     }
 
     internal async Task<int> Approve(string? hashText, bool interactive, TextReader input, CancellationToken ct)
