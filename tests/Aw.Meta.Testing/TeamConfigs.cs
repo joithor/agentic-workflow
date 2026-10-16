@@ -22,6 +22,7 @@ public static class TeamConfigs
             }),
         MergeOrder = [new MergeOrderRule(Before: 190, After: 192)],
         KnownFlakes = ["SpikeEvalTests"],
+        Worktrees = new WorktreeConfig(["/work/wt"], ["bin", "obj"], Enabled: false),
     };
 
     /// <summary>Whether two configs hold the same values.</summary>
@@ -36,8 +37,14 @@ public static class TeamConfigs
             && a.Lanes.SequenceEqual(b.Lanes, StringComparer.Ordinal)
             && a.KnownFlakes.SequenceEqual(b.KnownFlakes, StringComparer.Ordinal)
             && a.MergeOrder.SequenceEqual(b.MergeOrder)
-            && SameGate(a.Gate, b.Gate);
+            && SameGate(a.Gate, b.Gate)
+            && SameWorktrees(a.Worktrees, b.Worktrees);
     }
+
+    private static bool SameWorktrees(WorktreeConfig a, WorktreeConfig b) =>
+        a.Enabled == b.Enabled
+        && (a.Roots ?? []).SequenceEqual(b.Roots ?? [], StringComparer.Ordinal)
+        && (a.BuildOutputs ?? []).SequenceEqual(b.BuildOutputs ?? [], StringComparer.Ordinal);
 
     private static bool SameGate(GateConfig a, GateConfig b) =>
         a.Always.SequenceEqual(b.Always, StringComparer.Ordinal)
