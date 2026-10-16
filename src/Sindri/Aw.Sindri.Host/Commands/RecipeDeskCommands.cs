@@ -128,8 +128,16 @@ internal sealed class RecipeDeskCommands(RecipeDesk desk, IServiceProvider servi
     private async Task<Result<IssueChallengeResponse>> Issue(string action, CancellationToken ct)
     {
         var answer = await desk.Client.Post<IssueChallengeRequest, IssueChallengeResponse>(Challenges, new IssueChallengeRequest(action), ct).ConfigureAwait(false);
-        return answer.IsError ? answer.Error : answer.Value.Value;
+        return answer.IsError ? ForVerb(answer.Error, action) : answer.Value.Value;
     }
+
+    /// <summary>
+    /// The challenge row is shared by approve and revoke and names the approve command; a refused revoke names the revoke instead.
+    /// </summary>
+    private static Error ForVerb(Error error, string action) =>
+        error.Code == SindriErrors.AuthRefused.Code && action.StartsWith("revoke ", StringComparison.Ordinal)
+            ? error with { Message = error.Message.Replace("IssueChallenge", "Revoking a recipe", StringComparison.Ordinal).Replace("sindri recipe approve <recipe>", "sindri recipe revoke <recipe>", StringComparison.Ordinal) }
+            : error;
 
     private async Task<string> Prompt(string action)
     {
@@ -140,10 +148,10 @@ internal sealed class RecipeDeskCommands(RecipeDesk desk, IServiceProvider servi
     private static string Route(RecipeId id, RecipeHash hash, string verb) => $"/sindri/workflow/recipes/{id.Value}@{hash.Digest}/{verb}";
 
     internal static string Approved(ApproveRecipeResponse r) => r.AlreadyApproved
-        ? string.Create(CultureInfo.InvariantCulture, $"already approved {r.Approval.Id.Value}@{r.Approval.Hash.Display}; woke {r.Resumed.Count} instances\n")
+        ? string.Create(CultureInfo.InvariantCulture, $"already approved {r.Approval.Id.Value}@{r.Approval.Hash.Display}; woke {r.Resumed.Count} open instances\n")
         : r.Resumed.Count == 0
             ? $"approved {r.Approval.Id.Value}@{r.Approval.Hash.Display}\n"
-            : string.Create(CultureInfo.InvariantCulture, $"approved {r.Approval.Id.Value}@{r.Approval.Hash.Display}; {r.Resumed.Count} instances resumed\n");
+            : string.Create(CultureInfo.InvariantCulture, $"approved {r.Approval.Id.Value}@{r.Approval.Hash.Display}; woke {r.Resumed.Count} open instances (those parked on the drift resume)\n");
 
     private static string Revoked(RevokeRecipeResponse r) =>
         string.Create(CultureInfo.InvariantCulture, $"revoked {r.Revocation.Id.Value}@{r.Revocation.Hash.Display}; {r.Preview.Parks.Count} instances parked\n")

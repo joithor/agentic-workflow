@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Aw.Kernel.Outbox;
+using Aw.Redaction;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
@@ -123,12 +124,12 @@ internal sealed class EffectActivities(
         if (done.IsError && done.Error.Code == WorkflowErrors.NoRuntime.Code)
         {
             // A setup the effect can't run in (no commit, a repo the profile lacks, no fact:item): retrying can't fix it; the instance parks dispatch.
-            throw new ApplicationFailureException(done.Error.Message, errorType: done.Error.Code, nonRetryable: true);
+            throw new ApplicationFailureException(Scrubbed(done.Error.Message), errorType: done.Error.Code, nonRetryable: true);
         }
 
         if (done.IsError)
         {
-            throw new InvalidOperationException($"{done.Error.Code}: {done.Error.Message}");   // retried: the block's existence check makes the repeat harmless
+            throw new InvalidOperationException(Scrubbed($"{done.Error.Code}: {done.Error.Message}"));   // retried: the block's existence check makes the repeat harmless
         }
 
         var row = new EffectRow(identity, run.CommandId, run.Command.Effect, run.Command.Origin, EffectState.Dispatched, InstanceAddress.From(run.WorkflowId),
@@ -188,6 +189,9 @@ internal sealed class EffectActivities(
             ? throw new InvalidOperationException($"{appended.Error.Code}: {appended.Error.Message}")
             : appended.Value;
     }
+
+    /// <summary>The reason a block gave, scrubbed like a notice: it may carry a fact's text (a secret-shaped repo name), and it lands in the ledger and the status.</summary>
+    private static string Scrubbed(string reason) => Redactor.Default.Scrub(reason).Text;   // a blocked scrub yields its placeholder, never the input
 
     private static EffectRecheckResult Answer(string? code, EffectRecheck recheck) => new(code, code switch
     {

@@ -102,7 +102,7 @@ public sealed class EffectActivitiesTests : IDisposable
     public async Task A_refused_dispatch_reason_is_scrubbed_before_it_leaves_the_activity()
     {
         const string token = "gh" + "p_0123456789abcdefghijABCDEFGHIJ012345";
-        _desk.Failure = Aw.Sindri.Core.Workflow.WorkflowErrors.NoRuntime.With($"repo {token} isn't in the approved profile");
+        _desk.Failure = Core.Workflow.WorkflowErrors.NoRuntime.With($"repo {token} isn't in the approved profile");
         await using var sindri = _harness.Sindri(_desk.Replace);
         await WorkflowsHarness.HoldLease(sindri, Token);
         var activities = sindri.GetRequiredService<EffectActivities>();
