@@ -103,7 +103,7 @@ public sealed class SchedulerPauseAndGuardTests
     {
         var tidy = new ScriptedService(ScriptedService.Worked);
         await using var rig = await SchedulerRig.Start([tidy], ("tidy", "5s"));
-        Assert.True(rig.Guard.TryClaim(_tidy, out var manual));   // a manual run holds the service
+        Assert.True(rig.Guard.TryClaimManual(_tidy, out var manual));   // a manual run holds the service
         await rig.Begin();
 
         await rig.Step(12);

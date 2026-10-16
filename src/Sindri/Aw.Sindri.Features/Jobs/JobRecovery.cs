@@ -70,7 +70,10 @@ public sealed class JobRecovery
                 return written.Error;
             }
 
-            ended++;
+            if (written.Value)
+            {
+                ended++;
+            }
         }
 
         return ended;

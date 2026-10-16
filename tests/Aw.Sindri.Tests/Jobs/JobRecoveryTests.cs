@@ -38,10 +38,11 @@ public sealed class JobRecoveryTests
         _ = await rig.Left(A.FirstJobId);
         rig.Caught();
 
-        _ = await rig.Recovery.Run(Token);
-        _ = await rig.Recovery.Run(Token);   // the view still reads 'running' (the projector hasn't caught up with the first end)
+        var first = await rig.Recovery.Run(Token);
+        var second = await rig.Recovery.Run(Token);   // the view still reads 'running' (the projector hasn't caught up with the first end)
 
         _ = Assert.Single(rig.Of(EventTypes.JobFinished));
+        Expect.Equal((1, 0), (first.Value, second.Value));   // the second run wrote nothing and says so
     }
 
     [Fact]
