@@ -30,17 +30,40 @@ internal static partial class RecipeCommandTable
         }
 
         var files = (result.Value.Files ?? []).Select(f => (Path: Path.Combine(directory, f.Name + ".jsonl"), f.Text)).ToList();
+        if (files.GroupBy(static f => f.Path, StringComparer.Ordinal).FirstOrDefault(static g => g.Skip(1).Any()) is { Key: { } twice })
+        {
+            return await output.Error(SindriErrors.InvalidInput.With($"two scaffold cases would be written to {twice} (fix: this is a sindri bug; report it with the recipe file)")).ConfigureAwait(false);
+        }
+
         if (files.Find(f => File.Exists(f.Path)) is { Path: { } existing })
         {
             return await output.Error(SindriErrors.InvalidInput.With($"{existing} already exists (fix: choose another --out directory, or move it away)")).ConfigureAwait(false);
         }
 
-        _ = Directory.CreateDirectory(directory);
-        foreach (var (path, text) in files)
+        if (await Write(directory, files, ct).ConfigureAwait(false) is { } failure)
         {
-            await File.WriteAllTextAsync(path, text, ct).ConfigureAwait(false);
+            return await output.Error(failure).ConfigureAwait(false);
         }
 
         return await output.Text(string.Concat(files.Select(static f => f.Path + "\n")), 0).ConfigureAwait(false);
+    }
+
+    /// <summary>Writes each file under <paramref name="directory"/>; the refusal when the directory or a file can't be written, else null.</summary>
+    private static async Task<Error?> Write(string directory, List<(string Path, string Text)> files, CancellationToken ct)
+    {
+        try
+        {
+            _ = Directory.CreateDirectory(directory);
+            foreach (var (path, text) in files)
+            {
+                await File.WriteAllTextAsync(path, text, ct).ConfigureAwait(false);
+            }
+
+            return null;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return SindriErrors.InvalidInput.With($"can't write the scaffold to {directory}: {e.Message} (fix: choose an --out directory you can create and write)");
+        }
     }
 }

@@ -110,7 +110,7 @@ transition moves into a state not yet visited, until a terminal state. Every gat
 engine did, so it passes once it is in the recipe's `evals:`. `--record <address> --out <file>` writes a live instance's
 history in the same format; it needs the server's instances (P4) and exits 2 until then.
 
-A recipe with a route state (a `step.judge.choose`, see "Writing a decision tree") has a path per choice, plus `uncertain` and `step.failed`; `--scaffold <file> --out <dir>` writes each as `<dir>/scaffold-<branch>.jsonl` and prints the paths. It refuses when any of those files exists (`SND-CLI-003`) and writes nothing then.
+A recipe with a route state (a `step.judge.choose`, see "Writing a decision tree") has a path per choice, plus `uncertain` and `step-failed` (the Step failing); `--scaffold <file> --out <dir>` writes each as `<dir>/scaffold-<branch>.jsonl` and prints the paths. It refuses when any of those files exists (`SND-CLI-003`) and writes nothing then.
 
 | Exit | When |
 |---|---|
@@ -467,7 +467,7 @@ complete example is `recipes/dev/workflow.dev-evidence-route.yaml`.
   `{ "choice", "provider": "desk", "actor" }`, and `complete --output fact:decision=...` is refused. `recipe eval` fills it
   with provider `eval` when a line leaves it out.
 - **Evals:** `recipe eval --scaffold <file>` prints the first path; `--scaffold <file> --out <dir>` writes one
-  `<dir>/scaffold-<branch>.jsonl` per path (each choice, `uncertain`, and `failed`) and refuses to overwrite a file.
+  `<dir>/scaffold-<branch>.jsonl` per path (each choice, `uncertain`, and `step-failed`) and refuses to overwrite a file.
 - Until DT-V2, `status` on a choice state doesn't list the choices; read them in the recipe.
 
 ## Temporal foundation
