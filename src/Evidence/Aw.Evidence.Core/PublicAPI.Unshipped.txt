@@ -2079,11 +2079,9 @@ Aw.Evidence.Core.Data.Rows.Truncated.init -> void
 Aw.Evidence.Core.Data.Rows.Values.get -> System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<object?>!>!
 Aw.Evidence.Core.Data.Rows.Values.init -> void
 Aw.Evidence.Core.Data.SqliteTarget
-Aw.Evidence.Core.Data.SqliteTarget.Deconstruct(out string! SourcePath, out string! WorkDirectory) -> void
 Aw.Evidence.Core.Data.SqliteTarget.Equals(Aw.Evidence.Core.Data.SqliteTarget? other) -> bool
 Aw.Evidence.Core.Data.SqliteTarget.SourcePath.get -> string!
 Aw.Evidence.Core.Data.SqliteTarget.SourcePath.init -> void
-Aw.Evidence.Core.Data.SqliteTarget.SqliteTarget(string! SourcePath, string! WorkDirectory) -> void
 Aw.Evidence.Core.Data.SqliteTarget.WorkDirectory.get -> string!
 Aw.Evidence.Core.Data.SqliteTarget.WorkDirectory.init -> void
 abstract Aw.Evidence.Core.Data.DbTarget.<Clone>$() -> Aw.Evidence.Core.Data.DbTarget!
@@ -2221,3 +2219,93 @@ static Aw.Evidence.Core.Data.RoleFacts.operator !=(Aw.Evidence.Core.Data.RoleFac
 static Aw.Evidence.Core.Data.RoleFacts.operator ==(Aw.Evidence.Core.Data.RoleFacts? left, Aw.Evidence.Core.Data.RoleFacts? right) -> bool
 static Aw.Evidence.Core.Data.ServerIdentity.operator !=(Aw.Evidence.Core.Data.ServerIdentity? left, Aw.Evidence.Core.Data.ServerIdentity? right) -> bool
 static Aw.Evidence.Core.Data.ServerIdentity.operator ==(Aw.Evidence.Core.Data.ServerIdentity? left, Aw.Evidence.Core.Data.ServerIdentity? right) -> bool
+Aw.Evidence.Core.Data.DbStep
+Aw.Evidence.Core.Data.DbStep.<Clone>$() -> Aw.Evidence.Core.Data.DbStep!
+Aw.Evidence.Core.Data.DbStep.Action.get -> string!
+Aw.Evidence.Core.Data.DbStep.Action.init -> void
+Aw.Evidence.Core.Data.DbStep.DbStep(int Index, string! Action, string! Target, Aw.Evidence.Core.Data.DbStepStatus Status, int? RowCount, bool Truncated, string? Output) -> void
+Aw.Evidence.Core.Data.DbStep.Deconstruct(out int Index, out string! Action, out string! Target, out Aw.Evidence.Core.Data.DbStepStatus Status, out int? RowCount, out bool Truncated, out string? Output) -> void
+Aw.Evidence.Core.Data.DbStep.Equals(Aw.Evidence.Core.Data.DbStep? other) -> bool
+Aw.Evidence.Core.Data.DbStep.Index.get -> int
+Aw.Evidence.Core.Data.DbStep.Index.init -> void
+Aw.Evidence.Core.Data.DbStep.Output.get -> string?
+Aw.Evidence.Core.Data.DbStep.Output.init -> void
+Aw.Evidence.Core.Data.DbStep.RowCount.get -> int?
+Aw.Evidence.Core.Data.DbStep.RowCount.init -> void
+Aw.Evidence.Core.Data.DbStep.Status.get -> Aw.Evidence.Core.Data.DbStepStatus
+Aw.Evidence.Core.Data.DbStep.Status.init -> void
+Aw.Evidence.Core.Data.DbStep.Target.get -> string!
+Aw.Evidence.Core.Data.DbStep.Target.init -> void
+Aw.Evidence.Core.Data.DbStep.Truncated.get -> bool
+Aw.Evidence.Core.Data.DbStep.Truncated.init -> void
+Aw.Evidence.Core.Data.DbStepStatus
+Aw.Evidence.Core.Data.DbStepStatus.Broken = 3 -> Aw.Evidence.Core.Data.DbStepStatus
+Aw.Evidence.Core.Data.DbStepStatus.Failed = 1 -> Aw.Evidence.Core.Data.DbStepStatus
+Aw.Evidence.Core.Data.DbStepStatus.Passed = 0 -> Aw.Evidence.Core.Data.DbStepStatus
+Aw.Evidence.Core.Data.DbStepStatus.Refused = 2 -> Aw.Evidence.Core.Data.DbStepStatus
+Aw.Evidence.Core.Data.DbStepStatus.Skipped = 4 -> Aw.Evidence.Core.Data.DbStepStatus
+Aw.Evidence.Core.Data.DbSummary
+Aw.Evidence.Core.Data.DbSummary.<Clone>$() -> Aw.Evidence.Core.Data.DbSummary!
+Aw.Evidence.Core.Data.DbSummary.AppBuild.get -> string?
+Aw.Evidence.Core.Data.DbSummary.AppBuild.init -> void
+Aw.Evidence.Core.Data.DbSummary.At.get -> Aw.Evidence.Core.Data.DataRunAt
+Aw.Evidence.Core.Data.DbSummary.At.init -> void
+Aw.Evidence.Core.Data.DbSummary.DbSummary(string! Schema, string! Kind, Aw.Evidence.Core.Ids.RunId RunId, Aw.Evidence.Core.Ids.RunInstanceId RunInstance, System.DateTimeOffset StartedAt, System.DateTimeOffset FinishedAt, string? AppBuild, string! ScriptSha256, Aw.Evidence.Core.Data.DataRunAt At, string? Engine, string? Target, Aw.Evidence.Core.Data.ApiOutcome Outcome, string! Headline, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.DbStep!>! Steps, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.ApiFailure!>! Failures, string! Provenance, string? SeedSha256, Aw.Evidence.Core.Data.CodedMessage? Refusal, Aw.Evidence.Core.Data.CodedMessage? Error, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Usage.ModelInvocation!>! Invocations) -> void
+Aw.Evidence.Core.Data.DbSummary.Deconstruct(out string! Schema, out string! Kind, out Aw.Evidence.Core.Ids.RunId RunId, out Aw.Evidence.Core.Ids.RunInstanceId RunInstance, out System.DateTimeOffset StartedAt, out System.DateTimeOffset FinishedAt, out string? AppBuild, out string! ScriptSha256, out Aw.Evidence.Core.Data.DataRunAt At, out string? Engine, out string? Target, out Aw.Evidence.Core.Data.ApiOutcome Outcome, out string! Headline, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.DbStep!>! Steps, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.ApiFailure!>! Failures, out string! Provenance, out string? SeedSha256, out Aw.Evidence.Core.Data.CodedMessage? Refusal, out Aw.Evidence.Core.Data.CodedMessage? Error, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Usage.ModelInvocation!>! Invocations) -> void
+Aw.Evidence.Core.Data.DbSummary.Engine.get -> string?
+Aw.Evidence.Core.Data.DbSummary.Engine.init -> void
+Aw.Evidence.Core.Data.DbSummary.Equals(Aw.Evidence.Core.Data.DbSummary? other) -> bool
+Aw.Evidence.Core.Data.DbSummary.Error.get -> Aw.Evidence.Core.Data.CodedMessage?
+Aw.Evidence.Core.Data.DbSummary.Error.init -> void
+Aw.Evidence.Core.Data.DbSummary.ExitCode() -> int
+Aw.Evidence.Core.Data.DbSummary.Failures.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.ApiFailure!>!
+Aw.Evidence.Core.Data.DbSummary.Failures.init -> void
+Aw.Evidence.Core.Data.DbSummary.FinishedAt.get -> System.DateTimeOffset
+Aw.Evidence.Core.Data.DbSummary.FinishedAt.init -> void
+Aw.Evidence.Core.Data.DbSummary.Headline.get -> string!
+Aw.Evidence.Core.Data.DbSummary.Headline.init -> void
+Aw.Evidence.Core.Data.DbSummary.Invocations.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Usage.ModelInvocation!>!
+Aw.Evidence.Core.Data.DbSummary.Invocations.init -> void
+Aw.Evidence.Core.Data.DbSummary.Kind.get -> string!
+Aw.Evidence.Core.Data.DbSummary.Kind.init -> void
+Aw.Evidence.Core.Data.DbSummary.Outcome.get -> Aw.Evidence.Core.Data.ApiOutcome
+Aw.Evidence.Core.Data.DbSummary.Outcome.init -> void
+Aw.Evidence.Core.Data.DbSummary.Provenance.get -> string!
+Aw.Evidence.Core.Data.DbSummary.Provenance.init -> void
+Aw.Evidence.Core.Data.DbSummary.Refusal.get -> Aw.Evidence.Core.Data.CodedMessage?
+Aw.Evidence.Core.Data.DbSummary.Refusal.init -> void
+Aw.Evidence.Core.Data.DbSummary.RunId.get -> Aw.Evidence.Core.Ids.RunId
+Aw.Evidence.Core.Data.DbSummary.RunId.init -> void
+Aw.Evidence.Core.Data.DbSummary.RunInstance.get -> Aw.Evidence.Core.Ids.RunInstanceId
+Aw.Evidence.Core.Data.DbSummary.RunInstance.init -> void
+Aw.Evidence.Core.Data.DbSummary.Schema.get -> string!
+Aw.Evidence.Core.Data.DbSummary.Schema.init -> void
+Aw.Evidence.Core.Data.DbSummary.ScriptSha256.get -> string!
+Aw.Evidence.Core.Data.DbSummary.ScriptSha256.init -> void
+Aw.Evidence.Core.Data.DbSummary.SeedSha256.get -> string?
+Aw.Evidence.Core.Data.DbSummary.SeedSha256.init -> void
+Aw.Evidence.Core.Data.DbSummary.StartedAt.get -> System.DateTimeOffset
+Aw.Evidence.Core.Data.DbSummary.StartedAt.init -> void
+Aw.Evidence.Core.Data.DbSummary.Steps.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.DbStep!>!
+Aw.Evidence.Core.Data.DbSummary.Steps.init -> void
+Aw.Evidence.Core.Data.DbSummary.Target.get -> string?
+Aw.Evidence.Core.Data.DbSummary.Target.init -> void
+Aw.Evidence.Core.Data.IExecutableLocator.RealFile(string! path) -> string?
+Aw.Evidence.Core.Data.SqliteTarget.Deconstruct(out string! SourcePath, out string! WorkDirectory, out string? SeedSql) -> void
+Aw.Evidence.Core.Data.SqliteTarget.SeedSql.get -> string?
+Aw.Evidence.Core.Data.SqliteTarget.SeedSql.init -> void
+Aw.Evidence.Core.Data.SqliteTarget.SqliteTarget(string! SourcePath, string! WorkDirectory, string? SeedSql = null) -> void
+const Aw.Evidence.Core.Data.DbSummary.KindName = "db" -> string!
+const Aw.Evidence.Core.Data.DbSummary.SchemaName = "evidence.db.summary/1" -> string!
+const Aw.Evidence.Core.Data.DbSummary.Seeded = "seeded" -> string!
+const Aw.Evidence.Core.Data.DbSummary.Unseeded = "unseeded" -> string!
+override Aw.Evidence.Core.Data.DbStep.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.DbStep.GetHashCode() -> int
+override Aw.Evidence.Core.Data.DbStep.ToString() -> string!
+override Aw.Evidence.Core.Data.DbSummary.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.DbSummary.GetHashCode() -> int
+override Aw.Evidence.Core.Data.DbSummary.ToString() -> string!
+static Aw.Evidence.Core.Data.DbStep.operator !=(Aw.Evidence.Core.Data.DbStep? left, Aw.Evidence.Core.Data.DbStep? right) -> bool
+static Aw.Evidence.Core.Data.DbStep.operator ==(Aw.Evidence.Core.Data.DbStep? left, Aw.Evidence.Core.Data.DbStep? right) -> bool
+static Aw.Evidence.Core.Data.DbSummary.operator !=(Aw.Evidence.Core.Data.DbSummary? left, Aw.Evidence.Core.Data.DbSummary? right) -> bool
+static Aw.Evidence.Core.Data.DbSummary.operator ==(Aw.Evidence.Core.Data.DbSummary? left, Aw.Evidence.Core.Data.DbSummary? right) -> bool

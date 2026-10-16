@@ -1,4 +1,5 @@
 using Aw.Evidence.Features.ApiRun;
+using Aw.Evidence.Features.DbRun;
 using Aw.Evidence.Features.CheckProvenance;
 using Aw.Evidence.Features.Doctor;
 using Aw.Evidence.Features.InstallBrowser;
@@ -21,7 +22,8 @@ public static class EvidenceFeaturesServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddEvidenceFeatures(this IServiceCollection services) =>
-        services.AddBrowserSlices().AddPublishSlices().AddStackSlices().AddApiSlices();
+        services.AddBrowserSlices().AddPublishSlices().AddStackSlices().AddApiSlices()
+            .AddDbSlices();
 
     private static IServiceCollection AddBrowserSlices(this IServiceCollection services) =>
         services
@@ -111,4 +113,13 @@ public static class EvidenceFeaturesServiceCollectionExtensions
                 new ValidatingService<ApiRunRequest, ApiRunResponse>(
                     sp.GetRequiredService<ApiRunService>(),
                     sp.GetRequiredService<IValidator<ApiRunRequest>>()));
+
+    private static IServiceCollection AddDbSlices(this IServiceCollection services) =>
+        services
+            .AddScoped<DbRunService>()
+            .AddScoped<IValidator<DbRunRequest>, DbRunValidator>()
+            .AddScoped<IService<DbRunRequest, DbRunResponse>>(static sp =>
+                new ValidatingService<DbRunRequest, DbRunResponse>(
+                    sp.GetRequiredService<DbRunService>(),
+                    sp.GetRequiredService<IValidator<DbRunRequest>>()));
 }
