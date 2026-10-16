@@ -146,13 +146,19 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-059: a sync stopped at its time cap: the run is partial and resumes from its cursor next time (degraded, exit 0).</summary>
     public static readonly ErrorDefinition SyncCapped = new("SND-CONTEXT-059", ErrorKind.Unavailable, "A sync stopped at its time cap");
 
+    /// <summary>SND-CONTEXT-110: a sha of a diff range isn't a commit in the repo's clone (often a head from another clone or fork that isn't fetched yet).</summary>
+    public static readonly ErrorDefinition CommitUnknown = new("SND-CONTEXT-110", ErrorKind.NotFound, "The repo's clone doesn't hold that commit");
+
+    /// <summary>SND-CONTEXT-111: the two commits of a diff range share no merge base (unrelated histories).</summary>
+    public static readonly ErrorDefinition NoMergeBase = new("SND-CONTEXT-111", ErrorKind.Invalid, "The two commits share no merge base");
+
     /// <summary>Every Context error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
         [SettingsInvalid, SourceNotConfigured, UnknownAnchor, StoreUnavailable, PathInWorktree, QueryInvalid, SourceUnavailable, AllSourcesUnavailable, SessionsDisabled,
          McpRepoMissing, McpArgumentsInvalid, McpToolUnknown, McpRegisterRepoUnknown, McpRegisterFailed, McpUserWide,
          NoMap, MapFileInvalid, MapNodeUndefined, ExportOutsideHome, MapFileChanged, ProbeFileInvalid, NoProbeFile, AmbiguousAnchor, ProbesRegressed,
          HeavyLockBusy, LabelingUnavailable, ReviewFileNoMatch, NoDraftMap, RepoOutsideScope, PromoteRefused, ReviewTargetStale, ExtractionUnreadable,
-         OnyxKeyRefused, OnyxUnexpectedReply, OnyxDocumentNotFound, OnyxKeyNotServiceAccount, OnyxNotPinnedOrLoopback, SyncRunning, ModelAnswerRefused, SyncSourceUnknown, SyncCapped];
+         OnyxKeyRefused, OnyxUnexpectedReply, OnyxDocumentNotFound, OnyxKeyNotServiceAccount, OnyxNotPinnedOrLoopback, SyncRunning, ModelAnswerRefused, SyncSourceUnknown, SyncCapped, CommitUnknown, NoMergeBase];
 
     /// <summary>
     /// The codes the CLI answers with exit 1 (attention, spec §8.6): an unknown or ambiguous anchor, a refused input or
@@ -164,5 +170,6 @@ public static class ContextErrors
         UnknownAnchor.Code, PathInWorktree.Code, QueryInvalid.Code, SessionsDisabled.Code, NoMap.Code, MapFileInvalid.Code, MapNodeUndefined.Code,
         ExportOutsideHome.Code, MapFileChanged.Code, ProbeFileInvalid.Code, NoProbeFile.Code, AmbiguousAnchor.Code, ProbesRegressed.Code,
         LabelingUnavailable.Code, ReviewFileNoMatch.Code, NoDraftMap.Code, RepoOutsideScope.Code, PromoteRefused.Code, ReviewTargetStale.Code, SyncRunning.Code, SyncSourceUnknown.Code,
+        CommitUnknown.Code, NoMergeBase.Code,
     };
 }
