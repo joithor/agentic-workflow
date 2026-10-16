@@ -26,23 +26,26 @@ public sealed class SindriApiClientNeedsYouTests
     public async Task NeedsYou_reads_rows_in_the_apis_order_with_every_pinned_field()
     {
         var (client, _, _) = Reach();
+        var served = GoldenFiles.Node("needs-you", "fixture");
+        var rows = served["rows"]!.AsArray();
 
         var list = (await client.NeedsYou(_api, Token)).Value;
 
-        Assert.Equal(["decision:" + Dec, "failure:service:index", "profile:drift"], list.Rows.Select(r => r.Id), StringComparer.Ordinal);
+        Assert.Equal(rows.Select(r => (string)r!["id"]!), list.Rows.Select(r => r.Id), StringComparer.Ordinal);
         var decision = list.Rows[0];
-        Assert.Equal(("decision", "decision · re-scope", "pulse", "Decide"), (decision.Kind, decision.Label, decision.Urgency, decision.PrimaryAction));
-        Assert.Equal(new SubjectRefView("decision", Dec), decision.Subject);
-        Assert.Equal(("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a306", "sindri-app"), (decision.Item, decision.Repo));
-        Assert.Equal((true, "Recorded now; the agent acts on it when it next runs."), (decision.RecordedOnly, decision.Notice));
+        var decisionId = (string)rows[0]!["subject"]!["id"]!;
+        Assert.Equal(("decision", (string)rows[0]!["label"]!, "pulse", "Decide"), (decision.Kind, decision.Label, decision.Urgency, decision.PrimaryAction));
+        Assert.Equal(new SubjectRefView("decision", decisionId), decision.Subject);
+        Assert.Equal(((string?)rows[0]!["item"], (string)rows[0]!["repo"]!), (decision.Item, decision.Repo));
+        Assert.Equal(((bool)rows[0]!["recordedOnly"]!, (string)rows[0]!["notice"]!), (decision.RecordedOnly, decision.Notice));
         Assert.Null(decision.AnswerKind);
         Assert.Equal(["Decide"], decision.Actions);
-        Assert.Equal("sindri decide " + Dec + " <choice>", decision.Cli);
-        Assert.Equal((new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "Re-scope: drop the iOS head from this item"), (decision.Since, decision.Title));
+        Assert.Equal((string)rows[0]!["cli"]!, decision.Cli);
+        Assert.Equal((rows[0]!["since"]!.GetValue<DateTimeOffset>(), (string)rows[0]!["title"]!), (decision.Since, decision.Title));
         var failure = list.Rows[1];
         Assert.Equal(("colour", "RunService"), (failure.Urgency, failure.PrimaryAction));
         Assert.Equal(["RunService", "PauseService"], failure.Actions);
-        Assert.Equal((41L, false, false), (list.AsOf.Cursor, list.AsOf.Stalled, list.AsOf.Rebuilding));
+        Assert.Equal(((long)served["asOf"]!["cursor"]!, false, false), (list.AsOf.Cursor, list.AsOf.Stalled, list.AsOf.Rebuilding));
     }
 
     [Fact]
@@ -64,7 +67,8 @@ public sealed class SindriApiClientNeedsYouTests
 
         var profile = (await client.NeedsYou(_api, Token)).Value.Rows[2];
 
-        Assert.Equal(new SubjectRefView("profile", "3f1c09"), profile.Subject);
+        var served = GoldenFiles.Node("needs-you", "fixture")["rows"]![2]!["subject"]!;
+        Assert.Equal(new SubjectRefView("profile", (string)served["id"]!), profile.Subject);
     }
 
     [Fact]
@@ -91,8 +95,9 @@ public sealed class SindriApiClientNeedsYouTests
         Assert.Equal(["accept", "decline"], pending.Options.Select(o => o.Id), StringComparer.Ordinal);
         Assert.Equal([false, true], pending.Options.Select(o => o.RejectLike));
         Assert.Equal(("accept", "pending"), (pending.Recommended, pending.State));
-        Assert.Equal(["decided", "voided"], decided.Select(d => d.State), StringComparer.Ordinal);
-        Assert.Equal(("accept", "DEC-0192a1b2c3d4e5f6a7b8c9d0e1f2d701 accepted"), (decided[0].Choice, decided[0].Cleared));
+        var served = GoldenFiles.Node("decisions", "decided")["decisions"]![0]!;
+        Assert.Equal(["decided"], decided.Select(d => d.State), StringComparer.Ordinal);
+        Assert.Equal(((string)served["choice"]!, (string)served["cleared"]!), (decided[0].Choice, decided[0].Cleared));
         Assert.Empty(decided[0].Actions);
         Assert.Equal(1, server.DecisionQueries.Count(q => q.Pending == false));
     }
@@ -100,12 +105,13 @@ public sealed class SindriApiClientNeedsYouTests
     [Fact]
     public async Task Requests_sends_state_and_item_as_query_parameters()
     {
-        var (client, _, handler) = Reach();
+        var (client, server, handler) = Reach();
+        server.RequestsView = RouteAnswer.Api("requests", "list-state-accepted");
 
         var list = (await client.Requests(_api, "accepted", "ITM-1", Token)).Value;
 
         Assert.Equal(["?state=accepted&item=ITM-1"], handler.Requests.Select(r => r.Query), StringComparer.Ordinal);
-        Assert.Equal(2, list.Requests.Count);
+        Assert.Equal(["accepted"], list.Requests.Select(r => r.State), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -115,33 +121,38 @@ public sealed class SindriApiClientNeedsYouTests
         server.Decided = RouteAnswer.Problem(HttpStatusCode.ServiceUnavailable, "SND-UI-099", "down");
 
         _ = await client.Decide(_api, Dec, new DecideRequest("accept", "go ahead"), Token);
-        server.Decided = RouteAnswer.SpecShaped("decisions-id", "accepted");
+        server.Decided = RouteAnswer.Api("decisions-id", "accepted");
         var accepted = await client.Decide(_api, Dec, new DecideRequest("accept", "go ahead"), Token);
 
-        Assert.Equal(60L, accepted.Value.Sequence);
+        Assert.Equal((long)GoldenFiles.Node("decisions-id", "accepted")["sequence"]!, accepted.Value.Sequence);
         Assert.Equal(2, handler.Requests.Count(r => r.Method == "POST" && r.Path == "/sindri/decisions/" + Dec));
         Assert.Equal([(Dec, new DecideRequest("accept", "go ahead")), (Dec, new DecideRequest("accept", "go ahead"))], server.DecideCalls);
     }
 
     [Theory]
-    [InlineData("decided-elsewhere", "SND-DEC-001")]
-    [InlineData("voided", "SND-VIEW-001")]
-    public async Task Decide_maps_409_decided_elsewhere_and_voided_with_their_details(string scenario, string code)
+    [InlineData("decided-elsewhere")]
+    [InlineData("voided")]
+    public async Task Decide_maps_409_decided_elsewhere_and_voided_with_their_details(string scenario)
     {
+        var served = GoldenFiles.Node("decisions-id", scenario);
+        var code = (string)served["title"]!;
         var (client, server, _) = Reach();
         server.Decided = RouteAnswer.Problem("decisions-id", scenario);
 
         var result = await client.Decide(_api, Dec, new DecideRequest("accept", Note: null), Token);
 
         Assert.Equal((code, ErrorKind.Conflict), (result.Error.Code, result.Error.Kind));
-        Assert.Contains("(fix: re-read the list)", result.Error.Message, StringComparison.Ordinal);
+        Assert.Contains((string)served["detail"]!, result.Error.Message, StringComparison.Ordinal);
     }
 
     [Theory]
-    [InlineData("not-found", "SND-DEC-404", ErrorKind.NotFound)]
-    [InlineData("bad-choice", "SND-DEC-001", ErrorKind.Invalid)]
-    public async Task Decide_maps_SND_DEC_404_SND_DEC_001_and_SND_VIEW_001(string scenario, string code, ErrorKind kind)
+    [InlineData("not-found", ErrorKind.NotFound)]
+    [InlineData("bad-choice", ErrorKind.Invalid)]
+    [InlineData("bad-id", ErrorKind.Invalid)]
+    [InlineData("while-stalled", ErrorKind.Unavailable)]
+    public async Task Decide_maps_the_served_refusals_to_their_code_and_kind(string scenario, ErrorKind kind)
     {
+        var code = (string)GoldenFiles.Node("decisions-id", scenario)["title"]!;
         var (client, server, _) = Reach();
         server.Decided = RouteAnswer.Problem("decisions-id", scenario);
 
@@ -157,16 +168,21 @@ public sealed class SindriApiClientNeedsYouTests
 
         var filed = (await client.FileRequest(_api, new FileRequestRequest("accept-request", "ITM-1", "Please re-scope"), Token)).Value;
 
-        Assert.Equal(("REQ-0192a1b2c3d4e5f6a7b8c9d0e1f2d706", "DEC-0192a1b2c3d4e5f6a7b8c9d0e1f2d707", 62L), (filed.RequestId, filed.DecisionId, filed.Accepted.Sequence));
+        var served = GoldenFiles.Node("requests", "filed");
+        Assert.Equal(((string)served["requestId"]!, (string)served["decisionId"]!, (long)served["accepted"]!["sequence"]!), (filed.RequestId, filed.DecisionId, filed.Accepted.Sequence));
         Assert.Equal([new FileRequestRequest("accept-request", "ITM-1", "Please re-scope")], server.FileCalls);
     }
 
     [Theory]
-    [InlineData("invalid", "SND-REQ-001", ErrorKind.Invalid)]
-    [InlineData("item-not-found", "SND-ITEM-404", ErrorKind.NotFound)]
-    [InlineData("item-closed", "SND-ITEM-409", ErrorKind.Conflict)]
-    public async Task FileRequest_maps_SND_REQ_001_SND_REQ_002_and_item_404_409(string scenario, string code, ErrorKind kind)
+    [InlineData("invalid", ErrorKind.Invalid)]
+    [InlineData("too-long", ErrorKind.Invalid)]
+    [InlineData("invalid-kind", ErrorKind.Invalid)]
+    [InlineData("too-many", ErrorKind.RateLimited)]
+    [InlineData("item-not-found", ErrorKind.NotFound)]
+    [InlineData("item-closed", ErrorKind.Conflict)]
+    public async Task FileRequest_maps_the_served_refusals_to_their_code_and_kind(string scenario, ErrorKind kind)
     {
+        var code = (string)GoldenFiles.Node("requests", scenario)["title"]!;
         var (client, server, _) = Reach();
         server.Filed = RouteAnswer.Problem("requests", scenario);
 
@@ -184,7 +200,7 @@ public sealed class SindriApiClientNeedsYouTests
         _ = await client.NeedsYou(_api, Token);
         _ = await client.NeedsYou(_api, Token);
 
-        Assert.Equal(["60", null], handler.Requests.Where(r => r.Path == "/sindri/needs-you").Select(r => r.After), StringComparer.Ordinal);
+        Assert.Equal([((long)GoldenFiles.Node("decisions-id", "accepted")["sequence"]!).ToString(System.Globalization.CultureInfo.InvariantCulture), null], handler.Requests.Where(r => r.Path == "/sindri/needs-you").Select(r => r.After), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -195,7 +211,7 @@ public sealed class SindriApiClientNeedsYouTests
         _ = await client.FileRequest(_api, new FileRequestRequest("accept-request", ItemId: null, "x"), Token);
         _ = await client.Decisions(_api, pending: true, item: null, Token);
 
-        Assert.Equal("62", handler.Requests.Single(r => r.Path == "/sindri/decisions").After);
+        Assert.Equal(((long)GoldenFiles.Node("requests", "filed")["accepted"]!["sequence"]!).ToString(System.Globalization.CultureInfo.InvariantCulture), handler.Requests.Single(r => r.Path == "/sindri/decisions").After);
     }
 
     [Fact]

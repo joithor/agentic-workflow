@@ -89,13 +89,14 @@ public sealed class GoldenContractTests
     [Fact]
     public void Requests_slug_reads_list_scenarios_as_RequestList_and_others_as_RequestFiled()
     {
-        var list = AwJson.Deserialize<RequestList>(Encoding.UTF8.GetBytes(GoldenFiles.SpecShaped("requests", "list-fixture")), SindriApiClient.Json).Value;
-        var filed = AwJson.Deserialize<RequestFiledView>(Encoding.UTF8.GetBytes(GoldenFiles.SpecShaped("requests", "filed")), SindriApiClient.Json).Value;
+        var list = AwJson.Deserialize<RequestList>(Encoding.UTF8.GetBytes(GoldenFiles.Api("requests", "list-fixture")), SindriApiClient.Json).Value;
+        var filed = AwJson.Deserialize<RequestFiledView>(Encoding.UTF8.GetBytes(GoldenFiles.Api("requests", "filed")), SindriApiClient.Json).Value;
 
-        Assert.Equal(["open", "accepted"], list.Requests.Select(r => r.State), StringComparer.Ordinal);
-        Assert.Equal((62L, "REQ-0192a1b2c3d4e5f6a7b8c9d0e1f2d706"), (filed.Accepted.Sequence, filed.RequestId));
-        Assert.True(AsRequests(Encoding.UTF8.GetBytes(GoldenFiles.SpecShaped("requests", "list-empty"))).Value is RequestList);
-        Assert.True(AsRequests(Encoding.UTF8.GetBytes(GoldenFiles.SpecShaped("requests", "filed"))).Value is RequestFiledView);
+        var servedFiled = GoldenFiles.Node("requests", "filed");
+        Assert.Equal(GoldenFiles.Node("requests", "list-fixture")["requests"]!.AsArray().Select(r => (string)r!["state"]!), list.Requests.Select(r => r.State), StringComparer.Ordinal);
+        Assert.Equal(((long)servedFiled["accepted"]!["sequence"]!, (string)servedFiled["requestId"]!), (filed.Accepted.Sequence, filed.RequestId));
+        Assert.True(AsRequests(Encoding.UTF8.GetBytes(GoldenFiles.Api("requests", "list-empty"))).Value is RequestList);
+        Assert.True(AsRequests(Encoding.UTF8.GetBytes(GoldenFiles.Api("requests", "filed"))).Value is RequestFiledView);
     }
 
     [Fact]

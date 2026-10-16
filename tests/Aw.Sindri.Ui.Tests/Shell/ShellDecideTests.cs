@@ -13,7 +13,7 @@ namespace Aw.Sindri.Ui.Tests.Shell;
 public sealed class ShellDecideTests
 {
     private readonly InMemoryEndpointRecords _records = new();
-    private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.Api("commands", "catalog"), NeedsYouView = RouteAnswer.SpecShaped("needs-you", "empty") };
+    private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.Api("commands", "catalog"), NeedsYouView = RouteAnswer.Api("needs-you", "empty") };
     private readonly FakeTimeProvider _clock = new(A.Noon);
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -99,7 +99,7 @@ public sealed class ShellDecideTests
     public async Task A_conflict_shows_the_served_detail_inline_and_opens_the_sheet()
     {
         var shell = await WithDecision();
-        _server.DecideAnswers["DEC-1"] = RouteAnswer.SpecShaped("decisions-id", "decided-elsewhere");
+        _server.DecideAnswers["DEC-1"] = RouteAnswer.Api("decisions-id", "decided-elsewhere");
 
         Assert.True(shell.Press("X"));
         await shell.Decision.Settled;

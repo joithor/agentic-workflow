@@ -74,12 +74,12 @@ public sealed class RequeryTests
         shell.Navigate(new DeepLink(DeepLinkKind.Item, A.NewItem));
         await Until(() => shell.Item.HasItem);
         var (needsYou, decisions, items) = (_server.NeedsYouCalls, _server.DecisionQueries.Count, _server.ItemCalls);
-        _server.NeedsYouView = RouteAnswer.SpecShaped("needs-you", "after-decide");
+        _server.NeedsYouView = RouteAnswer.Api("needs-you", "after-decide");
         _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
 
         _server.Push(A.Event(61, type));
 
-        await Until(() => _server.NeedsYouCalls > needsYou && _server.DecisionQueries.Count > decisions && _server.ItemCalls > items && shell.Queue.Total == 12 && shell.Attention.Badge == 2);
+        await Until(() => _server.NeedsYouCalls > needsYou && _server.DecisionQueries.Count > decisions && _server.ItemCalls > items && shell.Queue.Total == 12 && shell.Attention.Badge == GoldenFiles.Node("needs-you", "after-decide")["rows"]!.AsArray().Count);
     }
 
     [Fact]

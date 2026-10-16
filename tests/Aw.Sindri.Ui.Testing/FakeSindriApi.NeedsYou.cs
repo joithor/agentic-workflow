@@ -3,7 +3,7 @@ using Aw.Sindri.Ui.Api;
 
 namespace Aw.Sindri.Ui.Testing;
 
-/// <summary>The Needs you routes (spec-shaped until API P4 records its goldens): the list, the decisions, the requests, Decide and FileRequest.</summary>
+/// <summary>The Needs you routes (API P4's goldens): the list, the decisions, the requests, Decide and FileRequest.</summary>
 internal sealed partial class FakeSindriApi
 {
     private readonly List<(string Decision, DecideRequest Request)> _decided = [];
@@ -13,28 +13,28 @@ internal sealed partial class FakeSindriApi
     private int _needsYouCalls;
 
     /// <summary>GET /sindri/needs-you's answer.</summary>
-    public RouteAnswer NeedsYouView { get; set; } = RouteAnswer.SpecShaped("needs-you", "fixture");
+    public RouteAnswer NeedsYouView { get; set; } = RouteAnswer.Api("needs-you", "fixture");
 
     /// <summary>GET /sindri/decisions's answer for pending=true (and for no filter).</summary>
-    public RouteAnswer PendingDecisions { get; set; } = RouteAnswer.SpecShaped("decisions", "pending");
+    public RouteAnswer PendingDecisions { get; set; } = RouteAnswer.Api("decisions", "pending");
 
     /// <summary>GET /sindri/decisions's answer for pending=false.</summary>
-    public RouteAnswer DecidedDecisions { get; set; } = RouteAnswer.SpecShaped("decisions", "decided");
+    public RouteAnswer DecidedDecisions { get; set; } = RouteAnswer.Api("decisions", "decided");
 
     /// <summary>GET /sindri/decisions's answer per item id (before the pending and decided ones).</summary>
     public Dictionary<string, RouteAnswer> DecisionsByItem { get; } = new(StringComparer.Ordinal);
 
     /// <summary>GET /sindri/requests's answer.</summary>
-    public RouteAnswer RequestsView { get; set; } = RouteAnswer.SpecShaped("requests", "list-fixture");
+    public RouteAnswer RequestsView { get; set; } = RouteAnswer.Api("requests", "list-fixture");
 
     /// <summary>POST /sindri/decisions/{id}'s answer (any decision without its own in <see cref="DecideAnswers"/>).</summary>
-    public RouteAnswer Decided { get; set; } = RouteAnswer.SpecShaped("decisions-id", "accepted");
+    public RouteAnswer Decided { get; set; } = RouteAnswer.Api("decisions-id", "accepted");
 
     /// <summary>POST /sindri/decisions/{id}'s answer per decision id.</summary>
     public Dictionary<string, RouteAnswer> DecideAnswers { get; } = new(StringComparer.Ordinal);
 
     /// <summary>POST /sindri/requests's answer.</summary>
-    public RouteAnswer Filed { get; set; } = RouteAnswer.SpecShaped("requests", "filed");
+    public RouteAnswer Filed { get; set; } = RouteAnswer.Api("requests", "filed");
 
     /// <summary>Held open until set: the needs-you read waits for it.</summary>
     public TaskCompletionSource? NeedsYouGate { get; set; }

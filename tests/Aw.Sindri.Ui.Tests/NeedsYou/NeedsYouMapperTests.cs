@@ -12,21 +12,30 @@ namespace Aw.Sindri.Ui.Tests.NeedsYou;
 [Lane(TestLane.Unit)]
 public sealed class NeedsYouMapperTests
 {
-    private const string Dec = "DEC-0192a1b2c3d4e5f6a7b8c9d0e1f2d701";
+    private static readonly System.Text.Json.Nodes.JsonArray _served = GoldenFiles.Node("needs-you", "fixture")["rows"]!.AsArray();
+    private static readonly string _dec = (string)_served[0]!["subject"]!["id"]!;
     private static readonly HomeCounts _counts = new(Running: 2, WithYou: 1, Queued: 3);
 
-    private static T Golden<T>(string slug, string scenario, bool api = false)
+    // The API's golden; an extra- scenario is the one spec-shaped case no golden covers.
+    private static T Golden<T>(string slug, string scenario)
         where T : class =>
-        AwJson.Deserialize<T>(Encoding.UTF8.GetBytes(api ? GoldenFiles.Api(slug, scenario) : GoldenFiles.SpecShaped(slug, scenario)), SindriApiClient.Json).Value;
+        AwJson.Deserialize<T>(Encoding.UTF8.GetBytes(scenario.StartsWith("extra-", StringComparison.Ordinal) ? GoldenFiles.SpecShaped(slug, scenario) : GoldenFiles.Api(slug, scenario)), SindriApiClient.Json).Value;
 
-    private static CommandList Catalog() => Golden<CommandList>("commands", "catalog", api: true);
+    private static CommandList Catalog() => Golden<CommandList>("commands", "catalog");
+
+    // The pending golden lists decisions by their own ids; the fixture row's decision is the first of them under the row's id.
+    private static DecisionList Pending()
+    {
+        var pending = Golden<DecisionList>("decisions", "pending");
+        return pending with { Decisions = [pending.Decisions[0] with { Id = _dec }, .. pending.Decisions.Skip(1)] };
+    }
 
     private static NeedsYouFeed Feed(string scenario = "fixture", bool withDecisions = true) =>
-        NeedsYouMapper.Map(Golden<NeedsYouList>("needs-you", scenario), Catalog(), withDecisions ? Golden<DecisionList>("decisions", "pending") : null, _counts);
+        NeedsYouMapper.Map(Golden<NeedsYouList>("needs-you", scenario), Catalog(), withDecisions ? Pending() : null, _counts);
 
     [Fact]
     public void Rows_keep_the_apis_order_and_ids() =>
-        Assert.Equal(["decision:" + Dec, "failure:service:index", "profile:drift"], Feed().Rows.Select(r => r.Id), StringComparer.Ordinal);
+        Assert.Equal(_served.Select(r => (string)r!["id"]!), Feed().Rows.Select(r => r.Id), StringComparer.Ordinal);
 
     [Fact]
     public void A_decision_row_carries_its_chip_item_repo_subject_cli_and_notice()
@@ -34,11 +43,12 @@ public sealed class NeedsYouMapperTests
         var row = Feed().Rows[0];
 
         Assert.Equal((NeedsYouUrgency.Pulse, new NeedsYouChip("DECISION", NeedsYouChipTone.Attn)), (row.Urgency, row.Chip));
-        Assert.Equal(("Re-scope: drop the iOS head from this item", "sindri-app", "decision · re-scope"), (row.Title, row.Repo, row.Reason));
-        Assert.Equal(("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a306", Dec, "Decide"), (row.ItemId, row.ShownId, row.PrimaryAction));
-        Assert.Equal(new NeedsYouSubject("decision", Dec), row.Subject);
-        Assert.Equal(("sindri decide " + Dec + " <choice>", true, "Recorded now; the agent acts on it when it next runs."), (row.Cli, row.RecordedOnly, row.Notice));
-        Assert.Equal(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), row.Since);
+        var served = _served[0]!;
+        Assert.Equal(((string)served["title"]!, (string)served["repo"]!, (string)served["label"]!), (row.Title, row.Repo, row.Reason));
+        Assert.Equal(((string?)served["item"], _dec, "Decide"), (row.ItemId, row.ShownId, row.PrimaryAction));
+        Assert.Equal(new NeedsYouSubject("decision", _dec), row.Subject);
+        Assert.Equal(((string)served["cli"]!, true, (string)served["notice"]!), (row.Cli, row.RecordedOnly, row.Notice));
+        Assert.Equal(served["since"]!.GetValue<DateTimeOffset>(), row.Since);
     }
 
     [Fact]
@@ -49,8 +59,8 @@ public sealed class NeedsYouMapperTests
         Assert.Equal(["Accept", "Decline"], actions.Select(a => a.Label), StringComparer.Ordinal);
         Assert.Equal(["accept", "decline"], actions.Select(a => a.OptionId), StringComparer.Ordinal);
         Assert.Equal([false, true], actions.Select(a => a.RejectLike));
-        Assert.All(actions, a => Assert.Equal(("Decide", ActionReadiness.Pending), (a.CatalogId, a.Readiness)));   // the golden catalog still lists Decide as pending:P4
-        Assert.Equal("sindri decide " + Dec + " decline", actions[1].Cli);
+        Assert.All(actions, a => Assert.Equal(("Decide", ActionReadiness.Ready), (a.CatalogId, a.Readiness)));   // P4's catalog lists Decide as ready
+        Assert.Equal(Pending().Decisions[0].Options[1].Cli, actions[1].Cli);
     }
 
     [Fact]
@@ -58,7 +68,7 @@ public sealed class NeedsYouMapperTests
     {
         var ready = Catalog() with { Rows = [.. Catalog().Rows.Select(r => r.Action == "Decide" ? r with { Ui = "ready" } : r)] };
 
-        var actions = NeedsYouMapper.Map(Golden<NeedsYouList>("needs-you", "fixture"), ready, Golden<DecisionList>("decisions", "pending"), _counts).Rows[0].Actions;
+        var actions = NeedsYouMapper.Map(Golden<NeedsYouList>("needs-you", "fixture"), ready, Pending(), _counts).Rows[0].Actions;
 
         Assert.All(actions, a => Assert.True(a.IsReady));
     }
@@ -68,7 +78,7 @@ public sealed class NeedsYouMapperTests
     {
         var action = Assert.Single(Feed(withDecisions: false).Rows[0].Actions);
 
-        Assert.Equal(("Decide", "", "sindri decide " + Dec + " <choice>"), (action.CatalogId, action.OptionId, action.Cli));
+        Assert.Equal(("Decide", "", (string)_served[0]!["cli"]!), (action.CatalogId, action.OptionId, action.Cli));
     }
 
     [Fact]
@@ -78,14 +88,14 @@ public sealed class NeedsYouMapperTests
 
         Assert.Equal(["RunService", "PauseService"], rows[1].Actions.Select(a => a.CatalogId), StringComparer.Ordinal);
         Assert.All(rows[1].Actions, a => Assert.Equal(ActionReadiness.Pending, a.Readiness));
-        Assert.Equal((NeedsYouUrgency.Colour, new NeedsYouChip("FAILED", NeedsYouChipTone.Fail), "sindri services run index"), (rows[1].Urgency, rows[1].Chip, rows[1].Cli));
+        Assert.Equal((NeedsYouUrgency.Colour, new NeedsYouChip("FAILED", NeedsYouChipTone.Fail), (string)_served[1]!["cli"]!), (rows[1].Urgency, rows[1].Chip, rows[1].Cli));
         Assert.Equal((NeedsYouUrgency.Calm, ActionReadiness.CliOnly, "ApproveProfile"), (rows[2].Urgency, rows[2].Actions[0].Readiness, rows[2].PrimaryAction));
     }
 
     [Fact]
     public void A_profile_subject_maps_and_a_null_one_stays_null()
     {
-        Assert.Equal(new NeedsYouSubject("profile", "3f1c09"), Feed().Rows[2].Subject);
+        Assert.Equal(new NeedsYouSubject("profile", (string)_served[2]!["subject"]!["id"]!), Feed().Rows[2].Subject);
         Assert.Null(Feed("extra-profile-null-subject").Rows[2].Subject);
     }
 
@@ -127,7 +137,7 @@ public sealed class NeedsYouMapperTests
         var stalled = Feed("stalled");
         var rebuilding = Feed("rebuilding");
 
-        Assert.Equal(("Nothing is waiting on you. 2 running, 3 queued.", false, false), (empty.Sentence, empty.Stalled, empty.Rebuilding));
+        Assert.Equal(((string)GoldenFiles.Node("needs-you", "empty")["empty"]!, false, false), (empty.Sentence, empty.Stalled, empty.Rebuilding));
         Assert.Empty(empty.Rows);
         Assert.Equal((true, false), (stalled.Stalled, stalled.Rebuilding));
         Assert.Equal((false, true), (rebuilding.Stalled, rebuilding.Rebuilding));

@@ -1,7 +1,0 @@
-{
-  "type": "about:blank",
-  "title": "SND-DEC-001",
-  "status": 400,
-  "detail": "choice 'maybe' is not one of accept, decline (fix: use one of them)",
-  "traceId": "<trace>"
-}

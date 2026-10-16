@@ -185,7 +185,7 @@ public sealed class ItemSheetViewModelTests
 
         Assert.Equal((true, "DEC-0192a1b2c3d4e5f6a7b8c9d0e1f2c501", "Needs decision"), (sheet.HasWaitingOn, sheet.WaitingOn, sheet.StateWord));
         Assert.Equal(["Decide", "Close item", "Close as cancelled"], sheet.Actions.Select(a => a.Label), StringComparer.Ordinal);
-        Assert.True(sheet.Actions[0].IsPending);
+        Assert.False(sheet.Actions[0].IsPending);   // P4 lists Decide as ready
     }
 
     private static Task Within(Task task) => task.WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
