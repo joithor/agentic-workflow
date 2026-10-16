@@ -16,12 +16,12 @@ internal sealed class ExpandedCommandViewModel : ObservableObject
     {
         Verb = command.Verb;
         Label = Labels.CommandLabel(command.Verb, command.Verb == StatusVerb.Answer ? answer : null);
-        Name = Labels.CommandName(Label, address);
+        var isProtected = string.Equals(command.Class, "protected", StringComparison.Ordinal);
+        PendingChip = isProtected ? string.Empty : Labels.AvailableWithU8b;
+        Name = Labels.CommandName(Label, address, PendingChip);
         Cli = ControlViewModel.Safe(command.Cli) ? command.Cli : string.Empty;
         Confirm = command.Confirm;
-        var isProtected = string.Equals(command.Class, "protected", StringComparison.Ordinal);
         Protected = isProtected ? new ProtectedActionViewModel(new ProtectedAction(Label, command.Cli, address), clipboard, clock) : null;
-        PendingChip = isProtected ? string.Empty : Labels.AvailableWithU8b;
         CopyName = $"{Labels.Copy}: {(Cli.Length > 0 ? Cli : Labels.NoCommandServed)}";
         CliCopy = new CopyAction(clipboard, clock, Name);
     }

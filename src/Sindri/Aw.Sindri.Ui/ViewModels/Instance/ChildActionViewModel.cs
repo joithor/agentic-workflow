@@ -15,9 +15,9 @@ internal sealed class ChildActionViewModel
     internal ChildActionViewModel(string action, string address, IClipboard clipboard, TimeProvider clock)
     {
         Label = Labels.Action(action);
-        Name = Labels.ChildActionName(Label, address);
         Protected = _protectedActions.Any(p => action.StartsWith(p, StringComparison.Ordinal)) ? new ProtectedActionViewModel(new ProtectedAction(Label, Cli: string.Empty, address), clipboard, clock) : null;
         PendingChip = Protected is null ? Labels.AvailableWithU8b : string.Empty;
+        Name = Labels.ChildActionName(Label, address, PendingChip);
     }
 
     /// <summary>The action's words.</summary>

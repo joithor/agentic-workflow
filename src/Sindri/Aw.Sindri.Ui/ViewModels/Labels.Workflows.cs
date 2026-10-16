@@ -64,10 +64,10 @@ internal static partial class Labels
     internal const string WorkflowsHeading = "Workflows";
 
     /// <summary>B on a row: handing an instance back is sent from the app in U8b.</summary>
-    internal const string HandBackArrives = "Hand back arrives with U8b. Copy its command from the instance and run it at a terminal.";
+    internal static readonly string HandBackArrives = $"Hand back {Arrives("U8b")}. Copy its command from the instance and run it at a terminal.";
 
     /// <summary>N: starting a workflow from the app arrives with U5'.</summary>
-    internal const string StartArrives = "Start arrives with U5'.";
+    internal static readonly string StartArrives = $"Start {Arrives("U5'")}.";
 
     /// <summary>The frame tab strip's heading for screen readers.</summary>
     internal const string TabsHeading = "Instance views";
@@ -85,10 +85,10 @@ internal static partial class Labels
     internal const string TabContext = "Context";
 
     /// <summary>The phase of the Timeline, Decisions and Requests tabs.</summary>
-    internal const string TabsArriveU8b = "arrives with U8b";
+    internal static readonly string TabsArriveU8b = Arrives("U8b");
 
     /// <summary>The phase of the Context tab.</summary>
-    internal const string TabArrivesU9 = "arrives with U9";
+    internal static readonly string TabArrivesU9 = Arrives("U9");
 
     /// <summary>A tab's text: the label and, when the API serves one, the count.</summary>
     /// <param name="label">The tab's word.</param>

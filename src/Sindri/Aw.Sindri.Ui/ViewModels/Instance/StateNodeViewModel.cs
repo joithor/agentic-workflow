@@ -8,7 +8,7 @@ internal sealed class StateNodeViewModel
 {
     private readonly StageCellViewModel _cell;
 
-    internal StateNodeViewModel(StateCell cell, bool isCurrent, string link, IReadOnlyList<StateNodeViewModel> branches)
+    internal StateNodeViewModel(StateCell cell, bool isCurrent, string link, IReadOnlyList<StateNodeViewModel> branches, string? loopsWith = null)
     {
         _cell = new StageCellViewModel(cell, isCurrent, isBlocked: false);
         IsCurrent = isCurrent;
@@ -16,6 +16,11 @@ internal sealed class StateNodeViewModel
         Outcome = cell.Outcome ?? string.Empty;
         Link = link;
         Branches = branches;
+        Name = string.Concat(
+            _cell.Name,
+            Outcome.Length > 0 ? ", " + Outcome : string.Empty,
+            loopsWith is { Length: > 0 } ? ", " + Labels.LoopsWith(loopsWith) : string.Empty,   // the loop mark and the indent are glyphs: the words say what they show
+            cell.BranchOf is { Length: > 0 } source ? ", " + Labels.BranchOf(source) : string.Empty);
     }
 
     /// <summary>The state.</summary>
@@ -24,8 +29,8 @@ internal sealed class StateNodeViewModel
     /// <summary>The state, its mark and what it serves, then its outcome.</summary>
     public string Text => $"{State} {_cell.Text}{(Outcome.Length > 0 ? " " + Outcome : string.Empty)}";
 
-    /// <summary>The words screen readers hear: the state in words, then the outcome.</summary>
-    public string Name => $"{_cell.Name}{(Outcome.Length > 0 ? ", " + Outcome : string.Empty)}";
+    /// <summary>The words screen readers hear: the state in words, its outcome, what it loops with, what it branches from.</summary>
+    public string Name { get; }
 
     /// <summary>True for the state the instance is in.</summary>
     public bool IsCurrent { get; }

@@ -62,6 +62,7 @@ internal static partial class Labels
     /// <summary>The accessible name of a child action that is not sent from here.</summary>
     /// <param name="label">The action's label.</param>
     /// <param name="address">The child.</param>
+    /// <param name="chip">The words of the pending chip, which the name carries because the chip itself is a glyph for a screen reader; empty for none.</param>
     /// <returns>The words.</returns>
-    internal static string ChildActionName(string label, string address) => $"{label} {address}";
+    internal static string ChildActionName(string label, string address, string chip = "") => chip.Length > 0 ? $"{label} {address}, {chip}" : $"{label} {address}";
 }

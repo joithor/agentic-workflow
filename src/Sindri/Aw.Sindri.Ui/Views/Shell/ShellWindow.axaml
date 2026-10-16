@@ -265,7 +265,7 @@
                   <ny:DecisionSheet x:Name="DecisionSheet" DataContext="{Binding Decision}" />
                 </ScrollViewer>
                 <!-- LANE ANCHOR U3': the sheet content for the kinds U3' claims (kinds: NeedsYou, Decision). Insert immediately above this marker, never between the markers. -->
-                <!-- LANE ANCHOR U8: the sheet content for the kinds U8 claims (kinds: Workflow); the item sheet's re-base is content only. Recipe, Node, Session, System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers. -->
+                <!-- LANE ANCHOR U8: the sheet content for the kinds U8 claims (kinds: Workflow); the item sheet's re-base (U8b) is content only. Recipe, Node, Session, System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers. -->
                 <ScrollViewer x:Name="InstanceSheetScroll" IsVisible="{Binding IsInstanceSheet}">
                   <iv:InstanceFrameView x:Name="InstanceSheetFrame" DataContext="{Binding Instance}" />
                 </ScrollViewer>

@@ -23,7 +23,7 @@ internal static partial class Labels
     internal const string CopyStatus = "Copy status";
 
     /// <summary>A command the app does not send yet.</summary>
-    internal const string AvailableWithU8b = "Available with U8b";
+    internal static readonly string AvailableWithU8b = Arrives("U8b");
 
     /// <summary>What a loop mark says in words: the state loops with the next one.</summary>
     /// <param name="next">The state it loops with.</param>
@@ -39,7 +39,7 @@ internal static partial class Labels
     internal const string PendingNoteResting = "Cancel";
 
     /// <summary>What the frame says after Cancel was confirmed: nothing was sent.</summary>
-    internal const string SendingArrivesNote = "Sending from the app arrives with U8b. Copy the command and run it at a terminal.";
+    internal static readonly string SendingArrivesNote = $"Sending from the app {Arrives("U8b")}. Copy the command and run it at a terminal.";
 
     /// <summary>The frame's note while its instance is done.</summary>
     internal const string InstanceDone = "This instance is done.";
@@ -112,8 +112,9 @@ internal static partial class Labels
     /// <summary>A command's accessible name: its words and the instance.</summary>
     /// <param name="label">The words.</param>
     /// <param name="address">The instance.</param>
+    /// <param name="chip">The words of the pending chip, which the name carries; empty for none.</param>
     /// <returns>The name.</returns>
-    internal static string CommandName(string label, string address) => $"{label} {address}";
+    internal static string CommandName(string label, string address, string chip = "") => chip.Length > 0 ? $"{label} {address}, {chip}" : $"{label} {address}";
 
     /// <summary>The step line of the expanded state.</summary>
     /// <param name="step">What the step declares.</param>

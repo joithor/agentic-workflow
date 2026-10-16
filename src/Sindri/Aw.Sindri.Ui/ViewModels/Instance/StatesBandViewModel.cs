@@ -36,7 +36,8 @@ internal sealed class StatesBandViewModel
     private static StateNodeViewModel Node(IReadOnlyList<StateCell> all, StateCell cell, StateCell? next, string current)
     {
         var branches = all.Where(c => string.Equals(c.BranchOf, cell.State, StringComparison.Ordinal)).Select(c => new StateNodeViewModel(c, IsCurrent(c, current), string.Empty, [])).ToList();
-        return new StateNodeViewModel(cell, IsCurrent(cell, current), next is null ? string.Empty : Loops(cell, next) ? Labels.LoopMark : Labels.StepLink, branches);
+        var loops = next is not null && Loops(cell, next);
+        return new StateNodeViewModel(cell, IsCurrent(cell, current), next is null ? string.Empty : loops ? Labels.LoopMark : Labels.StepLink, branches, loops ? next?.State : null);
     }
 
     private static bool IsCurrent(StateCell cell, string current) => string.Equals(cell.State, current, StringComparison.Ordinal);
