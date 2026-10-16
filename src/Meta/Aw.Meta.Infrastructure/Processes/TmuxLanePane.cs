@@ -12,7 +12,8 @@ namespace Aw.Meta.Infrastructure.Processes;
 /// </summary>
 /// <param name="runner">Runs tmux.</param>
 /// <param name="tmux">The tmux program (AW_TMUX, default tmux).</param>
-internal sealed class TmuxLanePane(ICommandRunner runner, string tmux) : ILanePane
+/// <param name="socket">The tmux socket name (AW_META_TMUX_SOCKET), passed as "-L"; null for the default socket, which is what production uses.</param>
+internal sealed class TmuxLanePane(ICommandRunner runner, string tmux, string? socket = null) : ILanePane
 {
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(5);
 
@@ -45,5 +46,5 @@ internal sealed class TmuxLanePane(ICommandRunner runner, string tmux) : ILanePa
     private static string Target(string session) => "=" + session + ":";
 
     private ValueTask<Result<CommandResult>> Run(string[] arguments, CancellationToken cancellationToken) =>
-        runner.Run(new CommandRequest([tmux, .. arguments], _timeout), cancellationToken);
+        runner.Run(new CommandRequest(socket is null ? [tmux, .. arguments] : [tmux, "-L", socket, .. arguments], _timeout), cancellationToken);
 }

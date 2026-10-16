@@ -37,7 +37,7 @@ public static class MetaInfrastructureServiceCollectionExtensions
             .AddScoped<IMetaConfig>(sp => new FileMetaConfig(settings.ConfigPath, new JsonSerializerOptions(sp.GetRequiredService<JsonSerializerOptions>()) { WriteIndented = true }))
             .AddSingleton<ITranscriptReader, FileTranscriptReader>()
             .AddSingleton<ILaneFiles>(new DirectoryLaneFiles(settings.LaneSessionsDirectory))
-            .AddSingleton<ILanePane>(sp => new TmuxLanePane(sp.GetRequiredService<ICommandRunner>(), settings.Tmux))
+            .AddSingleton<ILanePane>(sp => new TmuxLanePane(sp.GetRequiredService<ICommandRunner>(), settings.Tmux, settings.TmuxSocket))
             .AddScoped<ISessionDirectory>(sp => new LaneSessionDirectory(
                 new DirectorySessionDirectory(settings.SessionsDirectory), sp.GetRequiredService<IMetaConfig>(), sp.GetRequiredService<ILaneFiles>(), sp.GetRequiredService<ILanePane>()))
             .AddSingleton<IProcessTable>(new ProcProcessTable(settings.StateDirectory))
