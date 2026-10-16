@@ -1257,6 +1257,22 @@ Aw.Context.Core.Lenses.SymbolsState
 Aw.Context.Core.Lenses.SymbolsState.Ok = 2 -> Aw.Context.Core.Lenses.SymbolsState
 Aw.Context.Core.Lenses.SymbolsState.Stale = 1 -> Aw.Context.Core.Lenses.SymbolsState
 Aw.Context.Core.Lenses.SymbolsState.Unavailable = 0 -> Aw.Context.Core.Lenses.SymbolsState
+Aw.Context.Core.Linking.IIntentStore
+Aw.Context.Core.Linking.IIntentStore.CommitPage(Aw.Context.Core.Linking.IntentPage! page, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Linking.IntentCommit!>!>
+Aw.Context.Core.Linking.IIntentStore.Layer(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Linking.IntentLayer!>!>
+Aw.Context.Core.Linking.IIntentStore.RecordFailure(Aw.Context.Core.Sources.SourceId source, string! code, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Context.Core.Linking.IIntentStore.State(Aw.Context.Core.Sources.SourceId source, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Linking.IntentSourceState!>!>
+Aw.Context.Core.Linking.IntentCommit
+Aw.Context.Core.Linking.IntentCommit.<Clone>$() -> Aw.Context.Core.Linking.IntentCommit!
+Aw.Context.Core.Linking.IntentCommit.Changed.get -> int
+Aw.Context.Core.Linking.IntentCommit.Changed.init -> void
+Aw.Context.Core.Linking.IntentCommit.Deconstruct(out int Records, out int Links, out int Changed) -> void
+Aw.Context.Core.Linking.IntentCommit.Equals(Aw.Context.Core.Linking.IntentCommit? other) -> bool
+Aw.Context.Core.Linking.IntentCommit.IntentCommit(int Records, int Links, int Changed) -> void
+Aw.Context.Core.Linking.IntentCommit.Links.get -> int
+Aw.Context.Core.Linking.IntentCommit.Links.init -> void
+Aw.Context.Core.Linking.IntentCommit.Records.get -> int
+Aw.Context.Core.Linking.IntentCommit.Records.init -> void
 Aw.Context.Core.Linking.IntentLayer
 Aw.Context.Core.Linking.IntentLayer.<Clone>$() -> Aw.Context.Core.Linking.IntentLayer!
 Aw.Context.Core.Linking.IntentLayer.DecisionEdges.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>!
@@ -1295,6 +1311,21 @@ Aw.Context.Core.Linking.IntentOverlayResult.Graph.init -> void
 Aw.Context.Core.Linking.IntentOverlayResult.IntentOverlayResult(Aw.Context.Core.Graph.GraphSnapshot! Graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.IntentLink!>! Orphaned) -> void
 Aw.Context.Core.Linking.IntentOverlayResult.Orphaned.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.IntentLink!>!
 Aw.Context.Core.Linking.IntentOverlayResult.Orphaned.init -> void
+Aw.Context.Core.Linking.IntentPage
+Aw.Context.Core.Linking.IntentPage.<Clone>$() -> Aw.Context.Core.Linking.IntentPage!
+Aw.Context.Core.Linking.IntentPage.At.get -> System.DateTimeOffset
+Aw.Context.Core.Linking.IntentPage.At.init -> void
+Aw.Context.Core.Linking.IntentPage.Cursor.get -> string?
+Aw.Context.Core.Linking.IntentPage.Cursor.init -> void
+Aw.Context.Core.Linking.IntentPage.Deconstruct(out Aw.Context.Core.Sources.SourceId Source, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.IntentRecord!>! Records, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.IntentLink!>! Links, out string? Cursor, out System.DateTimeOffset At) -> void
+Aw.Context.Core.Linking.IntentPage.Equals(Aw.Context.Core.Linking.IntentPage? other) -> bool
+Aw.Context.Core.Linking.IntentPage.IntentPage(Aw.Context.Core.Sources.SourceId Source, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.IntentRecord!>! Records, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.IntentLink!>! Links, string? Cursor, System.DateTimeOffset At) -> void
+Aw.Context.Core.Linking.IntentPage.Links.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.IntentLink!>!
+Aw.Context.Core.Linking.IntentPage.Links.init -> void
+Aw.Context.Core.Linking.IntentPage.Records.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.IntentRecord!>!
+Aw.Context.Core.Linking.IntentPage.Records.init -> void
+Aw.Context.Core.Linking.IntentPage.Source.get -> Aw.Context.Core.Sources.SourceId
+Aw.Context.Core.Linking.IntentPage.Source.init -> void
 Aw.Context.Core.Linking.IntentRecord
 Aw.Context.Core.Linking.IntentRecord.<Clone>$() -> Aw.Context.Core.Linking.IntentRecord!
 Aw.Context.Core.Linking.IntentRecord.Aliases.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -1310,6 +1341,25 @@ Aw.Context.Core.Linking.IntentRecord.Title.get -> string!
 Aw.Context.Core.Linking.IntentRecord.Title.init -> void
 Aw.Context.Core.Linking.IntentRecord.Version.get -> string!
 Aw.Context.Core.Linking.IntentRecord.Version.init -> void
+Aw.Context.Core.Linking.IntentSourceState
+Aw.Context.Core.Linking.IntentSourceState.<Clone>$() -> Aw.Context.Core.Linking.IntentSourceState!
+Aw.Context.Core.Linking.IntentSourceState.Cursor.get -> string?
+Aw.Context.Core.Linking.IntentSourceState.Cursor.init -> void
+Aw.Context.Core.Linking.IntentSourceState.Decisions.get -> int
+Aw.Context.Core.Linking.IntentSourceState.Decisions.init -> void
+Aw.Context.Core.Linking.IntentSourceState.Deconstruct(out string? Cursor, out System.DateTimeOffset? LastSync, out string? LastError, out int Records, out int Links, out int Decisions, out int Queued) -> void
+Aw.Context.Core.Linking.IntentSourceState.Equals(Aw.Context.Core.Linking.IntentSourceState? other) -> bool
+Aw.Context.Core.Linking.IntentSourceState.IntentSourceState(string? Cursor, System.DateTimeOffset? LastSync, string? LastError, int Records, int Links, int Decisions, int Queued) -> void
+Aw.Context.Core.Linking.IntentSourceState.LastError.get -> string?
+Aw.Context.Core.Linking.IntentSourceState.LastError.init -> void
+Aw.Context.Core.Linking.IntentSourceState.LastSync.get -> System.DateTimeOffset?
+Aw.Context.Core.Linking.IntentSourceState.LastSync.init -> void
+Aw.Context.Core.Linking.IntentSourceState.Links.get -> int
+Aw.Context.Core.Linking.IntentSourceState.Links.init -> void
+Aw.Context.Core.Linking.IntentSourceState.Queued.get -> int
+Aw.Context.Core.Linking.IntentSourceState.Queued.init -> void
+Aw.Context.Core.Linking.IntentSourceState.Records.get -> int
+Aw.Context.Core.Linking.IntentSourceState.Records.init -> void
 Aw.Context.Core.Linking.LinkRule
 Aw.Context.Core.Linking.LinkRule.Identifier = 3 -> Aw.Context.Core.Linking.LinkRule
 Aw.Context.Core.Linking.LinkRule.IssueKey = 0 -> Aw.Context.Core.Linking.LinkRule
@@ -2832,6 +2882,9 @@ override Aw.Context.Core.Lenses.ProductBand.ToString() -> string!
 override Aw.Context.Core.Lenses.ProductCounts.Equals(object? obj) -> bool
 override Aw.Context.Core.Lenses.ProductCounts.GetHashCode() -> int
 override Aw.Context.Core.Lenses.ProductCounts.ToString() -> string!
+override Aw.Context.Core.Linking.IntentCommit.Equals(object? obj) -> bool
+override Aw.Context.Core.Linking.IntentCommit.GetHashCode() -> int
+override Aw.Context.Core.Linking.IntentCommit.ToString() -> string!
 override Aw.Context.Core.Linking.IntentLayer.Equals(object? obj) -> bool
 override Aw.Context.Core.Linking.IntentLayer.GetHashCode() -> int
 override Aw.Context.Core.Linking.IntentLayer.ToString() -> string!
@@ -2841,9 +2894,15 @@ override Aw.Context.Core.Linking.IntentLink.ToString() -> string!
 override Aw.Context.Core.Linking.IntentOverlayResult.Equals(object? obj) -> bool
 override Aw.Context.Core.Linking.IntentOverlayResult.GetHashCode() -> int
 override Aw.Context.Core.Linking.IntentOverlayResult.ToString() -> string!
+override Aw.Context.Core.Linking.IntentPage.Equals(object? obj) -> bool
+override Aw.Context.Core.Linking.IntentPage.GetHashCode() -> int
+override Aw.Context.Core.Linking.IntentPage.ToString() -> string!
 override Aw.Context.Core.Linking.IntentRecord.Equals(object? obj) -> bool
 override Aw.Context.Core.Linking.IntentRecord.GetHashCode() -> int
 override Aw.Context.Core.Linking.IntentRecord.ToString() -> string!
+override Aw.Context.Core.Linking.IntentSourceState.Equals(object? obj) -> bool
+override Aw.Context.Core.Linking.IntentSourceState.GetHashCode() -> int
+override Aw.Context.Core.Linking.IntentSourceState.ToString() -> string!
 override Aw.Context.Core.Map.ExportedFile.Equals(object? obj) -> bool
 override Aw.Context.Core.Map.ExportedFile.GetHashCode() -> int
 override Aw.Context.Core.Map.ExportedFile.ToString() -> string!
@@ -3325,6 +3384,8 @@ static Aw.Context.Core.Lenses.ProductBand.operator ==(Aw.Context.Core.Lenses.Pro
 static Aw.Context.Core.Lenses.ProductCounts.operator !=(Aw.Context.Core.Lenses.ProductCounts? left, Aw.Context.Core.Lenses.ProductCounts? right) -> bool
 static Aw.Context.Core.Lenses.ProductCounts.operator ==(Aw.Context.Core.Lenses.ProductCounts? left, Aw.Context.Core.Lenses.ProductCounts? right) -> bool
 static Aw.Context.Core.Lenses.RepoPaths.Normalize(string! path) -> string!
+static Aw.Context.Core.Linking.IntentCommit.operator !=(Aw.Context.Core.Linking.IntentCommit? left, Aw.Context.Core.Linking.IntentCommit? right) -> bool
+static Aw.Context.Core.Linking.IntentCommit.operator ==(Aw.Context.Core.Linking.IntentCommit? left, Aw.Context.Core.Linking.IntentCommit? right) -> bool
 static Aw.Context.Core.Linking.IntentLayer.Empty.get -> Aw.Context.Core.Linking.IntentLayer!
 static Aw.Context.Core.Linking.IntentLayer.operator !=(Aw.Context.Core.Linking.IntentLayer? left, Aw.Context.Core.Linking.IntentLayer? right) -> bool
 static Aw.Context.Core.Linking.IntentLayer.operator ==(Aw.Context.Core.Linking.IntentLayer? left, Aw.Context.Core.Linking.IntentLayer? right) -> bool
@@ -3333,8 +3394,12 @@ static Aw.Context.Core.Linking.IntentLink.operator ==(Aw.Context.Core.Linking.In
 static Aw.Context.Core.Linking.IntentOverlay.Apply(Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Linking.IntentLayer! layer) -> Aw.Context.Core.Linking.IntentOverlayResult!
 static Aw.Context.Core.Linking.IntentOverlayResult.operator !=(Aw.Context.Core.Linking.IntentOverlayResult? left, Aw.Context.Core.Linking.IntentOverlayResult? right) -> bool
 static Aw.Context.Core.Linking.IntentOverlayResult.operator ==(Aw.Context.Core.Linking.IntentOverlayResult? left, Aw.Context.Core.Linking.IntentOverlayResult? right) -> bool
+static Aw.Context.Core.Linking.IntentPage.operator !=(Aw.Context.Core.Linking.IntentPage? left, Aw.Context.Core.Linking.IntentPage? right) -> bool
+static Aw.Context.Core.Linking.IntentPage.operator ==(Aw.Context.Core.Linking.IntentPage? left, Aw.Context.Core.Linking.IntentPage? right) -> bool
 static Aw.Context.Core.Linking.IntentRecord.operator !=(Aw.Context.Core.Linking.IntentRecord? left, Aw.Context.Core.Linking.IntentRecord? right) -> bool
 static Aw.Context.Core.Linking.IntentRecord.operator ==(Aw.Context.Core.Linking.IntentRecord? left, Aw.Context.Core.Linking.IntentRecord? right) -> bool
+static Aw.Context.Core.Linking.IntentSourceState.operator !=(Aw.Context.Core.Linking.IntentSourceState? left, Aw.Context.Core.Linking.IntentSourceState? right) -> bool
+static Aw.Context.Core.Linking.IntentSourceState.operator ==(Aw.Context.Core.Linking.IntentSourceState? left, Aw.Context.Core.Linking.IntentSourceState? right) -> bool
 static Aw.Context.Core.Linking.RulesLinker.Link(Aw.Context.Core.Sources.RecordKey record, string! text, Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.IntentRecord!>! known, System.Collections.Generic.IReadOnlySet<string!>! teams) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.IntentLink!>!
 static Aw.Context.Core.Map.ExportedFile.operator !=(Aw.Context.Core.Map.ExportedFile? left, Aw.Context.Core.Map.ExportedFile? right) -> bool
 static Aw.Context.Core.Map.ExportedFile.operator ==(Aw.Context.Core.Map.ExportedFile? left, Aw.Context.Core.Map.ExportedFile? right) -> bool
