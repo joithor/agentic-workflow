@@ -1,0 +1,7 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- The Workflows strip's rows while the views are stale: marked, kept (screens spec §4.1). Tokens only. -->
+  <Style Selector="Border.strip-row.stale">
+    <Setter Property="Opacity" Value="0.7" />
+  </Style>
+</Styles>

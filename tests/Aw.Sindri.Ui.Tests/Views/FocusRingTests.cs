@@ -34,7 +34,7 @@ public sealed class FocusRingTests : IDisposable
     private readonly List<Window> _windows = [];
     private readonly CancellationTokenSource _stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
     private readonly InMemoryEndpointRecords _records = new();
-    private readonly FakeSindriApi _server = new();
+    private readonly FakeSindriApi _server = new() { WorkflowAnswer = RouteAnswer.Api("workflow-instances", "empty") };
     private readonly FakeTimeProvider _clock = new(A.Noon);
     private readonly InMemoryPreferencesStore _preferences = new();
 
@@ -165,7 +165,8 @@ public sealed class FocusRingTests : IDisposable
     [Fact]
     public Task The_Home_health_strip_shows_the_ring() => OnUi(async () =>
     {
-        var (window, _) = await Running();
+        // Home has the Workflows panel above the columns now: the window is taller so the strip's ring is not cut at the viewport's edge.
+        var (window, _) = await Running(height: 960);
 
         FocusByTab(window, window.Get<Control>("Page"), "HealthStrip");
 

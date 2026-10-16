@@ -3,7 +3,8 @@ using System.Net;
 using System.Text.Json.Nodes;
 using Avalonia.Automation;
 using Avalonia.Controls;
-using Avalonia.Interactivity;
+using Avalonia.Headless;
+using Avalonia.Input;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
@@ -99,10 +100,13 @@ public sealed class WorkflowsStripFramesTests : FrameHost
         var frame = Frames(window).Single(f => string.Equals(Address(f), row.Address, StringComparison.Ordinal));
         Assert.DoesNotContain(frame.GetVisualDescendants().OfType<Button>(), b => b.Name == "StripAnswer" && b.IsEffectivelyVisible);
         var lockButton = Named<Button>(frame, "LockButton");
-        lockButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        _ = lockButton.Focus(NavigationMethod.Tab);
+        window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, keySymbol: null);
         Settle(window);
 
         Assert.True(lockButton.Flyout!.IsOpen);
+        var popover = (Visual)((Flyout)lockButton.Flyout).Content!;
+        Assert.Equal(row.Protected!.Cli, Named<TextBlock>(popover, "ServedCli").Text);
         Frame(window, "u3p-strip-protected-popover");
     });
 

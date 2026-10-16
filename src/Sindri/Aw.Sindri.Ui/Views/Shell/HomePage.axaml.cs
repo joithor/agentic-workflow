@@ -8,6 +8,7 @@ using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Layout;
 using Aw.Sindri.Ui.Views.NeedsYou;
 using Aw.Sindri.Ui.Views.Queue;
+using Aw.Sindri.Ui.Views.Workflows;
 
 namespace Aw.Sindri.Ui.Views.Shell;
 
@@ -22,6 +23,9 @@ internal sealed partial class HomePage : UserControl
         AddHandler(NeedsYouRow.OpenEvent, OnNeedsYouOpen);
         AddHandler(NeedsYouRow.SelectEvent, OnNeedsYouSelect);
         AddHandler(NeedsYouRow.ActionEvent, OnNeedsYouAction);
+        AddHandler(StripRow.OpenEvent, OnStripOpen);
+        AddHandler(StripRow.SelectEvent, OnStripSelect);
+        AddHandler(StripRow.AnswerEvent, OnStripAnswer);
     }
 
     /// <inheritdoc />
@@ -90,6 +94,34 @@ internal sealed partial class HomePage : UserControl
         if (NeedsYouRow.ActionOf(e) is { } action && (e.Source as Control)?.FindAncestorOfType<NeedsYouRow>() is { RowId.Length: > 0 } row && DataContext is ShellViewModel shell)
         {
             shell.NeedsYou.Press(row.RowId, action);
+        }
+    }
+
+    private void OnWorkflowsMore(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.Strip.OpenWorkflows();
+
+    // Focus arriving on a strip row selects it, and the other lists' selections give way: one selection on Home.
+    private void OnStripSelect(object? sender, RoutedEventArgs e)
+    {
+        if (e.Source is StripRow { Address.Length: > 0 } row && DataContext is ShellViewModel shell)
+        {
+            shell.SelectStripRow(row.Address);
+        }
+    }
+
+    private void OnStripOpen(object? sender, RoutedEventArgs e)
+    {
+        if (e.Source is StripRow { Address.Length: > 0 } row && DataContext is ShellViewModel shell)
+        {
+            shell.SelectStripRow(row.Address);
+            shell.OpenStripRow(row.Address);
+        }
+    }
+
+    private void OnStripAnswer(object? sender, RoutedEventArgs e)
+    {
+        if (e.Source is StripRow { Address.Length: > 0 } row && DataContext is ShellViewModel shell)
+        {
+            shell.AnswerStripRow(row.Address);
         }
     }
 

@@ -48,6 +48,35 @@ internal sealed partial class ShellViewModel
         };
     }
 
+    /// <summary>Focus or a click reached a strip row: it is the one selection on Home.</summary>
+    /// <param name="address">The instance's address.</param>
+    internal void SelectStripRow(string address)
+    {
+        Queue.ClearSelection();
+        NeedsYou.Deselect();
+        _ = Strip.Select(address);
+    }
+
+    /// <summary>Opens a strip row's instance (a click on its subject).</summary>
+    /// <param name="address">The instance's address.</param>
+    internal void OpenStripRow(string address)
+    {
+        if (Strip.Rows.FirstOrDefault(r => string.Equals(r.Address, address, StringComparison.Ordinal)) is { } row)
+        {
+            Navigate(row.Link);
+        }
+    }
+
+    /// <summary>The Answer button of a strip row: the same as A on it.</summary>
+    /// <param name="address">The instance's address.</param>
+    internal void AnswerStripRow(string address)
+    {
+        if (Strip.Rows.FirstOrDefault(r => string.Equals(r.Address, address, StringComparison.Ordinal)) is { CanAnswer: true } row)
+        {
+            Answer(row);
+        }
+    }
+
     // Enter opens the selected row's instance; A answers it: the park row for the same instance when there is one (the one
     // answer form is that row's sheet), else the instance itself. Never a protected row: its button is the lock.
     private bool StripKeyPressed(string key, bool inSheet)
@@ -63,8 +92,7 @@ internal sealed partial class ShellViewModel
                 Navigate(row.Link);
                 return true;
             case "A" when row.CanAnswer:
-                Strip.Deselect();
-                Navigate(ParkRowFor(row) is { } park ? LinkOf(park.Id) : row.Link);
+                Answer(row);
                 return true;
             default:
                 return false;
@@ -79,6 +107,12 @@ internal sealed partial class ShellViewModel
         var parks = NeedsYou.Seen.Rows.Where(r => IsParkChip(r.Entry.Chip.Word)).ToList();
         return parks.Find(r => r.Entry.Subject is { } s && (string.Equals(s.Id, row.Address, StringComparison.Ordinal) || string.Equals(s.Id, row.InstanceId, StringComparison.Ordinal)))
             ?? parks.Find(r => row.ItemId is { } item && string.Equals(r.Entry.ItemId, item, StringComparison.Ordinal));
+    }
+
+    private void Answer(StripRowViewModel row)
+    {
+        Strip.Deselect();
+        Navigate(ParkRowFor(row) is { } park ? LinkOf(park.Id) : row.Link);
     }
 
     private static bool IsParkChip(string word) => string.Equals(word, "PARKED", StringComparison.Ordinal) || string.Equals(word, "ESCALATED", StringComparison.Ordinal);

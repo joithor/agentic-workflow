@@ -181,6 +181,7 @@ internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider
     private void SetSelected(string? address)
     {
         SelectedAddress = address;
+        OnChanged(nameof(SelectedAddress));
         foreach (var row in _shown)
         {
             row.SetContext(Stale, IsSelectedRow(row));
