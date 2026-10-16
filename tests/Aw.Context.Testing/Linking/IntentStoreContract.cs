@@ -258,4 +258,46 @@ public abstract class IntentStoreContract
         Expect.That(same.Conflicts.Count == 1 && same.Conflicts[0].Verdict == ConflictVerdict.Contradicts, test, $"{same.Conflicts.Count} verdicts after a re-save with the same key");
         Expect.That(gone.Conflicts.Count == 0 && gone.Decisions.Count == 2, test, $"{gone.Conflicts.Count} verdicts and {gone.Decisions.Count} decisions after the key went away");
     }
+
+    /// <summary>A pending save queues a record that was already extracted (a map change re-extracts it), so its stopped conflict check is retried.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_pending_save_queues_a_done_record_again()
+    {
+        const string test = nameof(A_pending_save_queues_a_done_record_again);
+        var store = CreateStore();
+        _ = Expect.Ok(await store.CommitPage(Page("c1", [Record(_r103, "v1", "SPL-103")], [Link(_r103, "feature:a")]), None), test);
+        var (decision, decides) = Decided(_r103, "first", "feature:a");
+        _ = Expect.Ok(await store.SaveDecisions(new DecisionBatch(_r103, "v1", [decision], [decides]), None), test);
+        var done = Expect.Ok(await store.Queued(_onyx, None), test);
+
+        _ = Expect.Ok(await store.SaveDecisions(new DecisionBatch(_r103, "v1", [decision], [decides]) { Pending = true }, None), test);
+        var again = Expect.Ok(await store.Queued(_onyx, None), test);
+        var state = Expect.Ok(await store.State(_onyx, None), test);
+
+        Expect.That(done.Count == 0 && again.Select(k => k.Value).SequenceEqual([_r103.Value], StringComparer.Ordinal) && state.Queued == 1, test, $"{done.Count} queued when done, {again.Count} after a pending save, state {state}");
+    }
+
+    /// <summary>A human decision is never replaced by a machine one with the same key, and keeps its edges.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_human_decision_is_never_replaced_by_a_machine_one()
+    {
+        const string test = nameof(A_human_decision_is_never_replaced_by_a_machine_one);
+        var store = CreateStore();
+        _ = Expect.Ok(await store.CommitPage(Page("c1", [Record(_r103, "v1", "SPL-103")], [Link(_r103, "feature:a")]), None), test);
+        var human = new DecisionRow(_r103, "kept by a person", "The owner's wording", Provenance.Human, _at);
+        var humanEdge = new GraphEdge(human.ToKey(), NodeKey.From("feature:a"), EdgeType.Decides, Provenance.Human, 1.0, At: _at);
+        _ = Expect.Ok(await store.SaveDecisions(new DecisionBatch(_r103, "v1", [human], [humanEdge]), None), test);
+        var machine = human with { Wording = "The model's wording", Provenance = Provenance.Model };
+        var machineEdge = humanEdge with { Provenance = Provenance.Model, Confidence = 0.5 };
+
+        _ = Expect.Ok(await store.SaveDecisions(new DecisionBatch(_r103, "v1", [machine], [machineEdge]), None), test);
+        _ = Expect.Ok(await store.SaveDecisions(new DecisionBatch(_r103, "v1", [], []), None), test);
+
+        var layer = Expect.Ok(await store.Layer(None), test);
+        var only = layer.Decisions.SingleOrDefault();
+        Expect.That(only is { Provenance: Provenance.Human } && only.Wording == human.Wording, test, $"{layer.Decisions.Count} decisions: {string.Join(',', layer.Decisions.Select(d => d.Provenance + ":" + d.Wording))}");
+        Expect.That(layer.DecisionEdges.Count == 1 && layer.DecisionEdges[0].Provenance == Provenance.Human, test, $"{layer.DecisionEdges.Count} edges");
+    }
 }
