@@ -14,7 +14,7 @@ namespace Aw.Sindri.Ui.Api;
 /// <param name="RecordedOnly">True when the answer is only recorded now.</param>
 /// <param name="Notice">The served recorded-only sentence.</param>
 /// <param name="AnswerKind">What the answer takes; null on every P4 row.</param>
-/// <param name="PrimaryAction">The catalog id of the primary action.</param>
+/// <param name="PrimaryAction">The catalog id of the primary action, or null for a failure of a service this build does not have.</param>
 /// <param name="Actions">The catalog ids of every action.</param>
 /// <param name="Cli">The one command to copy.</param>
 /// <param name="Chip">The served chip (U3'-API-9); null until the API serves one.</param>
@@ -32,7 +32,7 @@ internal sealed record NeedsYouRowView(
     bool RecordedOnly,
     string? Notice,
     string? AnswerKind,
-    string PrimaryAction,
+    string? PrimaryAction,
     IReadOnlyList<string> Actions,
     string Cli,
     Workflow.StateChip? Chip = null);
