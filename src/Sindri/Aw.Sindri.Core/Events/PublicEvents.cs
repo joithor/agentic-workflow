@@ -62,7 +62,7 @@ public static class PublicEvents
         }
     }
 
-    /// <summary>Scrubs and escapes every string in place. Only a string leaf is replaced; a container is walked and kept, because a node that already has a parent can't be assigned again.</summary>
+    /// <summary>Scrubs and escapes every string in place. Only a string leaf is replaced (a number, a boolean or a container comes back as the same node, and a node that already has a parent can't be assigned again).</summary>
     private static JsonNode? Clean(JsonNode? node, ITextScrubber scrubber)
     {
         switch (node)
@@ -70,13 +70,10 @@ public static class PublicEvents
             case JsonObject o:
                 foreach (var (name, value) in o.ToArray())
                 {
-                    if (value is JsonValue)
+                    var cleaned = Clean(value, scrubber);
+                    if (!ReferenceEquals(cleaned, value))
                     {
-                        o[name] = Clean(value, scrubber);
-                    }
-                    else
-                    {
-                        _ = Clean(value, scrubber);
+                        o[name] = cleaned;
                     }
                 }
 
@@ -84,13 +81,10 @@ public static class PublicEvents
             case JsonArray a:
                 for (var i = 0; i < a.Count; i++)
                 {
-                    if (a[i] is JsonValue)
+                    var cleaned = Clean(a[i], scrubber);
+                    if (!ReferenceEquals(cleaned, a[i]))
                     {
-                        a[i] = Clean(a[i], scrubber);
-                    }
-                    else
-                    {
-                        _ = Clean(a[i], scrubber);
+                        a[i] = cleaned;
                     }
                 }
 
