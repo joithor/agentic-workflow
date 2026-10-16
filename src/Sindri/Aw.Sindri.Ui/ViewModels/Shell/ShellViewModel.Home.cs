@@ -1,6 +1,7 @@
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
+using Aw.Sindri.Ui.ViewModels.Queue;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -106,6 +107,11 @@ internal sealed partial class ShellViewModel
         Strip.Deselect();
         NeedsYou.Select(rowId);
     }
+
+    /// <summary>Focus or a click reached a queue row on a page: on Home it is the one selection.</summary>
+    /// <param name="itemId">The item's id.</param>
+    /// <param name="scope">The page the row is on.</param>
+    internal void SelectQueueRow(string itemId, QueueScope scope = QueueScope.Home) => Queue.Select(itemId, scope);
 
     /// <summary>Opens a row's sheet (a click on its title, Enter).</summary>
     /// <param name="rowId">The row's id.</param>
