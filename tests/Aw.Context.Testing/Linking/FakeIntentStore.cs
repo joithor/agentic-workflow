@@ -23,6 +23,15 @@ public sealed class FakeIntentStore : IIntentStore
 
     public Error? Failure { get; set; }
 
+    /// <summary>When set, <see cref="Requeue"/> alone fails with it.</summary>
+    public Error? RequeueFailure { get; set; }
+
+    /// <summary>When set, <see cref="LinkedUnder"/> alone fails with it.</summary>
+    public Error? LinkedUnderFailure { get; set; }
+
+    /// <summary>When set, a <see cref="SaveDecisions"/> of a batch with no decisions alone fails with it (the pass's refusal of an oversized record).</summary>
+    public Error? EmptyBatchFailure { get; set; }
+
     /// <inheritdoc/>
     public ValueTask<Result<IntentLayer>> Layer(CancellationToken cancellationToken) => Done(() => new IntentLayer(
         [.. _records.Values.OrderBy(r => r.Key.Value, StringComparer.Ordinal)],
@@ -85,12 +94,19 @@ public sealed class FakeIntentStore : IIntentStore
     public ValueTask<Result<IReadOnlyList<RecordKey>>> Queued(SourceId source, CancellationToken cancellationToken) => Done<IReadOnlyList<RecordKey>>(() =>
         [.. _records.Values.Where(r => r.Source.Value == source.Value && IsQueued(r.Key.Value)).OrderBy(r => r.Key.Value, StringComparer.Ordinal).Select(r => r.Key)]);
 
-    public ValueTask<Result<IReadOnlyList<RecordKey>>> LinkedUnder(SourceId source, int mapVersion, CancellationToken cancellationToken) => Done<IReadOnlyList<RecordKey>>(() =>
+    public ValueTask<Result<IReadOnlyList<RecordKey>>> LinkedUnder(SourceId source, int mapVersion, CancellationToken cancellationToken) => LinkedUnderFailure is { } failure
+        ? ValueTask.FromResult<Result<IReadOnlyList<RecordKey>>>(failure)
+        : Done<IReadOnlyList<RecordKey>>(() =>
         [.. _records.Values.Where(r => r.Source.Value == source.Value && _linkedMap.GetValueOrDefault(r.Key.Value) == mapVersion).OrderBy(r => r.Key.Value, StringComparer.Ordinal).Select(r => r.Key)]);
 
     public ValueTask<Result<Unit>> SaveDecisions(DecisionBatch batch, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(batch);
+        if (EmptyBatchFailure is { } failure && batch.Decisions.Count == 0)
+        {
+            return ValueTask.FromResult<Result<Unit>>(failure);
+        }
+
         return Done(() =>
         {
             if (!_records.TryGetValue(batch.Record.Value, out var stored) || stored.Version != batch.Version)
@@ -127,6 +143,11 @@ public sealed class FakeIntentStore : IIntentStore
 
     public ValueTask<Result<Unit>> Requeue(RecordKey record, string version, CancellationToken cancellationToken)
     {
+        if (RequeueFailure is { } failure)
+        {
+            return ValueTask.FromResult<Result<Unit>>(failure);
+        }
+
         return Done(() =>
         {
             if (_records.TryGetValue(record.Value, out var stored) && stored.Version == version)

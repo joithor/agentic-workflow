@@ -318,6 +318,32 @@ public abstract class IntentStoreContract
             $"{stale.Count} queued after a stale requeue, {again.Count} after a requeue, {layer.Decisions.Count} decisions, {layer.DecisionEdges.Count} edges");
     }
 
+    /// <summary>A done record whose page moves its map version is queued in the same commit (only a finished extraction marks it done again) and keeps its decisions; the same map version again changes nothing.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_page_that_moves_a_done_records_map_version_queues_it_until_extracted_again()
+    {
+        const string test = nameof(A_page_that_moves_a_done_records_map_version_queues_it_until_extracted_again);
+        var store = CreateStore();
+        var record = Record(_r103, "v1", "SPL-103");
+        _ = Expect.Ok(await store.CommitPage(Page("c1", [record], [Link(_r103, "feature:a")]) with { MapVersion = 1 }, None), test);
+        var (decision, decides) = Decided(_r103, "first", "feature:a");
+        _ = Expect.Ok(await store.SaveDecisions(new DecisionBatch(_r103, "v1", [decision], [decides]), None), test);
+        var done = Expect.Ok(await store.Queued(_onyx, None), test);
+
+        _ = Expect.Ok(await store.CommitPage(Page("c2", [record], [Link(_r103, "feature:a")]) with { MapVersion = 1 }, None), test);
+        var sameMap = Expect.Ok(await store.Queued(_onyx, None), test);
+        _ = Expect.Ok(await store.CommitPage(Page("c3", [record], [Link(_r103, "feature:a")]) with { MapVersion = 2 }, None), test);
+        var newMap = Expect.Ok(await store.Queued(_onyx, None), test);
+        var layer = Expect.Ok(await store.Layer(None), test);
+        _ = Expect.Ok(await store.SaveDecisions(new DecisionBatch(_r103, "v1", [decision], [decides]), None), test);
+        var extracted = Expect.Ok(await store.Queued(_onyx, None), test);
+
+        Expect.That(done.Count == 0 && sameMap.Count == 0, test, $"{done.Count} queued when done, {sameMap.Count} after the same map version again");
+        Expect.That(newMap.Select(k => k.Value).SequenceEqual([_r103.Value], StringComparer.Ordinal) && layer.Decisions.Count == 1 && extracted.Count == 0, test,
+            $"{newMap.Count} queued after a new map version, {layer.Decisions.Count} decisions kept, {extracted.Count} queued once extracted again");
+    }
+
     /// <summary>A human decision is never replaced by a machine one with the same key, and keeps its edges.</summary>
     /// <returns>The test.</returns>
     [Fact]

@@ -108,4 +108,30 @@ public sealed class SourcesSyncStatusTests
         Assert.Equal(ContextErrors.SourceUnavailable.Code, capped.Code);
         Assert.Equal((SourceState.Unavailable, ContextErrors.SourceUnavailable.Code), (sync?.State, sync?.Code));   // the outage, not "ok / 059, the next run continues"
     }
+
+    [Fact]
+    public async Task A_capped_run_with_labeling_off_shows_059_not_042()
+    {
+        ScriptedSource? slow = null;
+        await using var rig = await Rig.Start(wrap: inner => slow = new ScriptedSource(inner));
+        slow!.AfterFetch = () => rig.World.Clock.Advance(SyncSourcesService.RunCap + TimeSpan.FromSeconds(1));
+
+        var capped = await rig.Sync(ExtractDecisionsTests.Scope(labeling: false));
+        var sync = (await Onyx(rig)).Sync;
+
+        Assert.Equal(ContextErrors.SyncCapped.Code, capped.Code);   // the walk was cut short, and the records held back for labeling do not hide it
+        Assert.Equal((SourceState.Ok, ContextErrors.SyncCapped.Code), (sync?.State, sync?.Code));
+    }
+
+    [Fact]
+    public async Task A_failed_read_of_the_linked_records_fails_the_run_with_its_code_and_fetches_nothing()
+    {
+        await using var rig = await Rig.Start();
+        rig.World.Intents.LinkedUnderFailure = ContextErrors.StoreUnavailable.With("the linked read failed");
+
+        var row = await rig.Sync(Scope());
+
+        Assert.Equal(ContextErrors.StoreUnavailable.Code, row.Code);
+        Assert.Equal(0, row.Fetched);   // not "nothing linked yet": that would fetch and re-extract every record
+    }
 }

@@ -149,6 +149,37 @@ public sealed class ExtractDecisionsTests
     }
 
     [Fact]
+    public async Task A_run_cancelled_during_the_model_call_after_a_map_change_leaves_the_record_queued_and_the_next_run_re_extracts_it()
+    {
+        await using var rig = await Rig.Start();
+        _ = await rig.Sync(Scope());
+        var linked = rig.World.Model.Requests.Count(r => r.Purpose == ModelPurpose.DecisionExtraction);
+        _ = await rig.World.ImportYaml(FixtureMap.Yaml.Replace("edges:", "  - key: thing:zzz-added\n    label: \"Added by the new map\"\nedges:", StringComparison.Ordinal));
+        rig.World.Model.Requests.Clear();
+        using var stop = new CancellationTokenSource();
+        var route = rig.World.Model.Responder!;
+        rig.World.Model.Responder = request =>
+        {
+            if (request.Purpose == ModelPurpose.DecisionExtraction)
+            {
+                stop.Cancel();   // an owner's stop, while the first record's extraction is in flight
+                throw new OperationCanceledException(stop.Token);
+            }
+
+            return route(request);
+        };
+
+        _ = await Record.ExceptionAsync(async () => await rig.World.Engine.Sync("onyx", Scope(), stop.Token));
+        rig.World.Model.Responder = route;
+        rig.World.Model.Requests.Clear();
+        var resumed = await rig.Sync(Scope());
+
+        var asked = rig.World.Model.Requests.Count(r => r.Purpose == ModelPurpose.DecisionExtraction);
+        Assert.Equal(linked, asked);   // every record, the one the stop interrupted included, is extracted against the new map
+        Assert.Equal((0, null), (resumed.Queued, resumed.Code));
+    }
+
+    [Fact]
     public async Task Extract_with_labeling_off_queues_and_reports_042()
     {
         await using var rig = await Rig.Start();
