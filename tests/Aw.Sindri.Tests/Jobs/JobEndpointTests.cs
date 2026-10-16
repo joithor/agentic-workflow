@@ -65,6 +65,22 @@ public sealed class JobEndpointTests
     }
 
     [Fact(Timeout = 30_000)]
+    public async Task A_manual_run_of_a_paused_service_runs()
+    {
+        await using var host = await JobHost.Start(TestContext.Current.CancellationToken);
+        await ViewScenarios.Approve(host, TestContext.Current.CancellationToken);
+        var paused = await Post(host, "/sindri/services/heartbeat/pause");
+        Assert.Equal(HttpStatusCode.OK, paused.Status);
+        await JobHost.Settle(host, TestContext.Current.CancellationToken);
+
+        var (job, _) = await Run(host, "heartbeat");   // a pause stops the schedule, never a person
+        await JobHost.Settle(host, TestContext.Current.CancellationToken);
+        var view = Json(await JobHost.Read(host, $"/sindri/jobs/{job.Value}"));
+
+        Assert.Equal(("succeeded", "heartbeat"), (view.GetProperty("state").GetString(), view.GetProperty("service").GetString()));
+    }
+
+    [Fact(Timeout = 30_000)]
     public async Task A_second_run_of_a_running_service_is_409_SND_JOB_409_naming_the_running_job()
     {
         await using var host = await JobHost.Start(TestContext.Current.CancellationToken);

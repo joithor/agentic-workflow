@@ -34,6 +34,9 @@ internal static class JobHost
     /// <summary>Two repos (a session can sit outside a job's repo), the scheduled 'heartbeat' and 'stuck'.</summary>
     public const string ProfileYaml = "schemaVersion: 1\nuser: golden\nrepos:\n  - { name: demo, path: /work/demo }\n  - { name: other, path: /work/other }\nservices:\n  heartbeat: { every: 5s }\n  stuck: { every: 5s }\n";
 
+    /// <summary>An echo with this delay or more is keyed by its line count, so several can run at once (the cap golden); the others share the key 'echo'.</summary>
+    public const int LongDelayMs = 1_000;
+
     /// <summary>The test-only route.</summary>
     public const string EchoRoute = "/sindri/test/echo";
 
@@ -110,7 +113,7 @@ internal static class JobHost
             .AddSingleton<EchoJobProbe>()
             .Replace(ServiceDescriptor.Singleton(options))
             .Replace(ServiceDescriptor.Singleton<ICommandCatalog>(new InMemoryCommandCatalog([.. new CommandCatalog().Rows, echo])))
-            .AddJob<EchoJobRequest, EchoReport, EchoJobService>(static _ => JobKey.From("echo"), static r => string.Create(CultureInfo.InvariantCulture, $"echoed {r.Lines}"));
+            .AddJob<EchoJobRequest, EchoReport, EchoJobService>(static r => JobKey.From(r.DelayMs >= LongDelayMs ? string.Create(CultureInfo.InvariantCulture, $"echo-{r.Lines}") : "echo"), static r => string.Create(CultureInfo.InvariantCulture, $"echoed {r.Lines}"));
     }
 
     private static void Map(WebApplication app) =>
