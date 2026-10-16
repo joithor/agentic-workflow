@@ -14,6 +14,11 @@ namespace Aw.Sindri.Core.Items;
 /// P4 plan G3): a filed request is an open request with a pending decision, a recorded decision settles both, and closing an item voids
 /// what it still waits on. Every text is scrubbed and escaped.
 /// </summary>
+/// <remarks>
+/// Why this is in Items and not Views: it folds the item-closing 'item.state-changed' (voiding what the item still waits on) and
+/// its decisions drive the item's needs-decision state in ItemsProjection, so the two change together; Views holds the row types
+/// and the rules they share (DecisionRules), which this projection uses.
+/// </remarks>
 /// <param name="events">Reads the payloads through the package's AwJson options.</param>
 /// <param name="scrubber">Scrubs secrets out of the text a row stores.</param>
 internal sealed class RequestsProjection(EventFactory events, ITextScrubber scrubber) : IProjection
@@ -136,6 +141,11 @@ internal sealed class RequestsProjection(EventFactory events, ITextScrubber scru
         }
 
         var decision = await rows.Require<HumanDecisionRow>(ViewNames.Decisions, payload.Value.Decision.Value, recorded.Envelope.Type, cancellationToken).ConfigureAwait(false);
+        if (decision.IsSuccess && decision.Value.State != DecisionState.Pending)
+        {
+            return Unit.Value;   // already settled (voided by its item closing, or decided): a late record changes nothing
+        }
+
         var request = decision.IsError
             ? decision.Error
             : await rows.Require<RequestRow>(ViewNames.Requests, decision.Value.Request.Value, recorded.Envelope.Type, cancellationToken).ConfigureAwait(false);

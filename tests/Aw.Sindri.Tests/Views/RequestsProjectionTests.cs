@@ -155,6 +155,20 @@ public sealed class RequestsProjectionTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_decision_recorded_after_its_item_closed_leaves_the_voided_rows_as_they_are()
+    {
+        await CreateItem();
+        await File(A.FirstRequestId, A.FirstDecisionId, RequestKind.Rescope, "one", _item);
+        await Close(_item, ItemState.Done, version: 2, from: ItemState.NeedsDecision);
+        var voided = (await _v.Views.Get<HumanDecisionRow>(ViewNames.Decisions, A.FirstDecisionId.Value, Token)).Value!;
+
+        await Decide(A.FirstDecisionId, _accept, note: "late", "human:ui");
+
+        Assert.Equal(voided, (await _v.Views.Get<HumanDecisionRow>(ViewNames.Decisions, A.FirstDecisionId.Value, Token)).Value);
+        Assert.Equal(RequestState.Voided, (await _v.Views.Get<RequestRow>(ViewNames.Requests, A.FirstRequestId.Value, Token)).Value!.State);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_request_does_not_move_a_running_item()
     {
         await CreateItem();
