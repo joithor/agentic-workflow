@@ -20,15 +20,33 @@ public sealed class ChildOutputRulesTests
             Outputs = [OutputOf("fact:output", "produce")],
         }));
 
+    /// <summary>workflow.steady declares fact:output and produces it on every path to every outcome.</summary>
+    private static readonly InMemoryChildRecipes _steady = new InMemoryChildRecipes().With(Child(
+        Of(
+            "produce",
+            [("produce", Active("step.produce")), ("done", Terminal()), ("dropped", Terminal("unresolved"))],
+            [Go("produce", "done", when: Outcome("done"), produces: ["fact:output"]), Go("produce", "dropped", "command.skip", produces: ["fact:output"])],
+            inputs: [],
+            id: "workflow.steady") with
+        {
+            Outputs = [OutputOf("fact:output", "produce")],
+        }));
+
+    private static WhenClause NotOf(WhenClause clause) => new(Outcome: null, Fact: null, Is: null, Loop: null, Below: null, All: null, Any: null, Not: clause);
+
     /// <summary>A parent waiting on workflow.kid whose transition (transitions[0]) is taken on <paramref name="when"/>.</summary>
-    private static Recipe Parent(WhenClause? when, params ProducedFact[] produces) =>
+    private static Recipe Parent(WhenClause? when, params ProducedFact[] produces) => ParentOf("workflow.kid", when, produces);
+
+    private static Recipe ParentOf(string child, WhenClause? when, params ProducedFact[] produces) =>
         Of(
             "running",
-            [("running", WaitForChild("workflow.kid")), ("done", Terminal()), ("dropped", Terminal("unresolved"))],
+            [("running", WaitForChild(child)), ("done", Terminal()), ("dropped", Terminal("unresolved"))],
             [GoProducing("running", "done", "wait.satisfied", when, produces)],
             inputs: []);
 
     private static Located WithKid => Located.Nowhere with { Children = _kid };
+
+    private static Located Steady => Located.Nowhere with { Children = _steady };
 
     private static IReadOnlyList<string> Wire003(IEnumerable<string> lines) => [.. lines.Where(l => l.StartsWith("RCP-WIRE-003", StringComparison.Ordinal))];
 
@@ -47,7 +65,7 @@ public sealed class ChildOutputRulesTests
     [Fact, Trait("Lane", "unit")]
     public void Producing_on_any_outcome_is_RCP_WIRE_003() =>
         Assert.Equal(
-            ["RCP-WIRE-003: transition from 'running' produces 'fact:output' from child 'workflow.kid' on any outcome, 'cancelled' among them at r.yaml:1:1 (transitions[0].produces[0]); add when: { outcome: <o> } naming outcomes that always carry it (resolved)"],
+            ["RCP-WIRE-003: transition from 'running' produces 'fact:output' from child 'workflow.kid' on a when that names no outcome (it matches every outcome, 'cancelled' among them) at r.yaml:1:1 (transitions[0].produces[0]); add when: { outcome: <o> } naming outcomes that always carry it (resolved)"],
             Wire003(CheckWiring(Parent(when: null, Bare("fact:output")), WithKid).Lines()));
 
     [Fact, Trait("Lane", "unit")]
@@ -57,6 +75,47 @@ public sealed class ChildOutputRulesTests
 
         Assert.Empty(Wire003(CheckWiring(Parent(AllOf(Outcome("resolved"), present), Bare("fact:output")), WithKid).Lines()));
         Assert.Empty(Wire003(CheckWiring(Parent(Outcome("resolved"), Rename("fact:exported", "fact:output")), WithKid).Lines()));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_when_with_only_a_fact_test_names_no_outcome_and_is_refused()
+    {
+        var present = new WhenClause(Outcome: null, FactKey.From("fact:output"), FactPresence.Present, Loop: null, Below: null, All: null, Any: null, Not: null);
+
+        _ = Assert.Single(Wire003(CheckWiring(Parent(present, Bare("fact:output")), WithKid).Lines()), l => l.Contains("names no outcome (it matches every outcome, 'cancelled' among them)", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Not_cancelled_is_accepted_when_every_outcome_carries_the_output() =>
+        Assert.Empty(Wire003(CheckWiring(ParentOf("workflow.steady", NotOf(Outcome("cancelled")), Bare("fact:output")), Steady).Lines()));
+
+    [Fact, Trait("Lane", "unit")]
+    public void Not_cancelled_is_refused_naming_the_outcome_that_misses_the_output() =>
+        Assert.Equal(
+            ["RCP-WIRE-003: transition from 'running' produces 'fact:output' on outcome 'unresolved' of child 'workflow.kid', which doesn't produce 'fact:output' on every path to 'unresolved' (in workflow.kid, the path through transitions[1] from 'produce' doesn't produce it) at r.yaml:1:1 (transitions[0].produces[0]); produce it on that path in workflow.kid, or produce it here only on outcomes that always carry it (resolved)"],
+            Wire003(CheckWiring(Parent(NotOf(Outcome("cancelled")), Bare("fact:output")), WithKid).Lines()));
+
+    [Fact, Trait("Lane", "unit")]
+    public void Not_of_an_outcome_that_leaves_cancelled_in_is_refused_as_cancelled() =>
+        Assert.Equal(
+            ["RCP-WIRE-003: transition from 'running' produces 'fact:output' on outcome 'cancelled' of child 'workflow.steady', which carries no outputs at r.yaml:1:1 (transitions[0].produces[0]); route cancelled with a transition of its own that produces nothing"],
+            Wire003(CheckWiring(ParentOf("workflow.steady", NotOf(Outcome("resolved")), Bare("fact:output")), Steady).Lines()));
+
+    [Fact, Trait("Lane", "unit")]
+    public void Any_and_all_combinations_resolve_against_the_childs_outcomes()
+    {
+        // any: union. resolved + unresolved never reach cancelled.
+        Assert.Empty(Wire003(CheckWiring(ParentOf("workflow.steady", AnyOf(Outcome("resolved"), Outcome("unresolved")), Bare("fact:output")), Steady).Lines()));
+
+        // any: a part that leaves cancelled in puts it in the union.
+        _ = Assert.Single(Wire003(CheckWiring(ParentOf("workflow.steady", AnyOf(Outcome("resolved"), NotOf(Outcome("unresolved"))), Bare("fact:output")), Steady).Lines()), l => l.Contains("outcome 'cancelled'", StringComparison.Ordinal));
+
+        // all: intersection. not cancelled and not unresolved leaves resolved, which workflow.kid carries.
+        Assert.Empty(Wire003(CheckWiring(Parent(AllOf(NotOf(Outcome("cancelled")), NotOf(Outcome("unresolved"))), Bare("fact:output")), WithKid).Lines()));
+
+        // all: a fact test narrows nothing, so not cancelled still decides.
+        var present = new WhenClause(Outcome: null, FactKey.From("fact:output"), FactPresence.Present, Loop: null, Below: null, All: null, Any: null, Not: null);
+        Assert.Empty(Wire003(CheckWiring(ParentOf("workflow.steady", AllOf(NotOf(Outcome("cancelled")), present), Bare("fact:output")), Steady).Lines()));
     }
 
     [Fact, Trait("Lane", "unit")]
