@@ -1,0 +1,17 @@
+namespace Aw.Sindri.Core.Onyx;
+
+/// <summary>Reads of the host the container runtime doesn't answer: free disk and free loopback ports.</summary>
+public interface IHostProbes
+{
+    /// <summary>Measures free disk at a path that may not exist yet.</summary>
+    /// <param name="path">The path Onyx would live under.</param>
+    /// <returns>The free bytes of the nearest existing ancestor (the path itself when it exists), and which one that was.</returns>
+    public DiskFacts FreeDisk(string path);
+
+    /// <summary>Probes loopback ports by binding them on 127.0.0.1 and releasing them at once.</summary>
+    /// <param name="preferred">The port Onyx wants.</param>
+    /// <param name="fallbackFirst">The first port of the fallback range.</param>
+    /// <param name="fallbackLast">The last port of the fallback range, inclusive.</param>
+    /// <returns>Whether the preferred port is free and the first free fallback.</returns>
+    public PortFacts Ports(int preferred, int fallbackFirst, int fallbackLast);
+}

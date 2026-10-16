@@ -122,12 +122,24 @@ public static class SindriErrors
     /// <summary>SND-ONYX-004: the Onyx pins are malformed (a downloaded file or image that fails its pin reuses the code).</summary>
     public static readonly ErrorDefinition OnyxPinsMalformed = new("SND-ONYX-004", ErrorKind.Invalid, "The Onyx pins are malformed or a download failed its pin");
 
+    /// <summary>SND-ONYX-001: the Docker CLI is missing or its daemon isn't answering; the message says to install or start it.</summary>
+    public static readonly ErrorDefinition OnyxDockerUnavailable = new("SND-ONYX-001", ErrorKind.Unavailable, "Docker is missing or not running");
+
+    /// <summary>SND-ONYX-002: Compose v2 is missing.</summary>
+    public static readonly ErrorDefinition OnyxComposeMissing = new("SND-ONYX-002", ErrorKind.Unavailable, "Docker Compose v2 is missing");
+
+    /// <summary>SND-ONYX-003: not enough free disk or Docker memory; the message says how much is needed and where.</summary>
+    public static readonly ErrorDefinition OnyxNotEnoughResources = new("SND-ONYX-003", ErrorKind.BudgetExceeded, "Not enough disk or Docker memory for Onyx");
+
+    /// <summary>SND-ONYX-006: Onyx's port is taken by something not ours and no fallback port is free.</summary>
+    public static readonly ErrorDefinition OnyxPortTaken = new("SND-ONYX-006", ErrorKind.Conflict, "Onyx's port is taken and no fallback port is free");
+
     /// <summary>Every Sindri error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
         LeaseHeld, LeaseLost, LeaseStale, ProfileMissing, ProfileInvalid, ProfileHashMismatch, ProfileNeedsTerminal,
         ProfileNotApproved, ApprovalsUnavailable, LedgerSchema, LedgerUnavailable, NotRunning, ApiTimeout, PortInUse, ApiNoCode, ApiInternal,
         CallerUnknown, OriginRefused, CommandBusy, AuthTokenRequired, AuthRefused, UnknownVerb, StartFailed,
-        InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, RequestInvalid, RequestsRateLimited, DecisionNotFound, DecisionInvalid, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe, OnyxPinsMalformed,
+        InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, RequestInvalid, RequestsRateLimited, DecisionNotFound, DecisionInvalid, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe, OnyxDockerUnavailable, OnyxComposeMissing, OnyxNotEnoughResources, OnyxPinsMalformed, OnyxPortTaken,
     ];
 }

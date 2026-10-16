@@ -7857,3 +7857,81 @@ override Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.GetHashCode() -> int
 override Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ToString() -> string!
 static Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.operator !=(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts? left, Aw.Sindri.Core.Onyx.ContainerRuntimeFacts? right) -> bool
 static Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.operator ==(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts? left, Aw.Sindri.Core.Onyx.ContainerRuntimeFacts? right) -> bool
+Aw.Sindri.Core.Onyx.DiskFacts
+Aw.Sindri.Core.Onyx.DiskFacts.<Clone>$() -> Aw.Sindri.Core.Onyx.DiskFacts!
+Aw.Sindri.Core.Onyx.DiskFacts.Deconstruct(out string! MeasuredPath, out long FreeBytes) -> void
+Aw.Sindri.Core.Onyx.DiskFacts.DiskFacts(string! MeasuredPath, long FreeBytes) -> void
+Aw.Sindri.Core.Onyx.DiskFacts.Equals(Aw.Sindri.Core.Onyx.DiskFacts? other) -> bool
+Aw.Sindri.Core.Onyx.DiskFacts.FreeBytes.get -> long
+Aw.Sindri.Core.Onyx.DiskFacts.FreeBytes.init -> void
+Aw.Sindri.Core.Onyx.DiskFacts.MeasuredPath.get -> string!
+Aw.Sindri.Core.Onyx.DiskFacts.MeasuredPath.init -> void
+Aw.Sindri.Core.Onyx.IHostProbes
+Aw.Sindri.Core.Onyx.IHostProbes.FreeDisk(string! path) -> Aw.Sindri.Core.Onyx.DiskFacts!
+Aw.Sindri.Core.Onyx.IHostProbes.Ports(int preferred, int fallbackFirst, int fallbackLast) -> Aw.Sindri.Core.Onyx.PortFacts!
+Aw.Sindri.Core.Onyx.OnyxPreflight
+Aw.Sindri.Core.Onyx.PortFacts
+Aw.Sindri.Core.Onyx.PortFacts.<Clone>$() -> Aw.Sindri.Core.Onyx.PortFacts!
+Aw.Sindri.Core.Onyx.PortFacts.Deconstruct(out int Preferred, out bool PreferredFree, out int? FirstFreeFallback) -> void
+Aw.Sindri.Core.Onyx.PortFacts.Equals(Aw.Sindri.Core.Onyx.PortFacts? other) -> bool
+Aw.Sindri.Core.Onyx.PortFacts.FirstFreeFallback.get -> int?
+Aw.Sindri.Core.Onyx.PortFacts.FirstFreeFallback.init -> void
+Aw.Sindri.Core.Onyx.PortFacts.PortFacts(int Preferred, bool PreferredFree, int? FirstFreeFallback) -> void
+Aw.Sindri.Core.Onyx.PortFacts.Preferred.get -> int
+Aw.Sindri.Core.Onyx.PortFacts.Preferred.init -> void
+Aw.Sindri.Core.Onyx.PortFacts.PreferredFree.get -> bool
+Aw.Sindri.Core.Onyx.PortFacts.PreferredFree.init -> void
+Aw.Sindri.Core.Onyx.PreflightCheck
+Aw.Sindri.Core.Onyx.PreflightCheck.<Clone>$() -> Aw.Sindri.Core.Onyx.PreflightCheck!
+Aw.Sindri.Core.Onyx.PreflightCheck.Deconstruct(out string! Name, out Aw.Sindri.Core.Doctor.CheckState State, out string! Detail, out Aw.Kernel.Error? Problem) -> void
+Aw.Sindri.Core.Onyx.PreflightCheck.Detail.get -> string!
+Aw.Sindri.Core.Onyx.PreflightCheck.Detail.init -> void
+Aw.Sindri.Core.Onyx.PreflightCheck.Equals(Aw.Sindri.Core.Onyx.PreflightCheck? other) -> bool
+Aw.Sindri.Core.Onyx.PreflightCheck.Name.get -> string!
+Aw.Sindri.Core.Onyx.PreflightCheck.Name.init -> void
+Aw.Sindri.Core.Onyx.PreflightCheck.PreflightCheck(string! Name, Aw.Sindri.Core.Doctor.CheckState State, string! Detail, Aw.Kernel.Error? Problem) -> void
+Aw.Sindri.Core.Onyx.PreflightCheck.Problem.get -> Aw.Kernel.Error?
+Aw.Sindri.Core.Onyx.PreflightCheck.Problem.init -> void
+Aw.Sindri.Core.Onyx.PreflightCheck.State.get -> Aw.Sindri.Core.Doctor.CheckState
+Aw.Sindri.Core.Onyx.PreflightCheck.State.init -> void
+Aw.Sindri.Core.Onyx.PreflightReport
+Aw.Sindri.Core.Onyx.PreflightReport.<Clone>$() -> Aw.Sindri.Core.Onyx.PreflightReport!
+Aw.Sindri.Core.Onyx.PreflightReport.Checks.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.PreflightCheck!>!
+Aw.Sindri.Core.Onyx.PreflightReport.Checks.init -> void
+Aw.Sindri.Core.Onyx.PreflightReport.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.PreflightCheck!>! Checks, out int Port) -> void
+Aw.Sindri.Core.Onyx.PreflightReport.Equals(Aw.Sindri.Core.Onyx.PreflightReport? other) -> bool
+Aw.Sindri.Core.Onyx.PreflightReport.Ok.get -> bool
+Aw.Sindri.Core.Onyx.PreflightReport.Port.get -> int
+Aw.Sindri.Core.Onyx.PreflightReport.Port.init -> void
+Aw.Sindri.Core.Onyx.PreflightReport.PreflightReport(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.PreflightCheck!>! Checks, int Port) -> void
+const Aw.Sindri.Core.Onyx.OnyxPreflight.FallbackFirst = 3001 -> int
+const Aw.Sindri.Core.Onyx.OnyxPreflight.FallbackLast = 3010 -> int
+const Aw.Sindri.Core.Onyx.OnyxPreflight.PreferredPort = 3000 -> int
+override Aw.Sindri.Core.Onyx.DiskFacts.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.DiskFacts.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.DiskFacts.ToString() -> string!
+override Aw.Sindri.Core.Onyx.PortFacts.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.PortFacts.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.PortFacts.ToString() -> string!
+override Aw.Sindri.Core.Onyx.PreflightCheck.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.PreflightCheck.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.PreflightCheck.ToString() -> string!
+override Aw.Sindri.Core.Onyx.PreflightReport.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.PreflightReport.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.PreflightReport.ToString() -> string!
+static Aw.Sindri.Core.Onyx.DiskFacts.operator !=(Aw.Sindri.Core.Onyx.DiskFacts? left, Aw.Sindri.Core.Onyx.DiskFacts? right) -> bool
+static Aw.Sindri.Core.Onyx.DiskFacts.operator ==(Aw.Sindri.Core.Onyx.DiskFacts? left, Aw.Sindri.Core.Onyx.DiskFacts? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxPreflight.Evaluate(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! docker, Aw.Sindri.Core.Onyx.DiskFacts! disk, Aw.Sindri.Core.Onyx.PortFacts! port, Aw.Sindri.Core.Onyx.OnyxPins! pins) -> Aw.Sindri.Core.Onyx.PreflightReport!
+static Aw.Sindri.Core.Onyx.OnyxPreflight.Gib(long bytes) -> string!
+static Aw.Sindri.Core.Onyx.PortFacts.operator !=(Aw.Sindri.Core.Onyx.PortFacts? left, Aw.Sindri.Core.Onyx.PortFacts? right) -> bool
+static Aw.Sindri.Core.Onyx.PortFacts.operator ==(Aw.Sindri.Core.Onyx.PortFacts? left, Aw.Sindri.Core.Onyx.PortFacts? right) -> bool
+static Aw.Sindri.Core.Onyx.PreflightCheck.operator !=(Aw.Sindri.Core.Onyx.PreflightCheck? left, Aw.Sindri.Core.Onyx.PreflightCheck? right) -> bool
+static Aw.Sindri.Core.Onyx.PreflightCheck.operator ==(Aw.Sindri.Core.Onyx.PreflightCheck? left, Aw.Sindri.Core.Onyx.PreflightCheck? right) -> bool
+static Aw.Sindri.Core.Onyx.PreflightReport.operator !=(Aw.Sindri.Core.Onyx.PreflightReport? left, Aw.Sindri.Core.Onyx.PreflightReport? right) -> bool
+static Aw.Sindri.Core.Onyx.PreflightReport.operator ==(Aw.Sindri.Core.Onyx.PreflightReport? left, Aw.Sindri.Core.Onyx.PreflightReport? right) -> bool
+static readonly Aw.Sindri.Core.SindriErrors.OnyxComposeMissing -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.OnyxDockerUnavailable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.OnyxNotEnoughResources -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.OnyxPortTaken -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Control.ISindriHome
+Aw.Sindri.Core.Control.ISindriHome.Path.get -> string!
