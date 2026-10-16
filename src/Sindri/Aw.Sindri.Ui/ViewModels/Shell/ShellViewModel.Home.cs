@@ -76,10 +76,7 @@ internal sealed partial class ShellViewModel
     }
 
     // A decision row opens the decision sheet (by the decision's id); every other row opens its own, keyed on the row id.
-    private DeepLink LinkOf(string rowId) =>
-        NeedsYou.Rows.FirstOrDefault(r => string.Equals(r.Id, rowId, StringComparison.Ordinal)) is { } row && IsDecisionRow(row.Entry)
-            ? new DeepLink(DeepLinkKind.Decision, row.Entry.Subject?.Id ?? row.Id)
-            : new DeepLink(DeepLinkKind.NeedsYou, rowId);
+    private DeepLink LinkOf(string rowId) => Canonical(new DeepLink(DeepLinkKind.NeedsYou, rowId));
 
     // A deep link to a row or a decision selects its row on Home (the sheet shows beside it).
     private void SelectRowOf(DeepLink link)
