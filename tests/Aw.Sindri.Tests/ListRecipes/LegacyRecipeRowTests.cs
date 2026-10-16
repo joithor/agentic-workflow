@@ -207,7 +207,7 @@ public sealed class LegacyRecipeRowTests
         _ = await r.H.HoldLease();
         var node = RecipeDeclarationsTests.LegacyJson(LegacyStep());
         node["evals"] = new System.Text.Json.Nodes.JsonArray();
-        var row = new RegisteredRecipe(RecipeId.From("workflow.step"), 1, Core.Workflow.Ids.RecipeHash.Of(CanonicalJson.Of(node)), node.ToJsonString(), Base: null, r.H.Clock.GetUtcNow());
+        var row = new RegisteredRecipe(RecipeId.From("workflow.step"), 1, RecipeHash.Of(CanonicalJson.Of(node)), node.ToJsonString(), Base: null, r.H.Clock.GetUtcNow());
         _ = await r.Recipes.Add(row, TestContext.Current.CancellationToken);
 
         var approved = await r.Issue(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"approve workflow.step {row.Version}"));
