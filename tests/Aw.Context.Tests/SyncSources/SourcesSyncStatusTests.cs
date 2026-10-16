@@ -1,6 +1,7 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
+using Aw.Context.Features.SyncSources;
 using static Aw.Context.Tests.SyncSources.ExtractDecisionsTests;
 
 namespace Aw.Context.Tests.SyncSources;
@@ -73,5 +74,23 @@ public sealed class SourcesSyncStatusTests
         var sync = view.Sources.Single(r => r.Source.Value == "onyx").Sync;
         Assert.Equal((SourceState.Unavailable, ContextErrors.SourceUnavailable.Code), (sync?.State, sync?.Code));
         Assert.All(view.Sources.Where(r => r.Source.Value == "repo-docs"), r => Assert.Null(r.Sync));
+    }
+
+    [Fact]
+    public async Task A_run_cut_short_by_the_time_cap_shows_059_and_stays_ok_and_042_stays_for_labeling()
+    {
+        ScriptedSource? slow = null;
+        await using var rig = await Rig.Start(wrap: inner => slow = new ScriptedSource(inner));
+        slow!.AfterFetch = () => rig.World.Clock.Advance(SyncSourcesService.RunCap + TimeSpan.FromSeconds(1));
+
+        var capped = await rig.Sync(Scope());
+        var cut = (await Onyx(rig)).Sync;
+        slow.AfterFetch = null;
+        _ = await rig.Sync(Scope());
+        var after = (await Onyx(rig)).Sync;
+
+        Assert.Equal(ContextErrors.SyncCapped.Code, capped.Code);
+        Assert.Equal((SourceState.Ok, ContextErrors.SyncCapped.Code), (cut?.State, cut?.Code));   // partial, not failed: the next run continues
+        Assert.Equal((SourceState.Ok, null), (after?.State, after?.Code));
     }
 }

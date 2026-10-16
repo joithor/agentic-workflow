@@ -1266,7 +1266,9 @@ Aw.Context.Core.Linking.ConflictChecker
 Aw.Context.Core.Linking.ConflictVerdict
 Aw.Context.Core.Linking.ConflictVerdict.Agrees = 1 -> Aw.Context.Core.Linking.ConflictVerdict
 Aw.Context.Core.Linking.ConflictVerdict.Contradicts = 0 -> Aw.Context.Core.Linking.ConflictVerdict
+Aw.Context.Core.Linking.ConflictVerdict.Refused = 4 -> Aw.Context.Core.Linking.ConflictVerdict
 Aw.Context.Core.Linking.ConflictVerdict.Supersedes = 2 -> Aw.Context.Core.Linking.ConflictVerdict
+Aw.Context.Core.Linking.ConflictVerdict.Unread = 3 -> Aw.Context.Core.Linking.ConflictVerdict
 Aw.Context.Core.Linking.DecisionBatch
 Aw.Context.Core.Linking.DecisionBatch.<Clone>$() -> Aw.Context.Core.Linking.DecisionBatch!
 Aw.Context.Core.Linking.DecisionBatch.DecisionBatch(Aw.Context.Core.Sources.RecordKey Record, string! Version, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.DecisionRow!>! Decisions, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>! Edges) -> void
@@ -1288,6 +1290,8 @@ Aw.Context.Core.Linking.DecisionConflict.A.get -> Aw.Context.Core.Graph.NodeKey
 Aw.Context.Core.Linking.DecisionConflict.A.init -> void
 Aw.Context.Core.Linking.DecisionConflict.At.get -> System.DateTimeOffset
 Aw.Context.Core.Linking.DecisionConflict.At.init -> void
+Aw.Context.Core.Linking.DecisionConflict.Tries.get -> int
+Aw.Context.Core.Linking.DecisionConflict.Tries.init -> void
 Aw.Context.Core.Linking.DecisionConflict.B.get -> Aw.Context.Core.Graph.NodeKey
 Aw.Context.Core.Linking.DecisionConflict.B.init -> void
 Aw.Context.Core.Linking.DecisionConflict.DecisionConflict(Aw.Context.Core.Graph.NodeKey A, Aw.Context.Core.Graph.NodeKey B, Aw.Context.Core.Linking.ConflictVerdict Verdict, System.DateTimeOffset At) -> void

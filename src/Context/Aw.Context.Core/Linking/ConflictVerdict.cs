@@ -17,4 +17,12 @@ public enum ConflictVerdict
     /// <summary>One replaces the other.</summary>
     [JsonStringEnumMemberName("supersedes")]
     Supersedes,
+
+    /// <summary>The model's answer could not be read; the pair is asked again, up to three tries (<see cref="DecisionConflict.Tries"/>). Not a verdict: it never shows in an answer.</summary>
+    [JsonStringEnumMemberName("unread")]
+    Unread,
+
+    /// <summary>Three answers in a row could not be read (SND-CONTEXT-057): the pair is given up, not asked again.</summary>
+    [JsonStringEnumMemberName("refused")]
+    Refused,
 }

@@ -9,6 +9,9 @@ namespace Aw.Context.Core.Linking;
 /// <param name="At">When it was asked.</param>
 public sealed record DecisionConflict(NodeKey A, NodeKey B, ConflictVerdict Verdict, DateTimeOffset At)
 {
+    /// <summary>How many answers about this pair could not be read so far (0 for a pair with a verdict).</summary>
+    public int Tries { get; init; }
+
     /// <summary>Builds the pair with its keys in order.</summary>
     /// <param name="x">One decision key.</param>
     /// <param name="y">The other.</param>

@@ -73,11 +73,11 @@ public sealed class ExtractDecisionsTests
 
         public MapWorld World { get; }
 
-        public static async Task<Rig> Start(string verdict = "contradicts")
+        public static async Task<Rig> Start(string verdict = "contradicts", Func<IContextSource, IContextSource>? wrap = null)
         {
             var onyx = await FakeOnyxServer.Start(new FakeServerOptions { OnyxPlant = Plant });
             var harness = new OnyxSourceHarness(onyx.Url, onyx.Token);
-            var world = new MapWorld(intent: harness.Source);
+            var world = new MapWorld(intent: wrap?.Invoke(harness.Source) ?? harness.Source);
             world.Model.Responder = r => Route(r, verdict);
             _ = await world.ImportFixture();
             return new Rig(onyx, harness, world);
@@ -245,5 +245,73 @@ public sealed class ExtractDecisionsTests
         var resumed = await rig.Sync(Scope());
 
         Assert.Equal((0, null, all), (resumed.Queued, resumed.Code, resumed.Decisions));
+    }
+
+    [Fact]
+    public async Task A_source_that_takes_longer_than_the_cap_for_every_fetch_still_finishes_across_runs()
+    {
+        await using var whole = await Rig.Start();
+        var all = (await whole.Sync(Scope())).Decisions;
+        ScriptedSource? slow = null;
+        await using var rig = await Rig.Start(wrap: inner => slow = new ScriptedSource(inner));
+        slow!.AfterFetch = () => rig.World.Clock.Advance(SyncSourcesService.RunCap + TimeSpan.FromSeconds(1));   // every fetch alone takes longer than the whole run may
+        var queued = int.MaxValue;
+        var runs = 0;
+        SourceSync last;
+
+        do
+        {
+            last = await rig.Sync(Scope());
+            runs++;
+            Assert.True(last.Queued <= queued || last.Fetched > 0, "a capped run must move on");
+            queued = last.Queued;
+        }
+        while (last.Code is not null && runs < 60);
+
+        Assert.Null(last.Code);
+        Assert.Equal((0, all), (last.Queued, last.Decisions));
+    }
+
+    [Fact]
+    public async Task A_capped_run_keeps_what_it_fetched_extracted_and_the_next_run_does_not_fetch_it_again()
+    {
+        ScriptedSource? slow = null;
+        await using var rig = await Rig.Start(wrap: inner => slow = new ScriptedSource(inner));
+        slow!.AfterFetch = () => rig.World.Clock.Advance(SyncSourcesService.RunCap + TimeSpan.FromSeconds(1));
+
+        var first = await rig.Sync(Scope());
+        var stored = (await rig.Layer()).Records.Select(r => r.Key.Value).ToList();
+        var second = await rig.Sync(Scope());
+
+        Assert.Equal(ContextErrors.SyncCapped.Code, first.Code);
+        Assert.Equal(1, first.Fetched);
+        Assert.Equal(0, first.Queued);   // the record in hand was extracted before the cap stopped the run
+        Assert.True(first.Tokens > 0);
+        Assert.Equal(1, second.Fetched);
+        Assert.Equal(stored.Count + 1, (await rig.Layer()).Records.Count);   // the second run moved on to another record
+    }
+
+    [Fact]
+    public async Task A_verdict_that_cannot_be_read_keeps_the_pair_pending_and_the_third_try_marks_it_refused()
+    {
+        await using var rig = await Rig.Start();
+        var routed = rig.World.Model.Responder!;
+        rig.World.Model.Responder = r => r.Purpose == ModelPurpose.Adjudication ? "no idea" : routed(r);
+        int Asked() => rig.World.Model.Requests.Count(r => r.Purpose == ModelPurpose.Adjudication);
+
+        var first = await rig.Sync(Scope());
+        var afterFirst = (Asked(), first.Queued > 0, first.Refused > 0);
+        var second = await rig.Sync(Scope());
+        var afterSecond = (Asked(), second.Queued > 0);
+        var third = await rig.Sync(Scope());
+        var afterThird = (Asked(), third.Queued, (await rig.Layer()).Conflicts.Select(c => c.Verdict).ToList());
+        var fourth = await rig.Sync(Scope());
+
+        Assert.Equal((1, true, true), afterFirst);   // not answered: the record waits
+        Assert.Equal((2, true), afterSecond);
+        Assert.Equal(3, afterThird.Item1);
+        Assert.Equal(0, afterThird.Queued);   // the third try gave up
+        Assert.Equal([ConflictVerdict.Refused], afterThird.Item3);
+        Assert.Equal((3, 0), (Asked(), fourth.Queued));   // and the pair is not asked again
     }
 }
