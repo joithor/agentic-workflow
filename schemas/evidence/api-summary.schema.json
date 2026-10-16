@@ -74,7 +74,6 @@
             "enum": [
               "passed",
               "failed",
-              "refused",
               "broken",
               "skipped"
             ]

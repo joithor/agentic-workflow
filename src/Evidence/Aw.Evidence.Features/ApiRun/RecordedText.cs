@@ -32,7 +32,8 @@ internal static class RecordedText
         };
     }
 
-    private static string Scrubbed(ITextScrubber scrubber, string text) => scrubber.Scrub(HideSecretMembers(scrubber, text));
+    // Scrubbed before the members are hidden too: re-serializing a body can change how a value is written (escapes), which a value scrub afterwards would not find.
+    private static string Scrubbed(ITextScrubber scrubber, string text) => scrubber.Scrub(HideSecretMembers(scrubber, scrubber.Scrub(text)));
 
     private static string HideSecretMembers(ITextScrubber scrubber, string text)
     {

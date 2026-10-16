@@ -14,15 +14,11 @@ public enum ApiStepStatus
     [JsonStringEnumMemberName("failed")]
     Failed,
 
-    /// <summary>The step a guard named.</summary>
-    [JsonStringEnumMemberName("refused")]
-    Refused,
-
     /// <summary>The request failed or the program would not start.</summary>
     [JsonStringEnumMemberName("broken")]
     Broken,
 
-    /// <summary>A step after a refused or broken one.</summary>
+    /// <summary>A step after a broken one.</summary>
     [JsonStringEnumMemberName("skipped")]
     Skipped,
 }

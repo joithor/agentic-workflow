@@ -1,4 +1,5 @@
 using Aw.Evidence.Core.Data;
+using Aw.Kernel;
 
 namespace Aw.Evidence.Features.ApiRun;
 
@@ -16,6 +17,9 @@ internal sealed class Collected(ITextScrubber scrubber)
     internal string? FirstFailureText { get; private set; }
 
     internal CodedMessage? Error { get; set; }
+
+    /// <summary>Ends the run with an error (a request that failed, a program that would not start): the message is scrubbed.</summary>
+    internal void Fail(Error error) => Error = new CodedMessage(error.Code, scrubber.Scrub(error.Message));
 
     /// <summary>Checks a finished step's result against its expectation and records the step, its output and each failed assertion (scrubbed, then capped).</summary>
     internal void Record(StepInfo info, Expectation expect, int code, string output, string? goldenText)

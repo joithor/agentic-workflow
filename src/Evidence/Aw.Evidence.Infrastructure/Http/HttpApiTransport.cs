@@ -36,7 +36,8 @@ internal sealed class HttpApiTransport : IApiTransport, IDisposable
         try
         {
             using var response = await _client.SendAsync(message, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false);
-            var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+            var body = Decode(bytes, response.Content.Headers.ContentType?.CharSet);
             return new HttpReply((int)response.StatusCode, response.Headers.Location?.OriginalString, body);
         }
         catch (HttpRequestException ex)
@@ -46,6 +47,19 @@ internal sealed class HttpApiTransport : IApiTransport, IDisposable
         catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             return EvidenceErrors.RequestFailed.With($"{message.Method} {call.Url} timed out");
+        }
+    }
+
+    // The app under test names the charset; one nobody knows (utf8mb4) is read as UTF-8 rather than failing the run.
+    private static string Decode(byte[] bytes, string? charset)
+    {
+        try
+        {
+            return (charset is null ? Encoding.UTF8 : Encoding.GetEncoding(charset.Trim('"'))).GetString(bytes);
+        }
+        catch (ArgumentException)
+        {
+            return Encoding.UTF8.GetString(bytes);
         }
     }
 

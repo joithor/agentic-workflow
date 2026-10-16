@@ -47,8 +47,13 @@ public static class ExpectationCheck
 
     private static ApiFailure? Check(int step, PointerCheck check, JsonElement? root)
     {
-        var found = root is { } document ? JsonPointer.Resolve(document, check.Location) : null;
-        var actual = root is null ? NotJson : found?.GetRawText() ?? Missing;
+        if (root is null)
+        {
+            return new ApiFailure(step, check.Location, ExpectedText(check), NotJson);
+        }
+
+        var found = JsonPointer.Resolve(root.Value, check.Location);
+        var actual = found?.GetRawText() ?? Missing;
         if (check.EqualTo is { } expected)
         {
             return found is { } value && JsonEquality.Equal(value, expected) ? null : new ApiFailure(step, check.Location, expected.GetRawText(), actual);
@@ -56,6 +61,9 @@ public static class ExpectationCheck
 
         return check.Exists is { } exists ? CheckExists(step, check, found is not null, exists, actual) : CheckMatches(step, check, found, actual);
     }
+
+    private static string ExpectedText(PointerCheck check) =>
+        check.EqualTo is { } expected ? expected.GetRawText() : check.Exists is { } exists ? (exists ? "exists" : "absent") : "matches " + check.Matches;
 
     private static ApiFailure? CheckExists(int step, PointerCheck check, bool present, bool exists, string actual) =>
         present == exists ? null : new ApiFailure(step, check.Location, exists ? "exists" : "absent", actual);

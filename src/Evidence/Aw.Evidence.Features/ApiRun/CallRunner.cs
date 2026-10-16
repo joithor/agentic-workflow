@@ -3,7 +3,7 @@ using Aw.Evidence.Core.Data;
 namespace Aw.Evidence.Features.ApiRun;
 
 /// <summary>Runs the vetted CLI calls in order, each in its own temporary directory with an exact environment, and checks each expectation.</summary>
-internal sealed class CallRunner(ICliRunner runner, ITextScrubber scrubber)
+internal sealed class CallRunner(ICliRunner runner)
 {
     internal async ValueTask RunAsync(VettedRun run, Collected collected, CancellationToken cancellationToken)
     {
@@ -20,7 +20,7 @@ internal sealed class CallRunner(ICliRunner runner, ITextScrubber scrubber)
             var outcome = await runner.RunAsync(invocation, cancellationToken).ConfigureAwait(false);
             if (outcome.IsError)
             {
-                collected.Error = new CodedMessage(outcome.Error.Code, scrubber.Scrub(outcome.Error.Message));
+                collected.Fail(outcome.Error);
                 collected.Steps.Add(new ApiStep(info.Index, info.Action, info.Target, ApiStepStatus.Broken, Code: null, Output: null, []));
                 continue;
             }

@@ -55,7 +55,7 @@ internal sealed class ApiRunHarness
             new ApiRunService(
                 new ApiRunFiles(Files, Scrubber, TestJson.Options),
                 new ApiVetting(Settings, new FakeSecrets(Environment), new ApiRunFiles(Files, Scrubber, TestJson.Options), Targets, Locator),
-                new RequestRunner(Transport, Scrubber), new CallRunner(Cli, Scrubber), Locks, Clock, Ids), new ApiRunValidator());
+                new RequestRunner(Transport), new CallRunner(Cli), Locks, Clock, Ids), new ApiRunValidator());
         return service.Handle(request ?? Request(), TestContext.Current.CancellationToken);
     }
 

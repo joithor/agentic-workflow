@@ -10,8 +10,6 @@ namespace Aw.Evidence.Infrastructure.Processes;
 /// </summary>
 internal sealed class ProcessCliRunner(TimeSpan timeout, string? tempRoot = null) : ICliRunner
 {
-    internal string? TempRoot { get; } = tempRoot;
-
     private const string FixedPath = "/usr/local/bin:/usr/bin:/bin";
 
     /// <inheritdoc/>
@@ -22,7 +20,13 @@ internal sealed class ProcessCliRunner(TimeSpan timeout, string? tempRoot = null
             return EvidenceErrors.RunFailed.With($"'{invocation.Executable}' is not an absolute path: a program is never looked up on PATH");
         }
 
-        var directory = Directory.CreateTempSubdirectory("aw-api-");
+        var made = MakeDirectory(tempRoot);
+        if (made.IsError)
+        {
+            return made.Error;
+        }
+
+        var directory = made.Value;
         try
         {
             var environment = new Dictionary<string, string>(invocation.Environment, StringComparer.Ordinal)
@@ -41,6 +45,18 @@ internal sealed class ProcessCliRunner(TimeSpan timeout, string? tempRoot = null
         }
     }
 
+    private static Result<DirectoryInfo> MakeDirectory(string? root)
+    {
+        try
+        {
+            return root is null ? Directory.CreateTempSubdirectory("aw-api-") : Directory.CreateDirectory(Path.Combine(root, "aw-api-" + Path.GetRandomFileName()));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return EvidenceErrors.RunFailed.With($"the program's temporary directory could not be made: {ex.Message}");
+        }
+    }
+
     // The call's scratch space is its own: nothing of it is kept, and a leftover must not fail a run.
     private static void Remove(DirectoryInfo directory)
     {
@@ -48,9 +64,9 @@ internal sealed class ProcessCliRunner(TimeSpan timeout, string? tempRoot = null
         {
             directory.Delete(recursive: true);
         }
-        catch (IOException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // Something still holds a file; the system temp cleaner owns it now.
+            // Something still holds a file, or the program left a directory it made read-only; the system temp cleaner owns it now.
         }
     }
 }

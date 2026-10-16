@@ -33,7 +33,7 @@ every path it writes into a run file is absolute.
 
 `--lock-timeout` is whole seconds, 0 to 86400 (default 120; 0 tries once), and applies to each lock in turn, so exit 75 can come after up to twice the value; anything else is a usage error. A `--baseline` that doesn't exist is AW-EVIDENCE-010 (exit 1) before any lock is taken; one that exists but doesn't decode as a PNG leaves the verdict `unchecked` (never `unchanged`). `--host` takes a bare origin: `http://localhost:<port>`
 or `http://127.0.0.1:<port>` (local: no extra flag), or an https preview host matching `UI_EVIDENCE_PREVIEW_HOST_PATTERN`
-with `--allow-preview-host` (the host guard below). Without `--host` the binary drives `http://localhost:3000`.
+with `--allow-preview-host` (the host guard below). Without `--host`, `run` and `parity` drive `http://localhost:3000`; `api-run` has no default host and refuses a script with requests (AW-EVIDENCE-004) unless `--host` names one.
 
 ### Exit codes
 
@@ -43,15 +43,18 @@ One scheme for every command:
 |---|---|---|
 | 0 | Done; every check passed | — |
 | 1 | Usage error, invalid input, or a guard refused | `ui-evidence: usage: ui-evidence <shape>`; AW-EVIDENCE-001…006, 010, 012, 016, 017, 019, 022 |
-| 2 | A check failed: a step failed or broke (`run`), a box check failed (`parity`), the stack is unhealthy (`doctor`) | the document is still written and printed |
+| 2 | A check failed: a step failed or broke (`run`), an expectation did not hold (`api-run`), a box check failed (`parity`), the stack is unhealthy (`doctor`) | the document is still written and printed |
 | 3 | Blocked on review (`parity-plan`) | the plan is still printed |
-| 4 | The run itself errored, or the environment's I/O failed: the browser failed to start or crashed, a frame's anchor is missing, a region runs past the viewport, a file couldn't be read or written (the script included), a lock directory couldn't be made; `api-run`: a request failed, timed out or was redirected off its origin | AW-EVIDENCE-011, 013, 015, 023 (a stack probe failure, AW-EVIDENCE-014, is never an exit: `doctor` and `provenance` report it in their document) |
+| 4 | The run itself errored, or the environment's I/O failed: the browser failed to start or crashed, a frame's anchor is missing, a region runs past the viewport, a file couldn't be read or written (the script included), a lock directory couldn't be made; `api-run`: a request failed, timed out or was redirected off its origin (AW-EVIDENCE-023), a golden file could not be read (011), a CLI call would not start or ran past its limit, or its temporary directory could not be made (AW-EVIDENCE-015, the same code the unexpected-exception line uses) | AW-EVIDENCE-011, 013, 015, 023 (a stack probe failure, AW-EVIDENCE-014, is never an exit: `doctor` and `provenance` report it in their document) |
 | 75 | A machine lock stayed busy past `--lock-timeout` | AW-EVIDENCE-009 |
 | 130 | Interrupted (SIGINT, SIGTERM, SIGHUP, SIGQUIT): a browser call in flight is abandoned at once and the locks are released on the way out. A second signal terminates the process without waiting (a lock it held is then left for a person to remove) | `ui-evidence: interrupted` |
 
 The mapping is by error kind: `timeout` → 75, `unavailable` → 4, anything else → 1. An unexpected exception (a bug,
 or a failure outside a result) is `ui-evidence: AW-EVIDENCE-015 the run failed unexpectedly: <first line>` and exit 4,
 never the runtime's crash exit.
+
+Codes AW-EVIDENCE-018 (database script), 020 (database refused), 021 (server identity mismatch) and 024 are reserved for
+`db-run` and the identity check (DT-E2) and are returned by nothing yet.
 
 ### stdout and stderr
 
@@ -249,9 +252,12 @@ judge wired, or no answer from the judge, is `unchecked`.
 ### `summary.json` for `api-run` (`schema: "evidence.api.summary/1"`)
 
 The UI run's shape for the fields the readers share, so one reader and one judge input serve both. Every key is always
-written (`null` or `[]`, never missing), in this order. It is written on every exit but 75, once the script has been
-read (a script that cannot be read, or a run directory that cannot be made, writes none); an earlier `summary.json` in the
-run directory is deleted first, so no exit leaves a stale one. Nothing is written outside the absolute `<run-dir>`
+written (`null` or `[]`, never missing), in this order. The run directory is made and an earlier `summary.json` in it
+deleted first, before the script is read, so no exit leaves a stale one. A summary is then written on every exit except these, which
+write none: 75 (a lock stayed busy), a script that cannot be read, a run directory that cannot be made, an unexpected exception
+(AW-EVIDENCE-015, exit 4) and 130 (interrupted). Any other failure is in the summary: an error of the input (a script, host, header,
+CLI target or a golden file that is missing) is `refused` (exit 1); a failure of the environment's I/O (an unreadable golden file, a
+lock directory that cannot be made) is `errored` with `error` set (exit 4). Nothing is written outside the absolute `<run-dir>`
 and the box-wide locks, except that each CLI call runs in a fresh temp directory under the system temp dir, removed when the call ends.
 
 | Field | Type | Holds |
@@ -262,7 +268,7 @@ and the box-wide locks, except that each CLI call runs in a fresh temp directory
 | `host` | string \| null | the origin the requests went to; null when the script has no requests |
 | `outcome` | `passed` \| `failed` \| `refused` \| `errored` | exit 0 · 2 · 1 · 4. A test pins that exit and `outcome` agree: the exit code alone decides |
 | `headline` | string | one line, 200 characters at most, scrubbed: `passed: 7 assertions`, `GET /api/items: status 500, expected 201 (assertion 3 of 7)` |
-| `steps[]` | object[] | one per request, then per CLI call: `index` (1-based), `action` (`request` \| `cli`), `target` (`GET /path`, or the argv without the program's arguments' values: `out/tool` and its words), `status` (`passed` \| `failed` \| `refused` \| `broken` \| `skipped`), `code` (the HTTP status or exit code, or null), `output` (the body or stdout, scrubbed and capped at 2,000 characters, or null), `headerNames` (names only) |
+| `steps[]` | object[] | one per request, then per CLI call: `index` (1-based), `action` (`request` \| `cli`), `target` (`GET /path`, or the argv without the program's arguments' values: `out/tool` and its words), `status` (`passed` \| `failed` \| `broken` \| `skipped`), `code` (the HTTP status or exit code, or null), `output` (the body or stdout, scrubbed and capped at 2,000 characters, or null), `headerNames` (names only) |
 | `failures[]` | object[] | one per assertion that did not hold: `step`, `pointer` (string \| null), `expected`, `actual` (text, scrubbed, capped at 200 characters; `missing` for an absent pointer) |
 | `declaredWrites[]` | string[] | the script's declaration, so a report shows it |
 | `passedEnv[]` | string[] | names only, of the variables beyond `PATH`, `HOME`, `TMPDIR` and `LANG` a CLI call received |
@@ -271,10 +277,13 @@ and the box-wide locks, except that each CLI call runs in a fresh temp directory
 | `error` | `{code, message}` \| null | set on exit 4 |
 | `invocations[]` | | always `[]`: no model runs |
 
-A step's `broken` is a request that failed or a program that would not start (exit 4); `refused` is the step a guard
-named (exit 1); `skipped` is a step after either. An assertion that does not hold marks its step `failed`, and the
+A step's `broken` is a request that failed or a program that would not start (exit 4); `skipped` is a step after it.
+A run that is refused, or errored before it starts (an unreadable golden file, a lock that failed), ran nothing: its `steps` is `[]`,
+and `refusal` or `error` names what stopped it. An assertion that does not hold marks its step `failed`, and the
 remaining steps still run (a request or call is an action that already happened or never will). The whole document, and so
-every value in it, goes through `Aw.Redaction` before it is written; stdout is exactly the file's content (no trailing newline) and logs go to
+every value in it, goes through `Aw.Redaction` before it is written, after the run has replaced, by value, each header value and
+pass-through variable value it resolved with `[REDACTED:header-value]` (wherever an app echoes it, including in its JSON-escaped
+form; a value under 6 characters is left to the patterns); stdout is exactly the file's content (no trailing newline) and logs go to
 stderr. The JSON Schemas of the script and the summary are generated from the records and committed as
 `schemas/evidence/api-script.schema.json` and `schemas/evidence/api-summary.schema.json`; a test validates a produced summary against its schema.
 
@@ -319,7 +328,7 @@ something), not a determined agent.
 | Host | requests go only to `--host`, which is required and has no default (a script with `requests` and no `--host` is refused). The host guard above decides it: a bare loopback origin, or a preview host with `--allow-preview-host` | AW-EVIDENCE-004 |
 | Redirects | a redirect to the same origin is followed (up to five hops) unless the expectation's `status` is itself a 3xx; a redirect to any other origin is never followed, and ends the run (exit 4) naming the origin it refused | AW-EVIDENCE-023 |
 | Writes | none refused: API evidence allows any HTTP method on the host the script names (owner decision, 2026-10-15). There is no `--allow-writes` for `api-run` | |
-| Header secrets | values come only from named environment variables; only the names are recorded | AW-EVIDENCE-017 (a literal), AW-EVIDENCE-006 (unset) |
+| Header secrets | values come only from named environment variables; only the names are recorded, and the values are scrubbed by value from everything the run records | AW-EVIDENCE-017 (a literal), AW-EVIDENCE-006 (unset) |
 | CLI target | `argv[0]` contains a `/`: it resolves, against `--repo` (default: the working directory) and after following every symlink, to an executable file inside a build output directory or equal to a `cli.allow` path. A bare name is never looked up on `PATH`. With nothing configured, every CLI call is refused, and the message names the files to write | AW-EVIDENCE-019 |
 | CLI writes | an argument that reads as a write verb (the UI guard's list, plus `push`, `drop`, `rm`, `truncate`, `destroy`, `purge`, `wipe`, `kill`, `commit`, `put`, `patch`, `write`, `rollback`, `revert`, `uninstall`) is refused unless the script's `declaredWrites` names it | AW-EVIDENCE-019 |
 | CLI environment | each call runs in a fresh temporary directory (its `HOME` and `TMPDIR`) with an empty environment plus `PATH`, `LANG` and the declared pass-through names. A pass-through name that reads as a secret (it contains `TOKEN`, `SECRET`, `PASSWORD`, `CREDENTIAL`, `API_KEY` or `PRIVATE_KEY`, starts with `AWS_`, `AZURE_`, `GCP_`, `GOOGLE_`, `SSH_` or `GITHUB_`, or is `DATABASE_URL`) is refused | AW-EVIDENCE-019 |

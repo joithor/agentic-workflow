@@ -1741,11 +1741,10 @@ Aw.Evidence.Core.Data.ApiStep.Status.init -> void
 Aw.Evidence.Core.Data.ApiStep.Target.get -> string!
 Aw.Evidence.Core.Data.ApiStep.Target.init -> void
 Aw.Evidence.Core.Data.ApiStepStatus
-Aw.Evidence.Core.Data.ApiStepStatus.Broken = 3 -> Aw.Evidence.Core.Data.ApiStepStatus
+Aw.Evidence.Core.Data.ApiStepStatus.Broken = 2 -> Aw.Evidence.Core.Data.ApiStepStatus
 Aw.Evidence.Core.Data.ApiStepStatus.Failed = 1 -> Aw.Evidence.Core.Data.ApiStepStatus
 Aw.Evidence.Core.Data.ApiStepStatus.Passed = 0 -> Aw.Evidence.Core.Data.ApiStepStatus
-Aw.Evidence.Core.Data.ApiStepStatus.Refused = 2 -> Aw.Evidence.Core.Data.ApiStepStatus
-Aw.Evidence.Core.Data.ApiStepStatus.Skipped = 4 -> Aw.Evidence.Core.Data.ApiStepStatus
+Aw.Evidence.Core.Data.ApiStepStatus.Skipped = 3 -> Aw.Evidence.Core.Data.ApiStepStatus
 Aw.Evidence.Core.Data.ApiSummary
 Aw.Evidence.Core.Data.ApiSummary.<Clone>$() -> Aw.Evidence.Core.Data.ApiSummary!
 Aw.Evidence.Core.Data.ApiSummary.ApiSummary(string! Schema, string! Kind, Aw.Evidence.Core.Ids.RunId RunId, Aw.Evidence.Core.Ids.RunInstanceId RunInstance, System.DateTimeOffset StartedAt, System.DateTimeOffset FinishedAt, string? AppBuild, string! ScriptSha256, Aw.Evidence.Core.Data.DataRunAt At, string? Host, Aw.Evidence.Core.Data.ApiOutcome Outcome, string! Headline, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.ApiStep!>! Steps, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.ApiFailure!>! Failures, System.Collections.Generic.IReadOnlyList<string!>! DeclaredWrites, System.Collections.Generic.IReadOnlyList<string!>! PassedEnv, string! Provenance, string? SeedSha256, Aw.Evidence.Core.Data.CodedMessage? Refusal, Aw.Evidence.Core.Data.CodedMessage? Error, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Usage.ModelInvocation!>! Invocations) -> void

@@ -7,7 +7,7 @@ using Aw.Kernel;
 namespace Aw.Evidence.Features.ApiRun;
 
 /// <summary>Runs the vetted requests in order against the host, follows same-origin redirects, and checks each expectation.</summary>
-internal sealed class RequestRunner(IApiTransport transport, ITextScrubber scrubber)
+internal sealed class RequestRunner(IApiTransport transport)
 {
     private const int MaxRedirects = 5;
 
@@ -28,7 +28,7 @@ internal sealed class RequestRunner(IApiTransport transport, ITextScrubber scrub
             var sent = await SendAsync(request, run.Host!, cancellationToken).ConfigureAwait(false);   // why: a script with requests has a host (vetting)
             if (sent.IsError)
             {
-                collected.Error = new CodedMessage(sent.Error.Code, scrubber.Scrub(sent.Error.Message));
+                collected.Fail(sent.Error);
                 collected.Steps.Add(new ApiStep(index, ApiAction.Request, target, ApiStepStatus.Broken, Code: null, Output: null, names));
                 continue;
             }
