@@ -139,4 +139,23 @@ public sealed class SeenTrackerTests
         Assert.Equal(["z"], await Stored(), StringComparer.Ordinal);
         Assert.Equal(0, tracker.UndoCount);
     }
+
+    // review run 1, a11y-12 (WCAG 2.2.1): the offer waits while the user is on its button.
+    [Fact]
+    public async Task The_Undo_offer_waits_while_it_is_held_and_starts_over_when_let_go()
+    {
+        var tracker = await Tracker();
+        tracker.MarkAllSeen(["a", "b"]);
+        _clock.Advance(TimeSpan.FromSeconds(9));
+
+        tracker.HoldUndo(holding: true);
+        _clock.Advance(TimeSpan.FromMinutes(5));
+        Assert.Equal(2, tracker.UndoCount);
+
+        tracker.HoldUndo(holding: false);
+        _clock.Advance(SeenTracker.UndoFor - TimeSpan.FromMilliseconds(1));
+        Assert.Equal(2, tracker.UndoCount);
+        _clock.Advance(TimeSpan.FromMilliseconds(1));
+        Assert.Equal(0, tracker.UndoCount);
+    }
 }

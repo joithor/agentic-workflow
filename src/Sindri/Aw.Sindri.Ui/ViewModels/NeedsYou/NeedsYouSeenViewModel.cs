@@ -143,6 +143,10 @@ internal sealed class NeedsYouSeenViewModel : ObservableObject
     /// <summary>Marks every row now in the list seen, and offers Undo.</summary>
     internal void MarkAllSeen() => _tracker.MarkAllSeen([.. _entries.Select(e => e.Id)]);
 
+    /// <summary>Holds the Undo offer open while the user is on its button (focus or pointer).</summary>
+    /// <param name="holding">True while they are.</param>
+    internal void HoldUndo(bool holding) => _tracker.HoldUndo(holding);
+
     /// <summary>Takes back the last Mark all seen, while its Undo is offered.</summary>
     internal void Undo() => _ = _tracker.Undo();
 

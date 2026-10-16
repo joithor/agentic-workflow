@@ -151,6 +151,17 @@ internal sealed partial class HomePage : UserControl
         }
     }
 
+    // The Undo offer waits while its button has focus or the pointer (WCAG 2.2.1), and starts over when both are gone.
+    private void OnUndoHeld(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.NeedsYou.Seen.HoldUndo(holding: true);
+
+    private void OnUndoReleased(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { IsKeyboardFocusWithin: false, IsPointerOver: false })
+        {
+            (DataContext as ShellViewModel)?.NeedsYou.Seen.HoldUndo(holding: false);
+        }
+    }
+
     private void OnShowHeld(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.Queue.ShowHeld(QueueScope.Home);
 
     private void OnPanelEntered(object? sender, Avalonia.Input.PointerEventArgs e) => (DataContext as ShellViewModel)?.Queue.Hold(holding: true);

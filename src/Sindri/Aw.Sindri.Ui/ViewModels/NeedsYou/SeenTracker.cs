@@ -144,6 +144,30 @@ internal sealed class SeenTracker : ObservableObject
         }
     }
 
+    /// <summary>Holds the Undo offer open while the user has the Undo button (focus or pointer); letting go gives it its full time again.</summary>
+    /// <param name="holding">True while the button has focus or the pointer.</param>
+    internal void HoldUndo(bool holding)
+    {
+        lock (_gate)
+        {
+            if (_undo.Count == 0)
+            {
+                return;
+            }
+
+            if (holding)
+            {
+                _undoTimer?.Dispose();
+                _undoTimer = null;
+            }
+            else if (_undoTimer is null)
+            {
+                _ui ??= SynchronizationContext.Current;
+                _undoTimer = _clock.CreateTimer(_ => OnUi(ExpireUndo), state: null, UndoFor, Timeout.InfiniteTimeSpan);
+            }
+        }
+    }
+
     /// <summary>Marks a row seen because the user acted on it.</summary>
     /// <param name="id">The row's id.</param>
     internal void Acted(string id) => MarkSeen(id);
