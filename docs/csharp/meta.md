@@ -134,7 +134,7 @@ A worktree git cannot read is kept with the reason.
 ## Team config
 
 `$AW_STATE_DIR/meta/team.json` (or `AW_META_CONFIG`). Unknown fields are ignored. Example:
-`skills/meta/examples/agentic-workflow.team.json`.
+`skills/meta/examples/agentic-workflow.team.json` (its `repo`, `prompts` and `log` are placeholders: set absolute paths, since they are not expanded).
 
 | Field | Meaning |
 |-------|---------|
