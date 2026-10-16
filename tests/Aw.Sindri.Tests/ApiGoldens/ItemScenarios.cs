@@ -267,7 +267,7 @@ internal static class ItemScenarios
         }
     }
 
-    private static async Task Stall(GoldenHost host, CancellationToken ct)
+    internal static async Task Stall(GoldenHost host, CancellationToken ct)
     {
         await ViewScenarios.CatchUp(host, ct);   // the first build finishes, so the stall is one of a running projector
         await ViewScenarios.Append(host, EventTypes.ItemCreated, "not an item", "item.created:unreadable", ct);
