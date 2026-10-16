@@ -61,7 +61,8 @@ public sealed class CliJobFollowTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Ctrl_c_before_the_job_is_accepted_exits_1_with_a_plain_line()
     {
-        var verbs = new ServiceVerbs(JobRig.Client(Api()), _rig.Output(), _rig.Follower(Api()), static (_, ct) => throw new OperationCanceledException(ct));   // the launch of the control plane was interrupted
+        await _rig.Interrupt();
+        var verbs = new ServiceVerbs(Client(Api()), _rig.Output(), _rig.Follower(Api()), static (_, ct) => throw new OperationCanceledException(ct));   // the launch of the control plane was interrupted
 
         var code = await verbs.Run(["run", "heartbeat"], _rig.Interrupted, _rig.Again);
 
@@ -75,7 +76,7 @@ public sealed class CliJobFollowTests : IDisposable
     {
         await _rig.Interrupt();
 
-        var code = await JobRig.Finished(_rig.RunServices(new JobApi(), "run", "heartbeat"));   // the request still goes out and is answered (a 404 here)
+        var code = await Finished(_rig.RunServices(new JobApi(), "run", "heartbeat"));   // the request still goes out and is answered (a 404 here)
 
         Assert.NotEqual(0, code);
         Assert.DoesNotContain("   at ", _rig.Error.ToString(), StringComparison.Ordinal);
