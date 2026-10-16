@@ -46,6 +46,19 @@ public sealed class CliJobFollowTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_failed_run_prints_the_services_reason_and_its_code_once()
+    {
+        var api = Api();
+        var run = _rig.RunServices(api, "run", "heartbeat");
+        await FollowRig.WaitUntil(() => api.Streams == 1);
+
+        await api.Frame(11, "job.finished", Finished("failed", "tidy: the ledger was busy", "SND-LEDGER-002"));
+
+        Assert.Equal(1, await Finished(run));
+        Assert.EndsWith("failed: tidy: the ledger was busy SND-LEDGER-002\n", _rig.Out.ToString().ReplaceLineEndings("\n"), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Ctrl_c_cancels_and_prints_cancelled()
     {
         var api = Api().Ok("POST", "/sindri/jobs/" + Id + "/cancel", Body(new Core.Commands.CommandAccepted(Core.Ids.CommandId.From(new Guid(8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)), 12)));

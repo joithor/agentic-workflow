@@ -64,7 +64,7 @@ public sealed class RunServiceTests
 
         var code = ScriptedService.Failure.Code;
         var finished = runtime.H.Events.Payload<JobFinished>(Assert.Single(runtime.Of(EventTypes.JobFinished))).Value;
-        Expect.Equal((JobOutcome.Failed, code, $"failed: {code}"), (finished.Outcome, finished.Code, finished.Summary));
+        Expect.Equal((JobOutcome.Failed, code, ScriptedService.Failure.Message), (finished.Outcome, finished.Code, finished.Summary));
         var ran = runtime.H.Events.Payload<ServiceRan>(Assert.Single(runtime.Of(EventTypes.ServiceRan))).Value;
         Expect.Equal((ServiceOutcome.Failed, code), (ran.Outcome, ran.Code));
         Expect.Equal(ServiceOutcome.Failed, runtime.Get<ServiceRunGuard>().LastOutcome(_tidy));
