@@ -10,7 +10,7 @@
 # temporal): doctor with nothing running, start headless with an unapproved profile, a second serve refused by the lease,
 # the approve preview and its non-terminal refusal, a session's typed approve refused (SND-AUTH-002), the human's typed
 # approval, status (text and --json's apiVersion), /sindri/mcp's initialize and tools/list as a stateless MCP client,
-# the views rebuild refused to a session and requested by the human, status's views and health lines, the item verbs (API P3: a human's item add, the queue and the item list, a session's item add refused, the human's item close, the done list and the queue again), the request verbs (API P4: a session's request, the needs-you list, a session's decide refused, the human's decide, the list again and the accepted requests), the ledger read (API P5: the human's lists command.handled, a session's doesn't, one item's events, and GET /events/catalog), a session's stop refused, the human's stop, status and doctor again (doctor with HOME on an empty scratch dir, so its
+# the views rebuild refused to a session and requested by the human, status's views and health lines, the item verbs (API P3: a human's item add, the queue and the item list, a session's item add refused, the human's item close, the done list and the queue again), the request verbs (API P4: a session's request, the needs-you list, a session's decide refused, the human's decide, the list again and the accepted requests), the ledger read (API P5: the human's lists command.handled, a session's doesn't, one item's events, and GET /events/catalog), the service and job verbs (API P6: the services list as JSON, a manual run of heartbeat followed to its end, a session's run refused, jobs show and the jobs list, pause and resume with a session's pause refused, and the services list after each), a session's stop refused, the human's stop, status and doctor again (doctor with HOME on an empty scratch dir, so its
 # context:mcp-scope row never reads the real provider files);
 # then recipe validate on the shipped recipes (their hashes; workflow.item reads its child beside it) and on an invalid
 # fixture (RCP-REACH-001, exit 1). The normalized output (pids, ports, hashes, times, the host name and the temp path
@@ -196,6 +196,21 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   echo "## GET /sindri/events/catalog | jq (public types, their invalidates)"
   curl -s -m 30 "$(jq -r '.url' "$AW_SINDRI_HOME/control.json" | sed 's|/$||')/sindri/events/catalog" -H 'X-Sindri-Repo: smoke' \
     | jq -c '{commandHandled: any(.types[]; .type == "command.handled"), itemCreated: (.types[] | select(.type == "item.created") | .invalidates)}'
+  echo "## sindri services --json | jq (name, every, paused, job)"
+  bounded "$bin" services --json </dev/null | jq -c '[.services[] | {name, every, paused, job}]'
+  human services run heartbeat </dev/null
+  settle
+  session services run heartbeat
+  job="$(bounded "$bin" jobs --json </dev/null | jq -r '.jobs[0].id')"
+  run jobs show "$job"
+  run jobs --state succeeded
+  human services pause heartbeat </dev/null
+  session services pause heartbeat
+  settle
+  run services
+  human services resume heartbeat </dev/null
+  settle
+  run services
   session stop
   human stop </dev/null
   run status
