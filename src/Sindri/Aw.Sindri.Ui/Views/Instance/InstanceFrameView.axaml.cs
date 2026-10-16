@@ -83,18 +83,22 @@ internal sealed partial class InstanceFrameView : UserControl
     private Button? Part(FrameFocusEventArgs wanted)
     {
         var buttons = this.GetVisualDescendants().OfType<Button>().Where(b => b.IsEffectivelyVisible && b.IsEffectivelyEnabled).ToList();
-        var name = wanted.Target switch
+        Button? Find(string name, Func<Button, bool>? also = null) => buttons.Find(b => string.Equals(b.Name, name, StringComparison.Ordinal) && (also?.Invoke(b) ?? true));
+        return wanted.Target switch
         {
-            FrameFocus.Keep => "ExpandedKeep",
-            FrameFocus.OpenIn => "InstanceOpenIn",
-            FrameFocus.CopyStatus or FrameFocus.PendingOutput or FrameFocus.Back => "ExpandedCopyStatus",
+            FrameFocus.Keep => Find("ExpandedKeep"),
+            FrameFocus.OpenIn => Find("InstanceOpenIn"),
+            FrameFocus.CopyStatus => Find("ExpandedCopyStatus"),
+            FrameFocus.PendingOutput => Find("FactCopyCli", b => b.DataContext is FactRowViewModel row && string.Equals(row.Key, wanted.Key, StringComparison.Ordinal)) ?? Find("ExpandedCopyStatus"),
+            FrameFocus.Back => Find("InstanceBack") ?? SheetBack(),   // the 404 state's own Back hides where the sheet covers the page: the header's Back is the one then
+            FrameFocus.ChildEntry => Find("ChildRowOpen", b => b.DataContext is ChildRowViewModel child && string.Equals(child.Address, wanted.Key, StringComparison.Ordinal)),
+            FrameFocus.ChildItem => Find("ChildRowItemOpen", b => b.DataContext is ChildRowViewModel child && string.Equals(child.ItemId, wanted.Key, StringComparison.Ordinal)),
             _ => throw new ArgumentOutOfRangeException(nameof(wanted), wanted.Target, message: null),
         };
-        return wanted.Target == FrameFocus.PendingOutput
-            ? buttons.Find(b => string.Equals(b.Name, "FactCopyCli", StringComparison.Ordinal) && b.DataContext is FactRowViewModel row && string.Equals(row.Key, wanted.Key, StringComparison.Ordinal))
-                ?? buttons.Find(b => string.Equals(b.Name, "ExpandedCopyStatus", StringComparison.Ordinal))
-            : buttons.Find(b => string.Equals(b.Name, name, StringComparison.Ordinal));
     }
+
+    private Button? SheetBack() => TopLevel.GetTopLevel(this)?.GetVisualDescendants().OfType<Button>()
+        .FirstOrDefault(b => string.Equals(b.Name, "SheetBack", StringComparison.Ordinal) && b.IsEffectivelyVisible && b.IsEffectivelyEnabled);
 
     private void OnBack(object? sender, RoutedEventArgs e) => (TopLevel.GetTopLevel(this)?.DataContext as ShellViewModel)?.Back();
 

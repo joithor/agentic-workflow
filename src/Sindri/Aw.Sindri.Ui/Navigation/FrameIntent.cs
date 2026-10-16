@@ -11,4 +11,10 @@ internal enum FrameIntent
 
     /// <summary>X: the frame asks whether to cancel, with its Keep button focused.</summary>
     AskCancel,
+
+    /// <summary>Back from a child's frame: focus lands on the child's entry in the children panel.</summary>
+    FocusChild,
+
+    /// <summary>Back from a child's item sheet: focus lands on the child's Open button.</summary>
+    FocusChildItem,
 }

@@ -56,19 +56,21 @@ internal sealed partial class InstanceFrameViewModel
     /// <summary>Names what the key that opened this frame wants done once the instance is read.</summary>
     /// <param name="address">The instance's address.</param>
     /// <param name="intent">The intent.</param>
-    internal void Intend(string address, FrameIntent intent)
+    /// <param name="key">What the intent names (the child's address or its item's id for a return); null otherwise.</param>
+    internal void Intend(string address, FrameIntent intent, string? key = null)
     {
-        _intent = intent == FrameIntent.None ? null : (address, intent);
+        _intent = intent == FrameIntent.None ? null : (address, intent, key);
         if (Phase == FramePhase.Shown && string.Equals(Address, address, StringComparison.Ordinal))
         {
             ApplyIntent();
         }
     }
 
-    // Once the instance is read (and only that instance): A on a desk task moves focus to the output the step awaits, X asks whether to cancel.
+    // Once the instance is read (and only that instance): A on a desk task moves focus to the output the step awaits, X asks whether to cancel,
+    // and a return from a child puts focus back on the child's entry.
     private void ApplyIntent()
     {
-        if (_intent is not var (address, intent) || !string.Equals(address, Address, StringComparison.Ordinal))
+        if (_intent is not var (address, intent, key) || !string.Equals(address, Address, StringComparison.Ordinal))
         {
             return;
         }
@@ -83,6 +85,27 @@ internal sealed partial class InstanceFrameViewModel
         {
             var awaiting = Facts?.Rows.FirstOrDefault(r => r.IsAwaiting)?.Key;
             Focus(awaiting is null ? InitialFocus : FrameFocus.PendingOutput, awaiting);
+        }
+        else if (ReturnTarget(intent) is { } target)
+        {
+            Focus(target, key);
+        }
+    }
+
+    private static FrameFocus? ReturnTarget(FrameIntent intent) => intent switch
+    {
+        FrameIntent.FocusChild => FrameFocus.ChildEntry,
+        FrameIntent.FocusChildItem => FrameFocus.ChildItem,
+        FrameIntent.None or FrameIntent.PendingOutput or FrameIntent.AskCancel => null,
+        _ => null,
+    };
+
+    /// <summary>Asks for focus on the frame's first read action (UI spec §11.2), unless a key already asked for another part.</summary>
+    internal void FocusInitial()
+    {
+        if (WantedFocus is null && _intent is null)
+        {
+            Focus(InitialFocus, key: null);
         }
     }
 

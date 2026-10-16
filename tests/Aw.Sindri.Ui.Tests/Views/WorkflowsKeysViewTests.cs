@@ -165,6 +165,8 @@ public sealed class WorkflowsKeysViewTests : FrameHost
         await Reach(window, shell, () => Focused(window) is Button keep && keep.Name == "ExpandedKeep");
         Frame(window, "u8-keys-cancel-ask", "");
 
+        Press(window, Key.Escape);   // the first Esc answers the question (Keep); the second closes the frame
+        Assert.True(shell.IsSheetOpen);
         Press(window, Key.Escape);
         await Until(window, () => !shell.IsSheetOpen && Focused(window) is Button { DataContext: InstanceRowViewModel row } open && open.Name == "WorkflowRowOpen" && row.Address == Plain.Address, "focus did not return to the row");
     });

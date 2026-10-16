@@ -41,12 +41,22 @@ internal sealed partial class ShellViewModel
     {
         if (IsSheetOpen && _trail.TryPop(out var previous))
         {
+            ReturnFocus(previous, SheetLink);
             Stacked(() => Navigate(previous), push: false);
             return;
         }
 
         _trail.Clear();
         CloseSheet();
+    }
+
+    // Back to a frame lands focus on the entry of the child (or the child's item) the user went into, once the frame is shown.
+    private void ReturnFocus(DeepLink previous, DeepLink? leaving)
+    {
+        if (previous is { Kind: DeepLinkKind.Workflow, Subject: { } parent } && leaving is { Subject: { } from } && leaving.Kind is DeepLinkKind.Workflow or DeepLinkKind.Item)
+        {
+            Instance.Intend(parent, leaving.Kind == DeepLinkKind.Item ? FrameIntent.FocusChildItem : FrameIntent.FocusChild, from);
+        }
     }
 
     // Everything the frame needs once it exists (ShellViewModel's constructor calls this one line).
@@ -62,10 +72,10 @@ internal sealed partial class ShellViewModel
     // the strip showed, else the list resolves the address.
     private void OnInstanceSheetOpened(DeepLink link)
     {
-        OpenerWorkflow = null;
         if (!_stacking)
         {
             _trail.Clear();   // a sheet opened from anywhere but a frame starts a new trail
+            OpenerWorkflow = null;   // ... and has no Workflows row to return to; a stacked one keeps the row that opened the first frame
         }
 
         Changed(nameof(IsInstanceSheet), nameof(ShownSheetWidth));

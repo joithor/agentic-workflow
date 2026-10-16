@@ -20,7 +20,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
     private Uri? _url;
     private string? _id;
     private int _generation;
-    private (string Address, FrameIntent Intent)? _intent;
+    private (string Address, FrameIntent Intent, string? Key)? _intent;
 
     /// <summary>Raised when the frame asks to open another instance.</summary>
     internal event EventHandler<FrameOpenEventArgs>? OpenRequested;

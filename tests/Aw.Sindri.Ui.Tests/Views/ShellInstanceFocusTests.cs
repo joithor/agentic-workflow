@@ -39,10 +39,11 @@ public sealed class ShellInstanceFocusTests : FrameHost
     private static List<Button> Buttons(Window window, string name) =>
         [.. window.GetVisualDescendants().OfType<Button>().Where(b => string.Equals(b.Name, name, StringComparison.Ordinal) && b.IsEffectivelyVisible)];
 
-    private async Task<(Window Window, ShellViewModel Shell)> Opened(string scenario, FramePhase phase = FramePhase.Shown)
+    private async Task<(Window Window, ShellViewModel Shell)> Opened(string scenario, FramePhase phase = FramePhase.Shown, RouteAnswer? served = null)
     {
         var detail = FixtureInstances.Detail(scenario);
         var (window, shell) = await Connected(s => s.Workflows.Groups.Count > 0, width: 1600, height: 1000);
+        Server.WorkflowAnswer = served;   // after connecting: the list behind the sheet is read first
         shell.OpenInstance(detail.Address, detail.Id);
         await Until(window, () => shell.Instance.Phase == phase);
         return (window, shell);
@@ -73,9 +74,7 @@ public sealed class ShellInstanceFocusTests : FrameHost
     [Fact]
     public Task A_link_open_that_is_not_found_focuses_Back() => OnUi(async () =>
     {
-        Server.WorkflowAnswer = RouteAnswer.Problem("workflow-instance", "not-found");
-
-        var (window, _) = await Opened("project-build", FramePhase.NotFound);
+        var (window, _) = await Opened("project-build", FramePhase.NotFound, RouteAnswer.Problem("workflow-instance", "not-found"));
 
         await Until(window, () => OnNamed(window, "InstanceBack"), $"focus is on {FocusedButton(window)?.Name}");
     });
@@ -100,7 +99,7 @@ public sealed class ShellInstanceFocusTests : FrameHost
         var (window, shell, address) = await OpenedFromTheWorkflowsRow("project-build");
         var child = shell.Instance.Children!.Groups.Single().Streams[0].Rows[0];
         Click(Buttons(window, "ChildRowOpen")[0]);
-        await Until(window, () => string.Equals(shell.Instance.Address, child.Address, StringComparison.Ordinal) && shell.Instance.Phase == FramePhase.Shown);
+        await Until(window, () => string.Equals(shell.Instance.Address, child.Address, StringComparison.Ordinal));
 
         Click(Named<Button>(window, "SheetBack"));
         await Until(window, () => string.Equals(shell.Instance.Address, address, StringComparison.Ordinal) && OnChildEntry(window, child.Address), "focus did not return to the child entry");

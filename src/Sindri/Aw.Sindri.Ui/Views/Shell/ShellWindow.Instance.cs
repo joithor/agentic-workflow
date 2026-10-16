@@ -1,6 +1,9 @@
+using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
+using Aw.Sindri.Ui.ViewModels.Instance;
+using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Workflows;
 
 namespace Aw.Sindri.Ui.Views.Shell;
@@ -8,6 +11,47 @@ namespace Aw.Sindri.Ui.Views.Shell;
 /// <summary>Focus when the instance frame closes (<see cref="ShellWindow"/>, continued; UI spec §11.2): Esc and Back return it to the Workflows row that opened the frame.</summary>
 internal sealed partial class ShellWindow
 {
+    private PropertyChangedEventHandler? _awaitingFrame;
+
+    // True when no row of the page (or strip, or queue) opened the sheet: a deep link, or a pointer.
+    private static bool NoOpener(ShellViewModel shell) => shell is { OpenerWorkflow: null, OpenerStrip: null, OpenerRow: null };
+
+    // The sheet opened on an instance: once the frame has an answer, focus goes to its first read action (Open in, else Copy status, else Back).
+    private void EnterOpenedFrame(ShellViewModel shell)
+    {
+        var frame = shell.Instance;
+        if (_awaitingFrame is not null)
+        {
+            frame.PropertyChanged -= _awaitingFrame;
+            _awaitingFrame = null;
+        }
+
+        if (!shell.IsInstanceSheet)
+        {
+            return;
+        }
+
+        if (frame.Phase is not (FramePhase.Loading or FramePhase.Empty))
+        {
+            frame.FocusInitial();
+            return;
+        }
+
+        _awaitingFrame = (_, e) =>
+        {
+            if (string.Equals(e.PropertyName, nameof(InstanceFrameViewModel.Phase), StringComparison.Ordinal) && frame.Phase is not (FramePhase.Loading or FramePhase.Empty))
+            {
+                frame.PropertyChanged -= _awaitingFrame;
+                _awaitingFrame = null;
+                if (shell.IsInstanceSheet)
+                {
+                    frame.FocusInitial();
+                }
+            }
+        };
+        frame.PropertyChanged += _awaitingFrame;
+    }
+
     // The sheet header's Back: the frame or sheet this one was opened from, else the sheet closes like Esc.
     private void OnBack(object? sender, RoutedEventArgs e) => Shell?.Back();
 

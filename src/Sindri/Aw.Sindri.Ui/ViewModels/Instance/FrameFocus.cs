@@ -17,4 +17,10 @@ internal enum FrameFocus
 
     /// <summary>Back, when there is nothing else to read.</summary>
     Back,
+
+    /// <summary>The children panel's entry for the child (its title button) the user came back from.</summary>
+    ChildEntry,
+
+    /// <summary>The children panel's Open button for the child whose item the user came back from.</summary>
+    ChildItem,
 }
