@@ -120,8 +120,8 @@ catalog, CA-0), `Infrastructure/Sessions/` (`ProcProcessTable`, `ClaudeSessionRe
 `Features/Sessions/` (the pass, `RecordFleetChanges`, `RestoreFleetHistory`) and `Host/Server/SessionCollectorHost`. Host detection (`HostRules`, tmux, terminals) is
 CO-2b, so every session's host reads `unknown` until then; the routes and the CLI are CO-3. The event is `fleet.changed`; the codes are `SND-SESSION-001`
 (a source failed), `-002` (`unsupported-platform`, `proc-unreadable`, `disabled`) and `-003` (a test override) in `docs/csharp/sindri.md`. The snapshot over
-`tests/fixtures/sessions/` is pinned by `tests/Aw.Sindri.Tests/Sessions/Golden/snapshot-discovery.json`. `LaunchId` (`Core/Launch/LaunchId.cs`) is the
-minimal typed id of `AW_SINDRI_LAUNCH`; the launcher (API P10a) owns it from SL-2 and may tighten its pattern.
+`tests/fixtures/sessions/` is pinned by `tests/Aw.Sindri.Tests/Sessions/Golden/snapshot-discovery.json`. `LaunchId` (the engine's, `Core/Workflow/Engine/LaunchId.cs`, `LCH-` and 32 hex) is the
+typed id of `AW_SINDRI_LAUNCH`; a value of another shape is dropped.
 
 ## API rows for review
 
