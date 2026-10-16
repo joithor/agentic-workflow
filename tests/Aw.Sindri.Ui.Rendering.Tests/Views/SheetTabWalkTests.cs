@@ -5,11 +5,12 @@ using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.Tests.Views;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
 using Aw.Sindri.Ui.Views.NeedsYou;
 
-namespace Aw.Sindri.Ui.Tests.Views;
+namespace Aw.Sindri.Ui.Rendering.Tests.Views;
 
 /// <summary>Tab beside an open decision sheet (review re-proof B8): every stop is a usable, visible control that draws a ring.</summary>
 [Lane(TestLane.Integration)]
