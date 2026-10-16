@@ -32,6 +32,21 @@ public abstract class ServiceRunGuardContract
         again.Dispose();
     }
 
+    /// <summary>A manual claim is told from a scheduled one while it is held, and neither is left behind after the release.</summary>
+    [Fact]
+    public void A_manual_run_is_told_from_a_scheduled_one()
+    {
+        var guard = Create();
+
+        Expect.True(guard.TryClaimManual(_heartbeat, out var manual));
+        Expect.True(guard.IsManualRun(_heartbeat));
+        manual.Dispose();
+        Expect.True(!guard.IsManualRun(_heartbeat));
+        Expect.True(guard.TryClaim(_heartbeat, out var scheduled));
+        Expect.True(!guard.IsManualRun(_heartbeat));
+        scheduled.Dispose();
+    }
+
     /// <summary>Claims of different services don't touch.</summary>
     [Fact]
     public void Different_services_claim_independently()

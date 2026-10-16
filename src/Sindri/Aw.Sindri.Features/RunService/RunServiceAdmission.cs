@@ -40,6 +40,12 @@ internal sealed class RunServiceAdmission(IApprovedProfile approvals, IEnumerabl
 
         if (!guard.TryClaim(name, out var claim))
         {
+            if (guard.IsManualRun(name))
+            {
+                Result<ServiceName?> running = name;
+                return running;   // a manual run: the start refuses with SND-JOB-409 naming that job
+            }
+
             return SindriErrors.JobConflict.With($"A scheduled run of {name.Value} is in flight (fix: wait for it to end, then run it again)");
         }
 

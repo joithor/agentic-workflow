@@ -37,7 +37,7 @@ internal sealed class RunServiceService(IEnumerable<IScheduledService> scheduled
             return SindriErrors.NotRunning.With("the control plane doesn't hold the lease (fix: sindri)");
         }
 
-        if (!guard.TryClaim(name, out var claim))
+        if (!guard.TryClaimManual(name, out var claim))
         {
             return SindriErrors.JobConflict.With($"A scheduled run of {name.Value} is in flight (fix: wait for it to end, then run it again)");
         }

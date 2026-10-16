@@ -111,6 +111,27 @@ public sealed class RunServiceTests
     }
 
     [Fact(Timeout = 20_000)]
+    public async Task A_second_manual_run_of_a_running_service_is_SND_JOB_409_naming_the_running_job()
+    {
+        var stuck = new BlockedService();
+        await using var runtime = await RunServiceRuntime.Open(stuck);
+        var first = await runtime.Start(A.RunServiceRequest().ForService(BlockedService.Name).Build(), Human());
+        try
+        {
+            var second = await runtime.Start(A.RunServiceRequest().ForService(BlockedService.Name).Build(), Human());
+
+            Expect.Equal(SindriErrors.JobConflict.Code, second.Error.Code);
+            Expect.Equal(first.Value.JobId.Value, second.Error.Extensions!.First(static e => string.Equals(e.Key, "runningJob", StringComparison.Ordinal)).Value.GetString());   // why: the conflict names the running job
+        }
+        finally
+        {
+            stuck.Release();
+        }
+
+        await runtime.Quiesce().WaitAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact(Timeout = 20_000)]
     public async Task A_cancelled_manual_run_writes_no_service_ran()
     {
         var stuck = new BlockedService();

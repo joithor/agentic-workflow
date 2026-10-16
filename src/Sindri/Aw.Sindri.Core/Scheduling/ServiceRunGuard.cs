@@ -11,13 +11,33 @@ public sealed class ServiceRunGuard
 {
     private readonly Lock _gate = new();
     private readonly HashSet<ServiceName> _claimed = [];
+    private readonly HashSet<ServiceName> _manual = [];
     private readonly Dictionary<ServiceName, ServiceOutcome> _last = [];
 
     /// <summary>Claims <paramref name="service"/> for one run.</summary>
     /// <param name="service">The service.</param>
     /// <param name="claim">Releases the claim when disposed (twice is harmless).</param>
     /// <returns>False when a run of that service is in flight.</returns>
-    public bool TryClaim(ServiceName service, out IDisposable claim)
+    public bool TryClaim(ServiceName service, out IDisposable claim) => TryClaim(service, manual: false, out claim);
+
+    /// <summary>Claims <paramref name="service"/> for one manual run (RunService), which <see cref="IsManualRun"/> then reports.</summary>
+    /// <param name="service">The service.</param>
+    /// <param name="claim">Releases the claim when disposed (twice is harmless).</param>
+    /// <returns>False when a run of that service is in flight.</returns>
+    public bool TryClaimManual(ServiceName service, out IDisposable claim) => TryClaim(service, manual: true, out claim);
+
+    /// <summary>Whether the run in flight for <paramref name="service"/> is a manual one.</summary>
+    /// <param name="service">The service.</param>
+    /// <returns>True for a manual run in flight; false for a scheduled one or none.</returns>
+    public bool IsManualRun(ServiceName service)
+    {
+        lock (_gate)
+        {
+            return _manual.Contains(service);
+        }
+    }
+
+    private bool TryClaim(ServiceName service, bool manual, out IDisposable claim)
     {
         lock (_gate)
         {
@@ -25,6 +45,11 @@ public sealed class ServiceRunGuard
             {
                 claim = NoClaim.Instance;
                 return false;
+            }
+
+            if (manual)
+            {
+                _ = _manual.Add(service);
             }
         }
 
@@ -69,6 +94,7 @@ public sealed class ServiceRunGuard
         lock (_gate)
         {
             _ = _claimed.Remove(service);
+            _ = _manual.Remove(service);
         }
     }
 
