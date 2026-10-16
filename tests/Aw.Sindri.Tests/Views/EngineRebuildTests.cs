@@ -35,11 +35,23 @@ public sealed class EngineRebuildTests : IDisposable
     [Fact(Timeout = 60_000)]
     public async Task A_replay_into_emptied_views_gives_the_same_items_and_needs_you_rows_byte_for_byte()
     {
-        var (incremental, rebuilt) = await Both(Ledger(), TestContext.Current.CancellationToken);
+        var (incremental, rebuilt) = await Both(Ledger(firstEnds: false), TestContext.Current.CancellationToken);
 
         Assert.Contains("park:", incremental.NeedsYou, StringComparison.Ordinal);   // the scenario leaves the first root parked behind the ended second
         Assert.Contains("\"earlier\"", incremental.Items, StringComparison.Ordinal);
-        Assert.Contains("\"state\":\"voided\"", incremental.Decisions, StringComparison.Ordinal);   // the item ended by its workflow voided the decision it waited on
+        Assert.Contains("\"state\":\"pending\"", incremental.Decisions, StringComparison.Ordinal);   // the first root is still live, so the item hasn't ended by its workflow (Close would refuse too)
+        Assert.DoesNotContain("voided", incremental.Decisions, StringComparison.Ordinal);
+        Assert.Equal(incremental.Decisions, rebuilt.Decisions);
+        Assert.Equal(incremental.Items, rebuilt.Items);
+        Assert.Equal(incremental.NeedsYou, rebuilt.NeedsYou);
+    }
+
+    [Fact(Timeout = 60_000)]
+    public async Task The_decision_is_voided_once_the_earlier_root_ends_too_incrementally_and_after_a_rebuild()
+    {
+        var (incremental, rebuilt) = await Both(Ledger(firstEnds: true), TestContext.Current.CancellationToken);
+
+        Assert.Contains("\"state\":\"voided\"", incremental.Decisions, StringComparison.Ordinal);
         Assert.DoesNotContain("decision:", incremental.NeedsYou, StringComparison.Ordinal);
         Assert.Equal(incremental.Decisions, rebuilt.Decisions);
         Assert.Equal(incremental.Items, rebuilt.Items);
@@ -93,14 +105,14 @@ public sealed class EngineRebuildTests : IDisposable
         new NeedsYouProjection(_slice.Events, new PassThroughScrubber()),
     ];
 
-    /// <summary>An item with two root instances: the first parks, the second (the latest) is answered and ends.</summary>
-    private List<LedgerEvent> Ledger()
+    /// <summary>An item with two root instances: the first parks, the second (the latest) is answered and ends; with <paramref name="firstEnds"/> the first is then cancelled too.</summary>
+    private List<LedgerEvent> Ledger(bool firstEnds)
     {
         var created = new ItemCreated(_slice.Ids.New<CommandId>(), _item, "the item", RepoName.From("agentic-workflow"), Link: null, Body: "the body", Owner: null);
         var filed = new RequestFiled(_slice.Ids.New<CommandId>(), A.FirstRequestId, A.FirstDecisionId, RequestKind.Rescope, _item, RepoName.From("agentic-workflow"), "widen the scope");
         var park = new SuspensionSummary(SuspensionKind.Park, ParkReason.Rounds, ParkKind.Loop, Escalation: null, Mirrors: null);
         var produce = new FrameSummary("produce", 1, "1.1", Child: null, StepRuntime.Desk);
-        return
+        List<LedgerEvent> rows =
         [
             Recorded.Of(_slice.Events, EventTypes.ItemCreated, created, 1, _item),
             Recorded.Of(_slice.Events, EventTypes.RequestFiled, filed, 2, _item),
@@ -109,6 +121,12 @@ public sealed class EngineRebuildTests : IDisposable
             Recorded.Of(_slice.Events, EventTypes.WorkflowTransition, Row(_first, "produce", "step.completed", frame: null, park), 5, _item),
             Recorded.Of(_slice.Events, EventTypes.WorkflowTransition, Row(_second, "done", "step.completed", new FrameSummary("done", 2, Run: null, Child: null), suspension: null, outcome: "resolved"), 6, _item),
         ];
+        if (firstEnds)
+        {
+            rows.Add(Recorded.Of(_slice.Events, EventTypes.WorkflowTransition, Row(_first, "done", "cancel", new FrameSummary("done", 2, Run: null, Child: null), suspension: null, outcome: "cancelled"), 7, _item));
+        }
+
+        return rows;
     }
 
     /// <summary>One root instance's life with the clock moving a minute per row: desk task, park, the park re-put as an escalation, a child's row, a takeover, its idle reminder, a command row and a row stored without its detail.</summary>
