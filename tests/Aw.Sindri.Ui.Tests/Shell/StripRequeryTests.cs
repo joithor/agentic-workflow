@@ -100,23 +100,29 @@ public sealed class StripRequeryTests
     }
 
     [Fact]
-    public async Task A_missing_list_route_marks_only_the_strip_and_another_failure_keeps_the_rows()
+    public async Task A_missing_list_route_marks_only_the_strip()
     {
         var shell = await Connected();
-        var shown = shell.Strip.Rows.Count;
+
+        _server.WorkflowAnswer = RouteAnswer.Problem(HttpStatusCode.NotFound, "SND-API-404", "no such route");
+        _server.Push(A.Event(73, "workflow.started"));
+        await Until(() => shell.Strip.IsNotServed);
+
+        Assert.Equal((ShellState.Normal, PageId.Home), (shell.State, shell.CurrentPage));
+    }
+
+    [Fact]
+    public async Task Another_failure_keeps_the_rows_as_they_were()
+    {
+        var shell = await Connected();
+        var shown = shell.Strip.Rows.Select(r => r.Address).ToList();
         var calls = _server.InstancesCalls;
 
         _server.WorkflowAnswer = RouteAnswer.Problem(HttpStatusCode.ServiceUnavailable, "SND-API-099", "busy");
         _server.Push(A.Event(73, "workflow.started"));
         await Until(() => _server.InstancesCalls > calls);
-        Assert.Equal((false, shown), (shell.Strip.IsNotServed, shell.Strip.Rows.Count));
 
-        calls = _server.InstancesCalls;
-        _server.WorkflowAnswer = RouteAnswer.Problem(HttpStatusCode.NotFound, "SND-API-404", "no such route");
-        _server.Push(A.Event(74, "workflow.started"));
-        await Until(() => shell.Strip.IsNotServed);
-
-        Assert.Equal(ShellState.Normal, shell.State);
-        Assert.Equal(PageId.Home, shell.CurrentPage);
+        Expect.Sequence(shown, shell.Strip.Rows.Select(r => r.Address));
+        Assert.False(shell.Strip.IsNotServed);
     }
 }

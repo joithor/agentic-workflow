@@ -1,3 +1,5 @@
+using Aw.Kernel;
+using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
 using Aw.Sindri.Ui.ViewModels.Queue;
@@ -11,10 +13,20 @@ internal sealed partial class ShellViewModel
     /// <summary>Home's Workflows strip.</summary>
     public WorkflowsStripViewModel Strip { get; }
 
-    // The workflow list is read with every event, whatever page is visible (until P5's invalidates): the stub is red.
-#pragma warning disable CA1822, IDE0060 // red stub, replaced by the green commit
-    private Task ReadStrip(Uri url, CancellationToken cancellationToken) => Task.CompletedTask;
-#pragma warning restore CA1822, IDE0060
+    // The root workflow list is read with every event, whatever page is visible (until P5's invalidates). A missing route
+    // (404 before P11) marks only the strip; any other failure leaves the rows as they were and the next event tries again.
+    private async Task ReadStrip(Uri url, CancellationToken cancellationToken)
+    {
+        var list = await _api.Instances(url, new InstanceQuery(Root: true), cancellationToken).ConfigureAwait(true);
+        if (list.IsSuccess)
+        {
+            Strip.Update(list.Value);
+        }
+        else if (list.Error.Kind == ErrorKind.NotFound)
+        {
+            Strip.MarkNotServed();
+        }
+    }
 
     // The strip gives rows back to Needs you first and marks its rows stale with the views; "… N more" opens Workflows.
     private void HookStrip()
