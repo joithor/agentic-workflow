@@ -151,4 +151,49 @@ public sealed class NeedsYouFocusTests : IDisposable
 
         Assert.Same(search, Focused(window));
     });
+
+    // review run 1, K21 (B1): the proof lost focus about 2 s after J, not after a Tab: the selection path.
+    [Fact]
+    public Task J_onto_a_row_keeps_that_frame_focused_across_a_re_read() => OnUi(async () =>
+    {
+        var (window, shell) = await WithFeed(() => Parks(3));
+        Assert.True(shell.Press("J"));
+        Settle(window);
+        await Task.Delay(50, Token);
+        Settle(window);
+        var frame = Assert.IsType<Border>(Focused(window));
+
+        shell.ShowNeedsYou(new NeedsYouFeed([.. Parks(3)], ""));
+        for (var i = 0; i < 20; i++)
+        {
+            await Task.Delay(10, Token);
+            Settle(window);
+        }
+
+        Assert.Same(frame, Focused(window));
+    });
+
+    [Fact]
+    public Task X_on_a_row_whose_Decide_is_refused_leaves_focus_on_that_rows_control() => OnUi(async () =>
+    {
+        _server.Decided = RouteAnswer.Problem("decisions-id", "decided-elsewhere");
+        var (window, shell) = await WithFeed(() => [NeedsYouRows.Decision()]);
+        Assert.True(shell.Press("J"));
+        Settle(window);
+        await Task.Delay(50, Token);
+        Settle(window);
+
+        Assert.True(shell.Press("X"));
+        await shell.Decision.Settled;
+        for (var i = 0; i < 20; i++)
+        {
+            await Task.Delay(10, Token);
+            Settle(window);
+        }
+
+        var focused = Focused(window);
+        Assert.NotNull(focused);
+        Assert.True(Rows(window)[0].IsVisualAncestorOf(focused) || ReferenceEquals(Rows(window)[0], focused));
+        Assert.True(focused.IsEffectivelyEnabled && focused.IsEffectivelyVisible);
+    });
 }
