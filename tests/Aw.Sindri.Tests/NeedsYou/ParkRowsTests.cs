@@ -68,6 +68,57 @@ public sealed class ParkRowsTests
         Assert.Equal(Urgency.Pulse, row.Urgency);
     }
 
+    public static TheoryData<ParkReason, ParkKind> Parks()
+    {
+        var data = new TheoryData<ParkReason, ParkKind>();
+        foreach (var reason in Enum.GetValues<ParkReason>())
+        {
+            foreach (var kind in Enum.GetValues<ParkKind>())
+            {
+                data.Add(reason, kind);
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(Parks))]
+    public void Every_park_shape_row_names_actions_the_catalog_has_and_a_primary_among_them(ParkReason reason, ParkKind kind) =>
+        AssertCatalogued(NeedsYouRows.ForPark(Item(), _address, Park(reason, kind), _since, _plain));
+
+    [Theory]
+    [InlineData(EscalationKind.Gate)]
+    [InlineData(EscalationKind.Timeout)]
+    [InlineData(EscalationKind.Child)]
+    public void Every_escalation_row_names_actions_the_catalog_has_and_a_primary_among_them(EscalationKind escalation) =>
+        AssertCatalogued(NeedsYouRows.ForPark(Item(), _address, new SuspensionSummary(SuspensionKind.Escalation, Reason: null, ParkKind: null, escalation, Mirrors: null), _since, _plain));
+
+    [Fact]
+    public void Desk_task_and_idle_takeover_rows_name_actions_the_catalog_has()
+    {
+        AssertCatalogued(NeedsYouRows.ForDeskTask(Item(), _address, _since, _plain));
+        AssertCatalogued(NeedsYouRows.ForIdleTakeover(Item(), _address, _since, _plain));
+    }
+
+    [Theory]
+    [InlineData(ParkKind.Drift)]
+    [InlineData(ParkKind.ChildRevoked)]
+    public void A_drift_or_revoked_child_park_row_offers_approve_first_and_then_cancel(ParkKind kind)
+    {
+        var row = NeedsYouRows.ForPark(Item(), _address, Park(ParkReason.SpecConflict, kind), _since, _plain);
+
+        Assert.Equal(ActionId.From("ApproveRecipe"), row.PrimaryAction);
+        Assert.Equal([ActionId.From("ApproveRecipe"), ActionId.From("ApplyCommand:cancel")], row.Actions);
+    }
+
+    private static void AssertCatalogued(NeedsYouRow row)
+    {
+        var catalog = Host.Catalog.EngineRows.All.Select(static r => r.Action).ToHashSet();
+        Assert.Contains(row.PrimaryAction, row.Actions);
+        Assert.All(row.Actions, action => Assert.Contains(action, catalog));
+    }
+
     private static SuspensionSummary Park(ParkReason reason, ParkKind kind) => new(SuspensionKind.Park, reason, kind, Escalation: null, Mirrors: null);
 
     private static ItemRow Item() => new(
