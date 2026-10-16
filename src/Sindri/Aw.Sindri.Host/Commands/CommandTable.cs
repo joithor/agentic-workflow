@@ -93,7 +93,7 @@ internal static class CommandTable
             ["ledger", .. var rest] => await new LedgerVerbs(client, output, (launch, c) => start.EnsureRunning(launch, c)).Run(rest, ct).ConfigureAwait(false),
             ["doctor", "--probe", .. var rest] when ProbeHarness(rest) is (true, var harness) => await output.Json(await harnesses.Probe(harness, ct).ConfigureAwait(false), 0).ConfigureAwait(false),
             ["doctor", .. var rest] when Json(rest) is { } json => await verbs.Doctor(json, ct, harnesses.DoctorChecks).ConfigureAwait(false),
-            ["onyx", "status", .. var rest] when Json(rest) is { } json => await verbs.OnyxStatus(json, ct).ConfigureAwait(false),
+            ["onyx", .. var rest] => await Onyx(rest, verbs, new OnyxVerbs(services, output, session), output, ct).ConfigureAwait(false),
             ["mcp", .. var rest] => await new McpVerbs(services, output, session).Run(rest, ct).ConfigureAwait(false),
             ["context", ..] => await Context(args, client, output, services, ct).ConfigureAwait(false),
             ["recipe", .. var rest] => await RecipeCommandTable.Run(rest, services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), ct).ConfigureAwait(false),
@@ -104,6 +104,16 @@ internal static class CommandTable
             _ => await UnknownVerb(args, output).ConfigureAwait(false),
         };
     }
+
+    /// <summary>'sindri onyx status|up|down [--json]'.</summary>
+    private static async Task<int> Onyx(string[] rest, Verbs verbs, OnyxVerbs onyx, Output output, CancellationToken ct) =>
+        rest switch
+        {
+            ["status", .. var flags] when Json(flags) is { } json => await verbs.OnyxStatus(json, ct).ConfigureAwait(false),
+            ["up", .. var flags] when Json(flags) is { } json => await onyx.Up(json, ct).ConfigureAwait(false),
+            ["down", .. var flags] when Json(flags) is { } json => await onyx.Down(json, ct).ConfigureAwait(false),
+            _ => await UnknownVerb(["onyx", .. rest], output).ConfigureAwait(false),
+        };
 
     /// <summary>'sindri context …': one arm per verb family; the first that matches wins.</summary>
     private static async Task<int> Context(string[] args, ControlPlaneClient client, Output output, IServiceProvider services, CancellationToken ct) =>

@@ -1,6 +1,9 @@
 using System.Text;
 using System.Text.Json;
 using Aw.Kernel.Json;
+using Aw.Kernel;
+using Aw.Kernel.Services;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Features.OnyxStatus;
@@ -60,7 +63,7 @@ public sealed class OnyxStatusCommandTests : IDisposable
         var lines = _out.ToString().TrimEnd('\n').Split('\n');
         Assert.Equal(
             [
-                "onyx      not set up",
+                "onyx      not set up (run `sindri onyx up`)",
                 "pinned    v4.9.0 (f1738ed)",
                 "docker    ok 29.4.0",
                 "compose   ok v2.40.3",
@@ -98,5 +101,59 @@ public sealed class OnyxStatusCommandTests : IDisposable
 
         Assert.Equal(2, code);
         Assert.Contains("SND-CLI-001", _error.ToString(), StringComparison.Ordinal);
+    }
+
+    private Task<int> RunOver(OnyxUpRig rig, params string[] args)
+        => CommandTable.Run(args, Environment, TimeProvider.System, services => services
+            .AddSingleton<IContainerRuntime>(rig.Runtime)
+            .AddSingleton<IHostProbes>(rig.Probes)
+            .AddSingleton<IOnyxHealth>(rig.Health)
+            .AddSingleton<IOnyxWorkspace>(rig.Workspace)
+            .AddSingleton<ISindriHome>(new FakeSindriHome(OnyxUpRig.Home)));
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Status_running_has_url_and_running_version_rows()
+    {
+        var rig = new OnyxUpRig();
+        _ = (await rig.Up(TestContext.Current.CancellationToken)).Value;
+
+        var code = await RunOver(rig, "onyx", "status");
+
+        Assert.Equal(0, code);
+        var lines = _out.ToString().TrimEnd('\n').Split('\n');
+        Assert.Equal(
+            ["onyx      running", "url       http://127.0.0.1:3000", "running   v4.9.0", "pinned    v4.9.0 (f1738ed)"],
+            lines.Take(4),
+            StringComparer.Ordinal);
+        Assert.Contains("port      ok 3000 (Onyx's own)", lines, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Status_stopped_has_no_url_row()
+    {
+        var rig = new OnyxUpRig();
+        _ = (await rig.Up(TestContext.Current.CancellationToken)).Value;
+        _ = rig.Runtime.Stop(rig.Paths.Project, TestContext.Current.CancellationToken);
+
+        _ = await RunOver(rig, "onyx", "status");
+
+        Assert.StartsWith("onyx      stopped (run `sindri onyx up` to start it)\npinned ", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Status_maps_a_Result_error_to_an_error_line_and_exit_1()
+    {
+        var code = await CommandTable.Run(["onyx", "status"], Environment, TimeProvider.System, services => services
+            .AddSingleton<IService<OnyxStatusRequest, OnyxStatusResponse>>(new FailingStatus()));
+
+        Assert.Equal(1, code);
+        Assert.Contains("SND-ONYX-011 docker said no", _error.ToString(), StringComparison.Ordinal);
+        Assert.Equal(string.Empty, _out.ToString());
+    }
+
+    private sealed class FailingStatus : IService<OnyxStatusRequest, OnyxStatusResponse>
+    {
+        public ValueTask<Result<OnyxStatusResponse>> Handle(OnyxStatusRequest request, CancellationToken cancellationToken)
+            => ValueTask.FromResult<Result<OnyxStatusResponse>>(SindriErrors.OnyxComposeFailed.With("docker said no"));
     }
 }
