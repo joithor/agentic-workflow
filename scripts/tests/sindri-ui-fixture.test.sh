@@ -108,6 +108,7 @@ echo "$*" >> "$STUB_LOG"
 case "$*" in
   "profile validate --json") echo '{"valid":true,"hash":"abcdef0123456789","approved":false}' ;;
   "profile approve abcdef0123456789") IFS= read -r line; echo "typed=$line" >> "$STUB_LOG" ;;
+  "item add "*) n=$(($(cat "$STUB_LOG.n" 2>/dev/null || echo 0) + 1)); echo "$n" > "$STUB_LOG.n"; echo "added ITM-0$n" ;;
 esac
 exit 0
 EOF
@@ -193,5 +194,32 @@ PATH="$WORK/bin:$PATH" AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" items 
 check "items_large_adds_30_items_and_12_requests_across_two_repos: 34 items" "$(grep -c '^item add' "$STUB_LOG")" "34"
 check "items --large files 12 requests" "$(grep -c '^curl .*sindri/requests' "$STUB_LOG")" "12"
 check "the requests span two repos" "$(grep -o 'X-Sindri-Repo: [a-z-]*' "$STUB_LOG" | sort -u | wc -l | tr -d ' ')" "2"
+
+# --- U3' T20: the Workflows strip's instances (sindri workflow start / cancel as the owner) ---
+: > "$STUB_LOG"; echo 0 > "$STUB_LOG.n"
+AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" workflows >/dev/null 2>&1; check "workflows exits 0" "$?" "0"
+starts="$(grep '^workflow start' "$STUB_LOG")"
+check "workflows_starts_one_triage_and_two_work_instances_through_the_cli: three starts" "$(printf '%s\n' "$starts" | grep -c .)" "3"
+check "one triage" "$(printf '%s\n' "$starts" | grep -c 'workflow start workflow.dev-triage-three-state --item ITM-')" "1"
+check "two work" "$(printf '%s\n' "$starts" | grep -c 'workflow start workflow.dev-desk-round-trip --item ITM-')" "2"
+check "each start has an item of its own" "$(printf '%s\n' "$starts" | grep -o 'ITM-[A-Za-z0-9]*' | sort -u | wc -l | tr -d ' ')" "3"
+: > "$STUB_LOG"; echo 0 > "$STUB_LOG.n"
+AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" workflows --large >/dev/null 2>&1; check "workflows --large exits 0" "$?" "0"
+starts="$(grep '^workflow start' "$STUB_LOG")"
+check "workflows_large_starts_twelve_roots_across_three_recipes: twelve starts" "$(printf '%s\n' "$starts" | grep -c .)" "12"
+check "three recipes" "$(printf '%s\n' "$starts" | awk '{print $3}' | sort -u | wc -l | tr -d ' ')" "3"
+: > "$STUB_LOG"; echo 0 > "$STUB_LOG.n"
+AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" incident start >/dev/null 2>&1; check "incident start exits 0" "$?" "0"
+contains "incident_start_starts_an_incident_urgency_instance: the incident recipe" "$(grep '^workflow start' "$STUB_LOG")" "workflow start workflow.dev-incident-hold --item ITM-01"
+: > "$STUB_LOG"
+AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" incident stop >/dev/null 2>&1; check "incident stop exits 0" "$?" "0"
+check "incident_stop_cancels_it" "$(cat "$STUB_LOG")" "workflow cancel ITM-01"
+AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" incident stop >/dev/null 2>&1; check "incident stop with none started exits 2" "$?" "2"
+AW_SINDRI_HOME="$U" bash "$FIXTURE" incident sideways >/dev/null 2>&1; check "incident takes start or stop (exit 2)" "$?" "2"
+AW_SINDRI_HOME="$U" bash "$FIXTURE" workflows --big >/dev/null 2>&1; check "workflows takes only --large (exit 2)" "$?" "2"
+for v in "workflows" "workflows --large" "incident start" "incident stop"; do
+  # shellcheck disable=SC2086
+  AW_SINDRI_HOME="$WORK/elsewhere" bash "$FIXTURE" $v >/dev/null 2>&1; check "every_workflow_verb_refuses_an_unguarded_home: $v" "$?" "2"
+done
 
 exit "$fail"
