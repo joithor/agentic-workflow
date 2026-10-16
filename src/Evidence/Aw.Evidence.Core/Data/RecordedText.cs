@@ -1,5 +1,5 @@
+using System.Text;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 
 namespace Aw.Evidence.Core.Data;
 
@@ -17,6 +17,8 @@ public static class RecordedText
 
     /// <summary>What replaces the value of a secret-named member (Aw.Redaction's own text for it).</summary>
     public const string SecretField = "[REDACTED:secret-field]";
+
+    private const int ReaderDepth = 1000;
 
     /// <summary>Text on its way into a summary: scrubbed, secret-named JSON members hidden, then capped.</summary>
     /// <param name="scrubber">The run's scrubber.</param>
@@ -47,6 +49,9 @@ public static class RecordedText
     // Scrubbed before the members are hidden too: re-serializing a body can change how a value is written (escapes), which a value scrub afterwards would not find.
     private static string Scrubbed(ITextScrubber scrubber, string text) => scrubber.Scrub(HideSecretMembers(scrubber, scrubber.Scrub(text)));
 
+    // A streaming pass over the bytes, not a parsed tree: a tree cannot hold a repeated key (a body or stdout may repeat one).
+    // The value of every secret-named property, wherever it occurs and however deep (a nested object or array too), is replaced in place by the placeholder; the rest of the text is kept as written.
+    // Text that is not JSON keeps only the value and pattern scrub.
     private static string HideSecretMembers(ITextScrubber scrubber, string text)
     {
         var trimmed = text.AsSpan().Trim();
@@ -55,48 +60,42 @@ public static class RecordedText
             return text;
         }
 
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var spans = new List<(int Start, int End)>();
         try
         {
-            var node = JsonNode.Parse(text);
-            return node is not null && Hide(scrubber, node) ? node.ToJsonString() : text;
+            var reader = new Utf8JsonReader(bytes, new JsonReaderOptions { MaxDepth = ReaderDepth });
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonTokenType.PropertyName && scrubber.IsSecretName(reader.GetString() ?? string.Empty) && reader.Read())
+                {
+                    var start = (int)reader.TokenStartIndex;
+                    reader.Skip();
+                    spans.Add((start, (int)reader.BytesConsumed));
+                }
+            }
         }
-        catch (Exception exception) when (exception is JsonException or ArgumentException)
+        catch (Exception exception) when (exception is JsonException or InvalidOperationException or ArgumentException)
         {
             return text;
         }
+
+        return spans.Count == 0 ? text : Replaced(bytes, spans);
     }
 
-    private static bool Hide(ITextScrubber scrubber, JsonNode node)
+    private static string Replaced(byte[] bytes, List<(int Start, int End)> spans)
     {
-        var changed = false;
-        switch (node)
+        var placeholder = Encoding.UTF8.GetBytes("\"" + SecretField + "\"");
+        var result = new List<byte>(bytes.Length);
+        var at = 0;
+        foreach (var (start, end) in spans)
         {
-            case JsonObject obj:
-                foreach (var entry in obj.ToList())
-                {
-                    if (scrubber.IsSecretName(entry.Key))
-                    {
-                        obj[entry.Key] = SecretField;
-                        changed = true;
-                    }
-                    else if (entry.Value is not null)
-                    {
-                        changed |= Hide(scrubber, entry.Value);
-                    }
-                }
-
-                break;
-            case JsonArray array:
-                foreach (var item in array)
-                {
-                    changed |= item is not null && Hide(scrubber, item);
-                }
-
-                break;
-            default:
-                break;
+            result.AddRange(bytes.AsSpan(at, start - at));
+            result.AddRange(placeholder);
+            at = end;
         }
 
-        return changed;
+        result.AddRange(bytes.AsSpan(at));
+        return Encoding.UTF8.GetString([.. result]);
     }
 }

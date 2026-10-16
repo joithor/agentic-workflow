@@ -7,7 +7,7 @@ public sealed class SqlTextTests
     [Fact, Trait("Lane", "unit")]
     public void SqlText_splits_at_top_level_semicolons_only()
     {
-        var statements = SqlText.Statements("SELECT ';'; SELECT \"a;b\" /* ; */ FROM t -- ;\n; SELECT $tag$ ; $tag$; ;");
+        var statements = SqlText.Statements("SELECT ';'; SELECT \"a;b\" /* ; */ FROM t -- ;\n; SELECT $tag$ ; $tag$; ;", nestedComments: true);
 
         Assert.Equal(3, statements.Count);
         Assert.Equal("SELECT ';'", statements[0]);
@@ -30,7 +30,7 @@ public sealed class SqlTextTests
     {
         const string Sql = "SELECT 1 /* /* */ ; VACUUM INTO 'x' /* */";
 
-        _ = Assert.Single(SqlText.Statements(Sql));
+        _ = Assert.Single(SqlText.Statements(Sql, nestedComments: true));
         Assert.Equal(["SELECT 1", "VACUUM INTO 'x'"], SqlText.Statements(Sql, nestedComments: false));
         Assert.Equal(["SELECT 2"], SqlText.Statements("/* a /* b */ SELECT 2", nestedComments: false));
     }
@@ -39,6 +39,6 @@ public sealed class SqlTextTests
     public void The_write_check_for_sqlite_sees_the_statement_a_non_nesting_comment_hides_from_the_nesting_scan()
     {
         Assert.True(WriteStatements.Check("SELECT 1 /* /* */ ; VACUUM INTO 'x' /* */", nestedComments: false).IsError);
-        Assert.False(WriteStatements.Check("SELECT 1 /* /* */ ; VACUUM INTO 'x' /* */").IsError);
+        Assert.False(WriteStatements.Check("SELECT 1 /* /* */ ; VACUUM INTO 'x' /* */", nestedComments: true).IsError);
     }
 }

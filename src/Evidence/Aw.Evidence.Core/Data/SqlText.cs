@@ -15,14 +15,14 @@ public static class SqlText
     /// <param name="sql">The SQL text.</param>
     /// <param name="nestedComments">True when block comments nest (PostgreSQL); false when the first closing marker ends one (SQLite).</param>
     /// <returns>The non-empty statements, comments removed and trimmed, without their semicolons.</returns>
-    public static IReadOnlyList<string> Statements(string sql, bool nestedComments = true) => Scan(sql, split: true, maskQuoted: false, nestedComments);
+    public static IReadOnlyList<string> Statements(string sql, bool nestedComments) => Scan(sql, split: true, maskQuoted: false, nestedComments);
 
     /// <summary>The words (letters, digits, underscores) of a statement outside quotes and comments, upper-cased.</summary>
     /// <param name="statement">One statement.</param>
     /// <returns>The words, in order.</returns>
     public static IReadOnlyList<string> Words(string statement)
     {
-        var masked = Scan(statement, split: false, maskQuoted: true);
+        var masked = Scan(statement, split: false, maskQuoted: true, nestedComments: true);
         var words = new List<string>();
         var word = new StringBuilder();
         foreach (var c in masked.Count == 0 ? string.Empty : masked[0])
@@ -55,11 +55,11 @@ public static class SqlText
     /// <summary>The statement with every quoted body emptied and comments removed, for a check on its punctuation.</summary>
     /// <param name="statement">One statement.</param>
     /// <returns>The masked text.</returns>
-    internal static string Masked(string statement) => Scan(statement, split: false, maskQuoted: true) is { Count: > 0 } one ? one[0] : string.Empty;
+    internal static string Masked(string statement) => Scan(statement, split: false, maskQuoted: true, nestedComments: true) is { Count: > 0 } one ? one[0] : string.Empty;
 
     private static bool IsWordChar(char c) => char.IsAsciiLetterOrDigit(c) || c == '_';
 
-    private static List<string> Scan(string sql, bool split, bool maskQuoted, bool nestedComments = true)
+    private static List<string> Scan(string sql, bool split, bool maskQuoted, bool nestedComments)
     {
         var statements = new List<string>();
         var current = new StringBuilder();

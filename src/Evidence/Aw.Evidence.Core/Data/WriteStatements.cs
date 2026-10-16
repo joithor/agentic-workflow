@@ -17,7 +17,7 @@ public static class WriteStatements
     /// <param name="sql">The SQL text of one query.</param>
     /// <param name="nestedComments">True for PostgreSQL's nesting block comments, false for SQLite's.</param>
     /// <returns>Success, or AW-EVIDENCE-020 naming the statement kind that is refused.</returns>
-    public static Result<Unit> Check(string sql, bool nestedComments = true)
+    public static Result<Unit> Check(string sql, bool nestedComments)
     {
         var statements = SqlText.Statements(sql, nestedComments);
         if (statements.Count == 0)

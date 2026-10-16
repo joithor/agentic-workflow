@@ -58,8 +58,9 @@ internal sealed class DbCollected
     {
         Learn(rows);
         var json = rows.ToJson();
+        var scrubber = KeysScrubber(rows);
         var checkedRows = DbExpectationCheck.Evaluate(index, expect, rows.Count, json, goldenText);
-        var failures = checkedRows.Failures.Select(failure => RecordedText.Of(Scrubber, failure)).ToList();
+        var failures = checkedRows.Failures.Select(failure => RecordedText.Of(scrubber, failure)).ToList();
         if (checkedRows.FirstFailedOrdinal is { } ordinal && FirstFailedAssertion is null)
         {
             FirstFailedAssertion = Assertions + ordinal;
@@ -69,7 +70,23 @@ internal sealed class DbCollected
         Assertions += checkedRows.Count;
         Failures.AddRange(failures);
         var status = failures.Count == 0 ? DbStepStatus.Passed : DbStepStatus.Failed;
-        Steps.Add(new DbStep(index, DbQueryRunner.Action, TargetOf(sql), status, rows.Count, rows.Truncated, RecordedText.Of(Scrubber, json, RecordedText.OutputLimit)));
+        Steps.Add(new DbStep(index, DbQueryRunner.Action, TargetOf(sql), status, rows.Count, rows.Truncated, RecordedText.Of(scrubber, json, RecordedText.OutputLimit)));
+    }
+
+    // A column the result repeats gets a numbered key (cookie_2); it keeps hiding by the name it was renamed from, and by the table column it reads.
+    private SecretKeysScrubber KeysScrubber(Rows rows)
+    {
+        var keys = new HashSet<string>(StringComparer.Ordinal);
+        var named = rows.Keys;
+        for (var column = 0; column < named.Count; column++)
+        {
+            if (IsSecretColumn(rows, column))
+            {
+                _ = keys.Add(named[column]);
+            }
+        }
+
+        return new SecretKeysScrubber(Scrubber, keys);
     }
 
     // A value read from a secret-named column (by its own name or the table column it reads) is hidden by value everywhere it is recorded from now on.

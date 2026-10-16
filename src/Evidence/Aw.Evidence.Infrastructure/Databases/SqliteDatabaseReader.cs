@@ -29,6 +29,7 @@ internal sealed class SqliteDatabaseReader : IDatabaseReader
     private const int NoAttachedDatabases = 7;   // SQLITE_LIMIT_ATTACHED
     private const int CopyAttempts = 3;
     private const int MaxLinks = 40;
+    private const int NotADatabaseCode = 26;
 
     // The main file and the sidecars the copy carries; -shm is never copied (SQLite rebuilds it).
     private static readonly string[] _sidecars = ["", "-wal", "-journal", "-shm"];
@@ -192,6 +193,9 @@ internal sealed class SqliteDatabaseReader : IDatabaseReader
         '|',
         _sidecars.Where(static s => s != "-shm").Select(suffix => new FileInfo(source + suffix) is { Exists: true } info ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{info.Length}:{info.LastWriteTimeUtc.Ticks}") : "-"));
 
+    // A file that SQLite says is not a database (SQLITE_NOTADB) is the script's input being wrong, like a seed that fails: AW-EVIDENCE-018, exit 1. It is not a database that may recover.
+    private static Error NotADatabase(string sourcePath) => EvidenceErrors.DbScriptInvalid.With($"{sourcePath} is not a SQLite database");
+
     // The copy opened read-write once: SQLite rolls a hot journal back (or recovers a -wal) on the copy, and quick_check proves the result is a database.
     private static async ValueTask<Result<Unit>> StabilizeAsync(string copy, string sourcePath, CancellationToken cancellationToken)
     {
@@ -199,7 +203,9 @@ internal sealed class SqliteDatabaseReader : IDatabaseReader
         var opened = await OpenSeedConnectionAsync(copy, cancellationToken).ConfigureAwait(false);
         if (opened.IsError)
         {
-            return unstable.With($"the copy of {sourcePath} can't be opened ({opened.Error.Message}); stop the app's writes to it, or retry");
+            return opened.Error.Message.Contains("not a database", StringComparison.OrdinalIgnoreCase)
+                ? NotADatabase(sourcePath)
+                : unstable.With($"the copy of {sourcePath} can't be opened ({opened.Error.Message}); stop the app's writes to it, or retry");
         }
 
         await using (opened.Value.ConfigureAwait(false))
@@ -213,6 +219,10 @@ internal sealed class SqliteDatabaseReader : IDatabaseReader
                     var verdict = Convert.ToString(await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false), System.Globalization.CultureInfo.InvariantCulture);
                     return verdict == "ok" ? Unit.Value : unstable.With($"the copy of {sourcePath} is not a consistent database (quick_check: {verdict}); stop the app's writes to it, or retry");
                 }
+            }
+            catch (SqliteException exception) when (exception.SqliteErrorCode == NotADatabaseCode)
+            {
+                return NotADatabase(sourcePath);
             }
             catch (SqliteException exception)
             {

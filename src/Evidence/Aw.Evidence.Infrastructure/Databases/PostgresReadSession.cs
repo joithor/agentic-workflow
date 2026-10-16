@@ -22,7 +22,7 @@ internal sealed class PostgresReadSession(NpgsqlConnection connection) : IReadSe
     /// <inheritdoc/>
     public async ValueTask<Result<Rows>> QueryAsync(string sql, int rowLimit, CancellationToken cancellationToken)
     {
-        if (SqlText.Statements(sql).Count != 1)
+        if (SqlText.Statements(sql, nestedComments: true).Count != 1)
         {
             return EvidenceErrors.DatabaseRefused.With("exactly one statement runs at a time");
         }
@@ -62,7 +62,7 @@ internal sealed class PostgresReadSession(NpgsqlConnection connection) : IReadSe
     // A read-only violation is always a refused write; a privilege error is one only when the statement is a write the pre-run guard refuses (COPY ... TO a file, for one).
     private static bool IsRefusal(PostgresException exception, string sql) =>
         _refusingStates.Contains(exception.SqlState, StringComparer.Ordinal)
-        || (exception.SqlState == InsufficientPrivilege && WriteStatements.Check(sql).IsError);
+        || (exception.SqlState == InsufficientPrivilege && WriteStatements.Check(sql, nestedComments: true).IsError);
 
     /// <inheritdoc/>
     public ValueTask DisposeAsync() => connection.DisposeAsync();

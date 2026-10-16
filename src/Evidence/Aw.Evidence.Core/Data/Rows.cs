@@ -15,6 +15,9 @@ public sealed record Rows(IReadOnlyList<string> Columns, IReadOnlyList<IReadOnly
     /// <summary>The number of rows kept.</summary>
     public int Count => Values.Count;
 
+    /// <summary>The key each column has in <see cref="ToJson"/>: its name, or the name with a number after it when the result repeats the name.</summary>
+    public IReadOnlyList<string> Keys => UniqueKeys(Columns);
+
     /// <summary>The rows as a JSON array of objects keyed by column name. A name a result repeats (a join's two id, Postgres's ?column?) keeps its first place and the later ones become name_2, name_3, skipping any name the result really has, so every key is unique and a pointer can reach every column.</summary>
     /// <returns>The JSON text.</returns>
     public string ToJson()

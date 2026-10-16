@@ -2,24 +2,27 @@ namespace Aw.Redaction;
 
 /// <summary>
 /// The token half of the secret-name rule. A name is split into tokens at every character that is not a letter or digit
-/// (_, -, ., a space) and at camelCase humps (apiTokens is api, tokens; APIKey is api, key),
-/// lower-cased. It holds a secret when a token equals a secret word (password, passwd, secret, token, apikey, accesskey,
-/// privatekey, secretkey, each also in the plural) or when two neighbouring tokens spell one (api + key, access + key,
-/// private + key, secret + key). Whole-token equality is the rule, so tokenizer, secretary and passwordless are ordinary.
-/// The word token (a count in LLM and telemetry names) is ordinary when a count word sits beside it (max_tokens,
-/// input_tokens, token_count, tokens_used, totalTokens).
+/// (_, -, ., a space), at camelCase humps (apiTokens is api, tokens; APIKey is api, key) and where letters turn into
+/// digits (password2 is password, 2; oauth2 is oauth, 2), lower-cased. It holds a secret when a token equals a secret word
+/// (password, passwd, pwd, passphrase, credential, secret, token, apikey, accesskey, privatekey, secretkey, each also in the
+/// plural) or when two neighbouring tokens spell one (api, access, private, secret, encryption, signing, hmac, master or
+/// client, then key). Whole-token equality is the rule, so tokenizer, secretary and passwordless are ordinary.
+/// The word token (a count in LLM and telemetry names) is ordinary only when a count word is directly before or after it
+/// (max_token, max_tokens, input_tokens, token_count, tokens_used, totalTokens); a count word elsewhere in the name does not
+/// help (used_refresh_tokens is secret). The other words have no count reading: password_min_length and password_changed_at
+/// are secret.
 /// </summary>
 internal static class SecretNameTokens
 {
     private static readonly HashSet<string> _words = new(StringComparer.Ordinal)
     {
         "password", "passwords", "passwd", "secret", "secrets", "apikey", "apikeys", "accesskey", "accesskeys",
-        "privatekey", "privatekeys", "secretkey", "secretkeys",
+        "privatekey", "privatekeys", "secretkey", "secretkeys", "passphrase", "passphrases", "credential", "credentials", "pwd",
     };
 
     private static readonly HashSet<string> _tokenWords = new(StringComparer.Ordinal) { "token", "tokens" };
 
-    private static readonly HashSet<string> _keyPrefixes = new(StringComparer.Ordinal) { "api", "access", "private", "secret" };
+    private static readonly HashSet<string> _keyPrefixes = new(StringComparer.Ordinal) { "api", "access", "private", "secret", "encryption", "signing", "hmac", "master", "client" };
 
     private static readonly HashSet<string> _keyWords = new(StringComparer.Ordinal) { "key", "keys" };
 
@@ -33,11 +36,10 @@ internal static class SecretNameTokens
     internal static bool Holds(string name)
     {
         var tokens = Split(name);
-        var counted = tokens.Exists(_countWords.Contains);
         for (var i = 0; i < tokens.Count; i++)
         {
             if (_words.Contains(tokens[i])
-                || (_tokenWords.Contains(tokens[i]) && !counted)
+                || (_tokenWords.Contains(tokens[i]) && !CountBeside(tokens, i))
                 || (i > 0 && _keyPrefixes.Contains(tokens[i - 1]) && _keyWords.Contains(tokens[i])))
             {
                 return true;
@@ -47,6 +49,18 @@ internal static class SecretNameTokens
         return false;
     }
 
+    /// <summary>True when the name ends in the word token with a count word directly before it (max_token, input_token): a count, so the pattern half of the rule (which matches any name ending in TOKEN) must not hide it.</summary>
+    /// <param name="name">The name.</param>
+    /// <returns>True when the name is a counted token.</returns>
+    internal static bool EndsInCountedToken(string name)
+    {
+        var tokens = Split(name);
+        return tokens.Count > 1 && tokens[^1] == "token" && CountBeside(tokens, tokens.Count - 1);
+    }
+
+    private static bool CountBeside(List<string> tokens, int i) =>
+        (i > 0 && _countWords.Contains(tokens[i - 1])) || (i + 1 < tokens.Count && _countWords.Contains(tokens[i + 1]));
+
     private static List<string> Split(string name)
     {
         var tokens = new List<string>();
@@ -55,7 +69,7 @@ internal static class SecretNameTokens
         {
             var c = i < name.Length ? name[i] : ' ';
             var alnum = char.IsAsciiLetterOrDigit(c);
-            if (start >= 0 && (!alnum || StartsHump(name, i)))
+            if (start >= 0 && (!alnum || StartsHump(name, i) || StartsDigits(name, i)))
             {
                 tokens.Add(name[start..i].ToLowerInvariant());
                 start = -1;
@@ -69,6 +83,10 @@ internal static class SecretNameTokens
 
         return tokens;
     }
+
+    // Digits after a letter start a new token (password2).
+    private static bool StartsDigits(string name, int i) =>
+        i > 0 && i < name.Length && char.IsAsciiDigit(name[i]) && char.IsAsciiLetter(name[i - 1]);
 
     // A hump starts at an upper-case letter after a lower-case letter or digit (apiKey), or before the last upper-case letter of a run that is followed by lower case (APIKey).
     private static bool StartsHump(string name, int i)
