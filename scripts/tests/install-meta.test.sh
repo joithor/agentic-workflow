@@ -25,10 +25,9 @@ export PATH="$WORK/linuxbin:$PATH"
 mkdir -p "$HOME/.claude" "$AW_STATE_DIR/bin"
 printf '#!/usr/bin/env bash\nexit 0\n' > "$AW_STATE_DIR/bin/aw-meta"; chmod +x "$AW_STATE_DIR/bin/aw-meta"
 # This tree may be a linked worktree (a lane's): a configured team points at the canonical checkout, so the team config's repo
-# (a stand-in with the launcher) decides where aw-meta-launch is linked
-mkdir -p "$WORK/canonical/scripts" "$AW_STATE_DIR/meta"
-printf '#!/usr/bin/env bash\nexit 0\n' > "$WORK/canonical/scripts/meta-launch.sh"
-jq -n --arg r "$WORK/canonical" '{team:"t",repo:$r}' > "$AW_STATE_DIR/meta/team.json"
+# is this tree, which is what the installer requires of a configured team
+mkdir -p "$AW_STATE_DIR/meta"
+jq -n --arg r "$(cd "$DIR/.." && pwd -P)" '{team:"t",repo:$r}' > "$AW_STATE_DIR/meta/team.json"
 S="$HOME/.claude/settings.json"
 echo '{"model":"opus","hooks":{"Stop":[{"hooks":[{"type":"command","command":"/x/done-gate.sh # aw:done-gate"}]}]}}' > "$S"
 
@@ -124,8 +123,16 @@ rm -f "$CLAUDE_LOCAL_BIN/aw-meta-launch"
 mkdir -p "$WORK/canon2/scripts"; printf '#!/usr/bin/env bash\nexit 0\n' > "$WORK/canon2/scripts/meta-launch.sh"
 jq -n --arg r "$WORK/canon2" '{team:"t",repo:$r}' > "$AW_STATE_DIR/meta/team.json"
 OUT="$(bash "$WORK/wt/scripts/install-meta.sh" --provider claude 2>&1)"; RC=$?
-check "worktree with a team repo: linked into the team repo, no flag needed" "$RC:$(link)" "0:$WORK/canon2/scripts/meta-launch.sh"
-
+check "a team repo set, run from another tree: refused, nothing linked" "$RC:$(printf '%s' "$OUT" | grep -c 'not the team.s repo'):$(link)" "1:1:none"
+OUT="$(bash "$WORK/tree/scripts/install-meta.sh" --provider claude 2>&1)"; RC=$?
+check "a team repo set, run from a second plain clone: refused too" "$RC:$(link)" "1:none"
+OUT="$(bash "$WORK/wt/scripts/install-meta.sh" --provider claude --allow-worktree 2>&1)"; RC=$?
+check "a team repo set, --allow-worktree: installs from this tree and links it" "$RC:$(link)" "0:$WORK/wt/scripts/meta-launch.sh"
+rm -f "$CLAUDE_LOCAL_BIN/aw-meta-launch"
+cp "$WORK/tree/scripts/install-meta.sh" "$WORK/canon2/scripts/"
+cp -r "$WORK/tree/config" "$WORK/tree/global.json" "$WORK/canon2/"
+OUT="$(bash "$WORK/canon2/scripts/install-meta.sh" --provider claude 2>&1)"; RC=$?
+check "a team repo set, run from it: linked into it, no flag needed" "$RC:$(link)" "0:$WORK/canon2/scripts/meta-launch.sh"
 rm -f "$CLAUDE_LOCAL_BIN/aw-meta-launch" "$AW_STATE_DIR/meta/team.json"
 OUT="$(bash "$WORK/tree/scripts/install-meta.sh" --provider claude 2>&1)"; RC=$?
 check "normal checkout, no team repo: linked into that checkout" "$RC:$(link)" "0:$WORK/tree/scripts/meta-launch.sh"

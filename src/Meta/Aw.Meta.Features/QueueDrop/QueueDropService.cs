@@ -6,6 +6,7 @@ using Aw.Meta.Core.Logs;
 using Aw.Meta.Core.Merge;
 using Aw.Meta.Core.Messages;
 using Aw.Meta.Core.Ports;
+using Aw.Meta.Core.Watch;
 
 namespace Aw.Meta.Features.QueueDrop;
 
@@ -14,37 +15,50 @@ namespace Aw.Meta.Features.QueueDrop;
 /// with its time, so only a ready message sent after it queues the pull request again.
 /// </summary>
 /// <param name="messages">The inbound messages.</param>
-/// <param name="values">Keeps the drops.</param>
+/// <param name="gates">Tells which pull requests are merged.</param>
+/// <param name="values">Keeps the drops and the pull requests the watch saw end.</param>
 /// <param name="log">The running log.</param>
 /// <param name="clock">Dates the drop.</param>
-internal sealed class QueueDropService(IMessageStore messages, IKeyValueStore values, IRunningLog log, TimeProvider clock) : IService<QueueDropRequest, QueueDropResponse>
+internal sealed class QueueDropService(IMessageStore messages, IGateStore gates, IKeyValueStore values, IRunningLog log, TimeProvider clock) : IService<QueueDropRequest, QueueDropResponse>
 {
     public async ValueTask<Result<QueueDropResponse>> Handle(QueueDropRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var inbound = await messages.Messages(cancellationToken).ConfigureAwait(false);
         var stored = await values.Get(KvKeys.QueueDropped, cancellationToken).ConfigureAwait(false);
-        if (inbound.IsError || stored.IsError)
+        var queued = stored.IsError ? Results.Failure<bool>(stored.Error) : await InQueue(request.Pr, QueueDrops.Parse(stored.Value), cancellationToken).ConfigureAwait(false);
+        if (queued.IsError)
         {
-            return inbound.IsError ? inbound.Error : stored.Error;
+            return queued.Error;
         }
 
-        var drops = QueueDrops.Parse(stored.Value);
-        var queued = inbound.Value.Any(m => m.Class is { Kind: MessageKind.Ready } c && c.Pr == request.Pr && (!drops.TryGetValue(request.Pr, out var at) || m.At > at));
-        if (!queued)
+        if (!queued.Value)
         {
             return MetaErrors.QueueEntryNotFound.With(string.Create(CultureInfo.InvariantCulture, $"no ready message for #{request.Pr} is in the queue"));
         }
 
         var now = clock.GetUtcNow();
+        var saved = await values.Set(KvKeys.QueueDropped, QueueDrops.With(stored.Value, request.Pr, now), cancellationToken).ConfigureAwait(false);
         var line = LogLine.Event(LogKind.Note, now, string.Create(CultureInfo.InvariantCulture, $"queue-drop #{request.Pr}: {request.Reason}"));
-        var appended = await log.Append(line, cancellationToken).ConfigureAwait(false);
-        if (appended.IsError)
+        var appended = saved.IsError ? Results.Failure<Unit>(saved.Error) : await log.Append(line, cancellationToken).ConfigureAwait(false);
+        return appended.IsError ? appended.Error : new QueueDropResponse(request.Pr, line);
+    }
+
+    // The same selection as `status`: a merged pull request, or one the watch saw merged or closed, is not in the queue.
+    private async ValueTask<Result<bool>> InQueue(int pr, IReadOnlyDictionary<int, DateTimeOffset> drops, CancellationToken cancellationToken)
+    {
+        var inbound = await messages.Messages(cancellationToken).ConfigureAwait(false);
+        var ended = await values.Get(KvKeys.EndedPrs, cancellationToken).ConfigureAwait(false);
+        var merge = await gates.FindMerge(pr, cancellationToken).ConfigureAwait(false);
+        if (inbound.IsError || ended.IsError || merge.IsError)
         {
-            return appended.Error;
+            return inbound.IsError ? inbound.Error : ended.IsError ? ended.Error : merge.Error;
         }
 
-        var saved = await values.Set(KvKeys.QueueDropped, QueueDrops.With(stored.Value, request.Pr, now), cancellationToken).ConfigureAwait(false);
-        return saved.IsError ? saved.Error : new QueueDropResponse(request.Pr, line);
+        return merge.Value is null
+            && !EndedPrs.Parse(ended.Value).Contains(pr)
+            && inbound.Value.Any(m => Queues(m, pr, drops));
     }
+
+    private static bool Queues(InboxMessage message, int pr, IReadOnlyDictionary<int, DateTimeOffset> drops) =>
+        message.Class is { Kind: MessageKind.Ready } ready && ready.Pr == pr && (!drops.TryGetValue(pr, out var at) || message.At > at);
 }

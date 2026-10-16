@@ -70,6 +70,15 @@ internal static class WorktreeRules
     // The main checkout is not a pull request branch; calling it "no pull request" reads like unfinished work.
     private static string NoPullRequest(WorktreeFacts facts) => facts.IsMainWorktree ? "main checkout" : "no pull request";
 
+    private static void NoPullRequestReasons(WorktreeFacts facts, List<string> reasons)
+    {
+        reasons.Add(facts.IsMainWorktree ? "main checkout (never swept)" : "no pull request: work not finished");
+        if (facts.HeadMerged)
+        {
+            reasons.Add("fresh branch, no commits of its own, or already in origin/main without a pull request");
+        }
+    }
+
     // Rule 1: a detached worktree that is not a gate tree is never removed; a branch only when its pull request ended (merged, or closed with everything on the remote).
     private static void Merged(WorktreeFacts facts, List<string> reasons)
     {
@@ -87,11 +96,7 @@ internal static class WorktreeRules
 
         if (facts.PrState is null)
         {
-            reasons.Add(NoPullRequest(facts) + ": work not finished");
-            if (facts.HeadMerged)
-            {
-                reasons.Add("fresh branch, no commits of its own, or already in origin/main without a pull request");
-            }
+            NoPullRequestReasons(facts, reasons);
         }
 
         if (facts.HeadMerged)

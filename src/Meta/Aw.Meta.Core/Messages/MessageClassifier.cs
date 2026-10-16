@@ -22,7 +22,7 @@ public static partial class MessageClassifier
 
         if (Matches(ReadyPattern, text) is { } ready
             && int.TryParse(ready.Groups["pr"].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var pr)
-            && Matches(NotReadyPattern, text) is null)
+            && Matches(NotReadyPattern, FirstLine(text)) is null)
         {
             return new Classification(MessageKind.Ready, Pr: pr);
         }
@@ -30,6 +30,12 @@ public static partial class MessageClassifier
         return Matches(AnnouncePattern, text) is { } announce
             ? new Classification(MessageKind.LaneAnnounce, Lane: announce.Groups["lane"].Value.ToLowerInvariant())
             : new Classification(MessageKind.Request);
+    }
+
+    private static string FirstLine(string text)
+    {
+        var end = text.IndexOfAny(['\r', '\n']);
+        return end < 0 ? text : text[..end];
     }
 
     private static Match? Matches(Regex pattern, string text)
@@ -45,8 +51,8 @@ public static partial class MessageClassifier
         }
     }
 
-    // Only the first line counts, and it must be exactly "ready #N <sha>": a status line that merely mentions a later ready never queues the pull request.
-    [GeneratedRegex(@"\Aready #(?<pr>[0-9]+) (?<sha>[0-9a-f]{7,40})\b", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
+    // Only the first line counts, and it must be "ready #N <sha>" (any case, the sha optionally in backticks); "not ready" or "follows" on that line says it is not one: a status line that merely mentions a later ready never queues the pull request.
+    [GeneratedRegex(@"\Aready #(?<pr>[0-9]+) `?(?<sha>[0-9a-f]{7,40})`?(?![0-9A-Za-z])", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
     private static partial Regex ReadyPattern { get; }
 
     [GeneratedRegex(@"not ready|follows", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, matchTimeoutMilliseconds: 100)]

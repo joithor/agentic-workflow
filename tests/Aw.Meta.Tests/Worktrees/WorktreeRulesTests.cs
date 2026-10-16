@@ -99,7 +99,7 @@ public sealed class WorktreeRulesTests
     {
         var verdict = Judge(new WorktreeFacts { Path = "/repo", Branch = "main", IsMainWorktree = true, HeadMerged = true });
 
-        AssertKept(verdict, "this is the main worktree", "main checkout");
+        AssertKept(verdict, "this is the main worktree", "main checkout (never swept)");
         Assert.DoesNotContain(verdict.Reasons, reason => reason.Contains("no pull request", StringComparison.Ordinal));
     }
 

@@ -21,9 +21,10 @@
 #      not a lane (AW_META_TEAM and AW_META_LANE, set by scripts/meta-lane.sh). Codex records trust against each hook's hash:
 #      the install prints the /hooks step.
 # 3. Links aw-meta and aw-meta-launch (scripts/meta-launch.sh) into CLAUDE_LOCAL_BIN. aw-meta-launch points into the canonical
-#    checkout only: the team config's repo (team.json, $AW_META_CONFIG or $AW_STATE_DIR/meta/team.json) when it has
-#    scripts/meta-launch.sh, else this tree. A linked git worktree (git-dir differs from git-common-dir) is refused as that tree,
-#    before anything is built or written, since the worktree is usually a throwaway one: --allow-worktree (the owner's call) permits it.
+#    checkout only. Before anything is built or written: when the team config (team.json, $AW_META_CONFIG or
+#    $AW_STATE_DIR/meta/team.json) names a repo with scripts/meta-launch.sh, this script must run from that repo; with no team repo, a
+#    linked git worktree (git-dir differs from git-common-dir) is refused. --allow-worktree (the owner's call) permits either and
+#    links this tree.
 # The /meta skill itself is linked by setup.sh with the other skills.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -41,27 +42,34 @@ LOCAL_BIN="${CLAUDE_LOCAL_BIN:-$HOME/.local/bin}"
 HEAVY="$STATE/bin-r1b/heavy"
 dry() { [ "${AW_DRY_RUN:-0}" = 1 ]; }
 
-# Where aw-meta-launch should point: the canonical checkout. The team config's repo wins when it has the launcher; otherwise this
-# tree, unless it is a linked worktree (then refuse; --allow-worktree overrides).
-LAUNCH_DIR="$SCRIPT_DIR"
-team_json="${AW_META_CONFIG:-$STATE/meta/team.json}"
-team_repo="$(jq -r '.repo // empty' "$team_json" 2>/dev/null || true)"
-if [ -n "$team_repo" ] && [ -f "$team_repo/scripts/meta-launch.sh" ]; then
-  LAUNCH_DIR="$team_repo"
-elif [ "$allow_worktree" != 1 ]; then
-  gd="$(git -C "$SCRIPT_DIR" rev-parse --absolute-git-dir 2>/dev/null || true)"
-  gc="$(git -C "$SCRIPT_DIR" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
-  if [ -n "$gd" ] && [ -n "$gc" ] && [ "$gd" != "$gc" ]; then
-    echo "install-meta: $SCRIPT_DIR is a linked git worktree, not the canonical checkout; aw-meta-launch would be linked into it." >&2
-    echo "  Run it from the canonical checkout, set the team config's repo (aw-meta team-init --repo <dir>), or pass --allow-worktree." >&2
-    exit 1
-  fi
-fi
-
 # aw-meta reads Linux /proc (memory, uptime, the process table), so it does not run on macOS yet.
 if [ "$(uname)" = Darwin ]; then
   echo "install-meta: aw-meta is Linux-only for now (it reads /proc); not installing on macOS" >&2
   exit 1
+fi
+
+# Never silently install an unmerged build. The team config's repo (when it has the launcher) is the canonical checkout: this
+# script must run from it; from any other tree (a worktree, a second clone) it refuses. With no team repo, a linked git worktree
+# is refused. --allow-worktree is the explicit override, and then aw-meta-launch is linked into this tree.
+LAUNCH_DIR="$SCRIPT_DIR"
+team_json="${AW_META_CONFIG:-$STATE/meta/team.json}"
+team_repo="$(jq -r '.repo // empty' "$team_json" 2>/dev/null || true)"
+if [ "$allow_worktree" != 1 ]; then
+  if [ -n "$team_repo" ] && [ -f "$team_repo/scripts/meta-launch.sh" ]; then
+    if [ "$(cd "$team_repo" && pwd -P)" != "$(cd "$SCRIPT_DIR" && pwd -P)" ]; then
+      echo "install-meta: this tree ($SCRIPT_DIR) is not the team's repo ($team_repo); it would install an unmerged build." >&2
+      echo "  Run scripts/install-meta.sh from $team_repo, or pass --allow-worktree to install from this tree on purpose." >&2
+      exit 1
+    fi
+  else
+    gd="$(git -C "$SCRIPT_DIR" rev-parse --absolute-git-dir 2>/dev/null || true)"
+    gc="$(git -C "$SCRIPT_DIR" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+    if [ -n "$gd" ] && [ -n "$gc" ] && [ "$gd" != "$gc" ]; then
+      echo "install-meta: $SCRIPT_DIR is a linked git worktree, not the canonical checkout; aw-meta-launch would be linked into it." >&2
+      echo "  Run it from the canonical checkout, set the team config's repo (aw-meta team-init --repo <dir>), or pass --allow-worktree." >&2
+      exit 1
+    fi
+  fi
 fi
 
 # 1. Build.

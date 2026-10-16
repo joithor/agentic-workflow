@@ -667,8 +667,12 @@ if [ "$WITH_META" = "1" ]; then
       if aw_dry; then
         echo "  [dry-run] would run scripts/install-meta.sh --provider $_p"
       else
-        AW_SKIP_BUILD="$([ "$_meta_built" = 1 ] && echo 1 || echo "${AW_SKIP_BUILD:-0}")" bash "$SCRIPT_DIR/scripts/install-meta.sh" --provider "$_p"
-        _meta_built=1
+        # install-meta refuses a linked worktree or a tree that is not the team's repo; that must not abort the rest of setup (meta is opt-in)
+        if AW_SKIP_BUILD="$([ "$_meta_built" = 1 ] && echo 1 || echo "${AW_SKIP_BUILD:-0}")" bash "$SCRIPT_DIR/scripts/install-meta.sh" --provider "$_p"; then
+          _meta_built=1
+        else
+          echo "  meta: NOT installed for $_p (see the message above); rerun scripts/install-meta.sh from the canonical checkout" >&2
+        fi
       fi
     done
   fi

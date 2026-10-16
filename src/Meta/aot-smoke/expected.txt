@@ -32,6 +32,11 @@ answered; logged: - OWNER (<date>): sqlite (asked by smoke-api)
 relay to smoke-api: OWNER ANSWER q1: sqlite
 ## log-append --kind note --text smoke run
 - NOTE <date> <time>: smoke run
+## queue-drop 1 --reason smoke drop --json
+{"pr":1,"line":"- NOTE <date> <time>: queue-drop #1: smoke drop"}
+## queue-drop 1 --reason smoke again
+AW-META-018: no ready message for #1 is in the queue
+exit 2
 ## lanes
 LANE MAP v1
 api          smoke-api (Direct)
@@ -49,6 +54,7 @@ exit 2
 ## log
 - OWNER (<date>): sqlite (asked by smoke-api)
 - NOTE <date> <time>: smoke run
+- NOTE <date> <time>: queue-drop #1: smoke drop
 ## state files
 ./meta/meta.db
 ./meta/team.json

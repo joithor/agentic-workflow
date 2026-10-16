@@ -76,7 +76,7 @@ it prints what you owe and the command that settles it. Settle it, don't argue w
 
 ## A lane says `ready #N`
 
-Only a message whose first line is `ready #N <sha>` queues a pull request. If something else queued one, `aw-meta queue-drop N --reason "…"` removes the entry and logs why.
+A lane queues a pull request with exactly `ready #N <sha>` on the **first line** of its message (any case; the sha, 7 to 40 hex digits, may sit in backticks), details on the lines below. A bare `ready #N`, a ready in the middle of a sentence, or a first line with "not ready" or "follows" in it is **ignored**: it is an ordinary request. Put this in every lane's kickoff prompt (`prompts/<lane>.md`) so lanes use the format. If something else queued a pull request, `aw-meta queue-drop N --reason "…"` removes the entry and logs why; a pull request that already merged or ended has no entry (`AW-META-018`).
 
 1. `aw-meta merge-check N`. Read every FAIL line. A merge-order FAIL means wait: tell the lane why.
 2. `aw-meta gate-run N`. Scopes come from the diff and the team config; name them to override (`gate-run N repo`).
