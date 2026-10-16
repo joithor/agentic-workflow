@@ -20,6 +20,12 @@ internal sealed partial class ShellViewModel
     /// <summary>True when the sheet's subject is a decision.</summary>
     public bool IsDecisionSheet => SheetLink?.Kind == DeepLinkKind.Decision;
 
+    /// <summary>True when Home's selected Needs-you row is the one whose sheet is open.</summary>
+    internal bool IsSelectedNeedsYouRowOpen => IsHome && NeedsYou.SelectedId is { } id && string.Equals(NeedsYou.SheetRowId, id, StringComparison.Ordinal);
+
+    /// <summary>True when the selected row (a queue row or a Needs-you row) is the one whose sheet is open.</summary>
+    internal bool IsSelectedSheetOpen => IsSelectedRowOpen || IsSelectedNeedsYouRowOpen;
+
     /// <summary>Marks every current row seen (Shift+A from anywhere but a text field).</summary>
     internal void MarkAllSeen() => NeedsYou.MarkAllSeen();
 
