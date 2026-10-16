@@ -203,4 +203,22 @@ public sealed class ExtractDecisionsTests
         Assert.True(row.Refused > 0);
         Assert.Equal(0, row.Queued);   // the version was asked about, so it isn't asked again
     }
+
+    [Fact]
+    public async Task A_conflict_check_that_stops_leaves_the_record_queued_and_the_next_sync_checks_the_pair()
+    {
+        await using var rig = await Rig.Start("contradicts");
+        rig.World.Model.Fail = r => r.Purpose == ModelPurpose.Adjudication ? ContextErrors.LabelingUnavailable.With("the model is down") : null;
+
+        var first = await rig.Sync(Scope());
+
+        Assert.Empty((await rig.Layer()).Conflicts);
+        Assert.True(first.Queued > 0);   // the record whose pair wasn't checked is not marked done
+        rig.World.Model.Fail = null;
+
+        var second = await rig.Sync(Scope());
+
+        Assert.Equal(ConflictVerdict.Contradicts, Assert.Single((await rig.Layer()).Conflicts).Verdict);
+        Assert.Equal((0, null), (second.Queued, second.Code));
+    }
 }

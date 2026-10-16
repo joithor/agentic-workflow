@@ -13,6 +13,9 @@ public sealed class FakeModelPort : IModelPort
     public Func<ModelRequest, string>? Responder { get; set; }
 
     /// <summary>The requests asked so far.</summary>
+    /// <summary>When it returns an error for a request, the call fails with it (a model that is down for some purposes).</summary>
+    public Func<ModelRequest, Error?>? Fail { get; set; }
+
     public IList<ModelRequest> Requests { get; } = [];
 
     /// <inheritdoc />
@@ -21,6 +24,11 @@ public sealed class FakeModelPort : IModelPort
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
         Requests.Add(request);
+        if (Fail?.Invoke(request) is { } failure)
+        {
+            return ValueTask.FromResult<Result<ModelAnswer>>(failure);
+        }
+
         var answer = Responder?.Invoke(request) ?? Answer;
         var text = answer.Length / 4 > request.MaxTokens ? answer[..(request.MaxTokens * 4)] : answer;
         return ValueTask.FromResult<Result<ModelAnswer>>(new ModelAnswer(text, (request.Prompt.Length + 3) / 4, (text.Length + 3) / 4));
