@@ -129,7 +129,7 @@ no stop before a PR opens (LN2, corrected): a phase's PR opens as soon as its re
 |---|---|---|---|
 | **1. After scoping** | `workflow.scoping` · `stop` (#258 §6.1) | #258 §8.4 | approve, revise (notes), drop |
 | **2. After design** | `workflow.plan` · `decide` then `stop` (§6.4) | `DesignStopView` (API10): lens findings left, the decisions with options, the spec, the plan graph with stacks and waves, coverage and trace tables, escapes | First the decisions interview (#258 §7's form, FormFrom `fact:questions`); then approve, revise design (notes), revise plan (notes), drop |
-| **3. Ready-to-merge**, per phase | `workflow.pr-babysitter` · `ready` + `command.merge` (PB3), entered only when CI is green on the head **and** docs sync has ended (its stacked docs PR opened, or nothing to sync) (BD3, BD5) | `ReadyView` (API11): the open PR and its body (the evidence pack: the acceptance table with evidence and shas, hidden-scenario verdicts, not-proven, review rounds), the docs PR, CI on the head sha, the stack base, the merge record | merge (one click, human caller only), or send it back: `command.rework` with notes ends the babysitter `unresolved` and the phase rebuilds (BD8) |
+| **3. Ready-to-merge**, per phase | `workflow.pr-babysitter` · `ready` + `command.merge` (PB3), entered only when CI is green on the head **and** docs sync has ended (its stacked docs PR opened, or nothing to sync) (BD3, BD5) | `ReadyView` (API11): the open PR and its body (the evidence pack: the acceptance table with evidence and shas, hidden-scenario verdicts, not-proven, review rounds), the docs PR, CI on the head sha, the stack base, the merge record | merge (one click, human caller only), or send it back: `command.rework` with notes ends the babysitter in `rework` (`failed`) and the phase rebuilds, updating the same PR (BD8) |
 
 ### 3.5 The meta recipe `workflow.line`
 
@@ -414,7 +414,7 @@ start workflow.phase --item <item> --fact fact:phasePacket=<hash>`. Its YAML is 
 
 ```
 seed ─► build ─► prove ─► review ─► drift ─┬─ same ─► ship ─► babysit ─► merged
-         ▲  (loop stage, cap 3)            └─ moved ─► prove (loop reprove, cap 2)
+         ▲  (loop stage, cap 3)            └─ moved ─► prove (loop reprove on drift, cap 3)
          ├── prove: unresolved (findings) ──────────────┘
          ├── review: failed (behaviour wrong)
          ├── ship: unresolved (GREEN red, head stale)
@@ -426,9 +426,9 @@ seed ─► build ─► prove ─► review ─► drift ─┬─ same ─► 
 |---|---|---|
 | `seed` | block `step.phase.seed` | Seeds `fact:buildNotes`; transition to `build` carries `effect.line.report` (`building`) |
 | `build` | child `workflow.build` (§7.2), loop `stage` cap 3 | `resolved` brings `fact:built`, `fact:workspace`, `fact:amendments` |
-| `prove` | child `workflow.prove` (§7.3), loop `reprove` cap 2 | `resolved` brings `fact:proofPack`; `unresolved` brings `fact:findings` as `fact:buildNotes` |
+| `prove` | child `workflow.prove` (§7.3) | `resolved` brings `fact:proofPack`; `unresolved` brings `fact:findings` as `fact:buildNotes` |
 | `review` | child `workflow.review-loop` (DT §4.1, DTC4) | Input `fact:change` (branch, base, head); `resolved` brings `fact:review` (the review result packet) |
-| `drift` | block `step.phase.drift` | `same` when the review's head equals the proof's; `moved` when review fixes moved it (back to `prove`, which re-proves on the new head) |
+| `drift` | block `step.phase.drift`, loop `reprove` cap 3 | `same` when the review's head equals the proof's; `moved` when review fixes moved it (back to `prove`, which re-proves on the new head) |
 | `ship` | child `workflow.ship` (§7.5) | `resolved` brings `fact:pr` and `fact:handoff`; transition to `babysit` reports `shipped` to the line (with the head branch, for stacking) |
 | `babysit` | child `workflow.pr-babysitter` (PB, §7.6) | `resolved` (merged) brings `fact:mergedSha`; reports `merged` |
 | `owner` | human-only `step.phase.decide` | rebuild (notes), stop |
@@ -781,7 +781,7 @@ phase is one PR through /specToProvenPR. **(owner)** steps run through `scripts/
 | 1. Foundations | DT-V, DT-C, DT-R (with DTC2–DTC9), DT-J; #258's W2, W6–W14 and this doc's W15–W21; P1–P5; L-17–L-19 | engine, packets, launcher, API |
 | 2. Scoping | #258 SC-F … SC-P | ideas, context, engine, API, UI |
 | 3. Design and plan | LN-F, LN-Y1, LN-K, LN-PK, LN-S1, LN-W | ideas, packets |
-| 4. The phase child | LN-Y2, LN-B, LN-H, LN-PV, LN-R, then PB-F, LN-SH | ideas, engine, launcher |
+| 4. The phase child | LN-Y2, LN-B, LN-H, LN-PV (with DTC4 in LN-Y2), then PB-F, LN-SH | ideas, engine, launcher |
 | 5. Babysit and docs sync | the PB draft's phases, with BD1–BD8 | ideas, API, engine, UI |
 | 6. The line | LN-L, LN-U, LN-P | ideas, engine, API, UI |
 
