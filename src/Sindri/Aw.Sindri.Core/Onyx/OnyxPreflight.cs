@@ -20,8 +20,9 @@ public static class OnyxPreflight
     /// <param name="docker">What the container runtime reports.</param>
     /// <param name="host">What the host reports: the disk at the Sindri home, the disk at Docker's data root when that is a directory here, and the loopback ports.</param>
     /// <param name="pins">What the pinned release needs.</param>
+    /// <param name="ownPort">The port our own running Onyx holds, when setup already ran: the port row is then ok at that port, taken or not.</param>
     /// <returns>The five checks and the port setup would use.</returns>
-    public static PreflightReport Evaluate(ContainerRuntimeFacts docker, HostFacts host, OnyxPins pins)
+    public static PreflightReport Evaluate(ContainerRuntimeFacts docker, HostFacts host, OnyxPins pins, int? ownPort = null)
     {
         ArgumentNullException.ThrowIfNull(docker);
         ArgumentNullException.ThrowIfNull(host);
@@ -34,10 +35,10 @@ public static class OnyxPreflight
             needsDocker ? Warn("compose", "needs docker") : Compose(docker),
             needsDocker ? Warn("memory", "needs docker") : Memory(docker, pins),
             Disk(docker, host.Home, host.DataRoot, pins),
-            Port(host.Port),
+            ownPort is { } own ? Ok("port", $"{own.ToString(CultureInfo.InvariantCulture)} (Onyx's own)") : Port(host.Port),
         ];
         var port = host.Port;
-        return new PreflightReport(checks, port.PreferredFree ? port.Preferred : port.FirstFreeFallback ?? port.Preferred);
+        return new PreflightReport(checks, ownPort ?? (port.PreferredFree ? port.Preferred : port.FirstFreeFallback ?? port.Preferred));
     }
 
     /// <summary>Formats bytes as GiB with one decimal, the way the preflight prints them.</summary>
@@ -48,9 +49,14 @@ public static class OnyxPreflight
     private static PreflightCheck Docker(ContainerRuntimeFacts docker) => docker switch
     {
         { CliFound: false } => Fail("docker", "docker CLI not found", SindriErrors.OnyxDockerUnavailable, "Docker isn't installed: install Docker Desktop (or Docker Engine), then run this again"),
+        _ when !IsLocal(docker.Endpoint) => Fail("docker", "docker points at another machine", SindriErrors.OnyxRemoteDocker, $"Docker points at another machine ({docker.Endpoint ?? "unknown"}): Sindri only runs Onyx on this one; switch to the local context (`docker context use default`, and unset DOCKER_HOST), then run this again"),
         { DaemonAnswers: false } => Fail("docker", "docker CLI found, daemon not answering", SindriErrors.OnyxDockerUnavailable, "Docker isn't running: start Docker Desktop (or the docker service) and wait until it is ready, then run this again"),
         _ => Ok("docker", docker.ServerVersion ?? "unreadable version"),
     };
+
+    // Only a daemon on this machine counts: a unix socket, or a named pipe on Windows. An endpoint nobody could read is refused too, since it may be anywhere.
+    private static bool IsLocal(string? endpoint)
+        => endpoint is not null && (endpoint.StartsWith("unix://", StringComparison.Ordinal) || endpoint.StartsWith("npipe://", StringComparison.Ordinal));
 
     private static PreflightCheck Compose(ContainerRuntimeFacts docker) => docker.ComposeV2
         ? Ok("compose", docker.ComposeVersion ?? "unreadable version")

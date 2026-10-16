@@ -16,10 +16,11 @@ public sealed class DockerCliRuntimeContractTests : ContainerRuntimeContract
         _ => arguments[0] switch
         {
             "version" => facts.DaemonAnswers ? new ToolRun(ToolOutcome.Exited, 0, facts.ServerVersion + "\n") : new ToolRun(ToolOutcome.Exited, 1, ""),
+            "context" => facts.Endpoint is null ? new ToolRun(ToolOutcome.Exited, 1, "") : new ToolRun(ToolOutcome.Exited, 0, facts.Endpoint + "\n"),
             "compose" => facts.ComposeV2 ? new ToolRun(ToolOutcome.Exited, 0, facts.ComposeVersion + "\n") : new ToolRun(ToolOutcome.Exited, 1, ""),
             _ => facts.MemoryBytes is null && facts.DataRoot is null
                 ? new ToolRun(ToolOutcome.Exited, 1, "")
                 : new ToolRun(ToolOutcome.Exited, 0, facts.MemoryBytes?.ToString(System.Globalization.CultureInfo.InvariantCulture) + "|" + facts.DataRoot + "\n"),
         },
-    }));
+    }), static _ => null);
 }

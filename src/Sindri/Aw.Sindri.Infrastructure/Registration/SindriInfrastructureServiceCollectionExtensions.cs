@@ -83,7 +83,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton(McpSettings.Read(environment))
             .AddSingleton<IClaudeCli, ProcessClaudeCli>()
             .AddSingleton<IProviderFiles, ProviderConfigFiles>()
-            .AddOnyxInfrastructure()
+            .AddOnyxInfrastructure(environment)
             .AddSingleton<ITextScrubber>(new RedactingScrubber(Redactor.Default));
 
     // The settings and the one place that reads Sindri's home from them.
@@ -92,10 +92,10 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton(SettingsFromEnvironment.Read(environment))
             .AddSingleton<ISindriHome, SettingsSindriHome>();
 
-    private static IServiceCollection AddOnyxInfrastructure(this IServiceCollection services)
+    private static IServiceCollection AddOnyxInfrastructure(this IServiceCollection services, Func<string, string?> environment)
         => services
             .AddSingleton<IOnyxPinsSource, EmbeddedOnyxPins>()                                            // context/onyx.lock, embedded
-            .AddSingleton<IContainerRuntime>(static _ => new DockerCliRuntime(new ProcessToolRunner()))   // Docker facts, read-only
+            .AddSingleton<IContainerRuntime>(_ => new DockerCliRuntime(new ProcessToolRunner(), environment))   // Docker facts, read-only
             .AddSingleton<IHostProbes>(static _ => new HostProbes());                                     // free disk and loopback ports
 
     /// <summary>

@@ -4,8 +4,10 @@ using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Infrastructure.Onyx;
 
-/// <summary>IContainerRuntime over the docker CLI: three read-only commands, each with a 5 s timeout, arguments as a list (never a shell string).</summary>
-internal sealed class DockerCliRuntime(IToolRunner runner) : IContainerRuntime
+/// <summary>IContainerRuntime over the docker CLI: read-only commands, each with a 5 s timeout, arguments as a list (never a shell string).</summary>
+/// <param name="runner">Runs the docker CLI.</param>
+/// <param name="environment">Reads an environment variable: DOCKER_HOST says where the CLI sends its commands.</param>
+internal sealed class DockerCliRuntime(IToolRunner runner, Func<string, string?> environment) : IContainerRuntime
 {
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(5);
 
@@ -15,7 +17,7 @@ internal sealed class DockerCliRuntime(IToolRunner runner) : IContainerRuntime
         var server = Docker(["version", "--format", "{{.Server.Version}}"]);
         if (server.Outcome == ToolOutcome.Missing)
         {
-            return new ContainerRuntimeFacts(CliFound: false, DaemonAnswers: false, ServerVersion: null, ComposeV2: false, ComposeVersion: null, MemoryBytes: null, DataRoot: null);
+            return new ContainerRuntimeFacts(CliFound: false, DaemonAnswers: false, ServerVersion: null, ComposeV2: false, ComposeVersion: null, MemoryBytes: null, DataRoot: null, Endpoint: null);
         }
 
         var serverText = Text(server);
@@ -26,7 +28,15 @@ internal sealed class DockerCliRuntime(IToolRunner runner) : IContainerRuntime
         var (memory, dataRoot) = serverText is null ? (null, null) : Info(Text(Docker(["info", "--format", "{{.MemTotal}}|{{.DockerRootDir}}"])));
 
         return new ContainerRuntimeFacts(
-            CliFound: true, DaemonAnswers: serverText is not null, ServerVersion: Version(serverText), ComposeV2: composeText is not null, ComposeVersion: Version(composeText), MemoryBytes: memory, DataRoot: dataRoot);
+            CliFound: true, DaemonAnswers: serverText is not null, ServerVersion: Version(serverText), ComposeV2: composeText is not null, ComposeVersion: Version(composeText), MemoryBytes: memory, DataRoot: dataRoot, Endpoint: Endpoint());
+    }
+
+    // Where the CLI would send commands: DOCKER_HOST when set (it wins over a context), else the current context's endpoint. Only a plain token reaches a row
+    // on the terminal: no control character or space, at most 256 long; anything else reads as unknown (null), which the preflight refuses like a remote one.
+    private string? Endpoint()
+    {
+        var text = environment("DOCKER_HOST") is { Length: > 0 } host ? host : Text(Docker(["context", "inspect", "--format", "{{.Endpoints.docker.Host}}"]));
+        return text is { Length: <= 256 } && text.All(static c => !char.IsControl(c) && !char.IsWhiteSpace(c)) ? text : null;
     }
 
     // One `docker info` line, MemTotal|DockerRootDir, split at the first '|' (a path may hold one, a byte count never does). Each half is guarded

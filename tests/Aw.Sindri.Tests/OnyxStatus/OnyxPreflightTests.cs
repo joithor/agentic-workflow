@@ -204,10 +204,10 @@ public sealed class OnyxPreflightTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void The_catalogue_lists_every_onyx_code_the_preflight_can_return()
+    public void The_catalogue_lists_every_onyx_code()
     {
         var codes = SindriErrors.All.Select(static e => e.Code).Where(static c => c.StartsWith("SND-ONYX-", StringComparison.Ordinal)).Order(StringComparer.Ordinal);
 
-        Assert.Equal(["SND-ONYX-001", "SND-ONYX-002", "SND-ONYX-003", "SND-ONYX-004", "SND-ONYX-006"], codes, StringComparer.Ordinal);
+        Assert.Equal(["SND-ONYX-001", "SND-ONYX-002", "SND-ONYX-003", "SND-ONYX-004", "SND-ONYX-005", "SND-ONYX-006", "SND-ONYX-010", "SND-ONYX-011"], codes, StringComparer.Ordinal);
     }
 }

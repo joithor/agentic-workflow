@@ -12,4 +12,5 @@ namespace Aw.Sindri.Core.Onyx;
 /// <param name="ComposeVersion">Compose's version when v2 is present.</param>
 /// <param name="MemoryBytes">The memory Docker has (Docker Desktop's VM limit) when the daemon answers `docker info`.</param>
 /// <param name="DataRoot">Docker's data root (`docker info` DockerRootDir) when the daemon answers: a host directory on a Linux engine, a path inside the VM on Docker Desktop.</param>
-public sealed record ContainerRuntimeFacts(bool CliFound, bool DaemonAnswers, string? ServerVersion, bool ComposeV2, string? ComposeVersion, long? MemoryBytes, string? DataRoot);
+/// <param name="Endpoint">Where the CLI would send commands: DOCKER_HOST when set, else the current docker context's endpoint; null when the CLI is missing or the endpoint can't be read. Only a local one (unix:// or npipe://) is accepted.</param>
+public sealed record ContainerRuntimeFacts(bool CliFound, bool DaemonAnswers, string? ServerVersion, bool ComposeV2, string? ComposeVersion, long? MemoryBytes, string? DataRoot, string? Endpoint);
