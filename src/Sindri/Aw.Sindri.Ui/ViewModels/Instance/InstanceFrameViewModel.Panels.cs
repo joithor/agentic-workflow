@@ -1,4 +1,3 @@
-#pragma warning disable CA1822, MA0041, IDE0060, CS0067 // red stub: replaced by the green commit
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.ViewModels.Facts;
@@ -33,6 +32,7 @@ internal sealed partial class InstanceFrameViewModel
             Facts = Facts is { OpenKeys.Count: > 0 } shown ? new FactsPanelViewModel(detail, Viewers, context, shown.OpenKeys) : fresh;
         }
 
+        ShowTabs(detail);
         var children = new ChildrenPanelViewModel(detail, clipboard, clock);
         if (Children is null || !string.Equals(Children.Signature, children.Signature, StringComparison.Ordinal))
         {
@@ -54,7 +54,55 @@ internal sealed partial class InstanceFrameViewModel
     /// <param name="intent">The intent.</param>
     internal void Intend(string address, FrameIntent intent)
     {
+        _intent = intent == FrameIntent.None ? null : (address, intent);
+        if (Phase == FramePhase.Shown && string.Equals(Address, address, StringComparison.Ordinal))
+        {
+            ApplyIntent();
+        }
     }
 
-    private void ClearPanels() => (Facts, Children) = (null, null);
+    // Once the instance is read (and only that instance): A on a desk task moves focus to the output the step awaits, X asks whether to cancel.
+    private void ApplyIntent()
+    {
+        if (_intent is not var (address, intent) || !string.Equals(address, Address, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _intent = null;
+        if (intent == FrameIntent.AskCancel)
+        {
+            Expanded?.AskCancel();
+            Focus(FrameFocus.Keep, key: null);
+        }
+        else if (intent == FrameIntent.PendingOutput)
+        {
+            var awaiting = Facts?.Rows.FirstOrDefault(r => r.IsAwaiting)?.Key;
+            Focus(awaiting is null ? InitialFocus : FrameFocus.PendingOutput, awaiting);
+        }
+    }
+
+    // The request is kept as well as raised: the sheet's view may not exist yet when a key opens the frame (it binds when the sheet shows).
+    private void Focus(FrameFocus target, string? key)
+    {
+        WantedFocus = new FrameFocusEventArgs(target, key);
+        FocusRequested?.Invoke(this, WantedFocus);
+    }
+
+    /// <summary>The focus a key asked for that the view has not yet given; null for none.</summary>
+    internal FrameFocusEventArgs? WantedFocus { get; private set; }
+
+    /// <summary>The view gave the focus asked for (or it can no longer be given).</summary>
+    internal void FocusServed() => WantedFocus = null;
+
+    private void ShowTabs(InstanceDetail detail)
+    {
+        var tabs = new FrameTabsViewModel(detail.Counts);
+        if (Tabs is null || !string.Equals(Tabs.Signature, tabs.Signature, StringComparison.Ordinal))
+        {
+            Tabs = tabs;
+        }
+    }
+
+    private void ClearPanels() => (Facts, Children, Tabs) = (null, null, null);
 }

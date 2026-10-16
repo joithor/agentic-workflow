@@ -173,6 +173,7 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
             ReplaceIfChanged(RecipeChoices, [Labels.AllRecipes, .. KnownRecipes]);
         }
 
+        Reselect();
         IsEmpty = rows.Count == 0;
         EmptyText = IsEmpty ? list.Empty ?? Labels.NoWorkflowsMatch : string.Empty;
     }
@@ -228,6 +229,7 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
             finished.ForEach(r => r.SetStale(IsStale));
             DoneRows.Clear();
             finished.ForEach(DoneRows.Add);
+            Reselect();
         }
     }
 
@@ -239,5 +241,6 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
         _rows.Clear();
         Groups.Clear();
         DoneRows.Clear();
+        SelectedAddress = null;
     }
 }

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -31,9 +32,29 @@ internal sealed partial class ProtectedActionButton : UserControl
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
+        _model?.PropertyChanged -= OnModelChanged;
         _model = DataContext as ProtectedActionViewModel;
+        _model?.PropertyChanged += OnModelChanged;
         // why: the Flyout's content is the panel the XAML declares; it is outside the logical tree until it shows, so it takes the context here
         ((Control)Popover.Content!).DataContext = _model;
+    }
+
+    // A key can ask for the popover (A on a Workflows row): the model says so and the button shows it, on the keyboard's ring.
+    private void OnModelChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (!string.Equals(e.PropertyName, nameof(ProtectedActionViewModel.IsOpen), StringComparison.Ordinal) || _model is not { } model)
+        {
+            return;
+        }
+
+        if (model.IsOpen && !Popover.IsOpen)
+        {
+            Popover.ShowAt(LockButton);
+        }
+        else if (!model.IsOpen && Popover.IsOpen)
+        {
+            Popover.Hide();
+        }
     }
 
     private void OnOpened(object? sender, EventArgs e)

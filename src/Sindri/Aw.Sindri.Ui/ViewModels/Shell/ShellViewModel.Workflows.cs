@@ -3,7 +3,7 @@ using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
-/// <summary>The Workflows page in the shell (<see cref="ShellViewModel"/>, continued; U8 T2): read with every event, whatever page is visible; its open figure is the tab's count.</summary>
+/// <summary>The Workflows page in the shell (<see cref="ShellViewModel"/>, continued; U8 T2, keys in T7): read with every event, whatever page is visible; its open figure is the tab's count.</summary>
 internal sealed partial class ShellViewModel
 {
     /// <summary>The Workflows page's list.</summary>
@@ -15,6 +15,11 @@ internal sealed partial class ShellViewModel
         Health.Follow(Workflows.Refresh);
         Workflows.OpenRequested += (_, e) =>
         {
+            if (e.Link.Subject is { } address)
+            {
+                Instance.Intend(address, e.Intent);   // before the sheet opens: the frame does it when the instance is read
+            }
+
             Navigate(e.Link);
             OpenerWorkflow = e.Link.Subject;
         };
@@ -33,4 +38,7 @@ internal sealed partial class ShellViewModel
             }
         };
     }
+
+    // The Workflows page's own keys (J / K, Enter, A, X, B, N) belong to the page and never to the sheet.
+    private bool WorkflowsKeyPressed(string key, bool inSheet) => !inSheet && IsWorkflows && Workflows.Press(key);
 }

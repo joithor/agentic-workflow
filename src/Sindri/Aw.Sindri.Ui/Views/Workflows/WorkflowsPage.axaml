@@ -25,6 +25,10 @@
       <TextBlock Classes="caption subtle" Text="{Binding StaleText}" VerticalAlignment="Center" />
     </StackPanel>
 
+    <!-- A key that only names a later phase (B, N) says so here, politely, and changes nothing. -->
+    <TextBlock x:Name="WorkflowsKeyNote" Classes="caption" Text="{Binding KeyNote}" IsVisible="{Binding HasKeyNote}" TextWrapping="Wrap"
+               AutomationProperties.LiveSetting="Polite" AutomationProperties.Name="{Binding KeyNote}" />
+
     <Border x:Name="WorkflowsPanel" Classes="panel" AutomationProperties.Name="Workflows" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
       <StackPanel>
         <TextBlock x:Name="WorkflowsPageEmpty" Classes="caption quiet" Text="{Binding EmptyText}" Margin="16,8" TextWrapping="Wrap"

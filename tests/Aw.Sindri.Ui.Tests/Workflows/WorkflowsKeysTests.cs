@@ -81,7 +81,8 @@ public sealed class WorkflowsKeysTests
         Assert.True(shell.Press("A"));
         await ShellWait.Until(shell, () => Reached(shell), Token);
 
-        Assert.Equal((Desk.Address, [(FrameFocus.PendingOutput, pending)]), (shell.Instance.Address, asked));
+        Assert.Equal(Desk.Address, shell.Instance.Address);
+        Assert.Equal([(FrameFocus.PendingOutput, pending)], asked);
     }, Token);
 
     [Fact]

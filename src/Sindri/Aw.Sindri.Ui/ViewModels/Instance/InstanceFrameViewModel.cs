@@ -2,6 +2,7 @@ using System.Globalization;
 using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
+using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Facts;
 
@@ -19,6 +20,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
     private Uri? _url;
     private string? _id;
     private int _generation;
+    private (string Address, FrameIntent Intent)? _intent;
 
     /// <summary>Raised when the frame asks to open another instance.</summary>
     internal event EventHandler<FrameOpenEventArgs>? OpenRequested;
@@ -220,6 +222,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         ProblemText = string.Empty;
         ShowParts(detail);
         Phase = FramePhase.Shown;
+        ApplyIntent();
     }
 
     // A re-read serves the same parts again: they stay (and the control with focus does) unless something they draw changed.
@@ -272,6 +275,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         }
 
         ProblemText = text;
+        _intent = null;   // nothing to act on
         Phase = phase;
     }
 
@@ -281,6 +285,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         (Title, Recipe, Hash12, Version, StateText, Detail, SinceText, Identity, ProblemText, Note) = (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
         (Subject, Band, Expanded) = (null, null, null);
         ClearPanels();
+        WantedFocus = null;
         Phase = FramePhase.Empty;
     }
 }

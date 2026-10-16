@@ -72,16 +72,23 @@ internal static partial class Labels
     /// <summary>The frame tab strip's heading for screen readers.</summary>
     internal const string TabsHeading = "Instance views";
 
+    /// <summary>The tabs' words.</summary>
+    internal const string TabTimeline = "Timeline";
+
+    /// <summary>The Decisions tab's word.</summary>
+    internal const string TabDecisions = "Decisions";
+
+    /// <summary>The Requests tab's word.</summary>
+    internal const string TabRequests = "Requests";
+
+    /// <summary>The Context tab's word.</summary>
+    internal const string TabContext = "Context";
+
     /// <summary>The phase of the Timeline, Decisions and Requests tabs.</summary>
     internal const string TabsArriveU8b = "arrives with U8b";
 
     /// <summary>The phase of the Context tab.</summary>
     internal const string TabArrivesU9 = "arrives with U9";
-
-    /// <summary>The frame tab strip's accessible name for one instance.</summary>
-    /// <param name="address">The instance's address.</param>
-    /// <returns>The words.</returns>
-    internal static string TabsName(string address) => $"{TabsHeading} of {address}";
 
     /// <summary>A tab's text: the label and, when the API serves one, the count.</summary>
     /// <param name="label">The tab's word.</param>

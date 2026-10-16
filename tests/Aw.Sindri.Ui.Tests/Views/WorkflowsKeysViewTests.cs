@@ -9,6 +9,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Facts;
 using Aw.Sindri.Ui.ViewModels.Instance;
 using Aw.Sindri.Ui.ViewModels.Shell;
@@ -49,6 +50,22 @@ public sealed class WorkflowsKeysViewTests : FrameHost
 
     private static Border RowFrame(Window window, string address) =>
         window.GetVisualDescendants().OfType<Border>().First(b => b.Name == "WorkflowRowFrame" && b.IsEffectivelyVisible && ((InstanceRowViewModel)b.DataContext!).Address == address);
+
+    // Waits for a state; when it never comes, the failure says where focus is and what the frame holds.
+    private static async Task Reach(Window window, ShellViewModel shell, Func<bool> condition)
+    {
+        try
+        {
+            await Until(window, condition);
+        }
+        catch (Xunit.Sdk.XunitException e)
+        {
+            throw new InvalidOperationException(Describe(window, shell), e);
+        }
+    }
+
+    private static string Describe(Window window, ShellViewModel shell) =>
+        $"{Focused(window)?.GetType().Name}/{(Focused(window) as Control)?.Name} sheet={shell.IsSheetOpen} phase={shell.Instance.Phase} kbd={shell.Instance.Expanded?.IsConfirmingCancel} copyButtons={window.GetVisualDescendants().OfType<Button>().Count(b => b.Name == "FactCopyCli")}/{window.GetVisualDescendants().OfType<Button>().Count(b => b.Name == "FactCopyCli" && b.IsEffectivelyVisible)}";
 
     private static object? Focused(Window window) => window.FocusManager?.GetFocusedElement();
 
@@ -95,7 +112,7 @@ public sealed class WorkflowsKeysViewTests : FrameHost
         Server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, body.ToJsonString());
 
         await shell.Workflows.Refresh(_api, Token);
-        await Until(window, () => Focused(window) is Control { IsEffectivelyVisible: true, IsEffectivelyEnabled: true }, "focus was lost");
+        await Reach(window, shell, () => Focused(window) is Control { IsEffectivelyVisible: true, IsEffectivelyEnabled: true });
 
         Assert.Null(shell.Workflows.SelectedAddress);
     });
@@ -109,7 +126,7 @@ public sealed class WorkflowsKeysViewTests : FrameHost
         Assert.True(RowFrame(window, Desk.Address).Focus(NavigationMethod.Tab));
 
         Press(window, Key.A);
-        await Until(window, () => Focused(window) is Button { DataContext: FactRowViewModel row } copy && copy.Name == "FactCopyCli" && string.Equals(row.Key, pending, StringComparison.Ordinal), "focus did not reach the pending output");
+        await Reach(window, shell, () => Focused(window) is Button { DataContext: FactRowViewModel row } copy && copy.Name == "FactCopyCli" && string.Equals(row.Key, pending, StringComparison.Ordinal));
 
         Frame(window, "u8-keys-pending-output", "");
     });
@@ -122,7 +139,7 @@ public sealed class WorkflowsKeysViewTests : FrameHost
         Assert.True(RowFrame(window, Plain.Address).Focus(NavigationMethod.Tab));
 
         Press(window, Key.X);
-        await Until(window, () => Focused(window) is Button keep && keep.Name == "ExpandedKeep", "focus did not reach Keep");
+        await Reach(window, shell, () => Focused(window) is Button keep && keep.Name == "ExpandedKeep");
         Frame(window, "u8-keys-cancel-ask", "");
 
         Press(window, Key.Escape);
@@ -137,7 +154,7 @@ public sealed class WorkflowsKeysViewTests : FrameHost
         Assert.True(RowFrame(window, Locked.Address).Focus(NavigationMethod.Tab));
 
         Press(window, Key.A);
-        await Until(window, () => shell.Workflows.SelectedRow?.Protected is { IsOpen: true } && Visible(window, "WorkflowProtected"), "the lock popover did not open");
+        await Reach(window, shell, () => shell.Workflows.SelectedRow?.Protected is { IsOpen: true } && window.GetVisualDescendants().OfType<ProtectedActionButton>().Any(b => b.Name == "WorkflowProtected" && b.IsEffectivelyVisible));
 
         Assert.False(shell.IsSheetOpen);
         Frame(window, "u8-keys-lock-popover", "");
@@ -151,6 +168,25 @@ public sealed class WorkflowsKeysViewTests : FrameHost
         var shown = window.GetVisualDescendants().OfType<ProtectedActionButton>().Where(b => b.Name == "WorkflowProtected" && b.IsEffectivelyVisible).ToList();
 
         _ = Assert.Single(shown);
+    });
+
+    [Fact]
+    public Task B_and_N_say_their_phase_on_the_page() => OnUi(async () =>
+    {
+        var (window, shell) = await OnWorkflows();
+        Assert.True(shell.Workflows.Select(Plain.Address));
+        Assert.True(RowFrame(window, Plain.Address).Focus(NavigationMethod.Tab));
+        Assert.False(Visible(window, "WorkflowsKeyNote"));
+
+        Press(window, Key.B);
+        Settle(window);
+        Assert.Equal((true, Labels.HandBackArrives), (Visible(window, "WorkflowsKeyNote"), Named<TextBlock>(window, "WorkflowsKeyNote").Text));
+
+        Press(window, Key.N);
+        Settle(window);
+        Assert.Equal(Labels.StartArrives, Named<TextBlock>(window, "WorkflowsKeyNote").Text);
+        Assert.Same(RowFrame(window, Plain.Address), Focused(window));
+        Frame(window, "u8-keys-phase-note", "");
     });
 
     [Fact]

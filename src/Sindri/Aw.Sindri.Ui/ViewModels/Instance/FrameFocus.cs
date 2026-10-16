@@ -12,6 +12,9 @@ internal enum FrameFocus
     /// <summary>The output a desk step awaits (A on a desk task).</summary>
     PendingOutput,
 
+    /// <summary>Keep, the safe answer of Cancel's question (X on a row).</summary>
+    Keep,
+
     /// <summary>Back, when there is nothing else to read.</summary>
     Back,
 }

@@ -38,6 +38,9 @@
       <Panel IsVisible="{Binding Children, Converter={x:Static ObjectConverters.IsNotNull}}">
         <iv:ChildrenPanel x:Name="Children" DataContext="{Binding Children}" />
       </Panel>
+      <Panel IsVisible="{Binding Tabs, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <iv:FrameTabs x:Name="FrameTabsStrip" DataContext="{Binding Tabs}" />
+      </Panel>
     </StackPanel>
   </StackPanel>
 </UserControl>

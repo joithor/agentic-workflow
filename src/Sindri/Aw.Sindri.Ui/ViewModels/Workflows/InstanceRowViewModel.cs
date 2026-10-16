@@ -1,4 +1,3 @@
-#pragma warning disable CA1822, MA0041, IDE0060 // red stub: replaced by the green commit
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
@@ -12,6 +11,10 @@ namespace Aw.Sindri.Ui.ViewModels.Workflows;
 /// </summary>
 internal sealed class InstanceRowViewModel : ObservableObject
 {
+    private const string ProtectedClass = "protected";
+    private const string CompleteStep = "CompleteStep";
+    private const string CancelCommand = "ApplyCommand:cancel";
+
     private readonly InstanceSummary _row;
 
     internal InstanceRowViewModel(InstanceSummary row, IClipboard clipboard, TimeProvider clock)
@@ -24,6 +27,13 @@ internal sealed class InstanceRowViewModel : ObservableObject
             var current = string.Equals(s.State, row.State, StringComparison.Ordinal);
             return new StageCellViewModel(s, current, blocked && current);
         })];
+        if (row.Answer is { } answer && string.Equals(answer.Class, ProtectedClass, StringComparison.Ordinal))
+        {
+            Protected = new ProtectedActionViewModel(new ProtectedAction(Labels.AnswerVerb(answer.Kind), answer.Cli, row.Address), clipboard, clock);
+        }
+
+        CanAnswerAtDesk = row.Answer is null && row.Actions.Contains(CompleteStep, StringComparer.Ordinal) && row.States.Any(s => s.Desk && string.Equals(s.State, row.State, StringComparison.Ordinal));
+        CanCancel = row.Actions.Contains(CancelCommand, StringComparer.Ordinal);
     }
 
     /// <summary>The instance's address, as served.</summary>
@@ -63,7 +73,13 @@ internal sealed class InstanceRowViewModel : ObservableObject
     public DeepLink Link => new(DeepLinkKind.Workflow, _row.Address);
 
     /// <summary>The lock button for a protected answer; null for none.</summary>
-    public ProtectedActionViewModel? Protected => null;
+    public ProtectedActionViewModel? Protected { get; }
+
+    /// <summary>True when A answers at the desk: the row's current state is a desk state the engine lets the human complete.</summary>
+    public bool CanAnswerAtDesk { get; }
+
+    /// <summary>True when the engine lists Cancel for the row (X asks).</summary>
+    public bool CanCancel { get; }
 
     /// <summary>True for the row the keys act on.</summary>
     public bool IsSelected { get; internal set => Set(ref field, value); }
@@ -72,7 +88,7 @@ internal sealed class InstanceRowViewModel : ObservableObject
     public bool IsStale { get; private set => Set(ref field, value); }
 
     /// <summary>Everything the row draws: two rows with the same signature look the same.</summary>
-    internal string Signature => string.Join('|', Address, Subject, Chip, Now, string.Join(',', Inputs.Select(i => i.Name)), string.Join(',', Stages.Select(s => s.Name)));
+    internal string Signature => string.Join('|', Address, Subject, Chip, Now, string.Join(',', Inputs.Select(i => i.Name)), string.Join(',', Stages.Select(s => s.Name)), Protected?.Cli, CanAnswerAtDesk, CanCancel);
 
     /// <summary>Sets what the list knows of the row.</summary>
     /// <param name="stale">The views are stalled or rebuilding.</param>
