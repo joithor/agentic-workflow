@@ -56,11 +56,9 @@ public sealed class RecipeRegistryCliTests : IDisposable
         Assert.Equal($"registered {name} (unapproved)\n", registerOut);
         Assert.Equal($"already registered {name} (unapproved)\n", againOut);
         Assert.Equal($"{name} unapproved\n", listOut);
-        Assert.StartsWith($"{name} unapproved\n", showOut, StringComparison.Ordinal);
-        Assert.Contains("pinned blocks:\n  step.checks sha256:", showOut, StringComparison.Ordinal);
-        Assert.Contains("urgency: work\ninput: fact:spec type=text kind=text\n", showOut, StringComparison.Ordinal);
+        Assert.StartsWith($"{name}\nurgency: work\ninput: fact:spec type=text kind=text\n", showOut, StringComparison.Ordinal);
         Assert.Contains("order: path\nstate: produce order=1\nstate: checks order=2\nstate: verify order=3\nstate: done order=4\n", showOut, StringComparison.Ordinal);
-        Assert.Contains("loop: revisions verify -> produce\nloop: revisions checks -> produce\n", showOut, StringComparison.Ordinal);
+        Assert.Contains("loop: revisions verify -> produce cap=3\nloop: revisions checks -> produce cap=3\n", showOut, StringComparison.Ordinal);
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
@@ -80,7 +78,7 @@ public sealed class RecipeRegistryCliTests : IDisposable
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
-    public async Task Show_json_returns_the_recipes_fields_as_list_json_does_and_the_preview()
+    public async Task Show_json_returns_the_recipe_view()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var app = await Started(ct);
@@ -96,8 +94,8 @@ public sealed class RecipeRegistryCliTests : IDisposable
         Assert.True((after, before) == (0, 0), _error.ToString());
         Assert.Equal(afterOut, _out.ToString());
         var shown = JsonDocument.Parse(afterOut).RootElement;
-        var recipe = shown.GetProperty("recipe");
-        Assert.Equal(("workflow.step", "unapproved", "work"), (recipe.GetProperty("id").GetString(), recipe.GetProperty("standing").GetString(), recipe.GetProperty("urgency").GetString()));
+        var recipe = shown;
+        Assert.Equal(("workflow.step", "work"), (recipe.GetProperty("id").GetString(), recipe.GetProperty("urgency").GetString()));
         Assert.Equal(JsonValueKind.Array, recipe.GetProperty("outputs").ValueKind);
         Assert.Equal("path", recipe.GetProperty("orderedBy").GetString());
         var done = recipe.GetProperty("states").EnumerateArray().Last();
@@ -106,7 +104,6 @@ public sealed class RecipeRegistryCliTests : IDisposable
         Assert.Equal(("verify", "produce"), (loop.GetProperty("from").GetString(), loop.GetProperty("to").GetString()));
         Assert.Equal("fact:spec", Assert.Single(recipe.GetProperty("inputs").EnumerateArray()).GetProperty("key").GetString());
         Assert.True(recipe.TryGetProperty("hash", out _) && recipe.TryGetProperty("version", out _));
-        Assert.Equal(JsonValueKind.Object, shown.GetProperty("preview").ValueKind);
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
@@ -123,7 +120,7 @@ public sealed class RecipeRegistryCliTests : IDisposable
         var code = await Run(app, ct, "show", $"workflow.dev-triage-three-state@{hash.Display}", "--json");
 
         Assert.True(code == 0, _error.ToString());
-        var recipe = JsonDocument.Parse(_out.ToString()).RootElement.GetProperty("recipe");
+        var recipe = JsonDocument.Parse(_out.ToString()).RootElement;
         Assert.Equal("triage", recipe.GetProperty("urgency").GetString());
         Assert.Equal("{fact:scope} - {start:date}", recipe.GetProperty("name").GetString());
         Assert.Equal([("fact:scope", "text"), ("fact:item", "item")], recipe.GetProperty("inputs").EnumerateArray().Select(i => (i.GetProperty("key").GetString(), i.GetProperty("kind").GetString())));
