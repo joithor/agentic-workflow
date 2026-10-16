@@ -40,7 +40,8 @@ internal static class IntentSql
     internal const string MarkExtracted =
         "UPDATE intent_record SET extracted_version = version, extraction_state = 'done' WHERE key = @record AND version = @version";
 
-    internal const string Touch = "UPDATE intent_record SET key = key WHERE key = @record AND version = @version";
+    // A pending save (the conflict checks are still to run) queues the record again, a done one included: a map change re-extracts it, and a stopped check is retried by the next sync.
+    internal const string Touch = "UPDATE intent_record SET extracted_version = NULL, extraction_state = 'queued' WHERE key = @record AND version = @version";
 
     // The record's machine decisions the new batch no longer holds (@keys: a JSON array of the batch's keys). A decision that survives keeps its verdicts; a human one is never replaced.
     private const string Gone = "SELECT key FROM intent_decision WHERE record = @record AND provenance <> 'human' AND key NOT IN (SELECT value FROM json_each(@keys))";

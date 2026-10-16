@@ -99,9 +99,15 @@ public sealed class FakeIntentStore : IIntentStore
                 _ = _conflicts.Remove(gone);
             }
 
-            _decisions[batch.Record.Value] = [.. current.Where(d => d.Provenance == Provenance.Human && !keys.Contains(d.ToKey().Value)), .. batch.Decisions];
-            _edges.AddRange(batch.Edges);
-            if (!batch.Pending)
+            var human = current.Where(d => d.Provenance == Provenance.Human).ToList();
+            var humanKeys = human.Select(d => d.ToKey().Value).ToHashSet(StringComparer.Ordinal);
+            _decisions[batch.Record.Value] = [.. human, .. batch.Decisions.Where(d => !humanKeys.Contains(d.ToKey().Value))];   // SQLite: a human row is never replaced
+            _edges.AddRange(batch.Edges.Where(e => !_edges.Exists(x => x.From == e.From && x.To == e.To && x.Type == e.Type)));   // SQLite: ON CONFLICT DO NOTHING
+            if (batch.Pending)
+            {
+                _ = _extracted.Remove(batch.Record.Value);   // queued again, a done record included
+            }
+            else
             {
                 _extracted[batch.Record.Value] = batch.Version;
             }

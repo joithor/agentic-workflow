@@ -1,9 +1,12 @@
+using System.Text;
+using System.Text.Json;
 using Aw.Context.Core.Linking;
 using Aw.Context.Core.Sources;
 using Aw.Context.Infrastructure.Graph;
 using Aw.Context.Infrastructure.Store;
 using Aw.Kernel;
 using Aw.Kernel.Data;
+using Aw.Kernel.Json;
 
 namespace Aw.Context.Infrastructure.Intent;
 
@@ -13,6 +16,8 @@ namespace Aw.Context.Infrastructure.Intent;
 /// </summary>
 internal sealed class SqliteIntentStore(ContextDatabase database) : IIntentStore
 {
+    private static readonly JsonSerializerOptions _keysJson = AwJson.CreateOptions(IntentJsonContext.Default);
+
     public async ValueTask<Result<IntentLayer>> Layer(CancellationToken cancellationToken)
     {
         var readable = await database.Readable(cancellationToken).ConfigureAwait(false);
@@ -202,7 +207,7 @@ internal sealed class SqliteIntentStore(ContextDatabase database) : IIntentStore
 
     private static IEnumerable<SqlStatement> Replacing(DecisionBatch batch)
     {
-        var keys = "[" + string.Join(',', batch.Decisions.Select(d => "\"" + d.ToKey().Value + "\"")) + "]";   // 'decision:' and hex: nothing to escape
+        var keys = Encoding.UTF8.GetString(AwJson.Serialize(batch.Decisions.Select(d => d.ToKey().Value).ToArray(), _keysJson));
         yield return new SqlStatement(IntentSql.DropConflicts, c => c.Bind("@record", batch.Record.Value).Bind("@keys", keys));
         yield return new SqlStatement(IntentSql.DropEdges, c => c.Bind("@record", batch.Record.Value));
         yield return new SqlStatement(IntentSql.DropDecisions, c => c.Bind("@record", batch.Record.Value).Bind("@keys", keys));
