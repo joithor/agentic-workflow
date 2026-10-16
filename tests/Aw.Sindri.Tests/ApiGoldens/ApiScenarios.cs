@@ -27,6 +27,8 @@ internal static class ApiScenarios
         .. ItemScenarios.All,
         .. RequestScenarios.All,
         .. StreamScenarios.All,
+        .. JobScenarios.All,
+        .. JobScopeScenarios.All,
     ];
 
     /// <summary>Whether the scenario's host must refuse the prover label (its home isn't temporary).</summary>
@@ -36,6 +38,8 @@ internal static class ApiScenarios
     public static async Task<GoldenHost> Start(string slug, string scenario, CancellationToken ct) =>
         ContextApiScenarios.Handles(slug)
             ? await ContextApiScenarios.Start(slug, scenario, ct)
+            : JobScenarios.Handles(slug, scenario) || JobScopeScenarios.Handles(slug, scenario)
+            ? await Jobs.JobHost.Start(ct, pump: false)
             : await GoldenHost.Start(temporary: !NeedsNonTemporaryHome(slug, scenario), ct, ProfileYaml(slug, scenario));
 
     /// <summary>The live profile the scenario's host starts with: the item scenarios need two repos.</summary>
@@ -81,6 +85,8 @@ internal static class ApiScenarios
         : RequestScenarios.Handles(slug, scenario) ? () => RequestScenarios.Body(host, slug, scenario, ct)
         : StreamScenarios.Handles(slug, scenario) ? () => StreamScenarios.Body(host, slug, scenario, ct)
         : ViewScenarios.Handles(slug, scenario) ? () => ViewScenarios.Body(host, slug, scenario, ct)
+        : JobScenarios.Handles(slug, scenario) ? () => JobScenarios.Body(host, slug, scenario, ct)
+        : JobScopeScenarios.Handles(slug, scenario) ? () => JobScopeScenarios.Body(host, slug, scenario, ct)
         : null;
 
     private static (string Name, string Value)[] Session => [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")];

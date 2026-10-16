@@ -1,0 +1,27 @@
+{
+  "jobs": [
+    {
+      "id": "JOB-00000000000000000000000000000001",
+      "kind": "EchoJob",
+      "key": "echo",
+      "item": null,
+      "repo": null,
+      "service": null,
+      "state": "running",
+      "startedBy": "service:host",
+      "startedAt": "2026-01-01T00:00:00.0000000Z",
+      "endedAt": null,
+      "rounds": 0,
+      "summary": null,
+      "code": null
+    }
+  ],
+  "empty": null,
+  "asOf": {
+    "cursor": 7,
+    "ledgerHead": 7,
+    "projectedAt": "2026-01-01T00:00:00.0000000Z",
+    "rebuilding": false,
+    "stalled": false
+  }
+}

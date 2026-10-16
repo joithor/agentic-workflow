@@ -115,7 +115,7 @@ public sealed class ParkRowsTests
     private static void AssertCatalogued(NeedsYouRow row)
     {
         var catalog = Host.Catalog.EngineRows.All.Select(static r => r.Action).ToHashSet();
-        Assert.Contains(row.PrimaryAction, row.Actions);
+        Assert.Contains(row.PrimaryAction!.Value, row.Actions);
         Assert.All(row.Actions, action => Assert.Contains(action, catalog));
     }
 

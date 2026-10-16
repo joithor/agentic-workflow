@@ -11,12 +11,15 @@ namespace Aw.Sindri.Host.Commands;
 internal sealed class Interrupt : IDisposable
 {
     private readonly CancellationTokenSource _source = new();
+    private readonly CancellationTokenSource _again = new();
     private readonly PosixSignalRegistration? _terminate;
     private readonly bool _listening;
+    private readonly bool _jobRun;
 
-    private Interrupt(bool listen)
+    private Interrupt(bool listen, bool jobRun)
     {
         _listening = listen;
+        _jobRun = jobRun;
         if (!listen)
         {
             return;
@@ -29,17 +32,26 @@ internal sealed class Interrupt : IDisposable
     /// <summary>Cancelled by Ctrl-C or SIGTERM; never cancelled for a verb that doesn't stream.</summary>
     public CancellationToken Token => _source.Token;
 
+    /// <summary>Cancelled by the second Ctrl-C of a verb that follows a job (<see cref="FollowsJob"/>): it leaves at once. Never cancelled otherwise.</summary>
+    public CancellationToken Again => _again.Token;
+
     /// <summary>Whether <paramref name="args"/> is a verb that runs until interrupted: 'workflow events … --follow' or 'status --follow'.</summary>
     /// <param name="args">The command line.</param>
     /// <returns>True for a following verb.</returns>
     public static bool Streams(string[] args) =>
-        (args is ["workflow", "events", .. var rest] && rest.Contains("--follow", StringComparer.Ordinal))
+        FollowsJob(args) || (args is ["workflow", "events", .. var rest] && rest.Contains("--follow", StringComparer.Ordinal))
         || (args is ["status", .. var follow] && follow.Contains("--follow", StringComparer.Ordinal));
 
-    /// <summary>Starts listening when <paramref name="args"/> <see cref="Streams"/>.</summary>
+    /// <summary>Whether <paramref name="args"/> is 'services run' without --detach: it follows its job, so the first Ctrl-C cancels the job and the second leaves.</summary>
+    /// <param name="args">The command line.</param>
+    /// <returns>True for a job-following verb.</returns>
+    public static bool FollowsJob(string[] args) =>
+        args is ["services", "run", .. var rest] && !rest.Contains("--detach", StringComparer.Ordinal);
+
+    /// <summary>Starts listening when <paramref name="args"/> <see cref="Streams"/> or <see cref="FollowsJob"/>.</summary>
     /// <param name="args">The command line.</param>
     /// <returns>The listener; dispose it to stop listening.</returns>
-    public static Interrupt For(string[] args) => new(Streams(args));
+    public static Interrupt For(string[] args) => new(Streams(args), FollowsJob(args));
 
     public void Dispose()
     {
@@ -50,14 +62,16 @@ internal sealed class Interrupt : IDisposable
         }
 
         _source.Dispose();
+        _again.Dispose();
     }
 
     private void OnCancelKey(object? sender, ConsoleCancelEventArgs e)
     {
-        e.Cancel = true;   // the verb ends itself; a second Ctrl-C ends the process the usual way
+        e.Cancel = true;   // the verb ends itself; a second Ctrl-C ends the process the usual way, or the job follower leaves
         if (_source.IsCancellationRequested)
         {
-            e.Cancel = false;
+            e.Cancel = _jobRun;
+            _again.Cancel();
         }
 
         _source.Cancel();

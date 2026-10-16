@@ -3,6 +3,7 @@ using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Items;
+using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.NeedsYou;
@@ -32,6 +33,7 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton(EventScope.ControlPlane)
             .AddSingleton<EventFactory>()
             .AddSingleton<ICallerContextAccessor, AsyncLocalCallerContextAccessor>()
+            .AddSingleton<IJobContextAccessor, AsyncLocalJobContextAccessor>()
             .AddSingleton<HeldLease>()
             .AddSingleton<EndedInstanceViews>()
             .AddSingleton<TemporalRuntime>()
@@ -52,6 +54,7 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<IProjection, ItemAliasesProjection>()
             .AddSingleton<IProjection, ItemTimelineProjection>()
             .AddSingleton<IProjection, NeedsYouProjection>()
+            .AddSingleton<IProjection, JobsProjection>()
             .AddScoped<RecipeApprovalPlanner>()
             .AddScoped<RecipeRevokePlanner>()
             .AddScoped<IRecipeProfileFacts, ApprovedRecipeProfileFacts>()
