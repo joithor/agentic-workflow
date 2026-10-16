@@ -287,6 +287,18 @@
       "schema": "invalid",
       "bash": "accept",
       "note": "policy names built-in forms only; the bash reader does not check the value, as for mcp"
+    },
+    {
+      "file": "model-policy-every-form.json",
+      "schema": "valid",
+      "bash": "accept",
+      "note": "every model and policy enum value once, so a reader's enum must match the schema's exactly"
+    },
+    {
+      "file": "model-null.json",
+      "schema": "invalid",
+      "bash": "accept",
+      "note": "null is not absent: model must be one of the form names; the bash reader does not check the value"
     }
   ]
 }

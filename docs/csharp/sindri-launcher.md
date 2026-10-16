@@ -69,26 +69,28 @@ never hashed, so one approval holds across runs; changing a form name changes th
 ### Model and policy forms (decided, owner, 2026-10-16)
 
 Scoping-station spec section 12.5, row L-17. An entry names, like `mcp`, which built-in form passes a per-run model id
-(`model`) and a per-launch policy file (`policy`) to its CLI. Both are enums, default `none`, and an added entry defaults to
+(`model`) and a per-launch policy (`policy`: a file for `claude-settings-file`, typed `-c` overrides with no file for
+`codex-overrides`) to its CLI. Both are enums, default `none`, and an added entry defaults to
 `none`; an override keeps the built-in's forms unless it names them. A form adds its arguments only on an **unattended Step
 launch** (`attended: false`), after the expanded `open` template. Human opens, `resume` and Meta lanes never pass them. The
 closed placeholder set is unchanged: no `{model}` or `{policy}`, so no placeholder expands to an empty or optional argument.
 The bash reader (`scripts/launcher-lib.sh`) accepts both keys and never applies them (lanes are attended); it does not check
-their values, as for `mcp`. The rendering below is the C# `BuildArgv`'s (SL-2, not in this PR), with `<id>` the per-run model
+their values, as for `mcp`. The rendering below is the C# `BuildArgv`'s (SL-2, API P10a U3), with `<id>` the per-run model
 id and `<path>` the 0600 policy file the engine writes:
 
 | Key | Form | Adds (unattended only) | Built-in |
 |---|---|---|---|
 | `model` | `claude-flag` | `--model <id>` | claude-code |
 | `model` | `codex-flag` | `-m <id>` | codex |
-| `model` | `cursor-flag` | the Cursor CLI's model flag | none: `agent --help` was not available to check on the box that wrote this, so cursor is `none` until a box with it confirms a flag |
+| `model` | `cursor-flag` | **reserved**: nothing until a box with the Cursor CLI verifies its model flag (expected `--model <id>`); a Step that requests it parks with `SND-LAUNCH-013` | none |
 | `model` | `none` | nothing | cursor |
 | `policy` | `claude-settings-file` | `--settings <path>` | claude-code |
 | `policy` | `codex-overrides` | `-c key=value` overrides, one pair per setting the engine's policy names (sandbox, approvals, the writable path) | codex |
-| `policy` | `cursor-config` | the Cursor CLI's config file argument | none: no built-in sets it yet |
+| `policy` | `cursor-config` | **reserved**: nothing until the Cursor CLI's config argument is verified; a Step that requests it parks with `SND-LAUNCH-013` | none |
 | `policy` | `none` | nothing | cursor |
 
-A Step that requests a model or a policy on an entry whose matching form is `none` parks with `SND-LAUNCH-013` and never
+A Step that requests a model or a policy on an entry whose matching form is `none`, or a reserved form (`cursor-flag`,
+`cursor-config`), parks with `SND-LAUNCH-013` and never
 launches unrestricted (the API implements the check).
 
 ## Worked examples for `exec-template`
