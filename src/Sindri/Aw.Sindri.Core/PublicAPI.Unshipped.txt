@@ -459,11 +459,13 @@ Aw.Sindri.Core.Events.FrameSummary
 Aw.Sindri.Core.Events.FrameSummary.<Clone>$() -> Aw.Sindri.Core.Events.FrameSummary!
 Aw.Sindri.Core.Events.FrameSummary.Child.get -> string?
 Aw.Sindri.Core.Events.FrameSummary.Child.init -> void
-Aw.Sindri.Core.Events.FrameSummary.Deconstruct(out string! State, out int Entry, out string? Run, out string? Child) -> void
+Aw.Sindri.Core.Events.FrameSummary.Deconstruct(out string! State, out int Entry, out string? Run, out string? Child, out Aw.Sindri.Core.Workflow.Engine.StepRuntime? Runtime) -> void
 Aw.Sindri.Core.Events.FrameSummary.Entry.get -> int
 Aw.Sindri.Core.Events.FrameSummary.Entry.init -> void
 Aw.Sindri.Core.Events.FrameSummary.Equals(Aw.Sindri.Core.Events.FrameSummary? other) -> bool
-Aw.Sindri.Core.Events.FrameSummary.FrameSummary(string! State, int Entry, string? Run, string? Child) -> void
+Aw.Sindri.Core.Events.FrameSummary.FrameSummary(string! State, int Entry, string? Run, string? Child, Aw.Sindri.Core.Workflow.Engine.StepRuntime? Runtime = null) -> void
+Aw.Sindri.Core.Events.FrameSummary.Runtime.get -> Aw.Sindri.Core.Workflow.Engine.StepRuntime?
+Aw.Sindri.Core.Events.FrameSummary.Runtime.init -> void
 Aw.Sindri.Core.Events.FrameSummary.Run.get -> string?
 Aw.Sindri.Core.Events.FrameSummary.Run.init -> void
 Aw.Sindri.Core.Events.FrameSummary.State.get -> string!
