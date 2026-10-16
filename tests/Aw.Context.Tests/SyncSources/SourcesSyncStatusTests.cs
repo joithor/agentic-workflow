@@ -93,4 +93,19 @@ public sealed class SourcesSyncStatusTests
         Assert.Equal((SourceState.Ok, ContextErrors.SyncCapped.Code), (cut?.State, cut?.Code));   // partial, not failed: the next run continues
         Assert.Equal((SourceState.Ok, null), (after?.State, after?.Code));
     }
+
+    [Fact]
+    public async Task A_model_failure_in_a_run_the_time_cap_also_stopped_shows_the_failure_not_059()
+    {
+        ScriptedSource? slow = null;
+        await using var rig = await Rig.Start(wrap: inner => slow = new ScriptedSource(inner));
+        slow!.AfterFetch = () => rig.World.Clock.Advance(SyncSourcesService.RunCap + TimeSpan.FromSeconds(1));
+        rig.World.Model.Fail = _ => ContextErrors.SourceUnavailable.With("the model is down");
+
+        var capped = await rig.Sync(Scope());
+        var sync = (await Onyx(rig)).Sync;
+
+        Assert.Equal(ContextErrors.SourceUnavailable.Code, capped.Code);
+        Assert.Equal((SourceState.Unavailable, ContextErrors.SourceUnavailable.Code), (sync?.State, sync?.Code));   // the outage, not "ok / 059, the next run continues"
+    }
 }
