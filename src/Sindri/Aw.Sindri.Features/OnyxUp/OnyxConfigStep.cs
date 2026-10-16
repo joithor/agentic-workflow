@@ -4,7 +4,7 @@ using Aw.Sindri.Core.Onyx;
 
 namespace Aw.Sindri.Features.OnyxUp;
 
-// Step 3: the .env and the compose override. A present auth key is always kept; a missing one is generated once.
+// Step 3: the .env and the compose override (stamped by the fetched files, port, platform, release and this platform's image digests). A present auth key is always kept; a missing one is generated once.
 internal sealed class OnyxConfigStep(IOnyxWorkspace workspace, IComposeServices services, IRandomHex random) : IOnyxUpStep
 {
     private const int AuthKeyBytes = 32;
@@ -12,7 +12,11 @@ internal sealed class OnyxConfigStep(IOnyxWorkspace workspace, IComposeServices 
     public string Name => OnyxSteps.Config;
 
     public string Stamp(OnyxUpContext context)
-        => OnyxSteps.Stamp(context.Done.GetValueOrDefault(OnyxSteps.Fetch, ""), context.Port.ToString(System.Globalization.CultureInfo.InvariantCulture), context.Platform, context.Pins.Version);
+        => OnyxSteps.Stamp(context.Done.GetValueOrDefault(OnyxSteps.Fetch, ""), context.Port.ToString(System.Globalization.CultureInfo.InvariantCulture), context.Platform, context.Pins.Version, ImageRows(context));
+
+    // The override names every image by its digest, so the digests this platform runs are inputs of the step (a moved pin re-renders, re-pulls and restarts).
+    private static string ImageRows(OnyxUpContext context)
+        => string.Join('\n', context.Pins.Images.Where(i => i.Platform == context.Platform).Select(static i => i.Repository + "@" + i.Digest).Order(StringComparer.Ordinal));
 
     public ValueTask<bool> IsDone(OnyxUpContext context, string? recorded, CancellationToken cancellationToken)
         => ValueTask.FromResult(

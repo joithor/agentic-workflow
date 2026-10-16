@@ -120,6 +120,24 @@ public sealed class OnyxUpResumeTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_changed_image_digest_alone_reruns_config_pull_and_start()
+    {
+        var rig = new OnyxUpRig();
+        _ = await rig.Up(Token);
+        var pins = rig.Pins.Pins;
+        var nginx = pins.Images.Single(static i => i.Platform == "linux/arm64" && i.Repository.EndsWith("nginx", StringComparison.Ordinal));
+        var moved = nginx with { Digest = "sha256:" + new string('a', 64) };
+        rig.Pins.Pins = pins with { Images = [.. pins.Images.Select(i => i == nginx ? moved : i)] };
+        rig.Runtime.LocalImages[moved.Repository + "@" + moved.Digest] = [ImageNames.WithoutDefaults(moved.Repository + "@" + moved.Digest)];
+
+        var rerun = (await rig.Up(Token)).Value;
+
+        Assert.Equal(["config", "pull", "start"], rerun.Ran, StringComparer.Ordinal);
+        Assert.Equal(["fetch"], rerun.Skipped, StringComparer.Ordinal);
+        Assert.Contains(moved.Digest, rig.Workspace.Files[rig.Paths.Override], StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_rerun_keeps_the_port_when_our_own_nginx_holds_it()
     {
         var rig = new OnyxUpRig();
