@@ -1,16 +1,16 @@
 {
   "rows": [
     {
-      "id": "failure:service:heartbeat",
+      "id": "failure:service:phantom",
       "kind": "failure",
-      "label": "failure · heartbeat",
+      "label": "failure · phantom",
       "subject": {
         "kind": "service",
-        "id": "heartbeat"
+        "id": "phantom"
       },
       "item": null,
-      "title": "heartbeat failed",
-      "reason": "SND-SVC-404: this build has no service 'heartbeat'; remove or rename it in the profile",
+      "title": "phantom failed",
+      "reason": "SND-SVC-404: this build has no service 'phantom'; remove or rename it in the profile",
       "repo": null,
       "urgency": "colour",
       "since": "2026-01-01T00:00:00.0000000Z",
