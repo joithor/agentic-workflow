@@ -8041,10 +8041,6 @@ static Aw.Sindri.Core.Jobs.JobLinks.operator ==(Aw.Sindri.Core.Jobs.JobLinks? le
 static Aw.Sindri.Core.Jobs.JobRow.operator !=(Aw.Sindri.Core.Jobs.JobRow? left, Aw.Sindri.Core.Jobs.JobRow? right) -> bool
 static Aw.Sindri.Core.Jobs.JobRow.operator ==(Aw.Sindri.Core.Jobs.JobRow? left, Aw.Sindri.Core.Jobs.JobRow? right) -> bool
 static Aw.Sindri.Core.Jobs.JobRules.CanCancel(Aw.Sindri.Core.Jobs.JobRow? row) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
-static Aw.Sindri.Core.Jobs.JobRules.Fold(Aw.Sindri.Core.Jobs.JobRow? row, Aw.Sindri.Core.Events.JobStarted! started, Aw.Sindri.Core.Ledger.LedgerEvent! recorded) -> Aw.Sindri.Core.Jobs.JobRow!
-static Aw.Sindri.Core.Jobs.JobRules.Fold(Aw.Sindri.Core.Jobs.JobRow! row, Aw.Sindri.Core.Events.JobProgress! progress, Aw.Sindri.Core.Ledger.LedgerEvent! recorded) -> Aw.Sindri.Core.Jobs.JobRow!
-static Aw.Sindri.Core.Jobs.JobRules.Fold(Aw.Sindri.Core.Jobs.JobRow! row, Aw.Sindri.Core.Events.JobFinished! finished, Aw.Sindri.Core.Ledger.LedgerEvent! recorded) -> Aw.Sindri.Core.Jobs.JobRow!
-static Aw.Sindri.Core.Jobs.JobRules.Fold(Aw.Sindri.Core.Jobs.JobRow! row, Aw.Sindri.Core.Events.JobCancelled! cancelled, Aw.Sindri.Core.Ledger.LedgerEvent! recorded) -> Aw.Sindri.Core.Jobs.JobRow!
 static Aw.Sindri.Core.Jobs.JobStartedResponse.operator !=(Aw.Sindri.Core.Jobs.JobStartedResponse? left, Aw.Sindri.Core.Jobs.JobStartedResponse? right) -> bool
 static Aw.Sindri.Core.Jobs.JobStartedResponse.operator ==(Aw.Sindri.Core.Jobs.JobStartedResponse? left, Aw.Sindri.Core.Jobs.JobStartedResponse? right) -> bool
 static readonly Aw.Sindri.Core.SindriErrors.JobConflict -> Aw.Kernel.ErrorDefinition!

@@ -1,6 +1,4 @@
 using Aw.Kernel;
-using Aw.Sindri.Core.Events;
-using Aw.Sindri.Core.Ledger;
 
 namespace Aw.Sindri.Core.Jobs;
 
@@ -16,76 +14,4 @@ public static class JobRules
         { State: JobState.Running } => Unit.Value,
         _ => SindriErrors.JobConflict.With("the job already ended"),
     };
-
-    /// <summary>The row a 'job.started' makes: running, no lines yet. A replay (the row exists) changes nothing.</summary>
-    /// <param name="row">The row so far, or null before the job's first event.</param>
-    /// <param name="started">The payload.</param>
-    /// <param name="recorded">The recorded event (its time, actor and sequence).</param>
-    /// <returns>The row.</returns>
-    public static JobRow Fold(JobRow? row, JobStarted started, LedgerEvent recorded)
-    {
-        ArgumentNullException.ThrowIfNull(started);
-        ArgumentNullException.ThrowIfNull(recorded);
-        return row ?? new JobRow(started.Job, started.Kind, started.Key, started.Item, started.Repo, started.Service, JobState.Running,
-            recorded.Envelope.Actor, recorded.Envelope.OccurredAt, EndedAt: null, Progress: [], Rounds: 0, Summary: null, Code: null, Result: null,
-            CancelledBy: null, recorded.Sequence);
-    }
-
-    /// <summary>The row after a 'job.progress': the line is appended, the last 200 are kept and the rounds are the highest seen. A job that ended ignores it (D5).</summary>
-    /// <param name="row">The row so far.</param>
-    /// <param name="progress">The payload.</param>
-    /// <param name="recorded">The recorded event.</param>
-    /// <returns>The row.</returns>
-    public static JobRow Fold(JobRow row, JobProgress progress, LedgerEvent recorded)
-    {
-        ArgumentNullException.ThrowIfNull(row);
-        ArgumentNullException.ThrowIfNull(progress);
-        ArgumentNullException.ThrowIfNull(recorded);
-        return row.State != JobState.Running
-            ? row
-            : row with
-            {
-                Progress = JobLines.Keep(row.Progress, new JobLine(progress.Round, progress.Line, recorded.Envelope.OccurredAt)),
-                Rounds = Math.Max(row.Rounds, progress.Round),
-                Sequence = recorded.Sequence,
-            };
-    }
-
-    /// <summary>The row after a 'job.finished': succeeded or failed, with its summary, code and result. A job that ended ignores it (D5: the first terminal event wins).</summary>
-    /// <param name="row">The row so far.</param>
-    /// <param name="finished">The payload.</param>
-    /// <param name="recorded">The recorded event.</param>
-    /// <returns>The row.</returns>
-    public static JobRow Fold(JobRow row, JobFinished finished, LedgerEvent recorded)
-    {
-        ArgumentNullException.ThrowIfNull(row);
-        ArgumentNullException.ThrowIfNull(finished);
-        ArgumentNullException.ThrowIfNull(recorded);
-        return row.State != JobState.Running
-            ? row
-            : row with
-            {
-                State = finished.Outcome == JobOutcome.Succeeded ? JobState.Succeeded : JobState.Failed,
-                EndedAt = recorded.Envelope.OccurredAt,
-                Summary = finished.Summary,
-                Code = finished.Code,
-                Result = finished.Result,
-                Sequence = recorded.Sequence,
-            };
-    }
-
-    /// <summary>The row after a 'job.cancelled': cancelled, by whom. A job that ended ignores it (D5).</summary>
-    /// <param name="row">The row so far.</param>
-    /// <param name="cancelled">The payload.</param>
-    /// <param name="recorded">The recorded event.</param>
-    /// <returns>The row.</returns>
-    public static JobRow Fold(JobRow row, JobCancelled cancelled, LedgerEvent recorded)
-    {
-        ArgumentNullException.ThrowIfNull(row);
-        ArgumentNullException.ThrowIfNull(cancelled);
-        ArgumentNullException.ThrowIfNull(recorded);
-        return row.State != JobState.Running
-            ? row
-            : row with { State = JobState.Cancelled, EndedAt = recorded.Envelope.OccurredAt, Summary = "cancelled", CancelledBy = cancelled.By, Sequence = recorded.Sequence };
-    }
 }

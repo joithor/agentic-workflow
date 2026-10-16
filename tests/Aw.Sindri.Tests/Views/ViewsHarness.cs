@@ -1,6 +1,5 @@
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Items;
-using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Testing;

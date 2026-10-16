@@ -3,7 +3,6 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Features.Jobs;
 
@@ -13,12 +12,12 @@ namespace Aw.Sindri.Features.Jobs;
 /// writes no end of its own (CancelJob appended 'job.cancelled'); a job the host's stop cancelled writes none either, recovery ends it at the next start.
 /// It takes no heavy-job slot: a job that needs one (the context map build) takes it itself.
 /// </summary>
-/// <param name="scopes">Gives each job's work a DI scope.</param>
+/// <param name="openScope">Opens a DI scope for each job's work.</param>
 /// <param name="jobs">Where the work reads its job context.</param>
 /// <param name="callers">The starting caller is re-entered for the work.</param>
 /// <param name="writer">Appends the job's own events.</param>
 /// <param name="registry">Releases a job's (kind, key) claim when it ends.</param>
-internal sealed class JobRunner(IServiceScopeFactory scopes, IJobContextAccessor jobs, ICallerContextAccessor callers, JobEventWriter writer, JobRegistry registry)
+internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jobs, ICallerContextAccessor callers, JobEventWriter writer, JobRegistry registry)
     : IJobRunner, IAsyncDisposable, IDisposable
 {
     private readonly ConcurrentDictionary<string, Run> _runs = new(StringComparer.Ordinal);
@@ -132,12 +131,12 @@ internal sealed class JobRunner(IServiceScopeFactory scopes, IJobContextAccessor
         var start = run.Start;
         try
         {
-            var scope = scopes.CreateAsyncScope();
-            await using (scope.ConfigureAwait(false))
+            var scope = openScope();
+            await using (scope.Lifetime.ConfigureAwait(false))
             {
                 using var caller = callers.Enter(start.Caller);
                 using var job = jobs.Enter(new JobContext(start.Job, start.Kind, new QueueProgress(queue)));
-                return await start.Definition.Run(scope.ServiceProvider.GetRequiredService, start.Request, run.Source.Token).ConfigureAwait(false);
+                return await start.Definition.Run(scope.Resolve, start.Request, run.Source.Token).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException) when (run.Source.IsCancellationRequested)

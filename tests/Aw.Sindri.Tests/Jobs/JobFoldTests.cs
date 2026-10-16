@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Infrastructure.Text;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Views;
@@ -33,25 +34,25 @@ public sealed class JobFoldTests
     private JobRow Started()
     {
         var recorded = Event(EventTypes.JobStarted, new JobStarted(Command, A.FirstJobId, _kind, _key, Item: null, Repo: null, ServiceName.From("heartbeat")));
-        return JobRules.Fold(row: null, _h.Events.Payload<JobStarted>(recorded).Value, recorded);
+        return JobsProjection.Fold(row: null, _h.Events.Payload<JobStarted>(recorded).Value, recorded);
     }
 
     private JobRow Progress(JobRow row, int round, string line)
     {
         var recorded = Event(EventTypes.JobProgress, new JobProgress(Command, A.FirstJobId, round, line));
-        return JobRules.Fold(row, _h.Events.Payload<JobProgress>(recorded).Value, recorded);
+        return JobsProjection.Fold(row, _h.Events.Payload<JobProgress>(recorded).Value, recorded);
     }
 
     private JobRow Finished(JobRow row, JobOutcome outcome, string summary, string? code = null, JsonElement? result = null)
     {
         var recorded = Event(EventTypes.JobFinished, new JobFinished(Command, A.FirstJobId, outcome, summary, code, result));
-        return JobRules.Fold(row, _h.Events.Payload<JobFinished>(recorded).Value, recorded);
+        return JobsProjection.Fold(row, _h.Events.Payload<JobFinished>(recorded).Value, recorded);
     }
 
     private JobRow Cancelled(JobRow row, string by)
     {
         var recorded = Event(EventTypes.JobCancelled, new JobCancelled(Command, A.FirstJobId, by));
-        return JobRules.Fold(row, _h.Events.Payload<JobCancelled>(recorded).Value, recorded);
+        return JobsProjection.Fold(row, _h.Events.Payload<JobCancelled>(recorded).Value, recorded);
     }
 
     [Fact]
@@ -74,7 +75,7 @@ public sealed class JobFoldTests
         var row = Progress(Started(), 1, "one");
         var again = Event(EventTypes.JobStarted, new JobStarted(Command, A.FirstJobId, _kind, _key, Item: null, Repo: null, Service: null));
 
-        Expect.Equal(row, JobRules.Fold(row, _h.Events.Payload<JobStarted>(again).Value, again));
+        Expect.Equal(row, JobsProjection.Fold(row, _h.Events.Payload<JobStarted>(again).Value, again));
     }
 
     [Fact]
