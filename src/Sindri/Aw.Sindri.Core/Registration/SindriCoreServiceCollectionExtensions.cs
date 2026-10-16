@@ -5,6 +5,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Blocks;
@@ -45,9 +46,11 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<IProjectorFeed>(static sp => sp.GetRequiredService<ProjectorProgress>())
             .AddSingleton<IProjection, ServicesProjection>()
             .AddSingleton<IProjection, ProfileProjection>()
+            .AddSingleton<IProjection, RequestsProjection>()
             .AddSingleton<IProjection, ItemsProjection>()
             .AddSingleton<IProjection, ItemAliasesProjection>()
             .AddSingleton<IProjection, ItemTimelineProjection>()
+            .AddSingleton<IProjection, NeedsYouProjection>()
             .AddScoped<RecipeApprovalPlanner>()
             .AddScoped<RecipeRevokePlanner>()
             .AddScoped<IRecipeProfileFacts, ApprovedRecipeProfileFacts>()
