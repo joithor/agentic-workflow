@@ -51,7 +51,7 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 agentic-workflow/
 ├── skills/        # 52 provider-neutral skills (linked into each provider's skills dir)
 ├── bootstrap/     # /bootstrap skill — repo documentation generator
-├── config/        # Settings, MCP config, statusline, safety hooks, sindri-nudge SessionStart hook, meta Stop/outbox hooks (+ hooks/adapters/ per provider)
+├── config/        # Settings, MCP config, statusline, safety hooks, sindri-nudge SessionStart hook, meta Stop/outbox hooks, non-Claude lane hooks (meta-lane-gate, session-id-report) (+ hooks/adapters/ per provider)
 ├── providers/     # Per-provider installers (claude, codex, cursor)
 ├── scorer/        # Daily cost/involvement report from provider session transcripts
 ├── judge/         # Cheap-agent-harness judge CLI (decisions, config, health)
@@ -148,7 +148,7 @@ scripts/check-env-example.sh            # Every env var the code reads is in .en
 
 # Bash tests (CI: scripts/ci/bash-tests.sh runs every tracked suite, independent ones in parallel and
 # its SERIAL list, the timing-sensitive ones, one at a time afterwards; --serial prints them with reasons)
-bash scripts/ci/bash-tests.sh
+bash scripts/ci/bash-tests.sh   # each suite runs with its own fresh temp HOME and AW_STATE_DIR (tools keep working through GIT_CONFIG_GLOBAL, DOTNET_ROOT, NUGET_PACKAGES, npm_config_cache)
 bash providers/tests/install.test.sh
 bash scripts/tests/sync-rules.test.sh
 bash scripts/tests/check-deps.test.sh

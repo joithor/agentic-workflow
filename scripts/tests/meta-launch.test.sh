@@ -295,21 +295,27 @@ id="$(cat /proc/sys/kernel/random/uuid 2> /dev/null || uuidgen | tr '[:upper:]' 
 mkdir -p "$HOME/.codex/sessions/2026/10/15"
 : > "$HOME/.codex/sessions/2026/10/15/rollout-2026-10-15T00-00-00-$id.jsonl"
 echo "wrote $AW_META_LANE $id" >> "$CALLS.events"
-printf '%s|' "$@" >> "$CALLS.codex"; echo "$AW_SINDRI_CHILD|$AW_META_TEAM|$AW_META_LANE" >> "$CALLS.codex"
+args=("$@"); printf '%s|' "${args[@]//$'\n'/ }" >> "$CALLS.codex"; echo "$AW_SINDRI_CHILD|$AW_META_TEAM|$AW_META_LANE" >> "$CALLS.codex"
+echo "$AW_STATE_DIR|${AW_META_CONFIG:-}" >> "$CALLS.state"
+echo "parent=$([ "$AW_META_LANE_PID" = "$PPID" ] && echo lane-script || echo other)|proc=$AW_META_LANE_PROC|agent=$AW_META_LANE_AGENT" >> "$CALLS.pid"
 sleep 600
 EOF
 chmod +x "$WORK/codex"
 jq -n --arg c "$WORK/codex" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex"}}' > "$LCFG"
 reset; : > "$CALLS.events"; : > "$CALLS.codex"
 OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open 2>&1)"; RC=$?
-check "codex lanes: the launch notes that they are launch-only" "$RC:$(grep -x 'lane api: codex, launch-only for now: no obligations' <<< "$OUT" | wc -l):$(grep -c '^lane meta' <<< "$OUT")" "0:1:0"
+check "codex lanes: the launch notes that they take part through their hooks" "$RC:$(grep -x 'lane api: codex, takes part in the obligations through its hooks (scripts/install-meta.sh installs them)' <<< "$OUT" | wc -l):$(grep -c '^lane meta' <<< "$OUT")" "0:1:0"
 ids="$AW_STATE_DIR/meta/lane-sessions"
 waitfor '[ -s "$ids/api" ] && [ -s "$ids/ui" ] && [ "$(wc -l < "$CALLS.codex")" -ge 2 ]'
 check "codex lanes: started one at a time (each id is reported before the next lane starts)" "$(awk '{print $1" "$2}' "$CALLS.events" | tr '\n' ';')" "start api;wrote api;start ui;wrote ui;"
 a="$(tr -d '[:space:]' < "$ids/api")"; u="$(tr -d '[:space:]' < "$ids/ui")"
 check "codex lanes: each lane recorded the id its own rollout file carries" "$(grep -c "wrote api $a" "$CALLS.events"):$(grep -c "wrote ui $u" "$CALLS.events")" "1:1"
 check "codex lanes: two distinct ids" "$([ "$a" != "$u" ] && [ -n "$a" ] && echo yes)" "yes"
-check "codex lanes: the built-in open argv, the prompt as the last argument, none without one" "$(grep -h -- '-C' "$CALLS.codex" | sort | tr '\n' ';')" "-C|$WORK/repo|1|t1|ui;-C|$WORK/repo|API kickoff|1|t1|api;"
+check "codex lanes: the built-in open argv, the prompt as the last argument, none without one" "$(grep -h -- '-C' "$CALLS.codex" | sort | tr '\n' ';')" "-C|$WORK/repo|1|t1|ui;-C|$WORK/repo|API kickoff  When you answer a message from the meta (aw-meta lane-inbox shows it), end your turn with a line starting REPLY TO META: followed by your reply.|1|t1|api;"
+check "codex lanes: <lane>.agent records the catalog facts the lane map needs" "$(jq -cS . "$ids/api.agent")" '{"agent":"codex","hooks":true,"processName":"codex","transcripts":"~/.codex/sessions/*/*/*/rollout-*-{sessionId}.jsonl"}'
+check "codex lanes: the meta lane (Claude) has no .agent record" "$(ls "$ids" | grep -c '^meta.agent$')" "0"
+check "codex lanes: AW_META_LANE_PID is the agent's parent (the lane script), AW_META_LANE_PROC the process name, AW_META_LANE_AGENT the catalog id" "$(sort -u "$CALLS.pid" | tr '\n' ';')" "parent=lane-script|proc=codex|agent=codex;"
+check "codex lanes: the agent's environment names the state directory and the team config" "$(sort -u "$CALLS.state" | tr '\n' ';')" "$AW_STATE_DIR|$cfg;"
 check "codex lanes: two codex sessions, not three (the meta lane is Claude)" "$(wc -l < "$CALLS.codex" | tr -d ' ')" "2"
 check "the lane variables are in the lane's environment and not in tmux's global one" "$(tmux show-environment -g 2>&1 | grep -c 'AW_SINDRI_CHILD\|AW_META_TEAM\|AW_META_LANE')" "0"
 # The meta lane stays Claude Code even when lanesAgent says otherwise; its claude is the stub.
@@ -319,6 +325,48 @@ tmux kill-server 2> /dev/null; : > "$CALLS.codex"
 AW_LAUNCHER_CONFIG="$LCFG" AW_META_NO_SHELL=1 bash "$DIR/meta-lane.sh" t1 api > /dev/null 2>&1 &
 rp=$!; waitfor '[ -s "$CALLS.codex" ]'; kill "$rp" 2> /dev/null; pkill -f "$WORK/codex" 2> /dev/null; wait "$rp" 2> /dev/null
 check "codex lane with a recorded id and its rollout: resumes it" "$(head -1 "$CALLS.codex" | cut -d'|' -f1-2)" "resume|$a"
+# A non-Claude lane's pane is named after its agent: tmux reads the foreground process group's leader, and aw-meta's wake guard
+# compares it with the catalog's processName. meta-lane.sh gives the agent its own group (job control); a Claude lane is untouched.
+printf '#!/usr/bin/env bash\nexec -a codex sleep 60\n' > "$WORK/codex-named"; chmod +x "$WORK/codex-named"
+jq --arg c "$WORK/codex-named" '.agents.codex.bin = $c' "$LCFG" > "$WORK/l4.json"
+tmux kill-server 2> /dev/null; tmux new-session -d -s keepalive "sleep 600"
+tmux new-session -d -s t1-api "env AW_LAUNCHER_CONFIG=$WORK/l4.json AW_META_NO_SHELL=1 AW_META_ID_WAIT=1 AW_META_ID_GRACE=1 bash $DIR/meta-lane.sh t1 api"
+waitfor '[ "$(tmux display-message -p -t =t1-api: "#{pane_current_command}")" = codex ]'
+check "a non-Claude lane's pane is named after the agent (processName)" "$(tmux display-message -p -t =t1-api: '#{pane_current_command}')" "codex"
+tmux kill-session -t =t1-api 2> /dev/null
+# The id watcher ends with the lane: a real hangup (the pty closed, as when a terminal pane is killed) must take the agent, the lane
+# script and the watcher with it, and a watcher must not outlive its lane to hold the team start lock.
+if command -v script > /dev/null 2>&1; then
+  printf '#!/usr/bin/env bash\nexec -a codex sleep 60\n' > "$WORK/codex-quiet"; chmod +x "$WORK/codex-quiet"
+  jq --arg c "$WORK/codex-quiet" '.agents.codex.bin = $c' "$LCFG" > "$WORK/l5.json"
+  find "$AW_STATE_DIR/meta/lane-sessions" -mindepth 1 -delete 2> /dev/null
+  script -qfec "env AW_LAUNCHER_CONFIG=$WORK/l5.json AW_META_NO_SHELL=1 AW_META_ID_WAIT=20 AW_META_ID_GRACE=1 bash $DIR/meta-lane.sh t1 api" /dev/null < /dev/null > /dev/null 2>&1 &
+  sp=$!
+  waitfor '[ "$(pgrep -f "^bash $DIR/meta-lane.sh t1 api$" | wc -l)" -ge 2 ] && pgrep -f "^codex 60$" > /dev/null'
+  lane_pids="$(pgrep -f "^bash $DIR/meta-lane.sh t1 api$")"; agent_pid="$(pgrep -f '^codex 60$' | head -1)"
+  check "a lane under a pty runs its script, its agent and an id watcher" "$([ "$(echo "$lane_pids" | wc -l)" -ge 2 ] && kill -0 "$agent_pid" 2> /dev/null && echo yes)" "yes"
+  kill -KILL "$sp" 2> /dev/null; wait "$sp" 2> /dev/null
+  waitfor '! pgrep -f "^bash $DIR/meta-lane.sh t1 api$" > /dev/null && ! kill -0 "$agent_pid" 2> /dev/null'
+  check "after the pty closes the agent, the lane script and the id watcher are all gone" "$(pgrep -f "^bash $DIR/meta-lane.sh t1 api$" | wc -l | tr -d ' '):$(kill -0 "$agent_pid" 2> /dev/null && echo alive || echo gone)" "0:gone"
+check "no snapshot file is left behind by the watcher" "$(ls -A "$AW_STATE_DIR/meta/lane-sessions" | grep -c '\.snap\.')" "0"
+else
+  echo "ok - skipped: script(1) is not installed (the pty hangup case)"
+fi
+# The npm install of Codex is a node wrapper that spawns the native binary: tmux names the pane "node". meta-lane.sh records the name
+# the pane really shows in the .agent record, which is what aw-meta's wake guard compares.
+cat > "$WORK/codex-npm" <<'EOF'
+#!/usr/bin/env bash
+if command -v node > /dev/null 2>&1; then exec node -e "require('child_process').spawnSync('sleep', ['60'], { stdio: 'inherit' })"; fi
+exec -a node sleep 60
+EOF
+chmod +x "$WORK/codex-npm"
+jq --arg c "$WORK/codex-npm" '.agents.codex.bin = $c' "$LCFG" > "$WORK/l6.json"
+find "$AW_STATE_DIR/meta/lane-sessions" -mindepth 1 -delete 2> /dev/null
+tmux kill-server 2> /dev/null; tmux new-session -d -s keepalive "sleep 600"
+tmux new-session -d -s t1-api "env AW_LAUNCHER_CONFIG=$WORK/l6.json AW_META_NO_SHELL=1 AW_META_ID_WAIT=1 AW_META_ID_GRACE=1 bash $DIR/meta-lane.sh t1 api"
+waitfor '[ "$(jq -r .processName "$AW_STATE_DIR/meta/lane-sessions/api.agent" 2> /dev/null)" = node ]'
+check "an npm-shaped agent (a node wrapper): the .agent record carries the name the pane shows" "$(jq -r .processName "$AW_STATE_DIR/meta/lane-sessions/api.agent"):$(tmux display-message -p -t =t1-api: '#{pane_current_command}')" "node:node"
+tmux kill-session -t =t1-api 2> /dev/null
 # no processName/transcripts surprises: the pane check uses the catalog's processName.
 mkdir -p "$WORK/fakebin2"; cp "$(command -v sleep)" "$WORK/fakebin2/codex"
 : > "$ids/api.exited"

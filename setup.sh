@@ -654,18 +654,23 @@ if [[ " $PROVIDERS " == *" claude "* ]]; then
   aw_claude_bypass "$CLAUDE_DIR/settings.json"
 fi
 
-# --- Meta harness (opt-in: ./setup.sh --with-meta; owner decision 2026-10-14; Claude Code only). After install-deps
-# (its NativeAOT publish needs clang and zlib) and after the provider install (its hooks merge into the settings.json
-# that install copies from the template) ---
+# --- Meta harness (opt-in: ./setup.sh --with-meta; owner decision 2026-10-14). After install-deps (its NativeAOT publish
+# needs clang and zlib) and after the provider install (its hooks merge into the settings that install copies from the
+# template). Each selected provider gets its own hooks: Claude Code the meta gates, Codex and Cursor the lane hooks for
+# non-Claude Meta lanes (the Codex /hooks trust step is printed). The binary is published once, by the first provider ---
 if [ "$WITH_META" = "1" ]; then
-  if [[ " $PROVIDERS " != *" claude "* ]]; then
-    echo "  meta: skipped (Claude Code only; claude is not among the providers)"
-  elif [ "$(uname)" = "Darwin" ]; then
+  if [ "$(uname)" = "Darwin" ]; then
     echo "  meta: skipped (aw-meta is Linux-only for now: it reads /proc)"
-  elif aw_dry; then
-    echo "  [dry-run] would run scripts/install-meta.sh"
   else
-    bash "$SCRIPT_DIR/scripts/install-meta.sh" --provider claude
+    _meta_built=0
+    for _p in $PROVIDERS; do
+      if aw_dry; then
+        echo "  [dry-run] would run scripts/install-meta.sh --provider $_p"
+      else
+        AW_SKIP_BUILD="$([ "$_meta_built" = 1 ] && echo 1 || echo "${AW_SKIP_BUILD:-0}")" bash "$SCRIPT_DIR/scripts/install-meta.sh" --provider "$_p"
+        _meta_built=1
+      fi
+    done
   fi
 fi
 
