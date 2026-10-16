@@ -18,30 +18,29 @@ pass() { cat > /dev/null 2>&1; exit 0; }
 [ -n "${AW_JUDGE_CHILD:-}" ] && pass
 [ -n "${AW_META_TEAM:-}" ] && [ -n "${AW_META_LANE:-}" ] || pass
 
-# own_agent: false when this hook runs for another agent instance started inside the lane (a `codex exec` or `cursor-agent -p` that
-# the lane's agent ran; it inherits the lane variables). scripts/meta-lane.sh exports AW_META_LANE_PID (its own pid, the parent of the
-# lane's agent) and AW_META_LANE_PROC (the agent's process name). Walking up from this hook, the lane's agent is the ancestor whose
-# parent is the lane script; another ancestor named like the agent means a nested instance. A hook with no lane script among its
-# ancestors (a human's codex in the pane after the lane's agent exited) is not the lane's either. Without the variables (a lane
-# started by an older meta-lane.sh) every session in the lane counts as the lane's; if ps can't tell, the hook acts.
-named_like_agent() { # <pid>: its command name or its argv[0] is the agent's process name
+# own_agent: whether this hook runs for the lane's own agent. scripts/meta-lane.sh exports AW_META_LANE_PID (its own pid), AW_META_LANE_AGENT
+# (the catalog id) and AW_META_LANE_PROC (the agent's process name) in every lane. The lane's agent root is whatever process meta-lane.sh
+# started (the ancestor whose parent is AW_META_LANE_PID), however it is named: a native binary, or the node wrapper of an npm install that
+# spawns the native one. Not the lane's: no AW_META_LANE_PID (not started by a lane), a Claude lane (its hooks are Claude's; a `codex exec`
+# inside it is nobody's), no lane script among the ancestors, or a nested agent instance, that is, a second stretch of ancestors named like
+# the agent below the root, behind a tool process such as a shell (a `codex exec` or `cursor-agent -p` the agent ran; it inherits the lane
+# variables). Forks of one instance share its command line and count as one stretch. A codex a human starts after `exec bash -i` in the
+# pane keeps the lane script's pid, so it counts as the lane's own. If ps can't answer, the hook acts.
+named_like_agent() { # <pid>: its command name or its argv[0] is the agent's process name (sets AGENT_ARGS)
   local c a
   c="$(ps -o comm= -p "$1" 2>/dev/null)"; a="$(ps -o args= -p "$1" 2>/dev/null)"; AGENT_ARGS="$a"; a="${a%% *}"; a="${a##*/}"
-  [ "$c" = "$AW_META_LANE_PROC" ] || [ "$a" = "$AW_META_LANE_PROC" ]
+  [ -n "${AW_META_LANE_PROC:-}" ] && { [ "$c" = "$AW_META_LANE_PROC" ] || [ "$a" = "$AW_META_LANE_PROC" ]; }
 }
 own_agent() {
-  [ -n "${AW_META_LANE_PID:-}" ] && [ -n "${AW_META_LANE_PROC:-}" ] || return 0
-  # runs counts separate stretches of agent-named ancestors: forks of one instance (a subshell, a worker) share their parent's
-  # command line and are one stretch; a nested instance sits behind a tool shell or has its own command line, so it is another.
-  local cur=$$ par runs=0 root_named=0 i=0 prev_named=0 prev_args=""
+  [ -n "${AW_META_LANE_PID:-}" ] || return 1
+  [ "${AW_META_LANE_AGENT:-}" != claude-code ] || return 1
+  local cur=$$ par runs=0 i=0 prev_named=0 prev_args=""
   while [ "$i" -lt 50 ]; do
     i=$((i + 1))
     par="$(ps -o ppid= -p "$cur" 2>/dev/null | tr -d '[:space:]')"
     case "$par" in ''|*[!0-9]*) return 0 ;; esac
-    if [ "$par" = "$AW_META_LANE_PID" ]; then
-      [ "$cur" != "$$" ] || return 0
-      [ "$prev_named" = 1 ] && root_named=1   # the last ancestor visited is the agent's root
-      [ $((runs - root_named)) -le 0 ]
+    if [ "$par" = "$AW_META_LANE_PID" ]; then   # $cur is the agent's root
+      [ "$runs" -le 1 ]
       return
     fi
     [ "$par" -gt 1 ] || return 1
@@ -61,7 +60,9 @@ META="${AW_META_BIN:-${AW_STATE_DIR:-$HOME/.agentic-workflow}/bin/aw-meta}"
 own_agent || pass        # a nested agent instance inside the lane is not the lane
 # A lane name becomes a path component (the reply marker): letters, digits, '.', '_' and '-', and not only dots.
 { [[ "$AW_META_LANE" =~ ^[A-Za-z0-9._-]+$ ]] && [[ "$AW_META_LANE" =~ [^.] ]]; } || { failopen lane-name-invalid; pass; }
-REPLIED="${AW_STATE_DIR:-$HOME/.agentic-workflow}/meta/lane-sessions/$AW_META_LANE.replied"   # the checksum of the reply last recorded
+LANE_DIR="${AW_STATE_DIR:-$HOME/.agentic-workflow}/meta/lane-sessions"
+REPLIED="$LANE_DIR/$AW_META_LANE.replied"   # the checksum of the reply last recorded
+OWED="$LANE_DIR/$AW_META_LANE.owed"         # the checksum of the owed list the last block showed
 # code_of <output>: "-AW-META-NNN" when aw-meta's first line is a coded error, appended to a failopen cause (the code, never the text)
 code_of() { if [[ "$1" =~ ^(AW-META-[0-9][0-9][0-9]): ]]; then printf -- '-%s' "${BASH_REMATCH[1]}"; fi; }
 
@@ -75,7 +76,7 @@ case "$EVENT" in
     OUT="$(AW_LOG_LEVEL=none "$META" lane-inbox 2>&1)"; rc=$?
     [ "$rc" = 0 ] || { failopen "lane-inbox-exit-$rc$(code_of "$OUT")"; exit 0; }
     [ -n "$OUT" ] || exit 0
-    unlink "$REPLIED" 2> /dev/null   # new mail: the next reply is a new one, even if its text repeats
+    unlink "$REPLIED" 2> /dev/null; unlink "$OWED" 2> /dev/null   # new mail: the next reply is a new one, even if its text repeats
     if [ "$EVENT" = UserPromptSubmit ]; then
       printf '%s\n' "$OUT"
     else
@@ -107,11 +108,19 @@ case "$EVENT" in
     [ "$ACTIVE" = true ] && args+=(--stop-hook-active)
     OUT="$(AW_LOG_LEVEL=none "$META" "${args[@]}" 2>&1)"; rc=$?
     case "$rc" in
-      0) # the loop guard's "stop allowed ..." warning: shown to the user (Codex; the Cursor adapter drops it, and
+      0) unlink "$OWED" 2> /dev/null   # nothing owed any more: the next owed list is a new one
+         # the loop guard's "stop allowed ..." warning: shown to the user (Codex; the Cursor adapter drops it, and
          # `aw-meta health` shows the stop cap either way)
          [ -z "$OUT" ] || jq -nc --arg m "$OUT" '{systemMessage: $m}' 2> /dev/null
          exit 0 ;;
-      1) printf '%s\n' "$OUT" >&2; exit 2 ;;
+      1) # A block shows the owed messages, so it is a delivery too: a new owed list makes the same reply text recordable again (the
+         # agent answers "on it" to a message that arrived mid-turn); the same list blocked again (the stop cap loop) does not.
+         OSUM="$(printf '%s' "$OUT" | cksum | tr ' ' ':')"
+         if [ "$(cat "$OWED" 2> /dev/null)" != "$OSUM" ]; then
+           unlink "$REPLIED" 2> /dev/null
+           mkdir -p "$LANE_DIR" 2> /dev/null && printf '%s\n' "$OSUM" > "$OWED" 2> /dev/null
+         fi
+         printf '%s\n' "$OUT" >&2; exit 2 ;;
       *) failopen "lane-stop-check-exit-$rc$(code_of "$OUT")"; exit 0 ;;
     esac ;;
   *) exit 0 ;;

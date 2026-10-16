@@ -218,7 +218,7 @@ run_case "meta-outbox: empty stdin" meta-outbox.sh "" "meta-outbox empty-input" 
 run_case "meta-outbox: aw-meta errors" meta-outbox.sh "$META_SEND" "meta-outbox meta-exit-2" AW_META_BIN="$FAKE_BIN/aw-meta" META_MODE=2
 run_case "meta-outbox: recorded send logs nothing" meta-outbox.sh "$META_SEND" "-" AW_META_BIN="$FAKE_BIN/aw-meta"
 # --- meta-lane-gate.sh (non-Claude lane hook) and session-id-report.sh (SessionStart), in a lane ---
-LANE="AW_META_TEAM=t1 AW_META_LANE=api"
+LANE="AW_META_TEAM=t1 AW_META_LANE=api AW_META_LANE_PID=$$ AW_META_LANE_AGENT=codex AW_META_LANE_PROC=codex"
 META_LANE_PROMPT='{"hook_event_name":"UserPromptSubmit","session_id":"s1","prompt":"hi"}'
 META_LANE_STOP="{\"hook_event_name\":\"Stop\",\"session_id\":\"s1\",\"stop_hook_active\":false,\"last_assistant_message\":\"done\\nREPLY TO META: $SECRET ok\"}"
 # shellcheck disable=SC2086
@@ -242,7 +242,7 @@ run_case "session-id-report: no session_id" session-id-report.sh '{"hook_event_n
 # shellcheck disable=SC2086
 run_case "session-id-report: an id that is not an id" session-id-report.sh '{"session_id":"../x y"}' "session-id-report id-invalid" $LANE
 # shellcheck disable=SC2086
-run_case "session-id-report: a lane name that is a path" session-id-report.sh '{"session_id":"abc-123"}' "session-id-report lane-name-invalid" AW_META_TEAM=t1 AW_META_LANE=..
+run_case "session-id-report: a lane name that is a path" session-id-report.sh '{"session_id":"abc-123"}' "session-id-report lane-name-invalid" AW_META_TEAM=t1 AW_META_LANE=.. AW_META_LANE_PID=$$
 # shellcheck disable=SC2086
 run_case "session-id-report: a recorded id logs nothing" session-id-report.sh '{"session_id":"abc-123"}' "-" $LANE
 run_case "session-id-report: outside a lane logs nothing" session-id-report.sh "$SECRET" "-"

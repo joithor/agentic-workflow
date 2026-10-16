@@ -43,30 +43,29 @@ write_id() {
   return 1
 }
 
-# own_agent: false when this hook runs for another agent instance started inside the lane (a `codex exec` or `cursor-agent -p` that
-# the lane's agent ran; it inherits the lane variables). scripts/meta-lane.sh exports AW_META_LANE_PID (its own pid, the parent of the
-# lane's agent) and AW_META_LANE_PROC (the agent's process name). Walking up from this hook, the lane's agent is the ancestor whose
-# parent is the lane script; another ancestor named like the agent means a nested instance. A hook with no lane script among its
-# ancestors (a human's codex in the pane after the lane's agent exited) is not the lane's either. Without the variables (a lane
-# started by an older meta-lane.sh) every session in the lane counts as the lane's; if ps can't tell, the hook acts.
-named_like_agent() { # <pid>: its command name or its argv[0] is the agent's process name
+# own_agent: whether this hook runs for the lane's own agent. scripts/meta-lane.sh exports AW_META_LANE_PID (its own pid), AW_META_LANE_AGENT
+# (the catalog id) and AW_META_LANE_PROC (the agent's process name) in every lane. The lane's agent root is whatever process meta-lane.sh
+# started (the ancestor whose parent is AW_META_LANE_PID), however it is named: a native binary, or the node wrapper of an npm install that
+# spawns the native one. Not the lane's: no AW_META_LANE_PID (not started by a lane), a Claude lane (its hooks are Claude's; a `codex exec`
+# inside it is nobody's), no lane script among the ancestors, or a nested agent instance, that is, a second stretch of ancestors named like
+# the agent below the root, behind a tool process such as a shell (a `codex exec` or `cursor-agent -p` the agent ran; it inherits the lane
+# variables). Forks of one instance share its command line and count as one stretch. A codex a human starts after `exec bash -i` in the
+# pane keeps the lane script's pid, so it counts as the lane's own. If ps can't answer, the hook acts.
+named_like_agent() { # <pid>: its command name or its argv[0] is the agent's process name (sets AGENT_ARGS)
   local c a
   c="$(ps -o comm= -p "$1" 2>/dev/null)"; a="$(ps -o args= -p "$1" 2>/dev/null)"; AGENT_ARGS="$a"; a="${a%% *}"; a="${a##*/}"
-  [ "$c" = "$AW_META_LANE_PROC" ] || [ "$a" = "$AW_META_LANE_PROC" ]
+  [ -n "${AW_META_LANE_PROC:-}" ] && { [ "$c" = "$AW_META_LANE_PROC" ] || [ "$a" = "$AW_META_LANE_PROC" ]; }
 }
 own_agent() {
-  [ -n "${AW_META_LANE_PID:-}" ] && [ -n "${AW_META_LANE_PROC:-}" ] || return 0
-  # runs counts separate stretches of agent-named ancestors: forks of one instance (a subshell, a worker) share their parent's
-  # command line and are one stretch; a nested instance sits behind a tool shell or has its own command line, so it is another.
-  local cur=$$ par runs=0 root_named=0 i=0 prev_named=0 prev_args=""
+  [ -n "${AW_META_LANE_PID:-}" ] || return 1
+  [ "${AW_META_LANE_AGENT:-}" != claude-code ] || return 1
+  local cur=$$ par runs=0 i=0 prev_named=0 prev_args=""
   while [ "$i" -lt 50 ]; do
     i=$((i + 1))
     par="$(ps -o ppid= -p "$cur" 2>/dev/null | tr -d '[:space:]')"
     case "$par" in ''|*[!0-9]*) return 0 ;; esac
-    if [ "$par" = "$AW_META_LANE_PID" ]; then
-      [ "$cur" != "$$" ] || return 0
-      [ "$prev_named" = 1 ] && root_named=1   # the last ancestor visited is the agent's root
-      [ $((runs - root_named)) -le 0 ]
+    if [ "$par" = "$AW_META_LANE_PID" ]; then   # $cur is the agent's root
+      [ "$runs" -le 1 ]
       return
     fi
     [ "$par" -gt 1 ] || return 1
@@ -81,12 +80,14 @@ own_agent() {
   return 1
 }
 
-# A nested agent instance inside the lane (codex exec, cursor-agent -p) must not take the lane's session id.
+# Only the lane's own agent reports its id: not a nested instance (codex exec, cursor-agent -p), and never a Claude lane's.
 if [ "$lane_mode" = 1 ] && ! own_agent; then lane_mode=0; fi
 STATE="${AW_STATE_DIR:-$HOME/.agentic-workflow}"
 if [ "$lane_mode" = 1 ]; then
   safe_name "$AW_META_LANE" || { failopen lane-name-invalid; exit 0; }
   write_id "$STATE/meta/lane-sessions" "$AW_META_LANE" || failopen write-failed
+  # a new session starts with no reply marker or owed checksum (meta-lane-gate.sh)
+  unlink "$STATE/meta/lane-sessions/$AW_META_LANE.replied" 2> /dev/null; unlink "$STATE/meta/lane-sessions/$AW_META_LANE.owed" 2> /dev/null
 fi
 if [ -n "${AW_SINDRI_LAUNCH:-}" ]; then
   if safe_name "$AW_SINDRI_LAUNCH"; then
