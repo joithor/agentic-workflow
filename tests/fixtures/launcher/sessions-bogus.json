@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "sessions": {
+    "enabled": true,
+    "bogus": 1
+  }
+}

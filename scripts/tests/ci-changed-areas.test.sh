@@ -70,6 +70,14 @@ expect "the launcher checks' inputs run the bash tests (check-launcher.mjs and c
   "$(printf 'tests/fixtures/launcher/manifest.json\nconfig/launcher/builtins.json\nschemas/launcher.schema.json\ndocs/csharp/sindri-profile.md\ndocs/csharp/sindri-launcher.md\n')" \
   "$(printf 'bash=true\ndotnet=true\npackages=[]')"
 
+expect "the fleet fixtures and the sessions tree run the bash tests (check-fleet.mjs reads them) and dotnet (the C# readers will)" \
+  "$(printf 'tests/fixtures/fleet/claude-code/stop.json\ntests/fixtures/sessions/proc/211/stat\nschemas/fleet-state.schema.json\n')" \
+  "$(printf 'bash=true\ndotnet=true\npackages=[]')"
+
+expect "the sessions doc alone runs bash only" \
+  "$(printf 'docs/csharp/sindri-sessions.md\n')" \
+  "$(printf 'bash=true\ndotnet=false\npackages=[]')"
+
 expect "SindriProfile.cs runs bash and dotnet" \
   "$(printf 'src/Sindri/Aw.Sindri.Core/Profile/SindriProfile.cs\n')" \
   "$(printf 'bash=true\ndotnet=true\npackages=[]')"

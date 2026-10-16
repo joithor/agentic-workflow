@@ -1,0 +1,165 @@
+{
+  "comment": "Every .json file under this directory except manifest.json is a fleet state fixture, listed here with its expected verdict against schemas/fleet-state.schema.json (Ajv2020). The directory name of a valid fixture is its provider (an AgentId). A file that does not parse is invalid. Checked by scripts/check-fleet.mjs; the aw:fleet hook's tests (CO-1) and the C# reader (CO-2a) run the same files.",
+  "fixtures": [
+    {
+      "file": "claude-code/session-start.json",
+      "schema": "valid",
+      "note": "SessionStart -> idle"
+    },
+    {
+      "file": "claude-code/prompt-submit.json",
+      "schema": "valid",
+      "note": "UserPromptSubmit -> running"
+    },
+    {
+      "file": "claude-code/permission-request.json",
+      "schema": "valid",
+      "note": "PermissionRequest -> asking approval with the tool"
+    },
+    {
+      "file": "claude-code/permission-request-mcp-tool.json",
+      "schema": "valid",
+      "note": "an MCP tool name: colons and underscores"
+    },
+    {
+      "file": "claude-code/notification-input.json",
+      "schema": "valid",
+      "note": "elicitation_dialog -> asking input"
+    },
+    {
+      "file": "claude-code/notification-auth.json",
+      "schema": "valid",
+      "note": "asking auth"
+    },
+    {
+      "file": "claude-code/notification-idle.json",
+      "schema": "valid",
+      "note": "idle_prompt -> idle"
+    },
+    {
+      "file": "claude-code/post-tool-use.json",
+      "schema": "valid",
+      "note": "PostToolUse after asking -> running"
+    },
+    {
+      "file": "claude-code/stop.json",
+      "schema": "valid",
+      "note": "Stop -> idle"
+    },
+    {
+      "file": "claude-code/session-end.json",
+      "schema": "valid",
+      "note": "SessionEnd -> ended"
+    },
+    {
+      "file": "claude-code/no-pid-no-transcript.json",
+      "schema": "valid",
+      "note": "agent process not found and no transcript: nulls"
+    },
+    {
+      "file": "claude-code/macos-env.json",
+      "schema": "valid",
+      "note": "macOS: allowlisted env names"
+    },
+    {
+      "file": "codex/permission-request.json",
+      "schema": "valid",
+      "note": "Codex PermissionRequest through adapters/codex.sh"
+    },
+    {
+      "file": "codex/interrupt.json",
+      "schema": "valid",
+      "note": "Codex Interrupt -> idle"
+    },
+    {
+      "file": "cursor/before-submit-prompt.json",
+      "schema": "valid",
+      "note": "Cursor beforeSubmitPrompt -> running"
+    },
+    {
+      "file": "cursor/stop.json",
+      "schema": "valid",
+      "note": "Cursor stop -> idle (no asking state exists)"
+    },
+    {
+      "file": "invalid/provider-is-claude-code-display-name.json",
+      "schema": "invalid",
+      "note": "provider is not an AgentId"
+    },
+    {
+      "file": "invalid/bad-state.json",
+      "schema": "invalid",
+      "note": "state outside the enum"
+    },
+    {
+      "file": "invalid/asking-without-reason.json",
+      "schema": "invalid",
+      "note": "asking needs a reason"
+    },
+    {
+      "file": "invalid/reason-on-idle.json",
+      "schema": "invalid",
+      "note": "reason only with asking"
+    },
+    {
+      "file": "invalid/tool-with-input-reason.json",
+      "schema": "invalid",
+      "note": "tool only with reason approval"
+    },
+    {
+      "file": "invalid/tool-too-long.json",
+      "schema": "invalid",
+      "note": "tool over 64 characters"
+    },
+    {
+      "file": "invalid/tool-bad-characters.json",
+      "schema": "invalid",
+      "note": "tool has a space and a slash"
+    },
+    {
+      "file": "invalid/tool-input-key.json",
+      "schema": "invalid",
+      "note": "tool_input must never appear"
+    },
+    {
+      "file": "invalid/message-key.json",
+      "schema": "invalid",
+      "note": "the notification message must never appear"
+    },
+    {
+      "file": "invalid/session-id-path.json",
+      "schema": "invalid",
+      "note": "session id is a path"
+    },
+    {
+      "file": "invalid/schema-2.json",
+      "schema": "invalid",
+      "note": "unknown schema version"
+    },
+    {
+      "file": "invalid/at-without-zone.json",
+      "schema": "invalid",
+      "note": "timestamp is not UTC Z"
+    },
+    {
+      "file": "invalid/ticks-without-pid.json",
+      "schema": "invalid",
+      "note": "start ticks without a pid"
+    },
+    {
+      "file": "invalid/missing-env.json",
+      "schema": "invalid",
+      "note": "env is required ({} on Linux)"
+    },
+    {
+      "file": "invalid/env-lowercase-name.json",
+      "schema": "invalid",
+      "note": "env names are upper case"
+    },
+    {
+      "file": "invalid/not-json.json",
+      "schema": "invalid",
+      "note": "does not parse"
+    }
+  ]
+}
