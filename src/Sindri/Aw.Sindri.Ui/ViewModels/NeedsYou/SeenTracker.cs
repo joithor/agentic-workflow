@@ -4,7 +4,8 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// Which needs-you rows the user has seen (UI spec §5): presentation state, kept by row id, never the API's. A row is seen
 /// once it has been on screen and focused for <see cref="OnScreenFor"/>, or acted on, or marked by Mark all seen. The ids
 /// are kept in memory and in the preference file, and dropped when the row leaves the list. Timers run on the injected
-/// clock; their callbacks, and so PropertyChanged, may come off the UI thread (the view posts).
+/// clock; their callbacks arrive on a pool thread, so they hop to the UI thread's context (captured when the timer is created, which
+/// is always on it) before anything changes: a bound property or a view handler never runs on the timer's thread.
 /// </summary>
 internal sealed class SeenTracker : ObservableObject
 {
@@ -21,6 +22,7 @@ internal sealed class SeenTracker : ObservableObject
     private readonly Dictionary<string, ITimer> _watching = new(StringComparer.Ordinal);
     private List<string> _undo = [];
     private ITimer? _undoTimer;
+    private SynchronizationContext? _ui;
 
     internal SeenTracker(Preferences preferences, TimeProvider clock)
     {
@@ -137,7 +139,8 @@ internal sealed class SeenTracker : ObservableObject
                 return;
             }
 
-            _watching[id] = _clock.CreateTimer(_ => MarkSeen(id), state: null, OnScreenFor, Timeout.InfiniteTimeSpan);
+            _ui ??= SynchronizationContext.Current;
+            _watching[id] = _clock.CreateTimer(_ => OnUi(() => MarkSeen(id)), state: null, OnScreenFor, Timeout.InfiniteTimeSpan);
         }
     }
 
@@ -165,7 +168,8 @@ internal sealed class SeenTracker : ObservableObject
 
             if (_undo.Count > 0)
             {
-                _undoTimer = _clock.CreateTimer(_ => ExpireUndo(), state: null, UndoFor, Timeout.InfiniteTimeSpan);
+                _ui ??= SynchronizationContext.Current;
+                _undoTimer = _clock.CreateTimer(_ => OnUi(ExpireUndo), state: null, UndoFor, Timeout.InfiniteTimeSpan);
             }
         }
 
@@ -195,6 +199,19 @@ internal sealed class SeenTracker : ObservableObject
         OnChanged(nameof(Seen));
         OnChanged(nameof(UndoCount));
         return true;
+    }
+
+    // A timer's callback runs on a pool thread: it continues on the UI thread's context when there is one (none: a test with no UI thread).
+    private void OnUi(Action action)
+    {
+        if (_ui is { } ui && SynchronizationContext.Current != ui)
+        {
+            ui.Post(_ => action(), state: null);
+        }
+        else
+        {
+            action();
+        }
     }
 
     private void MarkSeen(string id)
