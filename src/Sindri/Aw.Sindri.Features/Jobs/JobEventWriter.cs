@@ -22,7 +22,6 @@ namespace Aw.Sindri.Features.Jobs;
 internal sealed class JobEventWriter(ILedgerStore ledger, HeldLease held, EventFactory events, ITextScrubber scrubber, ICallerContextAccessor callers)
 {
     private const string ResultTooLarge = " (result too large)";
-    private const string ResultUnreadable = " (result dropped: it could not be cleaned)";
     private const string InterruptedSummary = "interrupted: the process stopped while it ran";
 
     /// <summary>Whether the control plane still holds the lease: a failed write with the lease held is the runner's to retry and then end the job over.</summary>
@@ -96,28 +95,20 @@ internal sealed class JobEventWriter(ILedgerStore ledger, HeldLease held, EventF
             return null;
         }
 
-        try
+        using var buffer = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(buffer))
         {
-            using var buffer = new MemoryStream();
-            using (var writer = new Utf8JsonWriter(buffer))
-            {
-                Write(element, writer);
-            }
-
-            if (buffer.Length > JobLimits.ResultBytes)
-            {
-                note = ResultTooLarge;
-                return null;
-            }
-
-            using var document = JsonDocument.Parse(buffer.ToArray());
-            return document.RootElement.Clone();
+            Write(element, writer);
         }
-        catch (Exception e) when (e is JsonException or InvalidOperationException)
+
+        if (buffer.Length > JobLimits.ResultBytes)
         {
-            note = ResultUnreadable;
+            note = ResultTooLarge;
             return null;
         }
+
+        using var document = JsonDocument.Parse(buffer.ToArray());   // what the writer wrote is JSON: AddJob already turned the result into an element
+        return document.RootElement.Clone();
     }
 
     private string Safe(string text) => SafeText.Escape(scrubber.Scrub(text));
