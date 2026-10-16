@@ -4,7 +4,7 @@
 # aw-packets (docs/csharp/meta.md): its state lives under $AW_STATE_DIR/meta, and
 # it appends to the team's running log; its gate and merge commands act on the team's checkout and PRs.
 #
-#   install-meta.sh [--provider claude|codex|cursor]   default claude
+#   install-meta.sh [--provider claude|codex|cursor] [--allow-worktree]   default claude
 #   AW_DRY_RUN=1     print what would happen, write nothing
 #   AW_SKIP_BUILD=1  don't publish; install the binary already in $AW_STATE_DIR/bin (tests)
 #   CLAUDE_LOCAL_BIN where the aw-meta and aw-meta-launch links go (default ~/.local/bin)
@@ -20,7 +20,10 @@
 #      and Stop (Codex) or sessionStart, postToolUse and stop (Cursor). Both pass straight through for every session that is
 #      not a lane (AW_META_TEAM and AW_META_LANE, set by scripts/meta-lane.sh). Codex records trust against each hook's hash:
 #      the install prints the /hooks step.
-# 3. Links aw-meta and aw-meta-launch (scripts/meta-launch.sh) into CLAUDE_LOCAL_BIN.
+# 3. Links aw-meta and aw-meta-launch (scripts/meta-launch.sh) into CLAUDE_LOCAL_BIN. aw-meta-launch points into the canonical
+#    checkout only: the team config's repo (team.json, $AW_META_CONFIG or $AW_STATE_DIR/meta/team.json) when it has
+#    scripts/meta-launch.sh, else this tree. A linked git worktree (git-dir differs from git-common-dir) is refused as that tree,
+#    before anything is built or written, since the worktree is usually a throwaway one: --allow-worktree (the owner's call) permits it.
 # The /meta skill itself is linked by setup.sh with the other skills.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -28,13 +31,32 @@ SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 source "$SCRIPT_DIR/config/hooks/adapters/install-lib.sh"
 aw_parse_provider_args "$@" || exit 1
 set -- ${AW_ARGS[@]+"${AW_ARGS[@]}"}
-[ $# -eq 0 ] || { echo "usage: install-meta.sh [--provider claude|codex|cursor]" >&2; exit 1; }
+allow_worktree=0
+[ "${1:-}" = --allow-worktree ] && { allow_worktree=1; shift; }
+[ $# -eq 0 ] || { echo "usage: install-meta.sh [--provider claude|codex|cursor] [--allow-worktree]" >&2; exit 1; }
 
 STATE="${AW_STATE_DIR:-$HOME/.agentic-workflow}"
 BIN="$STATE/bin"
 LOCAL_BIN="${CLAUDE_LOCAL_BIN:-$HOME/.local/bin}"
 HEAVY="$STATE/bin-r1b/heavy"
 dry() { [ "${AW_DRY_RUN:-0}" = 1 ]; }
+
+# Where aw-meta-launch should point: the canonical checkout. The team config's repo wins when it has the launcher; otherwise this
+# tree, unless it is a linked worktree (then refuse; --allow-worktree overrides).
+LAUNCH_DIR="$SCRIPT_DIR"
+team_json="${AW_META_CONFIG:-$STATE/meta/team.json}"
+team_repo="$(jq -r '.repo // empty' "$team_json" 2>/dev/null || true)"
+if [ -n "$team_repo" ] && [ -f "$team_repo/scripts/meta-launch.sh" ]; then
+  LAUNCH_DIR="$team_repo"
+elif [ "$allow_worktree" != 1 ]; then
+  gd="$(git -C "$SCRIPT_DIR" rev-parse --absolute-git-dir 2>/dev/null || true)"
+  gc="$(git -C "$SCRIPT_DIR" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+  if [ -n "$gd" ] && [ -n "$gc" ] && [ "$gd" != "$gc" ]; then
+    echo "install-meta: $SCRIPT_DIR is a linked git worktree, not the canonical checkout; aw-meta-launch would be linked into it." >&2
+    echo "  Run it from the canonical checkout, set the team config's repo (aw-meta team-init --repo <dir>), or pass --allow-worktree." >&2
+    exit 1
+  fi
+fi
 
 # aw-meta reads Linux /proc (memory, uptime, the process table), so it does not run on macOS yet.
 if [ "$(uname)" = Darwin ]; then
@@ -124,7 +146,7 @@ if dry; then
 else
   mkdir -p "$LOCAL_BIN"
   ln -sfn "$BIN/aw-meta" "$LOCAL_BIN/aw-meta"
-  ln -sfn "$SCRIPT_DIR/scripts/meta-launch.sh" "$LOCAL_BIN/aw-meta-launch"
+  ln -sfn "$LAUNCH_DIR/scripts/meta-launch.sh" "$LOCAL_BIN/aw-meta-launch"
   echo "  meta: aw-meta and aw-meta-launch in $LOCAL_BIN"
   [ -f "$STATE/meta/team.json" ] || echo "  meta: next, write a team config: aw-meta team-init --team <t> --repo <dir> --lanes a,b,c (example: skills/meta/examples/agentic-workflow.team.json)"
 fi

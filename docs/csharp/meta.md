@@ -65,7 +65,7 @@ and the hook carries on.
 
 ## The ready message
 
-A lane queues a pull request for merge by sending a message whose **first line** is `ready #<n> <sha>`: the pull request number and a commit of 7 to 40 lowercase hex digits (the head the lane means; compared with the pull request's head at gate time, since `merge-check` already refuses a head that moved after the gate). Nothing else queues a pull request: a status line that merely mentions a later ready ("...then ready #250 <sha>", "ready #264 follows once the re-review is clean"), a ready without a sha, or any message containing `not ready` or `follows` is an ordinary request. This changes behaviour only for false positives and for ready messages that omit the sha; lanes now add it (`ready #269 079c2541` and details below). `queue-drop` removes an entry that slipped through anyway.
+A lane queues a pull request for merge by sending a message whose **first line** is `ready #<n> <sha>`: the pull request number and a commit of 7 to 40 lowercase hex digits (the head the lane means). aw-meta checks the shape, not the head: it has no head lookup where the queue is read, and `merge-check` already refuses a pull request whose head moved after the gate, so a stale sha can't merge. Nothing else queues a pull request: a status line that merely mentions a later ready ("...then ready #250 <sha>", "ready #264 follows once the re-review is clean"), a ready without a sha, or any message containing `not ready` or `follows` is an ordinary request. This changes behaviour only for false positives and for ready messages that omit the sha; lanes now add it (`ready #269 079c2541` and details below). `queue-drop` removes an entry that slipped through anyway.
 
 ## Commands
 
