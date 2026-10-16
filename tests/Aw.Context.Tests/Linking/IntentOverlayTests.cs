@@ -56,6 +56,37 @@ public sealed class IntentOverlayTests
         Assert.Empty(result.Graph.Edges);
     }
 
+    private static readonly RecordKey _r104 = RecordKey.From("linear:issue/0e5a1b00-0000-4000-8000-000000000104");
+    private static readonly IntentRecord _target = new(_r104, SourceId.From("onyx"), "2026-07-22T10:20:00+00:00", "Restore pane layout", ["SPL-104"]);
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_record_that_is_only_the_target_of_a_link_becomes_a_node_and_the_link_is_not_orphaned()
+    {
+        var result = IntentOverlay.Apply(Map(), new IntentLayer([_record, _target], [Link("feature:layout.split-pane.orientation"), Link("record:" + _r104.Value)], [], []));
+
+        Assert.Contains(result.Graph.Nodes, n => n.Key.Value == "record:" + _r104.Value);
+        Assert.Contains(result.Graph.Edges, e => e.Type == EdgeType.Mentions && e.From.Value == "record:" + _r103.Value && e.To.Value == "record:" + _r104.Value);
+        Assert.Empty(result.Orphaned);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_link_by_issue_key_resolves_when_the_target_record_arrives_in_any_order()
+    {
+        var result = IntentOverlay.Apply(Map(), new IntentLayer([_record, _target], [Link("record:SPL-104")], [], []));
+
+        Assert.Contains(result.Graph.Edges, e => e.Type == EdgeType.Mentions && e.From.Value == "record:" + _r103.Value && e.To.Value == "record:" + _r104.Value);
+        Assert.Empty(result.Orphaned);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_link_by_issue_key_to_a_record_not_synced_yet_waits_and_is_not_counted_orphaned()
+    {
+        var result = IntentOverlay.Apply(Map(), new IntentLayer([_record], [Link("record:SPL-999"), Link("feature:layout.split-pane.orientation")], [], []));
+
+        Assert.Empty(result.Orphaned);
+        Assert.DoesNotContain(result.Graph.Edges, e => e.To.Value.StartsWith("record:", StringComparison.Ordinal));
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void A_decision_becomes_a_node_with_quotes_and_decides_edges()
     {

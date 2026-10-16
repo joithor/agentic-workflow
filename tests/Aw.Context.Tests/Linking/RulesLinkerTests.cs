@@ -49,6 +49,15 @@ public sealed class RulesLinkerTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void IssueKey_of_a_record_not_synced_yet_links_by_key_so_the_result_does_not_depend_on_fetch_order()
+    {
+        var links = RulesLinker.Link(_r103, "Depends on SPL-105 and https://linear.app/fixture-labs/issue/SPL-106/later.", Map(), _known, _teams);
+
+        Assert.Equal(["record:SPL-105", "record:SPL-106"], links.Select(l => l.Target.Value), StringComparer.Ordinal);
+        Assert.Equal([LinkRule.IssueKey, LinkRule.Url], links.Select(l => l.Rule));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Linear_issue_url_links_like_its_key()
     {
         var links = RulesLinker.Link(_r103, "See https://linear.app/fixture-labs/issue/SPL-104/restore-layout for the follow-up.", Map(), _known, _teams);
