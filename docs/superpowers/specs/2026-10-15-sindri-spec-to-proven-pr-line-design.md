@@ -48,7 +48,7 @@ value form: a pack is named by a plain string parameter (LN-WF5). Every request 
 | LN11 | **Parallel phases run as linked instances started one at a time by a dispatcher, up to a cap** (this doc, §8; recommended over a schema-v2 request and over sequential children). `workflow.line` has a pure dispatch Step that starts at most one ready phase per transition through an effect, then waits for phase events; at most `workflow.line.parallel` phases (default 2, never above the box's heavy-slot cap) **build** at once, and phases whose PR is open and waiting for the owner's merge don't count against it (rev 2) | Schema 1 keeps one current state per instance and no fan-out (WF §3.9). A start effect plus an event gives a capped fan-out without a schema change, keeps the child depth inside `RCP-CHILD-003`, and degrades to sequential at cap 1. IDEA-054's schema-v2 fan-out is engine-LATER and would block the line |
 | LN12 | **No seed reuses a prompt as-is** (owner, IDEA-098; carried from SC10). Every agent Step's seed on the line, including the #240 blocks the line uses, is written new against PR-R's rubric and evidence loop | §10. It amends DT7's /enhancePrompt porting (DTC7) |
 | LN13 | **Packets, not facts, cross stations; facts never do** (carried from SC §3) | A station reads its input packet by hash and verifies it against the freeze record; it never reads another instance's facts |
-| LN15 | **The scope opens in Context** (owner, 2026-10-16; the five pieces confirmed: "yes add those"; #258 SC11). The scope packet freezes `lenses.json` (per lens: found nodes and edges, anchors, depth, map version); the context lane extends C1 and C10 and adds C15 (`subgraph`); #258 API9 reads a packet's file by hash, after a purge too; #258 U7 opens U9 from the stop and the scope viewers, pinned as of the stop with a live toggle, per lens, with empty states (UI R8-14); W13's `scope-packet` type is what the viewer switches on. For the line: stop 1 carries the action, and every packet viewer reads its files through API9 (LN-UI4) | The owner reads a scope's blast radius as a graph, as it stood at the stop. One file route serves every packet kind, so the line's viewers don't need a second one |
+| LN15 | **The scope opens in Context** (owner, 2026-10-16; the five pieces confirmed: "yes add those"; #258 SC11). The scope packet freezes `lenses.json` (per lens: found nodes and edges, anchors, depth, map version); the context lane extends C1 and C10 and adds C15 (`subgraph`); #258 API9 reads a packet's file by hash, after a purge too; #258 U7 opens U9 from the stop and the scope viewers, pinned as of the stop (drawn from `lenses.json`) with a live toggle, per scope lens, with empty states (UI R8-14); W13's `scope-packet` type is what the viewer switches on. For the line: stop 1 carries the action, and every packet viewer reads its files through API9 (LN-UI4) | The owner reads a scope's blast radius as a graph, as it stood at the stop. One file route serves every packet kind, so the line's viewers don't need a second one |
 
 ## 2. Terms
 
@@ -836,7 +836,7 @@ phase is one PR through /specToProvenPR. **(owner)** steps run through `scripts/
 | Step | Phases | Lanes |
 |---|---|---|
 | 1. Foundations | DT-V, DT-C, DT-R (with DTC2–DTC9, DTC11), DT-J, engine P7 (DT §8.4's interpreter half); #258's W2, W6–W14 (and LN-SC1, before approval); P1, LN-PKT1–LN-PKT3, LN-PKT5; L-17; LN-WF9. Every other LN- row is built inside the phase its last column names | engine, packets, launcher, API |
-| 2. Scoping | #258 SC-F … SC-P, and SC-V (Open in Context, beside SC-P; LN-U's packet viewers use its API9) | ideas, context, engine, API, UI |
+| 2. Scoping | #258 SC-F … SC-P (SC-K now also serves API9, the packet-file route LN-U's viewers use), and SC-V (Open in Context, beside SC-P) | ideas, context, engine, API, UI |
 | 3. Design and plan | LN-F, LN-Y1, LN-K, LN-PK, LN-S1, LN-W | ideas, packets |
 | 4. The phase child | LN-Y2, LN-B1, LN-B2, LN-H, LN-PV (with DTC4 in LN-Y2), then PB-F, PB-O, LN-SH; LN-R (stop 3's desk, before the PB phases that use it) | ideas, engine, launcher, API, UI |
 | 5. Babysit and docs sync | the PB draft's phases, with BD1–BD9 | ideas, API, engine, UI |
@@ -860,7 +860,7 @@ phase is one PR through /specToProvenPR. **(owner)** steps run through `scripts/
 | **LN-SH** | Ship: green, pack, freeze, `effect.pr.open` (BD1) | S | LN-PV, PB-F, PB-O | **(owner)** a fixture phase opens a PR whose body is the evidence pack, with no stop; a moved head returns to build; a planted token fails `SHIP-SECRET-001` before any push | `sindri-line.md` (ship) | ideas |
 | **LN-L** | Line: dispatcher, LN-WF1, `LineView` (LN-API1), `line show`, `line doctor` | M | LN-SH, PB phases | `recipe eval` walks four phases at parallel 2 with one stack, and a phase waiting on its merge doesn't count against `parallel`; a parked phase reaches the board; a cancelled line cancels its phases | `sindri-line.md` (line) | engine, ideas, API |
 | **LN-R** | Stop 3's desk, early: LN-API3 (`ReadyView`), LN-API7 (merge and rework actions), LN-UI3 (its view and buttons) | S | LN-F, BD6 | `ReadyView` matches its golden for a fixture babysitter instance, with every BD6 field; merge and rework are buttons, refused to a session (`SND-AUTH-002`); each `mergeBlockedBy` state renders; the gate runs `Aw.Sindri.Ui.Tests` | `docs/csharp/sindri-ui.md` (stop 3) | API, UI |
-| **LN-U** | LN-UI1, LN-UI2, LN-UI4, LN-UI6 | M | LN-L, LN-R; #258 SC-V (API9) | **(owner)** the board, stop 2 and stop 3 render from fixture packets; stop 3 shows as a `ready-to-merge` row on Home | `docs/csharp/sindri-ui.md` rows | UI, API |
+| **LN-U** | LN-UI1, LN-UI2, LN-UI4, LN-UI6 | M | LN-L, LN-R; #258 SC-K (API9) | **(owner)** the board, stop 2 and stop 3 render from fixture packets; stop 3 shows as a `ready-to-merge` row on Home | `docs/csharp/sindri-ui.md` rows | UI, API |
 | **LN-P** (owner) | End to end on a real serve | S | all above | **(owner)** the fixture's `expiry` goes scope → design → plan → four phases (two in parallel, one stacked) → four PRs opened with their evidence packs and docs PRs → CI green → stop 3 → merged in stack order; `line show` prints the chain; LN-API6's stats read | — | ideas |
 
 ### 13.3 Parallelization plan
@@ -955,7 +955,7 @@ only where packets and stops are touched.
 | §1 | LN15 records the owner's decision |
 | §3.2, §3.4 | The scope packet's evidence adds `lenses.json`; stop 1 shows #258 U7's Open in Context ▸ |
 | §12 | The cited #258 ids gain C15, U7, API9, API10; LN-UI4 and LN-API1 read packet files through #258's API9 |
-| §13.1, §13.2 | Step 2 places #258 SC-V beside SC-P; LN-U needs SC-V for API9 |
+| §13.1, §13.2 | Step 2 places #258 SC-V beside SC-P; LN-U needs #258 SC-K, which serves API9 (moved there by #258's /autoplan on the delta, so the line waits on no UI phase) |
 
 ## 15. Open questions
 
