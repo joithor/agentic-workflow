@@ -66,6 +66,27 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
         return true;
     }
 
+    /// <inheritdoc />
+    public void Cancelling(JobId job)
+    {
+        if (_runs.TryGetValue(job.Value, out var run))
+        {
+            run.Cancelled = true;
+        }
+    }
+
+    /// <inheritdoc />
+    public void Withdraw(JobId job)
+    {
+        if (_runs.TryGetValue(job.Value, out var run) && run.WriteFailure is null)
+        {
+            run.Cancelled = false;
+        }
+    }
+
+    /// <inheritdoc />
+    public bool IsCancelling(JobId job) => _runs.TryGetValue(job.Value, out var run) && run.Cancelled;
+
     /// <summary>Completes when every job started so far has ended and its last event is appended.</summary>
     /// <returns>A task that completes then.</returns>
     public async Task Idle()
@@ -172,7 +193,7 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
                 return await start.Definition.Run(scope.Resolve, start.Request, run.Source.Token).ConfigureAwait(false);
             }
         }
-        catch (OperationCanceledException) when (run.Source.IsCancellationRequested)
+        catch (OperationCanceledException) when (run.Source.IsCancellationRequested || run.Cancelled)
         {
             return null;
         }

@@ -152,6 +152,35 @@ public sealed class RunServiceTests
     }
 
     [Fact]
+    public async Task A_run_that_returns_while_its_cancel_is_being_recorded_writes_no_service_ran()
+    {
+        var stuck = new BlockedService();
+        await using var runtime = await RunServiceRuntime.Open(stuck);
+        var started = await runtime.Start(A.RunServiceRequest().ForService(BlockedService.Name).Build(), Human());
+        await stuck.Entered.Task.WaitAsync(Token);
+        var appending = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var proceed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        runtime.H.Store.BeforeAppend = entry =>
+        {
+            if (entry.Envelope.Type == EventTypes.JobCancelled)
+            {
+                _ = appending.TrySetResult();
+                proceed.Task.Wait(Token);   // the cancel is mid-append: its token has not been tripped yet
+            }
+        };
+        var cancel = Task.Run(() => runtime.Cancel(started.Value.JobId), Token);
+        await appending.Task.WaitAsync(Token);
+
+        stuck.Release();   // the service returns now, past the point a tripped token would have stopped it
+        await runtime.Quiesce();
+        _ = proceed.TrySetResult();
+        _ = await cancel;
+
+        Assert.Empty(runtime.Of(EventTypes.ServiceRan));
+        Assert.Empty(runtime.Of(EventTypes.JobFinished));
+    }
+
+    [Fact]
     public async Task Manual_ok_after_failure_clears_the_needs_you_row_and_sets_lastRun_ok()
     {
         await using var runtime = await RunServiceRuntime.Open(new ScriptedService(ScriptedService.Failed, ScriptedService.Worked));
