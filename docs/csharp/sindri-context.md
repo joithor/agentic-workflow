@@ -664,7 +664,7 @@ sources status, doctor row, item query), `ContextCliTests` and `ContextReviewRow
 
 ### Sindri
 
-`GET /sindri/context/eval/map` (a query: no catalog row), `sindri context eval map|purge|backtest`. `eval purge` runs in the CLI process (`--all` also clears the probe reports, so the next `eval probes` has no baseline). The `context-purge` service applies the 90-day eval TTL and `doctor`'s `context:retention` counts expired eval files. **`RunContextBacktest`** is a `class: job` row, `ui: pending:API-P6`, `POST /sindri/context/eval/backtest` with no route mapped and no command type; the CLI answers SND-CLI-001 naming `pending:API-P6` (after checking `--arms`). The action id is one constant (`ContextRows.BacktestAction`). The job route (slice S7) lands with API P6.
+`GET /sindri/context/eval/map` (a query: no catalog row), `sindri context eval map|purge|backtest`. `eval purge` runs in the CLI process (`--all` also clears the probe reports, so the next `eval probes` has no baseline) as the CLI's own caller class: a session gets SND-CONTEXT-020 from the engine. The `context-purge` service applies the 90-day eval TTL and `doctor`'s `context:retention` counts expired eval files. **`RunContextBacktest`** is a `class: job` row, `ui: pending:API-P6`, `POST /sindri/context/eval/backtest` with no route mapped and no command type; the CLI answers SND-CLI-001 naming `pending:API-P6` (after checking `--arms`). The action id is one constant (`ContextRows.BacktestAction`). The job route (slice S7) lands with API P6.
 
 ### Errors (S-7A range 080-083)
 

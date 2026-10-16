@@ -818,7 +818,7 @@ Off by default. `context.eval.adjudicator: true` lets the run ask the model whet
 
 ### Map quality and housekeeping
 
-`sindri context eval map [--json]` reads your accept and reject decisions: node precision per provenance, link precision, nodes nobody decided (counted apart), and the unmapped rate (files changed in the 90 days before the mapped commit that implement no node), with the bars (precision at least 0.80, unmapped at most 0.20). `sindri context eval purge [--all]` deletes reports and the as-of cache older than 90 days; `--all` also clears the probe reports, so the next `eval probes` has no baseline. Reports are under `$AW_SINDRI_HOME/context/eval/{backtest,map}` and hold refs, versions, shas and numbers, never brief text.
+`sindri context eval map [--json]` reads your accept and reject decisions: node precision per provenance, link precision, nodes nobody decided (counted apart), and the unmapped rate (files changed in the 90 days before the mapped commit that implement no node), with the bars (precision at least 0.80, unmapped at most 0.20). `sindri context eval purge [--all]` deletes reports and the as-of cache older than 90 days; `--all` also clears the probe reports, so the next `eval probes` has no baseline. A session (an agent) is refused with SND-CONTEXT-020; a human at a terminal and the `context-purge` service are not. Reports are under `$AW_SINDRI_HOME/context/eval/{backtest,map}` and hold refs, versions, shas and numbers, never brief text.
 
 ### Status
 

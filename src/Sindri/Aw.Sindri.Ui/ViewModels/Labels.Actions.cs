@@ -22,7 +22,7 @@ internal static partial class Labels
         ["ApproveProfile"] = "Approve profile",
         ["ApproveRecipe"] = "Approve recipe",
         ["BuildContextMap"] = "Build map",
-        ["RunContextBacktest"] = "Run backtest",
+        ["RunContextBacktest"] = "Run map backtest",
         ["CancelJob"] = "Cancel job",
         ["CloseItem:cancelled"] = "Close as cancelled",
         ["CloseItem:done"] = "Close item",

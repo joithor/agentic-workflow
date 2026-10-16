@@ -59,10 +59,10 @@ internal sealed class ContextEvalVerbs(ControlPlaneClient client, Output output,
         return json ? await output.Raw(run.Value.Body, 0).ConfigureAwait(false) : await output.Text(ContextEvalText.Map(run.Value.Value), 0).ConfigureAwait(false);
     }
 
-    /// <summary>Runs in this process (as 'eval probes' does): it deletes report files under $AW_SINDRI_HOME, so it needs no route.</summary>
+    /// <summary>Runs in this process (as 'eval probes' does): it deletes report files under $AW_SINDRI_HOME, so it needs no route. As whoever runs it: the engine refuses a session (SND-CONTEXT-020).</summary>
     private async Task<int> Purge(bool all, CancellationToken ct)
     {
-        var scope = new ContextScope(Settings: null, [], new ContextCaller(ContextCallerKind.Human, Repo: null, ContextClient.Cli));
+        var scope = new ContextScope(Settings: null, [], new ContextCaller(client.SessionReason is null ? ContextCallerKind.Human : ContextCallerKind.Session, Repo: null, ContextClient.Cli));
         var purged = await engine.EvalPurge(new EvalPurgeRequest(scope, all), ct).ConfigureAwait(false);
         return purged.IsError ? await Failed(purged.Error).ConfigureAwait(false) : await output.Text(ContextEvalText.Purge(purged.Value, all), 0).ConfigureAwait(false);
     }
