@@ -2633,15 +2633,6 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe.Recipe.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe.Version.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeVersion!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe.Version.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList
-Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList!
-Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.Decisions.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>!
-Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.Decisions.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>! Decisions, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>! Tasks) -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList? other) -> bool
-Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.IsEmpty.get -> bool
-Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.NeedsYouList(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>! Decisions, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>! Tasks) -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.Tasks.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>!
-Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.Tasks.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.NonceClaim
 Aw.Sindri.Core.Workflow.Engine.Runtime.NonceClaim.Applied = 2 -> Aw.Sindri.Core.Workflow.Engine.Runtime.NonceClaim
 Aw.Sindri.Core.Workflow.Engine.Runtime.NonceClaim.Fresh = 0 -> Aw.Sindri.Core.Workflow.Engine.Runtime.NonceClaim
@@ -5098,9 +5089,6 @@ override Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.ToString() -> strin
 override Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe.ToString() -> string!
-override Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.GetHashCode() -> int
-override Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.ToString() -> string!
 override Aw.Sindri.Core.Workflow.Engine.Runtime.OpenQuestion.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Engine.Runtime.OpenQuestion.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Engine.Runtime.OpenQuestion.ToString() -> string!
@@ -6274,10 +6262,7 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.operator ==(Aw.Sindri
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViews.Allowed(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask? task) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand!>!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe? right) -> bool
-static Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.Of(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>! views) -> Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.Shown(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>! views) -> System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>!
-static Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList? left, Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList? right) -> bool
-static Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList? left, Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.OpenQuestion.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.OpenQuestion? left, Aw.Sindri.Core.Workflow.Engine.Runtime.OpenQuestion? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.OpenQuestion.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.OpenQuestion? left, Aw.Sindri.Core.Workflow.Engine.Runtime.OpenQuestion? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeVersion.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeVersion? left, Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeVersion? right) -> bool
