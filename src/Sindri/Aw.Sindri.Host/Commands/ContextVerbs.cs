@@ -85,15 +85,20 @@ internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
                     case "--draft":
                         pairs.Add(("draft", "true"));
                         break;
-                    case "--node" or "--item" or "--symbol" or "--depth" or "--budget" when i + 1 < args.Length:
+                    case "--node" or "--item" or "--symbol" or "--depth" or "--budget" or "--diff" or "--repo" when i + 1 < args.Length:
                         pairs.Add((args[i][2..], args[++i]));
                         break;
                     case var flag when flag.StartsWith("--", StringComparison.Ordinal):
-                        return SindriErrors.InvalidInput.With($"'{flag}' isn't a context query flag (or it needs a value): --node K | --item I | --symbol S | --depth N | --budget N | --draft | --json");
+                        return SindriErrors.InvalidInput.With($"'{flag}' isn't a context query flag (or it needs a value): --node K | --item I | --symbol S | --diff BASE..HEAD [--repo R] | --depth N | --budget N | --draft | --json");
                     default:
                         words.Add(args[i]);
                         break;
                 }
+            }
+
+            if (Misspelled(pairs) is { } refused)
+            {
+                return refused;
             }
 
             if (words.Count > 0)
@@ -103,6 +108,18 @@ internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
 
             var query = EncodedQuery(pairs);
             return query.IsError ? query.Error : new QueryArguments(query.Value, json);
+        }
+
+        // A range that is not two shas, or a repo without a diff, is refused here as the engine would: nothing is sent.
+        private static Kernel.Error? Misspelled(List<(string Key, string Value)> pairs)
+        {
+            var range = pairs.Find(p => p.Key == "diff").Value;
+            if (range is not null && DiffRange.Parse(range).IsError)
+            {
+                return DiffRange.Parse(range).Error;
+            }
+
+            return range is null && pairs.Exists(p => p.Key == "repo") ? ContextErrors.QueryInvalid.With(QueryRules.RepoMessage + " (CLI: --diff BASE..HEAD --repo R)") : null;
         }
 
         private static Kernel.Result<string> EncodedQuery(List<(string Key, string Value)> pairs)
