@@ -75,7 +75,7 @@ the transition (§8.6).
 ### 3.2 Choices grammar and rules
 
 An entry is `"<outcome>: <criterion>"`. The outcome is the text before the **first** `": "` and matches
-`[a-z][a-z0-9-]{0,31}`; the criterion is the rest, 1 to 400 characters, and may contain colons. Entries must be quoted
+`[a-z][a-z0-9]{0,31}`; the criterion is the rest, 1 to 400 characters, and may contain colons. Entries must be quoted
 in YAML, since an unquoted `- ui: …` is a mapping. The validator adds (§8.1):
 
 | Rule | Check | Message names |
@@ -145,7 +145,7 @@ transitions:
 - Every branch transition `produces: [fact:decision]`, so a decided route records its decision as well as an
   uncertain one (§8.6).
 - `none` goes to `evidence-none`, a block-runtime Step (`step.evidence.none`, pure) that writes a
-  `fact:evidence-summary` saying the always-run checks are the proof, then joins the other branches. No desk task is
+  `fact:evidenceSummary` saying the always-run checks are the proof, then joins the other branches. No desk task is
   spent on it, and every path out of the route carries a summary.
 - The route state's `next` is written as an instruction, because before DT-J it runs at the desk and a human acts in
   it (REF "Voice"). Its timeout is the desk's 2 days for that reason. On the block runtime the call is bounded by
@@ -217,19 +217,19 @@ its terminal outcomes.
 
 | Recipe | Does | Steps (block ids; all new ones `deskCapable`) | Outputs | Terminal outcomes | From |
 |---|---|---|---|---|---|
-| `workflow.plan` | A stage plan, a verification plan written before code, and a judge check that it states an observable signal | `step.plan.write`, `step.plan.verification`, `step.judge.choose` (`ready`, `underspecified`) | `fact:plan`, `fact:verification-plan` | `resolved`, `unresolved` | specToProvenPR 1–2 |
-| `workflow.investigate` | Root cause to `diagnosed`, with a confirmed hypothesis | `step.rootcause.investigate` (`diagnosed`, `unfixed`) | `fact:root-cause` | `resolved`, `unresolved` | bugFix 2 |
+| `workflow.plan` | A stage plan, a verification plan written before code, and a judge check that it states an observable signal | `step.plan.write`, `step.plan.verification`, `step.judge.choose` (`ready`, `underspecified`) | `fact:plan`, `fact:verificationPlan` | `resolved`, `unresolved` | specToProvenPR 1–2 |
+| `workflow.investigate` | Root cause to `diagnosed`, with a confirmed hypothesis | `step.rootcause.investigate` (`diagnosed`, `unfixed`) | `fact:rootCause` | `resolved`, `unresolved` | bugFix 2 |
 | `workflow.reproduce` | A route between a UI check and a test check, then a check that fails on the base for the reported reason, frozen as the baseline | `step.judge.choose` (`ui-check`, `test-check`), `step.reproduce.ui-check` / `step.reproduce.test-check` (`reproduced`, `not-reproduced`), each through `bugfix-state` | `fact:check` (kind, file, command), `fact:baseline` | `resolved`, `unresolved` (not reproduced) | bugFix 3 |
 | `workflow.implement` | Test-first build in a per-run worktree, looping on the checks | `step.produce`, `step.checks` (the existing Steps) under `loop: revisions` | `fact:diff`, `fact:branch` | `resolved`, `unresolved` | specToProvenPR 3; bugFix 4 (mode A) |
 | `workflow.implement-split` | Mode C: one implementer per area, in sequence on one worktree, each given the previous diff | `step.produce` per area, under `loop: areas` | `fact:diff`, `fact:branch` | `resolved`, `unresolved` | bugFix 4 (mode C) |
-| `workflow.hand-test` | Use the change by hand in the running app; record what was done, expected and seen | `step.handtest.run` (`works`, `broken`) | `fact:manual-test` | `resolved`, `unresolved` | specToProvenPR 4 |
-| `workflow.verify` | **Always runs.** The `verify-app` journey with its lenses and evidence pack, and `/design-verify` when screen baselines match | `step.verify.journey` (`pass`, `fail`), `step.verify.design` (`pass`, `fail`, `skipped`) | `fact:evidence-pack` | `resolved`, `unresolved` | specToProvenPR 5 (the PROOF gate) |
-| `workflow.evidence-ui` | A `ui-evidence` run: plan, run, lint, critique | `step.evidence.ui-plan`, `step.evidence.ui-run` (`passed`, `failed`, `broken`) | `fact:evidence-summary` | `resolved`, `unresolved` | specToProvenPR 6 |
-| `workflow.evidence-api` | An API or CLI contract run (§5.2) | `step.evidence.api-plan`, `step.evidence.api-run` (`passed`, `failed`) | `fact:evidence-summary` | same | new |
-| `workflow.evidence-db` | A persisted-state run (§5.2) | `step.evidence.db-plan`, `step.evidence.db-run` (`passed`, `failed`) | `fact:evidence-summary` | same | new |
-| `workflow.evidence-all` | The three above in sequence, as children, then one combine Step (§5.3) | `step.evidence.combine` (`done`; block runtime, pure) | `fact:evidence-summary` (the three combined) | same | new |
-| `workflow.evidence-other` | The evidence the human used, and why no block fitted | `step.evidence.desk` (`recorded`, `none-found`; human-only) | `fact:evidence-summary`, `fact:evidence-reason` | `resolved` (recorded), `unresolved` (none found) | DT5 |
-| `workflow.evidence` | The route of §3.3 over the evidence recipes and `none`, reconverged | `step.judge.choose`, `step.desk.choose`, `step.evidence.none` | `fact:evidence-summary`, `fact:decision` | `resolved`, `unresolved` | specToProvenPR 6; bugFix 5 |
+| `workflow.hand-test` | Use the change by hand in the running app; record what was done, expected and seen | `step.handtest.run` (`works`, `broken`) | `fact:manualTest` | `resolved`, `unresolved` | specToProvenPR 4 |
+| `workflow.verify` | **Always runs.** The `verify-app` journey with its lenses and evidence pack, and `/design-verify` when screen baselines match | `step.verify.journey` (`pass`, `fail`), `step.verify.design` (`pass`, `fail`, `skipped`) | `fact:evidencePack` | `resolved`, `unresolved` | specToProvenPR 5 (the PROOF gate) |
+| `workflow.evidence-ui` | A `ui-evidence` run: plan, run, lint, critique | `step.evidence.ui-plan`, `step.evidence.ui-run` (`passed`, `failed`, `broken`) | `fact:evidenceSummary` | `resolved`, `unresolved` | specToProvenPR 6 |
+| `workflow.evidence-api` | An API or CLI contract run (§5.2) | `step.evidence.api-plan`, `step.evidence.api-run` (`passed`, `failed`) | `fact:evidenceSummary` | same | new |
+| `workflow.evidence-db` | A persisted-state run (§5.2) | `step.evidence.db-plan`, `step.evidence.db-run` (`passed`, `failed`) | `fact:evidenceSummary` | same | new |
+| `workflow.evidence-all` | The three above in sequence, as children, then one combine Step (§5.3) | `step.evidence.combine` (`done`; block runtime, pure) | `fact:evidenceSummary` (the three combined) | same | new |
+| `workflow.evidence-other` | The evidence the human used, and why no block fitted | `step.evidence.desk` (`recorded`, `none-found`; human-only) | `fact:evidenceSummary`, `fact:evidenceReason` | `resolved` (recorded), `unresolved` (none found) | DT5 |
+| `workflow.evidence` | The route of §3.3 over the evidence recipes and `none`, reconverged | `step.judge.choose`, `step.desk.choose`, `step.evidence.none` | `fact:evidenceSummary`, `fact:decision` | `resolved`, `unresolved` | specToProvenPR 6; bugFix 5 |
 | `workflow.review-loop` | `/review` to 0 blocking and 0 issue findings, cap 5, then one narrow re-check (§4.1) | `step.review.run`, `step.review.fix`, `step.review.recheck` | `fact:review` | `resolved`, `unresolved`, `failed` (behaviour wrong) | specToProvenPR 8 |
 | `workflow.ready` | The GREEN gate (the full suite and CI on the PR head), the proof re-check if review changed non-test source, the PR body, `ready #N` to the merge orchestrator | `step.ready.green` (`green`, `red`), `step.ready.recheck` (`pass`, `fail`, `skipped`), `step.ready.body` (`done`); effect `effect.notify.desk` on the last transition | `fact:ready` (head sha, gate scopes, proof and review state; input `fact:pr` isn't re-declared, `RCP-OUT-003`) | `resolved`, `unresolved` | specToProvenPR 9 |
 | `workflow.report` | The bugfix report: `resolution.md` and the ask-first offer to post it, for a fixed or an unfixed bug alike. No PR | `step.report.write` (`done`) | `fact:resolution` | `resolved` (the report is written; the parent's own terminal says whether the bug was fixed, §6.1) | bugFix 6 |
@@ -315,16 +315,16 @@ in the UI run's shape, so one reader and one judge input serve all three. Phase 
 ### 5.3 `workflow.evidence-all`
 
 Three child waits in sequence: ui, then api, then db. Each child's summary arrives under its own key
-(`fact:evidence-ui`, `-api`, `-db`, mapped from the child's `fact:evidence-summary` by the parent's `produces`, §8.4), so
+(`fact:evidenceUi`, `fact:evidenceApi`, `fact:evidenceDb`, mapped from the child's `fact:evidenceSummary` by the parent's `produces`, §8.4), so
 none overwrites another. The first that ends `unresolved` ends the recipe the same way, and the rest don't run and
 show as skipped (§9). After all three, `step.evidence.combine` (block runtime, deterministic) writes the combined
-`fact:evidence-summary`.
+`fact:evidenceSummary`.
 There's no parallel split (DT3). When schema v2 adds fan-out, this recipe can become one without its parents changing.
 
 ### 5.4 The `other` branch
 
-`workflow.evidence-other` is one human-only desk Step, where the reason is asked once. It records the evidence used (`fact:evidence-summary`) and the reason no
-block fit (`fact:evidence-reason`). DT-P adds the route's outcome counts, `other` and `uncertain` among them, to the recipe stats (API P12, `RecipeStats`), with the `other` reasons listed. A reason that keeps
+`workflow.evidence-other` is one human-only desk Step, where the reason is asked once. It records the evidence used (`fact:evidenceSummary`) and the reason no
+block fit (`fact:evidenceReason`). DT-P adds the route's outcome counts, `other` and `uncertain` among them, to the recipe stats (API P12, `RecipeStats`), with the `other` reasons listed. A reason that keeps
 appearing becomes a proposal for a new evidence block and a new choice: a reviewed recipe change, never automatic.
 
 ### 5.5 Before and after
@@ -429,7 +429,7 @@ desk-task text: an edit needs a review, not a re-approval.
 These are the engine, Judge and Evidence changes, each with its phase (§10). The only recipe-format change is §8.4's
 `produces` long form.
 
-### 8.1 Parameter-declared outcomes and inputs (engine; DT-V)
+### 8.1 Parameter-declared outcomes and inputs (engine; DT-V1, with the views in DT-V2)
 
 Today a Step's outcomes and inputs are fixed by its descriptor (`BlockDescriptor.Outcomes`, `Inputs`; WF §2).
 
@@ -455,7 +455,7 @@ Today a Step's outcomes and inputs are fixed by its descriptor (`BlockDescriptor
 - **Descriptor hashes don't move.** The new fields, and the runtime and seed fields of §8.2 and §7, are nullable and
   written only when set (`JsonIgnore(WhenWritingNull)`; `HumanOnly` is a `bool?`, absent when not true), so every shipped descriptor hashes as before and no approved recipe
   drift-parks. A test over `ShippedBlocksTests` pins each shipped descriptor's hash.
-- The app's catalog and goldens change (the desk task's choices, §9), so DT-V's gate runs `Aw.Sindri.Ui.Tests`.
+- The app's catalog and goldens change (the desk task's choices, §9), so DT-V2's gate runs `Aw.Sindri.Ui.Tests`.
 
 ### 8.2 The block runtime (engine; DT-J)
 
@@ -523,7 +523,7 @@ results: the diff, the root cause, the check, the evidence summary.
   terminal outcomes on all of whose paths the child produces it (`RCP-WIRE-003`), and never on `cancelled`. An
   output's `from` stays the UI's placement hint; the flow follows the wiring, so an output produced in several states
   is fine.
-- A parent may rename what it receives (`produces: [{ fact: fact:evidence-ui, from: fact:evidence-summary }]`), so two
+- A parent may rename what it receives (`produces: [{ fact: fact:evidenceUi, from: fact:evidenceSummary }]`), so two
   children's outputs with one key don't overwrite each other (§5.3). That is the long form of a `produces` entry; the
   short form (a bare key) keeps its meaning.
 - This amends WF §3.2 ("declarations only" becomes "declarations, and what a parent receives") and §5.8. It changes no
@@ -570,7 +570,7 @@ The new human task and the branching states need these from the API and UI lanes
 UI spec. The API fields land with the engine phase named; the app's rendering is the UI lane's, filed as rows
 `DT-UI-1`…`5` in the UI spec's change list (its §6 table) by DT-V, and built after DT-J.
 
-- **DT-UI-1, the desk choice (API fields in DT-V; `reason` values in DT-J).** The desk task carries `choices: [{ name,
+- **DT-UI-1, the desk choice (API fields in DT-V2; `reason` values in DT-J).** The desk task carries `choices: [{ name,
   criterion, probability?, confidenceKind?, lean? }]` and `reason` (`below-threshold`, `no-provider-decided`, `rule-timeout`, `failed`, or none
   before DT-J). The CLI `status` lists every choice with its criterion and probability, and one `complete` line per
   choice. Nothing is pre-filled: today `status` pre-fills the first declared outcome (REF), and for a choice that
@@ -581,7 +581,7 @@ UI spec. The API fields land with the engine phase named; the app's rendering is
 - **DT-UI-3, the app's choice control.** A list with no initial selection, focus on the prompt first (UI R8-13's
   read-first rule), arrow keys and number keys, Enter to confirm. A probability is shown as text, never by colour or
   bar alone. Screen-reader order: name, probability, "model's lean" when it is the top one, criterion.
-- **DT-UI-4, the states band and the Workflows list (API: `states[].routeOf` and `skipped` in DT-V's views).** A route
+- **DT-UI-4, the states band and the Workflows list (API: `states[].routeOf` and `skipped` in DT-V2's views).** A route
   state and its branches render as one **route column**:
   before the choice it reads "choosing"; after it, the branch taken, with the chooser (judge or you) and the
   confidence. Branches not taken fold away, and children that never ran (`evidence-all`'s skipped ones) render as
@@ -598,13 +598,14 @@ through `scripts/sindri-prove.sh human`. Sizes: S is a few files, M one subsyste
 
 | Phase | Goal | Needs | Size | Signal | Docs |
 |---|---|---|---|---|---|
-| **DT-V** | §8.1 (resolver, `OutcomesFrom`, `InputsFrom`, every-outcome outputs, `RCP-CHOICE-001`–`006`, null-ignored descriptor fields); the `step.judge.choose` and `step.desk.choose` descriptors (descriptor-only, `deskCapable`); the desk task's choices in the views; `recipes/dev/workflow.dev-evidence-route.yaml` with evals | Engine P1, P3 (merged) | M | `recipe validate` on the dev route exits 0; one invalid fixture per `RCP-CHOICE` rule exits 1 with its message, including the unquoted-mapping one; a missing `uncertain` transition exits 1 with `RCP-OUTCOME-001`; `recipe eval` passes a case per outcome, `uncertain` and `step.failed` among them; `--scaffold` walks every choice; `ShippedBlocksTests` shows every shipped descriptor hash unchanged | REF (rules table, "How to add a block", a "Writing a decision tree" section); WF §2 note |
+| **DT-V1** | §8.1 (resolver, `OutcomesFrom`, `InputsFrom`, every-outcome and engine-filled outputs, `RCP-CHOICE-001`–`006`, null-ignored descriptor fields); the `step.judge.choose` and `step.desk.choose` descriptors (descriptor-only, `deskCapable`); `recipes/dev/workflow.dev-evidence-route.yaml` with evals; `recipe eval --scaffold` through a route (`--out <dir>`) | Engine P1, P3 (merged) | M | `recipe validate` on the dev route exits 0; one invalid fixture per `RCP-CHOICE` rule exits 1 with its message, including the unquoted-mapping one; a missing `uncertain` transition exits 1 with `RCP-OUTCOME-001`; `recipe eval` passes a case per outcome, `uncertain` and `step.failed` among them; `--scaffold` walks every choice; `ShippedBlocksTests` shows every shipped descriptor hash unchanged | REF (rules table, "How to add a block", a "Writing a decision tree" section); WF §2 note |
+| **DT-V2** | The desk task's choices in the views (`InstanceViews`, `status`, `allowedCommands`, the app list; §9), `DT-UI-1` and `DT-UI-4`'s API fields (`choices`, `states[].routeOf`, `skipped`) | DT-V1 | S | `status` on a `step.judge.choose` or `step.desk.choose` state lists each choice with its criterion and pre-fills none; the app's catalog and goldens move with it, so the gate runs `Aw.Sindri.Ui.Tests` | REF; API spec fields |
 | **DT-E** | `evidence-api` and `evidence-db` in `Aw.Evidence` (§5.2), contract section first | None (the Evidence package) | M | Against the fixture app: an api script fails at `base` and passes at `head` for a changed route; a db script asserts the rows a command wrote; each read-only bypass in §5.2 is refused (`COPY … TO` by the required non-superuser read-only role, the rest at the connection); a server-identity mismatch refuses; a CLI call outside the allowlist refuses; both `summary.json` files validate against their schemas | `docs/csharp/evidence.md` |
 | **DT-R** | The block recipes of §4 with evals, all in `recipes/sindri/`; every new Step descriptor, `evidence.check` (descriptor-only) and `HumanOnly` (§8.5); seed prompts ported with /enhancePrompt (§7) | DT-V | M | `recipe validate` exits 0 on every block recipe; `recipe eval` passes each one's happy case and its loop or cap case; a session's `complete` on a `step.desk.choose` run, and on a `step.judge.choose` run while it is on the desk, exits 2 with `SND-AUTH-002` | REF (block catalog); `recipes/sindri/README` |
 | **DT-C** | §8.4's validator and eval half: child outputs as facts of `wait.satisfied` | DT-V | S | A parent that `produces` a child's declared output validates; one that `produces` an undeclared child fact fails `RCP-WIRE-002`; `recipe eval` carries a child line's `outputs` into the parent | WF §3.2, §5.8 amendments; REF |
 | **DT-J** | §8.2 block runtime, §8.3 Judge `choose` and check kinds, the `cli` edge, §8.6 tracing, the `workflow.judge.providers` profile key (Jev opt-in) | DT-V; engine P6 (#232) merged, to avoid `RecipeWorkflow` conflicts | M | **(owner)** on a real `sindri serve`: the dev route with a UI-only diff fact ends in `evidence-ui`, the event says `via: block` and a decision id that `sindri workflow why` explains; with the profile at `[rules]` the same start goes to `route-evidence-desk`, `status` lists the five choices with none pre-filled, and `complete --outcome api` moves it to `evidence-api`; with the key absent the decision row names a CLI provider and nothing is sent to Typesafe; a judge call killed past `MaxDuration` lands at the desk with reason `failed` | `docs/csharp/judge.md`; REF; `docs/sindri/profile.md`; README X42 |
 | **DT-M** | The meta recipes `workflow.bugfix` and `workflow.spec-to-proven-pr`, with evals: child lines, one per inherited gate (DT10) | DT-R, DT-C | S | `recipe validate` exits 0 over the whole tree (`RCP-CHILD-001`…`003`); `recipe eval` walks a bugfix through `split`, an `uncertain` route, a failed recheck, a `partial` resolution and a resolve; each gate eval shows its gate can't be skipped | REF |
-| **DT-B** | The evidence Step runtimes, the evidence-check activity and `evidence.check` (§8.7), the bugfix Steps' runtimes, Evidence's Judge adapter, BugFix's `run-ui` and `judge` adapters, `AW_JUDGE_PROVIDERS` into child CLIs, and the edges (§8.8) | DT-J, DT-E, engine P7 (children on a live serve) | M | **(owner)** `workflow.evidence` on a fixture item with an api diff runs `evidence-api` and ends `resolved`; the same with a broken route ends `unresolved` with the failing assertion in the parent's `fact:evidence-summary`; `bugfix-state judge` and an Evidence `ui-element-repair` call under a repo without `jev` both write decision rows naming a CLI provider, in `$AW_SINDRI_HOME/judge/`, and the TS hook store is untouched | `docs/csharp/evidence.md`; REF; `deps.yaml` |
+| **DT-B** | The evidence Step runtimes, the evidence-check activity and `evidence.check` (§8.7), the bugfix Steps' runtimes, Evidence's Judge adapter, BugFix's `run-ui` and `judge` adapters, `AW_JUDGE_PROVIDERS` into child CLIs, and the edges (§8.8) | DT-J, DT-E, engine P7 (children on a live serve) | M | **(owner)** `workflow.evidence` on a fixture item with an api diff runs `evidence-api` and ends `resolved`; the same with a broken route ends `unresolved` with the failing assertion in the parent's `fact:evidenceSummary`; `bugfix-state judge` and an Evidence `ui-element-repair` call under a repo without `jev` both write decision rows naming a CLI provider, in `$AW_SINDRI_HOME/judge/`, and the TS hook store is untouched | `docs/csharp/evidence.md`; REF; `deps.yaml` |
 | **DT-P** | End to end: both meta recipes on a real serve, desk Steps first and agent Steps once P8 is in; the route's outcome counts in the recipe stats (API P12) | DT-M, DT-B, engine P7 (with §8.4's interpreter unit); API P12 for the stats; P8 for the agent half | S | **(owner)** a `workflow.bugfix` instance on a fixture bug reaches `fixed`, and one on a bug that doesn't reproduce reaches `not-fixed`, with its children's history in `sindri workflow events`; one `workflow.spec-to-proven-pr` stage reaches `ready`; with P8, the implement Step launches an agent session (`via: agent`); `GET /workflow/recipes/workflow.evidence/stats` shows the route's `uncertain` and `other` counts | REF; `docs/sindri/README.md` |
 
 **Approving the tree.** A meta recipe runs only when every recipe below it is approved, leaf first (`SND-RECIPE-003`).
@@ -626,6 +627,8 @@ now ──► DT-V ──┬──► DT-R ──┬──► DT-M ────�
   └──► DT-E (Evidence; any lane with a free builder) ──┐            │
 engine P6 merged + DT-V ──► DT-J ──────────────────────┴─► DT-B ────┘ (DT-B also needs engine P7)
 ```
+
+`DT-V` in this diagram and table is DT-V1 and DT-V2 together. DT-R, DT-C and DT-J need the resolver and the descriptors, so they start once DT-V1 merges; DT-V2 (the views) runs beside them.
 
 | Wave | Runs | Starts when |
 |---|---|---|

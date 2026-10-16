@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Infrastructure.Workflow;
@@ -155,7 +156,9 @@ internal sealed class RecipeShape(JsonSerializerOptions options, ReaderFindings 
         var type = Nullable.GetUnderlyingType(info.Type) ?? info.Type;
         var expected = RecipeTypes.Expected(type);
         var rule = type == typeof(RecipeDuration) ? "RCP-DUR-001" : "RCP-SCHEMA-002";
-        var fix = type == typeof(RecipeDuration) ? "write a whole number and m, h or d, at least 1m ('10m', '4h', '2d')" : $"write {expected}";
+        var fix = type == typeof(RecipeDuration) ? "write a whole number and m, h or d, at least 1m ('10m', '4h', '2d')"
+            : type == typeof(FactKey) && node is JsonValue key && key.GetValueKind() == JsonValueKind.String ? FactKeyHint.Fix(key.GetValue<string>())
+            : $"write {expected}";
         findings.Add(rule, path, $"{Written(node)} isn't {expected}", fix);
         findings.Refuse(path);
     }

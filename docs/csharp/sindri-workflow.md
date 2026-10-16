@@ -110,6 +110,8 @@ transition moves into a state not yet visited, until a terminal state. Every gat
 engine did, so it passes once it is in the recipe's `evals:`. `--record <address> --out <file>` writes a live instance's
 history in the same format; it needs the server's instances (P4) and exits 2 until then.
 
+A recipe with a route state (a `step.judge.choose`, see "Writing a decision tree") has a path per choice, plus `uncertain` and `step_failed` (the Step failing); `--scaffold <file> --out <dir>` writes each as `<dir>/scaffold-<branch>.jsonl` and prints the paths. It refuses when any of those files exists (`SND-CLI-003`) and writes nothing then.
+
 | Exit | When |
 |---|---|
 | 0 | Every case passes, or the recipe declares none |
@@ -303,7 +305,7 @@ the next transition.
 
 A closed set: `{ outcome }`, `{ fact, is: present | absent }`, `{ loop, below: cap }`, `{ all: [...] }`, `{ any: [...] }`
 and `{ not: ... }`. Outcomes come from the trigger's source: the Step's declared outcomes, the event's, or a child's
-terminal outcomes plus `cancelled` (`RCP-WHEN-001`). A loop must be declared (`RCP-WHEN-002`).
+terminal outcomes plus `cancelled` (`RCP-WHEN-001`, whose message ends with `(outcomes here: <list>)`). A choice Step's outcomes are its `choices` names plus the Step's own (`uncertain`); see "Writing a decision tree". A loop must be declared (`RCP-WHEN-002`).
 
 ### Loops, budgets and `next`
 
@@ -337,7 +339,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | Rule | Checks | Fix |
 |---|---|---|
 | `RCP-SCHEMA-001` | No unknown or missing field, the fields a state's kind needs and no others (a missing `timeout` is `RCP-TIME-001`'s), and one form where a value takes exactly one (`waitFor`, `with:` values, `when`) | Remove the field, or add the missing one |
-| `RCP-SCHEMA-002` | Each value has the right type and form (an enum is exactly one of its names), and a transition's `from` and `to` name states of the recipe | Write the form the message names |
+| `RCP-SCHEMA-002` | Each value has the right type and form (an enum is exactly one of its names), and a transition's `from` and `to` name states of the recipe. A fact key written with hyphens (`fact:evidence-summary`) gets the camelCase fix | Write the form the message names; fact names are camelCase (`fact:evidenceSummary`) |
 | `RCP-SCHEMA-003` | No refused YAML (see Reading) | Write the value out in full |
 | `RCP-STATE-001` | No state uses a reserved name, and the recipe has an active or wait state and a terminal state | Rename the state |
 | `RCP-NAME-001` | Every state, loop and parameter (`with:` key) name matches `[a-z][a-z0-9-]{0,63}`; each bad name is reported once, where it is written | Rename it |
@@ -350,9 +352,15 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-EVENT-001` | A waited-for event is registered | Wait for a registered event |
 | `RCP-WIRE-001` | A block's inputs are produced on every path into its state, or are recipe inputs | Produce it on every path, or add it to `inputs` |
 | `RCP-WIRE-002` | `produces` lists only what the trigger's source records | List only its outputs |
-| `RCP-WHEN-001` | `when: { outcome }` names an outcome the source reports | Test one of its outcomes |
+| `RCP-WHEN-001` | `when: { outcome }` names an outcome the source reports; the message lists the outcomes available there (`outcomes here: ui, api, uncertain`) | Test one of its outcomes |
 | `RCP-WHEN-002` | `when: { loop }` names a declared loop, and `when: { outcome }` isn't used on a trigger that reports no outcome | Declare the loop |
 | `RCP-OUTCOME-001` | Every outcome a Step, event or child reports is handled by a transition, and terminal outcomes are `resolved`, `unresolved`, `alreadySatisfied` or `failed` | Add a transition for it, or use one of those outcomes |
+| `RCP-CHOICE-001` | A `step.judge.choose` state's `choices` has 2 to 32 entries | List 2 to 32 choices, each `"<outcome>: <criterion>"` |
+| `RCP-CHOICE-002` | `choices` is a literal list (not `{ fact }` or `{ profile }`) and each entry is text `"<outcome>: <criterion>"`: the outcome is `[a-z][a-z0-9]{0,31}`, the criterion 1 to 400 characters. An unquoted `- ui: ...` is a YAML mapping and gets the quote fix | Quote the entry; write the choices as a literal list |
+| `RCP-CHOICE-003` | Outcome names are distinct, and none is `uncertain` (the Step adds it) | Give each choice its own outcome |
+| `RCP-CHOICE-004` | `facts` is a literal list of at least one fact key; a hyphenated key gets the camelCase fix | List the facts the question reads |
+| `RCP-CHOICE-005` | Every route state routes `uncertain`, if it does, to a `step.desk.choose` state whose `from` names it, and has a `step.failed` transition to that twin; a twin's `from` is a literal naming a route state (not `{ fact }` or `{ profile }`) | Route to the desk twin; set `from:` to the route state |
+| `RCP-CHOICE-006` | A route state's `uncertain` and `step.failed` transitions come after its branch transitions (the app takes the first transition as the main path) | List the branches first |
 | `RCP-CHILD-001` | A child recipe resolves (registered, or next to the recipe) and gets its inputs | Register it, or put `<id>.yaml` beside the recipe; pass the inputs it declares |
 | `RCP-CHILD-002` | Child recipes form no cycle | Remove a child wait |
 | `RCP-CHILD-003` | Children nest at most 4 deep | Flatten the chain |
@@ -431,10 +439,37 @@ A block is a class with a static descriptor, registered explicitly (no assembly 
    `AddSindriInfrastructure`. An event a wait can wait for is `AddEvent(descriptor)`. A block whose runtime comes in a
    later phase can ship as `AddBlockDescriptor(descriptor)`, so recipes that name it validate; at run time it is
    unavailable. Add it to `ShippedBlocksTests`, which pins the catalog.
+   A Step whose outcomes or inputs depend on its parameters sets `OutcomesFrom` and `InputsFrom`: a list parameter's name
+   (`choices`), or `<stateParam>.<listParam>` for a twin that reads another state's Step (`from.choices`). Read outcomes
+   and inputs through `StepOutcomes.Of` and `StepInputs.Of`, never from the descriptor directly: the validator, the report validation and the eval read through them (the desk's views still read the descriptor and move onto them in DT-V2). An output that every
+   outcome must carry is `Every: true` (read it with `StepOutputs.RequiredOn`), and one the engine writes when a report
+   omits it is `EngineFilled: true`. These descriptor fields are written only when set, so a descriptor without them
+   keeps its hash; `ShippedBlocksTests` pins every shipped hash.
 4. **Use it in a recipe** and run `sindri recipe validate` on it.
 5. **A behaviour change bumps `Version`** in the descriptor, in the reviewed change that makes it. Once approvals pin
    blocks (P2), a changed descriptor parks the instances of every recipe approved against the old one until it is
    re-approved (`SND-RECIPE-006`).
+
+## Writing a decision tree
+
+A route is a `step.judge.choose` state that picks one of a recipe's branches, and a desk twin, a `step.desk.choose` state
+that lets a person pick when the judge is unsure or fails. Until the block runtime ships both run at the desk. The
+complete example is `recipes/dev/workflow.dev-evidence-route.yaml`.
+
+- **The route state** gives `prompt`, `facts` (what the question reads; each must be produced on every path into the
+  state) and `choices`, each entry quoted `"<outcome>: <criterion>"`. Its outcomes are the choice names plus `uncertain`.
+  The choices are literal, so approving the recipe fixes its branches.
+- **The desk twin** is `step: { use: step.desk.choose, with: { from: <route state> } }`. Its outcomes are the route's choices.
+- **Transitions:** one per choice, listing both states in `from`, each `produces: [fact:decision]`; then
+  `{ from: <route>, to: <twin>, on: step.completed, when: { outcome: uncertain }, produces: [fact:decision] }` and
+  `{ from: <route>, to: <twin>, on: step.failed }`, last (`RCP-CHOICE-006`). A missing branch or `uncertain` is `RCP-OUTCOME-001`.
+- **`fact:decision`** is written by the engine, never typed: at the desk `complete --outcome <choice>` stores
+  `{ "choice", "provider": "desk", "actor" }`, and `complete --output fact:decision=...` is refused. `recipe eval` fills it
+  with provider `eval` when a line leaves it out; an eval line on a desk twin that writes `fact:decision` itself fails with the same
+  "is written by the engine" text.
+- **Evals:** `recipe eval --scaffold <file>` prints the first path; `--scaffold <file> --out <dir>` writes one
+  `<dir>/scaffold-<branch>.jsonl` per path (each choice, `uncertain`, and `step_failed`) and refuses to overwrite a file.
+- Until DT-V2, `status` on a choice state doesn't list the choices; read them in the recipe.
 
 ## Temporal foundation
 

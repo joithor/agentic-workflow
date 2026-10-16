@@ -1,4 +1,8 @@
 using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine.Evals;
+using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.EvalRecipe;
 using Aw.Sindri.Testing.Workflow;
 
@@ -204,6 +208,50 @@ public sealed class EvalRecipeTests
         Assert.All(printed.Skip(1), EvalFormat.AssertStep);
         _ = _files.With(eval, scaffold);
         Assert.True((await Eval(recipe)).Cases[0].Passed);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_dev_evidence_route_passes_a_case_per_outcome()
+    {
+        var response = await Eval(Choice.RouteRecipes.Dev);
+
+        Assert.Equal(
+            ["happy pass", "api pass", "db pass", "all pass", "none pass", "other pass", "uncertain pass", "failed pass"],
+            response.Cases.Select(c => c.ToLine()), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_eval_line_without_fact_decision_gets_the_eval_placeholder()
+    {
+        // the happy case never gives fact:decision, yet its transition produces it: the engine fills it as the desk does, with provider "eval"
+        var happy = ShippedRecipes.Read("dev/evals/workflow.dev-evidence-route/happy.jsonl");
+        Assert.DoesNotContain("fact:decision", happy, StringComparison.Ordinal);
+
+        var response = await Eval(Choice.RouteRecipes.Dev);
+
+        Assert.True(response.Cases[0].Passed, response.Cases[0].ToLine());
+        var recipe = EvalComposition.Recipe(Choice.RouteRecipes.Dev);
+        var line = new EvalStepLine(new EvalTrigger(TriggerNames.StepCompleted, OutcomeName.From("ui")), new EvalExpectation("evidence-ui"));
+        var started = EvalSimulation.Start(new EvalCase("c", new EvalStartLine(new EvalStart(recipe.Inputs.ToDictionary(static i => i.Key, static i => EvalFacts.OfText("x"))), Scaffold: false), []), recipe, EvalComposition.Catalog, InMemoryChildRecipes.None).Value;
+        var stepped = started.Step(line, 2).Value.Next;
+        Assert.Equal(EvalFacts.Value(new DecisionFact("ui", "eval")), stepped.Instance.Facts[FactKey.From("fact:decision")]);
+        Assert.Contains("fact:decision", recipe.Transitions[0].Produces.Select(f => f.Value), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_step_completed_line_that_writes_the_engine_filled_output_on_the_desk_twin_is_refused()
+    {
+        var recipe = EvalComposition.Recipe(Choice.RouteRecipes.Dev);
+        var start = new EvalStartLine(new EvalStart(recipe.Inputs.ToDictionary(static i => i.Key, static i => EvalFacts.OfText("x"))), Scaffold: false);
+        var atDesk = EvalSimulation.Start(new EvalCase("c", start, []), recipe, EvalComposition.Catalog, InMemoryChildRecipes.None).Value
+            .Step(new EvalStepLine(new EvalTrigger(TriggerNames.StepFailed), new EvalExpectation("route-evidence-desk")), 2).Value.Next;
+        var written = new Dictionary<FactKey, System.Text.Json.JsonElement> { [FactKey.From("fact:decision")] = EvalFacts.OfText("db") };
+        var line = new EvalStepLine(new EvalTrigger(TriggerNames.StepCompleted, OutcomeName.From("ui"), written), new EvalExpectation("evidence-ui"));
+
+        var refused = atDesk.Step(line, 3);
+
+        Assert.True(refused.IsError);
+        Assert.Equal("fact:decision is written by the engine on 'step.desk.choose' (fix: drop --output fact:decision)", refused.Error.Message);
     }
 
     [Fact, Trait("Lane", "unit")]

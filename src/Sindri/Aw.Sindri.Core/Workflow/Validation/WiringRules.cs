@@ -66,15 +66,16 @@ internal sealed partial class WiringRules : IRecipeRules
 
         return (state.Kind, on) switch
         {
-            (StateKind.Active, "step.completed") => StepSource(state.Step, context.Catalog),
+            (StateKind.Active, "step.completed") => StepSource(state.Step, recipe, context.Catalog),
             (StateKind.Wait, "wait.satisfied") => WaitSource(state.WaitFor, context),
             _ => null,
         };
     }
 
-    private static TriggerSource? StepSource(StepUse? step, BlockCatalog catalog) =>
-        step is not null && catalog.Find(step.Use) is { Kind: BlockKind.Step } descriptor
-            ? new TriggerSource($"step '{step.Use.Value}'", descriptor.Outcomes, [.. descriptor.Outputs.Select(o => o.Fact)])
+    /// <summary>A Step's source: its outcomes through the one resolver, so a choice Step's come from its parameters. Null when the Step isn't in the catalog or its list doesn't resolve (RCP-CHOICE-001 to -004 report that).</summary>
+    private static TriggerSource? StepSource(StepUse? step, Recipe recipe, BlockCatalog catalog) =>
+        step is not null && catalog.Find(step.Use) is { Kind: BlockKind.Step } descriptor && StepOutcomes.Of(descriptor, step, recipe) is { } outcomes
+            ? new TriggerSource($"step '{step.Use.Value}'", outcomes, [.. descriptor.Outputs.Select(o => o.Fact)])
             : null;
 
     private static TriggerSource? WaitSource(WaitFor? waitFor, ValidationContext context) => waitFor switch
