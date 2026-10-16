@@ -324,8 +324,13 @@ The same engine contract as `api-run`: every key always written (`null` or `[]`,
 directory made and an earlier `summary.json` deleted first; a summary on every exit except 75, an unreadable script, a
 run directory that cannot be made, an unexpected exception and 130; stdout exactly the file's content; logs on stderr;
 nothing written outside the absolute `<run-dir>` and the box-wide locks; the exit code alone decides the outcome (a test
-pins that they agree); the whole document through `Aw.Redaction`, which also hides the value of a secret-named column
-(`password`, `api_key`, `accessToken`, …) wherever it appears in a row.
+pins that they agree). Every free-text field (the `headline`, each step's recorded rows and `target`, each failure's `expected` and
+`actual`, the refusal and error messages) goes through `Aw.Redaction` as it is recorded: first the role's password, resolved from
+the entry's `passwordEnv`, is replaced by value with `[REDACTED:env-value]` (including its JSON-escaped forms; a value under 6
+characters is left to the patterns; a header-value placeholder, `[REDACTED:header-value]`, exists in the shared scrubber but a
+db-run has no headers), then the value of a secret-named column (`password`, `api_key`, `accessToken`, …) is hidden wherever
+it appears in a row and the pattern scrub runs. Fixed fields (`schema`, `kind`, `at`, `outcome`, `engine`, the top-level `target` (the connection name), `provenance`,
+`seedSha256`, statuses, codes) are written as they are: a password that happens to equal the connection name leaves that field intact.
 
 | Field | Type | Holds |
 |---|---|---|
