@@ -12,7 +12,7 @@
   "progress": [
     {
       "round": 1,
-      "line": "\u001B[31mred\u001B[0m \u001B]0;title\u0007done",
+      "line": "\\x1B[31mred\\x1B[0m \\x1B]0;title\\x07done",
       "at": "2026-01-01T00:00:00.0000000Z"
     }
   ],

@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Core.Text;
 using Aw.Sindri.Host;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Jobs;
@@ -202,7 +203,7 @@ internal static class JobScenarios
                 await Progress(h, j, n, "line " + n.ToString(CultureInfo.InvariantCulture), ct);
             }
         },
-        ["ansi-escaped"] = static (h, j, ct) => Progress(h, j, 1, "\u001b[31mred\u001b[0m \u001b]0;title\u0007done", ct),
+        ["ansi-escaped"] = static (h, j, ct) => Progress(h, j, 1, JobLines.Clean(h.App.Services.GetRequiredService<ITextScrubber>(), "\u001b[31mred\u001b[0m \u001b]0;title\u0007done"), ct),   // the line the real writer records
         ["stalled"] = static (h, _, ct) => ViewScenarios.Stall(h, ct),
     };
 
