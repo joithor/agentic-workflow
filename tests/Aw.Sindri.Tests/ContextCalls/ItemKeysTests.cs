@@ -1,16 +1,16 @@
 using Aw.Kernel;
-using Aw.Kernel.Ids;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Items;
+using Aw.Sindri.Core.Items.Vocabulary;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.ContextCalls;
-using Aw.Sindri.Core.Items.Vocabulary;
 
 namespace Aw.Sindri.Tests.ContextCalls;
 
-/// <summary>An <c>ITM-...</c> item asked of the context query becomes the tracker record it is linked to (spec §8.1 item shape; plan S5).</summary>
+/// <summary>An ITM-... item asked of the context query becomes the tracker record it is linked to (spec §8.1 item shape; plan S5).</summary>
 public sealed class ItemKeysTests
 {
     private static readonly ItemId _item = ItemId.From("ITM-" + new string('1', 32));
