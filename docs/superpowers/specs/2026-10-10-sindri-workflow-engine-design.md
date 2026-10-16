@@ -1001,7 +1001,7 @@ Outside S1:
 
 | Code | Kind | Meaning | Fix |
 |---|---|---|---|
-| SND-RECIPE-001 | invalid | Validation failed, or the recipe was registered before input kinds (a start or an approval of it) | Fix each `RCP-*` line; for a legacy row, register the current file at a new version and approve it |
+| SND-RECIPE-001 | invalid | Validation failed, or the recipe was registered before input kinds (a start or a first approval of it) | Fix each `RCP-*` line; for a legacy row, register the current file at a new version and approve it |
 | SND-RECIPE-002 | notFound | No recipe with that id or hash | `sindri recipe list` |
 | SND-RECIPE-003 | conflict | Not approved | `sindri recipe approve` |
 | SND-RECIPE-004 | — | Retired: a caller without a terminal gets API's `SND-AUTH-002` | — |

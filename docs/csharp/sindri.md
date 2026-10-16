@@ -587,7 +587,7 @@ together with `SindriErrors`. Retired codes stay reserved in `WorkflowErrors.Ret
 
 | Code | Kind | When |
 |---|---|---|
-| `SND-RECIPE-001` | invalid | Validation failed, or the recipe was registered before input kinds (a start or an approval of it); fix each `RCP-*` line, or register the current file at a new version and approve it |
+| `SND-RECIPE-001` | invalid | Validation failed, or the recipe was registered before input kinds (a start or a first approval of it); fix each `RCP-*` line, or register the current file at a new version and approve it |
 | `SND-RECIPE-002` | notFound | No recipe with that id or hash (`sindri recipe list`) |
 | `SND-RECIPE-003` | conflict | Not approved (`sindri recipe approve`) |
 | `SND-RECIPE-004` | — | Retired: a caller without a terminal gets the API's `SND-AUTH-002` |
