@@ -1,6 +1,7 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Components;
 using Aw.Sindri.Ui.ViewModels.Instance;
 using Aw.Sindri.Ui.ViewModels.Workflows;
 using Microsoft.Extensions.Time.Testing;
@@ -22,7 +23,7 @@ public sealed class RestingTextsTests
 
         await expanded.CopyStatus(TestContext.Current.CancellationToken);
         Assert.Equal(Labels.Copied, expanded.StatusCopy.Label);
-        _clock.Advance(Aw.Sindri.Ui.ViewModels.Components.ProtectedActionViewModel.CopiedFor);
+        _clock.Advance(ProtectedActionViewModel.CopiedFor);
 
         Assert.Equal(Labels.CopyStatus, expanded.StatusCopy.Label);
     }
