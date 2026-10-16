@@ -11,14 +11,17 @@
 #                                         (scripts/lib/with-tty.sh), stdin passed through, CRs and terminal control
 #                                         sequences stripped; stdout and stderr arrive merged on stdout. Exit: the CLI's.
 #                                         e.g. printf 'approve profile %s\n' "${H:0:6}" | sindri-prove.sh human profile approve "$H"
-#   sindri-prove.sh curl [--no-terminal] [--no-token | --token T] [-H 'Name: value']… <METHOD> <path> [json]
+#   sindri-prove.sh curl [--stream] [--no-terminal] [--no-token | --token T] [-H 'Name: value']… <METHOD> <path> [json]
 #                                         a human request to the running process: the URL from
 #                                         $AW_SINDRI_HOME/control.json, headers X-Sindri-Caller: human,
 #                                         X-Sindri-Terminal: 1 (unless --no-terminal), X-Sindri-Client: prover,
 #                                         X-Sindri-Token from $AW_SINDRI_HOME/auth/human.token (unless --no-token or
 #                                         --token T), Content-Type: application/json with a body. Prints the body on
 #                                         stdout and "HTTP <status>" on stderr. Exit 0 on 2xx, 1 on another status,
-#                                         3 when no response came. Not for the event stream (the body prints at the end).
+#                                         3 when no response came. The body prints at the end; for the event stream
+#                                         (GET /sindri/events) pass --stream: curl -N with the same human headers and
+#                                         token, the body straight to stdout as it arrives (no buffer file, no status
+#                                         line; exit 0 when it ends, 1 on an HTTP error status, 3 when no response came).
 #   sindri-prove.sh url                   the base URL, for session requests written by hand (no caller header)
 #
 # The guard runs first, for every mode: AW_SINDRI_HOME must be set and its real path strictly inside
@@ -45,7 +48,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT/scripts/lib/with-tty.sh"
 
 die() { echo "sindri-prove: $*" >&2; exit 2; }
-usage() { sed -n '5,22p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '5,25p' "$0" | sed 's/^# \{0,1\}//'; }
 
 case "${1:-}" in
   -h | --help) usage; exit 0 ;;
@@ -119,14 +122,15 @@ base_url() {
 }
 
 prove_curl() {
-  local terminal=1 token_mode=file token="" extra=()
+  local terminal=1 token_mode=file token="" extra=() stream=0
   while [ $# -gt 0 ]; do
     case "$1" in
+      --stream) stream=1; shift ;;
       --no-terminal) terminal=0; shift ;;
       --no-token) token_mode=none; shift ;;
       --token) [ $# -ge 2 ] || die "--token needs a value"; token_mode=given; token="$2"; shift 2 ;;
       -H) [ $# -ge 2 ] || die "-H needs a header"; extra+=(-H "$2"); shift 2 ;;
-      -*) die "unknown curl flag $1 (usage: sindri-prove.sh curl [--no-terminal] [--no-token | --token T] [-H 'Name: value']… <METHOD> <path> [json])" ;;
+      -*) die "unknown curl flag $1 (usage: sindri-prove.sh curl [--stream] [--no-terminal] [--no-token | --token T] [-H 'Name: value']… <METHOD> <path> [json])" ;;
       *) break ;;
     esac
   done
@@ -151,6 +155,12 @@ prove_curl() {
   [ "$has_body" = 1 ] && args+=(-H "Content-Type: application/json")
   [ ${#extra[@]} -gt 0 ] && args+=("${extra[@]}")
   [ "$has_body" = 1 ] && args+=(--data-binary "$body")
+
+  if [ "$stream" = 1 ]; then
+    # the body goes to stdout as it arrives: -N turns curl's buffering off; an HTTP error status still prints its body, then exits 22
+    curl "${args[@]}" -N --fail-with-body "$url$path"
+    case $? in 0) exit 0 ;; 22) exit 1 ;; *) exit 3 ;; esac
+  fi
 
   local out status rc
   out="$(mktemp "${TMPDIR:-/tmp}/sindri-prove.XXXXXX")" || die "no temp file"

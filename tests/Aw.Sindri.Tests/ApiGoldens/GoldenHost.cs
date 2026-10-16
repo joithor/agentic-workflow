@@ -59,6 +59,10 @@ public sealed class GoldenHost : IAsyncDisposable
     /// <summary>A client on the host's loopback address.</summary>
     public HttpClient Http { get; private set; } = new();
 
+    /// <summary>The host's clock now.</summary>
+    /// <returns>The instant.</returns>
+    public DateTimeOffset Now() => App.Services.GetRequiredService<TimeProvider>().GetUtcNow();
+
     /// <summary>The running host.</summary>
     public WebApplication App => _app ?? throw new InvalidOperationException("the host isn't started");
 

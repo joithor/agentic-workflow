@@ -1,5 +1,6 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Infrastructure;
 using Aw.Sindri.Infrastructure.Ledger;
@@ -18,7 +19,7 @@ public sealed class LedgerCommandOriginsContractTests : CommandOriginsContract, 
     protected override ValueTask<(SindriStores Stores, ICommandOrigins Origins)> Create(TimeProvider clock, IProcessProbe probe)
     {
         var database = new LedgerDatabase(new SindriSettings(_home.Path, Path.Combine(_home.Path, "profile.yaml")), clock);
-        var stores = new SindriStores(new SqliteLease(database, probe, clock), new SqliteLedger(database));
+        var stores = new SindriStores(new SqliteLease(database, probe, clock), new SqliteLedger(database, new LedgerSignal(clock)));
         return ValueTask.FromResult<(SindriStores, ICommandOrigins)>((stores, new LedgerCommandOrigins(database)));
     }
 }

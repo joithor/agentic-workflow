@@ -240,9 +240,9 @@ internal static class ItemScenarios
         }
     }
 
-    private static (string Name, string Value)[] Human(GoldenHost host) => Callers.CallerRequests.Human(host.Token.Value);
+    internal static (string Name, string Value)[] Human(GoldenHost host) => Callers.CallerRequests.Human(host.Token.Value);
 
-    private static (string Name, string Value)[] Session(string repo) => [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli"), (SindriHeaders.Repo, repo)];
+    internal static (string Name, string Value)[] Session(string repo) => [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli"), (SindriHeaders.Repo, repo)];
 
     private static CommandId Command(int n) => CommandId.From(new Guid(n, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
 
@@ -252,7 +252,7 @@ internal static class ItemScenarios
         await Send(host, Post($"/sindri/items/{item}/close", string.Create(CultureInfo.InvariantCulture, $$"""{"reason":"{{reason}}","itemVersion":{{version}}}"""), Human(host)));
 
     /// <summary>Creates an item as the human through the API and returns its id.</summary>
-    private static async Task<string> Create(GoldenHost host, string title, string? repo, string? body = null, string? link = null)
+    internal static async Task<string> Create(GoldenHost host, string title, string? repo, string? body = null, string? link = null)
     {
         var json = new JsonObject { ["title"] = title, ["repo"] = repo, ["body"] = body, ["link"] = link };
         var answer = await host.Http.Ask(Post("/sindri/items", json.ToJsonString(), Human(host)));
@@ -274,7 +274,7 @@ internal static class ItemScenarios
         await ViewScenarios.CatchUp(host, ct);
     }
 
-    private static async Task AppendFor<TPayload>(GoldenHost host, string item, string type, TPayload payload, string key, CancellationToken ct)
+    internal static async Task AppendFor<TPayload>(GoldenHost host, string item, string type, TPayload payload, string key, CancellationToken ct)
     {
         await using var scope = ViewScenarios.Service(host, out var grant);
         var events = scope.ServiceProvider.GetRequiredService<EventFactory>();

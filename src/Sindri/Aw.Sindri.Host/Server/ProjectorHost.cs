@@ -1,10 +1,12 @@
+using Aw.Sindri.Core.Ledger;
+
 namespace Aw.Sindri.Host.Server;
 
 /// <summary>
-/// Runs the projector while 'sindri serve' runs: a pass, then a second's wait on the clock (P5's ledger signal replaces
-/// the poll). A stalled projector's pass is a no-op until its 30 s retry (Projector.StallRetry).
+/// Runs the projector while 'sindri serve' runs: a pass, then a wait for the ledger signal (API spec §2.3, §5.5) that ends at
+/// once when an append lands past the head the pass saw, or after a second on the clock (the poll, for another process's append). A stalled projector's pass is a no-op until its 30 s retry (Projector.StallRetry).
 /// </summary>
-internal sealed partial class ProjectorHost(Projector projector, TimeProvider clock, ILogger<ProjectorHost> log) : BackgroundService
+internal sealed partial class ProjectorHost(Projector projector, ILedgerSignal signal, TimeProvider clock, ILogger<ProjectorHost> log) : BackgroundService
 {
     private static readonly TimeSpan _tick = TimeSpan.FromSeconds(1);
 
@@ -14,8 +16,15 @@ internal sealed partial class ProjectorHost(Projector projector, TimeProvider cl
         {
             try
             {
-                _ = await projector.CatchUp(stoppingToken).ConfigureAwait(false);
-                await Task.Delay(_tick, clock, stoppingToken).ConfigureAwait(false);
+                var pass = await projector.CatchUp(stoppingToken).ConfigureAwait(false);
+                if (pass == ProjectorPass.CaughtUp)
+                {
+                    _ = await signal.WaitAfter(projector.SeenHead, _tick, stoppingToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    await Task.Delay(_tick, clock, stoppingToken).ConfigureAwait(false);   // a stalled or failed pass has no head to wait past: poll
+                }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

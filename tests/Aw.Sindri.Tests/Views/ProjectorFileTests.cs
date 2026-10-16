@@ -51,7 +51,7 @@ public sealed class ProjectorFileTests : IDisposable
         var progress = new ProjectorProgress(_clock);
         var projector = new Projector(new SqliteLedgerReader(ledger), views.Store, [new ToggleProjection()], progress, new AsyncLocalCallerContextAccessor(_ids),
             _clock, new ListLogger<Projector>());
-        using var host = new ProjectorHost(projector, _clock, new ListLogger<ProjectorHost>());
+        using var host = new ProjectorHost(projector, new LedgerSignal(_clock), _clock, new ListLogger<ProjectorHost>());
 
         await host.StartAsync(Token);
         await Until(() => progress.Current.Cursor == 2);
@@ -60,6 +60,46 @@ public sealed class ProjectorFileTests : IDisposable
         await host.StopAsync(Token);
 
         Assert.Equal(3, (await views.Reader.List<ServiceRow>(ViewNames.Services, Token)).Value.Count);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Projector_wakes_on_a_pulse_before_its_poll()
+    {
+        var signal = new LedgerSignal(_clock);
+        await Append(2, signal);
+        using var views = new SqliteViews(_home.Path);
+        using var ledger = Ledger();
+        var progress = new ProjectorProgress(_clock);
+        var projector = new Projector(new SqliteLedgerReader(ledger), views.Store, [new ToggleProjection()], progress, new AsyncLocalCallerContextAccessor(_ids),
+            _clock, new ListLogger<Projector>());
+        using var host = new ProjectorHost(projector, signal, _clock, new ListLogger<ProjectorHost>());
+
+        await host.StartAsync(Token);
+        await Until(() => progress.Current.Cursor == 2);
+        await Append(1, signal);
+
+        await Until(() => progress.Current.Cursor == 3);   // the fake clock never moved: the pass ran on the pulse, not the poll
+        await host.StopAsync(Token);
+        Assert.Equal(KnownInstants.Epoch, _clock.GetUtcNow());
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Projector_still_polls_without_a_pulse()
+    {
+        await Append(2);
+        using var views = new SqliteViews(_home.Path);
+        using var ledger = Ledger();
+        var progress = new ProjectorProgress(_clock);
+        var projector = new Projector(new SqliteLedgerReader(ledger), views.Store, [new ToggleProjection()], progress, new AsyncLocalCallerContextAccessor(_ids),
+            _clock, new ListLogger<Projector>());
+        using var host = new ProjectorHost(projector, new LedgerSignal(_clock), _clock, new ListLogger<ProjectorHost>());
+
+        await host.StartAsync(Token);
+        await Until(() => progress.Current.Cursor == 2);
+        await Append(1, new LedgerSignal(_clock));   // another process's append: no pulse reaches this host
+
+        await Until(() => progress.Current.Cursor == 3, tick: true);
+        await host.StopAsync(Token);
     }
 
     private async Task<IReadOnlyList<ServiceRow>> ProjectOnce()
@@ -74,10 +114,10 @@ public sealed class ProjectorFileTests : IDisposable
 
     private LedgerDatabase Ledger() => new(new SindriSettings(_home.Path, Path.Combine(_home.Path, "profile.yaml")), _clock);
 
-    private async Task Append(int count)
+    private async Task Append(int count, ILedgerSignal? signal = null)
     {
         var probe = new FakeProcessProbe();
-        var stores = SqliteStores.Create(_home.Path, _clock, probe);
+        var stores = SqliteStores.Create(_home.Path, _clock, probe, signal);
         var grant = (await stores.Lease.Acquire(probe.Self(), Token)).Value;
         var head = (await stores.Ledger.Head(Token)).Value;
         for (var i = 1; i <= count; i++)

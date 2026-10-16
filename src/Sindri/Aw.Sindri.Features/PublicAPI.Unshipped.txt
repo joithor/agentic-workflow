@@ -979,49 +979,99 @@ Aw.Sindri.Features.StopProcess.StopProcessResponse.Pid.init -> void
 Aw.Sindri.Features.StopProcess.StopProcessResponse.Sequence.get -> long?
 Aw.Sindri.Features.StopProcess.StopProcessResponse.Sequence.init -> void
 Aw.Sindri.Features.StopProcess.StopProcessResponse.StopProcessResponse(int Pid, long Epoch, long? Sequence) -> void
-Aw.Sindri.Features.StreamEvents.EventView
-Aw.Sindri.Features.StreamEvents.EventView.<Clone>$() -> Aw.Sindri.Features.StreamEvents.EventView!
-Aw.Sindri.Features.StreamEvents.EventView.Actor.get -> string!
-Aw.Sindri.Features.StreamEvents.EventView.Actor.init -> void
-Aw.Sindri.Features.StreamEvents.EventView.Deconstruct(out long Sequence, out string! Type, out System.DateTimeOffset OccurredAt, out string! Actor, out string! Tenant, out int Ring, out long Epoch, out string! Payload) -> void
-Aw.Sindri.Features.StreamEvents.EventView.Epoch.get -> long
-Aw.Sindri.Features.StreamEvents.EventView.Epoch.init -> void
-Aw.Sindri.Features.StreamEvents.EventView.Equals(Aw.Sindri.Features.StreamEvents.EventView? other) -> bool
-Aw.Sindri.Features.StreamEvents.EventView.EventView(long Sequence, string! Type, System.DateTimeOffset OccurredAt, string! Actor, string! Tenant, int Ring, long Epoch, string! Payload) -> void
-Aw.Sindri.Features.StreamEvents.EventView.OccurredAt.get -> System.DateTimeOffset
-Aw.Sindri.Features.StreamEvents.EventView.OccurredAt.init -> void
-Aw.Sindri.Features.StreamEvents.EventView.Payload.get -> string!
-Aw.Sindri.Features.StreamEvents.EventView.Payload.init -> void
-Aw.Sindri.Features.StreamEvents.EventView.Ring.get -> int
-Aw.Sindri.Features.StreamEvents.EventView.Ring.init -> void
-Aw.Sindri.Features.StreamEvents.EventView.Sequence.get -> long
-Aw.Sindri.Features.StreamEvents.EventView.Sequence.init -> void
-Aw.Sindri.Features.StreamEvents.EventView.Tenant.get -> string!
-Aw.Sindri.Features.StreamEvents.EventView.Tenant.init -> void
-Aw.Sindri.Features.StreamEvents.EventView.Type.get -> string!
-Aw.Sindri.Features.StreamEvents.EventView.Type.init -> void
 Aw.Sindri.Features.StreamEvents.StreamEventsRequest
 Aw.Sindri.Features.StreamEvents.StreamEventsRequest.<Clone>$() -> Aw.Sindri.Features.StreamEvents.StreamEventsRequest!
 Aw.Sindri.Features.StreamEvents.StreamEventsRequest.After.get -> long
 Aw.Sindri.Features.StreamEvents.StreamEventsRequest.After.init -> void
-Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Deconstruct(out long After, out int Max, out Aw.Sindri.Core.Workflow.Engine.ItemKey? Item, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance) -> void
 Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Equals(Aw.Sindri.Features.StreamEvents.StreamEventsRequest? other) -> bool
 Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Instance.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress?
 Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Instance.init -> void
 Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Item.get -> Aw.Sindri.Core.Workflow.Engine.ItemKey?
 Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Item.init -> void
+Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Ref.get -> Aw.Sindri.Core.Ids.ItemRef?
+Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Ref.init -> void
+Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Types.get -> Aw.Sindri.Core.Ledger.TypeFilter?
+Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Types.init -> void
+Aw.Sindri.Features.StreamEvents.StreamEventsResponse.ScannedTo.get -> long
+Aw.Sindri.Features.StreamEvents.StreamEventsResponse.ScannedTo.init -> void
+Aw.Sindri.Features.StreamEvents.StreamEventsResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.PublicEvent!>! Events, out long ScannedTo) -> void
+Aw.Sindri.Features.StreamEvents.StreamEventsResponse.Events.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.PublicEvent!>!
+Aw.Sindri.Features.StreamEvents.StreamEventsResponse.StreamEventsResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.PublicEvent!>! Events, long ScannedTo) -> void
+Aw.Sindri.Features.GetEventCatalog.EventCatalogView
+Aw.Sindri.Features.GetEventCatalog.EventCatalogView.<Clone>$() -> Aw.Sindri.Features.GetEventCatalog.EventCatalogView!
+Aw.Sindri.Features.GetEventCatalog.EventCatalogView.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetEventCatalog.EventTypeView!>! Types) -> void
+Aw.Sindri.Features.GetEventCatalog.EventCatalogView.Equals(Aw.Sindri.Features.GetEventCatalog.EventCatalogView? other) -> bool
+Aw.Sindri.Features.GetEventCatalog.EventCatalogView.EventCatalogView(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetEventCatalog.EventTypeView!>! Types) -> void
+Aw.Sindri.Features.GetEventCatalog.EventCatalogView.Types.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetEventCatalog.EventTypeView!>!
+Aw.Sindri.Features.GetEventCatalog.EventCatalogView.Types.init -> void
+Aw.Sindri.Features.GetEventCatalog.EventTypeView
+Aw.Sindri.Features.GetEventCatalog.EventTypeView.<Clone>$() -> Aw.Sindri.Features.GetEventCatalog.EventTypeView!
+Aw.Sindri.Features.GetEventCatalog.EventTypeView.Deconstruct(out string! Type, out string! KeyShape, out System.Collections.Generic.IReadOnlyList<string!>! Invalidates) -> void
+Aw.Sindri.Features.GetEventCatalog.EventTypeView.Equals(Aw.Sindri.Features.GetEventCatalog.EventTypeView? other) -> bool
+Aw.Sindri.Features.GetEventCatalog.EventTypeView.EventTypeView(string! Type, string! KeyShape, System.Collections.Generic.IReadOnlyList<string!>! Invalidates) -> void
+Aw.Sindri.Features.GetEventCatalog.EventTypeView.Invalidates.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.GetEventCatalog.EventTypeView.Invalidates.init -> void
+Aw.Sindri.Features.GetEventCatalog.EventTypeView.KeyShape.get -> string!
+Aw.Sindri.Features.GetEventCatalog.EventTypeView.KeyShape.init -> void
+Aw.Sindri.Features.GetEventCatalog.EventTypeView.Type.get -> string!
+Aw.Sindri.Features.GetEventCatalog.EventTypeView.Type.init -> void
+Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest
+Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest.<Clone>$() -> Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest!
+Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest.Equals(Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest? other) -> bool
+Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest.GetEventCatalogRequest() -> void
+Aw.Sindri.Features.ReadLedger.LedgerPage
+Aw.Sindri.Features.ReadLedger.LedgerPage.<Clone>$() -> Aw.Sindri.Features.ReadLedger.LedgerPage!
+Aw.Sindri.Features.ReadLedger.LedgerPage.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.PublicEvent!>! Events, out long? Next) -> void
+Aw.Sindri.Features.ReadLedger.LedgerPage.Equals(Aw.Sindri.Features.ReadLedger.LedgerPage? other) -> bool
+Aw.Sindri.Features.ReadLedger.LedgerPage.Events.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.PublicEvent!>!
+Aw.Sindri.Features.ReadLedger.LedgerPage.Events.init -> void
+Aw.Sindri.Features.ReadLedger.LedgerPage.LedgerPage(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.PublicEvent!>! Events, long? Next) -> void
+Aw.Sindri.Features.ReadLedger.LedgerPage.Next.get -> long?
+Aw.Sindri.Features.ReadLedger.LedgerPage.Next.init -> void
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.<Clone>$() -> Aw.Sindri.Features.ReadLedger.ReadLedgerRequest!
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.After.get -> long
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.After.init -> void
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Deconstruct(out long After, out Aw.Sindri.Core.Ids.ItemRef? Item, out string? Type, out int Max) -> void
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Equals(Aw.Sindri.Features.ReadLedger.ReadLedgerRequest? other) -> bool
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Item.get -> Aw.Sindri.Core.Ids.ItemRef?
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Item.init -> void
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Max.get -> int
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Max.init -> void
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.ReadLedgerRequest(long After, Aw.Sindri.Core.Ids.ItemRef? Item = null, string? Type = null, int Max = 100) -> void
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Type.get -> string?
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Type.init -> void
+override Aw.Sindri.Features.GetEventCatalog.EventCatalogView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetEventCatalog.EventCatalogView.GetHashCode() -> int
+override Aw.Sindri.Features.GetEventCatalog.EventCatalogView.ToString() -> string!
+override Aw.Sindri.Features.GetEventCatalog.EventTypeView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetEventCatalog.EventTypeView.GetHashCode() -> int
+override Aw.Sindri.Features.GetEventCatalog.EventTypeView.ToString() -> string!
+override Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest.ToString() -> string!
+override Aw.Sindri.Features.ReadLedger.LedgerPage.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ReadLedger.LedgerPage.GetHashCode() -> int
+override Aw.Sindri.Features.ReadLedger.LedgerPage.ToString() -> string!
+override Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.ToString() -> string!
+static Aw.Sindri.Features.GetEventCatalog.EventCatalogView.operator !=(Aw.Sindri.Features.GetEventCatalog.EventCatalogView? left, Aw.Sindri.Features.GetEventCatalog.EventCatalogView? right) -> bool
+static Aw.Sindri.Features.GetEventCatalog.EventCatalogView.operator ==(Aw.Sindri.Features.GetEventCatalog.EventCatalogView? left, Aw.Sindri.Features.GetEventCatalog.EventCatalogView? right) -> bool
+static Aw.Sindri.Features.GetEventCatalog.EventTypeView.operator !=(Aw.Sindri.Features.GetEventCatalog.EventTypeView? left, Aw.Sindri.Features.GetEventCatalog.EventTypeView? right) -> bool
+static Aw.Sindri.Features.GetEventCatalog.EventTypeView.operator ==(Aw.Sindri.Features.GetEventCatalog.EventTypeView? left, Aw.Sindri.Features.GetEventCatalog.EventTypeView? right) -> bool
+static Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest.operator !=(Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest? left, Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest? right) -> bool
+static Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest.operator ==(Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest? left, Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest? right) -> bool
+static Aw.Sindri.Features.ReadLedger.LedgerPage.operator !=(Aw.Sindri.Features.ReadLedger.LedgerPage? left, Aw.Sindri.Features.ReadLedger.LedgerPage? right) -> bool
+static Aw.Sindri.Features.ReadLedger.LedgerPage.operator ==(Aw.Sindri.Features.ReadLedger.LedgerPage? left, Aw.Sindri.Features.ReadLedger.LedgerPage? right) -> bool
+static Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.operator !=(Aw.Sindri.Features.ReadLedger.ReadLedgerRequest? left, Aw.Sindri.Features.ReadLedger.ReadLedgerRequest? right) -> bool
+static Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.operator ==(Aw.Sindri.Features.ReadLedger.ReadLedgerRequest? left, Aw.Sindri.Features.ReadLedger.ReadLedgerRequest? right) -> bool
 Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Max.get -> int
 Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Max.init -> void
-Aw.Sindri.Features.StreamEvents.StreamEventsRequest.StreamEventsRequest(long After, int Max = 100, Aw.Sindri.Core.Workflow.Engine.ItemKey? Item = null, Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance = null) -> void
 Aw.Sindri.Features.StreamEvents.StreamEventsResponse
 Aw.Sindri.Features.StreamEvents.StreamEventsResponse.<Clone>$() -> Aw.Sindri.Features.StreamEvents.StreamEventsResponse!
-Aw.Sindri.Features.StreamEvents.StreamEventsResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.StreamEvents.EventView!>! Events) -> void
 Aw.Sindri.Features.StreamEvents.StreamEventsResponse.Equals(Aw.Sindri.Features.StreamEvents.StreamEventsResponse? other) -> bool
-Aw.Sindri.Features.StreamEvents.StreamEventsResponse.Events.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.StreamEvents.EventView!>!
 Aw.Sindri.Features.StreamEvents.StreamEventsResponse.Events.init -> void
-Aw.Sindri.Features.StreamEvents.StreamEventsResponse.Scanned.get -> long?
-Aw.Sindri.Features.StreamEvents.StreamEventsResponse.Scanned.init -> void
-Aw.Sindri.Features.StreamEvents.StreamEventsResponse.StreamEventsResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.StreamEvents.EventView!>! Events) -> void
 Aw.Sindri.Features.ValidateProfile.ValidateProfileRequest
 Aw.Sindri.Features.ValidateProfile.ValidateProfileRequest.<Clone>$() -> Aw.Sindri.Features.ValidateProfile.ValidateProfileRequest!
 Aw.Sindri.Features.ValidateProfile.ValidateProfileRequest.Equals(Aw.Sindri.Features.ValidateProfile.ValidateProfileRequest? other) -> bool
@@ -1330,9 +1380,6 @@ override Aw.Sindri.Features.StopProcess.StopProcessRequest.ToString() -> string!
 override Aw.Sindri.Features.StopProcess.StopProcessResponse.Equals(object? obj) -> bool
 override Aw.Sindri.Features.StopProcess.StopProcessResponse.GetHashCode() -> int
 override Aw.Sindri.Features.StopProcess.StopProcessResponse.ToString() -> string!
-override Aw.Sindri.Features.StreamEvents.EventView.Equals(object? obj) -> bool
-override Aw.Sindri.Features.StreamEvents.EventView.GetHashCode() -> int
-override Aw.Sindri.Features.StreamEvents.EventView.ToString() -> string!
 override Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Features.StreamEvents.StreamEventsRequest.GetHashCode() -> int
 override Aw.Sindri.Features.StreamEvents.StreamEventsRequest.ToString() -> string!
@@ -1539,10 +1586,10 @@ static Aw.Sindri.Features.StopProcess.StopProcessRequest.operator !=(Aw.Sindri.F
 static Aw.Sindri.Features.StopProcess.StopProcessRequest.operator ==(Aw.Sindri.Features.StopProcess.StopProcessRequest? left, Aw.Sindri.Features.StopProcess.StopProcessRequest? right) -> bool
 static Aw.Sindri.Features.StopProcess.StopProcessResponse.operator !=(Aw.Sindri.Features.StopProcess.StopProcessResponse? left, Aw.Sindri.Features.StopProcess.StopProcessResponse? right) -> bool
 static Aw.Sindri.Features.StopProcess.StopProcessResponse.operator ==(Aw.Sindri.Features.StopProcess.StopProcessResponse? left, Aw.Sindri.Features.StopProcess.StopProcessResponse? right) -> bool
-static Aw.Sindri.Features.StreamEvents.EventView.operator !=(Aw.Sindri.Features.StreamEvents.EventView? left, Aw.Sindri.Features.StreamEvents.EventView? right) -> bool
-static Aw.Sindri.Features.StreamEvents.EventView.operator ==(Aw.Sindri.Features.StreamEvents.EventView? left, Aw.Sindri.Features.StreamEvents.EventView? right) -> bool
 static Aw.Sindri.Features.StreamEvents.StreamEventsRequest.operator !=(Aw.Sindri.Features.StreamEvents.StreamEventsRequest? left, Aw.Sindri.Features.StreamEvents.StreamEventsRequest? right) -> bool
 static Aw.Sindri.Features.StreamEvents.StreamEventsRequest.operator ==(Aw.Sindri.Features.StreamEvents.StreamEventsRequest? left, Aw.Sindri.Features.StreamEvents.StreamEventsRequest? right) -> bool
+Aw.Sindri.Features.StreamEvents.StreamEventsRequest.Deconstruct(out long After, out int Max, out Aw.Sindri.Core.Workflow.Engine.ItemKey? Item, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance, out Aw.Sindri.Core.Ledger.TypeFilter? Types, out Aw.Sindri.Core.Ids.ItemRef? Ref) -> void
+Aw.Sindri.Features.StreamEvents.StreamEventsRequest.StreamEventsRequest(long After, int Max = 100, Aw.Sindri.Core.Workflow.Engine.ItemKey? Item = null, Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance = null, Aw.Sindri.Core.Ledger.TypeFilter? Types = null, Aw.Sindri.Core.Ids.ItemRef? Ref = null) -> void
 static Aw.Sindri.Features.StreamEvents.StreamEventsResponse.operator !=(Aw.Sindri.Features.StreamEvents.StreamEventsResponse? left, Aw.Sindri.Features.StreamEvents.StreamEventsResponse? right) -> bool
 static Aw.Sindri.Features.StreamEvents.StreamEventsResponse.operator ==(Aw.Sindri.Features.StreamEvents.StreamEventsResponse? left, Aw.Sindri.Features.StreamEvents.StreamEventsResponse? right) -> bool
 static Aw.Sindri.Features.ValidateProfile.ValidateProfileRequest.operator !=(Aw.Sindri.Features.ValidateProfile.ValidateProfileRequest? left, Aw.Sindri.Features.ValidateProfile.ValidateProfileRequest? right) -> bool

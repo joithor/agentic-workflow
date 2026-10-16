@@ -635,9 +635,12 @@ The `--json` output is the response as the CLI's serializer prints it (`status` 
   An input's digest prints as its first four hex digits and `...` (ASCII for §6.4's ellipsis). The answer note is set
   off by five spaces. Golden files pin the six §6.4 layouts and one per §3.8 row P4 reaches
   (`tests/Aw.Sindri.Tests/GetInstance/Golden/`).
-- **The event stream's filter (S1-D6).** `GET /sindri/events?item=<id>` keeps one item's rows and `?instance=<address>`
-  the rows an instance mirrored (keys `workflow:{address}:…`, so a child's rows stay out of its parent's). The stream's
-  cursor still moves past the rows the filter skips (`StreamEventsResponse.Scanned`).
+- **The event stream's filter (S1-D6).** `GET /sindri/events?item=<ITM id or alias>` keeps one item's rows: the item is
+  resolved for the caller, from the ledger, and an item that isn't there, or that a session may not see, is a 404
+  `SND-ITEM-404` before any frame. `?instance=<address>` keeps the rows an instance mirrored (keys `workflow:{address}:…`,
+  so a child's rows stay out of its parent's); an engine row keyed by a tracker key (not an ITM id) is reached through
+  `?instance=`, not `?item=`. The stream's cursor moves by `StreamEventsResponse.ScannedTo` (how far the read looked, also
+  past the rows the filter or the caller's scope skipped).
 - **Profile keys (S1-D11).** `workflow.deskTimeout` (default `2d`) and `workflow.eventHold` (default `24h`), each a
   duration (`1m`, `4h`, `2d`); a profile without a `workflow:` block keeps the canonical JSON (and so the hash) it had.
   The worker reads them through `ProfileWorkflowTimes`: `LoadRecipe` reads both when an instance starts, so the desk

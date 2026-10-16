@@ -31,6 +31,13 @@ public abstract class LedgerStoreContract
     /// <returns>The stores.</returns>
     protected abstract ValueTask<SindriStores> Create(TimeProvider clock, IProcessProbe probe);
 
+    /// <summary>The stores over a fresh, empty file or memory that pulse <paramref name="signal"/> after each new append commits.</summary>
+    /// <param name="clock">The only clock.</param>
+    /// <param name="probe">The process probe.</param>
+    /// <param name="signal">What a committed append pulses.</param>
+    /// <returns>The stores.</returns>
+    protected abstract ValueTask<SindriStores> Create(TimeProvider clock, IProcessProbe probe, ILedgerSignal signal);
+
     /// <summary>An appended event reads back with every envelope field, its epoch and its key.</summary>
     /// <returns>The test.</returns>
     [Fact]
@@ -112,6 +119,53 @@ public abstract class LedgerStoreContract
         _ = await ledger.Append(Entry("other", "k1"), grant, Token);
 
         Expect.Equal(second.Sequence, (await ledger.Head(Token)).Value);
+    }
+
+    /// <summary>Each new append pulses the ledger signal once, with its sequence (API spec §5.5).</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Each_new_append_pulses_once_with_its_sequence()
+    {
+        var signal = new RecordingLedgerSignal();
+        var (lease, ledger) = await Create(Clock, Probe, signal);
+        var grant = (await lease.Acquire(Probe.Self(), Token)).Value;
+
+        var first = (await ledger.Append(Entry("other", "k1"), grant, Token)).Value;
+        var second = (await ledger.Append(Entry("other", "k2"), grant, Token)).Value;
+
+        Expect.Sequence([first.Sequence, second.Sequence], signal.Pulses);
+    }
+
+    /// <summary>A replayed key pulses nothing: no row was committed.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_replayed_key_does_not_pulse()
+    {
+        var signal = new RecordingLedgerSignal();
+        var (lease, ledger) = await Create(Clock, Probe, signal);
+        var grant = (await lease.Acquire(Probe.Self(), Token)).Value;
+        var first = (await ledger.Append(Entry("other", "same"), grant, Token)).Value;
+
+        var again = (await ledger.Append(Entry("other", "same"), grant, Token)).Value;
+
+        Expect.True(again.AlreadyRecorded);
+        Expect.Sequence([first.Sequence], signal.Pulses);
+    }
+
+    /// <summary>An append refused for a stale epoch pulses nothing.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_refused_append_does_not_pulse()
+    {
+        var signal = new RecordingLedgerSignal();
+        var (lease, ledger) = await Create(Clock, Probe, signal);
+        var grant = (await lease.Acquire(Probe.Self(), Token)).Value;
+        _ = await lease.Release(grant, Token);
+
+        var refused = await ledger.Append(Entry("other", "k1"), grant, Token);
+
+        Expect.True(refused.IsError);
+        Expect.Equal(0, signal.Pulses.Count);
     }
 
     /// <summary>Once anything is written, the store reports its schema as current.</summary>

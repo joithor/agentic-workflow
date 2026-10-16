@@ -14,6 +14,9 @@ internal sealed class FlakyLedgerReader(ILedgerReader inner) : ILedgerReader
     public ValueTask<Result<IReadOnlyList<LedgerEvent>>> ReadAfter(long sequence, int max, CancellationToken cancellationToken) =>
         FailReads ? ValueTask.FromResult<Result<IReadOnlyList<LedgerEvent>>>(Unavailable) : inner.ReadAfter(sequence, max, cancellationToken);
 
+    public ValueTask<Result<LedgerScan>> Scan(long sequence, int max, LedgerFilter filter, CancellationToken cancellationToken) =>
+        FailReads ? ValueTask.FromResult<Result<LedgerScan>>(Unavailable) : inner.Scan(sequence, max, filter, cancellationToken);
+
     public ValueTask<Result<LedgerEvent?>> Latest(string type, CancellationToken cancellationToken) => inner.Latest(type, cancellationToken);
 
     public ValueTask<Result<long>> Head(CancellationToken cancellationToken) =>

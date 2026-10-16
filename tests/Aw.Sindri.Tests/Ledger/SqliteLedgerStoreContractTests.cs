@@ -1,5 +1,6 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.Ledger;
@@ -13,4 +14,7 @@ public sealed class SqliteLedgerStoreContractTests : LedgerStoreContract, IDispo
 
     protected override ValueTask<SindriStores> Create(TimeProvider clock, IProcessProbe probe) =>
         ValueTask.FromResult(SqliteStores.Create(_home.Path, clock, probe));
+
+    protected override ValueTask<SindriStores> Create(TimeProvider clock, IProcessProbe probe, ILedgerSignal signal) =>
+        ValueTask.FromResult(SqliteStores.Create(_home.Path, clock, probe, signal));
 }
