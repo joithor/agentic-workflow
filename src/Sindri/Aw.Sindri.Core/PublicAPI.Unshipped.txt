@@ -7777,7 +7777,6 @@ static Aw.Sindri.Core.Workflow.Blocks.ChoiceFault.operator ==(Aw.Sindri.Core.Wor
 static Aw.Sindri.Core.Workflow.Blocks.ChoiceList.Parse(System.Text.Json.JsonElement list) -> Aw.Sindri.Core.Workflow.Blocks.ChoiceParse!
 static Aw.Sindri.Core.Workflow.Blocks.ChoiceParse.operator !=(Aw.Sindri.Core.Workflow.Blocks.ChoiceParse? left, Aw.Sindri.Core.Workflow.Blocks.ChoiceParse? right) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.ChoiceParse.operator ==(Aw.Sindri.Core.Workflow.Blocks.ChoiceParse? left, Aw.Sindri.Core.Workflow.Blocks.ChoiceParse? right) -> bool
-static Aw.Sindri.Core.Workflow.Blocks.EngineFilledOutputs.For(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.OutputSpec!>! outputs, Aw.Sindri.Core.Workflow.Ids.OutcomeName outcome, string! provider, string? actor) -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>!
 static Aw.Sindri.Core.Workflow.Blocks.StepInputs.Of(Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor! descriptor, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.WithValue!>! with, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>?
 static Aw.Sindri.Core.Workflow.Blocks.StepOutcomes.Of(Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor! descriptor, Aw.Sindri.Core.Workflow.Recipes.StepUse! step, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>?
 static Aw.Sindri.Core.Workflow.Blocks.StepOutputs.RequiredOn(Aw.Sindri.Core.Workflow.Blocks.OutputSpec! spec, Aw.Sindri.Core.Workflow.Ids.OutcomeName outcome) -> bool
@@ -7785,3 +7784,20 @@ static Aw.Sindri.Core.Workflow.Engine.Evals.EvalScaffold.GenerateAll(Aw.Sindri.C
 static Aw.Sindri.Core.Workflow.Ids.FactKeyHint.Fix(string! text) -> string!
 Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.BlockDescriptor(Aw.Sindri.Core.Workflow.Ids.BlockId Id, Aw.Sindri.Core.Workflow.Blocks.BlockKind Kind, int Version, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>! Inputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.OutputSpec!>! Outputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>! Outcomes, Aw.Sindri.Core.Workflow.Blocks.Capability Capabilities, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.ParameterSpec!>! Parameters, Aw.Sindri.Core.Workflow.Blocks.Rung? Rung, bool DeskCapable, string? OutcomesFrom = null, string? InputsFrom = null) -> void
 Aw.Sindri.Core.Workflow.Blocks.OutputSpec.OutputSpec(Aw.Sindri.Core.Workflow.Ids.FactKey Fact, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>! RequiredOn, bool? Every = null, bool? EngineFilled = null) -> void
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact.Actor.get -> string?
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact.Actor.init -> void
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact.Choice.get -> string!
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact.Choice.init -> void
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact.<Clone>$() -> Aw.Sindri.Core.Workflow.Blocks.DecisionFact!
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact.DecisionFact(string! Choice, string! Provider, string? Actor = null) -> void
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact.Deconstruct(out string! Choice, out string! Provider, out string? Actor) -> void
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact.Equals(Aw.Sindri.Core.Workflow.Blocks.DecisionFact? other) -> bool
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact.Provider.get -> string!
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact.Provider.init -> void
+override Aw.Sindri.Core.Workflow.Blocks.DecisionFact.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Blocks.DecisionFact.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Blocks.DecisionFact.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Blocks.DecisionFact.operator !=(Aw.Sindri.Core.Workflow.Blocks.DecisionFact? left, Aw.Sindri.Core.Workflow.Blocks.DecisionFact? right) -> bool
+static Aw.Sindri.Core.Workflow.Blocks.DecisionFact.operator ==(Aw.Sindri.Core.Workflow.Blocks.DecisionFact? left, Aw.Sindri.Core.Workflow.Blocks.DecisionFact? right) -> bool
+static Aw.Sindri.Core.Workflow.Blocks.EngineFilledOutputs.For(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.OutputSpec!>! outputs, Aw.Sindri.Core.Workflow.Ids.OutcomeName outcome, string! provider, string? actor) -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Blocks.DecisionFact!>!

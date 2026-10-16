@@ -230,7 +230,7 @@ public sealed class EvalRecipeTests
         Assert.True(response.Cases[0].Passed, response.Cases[0].ToLine());
         var recipe = EvalComposition.Recipe(Choice.RouteRecipes.Dev);
         var filled = EngineFilledOutputs.For(EvalComposition.Catalog.Find(BlockId.From("step.judge.choose"))!.Outputs, OutcomeName.From("ui"), "eval", actor: null);
-        Assert.Equal("""{"choice":"ui","provider":"eval"}""", Assert.Single(filled).Value);
+        Assert.Equal(new DecisionFact("ui", "eval"), Assert.Single(filled).Value);
         Assert.Contains("fact:decision", recipe.Transitions[0].Produces.Select(f => f.Value), StringComparer.Ordinal);
     }
 

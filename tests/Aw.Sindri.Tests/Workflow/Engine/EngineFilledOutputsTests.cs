@@ -14,7 +14,7 @@ public sealed class EngineFilledOutputsTests
         var filled = EngineFilledOutputs.For(Outputs, OutcomeName.From("api"), "desk", "human:alice");
 
         var decision = Assert.Single(filled);
-        Assert.Equal(("fact:decision", """{"choice":"api","provider":"desk","actor":"human:alice"}"""), (decision.Key.Value, decision.Value));
+        Assert.Equal(("fact:decision", new DecisionFact("api", "desk", "human:alice")), (decision.Key.Value, decision.Value));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -22,7 +22,16 @@ public sealed class EngineFilledOutputsTests
     {
         var filled = EngineFilledOutputs.For(Outputs, OutcomeName.From("api"), "eval", actor: null);
 
-        Assert.Equal("""{"choice":"api","provider":"eval"}""", Assert.Single(filled).Value);
+        Assert.Equal(new DecisionFact("api", "eval"), Assert.Single(filled).Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_decision_serializes_without_an_actor_when_there_is_none()
+    {
+        var options = EvalComposition.Options;
+
+        Assert.Equal("""{"choice":"api","provider":"eval"}""", System.Text.Json.JsonSerializer.Serialize(new DecisionFact("api", "eval"), options));
+        Assert.Equal("""{"choice":"api","provider":"desk","actor":"human:alice"}""", System.Text.Json.JsonSerializer.Serialize(new DecisionFact("api", "desk", "human:alice"), options));
     }
 
     [Fact, Trait("Lane", "unit")]

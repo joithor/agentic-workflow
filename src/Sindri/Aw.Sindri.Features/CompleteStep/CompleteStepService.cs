@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
@@ -29,7 +31,8 @@ namespace Aw.Sindri.Features.CompleteStep;
 /// <param name="facts">Where the outputs are stored.</param>
 /// <param name="nonces">The nonce table.</param>
 /// <param name="callers">The caller the API chain classed: its actor reports.</param>
-internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanceRuntime runtime, IApprovedRecipes recipes, IFactStore facts, ICommandNonces nonces, ICallerContextAccessor callers)
+/// <param name="json">Writes the engine-filled facts.</param>
+internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanceRuntime runtime, IApprovedRecipes recipes, IFactStore facts, ICommandNonces nonces, ICallerContextAccessor callers, JsonSerializerOptions json)
     : IService<CompleteStepRequest, CompleteStepResponse>
 {
     public async ValueTask<Result<CompleteStepResponse>> Handle(CompleteStepRequest request, CancellationToken cancellationToken)
@@ -142,7 +145,7 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
     /// on, or a stale run: the send answers). A report that gives one itself is refused, before anything is claimed. An
     /// instance that can't be read is that error: a hand-written engine-filled output is never passed through unchecked.
     /// </summary>
-    private async ValueTask<Result<IReadOnlyDictionary<FactKey, string>>> EngineFilled(InstanceAddress address, CompleteStepRequest request, string actor, CancellationToken cancellationToken)
+    private async ValueTask<Result<IReadOnlyDictionary<FactKey, DecisionFact>>> EngineFilled(InstanceAddress address, CompleteStepRequest request, string actor, CancellationToken cancellationToken)
     {
         var view = await runtime.Get(address, cancellationToken).ConfigureAwait(false);
         if (view.IsError)
@@ -152,22 +155,22 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
 
         if (view.Value.Task is not { } task || task.Run != request.Run)
         {
-            return Results.Success<IReadOnlyDictionary<FactKey, string>>(new Dictionary<FactKey, string>());
+            return Results.Success<IReadOnlyDictionary<FactKey, DecisionFact>>(new Dictionary<FactKey, DecisionFact>());
         }
 
         var filled = EngineFilledOutputs.For(task.Outputs, request.Outcome, "desk", actor);
         var written = request.Outputs.Keys.Where(filled.ContainsKey).ToList();
         return written.Count > 0
             ? SindriErrors.InvalidInput.With($"{written[0].Value} is written by the engine on '{task.Step.Value}' (fix: drop --output {written[0].Value})")
-            : Results.Success<IReadOnlyDictionary<FactKey, string>>(filled);
+            : Results.Success<IReadOnlyDictionary<FactKey, DecisionFact>>(filled);
     }
 
-    private static Dictionary<FactKey, ReadOnlyMemory<byte>> Merge(IReadOnlyDictionary<FactKey, ReadOnlyMemory<byte>> given, IReadOnlyDictionary<FactKey, string> filled)
+    private Dictionary<FactKey, ReadOnlyMemory<byte>> Merge(IReadOnlyDictionary<FactKey, ReadOnlyMemory<byte>> given, IReadOnlyDictionary<FactKey, DecisionFact> filled)
     {
         var merged = new Dictionary<FactKey, ReadOnlyMemory<byte>>(given);
-        foreach (var (fact, text) in filled)
+        foreach (var (fact, decision) in filled)
         {
-            merged[fact] = Encoding.UTF8.GetBytes(text);
+            merged[fact] = JsonSerializer.SerializeToUtf8Bytes(decision, (JsonTypeInfo<DecisionFact>)json.GetTypeInfo(typeof(DecisionFact)));
         }
 
         return merged;

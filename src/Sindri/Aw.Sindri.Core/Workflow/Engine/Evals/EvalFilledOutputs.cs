@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
@@ -21,12 +20,11 @@ internal static class EvalFilledOutputs
             return outputs;
         }
 
-        foreach (var (fact, text) in EngineFilledOutputs.For(descriptor.Outputs, at.Outcome, "eval", actor: null))
+        foreach (var (fact, decision) in EngineFilledOutputs.For(descriptor.Outputs, at.Outcome, "eval", actor: null))
         {
             if (!outputs.ContainsKey(fact))
             {
-                using var content = JsonDocument.Parse(text);
-                outputs[fact] = EvalFacts.Value(content.RootElement);
+                outputs[fact] = EvalFacts.Value(decision);
             }
         }
 

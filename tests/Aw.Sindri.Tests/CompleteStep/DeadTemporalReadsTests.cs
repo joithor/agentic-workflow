@@ -32,7 +32,7 @@ public sealed class DeadTemporalReadsTests
         var directory = new TemporalInstanceDirectory(frontend, known);
         var like = new TemporalLikeRuntime();   // why: the approval check and the caller, which are not Temporal's
         var nonces = new InMemoryCommandNonces(new FakeTimeProvider());
-        var service = new CompleteStepService(directory, runtime, like, new InMemoryFactStore(), nonces, like);
+        var service = new CompleteStepService(directory, runtime, like, new InMemoryFactStore(), nonces, like, Aw.Sindri.Tests.Workflow.Engine.EvalComposition.Options);
         Assert.Equal("SND-WF-001", (await runtime.Get(_address, ct)).Error.Code);
         await environment.ShutdownAsync();
 
