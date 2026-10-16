@@ -58,6 +58,9 @@ internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller 
     public ValueTask<Result<ProbeRun>> EvalProbes(string? file, Func<ProbeCase, CancellationToken, ValueTask<Result<ContextResult>>> ask, CancellationToken cancellationToken) =>
         inner.EvalProbes(file, ask, cancellationToken);
 
+    public ValueTask<Result<Aw.Context.Core.Eval.Backtest.BacktestRun>> EvalBacktest(Aw.Context.Core.Eval.Backtest.BacktestRequest request, CancellationToken cancellationToken) =>
+        inner.EvalBacktest(request, cancellationToken);
+
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) => inner.ShowNode(key, scope, cancellationToken);
 
     public ValueTask<Result<NeighborsView>> Neighbors(string key, int? depth, ContextScope scope, CancellationToken cancellationToken) =>

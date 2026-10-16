@@ -1,4 +1,5 @@
 using Aw.Context.Core.Eval;
+using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Core.Extract;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
@@ -29,6 +30,7 @@ using Aw.Context.Features.PurgeMap;
 using Aw.Context.Features.QueryContext;
 using Aw.Context.Features.RefreshDocs;
 using Aw.Context.Features.ReviewHistory;
+using Aw.Context.Features.RunBacktest;
 using Aw.Context.Features.ReviewMap;
 using Aw.Context.Features.ReviewQueue;
 using Aw.Context.Features.ShowMapStatus;
@@ -73,6 +75,8 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<ListNeighborsRequest, NeighborsView>, ListNeighborsService>()
         .AddScoped<IService<FindPathRequest, PathView>, FindPathService>()
         .AddScoped<IService<EvalProbesRequest, ProbeRun>, EvalProbesService>()
+        .AddScoped<IService<BacktestRequest, BacktestRun>, RunBacktestService>()
+        .AddScoped<AsOfMapBuilder>()
         .AddScoped<IService<BuildMapRequest, MapBuildReport>, BuildMapService>()
         .AddScoped<IService<ReviewQueueRequest, ReviewQueueView>, ReviewQueueService>()
         .AddScoped<IService<ReviewHistoryRequest, ReviewHistoryView>, ReviewHistoryService>()

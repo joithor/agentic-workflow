@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
+using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Core.Results;
 using Aw.Kernel;
 
@@ -58,4 +59,10 @@ public interface IContextEngine : IContextMap, IContextGraph, IContextLenses
     /// <param name="cancellationToken">Cancels the run.</param>
     /// <returns>One row per source, or SND-CONTEXT-030 (no map), 056 (already running), 058 (unknown source).</returns>
     public ValueTask<Result<SyncReport>> Sync(string? source, ContextScope scope, CancellationToken cancellationToken);
+
+    /// <summary>Runs the backtest: the eligible samples, the as-of maps, the arms, the pass line (spec §9.1, S-7A). A human or service job; a session is refused (SND-CONTEXT-020).</summary>
+    /// <param name="request">The scope, arms and window.</param>
+    /// <param name="cancellationToken">Cancels the run; a cancelled run writes no report.</param>
+    /// <returns>The report and its path, SND-CONTEXT-080 with no eligible sample, 081 with no brief source, 040 with the heavy lock busy, or another context error.</returns>
+    public ValueTask<Result<BacktestRun>> EvalBacktest(BacktestRequest request, CancellationToken cancellationToken);
 }

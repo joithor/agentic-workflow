@@ -4229,3 +4229,99 @@ override Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.GetHashCode() -> int
 override Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.ToString() -> string!
 static Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.operator !=(Aw.Context.Core.Eval.Backtest.AsOfDocsRequest? left, Aw.Context.Core.Eval.Backtest.AsOfDocsRequest? right) -> bool
 static Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.operator ==(Aw.Context.Core.Eval.Backtest.AsOfDocsRequest? left, Aw.Context.Core.Eval.Backtest.AsOfDocsRequest? right) -> bool
+Aw.Context.Core.Eval.Backtest.ArmReport
+Aw.Context.Core.Eval.Backtest.ArmReport.<Clone>$() -> Aw.Context.Core.Eval.Backtest.ArmReport!
+Aw.Context.Core.Eval.Backtest.ArmReport.Arm.get -> string!
+Aw.Context.Core.Eval.Backtest.ArmReport.Arm.init -> void
+Aw.Context.Core.Eval.Backtest.ArmReport.ArmReport(string! Arm, string! Dimension, bool Leaky, string? NotAvailable, Aw.Context.Core.Eval.Backtest.ArmScore? Score, Aw.Context.Core.Eval.Backtest.ArmPassLine? PassLine, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.SampleScore!>! Samples) -> void
+Aw.Context.Core.Eval.Backtest.ArmReport.Deconstruct(out string! Arm, out string! Dimension, out bool Leaky, out string? NotAvailable, out Aw.Context.Core.Eval.Backtest.ArmScore? Score, out Aw.Context.Core.Eval.Backtest.ArmPassLine? PassLine, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.SampleScore!>! Samples) -> void
+Aw.Context.Core.Eval.Backtest.ArmReport.Dimension.get -> string!
+Aw.Context.Core.Eval.Backtest.ArmReport.Dimension.init -> void
+Aw.Context.Core.Eval.Backtest.ArmReport.Equals(Aw.Context.Core.Eval.Backtest.ArmReport? other) -> bool
+Aw.Context.Core.Eval.Backtest.ArmReport.Leaky.get -> bool
+Aw.Context.Core.Eval.Backtest.ArmReport.Leaky.init -> void
+Aw.Context.Core.Eval.Backtest.ArmReport.NotAvailable.get -> string?
+Aw.Context.Core.Eval.Backtest.ArmReport.NotAvailable.init -> void
+Aw.Context.Core.Eval.Backtest.ArmReport.PassLine.get -> Aw.Context.Core.Eval.Backtest.ArmPassLine?
+Aw.Context.Core.Eval.Backtest.ArmReport.PassLine.init -> void
+Aw.Context.Core.Eval.Backtest.ArmReport.Samples.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.SampleScore!>!
+Aw.Context.Core.Eval.Backtest.ArmReport.Samples.init -> void
+Aw.Context.Core.Eval.Backtest.ArmReport.Score.get -> Aw.Context.Core.Eval.Backtest.ArmScore?
+Aw.Context.Core.Eval.Backtest.ArmReport.Score.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport
+Aw.Context.Core.Eval.Backtest.BacktestReport.<Clone>$() -> Aw.Context.Core.Eval.Backtest.BacktestReport!
+Aw.Context.Core.Eval.Backtest.BacktestReport.Arms.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.ArmReport!>!
+Aw.Context.Core.Eval.Backtest.BacktestReport.Arms.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.BacktestReport(int SchemaVersion, System.DateTimeOffset CreatedAt, string! Window, int SampleCount, bool SmallSample, double LeakyShare, Aw.Context.Core.Eval.Backtest.LeftOut! LeftOut, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.CorpusSample!>! Samples, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.ArmReport!>! Arms, string? Overall, System.Collections.Generic.IReadOnlyList<string!>! Degraded) -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.CreatedAt.get -> System.DateTimeOffset
+Aw.Context.Core.Eval.Backtest.BacktestReport.CreatedAt.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.Deconstruct(out int SchemaVersion, out System.DateTimeOffset CreatedAt, out string! Window, out int SampleCount, out bool SmallSample, out double LeakyShare, out Aw.Context.Core.Eval.Backtest.LeftOut! LeftOut, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.CorpusSample!>! Samples, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.ArmReport!>! Arms, out string? Overall, out System.Collections.Generic.IReadOnlyList<string!>! Degraded) -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.Degraded.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Eval.Backtest.BacktestReport.Degraded.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.Equals(Aw.Context.Core.Eval.Backtest.BacktestReport? other) -> bool
+Aw.Context.Core.Eval.Backtest.BacktestReport.LeakyShare.get -> double
+Aw.Context.Core.Eval.Backtest.BacktestReport.LeakyShare.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.LeftOut.get -> Aw.Context.Core.Eval.Backtest.LeftOut!
+Aw.Context.Core.Eval.Backtest.BacktestReport.LeftOut.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.Overall.get -> string?
+Aw.Context.Core.Eval.Backtest.BacktestReport.Overall.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.SampleCount.get -> int
+Aw.Context.Core.Eval.Backtest.BacktestReport.SampleCount.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.Samples.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.CorpusSample!>!
+Aw.Context.Core.Eval.Backtest.BacktestReport.Samples.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.SchemaVersion.get -> int
+Aw.Context.Core.Eval.Backtest.BacktestReport.SchemaVersion.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.SmallSample.get -> bool
+Aw.Context.Core.Eval.Backtest.BacktestReport.SmallSample.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.Window.get -> string!
+Aw.Context.Core.Eval.Backtest.BacktestReport.Window.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestRequest
+Aw.Context.Core.Eval.Backtest.BacktestRequest.<Clone>$() -> Aw.Context.Core.Eval.Backtest.BacktestRequest!
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Arms.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.Arm>!
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Arms.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestRequest.BacktestRequest(Aw.Context.Core.Engine.ContextScope! Scope, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.Arm>! Arms, System.DateTimeOffset? Since = null, System.DateTimeOffset? Until = null, int? Limit = null, System.IProgress<string!>? Progress = null) -> void
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Deconstruct(out Aw.Context.Core.Engine.ContextScope! Scope, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.Arm>! Arms, out System.DateTimeOffset? Since, out System.DateTimeOffset? Until, out int? Limit, out System.IProgress<string!>? Progress) -> void
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Equals(Aw.Context.Core.Eval.Backtest.BacktestRequest? other) -> bool
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Limit.get -> int?
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Limit.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Progress.get -> System.IProgress<string!>?
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Progress.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Scope.get -> Aw.Context.Core.Engine.ContextScope!
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Scope.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Since.get -> System.DateTimeOffset?
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Since.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Until.get -> System.DateTimeOffset?
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Until.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestRun
+Aw.Context.Core.Eval.Backtest.BacktestRun.<Clone>$() -> Aw.Context.Core.Eval.Backtest.BacktestRun!
+Aw.Context.Core.Eval.Backtest.BacktestRun.BacktestRun(Aw.Context.Core.Eval.Backtest.BacktestReport! Report, string! Path) -> void
+Aw.Context.Core.Eval.Backtest.BacktestRun.Deconstruct(out Aw.Context.Core.Eval.Backtest.BacktestReport! Report, out string! Path) -> void
+Aw.Context.Core.Eval.Backtest.BacktestRun.Equals(Aw.Context.Core.Eval.Backtest.BacktestRun? other) -> bool
+Aw.Context.Core.Eval.Backtest.BacktestRun.Path.get -> string!
+Aw.Context.Core.Eval.Backtest.BacktestRun.Path.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestRun.Report.get -> Aw.Context.Core.Eval.Backtest.BacktestReport!
+Aw.Context.Core.Eval.Backtest.BacktestRun.Report.init -> void
+Aw.Context.Core.Eval.Backtest.LeftOut.NoBrief.get -> int
+Aw.Context.Core.Eval.Backtest.LeftOut.NoBrief.init -> void
+Aw.Context.Core.Facade.IContextEngine.EvalBacktest(Aw.Context.Core.Eval.Backtest.BacktestRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.Backtest.BacktestRun!>!>
+const Aw.Context.Core.Eval.Backtest.BacktestReport.CurrentSchemaVersion = 1 -> int
+override Aw.Context.Core.Eval.Backtest.ArmReport.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.ArmReport.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.ArmReport.ToString() -> string!
+override Aw.Context.Core.Eval.Backtest.BacktestReport.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.BacktestReport.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.BacktestReport.ToString() -> string!
+override Aw.Context.Core.Eval.Backtest.BacktestRequest.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.BacktestRequest.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.BacktestRequest.ToString() -> string!
+override Aw.Context.Core.Eval.Backtest.BacktestRun.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.BacktestRun.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.BacktestRun.ToString() -> string!
+static Aw.Context.Core.Eval.Backtest.ArmReport.operator !=(Aw.Context.Core.Eval.Backtest.ArmReport? left, Aw.Context.Core.Eval.Backtest.ArmReport? right) -> bool
+static Aw.Context.Core.Eval.Backtest.ArmReport.operator ==(Aw.Context.Core.Eval.Backtest.ArmReport? left, Aw.Context.Core.Eval.Backtest.ArmReport? right) -> bool
+static Aw.Context.Core.Eval.Backtest.BacktestReport.operator !=(Aw.Context.Core.Eval.Backtest.BacktestReport? left, Aw.Context.Core.Eval.Backtest.BacktestReport? right) -> bool
+static Aw.Context.Core.Eval.Backtest.BacktestReport.operator ==(Aw.Context.Core.Eval.Backtest.BacktestReport? left, Aw.Context.Core.Eval.Backtest.BacktestReport? right) -> bool
+static Aw.Context.Core.Eval.Backtest.BacktestRequest.operator !=(Aw.Context.Core.Eval.Backtest.BacktestRequest? left, Aw.Context.Core.Eval.Backtest.BacktestRequest? right) -> bool
+static Aw.Context.Core.Eval.Backtest.BacktestRequest.operator ==(Aw.Context.Core.Eval.Backtest.BacktestRequest? left, Aw.Context.Core.Eval.Backtest.BacktestRequest? right) -> bool
+static Aw.Context.Core.Eval.Backtest.BacktestRun.operator !=(Aw.Context.Core.Eval.Backtest.BacktestRun? left, Aw.Context.Core.Eval.Backtest.BacktestRun? right) -> bool
+static Aw.Context.Core.Eval.Backtest.BacktestRun.operator ==(Aw.Context.Core.Eval.Backtest.BacktestRun? left, Aw.Context.Core.Eval.Backtest.BacktestRun? right) -> bool

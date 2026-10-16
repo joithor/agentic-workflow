@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
+using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
@@ -26,7 +27,8 @@ internal sealed class ContextEngine(
     IScrubberFactory scrubbers,
     IContextMap map,
     ContextGraph graph,
-    IService<EvalProbesRequest, ProbeRun> probes) : IContextEngine
+    IService<EvalProbesRequest, ProbeRun> probes,
+    IService<BacktestRequest, BacktestRun> backtest) : IContextEngine
 {
     public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) =>
         SettingsReader.Read(section).Bind(read => scrubbers.For(read.ExtraPatterns)).Bind(_ => SettingsReader.Check(section, repos));   // the keys, then the patterns, then the repos
@@ -44,6 +46,8 @@ internal sealed class ContextEngine(
 
     public ValueTask<Result<ProbeRun>> EvalProbes(string? file, Func<ProbeCase, CancellationToken, ValueTask<Result<ContextResult>>> ask, CancellationToken cancellationToken) =>
         probes.Handle(new EvalProbesRequest(file, ask), cancellationToken);
+
+    public ValueTask<Result<BacktestRun>> EvalBacktest(BacktestRequest request, CancellationToken cancellationToken) => backtest.Handle(request, cancellationToken);
 
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) => graph.ShowNode(key, scope, cancellationToken);
 

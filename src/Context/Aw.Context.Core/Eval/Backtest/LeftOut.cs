@@ -7,9 +7,12 @@ namespace Aw.Context.Core.Eval.Backtest;
 /// <param name="Keys">The left-out keys with a reason, in key order.</param>
 public sealed record LeftOut(int NoMerge, int OutsideTeams, int ExtractFailed, IReadOnlyList<string> Keys)
 {
+    /// <summary>Issues whose record the source no longer had when the brief was read (counted when the run reads them).</summary>
+    public int NoBrief { get; init; }
+
     /// <summary>Nothing left out.</summary>
     public static LeftOut None { get; } = new(0, 0, 0, []);
 
     /// <summary>Everything left out.</summary>
-    public int Total => NoMerge + OutsideTeams + ExtractFailed;
+    public int Total => NoMerge + OutsideTeams + ExtractFailed + NoBrief;
 }
