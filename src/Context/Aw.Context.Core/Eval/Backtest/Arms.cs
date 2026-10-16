@@ -42,7 +42,34 @@ public static class Arms
     /// <summary>Parses a comma-separated '--arms' value.</summary>
     /// <param name="text">The value; 'all' (alone) expands to <see cref="Available"/>.</param>
     /// <returns>The arms in report order without repeats, or SND-CONTEXT-082 naming the arms.</returns>
-    public static Result<IReadOnlyList<Arm>> Parse(string text) => Unknown(text);
+    public static Result<IReadOnlyList<Arm>> Parse(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var names = text.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        if (names.Length == 0)
+        {
+            return Unknown(text);
+        }
+
+        if (names.Length == 1 && string.Equals(names[0], "all", StringComparison.Ordinal))
+        {
+            return Available.ToList();
+        }
+
+        var parsed = new List<Arm>();
+        foreach (var name in names)
+        {
+            var arm = Available.Concat(NotAvailable).Where(a => string.Equals(Name(a), name, StringComparison.Ordinal)).Cast<Arm?>().FirstOrDefault();
+            if (arm is not { } found)
+            {
+                return Unknown(name);
+            }
+
+            parsed.Add(found);
+        }
+
+        return Available.Concat(NotAvailable).Where(parsed.Contains).ToList();
+    }
 
     private static Error Unknown(string name)
     {
