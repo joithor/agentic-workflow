@@ -174,4 +174,24 @@ public sealed class JobEndpointTests
         Assert.Equal(0, byKind.GetProperty("jobs").GetArrayLength());
         Assert.Equal((HttpStatusCode.BadRequest, "SND-CLI-003"), (bad.Status, bad.Code));
     }
+
+    [Fact(Timeout = 30_000)]
+    public async Task A_filter_with_no_match_says_so_and_an_unknown_kind_or_state_is_refused_before_any_read()
+    {
+        await using var host = await JobHost.Start(TestContext.Current.CancellationToken);
+        await ViewScenarios.CatchUp(host, TestContext.Current.CancellationToken);
+
+        var none = Json(await JobHost.Read(host, "/sindri/jobs"));
+        var failedRuns = Json(await JobHost.Read(host, "/sindri/jobs?state=failed&kind=RunService"));
+        var running = Json(await JobHost.Read(host, "/sindri/jobs?state=running"));
+        var unknownKind = await JobHost.Read(host, "/sindri/jobs?kind=NoSuchJob");
+        var unknownState = await JobHost.Read(host, "/sindri/jobs?state=paused");
+
+        Assert.StartsWith("No jobs have run yet", none.GetProperty("empty").GetString(), StringComparison.Ordinal);
+        Assert.Equal("No failed RunService jobs.", failedRuns.GetProperty("empty").GetString());
+        Assert.Equal("No running jobs.", running.GetProperty("empty").GetString());
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CLI-003"), (unknownKind.Status, unknownKind.Code));
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CLI-003"), (unknownState.Status, unknownState.Code));
+        Assert.Contains("RunService", unknownKind.Body, StringComparison.Ordinal);
+    }
 }

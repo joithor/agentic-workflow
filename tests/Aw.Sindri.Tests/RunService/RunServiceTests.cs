@@ -64,7 +64,7 @@ public sealed class RunServiceTests
 
         var code = ScriptedService.Failure.Code;
         var finished = runtime.H.Events.Payload<JobFinished>(Assert.Single(runtime.Of(EventTypes.JobFinished))).Value;
-        Expect.Equal((JobOutcome.Failed, code, $"failed: {code}"), (finished.Outcome, finished.Code, finished.Summary));
+        Expect.Equal((JobOutcome.Failed, code, ScriptedService.Failure.Message), (finished.Outcome, finished.Code, finished.Summary));
         var ran = runtime.H.Events.Payload<ServiceRan>(Assert.Single(runtime.Of(EventTypes.ServiceRan))).Value;
         Expect.Equal((ServiceOutcome.Failed, code), (ran.Outcome, ran.Code));
         Expect.Equal(ServiceOutcome.Failed, runtime.Get<ServiceRunGuard>().LastOutcome(_tidy));
@@ -148,6 +148,47 @@ public sealed class RunServiceTests
         Assert.Empty(runtime.Of(EventTypes.ServiceRan));
         Assert.Empty(runtime.Of(EventTypes.JobFinished));
         Assert.True(runtime.Get<ServiceRunGuard>().TryClaim(BlockedService.Name, out var free));   // the claim went with the run
+        free.Dispose();
+    }
+
+    [Fact]
+    public async Task A_run_that_returns_while_its_cancel_is_being_recorded_writes_no_service_ran()
+    {
+        var stuck = new BlockedService();
+        await using var runtime = await RunServiceRuntime.Open(stuck);
+        var started = await runtime.Start(A.RunServiceRequest().ForService(BlockedService.Name).Build(), Human());
+        await stuck.Entered.Task.WaitAsync(Token);
+        var appending = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var proceed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        runtime.H.Store.BeforeAppend = entry =>
+        {
+            if (entry.Envelope.Type == EventTypes.JobCancelled)
+            {
+                _ = appending.TrySetResult();
+                proceed.Task.Wait(Token);   // the cancel is mid-append: its token has not been tripped yet
+            }
+        };
+        var cancel = Task.Run(() => runtime.Cancel(started.Value.JobId), Token);
+        await appending.Task.WaitAsync(Token);
+
+        stuck.Release();   // the service returns now, past the point a tripped token would have stopped it
+        await runtime.Quiesce();
+        _ = proceed.TrySetResult();
+        _ = await cancel;
+
+        Assert.Empty(runtime.Of(EventTypes.ServiceRan));
+        Assert.Empty(runtime.Of(EventTypes.JobFinished));
+    }
+
+    [Fact]
+    public async Task A_start_the_ledger_refuses_gives_the_service_back_to_the_scheduler()
+    {
+        await using var runtime = await RunServiceRuntime.Open(new ScriptedService(ScriptedService.Worked));
+        runtime.H.Store.AppendFailure = new InvalidOperationException("the disk went away");
+
+        _ = await Assert.ThrowsAsync<InvalidOperationException>(() => runtime.Start(A.RunServiceRequest().ForService(_tidy).Build(), Human()));
+
+        Assert.True(runtime.Get<ServiceRunGuard>().TryClaim(_tidy, out var free));
         free.Dispose();
     }
 

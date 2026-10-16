@@ -9,4 +9,17 @@ public interface IJobCancellation
     /// <param name="job">The job.</param>
     /// <returns>True when this process had the job running; false for a job it does not have (ended, or from before a restart).</returns>
     public bool Cancel(JobId job);
+
+    /// <summary>Marks a job as being cancelled, before 'job.cancelled' is appended, so its work can see the cancel is coming before its token trips and record nothing of its own (D7).</summary>
+    /// <param name="job">The job.</param>
+    public void Cancelling(JobId job);
+
+    /// <summary>Takes the mark back when the cancel could not be recorded.</summary>
+    /// <param name="job">The job.</param>
+    public void Withdraw(JobId job);
+
+    /// <summary>Whether a cancel of <paramref name="job"/> has been requested or recorded.</summary>
+    /// <param name="job">The job.</param>
+    /// <returns>True when the job is being cancelled.</returns>
+    public bool IsCancelling(JobId job);
 }

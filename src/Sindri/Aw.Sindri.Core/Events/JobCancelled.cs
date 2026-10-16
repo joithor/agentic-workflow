@@ -6,4 +6,6 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="CommandId">The 'CancelJob' command's id.</param>
 /// <param name="Job">The job.</param>
 /// <param name="By">Who cancelled, as the envelope's actor reads.</param>
-public sealed record JobCancelled(CommandId CommandId, JobId Job, string By);
+/// <param name="Item">The job's item, copied from its start, or null.</param>
+/// <param name="Repo">The job's repo, copied from its start (the session filter reads it), or null.</param>
+public sealed record JobCancelled(CommandId CommandId, JobId Job, string By, ItemId? Item = null, RepoName? Repo = null);

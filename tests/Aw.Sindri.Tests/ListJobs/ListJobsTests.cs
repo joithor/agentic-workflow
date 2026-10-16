@@ -21,7 +21,7 @@ public sealed class ListJobsTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private ListJobsService Service() => new(_jobs, _v.Progress, _v.Slice.Callers);
+    private ListJobsService Service() => new(_jobs, _v.Progress, _v.Slice.Callers, new FixedJobKinds(_run, _sync));
 
     private IDisposable As(CallerContext caller) => _v.Slice.Callers.Enter(caller);
 
@@ -74,5 +74,29 @@ public sealed class ListJobsTests
 
         Assert.Empty(list.Jobs);
         Expect.Equal(EmptyText.Jobs(), list.Empty);
+    }
+
+    [Fact]
+    public async Task A_filter_with_no_match_names_its_filter_in_the_empty_sentence()
+    {
+        _ = Put(_run, JobState.Succeeded);
+        using var entered = As(A.Caller().Human().Build());
+
+        var failed = (await Service().Handle(new ListJobsRequest(JobState.Failed, Kind: null), Token)).Value;
+        var sync = (await Service().Handle(new ListJobsRequest(State: null, _sync), Token)).Value;
+        var both = (await Service().Handle(new ListJobsRequest(JobState.Running, _run), Token)).Value;
+
+        Expect.Equal(("No failed jobs.", "No SyncSources jobs.", "No running RunService jobs."), (failed.Empty, sync.Empty, both.Empty));
+    }
+
+    [Fact]
+    public async Task A_kind_no_job_registers_is_refused_before_any_read_and_names_the_kinds()
+    {
+        using var entered = As(A.Caller().Human().Build());
+
+        var refused = await Service().Handle(new ListJobsRequest(State: null, JobKind.From("NoSuchJob")), Token);
+
+        Expect.True(refused.IsError && string.Equals(refused.Error.Code, "SND-CLI-003", StringComparison.Ordinal));
+        Assert.Contains("'NoSuchJob' isn't a job kind (fix: RunService, SyncSources)", refused.Error.Message, StringComparison.Ordinal);
     }
 }

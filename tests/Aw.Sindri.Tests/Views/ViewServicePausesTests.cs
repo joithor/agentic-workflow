@@ -37,7 +37,7 @@ public sealed class ViewServicePausesTests : IDisposable
     private Task Resume(SqliteViews views, ServiceName service) => Fold(views, EventTypes.ServiceResumed, new ServiceResumed(_h.Ids.New<CommandId>(), service));
 
     private static async Task<IReadOnlyList<string>> Paused(SqliteViews views) =>
-        [.. (await new ViewServicePauses(views.Reader).Paused(Token)).Value.Select(static s => s.Value).Order(StringComparer.Ordinal)];
+        [.. (await new ViewServicePauses(views.Reader, new ProjectorProgress(TimeProvider.System)).Paused(Token)).Value.Select(static s => s.Value).Order(StringComparer.Ordinal)];
 
     [Fact]
     public async Task Nothing_is_paused_before_any_pause_and_with_no_views_db()
@@ -45,6 +45,22 @@ public sealed class ViewServicePausesTests : IDisposable
         using var views = new SqliteViews(Dir);
 
         Assert.Empty(await Paused(views));
+    }
+
+    [Theory]
+    [InlineData(true, false, "SND-API-010")]
+    [InlineData(false, true, "SND-VIEW-001")]
+    public async Task While_the_views_rebuild_or_are_stalled_the_read_is_an_error_not_an_empty_set(bool rebuilding, bool stalled, string code)
+    {
+        using var views = new SqliteViews(Dir);
+        await Pause(views, _heartbeat);
+        var status = new ProjectorProgress(_h.Clock);
+        status.Publish(status.Current with { Rebuilding = rebuilding, Stalled = stalled, StalledAt = stalled ? 3 : null, StalledType = "service.paused" });
+
+        var read = await new ViewServicePauses(views.Reader, status).Paused(Token);
+
+        Assert.True(read.IsError);
+        Expect.Equal(code, read.Error.Code);
     }
 
     [Fact]

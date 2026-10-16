@@ -1,5 +1,6 @@
 using System.Globalization;
 using Aw.Kernel;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Features.ListServices;
@@ -28,7 +29,16 @@ internal sealed class ServiceVerbs(ControlPlaneClient client, Output output, Job
         }
 
         var command = parsed.Value;
-        var down = ensureRunning is null ? null : await ensureRunning(!command.NoStart, interrupt).ConfigureAwait(false);
+        Error? down;
+        try
+        {
+            down = ensureRunning is null ? null : await ensureRunning(!command.NoStart, interrupt).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (interrupt.IsCancellationRequested)
+        {
+            return await output.Error(SindriErrors.NotRunning.With("interrupted before the job started (fix: run the command again)")).ConfigureAwait(false);   // Ctrl-C while the control plane was starting
+        }
+
         if (down is not null)
         {
             return await output.Error(down).ConfigureAwait(false);
@@ -59,8 +69,8 @@ internal sealed class ServiceVerbs(ControlPlaneClient client, Output output, Job
 
     private async Task<int> StartRun(ServiceCommandLine command, CancellationToken interrupt, CancellationToken again)
     {
-        var route = $"/sindri/services/{Uri.EscapeDataString(command.Name ?? string.Empty)}/run";
-        var started = await client.Post<RunServiceRequest, JobStartedResponse>(route, body: null, interrupt).ConfigureAwait(false);
+        var route = $"/sindri/services/{Uri.EscapeDataString(command.Name ?? string.Empty)}/run";   // posted with no token: the client's own 10 s timeout bounds it, and a Ctrl-C that lands meanwhile is the follower's to act on once the job exists
+        var started = await client.Post<RunServiceRequest, JobStartedResponse>(route, body: null, CancellationToken.None).ConfigureAwait(false);
         if (started.IsError)
         {
             return await output.Error(started.Error).ConfigureAwait(false);

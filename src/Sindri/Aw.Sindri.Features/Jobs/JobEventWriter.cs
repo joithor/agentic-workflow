@@ -22,7 +22,11 @@ namespace Aw.Sindri.Features.Jobs;
 internal sealed class JobEventWriter(ILedgerStore ledger, HeldLease held, EventFactory events, ITextScrubber scrubber, ICallerContextAccessor callers)
 {
     private const string ResultTooLarge = " (result too large)";
+    private const string ResultUnreadable = " (result dropped: it could not be cleaned)";
     private const string InterruptedSummary = "interrupted: the process stopped while it ran";
+
+    /// <summary>Whether the control plane still holds the lease: a failed write with the lease held is the runner's to retry and then end the job over.</summary>
+    public bool HoldsLease() => held.Current is not null;
 
     /// <summary>Records one progress line (cleaned here) as round <paramref name="round"/>.</summary>
     /// <param name="start">The job.</param>
@@ -34,7 +38,7 @@ internal sealed class JobEventWriter(ILedgerStore ledger, HeldLease held, EventF
     {
         ArgumentNullException.ThrowIfNull(start);
         ArgumentNullException.ThrowIfNull(line);
-        var payload = new JobProgress(start.Caller.CommandId, start.Job, round, JobLines.Clean(scrubber, line));
+        var payload = new JobProgress(start.Caller.CommandId, start.Job, round, JobLines.Clean(scrubber, line), Item: null, start.Repo);
         return Append(start, EventTypes.JobProgress, payload, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{EventTypes.JobProgress}:{start.Job.Value}:{round}"), cancellationToken);
     }
 
@@ -48,7 +52,7 @@ internal sealed class JobEventWriter(ILedgerStore ledger, HeldLease held, EventF
         ArgumentNullException.ThrowIfNull(start);
         ArgumentNullException.ThrowIfNull(work);
         var payload = work.Error is { } error
-            ? new JobFinished(start.Caller.CommandId, start.Job, JobOutcome.Failed, JobLines.Clean(scrubber, error.Message), error.Code, Result: null)
+            ? new JobFinished(start.Caller.CommandId, start.Job, JobOutcome.Failed, JobLines.Clean(scrubber, error.Message), error.Code, Result: null, Item: null, start.Repo)
             : Succeeded(start, work);
         return Append(start, EventTypes.JobFinished, payload, $"{EventTypes.JobFinished}:{start.Job.Value}", cancellationToken);
     }
@@ -71,7 +75,7 @@ internal sealed class JobEventWriter(ILedgerStore ledger, HeldLease held, EventF
             return SindriErrors.NotRunning.With("no caller to record the end under");
         }
 
-        var payload = new JobFinished(caller.CommandId, job.Id, JobOutcome.Failed, InterruptedSummary, SindriErrors.JobInterrupted.Code, Result: null);
+        var payload = new JobFinished(caller.CommandId, job.Id, JobOutcome.Failed, InterruptedSummary, SindriErrors.JobInterrupted.Code, Result: null, job.Item, job.Repo);
         var appended = await ledger.Append(events.Entry(EventTypes.JobFinished, payload, $"{EventTypes.JobFinished}:{job.Id.Value}"), grant, cancellationToken).ConfigureAwait(false);
         return appended.IsError ? appended.Error : Unit.Value;
     }
@@ -79,32 +83,75 @@ internal sealed class JobEventWriter(ILedgerStore ledger, HeldLease held, EventF
     private JobFinished Succeeded(JobStart start, JobWorkResult work)
     {
         var summary = JobLines.Clean(scrubber, work.Summary);
-        var result = Kept(work.Result);
-        return new JobFinished(start.Caller.CommandId, start.Job, JobOutcome.Succeeded, work.Result is not null && result is null ? summary + ResultTooLarge : summary, Code: null, result);
+        var result = Kept(work.Result, out var note);
+        return new JobFinished(start.Caller.CommandId, start.Job, JobOutcome.Succeeded, summary + note, Code: null, result, Item: null, start.Repo);
     }
 
-    /// <summary>The result scrubbed and bounded: null when there is none, it is over <see cref="JobLimits.ResultBytes"/>, or scrubbing left text that is no longer JSON.</summary>
-    private JsonElement? Kept(JsonElement? result)
+    /// <summary>The result with every string (and property name) scrubbed then escaped, bounded to <see cref="JobLimits.ResultBytes"/>; null when there is none, it is over the bound, or it can't be rewritten.</summary>
+    private JsonElement? Kept(JsonElement? result, out string? note)
     {
+        note = null;
         if (result is not { } element)
-        {
-            return null;
-        }
-
-        var text = scrubber.Scrub(element.GetRawText());
-        if (System.Text.Encoding.UTF8.GetByteCount(text) > JobLimits.ResultBytes)
         {
             return null;
         }
 
         try
         {
-            using var document = JsonDocument.Parse(text);
+            using var buffer = new MemoryStream();
+            using (var writer = new Utf8JsonWriter(buffer))
+            {
+                Write(element, writer);
+            }
+
+            if (buffer.Length > JobLimits.ResultBytes)
+            {
+                note = ResultTooLarge;
+                return null;
+            }
+
+            using var document = JsonDocument.Parse(buffer.ToArray());
             return document.RootElement.Clone();
         }
-        catch (JsonException)
+        catch (Exception e) when (e is JsonException or InvalidOperationException)
         {
+            note = ResultUnreadable;
             return null;
+        }
+    }
+
+    private string Safe(string text) => SafeText.Escape(scrubber.Scrub(text));
+
+    private void Write(JsonElement element, Utf8JsonWriter writer)
+    {
+        if (element.ValueKind == JsonValueKind.String)
+        {
+            writer.WriteStringValue(Safe(element.GetString() ?? string.Empty));
+        }
+        else if (element.ValueKind == JsonValueKind.Object)
+        {
+            writer.WriteStartObject();
+            foreach (var property in element.EnumerateObject())
+            {
+                writer.WritePropertyName(Safe(property.Name));
+                Write(property.Value, writer);
+            }
+
+            writer.WriteEndObject();
+        }
+        else if (element.ValueKind == JsonValueKind.Array)
+        {
+            writer.WriteStartArray();
+            foreach (var item in element.EnumerateArray())
+            {
+                Write(item, writer);
+            }
+
+            writer.WriteEndArray();
+        }
+        else
+        {
+            element.WriteTo(writer);
         }
     }
 

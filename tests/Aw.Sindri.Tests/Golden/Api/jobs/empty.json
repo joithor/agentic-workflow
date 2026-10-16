@@ -1,6 +1,6 @@
 {
   "jobs": [],
-  "empty": "No jobs have run yet. Start one with `sindri services run <name>`.",
+  "empty": "No running jobs.",
   "asOf": {
     "cursor": 4,
     "ledgerHead": 4,

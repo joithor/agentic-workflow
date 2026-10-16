@@ -16,4 +16,10 @@ public interface IJobAdmission<in TRequest>
     /// <param name="cancellationToken">Cancels the check.</param>
     /// <returns>The service the job runs (or null), or the error that refuses the start.</returns>
     public ValueTask<Result<ServiceName?>> Admit(TRequest request, CancellationToken cancellationToken);
+
+    /// <summary>Gives back whatever <see cref="Admit"/> took when the start is refused after the admission (the claim was lost, the start could not be recorded). The default takes nothing.</summary>
+    /// <param name="request">The request that was admitted.</param>
+    public void Rollback(TRequest request)
+    {
+    }
 }

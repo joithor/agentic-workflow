@@ -146,7 +146,7 @@ run heartbeat (manual)
 succeeded: ok: worked
 result: {"idle":false,"summary":null}
 ## sindri jobs --state succeeded
-JOB-ID  succeeded  RunService  heartbeat  TIME  1 lines  ok: worked
+JOB-ID  succeeded  RunService  heartbeat  TIME  1 line  ok: worked
 ## sindri services pause heartbeat (human, terminal)
 heartbeat paused (sequence SEQ)
 ## sindri services pause heartbeat (session)

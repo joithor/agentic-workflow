@@ -46,6 +46,43 @@ public sealed class CliJobFollowTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_failed_run_prints_the_services_reason_and_its_code_once()
+    {
+        var api = Api();
+        var run = _rig.RunServices(api, "run", "heartbeat");
+        await FollowRig.WaitUntil(() => api.Streams == 1);
+
+        await api.Frame(11, "job.finished", Finished("failed", "tidy: the ledger was busy", "SND-LEDGER-002"));
+
+        Assert.Equal(1, await Finished(run));
+        Assert.EndsWith("failed: tidy: the ledger was busy SND-LEDGER-002\n", _rig.Out.ToString().ReplaceLineEndings("\n"), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Ctrl_c_before_the_job_is_accepted_exits_1_with_a_plain_line()
+    {
+        await _rig.Interrupt();
+        var verbs = new ServiceVerbs(Client(Api()), _rig.Output(), _rig.Follower(Api()), static (_, ct) => throw new OperationCanceledException(ct));   // the launch of the control plane was interrupted
+
+        var code = await verbs.Run(["run", "heartbeat"], _rig.Interrupted, _rig.Again);
+
+        Assert.Equal(1, code);
+        Assert.Contains("interrupted before the job started", _rig.Error.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("   at ", _rig.Error.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Ctrl_c_before_the_start_request_does_not_tear_it_down()
+    {
+        await _rig.Interrupt();
+
+        var code = await Finished(_rig.RunServices(new JobApi(), "run", "heartbeat"));   // the request still goes out and is answered (a 404 here)
+
+        Assert.NotEqual(0, code);
+        Assert.DoesNotContain("   at ", _rig.Error.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Ctrl_c_cancels_and_prints_cancelled()
     {
         var api = Api().Ok("POST", "/sindri/jobs/" + Id + "/cancel", Body(new Core.Commands.CommandAccepted(Core.Ids.CommandId.From(new Guid(8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)), 12)));

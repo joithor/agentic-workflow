@@ -61,6 +61,20 @@ public sealed class SindriApiClientNeedsYouTests
     }
 
     [Fact]
+    public async Task NeedsYou_reads_a_failure_row_whose_primary_action_is_null()
+    {
+        var (client, server, _) = Reach();
+        var served = GoldenFiles.Node("needs-you", "fixture");
+        served["rows"]![1]!["primaryAction"] = null;   // a failure of a service this build lacks has no primary action (API P6, SND-SVC-404)
+        server.NeedsYouView = new RouteAnswer(HttpStatusCode.OK, served.ToJsonString());
+
+        var read = await client.NeedsYou(_api, Token);
+
+        Assert.True(read.IsSuccess, read.IsError ? read.Error.Code : "");
+        Assert.Null(read.Value.Rows[1].PrimaryAction);
+    }
+
+    [Fact]
     public async Task NeedsYou_reads_a_profile_row_with_a_profile_subject()
     {
         var (client, _, _) = Reach();

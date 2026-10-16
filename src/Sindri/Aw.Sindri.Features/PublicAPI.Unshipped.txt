@@ -925,6 +925,7 @@ Aw.Sindri.Features.Jobs.IJobRunner.Start(Aw.Sindri.Features.Jobs.JobStart! start
 Aw.Sindri.Features.Jobs.JobDefinition
 Aw.Sindri.Features.Jobs.JobDefinition.KeyOf(object! request) -> Aw.Sindri.Core.Ids.JobKey
 Aw.Sindri.Features.Jobs.JobDefinition.Precheck(object! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Features.Jobs.JobDefinition.RepoOf(object! request) -> Aw.Sindri.Core.Ids.RepoName?
 Aw.Sindri.Features.Jobs.JobDefinition.Request.get -> System.Type!
 Aw.Sindri.Features.Jobs.JobDefinition.Run(System.Func<System.Type!, object!>! resolve, object! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Features.Jobs.JobWorkResult!>
 Aw.Sindri.Features.Jobs.JobRecovery
@@ -941,7 +942,7 @@ Aw.Sindri.Features.Jobs.JobStart.Caller.get -> Aw.Sindri.Core.Commands.CallerCon
 Aw.Sindri.Features.Jobs.JobStart.Caller.init -> void
 Aw.Sindri.Features.Jobs.JobStart.Cause.get -> Aw.Sindri.Core.Ids.EventId?
 Aw.Sindri.Features.Jobs.JobStart.Cause.init -> void
-Aw.Sindri.Features.Jobs.JobStart.Deconstruct(out Aw.Sindri.Core.Ids.JobId Job, out Aw.Sindri.Core.Ids.JobKind Kind, out Aw.Sindri.Core.Ids.JobKey Key, out Aw.Sindri.Features.Jobs.JobDefinition! Definition, out object! Request, out Aw.Sindri.Core.Commands.CallerContext! Caller, out Aw.Sindri.Core.Lease.LeaseGrant! Grant, out Aw.Sindri.Core.Ids.ServiceName? Service, out Aw.Sindri.Core.Ids.EventId? Cause) -> void
+Aw.Sindri.Features.Jobs.JobStart.Deconstruct(out Aw.Sindri.Core.Ids.JobId Job, out Aw.Sindri.Core.Ids.JobKind Kind, out Aw.Sindri.Core.Ids.JobKey Key, out Aw.Sindri.Features.Jobs.JobDefinition! Definition, out object! Request, out Aw.Sindri.Core.Commands.CallerContext! Caller, out Aw.Sindri.Core.Lease.LeaseGrant! Grant, out Aw.Sindri.Core.Ids.ServiceName? Service, out Aw.Sindri.Core.Ids.EventId? Cause, out Aw.Sindri.Core.Ids.RepoName? Repo) -> void
 Aw.Sindri.Features.Jobs.JobStart.Definition.get -> Aw.Sindri.Features.Jobs.JobDefinition!
 Aw.Sindri.Features.Jobs.JobStart.Definition.init -> void
 Aw.Sindri.Features.Jobs.JobStart.Equals(Aw.Sindri.Features.Jobs.JobStart? other) -> bool
@@ -949,11 +950,13 @@ Aw.Sindri.Features.Jobs.JobStart.Grant.get -> Aw.Sindri.Core.Lease.LeaseGrant!
 Aw.Sindri.Features.Jobs.JobStart.Grant.init -> void
 Aw.Sindri.Features.Jobs.JobStart.Job.get -> Aw.Sindri.Core.Ids.JobId
 Aw.Sindri.Features.Jobs.JobStart.Job.init -> void
-Aw.Sindri.Features.Jobs.JobStart.JobStart(Aw.Sindri.Core.Ids.JobId Job, Aw.Sindri.Core.Ids.JobKind Kind, Aw.Sindri.Core.Ids.JobKey Key, Aw.Sindri.Features.Jobs.JobDefinition! Definition, object! Request, Aw.Sindri.Core.Commands.CallerContext! Caller, Aw.Sindri.Core.Lease.LeaseGrant! Grant, Aw.Sindri.Core.Ids.ServiceName? Service, Aw.Sindri.Core.Ids.EventId? Cause = null) -> void
+Aw.Sindri.Features.Jobs.JobStart.JobStart(Aw.Sindri.Core.Ids.JobId Job, Aw.Sindri.Core.Ids.JobKind Kind, Aw.Sindri.Core.Ids.JobKey Key, Aw.Sindri.Features.Jobs.JobDefinition! Definition, object! Request, Aw.Sindri.Core.Commands.CallerContext! Caller, Aw.Sindri.Core.Lease.LeaseGrant! Grant, Aw.Sindri.Core.Ids.ServiceName? Service, Aw.Sindri.Core.Ids.EventId? Cause = null, Aw.Sindri.Core.Ids.RepoName? Repo = null) -> void
 Aw.Sindri.Features.Jobs.JobStart.Key.get -> Aw.Sindri.Core.Ids.JobKey
 Aw.Sindri.Features.Jobs.JobStart.Key.init -> void
 Aw.Sindri.Features.Jobs.JobStart.Kind.get -> Aw.Sindri.Core.Ids.JobKind
 Aw.Sindri.Features.Jobs.JobStart.Kind.init -> void
+Aw.Sindri.Features.Jobs.JobStart.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Features.Jobs.JobStart.Repo.init -> void
 Aw.Sindri.Features.Jobs.JobStart.Request.get -> object!
 Aw.Sindri.Features.Jobs.JobStart.Request.init -> void
 Aw.Sindri.Features.Jobs.JobStart.Service.get -> Aw.Sindri.Core.Ids.ServiceName?
@@ -2345,7 +2348,7 @@ static Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest.operator ==(Aw.Sindri.Fea
 static Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse.operator !=(Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse? left, Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse? right) -> bool
 static Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse.operator ==(Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse? left, Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse? right) -> bool
 static Aw.Sindri.Features.SindriFeaturesServiceCollectionExtensions.AddSindriFeatures(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
-static Aw.Sindri.Features.SindriJobServiceCollectionExtensions.AddJob<TRequest, TResult, TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Func<TRequest!, Aw.Sindri.Core.Ids.JobKey>! key, System.Func<TResult, string!>! summary, System.Func<TRequest!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>>? precheck = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Sindri.Features.SindriJobServiceCollectionExtensions.AddJob<TRequest, TResult, TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Func<TRequest!, Aw.Sindri.Core.Ids.JobKey>! key, System.Func<TResult, string!>! summary, System.Func<TRequest!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>>? precheck = null, System.Func<TRequest!, Aw.Sindri.Core.Ids.RepoName?>? repo = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Sindri.Features.StartInstance.StartFact.operator !=(Aw.Sindri.Features.StartInstance.StartFact? left, Aw.Sindri.Features.StartInstance.StartFact? right) -> bool
 static Aw.Sindri.Features.StartInstance.StartFact.operator ==(Aw.Sindri.Features.StartInstance.StartFact? left, Aw.Sindri.Features.StartInstance.StartFact? right) -> bool
 static Aw.Sindri.Features.StartInstance.StartInstanceRequest.operator !=(Aw.Sindri.Features.StartInstance.StartInstanceRequest? left, Aw.Sindri.Features.StartInstance.StartInstanceRequest? right) -> bool

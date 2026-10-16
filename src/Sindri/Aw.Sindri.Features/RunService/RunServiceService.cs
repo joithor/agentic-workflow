@@ -19,8 +19,9 @@ namespace Aw.Sindri.Features.RunService;
 /// <param name="record">Appends the run's 'service.ran'.</param>
 /// <param name="held">The lease the run is fenced by.</param>
 /// <param name="clock">Dates the run's slot.</param>
+/// <param name="cancellation">Says whether a cancel of this job is under way, so a run it ends records nothing.</param>
 internal sealed class RunServiceService(IEnumerable<IScheduledService> scheduled, ServiceRunGuard guard, IJobContextAccessor jobs,
-    IServiceRunRecorder record, HeldLease held, TimeProvider clock) : IService<RunServiceRequest, ScheduledResult>
+    IServiceRunRecorder record, HeldLease held, TimeProvider clock, IJobCancellation cancellation) : IService<RunServiceRequest, ScheduledResult>
 {
     public async ValueTask<Result<ScheduledResult>> Handle(RunServiceRequest request, CancellationToken cancellationToken)
     {
@@ -37,9 +38,9 @@ internal sealed class RunServiceService(IEnumerable<IScheduledService> scheduled
             return SindriErrors.NotRunning.With("the control plane doesn't hold the lease (fix: sindri)");
         }
 
-        if (!guard.TryClaimManual(name, out var claim))
+        if (!guard.TryClaimReserved(name, out var claim) && !guard.TryClaimManual(name, out claim))   // the admission reserved it; a direct call claims for itself
         {
-            return SindriErrors.JobConflict.With($"A scheduled run of {name.Value} is in flight (fix: wait for it to end, then run it again)");
+            return RunServiceMessages.ScheduledInFlight(name);
         }
 
         using (claim)
@@ -48,6 +49,11 @@ internal sealed class RunServiceService(IEnumerable<IScheduledService> scheduled
             var run = new ScheduledRun(grant, clock.GetUtcNow());
             var outcome = await Outcome(service, run, cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();   // a cancelled run writes no 'service.ran'
+            if (cancellation.IsCancelling(job.Job))
+            {
+                throw new OperationCanceledException(cancellationToken);   // CancelJob has set its mark but not yet tripped the token
+            }
+
             var recorded = await record.Record(name, run, outcome.Map(static _ => Unit.Value), job.Job, cancellationToken).ConfigureAwait(false);
             if (recorded.IsError)
             {
@@ -56,7 +62,7 @@ internal sealed class RunServiceService(IEnumerable<IScheduledService> scheduled
             }
 
             guard.Record(name, outcome.IsError ? ServiceOutcome.Failed : ServiceOutcome.Ok);
-            return outcome.IsError ? outcome.Error with { Message = $"failed: {outcome.Error.Code}" } : outcome;
+            return outcome;   // a failure keeps the service's own message (the job event cleans it) and its code
         }
     }
 

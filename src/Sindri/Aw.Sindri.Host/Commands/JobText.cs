@@ -9,7 +9,7 @@ namespace Aw.Sindri.Host.Commands;
 /// <summary>'sindri jobs' and 'jobs show' as text.</summary>
 internal static class JobText
 {
-    /// <summary>One line per job: 'id  state  kind  service-or-key  started  N lines  [summary] [code]'.</summary>
+    /// <summary>One line per job: 'id  state  kind  service-or-key  started  N line(s)  [summary] [code]'.</summary>
     /// <param name="list">The answer.</param>
     /// <returns>The text.</returns>
     internal static string Render(JobList list)
@@ -25,7 +25,7 @@ internal static class JobText
         {
             var end = string.Join(' ', new[] { j.Summary, j.Code }.Where(static p => p is not null));
             _ = text.AppendLine(string.Create(CultureInfo.InvariantCulture,
-                $"{j.Id.Value}  {State(j.State)}  {j.Kind.Value}  {j.Service?.Value ?? j.Key.Value}  {Time(j.StartedAt)}  {j.Rounds} lines{(end.Length == 0 ? string.Empty : "  " + end)}"));
+                $"{j.Id.Value}  {State(j.State)}  {j.Kind.Value}  {j.Service?.Value ?? j.Key.Value}  {Time(j.StartedAt)}  {j.Rounds} line{(j.Rounds == 1 ? string.Empty : "s")}{(end.Length == 0 ? string.Empty : "  " + end)}"));
         }
 
         return text.ToString();

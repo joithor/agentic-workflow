@@ -22,7 +22,7 @@ internal sealed class ProbeJobService(IJobContextAccessor jobs, Commands.Chain.F
                 latch.Start();
                 await latch.Release.Task.ConfigureAwait(false);
                 return new ProbeReport("late");
-            case "fail" or "throw" or "big" or "secret":
+            case "fail" or "throw" or "big" or "secret" or "repo" or "esc":
                 return Immediate(request.Mode);
             default:
                 await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
@@ -38,6 +38,8 @@ internal sealed class ProbeJobService(IJobContextAccessor jobs, Commands.Chain.F
                 return SindriErrors.ServiceFailed.With("it broke");
             case "throw":
                 throw new InvalidOperationException("kaboom");
+            case "esc":
+                return new ProbeReport("\u001b]0;title\u0007red\u001b[31m");
             case "big":
                 return new ProbeReport(new string('x', 20_000));
             default:

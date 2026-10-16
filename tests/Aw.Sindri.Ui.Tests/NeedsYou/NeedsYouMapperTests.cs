@@ -107,12 +107,12 @@ public sealed class NeedsYouMapperTests
     }
 
     [Fact]
-    public void Failure_actions_are_pending_and_a_profile_approve_is_cli_only_from_the_catalog()
+    public void Failure_actions_are_ready_and_a_profile_approve_is_cli_only_from_the_catalog()
     {
         var rows = Feed().Rows;
 
         Assert.Equal(["RunService", "PauseService"], rows[1].Actions.Select(a => a.CatalogId), StringComparer.Ordinal);
-        Assert.All(rows[1].Actions, a => Assert.Equal(ActionReadiness.Pending, a.Readiness));
+        Assert.All(rows[1].Actions, a => Assert.Equal(ActionReadiness.Ready, a.Readiness));
         Assert.Equal((NeedsYouUrgency.Colour, new StateChip("FAILED", ChipTone.Fail), (string)_served[1]!["cli"]!), (rows[1].Urgency, rows[1].Chip, rows[1].Cli));
         Assert.Equal((NeedsYouUrgency.Calm, ActionReadiness.CliOnly, "ApproveProfile"), (rows[2].Urgency, rows[2].Actions[0].Readiness, rows[2].PrimaryAction));
     }
@@ -122,6 +122,19 @@ public sealed class NeedsYouMapperTests
     {
         Assert.Equal(new NeedsYouSubject("profile", (string)_served[2]!["subject"]!["id"]!), Feed().Rows[2].Subject);
         Assert.Null(Feed("extra-profile-null-subject").Rows[2].Subject);
+    }
+
+    [Fact]
+    public void A_row_with_a_null_primary_action_has_no_primary_control()
+    {
+        var served = GoldenFiles.Node("needs-you", "fixture");
+        served["rows"]![1]!["primaryAction"] = null;
+        var list = AwJson.Deserialize<NeedsYouList>(Encoding.UTF8.GetBytes(served.ToJsonString()), SindriApiClient.Json).Value;
+
+        var row = NeedsYouMapper.Map(list, Catalog(), Pending(), _counts).Rows[1];
+
+        Assert.Equal("", row.PrimaryAction);
+        Assert.DoesNotContain(row.Actions, a => string.Equals(a.CatalogId, row.PrimaryAction, StringComparison.Ordinal));
     }
 
     [Fact]

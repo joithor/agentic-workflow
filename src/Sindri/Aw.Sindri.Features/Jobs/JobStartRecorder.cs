@@ -18,9 +18,10 @@ internal sealed class JobStartRecorder(HeldLease held, ILedgerStore ledger, Even
     /// <param name="ticket">The new job: its id, kind and key.</param>
     /// <param name="caller">The starting caller (the event carries its actor and correlation).</param>
     /// <param name="service">The background service the job runs (RunService), or null.</param>
+    /// <param name="repo">The job's repo, or null.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
     /// <returns>The grant it wrote under, the sequence of 'job.started' and its envelope id; or why it could not be written.</returns>
-    public async ValueTask<Result<RecordedStart>> Record(JobTicket ticket, CallerContext caller, ServiceName? service, CancellationToken cancellationToken)
+    public async ValueTask<Result<RecordedStart>> Record(JobTicket ticket, CallerContext caller, ServiceName? service, RepoName? repo, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(caller);
         if (held.Current is not { } grant)
@@ -28,7 +29,7 @@ internal sealed class JobStartRecorder(HeldLease held, ILedgerStore ledger, Even
             return SindriErrors.NotRunning.With("the control plane doesn't hold the lease (fix: sindri)");
         }
 
-        var started = new JobStarted(caller.CommandId, ticket.Job, ticket.Kind, ticket.Key, Item: null, caller.Repo, service);
+        var started = new JobStarted(caller.CommandId, ticket.Job, ticket.Kind, ticket.Key, Item: null, repo, service);
         var entry = events.Entry(EventTypes.JobStarted, started, $"{EventTypes.JobStarted}:{ticket.Job.Value}");
         var appended = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
         return appended.IsError ? appended.Error : new RecordedStart(grant, appended.Value.Sequence, EventId.From(entry.Envelope.Id));

@@ -14,4 +14,5 @@ namespace Aw.Sindri.Features.Jobs;
 /// <param name="Grant">The lease grant every write is fenced by.</param>
 /// <param name="Service">The service the job runs, or null.</param>
 /// <param name="Cause">The envelope id of the 'job.started' event, which the job's later events carry as their causation (the engine bridge routes by it), or null.</param>
-public sealed record JobStart(JobId Job, JobKind Kind, JobKey Key, JobDefinition Definition, object Request, CallerContext Caller, LeaseGrant Grant, ServiceName? Service, EventId? Cause = null);
+/// <param name="Repo">The job's repo as 'job.started' recorded it; the job's later events carry it so a session sees them only in that repo, or null.</param>
+public sealed record JobStart(JobId Job, JobKind Kind, JobKey Key, JobDefinition Definition, object Request, CallerContext Caller, LeaseGrant Grant, ServiceName? Service, EventId? Cause = null, RepoName? Repo = null);

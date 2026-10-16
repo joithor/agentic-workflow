@@ -45,6 +45,10 @@ public sealed class EventCatalogTests
     public void Approving_the_profile_invalidates_the_needs_you_view_that_drops_the_drift_row() =>
         Assert.Contains(ApiViews.NeedsYou, Assert.Single(EventCatalog.All, e => e.Type == EventTypes.ProfileApproved).Invalidates, StringComparer.Ordinal);
 
+    [Fact, Trait("Lane", "unit")]
+    public void A_progress_line_invalidates_the_job_and_the_jobs_list_that_serves_its_line_count() =>
+        Expect.Sequence([ApiViews.Job, ApiViews.Jobs], Assert.Single(EventCatalog.All, e => e.Type == EventTypes.JobProgress).Invalidates);
+
     [Theory, Trait("Lane", "unit")]
     [InlineData(WorkflowEventType.Started, "workflow.started")]
     [InlineData(WorkflowEventType.Transition, "workflow.transition")]
