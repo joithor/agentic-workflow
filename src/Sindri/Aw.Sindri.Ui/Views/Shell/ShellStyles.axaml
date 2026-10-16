@@ -114,7 +114,7 @@
     <Setter Property="Height" Value="13" />
   </Style>
 
-  <!-- The ⌘K field: a placeholder until the palette (U1). It fills its top-bar column (300 px with room, down to 160 px;
+  <!-- The ⌘K field: it opens the palette (§8). It fills its top-bar column (300 px with room, down to 160 px;
        TopBar.axaml), and its text trims; narrower still it folds to its magnifier. -->
   <Style Selector="Border.search">
     <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
@@ -319,6 +319,16 @@
   </Style>
   <Style Selector="Border.sheet.covers Button.back">
     <Setter Property="IsVisible" Value="True" />
+  </Style>
+  <!-- The 404 state's Back is the header's Back where the sheet covers the page. -->
+  <Style Selector="Button.not-found-back">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="Button.not-found-back.shown">
+    <Setter Property="IsVisible" Value="True" />
+  </Style>
+  <Style Selector="Border.sheet.covers Button.not-found-back.shown">
+    <Setter Property="IsVisible" Value="False" />
   </Style>
   <Style Selector="Thumb.sheet-grip">
     <Setter Property="Width" Value="{StaticResource Space.XXS}" />

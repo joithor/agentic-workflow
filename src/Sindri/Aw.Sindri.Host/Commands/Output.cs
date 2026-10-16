@@ -11,6 +11,12 @@ internal sealed class Output(TextWriter stdout, TextWriter stderr, JsonSerialize
 {
     public TextWriter Out { get; } = stdout;
 
+    /// <summary>Reads a UTF-8 JSON document the way the API's bodies are read (camelCase names, strict).</summary>
+    /// <param name="utf8Json">The document.</param>
+    /// <typeparam name="T">A type in the package's JSON context.</typeparam>
+    /// <returns>The value, or the reason it can't be read.</returns>
+    public Result<T> Read<T>(ReadOnlySpan<byte> utf8Json) => AwJson.Deserialize<T>(utf8Json, options);
+
     public async Task<int> Json<T>(T value, int exitCode)
     {
         await Out.WriteLineAsync(Encoding.UTF8.GetString(AwJson.Serialize(value, options))).ConfigureAwait(false);

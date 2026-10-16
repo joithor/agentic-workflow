@@ -11,4 +11,7 @@ internal sealed record ContextSection(
     int? MaxBudget = null,
     int? MinHits = null,
     SessionsSection? Sessions = null,
-    ScrubSection? Scrub = null);
+    SourcesSection? Sources = null,
+    ScrubSection? Scrub = null,
+    int? CascadeDepth = null,
+    LabelingSection? Labeling = null);

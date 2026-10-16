@@ -1,6 +1,12 @@
 # Sindri UI app design: the control plane's views, actions and launching sessions
 
 Status:
+- **Revision 7 amendment (owner, 2026-10-12; PR #197):** §4.5's queue has API §3.6's four groups (`waitingOnYou`,
+  `withYou`, `running`, `queued`), and a parked item shows in Waiting on you with a "parked" badge from its state; §4.6's
+  item detail shows the item's `body` (scrubbed) and `link` from `GET /items/{itemId}`; §12.4 lists the destructive
+  confirm's copy (§8, E-8): "<label> <id>?" with **Confirm** and **Keep**. Nothing else changes.
+- **Revision 7 amendment (owner, 2026-10-12; PR #193):** §4.1's command lifecycle also covers the palette's rows: a
+  ready command run from the palette keeps the palette open and its row shows the lifecycle.
 - **Revision 8 note (owner session, 2026-10-13):** the app's contents were re-evaluated around five questions. `2026-10-13-sindri-ui-screens-design.md` supersedes this spec's §3, §4.2–§4.8, §10, §16, §18 and §19 with seven pages (Home · Workflows · Work · Recipes · Context · Agents · System), a recipe-driven instance frame, the context lens stack and phases U3', U5', U8–U13. Everything else here stands and is referenced from there.
 - **Revision 7 amendment (owner, 2026-10-12; PR #184):** §12.4 lists two more app-owned sentences, "On in your system
   settings" (Settings, while the OS reduces motion) and "Looks again every 2 s" (the Not running card); §15's deps cycle
@@ -146,10 +152,14 @@ Three layouts were mocked with the same fixture data (`shotgun/contact-sheet.htm
   "Show all N", which expands the panel in place. The summary line always states the totals; the fold rule above says
   what fits.
 - **Detail sheet:** a right-side sheet (default 520 px, resizable 420–760 px, `surface-1`, a `hairline` left rule)
-  over the page, opened from any row with `Enter` or a click on its title. It shows the item, park, decision, service
+  beside the page, opened from any row with `Enter` or a click on its title. It shows the item, park, decision, service
   or job (§4.3–§4.8). `Esc` closes it and returns focus to the row. While it's closed, a slim edge tab shows the last
   opened subject. Below 1100 px window width the sheet covers the full width with a back affordance, and opening it moves focus to its
   heading.
+- **Page beside the sheet** (owner, 2026-10-15; WCAG 2.2 2.4.11): a sheet beside the page never covers page content.
+  The page area is the window width minus the sheet. Rows drop low-priority columns (since, repo, step) as the page
+  narrows, and Home stacks its two panels. Nothing hides under the sheet, the title keeps at least 160 px, and the
+  primary action stays visible.
 - **Pages** behind the top bar (Queue, Decisions, Services, Health) use the same width and panels, with the detail
   sheet on the right.
 - Window minimum 900 × 600. The window remembers its size, the sheet width and the last page (local preference).
@@ -160,7 +170,7 @@ Three layouts were mocked with the same fixture data (`shotgun/contact-sheet.htm
 |---|---|---|---|---|
 | 1 | **Home** (Needs you, Running and With you, Queued, Health) | `G H` | Always the default | needs-you, queue, status, services |
 | 1a | Home's **Needs you** panel, expanded | `G N` | the tray, the attention band | `GET /needs-you` |
-| 2 | **Queue** (all five groups) | `G Q` | — | `GET /queue` |
+| 2 | **Queue** (all four groups) | `G Q` | — | `GET /queue` |
 | 2a | Queue filtered to Running / With you | `G R` / `G W` | Home's panel headers | the queue's `running` / `withYou` groups |
 | 3 | **Decisions** (and requests) | `G D` | — | `GET /decisions`, `GET /requests` |
 | 4 | **Services** (and jobs) | `G S` | — | `GET /services`, `GET /jobs/{id}` |
@@ -200,13 +210,17 @@ Every view is in exactly one of these states, taken from the API, in this priori
 
 | Phase | Shows |
 |---|---|
-| `sending` | The control disabled with a spinner, its label kept; a polite announcement ("Sending…") after 300 ms |
+| `sending` | A spinner, the label kept. The control stays enabled so keyboard focus is kept; the view model refuses a second run. A polite announcement ("Sending…") after 300 ms |
 | `accepted` | An inline check and the outcome in words for 2 s ("Resumed ITM-01JC8"), announced; the row then clears or updates on the next refresh |
 | `refused` / `failed` | The inline error (above); focus stays on the control |
 | Copy | "Copied" for 1.5 s, announced |
 
 A second click while `sending` does nothing. The engine's nonce is minted at click time (§9.1), never when a form
 renders.
+
+**The palette's rows follow the same lifecycle** (owner, 2026-10-12; PR #193): running a `ready` command from the
+palette (§8) keeps the palette open, and that row shows `sending`, then `accepted` or Sindri's code and detail as
+`refused` / `failed`. Esc closes the palette at any point; the command keeps running.
 
 **A subject that clears while its sheet is open** (a decision decided at the CLI, an instance resumed): the sheet keeps
 the subject, shows "Cleared: <the timeline line that cleared it>" with **Close**, and disables any form while keeping
@@ -277,8 +291,10 @@ Mockups: `mockups/park-grant.html` (protected answer), `mockups/park-needs-answe
 
 ### 4.5 Queue, Running, With you
 
-- **Queue:** the five groups in the API's order (`waitingOnYou`, `withYou`, `parked`, `running`, `queued`), each a
-  collapsible section with its count; items within a group in the API's order. Each row: id, title, repo, state as a
+- **Queue:** the four groups in the API's order (`waitingOnYou`, `withYou`, `running`, `queued`; API §3.6), each a
+  collapsible section with its count; items within a group in the API's order. There is no parked group: a parked item
+  sits in Waiting on you and carries a "parked" badge, from its `state`. The app keeps a heading for a `parked` group only as a
+  fallback; the API never sends one. Each row: id, title, repo, state as a
   word, step, agent (once launched), since, and the row's primary action from `actions`.
 - **Running** (Home's left panel, and the Queue page filtered by `G R`): the `running` group, with the step (`produce round 2/3`), the agent and where it runs ("Claude Code in
   Warp", "factory worker"), the budget line as text plus a thin `ink-subtle` bar, **Open ▾** and **Take over** (§6.2). **Attach** belongs to With-you rows
@@ -292,7 +308,8 @@ Empty: each group hides when empty; the view shows its `empty` sentence when all
 
 ### 4.6 Item detail
 
-The full item: header (id, title, repo, state as a word, version, since), the engine instance header and `next` once
+The full item: header (id, title, repo, state as a word, version, since), its `body` (scrubbed, plain text) and its
+`link` (the tracker record key) as `GET /items/{itemId}` serves them, the engine instance header and `next` once
 S2 runs (WF §6.4, rendered line for line, ASCII as the API sends it), what it's waiting on, the answer block (§4.4),
 the launch block (§6), pending decisions for the item, requests filed against it, and the timeline
 (`GET /items/{id}/timeline`, paged by `next`, each entry: time, type, actor, one scrubbed line).
@@ -807,6 +824,7 @@ sentences are the app's own, because no API exists at that moment or because the
 | Home's summary line and panel headers (§4.2) | "N need you · N running · N with you · N queued" and the headers "NEEDS YOU N", "RUNNING N · WITH YOU N", "QUEUED N", built from the panels' row counts |
 | Before the API answers (§4.1) | "Not running" and its reasons (S1b's `SND-UI-*`), "Looks again every 2 s" (the Not running card), "Connecting…", "Sindri and the app are different versions" (API §9's wording), "Sindri not responding: run `sindri doctor`", "stale", "updated Ns ago" |
 | Command lifecycle (§4.1) | "Sending…", "Copied", the accepted outcome ("Resumed ITM-…", built from the action's label and the subject id), "Cleared: …" |
+| Destructive confirm (§8, E-8) | The question "<label> <id>?" (for example "Close as cancelled ITM-…?"), with **Confirm** and **Keep** |
 | Copy block (§7) | "Needs a typed confirmation at a terminal." |
 | Launch (§6.6) | "Sending to Warp…", "Sent to Warp · tab `sindri ITM-…`", "Sent to Warp <age> ago · <agent>", "Open another session" (the confirm's question is the server's `confirm.reason`), "Warp hasn't confirmed: run `sindri doctor`", the menu's "last used in <repo>", "profile default" |
 | Urgency words (§5, §11.3) | "needs you now", "failed", "to look at", "new" |

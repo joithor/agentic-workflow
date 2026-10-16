@@ -10,7 +10,7 @@
 # temporal): doctor with nothing running, start headless with an unapproved profile, a second serve refused by the lease,
 # the approve preview and its non-terminal refusal, a session's typed approve refused (SND-AUTH-002), the human's typed
 # approval, status (text and --json's apiVersion), /sindri/mcp's initialize and tools/list as a stateless MCP client,
-# a session's stop refused, the human's stop, status and doctor again (doctor with HOME on an empty scratch dir, so its
+# the views rebuild refused to a session and requested by the human, status's views and health lines, the item verbs (API P3: a human's item add, the queue and the item list, a session's item add refused, the human's item close, the done list and the queue again), the ledger read (API P5: the human's lists command.handled, a session's doesn't, one item's events, and GET /events/catalog), a session's stop refused, the human's stop, status and doctor again (doctor with HOME on an empty scratch dir, so its
 # context:mcp-scope row never reads the real provider files);
 # then recipe validate on the shipped recipes (their hashes; workflow.item reads its child beside it) and on an invalid
 # fixture (RCP-REACH-001, exit 1). The normalized output (pids, ports, hashes, times, the host name and the temp path
@@ -67,7 +67,7 @@ tree="$scratch/tree"
 work="$scratch/run"
 mkdir -p "$tree" "$work"
 git -C "$root" ls-files -z --cached --others --exclude-standard -- global.json nuget.config .editorconfig 'Directory.*' BannedSymbols.txt CodeMetricsConfig.txt \
-  src/Aw.Kernel src/Aw.Kernel.Data src/Aw.Kernel.Telemetry src/Redaction src/Aw.Analyzers src/Context src/Sindri | (cd "$root" && tar --null -T - -cf -) | tar -xf - -C "$tree"
+  src/Aw.Kernel src/Aw.Kernel.Data src/Aw.Kernel.Telemetry src/Redaction src/Aw.Analyzers src/Context src/Judge src/Sindri | (cd "$root" && tar --null -T - -cf -) | tar -xf - -C "$tree"
 dotnet publish "$tree/src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj" -c Release --no-self-contained -warnaserror   -o "$out/bin" </dev/null >"$out/publish.log" 2>&1 || { tail -20 "$out/publish.log" >&2; exit 1; }
 
 # Framework-dependent: the runtimeconfig names the shared framework and no runtime ships beside the host.
@@ -127,6 +127,20 @@ mcp() { # $1 = JSON-RPC method, $2 = params: one stateless /sindri/mcp call as a
   curl -s -m 30 -X POST "${url%/}/sindri/mcp" -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
     -H 'X-Sindri-Repo: smoke' -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"$1\",\"params\":$2}" | sed -n 's/^data: //p'
 }
+settle() { # the projector has caught up and isn't rebuilding (it polls once a second): status's views line is then stable
+  local i
+  for i in $(seq 1 40); do
+    jq -e '.views | (.cursor == .ledgerHead and (.rebuilding | not))' <<<"$(bounded "$bin" status --json </dev/null 2>/dev/null)" >/dev/null 2>&1 && return 0
+    sleep 0.25
+  done
+}
+items_in() { # $1 = state, $2 = count: the items view lists that many in that state (the projector polls once a second)
+  local i
+  for i in $(seq 1 40); do
+    jq -e --argjson n "$2" '.items | length == $n' <<<"$(bounded "$bin" items --state "$1" --json </dev/null 2>/dev/null)" >/dev/null 2>&1 && return 0
+    sleep 0.25
+  done
+}
 session_tty() { # an agent session at a terminal (the CLI's own terminal check passes, so the server decides)
   echo "## sindri $* (session, terminal)"
   local rc=0
@@ -142,6 +156,7 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   run profile approve "$hash"
   printf '%s\n' "approve profile ${hash:0:6}" | session_tty profile approve "$hash"
   printf '%s\n' "approve profile ${hash:0:6}" | human profile approve "$hash"
+  settle
   run status
   echo "## sindri status --json | jq '{running, apiVersion}'"
   json="$({ bounded "$bin" status --json </dev/null 2>&1 || true; })"
@@ -149,6 +164,29 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   echo "## /sindri/mcp initialize, then tools/list (stateless)"
   mcp initialize '{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"1"}}' | jq -c '.result.serverInfo.name'
   mcp tools/list '{}' | jq -c '[.result.tools[].name]'
+  session views rebuild
+  human views rebuild </dev/null
+  settle
+  run status
+  human item add "Smoke item" </dev/null
+  items_in new 1
+  run queue
+  run items --state new
+  session item add "Refused by the desk"
+  item="$(bounded "$bin" items --json </dev/null | jq -r '.items[0].id')"
+  human item close "$item" </dev/null
+  items_in done 1
+  run items --state done
+  run queue
+  echo "## sindri ledger --json --after 0 | jq (human: command.handled is listed)"
+  with_tty "${alarm[@]}" "$bin" ledger --json --after 0 </dev/null | jq -c '[.events[].type] | any(. == "command.handled")'
+  echo "## sindri ledger --json --after 0 | jq (session: public types only)"
+  CLAUDECODE=1 bounded "$bin" ledger --json --after 0 </dev/null | jq -c '[.events[].type] | any(. == "command.handled")'
+  echo "## sindri ledger --item <closed item> --json | jq (the item's events)"
+  with_tty "${alarm[@]}" "$bin" ledger --item "$item" --type 'item.*' --json </dev/null | jq -c '[.events[].type]'
+  echo "## GET /sindri/events/catalog | jq (public types, their invalidates)"
+  curl -s -m 30 "$(jq -r '.url' "$AW_SINDRI_HOME/control.json" | sed 's|/$||')/sindri/events/catalog" -H 'X-Sindri-Repo: smoke' \
+    | jq -c '{commandHandled: any(.types[]; .type == "command.handled"), itemCreated: (.types[] | select(.type == "item.created") | .invalidates)}'
   session stop
   human stop </dev/null
   run status

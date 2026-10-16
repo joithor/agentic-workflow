@@ -19,13 +19,13 @@
       <Setter Property="Foreground" Value="{DynamicResource Brush.Ink}" />
     </Style>
   </UserControl.Styles>
-  <!-- The top bar (UI spec §3.2): brand, the segmented navigation with its counts, the ⌘K field (a placeholder
-       until U1's palette) and the health pill, which opens Health. The ⌘K field's column is a star column that outweighs the
+  <!-- The top bar (UI spec §3.2): brand, the segmented navigation with its counts, Later ▾, the ⌘K field (a click,
+       Enter or Space opens the palette) and the health pill, which opens Health. The ⌘K field's column is a star column that outweighs the
        spacer and stops at 300 px plus its margins: with room it is 300 px wide at the right, and as the window narrows it
        gives way down to 160 px. Below that the bar steps down (TopBar.axaml.cs): first the ⌘K field folds to its
        magnifier, then the pill's age drops (its accessible name keeps it), then the brand keeps its mark alone, so the
        navigation and the pill's word fit at the 900 px minimum in every state and at text scale 1.3. -->
-  <Border Classes="topbar focus-region" Focusable="True" AutomationProperties.Name="{Binding Text.Sindri}">
+  <Border Classes="topbar focus-region" Focusable="True" AutomationProperties.Name="{Binding Text.Sindri}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
     <Grid x:Name="BarGrid" VerticalAlignment="Center">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="Auto" />
@@ -57,13 +57,23 @@
               <Style Selector="ListBoxItem" x:DataType="shell:NavEntry">
                 <Setter Property="AutomationProperties.Name" Value="{Binding Label}" />
               </Style>
+              <!-- A count shows when there is one, and not at all once the bar has stepped down to its last step (TopBar.Counts.cs). -->
+              <Style Selector="TextBlock.nav-count">
+                <Setter Property="IsVisible" Value="False" />
+              </Style>
+              <Style Selector="TextBlock.nav-count.has">
+                <Setter Property="IsVisible" Value="True" />
+              </Style>
+              <Style Selector="ListBox.no-counts TextBlock.nav-count">
+                <Setter Property="IsVisible" Value="False" />
+              </Style>
             </ListBox.Styles>
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="shell:NavEntry">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <Ellipse Classes="nav-dot" VerticalAlignment="Center" />
                   <TextBlock Classes="body-strong nav-label" Text="{Binding Label}" AutomationProperties.Name="{Binding Label}" />
-                  <TextBlock Classes="caption subtle" Text="{Binding Count}" IsVisible="{Binding HasCount}" AutomationProperties.Name="{Binding Count}" />
+                  <TextBlock Classes="caption subtle nav-count" Classes.has="{Binding HasCount}" Text="{Binding Count}" AutomationProperties.Name="{Binding Count}" />
                 </StackPanel>
               </DataTemplate>
             </ListBox.ItemTemplate>
@@ -71,23 +81,13 @@
         </StackPanel>
       </Border>
 
-      <!-- The G-chord's wait (rev 7 §8): "G …" in a keycap in the spacer column while G waits for its second key. Transient and
-           named, not live: the key press is the user's own. -->
-      <Border x:Name="ChordHint" Grid.Column="3" Classes="kbd" HorizontalAlignment="Left" VerticalAlignment="Center"
-              IsVisible="{Binding IsChordPending}" AutomationProperties.Name="{Binding ChordHint}">
-        <TextBlock Classes="kbd" Text="{Binding ChordHint}" VerticalAlignment="Center" />
-      </Border>
-
       <!-- The ⌘K field (home.html): a magnifier, the placeholder, and the ⌘K keycap at the right; folded ("compact"), the
-           magnifier alone, still named "Search or run a command". Inert until U1 brings the palette, so it is no Tab stop
-           (a keyboard user never lands on a control that does nothing) and, like the decorative glyphs, Raw to assistive
-           tech, so no screen reader announces a search group that takes no input (review run 4, accessibility-tester-2).
-           U1 makes it focusable and restores its view, with its role and action. -->
-      <Border x:Name="SearchField" Grid.Column="4" Classes="search" Margin="12,0,12,0"
-              AutomationProperties.Name="{Binding Text.Search}" AutomationProperties.AccessibilityView="Raw">
-        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw">
-          <Path Classes="magnifier" Data="M5.5,1 A4.5,4.5 0 1 1 5.5,10 A4.5,4.5 0 1 1 5.5,1 Z M8.8,8.8 L12,12" VerticalAlignment="Center"
-                AutomationProperties.AccessibilityView="Raw" />
+           magnifier alone, still named "Search or run a command". -->
+      <Border x:Name="SearchField" Grid.Column="4" Classes="search" Margin="12,0,12,0" Focusable="True" Cursor="Hand"
+              PointerPressed="OnSearch" KeyDown="OnSearchKey"
+              AutomationProperties.Name="{Binding Text.Search}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Button">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" VerticalAlignment="Center">
+          <Path Classes="magnifier" Data="M5.5,1 A4.5,4.5 0 1 1 5.5,10 A4.5,4.5 0 1 1 5.5,1 Z M8.8,8.8 L12,12" VerticalAlignment="Center" />
           <TextBlock x:Name="SearchText" Grid.Column="1" Classes="caption subtle search-text" Text="{Binding Text.Search}" AutomationProperties.Name="{Binding Text.Search}" VerticalAlignment="Center"
                      TextTrimming="CharacterEllipsis" AutomationProperties.AccessibilityView="Raw" />
           <Border x:Name="SearchKeycap" Grid.Column="2" Classes="kbd search-key" AutomationProperties.Name="{Binding Text.SearchKey}" AutomationProperties.AccessibilityView="Raw">
@@ -136,9 +136,22 @@
               <TextBlock x:Name="PillAgeText" Classes="caption subtle" Text="{Binding Pill.Age}" IsVisible="{Binding Pill.HasAge}"
                          Margin="6,0,0,0" VerticalAlignment="Center" />
             </Panel>
+            <!-- §3.2: any problem the status's health names, in words as served ("index failed"). -->
+            <TextBlock x:Name="PillProblems" Classes="caption" Text="{Binding Pill.Problems}" IsVisible="{Binding Pill.HasProblems}"
+                       Margin="6,0,0,0" VerticalAlignment="Center" MaxWidth="220" TextTrimming="CharacterEllipsis" />
           </StackPanel>
         </Button>
       </StackPanel>
+      <!-- The G-chord's wait (rev 7 §8): "G …" in a keycap while G waits for its second key. It sits inside the bar, vertically
+           centred over the ⌘K field's right end, where its keycap is (re-check R1: laid out below the bar, the page region painted over
+           it; the bar has no spare room for a column of its own at 900 px). Last in the grid so nothing in the bar draws over it; transient and exposed as text, not live: the key press is the
+           user's own. -->
+      <Border x:Name="ChordHint" Grid.Column="4" Classes="kbd" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,20,0"
+              IsHitTestVisible="False" IsVisible="{Binding IsChordPending}"
+              AutomationProperties.Name="{Binding ChordHint}" AutomationProperties.AccessibilityView="Control"
+              AutomationProperties.ControlTypeOverride="Text">
+        <TextBlock Classes="kbd" Text="{Binding ChordHint}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+      </Border>
     </Grid>
   </Border>
 </UserControl>

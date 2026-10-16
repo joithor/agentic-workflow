@@ -1,0 +1,11 @@
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.10",
+  "title": "SND-CONTEXT-037",
+  "status": 409,
+  "detail": "'Layout' is the name of 2 nodes: feature:layout.a, feature:layout.b (fix: ask by key)",
+  "candidates": [
+    "feature:layout.a",
+    "feature:layout.b"
+  ],
+  "traceId": "<trace>"
+}

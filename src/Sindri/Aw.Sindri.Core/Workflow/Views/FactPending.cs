@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Aw.Sindri.Core.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Views;
 
@@ -10,4 +11,4 @@ namespace Aw.Sindri.Core.Workflow.Views;
 public sealed record FactPending(
     bool Required,
     IReadOnlyList<string> Checks,
-    string CompleteAction);
+    ActionId CompleteAction);

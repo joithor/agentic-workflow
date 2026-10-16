@@ -5,6 +5,7 @@
 HOME # the user's home directory (OS)
 PATH # executable search path (OS)
 USER # login name (OS)
+EUID # the effective user id (bash sets it)
 TMPDIR # temp directory (OS)
 COLUMNS # terminal width (shell); the statusline falls back to it
 PROMPT_COMMAND # bash prompt hook; the Claude installer appends to it

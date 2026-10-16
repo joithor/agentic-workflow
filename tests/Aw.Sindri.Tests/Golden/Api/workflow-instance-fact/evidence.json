@@ -1,5 +1,5 @@
 {
-  "key": "evidence",
+  "key": "fact:evidence",
   "type": "evidence",
   "body": {
     "packs": [
@@ -9,6 +9,14 @@
       },
       {
         "task": "t2",
+        "verdict": "pass"
+      },
+      {
+        "task": "t3",
+        "verdict": "pass"
+      },
+      {
+        "task": "t9",
         "verdict": "pass"
       }
     ],

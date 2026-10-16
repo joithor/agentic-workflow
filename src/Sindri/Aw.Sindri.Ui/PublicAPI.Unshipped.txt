@@ -1,4 +1,6 @@
 #nullable enable
+Aw.Sindri.Ui.Platform.IClipboard
+Aw.Sindri.Ui.Platform.IClipboard.SetText(string! text, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!
 Aw.Sindri.Ui.Platform.IEndpointRecordSource
 Aw.Sindri.Ui.Platform.IEndpointRecordSource.Location.get -> string!
 Aw.Sindri.Ui.Platform.IEndpointRecordSource.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Ui.Platform.EndpointRecordRead!>
@@ -64,10 +66,12 @@ Aw.Sindri.Ui.Platform.TrayView.State.init -> void
 Aw.Sindri.Ui.Platform.TrayView.Tooltip.get -> string!
 Aw.Sindri.Ui.Platform.TrayView.Tooltip.init -> void
 Aw.Sindri.Ui.Platform.TrayView.TrayView(Aw.Sindri.Ui.Platform.TrayState State, string! Tooltip, string! OpenLabel, string! QuitLabel) -> void
+Aw.Sindri.Ui.Views.AppTrayIcons
 Aw.Sindri.Ui.Views.SindriApp
 Aw.Sindri.Ui.Views.SindriApp.SindriApp() -> void
 const Aw.Sindri.Ui.Platform.InstanceMessages.Focus = "focus" -> string!
 const Aw.Sindri.Ui.Platform.InstanceMessages.MaxLength = 512 -> int
+const Aw.Sindri.Ui.Views.SindriApp.FailedExitCode = 2 -> int
 override Aw.Sindri.Ui.Platform.SindriPlatform.Equals(object? obj) -> bool
 override Aw.Sindri.Ui.Platform.SindriPlatform.GetHashCode() -> int
 override Aw.Sindri.Ui.Platform.SindriPlatform.ToString() -> string!
@@ -80,11 +84,9 @@ static Aw.Sindri.Ui.Platform.SindriPlatform.operator !=(Aw.Sindri.Ui.Platform.Si
 static Aw.Sindri.Ui.Platform.SindriPlatform.operator ==(Aw.Sindri.Ui.Platform.SindriPlatform? left, Aw.Sindri.Ui.Platform.SindriPlatform? right) -> bool
 static Aw.Sindri.Ui.Platform.TrayView.operator !=(Aw.Sindri.Ui.Platform.TrayView? left, Aw.Sindri.Ui.Platform.TrayView? right) -> bool
 static Aw.Sindri.Ui.Platform.TrayView.operator ==(Aw.Sindri.Ui.Platform.TrayView? left, Aw.Sindri.Ui.Platform.TrayView? right) -> bool
-static Aw.Sindri.Ui.Views.SindriApp.Create(Aw.Sindri.Ui.Platform.SindriPlatform! platform, System.TimeProvider! clock) -> Aw.Sindri.Ui.Views.SindriApp!
-const Aw.Sindri.Ui.Views.SindriApp.FailedExitCode = 2 -> int
-Aw.Sindri.Ui.Views.AppTrayIcons
 static Aw.Sindri.Ui.Views.AppTrayIcons.Add(Avalonia.Controls.TrayIcon! icon) -> void
 static Aw.Sindri.Ui.Views.AppTrayIcons.Remove(Avalonia.Controls.TrayIcon! icon) -> void
+static Aw.Sindri.Ui.Views.SindriApp.Create(Aw.Sindri.Ui.Platform.SindriPlatform! platform, System.TimeProvider! clock) -> Aw.Sindri.Ui.Views.SindriApp!
 Aw.Sindri.Ui.Platform.EndpointRecordFailure
 Aw.Sindri.Ui.Platform.EndpointRecordFailure.NoPermission = 1 -> Aw.Sindri.Ui.Platform.EndpointRecordFailure
 Aw.Sindri.Ui.Platform.EndpointRecordFailure.NotAFile = 2 -> Aw.Sindri.Ui.Platform.EndpointRecordFailure

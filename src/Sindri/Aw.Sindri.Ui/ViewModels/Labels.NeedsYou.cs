@@ -30,16 +30,6 @@ internal static partial class Labels
     /// <returns>The words.</returns>
     internal static string AllRows(int count) => string.Create(CultureInfo.InvariantCulture, $"all {count} →");
 
-    /// <summary>The control that shows the rows held back while the pointer is over the panel.</summary>
-    /// <param name="count">How many rows are held.</param>
-    /// <returns>The words.</returns>
-    internal static string NewRows(int count) => string.Create(CultureInfo.InvariantCulture, $"{count} new");
-
-    /// <summary>The live region's line when a row leaves the list.</summary>
-    /// <param name="id">The row's shown id.</param>
-    /// <returns>The words.</returns>
-    internal static string Cleared(string id) => id + " cleared";
-
     /// <summary>A row's age: minutes under an hour, then hours, then days.</summary>
     /// <param name="age">How long the row has waited.</param>
     /// <returns>The words, such as "12m", "2h", "3d".</returns>

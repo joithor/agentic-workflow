@@ -28,6 +28,7 @@ internal sealed partial class AttachButton : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+        Menu.Opened += (_, _) => _model?.MenuOpened();
         Menu.Closed += OnMenuClosed;
     }
 

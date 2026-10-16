@@ -1,8 +1,10 @@
 using Avalonia;
 using Avalonia.Automation;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
@@ -144,6 +146,117 @@ public sealed class AttachButtonTests
 
         Assert.True(opened);
         Assert.True(closed);
+        Assert.True(focused);
+    }
+
+    [Fact]
+    public async Task The_pending_chip_is_exposed_with_the_dependency_in_its_name()
+    {
+        var (control, name, type) = await OnUi(() =>
+        {
+            var (window, button, _) = Show(new AttachInput(Address, AttachStepKind.Agent, AttachReady: false));
+            var chip = Named<Control>(button, "PendingChip");
+            var peer = ControlAutomationPeer.CreatePeerForElement(chip);
+            var result = (peer.IsControlElement(), peer.GetName(), peer.GetAutomationControlType());
+            window.Close();
+            return result;
+        });
+
+        Assert.True(control);
+        Assert.Equal($"Attach to {Address}: available with API P10a", name);
+        Assert.Equal(AutomationControlType.Text, type);
+    }
+
+    [Fact]
+    public async Task The_announcement_region_is_in_the_tree_only_after_the_menu_opens()
+    {
+        var (before, after) = await OnUi(() =>
+        {
+            var (window, button, _) = Show(Ready);
+            var region = Named<TextBlock>(button, "ConfirmAnnouncementRegion");
+            var was = region.IsEffectivelyVisible;
+            var chevron = Named<Button>(button, "AttachChevron");
+            _ = chevron.Focus(NavigationMethod.Tab);
+            window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, keySymbol: null);
+            Settle(window);
+            var result = (was, region.IsEffectivelyVisible);
+            window.Close();
+            return result;
+        });
+
+        Assert.False(before);
+        Assert.True(after);
+    }
+
+    [Fact]
+    public async Task The_main_button_a_menu_entry_Confirm_and_Keep_raise_their_actions_and_focus_returns_to_the_chevron()
+    {
+        var (chosen, keepFocus, afterKeep) = await OnUi(() =>
+        {
+            var (window, button, vm) = Show(Ready);
+            var raised = new List<AttachAction>();
+            vm.Chosen += (_, e) => raised.Add(e.Action);
+            Named<Button>(button, "AttachPrimary").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            var chevron = Named<Button>(button, "AttachChevron");
+            var menu = (MenuFlyout)chevron.Flyout!;
+            var takeOver = menu.Items.OfType<MenuItem>().First(i => (AutomationProperties.GetName(i) ?? string.Empty).StartsWith("Take over", StringComparison.Ordinal));
+            takeOver.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+            var cancel = menu.Items.OfType<MenuItem>().First(i => (AutomationProperties.GetName(i) ?? string.Empty).StartsWith("Cancel", StringComparison.Ordinal));
+            cancel.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+            Settle(window);
+            var keepFocused = Named<Button>(button, "KeepButton").IsFocused;
+            Named<Button>(button, "KeepButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Settle(window);
+            var afterKeep = (Raised: raised.ToList(), Chevron: chevron.IsFocused);
+            cancel.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+            Settle(window);
+            Named<Button>(button, "ConfirmButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Settle(window);
+            var result = (raised.ToList(), keepFocused, afterKeep);
+            window.Close();
+            return result;
+        });
+
+        Assert.Equal([AttachAction.Attach, AttachAction.TakeOver, AttachAction.Cancel], chosen);
+        Assert.True(keepFocus);
+        Assert.Equal([AttachAction.Attach, AttachAction.TakeOver], afterKeep.Raised);   // Keep raised nothing
+        Assert.True(afterKeep.Chevron);
+    }
+
+    [Fact]
+    public async Task The_confirm_button_shows_Cancel_it_and_its_name_starts_with_that_label()
+    {
+        var (content, name) = await OnUi(() =>
+        {
+            var (window, button, vm) = Show(Ready);
+            vm.Choose(AttachAction.Cancel);
+            Settle(window);
+            var confirm = Named<Button>(button, "ConfirmButton");
+            var result = (confirm.Content?.ToString(), AutomationProperties.GetName(confirm));
+            window.Close();
+            return result;
+        });
+
+        Assert.Equal("Cancel it", content);
+        Assert.StartsWith("Cancel it", name, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_new_address_closes_the_confirm_and_focus_goes_to_the_chevron()
+    {
+        var (shown, focused) = await OnUi(() =>
+        {
+            var (window, button, vm) = Show(Ready);
+            vm.Choose(AttachAction.Cancel);
+            Settle(window);
+            vm.Update(new AttachInput("ITM-01JE9/item.4", AttachStepKind.Agent, AttachReady: true));
+            Settle(window);
+            var result = (Named<StackPanel>(button, "ConfirmRow").IsEffectivelyVisible, Named<Button>(button, "AttachChevron").IsFocused);
+            window.Close();
+            return result;
+        });
+
+        Assert.False(shown);
         Assert.True(focused);
     }
 

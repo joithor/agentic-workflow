@@ -1,53 +1,63 @@
-using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
+using Microsoft.Extensions.Logging;
 using Temporalio.Activities;
 using Temporalio.Exceptions;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
-/// The interpreter's activities (engine spec rev 8 §5.1, §5.3). 'LoadRecipe' (a local activity) reads and normalizes the
-/// recipe. 'RunStep' is the activity an 'active' state starts: in the desk runtime it records the desk task's task
-/// token under its run token and returns pending (async completion); 'sindri workflow complete --run &lt;token&gt;'
-/// completes it through that task token. Engine P4a: recipes come from the home's recipes directory.
+/// The interpreter's activities (engine spec rev 8 §5.1, rev 8.1 §5.3). 'LoadRecipe' (a local activity) reads the
+/// approved recipe the workflow input pins, through <see cref="IApprovedRecipes"/>. 'RunStep' is the short activity an
+/// 'active' state starts with the run token in its id: in the desk runtime it records the open desk task and returns,
+/// and the workflow then waits for the 'complete' Update.
 /// </summary>
-/// <param name="reader">The recipe reader.</param>
+/// <param name="approvals">The approved recipes.</param>
 /// <param name="catalog">The build's block catalog.</param>
-/// <param name="home">Where the recipes and task tokens are.</param>
-/// <param name="tokens">The run-token-to-task-token map.</param>
-internal sealed class RunStepActivities(IRecipeReader reader, BlockCatalog catalog, WorkflowsHome home, TaskTokens tokens)
+/// <param name="times">The profile's 'workflow:' times (S1-D11): 'workflow.deskTimeout' and 'workflow.eventHold'.</param>
+/// <param name="logger">The log the open desk task is recorded in.</param>
+internal sealed partial class RunStepActivities(IApprovedRecipes approvals, BlockCatalog catalog, ProfileWorkflowTimes times, ILogger<RunStepActivities> logger)
 {
-    /// <summary>Reads 'workflow.&lt;name&gt;.yaml' and returns its long form and the descriptors of its blocks.</summary>
-    /// <param name="recipeId">The recipe id.</param>
+    /// <summary>Reads the approved recipe and the descriptors of its blocks.</summary>
+    /// <param name="recipe">The recipe the instance is pinned to.</param>
     /// <returns>The loaded recipe.</returns>
     [Activity("LoadRecipe")]
-    public async Task<LoadedRecipe> LoadRecipeAsync(string recipeId)
+    public async Task<LoadedRecipe> LoadRecipeAsync(RecipeVersion recipe)
     {
-        var file = Path.Combine(home.RecipesDirectory, recipeId + ".yaml");
-        var text = await File.ReadAllTextAsync(file, ActivityExecutionContext.Current.CancellationToken).ConfigureAwait(false);
-        var reading = reader.Read(text, Path.GetFileName(file));
-        if (reading.Document is not { } document)
+        ArgumentNullException.ThrowIfNull(recipe);
+        var cancel = ActivityExecutionContext.Current.CancellationToken;
+        var found = await approvals.Find(recipe.Id, recipe.Hash, cancel).ConfigureAwait(false);
+        if (found.IsError)
         {
-            var first = reading.Findings.Count > 0 ? reading.Findings[0].ToLine() : "it doesn't bind";
-            throw new ApplicationFailureException($"{file} doesn't read: {first}", nonRetryable: true);
+            // unknown (SND-RECIPE-002) and not approved or revoked (-003) can't change by retrying; a read that failed (I/O) can
+            throw new ApplicationFailureException($"{found.Error.Message}", errorType: found.Error.Code, nonRetryable: string.Equals(found.Error.Code, "SND-RECIPE-002", StringComparison.Ordinal) || string.Equals(found.Error.Code, "SND-RECIPE-003", StringComparison.Ordinal));
         }
 
-        var recipe = document.Recipe with { Hash = document.Hash };
-        var used = recipe.States.Values.Select(static s => s.Step?.Use)
-            .Concat(recipe.Transitions.SelectMany(static t => t.Gates.Select(static g => (BlockId?)g.Use).Concat(t.Effects.Select(static e => (BlockId?)e.Use))))
+        var definition = found.Value.Recipe;
+        var used = definition.States.Values.Select(static s => s.Step?.Use)
+            .Concat(definition.Transitions.SelectMany(static t => t.Gates.Select(static g => (BlockId?)g.Use).Concat(t.Effects.Select(static e => (BlockId?)e.Use))))
             .OfType<BlockId>().ToHashSet();
-        return new LoadedRecipe(recipe, [.. catalog.Blocks.Where(b => used.Contains(b.Id))]);
+        var workflow = await times.Read(cancel).ConfigureAwait(false);
+        return new LoadedRecipe(found.Value.Version, definition, [.. catalog.Blocks.Where(b => used.Contains(b.Id))], workflow.DeskTimeout, workflow.EventHold);
     }
 
-    /// <summary>Starts the Step and leaves the activity open for its report.</summary>
+    /// <summary>
+    /// Records the open desk task and returns (rev 8.1 §5.3): the activity, scheduled with the run token in its id
+    /// ('run:{token}:{n}'), is the record in the instance's history that a worker restart replays, so the task keeps its
+    /// token; it also writes one log line. The workflow then waits for the 'complete' Update. The first-desk-task
+    /// notification is P6's ('notify.desk').
+    /// </summary>
     /// <param name="run">The run.</param>
-    /// <returns>The report the human or the session completed it with.</returns>
+    /// <returns>Done.</returns>
     [Activity("RunStep")]
-    public Task<StepReport> RunStepAsync(StepRun run)
+    public Task RunStepAsync(StepRun run)
     {
         ArgumentNullException.ThrowIfNull(run);
-        tokens.Save(run.Address, run.Token, ActivityExecutionContext.Current.Info.TaskToken);
-        throw new CompleteAsyncException();
+        DeskTaskOpen(logger, run.Address, run.State, run.Token);
+        return Task.CompletedTask;
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "desk task open: {Address} {State} run {Token}")]
+    private static partial void DeskTaskOpen(ILogger logger, string address, string state, string token);
 }

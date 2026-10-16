@@ -80,12 +80,39 @@ public static class SindriErrors
     /// <summary>SND-SCHED-001: a background service run failed.</summary>
     public static readonly ErrorDefinition ServiceFailed = new("SND-SCHED-001", ErrorKind.Unavailable, "A background service failed");
 
+    /// <summary>SND-SECRET-001: a secret pointer has no scheme, an unknown scheme or a malformed target.</summary>
+    public static readonly ErrorDefinition SecretPointerInvalid = new("SND-SECRET-001", ErrorKind.Invalid, "The secret pointer is invalid");
+
+    /// <summary>SND-SECRET-002: a secret pointer doesn't resolve (unset variable, missing file or entry, missing tool, timeout).</summary>
+    public static readonly ErrorDefinition SecretUnresolved = new("SND-SECRET-002", ErrorKind.Unavailable, "The secret doesn't resolve");
+
+    /// <summary>SND-SECRET-003: a file: pointer names a file others may read or write, or something that isn't a regular file.</summary>
+    public static readonly ErrorDefinition SecretFileUnsafe = new("SND-SECRET-003", ErrorKind.Forbidden, "The secret file is unsafe");
+
+    /// <summary>SND-API-010: a command that reads views was refused while the views rebuild; it wasn't run.</summary>
+    public static readonly ErrorDefinition ViewsRebuilding = new("SND-API-010", ErrorKind.Unavailable, "Views are rebuilding; the command wasn't run, retry");
+
+    /// <summary>SND-API-011: the views didn't reach the sequence a caller waits for (X-Sindri-After, or a command's head) in time.</summary>
+    public static readonly ErrorDefinition ViewsBehind = new("SND-API-011", ErrorKind.Unavailable, "The views didn't reach the sequence in time");
+
+    /// <summary>SND-API-012: every event stream a caller may open is open (16, 4 held for the human; API spec §5.4).</summary>
+    public static readonly ErrorDefinition StreamsFull = new("SND-API-012", ErrorKind.RateLimited, "Too many event streams are open; re-query every 5 s");
+
+    /// <summary>SND-VIEW-001: the projector stalled on an event or can't run (views.db or the ledger can't be used); 'sindri views rebuild' clears an event stall or a views.db cause, 'sindri doctor' diagnoses a ledger cause.</summary>
+    public static readonly ErrorDefinition ViewsStalled = new("SND-VIEW-001", ErrorKind.Unavailable, "The projector stalled on an event");
+
+    /// <summary>SND-ITEM-404: no item has that id or alias, or a session caller may not see it (API spec §3.1).</summary>
+    public static readonly ErrorDefinition ItemNotFound = new("SND-ITEM-404", ErrorKind.NotFound, "No such item");
+
+    /// <summary>SND-ITEM-409: the item changed since the caller looked, or it is already closed (API spec §2.1).</summary>
+    public static readonly ErrorDefinition ItemConflict = new("SND-ITEM-409", ErrorKind.Conflict, "The item changed since you looked");
+
     /// <summary>Every Sindri error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
         LeaseHeld, LeaseLost, LeaseStale, ProfileMissing, ProfileInvalid, ProfileHashMismatch, ProfileNeedsTerminal,
         ProfileNotApproved, ApprovalsUnavailable, LedgerSchema, LedgerUnavailable, NotRunning, ApiTimeout, PortInUse, ApiNoCode, ApiInternal,
         CallerUnknown, OriginRefused, CommandBusy, AuthTokenRequired, AuthRefused, UnknownVerb, StartFailed,
-        InvalidInput, ServiceFailed,
+        InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe,
     ];
 }

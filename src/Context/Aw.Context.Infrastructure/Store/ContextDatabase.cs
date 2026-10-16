@@ -28,7 +28,7 @@ internal sealed class ContextDatabase : IDisposable
     public static IReadOnlyList<Migration> Migrations { get; } =
         EmbeddedMigrations.Load(typeof(ContextDatabase).Assembly, "Aw.Context.Infrastructure.Store.Migrations.").Value;
 
-    /// <summary>The session factory (reads go through <see cref="Readable"/> first).</summary>
+    /// <summary>The session factory (the graph store's reads open it as it is and never migrate; other reads go through <see cref="Readable"/> first).</summary>
     public SqliteUnitOfWorkFactory Sessions { get; }
 
     /// <inheritdoc/>

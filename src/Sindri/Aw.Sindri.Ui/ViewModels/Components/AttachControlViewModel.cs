@@ -61,6 +61,15 @@ internal sealed class AttachControlViewModel : ObservableObject
     /// <summary>The go-ahead button's accessible name.</summary>
     public string ConfirmButtonName => Labels.ConfirmCancelName(_input.Address);
 
+    /// <summary>The go-ahead button's visible label; its name starts with it.</summary>
+    public string ConfirmLabel => Labels.ConfirmCancel;
+
+    /// <summary>The Keep button's visible label; its name starts with it.</summary>
+    public string KeepLabel => Labels.KeepStep;
+
+    /// <summary>The pending chip's accessible name: the main action it stands for and what it waits for.</summary>
+    public string PendingChipName => Labels.AttachPendingName(_input.Address);
+
     /// <summary>The Keep button's accessible name.</summary>
     public string KeepButtonName => Labels.KeepName(_input.Address);
 
@@ -70,20 +79,28 @@ internal sealed class AttachControlViewModel : ObservableObject
     /// <summary>The confirm's live text: the confirm line while it shows, else a resting text (never empty).</summary>
     public string ConfirmAnnouncement { get; private set => Set(ref field, value); } = Labels.Sindri;
 
+    /// <summary>True when the confirm's live region is in the accessibility tree (it joins when the menu opens).</summary>
+    public bool IsRegionInTree { get; private set => Set(ref field, value); }
+
     private bool IsAgent => _input.Kind == AttachStepKind.Agent;
 
     /// <summary>Takes a new input (the catalog became ready, the served confirm arrived).</summary>
     /// <param name="input">The new input.</param>
     public void Update(AttachInput input)
     {
+        var moved = !string.Equals(_input.Address, input.Address, StringComparison.Ordinal);
         _input = input;
         Menu = MenuFor(input);
-        foreach (var name in (string[])[nameof(PrimaryLabel), nameof(PrimaryName), nameof(PrimaryAction), nameof(IsPending), nameof(IsPrimaryShown), nameof(HasNote), nameof(ChevronName), nameof(ConfirmLine), nameof(ConfirmButtonName), nameof(KeepButtonName)])
+        foreach (var name in (string[])[nameof(PendingChipName), nameof(PrimaryLabel), nameof(PrimaryName), nameof(PrimaryAction), nameof(IsPending), nameof(IsPrimaryShown), nameof(HasNote), nameof(ChevronName), nameof(ConfirmLine), nameof(ConfirmButtonName), nameof(KeepButtonName)])
         {
             OnChanged(name);
         }
 
-        if (IsConfirmingCancel)
+        if (IsConfirmingCancel && moved)
+        {
+            Close();   // a confirm about one Step never goes ahead against another
+        }
+        else if (IsConfirmingCancel)
         {
             ConfirmAnnouncement = ConfirmLine;
         }
@@ -116,6 +133,9 @@ internal sealed class AttachControlViewModel : ObservableObject
         Close();
         Chosen?.Invoke(this, new AttachChosenEventArgs(AttachAction.Cancel));
     }
+
+    /// <summary>The chevron's menu opened.</summary>
+    public void MenuOpened() => IsRegionInTree = true;
 
     /// <summary>Leaves the Step as it is.</summary>
     public void Keep() => Close();

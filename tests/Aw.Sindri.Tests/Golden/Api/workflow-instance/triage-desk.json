@@ -1,12 +1,12 @@
 {
-  "address": "workflow/sentry-8812",
-  "id": "WFI-0461AC4604",
+  "address": "ITM-01JK2/triage-alert/1",
+  "id": "WFI-16f1f891aeeb8be887595e1e8e4a2d4e",
   "parent": null,
-  "itemId": null,
+  "itemId": "ITM-01JK2",
   "title": "TypeError in tabs.layout",
   "recipe": {
-    "id": "triage.alert",
-    "hash": "d41f2a0700000000000000000000000000000000000000000000000000000000",
+    "id": "workflow.triage-alert",
+    "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
     "version": 2,
     "urgency": "triage"
   },
@@ -23,7 +23,7 @@
   "states": [
     {
       "id": "ingest",
-      "order": 0,
+      "order": 1,
       "branchOf": null,
       "glyph": "done",
       "badge": null,
@@ -37,7 +37,7 @@
     },
     {
       "id": "classify",
-      "order": 1,
+      "order": 2,
       "branchOf": null,
       "glyph": "active",
       "badge": null,
@@ -51,7 +51,7 @@
     },
     {
       "id": "route",
-      "order": 2,
+      "order": 3,
       "branchOf": null,
       "glyph": "pending",
       "badge": null,
@@ -65,7 +65,7 @@
     },
     {
       "id": "done",
-      "order": 3,
+      "order": 4,
       "branchOf": null,
       "glyph": "pending",
       "badge": null,
@@ -81,16 +81,16 @@
   "current": {
     "state": "classify",
     "step": {
-      "kind": "step.desk",
-      "ref": "classify.severity",
+      "kind": "active",
+      "ref": "step.classify",
       "declaration": "a person classifies the alert"
     },
     "gates": [],
     "desk": {
-      "run": "1.1",
+      "run": "2.1",
       "outputs": [
         {
-          "key": "severity",
+          "key": "fact:severity",
           "type": "text",
           "required": true
         }
@@ -102,16 +102,16 @@
     },
     "status": {
       "header": {
-        "address": "workflow/sentry-8812/classify",
-        "recipe": "workflow.step",
-        "hash12": "9ab2d40c0000",
-        "version": 4,
+        "address": "ITM-01JK2/triage-alert/1",
+        "recipe": "workflow.triage-alert",
+        "hash12": "d41f2a070000",
+        "version": 2,
         "state": "classify",
         "detail": "desk task",
         "since": "2026-10-12T12:22:00.0000000Z",
         "ageSeconds": 240
       },
-      "next": "Produce the Step output for sentry-8812 (round 1/3), then run: sindri workflow complete workflow/sentry-8812/classify --run 1.1 --outcome done --output fact:severity=<text>",
+      "next": "Classify the severity for sentry-8812, then run: sindri workflow complete ITM-01JK2/triage-alert/1 --run 2.1 --outcome done --output fact:severity=<file>",
       "answer": null,
       "child": null,
       "drift": null,
@@ -119,13 +119,13 @@
         {
           "key": "fact:alert",
           "name": "alert.json",
-          "hash": "1c0e5a77"
+          "hash": "sha256:1c0e5a7700000000000000000000000000000000000000000000000000000000"
         }
       ],
       "timeout": {
         "kind": "parks",
-        "inSeconds": 165000,
-        "on": "desk"
+        "inSeconds": 172560,
+        "on": "classify"
       },
       "budget": {
         "scope": "state",
@@ -140,40 +140,40 @@
       "commands": [
         {
           "verb": "complete",
-          "actionId": "ApplyCommand:complete",
+          "actionId": "CompleteStep",
           "class": "desk",
-          "cli": "sindri workflow complete workflow/sentry-8812/classify --run 1.1 --outcome done --output fact:severity=<text>",
+          "cli": "sindri workflow complete ITM-01JK2/triage-alert/1 --run 2.1 --outcome done --output fact:severity=<file>",
           "confirm": null
         },
         {
           "verb": "takeover",
           "actionId": "ApplyCommand:takeover",
-          "class": "protected",
-          "cli": "sindri workflow takeover workflow/sentry-8812/classify",
+          "class": "pause",
+          "cli": "sindri workflow takeover ITM-01JK2/triage-alert/1",
           "confirm": null
         },
         {
           "verb": "cancel",
           "actionId": "ApplyCommand:cancel",
-          "class": "protected",
-          "cli": "sindri workflow cancel workflow/sentry-8812/classify",
-          "confirm": "Cancel workflow/sentry-8812/classify? 1 running steps stop; 0 children are cancelled."
+          "class": "desk",
+          "cli": "sindri workflow cancel ITM-01JK2/triage-alert/1",
+          "confirm": "Cancel ITM-01JK2/triage-alert/1? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "workflow/sentry-8812/classify  workflow.step@9ab2d40c0000  v4  classify: desk task  since 12:22 (4m)\n  next      Produce the Step output for sentry-8812 (round 1/3), then run:\n            sindri workflow complete workflow/sentry-8812/classify --run 1.1 --outcome done --output fact:severity=<text>\n  inputs    fact:alert  alert.json  sha256:1c0e…\n  timeout   parks in 1d 22h 48m (desk)\n  budget    tokens 0 / 200k (state), 0 / 400k (instance)\n  commands  complete, takeover, cancel\n"
+      "text": "ITM-01JK2/triage-alert/1  workflow.triage-alert@d41f2a070000  v2  classify: desk task  since 12:22 (4m)\n  next      Classify the severity for sentry-8812, then run: sindri workflow complete ITM-01JK2/triage-alert/1 --run 2.1\n            --outcome done --output fact:severity=<file>\n  inputs    fact:alert  alert.json  sha256:1c0e...\n  timeout   parks in 1d 23h 56m (desk)\n  budget    tokens 0 / 200k (state), 0 / 400k (instance)\n  commands  complete, takeover, cancel\n"
     }
   },
   "facts": [
     {
-      "key": "alert",
+      "key": "fact:alert",
       "label": "Alert",
       "type": "payload",
       "direction": "input",
       "from": null,
       "status": "produced",
-      "summary": "sentry #8812 TypeError",
+      "summary": "sentry #8812 TypeError in tabs.layout",
       "at": "2026-10-12T12:22:00.0000000Z",
-      "by": "human:webhook",
+      "by": "service:webhook",
       "ref": {
         "name": null,
         "size": null,
@@ -183,13 +183,13 @@
         "url": null,
         "host": null,
         "title": null,
-        "factKey": "alert"
+        "factKey": "fact:alert"
       },
       "progress": null,
       "pending": null
     },
     {
-      "key": "severity",
+      "key": "fact:severity",
       "label": "Severity",
       "type": "text",
       "direction": "output",
@@ -207,6 +207,34 @@
         ],
         "completeAction": "CompleteStep"
       }
+    },
+    {
+      "key": "fact:route",
+      "label": "Route",
+      "type": "decision",
+      "direction": "output",
+      "from": "route",
+      "status": "pending",
+      "summary": "not started",
+      "at": null,
+      "by": null,
+      "ref": null,
+      "progress": null,
+      "pending": null
+    },
+    {
+      "key": "fact:item",
+      "label": "Item",
+      "type": "item",
+      "direction": "output",
+      "from": "route",
+      "status": "pending",
+      "summary": "not started",
+      "at": null,
+      "by": null,
+      "ref": null,
+      "progress": null,
+      "pending": null
     }
   ],
   "children": [],

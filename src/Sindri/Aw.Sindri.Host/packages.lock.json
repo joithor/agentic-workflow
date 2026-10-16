@@ -150,7 +150,34 @@
           "Aw.Kernel.Data": "[1.0.0, )",
           "Aw.Redaction": "[1.0.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.12, 10.0.12]",
           "YamlDotNet": "[18.1.0, 18.1.0]"
+        }
+      },
+      "aw.judge.core": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
+          "Vogen": "[8.0.7, 8.0.7]"
+        }
+      },
+      "aw.judge.features": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Judge.Core": "[1.0.0, )",
+          "Aw.Kernel": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]"
+        }
+      },
+      "aw.judge.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Judge.Core": "[1.0.0, )",
+          "Aw.Kernel": "[1.0.0, )",
+          "Aw.Kernel.Data": "[1.0.0, )",
+          "Aw.Redaction": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]"
         }
       },
       "aw.kernel": {
@@ -197,6 +224,7 @@
         "dependencies": {
           "Aw.Kernel": "[1.0.0, )",
           "Aw.Kernel.Data": "[1.0.0, )",
+          "Aw.Redaction": "[1.0.0, )",
           "Aw.Sindri.Core": "[1.0.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
           "YamlDotNet": "[18.1.0, 18.1.0]"
@@ -206,6 +234,7 @@
         "type": "Project",
         "dependencies": {
           "Aw.Kernel": "[1.0.0, )",
+          "Aw.Redaction": "[1.0.0, )",
           "Aw.Sindri.Core": "[1.0.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
           "Temporalio": "[1.19.0, 1.19.0]"

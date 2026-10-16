@@ -34,9 +34,17 @@ internal sealed class CheckMapService(IGraphStore store) : IService<CheckMapRequ
             return Fail(graph.IsError ? graph.Error : overrides.Error);
         }
 
+        // The map as status reads it: the deny globs cut first, so the two never count differently.
+        var seen = request.Scope is { } scope ? MapAccess.View(graph.Value, overrides.Value, scope, pending: false, callerScope: false) : null;
+        if (seen is { IsError: true })
+        {
+            return Fail(seen.Error);
+        }
+
+        var (shown, layer) = seen is { } ok ? (ok.Value.Graph, ok.Value.Overrides) : (graph.Value, overrides.Value);
         var detail = string.Create(CultureInfo.InvariantCulture,
-            $"map v{version.Number} current ({version.Repo}, {graph.Value.Nodes.Count} nodes, {graph.Value.Edges.Count} edges); commits behind HEAD: unknown until a build records its commit");
-        var orphaned = OverrideApplier.Apply(graph.Value, overrides.Value).Orphaned.Count;
+            $"map v{version.Number} current ({version.Repo}, {shown.Nodes.Count} nodes, {shown.Edges.Count} edges); commits behind HEAD: unknown until a build records its commit");
+        var orphaned = OverrideApplier.Apply(shown, layer).Orphaned.Count;
         return orphaned == 0
             ? new MapHealth(Name, MapHealthState.Ok, detail, Fix: null)
             : new MapHealth(Name, MapHealthState.Warn, string.Create(CultureInfo.InvariantCulture, $"{detail}; {orphaned} orphaned override(s)"),

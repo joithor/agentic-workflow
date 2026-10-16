@@ -7,33 +7,63 @@ namespace Aw.Context.Core.Map;
 
 /// <summary>
 /// Who may read which part of the map (spec §3): humans and services see all of it; a session only while
-/// 'context.sessions.enabled' is on (SND-CONTEXT-020), for a repo the profile maps, and only the nodes that repo implements,
+/// 'context.sessions.enabled' is on (SND-CONTEXT-020), for a repo the profile maps, and only the nodes that repo implements and the records and decisions linked to them (owner decision 2026-10-15, B),
 /// with what lies between them. A repo that implements nothing answers SND-CONTEXT-003, like any unknown anchor.
 /// </summary>
 public static class MapAccess
 {
-    /// <summary>The part of <paramref name="graph"/> and its overrides <paramref name="caller"/> may see (run <see cref="Gate"/> first).</summary>
+    /// <summary>
+    /// The one function from a stored snapshot to what a caller may see (review #220 run 4), which every reader and every planner uses, in one order: (1) what the repos'
+    /// deny globs hide is decided from the stored nodes and the nodes the overrides add (<see cref="DenyCut"/>: the code nodes of denied paths, the record nodes of denied documents
+    /// and the decisions quoting them, the nodes only a denied file evidences, the features only those files implement, their edges and denied evidence), whatever a person's
+    /// reject, delete, merge or accept made of them; (2) the stored graph is cut by that decision; (3) the overrides are cut by it (the ones about a hidden node, a proposal without
+    /// its allowed evidence, and a reject that names its proposal by either evidence); (4) the cut overrides are applied to the cut graph (a pending proposal only when
+    /// <paramref name="pending"/>), which is <see cref="MapView.Applied"/>; then, for a session, only its repo's scope. Lenses, status, export, the review queue, promote
+    /// and the history can't disagree.
+    /// </summary>
     /// <param name="graph">The stored graph.</param>
     /// <param name="overrides">Every override.</param>
-    /// <param name="caller">The caller.</param>
-    /// <returns>The visible graph and overrides, or SND-CONTEXT-003 when a session's repo implements nothing in the map.</returns>
-    public static Result<(GraphSnapshot Graph, IReadOnlyList<MapOverride> Overrides)> Visible(
-        GraphSnapshot graph, IReadOnlyList<MapOverride> overrides, ContextCaller caller)
+    /// <param name="scope">The profile's context section and repos, and the caller (run <see cref="Gate"/> first).</param>
+    /// <param name="pending">True when a 'propose' row's node is part of the map (a draft); a current map never holds a pending proposal.</param>
+    /// <param name="callerScope">False to apply the deny globs only, for a decision the engine doesn't scope to the caller's repo (a review, a proposal's status).</param>
+    /// <returns>The visible view, or SND-CONTEXT-001 for an invalid section, or SND-CONTEXT-003 when a session's repo implements nothing in the map.</returns>
+    public static Result<MapView> View(GraphSnapshot graph, IReadOnlyList<MapOverride> overrides, ContextScope scope, bool pending, bool callerScope = true)
     {
         ArgumentNullException.ThrowIfNull(graph);
-        ArgumentNullException.ThrowIfNull(caller);
-        if (caller.Kind != ContextCallerKind.Session)
+        ArgumentNullException.ThrowIfNull(overrides);
+        ArgumentNullException.ThrowIfNull(scope);
+        var settings = SettingsReader.Read(scope.Settings);
+        if (settings.IsError)
         {
-            return (graph, overrides);
+            return settings.Error;
         }
 
-        var scoped = caller.Repo is { } repo ? graph.ScopedTo(repo) : GraphSnapshot.Empty;
-        if (scoped.Nodes.Count == 0)
+        var repos = ScopeRules.Resolve(settings.Value, scope.Repos, scope.Caller);
+        if (repos.IsError)
+        {
+            return repos.Error;
+        }
+
+        // Whoever asks, every profile repo's deny globs judge record keys and evidence refs (they name their repo), not just the ones context.repos maps; a code: key names no repo, so only the mapped repos' globs judge it: the snapshot is global, so a session in repo A must not reach a document repo B denies (review #234 runs 1 and 2).
+        // The resolved repos are for the gate and the session's scope step only.
+        var cut = DenyCut.Of(graph, overrides, scope.Repos, ScopeRules.Mapped(settings.Value, scope.Repos));   // every override, pending or not: what is hidden doesn't depend on which reader asks
+        var (cutGraph, cutOverrides) = (cut.Apply(graph), cut.Apply(overrides));
+        var applied = OverrideApplier.Apply(cutGraph, pending ? cutOverrides : [.. cutOverrides.Where(o => o.Action != OverrideAction.Propose)]).Graph;
+        var view = new MapView(cutGraph, applied, cutOverrides, cut);
+        if (!callerScope || scope.Caller.Kind != ContextCallerKind.Session)
+        {
+            return view;
+        }
+
+        var scopedApplied = scope.Caller.Repo is { } repo ? view.Applied.ScopedTo(repo) : GraphSnapshot.Empty;
+        if (scopedApplied.Nodes.Count == 0)
         {
             return ContextErrors.UnknownAnchor.With("no map nodes are implemented in this session's repo (X-Sindri-Repo)");
         }
 
-        return (scoped, [.. overrides.Where(o => scoped.Resolve(o.Target) is not null)]);
+        // Both scopings run the same repo scope over graphs that differ only by the overrides applied; status counts come from scopedGraph and reads from scopedApplied.
+        var scopedGraph = scope.Caller.Repo is { } own ? view.Graph.ScopedTo(own) : GraphSnapshot.Empty;
+        return view.Scoped(scopedGraph, scopedApplied, [.. view.Overrides.Where(o => scopedGraph.Resolve(o.Target) is not null)]);
     }
 
     /// <summary>The checks that need no map, the same ones every engine read makes: the context section is valid (001), and a session needs sessions on (020) and a repo the profile maps (003).</summary>
@@ -73,6 +103,27 @@ public static class MapAccess
             ? (mapped.IsError ? mapped.Error : null)
             : ContextErrors.MapFileInvalid.With(
                 $"repo: '{repo.Value}' isn't a repo the approved profile maps ({string.Join(", ", mapped.Value.Select(r => r.Name.Value))}); nothing was written (fix: name one of them, or add the repo to the profile and approve it)");
+    }
+
+    /// <summary>
+    /// What a build keeps of the current map under the profile's deny globs (<c xml:lang="en">index.denyPaths</c>): <see cref="View"/>'s deny cut (steps 1 and 2) over the current graph, judged with the layer's
+    /// overrides as every reader judges it, and the undo rows that take a person's accepts, renames, moves and merges about what the cut removes out with it (the build writes them with the
+    /// draft, in one step, so the draft has no orphan the globs made).
+    /// </summary>
+    /// <param name="current">The current graph.</param>
+    /// <param name="overrides">Every override.</param>
+    /// <param name="profile">Every profile repo: their deny globs judge record keys and evidence refs.</param>
+    /// <param name="mapped">The repos the map is built from: only their deny globs judge a <c xml:lang="en">code:</c> key.</param>
+    /// <param name="at">When the build runs.</param>
+    /// <returns>The graph itself and no rows when nothing is denied.</returns>
+    public static (GraphSnapshot Graph, IReadOnlyList<MapOverride> Undo) WithoutDenied(GraphSnapshot current, IReadOnlyList<MapOverride> overrides, IReadOnlyList<ContextRepo> profile, IReadOnlyList<ContextRepo> mapped, DateTimeOffset at)
+    {
+        ArgumentNullException.ThrowIfNull(current);
+        ArgumentNullException.ThrowIfNull(overrides);
+        ArgumentNullException.ThrowIfNull(profile);
+        ArgumentNullException.ThrowIfNull(mapped);
+        var cut = DenyCut.Of(current, overrides, profile, mapped);
+        return (cut.Apply(current), cut.UndoRows(overrides, at));
     }
 
     /// <summary>The export document for a version's visible graph: decision nodes and 'quotes' edges are left to the decisions, which imply them.</summary>

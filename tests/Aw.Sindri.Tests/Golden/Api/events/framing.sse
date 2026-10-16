@@ -1,0 +1,9 @@
+event: service.heartbeat
+id: 7
+data: {"slot":"2026-01-01T00:00:00Z"}
+
+: ping
+
+event: error
+data: {"code":"SND-LEDGER-002","detail":"ledger.db: database is locked"}
+

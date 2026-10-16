@@ -1,0 +1,77 @@
+{
+  "version": {
+    "number": 1,
+    "repo": "aw-split-panes",
+    "commit": null,
+    "keyVersion": 1,
+    "created": "2026-01-01T00:00:00.0000000Z",
+    "status": "current"
+  },
+  "counts": {
+    "nodes": 14,
+    "edges": 15,
+    "aliases": 0,
+    "decisions": 2,
+    "overrides": 1
+  },
+  "orphaned": 1,
+  "retained": 0,
+  "scopedTo": null,
+  "coverage": {
+    "scope": 6,
+    "intent": {
+      "covered": 2,
+      "of": 6
+    },
+    "product": {
+      "confirmed": 6,
+      "of": 6
+    },
+    "code": {
+      "implemented": 2,
+      "of": 6,
+      "level": "file",
+      "suggested": 1
+    },
+    "gaps": [
+      {
+        "node": "action:tab-groups.group-selected",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
+      },
+      {
+        "node": "action:tab-manager.restore-layout",
+        "missing": [
+          "intent"
+        ],
+        "note": "implemented, no record or decision"
+      },
+      {
+        "node": "feature:tabs.tab-groups",
+        "missing": [
+          "code"
+        ],
+        "note": "has intent; its only implements link is a suggestion"
+      },
+      {
+        "node": "surface:command/group-tabs",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
+      },
+      {
+        "node": "surface:command/switch-tab",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
+      }
+    ]
+  }
+}

@@ -3,15 +3,9 @@ using Temporalio.Common;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
-/// <summary>The fixed names of Sindri's Temporal deployment (engine spec rev 8 §0 "Operations").</summary>
+/// <summary>The fixed names of Sindri's Temporal deployment (engine spec rev 8 §0 "Operations"); the namespace and task queue are <see cref="TemporalSettings"/>.</summary>
 internal static class SindriTemporal
 {
-    /// <summary>The namespace the dev server creates and the worker and clients use.</summary>
-    public const string Namespace = "sindri";
-
-    /// <summary>The task queue the worker inside 'sindri serve' polls.</summary>
-    public const string TaskQueue = "sindri";
-
     /// <summary>The dev server's SQLite file, directly under the Sindri home.</summary>
     public const string DatabaseFile = "temporal.db";
 
@@ -31,6 +25,9 @@ internal static class SindriTemporal
         ("Repo", IndexedValueType.Keyword),
         ("Tenant", IndexedValueType.Keyword),
         ("Ring", IndexedValueType.Keyword),
+        ("Urgency", IndexedValueType.Keyword),
+        ("Subject", IndexedValueType.Keyword),
+        ("Root", IndexedValueType.Bool),
     ];
 
     /// <summary>The 'Item' search attribute: the work item.</summary>
@@ -44,4 +41,22 @@ internal static class SindriTemporal
 
     /// <summary>The 'NeedsYou' search attribute: a desk run waits on a human.</summary>
     public static SearchAttributeKey<bool> NeedsYouKey { get; } = SearchAttributeKey.CreateBool("NeedsYou");
+
+    /// <summary>The 'Repo' search attribute: the repo 'fact:item' names; unset on an instance without one.</summary>
+    public static SearchAttributeKey<string> RepoKey { get; } = SearchAttributeKey.CreateKeyword("Repo");
+
+    /// <summary>The 'Tenant' search attribute: the instance's tenant key.</summary>
+    public static SearchAttributeKey<string> TenantKey { get; } = SearchAttributeKey.CreateKeyword("Tenant");
+
+    /// <summary>The 'Ring' search attribute: the instance's ring, as text.</summary>
+    public static SearchAttributeKey<string> RingKey { get; } = SearchAttributeKey.CreateKeyword("Ring");
+
+    /// <summary>The 'Urgency' search attribute: the recipe's urgency, 'incident', 'triage' or 'work'.</summary>
+    public static SearchAttributeKey<string> UrgencyKey { get; } = SearchAttributeKey.CreateKeyword("Urgency");
+
+    /// <summary>The 'Subject' search attribute: the key of the recipe's first declared input fact; unset when it declares none.</summary>
+    public static SearchAttributeKey<string> SubjectKey { get; } = SearchAttributeKey.CreateKeyword("Subject");
+
+    /// <summary>The 'Root' search attribute: true for a top-level instance, false for a child.</summary>
+    public static SearchAttributeKey<bool> RootKey { get; } = SearchAttributeKey.CreateBool("Root");
 }

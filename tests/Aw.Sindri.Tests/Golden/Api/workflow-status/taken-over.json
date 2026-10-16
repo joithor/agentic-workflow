@@ -1,21 +1,29 @@
 {
   "header": {
-    "address": "workflow/ITM-01JA1",
-    "recipe": "workflow.dev-timeout",
-    "hash12": "77aa01c30000",
-    "version": 3,
+    "address": "ITM-01JA1/step/1",
+    "recipe": "workflow.step",
+    "hash12": "1b13bd920351",
+    "version": 1,
     "state": "taken-over",
     "detail": null,
     "since": "2026-10-12T12:01:00.0000000Z",
     "ageSeconds": 1500
   },
-  "next": "With you since 12:01. Run `sindri workflow handback workflow/ITM-01JA1` when you're done.",
+  "next": "With you since 12:01. Run `sindri workflow handback ITM-01JA1/step/1` when you're done.",
   "answer": null,
   "child": null,
   "drift": null,
   "inputs": [],
   "timeout": null,
-  "budget": null,
+  "budget": {
+    "scope": "state",
+    "used": 40000,
+    "limit": 200000,
+    "instance": {
+      "used": 40000,
+      "limit": 400000
+    }
+  },
   "paused": {
     "timeoutLeftSeconds": 40
   },
@@ -24,16 +32,16 @@
       "verb": "handback",
       "actionId": "ApplyCommand:handback",
       "class": "desk",
-      "cli": "sindri workflow handback workflow/ITM-01JA1",
+      "cli": "sindri workflow handback ITM-01JA1/step/1",
       "confirm": null
     },
     {
       "verb": "cancel",
       "actionId": "ApplyCommand:cancel",
-      "class": "protected",
-      "cli": "sindri workflow cancel workflow/ITM-01JA1",
-      "confirm": "Cancel workflow/ITM-01JA1? 1 running steps stop; 0 children are cancelled."
+      "class": "desk",
+      "cli": "sindri workflow cancel ITM-01JA1/step/1",
+      "confirm": "Cancel ITM-01JA1/step/1? 0 running steps stop; 0 children are cancelled."
     }
   ],
-  "text": "workflow/ITM-01JA1  workflow.dev-timeout@77aa01c30000  v3  taken-over  since 12:01 (25m)\n  next      With you since 12:01. Run `sindri workflow handback workflow/ITM-01JA1` when you're done.\n  paused    timeout 40s left\n  commands  handback, cancel\n"
+  "text": "ITM-01JA1/step/1  workflow.step@1b13bd920351  v1  taken-over  since 12:01 (25m)\n  next      With you since 12:01. Run `sindri workflow handback ITM-01JA1/step/1` when you're done.\n  budget    tokens 40k / 200k (state), 40k / 400k (instance)\n  paused    timeout 40s left\n  commands  handback, cancel\n"
 }

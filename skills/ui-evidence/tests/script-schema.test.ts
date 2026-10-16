@@ -31,9 +31,10 @@ describe("step index", () => {
 });
 
 describe("script login", () => {
-  it("parses the env-var-only form with web-app defaults and an explicit form", () => {
+  it("parses the env-var-only form with one-step form defaults and an explicit form", () => {
     const r = parseUiScript(scriptWith({ login: { emailEnv: "ADMIN_EMAIL", passwordEnv: "ADMIN_PASSWORD" } }, [{ action: "goto", target: "/x", expectedState: exp }, { action: "scroll", target: "schedule-view-scroll-container", value: "end", expectedState: exp }]));
-    expect(r).toMatchObject({ login: { emailSelector: 'input[name="contact"]', passwordSelector: 'input[name="password"]', nextSelector: 'button[type="submit"]', submitSelector: 'button[type="submit"]', loginPath: "/login" } });
+    expect(r).toMatchObject({ login: { emailSelector: 'input[type="email"]', passwordSelector: 'input[type="password"]', submitSelector: 'button[type="submit"]', loginPath: "/login" } });
+    expect((r as { login: object }).login).not.toHaveProperty("nextSelector");
     const full = { emailEnv: "E", passwordEnv: "P", emailSelector: "a", passwordSelector: "b", nextSelector: "n", submitSelector: "s", loginPath: "/signin" };
     expect(parseUiScript(scriptWith({ login: full }))).toMatchObject({ login: full });
   });
@@ -62,9 +63,14 @@ describe("parseUiScript", () => {
     expect(result).not.toHaveProperty("error");
   });
 
-  it("rejects a script with an unknown role", () => {
-    const result = parseUiScript({ route: "/x", role: "wizard", viewports: ["desktop"], steps: [] });
-    expect(result).toHaveProperty("error");
+  it("takes any lower-case kebab-case role, the app's own name for it", () => {
+    for (const role of ["admin", "team-lead", "viewer2"]) {
+      expect(parseUiScript({ route: "/x", role, viewports: ["desktop"], steps: [{ action: "goto", target: "/x", expectedState: { kind: "text-visible", text: "x" } }] })).not.toHaveProperty("error");
+    }
+  });
+
+  it.each(["", "Admin", "super admin", "-x"])("rejects the role %j", (role) => {
+    expect(parseUiScript({ route: "/x", role, viewports: ["desktop"], steps: [{ action: "goto", target: "/x", expectedState: { kind: "text-visible", text: "x" } }] })).toHaveProperty("error");
   });
 
   it("rejects a script with no viewports", () => {
@@ -92,5 +98,15 @@ describe("parseUiScript", () => {
     expect(describeExpectedState({ kind: "testid-visible", testId: "t" })).toContain("t");
     expect(describeExpectedState({ kind: "url-path", path: "/p" })).toContain("/p");
     expect(describeExpectedState({ kind: "input-value", testId: "t", value: "v" })).toContain('"v"');
+  });
+
+  const withTarget = (action: "click" | "fill" | "goto", target: string) => parseUiScript({ route: "/x", role: "staff", viewports: ["desktop"], steps: [{ action, target, expectedState: { kind: "url-path", path: "/x" } }] });
+  it("accepts role: and text: targets on click and fill", () => {
+    expect("error" in withTarget("click", "role:button|Save")).toBe(false);
+    expect("error" in withTarget("fill", "role:textbox|Note")).toBe(false);
+    expect("error" in withTarget("click", "text:Unit 4200")).toBe(false);
+  });
+  it("rejects a malformed role: or text: target", () => {
+    for (const bad of ["role:button", "role:|Save", "role:button|", "text:", "Text:Save", "role:Button|Save"]) expect(withTarget("click", bad)).toHaveProperty("error");
   });
 });

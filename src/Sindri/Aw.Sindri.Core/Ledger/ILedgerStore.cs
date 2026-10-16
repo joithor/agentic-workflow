@@ -29,6 +29,11 @@ public interface ILedgerStore
     /// <returns>The event, if any.</returns>
     public ValueTask<Result<LedgerEvent?>> Latest(string type, CancellationToken cancellationToken);
 
+    /// <summary>The ledger's head: the last recorded sequence, 0 when the ledger is empty or has no file yet.</summary>
+    /// <param name="cancellationToken">Cancels the operation.</param>
+    /// <returns>The head.</returns>
+    public ValueTask<Result<long>> Head(CancellationToken cancellationToken);
+
     /// <summary>The schema state of the store against this build, without changing anything.</summary>
     /// <param name="cancellationToken">Cancels the operation.</param>
     /// <returns>Applied and expected migration counts.</returns>

@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Aw.Sindri.Ui.ViewModels.Controls"
+             xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
+             x:Class="Aw.Sindri.Ui.Views.Controls.CommandControl"
+             x:DataType="controls:ControlViewModel">
+  <!-- One catalog row as a control (UI spec §7, U3) with its §4.1 lifecycle. ready: a button; pending: the same button
+       disabled, and its phase and CLI on the next line in InkSubtle, focusable and copyable (disabled ink never carries
+       information); cli-only: the copy block (terminal glyph, the CLI, Copy, and its one line). -->
+  <StackPanel Spacing="{StaticResource Space.XXS}">
+    <StackPanel x:Name="ButtonRow" Orientation="Horizontal" Spacing="{StaticResource Space.XS}" IsVisible="{Binding !IsCliOnly}">
+      <Button x:Name="RunButton" Classes="command-control" IsEnabled="{Binding IsSendable}" Click="OnRun"
+              AutomationProperties.Name="{Binding Name}">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <icons:StateIcon x:Name="RunSpinner" Icon="Spinner" IsVisible="{Binding IsSending}" Spins="{Binding IsSending}"
+                           VerticalAlignment="Center" />
+          <TextBlock x:Name="RunLabel" Classes="button" Text="{Binding Label}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+      <StackPanel x:Name="AcceptedLine" Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsAccepted}" VerticalAlignment="Center"
+                  AutomationProperties.Name="{Binding Outcome}">
+        <icons:StateIcon Glyph="Ok" VerticalAlignment="Center" />
+        <TextBlock x:Name="OutcomeText" Classes="caption" Text="{Binding Outcome}" VerticalAlignment="Center" />
+      </StackPanel>
+    </StackPanel>
+
+    <!-- A destructive control asks first (§8, E-8): its question, Confirm (sends once) and Keep (Esc; nothing sent). -->
+    <StackPanel x:Name="ConfirmRow" Spacing="{StaticResource Space.XXS}" IsVisible="{Binding IsConfirming}">
+      <TextBlock x:Name="ConfirmText" Classes="caption" Text="{Binding ConfirmQuestion}" TextWrapping="Wrap"
+                 AutomationProperties.AccessibilityView="Raw" />
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button x:Name="ConfirmButton" Classes="command-control destructive" Click="OnConfirm" AutomationProperties.Name="{Binding ConfirmName}">
+          <TextBlock Classes="button" Text="{Binding ConfirmLabel}" />
+        </Button>
+        <Button x:Name="KeepButton" Classes="copy" Click="OnKeep" VerticalAlignment="Center" AutomationProperties.Name="{Binding KeepName}">
+          <TextBlock Classes="caption" Text="{Binding KeepLabel}" />
+        </Button>
+      </StackPanel>
+    </StackPanel>
+
+    <!-- pending: the phase and the CLI, focusable so the keyboard reaches it, with Copy. -->
+    <WrapPanel x:Name="PendingRow" Orientation="Horizontal" IsVisible="{Binding IsPending}">
+      <Border x:Name="PendingLine" Classes="pending-line" Focusable="True" AutomationProperties.Name="{Binding PendingName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+        <TextBlock x:Name="PendingText" Classes="caption subtle" TextWrapping="Wrap" Margin="0,0,6,0" Text="{Binding PendingLine}" AutomationProperties.AccessibilityView="Raw" />
+      </Border>
+      <Button x:Name="PendingCopy" Classes="copy" Click="OnCopy" IsEnabled="{Binding CanCopy}" AutomationProperties.Name="{Binding CopyName}">
+        <TextBlock Classes="caption" Text="{Binding CopyLabel}" />
+      </Button>
+    </WrapPanel>
+
+    <!-- cli-only: the copy block. It never offers to run the command. -->
+    <StackPanel x:Name="CopyBlock" Spacing="{StaticResource Space.XXS}" IsVisible="{Binding IsCliOnly}">
+      <Border Classes="command">
+        <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.XS}">
+          <TextBlock x:Name="TerminalGlyph" Classes="mono subtle" Text="&gt;_" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+          <TextBlock x:Name="CliText" Classes="mono" Text="{Binding Cli}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Cli}" />
+          <Button x:Name="BlockCopy" Classes="copy" Click="OnCopy" IsEnabled="{Binding CanCopy}"
+                  AutomationProperties.Name="{Binding CopyName}">
+            <TextBlock Classes="caption" Text="{Binding CopyLabel}" />
+          </Button>
+        </StackPanel>
+      </Border>
+      <TextBlock x:Name="CopyNoteText" Classes="caption subtle" Text="{Binding CopyNote}" IsVisible="{Binding CopyNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 AutomationProperties.Name="{Binding CopyNote}" />
+    </StackPanel>
+
+    <!-- refused / failed: the API's title (the SND code) and detail as served, under the control. -->
+    <Grid x:Name="ErrorLine" ColumnDefinitions="Auto,Auto,*" IsVisible="{Binding IsFailed}">
+      <icons:StateIcon Glyph="Down" Classes="error" VerticalAlignment="Top" Margin="0,0,6,0" />
+      <TextBlock x:Name="ErrorCodeText" Grid.Column="1" Classes="caption error" Text="{Binding ErrorCode}" Margin="0,0,6,0"
+                 AutomationProperties.Name="{Binding ErrorCode}" />
+      <TextBlock x:Name="ErrorDetailText" Grid.Column="2" Classes="caption" Text="{Binding ErrorDetail}" TextWrapping="Wrap" MaxWidth="560"
+                 HorizontalAlignment="Left" AutomationProperties.Name="{Binding ErrorDetail}" />
+    </Grid>
+
+    <!-- The polite live region for "Sending…", the outcome, a refusal's code and detail and "Copied" (U0's LiveSetting rules): zero-width, never "". -->
+    <TextBlock x:Name="Announcer" Classes="caption live-region" Classes.live="{Binding IsAnnouncing}" Width="0" Height="0" Opacity="0" IsHitTestVisible="False"
+               Text="{Binding Announcement}" HorizontalAlignment="Left" />
+  </StackPanel>
+</UserControl>

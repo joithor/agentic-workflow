@@ -214,7 +214,7 @@ public sealed class AppLifetimeTests
     {
         var store = new GatedPreferencesStore();
         var preferences = new Preferences(store);
-        var shell = new ShellViewModel(new InMemoryEndpointRecords(), new FakeSindriApi(), _clock, preferences);
+        var shell = new ShellViewModel(new InMemoryEndpointRecords(), new FakeSindriApi(), _clock, preferences, new FakeClipboard());
         await shell.Restore(TestContext.Current.CancellationToken);
         var window = new ShellWindow { DataContext = shell, Width = 1000, Height = 700 };
         window.Show();
@@ -433,7 +433,7 @@ public sealed class AppLifetimeTests
     {
         var records = new InMemoryEndpointRecords();
         records.Write(A.Record());
-        var shell = new ShellViewModel(records, new FakeSindriApi(), _clock, new Preferences(new InMemoryPreferencesStore()));
+        var shell = new ShellViewModel(records, new FakeSindriApi(), _clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
         var (window, lifetime, _) = Start();
         using (lifetime)
         using (var stop = new CancellationTokenSource())

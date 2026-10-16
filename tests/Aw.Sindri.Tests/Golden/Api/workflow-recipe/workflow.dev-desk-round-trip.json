@@ -1,0 +1,49 @@
+{
+  "id": "workflow.dev-desk-round-trip",
+  "hash": "sha256:42e9e8ab897f90e38c74f9a3a5aa499f9a56475b4c1a416c0ad5b01a79bb2346",
+  "version": 1,
+  "inputs": [
+    {
+      "key": "fact:request",
+      "label": "Request",
+      "type": "text",
+      "kind": "text",
+      "required": true
+    }
+  ],
+  "outputs": [
+    {
+      "key": "fact:output",
+      "label": "Exported file",
+      "type": "file",
+      "from": "export"
+    }
+  ],
+  "urgency": "work",
+  "orderedBy": "path",
+  "states": [
+    {
+      "id": "export",
+      "order": 1,
+      "branchOf": null
+    },
+    {
+      "id": "import",
+      "order": 2,
+      "branchOf": null
+    },
+    {
+      "id": "done",
+      "order": 3,
+      "branchOf": null
+    }
+  ],
+  "loops": [
+    {
+      "name": "rounds",
+      "from": "import",
+      "to": "export",
+      "cap": 2
+    }
+  ]
+}

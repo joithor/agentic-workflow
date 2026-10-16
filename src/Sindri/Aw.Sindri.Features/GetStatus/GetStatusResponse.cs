@@ -1,3 +1,6 @@
+using Aw.Sindri.Core.Health;
+using Aw.Sindri.Core.Views;
+
 namespace Aw.Sindri.Features.GetStatus;
 
 /// <summary>The control plane's status, as both the CLI and the UI show it.</summary>
@@ -17,4 +20,10 @@ public sealed record GetStatusResponse(
 {
     /// <summary>The API version this process serves (API spec §9); the app compares it with its own on connect.</summary>
     public int ApiVersion { get; init; }
+
+    /// <summary>The projector's status (API spec §2.2): cursor, head, rebuilding and stall.</summary>
+    public ViewsStatus? Views { get; init; }
+
+    /// <summary>The one-word health and its problems (UI spec E-14).</summary>
+    public HealthReport? Health { get; init; }
 }

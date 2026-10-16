@@ -9,6 +9,6 @@ internal sealed class ThrowingService : IScheduledService
 {
     public ServiceName Identity() => ServiceName.From("boom");
 
-    public ValueTask<Result<Unit>> Run(ScheduledRun run, CancellationToken cancellationToken) =>
+    public ValueTask<Result<ScheduledResult>> Run(ScheduledRun run, CancellationToken cancellationToken) =>
         throw new InvalidOperationException("boom failed");
 }

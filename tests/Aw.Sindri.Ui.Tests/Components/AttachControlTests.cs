@@ -81,7 +81,7 @@ public sealed class AttachControlTests
 
         Assert.True(vm.IsConfirmingCancel);
         Assert.Equal($"Cancel {Project}?", vm.ConfirmLine);
-        Assert.Equal($"Confirm cancelling {Project}", vm.ConfirmButtonName);
+        Assert.Equal($"Cancel it: {Project}", vm.ConfirmButtonName);   // starts with the visible label (WCAG 2.5.3)
         Assert.Equal($"Keep {Project}", vm.KeepButtonName);
         Assert.Empty(raised);
 
@@ -105,6 +105,60 @@ public sealed class AttachControlTests
 
         Assert.False(vm.IsConfirmingCancel);
         Assert.Empty(raised);
+    }
+
+    [Fact]
+    public void ConfirmCancel_with_no_confirm_standing_raises_nothing()
+    {
+        var vm = Agent();
+        var raised = new List<AttachAction>();
+        vm.Chosen += (_, e) => raised.Add(e.Action);
+
+        vm.ConfirmCancel();
+
+        Assert.Empty(raised);
+        Assert.False(vm.IsConfirmingCancel);
+    }
+
+    [Fact]
+    public void An_update_during_the_confirm_keeps_it_and_takes_the_new_served_sentence()
+    {
+        var vm = Agent();
+        vm.Choose(AttachAction.Cancel);
+
+        vm.Update(new AttachInput(Project, AttachStepKind.Agent, AttachReady: true, "Cancel it? 3 steps stop."));
+
+        Assert.True(vm.IsConfirmingCancel);
+        Assert.Equal("Cancel it? 3 steps stop.", vm.ConfirmLine);
+        Assert.Equal("Cancel it? 3 steps stop.", vm.ConfirmAnnouncement);
+    }
+
+    // A confirm about one Step must never go ahead against another: the component was handed a different address.
+    [Fact]
+    public void An_update_with_a_different_address_closes_the_confirm_and_a_later_confirm_raises_nothing()
+    {
+        var vm = Agent();
+        var raised = new List<AttachAction>();
+        vm.Chosen += (_, e) => raised.Add(e.Action);
+        vm.Choose(AttachAction.Cancel);
+
+        vm.Update(new AttachInput(Item, AttachStepKind.Agent, AttachReady: true));
+
+        Assert.False(vm.IsConfirmingCancel);
+        Assert.False(vm.IsConfirmLive);
+        Assert.False(string.IsNullOrEmpty(vm.ConfirmAnnouncement));
+        vm.ConfirmCancel();
+        Assert.Empty(raised);
+    }
+
+    [Fact]
+    public void The_announcement_region_joins_the_tree_only_from_the_menu_opening()
+    {
+        var vm = Agent();
+
+        Assert.False(vm.IsRegionInTree);
+        vm.MenuOpened();
+        Assert.True(vm.IsRegionInTree);
     }
 
     [Fact]

@@ -66,7 +66,7 @@ public sealed class ShellWindowTests : IDisposable
 
     private async Task<(ShellWindow Window, ShellViewModel Shell)> Show(Func<ShellViewModel, bool> ready, bool run = true)
     {
-        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences), new FakeClipboard());
         await shell.Restore(Token);
         var window = new ShellWindow { DataContext = shell };
         _windows.Add(window);
@@ -124,6 +124,7 @@ public sealed class ShellWindowTests : IDisposable
                 && (c is Button or ListBoxItem or TextBlock { Text.Length: > 1 })
                 && string.IsNullOrEmpty(AutomationProperties.GetName(c))
                 && !c.Classes.Contains("live-region")
+                && AutomationProperties.GetAccessibilityView(c) != AccessibilityView.Raw   // hidden from the tree on purpose; its parent carries the name
                 && (c is not TextBlock || (c.FindAncestorOfType<Button>() is null && c.FindAncestorOfType<ListBoxItem>() is null)))
             .Select(c => c.GetType().Name + ":" + (c as TextBlock)?.Text)
             .ToList();
@@ -202,7 +203,7 @@ public sealed class ShellWindowTests : IDisposable
         shell.Navigate(link);
         Settle(window);
 
-        var title = window.Get<TextBlock>("SheetTitle");
+        var title = window.Get<TextBlock>("SheetSubjectText");
         Assert.Equal(18, title.FontSize);
         Assert.Equal(FontWeight.Medium, title.FontWeight);
         Assert.Contains("JetBrains Mono", title.FontFamily.ToString(), StringComparison.Ordinal);
@@ -215,6 +216,7 @@ public sealed class ShellWindowTests : IDisposable
 
     // I1 (home.html .seg): one group; unselected labels muted, the selected one in PrimaryHover with the Primary dot;
     // The whole group disabled while not running.
+
     [Fact]
     public Task The_navigation_is_one_segmented_group_with_the_selected_dot() => OnUi(async () =>
     {
@@ -241,20 +243,27 @@ public sealed class ShellWindowTests : IDisposable
     });
 
     // I3 (home.html .phead): each Home panel has a header row (the eyebrow over a hairline) and a body; "not served yet"
-    // is a quiet InkSubtle caption. N2/N6: panel insets and the page gutter are on the spacing scale (16, 24).
+    // and a group's empty sentence are quiet InkSubtle captions. N2/N6: panel insets and the page gutter are on the spacing scale (16, 24).
     [Fact]
     public Task Home_panels_have_a_header_row_and_a_quiet_body() => OnUi(async () =>
     {
         _records.Write(A.Record());
         var (window, _) = await Show(s => s.State == ShellState.Normal);
 
+        // U2: Running and Queued are GET /queue's groups; an empty one shows its own sentence (E-18) the same quiet way.
         foreach (var name in (string[])["NeedsYouPanel", "RunningPanel", "QueuedPanel"])
         {
             var panel = Named<Border>(window, name);
             var head = panel.GetVisualDescendants().OfType<Border>().Single(b => b.Classes.Contains("phead"));
             Assert.Equal(new Thickness(0, 0, 0, 1), head.BorderThickness);
             Assert.Contains(head.GetVisualDescendants().OfType<TextBlock>(), t => t.Classes.Contains("eyebrow"));
-            var quiet = panel.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == Labels.NotServedYet);
+        }
+
+        foreach (var (name, text) in (ReadOnlySpan<(string, string)>)[("NeedsYouPanel", Labels.NotServedYet), ("RunningPanel", "Nothing running.")])
+        {
+            var panel = Named<Border>(window, name);
+            var head = panel.GetVisualDescendants().OfType<Border>().Single(b => b.Classes.Contains("phead"));
+            var quiet = panel.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == text && t.IsEffectivelyVisible);
             Assert.Contains("caption", quiet.Classes, StringComparer.Ordinal);
             Assert.Equal(Colour("Color.InkSubtle"), Ink(quiet));
 
@@ -857,6 +866,7 @@ public sealed class ShellWindowTests : IDisposable
         Assert.True(string.IsNullOrEmpty(AutomationProperties.GetName(Named<TextBlock>(window, "RunningLive"))));
 
         _server.UnreadableStatus = true;
+        _clock.Advance(HealthViewModel.RefreshEvery);   // the refresh that followed the recovery is still throttled (§9.2)
         _server.Push(A.Event(3));
         await Until(() => shell.State == ShellState.Unreadable);
         Settle(window);
@@ -1194,7 +1204,7 @@ public sealed class ShellWindowTests : IDisposable
         Assert.DoesNotContain("covers", sheet.Classes, StringComparer.Ordinal);
         Assert.False(tab.IsEffectivelyVisible);
         Assert.True(Focused(window) is Visual focused && sheet.IsVisualAncestorOf(focused), $"focus is on {(Focused(window) as Control)?.Name ?? Focused(window)?.GetType().Name ?? "nothing"}, not in the sheet");
-        Assert.Same(window.Get<TextBlock>("SheetTitle"), Focused(window));
+        Assert.Same(window.Get<Border>("SheetTitle"), Focused(window));
     });
 
     // Review run 4 (accessibility-tester-1; WCAG 2.4.3): narrowing the window below 1100 px while the sheet is open makes
@@ -1328,7 +1338,7 @@ public sealed class ShellWindowTests : IDisposable
         shell.Navigate(link);
         Settle(window);
         Assert.True(Visible(window, "Sheet"));
-        Assert.Equal("ITM-01JC8", Text(window, "SheetTitle"));
+        Assert.Equal("ITM-01JC8", Text(window, "SheetSubjectText"));
         Assert.Equal(UiPreferences.DefaultSheetWidth, window.Get<Border>("Sheet").Bounds.Width);
         Frame(window, "sheet");
 
@@ -1764,12 +1774,17 @@ public sealed class ShellWindowTests : IDisposable
         _records.Write(A.Record());
         var (window, shell) = await Show(s => s.State == ShellState.Normal);
         var command = OperatingSystem.IsMacOS() ? RawInputModifiers.Meta : RawInputModifiers.Control;
+        window.SettingsSlot.Content = new SettingsView { DataContext = new SettingsViewModel(new Preferences(_preferences), new FakeMotionPreference(), _ => { }) };
+        var focusEvents = 0;
+        window.GotFocus += (_, _) => focusEvents++;
 
         window.KeyPress(Key.OemComma, command, PhysicalKey.Comma, keySymbol: ",");
         Settle(window);
 
         Assert.Equal(PageId.Settings, shell.CurrentPage);
         Assert.True(Visible(window, "SettingsSlot"));
+        Assert.Equal(1, focusEvents);   // a11y-5: the chord moves focus once, into Settings
+        Assert.True(Focused(window) is Visual focused && window.SettingsSlot.IsVisualAncestorOf(focused), "focus isn't in Settings");
     });
 
     [Fact]
@@ -1784,5 +1799,100 @@ public sealed class ShellWindowTests : IDisposable
         var stored = (await new Preferences(_preferences).Load(Token)).Window;
         Assert.NotNull(stored);
         Assert.Equal((1100d, 720d), (stored.Width, stored.Height));
+    });
+
+    // W3 (a11y-0): the focus regions are control elements of type Group named for the region; a Border has no peer otherwise.
+    [Fact]
+    public Task The_focus_regions_are_exposed_as_named_groups() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
+        shell.Navigate(link);
+        Settle(window);
+        var regions = new (Control Region, string Name)[]
+        {
+            (window.Get<Border>("Page"), shell.PageName),
+            (window.Get<Border>("Sheet"), shell.SheetName),
+            (window.Get<TopBar>("TopBar").GetVisualDescendants().OfType<Border>().First(b => b.Classes.Contains("focus-region")), shell.Text.Sindri),
+        };
+
+        foreach (var (region, name) in regions)
+        {
+            var peer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(region);
+            Assert.True(peer.IsControlElement(), name);
+            Assert.Equal(Avalonia.Automation.Peers.AutomationControlType.Group, peer.GetAutomationControlType());
+            Assert.Equal(name, peer.GetName());
+        }
+
+        // testing-2: the shortcuts card is a focus region from the same style.
+        shell.Shortcuts.Open();
+        Settle(window);
+        var card = Named<Border>(window, "ShortcutsCard");
+        var cardPeer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(card);
+        Assert.True(cardPeer.IsControlElement());
+        Assert.Equal(Avalonia.Automation.Peers.AutomationControlType.Window, cardPeer.GetAutomationControlType());   // a modal layer is a dialog (U2 review), the regions behind it are groups
+        Assert.False(string.IsNullOrEmpty(cardPeer.GetName()));
+    });
+
+    // W3: the element F6 and a page change focus is a control named by the page.
+    [Fact]
+    public Task The_focused_page_region_has_a_peer_named_by_the_page() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        shell.GoTo(PageId.Work);
+        Settle(window);
+        Assert.True(window.Get<Border>("Page").Focus(NavigationMethod.Tab));
+
+        var peer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement((Control)window.FocusManager!.GetFocusedElement()!);
+
+        Assert.True(peer.IsControlElement());
+        Assert.Equal(shell.PageName, peer.GetName());
+    });
+
+    // W4 (a11y-1): the sheet title's peer is named for the kind noun and subject ("Workflow WFI-1"), not the bare subject.
+    [Fact]
+    public Task The_sheet_title_focus_target_is_text_named_for_the_kind_and_subject() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        Assert.True(DeepLink.TryParse("workflow/WFI-1", out var link));
+        shell.Navigate(link);
+        Settle(window);
+        var title = window.Get<Border>("SheetTitle");
+
+        var peer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(title);
+
+        Assert.True(peer.IsControlElement());
+        Assert.Equal(Avalonia.Automation.Peers.AutomationControlType.Text, peer.GetAutomationControlType());
+        Assert.Equal("Workflow WFI-1", peer.GetName());
+        Assert.NotEqual(shell.SheetSubject, peer.GetName(), StringComparer.Ordinal);
+        Assert.Equal(shell.SheetSubject, title.GetVisualDescendants().OfType<TextBlock>().Single().Text);
+    });
+
+    // W5 (a11y-2): a page change with focus already on the Page region raises a fresh focus event on it, so the new page is
+    // announced; from a control on the old page, focus lands on the region once (the existing rule).
+    [Theory]
+    [InlineData("Home", "System", false, 1)]
+    [InlineData("System", "Home", true, 1)]
+    [InlineData("Home", "Work", true, 1)]
+    public Task A_page_change_with_focus_on_the_page_region_raises_one_fresh_focus_event(string from, string to, bool startOnRegion, int events) => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        shell.GoTo(Enum.Parse<PageId>(from));
+        Settle(window);
+        var page = window.Get<Border>("Page");
+        var start = startOnRegion ? page : Named<Control>(window, "HealthStrip");
+        Assert.True(start.Focus(NavigationMethod.Tab));
+        var raised = 0;
+        window.AddHandler(InputElement.GotFocusEvent, (_, e) => raised += ReferenceEquals(e.Source, page) ? 1 : 0, RoutingStrategies.Bubble);
+
+        shell.GoTo(Enum.Parse<PageId>(to));
+        Settle(window);
+
+        Assert.Same(page, Focused(window));
+        Assert.Equal(events, raised);
     });
 }

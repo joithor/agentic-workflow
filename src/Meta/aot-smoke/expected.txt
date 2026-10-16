@@ -1,0 +1,54 @@
+## role-set --session s-meta --name smoke-meta
+meta session s-meta (smoke-meta)
+## inbox-sync --session s-meta --transcript <tmp>/meta.jsonl
+2 new message(s): m-idle, d-queued
+## inbox-sync --session s-meta --transcript <tmp>/meta.jsonl
+no new messages
+## stop-check --session s-meta --transcript <tmp>/meta.jsonl
+aw-meta: 3 open obligation(s); close them before stopping.
+1. [Reply] reply to smoke-api (m-idle): ready #1
+   next: SendMessage to smoke-api; or aw-meta inbox-dismiss m-idle --reason "<why>"; or aw-meta inbox-defer m-idle --reason "<why>" --until +30m
+2. [Reply] reply to smoke-ui (d-queued): can you rebase me
+   next: SendMessage to smoke-ui; or aw-meta inbox-dismiss d-queued --reason "<why>"; or aw-meta inbox-defer d-queued --reason "<why>" --until +30m
+3. [BroadcastLanes] lane map v1 not sent to: api (smoke-api)
+   next: aw-meta lanes --announce, then SendMessage the printed text to: smoke-api
+exit 1
+## outbox-record smoke-api
+recorded the send; closed: reply to smoke-api (m-idle): ready #1
+## outbox-record smoke-ui
+recorded the send; closed: reply to smoke-ui (d-queued): can you rebase me
+## lanes --announce
+LANE MAP v1: api=smoke-api (unmapped: ui)
+## outbox-record the lane map to smoke-api
+recorded the send; closed: lane map v1 not sent to: api (smoke-api)
+## stop-check --session s-meta --transcript <tmp>/meta.jsonl
+exit 0
+## inbox-sync --session s-meta --transcript <tmp>/meta.jsonl
+1 new message(s): m-owner
+## owner
+q1  smoke-api  sqlite or postgres?
+## owner-answer 1 --answer sqlite
+answered; logged: - OWNER (<date>): sqlite (asked by smoke-api)
+relay to smoke-api: OWNER ANSWER q1: sqlite
+## log-append --kind note --text smoke run
+- NOTE <date> <time>: smoke run
+## lanes
+LANE MAP v1
+api          smoke-api (Direct)
+ui           (no session)
+## merge-check 1
+FAIL gate: no gate recorded for this pull request; run aw-meta gate-run 1
+NOT READY #1
+exit 1
+## merge-check
+AW-META-001: expected 1 argument(s) before the options, got 0; usage: aw-meta merge-check <pr> [--json]
+exit 2
+## frobnicate
+AW-META-001: unknown command 'frobnicate'; usage: aw-meta <command> [arguments]
+exit 2
+## log
+- OWNER (<date>): sqlite (asked by smoke-api)
+- NOTE <date> <time>: smoke run
+## state files
+./meta/meta.db
+./meta/team.json

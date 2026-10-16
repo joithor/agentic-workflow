@@ -35,6 +35,11 @@ internal static partial class Labels
     /// <returns>The name.</returns>
     internal static string AttachTo(string address) => $"Attach to {address}";
 
+    /// <summary>Accessible name of the pending chip that stands for Attach.</summary>
+    /// <param name="address">The instance address (opaque).</param>
+    /// <returns>The name.</returns>
+    internal static string AttachPendingName(string address) => $"Attach to {address}: available with API P10a";
+
     /// <summary>Accessible name of the main button of a tool or model Step.</summary>
     /// <param name="address">The instance address (opaque).</param>
     /// <returns>The name.</returns>
@@ -68,7 +73,7 @@ internal static partial class Labels
     /// <summary>Accessible name of the confirm line's go-ahead button.</summary>
     /// <param name="address">The instance address (opaque).</param>
     /// <returns>The name.</returns>
-    internal static string ConfirmCancelName(string address) => $"Confirm cancelling {address}";
+    internal static string ConfirmCancelName(string address) => $"{ConfirmCancel}: {address}";
 
     /// <summary>Accessible name of the confirm line's Keep button.</summary>
     /// <param name="address">The instance address (opaque).</param>

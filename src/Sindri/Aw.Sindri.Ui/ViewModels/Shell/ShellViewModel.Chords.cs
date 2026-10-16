@@ -11,7 +11,10 @@ internal sealed partial class ShellViewModel
     /// <summary>How long G waits for its second key (rev 7 §8).</summary>
     internal static readonly TimeSpan ChordWait = TimeSpan.FromSeconds(1);
 
-    private ITimer? _chordTimer;
+    // The wait is a delay on the shell's clock, resumed on the context that started it (the UI thread), so nothing raises
+    // PropertyChanged from a timer thread. A generation says which chord a finished wait belongs to.
+    private CancellationTokenSource? _chordWait;
+    private int _chordGeneration;
 
     /// <summary>True while G waits for its second key; the top bar shows <see cref="ChordHint"/>.</summary>
     public bool IsChordPending { get; private set; }
@@ -27,6 +30,12 @@ internal sealed partial class ShellViewModel
     /// <returns>True when the chord took the key (G, or the second key of a chord). Any other key cancels a waiting chord and is not taken.</returns>
     internal bool PressKey(string key)
     {
+        if (!IsNavigationEnabled || !IsChromeVisible)
+        {
+            CancelChord();
+            return false;
+        }
+
         if (!IsChordPending)
         {
             if (!string.Equals(key, Labels.GoKey, StringComparison.OrdinalIgnoreCase))
@@ -34,24 +43,65 @@ internal sealed partial class ShellViewModel
                 return false;
             }
 
-            SetChord(pending: true);
-            _chordTimer?.Dispose();
-            _chordTimer = _clock.CreateTimer(_ => SetChord(pending: false), state: null, ChordWait, Timeout.InfiniteTimeSpan);
+            StartChord();
             return true;
         }
 
-        SetChord(pending: false);
-        _chordTimer?.Dispose();
-        _chordTimer = null;
+        CancelChord();
         if (SecondKey(key) is not { } target)
         {
             return false;
         }
 
-        HomeFilter = target.Filter;
-        OnChanged(nameof(HomeFilter));
-        GoTo(target.Page);
+        GoTo(target.Page, target.Filter);
         return true;
+    }
+
+    /// <summary>Cancels a waiting chord (any other unmodified key, Esc, a gate closing).</summary>
+    internal void CancelChord()
+    {
+        _chordGeneration++;
+        _chordWait?.Cancel();
+        _chordWait?.Dispose();
+        _chordWait = null;
+        SetChord(pending: false);
+    }
+
+    private void StartChord()
+    {
+        CancelChord();
+        var wait = new CancellationTokenSource();
+        _chordWait = wait;
+        SetChord(pending: true);
+        _ = Expire(_chordGeneration, wait.Token);
+    }
+
+    private async Task Expire(int generation, CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(ChordWait, _clock, token).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        if (generation == _chordGeneration)
+        {
+            CancelChord();
+        }
+    }
+
+    private void SetHomeFilter(HomeFilter filter)
+    {
+        if (HomeFilter == filter)
+        {
+            return;
+        }
+
+        HomeFilter = filter;
+        OnChanged(nameof(HomeFilter));
     }
 
     private static (PageId Page, HomeFilter Filter)? SecondKey(string key) => key.ToUpperInvariant() switch

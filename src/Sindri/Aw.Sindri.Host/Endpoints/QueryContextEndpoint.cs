@@ -10,7 +10,7 @@ internal static class QueryContextEndpoint
     internal static RouteGroupBuilder MapQueryContext(this RouteGroupBuilder group)
     {
         _ = group.MapGet("/context/query", static async (IService<QueryContextRequest, ContextResult> service, string? q, string? node, string? item,
-                string? symbol, int? depth, int? budget, bool? draft, CancellationToken ct)
+                string? symbol, string? depth, string? budget, bool? draft, CancellationToken ct)
             => (await service.Handle(new QueryContextRequest(q, node, item, symbol, depth, budget, draft ?? false), ct).ConfigureAwait(false)).ToHttpResult());
         return group;
     }

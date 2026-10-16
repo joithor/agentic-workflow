@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Text;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Health;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.GetStatus;
 
 namespace Aw.Sindri.Host.Commands;
@@ -15,6 +17,16 @@ internal static class SummaryText
         Line(lines, "services", status.Services.Count == 0
             ? "none scheduled (the approved profile names no services)"
             : string.Join(" · ", status.Services.Select(s => $"{s.Name.Value} every {s.Every}{LastRun(s.LastRun)}")));
+        if (status.Views is { } views)
+        {
+            Line(lines, "views", Views(views));
+        }
+
+        if (status.Health is { } health)
+        {
+            Health(lines, health);
+        }
+
         Line(lines, "api", endpoint.Url.Authority);
         if (ui is not null)
         {
@@ -26,6 +38,22 @@ internal static class SummaryText
             : "not held");
         Line(lines, "ready", Ready(status.Profile));
         return lines.ToString();
+    }
+
+    private static string Views(ViewsStatus v) => v switch
+    {
+        { Stalled: true } => $"{v.StalledPhrase()}: run `{v.StalledFix()}`",
+        { Rebuilding: true } => string.Create(CultureInfo.InvariantCulture, $"rebuilding (cursor {v.Cursor} of {v.LedgerHead})"),
+        _ => string.Create(CultureInfo.InvariantCulture, $"cursor {v.Cursor} of {v.LedgerHead}"),
+    };
+
+    private static void Health(StringBuilder lines, HealthReport health)
+    {
+        Line(lines, "health", health.Word.ToString().ToLowerInvariant());
+        foreach (var problem in health.Problems)
+        {
+            lines.Append(' ', 14).Append(problem.Code).Append(' ').AppendLine(problem.Text);
+        }
     }
 
     private static string Profile(ProfileStatus p) => p switch

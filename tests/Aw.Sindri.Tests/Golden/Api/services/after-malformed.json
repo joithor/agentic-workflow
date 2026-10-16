@@ -1,0 +1,7 @@
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "SND-CLI-003",
+  "status": 400,
+  "detail": "X-Sindri-After 'soon' isn't a ledger sequence (fix: send a whole number, the Sequence of a command's answer)",
+  "traceId": "<trace>"
+}

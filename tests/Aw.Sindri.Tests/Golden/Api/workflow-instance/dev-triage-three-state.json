@@ -1,45 +1,45 @@
 {
-  "address": "workflow/triage-three-state-1",
-  "id": "WFI-1DDB7BB95E",
+  "address": "ITM-01JL2/dev-triage-three-state/1",
+  "id": "WFI-afb45027d8a18f52bca007c9e9e47806",
   "parent": null,
-  "itemId": null,
+  "itemId": "ITM-01JL2",
   "title": "Three-state triage",
   "recipe": {
     "id": "workflow.dev-triage-three-state",
-    "hash": "e2d7a5b100000000000000000000000000000000000000000000000000000000",
+    "hash": "sha256:88a0e8fc810fb8dbdccb244b1a601e16743ade3c4230b57c7c0cf782b3ed0f66",
     "version": 1,
     "urgency": "triage"
   },
-  "state": "classify",
+  "state": "desk",
   "since": "2026-10-12T12:00:00.0000000Z",
   "engineOwned": null,
   "subject": {
-    "kind": "text",
-    "key": "triage-three-state-1",
-    "label": "triage-three-state-1",
+    "kind": "item",
+    "key": "ITM-01JL2",
+    "label": "Three-state triage",
     "href": null
   },
   "orderedBy": "path",
   "states": [
     {
-      "id": "intake",
-      "order": 0,
+      "id": "desk",
+      "order": 1,
       "branchOf": null,
-      "glyph": "done",
+      "glyph": "active",
       "badge": null,
       "round": null,
       "loops": [],
-      "desk": false,
+      "desk": true,
       "child": false,
       "children": null,
       "outcome": null,
       "terminal": false
     },
     {
-      "id": "classify",
-      "order": 1,
+      "id": "answer",
+      "order": 2,
       "branchOf": null,
-      "glyph": "active",
+      "glyph": "pending",
       "badge": null,
       "round": null,
       "loops": [],
@@ -51,7 +51,7 @@
     },
     {
       "id": "done",
-      "order": 2,
+      "order": 3,
       "branchOf": null,
       "glyph": "pending",
       "badge": null,
@@ -65,100 +65,135 @@
     }
   ],
   "current": {
-    "state": "classify",
+    "state": "desk",
     "step": {
-      "kind": "step.tool",
-      "ref": "classify.rules",
-      "declaration": "classify by rules"
+      "kind": "active",
+      "ref": "step.produce",
+      "declaration": "a person writes the draft"
     },
     "gates": [],
-    "desk": null,
+    "desk": {
+      "run": "1.1",
+      "outputs": [
+        {
+          "key": "fact:output",
+          "type": "file",
+          "required": true
+        }
+      ],
+      "checks": [
+        "output.file"
+      ],
+      "completeAction": "CompleteStep"
+    },
     "status": {
       "header": {
-        "address": "workflow/sentry-8812/classify",
-        "recipe": "workflow.step",
-        "hash12": "9ab2d40c0000",
-        "version": 4,
-        "state": "classify",
+        "address": "ITM-01JL2/dev-triage-three-state/1",
+        "recipe": "workflow.dev-triage-three-state",
+        "hash12": "88a0e8fc810f",
+        "version": 1,
+        "state": "desk",
         "detail": "desk task",
-        "since": "2026-10-12T12:22:00.0000000Z",
-        "ageSeconds": 240
+        "since": "2026-10-12T12:00:00.0000000Z",
+        "ageSeconds": 1560
       },
-      "next": "Produce the Step output for sentry-8812 (round 1/3), then run: sindri workflow complete workflow/sentry-8812/classify --run 1.1 --outcome done --output fact:severity=<text>",
+      "next": "Write the draft for ITM-01JL2, then run:\nsindri workflow complete ITM-01JL2/dev-triage-three-state/1 --run 1.1 --outcome done --output fact:output=<file>",
       "answer": null,
       "child": null,
       "drift": null,
       "inputs": [
         {
-          "key": "fact:alert",
-          "name": "alert.json",
-          "hash": "1c0e5a77"
+          "key": "fact:item",
+          "name": "item.json",
+          "hash": "sha256:b6c9cf9454914db27a93569f823751647192bdf84677126620b7f62b45e063fb"
         }
       ],
       "timeout": {
         "kind": "parks",
-        "inSeconds": 165000,
+        "inSeconds": 171240,
         "on": "desk"
       },
-      "budget": {
-        "scope": "state",
-        "used": 0,
-        "limit": 200000,
-        "instance": {
-          "used": 0,
-          "limit": 400000
-        }
-      },
+      "budget": null,
       "paused": null,
       "commands": [
         {
           "verb": "complete",
-          "actionId": "ApplyCommand:complete",
+          "actionId": "CompleteStep",
           "class": "desk",
-          "cli": "sindri workflow complete workflow/sentry-8812/classify --run 1.1 --outcome done --output fact:severity=<text>",
+          "cli": "sindri workflow complete ITM-01JL2/dev-triage-three-state/1 --run 1.1 --outcome done --output fact:output=<file>",
           "confirm": null
         },
         {
           "verb": "takeover",
           "actionId": "ApplyCommand:takeover",
-          "class": "protected",
-          "cli": "sindri workflow takeover workflow/sentry-8812/classify",
+          "class": "pause",
+          "cli": "sindri workflow takeover ITM-01JL2/dev-triage-three-state/1",
           "confirm": null
         },
         {
           "verb": "cancel",
           "actionId": "ApplyCommand:cancel",
-          "class": "protected",
-          "cli": "sindri workflow cancel workflow/sentry-8812/classify",
-          "confirm": "Cancel workflow/sentry-8812/classify? 1 running steps stop; 0 children are cancelled."
+          "class": "desk",
+          "cli": "sindri workflow cancel ITM-01JL2/dev-triage-three-state/1",
+          "confirm": "Cancel ITM-01JL2/dev-triage-three-state/1? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "workflow/sentry-8812/classify  workflow.step@9ab2d40c0000  v4  classify: desk task  since 12:22 (4m)\n  next      Produce the Step output for sentry-8812 (round 1/3), then run:\n            sindri workflow complete workflow/sentry-8812/classify --run 1.1 --outcome done --output fact:severity=<text>\n  inputs    fact:alert  alert.json  sha256:1c0e…\n  timeout   parks in 1d 22h 48m (desk)\n  budget    tokens 0 / 200k (state), 0 / 400k (instance)\n  commands  complete, takeover, cancel\n"
+      "text": "ITM-01JL2/dev-triage-three-state/1  workflow.dev-triage-three-state@88a0e8fc810f  v1  desk: desk task  since 12:00 (26m)\n  next      Write the draft for ITM-01JL2, then run:\n            sindri workflow complete ITM-01JL2/dev-triage-three-state/1 --run 1.1 --outcome done --output\n            fact:output=<file>\n  inputs    fact:item  item.json  sha256:b6c9...\n  timeout   parks in 1d 23h 34m (desk)\n  commands  complete, takeover, cancel\n"
     }
   },
   "facts": [
     {
-      "key": "request",
-      "label": "Request",
-      "type": "text",
+      "key": "fact:item",
+      "label": "Item",
+      "type": "item",
       "direction": "input",
       "from": null,
       "status": "produced",
-      "summary": "Crash on launch",
+      "summary": "ITM-01JL2 Crash on launch",
       "at": "2026-10-12T12:00:00.0000000Z",
       "by": "human:cli",
-      "ref": null,
+      "ref": {
+        "name": null,
+        "size": null,
+        "hash": null,
+        "path": null,
+        "itemId": "ITM-01JL2",
+        "url": null,
+        "host": null,
+        "title": null,
+        "factKey": null
+      },
       "progress": null,
       "pending": null
     },
     {
-      "key": "label",
-      "label": "Label",
-      "type": "text",
+      "key": "fact:output",
+      "label": "Draft",
+      "type": "file",
       "direction": "output",
-      "from": "classify",
-      "status": "in-progress",
-      "summary": "classifying",
+      "from": "desk",
+      "status": "pending",
+      "summary": "awaiting your file",
+      "at": null,
+      "by": null,
+      "ref": null,
+      "progress": null,
+      "pending": {
+        "required": true,
+        "checks": [
+          "output.file"
+        ],
+        "completeAction": "CompleteStep"
+      }
+    },
+    {
+      "key": "fact:answer",
+      "label": "Decision",
+      "type": "decision",
+      "direction": "output",
+      "from": "answer",
+      "status": "pending",
+      "summary": "not started",
       "at": null,
       "by": null,
       "ref": null,
@@ -174,6 +209,7 @@
     "context": null
   },
   "actions": [
+    "CompleteStep",
     "ApplyCommand:takeover",
     "ApplyCommand:cancel"
   ],

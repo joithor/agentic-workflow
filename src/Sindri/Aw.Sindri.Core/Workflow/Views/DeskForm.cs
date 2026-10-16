@@ -1,4 +1,6 @@
 using System.Text.Json.Serialization;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Core.Workflow.Views;
 
@@ -9,7 +11,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="CompleteAction">The action id that completes it.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record DeskForm(
-    string Run,
+    RunToken Run,
     IReadOnlyList<DeskOutput> Outputs,
     IReadOnlyList<string> Checks,
-    string CompleteAction);
+    ActionId CompleteAction);

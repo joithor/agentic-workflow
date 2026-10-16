@@ -77,6 +77,47 @@ test_send_with_a_pending_digest_rewrites_updated_input_and_clears_the_queue() {
   echo "PASS: test_send_with_a_pending_digest_rewrites_updated_input_and_clears_the_queue"
 }
 
+test_the_rewrite_keeps_to_and_the_other_fields() {
+  local bin_dir out outbox; bin_dir="$(setup_fake_judge send)"; outbox="$(mktemp -d)"
+  jq -nc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '{ts:$ts, agentType:"builder-a", to:"main", text:"queued one"}' > "$outbox/s1.jsonl"
+  out="$(run_hook '{"session_id":"s1","agent_type":"builder-a","tool_input":{"to":"main","summary":"s","message":"done"}}' "$bin_dir" "$outbox")"
+  echo "$out" | jq -e '.hookSpecificOutput.updatedInput | .to == "main" and .summary == "s" and (.message | contains("queued one"))' > /dev/null \
+    || { echo "FAIL: same recipient: expected updatedInput with to, summary and the merged message, got $out"; exit 1; }
+  echo "PASS: test_the_rewrite_keeps_to_and_the_other_fields"
+}
+
+test_a_queued_item_for_another_recipient_is_not_merged_and_is_kept() {
+  local bin_dir out outbox; bin_dir="$(setup_fake_judge send)"; outbox="$(mktemp -d)"
+  jq -nc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '{ts:$ts, agentType:"builder-a", to:"alice", text:"for alice"}' > "$outbox/s1.jsonl"
+  out="$(run_hook '{"session_id":"s1","agent_type":"builder-a","tool_input":{"to":"bob","message":"hello bob"}}' "$bin_dir" "$outbox")"
+  echo "$out" | jq -e '.hookSpecificOutput.permissionDecision == "allow" and (.hookSpecificOutput.updatedInput == null)' > /dev/null \
+    || { echo "FAIL: different recipient: expected a plain allow with no rewrite, got $out"; exit 1; }
+  jq -e 'select(.to == "alice" and .text == "for alice")' "$outbox/s1.jsonl" > /dev/null \
+    || { echo "FAIL: the alice item must stay queued for alice"; exit 1; }
+  out="$(run_hook '{"session_id":"s1","agent_type":"builder-a","tool_input":{"to":"alice","message":"hello alice"}}' "$bin_dir" "$outbox")"
+  echo "$out" | jq -e '.hookSpecificOutput.updatedInput | .to == "alice" and (.message | contains("for alice"))' > /dev/null \
+    || { echo "FAIL: the next send to alice should carry the item, got $out"; exit 1; }
+  [ -s "$outbox/s1.jsonl" ] && { echo "FAIL: the outbox should be empty after delivery"; exit 1; }
+  echo "PASS: test_a_queued_item_for_another_recipient_is_not_merged_and_is_kept"
+}
+
+test_batch_records_the_recipient() {
+  local bin_dir outbox; bin_dir="$(setup_fake_judge batch)"; outbox="$(mktemp -d)"
+  run_hook '{"session_id":"s1","tool_input":{"to":"alice","message":"p"}}' "$bin_dir" "$outbox" > /dev/null
+  jq -e 'select(.to == "alice")' "$outbox/s1.jsonl" > /dev/null || { echo "FAIL: the queued item must record its recipient"; exit 1; }
+  echo "PASS: test_batch_records_the_recipient"
+}
+
+test_a_malformed_queue_fails_open_and_is_left_intact() {
+  local bin_dir out outbox; bin_dir="$(setup_fake_judge send)"; outbox="$(mktemp -d)"
+  printf 'not json\n' > "$outbox/s1.jsonl"
+  out="$(run_hook '{"session_id":"s1","agent_type":"builder-a","tool_input":{"to":"main","message":"done"}}' "$bin_dir" "$outbox")"
+  echo "$out" | jq -e '.hookSpecificOutput.permissionDecision == "allow" and (.hookSpecificOutput.updatedInput == null)' > /dev/null \
+    || { echo "FAIL: malformed queue: expected the original send allowed unchanged, got $out"; exit 1; }
+  [ "$(cat "$outbox/s1.jsonl")" = "not json" ] || { echo "FAIL: a malformed queue must not be truncated"; exit 1; }
+  echo "PASS: test_a_malformed_queue_fails_open_and_is_left_intact"
+}
+
 test_concurrent_batch_appends_dont_lose_an_item_rf4() {
   local bin_dir outbox; bin_dir="$(setup_fake_judge batch)"; outbox="$(mktemp -d)"
   run_hook '{"session_id":"s1","agent_type":"a","tool_input":{"to":"main","message":"first"}}' "$bin_dir" "$outbox" > /dev/null &
@@ -113,6 +154,10 @@ test_batch_denies_and_queues_tagged_by_agent_type
 test_batch_from_main_session_queues_with_null_agent_type
 test_a_judge_failure_fails_open_to_allow_rf1
 test_send_with_a_pending_digest_rewrites_updated_input_and_clears_the_queue
+test_the_rewrite_keeps_to_and_the_other_fields
+test_a_queued_item_for_another_recipient_is_not_merged_and_is_kept
+test_batch_records_the_recipient
+test_a_malformed_queue_fails_open_and_is_left_intact
 test_concurrent_batch_appends_dont_lose_an_item_rf4
 test_aw_judge_child_guard
 test_control_messages_bypass_the_classifier_entirely_f6

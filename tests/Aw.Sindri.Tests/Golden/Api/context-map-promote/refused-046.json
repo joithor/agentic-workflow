@@ -1,0 +1,7 @@
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.10",
+  "title": "SND-CONTEXT-046",
+  "status": 409,
+  "detail": "draft v2 has 2 undecided review items (fix: decide them with 'sindri context map review'; skipping doesn't decide)",
+  "traceId": "<trace>"
+}

@@ -1,3 +1,5 @@
+using Aw.Sindri.Ui.Api;
+
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
 /// <summary>
@@ -31,6 +33,20 @@ internal sealed class HealthPill : ObservableObject
         }
     } = string.Empty;
 
+    /// <summary>Any problem the status's health names, in words as served (§3.2: "index failed"); empty otherwise.</summary>
+    public string Problems
+    {
+        get;
+        private set
+        {
+            Set(ref field, value);
+            OnChanged(nameof(HasProblems));
+        }
+    } = string.Empty;
+
+    /// <summary>True when the pill names problems.</summary>
+    public bool HasProblems => Problems.Length > 0;
+
     /// <summary>True when the state has a glyph; while connecting it has none, and the pill drops the glyph's slot (S1).</summary>
     public bool HasGlyph => Glyph != StateGlyph.None;
 
@@ -62,10 +78,12 @@ internal sealed class HealthPill : ObservableObject
     /// <param name="state">The shell's state.</param>
     /// <param name="age">How long since the views were last heard from.</param>
     /// <param name="notResponding">True after three failed refreshes while stale.</param>
-    internal void Show(ShellState state, TimeSpan age, bool notResponding)
+    /// <param name="health">The status's health (E-14), or null before API P2.</param>
+    internal void Show(ShellState state, TimeSpan age, bool notResponding, HealthView? health = null)
     {
         (Glyph, Word, Age) = state switch
         {
+            ShellState.Normal when health is not null => (Glyphs(health.Word), Labels.HealthWord(health.Word), Labels.UpdatedAgo(age)),
             ShellState.Normal => (StateGlyph.Ok, Labels.Running, Labels.UpdatedAgo(age)),
             ShellState.Stale => (StateGlyph.Stale, Labels.Stale, Labels.UpdatedAgo(age)),
             ShellState.NotRunning => (StateGlyph.Down, Labels.NotRunning, string.Empty),
@@ -74,8 +92,9 @@ internal sealed class HealthPill : ObservableObject
             ShellState.Connecting => (StateGlyph.None, Labels.Connecting, string.Empty),
             _ => throw new ArgumentOutOfRangeException(nameof(state), state, message: null),
         };
-        Text = HasAge ? Word + " · " + Age : Word;
-        IsHealthy = state == ShellState.Normal;
+        Problems = state == ShellState.Normal && health is not null ? string.Join(" · ", health.Problems.Select(p => p.Text)) : string.Empty;
+        Text = string.Join(" · ", ((string[])[Word, Age, Problems]).Where(t => t.Length > 0));
+        IsHealthy = state == ShellState.Normal && (health is null || string.Equals(health.Word, "healthy", StringComparison.Ordinal));
         var stale = state == ShellState.Stale;
         if (stale != IsStale)
         {
@@ -87,4 +106,12 @@ internal sealed class HealthPill : ObservableObject
         IsDataStale = state is ShellState.Stale or ShellState.Unreadable;
         IsDown = state is ShellState.NotRunning or ShellState.Unreadable or ShellState.VersionMismatch;
     }
+
+    // §11.3: healthy ✓, rebuilding ⌛ (the views are catching up), degraded and stalled ✕; always beside the word.
+    private static StateGlyph Glyphs(string word) => word switch
+    {
+        "healthy" => StateGlyph.Ok,
+        "rebuilding" => StateGlyph.Stale,
+        _ => StateGlyph.Down,
+    };
 }

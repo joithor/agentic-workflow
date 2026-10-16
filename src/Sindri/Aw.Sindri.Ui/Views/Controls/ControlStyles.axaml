@@ -1,0 +1,71 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
+        xmlns:icons="using:Aw.Sindri.Ui.Views.Icons">
+  <!-- The control renderer's looks (UI spec §7, §11.1): secondary buttons on Surface1 with a hairline; disabled ink only
+       for the disabled label; the pending line in InkSubtle; errors in the Error token, always with a word and ✕. -->
+  <Style Selector="Button.command-control, Button.copy">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="10,4" />
+  </Style>
+  <Style Selector="Button.command-control:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+  </Style>
+  <Style Selector="Button.command-control:disabled TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkTertiary}" />
+  </Style>
+  <Style Selector="Button.command-control:disabled icons|StateIcon">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkTertiary}" />
+  </Style>
+  <Style Selector="Button.copy">
+    <Setter Property="Padding" Value="8,2" />
+  </Style>
+  <Style Selector="Border.pending-line">
+    <Setter Property="Padding" Value="2,2" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.XS}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.error">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
+  </Style>
+  <Style Selector="icons|StateIcon.error">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
+  </Style>
+  <!-- The state chip (fixture.md "State chips"): the word as served on Surface2; the tone picks the colours. attn is the one
+       attention colour (needs-you), fail the error colour, ok the success colour, neutral the plain chip. Each pair is held to
+       4.5:1 by the contrast tests, and the word is always there beside the colour. -->
+  <Style Selector="controls|StateChipView">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.XS}" />
+    <Setter Property="Padding" Value="6,1" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+  </Style>
+  <Style Selector="controls|StateChipView > TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkMuted}" />
+    <Setter Property="FontSize" Value="{DynamicResource Type.Eyebrow.Size}" />
+    <Setter Property="LineHeight" Value="{DynamicResource Type.Eyebrow.LineHeight}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="controls|StateChipView.attn">
+    <Setter Property="Background" Value="{DynamicResource Brush.AttentionSoft}" />
+  </Style>
+  <Style Selector="controls|StateChipView.attn > TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Attention}" />
+  </Style>
+  <Style Selector="controls|StateChipView.fail">
+    <Setter Property="Background" Value="{DynamicResource Brush.ErrorSoft}" />
+  </Style>
+  <Style Selector="controls|StateChipView.fail > TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
+  </Style>
+  <Style Selector="controls|StateChipView.ok">
+    <Setter Property="Background" Value="{DynamicResource Brush.SuccessSoft}" />
+  </Style>
+  <Style Selector="controls|StateChipView.ok > TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Success}" />
+  </Style>
+</Styles>

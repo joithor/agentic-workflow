@@ -1,8 +1,32 @@
+using Aw.Sindri.Ui.Api;
+
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
 /// <summary>Refresh beside a stale pill (<see cref="HealthViewModel"/>, continued; §4.1 Stale and "sending").</summary>
 internal sealed partial class HealthViewModel
 {
+    private readonly List<Func<Uri, CancellationToken, Task>> _views = [];
+
+    /// <summary>The API's base URL while connected, else null (commands and the sheet read it at the click).</summary>
+    /// <returns>The URL, or null.</returns>
+    internal Uri? ApiUrl() => _url;
+
+    /// <summary>Adds a view the follower re-reads on connect and after every event (§9.2: re-query, never fold).</summary>
+    /// <param name="view">Reads the view from the API's base URL.</param>
+    internal void Follow(Func<Uri, CancellationToken, Task> view) => _views.Add(view);
+
+    /// <summary>Re-reads every followed view, in the order they were added.</summary>
+    /// <param name="url">The API's base URL.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    /// <returns>A task that completes when every view is shown.</returns>
+    internal async Task RefreshViews(Uri url, CancellationToken cancellationToken)
+    {
+        foreach (var view in _views)
+        {
+            await view(url, cancellationToken).ConfigureAwait(true);
+        }
+    }
+
     // Bumped each time the follow decides a state (a status shown, Not running, Unreadable, a mismatch), so a Refresh
     // whose answer comes after one knows it is late; and the lease the follow checked with ping (pid, epoch).
     private int _decisions;
@@ -55,7 +79,7 @@ internal sealed partial class HealthViewModel
     private async Task Answer(Uri url, CancellationToken cancellationToken)
     {
         var decided = Volatile.Read(ref _decisions);
-        var status = await api.Status(url, cancellationToken).ConfigureAwait(true);
+        var status = await api.ReadStatus(url, cancellationToken).ConfigureAwait(true);
         lock (_gate)
         {
             if (decided != _decisions || State is not (ShellState.Normal or ShellState.Stale))
@@ -65,6 +89,11 @@ internal sealed partial class HealthViewModel
 
             if (status.IsError)
             {
+                if (SindriApiReads.IsViewsBehind(status.Error))
+                {
+                    return;   // "views behind" is an answer from a live Sindri, not a failed refresh
+                }
+
                 _failedRefreshes++;
                 Word();
                 return;

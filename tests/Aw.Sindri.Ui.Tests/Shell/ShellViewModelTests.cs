@@ -25,7 +25,7 @@ public sealed class ShellViewModelTests
     // The shell as the app starts it: built over the ports, then restored from the stored preferences.
     private async Task<ShellViewModel> Shell()
     {
-        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences), new FakeClipboard());
         await shell.Restore(Token);
         return shell;
     }
@@ -67,13 +67,13 @@ public sealed class ShellViewModelTests
         Assert.All(shell.Navigation, n => Assert.Equal(string.Empty, n.Count));
     }
 
-    // Screens spec §4.8: a page whose phase hasn't landed says which phase brings it, never faked content.
+    // Screens spec §4.8: a page whose phase hasn't landed says which phase brings it and the API it waits for, never faked content.
     [Theory]
-    [InlineData(PageId.Workflows, "arrives with U8")]
-    [InlineData(PageId.Work, "arrives with U3'")]
-    [InlineData(PageId.Recipes, "arrives with U10")]
-    [InlineData(PageId.Context, "arrives with U9")]
-    [InlineData(PageId.Agents, "arrives with U11")]
+    [InlineData(PageId.Workflows, "arrives with U8 and the workflow routes (API P11)")]
+    [InlineData(PageId.Work, "arrives with U3' and the workflow routes (API P11)")]
+    [InlineData(PageId.Recipes, "arrives with U10 and the recipe stats (API P12)")]
+    [InlineData(PageId.Context, "arrives with U9 and the context lens routes (CTX phase 4)")]
+    [InlineData(PageId.Agents, "arrives with U11 and the launch targets (API P10a)")]
     internal async Task Unbuilt_pages_show_arrives_with_their_phase(PageId page, string words)
     {
         await Task.CompletedTask;
@@ -238,6 +238,7 @@ public sealed class ShellViewModelTests
         var shell = await Running(ShellState.NotRunning);
 
         // I7: the reason's words lead; the record's path is its own value, shortened.
+        await Until(() => shell.Pill.Text == Labels.NotRunning);
         Assert.Equal(Labels.NoRecord, shell.Reason);
         Assert.Equal(StatusText.ShortPath(_records.Location), shell.ReasonDetail);
         Assert.Equal(Labels.NotRunning, shell.Pill.Text);
@@ -250,7 +251,22 @@ public sealed class ShellViewModelTests
 
         var shell = await Running(ShellState.Normal);
 
+        await Until(() => shell.Pill.Text.StartsWith(Labels.Running, StringComparison.Ordinal));
         Assert.StartsWith(Labels.Running, shell.Pill.Text, StringComparison.Ordinal);
+    }
+
+    // Main's #231: while views.db migrates, /status answers views: null ("no views yet"): the app starts cleanly, says Running, and
+    // shows no views banner (nothing is stalled or rebuilding that it knows of).
+    [Fact]
+    public async Task A_status_with_no_views_yet_starts_cleanly_and_says_running()
+    {
+        _records.Write(A.Record());
+        _server.Current = A.Status() with { Views = null, Health = null };
+
+        var shell = await Running(ShellState.Normal);
+
+        await Until(() => shell.Pill.Text.StartsWith(Labels.Running, StringComparison.Ordinal));
+        Assert.Equal((ShellState.Normal, Labels.Running, false), (shell.State, shell.Pill.Word, shell.Health.Banner.IsShown));
     }
 
     [Fact]
@@ -285,6 +301,7 @@ public sealed class ShellViewModelTests
         _clock.Advance(ShellViewModel.StaleAfter);
         await Until(() => shell.State == ShellState.Stale);
 
+        await Until(() => shell.Pill.Text.Contains(Labels.Stale, StringComparison.Ordinal));
         Assert.Equal(ShellState.Stale, shell.State);
         Assert.Contains(Labels.Stale, shell.Pill.Text, StringComparison.Ordinal);
 

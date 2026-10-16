@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Sockets;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Tests.Ledger;
@@ -72,7 +73,7 @@ public sealed class TemporalDevServerTests : IDisposable
             Assert.NotEqual(stuck.ProcessId, replacement.ProcessId);
             Assert.False(replacement.Adopted);
             Assert.True(DevServerProcesses.Gone(stuck.ProcessId), "the stuck server still runs");
-            Assert.Equal(DevServerAnswer.Ready, (await DevServerProbe.Ask(replacement.Frontend, TimeSpan.FromSeconds(5), ct)).Answer);
+            Assert.Equal(DevServerAnswer.Ready, (await DevServerProbe.Ask(replacement.Frontend, TemporalSettings.DefaultNamespace, TimeSpan.FromSeconds(5), ct)).Answer);
         }
         finally
         {
@@ -96,15 +97,67 @@ public sealed class TemporalDevServerTests : IDisposable
         try
         {
             Assert.False(restarted.Adopted);
-            Assert.Equal(DevServerAnswer.Ready, (await DevServerProbe.Ask(restarted.Frontend, TimeSpan.FromSeconds(5), ct)).Answer);
+            Assert.Equal(DevServerAnswer.Ready, (await DevServerProbe.Ask(restarted.Frontend, TemporalSettings.DefaultNamespace, TimeSpan.FromSeconds(5), ct)).Answer);
             var listed = await Temporalio.Client.TemporalConnection.CreateLazy(new(restarted.Frontend.ToString())).OperatorService
-                .ListSearchAttributesAsync(new() { Namespace = SindriTemporal.Namespace }, new() { CancellationToken = ct });
+                .ListSearchAttributesAsync(new() { Namespace = TemporalSettings.DefaultNamespace }, new() { CancellationToken = ct });
             Assert.All(SindriTemporal.SearchAttributes, a => Assert.Equal(a.Type, listed.CustomAttributes[a.Name]));
         }
         finally
         {
             await server.StopAsync(restarted, ct);
         }
+    }
+
+    [Fact(Timeout = 60_000)]
+    public async Task A_picked_port_taken_before_the_server_binds_is_retried_with_new_ports()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var rival = Occupy();
+        var picks = 0;
+        var server = new TemporalDevServer(() => Interlocked.Increment(ref picks) == 1 ? PortOf(rival) : FreePort());   // the first pick (the frontend) loses the race
+
+        var running = await server.StartAsync(new TemporalServerStart(PinnedTemporal.Path(), _home.Path), ct);
+        try
+        {
+            Assert.NotEqual(PortOf(rival), running.Frontend.Port);
+            Assert.Equal(DevServerAnswer.Ready, (await DevServerProbe.Ask(running.Frontend, TemporalSettings.DefaultNamespace, TimeSpan.FromSeconds(5), ct)).Answer);
+            Assert.Contains("picking new ports", await File.ReadAllTextAsync(Path.Combine(_home.Path, "logs", SindriTemporal.LogFile), ct), StringComparison.Ordinal);
+        }
+        finally
+        {
+            await server.StopAsync(running, ct);
+        }
+    }
+
+    [Fact(Timeout = 90_000)]
+    public async Task A_start_whose_ports_are_taken_every_time_gives_up_after_the_bounded_attempts()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var rival = Occupy();
+        var picks = 0;
+        var server = new TemporalDevServer(() => Interlocked.Increment(ref picks) % 3 == 1 ? PortOf(rival) : FreePort());   // the frontend pick of every attempt loses
+
+        var failure = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            server.StartAsync(new TemporalServerStart(PinnedTemporal.Path(), _home.Path), ct));
+
+        Assert.Contains("address already in use", failure.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(TemporalDevServer.MaxPortAttempts * 3, picks);
+        Assert.Empty(TemporalDevServer.Find(_home.Path));
+    }
+
+    private static TcpListener Occupy()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        return listener;
+    }
+
+    private static int PortOf(TcpListener listener) => ((IPEndPoint)listener.LocalEndpoint).Port;
+
+    private static int FreePort()
+    {
+        using var listener = Occupy();
+        return PortOf(listener);
     }
 
     [Fact(Timeout = 60_000)]

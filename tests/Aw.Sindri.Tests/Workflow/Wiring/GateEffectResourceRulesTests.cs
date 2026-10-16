@@ -87,7 +87,7 @@ public sealed class GateEffectResourceRulesTests
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData(ResourceKind.Heavy, "heavy", "it parks with SND-WF-010 until the heavy-job lock port lands")]
+    [InlineData(ResourceKind.Heavy, "heavy", "it parks with SND-WF-010 until the workflow engine's heavy allocator is wired to the heavy-job lock")]
     [InlineData(ResourceKind.Slot, "slot", "it parks with SND-WF-010 until the session-slot stub lands (P7)")]
     public void A_resource_wait_is_information_while_nothing_allocates_it(ResourceKind resource, string name, string fix)
     {

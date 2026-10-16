@@ -18,7 +18,8 @@ internal static class UiSource
             .SelectMany(d => Directory.EnumerateFiles(d, "*.axaml", SearchOption.AllDirectories))
             .Where(f => !f.Split(Path.DirectorySeparatorChar).Any(p => string.Equals(p, "bin", StringComparison.Ordinal) || string.Equals(p, "obj", StringComparison.Ordinal)));
 
-    private static string Root
+    /// <summary>The checkout's root (the folder with AgenticWorkflow.slnx).</summary>
+    internal static string Root
     {
         get
         {

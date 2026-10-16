@@ -23,12 +23,14 @@ internal sealed class LoopbackServer : IAsyncDisposable
     private readonly ConcurrentQueue<string> _log;
     private readonly ConcurrentQueue<RecordedRequest> _requests = new();
     private readonly Func<FakeHttpRequest, FakeHttpReply> _handler;
+    private readonly TimeSpan _delay;
 
-    private LoopbackServer(WebApplication app, ConcurrentQueue<string> log, Func<FakeHttpRequest, FakeHttpReply> handler)
+    private LoopbackServer(WebApplication app, ConcurrentQueue<string> log, Func<FakeHttpRequest, FakeHttpReply> handler, TimeSpan delay)
     {
         _app = app;
         _log = log;
         _handler = handler;
+        _delay = delay;
     }
 
     public Uri BaseUrl { get; private set; } = new("http://127.0.0.1/");
@@ -37,13 +39,13 @@ internal sealed class LoopbackServer : IAsyncDisposable
 
     public IReadOnlyList<string> Log => [.. _log];
 
-    public static async Task<LoopbackServer> Start(string name, Func<FakeHttpRequest, FakeHttpReply> handler)
+    public static async Task<LoopbackServer> Start(string name, Func<FakeHttpRequest, FakeHttpReply> handler, TimeSpan delay = default)
     {
         var log = new ConcurrentQueue<string>();
         var builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions { Args = [], ApplicationName = name, ContentRootPath = AppContext.BaseDirectory });
         _ = builder.Logging.ClearProviders().AddProvider(new ListLoggerProvider(log)).SetMinimumLevel(LogLevel.Trace);
         _ = builder.WebHost.ConfigureKestrel(k => k.Listen(IPAddress.Loopback, 0));
-        var server = new LoopbackServer(builder.Build(), log, handler);
+        var server = new LoopbackServer(builder.Build(), log, handler, delay);
         server._app.Run(server.Serve);
         await server._app.StartAsync(CancellationToken.None).ConfigureAwait(false);
         server.BaseUrl = new Uri(server._app.Urls.Single().TrimEnd('/') + "/");
@@ -58,6 +60,11 @@ internal sealed class LoopbackServer : IAsyncDisposable
 
     private async Task Serve(HttpContext context)
     {
+        if (_delay > TimeSpan.Zero)
+        {
+            await Task.Delay(_delay, context.RequestAborted).ConfigureAwait(false);
+        }
+
         var request = await Read(context.Request).ConfigureAwait(false);
         var reply = Answer(request);
         var target = request.Path + context.Request.QueryString.Value;

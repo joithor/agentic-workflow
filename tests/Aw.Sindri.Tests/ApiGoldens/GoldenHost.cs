@@ -34,16 +34,19 @@ public sealed class GoldenHost : IAsyncDisposable
     public const string ProfileYaml = "schemaVersion: 1\nuser: golden\nservices:\n  heartbeat: { every: 5s }\n";
 
     private readonly TempHome _home = new();
+    private readonly List<IDisposable> _owned = [];
     private readonly TempHome? _elsewhere;
     private WebApplication? _app;
 
     private readonly string _profileYaml;
+    private readonly IReadOnlyDictionary<string, string>? _environment;
     private readonly Action<IServiceCollection>? _extra;
 
-    private GoldenHost(bool temporary, string profileYaml, Action<IServiceCollection>? extra)
+    private GoldenHost(bool temporary, string profileYaml, IReadOnlyDictionary<string, string>? environment, Action<IServiceCollection>? extra)
     {
         _elsewhere = temporary ? null : new TempHome();
         _profileYaml = profileYaml;
+        _environment = environment;
         _extra = extra;
     }
 
@@ -56,6 +59,10 @@ public sealed class GoldenHost : IAsyncDisposable
     /// <summary>A client on the host's loopback address.</summary>
     public HttpClient Http { get; private set; } = new();
 
+    /// <summary>The host's clock now.</summary>
+    /// <returns>The instant.</returns>
+    public DateTimeOffset Now() => App.Services.GetRequiredService<TimeProvider>().GetUtcNow();
+
     /// <summary>The running host.</summary>
     public WebApplication App => _app ?? throw new InvalidOperationException("the host isn't started");
 
@@ -63,11 +70,13 @@ public sealed class GoldenHost : IAsyncDisposable
     /// <param name="temporary">Whether the home counts as temporary (honours the prover label).</param>
     /// <param name="ct">Cancellation.</param>
     /// <param name="profileYaml">The live profile it starts with (<see cref="ProfileYaml"/> unless a test needs another).</param>
+    /// <param name="environment">More environment variables the host reads (fixture secrets behind 'env:' pointers), or null.</param>
     /// <param name="extra">More service replacements, after the fixed ones (a test's log sink).</param>
     /// <returns>The started host.</returns>
-    public static async Task<GoldenHost> Start(bool temporary, CancellationToken ct, string profileYaml = ProfileYaml, Action<IServiceCollection>? extra = null)
+    public static async Task<GoldenHost> Start(bool temporary, CancellationToken ct, string profileYaml = ProfileYaml,
+        IReadOnlyDictionary<string, string>? environment = null, Action<IServiceCollection>? extra = null)
     {
-        var host = new GoldenHost(temporary, profileYaml, extra);
+        var host = new GoldenHost(temporary, profileYaml, environment, extra);
         try
         {
             await host.Run(ct);
@@ -79,6 +88,10 @@ public sealed class GoldenHost : IAsyncDisposable
             throw;
         }
     }
+
+    /// <summary>Hands the host something to dispose after it stops (a fixture repo the profile maps).</summary>
+    /// <param name="resource">The resource.</param>
+    public void Own(IDisposable resource) => _owned.Add(resource);
 
     /// <summary>The live profile's hash.</summary>
     /// <param name="ct">Cancellation.</param>
@@ -97,6 +110,7 @@ public sealed class GoldenHost : IAsyncDisposable
 
         _home.Dispose();
         _elsewhere?.Dispose();
+        _owned.ForEach(o => o.Dispose());
     }
 
     private async Task Run(CancellationToken ct)
@@ -131,6 +145,6 @@ public sealed class GoldenHost : IAsyncDisposable
         "AW_SINDRI_CLAUDE_BIN" => Path.Combine(_home.Path, "no-claude"),  // mcp register --apply: never the real claude
         "TMPDIR" when _elsewhere is not null => Path.Combine(_elsewhere.Path, "tmp"),
         "AW_STATE_DIR" when _elsewhere is not null => Path.Combine(_elsewhere.Path, "state"),
-        _ => null,
+        _ => _environment is not null && _environment.TryGetValue(name, out var value) ? value : null,
     };
 }

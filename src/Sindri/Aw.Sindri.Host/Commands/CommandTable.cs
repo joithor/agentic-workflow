@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Aw.Context.Core.Facade;
 using Aw.Kernel.Telemetry;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Auth;
@@ -63,30 +64,49 @@ internal static class CommandTable
             services.GetRequiredService<TimeProvider>(), session, UiOpener(headless, environment));
         var start = Start(headless: true);   // 'sindri --headless', and the start a human 'profile approve' may need
         var verbs = new Verbs(client, probe, output, services);
-        var ct = CancellationToken.None;
+        using var interrupt = Interrupt.For(args);   // Ctrl-C ends 'workflow events --follow' with exit 0; no other verb listens
+        var ct = interrupt.Token;
         var harnesses = new ProbeCommands(services.GetRequiredService<IProcessAncestry>(), services.GetRequiredService<IHarnessVersions>(), environment, Interactive());
         return args switch
         {
             // ---- verbs: one arm per verb ----
             [] => await Start(headless: false).Run(ct).ConfigureAwait(false),
             ["--headless"] => await start.Run(ct).ConfigureAwait(false),
+            ["status", .. var rest] when Follow(rest) is { } json => await new FollowVerbs(client, probe, output, services.GetRequiredService<TimeProvider>()).Run(json, ct).ConfigureAwait(false),
             ["status", .. var rest] when Json(rest) is { } json => await verbs.Status(json, ct).ConfigureAwait(false),
             ["stop"] => await verbs.Stop(ct).ConfigureAwait(false),
             ["profile", "validate", .. var rest] when Json(rest) is { } json => await verbs.Validate(json, ct).ConfigureAwait(false),
             ["profile", "approve", .. var rest] when Approval(rest) is { } a => await new Verbs(client, probe, output, services, c => start.EnsureRunning(!a.NoStart, c))
                 .Approve(a.Hash, Interactive(), Console.In, ct).ConfigureAwait(false),
+            ["views", "rebuild", .. var rest] when NoStart(rest) is { } noStart => await new Verbs(client, probe, output, services, c => start.EnsureRunning(!noStart, c))
+                .RebuildViews(ct).ConfigureAwait(false),
+            ["queue" or "items" or "item", ..] => await new ItemVerbs(client, output, (launch, c) => start.EnsureRunning(launch, c)).Run(args, ct).ConfigureAwait(false),
+            ["ledger", .. var rest] => await new LedgerVerbs(client, output, (launch, c) => start.EnsureRunning(launch, c)).Run(rest, ct).ConfigureAwait(false),
             ["doctor", "--probe"] or ["doctor", "--probe", "--json"] => await output.Json(await harnesses.Probe(harness: null, ct).ConfigureAwait(false), 0).ConfigureAwait(false),
             ["doctor", "--probe", "--harness", var name, .. var rest] when Json(rest) is not null => await output.Json(await harnesses.Probe(name, ct).ConfigureAwait(false), 0).ConfigureAwait(false),
             ["doctor", .. var rest] when Json(rest) is { } json => await verbs.Doctor(json, ct, harnesses.DoctorChecks).ConfigureAwait(false),
             ["mcp", .. var rest] => await new McpVerbs(services, output, session).Run(rest, ct).ConfigureAwait(false),
-            ["context", "map", .. var rest] => await new ContextMapVerbs(client, output, Interactive(), Console.In).Run(rest, ct).ConfigureAwait(false),
-            ["context", .. var rest] => await new ContextVerbs(client, output).Run(rest, ct).ConfigureAwait(false),
+            ["context", ..] => await Context(args, client, output, services, ct).ConfigureAwait(false),
             ["recipe", .. var rest] => await RecipeCommandTable.Run(rest, services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), ct).ConfigureAwait(false),
-            ["workflow", .. var rest] => await WorkflowCommandTable.Run(rest, services, output, ct).ConfigureAwait(false),
+            ["workflow", .. var rest] => await WorkflowCommandTable.Run(rest, services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), ct).ConfigureAwait(false),
+            ["handback", ..] => await WorkflowCommandTable.RunShort(args, services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), ct).ConfigureAwait(false),
             ["help" or "--help" or "-h"] => await output.Text(Usage.Text + "\n", 0).ConfigureAwait(false),
             _ => await UnknownVerb(args, output).ConfigureAwait(false),
         };
     }
+
+    /// <summary>'sindri context …': one arm per verb family; the first that matches wins.</summary>
+    private static async Task<int> Context(string[] args, ControlPlaneClient client, Output output, IServiceProvider services, CancellationToken ct) =>
+        args switch
+        {
+            ["context", "show" or "neighbors" or "path", ..] => await new ContextGraphVerbs(client, output).Run(args[1..], ct).ConfigureAwait(false),
+            ["context", "eval", .. var rest] => await new ContextEvalVerbs(client, output, services.GetRequiredService<IContextEngine>()).Run(rest, ct).ConfigureAwait(false),
+            ["context", "filemap", "accept" or "reject", var link] => await new ContextMapVerbs(client, output, Interactive(), Console.In).Run(["review", args[2], link], ct).ConfigureAwait(false),
+            ["context", "lenses" or "filemap", ..] => await new ContextLensVerbs(client, output).Run(args[1..], ct).ConfigureAwait(false),
+            ["context", "map", .. var rest] => await new ContextMapVerbs(client, output, Interactive(), Console.In).Run(rest, ct).ConfigureAwait(false),
+            ["context", .. var rest] => await new ContextVerbs(client, output).Run(rest, ct).ConfigureAwait(false),
+            _ => await UnknownVerb(args, output).ConfigureAwait(false),
+        };
 
     /// <summary>
     /// The caller headers. The token store is Infrastructure's (registered with it); a missing token file means a human
@@ -101,10 +121,26 @@ internal static class CommandTable
     internal static Func<string>? UiOpener(bool headless, Func<string, string?> environment) =>
         headless ? null : () => UiLauncher.Open(UiLauncher.Locate(environment, AppContext.BaseDirectory));
 
+    /// <summary>'status --follow [--json]': whether it asks for JSON, or null when it isn't a follow.</summary>
+    private static bool? Follow(string[] rest) => rest switch
+    {
+        ["--follow"] => false,
+        ["--follow", "--json"] or ["--json", "--follow"] => true,
+        _ => null,
+    };
+
     private static bool? Json(string[] rest) => rest switch
     {
         [] => false,
         ["--json"] => true,
+        _ => null,
+    };
+
+    /// <summary>'views rebuild [--no-start]'.</summary>
+    private static bool? NoStart(string[] rest) => rest switch
+    {
+        [] => false,
+        ["--no-start"] => true,
         _ => null,
     };
 

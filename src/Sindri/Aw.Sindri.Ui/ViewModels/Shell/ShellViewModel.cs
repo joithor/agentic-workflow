@@ -2,6 +2,9 @@ using System.ComponentModel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Item;
+using Aw.Sindri.Ui.ViewModels.Palette;
+using Aw.Sindri.Ui.ViewModels.Queue;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -40,13 +43,24 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <param name="api">Its API.</param>
     /// <param name="clock">The clock for every timing rule.</param>
     /// <param name="preferences">The app's local preferences, shared with Settings (the shell keeps its window, sheet width and last page there).</param>
-    internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, Preferences preferences)
+    /// <param name="clipboard">Where Copy puts a CLI (the window's clipboard).</param>
+    internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, Preferences preferences, IClipboard clipboard)
     {
         _store = preferences;
         _clock = clock;
-        Health = new HealthViewModel(records, api, clock);
+        Health = new HealthViewModel(records, api, clock, clipboard);
         Health.PropertyChanged += OnHealthChanged;
         Health.Pill.PropertyChanged += OnPillChanged;
+        CommandOutcome = new CommandOutcomeRegion(control => Health.Banner.HasRebuild && ReferenceEquals(Health.Banner.Rebuild, control));
+        Create = new CreateItemViewModel(Health.Catalog, () => Health.ApiUrl(), api);
+        Palette = new CommandPaletteViewModel(Health.Catalog, GoTo, RememberRun, CommandOutcome, () => Create.Open());
+        Shortcuts = new ShortcutsViewModel(Health.Catalog);
+        Queue = new QueueViewModel(api, Health.Catalog, clock);
+        Queue.PageShown(RowScopeOf(CurrentPage));
+        Item = new ItemSheetViewModel(api, Health.Catalog, clock);
+        Health.Follow(Queue.Refresh);
+        Health.Follow(Item.Refresh);
+        Queue.PropertyChanged += OnQueueChanged;
         Attention = AttentionSummary.For(feed: null, State, _clock.GetUtcNow());
     }
 
@@ -156,23 +170,8 @@ internal sealed partial class ShellViewModel : ObservableObject
     // Connected: the API's pages (and the sheet over them) have something to show.
     private bool IsConnected => State is ShellState.Normal or ShellState.Stale or ShellState.Unreadable;
 
-    /// <summary>True while the detail sheet is open.</summary>
-    public bool IsSheetOpen { get; private set; }
-
-    /// <summary>The sheet's subject (the deep link's subject); kept after the sheet closes for the edge tab; empty before the first.</summary>
-    public string SheetSubject { get; private set; } = string.Empty;
-
-    /// <summary>True when the closed sheet shows its edge tab (a subject was opened before).</summary>
-    public bool HasEdgeTab => SheetSubject.Length > 0;
-
-    /// <summary>The sheet shows when it's open over a visible page.</summary>
-    public bool IsSheetShown => IsSheetOpen && IsConnected;
-
-    /// <summary>The edge tab's accessible name: "Reopen" and its subject.</summary>
-    public string EdgeTabName => Labels.Reopen + " " + SheetSubject;
-
-    /// <summary>The edge tab shows when the sheet is closed and has a subject, over a visible page.</summary>
-    public bool IsEdgeTabShown => !IsSheetOpen && HasEdgeTab && IsConnected;
+    /// <summary>The attention band under the top bar (§3.2): always false in U0, since needs-you arrives in U3.</summary>
+    public bool IsAttentionBandVisible { get; }
 
     /// <summary>The window's remembered bounds, or null to let the platform place it.</summary>
     public WindowBounds? Window => _preferences.Window;
@@ -180,10 +179,26 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <summary>The detail sheet's width (420–760).</summary>
     public double SheetWidth => _preferences.SheetWidth;
 
-    /// <summary>Shows a page (the G-chords, the top bar, the pill) and remembers it.</summary>
+    /// <summary>Shows a page (the G-chords, the top bar, the pill) and remembers it. Any way to a page but G D clears the Home filter.</summary>
     /// <param name="page">The page.</param>
-    internal void GoTo(PageId page)
+    internal void GoTo(PageId page) => GoTo(page, HomeFilter.All);
+
+    /// <summary>Shows a page with a Home filter, which is set once (G D is the one way to a filter but All).</summary>
+    /// <param name="page">The page.</param>
+    /// <param name="filter">The Home filter.</param>
+    internal void GoTo(PageId page, HomeFilter filter)
     {
+        if (page == PageId.Work)
+        {
+            Queue.Filter(QueueFilter.All);   // G Q, the palette and the tab show the whole queue; only GoToQueue narrows it
+        }
+
+        ShowPage(page, filter);
+    }
+
+    internal void ShowPage(PageId page, HomeFilter filter)
+    {
+        SetHomeFilter(filter);
         if (page == CurrentPage)
         {
             return;
@@ -195,15 +210,9 @@ internal sealed partial class ShellViewModel : ObservableObject
         }
 
         CurrentPage = page;
+        Queue.PageShown(RowScopeOf(page));
         Changed(_pageProperties);
         Remember(p => p with { LastPage = page.ToString() });
-    }
-
-    /// <summary>Closes the sheet (Esc); its subject stays on the edge tab.</summary>
-    internal void CloseSheet()
-    {
-        IsSheetOpen = false;
-        Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
     }
 
     /// <summary>
@@ -222,17 +231,8 @@ internal sealed partial class ShellViewModel : ObservableObject
         return true;
     }
 
-    /// <summary>Opens the sheet again on its last subject (the edge tab).</summary>
-    internal void ReopenSheet()
-    {
-        if (!HasEdgeTab)
-        {
-            return;
-        }
-
-        IsSheetOpen = true;
-        Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
-    }
+    // LANE ANCHOR U3': new Needs you state belongs in its own partial (ShellViewModel.<Slice>.cs), not in this file (cap 300 lines); only a hook-up line goes here. Insert immediately above this marker, never between the markers.
+    // LANE ANCHOR U8: new workflow state belongs in its own partial (ShellViewModel.<Slice>.cs), not in this file (cap 300 lines); only a hook-up line goes here. Insert immediately below this marker, never between the markers.
 
     /// <summary>Follows the control plane until cancelled (S1b's loop: control.json, ping, status, events).</summary>
     /// <param name="cancellationToken">Stops following.</param>

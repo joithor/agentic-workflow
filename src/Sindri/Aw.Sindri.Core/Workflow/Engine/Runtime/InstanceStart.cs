@@ -1,0 +1,34 @@
+using Aw.Sindri.Core.Workflow.Ids;
+
+namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
+
+/// <summary>
+/// The input of one 'RecipeWorkflow' execution (engine spec rev 8 §5.1): the recipe '(id, version, hash)', the item,
+/// the attempt, the input facts, and the tenant and ring keys. The workflow id is <see cref="WorkflowId"/>, so starting
+/// the same '(recipe, item, attempt)' again finds the running execution (WorkflowIdConflictPolicy.UseExisting).
+/// </summary>
+/// <param name="Recipe">The approved recipe the instance is pinned to.</param>
+/// <param name="Item">The item, as IItems resolved it.</param>
+/// <param name="Attempt">The attempt, from 1.</param>
+/// <param name="Inputs">The input facts by key ('fact:spec'), each stored by the API before the start.</param>
+/// <param name="Tenant">The tenant key.</param>
+/// <param name="Ring">The ring.</param>
+public sealed record InstanceStart(
+    RecipeVersion Recipe,
+    ItemKey Item,
+    int Attempt,
+    IReadOnlyDictionary<FactKey, InputFact> Inputs,
+    string Tenant,
+    int Ring)
+{
+    /// <summary>
+    /// The launch ('LCH-…') still 'requested' for the item when the start read the item's launches (UI spec E-19, §6.4):
+    /// the instance then starts taken over, with that request as the takeover's causation, so automation never runs
+    /// beside a session that's opening. Null when no launch is in flight. Engine P5 contract unit; unit (b) sets and reads it.
+    /// </summary>
+    public string? OpenLaunch { get; init; }
+
+    /// <summary>The workflow id: the instance's address, '{item}/{recipe name}/{attempt}'.</summary>
+    /// <returns>The address.</returns>
+    public InstanceAddress WorkflowId() => InstanceAddress.Root(Item, Recipe.Id, Attempt);
+}

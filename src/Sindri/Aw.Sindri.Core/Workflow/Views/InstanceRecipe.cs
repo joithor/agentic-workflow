@@ -1,16 +1,17 @@
 using System.Text.Json.Serialization;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Workflow.Views;
 
 /// <summary>A recipe as an instance pins it (E-20).</summary>
-/// <param name="Name">The recipe id.</param>
-/// <param name="Hash">The pinned hash.</param>
+/// <param name="Id">The recipe id.</param>
+/// <param name="Hash">The pinned hash ("sha256:" and 64 hex digits).</param>
 /// <param name="Version">The author's version.</param>
 /// <param name="Urgency">The recipe's urgency.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record InstanceRecipe(
-    [property: JsonPropertyName("id")] string Name,
-    string Hash,
+    RecipeId Id,
+    RecipeHash Hash,
     int Version,
     RecipeUrgency Urgency);

@@ -1,12 +1,12 @@
 {
   "instances": [
     {
-      "address": "workflow/INC-14",
-      "id": "WFI-94B6AE3D7A",
-      "itemId": null,
+      "address": "ITM-01JK1/incident-response/1",
+      "id": "WFI-64ce8c300705888aad5d956eab15aa53",
+      "itemId": "ITM-01JK1",
       "recipe": {
-        "id": "incident.response",
-        "hash": "5d90e1b200000000000000000000000000000000000000000000000000000000",
+        "id": "workflow.incident-response",
+        "hash": "sha256:5d90e1b200000000000000000000000000000000000000000000000000000000",
         "version": 4,
         "urgency": "incident"
       },
@@ -25,7 +25,7 @@
       },
       "inputs": [
         {
-          "key": "alert",
+          "key": "fact:alert",
           "label": "Alert",
           "kind": "webhook",
           "required": true,
@@ -35,7 +35,7 @@
       "states": [
         {
           "id": "assess",
-          "order": 0,
+          "order": 1,
           "branchOf": null,
           "glyph": "done",
           "badge": null,
@@ -49,7 +49,7 @@
         },
         {
           "id": "mitigate",
-          "order": 1,
+          "order": 2,
           "branchOf": null,
           "glyph": "active",
           "badge": null,
@@ -60,7 +60,7 @@
           "loops": [
             {
               "with": "verify",
-              "n": 1,
+              "n": 0,
               "max": 3
             }
           ],
@@ -72,7 +72,7 @@
         },
         {
           "id": "verify",
-          "order": 2,
+          "order": 3,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -80,7 +80,7 @@
           "loops": [
             {
               "with": "mitigate",
-              "n": 1,
+              "n": 0,
               "max": 3
             }
           ],
@@ -92,23 +92,6 @@
         },
         {
           "id": "comms",
-          "order": 3,
-          "branchOf": null,
-          "glyph": "pending",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": true,
-          "children": {
-            "done": 0,
-            "total": 1
-          },
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "resolved",
           "order": 4,
           "branchOf": null,
           "glyph": "pending",
@@ -116,386 +99,14 @@
           "round": null,
           "loops": [],
           "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": true
-        }
-      ],
-      "now": "agent rolling back in ITM-01JG2 · comms posting",
-      "answer": null,
-      "actions": [
-        "OpenItem",
-        "ApplyCommand:takeover",
-        "ApplyCommand:cancel"
-      ]
-    },
-    {
-      "address": "workflow/sentry-8790",
-      "id": "WFI-2C5F663A71",
-      "itemId": null,
-      "recipe": {
-        "id": "triage.alert",
-        "hash": "d41f2a0700000000000000000000000000000000000000000000000000000000",
-        "version": 2,
-        "urgency": "triage"
-      },
-      "state": "done",
-      "chip": {
-        "word": "DONE",
-        "tone": "neutral"
-      },
-      "since": "2026-10-12T09:40:00.0000000Z",
-      "engineOwned": null,
-      "subject": {
-        "kind": "webhook",
-        "key": "workflow/sentry-8790",
-        "label": "sentry #8790",
-        "href": null
-      },
-      "inputs": [
-        {
-          "key": "alert",
-          "label": "Alert",
-          "kind": "webhook",
-          "required": true,
-          "present": true
-        }
-      ],
-      "states": [
-        {
-          "id": "ingest",
-          "order": 0,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
+          "child": true,
           "children": null,
           "outcome": null,
           "terminal": false
         },
         {
-          "id": "classify",
-          "order": 1,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "route",
-          "order": 2,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "done",
-          "order": 3,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": true
-        }
-      ],
-      "now": "done",
-      "answer": null,
-      "actions": []
-    },
-    {
-      "address": "workflow/sentry-8797",
-      "id": "WFI-4ACFE3F377",
-      "itemId": null,
-      "recipe": {
-        "id": "triage.alert",
-        "hash": "d41f2a0700000000000000000000000000000000000000000000000000000000",
-        "version": 2,
-        "urgency": "triage"
-      },
-      "state": "done",
-      "chip": {
-        "word": "DONE",
-        "tone": "neutral"
-      },
-      "since": "2026-10-12T10:05:00.0000000Z",
-      "engineOwned": null,
-      "subject": {
-        "kind": "webhook",
-        "key": "workflow/sentry-8797",
-        "label": "sentry #8797",
-        "href": null
-      },
-      "inputs": [
-        {
-          "key": "alert",
-          "label": "Alert",
-          "kind": "webhook",
-          "required": true,
-          "present": true
-        }
-      ],
-      "states": [
-        {
-          "id": "ingest",
-          "order": 0,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "classify",
-          "order": 1,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "route",
-          "order": 2,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "done",
-          "order": 3,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": true
-        }
-      ],
-      "now": "done",
-      "answer": null,
-      "actions": []
-    },
-    {
-      "address": "workflow/sentry-8801",
-      "id": "WFI-EF737BAFED",
-      "itemId": null,
-      "recipe": {
-        "id": "triage.alert",
-        "hash": "d41f2a0700000000000000000000000000000000000000000000000000000000",
-        "version": 2,
-        "urgency": "triage"
-      },
-      "state": "done",
-      "chip": {
-        "word": "DONE",
-        "tone": "neutral"
-      },
-      "since": "2026-10-12T10:30:00.0000000Z",
-      "engineOwned": null,
-      "subject": {
-        "kind": "webhook",
-        "key": "workflow/sentry-8801",
-        "label": "sentry #8801",
-        "href": null
-      },
-      "inputs": [
-        {
-          "key": "alert",
-          "label": "Alert",
-          "kind": "webhook",
-          "required": true,
-          "present": true
-        }
-      ],
-      "states": [
-        {
-          "id": "ingest",
-          "order": 0,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "classify",
-          "order": 1,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "route",
-          "order": 2,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "done",
-          "order": 3,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": true
-        }
-      ],
-      "now": "done",
-      "answer": null,
-      "actions": []
-    },
-    {
-      "address": "workflow/pagerduty-P-2211",
-      "id": "WFI-B71B3D84F3",
-      "itemId": null,
-      "recipe": {
-        "id": "triage.alert",
-        "hash": "d41f2a0700000000000000000000000000000000000000000000000000000000",
-        "version": 2,
-        "urgency": "triage"
-      },
-      "state": "route",
-      "chip": {
-        "word": "ESCALATED",
-        "tone": "attn"
-      },
-      "since": "2026-10-12T11:02:00.0000000Z",
-      "engineOwned": {
-        "kind": "escalated",
-        "reason": "gate.severity 0.91 → INC-14 opened"
-      },
-      "subject": {
-        "kind": "webhook",
-        "key": "P-2211",
-        "label": "PagerDuty P-2211",
-        "href": null
-      },
-      "inputs": [
-        {
-          "key": "alert",
-          "label": "Alert",
-          "kind": "webhook",
-          "required": true,
-          "present": true
-        }
-      ],
-      "states": [
-        {
-          "id": "ingest",
-          "order": 0,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "classify",
-          "order": 1,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "route",
-          "order": 2,
-          "branchOf": null,
-          "glyph": "active",
-          "badge": {
-            "kind": "escalated",
-            "reason": "gate.severity 0.91 → INC-14 opened"
-          },
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "done",
-          "order": 3,
+          "id": "resolved",
+          "order": 5,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -508,121 +119,20 @@
           "terminal": true
         }
       ],
-      "now": "accept at a terminal",
-      "answer": {
-        "kind": "accept",
-        "actionId": "ApplyCommand:answer",
-        "class": "protected",
-        "cli": "sindri workflow answer workflow/pagerduty-P-2211 --accept",
-        "atTerminal": true
-      },
+      "now": "agent rolling back in ITM-01JG2",
+      "answer": null,
       "actions": [
-        "ApplyCommand:answer",
         "ApplyCommand:takeover",
         "ApplyCommand:cancel"
       ]
     },
     {
-      "address": "workflow/sentry-8809",
-      "id": "WFI-1C27917745",
-      "itemId": null,
+      "address": "ITM-01JK2/triage-alert/1",
+      "id": "WFI-16f1f891aeeb8be887595e1e8e4a2d4e",
+      "itemId": "ITM-01JK2",
       "recipe": {
-        "id": "triage.alert",
-        "hash": "d41f2a0700000000000000000000000000000000000000000000000000000000",
-        "version": 2,
-        "urgency": "triage"
-      },
-      "state": "done",
-      "chip": {
-        "word": "DONE",
-        "tone": "neutral"
-      },
-      "since": "2026-10-12T11:58:00.0000000Z",
-      "engineOwned": null,
-      "subject": {
-        "kind": "webhook",
-        "key": "8809",
-        "label": "sentry #8809 429s on stream",
-        "href": null
-      },
-      "inputs": [
-        {
-          "key": "alert",
-          "label": "Alert",
-          "kind": "webhook",
-          "required": true,
-          "present": true
-        }
-      ],
-      "states": [
-        {
-          "id": "ingest",
-          "order": 0,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "classify",
-          "order": 1,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "route",
-          "order": 2,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "done",
-          "order": 3,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": true
-        }
-      ],
-      "now": "done 12m → ITM-01JF0 queued",
-      "answer": null,
-      "actions": []
-    },
-    {
-      "address": "workflow/sentry-8812",
-      "id": "WFI-0461AC4604",
-      "itemId": null,
-      "recipe": {
-        "id": "triage.alert",
-        "hash": "d41f2a0700000000000000000000000000000000000000000000000000000000",
+        "id": "workflow.triage-alert",
+        "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
         "version": 2,
         "urgency": "triage"
       },
@@ -641,7 +151,7 @@
       },
       "inputs": [
         {
-          "key": "alert",
+          "key": "fact:alert",
           "label": "Alert",
           "kind": "webhook",
           "required": true,
@@ -651,7 +161,7 @@
       "states": [
         {
           "id": "ingest",
-          "order": 0,
+          "order": 1,
           "branchOf": null,
           "glyph": "done",
           "badge": null,
@@ -665,7 +175,7 @@
         },
         {
           "id": "classify",
-          "order": 1,
+          "order": 2,
           "branchOf": null,
           "glyph": "active",
           "badge": null,
@@ -679,7 +189,7 @@
         },
         {
           "id": "route",
-          "order": 2,
+          "order": 3,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -693,7 +203,7 @@
         },
         {
           "id": "done",
-          "order": 3,
+          "order": 4,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -715,12 +225,153 @@
       ]
     },
     {
-      "address": "workflow/PRJ-exports",
-      "id": "WFI-0201CFC8B6",
-      "itemId": null,
+      "address": "ITM-01JK3/project/1",
+      "id": "WFI-b8af4435da648073ac3a2a152fab1f4b",
+      "itemId": "ITM-01JK3",
       "recipe": {
         "id": "workflow.project",
-        "hash": "a8c21e7f00000000000000000000000000000000000000000000000000000000",
+        "hash": "sha256:a8c21e7f00000000000000000000000000000000000000000000000000000000",
+        "version": 12,
+        "urgency": "work"
+      },
+      "state": "build",
+      "chip": {
+        "word": "RUNNING",
+        "tone": "ok"
+      },
+      "since": "2026-10-12T09:14:00.0000000Z",
+      "engineOwned": null,
+      "subject": {
+        "kind": "linear-project",
+        "key": "APP",
+        "label": "APP · Offline sync",
+        "href": "https://linear.app/example/project/offline-sync"
+      },
+      "inputs": [
+        {
+          "key": "fact:project",
+          "label": "Linear project",
+          "kind": "linear-project",
+          "required": true,
+          "present": true
+        },
+        {
+          "key": "fact:prd",
+          "label": "PRD",
+          "kind": null,
+          "required": true,
+          "present": true
+        }
+      ],
+      "states": [
+        {
+          "id": "intake",
+          "order": 1,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "scoping",
+          "order": 2,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [
+            {
+              "with": "scoping",
+              "n": 0,
+              "max": 3
+            }
+          ],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "design",
+          "order": 3,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": true,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "build",
+          "order": 4,
+          "branchOf": null,
+          "glyph": "active",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": true,
+          "children": {
+            "done": 4,
+            "total": 9
+          },
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "verify",
+          "order": 5,
+          "branchOf": null,
+          "glyph": "pending",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "done",
+          "order": 6,
+          "branchOf": null,
+          "glyph": "pending",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": true
+        }
+      ],
+      "now": "engine waiting in ITM-01JK3",
+      "answer": null,
+      "actions": [
+        "ApplyCommand:takeover",
+        "ApplyCommand:cancel"
+      ]
+    },
+    {
+      "address": "ITM-01JK4/project/1",
+      "id": "WFI-e5a54b2d4b1280248b49f1cfeaeef2ed",
+      "itemId": "ITM-01JK4",
+      "recipe": {
+        "id": "workflow.project",
+        "hash": "sha256:a8c21e7f00000000000000000000000000000000000000000000000000000000",
         "version": 12,
         "urgency": "work"
       },
@@ -742,16 +393,16 @@
       },
       "inputs": [
         {
-          "key": "project",
+          "key": "fact:project",
           "label": "Linear project",
           "kind": "linear-project",
           "required": true,
           "present": true
         },
         {
-          "key": "prd",
+          "key": "fact:prd",
           "label": "PRD",
-          "kind": "file",
+          "kind": null,
           "required": true,
           "present": true
         }
@@ -759,20 +410,6 @@
       "states": [
         {
           "id": "intake",
-          "order": 0,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "scoping",
           "order": 1,
           "branchOf": null,
           "glyph": "done",
@@ -786,8 +423,28 @@
           "terminal": false
         },
         {
-          "id": "design",
+          "id": "scoping",
           "order": 2,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [
+            {
+              "with": "scoping",
+              "n": 0,
+              "max": 3
+            }
+          ],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "design",
+          "order": 3,
           "branchOf": null,
           "glyph": "active",
           "badge": {
@@ -804,21 +461,21 @@
         },
         {
           "id": "build",
-          "order": 3,
+          "order": 4,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
           "round": null,
           "loops": [],
           "desk": false,
-          "child": false,
+          "child": true,
           "children": null,
           "outcome": null,
           "terminal": false
         },
         {
           "id": "verify",
-          "order": 4,
+          "order": 5,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -832,7 +489,7 @@
         },
         {
           "id": "done",
-          "order": 5,
+          "order": 6,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -846,160 +503,19 @@
         }
       ],
       "now": "with you: import the design output",
-      "answer": {
-        "kind": "resume",
-        "actionId": "ApplyCommand:answer",
-        "class": "desk",
-        "cli": "sindri workflow answer workflow/PRJ-exports --resume --text <answer>",
-        "atTerminal": false
-      },
+      "answer": null,
       "actions": [
         "ApplyCommand:handback",
         "ApplyCommand:cancel"
       ]
     },
     {
-      "address": "workflow/PRJ-sync",
-      "id": "WFI-481A066729",
-      "itemId": null,
+      "address": "ITM-01JK5/project/1",
+      "id": "WFI-859782dc072487e4aa6baa643206623d",
+      "itemId": "ITM-01JK5",
       "recipe": {
         "id": "workflow.project",
-        "hash": "a8c21e7f00000000000000000000000000000000000000000000000000000000",
-        "version": 12,
-        "urgency": "work"
-      },
-      "state": "build",
-      "chip": {
-        "word": "RUNNING",
-        "tone": "ok"
-      },
-      "since": "2026-10-12T09:14:00.0000000Z",
-      "engineOwned": null,
-      "subject": {
-        "kind": "linear-project",
-        "key": "APP",
-        "label": "APP · Offline sync",
-        "href": "https://linear.app/example/project/offline-sync"
-      },
-      "inputs": [
-        {
-          "key": "project",
-          "label": "Linear project",
-          "kind": "linear-project",
-          "required": true,
-          "present": true
-        },
-        {
-          "key": "prd",
-          "label": "PRD",
-          "kind": "file",
-          "required": true,
-          "present": true
-        }
-      ],
-      "states": [
-        {
-          "id": "intake",
-          "order": 0,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "scoping",
-          "order": 1,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "design",
-          "order": 2,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "build",
-          "order": 3,
-          "branchOf": null,
-          "glyph": "active",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": true,
-          "children": {
-            "done": 4,
-            "total": 9
-          },
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "verify",
-          "order": 4,
-          "branchOf": null,
-          "glyph": "pending",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "done",
-          "order": 5,
-          "branchOf": null,
-          "glyph": "pending",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": true
-        }
-      ],
-      "now": "ITM-01JD6 checks · 4 done · 1 running · 1 parked · 3 queued",
-      "answer": null,
-      "actions": [
-        "ApplyCommand:takeover",
-        "ApplyCommand:cancel"
-      ]
-    },
-    {
-      "address": "workflow/PRJ-tabs",
-      "id": "WFI-A4E936160B",
-      "itemId": null,
-      "recipe": {
-        "id": "workflow.project",
-        "hash": "a8c21e7f00000000000000000000000000000000000000000000000000000000",
+        "hash": "sha256:a8c21e7f00000000000000000000000000000000000000000000000000000000",
         "version": 12,
         "urgency": "work"
       },
@@ -1018,16 +534,16 @@
       },
       "inputs": [
         {
-          "key": "project",
+          "key": "fact:project",
           "label": "Linear project",
           "kind": "linear-project",
           "required": true,
           "present": true
         },
         {
-          "key": "prd",
+          "key": "fact:prd",
           "label": "PRD",
-          "kind": "file",
+          "kind": null,
           "required": true,
           "present": true
         }
@@ -1035,7 +551,7 @@
       "states": [
         {
           "id": "intake",
-          "order": 0,
+          "order": 1,
           "branchOf": null,
           "glyph": "done",
           "badge": null,
@@ -1049,7 +565,7 @@
         },
         {
           "id": "scoping",
-          "order": 1,
+          "order": 2,
           "branchOf": null,
           "glyph": "active",
           "badge": null,
@@ -1060,7 +576,7 @@
           "loops": [
             {
               "with": "scoping",
-              "n": 2,
+              "n": 1,
               "max": 3
             }
           ],
@@ -1072,13 +588,13 @@
         },
         {
           "id": "design",
-          "order": 2,
+          "order": 3,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
           "round": null,
           "loops": [],
-          "desk": false,
+          "desk": true,
           "child": false,
           "children": null,
           "outcome": null,
@@ -1086,21 +602,21 @@
         },
         {
           "id": "build",
-          "order": 3,
+          "order": 4,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
           "round": null,
           "loops": [],
           "desk": false,
-          "child": false,
+          "child": true,
           "children": null,
           "outcome": null,
           "terminal": false
         },
         {
           "id": "verify",
-          "order": 4,
+          "order": 5,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -1114,7 +630,7 @@
         },
         {
           "id": "done",
-          "order": 5,
+          "order": 6,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -1127,7 +643,7 @@
           "terminal": true
         }
       ],
-      "now": "challenger round 2 · 84k / 600k",
+      "now": "agent challenging in ITM-01JK5",
       "answer": null,
       "actions": [
         "ApplyCommand:takeover",
@@ -1135,80 +651,12 @@
       ]
     },
     {
-      "address": "workflow/LIN-ENG",
-      "id": "WFI-2B509939D6",
-      "itemId": null,
+      "address": "ITM-01JKC/intake-linear/1",
+      "id": "WFI-39e9b69179ea8d279a5840e67f79e0a1",
+      "itemId": "ITM-01JKC",
       "recipe": {
-        "id": "intake.linear",
-        "hash": "0b7e44d300000000000000000000000000000000000000000000000000000000",
-        "version": 1,
-        "urgency": "work"
-      },
-      "state": "poll",
-      "chip": {
-        "word": "RUNNING",
-        "tone": "ok"
-      },
-      "since": "2026-10-12T12:10:00.0000000Z",
-      "engineOwned": null,
-      "subject": {
-        "kind": "linear-team",
-        "key": "ENG",
-        "label": "Linear ENG",
-        "href": null
-      },
-      "inputs": [
-        {
-          "key": "team",
-          "label": "Linear team",
-          "kind": "linear-team",
-          "required": true,
-          "present": true
-        }
-      ],
-      "states": [
-        {
-          "id": "poll",
-          "order": 0,
-          "branchOf": null,
-          "glyph": "active",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "emit",
-          "order": 1,
-          "branchOf": null,
-          "glyph": "pending",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": true
-        }
-      ],
-      "now": "polling every 15m · last 12:15 · 2 new items",
-      "answer": null,
-      "actions": [
-        "ApplyCommand:cancel"
-      ]
-    },
-    {
-      "address": "workflow/LIN-APP",
-      "id": "WFI-BAA44E0633",
-      "itemId": null,
-      "recipe": {
-        "id": "intake.linear",
-        "hash": "0b7e44d300000000000000000000000000000000000000000000000000000000",
+        "id": "workflow.intake-linear",
+        "hash": "sha256:0b7e44d300000000000000000000000000000000000000000000000000000000",
         "version": 1,
         "urgency": "work"
       },
@@ -1220,16 +668,16 @@
       "since": "2026-10-12T12:15:00.0000000Z",
       "engineOwned": null,
       "subject": {
-        "kind": "linear-team",
-        "key": "APP",
+        "kind": "text",
+        "key": "Linear APP",
         "label": "Linear APP",
         "href": null
       },
       "inputs": [
         {
-          "key": "team",
+          "key": "fact:team",
           "label": "Linear team",
-          "kind": "linear-team",
+          "kind": "text",
           "required": true,
           "present": true
         }
@@ -1237,7 +685,7 @@
       "states": [
         {
           "id": "poll",
-          "order": 0,
+          "order": 1,
           "branchOf": null,
           "glyph": "active",
           "badge": null,
@@ -1251,7 +699,21 @@
         },
         {
           "id": "emit",
-          "order": 1,
+          "order": 2,
+          "branchOf": null,
+          "glyph": "pending",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "done",
+          "order": 3,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -1264,11 +726,579 @@
           "terminal": true
         }
       ],
-      "now": "polling every 15m · last 12:15 · 2 new items",
+      "now": "engine waiting in ITM-01JKC",
       "answer": null,
       "actions": [
         "ApplyCommand:cancel"
       ]
+    },
+    {
+      "address": "ITM-01JKB/intake-linear/1",
+      "id": "WFI-b42d7e8e8c338b5e8d041253c48cc181",
+      "itemId": "ITM-01JKB",
+      "recipe": {
+        "id": "workflow.intake-linear",
+        "hash": "sha256:0b7e44d300000000000000000000000000000000000000000000000000000000",
+        "version": 1,
+        "urgency": "work"
+      },
+      "state": "poll",
+      "chip": {
+        "word": "RUNNING",
+        "tone": "ok"
+      },
+      "since": "2026-10-12T12:10:00.0000000Z",
+      "engineOwned": null,
+      "subject": {
+        "kind": "text",
+        "key": "Linear ENG",
+        "label": "Linear ENG",
+        "href": null
+      },
+      "inputs": [
+        {
+          "key": "fact:team",
+          "label": "Linear team",
+          "kind": "text",
+          "required": true,
+          "present": true
+        }
+      ],
+      "states": [
+        {
+          "id": "poll",
+          "order": 1,
+          "branchOf": null,
+          "glyph": "active",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "emit",
+          "order": 2,
+          "branchOf": null,
+          "glyph": "pending",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "done",
+          "order": 3,
+          "branchOf": null,
+          "glyph": "pending",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": true
+        }
+      ],
+      "now": "engine waiting in ITM-01JKB",
+      "answer": null,
+      "actions": [
+        "ApplyCommand:cancel"
+      ]
+    },
+    {
+      "address": "ITM-01JK6/triage-alert/1",
+      "id": "WFI-9b8dab36eeb686a8b0f9cc3831826f95",
+      "itemId": "ITM-01JK6",
+      "recipe": {
+        "id": "workflow.triage-alert",
+        "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
+        "version": 2,
+        "urgency": "triage"
+      },
+      "state": "route",
+      "chip": {
+        "word": "ESCALATED",
+        "tone": "attn"
+      },
+      "since": "2026-10-12T11:02:00.0000000Z",
+      "engineOwned": {
+        "kind": "escalated",
+        "reason": "gate.severity 0.62, below 0.8"
+      },
+      "subject": {
+        "kind": "webhook",
+        "key": "P-2211",
+        "label": "PagerDuty P-2211",
+        "href": null
+      },
+      "inputs": [
+        {
+          "key": "fact:alert",
+          "label": "Alert",
+          "kind": "webhook",
+          "required": true,
+          "present": true
+        }
+      ],
+      "states": [
+        {
+          "id": "ingest",
+          "order": 1,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "classify",
+          "order": 2,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": true,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "route",
+          "order": 3,
+          "branchOf": null,
+          "glyph": "active",
+          "badge": {
+            "kind": "escalated",
+            "reason": "gate.severity 0.62, below 0.8"
+          },
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "done",
+          "order": 4,
+          "branchOf": null,
+          "glyph": "pending",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": true
+        }
+      ],
+      "now": "needs your answer",
+      "answer": {
+        "kind": "accept",
+        "actionId": "ApplyCommand:answer-accept",
+        "class": "protected",
+        "cli": "sindri workflow answer ITM-01JK6/triage-alert/1 --accept",
+        "atTerminal": true
+      },
+      "actions": [
+        "ApplyCommand:answer-accept",
+        "ApplyCommand:takeover",
+        "ApplyCommand:cancel"
+      ]
+    },
+    {
+      "address": "ITM-01JKA/triage-alert/1",
+      "id": "WFI-b6e9ddec3a458b7aabafdcd9d4cac0a9",
+      "itemId": "ITM-01JKA",
+      "recipe": {
+        "id": "workflow.triage-alert",
+        "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
+        "version": 2,
+        "urgency": "triage"
+      },
+      "state": "done",
+      "chip": {
+        "word": "DONE",
+        "tone": "neutral"
+      },
+      "since": "2026-10-12T09:40:00.0000000Z",
+      "engineOwned": null,
+      "subject": {
+        "kind": "webhook",
+        "key": "8790",
+        "label": "sentry #8790",
+        "href": null
+      },
+      "inputs": [
+        {
+          "key": "fact:alert",
+          "label": "Alert",
+          "kind": "webhook",
+          "required": true,
+          "present": true
+        }
+      ],
+      "states": [
+        {
+          "id": "ingest",
+          "order": 1,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "classify",
+          "order": 2,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": true,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "route",
+          "order": 3,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "done",
+          "order": 4,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": true
+        }
+      ],
+      "now": "done",
+      "answer": null,
+      "actions": []
+    },
+    {
+      "address": "ITM-01JK9/triage-alert/1",
+      "id": "WFI-c16d43be4cc4832aad0f88bdd4e86a7c",
+      "itemId": "ITM-01JK9",
+      "recipe": {
+        "id": "workflow.triage-alert",
+        "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
+        "version": 2,
+        "urgency": "triage"
+      },
+      "state": "done",
+      "chip": {
+        "word": "DONE",
+        "tone": "neutral"
+      },
+      "since": "2026-10-12T10:05:00.0000000Z",
+      "engineOwned": null,
+      "subject": {
+        "kind": "webhook",
+        "key": "8797",
+        "label": "sentry #8797",
+        "href": null
+      },
+      "inputs": [
+        {
+          "key": "fact:alert",
+          "label": "Alert",
+          "kind": "webhook",
+          "required": true,
+          "present": true
+        }
+      ],
+      "states": [
+        {
+          "id": "ingest",
+          "order": 1,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "classify",
+          "order": 2,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": true,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "route",
+          "order": 3,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "done",
+          "order": 4,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": true
+        }
+      ],
+      "now": "done",
+      "answer": null,
+      "actions": []
+    },
+    {
+      "address": "ITM-01JK8/triage-alert/1",
+      "id": "WFI-e66f2acf465483ae83110574769d914a",
+      "itemId": "ITM-01JK8",
+      "recipe": {
+        "id": "workflow.triage-alert",
+        "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
+        "version": 2,
+        "urgency": "triage"
+      },
+      "state": "done",
+      "chip": {
+        "word": "DONE",
+        "tone": "neutral"
+      },
+      "since": "2026-10-12T10:30:00.0000000Z",
+      "engineOwned": null,
+      "subject": {
+        "kind": "webhook",
+        "key": "8801",
+        "label": "sentry #8801",
+        "href": null
+      },
+      "inputs": [
+        {
+          "key": "fact:alert",
+          "label": "Alert",
+          "kind": "webhook",
+          "required": true,
+          "present": true
+        }
+      ],
+      "states": [
+        {
+          "id": "ingest",
+          "order": 1,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "classify",
+          "order": 2,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": true,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "route",
+          "order": 3,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "done",
+          "order": 4,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": true
+        }
+      ],
+      "now": "done",
+      "answer": null,
+      "actions": []
+    },
+    {
+      "address": "ITM-01JK7/triage-alert/1",
+      "id": "WFI-9abca2e051458a73850462c51a95afa6",
+      "itemId": "ITM-01JK7",
+      "recipe": {
+        "id": "workflow.triage-alert",
+        "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
+        "version": 2,
+        "urgency": "triage"
+      },
+      "state": "done",
+      "chip": {
+        "word": "DONE",
+        "tone": "neutral"
+      },
+      "since": "2026-10-12T11:58:00.0000000Z",
+      "engineOwned": null,
+      "subject": {
+        "kind": "webhook",
+        "key": "8809",
+        "label": "sentry #8809 429s on stream",
+        "href": null
+      },
+      "inputs": [
+        {
+          "key": "fact:alert",
+          "label": "Alert",
+          "kind": "webhook",
+          "required": true,
+          "present": true
+        }
+      ],
+      "states": [
+        {
+          "id": "ingest",
+          "order": 1,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "classify",
+          "order": 2,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": true,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "route",
+          "order": 3,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "done",
+          "order": 4,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": true
+        }
+      ],
+      "now": "done",
+      "answer": null,
+      "actions": []
     }
   ],
   "counts": {

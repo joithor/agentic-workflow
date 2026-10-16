@@ -6,8 +6,8 @@ namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 
 /// <summary>
 /// The engine triggers this unit routes to the suspension and child rules (spec §3.8, §5.8): cancel, takeover,
-/// handback, a child's park, resume or escalation, and answers. Timers come with P5, recipe wakes and effect refusals
-/// with P2 and P6, and open-requests with UI E-6.
+/// handback, a child's park, resume or escalation, and answers; P5's timers and open-requests go to
+/// TransitionDecision.Timers.cs. Recipe wakes and effect refusals come with P2 and P6.
 /// </summary>
 public static partial class TransitionDecision
 {
@@ -28,7 +28,10 @@ public static partial class TransitionDecision
             AnswerGiven answer when WaitingForAnswer(instance, d.Recipe) is { } wait => AnswerTheWait(d, instance, answer, wait),
             AnswerGiven answer => Answer(d, instance, answer),
             CancelRequested => new Rejected(d.Key, NotAllowed(d.Trigger, instance)),
-            _ => throw new NotSupportedException($"{d.Trigger.Name} is decided by the engine-owned rules its phase adds (P5: timers; P2, P6: recipe wakes and effect refusals; UI E-6: open-requests)."),
+            DeadlineFired { Kind: DeadlineKind.TakeoverIdle } idle => Idle(d, instance, idle),
+            DeadlineFired fired => Expired(d, instance, fired),
+            OpenRequested open => OpenRequest(d, instance, open),
+            _ => throw new NotSupportedException($"{d.Trigger.Name} is decided by the engine-owned rules its phase adds (P2, P6: recipe wakes and effect refusals)."),
         };
     }
 

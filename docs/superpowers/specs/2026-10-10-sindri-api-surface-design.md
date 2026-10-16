@@ -74,7 +74,7 @@ This design adds to these. Where it has to change one of them, §10 lists the co
 | D5 | Finding or starting the process | S1's `control.json`, spawn and ping check, plus one rule for which verbs may start the process. Nothing run inside an agent session starts it (§7) |
 | D6 | MCP server | **One MCP endpoint, `/sindri/mcp`**: Streamable HTTP in stateless mode on the API port (the MCP C# SDK), shared with the context engine's `context_*` tools. Every call is stamped `session`. It offers queries and `sindri_request` only. **It is proven by a real Claude Code subagent**, run as a fresh `claude -p` process (§8) |
 | D7 | Webhooks | **Cut for now** (§11) |
-| D8 | Errors, versioning, JSON | <ul><li>S1's `Result` → `ProblemDetails` mapping stays unchanged.</li><li>New codes are reserved per phase and documented in `docs/csharp/sindri.md`.</li><li>No version in the path in v0.</li><li>One JSON context.</li><li>`--json` prints the API body unchanged (§9).</li></ul> |
+| D8 | Errors, versioning, JSON | <ul><li>S1's `Result` → `ProblemDetails` mapping stays unchanged, plus extension members (§9).</li><li>New codes are reserved per phase and documented in `docs/csharp/sindri.md`.</li><li>No version in the path in v0.</li><li>One JSON context.</li><li>`--json` prints the API body unchanged (§9).</li></ul> |
 
 ## 2. The CQRS model
 
@@ -199,7 +199,7 @@ and a body over 64 KiB. They get 400 or 415, and the host logs them; they aren't
 
 **Freshness: every view response carries `asOf`.**
 - It holds `{ cursor, ledgerHead, projectedAt, rebuilding, stalled }`.
-- `ledgerHead` comes from the projector's in-memory status (`IProjectorStatus`), not from the ledger store.
+- `ledgerHead` comes from the projector's in-memory status (`IProjectorStatus`), not from the ledger store. `views.ledgerHead` on GET /status is the exception: it is the ledger's current head, read fresh; `cursor` is the projector's, so the gap is the lag. Query answers' `asOf` keep the projector's view.
 - `projectedAt` is when the cursor last moved. It is the clock behind the UI's "updated Ns ago".
 - With `asOf`, a client can tell "empty" from "still loading" from "views are broken" (§3.6).
 
@@ -237,8 +237,9 @@ or for 1 s, only once it has caught up. While a rebuild runs, commands that read
 
 **Failure.** A projection that throws on an event stops the projector at that sequence:
 - it sets `stalled`, logs `SND-VIEW-001` with the sequence and event type, and retries every 30 s;
-- `GET /status` reports `views: stalled at <sequence>`;
-- `sindri doctor` gains a `views` line, which fails with the fix `sindri views rebuild`;
+- when the projector can't run at all (views.db can't be opened, written or reset, or the ledger can't be read), no event is to blame: it publishes `stalled` with a null `stalledAt` and a `stalledType` of `<code>: <detail>`, the failing call's own code (`SND-VIEW-001` for views.db, `SND-LEDGER-00x` for the ledger), which clears with the next pass that works (health `stalled`, `views.text` "The views can't be updated (...): run `sindri views rebuild`", or run `sindri doctor` when the ledger is what can't be read). Every reader says the same: the CLI's `views:` line, the `empty` sentence of the list answers and the SND-VIEW-001 and SND-API-011 messages name "can't be updated (...)", never an event number. A `GET /status` that can't read the services view adds a `SND-VIEW-001` problem to `health` ("the views can't be read") instead of reporting no services (unless the views are already stalled, which is the views problem);
+- `GET /status` reports `views` in the same shape as `asOf`, plus the stall: `projectedAt`, `cursor`, `ledgerHead`, `rebuilding`, `stalled`, `stalledAt` and `stalledType`. It also carries `views.text`, the rebuilding or stalled sentence (§3.6), which is `null` when the views are fresh. It also carries `health` (UI spec E-14): `word` (`stalled`, then `rebuilding`, then `degraded`, else `healthy`), `problems` (each `code`, `text` and `clause`, in a fixed order: not running, views, failed services, profile) and `sentence`, "Sindri is degraded: A, B, and C." built from the problems' `clause`s (`null` when healthy). `sindri status` exits 1 unless the word is `healthy`;
+- `sindri doctor` gains a `views` line (after `ledger`): `cursor N of head M` when ok, a warn while rebuilding or before the first build, and a fail with the fix `sindri views rebuild` when stalled;
 - queries answer with `asOf.stalled = true`, and the UI shows its error banner;
 - `RebuildViews` doesn't wait for the head (§2.1), so the fix always runs.
 
@@ -295,14 +296,14 @@ Every list view also returns `empty`, the `EmptyText` sentence (§3.6) for its c
 
 | Route | Slice | Request | Response | Phase |
 |---|---|---|---|---|
-| `GET /status` | `GetStatus` (S1) | — | S1's response, plus `apiVersion` and `views` (§2.3), and `dependencies`: the dependency graph with health and the impact closure of what is failing (E-29, §3.8) | S1; extended in P1 and P2 |
+| `GET /status` | `GetStatus` (S1) | — | S1's response, plus `apiVersion`, `health` (§2.3) and `views` (§2.3: the `asOf`-shaped `projectedAt`, `cursor`, `ledgerHead`, `rebuilding`, `stalled`, `stalledAt`, `stalledType`, and `text`, the rebuilding or stalled sentence, `null` when fresh) (`dependencies`, the dependency graph with health and the impact closure of what is failing, E-29, §3.8, is not in P2: it lands with E-29, the rev-8 API follow-up after #190) | S1; extended in P1 and P2 |
 | `GET /ping` | `PingProcess` (S1) | — | S1's `{pid, epoch}` | S1 |
 | `GET /commands` | `ListCommands` | — | `CommandList(rows)`. Each row: <ul><li>action id (`<Command>` or `<Command>:<variant>`);</li><li>class;</li><li>allowed callers;</li><li>whether it needs a terminal;</li><li>method and route;</li><li>CLI form;</li><li>UI status: `ready`, `pending:<phase>` or `cli-only:<reason>`.</li></ul> | P1 |
 | `GET /services` | `ListServices` | — | `ServiceList(services, empty, asOf)`. Each service: <ul><li>name;</li><li>cadence;</li><li>paused;</li><li>last run (slot, outcome, code);</li><li>next slot.</li></ul> | P2 |
 | `GET /profile` | `GetProfile` | — | `ProfileView(asOf)`: <ul><li>approved hash and when it was approved;</li><li>live hash, as of the last drift check;</li><li>whether it changed since approval;</li><li>the changed key paths.</li></ul> | P2 |
 | `GET /queue` | `GetQueue` | — | `QueueView(groups, empty, asOf)`: the §3.6 groups in their fixed order, each a list of `ItemSummary` | P3 |
-| `GET /items?state=&repo=` | `ListItems` | `ListItemsQuery(ItemState?, RepoName?)` | `ItemList(items, empty, asOf)`. Each item: <ul><li>id, title, repo, state, step;</li><li>`since`;</li><li>its next action;</li><li>`actions`: the action ids allowed now.</li></ul> | P3 |
-| `GET /items/{itemId}` | `GetItem` | `GetItemQuery(ItemId)` | `ItemView`: <ul><li>the summary, plus version and who created it;</li><li>what it's waiting on (a decision id);</li><li>the engine instance id, once S2 exists;</li><li>timestamps;</li><li>`actions`;</li><li>`asOf`.</li></ul> | P3 |
+| `GET /items?state=&repo=` | `ListItems` | `ListItemsQuery(ItemState?, RepoName?)` | `ItemList(items, empty, asOf)`. Without `state` it lists open items only (a closed item shows only when `state` names `done` or `cancelled`), and its empty sentence then reads "No open items[ in <repo>].". Each item: <ul><li>id, title, repo, state, step;</li><li>`since`;</li><li>`primaryAction`: an action id from `actions`, or null;</li><li>`actions`: the action ids allowed now;</li><li>`owner`: reserved for multi-user (README X61), always null for now.</li></ul> | P3 |
+| `GET /items/{itemId}` | `GetItem` | `GetItemQuery(ItemId)` | `ItemView`: <ul><li>the summary, plus version and who created it;</li><li>`body` (scrubbed) and `link`: on this view only, never on a list row, the queue, a timeline line or a public event;</li><li>what it's waiting on (a decision id);</li><li>the engine instance id, once S2 exists;</li><li>timestamps;</li><li>`actions`;</li><li>`owner`: reserved for multi-user (README X61), always null for now;</li><li>`asOf`.</li></ul> | P3 |
 | `GET /items/{itemId}/timeline?after=` | `GetItemTimeline` | `GetItemTimelineQuery(ItemId, long?)` | `Timeline(entries, next, asOf)`. Each entry: sequence, time, type, actor, and one scrubbed line | P3 |
 | `GET /needs-you` | `GetNeedsYou` | — | `NeedsYouList(rows, empty, asOf)` (§3.6) | P4 |
 | `GET /requests?state=` | `ListRequests` | `ListRequestsQuery(RequestState?)` | `RequestList(requests, empty, asOf)`. Each request: <ul><li>id, kind, item;</li><li>text (scrubbed, at most 2,000 characters);</li><li>actor, state, decision id.</li></ul> | P4 |
@@ -341,7 +342,7 @@ They're in the catalog with class `local` and are never routes. `doctor` gains a
 | `POST /profile/approve` | `ApproveProfile` (S1) | S1's body | S1's response, plus `sequence` | **protected** | `sindri profile approve [<hash>]` | S1; class in P1 |
 | `POST /views/rebuild` | `RebuildViews` | — | `CommandAccepted` | desk | `sindri views rebuild` | P2 |
 | `POST /items` | `CreateItem` | `title`, `repo?`, `body?`, `link?` (a tracker record key, e.g. `linear:issue/<uuid>`) | `ItemCreated(accepted, ItemId)` | desk | `sindri item add "<title>" [--repo R]` | P3 |
-| `POST /items/{itemId}/close` | `CloseItem` | `reason` (`done` or `cancelled`), `itemVersion` | `CommandAccepted` | desk | `sindri item close <item> [--cancelled]` | P3 |
+| `POST /items/{itemId}/close` | `CloseItem` | `reason` (`done` or `cancelled`), `itemVersion` | `CommandAccepted` | desk | `sindri item close <item> [--cancelled] [--version <n>]` | P3 |
 | `POST /requests` | `FileRequest` | `kind` (`rescope`, `add-task`, `note` or `handback`), `itemId?`, `text` | `RequestFiled(accepted, RequestId, DecisionId)` | **request** | `sindri request <kind> [--item X] "<text>"` | P4 |
 | `POST /decisions/{decisionId}` | `Decide` | `choice`, `note?` | `CommandAccepted` | decision | `sindri decide <decisionId> <choice> [--note]` | P4 |
 | `POST /services/{name}/run` | `RunService` | — | `JobStarted(accepted, JobId)` | job | `sindri services run <name>` | P6 |
@@ -414,7 +415,7 @@ catalog itself lands in P1. Every domain payload carries `commandId` (or the `se
 | `views.rebuilt` | cursor before, events replayed | `views.rebuilt:<commandId>` | no | P2 |
 | `service.ran` | service, slot, outcome (`ok` or `failed`), code? | `service.ran:<name>:<epoch>:<slot>` | yes | P2 (C8) |
 | `profile.checked` | approved hash, live hash, drifted, changed paths, the approved profile's service names | `profile.checked:<previousCheckSequence>` | yes | P2 (C8) |
-| `item.created` | item, title, repo | `item.created:<itemId>` | yes | P3 |
+| `item.created` | item, title, repo, link?, body? (never public), owner? (reserved, README X61) | `item.created:<itemId>` | yes | P3 |
 | `item.state-changed` | item, from, to, version (the new one), reason? | `item.state-changed:<itemId>:v<version>` | yes | P3 |
 | `request.filed` | request, decision, kind, item?, repo? (the item's repo, else the session's `X-Sindri-Repo`), text (scrubbed, at most 2,000 characters) | `request.filed:<requestId>` | yes (text left out) | P4 |
 | `decision.recorded` | decision, choice, note?, by | `decision.recorded:<decisionId>` | yes | P4 |
@@ -424,7 +425,7 @@ catalog itself lands in P1. Every domain payload carries `commandId` (or the `se
 | `job.finished` | job, outcome, summary, code? | `job.finished:<jobId>` | yes | P6 |
 | `job.cancelled` | job | `job.cancelled:<jobId>` | yes | P6 |
 | `service.paused`, `service.resumed` | service | `service.paused:<name>:<commandId>` | yes | P6 |
-| `item.linked` | item, record key, alias | `item.linked:<itemId>:<record>` | yes | P3 (`CreateItem` with `link`); context Phase 6 (`service:context-sync`) |
+| `item.linked` | item, record key, alias | `item.linked:<itemId>:<record>` | yes | context Phase 6 only (`service:context-sync`); a `CreateItem` with `link` stores it on `item.created` and gives no alias, so `GET /items/<tracker key>` resolves only after a later `item.linked` |
 | `item.open-requested` | item, target, mode, launch | `item.open-requested:<itemId>:<launch>` | yes | P10 |
 | `launch.started`, `launch.failed`, `launch.probed`, `session.ended` | as UI E-1 and E-3; `session.ended`: launch, reason (`exit`, `lost`), exit code, token usage | `launch.started:<launch>`, `launch.failed:<launch>`, `session.ended:<launch>` | yes | P10a (written by `service:launcher`; the engine's agent runtime uses the same events) |
 | `session.usage` | launch, target, model, tokens in, tokens out (cumulative for the launch) | `session.usage:<launch>:<n>` | no | P10a (E-28; sampled every 60 s while the session is live by the target's usage reader, and once more at its end) |
@@ -458,7 +459,7 @@ action id, for example `ApplyCommand:answer`.
 | The item filter on `/sindri/events` (engine S1-D6) | **This spec**, in P5 | The engine's `workflow events` uses it. If engine P4 merges first, it adds the filter and P5 keeps it |
 | `ILauncher` | **This spec**, in P10 (`OpenItem`), with launch targets from the UI design spec | The engine replaces its desk runtime with it (engine W20) |
 | The shapes of the instance list and view, the recipe definition, stats and list, and the status fields (E-20, E-22…E-25) | **This spec**, §3.8: the screens spec asks for them, and they are served by the engine spec's `ListInstances`, `GetInstance`, `ListRecipes` and `ShowRecipe` | The engine spec computes path order, `loops`, `next` and the status layout (WF §3.5, §6.4) and registers the `outputs` and `inputs[].kind` schema (E-22). The CLI's `workflow status` and `recipe show` print from the same renderers |
-| The engine in depth (E-30): `GET /engine`, `/engine/instances`, `/engine/instances/{address}/history` | **This spec**, §3.8, P13, served from the Temporal SDK through Sindri | The engine spec's mirror writes the Temporal event id on each ledger row (WF §5.6, ERD), which the history lines join on |
+| The engine in depth (E-30): `GET /engine`, `/engine/instances`, `/engine/instances/{id}/history` | **This spec**, §3.8, P13, served from the Temporal SDK through Sindri | The engine spec's mirror writes the Temporal event id on each ledger row (WF §5.6, ERD), which the history lines join on |
 | The authorization model: caller, terminal flag, action classes, the chain, and `SND-AUTH-002` | **This spec**, in P1 | Every engine command goes through the same chain. The engine spec adopted it in its rev 5 (§6.2): its own caller classes and `SND-WF-007` are retired, takeover is `pause`, the `IClassifiedCommand` rule applies, its harness probe supplies the agent variables (§6), and idle takeovers and desk tasks are needs-you rows of kind `park`. Engine commands never evaluate gates in the handler (engine §5.3) and may append one event per instance they change (a parent and the child it creates) |
 | `EventFactory` reading the caller (C6) and the engine's S1-D7 | **This spec**, P1 | The engine uses it from P4 |
 | Starting the process from a verb | **This spec**, §7: never from inside an agent session | The engine spec's "starts if needed" follows §7 |
@@ -472,10 +473,12 @@ is a command with a catalog row and an action class, and every route goes throug
 
 | Route | Class |
 |---|---|
-| `GET /context/query`, `/context/node`, `/context/neighbors`, `/context/path`, `/context/map`, `/context/map/export`, `/context/map/review`, `/context/sources` | query (session callers repo-scoped, §3.1) |
+| `GET /context/query`, `/context/node`, `/context/neighbors`, `/context/path`, `/context/map`, `/context/map/export`, `/context/map/review`, `/context/map/review/history`, `/context/map/review/export`, `/context/map/proposals`, `/context/lenses`, `/context/filemap`, `/context/sources` | query (session callers repo-scoped, §3.1) |
 | `POST /context/map/build`, `POST /context/sources/sync` | `job` |
 | `POST /context/map/import`, `POST /context/map/promote` (both make content `current`) | `protected` |
-| `POST /context/map/review` (apply a review) | `protected` |
+| `POST /context/map/review`, variants `accept`, `reject`, `rename`, `move`, `accept-deterministic`, `undo`, `drop`, `repoint` (one reversible `map_override` row, with Undo; README X63) | `desk` |
+| `POST /context/map/review`, variants `apply-file`, `merge`, `add`, `delete` | `protected` |
+| `POST /context/map/proposals` (a scoping run's surfaces as draft proposals; synchronous until API P6) | `job` |
 
 ### 3.6 Views the UI renders: states, groups and needs-you
 
@@ -548,7 +551,7 @@ How items move through the states:
 
 **Empty, loading and error text.** One `EmptyText` table in `Core` holds the sentences for each list: its empty
 sentence (for example "Nothing is waiting on you. 3 running, 1 queued."), plus `rebuilding` ("Rebuilding views (cursor
-N of M)…") and `stalled` ("Views are stalled at N: run `sindri views rebuild`").
+N of M)…"), `stalled` ("Views are stalled at N: run `sindri views rebuild`") and, for a projector that can't run, "The views can't be updated (<code>: <detail>)" with `sindri views rebuild` or `sindri doctor` as its fix.
 - The CLI prints them, and every list view returns the right one in `empty`. The UI never keeps its own copy.
 - The CLI exits 1 (attention) when a view answers `rebuilding` or `stalled`, so a script can tell those apart from an
   empty list (exit 0).
@@ -576,8 +579,11 @@ API serves, so the app never parses YAML or recomputes an order (README X52: the
 - **Ownership (§3.5).** The workflow engine spec owns the slices `ListInstances`, `GetInstance`, `ListRecipes` and
   `ShowRecipe` and their routes. This section owns the **view shapes** they return, and the engine spec's `{instanceId}`
   and `{id}@{hash}` forms stay valid beside the addressed forms below.
-- **Address.** An instance is addressed by the CLI address (`T-3/item/1`, `workflow/PRJ-sync`), URL-encoded as one
-  path segment; the id form is accepted too and answers the same body.
+- **Address.** An address is the engine's form (WF §6.1), everywhere, with no display forms: a root is
+  `<item>/<recipe-name>/<attempt>` (`ITM-01JK3/project/1`), a child is `<parent>/<child-recipe>.<n>`
+  (`ITM-01JK3/project/1/step.2`), and every root has an item. The routes take the opaque instance id (`WFI-…`):
+  `GET /workflow/instances/{id}`, and the facts route is `/workflow/instances/{id}/facts/{key}`. An address is given only
+  as `?address=` (URL-encoded). The app's deep link is `workflow/<address>`; that is a path of the app, not an address.
 - **Callers.** Every route here is a query. A `session` caller is repo-scoped as in §3.1: instances whose item is in
   another repo are left out, and an address in another repo answers `SND-ITEM-404`.
 - **Text and ids.** All text is scrubbed and escaped as in §3.6. Times are ISO 8601 UTC; durations are whole seconds,
@@ -585,30 +591,30 @@ API serves, so the app never parses YAML or recomputes an order (README X52: the
 
 | Route | Slice | Request | Response | Class | Phase |
 |---|---|---|---|---|---|
-| `GET /workflow/instances?root=&recipe=&subject=&state=&needsMe=` | `ListInstances` (engine) | `root=true` keeps top-level instances; `recipe` is a recipe id; `subject` matches the subject key or label | `InstanceList(instances, empty, asOf)` (E-20, below) | query | P11 |
-| `GET /workflow/instances/{address}` | `GetInstance` (engine) | — | `InstanceView` (E-20, E-23, below) | query | P11 |
-| `GET /workflow/instances/{address}/facts/{key}` | `GetInstanceFact` | — | `FactView`: the scrubbed body behind one fact row (the scope-map table, the packet's tasks and check results, a payload tree). Large bodies are capped at 256 KiB with `truncated: true` | query | P11 |
+| `GET /workflow/instances?root=&open=&recipe=&subject=&state=&needsMe=` | `ListInstances` (engine) | `root=true` keeps top-level instances; `open=true` keeps those whose state is not terminal; `recipe` is a recipe id; `subject` matches the subject key or label | `InstanceList(instances, counts, empty, asOf)` (E-20, below) | query | P11 |
+| `GET /workflow/instances/{id}` (or `?address=`) | `GetInstance` (engine) | — | `InstanceView` (E-20, E-23, below) | query | P11 |
+| `GET /workflow/instances/{id}/facts/{key}` | `GetInstanceFact` | `key` is the fact row's key in its `fact:` form (`fact:scope`) | `FactView{key, type, body, truncated}`: the scrubbed body behind one fact row (the scope-map table with its graph and items columns, the packet's tasks and `PKT-*` check results, a payload tree). `body` is an object for `scope-map`, `packet`, `evidence` (`{packs[], done, total}`: the packs produced so far) and `payload` and a string for `text`. Large bodies are capped at 256 KiB with `truncated: true`; a truncated object loses its tail entries and stays an object. An undeclared key answers `SND-ITEM-404` | query | P11 |
 | `GET /workflow/recipes?window=` | `ListRecipes` (engine) | `window`: `7d`, `30d` (default) or `90d` | `RecipeList(recipes, window, empty, asOf)` (E-25) | query | P12 |
 | `GET /workflow/recipes/{id}` and `{id}@{hash}` | `ShowRecipe` (engine) | `{id}` resolves to the approved hash | `RecipeView` (E-22) | query | P11 |
 | `GET /workflow/recipes/{id}/stats?window=&hash=` | `GetRecipeStats` | `window` as above; `hash` re-scopes to runs under one approved version | `RecipeStats` (E-24) | query | P12 |
 | `GET /engine` | `GetEngine` | — | `EngineView` (E-30) | query | P13 |
 | `GET /engine/instances?state=&stuck=` | `ListEngineInstances` | — | `EngineInstanceList(instances, pending, asOf)` (E-30) | query | P13 |
-| `GET /engine/instances/{address}/history?page=` | `GetEngineHistory` | `page` from 1; 50 events a page, newest first | `EngineHistory(events, page, total, next)` (E-30) | query | P13 |
+| `GET /engine/instances/{id}/history?page=` (or `?address=`) | `GetEngineHistory` | `page` from 1; 50 events a page, newest first | `EngineHistory(events, page, total, next)` (E-30) | query | P13 |
 
-**The instance list (E-20).** `InstanceList.instances` is ordered by the recipe's `urgency` (`incident`, then `triage`,
-then `work`; WF E-21), then oldest `since` first, so the Home strip (screens §4.1) is the first five rows with
-`state` not terminal, and the Workflows page groups the same rows by `recipe.id`. Each `InstanceSummary`:
+**The instance list (E-20).** `InstanceList.instances` is ordered by this key list, each key breaking the ties of the one before: (1) unfinished before finished; (2) not parked or escalated before parked or escalated (only parked and escalated rows move to the Needs-you panel; a `DECISION` row counts as needs-you but stays in the strip, and a `WITH YOU` row is neither); (3) the recipe's `urgency` (`incident`, then `triage`, then `work`; WF E-21); (4) `subject.label` (ordinal; the fixture's rows are not age-ordered, so the label is the stable tiebreak). The Home strip (screens §4.1) is the first five rows of that order, which reproduces the screens fixture's strip, and the Workflows page groups the same rows by `recipe.id`. `counts` is `{open, needsYou, withYou, running, done}`, computed over the whole root set before `recipe` or `open` narrows the rows, so every head count comes from rows. **`counts.open` is the rows that are not terminal** (owner decision, 2026-10-14): the Workflows head and the nav print `counts.open`, and the finished rows show as one collapsed "N done today" line, not as open ones. `counts.needsYou` counts the `PARKED`, `ESCALATED` and `DECISION` rows, workflow rows only; Home's own needs-you figure counts the whole needs-you list. Each `InstanceSummary`:
 
 | Field | What it holds |
 |---|---|
-| `address`, `itemId?` | The CLI address, and the `ITM-…` id when the instance is an item's |
+| `address`, `id`, `itemId?` | The CLI address; the engine's `WFI-…` instance id, which the id routes take; and the `ITM-…` id when the instance is an item's |
 | `recipe` | `{id, hash, version, urgency}` |
 | `state`, `since` | The current state id, and when the instance entered it |
+| `chip` | `{word, tone}`: the one state chip (`PARKED`, `ESCALATED`, `WITH YOU`, `DECISION`, `QUEUED`, `DONE`, `RUNNING`) and its colour class `attn`, `fail`, `ok` or `neutral`; the same record is on `ChildRow` |
 | `engineOwned` | `null`, or `{kind: parked \| escalated \| taken-over, reason}`: the badge that replaces the state's glyph |
-| `subject` | `{kind, key, label, href?}`, from the recipe's first input (screens §5.4); `kind` is `inputs[].kind` (E-22) |
-| `inputs[]` | `{key, label, kind, required, present}`, in declaration order, for the INPUTS column |
+| `subject` | `{kind, key, label, href?}`, from the recipe's first input (screens §5.4); `kind` is `inputs[0].kind` (E-22; null when the first input has no subject kind: the app shows the key) |
+| `inputs[]` | `{key, label, kind?, required, present}`, in declaration order, for the INPUTS column. `kind` is the input's declared kind exactly as `RecipeView.inputs[].kind` serves it (the subject adapter; `null` for every input but the first). **v1 serves `required: true` and `present: true` for every started instance**: StartInstance refuses a missing input, and the recipe schema has no optional input yet (a future change). The missing and optional renders are previews with data in one golden, `workflow-instances/preview-missing-input` (ITM-01JKH, a marked preview like the fan-out one); `workflow-recipe/workflow.no-outputs`' optional `fact:context` is the same kind of preview |
 | `states[]` | The compact `StateCell` list below, so the list renders every stage cell without a second call |
-| `now` | The engine's `next` sentence, shortened to 80 characters (the full text is on the view) |
+| `now` | Its own short sentence of at most 80 characters, composed by the engine's layout for the row (screens fixture, NOW column); it is not a shortening of `next` (the full `next` is on the view). One pattern per chip: `DECISION` reads `needs your <answer word> (desk answer)` (the answer word is the first output the report must carry, else the state's name); `PARKED` and `ESCALATED` read `needs your answer` when the view has an answer line (a Step park, a gate or review escalation) and otherwise `parked (<detail>)` or `escalated (<detail>)`, or the bare word when there is no detail; `WITH YOU` reads `with you: <activity>`, the first clause of the desk Step's `next`; `RUNNING` reads `engine waiting in <item>` (a wait), `engine running in <item>` (no step) or `agent <gerund> in <item>` (an agent step: `agent producing in ITM-01JL2`; the gerund is of the step id's last word); `QUEUED` reads `queued`; `DONE` reads the outcome, or `done` when it has none. Where a part is missing: `WITH YOU` reads the state's id when the Step has no activity, and `RUNNING` reads the instance's address in place of `<item>` when it has no item. The engine cuts it at 80 characters, surrogate-safe, with `...` inside the 80 |
+| `answer?` | The same `StatusAnswer` as `current.status.answer`, including `atTerminal`, so the row can offer `[Answer]` |
 | `actions` | The action ids allowed now, as on `ItemView` |
 
 **`StateCell` and the full `states[]` (E-20).** One entry per state of the recipe, in **path order** (screens §5.1).
@@ -617,12 +623,12 @@ The engine computes the order once per recipe hash and serves it, so a client ne
 | Field | What it holds |
 |---|---|
 | `id` | The state id |
-| `order` | The 0-based position in path order |
+| `order` | The 1-based position in path order on the main path; `null` for a branch state (WF §3.10) |
 | `branchOf?` | The state this one is folded under, for a branch (the app draws `⤷`) |
 | `glyph` | `done`, `active` or `pending` (the app draws ●, ◐, ○). A terminal state is `done` once reached |
 | `badge?` | `{kind: parked \| escalated \| taken-over, reason}` on the state the instance is interrupted in; it replaces the glyph |
-| `round?` | `{n, max}` for a state in a loop (`r2/3`) |
-| `loops` | `[{with: <stateId>, n, max}]`: the loop pairs this state belongs to (`mitigate ⇄ verify`) |
+| `round?` | `{n, max}` for the current state of a loop: the round it is in now (`r2/3`) |
+| `loops` | `[{with: <stateId>, n, max}]`: the loop pairs this state belongs to (`mitigate ⇄ verify`). Loops belong to the recipe hash, so every instance of a hash serves the same pairs (`n` is the **rounds completed** in that loop so far, 0 where the instance has not looped; `max` is the recipe's cap, the same for every instance of the hash). A self-loop is `with` = the state itself (`scoping`, round 2 of 3) |
 | `desk` | `true` for a desk state |
 | `child` | `true` when the state waits on children |
 | `children?` | `{done, total}`: progress for a children state (`4/9`) |
@@ -633,31 +639,32 @@ The view's top level adds `orderedBy`: `"path"`, or `"transition-list"` when the
 (screens §5.1), so the band can say so.
 
 ```jsonc
-// GET /workflow/instances/workflow%2FPRJ-sync   (InstanceView; E-20, E-23)
+// GET /workflow/instances/WFI-b8af4435…   (InstanceView; E-20, E-23)
 {
-  "address": "workflow/PRJ-sync", "itemId": null, "title": "Offline sync",
+  "address": "ITM-01JK3/project/1", "id": "WFI-b8af4435…", "parent": null,   // parent?: {id, address, title, task?, workstream?}
+  "itemId": "ITM-01JK3", "title": "Offline sync",
   "recipe": { "id": "workflow.project", "hash": "a8c21e7f…", "version": 12, "urgency": "work" },
   "state": "build", "since": "2026-10-14T09:14:00Z",
   "engineOwned": null,
   "subject": { "kind": "linear-project", "key": "APP", "label": "APP · Offline sync", "href": "https://linear.app/…" },
   "orderedBy": "path",
   "states": [
-    { "id": "intake", "order": 0, "glyph": "done", "loops": [], "desk": false, "child": false, "terminal": false },
+    { "id": "intake", "order": 1, "glyph": "done", "loops": [], "desk": false, "child": false, "terminal": false },
     { "id": "build",  "order": 4, "glyph": "active", "loops": [], "desk": false, "child": true,
       "children": { "done": 4, "total": 9 } }
     // … every state, in path order
   ],
   "current": {                      // the expanded state (the engine's status layout, WF §6.4, as fields)
     "state": "build",
-    "step": { "kind": "step.children", "ref": "builder.feature", "declaration": "one child per packet task" },
+    "step": { "kind": "wait", "ref": "workflow.step", "declaration": "one child per packet task" },   // StepDeclaration, below
     "gates": [ { "id": "gate.evidence.all", "on": "exit", "threshold": null, "description": "…" },
                { "id": "gate.judge.verify", "on": "exit", "threshold": 0.8, "description": "…" } ],
-    "desk": null,                    // or {outputs:[{key,type,required}], checks:[…], completeAction:"CompleteStep"}
+    "desk": null,                    // or {run:"3.1", outputs:[{key,type,required}], checks:[…], completeAction:"CompleteStep"}
     "status": { /* StatusFields, E-23, below */ }
   },
   "facts": [ /* FactRow, below */ ],
   "children": [ /* ChildGroup, below */ ],
-  "counts": { "timeline": 41, "decisions": 3, "requests": 1, "context": 14 },
+  "counts": { "timeline": 41, "decisions": 3, "requests": 1, "context": 14 },   // context: null until CTX serves the lenses
   "actions": [ "ApplyCommand:takeover", "ApplyCommand:cancel" ],
   "asOf": "…"
 }
@@ -669,54 +676,64 @@ every §6.4 layout both ways. Lines the layout leaves out are `null` or `[]`.
 
 | Field | What it holds |
 |---|---|
-| `header` | `{address, recipe, hash12, version, state, detail?, since, ageSeconds}`: the header line's parts |
-| `next` | The rendered `next` sentence, whole |
-| `answer?` | `{kind: text \| resume \| grant \| grantTokens \| accept \| cancel-only, actionId, class, cli, atTerminal}`; `class` is `desk` or `protected`, and `cli` is the exact command the layout prints |
-| `child?` | `{address, state, reason?}` when the park mirrors a child |
-| `drift?` | `{block, needsReapproval}` for a recorded drift |
-| `inputs[]` | `{key, name, hash?}` for the Step's inputs |
-| `timeout?` | `{kind: parks \| escalates, inSeconds, on}` (`parks in 1d 22h 48m (desk)`) |
-| `budget?` | `{scope: state, used, limit, instance: {used, limit}}` in tokens |
+| `header` | `{address, recipe, hash12, version, state, detail?, since, ageSeconds}`: the header line's parts, as WF §6.4 prints them (`<state>[: <detail>]`). `state` is the reserved engine word while the engine owns the instance (`parked`, `escalated`, `taken-over`) and the recipe state otherwise; `detail` is the reason (`budget`, `no-progress (child)`, `gate`, `desk task`) and never contains the engine word. **`detail` is `null` for a running instance** (no `running`, round or children text: the engine never produces those) and for a finished one whose outcome equals its state. The recipe state the instance is covered in stays on the view (`state`) and on the `states[]` badge |
+| `next?` | The rendered `next` sentence, whole; `null` when the layout has none (a finished instance) |
+| `answer?` | `{kind: text \| resume \| grant \| grantTokens \| accept \| cancel-only, actionId, class, cli, atTerminal}`; `class` is `desk` or `protected`, and `cli` is the exact command the layout prints (a wait's is `--resume [--text <answer>]`). Only `accept` is served for an escalated gate: `reject` is CLI-only for now. **A drift park has no answer** (`null`): re-approving the changed block is the protected command `approve` (`sindri recipe approve <id>@<hash12>`, class `protected`) in `commands[]` beside `takeover` and `cancel`, and the approval resumes the instance. **A desk task has no answer row** either: `complete` is its first command (`--output fact:<key>=<file>`), because desk completion is the action, not an answer |
+| `child?` | `{id, address, state, reason?}` when the park mirrors a child |
+| `drift?` | `{block, needsReapproval}` for a recorded drift (the line reads `<block> changed since <id>@<hash12> was approved`) |
+| `inputs[]` | `{key, name, hash?}` for the Step's inputs. `hash` is `sha256:<64 hex>`, as on every hash field; text forms shorten it |
+| `timeout?` | `{kind: parks \| escalates, inSeconds, on}`. `on` is the id of the state the timeout belongs to, which is the current state: one meaning, never the state the timeout fires to. The text form prints the owner of an open desk task as `(desk)`, as the shipped `StatusLayout` does (`parks in 1d 22h 48m (desk)`, with `on: produce`); the `on` field is what clients read. A retry timeout (`TimeoutAction.Retry`, as workflow.item's `claimed`) is served as `parks`, its eventual effect: the first fire retries, a second parks |
+| `budget?` | `{scope: state, used, limit?, instance: {used, limit?}}` in tokens. `limit` is `null` when the state (or the instance) has no token cap; `used` is still served, and the status text then prints `<used> used` with no `/ <limit>` (e.g. `tokens 84k used (state)`) |
 | `paused?` | `{timeoutLeftSeconds}` on a taken-over instance |
-| `commands[]` | The instance's own verbs first, in `answer, complete, handback, takeover, cancel` order: `{verb, actionId, class, cli, confirm?}`, each a row of the catalog (§3.3). `confirm` is `null` except on `cancel`, where it is `Cancel <address>? <N> running steps stop; <M> children are cancelled.` (owner decision, 2026-10-14; N is the open run's running steps and M the open children) |
-| `text` | The CLI's text form |
+| `commands[]` | The instance's own verbs first, in `answer, complete, handback, takeover, cancel, approve` order: `{verb, actionId, class, cli, confirm?}`; `verb` is that closed set (the engine's open recipe-command verbs are not served here), each a row of the catalog (§3.3). `confirm` is `null` except on `cancel`, where it is `Cancel <address>? <N> running steps stop; <M> children are cancelled.` (owner decision, 2026-10-14; N is the open run's running steps and M the open children; an open desk run is not a running step, so N excludes it). The sentence is singular at 1 (`1 running step stops; 1 child is cancelled`): a provisional owner default (2026-10-14 night) |
+| `text` | The CLI's text form, ASCII only (WF §6.4: hashes are cut with `...`, and a line is joined with `,`, never a middle dot) |
 
 **`FactRow` (E-20).** One per input and output the recipe declares, in declaration order (screens §5.2).
 
 | Field | What it holds |
 |---|---|
-| `key`, `label`, `type` | `type` is `text`, `file`, `item`, `link`, `scope-map`, `packet`, `evidence`, `decision` or `payload`; an unknown type is served as `payload` |
+| `key`, `label`, `type` | `key` carries the `fact:` prefix everywhere it appears (declarations, rows, refs, the facts route); `label` and `type` equal the recipe's declaration of the key (`RecipeView.inputs[]` and `outputs[]`); `type` is `text`, `file`, `item`, `link`, `scope-map`, `packet`, `evidence`, `decision` or `payload`; an unknown type is served as `payload`; an undeclared type is served as the declared default `text` (engine §3.3); `FactTypeJsonConverter`'s unknown-name → payload rule is separate (a wire name the client doesn't know) |
 | `direction` | `input` or `output` |
 | `from?` | The state that produces it (E-22 `outputs[].from`), which places the band's ◐ mark |
 | `status` | `produced`, `in-progress` or `pending` |
 | `summary` | The one-line summary the viewer shows |
-| `at?`, `by?` | When it was produced, and by whom (`you`, a Step, an agent) |
+| `at?`, `by?` | When it was produced, and by whom. `by` is the actor string (README X61, never parsed by the API): `human:<client>`, `step.<id>`, `agent:<name>` or `service:<name>` (a webhook is `service:webhook`); the UI renders `human:*` as "you" |
 | `ref?` | The per-type handle: `{name, size, hash, path}` for `file`; `{itemId}`; `{url, host, title}`; `{factKey}` for the viewers that call `GetInstanceFact` |
 | `progress?` | `{done, total}` for `evidence` (`4 of 9 packs`) |
 | `pending?` | On a pending output of an open desk state: `{required, checks[], completeAction}`, which the complete form needs |
 
 **`ChildGroup` (E-20).** `children` is a list of groups, one per state that declares `child` or runs `step.children`
-(screens §5.5), in path order:
+(screens §5.5), in path order. `recipe` is the `workflow.*` id of the recipe the children run. A child's `address` is the engine's form, `<parent>/<child-recipe>.<n>` (`ITM-01JK3/project/1/step.2`; the screens spec's `builder.feature` is illustrative: children run `workflow.step`). A child that has not started shows its recipe's first state (`produce`), glyph `pending`, chip `QUEUED`, and offers `OpenItem` only; a done child offers `OpenItem` only. **`mirroredPark`** is a child's park shown on the parent's band; it does not park the parent, which keeps running:
 
 ```jsonc
-{ "state": "build", "recipe": "builder.feature", "done": 4, "total": 9,
+{ "state": "build", "recipe": "workflow.step", "done": 4, "total": 9,
   "workstreams": [                     // [] unless the state's input is a packet; in the packet's order
     { "id": "ws-1", "label": "UI",
-      "rows": [ { "address": "…", "itemId": "ITM-01JE7", "title": "Sync status pill",
-                  "glyph": "active", "state": "produce", "round": { "n": 2, "max": 3 },
-                  "agent": "claude-code", "ageSeconds": 360,
-                  "engineOwned": null, "mirroredPark": null, "actions": [ "OpenItem", "ApplyCommand:takeover" ] } ] } ],
+      "rows": [ { "id": "WFI-205dbef9…", "address": "ITM-01JK3/project/1/step.2", "itemId": "ITM-01JE7", "title": "Sync status pill",
+                  "glyph": "active", "state": "produce", "chip": { "word": "DECISION", "tone": "attn" }, "round": null,
+                  "agent": null, "ageSeconds": 360,
+                  "engineOwned": null, "mirroredPark": null, "actions": [ "OpenItem", "ApplyCommand:takeover" ] } ] } ],   // illustrative: a workflow.step child is a desk task until P8 (below)
   "rows": [],                          // used instead of workstreams when there are none
   "more": 6 }                          // rows beyond the first 20; "Open all in Work" follows the items filter
 ```
+
+**What a served instance holds (invariants the goldens keep).**
+- **`current.step` (`StepDeclaration`).** `{kind: active | wait, ref, declaration}`: `kind` is `active` for a state that runs a Step block and `wait` for a state that waits on a child recipe or on a person; `ref` is the block id (`step.produce`) for `active` and the child recipe id (`workflow.step`) for `wait`; `declaration` is the recipe's own one-line description of the state. The screens spec's `builder.feature` is illustrative and never served.
+- **One current state.** Exactly one state of `states[]` is `active`, parked or escalated, as the instance's `state`; earlier path states are `done` and later ones `pending`. The screens fixture's INC-14 shows a comms child running beside `mitigate`; v1 cannot serve that (the golden shows `mitigate` only, `comms` pending), and the fixture's second live state is a schema v2 matter.
+- **Children (v1).** A child exists only under the parent's current state when it is a child wait, and a v1 child's address entry is the parent's entry of the state that created it (the parent's path entry count on a linear walk; at least that where the instance looped). `children[].rows` of one group are sequential children, and v1 serves **at most one live child per wait** (WF §3.9). **Fan-out (schema v2 preview).** Several live children per wait appear only in the PRJ-sync (9 children) and project-many-children (24 children) goldens, which the screens fixture needs for UI wave 1: "schema v2 preview; v1 serves at most one live child per wait; re-recorded when v2 lands". In v2 the fan-out is sequential in the entry order.
+- **Desk runtime until P8.** Until the agent runtime lands (WF §12), the deskCapable Steps of the recipes shipped under `recipes/` (`workflow.step` produce, checks and verify; the dev recipes' import) run as **desk tasks**: `current.desk` is set (`run` is `<entry of the state>.<n>`, `3.1`), the status detail is `desk task`, `complete` is the first command, the chip is `DECISION`, and a child row of such a state shows no agent. For a state whose block is in the shipped catalog, `current.desk.outputs` and the `--output <fact>=<file>` flags of the `complete` command are exactly that block's outputs required on the outcome the command reports (`step.produce`: `fact:output`, a file), and `current.desk.checks` are the checks the engine runs on a desk report before it accepts it: one per required output on that outcome, with id `<output name without "fact:">.<type>` (`fact:output` of type `file` is `output.file`, `fact:findings` of type `text` is `findings.text`), or `<name>.present` when the recipe declares no type; `facts[].pending.checks` is the one check of that fact, and the state's token budget is served as 0 used, since no agent runs. Fixture-only recipes (`incident-response`, `triage-alert`, `project`, `intake-linear`, `fork-demo`) stand for the P8-era product the screens fixture shows: their agent states name an agent-runtime block and are `RUNNING` with an agent, and their desk states stay desk tasks. P8 re-records the desk-runtime states.
+- **Timeouts and budgets.** Every active or wait state serves the recipe's timeout (desk at least `DeskTimeouts.DefaultFloor`) and its budget where the recipe declares one.
 
 **`RecipeView` (E-22).** `GET /workflow/recipes/{id}` and `sindri recipe show` return the same body: the engine spec's
 definition (states, transitions, evals, pins, open instances placed per state, the registry's approved hashes) plus:
 
 | Field | What it holds |
 |---|---|
-| `inputs[]` | `{key, label?, type, kind?, required}`. `type` is `text`, `file` or `item` today; **`kind`** is the subject adapter (`item`, `linear-project`, `webhook`, `file`, `text`) and is read from the first input only (screens §5.4) |
+| `id`, `hash`, `version` | The recipe's stamp (the same one an instance carries in `recipe`), served now ahead of the engine's full body: its id, its `sha256:<64 hex>` hash and its version |
+| `inputs[]` | `{key, label?, type, kind?, required}`. `type` is a fact type (the nine of `FactRow.type`); **`kind`** is the subject adapter (`item`, `linear-project`, `webhook`, `file`, `text`) and is read from the first input only (screens §5.4) |
 | `outputs[]` | `{key, label?, type, from}`: the new output declarations (WF `outputs`, E-22), with the added fact types of screens §5.2 |
+| `orderedBy` | `"path"`, or `"transition-list"` when the graph has more than one initial path: the same field and meaning as on `InstanceView` |
+| `loops[]` | `{name?, from, to, cap}`: the back edge of each loop and its cap (the most rounds before it parks; part of the recipe hash), for 'loop ≤ 3 with verify' (screens §4.2, §4.3) |
 
 The CLI prints both under the recipe header as `inputs:` and `outputs:` lines, one per key, `key  type[/kind]  [from <state>]`.
 A recipe with no `outputs` returns `[]`.
@@ -780,13 +797,13 @@ the Temporal event id on each ledger row it mirrors (WF §5.6, ERD), so a histor
   "asOf": "…" }
 
 // GET /engine/instances   (each EngineInstance)
-{ "address": "ITM-01JE9", "recipe": { "id": "workflow.item", "hash": "3f1c09…" }, "state": "checks",
+{ "id": "WFI-29f1d759…", "address": "ITM-01JE9/item/1/step.4", "recipe": { "id": "workflow.step", "hash": "3f1c09…" }, "state": "checks",
   "waitingOn": { "kind": "activity", "name": "step.checks", "ageSeconds": 120 },   // activity | signal | update | child | timer
   "timers": [ { "name": "produce-timeout", "firesAt": "…", "kind": "timeout" } ],
   "retries": { "attempt": 2, "lastError": "exit 1" },
   "historyLength": 88, "stuck": false }
 
-// GET /engine/instances/ITM-01JE9/history?page=1   (each event, newest first)
+// GET /engine/instances/WFI-29f1d759…/history?page=1   (each event, newest first)
 { "eventId": 412, "time": "…", "type": "ActivityTaskScheduled", "name": "step.checks",
   "summary": "attempt 2 · retry after exit 1 (…) · backoff 10 s", "ledgerSequence": 4231 }   // null when not mirrored
 ```
@@ -823,6 +840,7 @@ the Temporal event id on each ledger row it mirrors (WF §5.6, ERD), so a histor
   that node's consumers, each with its own sentence. `fixAction` is a catalog action id when a control exists
   (`RunService` for a service, `copy:<cli>` otherwise).
 - The layer (`source`, `engine`, `surface`) is a field of the node, so the fixed layered drawing needs no layout logic.
+- **Lands with E-29 after #190; acceptance (moved here from the P2 row):** with a fixture whose doctor declares the code-index check consumed by two surfaces, marking its last-run row failed makes `GET /status` show that node `failed` with an `impact` entry listing both consumers (and the consumers' consumers) within one doctor interval; fixing it clears the entry.
 
 **Agent budgets (E-28).** `agents.<target>.dailyBudget` in the profile is a decimal amount in USD for one launch
 target (`claude-code`, `codex`, `cursor`); `agents.softLimit` is a fraction (default `0.8`). The hard limit is 100 %.
@@ -1123,6 +1141,10 @@ S1's `HttpResults` mapping is unchanged: `ErrorKind` sets the status, and `Probl
 code and `detail` = the message with its `(fix: …)`. The CLI prints `SND-… message` and exits 0 for ok, 1 for attention,
 2 for an error (S1), and 75 when a heavy-job lock stayed busy (as Evidence and the context engine do).
 
+An error may carry extension members (RFC 9457 §3.2), named camelCase and written as top-level members of the problem body
+after the standard ones; their string values and the member names inside objects are cleaned (scrubbed, escaped, one line, at most 200 characters), and an array is cut at 100 items, and each code
+that uses them lists them in its row. The CLI ignores them.
+
 The phase that reserves a code registers it in `SindriErrors` and its `All` list, and documents it in the error table
 of **`docs/csharp/sindri.md`**. Not `docs/sindri/errors.md`, which is generated from the TS build.
 
@@ -1134,7 +1156,7 @@ of **`docs/csharp/sindri.md`**. Not `docs/sindri/errors.md`, which is generated 
 | `SND-API-009` | Unavailable (503) | The command gate wasn't acquired within 5 s | P1 |
 | `SND-API-011` | Unavailable (503) | The views didn't reach `X-Sindri-After`, or the head, within 2 s | P2 |
 | `SND-API-010` | Unavailable (503) | A command that reads views arrived during a rebuild; it wasn't run, so retry | P2 |
-| `SND-VIEW-001` | Unavailable (503) | The projector stalled on an event (status, doctor, logs) | P2 |
+| `SND-VIEW-001` | Unavailable (503) | The projector stalled on an event, or can't run because views.db or the ledger can't be used (status, doctor, logs); the fix is `sindri views rebuild`, or `sindri doctor` for a ledger cause | P2 |
 | `SND-ITEM-404` | NotFound (404) | No such item, or it's outside a session's repo | P3 |
 | `SND-ITEM-409` | Conflict (409) | The item changed since you looked, or the decision was decided elsewhere | P3, P4 |
 | `SND-REQ-001` | Invalid (400) | An unknown request kind, or text that's empty or over 2,000 characters | P4 |
@@ -1191,7 +1213,7 @@ Spans and metrics use the `Aw.Sindri` source and meter, as `docs/csharp/telemetr
 | C5 | Command responses have no `sequence`, and `ControlPlaneClient` re-serializes `--json` | `sequence` for read-your-writes, and the raw body printed | P1 adds `sequence` to `StopProcessResponse` and `ApproveProfileResponse`, and keeps the raw body. Both are additive |
 | C6 | The singleton `EventFactory` stamps `host:sindri`, uses a new correlation id per event, and leaves `Item = null` | The actor from the caller, one correlation per command, the item set | P1 adds `ICallerContextAccessor` (an `AsyncLocal` singleton) and `EventFactory` reads it. The same change covers the engine's S1-D7 |
 | C7 | `EndpointTable` and `CommandTable`/`Verbs` have no anchors, and `/new-slice` edits shared files at its own anchors even with `--files-only` | Slices can be scaffolded in parallel without touching shared files | P0 adds a `--slice-only` mode to `scripts/scaffold/new-slice.mjs`, with a case in `scripts/tests/scaffold.test.sh`. It writes the slice folder, the test, the builder and new ids, plus the slice's own lines in three generator-owned places: the unit's `PublicAPI.Unshipped.txt` lines, its `A.cs` factory method, and its `IdsJsonContext` entry. It touches no other shared file. P1 also restructures both tables to one line per slice under an anchor comment |
-| C8 | The scheduler only logs a failed run (`SND-SCHED-001`), and a changed profile is a file on disk with no event | `service.ran` and `profile.checked` events for the views | <ul><li>P2 makes the scheduler append `service.ran` for every run, `ok` or `failed`, keyed by service, epoch and slot.</li><li>P2 adds `profile-watch` as a **hosted service**. It isn't scheduled from the profile, so it always runs.</li><li>Every 30 s it hashes the live profile, and appends `profile.checked` only when the (approved, live) pair has changed since its last check.</li><li>So a revert or a re-approval writes `drifted: false`, and drifting back to an old hash writes again.</li><li>S1's `profile.approved` key already includes the previous hash (S1 `5c9c4a4`), so re-approving an old hash is recorded, and S1 needs no change.</li><li>On restart, `profile-watch` takes its last (approved, live) pair from the latest `profile.checked` event.</li></ul> |
+| C8 | The scheduler only logs a failed run (`SND-SCHED-001`), and a changed profile is a file on disk with no event | `service.ran` and `profile.checked` events for the views | <ul><li>P2 makes the scheduler append `service.ran` for every run that failed or did work, and the first ok after a failure; an idle run after an ok one writes nothing. A recorded row is keyed by service, epoch and slot.</li><li>A service reports an idle run (it did nothing and didn't fail) with `Idle: true` in its result. The scheduler keeps each service's last recorded outcome, and after a restart takes it from the service's latest `service.ran`.</li><li>P2 adds `profile-watch` as a **hosted service**. It isn't scheduled from the profile, so it always runs.</li><li>Every 30 s it hashes the live profile, and appends `profile.checked` only when the (approved, live) pair has changed since its last check.</li><li>So a revert or a re-approval writes `drifted: false`, and drifting back to an old hash writes again.</li><li>S1's `profile.approved` key already includes the previous hash (S1 `5c9c4a4`), so re-approving an old hash is recorded, and S1 needs no change.</li><li>On restart, `profile-watch` takes its last (approved, live) pair from the latest `profile.checked` event.</li></ul> |
 | C9 | `ILedgerStore` has no way to read the head | The ledger head, for `asOf` and command waits | P2 adds `Head()` to `ILedgerStore` (additive, with a case in its contract suite) and `ILedgerReader` (the read-only port for `ReadLedger` and the projector) |
 
 ## 11. Later (designed in outline, not phased)
@@ -1472,7 +1494,7 @@ Each phase is one PR and follows the slice recipe, red first.
 |---|---|---|---|---|---|---|
 | **P0** | **Scaffold mode.** `--slice-only` for `new-slice.mjs` (C7) | `scripts/scaffold/new-slice.mjs`, `scripts/tests/scaffold.test.sh` | S | — (it works on any package) | `bash scripts/tests/scaffold.test.sh` passes its `--slice-only` case: only the slice's files change, plus its own lines in `PublicAPI.Unshipped.txt`, `A.cs` and `IdsJsonContext`; the red test compiles and fails | All phases |
 | **P1** | **CQRS spine.** <ul><li>The anchors (C7).</li><li>`ICommand`, `IQuery`, `IClassifiedCommand`.</li><li>The callers: `CallerContext`, `ICallerContextAccessor`, the four headers (no header means `session`), the `Origin` refusal.</li><li>The chain: `CommandGate`, `AuditingService`, `AuthorizingService`, `ValidatingService`, and the `AddCommand`/`AddQuery` helpers.</li><li>`CommandAccepted`.</li><li>The catalogs: `ICommandCatalog`/`CommandCatalog`, `EventCatalog`, `ListCommands`.</li><li>`apiVersion`.</li><li>S1's commands get their classes; plus `sequence` and the raw `--json` (C5), and `EventFactory` (C6).</li><li>The CLI headers and the no-start rule for agent sessions.</li><li>`scripts/sindri-prove.sh`.</li><li>`ARCH-CQRS-001..003`.</li><li>Codes: `SND-AUTH-002`, `SND-API-007/008/009`.</li></ul> | `scripts/sindri-prove.sh`, `Core/Commands/*`, `Core/Events/EventCatalog.cs`, `Features/Commands/*`, `Features/ListCommands/`, `Host/CallerContextMiddleware.cs`, `Host/CommandCatalog.cs`, `Host/Endpoints/EndpointTable.cs`, `Host/Commands/*`, `tests/Aw.Sindri.Tests/Commands/*`, `tests/Aw.Architecture.Tests/Cqrs*`, rule records, `docs/csharp/sindri.md`, `scripts/env-scan-ignore.txt` | M | S1 + P0 | <ul><li>With `H=$($SINDRI profile validate --json \| jq -r .hash)`, the call `curl -X POST -H 'Content-Type: application/json' …/sindri/profile/approve -d "{\"hash\":\"$H\",\"confirmed\":true}"` with **no caller header** gets 403 `SND-AUTH-002`. `sqlite3 -readonly ledger.db` shows a `command.handled` row with `refused` and no `profile.approved`.</li><li>The same call as `human` but with no `X-Sindri-Terminal` also gets 403.</li><li>Adding `-H 'Origin: http://localhost:3000'` gets `SND-API-008`.</li><li>`curl …/sindri/commands` lists every action id with its class.</li><li>In an agent session, `$SINDRI stop` gets `SND-AUTH-002`.</li><li>Ctrl-C on `sindri serve` records `process.stopped`, and an immediate restart takes the lease.</li></ul> | UI, engine |
-| **P2** | **Projector, read-your-writes and the head.** <ul><li>`views.db`, `IProjection`, the projector, `IProjectorStatus`, `asOf`.</li><li>Rebuild and stall handling.</li><li>`X-Sindri-After`.</li><li>`ILedgerStore.Head()` and `ILedgerReader` (C9).</li><li>`service.ran` and `profile-watch` (C8).</li><li>The slices `RebuildViews`, `ListServices`, `GetProfile`.</li><li>doctor's `views` line.</li><li>`GET /status` gains `dependencies` (E-29, §3.8): the doctor's checks with their declared `consumers` (S1's doctor), and the impact closure.</li><li>Codes: `SND-API-011`, `SND-VIEW-001`.</li></ul> | `Core/Views/*`, `Infrastructure/Views/*` (+ migrations), `Infrastructure/Ledger/*` (Head, reader), `Host/Projector.cs`, `Features/{ListServices,GetProfile,RebuildViews}/` | M | P1 | <ul><li>Delete `views.db` and restart: `GET /services` matches the earlier body, apart from `asOf`.</li><li>During `views rebuild`, a query shows `"rebuilding":true`.</li><li>`X-Sindri-After: <head+1000>` gets 503 `SND-API-011` after 2 s.</li><li>A test service that fails once and then succeeds: after the failure, `lastRun.outcome` is `failed`; after the success, it is `ok`.</li><li>Editing the live profile makes `GET /profile` show `changed` within 30 s, and reverting the edit clears it.</li><li>With a fixture whose doctor declares the code-index check consumed by two surfaces, marking its last-run row failed makes `GET /status` show that node `failed` with an `impact` entry listing both consumers (and the consumers' consumers) within one doctor interval; fixing it clears the entry (E-29).</li></ul> | UI, engine |
+| **P2** | **Projector, read-your-writes and the head.** <ul><li>`views.db`, `IProjection`, the projector, `IProjectorStatus`, `asOf`.</li><li>Rebuild and stall handling.</li><li>`X-Sindri-After`.</li><li>`ILedgerStore.Head()` and `ILedgerReader` (C9).</li><li>`service.ran` and `profile-watch` (C8).</li><li>The slices `RebuildViews`, `ListServices`, `GetProfile`.</li><li>doctor's `views` line.</li><li>Codes: `SND-API-011`, `SND-VIEW-001`.</li></ul> | `Core/Views/*`, `Infrastructure/Views/*` (+ migrations), `Infrastructure/Ledger/*` (Head, reader), `Host/Projector.cs`, `Features/{ListServices,GetProfile,RebuildViews}/` | M | P1 | <ul><li>Delete `views.db` and restart: `GET /services` matches the earlier body, apart from `asOf`.</li><li>During `views rebuild`, a query shows `"rebuilding":true`.</li><li>`X-Sindri-After: <head+1000>` gets 503 `SND-API-011` after 2 s.</li><li>A test service that fails once and then succeeds: after the failure, `lastRun.outcome` is `failed`; after the success, it is `ok`.</li><li>Editing the live profile makes `GET /profile` show `changed` within 30 s, and reverting the edit clears it.</li></ul> | UI, engine |
 | **P3** | **Items and the queue.** <ul><li>`ItemId` and the item events.</li><li>The `item_view` and `queue_view` projections.</li><li>`ItemActions` and `EmptyText`.</li><li>The slices `CreateItem`, `CloseItem`, `GetQueue`, `ListItems`, `GetItem`, `GetItemTimeline`.</li><li>The CLI verbs `queue`, `items`, `item add` and `item close`.</li></ul> | `Core/Items/*`, `Features/{CreateItem,CloseItem,GetQueue,ListItems,GetItem,GetItemTimeline}/`, projections, `Host/Commands/*` | M | P2 | <ul><li>`sindri-prove.sh human item add "Try the queue"`, then `sindri-prove.sh curl GET /sindri/queue \| jq -S 'del(.asOf)'` equals `sindri-prove.sh human queue --json \| jq -S 'del(.asOf)'` (both human, so both see every repo).</li><li>`item close` with a stale version gets `SND-ITEM-409`.</li><li>An empty queue prints its `EmptyText`.</li><li>A `POST /items` with no header gets 403.</li></ul> | **UI** |
 | **P4** | **Requests, decisions and needs-you.** <ul><li>`RequestId` and `DecisionId`.</li><li>The slices `FileRequest`, `ListRequests`, `ListDecisions`, `Decide`, `GetNeedsYou`.</li><li>The needs-you `failure` and `profile` rows over P2's events.</li><li>The CLI verbs `request`, `requests`, `decide` and `needs-you`.</li><li>Codes: `SND-REQ-*`, `SND-DEC-*`.</li></ul> | `Core/{Requests,Decisions,NeedsYou}/*`, `Features/{FileRequest,ListRequests,ListDecisions,Decide,GetNeedsYou}/`, projections, `Host/Commands/*` | M | P3 | <ul><li>`curl -X POST -H 'Content-Type: application/json' -H 'X-Sindri-Repo: demo' …/requests -d '{"kind":"rescope","text":"…"}'` (no caller header, so `session`) shows up as exactly one `decision` row in `GET /needs-you`, with `recordedOnly: true`.</li><li>The same `decide` with no caller header gets 403.</li><li>`sindri-prove.sh human decide DEC-… accept` clears the row.</li><li>Two `decide` calls started together: one succeeds and the other gets `SND-ITEM-409 decided elsewhere`.</li><li>Editing the live profile adds a `profile` row within 30 s, and reverting the edit clears it.</li><li>A service that fails adds a `failure` row, and its next good run clears it.</li><li>A service that fails, is removed from the profile, and has the profile approved also clears its row.</li></ul> | **UI, engine** |
 | **P5** | **Event stream and ledger read.** <ul><li>Public types from `EventCatalog`, `PublicEvent`.</li><li>The `item` and `types` filters, the session repo filter, `Last-Event-ID`.</li><li>The ping and the stream limits (`SND-API-012`).</li><li>`ILedgerSignal`, wired to the projector and the stream.</li><li>`ReadLedger` and `sindri ledger`.</li><li>`sindri status --follow` (C4).</li></ul> | `Core/Events/*`, `Infrastructure/Ledger/LedgerSignal.cs`, `Features/{StreamEvents,ReadLedger}/`, `Host/Endpoints/EventStream.cs`, `Host/Projector.cs` | S | P1, plus P2 for the projector wiring (its signal uses `service.heartbeat`; the item filter is tested once P3 lands) | <ul><li>`curl -N '…/sindri/events?after=0&types=service.*'` shows each `service.heartbeat` within 100 ms of its append.</li><li>Reconnecting with `Last-Event-ID: n` resumes at n+1.</li><li>`command.handled` never appears.</li><li>`sindri-prove.sh human ledger --json --after 0` lists it.</li></ul> | **UI, engine** (S1-D6) |
@@ -1564,7 +1586,7 @@ conflicts.
 
 **Reserved so phases never collide.**
 - Error codes are reserved per phase in §9.
-- `views.db` migration numbers are reserved per phase: P2 `V0xx`, P3 `V1xx`, P4 `V2xx`, P6 `V3xx`, P11 `V4xx`, P12 `V5xx`.
+- `views.db` migrations take the next free number: the migration runner refuses a gap, so a phase can't reserve a range.
 
 **`PublicAPI.Unshipped.txt`**: each unit declares its own lines through `--slice-only`. The integrator re-derives the
 file from the build's `RS0016` output only when merges conflict.

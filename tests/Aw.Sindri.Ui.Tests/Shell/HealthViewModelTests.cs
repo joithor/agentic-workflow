@@ -1,3 +1,4 @@
+using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Testing;
@@ -18,7 +19,7 @@ public sealed class HealthViewModelTests : IDisposable
 
     public HealthViewModelTests()
     {
-        _vm = new HealthViewModel(_records, _server, _clock);
+        _vm = new HealthViewModel(_records, _server, _clock, new FakeClipboard());
     }
 
     private Task _run = Task.CompletedTask;
@@ -70,6 +71,16 @@ public sealed class HealthViewModelTests : IDisposable
         _clock.Advance(HealthViewModel.RetryEvery);
         await Eventually(() => _vm.IsRunning, "running again");
         Assert.Equal(ShellState.Normal, _vm.State);
+    }
+
+    // The merge of #184 with U1: any answer Sindri explains with its own code (not only a 403) is the Unreadable banner
+    // with that code and detail; only SND-UI-002 (nothing answered) is Not running. The decision keys off the code.
+    [Fact]
+    public void A_refusal_that_isnt_a_403_is_unreadable_with_sindris_code_not_nothing_answered()
+    {
+        _ = _vm.Failed(new Error("SND-LEDGER-002", ErrorKind.Unavailable, "The ledger can't be read (fix: sindri doctor)"), new Uri("http://127.0.0.1:7410/"));
+
+        Assert.Equal((ShellState.Unreadable, "SND-LEDGER-002: The ledger can't be read (fix: sindri doctor)"), (_vm.State, _vm.Reason));
     }
 
     // A token removed or replaced while the app follows: the next ping's refusal ends the follow (a definite answer, not
@@ -495,6 +506,7 @@ public sealed class HealthViewModelTests : IDisposable
 
         _clock.Advance(TimeSpan.FromSeconds(1));
         await Eventually(() => _vm.State == ShellState.Stale, "stale after 30 s of failed pings");
+        await Eventually(() => _vm.Pill.Text == "stale · updated 30s ago", "the stale pill");
         Assert.Equal("stale · updated 30s ago", _vm.Pill.Text);
     }
 

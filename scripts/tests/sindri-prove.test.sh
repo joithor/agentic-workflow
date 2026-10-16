@@ -55,7 +55,8 @@ while [ $# -gt 0 ]; do
 done
 [ -n "$out" ] && printf '{"ok":true}' > "$out"
 [ -n "$write" ] && printf '%s' "${STUB_STATUS:-200}"
-exit 0
+[ -z "$out" ] && printf 'event: service.heartbeat\nid: 2\ndata: {}\n\n'
+exit "${STUB_CURL_RC:-0}"
 EOF
 chmod +x "$WORK/bin/curl"
 export CURL_LOG="$WORK/curl.log"
@@ -213,11 +214,42 @@ check "curl_flags_drop_terminal_and_token: a missing token file is an error with
 prove "$H" curl --no-token GET /sindri/status >/dev/null 2>&1; rc=$?
 check "curl_flags_drop_terminal_and_token: --no-token needs no token file" "$rc" "0"
 
+# --- curl_stream_prints_the_body_as_it_arrives ---
+printf 'tok-abc\n' > "$H/auth/human.token"
+out="$(prove "$H" curl --stream GET '/sindri/events?after=1' 2>"$WORK/err")"; rc=$?
+log="$(cat "$CURL_LOG")"
+check "curl_stream_prints_the_body_as_it_arrives: the body is on stdout" "$out" $'event: service.heartbeat\nid: 2\ndata: {}'
+check "curl_stream_prints_the_body_as_it_arrives: no status line" "$(cat "$WORK/err")" ""
+check "curl_stream_prints_the_body_as_it_arrives: exit 0 when the stream ends" "$rc" "0"
+contains "curl_stream_prints_the_body_as_it_arrives: -N" "$log" $'-N'
+lacks "curl_stream_prints_the_body_as_it_arrives: no buffer file" "$log" $'-o\n'
+lacks "curl_stream_prints_the_body_as_it_arrives: no status write-out" "$log" $'-w\n'
+contains "curl_stream_prints_the_body_as_it_arrives: URL" "$log" "http://127.0.0.1:5555/sindri/events?after=1"
+contains "curl_stream_prints_the_body_as_it_arrives: human headers" "$log" $'-H\nX-Sindri-Caller: human'
+contains "curl_stream_prints_the_body_as_it_arrives: terminal header" "$log" $'-H\nX-Sindri-Terminal: 1'
+contains "curl_stream_prints_the_body_as_it_arrives: the token" "$log" "X-Sindri-Token: tok-abc"
+STUB_CURL_RC=22 prove "$H" curl --stream GET /sindri/events >/dev/null 2>&1; rc=$?
+check "curl_stream_prints_the_body_as_it_arrives: an HTTP error status is exit 1" "$rc" "1"
+STUB_CURL_RC=7 prove "$H" curl --stream GET /sindri/events >/dev/null 2>&1; rc=$?
+check "curl_stream_prints_the_body_as_it_arrives: no response is exit 3" "$rc" "3"
+prove "$WORK/elsewhere/home" curl --stream GET /sindri/events >/dev/null 2>&1; rc=$?
+check "curl_stream_prints_the_body_as_it_arrives: still refuses a non-temp home" "$rc" "2"
+
 # --- with_tty_under_set_e_outlives_its_feeder ---
 # A caller with errexit on, and a command that runs past the feeder's exit: with_tty returns the command's status.
 out="$(bash -c 'set -euo pipefail; source "$1"; with_tty sh -c "sleep 0.6; echo hi; exit 0" </dev/null; echo "after"' _ "$ROOT/scripts/lib/with-tty.sh" 2>&1)"; rc=$?
 check "with_tty_under_set_e_outlives_its_feeder: the caller carries on" "$rc" "0"
 contains "with_tty_under_set_e_outlives_its_feeder: the caller reaches its next line" "$out" "after"
+
+# --- with_tty_under_set_e_stops_its_feeder_when_the_command_fails ---
+# A caller with errexit and pipefail on, and a command that fails: with_tty still cleans up (its temp folder, its
+# feeder) before it returns the command's status, instead of the failed pipeline ending it halfway.
+FT="$WORK/feeder-tmp"; mkdir -p "$FT"
+out="$(TMPDIR="$FT" bash -c 'set -euo pipefail; source "$1"; with_tty sh -c "echo hi; exit 3" < <(sleep 8 >/dev/null 2>&1); echo "after"' _ "$ROOT/scripts/lib/with-tty.sh" 2>&1)"; rc=$?
+check "with_tty_under_set_e_stops_its_feeder_when_the_command_fails: the command's status ends the caller" "$rc" "3"
+contains "with_tty_under_set_e_stops_its_feeder_when_the_command_fails: the output arrives" "$out" "hi"
+check "with_tty_under_set_e_stops_its_feeder_when_the_command_fails: no temp folder is left" "$(ls "$FT" | wc -l | tr -d ' ')" "0"
+check "with_tty_under_set_e_stops_its_feeder_when_the_command_fails: no feeder is left running" "$(pgrep -f "$FT/with-tty" | wc -l | tr -d ' ')" "0"
 
 if [ "$fail" -ne 0 ]; then echo "FAIL: sindri-prove tests"; exit 1; fi
 echo "PASS: sindri-prove tests"

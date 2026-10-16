@@ -31,7 +31,7 @@ public sealed class ExportMapTests : IDisposable
         var exported = await _world.Map.ExportMap(path: null, MapWorld.Human, MapWorld.None);
 
         Assert.Equal(FakeExportStore.Folder + "/map-v1-20260801T120000Z.json", exported.Value.Path);
-        Assert.Equal((1, new MapCounts(19, 19, 1, 1, 2)), (exported.Value.Version, exported.Value.Counts));
+        Assert.Equal((1, new MapCounts(20, 21, 1, 1, 2)), (exported.Value.Version, exported.Value.Counts));
         var document = _world.Exports.Documents[exported.Value.Path];
         Assert.Equal((MapDocumentKind.Export, 1, 1), (document.Kind, document.SchemaVersion, document.MapVersion));
         Assert.Equal(_world.Clock.GetUtcNow(), document.ExportedAt);
@@ -85,7 +85,7 @@ public sealed class ExportMapTests : IDisposable
         Assert.Equal("feature:gone", Assert.Single(document.Orphaned!).Value);
         Assert.True(again.IsSuccess);
         Assert.Equal(3, (await _world.Store.Overrides(MapWorld.None)).Value.Count);
-        Assert.Equal(1, (await _world.Map.MapStatus(MapWorld.Human, MapWorld.None)).Value.Orphaned);
+        Assert.Equal(1, (await _world.Map.MapStatus(anchor: null, MapWorld.Human, MapWorld.None)).Value.Orphaned);
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -101,31 +101,18 @@ public sealed class ExportMapTests : IDisposable
         Assert.Empty(_world.Exports.Documents);
     }
 
-    [Fact, Trait("Lane", "unit")]
-    public async Task A_session_export_holds_only_its_repos_nodes_and_the_edges_between_them()
-    {
-        _ = await _world.ImportFixture();
-
-        var exported = await _world.Map.ExportMap(path: null, MapWorld.Session(FixtureMap.Repo), MapWorld.None);
-
-        var document = _world.Exports.Documents[exported.Value.Path];
-        Assert.Equal(string.Join(',', FixtureMap.ScopedNodes), string.Join(',', document.Nodes.Select(n => n.Key.Value).Order(StringComparer.Ordinal)));
-        Assert.Equal(2, document.Edges!.Count);
-        Assert.Empty(document.Decisions!);
-        _ = Assert.Single(document.Overrides!);
-    }
-
     [Theory, Trait("Lane", "unit")]
-    [InlineData("other", true, "SND-CONTEXT-003")]
-    [InlineData(null, true, "SND-CONTEXT-003")]
-    [InlineData("aw-split-panes", false, "SND-CONTEXT-020")]
-    public async Task A_session_outside_the_map_or_with_sessions_off_is_refused(string? repo, bool enabled, string code)
+    [InlineData("aw-split-panes", true)]
+    [InlineData("aw-split-panes", false)]
+    [InlineData("other", true)]
+    [InlineData(null, true)]
+    public async Task A_session_can_not_export_the_map_and_nothing_is_written(string? repo, bool enabled)
     {
         _ = await _world.ImportFixture();
 
         var exported = await _world.Map.ExportMap(path: null, MapWorld.Session(repo, enabled), MapWorld.None);
 
-        Assert.Equal(code, exported.Error.Code);
+        Assert.Equal("SND-CONTEXT-020", exported.Error.Code);   // why: spec §3, an export is a whole-map path and writes unscrubbed work text
         Assert.Empty(_world.Exports.Documents);
     }
 

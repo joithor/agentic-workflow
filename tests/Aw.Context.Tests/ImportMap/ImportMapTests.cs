@@ -16,7 +16,7 @@ public sealed class ImportMapTests : IDisposable
     {
         var preview = await _world.Map.PreviewMap(MapWorld.MapPath, MapWorld.Human, MapWorld.None);
 
-        Assert.Equal(new MapCounts(19, 19, 1, 1, 2), preview.Value.Counts);
+        Assert.Equal(new MapCounts(20, 21, 1, 1, 2), preview.Value.Counts);
         Assert.Equal((FixtureMap.Repo, MapDocumentKind.Authored), (preview.Value.Repo.Value, preview.Value.Kind));
         Assert.Matches("^[0-9a-f]{64}$", preview.Value.Hash);
         Assert.Empty((await _world.Store.Versions(MapWorld.None)).Value);
@@ -28,7 +28,7 @@ public sealed class ImportMapTests : IDisposable
         var imported = await _world.ImportFixture();
 
         Assert.Equal((1, MapVersionStatus.Current, FixtureMap.Repo), (imported.Version.Number, imported.Version.Status, imported.Version.Repo.Value));
-        Assert.Equal(new MapCounts(19, 19, 1, 1, 2), imported.Counts);
+        Assert.Equal(new MapCounts(20, 21, 1, 1, 2), imported.Counts);
         Assert.Equal(_world.Clock.GetUtcNow(), imported.Version.Created);
         Assert.Equal(Canonical.Of(Maps.Checked(Maps.Fixture()).Graph), Canonical.Of((await _world.Store.Read(1, MapWorld.None)).Value));
         Assert.Equal(2, (await _world.Store.Overrides(MapWorld.None)).Value.Count);

@@ -1,9 +1,14 @@
 using System.Text.Json;
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Eval;
 using Aw.Context.Core.Facade;
+using Aw.Context.Core.Graph;
+using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
+using Aw.Context.Core.Review;
 using Aw.Kernel;
 
 namespace Aw.Context.Testing.Engine;
@@ -18,12 +23,20 @@ public sealed class FakeContextEngine : IContextEngine
 {
     private readonly FakeScrubberFactory _scrubbers = new();
 
-    private FakeContextEngine()
+    private readonly ProbeSet? _probes;
+
+    private FakeContextEngine(ProbeSet? probes)
     {
+        _probes = probes;
     }
 
-    /// <summary>The one instance.</summary>
-    public static FakeContextEngine Instance { get; } = new();
+    /// <summary>The one instance, with no probe file.</summary>
+    public static FakeContextEngine Instance { get; } = new(probes: null);
+
+    /// <summary>An engine like <see cref="Instance"/> whose probe file is <paramref name="probes"/>: a run asks its questions through the caller's delegate and scores them with the real runner (nothing is saved).</summary>
+    /// <param name="probes">The probes of the file.</param>
+    /// <returns>The engine.</returns>
+    public static FakeContextEngine WithProbes(ProbeSet probes) => new(probes);
 
     /// <inheritdoc />
     public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) =>
@@ -51,10 +64,67 @@ public sealed class FakeContextEngine : IContextEngine
     public ValueTask<Result<MapExported>> ExportMap(string? path, ContextScope scope, CancellationToken cancellationToken) => NoMap<MapExported>();
 
     /// <inheritdoc/>
-    public ValueTask<Result<MapStatusView>> MapStatus(ContextScope scope, CancellationToken cancellationToken) => NoMap<MapStatusView>();
+    public ValueTask<Result<MapStatusView>> MapStatus(string? anchor, ContextScope scope, CancellationToken cancellationToken) => NoMap<MapStatusView>();
+
+    /// <summary>With no probes a run answers SND-CONTEXT-036; with <see cref="WithProbes"/> it runs them.</summary>
+    public async ValueTask<Result<ProbeRun>> EvalProbes(string? file, Func<ProbeCase, CancellationToken, ValueTask<Result<ContextResult>>> ask, CancellationToken cancellationToken)
+    {
+        if (_probes is null)
+        {
+            return ContextErrors.NoProbeFile.With("this test engine has no probe file");
+        }
+
+        var report = await ProbeRunner.Run(new ProbeFile(file ?? "/probes/probes.json", "fake-hash", _probes), ask, baseline: null, DateTimeOffset.UnixEpoch, cancellationToken).ConfigureAwait(false);
+        return report.IsError ? report.Error : new ProbeRun(report.Value, Path: null);
+    }
 
     /// <inheritdoc/>
-    public ValueTask<Result<MapHealth>> CheckMap(CancellationToken cancellationToken) =>
+    public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) => NoMap<NodeView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<NeighborsView>> Neighbors(string key, int? depth, ContextScope scope, CancellationToken cancellationToken) => NoMap<NeighborsView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<PathView>> Path(string from, string to, ContextScope scope, CancellationToken cancellationToken) => NoMap<PathView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<MapBuildReport>> BuildMap(IProgress<string>? progress, ContextScope scope, CancellationToken cancellationToken) => NoMap<MapBuildReport>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ReviewQueueView>> ReviewQueue(int? limit, ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewQueueView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ReviewResult>> ApplyReview(ReviewDecision decision, ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewResult>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ReviewExported>> ExportReview(string? path, ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewExported>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ReviewResult>> ApplyReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewResult>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ReviewHistoryView>> ReviewHistory(int? limit, ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewHistoryView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ReviewFilePreview>> PreviewReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewFilePreview>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken) => NoMap<MapPromoted>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ProposeResult>> Propose(ScopeProposal proposal, ContextScope scope, CancellationToken cancellationToken) => NoMap<ProposeResult>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ProposalsView>> Proposals(string run, ContextScope scope, CancellationToken cancellationToken) => NoMap<ProposalsView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken) => NoMap<LensesView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) => NoMap<FileMapView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<MapHealth>> CheckMap(ContextScope? scope, CancellationToken cancellationToken) =>
         ValueTask.FromResult(Results.Success(new MapHealth("context:map", MapHealthState.Warn, "no map yet", "sindri context map import <file>")));
 
     /// <inheritdoc/>

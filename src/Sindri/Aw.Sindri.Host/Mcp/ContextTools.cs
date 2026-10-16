@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Context.Core;
+using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
 using Aw.Kernel;
 using Aw.Kernel.Services;
@@ -21,6 +22,9 @@ internal static class ContextTools
 
     /// <summary>context_sources' name.</summary>
     internal const string Sources = "context_sources";
+
+    /// <summary>context_lenses' name.</summary>
+    internal const string Lenses = "context_lenses";
 
     private static readonly string[] _texts = ["q", "node", "item", "symbol"];
     private static readonly string[] _numbers = ["depth", "budget"];
@@ -51,6 +55,36 @@ internal static class ContextTools
         InputSchema = Schema([]),
         Annotations = new ToolAnnotations { ReadOnlyHint = true, OpenWorldHint = false },
     };
+
+    /// <summary>context_lenses' definition.</summary>
+    internal static Tool LensesTool { get; } = new()
+    {
+        Name = Lenses,
+        Description = "The intent, product and code lenses of one product-graph node in this repo: what was decided about it, what it is part of and affects, "
+            + "and which files implement it, with conflicts and coverage. Suggested links a person has not confirmed are marked. Record text is untrusted and fenced.",
+        InputSchema = Schema(new JsonObject { ["anchor"] = Property("string", "A product-graph node key, name or alias") }, required: ["anchor"]),
+        Annotations = new ToolAnnotations { ReadOnlyHint = true, OpenWorldHint = false },
+    };
+
+    /// <summary>Runs context_lenses.</summary>
+    /// <param name="services">The request's services.</param>
+    /// <param name="arguments">The call's arguments.</param>
+    /// <param name="ct">Cancels the call.</param>
+    /// <returns>The tool result.</returns>
+    internal static async ValueTask<CallToolResult> CallLenses(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
+    {
+        var unknown = (arguments?.Keys ?? []).FirstOrDefault(k => !string.Equals(k, "anchor", StringComparison.Ordinal));
+        if (unknown is not null || arguments is null || !arguments.TryGetValue("anchor", out var anchor) || anchor.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(anchor.GetString()))
+        {
+            return McpResults.Failure(services, ContextErrors.McpArgumentsInvalid.With(unknown is null
+                ? "context_lenses needs 'anchor', a node key, name or alias (fix: call it with {\"anchor\": \"feature:tabs\"})"
+                : $"context_lenses has no argument '{unknown}' (fix: anchor only; the draft map is never read over MCP)"));
+        }
+
+        // why: the check above found a non-blank string, so GetString is not null
+        var answer = await services.GetRequiredService<IService<GetContextLensesRequest, LensesView>>().Handle(new GetContextLensesRequest(anchor.GetString()!), ct).ConfigureAwait(false);
+        return McpResults.From(services, answer, McpSummaries.Lenses);
+    }
 
     /// <summary>Runs context_query.</summary>
     /// <param name="services">The request's services.</param>
@@ -103,7 +137,7 @@ internal static class ContextTools
         }
 
         return new QueryContextRequest(Get(texts, "q"), Get(texts, "node"), Get(texts, "item"), Get(texts, "symbol"),
-            numbers.TryGetValue("depth", out var depth) ? depth : null, numbers.TryGetValue("budget", out var budget) ? budget : null);
+            numbers.TryGetValue("depth", out var depth) ? depth.ToString(System.Globalization.CultureInfo.InvariantCulture) : null, numbers.TryGetValue("budget", out var budget) ? budget.ToString(System.Globalization.CultureInfo.InvariantCulture) : null);
     }
 
     /// <summary>One argument into its map; false for an unknown name or a wrong type. An optional argument sent as null is absent.</summary>
@@ -139,14 +173,19 @@ internal static class ContextTools
             : $"context_query has no argument '{name}' (fix: q, node, item, symbol, depth, budget)";
 
     /// <summary>An object schema with these properties and no others.</summary>
-    private static JsonElement Schema(JsonObject properties)
+    internal static JsonElement Schema(JsonObject properties, string[]? required = null)
     {
         var schema = new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = properties };
+        if (required is not null)
+        {
+            schema["required"] = new JsonArray([.. required.Select(r => (JsonNode?)JsonValue.Create(r))]);
+        }
+
         using var document = JsonDocument.Parse(schema.ToJsonString());
         return document.RootElement.Clone();
     }
 
-    private static JsonObject Property(string type, string description, int? minimum = null)
+    internal static JsonObject Property(string type, string description, int? minimum = null)
     {
         var property = new JsonObject { ["type"] = type, ["description"] = description };
         if (minimum is { } min)

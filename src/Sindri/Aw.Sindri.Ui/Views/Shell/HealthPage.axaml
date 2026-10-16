@@ -3,13 +3,15 @@
              xmlns:vm="using:Aw.Sindri.Ui.ViewModels"
              xmlns:shell="using:Aw.Sindri.Ui.ViewModels.Shell"
              xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
+             xmlns:controls="using:Aw.Sindri.Ui.ViewModels.Controls"
+             xmlns:ccontrols="using:Aw.Sindri.Ui.Views.Controls"
              x:Class="Aw.Sindri.Ui.Views.Shell.HealthPage"
              x:DataType="shell:HealthViewModel">
   <!-- Health (UI spec §4.8, services-health.html HEALTH): one panel of sections, each an eyebrow with the state's glyph
        and word at its right (on the eyebrow's baseline, S2: .head-eyebrow), over label/value rows at Body size. The same
        status 'sindri status' prints. -->
   <StackPanel Spacing="{StaticResource Size.PanelGap}">
-    <TextBlock Classes="page-title" Text="{Binding Text.Health}" AutomationProperties.Name="{Binding Text.Health}" />
+    <TextBlock Classes="page-title" Text="{Binding Text.System}" AutomationProperties.Name="{Binding Text.System}" />
 
     <Border Classes="panel">
       <StackPanel>
@@ -84,6 +86,45 @@
               <TextBlock x:Name="ProfileFixText" Classes="mono" Text="{Binding ProfileFix}"
                          AutomationProperties.Name="{Binding ProfileFix}" />
             </Border>
+          </StackPanel>
+        </Border>
+
+        <!-- The catalog (§4.8): its pending rows by the phase that ships them, then the actions that stay at a terminal
+             (copy blocks). Every control comes from the control renderer; nothing here runs a command. -->
+        <Border x:Name="ActionsSection" Classes="section" DataContext="{Binding Catalog}" x:DataType="controls:CatalogViewModel">
+          <StackPanel Spacing="{StaticResource Space.XS}">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock x:Name="ActionsEyebrow" Classes="eyebrow head-eyebrow" Text="{Binding $parent[UserControl].((shell:HealthViewModel)DataContext).Text.ActionsCard}"
+                         AutomationProperties.Name="{Binding $parent[UserControl].((shell:HealthViewModel)DataContext).Text.ActionsCard}" />
+              <TextBlock x:Name="PendingSummaryText" Grid.Column="1" Classes="body subtle" Text="{Binding PendingSummary}"
+                         AutomationProperties.Name="{Binding PendingSummary}" />
+            </Grid>
+            <ItemsControl x:Name="PendingPhases" ItemsSource="{Binding Pending}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="controls:PendingPhase">
+                  <StackPanel Spacing="{StaticResource Space.XXS}" Margin="0,0,0,8">
+                    <TextBlock Classes="caption subtle" Text="{Binding Heading}" AutomationProperties.Name="{Binding Heading}" />
+                    <ItemsControl ItemsSource="{Binding Controls}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="controls:ControlViewModel">
+                          <ccontrols:CommandControl Margin="0,0,0,6" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <ItemsControl x:Name="CliOnlyActions" ItemsSource="{Binding CliOnly}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="controls:ControlViewModel">
+                  <StackPanel Spacing="{StaticResource Space.XXS}" Margin="0,0,0,8">
+                    <TextBlock Classes="caption subtle" Text="{Binding Label}" AutomationProperties.Name="{Binding Label}" />
+                    <ccontrols:CommandControl />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
           </StackPanel>
         </Border>
 

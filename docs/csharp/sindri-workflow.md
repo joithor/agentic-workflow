@@ -75,7 +75,7 @@ A case file is JSON lines, LF or CRLF:
 or an engine trigger: `answer` with a `variant` (`grant`, `grant-tokens`, `accept`, `reject`, `resume`, `text`; the
 grants take `amount`, a `text` answer's text is `outputs` `fact:answer`), `takeover`, `handback`, `cancel` and
 `deadline`. An answer wait is satisfied by an `answer` line with `variant` `text` (outcome `answered`), not by
-`wait.satisfied`. A `deadline` line fails until timers land (P5).
+`wait.satisfied`. A `deadline` line fires the running timer: `takeoverIdle` while taken over, the retry timer after a `then: retry` re-armed the state, otherwise the state timer. It fails when no timer runs (parked, escalated or ended).
 
 A `step.failed` line takes an optional `reason`, what the Step reported as its failure. Left out, it is the constant
 `the Step failed`, the same on every line, so two `step.failed` lines in a loop are the same failure and park
@@ -177,8 +177,8 @@ with the register call's `SND-RECIPE-007` and its `RCP-VERSION-001` line.
 
 `sindri recipe revoke <id@hash>` (the hash by 8 or more digits) previews the instances that will park, the takeovers it
 ends, the generated recipes approved from it (revoked with it, recursively) and the parents pinning it as a child
-(marked `child-stale`), asks for `revoke <id>@<hash12>`, and prints `revoked …; N instances parked` (N is 0 until P4's
-wake reaches instances). Revoking an already revoked hash is `SND-RECIPE-005`, unless a revoke stopped partway through
+(marked `child-stale`), asks for `revoke <id>@<hash12>`, and prints `revoked …; N instances parked` (N is 0 until P6's
+`TemporalRecipeWake` reaches instances; P4 keeps `NoOpRecipeWake`). Revoking an already revoked hash is `SND-RECIPE-005`, unless a revoke stopped partway through
 its cascade: then the same command finishes it (each step is keyed by its hash, so nothing is recorded twice).
 
 Each approval appends `recipe.approved` (keyed `recipe.approved:<hash>:after:<seq>`) and an approval row keyed by
@@ -525,6 +525,11 @@ same at-least-once execution with three history events per ledger row, so exactl
 and the local activity is the cheaper of the two. Its retry policy is unbounded with backoff, so the workflow waits for
 the ledger.
 
+Each payload is scrubbed before it is appended (free text in an event's detail can carry a secret). Until the context lane's
+scrubber is wired in, the engine's ledger scrub uses `Redactor.Default`, the built-in rules; the profile's
+`context.scrub.extraPatterns` do not reach it yet. A payload the scrub blocks, or breaks so it is no longer JSON, is stored
+without its detail; one that still can't be scrubbed throws, and the activity retries.
+
 **How it was measured.** `AW_SPIKE_LOG=<file> dotnet test --project tests/Aw.Sindri.Tests -- --filter-namespace
 Aw.Sindri.Tests.Workflows.Spike` appends each measurement line to the file; `AW_SPIKE_LEDGER_COPY=<dir>` keeps the
 ledger replay test's `ledger.db`. Counted with `sqlite3 ledger.db "select type, count(*) from events group by type"`
@@ -534,3 +539,208 @@ idempotency_key having c > 1` (no rows). Wall times are `Stopwatch` around the a
 `p0-c/ledger-sqlite3.txt`, `p0-c/ctrf-final/`).
 
 **Verdict: pass.** All five pass lines hold on the merged build, line 4 in both physical footprint and RSS. Temporal stays the substrate (rev 8); P4 starts from rev 8.1: desk Steps wait for the `complete` Update (F1), the ledger key is the RecordEvent activity id, and time-skipping tests follow F1–F3 (spec §11).
+
+## The interpreter's interface (engine P4)
+
+Engine spec rev 8.1 §5.1–§5.6, "Phase 4". The P4 contract fixes the interface; the units fill in the bodies.
+
+| Part | Shape | Where |
+|---|---|---|
+| Workflow input | `InstanceStart`: the recipe `RecipeVersion (id, version, hash)`, the item, the attempt, the input facts (`InputFact`: the file name status shows, and the stored `FactValue`), the tenant and the ring | `Aw.Sindri.Core/Workflow/Engine/Runtime` |
+| Workflow id | The address, `InstanceStart.WorkflowId()` (`{item}/{recipe-name}/{attempt}`) | same |
+| `GetInstance` Query | `InstanceView`: the state, its detail and since, `next`, `allowedCommands` as `AllowedCommand` (`{ actionId, cli }`, UI E-13), the open `OpenQuestion` or `DeskTask` (the Step's declared outcomes and outputs, the inputs, when the timeout fires), the run token, the children and the outcome. `InstanceViews.Of` builds it, and it is pure | same |
+| Updates (§5.2) | `complete(StepCompleted)`, `answer(AnswerGiven)`, `command(CommandFired)`, `cancel(CancelRequested)`, `takeover(TakeoverRequested)`, `handback(HandbackRequested)`, `open-request(OpenRequested)` (update id `wf:{instance}:open:{launch}`, from the engine). Each has a `[WorkflowUpdateValidator]` and returns `CommandResult` (the view after the command, and what happened). The update id is the nonce | `RecipeWorkflow` |
+| Desk Step (rev 8.1 §5.3) | `RunStep` is a short activity with id `run:{token}:{n}`. The workflow then waits for the `complete` Update, bounded by the state's timer (`TimerScopes`), the state's timeout raised to `workflow.deskTimeout`; the expiry always parks `timeout` | `RecipeWorkflow.RunStep`, `RunStepActivities` |
+| Events (§5.4) | The `event` signal carries a `WaitSatisfied` | `RecipeWorkflow.EventAsync` |
+| Ledger mirror (§5.6) | `RecordEvent`, a local activity keyed `workflow:{workflow id}:{run id}:{activity id}` | `RecordEventActivities` |
+| Client port | `IInstanceRuntime`: `Start` (UseExisting), `Get` (the Query), `Send` (the Update the trigger names, with the nonce as its id), `OpenRequest` (the engine's takeover, id `wf:{instance}:open:{launch}`), `Signal` (the bridge) | Core port; `TemporalInstanceRuntime` |
+| Items | `IItems.Resolve` (an ItemId or a tracker alias). The stub `SelfItems` stands in until API P3 lands | Core port; `Aw.Sindri.Workflows` |
+| Approved recipes | `IApprovedRecipes` (`Latest`, `Find`, `Check`) is the minimal read port the interpreter and the start and command slices use. `RegistryApprovedRecipes` implements it over P2's registry (`IRecipeStore`, `IRecipeApprovals`): a recipe starts only when it is registered and its latest approval isn't revoked (`SND-RECIPE-003`) | `Aw.Sindri.Core/Workflow/Registry` |
+
+The Updates, their validators, the `IInstanceRuntime` methods and every `workflow` verb are built. Every Update on this path is built,
+including `takeover`, `handback` and the engine's `open-request` (P5). A rejected
+Update records nothing. `RecipeWorkflowTests` pins the interface (the desk task 1.1 with its declared outcomes through
+the Query, `allowedCommands`, the ledger key, and replay), and `PhaseFourSignalTests` (integration) is phase 4 signal 1:
+start `workflow.step` on an item, then status shows the desk task with run 1.1.
+
+**The state loop (unit (a)).** `RunAsync` loads the recipe, enters `initial`, then repeats until a terminal state: an
+active state runs its desk Step (`RunDeskStep`, unit (c)); a wait state, a park, an escalation or a takeover waits
+(`RecipeWorkflow.Loop.cs`). Every trigger reaches the instance at a wait and is decided there, one at a time, by P3's
+`TransitionDecision`: a command an Update hands over through `Submit(trigger)` (which returns the decision to the
+Update), or a delivered `event` signal whose source fits the wait's `waitFor` (its event kind, its resource, or its
+child's end). A delivered event that fits no wait yet stays buffered until one does. An applied or refused trigger writes
+one ledger event (`workflow.transition` or `workflow.refused`) and sets the search attributes; a rejected one records
+nothing. The row's payload is `WorkflowEventPayload` (instance, from, to, trigger kind, outcome, run) plus a `detail` projection of
+the decision's event (`WorkflowEventDetail`, §5.6): the trigger's id (its key: a command's nonce and arguments digest, a
+report's run and digest, an event's source sequence), actor, source sequence, answer variant and amount, any gates, evidence,
+grant, override and refusal records, the effect identities and the post-state delta (state names, reasons, counters and fact
+digests). It never holds an answer's text, a parked question or a fact's content. The `started` row carries the start's key
+and actor; a held event's expiry and the desk deadline's park, which have no decision, carry no `detail`. Gates have no runtime in the interpreter yet, so a matched transition's gate refuses (fail closed, W5) and the
+refusal follows §5.8's precedence. A wait state's timer wakes the wait like a delivered event, and `TransitionDecision.Expired` decides the expiry (park, escalate, or retry once); a child wait doesn't
+start its child until P7.
+
+| Search attribute | Value |
+|---|---|
+| `Item`, `Recipe`, `Tenant`, `Ring` | From `InstanceStart`; `StartRequest` carries the tenant and ring into the instance |
+| `State` | The state after each change (`parked`, `escalated`, `taken-over` while suspended) |
+| `NeedsYou` | True while parked or escalated, or while an open desk task waits; false while taken over |
+| `Repo` | `fact:item`'s `repo`, read once on start by the `ReadItemRepo` local activity; unset without one |
+
+The loop's tests run on the time-skipping server: `InterpreterEvalTests` runs every shipped `workflow.step` eval case
+through the interpreter and checks each line against the in-process `recipe eval`, and `InterpreterStateLoopTests`
+covers the search attributes, a delivered event, a refused event's park (`NeedsYou` flips) and replay.
+
+## Status, list and events (engine P4 unit (e))
+
+Engine spec rev 8.1 §5.1, §5.6, §6.3, §6.4, S1-D6 and S1-D11; README X5 and X16.
+
+All three are clients of serve's routes, like the write verbs: `status` resolves its reference with `GET /sindri/workflow/instances?address=` and
+reads `GET /sindri/workflow/instances/{id}`; `list` calls `GET /sindri/workflow/instances` with `needsMe`, `item`, `state` and `query`;
+`events` resolves the same way and reads `GET /sindri/workflow/instances/{id}/events?after=` (`--follow` polls it). None starts serve:
+with none running they print `SND-API-001 not running: …` and exit 1. Only `recipe validate` and `recipe eval` run in process (spec §6.1).
+The `--json` output is the response as the CLI's serializer prints it (`status` prints the `instance` member, as before).
+
+| Verb | Slice | What it reads | Prints |
+|---|---|---|---|
+| `workflow status <address> [--json]` | `GetInstance` | the `GetInstance` Query (`TemporalInstanceRuntime.Get`); an ended instance answers too | the §6.4 layout, or the `InstanceView` as JSON. Exit 2 with `SND-WF-001` for no such instance, `SND-API-002` when no worker answers in 10 s |
+| `workflow list [--needs-me \| --item <id> \| --state <s>] [--query <q>] [--json]` | `ListInstances` | a visibility query on the search attributes, then each row's `GetInstance` | one status header per line; `--needs-me` prints **Decisions** (parks and escalations; a takeover is never listed, since `NeedsYou` is false while taken over. `takeoverIdle` records a `workflow.notified` row, which P6 delivers as `notify.desk`; listing idle takeovers under `--needs-me` isn't built yet, an owner item for the API / P6) then **Tasks** (open desk tasks), each under its heading. Empty: `nothing needs you` (`--needs-me`) or `no instances match`; exit 0 |
+| `workflow events <address> [--follow] [--json]` | `GetInstanceEvents` | the ledger through `ILedgerReader`, never Temporal's history | one line per event: `seq  MM-dd HH:mm:ss  type  from -> to  trigger outcome  run r  actor`; `no events`. `--follow` reads after its cursor every second until interrupted |
+
+- **`--needs-me` is a stand-in.** `GET /needs-you` (API P4) isn't built yet, so `ListInstances` serves it with the
+  visibility query `NeedsYou = true` over running instances and sorts the views with `NeedsYouList.Of`: Decisions,
+  then Tasks, by address, and a parent whose open question mirrors a listed child shown once, under the child. When
+  API P4 lands, `--needs-me` reads its route instead and keeps this output.
+- **Which instances.** Bare `list` and `--needs-me` list running instances; `--item` and `--state` list ended ones too
+  (`IWorkflowInstances.List(query, ended, …)`). `--state` takes a state name (`[a-z][a-z0-9-]{0,63}`); `--query` adds a
+  raw visibility query for scripts.
+- **`v<n>`.** Temporal keeps no row version, so the instance's version is the count of events the interpreter has
+  mirrored into the ledger (`workflow.started` and every transition): a new instance is `v1`. The workflow counts
+  them in `Mirror` and sets `InstanceView.Version` in the Query.
+- **Times.** Every clock time status prints is UTC (`since 11:54`; `since 10-09 11:54` once a day or more has passed),
+  in the header and in `next` alike, because the Query has no local time zone. Durations read `1d 22h 48m`, or `40s`
+  under a minute (`StatusText`).
+- **What the view renders** (`InstanceViews.Of`, pure, so the Query and the goldens call the same code): the header's
+  detail (`desk task`, the park reason with `(child)` for a mirrored park, `spec-conflict (<kind>)`, the escalation
+  kind, the outcome when it isn't the state's name), `next` (§3.8's text per row, a park's instruction on its own line;
+  a desk task's recipe `next` with its variables filled and the `workflow complete` line with the Step's first declared
+  outcome and the outputs required on it), the answer line per park reason (`--grant 1`, `--grant-tokens <half the
+  state's budget>`, `--text`, `--resume [--text]`, `--resume`, `--accept`, and the approval or cancel a spec-conflict
+  needs), the drift line for a drift recorded behind a park, the budgets, and `allowedCommands`. A spec-conflict park
+  whose only way out is an approval or a cancel (revoked, child revoked, drift) offers no `answer`.
+- **Layout** (`StatusLayout`): the labels take 12 columns, `next` wraps at 120, and the lines come in a fixed order:
+  next, child, inputs, drift, timeout, paused, budget (beside an open desk task, as §6.4 shows it), answer, commands.
+  An input's digest prints as its first four hex digits and `...` (ASCII for §6.4's ellipsis). The answer note is set
+  off by five spaces. Golden files pin the six §6.4 layouts and one per §3.8 row P4 reaches
+  (`tests/Aw.Sindri.Tests/GetInstance/Golden/`).
+- **The event stream's filter (S1-D6).** `GET /sindri/events?item=<ITM id or alias>` keeps one item's rows: the item is
+  resolved for the caller, from the ledger, and an item that isn't there, or that a session may not see, is a 404
+  `SND-ITEM-404` before any frame. `?instance=<address>` keeps the rows an instance mirrored (keys `workflow:{address}:…`,
+  so a child's rows stay out of its parent's); an engine row keyed by a tracker key (not an ITM id) is reached through
+  `?instance=`, not `?item=`. The stream's cursor moves by `StreamEventsResponse.ScannedTo` (how far the read looked, also
+  past the rows the filter or the caller's scope skipped).
+- **Profile keys (S1-D11).** `workflow.deskTimeout` (default `2d`) and `workflow.eventHold` (default `24h`), each a
+  duration (`1m`, `4h`, `2d`); a profile without a `workflow:` block keeps the canonical JSON (and so the hash) it had.
+  The worker reads them through `ProfileWorkflowTimes`: `LoadRecipe` reads both when an instance starts, so the desk
+  floor (unit (c)) and the interpreter's `eventHold` expiry come from history and a replay sees the same values. The dev profile sets `deskTimeout: 1m`.
+- **Not yet:** approval doesn't run a recipe's evals. P2's `ApproveRecipe` only checks that the recipe declares them
+  (`SND-RECIPE-008`); the Core port `IApprovalEvals` names the hook and has no implementation or caller yet. Binding it
+  (moving `EvalRecipe`'s case running into Core) is a later phase's work.
+  `workflow events` reads the ledger directly until API P3's item timeline exists.
+- **Not yet (P6):** the revoke and drift wake. `IRecipeWake` is bound to `NoOpRecipeWake`, so a revoke or a pin drift parks no
+  running instance in P4 (the approval check at each command, answer and `complete` still refuses a revoked or drifted recipe
+  with `SND-RECIPE-005`/`-006`). P6 brings `TemporalRecipeWake`, which signals the running instances.
+
+## The event bridge (engine P4 unit (d))
+
+Spec rev 8 §5.4, §7.2 S1-D8 and S1-D10. `EventBridge` is the built-in service `workflow-events` (a service name is
+kebab-case, so not `workflow.events`). It runs every 5 s without a profile entry; a profile entry of the same name sets
+its cadence. The scheduler gives every service its own loop: a run still in flight holds back no other service, and its
+own slots that come due meanwhile are skipped, never overlapped.
+
+| Part | Behaviour |
+|---|---|
+| Cursor | The last delivered ledger sequence, in the owner-only file `<home>/workflow/events.cursor`, written to a temporary name and moved into place. A missing file reads as 0. The cursor moves past an event once every target has it |
+| Held window | Visibility lags a start, so an instance started just before its item event can be missing from the item query when the event goes out. Every item event the bridge delivers stays in an in-memory window (`HeldItemEvents`) for `HeldItemEvents.VisibilityLag` (1 minute from delivery), not `workflow.eventHold`. Each run ends by sending it to a live instance of its item that hasn't had it and **started at or before the event** (visibility's start time), one visibility query per item. An instance started after the event, such as a later attempt, never gets it. The workflow drops a repeat by its ledger sequence. The window covers the seconds visibility lags, not a serve restart. An event whose item isn't an item key is logged and skipped, and a delivery refused for a reason other than Unavailable or Timeout is logged and passed, so one bad row can't stall the cursor |
+| Accepted events | A registered `EventDescriptor` kind whose envelope actor is the descriptor's `producer`. Every other event signals nothing |
+| `route: item` | Every live instance of the event's item (a visibility query on `Item`). Temporal buffers the signal until the instance reaches the wait, so an early event isn't lost. The workflow drops a kind its recipe never waits for |
+| `route: causation` | Only the instance that the reply's causing event names (`ICommandOrigins`: the causing ledger event's `instance` field, until P6's `workflow_commands`) |
+| Trigger | `wait.satisfied` from `EventWaitSource(kind, sequence)`, the payload's `outcome` (one the descriptor declares) and the descriptor's facts from the payload's `facts` |
+| Idempotency | The ledger sequence is the key. `RecipeWorkflow.EventAsync` drops a sequence it has already taken, so a bridge that crashed between a signal and its cursor write re-sends harmlessly |
+| Failures | An instance that has ended is skipped. A Temporal or ledger failure ends the run with the cursor before that event, and the next run retries it |
+## Start, answer, command and cancel (engine P4 unit (b))
+
+Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
+
+- **`workflow start <recipe> --item <id> [--attempt next] [--fact <key>=<file>]…`** runs the `StartInstance` slice: it
+  resolves the item (`IItems`) and the approved recipe (the latest, or `id@hash`, a hash prefix of 8 or more digits),
+  refuses a `fact:item` whose `id` isn't the item (`SND-WF-014`) and a missing declared input (`SND-CLI-003`), stores
+  each fact owner-only (`IFactStore`, at most 1 MiB, the CLI sends name and content, never the path), and starts
+  `RecipeWorkflow` with the address as its workflow id (`WorkflowIdConflictPolicy.UseExisting`,
+  `WorkflowIdReusePolicy.RejectDuplicate`). The attempts come from `IInstanceDirectory.Latest`, which describes
+  `{item}/{recipe}/1`, `/2` … so a start never waits on visibility. Without `--attempt` the latest attempt is used (a
+  live one is returned as it is; an ended one is shown with `start a new one with --attempt next`); `--attempt next`
+  is refused while the latest is live (`SND-WF-012`). It prints the status header.
+- **`workflow answer`, `command <verb>`, `cancel`, `takeover`, `handback`** run the `ApplyCommand` slice, in this order: resolve the address
+  (a bare item is the root of its latest attempt, `SND-WF-006` listing the candidates when the item has roots of more
+  than one recipe); check the arguments; claim the nonce for exactly this command (`SND-WF-009`); for a protected
+  answer (`--grant`, `--grant-tokens`, `--accept`) redeem its challenge (`IChallenges`, P2's shape; action text
+  `grant n <address>`, `grant-tokens n <address>`, `accept <address>`; subject `instance:<address>@v<version>`, the
+  address and the instance version the preview showed, so any event mirrored since makes it stale; `SND-WF-013`); check the recipe's approval unless the trigger is exempt (cancel, takeover, handback; `SND-RECIPE-005`, `-006`);
+  then send the Update with the nonce as its id. A refusal gives the nonce back. A repeated nonce skips the checks and
+  Temporal returns the first outcome, printed `already applied (…)`. The CLI prints the status header and what happened;
+  an answer prints the resume action it ran (`resumed (transition): -> produce`).
+- **In the workflow**, each validator runs P3's pure `TransitionDecision` on the instance as it stands and rejects what
+  it rejects (an answer that doesn't fit is `SND-WF-003`, its fix naming the answer that does), so nothing is recorded.
+  An accepted Update hands its trigger to the loop through `Submit` (`RecipeWorkflow.Loop.cs`). The desk wait wakes for a submitted command as well as for the report. An answer
+  that ends a suspension arms the state's full timeout again (`StateTimers.Between`), so `--resume` on a timeout park gets a fresh timeout from the answer.
+- **`IssueNonce`** returns a nonce for an existing instance (class issue). API P1 has no nonce table yet, so the
+  `POST /workflow/instances/{instanceId}/nonce` route issues them from unit (c)'s `HomeCommandNonces` stand-in.
+- **Routes and ids (§6.3).** The write verbs are clients of the API's command chain: `POST /workflow/instances`
+  (start), `/{instanceId}/nonce`, `/{instanceId}/commands` and `/{instanceId}/runs/{run}/complete`. `{instanceId}` is
+  the instance's opaque id, `WFI-` and 32 hex digits: a UUIDv8 over the SHA-256 of its address
+  (`WorkflowInstanceId.Of`, the same rule P3 uses for a child), so the same instance always has the same id. Start, list
+  and get return it (`InstanceView.id`). A CLI address travels only in `GET /workflow/instances?address=<address or
+  item>`, which answers the one instance it names; the CLI resolves there first, then calls the id routes. An address in
+  a route is a 400 (`SND-CLI-003`); an id no instance has is `SND-WF-001`. The server finds an id among the instances it
+  has started or shown (`KnownInstances`), else by minting the id of every instance visibility lists.
+- **Failures of an Update (§5.2, §5.3).** Each Update waits at most 4 s for a worker (`TemporalUpdates.Patience`): a
+  command that first waited the 5 s command gate still answers inside the CLI's 10 s HTTP timeout. No worker in that
+  time is `SND-API-002`, naming the nonce: the Update may still apply once a worker runs, so the claim stays and the same
+  command with `--nonce <n>` is deduplicated. A Temporal without the settings' namespace is `SND-API-001`, not a missing
+  instance. The same nonce after the instance ended (`cancel` twice) prints `already applied (-> cancelled)`: Temporal
+  keeps the first outcome of an update id on a closed workflow.
+- **Namespace and task queue** come from `AW_SINDRI_TEMPORAL_NAMESPACE` and `AW_SINDRI_TEMPORAL_TASK_QUEUE` (each
+  `sindri` when unset; README X61). A Step's activity runs on its instance's queue; `StepTaskQueue.For` is the seam a
+  later phase uses to route a Step elsewhere.
+
+## Takeover, handback, takeoverIdle and open-request (engine P5 unit (b))
+
+Engine spec rev 8.1 §3.8, §5.2, §5.5, §5.8, §6.2; UI spec E-6, E-19.
+
+- **`workflow takeover <address>`** (class `pause`: an agent session may take over, so the attach hook works) and
+  **`workflow handback <address>`** (class `desk`: a session is refused `SND-AUTH-002`) are `ApplyCommand` kinds
+  `takeover` and `handback`, sent as the `takeover` and `handback` Updates with the nonce as id. Both are exempt from
+  the approval check. While the workflow is still open, a takeover of an ended or already taken-over instance, and a handback of one
+  that isn't taken over, are `SND-WF-003` from the validator and record nothing. Once an ended instance's workflow has
+  closed, Temporal has no running execution to take the Update: the command is `SND-WF-001` ("no running instance"),
+  as for `cancel` and `command` (the same open/closed split holds for them).
+- **Timers.** A takeover cancels the state timer's scope and keeps what was left (`RemainingTimer`, from
+  `Workflow.UtcNow`) on the takeover's suspension; status shows it as `paused  timeout 40s left`
+  (`InstanceView.paused`). No state timer fires while taken over (`StateTimers.Between` decides `arm`, `pause`, `resume`, `keep` or `stop`). The handback re-arms that timer with what was left
+  (`TimerScopes` applies the decision). A takeover over a park
+  has no timer to pause and the handback returns to the park; a park that arrives while taken over waits as the pending park
+  and takes effect on the handback. A cancel while taken over stops every timer.
+- **takeoverIdle.** A takeover arms a 2 h timer in its own scope. When it fires while still taken over the engine
+  records one `workflow.notified` row and clears it; it never hands back. P6 delivers it as `notify.desk`
+  ("hand back {item}?").
+- **open-request (E-6).** `IInstanceRuntime.OpenRequest(address, LaunchId, …)` builds the open-request (actor `service:engine`) and sends it as the `open-request` Update with id
+  `wf:{instance}:open:{launchId}`: no nonce, actor `service:engine`, past the API chain and exempt from approval. It
+  takes over wherever a takeover is allowed, is a no-op (nothing recorded) when the instance is already taken over,
+  and is `SND-WF-003` on an ended instance whose workflow is still open (`SND-WF-001` once it has closed), for any actor other than `service:engine`,
+  and for a launch that is not a launch id (`LCH-` and 32 lower-case hex digits). One that arrives while the
+  instance is still starting waits for the start, then takes over. Temporal deduplicates the id, so a repeat applies once. The ledger row
+  carries the launch id as `causation`. Its sender is API P10b's launcher.
+- **Start taken over (E-19).** `StartInstance` reads the item's launches (`ILaunchRequests.Requested` returns a `LaunchId?`: `LCH-` and 32 hex digits); when one is still
+  requested the instance starts taken over (`InstanceStart.OpenLaunch`, actor `service:engine`), with the launch as the
+  `workflow.started` row's `causation`, the state's full timeout kept for the handback and takeoverIdle running. Until
+  API P10a's launches projection lands, the adapter (`NoLaunchRequests`) reads none.

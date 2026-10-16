@@ -1,20 +1,20 @@
 {
   "header": {
-    "address": "workflow/PRJ-exports",
-    "recipe": "workflow.project",
-    "hash12": "a8c21e7f0000",
-    "version": 12,
-    "state": "design",
-    "detail": "parked: needs-answer",
-    "since": "2026-10-11T16:02:00.0000000Z",
-    "ageSeconds": 73440
+    "address": "ITM-01JL4/dev-triage-three-state/1",
+    "recipe": "workflow.dev-triage-three-state",
+    "hash12": "88a0e8fc810f",
+    "version": 1,
+    "state": "parked",
+    "detail": "needs-answer",
+    "since": "2026-10-12T12:03:00.0000000Z",
+    "ageSeconds": 1380
   },
-  "next": "Parked (needs-answer) in design: import the design output, then resume.",
+  "next": "Parked: the reply to 'Accept the draft?' was not understood.\nFix the cause, then resume to check again, or cancel.",
   "answer": {
     "kind": "resume",
-    "actionId": "ApplyCommand:answer",
+    "actionId": "ApplyCommand:answer-resume",
     "class": "desk",
-    "cli": "sindri workflow answer workflow/PRJ-exports --resume --text <answer>",
+    "cli": "sindri workflow answer ITM-01JL4/dev-triage-three-state/1 --resume [--text <answer>]",
     "atTerminal": false
   },
   "child": null,
@@ -26,25 +26,25 @@
   "commands": [
     {
       "verb": "answer",
-      "actionId": "ApplyCommand:answer",
+      "actionId": "ApplyCommand:answer-resume",
       "class": "desk",
-      "cli": "sindri workflow answer workflow/PRJ-exports --resume --text <answer>",
+      "cli": "sindri workflow answer ITM-01JL4/dev-triage-three-state/1 --resume [--text <answer>]",
       "confirm": null
     },
     {
       "verb": "takeover",
       "actionId": "ApplyCommand:takeover",
-      "class": "protected",
-      "cli": "sindri workflow takeover workflow/PRJ-exports",
+      "class": "pause",
+      "cli": "sindri workflow takeover ITM-01JL4/dev-triage-three-state/1",
       "confirm": null
     },
     {
       "verb": "cancel",
       "actionId": "ApplyCommand:cancel",
-      "class": "protected",
-      "cli": "sindri workflow cancel workflow/PRJ-exports",
-      "confirm": "Cancel workflow/PRJ-exports? 1 running steps stop; 0 children are cancelled."
+      "class": "desk",
+      "cli": "sindri workflow cancel ITM-01JL4/dev-triage-three-state/1",
+      "confirm": "Cancel ITM-01JL4/dev-triage-three-state/1? 0 running steps stop; 0 children are cancelled."
     }
   ],
-  "text": "workflow/PRJ-exports  workflow.project@a8c21e7f0000  v12  parked: needs-answer  since 10-11 16:02 (20h 24m)\n  next      Parked (needs-answer) in design: import the design output, then resume.\n  answer    sindri workflow answer workflow/PRJ-exports --resume --text <answer>\n  commands  answer, takeover, cancel\n"
+  "text": "ITM-01JL4/dev-triage-three-state/1  workflow.dev-triage-three-state@88a0e8fc810f  v1  parked: needs-answer  since 12:03 (23m)\n  next      Parked: the reply to 'Accept the draft?' was not understood.\n            Fix the cause, then resume to check again, or cancel.\n  answer    sindri workflow answer ITM-01JL4/dev-triage-three-state/1 --resume [--text <answer>]\n  commands  answer, takeover, cancel\n"
 }

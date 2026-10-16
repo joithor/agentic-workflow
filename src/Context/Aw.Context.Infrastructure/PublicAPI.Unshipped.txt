@@ -1,3 +1,4 @@
 #nullable enable
 Aw.Context.Infrastructure.ContextInfrastructureServiceCollectionExtensions
 static Aw.Context.Infrastructure.ContextInfrastructureServiceCollectionExtensions.AddContextInfrastructure(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Func<string!, string?>! environment) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Context.Infrastructure.ContextInfrastructureServiceCollectionExtensions.AddContextLabeling(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

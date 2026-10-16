@@ -545,6 +545,17 @@
           "xunit.v3.runner.common": "[4.0.1]"
         }
       },
+      "aw-meta": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "Aw.Kernel.Telemetry": "[1.0.0, )",
+          "Aw.Meta.Core": "[1.0.0, )",
+          "Aw.Meta.Features": "[1.0.0, )",
+          "Aw.Meta.Infrastructure": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection": "[10.0.12, 10.0.12]"
+        }
+      },
       "aw-packets": {
         "type": "Project",
         "dependencies": {
@@ -611,6 +622,7 @@
           "Aw.Kernel.Data": "[1.0.0, )",
           "Aw.Redaction": "[1.0.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.12, 10.0.12]",
           "YamlDotNet": "[18.1.0, 18.1.0]"
         }
       },
@@ -684,6 +696,31 @@
           "OpenTelemetry": "[1.19.1, 1.19.1]"
         }
       },
+      "aw.meta.core": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
+          "Vogen": "[8.0.7, 8.0.7]"
+        }
+      },
+      "aw.meta.features": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "Aw.Meta.Core": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]"
+        }
+      },
+      "aw.meta.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "Aw.Kernel.Data": "[1.0.0, )",
+          "Aw.Meta.Core": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]"
+        }
+      },
       "aw.packets.core": {
         "type": "Project",
         "dependencies": {
@@ -726,6 +763,7 @@
         "dependencies": {
           "Aw.Kernel": "[1.0.0, )",
           "Aw.Kernel.Data": "[1.0.0, )",
+          "Aw.Redaction": "[1.0.0, )",
           "Aw.Sindri.Core": "[1.0.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
           "YamlDotNet": "[18.1.0, 18.1.0]"
@@ -745,6 +783,7 @@
         "type": "Project",
         "dependencies": {
           "Aw.Kernel": "[1.0.0, )",
+          "Aw.Redaction": "[1.0.0, )",
           "Aw.Sindri.Core": "[1.0.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
           "Temporalio": "[1.19.0, 1.19.0]"
@@ -778,6 +817,9 @@
           "Aw.Context.Core": "[1.0.0, )",
           "Aw.Context.Features": "[1.0.0, )",
           "Aw.Context.Infrastructure": "[1.0.0, )",
+          "Aw.Judge.Core": "[1.0.0, )",
+          "Aw.Judge.Features": "[1.0.0, )",
+          "Aw.Judge.Infrastructure": "[1.0.0, )",
           "Aw.Kernel": "[1.0.0, )",
           "Aw.Kernel.Telemetry": "[1.0.0, )",
           "Aw.Sindri.Core": "[1.0.0, )",

@@ -16,20 +16,54 @@ internal static class ApiScenarios
     [
         ("status", "running-unapproved"), ("status", "running-approved"), ("status", "human-no-token"),
         ("status", "human-stale-token"), ("status", "unknown-caller"), ("status", "prover-refused"),
-        ("ping", "running"), ("commands", "catalog"), ("events", "process-started"),
+        ("ping", "running"), ("commands", "catalog"), ("events", "process-started"), ("events-catalog", "catalog"),
         ("stop", "accepted"), ("stop", "refused-session"), ("stop", "refused-origin"),
         ("profile-approve", "preview"), ("profile-approve", "approved"), ("profile-approve", "already-approved"),
         ("profile-approve", "refused-session"), ("profile-approve", "refused-no-terminal"), ("profile-approve", "refused-origin"),
         ("profile-approve", "stale-hash"), ("profile-approve", "bad-body"),
+        ("workflow-recipe", "not-found"),
+        .. ContextApiScenarios.Rows,
+        .. ViewScenarios.All,
+        .. ItemScenarios.All,
+        .. StreamScenarios.All,
     ];
 
     /// <summary>Whether the scenario's host must refuse the prover label (its home isn't temporary).</summary>
     public static bool NeedsNonTemporaryHome(string slug, string scenario) => (slug, scenario) is ("status", "prover-refused");
 
+    /// <summary>Starts the host the scenario runs on: the plain golden host, or for the context routes one over a small git repo with a map.</summary>
+    public static async Task<GoldenHost> Start(string slug, string scenario, CancellationToken ct) =>
+        ContextApiScenarios.Handles(slug)
+            ? await ContextApiScenarios.Start(slug, scenario, ct)
+            : await GoldenHost.Start(temporary: !NeedsNonTemporaryHome(slug, scenario), ct, ProfileYaml(slug, scenario));
+
+    /// <summary>The live profile the scenario's host starts with: the item scenarios need two repos.</summary>
+    public static string ProfileYaml(string slug, string scenario) => ItemScenarios.Handles(slug, scenario) || StreamScenarios.Handles(slug, scenario) ? ItemScenarios.ProfileYaml : GoldenHost.ProfileYaml;
+
     /// <summary>Runs the scenario against <paramref name="host"/> and returns the body to compare.</summary>
     public static async Task<string> Body(GoldenHost host, string slug, string scenario, CancellationToken ct)
     {
+        if (ContextApiScenarios.Handles(slug))
+        {
+            return await ContextApiScenarios.Body(host, slug, scenario, ct);
+        }
+
         var token = host.Token.Value;
+        if (ItemScenarios.Handles(slug, scenario))
+        {
+            return await ItemScenarios.Body(host, slug, scenario, ct);
+        }
+
+        if (StreamScenarios.Handles(slug, scenario))
+        {
+            return await StreamScenarios.Body(host, slug, scenario, ct);
+        }
+
+        if (ViewScenarios.Handles(slug, scenario))
+        {
+            return await ViewScenarios.Body(host, slug, scenario, ct);
+        }
+
         return (slug, scenario) switch
         {
             ("status", "running-unapproved") => await Ask(host, Get("/sindri/status", Human(token))),
@@ -41,6 +75,8 @@ internal static class ApiScenarios
             ("ping", "running") => await Ask(host, Get("/sindri/ping", Human(token))),
             ("commands", "catalog") => await Ask(host, Get("/sindri/commands", Human(token))),
             ("events", "process-started") => await FirstEventData(host, ct),
+            ("events-catalog", "catalog") => await Ask(host, Get("/sindri/events/catalog", Human(token))),
+            ("workflow-recipe", "not-found") => await Ask(host, Get(UnknownRecipe, Human(token))),
             ("stop", "accepted") => await Ask(host, Post("/sindri/stop", json: null, Human(token))),
             ("stop", "refused-session") => await Ask(host, Post("/sindri/stop", json: null, Session)),
             ("stop", "refused-origin") => await Ask(host, Post("/sindri/stop", json: null, [.. Human(token), Origin])),
@@ -49,6 +85,10 @@ internal static class ApiScenarios
     }
 
     private static (string Name, string Value)[] Session => [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")];
+
+    // An unknown recipe answers the engine's SND-RECIPE-002 (WorkflowErrors.RecipeNotFound; API spec §3.8). Served today by
+    // the recipe show route (id@hash); P11 serves GET /workflow/recipes/{id} and re-records this file from that route.
+    private static string UnknownRecipe => "/sindri/workflow/recipes/workflow.unknown@" + new string('0', 64);
 
     private static (string Name, string Value) Origin => ("Origin", "http://localhost:3000");
 

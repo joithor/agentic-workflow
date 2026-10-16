@@ -23,7 +23,7 @@ public sealed class ShellAttentionTests
 
     private async Task<ShellViewModel> Shell(bool running)
     {
-        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences), new FakeClipboard());
         await shell.Restore(Token);
         if (running)
         {

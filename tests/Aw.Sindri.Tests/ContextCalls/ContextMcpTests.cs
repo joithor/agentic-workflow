@@ -27,7 +27,7 @@ public sealed class ContextMcpTests : IDisposable
     public void Dispose() => _repo.Dispose();
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task Tools_list_names_both_context_tools_read_only_even_while_sessions_are_off()
+    public async Task Tools_list_names_the_context_tools_read_only_even_while_sessions_are_off()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var host = await ContextHosts.Approved(_repo, sessions: false, ct);
@@ -35,7 +35,7 @@ public sealed class ContextMcpTests : IDisposable
 
         var tools = await mcp.Client.ListToolsAsync(cancellationToken: ct);
 
-        Assert.Equal(["context_query", "context_sources"], tools.Select(t => t.Name).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal(["context_lenses", "context_neighbors", "context_node", "context_query", "context_sources"], tools.Select(t => t.Name).Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.All(tools, t => Assert.True(t.ProtocolTool.Annotations?.ReadOnlyHint));
         var query = tools.Single(t => t.Name == "context_query").JsonSchema;
         Assert.False(query.GetProperty("additionalProperties").GetBoolean());
@@ -115,6 +115,9 @@ public sealed class ContextMcpTests : IDisposable
         }.Select(r => (r.IsError, Code(r)));
 
         Assert.NotEqual(true, (await own.Call("context_query", """{"q":"orientation","depth":null,"node":null}""", ct)).IsError);   // why: null is absent
+        Assert.NotEqual(true, (await own.Call("context_query", """{"q":"orientation","depth":2}""", ct)).IsError);
+        Assert.Equal("SND-CONTEXT-006", Code(await own.Call("context_query", """{"q":"orientation","depth":9}""", ct)));
+        Assert.Equal("SND-CONTEXT-006", Code(await own.Call("context_query", """{"q":"orientation","budget":0}""", ct)));
         Assert.Equal(
             [(true, "SND-CONTEXT-020"), (true, "SND-CONTEXT-020"), (true, "SND-CONTEXT-003"), (true, "SND-CONTEXT-021"), (true, "SND-CONTEXT-022"),
              (true, "SND-CONTEXT-022"), (true, "SND-CONTEXT-006"), (true, "SND-CONTEXT-023"), (true, "SND-CONTEXT-020"), (true, "SND-CONTEXT-021"),

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- Aw.Sindri.Ui (readiness spec §4a "UI", .agents/rules/csharp.md "The UI package"): the Avalonia views, their view
        models, the typed client of Sindri's HTTP API and the ports for platform services. It references no Sindri
-       project: its edges to Sindri are the HTTP API (GET /sindri/ping, /sindri/status, /sindri/events; docs/csharp/
+       project: its edges to Sindri are the HTTP API (the routes are the http edge in deps.yaml; docs/csharp/
        sindri.md), the endpoint record control.json it finds the API by, and auth/human.token, the per-start human
        token it sends. Each platform head (Aw.Sindri.Ui.Desktop) adds Main, composition and one adapter per port. -->
   <PropertyGroup>

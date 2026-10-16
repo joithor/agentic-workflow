@@ -32,6 +32,7 @@ public sealed partial class ContrastTests
         { "InkTertiary", "Surface1", 3.3, 0 },
         { "PrimaryHover", "Canvas", 7.3, TextAa },
         { "PrimaryHover", "Surface1", 6.6, NonText },
+        { "PrimaryHover", "Surface3", 6.1, NonText },   // the palette's selected-row bar on its card (U1 run 1, a11y-4)
         { "OnPrimary", "Primary", 4.70, TextAa },
         { "OnPrimary", "PrimaryHoverFill", 5.5, TextAa },
         { "OnPrimary", "PrimaryPressed", 6.2, TextAa },
@@ -40,6 +41,10 @@ public sealed partial class ContrastTests
         { "Success", "Canvas", 6.6, TextAa },
         { "Attention", "Canvas", 9.4, TextAa },
         { "Attention", "Surface1", 8.6, TextAa },
+        { "Attention", "AttentionSoft", 7.9, TextAa },   // the attn chip
+        { "Error", "ErrorSoft", 5.3, TextAa },   // the fail chip
+        { "Success", "SuccessSoft", 5.8, TextAa },   // the ok chip
+        { "InkMuted", "Surface2", 12.5, TextAa },   // the neutral chip
         { "Hairline", "Canvas", 1.3, 0 },
         { "HairlineStrong", "Canvas", 1.7, 0 },
     };

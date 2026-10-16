@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { ScriptLoginSchema } from "./login.js";
+import { parseStepTarget } from "./step-target.js";
 
 // A machine-checkable post-step expectation. Free-form prose can't be
 // asserted, so the planner must emit one of these shapes; runStep checks it
@@ -30,6 +31,10 @@ export const ScriptStepSchema = z
     if (step.index !== undefined && step.action !== "click" && step.action !== "fill" && step.action !== "scroll") {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["index"], message: "index is only allowed for click, fill and scroll steps" });
     }
+    if (step.action === "click" || step.action === "fill") {
+      const parsed = parseStepTarget(step.target);
+      if ("error" in parsed) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["target"], message: parsed.error });
+    }
     if (step.action === "scroll" && step.value !== undefined && !SCROLL_VALUE.test(step.value)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["value"], message: 'scroll value must be "end", "start", "bottom", "top" or a non-negative integer pixel offset' });
     }
@@ -50,7 +55,9 @@ export type PlanningMeta = z.infer<typeof PlanningMetaSchema>;
 
 export const UiScriptSchema = z.object({
   route: z.string(),
-  role: z.enum(["manager", "staff", "central-staffer", "super-admin"]),
+  // The app role the script signs in as (the app's own names, e.g. "admin");
+  // recorded in the summary, not interpreted.
+  role: z.string().regex(/^[a-z][a-z0-9-]*$/),
   /** Env-var sign-in run before the first step (credentials never live in the script). */
   login: ScriptLoginSchema.optional(),
   steps: z.array(ScriptStepSchema).min(1),
