@@ -70,6 +70,19 @@ public sealed class ShellSpokenTests
     }, Token);
 
     [Fact]
+    public Task One_feed_update_with_a_cleared_row_and_new_rows_is_one_sentence() => UiThread.Run(async () =>
+    {
+        var (shell, spoken) = await Listening();
+        shell.ShowNeedsYou(Feed(NeedsYouRows.Park(), NeedsYouRows.Failure()));
+        spoken.Clear();
+        Assert.True(shell.Press("J"));
+
+        shell.ShowNeedsYou(Feed(NeedsYouRows.Failure(), NeedsYouRows.Decision("decision:DEC-1"), NeedsYouRows.Decision("decision:DEC-2")));
+
+        Assert.Equal(["ITM-01JC8 cleared, 3 now need you"], spoken);
+    }, Token);
+
+    [Fact]
     public Task A_selected_instance_that_finishes_is_spoken() => UiThread.Run(async () =>
     {
         var (shell, spoken) = await Listening();
