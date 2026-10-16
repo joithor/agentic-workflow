@@ -25,7 +25,7 @@ internal static class JobText
         {
             var end = string.Join(' ', new[] { j.Summary, j.Code }.Where(static p => p is not null));
             _ = text.AppendLine(string.Create(CultureInfo.InvariantCulture,
-                $"{j.Id.Value}  {State(j.State)}  {j.Kind.Value}  {j.Service?.Value ?? j.Key.Value}  {Time(j.StartedAt)}  {j.Rounds} line{(j.Rounds == 1 ? string.Empty : "s")}{(end.Length == 0 ? string.Empty : "  " + end)}"));
+                $"{j.Id.Value}  {JobStateNames.Of(j.State)}  {j.Kind.Value}  {j.Service?.Value ?? j.Key.Value}  {Time(j.StartedAt)}  {j.Rounds} line{(j.Rounds == 1 ? string.Empty : "s")}{(end.Length == 0 ? string.Empty : "  " + end)}"));
         }
 
         return text.ToString();
@@ -38,7 +38,7 @@ internal static class JobText
     {
         ArgumentNullException.ThrowIfNull(job);
         var text = new StringBuilder();
-        _ = text.AppendLine($"{job.Id.Value}  {State(job.State)}  {job.Kind.Value}  {job.Service?.Value ?? job.Key.Value}");
+        _ = text.AppendLine($"{job.Id.Value}  {JobStateNames.Of(job.State)}  {job.Kind.Value}  {job.Service?.Value ?? job.Key.Value}");
         _ = text.AppendLine($"started by {job.StartedBy} at {Time(job.StartedAt)}");
         foreach (var line in job.Progress)
         {
@@ -59,13 +59,4 @@ internal static class JobText
     }
 
     private static string Time(DateTimeOffset at) => at.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ss'Z'", CultureInfo.InvariantCulture);
-
-    private static string State(JobState state) => state switch
-    {
-        JobState.Running => "running",
-        JobState.Succeeded => "succeeded",
-        JobState.Failed => "failed",
-        JobState.Cancelled => "cancelled",
-        _ => "unknown",
-    };
 }

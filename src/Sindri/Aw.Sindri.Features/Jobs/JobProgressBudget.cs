@@ -12,21 +12,21 @@ internal sealed class JobProgressBudget
 
     /// <summary>What to do with the next line.</summary>
     /// <returns>The decision.</returns>
-    public JobAdmission Admit()
+    public ProgressDecision Admit()
     {
         if (Written < JobLimits.MaxProgressEvents)
         {
             Written++;
-            return JobAdmission.Write;
+            return ProgressDecision.Write;
         }
 
         if (_noticed)
         {
-            return JobAdmission.Drop;
+            return ProgressDecision.Drop;
         }
 
         _noticed = true;
         Written++;
-        return JobAdmission.Truncate;
+        return ProgressDecision.Truncate;
     }
 }

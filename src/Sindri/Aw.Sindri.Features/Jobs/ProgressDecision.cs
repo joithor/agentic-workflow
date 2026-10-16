@@ -3,7 +3,7 @@ using Aw.Sindri.Core.Jobs;
 namespace Aw.Sindri.Features.Jobs;
 
 /// <summary>What the writer does with the next progress line.</summary>
-internal enum JobAdmission
+internal enum ProgressDecision
 {
     /// <summary>Record it.</summary>
     Write,

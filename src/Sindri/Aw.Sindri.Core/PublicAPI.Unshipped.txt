@@ -7368,7 +7368,6 @@ static Aw.Sindri.Core.Views.EmptyText.FixFor(string? detail) -> string!
 static Aw.Sindri.Core.Views.EmptyText.For(Aw.Sindri.Core.Views.ViewsStatus! views, bool empty, System.Func<string!>! emptySentence) -> string?
 static Aw.Sindri.Core.Views.EmptyText.Group(Aw.Sindri.Core.Items.Vocabulary.QueueGroup group) -> string!
 static Aw.Sindri.Core.Views.EmptyText.Items(Aw.Sindri.Core.Items.Vocabulary.ItemState? state, Aw.Sindri.Core.Ids.RepoName? repo) -> string!
-static Aw.Sindri.Core.Views.EmptyText.Jobs() -> string!
 static Aw.Sindri.Core.Views.EmptyText.Jobs(Aw.Sindri.Core.Jobs.JobState? state, Aw.Sindri.Core.Ids.JobKind? kind) -> string!
 static Aw.Sindri.Core.Views.EmptyText.NeedsYou(int running, int queued) -> string!
 static Aw.Sindri.Core.Views.EmptyText.Queue() -> string!
@@ -8159,3 +8158,5 @@ Aw.Sindri.Core.Jobs.IJobAdmission<TRequest>.Rollback(TRequest request) -> void
 Aw.Sindri.Core.Jobs.JobOrder
 static Aw.Sindri.Core.Jobs.JobOrder.NewestFirst(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Jobs.JobRow!>! rows) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Jobs.JobRow!>!
 static Aw.Sindri.Core.Jobs.JobOrder.OldestFirst(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Jobs.JobRow!>! rows) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Jobs.JobRow!>!
+Aw.Sindri.Core.Jobs.JobStateNames
+static Aw.Sindri.Core.Jobs.JobStateNames.Of(Aw.Sindri.Core.Jobs.JobState state) -> string!

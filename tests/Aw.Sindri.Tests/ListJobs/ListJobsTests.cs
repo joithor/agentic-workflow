@@ -74,7 +74,7 @@ public sealed class ListJobsTests
         var list = (await Service().Handle(A.ListJobsRequest().Build(), Token)).Value;
 
         Assert.Empty(list.Jobs);
-        Expect.Equal(EmptyText.Jobs(), list.Empty);
+        Expect.Equal(EmptyText.Jobs(state: null, kind: null), list.Empty);
     }
 
     [Fact]

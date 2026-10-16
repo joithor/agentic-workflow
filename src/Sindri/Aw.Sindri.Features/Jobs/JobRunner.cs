@@ -219,12 +219,12 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
                 }
 
                 var admitted = budget.Admit();
-                if (admitted == JobAdmission.Drop)
+                if (admitted == ProgressDecision.Drop)
                 {
                     continue;
                 }
 
-                var text = admitted == JobAdmission.Truncate ? "(progress truncated)" : line;
+                var text = admitted == ProgressDecision.Truncate ? "(progress truncated)" : line;
                 var written = await Retry(() => writer.Progress(run.Start, budget.Written, text, CancellationToken.None)).ConfigureAwait(false);
                 if (written.IsError)
                 {

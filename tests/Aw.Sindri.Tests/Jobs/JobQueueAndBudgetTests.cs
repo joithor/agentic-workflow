@@ -70,10 +70,10 @@ public sealed class JobQueueAndBudgetTests
         var budget = new JobProgressBudget();
         var decisions = Enumerable.Range(1, 2_005).Select(_ => budget.Admit()).ToList();
 
-        Expect.Equal(JobLimits.MaxProgressEvents, decisions.Count(d => d == JobAdmission.Write));
-        Expect.Equal(JobAdmission.Truncate, decisions[JobLimits.MaxProgressEvents]);
-        Expect.Equal(1, decisions.Count(d => d == JobAdmission.Truncate));
-        Expect.Equal(4, decisions.Count(d => d == JobAdmission.Drop));
+        Expect.Equal(JobLimits.MaxProgressEvents, decisions.Count(d => d == ProgressDecision.Write));
+        Expect.Equal(ProgressDecision.Truncate, decisions[JobLimits.MaxProgressEvents]);
+        Expect.Equal(1, decisions.Count(d => d == ProgressDecision.Truncate));
+        Expect.Equal(4, decisions.Count(d => d == ProgressDecision.Drop));
         Expect.Equal(JobLimits.MaxProgressEvents + 1, budget.Written);
     }
 }

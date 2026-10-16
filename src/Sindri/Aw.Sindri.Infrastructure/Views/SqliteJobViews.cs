@@ -14,14 +14,14 @@ internal sealed class SqliteJobViews(IViewReader reader) : IJobViews
 
     public async ValueTask<Result<IReadOnlyList<JobRow>>> Running(CancellationToken cancellationToken)
     {
-        var rows = await reader.Where<JobRow>(ViewNames.Jobs, ViewColumn.State, Wire(JobState.Running), cancellationToken).ConfigureAwait(false);
+        var rows = await reader.Where<JobRow>(ViewNames.Jobs, ViewColumn.State, JobStateNames.Of(JobState.Running), cancellationToken).ConfigureAwait(false);
         return rows.IsError ? rows.Error : Results.Success(JobOrder.OldestFirst(rows.Value));
     }
 
     public async ValueTask<Result<IReadOnlyList<JobRow>>> List(JobState? state, JobKind? kind, CancellationToken cancellationToken)
     {
         var rows = state is { } wanted
-            ? await reader.Where<JobRow>(ViewNames.Jobs, ViewColumn.State, Wire(wanted), cancellationToken).ConfigureAwait(false)
+            ? await reader.Where<JobRow>(ViewNames.Jobs, ViewColumn.State, JobStateNames.Of(wanted), cancellationToken).ConfigureAwait(false)
             : kind is { } of
                 ? await reader.Where<JobRow>(ViewNames.Jobs, ViewColumn.Kind, of.Value, cancellationToken).ConfigureAwait(false)
                 : await reader.List<JobRow>(ViewNames.Jobs, cancellationToken).ConfigureAwait(false);
@@ -29,14 +29,4 @@ internal sealed class SqliteJobViews(IViewReader reader) : IJobViews
             ? rows.Error
             : Results.Success(JobOrder.NewestFirst(rows.Value.Where(r => kind is null || r.Kind == kind)));
     }
-
-    /// <summary>The state as the row's JSON writes it (the 'state' column is generated from that text).</summary>
-    private static string Wire(JobState state) => state switch
-    {
-        JobState.Running => "running",
-        JobState.Succeeded => "succeeded",
-        JobState.Failed => "failed",
-        JobState.Cancelled => "cancelled",
-        _ => throw new ArgumentOutOfRangeException(nameof(state), state, "unknown job state"),
-    };
 }
