@@ -115,6 +115,8 @@ which leaves the `x:Name` fields null; `Views/NamedControlsTests` checks each vi
 this start-up path the way the head does (`Create`, `Initialize`, `OnFrameworkInitializationCompleted` with a classic
 desktop lifetime).
 
+**The UI context.** The app factory (`SindriApp.Create`) installs Avalonia's synchronization context before it builds any view model, because `AppBuilder.Configure` runs it before Avalonia does; `UiContext` throws when it is posted to from another thread with no context, and a test that has pool-thread timers and no UI thread uses `InlineUiContext`.
+
 **Start-up never fails silently.** The start-up and the following run as one task on the UI thread; when it throws,
 the app logs `SND-UI-004` through `SindriPlatform.Log` (an `ILogger`; the desktop head's is `Aw.Kernel.Telemetry`'s,
 JSON lines on standard error, `AW_LOG_LEVEL`) with the exception's type only (no message, no stack: they can carry paths

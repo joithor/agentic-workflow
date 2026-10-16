@@ -18,7 +18,6 @@ namespace Aw.Sindri.Ui.Views;
 /// </summary>
 public sealed partial class SindriApp : Application
 {
-    private readonly ShellViewModel? _shell;
     private readonly Preferences? _preferences;
     private readonly TimeProvider? _clock;
     private InstanceListener? _listener;
@@ -36,7 +35,7 @@ public sealed partial class SindriApp : Application
 
     private SindriApp(ShellViewModel shell, Preferences preferences, SindriPlatform platform, TimeProvider clock)
     {
-        _shell = shell;
+        Shell = shell;
         _preferences = preferences;
         _clock = clock;
         Platform = platform;
@@ -59,6 +58,9 @@ public sealed partial class SindriApp : Application
         return new(new ShellViewModel(platform.Records, api, clock, preferences, clipboard, platform.Motion), preferences, platform, clock);
     }
 
+    /// <summary>The shell the app was built over; null for the theme-only app.</summary>
+    internal ShellViewModel? Shell { get; }
+
     /// <summary>The head's adapters, or null for the theme-only app.</summary>
     internal SindriPlatform? Platform { get; }
 
@@ -79,7 +81,7 @@ public sealed partial class SindriApp : Application
     /// <inheritdoc />
     public override void OnFrameworkInitializationCompleted()
     {
-        if (_shell is not null && _preferences is not null && Platform is { } platform && ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        if (Shell is not null && _preferences is not null && Platform is { } platform && ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             // A later launch is answered from now on, while the window is still being built (ShellOpened hands the
             // messages to the window's lifetime); reading ends when the head disposes the instance.
@@ -88,7 +90,7 @@ public sealed partial class SindriApp : Application
 
             // Started on the UI thread, so the view models' awaits come back to it. Its failure is observed there: logged,
             // then the app ends with FailedExitCode.
-            _ = Open(desktop, _shell, _preferences, platform).ContinueWith(
+            _ = Open(desktop, Shell, _preferences, platform).ContinueWith(
                 opened => Fail(desktop, platform, opened.Exception),
                 CancellationToken.None,
                 TaskContinuationOptions.OnlyOnFaulted,

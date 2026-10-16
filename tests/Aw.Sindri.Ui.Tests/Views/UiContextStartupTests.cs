@@ -50,6 +50,20 @@ public sealed class UiContextStartupTests
     }
 
     [Fact]
+    public async Task The_OS_motion_setting_changing_on_a_pool_thread_after_the_factory_reaches_the_UI_thread()
+    {
+        var motion = new FakeMotionPreference();
+        var platform = new SindriPlatform(new InMemoryEndpointRecords(), new InMemoryHumanToken(), new InMemoryPreferencesStore(), motion, new FakeSingleInstance(new FakeInstanceChannel()), new FakeTray());
+        var app = OnBareThread(() => SindriApp.Create(platform, new FakeTimeProvider(A.Noon)));
+
+        var thrown = await Record.ExceptionAsync(() => Task.Run(() => motion.Set(reduce: true), TestContext.Current.CancellationToken));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.Null(thrown);
+        Assert.True(app.Shell!.NeedsYou.Seen.ReducedMotion);
+    }
+
+    [Fact]
     public void A_post_from_another_thread_with_no_UI_context_fails_loudly_instead_of_running_there()
     {
         var ui = OnBareThread(static () => new UiContext());
