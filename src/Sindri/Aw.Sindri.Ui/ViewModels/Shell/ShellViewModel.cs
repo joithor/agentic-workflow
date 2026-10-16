@@ -60,6 +60,8 @@ internal sealed partial class ShellViewModel : ObservableObject
         Item = new ItemSheetViewModel(api, Health.Catalog, clock);
         Health.Follow(Queue.Refresh);
         Health.Follow(Item.Refresh);
+        _api = api;
+        Health.Follow(ReadNeedsYou);
         Queue.PropertyChanged += OnQueueChanged;
         Attention = AttentionSummary.For(feed: null, State, _clock.GetUtcNow());
     }

@@ -13,6 +13,9 @@ namespace Aw.Sindri.Ui.ViewModels.Controls;
 /// <param name="clock">The clock for the controls' timings.</param>
 internal sealed class CatalogViewModel(IClipboard clipboard, TimeProvider clock) : ObservableObject
 {
+    /// <summary>The catalog as last read; null before the first. Rows that carry the readiness of an action the API names.</summary>
+    internal CommandList? Listed { get; private set; }
+
     private Dictionary<string, CommandRowView> _rows = new(StringComparer.Ordinal);
 
     /// <summary>Every catalog row, in the API's order.</summary>
@@ -46,6 +49,7 @@ internal sealed class CatalogViewModel(IClipboard clipboard, TimeProvider clock)
     /// <param name="catalog">The catalog.</param>
     internal void Show(Uri api, ISindriApi client, CommandList catalog)
     {
+        Listed = catalog;
         _rows = catalog.Rows.ToDictionary(r => r.Action, StringComparer.Ordinal);
         Controls = [.. catalog.Rows.Select(row => new ControlViewModel(row, Sender(api, client, row.Action), clipboard, clock))];
         var pending = Controls.Where(c => c.IsPending).ToList();

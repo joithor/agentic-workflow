@@ -3,7 +3,6 @@ using Aw.Sindri.Ui.Api;
 namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 
 /// <summary>Maps the API's needs-you list, with the command catalog and the pending decisions, onto the rows and feed the view models take.</summary>
-#pragma warning disable MA0182 // why: the shell reads it in the next commit (T5 re-reads)
 internal static class NeedsYouMapper
 {
     private const string Decide = "Decide";
