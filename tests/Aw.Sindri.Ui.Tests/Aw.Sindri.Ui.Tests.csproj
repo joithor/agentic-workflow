@@ -6,6 +6,10 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>Aw.Sindri.Ui.Tests</RootNamespace>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- The integration lane builds ~500 windows on one UI thread, so it is bound by that thread's CPU. Dynamic PGO
+         instrumentation and the background GC thread both cost it: measured 78 s -> 54 s for the lane (LANE-PKG-001). -->
+    <TieredPGO>false</TieredPGO>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
   </PropertyGroup>
 
   <ItemGroup>

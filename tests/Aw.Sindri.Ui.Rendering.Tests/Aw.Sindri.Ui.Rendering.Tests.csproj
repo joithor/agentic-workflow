@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aw.Sindri.Ui.Rendering.Tests: the tests that read real pixels (the focus ring as drawn, the tray marks), so they run
+       under Avalonia's headless platform with Skia drawing on. Everything else stays in Aw.Sindri.Ui.Tests, which runs with
+       headless drawing off: building a window and rendering it through Skia dominated that project's integration lane
+       (LANE-PKG-001). Both projects belong to the SindriUi package, so their lane times add up against one budget. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Aw.Sindri.Ui.Rendering.Tests</RootNamespace>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <PackageReference Include="Avalonia.Headless" />
+    <PackageReference Include="Avalonia.Skia" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Sindri/Aw.Sindri.Ui/Aw.Sindri.Ui.csproj" />
+    <ProjectReference Include="../../src/Sindri/Aw.Sindri.Ui.Desktop/Aw.Sindri.Ui.Desktop.csproj" />
+    <ProjectReference Include="../Aw.Sindri.Ui.Testing/Aw.Sindri.Ui.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <!-- Shared with Aw.Sindri.Ui.Tests by link, not copy: the key-frame host, the serial collection and the token reader. -->
+  <ItemGroup>
+    <Compile Include="../Aw.Sindri.Ui.Tests/Views/FrameHost.cs" Link="Shared/FrameHost.cs" />
+    <Compile Include="../Aw.Sindri.Ui.Tests/Views/FrameFile.cs" Link="Shared/FrameFile.cs" />
+    <Compile Include="../Aw.Sindri.Ui.Tests/Views/HeadlessWindows.cs" Link="Shared/HeadlessWindows.cs" />
+    <Compile Include="../Aw.Sindri.Ui.Tests/Theme/TokenFile.cs" Link="Shared/TokenFile.cs" />
+    <Compile Include="../Aw.Sindri.Ui.Tests/Theme/UiSource.cs" Link="Shared/UiSource.cs" />
+    <Compile Include="../Aw.Sindri.Ui.Tests/Theme/Wcag.cs" Link="Shared/Wcag.cs" />
+  </ItemGroup>
+
+  <!-- The API goldens the fake serves (Aw.Sindri.Ui.Testing reads them from the output folder): the same files as Aw.Sindri.Ui.Tests. -->
+  <ItemGroup>
+    <None Include="../Aw.Sindri.Tests/Golden/Api/**/*.json" Link="Golden/Api/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../Aw.Sindri.Ui.Tests/Golden/SpecShaped/**/*.json" Link="Golden/SpecShaped/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
