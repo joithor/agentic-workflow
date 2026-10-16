@@ -18,7 +18,7 @@ public sealed class JobRuntimeTests
 {
     private static CallerContext Human() => A.Caller().Human().Build();
 
-    private static async Task<RealJobRuntime> Open(Aw.Sindri.Core.Text.ITextScrubber? scrubber = null)
+    private static async Task<RealJobRuntime> Open(Core.Text.ITextScrubber? scrubber = null)
     {
         var runtime = new RealJobRuntime(scrubber);
         await runtime.Open();
@@ -112,7 +112,7 @@ public sealed class JobRuntimeTests
     public async Task The_ninth_running_job_is_refused_SND_JOB_002()
     {
         await using var runtime = await Open();
-        var started = new List<Aw.Sindri.Core.Ids.JobId>();
+        var started = new List<Core.Ids.JobId>();
         for (var n = 1; n <= JobLimits.MaxRunning; n++)
         {
             started.Add((await runtime.Start(new ProbeJobRequest(string.Create(CultureInfo.InvariantCulture, $"hold{n}")), Human())).Value.JobId);

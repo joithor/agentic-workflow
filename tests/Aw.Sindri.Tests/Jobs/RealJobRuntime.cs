@@ -18,9 +18,9 @@ using Aw.Sindri.Features.Jobs;
 using Aw.Sindri.Host;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Jobs;
+using Aw.Sindri.Tests.Commands.Authorization;
 using Aw.Sindri.Tests.Commands.Chain;
 using Aw.Sindri.Tests.Server;
-using Aw.Sindri.Tests.Commands.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Tests.Jobs;
@@ -52,12 +52,13 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
             .AddSingleton<ICommandCatalog>(catalog)
             .AddSingleton<IProjectorStatus>(new ProjectorProgress(H.Clock))
             .AddSingleton<IHeavySlots>(_heavy)
-            .AddSingleton<ITextScrubber>(scrubber ?? new PassThroughScrubber())
+            .AddSingleton(scrubber ?? new PassThroughScrubber())
             .AddSingleton<IJobContextAccessor>(new FakeJobContextAccessor())
             .AddSingleton<EchoJobProbe>()
             .AddSingleton(Latch)
             .AddSingleton<Microsoft.Extensions.Logging.ILogger<AuditTrail>>(new ListLogger<AuditTrail>())
             .AddSingleton<JobRegistry>()
+            .AddSingleton(static sp => new JobStartRecorder(sp.GetRequiredService<HeldLease>(), sp.GetRequiredService<ILedgerStore>(), sp.GetRequiredService<EventFactory>()))
             .AddSingleton(static sp => new JobEventWriter(sp.GetRequiredService<ILedgerStore>(), sp.GetRequiredService<HeldLease>(), sp.GetRequiredService<EventFactory>(),
                 sp.GetRequiredService<ITextScrubber>(), sp.GetRequiredService<ICallerContextAccessor>()))
             .AddSingleton(static sp => new JobRunner(sp.GetRequiredService<IServiceScopeFactory>(), sp.GetRequiredService<IJobContextAccessor>(),
@@ -136,11 +137,7 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
         }
     }
 
-    public async ValueTask DisposeAsync()
-    {
-        await Runner.DisposeAsync();
-        await _provider.DisposeAsync();
-    }
+    public ValueTask DisposeAsync() => _provider.DisposeAsync();
 
     private sealed class HeavyTakes : IHeavySlots
     {
