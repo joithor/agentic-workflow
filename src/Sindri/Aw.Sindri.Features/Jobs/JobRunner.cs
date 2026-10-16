@@ -79,14 +79,7 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
     {
         if (_runs.TryGetValue(job.Value, out var run))
         {
-            lock (run)
-            {
-                run.Cancelled = true;
-                if (run.Pending is null || run.Pending.Task.IsCompleted)
-                {
-                    run.Pending = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                }
-            }
+            run.Mark();
         }
     }
 
@@ -186,24 +179,33 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
     /// <summary>Writes how the job ended. A write that fails while the lease is still held is tried once more, then replaced by a failed end carrying the write's own code; a lost lease is recovery's.</summary>
     private async Task End(JobRun run, JobWorkResult? work)
     {
-        if (run.Pending is { } pending)
-        {
-            _ = await pending.Task.ConfigureAwait(false);   // a cancel is being recorded: whether it was is settled (recorded, or withdrawn) before the job decides how it ends
-        }
-
+        await Settle(run).ConfigureAwait(false);   // whether a cancel in flight was recorded or withdrawn is settled before the job decides how it ends
         if (run.WriteFailure is { } failure)
         {
             await Finish(run, new JobWorkResult(failure, string.Empty, Result: null)).ConfigureAwait(false);
         }
-        else if (work is not null && !run.Cancelled && !_stopping.IsCancellationRequested)
+        else if (!run.Cancelled && !_stopping.IsCancellationRequested && (work ?? Withdrawn(run)) is { } ending)
         {
-            var finished = await Retry(() => writer.Finish(run.Start, work, CancellationToken.None)).ConfigureAwait(false);
+            var finished = await Retry(() => writer.Finish(run.Start, ending, CancellationToken.None)).ConfigureAwait(false);
             if (finished.IsError && writer.HoldsLease())
             {
                 _ = await writer.Finish(run.Start, new JobWorkResult(finished.Error, string.Empty, Result: null), CancellationToken.None).ConfigureAwait(false);
             }
         }
     }
+
+    /// <summary>Waits while a cancel is pending (it may be replaced by another), then the end is fixed.</summary>
+    private static async Task Settle(JobRun run)
+    {
+        while (run.OpenCancelOrEnd() is { } pending)
+        {
+            _ = await pending.ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>A work that threw a cancellation of its own saw a mark that was withdrawn: nothing cancelled the job, so it ends failed instead of with no end at all.</summary>
+    private static JobWorkResult? Withdrawn(JobRun run) =>
+        run.Source.IsCancellationRequested ? null : new JobWorkResult(SindriErrors.ServiceFailed.With("the job was cancelled but the cancel could not be recorded"), string.Empty, Result: null);
 
     private async Task Finish(JobRun run, JobWorkResult work) =>
         _ = await Retry(() => writer.Finish(run.Start, work, CancellationToken.None)).ConfigureAwait(false);

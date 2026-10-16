@@ -50,8 +50,8 @@ internal sealed class CancelJobService(IJobViews jobs, ILedgerStore ledger, Held
             return allowed.Error;
         }
 
-        runtime.Cancelling(request.Job);   // before the append, so the work sees it coming and records nothing of its own
         var entry = events.Entry(EventTypes.JobCancelled, new JobCancelled(caller.CommandId, request.Job, caller.Actor, row.Value?.Item, row.Value?.Repo), $"{EventTypes.JobCancelled}:{request.Job.Value}");
+        runtime.Cancelling(request.Job);   // before the append, so the work sees it coming and records nothing of its own; nothing that can throw sits between this and Record's try
         return await Record(request.Job, entry, grant, caller.CommandId).ConfigureAwait(false);
     }
 
