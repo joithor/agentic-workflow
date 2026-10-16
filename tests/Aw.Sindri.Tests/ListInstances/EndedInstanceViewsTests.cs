@@ -80,7 +80,7 @@ public sealed class EndedInstanceViewsTests
     {
         var reader = new CountingReader { Ended = true };
         var views = new EndedInstanceViews(reader);
-        var rows = Enumerable.Range(0, EndedInstanceViews.Capacity + 1).Select(static n => Row(string.Create(CultureInfo.InvariantCulture, $"ITM-9/step/{n}"), _started)).ToList();
+        var rows = Enumerable.Range(0, EndedInstanceViews.Capacity + 1).Select(static n => Row(string.Create(CultureInfo.InvariantCulture, $"ITM-9/step/{n + 1}"), _started)).ToList();
         foreach (var row in rows)
         {
             _ = await views.Get(row, InstanceAddress.From(row.Address), TestContext.Current.CancellationToken);
