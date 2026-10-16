@@ -51,6 +51,24 @@ public sealed class NeedsYouFramesTests : FrameHost
         Assert.NotNull(shell);
     });
 
+    // review run 1, K12: a disabled control says why, to a pointer and to a screen reader.
+    [Fact]
+    public Task A_disabled_row_control_says_why_on_hover_and_to_assistive_technology() => OnUi(async () =>
+    {
+        var (window, _) = await Connected(s => s.NeedsYou.Count > 0);
+
+        var disabled = Rows(window).SelectMany(r => Named<ItemsControl>(r, "NeedsYouControls").GetVisualDescendants().OfType<Button>()).Where(b => !b.IsEnabled).ToList();
+
+        Assert.NotEmpty(disabled);
+        Assert.All(disabled, b =>
+        {
+            var why = ((ViewModels.NeedsYou.NeedsYouActionControl)b.DataContext!).Tooltip;
+            Assert.NotEmpty(why);
+            Assert.True(ToolTip.GetShowOnDisabled(b));
+            Assert.Equal(why, Avalonia.Automation.AutomationProperties.GetHelpText(b));
+        });
+    });
+
     [Fact]
     public Task An_empty_list_shows_the_served_sentence() => OnUi(async () =>
     {
