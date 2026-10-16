@@ -10,6 +10,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>Closing a sheet opened from a strip row returns focus to that strip row (review run 1, a11y-13; UI spec §11.2 "Esc or back returns it to the row").</summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class StripFocusReturnTests : FrameHost
 {
     [Fact]

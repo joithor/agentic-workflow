@@ -17,6 +17,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>The G-chords as the window routes them (screens spec §3, rev 7 §8): gated like the other navigation, never typed into a text field.</summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class ChordKeysTests : IDisposable
 {
     private readonly List<Window> _windows = [];

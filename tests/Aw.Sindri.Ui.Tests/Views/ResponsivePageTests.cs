@@ -20,6 +20,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// stays at 160 px or more, B7), and focusing a title does not move the layout.
 /// </summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class ResponsivePageTests : IDisposable
 {
     private readonly List<Window> _windows = [];

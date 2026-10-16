@@ -18,6 +18,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// slot, the tray follows the shell, and the single instance's messages are consumed.
 /// </summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class StartupTests : IDisposable
 {
     private readonly FakeTimeProvider _clock = new(A.Noon);

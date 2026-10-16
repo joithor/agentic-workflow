@@ -13,6 +13,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// InitializeComponent, which binds them, never through AvaloniaXamlLoader.Load(this), which leaves them null.
 /// </summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class NamedControlsTests
 {
     private static readonly XNamespace _x = "http://schemas.microsoft.com/winfx/2006/xaml";

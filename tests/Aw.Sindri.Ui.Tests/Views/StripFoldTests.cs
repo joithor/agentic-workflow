@@ -10,6 +10,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>The fold (screens §4.1): at 1280 × 800 Home's summary, Needs you, the strip and the column tops are all above the fold.</summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class StripFoldTests : FrameHost
 {
     private static double Top(Window window, string name) => Named<Control>(window, name).TranslatePoint(new Point(0, 0), window)!.Value.Y; // why: the panels are in the tree

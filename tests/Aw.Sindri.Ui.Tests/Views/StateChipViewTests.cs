@@ -12,6 +12,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>The chip control under the headless platform: the word as served, the class its tone picks, hidden with nothing to say.</summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class StateChipViewTests
 {
     private static readonly string[] _looks = ["chip", "attn", "fail", "ok"];

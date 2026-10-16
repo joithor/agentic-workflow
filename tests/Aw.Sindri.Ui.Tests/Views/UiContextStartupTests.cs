@@ -12,6 +12,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// that captured "the current context" there captured none, and every timer callback then ran on its own pool thread.
 /// </summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class UiContextStartupTests
 {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "carried to the test thread and rethrown there")]

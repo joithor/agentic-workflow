@@ -10,6 +10,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// Application.Name and, without an app menu of the app's own, adds an "About Avalonia" item.
 /// </summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class AppNameTests
 {
     private static Task<T> OnUi<T>(Func<T> body) =>

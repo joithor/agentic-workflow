@@ -26,6 +26,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// Key frames are saved under the test output's frames/ as focus-*.png.
 /// </summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class FocusRingTests : IDisposable
 {
     // §11.1: the ring's colour, PrimaryHover.
@@ -225,7 +226,9 @@ public sealed class FocusRingTests : IDisposable
     // round: a full pill's ring curves away from the corners, so its sides are sampled at mid-height only.
     private static void AssertRing(Window window, Control control, string frame, bool inside = false, bool round = false)
     {
+        window.Activate();
         Settle(window);
+        Assert.Same(control, Focused(window));
         using var bitmap = window.CaptureRenderedFrame() ?? throw new InvalidOperationException("no frame");
         Save(bitmap, frame);
         var pixels = Pixels(bitmap);

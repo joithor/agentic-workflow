@@ -10,6 +10,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>The reduced-motion outline never hides the focus ring or the selection bar (review run 1, K2; UI spec §11.1).</summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class NeedsYouOutlineTests : FrameHost
 {
     private static readonly Color _ring = Color.FromRgb(0x82, 0x8f, 0xff);

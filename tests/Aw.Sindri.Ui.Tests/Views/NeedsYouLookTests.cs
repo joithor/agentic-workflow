@@ -16,6 +16,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>A row becomes seen by being looked at, and the pointer holds new rows (review run 1, K3 / corr-8, a11y-1): both wired in the view.</summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class NeedsYouLookTests : IDisposable
 {
     private readonly List<Window> _windows = [];

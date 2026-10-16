@@ -17,6 +17,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>Clicking a tab of the top bar's navigation (UI spec §3.2): each of the seven shows exactly its page, and an unbuilt page its arrives note.</summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class NavTabClickTests : IDisposable
 {
     private readonly List<Window> _windows = [];

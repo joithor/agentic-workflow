@@ -21,6 +21,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// platform: a refresh never moves focus, one selection is the focus, the sheet returns focus to its row.
 /// </summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class QueueFocusTests : IDisposable
 {
     private readonly List<Window> _windows = [];

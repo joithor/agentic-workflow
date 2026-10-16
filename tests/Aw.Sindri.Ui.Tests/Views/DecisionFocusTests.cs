@@ -13,6 +13,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>Focus on the decision sheet's options across re-reads, a press and a refusal (review run 1, K7 / corr-5, a11y-2; UI spec §11.2: focus is never lost).</summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class DecisionFocusTests : FrameHost
 {
     private const string Pending = "DEC-00000000000000000000000000000011";

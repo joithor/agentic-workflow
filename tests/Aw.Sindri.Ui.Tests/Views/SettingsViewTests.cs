@@ -18,6 +18,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// "Reduced motion: the in-app switch; key frames before and after"). Each test puts the theme back as it found it.
 /// </summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class SettingsViewTests
 {
     private static readonly string[] _motionKeys = ["Motion.Fast", "Motion.Base", "Motion.Pulse"];

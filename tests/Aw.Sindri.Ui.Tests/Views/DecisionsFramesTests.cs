@@ -15,6 +15,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// item's requests and the failure and profile sheets. Saved under frames/ as u3-decision-*.png and friends.
 /// </summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class DecisionsFramesTests : FrameHost
 {
     private const string Pending = "DEC-00000000000000000000000000000011";

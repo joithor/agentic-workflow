@@ -18,6 +18,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// with the large profile. Saved under frames/ as u3-u3p-*.png.
 /// </summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class WorkflowsStripFramesTests : FrameHost
 {
     private static List<Border> Frames(Window window) =>

@@ -13,6 +13,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>Tab beside an open decision sheet (review re-proof B8): every stop is a usable, visible control that draws a ring.</summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class SheetTabWalkTests : FrameHost
 {
     private static int RingPixels(Window window)

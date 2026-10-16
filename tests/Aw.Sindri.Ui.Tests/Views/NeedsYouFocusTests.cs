@@ -16,6 +16,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>Focus on Home's Needs-you rows across a re-read (UI spec §3.3, §11.2; proof B1): rows are reconciled in place, and focus is never left on nothing.</summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class NeedsYouFocusTests : IDisposable
 {
     private readonly List<Window> _windows = [];

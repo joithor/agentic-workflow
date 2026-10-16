@@ -16,6 +16,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>The Attach component under the headless platform (screens spec §4.5): one template in two sizes, names, the chip, the menu's keys.</summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class AttachButtonTests
 {
     private const string Address = "ITM-01JE7/project/1";

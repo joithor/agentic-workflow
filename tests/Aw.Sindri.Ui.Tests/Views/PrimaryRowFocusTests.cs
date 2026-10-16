@@ -12,6 +12,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>A focused primary button in a row keeps a ring that contrasts (review run 4, a11y): the in-row ring is at least 3:1 against the primary fill and against the row, and differs from the unfocused look (WCAG 1.4.11).</summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class PrimaryRowFocusTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;

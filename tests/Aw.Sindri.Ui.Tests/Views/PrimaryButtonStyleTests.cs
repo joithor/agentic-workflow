@@ -10,6 +10,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>The recommended option is drawn primary (real-app re-proof, NB2): a command button with the primary class is filled with the primary token.</summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class PrimaryButtonStyleTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;

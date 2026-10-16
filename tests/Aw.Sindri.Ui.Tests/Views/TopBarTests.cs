@@ -23,6 +23,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// the pill while Sindri isn't running, and the spinner under reduced motion switched on mid-flight.
 /// </summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class TopBarTests : IDisposable
 {
     private readonly List<Window> _windows = [];

@@ -14,6 +14,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// all, held rows and Home at 5 s and with the large profile. Saved under frames/ as u3-needs-you-*.png.
 /// </summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class NeedsYouFramesTests : FrameHost
 {
     private static List<NeedsYouRow> Rows(Window window) =>

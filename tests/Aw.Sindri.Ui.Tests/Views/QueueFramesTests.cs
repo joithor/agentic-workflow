@@ -24,6 +24,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// timeline; SND-ITEM-404 and SND-ITEM-409; the Create item form; the Close confirm. Saved under frames/ as u2-*.png.
 /// </summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class QueueFramesTests : IDisposable
 {
     private readonly List<Window> _windows = [];

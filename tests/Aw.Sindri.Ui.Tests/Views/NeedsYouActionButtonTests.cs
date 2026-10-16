@@ -16,6 +16,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>A row's own buttons act (real-app re-proof, NB1): clicking or pressing Space on a row's own button sends the action.</summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class NeedsYouActionButtonTests : IDisposable
 {
     private readonly List<Window> _windows = [];
