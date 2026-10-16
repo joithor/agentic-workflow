@@ -106,7 +106,9 @@ instances first, then by age.
 
 - Cap 5 rows, then "… N more" which opens Workflows. The fold rule of rev 7 §3.2 now counts this strip: at 1280 × 800
   the summary line, Needs you (up to 5), the strip (up to 3 when Needs you has 5) and the tops of the two columns are
-  above the fold; the strip gives rows back to Needs you first.
+  above the fold; the strip gives rows back to Needs you first. Provisional owner default (pass 6, pending the owner's answer):
+  a Needs-you row is two lines (about 61 px: title, chip and id, then the served sentence and the row's actions), so five rows
+  and three strip rows put the column tops near y = 712 at 1280 × 800 and text scale 1.0.
 - A row's `[Answer]` is the desk answer control of rev 7 §4.4; a protected answer shows the CLI.
 - Data: the Workflows list query (§6, E-20) with `root=true`, ordered by the recipe's `urgency` class (E-21).
 
