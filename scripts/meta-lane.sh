@@ -20,6 +20,7 @@
 #                        permissions.defaultMode to bypassPermissions, so every lane runs in the same mode and messages
 #                        are never held)
 #   AW_META_ID_WAIT      seconds a reported session id may take to appear (default 30; tests)
+#   AW_META_ID_GRACE     seconds a lane whose id timed out keeps the start lock for its late session file (default 10; tests)
 #   AW_META_NO_SHELL     1: exit when the agent exits instead of dropping to a shell (tests)
 set -u
 here="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"

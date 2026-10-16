@@ -189,8 +189,8 @@ chooses its own id: lanes of that kind start one at a time, each waiting up to `
 lane has recorded; two candidates are refused and leave `<lane>.ambiguous`). "New" means a path that did not exist when
 the lane started (a snapshot taken before the agent runs), not a recently modified one. The one-at-a-time start is the
 lane's own: `meta-lane.sh` takes a team start lock (`lane-sessions/.reported.lock`) before the agent runs and releases it
-when the id is recorded, refused or timed out, so lanes created together (a Warp pane that creates its session, a
-reboot, `--lanes`) are safe too. A lane refused by the launcher reader (a kickoff prompt starting with `-` once a
+when the id is recorded or refused, or after a timeout plus a grace window (`AW_META_ID_GRACE` seconds, default 10, during which the lane still watches for its late file and keeps it if it arrives, so the next lane cannot take it), so lanes created together (a Warp pane that creates its session, a
+reboot, `--lanes`) are safe too. A lane that cannot start leaves `<lane>.failed` (the reason, the line the launcher prints as `lane <l> failed to start: ...`) and `<lane>.settled`, so the launcher reports it at once instead of waiting out the timeout. A lane refused by the launcher reader (a kickoff prompt starting with `-` once a
 `launcher.json` exists) starts no agent and records no id. Obligations for them arrive with SL-1b.
 
 **Precedence** (environment, then the file, then the defaults): `AW_META_CLAUDE` replaces the `claude-code` entry's `bin`

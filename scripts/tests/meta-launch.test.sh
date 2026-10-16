@@ -463,7 +463,8 @@ EOF2
 chmod +x "$WORK/codex-late"
 jq -n --arg c "$WORK/codex-late" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex"}}' > "$WORK/late.json"
 jq -n --arg r "$WORK/repo" '{team:"demo", repo:$r, metaLane:"meta", lanes:["la","lb"]}' > "$WORK/team3.json"
-reset; : > "$CALLS.late"; rm -f "$ids"/la* "$ids"/lb*; rm -rf "$HOME/.codex/sessions/2026/10/18"
+reset; tmux set-environment -g AW_META_ID_WAIT 2; tmux set-environment -g AW_META_ID_GRACE 6   # the lanes run under the tmux server, not this shell
+: > "$CALLS.late"; rm -f "$ids"/la* "$ids"/lb*; rm -rf "$HOME/.codex/sessions/2026/10/18"
 OUT="$(AW_META_CONFIG="$WORK/team3.json" AW_LAUNCHER_CONFIG="$WORK/late.json" AW_META_ID_WAIT=2 AW_META_ID_GRACE=6 bash "$DIR/meta-launch.sh" --no-open --lanes la,lb 2>&1)"
 waitfor '[ -s "$ids/la" ] && [ -s "$ids/lb" ]'
 la="$(tr -d '[:space:]' < "$ids/la" 2> /dev/null)"; lb="$(tr -d '[:space:]' < "$ids/lb" 2> /dev/null)"
