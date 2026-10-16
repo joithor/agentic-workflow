@@ -99,6 +99,39 @@ internal sealed class DbCollected
         return Scrubber.IsSecretName(rows.Columns[column]) || (source is not null && Scrubber.IsSecretName(source));
     }
 
-    private bool Remember(object? value) =>
-        value is not (null or DBNull or byte[]) && _secretValues.Add(Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty);
+    // Every scalar in the cell, as the JSON text of the rows writes it: bytes as \x-hex, arrays element by element, dates in the round-trip format.
+    private bool Remember(object? value)
+    {
+        var added = false;
+        switch (value)
+        {
+            case null or DBNull or bool:
+                break;
+            case byte[] bytes:
+                added = _secretValues.Add("\\x" + Convert.ToHexStringLower(bytes));
+                break;
+            case string text:
+                added = _secretValues.Add(text);
+                break;
+            case System.Collections.IEnumerable items:
+                foreach (var item in items)
+                {
+                    added |= Remember(item);
+                }
+
+                break;
+            default:
+                added = _secretValues.Add(Text(value));
+                break;
+        }
+
+        return added;
+    }
+
+    private static string Text(object value) => value switch
+    {
+        DateTime moment => moment.ToString("O", System.Globalization.CultureInfo.InvariantCulture),
+        DateTimeOffset moment => moment.ToString("O", System.Globalization.CultureInfo.InvariantCulture),
+        _ => Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty,
+    };
 }

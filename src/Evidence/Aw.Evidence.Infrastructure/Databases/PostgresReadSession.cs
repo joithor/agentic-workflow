@@ -7,13 +7,17 @@ namespace Aw.Evidence.Infrastructure.Databases;
 
 /// <summary>
 /// A connection that runs one statement at a time, each in its own BEGIN READ ONLY transaction that is always rolled back. A
-/// second statement is refused here and the server refuses it again (one statement per extended-protocol command). A write the server
-/// refuses (read-only transaction, insufficient privilege) is a refusal; any other failure is a failed query.
+/// second statement is refused here before anything is sent (Npgsql would split it into separate commands). What stops a write is
+/// behind that: the connection's default_transaction_read_only, the BEGIN READ ONLY transaction and the role check made when the
+/// connection opened. A write the server refuses (read-only transaction, or a privilege error on a statement the pre-run guard would
+/// have refused) is a refusal; any other failure, a privilege error on a plain read included, is a failed query.
 /// </summary>
 internal sealed class PostgresReadSession(NpgsqlConnection connection) : IReadSession
 {
-    // active_sql_transaction (switching to read-write), read_only_sql_transaction and insufficient_privilege.
-    private static readonly string[] _refusingStates = ["25001", "25006", "42501"];
+    // active_sql_transaction (switching to read-write) and read_only_sql_transaction.
+    private static readonly string[] _refusingStates = ["25001", "25006"];
+
+    private const string InsufficientPrivilege = "42501";
 
     /// <inheritdoc/>
     public async ValueTask<Result<Rows>> QueryAsync(string sql, int rowLimit, CancellationToken cancellationToken)
@@ -37,20 +41,28 @@ internal sealed class PostgresReadSession(NpgsqlConnection connection) : IReadSe
                 await RollbackAsync().ConfigureAwait(false);
             }
         }
-        catch (PostgresException exception) when (IsRefusal(exception))
+        catch (PostgresException exception) when (IsRefusal(exception, sql))
         {
-            return EvidenceErrors.DatabaseRefused.With($"the server refused a write (SQLSTATE {exception.SqlState}): {exception.MessageText}");
+            return EvidenceErrors.DatabaseRefused.With($"the server refused a write (SQLSTATE {ServerMessage.Of(exception)})");
+        }
+        catch (PostgresException exception) when (exception.SqlState == InsufficientPrivilege)
+        {
+            return EvidenceErrors.RunFailed.With($"the server refused the query (SQLSTATE {ServerMessage.Of(exception)})");
+        }
+        catch (PostgresException exception)
+        {
+            return EvidenceErrors.RunFailed.With($"the query failed: {ServerMessage.Of(exception)}");
         }
         catch (Exception exception) when (exception is NpgsqlException or InvalidOperationException)
         {
-            return EvidenceErrors.RunFailed.With($"the query failed: {(exception is PostgresException server ? server.SqlState + " " + server.MessageText : exception.Message)}");
+            return EvidenceErrors.RunFailed.With($"the query failed: {exception.Message}");
         }
     }
 
-    // A second command in one prepared statement is a syntax error to the server; any other syntax error is the script's own mistake.
-    private static bool IsRefusal(PostgresException exception) =>
+    // A read-only violation is always a refused write; a privilege error is one only when the statement is a write the pre-run guard refuses (COPY ... TO a file, for one).
+    private static bool IsRefusal(PostgresException exception, string sql) =>
         _refusingStates.Contains(exception.SqlState, StringComparer.Ordinal)
-        || (string.Equals(exception.SqlState, "42601", StringComparison.Ordinal) && exception.MessageText.Contains("multiple commands", StringComparison.Ordinal));
+        || (exception.SqlState == InsufficientPrivilege && WriteStatements.Check(sql).IsError);
 
     /// <inheritdoc/>
     public ValueTask DisposeAsync() => connection.DisposeAsync();
@@ -104,13 +116,40 @@ internal sealed class PostgresReadSession(NpgsqlConnection connection) : IReadSe
                         break;
                     }
 
-                    rows.Add([.. Enumerable.Range(0, columns.Count).Select(i => reader.IsDBNull(i) ? null : reader.GetValue(i))]);
+                    rows.Add([.. Enumerable.Range(0, columns.Count).Select(i => Cell(reader, i))]);
                 }
 
                 return (new Rows(columns, rows, truncated), Origins(reader));
             }
         }
     }
+
+    // A value Npgsql cannot hand over as an object (numeric NaN, a BC date, an unmapped type) is read as text when the driver can, otherwise named by its type only (no value), so one odd cell does not end the run.
+    private static object? Cell(NpgsqlDataReader reader, int column)
+    {
+        if (reader.IsDBNull(column))
+        {
+            return null;
+        }
+
+        try
+        {
+            return reader.GetValue(column);
+        }
+        catch (Exception exception) when (Unmappable(exception))
+        {
+            try
+            {
+                return reader.GetFieldValue<string>(column);
+            }
+            catch (Exception inner) when (Unmappable(inner))
+            {
+                return $"<{reader.GetDataTypeName(column)}: not representable>";
+            }
+        }
+    }
+
+    private static bool Unmappable(Exception exception) => exception is InvalidCastException or NotSupportedException or OverflowException or ArgumentOutOfRangeException;
 
     private static List<(uint Table, short Number)?> Origins(NpgsqlDataReader reader)
     {

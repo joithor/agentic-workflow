@@ -69,7 +69,7 @@ public sealed class PostgresDatabaseReaderTests(PostgresContainer container) : R
     }
 
     [Fact]
-    public async Task A_value_npgsql_cannot_map_to_an_object_is_read_as_text_and_the_run_goes_on()
+    public async Task A_value_npgsql_cannot_map_to_an_object_is_named_by_its_type_and_the_run_goes_on()
     {
         await using var session = (await new PostgresDatabaseReader().OpenAsync(Target(Entry()), TestContext.Current.CancellationToken)).Value;
 
@@ -77,8 +77,8 @@ public sealed class PostgresDatabaseReaderTests(PostgresContainer container) : R
         var after = await session.QueryAsync(ReadAll, 5, TestContext.Current.CancellationToken);
 
         Assert.True(rows.IsSuccess, rows.IsError ? rows.Error.Message : "");
-        Assert.Contains("NaN", rows.Value.ToJson(), StringComparison.Ordinal);
-        Assert.Contains("7", rows.Value.ToJson(), StringComparison.Ordinal);
+        Assert.Contains("numeric: not representable", rows.Value.ToJson(), StringComparison.Ordinal);
+        Assert.Contains("\"seven\":7", rows.Value.ToJson(), StringComparison.Ordinal);
         Assert.Equal(3, after.Value.Count);
     }
 

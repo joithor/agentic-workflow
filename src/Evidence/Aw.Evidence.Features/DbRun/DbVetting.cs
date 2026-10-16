@@ -34,21 +34,21 @@ internal sealed class DbVetting(DataRunFiles files, IEvidenceTargets targets, IE
         }
 
         var (goldens, seed) = inputs.Value;
-        var target = script.Connection is { } name ? Postgres(loaded.Value, name) : Sqlite(request, script, seed);
-        return target.Map(t => new VettedDb(script, t, goldens, seed is null ? null : ContentHash.Sha256Hex(Encoding.UTF8.GetBytes(seed)), t is PostgresTarget p ? [p.Password] : []));
+        var target = script.Connection is { } name ? Postgres(loaded.Value, name) : Sqlite(request, script, seed?.Text);
+        return target.Map(t => new VettedDb(script, t, goldens, seed?.Hash, t is PostgresTarget p ? [p.Password] : []));
     }
 
     // The goldens and the seed text; a seed that reaches beyond the run's copy is refused here, before any lock.
-    private async ValueTask<Result<(IReadOnlyList<string?> Goldens, string? Seed)>> ReadInputsAsync(DbRunRequest request, DbScript script, CancellationToken cancellationToken)
+    private async ValueTask<Result<(IReadOnlyList<string?> Goldens, SeedFile? Seed)>> ReadInputsAsync(DbRunRequest request, DbScript script, CancellationToken cancellationToken)
     {
         var goldens = await ReadGoldensAsync(request, script, cancellationToken).ConfigureAwait(false);
-        var seed = await ReadTextAsync(request.ScriptPath, script.Seed, cancellationToken).ConfigureAwait(false);
+        var seed = await ReadSeedAsync(request.ScriptPath, script.Seed, cancellationToken).ConfigureAwait(false);
         if (goldens.IsError || seed.IsError)
         {
             return goldens.IsError ? goldens.Error : seed.Error;
         }
 
-        var guarded = seed.Value is null ? Unit.Value : SeedStatements.Check(seed.Value);
+        var guarded = seed.Value is null ? Unit.Value : SeedStatements.Check(seed.Value.Text);
         return guarded.IsError ? guarded.Error with { Message = "seed: " + guarded.Error.Message } : (goldens.Value, seed.Value);
     }
 
@@ -120,6 +120,23 @@ internal sealed class DbVetting(DataRunFiles files, IEvidenceTargets targets, IE
             : EvidenceErrors.CredentialsMissing.With($"environment variable {entry.PasswordEnv} (database {name}) is not set");
     }
 
+    // The seed's text for the connection and the hash of the file's own bytes.
+    private async ValueTask<Result<SeedFile?>> ReadSeedAsync(string scriptPath, string? file, CancellationToken cancellationToken)
+    {
+        if (file is null)
+        {
+            return (SeedFile?)null;
+        }
+
+        var bytes = await files.ReadAsync(ScriptRelative(scriptPath, file), cancellationToken).ConfigureAwait(false);
+        return bytes.Map(static b => (SeedFile?)new SeedFile(Encoding.UTF8.GetString(b), ContentHash.Sha256Hex(b)));
+    }
+
+    private static string ScriptRelative(string scriptPath, string file) =>
+        file.StartsWith('/') ? file : RunPath.Combine(scriptPath[..scriptPath.LastIndexOf('/')], file);
+
+    private sealed record SeedFile(string Text, string Hash);
+
     // A relative file resolves against the script's directory; a missing one is AW-EVIDENCE-010 before any lock.
     private async ValueTask<Result<string?>> ReadTextAsync(string scriptPath, string? file, CancellationToken cancellationToken)
     {
@@ -128,8 +145,7 @@ internal sealed class DbVetting(DataRunFiles files, IEvidenceTargets targets, IE
             return (string?)null;
         }
 
-        var path = file.StartsWith('/') ? file : RunPath.Combine(scriptPath[..scriptPath.LastIndexOf('/')], file);
-        var bytes = await files.ReadAsync(path, cancellationToken).ConfigureAwait(false);
+        var bytes = await files.ReadAsync(ScriptRelative(scriptPath, file), cancellationToken).ConfigureAwait(false);
         return bytes.Map(static b => (string?)Encoding.UTF8.GetString(b));
     }
 }
