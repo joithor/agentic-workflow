@@ -1,10 +1,12 @@
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Instance;
 using Microsoft.Extensions.Time.Testing;
+using ApiGlyph = Aw.Sindri.Ui.Api.Workflow.StateGlyph;
 
 namespace Aw.Sindri.Ui.Tests.Instance;
 
@@ -31,7 +33,7 @@ public sealed class ChildrenPanelViewModelTests
         return new ChildRowViewModel(FixtureInstances.Parse<ChildRow>(node), _clipboard, _clock);
     }
 
-    private static System.Text.Json.JsonSerializerOptions SindriApiClientJson => Aw.Sindri.Ui.Api.SindriApiClient.Json;
+    private static System.Text.Json.JsonSerializerOptions SindriApiClientJson => SindriApiClient.Json;
 
     [Theory]
     [InlineData("project-build")]
@@ -108,7 +110,7 @@ public sealed class ChildrenPanelViewModelTests
     [Fact]
     public void Done_rows_offer_Open_only()
     {
-        var done = Rows("project-build").Where(r => r.Glyph == Aw.Sindri.Ui.Api.Workflow.StateGlyph.Done).ToList();
+        var done = Rows("project-build").Where(r => r.Glyph == ApiGlyph.Done).ToList();
 
         Assert.NotEmpty(done);
         Assert.All(done, served =>

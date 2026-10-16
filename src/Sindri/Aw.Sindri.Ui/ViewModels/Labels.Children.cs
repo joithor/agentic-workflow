@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.ViewModels;
 
@@ -39,7 +40,7 @@ internal static partial class Labels
     /// <summary>A child's loop round.</summary>
     /// <param name="round">The served round.</param>
     /// <returns>"r1/3".</returns>
-    internal static string RoundOf(Aw.Sindri.Ui.Api.Workflow.Round round) => string.Create(CultureInfo.InvariantCulture, $"r{round.N}/{round.Max}");
+    internal static string RoundOf(Round round) => string.Create(CultureInfo.InvariantCulture, $"r{round.N}/{round.Max}");
 
     /// <summary>The panel's accessible name.</summary>
     /// <param name="address">The instance.</param>
