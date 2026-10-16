@@ -195,7 +195,9 @@ OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open 2>&1)"; R
 check "invalid launcher.json: exit 1, SND-LAUNCH-011 with the file and the key" "$RC:$(grep -c "SND-LAUNCH-011: unknown key \"terminal\".*" <<< "$OUT"):$(grep -c "$LCFG" <<< "$OUT")" "1:1:1"
 check "invalid launcher.json: no tmux session was created" "$(tmux list-sessions -F '#S' | grep -c '^demo-')" "0"
 OUT="$(AW_LAUNCHER_CONFIG="$WORK/missing.json" bash "$DIR/meta-launch.sh" --no-open 2>&1)"; RC=$?
-check "AW_LAUNCHER_CONFIG naming a missing file: exit 1" "$RC" "1"
+check "AW_LAUNCHER_CONFIG naming a missing file: exit 1, the file named, no session created" "$RC:$(grep -c "$WORK/missing.json" <<< "$OUT"):$(tmux list-sessions -F '#S' | grep -c '^demo-')" "1:1:0"
+OUT="$(bash "$DIR/meta-launch.sh" --force 2>&1)"; RC=$?
+check "--force, --viewer and --stdout without --init-launcher: usage error" "$RC:$(grep -c -- '--init-launcher' <<< "$OUT")" "2:1"
 echo '{"schema":1,"meta":{"lanesAgent":"nonesuch"}}' > "$LCFG"
 OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open 2>&1)"; RC=$?
 check "a lane agent the catalog lacks: exit 1 with SND-LAUNCH-003" "$RC:$(grep -c 'SND-LAUNCH-003' <<< "$OUT")" "1:1"
@@ -247,7 +249,6 @@ jq -n '{schema:1, viewer:{kind:"exec-template", name:"ghost", argv:["no-such-ter
 OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" 2>&1)"; RC=$?
 check "a viewer that is not installed never stops the sessions (exit 0, the attach line is shown)" "$RC:$(grep -c 'ghost: no-such-terminal-xyz not found' <<< "$OUT"):$(grep -c '^tmux attach -t =demo-api' <<< "$OUT")" "0:3:1"
 jq -n --arg v "$WORK/viewer" '{schema:1, viewer:{kind:"exec-template", name:"rec", argv:[$v,"{title}"]}}' > "$LCFG"
-OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --lanes api --dry-run 2>&1)"
 jq '.viewer.argv[1] = "{cmd...}x"' "$LCFG" > "$WORK/l2.json"
 OUT2="$(AW_LAUNCHER_CONFIG="$WORK/l2.json" bash "$DIR/meta-launch.sh" --dry-run 2>&1)"; RC=$?
 check "a {cmd...} inside an argument is refused" "$RC:$(grep -c 'SND-LAUNCH-011' <<< "$OUT2")" "1:1"
@@ -257,7 +258,7 @@ cat > "$WORK/codex" <<'EOF'
 #!/usr/bin/env bash
 echo "start $AW_META_LANE" >> "$CALLS.events"
 sleep 0.4
-id="$(cat /proc/sys/kernel/random/uuid)"
+id="$(cat /proc/sys/kernel/random/uuid 2> /dev/null || uuidgen | tr '[:upper:]' '[:lower:]')"
 mkdir -p "$HOME/.codex/sessions/2026/10/15"
 : > "$HOME/.codex/sessions/2026/10/15/rollout-2026-10-15T00-00-00-$id.jsonl"
 echo "wrote $AW_META_LANE $id" >> "$CALLS.events"
@@ -282,7 +283,8 @@ check "the lane variables are in the lane's environment and not in tmux's global
 check "the meta lane runs the claude stub, not codex" "$(grep -c 'meta' "$CALLS.events")" "0"
 # Resume: a lane whose rollout exists resumes by the reported id.
 tmux kill-server 2> /dev/null; : > "$CALLS.codex"
-AW_LAUNCHER_CONFIG="$LCFG" AW_META_NO_SHELL=1 timeout 3 bash "$DIR/meta-lane.sh" demo api; true
+AW_LAUNCHER_CONFIG="$LCFG" AW_META_NO_SHELL=1 bash "$DIR/meta-lane.sh" demo api > /dev/null 2>&1 &
+rp=$!; waitfor '[ -s "$CALLS.codex" ]'; kill "$rp" 2> /dev/null; pkill -f "$WORK/codex" 2> /dev/null; wait "$rp" 2> /dev/null
 check "codex lane with a recorded id and its rollout: resumes it" "$(head -1 "$CALLS.codex" | cut -d'|' -f1-2)" "resume|$a"
 # no processName/transcripts surprises: the pane check uses the catalog's processName.
 mkdir -p "$WORK/fakebin2"; cp "$(command -v sleep)" "$WORK/fakebin2/codex"
@@ -296,6 +298,93 @@ jq '.agents.codex.processName = "other"' "$LCFG" > "$WORK/l3.json"
 OUT="$(AW_LAUNCHER_CONFIG="$WORK/l3.json" bash "$DIR/meta-launch.sh" --no-open --dry-run --lanes api 2>&1)"
 check "with another processName that pane counts as exited and is restarted" "$(grep -c 'respawn-pane' <<< "$OUT")" "1"
 pkill -f "$WORK/fakebin2/codex 60" 2> /dev/null
+
+# A refused prompt ({seed} starting with "-", spec section 4) starts no agent and records no id, whatever the agent.
+killstubs() { pkill -f "$WORK/codex" 2> /dev/null; sleep 0.1; }
+jq -n '{schema:1, viewer:{kind:"print"}}' > "$WORK/print.json"
+for first in '- First: read the spec' '---'; do
+  printf '%s\nbody\n' "$first" > "$WORK/prompts/refuse.md"; : > "$CALLS"; rm -f "$ids/refuse"
+  OUT="$(AW_LAUNCHER_CONFIG="$WORK/print.json" bash "$DIR/meta-lane.sh" demo refuse 2>&1)"; RC=$?
+  check "a prompt starting with '$first' and a launcher.json: refused, no agent start, no recorded id" "$RC:$(grep -c 'SND-LAUNCH-011' <<< "$OUT"):$(wc -c < "$CALLS" | tr -d ' '):$(test -e "$ids/refuse" && echo id || echo none)" "1:1:0:none"
+done
+: > "$CALLS"; rm -f "$ids/refuse"; : > "$CALLS.codex"
+OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-lane.sh" demo refuse 2>&1)"; RC=$?
+check "the same prompt with a codex lane: refused, no agent start" "$RC:$(wc -c < "$CALLS.codex" | tr -d ' ' | grep -c '^0$'):$(test -e "$ids/refuse" && echo id || echo none)" "1:1:none"
+rm -f "$WORK/prompts/refuse.md"
+# An existing but empty prompt file still passes "" as the last argument, as it did before launcher.json.
+: > "$WORK/prompts/empty.md"; : > "$CALLS"
+bash "$DIR/meta-lane.sh" demo empty
+check "an empty <lane>.md passes an empty prompt argument, as before" "$(sed -E 's/[0-9a-f]{8}-[0-9a-f-]{27}/ID/' "$CALLS")" "--session-id|ID|-n|demo-empty||"
+rm -f "$WORK/prompts/empty.md"
+# The three lane variables reach a Claude Code lane too.
+cat > "$WORK/claude-aw" <<'EOF2'
+#!/usr/bin/env bash
+echo "$AW_SINDRI_CHILD|$AW_META_TEAM|$AW_META_LANE" > "$CALLS.aw"
+EOF2
+chmod +x "$WORK/claude-aw"
+AW_META_CLAUDE="$WORK/claude-aw" bash "$DIR/meta-lane.sh" demo awenv
+check "a Claude Code lane sees AW_SINDRI_CHILD, AW_META_TEAM and AW_META_LANE" "$(cat "$CALLS.aw")" "1|demo|awenv"
+
+# Reported ids: only session files created after the start count (an old rollout appended to meanwhile is not chosen).
+codex_dir="$HOME/.codex/sessions/2026/10/14"; mkdir -p "$codex_dir"
+old="$codex_dir/rollout-2026-10-14T00-00-00-11111111-1111-1111-1111-111111111111.jsonl"; : > "$old"
+cat > "$WORK/codex-race" <<'EOF2'
+#!/usr/bin/env bash
+( sleep 0.4; echo more >> "$OLD_ROLLOUT" ) &
+sleep 1
+mkdir -p "$HOME/.codex/sessions/2026/10/15"
+: > "$HOME/.codex/sessions/2026/10/15/rollout-2026-10-15T00-00-00-22222222-2222-2222-2222-222222222222.jsonl"
+sleep 600
+EOF2
+chmod +x "$WORK/codex-race"; export OLD_ROLLOUT="$old"
+jq -n --arg c "$WORK/codex-race" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex"}}' > "$WORK/race.json"
+rm -f "$ids/race" "$ids/race.settled"
+AW_LAUNCHER_CONFIG="$WORK/race.json" AW_META_ID_WAIT=8 bash "$DIR/meta-lane.sh" demo race > /dev/null 2>&1 &
+rp=$!; waitfor '[ -e "$ids/race.settled" ]'
+check "an existing rollout appended to during the wait is not chosen; the lane's own new one is" "$(tr -d '[:space:]' < "$ids/race" 2> /dev/null)" "22222222-2222-2222-2222-222222222222"
+kill "$rp" 2> /dev/null; killstubs; wait "$rp" 2> /dev/null
+
+# Two new session files at once are refused: no id, a .ambiguous marker, and the launcher says so.
+cat > "$WORK/codex-two" <<'EOF2'
+#!/usr/bin/env bash
+mkdir -p "$HOME/.codex/sessions/2026/10/16"
+: > "$HOME/.codex/sessions/2026/10/16/rollout-2026-10-16T00-00-00-33333333-3333-3333-3333-333333333333.jsonl"
+: > "$HOME/.codex/sessions/2026/10/16/rollout-2026-10-16T00-00-01-44444444-4444-4444-4444-444444444444.jsonl"
+sleep 600
+EOF2
+chmod +x "$WORK/codex-two"
+jq -n --arg c "$WORK/codex-two" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex"}}' > "$WORK/two.json"
+jq -n --arg r "$WORK/repo" '{team:"demo", repo:$r, metaLane:"meta", lanes:["amb","idle"]}' > "$WORK/team2.json"
+tmux kill-server 2> /dev/null; sleep 0.3; tmux new-session -d -s keepalive "sleep 600"; rm -f "$ids/amb" "$ids/amb.ambiguous" "$ids/amb.settled"
+OUT="$(AW_META_CONFIG="$WORK/team2.json" AW_LAUNCHER_CONFIG="$WORK/two.json" AW_META_ID_WAIT=5 bash "$DIR/meta-launch.sh" --no-open --lanes amb 2>&1)"; RC=$?
+check "two unclaimed new session files: no id recorded, .ambiguous left" "$(test -s "$ids/amb" && echo id || echo none):$(test -e "$ids/amb.ambiguous" && echo marker || echo none)" "none:marker"
+check "the launcher reports the ambiguous id and still exits 0" "$RC:$(grep -c 'lane amb: ambiguous session id' <<< "$OUT")" "0:1"
+killstubs
+
+# An agent that never reports: the launcher times out with a message and the next lane still starts.
+cat > "$WORK/codex-idle" <<'EOF2'
+#!/usr/bin/env bash
+sleep 600
+EOF2
+chmod +x "$WORK/codex-idle"
+jq -n --arg c "$WORK/codex-idle" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex"}}' > "$WORK/idle.json"
+rm -f "$ids/idle" "$ids/idle.settled" "$ids/idle.ambiguous"
+OUT="$(AW_META_CONFIG="$WORK/team2.json" AW_LAUNCHER_CONFIG="$WORK/idle.json" AW_META_ID_WAIT=1 bash "$DIR/meta-launch.sh" --no-open --lanes idle,amb 2>&1)"; RC=$?
+check "an id that never arrives: the timeout message, exit 0, the next lane started" "$RC:$(grep -c 'lane idle has not reported its session id after 1s' <<< "$OUT"):$(grep -c 'tmux demo-amb: started' <<< "$OUT")" "0:1:1"
+check "an id that never arrives: nothing recorded" "$(test -s "$ids/idle" && echo id || echo none)" "none"
+tmux kill-server 2> /dev/null; killstubs
+
+# Two reported lanes started at the same moment (as Warp's panes do) still start one at a time.
+reset; : > "$CALLS.events"; : > "$CALLS.codex"; rm -f "$ids/p1" "$ids/p2" "$ids/p1.settled" "$ids/p2.settled"
+export -n OLD_ROLLOUT
+AW_LAUNCHER_CONFIG="$LCFG" AW_META_ID_WAIT=10 bash "$DIR/meta-lane.sh" demo p1 > /dev/null 2>&1 & p1=$!
+AW_LAUNCHER_CONFIG="$LCFG" AW_META_ID_WAIT=10 bash "$DIR/meta-lane.sh" demo p2 > /dev/null 2>&1 & p2=$!
+waitfor '[ -s "$ids/p1" ] && [ -s "$ids/p2" ]'
+a1="$(tr -d '[:space:]' < "$ids/p1")"; a2="$(tr -d '[:space:]' < "$ids/p2")"
+check "two lanes starting at once: one at a time (each id recorded before the other agent starts)" "$(awk '{print $1}' "$CALLS.events" | tr '\n' ';')" "start;wrote;start;wrote;"
+check "two lanes starting at once: each lane recorded its own rollout's id" "$(grep -c "wrote p1 $a1" "$CALLS.events"):$(grep -c "wrote p2 $a2" "$CALLS.events"):$([ "$a1" != "$a2" ] && echo distinct)" "1:1:distinct"
+kill "$p1" "$p2" 2> /dev/null; killstubs; wait 2> /dev/null
+check "the start lock is released afterwards" "$(test -d "$ids/.reported.lock" && echo held || echo free)" "free"
 
 # Precedence: AW_META_CLAUDE ranks above the file's claude-code bin; without it the file's bin is used.
 jq -n '{schema:1, agents:{"claude-code":{override:true, bin:"/nonexistent/claude"}}}' > "$LCFG"
@@ -314,11 +403,12 @@ check "an override's open template is used; AW_META_CLAUDE_ARGS go right after {
 # --init-launcher: the detection under a PATH holding only the named terminals.
 tools="jq mkdir mv chmod cat dirname readlink uname tr head tail grep sed awk date rm printf env bash sh mktemp cp ls basename wc sort"
 kd="$WORK/kitty-only"; mkdir -p "$kd"; for t in $tools; do p="$(command -v "$t" 2> /dev/null)" && ln -sf "$p" "$kd/$t"; done
+unlink "$kd/uname"; printf '#!/bin/sh\necho Linux\n' > "$kd/uname"; chmod +x "$kd/uname"   # the detection is the same on every host
 printf '#!/bin/sh\nexit 0\n' > "$kd/kitty"; chmod +x "$kd/kitty"
 INIT="$WORK/init.json"
 OUT="$(env -i HOME="$HOME" PATH="$kd" DISPLAY=:0 AW_LAUNCHER_CONFIG="$INIT" bash "$DIR/meta-launch.sh" --init-launcher 2>&1)"; RC=$?
 check "init-launcher with only kitty on PATH and a display: writes the kitty template" "$RC:$(jq -c '[.viewer.kind, .viewer.name, .viewer.argv[0]]' "$INIT")" '0:["exec-template","kitty","kitty"]'
-check "init-launcher: the file is 0600 and passes the reader" "$(stat -c %a "$INIT"):$( ( . "$DIR/launcher-lib.sh"; launcher_validate "$INIT" > /dev/null && echo ok ) )" "600:ok"
+check "init-launcher: the file is 0600 and passes the reader" "$(stat -c %a "$INIT" 2> /dev/null || stat -f %Lp "$INIT"):$( ( . "$DIR/launcher-lib.sh"; launcher_validate "$INIT" > /dev/null && echo ok ) )" "600:ok"
 check "init-launcher says what it chose and why" "$(grep -c 'Wrote .*init.json: kitty (first on PATH)' <<< "$OUT")" "1"
 OUT="$(env -i HOME="$HOME" PATH="$kd" DISPLAY=:0 AW_LAUNCHER_CONFIG="$INIT" bash "$DIR/meta-launch.sh" --init-launcher 2>&1)"; RC=$?
 check "init-launcher refuses to replace a file without --force" "$RC" "1"
@@ -333,6 +423,7 @@ unlink "$INIT"
 OUT="$(env -i HOME="$HOME" PATH="$kd" DISPLAY=:0 AW_LAUNCHER_CONFIG="$INIT" bash "$DIR/meta-launch.sh" --init-launcher --viewer nonesuch 2>&1)"; RC=$?
 check "init-launcher with an unknown --viewer: exit 2" "$RC" "2"
 mkdir -p "$WORK/warpbin"; for t in $tools; do p="$(command -v "$t" 2> /dev/null)" && ln -sf "$p" "$WORK/warpbin/$t"; done
+unlink "$WORK/warpbin/uname"; printf '#!/bin/sh\necho Linux\n' > "$WORK/warpbin/uname"; chmod +x "$WORK/warpbin/uname"
 printf '#!/bin/sh\nexit 0\n' > "$WORK/warpbin/warp-terminal"; chmod +x "$WORK/warpbin/warp-terminal"
 OUT="$(env -i HOME="$HOME" PATH="$WORK/warpbin" DISPLAY=:0 AW_LAUNCHER_CONFIG="$INIT" bash "$DIR/meta-launch.sh" --init-launcher --stdout 2>&1)"
 check "init-launcher picks Warp when it is installed" "$(jq -c .viewer <<< "$OUT")" '{"kind":"warp"}'

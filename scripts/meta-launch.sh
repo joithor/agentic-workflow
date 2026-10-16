@@ -29,6 +29,9 @@ while [ $# -gt 0 ]; do
     *) echo "usage: meta-launch.sh [--lanes a,b,...] [--no-open] [--dry-run] | --init-launcher [--viewer name] [--force] [--stdout]" >&2; exit 2 ;;
   esac
 done
+if [ "$init" = 0 ] && { [ -n "$init_viewer" ] || [ "$init_force" = 1 ] || [ "$init_stdout" = 1 ]; }; then
+  echo "meta-launch: --viewer, --force and --stdout go with --init-launcher" >&2; exit 2
+fi
 command -v jq > /dev/null || { echo "meta-launch: jq is not installed" >&2; exit 1; }
 state_dir="${AW_STATE_DIR:-$HOME/.agentic-workflow}"
 # shellcheck source=launcher-lib.sh
@@ -142,22 +145,25 @@ claude_in_pane() {
       exit 1 }'
 }
 
-# A lane whose agent reports its own session id (sessionId: reported) is started on its own: wait until meta-lane.sh has
-# recorded the id (the lane-sessions file newer than this start) before the next lane starts, so two lanes never race
-# for the same new session file (spec section 4). AW_META_ID_WAIT seconds at most.
-mark_start() { mkdir -p "$state_dir/meta/lane-sessions"; local r="$state_dir/meta/lane-sessions/.launch-start.$$"; : > "$r"; printf '%s' "$r"; }
-wait_reported() { # lane ref
-  local f="$state_dir/meta/lane-sessions/$1" n
+# A lane whose agent reports its own session id (sessionId: reported) is waited for: meta-lane.sh leaves
+# lane-sessions/<lane>.settled once the id is recorded (or refused as ambiguous), and the next lane is started after that.
+# meta-lane.sh serialises such lanes itself too (a start lock), so a Warp pane that creates its session is safe as well.
+# AW_META_ID_WAIT seconds at most.
+mark_start() { # lane: clear the previous start's markers
+  mkdir -p "$state_dir/meta/lane-sessions"
+  rm -f "$state_dir/meta/lane-sessions/$1.settled" "$state_dir/meta/lane-sessions/$1.ambiguous"
+}
+wait_reported() { # lane
+  local d="$state_dir/meta/lane-sessions" n
   n=$(( ${AW_META_ID_WAIT:-30} * 10 ))
   if [ "$(launcher_agent_field "$(agent_of "$1")" sessionId)" = reported ]; then
     while [ "$n" -gt 0 ]; do
-      { [ -s "$f" ] && [ "$f" -nt "$2" ]; } && break
-      [ "$f.ambiguous" -nt "$2" ] && { echo "meta-launch: lane $1: ambiguous session id (more than one new session file); no id recorded" >&2; break; }
+      [ -e "$d/$1.settled" ] && break
       sleep 0.1; n=$((n - 1))
     done
-    [ "$n" -gt 0 ] || echo "meta-launch: lane $1 has not reported its session id after ${AW_META_ID_WAIT:-30}s" >&2
+    if [ "$n" -le 0 ]; then echo "meta-launch: lane $1 has not reported its session id after ${AW_META_ID_WAIT:-30}s" >&2
+    elif [ -e "$d/$1.ambiguous" ]; then echo "meta-launch: lane $1: ambiguous session id (more than one new session file); no id recorded" >&2; fi
   fi
-  unlink "$2"
 }
 
 # 1. tmux sessions: create the missing ones (detached), keep the live ones.
@@ -169,17 +175,17 @@ for l in "${L[@]}"; do
     if [ ! -f "$state_dir/meta/lane-sessions/$l.exited" ] || claude_in_pane "$s" "$(proc_of "$l")"; then echo "tmux $s: running"
     elif [ "$dry" = 1 ]; then echo "[dry-run] tmux respawn-pane -k -t $s $here/meta-lane.sh $team $l"
     else
-      ref="$(mark_start)"
+      mark_start "$l"
       tmux respawn-pane -k -t "=$s:" -c "$repo" -e "AW_META_CONFIG=$config" ${lc_env[@]+"${lc_env[@]}"} "$here/meta-lane.sh $team $l"
       echo "tmux $s: restarted (claude had exited)"
-      wait_reported "$l" "$ref"
+      wait_reported "$l"
     fi
   elif [ "$dry" = 1 ]; then echo "[dry-run] tmux new-session -d -s $s -c $repo $here/meta-lane.sh $team $l"
   else
-    ref="$(mark_start)"
+    mark_start "$l"
     tmux new-session -d -s "$s" -c "$repo" -e "AW_META_CONFIG=$config" ${lc_env[@]+"${lc_env[@]}"} "$here/meta-lane.sh $team $l"
     echo "tmux $s: started"
-    wait_reported "$l" "$ref"
+    wait_reported "$l"
   fi
 done
 

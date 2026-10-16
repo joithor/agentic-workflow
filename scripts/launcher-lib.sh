@@ -170,7 +170,7 @@ launcher_agent_field() { # id field
 
 # launcher_expand <json-array> cwd title name seed sessionId bin [cmd...]: NUL-separated arguments on stdout. Each element
 # is one argument: {cmd...} (a whole element) is spliced as the cmd words, an element that is just {seed} is dropped when the
-# seed is empty, and every other placeholder is replaced in one pass (a value is never expanded again). With a launcher file
+# seed is empty (unless LAUNCHER_KEEP_EMPTY_SEED=1: the prompt file exists but is empty), and every other placeholder is replaced in one pass (a value is never expanded again). With a launcher file
 # (LAUNCHER_STRICT), an element that is exactly {title}, {name}, {sessionId} or {seed} and expands to a value starting
 # with "-" is refused.
 launcher_expand() {
@@ -178,12 +178,12 @@ launcher_expand() {
   local cmd; cmd="$(printf '%s\0' "$@" | jq -Rs '[split("\u0000")[:-1][]]' 2> /dev/null)" || return 1
   [ "$#" = 0 ] && cmd='[]'
   # shellcheck disable=SC2016
-  jq -j --argjson cmd "$cmd" --argjson strict "$LAUNCHER_STRICT" --arg cwd "$cwd" --arg title "$title" --arg name "$name" \
+  jq -j --argjson cmd "$cmd" --argjson strict "$LAUNCHER_STRICT" --argjson keep "${LAUNCHER_KEEP_EMPTY_SEED:-0}" --arg cwd "$cwd" --arg title "$title" --arg name "$name" \
     --arg seed "$seed" --arg sessionId "$sid" --arg bin "$bin" '
     {bin: $bin, cwd: $cwd, title: $title, name: $name, seed: $seed, sessionId: $sessionId, mcpConfig: ""} as $v
     | .[]
     | if . == "{cmd...}" then $cmd[]
-      elif . == "{seed}" and $seed == "" then empty
+      elif . == "{seed}" and $seed == "" and $keep == 0 then empty
       else
         (if $strict == 1 and (. as $e | ["{title}", "{name}", "{sessionId}", "{seed}"] | index([$e]))
             and ($v[.[1:-1]] | startswith("-"))

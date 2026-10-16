@@ -61,42 +61,60 @@ has_transcript() {
 }
 
 # watch_reported_id: the agent picks its own session id. Wait up to AW_META_ID_WAIT seconds for it: the file the agent's
-# hook writes to $ids/<lane>, else the one session file (the catalog's newestFile glob) created after this start that no
-# other lane has recorded; its capture group is the id. Two candidates are refused.
+# hook writes to $ids/<lane>, else the one session file (the catalog's newestFile glob) that did not exist when this lane
+# started (the $snapshot of paths, taken before the agent ran) and that no other lane has recorded; its capture group is
+# the id. Two candidates are refused. Success and a refusal both leave <lane>.settled for scripts/meta-launch.sh.
 watch_reported_id() {
-  local ref="$ids/$lane.start" deadline=$((SECONDS + ${AW_META_ID_WAIT:-30})) glob capture f cid other claimed n
+  local deadline=$((SECONDS + ${AW_META_ID_WAIT:-30})) glob capture p f cid other claimed n
   glob="$(jq -r --arg id "$agent" '.[$id].reportedId.newestFile // empty' <<< "$LAUNCHER_CAT")"
   capture="$(jq -r --arg id "$agent" '.[$id].reportedId.capture // empty' <<< "$LAUNCHER_CAT")"
   glob="${glob/#\~/$HOME}"
-  : > "$ref"
-  sleep 0.05
   while [ "$SECONDS" -lt "$deadline" ]; do
-    if [ -s "$ids/$lane" ] && [ "$ids/$lane" -nt "$ref" ]; then rm -f "$ref"; return 0; fi   # the hook wrote it
+    if [ -s "$ids/$lane" ]; then : > "$ids/$lane.settled"; return 0; fi   # the hook wrote it (any older file was removed at the start)
     if [ -n "$glob" ] && [ -n "$capture" ]; then
       n=0; cid=""
-      while IFS= read -r f; do
-        [ -n "$f" ] && [ "$f" -nt "$ref" ] || continue
-        [[ "$f" =~ $capture ]] || continue
+      while IFS= read -r p; do
+        [ -n "$p" ] || continue
+        case $'\n'"$snapshot"$'\n' in *$'\n'"$p"$'\n'*) continue ;; esac   # existed before this start: not ours
+        [[ "$p" =~ $capture ]] || continue
         f="${BASH_REMATCH[1]}"
         [ -n "$f" ] && id_ok "$f" || continue
         claimed=0
         for other in "$ids"/*; do
-          case "$other" in *.exited|*.start|*.tmp|*.ambiguous|"$ids/$lane") continue ;; esac
+          case "$other" in *.exited|*.start|*.tmp|*.ambiguous|*.settled|"$ids/$lane") continue ;; esac
           [ -f "$other" ] && [ "$(tr -d '[:space:]' < "$other")" = "$f" ] && claimed=1
         done
         [ "$claimed" = 0 ] || continue
         if [ "$f" != "$cid" ]; then n=$((n + 1)); cid="$f"; fi
       done < <(compgen -G "$glob")
-      if [ "$n" -gt 1 ]; then : > "$ids/$lane.ambiguous"; rm -f "$ref"; return 1; fi
-      if [ "$n" = 1 ]; then printf '%s\n' "$cid" > "$ids/$lane.tmp" && mv "$ids/$lane.tmp" "$ids/$lane"; rm -f "$ref"; return 0; fi
+      if [ "$n" -gt 1 ]; then : > "$ids/$lane.ambiguous"; : > "$ids/$lane.settled"; return 1; fi
+      if [ "$n" = 1 ]; then printf '%s\n' "$cid" > "$ids/$lane.tmp" && mv "$ids/$lane.tmp" "$ids/$lane"; : > "$ids/$lane.settled"; return 0; fi
     fi
     sleep 0.2
   done
-  rm -f "$ref"
   return 1
 }
 
-id=""; mode=fresh
+# Lanes whose agent reports its own id start one at a time, whoever starts them (aw-meta-launch, a Warp pane that creates
+# its session, a reboot, --lanes): the newest-file fallback cannot tell two new session files apart. A lane takes the
+# team's start lock (a directory under lane-sessions; its pid file names the process holding it, so a dead holder's lock is
+# cleared) before its agent runs, and the watcher releases it once the id is recorded, refused or timed out.
+start_lock="$ids/.reported.lock"
+acquire_start_lock() {
+  local deadline=$((SECONDS + ${AW_META_ID_WAIT:-30} * 10)) holder nopid=0
+  until mkdir "$start_lock" 2> /dev/null; do
+    holder="$(cat "$start_lock/pid" 2> /dev/null)"
+    if [ -z "$holder" ]; then nopid=$((nopid + 1)); else nopid=0; fi   # no pid for 2 s: the holder died between mkdir and writing it
+    if { [ -n "$holder" ] && ! kill -0 "$holder" 2> /dev/null; } || [ "$nopid" -ge 20 ]; then
+      rm -f "$start_lock/pid"; rmdir "$start_lock" 2> /dev/null; nopid=0; continue
+    fi
+    if [ "$SECONDS" -ge "$deadline" ]; then echo "meta-lane: another lane's start did not finish; starting $lane anyway" >&2; return 1; fi
+    sleep 0.1
+  done
+  echo "$$" > "$start_lock/pid"
+}
+
+id=""; mode=fresh; write_id=0
 case "$id_mode" in
   none) ;;
   *)
@@ -106,22 +124,33 @@ case "$id_mode" in
     elif [ "$id_mode" = pre-chosen-uuid ]; then
       id="$(cat /proc/sys/kernel/random/uuid 2> /dev/null || uuidgen)"
     else
-      id=""; rm -f "$ids/$lane" "$ids/$lane.ambiguous"
+      id=""; rm -f "$ids/$lane" "$ids/$lane.ambiguous" "$ids/$lane.settled"
     fi
-    if [ -n "$id" ]; then printf '%s\n' "$id" > "$ids/$lane.tmp" && mv "$ids/$lane.tmp" "$ids/$lane"; fi ;;
+    if [ -n "$id" ]; then write_id=1; fi ;;   # recorded below, once the argv is known to be allowed
 esac
+name="$team-$lane"
+bin="$(field bin)"
+seed=""; LAUNCHER_KEEP_EMPTY_SEED=0
+if [ "$mode" = fresh ] && [ -n "$prompts" ] && [ -f "$prompts/$lane.md" ]; then
+  seed="$(cat "$prompts/$lane.md")"; LAUNCHER_KEEP_EMPTY_SEED=1   # an empty prompt file still passes "", as before
+fi
+if [ "$mode" = resume ]; then tpl="$(field resume)"; else tpl="$(field open)"; fi
+# Expand once into a file: its status (a refused element, spec section 4) is checked before anything else happens, so a
+# refused lane starts no agent and records no id.
+argv_file="$ids/$lane.argv.$$"
+if ! launcher_expand "$tpl" "$repo" "$name" "$name" "$seed" "$id" "$bin" > "$argv_file"; then
+  unlink "$argv_file" 2> /dev/null; echo "meta-lane: lane $lane refused: the agent was not started" >&2; exit 1
+fi
+args=()
+while IFS= read -r -d '' a; do args+=("$a"); done < "$argv_file"
+unlink "$argv_file"
+[ "${#args[@]}" -gt 0 ] || { echo "meta-lane: agent '$agent' has an empty argv" >&2; exit 1; }
+if [ "$write_id" = 1 ]; then printf '%s\n' "$id" > "$ids/$lane.tmp" && mv "$ids/$lane.tmp" "$ids/$lane"; fi
+if [ "$id_mode" = reported ] && [ "$mode" = resume ]; then : > "$ids/$lane.settled"; fi
 if [ "$lane" = "$meta_lane" ] && [ -x "$meta_bin" ] && [ -n "$id" ]; then
   AW_LOG_LEVEL=none "$meta_bin" role-set --session "$id" --name "$team-$lane" > /dev/null 2>&1 \
     || echo "meta-lane: aw-meta role-set failed; run it by hand in the meta session" >&2
 fi
-name="$team-$lane"
-bin="$(field bin)"
-seed=""
-if [ "$mode" = fresh ] && [ -n "$prompts" ] && [ -f "$prompts/$lane.md" ]; then seed="$(cat "$prompts/$lane.md")"; fi
-if [ "$mode" = resume ]; then tpl="$(field resume)"; else tpl="$(field open)"; fi
-args=()
-while IFS= read -r -d '' a; do args+=("$a"); done < <(launcher_expand "$tpl" "$repo" "$name" "$name" "$seed" "$id" "$bin") || exit 1
-[ "${#args[@]}" -gt 0 ] || { echo "meta-lane: agent '$agent' has an empty argv" >&2; exit 1; }
 # AW_META_CLAUDE_ARGS go right after {bin}, before the session flags and the prompt, for the claude-code agent only. The
 # built-in claude-code resume template has no -n (Sindri names its sessions another way); a Meta lane's name must not
 # change across restarts, so it is appended there.
@@ -136,7 +165,17 @@ unset CLAUDECODE CLAUDE_PID CLAUDE_CODE_SESSION_ID CLAUDE_CODE_CHILD_SESSION CLA
   CLAUDE_CODE_MESSAGING_TOKEN CLAUDE_CODE_BRIDGE_SESSION_ID CLAUDE_CODE_ENTRYPOINT CLAUDE_CODE_SESSION_ATTENDED \
   CLAUDE_CODE_EXECPATH
 export AW_SINDRI_CHILD=1 AW_META_TEAM="$team" AW_META_LANE="$lane"
-if [ "$id_mode" = reported ] && [ "$mode" = fresh ]; then ( watch_reported_id ) > /dev/null 2>&1 & fi
+if [ "$id_mode" = reported ] && [ "$mode" = fresh ]; then
+  have_lock=0; acquire_start_lock && have_lock=1
+  # The session files that exist now are not this lane's: the watcher counts only paths that appear after this point.
+  snap_glob="$(jq -r --arg id "$agent" '.[$id].reportedId.newestFile // empty' <<< "$LAUNCHER_CAT")"
+  snapshot=""; [ -z "$snap_glob" ] || snapshot="$(compgen -G "${snap_glob/#\~/$HOME}" 2> /dev/null)"
+  (
+    if [ "$have_lock" = 1 ]; then echo "$(sh -c 'echo $PPID')" > "$start_lock/pid"; fi
+    watch_reported_id
+    if [ "$have_lock" = 1 ]; then rm -f "$start_lock/pid"; rmdir "$start_lock" 2> /dev/null; fi
+  ) > /dev/null 2>&1 &
+fi
 "${args[@]}"
 [ "${AW_META_NO_SHELL:-0}" = 1 ] && exit 0
 : > "$exited"
