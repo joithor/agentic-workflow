@@ -99,6 +99,7 @@ public sealed class FactViewerTests
     public async Task File_Open_reports_what_the_launcher_answered_and_never_opens_a_relative_path()
     {
         var launcher = new FakeLauncher();
+        launcher.AddFile("/work/docs/prd.md");
         var row = FactFixtures.Row("project-build", "fact:prd");
         var rooted = row with { Ref = row.Ref! with { Path = "/work/docs/prd.md" } };
         var viewer = new FileFactViewer(rooted, launcher);
