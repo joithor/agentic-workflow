@@ -1,4 +1,5 @@
 using System.Text;
+using Microsoft.Extensions.Time.Testing;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
@@ -134,7 +135,10 @@ public sealed class NeedsYouMapperTests
         var row = NeedsYouMapper.Map(list, Catalog(), Pending(), _counts).Rows[1];
 
         Assert.Equal("", row.PrimaryAction);
-        Assert.DoesNotContain(row.Actions, a => string.Equals(a.CatalogId, row.PrimaryAction, StringComparison.Ordinal));
+        Assert.NotEmpty(row.Actions);
+        var vm = new NeedsYouRowViewModel(row, seen: true, reducedMotion: false, arrived: false, new FakeTimeProvider(A.Noon));
+        Assert.NotEmpty(vm.Controls);
+        Assert.DoesNotContain(vm.Controls, c => c.IsPrimary);
     }
 
     [Fact]
