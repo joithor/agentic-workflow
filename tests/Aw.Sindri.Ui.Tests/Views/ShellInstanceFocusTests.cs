@@ -49,10 +49,10 @@ public sealed class ShellInstanceFocusTests : FrameHost
         return (window, shell);
     }
 
-    private async Task<(Window Window, ShellViewModel Shell, string Address)> OpenedFromTheWorkflowsRow(string scenario)
+    private async Task<(Window Window, ShellViewModel Shell, string Address)> OpenedFromTheWorkflowsRow(string scenario, double width = 1600)
     {
         var address = FixtureInstances.Detail(scenario).Address;
-        var (window, shell) = await Connected(s => s.Workflows.Groups.Count > 0, width: 1600, height: 1000);
+        var (window, shell) = await Connected(s => s.Workflows.Groups.Count > 0, width: width, height: 1000);
         shell.GoTo(PageId.Workflows);
         Settle(window);
         Assert.True(shell.Workflows.Select(address));
@@ -119,5 +119,15 @@ public sealed class ShellInstanceFocusTests : FrameHost
 
         Assert.Equal((false, true), (shell.Instance.Expanded!.IsConfirmingCancel, shell.IsSheetOpen));
         await Until(window, () => OnNamed(window, "CommandAsk"), $"focus is on {FocusedButton(window)?.Name}");
+    });
+
+    [Fact]
+    public Task A_row_open_where_the_sheet_covers_the_page_stays_on_the_heading() => OnUi(async () =>
+    {
+        var (window, shell, _) = await OpenedFromTheWorkflowsRow("project-build", width: 1000);
+
+        Settle(window);   // the frame is read: focus must not have moved on from the heading to its first action (§11.2)
+        Assert.True(Named<Border>(window, "SheetTitle").IsFocused, $"focus is on {window.FocusManager?.GetFocusedElement()}");
+        Assert.True(shell.IsSheetShown);
     });
 }
