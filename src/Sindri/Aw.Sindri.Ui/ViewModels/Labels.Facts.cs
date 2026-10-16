@@ -27,6 +27,14 @@ internal static partial class Labels
     /// <summary>The words while a body is read.</summary>
     internal const string ReadingFact = "Reading the fact…";
 
+    /// <summary>What the payload viewer says when there is no API to ask.</summary>
+    internal const string PayloadNotRunning = "Sindri isn't running, so this fact can't be read now.";
+
+    /// <summary>What the payload viewer's polite line says once the body is there.</summary>
+    /// <param name="label">The fact's label.</param>
+    /// <returns>The words.</returns>
+    internal static string PayloadLoaded(string label) => $"{label} loaded";
+
     /// <summary>Open on a file or an item.</summary>
     internal const string OpenFact = "Open";
 

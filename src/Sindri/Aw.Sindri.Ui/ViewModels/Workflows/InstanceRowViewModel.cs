@@ -32,6 +32,7 @@ internal sealed class InstanceRowViewModel : ObservableObject
             Protected = new ProtectedActionViewModel(new ProtectedAction(Labels.AnswerVerb(answer.Kind), answer.Cli, row.Address), clipboard, clock);
         }
 
+        Cells = Stages;
         CanAnswerAtDesk = row.Answer is null && row.Actions.Contains(CompleteStep, StringComparer.Ordinal) && row.States.Any(s => s.Desk && string.Equals(s.State, row.State, StringComparison.Ordinal));
         CanCancel = row.Actions.Contains(CancelCommand, StringComparer.Ordinal);
     }
@@ -65,6 +66,16 @@ internal sealed class InstanceRowViewModel : ObservableObject
 
     /// <summary>A cell per state, in the served order.</summary>
     public IReadOnlyList<StageCellViewModel> Stages { get; }
+
+    /// <summary>The cells under the group's column heads, one per column in the group's order (a blank where this row has no such state).</summary>
+    public IReadOnlyList<StageCellViewModel> Cells { get; private set => Set(ref field, value); }
+
+    /// <summary>Lines the cells up under the group's columns.</summary>
+    /// <param name="columns">The group's columns.</param>
+    internal void Align(IReadOnlyList<string> columns) => _ = (columns, _row);
+
+    /// <summary>The title button's accessible name.</summary>
+    public string OpenName => AccessibleName;
 
     /// <summary>The name screen readers hear: the subject and the address.</summary>
     public string AccessibleName => $"{Subject} {_row.Address}";

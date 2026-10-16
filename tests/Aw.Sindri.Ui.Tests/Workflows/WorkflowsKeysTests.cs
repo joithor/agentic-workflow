@@ -335,4 +335,21 @@ public sealed class WorkflowsKeysTests
 
         Assert.Equal((string.Empty, false), (shell.Workflows.KeyNote, shell.Workflows.KeyNoteVoice.IsAnnouncing));
     }, Token);
+
+    [Fact]
+    public Task J_and_K_from_a_row_in_a_collapsed_group_step_to_the_nearest_drawn_row() => UiThread.Run(async () =>
+    {
+        var shell = await OnWorkflows();
+        var groups = shell.Workflows.Groups;
+        var inside = groups[1].Rows[0].Address;
+        Assert.True(shell.Workflows.Select(inside));
+        groups[1].Toggle();
+
+        Assert.True(shell.Press("J"));
+        Assert.Equal(groups[2].Rows[0].Address, shell.Workflows.SelectedAddress, StringComparer.Ordinal);
+
+        Assert.True(shell.Workflows.Select(inside));
+        Assert.True(shell.Press("K"));
+        Assert.Equal(groups[0].Rows[^1].Address, shell.Workflows.SelectedAddress, StringComparer.Ordinal);
+    }, Token);
 }

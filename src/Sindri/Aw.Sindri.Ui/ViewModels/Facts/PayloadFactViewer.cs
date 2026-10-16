@@ -22,6 +22,9 @@ internal sealed class PayloadFactViewer : ObservableObject, IFactViewer
     /// <summary>The fact row the viewer shows.</summary>
     public FactRow Row { get; }
 
+    /// <summary>The polite line that says the outcome of the read: the problem, the cut, or that the body is there.</summary>
+    public Components.LiveAnnouncer Voice { get; } = new(Labels.ReadingFact);
+
     /// <summary>True until the body has been read.</summary>
     public bool IsLoading { get; private set { Set(ref field, value); OnChanged(nameof(IsShown)); } } = true;
 

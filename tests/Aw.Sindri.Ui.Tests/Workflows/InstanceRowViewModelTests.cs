@@ -122,4 +122,20 @@ public sealed class InstanceRowViewModelTests
 
     [Fact]
     public void Chip_is_the_served_chip() => Assert.All(Open, served => Assert.Equal(served.Chip, Row(served).Chip));
+
+    [Fact]
+    public void The_name_carries_the_state_and_the_chip_and_the_current_cell_says_current()
+    {
+        Assert.All(Open, served =>
+        {
+            var row = Row(served);
+            Assert.Contains(served.State, row.AccessibleName, StringComparison.Ordinal);
+            Assert.Contains(served.Chip.Word, row.AccessibleName, StringComparison.Ordinal);
+            Assert.Contains(row.Subject, row.AccessibleName, StringComparison.Ordinal);
+            var current = row.Stages.Single(s => s.State == served.State);
+            Assert.EndsWith(", " + Labels.StageCurrent, current.Name, StringComparison.Ordinal);
+            Assert.All(row.Stages.Where(s => s.State != served.State), s => Assert.DoesNotContain(Labels.StageCurrent, s.Name, StringComparison.Ordinal));
+            Assert.Equal(Labels.OpenInstanceName(served.Address), row.OpenName);
+        });
+    }
 }

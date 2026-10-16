@@ -79,4 +79,26 @@ public sealed class PayloadFactViewerTests
         Assert.DoesNotContain(viewer.Tree[0].Text, c => c is '‮' or '\u0007');
         Assert.StartsWith("note", viewer.Preview[0], StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task A_viewer_with_no_api_to_ask_says_so_instead_of_showing_an_empty_body()
+    {
+        var context = new FactViewerContext(_server, new FakeClipboard(), _clock, () => null, FixtureInstances.Detail("incident-loop").Id, _ => { });
+        var viewer = new PayloadFactViewer(FactFixtures.Row("incident-loop", "fact:alert"), context);
+
+        await viewer.Load(Token);
+
+        Assert.Equal((Labels.PayloadNotRunning, false), (viewer.ProblemText, viewer.IsShown));
+        Assert.Equal((true, Labels.PayloadNotRunning), (viewer.Voice.IsAnnouncing, viewer.Voice.Announcement));
+    }
+
+    [Fact]
+    public async Task The_outcome_of_the_read_is_said_once_by_a_polite_line()
+    {
+        var viewer = Viewer("incident-loop", "fact:alert");
+
+        await viewer.Load(Token);
+
+        Assert.Equal((true, Labels.PayloadLoaded(viewer.Row.Label)), (viewer.Voice.IsAnnouncing, viewer.Voice.Announcement));
+    }
 }

@@ -63,6 +63,9 @@ internal static partial class Labels
     /// <summary>The page's heading while it has no counts yet.</summary>
     internal const string WorkflowsHeading = "Workflows";
 
+    /// <summary>The word a screen reader hears after the cell of the state the instance is in.</summary>
+    internal const string StageCurrent = "current";
+
     /// <summary>The legend's word for the loop mark.</summary>
     internal const string LegendLoop = "loop";
 

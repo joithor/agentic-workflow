@@ -60,4 +60,21 @@ public sealed class InstanceFrameFailureTests
 
         Assert.Equal((FramePhase.Shown, false), (frame.Phase, frame.IsProblem));
     }
+
+    [Fact]
+    public async Task A_link_that_matches_several_instances_opens_none_of_them()
+    {
+        var body = GoldenFiles.Node("workflow-instances", "open");
+        var rows = body["instances"]!.AsArray();
+        var twin = rows[0]!.DeepClone();
+        twin["address"] = "twin/" + (string)rows[0]!["address"]!;
+        twin["id"] = "WFI-twin";
+        rows.Add(twin);
+        _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, body.ToJsonString());
+        var frame = new InstanceFrameViewModel(_server, new FakeClipboard(), _clock);
+
+        await frame.Open(_api, (string)rows[0]!["itemId"]!, id: null, Token);   // an item id: both rows match, neither is exact
+
+        Assert.Equal(FramePhase.NotFound, frame.Phase);
+    }
 }

@@ -182,16 +182,17 @@ public sealed class WorkflowsViewModelTests
         var body = (JsonObject)GoldenFiles.Node("workflow-instances", "open");
         _ = body.Remove("counts");   // the engine's shape before API P11 has no counts (N1)
         var list = await Shown();
+        var (rowsBefore, headBefore) = (list.Groups.Sum(g => g.Rows.Count), list.Head);   // the last good data stays, marked stale (screens §4.1)
         Assert.False(list.IsUnreadable);
 
         _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, body.ToJsonString());
         await list.Refresh(_api, Token);
 
-        Assert.Equal((true, Labels.StripUnreadable, 0, string.Empty), (list.IsUnreadable, list.UnreadableText, list.Groups.Count, list.Head));
+        Assert.Equal((true, Labels.StripUnreadable, rowsBefore, headBefore, true), (list.IsUnreadable, list.UnreadableText, list.Groups.Sum(g => g.Rows.Count), list.Head, list.Groups.SelectMany(g => g.Rows).All(r => r.IsStale)));
 
         _server.WorkflowAnswer = null;
         await list.Refresh(_api, Token);
-        Assert.Equal((false, true), (list.IsUnreadable, list.Groups.Count > 0));
+        Assert.Equal((false, true, false), (list.IsUnreadable, list.Groups.Count > 0, list.Groups.SelectMany(g => g.Rows).Any(r => r.IsStale)));
     }
 
     [Fact]
@@ -275,5 +276,25 @@ public sealed class WorkflowsViewModelTests
         Assert.All(words, w => Assert.Contains(w, list.LegendName, StringComparison.Ordinal));
         Assert.All(marks, m => Assert.DoesNotContain(m, list.LegendName, StringComparison.Ordinal));
         Assert.All((string[])["Enter", "A", "B", "X"], k => Assert.Contains(k, list.LegendText, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Every_rows_cells_sit_under_the_groups_column_heads()
+    {
+        var body = GoldenFiles.Node("workflow-instances", "open");
+        var rows = body["instances"]!.AsArray();
+        var group = rows.GroupBy(r => Recipe(r!), StringComparer.Ordinal).First(g => g.Skip(1).Any()).ToList();
+        var shortened = group[1]!;
+        var dropped = Text(shortened["states"]!.AsArray()[0]!["id"]);
+        shortened["states"]!.AsArray().RemoveAt(0);   // a row on another hash: one state fewer
+        _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, body.ToJsonString());
+
+        var list = await Shown();
+
+        var served = list.Groups.First(g => string.Equals(g.Recipe, Recipe(shortened), StringComparison.Ordinal));
+        Assert.Contains(dropped, served.Columns, StringComparer.Ordinal);
+        Assert.All(served.Rows, row => Expect.Sequence(served.Columns, row.Cells.Select(c => c.State)));
+        var short1 = served.Rows.First(r => string.Equals(r.Address, Text(shortened["address"]), StringComparison.Ordinal));
+        Assert.Contains(short1.Cells, c => string.Equals(c.State, dropped, StringComparison.Ordinal) && c.Text.Length == 0);
     }
 }
