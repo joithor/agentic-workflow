@@ -23,7 +23,7 @@ public static class RecipeViews
             stamp.Hash,
             stamp.Version,
             recipe.Name,
-            [.. recipe.Inputs.Select(static i => new RecipeInputView(i.Key.Value, i.Label, Declared(i.Type), i.Kind ?? SubjectKinds.NoKind, Required: i.Generate is null, i.Generate))],
+            [.. recipe.Inputs.Select(static i => new RecipeInputView(i.Key.Value, i.Label, FactTypes.Parse(SubjectKinds.TypeOf(i)), i.Kind ?? SubjectKinds.NoKind, Required: i.Generate is null, i.Generate))],
             [.. recipe.Outputs.Select(static o => new RecipeOutputView(o.Key.Value, o.Label, Declared(o.Type), o.From))],
             Urgencies.IsKnown(recipe.Urgency) ? Urgencies.Parse(recipe.Urgency) : RecipeUrgency.Work,
             path.OrderedBy == "transition-list" ? PathOrdering.TransitionList : PathOrdering.Path,
