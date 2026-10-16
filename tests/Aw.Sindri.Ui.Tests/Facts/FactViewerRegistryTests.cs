@@ -3,6 +3,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels.Facts;
+using Aw.Sindri.Ui.Views.Facts;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Ui.Tests.Facts;
@@ -32,6 +33,7 @@ public sealed class FactViewerRegistryTests
         {
             Assert.True(registry.IsRegistered(one.Row.Type), one.Row.Key);
             Assert.IsType(one.Viewer, registry.Create(one.Row, Context()));
+            Assert.True(FactViewTemplates.HasView(one.Viewer), one.Viewer.Name + " has no view: its fact would read as its summary");
         });
     }
 

@@ -11,8 +11,6 @@ namespace Aw.Sindri.Ui.ViewModels.Workflows;
 /// </summary>
 internal sealed class InstanceRowViewModel : ObservableObject
 {
-    private const string ProtectedClass = "protected";
-    private const string CompleteStep = "CompleteStep";
     private const string CancelCommand = "ApplyCommand:cancel";
 
     private readonly InstanceSummary _row;
@@ -27,13 +25,14 @@ internal sealed class InstanceRowViewModel : ObservableObject
             var current = string.Equals(s.State, row.State, StringComparison.Ordinal);
             return new StageCellViewModel(s, current, blocked && current);
         })];
-        if (row.Answer is { } answer && string.Equals(answer.Class, ProtectedClass, StringComparison.Ordinal))
+        if (InstanceRules.HasProtectedAnswer(row))
         {
+            var answer = row.Answer!; // why: HasProtectedAnswer is true only for a row with an answer
             Protected = new ProtectedActionViewModel(new ProtectedAction(Labels.AnswerVerb(answer.Kind), answer.Cli, row.Address), clipboard, clock);
         }
 
         Cells = Stages;
-        CanAnswerAtDesk = row.Answer is null && row.Actions.Contains(CompleteStep, StringComparer.Ordinal) && row.States.Any(s => s.Desk && string.Equals(s.State, row.State, StringComparison.Ordinal));
+        CanAnswerAtDesk = row.Answer is null && InstanceRules.CompletesAtDesk(row);
         CanCancel = row.Actions.Contains(CancelCommand, StringComparer.Ordinal);
     }
 

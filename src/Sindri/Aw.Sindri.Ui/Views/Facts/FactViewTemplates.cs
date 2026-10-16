@@ -20,6 +20,11 @@ internal static class FactViewTemplates
         [typeof(PayloadFactViewer)] = () => new PayloadFactView(),
     };
 
+    /// <summary>Whether a viewer type has a view of its own (every viewer the registry makes should: one without reads as its summary).</summary>
+    /// <param name="viewer">The viewer's type.</param>
+    /// <returns>True when a view is registered.</returns>
+    internal static bool HasView(Type viewer) => _views.ContainsKey(viewer);
+
     /// <summary>The template the facts panel draws an open viewer with.</summary>
     internal static IDataTemplate Template { get; } = new ViewerTemplate();
 

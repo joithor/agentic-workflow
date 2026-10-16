@@ -12,9 +12,6 @@ namespace Aw.Sindri.Ui.ViewModels.Workflows;
 /// </summary>
 internal sealed class StripRowViewModel : ObservableObject
 {
-    private const string ProtectedClass = "protected";
-    private const string CompleteStep = "CompleteStep";
-
     private readonly InstanceSummary _row;
     private readonly TimeProvider _clock;
 
@@ -22,13 +19,12 @@ internal sealed class StripRowViewModel : ObservableObject
     {
         (_row, _clock) = (row, clock);
         var answer = row.Answer;
-        if (answer is not null && string.Equals(answer.Class, ProtectedClass, StringComparison.Ordinal))
+        if (answer is not null && InstanceRules.HasProtectedAnswer(row))
         {
             Protected = new ProtectedActionViewModel(new ProtectedAction(Labels.AnswerVerb(answer.Kind), answer.Cli, row.Address), clipboard, clock);
         }
 
-        var desk = row.States.Any(s => s.Desk && string.Equals(s.State, row.State, StringComparison.Ordinal));
-        CanAnswer = Protected is null && (answer is not null || (desk && row.Actions.Contains(CompleteStep, StringComparer.Ordinal)));
+        CanAnswer = Protected is null && (answer is not null || InstanceRules.CompletesAtDesk(row));
     }
 
     /// <summary>The served chip (the word and tone the chip control draws).</summary>
