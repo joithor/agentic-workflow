@@ -8,7 +8,8 @@
 // 2. Every file in tests/fixtures/launcher/ (except manifest.json) is listed in manifest.json and has the expected
 //    schema verdict; a file that does not parse is invalid. The manifest's `bash` tags are well formed.
 // 3. config/launcher/builtins.json (each agent, no "override") and the argv of every entry in config/launcher/terminals.json
-//    (as an exec-template viewer) validate against the schema.
+//    (as an exec-template viewer) validate against the schema; every terminals.json row names its running processes
+//    (`processNames`, non-empty, no name shared between rows).
 // 4. docs/csharp/sindri-launcher.md shows each terminals.json argv as its worked example.
 // 4b. Each golden in tests/fixtures/launcher/argv-hash/ names its inputs (a built-in, with an optional launcher.json override,
 //    or a full entry); its canonical text and argvHash equal the RFC 8785 (JCS) form and SHA-256 of the merged entry (spec §2).
@@ -102,11 +103,22 @@ try {
     if (keys && !new RegExp(keys.agentIdPattern).test(id)) fail("config/launcher/builtins.json", `${id} does not match the agent id pattern`);
   }
   const terminals = readJson("config/launcher/terminals.json");
+  const seenProcessNames = new Map();
   for (const t of terminals.terminals ?? []) {
     const viewer = { kind: "exec-template", name: t.name, argv: t.argv };
     if (!validateViewer(viewer)) fail("config/launcher/terminals.json", `${t.id}: ${ajv.errorsText(validateViewer.errors)}`);
     if (!t.argv.includes("{cmd...}")) fail("config/launcher/terminals.json", `${t.id}: argv has no {cmd...}`);
     if (!t.titleless && !t.argv.some((a) => a.includes("{title}"))) fail("config/launcher/terminals.json", `${t.id}: argv has no {title}`);
+    // The running process names the session collector's host detection matches (spec 2026-10-16-sindri-session-collector-design.md §6.1, §9).
+    const names = t.processNames;
+    if (!Array.isArray(names) || names.length === 0 || names.some((n) => typeof n !== "string" || n === "")) {
+      fail("config/launcher/terminals.json", `${t.id}: processNames must be a non-empty array of process names`);
+    } else {
+      for (const n of names) {
+        if (seenProcessNames.has(n)) fail("config/launcher/terminals.json", `${t.id}: processName ${n} is also ${seenProcessNames.get(n)}'s`);
+        else seenProcessNames.set(n, t.id);
+      }
+    }
   }
 
   const doc = fs.readFileSync(path.join(ROOT, "docs/csharp/sindri-launcher.md"), "utf8");
@@ -148,6 +160,7 @@ try {
     sameSet("host", keys.host, Object.keys(schema.$defs.host.properties));
     sameSet("reportedId", keys.reportedId, Object.keys(schema.$defs.reportedId.properties));
     sameSet("meta", keys.meta, Object.keys(schema.$defs.meta.properties));
+    sameSet("sessions", keys.sessions, Object.keys(schema.$defs.sessions.properties));
     sameSet("viewerKinds", keys.viewerKinds, schema.$defs.viewer.properties.kind.enum);
     sameSet("hostKinds", keys.hostKinds, schema.$defs.host.properties.kind.enum);
     sameSet("sessionIdModes", keys.sessionIdModes, schema.$defs.agent.properties.sessionId.enum);
