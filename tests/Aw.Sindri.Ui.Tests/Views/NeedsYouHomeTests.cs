@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
+using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
@@ -187,5 +188,36 @@ public sealed class NeedsYouHomeTests : IDisposable
         Settle(window);
 
         Assert.Equal("Decided: Decline", Named<TextBlock>(window, "DecisionOutcome").Text);
+    });
+
+    // §11.2 as U2's F2, for a Needs-you row: with its sheet beside the page, Enter again moves into the sheet's first action.
+    [Fact]
+    public Task Enter_again_on_a_decision_row_with_its_sheet_open_focuses_the_first_option() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected(width: 1400);
+        shell.ShowNeedsYou(new ViewModels.NeedsYou.NeedsYouFeed([NeedsYouRows.Decision()], ""));
+        shell.Navigate(new DeepLink(DeepLinkKind.Decision, "DEC-1"));
+        Settle(window);
+        var first = Named<Control>(window, "DecisionSheet").GetVisualDescendants().OfType<Button>().First(b => b.Classes.Contains("decision-option"));
+        Assert.False(ReferenceEquals(window.FocusManager?.GetFocusedElement(), first));
+
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        Settle(window);
+
+        Assert.True(ReferenceEquals(window.FocusManager?.GetFocusedElement(), first));
+    });
+
+    [Fact]
+    public Task Enter_again_on_a_row_whose_sheet_has_no_action_focuses_the_sheets_heading() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected(width: 1400);
+        shell.ShowNeedsYou(new ViewModels.NeedsYou.NeedsYouFeed([NeedsYouRows.Failure()], ""));
+        shell.Navigate(new DeepLink(DeepLinkKind.NeedsYou, "failure:service:index"));
+        Settle(window);
+
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        Settle(window);
+
+        Assert.True(ReferenceEquals(window.FocusManager?.GetFocusedElement(), Named<Control>(window, "SheetTitle")));
     });
 }
