@@ -1,4 +1,3 @@
-
 #nullable enable
 Aw.Sindri.Core.Auth.HeldHumanToken
 Aw.Sindri.Core.Auth.HeldHumanToken.Clear() -> void
@@ -602,7 +601,6 @@ Aw.Sindri.Core.Events.ViewsRebuilt.EventsReplayed.init -> void
 Aw.Sindri.Core.Events.ViewsRebuilt.ViewsRebuilt(Aw.Sindri.Core.Ids.CommandId CommandId, long CursorBefore, long EventsReplayed) -> void
 Aw.Sindri.Core.Events.WorkflowEventDelta
 Aw.Sindri.Core.Events.WorkflowEventDelta.<Clone>$() -> Aw.Sindri.Core.Events.WorkflowEventDelta!
-Aw.Sindri.Core.Events.WorkflowEventDelta.Deconstruct(out Aw.Sindri.Core.Events.FrameSummary? Frame, out Aw.Sindri.Core.Events.SuspensionSummary? Suspension, out Aw.Sindri.Core.Events.SuspensionSummary? PendingPark, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Events.LoopCounter!>? Loops, out int? TokensSpent, out int? TokensGranted, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Facts, out string? Outcome) -> void
 Aw.Sindri.Core.Events.WorkflowEventDelta.Equals(Aw.Sindri.Core.Events.WorkflowEventDelta? other) -> bool
 Aw.Sindri.Core.Events.WorkflowEventDelta.Facts.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
 Aw.Sindri.Core.Events.WorkflowEventDelta.Facts.init -> void
@@ -620,7 +618,6 @@ Aw.Sindri.Core.Events.WorkflowEventDelta.TokensGranted.get -> int?
 Aw.Sindri.Core.Events.WorkflowEventDelta.TokensGranted.init -> void
 Aw.Sindri.Core.Events.WorkflowEventDelta.TokensSpent.get -> int?
 Aw.Sindri.Core.Events.WorkflowEventDelta.TokensSpent.init -> void
-Aw.Sindri.Core.Events.WorkflowEventDelta.WorkflowEventDelta(Aw.Sindri.Core.Events.FrameSummary? Frame, Aw.Sindri.Core.Events.SuspensionSummary? Suspension, Aw.Sindri.Core.Events.SuspensionSummary? PendingPark, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Events.LoopCounter!>? Loops, int? TokensSpent, int? TokensGranted, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Facts, string? Outcome) -> void
 Aw.Sindri.Core.Events.WorkflowEventDetail
 Aw.Sindri.Core.Events.WorkflowEventDetail.<Clone>$() -> Aw.Sindri.Core.Events.WorkflowEventDetail!
 Aw.Sindri.Core.Events.WorkflowEventDetail.Amount.get -> int?
@@ -7026,7 +7023,6 @@ static readonly Aw.Sindri.Core.SindriErrors.ItemNotFound -> Aw.Kernel.ErrorDefin
 static Aw.Sindri.Core.Profile.RepoDenyGlobs.Entries(Aw.Sindri.Core.Profile.SindriProfile! profile) -> System.Collections.Generic.IReadOnlyList<(string! Name, string! Path, System.Collections.Generic.IReadOnlyList<string!>? DenyPaths)>!
 static Aw.Sindri.Core.Profile.RepoDenyGlobs.For(Aw.Sindri.Core.Profile.SindriProfile! profile, Aw.Sindri.Core.Profile.RepoEntry! repo) -> System.Collections.Generic.IReadOnlyList<string!>?
 Aw.Sindri.Core.Profile.RepoDenyGlobs
-
 Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance.LaterParks.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Instances.Suspension!>?
 Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance.LaterParks.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.Suspension.Approved.get -> bool
@@ -7081,8 +7077,6 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.FactTypes.Of(string? declared) -> 
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceHeader.Line(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view, System.DateTimeOffset now) -> string!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext? right) -> bool
-Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Deconstruct(out int Version, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>? Provenance, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>? Children, out Aw.Sindri.Core.Workflow.Views.SubjectRef? Subject) -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.InstanceViewContext(int Version = 0, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>? Provenance = null, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>? Children = null, Aw.Sindri.Core.Workflow.Views.SubjectRef? Subject = null) -> void
 static Aw.Sindri.Core.Workflow.Engine.Runtime.StatusLayout.Commands(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view) -> string!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.StatusLayout.Render(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view, System.DateTimeOffset now) -> string!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.StatusLayout.Verb(string! action) -> string!
@@ -7261,3 +7255,29 @@ static Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.Effective(Aw.Sindri.Core.Wor
 Aw.Sindri.Core.Events.RecipeEvents.LatestApproval(Aw.Sindri.Core.Workflow.Ids.RecipeHash hash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<long>!>
 Aw.Sindri.Core.Commands.IRefusalCli
 Aw.Sindri.Core.Commands.IRefusalCli.RefusalCli.get -> string?
+Aw.Sindri.Core.Events.EventSubject
+Aw.Sindri.Core.Events.EventSubject.<Clone>$() -> Aw.Sindri.Core.Events.EventSubject!
+Aw.Sindri.Core.Events.EventSubject.Deconstruct(out string! Kind, out string! Key, out string! Label) -> void
+Aw.Sindri.Core.Events.EventSubject.Equals(Aw.Sindri.Core.Events.EventSubject? other) -> bool
+Aw.Sindri.Core.Events.EventSubject.EventSubject(string! Kind, string! Key, string! Label) -> void
+Aw.Sindri.Core.Events.EventSubject.Key.get -> string!
+Aw.Sindri.Core.Events.EventSubject.Key.init -> void
+Aw.Sindri.Core.Events.EventSubject.Kind.get -> string!
+Aw.Sindri.Core.Events.EventSubject.Kind.init -> void
+Aw.Sindri.Core.Events.EventSubject.Label.get -> string!
+Aw.Sindri.Core.Events.EventSubject.Label.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDelta.Deconstruct(out Aw.Sindri.Core.Events.FrameSummary? Frame, out Aw.Sindri.Core.Events.SuspensionSummary? Suspension, out Aw.Sindri.Core.Events.SuspensionSummary? PendingPark, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Events.LoopCounter!>? Loops, out int? TokensSpent, out int? TokensGranted, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Facts, out string? Outcome, out Aw.Sindri.Core.Events.EventSubject? Subject, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Producers) -> void
+Aw.Sindri.Core.Events.WorkflowEventDelta.Producers.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
+Aw.Sindri.Core.Events.WorkflowEventDelta.Producers.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDelta.Subject.get -> Aw.Sindri.Core.Events.EventSubject?
+Aw.Sindri.Core.Events.WorkflowEventDelta.Subject.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDelta.WorkflowEventDelta(Aw.Sindri.Core.Events.FrameSummary? Frame, Aw.Sindri.Core.Events.SuspensionSummary? Suspension, Aw.Sindri.Core.Events.SuspensionSummary? PendingPark, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Events.LoopCounter!>? Loops, int? TokensSpent, int? TokensGranted, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Facts, string? Outcome, Aw.Sindri.Core.Events.EventSubject? Subject = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Producers = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Contents.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Contents.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Deconstruct(out int Version, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>? Provenance, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>? Children, out Aw.Sindri.Core.Workflow.Views.SubjectRef? Subject, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>? Contents) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.InstanceViewContext(int Version = 0, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>? Provenance = null, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>? Children = null, Aw.Sindri.Core.Workflow.Views.SubjectRef? Subject = null, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>? Contents = null) -> void
+override Aw.Sindri.Core.Events.EventSubject.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.EventSubject.GetHashCode() -> int
+override Aw.Sindri.Core.Events.EventSubject.ToString() -> string!
+static Aw.Sindri.Core.Events.EventSubject.operator !=(Aw.Sindri.Core.Events.EventSubject? left, Aw.Sindri.Core.Events.EventSubject? right) -> bool
+static Aw.Sindri.Core.Events.EventSubject.operator ==(Aw.Sindri.Core.Events.EventSubject? left, Aw.Sindri.Core.Events.EventSubject? right) -> bool

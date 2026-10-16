@@ -46,6 +46,20 @@ public sealed class InstanceViewProducerTests
     }
 
     [Fact]
+    public void A_link_facts_ref_carries_its_url_host_and_title_as_the_subject_does()
+    {
+        var pr = FactKey.From("fact:pr");
+        var recipe = _incident with { Recipe = _incident.Recipe with { Inputs = [new RecipeInput(pr, "PR", "link", "link", Generate: null)] } };
+        var instance = EngineFixture.At(recipe.Recipe, "produce") with { Facts = new Dictionary<FactKey, FactValue> { [pr] = EngineFixture.Fact("link") } };
+        var contents = new Dictionary<FactKey, string> { [pr] = "{\"url\":\"https://github.com/o/r/pull/9\",\"title\":\"Fix it\"}" };
+
+        var view = InstanceViews.Of(instance, recipe, StatusCases.Now, timeoutAt: null, new InstanceViewContext(Contents: contents));
+
+        var link = Assert.Single(view.Facts, static f => f.Key == "fact:pr").Ref!;
+        Assert.Equal(("https://github.com/o/r/pull/9", "github.com", "Fix it", "fact:pr"), (link.Url, link.Host, link.Title, link.FactKey));
+    }
+
+    [Fact]
     public void The_identity_members_come_from_the_instance_and_the_recipe()
     {
         var view = Produce();

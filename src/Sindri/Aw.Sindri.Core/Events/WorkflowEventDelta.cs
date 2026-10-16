@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 
@@ -16,6 +17,8 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="TokensGranted">The tokens granted after it.</param>
 /// <param name="Facts">The facts it added or replaced: key to the content's SHA-256.</param>
 /// <param name="Outcome">The terminal outcome, when it ended the instance.</param>
+/// <param name="Subject">The subject as named at the start (kind, key and the rendered name as label); only workflow.started carries it.</param>
+/// <param name="Producers">Each fact in <paramref name="Facts"/> to who made it, 'engine:generate' for an input the start generated; only workflow.started carries it.</param>
 public sealed record WorkflowEventDelta(
     FrameSummary? Frame,
     SuspensionSummary? Suspension,
@@ -24,7 +27,9 @@ public sealed record WorkflowEventDelta(
     int? TokensSpent,
     int? TokensGranted,
     IReadOnlyDictionary<string, string>? Facts,
-    string? Outcome)
+    string? Outcome,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] EventSubject? Subject = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyDictionary<string, string>? Producers = null)
 {
     /// <summary>The public projection of <paramref name="delta"/>.</summary>
     /// <param name="delta">The decision's delta.</param>

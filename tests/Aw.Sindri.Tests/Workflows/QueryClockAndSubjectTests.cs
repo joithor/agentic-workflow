@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using System.Runtime.Versioning;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -137,5 +138,50 @@ public sealed class QueryClockAndSubjectTests : IDisposable
         Assert.Equal("engine:generate", view.Facts.Single(static f => f.Key == "fact:run").By);
         Assert.Equal([("fact:scope", true), ("fact:run", false)], view.Inputs.Select(static i => (i.Key, i.Required)));
         await handle.TerminateAsync("test over");
+    }
+
+    [Fact(Timeout = 120_000)]
+    public async Task The_started_row_records_the_rendered_subject_and_each_facts_producer()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _harness.Recipe("workflow.named", Named);
+        await using var env = await WorkflowsHarness.StartDevServer(ct: ct);
+        await using var served = await ApplyCommand.Served.Start(_harness.Home, env, ct);
+        var start = await WorkflowsHarness.RecipeStart(served.Sindri, "workflow.named", "T-1", ct);
+        var handle = await WorkflowsHarness.Start(env.Client, start with
+        {
+            Inputs = new Dictionary<FactKey, InputFact>
+            {
+                [FactKey.From("fact:scope")] = new("scope.txt", _harness.Fact("Crash on launch")),
+                [FactKey.From("fact:run")] = new("generated", _harness.Fact("run 2026-10-15"), Generated: true),
+            },
+        });
+        var view = await WorkflowsHarness.Until(handle, static v => v.Task is not null);
+
+        var delta = await StartedDelta(served.Sindri, ct);
+
+        var subject = delta.GetProperty("subject");
+        Assert.Equal(("text", "Crash on launch", view.Subject!.Label), (subject.GetProperty("kind").GetString(), subject.GetProperty("key").GetString(), subject.GetProperty("label").GetString()));
+        var producers = delta.GetProperty("producers");
+        Assert.Equal("engine:generate", producers.GetProperty("fact:run").GetString());
+        Assert.NotEqual("engine:generate", producers.GetProperty("fact:scope").GetString(), StringComparer.Ordinal);
+        await handle.TerminateAsync("test over");
+    }
+
+    /// <summary>The 'detail.delta' of the workflow.started row, read once the mirror has written it.</summary>
+    private static async Task<System.Text.Json.JsonElement> StartedDelta(IServiceProvider sindri, CancellationToken ct)
+    {
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
+        while (true)
+        {
+            var row = (await sindri.GetRequiredService<Aw.Sindri.Core.Ledger.ILedgerStore>().ReadAfter(0, 100, ct)).Value.FirstOrDefault(static e => e.Envelope.Type == "workflow.started");
+            if (row is not null)
+            {
+                return System.Text.Json.JsonDocument.Parse(row.Envelope.Payload).RootElement.GetProperty("detail").GetProperty("delta").Clone();
+            }
+
+            Assert.True(DateTime.UtcNow < deadline, "the workflow.started row was not mirrored in 20 s");
+            await Task.Delay(200, ct);
+        }
     }
 }
