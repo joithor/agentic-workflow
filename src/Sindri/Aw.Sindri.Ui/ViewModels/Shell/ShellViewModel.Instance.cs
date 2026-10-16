@@ -117,6 +117,7 @@ internal sealed partial class ShellViewModel
     {
         _trail.Clear();
         CloseSheet();
+        Queue.ClearFilter();   // every item of the group, not the ones a filter left over would show
         GoTo(PageId.Work);
     }
 

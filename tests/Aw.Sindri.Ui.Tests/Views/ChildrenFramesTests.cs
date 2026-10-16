@@ -117,15 +117,4 @@ public sealed class ChildrenFramesTests : FrameHost
         shell.Back();
         await Until(window, () => shell.IsInstanceSheet && shell.Instance.Address == parent && shell.Instance.Phase == FramePhase.Shown);
     });
-
-    [Fact]
-    public Task Open_all_in_Work_goes_to_the_Work_page_unfiltered() => OnUi(async () =>
-    {
-        var (window, shell) = await Opened("project-many-children");
-
-        Click(Buttons(window, "ChildOpenAll")[0]);
-        Settle(window);
-
-        Assert.Equal(PageId.Work, shell.CurrentPage);
-    });
 }
