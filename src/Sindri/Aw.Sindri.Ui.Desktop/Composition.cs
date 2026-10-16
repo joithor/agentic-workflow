@@ -1,5 +1,4 @@
 using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Views;
 
@@ -43,12 +42,8 @@ internal static class Composition
             return new MacDockBadge();
         }
 
-        return OperatingSystem.IsWindows() ? new WindowsDockBadge(MainWindowHandle) : new NullDockBadge();
+        return OperatingSystem.IsWindows() ? new WindowsDockBadge(Aw.Sindri.Ui.Views.MainWindowHandle.Current) : new NullDockBadge();
     }
-
-    // The main window's native handle, once it exists; 0 before.
-    private static nint MainWindowHandle() =>
-        (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow?.TryGetPlatformHandle()?.Handle ?? 0;
 
     /// <summary>The app over <paramref name="platform"/>.</summary>
     /// <param name="platform">The head's adapters.</param>

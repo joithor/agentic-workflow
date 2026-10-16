@@ -15,7 +15,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 [Lane(TestLane.Integration)]
 public sealed class NeedsYouFramesTests : FrameHost
 {
-    private static List<NeedsYouRow> Rows(Avalonia.Controls.Window window) =>
+    private static List<NeedsYouRow> Rows(Window window) =>
         [.. Named<Control>(window, "NeedsYouPanel").GetVisualDescendants().OfType<NeedsYouRow>().Where(r => r.IsEffectivelyVisible)];
 
     [Fact]

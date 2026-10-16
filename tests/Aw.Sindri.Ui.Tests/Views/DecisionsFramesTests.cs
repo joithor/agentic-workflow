@@ -19,7 +19,7 @@ public sealed class DecisionsFramesTests : FrameHost
 {
     private const string Pending = "DEC-00000000000000000000000000000011";
 
-    private async Task<(Avalonia.Controls.Window Window, ViewModels.Shell.ShellViewModel Shell)> WithDecisionOpen()
+    private async Task<(Window Window, ViewModels.Shell.ShellViewModel Shell)> WithDecisionOpen()
     {
         Server.NeedsYouView = RouteAnswer.Api("needs-you", "large");
         var (window, shell) = await Connected(s => s.NeedsYou.Count > 0, width: 1400);
@@ -28,7 +28,7 @@ public sealed class DecisionsFramesTests : FrameHost
         return (window, shell);
     }
 
-    private static Button Option(Avalonia.Controls.Window window, string label) =>
+    private static Button Option(Window window, string label) =>
         Named<Control>(window, "DecisionSheet").GetVisualDescendants().OfType<Button>().Single(b => b.Classes.Contains("decision-option") && string.Equals((string?)b.Content, label, StringComparison.Ordinal));
 
     [Fact]
@@ -70,7 +70,7 @@ public sealed class DecisionsFramesTests : FrameHost
 
         Assert.Equal("SND-ITEM-409", shell.Decision.RefusalCode);
         Assert.Equal((string)GoldenFiles.Node("decisions-id", "decided-elsewhere")["detail"]!, Named<TextBlock>(window, "DecisionRefusal").Text);
-        Assert.Equal("accept", window.FocusManager?.GetFocusedElement() is Button { DataContext: ViewModels.NeedsYou.DecisionOption focused } ? focused.Id : "", StringComparer.Ordinal); // why: the buttons are rebuilt, so the same option's new button
+        Assert.Equal("accept", window.FocusManager?.GetFocusedElement() is Button { DataContext: DecisionOption focused } ? focused.Id : "", StringComparer.Ordinal); // why: the buttons are rebuilt, so the same option's new button
         Frame(window, "decision-409");
     });
 
