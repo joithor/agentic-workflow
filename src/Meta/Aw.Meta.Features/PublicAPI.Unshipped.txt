@@ -821,3 +821,31 @@ static Aw.Meta.Features.WorktreeSweep.SweepWorktreesRequest.operator !=(Aw.Meta.
 static Aw.Meta.Features.WorktreeSweep.SweepWorktreesRequest.operator ==(Aw.Meta.Features.WorktreeSweep.SweepWorktreesRequest? left, Aw.Meta.Features.WorktreeSweep.SweepWorktreesRequest? right) -> bool
 static Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse.operator !=(Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse? left, Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse? right) -> bool
 static Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse.operator ==(Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse? left, Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse? right) -> bool
+Aw.Meta.Features.QueueDrop.QueueDropRequest
+Aw.Meta.Features.QueueDrop.QueueDropRequest.<Clone>$() -> Aw.Meta.Features.QueueDrop.QueueDropRequest!
+Aw.Meta.Features.QueueDrop.QueueDropRequest.Deconstruct(out int Pr, out string! Reason) -> void
+Aw.Meta.Features.QueueDrop.QueueDropRequest.Equals(Aw.Meta.Features.QueueDrop.QueueDropRequest? other) -> bool
+Aw.Meta.Features.QueueDrop.QueueDropRequest.Pr.get -> int
+Aw.Meta.Features.QueueDrop.QueueDropRequest.Pr.init -> void
+Aw.Meta.Features.QueueDrop.QueueDropRequest.QueueDropRequest(int Pr, string! Reason) -> void
+Aw.Meta.Features.QueueDrop.QueueDropRequest.Reason.get -> string!
+Aw.Meta.Features.QueueDrop.QueueDropRequest.Reason.init -> void
+Aw.Meta.Features.QueueDrop.QueueDropResponse
+Aw.Meta.Features.QueueDrop.QueueDropResponse.<Clone>$() -> Aw.Meta.Features.QueueDrop.QueueDropResponse!
+Aw.Meta.Features.QueueDrop.QueueDropResponse.Deconstruct(out int Pr, out string! Line) -> void
+Aw.Meta.Features.QueueDrop.QueueDropResponse.Equals(Aw.Meta.Features.QueueDrop.QueueDropResponse? other) -> bool
+Aw.Meta.Features.QueueDrop.QueueDropResponse.Line.get -> string!
+Aw.Meta.Features.QueueDrop.QueueDropResponse.Line.init -> void
+Aw.Meta.Features.QueueDrop.QueueDropResponse.Pr.get -> int
+Aw.Meta.Features.QueueDrop.QueueDropResponse.Pr.init -> void
+Aw.Meta.Features.QueueDrop.QueueDropResponse.QueueDropResponse(int Pr, string! Line) -> void
+override Aw.Meta.Features.QueueDrop.QueueDropRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.QueueDrop.QueueDropRequest.GetHashCode() -> int
+override Aw.Meta.Features.QueueDrop.QueueDropRequest.ToString() -> string!
+override Aw.Meta.Features.QueueDrop.QueueDropResponse.Equals(object? obj) -> bool
+override Aw.Meta.Features.QueueDrop.QueueDropResponse.GetHashCode() -> int
+override Aw.Meta.Features.QueueDrop.QueueDropResponse.ToString() -> string!
+static Aw.Meta.Features.QueueDrop.QueueDropRequest.operator !=(Aw.Meta.Features.QueueDrop.QueueDropRequest? left, Aw.Meta.Features.QueueDrop.QueueDropRequest? right) -> bool
+static Aw.Meta.Features.QueueDrop.QueueDropRequest.operator ==(Aw.Meta.Features.QueueDrop.QueueDropRequest? left, Aw.Meta.Features.QueueDrop.QueueDropRequest? right) -> bool
+static Aw.Meta.Features.QueueDrop.QueueDropResponse.operator !=(Aw.Meta.Features.QueueDrop.QueueDropResponse? left, Aw.Meta.Features.QueueDrop.QueueDropResponse? right) -> bool
+static Aw.Meta.Features.QueueDrop.QueueDropResponse.operator ==(Aw.Meta.Features.QueueDrop.QueueDropResponse? left, Aw.Meta.Features.QueueDrop.QueueDropResponse? right) -> bool

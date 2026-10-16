@@ -94,5 +94,24 @@ public sealed class OwnerLanesAndStatusCommandTests : IDisposable
         Assert.Equal((2, "AW-META-006"), (missing.Exit, missing.Err[..11]));
     }
 
+    [Fact, Trait("Lane", "integration")]
+    public async Task Queue_drop_removes_the_entry_logs_the_reason_and_an_empty_queue_is_AW_META_018()
+    {
+        await Ready();
+        await File.WriteAllTextAsync(Transcript, MetaWorld.PeerLine("m1", "t1-api", "ready #250 079c2541"), TestContext.Current.CancellationToken);
+        _ = await _cli.Run("inbox-sync", "--session", "s-meta", "--transcript", Transcript);
+
+        var before = await _cli.Run("status");
+        var dropped = await _cli.Run("queue-drop", "250", "--reason", "not a ready");
+        var after = await _cli.Run("status");
+        var again = await _cli.Run("queue-drop", "#250", "--reason", "x");
+
+        Assert.Contains("#250 ready", before.Out, StringComparison.Ordinal);
+        Assert.Equal(0, dropped.Exit);
+        Assert.Contains("merge queue: empty", after.Out, StringComparison.Ordinal);
+        Assert.Contains("queue-drop #250: not a ready", await File.ReadAllTextAsync(_cli.File("log.md"), TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        Assert.Equal((2, "AW-META-018"), (again.Exit, again.Err[..11]));
+    }
+
     public void Dispose() => _cli.Dispose();
 }

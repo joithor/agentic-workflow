@@ -29,4 +29,7 @@ public static class KvKeys
 
     /// <summary>Pull requests the watch saw end whose worktrees it could not yet sweep (the sweep could not run), comma separated; retried on each poll.</summary>
     public const string WorktreesPending = "worktrees.pending-prs";
+
+    /// <summary>When the owner or meta dropped a pull request's merge-queue entry (aw-meta queue-drop), as "pr=ticks" pairs; a ready message newer than the drop queues it again.</summary>
+    public const string QueueDropped = "queue.dropped";
 }

@@ -95,6 +95,15 @@ public sealed class WorktreeRulesTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void The_main_checkout_is_kept_as_the_main_checkout_not_as_a_branch_with_no_pull_request()
+    {
+        var verdict = Judge(new WorktreeFacts { Path = "/repo", Branch = "main", IsMainWorktree = true, HeadMerged = true });
+
+        AssertKept(verdict, "this is the main worktree", "main checkout (never swept)");
+        Assert.DoesNotContain(verdict.Reasons, reason => reason.Contains("no pull request", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_fresh_branch_whose_head_is_already_in_main_with_no_ended_pull_request_is_kept()
     {
         // The incident: a worktree on a branch just created from origin/main, no commits, no pull request.

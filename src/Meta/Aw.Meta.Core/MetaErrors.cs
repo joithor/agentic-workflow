@@ -56,7 +56,10 @@ public static class MetaErrors
     /// <summary>AW-META-017.</summary>
     public static readonly ErrorDefinition ClaudeLane = new("AW-META-017", ErrorKind.Invalid, "A Claude lane: send with SendMessage");
 
+    /// <summary>AW-META-018.</summary>
+    public static readonly ErrorDefinition QueueEntryNotFound = new("AW-META-018", ErrorKind.NotFound, "No merge-queue entry for that pull request");
+
     /// <summary>Every Meta error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
-        [Invalid, NoTeamConfig, ConfigInvalid, TranscriptUnreadable, MessageNotFound, QuestionNotFound, GateStepNotFound, LogUnwritable, CommandNotStarted, HostUnreadable, ConfigExists, CommandFailed, LogUnreadable, LaneVariablesUnset, LaneNotRecorded, UnknownLane, ClaudeLane];
+        [Invalid, NoTeamConfig, ConfigInvalid, TranscriptUnreadable, MessageNotFound, QuestionNotFound, GateStepNotFound, LogUnwritable, CommandNotStarted, HostUnreadable, ConfigExists, CommandFailed, LogUnreadable, LaneVariablesUnset, LaneNotRecorded, UnknownLane, ClaudeLane, QueueEntryNotFound];
 }
