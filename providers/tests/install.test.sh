@@ -370,7 +370,23 @@ test_state_root_follows_aw_state_dir() {
   echo "PASS: test_state_root_follows_aw_state_dir"
 }
 
+# config/mcp.json holds only xcodebuildmcp (Darwin-only): the legacy copy runs on macOS and is skipped elsewhere.
+test_darwin_only_mcp_json_copy() {
+  setup_env
+  mkdir -p "$HOME/.claude" "$SANDBOX/fakebin"
+  CLAUDE_DIR="$HOME/.claude"
+  printf '#!/usr/bin/env bash\necho Linux\n' > "$SANDBOX/fakebin/uname"; chmod +x "$SANDBOX/fakebin/uname"
+  PATH="$SANDBOX/fakebin:$PATH" claude_install_legacy_mcp_json >/dev/null
+  [ ! -e "$HOME/.claude/mcp.json" ] || fail "mcp.json (xcodebuildmcp) copied on Linux"
+  printf '#!/usr/bin/env bash\necho Darwin\n' > "$SANDBOX/fakebin/uname"
+  PATH="$SANDBOX/fakebin:$PATH" claude_install_legacy_mcp_json >/dev/null
+  [ -f "$HOME/.claude/mcp.json" ] || fail "mcp.json not copied on Darwin"
+  teardown_env
+  echo "PASS: test_darwin_only_mcp_json_copy"
+}
+
 test_links_managed_and_bootstrap_then_is_idempotent
+test_darwin_only_mcp_json_copy
 test_state_root_follows_aw_state_dir
 test_refreshes_legacy_link_and_removes_deprecated
 test_foreign_collision_is_kept_when_stdin_closed
