@@ -193,4 +193,16 @@ public sealed class WorkflowsViewModelTests
         await list.Refresh(_api, Token);
         Assert.Equal((false, true), (list.IsUnreadable, list.Groups.Count > 0));
     }
+
+    [Fact]
+    public async Task Recipe_options_survive_a_filter()
+    {
+        var list = await Shown();
+        var all = list.Groups.Select(g => g.Recipe).ToList();
+
+        await list.FilterRecipe(all[1], Token);
+
+        Expect.Sequence(all, list.KnownRecipes);
+        Assert.Equal(all[1], list.RecipeFilter);
+    }
 }

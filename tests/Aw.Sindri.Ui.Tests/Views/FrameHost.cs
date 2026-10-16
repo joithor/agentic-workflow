@@ -103,11 +103,11 @@ public abstract class FrameHost : IDisposable
 
     private protected static bool Visible(Visual within, string name) => within.GetVisualDescendants().OfType<Control>().FirstOrDefault(c => c.Name == name)?.IsEffectivelyVisible == true;
 
-    private protected static void Frame(Window window, string name)
+    private protected static void Frame(Window window, string name, string prefix = "u3-")
     {
         Settle(window);
         var dir = Path.Combine(AppContext.BaseDirectory, "frames");
         _ = Directory.CreateDirectory(dir);
-        window.CaptureRenderedFrame()?.Save(Path.Combine(dir, "u3-" + name + ".png"), new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+        window.CaptureRenderedFrame()?.Save(Path.Combine(dir, prefix + name + ".png"), new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
     }
 }
