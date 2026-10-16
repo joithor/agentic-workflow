@@ -111,7 +111,33 @@ internal sealed partial class ShellViewModel
     /// <summary>Focus or a click reached a queue row on a page: on Home it is the one selection.</summary>
     /// <param name="itemId">The item's id.</param>
     /// <param name="scope">The page the row is on.</param>
-    internal void SelectQueueRow(string itemId, QueueScope scope = QueueScope.Home) => Queue.Select(itemId, scope);
+    internal void SelectQueueRow(string itemId, QueueScope scope = QueueScope.Home)
+    {
+        if (scope == QueueScope.Home)
+        {
+            NeedsYou.Deselect();
+            Strip.Deselect();
+        }
+
+        Queue.Select(itemId, scope);
+    }
+
+    // A sheet that is not the open Needs-you row's own replaces it: that row is no longer open.
+    private void ForgetRowSheetUnless(DeepLink link)
+    {
+        if (NeedsYou.SheetRowId is not { } open)
+        {
+            return;
+        }
+
+        var row = NeedsYou.Seen.Rows.FirstOrDefault(r => string.Equals(r.Id, open, StringComparison.Ordinal));
+        var own = (link.Kind == DeepLinkKind.NeedsYou && string.Equals(link.Subject, open, StringComparison.Ordinal))
+            || (link.Kind == DeepLinkKind.Decision && row is not null && IsDecisionRow(row.Entry) && string.Equals(row.Entry.Subject?.Id, link.Subject, StringComparison.Ordinal));
+        if (!own)
+        {
+            NeedsYou.ForgetSheet();
+        }
+    }
 
     /// <summary>Opens a row's sheet (a click on its title, Enter).</summary>
     /// <param name="rowId">The row's id.</param>

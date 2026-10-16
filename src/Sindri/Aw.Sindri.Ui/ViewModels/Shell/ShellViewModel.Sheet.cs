@@ -1,5 +1,4 @@
 using Aw.Sindri.Ui.Navigation;
-using Aw.Sindri.Ui.ViewModels.NeedsYou;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -48,6 +47,7 @@ internal sealed partial class ShellViewModel
     {
         SheetLink = link;
         IsSheetOpen = true;
+        ForgetRowSheetUnless(link);
         OnSheetOpened(link);
         Changed(nameof(IsItemSheet), nameof(IsNeedsYouSheet), nameof(IsDecisionSheet), nameof(SheetLink), nameof(SheetSubject), nameof(SheetName), nameof(EdgeTabName), nameof(IsSheetOpen), nameof(HasEdgeTab), nameof(IsSheetShown), nameof(IsEdgeTabShown), nameof(IsSheetPlaceholderShown));
     }
@@ -56,7 +56,7 @@ internal sealed partial class ShellViewModel
     internal void CloseSheet()
     {
         IsSheetOpen = false;
-        _ = NeedsYou.Press(NeedsYouKey.Escape);
+        _ = NeedsYou.CloseSheet();
         Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
     }
 

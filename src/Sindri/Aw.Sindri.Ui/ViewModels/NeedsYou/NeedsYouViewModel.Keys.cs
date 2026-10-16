@@ -35,6 +35,18 @@ internal sealed partial class NeedsYouViewModel
         OnChanged(nameof(SheetRow));
     }
 
+    /// <summary>Another sheet replaced the row's: the row's open marker goes (a key must not act as if its sheet showed).</summary>
+    internal void ForgetSheet()
+    {
+        if (SheetRowId is null)
+        {
+            return;
+        }
+
+        SheetRowId = null;
+        OnChanged(nameof(SheetRow));
+    }
+
     /// <summary>A control of a row was pressed: the same request a key makes.</summary>
     /// <param name="rowId">The row's id.</param>
     /// <param name="action">The control's action.</param>
@@ -51,6 +63,12 @@ internal sealed partial class NeedsYouViewModel
     /// <returns>True when the list used it.</returns>
     internal bool Press(NeedsYouKey key)
     {
+        // Esc closes a sheet; it is no action on a row, so the quiet after an automatic move does not apply (KeyQuiet guards actions only).
+        if (key == NeedsYouKey.Escape)
+        {
+            return CloseSheet();
+        }
+
         if (_clock.GetUtcNow() - _lastAutoMove < KeyQuiet)
         {
             return false;
@@ -61,7 +79,7 @@ internal sealed partial class NeedsYouViewModel
         {
             NeedsYouKey.J => Move(1),
             NeedsYouKey.K => Move(-1),
-            NeedsYouKey.Escape => CloseSheet(),
+            NeedsYouKey.Escape => false,
             _ when row is null => false,
             NeedsYouKey.A => RunPrimary(row),
             NeedsYouKey.X => RunReject(row),
@@ -133,7 +151,9 @@ internal sealed partial class NeedsYouViewModel
         return true;
     }
 
-    private bool CloseSheet()
+    /// <summary>The sheet closed (Esc, its close button): its row is no longer open, and focus goes back to the row.</summary>
+    /// <returns>True when a row's sheet was open.</returns>
+    internal bool CloseSheet()
     {
         if (SheetRowId is not { } open)
         {

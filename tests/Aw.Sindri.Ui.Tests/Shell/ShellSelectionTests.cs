@@ -17,11 +17,26 @@ public sealed class ShellSelectionTests
     private readonly FakeTimeProvider _clock = new(A.Noon);
     private readonly FakeClipboard _clipboard = new();
 
+    private const string QueueRow = "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a301";
+
+    // The golden queue with one row's primary action set to Decide, so Y has a command to copy there.
+    private static RouteAnswer WithCopyableRow()
+    {
+        var root = System.Text.Json.Nodes.JsonNode.Parse(GoldenFiles.SpecShaped("queue", "extra-p4-waiting"))!;
+        foreach (var item in root["groups"]!.AsArray().SelectMany(g => g!["items"]!.AsArray()).Where(i => string.Equals(i!["id"]!.GetValue<string>(), QueueRow, StringComparison.Ordinal)))
+        {
+            item!["primaryAction"] = "Decide";
+        }
+
+        return new RouteAnswer(System.Net.HttpStatusCode.OK, root.ToJsonString());
+    }
+
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     private async Task<ShellViewModel> Connected()
     {
         _records.Write(A.Record());
+        _server.QueueView = WithCopyableRow();
         var shell = new ShellViewModel(_records, _server, _clock, new Preferences(new InMemoryPreferencesStore()), _clipboard);
         await shell.Restore(Token);
         _ = shell.Run(Token);
@@ -42,7 +57,7 @@ public sealed class ShellSelectionTests
         Assert.True(shell.Press("J"));
         Assert.True(shell.Press("Enter"));
         Assert.True(shell.IsDecisionSheet);
-        var queueRow = A.DecisionItem;
+        const string queueRow = QueueRow;
 
         shell.SelectQueueRow(queueRow);
         const string expected = "sindri decide <decisionId> <choice> [--note <note>]";
@@ -65,7 +80,7 @@ public sealed class ShellSelectionTests
         var shell = await Connected();
         shell.Strip.Update(FixtureInstances.Root);
         shell.SelectStripRow(shell.Strip.Rows[0].Address);
-        var queueRow = A.DecisionItem;
+        const string queueRow = QueueRow;
 
         shell.SelectQueueRow(queueRow);
         const string expected = "sindri decide <decisionId> <choice> [--note <note>]";
