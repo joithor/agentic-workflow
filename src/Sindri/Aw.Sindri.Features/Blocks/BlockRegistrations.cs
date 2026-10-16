@@ -19,6 +19,8 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(DeskSteps.Produce)
         .AddBlockDescriptor(DeskSteps.Checks)
         .AddBlockDescriptor(DeskSteps.Verify)
+        .AddBlockDescriptor(ChoiceSteps.JudgeChoose)
+        .AddBlockDescriptor(ChoiceSteps.DeskChoose)
         .AddGate<BudgetAvailableGate>()
         .AddBlockDescriptor(PendingRuntimes.RouteStartable)
         .AddEffect<ClaimRefEffect>()      // engine P6 unit (d)

@@ -1,4 +1,6 @@
 using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.EvalRecipe;
 using Aw.Sindri.Testing.Workflow;
 
@@ -204,6 +206,32 @@ public sealed class EvalRecipeTests
         Assert.All(printed.Skip(1), EvalFormat.AssertStep);
         _ = _files.With(eval, scaffold);
         Assert.True((await Eval(recipe)).Cases[0].Passed);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_dev_evidence_route_passes_a_case_per_outcome()
+    {
+        var response = await Eval(Choice.RouteRecipes.Dev);
+
+        Assert.Equal(
+            ["happy pass", "api pass", "db pass", "all pass", "none pass", "other pass", "uncertain pass", "failed pass"],
+            response.Cases.Select(c => c.ToLine()), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_eval_line_without_fact_decision_gets_the_eval_placeholder()
+    {
+        // the happy case never gives fact:decision, yet its transition produces it: the engine fills it as the desk does, with provider "eval"
+        var happy = ShippedRecipes.Read("dev/evals/workflow.dev-evidence-route/happy.jsonl");
+        Assert.DoesNotContain("fact:decision", happy, StringComparison.Ordinal);
+
+        var response = await Eval(Choice.RouteRecipes.Dev);
+
+        Assert.True(response.Cases[0].Passed, response.Cases[0].ToLine());
+        var recipe = EvalComposition.Recipe(Choice.RouteRecipes.Dev);
+        var filled = EngineFilledOutputs.For(EvalComposition.Catalog.Find(BlockId.From("step.judge.choose"))!.Outputs, OutcomeName.From("ui"), "eval", actor: null);
+        Assert.Equal("""{"choice":"ui","provider":"eval"}""", Assert.Single(filled).Value);
+        Assert.Contains("fact:decision", recipe.Transitions[0].Produces.Select(f => f.Value), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

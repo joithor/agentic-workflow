@@ -20,6 +20,43 @@ public sealed class OutcomeRulesTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_route_without_an_uncertain_transition_is_RCP_OUTCOME_001()
+    {
+        var lines = Choice.RouteRecipes.Lines(Choice.RouteRecipes.Fixture("RCP-OUTCOME-001-uncertain"));
+
+        var line = Assert.Single(lines);
+        Assert.StartsWith("RCP-OUTCOME-001: state 'route' has no transition for outcome 'uncertain' of step 'step.judge.choose' at ", line, StringComparison.Ordinal);
+        Assert.EndsWith("add a transition from 'route' on step.completed with when: { outcome: uncertain }", line, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void RCP_WHEN_001_lists_the_outcomes_available_there()
+    {
+        var yaml = Choice.RouteRecipes.Edit(Choice.RouteRecipes.Compact, "when: { outcome: ui }", "when: { outcome: sideways }");
+
+        var lines = Choice.RouteRecipes.Lines(yaml);
+
+        Assert.Contains(lines, l => l.StartsWith("RCP-WHEN-001: transition from 'route' tests outcome 'sideways', which step 'step.judge.choose' doesn't report (outcomes here: ui, api, uncertain) at ", StringComparison.Ordinal));
+        Assert.Contains(lines, l => l.StartsWith("RCP-WHEN-001: transition from 'route-desk' tests outcome 'sideways', which step 'step.desk.choose' doesn't report (outcomes here: ui, api) at ", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Branch_transitions_on_each_choice_handle_every_outcome() =>
+        Assert.Empty(Choice.RouteRecipes.Lines(Aw.Sindri.Testing.Workflow.ShippedRecipes.Read(Choice.RouteRecipes.Dev)));
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("RCP-CHOICE-002")]
+    [InlineData("RCP-CHOICE-002-mapping")]
+    [InlineData("RCP-CHOICE-003")]
+    public void Bad_choices_give_no_outcome_or_when_findings(string fixture)
+    {
+        var lines = Choice.RouteRecipes.Lines(Choice.RouteRecipes.Fixture(fixture));
+
+        Assert.NotEmpty(lines);
+        Assert.DoesNotContain(lines, l => l.StartsWith("RCP-WHEN-", StringComparison.Ordinal) || l.StartsWith("RCP-OUTCOME-", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Outcomes_nested_in_all_any_and_not_come_from_the_source_too()
     {
         var recipe = Of("triaged", [("triaged", WaitForEvent("item.routed")), ("done", Terminal())],

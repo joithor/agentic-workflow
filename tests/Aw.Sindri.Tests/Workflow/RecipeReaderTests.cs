@@ -50,6 +50,16 @@ public sealed class RecipeReaderTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_hyphenated_fact_key_is_RCP_SCHEMA_002_with_a_camelCase_fix()
+    {
+        var lines = Lines(Minimal.Replace("produces: [fact:output]", "produces: [fact:evidence-summary]", StringComparison.Ordinal));
+
+        var line = Assert.Single(lines);
+        Assert.StartsWith("RCP-SCHEMA-002: 'fact:evidence-summary' isn't a fact key (", line, StringComparison.Ordinal);
+        Assert.EndsWith("; fact names are camelCase: write fact:evidenceSummary", line, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void On_yes_and_no_stay_text_under_the_core_schema_while_true_and_numbers_are_typed()
     {
         var recipe = Bind(Minimal.Replace("step: step.produce", "step: { use: step.produce, with: { a: on, b: yes, c: no, d: true, e: 12, f: 1.5, g: '7', h: ~ } }", StringComparison.Ordinal));

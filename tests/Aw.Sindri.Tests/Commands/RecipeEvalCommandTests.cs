@@ -101,6 +101,29 @@ public sealed class RecipeEvalCommandTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task Scaffold_out_writes_one_file_per_path_and_refuses_to_overwrite()
+    {
+        var route = Path.Combine(_home.Path, "recipes", "workflow.dev-evidence-route.yaml");
+        var directory = Path.Combine(_home.Path, "scaffolds");
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(route)!); // why: the recipe's directory
+        await File.WriteAllTextAsync(route, ShippedRecipes.Read("dev/workflow.dev-evidence-route.yaml"), TestContext.Current.CancellationToken);
+        string[] names = ["scaffold-ui", "scaffold-api", "scaffold-db", "scaffold-all", "scaffold-none", "scaffold-other", "scaffold-uncertain", "scaffold-failed"];
+
+        Assert.Equal(0, await Run("recipe", "eval", "--scaffold", route, "--out", directory));
+
+        Assert.Equal(names.Select(n => Path.Combine(directory, n + ".jsonl")), _out.ToString().TrimEnd('\n').Split('\n'), StringComparer.Ordinal);
+        Assert.Equal(names.Order(StringComparer.Ordinal), Directory.GetFiles(directory).Select(f => Path.GetFileNameWithoutExtension(f)).Order(StringComparer.Ordinal));
+        var first = await File.ReadAllTextAsync(Path.Combine(directory, "scaffold-ui.jsonl"), TestContext.Current.CancellationToken);
+        Assert.Contains("\"scaffold\":true", first, StringComparison.Ordinal);
+
+        await File.WriteAllTextAsync(Path.Combine(directory, "scaffold-api.jsonl"), "mine\n", TestContext.Current.CancellationToken);
+        _out.GetStringBuilder().Clear();
+        Assert.Equal(2, await Run("recipe", "eval", "--scaffold", route, "--out", directory));
+        Assert.Contains("SND-CLI-003", _error.ToString(), StringComparison.Ordinal);
+        Assert.Equal("mine\n", await File.ReadAllTextAsync(Path.Combine(directory, "scaffold-api.jsonl"), TestContext.Current.CancellationToken));
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task Record_exits_2_until_the_server_has_instances()
     {
         Assert.Equal(2, await Run("recipe", "eval", "--record", "T-3/step/1", "--out", Happy));

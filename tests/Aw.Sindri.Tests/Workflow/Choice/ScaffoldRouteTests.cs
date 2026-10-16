@@ -1,0 +1,45 @@
+using Aw.Sindri.Core.Workflow.Engine.Evals;
+using Aw.Sindri.Tests.Workflow.Engine;
+
+namespace Aw.Sindri.Tests.Workflow.Choice;
+
+/// <summary>'recipe eval --scaffold' through a route (DT spec §8.1): a case per path, each choice taken in turn.</summary>
+public sealed class ScaffoldRouteTests
+{
+    [Fact, Trait("Lane", "unit")]
+    public void Scaffold_walks_every_choice_of_a_route()
+    {
+        var recipe = EvalComposition.Recipe(RouteRecipes.Dev);
+
+        var cases = EvalScaffold.GenerateAll(recipe, EvalComposition.Catalog, NoChildren);
+
+        Assert.Equal(
+            ["scaffold-ui", "scaffold-api", "scaffold-db", "scaffold-all", "scaffold-none", "scaffold-other", "scaffold-uncertain", "scaffold-failed"],
+            cases.Select(c => c.Name), StringComparer.Ordinal);
+        foreach (var evalCase in cases)
+        {
+            var verdict = EvalRunner.Run(evalCase, recipe, EvalComposition.Catalog, NoChildren);
+            Assert.True(verdict.Passed, $"{evalCase.Name}: {verdict.Detail}");
+        }
+
+        Assert.Equal("evidence-other", cases[5].Steps[0].Expect.State);
+        Assert.Equal("route-evidence-desk", cases[6].Steps[0].Expect.State);
+        Assert.Equal("route-evidence-desk", cases[7].Steps[0].Expect.State);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Scaffold_of_a_recipe_without_a_route_is_unchanged()
+    {
+        var recipe = EvalComposition.Recipe("sindri/workflow.step.yaml");
+
+        var all = EvalScaffold.GenerateAll(recipe, EvalComposition.Catalog, NoChildren);
+
+        var only = Assert.Single(all);
+        Assert.Equal("scaffold", only.Name);
+        Assert.Equal(
+            EvalLines.Write(EvalScaffold.Generate(recipe, EvalComposition.Catalog, NoChildren), EvalComposition.Options),
+            EvalLines.Write(only, EvalComposition.Options));
+    }
+
+    private static Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver NoChildren { get; } = Aw.Sindri.Testing.Workflow.InMemoryChildRecipes.None;
+}

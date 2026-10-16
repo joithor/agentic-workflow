@@ -52,6 +52,43 @@ public sealed class TransitionDecisionTests
         Assert.Equal("SND-WF-008", Assert.IsType<Rejected>(decision).Error.Code);
     }
 
+    private const string DeskDecision = """{"choice":"api","provider":"desk","actor":"human:test"}""";
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_desk_report_of_a_choice_is_accepted()
+    {
+        var route = EvalComposition.Recipe(Choice.RouteRecipes.Dev);
+
+        var decision = Decide(At(route, "route-evidence-desk"), route, Completed(1, "api", ("fact:decision", DeskDecision)));
+
+        var applied = Assert.IsType<Applied>(decision);
+        Assert.Equal("evidence-api", applied.Changes[0].After.State);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_report_outside_the_choices_is_SND_WF_008_listing_them()
+    {
+        var route = EvalComposition.Recipe(Choice.RouteRecipes.Dev);
+
+        var twin = Assert.IsType<Rejected>(Decide(At(route, "route-evidence-desk"), route, Completed(1, "sideways", ("fact:decision", DeskDecision))));
+        var judge = Assert.IsType<Rejected>(Decide(At(route, "route-evidence"), route, Completed(1, "sideways", ("fact:decision", DeskDecision))));
+
+        Assert.Equal("SND-WF-008", twin.Error.Code);
+        Assert.Contains("use one of ui, api, db, all, none, other)", twin.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("use one of ui, api, db, all, none, other, uncertain)", judge.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_choice_report_without_fact_decision_is_SND_WF_008()
+    {
+        var route = EvalComposition.Recipe(Choice.RouteRecipes.Dev);
+
+        var rejected = Assert.IsType<Rejected>(Decide(At(route, "route-evidence-desk"), route, Completed(1, "api")));
+
+        Assert.Equal("SND-WF-008", rejected.Error.Code);
+        Assert.Contains("without fact:decision", rejected.Error.Message, StringComparison.Ordinal);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void Step_without_runtime_and_not_desk_capable_parks()
     {

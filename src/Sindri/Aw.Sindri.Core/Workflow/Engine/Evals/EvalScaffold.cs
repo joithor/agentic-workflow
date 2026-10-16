@@ -55,6 +55,18 @@ public static class EvalScaffold
         return new EvalCase("scaffold", start, steps);
     }
 
+    /// <summary>
+    /// A case for each path from the start to a terminal state (DT spec §8.1): at a route state ('step.judge.choose') it
+    /// branches over each choice, then 'uncertain', then 'step.failed'; after the desk twin it takes the first choice;
+    /// elsewhere it takes the first applicable outcome, as <see cref="Generate(Recipe, BlockCatalog, IChildRecipeResolver)"/> does.
+    /// </summary>
+    /// <param name="recipe">The recipe.</param>
+    /// <param name="catalog">The build's descriptors.</param>
+    /// <param name="children">The recipe's child recipes.</param>
+    /// <returns>The cases: 'scaffold' for a recipe without a route, otherwise 'scaffold-&lt;branch&gt;' for each path, the first marked '"scaffold": true'.</returns>
+    public static IReadOnlyList<EvalCase> GenerateAll(Recipe recipe, BlockCatalog catalog, IChildRecipeResolver children) =>
+        throw new NotSupportedException("EvalScaffold.GenerateAll is not implemented yet");
+
     private static (EvalStepLine Line, EvalSimulation Next)? Next(EvalSimulation simulation, HashSet<string> visited, int number)
     {
         foreach (var trigger in Candidates(simulation))
