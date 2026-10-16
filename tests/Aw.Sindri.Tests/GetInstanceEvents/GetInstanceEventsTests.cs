@@ -1,5 +1,6 @@
 using Aw.Kernel.Services;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Features.GetInstanceEvents;
 using Aw.Sindri.Features.StreamEvents;
@@ -61,7 +62,7 @@ public sealed class GetInstanceEventsTests
         var unfiltered = (await service.Handle(new StreamEventsRequest(0), ct)).Value;
 
         Assert.Equal([2L, 4L], byInstance.Events.Select(static e => e.Sequence));
-        Assert.Equal(5L, byInstance.Scanned);
+        Assert.Equal(5L, byInstance.ScannedTo);
         Assert.Equal([2L, 3L, 4L], byItem.Events.Select(static e => e.Sequence));
         Assert.Equal(5, unfiltered.Events.Count);
     }
@@ -71,15 +72,27 @@ public sealed class GetInstanceEventsTests
     [InlineData(null, "T-1", "'T-1' isn't an instance address")]
     public void The_event_streams_filter_refuses_a_malformed_item_or_address(string? item, string? instance, string message)
     {
-        var filter = EventStream.Filter(item, instance);
+        var filter = EventStreamOpener.Bind(Request(item, instance));
 
         Assert.Equal("SND-CLI-003", filter.Error.Code);
         Assert.StartsWith(message, filter.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void The_event_streams_filter_reads_an_item_and_an_address() =>
-        Assert.Equal((ItemKey.From("T-1"), _address), (EventStream.Filter("T-1", "T-1/step/1").Value.Item, EventStream.Filter(item: null, "T-1/step/1").Value.Instance));
+    public void The_event_streams_filter_reads_an_item_and_an_address()
+    {
+        var both = EventStreamOpener.Bind(Request("ENG-142", "T-1/step/1")).Value;
+
+        Assert.Equal((ItemRef.To(ItemAlias.From("ENG-142")), _address), (both.Ref, both.Instance));
+    }
+
+    private static Microsoft.AspNetCore.Http.HttpRequest Request(string? item, string? instance)
+    {
+        var context = new Microsoft.AspNetCore.Http.DefaultHttpContext();
+        context.Request.QueryString = new Microsoft.AspNetCore.Http.QueryString(
+            "?" + string.Join('&', new[] { item is null ? null : "item=" + item, instance is null ? null : "instance=" + instance }.Where(static q => q is not null)));
+        return context.Request;
+    }
 
     [Fact]
     public async Task An_address_no_instance_has_is_SND_WF_001_not_no_events()
@@ -220,10 +233,13 @@ public sealed class GetInstanceEventsTests
     }
 
     [Fact]
-    public void Only_events_with_follow_listens_for_an_interrupt()
+    public void Only_the_following_verbs_listen_for_an_interrupt()
     {
         Assert.True(Interrupt.Streams(["workflow", "events", "T-1", "--follow"]));
+        Assert.True(Interrupt.Streams(["status", "--follow"]));
+        Assert.True(Interrupt.Streams(["status", "--follow", "--json"]));
         Assert.False(Interrupt.Streams(["workflow", "events", "T-1"]));
+        Assert.False(Interrupt.Streams(["status"]));
         Assert.False(Interrupt.Streams(["workflow", "status", "T-1", "--follow"]));
     }
 

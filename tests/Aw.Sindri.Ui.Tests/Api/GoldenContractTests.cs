@@ -25,7 +25,7 @@ public sealed class GoldenContractTests
     {
         ["ping"] = As<PingView>,
         ["status"] = As<StatusView>,
-        ["events"] = As<EventView>,
+        ["events"] = AsEvents,
         ["commands"] = As<CommandList>,
         ["services"] = As<ServiceList>,
         ["views-rebuild"] = As<CommandAcceptedView>,
@@ -43,6 +43,8 @@ public sealed class GoldenContractTests
         "stop", "profile-approve", "profile",
         "context-filemap", "context-lenses", "context-map", "context-map-promote", "context-map-proposals", "context-map-review", "context-map-review-history", "context-node",
         "queue", "items", "items-id", "items-id-timeline", "items-id-close",   // API P3: the queue and item screens (U2) place these
+        "ledger",   // API P5: the audit read is the CLI's; the app follows the stream and re-queries
+        "events-catalog",   // API P5 (E-15): the app reads each type's invalidates once it switches from re-querying every view on each event (UI lane)
     };
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -203,6 +205,27 @@ public sealed class GoldenContractTests
 
         var problem = AwJson.Deserialize<ProblemView>(body, SindriApiClient.Json);
         return problem is { IsSuccess: true, Value.Title.Length: > 0 } ? problem.Value : null;
+    }
+
+    /// <summary>An event golden: one event (S1's), or the data of each frame a stream scenario sent, as an array (API P5).</summary>
+    private static Result<object> AsEvents(byte[] body)
+    {
+        var node = JsonNode.Parse(body);
+        if (node is not JsonArray frames)
+        {
+            return As<EventView>(body);
+        }
+
+        foreach (var frame in frames)
+        {
+            var read = As<EventView>(Encoding.UTF8.GetBytes(frame?.ToJsonString() ?? "null"));
+            if (read.IsError)
+            {
+                return read;
+            }
+        }
+
+        return frames;
     }
 
     private static Result<object> As<T>(byte[] body)

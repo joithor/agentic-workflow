@@ -191,9 +191,14 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
     /// <summary>A ping body as this handler writes it.</summary>
     internal static string Ping(PingView p) => string.Create(CultureInfo.InvariantCulture, $$"""{"pid":{{p.Pid}},"epoch":{{p.Epoch}}}""");
 
-    /// <summary>An event's data line as this handler writes it.</summary>
+    /// <summary>An event's data line as this handler writes it: the PublicEvent envelope (API spec §5.3), an empty payload.</summary>
     internal static string Event(EventView e) => string.Create(CultureInfo.InvariantCulture,
-        $$"""{"sequence":{{e.Sequence}},"type":"{{e.Type}}","occurredAt":"{{Time(e.OccurredAt)}}","actor":"sindri","tenant":"local","ring":0,"epoch":7,"payload":"{}"}""");
+        $$"""{"sequence":{{e.Sequence}},"id":"{{Id(e.Sequence * 2)}}","type":"{{e.Type}}","schemaVersion":1,"occurredAt":"{{Time(e.OccurredAt)}}","actor":"sindri","tenant":"local","ring":0,"item":null,"correlationId":"{{Id((e.Sequence * 2) + 1)}}","causationId":null,"traceId":null,"payload":{{EmptyObject}}}""");
+
+    private const string EmptyObject = "{}";
+
+    // The PublicEvent envelope's ids are Guids; the app never reads them, so a number-derived one is enough.
+    private static string Id(long n) => "00000000-0000-0000-0000-" + n.ToString("D12", CultureInfo.InvariantCulture);
 
     /// <summary>A status body as this handler writes it.</summary>
     internal static string Status(StatusView s) => string.Create(CultureInfo.InvariantCulture,
