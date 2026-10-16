@@ -8123,3 +8123,23 @@ static Aw.Sindri.Core.Onyx.ComposeProject.operator ==(Aw.Sindri.Core.Onyx.Compos
 static Aw.Sindri.Core.Onyx.ComposePublisher.operator !=(Aw.Sindri.Core.Onyx.ComposePublisher? left, Aw.Sindri.Core.Onyx.ComposePublisher? right) -> bool
 static Aw.Sindri.Core.Onyx.ComposePublisher.operator ==(Aw.Sindri.Core.Onyx.ComposePublisher? left, Aw.Sindri.Core.Onyx.ComposePublisher? right) -> bool
 static Aw.Sindri.Core.Onyx.ImageNames.WithoutDefaults(string! reference) -> string!
+Aw.Sindri.Core.Onyx.DeployFetch
+Aw.Sindri.Core.Onyx.DeployFetch.<Clone>$() -> Aw.Sindri.Core.Onyx.DeployFetch!
+Aw.Sindri.Core.Onyx.DeployFetch.Deconstruct(out int Downloaded, out int Present) -> void
+Aw.Sindri.Core.Onyx.DeployFetch.DeployFetch(int Downloaded, int Present) -> void
+Aw.Sindri.Core.Onyx.DeployFetch.Downloaded.get -> int
+Aw.Sindri.Core.Onyx.DeployFetch.Downloaded.init -> void
+Aw.Sindri.Core.Onyx.DeployFetch.Equals(Aw.Sindri.Core.Onyx.DeployFetch? other) -> bool
+Aw.Sindri.Core.Onyx.DeployFetch.Present.get -> int
+Aw.Sindri.Core.Onyx.DeployFetch.Present.init -> void
+Aw.Sindri.Core.Onyx.IDeployFiles
+Aw.Sindri.Core.Onyx.IDeployFiles.Fetch(Aw.Sindri.Core.Onyx.OnyxPins! pins, string! deployDir, System.Action<string!>! progress, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Onyx.DeployFetch!>!>
+Aw.Sindri.Core.Onyx.OnyxFilePin.Matches(System.ReadOnlySpan<byte> content) -> bool
+Aw.Sindri.Core.Onyx.OnyxFilePin.Mismatch(System.ReadOnlySpan<byte> content) -> Aw.Kernel.Error!
+Aw.Sindri.Core.Onyx.OnyxFilePin.Unavailable(string! why) -> Aw.Kernel.Error!
+override Aw.Sindri.Core.Onyx.DeployFetch.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.DeployFetch.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.DeployFetch.ToString() -> string!
+static Aw.Sindri.Core.Onyx.DeployFetch.operator !=(Aw.Sindri.Core.Onyx.DeployFetch? left, Aw.Sindri.Core.Onyx.DeployFetch? right) -> bool
+static Aw.Sindri.Core.Onyx.DeployFetch.operator ==(Aw.Sindri.Core.Onyx.DeployFetch? left, Aw.Sindri.Core.Onyx.DeployFetch? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxFilePin.Sha256Of(System.ReadOnlySpan<byte> content) -> string!
