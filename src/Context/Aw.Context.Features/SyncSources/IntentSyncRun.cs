@@ -82,7 +82,12 @@ internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (Cont
 
         var linkedNow = current.Value.Select(k => k.Value).ToHashSet(StringComparer.Ordinal);
         var queued = context.Settings.Labeling.Enabled ? await ports.Store.Queued(_id, cancellationToken).ConfigureAwait(false) : Results.Success<IReadOnlyList<RecordKey>>([]);
-        var waiting = queued.IsError ? [] : queued.Value.Select(k => k.Value).ToHashSet(StringComparer.Ordinal);
+        if (queued.IsError)
+        {
+            return queued.Error;   // as for LinkedUnder: reading it as "nothing waiting" would skip a record still waiting for extraction as unchanged
+        }
+
+        var waiting = queued.Value.Select(k => k.Value).ToHashSet(StringComparer.Ordinal);
         return Results.Success(new Dictionary<string, string>(known.Where(p => linkedNow.Contains(p.Key) && !waiting.Contains(p.Key)).Select(p => KeyValuePair.Create(p.Key, p.Value.Version)), StringComparer.Ordinal));
     }
 

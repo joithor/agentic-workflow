@@ -9,7 +9,7 @@ namespace Aw.Context.Features.SyncSources;
 /// <summary>
 /// Decision extraction and conflict checks for the records one sync page committed (spec §6.1, §8.8, §8.9; S-5B). The model sees only the scrubbed,
 /// fenced record text and the node keys its rules linked, and its answer is validated by <see cref="DecisionExtractor"/>. Everything it asks is counted
-/// against 'maxTokensPerSync': a call that would go over the cap is not made, and the record stays queued for the next sync, until its conflict checks are through too. A record whose extraction prompt alone is over the cap can never be made, so it is refused (counted, no decisions, not queued) rather than held back forever; so is a record that, as the run's first model call, leaves no room under the cap for its conflict checks (its pairs are refused).
+/// against 'maxTokensPerSync': a call that would go over the cap is not made, and the record stays queued for the next sync, until its conflict checks are through too. A record whose extraction prompt alone is over the cap can never be made, so it is refused (counted, no decisions, not queued) rather than held back forever; so is a record that, as the run's first model call, leaves no room under the cap for even one conflict check (its pairs are refused; one that got some pairs answered stays queued and continues next run).
 /// </summary>
 internal sealed class DecisionPass(IIntentStore store, IModelPort model, LabelingSettings labeling, (IIngestFilter Ingest, TimeProvider Clock) support)
 {
@@ -20,6 +20,7 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
 
     private bool _stopped;
     private bool _capped;
+    private int _answered;   // pairs the run's conflict checks stored with a verdict: progress, so the cap isn't "can never fit"
 
     public int Tokens { get; private set; }
 
@@ -87,9 +88,9 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
     {
         var decisions = batch.Decisions;
         var finished = decisions.Count > 0 && await CheckConflicts(decisions, cancellationToken).ConfigureAwait(false);
-        if (!finished && decisions.Count > 0 && first && _capped && Failure is null)
+        if (!finished && decisions.Count > 0 && first && _capped && _answered == 0 && Failure is null)
         {
-            finished = await GiveUpPairs(decisions, cancellationToken).ConfigureAwait(false);   // its own extraction left no room for its checks, and a retry would again
+            finished = await GiveUpPairs(decisions, cancellationToken).ConfigureAwait(false);   // its own extraction left no room for even one check, and a retry would again
         }
 
         if (finished)
@@ -121,15 +122,14 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
     /// <summary>Asks about each unanswered pair the added decisions make; false when the checks stopped before the last pair or an answer could not be read yet.</summary>
     private async ValueTask<bool> CheckConflicts(IReadOnlyList<DecisionRow> added, CancellationToken cancellationToken)
     {
-        var layer = await store.Layer(cancellationToken).ConfigureAwait(false);
-        if (layer.IsError)
+        if (await ReadLayer(cancellationToken).ConfigureAwait(false) is not { } layer)
         {
             return false;
         }
 
-        var tried = layer.Value.Conflicts.Where(c => c.Verdict == ConflictVerdict.Unread).ToDictionary(c => (c.A.Value, c.B.Value), c => c.Tries);
+        var tried = layer.Conflicts.Where(c => c.Verdict == ConflictVerdict.Unread).ToDictionary(c => (c.A.Value, c.B.Value), c => c.Tries);
         var complete = true;
-        foreach (var (first, second, _) in ConflictChecker.Pairs(layer.Value, added))
+        foreach (var (first, second, _) in ConflictChecker.Pairs(layer, added))
         {
             var answer = await Ask(ModelPurpose.Adjudication, ConflictChecker.Prompt(first, second), VerdictAnswerTokens, cancellationToken).ConfigureAwait(false);
             if (answer is null)
@@ -141,12 +141,10 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
             var pair = DecisionConflict.Of(first.ToKey(), second.ToKey(), ConflictChecker.Read(answer) ?? ConflictVerdict.Unread, now);
             if (pair.Verdict == ConflictVerdict.Unread)
             {
-                // An answer that can't be read leaves the pair unanswered and the record queued; the third unreadable answer gives the pair up (057), so it isn't asked forever.
-                Refused++;
-                var tries = tried.GetValueOrDefault((pair.A.Value, pair.B.Value)) + 1;
-                pair = pair with { Verdict = tries >= VerdictTries ? ConflictVerdict.Refused : ConflictVerdict.Unread, Tries = tries };
-                complete &= pair.Verdict == ConflictVerdict.Refused;
+                pair = Unreadable(pair, tried.GetValueOrDefault((pair.A.Value, pair.B.Value)) + 1);
             }
+
+            complete &= pair.Verdict != ConflictVerdict.Unread;
 
             var stored = await store.SaveConflict(pair, cancellationToken).ConfigureAwait(false);
             if (stored.IsError)
@@ -155,9 +153,35 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
                 _stopped = true;
                 return false;
             }
+
+            if (pair.Verdict != ConflictVerdict.Unread)
+            {
+                _answered++;
+            }
         }
 
         return complete;
+    }
+
+    /// <summary>The stored layer; a failed read is the pass's failure, not "no pairs" (042) or the cap (059).</summary>
+    private async ValueTask<IntentLayer?> ReadLayer(CancellationToken cancellationToken)
+    {
+        var layer = await store.Layer(cancellationToken).ConfigureAwait(false);
+        if (layer.IsError)
+        {
+            Failure = layer.Error.Code;
+            _stopped = true;
+            return null;
+        }
+
+        return layer.Value;
+    }
+
+    /// <summary>An answer that can't be read leaves the pair unanswered and the record queued; the third unreadable answer gives the pair up (057), so it isn't asked forever.</summary>
+    private DecisionConflict Unreadable(DecisionConflict pair, int tries)
+    {
+        Refused++;
+        return pair with { Verdict = tries >= VerdictTries ? ConflictVerdict.Refused : ConflictVerdict.Unread, Tries = tries };
     }
 
     /// <summary>The record's prompt could never fit, in any run: counted refused, no decisions, not queued, instead of held back forever while it stops the pass for the records after it.</summary>
@@ -173,18 +197,17 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
     }
 
     /// <summary>
-    /// A record that was the run's first model call and still could not fit its conflict checks under the cap never will (a retry re-extracts it first): the pairs left are
-    /// refused (counted, 057) so the record is done and the records after it get their turn. False when a save failed.
+    /// A record that was the run's first model call and could not fit even one conflict check under the cap never will (a retry re-extracts it first): its pairs are
+    /// refused (counted, 057) so the record is done and the records after it get their turn. A record with a pair answered this run stays queued instead: the next run continues. False when a read or save failed.
     /// </summary>
     private async ValueTask<bool> GiveUpPairs(IReadOnlyList<DecisionRow> added, CancellationToken cancellationToken)
     {
-        var layer = await store.Layer(cancellationToken).ConfigureAwait(false);
-        if (layer.IsError)
+        if (await ReadLayer(cancellationToken).ConfigureAwait(false) is not { } layer)
         {
             return false;
         }
 
-        foreach (var (first, second, _) in ConflictChecker.Pairs(layer.Value, added))
+        foreach (var (first, second, _) in ConflictChecker.Pairs(layer, added))
         {
             Refused++;
             var stored = await store.SaveConflict(DecisionConflict.Of(first.ToKey(), second.ToKey(), ConflictVerdict.Refused, support.Clock.GetUtcNow()), cancellationToken).ConfigureAwait(false);
