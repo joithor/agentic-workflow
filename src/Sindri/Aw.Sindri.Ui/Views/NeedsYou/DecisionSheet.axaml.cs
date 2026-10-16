@@ -14,6 +14,7 @@ namespace Aw.Sindri.Ui.Views.NeedsYou;
 internal sealed partial class DecisionSheet : UserControl
 {
     private string? _pressed;
+    private bool _keyboard;
 
     public DecisionSheet()
     {
@@ -38,16 +39,22 @@ internal sealed partial class DecisionSheet : UserControl
         if (DataContext is DecisionSheetViewModel sheet && sender is Control { DataContext: DecisionOption option })
         {
             _pressed = option.Id;
+            _keyboard = (sender as Control)?.Classes.Contains(":focus-visible") == true;
             _ = sheet.Choose(option.Id);
         }
     }
 
+    // The options changed under the press (all disabled once it was accepted): focus goes back to the pressed option while it can
+    // take it, else to the sheet's heading; never nowhere. The ring follows the way the press was made.
     private void RestoreFocus()
     {
-        var button = this.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.IsEffectivelyEnabled && b.DataContext is DecisionOption o && string.Equals(o.Id, _pressed, StringComparison.Ordinal));
-        if (button is not null && TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is not Button { DataContext: DecisionOption })
+        var top = TopLevel.GetTopLevel(this);
+        if (top?.FocusManager?.GetFocusedElement() is Control { IsEffectivelyEnabled: true, IsEffectivelyVisible: true })
         {
-            _ = button.Focus(NavigationMethod.Unspecified);
+            return;
         }
+
+        var button = this.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.IsEffectivelyEnabled && b.DataContext is DecisionOption o && string.Equals(o.Id, _pressed, StringComparison.Ordinal));
+        _ = (button ?? (top as Control)?.FindControl<Control>("SheetTitle"))?.Focus(_keyboard ? NavigationMethod.Tab : NavigationMethod.Pointer);
     }
 }

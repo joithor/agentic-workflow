@@ -19,6 +19,11 @@ internal sealed class DecisionSender(ISindriApi api)
     /// <returns>True when a press would send.</returns>
     internal bool CanSend(string decisionId) => !_sent.Contains(decisionId) && !_inFlight.Contains(decisionId);
 
+    /// <summary>True once an accepted Decide marked the decision sent.</summary>
+    /// <param name="decisionId">The decision.</param>
+    /// <returns>True when it was accepted.</returns>
+    internal bool IsSent(string decisionId) => _sent.Contains(decisionId);
+
     /// <summary>True while a Decide for the decision is in flight.</summary>
     /// <param name="decisionId">The decision.</param>
     /// <returns>True while it is.</returns>

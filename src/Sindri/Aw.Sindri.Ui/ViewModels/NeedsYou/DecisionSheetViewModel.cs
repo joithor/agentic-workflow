@@ -15,9 +15,8 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
     /// <summary>Raised when Decide was refused, so the shell can open the sheet where the refusal shows.</summary>
     internal event EventHandler? Refused;
 
-    /// <summary>The option buttons, as served (the first is the recommended one).</summary>
-    internal IReadOnlyList<DecisionOption> Options => _row is null ? [] :
-        [.. _row.Controls.Where(c => c.Action.OptionId.Length > 0).Select((c, i) => new DecisionOption(c.Action.OptionId, c.Action.Label, i == 0, c.IsEnabled && CanSend))];
+    /// <summary>The option buttons, as served (the first is the recommended one). One list, replaced only when an option differs, so the buttons (and the focus on one) survive a re-read and a press; a press in flight is guarded by the sender, not by disabling the button.</summary>
+    internal IReadOnlyList<DecisionOption> Options { get; private set; } = [];
 
     /// <summary>The decision's question as the pending list serves it; the row's title while the list has none.</summary>
     internal string Question => _row is null ? "" : _row.Entry.Question.Length > 0 ? _row.Entry.Question : _row.Title;
@@ -187,7 +186,14 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
 
     private void Raise()
     {
-        OnChanged(nameof(Options));
+        IReadOnlyList<DecisionOption> built = _row is null ? [] :
+            [.. _row.Controls.Where(c => c.Action.OptionId.Length > 0).Select((c, i) => new DecisionOption(c.Action.OptionId, c.Action.Label, i == 0, c.IsEnabled && !IsCleared && !sender.IsSent(DecisionId)))];
+        if (!built.SequenceEqual(Options))
+        {
+            Options = built;
+            OnChanged(nameof(Options));
+        }
+
         OnChanged(nameof(Question));
         OnChanged(nameof(Notice));
     }

@@ -63,10 +63,10 @@ internal sealed partial class ShellWindow
             return;   // focus is already in the row (a click on its title or a control): it stays where it is
         }
 
-        var frame = row?.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => string.Equals(b.Name, "RowFrame", StringComparison.Ordinal));
+        var frame = Usable(row?.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => string.Equals(b.Name, "RowFrame", StringComparison.Ordinal)));
         if (frame is null)
         {
-            KeepFocus();   // the row is not drawn: focus still goes somewhere
+            KeepFocus();   // the row is not drawn, or the sheet covers the page and its frame can't take focus: focus still goes somewhere
             return;
         }
 

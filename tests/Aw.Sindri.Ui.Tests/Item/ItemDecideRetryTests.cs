@@ -38,4 +38,24 @@ public sealed class ItemDecideRetryTests
         Assert.Equal(2, _server.DecideCalls.Count);
         Assert.Equal(string.Empty, sheet.Needs.Refusal);
     }, Token);
+
+    [Fact]
+    public Task A_re_read_of_equal_decisions_keeps_the_same_rows_and_buttons() => UiThread.Run(async () =>
+    {
+        _server.DecisionsByItem[DecisionItem] = RouteAnswer.Api("decisions", "by-item");
+        _server.RequestsByItem[DecisionItem] = RouteAnswer.Api("requests", "list-by-item");
+        _server.Items[DecisionItem] = _server.Items[A.NewItem];
+        var catalog = new CatalogViewModel(new FakeClipboard(), _clock);
+        catalog.Show(_api, _server, (await _server.Commands(_api, Token)).Value);
+        var sheet = new ItemSheetViewModel(_server, catalog, _clock);
+        await sheet.Open(_api, DecisionItem, Token);
+        var before = sheet.Needs.Decisions;
+        var changes = 0;
+        sheet.Needs.PropertyChanged += (_, e) => changes += string.Equals(e.PropertyName, nameof(ItemNeedsViewModel.Decisions), StringComparison.Ordinal) ? 1 : 0;
+
+        await sheet.Needs.Read(_api, DecisionItem, Token);
+
+        Assert.Same(before, sheet.Needs.Decisions);
+        Assert.Equal(0, changes);
+    }, Token);
 }
