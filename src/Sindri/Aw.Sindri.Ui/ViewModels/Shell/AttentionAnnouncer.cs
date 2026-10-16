@@ -16,8 +16,14 @@ internal sealed class AttentionAnnouncer
 
     /// <summary>Sees the count of rows that need the user now.</summary>
     /// <param name="count">The count.</param>
-    internal void Observe(int count)
+    /// <param name="counting">False while the count is not the list (no running Sindri): nothing is seen and the last count is kept, so the same rows are not announced again when it returns.</param>
+    internal void Observe(int count, bool counting = true)
     {
+        if (!counting)
+        {
+            return;
+        }
+
         if (count > _last)
         {
             Line = Labels.NowNeedYou(count);
