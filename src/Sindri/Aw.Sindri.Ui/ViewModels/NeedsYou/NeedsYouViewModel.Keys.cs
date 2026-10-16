@@ -162,7 +162,8 @@ internal sealed partial class NeedsYouViewModel
 
         SheetRowId = null;
         OnChanged(nameof(SheetRow));
-        FocusRequested?.Invoke(this, new NeedsYouRowEventArgs(open));
+        var gone = !Seen.Rows.Any(r => string.Equals(r.Id, open, StringComparison.Ordinal));
+        FocusRequested?.Invoke(this, new NeedsYouRowEventArgs(gone && SelectedId is { } next ? next : open));   // a row decided from its sheet has cleared: focus goes to the row now selected
         return true;
     }
 }
