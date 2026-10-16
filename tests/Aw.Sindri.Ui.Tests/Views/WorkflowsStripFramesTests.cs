@@ -90,6 +90,18 @@ public sealed class WorkflowsStripFramesTests : FrameHost
         Frame(window, "u3p-strip-not-served");
     });
 
+    // Proof B6: a list in the older shape (main's, before P11) is a sentence on the strip, never an empty box with only its header.
+    [Fact]
+    public Task A_list_this_build_cant_read_shows_a_sentence_not_an_empty_box() => OnUi(async () =>
+    {
+        Server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, """{"instances":[],"needsYou":[],"empty":"nothing","rows":[]}""");
+        var (window, shell) = await Connected(s => s.Strip.IsUnreadable);
+
+        Assert.Equal((true, ViewModels.Labels.StripUnreadable), (Visible(window, "WorkflowsUnreadable"), Named<TextBlock>(window, "WorkflowsUnreadable").Text));
+        Assert.False(Visible(window, "WorkflowsEmpty") || Visible(window, "WorkflowsNotServed") || Visible(window, "WorkflowsMore"));
+        Assert.Empty(shell.Strip.Rows);
+    });
+
     [Fact]
     public Task A_protected_row_shows_the_lock_button_and_its_popover_holds_the_served_cli() => OnUi(async () =>
     {

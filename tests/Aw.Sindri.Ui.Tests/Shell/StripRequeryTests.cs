@@ -149,6 +149,7 @@ public sealed class StripRequeryTests
         await Until(() => shell.Strip.IsUnreadable);
 
         _server.WorkflowAnswer = null;
+        _clock.Advance(HealthViewModel.RefreshEvery);   // the next re-read is a quarter second away (§9.2)
         _server.Push(A.Event(74, "workflow.started"));
         await Until(() => !shell.Strip.IsUnreadable);
 

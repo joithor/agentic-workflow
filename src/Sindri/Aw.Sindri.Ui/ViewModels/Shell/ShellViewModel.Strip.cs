@@ -14,7 +14,8 @@ internal sealed partial class ShellViewModel
     public WorkflowsStripViewModel Strip { get; }
 
     // The root workflow list is read with every event, whatever page is visible (until P5's invalidates). A missing route
-    // (404 before P11) marks only the strip; any other failure leaves the rows as they were and the next event tries again.
+    // (404 before P11) marks only the strip, and so does a list in a shape this build can't read (SND-UI-003; main still serves P4's
+    // shape until P11): a sentence, never an empty box. Any other failure leaves the rows as they were and the next event tries again.
     private async Task ReadStrip(Uri url, CancellationToken cancellationToken)
     {
         var list = await _api.Instances(url, new InstanceQuery(Root: true), cancellationToken).ConfigureAwait(true);
@@ -25,6 +26,10 @@ internal sealed partial class ShellViewModel
         else if (list.Error.Kind == ErrorKind.NotFound)
         {
             Strip.MarkNotServed();
+        }
+        else if (list.Error.Kind == ErrorKind.Invalid)
+        {
+            Strip.MarkUnreadable();
         }
     }
 

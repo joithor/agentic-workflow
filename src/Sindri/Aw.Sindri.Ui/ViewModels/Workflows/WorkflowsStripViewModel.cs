@@ -26,7 +26,7 @@ internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider
 
     private static readonly string[] _listProperties =
     [
-        nameof(HasMore), nameof(MoreText), nameof(IsEmpty), nameof(EmptyText), nameof(IsNotServed), nameof(NotServedText), nameof(OpenText),
+        nameof(HasMore), nameof(MoreText), nameof(IsEmpty), nameof(EmptyText), nameof(IsNotServed), nameof(NotServedText), nameof(IsUnreadable), nameof(UnreadableText), nameof(OpenText),
     ];
 
     private List<InstanceSummary> _open = [];
@@ -51,13 +51,13 @@ internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider
     public ObservableCollection<StripRowViewModel> Rows { get; } = [];
 
     /// <summary>True when the cap leaves open rows out.</summary>
-    public bool HasMore => !IsNotServed && _open.Count > _shown.Count;
+    public bool HasMore => !IsNotServed && !IsUnreadable && _open.Count > _shown.Count;
 
     /// <summary>"… 3 more"; empty without overflow.</summary>
     public string MoreText => HasMore ? Labels.MoreRows(_open.Count - _shown.Count) : string.Empty;
 
     /// <summary>True when the list is empty and served.</summary>
-    public bool IsEmpty => !IsNotServed && Counts is not null && _open.Count == 0;
+    public bool IsEmpty => !IsNotServed && !IsUnreadable && Counts is not null && _open.Count == 0;
 
     /// <summary>The served empty sentence; empty unless the strip is empty.</summary>
     public string EmptyText => IsEmpty ? Empty ?? string.Empty : string.Empty;
@@ -68,13 +68,11 @@ internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider
     /// <summary>What the strip says then.</summary>
     public string NotServedText => IsNotServed ? Labels.ArrivesWorkflowStrip : string.Empty;
 
-#pragma warning disable CA1822, MA0041 // stub until the fix
-    /// <summary>True while the workflow list answers in a shape this build can't read.</summary>
-    public bool IsUnreadable => false;
+    /// <summary>True while the workflow list answers in a shape this build can't read (an older Sindri); the strip says so instead of drawing an empty box.</summary>
+    public bool IsUnreadable { get; private set; }
 
     /// <summary>What the strip says then.</summary>
-    public string UnreadableText => string.Empty;
-#pragma warning restore CA1822, MA0041
+    public string UnreadableText => IsUnreadable ? Labels.StripUnreadable : string.Empty;
 
     /// <summary>The text scale; at 1.3 and over the cap drops to two.</summary>
     internal double TextScale
@@ -95,6 +93,7 @@ internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider
     internal void Update(InstanceList list)
     {
         IsNotServed = false;
+        IsUnreadable = false;
         Counts = list.Counts;
         Empty = list.Empty;
         _open = [.. list.Instances.Where(IsOpen)];
@@ -112,6 +111,17 @@ internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider
     internal void MarkNotServed()
     {
         IsNotServed = true;
+        IsUnreadable = false;
+        _open = [];
+        Counts = null;
+        Reshow();
+    }
+
+    /// <summary>The list answered in a shape this build can't read: the strip says so and shows no rows (Home is unaffected).</summary>
+    internal void MarkUnreadable()
+    {
+        IsUnreadable = true;
+        IsNotServed = false;
         _open = [];
         Counts = null;
         Reshow();

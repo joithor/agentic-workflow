@@ -12,7 +12,7 @@ internal static partial class Labels
     internal const string ArrivesWorkflowStrip = "arrives with API P11";
 
     /// <summary>What the strip says when the workflow list answers in a shape this build can't read (an older Sindri; screens §4.8, until API P11).</summary>
-    internal const string StripUnreadable = "can't be read from this Sindri yet (arrives with API P11)";
+    internal const string StripUnreadable = "The workflow list can't be read from this Sindri yet (arrives with API P11).";
 
     /// <summary>The strip's overflow row: "… 3 more".</summary>
     /// <param name="count">How many open rows are not shown.</param>

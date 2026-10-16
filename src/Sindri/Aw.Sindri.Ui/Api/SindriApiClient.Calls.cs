@@ -74,6 +74,8 @@ internal sealed partial class SindriApiClient
         }
     }
 
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> _unreadable = new(StringComparer.Ordinal);
+
     private Result<T> Read<T>(string path, byte[] body)
     {
         var value = AwJson.Deserialize<T>(body, Json);
@@ -81,9 +83,17 @@ internal sealed partial class SindriApiClient
         {
             // The parser's text names .NET types, JSON paths and byte positions: the log keeps it, the window gets the
             // route in words (UI spec §4.1 Unreadable; as I7 for SND-UI-002).
-            SindriApiLog.Unreadable(_log, path, value.Error.Message);
+            // The shell reads again on every event: the same failure for a route is logged once, until the route reads well.
+            if (!string.Equals(_unreadable.GetValueOrDefault(path), value.Error.Message, StringComparison.Ordinal))
+            {
+                _unreadable[path] = value.Error.Message;
+                SindriApiLog.Unreadable(_log, path, value.Error.Message);
+            }
+
             return SindriUiErrors.BadAnswer.With($"{path} answered with something this build can't read");
         }
+
+        _ = _unreadable.TryRemove(path, out _);
 
         // An accepted command (CreateItem nests it) is waited for by the next query.
         if ((object?)value.Value switch { CommandAcceptedView a => a.Sequence, ItemCreatedView c => c.Accepted.Sequence, RequestFiledView f => f.Accepted.Sequence, _ => (long?)null } is { } sequence)

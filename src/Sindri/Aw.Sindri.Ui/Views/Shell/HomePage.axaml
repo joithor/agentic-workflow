@@ -87,6 +87,8 @@
                    IsVisible="{Binding Strip.IsEmpty}" AutomationProperties.Name="{Binding Strip.EmptyText}" />
         <TextBlock x:Name="WorkflowsNotServed" Classes="caption quiet" Text="{Binding Strip.NotServedText}" Margin="16,8"
                    IsVisible="{Binding Strip.IsNotServed}" AutomationProperties.Name="{Binding Strip.NotServedText}" />
+        <TextBlock x:Name="WorkflowsUnreadable" Classes="caption quiet" Text="{Binding Strip.UnreadableText}" Margin="16,8" TextWrapping="Wrap"
+                   IsVisible="{Binding Strip.IsUnreadable}" AutomationProperties.Name="{Binding Strip.UnreadableText}" />
         <Button x:Name="WorkflowsMore" HorizontalAlignment="Left" Classes="copy" Click="OnWorkflowsMore" IsVisible="{Binding Strip.HasMore}"
                 AutomationProperties.Name="{Binding Strip.MoreText}" Margin="16,6">
           <TextBlock Classes="caption" Text="{Binding Strip.MoreText}" />
