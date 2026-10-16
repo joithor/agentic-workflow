@@ -25,7 +25,31 @@ public static class PassLine
     /// <summary>The report's overall line: the arm 'all' when it ran, else the best non-leaky arm that ran, never a leaky arm.</summary>
     /// <param name="arms">The arm rows in report order.</param>
     /// <returns>The overall verdict; 'no non-leaky arm ran' when only the leaky arm ran; null when no arm was judged.</returns>
-    public static string? Overall(IReadOnlyList<ArmReport> arms) => throw new NotSupportedException();
+    public static string? Overall(IReadOnlyList<ArmReport> arms)
+    {
+        ArgumentNullException.ThrowIfNull(arms);
+        var judged = arms.Where(a => a.PassLine is not null).ToList();
+        if (judged.Count == 0)
+        {
+            return null;
+        }
+
+        if (judged.FirstOrDefault(a => string.Equals(a.Arm, Arms.Name(Arm.All), StringComparison.Ordinal)) is { } all)
+        {
+            return all.PassLine?.Overall;
+        }
+
+        var clean = judged.Where(a => !a.Leaky).Select(a => a.PassLine?.Overall).OfType<string>().ToList();
+        return clean.Count == 0
+            ? Verdicts.NoCleanArm
+            : clean.Select((line, i) => (Line: line, Order: i)).OrderByDescending(x => Rank(x.Line)).ThenByDescending(x => x.Order).First().Line;   // the best verdict; the richer (later) arm on a tie
+    }
+
+    private static int Rank(string overall) =>
+        string.Equals(overall, Verdicts.Pass, StringComparison.Ordinal) ? 3
+        : string.Equals(overall, Verdicts.OwnerDecision, StringComparison.Ordinal) ? 2
+        : string.Equals(overall, Verdicts.NotMeasured, StringComparison.Ordinal) ? 1
+        : 0;
 
     private static string Recall(ArmScore arm, ArmScore? brief)
     {

@@ -28,7 +28,12 @@ internal sealed class Adjudicator(IModelPort model) : IAdjudicator
         }
 
         var first = await Ask(request, request.Surfaces, 0, cancellationToken).ConfigureAwait(false);
-        var second = first.Capped ? first : await Ask(request, [.. request.Surfaces.Reverse()], first.Spent, cancellationToken).ConfigureAwait(false);
+        var second = first.Capped || first.Error is not null ? first : await Ask(request, [.. request.Surfaces.Reverse()], first.Spent, cancellationToken).ConfigureAwait(false);
+        if ((first.Error ?? second.Error) is { } code)
+        {
+            return new Adjudication(verdicts, second.Spent, Capped: false, code);   // a model that can't answer is not an unstable verdict: the run is incomplete and stops asking
+        }
+
         if (first.Capped || second.Capped)
         {
             return new Adjudication(verdicts, second.Spent, Capped: true);
@@ -56,7 +61,7 @@ internal sealed class Adjudicator(IModelPort model) : IAdjudicator
 
         var answer = await model.Ask(new ModelRequest(ModelPurpose.Adjudication, prompt, cap, _budget), cancellationToken).ConfigureAwait(false);
         return answer.IsError
-            ? new Round([], spentBefore, Capped: false)   // a model that can't answer leaves the surfaces unstable
+            ? new Round([], spentBefore, Capped: false, answer.Error.Code)
             : new Round(ParseIds(answer.Value.Text, order), spentBefore + answer.Value.InputTokens + answer.Value.OutputTokens, Capped: false);
     }
 
@@ -104,5 +109,5 @@ internal sealed class Adjudicator(IModelPort model) : IAdjudicator
     private static int? Position(string? id, int asked) =>
         id is { Length: > 1 } && id[0] == 'n' && int.TryParse(id.AsSpan(1), NumberStyles.None, CultureInfo.InvariantCulture, out var n) && n >= 1 && n <= asked ? n : null;
 
-    private sealed record Round(Dictionary<string, bool> Answers, int Spent, bool Capped);
+    private sealed record Round(Dictionary<string, bool> Answers, int Spent, bool Capped, string? Error = null);
 }

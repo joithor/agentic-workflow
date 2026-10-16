@@ -16,6 +16,12 @@ internal sealed class Spend(bool Enabled)
     /// <summary>True once a call was refused for the cap.</summary>
     public bool Capped { get; private set; }
 
+    /// <summary>The code of the first model error, or null: after it the run stops asking the model.</summary>
+    public string? Error { get; private set; }
+
+    /// <summary>True when no further call is made: the cap or a model error stopped adjudication.</summary>
+    public bool Stopped => Capped || Error is not null;
+
     /// <summary>Tokens per arm.</summary>
     public Dictionary<Arm, int> ByArm { get; } = [];
 
@@ -27,5 +33,6 @@ internal sealed class Spend(bool Enabled)
         Total += result.Tokens;
         ByArm[arm] = ByArm.GetValueOrDefault(arm) + result.Tokens;
         Capped |= result.Capped;
+        Error ??= result.Error;
     }
 }

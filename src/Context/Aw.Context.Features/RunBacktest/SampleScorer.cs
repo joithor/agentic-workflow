@@ -44,10 +44,21 @@ internal sealed class SampleScorer(IBriefSource briefs, AsOfMapBuilder maps, IAs
             dropped[outcome.Value] = dropped.GetValueOrDefault(outcome.Value) + 1;
         }
 
-        return dropped.GetValueOrDefault(Outcome.SourceDown) > 0 && kept.Count == 0
-            ? ContextErrors.AllSourcesUnavailable.With("the brief source answered no brief; fix: sindri context sources status")
-            : new Collected(kept, scores, dropped.GetValueOrDefault(Outcome.CutUnreadable), dropped.GetValueOrDefault(Outcome.NoBrief)) { Tokens = spend.ByArm, AdjudicationCapped = spend.Capped };
+        return kept.Count == 0
+            ? NothingScored(dropped)
+            : new Collected(kept, scores, dropped.GetValueOrDefault(Outcome.CutUnreadable), dropped.GetValueOrDefault(Outcome.NoBrief))
+            {
+                Tokens = spend.ByArm,
+                AdjudicationCapped = spend.Capped,
+                AdjudicationError = spend.Error,
+                SourceDown = dropped.GetValueOrDefault(Outcome.SourceDown),
+            };
     }
+
+    // Every sample dropped: no report of nothing, the counts of why.
+    private static Error NothingScored(Dictionary<Outcome, int> dropped) =>
+        ContextErrors.NoEligibleSample.With(string.Create(CultureInfo.InvariantCulture,
+            $"no backtest sample could be scored: {dropped.GetValueOrDefault(Outcome.SourceDown)} dropped for an unavailable brief source (SND-CONTEXT-011), {dropped.GetValueOrDefault(Outcome.NoBrief)} with no brief, {dropped.GetValueOrDefault(Outcome.CutUnreadable)} whose cut git can't read (fix: sindri context sources status; check the checkout)"));
 
     private async ValueTask<Result<Outcome>> One(BacktestRequest request, (BriefScope World, BriefIssue Issue, CorpusSample Sample) what,
         (List<Arm> Running, Dictionary<Arm, List<SampleScore>> Scores, string Step) how, Spend spend, CancellationToken cancellationToken)
@@ -63,9 +74,9 @@ internal sealed class SampleScorer(IBriefSource briefs, AsOfMapBuilder maps, IAs
         var opened = await Open(world.Repos.First(r => r.Name == sample.Repo), sample, (world, request.Scope), cancellationToken).ConfigureAwait(false);
         if (opened.IsError)
         {
-            if (opened.Error.Code == ContextErrors.PathInWorktree.Code)
+            if (!string.Equals(opened.Error.Code, ContextErrors.ExtractionUnreadable.Code, StringComparison.Ordinal))
             {
-                return opened.Error;
+                return opened.Error;   // a refused store (005), context.db or the cache failing: every other sample would fail the same way, and the code is the real cause
             }
 
             request.Progress?.Report($"{how.Step}: dropped, git can't read the cut");
@@ -119,8 +130,8 @@ internal sealed class SampleScorer(IBriefSource briefs, AsOfMapBuilder maps, IAs
         }
 
         var surfaces = AdjudicatedScoring.Surfaces(score.PredictedNodes, what.Truth, what.Graph);
-        var judged = spend.Capped
-            ? new Adjudication(surfaces.ToDictionary(s => s.Key, _ => Verdict.Unjudged, StringComparer.Ordinal), 0, Capped: true)
+        var judged = spend.Stopped
+            ? new Adjudication(surfaces.ToDictionary(s => s.Key, _ => Verdict.Unjudged, StringComparer.Ordinal), 0, Capped: spend.Capped)
             : await adjudicator.Judge(new AdjudicationRequest(text.Brief.Text, surfaces, text.Opened.Egress, PassBars.MaxTokens - spend.Total), cancellationToken).ConfigureAwait(false);
         spend.Add(what.Arm, judged);
         return score with { AdjudicatedPrecision = AdjudicatedScoring.Precision(score.PredictedNodes, what.Truth, judged.Verdicts) };

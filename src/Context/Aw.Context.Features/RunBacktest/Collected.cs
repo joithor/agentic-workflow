@@ -12,6 +12,12 @@ internal sealed record Collected(IReadOnlyList<CorpusSample> Kept, Dictionary<Ar
     /// <summary>Model tokens per arm (empty with the adjudicator off).</summary>
     public Dictionary<Arm, int> Tokens { get; init; } = [];
 
+    /// <summary>Samples dropped because the brief source was unavailable (SND-CONTEXT-011).</summary>
+    public int SourceDown { get; init; }
+
+    /// <summary>The code of the model error that stopped adjudication, or null.</summary>
+    public string? AdjudicationError { get; init; }
+
     /// <summary>True when adjudication stopped at the token cap (SND-CONTEXT-083).</summary>
     public bool AdjudicationCapped { get; init; }
 }

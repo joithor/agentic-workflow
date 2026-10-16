@@ -1,9 +1,9 @@
+using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Core.Extract;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
-using Aw.Context.Core.Overrides;
 using Aw.Kernel;
 
 namespace Aw.Context.Features.RunBacktest;
@@ -26,7 +26,7 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
             return listed.Error;
         }
 
-        var extraction = await Cut(request, cancellationToken).ConfigureAwait(false);
+        var extraction = await Cut(request, listed.Value, cancellationToken).ConfigureAwait(false);
         if (extraction.IsError)
         {
             return extraction.Error;
@@ -39,12 +39,12 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
             return authored.IsError ? authored.Error : overrides.Error;
         }
 
-        var joined = Join(authored.Value, extraction.Value.Map);
-        var applied = OverrideApplier.Apply(joined, [.. overrides.Value.Where(o => o.At < sample.CreatedAt)]).Graph;
-        return new AsOfGraph(applied, extraction.Value.Cached, extraction.Value.Clustered);
+        // The same cut every reader makes of the current map: the deny globs hide what they hide, and a pending proposal is no part of a map as of a day.
+        var view = MapAccess.View(Join(authored.Value, extraction.Value.Map), [.. overrides.Value.Where(o => o.At < sample.CreatedAt)], request.Scope, pending: false, callerScope: false);
+        return view.IsError ? view.Error : new AsOfGraph(view.Value.Applied, extraction.Value.Cached, extraction.Value.Clustered);
     }
 
-    private async ValueTask<Result<Found>> Cut(AsOfRequest request, CancellationToken cancellationToken)
+    private async ValueTask<Result<Found>> Cut(AsOfRequest request, IReadOnlyList<string> files, CancellationToken cancellationToken)
     {
         var looked = await Look(request, cancellationToken).ConfigureAwait(false);
         if (looked.IsError || looked.Value.Hit is not null)
@@ -53,9 +53,17 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
         }
 
         var (key, set) = (looked.Value.Key, looked.Value.Set);
-        var built = await Extract(request, set, cancellationToken).ConfigureAwait(false);
-        var written = built.IsError ? Results.Ok() : await cache.WriteMap(key, built.Value, cancellationToken).ConfigureAwait(false);
-        return built.IsError ? built.Error : written.IsError ? written.Error : new Found(built.Value, Cached: false, set.Available);
+        var built = await Extract(request, (files, set), cancellationToken).ConfigureAwait(false);
+        if (built.IsError)
+        {
+            return built.Error;
+        }
+
+        // A cache that can't be written costs the next run its time, not this one its map; only a refused store folder (005) stops the run.
+        var written = await cache.WriteMap(key, built.Value, cancellationToken).ConfigureAwait(false);
+        return written.IsError && string.Equals(written.Error.Code, ContextErrors.PathInWorktree.Code, StringComparison.Ordinal)
+            ? written.Error
+            : new Found(built.Value, Cached: false, set.Available);
     }
 
     // A clustered extraction is cached under its own key and found without calling the cluster source; otherwise the source is asked, and the plain key is read only when it has no clusters.
@@ -81,17 +89,12 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
         return hit.IsError ? hit.Error : Results.Success<Found?>(hit.Value is { } map ? new Found(map, Cached: true, clustered) : null);
     }
 
-    private async ValueTask<Result<ExtractedMap>> Extract(AsOfRequest request, ClusterSet set, CancellationToken cancellationToken)
+    private async ValueTask<Result<ExtractedMap>> Extract(AsOfRequest request, (IReadOnlyList<string> Tree, ClusterSet Set) cut, CancellationToken cancellationToken)
     {
         var (repo, sample) = (request.Repo, request.Sample);
-        var listed = await repos.ListFiles(repo, sample.Cut, cancellationToken).ConfigureAwait(false);
-        if (listed.IsError)
-        {
-            return listed.Error;
-        }
-
+        var set = cut.Set;
         var files = new List<RepoFile>();
-        foreach (var path in listed.Value.Where(p => !repo.Denies(p) && Recognizers.MayRead(p)))
+        foreach (var path in cut.Tree.Where(p => !repo.Denies(p) && Recognizers.MayRead(p)))
         {
             var text = await repos.Read(repo, sample.Cut, path, cancellationToken).ConfigureAwait(false);
             if (text.IsError)

@@ -17,5 +17,5 @@ public sealed record LeftOut(int NoMerge, int OutsideTeams, int ExtractFailed, I
     public static LeftOut None { get; } = new(0, 0, 0, []);
 
     /// <summary>Everything left out.</summary>
-    public int Total => NoMerge + OutsideTeams + ExtractFailed + NoBrief;
+    public int Total => NoMerge + OutsideTeams + ExtractFailed + NoBrief + SourceDown;
 }

@@ -64,7 +64,7 @@ internal sealed class RunBacktestService(CorpusLoader corpus, SampleScorer score
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        var left = loaded.Value.Corpus.LeftOut with { ExtractFailed = scored.Value.ExtractFailed, NoBrief = scored.Value.NoBrief };
+        var left = loaded.Value.Corpus.LeftOut with { ExtractFailed = scored.Value.ExtractFailed, NoBrief = scored.Value.NoBrief, SourceDown = scored.Value.SourceDown };
         var report = ReportAssembly.Assemble(request, (started, left), scored.Value);
         var written = await store.WriteReport(EvalReportKind.Backtest, report, started, cancellationToken).ConfigureAwait(false);
         return written.IsError ? written.Error : new BacktestRun(report, written.Value);

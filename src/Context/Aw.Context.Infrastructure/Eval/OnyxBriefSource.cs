@@ -40,9 +40,20 @@ internal sealed class OnyxBriefSource(ISourceCatalog catalog) : IBriefSource
             foreach (var hit in hits.Value)
             {
                 var key = hit.Aliases.FirstOrDefault(a => IssueKey(team).IsMatch(a));
-                if (key is not null && seen.Add(key) && await Issue(source, scope, (key, hit), cancellationToken).ConfigureAwait(false) is { } issue)
+                if (key is null || !seen.Add(key))
                 {
-                    issues.Add(issue);
+                    continue;
+                }
+
+                var issue = await Issue(source, scope, (key, hit), cancellationToken).ConfigureAwait(false);
+                if (issue.IsError)
+                {
+                    return issue.Error;   // an Onyx that fails mid-listing fails the run: a corpus that shrank in silence would pass for a small sample
+                }
+
+                if (issue.Value is { } found)
+                {
+                    issues.Add(found);
                 }
             }
         }
@@ -78,17 +89,24 @@ internal sealed class OnyxBriefSource(ISourceCatalog catalog) : IBriefSource
         return Results.Success<Brief?>(new Brief(issue.Key, clean.Blocked ? string.Empty : clean.Text));
     }
 
-    private static async ValueTask<BriefIssue?> Issue(IContextSource source, BriefScope scope, (string Key, SourceHit Hit) found, CancellationToken cancellationToken)
+    private static async ValueTask<Result<BriefIssue?>> Issue(IContextSource source, BriefScope scope, (string Key, SourceHit Hit) found, CancellationToken cancellationToken)
     {
         var record = await source.Fetch(found.Hit.Ref, cancellationToken).ConfigureAwait(false);
-        if (record.IsError || record.Value.CreatedAt is not { } created)
+        if (record.IsError)
         {
-            return null;   // no creation time, no cut: not a sample
+            return record.Error.Kind == ErrorKind.NotFound
+                ? Results.Success<BriefIssue?>(value: null)   // the record is gone: not a sample
+                : ContextErrors.AllSourcesUnavailable.With($"the brief source can't be read ({record.Error.Code}); fix: sindri context sources status");
+        }
+
+        if (record.Value.CreatedAt is not { } created)
+        {
+            return Results.Success<BriefIssue?>(value: null);   // no creation time, no cut: not a sample
         }
 
         var updated = record.Value.UpdatedAt ?? created;
         var title = scope.Scrubbers.Ingest.Clean(found.Hit.Title, singleLine: true);
-        return new BriefIssue(found.Key, "onyx/" + found.Hit.Ref.Id.Value, found.Hit.Ref.Version.Value, created, updated, title.Blocked ? string.Empty : title.Text);
+        return Results.Success<BriefIssue?>(new BriefIssue(found.Key, "onyx/" + found.Hit.Ref.Id.Value, found.Hit.Ref.Version.Value, created, updated, title.Blocked ? string.Empty : title.Text));
     }
 
     private IContextSource? Onyx(BriefScope scope) =>

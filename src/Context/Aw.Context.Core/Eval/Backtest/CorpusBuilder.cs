@@ -28,7 +28,7 @@ public static partial class CorpusBuilder
                 continue;
             }
 
-            var sample = histories.Select(h => Sample(issue, h, isDenied)).OfType<CorpusSample>().OrderBy(s => s.CreatedAt).FirstOrDefault();
+            var sample = histories.Select(h => Sample(issue, h, isDenied)).OfType<Found>().OrderBy(f => f.MergedAt).Select(f => f.Sample).FirstOrDefault();   // the earliest merge across the repos
             if (sample is null)
             {
                 left.Add((issue.Key, false));
@@ -49,16 +49,25 @@ public static partial class CorpusBuilder
     public static bool Carries(string? text, string key) =>
         text is not null && Keys(text).Contains(key, StringComparer.OrdinalIgnoreCase);
 
-    private static CorpusSample? Sample(BriefIssue issue, RepoHistory history, Func<string, bool> isDenied)
+    // A merge at or before the moment the issue existed is no sample: its cut would already hold the answer, so it could only score as clean what it was given.
+    // The cut is the last commit before the merge (in first-parent order) at or before the issue's creation.
+    private static Found? Sample(BriefIssue issue, RepoHistory history, Func<string, bool> isDenied)
     {
-        var merge = history.Commits.FirstOrDefault(c => c.IsMerge && (Carries(c.Subject, issue.Key) || Carries(c.Branch, issue.Key)));
-        var cut = history.Commits.LastOrDefault(c => c.At <= issue.CreatedAt);
-        var truth = merge?.ChangedFiles.Where(f => !isDenied(f)).Order(StringComparer.Ordinal).ToList();
-        return merge is null || cut is null || truth is not { Count: > 0 }
+        var at = history.Commits.ToList().FindIndex(c => c.IsMerge && (Carries(c.Subject, issue.Key) || Carries(c.Branch, issue.Key)));
+        if (at < 0 || history.Commits[at].At <= issue.CreatedAt)
+        {
+            return null;
+        }
+
+        var merge = history.Commits[at];
+        var cut = history.Commits.Take(at).LastOrDefault(c => c.At <= issue.CreatedAt);
+        var truth = merge.ChangedFiles.Where(f => !isDenied(f)).Order(StringComparer.Ordinal).ToList();
+        return cut is null || truth.Count == 0
             ? null
-            : new CorpusSample(issue.Key, issue.RecordRef, issue.Version, issue.CreatedAt, issue.UpdatedAt > issue.CreatedAt, history.Repo, merge.Sha, cut.Sha,
-                truth);
+            : new Found(new CorpusSample(issue.Key, issue.RecordRef, issue.Version, issue.CreatedAt, issue.UpdatedAt > issue.CreatedAt, history.Repo, merge.Sha, cut.Sha, truth), merge.At);
     }
+
+    private sealed record Found(CorpusSample Sample, DateTimeOffset MergedAt);
 
     private static IEnumerable<string> Keys(string text) => KeyShape.Matches(text).Select(m => m.Value);
 

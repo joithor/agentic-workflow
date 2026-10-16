@@ -4507,3 +4507,4 @@ Aw.Context.Core.Eval.Backtest.Adjudication.Error.init -> void
 Aw.Context.Core.Eval.Backtest.LeftOut.SourceDown.get -> int
 Aw.Context.Core.Eval.Backtest.LeftOut.SourceDown.init -> void
 static Aw.Context.Core.Eval.Backtest.PassLine.Overall(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.ArmReport!>! arms) -> string?
+const Aw.Context.Core.Eval.Backtest.Verdicts.NoCleanArm = "no non-leaky arm ran" -> string!
