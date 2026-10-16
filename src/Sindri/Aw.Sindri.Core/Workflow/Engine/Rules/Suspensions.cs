@@ -18,8 +18,7 @@ internal static class Suspensions
     /// <summary>The parks waiting behind the suspension, in order: the pending park, then the queued ones.</summary>
     /// <param name="instance">The instance.</param>
     /// <returns>The pending parks.</returns>
-    internal static IReadOnlyList<Suspension> PendingParks(WorkflowInstance instance) =>
-        instance.PendingPark is { } pending ? [pending, .. instance.LaterParks ?? []] : [];
+    internal static IReadOnlyList<Suspension> PendingParks(WorkflowInstance instance) => instance.PendingParks();
 
     /// <summary>The instance with <paramref name="parks"/> as its pending queue.</summary>
     /// <param name="instance">The instance.</param>

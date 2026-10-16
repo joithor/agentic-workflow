@@ -54,4 +54,8 @@ public sealed record WorkflowInstance(
     /// <summary>Whether the instance has ended.</summary>
     [JsonIgnore]
     public bool Ended => Outcome is not null;
+
+    /// <summary>The parks waiting behind the suspension, in order: the pending park, then the queued ones.</summary>
+    /// <returns>The pending parks.</returns>
+    internal IReadOnlyList<Suspension> PendingParks() => PendingPark is { } pending ? [pending, .. LaterParks ?? []] : [];
 }

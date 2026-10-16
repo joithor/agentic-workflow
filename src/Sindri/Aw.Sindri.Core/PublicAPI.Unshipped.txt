@@ -1584,9 +1584,9 @@ Aw.Sindri.Core.Workflow.Engine.Decisions.BudgetVerdict.Park.get -> Aw.Sindri.Cor
 Aw.Sindri.Core.Workflow.Engine.Decisions.BudgetVerdict.Park.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.BudgetVerdict.Spent.get -> Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend!
 Aw.Sindri.Core.Workflow.Engine.Decisions.BudgetVerdict.Spent.init -> void
-Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin
-Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin.Engine = 1 -> Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin
-Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin.Recipe = 2 -> Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin
+Aw.Sindri.Core.Workflow.Engine.CommandOrigin
+Aw.Sindri.Core.Workflow.Engine.CommandOrigin.Engine = 1 -> Aw.Sindri.Core.Workflow.Engine.CommandOrigin
+Aw.Sindri.Core.Workflow.Engine.CommandOrigin.Recipe = 2 -> Aw.Sindri.Core.Workflow.Engine.CommandOrigin
 Aw.Sindri.Core.Workflow.Engine.Decisions.Decision
 Aw.Sindri.Core.Workflow.Engine.Decisions.Decision.Decision(Aw.Sindri.Core.Workflow.Engine.Decisions.Decision! original) -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.Decision.Decision(Aw.Sindri.Core.Workflow.Engine.TriggerKey Key) -> void
@@ -1625,14 +1625,14 @@ Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionInput.Trigger.get -> Aw.Sindri.
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionInput.Trigger.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand
 Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand!
-Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Effect, out Aw.Sindri.Core.Workflow.Engine.EffectIdentity! Identity, out Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin Origin, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.WithValue!>! With) -> void
+Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Effect, out Aw.Sindri.Core.Workflow.Engine.EffectIdentity! Identity, out Aw.Sindri.Core.Workflow.Engine.CommandOrigin Origin, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.WithValue!>! With) -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.Effect.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
 Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.Effect.init -> void
-Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.EffectCommand(Aw.Sindri.Core.Workflow.Ids.BlockId Effect, Aw.Sindri.Core.Workflow.Engine.EffectIdentity! Identity, Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin Origin, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.WithValue!>! With) -> void
+Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.EffectCommand(Aw.Sindri.Core.Workflow.Ids.BlockId Effect, Aw.Sindri.Core.Workflow.Engine.EffectIdentity! Identity, Aw.Sindri.Core.Workflow.Engine.CommandOrigin Origin, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.WithValue!>! With) -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.Equals(Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand? other) -> bool
 Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.Identity.get -> Aw.Sindri.Core.Workflow.Engine.EffectIdentity!
 Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.Identity.init -> void
-Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.Origin.get -> Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin
+Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.Origin.get -> Aw.Sindri.Core.Workflow.Engine.CommandOrigin
 Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.Origin.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.With.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.WithValue!>!
 Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.With.init -> void
@@ -1849,8 +1849,8 @@ Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Code.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Code.init -> void
 Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Command.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Command.init -> void
-Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Deconstruct(out string! Identity, out string! Command, out Aw.Sindri.Core.Workflow.Ids.BlockId Kind, out Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin Origin, out Aw.Sindri.Core.Workflow.Engine.Effects.EffectState State, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, out string? Code, out string? Reason) -> void
-Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.EffectRow(string! Identity, string! Command, Aw.Sindri.Core.Workflow.Ids.BlockId Kind, Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin Origin, Aw.Sindri.Core.Workflow.Engine.Effects.EffectState State, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, string? Code = null, string? Reason = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Deconstruct(out string! Identity, out string! Command, out Aw.Sindri.Core.Workflow.Ids.BlockId Kind, out Aw.Sindri.Core.Workflow.Engine.CommandOrigin Origin, out Aw.Sindri.Core.Workflow.Engine.Effects.EffectState State, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, out string? Code, out string? Reason) -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.EffectRow(string! Identity, string! Command, Aw.Sindri.Core.Workflow.Ids.BlockId Kind, Aw.Sindri.Core.Workflow.Engine.CommandOrigin Origin, Aw.Sindri.Core.Workflow.Engine.Effects.EffectState State, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, string? Code = null, string? Reason = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Equals(Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow? other) -> bool
 Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Identity.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Identity.init -> void
@@ -1858,7 +1858,7 @@ Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Instance.get -> Aw.Sindri.Core.
 Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Instance.init -> void
 Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Kind.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
 Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Kind.init -> void
-Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Origin.get -> Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Origin.get -> Aw.Sindri.Core.Workflow.Engine.CommandOrigin
 Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Origin.init -> void
 Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Reason.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Reason.init -> void
@@ -2392,13 +2392,13 @@ Aw.Sindri.Core.Workflow.Engine.ParkReason.SpecConflict = 6 -> Aw.Sindri.Core.Wor
 Aw.Sindri.Core.Workflow.Engine.ParkReason.Timeout = 5 -> Aw.Sindri.Core.Workflow.Engine.ParkReason
 Aw.Sindri.Core.Workflow.Engine.RefusedEffect
 Aw.Sindri.Core.Workflow.Engine.RefusedEffect.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.RefusedEffect!
-Aw.Sindri.Core.Workflow.Engine.RefusedEffect.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Kind, out Aw.Sindri.Core.Workflow.Engine.EffectIdentity! Identity, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.WithValue!>! With, out Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin Origin) -> void
+Aw.Sindri.Core.Workflow.Engine.RefusedEffect.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Kind, out Aw.Sindri.Core.Workflow.Engine.EffectIdentity! Identity, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.WithValue!>! With, out Aw.Sindri.Core.Workflow.Engine.CommandOrigin Origin) -> void
 Aw.Sindri.Core.Workflow.Engine.RefusedEffect.Equals(Aw.Sindri.Core.Workflow.Engine.RefusedEffect? other) -> bool
 Aw.Sindri.Core.Workflow.Engine.RefusedEffect.Identity.get -> Aw.Sindri.Core.Workflow.Engine.EffectIdentity!
 Aw.Sindri.Core.Workflow.Engine.RefusedEffect.Identity.init -> void
 Aw.Sindri.Core.Workflow.Engine.RefusedEffect.Kind.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
 Aw.Sindri.Core.Workflow.Engine.RefusedEffect.Kind.init -> void
-Aw.Sindri.Core.Workflow.Engine.RefusedEffect.RefusedEffect(Aw.Sindri.Core.Workflow.Ids.BlockId Kind, Aw.Sindri.Core.Workflow.Engine.EffectIdentity! Identity, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.WithValue!>! With, Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin Origin) -> void
+Aw.Sindri.Core.Workflow.Engine.RefusedEffect.RefusedEffect(Aw.Sindri.Core.Workflow.Ids.BlockId Kind, Aw.Sindri.Core.Workflow.Engine.EffectIdentity! Identity, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.WithValue!>! With, Aw.Sindri.Core.Workflow.Engine.CommandOrigin Origin) -> void
 Aw.Sindri.Core.Workflow.Engine.RefusedEffect.With.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.WithValue!>!
 Aw.Sindri.Core.Workflow.Engine.RefusedEffect.With.init -> void
 Aw.Sindri.Core.Workflow.Engine.Rules.StateTimers
@@ -6101,7 +6101,7 @@ static Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.operator !=(Aw.Sindri.
 static Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.operator ==(Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply? left, Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.operator !=(Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow? left, Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.operator ==(Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow? left, Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow? right) -> bool
-static Aw.Sindri.Core.Workflow.Engine.Effects.EffectRules.Recheck(Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin origin, Aw.Sindri.Core.Workflow.Engine.Decisions.ApprovalCheck approval, Aw.Sindri.Core.Profile.EffectSettings! effects, Aw.Sindri.Core.Workflow.Ids.BlockId kind) -> string?
+static Aw.Sindri.Core.Workflow.Engine.Effects.EffectRules.Recheck(Aw.Sindri.Core.Workflow.Engine.CommandOrigin origin, Aw.Sindri.Core.Workflow.Engine.Decisions.ApprovalCheck approval, Aw.Sindri.Core.Profile.EffectSettings! effects, Aw.Sindri.Core.Workflow.Ids.BlockId kind) -> string?
 static Aw.Sindri.Core.Workflow.Engine.Effects.EngineNotices.For(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance? before, Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! after, int version, bool deskTaskNotified) -> System.Collections.Generic.IReadOnlyList<(Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand! Command, Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass Class)>!
 static Aw.Sindri.Core.Workflow.Engine.Effects.EngineNotices.For(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance? before, Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! after, int version, bool deskTaskNotified, Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType change) -> System.Collections.Generic.IReadOnlyList<(Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand! Command, Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass Class)>!
 static Aw.Sindri.Core.Workflow.Engine.Effects.EngineNotices.NoticedDeskTask(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! after, System.Collections.Generic.IReadOnlyList<(Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand! Command, Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass Class)>! notices) -> bool
@@ -7051,7 +7051,7 @@ Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance.LaterParks.get -> Syst
 Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance.LaterParks.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.Suspension.Approved.get -> bool
 Aw.Sindri.Core.Workflow.Engine.Instances.Suspension.Approved.init -> void
-Aw.Sindri.Core.Workflow.Engine.RefusedEffect.Origin.get -> Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin
+Aw.Sindri.Core.Workflow.Engine.RefusedEffect.Origin.get -> Aw.Sindri.Core.Workflow.Engine.CommandOrigin
 Aw.Sindri.Core.Workflow.Engine.RefusedEffect.Origin.init -> void
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter.Deconstruct(out string? Recipe, out string? State, out bool? NeedsYou, out Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency? Urgency, out string? Item, out string? Subject, out bool? Root) -> void
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceFilter.InstanceFilter(string? Recipe = null, string? State = null, bool? NeedsYou = null, Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency? Urgency = null, string? Item = null, string? Subject = null, bool? Root = null) -> void

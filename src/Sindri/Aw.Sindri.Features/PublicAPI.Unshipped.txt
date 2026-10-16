@@ -706,7 +706,7 @@ Aw.Sindri.Features.ListOutbox.OutboxCommandView.Code.get -> string?
 Aw.Sindri.Features.ListOutbox.OutboxCommandView.Code.init -> void
 Aw.Sindri.Features.ListOutbox.OutboxCommandView.Command.get -> string!
 Aw.Sindri.Features.ListOutbox.OutboxCommandView.Command.init -> void
-Aw.Sindri.Features.ListOutbox.OutboxCommandView.Deconstruct(out long Sequence, out System.DateTimeOffset At, out string! Identity, out string! Command, out Aw.Sindri.Core.Workflow.Ids.BlockId Kind, out Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin Origin, out Aw.Sindri.Core.Workflow.Engine.Effects.EffectState State, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, out string? Code) -> void
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.Deconstruct(out long Sequence, out System.DateTimeOffset At, out string! Identity, out string! Command, out Aw.Sindri.Core.Workflow.Ids.BlockId Kind, out Aw.Sindri.Core.Workflow.Engine.CommandOrigin Origin, out Aw.Sindri.Core.Workflow.Engine.Effects.EffectState State, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, out string? Code) -> void
 Aw.Sindri.Features.ListOutbox.OutboxCommandView.Equals(Aw.Sindri.Features.ListOutbox.OutboxCommandView? other) -> bool
 Aw.Sindri.Features.ListOutbox.OutboxCommandView.Identity.get -> string!
 Aw.Sindri.Features.ListOutbox.OutboxCommandView.Identity.init -> void
@@ -714,9 +714,9 @@ Aw.Sindri.Features.ListOutbox.OutboxCommandView.Instance.get -> Aw.Sindri.Core.W
 Aw.Sindri.Features.ListOutbox.OutboxCommandView.Instance.init -> void
 Aw.Sindri.Features.ListOutbox.OutboxCommandView.Kind.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
 Aw.Sindri.Features.ListOutbox.OutboxCommandView.Kind.init -> void
-Aw.Sindri.Features.ListOutbox.OutboxCommandView.Origin.get -> Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.Origin.get -> Aw.Sindri.Core.Workflow.Engine.CommandOrigin
 Aw.Sindri.Features.ListOutbox.OutboxCommandView.Origin.init -> void
-Aw.Sindri.Features.ListOutbox.OutboxCommandView.OutboxCommandView(long Sequence, System.DateTimeOffset At, string! Identity, string! Command, Aw.Sindri.Core.Workflow.Ids.BlockId Kind, Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin Origin, Aw.Sindri.Core.Workflow.Engine.Effects.EffectState State, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, string? Code) -> void
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.OutboxCommandView(long Sequence, System.DateTimeOffset At, string! Identity, string! Command, Aw.Sindri.Core.Workflow.Ids.BlockId Kind, Aw.Sindri.Core.Workflow.Engine.CommandOrigin Origin, Aw.Sindri.Core.Workflow.Engine.Effects.EffectState State, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, string? Code) -> void
 Aw.Sindri.Features.ListOutbox.OutboxCommandView.Sequence.get -> long
 Aw.Sindri.Features.ListOutbox.OutboxCommandView.Sequence.init -> void
 Aw.Sindri.Features.ListOutbox.OutboxCommandView.State.get -> Aw.Sindri.Core.Workflow.Engine.Effects.EffectState

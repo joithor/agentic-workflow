@@ -1,5 +1,4 @@
 using Aw.Sindri.Core.Workflow.Engine.Instances;
-using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -53,7 +52,7 @@ internal sealed partial record InstanceWords(WorkflowInstance Instance, Interpre
 
     /// <summary>The drift park waiting behind the open park that the re-approval hasn't ended; the line and the note both read it.</summary>
     private Suspension? BehindDrift() => Instance is { Suspension.Kind: SuspensionKind.Park }
-        ? Suspensions.PendingParks(Instance).FirstOrDefault(static p => p is { Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Drift, Approved: false })
+        ? Instance.PendingParks().FirstOrDefault(static p => p is { Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Drift, Approved: false })
         : null;
 
     private string Answering => $"sindri workflow answer {Address}";

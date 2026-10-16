@@ -1,6 +1,6 @@
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
-using Aw.Sindri.Core.Workflow.Engine.Decisions;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Microsoft.Extensions.DependencyInjection;
 
