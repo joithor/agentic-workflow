@@ -1,4 +1,6 @@
 using Aw.Sindri.Core.Workflow.Engine.Evals;
+using Aw.Sindri.Core.Workflow.Validation;
+using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Workflow.Engine;
 
 namespace Aw.Sindri.Tests.Workflow.Choice;
@@ -41,5 +43,5 @@ public sealed class ScaffoldRouteTests
             EvalLines.Write(only, EvalComposition.Options));
     }
 
-    private static Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver NoChildren { get; } = Aw.Sindri.Testing.Workflow.InMemoryChildRecipes.None;
+    private static IChildRecipeResolver NoChildren { get; } = InMemoryChildRecipes.None;
 }

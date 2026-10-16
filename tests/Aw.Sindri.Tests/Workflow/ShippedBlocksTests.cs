@@ -132,7 +132,7 @@ public sealed class ShippedBlocksTests
     [Fact, Trait("Lane", "unit")]
     public void A_descriptor_without_the_new_fields_serializes_without_them()
     {
-        var json = System.Text.Encoding.UTF8.GetString(AwJson.Serialize(FixtureCatalog.Shipped().Find(BlockId.From("step.produce"))!, SliceHarness.Json));
+        var json = System.Text.Encoding.UTF8.GetString(AwJson.Serialize(FixtureCatalog.Shipped().Find(BlockId.From("step.produce")), SliceHarness.Json));
 
         Assert.DoesNotContain("outcomesFrom", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("inputsFrom", json, StringComparison.OrdinalIgnoreCase);

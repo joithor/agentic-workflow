@@ -41,7 +41,7 @@ public sealed class OutcomeRulesTests
 
     [Fact, Trait("Lane", "unit")]
     public void Branch_transitions_on_each_choice_handle_every_outcome() =>
-        Assert.Empty(Choice.RouteRecipes.Lines(Aw.Sindri.Testing.Workflow.ShippedRecipes.Read(Choice.RouteRecipes.Dev)));
+        Assert.Empty(Choice.RouteRecipes.Lines(ShippedRecipes.Read(Choice.RouteRecipes.Dev)));
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("RCP-CHOICE-002")]
