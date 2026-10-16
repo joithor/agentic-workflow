@@ -3915,20 +3915,12 @@ Aw.Context.Core.Engine.DiffRange.Equals(Aw.Context.Core.Engine.DiffRange? other)
 Aw.Context.Core.Engine.DiffRange.Head.get -> string!
 Aw.Context.Core.Engine.DiffRange.Head.init -> void
 Aw.Context.Core.Engine.DiffRange.IsValid() -> bool
-Aw.Context.Core.Extract.ChangeKind
-Aw.Context.Core.Extract.ChangeKind.Added = 0 -> Aw.Context.Core.Extract.ChangeKind
-Aw.Context.Core.Extract.ChangeKind.Deleted = 2 -> Aw.Context.Core.Extract.ChangeKind
-Aw.Context.Core.Extract.ChangeKind.Modified = 1 -> Aw.Context.Core.Extract.ChangeKind
-Aw.Context.Core.Extract.ChangeKind.TypeChanged = 3 -> Aw.Context.Core.Extract.ChangeKind
 Aw.Context.Core.Extract.RepoChange
 Aw.Context.Core.Extract.RepoChange.<Clone>$() -> Aw.Context.Core.Extract.RepoChange!
-Aw.Context.Core.Extract.RepoChange.Change.get -> Aw.Context.Core.Extract.ChangeKind
 Aw.Context.Core.Extract.RepoChange.Change.init -> void
-Aw.Context.Core.Extract.RepoChange.Deconstruct(out string! Path, out Aw.Context.Core.Extract.ChangeKind Change) -> void
 Aw.Context.Core.Extract.RepoChange.Equals(Aw.Context.Core.Extract.RepoChange? other) -> bool
 Aw.Context.Core.Extract.RepoChange.Path.get -> string!
 Aw.Context.Core.Extract.RepoChange.Path.init -> void
-Aw.Context.Core.Extract.RepoChange.RepoChange(string! Path, Aw.Context.Core.Extract.ChangeKind Change) -> void
 Aw.Context.Core.Extract.RepoChanges
 Aw.Context.Core.Extract.RepoChanges.<Clone>$() -> Aw.Context.Core.Extract.RepoChanges!
 Aw.Context.Core.Extract.RepoChanges.Base.get -> string!
@@ -3964,25 +3956,18 @@ Aw.Context.Core.Results.DiffCounts.Unmapped.get -> int
 Aw.Context.Core.Results.DiffCounts.Unmapped.init -> void
 Aw.Context.Core.Results.DiffFile
 Aw.Context.Core.Results.DiffFile.<Clone>$() -> Aw.Context.Core.Results.DiffFile!
-Aw.Context.Core.Results.DiffFile.Change.get -> Aw.Context.Core.Extract.ChangeKind
 Aw.Context.Core.Results.DiffFile.Change.init -> void
-Aw.Context.Core.Results.DiffFile.Deconstruct(out string! Path, out Aw.Context.Core.Extract.ChangeKind Change, out Aw.Context.Core.Lenses.FileMapStatus Status, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffNode!>! Nodes) -> void
-Aw.Context.Core.Results.DiffFile.DiffFile(string! Path, Aw.Context.Core.Extract.ChangeKind Change, Aw.Context.Core.Lenses.FileMapStatus Status, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffNode!>! Nodes) -> void
 Aw.Context.Core.Results.DiffFile.Equals(Aw.Context.Core.Results.DiffFile? other) -> bool
 Aw.Context.Core.Results.DiffFile.Nodes.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffNode!>!
 Aw.Context.Core.Results.DiffFile.Nodes.init -> void
 Aw.Context.Core.Results.DiffFile.Path.get -> string!
 Aw.Context.Core.Results.DiffFile.Path.init -> void
-Aw.Context.Core.Results.DiffFile.Status.get -> Aw.Context.Core.Lenses.FileMapStatus
 Aw.Context.Core.Results.DiffFile.Status.init -> void
 Aw.Context.Core.Results.DiffNode
 Aw.Context.Core.Results.DiffNode.<Clone>$() -> Aw.Context.Core.Results.DiffNode!
 Aw.Context.Core.Results.DiffNode.Confirmed.get -> bool
 Aw.Context.Core.Results.DiffNode.Confirmed.init -> void
-Aw.Context.Core.Results.DiffNode.Deconstruct(out Aw.Context.Core.Graph.NodeKey Key, out bool Confirmed) -> void
-Aw.Context.Core.Results.DiffNode.DiffNode(Aw.Context.Core.Graph.NodeKey Key, bool Confirmed) -> void
 Aw.Context.Core.Results.DiffNode.Equals(Aw.Context.Core.Results.DiffNode? other) -> bool
-Aw.Context.Core.Results.DiffNode.Key.get -> Aw.Context.Core.Graph.NodeKey
 Aw.Context.Core.Results.DiffNode.Key.init -> void
 Aw.Context.Core.Results.DiffPart
 Aw.Context.Core.Results.DiffPart.<Clone>$() -> Aw.Context.Core.Results.DiffPart!
@@ -4057,3 +4042,22 @@ override Aw.Context.Core.Engine.DiffRangeJsonConverter.Read(ref System.Text.Json
 override Aw.Context.Core.Engine.DiffRangeJsonConverter.Write(System.Text.Json.Utf8JsonWriter! writer, Aw.Context.Core.Engine.DiffRange! value, System.Text.Json.JsonSerializerOptions! options) -> void
 const Aw.Context.Core.Engine.QueryRules.RepoMessage = "a repo goes with a diff only (it names the repo whose commits the range is read in)" -> string!
 Aw.Context.Core.Extract.IRepoReader.Changes(Aw.Context.Core.Engine.ContextRepo! repo, Aw.Context.Core.Engine.DiffRange! range, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Extract.RepoChanges!>!>
+Aw.Context.Core.Extract.RepoChange.Change.get -> Aw.Context.Core.Results.ChangeKind
+Aw.Context.Core.Extract.RepoChange.Deconstruct(out string! Path, out Aw.Context.Core.Results.ChangeKind Change) -> void
+Aw.Context.Core.Extract.RepoChange.RepoChange(string! Path, Aw.Context.Core.Results.ChangeKind Change) -> void
+Aw.Context.Core.Results.ChangeKind
+Aw.Context.Core.Results.ChangeKind.Added = 0 -> Aw.Context.Core.Results.ChangeKind
+Aw.Context.Core.Results.ChangeKind.Deleted = 2 -> Aw.Context.Core.Results.ChangeKind
+Aw.Context.Core.Results.ChangeKind.Modified = 1 -> Aw.Context.Core.Results.ChangeKind
+Aw.Context.Core.Results.ChangeKind.TypeChanged = 3 -> Aw.Context.Core.Results.ChangeKind
+Aw.Context.Core.Results.DiffFile.Change.get -> Aw.Context.Core.Results.ChangeKind
+Aw.Context.Core.Results.DiffFile.Deconstruct(out string! Path, out Aw.Context.Core.Results.ChangeKind Change, out Aw.Context.Core.Results.DiffStatus Status, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffNode!>! Nodes) -> void
+Aw.Context.Core.Results.DiffFile.DiffFile(string! Path, Aw.Context.Core.Results.ChangeKind Change, Aw.Context.Core.Results.DiffStatus Status, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffNode!>! Nodes) -> void
+Aw.Context.Core.Results.DiffFile.Status.get -> Aw.Context.Core.Results.DiffStatus
+Aw.Context.Core.Results.DiffNode.Deconstruct(out string! Key, out bool Confirmed) -> void
+Aw.Context.Core.Results.DiffNode.DiffNode(string! Key, bool Confirmed) -> void
+Aw.Context.Core.Results.DiffNode.Key.get -> string!
+Aw.Context.Core.Results.DiffStatus
+Aw.Context.Core.Results.DiffStatus.Mapped = 0 -> Aw.Context.Core.Results.DiffStatus
+Aw.Context.Core.Results.DiffStatus.Suggested = 1 -> Aw.Context.Core.Results.DiffStatus
+Aw.Context.Core.Results.DiffStatus.Unmapped = 2 -> Aw.Context.Core.Results.DiffStatus

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Aw.Context.Core.Extract;
+namespace Aw.Context.Core.Results;
 
 /// <summary>How a path changed between the merge base and the head of a diff range (a rename is a deletion plus an addition).</summary>
 [JsonConverter(typeof(StrictEnumConverter<ChangeKind>))]

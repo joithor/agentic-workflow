@@ -77,9 +77,9 @@ public sealed class ResultJsonTests
     {
         var at = new DateTimeOffset(2026, 10, 10, 18, 2, 11, TimeSpan.Zero);
         var sha = "0123456789abcdef0123456789abcdef01234567";
-        var node = new DiffNode(Context.Core.Graph.NodeKey.From("feature:layout.split-pane"), Confirmed: true);
+        var node = new DiffNode("feature:layout.split-pane", Confirmed: true);
         var part = new DiffPart(ContextRepoName.From("aw-split-panes"), sha, sha, sha,
-            [new DiffFile("src/a.ts", Context.Core.Extract.ChangeKind.TypeChanged, Context.Core.Lenses.FileMapStatus.Mapped, [node])], [], new DiffCounts(1, 1, 0, 0, 0), Truncated: false, 1, AnchorsTruncated: false);
+            [new DiffFile("src/a.ts", ChangeKind.TypeChanged, DiffStatus.Mapped, [node])], [], new DiffCounts(1, 1, 0, 0, 0), Truncated: false, 1, AnchorsTruncated: false);
         var result = new ContextResult(ContextResult.CurrentSchemaVersion, QueryId.From("q_1"), new ContextQuery(Text: null, Diff: new DiffRange(sha, sha), Repo: ContextRepoName.From("aw-split-panes")), ["feature:layout.split-pane"],
             "v1", at, [], [], [], [], Truncated: false, new BudgetUse(6000, 0, Estimate: true), new Dictionary<string, Citation>(StringComparer.Ordinal), part);
 

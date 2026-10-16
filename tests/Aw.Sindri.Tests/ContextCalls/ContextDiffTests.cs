@@ -3,9 +3,6 @@ using System.Net;
 using System.Text.Json;
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
-using Aw.Context.Core.Extract;
-using Aw.Context.Core.Graph;
-using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
 using Aw.Context.Testing.Fixtures;
 using Aw.Context.Testing.Map;
@@ -156,8 +153,8 @@ public sealed class ContextDiffTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public void Context_query_diff_text_lists_unmapped_before_sections_in_words_with_control_characters_escaped()
     {
-        var file = new DiffFile("src/layout/SplitPane.ts", ChangeKind.Modified, FileMapStatus.Mapped, [new DiffNode(NodeKey.From("feature:layout.split-pane"), Confirmed: true)]);
-        var odd = new DiffFile("src/odd\u001b[31mname.ts", ChangeKind.Added, FileMapStatus.Unmapped, []);
+        var file = new DiffFile("src/layout/SplitPane.ts", ChangeKind.Modified, DiffStatus.Mapped, [new DiffNode("feature:layout.split-pane", Confirmed: true)]);
+        var odd = new DiffFile("src/odd\u001b[31mname.ts", ChangeKind.Added, DiffStatus.Unmapped, []);
         var sha = "0123456789abcdef0123456789abcdef01234567";
         var part = new DiffPart(ContextRepoName.From("aw-split-panes"), sha, sha, "89abcdef0123456789abcdef0123456789abcdef", [odd, file], [odd.Path], new DiffCounts(3, 1, 1, 1, 0), Truncated: false, 1, AnchorsTruncated: false);
         var item = new ResultItem("feature", "feature:layout.split-pane", "Split pane", Text: null, Score: null, ["anchor"], Provenance.Human, Confirmed: true, Trust.Trusted, ["C1"]);

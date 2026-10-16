@@ -33,7 +33,7 @@ public sealed class DiffAnchorsTests
         var (part, _) = Build(Changes(("src/layout/SplitPane.ts", ChangeKind.Modified), ("src/tabs/TabGroups.ts", ChangeKind.Modified), ("src/commands/registry.ts", ChangeKind.Added)));
 
         Assert.Equal(["src/commands/registry.ts", "src/layout/SplitPane.ts", "src/tabs/TabGroups.ts"], part.Files.Select(f => f.Path), StringComparer.Ordinal);
-        Assert.Equal([FileMapStatus.Unmapped, FileMapStatus.Mapped, FileMapStatus.Suggested], part.Files.Select(f => f.Status));
+        Assert.Equal([DiffStatus.Unmapped, DiffStatus.Mapped, DiffStatus.Suggested], part.Files.Select(f => f.Status));
         Assert.Equal([ChangeKind.Added, ChangeKind.Modified, ChangeKind.Modified], part.Files.Select(f => f.Change));
     }
 
@@ -43,7 +43,7 @@ public sealed class DiffAnchorsTests
         var (part, _) = Build(Changes(("src/z.ts", ChangeKind.Added), ("src/layout/SplitPane.ts", ChangeKind.Modified), ("src/a.ts", ChangeKind.Deleted), ("src/tabs/TabGroups.ts", ChangeKind.Modified)));
 
         Assert.Equal(["src/a.ts", "src/z.ts"], part.Unmapped, StringComparer.Ordinal);
-        Assert.Equal(part.Files.Where(f => f.Status == FileMapStatus.Unmapped).Select(f => f.Path), part.Unmapped, StringComparer.Ordinal);
+        Assert.Equal(part.Files.Where(f => f.Status == DiffStatus.Unmapped).Select(f => f.Path), part.Unmapped, StringComparer.Ordinal);
         Assert.Equal(new DiffCounts(Changed: 4, Mapped: 1, Suggested: 1, Unmapped: 2, Denied: 0), part.Counts);
     }
 
@@ -53,9 +53,9 @@ public sealed class DiffAnchorsTests
         var (part, _) = Build(Changes(("src/tabs/TabGroups.ts", ChangeKind.Modified)));
 
         var file = Assert.Single(part.Files);
-        Assert.Equal(FileMapStatus.Suggested, file.Status);
+        Assert.Equal(DiffStatus.Suggested, file.Status);
         var node = Assert.Single(file.Nodes);
-        Assert.Equal(("feature:tabs.tab-groups", false), (node.Key.Value, node.Confirmed));
+        Assert.Equal(("feature:tabs.tab-groups", false), (node.Key, node.Confirmed));
         Assert.Empty(part.Unmapped);
     }
 
@@ -64,7 +64,7 @@ public sealed class DiffAnchorsTests
     {
         var (part, _) = Build(Changes(("src/layout/SplitPane.ts", ChangeKind.Modified)));
 
-        Assert.Equal(["feature:layout.split-pane", "feature:layout.split-pane.orientation"], part.Files[0].Nodes.Select(n => n.Key.Value), StringComparer.Ordinal);
+        Assert.Equal(["feature:layout.split-pane", "feature:layout.split-pane.orientation"], part.Files[0].Nodes.Select(n => n.Key), StringComparer.Ordinal);
         Assert.All(part.Files[0].Nodes, n => Assert.True(n.Confirmed));
     }
 
@@ -130,7 +130,7 @@ public sealed class DiffAnchorsTests
         var (part, anchors) = Build(Changes(("src/layout/SplitPane.ts", ChangeKind.Deleted)));
 
         var file = Assert.Single(part.Files);
-        Assert.Equal((ChangeKind.Deleted, FileMapStatus.Mapped), (file.Change, file.Status));
+        Assert.Equal((ChangeKind.Deleted, DiffStatus.Mapped), (file.Change, file.Status));
         Assert.Equal(2, anchors.Count);
     }
 

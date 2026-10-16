@@ -2,7 +2,6 @@ using System.Text;
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Extract;
-using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
 using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Extract;
@@ -63,8 +62,8 @@ public sealed class DiffQueryTests : IDisposable
         Assert.Equal(["README.md", "src/commands/registry.ts", "src/layout/SplitPane.ts", "src/tabs/TabManager.ts"], diff.Files.Select(f => f.Path), StringComparer.Ordinal);
         Assert.Equal(["README.md", "src/commands/registry.ts"], diff.Unmapped, StringComparer.Ordinal);
         var split = diff.Files.Single(f => string.Equals(f.Path, "src/layout/SplitPane.ts", StringComparison.Ordinal));
-        Assert.Equal(FileMapStatus.Mapped, split.Status);
-        Assert.Equal(["feature:layout.split-pane", "feature:layout.split-pane.orientation"], split.Nodes.Select(n => n.Key.Value), StringComparer.Ordinal);
+        Assert.Equal(DiffStatus.Mapped, split.Status);
+        Assert.Equal(["feature:layout.split-pane", "feature:layout.split-pane.orientation"], split.Nodes.Select(n => n.Key), StringComparer.Ordinal);
         Assert.All(split.Nodes, n => Assert.True(n.Confirmed));
         Assert.Equal(new DiffCounts(4, 2, 0, 2, 0), diff.Counts);
         Assert.Equal((4, false, false), (diff.AnchorsTotal, diff.AnchorsTruncated, diff.Truncated));
@@ -96,7 +95,7 @@ public sealed class DiffQueryTests : IDisposable
         var diff = (await world.Engine.Query(Ask(), MapWorld.Human, MapWorld.None)).Value.Diff!;
 
         var groups = diff.Files.Single(f => string.Equals(f.Path, "src/tabs/TabGroups.ts", StringComparison.Ordinal));
-        Assert.Equal(FileMapStatus.Suggested, groups.Status);
+        Assert.Equal(DiffStatus.Suggested, groups.Status);
         Assert.All(groups.Nodes, n => Assert.False(n.Confirmed));
         Assert.Equal(["src/tabs/Pinned.ts"], diff.Unmapped, StringComparer.Ordinal);
         Assert.Equal(1, diff.Counts.Suggested);
@@ -264,7 +263,7 @@ public sealed class DiffQueryTests : IDisposable
         var diff = result.Value.Diff!;
         Assert.Equal(Git(repo, "merge-base", gitBase, gitHead), diff.MergeBase);
         Assert.Equal(pr.Files, diff.Files.Select(f => f.Path), StringComparer.Ordinal);
-        Assert.Equal(FileMapStatus.Mapped, diff.Files.Single(f => string.Equals(f.Path, "src/layout/SplitPane.ts", StringComparison.Ordinal)).Status);
+        Assert.Equal(DiffStatus.Mapped, diff.Files.Single(f => string.Equals(f.Path, "src/layout/SplitPane.ts", StringComparison.Ordinal)).Status);
         Assert.DoesNotContain("src/layout/SplitPane.ts", diff.Unmapped, StringComparer.Ordinal);
         Assert.Contains("src/commands/registry.ts", diff.Unmapped, StringComparer.Ordinal);
         Assert.Contains("src/keybindings/defaults.ts", diff.Unmapped, StringComparer.Ordinal);
