@@ -14,6 +14,9 @@ internal sealed record NeedsYouAction(string CatalogId, string Label, ActionRead
     /// <summary>For a pending action: the phase that brings it ("P4"); empty otherwise.</summary>
     internal string Stage { get; init; } = "";
 
+    /// <summary>False when the catalog the action was read against was empty (not read yet).</summary>
+    internal bool CatalogRead { get; init; } = true;
+
     /// <summary>True for the option the decision serves as recommended (A runs it).</summary>
     internal bool Recommended { get; init; }
 

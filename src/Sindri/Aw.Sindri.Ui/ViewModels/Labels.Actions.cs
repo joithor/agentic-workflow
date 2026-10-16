@@ -105,6 +105,12 @@ internal static partial class Labels
         return words.ToString().Trim();
     }
 
+    /// <summary>What Decide's line says while the command catalog has not been read.</summary>
+    internal const string CheckingCatalog = "Checking what can run";
+
+    /// <summary>What Decide's line says when the catalog is read but lists no Decide and the decision serves no command.</summary>
+    internal const string DecideUnlisted = "Decide is not in the command catalog";
+
     /// <summary>A pending control's phase: "arrives in P2".</summary>
     /// <param name="phase">The phase the catalog names.</param>
     /// <returns>The words.</returns>

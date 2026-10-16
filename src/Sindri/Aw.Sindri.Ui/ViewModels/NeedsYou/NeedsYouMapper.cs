@@ -20,7 +20,8 @@ internal static class NeedsYouMapper
         ArgumentNullException.ThrowIfNull(list);
         ArgumentNullException.ThrowIfNull(catalog);
         var readiness = catalog.Rows.ToDictionary(r => r.Action, r => (ReadinessOf(r.Ui), CatalogReadiness.Parse(r.Ui).Stage), StringComparer.Ordinal);
-        return new NeedsYouFeed([.. list.Rows.Select(row => Entry(row, readiness, decisions))], list.Empty ?? string.Empty)
+        var read = catalog.Rows.Count > 0;
+        return new NeedsYouFeed([.. list.Rows.Select(row => Entry(row, readiness, decisions, read))], list.Empty ?? string.Empty)
         {
             Stalled = list.AsOf.Stalled,
             Rebuilding = list.AsOf.Rebuilding,
@@ -37,7 +38,7 @@ internal static class NeedsYouMapper
         _ => ActionReadiness.CliOnly,
     };
 
-    private static NeedsYouEntry Entry(NeedsYouRowView row, Dictionary<string, (ActionReadiness Readiness, string Stage)> readiness, DecisionList? decisions)
+    private static NeedsYouEntry Entry(NeedsYouRowView row, Dictionary<string, (ActionReadiness Readiness, string Stage)> readiness, DecisionList? decisions, bool read)
     {
         var subject = row.Subject is { } s ? new NeedsYouSubject(s.Kind, s.Id) : null;
         return new NeedsYouEntry(row.Id, UrgencyOf(row.Urgency))
@@ -51,7 +52,7 @@ internal static class NeedsYouMapper
             Reason = row.Reason,
             Since = row.Since,
             PrimaryAction = row.PrimaryAction,
-            Actions = [.. row.Actions.SelectMany(id => Actions(row, subject?.DecisionId, id, readiness, decisions))],
+            Actions = [.. row.Actions.SelectMany(id => Actions(row, subject?.DecisionId, id, readiness, decisions).Select(a => a with { CatalogRead = read }))],
             Subject = subject,
             ItemId = row.Item,
             Cli = row.Cli,

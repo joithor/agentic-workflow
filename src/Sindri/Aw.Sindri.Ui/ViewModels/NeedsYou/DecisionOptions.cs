@@ -39,6 +39,6 @@ internal static class DecisionOptions
     internal static string Line(IEnumerable<NeedsYouActionControl> controls)
     {
         ArgumentNullException.ThrowIfNull(controls);
-        return controls.FirstOrDefault(c => c.Action.OptionId.Length > 0)?.Action is { } a ? new DecideState(a.Readiness, a.Stage, a.Cli).Line : "";
+        return controls.FirstOrDefault(c => c.Action.OptionId.Length > 0)?.Action is { } a ? new DecideState(a.Readiness, a.Stage, a.Cli, a.CatalogRead).Line : "";
     }
 }

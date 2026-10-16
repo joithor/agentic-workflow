@@ -34,7 +34,7 @@ internal sealed class ItemNeedsViewModel : ObservableObject
     internal static ItemNeedsViewModel Create(ISindriApi api, DecisionSender sender, CatalogViewModel catalog)
     {
         ArgumentNullException.ThrowIfNull(catalog);
-        var needs = new ItemNeedsViewModel(api, sender, () => StateOf(catalog.For("Decide")));
+        var needs = new ItemNeedsViewModel(api, sender, () => StateOf(catalog.For("Decide"), catalog.Listed is not null));
         catalog.PropertyChanged += (_, e) =>
         {
             if (string.Equals(e.PropertyName, nameof(CatalogViewModel.Controls), StringComparison.Ordinal))
@@ -46,9 +46,9 @@ internal sealed class ItemNeedsViewModel : ObservableObject
     }
 
     // A catalog that has not named Decide yet is read as pending, as the mapper reads an action it has no row for.
-    private static DecideState StateOf(ControlViewModel? decide) => decide switch
+    private static DecideState StateOf(ControlViewModel? decide, bool read) => decide switch
     {
-        null => new DecideState(ActionReadiness.Pending, "", ""),
+        null => new DecideState(ActionReadiness.Pending, "", "", read),
         { Kind: ControlKind.Ready } => new DecideState(ActionReadiness.Ready, "", decide.Cli),
         { Kind: ControlKind.Pending } => new DecideState(ActionReadiness.Pending, decide.Stage, decide.Cli),
         _ => new DecideState(ActionReadiness.CliOnly, "", decide.Cli),
@@ -113,11 +113,18 @@ internal sealed class ItemNeedsViewModel : ObservableObject
     {
         // The rows are replaced only when one differs, so the buttons (and the focus on one) survive a re-read (§3.3).
         var state = _readiness();
-        IReadOnlyList<ItemDecisionRow> built = [.. (_served?.Decisions ?? []).Select(d => new ItemDecisionRow(d.Id, d.Question, d.FiledBy, DecisionOptions.From(d, state, _sender), state.Line))];
+        IReadOnlyList<ItemDecisionRow> built = [.. (_served?.Decisions ?? []).Select(d => Row(d, state))];
         if (!built.SequenceEqual(Decisions, ItemDecisionRowComparer.Instance))
         {
             Decisions = built;
         }
+    }
+
+    // The line and the options speak of the decision's own served command (its first option's) before the catalog's.
+    private ItemDecisionRow Row(DecisionView d, DecideState state)
+    {
+        var own = state with { Cli = d.Options.Select(o => o.Cli).FirstOrDefault(c => c.Length > 0) ?? state.Cli };
+        return new ItemDecisionRow(d.Id, d.Question, d.FiledBy, DecisionOptions.From(d, own, _sender), own.Line);
     }
 
     /// <summary>Decides one of the item's decisions with an option: sent once, never retried; a refusal shows as served.</summary>
