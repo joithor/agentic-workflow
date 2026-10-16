@@ -37,6 +37,9 @@ internal sealed class GitRepoReader(GitCli git) : IRepoReader
         return text.IsError ? Unreadable(repo, commit, path) : text;
     }
 
+    public ValueTask<Result<RepoChanges>> Changes(ContextRepo repo, DiffRange range, CancellationToken cancellationToken) =>
+        throw new NotSupportedException();
+
     // Names the repo and the commit or path asked for, never what git printed (it may name repo content).
     private static Error Unreadable(ContextRepo repo, string what, string? path = null) =>
         ContextErrors.ExtractionUnreadable.With($"git can't read {path ?? what} of {repo.Name.Value} (fix: check the checkout and that the commit exists)");

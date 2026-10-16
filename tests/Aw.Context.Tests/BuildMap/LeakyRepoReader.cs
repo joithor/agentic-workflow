@@ -20,4 +20,7 @@ internal sealed class LeakyRepoReader(string head, IReadOnlyDictionary<string, s
         Reads.Add(path);
         return ValueTask.FromResult<Result<string>>(files.TryGetValue(path, out var text) ? text : ContextErrors.ExtractionUnreadable.With("no such path"));
     }
+
+    public ValueTask<Result<RepoChanges>> Changes(ContextRepo repo, DiffRange range, CancellationToken cancellationToken) =>
+        ValueTask.FromResult<Result<RepoChanges>>(ContextErrors.ExtractionUnreadable.With("this reader lists no changes"));
 }

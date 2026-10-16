@@ -13,4 +13,11 @@ public sealed class FakeRepoReaderContractTests : RepoReaderContract
         commit = "0a1b2c3d4e5f60718293a4b5c6d7e8f901234567";
         return new FakeRepoReader(repo, commit, Committed);
     }
+
+    protected override IRepoReader CreateChangeReader(out ContextRepo repo, out ChangeWorld world)
+    {
+        repo = new ContextRepo(ContextRepoName.From("aw-split-panes"), "/work/aw-split-panes");
+        (world, var reader) = ChangeWorlds.Fake(repo);
+        return reader;
+    }
 }

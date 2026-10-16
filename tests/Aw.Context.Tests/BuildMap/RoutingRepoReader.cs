@@ -19,4 +19,7 @@ internal sealed class RoutingRepoReader(IReadOnlyDictionary<string, IRepoReader>
     private IRepoReader? For(ContextRepo repo) => readers.GetValueOrDefault(repo.Name.Value);
 
     private static ValueTask<Result<T>> Missing<T>() => ValueTask.FromResult<Result<T>>(ContextErrors.ExtractionUnreadable.With("no such repo"));
+
+    public ValueTask<Result<RepoChanges>> Changes(ContextRepo repo, DiffRange range, CancellationToken cancellationToken) =>
+        For(repo)?.Changes(repo, range, cancellationToken) ?? Missing<RepoChanges>();
 }
