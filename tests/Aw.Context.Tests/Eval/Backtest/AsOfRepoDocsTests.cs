@@ -2,7 +2,6 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Core.Sources;
 using Aw.Context.Infrastructure.Eval;
-using Aw.Context.Infrastructure.Extract;
 using Aw.Context.Infrastructure.Git;
 using Aw.Context.Testing.Fixtures;
 using Aw.Context.Tests.Infrastructure;
@@ -21,11 +20,10 @@ public sealed class AsOfRepoDocsTests
         using var home = new TempHome();
         using var fixture = FixtureRepo.Build();
         var repo = new ContextRepo(ContextRepoName.From("aw-split-panes"), fixture.Path);
-        var reader = new GitRepoReader(new GitCli());
         var initial = (await new GitMergeHistory(new GitCli()).History(repo, TestContext.Current.CancellationToken)).Value.Commits[0].Sha;
 
-        var atCut = (await AsOfRepoDocs.Build(new AsOfDocsRequest(repo, initial, _globs, home.Scrubbers), reader, TestContext.Current.CancellationToken)).Value;
-        var atHead = (await AsOfRepoDocs.Build(new AsOfDocsRequest(repo, fixture.Head, _globs, home.Scrubbers), reader, TestContext.Current.CancellationToken)).Value;
+        var atCut = (await AsOfRepoDocs.Build(new AsOfDocsRequest(repo, initial, _globs, home.Scrubbers), new GitCli(), TimeProvider.System, TestContext.Current.CancellationToken)).Value;
+        var atHead = (await AsOfRepoDocs.Build(new AsOfDocsRequest(repo, fixture.Head, _globs, home.Scrubbers), new GitCli(), TimeProvider.System, TestContext.Current.CancellationToken)).Value;
 
         var before = (await atCut.Search(Query("orientation"), TestContext.Current.CancellationToken)).Value;
         var after = (await atHead.Search(Query("orientation"), TestContext.Current.CancellationToken)).Value;
@@ -45,7 +43,7 @@ public sealed class AsOfRepoDocsTests
         _ = Run(fixture.Path, "commit", "-q", "-am", "plant");
         var head = Run(fixture.Path, "rev-parse", "HEAD");
 
-        var docs = (await AsOfRepoDocs.Build(new AsOfDocsRequest(repo, head, _globs, home.Scrubbers), new GitRepoReader(new GitCli()), TestContext.Current.CancellationToken)).Value;
+        var docs = (await AsOfRepoDocs.Build(new AsOfDocsRequest(repo, head, _globs, home.Scrubbers), new GitCli(), TimeProvider.System, TestContext.Current.CancellationToken)).Value;
         var hit = (await docs.Search(Query("deploy"), TestContext.Current.CancellationToken)).Value[0];
         var record = (await docs.Fetch(hit.Ref, TestContext.Current.CancellationToken)).Value;
 
@@ -60,7 +58,7 @@ public sealed class AsOfRepoDocsTests
         using var fixture = FixtureRepo.Build();
         var repo = new ContextRepo(ContextRepoName.From("aw-split-panes"), fixture.Path);
 
-        var docs = (await AsOfRepoDocs.Build(new AsOfDocsRequest(repo, fixture.Head, _globs, home.Scrubbers), new GitRepoReader(new GitCli()), TestContext.Current.CancellationToken)).Value;
+        var docs = (await AsOfRepoDocs.Build(new AsOfDocsRequest(repo, fixture.Head, _globs, home.Scrubbers), new GitCli(), TimeProvider.System, TestContext.Current.CancellationToken)).Value;
         var hit = (await docs.Search(Query("architecture"), TestContext.Current.CancellationToken)).Value[0];
         var versions = (await docs.Versions([hit.Ref], TestContext.Current.CancellationToken)).Value;
 

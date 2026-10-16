@@ -41,7 +41,7 @@ public sealed class BriefSourceTests
     [Fact, Trait("Lane", "integration")]
     public async Task OnyxBriefSource_brief_is_the_cleaned_record_text()
     {
-        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { OnyxPlant = text => text + " " + Planted.Secret });
+        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { OnyxPlant = static json => json.Replace("named command in one registry", "named command in one registry " + Planted.Secret, StringComparison.Ordinal) });
         using var harness = new OnyxSourceHarness(onyx.Url, onyx.Token);
         using var home = new TempHome();
         var source = new OnyxBriefSource(new FixedSourceCatalog(harness.Source));
