@@ -125,22 +125,80 @@ public sealed class NeedsYouActionButtonTests : IDisposable
         await SentOnce(window);
     });
 
-    [Fact]
-    public Task A_failure_rows_Pause_button_tooltip_help_text_and_sheet_line_carry_the_pause_command() => OnUi(async () =>
+    private const string Unfillable = "sindri services pause <itemId>";
+
+    private static T Golden<T>(string slug, string scenario)
+        where T : class =>
+        AwJson.Deserialize<T>(Encoding.UTF8.GetBytes(GoldenFiles.Api(slug, scenario)), SindriApiClient.Json).Value;
+
+    // The golden's failure row alone, against the golden catalog with its PauseService row changed by `change`.
+    private static (NeedsYouFeed Feed, string Pause) FailureFeed(Func<CommandRowView, CommandRowView> change)
     {
-        var list = AwJson.Deserialize<NeedsYouList>(Encoding.UTF8.GetBytes(GoldenFiles.Api("needs-you", "fixture")), SindriApiClient.Json).Value;
-        var catalog = AwJson.Deserialize<CommandList>(Encoding.UTF8.GetBytes(GoldenFiles.Api("commands", "catalog")), SindriApiClient.Json).Value;
-        var service = list.Rows.Single(r => r.Kind == "failure").Subject!.Id;
-        var pause = catalog.Rows.Single(r => r.Action == "PauseService").Cli.Replace("<name>", service, StringComparison.Ordinal);
-        var feed = NeedsYouMapper.Map(list with { Rows = [list.Rows.Single(r => r.Kind == "failure")] }, catalog, decisions: null, new HomeCounts(0, 0, 0));
+        var list = Golden<NeedsYouList>("needs-you", "fixture");
+        var catalog = Golden<CommandList>("commands", "catalog");
+        var failure = list.Rows.Single(r => r.Kind == NeedsYouKinds.Failure);
+        var pause = catalog.Rows.Single(r => r.Action == "PauseService").Cli.Replace("<name>", failure.Subject!.Id, StringComparison.Ordinal);
+        var changed = catalog with { Rows = [.. catalog.Rows.Select(r => r.Action == "PauseService" ? change(r) : r)] };
+        return (NeedsYouMapper.Map(list with { Rows = [failure] }, changed, decisions: null, new HomeCounts(0, 0, 0)), pause);
+    }
+
+    private static Button PauseButton(NeedsYouRow row) =>
+        row.GetVisualDescendants().OfType<Button>().First(b => string.Equals(b.Content as string, Labels.Action("PauseService"), StringComparison.Ordinal));
+
+    private static SheetDetail PauseLine(NeedsYouRow row) =>
+        ((NeedsYouRowViewModel)row.DataContext!).Details.Single(d => d.Label == Labels.Action("PauseService"));
+
+    [Fact]
+    public Task A_ready_Pause_shows_the_pause_command_on_the_sheet_without_a_hint() => OnUi(async () =>
+    {
+        var (feed, pause) = FailureFeed(r => r);
+        var (window, _) = await WithFeed(feed);
+
+        var line = PauseLine(Rows(window).Single());
+
+        Assert.Equal(pause, line.Value);
+        Assert.Empty(line.Hint);
+    });
+
+    [Fact]
+    public Task A_pending_Pauses_tooltip_help_text_and_sheet_line_carry_the_pause_command() => OnUi(async () =>
+    {
+        var (feed, pause) = FailureFeed(r => r with { Ui = "pending:P9" });
         var (window, _) = await WithFeed(feed);
 
         var row = Rows(window).Single();
-        var button = row.GetVisualDescendants().OfType<Button>().First(b => string.Equals(b.Content as string, Labels.Action("PauseService"), StringComparison.Ordinal));
+        var button = PauseButton(row);
 
         Assert.Equal(pause, ToolTip.GetTip(button));
         Assert.Equal(pause, AutomationProperties.GetHelpText(button));
-        var line = ((NeedsYouRowViewModel)row.DataContext!).Details.Single(d => d.Label == Labels.Action("PauseService"));
-        Assert.Contains(pause, line.Value, StringComparison.Ordinal);
+        Assert.Equal(Labels.NotInTheAppYet(pause), PauseLine(row).Value);
+    });
+
+    [Fact]
+    public Task A_pending_Pause_with_an_unfillable_placeholder_names_it_in_the_tooltip_and_beside_the_sheet_line() => OnUi(async () =>
+    {
+        var (feed, _) = FailureFeed(r => r with { Ui = "pending:P9", Cli = Unfillable });
+        var (window, _) = await WithFeed(feed);
+        var hint = Labels.FillInHint(["itemId"]);
+
+        var row = Rows(window).Single();
+        var line = PauseLine(row);
+
+        Assert.Equal(Labels.WithHint(Unfillable, hint), ToolTip.GetTip(PauseButton(row)));
+        Assert.Equal(Labels.WithHint(Unfillable, hint), AutomationProperties.GetHelpText(PauseButton(row)));
+        Assert.Equal(Labels.NotInTheAppYet(Unfillable), line.Value);
+        Assert.Equal(hint, line.Hint);
+    });
+
+    [Fact]
+    public Task A_protected_Pause_with_an_unfillable_placeholder_shows_the_hint_beside_its_inline_command() => OnUi(async () =>
+    {
+        var (feed, _) = FailureFeed(r => r with { Ui = "cli-only:typed", Cli = Unfillable });
+        var (window, _) = await WithFeed(feed);
+
+        var texts = Rows(window).Single().GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible).Select(t => t.Text).ToList();
+
+        Assert.Contains(texts, t => string.Equals(t, Unfillable, StringComparison.Ordinal));
+        Assert.Contains(texts, t => string.Equals(t, Labels.FillInHint(["itemId"]), StringComparison.Ordinal));
     });
 }

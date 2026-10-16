@@ -23,9 +23,5 @@ internal static class FailureDetails
         ];
     }
 
-    private static string Value(NeedsYouAction a)
-    {
-        var cli = a.FillIn ? Labels.FillIn(a.Cli) : a.Cli;
-        return a.IsReady ? cli : Labels.NotInTheAppYet(cli);
-    }
+    private static string Value(NeedsYouAction a) => a.IsReady ? a.Cli : Labels.NotInTheAppYet(a.Cli);
 }

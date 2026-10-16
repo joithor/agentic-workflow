@@ -76,8 +76,8 @@ internal static class NeedsYouMapper
         var decision = string.Equals(id, Decide, StringComparison.Ordinal) ? PendingDecision(subject?.DecisionId, decisions) : null;
         if (decision is null)
         {
-            var (cli, fillIn) = ActionCommand.For(catalogCli, string.Equals(id, row.PrimaryAction, StringComparison.Ordinal), row.Cli, subject, row.Item);
-            yield return new NeedsYouAction(id, Labels.Action(id), ready, cli, RejectLike: false) { Stage = stage, FillIn = fillIn };
+            var (cli, hint) = ActionCommand.For(catalogCli, string.Equals(id, row.PrimaryAction, StringComparison.Ordinal), row.Cli, subject, row.Item);
+            yield return new NeedsYouAction(id, Labels.Action(id), ready, cli, RejectLike: false) { Stage = stage, FillInHint = hint };
             yield break;
         }
 

@@ -149,10 +149,16 @@ internal static partial class Labels
     /// <summary>A profile sheet's line for the command that approves it.</summary>
     internal static string SheetApprove => "Approve with";
 
-    /// <summary>A command as served, with a placeholder the row could not fill.</summary>
+    /// <summary>The words that name the placeholders a command still has open.</summary>
+    /// <param name="names">The open placeholders, without their angle brackets.</param>
+    /// <returns>For example "fill in name".</returns>
+    internal static string FillInHint(IReadOnlyList<string> names) => "fill in " + string.Join(", ", names);
+
+    /// <summary>A command with its fill-in hint, for display and spoken text only; a copy takes the command alone.</summary>
     /// <param name="cli">The command, placeholder and all.</param>
-    /// <returns>The command and the words that say to fill it in.</returns>
-    internal static string FillIn(string cli) => cli + " · fill in";
+    /// <param name="hint">The hint, or empty.</param>
+    /// <returns>The command, then the hint after a middle dot when there is one.</returns>
+    internal static string WithHint(string cli, string hint) => hint.Length > 0 ? cli + " · " + hint : cli;
 
     /// <summary>An action's value on a sheet while the app cannot run it yet.</summary>
     /// <param name="cli">The command that does it.</param>

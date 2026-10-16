@@ -15,17 +15,17 @@ internal static partial class ActionCommand
     /// <param name="rowCli">The row's served command.</param>
     /// <param name="subject">The row's subject, or null.</param>
     /// <param name="itemId">The row's item, or null.</param>
-    /// <returns>The command, and whether a required placeholder is still open.</returns>
-    internal static (string Cli, bool FillIn) For(string catalogCli, bool isPrimary, string rowCli, NeedsYouSubject? subject, string? itemId)
+    /// <returns>The command, and the hint naming the required placeholders still open (empty when none).</returns>
+    internal static (string Cli, string Hint) For(string catalogCli, bool isPrimary, string rowCli, NeedsYouSubject? subject, string? itemId)
     {
         if (isPrimary || string.IsNullOrEmpty(catalogCli))
         {
-            return (rowCli, false);
+            return (rowCli, "");
         }
 
         // An optional [group] is filled whole or shown as served (never half-filled); it never asks for a fill-in.
         var filled = Token.Replace(catalogCli, m => m.Groups["body"].Success ? FillGroup(m, subject, itemId) : Value(m.Groups["word"].Value, subject, itemId) ?? m.Value);
-        return (filled, Open.IsMatch(OptionalGroup.Replace(filled, "")));
+        return (filled, "");
     }
 
     // A group whose placeholders all resolve loses its brackets; any other group is left exactly as served.
@@ -57,10 +57,4 @@ internal static partial class ActionCommand
 
     [GeneratedRegex(@"\[(?<body>[^\]]*)\]|<(?<word>[A-Za-z]+)>", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Token { get; }
-
-    [GeneratedRegex(@"\[[^\]]*\]", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex OptionalGroup { get; }
-
-    [GeneratedRegex("<[A-Za-z]+>", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex Open { get; }
 }

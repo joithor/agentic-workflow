@@ -176,7 +176,7 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
     {
         ActionReadiness.Ready when rebuilding => Labels.RetryAfterRebuild,
         ActionReadiness.CliOnly => Labels.ProtectedTooltip,
-        ActionReadiness.Pending => action.FillIn ? Labels.FillIn(action.Cli) : action.Cli,
+        ActionReadiness.Pending => action.Cli,
         _ => "",
     };
 

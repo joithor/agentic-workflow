@@ -3,6 +3,7 @@ using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
 
 namespace Aw.Sindri.Ui.Tests.NeedsYou;
@@ -22,7 +23,7 @@ public sealed class NeedsYouActionCliTests
     private static string CatalogCli(string action) => Catalog().Rows.Single(r => r.Action == action).Cli;
 
     private static NeedsYouRowView Failure() =>
-        Golden<NeedsYouList>("needs-you", "fixture").Rows.Single(r => r.Kind == "failure");
+        Golden<NeedsYouList>("needs-you", "fixture").Rows.Single(r => r.Kind == NeedsYouKinds.Failure);
 
     private static NeedsYouEntry Map(NeedsYouRowView row, CommandList? catalog = null) =>
         NeedsYouMapper.Map(Golden<NeedsYouList>("needs-you", "fixture") with { Rows = [row] }, catalog ?? Catalog(), decisions: null, _counts).Rows[0];
@@ -38,7 +39,7 @@ public sealed class NeedsYouActionCliTests
         var pause = Pause(Map(row));
 
         Assert.Equal(CatalogCli("PauseService").Replace("<name>", service, StringComparison.Ordinal), pause.Cli);
-        Assert.False(pause.FillIn);
+        Assert.Empty(pause.FillInHint);
     }
 
     [Fact]
@@ -60,7 +61,7 @@ public sealed class NeedsYouActionCliTests
         var pause = Pause(Map(row, catalog with { Rows = [.. catalog.Rows.Where(r => r.Action != "PauseService")] }));
 
         Assert.Equal(row.Cli, pause.Cli);
-        Assert.False(pause.FillIn);
+        Assert.Empty(pause.FillInHint);
     }
 
     [Fact]
@@ -69,6 +70,6 @@ public sealed class NeedsYouActionCliTests
         var pause = Pause(Map(Failure() with { Subject = null }));
 
         Assert.Equal(CatalogCli("PauseService"), pause.Cli);
-        Assert.True(pause.FillIn);
+        Assert.Equal(Labels.FillInHint(["name"]), pause.FillInHint);
     }
 }
