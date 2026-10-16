@@ -641,3 +641,35 @@ intent source never synced or its last run failed. The `SyncSources` catalog row
 `tests/Aw.Context.Tests/{Linking,SyncSources,QueryContext}` (rules, overlay, store contracts, sync, decisions, conflicts, item shape,
 sources status); `tests/Aw.Sindri.Tests/ContextCalls/ContextSyncTests` (integration: service named or not, event with counts, event key,
 sources status, doctor row, item query), `ContextCliTests` and `ContextReviewRowsTests` (the pending form and the catalog row).
+
+## S-7A: the evaluation harness (corpus, as-of maps, arms, reports)
+
+### Shape
+
+- **Core** (`Aw.Context.Core/Eval/Backtest`, pure): `Arm`/`Arms` (names, order, `--arms` parsing, 082), `CorpusBuilder` (a sample is a merge keyed by its issue: the cut is the last first-parent commit at or before the issue's `createdAt`; truth is `git diff --name-only <merge>^1 <merge>` minus the deny globs), `BacktestScoring` (node recall, strict node precision, file recall@20, macro means; a metric with nothing to average is `null`, "not measured", never 0), `PassLine`/`PassBars` (the §9.4 bars; below 30 samples the overall line is the owner decision and enables nothing), `AdjudicatedScoring`, `MapQuality/*`. Ports: `IMergeHistory`, `IBriefSource`, `IAsOfDocs`, `IEvalStore`, `IArmQuery`, `IAdjudicator`. `MapExtractor.Version` keys the as-of cache.
+- **Infrastructure** (`Eval/`): `GitMergeHistory` (first-parent log over `GitCli`, caller `GIT_*` removed), `OnyxBriefSource` (searches each profile team key, keeps hits whose S-5A alias is `TEAM-n`, reads description chunks through the adapter's own allowlist; the brief is cleaned at ingest; a record edited after its creation is `leaky`, because Onyx keeps no content history), `AsOfRepoDocs` (the repo docs at the cut commit, same globs, size cap, chunker and ingest scrub, held in memory; the live `RepoDocsSource` is unchanged and keeps `SupportsAsOf: false`), `FileEvalStore` (0700/0600 files, refuses a worktree with 005, 90-day TTL).
+- **Features**: `QueryPipeline` is the old `QueryContextService` body behind one seam (`IMapProvider` plus a source catalog plus an as-of time); `QueryContextService` calls it with the live map, `ArmQuery` calls it with a sample's as-of map and an arm-filtered catalog. **No `asOf`, arm or graph parameter was added to `GET /sindri/context/query` or MCP**, so a session can never see an as-of or arm view. `RunBacktest/*` (`CorpusLoader`, `SampleScorer`, `AsOfMapBuilder`, `ArmRunner`, `ReportAssembly`, `RunBacktestService`), `Adjudicate/Adjudicator`, `EvalMap/*`, `EvalPurge/*`. The eval slices sit behind one `ContextEval` group in the facade.
+- **As-of map** (`AsOfMapBuilder`): `MapExtractor.Extract` over the cut commit's tree, plus `ClusterFeatures.Propose` over that commit's clusters with no labels (no labeling pass, no model call), joined under the newest map version created at or before the issue's creation (authored nodes whose code the cut lacks are dropped, `AsOfPruning`), with the `map_override` rows dated before the issue applied. Cached by repo, sha12, extractor version and whether clusters answered (`eval/cache/maps/<repo>-<sha12>-x<v>-c<0|1>.json`). Nothing is written to `context.db`.
+- **Arms**: `brief` (text anchors only, depth 0, no source), `docs` (as-of docs, empty graph), `graph` (the floor), `graph+reviewed` (today's map with every decision; labeled leaky), `all` (as-of graph and as-of docs). `linear`, `onyx`, `code` print `not available (S-6 / S-7B / S-9)`. `ranker` is 082 naming S-8.
+- **Heavy lock**: one slot for the whole run (`IHeavyJobLock`); busy is 040. A session caller is 020 ("a human or service job"). Cancellation writes no report.
+- **Adjudicator** (`context.eval.adjudicator`, default off): asks twice (second time the surfaces reversed), keeps agreeing answers, a disagreement is `unstable` and counts as not relevant; sends the scrubbed brief inside the untrusted fence and node labels only; truth nodes are never judged; stops at 1.5M tokens (083, degraded, the rest `unjudged`, adjudicated precision "not measured"). The cap is the §9.4 bar kept as a constant, not a profile key.
+- **State is files**: `context/eval/{backtest,map,cache}`; no `context.db` migration, no new ledger event type.
+
+### Sindri
+
+`GET /sindri/context/eval/map` (a query: no catalog row), `sindri context eval map|purge|backtest`. `eval purge` runs in the CLI process (`--all` also clears the probe reports, so the next `eval probes` has no baseline). The `context-purge` service applies the 90-day eval TTL and `doctor`'s `context:retention` counts expired eval files. **`RunContextBacktest`** is a `class: job` row, `ui: pending:API-P6`, `POST /sindri/context/eval/backtest` with no route mapped and no command type; the CLI answers SND-CLI-001 naming `pending:API-P6` (after checking `--arms`). The action id is one constant (`ContextRows.BacktestAction`). The job route (slice S7) lands with API P6.
+
+### Errors (S-7A range 080-083)
+
+| Code | Kind (HTTP) | Exit | Meaning |
+|---|---|---|---|
+| `SND-CONTEXT-080` | NotFound (404) | 1 | No eligible sample (the message gives the counts left out) |
+| `SND-CONTEXT-081` | Unavailable (503) | 1 | No configured source can supply issue briefs |
+| `SND-CONTEXT-082` | Invalid (400) | 1 | `--arms` names an unknown arm (the message lists the arms and which are not available yet) |
+| `SND-CONTEXT-083` | degraded | 0 | Adjudication stopped at the 1.5M-token cap |
+
+084-086 are reserved for review findings, 087-089 for S-7B. Reused: 020, 030, 040, 048 (a cut git can't read: that sample is dropped and counted), 005, 001, 011.
+
+### Tests
+
+`tests/Aw.Context.Tests/{Eval/Backtest,RunBacktest,Adjudicate,EvalMap}` (pure scoring, merge history on the fixture repo, the briefs against the fake Onyx, the whole backtest on the split-panes fixture, as-of honesty, adjudicator with `FakeModelPort`); `tests/Aw.Sindri.Tests/ContextCalls/{ContextEvalVerbsTests,ContextLensesApiTests,ContextReviewRowsTests}`.

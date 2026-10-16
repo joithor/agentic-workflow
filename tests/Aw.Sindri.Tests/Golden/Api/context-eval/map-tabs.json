@@ -1,0 +1,39 @@
+{
+  "report": {
+    "schemaVersion": 1,
+    "createdAt": "2026-01-01T00:00:00.0000000Z",
+    "mapVersion": "v1",
+    "nodePrecision": {
+      "hits": 0,
+      "total": 0,
+      "value": null
+    },
+    "nodePrecisionDeterministic": {
+      "hits": 0,
+      "total": 0,
+      "value": null
+    },
+    "nodePrecisionModel": {
+      "hits": 0,
+      "total": 0,
+      "value": null
+    },
+    "linkPrecision": {
+      "hits": 0,
+      "total": 0,
+      "value": null
+    },
+    "undecided": 2,
+    "unmappedRate": {
+      "hits": 0,
+      "total": 0,
+      "value": null
+    },
+    "window": null,
+    "bars": [
+      "node precision ≥ 0.80: not measured",
+      "unmapped rate ≤ 0.20: not measured"
+    ]
+  },
+  "path": "<home>/context/eval/map/map-20260101T000000000Z.json"
+}

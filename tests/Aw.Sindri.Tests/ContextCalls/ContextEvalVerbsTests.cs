@@ -71,7 +71,7 @@ public sealed class ContextEvalVerbsTests
     {
         var (code, map) = await Verb("map");
 
-        Assert.Equal(2, code);   // the same exit a probe's failed query gets: no server, a tool error
+        Assert.Equal(1, code);   // SND-API-001 is attention, as for every graph verb
         Assert.Contains("SND-API-001", map, StringComparison.Ordinal);
     }
 }

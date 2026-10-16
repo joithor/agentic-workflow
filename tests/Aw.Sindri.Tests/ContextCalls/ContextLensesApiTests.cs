@@ -345,13 +345,14 @@ public sealed class ContextLensesApiTests : IDisposable
         var made = Json((await host.Http.Ask(Get("/sindri/context/eval/map", Terminal(host)))).Body).GetProperty("path").GetString()!;
         var fresh = made.Replace("map-", "map-fresh-", StringComparison.Ordinal);
         File.Copy(made, fresh);
-        File.SetLastWriteTimeUtc(made, DateTime.UtcNow.AddDays(-100));
-        File.SetLastWriteTimeUtc(fresh, DateTime.UtcNow);
+        var now = Clock(host).GetUtcNow().UtcDateTime;   // the host runs on a fake clock
+        File.SetLastWriteTimeUtc(made, now.AddDays(-100));
+        File.SetLastWriteTimeUtc(fresh, now);
         await using var scope = host.App.Services.CreateAsyncScope();
         var service = scope.ServiceProvider.GetServices<Aw.Sindri.Core.Scheduling.IScheduledService>().Single(s => s.Identity().Value == "context-purge");
         var grant = host.App.Services.GetRequiredService<HeldLease>().Current!;   // why: the started host holds the lease
 
-        var ran = await service.Run(new Aw.Sindri.Core.Scheduling.ScheduledRun(grant, DateTimeOffset.UtcNow), TestContext.Current.CancellationToken);
+        var ran = await service.Run(new Aw.Sindri.Core.Scheduling.ScheduledRun(grant, Clock(host).GetUtcNow()), TestContext.Current.CancellationToken);
 
         Assert.True(ran.IsSuccess);
         Assert.False(File.Exists(made));

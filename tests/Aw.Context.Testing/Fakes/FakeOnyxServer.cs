@@ -74,7 +74,8 @@ public sealed class FakeOnyxServer : IAsyncDisposable
 
         var key = new OnyxKey(token, account, options.OnyxAdmin, options.OnyxVersion ?? PinnedVersion);
         var plant = options.OnyxPlant;
-        var server = await LoopbackServer.Start("fake-onyx", r => Planted(Handle(r, key), plant), options.Delay).ConfigureAwait(false);
+        var documents = options.OnyxDocuments is { } issues ? [.. issues.Select(OnyxIndex.From)] : OnyxIndex.Documents;
+        var server = await LoopbackServer.Start("fake-onyx", r => Planted(Handle(r, key, documents), plant), options.Delay).ConfigureAwait(false);
         return new FakeOnyxServer(server, token);
     }
 
@@ -84,7 +85,7 @@ public sealed class FakeOnyxServer : IAsyncDisposable
     private static FakeHttpReply Planted(FakeHttpReply reply, Func<string, string>? plant) =>
         plant is null ? reply : reply with { Body = JsonNode.Parse(plant(reply.Body.ToJsonString()))! };   // why: a plant returns JSON text
 
-    private static FakeHttpReply Handle(FakeHttpRequest request, OnyxKey key)
+    private static FakeHttpReply Handle(FakeHttpRequest request, OnyxKey key, IReadOnlyList<OnyxDocument> documents)
     {
         try
         {
@@ -95,9 +96,9 @@ public sealed class FakeOnyxServer : IAsyncDisposable
                 ("GET", MeRoute) => authenticated ? new FakeHttpReply(200, OnyxMe.Info(key.AccountType, key.Admin), "me") : OnyxError(403, "UNAUTHORIZED", "Unauthorized", "refused: no valid credential"),
                 ("POST", SearchRoute) or ("GET", SizeRoute) or ("GET", ChunkRoute) when !authenticated => OnyxError(403, "UNAUTHORIZED", NotAuthenticated, "refused: no valid credential"),
                 ("POST", SearchRoute) when !key.Admin => OnyxError(403, "INSUFFICIENT_PERMISSIONS", "You do not have the required permissions for this action.", "refused: not admin"),
-                ("POST", SearchRoute) => Search(request.Body),
-                ("GET", SizeRoute) => Size(request.Query),
-                ("GET", ChunkRoute) => Chunk(request.Query),
+                ("POST", SearchRoute) => Search(request.Body, documents),
+                ("GET", SizeRoute) => Size(request.Query, documents),
+                ("GET", ChunkRoute) => Chunk(request.Query, documents),
                 _ => OnyxError(404, "NOT_FOUND", $"The fake Onyx server has no route {request.Method} {request.Path}; it answers GET {VersionRoute}, GET {MeRoute}, POST {SearchRoute}, GET {SizeRoute} and GET {ChunkRoute}.", "refused: route"),
             };
         }
@@ -119,23 +120,23 @@ public sealed class FakeOnyxServer : IAsyncDisposable
         string.Equals(authorization, "Bearer " + token, StringComparison.Ordinal)
         || (token.StartsWith(ServiceAccountPrefix, StringComparison.Ordinal) && string.Equals(authorization, token, StringComparison.Ordinal));
 
-    private static FakeHttpReply Search(string body) =>
-        new(200, new JsonObject { ["documents"] = OnyxIndex.Search(OnyxSearchRequest.Parse(body)) }, "admin-search");
+    private static FakeHttpReply Search(string body, IReadOnlyList<OnyxDocument> documents) =>
+        new(200, new JsonObject { ["documents"] = OnyxIndex.Search(OnyxSearchRequest.Parse(body), documents) }, "admin-search");
 
-    private static FakeHttpReply Size(IReadOnlyDictionary<string, string> query)
+    private static FakeHttpReply Size(IReadOnlyDictionary<string, string> query, IReadOnlyList<OnyxDocument> documents)
     {
         if (query.GetValueOrDefault("document_id") is not { } id)
         {
             return ValidationFailed("refused: document-size-info query");
         }
 
-        var document = OnyxIndex.Documents.FirstOrDefault(d => string.Equals(d.Id, id, StringComparison.Ordinal));
+        var document = documents.FirstOrDefault(d => string.Equals(d.Id, id, StringComparison.Ordinal));
         return document is null
             ? OnyxError(404, "NOT_FOUND", "Document not found", "document-size-info: not found")
             : new FakeHttpReply(200, new JsonObject { ["num_chunks"] = document.Chunks.Count, ["num_tokens"] = document.Chunks.Sum(Tokens) }, "document-size-info");
     }
 
-    private static FakeHttpReply Chunk(IReadOnlyDictionary<string, string> query)
+    private static FakeHttpReply Chunk(IReadOnlyDictionary<string, string> query, IReadOnlyList<OnyxDocument> documents)
     {
         if (query.GetValueOrDefault("document_id") is not { } id
             || !int.TryParse(query.GetValueOrDefault("chunk_id"), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var chunk))
@@ -143,7 +144,7 @@ public sealed class FakeOnyxServer : IAsyncDisposable
             return ValidationFailed("refused: chunk-info query");
         }
 
-        var document = OnyxIndex.Documents.FirstOrDefault(d => string.Equals(d.Id, id, StringComparison.Ordinal));
+        var document = documents.FirstOrDefault(d => string.Equals(d.Id, id, StringComparison.Ordinal));
         if (document is null || chunk < 0 || chunk >= document.Chunks.Count)
         {
             return OnyxError(404, "NOT_FOUND", "Chunk not found", "chunk-info: not found");

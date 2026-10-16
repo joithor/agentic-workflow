@@ -30,4 +30,7 @@ public sealed record FakeServerOptions
     /// the replies as they are.
     /// </summary>
     public Func<string, string>? OnyxPlant { get; init; }
+
+    /// <summary>A replacement document set (test-only): when set, the server serves these synthetic issues instead of the recorded split-panes documents.</summary>
+    public IReadOnlyList<SyntheticIssue>? OnyxDocuments { get; init; }
 }

@@ -803,3 +803,25 @@ $SINDRI context sources status
 $SINDRI context query "split pane orientation"
 $SINDRI stop                                    # free the port before going back to your real home
 ```
+
+## S-7A: the evaluation harness
+
+`sindri context eval backtest` replays the owner's merged work against the context engine (context spec §9): each merged PR whose title or branch carries an issue key of a `context.sources.linear.teams` team is a sample, cut at the last commit before the issue was created. For each sample the engine builds the map as it stood then (from git; never today's map), asks every requested arm the issue's brief, and scores what came back against the files the PR changed.
+
+### What it prints
+
+The sample count first (`5 samples (SPL-101, ...); left out: SPL-106 (1 with no merged PR) · small sample`), then one row per arm in this order: `brief` (the brief-only baseline), `docs`, `graph` (the floor), `graph+reviewed` (the ceiling, labeled `leaky`), `all`; `linear`, `onyx` and `code` print `not available (S-6 / S-7B / S-9)`. A row gives samples, node recall, node precision, file recall@20, leaky share and tokens. Then the pass line against the starting bars (node recall at least 0.60 and above brief-only; node precision at least 0.60; file recall@20 at least 0.50; at most 1.5M tokens), each bar `met`, `not met` or `not measured`. Below 30 samples the overall line is `owner decision needed (small sample)` and nothing is enabled. A brief edited after its cut is `leaky`; every Onyx brief edited after its creation is, because Onyx keeps no content history.
+
+### The adjudicator
+
+Off by default. `context.eval.adjudicator: true` lets the run ask the model whether a predicted node no PR touched is relevant to the brief: twice, the second time in reversed order, keeping answers that agree. It sees the scrubbed brief and node labels only, and stops at 1.5M tokens per run (`SND-CONTEXT-083`).
+
+### Map quality and housekeeping
+
+`sindri context eval map [--json]` reads your accept and reject decisions: node precision per provenance, link precision, nodes nobody decided (counted apart), and the unmapped rate (files changed in the 90 days before the mapped commit that implement no node), with the bars (precision at least 0.80, unmapped at most 0.20). `sindri context eval purge [--all]` deletes reports and the as-of cache older than 90 days; `--all` also clears the probe reports, so the next `eval probes` has no baseline. Reports are under `$AW_SINDRI_HOME/context/eval/{backtest,map}` and hold refs, versions, shas and numbers, never brief text.
+
+### Status
+
+The backtest is a job (it takes a heavy-job slot and runs for minutes); `RunContextBacktest` is `pending:API-P6`, and the CLI says so until API P6's job runtime merges. The owner's corpus is S-7B.
+
+Errors: `SND-CONTEXT-080` no eligible sample, `081` no brief source, `082` unknown arm, `083` adjudication stopped at its cap.

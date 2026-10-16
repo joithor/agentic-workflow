@@ -33,7 +33,14 @@ public sealed class FixtureRepo : IDisposable
     /// directory when null.
     /// </param>
     /// <returns>The built repo.</returns>
-    public static FixtureRepo Build(string? parentDirectory = null)
+    public static FixtureRepo Build(string? parentDirectory = null) => BuildFrom(parentDirectory, SplitPanesFixture.History, varied: false);
+
+    /// <summary>Builds a repo from <paramref name="history"/>. A <paramref name="varied"/> history may reuse a template folder for several pull requests: each reuse appends a marker line to its text files, so every merge changes something.</summary>
+    /// <param name="parentDirectory">Where to build, or null for a temp folder.</param>
+    /// <param name="history">The initial commit and the pull requests.</param>
+    /// <param name="varied">True when a folder is reused (see above).</param>
+    /// <returns>The repo.</returns>
+    internal static FixtureRepo BuildFrom(string? parentDirectory, FixtureHistory history, bool varied)
     {
         var root = parentDirectory is null
             ? Directory.CreateTempSubdirectory("aw-split-panes-").FullName
@@ -41,7 +48,7 @@ public sealed class FixtureRepo : IDisposable
         var built = false;
         try
         {
-            var repo = Create(root);
+            var repo = Create(root, history, varied);
             built = true;
             return repo;
         }
@@ -81,9 +88,8 @@ public sealed class FixtureRepo : IDisposable
             ? throw new InvalidOperationException($"'{path}' already exists; build the fixture repo into a parent without one.")
             : Directory.CreateDirectory(path).FullName;
 
-    private static FixtureRepo Create(string root)
+    private static FixtureRepo Create(string root, FixtureHistory history, bool varied)
     {
-        var history = SplitPanesFixture.History;
         var path = Directory.CreateDirectory(System.IO.Path.Combine(root, "split-panes")).FullName;
         var emptyConfig = System.IO.Path.Combine(root, "gitconfig");
         File.WriteAllText(emptyConfig, "");
@@ -91,16 +97,16 @@ public sealed class FixtureRepo : IDisposable
         var initial = history.Initial;
         _ = git.Run(initial.At, "init", "-q", "-b", "main");
         _ = git.Run(initial.At, "config", "core.hooksPath", System.IO.Path.Combine(root, "no-hooks"));
-        _ = Write(path, initial.Dir);
+        _ = Write(path, initial.Dir, 0);
         Commit(git, initial.At, initial.Message);
-        var merged = history.PullRequests.Select(pr => Merge(git, path, history.Repository, pr)).ToList();
+        var merged = history.PullRequests.Select(pr => Merge(git, path, history.Repository, pr, varied)).ToList();
         return new FixtureRepo(root, path, git.Run(initial.At, "rev-parse", "main"), merged);
     }
 
-    private static MergedPullRequest Merge(GitRunner git, string path, string repository, FixturePullRequest pr)
+    private static MergedPullRequest Merge(GitRunner git, string path, string repository, FixturePullRequest pr, bool varied)
     {
         _ = git.Run(pr.CommittedAt, "checkout", "-q", "-b", pr.Branch);
-        var files = Write(path, pr.Dir);
+        var files = Write(path, pr.Dir, varied ? pr.Number : 0);
         Commit(git, pr.CommittedAt, $"{pr.IssueKey}: {pr.Title}");
         _ = git.Run(pr.MergedAt, "checkout", "-q", "main");
         var message = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"Merge pull request #{pr.Number} from {repository.Split('/')[0]}/{pr.Branch}");
@@ -115,16 +121,28 @@ public sealed class FixtureRepo : IDisposable
         _ = git.Run(at, "commit", "-q", "--no-gpg-sign", "-m", message);
     }
 
-    private static List<string> Write(string path, string folder)
+    private static List<string> Write(string path, string folder, int variant)
     {
         var files = SplitPanesFixture.FilesUnder(folder);
         foreach (var (relative, resource) in files)
         {
             var target = System.IO.Path.Combine(path, relative);
             _ = Directory.CreateDirectory(System.IO.Path.GetDirectoryName(target)!); // why: a file under the repo has a directory
-            File.WriteAllBytes(target, SplitPanesFixture.ReadBytes(resource));
+            File.WriteAllBytes(target, Varied(SplitPanesFixture.ReadBytes(resource), relative, variant));
         }
 
         return [.. files.Select(f => f.Key)];
+    }
+
+    // A reused template changes its text files by one comment line naming the variant, so the merge has something to commit; json can't hold a comment and stays as it is.
+    private static byte[] Varied(byte[] bytes, string relative, int variant)
+    {
+        if (variant == 0 || relative.EndsWith(".json", StringComparison.Ordinal))
+        {
+            return bytes;
+        }
+
+        var marker = relative.EndsWith(".md", StringComparison.Ordinal) ? "<!-- variant {0} -->" : "// variant {0}";
+        return [.. bytes, .. System.Text.Encoding.UTF8.GetBytes("\n" + string.Format(System.Globalization.CultureInfo.InvariantCulture, marker, variant) + "\n")];
     }
 }
