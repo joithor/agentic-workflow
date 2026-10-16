@@ -1,12 +1,79 @@
+using Aw.Evidence.Core;
 using Aw.Evidence.Core.Data;
 using Aw.Kernel;
+using Aw.Kernel.Data;
+using Microsoft.Data.Sqlite;
 
 namespace Aw.Evidence.Infrastructure.Databases;
 
-/// <summary>Reads a SQLite file through a read-only copy of it in the run directory.</summary>
+/// <summary>
+/// Reads a SQLite file through a copy of it. The source is opened Mode=ReadOnly only to take an online backup into the work
+/// directory; the session then queries the copy opened read-only with query_only (Aw.Kernel.Data's OpenReadOnly), so the
+/// evidence connection never holds a write handle on the source.
+/// </summary>
 internal sealed class SqliteDatabaseReader : IDatabaseReader
 {
+    internal const string CopyName = "evidence-copy.sqlite";
+
     /// <inheritdoc/>
-    public ValueTask<Result<IReadSession>> OpenAsync(DbTarget target, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("SqliteDatabaseReader is not written yet");
+    public async ValueTask<Result<IReadSession>> OpenAsync(DbTarget target, CancellationToken cancellationToken)
+    {
+        if (target is not SqliteTarget sqlite)
+        {
+            return EvidenceErrors.DatabaseRefused.With("this reader opens SQLite files only");
+        }
+
+        if (!File.Exists(sqlite.SourcePath))
+        {
+            return EvidenceErrors.DatabaseUnavailable.With($"{sqlite.SourcePath} is not a file");
+        }
+
+        var copy = Path.Combine(sqlite.WorkDirectory, CopyName);
+        var copied = await CopyAsync(sqlite, copy, cancellationToken).ConfigureAwait(false);
+        if (copied.IsError)
+        {
+            return copied.Error;
+        }
+
+        var opened = await new SqliteConnectionFactory(new SqliteOptions(copy)).OpenReadOnly(cancellationToken).ConfigureAwait(false);
+        return opened.IsError ? EvidenceErrors.DatabaseUnavailable.With($"can't open the copy {copy}: {opened.Error.Message}") : new SqliteReadSession(opened.Value);
+    }
+
+    private static async ValueTask<Result<Unit>> CopyAsync(SqliteTarget target, string copy, CancellationToken cancellationToken)
+    {
+        _ = Directory.CreateDirectory(target.WorkDirectory);
+        foreach (var leftover in new[] { copy, copy + "-wal", copy + "-shm" })
+        {
+            File.Delete(leftover);
+        }
+
+        var source = await new SqliteConnectionFactory(new SqliteOptions(target.SourcePath)).OpenReadOnly(cancellationToken).ConfigureAwait(false);
+        if (source.IsError)
+        {
+            return EvidenceErrors.DatabaseUnavailable.With($"can't open {target.SourcePath}: {source.Error.Message}");
+        }
+
+        await using (source.Value.ConfigureAwait(false))
+        {
+            var destination = await new SqliteConnectionFactory(new SqliteOptions(copy)).Open(cancellationToken).ConfigureAwait(false);
+            if (destination.IsError)
+            {
+                return EvidenceErrors.DatabaseUnavailable.With($"can't make the copy {copy}: {destination.Error.Message}");
+            }
+
+            await using (destination.Value.ConfigureAwait(false))
+            {
+                try
+                {
+                    source.Value.BackupDatabase(destination.Value);
+                }
+                catch (SqliteException exception)
+                {
+                    return EvidenceErrors.DatabaseUnavailable.With($"can't copy {target.SourcePath}: {exception.Message}");
+                }
+            }
+        }
+
+        return Unit.Value;
+    }
 }

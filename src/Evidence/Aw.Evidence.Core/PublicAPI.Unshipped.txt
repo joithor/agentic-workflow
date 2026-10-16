@@ -2112,3 +2112,4 @@ static Aw.Evidence.Core.Data.SqliteTarget.operator ==(Aw.Evidence.Core.Data.Sqli
 virtual Aw.Evidence.Core.Data.DbTarget.EqualityContract.get -> System.Type!
 virtual Aw.Evidence.Core.Data.DbTarget.Equals(Aw.Evidence.Core.Data.DbTarget? other) -> bool
 virtual Aw.Evidence.Core.Data.DbTarget.PrintMembers(System.Text.StringBuilder! builder) -> bool
+static Aw.Evidence.Core.Data.SqlText.IsReadPragma(string! statement) -> bool

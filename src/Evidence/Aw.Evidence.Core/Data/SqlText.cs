@@ -6,6 +6,9 @@ namespace Aw.Evidence.Core.Data;
 /// <summary>Splits SQL text into statements and words without ever looking inside a quoted string, a quoted identifier or a comment.</summary>
 public static class SqlText
 {
+    private static readonly string[] _readPragmas =
+        ["TABLE_INFO", "TABLE_XINFO", "INDEX_LIST", "INDEX_INFO", "INDEX_XINFO", "FOREIGN_KEY_LIST", "DATABASE_LIST", "TABLE_LIST"];
+
     private static readonly SearchValues<char> _tagChars = SearchValues.Create("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_");
 
     /// <summary>Splits <paramref name="sql"/> at its top-level semicolons.</summary>
@@ -41,6 +44,12 @@ public static class SqlText
 
         return words;
     }
+
+    /// <summary>True when <paramref name="statement"/> is a PRAGMA that only reads a schema fact (table_info, index_list, …) and assigns nothing.</summary>
+    /// <param name="statement">One statement.</param>
+    /// <returns>True for a read pragma.</returns>
+    public static bool IsReadPragma(string statement) =>
+        Words(statement) is ["PRAGMA", var name, ..] && _readPragmas.Contains(name, StringComparer.Ordinal) && !Masked(statement).Contains('=', StringComparison.Ordinal);
 
     /// <summary>The statement with every quoted body emptied and comments removed, for a check on its punctuation.</summary>
     /// <param name="statement">One statement.</param>
