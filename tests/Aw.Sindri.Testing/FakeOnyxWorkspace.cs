@@ -17,6 +17,9 @@ public sealed class FakeOnyxWorkspace : IOnyxWorkspace
     /// <summary>Gets the paths written, in order (a write that changed nothing isn't listed), and whether each was written as a protected file.</summary>
     public IList<(string Path, bool Protected)> Writes { get; } = [];
 
+    /// <summary>Gets a value indicating whether the lock is held.</summary>
+    public bool LockHeld { get; private set; }
+
     /// <summary>Gets the number of state writes.</summary>
     public int StateWrites { get; private set; }
 
@@ -44,5 +47,22 @@ public sealed class FakeOnyxWorkspace : IOnyxWorkspace
     {
         (State, StateIsCorrupt) = (state, false);
         StateWrites++;
+    }
+
+    /// <inheritdoc />
+    public IDisposable? TryLock()
+    {
+        if (LockHeld)
+        {
+            return null;
+        }
+
+        LockHeld = true;
+        return new Release(this);
+    }
+
+    private sealed class Release(FakeOnyxWorkspace owner) : IDisposable
+    {
+        public void Dispose() => owner.LockHeld = false;
     }
 }

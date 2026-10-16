@@ -9,6 +9,12 @@ namespace Aw.Sindri.Core.Onyx;
 /// <param name="Override">The compose override Sindri renders, beside the compose file.</param>
 public sealed record OnyxPaths(string Root, string State, string DeployDir, string Compose, string Env, string Override)
 {
+    /// <summary>Gets the fetched env.template the .env is rendered from.</summary>
+    public string EnvTemplate => DeployDir + "/docker_compose/env.template";
+
+    /// <summary>Gets the compose project over these files.</summary>
+    public ComposeProject Project => new(Compose, Override, Env);
+
     /// <summary>Lays the files out under a Sindri home. Joined with '/', which every platform's file APIs accept; Core has no System.IO.</summary>
     /// <param name="sindriHome">The Sindri home (AW_SINDRI_HOME).</param>
     /// <returns>The paths.</returns>

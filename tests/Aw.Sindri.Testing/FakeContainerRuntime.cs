@@ -28,6 +28,9 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
     /// <summary>Gets the operations called, in order: Inspect, ServerPlatform, Pull, Up, Stop, Ps, RepoDigests.</summary>
     public IList<string> Calls { get; } = [];
 
+    /// <summary>Gets or sets a callback told the name of each operation as it starts, before it can fail or be cancelled (a test cancels a token from it).</summary>
+    public Action<string>? OnCall { get; set; }
+
     /// <summary>Gets the containers of the project: <see cref="Up"/> fills them, <see cref="Stop"/> marks them exited.</summary>
     public IList<ComposeContainer> Containers { get; } = [];
 
@@ -71,6 +74,8 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
             return error;
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
+
         ProgressLines.ToList().ForEach(progress);
         return Results.Ok();
     }
@@ -82,6 +87,8 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
         {
             return error;
         }
+
+        cancellationToken.ThrowIfCancellationRequested();
 
         ProgressLines.ToList().ForEach(progress);
         Containers.Clear();
@@ -130,6 +137,7 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
     private Error? Begin(string operation)
     {
         Calls.Add(operation);
+        OnCall?.Invoke(operation);
         if (_failures.Remove(operation, out var queued))
         {
             return queued;

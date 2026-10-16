@@ -22,4 +22,8 @@ public interface IOnyxWorkspace
     /// <summary>Writes the setup state, atomically and owner-only.</summary>
     /// <param name="state">The state.</param>
     public void WriteState(OnyxSetupState state);
+
+    /// <summary>Takes the exclusive lock of the onyx directory, so one `onyx up` runs at a time (a second one is refused, not queued).</summary>
+    /// <returns>The held lock (dispose it to release), or null when another holder has it.</returns>
+    public IDisposable? TryLock();
 }

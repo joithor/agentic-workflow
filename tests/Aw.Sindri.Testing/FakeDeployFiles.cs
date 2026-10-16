@@ -8,8 +8,13 @@ namespace Aw.Sindri.Testing;
 /// <param name="local">The files already laid out, by path.</param>
 public sealed class FakeDeployFiles(IReadOnlyDictionary<string, byte[]> remote, IReadOnlyDictionary<string, byte[]> local) : IDeployFiles
 {
-    private readonly Dictionary<string, byte[]> _remote = new(remote, StringComparer.Ordinal);
     private readonly List<string> _requested = [];
+
+    /// <summary>Gets the remote's files by path under deployment/; change it to serve something else.</summary>
+    public IDictionary<string, byte[]> Remote { get; } = new Dictionary<string, byte[]>(remote, StringComparer.Ordinal);
+
+    /// <summary>Gets or sets a callback told each file written (path under deployment/, bytes), so a rig can mirror the files into another store.</summary>
+    public Action<string, byte[]>? Written { get; set; }
 
     /// <summary>Gets the laid-out files by path.</summary>
     public IDictionary<string, byte[]> Local { get; } = new Dictionary<string, byte[]>(local, StringComparer.Ordinal);
@@ -43,7 +48,7 @@ public sealed class FakeDeployFiles(IReadOnlyDictionary<string, byte[]> remote, 
             }
 
             _requested.Add(pin.Path);
-            if (!_remote.TryGetValue(pin.Path, out var served))
+            if (!Remote.TryGetValue(pin.Path, out var served))
             {
                 first ??= pin.Unavailable("HTTP 404");
             }
@@ -54,6 +59,7 @@ public sealed class FakeDeployFiles(IReadOnlyDictionary<string, byte[]> remote, 
             else
             {
                 Local[pin.Path] = served;
+                Written?.Invoke(pin.Path, served);
                 downloaded++;
                 progress($"fetched {pin.Path}");
             }

@@ -73,4 +73,19 @@ public abstract class OnyxWorkspaceContract
         Expect.Equal("bb", read.Steps[OnyxSteps.Config]);
         Expect.True(read.Steps.Count == 2);
     }
+
+    /// <summary>A second lock is refused while the first is held, and allowed once it is released.</summary>
+    [Fact]
+    public void A_second_lock_is_refused_while_the_first_is_held()
+    {
+        using var rig = Create();
+
+        var first = rig.Workspace.TryLock();
+        Expect.True(first is not null);
+        Expect.True(rig.Workspace.TryLock() is null);
+
+        first?.Dispose();
+        using var again = rig.Workspace.TryLock();
+        Expect.True(again is not null);
+    }
 }

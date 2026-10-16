@@ -64,6 +64,20 @@ internal sealed class FileOnyxWorkspace(ISindriHome home, JsonSerializerOptions 
         WriteAtomically(_paths.State, AwJson.Serialize(state, json), secret: true);
     }
 
+    /// <inheritdoc />
+    public IDisposable? TryLock()
+    {
+        OwnerOnly.EnsureDirectory(_paths.Root);
+        try
+        {
+            return new FileStream(_paths.Root + "/.lock", new FileStreamOptions { Mode = FileMode.OpenOrCreate, Access = FileAccess.ReadWrite, Share = FileShare.None });
+        }
+        catch (IOException)
+        {
+            return null;   // another `onyx up` holds it
+        }
+    }
+
     private static void WriteAtomically(string path, byte[] bytes, bool secret)
     {
         var temporary = path + ".tmp-" + Guid.NewGuid().ToString("N");

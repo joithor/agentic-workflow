@@ -1,4 +1,3 @@
-using Aw.Sindri.Core.Onyx;
 using System.Text.Json.Serialization;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Graph;
@@ -15,6 +14,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Health;
 using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.NeedsYou;
+using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Blocks;

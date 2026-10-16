@@ -8169,3 +8169,17 @@ override Aw.Sindri.Core.Onyx.OnyxProbe.GetHashCode() -> int
 override Aw.Sindri.Core.Onyx.OnyxProbe.ToString() -> string!
 static Aw.Sindri.Core.Onyx.OnyxProbe.operator !=(Aw.Sindri.Core.Onyx.OnyxProbe? left, Aw.Sindri.Core.Onyx.OnyxProbe? right) -> bool
 static Aw.Sindri.Core.Onyx.OnyxProbe.operator ==(Aw.Sindri.Core.Onyx.OnyxProbe? left, Aw.Sindri.Core.Onyx.OnyxProbe? right) -> bool
+Aw.Sindri.Core.Onyx.IOnyxProgress
+Aw.Sindri.Core.Onyx.IOnyxProgress.Line(string! text) -> void
+Aw.Sindri.Core.Onyx.IOnyxProgress.Tick() -> void
+Aw.Sindri.Core.Onyx.IOnyxWorkspace.TryLock() -> System.IDisposable?
+Aw.Sindri.Core.Onyx.IRandomHex
+Aw.Sindri.Core.Onyx.IRandomHex.Hex(int bytes) -> string!
+Aw.Sindri.Core.Onyx.OnyxFacts
+Aw.Sindri.Core.Onyx.OnyxFacts.Containers(System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeContainer!>!>!
+Aw.Sindri.Core.Onyx.OnyxFacts.OnyxFacts(Aw.Sindri.Core.Onyx.IContainerRuntime! runtime, Aw.Sindri.Core.Onyx.IHostProbes! probes, Aw.Sindri.Core.Control.ISindriHome! home) -> void
+Aw.Sindri.Core.Onyx.OnyxFacts.Paths.get -> Aw.Sindri.Core.Onyx.OnyxPaths!
+Aw.Sindri.Core.Onyx.OnyxFacts.Platform(System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<string!>!
+Aw.Sindri.Core.Onyx.OnyxFacts.Read(System.Threading.CancellationToken cancellationToken) -> (Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! Docker, Aw.Sindri.Core.Onyx.HostFacts! Host)
+Aw.Sindri.Core.Onyx.OnyxPaths.EnvTemplate.get -> string!
+Aw.Sindri.Core.Onyx.OnyxPaths.Project.get -> Aw.Sindri.Core.Onyx.ComposeProject!
