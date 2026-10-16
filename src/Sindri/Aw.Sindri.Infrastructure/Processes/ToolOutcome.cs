@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Infrastructure.Secrets;
+namespace Aw.Sindri.Infrastructure.Processes;
 
 /// <summary>How a tool run ended.</summary>
 internal enum ToolOutcome

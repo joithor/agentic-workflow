@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 
-namespace Aw.Sindri.Infrastructure.Secrets;
+namespace Aw.Sindri.Infrastructure.Processes;
 
 /// <summary>IToolRunner over System.Diagnostics.Process: no shell, standard output captured, standard error drained and dropped.</summary>
 internal sealed class ProcessToolRunner : IToolRunner

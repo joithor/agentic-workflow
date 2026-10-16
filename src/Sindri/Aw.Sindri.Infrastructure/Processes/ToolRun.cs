@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Infrastructure.Secrets;
+namespace Aw.Sindri.Infrastructure.Processes;
 
 /// <summary>The end of a tool run.</summary>
 /// <param name="Outcome">How it ended.</param>

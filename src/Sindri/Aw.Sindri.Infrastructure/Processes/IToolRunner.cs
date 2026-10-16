@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Infrastructure.Secrets;
+namespace Aw.Sindri.Infrastructure.Processes;
 
 /// <summary>Runs a secret tool ('security', 'secret-tool', 'op') synchronously, with an argument list (never a shell string) and a timeout.</summary>
 internal interface IToolRunner

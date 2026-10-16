@@ -1,6 +1,6 @@
-using Aw.Sindri.Infrastructure.Secrets;
+using Aw.Sindri.Infrastructure.Processes;
 
-namespace Aw.Sindri.Tests.Secrets;
+namespace Aw.Sindri.Tests.Processes;
 
 // The real runner, over harmless system tools (printf, sh); never security or op.
 public sealed class ProcessToolRunnerTests

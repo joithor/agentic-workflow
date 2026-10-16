@@ -1,5 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
-using Aw.Sindri.Infrastructure.Secrets;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Testing;
 

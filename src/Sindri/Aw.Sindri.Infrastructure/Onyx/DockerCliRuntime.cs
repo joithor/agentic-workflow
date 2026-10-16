@@ -1,6 +1,6 @@
 using System.Globalization;
 using Aw.Sindri.Core.Onyx;
-using Aw.Sindri.Infrastructure.Secrets;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Infrastructure.Onyx;
 

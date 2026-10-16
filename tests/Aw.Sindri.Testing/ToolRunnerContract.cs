@@ -1,4 +1,4 @@
-using Aw.Sindri.Infrastructure.Secrets;
+using Aw.Sindri.Infrastructure.Processes;
 using Xunit;
 
 namespace Aw.Sindri.Testing;

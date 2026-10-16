@@ -1,5 +1,5 @@
 using Aw.Sindri.Infrastructure.Onyx;
-using Aw.Sindri.Infrastructure.Secrets;
+using Aw.Sindri.Infrastructure.Processes;
 using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.OnyxStatus;
