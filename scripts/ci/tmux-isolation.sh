@@ -26,15 +26,22 @@ cd "$ROOT" || exit 2
 
 SELF="scripts/ci/tmux-isolation.sh"
 SELF_TEST="scripts/tests/tmux-isolation.test.sh"   # its fixtures are the violations
-files="$( { git ls-files -- '*.test.sh' 'tests/**/*.sh' 2> /dev/null; find . -name '*.test.sh' -not -path '*/node_modules/*' -not -path './.git/*' 2> /dev/null | sed 's|^\./||'; } | sort -u )"
-cs_files="$( { git ls-files -- 'tests/*.cs' 2> /dev/null; find tests -name '*.cs' -not -path '*/obj/*' -not -path '*/bin/*' 2> /dev/null; } | sort -u )"
+# The file list: inside a git checkout, what git tracks or would track (so ignored directories and, from the main checkout, other
+# worktrees' files are never scanned); outside one, a find that skips .git, .claude/worktrees, node_modules, obj and bin.
+if [ "$(git -C "$ROOT" rev-parse --show-toplevel 2> /dev/null)" = "$ROOT" ]; then
+  listing="$(git ls-files --cached --others --exclude-standard 2> /dev/null | sort -u)"
+else
+  listing="$(find . \( -path ./.git -o -path ./.claude/worktrees -o -name node_modules -o -name obj -o -name bin \) -prune -o -type f \( -name '*.sh' -o -name '*.cs' \) -print 2> /dev/null | sed 's|^\./||' | sort -u)"
+fi
+files="$(grep -E '(\.test\.sh$|^tests/.*\.sh$)' <<< "$listing")"
+cs_files="$(grep -E '^tests/.*\.cs$' <<< "$listing")"
 
 violations=0
 report() { printf '%s:%s: %s\n' "$1" "$2" "$3"; violations=$((violations + 1)); }
 
 # A command position: line start or after ; & | ( ` $( or { ; then an optional keyword (if while until ! then do else elif time), wrappers
 # (env command exec sudo xargs nohup, timeout with its duration), and VAR=value prefixes; then tmux itself.
-CMDPOS='(^|[;&|(`{]|\$\()[[:space:]]*((if|while|until|elif|then|do|else|!|time)[[:space:]]+)*((env|command|exec|sudo|xargs|nohup|timeout([[:space:]]+(-[A-Za-z-]+|[0-9][0-9a-z.]*))*)[[:space:]]+)*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*tmux([[:space:]]|$)'
+CMDPOS='(^|[;&|(`{]|\$\()[[:space:]]*((if|while|until|elif|then|do|else|!|time)[[:space:]]+)*((env|command|exec|xargs|nohup|sudo([[:space:]]+-[A-Za-z-]+([[:space:]]+[A-Za-z0-9_.-]+)?)*|timeout([[:space:]]+(-[A-Za-z-]+|[0-9][0-9a-z.]*))*)[[:space:]]+)*([A-Za-z_][A-Za-z0-9_]*=("[^"]*"|'"'"'[^'"'"']*'"'"'|[^[:space:]]*)[[:space:]]+)*tmux([[:space:]]|$)'
 
 while IFS= read -r f; do
   [ -n "$f" ] && [ -f "$f" ] && [ "$f" != "$SELF" ] && [ "$f" != "$SELF_TEST" ] || continue

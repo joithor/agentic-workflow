@@ -40,6 +40,10 @@ check "a VAR= prefix does not hide tmux" "$(scan a.test.sh 'TMUX= tmux ls')" "1:
 check "several prefixes do not hide tmux" "$(scan a.test.sh 'A=1 B=2 tmux ls')" "1:1"
 check "if with -L is allowed" "$(scan a.test.sh 'if tmux -L t1-private has-session -t x; then :; fi')" "0:0"
 check "tmux mentioned as an argument is not a call" "$(scan a.test.sh 'if command -v tmux > /dev/null; then :; fi')" "0:0"
+check "a quoted VAR=value prefix does not hide tmux" "$(scan a.test.sh 'X="$(date)" tmux ls')" "1:1"
+check "a single-quoted VAR prefix does not hide tmux" "$(scan a.test.sh "X='a b' tmux ls")" "1:1"
+check "sudo -u x tmux is a violation" "$(scan a.test.sh 'sudo -u x tmux ls')" "1:1"
+check "sudo -E tmux is a violation" "$(scan a.test.sh 'sudo -E tmux ls')" "1:1"
 check "tmux with -L is allowed" "$(scan a.test.sh 'tmux -L t1-private ls')" "0:0"
 check "tmux with -S is allowed (a private path the caller owns)" "$(scan a.test.sh 'tmux -S "$W/sock" ls')" "0:0"
 check "ttmux is allowed" "$(scan a.test.sh 'ttmux new-session -d -s x')" "0:0"
@@ -59,6 +63,15 @@ check "C# CommandRequest tmux without -L is a violation" "$(scan ATests.cs 'new 
 check "C# CommandRequest tmux with -L is allowed" "$(scan ATests.cs 'new CommandRequest(["tmux", "-L", "t1", "ls"], t)')" "0:0"
 check "C# strings that only mention tmux are fine" "$(scan ATests.cs 'Assert.Equal("tmux send-keys -t x", line);')" "0:0"
 check "the C# waiver is allowed" "$(scan ATests.cs 'Process.Start("tmux", "-V"); // tmux-isolation: ok (version only)')" "0:0"
+# an ignored nested directory is not scanned inside a git checkout; outside one, .claude/worktrees is skipped
+G="$(mktemp -d)"; N="$(mktemp -d)"; trap 'rm -rf "$W" "$G" "$N"' EXIT
+git -C "$G" init -q 2> /dev/null && mkdir -p "$G/scripts/tests" "$G/other/scripts/tests" && printf 'other/\n' > "$G/.gitignore" \
+  && printf 'tmux ls\n' > "$G/other/scripts/tests/bad.test.sh" && printf 'echo ok\n' > "$G/scripts/tests/good.test.sh"
+check "a nested ignored directory with a bad tmux line is not flagged (git)" "$(bash "$CHECK" --root "$G" > /dev/null 2>&1; echo $?)" "0"
+printf 'tmux ls\n' > "$G/scripts/tests/bad.test.sh"
+check "an untracked, unignored bad file is flagged (git)" "$(bash "$CHECK" --root "$G" > /dev/null 2>&1; echo $?)" "1"
+mkdir -p "$N/.claude/worktrees/lane/scripts/tests" && printf 'tmux ls\n' > "$N/.claude/worktrees/lane/scripts/tests/bad.test.sh"
+check "outside git, files under .claude/worktrees are skipped" "$(bash "$CHECK" --root "$N" > /dev/null 2>&1; echo $?)" "0"
 check "the real tree is clean" "$(bash "$CHECK" > /dev/null 2>&1; echo $?)" "0"
 check "an unknown flag is a usage error" "$(bash "$CHECK" --nope > /dev/null 2>&1; echo $?)" "2"
 exit "$fail"
