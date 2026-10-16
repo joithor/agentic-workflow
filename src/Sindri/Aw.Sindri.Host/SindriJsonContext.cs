@@ -101,6 +101,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ItemLinked))]
 [JsonSerializable(typeof(RequestFiled))]
 [JsonSerializable(typeof(RequestFiledPublic))]
+[JsonSerializable(typeof(DecisionFact))]
 [JsonSerializable(typeof(DecisionRecorded))]
 [JsonSerializable(typeof(DecisionRecordedPublic))]
 [JsonSerializable(typeof(JobStarted)), JsonSerializable(typeof(JobProgress)), JsonSerializable(typeof(JobFinished)), JsonSerializable(typeof(JobFinishedPublic))]

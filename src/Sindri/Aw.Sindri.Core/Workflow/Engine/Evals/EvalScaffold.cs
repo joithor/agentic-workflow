@@ -15,7 +15,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Evals;
 /// terminal state or a state nothing moves on from. Every gate passes. Each line's 'expect' is what the engine did, so
 /// the printed case passes.
 /// </summary>
-public static class EvalScaffold
+public static partial class EvalScaffold
 {
     private const int MaxLines = 64;
 
@@ -80,7 +80,7 @@ public static class EvalScaffold
 
         if (state.Step is { } step && simulation.Catalog.Find(step.Use) is { } descriptor)
         {
-            return descriptor.Outcomes.Select(o => new EvalTrigger(TriggerNames.StepCompleted, o, Outputs(descriptor, o), Park: null));
+            return (StepOutcomes.Of(descriptor, step, simulation.Recipe) ?? []).Select(o => new EvalTrigger(TriggerNames.StepCompleted, o, Outputs(descriptor, o), Park: null));
         }
 
         return state.WaitFor is { } wait ? WaitCandidates(simulation, wait) : [];
@@ -105,7 +105,7 @@ public static class EvalScaffold
     /// <summary>The outputs a Step must write on <paramref name="outcome"/>, as placeholder content.</summary>
     private static Dictionary<FactKey, JsonElement>? Outputs(BlockDescriptor descriptor, OutcomeName outcome)
     {
-        var required = descriptor.Outputs.Where(o => o.RequiredOn.Contains(outcome)).ToDictionary(
+        var required = descriptor.Outputs.Where(o => StepOutputs.RequiredOn(o, outcome) && o.EngineFilled != true).ToDictionary(
             static o => o.Fact, o => EvalFacts.OfText($"{o.Fact.Value} from {descriptor.Id.Value} ({outcome.Value})"));
         return required.Count == 0 ? null : required;
     }
