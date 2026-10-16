@@ -16,6 +16,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>The decision sheet is bound once, before any decision shows: its Copy button and its line's name follow the decision shown (review run 5, r5-0).</summary>
 [Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
 public sealed class NeedsYouDecisionLineTests : IDisposable
 {
     private readonly List<Window> _windows = [];
@@ -56,12 +57,12 @@ public sealed class NeedsYouDecisionLineTests : IDisposable
     private static T Named<T>(Avalonia.Visual within, string name)
         where T : Control => within.GetVisualDescendants().OfType<T>().First(c => c.Name == name);
 
+    private static NeedsYouEntry Pending(NeedsYouEntry row) =>
+        row with { Actions = [.. row.Actions.Select(a => a with { Readiness = ActionReadiness.Pending, Stage = "P4" })] };
+
     [Fact]
     public Task The_decision_sheet_shows_Copy_and_names_the_line_after_the_decision_shown() => OnUi(async () =>
     {
-        var catalog = GoldenFiles.Node("commands", "catalog");
-        catalog["rows"]!.AsArray().First(r => (string?)r!["action"] == "Decide")!["ui"] = "pending:P4";
-        _server.Catalog = new RouteAnswer(System.Net.HttpStatusCode.OK, catalog.ToJsonString());
         _records.Write(A.Record());
         var shell = new ShellViewModel(_records, _server, _clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
         await shell.Restore(Token);
@@ -75,8 +76,8 @@ public sealed class NeedsYouDecisionLineTests : IDisposable
             Settle(window);
         }
 
-        var second = NeedsYouRows.Decision("decision:DEC-2") with { Subject = new NeedsYouSubject("decision", "DEC-2") };
-        shell.ShowNeedsYou(new NeedsYouFeed([NeedsYouRows.Decision(), second], ""));
+        var second = Pending(NeedsYouRows.Decision("decision:DEC-2") with { Subject = new NeedsYouSubject("decision", "DEC-2") });
+        shell.ShowNeedsYou(new NeedsYouFeed([Pending(NeedsYouRows.Decision()), second], ""));
 
         shell.Navigate(new DeepLink(DeepLinkKind.Decision, "DEC-1"));
         Settle(window);

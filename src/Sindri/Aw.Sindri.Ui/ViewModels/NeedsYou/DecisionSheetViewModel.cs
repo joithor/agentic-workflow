@@ -231,6 +231,10 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
         OnChanged(nameof(Question));
         OnChanged(nameof(Notice));
         OnChanged(nameof(DecideLine));
+        OnChanged(nameof(DecideCli));
+        OnChanged(nameof(CanCopy));
+        OnChanged(nameof(CopyName));
+        OnChanged(nameof(DecideLineName));
     }
 
     // The flag changes before the text, and an announcement already live is dropped first so the next one is spoken again.
