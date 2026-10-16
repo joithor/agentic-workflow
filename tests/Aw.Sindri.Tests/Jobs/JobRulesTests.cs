@@ -31,7 +31,9 @@ public sealed class JobRulesTests
     {
         var cleaned = JobLines.Clean(new PassThroughScrubber(), "\u001b[31mred\u001b[0m " + new string('x', 400));
 
-        Assert.True(cleaned.Length <= JobLimits.LineChars);
+        Expect.Equal(JobLimits.LineChars, cleaned.Length);   // exactly 200: an empty or short result would fail
+        Assert.StartsWith("\\x1B[31mred\\x1B[0m xxx", cleaned, StringComparison.Ordinal);
+        Assert.EndsWith("…", cleaned, StringComparison.Ordinal);
         Assert.DoesNotContain('\u001b', cleaned);
     }
 

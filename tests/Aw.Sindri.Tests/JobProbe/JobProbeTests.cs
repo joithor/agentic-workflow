@@ -8,7 +8,7 @@ using Aw.Sindri.Features.JobProbe;
 using Aw.Sindri.Features.RunService;
 using Aw.Sindri.Infrastructure.Text;
 using Aw.Sindri.Testing;
-using Microsoft.Extensions.Time.Testing;
+using Aw.Sindri.Tests.Commands;
 
 namespace Aw.Sindri.Tests.JobProbe;
 
@@ -16,7 +16,7 @@ namespace Aw.Sindri.Tests.JobProbe;
 public sealed class JobProbeTests
 {
     private static readonly ScheduledRun _run = new(new LeaseGrant(FakeProcessProbe.Holder(100), 1, KnownInstants.Epoch), KnownInstants.Epoch);
-    private readonly FakeTimeProvider _clock = new(KnownInstants.Epoch);
+    private readonly FollowRig.CountingClock _clock = new();
     private readonly Lines _lines = new();
 
     private (FakeJobContextAccessor Jobs, JobProbeService Probe) Probe()
@@ -30,8 +30,20 @@ public sealed class JobProbeTests
         var (jobs, probe) = Probe();
         var entered = jobs.Enter(new JobContext(JobId.From("JOB-0123456789abcdef0123456789abcdef"), JobKind.From("RunService"), _lines));
         var done = Task.Run(async () => await probe.Run(_run, ct), CancellationToken.None);
-        await Task.Delay(50, CancellationToken.None);
+        await _lines.Reached(1);   // the first line is written, then the probe sets its timer
         return (done, entered);
+    }
+
+    /// <summary>Moves the clock one pause at a time, each time the probe is waiting on a new timer, until it ends; <paramref name="from"/> timers have been set already.</summary>
+    private async Task Pump(Task done, int from)
+    {
+        for (var timers = from; timers < JobProbeService.Lines; timers++)
+        {
+            await _clock.TimersReached(timers);
+            _clock.Advance(JobProbeService.Pause);
+        }
+
+        await done;
     }
 
     private async Task<IReadOnlyList<string>> RunToEnd()
@@ -39,11 +51,7 @@ public sealed class JobProbeTests
         var (done, entered) = await Start(CancellationToken.None);
         using (entered)
         {
-            while (!done.IsCompleted)
-            {
-                _clock.Advance(TimeSpan.FromMilliseconds(250));
-                await Task.Delay(1, TestContext.Current.CancellationToken);
-            }
+            await Pump(done, from: 1);
 
             Assert.Equal("ok: 250 lines", (await done).Value.Summary);
         }
@@ -57,18 +65,14 @@ public sealed class JobProbeTests
         var (done, entered) = await Start(CancellationToken.None);
         using (entered)
         {
+            await _clock.TimersReached(1);
             _ = Assert.Single(_lines.All);   // the first line is written at once, then it waits
             _clock.Advance(TimeSpan.FromMilliseconds(249));
-            await Task.Delay(50, TestContext.Current.CancellationToken);
             _ = Assert.Single(_lines.All);
             _clock.Advance(TimeSpan.FromMilliseconds(1));
-            await Task.Delay(50, TestContext.Current.CancellationToken);
+            await _lines.Reached(2);
             Assert.Equal(2, _lines.All.Count);
-            while (!done.IsCompleted)
-            {
-                _clock.Advance(TimeSpan.FromMilliseconds(250));
-                await Task.Delay(1, TestContext.Current.CancellationToken);
-            }
+            await Pump(done, from: 2);
 
             Assert.Equal(250, _lines.All.Count);
             Assert.Equal(new ScheduledResult(Idle: false, "ok: 250 lines"), (await done).Value);
@@ -82,8 +86,9 @@ public sealed class JobProbeTests
         var (done, entered) = await Start(cancel.Token);
         using (entered)
         {
+            await _clock.TimersReached(1);
             _clock.Advance(TimeSpan.FromMilliseconds(250));
-            await Task.Delay(50, TestContext.Current.CancellationToken);
+            await _clock.TimersReached(2);   // line 2 is written, then the probe sets its next timer
             var written = _lines.All.Count;
 
             await cancel.CancelAsync();
@@ -151,6 +156,7 @@ public sealed class JobProbeTests
     private sealed class Lines : IProgress<string>
     {
         private readonly List<string> _all = [];
+        private readonly List<(int Count, TaskCompletionSource Reached)> _waiting = [];
 
         public IReadOnlyList<string> All
         {
@@ -163,11 +169,34 @@ public sealed class JobProbeTests
             }
         }
 
+        /// <summary>A task that completes once <paramref name="count"/> lines were reported.</summary>
+        /// <param name="count">How many.</param>
+        /// <returns>The task.</returns>
+        public Task Reached(int count)
+        {
+            lock (_all)
+            {
+                if (_all.Count >= count)
+                {
+                    return Task.CompletedTask;
+                }
+
+                var reached = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                _waiting.Add((count, reached));
+                return reached.Task;
+            }
+        }
+
         public void Report(string value)
         {
             lock (_all)
             {
                 _all.Add(value);
+                foreach (var (count, reached) in _waiting.Where(w => w.Count <= _all.Count).ToList())
+                {
+                    _ = reached.TrySetResult();
+                    _ = _waiting.Remove((count, reached));
+                }
             }
         }
     }

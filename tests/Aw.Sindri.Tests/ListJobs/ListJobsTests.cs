@@ -29,7 +29,8 @@ public sealed class ListJobsTests
     {
         var id = JobId.From("JOB-" + (++_n).ToString("x32", System.Globalization.CultureInfo.InvariantCulture));
         var row = A.Job().WithId(id).OfKind(kind, JobKey.From("k" + _n.ToString(System.Globalization.CultureInfo.InvariantCulture))).InRepo(repo is null ? null : RepoName.From(repo));
-        _jobs.Put((state == JobState.Running ? row : row.Ended(state)).Build() with { Sequence = _n });
+        var built = (state == JobState.Running ? row : row.Ended(state)).Build();
+        _jobs.Put(built with { Sequence = _n, StartedAt = built.StartedAt.AddMinutes(_n) });
         return id;
     }
 

@@ -27,14 +27,11 @@ public sealed class JobFollowerHostTests
             var tokens = new HostToken(host.Token);
             using var client = new ControlPlaneClient(probe, SliceHarness.Json,
                 CallerHeaders.For(new AgentSession(Signal: null, Terminal: true, Prover: false), tokens, _ => ValueTask.FromResult((RepoName?)null)));
-            using var stdout = new StringWriter();
+            using var stdout = new SignalWriter("echo");   // the first line arrived: the follower is on the stream
             using var stderr = new StringWriter();
             var follow = Task.Run(() => new JobFollower(client, new Output(stdout, stderr, SliceHarness.Json), TimeProvider.System).Follow(started, json: false, default, default), ct);
 
-            while (!stdout.ToString().Contains("echo", StringComparison.Ordinal))
-            {
-                await Task.Delay(20, ct);   // the first line arrived: the follower is on the stream
-            }
+            await stdout.Seen.WaitAsync(ct);
 
             await JobHost.ReleaseLease(host, ct);
             await host.DisposeAsync();
@@ -45,6 +42,40 @@ public sealed class JobFollowerHostTests
         finally
         {
             await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>A writer that completes <see cref="Seen"/> once what was written holds the needle.</summary>
+    private sealed class SignalWriter(string needle) : StringWriter
+    {
+        private readonly TaskCompletionSource _seen = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task Seen => _seen.Task;
+
+        public override void Write(char value)
+        {
+            base.Write(value);
+            Check();
+        }
+
+        public override void Write(string? value)
+        {
+            base.Write(value);
+            Check();
+        }
+
+        public override void Write(ReadOnlySpan<char> buffer)
+        {
+            base.Write(buffer);
+            Check();
+        }
+
+        private void Check()
+        {
+            if (ToString().Contains(needle, StringComparison.Ordinal))
+            {
+                _ = _seen.TrySetResult();
+            }
         }
     }
 

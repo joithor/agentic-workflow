@@ -176,7 +176,7 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
         });
         try
         {
-            return (await run.WaitAsync(TimeSpan.FromSeconds(2), TimeProvider.System, TestContext.Current.CancellationToken)).IsSuccess;   // real time: the harness clock is fake and would never fire
+            return (await run.WaitAsync(TimeSpan.FromSeconds(2), TimeProvider.System, TestContext.Current.CancellationToken)).IsSuccess;   // a hang guard on the real clock, not a wait: the harness clock is fake and would never fire
         }
         catch (TimeoutException)
         {

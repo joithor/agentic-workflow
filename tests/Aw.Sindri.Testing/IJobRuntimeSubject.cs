@@ -34,7 +34,7 @@ public interface IJobRuntimeSubject : IAsyncDisposable
     /// <returns>A task that completes then.</returns>
     public Task Quiesce();
 
-    /// <summary>Runs another command through the same gate and says whether it got through at once (within 100 ms).</summary>
+    /// <summary>Runs another command through the same gate and says whether it got through: a gate held by a job never lets it, and a hang guard on the real clock turns that into false.</summary>
     /// <returns>True when the gate was free.</returns>
     public Task<bool> CommandGateIsFree();
 }

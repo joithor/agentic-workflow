@@ -75,15 +75,22 @@ internal sealed class JobRig : IDisposable
 
     public static Task<int> Finished(Task<int> run) => run.WaitAsync(TimeSpan.FromSeconds(15), TestContext.Current.CancellationToken);
 
-    public async Task Tick(TimeSpan step, Func<bool> done)
+    /// <summary>Moves the fake clock by <paramref name="step"/> each time the verb sets a new timer, until <paramref name="run"/> ends: no wall-clock wait, and a timer set late still fires.</summary>
+    /// <param name="step">How far to move the clock for each timer.</param>
+    /// <param name="run">The verb's run.</param>
+    /// <returns>A task that completes when the run ended.</returns>
+    public async Task AdvanceOnTimers(TimeSpan step, Task run)
     {
-        for (var i = 0; i < 1_000 && !done(); i++)
+        for (var armed = 0; ; armed++)
         {
-            Clock.Advance(step);
-            await Task.Delay(10, TestContext.Current.CancellationToken);
-        }
+            _ = await Task.WhenAny(run, Clock.TimersReached(armed + 1)).WaitAsync(TimeSpan.FromSeconds(15), TimeProvider.System, TestContext.Current.CancellationToken);
+            if (run.IsCompleted)
+            {
+                return;
+            }
 
-        Assert.True(done(), "the condition never held while the clock moved");
+            Clock.Advance(step);
+        }
     }
 
     public Task<int> RunServices(JobApi api, params string[] args) => Task.Run(() => Services(api).Run(args, Interrupted, Again));

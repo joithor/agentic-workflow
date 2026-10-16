@@ -22,7 +22,7 @@ internal sealed class ProbeJobService(IJobContextAccessor jobs, Commands.Chain.F
                 latch.Start();
                 await latch.Release.Task.ConfigureAwait(false);
                 return new ProbeReport("late");
-            case "fail" or "throw" or "big" or "secret" or "repo" or "esc":
+            case "fail" or "throw" or "big" or "secret" or "repo" or "esc" or "keyed":
                 return Immediate(request.Mode);
             default:
                 await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
@@ -40,10 +40,12 @@ internal sealed class ProbeJobService(IJobContextAccessor jobs, Commands.Chain.F
                 throw new InvalidOperationException("kaboom");
             case "esc":
                 return new ProbeReport("\u001b]0;title\u0007red\u001b[31m");
+            case "keyed":   // a secret in a result string and in a property-like text
+                return new ProbeReport("see token ghp_" + new string('b', 36));
             case "big":
                 return new ProbeReport(new string('x', 20_000));
             default:
-                jobs.Current?.Progress.Report("token ghp_" + new string('a', 36));
+                jobs.Current?.Progress.Report("\u001b]8;;x\u0007 token ghp_" + new string('a', 36) + " " + new string('x', 400));   // an OSC, a credential and 400 characters: all three rules apply to one line
                 return new ProbeReport("ok");
         }
     }

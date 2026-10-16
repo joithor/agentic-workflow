@@ -1,4 +1,5 @@
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Testing;
@@ -57,6 +58,25 @@ public sealed class SchedulerPauseAndGuardTests
         await rig.Step(6);
 
         Assert.True(tidy.Runs >= 1);
+    }
+
+    [Fact]
+    public async Task A_pause_read_that_returns_an_error_is_logged_once_with_its_code_until_it_reads_again()
+    {
+        var tidy = new ScriptedService(ScriptedService.Worked);
+        await using var rig = await SchedulerRig.Start([tidy], ("tidy", "5s"));
+        await rig.BeginRebuild();   // the pause read answers SND-VIEW-… while the views rebuild
+        await rig.Begin();
+
+        await rig.Step(6);
+
+        var line = Assert.Single(rig.Log.Lines, static l => l.Contains("SND-SCHED-001", StringComparison.Ordinal));   // once for the whole failing stretch, not once a second
+        Assert.Contains(SindriErrors.ViewsRebuilding.Code, line, StringComparison.Ordinal);
+        await rig.EndRebuild();
+        await rig.Step(1);
+        await rig.BeginRebuild();
+        await rig.Step(2);
+        Expect.Equal(2, rig.Log.Lines.Count(static l => l.Contains("SND-SCHED-001", StringComparison.Ordinal)));   // a new failing stretch logs again
     }
 
     [Fact]

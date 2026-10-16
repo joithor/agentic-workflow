@@ -11,7 +11,7 @@ using Aw.Sindri.Tests.Ledger;
 
 namespace Aw.Sindri.Tests.Views;
 
-/// <summary>The jobs view in views.db (API P6 unit B): rows the real projection folds are read back by id, by state and by kind.</summary>
+/// <summary>The jobs view in views.db (API P6 unit B): rows the real projection folds are read back by id and as the running list; the list's order and filters are the JobViewsContract's.</summary>
 [Lane(TestLane.Integration)]
 public sealed class SqliteJobViewsTests : IDisposable
 {
@@ -67,25 +67,6 @@ public sealed class SqliteJobViewsTests : IDisposable
         Expect.Equal(JobState.Succeeded, one!.State);
         Assert.Null(missing);
         Expect.Sequence([Id(2), Id(3)], running.Select(r => r.Id));
-    }
-
-    [Fact]
-    public async Task List_filters_by_state_and_kind_newest_first()
-    {
-        await Start(1, _run, "heartbeat");
-        await Start(2, _sync, "all");
-        await Start(3, _run, "index");
-        await Finish(1);
-
-        var all = (await Jobs.List(state: null, kind: null, Token)).Value;
-        var runs = (await Jobs.List(state: null, _run, Token)).Value;
-        var runningRuns = (await Jobs.List(JobState.Running, _run, Token)).Value;
-        var ended = (await Jobs.List(JobState.Succeeded, kind: null, Token)).Value;
-
-        Expect.Sequence([Id(1), Id(3), Id(2)], all.Select(r => r.Id));
-        Expect.Sequence([Id(1), Id(3)], runs.Select(r => r.Id));
-        Expect.Sequence([Id(3)], runningRuns.Select(r => r.Id));
-        Expect.Sequence([Id(1)], ended.Select(r => r.Id));
     }
 
     [Fact]

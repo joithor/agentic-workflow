@@ -5,6 +5,7 @@ using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Ui.Tests.NeedsYou;
 
@@ -134,7 +135,10 @@ public sealed class NeedsYouMapperTests
         var row = NeedsYouMapper.Map(list, Catalog(), Pending(), _counts).Rows[1];
 
         Assert.Equal("", row.PrimaryAction);
-        Assert.DoesNotContain(row.Actions, a => string.Equals(a.CatalogId, row.PrimaryAction, StringComparison.Ordinal));
+        Assert.NotEmpty(row.Actions);
+        var vm = new NeedsYouRowViewModel(row, seen: true, reducedMotion: false, arrived: false, new FakeTimeProvider(A.Noon));
+        Assert.NotEmpty(vm.Controls);
+        Assert.DoesNotContain(vm.Controls, c => c.IsPrimary);
     }
 
     [Fact]
@@ -202,7 +206,7 @@ public sealed class NeedsYouMapperTests
     {
         var catalog = Catalog() with { Rows = [.. Catalog().Rows.Select(r => r.Action == "Decide" ? r with { Ui = "from-the-future" } : r)] };
         var feed = NeedsYouMapper.Map(Golden<NeedsYouList>("needs-you", "fixture"), catalog, Pending(), _counts);
-        var control = new ViewModels.Controls.ControlViewModel(catalog.Rows.First(r => r.Action == "Decide"), send: null, new FakeClipboard(), new Microsoft.Extensions.Time.Testing.FakeTimeProvider(A.Noon));
+        var control = new ViewModels.Controls.ControlViewModel(catalog.Rows.First(r => r.Action == "Decide"), send: null, new FakeClipboard(), new FakeTimeProvider(A.Noon));
 
         Assert.All(feed.Rows[0].Actions, a => Assert.Equal(ActionReadiness.CliOnly, a.Readiness));
         Assert.Equal(ViewModels.Controls.ControlKind.CliOnly, control.Kind);
