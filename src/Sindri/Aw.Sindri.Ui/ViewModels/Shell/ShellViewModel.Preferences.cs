@@ -1,11 +1,21 @@
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Settings;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
 /// <summary>The shell's local preferences (§3.2, §12.3): the window's bounds, the sheet's width and the last page.</summary>
 internal sealed partial class ShellViewModel
 {
+    /// <summary>Gives the lists the text scale Settings holds (Settings calls it when it loads and on every change).</summary>
+    /// <param name="appearance">The appearance Settings applied.</param>
+    internal void ApplyAppearance(AppearanceSettings appearance)
+    {
+        NeedsYou.TextScale = appearance.TextScale;
+        Strip.TextScale = appearance.TextScale;
+        NeedsYou.Seen.SetInAppReduceMotion(appearance.ReduceMotion);
+    }
+
     /// <summary>Remembers the sheet's width (clamped to 420–760 when it's next read).</summary>
     /// <param name="width">The width the user dragged it to.</param>
     internal void ResizeSheet(double width)
@@ -40,6 +50,7 @@ internal sealed partial class ShellViewModel
 
         CurrentPage = Enum.TryParse<PageId>(_preferences.LastPage, out var page) ? page : PageId.Home;
         Queue.PageShown(RowScopeOf(CurrentPage));
+        await NeedsYou.Restore(cancellationToken).ConfigureAwait(true);
         Changed(_pageProperties);
         Changed(nameof(Window), nameof(SheetWidth));
     }

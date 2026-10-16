@@ -25,7 +25,13 @@ internal sealed partial class HealthViewModel
         {
             await view(url, cancellationToken).ConfigureAwait(true);
         }
+
+        ViewReads++;
+        OnChanged(nameof(ViewReads));
     }
+
+    /// <summary>How many times every followed view has been re-read; a test (or a view) waits on it to know a read, answered or refused, was handled.</summary>
+    internal int ViewReads { get; private set; }
 
     // Bumped each time the follow decides a state (a status shown, Not running, Unreadable, a mismatch), so a Refresh
     // whose answer comes after one knows it is late; and the lease the follow checked with ping (pid, epoch).
@@ -58,7 +64,7 @@ internal sealed partial class HealthViewModel
 
         CanRefresh = false;
         var attempt = ++_refreshes;
-        var sending = clock.CreateTimer(_ => OnUi(() => IsSending = !CanRefresh && attempt == _refreshes), state: null, SendingAfter, Timeout.InfiniteTimeSpan);
+        var sending = clock.CreateTimer(_ => _ui.PostOrInline(() => IsSending = !CanRefresh && attempt == _refreshes), state: null, SendingAfter, Timeout.InfiniteTimeSpan);
         try
         {
             await using (sending.ConfigureAwait(true))

@@ -1,0 +1,31 @@
+namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
+
+/// <summary>
+/// One action of a row as served: a catalog id and the catalog's readiness for it. A decision's options each make one
+/// (<see cref="OptionId"/> is the option sent, <see cref="Label"/> its served label).
+/// </summary>
+/// <param name="CatalogId">The catalog id (Decide, RunService, PauseService, ApproveProfile).</param>
+/// <param name="Label">What the control says.</param>
+/// <param name="Readiness">Whether the app can run it now.</param>
+/// <param name="Cli">The served command, or empty.</param>
+/// <param name="RejectLike">True for the option that turns the request down (X picks it).</param>
+internal sealed record NeedsYouAction(string CatalogId, string Label, ActionReadiness Readiness, string Cli, bool RejectLike)
+{
+    /// <summary>For a pending action: the phase that brings it ("P4"); empty otherwise.</summary>
+    internal string Stage { get; init; } = "";
+
+    /// <summary>False when the catalog the action was read against was empty (not read yet).</summary>
+    internal bool CatalogRead { get; init; } = true;
+
+    /// <summary>True for the option the decision serves as recommended (A runs it).</summary>
+    internal bool Recommended { get; init; }
+
+    /// <summary>For a decision option: the option's id.</summary>
+    internal string OptionId { get; init; } = "";
+
+    /// <summary>True when the app can run it (the catalog says ready).</summary>
+    internal bool IsReady => Readiness == ActionReadiness.Ready;
+
+    /// <summary>True for a protected action, one that needs a typed confirmation at a terminal (the app shows its command and runs nothing).</summary>
+    internal bool IsProtected => Readiness == ActionReadiness.CliOnly;
+}

@@ -68,6 +68,30 @@ public abstract partial class SindriApiContract
     }
 
     [Fact]
+    public async Task Instances_root_empty_returns_the_served_sentence()
+    {
+        var api = new FakeSindriApi { WorkflowAnswer = RouteAnswer.Api("workflow-instances", "empty") };
+        var served = Golden("workflow-instances", "empty");
+
+        var list = (await Reach(api).Instances(_api, new InstanceQuery(Root: true), Token)).Value;
+
+        Expect.Equal(((string?)served["empty"], 0), (list.Empty, list.Instances.Count));
+        Expect.True(!string.IsNullOrEmpty(list.Empty));
+    }
+
+    [Fact]
+    public async Task Instances_root_serves_the_incident_first()
+    {
+        var served = Golden("workflow-instances", "root")["instances"]!.AsArray(); // why: the golden has rows
+        var incident = served.First(r => (string)r!["recipe"]!["urgency"]! == "incident")!; // why: the golden holds an incident
+
+        var list = (await Reach(new FakeSindriApi()).Instances(_api, new InstanceQuery(Root: true), Token)).Value;
+
+        Expect.Equal((string)incident["id"]!, list.Instances[0].Id);
+        Expect.Equal(RecipeUrgency.Incident, list.Instances[0].Recipe.Urgency);
+    }
+
+    [Fact]
     public async Task Instances_recipe_keeps_that_recipe_in_the_order_of_the_golden()
     {
         var golden = Golden("workflow-instances", "recipe-filter");
@@ -351,11 +375,29 @@ public abstract partial class SindriApiContract
     {
         var api = Reach(new FakeSindriApi { WorkflowAnswer = new RouteAnswer((HttpStatusCode)status, body) });
 
-        Expect.Equal("SND-UI-003", (await api.Instances(_api, new InstanceQuery(), Token)).Error.Code);
-        Expect.Equal("SND-UI-003", (await api.Instance(_api, "WFI-1", Token)).Error.Code);
-        Expect.Equal("SND-UI-003", (await api.InstanceFact(_api, "WFI-1", "fact:a", Token)).Error.Code);
-        Expect.Equal("SND-UI-003", (await api.Recipe(_api, "workflow.project", hash: null, Token)).Error.Code);
+        // A non-2xx that isn't Sindri's is unavailable (the strip keeps its rows); a 200 that doesn't parse is invalid (the next test).
+        var expected = ("SND-UI-003", ErrorKind.Unavailable);
+        Expect.Equal(expected, Split((await api.Instances(_api, new InstanceQuery(), Token)).Error));
+        Expect.Equal(expected, Split((await api.Instance(_api, "WFI-1", Token)).Error));
+        Expect.Equal(expected, Split((await api.InstanceFact(_api, "WFI-1", "fact:a", Token)).Error));
+        Expect.Equal(expected, Split((await api.Recipe(_api, "workflow.project", hash: null, Token)).Error));
     }
+
+    [Theory]
+    [InlineData("not json")]
+    [InlineData("{\"unexpected\":true}")]
+    public async Task A_200_whose_body_does_not_parse_is_an_invalid_answer_on_every_workflow_route(string body)
+    {
+        var api = Reach(new FakeSindriApi { WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, body) });
+        var expected = ("SND-UI-003", ErrorKind.Invalid);
+
+        Expect.Equal(expected, Split((await api.Instances(_api, new InstanceQuery(), Token)).Error));
+        Expect.Equal(expected, Split((await api.Instance(_api, "WFI-1", Token)).Error));
+        Expect.Equal(expected, Split((await api.InstanceFact(_api, "WFI-1", "fact:a", Token)).Error));
+        Expect.Equal(expected, Split((await api.Recipe(_api, "workflow.project", hash: null, Token)).Error));
+    }
+
+    private static (string Code, ErrorKind Kind) Split(Error error) => (error.Code, error.Kind);
 
     // LANE ANCHOR U3': nothing: U3' cases go in their own partial file. Insert immediately above this marker, never between the markers.
     // LANE ANCHOR U8: the send cases (nonce, commands, complete), once the goldens exist; enumerate them from disk like the reads. Insert immediately below this marker, never between the markers.

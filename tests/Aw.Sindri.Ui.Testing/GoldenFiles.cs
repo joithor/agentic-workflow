@@ -16,6 +16,12 @@ internal static class GoldenFiles
     /// <returns>The body as served.</returns>
     internal static string Api(string slug, string scenario) => File.ReadAllText(Path.Combine(Root, "Api", slug, scenario + ".json"));
 
+    /// <summary>An API golden parsed, so a test reads its expected values from the file instead of repeating them.</summary>
+    /// <param name="slug">The route slug.</param>
+    /// <param name="scenario">The scenario.</param>
+    /// <returns>The parsed body.</returns>
+    internal static System.Text.Json.Nodes.JsonNode Node(string slug, string scenario) => System.Text.Json.Nodes.JsonNode.Parse(Api(slug, scenario))!;
+
     /// <summary>A body written from the API spec's documented shape, standing in until its phase writes the golden.</summary>
     /// <param name="slug">The route slug.</param>
     /// <param name="scenario">The scenario.</param>

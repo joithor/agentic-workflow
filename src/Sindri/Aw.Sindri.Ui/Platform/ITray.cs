@@ -14,6 +14,9 @@ public interface ITray
     /// <summary>Raised when the user picks "Open Sindri" (or clicks the icon where the platform has no menu on click).</summary>
     public event EventHandler? OpenRequested;
 
+    /// <summary>Raised when the user picks a needs-you row in the menu; the app opens it. No action runs from the tray.</summary>
+    public event EventHandler<TrayRowEventArgs>? RowRequested;
+
     /// <summary>Raised when the user picks "Quit".</summary>
     public event EventHandler? QuitRequested;
 

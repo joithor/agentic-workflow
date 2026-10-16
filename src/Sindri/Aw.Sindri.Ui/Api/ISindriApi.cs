@@ -108,6 +108,43 @@ internal interface ISindriApi
     /// <returns>The recipe, the API's refusal, or SND-UI-002/003.</returns>
     public Task<Result<RecipeView>> Recipe(Uri api, string recipe, string? hash, CancellationToken cancellationToken);
 
-    // LANE ANCHOR U3': the Needs you, decision and request reads, one method each. Insert immediately above this marker, never between the markers.
+    /// <summary>GET /sindri/needs-you (API P4): what waits on the human, in the API's order.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The list, the API's refusal, or SND-UI-002/003.</returns>
+    public Task<Result<NeedsYouList>> NeedsYou(Uri api, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/decisions?pending=&amp;item= (API P4).</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="pending">True for the pending ones, false for the decided and voided, null for all.</param>
+    /// <param name="item">Only the decisions of this item, or null.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The list, the API's refusal, or SND-UI-002/003.</returns>
+    public Task<Result<DecisionList>> Decisions(Uri api, bool? pending, string? item, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/requests?state=&amp;item= (API P4).</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="state">Only requests in this state (open, accepted, declined, voided), or null.</param>
+    /// <param name="item">Only the requests of this item, or null.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The list, the API's refusal, or SND-UI-002/003.</returns>
+    public Task<Result<RequestList>> Requests(Uri api, string? state, string? item, CancellationToken cancellationToken);
+
+    /// <summary>POST /sindri/decisions/{decisionId} (Decide, desk, API P4): sent once, never retried by the app.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="decisionId">The decision.</param>
+    /// <param name="request">The choice and the note.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The accepted command, SND-DEC-001/404 or SND-VIEW-001 as served, or SND-UI-002/003.</returns>
+    public Task<Result<CommandAcceptedView>> Decide(Uri api, string decisionId, DecideRequest request, CancellationToken cancellationToken);
+
+    /// <summary>POST /sindri/requests (FileRequest, desk, API P4): sent once, never retried by the app.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="request">The kind, item and text.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The new ids with the accepted command, SND-REQ-001/002 or an item refusal as served, or SND-UI-002/003.</returns>
+    public Task<Result<RequestFiledView>> FileRequest(Uri api, FileRequestRequest request, CancellationToken cancellationToken);
+
+    // LANE ANCHOR U3': the Needs you, decision and request reads and the Decide and FileRequest sends, one method each (the client's are in SindriApiClient.NeedsYou.cs). Insert immediately above this marker, never between the markers.
     // LANE ANCHOR U8: the command sends (nonce, commands, complete), once API P11 serves their shapes (Q-API-7/8); none is declared before. Insert immediately below this marker, never between the markers.
 }

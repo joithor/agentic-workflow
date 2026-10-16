@@ -42,7 +42,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     private Uri? _url;
     private int _failedRefreshes;
     private int _refreshes;
-    private SynchronizationContext? _ui;
+    private readonly UiContext _ui = new();
     private HealthView? _health;
     private DateTimeOffset? _projectedAt;
 
@@ -104,8 +104,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     /// <returns>A task that ends when cancelled.</returns>
     internal async Task Run(CancellationToken cancellationToken)
     {
-        _ui = SynchronizationContext.Current;
-        var ticker = clock.CreateTimer(_ => OnUi(Age), state: null, _tick, _tick);
+        var ticker = clock.CreateTimer(_ => _ui.PostOrInline(Age), state: null, _tick, _tick);
         await using (ticker.ConfigureAwait(true))
         {
             await new ControlPlaneFollower(records, api, clock, this).Run(cancellationToken).ConfigureAwait(true);
@@ -252,16 +251,4 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
 
     // §4.1 Stale: "After 3 failed refreshes: Sindri not responding: run sindri doctor".
     private const int NotRespondingAfter = 3;
-
-    private void OnUi(Action action)
-    {
-        if (_ui is { } ui)
-        {
-            ui.Post(_ => action(), state: null);
-        }
-        else
-        {
-            action();
-        }
-    }
 }

@@ -34,6 +34,7 @@ internal sealed partial class ShellViewModel
     public bool IsSheetPlaceholderShown => SheetLink?.Kind switch
     {
         DeepLinkKind.Item => false,
+        DeepLinkKind.NeedsYou or DeepLinkKind.Decision => false,
         // LANE ANCHOR U3': one `DeepLinkKind.X or … => false` arm claims the kinds from the placeholder (kinds: NeedsYou, Decision), as screens spec §8 assigns them. `Item` is U2's item sheet (#197): its arm, `DeepLinkKind.Item => false`, is written above both markers. `HomeNeedsYou` is a page link, not a sheet. Insert immediately above this marker, never between the markers.
         // LANE ANCHOR U8: one `DeepLinkKind.X or … => false` arm claims the kinds (kinds: Workflow); U8 re-bases the item sheet (§4.7), which is content and adds no arm. Recipe, Node, Session, System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers.
         _ => true,
@@ -46,14 +47,16 @@ internal sealed partial class ShellViewModel
     {
         SheetLink = link;
         IsSheetOpen = true;
+        ForgetRowSheetUnless(link);
         OnSheetOpened(link);
-        Changed(nameof(IsItemSheet), nameof(SheetLink), nameof(SheetSubject), nameof(SheetName), nameof(EdgeTabName), nameof(IsSheetOpen), nameof(HasEdgeTab), nameof(IsSheetShown), nameof(IsEdgeTabShown), nameof(IsSheetPlaceholderShown));
+        Changed(nameof(IsItemSheet), nameof(IsNeedsYouSheet), nameof(IsDecisionSheet), nameof(SheetLink), nameof(SheetSubject), nameof(SheetName), nameof(EdgeTabName), nameof(IsSheetOpen), nameof(HasEdgeTab), nameof(IsSheetShown), nameof(IsEdgeTabShown), nameof(IsSheetPlaceholderShown));
     }
 
     /// <summary>Closes the sheet (Esc); its subject stays on the edge tab.</summary>
     internal void CloseSheet()
     {
         IsSheetOpen = false;
+        _ = NeedsYou.CloseSheet();
         Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
     }
 
@@ -65,7 +68,7 @@ internal sealed partial class ShellViewModel
             return;
         }
 
-        (IsSheetOpen, OpenerRow) = (true, null);
+        (IsSheetOpen, OpenerRow, OpenerStrip) = (true, null, null);
         Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
     }
 }

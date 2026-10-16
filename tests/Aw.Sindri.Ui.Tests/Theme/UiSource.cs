@@ -6,7 +6,13 @@ internal static class UiSource
     /// <summary>src/Sindri/Aw.Sindri.Ui.</summary>
     internal static string Library => Path.Combine(Root, "src", "Sindri", "Aw.Sindri.Ui");
 
+    /// <summary>The UI design spec (docs/superpowers/specs/2026-10-11-sindri-ui-design.md).</summary>
+    internal static string Spec => Path.Combine(Root, "docs", "superpowers", "specs", "2026-10-11-sindri-ui-design.md");
+
     /// <summary>The library's Theme folder.</summary>
+    /// <summary>The screens spec (revision 8).</summary>
+    internal static string ScreensSpec => Path.Combine(Root, "docs", "superpowers", "specs", "2026-10-13-sindri-ui-screens-design.md");
+
     internal static string Theme => Path.Combine(Library, "Theme");
 
     /// <summary>Every .axaml file of the UI projects (the library and its heads), outside bin and obj.</summary>
