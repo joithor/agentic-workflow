@@ -56,7 +56,7 @@ internal sealed class RunServiceService(IEnumerable<IScheduledService> scheduled
             }
 
             guard.Record(name, outcome.IsError ? ServiceOutcome.Failed : ServiceOutcome.Ok);
-            return outcome.IsError ? outcome.Error with { Message = $"failed: {outcome.Error.Code}" } : outcome;
+            return outcome;   // a failure keeps the service's own message (the job event cleans it) and its code
         }
     }
 
