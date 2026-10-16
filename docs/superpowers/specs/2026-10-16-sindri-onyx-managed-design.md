@@ -3,7 +3,9 @@
 **Status:** design, revision 1, for the owner's review · **Date:** 2026-10-16 · **Owner decisions:** 2026-10-16 (§1:
 O1, O2) · **Builds on:** the context retrieval spec `2026-10-10-sindri-context-retrieval-design.md` (CTX: D2, D3, §8.8),
 `docs/sindri/onyx.md` (the manual setup this replaces), `docs/csharp/sindri-context.md`, `docs/csharp/sindri.md`
-(commands, doctor, caller classes), the API surface spec `2026-10-10-sindri-api-surface-design.md` (API) ·
+(commands, doctor, caller classes), the API surface spec `2026-10-10-sindri-api-surface-design.md` (API), and the
+`sindri-app` launcher (`scripts/sindri-app.sh`, jthorare/agentic-workflow#278: the single command users enter Sindri
+through) ·
 **Lane:** the context lane · **Next:** the owner reviews this doc, then /specToProvenPR takes §11's phases to PRs.
 
 ## 0. Why
@@ -15,11 +17,17 @@ it is the owner's real job. The owner's words: "all of that should be done by si
 a dependency and download all of these pieces if necessary. That way the only thing I need to do is login + oauth to
 onyx to start ingesting data."
 
-**Success:** on a box with Docker running and the disk space it needs, one command (`sindri onyx up`, at a terminal)
-ends with Onyx v4.9.0 running on `127.0.0.1`, the owner's own admin account (created by the owner in Onyx's sign-up
+**How users enter Sindri:** `sindri-app` (#278). It publishes the C# `sindri` and `sindri-ui` when the source changed,
+installs the pinned SDK and fetches the pinned `temporal` when missing, then runs `sindri` with its arguments; bare
+`sindri-app` starts the control plane and opens the app. Onyx joins that path: it is one more dependency `sindri-app`
+brings up, not a separate tool the owner has to know about. Every command below is written as the C# verb (`sindri
+onyx …`); the owner types it as `sindri-app onyx …`, which the launcher passes through unchanged.
+
+**Success:** on a box with Docker running and the disk space it needs, the owner's first bare `sindri-app` at a
+terminal (or `sindri-app onyx up`) ends with Onyx v4.9.0 running on `127.0.0.1`, the owner's own admin account (created by the owner in Onyx's sign-up
 page, which the command opens), an admin service-account key in the OS secret store, the profile's
 `context.sources.onyx` section approved and `sindri doctor`'s `context:onyx` row ok. The owner then connects Linear and
-Slack (OAuth, in Onyx's UI). From then on `sindri serve` keeps Onyx up and `sindri stop` takes it down.
+Slack (OAuth, in Onyx's UI). From then on every `sindri-app` (through `serve`) keeps Onyx up and `sindri-app stop` takes it down.
 
 ## 1. Decisions
 
@@ -29,12 +37,14 @@ Slack (OAuth, in Onyx's UI). From then on `sindri serve` keeps Onyx up and `sind
 | O2 | Sindri may send the Onyx requests needed to mint its own key **at setup only**, beyond the five-request allowlist of `docs/sindri/onyx.md` §7. The query adapter's allowlist stays exactly five (§5) | owner, 2026-10-16 |
 | O3 | The owner does Onyx's initial setup, not Sindri: the owner registers their own account in Onyx's UI (Onyx makes the first registered user the admin), so connectors and their OAuth grants are the owner's. Sindri never registers an account and never stores the owner's password; to mint its key it asks for the owner's Onyx login once at the terminal (§4.1 step 7) and forgets it | owner, 2026-10-16 |
 | O4 | `serve` starts a managed Onyx and `stop` stops it (containers stopped, volumes kept). An unmanaged Onyx (today's manual setup) is never touched | builder's call; owner to confirm |
+| O6 | `sindri-app` (#278) is the entry point. Bare `sindri-app` at a terminal, on a box where Onyx isn't set up (no `context.sources.onyx` in the profile, or a managed one whose `onyx up` never finished), offers the setup before it starts the control plane: "Set up Onyx (Sindri's business-context search) now? [Y/n]". Yes runs §4.1 in that terminal; no starts Sindri without it and leaves a needs-you row "Set up Onyx: `sindri-app onyx up`", and the offer isn't repeated until the owner runs it. Not at a terminal (stdin isn't a tty), or in an agent session: no offer, the needs-you row only | owner, 2026-10-16 (the entry point); the offer's wording and the once-only rule are the writer's calls |
 | O5 | Docker itself is a prerequisite, not something Sindri installs (Docker Desktop needs an interactive install and admin rights). Sindri detects it and says how to get it | builder's call; owner to confirm |
 
 ## 2. Goals, non-goals, anti-goals
 
 **Goals**
-- One human command from nothing to a working, pinned, loopback-only Onyx that Sindri can query.
+- The owner's usual entry, `sindri-app`, goes from nothing to a working, pinned, loopback-only Onyx that Sindri can
+  query, with no extra tool or command to learn (O6).
 - Every downloaded piece pinned by version and content hash: the Onyx deployment files by commit and sha256, the images
   by digest per platform.
 - The same guarantees `docs/sindri/onyx.md` documents by hand: pinned `v4.9.0`, nginx on `127.0.0.1` only, telemetry off,
@@ -223,7 +233,10 @@ Inside the Sindri package, by the C# rules (`.agents/rules/csharp.md`): slices `
 `OnyxLogin` in `Aw.Sindri.Features`; ports `IContainerRuntime` (compose project up, stop, pull, ps, version),
 `IOnyxProvisioning` (§5.2), `ISecretWriter` (§5.3), `IDeployFiles` (fetch and verify against the pins) in Core, with
 fakes and contract tests in `Aw.Sindri.Testing`; the Docker CLI, HTTP and keychain adapters in Infrastructure; CLI
-commands in Host. The serve and stop hooks sit beside the Temporal ones (`TemporalDevServer` is the model for detach,
+commands in Host. The first-run offer (O6) lives in the C# bare start (`StartCommand`, before it launches `serve`),
+not in `scripts/sindri-app.sh`: the launcher stays a thin build-and-exec wrapper, and a published `sindri` started any
+other way behaves the same. The launcher's only change is its header and `docs/csharp/sindri-ui.md`'s paragraph
+naming Onyx among what bare `sindri-app` brings up. The serve and stop hooks sit beside the Temporal ones (`TemporalDevServer` is the model for detach,
 readiness, bounded stop). `deps.yaml` declares the new `cli` edges (`docker`, `security`, `secret-tool`, `pbcopy` and
 the Linux clipboards) and the `file` edge to `context/onyx.lock`.
 
@@ -236,7 +249,7 @@ the Linux clipboards) and the `file` edge to `context/onyx.lock`.
 - **Integration:** the provisioning client against a fake Onyx HTTP server (`Aw.Context.Testing` has `FakeOnyxServer`;
   extend it with login, logout, key and role), the Docker adapter against a stub `docker` on PATH, the secret writer
   against a stub `security` / `secret-tool`.
-- **Heavy (nightly, and once by hand for the PR):** a real `sindri onyx up` on a clean `AW_SINDRI_HOME` on macOS arm64
+- **Heavy (nightly, and once by hand for the PR):** a real first bare `sindri-app` (accepting the offer) on a clean `AW_SINDRI_HOME` on macOS arm64
   (the owner's box, which needs the measured free disk first; today it has 11 GiB free), then: `lsof` shows
   `127.0.0.1:<port>` only; `GET /api/version` is `v4.9.0`; running digests equal the pins; doctor `context:onyx` and
   `onyx:stack` ok; `sindri context sources status` shows onyx answering; `sindri stop` stops the project and `serve`
@@ -251,8 +264,9 @@ the Linux clipboards) and the `file` edge to `context/onyx.lock`.
    doctor `onyx:stack`; `SND-ONYX-004, 005`.
 3. **P3 — owner setup, key, secret, profile:** the sign-up hand-off, the provisioning client and its allowlist, the
    secret writer, the profile write and inline approval, `sindri onyx open`; `SND-ONYX-007..009`.
-4. **P4 — serve and stop:** the lifecycle hooks, `control.json`, the needs-you row; docs: `docs/sindri/onyx.md` rewritten
-   around `sindri onyx up` (the manual steps kept as an appendix for an unmanaged Onyx), `docs/csharp/sindri.md`
+4. **P4 — the entry path, serve and stop:** the first-run offer in bare `sindri-app` (O6), the lifecycle hooks,
+   `control.json`, the needs-you rows; this phase's PR needs #278 merged (or stacks on it); docs: `docs/sindri/onyx.md` rewritten
+   around bare `sindri-app` and `sindri-app onyx up` (the manual steps kept as an appendix for an unmanaged Onyx), `docs/csharp/sindri.md`
    commands, a README X-row (the next free, X64) recording O1–O5.
 
 ## 12. Settled in review, and left to the builder
