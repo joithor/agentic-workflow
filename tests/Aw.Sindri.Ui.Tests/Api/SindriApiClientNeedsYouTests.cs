@@ -106,7 +106,7 @@ public sealed class SindriApiClientNeedsYouTests
     public async Task Requests_sends_state_and_item_as_query_parameters()
     {
         var (client, server, handler) = Reach();
-        server.RequestsView = RouteAnswer.Api("requests", "list-state-accepted");
+        server.RequestsByItem["ITM-1"] = RouteAnswer.Api("requests", "list-state-accepted");
 
         var list = (await client.Requests(_api, "accepted", "ITM-1", Token)).Value;
 

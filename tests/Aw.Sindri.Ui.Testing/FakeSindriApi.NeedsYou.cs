@@ -21,7 +21,7 @@ internal sealed partial class FakeSindriApi
     /// <summary>GET /sindri/decisions's answer for pending=false.</summary>
     public RouteAnswer DecidedDecisions { get; set; } = RouteAnswer.Api("decisions", "decided");
 
-    /// <summary>GET /sindri/decisions's answer per item id (before the pending and decided ones).</summary>
+    /// <summary>GET /sindri/decisions's answer per item id (an item without one has no decisions).</summary>
     public Dictionary<string, RouteAnswer> DecisionsByItem { get; } = new(StringComparer.Ordinal);
 
     /// <summary>GET /sindri/requests's answer.</summary>
@@ -62,7 +62,16 @@ internal sealed partial class FakeSindriApi
     /// <param name="item">The item filter.</param>
     /// <returns>The answer.</returns>
     public RouteAnswer DecisionsAnswer(bool? pending, string? item) =>
-        item is not null && DecisionsByItem.TryGetValue(item, out var own) ? own : pending == false ? DecidedDecisions : PendingDecisions;
+        item is not null ? DecisionsByItem.GetValueOrDefault(item, RouteAnswer.Api("decisions", "empty")) : pending == false ? DecidedDecisions : PendingDecisions;
+
+    /// <summary>GET /sindri/requests's answer per item id (an item without one has no requests).</summary>
+    public Dictionary<string, RouteAnswer> RequestsByItem { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>The requests answer for one query.</summary>
+    /// <param name="item">The item filter.</param>
+    /// <returns>The answer.</returns>
+    public RouteAnswer RequestsAnswer(string? item) =>
+        item is not null ? RequestsByItem.GetValueOrDefault(item, RouteAnswer.Api("requests", "list-empty")) : RequestsView;
 
     /// <summary>The answer to Decide for one decision.</summary>
     /// <param name="decisionId">The decision.</param>
@@ -119,7 +128,7 @@ internal sealed partial class FakeSindriApi
             _requestQueries.Add((state, item));
         }
 
-        return View<RequestList>(api, "/sindri/requests", RequestsView, sequence, gate: null, cancellationToken);
+        return View<RequestList>(api, "/sindri/requests", RequestsAnswer(item), sequence, gate: null, cancellationToken);
     }
 
     public async Task<Result<CommandAcceptedView>> Decide(Uri api, string decisionId, DecideRequest request, CancellationToken cancellationToken)

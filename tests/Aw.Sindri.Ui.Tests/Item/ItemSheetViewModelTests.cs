@@ -479,7 +479,7 @@ public sealed class ItemSheetViewModelTests
     private async Task<ItemSheetViewModel> SheetWithNeeds()
     {
         _server.DecisionsByItem[DecisionItem] = RouteAnswer.Api("decisions", "by-item");
-        _server.RequestsView = RouteAnswer.Api("requests", "list-by-item");
+        _server.RequestsByItem[DecisionItem] = RouteAnswer.Api("requests", "list-by-item");
         _server.Items[DecisionItem] = _server.Items[A.NewItem];
         var sheet = await Sheet();
         await sheet.Open(_api, DecisionItem, Token);
@@ -517,7 +517,6 @@ public sealed class ItemSheetViewModelTests
     public async Task Shows_the_served_empty_sentences_for_the_item()
     {
         _server.DecisionsByItem[DecisionItem] = RouteAnswer.Api("decisions", "empty");
-        _server.RequestsView = RouteAnswer.Api("requests", "list-empty");
         _server.Items[DecisionItem] = _server.Items[A.NewItem];
         var sheet = await Sheet();
 

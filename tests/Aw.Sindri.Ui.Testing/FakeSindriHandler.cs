@@ -87,7 +87,7 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
                 Answer(Counted(await server.Decide(uri, Uri.UnescapeDataString(path["/sindri/decisions/".Length..]), await Body<DecideRequest>(request, cancellationToken), cancellationToken), server.DecideAnswer(Uri.UnescapeDataString(path["/sindri/decisions/".Length..])))),
             "/sindri/requests" when request.Method == HttpMethod.Post =>
                 Answer(Counted(await server.FileRequest(uri, await Body<FileRequestRequest>(request, cancellationToken), cancellationToken), server.Filed)),
-            "/sindri/requests" => Answer(Counted(await server.Requests(uri, Query(uri, "state"), Query(uri, "item"), after, cancellationToken), server.RequestsView)),
+            "/sindri/requests" => Answer(Counted(await server.Requests(uri, Query(uri, "state"), Query(uri, "item"), after, cancellationToken), server.RequestsAnswer(Query(uri, "item")))),
             // LANE ANCHOR U3': add the Needs you routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately above this marker, never between the markers.
             // LANE ANCHOR U8: add the workflow command routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately below this marker, never between the markers.
             { } path when request.Method == HttpMethod.Get && path.StartsWith("/sindri/workflow/", StringComparison.Ordinal) => await Workflow(uri, cancellationToken),

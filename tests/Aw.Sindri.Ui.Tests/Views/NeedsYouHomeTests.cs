@@ -227,7 +227,7 @@ public sealed class NeedsYouHomeTests : IDisposable
     {
         const string item = "ITM-0000000000000000000000000000000e";
         _server.DecisionsByItem[item] = RouteAnswer.Api("decisions", "by-item");
-        _server.RequestsView = RouteAnswer.Api("requests", "list-by-item");
+        _server.RequestsByItem[item] = RouteAnswer.Api("requests", "list-by-item");
         _server.Items[item] = _server.Items[A.NewItem];
         var (window, shell) = await Connected(width: 1400);
 
