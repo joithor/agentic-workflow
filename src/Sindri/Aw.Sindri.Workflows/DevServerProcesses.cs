@@ -101,7 +101,9 @@ internal static partial class DevServerProcesses
             throw new TimeoutException($"{file} didn't finish within 10 s");
         }
 
+#pragma warning disable RS0030 // the process exited within the bound above and its stream is flushed, so the read is finished and GetResult doesn't block
         return output.GetAwaiter().GetResult();
+#pragma warning restore RS0030
     }
 
     private static int? Flag(string line, Regex flag) =>

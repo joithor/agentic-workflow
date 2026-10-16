@@ -41,7 +41,9 @@ internal sealed class FileStateStore(JsonSerializerOptions json, BugFixSettings 
             // other open failure looks the same and is reported as busy after the wait.
             catch (IOException) when (File.Exists(lockFile) && waited.Elapsed < settings.LockWait)
             {
+#pragma warning disable RS0030 // bugfix-state is a synchronous CLI; this waits out another call's lock, bounded by LockWait
                 Thread.Sleep(_lockPause);   // another call holds it: wait
+#pragma warning restore RS0030
             }
             catch (IOException ex) when (File.Exists(lockFile))
             {

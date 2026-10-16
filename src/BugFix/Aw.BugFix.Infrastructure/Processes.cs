@@ -82,9 +82,11 @@ internal static class Processes
                 return (TimedOut, false, $"{start.FileName} took longer than {timeout}; killed and counted as not run");
             }
 
+#pragma warning disable RS0030 // bugfix-state is a synchronous CLI; the wait is bounded by _drainAfterExit
             return pumps.Wait(_drainAfterExit)
                 ? (process.ExitCode, true, null)
                 : (process.ExitCode, true, string.Create(CultureInfo.InvariantCulture, $"{start.FileName} exited {process.ExitCode} but left processes holding its output; output after the exit was not kept"));
+#pragma warning restore RS0030
         }
     }
 
