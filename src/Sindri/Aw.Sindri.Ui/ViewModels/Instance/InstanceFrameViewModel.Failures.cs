@@ -36,7 +36,12 @@ internal sealed partial class InstanceFrameViewModel
         }
 
         ProblemText = text;
+        var asked = _intent is not null;
         _intent = null;   // nothing to act on
         Phase = phase;
+        if (asked)
+        {
+            Focus(FrameFocus.Back, key: null);   // a key opened or returned to this frame: focus never lands nowhere, Back is all there is
+        }
     }
 }

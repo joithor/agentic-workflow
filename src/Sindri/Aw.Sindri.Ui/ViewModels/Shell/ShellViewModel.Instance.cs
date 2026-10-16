@@ -8,7 +8,7 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 internal sealed partial class ShellViewModel
 {
     private readonly Dictionary<string, string> _hintedIds = new(StringComparer.Ordinal);
-    private readonly Stack<DeepLink> _trail = new();
+    private readonly Stack<(DeepLink Link, bool Pointer)> _trail = new();
     private bool _stacking;
 
     /// <summary>The instance frame.</summary>
@@ -22,6 +22,9 @@ internal sealed partial class ShellViewModel
 
     /// <summary>The Workflows row the frame was opened from (its address), where Esc returns focus; null when it came from elsewhere.</summary>
     internal string? OpenerWorkflow { get; private set; }
+
+    /// <summary>Raised when a sheet was opened from inside a frame (an item): the control that had focus left the tree, so the view puts focus on the sheet's heading.</summary>
+    internal event EventHandler? SheetStacked;
 
     /// <summary>Opens an instance's frame.</summary>
     /// <param name="address">The address.</param>
@@ -41,8 +44,8 @@ internal sealed partial class ShellViewModel
     {
         if (IsSheetOpen && _trail.TryPop(out var previous))
         {
-            ReturnFocus(previous, SheetLink);
-            Stacked(() => Navigate(previous), push: false);
+            ReturnFocus(previous.Link, SheetLink, previous.Pointer);
+            Stacked(() => Navigate(previous.Link), push: false);
             return;
         }
 
@@ -51,11 +54,12 @@ internal sealed partial class ShellViewModel
     }
 
     // Back to a frame lands focus on the entry of the child (or the child's item) the user went into, once the frame is shown.
-    private void ReturnFocus(DeepLink previous, DeepLink? leaving)
+    private void ReturnFocus(DeepLink previous, DeepLink? leaving, bool viaPointer)
     {
         if (previous is { Kind: DeepLinkKind.Workflow, Subject: { } parent } && leaving is { Subject: { } from } && leaving.Kind is DeepLinkKind.Workflow or DeepLinkKind.Item)
         {
-            Instance.Intend(parent, leaving.Kind == DeepLinkKind.Item ? FrameIntent.FocusChildItem : FrameIntent.FocusChild, from);
+            var intent = leaving.Kind == DeepLinkKind.Item ? FrameIntent.FocusChildItem : viaPointer ? FrameIntent.FocusPointer : FrameIntent.FocusChild;
+            Instance.Intend(parent, intent, from);
         }
     }
 
@@ -63,8 +67,16 @@ internal sealed partial class ShellViewModel
     private void InitInstance()
     {
         Health.Follow((url, token) => IsInstanceSheet ? Instance.Refresh(url, token) : Task.CompletedTask);
-        Instance.OpenRequested += (_, e) => Stacked(() => OpenInstance(e.Address, e.Id), push: true);
-        Instance.ItemRequested += (_, e) => Stacked(() => Navigate(new DeepLink(DeepLinkKind.Item, e.ItemId)), push: true);
+        Instance.OpenRequested += (_, e) =>
+        {
+            Instance.Intend(e.Address, FrameIntent.OpenInitial);   // the child's frame, once read, asks for its first read action
+            Stacked(() => OpenInstance(e.Address, e.Id), push: true, e.FromPointer);
+        };
+        Instance.ItemRequested += (_, e) =>
+        {
+            Stacked(() => Navigate(new DeepLink(DeepLinkKind.Item, e.ItemId)), push: true);
+            SheetStacked?.Invoke(this, EventArgs.Empty);
+        };
         Instance.WorkRequested += (_, _) => OpenWork();
     }
 
@@ -94,11 +106,11 @@ internal sealed partial class ShellViewModel
     }
 
     // A sheet opened from inside a frame (a child, an item) keeps the one it came from, so Back returns to it.
-    private void Stacked(Action open, bool push)
+    private void Stacked(Action open, bool push, bool viaPointer = false)
     {
         if (push && IsSheetOpen && SheetLink is { } here)
         {
-            _trail.Push(here);
+            _trail.Push((here, viaPointer));
         }
 
         _stacking = true;

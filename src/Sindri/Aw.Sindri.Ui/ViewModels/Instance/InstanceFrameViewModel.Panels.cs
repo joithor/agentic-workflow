@@ -81,22 +81,30 @@ internal sealed partial class InstanceFrameViewModel
             Expanded?.AskCancel();
             Focus(FrameFocus.Keep, key: null);
         }
-        else if (intent == FrameIntent.PendingOutput)
+        else if (FocusFor(intent, key) is var (target, wanted))
+        {
+            Focus(target, wanted);
+        }
+    }
+
+    // Where focus goes for an intent: the output a desk step awaits, the frame's first read action, or the entry the user came back from.
+    private (FrameFocus Target, string? Key)? FocusFor(FrameIntent intent, string? key)
+    {
+        if (intent == FrameIntent.PendingOutput)
         {
             var awaiting = Facts?.Rows.FirstOrDefault(r => r.IsAwaiting)?.Key;
-            Focus(awaiting is null ? InitialFocus : FrameFocus.PendingOutput, awaiting);
+            return awaiting is null ? (InitialFocus, null) : (FrameFocus.PendingOutput, awaiting);
         }
-        else if (ReturnTarget(intent) is { } target)
-        {
-            Focus(target, key);
-        }
+
+        return intent == FrameIntent.OpenInitial ? (InitialFocus, null) : ReturnTarget(intent) is { } target ? (target, key) : null;
     }
 
     private static FrameFocus? ReturnTarget(FrameIntent intent) => intent switch
     {
         FrameIntent.FocusChild => FrameFocus.ChildEntry,
         FrameIntent.FocusChildItem => FrameFocus.ChildItem,
-        FrameIntent.None or FrameIntent.PendingOutput or FrameIntent.AskCancel or FrameIntent.FocusPointer or FrameIntent.OpenInitial => null,
+        FrameIntent.FocusPointer => FrameFocus.ChildPointer,
+        FrameIntent.None or FrameIntent.PendingOutput or FrameIntent.AskCancel or FrameIntent.OpenInitial => null,
         _ => null,
     };
 

@@ -69,10 +69,12 @@ internal sealed partial class ShellWindow
         if (on)
         {
             shell.Queue.FocusRequested += OnFocusRow;
+            shell.SheetStacked += OnSheetStacked;
         }
         else
         {
             shell.Queue.FocusRequested -= OnFocusRow;
+            shell.SheetStacked -= OnSheetStacked;
         }
 
         PropertyChangedEventHandler[] handlers = [OnShellChanged, OnBannerChanged, OnOverlayChanged, OnOverlayChanged, OnOverlayChanged, OnQueueChanged];

@@ -74,10 +74,22 @@ internal sealed partial class InstanceFrameView : UserControl
         }
         else if (++_attempts > MaxLooks)
         {
-            (_wanted, _attempts) = (null, 0);
-            _frame?.FocusServed();
-            LayoutUpdated -= OnLayoutUpdated;
+            GiveUp(wanted);
         }
+    }
+
+    // The part never came: a child that is not drawn (past "N more") falls back to the frame's first read action, so focus never lands nowhere.
+    private void GiveUp(FrameFocusEventArgs wanted)
+    {
+        LayoutUpdated -= OnLayoutUpdated;
+        if (wanted.Target is FrameFocus.ChildEntry or FrameFocus.ChildItem or FrameFocus.ChildPointer && _frame is { } frame)
+        {
+            OnFocusRequested(frame, new FrameFocusEventArgs(frame.InitialFocus, key: null));
+            return;
+        }
+
+        (_wanted, _attempts) = (null, 0);
+        _frame?.FocusServed();
     }
 
     private Button? Part(FrameFocusEventArgs wanted)

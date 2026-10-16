@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Sindri.Ui.ViewModels.Instance;
 using Aw.Sindri.Ui.ViewModels.Shell;
@@ -51,6 +52,10 @@ internal sealed partial class ShellWindow
         };
         frame.PropertyChanged += _awaitingFrame;
     }
+
+    // An item's sheet opened from a frame: the control that had focus (the child's Open) left the tree, so focus goes to the sheet's heading.
+    private void OnSheetStacked(object? sender, EventArgs e) =>
+        Dispatcher.UIThread.Post(() => this.Get<Border>("SheetTitle").Focus(Method()), DispatcherPriority.Loaded);
 
     // The sheet header's Back: the frame or sheet this one was opened from, else the sheet closes like Esc.
     private void OnBack(object? sender, RoutedEventArgs e) => Shell?.Back();

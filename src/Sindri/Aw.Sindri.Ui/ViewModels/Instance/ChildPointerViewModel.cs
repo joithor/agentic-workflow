@@ -24,5 +24,5 @@ internal sealed class ChildPointerViewModel
     public string Name { get; }
 
     /// <summary>Follows the pointer.</summary>
-    public void Open() => Opened?.Invoke(this, new FrameOpenEventArgs(_child.Address, _child.Id));
+    public void Open() => Opened?.Invoke(this, new FrameOpenEventArgs(_child.Address, _child.Id, fromPointer: true));
 }
