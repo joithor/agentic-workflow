@@ -7,9 +7,8 @@ using Microsoft.Data.Sqlite;
 namespace Aw.Evidence.Infrastructure.Databases;
 
 /// <summary>
-/// Reads a SQLite file through a copy of it. The source is opened Mode=ReadOnly only to take an online backup into the work
-/// directory; the session then queries the copy opened read-only with query_only (Aw.Kernel.Data's OpenReadOnly), so the
-/// evidence connection never holds a write handle on the source.
+/// Reads a SQLite file through a copy of it. The source is only ever read as a file (File.Copy of the database and its -wal file into the work
+/// directory); no SQLite connection opens it. The session then queries the copy opened read-only with query_only (Aw.Kernel.Data's OpenReadOnly).
 /// </summary>
 internal sealed class SqliteDatabaseReader : IDatabaseReader
 {
@@ -100,41 +99,40 @@ internal sealed class SqliteDatabaseReader : IDatabaseReader
         return opened;
     }
 
-    private static async ValueTask<Result<Unit>> CopyAsync(SqliteTarget target, string copy, CancellationToken cancellationToken)
+    // A plain file copy of the main file and its -wal (never -shm), so no SQLite connection ever opens the source: even a read-only connection
+    // creates -shm and -wal beside a WAL-mode database. The copy is the only file any connection opens.
+    private static ValueTask<Result<Unit>> CopyAsync(SqliteTarget target, string copy, CancellationToken cancellationToken)
     {
-        _ = Directory.CreateDirectory(target.WorkDirectory);
-        foreach (var leftover in new[] { copy, copy + "-wal", copy + "-shm" })
+        cancellationToken.ThrowIfCancellationRequested();
+        var work = Path.GetFullPath(target.WorkDirectory);
+        var source = Path.GetFullPath(target.SourcePath);
+        if (IsInside(work, source) || (new FileInfo(source).ResolveLinkTarget(returnFinalTarget: true)?.FullName is { } linked && IsInside(work, linked)))
         {
-            File.Delete(leftover);
+            return ValueTask.FromResult<Result<Unit>>(EvidenceErrors.DatabaseRefused.With($"{target.SourcePath} is inside the run's own database directory"));
         }
 
-        var source = await new SqliteConnectionFactory(new SqliteOptions(target.SourcePath)).OpenReadOnly(cancellationToken).ConfigureAwait(false);
-        if (source.IsError)
+        try
         {
-            return EvidenceErrors.DatabaseUnavailable.With($"can't open {target.SourcePath}: {source.Error.Message}");
-        }
-
-        await using (source.Value.ConfigureAwait(false))
-        {
-            var destination = await new SqliteConnectionFactory(new SqliteOptions(copy)).Open(cancellationToken).ConfigureAwait(false);
-            if (destination.IsError)
+            _ = Directory.CreateDirectory(work);
+            foreach (var leftover in new[] { copy, copy + "-wal", copy + "-shm" })
             {
-                return EvidenceErrors.DatabaseUnavailable.With($"can't make the copy {copy}: {destination.Error.Message}");
+                File.Delete(leftover);
             }
 
-            await using (destination.Value.ConfigureAwait(false))
+            File.Copy(source, copy);
+            if (File.Exists(source + "-wal"))
             {
-                try
-                {
-                    source.Value.BackupDatabase(destination.Value);
-                }
-                catch (SqliteException exception)
-                {
-                    return EvidenceErrors.DatabaseUnavailable.With($"can't copy {target.SourcePath}: {exception.Message}");
-                }
+                File.Copy(source + "-wal", copy + "-wal");
             }
         }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return ValueTask.FromResult<Result<Unit>>(EvidenceErrors.DatabaseUnavailable.With($"can't copy {target.SourcePath}: {exception.Message}"));
+        }
 
-        return Unit.Value;
+        return ValueTask.FromResult<Result<Unit>>(Unit.Value);
     }
+
+    private static bool IsInside(string directory, string path) =>
+        path.StartsWith(directory.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.Ordinal);
 }
