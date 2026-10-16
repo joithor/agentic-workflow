@@ -34,7 +34,7 @@ public sealed class InboxTests
     public async Task The_default_list_holds_only_messages_still_owed_a_reply()
     {
         await _world.Ready();
-        await Receive(("m1", "t1-api", "please rebase"), ("m2", "t1-ui", "ready #190"));
+        await Receive(("m1", "t1-api", "please rebase"), ("m2", "t1-ui", "ready #190 079c2541"));
         _ = await _world.Messages.RecordOutbound(A.Sent("t1-api", "done", 61), CancellationToken.None);
 
         var open = await Items(all: false);
