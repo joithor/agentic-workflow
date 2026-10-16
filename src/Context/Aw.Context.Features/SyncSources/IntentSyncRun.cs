@@ -108,7 +108,9 @@ internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (Cont
             await _decisions.Run(page.Value.Pending, ct).ConfigureAwait(false);
         }
 
-        return null;
+        // The walk is through: the cursor says so even when the last nodes had no terms (so no page moved it), and the next run starts at the first node.
+        var finished = await ports.Store.CommitPage(new IntentPage(_id, [], [], string.Create(CultureInfo.InvariantCulture, $"{seen.Version}:{nodes.Count}"), ports.Clock.GetUtcNow()), ct).ConfigureAwait(false);
+        return finished.IsError ? finished.Error.Code : null;
     }
 
     private async ValueTask<Result<(List<IntentRecord> Records, List<IntentLink> Links, List<PendingRecord> Pending)>> Page(IReadOnlyList<SourceHit> hits,
