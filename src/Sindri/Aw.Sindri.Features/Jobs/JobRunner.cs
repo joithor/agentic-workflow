@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
@@ -65,6 +66,27 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
         return true;
     }
 
+    /// <inheritdoc />
+    public void Cancelling(JobId job)
+    {
+        if (_runs.TryGetValue(job.Value, out var run))
+        {
+            run.Cancelled = true;
+        }
+    }
+
+    /// <inheritdoc />
+    public void Withdraw(JobId job)
+    {
+        if (_runs.TryGetValue(job.Value, out var run) && run.WriteFailure is null)
+        {
+            run.Cancelled = false;
+        }
+    }
+
+    /// <inheritdoc />
+    public bool IsCancelling(JobId job) => _runs.TryGetValue(job.Value, out var run) && run.Cancelled;
+
     /// <summary>Completes when every job started so far has ended and its last event is appended.</summary>
     /// <returns>A task that completes then.</returns>
     public async Task Idle()
@@ -108,15 +130,18 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
     {
         var queue = new JobLineQueue(JobLimits.QueueLines);
         var drained = Task.Run(() => Drain(run, queue), CancellationToken.None);
-        var work = await Work(run, queue).ConfigureAwait(false);
-        queue.Complete();
-        await drained.ConfigureAwait(false);
         try
         {
-            if (work is not null && !run.Cancelled && !_stopping.IsCancellationRequested)
-            {
-                _ = await writer.Finish(run.Start, work, CancellationToken.None).ConfigureAwait(false);   // a lost write is recovery's to end at the next start
-            }
+            var work = await Work(run, queue).ConfigureAwait(false);
+            queue.Complete();
+            await drained.ConfigureAwait(false);
+            await End(run, work).ConfigureAwait(false);
+        }
+#pragma warning disable CA1031 // boundary: whatever the writing throws must not leave the claim, the slot and Idle behind
+        catch (Exception)
+#pragma warning restore CA1031
+        {
+            run.Cancelled = true;   // the job's end is recovery's to write at the next start
         }
         finally
         {
@@ -125,6 +150,33 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
             run.Source.Dispose();
             _ = run.Done.TrySetResult();
         }
+    }
+
+    /// <summary>Writes how the job ended. A write that fails while the lease is still held is tried once more, then replaced by a failed end carrying the write's own code; a lost lease is recovery's.</summary>
+    private async Task End(Run run, JobWorkResult? work)
+    {
+        if (run.WriteFailure is { } failure)
+        {
+            await Finish(run, new JobWorkResult(failure, string.Empty, Result: null)).ConfigureAwait(false);
+        }
+        else if (work is not null && !run.Cancelled && !_stopping.IsCancellationRequested)
+        {
+            var finished = await Retry(() => writer.Finish(run.Start, work, CancellationToken.None)).ConfigureAwait(false);
+            if (finished.IsError && writer.HoldsLease())
+            {
+                _ = await writer.Finish(run.Start, new JobWorkResult(finished.Error, string.Empty, Result: null), CancellationToken.None).ConfigureAwait(false);
+            }
+        }
+    }
+
+    private async Task Finish(Run run, JobWorkResult work) =>
+        _ = await Retry(() => writer.Finish(run.Start, work, CancellationToken.None)).ConfigureAwait(false);
+
+    /// <summary>Runs <paramref name="write"/>; when it fails with the lease still held, once more (every event has an idempotency key, so a repeat is safe).</summary>
+    private async ValueTask<Result<Unit>> Retry(Func<ValueTask<Result<Unit>>> write)
+    {
+        var first = await write().ConfigureAwait(false);
+        return first.IsError && writer.HoldsLease() ? await write().ConfigureAwait(false) : first;
     }
 
     /// <summary>Runs the work under the starting caller; null when it was cancelled (nothing to record), otherwise how it ended.</summary>
@@ -141,7 +193,7 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
                 return await start.Definition.Run(scope.Resolve, start.Request, run.Source.Token).ConfigureAwait(false);
             }
         }
-        catch (OperationCanceledException) when (run.Source.IsCancellationRequested)
+        catch (OperationCanceledException) when (run.Source.IsCancellationRequested || run.Cancelled)
         {
             return null;
         }
@@ -153,32 +205,46 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
         }
     }
 
-    /// <summary>Writes the queued lines as 'job.progress' within the budget; a write that fails (no lease) stops the writing and cancels the job.</summary>
+    /// <summary>Writes the queued lines as 'job.progress' within the budget; a write that fails (after one retry while the lease is held) stops the writing, cancels the job and is its failure.</summary>
     private async Task Drain(Run run, JobLineQueue queue)
     {
         var budget = new JobProgressBudget();
-        var broken = false;
-        await foreach (var line in queue.ReadAll(CancellationToken.None).ConfigureAwait(false))
+        try
         {
-            if (broken)
+            await foreach (var line in queue.ReadAll(CancellationToken.None).ConfigureAwait(false))
             {
-                continue;
-            }
+                if (run.WriteFailure is not null)
+                {
+                    continue;
+                }
 
-            var admitted = budget.Admit();
-            if (admitted == JobAdmission.Drop)
-            {
-                continue;
-            }
+                var admitted = budget.Admit();
+                if (admitted == JobAdmission.Drop)
+                {
+                    continue;
+                }
 
-            var text = admitted == JobAdmission.Truncate ? "(progress truncated)" : line;
-            if ((await writer.Progress(run.Start, budget.Written, text, CancellationToken.None).ConfigureAwait(false)).IsError)
-            {
-                broken = true;
-                run.Cancelled = true;   // a lost lease ends the job here; recovery writes its end
-                await run.Source.CancelAsync().ConfigureAwait(false);
+                var text = admitted == JobAdmission.Truncate ? "(progress truncated)" : line;
+                var written = await Retry(() => writer.Progress(run.Start, budget.Written, text, CancellationToken.None)).ConfigureAwait(false);
+                if (written.IsError)
+                {
+                    await Break(run, written.Error).ConfigureAwait(false);
+                }
             }
         }
+#pragma warning disable CA1031 // boundary: a writer that throws breaks the job's writing, never the process
+        catch (Exception e)
+#pragma warning restore CA1031
+        {
+            await Break(run, SindriErrors.ServiceFailed.With(e.Message)).ConfigureAwait(false);
+        }
+    }
+
+    private static async Task Break(Run run, Error failure)
+    {
+        run.WriteFailure ??= failure;
+        run.Cancelled = true;   // the job ends here; Execute writes its failed end while the lease is held, recovery otherwise
+        await run.Source.CancelAsync().ConfigureAwait(false);
     }
 
     private sealed class QueueProgress(JobLineQueue queue) : IProgress<string>
@@ -195,5 +261,7 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
         public TaskCompletionSource Done { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public bool Cancelled { get; set; }
+
+        public Error? WriteFailure { get; set; }
     }
 }

@@ -70,6 +70,23 @@ public sealed class JobFoldTests
     }
 
     [Fact]
+    public void A_raw_control_sequence_in_a_line_or_a_summary_is_escaped_on_read()
+    {
+        var row = Progress(Started(), 1, "\u001b[31mred\u001b[0m \u001b]0;title\u0007done");
+
+        Expect.Equal("\\x1B[31mred\\x1B[0m \\x1B]0;title\\x07done", row.Progress[0].Line);
+        Expect.Equal("ok \\x1B[2J", Finished(row, JobOutcome.Succeeded, "ok \u001b[2J").Summary);
+    }
+
+    [Fact]
+    public void A_line_that_is_already_escaped_stays_as_it_is()
+    {
+        var row = Progress(Started(), 1, "\\x1B[31mred");
+
+        Expect.Equal("\\x1B[31mred", row.Progress[0].Line);
+    }
+
+    [Fact]
     public void A_replayed_start_changes_nothing()
     {
         var row = Progress(Started(), 1, "one");

@@ -109,6 +109,18 @@ public sealed class JobRuntimeTests
     }
 
     [Fact]
+    public async Task A_control_sequence_in_a_result_string_is_escaped_where_it_is_stored()
+    {
+        await using var runtime = await Open();
+
+        _ = await runtime.Start(new ProbeJobRequest("esc"), Human());
+        await runtime.Quiesce();
+
+        var text = Finished(runtime).Result!.Value.GetProperty("text").GetString();
+        Expect.Equal("\\x1B]0;title\\x07red\\x1B[31m", text);
+    }
+
+    [Fact]
     public async Task The_ninth_running_job_is_refused_SND_JOB_002()
     {
         await using var runtime = await Open();

@@ -48,8 +48,8 @@ public sealed class GetNeedsYouTests
         var row = Assert.Single((await Get()).Rows);
 
         Expect.Equal(("decision · re-scope", item, true, EmptyText.RecordedOnly()), (row.Label, row.Item!.Value, row.RecordedOnly, row.Notice));
-        Expect.Equal(($"sindri decide {decision.Value} accept", "Decide"), (row.Cli, row.PrimaryAction.Value));
-        Assert.Contains(row.PrimaryAction, row.Actions);
+        Expect.Equal(($"sindri decide {decision.Value} accept", "Decide"), (row.Cli, row.PrimaryAction?.Value));
+        Assert.Contains(row.PrimaryAction!.Value, row.Actions);
     }
 
     [Fact]
@@ -121,7 +121,7 @@ public sealed class GetNeedsYouTests
             Assert.Matches("^sindri( [A-Za-z0-9][A-Za-z0-9:._-]*)+$", row.Cli);
             Assert.DoesNotContain('<', row.Cli);
             Assert.StartsWith("sindri ", row.Cli, StringComparison.Ordinal);
-            Assert.Contains(row.PrimaryAction, row.Actions);
+            Assert.Contains(row.PrimaryAction!.Value, row.Actions);
             Assert.StartsWith(row.Kind.ToString(), row.Label, StringComparison.OrdinalIgnoreCase);
         }
     }

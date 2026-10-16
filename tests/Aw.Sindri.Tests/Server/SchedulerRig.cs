@@ -37,13 +37,17 @@ internal sealed class SchedulerRig : IAsyncDisposable
             _ = collection.AddSingleton(service);
         }
 
+        Progress = new ProjectorProgress(H.Clock);
         _provider = collection.BuildServiceProvider();
         _clock = new SteppedClock(H.Clock);
-        _scheduler = new SchedulerHost(_provider.GetRequiredService<IServiceScopeFactory>(), new ScheduleInputs(H.Profiles, [], new ViewServicePauses(_views)), Guard, H.Held, H.Callers, _clock,
+        _scheduler = new SchedulerHost(_provider.GetRequiredService<IServiceScopeFactory>(), new ScheduleInputs(H.Profiles, [], new ViewServicePauses(_views, Progress)), Guard, H.Held, H.Callers, _clock,
             new ListLogger<SchedulerHost>());
     }
 
     public SliceHarness H { get; } = new();
+
+    /// <summary>The projector status the pause view reads.</summary>
+    internal ProjectorProgress Progress { get; }
 
     public ServiceRunGuard Guard { get; } = new();
 
@@ -76,6 +80,28 @@ internal sealed class SchedulerRig : IAsyncDisposable
     }
 
     public Task Pause(string service) => Fold(EventTypes.ServicePaused, new ServicePaused(H.Ids.New<CommandId>(), ServiceName.From(service)));
+
+    /// <summary>The views start a rebuild: the status says so and the services view is emptied, to be refolded.</summary>
+    /// <returns>A task that completes then.</returns>
+    public async Task BeginRebuild()
+    {
+        Progress.Publish(Progress.Current with { Rebuilding = true });
+        _ = await _views.Reset([ViewNames.Services], ViewSchema.Version, H.Clock.GetUtcNow(), TestContext.Current.CancellationToken);
+        _sequence = 0;
+    }
+
+    /// <summary>The rebuild is done: the pauses given are refolded and the status is fresh again.</summary>
+    /// <param name="paused">The services paused in the ledger.</param>
+    /// <returns>A task that completes then.</returns>
+    public async Task EndRebuild(params string[] paused)
+    {
+        foreach (var service in paused)
+        {
+            await Pause(service);
+        }
+
+        Progress.Publish(Progress.Current with { Rebuilding = false });
+    }
 
     public Task Resume(string service) => Fold(EventTypes.ServiceResumed, new ServiceResumed(H.Ids.New<CommandId>(), ServiceName.From(service)));
 

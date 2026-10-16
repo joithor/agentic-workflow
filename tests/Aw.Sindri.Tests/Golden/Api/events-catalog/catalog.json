@@ -67,7 +67,8 @@
       "type": "job.progress",
       "keyShape": "job.progress:<jobId>:<n>",
       "invalidates": [
-        "job"
+        "job",
+        "jobs"
       ]
     },
     {

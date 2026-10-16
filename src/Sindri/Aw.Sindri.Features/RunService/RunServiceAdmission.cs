@@ -18,6 +18,18 @@ namespace Aw.Sindri.Features.RunService;
 /// <param name="guard">Says whether a run of the service is in flight.</param>
 internal sealed class RunServiceAdmission(IApprovedProfile approvals, IEnumerable<IScheduledService> scheduled, ServiceRunGuard guard) : IJobAdmission<RunServiceRequest>
 {
+    private bool _reserved;   // this instance is scoped to one start
+
+    public void Rollback(RunServiceRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (_reserved)   // only what this start's own admission took: a refused second start must never give back the first one's claim
+        {
+            _reserved = false;
+            guard.Unreserve(request.Name);
+        }
+    }
+
     public async ValueTask<Result<ServiceName?>> Admit(RunServiceRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -38,18 +50,14 @@ internal sealed class RunServiceAdmission(IApprovedProfile approvals, IEnumerabl
             return SindriErrors.ServiceNotFound.With($"The profile names service '{name.Value}', which this build doesn't have");
         }
 
-        if (!guard.TryClaim(name, out var claim))
+        if (!guard.TryReserveManual(name))   // taken here, inside the gate, and handed to the work: no scheduled tick can claim after the 200
         {
-            if (guard.IsManualRun(name))
-            {
-                Result<ServiceName?> running = name;
-                return running;   // a manual run: the start refuses with SND-JOB-409 naming that job
-            }
-
-            return SindriErrors.JobConflict.With($"A scheduled run of {name.Value} is in flight (fix: wait for it to end, then run it again)");
+            return guard.IsManualRun(name)
+                ? (Result<ServiceName?>)name   // a manual run: the start refuses with SND-JOB-409 naming that job
+                : RunServiceMessages.ScheduledInFlight(name);
         }
 
-        claim.Dispose();   // the work claims it for itself; this was only the look
+        _reserved = true;
         Result<ServiceName?> admitted = name;
         return admitted;
     }

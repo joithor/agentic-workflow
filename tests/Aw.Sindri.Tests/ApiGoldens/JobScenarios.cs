@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Core.Text;
 using Aw.Sindri.Host;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Jobs;
@@ -32,7 +33,7 @@ internal static class JobScenarios
         ("jobs-id", "running"), ("jobs-id", "succeeded"), ("jobs-id", "failed"), ("jobs-id", "cancelled"), ("jobs-id", "interrupted"), ("jobs-id", "progress-capped"),
         ("jobs-id", "ansi-escaped"), ("jobs-id", "result"), ("jobs-id", "not-found"), ("jobs-id", "bad-id"), ("jobs-id", "session-other-repo"), ("jobs-id", "stalled"),
         ("jobs-id-cancel", "accepted"), ("jobs-id-cancel", "already-ended"), ("jobs-id-cancel", "not-found"), ("jobs-id-cancel", "refused-session"),
-        ("jobs", "running"), ("jobs", "empty"), ("jobs", "by-kind"),
+        ("jobs", "running"), ("jobs", "empty"), ("jobs", "by-kind"), ("jobs", "empty-unfiltered"), ("jobs", "bad-kind"), ("jobs", "bad-state"),
     ];
 
     /// <summary>Whether <paramref name="slug"/> and <paramref name="scenario"/> belong to this class.</summary>
@@ -141,7 +142,7 @@ internal static class JobScenarios
 
     private static async Task<string> List(GoldenHost host, string scenario, CancellationToken ct)
     {
-        if (scenario != "empty")
+        if (scenario is not ("empty" or "empty-unfiltered" or "bad-kind" or "bad-state"))
         {
             await Started(host, Job(1), "EchoJob", "echo", ct);
             await Started(host, Job(2), "RunService", "heartbeat", ct, service: "heartbeat");
@@ -149,7 +150,14 @@ internal static class JobScenarios
         }
 
         await ViewScenarios.CatchUp(host, ct);
-        return await ViewScenarios.Read(host, scenario == "by-kind" ? "/sindri/jobs?kind=RunService" : "/sindri/jobs?state=running");
+        return await ViewScenarios.Read(host, scenario switch
+        {
+            "by-kind" => "/sindri/jobs?kind=RunService",
+            "empty-unfiltered" => "/sindri/jobs",
+            "bad-kind" => "/sindri/jobs?kind=NoSuchJob",
+            "bad-state" => "/sindri/jobs?state=paused",
+            _ => "/sindri/jobs?state=running",
+        });
     }
 
     private static async Task<string> Cancel(GoldenHost host, string scenario, CancellationToken ct)
@@ -195,7 +203,7 @@ internal static class JobScenarios
                 await Progress(h, j, n, "line " + n.ToString(CultureInfo.InvariantCulture), ct);
             }
         },
-        ["ansi-escaped"] = static (h, j, ct) => Progress(h, j, 1, "\u001b[31mred\u001b[0m \u001b]0;title\u0007done", ct),
+        ["ansi-escaped"] = static (h, j, ct) => Progress(h, j, 1, JobLines.Clean(h.App.Services.GetRequiredService<ITextScrubber>(), "\u001b[31mred\u001b[0m \u001b]0;title\u0007done"), ct),   // the line the real writer records
         ["stalled"] = static (h, _, ct) => ViewScenarios.Stall(h, ct),
     };
 

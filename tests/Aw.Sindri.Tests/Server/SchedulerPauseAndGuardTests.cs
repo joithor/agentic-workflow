@@ -27,6 +27,39 @@ public sealed class SchedulerPauseAndGuardTests
     }
 
     [Fact]
+    public async Task A_paused_service_stays_paused_through_a_views_rebuild()
+    {
+        var tidy = new ScriptedService(ScriptedService.Worked);
+        await using var rig = await SchedulerRig.Start([tidy], ("tidy", "5s"));
+        await rig.Pause("tidy");
+        await rig.Begin();
+        await rig.Step(7);
+
+        await rig.BeginRebuild();   // the services view is empty until its events are refolded
+        await rig.Step(12);
+        await rig.EndRebuild("tidy");
+        await rig.Step(12);
+
+        Expect.Equal(0, tidy.Runs);
+    }
+
+    [Fact]
+    public async Task No_service_runs_until_the_first_good_read_of_the_pauses()
+    {
+        var tidy = new ScriptedService(ScriptedService.Worked);
+        await using var rig = await SchedulerRig.Start([tidy], ("tidy", "5s"));
+        await rig.BeginRebuild();   // the process starts while the views are rebuilding
+        await rig.Begin();
+
+        await rig.Step(12);
+        Expect.Equal(0, tidy.Runs);
+        await rig.EndRebuild();
+        await rig.Step(6);
+
+        Assert.True(tidy.Runs >= 1);
+    }
+
+    [Fact]
     public async Task Resume_runs_the_next_aligned_slot_not_a_burst()
     {
         var tidy = new ScriptedService(ScriptedService.Worked);

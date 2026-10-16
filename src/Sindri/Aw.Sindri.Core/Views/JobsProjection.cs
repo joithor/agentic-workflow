@@ -3,11 +3,12 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Text;
 
 namespace Aw.Sindri.Core.Views;
 
 /// <summary>
-/// Folds the four job events into the 'jobs' view (API P6): one row per job, keyed by its id, each event through the pure Fold methods below.
+/// Folds the four job events (lines and summaries are escaped again on read, so a raw control byte that reached the ledger never reaches a client; escaping is idempotent) into the 'jobs' view (API P6): one row per job, keyed by its id, each event through the pure Fold methods below.
 /// A progress, finish or cancel for a job with no row is a fold that can't continue (SND-VIEW-001): the ledger holds events the view can't explain.
 /// </summary>
 /// <param name="events">Reads the payloads through the package's AwJson options.</param>
@@ -89,7 +90,7 @@ internal sealed class JobsProjection(EventFactory events) : IProjection
             ? row
             : row with
             {
-                Progress = JobLines.Keep(row.Progress, new JobLine(progress.Round, progress.Line, recorded.Envelope.OccurredAt)),
+                Progress = JobLines.Keep(row.Progress, new JobLine(progress.Round, SafeText.Escape(progress.Line), recorded.Envelope.OccurredAt)),
                 Rounds = Math.Max(row.Rounds, progress.Round),
                 Sequence = recorded.Sequence,
             };
@@ -111,7 +112,7 @@ internal sealed class JobsProjection(EventFactory events) : IProjection
             {
                 State = finished.Outcome == JobOutcome.Succeeded ? JobState.Succeeded : JobState.Failed,
                 EndedAt = recorded.Envelope.OccurredAt,
-                Summary = finished.Summary,
+                Summary = SafeText.Escape(finished.Summary),
                 Code = finished.Code,
                 Result = finished.Result,
                 Sequence = recorded.Sequence,

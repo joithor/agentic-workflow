@@ -20,7 +20,7 @@ namespace Aw.Sindri.Core.NeedsYou;
 /// <param name="RecordedOnly">True when the answer is recorded and not yet acted on (API spec §3.4).</param>
 /// <param name="Notice">The sentence saying so (EmptyText.RecordedOnly) when <paramref name="RecordedOnly"/>, else null.</param>
 /// <param name="AnswerKind">The kind of answer it takes (engine spec §5.8); null for every P4 row.</param>
-/// <param name="PrimaryAction">A catalog action id (never 'copy:'), a member of <paramref name="Actions"/>.</param>
+/// <param name="PrimaryAction">A catalog action id (never 'copy:'), a member of <paramref name="Actions"/>, or null when the row has no one-step action (a failure of a service this build lacks).</param>
 /// <param name="Actions">The action ids that apply; ready, pending or cli-only is the catalog's say.</param>
 /// <param name="Cli">The command line that does it, built through CliForm.Fill with typed ids.</param>
 public sealed record NeedsYouRow(
@@ -37,6 +37,6 @@ public sealed record NeedsYouRow(
     bool RecordedOnly,
     string? Notice,
     AnswerKind? AnswerKind,
-    ActionId PrimaryAction,
+    ActionId? PrimaryAction,
     IReadOnlyList<ActionId> Actions,
     string Cli);

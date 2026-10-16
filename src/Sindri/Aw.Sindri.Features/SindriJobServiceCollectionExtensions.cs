@@ -24,12 +24,13 @@ public static class SindriJobServiceCollectionExtensions
     /// <param name="key">The idempotency key of a start within its kind; a start whose kind and key is running is SND-JOB-409.</param>
     /// <param name="summary">The one-line summary of a result.</param>
     /// <param name="precheck">A check run inside the gate before the start is accepted (an unknown service is a synchronous 404), or null.</param>
+    /// <param name="repo">The repo a start by a human is about (a session's job is always in its own repo), or null for a job of no repo.</param>
     /// <typeparam name="TRequest">The job request; its catalog row is class 'job'.</typeparam>
     /// <typeparam name="TResult">What the work returns.</typeparam>
     /// <typeparam name="TService">The work.</typeparam>
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddJob<TRequest, TResult, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection services, Func<TRequest, JobKey> key, Func<TResult, string> summary,
-        Func<TRequest, CancellationToken, ValueTask<Result<Unit>>>? precheck = null)
+        Func<TRequest, CancellationToken, ValueTask<Result<Unit>>>? precheck = null, Func<TRequest, RepoName?>? repo = null)
         where TRequest : class, IJob<TResult>
         where TService : class, IService<TRequest, TResult>
     {
@@ -37,11 +38,13 @@ public static class SindriJobServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(summary);
         services.TryAddSingleton<JobRegistry>();
+        services.TryAddSingleton<IJobKinds, RegisteredJobKinds>();
         services.TryAddScoped<JobAdmitter<TRequest>>();
         services.TryAddScoped<IValidator<TRequest>, JobAcceptAllValidator<TRequest>>();
         _ = services
             .AddScoped<TService>()
             .AddSingleton(new JobDefinition(typeof(TRequest), request => key((TRequest)request),
+                request => repo?.Invoke((TRequest)request),
                 (request, ct) => precheck is null ? ValueTask.FromResult<Result<Unit>>(Unit.Value) : precheck((TRequest)request, ct),
                 async (resolve, request, ct) => await Work<TRequest, TResult, TService>(resolve, (TRequest)request, summary, ct).ConfigureAwait(false)));
         return services.AddCommand<TRequest, JobStartedResponse, JobStartService<TRequest, TResult>>();

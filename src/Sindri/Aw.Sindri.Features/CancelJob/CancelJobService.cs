@@ -49,10 +49,12 @@ internal sealed class CancelJobService(IJobViews jobs, ILedgerStore ledger, Held
             return allowed.Error;
         }
 
-        var entry = events.Entry(EventTypes.JobCancelled, new JobCancelled(caller.CommandId, request.Job, caller.Actor), $"{EventTypes.JobCancelled}:{request.Job.Value}");
+        runtime.Cancelling(request.Job);   // before the append, so the work sees it coming and records nothing of its own
+        var entry = events.Entry(EventTypes.JobCancelled, new JobCancelled(caller.CommandId, request.Job, caller.Actor, row.Value?.Item, row.Value?.Repo), $"{EventTypes.JobCancelled}:{request.Job.Value}");
         var appended = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
         if (appended.IsError)
         {
+            runtime.Withdraw(request.Job);
             return appended.Error;
         }
 

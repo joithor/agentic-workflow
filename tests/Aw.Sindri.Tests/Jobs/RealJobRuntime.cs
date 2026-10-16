@@ -74,9 +74,10 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
                 sp.GetRequiredService<ITextScrubber>(), sp.GetRequiredService<ICallerContextAccessor>()))
             .AddSingleton(static sp => new JobRunner(() => { var scope = sp.GetRequiredService<IServiceScopeFactory>().CreateAsyncScope(); return new JobScope(scope.ServiceProvider.GetRequiredService, scope); }, sp.GetRequiredService<IJobContextAccessor>(),
                 sp.GetRequiredService<ICallerContextAccessor>(), sp.GetRequiredService<JobEventWriter>(), sp.GetRequiredService<JobRegistry>(), sp.GetRequiredService<IShutdown>()))
-            .AddSingleton<IJobRunner>(static sp => sp.GetRequiredService<JobRunner>())
+            .AddSingleton<IJobRunner>(static sp => sp.GetRequiredService<JobRunner>()).AddSingleton<IJobCancellation>(static sp => sp.GetRequiredService<JobRunner>())
             .AddJob<EchoJobRequest, EchoReport, EchoJobService>(static _ => JobKey.From("echo"), static r => string.Create(CultureInfo.InvariantCulture, $"echoed {r.Lines}"))
-            .AddJob<ProbeJobRequest, ProbeReport, ProbeJobService>(static r => JobKey.From(r.Mode), static r => string.Create(CultureInfo.InvariantCulture, $"probed {r.Text.Length}"))
+            .AddJob<ProbeJobRequest, ProbeReport, ProbeJobService>(static r => JobKey.From(r.Mode), static r => string.Create(CultureInfo.InvariantCulture, $"probed {r.Text.Length}"),
+                repo: static r => r.Mode == "repo" ? Aw.Sindri.Core.Ids.RepoName.From("demo") : null)
             .AddScoped<IValidator<FixtureCommand>, FixtureValidator>().AddCommand<FixtureCommand, CommandAccepted, FixtureService>()
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
     }
@@ -121,6 +122,17 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
         return await scope.ServiceProvider.GetRequiredService<IService<TRequest, JobStartedResponse>>().Handle(request, TestContext.Current.CancellationToken);
     }
 
+    /// <summary>Starts an echo job as <paramref name="caller"/> with a request token of the test's choosing (an aborted POST).</summary>
+    /// <param name="caller">The starting caller.</param>
+    /// <param name="cancellationToken">The request's token.</param>
+    /// <returns>The answer.</returns>
+    public async Task<Result<JobStartedResponse>> StartWith(CallerContext caller, CancellationToken cancellationToken)
+    {
+        using var entered = H.Callers.Enter(caller);
+        await using var scope = _provider.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<IService<EchoJobRequest, JobStartedResponse>>().Handle(new EchoJobRequest(Lines: 1, DelayMs: 0), cancellationToken);
+    }
+
     /// <summary>Runs any registered command through its chain as <paramref name="caller"/>.</summary>
     /// <typeparam name="TRequest">The request.</typeparam>
     /// <typeparam name="TResponse">The response.</typeparam>
@@ -139,6 +151,7 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
     {
         var caller = A.Caller().Human().Build();
         using var entered = H.Callers.Enter(caller);
+        Runner.Cancelling(job);
         var entry = H.Events.Entry(EventTypes.JobCancelled, new JobCancelled(caller.CommandId, job, caller.Actor), $"{EventTypes.JobCancelled}:{job.Value}");
         var appended = await H.Store.Append(entry, H.Held.Current!, TestContext.Current.CancellationToken);
         if (appended.IsError)

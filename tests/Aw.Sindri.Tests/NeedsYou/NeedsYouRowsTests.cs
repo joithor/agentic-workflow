@@ -75,6 +75,19 @@ public sealed class NeedsYouRowsTests
     }
 
     [Fact]
+    public void A_failure_for_a_service_the_build_lacks_cannot_be_run_and_points_at_the_profile()
+    {
+        var failed = new ServiceRow(_service, new LastRun(_t, ServiceOutcome.Failed, "SND-SVC-404", _t), Paused: false, Sequence: 4);
+
+        var row = NeedsYouRows.ForFailure(failed, _t, _plain).Value;
+
+        Expect.Equal(("sindri profile validate", true), (row.Cli, row.PrimaryAction is null));
+        Expect.Sequence([ActionId.From("PauseService")], row.Actions);
+        Assert.Contains("remove or rename", row.Reason, StringComparison.Ordinal);
+        Assert.StartsWith("SND-SVC-404", row.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void A_failure_without_a_code_says_which_slot_failed()
     {
         var failed = new ServiceRow(_service, new LastRun(_t, ServiceOutcome.Failed, Code: null, _t), Paused: false, Sequence: 4);
@@ -142,7 +155,7 @@ public sealed class NeedsYouRowsTests
 
         foreach (var row in rows)
         {
-            Expect.True(row.Actions.Contains(row.PrimaryAction) && !row.PrimaryAction.Value.StartsWith("copy", StringComparison.Ordinal));
+            Expect.True(row.PrimaryAction is { } primary && row.Actions.Contains(primary) && !primary.Value.StartsWith("copy", StringComparison.Ordinal));
             Expect.True(row.Cli.StartsWith("sindri ", StringComparison.Ordinal));
         }
     }

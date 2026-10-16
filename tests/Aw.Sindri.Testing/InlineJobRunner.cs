@@ -52,6 +52,21 @@ public sealed class InlineJobRunner(IServiceScopeFactory scopes, IJobContextAcce
     /// <inheritdoc />
     public bool Cancel(JobId job) => false;
 
+    /// <inheritdoc />
+    public void Cancelling(JobId job)
+    {
+        // the inline runner has finished the work by the time anything can cancel it
+    }
+
+    /// <inheritdoc />
+    public void Withdraw(JobId job)
+    {
+        // nothing was marked
+    }
+
+    /// <inheritdoc />
+    public bool IsCancelling(JobId job) => false;
+
     /// <summary>Reports on the calling thread, so the lines are there when Start returns (Progress&lt;T&gt; would post them to the pool).</summary>
     private sealed class Inline(Action<string> report) : IProgress<string>
     {

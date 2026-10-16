@@ -104,7 +104,7 @@ public sealed class SchedulerHostTests
 
         await Run(new CountingApprovals(_h.Profiles), () => Heartbeats() >= 2);
 
-        Assert.Contains(_log.Lines, l => l.Contains("SND-SCHED-001 the profile names service 'ghost'", StringComparison.Ordinal));
+        Assert.Contains(_log.Lines, l => l.Contains("SND-SVC-404 the profile names service 'ghost'", StringComparison.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -175,7 +175,7 @@ public sealed class SchedulerHostTests
 
         await Run(new CountingApprovals(_h.Profiles), () => Runs("ghost").Count >= 2);
 
-        Assert.All(Runs("ghost"), r => Assert.Equal((ServiceOutcome.Failed, "SND-SCHED-001"), (r.Outcome, r.Code)));
+        Assert.All(Runs("ghost"), r => Assert.Equal((ServiceOutcome.Failed, "SND-SVC-404"), (r.Outcome, r.Code)));
     }
 
     [Fact, Trait("Lane", "unit")]
