@@ -182,4 +182,18 @@ public sealed class NeedsYouMapperTests
         Assert.All(feed.Rows[0].Actions, a => Assert.Equal(ActionReadiness.CliOnly, a.Readiness));
         Assert.Equal(Aw.Sindri.Ui.ViewModels.Controls.ControlKind.CliOnly, control.Kind);
     }
+
+    // review run 1, K17: one chip type. The served chip goes onto the row as it is served, tone included.
+    [Fact]
+    public void The_served_chip_is_the_one_chip_type_and_keeps_its_tone()
+    {
+        var list = Golden<NeedsYouList>("needs-you", "fixture");
+        var served = list.Rows[0] with { Chip = new StateChip("DECISION", (ChipTone)99) };
+
+        var feed = NeedsYouMapper.Map(list with { Rows = [served] }, Catalog(), Pending(), _counts);
+
+        Assert.Equal(("DECISION", 99), (feed.Rows[0].Chip.Word, (int)feed.Rows[0].Chip.Tone));
+        Assert.Null(typeof(NeedsYouEntry).Assembly.GetType("Aw.Sindri.Ui.ViewModels.NeedsYou.NeedsYouChip"));
+        Assert.Null(typeof(NeedsYouEntry).Assembly.GetType("Aw.Sindri.Ui.ViewModels.NeedsYou.NeedsYouChipTone"));
+    }
 }
