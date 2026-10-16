@@ -29,6 +29,9 @@ internal sealed class InstanceRowViewModel : ObservableObject
     /// <summary>The instance's own id, as served.</summary>
     public string InstanceId => _row.Id;
 
+    /// <summary>The state the instance is in, as served.</summary>
+    public string StateWord => _row.State;
+
     /// <summary>The recipe's id, as served.</summary>
     public string Recipe => _row.Recipe.Id;
 

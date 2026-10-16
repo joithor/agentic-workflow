@@ -1,0 +1,209 @@
+using System.Net;
+using System.Text.Json.Nodes;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.VisualTree;
+using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Api.Workflow;
+using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Instance;
+using Aw.Sindri.Ui.ViewModels.Shell;
+
+namespace Aw.Sindri.Ui.Tests.Views;
+
+/// <summary>U8 key frames (UI spec §18.2: one per state, integration lane) for the instance frame, against the in-memory API serving the instance goldens. Saved under frames/ as u8-frame-*.png.</summary>
+[Lane(TestLane.Integration)]
+[Collection(HeadlessWindows.Name)]
+public sealed class InstanceFramesTests : FrameHost
+{
+    private const string Prefix = "u8-frame-";
+
+    private static InstanceDetail Detail(string scenario) => FixtureInstances.Detail(scenario);
+
+    private async Task<(Window Window, ShellViewModel Shell)> Opened(string scenario, FramePhase phase = FramePhase.Shown)
+    {
+        var (window, shell) = await Connected(width: 1600, height: 1000);
+        shell.OpenInstance(Detail(scenario).Address, Detail(scenario).Id);
+        await Until(window, () => shell.Instance.Phase == phase);
+        Settle(window);
+        return (window, shell);
+    }
+
+    private static List<TextBlock> Texts(Window window, string name) =>
+        [.. window.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == name && t.IsEffectivelyVisible)];
+
+    private static List<Button> Buttons(Window window, string name) =>
+        [.. window.GetVisualDescendants().OfType<Button>().Where(b => b.Name == name && b.IsEffectivelyVisible)];
+
+    private static void Frame(Window window, string name) => Frame(window, name, Prefix);
+
+    [Fact]
+    public Task u8_frame_project_build() => OnUi(async () =>
+    {
+        var (window, shell) = await Opened("project-build");
+
+        var detail = Detail("project-build");
+        Assert.Equal(detail.States.Count, Texts(window, "StateNodeText").Count);
+        Assert.Equal(detail.Current.Status.Next, Named<TextBlock>(window, "ExpandedNext").Text);
+        Assert.Equal(shell.Instance.Identity, Named<TextBlock>(window, "InstanceIdentity").Text);
+        Assert.Equal(shell.Instance.Subject!.OpenInText, Named<Button>(window, "InstanceOpenIn").Content?.ToString());
+        Assert.True(Visible(window, "ExpandedBudget"));
+        Frame(window, "project-build");
+    });
+
+    [Fact]
+    public Task u8_frame_incident_loop() => OnUi(async () =>
+    {
+        var (window, _) = await Opened("incident-loop");
+
+        Assert.Contains(Texts(window, "StateNodeLink"), t => t.Text == Labels.LoopMark);
+        Assert.Equal(Labels.AvailableWithP10a, Named<TextBlock>(window, "ExpandedAttachChip").Text);
+        Assert.Empty(Buttons(window, "LockButton"));
+        Frame(window, "incident-loop");
+    });
+
+    [Fact]
+    public Task u8_frame_triage_desk() => OnUi(async () =>
+    {
+        var (window, _) = await Opened("triage-desk");
+
+        var served = Detail("triage-desk").Current.Status.Commands;
+        Expect.Sequence(served.Select(c => c.Cli), Texts(window, "CommandCli").Select(t => t.Text));
+        Assert.Equal(served.Count, Texts(window, "CommandPending").Count);
+        Frame(window, "triage-desk");
+    });
+
+    [Fact]
+    public Task u8_frame_escalated_gate() => OnUi(async () =>
+    {
+        var (window, shell) = await Opened("escalated-gate");
+
+        _ = Assert.Single(Buttons(window, "LockButton"));
+        Assert.Contains(Texts(window, "StateNodeText"), t => t.Text!.Contains(Labels.EngineBadge(EngineOwnedKind.Escalated, Detail("escalated-gate").EngineOwned!.Reason), StringComparison.Ordinal));
+        Assert.Equal((true, "gate"), (shell.Instance.HasDetail, shell.Instance.Detail));
+        Frame(window, "escalated-gate");
+    });
+
+    [Fact]
+    public Task u8_frame_dev_desk_round_trip() => OnUi(async () =>
+    {
+        var (window, _) = await Opened("dev-desk-round-trip");
+
+        Assert.Equal(Detail("dev-desk-round-trip").Current.Status.Next, Named<TextBlock>(window, "ExpandedNext").Text);
+        Assert.True(Visible(window, "ExpandedTimeout"));
+        Frame(window, "dev-desk-round-trip");
+    });
+
+    [Fact]
+    public Task u8_frame_dev_triage_three_state() => OnUi(async () =>
+    {
+        var (window, _) = await Opened("dev-triage-three-state");
+
+        Assert.Equal(Detail("dev-triage-three-state").States.Count, Texts(window, "StateNodeText").Count);
+        Assert.Equal(Detail("dev-triage-three-state").Current.Status.Next, Named<TextBlock>(window, "ExpandedNext").Text);
+        Frame(window, "dev-triage-three-state");
+    });
+
+    [Fact]
+    public Task u8_frame_transition_list() => OnUi(async () =>
+    {
+        var (window, _) = await Opened("transition-list");
+
+        Assert.Equal(Labels.OrderedByTransitions, Named<TextBlock>(window, "BandOrderNote").Text);
+        Assert.Equal(Detail("transition-list").States.Count, Texts(window, "StateNodeText").Count);
+        Assert.Equal(Detail("transition-list").States.Count - 1, Named<ItemsControl>(window, "StateNodes").ItemCount);
+        Frame(window, "transition-list");
+    });
+
+    [Fact]
+    public Task u8_frame_done() => OnUi(async () =>
+    {
+        var (window, shell) = await Opened("done");
+
+        Assert.Equal((true, Labels.InstanceDone), (Visible(window, "InstanceNote"), Named<TextBlock>(window, "InstanceNote").Text));
+        Assert.Empty(Texts(window, "CommandCli"));
+        Assert.False(Visible(window, "ExpandedNext"));
+        Assert.Equal(Detail("done").Current.Status.Header.State, shell.Instance.StateText);
+        Frame(window, "done");
+    });
+
+    [Fact]
+    public Task u8_frame_not_found() => OnUi(async () =>
+    {
+        Server.WorkflowAnswer = RouteAnswer.Problem("workflow-instance", "not-found");
+        var (window, _) = await Opened("project-build", FramePhase.NotFound);
+
+        Assert.Equal((string)GoldenFiles.Node("workflow-instance", "not-found")["detail"]!, Named<TextBlock>(window, "InstanceProblem").Text);
+        Assert.Equal((true, false, true), (Visible(window, "InstanceProblem"), Visible(window, "InstanceBand"), Visible(window, "InstanceBack")));
+        Frame(window, "not-found");
+    });
+
+    [Fact]
+    public Task u8_frame_taken_over() => OnUi(async () =>
+    {
+        var body = (JsonObject)GoldenFiles.Node("workflow-instance", "project-build");
+        var status = GoldenFiles.Node("workflow-status", "taken-over");
+        body["current"]!["status"] = status.DeepClone();
+        body["address"] = status["header"]!["address"]!.DeepClone();
+        var cover = GoldenFiles.Node("workflow-instances", "open")["instances"]!.AsArray().First(r => r!["engineOwned"] is not null || r["states"]!.AsArray().Any(s => s!["badge"] is not null))!["states"]!.AsArray().First(s => s!["badge"] is not null)!;
+        body["states"]!.AsArray().First(s => (string)s!["id"]! == (string)cover["id"]!)!["badge"] = cover["badge"]!.DeepClone();
+        Server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, body.ToJsonString());
+        var (window, shell) = await Opened("project-build");
+
+        Assert.True(Visible(window, "ExpandedPaused"));
+        Assert.Contains(Labels.Duration(FixtureInstances.Status("taken-over").Paused!.TimeoutLeftSeconds), Named<TextBlock>(window, "ExpandedPaused").Text, StringComparison.Ordinal);
+        Expect.Sequence(FixtureInstances.Status("taken-over").Commands.Select(c => c.Cli), Texts(window, "CommandCli").Select(t => t.Text));
+        Assert.Equal("taken-over", shell.Instance.StateText);
+        Assert.False(Visible(window, "ExpandedAttachChip"));
+        Frame(window, "taken-over");
+    });
+
+    [Fact]
+    public Task u8_frame_cancel_confirm() => OnUi(async () =>
+    {
+        var (window, shell) = await Opened("project-build");
+        var served = Detail("project-build").Current.Status.Commands.Single(c => c.Verb == StatusVerb.Cancel).Confirm;
+        var ask = Buttons(window, "CommandAsk").Single();
+        Assert.True(ask.Focus(NavigationMethod.Tab));
+
+        shell.Instance.Expanded!.AskCancel();
+        Settle(window);
+
+        Assert.Equal((true, served), (Visible(window, "ExpandedConfirm"), Named<TextBlock>(window, "ExpandedConfirmLine").Text));
+        await Until(window, () => string.Equals((window.FocusManager?.GetFocusedElement() as Button)?.Name, "ExpandedKeep", StringComparison.Ordinal), "Keep did not take focus");
+        Frame(window, "cancel-confirm");
+        shell.Instance.Expanded.Keep();
+        await Until(window, () => ReferenceEquals(window.FocusManager?.GetFocusedElement(), Buttons(window, "CommandAsk").Single()), "focus did not return to Cancel");
+        Assert.False(Visible(window, "ExpandedConfirm"));
+    });
+
+    [Fact]
+    public Task u8_frame_lock_popover() => OnUi(async () =>
+    {
+        var (window, _) = await Opened("escalated-gate");
+        var button = Buttons(window, "LockButton").Single();
+
+        button.Flyout!.ShowAt(button);
+        Settle(window);
+
+        var root = (Avalonia.Visual)((Flyout)button.Flyout).Content!;
+        Assert.True(button.Flyout.IsOpen);
+        Assert.Equal(Detail("escalated-gate").Current.Status.Answer!.Cli, Named<TextBlock>(root, "ServedCli").Text);
+        Frame(window, "lock-popover");
+        button.Flyout.Hide();
+    });
+
+    [Fact]
+    public Task Focus_order_reads_before_it_acts() => OnUi(async () =>
+    {
+        var (window, _) = await Opened("project-build");
+        var frame = Named<Control>(window, "InstanceFrame");
+
+        var stops = frame.GetVisualDescendants().OfType<Control>().Where(c => c is Button or TextBox && c.Focusable && c.IsEffectivelyVisible && c.IsEffectivelyEnabled).Select(c => c.Name ?? string.Empty).ToList();
+
+        Assert.Equal("InstanceOpenIn", stops[0]);
+        Assert.True(stops.IndexOf("ExpandedCopyStatus") < stops.IndexOf("CommandAsk"));
+        Assert.Equal(-1, stops.IndexOf("ExpandedKeep"));
+    });
+}

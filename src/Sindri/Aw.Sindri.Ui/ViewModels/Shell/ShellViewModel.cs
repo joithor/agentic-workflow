@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Instance;
 using Aw.Sindri.Ui.ViewModels.Item;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
 using Aw.Sindri.Ui.ViewModels.Palette;
@@ -72,6 +73,8 @@ internal sealed partial class ShellViewModel : ObservableObject
         InitStrip();
         Workflows = new WorkflowsViewModel(api);
         InitWorkflows();
+        Instance = new InstanceFrameViewModel(api, clipboard, clock);
+        InitInstance();
         Queue.PropertyChanged += OnQueueChanged;
         InitAnnouncements();
         Attention = AttentionSummary.For(feed: null, State, _clock.GetUtcNow());
