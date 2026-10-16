@@ -17,7 +17,13 @@ namespace Aw.Sindri.Host.Commands;
 /// </summary>
 internal static class CommandTable
 {
-    internal static async Task<int> Run(string[] args, Func<string, string?> environment, TimeProvider clock, Action<IServiceCollection>? overrides = null)
+    /// <summary>Runs one verb as Program does.</summary>
+    /// <param name="args">The command line.</param>
+    /// <param name="environment">Reads an environment variable.</param>
+    /// <param name="clock">The clock.</param>
+    /// <param name="configure">Tests only: changes the registrations after Compose, to swap a port for its fake; Program passes nothing.</param>
+    /// <returns>The exit code.</returns>
+    internal static async Task<int> Run(string[] args, Func<string, string?> environment, TimeProvider clock, Action<IServiceCollection>? configure = null)
     {
         if (args is ["serve"])
         {
@@ -25,7 +31,7 @@ internal static class CommandTable
         }
 
         var services = Composition.Compose(new ServiceCollection(), environment, clock);
-        overrides?.Invoke(services);   // a test replaces a port with its fake; Program passes none
+        configure?.Invoke(services);   // tests only: a test replaces a port with its fake; Program passes nothing
         var provider = services.BuildServiceProvider();
         await using (provider.ConfigureAwait(false))
         {
