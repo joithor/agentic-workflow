@@ -96,6 +96,9 @@ internal sealed partial class NeedsYouViewModel : ObservableObject
     /// <summary>The selected row's id; null for none.</summary>
     internal string? SelectedId { get; private set; }
 
+    /// <summary>True when the last change of <see cref="SelectedId"/> was a refresh moving it off a row that cleared; the view then moves focus only if it was lost.</summary>
+    internal bool SelectionMovedOnItsOwn { get; private set; }
+
     /// <summary>The live region's line: "&lt;id&gt; cleared" for the last row to leave.</summary>
     internal string Announcement { get; private set; } = "";
 
@@ -205,6 +208,7 @@ internal sealed partial class NeedsYouViewModel : ObservableObject
         var shown = at >= 0 ? before[at] : null;
         var next = at < 0 ? null : before.Skip(at + 1).Concat(before.Take(Math.Max(at, 0)).Reverse()).FirstOrDefault(e => kept.Contains(e.Id));
         SelectedId = next?.Id;
+        SelectionMovedOnItsOwn = true;
         if (shown is not null)
         {
             Announcement = Labels.Cleared(shown.ShownId.Length > 0 ? shown.ShownId : shown.Id);
@@ -227,6 +231,7 @@ internal sealed partial class NeedsYouViewModel : ObservableObject
         }
 
         SelectedId = id;
+        SelectionMovedOnItsOwn = false;
         foreach (var row in Seen.Rows)
         {
             row.SetContext(_feed.Stalled, _feed.Rebuilding, string.Equals(row.Id, id, StringComparison.Ordinal));
