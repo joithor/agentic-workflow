@@ -29,6 +29,11 @@ public sealed class GoldenContractTests
         ["commands"] = As<CommandList>,
         ["services"] = As<ServiceList>,
         ["views-rebuild"] = As<CommandAcceptedView>,
+        ["queue"] = As<QueueView>,
+        ["items-id"] = As<ItemView>,
+        ["items-id-timeline"] = As<TimelineView>,
+        ["items"] = As<ItemCreatedView>,   // POST /items' created* goldens only
+        ["items-id-close"] = As<CommandAcceptedView>,
         ["workflow-instances"] = As<InstanceList>,
         ["workflow-instance"] = As<InstanceDetail>,
         ["workflow-instance-fact"] = As<FactView>,
@@ -41,8 +46,8 @@ public sealed class GoldenContractTests
     private static readonly HashSet<string> _notRead = new(StringComparer.Ordinal)
     {
         "stop", "profile-approve", "profile",
-        "context-filemap", "context-lenses", "context-map", "context-map-promote", "context-map-proposals", "context-map-review", "context-map-review-history", "context-node",
-        "queue", "items", "items-id", "items-id-timeline", "items-id-close",   // API P3: the queue and item screens (U2) place these
+        "context-filemap", "context-lenses", "context-map", "context-map-promote", "context-map-proposals", "context-map-review", "context-map-review-history", "context-node",   // until U9 (context records)
+        "items",   // GET /items (the list) is never called; POST /items' created* goldens are read (see the loop)
         "ledger",   // API P5: the audit read is the CLI's; the app follows the stream and re-queries
         "events-catalog",   // API P5 (E-15): the app reads each type's invalidates once it switches from re-querying every view on each event (UI lane)
     };
@@ -66,7 +71,7 @@ public sealed class GoldenContractTests
                 continue;
             }
 
-            if (_notRead.Contains(slug))
+            if (_notRead.Contains(slug) && !(slug == "items" && scenario.StartsWith("created", StringComparison.Ordinal)))
             {
                 continue;
             }

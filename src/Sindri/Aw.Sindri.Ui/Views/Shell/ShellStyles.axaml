@@ -320,6 +320,16 @@
   <Style Selector="Border.sheet.covers Button.back">
     <Setter Property="IsVisible" Value="True" />
   </Style>
+  <!-- The 404 state's Back is the header's Back where the sheet covers the page. -->
+  <Style Selector="Button.not-found-back">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="Button.not-found-back.shown">
+    <Setter Property="IsVisible" Value="True" />
+  </Style>
+  <Style Selector="Border.sheet.covers Button.not-found-back.shown">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
   <Style Selector="Thumb.sheet-grip">
     <Setter Property="Width" Value="{StaticResource Space.XXS}" />
     <Setter Property="Background" Value="Transparent" />

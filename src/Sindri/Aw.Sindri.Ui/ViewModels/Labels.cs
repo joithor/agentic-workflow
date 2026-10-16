@@ -118,6 +118,9 @@ internal static partial class Labels
     /// <summary>The detail sheet's close button.</summary>
     internal const string CloseSheet = "Close";
 
+    /// <summary>The sheet's dismiss button's accessible name: what it closes, distinct from "Close item ITM-…".</summary>
+    internal const string CloseSheetName = "Close sheet";
+
     /// <summary>The detail sheet's back button, when it covers the page (below 1100 px).</summary>
     internal const string Back = "Back";
 

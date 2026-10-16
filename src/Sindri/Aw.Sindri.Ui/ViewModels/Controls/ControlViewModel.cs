@@ -32,12 +32,14 @@ internal sealed partial class ControlViewModel : ObservableObject
     /// <param name="row">The catalog row.</param>
     /// <param name="send">Sends the command once; null when nothing is wired to it (it then never runs).</param>
     /// <param name="clipboard">Where Copy puts the CLI.</param>
+    /// <param name="subject">The subject the control acts on (an item id), named in its accessible name; null for none.</param>
     /// <param name="clock">The clock for the lifecycle's timings.</param>
-    internal ControlViewModel(CommandRowView row, Func<CancellationToken, Task<Result<CommandAcceptedView>>>? send, IClipboard clipboard, TimeProvider clock)
+    internal ControlViewModel(CommandRowView row, Func<CancellationToken, Task<Result<CommandAcceptedView>>>? send, IClipboard clipboard, TimeProvider clock, string? subject = null)
     {
         _send = send;
         _clipboard = clipboard;
         _clock = clock;
+        Subject = subject ?? string.Empty;
         Action = row.Action;
         Label = Labels.Action(row.Action);
         Shortcut = row.Shortcut ?? string.Empty;
@@ -45,7 +47,10 @@ internal sealed partial class ControlViewModel : ObservableObject
         Cli = Safe(row.Cli) ? row.Cli : string.Empty;
         PendingLine = Kind == ControlKind.Pending ? Labels.Arrives(Stage) + " · " + Cli : string.Empty;
         CopyNote = row.Ui == "cli-only:typed-confirmation" ? Labels.TypedConfirmation : string.Empty;
-        Name = Kind == ControlKind.Pending ? Label + ", " + Labels.Arrives(Stage) : Label;
+        var named = subject is { Length: > 0 } ? Label + " " + subject : Label;
+        Name = Kind == ControlKind.Pending ? named + ", " + Labels.Arrives(Stage) : named;
+        IsDestructive = row.Destructive;
+        ConfirmQuestion = Labels.ConfirmQuestion(named);
     }
 
     /// <summary>The catalog action id.</summary>
@@ -142,12 +147,18 @@ internal sealed partial class ControlViewModel : ObservableObject
         }
     } = Labels.Copy;
 
+    /// <summary>
+    /// Asked just before a run starts; false sends nothing (the owner has said why where it belongs, as the create form does for a
+    /// blank title). Null for a control with nothing to check.
+    /// </summary>
+    internal Func<bool>? Precondition { get; set; }
+
     /// <summary>Sends the command once (a second click while sending does nothing; the app never retries on its own).</summary>
     /// <param name="cancellationToken">Cancels the wait for the answer.</param>
     /// <returns>A task that completes when the answer is shown.</returns>
-    internal async Task Run(CancellationToken cancellationToken)
+    private async Task Run(CancellationToken cancellationToken)
     {
-        if (!CanRun || _send is not { } send)
+        if (!CanRun || _send is not { } send || Precondition?.Invoke() == false)
         {
             return;
         }

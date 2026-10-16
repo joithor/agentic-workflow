@@ -78,11 +78,21 @@ public sealed class ShellSheetKindTests
         {
             shell.OpenSheet(new DeepLink(kind, kind == DeepLinkKind.HomeNeedsYou ? null : "X"));
 
-            Assert.True(shell.IsSheetPlaceholderShown, kind.ToString());
+            Assert.Equal(kind != DeepLinkKind.Item, shell.IsSheetPlaceholderShown);   // Item is U2's: its sheet is the item detail
             var noun = Labels.KindNoun(kind);
             var subject = kind == DeepLinkKind.HomeNeedsYou ? string.Empty : "X";
             Assert.Equal(noun.Length > 0 ? noun + " " + subject : subject, shell.SheetName);
         }
+    }
+
+    [Fact]
+    public async Task An_item_link_claims_the_sheet_from_the_placeholder()
+    {
+        var shell = await Shell();
+
+        shell.OpenSheet(Link("item/ITM-01JC8"));
+
+        Assert.Equal((false, true, "ITM-01JC8"), (shell.IsSheetPlaceholderShown, shell.IsItemSheet, shell.SheetName));
     }
 
     [Fact]
