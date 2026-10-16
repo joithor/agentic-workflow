@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Context.Core;
 using Aw.Context.Core.Eval;
+using Aw.Context.Infrastructure.Map;
 using Aw.Context.Infrastructure.Store;
 using Aw.Kernel;
 using Aw.Kernel.Json;
@@ -65,6 +66,11 @@ internal sealed class FileProbeReportStore(ContextStoreSettings settings) : IPro
     public ValueTask<Result<string>> Write(ProbeReport report, DateTimeOffset runAt, CancellationToken cancellationToken)
     {
         var path = Path.Combine(settings.ProbesDirectory, "probes-" + runAt.UtcDateTime.ToString("yyyyMMdd'T'HHmmssfff'Z'", CultureInfo.InvariantCulture) + ".json");
+        if (Worktrees.Containing(Path.Combine(settings.Home, "x")) is { } worktree)
+        {
+            return ValueTask.FromResult<Result<string>>(ContextErrors.PathInWorktree.With($"{settings.Home} is inside the git worktree {worktree} (fix: point AW_SINDRI_HOME outside every repo)"));
+        }
+
         try
         {
             OwnerOnly.EnsureDirectory(settings.Home);
