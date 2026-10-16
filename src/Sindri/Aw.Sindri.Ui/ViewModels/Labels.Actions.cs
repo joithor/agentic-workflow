@@ -111,6 +111,17 @@ internal static partial class Labels
     /// <summary>What Decide's line says when the catalog is read but lists no Decide and the decision serves no command.</summary>
     internal const string DecideUnlisted = "Decide is not in the command catalog";
 
+    /// <summary>The name of the Copy button under a decision's Decide line.</summary>
+    /// <param name="decisionId">The decision.</param>
+    /// <returns>The words.</returns>
+    internal static string CopyDecide(string decisionId) => Copy + ": Decide " + decisionId;
+
+    /// <summary>The accessible name of a decision's Decide line: the decision, then the line.</summary>
+    /// <param name="decisionId">The decision.</param>
+    /// <param name="line">The line.</param>
+    /// <returns>The words.</returns>
+    internal static string DecideLineName(string decisionId, string line) => decisionId + ": " + line;
+
     /// <summary>A pending control's phase: "arrives in P2".</summary>
     /// <param name="phase">The phase the catalog names.</param>
     /// <returns>The words.</returns>

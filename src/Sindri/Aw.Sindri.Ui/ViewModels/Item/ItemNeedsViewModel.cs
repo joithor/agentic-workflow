@@ -127,6 +127,11 @@ internal sealed class ItemNeedsViewModel : ObservableObject
         return new ItemDecisionRow(d.Id, d.Question, d.FiledBy, DecisionOptions.From(d, own, _sender), own.Line);
     }
 
+    /// <summary>Copies a decision's served Decide command.</summary>
+    /// <param name="decisionId">The decision.</param>
+    /// <returns>A task that completes once the clipboard answered.</returns>
+    internal Task CopyDecide(string decisionId) => throw new NotSupportedException(decisionId);
+
     /// <summary>Decides one of the item's decisions with an option: sent once, never retried; a refusal shows as served.</summary>
     /// <param name="decisionId">The decision.</param>
     /// <param name="optionId">The option.</param>

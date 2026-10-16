@@ -54,7 +54,8 @@ public sealed class DecideReadinessTests
 
         var row = sheet.Needs.Decisions[0];
         Assert.All(row.Options, o => Assert.Equal(Labels.ProtectedTooltip, o.Reason));
-        Assert.Equal(Labels.ProtectedTooltip, row.DecideLine);
+        Assert.StartsWith(Labels.ProtectedTooltip, row.DecideLine, StringComparison.Ordinal);
+        Assert.Contains("sindri decide", row.DecideLine, StringComparison.Ordinal);   // the served per-option command follows the sentence
     }, Token);
 
     [Fact]

@@ -7,7 +7,7 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// sent once and never retried; a refusal (decided elsewhere, voided, not found) shows as served, inline. When the row clears
 /// while the sheet is open the form is disabled and keeps its text.
 /// </summary>
-internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, TimeProvider clock, DecisionSender sender) : ObservableObject
+internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, TimeProvider clock, DecisionSender sender, Platform.IClipboard? clipboard = null) : ObservableObject
 {
     private static readonly TimeSpan _outcomeShown = TimeSpan.FromSeconds(2);
     private NeedsYouRowViewModel? _row;
@@ -26,6 +26,25 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
 
     /// <summary>The phase and command line under the options when Decide is not ready; empty when it is.</summary>
     internal string DecideLine => _row is null ? "" : DecisionOptions.Line(_row.Controls);
+
+    /// <summary>The served command the line's Copy puts on the clipboard; empty for none.</summary>
+    internal string DecideCli => _row is null || DecideLine.Length == 0 ? "" : DecisionOptions.Cli(_row.Controls);
+
+    /// <summary>Copies the decision's served Decide command.</summary>
+    /// <returns>A task that completes once the clipboard answered.</returns>
+    internal async Task CopyDecide()
+    {
+        if (DecideCli.Length > 0 && clipboard is not null)
+        {
+            _ = await clipboard.SetText(DecideCli, CancellationToken.None).ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>What Copy is called to a screen reader: "Copy: Decide DEC-1".</summary>
+    internal string CopyName => Labels.CopyDecide(DecisionId);
+
+    /// <summary>The line's accessible name: it carries the decision it speaks of.</summary>
+    internal string DecideLineName => Labels.DecideLineName(DecisionId, DecideLine);
 
     /// <summary>The id of the decision shown.</summary>
     internal string DecisionId { get; private set; } = "";

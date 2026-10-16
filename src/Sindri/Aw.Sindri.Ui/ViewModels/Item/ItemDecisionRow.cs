@@ -8,4 +8,15 @@ namespace Aw.Sindri.Ui.ViewModels.Item;
 /// <param name="FiledBy">Who filed it.</param>
 /// <param name="Options">The option buttons, in the served order; the recommended one is flagged.</param>
 /// <param name="DecideLine">The phase and command line under the decision when Decide is not ready; empty when it is.</param>
-internal sealed record ItemDecisionRow(string Id, string Question, string FiledBy, IReadOnlyList<DecisionOption> Options, string DecideLine = "");
+/// <param name="DecideCli">The served command the line's Copy puts on the clipboard; empty for none.</param>
+internal sealed record ItemDecisionRow(string Id, string Question, string FiledBy, IReadOnlyList<DecisionOption> Options, string DecideLine = "", string DecideCli = "")
+{
+    /// <summary>True when the line has a command to copy.</summary>
+    internal bool CanCopy => DecideCli.Length > 0;
+
+    /// <summary>What Copy is called to a screen reader: "Copy: Decide DEC-1".</summary>
+    internal string CopyName => Labels.CopyDecide(Id);
+
+    /// <summary>The line's accessible name: it carries the decision it speaks of.</summary>
+    internal string LineName => Labels.DecideLineName(Id, DecideLine);
+}

@@ -41,4 +41,13 @@ internal static class DecisionOptions
         ArgumentNullException.ThrowIfNull(controls);
         return controls.FirstOrDefault(c => c.Action.OptionId.Length > 0)?.Action is { } a ? new DecideState(a.Readiness, a.Stage, a.Cli, a.CatalogRead).Line : "";
     }
+
+    /// <summary>The served command of a decision row's first option: what the line's Copy puts on the clipboard.</summary>
+    /// <param name="controls">The row's controls.</param>
+    /// <returns>The command, or empty.</returns>
+    internal static string Cli(IEnumerable<NeedsYouActionControl> controls)
+    {
+        ArgumentNullException.ThrowIfNull(controls);
+        return controls.FirstOrDefault(c => c.Action.OptionId.Length > 0)?.Action.Cli ?? "";
+    }
 }
