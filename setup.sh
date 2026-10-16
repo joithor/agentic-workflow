@@ -660,6 +660,8 @@ fi
 if [ "$WITH_META" = "1" ]; then
   if [[ " $PROVIDERS " != *" claude "* ]]; then
     echo "  meta: skipped (Claude Code only; claude is not among the providers)"
+  elif [ "$(uname)" = "Darwin" ]; then
+    echo "  meta: skipped (aw-meta is Linux-only for now: it reads /proc)"
   elif aw_dry; then
     echo "  [dry-run] would run scripts/install-meta.sh"
   else

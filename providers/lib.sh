@@ -16,7 +16,9 @@
 # Compatible with macOS /bin/bash 3.2: no associative arrays, no mapfile, and
 # empty-array expansions are guarded for `set -u`.
 
-AW_STATE_ROOT="${AW_STATE_ROOT:-$HOME/.agentic-workflow}"
+# One state root: AW_STATE_DIR (what the tools and hooks read). AW_STATE_ROOT stays as an alias for it.
+AW_STATE_ROOT="${AW_STATE_DIR:-${AW_STATE_ROOT:-$HOME/.agentic-workflow}}"
+export AW_STATE_DIR="$AW_STATE_ROOT"   # so the install scripts setup.sh runs see the same root
 
 aw_dry() { [ "${AW_DRY_RUN:-0}" = "1" ]; }
 
