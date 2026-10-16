@@ -300,7 +300,7 @@ public sealed class RecipeReaderTests
     {
         var lines = Lines(Minimal
             .Replace("    next: \"Produce", "    budget: { tokens: lots }\n    next: \"Produce", StringComparison.Ordinal)
-            .Replace("step: step.produce", "step: { use: step.produce, with: { files: [{ a: 1 }] } }", StringComparison.Ordinal));
+            .Replace("step: step.produce", "step: { use: step.produce, with: { files: [{ a: 1, b: 2 }] } }", StringComparison.Ordinal));
 
         Assert.Equal(
             [

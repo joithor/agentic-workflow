@@ -125,7 +125,7 @@ internal static class RecipeNormalizer
                 continue;
             }
 
-            if (value is JsonArray list && list.Any(static item => item is JsonObject or JsonArray))
+            if (value is JsonArray list && list.Any(static item => item is JsonArray || (item is JsonObject entry && !IsUnquotedEntry(entry))))
             {
                 findings.Add("RCP-SCHEMA-002", $"{path}.{key}", $"the list '{key}' holds more than strings, numbers and bools",
                     "a literal list holds only strings, numbers and bools; use { fact } or { profile } for anything else");
@@ -136,6 +136,12 @@ internal static class RecipeNormalizer
             values[key] = new JsonObject { ["literal"] = value?.DeepClone() };
         }
     }
+
+    /// <summary>
+    /// A one-key mapping with a plain value: an entry written "- ui: text" without its quotes. It stays in the list so the
+    /// block's own rule (RCP-CHOICE-002 for a choice list, RCP-BLOCK-003 for any other) can say to quote it.
+    /// </summary>
+    private static bool IsUnquotedEntry(JsonObject entry) => entry.Count == 1 && entry.Single().Value is JsonValue;
 
     private static void Tokens(JsonObject? budget, string path, ReaderFindings findings)
     {

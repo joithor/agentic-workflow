@@ -292,7 +292,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-SCHEMA-002-camel"] = new(
             FixtureSetup.Shipped,
-            "RCP-SCHEMA-002: 'fact:evidence-summary' isn't a fact key at RCP-SCHEMA-002-camel.yaml:34:104 (transitions[4].produces[0]); fact names are camelCase: write fact:evidenceSummary",
+            "RCP-SCHEMA-002: 'fact:evidence-summary' isn't a fact key ('fact:<name>' or 'evidence:<kind>@<base|head>') at RCP-SCHEMA-002-camel.yaml:34:86 (transitions[4].produces[0]); fact names are camelCase: write fact:evidenceSummary",
             []),
     };
 }
