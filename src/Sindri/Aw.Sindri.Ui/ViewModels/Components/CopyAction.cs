@@ -11,16 +11,17 @@ internal sealed class CopyAction : ObservableObject
     private readonly IClipboard _clipboard;
     private readonly TimeProvider _clock;
     private readonly string _resting;
+    private readonly string _restingLabel;
     private int _copies;
 
-    internal CopyAction(IClipboard clipboard, TimeProvider clock, string resting)
+    internal CopyAction(IClipboard clipboard, TimeProvider clock, string resting, string? restingLabel = null)
     {
-        (_clipboard, _clock, _resting) = (clipboard, clock, resting);
-        Announcement = resting;
+        (_clipboard, _clock, _resting, _restingLabel) = (clipboard, clock, resting, restingLabel ?? Labels.Copy);
+        (Announcement, Label) = (resting, _restingLabel);
     }
 
-    /// <summary>"Copy", or "Copied" for 1.5 s after a copy.</summary>
-    public string Label { get; private set => Set(ref field, value); } = Labels.Copy;
+    /// <summary>"Copy" (or the button's own resting words), or "Copied" for 1.5 s after a copy.</summary>
+    public string Label { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>True while the live region is live (set before its text changes).</summary>
     public bool IsAnnouncing { get; private set => Set(ref field, value); }
@@ -68,7 +69,7 @@ internal sealed class CopyAction : ObservableObject
 
         if (copy == _copies)
         {
-            Label = Labels.Copy;
+            Label = _restingLabel;
             IsAnnouncing = false;
             Announcement = _resting;
         }

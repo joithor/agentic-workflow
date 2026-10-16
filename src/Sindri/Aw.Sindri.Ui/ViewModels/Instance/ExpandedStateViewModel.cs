@@ -33,7 +33,7 @@ internal sealed class ExpandedStateViewModel : ObservableObject
         HasAttach = current.Step is { } step && string.Equals(step.Ref, "step.agent", StringComparison.Ordinal) && status.Paused is null;
         Name = Labels.ExpandedName(current.State, address);
         CopyStatusName = Labels.CopyStatusName(address);
-        StatusCopy = new CopyAction(clipboard, clock, Labels.CopyStatus);
+        StatusCopy = new CopyAction(clipboard, clock, Labels.CopyStatus, Labels.CopyStatus);
     }
 
     // The lines that move with time or with the engine's counters: a re-read changes their words in place and keeps the controls.
@@ -142,7 +142,7 @@ internal sealed class ExpandedStateViewModel : ObservableObject
     public string PendingNote { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>The live region that says the pending note: flag first, text second, never empty.</summary>
-    public LiveAnnouncer PendingVoice { get; } = new(Labels.PendingNoteResting);
+    public LiveAnnouncer PendingVoice { get; } = new(Labels.PendingNotesResting);
 
     /// <summary>The Copy status control: its words and the live region that says "Copied".</summary>
     public CopyAction StatusCopy { get; }

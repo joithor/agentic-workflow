@@ -41,8 +41,10 @@
           <DataTemplate x:DataType="inst:ExpandedCommandViewModel">
             <WrapPanel Orientation="Horizontal" Margin="0,0,0,6">
               <Button Name="CommandAsk" IsVisible="{Binding IsCancel}" Content="{Binding Label}" Click="OnAsk" Margin="0,0,8,0" AutomationProperties.Name="{Binding Name}" />
-              <TextBlock Name="CommandLabel" Classes="body-strong" Text="{Binding Label}" IsVisible="{Binding ShowsLabel}" VerticalAlignment="Center" Margin="0,0,8,0"
-                         AutomationProperties.Name="{Binding Name}" />
+              <Border Name="CommandLabelName" IsVisible="{Binding ShowsLabel}" VerticalAlignment="Center" Margin="0,0,8,0" AutomationProperties.Name="{Binding Name}"
+                      AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                <TextBlock Name="CommandLabel" Classes="body-strong" Text="{Binding Label}" AutomationProperties.AccessibilityView="Raw" />
+              </Border>
               <Panel IsVisible="{Binding Protected, Converter={x:Static ObjectConverters.IsNotNull}}" Margin="0,0,8,0">
                 <comp:ProtectedActionButton DataContext="{Binding Protected}" />
               </Panel>

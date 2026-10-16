@@ -26,9 +26,11 @@
       <ItemsControl x:Name="WorkflowRowInputs" Grid.Column="1" ItemsSource="{Binding Inputs}" Margin="0,0,8,0">
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="wf:InputCellViewModel">
-            <TextBlock Classes="caption mono" TextTrimming="CharacterEllipsis" AutomationProperties.Name="{Binding Name}">
-              <Run Text="{Binding Label}" /><Run Text=" " /><Run Text="{Binding Mark}" />
-            </TextBlock>
+            <Border Name="WorkflowInputCell" AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+              <TextBlock Classes="caption mono" TextTrimming="CharacterEllipsis" AutomationProperties.AccessibilityView="Raw">
+                <Run Text="{Binding Label}" /><Run Text=" " /><Run Text="{Binding Mark}" />
+              </TextBlock>
+            </Border>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
@@ -38,8 +40,10 @@
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="wf:StageCellViewModel">
-            <TextBlock Classes="caption mono" Classes.current="{Binding IsCurrent}" Text="{Binding Text}" TextWrapping="Wrap" Margin="0,0,6,0"
-                       AutomationProperties.Name="{Binding Name}" />
+            <Border Name="WorkflowStageCell" Margin="0,0,6,0" IsVisible="{Binding !IsMissing}" AutomationProperties.Name="{Binding Name}"
+                    AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+              <TextBlock Classes="caption mono" Classes.current="{Binding IsCurrent}" Text="{Binding Text}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+            </Border>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>

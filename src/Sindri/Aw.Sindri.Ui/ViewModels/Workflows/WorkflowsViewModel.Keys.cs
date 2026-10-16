@@ -23,7 +23,7 @@ internal sealed partial class WorkflowsViewModel
     public string KeyNote { get; private set { Set(ref field, value); OnChanged(nameof(HasKeyNote)); } } = string.Empty;
 
     /// <summary>The live region that says the note: flag first, text second, never empty.</summary>
-    public LiveAnnouncer KeyNoteVoice { get; } = new(Labels.WorkflowsHeading);
+    public LiveAnnouncer KeyNoteVoice { get; } = new(Labels.KeyNotesResting);
 
     /// <summary>True when a key left a note.</summary>
     public bool HasKeyNote => KeyNote.Length > 0;

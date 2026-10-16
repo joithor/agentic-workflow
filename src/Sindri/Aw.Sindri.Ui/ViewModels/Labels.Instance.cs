@@ -35,9 +35,6 @@ internal static partial class Labels
     /// <returns>The words.</returns>
     internal static string BranchOf(string source) => $"branch of {source}";
 
-    /// <summary>The note's live region while it says nothing (never empty).</summary>
-    internal const string PendingNoteResting = "Cancel";
-
     /// <summary>What the frame says after Cancel was confirmed: nothing was sent.</summary>
     internal static readonly string SendingArrivesNote = $"Sending from the app {Arrives("U8b")}. Copy the command and run it at a terminal.";
 

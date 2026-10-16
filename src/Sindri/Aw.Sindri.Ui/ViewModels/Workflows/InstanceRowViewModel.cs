@@ -75,7 +75,7 @@ internal sealed class InstanceRowViewModel : ObservableObject
         Cells = [.. columns.Select(column => Stages.FirstOrDefault(s => string.Equals(s.State, column, StringComparison.Ordinal)) ?? StageCellViewModel.Missing(column))];
 
     /// <summary>The title button's accessible name.</summary>
-    public string OpenName => Labels.OpenInstanceName(_row.Address);
+    public string OpenName => Labels.OpenInstanceName(Subject, _row.Address);
 
     /// <summary>The name screen readers hear: the subject and the address, then the state and the chip's word.</summary>
     public string AccessibleName => $"{Subject} {_row.Address}, {_row.State}, {_row.Chip.Word}";
