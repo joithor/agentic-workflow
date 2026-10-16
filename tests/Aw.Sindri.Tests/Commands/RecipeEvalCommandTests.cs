@@ -107,7 +107,7 @@ public sealed class RecipeEvalCommandTests : IDisposable
         var directory = Path.Combine(_home.Path, "scaffolds");
         _ = Directory.CreateDirectory(Path.GetDirectoryName(route)!); // why: the recipe's directory
         await File.WriteAllTextAsync(route, ShippedRecipes.Read("dev/workflow.dev-evidence-route.yaml"), TestContext.Current.CancellationToken);
-        string[] names = ["scaffold-ui", "scaffold-api", "scaffold-db", "scaffold-all", "scaffold-none", "scaffold-other", "scaffold-uncertain", "scaffold-step-failed"];
+        string[] names = ["scaffold-ui", "scaffold-api", "scaffold-db", "scaffold-all", "scaffold-none", "scaffold-other", "scaffold-uncertain", "scaffold-step_failed"];
 
         Assert.Equal(0, await Run("recipe", "eval", "--scaffold", route, "--out", directory));
 
@@ -122,13 +122,13 @@ public sealed class RecipeEvalCommandTests : IDisposable
         Assert.Contains("SND-CLI-003", _error.ToString(), StringComparison.Ordinal);
         Assert.Equal("mine\n", await File.ReadAllTextAsync(Path.Combine(directory, "scaffold-api.jsonl"), TestContext.Current.CancellationToken));
 
-        foreach (var name in names.Where(static n => !string.Equals(n, "scaffold-step-failed", StringComparison.Ordinal)))
+        foreach (var name in names.Where(static n => !string.Equals(n, "scaffold-step_failed", StringComparison.Ordinal)))
         {
             File.Delete(Path.Combine(directory, name + ".jsonl"));
         }
 
         Assert.Equal(2, await Run("recipe", "eval", "--scaffold", route, "--out", directory));   // the last file still exists: nothing is written, not even the missing ones
-        Assert.Equal(["scaffold-step-failed"], Directory.GetFiles(directory).Select(static f => Path.GetFileNameWithoutExtension(f)), StringComparer.Ordinal);
+        Assert.Equal(["scaffold-step_failed"], Directory.GetFiles(directory).Select(static f => Path.GetFileNameWithoutExtension(f)), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "integration")]
