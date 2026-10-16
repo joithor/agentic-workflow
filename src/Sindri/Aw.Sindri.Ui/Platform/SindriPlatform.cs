@@ -21,9 +21,6 @@ public sealed record SindriPlatform(
     /// <summary>The app's log (the desktop head's writes JSON lines on standard error through Aw.Kernel.Telemetry); none by default.</summary>
     public ILogger Log { get; init; } = NullLogger.Instance;
 
-    /// <summary>Opens links and files in the system's apps; a head without one keeps the launcher that opens nothing.</summary>
-    public ILauncher Launcher { get; init; } = NullLauncher.Instance;
-
     /// <summary>The dock or taskbar badge (U3'); a platform without one keeps the <see cref="NullDockBadge"/>.</summary>
     public IDockBadge DockBadge { get; init; } = new NullDockBadge();
 }

@@ -4,7 +4,7 @@ using Aw.Sindri.Ui.ViewModels.Facts;
 
 namespace Aw.Sindri.Ui.Views.Facts;
 
-/// <summary>A link fact's viewer: Open hands the link to the platform.</summary>
+/// <summary>A link fact's viewer: Open hands the link to the launcher.</summary>
 internal sealed partial class LinkFactView : UserControl
 {
     public LinkFactView()
@@ -14,9 +14,9 @@ internal sealed partial class LinkFactView : UserControl
 
     private void OnOpen(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is LinkFactViewer { CanOpen: true } viewer && Uri.TryCreate(viewer.Url, UriKind.Absolute, out var uri))
+        if (DataContext is LinkFactViewer viewer)
         {
-            _ = TopLevel.GetTopLevel(this)?.Launcher.LaunchUriAsync(uri);
+            _ = viewer.Open(CancellationToken.None);
         }
     }
 }

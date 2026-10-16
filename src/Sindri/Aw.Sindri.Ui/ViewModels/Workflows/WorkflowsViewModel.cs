@@ -36,10 +36,10 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
 #pragma warning restore CA1822, MA0041
 
     /// <summary>The legend line at the foot of the list (screens §4.2): the marks the rows draw, then the page's keys.</summary>
-    public string LegendText { get; } = Labels.WorkflowsLegend;
+    public string LegendText { get; } = WorkflowsLegend.Text;
 
     /// <summary>The legend in words, for screen readers: no glyph.</summary>
-    public string LegendName { get; } = Labels.WorkflowsLegendName;
+    public string LegendName { get; } = WorkflowsLegend.Name;
 
     /// <summary>"8 open · 2 need you · 1 with you", root-wide whatever the filters; empty before the first list.</summary>
     public string Head { get; private set => Set(ref field, value); } = string.Empty;

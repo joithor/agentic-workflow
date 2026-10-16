@@ -47,10 +47,12 @@ internal sealed class SubjectLineViewModel
     /// <summary>Hands the subject's link to the system.</summary>
     /// <param name="cancellationToken">Cancels the request.</param>
     /// <returns>A task that completes once the system answered.</returns>
-    public Task OpenIn(CancellationToken cancellationToken)
+    public async Task OpenIn(CancellationToken cancellationToken)
     {
-        _ = (_launcher, cancellationToken);   // used by the fix that follows this test commit
-        throw new NotSupportedException();
+        if (HasHref && Uri.TryCreate(Href, UriKind.Absolute, out var uri))
+        {
+            _ = await _launcher.OpenUri(uri, cancellationToken).ConfigureAwait(true);
+        }
     }
 
     /// <summary>What the line is made of, to keep the control when a re-read serves the same.</summary>

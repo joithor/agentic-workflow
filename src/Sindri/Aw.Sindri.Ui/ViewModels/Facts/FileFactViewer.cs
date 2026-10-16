@@ -57,11 +57,8 @@ internal sealed class FileFactViewer : ObservableObject, IFactViewer
     /// <summary>Asks the system to open the file the fact names, and says so when it could not (a path that is not absolute is never opened).</summary>
     /// <param name="cancellationToken">Cancels the request.</param>
     /// <returns>A task that completes once the system answered.</returns>
-    public Task Open(CancellationToken cancellationToken)
-    {
-        _ = (_launcher, cancellationToken);   // used by the fix that follows this test commit
-        throw new NotSupportedException();
-    }
+    public async Task Open(CancellationToken cancellationToken) =>
+        ReportOpened(System.IO.Path.IsPathRooted(Path) && await _launcher.OpenFile(Path, cancellationToken).ConfigureAwait(true));
 
     /// <summary>Records what Open found.</summary>
     /// <param name="opened">True when the platform opened the file.</param>

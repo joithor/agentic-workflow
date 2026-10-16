@@ -45,10 +45,12 @@ internal sealed class LinkFactViewer : ObservableObject, IFactViewer
     /// <summary>Hands the link to the system. Only an http or https link is opened.</summary>
     /// <param name="cancellationToken">Cancels the request.</param>
     /// <returns>A task that completes once the system answered.</returns>
-    public Task Open(CancellationToken cancellationToken)
+    public async Task Open(CancellationToken cancellationToken)
     {
-        _ = (_launcher, cancellationToken);   // used by the fix that follows this test commit
-        throw new NotSupportedException();
+        if (CanOpen && Uri.TryCreate(Url, UriKind.Absolute, out var uri))
+        {
+            _ = await _launcher.OpenUri(uri, cancellationToken).ConfigureAwait(true);
+        }
     }
 
     /// <summary>A link viewer needs nothing beyond the row.</summary>
