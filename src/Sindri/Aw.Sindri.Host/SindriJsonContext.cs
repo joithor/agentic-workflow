@@ -16,6 +16,7 @@ using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
@@ -28,6 +29,7 @@ using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.ApproveRecipe;
+using Aw.Sindri.Features.CancelJob;
 using Aw.Sindri.Features.CloseItem;
 using Aw.Sindri.Features.CompleteStep;
 using Aw.Sindri.Features.ContextCalls;
@@ -41,6 +43,7 @@ using Aw.Sindri.Features.GetInstanceEvents;
 using Aw.Sindri.Features.GetInstanceFact;
 using Aw.Sindri.Features.GetItem;
 using Aw.Sindri.Features.GetItemTimeline;
+using Aw.Sindri.Features.GetJob;
 using Aw.Sindri.Features.GetNeedsYou;
 using Aw.Sindri.Features.GetProfile;
 using Aw.Sindri.Features.GetQueue;
@@ -51,16 +54,20 @@ using Aw.Sindri.Features.ListCommands;
 using Aw.Sindri.Features.ListDecisions;
 using Aw.Sindri.Features.ListInstances;
 using Aw.Sindri.Features.ListItems;
+using Aw.Sindri.Features.ListJobs;
 using Aw.Sindri.Features.ListOutbox;
 using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.ListRequests;
 using Aw.Sindri.Features.ListServices;
+using Aw.Sindri.Features.PauseService;
 using Aw.Sindri.Features.ReadLedger;
 using Aw.Sindri.Features.RebuildViews;
 using Aw.Sindri.Features.RegisterMcp;
 using Aw.Sindri.Features.RegisterRecipe;
+using Aw.Sindri.Features.ResumeService;
 using Aw.Sindri.Features.RevokeRecipe;
 using Aw.Sindri.Features.RunDoctor;
+using Aw.Sindri.Features.RunService;
 using Aw.Sindri.Features.ShowRecipe;
 using Aw.Sindri.Features.StartInstance;
 using Aw.Sindri.Features.StopProcess;
@@ -96,17 +103,12 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(RequestFiledPublic))]
 [JsonSerializable(typeof(DecisionRecorded))]
 [JsonSerializable(typeof(DecisionRecordedPublic))]
-[JsonSerializable(typeof(JobStarted))]
-[JsonSerializable(typeof(JobProgress))]
-[JsonSerializable(typeof(JobFinished))]
-[JsonSerializable(typeof(JobFinishedPublic))]
-[JsonSerializable(typeof(JobCancelled))]
-[JsonSerializable(typeof(ServicePaused))]
-[JsonSerializable(typeof(ServiceResumed))]
-[JsonSerializable(typeof(JobRow))]
-[JsonSerializable(typeof(JobLine))]
-[JsonSerializable(typeof(JobLinks))]
-[JsonSerializable(typeof(JobStartedResponse))]
+[JsonSerializable(typeof(JobStarted)), JsonSerializable(typeof(JobProgress)), JsonSerializable(typeof(JobFinished)), JsonSerializable(typeof(JobFinishedPublic))]
+[JsonSerializable(typeof(JobCancelled)), JsonSerializable(typeof(ServicePaused)), JsonSerializable(typeof(ServiceResumed)), JsonSerializable(typeof(JobRow))]
+[JsonSerializable(typeof(JobLine)), JsonSerializable(typeof(JobLinks)), JsonSerializable(typeof(JobStartedResponse)), JsonSerializable(typeof(RunServiceRequest))]
+[JsonSerializable(typeof(PauseServiceRequest)), JsonSerializable(typeof(ResumeServiceRequest)), JsonSerializable(typeof(CancelJobRequest)), JsonSerializable(typeof(GetJobRequest))]
+[JsonSerializable(typeof(JobView)), JsonSerializable(typeof(ListJobsRequest)), JsonSerializable(typeof(JobList)), JsonSerializable(typeof(JobSummary))]
+[JsonSerializable(typeof(ScheduledResult))]
 [JsonSerializable(typeof(AsOf))]
 [JsonSerializable(typeof(ViewsStatus))]
 [JsonSerializable(typeof(ServiceRow))]

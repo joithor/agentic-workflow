@@ -6,10 +6,11 @@ using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Features.Commands;
+using Aw.Sindri.Features.Jobs;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace Aw.Sindri.Features.Jobs;
+namespace Aw.Sindri.Features;
 
 /// <summary>Registers job-class commands (API P6): the contract the context lane's SyncSources and BuildContextMap use.</summary>
 public static class SindriJobServiceCollectionExtensions
@@ -41,21 +42,21 @@ public static class SindriJobServiceCollectionExtensions
             .AddScoped<TService>()
             .AddSingleton(new JobDefinition(typeof(TRequest), request => key((TRequest)request),
                 (request, ct) => precheck is null ? ValueTask.FromResult<Result<Unit>>(Unit.Value) : precheck((TRequest)request, ct),
-                async (sp, request, ct) => await Work<TRequest, TResult, TService>(sp, (TRequest)request, summary, ct).ConfigureAwait(false)));
+                async (resolve, request, ct) => await Work<TRequest, TResult, TService>(resolve, (TRequest)request, summary, ct).ConfigureAwait(false)));
         return services.AddCommand<TRequest, JobStartedResponse, JobStartService<TRequest, TResult>>();
     }
 
-    private static async ValueTask<JobWorkResult> Work<TRequest, TResult, TService>(IServiceProvider sp, TRequest request, Func<TResult, string> summary, CancellationToken ct)
+    private static async ValueTask<JobWorkResult> Work<TRequest, TResult, TService>(Func<Type, object> resolve, TRequest request, Func<TResult, string> summary, CancellationToken ct)
         where TRequest : class
         where TService : class, IService<TRequest, TResult>
     {
-        var done = await sp.GetRequiredService<TService>().Handle(request, ct).ConfigureAwait(false);
+        var done = await ((TService)resolve(typeof(TService))).Handle(request, ct).ConfigureAwait(false);
         if (done.IsError)
         {
             return new JobWorkResult(done.Error, string.Empty, Result: null);
         }
 
-        var options = sp.GetRequiredService<JsonSerializerOptions>();
+        var options = (JsonSerializerOptions)resolve(typeof(JsonSerializerOptions));
         return new JobWorkResult(Error: null, summary(done.Value), JsonSerializer.SerializeToElement(done.Value, options.GetTypeInfo(typeof(TResult))));
     }
 }

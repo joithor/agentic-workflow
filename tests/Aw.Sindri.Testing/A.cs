@@ -108,4 +108,28 @@ public static class A
     /// <summary>A jobs-view row builder: a running RunService job for heartbeat, started at the epoch.</summary>
     /// <returns>A new builder.</returns>
     public static JobBuilder Job() => new();
+
+    /// <summary>A RunServiceRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static RunServiceRequestBuilder RunServiceRequest() => new();
+
+    /// <summary>A PauseServiceRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static PauseServiceRequestBuilder PauseServiceRequest() => new();
+
+    /// <summary>A ResumeServiceRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static ResumeServiceRequestBuilder ResumeServiceRequest() => new();
+
+    /// <summary>A CancelJobRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static CancelJobRequestBuilder CancelJobRequest() => new();
+
+    /// <summary>A GetJobRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static GetJobRequestBuilder GetJobRequest() => new();
+
+    /// <summary>A ListJobsRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static ListJobsRequestBuilder ListJobsRequest() => new();
 }

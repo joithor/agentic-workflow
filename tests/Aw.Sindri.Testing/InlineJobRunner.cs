@@ -40,11 +40,11 @@ public sealed class InlineJobRunner(IServiceScopeFactory scopes, IJobContextAcce
             using var job = jobs.Enter(new JobContext(start.Job, start.Kind, new Inline(line => _lines.Enqueue((start.Job, line)))));
             try
             {
-                _finished.Enqueue((start.Job, await start.Definition.Run(scope.ServiceProvider, start.Request, cancellationToken).ConfigureAwait(false)));
+                _finished.Enqueue((start.Job, await start.Definition.Run(scope.ServiceProvider.GetRequiredService, start.Request, cancellationToken).ConfigureAwait(false)));
             }
             catch (Exception e) when (e is not OperationCanceledException)
             {
-                _finished.Enqueue((start.Job, new JobWorkResult(Aw.Sindri.Core.SindriErrors.ServiceFailed.With(e.Message), string.Empty, Result: null)));
+                _finished.Enqueue((start.Job, new JobWorkResult(Core.SindriErrors.ServiceFailed.With(e.Message), string.Empty, Result: null)));
             }
         }
     }

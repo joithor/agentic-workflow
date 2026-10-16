@@ -3,6 +3,7 @@ using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
+using Aw.Sindri.Features;
 using Aw.Sindri.Features.Jobs;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Jobs;

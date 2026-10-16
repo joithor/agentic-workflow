@@ -11,10 +11,10 @@ public sealed class JobDefinition
 {
     private readonly Func<object, JobKey> _key;
     private readonly Func<object, CancellationToken, ValueTask<Result<Unit>>> _precheck;
-    private readonly Func<IServiceProvider, object, CancellationToken, ValueTask<JobWorkResult>> _run;
+    private readonly Func<Func<Type, object>, object, CancellationToken, ValueTask<JobWorkResult>> _run;
 
     internal JobDefinition(Type request, Func<object, JobKey> key, Func<object, CancellationToken, ValueTask<Result<Unit>>> precheck,
-        Func<IServiceProvider, object, CancellationToken, ValueTask<JobWorkResult>> run)
+        Func<Func<Type, object>, object, CancellationToken, ValueTask<JobWorkResult>> run)
     {
         Request = request;
         _key = key;
@@ -44,15 +44,15 @@ public sealed class JobDefinition
         return _precheck(request, cancellationToken);
     }
 
-    /// <summary>Runs the work of <paramref name="request"/> in <paramref name="services"/> (a scope the caller owns).</summary>
-    /// <param name="services">The scope's provider.</param>
+    /// <summary>Runs the work of <paramref name="request"/>, resolving its service through a DI scope the caller owns.</summary>
+    /// <param name="resolve">Resolves a service from the scope the caller owns (a delegate, so Features never holds the provider).</param>
     /// <param name="request">The request.</param>
     /// <param name="cancellationToken">Trips on CancelJob or the host stopping.</param>
     /// <returns>How it ended; a throw is the runner's to map.</returns>
-    public ValueTask<JobWorkResult> Run(IServiceProvider services, object request, CancellationToken cancellationToken)
+    public ValueTask<JobWorkResult> Run(Func<Type, object> resolve, object request, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(resolve);
         ArgumentNullException.ThrowIfNull(request);
-        return _run(services, request, cancellationToken);
+        return _run(resolve, request, cancellationToken);
     }
 }

@@ -19,5 +19,5 @@ public interface IJobRunner
     /// <summary>Trips the work token of a running job.</summary>
     /// <param name="job">The job.</param>
     /// <returns>True when this runner had the job running; false for a job it does not have (ended, or from before a restart).</returns>
-    public bool Cancel(Aw.Sindri.Core.Ids.JobId job);
+    public bool Cancel(Core.Ids.JobId job);
 }
