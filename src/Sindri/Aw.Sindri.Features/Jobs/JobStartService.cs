@@ -56,15 +56,32 @@ internal sealed class JobStartService<TRequest, TResult>(JobAdmitter<TRequest> a
             return Conflict(kind, key, running);
         }
 
-        var recorded = await recorder.Record(new JobTicket(job, kind, key), caller, admitted.Value.Service, repo, cancellationToken).ConfigureAwait(false);
-        if (recorded.IsError)
-        {
-            registry.Release(job);
-            return recorded.Error;
-        }
+        return await Begin(new JobTicket(job, kind, key), admitted.Value, request, caller, repo).ConfigureAwait(false);
+    }
 
-        await runner.Start(new JobStart(job, kind, key, definition, request, caller, recorded.Value.Grant, admitted.Value.Service, recorded.Value.Cause, repo), cancellationToken).ConfigureAwait(false);
-        return Response(caller, job, recorded.Value.Sequence);
+    /// <summary>
+    /// Records the start and hands the job over once its claim is held, whatever the request does: an aborted POST must neither tear the append nor leave
+    /// the claim behind, and a throw releases it.
+    /// </summary>
+    private async ValueTask<Result<JobStartedResponse>> Begin(JobTicket ticket, AdmittedJob admitted, TRequest request, CallerContext caller, RepoName? repo)
+    {
+        try
+        {
+            var recorded = await recorder.Record(ticket, caller, admitted.Service, repo, CancellationToken.None).ConfigureAwait(false);
+            if (recorded.IsError)
+            {
+                registry.Release(ticket.Job);
+                return recorded.Error;
+            }
+
+            await runner.Start(new JobStart(ticket.Job, ticket.Kind, ticket.Key, admitted.Definition, request, caller, recorded.Value.Grant, admitted.Service, recorded.Value.Cause, repo), CancellationToken.None).ConfigureAwait(false);
+            return Response(caller, ticket.Job, recorded.Value.Sequence);
+        }
+        catch
+        {
+            registry.Release(ticket.Job);   // once the runner has the job it releases the claim itself; releasing a claim already gone is a no-op
+            throw;
+        }
     }
 
     private static JobStartedResponse Response(CallerContext caller, JobId job, long sequence) =>

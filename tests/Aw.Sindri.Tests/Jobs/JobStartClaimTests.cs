@@ -50,12 +50,11 @@ public sealed class JobStartClaimTests
         await using var runtime = new RealJobRuntime();
         await runtime.Open();
         using var aborted = new CancellationTokenSource();
-        await aborted.CancelAsync();
+        runtime.H.Store.BeforeAppend = entry => { if (entry.Envelope.Type == EventTypes.JobStarted) { aborted.Cancel(); } };   // the client drops the POST while the start is being recorded
 
-        var started = await runtime.StartWith(Human(), aborted.Token);
+        _ = await Record.ExceptionAsync(() => runtime.StartWith(Human(), aborted.Token));   // the audit after the start sees the dead token; the start itself is not torn
         await runtime.Quiesce();
 
-        Assert.True(started.IsSuccess);
         _ = Assert.Single(runtime.Events, e => e.Envelope.Type == EventTypes.JobStarted);
         _ = Assert.Single(runtime.Events, e => e.Envelope.Type == EventTypes.JobFinished);
         var again = await runtime.Start(new EchoJobRequest(Lines: 1, DelayMs: 0), Human());   // the key is free once the job has ended
