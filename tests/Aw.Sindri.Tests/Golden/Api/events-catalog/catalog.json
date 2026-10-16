@@ -46,6 +46,40 @@
       ]
     },
     {
+      "type": "job.cancelled",
+      "keyShape": "job.cancelled:<jobId>",
+      "invalidates": [
+        "job",
+        "jobs",
+        "services"
+      ]
+    },
+    {
+      "type": "job.finished",
+      "keyShape": "job.finished:<jobId>",
+      "invalidates": [
+        "job",
+        "jobs",
+        "services"
+      ]
+    },
+    {
+      "type": "job.progress",
+      "keyShape": "job.progress:<jobId>:<n>",
+      "invalidates": [
+        "job"
+      ]
+    },
+    {
+      "type": "job.started",
+      "keyShape": "job.started:<jobId>",
+      "invalidates": [
+        "job",
+        "jobs",
+        "services"
+      ]
+    },
+    {
       "type": "process.started",
       "keyShape": "process.started:<epoch>",
       "invalidates": [
@@ -99,12 +133,28 @@
       ]
     },
     {
+      "type": "service.paused",
+      "keyShape": "service.paused:<name>:<commandId>",
+      "invalidates": [
+        "services",
+        "status"
+      ]
+    },
+    {
       "type": "service.ran",
-      "keyShape": "service.ran:<name>:<epoch>:<slot>",
+      "keyShape": "service.ran:<name>:<epoch>:<slot> | service.ran:<name>:manual:<jobId>",
       "invalidates": [
         "status",
         "services",
         "needs-you"
+      ]
+    },
+    {
+      "type": "service.resumed",
+      "keyShape": "service.resumed:<name>:<commandId>",
+      "invalidates": [
+        "services",
+        "status"
       ]
     }
   ]

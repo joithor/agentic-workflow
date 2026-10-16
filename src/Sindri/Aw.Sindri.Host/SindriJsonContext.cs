@@ -13,6 +13,7 @@ using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Health;
 using Aw.Sindri.Core.Items;
+using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Views;
@@ -95,6 +96,17 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(RequestFiledPublic))]
 [JsonSerializable(typeof(DecisionRecorded))]
 [JsonSerializable(typeof(DecisionRecordedPublic))]
+[JsonSerializable(typeof(JobStarted))]
+[JsonSerializable(typeof(JobProgress))]
+[JsonSerializable(typeof(JobFinished))]
+[JsonSerializable(typeof(JobFinishedPublic))]
+[JsonSerializable(typeof(JobCancelled))]
+[JsonSerializable(typeof(ServicePaused))]
+[JsonSerializable(typeof(ServiceResumed))]
+[JsonSerializable(typeof(JobRow))]
+[JsonSerializable(typeof(JobLine))]
+[JsonSerializable(typeof(JobLinks))]
+[JsonSerializable(typeof(JobStartedResponse))]
 [JsonSerializable(typeof(AsOf))]
 [JsonSerializable(typeof(ViewsStatus))]
 [JsonSerializable(typeof(ServiceRow))]

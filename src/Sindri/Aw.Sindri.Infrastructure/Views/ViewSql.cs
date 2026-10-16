@@ -35,6 +35,7 @@ internal static class ViewSql
         [ViewNames.Requests] = new ViewTable("view_requests", Columns(ViewNames.Requests)),
         [ViewNames.Decisions] = new ViewTable("view_decisions", Columns(ViewNames.Decisions)),
         [ViewNames.NeedsYou] = new ViewTable("view_needs_you", Columns(ViewNames.NeedsYou)),
+        [ViewNames.Jobs] = new ViewTable("view_jobs"),
     };
 
     /// <summary>The columns migration 0003 generates for <paramref name="view"/>: the ones <see cref="ViewColumns"/> maps, named after the column.</summary>

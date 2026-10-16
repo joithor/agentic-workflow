@@ -579,6 +579,11 @@ blocks.
 | `SND-SECRET-002` | A secret pointer doesn't resolve: the variable is unset or empty, the file is missing or empty, the keychain (macOS `security`, Linux `secret-tool`) or 1Password entry is missing, `security`, `secret-tool` or `op` isn't on PATH or ran past its timeout (5 s, 30 s), or `keychain:` is used on any other OS. On Linux `secret-tool` exits 1 both for a missing entry and when no D-Bus session or keyring is reachable, so `sindri serve` must run in the login session. The message names the pointer and the fix, never a value |
 | `SND-SECRET-003` | A `file:` pointer is unsafe: the file has group or other permission bits (it must be 0600 or stricter) or isn't a regular file (a symbolic link, even to a 0600 file, or a directory; only the last path segment is checked) |
 | `SND-VIEW-001` | The views are stalled or can't be updated: the projector stalled on an event (logged with its sequence and type), or it can't run (views.db or the ledger can't be used). `sindri views rebuild` clears an event stall or a views.db cause; `sindri doctor` diagnoses a ledger cause |
+| `SND-JOB-404` | No job has that id, or a `session` caller asked for one outside its repo (404; API P6) |
+| `SND-JOB-409` | A job of that kind and key is already running (409; the error carries `runningJob: "JOB-…"`), or `CancelJob` met a job that already ended (409; API P6) |
+| `SND-JOB-001` | The process stopped while the job ran. Only ever a job's `code` (the recovery pass writes it at the next start), never an HTTP response (API P6) |
+| `SND-JOB-002` | Too many jobs are running (8) (429; API P6) |
+| `SND-SVC-404` | No service of the approved profile has that name (404; API P6) |
 
 ### Workflow errors (`WorkflowErrors`)
 

@@ -56,18 +56,19 @@ public sealed class ViewsFileTests : IDisposable
         var migrated = await runner.Migrate(ViewsDatabase.Migrations, Token);
 
         Assert.True(migrated.IsSuccess, migrated.IsError ? migrated.Error.Message : null);
-        Assert.Equal(["projector_state", "view_decisions", "view_item_aliases", "view_item_timeline", "view_items", "view_needs_you", "view_profile", "view_requests", "view_services"], Tables(path));
+        Assert.Equal(["projector_state", "view_decisions", "view_item_aliases", "view_item_timeline", "view_items", "view_jobs", "view_needs_you", "view_profile", "view_requests", "view_services"], Tables(path));
         Assert.Equal(["key", "row_json", "seq", "owner"], Columns(path, "view_items"));
         Assert.Equal(["key", "row_json", "seq", "item", "state", "repo"], Columns(path, "view_requests"));
         Assert.Equal(["key", "row_json", "seq", "item", "state", "repo"], Columns(path, "view_decisions"));
         Assert.Equal(["key", "row_json", "seq", "item", "repo", "kind"], Columns(path, "view_needs_you"));
+        Assert.Equal(["key", "row_json", "seq", "state", "kind", "repo"], Columns(path, "view_jobs"));
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Every_view_name_has_a_table_and_the_schema_is_at_version_3()
+    public void Every_view_name_has_a_table_and_the_schema_is_at_version_4()
     {
-        Assert.Equal(["decisions", "item-aliases", "item-timeline", "items", "needs_you", "profile", "requests", "services"], ViewNames.All.Order(StringComparer.Ordinal).ToList());
-        Assert.Equal(3, ViewSchema.Version);
+        Assert.Equal(["decisions", "item-aliases", "item-timeline", "items", "jobs", "needs_you", "profile", "requests", "services"], ViewNames.All.Order(StringComparer.Ordinal).ToList());
+        Assert.Equal(4, ViewSchema.Version);
     }
 
     [Fact, Trait("Lane", "integration")]

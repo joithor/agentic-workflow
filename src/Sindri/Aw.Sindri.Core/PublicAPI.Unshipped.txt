@@ -560,13 +560,11 @@ Aw.Sindri.Core.Events.ServiceRan.Code.get -> string?
 Aw.Sindri.Core.Events.ServiceRan.Code.init -> void
 Aw.Sindri.Core.Events.ServiceRan.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
 Aw.Sindri.Core.Events.ServiceRan.CommandId.init -> void
-Aw.Sindri.Core.Events.ServiceRan.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.ServiceName Service, out System.DateTimeOffset Slot, out Aw.Sindri.Core.Events.ServiceOutcome Outcome, out string? Code) -> void
 Aw.Sindri.Core.Events.ServiceRan.Equals(Aw.Sindri.Core.Events.ServiceRan? other) -> bool
 Aw.Sindri.Core.Events.ServiceRan.Outcome.get -> Aw.Sindri.Core.Events.ServiceOutcome
 Aw.Sindri.Core.Events.ServiceRan.Outcome.init -> void
 Aw.Sindri.Core.Events.ServiceRan.Service.get -> Aw.Sindri.Core.Ids.ServiceName
 Aw.Sindri.Core.Events.ServiceRan.Service.init -> void
-Aw.Sindri.Core.Events.ServiceRan.ServiceRan(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.ServiceName Service, System.DateTimeOffset Slot, Aw.Sindri.Core.Events.ServiceOutcome Outcome, string? Code) -> void
 Aw.Sindri.Core.Events.ServiceRan.Slot.get -> System.DateTimeOffset
 Aw.Sindri.Core.Events.ServiceRan.Slot.init -> void
 Aw.Sindri.Core.Events.StopReason
@@ -1229,7 +1227,6 @@ Aw.Sindri.Core.Views.ProjectorState.StalledType.get -> string?
 Aw.Sindri.Core.Views.ProjectorState.StalledType.init -> void
 Aw.Sindri.Core.Views.ServiceRow
 Aw.Sindri.Core.Views.ServiceRow.<Clone>$() -> Aw.Sindri.Core.Views.ServiceRow!
-Aw.Sindri.Core.Views.ServiceRow.Deconstruct(out Aw.Sindri.Core.Ids.ServiceName Name, out Aw.Sindri.Core.Views.LastRun? LastRun, out bool Paused, out long Sequence) -> void
 Aw.Sindri.Core.Views.ServiceRow.Equals(Aw.Sindri.Core.Views.ServiceRow? other) -> bool
 Aw.Sindri.Core.Views.ServiceRow.LastRun.get -> Aw.Sindri.Core.Views.LastRun?
 Aw.Sindri.Core.Views.ServiceRow.LastRun.init -> void
@@ -1239,7 +1236,6 @@ Aw.Sindri.Core.Views.ServiceRow.Paused.get -> bool
 Aw.Sindri.Core.Views.ServiceRow.Paused.init -> void
 Aw.Sindri.Core.Views.ServiceRow.Sequence.get -> long
 Aw.Sindri.Core.Views.ServiceRow.Sequence.init -> void
-Aw.Sindri.Core.Views.ServiceRow.ServiceRow(Aw.Sindri.Core.Ids.ServiceName Name, Aw.Sindri.Core.Views.LastRun? LastRun, bool Paused, long Sequence) -> void
 Aw.Sindri.Core.Views.ViewNames
 Aw.Sindri.Core.Views.ViewSchema
 Aw.Sindri.Core.Views.ViewStall
@@ -4523,7 +4519,6 @@ const Aw.Sindri.Core.Profile.SindriProfile.CurrentSchemaVersion = 1 -> int
 const Aw.Sindri.Core.Profile.SindriProfile.DefaultTenant = "local" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Profile = "profile" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Services = "services" -> string!
-const Aw.Sindri.Core.Views.ViewSchema.Version = 3 -> int
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Cancelled = "outbox.cancelled" -> string!
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Dispatched = "outbox.dispatched" -> string!
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Pending = "outbox.pending" -> string!
@@ -7720,3 +7715,292 @@ static Aw.Sindri.Core.Ids.JobKind.TryFrom(string? value, out Aw.Sindri.Core.Ids.
 static Aw.Sindri.Core.Ids.JobKind.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Ids.JobKind result) -> bool
 static Aw.Sindri.Core.Ids.JobKind.operator !=(Aw.Sindri.Core.Ids.JobKind left, Aw.Sindri.Core.Ids.JobKind right) -> bool
 static Aw.Sindri.Core.Ids.JobKind.operator ==(Aw.Sindri.Core.Ids.JobKind left, Aw.Sindri.Core.Ids.JobKind right) -> bool
+Aw.Sindri.Core.Commands.IJob<TResult>
+Aw.Sindri.Core.Events.JobCancelled
+Aw.Sindri.Core.Events.JobCancelled.<Clone>$() -> Aw.Sindri.Core.Events.JobCancelled!
+Aw.Sindri.Core.Events.JobCancelled.By.get -> string!
+Aw.Sindri.Core.Events.JobCancelled.By.init -> void
+Aw.Sindri.Core.Events.JobCancelled.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.JobCancelled.CommandId.init -> void
+Aw.Sindri.Core.Events.JobCancelled.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.JobId Job, out string! By) -> void
+Aw.Sindri.Core.Events.JobCancelled.Equals(Aw.Sindri.Core.Events.JobCancelled? other) -> bool
+Aw.Sindri.Core.Events.JobCancelled.Job.get -> Aw.Sindri.Core.Ids.JobId
+Aw.Sindri.Core.Events.JobCancelled.Job.init -> void
+Aw.Sindri.Core.Events.JobCancelled.JobCancelled(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.JobId Job, string! By) -> void
+Aw.Sindri.Core.Events.JobFinished
+Aw.Sindri.Core.Events.JobFinished.<Clone>$() -> Aw.Sindri.Core.Events.JobFinished!
+Aw.Sindri.Core.Events.JobFinished.Code.get -> string?
+Aw.Sindri.Core.Events.JobFinished.Code.init -> void
+Aw.Sindri.Core.Events.JobFinished.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.JobFinished.CommandId.init -> void
+Aw.Sindri.Core.Events.JobFinished.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.JobId Job, out Aw.Sindri.Core.Jobs.JobOutcome Outcome, out string! Summary, out string? Code, out System.Text.Json.JsonElement? Result) -> void
+Aw.Sindri.Core.Events.JobFinished.Equals(Aw.Sindri.Core.Events.JobFinished? other) -> bool
+Aw.Sindri.Core.Events.JobFinished.Job.get -> Aw.Sindri.Core.Ids.JobId
+Aw.Sindri.Core.Events.JobFinished.Job.init -> void
+Aw.Sindri.Core.Events.JobFinished.JobFinished(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.JobId Job, Aw.Sindri.Core.Jobs.JobOutcome Outcome, string! Summary, string? Code, System.Text.Json.JsonElement? Result) -> void
+Aw.Sindri.Core.Events.JobFinished.Outcome.get -> Aw.Sindri.Core.Jobs.JobOutcome
+Aw.Sindri.Core.Events.JobFinished.Outcome.init -> void
+Aw.Sindri.Core.Events.JobFinished.Result.get -> System.Text.Json.JsonElement?
+Aw.Sindri.Core.Events.JobFinished.Result.init -> void
+Aw.Sindri.Core.Events.JobFinished.Summary.get -> string!
+Aw.Sindri.Core.Events.JobFinished.Summary.init -> void
+Aw.Sindri.Core.Events.JobFinishedPublic
+Aw.Sindri.Core.Events.JobFinishedPublic.<Clone>$() -> Aw.Sindri.Core.Events.JobFinishedPublic!
+Aw.Sindri.Core.Events.JobFinishedPublic.Code.get -> string?
+Aw.Sindri.Core.Events.JobFinishedPublic.Code.init -> void
+Aw.Sindri.Core.Events.JobFinishedPublic.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.JobFinishedPublic.CommandId.init -> void
+Aw.Sindri.Core.Events.JobFinishedPublic.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.JobId Job, out Aw.Sindri.Core.Jobs.JobOutcome Outcome, out string! Summary, out string? Code) -> void
+Aw.Sindri.Core.Events.JobFinishedPublic.Equals(Aw.Sindri.Core.Events.JobFinishedPublic? other) -> bool
+Aw.Sindri.Core.Events.JobFinishedPublic.Job.get -> Aw.Sindri.Core.Ids.JobId
+Aw.Sindri.Core.Events.JobFinishedPublic.Job.init -> void
+Aw.Sindri.Core.Events.JobFinishedPublic.JobFinishedPublic(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.JobId Job, Aw.Sindri.Core.Jobs.JobOutcome Outcome, string! Summary, string? Code) -> void
+Aw.Sindri.Core.Events.JobFinishedPublic.Outcome.get -> Aw.Sindri.Core.Jobs.JobOutcome
+Aw.Sindri.Core.Events.JobFinishedPublic.Outcome.init -> void
+Aw.Sindri.Core.Events.JobFinishedPublic.Summary.get -> string!
+Aw.Sindri.Core.Events.JobFinishedPublic.Summary.init -> void
+Aw.Sindri.Core.Events.JobProgress
+Aw.Sindri.Core.Events.JobProgress.<Clone>$() -> Aw.Sindri.Core.Events.JobProgress!
+Aw.Sindri.Core.Events.JobProgress.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.JobProgress.CommandId.init -> void
+Aw.Sindri.Core.Events.JobProgress.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.JobId Job, out int Round, out string! Line) -> void
+Aw.Sindri.Core.Events.JobProgress.Equals(Aw.Sindri.Core.Events.JobProgress? other) -> bool
+Aw.Sindri.Core.Events.JobProgress.Job.get -> Aw.Sindri.Core.Ids.JobId
+Aw.Sindri.Core.Events.JobProgress.Job.init -> void
+Aw.Sindri.Core.Events.JobProgress.JobProgress(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.JobId Job, int Round, string! Line) -> void
+Aw.Sindri.Core.Events.JobProgress.Line.get -> string!
+Aw.Sindri.Core.Events.JobProgress.Line.init -> void
+Aw.Sindri.Core.Events.JobProgress.Round.get -> int
+Aw.Sindri.Core.Events.JobProgress.Round.init -> void
+Aw.Sindri.Core.Events.JobStarted
+Aw.Sindri.Core.Events.JobStarted.<Clone>$() -> Aw.Sindri.Core.Events.JobStarted!
+Aw.Sindri.Core.Events.JobStarted.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.JobStarted.CommandId.init -> void
+Aw.Sindri.Core.Events.JobStarted.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.JobId Job, out Aw.Sindri.Core.Ids.JobKind Kind, out Aw.Sindri.Core.Ids.JobKey Key, out Aw.Sindri.Core.Ids.ItemId? Item, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.Ids.ServiceName? Service) -> void
+Aw.Sindri.Core.Events.JobStarted.Equals(Aw.Sindri.Core.Events.JobStarted? other) -> bool
+Aw.Sindri.Core.Events.JobStarted.Item.get -> Aw.Sindri.Core.Ids.ItemId?
+Aw.Sindri.Core.Events.JobStarted.Item.init -> void
+Aw.Sindri.Core.Events.JobStarted.Job.get -> Aw.Sindri.Core.Ids.JobId
+Aw.Sindri.Core.Events.JobStarted.Job.init -> void
+Aw.Sindri.Core.Events.JobStarted.JobStarted(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.JobId Job, Aw.Sindri.Core.Ids.JobKind Kind, Aw.Sindri.Core.Ids.JobKey Key, Aw.Sindri.Core.Ids.ItemId? Item, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.Ids.ServiceName? Service) -> void
+Aw.Sindri.Core.Events.JobStarted.Key.get -> Aw.Sindri.Core.Ids.JobKey
+Aw.Sindri.Core.Events.JobStarted.Key.init -> void
+Aw.Sindri.Core.Events.JobStarted.Kind.get -> Aw.Sindri.Core.Ids.JobKind
+Aw.Sindri.Core.Events.JobStarted.Kind.init -> void
+Aw.Sindri.Core.Events.JobStarted.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Core.Events.JobStarted.Repo.init -> void
+Aw.Sindri.Core.Events.JobStarted.Service.get -> Aw.Sindri.Core.Ids.ServiceName?
+Aw.Sindri.Core.Events.JobStarted.Service.init -> void
+Aw.Sindri.Core.Events.ServicePaused
+Aw.Sindri.Core.Events.ServicePaused.<Clone>$() -> Aw.Sindri.Core.Events.ServicePaused!
+Aw.Sindri.Core.Events.ServicePaused.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.ServicePaused.CommandId.init -> void
+Aw.Sindri.Core.Events.ServicePaused.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.ServiceName Service) -> void
+Aw.Sindri.Core.Events.ServicePaused.Equals(Aw.Sindri.Core.Events.ServicePaused? other) -> bool
+Aw.Sindri.Core.Events.ServicePaused.Service.get -> Aw.Sindri.Core.Ids.ServiceName
+Aw.Sindri.Core.Events.ServicePaused.Service.init -> void
+Aw.Sindri.Core.Events.ServicePaused.ServicePaused(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.ServiceName Service) -> void
+Aw.Sindri.Core.Events.ServiceRan.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.ServiceName Service, out System.DateTimeOffset Slot, out Aw.Sindri.Core.Events.ServiceOutcome Outcome, out string? Code, out Aw.Sindri.Core.Ids.JobId? Job) -> void
+Aw.Sindri.Core.Events.ServiceRan.Job.get -> Aw.Sindri.Core.Ids.JobId?
+Aw.Sindri.Core.Events.ServiceRan.Job.init -> void
+Aw.Sindri.Core.Events.ServiceRan.ServiceRan(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.ServiceName Service, System.DateTimeOffset Slot, Aw.Sindri.Core.Events.ServiceOutcome Outcome, string? Code, Aw.Sindri.Core.Ids.JobId? Job = null) -> void
+Aw.Sindri.Core.Events.ServiceResumed
+Aw.Sindri.Core.Events.ServiceResumed.<Clone>$() -> Aw.Sindri.Core.Events.ServiceResumed!
+Aw.Sindri.Core.Events.ServiceResumed.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.ServiceResumed.CommandId.init -> void
+Aw.Sindri.Core.Events.ServiceResumed.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.ServiceName Service) -> void
+Aw.Sindri.Core.Events.ServiceResumed.Equals(Aw.Sindri.Core.Events.ServiceResumed? other) -> bool
+Aw.Sindri.Core.Events.ServiceResumed.Service.get -> Aw.Sindri.Core.Ids.ServiceName
+Aw.Sindri.Core.Events.ServiceResumed.Service.init -> void
+Aw.Sindri.Core.Events.ServiceResumed.ServiceResumed(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.ServiceName Service) -> void
+Aw.Sindri.Core.Jobs.IJobContextAccessor
+Aw.Sindri.Core.Jobs.IJobContextAccessor.Current.get -> Aw.Sindri.Core.Jobs.JobContext?
+Aw.Sindri.Core.Jobs.IJobContextAccessor.Enter(Aw.Sindri.Core.Jobs.JobContext! context) -> System.IDisposable!
+Aw.Sindri.Core.Jobs.JobContext
+Aw.Sindri.Core.Jobs.JobContext.<Clone>$() -> Aw.Sindri.Core.Jobs.JobContext!
+Aw.Sindri.Core.Jobs.JobContext.Deconstruct(out Aw.Sindri.Core.Ids.JobId Job, out Aw.Sindri.Core.Ids.JobKind Kind, out System.IProgress<string!>! Progress) -> void
+Aw.Sindri.Core.Jobs.JobContext.Equals(Aw.Sindri.Core.Jobs.JobContext? other) -> bool
+Aw.Sindri.Core.Jobs.JobContext.Job.get -> Aw.Sindri.Core.Ids.JobId
+Aw.Sindri.Core.Jobs.JobContext.Job.init -> void
+Aw.Sindri.Core.Jobs.JobContext.JobContext(Aw.Sindri.Core.Ids.JobId Job, Aw.Sindri.Core.Ids.JobKind Kind, System.IProgress<string!>! Progress) -> void
+Aw.Sindri.Core.Jobs.JobContext.Kind.get -> Aw.Sindri.Core.Ids.JobKind
+Aw.Sindri.Core.Jobs.JobContext.Kind.init -> void
+Aw.Sindri.Core.Jobs.JobContext.Progress.get -> System.IProgress<string!>!
+Aw.Sindri.Core.Jobs.JobContext.Progress.init -> void
+Aw.Sindri.Core.Jobs.JobLimits
+Aw.Sindri.Core.Jobs.JobLine
+Aw.Sindri.Core.Jobs.JobLine.<Clone>$() -> Aw.Sindri.Core.Jobs.JobLine!
+Aw.Sindri.Core.Jobs.JobLine.At.get -> System.DateTimeOffset
+Aw.Sindri.Core.Jobs.JobLine.At.init -> void
+Aw.Sindri.Core.Jobs.JobLine.Deconstruct(out int Round, out string! Line, out System.DateTimeOffset At) -> void
+Aw.Sindri.Core.Jobs.JobLine.Equals(Aw.Sindri.Core.Jobs.JobLine? other) -> bool
+Aw.Sindri.Core.Jobs.JobLine.JobLine(int Round, string! Line, System.DateTimeOffset At) -> void
+Aw.Sindri.Core.Jobs.JobLine.Line.get -> string!
+Aw.Sindri.Core.Jobs.JobLine.Line.init -> void
+Aw.Sindri.Core.Jobs.JobLine.Round.get -> int
+Aw.Sindri.Core.Jobs.JobLine.Round.init -> void
+Aw.Sindri.Core.Jobs.JobLines
+Aw.Sindri.Core.Jobs.JobLinks
+Aw.Sindri.Core.Jobs.JobLinks.<Clone>$() -> Aw.Sindri.Core.Jobs.JobLinks!
+Aw.Sindri.Core.Jobs.JobLinks.Cancel.get -> string!
+Aw.Sindri.Core.Jobs.JobLinks.Cancel.init -> void
+Aw.Sindri.Core.Jobs.JobLinks.Deconstruct(out string! Job, out string! Cancel, out string! Events) -> void
+Aw.Sindri.Core.Jobs.JobLinks.Equals(Aw.Sindri.Core.Jobs.JobLinks? other) -> bool
+Aw.Sindri.Core.Jobs.JobLinks.Events.get -> string!
+Aw.Sindri.Core.Jobs.JobLinks.Events.init -> void
+Aw.Sindri.Core.Jobs.JobLinks.Job.get -> string!
+Aw.Sindri.Core.Jobs.JobLinks.Job.init -> void
+Aw.Sindri.Core.Jobs.JobLinks.JobLinks(string! Job, string! Cancel, string! Events) -> void
+Aw.Sindri.Core.Jobs.JobOutcome
+Aw.Sindri.Core.Jobs.JobOutcome.Failed = 1 -> Aw.Sindri.Core.Jobs.JobOutcome
+Aw.Sindri.Core.Jobs.JobOutcome.Succeeded = 0 -> Aw.Sindri.Core.Jobs.JobOutcome
+Aw.Sindri.Core.Jobs.JobRow
+Aw.Sindri.Core.Jobs.JobRow.<Clone>$() -> Aw.Sindri.Core.Jobs.JobRow!
+Aw.Sindri.Core.Jobs.JobRow.CancelledBy.get -> string?
+Aw.Sindri.Core.Jobs.JobRow.CancelledBy.init -> void
+Aw.Sindri.Core.Jobs.JobRow.Code.get -> string?
+Aw.Sindri.Core.Jobs.JobRow.Code.init -> void
+Aw.Sindri.Core.Jobs.JobRow.Deconstruct(out Aw.Sindri.Core.Ids.JobId Id, out Aw.Sindri.Core.Ids.JobKind Kind, out Aw.Sindri.Core.Ids.JobKey Key, out Aw.Sindri.Core.Ids.ItemId? Item, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.Ids.ServiceName? Service, out Aw.Sindri.Core.Jobs.JobState State, out string! StartedBy, out System.DateTimeOffset StartedAt, out System.DateTimeOffset? EndedAt, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Jobs.JobLine!>! Progress, out int Rounds, out string? Summary, out string? Code, out System.Text.Json.JsonElement? Result, out string? CancelledBy, out long Sequence) -> void
+Aw.Sindri.Core.Jobs.JobRow.EndedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Jobs.JobRow.EndedAt.init -> void
+Aw.Sindri.Core.Jobs.JobRow.Equals(Aw.Sindri.Core.Jobs.JobRow? other) -> bool
+Aw.Sindri.Core.Jobs.JobRow.Id.get -> Aw.Sindri.Core.Ids.JobId
+Aw.Sindri.Core.Jobs.JobRow.Id.init -> void
+Aw.Sindri.Core.Jobs.JobRow.Item.get -> Aw.Sindri.Core.Ids.ItemId?
+Aw.Sindri.Core.Jobs.JobRow.Item.init -> void
+Aw.Sindri.Core.Jobs.JobRow.JobRow(Aw.Sindri.Core.Ids.JobId Id, Aw.Sindri.Core.Ids.JobKind Kind, Aw.Sindri.Core.Ids.JobKey Key, Aw.Sindri.Core.Ids.ItemId? Item, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.Ids.ServiceName? Service, Aw.Sindri.Core.Jobs.JobState State, string! StartedBy, System.DateTimeOffset StartedAt, System.DateTimeOffset? EndedAt, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Jobs.JobLine!>! Progress, int Rounds, string? Summary, string? Code, System.Text.Json.JsonElement? Result, string? CancelledBy, long Sequence) -> void
+Aw.Sindri.Core.Jobs.JobRow.Key.get -> Aw.Sindri.Core.Ids.JobKey
+Aw.Sindri.Core.Jobs.JobRow.Key.init -> void
+Aw.Sindri.Core.Jobs.JobRow.Kind.get -> Aw.Sindri.Core.Ids.JobKind
+Aw.Sindri.Core.Jobs.JobRow.Kind.init -> void
+Aw.Sindri.Core.Jobs.JobRow.Progress.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Jobs.JobLine!>!
+Aw.Sindri.Core.Jobs.JobRow.Progress.init -> void
+Aw.Sindri.Core.Jobs.JobRow.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Core.Jobs.JobRow.Repo.init -> void
+Aw.Sindri.Core.Jobs.JobRow.Result.get -> System.Text.Json.JsonElement?
+Aw.Sindri.Core.Jobs.JobRow.Result.init -> void
+Aw.Sindri.Core.Jobs.JobRow.Rounds.get -> int
+Aw.Sindri.Core.Jobs.JobRow.Rounds.init -> void
+Aw.Sindri.Core.Jobs.JobRow.Sequence.get -> long
+Aw.Sindri.Core.Jobs.JobRow.Sequence.init -> void
+Aw.Sindri.Core.Jobs.JobRow.Service.get -> Aw.Sindri.Core.Ids.ServiceName?
+Aw.Sindri.Core.Jobs.JobRow.Service.init -> void
+Aw.Sindri.Core.Jobs.JobRow.StartedAt.get -> System.DateTimeOffset
+Aw.Sindri.Core.Jobs.JobRow.StartedAt.init -> void
+Aw.Sindri.Core.Jobs.JobRow.StartedBy.get -> string!
+Aw.Sindri.Core.Jobs.JobRow.StartedBy.init -> void
+Aw.Sindri.Core.Jobs.JobRow.State.get -> Aw.Sindri.Core.Jobs.JobState
+Aw.Sindri.Core.Jobs.JobRow.State.init -> void
+Aw.Sindri.Core.Jobs.JobRow.Summary.get -> string?
+Aw.Sindri.Core.Jobs.JobRow.Summary.init -> void
+Aw.Sindri.Core.Jobs.JobRules
+Aw.Sindri.Core.Jobs.JobStartedResponse
+Aw.Sindri.Core.Jobs.JobStartedResponse.<Clone>$() -> Aw.Sindri.Core.Jobs.JobStartedResponse!
+Aw.Sindri.Core.Jobs.JobStartedResponse.Accepted.get -> Aw.Sindri.Core.Commands.CommandAccepted!
+Aw.Sindri.Core.Jobs.JobStartedResponse.Accepted.init -> void
+Aw.Sindri.Core.Jobs.JobStartedResponse.Deconstruct(out Aw.Sindri.Core.Commands.CommandAccepted! Accepted, out Aw.Sindri.Core.Ids.JobId JobId, out Aw.Sindri.Core.Jobs.JobLinks! Links) -> void
+Aw.Sindri.Core.Jobs.JobStartedResponse.Equals(Aw.Sindri.Core.Jobs.JobStartedResponse? other) -> bool
+Aw.Sindri.Core.Jobs.JobStartedResponse.JobId.get -> Aw.Sindri.Core.Ids.JobId
+Aw.Sindri.Core.Jobs.JobStartedResponse.JobId.init -> void
+Aw.Sindri.Core.Jobs.JobStartedResponse.JobStartedResponse(Aw.Sindri.Core.Commands.CommandAccepted! Accepted, Aw.Sindri.Core.Ids.JobId JobId, Aw.Sindri.Core.Jobs.JobLinks! Links) -> void
+Aw.Sindri.Core.Jobs.JobStartedResponse.Links.get -> Aw.Sindri.Core.Jobs.JobLinks!
+Aw.Sindri.Core.Jobs.JobStartedResponse.Links.init -> void
+Aw.Sindri.Core.Jobs.JobState
+Aw.Sindri.Core.Jobs.JobState.Cancelled = 3 -> Aw.Sindri.Core.Jobs.JobState
+Aw.Sindri.Core.Jobs.JobState.Failed = 2 -> Aw.Sindri.Core.Jobs.JobState
+Aw.Sindri.Core.Jobs.JobState.Running = 0 -> Aw.Sindri.Core.Jobs.JobState
+Aw.Sindri.Core.Jobs.JobState.Succeeded = 1 -> Aw.Sindri.Core.Jobs.JobState
+Aw.Sindri.Core.Scheduling.IServicePauses
+Aw.Sindri.Core.Scheduling.IServicePauses.Paused(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Ids.ServiceName>!>!>
+Aw.Sindri.Core.Views.IJobViews
+Aw.Sindri.Core.Views.IJobViews.Get(Aw.Sindri.Core.Ids.JobId job, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Jobs.JobRow?>!>
+Aw.Sindri.Core.Views.IJobViews.List(Aw.Sindri.Core.Jobs.JobState? state, Aw.Sindri.Core.Ids.JobKind? kind, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Jobs.JobRow!>!>!>
+Aw.Sindri.Core.Views.IJobViews.Running(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Jobs.JobRow!>!>!>
+Aw.Sindri.Core.Views.ServiceRow.Deconstruct(out Aw.Sindri.Core.Ids.ServiceName Name, out Aw.Sindri.Core.Views.LastRun? LastRun, out bool Paused, out long Sequence, out System.DateTimeOffset? ScheduledSlot) -> void
+Aw.Sindri.Core.Views.ServiceRow.ScheduledSlot.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Views.ServiceRow.ScheduledSlot.init -> void
+Aw.Sindri.Core.Views.ServiceRow.ServiceRow(Aw.Sindri.Core.Ids.ServiceName Name, Aw.Sindri.Core.Views.LastRun? LastRun, bool Paused, long Sequence, System.DateTimeOffset? ScheduledSlot = null) -> void
+const Aw.Sindri.Core.Events.ApiViews.Job = "job" -> string!
+const Aw.Sindri.Core.Events.ApiViews.Jobs = "jobs" -> string!
+const Aw.Sindri.Core.Events.EventTypes.JobCancelled = "job.cancelled" -> string!
+const Aw.Sindri.Core.Events.EventTypes.JobFinished = "job.finished" -> string!
+const Aw.Sindri.Core.Events.EventTypes.JobProgress = "job.progress" -> string!
+const Aw.Sindri.Core.Events.EventTypes.JobStarted = "job.started" -> string!
+const Aw.Sindri.Core.Events.EventTypes.ServicePaused = "service.paused" -> string!
+const Aw.Sindri.Core.Events.EventTypes.ServiceResumed = "service.resumed" -> string!
+const Aw.Sindri.Core.Jobs.JobLimits.LineChars = 200 -> int
+const Aw.Sindri.Core.Jobs.JobLimits.MaxProgressEvents = 2000 -> int
+const Aw.Sindri.Core.Jobs.JobLimits.MaxRunning = 8 -> int
+const Aw.Sindri.Core.Jobs.JobLimits.QueueLines = 256 -> int
+const Aw.Sindri.Core.Jobs.JobLimits.ResultBytes = 16384 -> int
+const Aw.Sindri.Core.Jobs.JobLimits.ViewLines = 200 -> int
+const Aw.Sindri.Core.Views.ViewNames.Jobs = "jobs" -> string!
+override Aw.Sindri.Core.Events.JobCancelled.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.JobCancelled.GetHashCode() -> int
+override Aw.Sindri.Core.Events.JobCancelled.ToString() -> string!
+override Aw.Sindri.Core.Events.JobFinished.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.JobFinished.GetHashCode() -> int
+override Aw.Sindri.Core.Events.JobFinished.ToString() -> string!
+override Aw.Sindri.Core.Events.JobFinishedPublic.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.JobFinishedPublic.GetHashCode() -> int
+override Aw.Sindri.Core.Events.JobFinishedPublic.ToString() -> string!
+override Aw.Sindri.Core.Events.JobProgress.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.JobProgress.GetHashCode() -> int
+override Aw.Sindri.Core.Events.JobProgress.ToString() -> string!
+override Aw.Sindri.Core.Events.JobStarted.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.JobStarted.GetHashCode() -> int
+override Aw.Sindri.Core.Events.JobStarted.ToString() -> string!
+override Aw.Sindri.Core.Events.ServicePaused.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ServicePaused.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ServicePaused.ToString() -> string!
+override Aw.Sindri.Core.Events.ServiceResumed.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ServiceResumed.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ServiceResumed.ToString() -> string!
+override Aw.Sindri.Core.Jobs.JobContext.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Jobs.JobContext.GetHashCode() -> int
+override Aw.Sindri.Core.Jobs.JobContext.ToString() -> string!
+override Aw.Sindri.Core.Jobs.JobLine.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Jobs.JobLine.GetHashCode() -> int
+override Aw.Sindri.Core.Jobs.JobLine.ToString() -> string!
+override Aw.Sindri.Core.Jobs.JobLinks.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Jobs.JobLinks.GetHashCode() -> int
+override Aw.Sindri.Core.Jobs.JobLinks.ToString() -> string!
+override Aw.Sindri.Core.Jobs.JobRow.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Jobs.JobRow.GetHashCode() -> int
+override Aw.Sindri.Core.Jobs.JobRow.ToString() -> string!
+override Aw.Sindri.Core.Jobs.JobStartedResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Jobs.JobStartedResponse.GetHashCode() -> int
+override Aw.Sindri.Core.Jobs.JobStartedResponse.ToString() -> string!
+static Aw.Sindri.Core.Events.JobCancelled.operator !=(Aw.Sindri.Core.Events.JobCancelled? left, Aw.Sindri.Core.Events.JobCancelled? right) -> bool
+static Aw.Sindri.Core.Events.JobCancelled.operator ==(Aw.Sindri.Core.Events.JobCancelled? left, Aw.Sindri.Core.Events.JobCancelled? right) -> bool
+static Aw.Sindri.Core.Events.JobFinished.operator !=(Aw.Sindri.Core.Events.JobFinished? left, Aw.Sindri.Core.Events.JobFinished? right) -> bool
+static Aw.Sindri.Core.Events.JobFinished.operator ==(Aw.Sindri.Core.Events.JobFinished? left, Aw.Sindri.Core.Events.JobFinished? right) -> bool
+static Aw.Sindri.Core.Events.JobFinishedPublic.operator !=(Aw.Sindri.Core.Events.JobFinishedPublic? left, Aw.Sindri.Core.Events.JobFinishedPublic? right) -> bool
+static Aw.Sindri.Core.Events.JobFinishedPublic.operator ==(Aw.Sindri.Core.Events.JobFinishedPublic? left, Aw.Sindri.Core.Events.JobFinishedPublic? right) -> bool
+static Aw.Sindri.Core.Events.JobProgress.operator !=(Aw.Sindri.Core.Events.JobProgress? left, Aw.Sindri.Core.Events.JobProgress? right) -> bool
+static Aw.Sindri.Core.Events.JobProgress.operator ==(Aw.Sindri.Core.Events.JobProgress? left, Aw.Sindri.Core.Events.JobProgress? right) -> bool
+static Aw.Sindri.Core.Events.JobStarted.operator !=(Aw.Sindri.Core.Events.JobStarted? left, Aw.Sindri.Core.Events.JobStarted? right) -> bool
+static Aw.Sindri.Core.Events.JobStarted.operator ==(Aw.Sindri.Core.Events.JobStarted? left, Aw.Sindri.Core.Events.JobStarted? right) -> bool
+static Aw.Sindri.Core.Events.ServicePaused.operator !=(Aw.Sindri.Core.Events.ServicePaused? left, Aw.Sindri.Core.Events.ServicePaused? right) -> bool
+static Aw.Sindri.Core.Events.ServicePaused.operator ==(Aw.Sindri.Core.Events.ServicePaused? left, Aw.Sindri.Core.Events.ServicePaused? right) -> bool
+static Aw.Sindri.Core.Events.ServiceResumed.operator !=(Aw.Sindri.Core.Events.ServiceResumed? left, Aw.Sindri.Core.Events.ServiceResumed? right) -> bool
+static Aw.Sindri.Core.Events.ServiceResumed.operator ==(Aw.Sindri.Core.Events.ServiceResumed? left, Aw.Sindri.Core.Events.ServiceResumed? right) -> bool
+static Aw.Sindri.Core.Jobs.JobContext.operator !=(Aw.Sindri.Core.Jobs.JobContext? left, Aw.Sindri.Core.Jobs.JobContext? right) -> bool
+static Aw.Sindri.Core.Jobs.JobContext.operator ==(Aw.Sindri.Core.Jobs.JobContext? left, Aw.Sindri.Core.Jobs.JobContext? right) -> bool
+static Aw.Sindri.Core.Jobs.JobLine.operator !=(Aw.Sindri.Core.Jobs.JobLine? left, Aw.Sindri.Core.Jobs.JobLine? right) -> bool
+static Aw.Sindri.Core.Jobs.JobLine.operator ==(Aw.Sindri.Core.Jobs.JobLine? left, Aw.Sindri.Core.Jobs.JobLine? right) -> bool
+static Aw.Sindri.Core.Jobs.JobLines.Clean(Aw.Sindri.Core.Text.ITextScrubber! scrubber, string! line) -> string!
+static Aw.Sindri.Core.Jobs.JobLines.Keep(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Jobs.JobLine!>! lines, Aw.Sindri.Core.Jobs.JobLine! next) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Jobs.JobLine!>!
+static Aw.Sindri.Core.Jobs.JobLinks.operator !=(Aw.Sindri.Core.Jobs.JobLinks? left, Aw.Sindri.Core.Jobs.JobLinks? right) -> bool
+static Aw.Sindri.Core.Jobs.JobLinks.operator ==(Aw.Sindri.Core.Jobs.JobLinks? left, Aw.Sindri.Core.Jobs.JobLinks? right) -> bool
+static Aw.Sindri.Core.Jobs.JobRow.operator !=(Aw.Sindri.Core.Jobs.JobRow? left, Aw.Sindri.Core.Jobs.JobRow? right) -> bool
+static Aw.Sindri.Core.Jobs.JobRow.operator ==(Aw.Sindri.Core.Jobs.JobRow? left, Aw.Sindri.Core.Jobs.JobRow? right) -> bool
+static Aw.Sindri.Core.Jobs.JobRules.CanCancel(Aw.Sindri.Core.Jobs.JobRow? row) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+static Aw.Sindri.Core.Jobs.JobStartedResponse.operator !=(Aw.Sindri.Core.Jobs.JobStartedResponse? left, Aw.Sindri.Core.Jobs.JobStartedResponse? right) -> bool
+static Aw.Sindri.Core.Jobs.JobStartedResponse.operator ==(Aw.Sindri.Core.Jobs.JobStartedResponse? left, Aw.Sindri.Core.Jobs.JobStartedResponse? right) -> bool
+static readonly Aw.Sindri.Core.SindriErrors.JobConflict -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.JobInterrupted -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.JobNotFound -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.JobsRateLimited -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.ServiceNotFound -> Aw.Kernel.ErrorDefinition!
+const Aw.Sindri.Core.Views.ViewSchema.Version = 4 -> int
