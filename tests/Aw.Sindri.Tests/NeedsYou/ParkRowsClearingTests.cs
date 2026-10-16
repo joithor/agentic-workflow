@@ -1,0 +1,55 @@
+using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.NeedsYou;
+using Aw.Sindri.Core.Views;
+using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Tests.Items;
+
+namespace Aw.Sindri.Tests.NeedsYou;
+
+/// <summary>The park rows clear when the instance resumes or ends (API spec section 3.6; API P11 U3), through the real projections.</summary>
+[Lane(TestLane.Integration)]
+public sealed class ParkRowsClearingTests
+{
+    private static readonly string _address = "ITM-" + new string('1', 32) + "/step/1";
+
+    [Fact]
+    public async Task Row_clears_when_the_instance_resumes_or_ends()
+    {
+        var q = new ItemQueryHarness();
+        await q.Item('1', "the item", repo: "agentic-workflow");
+
+        await Fold(q, EventTypes.WorkflowStarted, Row("produce", new FrameSummary("produce", 1, "1.1", Child: null, StepRuntime.Desk), suspension: null));
+        var desk = await Kinds(q);
+        await Fold(q, EventTypes.WorkflowTransition, Row("produce", frame: null, Parked()));
+        var parked = await Kinds(q);
+        await Fold(q, EventTypes.WorkflowTransition, Row("produce", frame: null, suspension: null));
+        var resumed = await Kinds(q);
+        await Fold(q, EventTypes.WorkflowTransition, Row("done", new FrameSummary("done", 2, Run: null, Child: null), suspension: null, outcome: "resolved"));
+        var ended = await Kinds(q);
+
+        Assert.Equal(["desk:"], desk);
+        Assert.Equal(["park:"], parked);   // the desk task is replaced by the park
+        Assert.Equal(["desk:"], resumed);
+        Assert.Empty(ended);
+    }
+
+    private static async Task<string[]> Kinds(ItemQueryHarness q)
+    {
+        var rows = await q.Views.Views.List<NeedsYouRowRecord>(ViewNames.NeedsYou, ItemQueryHarness.Token);
+        return [.. rows.Value.Select(static r => r.Row.Id.Value[..(r.Row.Id.Value.IndexOf(':', StringComparison.Ordinal) + 1)])];
+    }
+
+    private static Task Fold(ItemQueryHarness q, string type, WorkflowEventPayload payload) => q.Views.Fold(type, payload, ItemQueryHarness.Id('1'));
+
+    private static SuspensionSummary Parked() => new(SuspensionKind.Park, ParkReason.Rounds, ParkKind.Loop, Escalation: null, Mirrors: null);
+
+    private static WorkflowEventPayload Row(string to, FrameSummary? frame, SuspensionSummary? suspension, string? outcome = null)
+    {
+        var delta = new WorkflowEventDelta(frame, suspension, PendingPark: null, Loops: null, TokensSpent: null, TokensGranted: null, Facts: null, outcome);
+        var detail = new WorkflowEventDetail(TriggerKey.For(WorkflowInstanceId.From("WFI-" + new string('a', 32)), "t"), "human:cli", SourceSequence: null, ArgumentsSha256: null, ReportSha256: null,
+            Answer: null, Amount: null, Reason: null, [], [], Grant: null, Override: null, Refusal: null, [], delta);
+        return new WorkflowEventPayload(_address, "from", to, "step.completed", Outcome: null, Run: null, detail);
+    }
+}
