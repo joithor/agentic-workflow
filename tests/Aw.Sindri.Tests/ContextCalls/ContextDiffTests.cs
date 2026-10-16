@@ -3,6 +3,7 @@ using System.Net;
 using System.Text.Json;
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
 using Aw.Context.Testing.Fixtures;
 using Aw.Context.Testing.Map;
@@ -148,6 +149,35 @@ public sealed class ContextDiffTests : IDisposable
 
         Assert.Equal(1, exit);
         Assert.Contains("SND-CONTEXT-006", error.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Context_query_diff_text_and_mcp_summary_say_when_the_file_list_and_the_anchors_are_truncated()
+    {
+        var sha = "0123456789abcdef0123456789abcdef01234567";
+        var part = new DiffPart(ContextRepoName.From("aw-split-panes"), sha, sha, sha, [], [], new DiffCounts(1_500, 1_500, 0, 0, 0), Truncated: true, 45, AnchorsTruncated: true);
+        var result = new ContextResult(1, QueryId.From("q_1"), new ContextQuery(Text: null, Diff: new DiffRange(sha, sha)), [], "v1", DateTimeOffset.UnixEpoch,
+            [], [], [], [], Truncated: false, new BudgetUse(8000, 10, Estimate: true), new Dictionary<string, Citation>(StringComparer.Ordinal), part);
+
+        var text = ContextText.Render(result);
+
+        Assert.Contains("file list truncated to the first 0", text, StringComparison.Ordinal);
+        Assert.Contains($"anchors: the first {DiffAnchors.MaxAnchors} of 45", text, StringComparison.Ordinal);
+        Assert.Contains("(file list truncated)", Aw.Sindri.Host.Mcp.McpSummaries.Query(result), StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    public async Task Query_with_a_malformed_repo_name_is_a_006_problem_before_the_engine_runs()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (range, _) = Pr3();
+        await using var host = await Mapped(sessions: false, ct);
+
+        var spaced = await host.Http.Ask(Get($"/sindri/context/query?diff={range}&repo=bad%20name", Human(host.Token.Value)));
+        var long_ = await host.Http.Ask(Get($"/sindri/context/query?diff={range}&repo={new string('a', 101)}", Human(host.Token.Value)));
+
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (spaced.Status, spaced.Code));
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (long_.Status, long_.Code));
     }
 
     [Fact, Trait("Lane", "unit")]

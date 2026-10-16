@@ -207,7 +207,7 @@ public sealed class DiffQueryTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_sessions_changed_path_is_scrubbed_like_node_text_while_a_humans_is_raw()
+    public async Task A_changed_path_is_scrubbed_like_node_text_for_every_caller()
     {
         var planted = $"src/{FakeScrubber.Secret}.ts";
         var world = World(Reader((planted, ChangeKind.Added)));
@@ -218,7 +218,8 @@ public sealed class DiffQueryTests : IDisposable
 
         Assert.DoesNotContain(FakeScrubber.Secret, session.Files[0].Path, StringComparison.Ordinal);
         Assert.DoesNotContain(FakeScrubber.Secret, session.Unmapped[0], StringComparison.Ordinal);
-        Assert.Equal(planted, human.Files[0].Path);
+        Assert.DoesNotContain(FakeScrubber.Secret, human.Files[0].Path, StringComparison.Ordinal);
+        Assert.DoesNotContain(FakeScrubber.Secret, human.Unmapped[0], StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -274,6 +275,11 @@ public sealed class DiffQueryTests : IDisposable
     private static string Git(Testing.Fixtures.FixtureRepo repo, params string[] args)
     {
         var start = new System.Diagnostics.ProcessStartInfo("git") { RedirectStandardOutput = true, UseShellExecute = false };
+        foreach (var name in start.Environment.Keys.Where(k => k.StartsWith("GIT_", StringComparison.Ordinal)).ToList())
+        {
+            _ = start.Environment.Remove(name);   // why: like GitRunner, a caller's GIT_DIR must not redirect the helper
+        }
+
         start.ArgumentList.Add("-C");
         start.ArgumentList.Add(repo.Path);
         foreach (var arg in args)

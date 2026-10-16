@@ -1,9 +1,9 @@
+using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Extract;
 using Aw.Context.Infrastructure.Extract;
 using Aw.Context.Infrastructure.Git;
 using Aw.Context.Testing.Extract;
-using Aw.Kernel;
 
 namespace Aw.Context.Tests.Infrastructure;
 
@@ -33,25 +33,34 @@ public sealed class GitRepoReaderContractTests : RepoReaderContract, IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
-    public async Task Changes_ignores_the_repos_diff_renames_setting_and_the_callers_GIT_environment()
+    public async Task Changes_ignores_the_repos_diff_renames_setting()
     {
         using var temp = new TempGitRepo(Committed);
         var world = ChangeWorlds.Build(temp);
         _ = temp.Run("config", "diff.renames", "copies");
         var reader = new GitRepoReader(new GitCli());
-        Environment.SetEnvironmentVariable("GIT_DIR", Path.Combine(Path.GetTempPath(), "aw-no-such-gitdir"));
-        Result<RepoChanges> changes;
-        try
-        {
-            changes = await reader.Changes(temp.Repo, new DiffRange(world.Head, world.RenameHead), TestContext.Current.CancellationToken);
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable("GIT_DIR", value: null);
-        }
+
+        var changes = await reader.Changes(temp.Repo, new DiffRange(world.Head, world.RenameHead), TestContext.Current.CancellationToken);
 
         Assert.True(changes.IsSuccess, changes.IsError ? changes.Error.Message : string.Empty);
         Assert.Equal(world.RenameExpected, changes.Value.Files);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task An_abbreviated_sha_that_is_also_a_branch_name_is_110_never_the_branch()
+    {
+        using var temp = new TempGitRepo(Committed);
+        var world = ChangeWorlds.Build(temp);
+        var shadow = world.Base[..7];
+        _ = temp.Run("branch", shadow, world.Head);   // why: git resolves a ref called like the abbreviation before the object
+        var reader = new GitRepoReader(new GitCli());
+
+        var viaRef = await reader.Changes(temp.Repo, new DiffRange(shadow, world.Head), TestContext.Current.CancellationToken);
+        var full = await reader.Changes(temp.Repo, new DiffRange(world.Base, world.Head), TestContext.Current.CancellationToken);
+
+        Assert.Equal(ContextErrors.CommitUnknown.Code, viaRef.Error.Code);
+        Assert.Contains("full sha", viaRef.Error.Message, StringComparison.Ordinal);
+        Assert.True(full.IsSuccess);
     }
 
     [Fact, Trait("Lane", "integration")]

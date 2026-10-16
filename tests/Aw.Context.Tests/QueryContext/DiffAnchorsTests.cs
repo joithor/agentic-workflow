@@ -38,6 +38,23 @@ public sealed class DiffAnchorsTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_path_two_repos_share_claims_only_the_nodes_the_diffed_repo_implements()
+    {
+        var map = new GraphBuilder()
+            .Edge("code:src/shared.ts", EdgeType.Implements, "feature:mine", evidence: "repo:aw-split-panes/src/shared.ts")
+            .Edge("code:src/shared.ts", EdgeType.Implements, "feature:theirs", evidence: "repo:other/src/shared.ts")
+            .Edge("code:src/theirs-only.ts", EdgeType.Implements, "feature:theirs", evidence: "repo:other/src/theirs-only.ts");
+
+        var (part, anchors) = Build(Changes(("src/shared.ts", ChangeKind.Modified), ("src/theirs-only.ts", ChangeKind.Modified)), map: map);
+
+        var shared = part.Files.Single(f => string.Equals(f.Path, "src/shared.ts", StringComparison.Ordinal));
+        Assert.Equal(["feature:mine"], shared.Nodes.Select(n => n.Key), StringComparer.Ordinal);
+        Assert.Equal(["feature:mine"], anchors.Select(a => a.Key.Value), StringComparer.Ordinal);
+        Assert.Equal(["src/theirs-only.ts"], part.Unmapped, StringComparer.Ordinal);
+        Assert.Equal(new DiffCounts(2, 1, 0, 1, 0), part.Counts);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Unmapped_lists_exactly_the_unmapped_files()
     {
         var (part, _) = Build(Changes(("src/z.ts", ChangeKind.Added), ("src/layout/SplitPane.ts", ChangeKind.Modified), ("src/a.ts", ChangeKind.Deleted), ("src/tabs/TabGroups.ts", ChangeKind.Modified)));

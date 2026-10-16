@@ -74,7 +74,7 @@ public sealed class QueryRulesDiffTests
         => Assert.True(QueryRules.Check(Diff($"{Base}..{Head}", ContextRepoName.From("aw-split-panes")), new ContextSettings()).IsSuccess);
 
     [Fact, Trait("Lane", "unit")]
-    public void Diff_range_over_MaxEncodedText_is_006()
+    public void Diff_sha_longer_than_64_characters_is_006()
     {
         var long_ = new DiffRange(new string('a', QueryRules.MaxEncodedText), Head);
 
