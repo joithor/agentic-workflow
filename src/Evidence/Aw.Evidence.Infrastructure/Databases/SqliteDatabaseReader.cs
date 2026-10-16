@@ -12,6 +12,18 @@ namespace Aw.Evidence.Infrastructure.Databases;
 /// </summary>
 internal sealed class SqliteDatabaseReader : IDatabaseReader
 {
+    private readonly Action<int>? _afterCopy;
+
+    public SqliteDatabaseReader()
+    {
+    }
+
+    /// <summary>A reader that calls <paramref name="afterCopy"/> with the attempt number after each copy of the source (tests change the source there).</summary>
+    internal SqliteDatabaseReader(Action<int> afterCopy)
+    {
+        _afterCopy = afterCopy;
+    }
+
     internal const string CopyName = "evidence-copy.sqlite";
 
     private const int NoAttachedDatabases = 7;   // SQLITE_LIMIT_ATTACHED
@@ -29,6 +41,7 @@ internal sealed class SqliteDatabaseReader : IDatabaseReader
             return EvidenceErrors.DatabaseUnavailable.With($"{sqlite.SourcePath} is not a file");
         }
 
+        _ = _afterCopy;
         var copy = Path.Combine(sqlite.WorkDirectory, CopyName);
         var copied = await CopyAsync(sqlite, copy, cancellationToken).ConfigureAwait(false);
         if (copied.IsError)

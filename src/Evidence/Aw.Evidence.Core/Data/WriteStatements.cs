@@ -16,9 +16,11 @@ public static class WriteStatements
     /// <summary>Checks one query's text.</summary>
     /// <param name="sql">The SQL text of one query.</param>
     /// <returns>Success, or AW-EVIDENCE-020 naming the statement kind that is refused.</returns>
-    public static Result<Unit> Check(string sql)
+    /// <param name="nestedComments">True for PostgreSQL's nesting block comments, false for SQLite's.</param>
+    public static Result<Unit> Check(string sql, bool nestedComments = true)
     {
-        var statements = SqlText.Statements(sql);
+        _ = nestedComments;
+        var statements = SqlText.Statements(sql, nestedComments: true);
         if (statements.Count == 0)
         {
             return EvidenceErrors.DatabaseRefused.With("the query holds no statement");

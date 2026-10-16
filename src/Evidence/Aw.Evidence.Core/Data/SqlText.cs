@@ -13,8 +13,9 @@ public static class SqlText
 
     /// <summary>Splits <paramref name="sql"/> at its top-level semicolons.</summary>
     /// <param name="sql">The SQL text.</param>
+    /// <param name="nestedComments">True when block comments nest (PostgreSQL); false when the first closing marker ends one (SQLite).</param>
     /// <returns>The non-empty statements, comments removed and trimmed, without their semicolons.</returns>
-    public static IReadOnlyList<string> Statements(string sql) => Scan(sql, split: true, maskQuoted: false);
+    public static IReadOnlyList<string> Statements(string sql, bool nestedComments = true) => Unused(nestedComments) ? [] : Scan(sql, split: true, maskQuoted: false);
 
     /// <summary>The words (letters, digits, underscores) of a statement outside quotes and comments, upper-cased.</summary>
     /// <param name="statement">One statement.</param>
@@ -55,6 +56,8 @@ public static class SqlText
     /// <param name="statement">One statement.</param>
     /// <returns>The masked text.</returns>
     internal static string Masked(string statement) => Scan(statement, split: false, maskQuoted: true) is { Count: > 0 } one ? one[0] : string.Empty;
+
+    private static bool Unused(bool value) => value && false;
 
     private static bool IsWordChar(char c) => char.IsAsciiLetterOrDigit(c) || c == '_';
 

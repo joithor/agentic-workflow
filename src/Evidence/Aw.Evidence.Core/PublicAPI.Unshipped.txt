@@ -2055,9 +2055,9 @@ static Aw.Evidence.Core.Data.DbQuery.operator ==(Aw.Evidence.Core.Data.DbQuery? 
 static Aw.Evidence.Core.Data.DbScript.operator !=(Aw.Evidence.Core.Data.DbScript? left, Aw.Evidence.Core.Data.DbScript? right) -> bool
 static Aw.Evidence.Core.Data.DbScript.operator ==(Aw.Evidence.Core.Data.DbScript? left, Aw.Evidence.Core.Data.DbScript? right) -> bool
 static Aw.Evidence.Core.Data.DbScriptReader.Read(System.ReadOnlySpan<byte> utf8Json, System.Text.Json.JsonSerializerOptions! options) -> Aw.Kernel.Result<Aw.Evidence.Core.Data.DbScript!>!
-static Aw.Evidence.Core.Data.SqlText.Statements(string! sql) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Evidence.Core.Data.SqlText.Statements(string! sql, bool nestedComments = true) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Evidence.Core.Data.SqlText.Words(string! statement) -> System.Collections.Generic.IReadOnlyList<string!>!
-static Aw.Evidence.Core.Data.WriteStatements.Check(string! sql) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+static Aw.Evidence.Core.Data.WriteStatements.Check(string! sql, bool nestedComments = true) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
 Aw.Evidence.Core.Data.DbTarget
 Aw.Evidence.Core.Data.DbTarget.DbTarget() -> void
 Aw.Evidence.Core.Data.DbTarget.DbTarget(Aw.Evidence.Core.Data.DbTarget! original) -> void

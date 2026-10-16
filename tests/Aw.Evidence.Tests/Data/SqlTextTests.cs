@@ -30,7 +30,7 @@ public sealed class SqlTextTests
     {
         const string Sql = "SELECT 1 /* /* */ ; VACUUM INTO 'x' /* */";
 
-        Assert.Single(SqlText.Statements(Sql));
+        _ = Assert.Single(SqlText.Statements(Sql));
         Assert.Equal(["SELECT 1", "VACUUM INTO 'x'"], SqlText.Statements(Sql, nestedComments: false));
         Assert.Equal(["SELECT 2"], SqlText.Statements("/* a /* b */ SELECT 2", nestedComments: false));
     }
