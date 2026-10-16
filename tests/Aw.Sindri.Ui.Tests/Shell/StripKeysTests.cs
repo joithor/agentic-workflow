@@ -117,7 +117,7 @@ public sealed class StripKeysTests
         var shell = await Connected();
         shell.Strip.Update(FixtureInstances.Root);
         _ = shell.Press("J");
-        var address = shell.Strip.SelectedAddress!;
+        var address = shell.Strip.SelectedAddress;
 
         Assert.True(shell.Press("Enter"));
 

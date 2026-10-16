@@ -1,5 +1,5 @@
-using Aw.Kernel.Testing;
 using System.Globalization;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.Tests.Theme;
 using Aw.Sindri.Ui.ViewModels.Workflows;
