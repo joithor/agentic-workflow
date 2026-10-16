@@ -45,10 +45,12 @@ internal sealed class BacktestWorld : IAsyncDisposable
     private readonly ServiceProvider _provider;
     private readonly IServiceScope _scope;
     private GrownCorpus? _grown;
-    private readonly string _home = Directory.CreateTempSubdirectory("aw-backtest-home-").FullName;
+    private readonly string _home;
 
-    private BacktestWorld(FixtureRepo repo, (FakeOnyxServer Onyx, OnyxSourceHarness Harness) onyx, FakeTimeProvider clock, Func<IRepoReader, IRepoReader>? wrap)
+    private BacktestWorld(FixtureRepo repo, (FakeOnyxServer Onyx, OnyxSourceHarness Harness) onyx, FakeTimeProvider clock, (Func<IRepoReader, IRepoReader>? Wrap, string? HomeUnder) options)
     {
+        var wrap = options.Wrap;
+        _home = Directory.CreateDirectory(Path.Combine(options.HomeUnder ?? Path.GetTempPath(), "aw-backtest-home-" + Path.GetRandomFileName())).FullName;
         Repo = repo;
         (Onyx, Harness) = onyx;
         Clock = clock;
@@ -124,11 +126,12 @@ internal sealed class BacktestWorld : IAsyncDisposable
     /// <param name="now">The time the authored map is imported at when <see cref="ImportMap"/> runs.</param>
     /// <param name="onyx">Options for the fake Onyx server.</param>
     /// <param name="wrap">Wraps the git repo reader (to make a read fail).</param>
+    /// <param name="homeUnder">A directory to make the state home in (inside a git worktree, to refuse writes with 005), or null for the temp directory.</param>
     /// <returns>The world.</returns>
-    public static async Task<BacktestWorld> Start(DateTimeOffset now, FakeServerOptions? onyx = null, Func<IRepoReader, IRepoReader>? wrap = null)
+    public static async Task<BacktestWorld> Start(DateTimeOffset now, FakeServerOptions? onyx = null, Func<IRepoReader, IRepoReader>? wrap = null, string? homeUnder = null)
     {
         var repo = FixtureRepo.Build();
-        return await Start(repo, now, onyx, wrap).ConfigureAwait(false);
+        return await Start(repo, now, onyx, (wrap, homeUnder)).ConfigureAwait(false);
     }
 
     /// <summary>Starts the world over the grown synthetic corpus (32 pull requests, SPL-201 and up) and the fake Onyx serving its issues.</summary>
@@ -138,16 +141,16 @@ internal sealed class BacktestWorld : IAsyncDisposable
     public static async Task<BacktestWorld> Start(DateTimeOffset now, GrownCorpus grown)
     {
         ArgumentNullException.ThrowIfNull(grown);
-        var world = await Start(grown.Repo, now, new FakeServerOptions { OnyxDocuments = grown.Issues }, wrap: null).ConfigureAwait(false);
+        var world = await Start(grown.Repo, now, new FakeServerOptions { OnyxDocuments = grown.Issues }, (null, null)).ConfigureAwait(false);
         world._grown = grown;
         return world;
     }
 
-    private static async Task<BacktestWorld> Start(FixtureRepo repo, DateTimeOffset now, FakeServerOptions? onyx, Func<IRepoReader, IRepoReader>? wrap)
+    private static async Task<BacktestWorld> Start(FixtureRepo repo, DateTimeOffset now, FakeServerOptions? onyx, (Func<IRepoReader, IRepoReader>? Wrap, string? HomeUnder) options)
     {
         var server = await FakeOnyxServer.Start(onyx).ConfigureAwait(false);
         var harness = new OnyxSourceHarness(server.Url, server.Token);
-        return new BacktestWorld(repo, (server, harness), new FakeTimeProvider(now), wrap);
+        return new BacktestWorld(repo, (server, harness), new FakeTimeProvider(now), options);
     }
 
     /// <summary>The human's scope: the fixture repo, the fake Onyx and team SPL, plus any extra 'context:' keys.</summary>

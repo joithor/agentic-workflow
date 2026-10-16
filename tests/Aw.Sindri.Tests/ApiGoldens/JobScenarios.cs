@@ -210,7 +210,9 @@ internal static class JobScenarios
             await Progress(h, j, 1, "corpus: 5 samples", ct);
             await Progress(h, j, 2, "arm graph 5/5", ct);
             var result = new RunContextBacktestResult(5, SmallSample: true, LeftOut: 1,
-                [new BacktestArmLine("brief", NotAvailable: null, Verdicts.OwnerDecision), new BacktestArmLine("graph", NotAvailable: null, Verdicts.OwnerDecision), new BacktestArmLine("linear", "S-6", Overall: null)],
+                [new BacktestArmLine("brief", NotAvailable: null, Verdicts.OwnerDecision, Leaky: false, new BacktestArmScore(5, 0.5, 0.4, 0.3, 1.0, 0)),
+                 new BacktestArmLine("graph", NotAvailable: null, Verdicts.OwnerDecision, Leaky: false, new BacktestArmScore(5, 0.0, NodePrecision: null, 0.0, 1.0, 0)),
+                 new BacktestArmLine("linear", "S-6", Overall: null, Leaky: false, Score: null)],
                 Verdicts.OwnerDecision, "<home>/context/eval/backtest/20260101T000000Z.json", ["clusters unavailable"]);
             var element = JsonSerializer.SerializeToElement(result, h.App.Services.GetRequiredService<JsonSerializerOptions>());
             await Finished(h, j, JobOutcome.Succeeded, "5 samples, brief and graph, " + Verdicts.OwnerDecision, code: null, element, ct);

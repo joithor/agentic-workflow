@@ -1,6 +1,9 @@
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Jobs;
+using System.Text;
 using Aw.Sindri.Features.ContextCalls;
+using Aw.Sindri.Features.GetJob;
+using Aw.Sindri.Host.Text;
 
 namespace Aw.Sindri.Host.Commands;
 
@@ -41,7 +44,7 @@ internal sealed class ContextJobVerbs(ControlPlaneClient client, Output output, 
             return await output.Error(started.Error).ConfigureAwait(false);
         }
 
-        return await Followed(started.Value, line.Detach, line.Json, interrupt, again).ConfigureAwait(false);
+        return await Followed(started.Value, (line.Detach, line.Json), interrupt, again).ConfigureAwait(false);
     }
 
     /// <summary>'context eval backtest [--arms a,b|all] [--since D] [--until D] [--limit N] [--detach] [--json]': the backtest job (context spec §9.1).</summary>
@@ -56,14 +59,27 @@ internal sealed class ContextJobVerbs(ControlPlaneClient client, Output output, 
         var started = await client.Post<RunContextBacktestRequest, JobStartedResponse>("/sindri/context/eval/backtest", line.Request, interrupt).ConfigureAwait(false);
         return started.IsError
             ? await output.Error(started.Error).ConfigureAwait(false)
-            : await Followed(started.Value, line.Detach, line.Json, interrupt, again).ConfigureAwait(false);
+            : await Followed(started.Value, (line.Detach, line.Json), interrupt, again, Table).ConfigureAwait(false);
     }
 
-    private async Task<int> Followed(ApiAnswer<JobStartedResponse> started, bool detach, bool json, CancellationToken interrupt, CancellationToken again)
+    /// <summary>The backtest's rows, read from the final job's small result; nothing when the result isn't there or doesn't read.</summary>
+    private string? Table(JobView job)
     {
+        if (job.Result is not { } result)
+        {
+            return null;
+        }
+
+        var read = output.Read<RunContextBacktestResult>(Encoding.UTF8.GetBytes(result.GetRawText()));
+        return read.IsSuccess ? BacktestJobText.Render(read.Value) : null;
+    }
+
+    private async Task<int> Followed(ApiAnswer<JobStartedResponse> started, (bool Detach, bool Json) mode, CancellationToken interrupt, CancellationToken again, Func<JobView, string?>? describe = null)
+    {
+        var (detach, json) = mode;
         if (!detach)
         {
-            return await follower.Follow(started.Value, json, interrupt, again).ConfigureAwait(false);
+            return await follower.Follow(started.Value, json, interrupt, again, describe).ConfigureAwait(false);
         }
 
         return json

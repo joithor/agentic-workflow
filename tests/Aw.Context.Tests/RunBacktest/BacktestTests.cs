@@ -185,4 +185,24 @@ public sealed class BacktestTests
         Assert.True(graph.AdjudicatedPrecision >= graph.NodePrecision);
         Assert.Empty(report.Degraded);
     }
+
+    private sealed class Lines : IProgress<string>
+    {
+        public List<string> Seen { get; } = [];
+
+        public void Report(string value) => Seen.Add(value);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Backtest_with_a_home_inside_a_worktree_is_refused_with_005_before_any_sample_is_dropped_as_unreadable()
+    {
+        using var worktree = new Infrastructure.TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal) { ["a.txt"] = "a" });
+        await using var world = await BacktestWorld.Start(BacktestWorld.BeforeAllCuts, homeUnder: worktree.Path);
+        var lines = new Lines();
+
+        var run = await world.Run("graph", configure: r => r with { Progress = lines });
+
+        Assert.Equal(ContextErrors.PathInWorktree.Code, run.Error.Code);
+        Assert.DoesNotContain(lines.Seen, l => l.Contains("git can't read the cut", StringComparison.Ordinal));
+    }
 }

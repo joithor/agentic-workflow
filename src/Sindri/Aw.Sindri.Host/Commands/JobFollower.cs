@@ -30,8 +30,9 @@ internal sealed class JobFollower(ControlPlaneClient client, Output output, Time
     /// <param name="json">Print NDJSON (the JobStarted body, then the final JobView) instead of lines.</param>
     /// <param name="interrupt">The first Ctrl-C: cancels the job.</param>
     /// <param name="again">The second Ctrl-C: leaves at once.</param>
+    /// <param name="describe">Words to print after the end line of a job that succeeded (a table of its result, say), read from the final job; null for none. Not used with json.</param>
     /// <returns>The exit code.</returns>
-    internal async Task<int> Follow(JobStartedResponse started, bool json, CancellationToken interrupt, CancellationToken again)
+    internal async Task<int> Follow(JobStartedResponse started, bool json, CancellationToken interrupt, CancellationToken again, Func<JobView, string?>? describe = null)
     {
         ArgumentNullException.ThrowIfNull(started);
         var run = new JobFollowed(started, json);
@@ -40,7 +41,7 @@ internal sealed class JobFollower(ControlPlaneClient client, Output output, Time
             : await output.Text($"job {started.JobId.Value} started\n", 0).ConfigureAwait(false);
         using var signals = new JobInterrupts(interrupt, again);
         var ended = await Watch(run, signals).ConfigureAwait(false);
-        return ended.IsError ? await output.Error(ended.Error).ConfigureAwait(false) : await Finish(run, ended.Value).ConfigureAwait(false);
+        return ended.IsError ? await output.Error(ended.Error).ConfigureAwait(false) : await Finish(run, ended.Value, describe).ConfigureAwait(false);
     }
 
     private async Task<Result<JobEnd>> Watch(JobFollowed run, JobInterrupts signals)
@@ -248,22 +249,32 @@ internal sealed class JobFollower(ControlPlaneClient client, Output output, Time
         return new JobEnd(Exit: 1, After: 0, Left: true);
     }
 
-    /// <summary>With --json, the final job view after the JobStarted body.</summary>
-    private async Task<int> Finish(JobFollowed run, JobEnd end)
+    /// <summary>With --json, the final job view after the JobStarted body; otherwise, for a job that succeeded, what <paramref name="describe"/> says about it.</summary>
+    private async Task<int> Finish(JobFollowed run, JobEnd end, Func<JobView, string?>? describe)
     {
-        if (!run.Json || end.Left)
+        var wanted = run.Json || (describe is not null && end.Exit == 0);
+        if (end.Left || !wanted)
         {
             return end.Exit;
         }
 
-        if (end.View is { } view)
+        if (run.Json && end.View is { } view)
         {
             return await output.Raw(view, end.Exit).ConfigureAwait(false);
         }
 
-        var final = end.After > 0
-            ? await client.GetAfter<JobView>(run.Started.Links.Job, end.After, CancellationToken.None).ConfigureAwait(false)
-            : await client.Get<JobView>(run.Started.Links.Job, CancellationToken.None).ConfigureAwait(false);
-        return final.IsError ? await output.Error(final.Error).ConfigureAwait(false) : await output.Raw(final.Value.Body, end.Exit).ConfigureAwait(false);
+        var final = await FinalView(run, end).ConfigureAwait(false);
+        if (final.IsError)
+        {
+            return await output.Error(final.Error).ConfigureAwait(false);
+        }
+
+        return run.Json
+            ? await output.Raw(final.Value.Body, end.Exit).ConfigureAwait(false)
+            : await output.Text(describe!(final.Value.Value) ?? string.Empty, end.Exit).ConfigureAwait(false);   // why: 'wanted' without json means describe is set
     }
+
+    private async Task<Result<ApiAnswer<JobView>>> FinalView(JobFollowed run, JobEnd end) => end.After > 0
+        ? await client.GetAfter<JobView>(run.Started.Links.Job, end.After, CancellationToken.None).ConfigureAwait(false)
+        : await client.Get<JobView>(run.Started.Links.Job, CancellationToken.None).ConfigureAwait(false);
 }

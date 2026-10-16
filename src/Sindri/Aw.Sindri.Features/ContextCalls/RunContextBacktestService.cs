@@ -42,7 +42,7 @@ internal sealed class RunContextBacktestService(ContextScopes scopes, IContextEn
     {
         var report = run.Report;
         return new RunContextBacktestResult(report.SampleCount, report.SmallSample, report.LeftOut.Total,
-            [.. report.Arms.Select(static a => new BacktestArmLine(a.Arm, a.NotAvailable, a.PassLine?.Overall))],
+            [.. report.Arms.Select(static a => new BacktestArmLine(a.Arm, a.NotAvailable, a.PassLine?.Overall, Leaky: false, Score: null))],
             report.Overall, run.Path, [.. report.Degraded.Take(MaxDegraded).Select(static d => d.Length <= MaxNote ? d : d[..MaxNote])]);
     }
 }
