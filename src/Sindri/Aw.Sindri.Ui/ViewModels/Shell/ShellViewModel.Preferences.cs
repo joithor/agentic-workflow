@@ -9,7 +9,11 @@ internal sealed partial class ShellViewModel
 {
     /// <summary>Gives the lists the text scale Settings holds (Settings calls it when it loads and on every change).</summary>
     /// <param name="appearance">The appearance Settings applied.</param>
-    internal void ApplyAppearance(AppearanceSettings appearance) => throw new NotSupportedException();
+    internal void ApplyAppearance(AppearanceSettings appearance)
+    {
+        NeedsYou.TextScale = appearance.TextScale;
+        Strip.TextScale = appearance.TextScale;
+    }
 
     /// <summary>Remembers the sheet's width (clamped to 420–760 when it's next read).</summary>
     /// <param name="width">The width the user dragged it to.</param>

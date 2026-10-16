@@ -98,7 +98,7 @@ public sealed partial class SindriApp : Application
     // its bounds, the sheet width and the last page), then follows.
     private async Task Open(IClassicDesktopStyleApplicationLifetime desktop, ShellViewModel shell, Preferences preferences, SindriPlatform platform)
     {
-        var settings = await Settings(preferences, platform).ConfigureAwait(true);
+        var settings = await Settings(shell, preferences, platform).ConfigureAwait(true);
         desktop.Exit += (_, _) => settings.Dispose();
         await shell.Restore(CancellationToken.None).ConfigureAwait(true);
         var window = new ShellWindow { DataContext = shell };
@@ -118,11 +118,16 @@ public sealed partial class SindriApp : Application
         End(desktop, FailedExitCode);
     }
 
-    // Settings (⌘,) over the preferences and the OS setting, applying to this app's resources. A preferences file that
+    // Settings (⌘,) over the preferences and the OS setting, applying to this app's resources and the shell's lists. A preferences file that
     // can't be read leaves the theme's own values (the defaults) in place.
-    private async Task<SettingsViewModel> Settings(Preferences preferences, SindriPlatform platform)
+    private async Task<SettingsViewModel> Settings(ShellViewModel shell, Preferences preferences, SindriPlatform platform)
     {
-        var settings = new SettingsViewModel(preferences, platform.Motion, SettingsTheme.For(Resources));
+        var theme = SettingsTheme.For(Resources);
+        var settings = new SettingsViewModel(preferences, platform.Motion, appearance =>
+        {
+            theme(appearance);
+            shell.ApplyAppearance(appearance); // the lists' caps follow the text scale (screens §4.1)
+        });
         try
         {
             await settings.Load(CancellationToken.None).ConfigureAwait(true);
