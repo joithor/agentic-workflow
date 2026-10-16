@@ -62,6 +62,23 @@ internal static class FixtureInstances
     /// <returns>Whether it is open.</returns>
     internal static bool IsOpen(InstanceSummary row) => IsOpen(row.State, row.States.Select(s => (s.State, s.Terminal)));
 
+    /// <summary>One instance golden in full, read through the app's records.</summary>
+    /// <param name="scenario">The scenario ('project-build', 'incident-loop').</param>
+    /// <returns>The instance as served.</returns>
+    internal static InstanceDetail Detail(string scenario) => Read<InstanceDetail>(GoldenFiles.Api("workflow-instance", scenario));
+
+    /// <summary>One status golden, read through the app's records (a state the instance goldens don't show in full, such as taken-over).</summary>
+    /// <param name="scenario">The scenario ('taken-over', 'parked-drift').</param>
+    /// <returns>The status as served.</returns>
+    internal static StatusFields Status(string scenario) => Read<StatusFields>(GoldenFiles.Api("workflow-status", scenario));
+
+    /// <summary>A golden changed by a test (a member removed or nulled), read through the app's records.</summary>
+    /// <typeparam name="T">The record.</typeparam>
+    /// <param name="node">The edited body.</param>
+    /// <returns>The record.</returns>
+    internal static T Parse<T>(System.Text.Json.Nodes.JsonNode node)
+        where T : class => Read<T>(node.ToJsonString());
+
     private static T Read<T>(string body)
         where T : class =>
         AwJson.Deserialize<T>(Encoding.UTF8.GetBytes(body), SindriApiClient.Json).Value;

@@ -21,8 +21,11 @@ internal sealed partial class FakeSindriApi
         return Task.FromResult(Answer<InstanceList>(api, WorkflowRoutes.Instances(query), InstancesAnswer(query)));
     }
 
-    public Task<Result<InstanceDetail>> Instance(Uri api, string id, CancellationToken cancellationToken) =>
-        Task.FromResult(Answer<InstanceDetail>(api, WorkflowRoutes.Instance(id), InstanceAnswer(id)));
+    public Task<Result<InstanceDetail>> Instance(Uri api, string id, CancellationToken cancellationToken)
+    {
+        LastInstanceId = id;
+        return Task.FromResult(Answer<InstanceDetail>(api, WorkflowRoutes.Instance(id), InstanceAnswer(id)));
+    }
 
     public Task<Result<FactView>> InstanceFact(Uri api, string id, string key, CancellationToken cancellationToken) =>
         Task.FromResult(Answer<FactView>(api, WorkflowRoutes.Fact(id, key), FactAnswer(id, key)));
@@ -54,6 +57,9 @@ internal sealed partial class FakeSindriApi
 
     // LANE ANCHOR U3': U3' keeps its own fake in FakeSindriApi.Routes.cs; it adds nothing here. Insert immediately above this marker, never between the markers.
     // LANE ANCHOR U8: new workflow answers (commands, complete) and their gates, answered from WorkflowAnswers. Insert immediately below this marker, never between the markers.
+
+    /// <summary>The id of the latest instance read; null before the first.</summary>
+    public string? LastInstanceId { get; private set; }
 
     /// <summary>The query of the latest instance-list read; null before the first.</summary>
     public InstanceQuery? LastInstancesQuery { get; private set; }
