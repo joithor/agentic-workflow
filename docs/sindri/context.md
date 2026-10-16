@@ -826,6 +826,6 @@ Off by default. `context.eval.adjudicator: true` lets the run ask the model whet
 
 ### Status
 
-The backtest is a job (it takes a heavy-job slot and runs for minutes); `RunContextBacktest` is `pending:API-P6`, and the CLI says so until API P6's job runtime merges. The owner's corpus is S-7B.
+The backtest is a job (it takes a heavy-job slot and runs for minutes); `sindri context eval backtest [--arms a,b|all] [--since D] [--until D] [--limit N] [--detach] [--json]` starts the job and follows it (Ctrl-C cancels it; `--detach` prints the job id; `--json` prints the started body, then the final job). A session cannot start it (SND-AUTH-002); a second start while one runs is SND-JOB-409; an unknown arm is refused at the start (SND-CONTEXT-082). The job's result is small (at most 16 KiB): the sample count, whether it is a small sample, the number left out, one line per arm, the pass line and the report path. The full report, with the samples and scores, stays in the eval file store. The owner's corpus is S-7B.
 
 Errors: `SND-CONTEXT-080` no eligible sample, `081` no brief source, `082` unknown arm, `083` adjudication stopped at its cap.
