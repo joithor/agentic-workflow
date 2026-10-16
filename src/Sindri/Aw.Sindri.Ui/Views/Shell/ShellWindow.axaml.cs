@@ -227,7 +227,10 @@ internal sealed partial class ShellWindow : Window
         if (Shell is { IsSheetShown: true } shell && (Covering || !HasUsableFocus))
         {
             _ = this.Get<Border>("SheetTitle").Focus(Method());
-            EnterOpenedFrame(shell);
+            if (NoOpener(shell))
+            {
+                EnterOpenedFrame(shell);   // a link with no row behind it goes on to the frame; a row's open stays on the heading (§11.2)
+            }
         }
         else if (Shell is { IsSheetShown: true, IsInstanceSheet: true } opened && NoOpener(opened))
         {
