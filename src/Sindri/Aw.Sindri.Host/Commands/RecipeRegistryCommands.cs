@@ -1,8 +1,8 @@
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.RegisterRecipe;
-using Aw.Sindri.Features.ShowRecipe;
 using Aw.Sindri.Host.Commands.Recipe;
 
 namespace Aw.Sindri.Host.Commands;
@@ -46,13 +46,13 @@ internal sealed class RecipeRegistryCommands(RecipeDesk desk, IServiceProvider s
     internal async Task<int> Show(string target, bool json, CancellationToken ct)
     {
         var at = target.IndexOf('@', StringComparison.Ordinal);
-        if (at <= 0 || at == target.Length - 1)
+        if (at == 0 || at == target.Length - 1)
         {
-            return await output.Error(SindriErrors.InvalidInput.With($"recipe show needs <id>@<hash>, for example workflow.step@9ab2d40c1e77 (got '{target}')")).ConfigureAwait(false);
+            return await output.Error(SindriErrors.InvalidInput.With($"recipe show needs <id> or <id>@<hash>, for example workflow.step or workflow.step@9ab2d40c1e77 (got '{target}')")).ConfigureAwait(false);
         }
 
-        var shown = await desk.Client.Get<ShowRecipeResponse>($"{Recipes}/{Uri.EscapeDataString(target[..at])}@{Uri.EscapeDataString(target[(at + 1)..])}", ct)
-            .ConfigureAwait(false);
+        var route = at < 0 ? $"{Recipes}/{Uri.EscapeDataString(target)}" : $"{Recipes}/{Uri.EscapeDataString(target[..at])}@{Uri.EscapeDataString(target[(at + 1)..])}";
+        var shown = await desk.Client.Get<RecipeView>(route, ct).ConfigureAwait(false);
         if (shown.IsError)
         {
             return await output.Error(InstanceReads.NotRunning(shown.Error)).ConfigureAwait(false);
@@ -60,7 +60,7 @@ internal sealed class RecipeRegistryCommands(RecipeDesk desk, IServiceProvider s
 
         return json
             ? await output.Raw(shown.Value.Body, 0).ConfigureAwait(false)
-            : await output.Text(RecipeLineText.Line(shown.Value.Value.Recipe) + "\n" + RecipeLineText.Detail(shown.Value.Value.Recipe) + RecipePreviewText.Approve(shown.Value.Value.Preview, evals: null), 0).ConfigureAwait(false);
+            : await output.Text(RecipeLineText.Show(shown.Value.Value), 0).ConfigureAwait(false);
     }
 
     internal async Task<int> List(bool stale, bool json, CancellationToken ct)

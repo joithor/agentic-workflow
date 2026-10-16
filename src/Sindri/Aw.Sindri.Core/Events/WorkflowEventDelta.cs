@@ -40,7 +40,7 @@ public sealed record WorkflowEventDelta(
     {
         ArgumentNullException.ThrowIfNull(delta);
         return new WorkflowEventDelta(
-            delta.Frame is { } f ? new FrameSummary(f.State, f.Entry, f.Run?.Token.Value, f.Child?.Value) : null,
+            delta.Frame is { } f ? new FrameSummary(f.State, f.Entry, f.Run?.Token.Value, f.Child?.Value, f.Run?.Runtime) : null,
             Summary(delta.Suspension),
             Summary(delta.PendingPark),
             delta.Loops?.ToDictionary(l => l.Key, l => new LoopCounter(l.Value.Round, l.Value.Allowed), StringComparer.Ordinal),

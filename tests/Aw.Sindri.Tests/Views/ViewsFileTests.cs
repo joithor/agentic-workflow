@@ -65,10 +65,10 @@ public sealed class ViewsFileTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Every_view_name_has_a_table_and_the_schema_is_at_version_4()
+    public void Every_view_name_has_a_table_and_the_schema_is_at_version_5()
     {
         Assert.Equal(["decisions", "item-aliases", "item-timeline", "items", "jobs", "needs_you", "profile", "requests", "services"], ViewNames.All.Order(StringComparer.Ordinal).ToList());
-        Assert.Equal(4, ViewSchema.Version);
+        Assert.Equal(5, ViewSchema.Version);
     }
 
     [Fact, Trait("Lane", "integration")]
