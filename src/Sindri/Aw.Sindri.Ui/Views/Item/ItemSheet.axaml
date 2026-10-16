@@ -97,9 +97,14 @@
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <Border Classes="pending-line" Focusable="True" IsVisible="{Binding DecideLine, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" AutomationProperties.Name="{Binding DecideLine}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-                  <TextBlock Classes="caption subtle" TextWrapping="Wrap" Text="{Binding DecideLine}" AutomationProperties.AccessibilityView="Raw" />
-                </Border>
+                <WrapPanel Orientation="Horizontal" IsVisible="{Binding DecideLine, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                  <Border Classes="pending-line" Focusable="True" AutomationProperties.Name="{Binding LineName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                    <TextBlock Classes="caption subtle" TextWrapping="Wrap" Margin="0,0,6,0" Text="{Binding DecideLine}" AutomationProperties.AccessibilityView="Raw" />
+                  </Border>
+                  <Button Classes="copy" Click="OnCopyDecide" IsVisible="{Binding CanCopy}" AutomationProperties.Name="{Binding CopyName}">
+                    <TextBlock Classes="caption" Text="{Binding CopyLabel}" />
+                  </Button>
+                </WrapPanel>
               </StackPanel>
             </DataTemplate>
           </ItemsControl.ItemTemplate>

@@ -34,6 +34,14 @@ internal sealed partial class DecisionSheet : UserControl
         };
     }
 
+    private void OnCopyDecide(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is DecisionSheetViewModel sheet)
+        {
+            _ = sheet.CopyDecide();
+        }
+    }
+
     private void OnOption(object? sender, RoutedEventArgs e)
     {
         if (DataContext is DecisionSheetViewModel sheet && sender is Control { DataContext: DecisionOption option })

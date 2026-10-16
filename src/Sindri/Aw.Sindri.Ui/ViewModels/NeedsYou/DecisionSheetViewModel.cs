@@ -30,6 +30,14 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
     /// <summary>The served command the line's Copy puts on the clipboard; empty for none.</summary>
     internal string DecideCli => _row is null || DecideLine.Length == 0 ? "" : DecisionOptions.Cli(_row.Controls);
 
+    /// <summary>The Copy button's word.</summary>
+#pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
+    internal string CopyLabel => Labels.Copy;
+#pragma warning restore CA1822, MA0041
+
+    /// <summary>True when the line has a command to copy.</summary>
+    internal bool CanCopy => DecideCli.Length > 0;
+
     /// <summary>Copies the decision's served Decide command.</summary>
     /// <returns>A task that completes once the clipboard answered.</returns>
     internal async Task CopyDecide()

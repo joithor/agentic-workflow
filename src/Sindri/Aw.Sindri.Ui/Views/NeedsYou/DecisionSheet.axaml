@@ -23,9 +23,14 @@
         </DataTemplate>
       </ItemsControl.ItemTemplate>
     </ItemsControl>
-    <Border x:Name="DecisionDecideLine" Classes="pending-line" Focusable="True" IsVisible="{Binding DecideLine, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" AutomationProperties.Name="{Binding DecideLine}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-      <TextBlock Classes="caption subtle" TextWrapping="Wrap" Text="{Binding DecideLine}" AutomationProperties.AccessibilityView="Raw" />
-    </Border>
+    <WrapPanel Orientation="Horizontal" IsVisible="{Binding DecideLine, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+      <Border x:Name="DecisionDecideLine" Classes="pending-line" Focusable="True" AutomationProperties.Name="{Binding DecideLineName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+        <TextBlock Classes="caption subtle" TextWrapping="Wrap" Margin="0,0,6,0" Text="{Binding DecideLine}" AutomationProperties.AccessibilityView="Raw" />
+      </Border>
+      <Button x:Name="DecisionDecideCopy" Classes="copy" Click="OnCopyDecide" IsVisible="{Binding CanCopy}" AutomationProperties.Name="{Binding CopyName}">
+        <TextBlock Classes="caption" Text="{Binding CopyLabel}" />
+      </Button>
+    </WrapPanel>
     <TextBlock x:Name="DecisionNoteCaption" Classes="caption subtle" Text="{Binding NoteLabel}" AutomationProperties.AccessibilityView="Raw" />
     <TextBox x:Name="DecisionNote" Text="{Binding Note}" AcceptsReturn="False" IsEnabled="{Binding !IsCleared}" AutomationProperties.Name="{Binding NoteLabel}" />
     <TextBlock x:Name="DecisionRefusal" Classes="caption" Text="{Binding Refusal}" IsVisible="{Binding Refusal, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"

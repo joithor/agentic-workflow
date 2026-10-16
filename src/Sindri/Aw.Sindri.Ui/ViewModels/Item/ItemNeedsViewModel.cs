@@ -12,6 +12,7 @@ internal sealed class ItemNeedsViewModel : ObservableObject
 {
     private readonly ISindriApi _api;
     private readonly DecisionSender _sender;
+    private readonly Platform.IClipboard? _clipboard;
     private readonly Func<DecideState> _readiness;
     private DecisionList? _served;
     private Uri? _url;
@@ -21,9 +22,10 @@ internal sealed class ItemNeedsViewModel : ObservableObject
     /// <param name="api">The API.</param>
     /// <param name="sender">Sends Decide, with the guard the decision sheet shares.</param>
     /// <param name="readiness">What the catalog says of Decide now; the options take input only when it is ready.</param>
-    internal ItemNeedsViewModel(ISindriApi api, DecisionSender sender, Func<DecideState> readiness)
+    /// <param name="clipboard">Where the line's Copy puts the served command; null for none.</param>
+    internal ItemNeedsViewModel(ISindriApi api, DecisionSender sender, Func<DecideState> readiness, Platform.IClipboard? clipboard = null)
     {
-        (_api, _sender, _readiness) = (api, sender, readiness);
+        (_api, _sender, _readiness, _clipboard) = (api, sender, readiness, clipboard);
     }
 
     /// <summary>The item's needs, reading Decide from <paramref name="catalog"/> and rebuilding the options when the catalog arrives or changes.</summary>
@@ -34,7 +36,7 @@ internal sealed class ItemNeedsViewModel : ObservableObject
     internal static ItemNeedsViewModel Create(ISindriApi api, DecisionSender sender, CatalogViewModel catalog)
     {
         ArgumentNullException.ThrowIfNull(catalog);
-        var needs = new ItemNeedsViewModel(api, sender, () => StateOf(catalog.For("Decide"), catalog.Listed is not null));
+        var needs = new ItemNeedsViewModel(api, sender, () => StateOf(catalog.For("Decide"), catalog.Listed is not null), catalog.Clipboard);
         catalog.PropertyChanged += (_, e) =>
         {
             if (string.Equals(e.PropertyName, nameof(CatalogViewModel.Controls), StringComparison.Ordinal))
@@ -124,13 +126,20 @@ internal sealed class ItemNeedsViewModel : ObservableObject
     private ItemDecisionRow Row(DecisionView d, DecideState state)
     {
         var own = state with { Cli = d.Options.Select(o => o.Cli).FirstOrDefault(c => c.Length > 0) ?? state.Cli };
-        return new ItemDecisionRow(d.Id, d.Question, d.FiledBy, DecisionOptions.From(d, own, _sender), own.Line);
+        return new ItemDecisionRow(d.Id, d.Question, d.FiledBy, DecisionOptions.From(d, own, _sender), own.Line, own.Line.Length > 0 ? own.Cli : "");
     }
 
     /// <summary>Copies a decision's served Decide command.</summary>
     /// <param name="decisionId">The decision.</param>
     /// <returns>A task that completes once the clipboard answered.</returns>
-    internal Task CopyDecide(string decisionId) => throw new NotSupportedException(decisionId);
+    internal async Task CopyDecide(string decisionId)
+    {
+        var cli = Decisions.FirstOrDefault(d => string.Equals(d.Id, decisionId, StringComparison.Ordinal))?.DecideCli ?? "";
+        if (cli.Length > 0 && _clipboard is not null)
+        {
+            _ = await _clipboard.SetText(cli, CancellationToken.None).ConfigureAwait(true);
+        }
+    }
 
     /// <summary>Decides one of the item's decisions with an option: sent once, never retried; a refusal shows as served.</summary>
     /// <param name="decisionId">The decision.</param>

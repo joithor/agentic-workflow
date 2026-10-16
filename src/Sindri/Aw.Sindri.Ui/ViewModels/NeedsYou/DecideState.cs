@@ -23,7 +23,7 @@ internal readonly record struct DecideState(ActionReadiness Readiness, string St
     internal string Line => Readiness switch
     {
         ActionReadiness.Pending => Stage.Length > 0 ? (Cli.Length > 0 ? Labels.Arrives(Stage) + " · " + Cli : Labels.Arrives(Stage)) : Unphased,
-        ActionReadiness.CliOnly => Labels.ProtectedTooltip,
+        ActionReadiness.CliOnly => Cli.Length > 0 ? Labels.ProtectedTooltip + " · " + Cli : Labels.ProtectedTooltip,
         ActionReadiness.Ready => "",
         _ => "",
     };

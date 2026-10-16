@@ -14,6 +14,11 @@ internal sealed record ItemDecisionRow(string Id, string Question, string FiledB
     /// <summary>True when the line has a command to copy.</summary>
     internal bool CanCopy => DecideCli.Length > 0;
 
+    /// <summary>The Copy button's word.</summary>
+#pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
+    internal string CopyLabel => Labels.Copy;
+#pragma warning restore CA1822, MA0041
+
     /// <summary>What Copy is called to a screen reader: "Copy: Decide DEC-1".</summary>
     internal string CopyName => Labels.CopyDecide(Id);
 

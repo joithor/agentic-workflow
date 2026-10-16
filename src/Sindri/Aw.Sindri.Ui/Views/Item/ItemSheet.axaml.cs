@@ -57,6 +57,14 @@ internal sealed partial class ItemSheet : UserControl
         }
     }
 
+    private void OnCopyDecide(object? sender, RoutedEventArgs e)
+    {
+        if (_sheet is { } sheet && sender is Button { DataContext: ItemDecisionRow row })
+        {
+            _ = sheet.Needs.CopyDecide(row.Id);
+        }
+    }
+
     // An option on one of the item's pending decisions: Decide, once; the buttons are rebuilt by the re-read, so focus
     // goes to the sheet's title when the pressed one is gone (focus is never lost).
     private async void OnDecisionOption(object? sender, RoutedEventArgs e)

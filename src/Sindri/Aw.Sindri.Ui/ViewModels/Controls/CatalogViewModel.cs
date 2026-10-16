@@ -16,6 +16,9 @@ internal sealed class CatalogViewModel(IClipboard clipboard, TimeProvider clock)
     /// <summary>The catalog as last read; null before the first. Rows that carry the readiness of an action the API names.</summary>
     internal CommandList? Listed { get; private set; }
 
+    /// <summary>Where Copy puts a CLI (a decision's line copies through it too).</summary>
+    internal IClipboard Clipboard { get; } = clipboard;
+
     private Dictionary<string, CommandRowView> _rows = new(StringComparer.Ordinal);
 
     /// <summary>Every catalog row, in the API's order.</summary>
@@ -41,7 +44,7 @@ internal sealed class CatalogViewModel(IClipboard clipboard, TimeProvider clock)
     /// <param name="send">Sends the command once; null when nothing is wired to it.</param>
     /// <returns>The control, or null.</returns>
     internal ControlViewModel? On(string action, string subject, Func<CancellationToken, Task<Result<CommandAcceptedView>>>? send) =>
-        _rows.TryGetValue(action, out var row) ? new ControlViewModel(row, send, clipboard, clock, subject) : null;
+        _rows.TryGetValue(action, out var row) ? new ControlViewModel(row, send, Clipboard, clock, subject) : null;
 
     /// <summary>Shows a catalog read from the API at <paramref name="api"/>.</summary>
     /// <param name="api">Where the API answers (the senders call it).</param>
@@ -51,7 +54,7 @@ internal sealed class CatalogViewModel(IClipboard clipboard, TimeProvider clock)
     {
         Listed = catalog;
         _rows = catalog.Rows.ToDictionary(r => r.Action, StringComparer.Ordinal);
-        Controls = [.. catalog.Rows.Select(row => new ControlViewModel(row, Sender(api, client, row.Action), clipboard, clock))];
+        Controls = [.. catalog.Rows.Select(row => new ControlViewModel(row, Sender(api, client, row.Action), Clipboard, clock))];
         var pending = Controls.Where(c => c.IsPending).ToList();
         Pending = [.. pending.GroupBy(c => c.Stage, StringComparer.Ordinal).Select(g => new PendingPhase(Labels.Arrives(g.Key), [.. g]))];
         PendingSummary = pending.Count == 0 ? string.Empty : Labels.PendingSummary(pending.Count);

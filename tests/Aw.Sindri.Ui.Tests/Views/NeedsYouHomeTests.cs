@@ -211,7 +211,7 @@ public sealed class NeedsYouHomeTests : IDisposable
         shell.Navigate(new DeepLink(DeepLinkKind.Decision, "DEC-1"));
         Settle(window);
 
-        Named<Control>(window, "DecisionSheet").GetVisualDescendants().OfType<Button>().Single(b => string.Equals((string?)b.Content, "Decline", StringComparison.Ordinal))
+        Named<Control>(window, "DecisionSheet").GetVisualDescendants().OfType<Button>().Single(b => string.Equals(b.Content as string, "Decline", StringComparison.Ordinal))
             .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
         await shell.Decision.Settled;
         Settle(window);
