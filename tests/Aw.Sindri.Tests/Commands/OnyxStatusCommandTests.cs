@@ -57,11 +57,11 @@ public sealed class OnyxStatusCommandTests : IDisposable
         var lines = _out.ToString().TrimEnd('\n').Split('\n');
         Assert.Equal(
             [
-                "onyx      not set up (run `sindri-app onyx up`)",
+                "onyx      not set up",
                 "pinned    v4.9.0 (f1738ed)",
                 "docker    ok 29.4.0",
                 "compose   ok v2.40.3",
-                "memory    ok 15.7 GiB for Docker, needs 6.0 GiB",
+                "memory    ok 15.7 GiB for Docker, needs a 6 GiB setting",
                 "disk      fail 11.0 GiB free at /sindri-home, needs 16.3 GiB (SND-ONYX-003: Not enough disk: 11.0 GiB free at /sindri-home, needs 16.3 GiB. Free space on that volume, then run this again)",
                 "port      ok 3000 free",
             ],

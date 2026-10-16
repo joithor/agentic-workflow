@@ -112,7 +112,7 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
             return await output.Json(status, status.ExitCode).ConfigureAwait(false);
         }
 
-        var state = status.State == "not-set-up" ? "not set up (run `sindri-app onyx up`)" : status.State;
+        var state = status.State == "not-set-up" ? "not set up" : status.State;   // no command named yet: `onyx up` arrives with P2, which adds the hint
         var rows = new List<string>
         {
             $"{"onyx",-10}{state}",
