@@ -243,20 +243,27 @@ public sealed class ShellWindowTests : IDisposable
     });
 
     // I3 (home.html .phead): each Home panel has a header row (the eyebrow over a hairline) and a body; "not served yet"
-    // is a quiet InkSubtle caption. N2/N6: panel insets and the page gutter are on the spacing scale (16, 24).
+    // and a group's empty sentence are quiet InkSubtle captions. N2/N6: panel insets and the page gutter are on the spacing scale (16, 24).
     [Fact]
     public Task Home_panels_have_a_header_row_and_a_quiet_body() => OnUi(async () =>
     {
         _records.Write(A.Record());
         var (window, _) = await Show(s => s.State == ShellState.Normal);
 
+        // U2: Running and Queued are GET /queue's groups; an empty one shows its own sentence (E-18) the same quiet way.
         foreach (var name in (string[])["NeedsYouPanel", "RunningPanel", "QueuedPanel"])
         {
             var panel = Named<Border>(window, name);
             var head = panel.GetVisualDescendants().OfType<Border>().Single(b => b.Classes.Contains("phead"));
             Assert.Equal(new Thickness(0, 0, 0, 1), head.BorderThickness);
             Assert.Contains(head.GetVisualDescendants().OfType<TextBlock>(), t => t.Classes.Contains("eyebrow"));
-            var quiet = panel.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == Labels.NotServedYet);
+        }
+
+        foreach (var (name, text) in (ReadOnlySpan<(string, string)>)[("NeedsYouPanel", Labels.NotServedYet), ("RunningPanel", "Nothing running.")])
+        {
+            var panel = Named<Border>(window, name);
+            var head = panel.GetVisualDescendants().OfType<Border>().Single(b => b.Classes.Contains("phead"));
+            var quiet = panel.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == text && t.IsEffectivelyVisible);
             Assert.Contains("caption", quiet.Classes, StringComparer.Ordinal);
             Assert.Equal(Colour("Color.InkSubtle"), Ink(quiet));
 
@@ -1808,7 +1815,7 @@ public sealed class ShellWindowTests : IDisposable
         var card = Named<Border>(window, "ShortcutsCard");
         var cardPeer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(card);
         Assert.True(cardPeer.IsControlElement());
-        Assert.Equal(Avalonia.Automation.Peers.AutomationControlType.Group, cardPeer.GetAutomationControlType());
+        Assert.Equal(Avalonia.Automation.Peers.AutomationControlType.Window, cardPeer.GetAutomationControlType());   // a modal layer is a dialog (U2 review), the regions behind it are groups
         Assert.False(string.IsNullOrEmpty(cardPeer.GetName()));
     });
 

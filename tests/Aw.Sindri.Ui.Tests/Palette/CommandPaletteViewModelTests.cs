@@ -323,7 +323,7 @@ public sealed partial class CommandPaletteViewModelTests
     {
         _server.RebuildGate = new TaskCompletionSource();
         var control = _controls.For("RebuildViews")!;
-        var first = control.Run(Token);
+        var first = control.Press(Token);
 
         _palette.Open();
         var rebuild = Entry("RebuildViews");
@@ -460,7 +460,7 @@ public sealed partial class CommandPaletteViewModelTests
         _server.RebuildGate = new TaskCompletionSource();
         _server.Rebuild = RouteAnswer.Problem(System.Net.HttpStatusCode.InternalServerError, "SND-API-005", "failed");
         var control = _controls.For("RebuildViews")!;
-        var run = control.Run(Token);
+        var run = control.Press(Token);
         _palette.Open();
         var spoken = Spoken();
         var said = new List<string>();

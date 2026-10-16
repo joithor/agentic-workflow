@@ -4,9 +4,9 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
-using Avalonia.VisualTree;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Shell;
+using Aw.Sindri.Ui.Views.Layout;
 
 namespace Aw.Sindri.Ui.Views.Shell;
 
@@ -28,6 +28,7 @@ internal sealed partial class ShellWindow : Window
 
     private ShellViewModel? _shell;
     private Control? _lastFocused;
+    private int _rowRequests;   // row-focus requests posted and not yet run
     private NavigationMethod _lastMethod = NavigationMethod.Tab;
     private Control? _sheetOpener;
 
@@ -38,6 +39,7 @@ internal sealed partial class ShellWindow : Window
     {
         InitializeComponent();
         AddHandler(GotFocusEvent, OnGotFocus, handledEventsToo: true);
+        PagePanel.SizeChanged += (_, e) => PageLayout.SetTier(PagePanel, PageLayout.For(e.NewSize.Width));
         WatchNavigationKeys();
     }
 
@@ -98,7 +100,7 @@ internal sealed partial class ShellWindow : Window
         // Esc with a chord waiting is spent on cancelling it: whatever Esc would close stays open.
         e.Handled = RegionStep(e.Key, e.KeyModifiers, OperatingSystem.IsMacOS()) is { } step ? CycleRegion(back: step < 0)
             : e.Key == Key.Escape ? chordWaiting || Escape()
-            : OpenByKey(e) || (!OverlayOpen && Chord(e));
+            : TabOutOfOpenRow(e) || OpenByKey(e) || (!OverlayOpen && PageKey(e));
         base.OnKeyDown(e);
     }
 
@@ -106,10 +108,6 @@ internal sealed partial class ShellWindow : Window
     private static bool IsChordStep(KeyEventArgs e) =>
         (e.KeyModifiers == KeyModifiers.None && ChordKey(e.Key) is not null)
         || e.Key is Key.LeftShift or Key.RightShift or Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt or Key.LWin or Key.RWin;
-
-    // Single keys never fire while typing in a text field (rev 7 §8).
-    private bool Chord(KeyEventArgs e) =>
-        e.KeyModifiers == KeyModifiers.None && e.Source is not TextBox && ChordKey(e.Key) is { } chord && Shell is { } shell && shell.PressKey(chord);
 
     // Esc closes the sheet when it shows, or Settings over the Not running card (focus then goes from its hidden control
     // to the page region); otherwise it does nothing here. A sheet hidden while Sindri isn't running stays open, so the
@@ -133,6 +131,11 @@ internal sealed partial class ShellWindow : Window
             return true;
         }
 
+        if (EscapeItemLayer(shell))
+        {
+            return true;
+        }
+
         if (shell.IsSheetShown)
         {
             shell.CloseSheet();
@@ -147,46 +150,6 @@ internal sealed partial class ShellWindow : Window
         Dispatcher.UIThread.Post(KeepFocus, DispatcherPriority.Loaded);
         return true;
     }
-
-    // F6, or ⌘⌥→ and ⌘⌥← on macOS (§8, §11.2): the next region (top bar, page, sheet when open) gets focus: the
-    // region itself, so Tab then moves inside it (or its first focusable control when the region itself can't take focus).
-    private bool CycleRegion(bool back)
-    {
-        if (OverlayOpen)
-        {
-            return true;   // the palette and the ? sheet trap focus: the regions behind the scrim are out of reach (WCAG 2.4.3)
-        }
-
-        Control[] regions = [.. _regions.Select(this.Get<Control>).Where(c => c.IsEffectivelyVisible && c.IsEffectivelyEnabled)];
-        var focused = FocusManager?.GetFocusedElement() as Visual;
-        var current = Array.FindIndex(regions, r => focused is not null && (r == focused || r.IsVisualAncestorOf(focused)));
-        var next = regions[(current + (back ? regions.Length - 1 : 1) + regions.Length) % regions.Length];
-        var target = next.Focusable ? next : FirstFocusable(next) ?? next;
-        return target.Focus(NavigationMethod.Tab);
-    }
-
-    /// <summary>The text a plain key feeds the G-chord: a letter or '.', else null.</summary>
-    /// <param name="key">The key.</param>
-    /// <returns>Its text, or null.</returns>
-    internal static string? ChordKey(Key key) =>
-        key is >= Key.A and <= Key.Z ? key.ToString() : key is Key.OemPeriod or Key.Decimal ? "." : null;
-
-    /// <summary>The step a key takes through the regions (§8, §11.2): 1 forward, -1 back, null when it isn't a region key.</summary>
-    /// <param name="key">The key.</param>
-    /// <param name="modifiers">Its modifiers.</param>
-    /// <param name="macOS">Whether the app runs on macOS.</param>
-    /// <returns>The step, or null.</returns>
-    internal static int? RegionStep(Key key, KeyModifiers modifiers, bool macOS) => (key, modifiers) switch
-    {
-        (Key.F6, KeyModifiers.None) => 1,
-        (Key.F6, KeyModifiers.Shift) => -1,
-        (Key.Right, KeyModifiers.Meta | KeyModifiers.Alt) when macOS => 1,
-        (Key.Left, KeyModifiers.Meta | KeyModifiers.Alt) when macOS => -1,
-        _ => null,
-    };
-
-    private static InputElement? FirstFocusable(Visual within) => within.GetVisualDescendants().OfType<InputElement>()
-        .FirstOrDefault(c => c.Focusable && c.IsEffectivelyVisible && c.IsEffectivelyEnabled);
 
     // Below Size.SheetCoversBelow the sheet covers the page, with a back affordance; otherwise it keeps its width. When
     // an open sheet starts or stops covering (the window narrowed or widened), focus left on the page it now disables
@@ -210,7 +173,19 @@ internal sealed partial class ShellWindow : Window
     // enabled again as soon as the sheet closes or stops covering, before focus returns to it (KeepFocus runs later).
     // KeepFocusOrReannounce (ShellWindow.Focus.cs) also pulses Page.IsEnabled to drop and retake focus, but that is on the Page
     // border; this is PagePanel, the page's container, so the two don't fight.
-    private void CoverPage() => PagePanel.IsEnabled = !(Covering && Shell is { IsSheetShown: true });
+    private void CoverPage()
+    {
+        PagePanel.IsEnabled = !(Covering && Shell is { IsSheetShown: true });
+        ReservePage();
+    }
+
+    // Beside the page the sheet takes its width from the page region: the page is the window minus the sheet, so nothing the
+    // keyboard reaches is under it (WCAG 2.4.11, proof B8), and the page's rows and Home adapt to the narrower width
+    // (PageLayout). The width is the sheet's clamped one, not the requested.
+    private void ReservePage() =>
+        PagePanel.Margin = new Thickness(0, 0, !Covering && Shell is { IsSheetShown: true } && !double.IsNaN(SheetPanel.Width) ? ClampedSheetWidth() : 0, 0);
+
+    private double ClampedSheetWidth() => Math.Clamp(SheetPanel.Width, SheetPanel.MinWidth, SheetPanel.MaxWidth);
 
     private bool Covering => SheetPanel.Classes.Contains("covers");
 
@@ -271,7 +246,11 @@ internal sealed partial class ShellWindow : Window
     // A keyboard user's focus moves with its ring (Tab); a pointer user's without.
     private NavigationMethod Method() => _lastMethod == NavigationMethod.Pointer ? NavigationMethod.Pointer : NavigationMethod.Tab;
 
-    private void OnSheetDrag(object? sender, VectorEventArgs e) => SheetPanel.Width = SheetPanel.Bounds.Width - e.Vector.X;
+    private void OnSheetDrag(object? sender, VectorEventArgs e)
+    {
+        SheetPanel.Width = Math.Clamp(SheetPanel.Bounds.Width - e.Vector.X, SheetPanel.MinWidth, SheetPanel.MaxWidth);
+        ReservePage();
+    }
 
     private void OnSheetDragged(object? sender, VectorEventArgs e) => Shell?.ResizeSheet(SheetPanel.Bounds.Width);
 
