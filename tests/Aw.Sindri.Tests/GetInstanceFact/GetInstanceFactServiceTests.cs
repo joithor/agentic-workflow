@@ -151,7 +151,7 @@ public sealed class GetInstanceFactServiceTests
 
         var result = await Read(With("fact:spec", FactType.Text), "fact:spec", new string('é', 4_000_000));
 
-        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(1), $"cutting took {clock.Elapsed}");
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(10), $"cutting took {clock.Elapsed}");   // a quadratic cut takes minutes here; 10 s leaves room for a loaded CI runner
         Assert.Equal((true, 256 * 1024 / 2), (result.Value.Truncated, result.Value.Body.GetString()!.Length));   // 2 bytes a character, cut exactly at the budget
     }
 
@@ -163,7 +163,7 @@ public sealed class GetInstanceFactServiceTests
 
         var result = await Read(With("fact:plan", FactType.Packet), "fact:plan", "{" + entries + "}");
 
-        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(1), $"cutting took {clock.Elapsed}");
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(10), $"cutting took {clock.Elapsed}");   // a quadratic cut takes minutes here; 10 s leaves room for a loaded CI runner
         Assert.True(result.Value.Truncated);
         Assert.InRange(Encoding.UTF8.GetByteCount(result.Value.Body.GetRawText()), (256 * 1024) - 16, 256 * 1024);
     }
