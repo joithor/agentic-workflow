@@ -19,7 +19,7 @@ public static class EmptyText
     /// <param name="state">The state filter, or null.</param>
     /// <param name="kind">The kind filter, or null.</param>
     /// <returns>The sentence.</returns>
-    public static string Jobs(Jobs.JobState? state, JobKind? kind) =>
+    public static string Jobs(JobState? state, JobKind? kind) =>
         state is null && kind is null
             ? Jobs()
             : string.Join(' ', new[] { "No", state is { } named ? JobStateNames.Of(named) : null, kind?.Value, "jobs." }.Where(static w => w is { Length: > 0 }));
