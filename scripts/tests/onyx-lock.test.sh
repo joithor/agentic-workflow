@@ -115,7 +115,7 @@ for repo in Bad_Repo -lead; do
   expect "repository name $repo fails" 1 'ONYX-LOCK-002 .*repository'
 done
 
-for path in 'a\b' 'a//b' 'a/' '../x' 'a/../x' '/x'; do
+for path in 'a\b' 'a//b' 'a/' '../x' 'a/../x' '/x' 'a[1]' 'a?b' 'a%2e' 'a#b' 'a:b' 'a*'; do
   f="$( { good_body; printf 'file %s %s\n' "$path" "$SHA"; } | lock badpath)"
   run check --file "$f"
   expect "file path $path fails" 1 'ONYX-LOCK-002 .*path'
@@ -124,6 +124,25 @@ done
 f="$( { good_body; printf 'file a\0b %s\n' "$SHA"; } | lock nulpath)"
 run check --file "$f"
 expect "a NUL byte fails" 1 'ONYX-LOCK-002 .*NUL'
+
+# A CR, VT or FF anywhere on a line is refused (the shipped lock is LF-only), as OnyxPins.Parse refuses it.
+f="$( { good_body; printf '\r\n'; } | lock lonecr)"
+run check --file "$f"
+expect "a line holding a lone CR fails" 1 'ONYX-LOCK-002 7: .*CR, VT or FF'
+
+f="$( { good_body; printf '# note\r\n'; } | lock crcomment)"
+run check --file "$f"
+expect "a comment line ending in CR fails" 1 'ONYX-LOCK-002 7: .*CR, VT or FF'
+
+f="$( { good_body; printf 'need disk-bytes 100\r # c\n'; } | lock crbeforehash)"
+run check --file "$f"
+expect "a CR before a # fails" 1 'ONYX-LOCK-002 7: .*CR, VT or FF'
+
+for c in '\v' '\f'; do
+  f="$( { good_body; printf "# a${c}b\n"; } | lock ctl)"
+  run check --file "$f"
+  expect "a $c inside a line fails" 1 'ONYX-LOCK-002 7: .*CR, VT or FF'
+done
 
 # Fields split on space and tab only (as awk does): CRLF line endings and a no-break space are refused, as OnyxPins.Parse refuses them.
 f="$(good_body | awk '{ printf "%s\r\n", $0 }' | lock crlf)"
@@ -154,24 +173,38 @@ cp "$STUB/$(basename "$url")" "$out"
 EOS
 cat >"$STUB/bin/docker" <<'EOS'
 #!/usr/bin/env bash
+# An inspect of <repo>@<digest> is answered from $STUB/by-digest/<digest with : as _>.json when that file exists; everything else from index.json.
+echo "$*" >>"$STUB/docker.log"
+for a in "$@"; do
+  case "$a" in *@sha256:*) f="$STUB/by-digest/$(printf '%s' "${a#*@}" | tr : _).json"; if [ -f "$f" ]; then cat "$f"; exit 0; fi ;; esac
+done
 [ -f "$STUB/index.json" ] || { echo "no such manifest" >&2; exit 1; }
 cat "$STUB/index.json"
 EOS
+mkdir -p "$STUB/by-digest"
 chmod +x "$STUB/bin/curl" "$STUB/bin/docker"
-cat >"$STUB/docker-compose.yml" <<'EOS'
-services:
-  a:
-    image: '${A_IMAGE:-o/app:${IMAGE_TAG:-latest}}'
-  b:
-    image: "${REG:-docker.io}/library/redis:7.4-alpine@sha256:abc"
-  # image: unused/thing:1
-EOS
 DEV="sha256:1111111111111111111111111111111111111111111111111111111111111111"
 ARM="sha256:2222222222222222222222222222222222222222222222222222222222222222"
+INDEXD="sha256:5555555555555555555555555555555555555555555555555555555555555555"   # an index the compose pins (answered by index.json)
+OTHERD="sha256:4444444444444444444444444444444444444444444444444444444444444444"   # an index with other platform digests
+OTHERM="sha256:6666666666666666666666666666666666666666666666666666666666666666"   # a single manifest the lock doesn't hold
+compose() {   # [<digest pinned on the redis line>] [<image line count: 2 or 0>] -- writes the compose the stubs serve and sets CSHA
+  { echo "services:"
+    if [ "${2:-2}" -ne 0 ]; then
+      echo "  a:"; echo "    image: '\${A_IMAGE:-o/app:\${IMAGE_TAG:-latest}}'"
+      echo "  b:"; echo "    image: \"\${REG:-docker.io}/library/redis:7.4-alpine${1:+@$1}\""
+    fi
+    echo "  # image: unused/thing:1"; } >"$STUB/docker-compose.yml"
+  CSHA="$(shasum -a 256 "$STUB/docker-compose.yml" | cut -d' ' -f1)"
+}
 cat >"$STUB/index.json" <<EOS
 {"manifests":[{"digest":"$ARM","platform":{"os":"linux","architecture":"arm64"}},{"digest":"$DEV","platform":{"os":"linux","architecture":"amd64"}},{"digest":"sha256:3333333333333333333333333333333333333333333333333333333333333333","platform":{"os":"unknown","architecture":"unknown"}}]}
 EOS
-CSHA="$(shasum -a 256 "$STUB/docker-compose.yml" | cut -d' ' -f1)"
+cat >"$STUB/by-digest/$(printf '%s' "$OTHERD" | tr : _).json" <<EOS
+{"manifests":[{"digest":"$DEV","platform":{"os":"linux","architecture":"arm64"}},{"digest":"$ARM","platform":{"os":"linux","architecture":"amd64"}}]}
+EOS
+for m in "$ARM" "$OTHERM"; do printf '{"schemaVersion":2,"config":{"digest":"x"},"layers":[]}' >"$STUB/by-digest/$(printf '%s' "$m" | tr : _).json"; done
+compose "$INDEXD"
 vlock() {   # <name> [<image digest for arm64>] — a lock the stubs satisfy
   { echo "version v4.9.0 $COMMIT"; echo "file docker_compose/docker-compose.yml ${3:-$CSHA}"
     echo "image docker.io/o/app v4.9.0 linux/arm64 ${2:-$ARM}"; echo "image docker.io/o/app v4.9.0 linux/amd64 $DEV"
@@ -190,6 +223,27 @@ expect "verify reports an image digest that differs" 1 'ONYX-LOCK-011 docker.io/
 
 vrun --file "$(vlock vbadfile "$ARM" "$(printf 'f%.0s' $(seq 64))")"
 expect "verify reports a file sha256 that differs" 1 'ONYX-LOCK-010 docker_compose/docker-compose.yml: expected f+, got '"$CSHA"
+
+grep -q -- " -g " "$STUB/curl.log" || grep -q -- "-fsSLg" "$STUB/curl.log" && ok "verify's curl turns URL globbing off (-g)" || fail "verify's curl lacks -g"
+
+grep -q -- "buildx imagetools inspect docker.io/library/redis@$INDEXD --raw" "$STUB/docker.log" && ok "a digest-pinned compose line is inspected as <repository>@<digest>" || fail "no inspect of redis@digest"
+
+# A digest-pinned compose line: an index must hold the lock's two platform digests, a single manifest must be one of them.
+compose "$OTHERD"; vrun --file "$(vlock vdiffindex)"
+expect "verify fails a compose line pinning an index whose platform digests differ from the lock" 1 'ONYX-LOCK-012 .*redis:7.4-alpine@sha256:4444.* pins an index'
+
+compose "$ARM"; vrun --file "$(vlock vmanifest)"
+expect "verify passes a compose line pinning a single manifest the lock holds" 0 'verify: ok'
+
+compose "$OTHERM"; vrun --file "$(vlock vbadmanifest)"
+expect "verify fails a compose line pinning a single manifest the lock does not hold" 1 'ONYX-LOCK-012 .*pins the manifest sha256:6666'
+
+compose "sha256:abc"; vrun --file "$(vlock vbogus)"
+expect "verify fails a compose line pinning a malformed digest" 1 'ONYX-LOCK-012 .*sha256:abc'
+
+compose "" 0; vrun --file "$(vlock vnoimages)"
+expect "verify fails a compose with no image line" 1 'ONYX-LOCK-012 .*extracted 0 image lines'
+compose "$INDEXD"
 
 sed '/^image docker.io\/library\/redis/d' "$(vlock vsrc)" >"$TMPROOT/vunpinned.lock"
 vrun --file "$TMPROOT/vunpinned.lock"
