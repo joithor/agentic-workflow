@@ -184,7 +184,16 @@ internal sealed partial class NeedsYouViewModel : ObservableObject
         var selected = SelectedId;
         if (selected is not null && !_visible.Exists(e => string.Equals(e.Id, selected, StringComparison.Ordinal)))
         {
-            Clear(selected, before);
+            if (_feed.Rows.Any(e => string.Equals(e.Id, selected, StringComparison.Ordinal)))
+            {
+                SelectedId = null;   // only filtered out (or held): the row is still on the feed, so nothing cleared; no sentence, no quiet
+                SelectionMovedOnItsOwn = false;
+                OnChanged(nameof(SelectedId));
+            }
+            else
+            {
+                Clear(selected, before);
+            }
         }
 
         foreach (var row in Seen.Rows)
