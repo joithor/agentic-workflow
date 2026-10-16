@@ -2,12 +2,12 @@ using Aw.Kernel;
 using Aw.Sindri.Core.Decisions;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
-using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Requests;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
 
-namespace Aw.Sindri.Core.Requests;
+namespace Aw.Sindri.Core.Items;
 
 /// <summary>
 /// Folds 'request.filed', 'decision.recorded' and the closing 'item.state-changed' into the 'requests' and 'decisions' views (API spec §3.4,

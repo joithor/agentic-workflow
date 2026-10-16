@@ -1,9 +1,9 @@
 using Aw.Kernel.Ids;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
-using Aw.Sindri.Core.Decisions;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.Decisions;

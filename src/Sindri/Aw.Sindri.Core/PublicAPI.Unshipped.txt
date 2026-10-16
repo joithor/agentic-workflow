@@ -7416,12 +7416,12 @@ Aw.Sindri.Core.Decisions.DecisionOptionSpec.Label.get -> string!
 Aw.Sindri.Core.Decisions.DecisionOptionSpec.Label.init -> void
 Aw.Sindri.Core.Decisions.DecisionOptionSpec.RejectLike.get -> bool
 Aw.Sindri.Core.Decisions.DecisionOptionSpec.RejectLike.init -> void
-Aw.Sindri.Core.Decisions.DecisionRules
+Aw.Sindri.Core.Views.DecisionRules
 Aw.Sindri.Core.NeedsYou.NeedsYouClearing
 Aw.Sindri.Core.NeedsYou.NeedsYouOrder
 Aw.Sindri.Core.NeedsYou.NeedsYouRows
 Aw.Sindri.Core.Requests.RequestRules
-const Aw.Sindri.Core.Decisions.DecisionRules.NoteMax = 2000 -> int
+const Aw.Sindri.Core.Views.DecisionRules.NoteMax = 2000 -> int
 const Aw.Sindri.Core.Requests.RequestRules.MaxOpenPerRepo = 20 -> int
 const Aw.Sindri.Core.Requests.RequestRules.MaxOpenTotal = 50 -> int
 const Aw.Sindri.Core.Requests.RequestRules.TextMax = 2000 -> int
@@ -7433,7 +7433,7 @@ static Aw.Sindri.Core.Decisions.DecisionKinds.Recommended(Aw.Sindri.Core.Decisio
 static Aw.Sindri.Core.Decisions.DecisionLabels.For(Aw.Sindri.Core.Decisions.DecisionKind kind, Aw.Sindri.Core.Requests.RequestKind requestKind) -> string!
 static Aw.Sindri.Core.Decisions.DecisionOptionSpec.operator !=(Aw.Sindri.Core.Decisions.DecisionOptionSpec? left, Aw.Sindri.Core.Decisions.DecisionOptionSpec? right) -> bool
 static Aw.Sindri.Core.Decisions.DecisionOptionSpec.operator ==(Aw.Sindri.Core.Decisions.DecisionOptionSpec? left, Aw.Sindri.Core.Decisions.DecisionOptionSpec? right) -> bool
-static Aw.Sindri.Core.Decisions.DecisionRules.Decide(Aw.Sindri.Core.Views.HumanDecisionRow! decision, Aw.Sindri.Core.Ids.DecisionOption choice, string? note, string! actor, Aw.Sindri.Core.Ids.CommandId command) -> Aw.Kernel.Result<Aw.Sindri.Core.Events.DecisionRecorded!>!
+static Aw.Sindri.Core.Views.DecisionRules.Decide(Aw.Sindri.Core.Views.HumanDecisionRow! decision, Aw.Sindri.Core.Ids.DecisionOption choice, string? note, string! actor, Aw.Sindri.Core.Ids.CommandId command) -> Aw.Kernel.Result<Aw.Sindri.Core.Events.DecisionRecorded!>!
 static Aw.Sindri.Core.NeedsYou.NeedsYouClearing.AfterCheck(Aw.Sindri.Core.NeedsYou.NeedsYouRow? existing, Aw.Sindri.Core.Views.ProfileRow! profile, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> Aw.Kernel.Result<Aw.Sindri.Core.NeedsYou.NeedsYouRow?>!
 static Aw.Sindri.Core.NeedsYou.NeedsYouClearing.AfterRun(Aw.Sindri.Core.NeedsYou.NeedsYouRow? existing, Aw.Sindri.Core.Views.ServiceRow! service, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> Aw.Kernel.Result<Aw.Sindri.Core.NeedsYou.NeedsYouRow?>!
 static Aw.Sindri.Core.NeedsYou.NeedsYouClearing.FailureStands(Aw.Sindri.Core.NeedsYou.NeedsYouRow! failure, Aw.Sindri.Core.Views.ProfileRow! profile) -> bool

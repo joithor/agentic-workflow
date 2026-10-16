@@ -1,6 +1,6 @@
 using Aw.Sindri.Core.Views;
 
-namespace Aw.Sindri.Core.Requests;
+namespace Aw.Sindri.Core.Items;
 
 /// <summary>The rows a filed request makes.</summary>
 /// <param name="Request">The request, open.</param>

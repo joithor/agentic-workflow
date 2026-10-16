@@ -3,6 +3,7 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Decisions;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Items.Vocabulary;
 using Aw.Sindri.Core.Requests;
 using Aw.Sindri.Core.Text;

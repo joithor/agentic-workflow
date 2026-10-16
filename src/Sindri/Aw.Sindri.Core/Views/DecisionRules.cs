@@ -1,11 +1,11 @@
 using System.Globalization;
 using Aw.Kernel;
+using Aw.Sindri.Core.Decisions;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Text;
-using Aw.Sindri.Core.Views;
 
-namespace Aw.Sindri.Core.Decisions;
+namespace Aw.Sindri.Core.Views;
 
 /// <summary>The pure rules of deciding (API spec §3.2 'Decide', §9).</summary>
 public static class DecisionRules

@@ -2,7 +2,6 @@ using Aw.Kernel;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Ledger;
-using Aw.Sindri.Core.Requests;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
 
