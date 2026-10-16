@@ -46,4 +46,31 @@ public sealed class ActionCommandTests
         Assert.Equal(CatalogCli("StartInstance").Replace("<itemId>", Item, StringComparison.Ordinal), cli);
         Assert.True(fillIn);
     }
+
+    [Fact]
+    public void An_id_placeholder_is_not_the_item_and_stays_as_served()
+    {
+        var (cli, fillIn) = For("ReviewContextMap:drop", subject: null, Item);
+
+        Assert.Equal(CatalogCli("ReviewContextMap:drop"), cli);
+        Assert.True(fillIn);
+    }
+
+    [Fact]
+    public void An_optional_group_whose_placeholder_is_filled_loses_its_brackets()
+    {
+        var (cli, fillIn) = For("ApproveProfile", new NeedsYouSubject(NeedsYouKinds.Profile, "932d"), item: null);
+
+        Assert.Equal("sindri profile approve 932d", cli);
+        Assert.False(fillIn);
+    }
+
+    [Fact]
+    public void An_optional_group_whose_placeholder_is_not_filled_is_shown_as_served()
+    {
+        var (cli, fillIn) = For("ApproveProfile", subject: null, item: null);
+
+        Assert.Equal(CatalogCli("ApproveProfile"), cli);
+        Assert.False(fillIn);
+    }
 }
