@@ -42,8 +42,11 @@ from it.
 
 A closed set: `{bin}`, `{cwd}`, `{title}`, `{name}`, `{seed}`, `{sessionId}`, `{mcpConfig}`, `{cmd...}`. `{cmd...}` is the
 host's attach argv, spliced as separate arguments, so it is a whole element; every other placeholder expands to
-exactly one argument and may sit inside one (`--title={title}`). There is no shell. An expanded `{title}`, `{name}`,
-`{sessionId}` or `{seed}` that starts with `-` is refused, and `{cwd}` is always absolute. Use the argv forms below
+exactly one argument and may sit inside one (`--title={title}`). Decision (SL-0 review): embedded placeholders are allowed
+although spec section 4 says "no string concatenation inside an argument", because section 5's GNOME Terminal and Konsole
+rows and UI section 6.1 (`--resume={sessionId}`) need them; section 4's ban stands for `{cmd...}` only. There is no shell. An expanded `{title}`, `{name}`,
+`{sessionId}` or `{seed}` that starts with `-` is refused (the rule applies to the expanded value at launch, not to the
+template: `--title={title}` always starts with `--`, and a bare `{title}` element is refused for a title such as `-x`), and `{cwd}` is always absolute. Use the argv forms below
 (`--` before `{cmd...}`); a terminal that re-parses a single string after `-e` runs a shell on it.
 
 ### `argvHash`
@@ -53,6 +56,10 @@ exactly one argument and may sit inside one (`--title={title}`). There is no she
 `processName`, `transcripts`, `usage`, `sessionIdPattern` and `reportedId` are not inputs, so a `bin`-directory-only
 override hashes equal to its built-in. The goldens are `tests/fixtures/launcher/argv-hash/*.json`; `node
 scripts/check-launcher.mjs` recomputes each.
+
+Defaults for the merged entry, so a C# and a bash implementation hash the same file: an absent `resume` is `null` (no
+resume argv; it is in the input as `null`), and an absent `mcp` is `"none"`. `aider-added-defaults.json` leaves both out
+and pins the hash; the schema repeats the defaults in the two properties' descriptions.
 
 ## Worked examples for `exec-template`
 

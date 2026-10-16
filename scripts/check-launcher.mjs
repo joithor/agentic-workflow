@@ -130,6 +130,7 @@ try {
       }
     } else entry = g.entry;
     if (!entry) { fail(where, "names neither builtin nor entry"); continue; }
+    for (const k of g.absent ?? []) if (k in entry) fail(where, `${k} is listed as absent but the entry has it`);
     const canonical = jcs(hashInput(entry));
     if (g.canonical !== canonical) fail(where, `canonical is ${canonical}`);
     if (g.argvHash !== argvHash(entry)) fail(where, `argvHash is ${argvHash(entry)}`);

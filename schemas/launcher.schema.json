@@ -102,13 +102,18 @@
       "$ref": "#/$defs/host"
     },
     "agents": {
-      "description": "Entries merged over the built-in claude-code, codex and cursor entries. A built-in id needs \"override\": true; any other id adds an entry.",
+      "description": "Entries merged over the built-in claude-code, codex and cursor entries. A built-in id needs \"override\": true; any other id adds an entry, which carries no \"override\": true and names label, bin, open and sessionId.",
       "type": "object",
       "propertyNames": {
         "$ref": "#/$defs/agentId"
       },
       "additionalProperties": {
-        "$ref": "#/$defs/agent"
+        "$ref": "#/$defs/agent",
+        "properties": {
+          "override": {
+            "const": false
+          }
+        }
       },
       "properties": {
         "claude-code": {
@@ -267,7 +272,8 @@
           "minItems": 1,
           "items": {
             "$ref": "#/$defs/argvElement"
-          }
+          },
+          "description": "Absent means null (no resume argv; the argvHash default)."
         },
         "sessionId": {
           "enum": [
@@ -320,7 +326,8 @@
             "claude-config-file",
             "codex-overrides",
             "none"
-          ]
+          ],
+          "description": "Absent means \"none\" (the argvHash default)."
         }
       },
       "additionalProperties": false,
@@ -394,7 +401,7 @@
       }
     },
     "builtinOverride": {
-      "description": "A built-in id is replaced only with \"override\": true (SND-LAUNCH-011 otherwise).",
+      "description": "A built-in id is replaced only with \"override\": true (SND-LAUNCH-011 otherwise). Every built-in has a sessionIdPattern, so an override may set it to null only together with \"sessionId\": \"none\" (section 4: the pattern is required unless sessionId is none).",
       "$ref": "#/$defs/agent",
       "required": [
         "override"
@@ -402,6 +409,26 @@
       "properties": {
         "override": {
           "const": true
+        }
+      },
+      "if": {
+        "properties": {
+          "sessionIdPattern": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "sessionIdPattern"
+        ]
+      },
+      "then": {
+        "required": [
+          "sessionId"
+        ],
+        "properties": {
+          "sessionId": {
+            "const": "none"
+          }
         }
       }
     },

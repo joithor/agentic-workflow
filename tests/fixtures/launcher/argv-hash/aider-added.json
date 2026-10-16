@@ -1,5 +1,5 @@
 {
-  "note": "an added entry; mcp absent hashes as none",
+  "note": "an added entry with the defaults written out (mcp none, resume null); aider-added-defaults.json leaves them absent",
   "entry": {
     "label": "Aider",
     "bin": "/usr/local/bin/aider",
