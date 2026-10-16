@@ -69,9 +69,22 @@ public sealed class NeedsYouRowsTests
             (NeedsYouRowId.From("failure:service:heartbeat"), NeedsYouKind.Failure, "failure · heartbeat", new NeedsYouSubject(SubjectKind.Service, SubjectId.From("heartbeat"))),
             (row.Id, row.Kind, row.Label, row.Subject));
         Expect.Equal(("heartbeat failed", "SND-SCHED-001: A background service failed", Urgency.Colour, _t), (row.Title, row.Reason, row.Urgency, row.Since));
-        Expect.Equal((ActionId.From("RunService"), "sindri status", false, null), (row.PrimaryAction, row.Cli, row.RecordedOnly, row.Notice));
+        Expect.Equal((ActionId.From("RunService"), "sindri services run heartbeat", false, null), (row.PrimaryAction, row.Cli, row.RecordedOnly, row.Notice));
         Expect.Sequence([ActionId.From("RunService"), ActionId.From("PauseService")], row.Actions);
         Expect.True(row.Item is null && row.Repo is null);
+    }
+
+    [Fact]
+    public void A_failure_for_a_service_the_build_lacks_cannot_be_run_and_points_at_the_profile()
+    {
+        var failed = new ServiceRow(_service, new LastRun(_t, ServiceOutcome.Failed, "SND-SVC-404", _t), Paused: false, Sequence: 4);
+
+        var row = NeedsYouRows.ForFailure(failed, _t, _plain).Value;
+
+        Expect.Equal(("sindri profile validate", true), (row.Cli, row.PrimaryAction is null));
+        Expect.Sequence([ActionId.From("PauseService")], row.Actions);
+        Assert.Contains("remove or rename", row.Reason, StringComparison.Ordinal);
+        Assert.StartsWith("SND-SVC-404", row.Reason, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -142,7 +155,7 @@ public sealed class NeedsYouRowsTests
 
         foreach (var row in rows)
         {
-            Expect.True(row.Actions.Contains(row.PrimaryAction) && !row.PrimaryAction.Value.StartsWith("copy", StringComparison.Ordinal));
+            Expect.True(row.PrimaryAction is { } primary && row.Actions.Contains(primary) && !primary.Value.StartsWith("copy", StringComparison.Ordinal));
             Expect.True(row.Cli.StartsWith("sindri ", StringComparison.Ordinal));
         }
     }

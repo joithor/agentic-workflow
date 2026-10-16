@@ -5,7 +5,8 @@
       "every": "5s",
       "paused": false,
       "lastRun": null,
-      "nextSlot": null
+      "nextSlot": null,
+      "job": null
     }
   ],
   "empty": "Rebuilding views (cursor 4 of 4)…",

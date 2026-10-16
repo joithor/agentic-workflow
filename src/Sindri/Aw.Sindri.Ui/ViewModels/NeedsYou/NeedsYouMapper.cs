@@ -51,7 +51,7 @@ internal static class NeedsYouMapper
             Label = row.Label,
             Reason = row.Reason,
             Since = row.Since,
-            PrimaryAction = row.PrimaryAction,
+            PrimaryAction = row.PrimaryAction ?? string.Empty,
             Actions = [.. row.Actions.SelectMany(id => Actions(row, subject, id, readiness, decisions).Select(a => a with { CatalogRead = read }))],
             Subject = subject,
             ItemId = row.Item,

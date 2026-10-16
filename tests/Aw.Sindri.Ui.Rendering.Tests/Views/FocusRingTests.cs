@@ -11,6 +11,7 @@ using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.Tests.Views;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Settings;
 using Aw.Sindri.Ui.ViewModels.Shell;
@@ -18,7 +19,7 @@ using Aw.Sindri.Ui.Views;
 using Aw.Sindri.Ui.Views.Shell;
 using Microsoft.Extensions.Time.Testing;
 
-namespace Aw.Sindri.Ui.Tests.Views;
+namespace Aw.Sindri.Ui.Rendering.Tests.Views;
 
 /// <summary>
 /// The focus ring as rendered (UI spec §11.1, §11.2): each control reached by the keyboard shows a ring of PrimaryHover

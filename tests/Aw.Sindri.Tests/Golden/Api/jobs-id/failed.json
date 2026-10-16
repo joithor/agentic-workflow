@@ -1,0 +1,27 @@
+{
+  "id": "JOB-00000000000000000000000000000001",
+  "kind": "EchoJob",
+  "key": "echo",
+  "item": null,
+  "repo": null,
+  "service": null,
+  "state": "failed",
+  "startedBy": "service:host",
+  "startedAt": "2026-01-01T00:00:00.0000000Z",
+  "endedAt": "2026-01-01T00:00:00.0000000Z",
+  "progress": [],
+  "rounds": 0,
+  "summary": "it broke",
+  "code": "SND-SCHED-001",
+  "result": null,
+  "cancelledBy": null,
+  "actions": [],
+  "cli": null,
+  "asOf": {
+    "cursor": 6,
+    "ledgerHead": 6,
+    "projectedAt": "2026-01-01T00:00:00.0000000Z",
+    "rebuilding": false,
+    "stalled": false
+  }
+}
