@@ -39,6 +39,10 @@ public sealed class GoldenContractTests
         ["workflow-instance-fact"] = As<FactView>,
         ["workflow-status"] = As<StatusFields>,
         ["workflow-recipe"] = As<RecipeView>,
+        ["needs-you"] = As<NeedsYouList>,
+        ["decisions"] = As<DecisionList>,
+        ["decisions-id"] = As<CommandAcceptedView>,   // POST /decisions/{id}'s accepted goldens; the refusals are ProblemDetails
+        ["requests"] = AsRequests,
     };
 
     // Routes the app never calls yet: stop is Health's (U4), profile approve is protected (the app shows the CLI, §6.5), the profile route is a later page's (U2+), and the
@@ -80,6 +84,18 @@ public sealed class GoldenContractTests
             var value = read(bytes);
             Assert.True(value.IsSuccess, $"{kind}/{slug}/{scenario}: {(value.IsError ? value.Error.Message : string.Empty)}");
         }
+    }
+
+    [Fact]
+    public void Requests_slug_reads_list_scenarios_as_RequestList_and_others_as_RequestFiled()
+    {
+        var list = AwJson.Deserialize<RequestList>(Encoding.UTF8.GetBytes(GoldenFiles.SpecShaped("requests", "list-fixture")), SindriApiClient.Json).Value;
+        var filed = AwJson.Deserialize<RequestFiledView>(Encoding.UTF8.GetBytes(GoldenFiles.SpecShaped("requests", "filed")), SindriApiClient.Json).Value;
+
+        Assert.Equal(["open", "accepted"], list.Requests.Select(r => r.State), StringComparer.Ordinal);
+        Assert.Equal((62L, "REQ-0192a1b2c3d4e5f6a7b8c9d0e1f2d706"), (filed.Accepted.Sequence, filed.RequestId));
+        Assert.True(AsRequests(Encoding.UTF8.GetBytes(GoldenFiles.SpecShaped("requests", "list-empty"))).Value is RequestList);
+        Assert.True(AsRequests(Encoding.UTF8.GetBytes(GoldenFiles.SpecShaped("requests", "filed"))).Value is RequestFiledView);
     }
 
     [Fact]
@@ -213,6 +229,10 @@ public sealed class GoldenContractTests
     }
 
     /// <summary>An event golden: one event (S1's), or the data of each frame a stream scenario sent, as an array (API P5).</summary>
+    // One slug for GET and POST /requests (U3-API-5): the list-* scenarios are RequestList, the others RequestFiled.
+    private static Result<object> AsRequests(byte[] body) =>
+        JsonNode.Parse(body) is JsonObject node && node.ContainsKey("requests") ? As<RequestList>(body) : As<RequestFiledView>(body);
+
     private static Result<object> AsEvents(byte[] body)
     {
         var node = JsonNode.Parse(body);

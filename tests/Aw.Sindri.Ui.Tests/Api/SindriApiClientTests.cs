@@ -156,7 +156,7 @@ public sealed class SindriApiClientTests
         }
 
         Assert.Equal(["/sindri/ping", "/sindri/status", "/sindri/events"], handler.Requests.Select(r => r.Path), StringComparer.Ordinal);
-        Assert.All(handler.Requests, r => Assert.Equal(new SeenRequest(r.Path, "human", "ui", Terminal: null, Origin: null, A.HumanToken), r));
+        Assert.All(handler.Requests, r => Assert.Equal(new SeenRequest(r.Path, "human", "ui", Terminal: null, Origin: null, A.HumanToken), r with { Query = "" }));
     }
 
     // API spec §6, docs/csharp/sindri.md: the token is read at each call, like the CLI's, so a restarted control plane's

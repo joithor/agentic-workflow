@@ -9,4 +9,5 @@ namespace Aw.Sindri.Ui.Testing;
 /// <param name="Token">X-Sindri-Token.</param>
 /// <param name="After">X-Sindri-After.</param>
 /// <param name="Method">The HTTP method.</param>
-internal sealed record SeenRequest(string Path, string? Caller, string? Client, string? Terminal, string? Origin, string? Token = null, string? After = null, string Method = "GET");
+/// <param name="Query">The query string as sent (with its leading ?), or empty.</param>
+internal sealed record SeenRequest(string Path, string? Caller, string? Client, string? Terminal, string? Origin, string? Token = null, string? After = null, string Method = "GET", string Query = "");

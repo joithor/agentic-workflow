@@ -1,0 +1,59 @@
+{
+  "rows": [
+    {
+      "id": "failure:service:index",
+      "kind": "failure",
+      "label": "failure \u00b7 index",
+      "subject": {
+        "kind": "service",
+        "id": "index"
+      },
+      "item": null,
+      "title": "Nightly index build",
+      "reason": "the last run failed",
+      "repo": null,
+      "urgency": "colour",
+      "since": "2025-12-31T15:00:00.0000000Z",
+      "recordedOnly": false,
+      "notice": null,
+      "answerKind": null,
+      "primaryAction": "RunService",
+      "actions": [
+        "RunService",
+        "PauseService"
+      ],
+      "cli": "sindri services run index"
+    },
+    {
+      "id": "profile:drift",
+      "kind": "profile",
+      "label": "profile \u00b7 drifted",
+      "subject": {
+        "kind": "profile",
+        "id": "3f1c09"
+      },
+      "item": null,
+      "title": "Profile changed since approval \u00b7 2 keys",
+      "reason": "the live profile differs from the approved one",
+      "repo": null,
+      "urgency": "calm",
+      "since": "2025-12-31T22:00:00.0000000Z",
+      "recordedOnly": false,
+      "notice": null,
+      "answerKind": null,
+      "primaryAction": "ApproveProfile",
+      "actions": [
+        "ApproveProfile"
+      ],
+      "cli": "sindri profile approve 3f1c09"
+    }
+  ],
+  "empty": null,
+  "asOf": {
+    "cursor": 41,
+    "ledgerHead": 41,
+    "projectedAt": "2026-01-01T00:00:58.0000000Z",
+    "rebuilding": false,
+    "stalled": false
+  }
+}

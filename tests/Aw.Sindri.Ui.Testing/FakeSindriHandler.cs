@@ -60,7 +60,8 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
                 Header(request, "Origin"),
                 Header(request, "X-Sindri-Token"),
                 Header(request, "X-Sindri-After"),
-                request.Method.Method));
+                request.Method.Method,
+                request.RequestUri?.Query ?? string.Empty));
         }
     }
 
@@ -80,6 +81,13 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
             "/sindri/items" when request.Method == HttpMethod.Post =>
                 Answer(Counted(await server.CreateItem(uri, await Body<CreateItemRequest>(request, cancellationToken), cancellationToken), server.Create)),
             var path when path.StartsWith("/sindri/items/", StringComparison.Ordinal) => await Item(request, path["/sindri/items/".Length..], after, cancellationToken),
+            "/sindri/needs-you" => Answer(Counted(await server.NeedsYou(uri, after, cancellationToken), server.NeedsYouView)),
+            "/sindri/decisions" => Answer(Counted(await server.Decisions(uri, Flag(uri, "pending"), Query(uri, "item"), after, cancellationToken), server.DecisionsAnswer(Flag(uri, "pending"), Query(uri, "item")))),
+            var path when request.Method == HttpMethod.Post && path.StartsWith("/sindri/decisions/", StringComparison.Ordinal) =>
+                Answer(Counted(await server.Decide(uri, Uri.UnescapeDataString(path["/sindri/decisions/".Length..]), await Body<DecideRequest>(request, cancellationToken), cancellationToken), server.DecideAnswer(Uri.UnescapeDataString(path["/sindri/decisions/".Length..])))),
+            "/sindri/requests" when request.Method == HttpMethod.Post =>
+                Answer(Counted(await server.FileRequest(uri, await Body<FileRequestRequest>(request, cancellationToken), cancellationToken), server.Filed)),
+            "/sindri/requests" => Answer(Counted(await server.Requests(uri, Query(uri, "state"), Query(uri, "item"), after, cancellationToken), server.RequestsView)),
             // LANE ANCHOR U3': add the Needs you routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately above this marker, never between the markers.
             // LANE ANCHOR U8: add the workflow command routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately below this marker, never between the markers.
             { } path when request.Method == HttpMethod.Get && path.StartsWith("/sindri/workflow/", StringComparison.Ordinal) => await Workflow(uri, cancellationToken),
@@ -191,6 +199,11 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
 
     private static string? Header(HttpRequestMessage request, string name) =>
         request.Headers.TryGetValues(name, out var values) ? string.Join(',', values) : null;
+
+    private static string? Query(Uri uri, string name) =>
+        uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries).Select(p => p.Split('=', 2)).Where(p => p.Length == 2 && p[0] == name).Select(p => Uri.UnescapeDataString(p[1])).FirstOrDefault();
+
+    private static bool? Flag(Uri uri, string name) => Query(uri, name) is { } v ? string.Equals(v, "true", StringComparison.Ordinal) : null;
 
     private static long After(Uri uri) =>
         uri.Query.TrimStart('?').Split('&').Select(p => p.Split('=')).Where(p => p is ["after", _]).Select(p => long.Parse(p[1], CultureInfo.InvariantCulture)).FirstOrDefault();

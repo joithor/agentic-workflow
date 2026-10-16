@@ -1,0 +1,7 @@
+{
+  "type": "about:blank",
+  "title": "SND-REQ-001",
+  "status": 400,
+  "detail": "text is empty (fix: say what you want)",
+  "traceId": "<trace>"
+}
