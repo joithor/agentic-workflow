@@ -142,7 +142,7 @@ internal sealed class SqliteIntentStore(ContextDatabase database) : IIntentStore
         ArgumentNullException.ThrowIfNull(batch);
         return Write(async (session, token) =>
         {
-            var marked = await SqliteQueries.Execute(session, new SqlStatement(IntentSql.MarkExtracted, c => c.Bind("@record", batch.Record.Value).Bind("@version", batch.Version)), token).ConfigureAwait(false);
+            var marked = await SqliteQueries.Execute(session, new SqlStatement(batch.Pending ? IntentSql.Touch : IntentSql.MarkExtracted, c => c.Bind("@record", batch.Record.Value).Bind("@version", batch.Version)), token).ConfigureAwait(false);
             if (marked.IsError || marked.Value == 0)
             {
                 return marked.IsError ? marked.Error : Unit.Value;   // the record has a newer version now: these decisions are stale
@@ -202,9 +202,10 @@ internal sealed class SqliteIntentStore(ContextDatabase database) : IIntentStore
 
     private static IEnumerable<SqlStatement> Replacing(DecisionBatch batch)
     {
-        yield return new SqlStatement(IntentSql.DropConflicts, c => c.Bind("@record", batch.Record.Value));
+        var keys = "[" + string.Join(',', batch.Decisions.Select(d => "\"" + d.ToKey().Value + "\"")) + "]";   // 'decision:' and hex: nothing to escape
+        yield return new SqlStatement(IntentSql.DropConflicts, c => c.Bind("@record", batch.Record.Value).Bind("@keys", keys));
         yield return new SqlStatement(IntentSql.DropEdges, c => c.Bind("@record", batch.Record.Value));
-        yield return new SqlStatement(IntentSql.DropDecisions, c => c.Bind("@record", batch.Record.Value));
+        yield return new SqlStatement(IntentSql.DropDecisions, c => c.Bind("@record", batch.Record.Value).Bind("@keys", keys));
         foreach (var decision in batch.Decisions)
         {
             yield return new SqlStatement(IntentSql.InsertDecision, c => c.Bind("@key", decision.ToKey().Value).Bind("@record", decision.Record.Value).Bind("@quote", decision.Quote)

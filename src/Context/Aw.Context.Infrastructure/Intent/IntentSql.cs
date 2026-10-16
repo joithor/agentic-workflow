@@ -40,15 +40,19 @@ internal static class IntentSql
     internal const string MarkExtracted =
         "UPDATE intent_record SET extracted_version = version, extraction_state = 'done' WHERE key = @record AND version = @version";
 
-    internal const string DropConflicts =
-        "DELETE FROM intent_conflict WHERE a IN (SELECT key FROM intent_decision WHERE record = @record) OR b IN (SELECT key FROM intent_decision WHERE record = @record)";
+    internal const string Touch = "UPDATE intent_record SET key = key WHERE key = @record AND version = @version";
 
-    internal const string DropEdges = "DELETE FROM intent_edge WHERE from_key IN (SELECT key FROM intent_decision WHERE record = @record)";
+    // The record's machine decisions the new batch no longer holds (@keys: a JSON array of the batch's keys). A decision that survives keeps its verdicts; a human one is never replaced.
+    private const string Gone = "SELECT key FROM intent_decision WHERE record = @record AND provenance <> 'human' AND key NOT IN (SELECT value FROM json_each(@keys))";
 
-    internal const string DropDecisions = "DELETE FROM intent_decision WHERE record = @record";
+    internal const string DropConflicts = "DELETE FROM intent_conflict WHERE a IN (" + Gone + ") OR b IN (" + Gone + ")";
+
+    internal const string DropEdges = "DELETE FROM intent_edge WHERE from_key IN (SELECT key FROM intent_decision WHERE record = @record AND provenance <> 'human')";
+
+    internal const string DropDecisions = "DELETE FROM intent_decision WHERE record = @record AND key IN (" + Gone + ")";
 
     internal const string InsertDecision =
-        "INSERT INTO intent_decision (key, record, quote, wording, provenance, at) VALUES (@key, @record, @quote, @wording, @provenance, @at) ON CONFLICT DO NOTHING";
+        "INSERT INTO intent_decision (key, record, quote, wording, provenance, at) VALUES (@key, @record, @quote, @wording, @provenance, @at) ON CONFLICT (key) DO UPDATE SET wording = excluded.wording WHERE provenance <> 'human'";
 
     internal const string InsertEdge =
         "INSERT INTO intent_edge (from_key, to_key, type, provenance, confidence, at) VALUES (@from, @to, @type, @provenance, @confidence, @at) ON CONFLICT DO NOTHING";

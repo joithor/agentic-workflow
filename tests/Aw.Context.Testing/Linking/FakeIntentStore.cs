@@ -1,6 +1,7 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Linking;
+using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 using Aw.Kernel;
 
@@ -88,16 +89,23 @@ public sealed class FakeIntentStore : IIntentStore
                 return Unit.Value;
             }
 
-            var removed = _decisions.GetValueOrDefault(batch.Record.Value, []).Select(d => d.ToKey().Value).ToHashSet(StringComparer.Ordinal);
-            _ = _edges.RemoveAll(e => removed.Contains(e.From.Value));
+            var current = _decisions.GetValueOrDefault(batch.Record.Value, []);
+            var keys = batch.Decisions.Select(d => d.ToKey().Value).ToHashSet(StringComparer.Ordinal);
+            var machine = current.Where(d => d.Provenance != Provenance.Human).Select(d => d.ToKey().Value).ToHashSet(StringComparer.Ordinal);
+            var removed = machine.Where(k => !keys.Contains(k)).ToHashSet(StringComparer.Ordinal);   // a surviving decision keeps its verdicts; a human one is never replaced
+            _ = _edges.RemoveAll(e => machine.Contains(e.From.Value));
             foreach (var gone in _conflicts.Keys.Where(k => removed.Contains(k.Item1) || removed.Contains(k.Item2)).ToList())
             {
                 _ = _conflicts.Remove(gone);
             }
 
-            _decisions[batch.Record.Value] = [.. batch.Decisions];
+            _decisions[batch.Record.Value] = [.. current.Where(d => d.Provenance == Provenance.Human && !keys.Contains(d.ToKey().Value)), .. batch.Decisions];
             _edges.AddRange(batch.Edges);
-            _extracted[batch.Record.Value] = batch.Version;
+            if (!batch.Pending)
+            {
+                _extracted[batch.Record.Value] = batch.Version;
+            }
+
             return Unit.Value;
         });
     }
