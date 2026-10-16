@@ -33,6 +33,7 @@ machine-wide, needs no profile approval, and never holds secrets. One JSON Schem
 | `host` | Who owns the process: `tmux` (default) or `none` (a GUI app that owns its own agent; attended opens only). Unattended Steps always use tmux |
 | `agents.<id>` | An added catalog entry (`label`, `bin`, `open`, `sessionId` required; `sessionIdPattern` required unless `sessionId` is `none`; `reportedId` required for `reported`), or, with `"override": true`, the named fields of a built-in one. Ids match `^[a-z][a-z0-9-]{1,31}$` |
 | `meta` | `lanesAgent` and per-lane `lanes.<lane>` name catalog agents for `aw-meta-launch` |
+| `sessions` | The session collector's settings (`enabled`, `pollSeconds` 1 to 30, `providers`, `tmuxSockets`, `claudeSessionsDir`); optional, and the bash reader accepts and ignores it. See `docs/csharp/sindri-sessions.md` |
 
 Built-in entries (`claude-code`, `codex`, `cursor`) live once in `config/launcher/builtins.json`. The terminal templates
 below live once in `config/launcher/terminals.json`; `sindri launch init` and `aw-meta-launch --init-launcher` write
@@ -80,6 +81,13 @@ GNOME Terminal and `kitty --single-instance` exit 0 through a server even when n
 check (spec §3), not the exit code, decides whether the outcome is `opened`. WezTerm's `start` has no title flag, so its
 template omits `{title}`.
 
+## Terminal process names
+
+Each `config/launcher/terminals.json` row also carries `processNames`: the names its terminal runs as (`wezterm-gui`,
+`gnome-terminal-server`), which the session collector's host detection matches against a session's parent chain (by argv[0] or exe basename, not `comm`, which the kernel cuts to 15 characters)
+(`docs/csharp/sindri-sessions.md`). The launch argv does not use them. `node scripts/check-launcher.mjs` fails a row
+without a non-empty `processNames` and a name two rows share. The `focus` argv templates are CO-4c's, not part of this file's contract yet.
+
 ## The bash reader
 
 `scripts/launcher-lib.sh` (sourced by `scripts/meta-launch.sh` and `scripts/meta-lane.sh`) reads the file with `jq`. It
@@ -91,6 +99,10 @@ lane uses, an unknown `usage` reader) is `sindri launch show`'s. Its key lists a
 block, read at run time. `scripts/tests/meta-launch.test.sh` runs every fixture below against its `bash:` tag. With no
 file, `aw-meta-launch` keeps the Warp viewer it always had (the spec's in-memory detection is Sindri's; the Meta launcher
 must not change what a box without a file gets).
+
+The `sessions` key is new in schema 1 (additive, optional). The reader refuses unknown keys from `x-aw-keys.root`, so an
+`aw-meta-launch` installed before the key was added refuses a file that has it ("unknown key \"sessions\"") until
+`scripts/install-meta.sh` reinstalls it; one installed from this change on accepts the key and ignores it.
 
 ## Fixtures and checks
 

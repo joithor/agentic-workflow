@@ -1,0 +1,17 @@
+{
+  "pid": 211,
+  "sessionId": "aaaaaaaa-0000-4000-8000-000000000211",
+  "cwd": "/home/dev/repo",
+  "startedAt": 1760000000211,
+  "procStart": "1100",
+  "version": "2.1.301",
+  "kind": "interactive",
+  "entrypoint": "cli",
+  "name": "api work",
+  "nameSource": "user",
+  "status": "busy",
+  "statusUpdatedAt": 1760000100211,
+  "updatedAt": 1760000100211,
+  "pidDomain": "host",
+  "peerProtocol": 1
+}
