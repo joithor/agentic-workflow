@@ -57,8 +57,10 @@ public sealed class InstanceViewsTests
     [InlineData("parked-dispatch-allowlist", true)]
     public void A_dispatch_park_says_its_reason_and_its_fix_once(string name, bool allowlist)
     {
-        var next = StatusCases.View(name).Next;
+        var view = StatusCases.View(name);
+        var next = view.Next;
 
+        Assert.Contains(allowlist ? "once the profile allows the effect" : "once the cause is fixed", view.Answer, StringComparison.Ordinal);   // rc2-1: the answer line follows the refusal like Next does
         Assert.Equal(1, next.Split("resume to send it again", StringSplitOptions.None).Length - 1);
         Assert.Equal(allowlist ? 1 : 0, next.Split("isn't on the profile's effect allowlist", StringSplitOptions.None).Length - 1);
         Assert.StartsWith("effect.claim.ref ", next, StringComparison.Ordinal);

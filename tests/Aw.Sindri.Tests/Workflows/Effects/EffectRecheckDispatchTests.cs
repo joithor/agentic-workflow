@@ -193,6 +193,37 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server, 
         }, Token);
     }
 
+    /// <summary>rc2-2: a block that throws with a token-shaped message reaches the outbox row and the park question scrubbed (the activity-side scrub only covers a returned error).</summary>
+    [Fact]
+    public async Task A_block_that_throws_a_token_is_refused_and_parked_with_the_token_scrubbed()
+    {
+        const string token = "gh" + "p_0123456789abcdefghijABCDEFGHIJ012345";
+        var env = server.Environment;
+        _harness.Recipe("workflow.dev-notify", WorkflowsHarness.Shipped("dev/workflow.dev-notify.yaml"));
+        await Allow(_notify);
+        _desk.Throw = new InvalidOperationException($"the desk rejected {token}");
+        await using var sindri = Sindri();
+        await WorkflowsHarness.HoldLease(sindri, Token);
+        using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
+
+        await worker.ExecuteAsync(async () =>
+        {
+            var handle = await Completed(sindri, "T-99");
+            await Armed(handle, timers: 1);
+            await env.DelayAsync(_delay + TimeSpan.FromHours(4), Token);
+            var refused = Assert.Single(await EffectRows.Eventually(sindri, OutboxEvents.Refused, CommandOrigin.Recipe));
+            _ = await handle.ExecuteUpdateAsync(wf => wf.AnswerAsync(Resume('e')), new WorkflowUpdateOptions(new string('e', 32)));   // the 10 m timeout park came first; resuming it surfaces the dispatch park
+            var parked = await WorkflowsHarness.Until(handle, static v => v.State == "parked" && v.Detail == "spec-conflict (dispatch)");
+
+            Assert.DoesNotContain(token, refused.Reason, StringComparison.Ordinal);
+            Assert.Contains("[REDACTED:github-token]", refused.Reason, StringComparison.Ordinal);
+            Assert.DoesNotContain(token, parked.Question?.Question, StringComparison.Ordinal);
+            Assert.Contains("[REDACTED:github-token]", parked.Question?.Question, StringComparison.Ordinal);
+            _ = await handle.ExecuteUpdateAsync(wf => wf.CancelAsync(Cancel()), new WorkflowUpdateOptions(new string('c', 32)));
+            Assert.Equal("cancelled", (await handle.GetResultAsync()).State);
+        }, Token);
+    }
+
     /// <summary>A cancel while the failing effect waits out its retry backoff stops the retries: no later send (PR 232 run 2, S1).</summary>
     [Fact]
     public async Task A_cancel_during_the_retry_backoff_sends_nothing_further()

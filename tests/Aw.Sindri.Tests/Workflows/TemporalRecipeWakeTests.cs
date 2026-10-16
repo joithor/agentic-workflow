@@ -91,6 +91,8 @@ public sealed class TemporalRecipeWakeTests : IDisposable
     {
         var missed = await failing.Wake(drifted with { Kind = RecipeWakeKind.Revoked, Sequence = 9 }, Token);
         Assert.Contains("SND-RECIPE-005", missed.Error.Message, StringComparison.Ordinal);
+        Assert.Contains($"the revocation of {drifted.Hash.Value} is recorded", missed.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("send the wake again to what it reaches", missed.Error.Message, StringComparison.Ordinal);
         Assert.Contains("is recorded; run the revoke again to finish any cascade it didn't reach and send the wake again", missed.Error.Message, StringComparison.Ordinal);
         Assert.Contains("refused SND-RECIPE-005 when nothing is left", missed.Error.Message, StringComparison.Ordinal);
         Assert.Contains("parks then", missed.Error.Message, StringComparison.Ordinal);
