@@ -525,21 +525,22 @@ How items move through the states:
 |---|---|
 | `id` | A stable id, such as `decision:DEC-…` or `failure:service:heartbeat`. The UI keys focus and the "seen" pulse on it |
 | `kind` | `decision`, `park`, `failure` or `profile` |
-| `subject` | A reference to an item, decision, instance, job or service |
+| `subject` | `{kind, id}`: a reference to an item, decision, instance, job, service or profile. A `profile` row's subject is `{profile, <live hash>}` (owner decision, 2026-10-14) |
 | `title`, `reason` | Scrubbed text |
 | `repo?` | The repo the row belongs to |
 | `urgency` | `pulse`, `colour` or `calm` (dashboard spec §5.1) |
 | `since` | When the row appeared |
 | `recordedOnly` | Whether the decision is recorded only (before S2) |
+| `notice` | The sentence that says so, served by the API (`recorded; acted on once the workflow engine runs`) so no client keeps its own copy; `null` when `recordedOnly` is false. A `DecisionView` voided by closing its item carries the voided sentence (`voided: the item was closed`) in `notice` and `cleared` |
 | `answerKind` | For `park` rows: `text`, `resume`, `grant`, `grantTokens`, `accept` (with reject), or `cancel-only`, taken from the engine's resume action (engine §5.8), so the app shows the right control |
-| `primaryAction` | A catalog action id, or `copy:<cli>` for a `cli-only` row. Per kind: <ul><li>`decision` → `Decide`;</li><li>`park` → the engine's action id;</li><li>`failure` → `copy:sindri status` until P6, then `RunService`;</li><li>`profile` → `copy:sindri profile approve <hash>` (protected).</li></ul> |
+| `primaryAction` | A catalog action id, or `copy:<cli>` for a `cli-only` row. Per kind: <ul><li>`decision` → `Decide`;</li><li>`park` → the engine's action id;</li><li>`failure` → `RunService` (`pending:P6` until the service runner lands, so the row's `actions` lists it as pending);</li><li>`profile` → `copy:sindri profile approve <hash>` (protected).</li></ul> |
 | `cli` | The CLI form |
 
 **Rows by kind.** A filed request appears **once**, as its `decision` row; there is no separate request row.
 
 | Kind | Source | Urgency | Cleared when |
 |---|---|---|---|
-| `decision` | Pending decisions, including filed requests (P4) | `pulse` | `decision.recorded` |
+| `decision` | Pending decisions, including filed requests (P4) | `pulse` | `decision.recorded`, or the item closing (the decision is voided) |
 | `park` | Engine parks and gates, idle takeovers, and desk tasks (S2) | `pulse` | The engine resumes the instance, a `handback`, or `CompleteStep` |
 | `failure` | `service.ran` with `failed` (C8, P2) | `colour` | The service's next `service.ran` with `ok` (scheduled or manual), or a `profile.checked` whose approved service names no longer include the service (it was removed and approved) |
 | `profile` | `profile.checked` with `drifted: true` (C8, P2) | `calm` | The next `profile.checked` with `drifted: false`, after an approval or a revert |
