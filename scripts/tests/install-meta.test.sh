@@ -24,6 +24,10 @@ printf '#!/usr/bin/env bash\necho Linux\n' > "$WORK/linuxbin/uname"; chmod +x "$
 export PATH="$WORK/linuxbin:$PATH"
 mkdir -p "$HOME/.claude" "$AW_STATE_DIR/bin"
 printf '#!/usr/bin/env bash\nexit 0\n' > "$AW_STATE_DIR/bin/aw-meta"; chmod +x "$AW_STATE_DIR/bin/aw-meta"
+# This tree may be a linked worktree (a lane's): a configured team points at the canonical checkout, so the team config's repo
+# is this tree, which is what the installer requires of a configured team
+mkdir -p "$AW_STATE_DIR/meta"
+jq -n --arg r "$(cd "$DIR/.." && pwd -P)" '{team:"t",repo:$r}' > "$AW_STATE_DIR/meta/team.json"
 S="$HOME/.claude/settings.json"
 echo '{"model":"opus","hooks":{"Stop":[{"hooks":[{"type":"command","command":"/x/done-gate.sh # aw:done-gate"}]}]}}' > "$S"
 
@@ -93,4 +97,56 @@ check "Darwin: refused with the Linux-only message, exit 1" "$RC:$(printf '%s' "
 check "Darwin: nothing linked" "$(ls "$WORK/darwin-bin" 2>/dev/null | wc -l | tr -d ' ')" "0"
 OUT="$(PATH="$WORK/fakebin:$PATH" bash "$DIR/install-meta.sh" --provider codex 2>&1)"; RC=$?
 check "Darwin, another provider: refused too, exit 1" "$RC:$(printf '%s' "$OUT" | grep -c 'Linux-only')" "1:1"
+
+# Linking: aw-meta-launch points into the canonical checkout only. A temp git repo holding a copy of the installer stands in for the
+# tree it runs from; a linked worktree of it is the throwaway one.
+TOP="$DIR/.."
+mkdir -p "$WORK/tree/scripts" "$WORK/tree/config/hooks/adapters" "$WORK/tree/config/lib"
+cp "$DIR/install-meta.sh" "$DIR/meta-launch.sh" "$WORK/tree/scripts/"
+cp "$TOP/config/hooks/adapters/"* "$WORK/tree/config/hooks/adapters/" 2>/dev/null
+cp -r "$TOP/config/lib/." "$WORK/tree/config/lib/"
+cp "$TOP/config/hooks/meta-stop-gate.sh" "$TOP/config/hooks/meta-outbox.sh" "$WORK/tree/config/hooks/"
+cp "$TOP/global.json" "$WORK/tree/"
+git -C "$WORK/tree" init -q && git -C "$WORK/tree" add -A && git -C "$WORK/tree" -c user.email=t@t -c user.name=t commit -qm t
+git -C "$WORK/tree" worktree add -q --detach "$WORK/wt" HEAD
+export CLAUDE_LOCAL_BIN="$WORK/linkbin"
+link() { readlink "$CLAUDE_LOCAL_BIN/aw-meta-launch" 2>/dev/null || echo none; }
+
+rm -f "$AW_STATE_DIR/meta/team.json"
+OUT="$(bash "$WORK/wt/scripts/install-meta.sh" --provider claude 2>&1)"; RC=$?
+check "worktree, no team repo: refused with its own exit code 3" "$RC:$(printf '%s' "$OUT" | grep -c 'linked git worktree')" "3:1"
+check "worktree, no team repo: nothing linked" "$(link)" "none"
+OUT="$(bash "$WORK/wt/scripts/install-meta.sh" --provider claude --allow-worktree 2>&1)"; RC=$?
+check "worktree with --allow-worktree: linked into the worktree" "$RC:$(link)" "0:$WORK/wt/scripts/meta-launch.sh"
+
+rm -f "$CLAUDE_LOCAL_BIN/aw-meta-launch"
+mkdir -p "$WORK/canon2/scripts"; printf '#!/usr/bin/env bash\nexit 0\n' > "$WORK/canon2/scripts/meta-launch.sh"
+jq -n --arg r "$WORK/canon2" '{team:"t",repo:$r}' > "$AW_STATE_DIR/meta/team.json"
+OUT="$(bash "$WORK/wt/scripts/install-meta.sh" --provider claude 2>&1)"; RC=$?
+check "a team repo set, run from another tree: refused, nothing linked" "$RC:$(printf '%s' "$OUT" | grep -c 'not the team.s repo'):$(link)" "3:1:none"
+OUT="$(bash "$WORK/tree/scripts/install-meta.sh" --provider claude 2>&1)"; RC=$?
+check "a team repo set, run from a second plain clone: refused too" "$RC:$(link)" "3:none"
+OUT="$(bash "$WORK/wt/scripts/install-meta.sh" --provider claude --allow-worktree 2>&1)"; RC=$?
+check "a team repo set, --allow-worktree: installs from this tree and links it" "$RC:$(link)" "0:$WORK/wt/scripts/meta-launch.sh"
+rm -f "$CLAUDE_LOCAL_BIN/aw-meta-launch"
+cp "$WORK/tree/scripts/install-meta.sh" "$WORK/canon2/scripts/"
+cp -r "$WORK/tree/config" "$WORK/tree/global.json" "$WORK/canon2/"
+OUT="$(bash "$WORK/canon2/scripts/install-meta.sh" --provider claude 2>&1)"; RC=$?
+check "a team repo set, run from it: linked into it, no flag needed" "$RC:$(link)" "0:$WORK/canon2/scripts/meta-launch.sh"
+rm -f "$CLAUDE_LOCAL_BIN/aw-meta-launch" "$AW_STATE_DIR/meta/team.json"
+OUT="$(bash "$WORK/tree/scripts/install-meta.sh" --provider claude 2>&1)"; RC=$?
+check "normal checkout, no team repo: linked into that checkout" "$RC:$(link)" "0:$WORK/tree/scripts/meta-launch.sh"
+
+# setup.sh --with-meta (config/lib/setup-meta-step.sh): exit 3 from the installer (a refused tree) only warns; any other failure fails the step
+mkdir -p "$WORK/fake/scripts" "$WORK/fake/config/lib"
+step() { # step <installer exit code> -> "<step rc>:<warnings>:<installer calls>"
+  printf '#!/usr/bin/env bash\necho "$*" >> "%s/calls"\nexit %s\n' "$WORK" "$1" > "$WORK/fake/scripts/install-meta.sh"
+  : > "$WORK/calls"
+  local out rc=0
+  out="$( ( source "$DIR/../config/lib/setup-meta-step.sh"; aw_setup_meta_step "$WORK/fake" claude codex ) 2>&1 )" || rc=$?
+  echo "$rc:$(printf '%s' "$out" | grep -c 'NOT installed'):$(wc -l < "$WORK/calls" | tr -d ' ')"
+}
+check "setup step: a tree refusal (3) warns for each provider and returns 0" "$(step 3)" "0:2:2"
+check "setup step: a publish failure (1) fails the step at once" "$(step 1)" "1:0:1"
+check "setup step: an installer success returns 0, no warning" "$(step 0)" "0:0:2"
 exit $fail

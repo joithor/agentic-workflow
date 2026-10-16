@@ -43,11 +43,11 @@ public sealed class SyncInboxTests
     [Fact, Trait("Lane", "unit")]
     public async Task SyncInbox_records_each_peer_message_once()
     {
-        _reader.Write(Transcript, Noise + UserPeer("m1", "t1-api", "ready #190") + Noise + Queued("m2", "t1-ui", "hello"));
+        _reader.Write(Transcript, Noise + UserPeer("m1", "t1-api", "ready #190 079c2541") + Noise + Queued("m2", "t1-ui", "hello"));
 
         var first = await Sync();
         var again = await Sync();
-        _reader.Append(Transcript, UserPeer("m1", "t1-api", "ready #190") + Queued("m3", "t1-api", "more"));
+        _reader.Append(Transcript, UserPeer("m1", "t1-api", "ready #190 079c2541") + Queued("m3", "t1-api", "more"));
         var later = await Sync();
 
         Assert.Equal(["m1", "m2"], first, StringComparer.Ordinal);
@@ -73,12 +73,12 @@ public sealed class SyncInboxTests
     [Fact, Trait("Lane", "unit")]
     public async Task The_message_is_stored_with_its_sender_time_and_classification()
     {
-        _reader.Write(Transcript, UserPeer("m1", "t1-api", "ready #190"));
+        _reader.Write(Transcript, UserPeer("m1", "t1-api", "ready #190 079c2541"));
         _ = await Sync();
 
         var stored = Assert.Single((await _store.Messages(CancellationToken.None)).Value);
 
-        Assert.Equal(("uds:/run/t1-api.sock", "t1-api", "ready #190"), (stored.From, stored.FromName, stored.Body));
+        Assert.Equal(("uds:/run/t1-api.sock", "t1-api", "ready #190 079c2541"), (stored.From, stored.FromName, stored.Body));
         Assert.Equal(new DateTimeOffset(2026, 10, 15, 4, 5, 0, TimeSpan.Zero), stored.At);
         Assert.Equal(190, stored.Class.Pr);
     }

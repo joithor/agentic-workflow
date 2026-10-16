@@ -1429,3 +1429,8 @@ static readonly Aw.Meta.Core.MetaErrors.NoTeamConfig -> Aw.Kernel.ErrorDefinitio
 static readonly Aw.Meta.Core.MetaErrors.QuestionNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.TranscriptUnreadable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.UnknownLane -> Aw.Kernel.ErrorDefinition!
+Aw.Meta.Core.Merge.QueueDrops
+const Aw.Meta.Core.KvKeys.QueueDropped = "queue.dropped" -> string!
+static Aw.Meta.Core.Merge.QueueDrops.Parse(string? stored) -> System.Collections.Generic.IReadOnlyDictionary<int, System.DateTimeOffset>!
+static Aw.Meta.Core.Merge.QueueDrops.With(string? stored, int pr, System.DateTimeOffset at) -> string!
+static readonly Aw.Meta.Core.MetaErrors.QueueEntryNotFound -> Aw.Kernel.ErrorDefinition!

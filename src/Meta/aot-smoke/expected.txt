@@ -6,7 +6,7 @@ meta session s-meta (smoke-meta)
 no new messages
 ## stop-check --session s-meta --transcript <tmp>/meta.jsonl
 aw-meta: 3 open obligation(s); close them before stopping.
-1. [Reply] reply to smoke-api (m-idle): ready #1
+1. [Reply] reply to smoke-api (m-idle): ready #1 079c2541
    next: SendMessage to smoke-api; or aw-meta inbox-dismiss m-idle --reason "<why>"; or aw-meta inbox-defer m-idle --reason "<why>" --until +30m
 2. [Reply] reply to smoke-ui (d-queued): can you rebase me
    next: SendMessage to smoke-ui; or aw-meta inbox-dismiss d-queued --reason "<why>"; or aw-meta inbox-defer d-queued --reason "<why>" --until +30m
@@ -14,7 +14,7 @@ aw-meta: 3 open obligation(s); close them before stopping.
    next: aw-meta lanes --announce, then SendMessage the printed text to: smoke-api
 exit 1
 ## outbox-record smoke-api
-recorded the send; closed: reply to smoke-api (m-idle): ready #1
+recorded the send; closed: reply to smoke-api (m-idle): ready #1 079c2541
 ## outbox-record smoke-ui
 recorded the send; closed: reply to smoke-ui (d-queued): can you rebase me
 ## lanes --announce
@@ -32,6 +32,11 @@ answered; logged: - OWNER (<date>): sqlite (asked by smoke-api)
 relay to smoke-api: OWNER ANSWER q1: sqlite
 ## log-append --kind note --text smoke run
 - NOTE <date> <time>: smoke run
+## queue-drop 1 --reason smoke drop --json
+{"pr":1,"line":"- NOTE <date> <time>: queue-drop #1: smoke drop"}
+## queue-drop 1 --reason smoke again
+AW-META-018: no ready message for #1 is in the queue
+exit 2
 ## lanes
 LANE MAP v1
 api          smoke-api (Direct)
@@ -49,6 +54,7 @@ exit 2
 ## log
 - OWNER (<date>): sqlite (asked by smoke-api)
 - NOTE <date> <time>: smoke run
+- NOTE <date> <time>: queue-drop #1: smoke drop
 ## state files
 ./meta/meta.db
 ./meta/team.json

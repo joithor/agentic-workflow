@@ -21,6 +21,7 @@ using Aw.Meta.Features.OutboxRecord;
 using Aw.Meta.Features.Owner;
 using Aw.Meta.Features.OwnerAnswer;
 using Aw.Meta.Features.OwnerAsk;
+using Aw.Meta.Features.QueueDrop;
 using Aw.Meta.Features.Roles;
 using Aw.Meta.Features.Status;
 using Aw.Meta.Features.StopCheck;
@@ -110,6 +111,9 @@ public static class MetaFeaturesServiceCollectionExtensions
         .AddScoped<AppendLogService>()
         .AddScoped<IValidator<AppendLogRequest>, AppendLogValidator>()
         .Validated<AppendLogService, AppendLogRequest, AppendLogResponse>()
+        .AddScoped<QueueDropService>()
+        .AddScoped<IValidator<QueueDropRequest>, QueueDropValidator>()
+        .Validated<QueueDropService, QueueDropRequest, QueueDropResponse>()
         .AddScoped<StatusReader>()
         .AddScoped<StatusService>()
         .Plain<StatusService, StatusRequest, StatusResponse>();
