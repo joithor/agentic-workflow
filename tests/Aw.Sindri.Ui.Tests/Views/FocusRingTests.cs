@@ -165,8 +165,7 @@ public sealed class FocusRingTests : IDisposable
     [Fact]
     public Task The_Home_health_strip_shows_the_ring() => OnUi(async () =>
     {
-        // Home has the Workflows panel above the columns now: the window is taller so the strip's ring is not cut at the viewport's edge.
-        var (window, _) = await Running(height: 960);
+        var (window, _) = await Running();
 
         FocusByTab(window, window.Get<Control>("Page"), "HealthStrip");
 
