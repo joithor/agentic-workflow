@@ -736,7 +736,7 @@ definition (states, transitions, evals, pins, open instances placed per state, t
 | `orderedBy` | `"path"`, or `"transition-list"` when the graph has more than one initial path: the same field and meaning as on `InstanceView` |
 | `loops[]` | `{name?, from, to, cap}`: the back edge of each loop and its cap (the most rounds before it parks; part of the recipe hash), for 'loop ≤ 3 with verify' (screens §4.2, §4.3) |
 
-The CLI prints both under the recipe header as `inputs:` and `outputs:` lines, one per key, `input: <key> type=<type> kind=<kind> [generate="<template>"]` for an input and `output: <key> type=<type> from=<state>` for an output. The CLI also prints `name:` under the recipe header when the template is present.
+The CLI prints them under the recipe header, one line per key: `input: <key> type=<type> kind=<kind> [generate="<template>"]` for an input (a quote or backslash in the template is escaped with a backslash) and `output: <key> type=<type> from=<state>` for an output. The CLI also prints `name:` under the recipe header when the template is present.
 A recipe with no `outputs` returns `[]`.
 
 **`RecipeStats` (E-24).** Counts over **ledger events** for the window, computed by a query over `workflow.*` events and

@@ -14,6 +14,7 @@ internal sealed class StartFacts(IFactStore facts, TimeProvider clock)
     public async ValueTask<Result<StartedFacts>> Store(StartInstanceRequest request, Recipe recipe, CancellationToken cancellationToken)
     {
         var stored = new Dictionary<FactKey, InputFact>();
+        var now = clock.GetUtcNow();   // the one start time: generated inputs read it, the instance is stamped with it, the workflow renders the name from it
         var now = clock.GetUtcNow();
         foreach (var input in recipe.Inputs.Where(static i => i.Generate is not null))
         {
@@ -42,6 +43,6 @@ internal sealed class StartFacts(IFactStore facts, TimeProvider clock)
             stored[key] = new InputFact(fact.Name, put.Value);
         }
 
-        return new StartedFacts(stored, clock.GetUtcNow());
+        return new StartedFacts(stored, now);
     }
 }

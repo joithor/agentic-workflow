@@ -58,7 +58,9 @@ internal sealed class DeclarationRules : IRecipeRules
         if (template.Problem is { } problem)
         {
             yield return source.Finding("RCP-NAME-003", path, problem,
-                isName
+                problem.StartsWith("a control", StringComparison.Ordinal)
+                    ? "keep the template on one line, without control characters"
+                    : isName
                     ? "use {fact:<input>}, {start:date} or {start:time}, and write {{ or }} for a literal brace"
                     : "use {start:date} or {start:time}, and write {{ or }} for a literal brace");
             yield break;

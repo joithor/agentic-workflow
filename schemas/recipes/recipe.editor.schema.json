@@ -17,7 +17,7 @@
         "base": { "oneOf": [{ "$ref": "#/$defs/RecipeRef" }, { "type": "null" }] },
         "urgency": { "enum": ["incident", "triage", "work"] },
         "name": { "type": ["string", "null"], "maxLength": 200, "description": "A template for the instance's name: literals, {fact:<input>}, {start:date}, {start:time}; {{ and }} write a brace (spec section 3.11)." },
-        "inputs": { "type": "array", "items": { "oneOf": [{ "$ref": "#/$defs/FactKey" }, { "$ref": "#/$defs/RecipeInput" }] } },
+        "inputs": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/RecipeInput" } },
         "outputs": { "type": "array", "items": { "$ref": "#/$defs/RecipeOutput" } },
         "initial": { "type": "string" },
         "states": {

@@ -32,7 +32,7 @@ internal static class RecipeLineText
     internal static string Detail(RecipeSummary s) =>
         $"urgency: {s.Urgency}\n"
         + (s.Name is { } name ? $"name: {name}\n" : string.Empty)
-        + string.Concat(s.Inputs.Select(static i => $"input: {i.Key.Value} type={i.Type ?? SubjectKinds.TypeOf(i)} kind={i.Kind ?? "-"}{(i.Generate is { } generate ? $" generate=\"{generate}\"" : string.Empty)}\n"))
+        + string.Concat(s.Inputs.Select(static i => $"input: {i.Key.Value} type={i.Type ?? SubjectKinds.TypeOf(i)} kind={i.Kind ?? "-"}{(i.Generate is { } generate ? $" generate=\"{generate.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal)}\"" : string.Empty)}\n"))
         + string.Concat(s.Outputs.Select(static o => $"output: {o.Key.Value} type={o.Type ?? FactTypes.Default} from={o.From}\n"))
         + $"order: {s.OrderedBy}\n"
         + string.Concat(s.States.Select(static p => $"state: {p.State} {(p.BranchOf is { } b ? $"branch-of={b}" : $"order={p.Order?.ToString(CultureInfo.InvariantCulture) ?? "-"}")}\n"))

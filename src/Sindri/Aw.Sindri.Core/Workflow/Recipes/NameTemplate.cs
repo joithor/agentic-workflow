@@ -22,7 +22,7 @@ internal sealed partial class NameTemplate
     /// <summary>The parts in order; empty when <see cref="Problem"/> is set.</summary>
     public IReadOnlyList<TemplatePart> Parts { get; }
 
-    /// <summary>The first problem (RCP-NAME-003): "unknown placeholder '{x}'" or "unbalanced '{' or '}'"; null when the template is well formed.</summary>
+    /// <summary>The first problem (RCP-NAME-003): "unknown placeholder '{x}'", "unbalanced '{' or '}'" or "a control character"; null when the template is well formed.</summary>
     public string? Problem { get; }
 
     /// <summary>The distinct facts the template reads, in order of first use.</summary>
@@ -34,6 +34,11 @@ internal sealed partial class NameTemplate
     public static NameTemplate Parse(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
+        if (text.Any(char.IsControl))
+        {
+            return new NameTemplate([], "a control character (a line break or tab) in the template");
+        }
+
         var parts = new List<TemplatePart>();
         foreach (Match match in Token.Matches(text))
         {

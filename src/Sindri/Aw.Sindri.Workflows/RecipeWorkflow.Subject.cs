@@ -47,7 +47,7 @@ internal sealed partial class RecipeWorkflow
             }
         }
 
-        var name = InstanceNames.Render(recipe, start.Item, contents, Now);
+        var name = InstanceNames.Render(recipe, start.Item, contents, start.StartedAt);
         return (SubjectRefs.Of(recipe, start.Item, contents.GetValueOrDefault(inputs[0].Key), name), links);
     }
 
@@ -60,7 +60,7 @@ internal sealed partial class RecipeWorkflow
         {
             Delta = detail.Delta with
             {
-                Subject = _subject is { } s ? new EventSubject(s.Kind, s.Key, s.Label) : null,
+                Subject = _subject is { } s ? new EventSubject(s.Kind, s.Key, s.Label.Length > 0 ? s.Label : start.WorkflowId().Value) : null,
                 Producers = detail.Delta.Facts?.Keys.ToDictionary(
                     static k => k,
                     k => start.Inputs.TryGetValue(FactKey.From(k), out var input) && input.Generated ? GenerateActor : detail.TriggerActor,

@@ -213,7 +213,7 @@ internal sealed class WorkflowsHarness : IDisposable
     {
         var approved = await sindri.GetRequiredService<IApprovedRecipes>().Latest(RecipeId.From(recipe), ct);
         Assert.False(approved.IsError, approved.IsError ? approved.Error.Message : null);
-        return new InstanceStart(approved.Value.Version, ItemKey.From(item), Attempt: 1, new Dictionary<FactKey, InputFact>(), Tenant: "local", Ring: 0);
+        return new InstanceStart(approved.Value.Version, ItemKey.From(item), Attempt: 1, new Dictionary<FactKey, InputFact>(), Tenant: "local", Ring: 0) { StartedAt = DateTimeOffset.UtcNow };
     }
 
     /// <summary>The workflow input for 'workflow.step' on <paramref name="item"/>, attempt 1, with a 'fact:spec' input.</summary>
@@ -223,7 +223,7 @@ internal sealed class WorkflowsHarness : IDisposable
         Assert.False(approved.IsError, approved.IsError ? approved.Error.Message : null);
         var spec = new FactValue("fact:sha256:" + new string('a', 64), new string('a', 64), HeadSha: null);
         var inputs = new Dictionary<FactKey, InputFact> { [FactKey.From("fact:spec")] = new InputFact("spec.md", spec) };
-        return new InstanceStart(approved.Value.Version, ItemKey.From(item), Attempt: 1, inputs, Tenant: "local", Ring: 0);
+        return new InstanceStart(approved.Value.Version, ItemKey.From(item), Attempt: 1, inputs, Tenant: "local", Ring: 0) { StartedAt = DateTimeOffset.UtcNow };
     }
 
     public static async Task<WorkflowHandle<RecipeWorkflow, RecipeResult>> Start(ITemporalClient client, InstanceStart start) =>
