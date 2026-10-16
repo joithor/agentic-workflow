@@ -63,11 +63,11 @@ public sealed class NeedsYouViewModelTests
     }
 
     [Fact]
-    public async Task Row_is_named_for_screen_readers_by_chip_then_id()
+    public async Task Row_is_named_for_screen_readers_by_urgency_chip_title_and_id()
     {
         var list = await List(NeedsYouRows.Park(), NeedsYouRows.Failure());
 
-        Assert.Equal(["PARKED ITM-01JC8", "FAILED failure:service:index"], [.. list.Rows.Select(r => r.AccessibleName)]);
+        Assert.Equal(["needs you now, PARKED, Retry storm in outbox dispatcher, ITM-01JC8, new", "failed, FAILED, Nightly index build, failure:service:index"], [.. list.Rows.Select(r => r.AccessibleName)]);
     }
 
     [Fact]

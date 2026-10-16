@@ -60,18 +60,13 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
     /// <summary>How long the row has waited, as of the last update ("12m", "2h").</summary>
     public string Age => Entry.Since == default ? "" : Labels.RowAge(_clock.GetUtcNow() - Entry.Since);
 
-    /// <summary>The name screen readers hear: the chip word and the id.</summary>
-    public string AccessibleName
-    {
-        get
-        {
-            var id = Entry.ShownId.Length > 0 ? Entry.ShownId : Entry.Id;
-            return Entry.Chip.Word.Length > 0 ? Entry.Chip.Word + " " + id : id;
-        }
-    }
+    /// <summary>The name screen readers hear: the urgency word, the chip, the title and the id, and "new" while the row is unseen (§11.3).</summary>
+    public string AccessibleName => Labels.NeedsYouRowName(Entry.Urgency, Entry.Chip.Word, Entry.Title, IdShown, Entry.Urgency == NeedsYouUrgency.Pulse && !_seen);
 
-    /// <summary>The title button's accessible name; a stub until K10.</summary>
-    public string OpenName => Title;
+    private string IdShown => Entry.ShownId.Length > 0 ? Entry.ShownId : Entry.Id;
+
+    /// <summary>The title button's accessible name: "Open", the title and the id.</summary>
+    public string OpenName => Labels.OpenRow(Title, IdShown);
 
     /// <summary>The row's controls, the primary first, then the others as served.</summary>
     public IReadOnlyList<NeedsYouActionControl> Controls { get; private set; }
@@ -172,8 +167,8 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
         var rest = Entry.Actions.Where(a => !string.Equals(a.CatalogId, primary, StringComparison.Ordinal));
         return
         [
-            .. first.Select(a => new NeedsYouActionControl(a, IsPrimary: true, a.IsReady && !_rebuilding, Tooltip(a, _rebuilding))),
-            .. rest.Select(a => new NeedsYouActionControl(a, IsPrimary: false, a.IsReady && !_rebuilding, Tooltip(a, _rebuilding))),
+            .. first.Select(a => new NeedsYouActionControl(a, IsPrimary: true, a.IsReady && !_rebuilding, Tooltip(a, _rebuilding), IdShown)),
+            .. rest.Select(a => new NeedsYouActionControl(a, IsPrimary: false, a.IsReady && !_rebuilding, Tooltip(a, _rebuilding), IdShown)),
         ];
     }
 
@@ -227,6 +222,7 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
         (_seen, _reduced, _arrived) = (seen, reducedMotion, arrived);
         if (before.Tint != Tint)
         {
+            OnChanged(nameof(AccessibleName));
             OnChanged(nameof(Tint));
             OnChanged(nameof(IsPulsing));
         }

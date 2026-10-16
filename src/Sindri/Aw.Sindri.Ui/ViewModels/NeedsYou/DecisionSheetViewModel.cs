@@ -187,7 +187,7 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
     private void Raise()
     {
         IReadOnlyList<DecisionOption> built = _row is null ? [] :
-            [.. _row.Controls.Where(c => c.Action.OptionId.Length > 0).Select(c => new DecisionOption(c.Action.OptionId, c.Action.Label, c.Action.Recommended, c.IsEnabled && !IsCleared && !sender.IsSent(DecisionId)))];
+            [.. _row.Controls.Where(c => c.Action.OptionId.Length > 0).Select(c => new DecisionOption(c.Action.OptionId, c.Action.Label, c.Action.Recommended, c.IsEnabled && !IsCleared && !sender.IsSent(DecisionId), DecisionId))];
         if (!built.SequenceEqual(Options))
         {
             Options = built;

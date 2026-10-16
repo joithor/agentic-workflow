@@ -19,7 +19,7 @@
       <ItemsControl.ItemTemplate>
         <DataTemplate x:DataType="ny:DecisionOption">
           <Button Classes="command-control decision-option" Classes.primary="{Binding IsRecommended}" Content="{Binding Label}" IsEnabled="{Binding IsEnabled}"
-                  Click="OnOption" Margin="0,0,8,8" AutomationProperties.Name="{Binding Label}" />
+                  Click="OnOption" Margin="0,0,8,8" AutomationProperties.Name="{Binding Name}" />
         </DataTemplate>
       </ItemsControl.ItemTemplate>
     </ItemsControl>

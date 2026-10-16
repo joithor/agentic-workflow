@@ -30,6 +30,27 @@ public sealed class NeedsYouFramesTests : FrameHost
         Frame(window, "needs-you-fixture");
     });
 
+    // review run 1, K10: what a screen reader lists says which row each control belongs to.
+    [Fact]
+    public Task Every_row_and_control_is_named_for_its_row() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected(s => s.NeedsYou.Count > 0);
+
+        foreach (var row in Rows(window))
+        {
+            var vm = (ViewModels.NeedsYou.NeedsYouRowViewModel)row.DataContext!;
+            var id = vm.ShownId.Length > 0 ? vm.ShownId : vm.Id;
+            Assert.Equal(vm.AccessibleName, Avalonia.Automation.AutomationProperties.GetName(row.GetVisualDescendants().OfType<Border>().First(b => b.Name == "RowFrame")));
+            Assert.Equal($"Open {vm.Title} {id}", Avalonia.Automation.AutomationProperties.GetName(Named<Button>(row, "NeedsYouTitle")));
+            foreach (var button in Named<ItemsControl>(row, "NeedsYouControls").GetVisualDescendants().OfType<Button>())
+            {
+                Assert.EndsWith(" " + id, Avalonia.Automation.AutomationProperties.GetName(button), StringComparison.Ordinal);
+            }
+        }
+
+        Assert.NotNull(shell);
+    });
+
     [Fact]
     public Task An_empty_list_shows_the_served_sentence() => OnUi(async () =>
     {
