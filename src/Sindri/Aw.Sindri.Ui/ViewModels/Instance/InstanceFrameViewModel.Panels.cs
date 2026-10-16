@@ -9,6 +9,9 @@ internal sealed partial class InstanceFrameViewModel
     /// <summary>Raised when a panel asks to open an item's sheet.</summary>
     internal event EventHandler<ItemOpenEventArgs>? ItemRequested;
 
+    /// <summary>Raised when the children panel asks to list every child in Work.</summary>
+    internal event EventHandler? WorkRequested;
+
     /// <summary>Which viewer shows which fact type. A later phase registers its own here at start-up, in its own files.</summary>
     internal FactViewerRegistry Viewers { get; } = viewers ?? FactViewerRegistry.CreateDefault();
 
@@ -16,9 +19,7 @@ internal sealed partial class InstanceFrameViewModel
     public FactsPanelViewModel? Facts { get; private set => Set(ref field, value); }
 
     /// <summary>The children panel; null before a read.</summary>
-#pragma warning disable CA1822, MA0041 // red stub
-    public ChildrenPanelViewModel? Children => throw new NotSupportedException();
-#pragma warning restore CA1822, MA0041
+    public ChildrenPanelViewModel? Children { get; private set => Set(ref field, value); }
 
     // A re-read serves the same facts again: the panel stays (and its open viewers with it) unless a row changed, and then the open ones stay open.
     private void ShowPanels(InstanceDetail detail)
@@ -29,7 +30,16 @@ internal sealed partial class InstanceFrameViewModel
         {
             Facts = Facts is { OpenKeys.Count: > 0 } shown ? new FactsPanelViewModel(detail, Viewers, context, shown.OpenKeys) : fresh;
         }
+
+        var children = new ChildrenPanelViewModel(detail, clipboard, clock);
+        if (Children is null || !string.Equals(Children.Signature, children.Signature, StringComparison.Ordinal))
+        {
+            children.Opened += (_, e) => OpenRequested?.Invoke(this, e);
+            children.ItemRequested += (_, e) => ItemRequested?.Invoke(this, e);
+            children.WorkRequested += (_, _) => WorkRequested?.Invoke(this, EventArgs.Empty);
+            Children = children;
+        }
     }
 
-    private void ClearPanels() => Facts = null;
+    private void ClearPanels() => (Facts, Children) = (null, null);
 }

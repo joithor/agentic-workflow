@@ -54,6 +54,7 @@ public sealed class ChildrenFramesTests : FrameHost
         Assert.Equal(FixtureInstances.ChildRows(served).Count(), Buttons(window, "ChildRowOpen").Count);
         _ = Assert.Single(Texts(window, "ChildMirrored"));
         Assert.Contains(Texts(window, "ChildGroupHeader"), t => t.Text!.Contains(served.Recipe, StringComparison.Ordinal));
+        Named<Control>(window, "ChildrenBlock").BringIntoView();
         Frame(window, "children-workstreams");
     });
 
@@ -64,6 +65,7 @@ public sealed class ChildrenFramesTests : FrameHost
 
         Assert.Equal(shell.Instance.Children!.Groups.Single().MoreText, Texts(window, "ChildMore").Single().Text);
         _ = Assert.Single(Buttons(window, "ChildOpenAll"));
+        Named<Control>(window, "ChildrenBlock").BringIntoView();
         Frame(window, "children-more");
     });
 

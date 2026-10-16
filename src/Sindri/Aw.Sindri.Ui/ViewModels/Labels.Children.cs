@@ -31,6 +31,16 @@ internal static partial class Labels
     /// <returns>"4 of 9 done".</returns>
     internal static string ChildrenDone(int done, int total) => string.Create(CultureInfo.InvariantCulture, $"{done} of {total} done");
 
+    /// <summary>The panel's heading with the number of children.</summary>
+    /// <param name="total">How many children there are.</param>
+    /// <returns>"CHILDREN 9".</returns>
+    internal static string ChildrenCount(int total) => string.Create(CultureInfo.InvariantCulture, $"{ChildrenHeading} {total}");
+
+    /// <summary>A child's loop round.</summary>
+    /// <param name="round">The served round.</param>
+    /// <returns>"r1/3".</returns>
+    internal static string RoundOf(Aw.Sindri.Ui.Api.Workflow.Round round) => string.Create(CultureInfo.InvariantCulture, $"r{round.N}/{round.Max}");
+
     /// <summary>The panel's accessible name.</summary>
     /// <param name="address">The instance.</param>
     /// <returns>The words.</returns>

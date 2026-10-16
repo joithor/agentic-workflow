@@ -8,6 +8,8 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 internal sealed partial class ShellViewModel
 {
     private readonly Dictionary<string, string> _hintedIds = new(StringComparer.Ordinal);
+    private readonly Stack<DeepLink> _trail = new();
+    private bool _stacking;
 
     /// <summary>The instance frame.</summary>
     public InstanceFrameViewModel Instance { get; }
@@ -34,15 +36,26 @@ internal sealed partial class ShellViewModel
         Navigate(new DeepLink(DeepLinkKind.Workflow, address));
     }
 
-    /// <summary>Back: returns to the frame or sheet this one was opened from, else closes the sheet.</summary>
-    internal void Back() => throw new NotSupportedException();   // red stub
+    /// <summary>Back: returns to the frame or sheet this one was opened from (a child, an item), else closes the sheet like Esc does.</summary>
+    internal void Back()
+    {
+        if (IsSheetOpen && _trail.TryPop(out var previous))
+        {
+            Stacked(() => Navigate(previous), push: false);
+            return;
+        }
+
+        _trail.Clear();
+        CloseSheet();
+    }
 
     // Everything the frame needs once it exists (ShellViewModel's constructor calls this one line).
     private void InitInstance()
     {
         Health.Follow((url, token) => IsInstanceSheet ? Instance.Refresh(url, token) : Task.CompletedTask);
-        Instance.OpenRequested += (_, e) => OpenInstance(e.Address, e.Id);
-        Instance.ItemRequested += (_, e) => Navigate(new DeepLink(DeepLinkKind.Item, e.ItemId));
+        Instance.OpenRequested += (_, e) => Stacked(() => OpenInstance(e.Address, e.Id), push: true);
+        Instance.ItemRequested += (_, e) => Stacked(() => Navigate(new DeepLink(DeepLinkKind.Item, e.ItemId)), push: true);
+        Instance.WorkRequested += (_, _) => OpenWork();
     }
 
     // The instance part of opening the sheet (OnSheetOpened): the frame names its instance at once and reads it; the id is the one a row or
@@ -50,6 +63,11 @@ internal sealed partial class ShellViewModel
     private void OnInstanceSheetOpened(DeepLink link)
     {
         OpenerWorkflow = null;
+        if (!_stacking)
+        {
+            _trail.Clear();   // a sheet opened from anywhere but a frame starts a new trail
+        }
+
         Changed(nameof(IsInstanceSheet), nameof(ShownSheetWidth));
         if (link.Kind != DeepLinkKind.Workflow || link.Subject is not { } address)
         {
@@ -62,6 +80,33 @@ internal sealed partial class ShellViewModel
         {
             _ = Instance.Open(url, address, id, CancellationToken.None);
         }
+    }
+
+    // A sheet opened from inside a frame (a child, an item) keeps the one it came from, so Back returns to it.
+    private void Stacked(Action open, bool push)
+    {
+        if (push && IsSheetOpen && SheetLink is { } here)
+        {
+            _trail.Push(here);
+        }
+
+        _stacking = true;
+        try
+        {
+            open();
+        }
+        finally
+        {
+            _stacking = false;
+        }
+    }
+
+    // "Open all in Work": the Work page, unfiltered, with the frame closed.
+    private void OpenWork()
+    {
+        _trail.Clear();
+        CloseSheet();
+        GoTo(PageId.Work);
     }
 
     private string? KnownId(string address) =>

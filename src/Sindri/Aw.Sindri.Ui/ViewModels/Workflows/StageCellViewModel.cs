@@ -43,7 +43,7 @@ internal sealed class StageCellViewModel
     /// <summary>The name screen readers hear: the state, then what the cell says in words.</summary>
     public string Name => $"{_cell.State}, {Words()}";
 
-    private static string Mark(Api.Workflow.StateGlyph glyph) => glyph switch
+    internal static string Mark(Api.Workflow.StateGlyph glyph) => glyph switch
     {
         Api.Workflow.StateGlyph.Done => "●",
         Api.Workflow.StateGlyph.Active => "◐",

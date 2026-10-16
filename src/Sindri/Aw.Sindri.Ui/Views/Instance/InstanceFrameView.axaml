@@ -35,6 +35,9 @@
       <Panel IsVisible="{Binding Facts, Converter={x:Static ObjectConverters.IsNotNull}}">
         <iv:FactsPanel x:Name="Facts" DataContext="{Binding Facts}" />
       </Panel>
+      <Panel IsVisible="{Binding Children, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <iv:ChildrenPanel x:Name="Children" DataContext="{Binding Children}" />
+      </Panel>
     </StackPanel>
   </StackPanel>
 </UserControl>

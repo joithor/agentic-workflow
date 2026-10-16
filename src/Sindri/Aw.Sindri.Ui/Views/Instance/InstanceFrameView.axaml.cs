@@ -13,7 +13,7 @@ internal sealed partial class InstanceFrameView : UserControl
         InitializeComponent();
     }
 
-    private void OnBack(object? sender, RoutedEventArgs e) => (TopLevel.GetTopLevel(this)?.DataContext as ShellViewModel)?.CloseSheet();
+    private void OnBack(object? sender, RoutedEventArgs e) => (TopLevel.GetTopLevel(this)?.DataContext as ShellViewModel)?.Back();
 
     private void OnOpenIn(object? sender, RoutedEventArgs e)
     {

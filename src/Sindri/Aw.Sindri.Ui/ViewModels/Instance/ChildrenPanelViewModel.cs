@@ -1,13 +1,33 @@
-#pragma warning disable CA1822, MA0041, IDE0021, MA0182, IDE0060, CA1801, CA1812, IDE0051, CA1823, IDE0032, CS0067 // red stub: removed in the green commit
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Platform;
 
 namespace Aw.Sindri.Ui.ViewModels.Instance;
 
-/// <summary>The children panel (screens §4.2): the child instances, grouped under the state that spawned them and, for a packet, by workstream.</summary>
+/// <summary>
+/// The children panel (screens §4.2): the child instances, grouped under the state that spawned them and, for a packet, by workstream.
+/// Every figure and word is served; a child's frame opens by its id and its item by its id, and the panel sends nothing.
+/// </summary>
 internal sealed class ChildrenPanelViewModel : ObservableObject
 {
-    internal ChildrenPanelViewModel(InstanceDetail detail, IClipboard clipboard, TimeProvider clock) => throw new NotSupportedException();
+    internal ChildrenPanelViewModel(InstanceDetail detail, IClipboard clipboard, TimeProvider clock)
+    {
+        ChildRowViewModel Make(ChildRow served)
+        {
+            var row = new ChildRowViewModel(served, clipboard, clock);
+            row.Opened += (_, e) => Opened?.Invoke(this, e);
+            row.ItemRequested += (_, e) => ItemRequested?.Invoke(this, e);
+            return row;
+        }
+
+        Groups = [.. detail.Children.Select(g => new ChildGroupViewModel(g, detail.Address, Make))];
+        foreach (var group in Groups)
+        {
+            group.WorkRequested += (_, _) => WorkRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        Heading = Groups.Count > 0 ? Labels.ChildrenCount(Groups.Sum(g => g.Total)) : Labels.ChildrenHeading;
+        Name = Labels.ChildrenName(detail.Address);
+    }
 
     /// <summary>Raised when a row asks to open its child's frame.</summary>
     internal event EventHandler<FrameOpenEventArgs>? Opened;
@@ -19,20 +39,22 @@ internal sealed class ChildrenPanelViewModel : ObservableObject
     internal event EventHandler? WorkRequested;
 
     /// <summary>The groups, in the order served.</summary>
-    public IReadOnlyList<ChildGroupViewModel> Groups => throw new NotSupportedException();
+    public IReadOnlyList<ChildGroupViewModel> Groups { get; }
 
     /// <summary>True when the recipe has children.</summary>
-    public bool HasGroups => throw new NotSupportedException();
+    public bool HasGroups => Groups.Count > 0;
 
     /// <summary>"CHILDREN 9".</summary>
-    public string Heading => throw new NotSupportedException();
+    public string Heading { get; }
 
     /// <summary>The words when there are no children.</summary>
-    public string EmptyText => throw new NotSupportedException();
+#pragma warning disable CA1822, MA0041 // a fixed sentence is a property because the view binds it
+    public string EmptyText => Labels.NoChildren;
+#pragma warning restore CA1822, MA0041
 
     /// <summary>The panel's accessible name.</summary>
-    public string Name => throw new NotSupportedException();
+    public string Name { get; }
 
     /// <summary>What the panel draws, so a re-read of the same keeps it.</summary>
-    internal string Signature => throw new NotSupportedException();
+    internal string Signature => string.Join('\n', Groups.Select(g => g.Signature));
 }
