@@ -210,7 +210,7 @@ public abstract class ViewStoreContract
     public static TheoryData<string, ViewColumn> EveryViewAndColumn()
     {
         var pairs = new TheoryData<string, ViewColumn>();
-        foreach (var view in ViewNames.All)
+        foreach (var view in ViewNames.All.Where(static v => !string.Equals(v, ViewNames.Jobs, StringComparison.Ordinal)))   // the jobs view's columns are pinned by SqliteJobViewsTests
         {
             foreach (var column in Enum.GetValues<ViewColumn>())
             {

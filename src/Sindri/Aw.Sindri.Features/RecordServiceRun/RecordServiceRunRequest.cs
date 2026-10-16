@@ -8,4 +8,5 @@ namespace Aw.Sindri.Features.RecordServiceRun;
 /// <param name="Service">The service that ran (or that this build doesn't have).</param>
 /// <param name="Run">The scheduled run (grant and slot).</param>
 /// <param name="Outcome">The run's result: success, or the error it failed with.</param>
-public sealed record RecordServiceRunRequest(ServiceName Service, ScheduledRun Run, Result<Unit> Outcome);
+/// <param name="Job">The job of a manual run (RunService, API P6): its run is keyed by the job, and its slot is when the job started. Null for a scheduled run.</param>
+public sealed record RecordServiceRunRequest(ServiceName Service, ScheduledRun Run, Result<Unit> Outcome, JobId? Job = null);

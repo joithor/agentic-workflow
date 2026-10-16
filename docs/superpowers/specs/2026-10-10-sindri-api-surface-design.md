@@ -299,7 +299,7 @@ Every list view also returns `empty`, the `EmptyText` sentence (§3.6) for its c
 | `GET /status` | `GetStatus` (S1) | — | S1's response, plus `apiVersion`, `health` (§2.3) and `views` (§2.3: the `asOf`-shaped `projectedAt`, `cursor`, `ledgerHead`, `rebuilding`, `stalled`, `stalledAt`, `stalledType`, and `text`, the rebuilding or stalled sentence, `null` when fresh) (`dependencies`, the dependency graph with health and the impact closure of what is failing, E-29, §3.8, is not in P2: it lands with E-29, the rev-8 API follow-up after #190) | S1; extended in P1 and P2 |
 | `GET /ping` | `PingProcess` (S1) | — | S1's `{pid, epoch}` | S1 |
 | `GET /commands` | `ListCommands` | — | `CommandList(rows)`. Each row: <ul><li>action id (`<Command>` or `<Command>:<variant>`);</li><li>class;</li><li>allowed callers;</li><li>whether it needs a terminal;</li><li>method and route;</li><li>CLI form;</li><li>UI status: `ready`, `pending:<phase>` or `cli-only:<reason>`.</li></ul> | P1 |
-| `GET /services` | `ListServices` | — | `ServiceList(services, empty, asOf)`. Each service: <ul><li>name;</li><li>cadence;</li><li>paused;</li><li>last run (slot, outcome, code);</li><li>next slot.</li></ul> | P2 |
+| `GET /services` | `ListServices` | — | `ServiceList(services, empty, asOf)`. Each service: <ul><li>name;</li><li>cadence;</li><li>paused;</li><li>last run (slot, outcome, code);</li><li>next slot;</li><li>`job`: the running job of the service (a manual run), or null **(provisional owner default, 2026-10-15)**.</li></ul> | P2, P6 |
 | `GET /profile` | `GetProfile` | — | `ProfileView(asOf)`: <ul><li>approved hash and when it was approved;</li><li>live hash, as of the last drift check;</li><li>whether it changed since approval;</li><li>the changed key paths.</li></ul> | P2 |
 | `GET /queue` | `GetQueue` | — | `QueueView(groups, empty, asOf)`: the §3.6 groups in their fixed order, each a list of `ItemSummary` | P3 |
 | `GET /items?state=&repo=` | `ListItems` | `ListItemsQuery(ItemState?, RepoName?)` | `ItemList(items, empty, asOf)`. Without `state` it lists open items only (a closed item shows only when `state` names `done` or `cancelled`), and its empty sentence then reads "No open items[ in <repo>].". Each item: <ul><li>id, title, repo, state, step;</li><li>`since`;</li><li>`primaryAction`: an action id from `actions`, or null;</li><li>`actions`: the action ids allowed now;</li><li>`owner`: reserved for multi-user (README X61), always null for now.</li></ul> | P3 |
@@ -310,7 +310,8 @@ Every list view also returns `empty`, the `EmptyText` sentence (§3.6) for its c
 | `GET /decisions?pending=&item=` | `ListDecisions` | `ListDecisionsQuery(bool?, ItemId?)` | `DecisionList(decisions, empty, asOf)`. Each decision: <ul><li>id, kind, class, item, item version;</li><li>question, options and the recommended option;</li><li>state, and who decided it;</li><li>`recordedOnly`;</li><li>the CLI command.</li></ul> | P4 |
 | `GET /events?after=&item=&types=` | `StreamEvents` (S1, extended) | `StreamEventsQuery(long, ItemId?, TypeFilter?)` | An SSE stream of `PublicEvent` (§5) | S1; extended in P5 |
 | `GET /ledger?after=&item=&type=&max=` | `ReadLedger` | `ReadLedgerQuery(long, ItemId?, string?, int)`, with `max` ≤ 500 | `LedgerPage(events, next)`: public envelopes with sanitized payloads. It's an audit read, so `human` callers also get the non-public types. For `session` callers it is repo-scoped like every other query (only events whose item is in the session's repo, or that have no item) | P5 |
-| `GET /jobs/{jobId}` | `GetJob` | `GetJobQuery(JobId)` | `JobView`: <ul><li>id, kind, item?;</li><li>state: `running`, `succeeded`, `failed` or `cancelled`;</li><li>when it started and ended;</li><li>the last 200 progress lines;</li><li>result summary and code;</li><li>`asOf`.</li></ul> | P6 |
+| `GET /jobs/{jobId}` | `GetJob` | `GetJobQuery(JobId)` | `JobView`: <ul><li>id, kind, key, item?, repo?, service?;</li><li>state: `running`, `succeeded`, `failed` or `cancelled`, `startedBy`, and when it started and ended;</li><li>the last 200 progress lines, each `{round, line, at}` (cleaned when written: scrubbed, escaped, one line, at most 200 characters), and `rounds`;</li><li>result summary, `code`, `result` (the work's bounded, scrubbed result) and `cancelledBy`;</li><li>`actions` (`CancelJob` while running) and `cli` (`sindri jobs cancel JOB-…` while running);</li><li>`asOf`.</li></ul> | P6 |
+| `GET /jobs?state=&kind=` | `ListJobs` | `state?`, `kind?` | `JobList`: `{jobs: [JobSummary], empty, asOf}`, newest start first (never latest activity; a tie goes by job id); a `JobSummary` is the `JobView` without its lines, result, actions and cli. **(provisional owner default, 2026-10-15)**: the route, `sindri jobs` and `ServiceView.job` are an additive owner default awaiting confirmation | P6 |
 
 **Session callers are scoped to one repo.**
 - A `session` caller's list and item queries are filtered to the repo named in `X-Sindri-Repo`, which the CLI sets from
@@ -345,7 +346,7 @@ They're in the catalog with class `local` and are never routes. `doctor` gains a
 | `POST /items/{itemId}/close` | `CloseItem` | `reason` (`done` or `cancelled`), `itemVersion` | `CommandAccepted` | desk | `sindri item close <item> [--cancelled] [--version <n>]` | P3 |
 | `POST /requests` | `FileRequest` | `kind` (`rescope`, `add-task`, `note` or `handback`), `itemId?`, `text` | `RequestFiled(accepted, RequestId, DecisionId)` | **request** | `sindri request <kind> [--item X] "<text>"` | P4 |
 | `POST /decisions/{decisionId}` | `Decide` | `choice`, `note?` | `CommandAccepted` | decision | `sindri decide <decisionId> <choice> [--note]` | P4 |
-| `POST /services/{name}/run` | `RunService` | — | `JobStarted(accepted, JobId)` | job | `sindri services run <name>` | P6 |
+| `POST /services/{name}/run` | `RunService` | — | `JobStarted(accepted, JobId, links)`; `links` is `{job, cancel, events}` (paths under the origin) | job | `sindri services run <name>` | P6 |
 | `POST /services/{name}/pause` | `PauseService` | — | `CommandAccepted` | desk | `sindri services pause <name>` | P6 |
 | `POST /services/{name}/resume` | `ResumeService` | — | `CommandAccepted` | desk | `sindri services resume <name>` | P6 |
 | `POST /jobs/{jobId}/cancel` | `CancelJob` | — | `CommandAccepted` | job | Ctrl-C while following; `sindri jobs cancel <id>` | P6 |
@@ -419,11 +420,11 @@ catalog itself lands in P1. Every domain payload carries `commandId` (or the `se
 | `item.state-changed` | item, from, to, version (the new one), reason? | `item.state-changed:<itemId>:v<version>` | yes | P3 |
 | `request.filed` | request, decision, kind, item?, repo? (the item's repo, else the session's `X-Sindri-Repo`), text (scrubbed, at most 2,000 characters) | `request.filed:<requestId>` | yes (text left out) | P4 |
 | `decision.recorded` | decision, choice, note?, by, repo? (the decision's repo, copied from its row) | `decision.recorded:<decisionId>` | yes (note left out; a human's ledger read keeps it) | P4 |
-| `job.started` | job, kind, item? | `job.started:<jobId>` | yes | P6 |
-| `service.ran` (manual) | as above; `slot` is the run's start time, and the key carries the job instead | `service.ran:<name>:manual:<jobId>` | yes | P6: a `RunService` job appends it when it ends, so a manual run updates `lastRun` and clears a failure row |
-| `job.progress` | job, round, line | `job.progress:<jobId>:<n>` | yes | P6 |
-| `job.finished` | job, outcome, summary, code? | `job.finished:<jobId>` | yes | P6 |
-| `job.cancelled` | job | `job.cancelled:<jobId>` | yes | P6 |
+| `job.started` | job, kind, key, item?, repo?, service? | `job.started:<jobId>` | yes | P6 |
+| `service.ran` (manual) | as above, plus `job`; `slot` is the run's start time, and the key carries the job instead | `service.ran:<name>:manual:<jobId>` | yes | P6: a `RunService` job appends it when it ends, so a manual run updates `lastRun` and clears a failure row |
+| `job.progress` | job, round, line, item?, repo? | `job.progress:<jobId>:<n>` | yes | P6 |
+| `job.finished` | job, outcome, summary, code?, result?, item?, repo? | `job.finished:<jobId>` | yes (result left out of the public form) | P6 |
+| `job.cancelled` | job, by, item?, repo? | `job.cancelled:<jobId>` | yes | P6 |
 | `service.paused`, `service.resumed` | service | `service.paused:<name>:<commandId>` | yes | P6 |
 | `item.linked` | item, record key, alias | `item.linked:<itemId>:<record>` | yes | context Phase 6 only (`service:context-sync`); a `CreateItem` with `link` stores it on `item.created` and gives no alias, so `GET /items/<tracker key>` resolves only after a later `item.linked` |
 | `item.open-requested` | item, target, mode, launch | `item.open-requested:<itemId>:<launch>` | yes | P10 |
@@ -533,7 +534,7 @@ How items move through the states:
 | `recordedOnly` | Whether the decision is recorded only (before S2) |
 | `notice` | The sentence that says so, served by the API (`recorded; acted on once the workflow engine runs`) so no client keeps its own copy; `null` when `recordedOnly` is false. A `DecisionView` voided by closing its item carries the voided sentence (`voided: the item was closed`) in `notice` and `cleared` |
 | `answerKind` | For `park` rows: `text`, `resume`, `grant`, `grantTokens`, `accept` (with reject), or `cancel-only`, taken from the engine's resume action (engine §5.8), so the app shows the right control |
-| `primaryAction` | A catalog action id (no P4 row is `cli-only`, so none serves `copy:<cli>`). Per kind: <ul><li>`decision` → `Decide`;</li><li>`park` → the engine's action id;</li><li>`failure` → `RunService` (`pending:P6` until the service runner lands, so the row's `actions` lists it as pending);</li><li>`profile` → `ApproveProfile` (protected: terminal-only, so the app copies the row's `cli`, `sindri profile approve <hash>`, instead of calling it).</li></ul> |
+| `primaryAction` | A catalog action id (no P4 row is `cli-only`, so none serves `copy:<cli>`). Per kind: <ul><li>`decision` → `Decide`;</li><li>`park` → the engine's action id;</li><li>`failure` → `RunService` (served since P6, with `cli` `sindri services run <name>`), or **null** for a failure of a service this build doesn't have (`SND-SVC-404`: `actions` is `[PauseService]` and `cli` is `sindri profile validate`; golden `needs-you/unknown-service`);</li><li>`profile` → `ApproveProfile` (protected: terminal-only, so the app copies the row's `cli`, `sindri profile approve <hash>`, instead of calling it).</li></ul> |
 | `cli` | The CLI form |
 
 **Rows by kind.** A filed request appears **once**, as its `decision` row; there is no separate request row.
@@ -1168,6 +1169,9 @@ of **`docs/csharp/sindri.md`**. Not `docs/sindri/errors.md`, which is generated 
 | `SND-API-012` | RateLimited (429) | The stream limits (§5.4) | P5 |
 | `SND-JOB-404` | NotFound (404) | No such job | P6 |
 | `SND-SVC-404` | NotFound (404) | No such service in the approved profile | P6 |
+| `SND-JOB-409` | Conflict (409) | Three causes: a job of that kind and key is already running (the only one with the extension `runningJob`); a scheduled run of the service is in flight (`RunService`, no job to name); `CancelJob` met a job that already ended | P6 |
+| `SND-JOB-001` | Unavailable | The process stopped while the job ran; only ever a job's `code`, never an HTTP response | P6 |
+| `SND-JOB-002` | RateLimited (429) | Too many jobs are running (8) | P6 |
 | `SND-LAUNCH-001` | Unavailable (503) | The launcher couldn't open the terminal | P10 |
 | `SND-LAUNCH-002…009` | — | As the UI spec's E-5 numbers them (no terminal, agent CLI missing, repo missing, nothing to resume or attach, interrupted, already in progress, timed out) | P10a |
 | `SND-LAUNCH-010` | RateLimited (429) | The target's spend today has reached its `agents.<target>.dailyBudget` (E-28). Fix: raise the budget in the profile and approve it, or wait for the local day to roll over | P10a |

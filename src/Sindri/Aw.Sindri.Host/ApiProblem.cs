@@ -4,4 +4,5 @@ namespace Aw.Sindri.Host;
 /// <param name="Title">The error code.</param>
 /// <param name="Detail">The message.</param>
 /// <param name="Status">The HTTP status.</param>
-internal sealed record ApiProblem(string? Title, string? Detail, int? Status);
+/// <param name="RunningJob">The job already running, on an SND-JOB-409 for a start (the 'runningJob' extension), else null.</param>
+internal sealed record ApiProblem(string? Title, string? Detail, int? Status, string? RunningJob = null);

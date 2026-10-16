@@ -71,6 +71,7 @@ internal sealed class FollowRig : IDisposable
     /// <summary>A fake clock that counts the timers set on it, so a test can wait for the verb to be waiting.</summary>
     internal sealed class CountingClock : FakeTimeProvider
     {
+        private readonly List<(int Count, TaskCompletionSource Reached)> _waiting = [];
         private int _timers;
 
         public CountingClock()
@@ -80,10 +81,38 @@ internal sealed class FollowRig : IDisposable
 
         public int Timers => Volatile.Read(ref _timers);
 
+        /// <summary>A task that completes once at least <paramref name="count"/> timers have been set on this clock (no wall-clock wait).</summary>
+        /// <param name="count">How many timers.</param>
+        /// <returns>The task.</returns>
+        public Task TimersReached(int count)
+        {
+            lock (_waiting)
+            {
+                if (Timers >= count)
+                {
+                    return Task.CompletedTask;
+                }
+
+                var reached = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                _waiting.Add((count, reached));
+                return reached.Task;
+            }
+        }
+
         public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
         {
-            _ = Interlocked.Increment(ref _timers);
-            return base.CreateTimer(callback, state, dueTime, period);
+            var timer = base.CreateTimer(callback, state, dueTime, period);
+            lock (_waiting)
+            {
+                var now = Interlocked.Increment(ref _timers);
+                foreach (var (count, reached) in _waiting.Where(w => w.Count <= now).ToList())
+                {
+                    _ = reached.TrySetResult();
+                    _ = _waiting.Remove((count, reached));
+                }
+            }
+
+            return timer;
         }
     }
 }
