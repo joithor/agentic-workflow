@@ -662,19 +662,15 @@ if [ "$WITH_META" = "1" ]; then
   if [ "$(uname)" = "Darwin" ]; then
     echo "  meta: skipped (aw-meta is Linux-only for now: it reads /proc)"
   else
-    _meta_built=0
-    for _p in $PROVIDERS; do
-      if aw_dry; then
-        echo "  [dry-run] would run scripts/install-meta.sh --provider $_p"
-      else
-        # install-meta refuses a linked worktree or a tree that is not the team's repo; that must not abort the rest of setup (meta is opt-in)
-        if AW_SKIP_BUILD="$([ "$_meta_built" = 1 ] && echo 1 || echo "${AW_SKIP_BUILD:-0}")" bash "$SCRIPT_DIR/scripts/install-meta.sh" --provider "$_p"; then
-          _meta_built=1
-        else
-          echo "  meta: NOT installed for $_p (see the message above); rerun scripts/install-meta.sh from the canonical checkout" >&2
-        fi
-      fi
-    done
+    # shellcheck source=config/lib/setup-meta-step.sh
+    source "$SCRIPT_DIR/config/lib/setup-meta-step.sh"
+    if aw_dry; then
+      for _p in $PROVIDERS; do echo "  [dry-run] would run scripts/install-meta.sh --provider $_p"; done
+    else
+      # install-meta exits 3 when it refuses the tree (a worktree or a tree that is not the team's repo): setup warns and goes on;
+      # any other failure stops setup
+      aw_setup_meta_step "$SCRIPT_DIR" $PROVIDERS
+    fi
   fi
 fi
 

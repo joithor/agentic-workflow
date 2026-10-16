@@ -51,8 +51,8 @@ public static partial class MessageClassifier
         }
     }
 
-    // Only the first line counts, and it must be "ready #N <sha>" (any case, the sha optionally in backticks); "not ready" or "follows" on that line says it is not one: a status line that merely mentions a later ready never queues the pull request.
-    [GeneratedRegex(@"\Aready #(?<pr>[0-9]+) `?(?<sha>[0-9a-f]{7,40})`?(?![0-9A-Za-z])", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
+    // Only the first line counts, and it must be "ready #N <sha>" (any case, the sha with paired backticks or none); "not ready" or "follows" on that line says it is not one: a status line that merely mentions a later ready never queues the pull request.
+    [GeneratedRegex(@"\Aready #(?<pr>[0-9]+) (?:`(?<sha>[0-9a-f]{7,40})`|(?<sha>[0-9a-f]{7,40})(?!`))(?![0-9A-Za-z])", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
     private static partial Regex ReadyPattern { get; }
 
     [GeneratedRegex(@"not ready|follows", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, matchTimeoutMilliseconds: 100)]

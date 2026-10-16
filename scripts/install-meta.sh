@@ -5,6 +5,10 @@
 # it appends to the team's running log; its gate and merge commands act on the team's checkout and PRs.
 #
 #   install-meta.sh [--provider claude|codex|cursor] [--allow-worktree]   default claude
+#   --allow-worktree  install from this tree although it is not the canonical checkout: a linked worktree, a second clone, or any
+#                     tree other than the team config's repo (the name is historical; it covers all three)
+#   Exit codes: 0 installed; 1 failed (usage, macOS, a missing binary, a failed publish); 3 refused because this tree is not the
+#   canonical checkout (setup.sh --with-meta warns on 3 and carries on, and stops on every other non-zero exit)
 #   AW_DRY_RUN=1     print what would happen, write nothing
 #   AW_SKIP_BUILD=1  don't publish; install the binary already in $AW_STATE_DIR/bin (tests)
 #   CLAUDE_LOCAL_BIN where the aw-meta and aw-meta-launch links go (default ~/.local/bin)
@@ -59,7 +63,7 @@ if [ "$allow_worktree" != 1 ]; then
     if [ "$(cd "$team_repo" && pwd -P)" != "$(cd "$SCRIPT_DIR" && pwd -P)" ]; then
       echo "install-meta: this tree ($SCRIPT_DIR) is not the team's repo ($team_repo); it would install an unmerged build." >&2
       echo "  Run scripts/install-meta.sh from $team_repo, or pass --allow-worktree to install from this tree on purpose." >&2
-      exit 1
+      exit 3
     fi
   else
     gd="$(git -C "$SCRIPT_DIR" rev-parse --absolute-git-dir 2>/dev/null || true)"
@@ -67,7 +71,7 @@ if [ "$allow_worktree" != 1 ]; then
     if [ -n "$gd" ] && [ -n "$gc" ] && [ "$gd" != "$gc" ]; then
       echo "install-meta: $SCRIPT_DIR is a linked git worktree, not the canonical checkout; aw-meta-launch would be linked into it." >&2
       echo "  Run it from the canonical checkout, set the team config's repo (aw-meta team-init --repo <dir>), or pass --allow-worktree." >&2
-      exit 1
+      exit 3
     fi
   fi
 fi
