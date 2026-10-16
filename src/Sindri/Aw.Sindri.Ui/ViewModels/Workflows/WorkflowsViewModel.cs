@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
 
@@ -89,7 +90,7 @@ internal sealed class WorkflowsViewModel(ISindriApi api) : ObservableObject
                 await ReadDone(cancellationToken).ConfigureAwait(true);
             }
         }
-        else if (string.Equals(list.Error.Code, SindriUiErrors.BadAnswer.Code, StringComparison.Ordinal) && list.Error.Kind == Aw.Kernel.ErrorKind.Invalid)
+        else if (string.Equals(list.Error.Code, SindriUiErrors.BadAnswer.Code, StringComparison.Ordinal) && list.Error.Kind == ErrorKind.Invalid)
         {
             MarkUnreadable();
         }

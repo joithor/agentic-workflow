@@ -72,7 +72,7 @@ public sealed class InstanceRowViewModelTests
                 Assert.Equal(cell.Round is { } r ? string.Create(CultureInfo.InvariantCulture, $"r{r.N}/{r.Max}") : string.Empty, Between(stage, "r"), StringComparer.Ordinal);
                 Assert.Equal(cell.Desk, stage.Detail.Contains("desk", StringComparison.Ordinal));
                 Assert.Equal(cell.Child && cell.Children is null, stage.Detail.Contains("child", StringComparison.Ordinal));
-                Assert.Equal(cell.Children is { } c ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{c.Done}/{c.Total}") : string.Empty, Between(stage, "n"), StringComparer.Ordinal);
+                Assert.Equal(cell.Children is { } c ? string.Create(CultureInfo.InvariantCulture, $"{c.Done}/{c.Total}") : string.Empty, Between(stage, "n"), StringComparer.Ordinal);
             });
             _ = Assert.Single(stages, s => s.IsCurrent);
         });
