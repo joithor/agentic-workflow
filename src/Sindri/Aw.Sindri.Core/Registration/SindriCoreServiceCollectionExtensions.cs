@@ -53,6 +53,7 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<IProjection, ItemAliasesProjection>()
             .AddSingleton<IProjection, ItemTimelineProjection>()
             .AddSingleton<IProjection, NeedsYouProjection>()
+            .AddSingleton<IProjection, JobsProjection>()
             .AddScoped<RecipeApprovalPlanner>()
             .AddScoped<RecipeRevokePlanner>()
             .AddScoped<IRecipeProfileFacts, ApprovedRecipeProfileFacts>()
