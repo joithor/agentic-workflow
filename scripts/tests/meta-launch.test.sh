@@ -12,6 +12,18 @@ check() {
   fi
 }
 command -v tmux > /dev/null || { echo "ok - skipped: tmux not installed"; exit 0; }
+# Isolation guard: every tmux this file runs is a private server in a TMUX_TMPDIR under a mktemp -d directory of this run, and never a
+# client inside the box's own tmux (TMUX set), whose default socket is the live team's server. The first tmux use checks both and
+# exits 2 (the recording shim of golden_transcript checks them too). scripts/ci/tmux-isolation.mjs fails any tmux call in the tests
+# that isn't behind this guard, AW_TMUX or an explicit socket.
+tmux_guard() {
+  if [ -n "${TMUX:-}" ]; then echo "meta-launch.test: TMUX is set ($TMUX): refusing to run tmux inside a tmux client" >&2; exit 2; fi
+  case "${TMUX_TMPDIR:-}" in
+    */tmp.*/*) ;;
+    *) echo "meta-launch.test: TMUX_TMPDIR '${TMUX_TMPDIR:-}' is not under this test's temp dir: refusing to run tmux" >&2; exit 2 ;;
+  esac
+}
+tmux() { tmux_guard; command tmux "$@"; }
 # golden_transcript <scripts-dir>: what scripts/meta-launch.sh and scripts/meta-lane.sh do with NO launcher.json, as one
 # normalized transcript: the dry-run, the Warp YAML, every tmux command the launcher issues (a recording shim in front of
 # tmux), and the claude command lines meta-lane.sh runs (fresh with a multi-line prompt, resumed, no prompt, with
@@ -25,8 +37,8 @@ golden_transcript() {
     for v in $(compgen -e | grep '^AW_META_'); do unset "$v"; done
     mkdir -p "$TMUX_TMPDIR" "$HOME/.claude/projects/p" "$G/repo" "$G/prompts" "$AW_STATE_DIR/meta" "$G/shim"
     printf 'API kickoff\nline two $HOME "quoted" '"'"'single'"'"'\n' > "$G/prompts/api.md"
-    local real; real="$(command -v tmux)"
-    printf '#!/usr/bin/env bash\nprintf "tmux" >> "%s"; printf " %%q" "$@" >> "%s"; echo >> "%s"\nexec "%s" "$@"\n' "$G/tmux-calls" "$G/tmux-calls" "$G/tmux-calls" "$real" > "$G/shim/tmux"
+    local real; real="$(type -P tmux)"
+    printf '#!/usr/bin/env bash\n[ -z "${TMUX:-}" ] || exit 2\ncase "${TMUX_TMPDIR:-}" in */tmp.*/*) ;; *) exit 2 ;; esac\nprintf "tmux" >> "%s"; printf " %%q" "$@" >> "%s"; echo >> "%s"\nexec "%s" "$@"\n' "$G/tmux-calls" "$G/tmux-calls" "$G/tmux-calls" "$real" > "$G/shim/tmux"
     printf '#!/usr/bin/env bash\nprintf "%%s|" "$@" >> "$CALLS"; echo >> "$CALLS"\n' > "$G/claude"
     printf '#!/usr/bin/env bash\nexec sleep 600\n' > "$G/claude-noop"
     printf '#!/usr/bin/env bash\necho "$*" >> "$CALLS.meta"\n' > "$G/aw-meta"
