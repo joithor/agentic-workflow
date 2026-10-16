@@ -32,6 +32,7 @@ internal sealed partial class SchedulerHost(
     private ProfileHash? _profile;
     private bool _loaded;
     private string? _problem;
+    private bool _pausesKnown;   // until the first good read of the pauses no service runs: a restart mid-rebuild must not run what a human paused
     private IReadOnlySet<ServiceName> _paused = new HashSet<ServiceName>();   // read once per tick; a failed read keeps the last known set
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -113,7 +114,7 @@ internal sealed partial class SchedulerHost(
             }
 
             // a paused service's slot passes unrun (so a resume doesn't burst); a service with a run in flight, scheduled or manual, skips this slot (S1-D10)
-            if (!_paused.Contains(schedule.Name) && guard.TryClaim(schedule.Name, out var claim))
+            if (_pausesKnown && !_paused.Contains(schedule.Name) && guard.TryClaim(schedule.Name, out var claim))
             {
                 var run = RunOne(schedule, new ScheduledRun(grant, schedule.NextSlot), claim, ct);   // its own loop: not awaited here
                 if (run.IsCompleted)
@@ -141,6 +142,7 @@ internal sealed partial class SchedulerHost(
             if (paused.IsSuccess)
             {
                 _paused = paused.Value;
+                _pausesKnown = true;
             }
         }
         catch (Exception e) when (!ct.IsCancellationRequested)   // boundary: an unreadable view must not stop the schedule; the last known pauses stand
