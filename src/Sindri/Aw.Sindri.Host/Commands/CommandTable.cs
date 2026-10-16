@@ -86,7 +86,7 @@ internal static class CommandTable
             ["services" or "jobs", ..] => await JobCommands.Run(args, (client, output), start.EnsureRunning, services.GetRequiredService<TimeProvider>(), (ct, interrupt.Again)).ConfigureAwait(false),
             ["doctor", ..] => await Doctor(args, verbs, harnesses, output, ct).ConfigureAwait(false),
             ["mcp", .. var rest] => await new McpVerbs(services, output, session).Run(rest, ct).ConfigureAwait(false),
-            ["context", ..] => await Context(args, client, output, services, ct).ConfigureAwait(false),
+            ["context", ..] => await Context(args, client, output, services, (ct, interrupt.Again)).ConfigureAwait(false),
             ["recipe", .. var rest] => await RecipeCommandTable.Run(rest, services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), ct).ConfigureAwait(false),
             ["workflow", .. var rest] => await WorkflowCommandTable.Run(rest, services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), ct).ConfigureAwait(false),
             ["outbox", .. var rest] => await OutboxCommandTable.Run(rest, services, output, ct).ConfigureAwait(false),
@@ -107,15 +107,17 @@ internal static class CommandTable
         };
 
     /// <summary>'sindri context …': one arm per verb family; the first that matches wins.</summary>
-    private static async Task<int> Context(string[] args, ControlPlaneClient client, Output output, IServiceProvider services, CancellationToken ct) =>
+    private static async Task<int> Context(string[] args, ControlPlaneClient client, Output output, IServiceProvider services, (CancellationToken Interrupt, CancellationToken Again) signals) =>
         args switch
         {
-            ["context", "show" or "neighbors" or "path", ..] => await new ContextGraphVerbs(client, output).Run(args[1..], ct).ConfigureAwait(false),
-            ["context", "eval", .. var rest] => await new ContextEvalVerbs(client, output, services.GetRequiredService<IContextEngine>()).Run(rest, ct).ConfigureAwait(false),
-            ["context", "filemap", "accept" or "reject", var link] => await new ContextMapVerbs(client, output, Interactive(), Console.In).Run(["review", args[2], link], ct).ConfigureAwait(false),
-            ["context", "lenses" or "filemap", ..] => await new ContextLensVerbs(client, output).Run(args[1..], ct).ConfigureAwait(false),
-            ["context", "map", .. var rest] => await new ContextMapVerbs(client, output, Interactive(), Console.In).Run(rest, ct).ConfigureAwait(false),
-            ["context", .. var rest] => await new ContextVerbs(client, output).Run(rest, ct).ConfigureAwait(false),
+            ["context", "sources", "sync", .. var rest] => await new ContextJobVerbs(client, output, new JobFollower(client, output, services.GetRequiredService<TimeProvider>())).Run(["sources", "sync", .. rest], signals.Interrupt, signals.Again).ConfigureAwait(false),
+            ["context", "map", "build", .. var rest] => await new ContextJobVerbs(client, output, new JobFollower(client, output, services.GetRequiredService<TimeProvider>())).Run(["map", "build", .. rest], signals.Interrupt, signals.Again).ConfigureAwait(false),
+            ["context", "show" or "neighbors" or "path", ..] => await new ContextGraphVerbs(client, output).Run(args[1..], signals.Interrupt).ConfigureAwait(false),
+            ["context", "eval", .. var rest] => await new ContextEvalVerbs(client, output, services.GetRequiredService<IContextEngine>()).Run(rest, signals.Interrupt).ConfigureAwait(false),
+            ["context", "filemap", "accept" or "reject", var link] => await new ContextMapVerbs(client, output, Interactive(), Console.In).Run(["review", args[2], link], signals.Interrupt).ConfigureAwait(false),
+            ["context", "lenses" or "filemap", ..] => await new ContextLensVerbs(client, output).Run(args[1..], signals.Interrupt).ConfigureAwait(false),
+            ["context", "map", .. var rest] => await new ContextMapVerbs(client, output, Interactive(), Console.In).Run(rest, signals.Interrupt).ConfigureAwait(false),
+            ["context", .. var rest] => await new ContextVerbs(client, output).Run(rest, signals.Interrupt).ConfigureAwait(false),
             _ => await UnknownVerb(args, output).ConfigureAwait(false),
         };
 
