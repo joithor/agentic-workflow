@@ -95,7 +95,7 @@ internal sealed partial class HomePage : UserControl
 
     private void OnNeedsYouAction(object? sender, RoutedEventArgs e)
     {
-        if (NeedsYouRow.ActionOf(e) is { } action && (e.Source as Control)?.FindAncestorOfType<NeedsYouRow>() is { RowId.Length: > 0 } row && DataContext is ShellViewModel shell)
+        if (NeedsYouRow.ActionOf(e) is { } action && e.Source is NeedsYouRow { RowId.Length: > 0 } row && DataContext is ShellViewModel shell)
         {
             shell.NeedsYou.Press(row.RowId, action);
         }

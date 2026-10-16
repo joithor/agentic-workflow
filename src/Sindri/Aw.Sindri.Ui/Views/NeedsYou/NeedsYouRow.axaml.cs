@@ -28,13 +28,16 @@ internal sealed partial class NeedsYouRow : UserControl
     /// <summary>The action of the control an <see cref="ActionEvent"/> came from, or null.</summary>
     /// <param name="e">The event.</param>
     /// <returns>The action.</returns>
-    internal static NeedsYouAction? ActionOf(RoutedEventArgs e) => e.Source is Control { DataContext: NeedsYouActionControl { Action: var action } } ? action : null;
+    internal static NeedsYouAction? ActionOf(RoutedEventArgs e) => e is RowActionEventArgs { Action: var action } ? action : null;
 
     private void OnOpen(object? sender, RoutedEventArgs e) => RaiseEvent(new RoutedEventArgs(OpenEvent, this));
 
     private void OnAction(object? sender, RoutedEventArgs e)
     {
-        e.Source = sender;
-        RaiseEvent(new RoutedEventArgs(ActionEvent, sender));
+        // RaiseEvent makes the row the event's source, so the pressed control's action travels in the args.
+        if (sender is Control { DataContext: NeedsYouActionControl { Action: var action } })
+        {
+            RaiseEvent(new RowActionEventArgs(action));
+        }
     }
 }
