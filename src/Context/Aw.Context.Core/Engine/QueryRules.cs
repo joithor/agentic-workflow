@@ -156,7 +156,7 @@ public static class QueryRules
         ArgumentNullException.ThrowIfNull(item);
         ArgumentNullException.ThrowIfNull(suggested);
         var shown = item.Length <= 80 && !item.Any(char.IsControl) ? item.Trim() : "(a long or unusual item)";
-        var error = ContextErrors.UnknownAnchor.With($"no synced record is linked to the item '{shown}' (fix: {(suggested.Count == 0 ? "sindri context sources sync" : "try " + string.Join(", ", suggested))})");
+        var error = ContextErrors.UnknownAnchor.With($"no synced record is linked to the item '{shown}' (fix: {(suggested.Count == 0 ? "name the context-sync service under services: in the profile" : "try " + string.Join(", ", suggested))})");
         return suggested.Count == 0 ? error : error.WithExtension("suggestedAnchors", [.. suggested], SettingsJsonContext.Default.ListString);
     }
 

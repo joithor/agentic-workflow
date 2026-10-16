@@ -129,7 +129,7 @@ public sealed class ContextSyncTests : IDisposable
         var byKey = await host.Http.Ask(Get("/sindri/context/query?item=SPL-103", Human(host.Token.Value)));
 
         Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-003"), (byId.Status, byId.Code));
-        Assert.Contains("no tracker record", byId.Body, StringComparison.Ordinal);
+        Assert.Contains("no synced record is linked", byId.Body, StringComparison.Ordinal);
         Assert.Equal(HttpStatusCode.OK, byKey.Status);
         Assert.Contains("\"anchors\":[\"record:linear:issue/", byKey.Body, StringComparison.Ordinal);
     }

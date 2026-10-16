@@ -1,6 +1,8 @@
 using System.Globalization;
+using Aw.Context.Core;
 using Aw.Context.Core.Docs;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Linking;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 using Aw.Context.Core.Trust;
@@ -15,7 +17,7 @@ namespace Aw.Context.Features.SourcesStatus;
 /// refresh), then every live source's probe. A session's view is gated and scoped like its queries, but says whether
 /// sessions are enabled.
 /// </summary>
-internal sealed class SourcesStatusService(IDocIndex index, ISourceCatalog catalog, IScrubberFactory scrubberFactory, TimeProvider clock)
+internal sealed class SourcesStatusService(IDocIndex index, ISourceCatalog catalog, IScrubberFactory scrubberFactory, IIntentStore intents, TimeProvider clock)
     : IService<SourcesStatusRequest, SourcesView>
 {
     public async ValueTask<Result<SourcesView>> Handle(SourcesStatusRequest request, CancellationToken cancellationToken)
@@ -40,15 +42,48 @@ internal sealed class SourcesStatusService(IDocIndex index, ISourceCatalog catal
             rows.Add(Row(repo.Name, status.Value));
         }
 
-        foreach (var source in catalog.For(settings.Value, repos.Value, scrubbers.Value)
-            .Where(s => s.Describe().Freshness == SourceFreshness.Live && ScopeRules.MayRead(request.Scope.Caller, s.Describe())))
+        var live = await LiveRows(catalog.For(settings.Value, repos.Value, scrubbers.Value)
+            .Where(s => s.Describe().Freshness == SourceFreshness.Live && ScopeRules.MayRead(request.Scope.Caller, s.Describe())), cancellationToken).ConfigureAwait(false);
+        if (live.IsError)
+        {
+            return live.Error;
+        }
+
+        rows.AddRange(live.Value);
+        return new SourcesView(rows, settings.Value.SessionsEnabled, clock.GetUtcNow());
+    }
+
+    private async ValueTask<Result<IReadOnlyList<SourceStatusRow>>> LiveRows(IEnumerable<IContextSource> sources, CancellationToken cancellationToken)
+    {
+        var rows = new List<SourceStatusRow>();
+        foreach (var source in sources)
         {
             var health = await source.Probe(cancellationToken).ConfigureAwait(false);
             var described = source.Describe();
-            rows.Add(new SourceStatusRow(described.Id, described.Kind, Repo: null, health.State, health.Detail, health.Code, LastSync: null, Records: 0));
+            var row = new SourceStatusRow(described.Id, described.Kind, Repo: null, health.State, health.Detail, health.Code, LastSync: null, Records: 0);
+            if (described.Kind == SourceKind.Intent)
+            {
+                var state = await intents.State(described.Id, cancellationToken).ConfigureAwait(false);
+                if (state.IsError)
+                {
+                    return state.Error;
+                }
+
+                row = row with { Sync = SyncStatus(state.Value) };
+            }
+
+            rows.Add(row);
         }
 
-        return new SourcesView(rows, settings.Value.SessionsEnabled, clock.GetUtcNow());
+        return rows;
+    }
+
+    /// <summary>Unavailable after a failed run; labeling being off (042) only queues the extraction, so the links synced and it stays ok.</summary>
+    private static SourceSyncStatus SyncStatus(IntentSourceState state)
+    {
+        var failed = state.LastError is { } code && code != ContextErrors.LabelingUnavailable.Code;
+        var health = failed ? SourceState.Unavailable : state.LastSync is null ? SourceState.Degraded : SourceState.Ok;
+        return new SourceSyncStatus(state.LastSync, health, state.Records, state.Links, state.Decisions, state.Queued, state.LastError);
     }
 
     private static SourceStatusRow Row(ContextRepoName repo, DocIndexStatus status)

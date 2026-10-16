@@ -11,6 +11,7 @@ namespace Aw.Sindri.Features.ContextCalls;
 internal static class ContextChecks
 {
     internal const string SourcesName = "context:sources";
+    internal const string SyncName = "context:sync";
     internal const string McpScopeName = "context:mcp-scope";
 
     /// <summary>No approved profile: nothing to check yet.</summary>
@@ -45,6 +46,27 @@ internal static class ContextChecks
         return new DoctorCheck(SourcesName, CheckState.Ok, view.Value.SessionsEnabled
             ? $"{counts}; session reads on"
             : $"{counts}; session reads off (context.sessions.enabled), so MCP calls answer {ContextErrors.SessionsDisabled.Code}", Fix: null);
+    }
+
+    /// <summary>The intent sources' sync (S-5B): warn when one was never synced or its last run failed; nothing to check without an intent source or a profile.</summary>
+    internal static DoctorCheck Sync(Result<SourcesView> view)
+    {
+        if (view.IsError)
+        {
+            return new DoctorCheck(SyncName, CheckState.Ok, "no sources to check yet", Fix: null);   // context:sources already reports why
+        }
+
+        var intent = view.Value.Sources.Where(r => r.Kind == SourceKind.Intent).ToList();
+        if (intent.Count == 0)
+        {
+            return new DoctorCheck(SyncName, CheckState.Ok, "no intent source in the profile, so nothing syncs", Fix: null);
+        }
+
+        var problems = intent.Select(r => (r.Source.Value, r.Sync)).Where(p => p.Sync is null or { LastSync: null } or { State: SourceState.Unavailable })
+            .Select(p => p.Sync?.Code is { } code ? $"{p.Value} last sync failed ({code})" : $"{p.Value} never synced").ToList();
+        return problems.Count > 0
+            ? new DoctorCheck(SyncName, CheckState.Warn, string.Join("; ", problems), "name the context-sync service under services: in the profile, or run it once, then sindri context sources status")
+            : new DoctorCheck(SyncName, CheckState.Ok, $"{intent.Count} intent source(s) synced", Fix: null);
     }
 
     /// <summary>Warn on any user-wide sindri entry (026) or a provider file that couldn't be checked.</summary>

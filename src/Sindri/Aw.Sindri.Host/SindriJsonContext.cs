@@ -204,6 +204,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ProbeReport))]
 [JsonSerializable(typeof(ProbeRun))]
 [JsonSerializable(typeof(SourcesView))]
+[JsonSerializable(typeof(SourceSyncStatus))]
 [JsonSerializable(typeof(McpToolError))]
 [JsonSerializable(typeof(McpSourcesAnswer))]
 [JsonSerializable(typeof(RegisterMcpResponse))]
