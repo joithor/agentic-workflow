@@ -121,6 +121,21 @@ public sealed class NeedsYouHomeTests : IDisposable
         Assert.Equal("PARKED", chip.GetVisualDescendants().OfType<TextBlock>().First().Text);
     });
 
+    // Proof B5: the in-app Reduce motion switch, through the shell's appearance path, swaps the pulse for the outline and "new".
+    [Fact]
+    public Task Reduce_motion_draws_the_outline_and_the_word_new_and_no_pulse() => OnUi(async () =>
+    {
+        var (window, shell) = await WithRows(2);
+        var frame = Rows(window)[0].GetVisualDescendants().OfType<Border>().First(b => string.Equals(b.Name, "RowFrame", StringComparison.Ordinal));
+        Assert.Contains(frame.Classes, c => string.Equals(c, "pulsing", StringComparison.Ordinal));
+
+        shell.ApplyAppearance(new ViewModels.Settings.AppearanceSettings(1.0, ReduceMotion: true));
+        Settle(window);
+
+        Assert.Equal((false, true), (frame.Classes.Contains("pulsing"), frame.Classes.Contains("outlined")));
+        Assert.True(Named<TextBlock>(Rows(window)[0], "NewWord").IsEffectivelyVisible);
+    });
+
     [Fact]
     public Task Seven_rows_show_five_then_Show_all_expands_in_place() => OnUi(async () =>
     {

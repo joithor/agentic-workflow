@@ -13,6 +13,7 @@ internal sealed partial class ShellViewModel
     {
         NeedsYou.TextScale = appearance.TextScale;
         Strip.TextScale = appearance.TextScale;
+        NeedsYou.Seen.SetInAppReduceMotion(appearance.ReduceMotion);
     }
 
     /// <summary>Remembers the sheet's width (clamped to 420–760 when it's next read).</summary>
