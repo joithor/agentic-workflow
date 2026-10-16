@@ -57,10 +57,14 @@ public sealed class UiContextStartupTests
         var app = OnBareThread(() => SindriApp.Create(platform, new FakeTimeProvider(A.Noon)));
 
         var thrown = await Record.ExceptionAsync(() => Task.Run(() => motion.Set(reduce: true), TestContext.Current.CancellationToken));
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        var reduced = await Avalonia.Headless.HeadlessUnitTestSession.GetOrStartForAssembly(typeof(UiContextStartupTests).Assembly).Dispatch(() =>
+        {
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            return app.Shell!.NeedsYou.Seen.ReducedMotion;
+        }, TestContext.Current.CancellationToken);
 
         Assert.Null(thrown);
-        Assert.True(app.Shell!.NeedsYou.Seen.ReducedMotion);
+        Assert.True(reduced);
     }
 
     [Fact]
