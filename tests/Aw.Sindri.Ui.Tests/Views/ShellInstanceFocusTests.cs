@@ -39,16 +39,6 @@ public sealed class ShellInstanceFocusTests : FrameHost
     private static List<Button> Buttons(Window window, string name) =>
         [.. window.GetVisualDescendants().OfType<Button>().Where(b => string.Equals(b.Name, name, StringComparison.Ordinal) && b.IsEffectivelyVisible)];
 
-    private async Task<(Window Window, ShellViewModel Shell)> Opened(string scenario, FramePhase phase = FramePhase.Shown, RouteAnswer? served = null)
-    {
-        var detail = FixtureInstances.Detail(scenario);
-        var (window, shell) = await Connected(s => s.Workflows.Groups.Count > 0, width: 1600, height: 1000);
-        Server.WorkflowAnswer = served;   // after connecting: the list behind the sheet is read first
-        shell.OpenInstance(detail.Address, detail.Id);
-        await Until(window, () => shell.Instance.Phase == phase);
-        return (window, shell);
-    }
-
     private async Task<(Window Window, ShellViewModel Shell, string Address)> OpenedFromTheWorkflowsRow(string scenario, double width = 1600)
     {
         var address = FixtureInstances.Detail(scenario).Address;
@@ -60,24 +50,6 @@ public sealed class ShellInstanceFocusTests : FrameHost
         await Until(window, () => shell.Instance.Phase == FramePhase.Shown && string.Equals(shell.Instance.Address, address, StringComparison.Ordinal));
         return (window, shell, address);
     }
-
-    [Theory]
-    [InlineData("project-build", "InstanceOpenIn")]
-    [InlineData("incident-loop", "ExpandedCopyStatus")]
-    public Task A_link_open_focuses_the_frames_first_read_action(string scenario, string expected) => OnUi(async () =>
-    {
-        var (window, _) = await Opened(scenario);
-
-        await Until(window, () => OnNamed(window, expected), $"focus is on {FocusedButton(window)?.Name}");
-    });
-
-    [Fact]
-    public Task A_link_open_that_is_not_found_focuses_Back() => OnUi(async () =>
-    {
-        var (window, _) = await Opened("project-build", FramePhase.NotFound, RouteAnswer.Problem("workflow-instance", "not-found"));
-
-        await Until(window, () => OnNamed(window, "InstanceBack"), $"focus is on {FocusedButton(window)?.Name}");
-    });
 
     [Fact]
     public Task Enter_again_on_the_row_whose_frame_is_open_moves_into_the_frame() => OnUi(async () =>
@@ -99,26 +71,14 @@ public sealed class ShellInstanceFocusTests : FrameHost
         var (window, shell, address) = await OpenedFromTheWorkflowsRow("project-build");
         var child = shell.Instance.Children!.Groups.Single().Streams[0].Rows[0];
         Click(Buttons(window, "ChildRowOpen")[0]);
-        await Until(window, () => string.Equals(shell.Instance.Address, child.Address, StringComparison.Ordinal));
+        await Until(window, () => string.Equals(shell.Instance.Address, child.Address, StringComparison.Ordinal) && shell.Instance.Phase != FramePhase.Loading);
+        await Until(window, () => FocusedButton(window) is { } held && Named<Control>(window, "InstanceFrame").IsVisualAncestorOf(held), "focus is not in the child's frame");
 
         Click(Named<Button>(window, "SheetBack"));
         await Until(window, () => string.Equals(shell.Instance.Address, address, StringComparison.Ordinal) && OnChildEntry(window, child.Address), "focus did not return to the child entry");
 
         Press(window, Key.Escape);
         await Until(window, () => !shell.IsSheetOpen && OnWorkflowRow(window, address), "focus did not return to the Workflows row");
-    });
-
-    [Fact]
-    public Task Esc_during_the_cancel_confirm_answers_Keep_and_returns_to_the_ask() => OnUi(async () =>
-    {
-        var (window, shell) = await Opened("incident-loop");
-        Click(Buttons(window, "CommandAsk").Single());
-        await Until(window, () => shell.Instance.Expanded!.IsConfirmingCancel);
-
-        Press(window, Key.Escape);
-
-        Assert.Equal((false, true), (shell.Instance.Expanded!.IsConfirmingCancel, shell.IsSheetOpen));
-        await Until(window, () => OnNamed(window, "CommandAsk"), $"focus is on {FocusedButton(window)?.Name}");
     });
 
     [Fact]

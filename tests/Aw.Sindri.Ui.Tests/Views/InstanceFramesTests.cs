@@ -23,9 +23,14 @@ public sealed class InstanceFramesTests : FrameHost
 
     private static InstanceDetail Detail(string scenario) => FixtureInstances.Detail(scenario);
 
-    private async Task<(Window Window, ShellViewModel Shell)> Opened(string scenario, FramePhase phase = FramePhase.Shown)
+    private async Task<(Window Window, ShellViewModel Shell)> Opened(string scenario, FramePhase phase = FramePhase.Shown, RouteAnswer? served = null)
     {
         var (window, shell) = await Connected(width: 1600, height: 1000);
+        if (served is not null)
+        {
+            Server.WorkflowAnswer = served;   // after connecting: the list behind the sheet is read first
+        }
+
         shell.OpenInstance(Detail(scenario).Address, Detail(scenario).Id);
         await Until(window, () => shell.Instance.Phase == phase);
         Settle(window);
@@ -40,10 +45,18 @@ public sealed class InstanceFramesTests : FrameHost
 
     private static void Frame(Window window, string name) => Frame(window, name, Prefix);
 
+    private static bool OnNamed(Window window, string name) => string.Equals((window.FocusManager?.GetFocusedElement() as Button)?.Name, name, StringComparison.Ordinal);
+
+    // Opening a frame (a link, no row behind it) puts focus on its first read action (review run 1, V4; UI spec §11.2).
+    private static Task FocusedOn(Window window, string name) => Until(window, () => OnNamed(window, name), $"focus is on {(window.FocusManager?.GetFocusedElement() as Control)?.Name}");
+
+    private static void Click(Button button) => button.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
     [Fact]
     public Task u8_frame_project_build() => OnUi(async () =>
     {
-        var (window, shell) = await Opened("project-build");
+        var (window, shell) = await Opened("project-build", served: PointerTo(Detail("item-produce")));
+        await FocusedOn(window, "InstanceOpenIn");
 
         var detail = Detail("project-build");
         Assert.Equal(detail.States.Count, Texts(window, "StateNodeText").Count);
@@ -57,17 +70,45 @@ public sealed class InstanceFramesTests : FrameHost
         Expect.Sequence(shell.Instance.Tabs!.Tabs.Select(t => t.Text), texts);
         Expect.Sequence(shell.Instance.Tabs.Tabs.Select(t => t.Phase), phases);
         Frame(window, "project-build");
+
+        // the child opened from the status line's pointer: its frame takes focus, and Back returns to the pointer (a11y-r2-5)
+        var (parent, parentAnswer) = (shell.Instance.Address, Server.WorkflowAnswer);
+        Server.WorkflowAnswer = null;   // the child is read from its own golden
+        Click(Named<Button>(window, "ExpandedChild"));
+        await Until(window, () => shell.Instance.Address == Detail("item-produce").Address && shell.Instance.Phase == FramePhase.Shown);
+        await FocusedOn(window, shell.Instance.InitialFocus == FrameFocus.OpenIn ? "InstanceOpenIn" : "ExpandedCopyStatus");
+        Server.WorkflowAnswer = parentAnswer;
+        Click(Named<Button>(window, "SheetBack"));
+        await FocusedOn(window, "ExpandedChild");
+        Assert.Equal(parent, shell.Instance.Address);
     });
+
+    // The project-build golden with a child pointer on its status (no instance golden shows one); every read answers it.
+    private static RouteAnswer PointerTo(InstanceDetail child)
+    {
+        var body = GoldenFiles.Node("workflow-instance", "project-build");
+        body["current"]!["status"]!["child"] = new JsonObject { ["id"] = child.Id, ["address"] = child.Address, ["state"] = "parked", ["reason"] = null };
+        return new RouteAnswer(HttpStatusCode.OK, body.ToJsonString());
+    }
 
     [Fact]
     public Task u8_frame_incident_loop() => OnUi(async () =>
     {
-        var (window, _) = await Opened("incident-loop");
+        var (window, shell) = await Opened("incident-loop");
+        await FocusedOn(window, "ExpandedCopyStatus");
 
         Assert.Contains(Texts(window, "StateNodeLink"), t => t.Text == Labels.LoopMark);
         Assert.Equal(Labels.AvailableWithP10a, Named<TextBlock>(window, "ExpandedAttachChip").Text);
         Assert.Empty(Buttons(window, "LockButton"));
         Frame(window, "incident-loop");
+
+        // Esc during the cancel confirm answers Keep and returns focus to the ask, with the sheet still open (V5)
+        Click(Buttons(window, "CommandAsk").Single());
+        await Until(window, () => shell.Instance.Expanded!.IsConfirmingCancel);
+        window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.None, keySymbol: null);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal((false, true), (shell.Instance.Expanded!.IsConfirmingCancel, shell.IsSheetOpen));
+        await FocusedOn(window, "CommandAsk");
     });
 
     [Fact]
@@ -138,8 +179,8 @@ public sealed class InstanceFramesTests : FrameHost
     [Fact]
     public Task u8_frame_not_found() => OnUi(async () =>
     {
-        Server.WorkflowAnswer = RouteAnswer.Problem("workflow-instance", "not-found");
-        var (window, _) = await Opened("project-build", FramePhase.NotFound);
+        var (window, _) = await Opened("project-build", FramePhase.NotFound, RouteAnswer.Problem("workflow-instance", "not-found"));
+        await FocusedOn(window, "InstanceBack");
 
         Assert.Equal((string)GoldenFiles.Node("workflow-instance", "not-found")["detail"]!, Named<TextBlock>(window, "InstanceProblem").Text);
         Assert.Equal((true, false, true), (Visible(window, "InstanceProblem"), Visible(window, "InstanceBand"), Visible(window, "InstanceBack")));
