@@ -110,17 +110,29 @@ watch_reported_id() { # [seconds]: the wait (default AW_META_ID_WAIT); a second 
 # cleared) before its agent runs, and the watcher releases it once the id is recorded, refused or timed out.
 start_lock="$ids/.reported.lock"
 acquire_start_lock() {
-  local deadline=$((SECONDS + ${AW_META_ID_WAIT:-30} * 10)) holder nopid=0
-  until mkdir "$start_lock" 2> /dev/null; do
+  local deadline=$((SECONDS + ${AW_META_ID_WAIT:-30} * 10)) holder nopid=0 mine stale
+  mine="$start_lock.new.$$"
+  while :; do
+    # The lock never exists without its pid: build the directory (pid inside) under a private name, then rename it into
+    # place. rename(2) fails while the target is a non-empty directory, so only one starter wins.
+    rm -f "$mine/pid" 2> /dev/null; rmdir "$mine" 2> /dev/null
+    mkdir "$mine" && echo "$$" > "$mine/pid"
+    if mv -T "$mine" "$start_lock" 2> /dev/null; then return 0; fi
     holder="$(cat "$start_lock/pid" 2> /dev/null)"
-    if [ -z "$holder" ]; then nopid=$((nopid + 1)); else nopid=0; fi   # no pid for 2 s: the holder died between mkdir and writing it
+    if [ -z "$holder" ]; then nopid=$((nopid + 1)); else nopid=0; fi   # a lock from an older build can lack its pid: stale after 2 s
     if { [ -n "$holder" ] && ! kill -0 "$holder" 2> /dev/null; } || [ "$nopid" -ge 20 ]; then
-      rm -f "$start_lock/pid"; rmdir "$start_lock" 2> /dev/null; nopid=0; continue
+      # Break a stale lock by renaming it away first: only one waiter's mv succeeds, so nobody removes a lock that a
+      # faster waiter has just re-created. If what was renamed is not the dead holder's lock, put it back.
+      stale="$start_lock.stale.$$"
+      if mv -T "$start_lock" "$stale" 2> /dev/null; then
+        if [ "$(cat "$stale/pid" 2> /dev/null)" = "$holder" ]; then rm -f "$stale/pid"; rmdir "$stale" 2> /dev/null
+        else mv -T "$stale" "$start_lock" 2> /dev/null || { rm -f "$stale/pid"; rmdir "$stale" 2> /dev/null; }; fi
+      fi
+      nopid=0; continue
     fi
-    if [ "$SECONDS" -ge "$deadline" ]; then echo "meta-lane: another lane's start did not finish; starting $lane anyway" >&2; return 1; fi
+    if [ "$SECONDS" -ge "$deadline" ]; then echo "meta-lane: another lane's start did not finish; starting $lane anyway" >&2; rm -f "$mine/pid"; rmdir "$mine" 2> /dev/null; return 1; fi
     sleep 0.1
   done
-  echo "$$" > "$start_lock/pid"
 }
 
 id=""; mode=fresh; write_id=0
