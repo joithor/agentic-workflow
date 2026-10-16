@@ -36,11 +36,25 @@ public interface IIntentStore
     /// <returns>The queued record keys.</returns>
     public ValueTask<Result<IReadOnlyList<RecordKey>>> Queued(SourceId source, CancellationToken cancellationToken);
 
+    /// <summary>The records of a source whose links were last computed against the given map version.</summary>
+    /// <param name="source">The source.</param>
+    /// <param name="mapVersion">The map version.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The record keys.</returns>
+    public ValueTask<Result<IReadOnlyList<RecordKey>>> LinkedUnder(SourceId source, int mapVersion, CancellationToken cancellationToken);
+
     /// <summary>Replaces a record's decisions and their edges, and marks its version extracted (only if the record still has that version).</summary>
     /// <param name="batch">What extraction found.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
     /// <returns>Unit, or SND-CONTEXT-004.</returns>
     public ValueTask<Result<Unit>> SaveDecisions(DecisionBatch batch, CancellationToken cancellationToken);
+
+    /// <summary>Queues a record again without touching its decisions (only if the record still has that version): a done record whose re-extraction was held back, so the next sync tries it again.</summary>
+    /// <param name="record">The record.</param>
+    /// <param name="version">The record version that was held back.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    /// <returns>Unit, or SND-CONTEXT-004.</returns>
+    public ValueTask<Result<Unit>> Requeue(RecordKey record, string version, CancellationToken cancellationToken);
 
     /// <summary>Stores a checked pair (a pair is stored once).</summary>
     /// <param name="conflict">The pair and its verdict.</param>

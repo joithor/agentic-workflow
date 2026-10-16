@@ -9,7 +9,8 @@ CREATE TABLE intent_record (
     aliases          TEXT NOT NULL,
     fetched_at       TEXT NOT NULL,
     extracted_version TEXT,
-    extraction_state TEXT NOT NULL CHECK (extraction_state IN ('queued', 'done', 'none'))
+    extraction_state TEXT NOT NULL CHECK (extraction_state IN ('queued', 'done', 'none')),
+    linked_map       INTEGER NOT NULL DEFAULT 0   -- the map version its links were last computed against; a sync skips an unchanged record only under the same one
 ) STRICT;
 
 CREATE INDEX intent_record_by_source ON intent_record (source);

@@ -17,9 +17,9 @@ namespace Aw.Context.Features.SyncSources;
 /// version is new are fetched, cleaned at the ingest boundary and linked by <see cref="RulesLinker"/>. Each record is committed with its links and its
 /// decisions are extracted before the next one is fetched, so a run that the time cap stops has finished every record it fetched, and the next run skips them
 /// as unchanged (a slow source can't starve: every run completes at least one record). A node's cursor 'mapVersion:nodesDone' moves when the node is through,
-/// so a stopped run (the source down, the time cap) resumes where it was and a replay writes nothing new. A map version change re-links every record: until a walk
-/// under the new version finishes, the cursor carries a relink marker ('mapVersion:nodesDone:r') and no record is skipped as unchanged, so a run that stops early doesn't
-/// leave the records it never reached with their old-map links. A finished walk drops the marker, and the runs after it skip unchanged records again.
+/// so a stopped run (the source down, the time cap) resumes where it was and a replay writes nothing new. A map version change re-links every record,
+/// across runs: a record is skipped as unchanged only when its upstream version is the stored one and its links were computed against this map version
+/// (<see cref="IntentPage.MapVersion"/>), so a run that stops early doesn't leave the records it never reached with their old-map links, and no record is re-fetched twice for one map.
 /// </summary>
 internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (ContextSettings Settings, Scrubbers Scrubbers) context, (IIntentStore Store, IModelPort Model, TimeProvider Clock) ports)
 {
@@ -30,7 +30,6 @@ internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (Cont
     private int _unchanged;
     private int _linked;
     private int _unlinked;
-    private bool _relinking;
 
     private DecisionPass Decisions => field ??= new(ports.Store, ports.Model, context.Settings.Labeling, (context.Scrubbers.Ingest, ports.Clock));
 
@@ -47,10 +46,9 @@ internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (Cont
 
         var version = map.Snapshot.Version.Number;
         var nodes = map.Graph.Nodes.Where(n => n.Key.Kind is not (NodeKind.Record or NodeKind.Decision)).OrderBy(n => n.Key.Value, StringComparer.Ordinal).ToList();
-        var (offset, sameMap) = Resume(state.Value.Cursor, version, nodes.Count);
-        _relinking = !sameMap;
+        var offset = Resume(state.Value.Cursor, version, nodes.Count);
         var known = layer.Value.Records.Where(r => r.Source == _id).ToDictionary(r => r.Key.Value, StringComparer.Ordinal);
-        var stored = sameMap ? await StoredVersions(known, cancellationToken).ConfigureAwait(false) : [];
+        var stored = await StoredVersions(known, version, cancellationToken).ConfigureAwait(false);
         var code = await Walk(nodes, offset, (version, stored, known), cancellationToken).ConfigureAwait(false);
         code ??= Decisions.Failure ?? (Decisions.HeldBack ? ContextErrors.LabelingUnavailable.Code : null);
         if (code is not null)
@@ -61,29 +59,26 @@ internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (Cont
         return await Summary(code, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>The versions already linked; records still waiting for extraction are left out, so they are fetched again (their text isn't stored).</summary>
-    private async ValueTask<Dictionary<string, string>> StoredVersions(Dictionary<string, IntentRecord> known, CancellationToken cancellationToken)
+    /// <summary>
+    /// The versions already linked under this map version; records linked under an older map are left out, so they are fetched and linked again, and so are records still
+    /// waiting for extraction (their text isn't stored).
+    /// </summary>
+    private async ValueTask<Dictionary<string, string>> StoredVersions(Dictionary<string, IntentRecord> known, int mapVersion, CancellationToken cancellationToken)
     {
+        var current = await ports.Store.LinkedUnder(_id, mapVersion, cancellationToken).ConfigureAwait(false);
+        var linkedNow = current.IsError ? [] : current.Value.Select(k => k.Value).ToHashSet(StringComparer.Ordinal);
         var queued = context.Settings.Labeling.Enabled ? await ports.Store.Queued(_id, cancellationToken).ConfigureAwait(false) : Results.Success<IReadOnlyList<RecordKey>>([]);
         var waiting = queued.IsError ? [] : queued.Value.Select(k => k.Value).ToHashSet(StringComparer.Ordinal);
-        return new Dictionary<string, string>(known.Where(p => !waiting.Contains(p.Key)).Select(p => KeyValuePair.Create(p.Key, p.Value.Version)), StringComparer.Ordinal);
+        return new Dictionary<string, string>(known.Where(p => linkedNow.Contains(p.Key) && !waiting.Contains(p.Key)).Select(p => KeyValuePair.Create(p.Key, p.Value.Version)), StringComparer.Ordinal);
     }
 
-    private static (int Offset, bool SameMap) Resume(string? cursor, int version, int total)
+    private static int Resume(string? cursor, int version, int total)
     {
-        var (v, done, relink) = ParseCursor(cursor);
-        return (v == version && done > 0 && done < total ? done : 0, v == version && !relink);
-    }
-
-    /// <summary>'mapVersion:nodesDone' or 'mapVersion:nodesDone:r' (a relink after a map change is still under way); anything else reads as no cursor.</summary>
-    private static (int Version, int Done, bool Relink) ParseCursor(string? cursor)
-    {
-        var parts = cursor?.Split(':') ?? [];
-        var relink = parts is [_, _, "r"];
-        return parts.Length is 2 or 3 && (parts.Length == 2 || relink) && int.TryParse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture, out var v)
-            && int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out var d)
-            ? (v, d, relink)
-            : (-1, 0, false);
+        var parts = cursor?.Split(':');
+        var read = parts is [var mv, var done] && int.TryParse(mv, NumberStyles.None, CultureInfo.InvariantCulture, out var v) && int.TryParse(done, NumberStyles.None, CultureInfo.InvariantCulture, out var d)
+            ? (v, d)
+            : (-1, 0);
+        return read.Item1 == version && read.Item2 > 0 && read.Item2 < total ? read.Item2 : 0;
     }
 
     private async ValueTask<string?> Walk(List<GraphNode> nodes, int offset, (int Version, Dictionary<string, string> Stored, Dictionary<string, IntentRecord> Known) seen, CancellationToken ct)
@@ -129,7 +124,7 @@ internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (Cont
             return failure;
         }
 
-        var cursor = string.Create(CultureInfo.InvariantCulture, $"{walk.Seen.Version}:{(stopped ? index : index + 1)}{(_relinking ? ":r" : string.Empty)}");   // a node the cap cut short is walked again: its stored hits are skipped as unchanged
+        var cursor = string.Create(CultureInfo.InvariantCulture, $"{walk.Seen.Version}:{(stopped ? index : index + 1)}");   // a node the cap cut short is walked again: its stored hits are skipped as unchanged
         var committed = await ports.Store.CommitPage(new IntentPage(_id, [], [], cursor, ports.Clock.GetUtcNow()), ct).ConfigureAwait(false);
         return committed.IsError ? committed.Error.Code : stopped ? ContextErrors.SyncCapped.Code : null;   // what was committed stays; a held-back record stays queued for the next run
     }
@@ -166,7 +161,7 @@ internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (Cont
             }
 
             var one = Linked(hit, fetched.Value, seen.Known);
-            var committed = await ports.Store.CommitPage(new IntentPage(_id, [one.Record], one.Links, Cursor: null, ports.Clock.GetUtcNow()), ct).ConfigureAwait(false);
+            var committed = await ports.Store.CommitPage(new IntentPage(_id, [one.Record], one.Links, Cursor: null, ports.Clock.GetUtcNow()) { MapVersion = seen.Version }, ct).ConfigureAwait(false);
             if (committed.IsError)
             {
                 return (false, committed.Error.Code);

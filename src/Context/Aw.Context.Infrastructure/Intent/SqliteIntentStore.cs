@@ -142,6 +142,27 @@ internal sealed class SqliteIntentStore(ContextDatabase database) : IIntentStore
         }
     }
 
+    public async ValueTask<Result<IReadOnlyList<RecordKey>>> LinkedUnder(SourceId source, int mapVersion, CancellationToken cancellationToken)
+    {
+        var readable = await database.Readable(cancellationToken).ConfigureAwait(false);
+        if (readable.IsError || readable.Value is not { } sessions)
+        {
+            return readable.IsError ? readable.Error : Results.Success<IReadOnlyList<RecordKey>>([]);
+        }
+
+        var read = await sessions.BeginRead(cancellationToken).ConfigureAwait(false);
+        if (read.IsError)
+        {
+            return ContextDatabase.Translate(read.Error);
+        }
+
+        await using (read.Value.ConfigureAwait(false))
+        {
+            var keys = await SqliteQueries.List(read.Value, new SqlStatement(IntentSql.LinkedKeys, c => c.Bind("@source", source.Value).Bind("@map", mapVersion)), IntentMappers.Key, cancellationToken).ConfigureAwait(false);
+            return keys.IsError ? ContextDatabase.Translate(keys.Error) : Results.Success(keys.Value);
+        }
+    }
+
     public ValueTask<Result<Unit>> SaveDecisions(DecisionBatch batch, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(batch);
@@ -163,6 +184,16 @@ internal sealed class SqliteIntentStore(ContextDatabase database) : IIntentStore
             }
 
             return Unit.Value;
+        }, cancellationToken);
+    }
+
+    public ValueTask<Result<Unit>> Requeue(RecordKey record, string version, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(version);
+        return Write(async (session, token) =>
+        {
+            var done = await SqliteQueries.Execute(session, new SqlStatement(IntentSql.Touch, c => c.Bind("@record", record.Value).Bind("@version", version)), token).ConfigureAwait(false);
+            return done.IsError ? done.Error : Unit.Value;
         }, cancellationToken);
     }
 
@@ -231,6 +262,10 @@ internal sealed class SqliteIntentStore(ContextDatabase database) : IIntentStore
             yield return new SqlStatement(IntentSql.UpsertRecord, c => c.Bind("@key", record.Key.Value).Bind("@source", record.Source.Value).Bind("@version", record.Version)
                 .Bind("@title", record.Title).Bind("@aliases", IntentMappers.Joined(record.Aliases)).Bind("@at", page.At));
             yield return new SqlStatement(IntentSql.DeleteLinks, c => c.Bind("@record", record.Key.Value));
+            if (page.MapVersion > 0)
+            {
+                yield return new SqlStatement(IntentSql.MarkLinked, c => c.Bind("@record", record.Key.Value).Bind("@map", page.MapVersion));
+            }
         }
 
         foreach (var link in page.Links)

@@ -593,11 +593,12 @@ the row, and a reply the pinned shape can't read degrades onyx (`010` with cause
   hand is always extracted (the cap never cuts a model call), so no record waits queued because of the cap. A node the cap cuts short keeps its
   cursor at the node and is walked again, its stored hits skipped as unchanged. A capped run records `059` as the source's last code without
   failing it (status: `ok`/`degraded` with code `059`; the next run continues and clears it). A finished walk commits the end cursor so trailing
-  nodes without search terms don't stall the next run. A map version change re-links every record, across runs: until a walk under the new version finishes, the cursor carries a relink marker
-  (`mapVersion:nodesDone:r`) and no record is skipped as unchanged, so a run that stops early (the cap, the source down) leaves nothing with old-map links;
-  the finished walk drops the marker and later runs skip unchanged records again. A record stays queued until its conflict checks are through too (a stopped check, the token cap
+  nodes without search terms don't stall the next run. A map version change re-links every record, across runs: a hit is skipped as unchanged only when its upstream version is the stored one and its links were
+  computed against the current map version (`intent_record.linked_map`, set by each record's page; `IIntentStore.LinkedUnder`), so a run that stops early (the cap, the source
+  down) leaves nothing with old-map links, and each record is re-fetched once per map version, not on every run. A record stays queued until its conflict checks are through too (a stopped check, the token cap
   or a model failure leaves the pair to the next time the walk reaches the record; a save with the checks pending queues a done record again, so a map
-  change that re-extracts it is retried too); a re-extraction keeps the verdicts of pairs whose decision keys survive and never replaces a human
+  change that re-extracts it is retried too; a done record whose re-extraction is held back (the token cap, labeling off, a model failure) is queued again by
+  `IIntentStore.Requeue` and keeps its old decisions until then); a re-extraction keeps the verdicts of pairs whose decision keys survive and never replaces a human
   decision (`DecisionBatch.Pending`). A verdict answer that can't be read leaves the pair unanswered (`unread`, `tries` 1-2, the record stays queued,
   `057` counted); the third unreadable answer marks it `refused` and it is not asked again. `IContextEngine.Sync(source?, scope)` returns a `SyncReport` of counts and codes only.
 - Reads: `MapReader` merges the layer for every graph read; the `item` shape (`context query --item <KEY>`) anchors on the record a tracker

@@ -39,7 +39,7 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
             }
             else if (!labeling.Enabled || _stopped)
             {
-                HeldBack = true;
+                await HoldBack(record, cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -53,6 +53,7 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
         var asked = await Ask(ModelPurpose.DecisionExtraction, DecisionExtractor.Prompt(record.Record.Key, record.Text, linked), ExtractAnswerTokens, cancellationToken).ConfigureAwait(false);
         if (asked is null)
         {
+            await HoldBack(record, cancellationToken).ConfigureAwait(false);
             return;
         }
 
@@ -77,6 +78,21 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
                 Failure = saved.Error.Code;
                 _stopped = true;
             }
+        }
+    }
+
+    /// <summary>
+    /// A record left unextracted this run waits for the next: a record already done (a map change re-fetched it) is queued again, keeping its old decisions until then,
+    /// so the next run re-extracts it against the new map instead of skipping it as unchanged.
+    /// </summary>
+    private async ValueTask HoldBack(PendingRecord record, CancellationToken cancellationToken)
+    {
+        HeldBack = true;
+        var queued = await store.Requeue(record.Record.Key, record.Record.Version, cancellationToken).ConfigureAwait(false);
+        if (queued.IsError)
+        {
+            Failure = queued.Error.Code;
+            _stopped = true;
         }
     }
 

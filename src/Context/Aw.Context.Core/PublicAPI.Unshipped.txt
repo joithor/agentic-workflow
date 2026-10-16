@@ -1318,6 +1318,8 @@ Aw.Context.Core.Linking.IIntentStore.Queued(Aw.Context.Core.Sources.SourceId sou
 Aw.Context.Core.Linking.IIntentStore.RecordFailure(Aw.Context.Core.Sources.SourceId source, string! code, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Context.Core.Linking.IIntentStore.SaveConflict(Aw.Context.Core.Linking.DecisionConflict! conflict, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Context.Core.Linking.IIntentStore.SaveDecisions(Aw.Context.Core.Linking.DecisionBatch! batch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Context.Core.Linking.IIntentStore.LinkedUnder(Aw.Context.Core.Sources.SourceId source, int mapVersion, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.RecordKey>!>!>
+Aw.Context.Core.Linking.IIntentStore.Requeue(Aw.Context.Core.Sources.RecordKey record, string! version, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Context.Core.Linking.IIntentStore.State(Aw.Context.Core.Sources.SourceId source, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Linking.IntentSourceState!>!>
 Aw.Context.Core.Linking.IntentCommit
 Aw.Context.Core.Linking.IntentCommit.<Clone>$() -> Aw.Context.Core.Linking.IntentCommit!
@@ -1379,6 +1381,8 @@ Aw.Context.Core.Linking.IntentPage.Cursor.init -> void
 Aw.Context.Core.Linking.IntentPage.Deconstruct(out Aw.Context.Core.Sources.SourceId Source, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.IntentRecord!>! Records, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.IntentLink!>! Links, out string? Cursor, out System.DateTimeOffset At) -> void
 Aw.Context.Core.Linking.IntentPage.Equals(Aw.Context.Core.Linking.IntentPage? other) -> bool
 Aw.Context.Core.Linking.IntentPage.IntentPage(Aw.Context.Core.Sources.SourceId Source, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.IntentRecord!>! Records, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.IntentLink!>! Links, string? Cursor, System.DateTimeOffset At) -> void
+Aw.Context.Core.Linking.IntentPage.MapVersion.get -> int
+Aw.Context.Core.Linking.IntentPage.MapVersion.init -> void
 Aw.Context.Core.Linking.IntentPage.Links.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.IntentLink!>!
 Aw.Context.Core.Linking.IntentPage.Links.init -> void
 Aw.Context.Core.Linking.IntentPage.Records.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.IntentRecord!>!

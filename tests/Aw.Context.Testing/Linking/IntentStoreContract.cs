@@ -278,6 +278,46 @@ public abstract class IntentStoreContract
         Expect.That(done.Count == 0 && again.Select(k => k.Value).SequenceEqual([_r103.Value], StringComparer.Ordinal) && state.Queued == 1, test, $"{done.Count} queued when done, {again.Count} after a pending save, state {state}");
     }
 
+    /// <summary>A record is linked under the map version of the page that committed it; a later page under another version moves it.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task LinkedUnder_lists_the_records_whose_page_carried_that_map_version()
+    {
+        const string test = nameof(LinkedUnder_lists_the_records_whose_page_carried_that_map_version);
+        var store = CreateStore();
+        _ = Expect.Ok(await store.CommitPage(Page("c1", [Record(_r103, "v1", "SPL-103")], [Link(_r103, "feature:a")]) with { MapVersion = 1 }, None), test);
+        var underOne = Expect.Ok(await store.LinkedUnder(_onyx, 1, None), test);
+        var underTwoBefore = Expect.Ok(await store.LinkedUnder(_onyx, 2, None), test);
+
+        _ = Expect.Ok(await store.CommitPage(Page("c2", [Record(_r103, "v1", "SPL-103")], [Link(_r103, "feature:a")]) with { MapVersion = 2 }, None), test);
+        var underOneAfter = Expect.Ok(await store.LinkedUnder(_onyx, 1, None), test);
+        var underTwo = Expect.Ok(await store.LinkedUnder(_onyx, 2, None), test);
+
+        Expect.That(underOne.Count == 1 && underTwoBefore.Count == 0 && underOneAfter.Count == 0 && underTwo.Select(k => k.Value).SequenceEqual([_r103.Value], StringComparer.Ordinal), test,
+            $"{underOne.Count}/{underTwoBefore.Count} before, {underOneAfter.Count}/{underTwo.Count} after the second page");
+    }
+
+    /// <summary>Requeue queues a done record again and leaves its decisions and edges alone; a version that moved on is ignored.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Requeue_queues_a_done_record_again_and_keeps_its_decisions()
+    {
+        const string test = nameof(Requeue_queues_a_done_record_again_and_keeps_its_decisions);
+        var store = CreateStore();
+        _ = Expect.Ok(await store.CommitPage(Page("c1", [Record(_r103, "v1", "SPL-103")], [Link(_r103, "feature:a")]), None), test);
+        var (decision, decides) = Decided(_r103, "first", "feature:a");
+        _ = Expect.Ok(await store.SaveDecisions(new DecisionBatch(_r103, "v1", [decision], [decides]), None), test);
+
+        _ = Expect.Ok(await store.Requeue(_r103, "v0", None), test);
+        var stale = Expect.Ok(await store.Queued(_onyx, None), test);
+        _ = Expect.Ok(await store.Requeue(_r103, "v1", None), test);
+        var again = Expect.Ok(await store.Queued(_onyx, None), test);
+        var layer = Expect.Ok(await store.Layer(None), test);
+
+        Expect.That(stale.Count == 0 && again.Select(k => k.Value).SequenceEqual([_r103.Value], StringComparer.Ordinal) && layer.Decisions.Count == 1 && layer.DecisionEdges.Count == 1, test,
+            $"{stale.Count} queued after a stale requeue, {again.Count} after a requeue, {layer.Decisions.Count} decisions, {layer.DecisionEdges.Count} edges");
+    }
+
     /// <summary>A human decision is never replaced by a machine one with the same key, and keeps its edges.</summary>
     /// <returns>The test.</returns>
     [Fact]

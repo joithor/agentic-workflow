@@ -16,6 +16,7 @@ public sealed class FakeIntentStore : IIntentStore
 
     /// <summary>When set, every call fails with it (a store that can't open).</summary>
     private readonly Dictionary<string, string> _extracted = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, int> _linkedMap = new(StringComparer.Ordinal);
     private readonly Dictionary<string, List<DecisionRow>> _decisions = new(StringComparer.Ordinal);
     private readonly List<GraphEdge> _edges = [];
     private readonly Dictionary<(string, string), DecisionConflict> _conflicts = [];
@@ -59,6 +60,11 @@ public sealed class FakeIntentStore : IIntentStore
                 var isNew = !_records.TryGetValue(record.Key.Value, out var stored) || stored.Version != record.Version;
                 changed += isNew ? 1 : 0;
                 _records[record.Key.Value] = isNew ? record : stored!;
+                if (page.MapVersion > 0)
+                {
+                    _linkedMap[record.Key.Value] = page.MapVersion;
+                }
+
                 _links[record.Key.Value] = [.. page.Links.Where(l => l.Record.Value == record.Key.Value).DistinctBy(l => (l.Target.Value, l.Rule))];
             }
 
@@ -78,6 +84,9 @@ public sealed class FakeIntentStore : IIntentStore
 
     public ValueTask<Result<IReadOnlyList<RecordKey>>> Queued(SourceId source, CancellationToken cancellationToken) => Done<IReadOnlyList<RecordKey>>(() =>
         [.. _records.Values.Where(r => r.Source.Value == source.Value && IsQueued(r.Key.Value)).OrderBy(r => r.Key.Value, StringComparer.Ordinal).Select(r => r.Key)]);
+
+    public ValueTask<Result<IReadOnlyList<RecordKey>>> LinkedUnder(SourceId source, int mapVersion, CancellationToken cancellationToken) => Done<IReadOnlyList<RecordKey>>(() =>
+        [.. _records.Values.Where(r => r.Source.Value == source.Value && _linkedMap.GetValueOrDefault(r.Key.Value) == mapVersion).OrderBy(r => r.Key.Value, StringComparer.Ordinal).Select(r => r.Key)]);
 
     public ValueTask<Result<Unit>> SaveDecisions(DecisionBatch batch, CancellationToken cancellationToken)
     {
@@ -110,6 +119,19 @@ public sealed class FakeIntentStore : IIntentStore
             else
             {
                 _extracted[batch.Record.Value] = batch.Version;
+            }
+
+            return Unit.Value;
+        });
+    }
+
+    public ValueTask<Result<Unit>> Requeue(RecordKey record, string version, CancellationToken cancellationToken)
+    {
+        return Done(() =>
+        {
+            if (_records.TryGetValue(record.Value, out var stored) && stored.Version == version)
+            {
+                _ = _extracted.Remove(record.Value);
             }
 
             return Unit.Value;

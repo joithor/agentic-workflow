@@ -8,4 +8,8 @@ namespace Aw.Context.Core.Linking;
 /// <param name="Links">The links of those records; a record's earlier links are replaced by the page's.</param>
 /// <param name="Cursor">The cursor to store after the page, or null to leave it alone.</param>
 /// <param name="At">When the page was committed.</param>
-public sealed record IntentPage(SourceId Source, IReadOnlyList<IntentRecord> Records, IReadOnlyList<IntentLink> Links, string? Cursor, DateTimeOffset At);
+public sealed record IntentPage(SourceId Source, IReadOnlyList<IntentRecord> Records, IReadOnlyList<IntentLink> Links, string? Cursor, DateTimeOffset At)
+{
+    /// <summary>The map version the links were computed against; stored with each record so a map change re-links it even when its upstream version didn't move. 0 (the default) records none.</summary>
+    public int MapVersion { get; init; }
+}

@@ -12,6 +12,10 @@ internal static class IntentSql
         "ON CONFLICT (key) DO UPDATE SET source = excluded.source, title = excluded.title, aliases = excluded.aliases, fetched_at = excluded.fetched_at, " +
         "extracted_version = NULL, extraction_state = 'queued', version = excluded.version WHERE intent_record.version <> excluded.version";
 
+    internal const string MarkLinked = "UPDATE intent_record SET linked_map = @map WHERE key = @record";
+
+    internal const string LinkedKeys = "SELECT key FROM intent_record WHERE source = @source AND linked_map = @map ORDER BY key";
+
     internal const string DeleteLinks = "DELETE FROM intent_link WHERE record = @record";
 
     internal const string InsertLink =
