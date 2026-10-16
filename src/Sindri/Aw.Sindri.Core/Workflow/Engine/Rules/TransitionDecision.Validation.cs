@@ -50,8 +50,10 @@ public static partial class TransitionDecision
         var missing = descriptor.Outputs.FirstOrDefault(o => StepOutputs.RequiredOn(o, report.Outcome) && !report.Outputs.ContainsKey(o.Fact));
         if (missing is not null)
         {
-            return WorkflowErrors.MalformedReport.With(
-                $"{step.Value} reported '{report.Outcome.Value}' without {missing.Fact.Value} (fix: include the required output {missing.Fact.Value})");
+            var fix = missing.EngineFilled == true
+                ? $"the engine writes {missing.Fact.Value} from --outcome: retry 'workflow complete' with the same --nonce"   // CompleteStep refuses a hand-written one
+                : $"include the required output {missing.Fact.Value}";
+            return WorkflowErrors.MalformedReport.With($"{step.Value} reported '{report.Outcome.Value}' without {missing.Fact.Value} (fix: {fix})");
         }
 
         var undeclared = report.Outputs.Keys.Where(k => !descriptor.Outputs.Any(o => o.Fact == k)).Select(k => k.Value).Order(StringComparer.Ordinal).ToList();
