@@ -113,4 +113,51 @@ public sealed class NeedsYouRowViewModelTests
         panel.Update([Pulse("a"), Pulse("b"), Pulse("c")]);
         Assert.False(panel.Rows[2].SlidesIn);
     }
+
+    // review run 1, corr-11: a re-read serves new, equal records; Replace reports what really changed, and only that.
+    private static List<string?> Changes(NeedsYouRowViewModel row, Action change)
+    {
+        var raised = new List<string?>();
+        row.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+        change();
+        return raised;
+    }
+
+    [Fact]
+    public void Replace_with_an_equal_entry_reports_only_the_age()
+    {
+        var clock = new FakeTimeProvider(A.Noon);
+        var row = new NeedsYouRowViewModel(NeedsYouRows.Failure(), seen: true, reducedMotion: false, arrived: false, clock);
+
+        var raised = Changes(row, () => row.Replace(NeedsYouRows.Failure()));
+
+        Assert.Equal([nameof(NeedsYouRowViewModel.Age)], raised, StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void Replace_reports_the_chip_the_details_and_the_tint_when_they_change()
+    {
+        var clock = new FakeTimeProvider(A.Noon);
+        var row = new NeedsYouRowViewModel(NeedsYouRows.Park(), seen: true, reducedMotion: false, arrived: false, clock);
+        var louder = NeedsYouRows.Failure() with { Id = row.Id, Subject = new NeedsYouSubject("service", "index") };
+
+        var raised = Changes(row, () => row.Replace(louder));
+
+        Assert.Contains(nameof(NeedsYouRowViewModel.Chip), raised, StringComparer.Ordinal);
+        Assert.Contains(nameof(NeedsYouRowViewModel.Details), raised, StringComparer.Ordinal);
+        Assert.Contains(nameof(NeedsYouRowViewModel.IsSteady), raised, StringComparer.Ordinal);   // pulse (seen: none) became colour: a steady tint
+        Assert.Equal(RowTint.Steady, row.Tint);
+    }
+
+    [Fact]
+    public void A_new_reason_reaches_an_open_failure_sheet()
+    {
+        var clock = new FakeTimeProvider(A.Noon);
+        var row = new NeedsYouRowViewModel(NeedsYouRows.Failure(), seen: true, reducedMotion: false, arrived: false, clock);
+        var before = row.Details.First(d => d.Label == "Why").Value;
+
+        row.Replace(NeedsYouRows.Failure() with { Reason = "SND-SCHED-002: it failed differently" });
+
+        Assert.NotEqual(before, row.Details.First(d => d.Label == "Why").Value, StringComparer.Ordinal);
+    }
 }
