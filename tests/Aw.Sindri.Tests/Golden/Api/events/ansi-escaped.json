@@ -1,0 +1,68 @@
+[
+  {
+    "sequence": 5,
+    "id": "00000000-0000-0000-0000-00000000000f",
+    "type": "item.created",
+    "schemaVersion": 1,
+    "occurredAt": "2026-01-01T00:00:00.0000000Z",
+    "actor": "human:cli",
+    "tenant": "local",
+    "ring": 0,
+    "item": "ITM-0000000000000000000000000000000e",
+    "correlationId": "00000000-0000-0000-0000-00000000000d",
+    "causationId": null,
+    "traceId": null,
+    "payload": {
+      "commandId": "00000000-0000-0000-0000-00000000000c",
+      "item": "ITM-0000000000000000000000000000000e",
+      "title": "In demo",
+      "repo": "demo",
+      "link": null,
+      "owner": null
+    }
+  },
+  {
+    "sequence": 7,
+    "id": "00000000-0000-0000-0000-000000000014",
+    "type": "item.created",
+    "schemaVersion": 1,
+    "occurredAt": "2026-01-01T00:00:00.0000000Z",
+    "actor": "human:cli",
+    "tenant": "local",
+    "ring": 0,
+    "item": "ITM-00000000000000000000000000000013",
+    "correlationId": "00000000-0000-0000-0000-000000000012",
+    "causationId": null,
+    "traceId": null,
+    "payload": {
+      "commandId": "00000000-0000-0000-0000-000000000011",
+      "item": "ITM-00000000000000000000000000000013",
+      "title": "In other",
+      "repo": "other",
+      "link": null,
+      "owner": null
+    }
+  },
+  {
+    "sequence": 10,
+    "id": "00000000-0000-0000-0000-00000000001b",
+    "type": "item.created",
+    "schemaVersion": 1,
+    "occurredAt": "2026-01-01T00:00:00.0000000Z",
+    "actor": "service:host",
+    "tenant": "local",
+    "ring": 0,
+    "item": "ITM-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "correlationId": "00000000-0000-0000-0000-00000000001a",
+    "causationId": null,
+    "traceId": null,
+    "payload": {
+      "commandId": "00000063-0000-0000-0000-000000000000",
+      "item": "ITM-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "title": "Fix \\x1B]8;;http://example.org\\x07link\\x1B]8;;\\x07 \\x1B[31mred\\x1B[0m",
+      "repo": "demo",
+      "link": null,
+      "owner": null
+    }
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "title": "SND-API-012",
+  "status": 429,
+  "detail": "Too many event streams are open; re-query every 5 s",
+  "traceId": "<trace>"
+}

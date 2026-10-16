@@ -1,10 +1,20 @@
 {
   "sequence": 1,
+  "id": "00000000-0000-0000-0000-000000000003",
   "type": "process.started",
+  "schemaVersion": 1,
   "occurredAt": "2026-01-01T00:00:00.0000000Z",
   "actor": "service:host",
   "tenant": "local",
   "ring": 0,
-  "epoch": 1,
-  "payload": "{\"host\":\"box\",\"pid\":4242,\"epoch\":1,\"profile\":null}"
+  "item": null,
+  "correlationId": "00000000-0000-0000-0000-000000000002",
+  "causationId": null,
+  "traceId": null,
+  "payload": {
+    "host": "box",
+    "pid": 4242,
+    "epoch": 1,
+    "profile": null
+  }
 }

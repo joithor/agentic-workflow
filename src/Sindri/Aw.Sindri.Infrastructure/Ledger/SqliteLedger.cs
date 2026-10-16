@@ -8,11 +8,22 @@ using Aw.Sindri.Core.Ledger;
 namespace Aw.Sindri.Infrastructure.Ledger;
 
 /// <summary>The ledger's event log in SQLite: each append checks the lease epoch and the idempotency key in the same write transaction.</summary>
-internal sealed class SqliteLedger(LedgerDatabase database) : ILedgerStore
+internal sealed class SqliteLedger(LedgerDatabase database, ILedgerSignal signal) : ILedgerStore
 {
     private readonly SqliteLedgerReader _reads = new(database);
 
     public async ValueTask<Result<LedgerAppend>> Append(LedgerEntry entry, LeaseGrant grant, CancellationToken cancellationToken)
+    {
+        var appended = await Record(entry, grant, cancellationToken).ConfigureAwait(false);
+        if (appended is { IsSuccess: true, Value.AlreadyRecorded: false })
+        {
+            signal.Pulse(appended.Value.Sequence);   // the write session is closed and the commit is durable; a replay recorded nothing new
+        }
+
+        return appended;
+    }
+
+    private async ValueTask<Result<LedgerAppend>> Record(LedgerEntry entry, LeaseGrant grant, CancellationToken cancellationToken)
     {
         var writable = await database.Writable(cancellationToken).ConfigureAwait(false);
         if (writable.IsError)

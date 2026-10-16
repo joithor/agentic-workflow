@@ -55,7 +55,8 @@ while [ $# -gt 0 ]; do
 done
 [ -n "$out" ] && printf '{"ok":true}' > "$out"
 [ -n "$write" ] && printf '%s' "${STUB_STATUS:-200}"
-exit 0
+[ -z "$out" ] && printf 'event: service.heartbeat\nid: 2\ndata: {}\n\n'
+exit "${STUB_CURL_RC:-0}"
 EOF
 chmod +x "$WORK/bin/curl"
 export CURL_LOG="$WORK/curl.log"
@@ -212,6 +213,27 @@ prove "$H" curl GET /sindri/status >/dev/null 2>"$WORK/err"; rc=$?
 check "curl_flags_drop_terminal_and_token: a missing token file is an error without --no-token" "$rc" "2"
 prove "$H" curl --no-token GET /sindri/status >/dev/null 2>&1; rc=$?
 check "curl_flags_drop_terminal_and_token: --no-token needs no token file" "$rc" "0"
+
+# --- curl_stream_prints_the_body_as_it_arrives ---
+printf 'tok-abc\n' > "$H/auth/human.token"
+out="$(prove "$H" curl --stream GET '/sindri/events?after=1' 2>"$WORK/err")"; rc=$?
+log="$(cat "$CURL_LOG")"
+check "curl_stream_prints_the_body_as_it_arrives: the body is on stdout" "$out" $'event: service.heartbeat\nid: 2\ndata: {}'
+check "curl_stream_prints_the_body_as_it_arrives: no status line" "$(cat "$WORK/err")" ""
+check "curl_stream_prints_the_body_as_it_arrives: exit 0 when the stream ends" "$rc" "0"
+contains "curl_stream_prints_the_body_as_it_arrives: -N" "$log" $'-N'
+lacks "curl_stream_prints_the_body_as_it_arrives: no buffer file" "$log" $'-o\n'
+lacks "curl_stream_prints_the_body_as_it_arrives: no status write-out" "$log" $'-w\n'
+contains "curl_stream_prints_the_body_as_it_arrives: URL" "$log" "http://127.0.0.1:5555/sindri/events?after=1"
+contains "curl_stream_prints_the_body_as_it_arrives: human headers" "$log" $'-H\nX-Sindri-Caller: human'
+contains "curl_stream_prints_the_body_as_it_arrives: terminal header" "$log" $'-H\nX-Sindri-Terminal: 1'
+contains "curl_stream_prints_the_body_as_it_arrives: the token" "$log" "X-Sindri-Token: tok-abc"
+STUB_CURL_RC=22 prove "$H" curl --stream GET /sindri/events >/dev/null 2>&1; rc=$?
+check "curl_stream_prints_the_body_as_it_arrives: an HTTP error status is exit 1" "$rc" "1"
+STUB_CURL_RC=7 prove "$H" curl --stream GET /sindri/events >/dev/null 2>&1; rc=$?
+check "curl_stream_prints_the_body_as_it_arrives: no response is exit 3" "$rc" "3"
+prove "$WORK/elsewhere/home" curl --stream GET /sindri/events >/dev/null 2>&1; rc=$?
+check "curl_stream_prints_the_body_as_it_arrives: still refuses a non-temp home" "$rc" "2"
 
 # --- with_tty_under_set_e_outlives_its_feeder ---
 # A caller with errexit on, and a command that runs past the feeder's exit: with_tty returns the command's status.
