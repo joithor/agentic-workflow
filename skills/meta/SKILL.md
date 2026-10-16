@@ -43,7 +43,9 @@ it prints what you owe and the command that settles it. Settle it, don't argue w
 2. `aw-meta-launch` opens one Warp window with a pane per lane, each attached to tmux session `<team>-<lane>` running
    that lane's Claude session, named `<team>-<lane>` so its name never changes. Rerun it after a crash: it recreates
    the dead tmux sessions, restarts a lane whose Claude exited, and resumes each lane by its session id. From the
-   meta session, recreate lanes with `aw-meta-launch --no-open`: the open Warp window reattaches by itself.
+   meta session, recreate lanes with `aw-meta-launch --no-open`: the open Warp window reattaches by itself. When
+   `launcher.json` puts a lane on another agent, the launcher prints `lane <l>: <agent>, launch-only for now: no
+   obligations`: don't message a lane marked launch-only.
 
 ## Start (or after any restart)
 
