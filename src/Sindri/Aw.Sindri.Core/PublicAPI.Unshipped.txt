@@ -7937,3 +7937,5 @@ static readonly Aw.Sindri.Core.SindriErrors.OnyxNotEnoughResources -> Aw.Kernel.
 static readonly Aw.Sindri.Core.SindriErrors.OnyxPortTaken -> Aw.Kernel.ErrorDefinition!
 Aw.Sindri.Core.Control.ISindriHome
 Aw.Sindri.Core.Control.ISindriHome.Path.get -> string!
+Aw.Sindri.Core.Onyx.OnyxState
+Aw.Sindri.Core.Onyx.OnyxState.NotSetUp = 0 -> Aw.Sindri.Core.Onyx.OnyxState

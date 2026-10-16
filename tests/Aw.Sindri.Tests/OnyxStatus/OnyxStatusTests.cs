@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Doctor;
+using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Features.OnyxStatus;
 using Aw.Sindri.Infrastructure.Onyx;
 using Aw.Sindri.Testing;
@@ -23,7 +24,7 @@ public sealed class OnyxStatusTests
     {
         var status = await Status(100 * Gib);
 
-        Assert.Equal("not-set-up", status.State);
+        Assert.Equal(OnyxState.NotSetUp, status.State);
         Assert.Equal("v4.9.0", status.PinnedVersion);
         Assert.Equal(40, status.PinnedCommit.Length);
         Assert.Equal(0, status.ExitCode);

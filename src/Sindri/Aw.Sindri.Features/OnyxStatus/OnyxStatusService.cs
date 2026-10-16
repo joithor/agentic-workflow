@@ -16,7 +16,7 @@ internal sealed class OnyxStatusService(IOnyxPinsSource pinsSource, IContainerRu
             probes.FreeDisk(home.Path),
             probes.Ports(OnyxPreflight.PreferredPort, OnyxPreflight.FallbackFirst, OnyxPreflight.FallbackLast),
             pins);
-        Result<OnyxStatusResponse> response = new OnyxStatusResponse("not-set-up", pins.Version, pins.Commit, report.Checks, report.Port, report.Ok ? 0 : 1);
+        Result<OnyxStatusResponse> response = new OnyxStatusResponse(OnyxState.NotSetUp, pins.Version, pins.Commit, report.Checks, report.Port, report.Ok ? 0 : 1);
         return ValueTask.FromResult(response);
     }
 }

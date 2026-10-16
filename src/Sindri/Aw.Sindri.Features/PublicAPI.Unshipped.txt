@@ -2068,18 +2068,18 @@ Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.<Clone>$() -> Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse!
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.Checks.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.PreflightCheck!>!
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.Checks.init -> void
-Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.Deconstruct(out string! State, out string! PinnedVersion, out string! PinnedCommit, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.PreflightCheck!>! Checks, out int Port, out int ExitCode) -> void
+Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.Deconstruct(out Aw.Sindri.Core.Onyx.OnyxState State, out string! PinnedVersion, out string! PinnedCommit, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.PreflightCheck!>! Checks, out int Port, out int ExitCode) -> void
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.Equals(Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse? other) -> bool
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.ExitCode.get -> int
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.ExitCode.init -> void
-Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.OnyxStatusResponse(string! State, string! PinnedVersion, string! PinnedCommit, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.PreflightCheck!>! Checks, int Port, int ExitCode) -> void
+Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.OnyxStatusResponse(Aw.Sindri.Core.Onyx.OnyxState State, string! PinnedVersion, string! PinnedCommit, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.PreflightCheck!>! Checks, int Port, int ExitCode) -> void
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.PinnedCommit.get -> string!
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.PinnedCommit.init -> void
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.PinnedVersion.get -> string!
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.PinnedVersion.init -> void
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.Port.get -> int
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.Port.init -> void
-Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.State.get -> string!
+Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.State.get -> Aw.Sindri.Core.Onyx.OnyxState
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.State.init -> void
 override Aw.Sindri.Features.OnyxStatus.OnyxStatusRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Features.OnyxStatus.OnyxStatusRequest.GetHashCode() -> int
