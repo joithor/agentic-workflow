@@ -422,9 +422,9 @@ catalog itself lands in P1. Every domain payload carries `commandId` (or the `se
 | `decision.recorded` | decision, choice, note?, by, repo? (the decision's repo, copied from its row) | `decision.recorded:<decisionId>` | yes (note left out; a human's ledger read keeps it) | P4 |
 | `job.started` | job, kind, key, item?, repo?, service? | `job.started:<jobId>` | yes | P6 |
 | `service.ran` (manual) | as above, plus `job`; `slot` is the run's start time, and the key carries the job instead | `service.ran:<name>:manual:<jobId>` | yes | P6: a `RunService` job appends it when it ends, so a manual run updates `lastRun` and clears a failure row |
-| `job.progress` | job, round, line | `job.progress:<jobId>:<n>` | yes | P6 |
-| `job.finished` | job, outcome, summary, code?, result? | `job.finished:<jobId>` | yes (result left out of the public form) | P6 |
-| `job.cancelled` | job, by | `job.cancelled:<jobId>` | yes | P6 |
+| `job.progress` | job, round, line, item?, repo? | `job.progress:<jobId>:<n>` | yes | P6 |
+| `job.finished` | job, outcome, summary, code?, result?, item?, repo? | `job.finished:<jobId>` | yes (result left out of the public form) | P6 |
+| `job.cancelled` | job, by, item?, repo? | `job.cancelled:<jobId>` | yes | P6 |
 | `service.paused`, `service.resumed` | service | `service.paused:<name>:<commandId>` | yes | P6 |
 | `item.linked` | item, record key, alias | `item.linked:<itemId>:<record>` | yes | context Phase 6 only (`service:context-sync`); a `CreateItem` with `link` stores it on `item.created` and gives no alias, so `GET /items/<tracker key>` resolves only after a later `item.linked` |
 | `item.open-requested` | item, target, mode, launch | `item.open-requested:<itemId>:<launch>` | yes | P10 |
