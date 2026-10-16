@@ -1,5 +1,8 @@
 using Aw.Kernel.Testing;
+using System.Globalization;
+using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.Tests.Theme;
+using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.Tests.Docs;
 
@@ -41,6 +44,20 @@ public sealed class SpecTextTests
         Assert.Contains("`pending:P6`", line, StringComparison.Ordinal);
         Assert.Contains("`PauseService`", line, StringComparison.Ordinal);
         Assert.Contains("the served `cli`", line, StringComparison.Ordinal);
+    }
+
+    // §4.1 draws the strip; the fixture is the truth for its numbers (screens §4.9): the head's open count is the golden's, and
+    // the overflow line is that count less the cap.
+    [Fact]
+    public void Screens_spec_strip_drawing_matches_the_fixture()
+    {
+        var lines = File.ReadAllLines(UiSource.ScreensSpec);
+        var head = lines.First(l => l.StartsWith("┌ WORKFLOWS", StringComparison.Ordinal));
+        var more = lines.First(l => l.StartsWith("│ … ", StringComparison.Ordinal) && l.Contains(" more", StringComparison.Ordinal));
+        var open = FixtureInstances.Counts.Open;
+
+        Assert.Contains(string.Create(CultureInfo.InvariantCulture, $"WORKFLOWS {open} open"), head, StringComparison.Ordinal);
+        Assert.Contains(string.Create(CultureInfo.InvariantCulture, $"… {open - WorkflowsStripViewModel.Cap} more"), more, StringComparison.Ordinal);
     }
 
     private static string Line(string start)
