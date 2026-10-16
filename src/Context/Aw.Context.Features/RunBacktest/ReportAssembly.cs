@@ -20,14 +20,15 @@ internal static class ReportAssembly
             }
 
             var scores = collected.Scores[arm];
-            var score = BacktestScoring.Aggregate(scores, tokens: 0);
+            var score = BacktestScoring.Aggregate(scores, collected.Tokens.GetValueOrDefault(arm));
             rows.Add(new ArmReport(Arms.Name(arm), "source", arm == Arm.GraphReviewed, NotAvailable: null, score, PassLine.Evaluate(score, arm == Arm.Brief ? null : briefScore, kept.Count), scores));
         }
 
         var judged = rows.Where(r => r.PassLine is not null).ToList();
         var overall = (judged.FirstOrDefault(r => r.Arm == Arms.Name(Arm.All)) ?? judged.LastOrDefault())?.PassLine?.Overall;
         return new BacktestReport(BacktestReport.CurrentSchemaVersion, run.Started, Window(request), kept.Count, kept.Count < PassBars.MinSamples,
-            kept.Count == 0 ? 0 : Math.Round((double)kept.Count(s => s.Leaky) / kept.Count, 4, MidpointRounding.ToEven), run.LeftOut, kept, rows, overall, []);
+            kept.Count == 0 ? 0 : Math.Round((double)kept.Count(s => s.Leaky) / kept.Count, 4, MidpointRounding.ToEven), run.LeftOut, kept, rows, overall,
+            collected.AdjudicationCapped ? ["SND-CONTEXT-083: adjudication stopped at the 1.5M-token cap; the rest are unjudged and adjudicated precision is not measured"] : []);
     }
 
     private static string Window(BacktestRequest request)

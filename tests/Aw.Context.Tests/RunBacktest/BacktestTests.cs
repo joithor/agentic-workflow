@@ -168,4 +168,21 @@ public sealed class BacktestTests
         Assert.All(second.Lines.Where(l => l.StartsWith("sample ", StringComparison.Ordinal) && l.Contains(": map", StringComparison.Ordinal)), l => Assert.EndsWith("map cached", l, StringComparison.Ordinal));
         Assert.Contains(first.Lines, l => l.StartsWith("arm graph SPL-103", StringComparison.Ordinal));
     }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Backtest_with_the_adjudicator_on_judges_untouched_surfaces_and_reports_adjudicated_precision()
+    {
+        await using var world = await BacktestWorld.Start(BacktestWorld.BeforeAllCuts);
+        await world.ImportMap();
+        world.Model.Responder = request => "[" + string.Join(',', request.Prompt.Split('\n').Where(l => l.Length > 2 && l[0] == 'n' && char.IsDigit(l[1])).Select(l => $"{{\"id\":\"{l[..l.IndexOf(':', StringComparison.Ordinal)]}\",\"relevant\":true}}")) + "]";
+
+        var report = (await world.Run("graph", scope: world.Human("\"eval\":{\"adjudicator\":true}"))).Value.Report;
+
+        var graph = Arm(report, "graph").Score!;
+        Assert.NotEmpty(world.Model.Requests);
+        Assert.All(world.Model.Requests, r => Assert.DoesNotContain("code:", r.Prompt, StringComparison.Ordinal));
+        Assert.True(graph.Tokens > 0);
+        Assert.True(graph.AdjudicatedPrecision >= graph.NodePrecision);
+        Assert.Empty(report.Degraded);
+    }
 }

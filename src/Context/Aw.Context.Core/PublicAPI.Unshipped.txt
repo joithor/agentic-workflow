@@ -4373,3 +4373,39 @@ static Aw.Context.Core.Eval.Backtest.AdjudicatedScoring.Precision(System.Collect
 static Aw.Context.Core.Eval.Backtest.AdjudicatedScoring.Surfaces(System.Collections.Generic.IReadOnlyList<string!>! predicted, System.Collections.Generic.IReadOnlyList<string!>! truth, Aw.Context.Core.Graph.GraphSnapshot! graph) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.Surface!>!
 static Aw.Context.Core.Eval.Backtest.Surface.operator !=(Aw.Context.Core.Eval.Backtest.Surface? left, Aw.Context.Core.Eval.Backtest.Surface? right) -> bool
 static Aw.Context.Core.Eval.Backtest.Surface.operator ==(Aw.Context.Core.Eval.Backtest.Surface? left, Aw.Context.Core.Eval.Backtest.Surface? right) -> bool
+Aw.Context.Core.Eval.Backtest.Adjudication
+Aw.Context.Core.Eval.Backtest.Adjudication.<Clone>$() -> Aw.Context.Core.Eval.Backtest.Adjudication!
+Aw.Context.Core.Eval.Backtest.Adjudication.Adjudication(System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Eval.Backtest.Verdict>! Verdicts, int Tokens, bool Capped) -> void
+Aw.Context.Core.Eval.Backtest.Adjudication.Capped.get -> bool
+Aw.Context.Core.Eval.Backtest.Adjudication.Capped.init -> void
+Aw.Context.Core.Eval.Backtest.Adjudication.Deconstruct(out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Eval.Backtest.Verdict>! Verdicts, out int Tokens, out bool Capped) -> void
+Aw.Context.Core.Eval.Backtest.Adjudication.Equals(Aw.Context.Core.Eval.Backtest.Adjudication? other) -> bool
+Aw.Context.Core.Eval.Backtest.Adjudication.Tokens.get -> int
+Aw.Context.Core.Eval.Backtest.Adjudication.Tokens.init -> void
+Aw.Context.Core.Eval.Backtest.Adjudication.Verdicts.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Eval.Backtest.Verdict>!
+Aw.Context.Core.Eval.Backtest.Adjudication.Verdicts.init -> void
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.<Clone>$() -> Aw.Context.Core.Eval.Backtest.AdjudicationRequest!
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.AdjudicationRequest(string! Brief, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.Surface!>! Surfaces, Aw.Context.Core.Trust.IEgressScrubber! Egress, int TokensLeft) -> void
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.Brief.get -> string!
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.Brief.init -> void
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.Deconstruct(out string! Brief, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.Surface!>! Surfaces, out Aw.Context.Core.Trust.IEgressScrubber! Egress, out int TokensLeft) -> void
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.Egress.get -> Aw.Context.Core.Trust.IEgressScrubber!
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.Egress.init -> void
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.Equals(Aw.Context.Core.Eval.Backtest.AdjudicationRequest? other) -> bool
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.Surfaces.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.Surface!>!
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.Surfaces.init -> void
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.TokensLeft.get -> int
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.TokensLeft.init -> void
+Aw.Context.Core.Eval.Backtest.IAdjudicator
+Aw.Context.Core.Eval.Backtest.IAdjudicator.Judge(Aw.Context.Core.Eval.Backtest.AdjudicationRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Context.Core.Eval.Backtest.Adjudication!>
+override Aw.Context.Core.Eval.Backtest.Adjudication.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.Adjudication.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.Adjudication.ToString() -> string!
+override Aw.Context.Core.Eval.Backtest.AdjudicationRequest.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.AdjudicationRequest.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.AdjudicationRequest.ToString() -> string!
+static Aw.Context.Core.Eval.Backtest.Adjudication.operator !=(Aw.Context.Core.Eval.Backtest.Adjudication? left, Aw.Context.Core.Eval.Backtest.Adjudication? right) -> bool
+static Aw.Context.Core.Eval.Backtest.Adjudication.operator ==(Aw.Context.Core.Eval.Backtest.Adjudication? left, Aw.Context.Core.Eval.Backtest.Adjudication? right) -> bool
+static Aw.Context.Core.Eval.Backtest.AdjudicationRequest.operator !=(Aw.Context.Core.Eval.Backtest.AdjudicationRequest? left, Aw.Context.Core.Eval.Backtest.AdjudicationRequest? right) -> bool
+static Aw.Context.Core.Eval.Backtest.AdjudicationRequest.operator ==(Aw.Context.Core.Eval.Backtest.AdjudicationRequest? left, Aw.Context.Core.Eval.Backtest.AdjudicationRequest? right) -> bool

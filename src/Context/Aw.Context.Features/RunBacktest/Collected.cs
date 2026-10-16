@@ -7,4 +7,11 @@ namespace Aw.Context.Features.RunBacktest;
 /// <param name="Scores">Each running arm's sample scores.</param>
 /// <param name="ExtractFailed">Samples dropped because git couldn't read their cut.</param>
 /// <param name="NoBrief">Samples dropped because the source no longer had the record.</param>
-internal sealed record Collected(IReadOnlyList<CorpusSample> Kept, Dictionary<Arm, List<SampleScore>> Scores, int ExtractFailed, int NoBrief);
+internal sealed record Collected(IReadOnlyList<CorpusSample> Kept, Dictionary<Arm, List<SampleScore>> Scores, int ExtractFailed, int NoBrief)
+{
+    /// <summary>Model tokens per arm (empty with the adjudicator off).</summary>
+    public Dictionary<Arm, int> Tokens { get; init; } = [];
+
+    /// <summary>True when adjudication stopped at the token cap (SND-CONTEXT-083).</summary>
+    public bool AdjudicationCapped { get; init; }
+}

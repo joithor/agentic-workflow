@@ -111,6 +111,6 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<AsOfMapBuilder>()
         .AddScoped<ArmRunner>()
         .AddScoped<CorpusLoader>()
-        .AddScoped<Adjudicator>()
+        .AddScoped<IAdjudicator, Adjudicator>()
         .AddScoped<SampleScorer>();
 }
