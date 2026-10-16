@@ -69,6 +69,8 @@ public static class InstanceViews
             instance.Outcome)
         {
             Id = WorkflowInstanceId.Of(instance.Address),
+            ParentId = instance.Parent,
+            FactShas = ShasOf(instance),
             Version = context.Version,
             Answer = words.Answer(),
             Drift = words.Drift(),
@@ -78,6 +80,10 @@ public static class InstanceViews
         };
         return WithLayout(view, new Layout(instance, recipe, task, words), context);
     }
+
+    /// <summary>The stored digest of each fact by key; null when the instance holds none.</summary>
+    private static Dictionary<string, string>? ShasOf(WorkflowInstance instance) =>
+        instance.Facts.Count == 0 ? null : instance.Facts.ToDictionary(static f => f.Key.Value, static f => f.Value.Sha256, StringComparer.Ordinal);
 
     /// <summary>The API's detail view of <paramref name="view"/>: a pure function of the view and the context (no clock, no I/O).</summary>
     /// <param name="view">The instance view <see cref="Of(WorkflowInstance, InterpretedRecipe, DateTimeOffset, DateTimeOffset?, InstanceViewContext)"/> built.</param>
