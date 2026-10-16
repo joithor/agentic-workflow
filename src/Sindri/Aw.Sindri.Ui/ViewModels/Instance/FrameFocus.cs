@@ -23,4 +23,7 @@ internal enum FrameFocus
 
     /// <summary>The children panel's Open button for the child whose item the user came back from.</summary>
     ChildItem,
+
+    /// <summary>The expanded state's child pointer, which the user came back from.</summary>
+    ChildPointer,
 }

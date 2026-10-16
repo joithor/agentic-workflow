@@ -96,7 +96,7 @@ internal sealed partial class InstanceFrameViewModel
     {
         FrameIntent.FocusChild => FrameFocus.ChildEntry,
         FrameIntent.FocusChildItem => FrameFocus.ChildItem,
-        FrameIntent.None or FrameIntent.PendingOutput or FrameIntent.AskCancel => null,
+        FrameIntent.None or FrameIntent.PendingOutput or FrameIntent.AskCancel or FrameIntent.FocusPointer or FrameIntent.OpenInitial => null,
         _ => null,
     };
 

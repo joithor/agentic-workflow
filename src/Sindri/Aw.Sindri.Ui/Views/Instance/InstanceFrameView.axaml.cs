@@ -93,6 +93,7 @@ internal sealed partial class InstanceFrameView : UserControl
             FrameFocus.Back => Find("InstanceBack") ?? SheetBack(),   // the 404 state's own Back hides where the sheet covers the page: the header's Back is the one then
             FrameFocus.ChildEntry => Find("ChildRowOpen", b => b.DataContext is ChildRowViewModel child && string.Equals(child.Address, wanted.Key, StringComparison.Ordinal)),
             FrameFocus.ChildItem => Find("ChildRowItemOpen", b => b.DataContext is ChildRowViewModel child && string.Equals(child.ItemId, wanted.Key, StringComparison.Ordinal)),
+            FrameFocus.ChildPointer => Find("ExpandedChild"),
             _ => throw new ArgumentOutOfRangeException(nameof(wanted), wanted.Target, message: null),
         };
     }

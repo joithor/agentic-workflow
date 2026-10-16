@@ -77,4 +77,39 @@ public sealed class ShellTrailTests
 
         Assert.False(shell.IsSheetOpen);
     }, Token);
+
+    [Fact]
+    public Task A_frame_opened_by_stacking_asks_for_its_first_read_action_once_it_is_read() => UiThread.Run(async () =>
+    {
+        var shell = await Connected();
+        await Open(shell, "project-build");
+        var child = shell.Instance.Children!.Groups.Single().Streams[0].Rows[0];
+
+        child.OpenFrame();
+        await ShellWait.Until(shell, () => shell.Instance.Address == child.Address && shell.Instance.Phase != FramePhase.Loading, Token);
+
+        Assert.Equal(shell.Instance.InitialFocus, shell.Instance.WantedFocus?.Target);
+    }, Token);
+
+    [Fact]
+    public Task Back_from_a_child_opened_by_the_pointer_asks_for_focus_on_the_pointer() => UiThread.Run(async () =>
+    {
+        var shell = await Connected();
+        var childDetail = FixtureInstances.Detail("item-produce");
+        var parentGolden = GoldenFiles.Node("workflow-instance", "project-build");   // no instance golden shows a pointer, so one is put on this status
+        parentGolden["current"]!["status"]!["child"] = new System.Text.Json.Nodes.JsonObject { ["id"] = childDetail.Id, ["address"] = childDetail.Address, ["state"] = "parked", ["reason"] = null };
+        var parentAnswer = new RouteAnswer(System.Net.HttpStatusCode.OK, parentGolden.ToJsonString());
+        _server.WorkflowAnswer = parentAnswer;
+        await Open(shell, "project-build");
+        var parent = shell.Instance.Address;
+        _server.WorkflowAnswer = new RouteAnswer(System.Net.HttpStatusCode.OK, GoldenFiles.Node("workflow-instance", "item-produce").ToJsonString());
+        shell.Instance.Expanded!.Child!.Open();
+        await ShellWait.Until(shell, () => shell.Instance.Address == childDetail.Address && shell.Instance.Phase == FramePhase.Shown, Token);
+        _server.WorkflowAnswer = parentAnswer;
+
+        shell.Back();
+        await ShellWait.Until(shell, () => shell.Instance.Address == parent && shell.Instance.Phase == FramePhase.Shown, Token);
+
+        Assert.Equal((FrameFocus.ChildPointer, childDetail.Address), (shell.Instance.WantedFocus?.Target, shell.Instance.WantedFocus?.Key));
+    }, Token);
 }
