@@ -33,6 +33,7 @@ internal sealed partial class SchedulerHost(
     private bool _loaded;
     private string? _problem;
     private bool _pausesKnown;   // until the first good read of the pauses no service runs: a restart mid-rebuild must not run what a human paused
+    private bool _pausesFailing;   // the last read of the pauses failed (logged once for the stretch)
     private IReadOnlySet<ServiceName> _paused = new HashSet<ServiceName>();   // read once per tick; a failed read keeps the last known set
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -143,6 +144,12 @@ internal sealed partial class SchedulerHost(
             {
                 _paused = paused.Value;
                 _pausesKnown = true;
+                _pausesFailing = false;
+            }
+            else if (!_pausesFailing)
+            {
+                _pausesFailing = true;   // one line per failing stretch: a rebuild can last minutes, a tick a second
+                LogPausesFailed(log, $"{paused.Error.Code} {paused.Error.Message}");
             }
         }
         catch (Exception e) when (!ct.IsCancellationRequested)   // boundary: an unreadable view must not stop the schedule; the last known pauses stand
