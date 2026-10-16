@@ -2,6 +2,8 @@
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOOK="$DIR/../../hooks/send-gate.sh"
+# The hook logs fail-open events under $AW_STATE_DIR (default ~/.agentic-workflow): this suite gets its own, never an inherited one.
+AW_STATE_DIR="$(mktemp -d)"; export AW_STATE_DIR
 
 setup_fake_judge() {
   local bin_dir decision; bin_dir="$(mktemp -d)"; decision="$1"

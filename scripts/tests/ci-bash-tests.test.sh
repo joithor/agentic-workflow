@@ -160,6 +160,23 @@ $out"
   echo "PASS: test_a_failing_suite_fails_the_run_and_shows_its_log"
 }
 
+test_every_suite_gets_its_own_fresh_home_and_state_dir_whatever_the_caller_exported() {
+  local d m out rc=0 f
+  d="$(mktemp -d)"; m="$(mktemp -d)"
+  git -C "$d" init -q; mkdir -p "$d/t"
+  for f in a b; do
+    printf '%s\n' 'echo "$HOME|$AW_STATE_DIR" >> "$MARK/seen"; [ "$HOME" != "$CALLER_HOME" ] && [ "$AW_STATE_DIR" != "$CALLER_STATE" ] && [ -d "$AW_STATE_DIR" ] && [ -d "$HOME" ] && [ -z "$(ls -A "$AW_STATE_DIR")" ]; rc=$?; echo x > "$AW_STATE_DIR/dirty"; exit $rc' > "$d/t/$f.test.sh"
+  done
+  git -C "$d" add t
+  out="$(MARK="$m" CALLER_HOME=/caller/home CALLER_STATE=/caller/state HOME=/caller/home AW_STATE_DIR=/caller/state BASH_TESTS_ROOT="$d" \
+    BASH_TESTS_JOBS=2 BASH_TESTS_SERIAL="" BASH_TESTS_EXCLUDED="" bash "$RUNNER" 2>&1)" || rc=$?
+  [ "$rc" -eq 0 ] || fail "a suite saw the caller's HOME or state dir, or a dirty state dir (exit $rc):
+$out"
+  [ "$(sort -u "$m/seen" | wc -l | tr -d ' ')" = 2 ] || fail "two suites shared a HOME or state dir: $(cat "$m/seen")"
+  rm -r "$d" "$m"
+  echo "PASS: test_every_suite_gets_its_own_fresh_home_and_state_dir_whatever_the_caller_exported"
+}
+
 test_bad_configuration_is_a_tool_error() {
   local d m rc
   d="$(mktemp -d)"; m="$(mktemp -d)"
@@ -185,4 +202,5 @@ test_the_timing_sensitive_suites_are_serial
 test_no_pool_suite_builds_judge
 test_pool_runs_in_parallel_and_serial_suites_run_alone
 test_a_failing_suite_fails_the_run_and_shows_its_log
+test_every_suite_gets_its_own_fresh_home_and_state_dir_whatever_the_caller_exported
 test_bad_configuration_is_a_tool_error
