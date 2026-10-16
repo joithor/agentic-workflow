@@ -23,7 +23,7 @@ public sealed class StopCheckTests
     public async Task Any_other_session_may_stop_and_nothing_is_read()
     {
         await _world.Ready();
-        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "sindri-api", "please rebase"));
+        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "t1-api", "please rebase"));
 
         var response = await Check(session: "s-other");
 
@@ -35,8 +35,8 @@ public sealed class StopCheckTests
     public async Task After_clear_the_new_session_id_under_the_registered_name_is_still_the_meta_and_is_registered()
     {
         await _world.Ready();
-        _world.Sessions.Add(A.Live("sindri-meta", "s-after-clear"));
-        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "sindri-api", "please rebase"));
+        _world.Sessions.Add(A.Live("t1-meta", "s-after-clear"));
+        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "t1-api", "please rebase"));
 
         var response = await Check(session: "s-after-clear");
 
@@ -47,13 +47,13 @@ public sealed class StopCheckTests
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("sindri-api", "s-new")]
+    [InlineData("t1-api", "s-new")]
     [InlineData("", "s-new")]
     public async Task A_live_session_with_another_name_is_not_the_meta(string name, string session)
     {
         await _world.Ready();
         _world.Sessions.Add(A.Live(name, session));
-        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "sindri-api", "please rebase"));
+        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "t1-api", "please rebase"));
 
         var response = await Check(session: session);
 
@@ -65,7 +65,7 @@ public sealed class StopCheckTests
     public async Task A_session_that_is_not_live_is_not_the_meta_even_with_the_registered_name_elsewhere()
     {
         await _world.Ready();
-        _world.Sessions.Add(A.Live("sindri-meta", "s-someone-else"));
+        _world.Sessions.Add(A.Live("t1-meta", "s-someone-else"));
 
         Assert.False((await Check(session: "s-not-listed")).IsMeta);
     }
@@ -74,7 +74,7 @@ public sealed class StopCheckTests
     public async Task A_new_turn_restarts_the_block_count()
     {
         await _world.Ready();
-        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "sindri-api", "stuck"));
+        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "t1-api", "stuck"));
         var turns = new List<bool[]>();
         for (var turn = 0; turn < 2; turn++)
         {
@@ -95,7 +95,7 @@ public sealed class StopCheckTests
     public async Task The_meta_with_an_unanswered_peer_message_is_blocked_with_the_exact_next_command()
     {
         await _world.Ready();
-        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "sindri-api", "please rebase"));
+        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "t1-api", "please rebase"));
 
         var response = await Check();
 
@@ -109,9 +109,9 @@ public sealed class StopCheckTests
     public async Task Answering_the_peer_releases_the_stop()
     {
         await _world.Ready();
-        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "sindri-api", "please rebase"));
+        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "t1-api", "please rebase"));
         _ = await Check();
-        _ = await _world.Messages.RecordOutbound(A.Sent("sindri-api", "done", 61), CancellationToken.None);
+        _ = await _world.Messages.RecordOutbound(A.Sent("t1-api", "done", 61), CancellationToken.None);
 
         var response = await Check();
 
@@ -123,7 +123,7 @@ public sealed class StopCheckTests
     public async Task A_dismissed_message_does_not_block_and_a_deferred_one_blocks_again_when_due()
     {
         await _world.Ready();
-        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "sindri-api", "a") + MetaWorld.PeerLine("m2", "sindri-ui", "b"));
+        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "t1-api", "a") + MetaWorld.PeerLine("m2", "t1-ui", "b"));
         _ = await Check();
         _ = await _world.Messages.Resolve(MessageId.From("m1"), new(Core.Messages.MessageResolutionKind.Dismissed, "fyi"), CancellationToken.None);
         _ = await _world.Messages.Resolve(MessageId.From("m2"), new(Core.Messages.MessageResolutionKind.Deferred, "later", _world.Clock.GetUtcNow().AddMinutes(30)), CancellationToken.None);
@@ -141,7 +141,7 @@ public sealed class StopCheckTests
     {
         await _world.Ready();
         _world.Transcripts.Write(MetaWorld.Transcript, string.Empty);
-        _world.Sessions.Add(A.Live("sindri-api", "s-api"));
+        _world.Sessions.Add(A.Live("t1-api", "s-api"));
 
         var response = await Check();
 
@@ -167,7 +167,7 @@ public sealed class StopCheckTests
     public async Task The_same_open_set_blocks_three_times_then_a_continuation_is_let_through_with_a_warning_and_one_incident()
     {
         await _world.Ready();
-        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "sindri-api", "stuck"));
+        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "t1-api", "stuck"));
 
         var blocks = new List<bool>();
         for (var i = 0; i < 3; i++)
@@ -189,13 +189,13 @@ public sealed class StopCheckTests
     public async Task Without_hook_active_it_never_lets_the_stop_through_and_a_new_set_restarts_the_count()
     {
         await _world.Ready();
-        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "sindri-api", "stuck"));
+        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "t1-api", "stuck"));
         for (var i = 0; i < 5; i++)
         {
             Assert.True((await Check(hookActive: false)).Blocked);
         }
 
-        _world.Transcripts.Append(MetaWorld.Transcript, MetaWorld.PeerLine("m2", "sindri-ui", "another"));
+        _world.Transcripts.Append(MetaWorld.Transcript, MetaWorld.PeerLine("m2", "t1-ui", "another"));
 
         Assert.True((await Check(hookActive: true)).Blocked);
     }

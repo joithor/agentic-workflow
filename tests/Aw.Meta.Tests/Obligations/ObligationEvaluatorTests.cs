@@ -8,7 +8,7 @@ namespace Aw.Meta.Tests.Obligations;
 public sealed class ObligationEvaluatorTests
 {
     private static LaneMapState Lanes(int version) =>
-        new(version, [A.Assigned("meta", "sindri-meta"), A.Assigned("api", "sindri-api"), A.Assigned("engine", "sindri-engine")]);
+        new(version, [A.Assigned("meta", "t1-meta"), A.Assigned("api", "t1-api"), A.Assigned("engine", "t1-engine")]);
 
     [Fact, Trait("Lane", "unit")]
     public void Nothing_recorded_owes_nothing() =>
@@ -17,26 +17,26 @@ public sealed class ObligationEvaluatorTests
     [Fact, Trait("Lane", "unit")]
     public void An_unanswered_message_opens_a_reply_with_the_next_command()
     {
-        var facts = A.Facts() with { Messages = [A.Inbox("m1", name: "sindri-api", body: "ready #190")] };
+        var facts = A.Facts() with { Messages = [A.Inbox("m1", name: "t1-api", body: "ready #190")] };
 
         var open = Assert.Single(ObligationEvaluator.Evaluate(facts));
 
         Assert.Equal((ObligationKind.Reply, "m1"), (open.Kind, open.Key));
         Assert.Contains("inbox-dismiss m1", open.NextCommand, StringComparison.Ordinal);
-        Assert.Contains("sindri-api", open.Summary, StringComparison.Ordinal);
+        Assert.Contains("t1-api", open.Summary, StringComparison.Ordinal);
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("sindri-api", 5, false)]
-    [InlineData("SINDRI-API", 5, false)]
-    [InlineData("uds:/run/sindri-api.sock", 5, false)]
-    [InlineData("sindri-api", -5, true)]
-    [InlineData("sindri-engine", 5, true)]
+    [InlineData("t1-api", 5, false)]
+    [InlineData("T1-API", 5, false)]
+    [InlineData("uds:/run/t1-api.sock", 5, false)]
+    [InlineData("t1-api", -5, true)]
+    [InlineData("t1-engine", 5, true)]
     public void A_later_send_to_the_same_peer_closes_a_reply(string to, int minute, bool stillOpen)
     {
         var facts = A.Facts() with
         {
-            Messages = [A.Inbox("m1", name: "sindri-api", minute: 0)],
+            Messages = [A.Inbox("m1", name: "t1-api", minute: 0)],
             Outbound = [A.Sent(to, "ack", minute)],
         };
 
@@ -66,7 +66,7 @@ public sealed class ObligationEvaluatorTests
     [Fact, Trait("Lane", "unit")]
     public void The_lane_map_must_reach_every_lane_but_the_meta()
     {
-        var facts = A.Facts() with { Lanes = Lanes(2), Outbound = [A.Sent("sindri-api", "LANE MAP v2: api=sindri-api", 3)] };
+        var facts = A.Facts() with { Lanes = Lanes(2), Outbound = [A.Sent("t1-api", "LANE MAP v2: api=t1-api", 3)] };
 
         var open = Assert.Single(ObligationEvaluator.Evaluate(facts));
 
@@ -82,8 +82,8 @@ public sealed class ObligationEvaluatorTests
 
         var open = ObligationEvaluator.Evaluate(facts);
 
-        Assert.All(open, o => Assert.EndsWith("to: sindri-api, sindri-engine", o.NextCommand, StringComparison.Ordinal));
-        Assert.All(open, o => Assert.Contains("api (sindri-api), engine (sindri-engine)", o.Summary, StringComparison.Ordinal));
+        Assert.All(open, o => Assert.EndsWith("to: t1-api, t1-engine", o.NextCommand, StringComparison.Ordinal));
+        Assert.All(open, o => Assert.Contains("api (t1-api), engine (t1-engine)", o.Summary, StringComparison.Ordinal));
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -94,7 +94,7 @@ public sealed class ObligationEvaluatorTests
         var facts = A.Facts() with
         {
             Lanes = Lanes(2),
-            Outbound = [A.Sent("sindri-api", text, 3), A.Sent("sindri-engine", text, 3)],
+            Outbound = [A.Sent("t1-api", text, 3), A.Sent("t1-engine", text, 3)],
         };
 
         Assert.Equal(closed, ObligationEvaluator.Evaluate(facts).All(o => o.Kind != ObligationKind.BroadcastLanes));
@@ -108,7 +108,7 @@ public sealed class ObligationEvaluatorTests
         {
             Lanes = Lanes(0),
             LatestMerge = merge,
-            Outbound = [A.Sent("sindri-api", "main moved to abcdef1: #190", 11), A.Sent("sindri-engine", "main moved to abcdef1", 2)],
+            Outbound = [A.Sent("t1-api", "main moved to abcdef1: #190", 11), A.Sent("t1-engine", "main moved to abcdef1", 2)],
         };
 
         var open = Assert.Single(ObligationEvaluator.Evaluate(facts));
@@ -125,7 +125,7 @@ public sealed class ObligationEvaluatorTests
         {
             Lanes = Lanes(0),
             LatestMerge = merge,
-            Outbound = [A.Sent("sindri-api", "main is now abcdef1234567890", 11), A.Sent("sindri-engine", "main moved to abcdef1: #190 merged.", 11)],
+            Outbound = [A.Sent("t1-api", "main is now abcdef1234567890", 11), A.Sent("t1-engine", "main moved to abcdef1: #190 merged.", 11)],
         };
 
         Assert.Empty(ObligationEvaluator.Evaluate(facts));
@@ -139,7 +139,7 @@ public sealed class ObligationEvaluatorTests
         {
             Lanes = Lanes(0),
             LatestMerge = merge,
-            Outbound = [A.Sent("sindri-api", "main moved (#221 merged).", 11), A.Sent("sindri-engine", "main moved (#22 merged).", 11)],
+            Outbound = [A.Sent("t1-api", "main moved (#221 merged).", 11), A.Sent("t1-engine", "main moved (#22 merged).", 11)],
         };
 
         var open = Assert.Single(ObligationEvaluator.Evaluate(facts));
@@ -151,17 +151,17 @@ public sealed class ObligationEvaluatorTests
     [Fact, Trait("Lane", "unit")]
     public void An_owner_answer_must_go_back_to_the_asking_lane()
     {
-        var answer = new OwnerAnswer(3, "sindri-api", "use postgres", A.At(20));
+        var answer = new OwnerAnswer(3, "t1-api", "use postgres", A.At(20));
         var open = ObligationEvaluator.Evaluate(A.Facts() with { Answers = [answer] });
         var relayed = ObligationEvaluator.Evaluate(A.Facts() with
         {
             Answers = [answer],
-            Outbound = [A.Sent("sindri-api", "OWNER ANSWER q3: use postgres", 21)],
+            Outbound = [A.Sent("t1-api", "OWNER ANSWER q3: use postgres", 21)],
         });
         var wrong = ObligationEvaluator.Evaluate(A.Facts() with
         {
             Answers = [answer],
-            Outbound = [A.Sent("sindri-api", "something else", 21)],
+            Outbound = [A.Sent("t1-api", "something else", 21)],
         });
 
         Assert.Equal((ObligationKind.RelayOwner, "q3"), (open[0].Kind, open[0].Key));

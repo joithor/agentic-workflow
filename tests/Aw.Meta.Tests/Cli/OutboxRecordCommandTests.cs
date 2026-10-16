@@ -2,6 +2,7 @@ using Aw.Meta.Testing;
 
 namespace Aw.Meta.Tests.Cli;
 
+[System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
 public sealed class OutboxRecordCommandTests : IDisposable
 {
     private readonly CliHarness _cli = new();
@@ -14,20 +15,20 @@ public sealed class OutboxRecordCommandTests : IDisposable
     [Fact, Trait("Lane", "integration")]
     public async Task A_recorded_reply_releases_the_stop_that_was_blocked()
     {
-        _ = await _cli.Run("team-init", "--team", "sindri", "--repo", "/r", "--lanes", "api");
-        _ = await _cli.Run("role-set", "--session", "s-meta", "--name", "sindri-meta");
-        await File.WriteAllTextAsync(Transcript, MetaWorld.PeerLine("m1", "sindri-api", "please rebase"), TestContext.Current.CancellationToken);
+        _ = await _cli.Run("team-init", "--team", "t1", "--repo", "/r", "--lanes", "api");
+        _ = await _cli.Run("role-set", "--session", "s-meta", "--name", "t1-meta");
+        await File.WriteAllTextAsync(Transcript, MetaWorld.PeerLine("m1", "t1-api", "please rebase"), TestContext.Current.CancellationToken);
         var blocked = await _cli.Run("stop-check", "--session", "s-meta", "--transcript", Transcript);
         _cli.Clock.Advance(TimeSpan.FromMinutes(1));
 
-        var other = await _cli.RunWithInput(Hook("s-other", "sindri-api", "hi"), "outbox-record");
-        var recorded = await _cli.RunWithInput(Hook("s-meta", "sindri-api", "rebased"), "outbox-record");
+        var other = await _cli.RunWithInput(Hook("s-other", "t1-api", "hi"), "outbox-record");
+        var recorded = await _cli.RunWithInput(Hook("s-meta", "t1-api", "rebased"), "outbox-record");
         var released = await _cli.Run("stop-check", "--session", "s-meta", "--transcript", Transcript);
 
         Assert.Equal(1, blocked.Exit);
         Assert.Equal((0, string.Empty), (other.Exit, other.Out));
         Assert.Equal(0, recorded.Exit);
-        Assert.Contains("closed: reply to sindri-api (m1)", recorded.Out, StringComparison.Ordinal);
+        Assert.Contains("closed: reply to t1-api (m1)", recorded.Out, StringComparison.Ordinal);
         Assert.Equal((0, string.Empty), (released.Exit, released.Out));
     }
 

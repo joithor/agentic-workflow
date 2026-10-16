@@ -42,15 +42,15 @@ public sealed class StatusTests
     public async Task A_ready_pull_request_is_queued_with_its_gate_state_until_it_merges()
     {
         await _world.Ready();
-        await Receive("m1", "sindri-api", "ready #190");
+        await Receive("m1", "t1-api", "ready #190");
         var ungated = await Status();
         _ = await _world.Gates.Save(new GateRecord(190, "h", "m", ["repo"], [], GateVerdict.Pass, A.At(2)), CancellationToken.None);
         var gated = await Status();
         _ = await _world.Gates.RecordMerge(new MergeRecord(190, "abcdef123", A.At(3)), CancellationToken.None);
         var merged = await Status();
 
-        Assert.Equal([new QueuedPr(190, "sindri-api", "none")], ungated.MergeQueue);
-        Assert.Equal([new QueuedPr(190, "sindri-api", "Pass")], gated.MergeQueue);
+        Assert.Equal([new QueuedPr(190, "t1-api", "none")], ungated.MergeQueue);
+        Assert.Equal([new QueuedPr(190, "t1-api", "Pass")], gated.MergeQueue);
         Assert.Empty(merged.MergeQueue);
     }
 
@@ -58,8 +58,8 @@ public sealed class StatusTests
     public async Task A_pull_request_merged_earlier_stays_out_of_the_queue_after_a_later_merge()
     {
         await _world.Ready();
-        await Receive("m1", "sindri-api", "ready #190");
-        await Receive("m2", "sindri-context", "ready #191");
+        await Receive("m1", "t1-api", "ready #190");
+        await Receive("m2", "t1-context", "ready #191");
         _ = await _world.Gates.RecordMerge(new MergeRecord(190, "abcdef123", A.At(3)), CancellationToken.None);
         _ = await _world.Gates.RecordMerge(new MergeRecord(191, "fedcba987", A.At(4)), CancellationToken.None);
 
@@ -72,9 +72,9 @@ public sealed class StatusTests
     public async Task A_pull_request_the_watch_saw_merged_or_closed_on_GitHub_is_dropped_from_the_queue()
     {
         await _world.Ready();
-        await Receive("m1", "sindri-api", "ready #190");
-        await Receive("m2", "sindri-context", "ready #191");
-        await Receive("m3", "sindri-ui", "ready #192");
+        await Receive("m1", "t1-api", "ready #190");
+        await Receive("m2", "t1-context", "ready #191");
+        await Receive("m3", "t1-ui", "ready #192");
         _ = await _world.Values.Set(KvKeys.EndedPrs, "190,191", CancellationToken.None);
 
         var status = await Status();
@@ -86,7 +86,7 @@ public sealed class StatusTests
     public async Task What_is_owed_and_what_waits_for_the_owner_is_listed()
     {
         await _world.Ready();
-        await Receive("m1", "sindri-api", "OWNER QUESTION: which db?");
+        await Receive("m1", "t1-api", "OWNER QUESTION: which db?");
 
         var status = await Status();
 

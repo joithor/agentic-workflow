@@ -1,0 +1,47 @@
+using Aw.Meta.Core.Lanes;
+using Aw.Meta.Core.Ports;
+using Xunit;
+
+namespace Aw.Meta.Testing;
+
+/// <summary>The ILaneFiles contract, run against the in-memory fake and the directory adapter.</summary>
+public abstract class LaneFilesContract
+{
+    private static readonly CancellationToken _none = CancellationToken.None;
+
+    /// <summary>A fresh store plus a way to put a lane's record in place the way the launcher and the hook do.</summary>
+    /// <returns>The store and the writer.</returns>
+    protected abstract ValueTask<(ILaneFiles Files, Func<LaneRecord, Task> Put)> Create();
+
+    /// <summary>A lane nothing was recorded for has no record.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task A_lane_with_nothing_recorded_has_no_record()
+    {
+        var (files, _) = await Create();
+
+        var record = await files.Record("api", _none);
+
+        Expect.That(record.IsSuccess && record.Value is null, "no record");
+    }
+
+    /// <summary>The session id, agent facts and ambiguity read back.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task A_recorded_lane_reads_back_with_its_session_and_agent()
+    {
+        var (files, put) = await Create();
+        await put(new LaneRecord("api", Core.Ids.SessionId.From("s-1"), new LaneAgent("codex", "codex", Hooks: true, "~/.codex/{sessionId}.jsonl")));
+        await put(new LaneRecord("ui", Session: null, new LaneAgent("aider", "aider", Hooks: false), RecordedAt: null, Ambiguous: true));
+
+        var api = await files.Record("api", _none);
+        var ui = await files.Record("ui", _none);
+
+        var a = api.Value!;
+        var u = ui.Value!;
+        Expect.That(a.Session?.Value == "s-1" && a.IsNonClaude, "session and a non-Claude agent");
+        Expect.That(string.Equals(a.Agent?.Agent, "codex", StringComparison.Ordinal) && string.Equals(a.Agent?.ProcessName, "codex", StringComparison.Ordinal) && a.Agent!.Hooks, "agent facts");
+        Expect.That(string.Equals(a.Agent?.Transcripts, "~/.codex/{sessionId}.jsonl", StringComparison.Ordinal), "the transcript glob");
+        Expect.That(u.Session is null && !u.Agent!.Hooks && u.Ambiguous, "ambiguous with no session and no hooks");
+    }
+}

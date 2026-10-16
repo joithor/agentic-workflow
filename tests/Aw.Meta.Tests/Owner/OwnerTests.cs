@@ -21,7 +21,7 @@ public sealed class OwnerTests
     public async Task A_lane_s_owner_question_shows_in_the_owner_queue_until_it_is_answered()
     {
         await _world.Ready();
-        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "sindri-api", "OWNER QUESTION: sqlite or postgres?"));
+        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "t1-api", "OWNER QUESTION: sqlite or postgres?"));
         _ = await _world.Sync.Run(MetaWorld.Transcript, CancellationToken.None);
 
         var open = await List().Handle(new ListOwnerRequest(All: false), CancellationToken.None);
@@ -30,7 +30,7 @@ public sealed class OwnerTests
         var all = await List().Handle(new ListOwnerRequest(All: true), CancellationToken.None);
 
         var question = Assert.Single(open.Value.Questions);
-        Assert.Equal(("sindri-api", "sqlite or postgres?"), (question.AskedBy, question.Text));
+        Assert.Equal(("t1-api", "sqlite or postgres?"), (question.AskedBy, question.Text));
         Assert.Empty(after.Value.Questions);
         Assert.Equal("sqlite", Assert.Single(all.Value.Questions).Answer);
     }
@@ -39,13 +39,13 @@ public sealed class OwnerTests
     public async Task Answering_logs_the_decision_and_opens_a_relay_to_the_lane_that_asked()
     {
         await _world.Ready();
-        _ = await _world.Owner.Ask("sindri-api", "sqlite or postgres?", A.At(1), CancellationToken.None);
+        _ = await _world.Owner.Ask("t1-api", "sqlite or postgres?", A.At(1), CancellationToken.None);
 
         var response = await Answer().Handle(new AnswerOwnerRequest(1, "sqlite"), CancellationToken.None);
 
         var relay = Assert.Single(await _world.Open());
         Assert.Equal("OWNER ANSWER q1: sqlite", response.Value.Relay);
-        Assert.Equal("- OWNER (2026-10-15): sqlite (asked by sindri-api)", response.Value.LogLine);
+        Assert.Equal("- OWNER (2026-10-15): sqlite (asked by t1-api)", response.Value.LogLine);
         Assert.Equal([response.Value.LogLine], _world.Log.Lines);
         Assert.Equal((ObligationKind.RelayOwner, "q1"), (relay.Kind, relay.Key));
         Assert.Contains("OWNER ANSWER q1: sqlite", relay.NextCommand, StringComparison.Ordinal);
