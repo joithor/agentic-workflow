@@ -13,6 +13,7 @@ using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Health;
 using Aw.Sindri.Core.Items;
+using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Blocks;
@@ -82,12 +83,20 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ItemCreatedPublic))]
 [JsonSerializable(typeof(ItemStateChanged))]
 [JsonSerializable(typeof(ItemLinked))]
+[JsonSerializable(typeof(RequestFiled))]
+[JsonSerializable(typeof(RequestFiledPublic))]
+[JsonSerializable(typeof(DecisionRecorded))]
 [JsonSerializable(typeof(AsOf))]
 [JsonSerializable(typeof(ViewsStatus))]
 [JsonSerializable(typeof(ServiceRow))]
 [JsonSerializable(typeof(ProfileRow))]
 [JsonSerializable(typeof(ItemRow))]
 [JsonSerializable(typeof(AliasRow))]
+[JsonSerializable(typeof(RequestRow))]
+[JsonSerializable(typeof(HumanDecisionRow))]
+[JsonSerializable(typeof(NeedsYouRowRecord))]
+[JsonSerializable(typeof(NeedsYouRow))]
+[JsonSerializable(typeof(NeedsYouSubject))]
 [JsonSerializable(typeof(TimelineRow))]
 [JsonSerializable(typeof(HealthReport))]
 [JsonSerializable(typeof(CommandAccepted))]

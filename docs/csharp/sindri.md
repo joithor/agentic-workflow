@@ -530,6 +530,10 @@ blocks.
 | `SND-SCHED-001` | A background service run failed |
 | `SND-ITEM-404` | No item has that id or alias, or a `session` caller asked for an item outside its repo (404) |
 | `SND-ITEM-409` | The item changed since the caller looked (a stale `itemVersion`, or another close won the fact key), or it is already done or cancelled (409) |
+| `SND-REQ-001` | A request has an unknown kind, no text, or more than 2,000 characters (400; API P4) |
+| `SND-REQ-002` | Too many open requests: 20 in the repo or 50 in all, counted for a `session` caller (429; API P4) |
+| `SND-DEC-404` | No decision has that id, or a `session` caller asked for one outside its repo (404; API P4) |
+| `SND-DEC-001` | The choice isn't one of the decision's options, or the note is over 2,000 characters (400; API P4) |
 | `SND-SECRET-001` | A secret pointer is malformed: no scheme, an unknown scheme, or a bad target. Expected `env:NAME`, `file:/absolute/path`, `keychain:<service>/<account>` or `op:<vault>/<item>/<field>`; the message names only the scheme, never the text after it (it may be a secret pasted by mistake) |
 | `SND-SECRET-002` | A secret pointer doesn't resolve: the variable is unset or empty, the file is missing or empty, the keychain (macOS `security`, Linux `secret-tool`) or 1Password entry is missing, `security`, `secret-tool` or `op` isn't on PATH or ran past its timeout (5 s, 30 s), or `keychain:` is used on any other OS. On Linux `secret-tool` exits 1 both for a missing entry and when no D-Bus session or keyring is reachable, so `sindri serve` must run in the login session. The message names the pointer and the fix, never a value |
 | `SND-SECRET-003` | A `file:` pointer is unsafe: the file has group or other permission bits (it must be 0600 or stricter) or isn't a regular file (a symbolic link, even to a 0600 file, or a directory; only the last path segment is checked) |
