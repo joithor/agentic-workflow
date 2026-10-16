@@ -49,7 +49,8 @@ internal sealed partial class WiringRules : IRecipeRules
     /// <param name="Name">How findings name it: "step 'step.produce'", "event 'item.routed'".</param>
     /// <param name="Outcomes">The outcomes it reports; empty when it reports none.</param>
     /// <param name="Facts">The facts it records, which a transition may list in 'produces'.</param>
-    private sealed record TriggerSource(string Name, IReadOnlyList<OutcomeName> Outcomes, IReadOnlyList<FactKey> Facts);
+    /// <param name="ChildId">The child recipe's id when the source is a child, whose declared outputs are the facts; null otherwise.</param>
+    private sealed record TriggerSource(string Name, IReadOnlyList<OutcomeName> Outcomes, IReadOnlyList<FactKey> Facts, string? ChildId = null);
 
     /// <summary>The source of a transition from <paramref name="from"/> on <paramref name="on"/>, or null when it can't be resolved (an unknown state, block, event or child, or a trigger that doesn't fit the state, which other rules report).</summary>
     private static TriggerSource? SourceOf(Recipe recipe, string from, string on, ValidationContext context)
@@ -97,7 +98,7 @@ internal sealed partial class WiringRules : IRecipeRules
         var terminals = found.Recipe.States.Values
             .Where(s => s.Kind == StateKind.Terminal && s.Outcome is not null)
             .Select(s => s.Outcome.GetValueOrDefault());
-        return new TriggerSource($"child '{child.Recipe.Value}'", [.. terminals.Append(_cancelled).Distinct()], []);
+        return new TriggerSource($"child '{child.Recipe.Value}'", [.. terminals.Append(_cancelled).Distinct()], ChildOutputs.Declared(found.Recipe), child.Recipe.Value);
     }
 
     /// <summary>Each state a transition leaves from, with its trigger's source where that resolves.</summary>
