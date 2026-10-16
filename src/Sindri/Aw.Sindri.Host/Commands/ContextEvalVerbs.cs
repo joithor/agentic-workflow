@@ -1,7 +1,6 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
-using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Core.Eval.MapQuality;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Results;
@@ -29,24 +28,8 @@ internal sealed class ContextEvalVerbs(ControlPlaneClient client, Output output,
         ["probes", .. var rest] when Options(rest) is { } o => Probes(o.File, o.Json, ct),
         ["map", .. var rest] when rest is [] or ["--json"] => Map(rest.Length == 1, ct),
         ["purge", .. var rest] when rest is [] or ["--all"] => Purge(rest.Length == 1, ct),
-        ["backtest", .. var rest] => Backtest(rest),
-        _ => output.Error(SindriErrors.UnknownVerb.With($"'context eval {string.Join(' ', args)}' is not an eval command: context eval probes [--file <probes.json>] [--json] | map [--json] | purge [--all] | backtest [--arms a,b|all] [--since D] [--until D] [--limit N]")),
+        _ => output.Error(SindriErrors.UnknownVerb.With($"'context eval {string.Join(' ', args)}' is not an eval command: context eval probes [--file <probes.json>] [--json] | map [--json] | purge [--all] | backtest [--arms a,b|all] [--since D] [--until D] [--limit N] [--detach] [--json]")),
     };
-
-    /// <summary>The backtest is a job (it takes a heavy-job slot and runs for minutes): the CLI follows it through API P6's job runtime, which has not merged. The arms are checked first.</summary>
-    private async Task<int> Backtest(string[] rest)
-    {
-        var arms = Arms.Parse(ArmsOption(rest) ?? "all");
-        return arms.IsError
-            ? await Failed(arms.Error).ConfigureAwait(false)
-            : await output.Error(SindriErrors.UnknownVerb.With("'context eval backtest' is pending:API-P6 (a job: it ships once API P6's job runtime merges; the engine and its tests are in)")).ConfigureAwait(false);
-    }
-
-    private static string? ArmsOption(string[] rest)
-    {
-        var at = Array.IndexOf(rest, "--arms");
-        return at >= 0 && at + 1 < rest.Length ? rest[at + 1] : null;
-    }
 
     private async Task<int> Map(bool json, CancellationToken ct)
     {

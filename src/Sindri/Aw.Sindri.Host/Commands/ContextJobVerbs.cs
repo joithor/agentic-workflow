@@ -15,11 +15,17 @@ namespace Aw.Sindri.Host.Commands;
 internal sealed class ContextJobVerbs(ControlPlaneClient client, Output output, JobFollower follower)
 {
     internal const string SyncUsage = "context sources sync [<source>] [--detach] [--json]";
+    internal const string BacktestUsage = "context eval backtest [--arms a,b|all] [--since <date>] [--until <date>] [--limit <n>] [--detach] [--json]";
     internal const string BuildUsage = "context map build [--detach] [--json]";
 
     internal async Task<int> Run(string[] args, CancellationToken interrupt, CancellationToken again)
     {
         ArgumentNullException.ThrowIfNull(args);
+        if (args is ["eval", "backtest", ..])
+        {
+            return await Backtest(args[2..], interrupt, again).ConfigureAwait(false);
+        }
+
         var sync = args is ["sources", ..];
         var line = Parse(args[2..], sync ? 1 : 0);
         if (line is null)
@@ -35,14 +41,34 @@ internal sealed class ContextJobVerbs(ControlPlaneClient client, Output output, 
             return await output.Error(started.Error).ConfigureAwait(false);
         }
 
-        if (!line.Detach)
+        return await Followed(started.Value, line.Detach, line.Json, interrupt, again).ConfigureAwait(false);
+    }
+
+    /// <summary>'context eval backtest [--arms a,b|all] [--since D] [--until D] [--limit N] [--detach] [--json]': the backtest job (context spec §9.1).</summary>
+    private async Task<int> Backtest(string[] rest, CancellationToken interrupt, CancellationToken again)
+    {
+        var line = BacktestLine.Parse(rest);
+        if (line is null)
         {
-            return await follower.Follow(started.Value.Value, line.Json, interrupt, again).ConfigureAwait(false);
+            return await output.Error(SindriErrors.InvalidInput.With($"'context eval backtest {string.Join(' ', rest)}' isn't this command: {BacktestUsage}")).ConfigureAwait(false);
         }
 
-        return line.Json
-            ? await output.Raw(started.Value.Body, 0).ConfigureAwait(false)
-            : await output.Text($"job {started.Value.Value.JobId.Value} started\n", 0).ConfigureAwait(false);
+        var started = await client.Post<RunContextBacktestRequest, JobStartedResponse>("/sindri/context/eval/backtest", line.Request, interrupt).ConfigureAwait(false);
+        return started.IsError
+            ? await output.Error(started.Error).ConfigureAwait(false)
+            : await Followed(started.Value, line.Detach, line.Json, interrupt, again).ConfigureAwait(false);
+    }
+
+    private async Task<int> Followed(ApiAnswer<JobStartedResponse> started, bool detach, bool json, CancellationToken interrupt, CancellationToken again)
+    {
+        if (!detach)
+        {
+            return await follower.Follow(started.Value, json, interrupt, again).ConfigureAwait(false);
+        }
+
+        return json
+            ? await output.Raw(started.Body, 0).ConfigureAwait(false)
+            : await output.Text($"job {started.Value.JobId.Value} started\n", 0).ConfigureAwait(false);
     }
 
     /// <summary>The words (at most <paramref name="maxWords"/>) and the --detach and --json flags; null for anything else.</summary>
