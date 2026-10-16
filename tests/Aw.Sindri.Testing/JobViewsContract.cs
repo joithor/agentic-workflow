@@ -57,14 +57,14 @@ public abstract class JobViewsContract
     public async Task Running_is_the_running_jobs_oldest_start_first()
     {
         await using var subject = await Create();
-        await subject.Start(Id(3), _run, JobKey.From("c"), At(3));
-        await subject.Start(Id(1), _run, JobKey.From("a"), At(1));
-        await subject.Start(Id(2), _sync, JobKey.From("b"), At(2));
+        await subject.Start(Id(3), _run, JobKey.From("c"), At(1));
+        await subject.Start(Id(1), _run, JobKey.From("a"), At(2));
+        await subject.Start(Id(2), _sync, JobKey.From("b"), At(3));
         await subject.Finish(Id(2));
 
         var running = (await subject.Views.Running(Token)).Value;
 
-        Expect.Sequence([Id(1), Id(3)], running.Select(static r => r.Id));
+        Expect.Sequence([Id(3), Id(1)], running.Select(static r => r.Id));
     }
 
     /// <summary>List is newest start first: a job that started earlier but ended just now is not above a job that started later.</summary>

@@ -8156,3 +8156,6 @@ Aw.Sindri.Core.Scheduling.ServiceRunGuard.Unreserve(Aw.Sindri.Core.Ids.ServiceNa
 Aw.Sindri.Core.Scheduling.ServiceRunGuard.TryClaimReserved(Aw.Sindri.Core.Ids.ServiceName service, out System.IDisposable! claim) -> bool
 Aw.Sindri.Core.Scheduling.ServiceRunGuard.TryReserveManual(Aw.Sindri.Core.Ids.ServiceName service) -> bool
 Aw.Sindri.Core.Jobs.IJobAdmission<TRequest>.Rollback(TRequest request) -> void
+Aw.Sindri.Core.Jobs.JobOrder
+static Aw.Sindri.Core.Jobs.JobOrder.NewestFirst(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Jobs.JobRow!>! rows) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Jobs.JobRow!>!
+static Aw.Sindri.Core.Jobs.JobOrder.OldestFirst(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Jobs.JobRow!>! rows) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Jobs.JobRow!>!
