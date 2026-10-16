@@ -218,7 +218,7 @@
       "method": "POST",
       "route": "/sindri/jobs/{jobId}/cancel",
       "cli": "sindri jobs cancel <jobId>",
-      "ui": "pending:P6",
+      "ui": "ready",
       "destructive": false,
       "readsViews": true,
       "shortcut": null
@@ -427,7 +427,7 @@
       "method": "POST",
       "route": "/sindri/services/{name}/pause",
       "cli": "sindri services pause <name>",
-      "ui": "pending:P6",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
@@ -524,7 +524,7 @@
       "method": "POST",
       "route": "/sindri/services/{name}/resume",
       "cli": "sindri services resume <name>",
-      "ui": "pending:P6",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
@@ -757,7 +757,7 @@
       "method": "POST",
       "route": "/sindri/services/{name}/run",
       "cli": "sindri services run <name>",
-      "ui": "pending:P6",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null

@@ -104,7 +104,7 @@ public sealed class SchedulerHostTests
 
         await Run(new CountingApprovals(_h.Profiles), () => Heartbeats() >= 2);
 
-        Assert.Contains(_log.Lines, l => l.Contains("SND-SCHED-001 the profile names service 'ghost'", StringComparison.Ordinal));
+        Assert.Contains(_log.Lines, l => l.Contains("SND-SVC-404 the profile names service 'ghost'", StringComparison.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -175,7 +175,7 @@ public sealed class SchedulerHostTests
 
         await Run(new CountingApprovals(_h.Profiles), () => Runs("ghost").Count >= 2);
 
-        Assert.All(Runs("ghost"), r => Assert.Equal((ServiceOutcome.Failed, "SND-SCHED-001"), (r.Outcome, r.Code)));
+        Assert.All(Runs("ghost"), r => Assert.Equal((ServiceOutcome.Failed, "SND-SVC-404"), (r.Outcome, r.Code)));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -224,7 +224,7 @@ public sealed class SchedulerHostTests
             .AddScoped<IScheduledService, FailingService>()
             .BuildServiceProvider();
         var clock = new SteppedClock(_h.Clock);
-        using var scheduler = new SchedulerHost(provider.GetRequiredService<IServiceScopeFactory>(), approvals, _h.Held, _h.Callers, builtIns ?? [], clock, _log);
+        using var scheduler = new SchedulerHost(provider.GetRequiredService<IServiceScopeFactory>(), new ScheduleInputs(approvals, builtIns ?? [], new NoPauses()), new ServiceRunGuard(), _h.Held, _h.Callers, clock, _log);
         await scheduler.StartAsync(Token);
         for (var step = 0; !done(); step++)
         {
