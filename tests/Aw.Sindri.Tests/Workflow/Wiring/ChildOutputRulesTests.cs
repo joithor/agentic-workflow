@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Validation;
 using Aw.Sindri.Testing.Workflow;
 using static Aw.Sindri.Tests.Workflow.Wiring.WiringRecipe;
 
@@ -205,6 +206,24 @@ public sealed class ChildOutputRulesTests
         Assert.Empty(Wire003(CheckWiring(Parent(AnyOf(), Bare("fact:output")), WithKid).Lines()));
         Assert.Empty(Wire003(CheckWiring(Parent(AllOf(), Bare("fact:output")), WithKid).Lines()));
         Assert.Empty(Wire003(CheckWiring(Parent(AllOf(Outcome("unresolved"), NotOf(AnyOf())), Bare("fact:output")), WithKid).Lines()));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_whole_validator_reports_an_empty_all_or_any_once_as_RCP_SCHEMA_001_at_its_path()
+    {
+        var context = new ValidationContext(WiringCatalog.WithTestBlocks, RecipeProfileFacts.None, WithKid.Children!, BaseRecipe: null);
+        var source = new RecipeSource("r.yaml", SourcePositions.None);
+
+        IReadOnlyList<string> Findings(WhenClause when) =>
+        [
+            .. RecipeValidator.Validate(new RecipeDocument(Parent(when, Bare("fact:output")), RecipeHash.Of("{}"u8), source), context)
+                .Where(f => f.Rule.StartsWith("RCP-SCHEMA-001", StringComparison.Ordinal) || f.Rule.StartsWith("RCP-WIRE-003", StringComparison.Ordinal))
+                .Select(f => f.Rule + " " + f.Path),
+        ];
+
+        Assert.Equal(["RCP-SCHEMA-001 transitions[0].when"], Findings(AnyOf()));
+        Assert.Equal(["RCP-SCHEMA-001 transitions[0].when"], Findings(AllOf()));
+        Assert.Equal(["RCP-SCHEMA-001 transitions[0].when.all[1].not"], Findings(AllOf(Outcome("unresolved"), NotOf(AnyOf()))));
     }
 
     [Fact, Trait("Lane", "unit")]

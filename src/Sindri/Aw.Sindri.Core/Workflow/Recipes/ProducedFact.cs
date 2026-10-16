@@ -8,6 +8,7 @@ namespace Aw.Sindri.Core.Workflow.Recipes;
 /// The bare key 'fact:x' records the trigger's 'fact:x' under its own name; the long form '{ fact, from }' renames a
 /// child's output on the way (DT spec §8.4). A bare key is written as a plain string, so its hash doesn't move. The
 /// canonical form lives in the type: a source equal to the fact is the bare key, however the entry is built or read.
+/// The getter normalizes on read and the setter stores the raw value, so a later <c lang="csharp">with { Fact = ... }</c> keeps the stored source (a rename of the new fact from the old source).
 /// </summary>
 /// <param name="Fact">The fact the transition records.</param>
 /// <param name="From">The trigger's fact it takes the value from; a source equal to <paramref name="Fact"/> is the same key and reads as null, whether it is set here or by a <see langword="with"/>.</param>
