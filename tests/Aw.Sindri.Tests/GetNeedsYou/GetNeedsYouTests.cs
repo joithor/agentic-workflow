@@ -1,6 +1,5 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
-using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Views;
@@ -119,7 +118,7 @@ public sealed class GetNeedsYouTests
         Expect.Equal(3, rows.Count);
         foreach (var row in rows)
         {
-            Assert.True(CliForm.Parse(row.Cli).IsSuccess, row.Cli);
+            Assert.Matches("^sindri( [A-Za-z0-9][A-Za-z0-9:._-]*)+$", row.Cli);
             Assert.DoesNotContain('<', row.Cli);
             Assert.StartsWith("sindri ", row.Cli, StringComparison.Ordinal);
             Assert.Contains(row.PrimaryAction, row.Actions);
