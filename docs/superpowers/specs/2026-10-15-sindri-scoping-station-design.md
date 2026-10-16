@@ -17,6 +17,8 @@ it ends at the owner's after-scoping stop with a **scope packet**: a cited scope
 all failing, a size estimate, the open questions left, and a coverage report for four blast-radius lenses. The design
 station takes that packet as its input.
 
+The full line, with its three owner stops and its capped review loop, is specified in the line contract, `2026-10-15-sindri-spec-to-proven-pr-line-design.md` (draft PR #262).
+
 The station fixes three things the owner names as today's pain: scoping that misses blast radius, behaviour that is
 never fully pinned down, and work whose evidence doesn't accumulate. Each is a state or a check here, not advice.
 
@@ -30,7 +32,7 @@ block, W6–W14, sequenced before SC-L and SC-R.
 | # | Decision | Reason |
 |---|---|---|
 | SC1 | **The line** (owner, 2026-10-15). Spec-to-proven-PR is rebuilt from the ground up as block recipes: scope → design → plan → a per-phase child [build → prove → review → ship → babysit → docs sync]. Phase children run one after another, or as a PR stack with some built in parallel. Build order is front to back, strictly. Scoping is first | Each station is a block recipe with a packet in and a packet out. A station that is wrong poisons every later one, so the front is built and proven first |
-| SC2 | **Owner stops** (owner, 2026-10-15). The owner stops the line after scoping, after design, before each PR opens, and at merge. This station owns the first: `stop` (§6) is a human-only desk Step | The owner decides at the four points where a wrong call costs the most. Nothing between them asks the owner anything except the interview (SC6) |
+| SC2 | **Owner stops** (owner, 2026-10-15 (revised)). The line has three owner stops: after scoping, after design, and ready-to-merge (the PR is open with its evidence pack, docs sync is complete, and CI is green). There is no stop before a PR opens. This station owns the first: `stop` (§6) is a human-only desk Step | The owner decides at the three points where a wrong call costs the most. Nothing between them asks the owner anything except the interview (SC6) |
 | SC3 | **Pain points this station must fix** (owner, 2026-10-15): incomplete scoping (blast radius in code, product surfaces, and related surfaces and features); incomplete answers on expected or desired behaviour; evidence that doesn't accumulate at every stage | They are the reasons today's projects need 20 or more PRs and several /autoplan passes. §5 answers the first, §7 the second, §8 the third |
 | SC4 | **Inputs** (owner, 2026-10-15). Any one of: a brief or spec doc (a whole file or one section); a tracker project or issue, read through a tracker port, never hard-wired to one tracker; a rough idea typed in the app, first turned into a brief by an interview; a PR or branch, to scope an existing change (§4) | Work arrives in all four forms. One station with four readers means one scope packet shape for the design station |
 | SC5 | **Four blast-radius lenses** (owner, 2026-10-15). **Code:** files, symbols, callers and callees, covering tests, and data and schema touched. **Product surfaces:** screens, APIs, jobs, notifications, permissions, reports and flags, from the product map. **Related features:** features that share data, flows or components with the change. **History:** past tickets, incidents, PRs and decisions on the same areas (§5) | Each lens is a place today's scoping misses things. Naming them makes "nothing found" a recorded result instead of a silence |
@@ -63,7 +65,7 @@ block, W6–W14, sequenced before SC-L and SC-R.
 input ─► [ scoping ] ─► scope packet ─► [ design ] ─► design packet ─► [ plan ] ─► phases
                                                                            │
           per phase (sequence, or a PR stack): build ─► prove ─► review ─► ship ─► babysit ─► docs sync
-                                                    owner stop before the PR opens ┘    owner stop at merge ┘
+                                                                  owner stop at ready-to-merge ┘
 ```
 
 - A station is a block recipe. A later `workflow.line` meta recipe chains them as children (DT §6), once two stations
