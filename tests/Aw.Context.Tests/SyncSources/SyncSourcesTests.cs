@@ -8,6 +8,7 @@ using Aw.Context.Core.Sources;
 using Aw.Context.Features.SyncSources;
 using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Fakes;
+using Aw.Context.Testing.Map;
 using Aw.Context.Tests.Map;
 using Aw.Context.Tests.Onyx;
 
@@ -88,6 +89,27 @@ public sealed class SyncSourcesTests
 
         Assert.Null(resumed.Code);
         Assert.Equal(total, source.Searches);   // the second run searched only the nodes the first one didn't reach
+    }
+
+    [Fact]
+    public async Task SyncSources_after_a_finished_run_whose_last_nodes_have_no_terms_the_next_run_walks_the_whole_map_again()
+    {
+        await using var onyx = await FakeOnyxServer.Start();
+        using var harness = new OnyxSourceHarness(onyx.Url, onyx.Token);
+        var source = new ScriptedSource(harness.Source);
+        using var world = new MapWorld(intent: source);
+        _ = await world.ImportYaml(FixtureMap.Yaml.Replace("edges:", "  - key: thing:zzz-termless\n    label: \"[REDACTED:x]\"\nedges:", StringComparison.Ordinal));   // sorts last, has no search terms
+        var text = new MapText(new FakeScrubberFactory().For([]).Value);
+        var total = (await new MapReader(world.Store, world.Intents).ReadWithoutIntent(_scope, draft: false, Ct)).Value.Graph.Nodes.Count(n => n.Key.Kind is not (NodeKind.Record or NodeKind.Decision) && text.SearchTerms(n.Label).Count > 0);
+
+        var first = (await world.Engine.Sync("onyx", _scope, Ct)).Value.Sources[0];
+        var searchedFirst = source.Searches;
+        var second = (await world.Engine.Sync("onyx", _scope, Ct)).Value.Sources[0];
+
+        Assert.Null(first.Code);
+        Assert.Equal(total, searchedFirst);
+        Assert.Null(second.Code);
+        Assert.Equal(2 * total, source.Searches);   // a finished run restarts at the first node, not at the termless tail
     }
 
     [Fact]
