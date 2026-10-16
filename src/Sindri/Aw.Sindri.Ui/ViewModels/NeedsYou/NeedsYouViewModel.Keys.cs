@@ -116,7 +116,7 @@ internal sealed partial class NeedsYouViewModel
     {
         var decision = row.Entry.DecisionId is not null;
         var primary = row.Controls.FirstOrDefault(c => c.IsPrimary && c.IsEnabled);
-        return primary is not null && (!decision || string.Equals(SheetRowId, row.Id, StringComparison.Ordinal)) && Act(row, primary.Action);
+        return primary is not null && (!decision || (primary.Action.OptionId.Length > 0 && string.Equals(SheetRowId, row.Id, StringComparison.Ordinal))) && Act(row, primary.Action);
     }
 
     // X picks the option the API marks rejectLike; a row without one has no X.

@@ -177,7 +177,6 @@ internal sealed partial class HomePage : UserControl
     // IsActive is not yet true inside Activated, so the event says which way the window went.
     private void WatchFocusedRow(bool active)
     {
-
         if (TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is Visual focused
             && focused.GetSelfAndVisualAncestors().OfType<NeedsYouRow>().FirstOrDefault() is { } row)
         {

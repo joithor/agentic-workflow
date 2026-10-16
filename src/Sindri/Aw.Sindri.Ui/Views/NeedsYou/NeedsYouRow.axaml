@@ -18,7 +18,7 @@
         <Button x:Name="NeedsYouTitle" Grid.Column="2" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding OpenName}">
           <TextBlock Classes="body-strong" Text="{Binding Title}" TextTrimming="CharacterEllipsis" AutomationProperties.AccessibilityView="Raw" />
         </Button>
-        <TextBlock x:Name="NewWord" Grid.Column="3" Classes="caption" Text="{Binding NewWord}" AutomationProperties.Name="{Binding NewWord}" IsVisible="{Binding HasNewWord}" Margin="8,0" VerticalAlignment="Center" />
+        <TextBlock x:Name="NewWord" Grid.Column="3" Classes="caption" Text="{Binding NewWord}" IsVisible="{Binding HasNewWord}" AutomationProperties.AccessibilityView="Raw" Margin="8,0" VerticalAlignment="Center" />
         <TextBlock Grid.Column="4" Classes="caption subtle" Text="{Binding Age}" VerticalAlignment="Center" TextAlignment="Right" AutomationProperties.AccessibilityView="Raw" />
       </Grid>
       <DockPanel LastChildFill="True">

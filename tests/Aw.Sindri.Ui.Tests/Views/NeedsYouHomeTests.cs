@@ -128,6 +128,7 @@ public sealed class NeedsYouHomeTests : IDisposable
         var (window, shell) = await WithRows(2);
         var frame = Rows(window)[0].GetVisualDescendants().OfType<Border>().First(b => string.Equals(b.Name, "RowFrame", StringComparison.Ordinal));
         Assert.Contains(frame.Classes, c => string.Equals(c, "pulsing", StringComparison.Ordinal));
+        Assert.True(Named<TextBlock>(Rows(window)[0], "NewWord").IsEffectivelyVisible);   // motion only adds to the word (test-r3-5)
 
         shell.ApplyAppearance(new ViewModels.Settings.AppearanceSettings(1.0, ReduceMotion: true));
         Settle(window);
