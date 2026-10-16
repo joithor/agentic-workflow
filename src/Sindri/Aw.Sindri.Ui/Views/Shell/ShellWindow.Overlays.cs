@@ -36,6 +36,8 @@ internal sealed partial class ShellWindow
         return OpenSettingsByKey(e, shell);
     }
 
+    private bool _openingSettings;
+
     private bool OpenSettingsByKey(KeyEventArgs e, ShellViewModel shell)
     {
         if (e.Key != Key.OemComma || e.KeyModifiers != _command)
@@ -48,7 +50,16 @@ internal sealed partial class ShellWindow
             return true;   // the palette and the ? sheet are modal (§11.2): the chord is swallowed, focus stays in the card
         }
 
-        shell.GoTo(PageId.Settings);
+        _openingSettings = true;   // the page change would post KeepFocus too; ⌘, moves focus once, into Settings
+        try
+        {
+            shell.GoTo(PageId.Settings);
+        }
+        finally
+        {
+            _openingSettings = false;
+        }
+
         // Like the sheet's heading (§11.2), opening Settings moves focus into it: its first control.
         Dispatcher.UIThread.Post(() => FirstFocusable(this.Get<Control>("SettingsSlot"))?.Focus(NavigationMethod.Tab), DispatcherPriority.Loaded);
         return true;

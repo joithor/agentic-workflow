@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -32,6 +33,10 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<TemporalRuntime>()
             .AddSingleton<HeldHumanToken>()
             .AddSingleton<BlockCatalog>()
+            .AddSingleton<ILedgerSignal, LedgerSignal>()
+            .AddSingleton<IStreamSlots, StreamSlots>()
+            .AddScoped<CallerEventView>()
+            .AddSingleton<IItemRepos, LedgerItemRepos>()
             .AddSingleton<ProjectorProgress>()
             .AddSingleton<IProjectorStatus>(static sp => sp.GetRequiredService<ProjectorProgress>())
             .AddSingleton<IProjectorControl>(static sp => sp.GetRequiredService<ProjectorProgress>())

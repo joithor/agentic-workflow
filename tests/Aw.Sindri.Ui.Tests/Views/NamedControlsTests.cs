@@ -4,8 +4,6 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Tests.Theme;
-using Aw.Sindri.Ui.Views;
-using Aw.Sindri.Ui.Views.Palette;
 using Aw.Sindri.Ui.Views.Shell;
 
 namespace Aw.Sindri.Ui.Tests.Views;
@@ -19,20 +17,24 @@ public sealed class NamedControlsTests
 {
     private static readonly XNamespace _x = "http://schemas.microsoft.com/winfx/2006/xaml";
 
-    public static TheoryData<string> Views => ["SettingsView", "Palette/CommandPalette", "Palette/ShortcutsSheet", "Shell/ShellWindow", "Shell/TopBar", "Shell/HomePage", "Shell/HealthPage", "Shell/PlaceholderPage"];
+    // Every view the library has, found from its XAML (a root with an x:Class that is a Control), never a list kept by hand.
+    private static readonly (string Path, Type Type)[] _views =
+    [
+        .. UiSource.Axaml
+            .Where(f => f.StartsWith(Path.Combine(UiSource.Library, "Views") + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+            .Select(f => (Path: Path.GetRelativePath(Path.Combine(UiSource.Library, "Views"), f)[..^".axaml".Length].Replace('\\', '/'), Class: (string?)XDocument.Load(f).Root?.Attribute(_x + "Class")))
+            .Where(v => v.Class is not null)
+            .Select(v => (v.Path, Type: typeof(ShellWindow).Assembly.GetType(v.Class!, throwOnError: true)!))
+            .Where(v => typeof(Control).IsAssignableFrom(v.Type))
+            .OrderBy(v => v.Path, StringComparer.Ordinal),
+    ];
 
-    private static Control Construct(string view) => view switch
-    {
-        "SettingsView" => new SettingsView(),
-        "Palette/CommandPalette" => new CommandPalette(),
-        "Palette/ShortcutsSheet" => new ShortcutsSheet(),
-        "Shell/ShellWindow" => new ShellWindow(),
-        "Shell/TopBar" => new TopBar(),
-        "Shell/HomePage" => new HomePage(),
-        "Shell/HealthPage" => new HealthPage(),
-        "Shell/PlaceholderPage" => new PlaceholderPage(),
-        _ => throw new ArgumentOutOfRangeException(nameof(view), view, message: null),
-    };
+    public static TheoryData<string> Views => [.. _views.Select(v => v.Path)];
+
+    internal static Control Build(string view) => Construct(view);
+
+    private static Control Construct(string view) =>
+        (Control)Activator.CreateInstance(_views.Single(v => v.Path == view).Type, nonPublic: true)!;
 
     [Theory]
     [MemberData(nameof(Views))]

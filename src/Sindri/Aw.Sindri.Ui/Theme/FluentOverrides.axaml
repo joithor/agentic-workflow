@@ -60,6 +60,9 @@
   <!-- A focusable region that fills the window's width (the top bar, the page, the sheet: F6's stops) has no room
        outside it, so its ring is drawn 2 px inside its edge instead. -->
   <Style Selector=":is(Control).focus-region">
+    <!-- A Border has no automation peer unless it is a control element with a type: the region is a named Group (review run 4, a11y-0). -->
+    <Setter Property="AutomationProperties.AccessibilityView" Value="Control" />
+    <Setter Property="AutomationProperties.ControlTypeOverride" Value="Group" />
     <Setter Property="FocusAdorner">
       <FocusAdornerTemplate>
         <Border BorderBrush="{DynamicResource Brush.PrimaryHover}" BorderThickness="2" Margin="2" />

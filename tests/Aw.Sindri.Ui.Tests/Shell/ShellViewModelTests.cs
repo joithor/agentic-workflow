@@ -50,24 +50,127 @@ public sealed class ShellViewModelTests
         }
     }
 
+    // Screens spec §3: seven pages, each with its G-chord key; Settings is not a tab.
     [Fact]
-    public async Task The_top_bar_is_Home_Queue_Decisions_Services_with_no_counts_yet()
+    public async Task Nav_is_Home_Workflows_Work_Recipes_Context_Agents_System()
     {
         var shell = await Shell();
 
-        Assert.Equal([PageId.Home, PageId.Queue, PageId.Decisions, PageId.Services], shell.Navigation.Select(n => n.Page));
-        Assert.Equal([Labels.Home, Labels.Queue, Labels.Decisions, Labels.Services], shell.Navigation.Select(n => n.Label), StringComparer.Ordinal);
-        Assert.Equal(["H", "Q", "D", "S"], shell.Navigation.Select(n => n.Key), StringComparer.Ordinal);
+        Assert.Equal(
+            [PageId.Home, PageId.Workflows, PageId.Work, PageId.Recipes, PageId.Context, PageId.Agents, PageId.System],
+            shell.Navigation.Select(n => n.Page));
+        Assert.Equal(
+            [Labels.Home, Labels.Workflows, Labels.Work, Labels.Recipes, Labels.Context, Labels.Agents, Labels.System],
+            shell.Navigation.Select(n => n.Label),
+            StringComparer.Ordinal);
+        Assert.Equal(["H", "W", "Q", "R", "C", "A", "."], shell.Navigation.Select(n => n.Key), StringComparer.Ordinal);
         Assert.All(shell.Navigation, n => Assert.Equal(string.Empty, n.Count));
     }
 
+    // Screens spec §4.8: a page whose phase hasn't landed says which phase brings it and the API it waits for, never faked content.
+    [Theory]
+    [InlineData(PageId.Workflows, "arrives with U8 and the workflow routes (API P11)")]
+    [InlineData(PageId.Work, "arrives with U3' and the workflow routes (API P11)")]
+    [InlineData(PageId.Recipes, "arrives with U10 and the recipe stats (API P12)")]
+    [InlineData(PageId.Context, "arrives with U9 and the context lens routes (CTX phase 4)")]
+    [InlineData(PageId.Agents, "arrives with U11 and the launch targets (API P10a)")]
+    internal async Task Unbuilt_pages_show_arrives_with_their_phase(PageId page, string words)
+    {
+        await Task.CompletedTask;
+
+        Assert.Equal(words, Labels.ArrivesWith(page));
+        Assert.Null(Labels.ArrivesWith(PageId.Home));
+        Assert.Null(Labels.ArrivesWith(PageId.System));
+    }
+
+    // Screens spec §3: G then a page's key; G S is System as G . is.
+    [Theory]
+    [InlineData("H", PageId.Home)]
+    [InlineData("W", PageId.Workflows)]
+    [InlineData("Q", PageId.Work)]
+    [InlineData("R", PageId.Recipes)]
+    [InlineData("C", PageId.Context)]
+    [InlineData("A", PageId.Agents)]
+    [InlineData(".", PageId.System)]
+    [InlineData("S", PageId.System)]
+    [InlineData("N", PageId.Home)]
+    [InlineData("D", PageId.Home)]
+    internal async Task Chords_follow_screens_section_3(string second, PageId page)
+    {
+        var shell = await Shell();
+        shell.GoTo(page == PageId.Context ? PageId.Agents : PageId.Context);
+
+        Assert.True(shell.PressKey("G"));
+        Assert.True(shell.IsChordPending);
+        Assert.Equal("G …", shell.ChordHint);
+        Assert.True(shell.PressKey(second));
+
+        Assert.Equal(page, shell.CurrentPage);
+        Assert.False(shell.IsChordPending);
+        Assert.Equal(string.Empty, shell.ChordHint);
+    }
+
     [Fact]
-    public async Task Later_lists_the_views_the_api_doesnt_serve_yet()
+    public async Task G_D_filters_Home_to_the_decision_rows_and_G_H_clears_it()
+    {
+        var shell = await Shell();
+        shell.GoTo(PageId.Work);
+
+        _ = shell.PressKey("G");
+        _ = shell.PressKey("D");
+        Assert.Equal(PageId.Home, shell.CurrentPage);
+        Assert.Equal(HomeFilter.Decisions, shell.HomeFilter);
+
+        _ = shell.PressKey("G");
+        _ = shell.PressKey("N");
+        Assert.Equal(HomeFilter.All, shell.HomeFilter);
+    }
+
+    [Fact]
+    public async Task A_chord_waits_one_second_and_any_other_key_cancels_it()
     {
         var shell = await Shell();
 
-        Assert.Equal([Labels.Agents, Labels.Repos, Labels.Today, Labels.AutomaticWork], shell.Later.Select(l => l.Label), StringComparer.Ordinal);
-        Assert.All(shell.Later, l => Assert.Equal(Labels.NotServedYet, l.Note));
+        _ = shell.PressKey("G");
+        _clock.Advance(TimeSpan.FromMilliseconds(1001));
+        Assert.False(shell.IsChordPending);
+        Assert.False(shell.PressKey("W"));
+        Assert.Equal(PageId.Home, shell.CurrentPage);
+
+        _ = shell.PressKey("G");
+        Assert.False(shell.PressKey("X"));
+        Assert.False(shell.IsChordPending);
+        Assert.False(shell.PressKey("W"));
+        Assert.Equal(PageId.Home, shell.CurrentPage);
+    }
+
+    [Fact]
+    public async Task A_second_key_alone_is_not_a_chord()
+    {
+        var shell = await Shell();
+
+        Assert.False(shell.PressKey("W"));
+        Assert.Equal(PageId.Home, shell.CurrentPage);
+    }
+
+    [Theory]
+    [InlineData("workflow/INC-14", DeepLinkKind.Workflow, PageId.Workflows)]
+    [InlineData("workflow/ITM-01JC8/step", DeepLinkKind.Workflow, PageId.Workflows)]
+    [InlineData("recipe/workflow.project-build", DeepLinkKind.Recipe, PageId.Recipes)]
+    [InlineData("node/feature:tabs.tab-manager", DeepLinkKind.Node, PageId.Context)]
+    [InlineData("session/snd-01JE7.2", DeepLinkKind.Session, PageId.Agents)]
+    [InlineData("system/temporal", DeepLinkKind.System, PageId.System)]
+    internal async Task A_rev8_link_opens_its_page_and_the_sheet(string text, DeepLinkKind kind, PageId page)
+    {
+        var shell = await Shell();
+        Assert.True(DeepLink.TryParse(text, out var link));
+        Assert.Equal(kind, link.Kind);
+
+        shell.Navigate(link);
+
+        Assert.Equal(page, shell.CurrentPage);
+        Assert.True(shell.IsSheetOpen);
+        Assert.Equal(link.Subject, shell.SheetSubject);
     }
 
     [Fact]
@@ -86,9 +189,9 @@ public sealed class ShellViewModelTests
         var changed = new List<string?>();
         shell.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
 
-        shell.GoTo(PageId.Health);
+        shell.GoTo(PageId.System);
 
-        Assert.Equal(PageId.Health, shell.CurrentPage);
+        Assert.Equal(PageId.System, shell.CurrentPage);
         Assert.Contains(nameof(ShellViewModel.CurrentPage), changed, StringComparer.Ordinal);
     }
 
@@ -112,7 +215,7 @@ public sealed class ShellViewModelTests
     public async Task The_home_needs_you_link_goes_Home_and_leaves_the_sheet_alone()
     {
         var shell = await Shell();
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
 
         shell.Navigate(DeepLink.HomeNeedsYou);
 
@@ -200,10 +303,12 @@ public sealed class ShellViewModelTests
     // §11.2: the page region is read with the page it shows, not always "Home".
     [Theory]
     [InlineData(PageId.Home, Labels.Home)]
-    [InlineData(PageId.Queue, Labels.Queue)]
-    [InlineData(PageId.Decisions, Labels.Decisions)]
-    [InlineData(PageId.Services, Labels.Services)]
-    [InlineData(PageId.Health, Labels.Health)]
+    [InlineData(PageId.Workflows, Labels.Workflows)]
+    [InlineData(PageId.Work, Labels.Work)]
+    [InlineData(PageId.Recipes, Labels.Recipes)]
+    [InlineData(PageId.Context, Labels.Context)]
+    [InlineData(PageId.Agents, Labels.Agents)]
+    [InlineData(PageId.System, Labels.System)]
     [InlineData(PageId.Settings, Labels.Settings)]
     internal async Task The_page_region_is_named_after_the_page_shown(PageId page, string name)
     {
@@ -220,9 +325,9 @@ public sealed class ShellViewModelTests
     [Fact]
     public async Task The_last_page_is_remembered_and_reopened()
     {
-        (await Shell()).GoTo(PageId.Decisions);
+        (await Shell()).GoTo(PageId.Context);
 
-        Assert.Equal("Decisions", (await new Preferences(_preferences).Load(Token)).LastPage);
-        Assert.Equal(PageId.Decisions, (await Shell()).CurrentPage);
+        Assert.Equal("Context", (await new Preferences(_preferences).Load(Token)).LastPage);
+        Assert.Equal(PageId.Context, (await Shell()).CurrentPage);
     }
 }

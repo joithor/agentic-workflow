@@ -157,7 +157,7 @@ public sealed class CatalogFramesTests : IDisposable
     public Task Health_shows_pending_lines_and_copy_blocks() => OnUi(async () =>
     {
         var (window, shell) = await Connected(s => s.Health.Catalog.Controls.Count > 0);
-        shell.GoTo(PageId.Health);
+        shell.GoTo(PageId.System);
         Settle(window);
 
         var page = Named<Control>(window, "HealthPage");
