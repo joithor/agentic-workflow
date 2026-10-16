@@ -20,8 +20,8 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
     internal IReadOnlyList<DecisionOption> Options => _row is null ? [] :
         [.. _row.Controls.Where(c => c.Action.OptionId.Length > 0).Select((c, i) => new DecisionOption(c.Action.OptionId, c.Action.Label, i == 0, c.IsEnabled && CanSend))];
 
-    /// <summary>The decision's question (the row's title).</summary>
-    internal string Question => _row?.Title ?? "";
+    /// <summary>The decision's question as the pending list serves it; the row's title while the list has none.</summary>
+    internal string Question => _row is null ? "" : _row.Entry.Question.Length > 0 ? _row.Entry.Question : _row.Title;
 
     /// <summary>The recorded-only sentence as served; empty for none.</summary>
     internal string Notice => _row?.Notice ?? "";

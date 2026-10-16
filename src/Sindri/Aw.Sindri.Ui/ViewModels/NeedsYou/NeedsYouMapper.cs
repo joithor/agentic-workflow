@@ -50,15 +50,22 @@ internal static class NeedsYouMapper
             Cli = row.Cli,
             RecordedOnly = row.RecordedOnly,
             Notice = row.Notice ?? string.Empty,
+            Question = QuestionOf(row, decisions),
         };
+
+    private static string QuestionOf(NeedsYouRowView row, DecisionList? decisions) => PendingDecision(row, decisions)?.Question ?? string.Empty;
+
+    // The pending decision a decision row stands for, when the list has it.
+    private static DecisionView? PendingDecision(NeedsYouRowView row, DecisionList? decisions) =>
+        row.Subject is { } subject && string.Equals(subject.Kind, "decision", StringComparison.Ordinal)
+            ? decisions?.Decisions.FirstOrDefault(d => string.Equals(d.Id, subject.Id, StringComparison.Ordinal))
+            : null;
 
     // A Decide on a decision row is one button per option the pending list offers; every other action is one button as served.
     private static IEnumerable<NeedsYouAction> Actions(NeedsYouRowView row, string id, Dictionary<string, ActionReadiness> readiness, DecisionList? decisions)
     {
         var ready = readiness.GetValueOrDefault(id, ActionReadiness.Pending);
-        var decision = string.Equals(id, Decide, StringComparison.Ordinal) && row.Subject is { } subject && string.Equals(subject.Kind, "decision", StringComparison.Ordinal)
-            ? decisions?.Decisions.FirstOrDefault(d => string.Equals(d.Id, subject.Id, StringComparison.Ordinal))
-            : null;
+        var decision = string.Equals(id, Decide, StringComparison.Ordinal) ? PendingDecision(row, decisions) : null;
         if (decision is null)
         {
             yield return new NeedsYouAction(id, Labels.Action(id), ready, row.Cli, RejectLike: false);
