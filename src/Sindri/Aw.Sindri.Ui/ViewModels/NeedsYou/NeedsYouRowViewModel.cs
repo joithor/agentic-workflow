@@ -228,8 +228,11 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
     /// <summary>True for the static 2 px attention outline (an unseen pulse row under reduced motion).</summary>
     public bool HasOutline => Entry.Urgency == NeedsYouUrgency.Pulse && !_seen && _reduced;
 
-    /// <summary>The word "new" next to an unseen pulse row under reduced motion; empty otherwise.</summary>
-    public string NewWord => HasOutline ? Labels.New : "";
+    /// <summary>True for an unseen pulse row, with motion or without: motion only adds to the word "new" (UI spec §11.4).</summary>
+    public bool HasNewWord => Entry.Urgency == NeedsYouUrgency.Pulse && !_seen;
+
+    /// <summary>The word "new" next to an unseen pulse row; empty otherwise.</summary>
+    public string NewWord => HasNewWord ? Labels.New : "";
 
     /// <summary>True when the row slides in (it arrived after the list was first shown, and motion is allowed).</summary>
     public bool SlidesIn => _arrived && !_reduced;
@@ -241,8 +244,14 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
     internal void Apply(bool seen, bool reducedMotion, bool arrived)
     {
         var before = (Tint, HasOutline, SlidesIn);
+        var wasNew = HasNewWord;
         (_seen, _reduced, _arrived) = (seen, reducedMotion, arrived);
         ReportLook(before);
+        if (wasNew != HasNewWord)
+        {
+            OnChanged(nameof(HasNewWord));
+            OnChanged(nameof(NewWord));
+        }
     }
 
     // Reports the look properties (tint, outline, slide-in) that differ from how they were.
@@ -260,7 +269,6 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
         if (before.HasOutline != HasOutline)
         {
             OnChanged(nameof(HasOutline));
-            OnChanged(nameof(NewWord));
         }
 
         if (before.SlidesIn != SlidesIn)

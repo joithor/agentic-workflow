@@ -47,6 +47,7 @@ public sealed class NeedsYouMapperTests
         Assert.Equal(((string)served["title"]!, (string)served["repo"]!, (string)served["label"]!), (row.Title, row.Repo, row.Label));
         Assert.Equal(((string?)served["item"], _dec, "Decide"), (row.ItemId, row.ShownId, row.PrimaryAction));
         Assert.Equal(new NeedsYouSubject("decision", _dec), row.Subject);
+        Assert.Equal(_served.Select(r => (string)r!["kind"]!), Feed().Rows.Select(r => r.Kind), StringComparer.Ordinal);   // the strip finds a park by this
         Assert.Equal(((string)served["cli"]!, true, (string)served["notice"]!), (row.Cli, row.RecordedOnly, row.Notice));
         Assert.Equal(served["since"]!.GetValue<DateTimeOffset>(), row.Since);
     }

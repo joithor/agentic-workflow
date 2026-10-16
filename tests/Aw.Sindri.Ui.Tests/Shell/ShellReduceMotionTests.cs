@@ -31,7 +31,7 @@ public sealed class ShellReduceMotionTests
         var (shell, settings) = Wired();
         await settings.Load(Token);
         var row = shell.NeedsYou.Rows[0];
-        Assert.Equal((true, false, ""), (row.IsPulsing, row.HasOutline, row.NewWord));
+        Assert.Equal((true, false, Labels.New), (row.IsPulsing, row.HasOutline, row.NewWord));   // motion only adds to the word
 
         settings.ReduceMotion = true;
 

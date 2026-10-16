@@ -31,7 +31,7 @@ public sealed class NeedsYouRowViewModelTests
         var panel = await Panel();
         panel.Update([Pulse()]);
         var row = panel.Rows[0];
-        Assert.Equal((RowTint.Pulsing, true, false, ""), (row.Tint, row.IsPulsing, row.HasOutline, row.NewWord));
+        Assert.Equal((RowTint.Pulsing, true, false, "new"), (row.Tint, row.IsPulsing, row.HasOutline, row.NewWord));
 
         panel.Acted("p");
 
