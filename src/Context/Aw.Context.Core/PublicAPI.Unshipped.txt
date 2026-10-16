@@ -3879,7 +3879,6 @@ Aw.Context.Core.Overrides.ProposalPayload.Deconstruct(out string! Run, out Aw.Co
 Aw.Context.Core.Overrides.ProposalPayload.Generation.get -> int
 Aw.Context.Core.Overrides.ProposalPayload.Generation.init -> void
 Aw.Context.Core.Overrides.ProposalPayload.ProposalPayload(string! Run, Aw.Context.Core.Engine.ContextRepoName Repo, Aw.Context.Core.Graph.NodeKind Kind, Aw.Context.Core.Graph.NodeKey? Parent = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? Evidence = null, string? Quote = null, int Generation = 0) -> void
-
 Aw.Context.Core.Extract.LabelPass
 Aw.Context.Core.Extract.LabelPass.<Clone>$() -> Aw.Context.Core.Extract.LabelPass!
 Aw.Context.Core.Extract.LabelPass.Complete.get -> bool
@@ -3897,7 +3896,6 @@ static Aw.Context.Core.Extract.LabelPass.operator ==(Aw.Context.Core.Extract.Lab
 const Aw.Context.Core.Overrides.MapOverride.CutMarker = "service:deny-cut" -> string!
 Aw.Context.Core.Overrides.MapOverride.IsCutUndo.get -> bool
 static Aw.Context.Core.Overrides.MapOverride.UndoingCut(Aw.Context.Core.Overrides.MapOverride! decision, System.DateTimeOffset at) -> Aw.Context.Core.Overrides.MapOverride!
-
 static Aw.Context.Core.Graph.TrustPolicy.ForNode(Aw.Context.Core.Graph.GraphNode! node, bool accepted) -> Aw.Context.Core.Results.Trust
 static Aw.Context.Core.Map.MapAccess.WithoutDenied(Aw.Context.Core.Graph.GraphSnapshot! current, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! profile, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! mapped, System.DateTimeOffset at) -> (Aw.Context.Core.Graph.GraphSnapshot! Graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Undo)
 static Aw.Context.Core.Engine.ScopeRules.Mapped(Aw.Context.Core.Engine.ContextSettings! settings, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>!
@@ -4375,10 +4373,8 @@ static Aw.Context.Core.Eval.Backtest.Surface.operator !=(Aw.Context.Core.Eval.Ba
 static Aw.Context.Core.Eval.Backtest.Surface.operator ==(Aw.Context.Core.Eval.Backtest.Surface? left, Aw.Context.Core.Eval.Backtest.Surface? right) -> bool
 Aw.Context.Core.Eval.Backtest.Adjudication
 Aw.Context.Core.Eval.Backtest.Adjudication.<Clone>$() -> Aw.Context.Core.Eval.Backtest.Adjudication!
-Aw.Context.Core.Eval.Backtest.Adjudication.Adjudication(System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Eval.Backtest.Verdict>! Verdicts, int Tokens, bool Capped) -> void
 Aw.Context.Core.Eval.Backtest.Adjudication.Capped.get -> bool
 Aw.Context.Core.Eval.Backtest.Adjudication.Capped.init -> void
-Aw.Context.Core.Eval.Backtest.Adjudication.Deconstruct(out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Eval.Backtest.Verdict>! Verdicts, out int Tokens, out bool Capped) -> void
 Aw.Context.Core.Eval.Backtest.Adjudication.Equals(Aw.Context.Core.Eval.Backtest.Adjudication? other) -> bool
 Aw.Context.Core.Eval.Backtest.Adjudication.Tokens.get -> int
 Aw.Context.Core.Eval.Backtest.Adjudication.Tokens.init -> void
@@ -4504,3 +4500,10 @@ static Aw.Context.Core.Eval.MapQuality.MapQualityRun.operator ==(Aw.Context.Core
 static Aw.Context.Core.Eval.MapQuality.Ratio.operator !=(Aw.Context.Core.Eval.MapQuality.Ratio? left, Aw.Context.Core.Eval.MapQuality.Ratio? right) -> bool
 static Aw.Context.Core.Eval.MapQuality.Ratio.operator ==(Aw.Context.Core.Eval.MapQuality.Ratio? left, Aw.Context.Core.Eval.MapQuality.Ratio? right) -> bool
 static Aw.Context.Core.Map.MapRetention.EvalWindow.get -> System.TimeSpan
+Aw.Context.Core.Eval.Backtest.Adjudication.Adjudication(System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Eval.Backtest.Verdict>! Verdicts, int Tokens, bool Capped, string? Error = null) -> void
+Aw.Context.Core.Eval.Backtest.Adjudication.Deconstruct(out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Eval.Backtest.Verdict>! Verdicts, out int Tokens, out bool Capped, out string? Error) -> void
+Aw.Context.Core.Eval.Backtest.Adjudication.Error.get -> string?
+Aw.Context.Core.Eval.Backtest.Adjudication.Error.init -> void
+Aw.Context.Core.Eval.Backtest.LeftOut.SourceDown.get -> int
+Aw.Context.Core.Eval.Backtest.LeftOut.SourceDown.init -> void
+static Aw.Context.Core.Eval.Backtest.PassLine.Overall(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.ArmReport!>! arms) -> string?

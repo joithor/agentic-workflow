@@ -1,7 +1,9 @@
 using Aw.Context.Core.Eval.Backtest;
+using Aw.Context.Core.Extract;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Overrides;
 using Aw.Context.Features.RunBacktest;
+using Aw.Kernel;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Context.Tests.RunBacktest;
@@ -18,7 +20,7 @@ public sealed class AsOfMapTests
     {
         var builder = world.Services.GetRequiredService<AsOfMapBuilder>();
         var repo = world.Profile.Single(r => r.Name == sample.Repo);
-        return (await builder.Build(new AsOfRequest(repo, sample), TestContext.Current.CancellationToken)).Value;
+        return (await builder.Build(new AsOfRequest(repo, sample, world.Human()), TestContext.Current.CancellationToken)).Value;
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -87,5 +89,54 @@ public sealed class AsOfMapTests
         Assert.Equal(plain.Graph.Nodes.Select(n => n.Key.Value), again.Graph.Nodes.Select(n => n.Key.Value), StringComparer.Ordinal);
         Assert.True(world.Clusters.Asked.Count > asked);
         Assert.Empty(world.Model.Requests);   // no labeling pass, no model call (§9.1)
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Backtest_as_of_map_applies_the_deny_cut_and_drops_pending_proposals_like_the_current_map()
+    {
+        await using var world = await BacktestWorld.Start(BacktestWorld.BeforeAllCuts);
+        await world.ImportMap();
+        var sample = await SampleOf(world, "SPL-105");
+        var proposal = new MapOverride(OverrideAction.Propose, NodeKey.From("feature:zoom"), "service:engine", new DateTimeOffset(2026, 7, 1, 9, 0, 0, TimeSpan.Zero), "Zoom",
+            Proposal: new ProposalPayload("run-1", sample.Repo, NodeKind.Feature));
+        _ = await world.Store.AppendOverrides([proposal], TestContext.Current.CancellationToken);
+        var repo = world.Profile.Single(r => r.Name == sample.Repo) with { DenyPaths = ["src/layout/SplitPane.ts"] };
+        var scope = world.Human() with { Repos = [repo] };
+
+        var graph = (await world.Services.GetRequiredService<AsOfMapBuilder>().Build(new AsOfRequest(repo, sample, scope), TestContext.Current.CancellationToken)).Value.Graph;
+
+        Assert.DoesNotContain(graph.Nodes, n => n.Key.Value == "code:src/layout/SplitPane.ts");   // the deny globs hide it, as MapAccess.View does for the current map
+        Assert.DoesNotContain(graph.Nodes, n => n.Key.Value == "feature:zoom");   // a map as of a day holds no pending proposal
+        Assert.Contains(graph.Nodes, n => n.Key.Kind == NodeKind.Surface);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Backtest_as_of_map_keeps_the_map_it_built_when_the_cache_write_fails()
+    {
+        await using var world = await BacktestWorld.Start(BacktestWorld.BeforeAllCuts);
+        var sample = await SampleOf(world, "SPL-105");
+        var repo = world.Profile.Single(r => r.Name == sample.Repo);
+        var builder = new AsOfMapBuilder(world.Services.GetRequiredService<IRepoReader>(), world.Clusters, world.Store, new WriteFailingCache(world.Services.GetRequiredService<IEvalStore>()));
+
+        var built = await builder.Build(new AsOfRequest(repo, sample, world.Human()), TestContext.Current.CancellationToken);
+
+        Assert.True(built.IsSuccess, built.IsError ? built.Error.Message : null);
+        Assert.False(built.Value.Cached);
+        Assert.Contains(built.Value.Graph.Nodes, n => n.Key.Kind == NodeKind.Surface);
+    }
+
+    private sealed class WriteFailingCache(IEvalStore inner) : IEvalStore
+    {
+        public ValueTask<Result<string>> WriteReport<T>(EvalReportKind kind, T report, DateTimeOffset at, CancellationToken cancellationToken)
+            where T : class => inner.WriteReport(kind, report, at, cancellationToken);
+
+        public ValueTask<Result<ExtractedMap?>> ReadMap(string key, CancellationToken cancellationToken) => inner.ReadMap(key, cancellationToken);
+
+        public ValueTask<Result<Unit>> WriteMap(string key, ExtractedMap map, CancellationToken cancellationToken) =>
+            ValueTask.FromResult<Result<Unit>>(Aw.Context.Core.ContextErrors.StoreUnavailable.With("the cache folder is read-only"));
+
+        public ValueTask<Result<EvalPurgeReport>> Purge(DateTimeOffset now, bool all, CancellationToken cancellationToken) => inner.Purge(now, all, cancellationToken);
+
+        public ValueTask<Result<EvalPurgeReport>> Expired(DateTimeOffset now, CancellationToken cancellationToken) => inner.Expired(now, cancellationToken);
     }
 }

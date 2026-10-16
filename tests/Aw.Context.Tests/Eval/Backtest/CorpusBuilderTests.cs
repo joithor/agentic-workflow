@@ -58,6 +58,20 @@ public sealed class CorpusBuilderTests
         Assert.Equal(1, corpus.LeftOut.NoMerge);
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(3)]   // merged two days before the issue existed
+    [InlineData(5)]   // merged at the very moment the issue was created
+    public void A_merge_at_or_before_the_issue_existed_is_left_out_never_scored_as_clean(int mergeDay)
+    {
+        var history = Builders.History(Builders.Commit("c1", day: 1), Builders.Merge("m1", mergeDay, "Merge PR #1: SPL-101", "src/a.ts"), Builders.Commit("c2", day: 6));
+
+        var corpus = Build(history, Builders.Issue("SPL-101", createdDay: 5, updatedDay: 8));
+
+        Assert.Empty(corpus.Samples);   // the cut would already hold the answer
+        Assert.Equal(1, corpus.LeftOut.NoMerge);
+        Assert.Equal(["SPL-101"], corpus.LeftOut.Keys);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void An_issue_created_before_the_first_commit_has_no_cut_and_is_left_out()
     {

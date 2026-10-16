@@ -10,6 +10,9 @@ public sealed record LeftOut(int NoMerge, int OutsideTeams, int ExtractFailed, I
     /// <summary>Issues whose record the source no longer had when the brief was read (counted when the run reads them).</summary>
     public int NoBrief { get; init; }
 
+    /// <summary>Issues whose brief could not be read because the source was down (SND-CONTEXT-011).</summary>
+    public int SourceDown { get; init; }
+
     /// <summary>Nothing left out.</summary>
     public static LeftOut None { get; } = new(0, 0, 0, []);
 

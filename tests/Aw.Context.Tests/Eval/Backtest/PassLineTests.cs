@@ -6,6 +6,39 @@ public sealed class PassLineTests
 {
     private static ArmScore Arm(double? recall, double? precision, double? files, int tokens = 0) => new(40, 40, recall, precision, files, 0.0, tokens);
 
+    private static ArmReport Row(string arm, string? overall, bool leaky = false) =>
+        new(arm, "source", leaky, NotAvailable: null, Score: null, overall is null ? null : new ArmPassLine("met", "met", "met", "met", overall), []);
+
+    [Fact, Trait("Lane", "unit")]
+    public void Overall_is_the_arm_all_when_it_ran()
+    {
+        var overall = PassLine.Overall([Row("brief", Verdicts.Pass), Row("graph", Verdicts.Pass), Row("graph+reviewed", Verdicts.Pass, leaky: true), Row("all", Verdicts.NotPassed)]);
+
+        Assert.Equal(Verdicts.NotPassed, overall);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Overall_without_all_is_the_best_non_leaky_arm_never_the_leaky_ceiling()
+    {
+        var overall = PassLine.Overall([Row("brief", Verdicts.NotPassed), Row("graph", Verdicts.NotPassed), Row("graph+reviewed", Verdicts.Pass, leaky: true)]);
+
+        Assert.Equal(Verdicts.NotPassed, overall);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Overall_picks_the_best_verdict_among_non_leaky_arms_and_the_later_arm_on_a_tie()
+    {
+        Assert.Equal(Verdicts.Pass, PassLine.Overall([Row("brief", Verdicts.NotPassed), Row("docs", Verdicts.Pass), Row("graph", Verdicts.NotMeasured)]));
+        Assert.Equal(Verdicts.OwnerDecision, PassLine.Overall([Row("brief", Verdicts.OwnerDecision), Row("graph", Verdicts.OwnerDecision)]));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Overall_says_so_when_only_the_leaky_arm_ran_and_is_null_when_nothing_was_judged()
+    {
+        Assert.Equal("no non-leaky arm ran", PassLine.Overall([Row("graph+reviewed", Verdicts.Pass, leaky: true)]));
+        Assert.Null(PassLine.Overall([Row("linear", overall: null)]));
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void Pass_line_below_30_samples_is_owner_decision_and_enables_nothing()
     {

@@ -42,6 +42,19 @@ public sealed class AdjudicatorTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_model_error_is_incomplete_with_its_code_asks_once_and_judges_nothing_instead_of_unstable()
+    {
+        var model = new FakeModelPort { Fail = _ => ContextErrors.LabelingUnavailable.With("the model is down") };
+
+        var result = await new Adjudicator(model).Judge(Request(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(ContextErrors.LabelingUnavailable.Code, result.Error);
+        _ = Assert.Single(model.Requests);   // no second round against a model that is failing
+        Assert.All(result.Verdicts.Values, v => Assert.Equal(Verdict.Unjudged, v));
+        Assert.False(result.Capped);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Agreeing_not_relevant_is_not_relevant()
     {
         var model = new FakeModelPort { Responder = r => Answer(r) };

@@ -57,6 +57,7 @@ internal sealed class BacktestWorld : IAsyncDisposable
         Settings = new ContextStoreSettings(Path.Combine(_home, "context"));
         var git = new GitCli();
         var catalog = new FixedSourceCatalog(Harness.Source);
+        Briefs = new FlakyBriefSource(new OnyxBriefSource(catalog));
         Reader.Put(MapPath, Maps.Fixture(), FixtureMap.Yaml);
         Profile = [new ContextRepo(ContextRepoName.From(FixtureMap.Repo), repo.Path)];
         _provider = new ServiceCollection()
@@ -80,7 +81,7 @@ internal sealed class BacktestWorld : IAsyncDisposable
             .AddSingleton<IReviewFileStore>(new FakeReviewFileStore())
             .AddSingleton<ICurrentUser>(new FakeCurrentUser())
             .AddSingleton<IMergeHistory>(new GitMergeHistory(git))
-            .AddSingleton<IBriefSource>(new OnyxBriefSource(catalog))
+            .AddSingleton<IBriefSource>(Briefs)
             .AddSingleton<IAsOfDocs>(new AsOfDocsFactory(git, Clock))
             .AddSingleton<IEvalStore>(new FileEvalStore(Settings))
             .AddContextFeatures()
@@ -89,6 +90,8 @@ internal sealed class BacktestWorld : IAsyncDisposable
     }
 
     public FixtureRepo Repo { get; }
+
+    public FlakyBriefSource Briefs { get; }
 
     public FakeOnyxServer Onyx { get; }
 

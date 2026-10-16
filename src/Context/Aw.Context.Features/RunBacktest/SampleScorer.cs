@@ -60,7 +60,7 @@ internal sealed class SampleScorer(IBriefSource briefs, AsOfMapBuilder maps, IAs
             return brief.IsError ? Outcome.SourceDown : Outcome.NoBrief;
         }
 
-        var opened = await Open(world.Repos.First(r => r.Name == sample.Repo), sample, world, cancellationToken).ConfigureAwait(false);
+        var opened = await Open(world.Repos.First(r => r.Name == sample.Repo), sample, (world, request.Scope), cancellationToken).ConfigureAwait(false);
         if (opened.IsError)
         {
             if (opened.Error.Code == ContextErrors.PathInWorktree.Code)
@@ -77,9 +77,10 @@ internal sealed class SampleScorer(IBriefSource briefs, AsOfMapBuilder maps, IAs
         return Outcome.Scored;
     }
 
-    private async ValueTask<Result<Opened>> Open(ContextRepo repo, CorpusSample sample, BriefScope world, CancellationToken cancellationToken)
+    private async ValueTask<Result<Opened>> Open(ContextRepo repo, CorpusSample sample, (BriefScope World, ContextScope Scope) given, CancellationToken cancellationToken)
     {
-        var built = await maps.Build(new AsOfRequest(repo, sample), cancellationToken).ConfigureAwait(false);
+        var (world, scope) = given;
+        var built = await maps.Build(new AsOfRequest(repo, sample, scope), cancellationToken).ConfigureAwait(false);
         if (built.IsError)
         {
             return built.Error;

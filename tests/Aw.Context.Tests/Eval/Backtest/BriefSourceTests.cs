@@ -2,6 +2,8 @@ using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Core.Onyx;
+using Aw.Context.Core.Sources;
+using Aw.Kernel;
 using Aw.Context.Infrastructure.Eval;
 using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Fakes;
@@ -90,5 +92,33 @@ public sealed class BriefSourceTests
         var issues = await source.Issues(Scope(home), TestContext.Current.CancellationToken);
 
         Assert.Equal(ContextErrors.AllSourcesUnavailable.Code, issues.Error.Code);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task OnyxBriefSource_listing_with_a_record_fetch_that_errors_fails_with_its_code_instead_of_shrinking_the_corpus()
+    {
+        await using var onyx = await FakeOnyxServer.Start();
+        using var harness = new OnyxSourceHarness(onyx.Url, onyx.Token);
+        using var home = new TempHome();
+        var source = new OnyxBriefSource(new FixedSourceCatalog(new FetchFailing(harness.Source)));
+
+        var issues = await source.Issues(Scope(home), TestContext.Current.CancellationToken);
+
+        Assert.Equal(ContextErrors.AllSourcesUnavailable.Code, issues.Error.Code);
+        Assert.Contains(ContextErrors.SourceUnavailable.Code, issues.Error.Message, StringComparison.Ordinal);   // the fetch's own code is named
+    }
+
+    private sealed class FetchFailing(IContextSource inner) : IContextSource
+    {
+        public SourceDescriptor Describe() => inner.Describe();
+
+        public ValueTask<Result<IReadOnlyList<SourceHit>>> Search(SourceQuery query, CancellationToken cancellationToken) => inner.Search(query, cancellationToken);
+
+        public ValueTask<Result<SourceRecord>> Fetch(SourceRef reference, CancellationToken cancellationToken) =>
+            ValueTask.FromResult<Result<SourceRecord>>(ContextErrors.SourceUnavailable.With("onyx answered 503"));
+
+        public ValueTask<Result<IReadOnlyList<SourceVersion?>>> Versions(IReadOnlyList<SourceRef> refs, CancellationToken cancellationToken) => inner.Versions(refs, cancellationToken);
+
+        public ValueTask<SourceHealth> Probe(CancellationToken cancellationToken) => inner.Probe(cancellationToken);
     }
 }

@@ -186,6 +186,60 @@ public sealed class BacktestTests
         Assert.Empty(report.Degraded);
     }
 
+    [Fact, Trait("Lane", "integration")]
+    public async Task Backtest_counts_and_reports_samples_dropped_because_the_brief_source_was_down()
+    {
+        await using var world = await BacktestWorld.Start(BacktestWorld.BeforeAllCuts);
+        world.Briefs.Down.UnionWith(["SPL-102", "SPL-104"]);
+
+        var report = (await world.Run("graph")).Value.Report;
+
+        Assert.Equal(["SPL-101", "SPL-103", "SPL-105"], report.Samples.Select(s => s.IssueKey), StringComparer.Ordinal);
+        Assert.Equal(2, report.LeftOut.SourceDown);
+        Assert.Equal(3, report.LeftOut.Total);   // SPL-106 has no merged PR; the two dropped for the source join it
+        Assert.Contains(report.Degraded, d => d.Contains("SND-CONTEXT-011", StringComparison.Ordinal) && d.Contains('2', StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Backtest_with_every_sample_dropped_is_080_naming_why_not_an_empty_report()
+    {
+        await using var world = await BacktestWorld.Start(BacktestWorld.BeforeAllCuts);
+        world.Briefs.Down.UnionWith(["SPL-101", "SPL-102", "SPL-103", "SPL-104", "SPL-105"]);
+
+        var run = await world.Run("graph");
+
+        Assert.Equal(ContextErrors.NoEligibleSample.Code, run.Error.Code);
+        Assert.Contains("brief source", run.Error.Message, StringComparison.Ordinal);
+        Assert.False(Directory.Exists(world.Settings.BacktestDirectory) && Directory.EnumerateFiles(world.Settings.BacktestDirectory).Any());
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Backtest_a_context_db_error_keeps_its_own_code_and_is_not_git_cant_read_the_cut()
+    {
+        await using var world = await BacktestWorld.Start(BacktestWorld.BeforeAllCuts);
+        world.Store.Failure = ContextErrors.StoreUnavailable.With("context.db can't be opened");
+        var lines = new Lines();
+
+        var run = await world.Run("graph", configure: r => r with { Progress = lines });
+
+        Assert.Equal(ContextErrors.StoreUnavailable.Code, run.Error.Code);
+        Assert.DoesNotContain(lines.Seen, l => l.Contains("git can't read the cut", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Backtest_a_failing_adjudicator_model_stops_adjudication_marks_the_report_incomplete_and_stops_calling_it()
+    {
+        await using var world = await BacktestWorld.Start(BacktestWorld.BeforeAllCuts);
+        await world.ImportMap();
+        world.Model.Fail = _ => ContextErrors.LabelingUnavailable.With("the model is down");
+
+        var report = (await world.Run("graph", scope: world.Human("\"eval\":{\"adjudicator\":true}"))).Value.Report;
+
+        _ = Assert.Single(world.Model.Requests);   // one failed call, then the run stops asking
+        Assert.Contains(report.Degraded, d => d.Contains("adjudication incomplete", StringComparison.Ordinal) && d.Contains(ContextErrors.LabelingUnavailable.Code, StringComparison.Ordinal));
+        Assert.All(Arm(report, "graph").Samples, s => Assert.Null(s.AdjudicatedPrecision));   // never reported as measured
+    }
+
     private sealed class Lines : IProgress<string>
     {
         public List<string> Seen { get; } = [];
