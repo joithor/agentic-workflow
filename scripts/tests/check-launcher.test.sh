@@ -57,7 +57,7 @@ sed -i 's/"--title", "{title}", "--directory"/"--directory"/' "$d/config/launche
 run "$d"; expect_rc "a terminal template without {title} fails" 1; expect_out "names it" "kitty: argv has no {title}"
 
 d="$(copy keys)"
-sed -i 's/"mcpForms": \[[^]]*\]/"mcpForms": ["none"]/' "$d/schemas/launcher.schema.json"
+perl -0pi -e 's/"mcpForms": \[[^]]*\]/"mcpForms": ["none"]/' "$d/schemas/launcher.schema.json"
 run "$d"; expect_rc "x-aw-keys out of step with the schema fails" 1; expect_out "names the list" "x-aw-keys.mcpForms"
 
 echo

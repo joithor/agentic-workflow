@@ -105,7 +105,7 @@ try {
     const viewer = { kind: "exec-template", name: t.name, argv: t.argv };
     if (!validateViewer(viewer)) fail("config/launcher/terminals.json", `${t.id}: ${ajv.errorsText(validateViewer.errors)}`);
     if (!t.argv.includes("{cmd...}")) fail("config/launcher/terminals.json", `${t.id}: argv has no {cmd...}`);
-    if (!t.argv.some((a) => a.includes("{title}"))) fail("config/launcher/terminals.json", `${t.id}: argv has no {title}`);
+    if (!t.titleless && !t.argv.some((a) => a.includes("{title}"))) fail("config/launcher/terminals.json", `${t.id}: argv has no {title}`);
   }
 
   // 4. goldens
@@ -148,7 +148,7 @@ try {
     sameSet("mcpForms", keys.mcpForms, schema.$defs.agent.properties.mcp.enum);
     sameSet("viewer", keys.viewer, ["kind", "name", "argv"]);
     const pat = schema.$defs.argvElement.anyOf[1].pattern;
-    const inPattern = [...pat.match(/\(\?:(.*?)\)\\\}/)[1].split("|")].map((p) => `{${p}}`);
+    const inPattern = [...pat.match(/\\\{\(\?:([A-Za-z|]+)\)\\\}/)[1].split("|")].map((p) => `{${p}}`);
     sameSet("placeholders", keys.placeholders, [...inPattern, keys.splicePlaceholder]);
     if (keys.agentIdPattern !== schema.$defs.agentId.pattern) fail("schemas/launcher.schema.json", "x-aw-keys.agentIdPattern differs from $defs.agentId");
   }

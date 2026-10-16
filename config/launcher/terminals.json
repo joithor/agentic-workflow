@@ -13,6 +13,7 @@
       "name": "WezTerm",
       "bin": "wezterm",
       "termProgram": ["WezTerm"],
+      "titleless": true,
       "argv": ["wezterm", "start", "--cwd", "{cwd}", "--", "{cmd...}"]
     },
     {
