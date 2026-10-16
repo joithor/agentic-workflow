@@ -14,7 +14,11 @@ public static class DiffAnchors
     /// <summary>The most anchors a diff answer starts the cascade from.</summary>
     public const int MaxAnchors = 20;
 
-    /// <summary>Reads each changed path against the map.</summary>
+    /// <summary>
+    /// Reads each changed path against the map, through the links of <paramref name="repo"/> only (a path that also exists in another mapped repo never claims that repo's nodes).
+    /// Denied paths are only counted. When more than <see cref="MaxFiles"/> files are visible, the files and unmapped lists hold the first 1000 by path, while
+    /// the counts, the anchor total and the anchors cover every visible file.
+    /// </summary>
     /// <param name="changes">What the repo changed.</param>
     /// <param name="repo">The repo, with its deny globs.</param>
     /// <param name="graph">The map the caller may read.</param>
@@ -24,7 +28,7 @@ public static class DiffAnchors
         ArgumentNullException.ThrowIfNull(changes);
         ArgumentNullException.ThrowIfNull(repo);
         ArgumentNullException.ThrowIfNull(graph);
-        var links = new FileLinks(graph);
+        var links = new FileLinks(graph, repo.Name);
         var ordered = changes.Files.OrderBy(f => f.Path, StringComparer.Ordinal).ToList();
         var visible = ordered.Where(f => !repo.Denies(f.Path)).Select(f => Read(f, links)).ToList();
         var counts = new DiffCounts(ordered.Count, visible.Count(f => f.Status == DiffStatus.Mapped), visible.Count(f => f.Status == DiffStatus.Suggested),

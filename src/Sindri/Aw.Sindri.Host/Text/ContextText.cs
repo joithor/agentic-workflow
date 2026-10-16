@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 
@@ -60,7 +61,7 @@ internal static class ContextText
 
         if (diff.AnchorsTruncated)
         {
-            _ = text.AppendLine(Invariant($"  anchors: the first {Math.Min(diff.AnchorsTotal, 20)} of {diff.AnchorsTotal}"));
+            _ = text.AppendLine(Invariant($"  anchors: the first {DiffAnchors.MaxAnchors} of {diff.AnchorsTotal}"));
         }
 
         if (diff.Unmapped.Count > 0)

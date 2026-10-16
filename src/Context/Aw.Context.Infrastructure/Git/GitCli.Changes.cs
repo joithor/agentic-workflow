@@ -12,7 +12,11 @@ internal sealed partial class GitCli
     /// <param name="repo">The repo's checkout.</param>
     /// <param name="sha">An abbreviated or full commit sha.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The full sha; SND-CONTEXT-110 when the repo holds no such commit; SND-CONTEXT-010 when git can't answer (a missing checkout, an ambiguous abbreviation).</returns>
+    /// <remarks>
+    /// A sha is an object id, never a ref name: git resolves a ref that is spelled like the abbreviation before the object, so an answer whose full sha doesn't start with the input
+    /// (the abbreviation named a ref) is refused as 110 with "pass the full sha". An ambiguous abbreviation (git exits 1) is 110 too, with the same fix.
+    /// </remarks>
+    /// <returns>The full sha; SND-CONTEXT-110 when the repo holds no such commit, the abbreviation is ambiguous or it names a ref; SND-CONTEXT-010 when git can't answer (a missing checkout).</returns>
     public async ValueTask<Result<string>> Commit(string repo, string sha, CancellationToken cancellationToken)
     {
         if (!IsSha(sha))
@@ -24,8 +28,9 @@ internal sealed partial class GitCli
         return run switch
         {
             { IsError: true } => run.Error,
-            { Value.Exit: 0 } when IsSha(run.Value.Stdout.Trim()) => run.Value.Stdout.Trim(),
-            { Value.Exit: 1 } => ContextErrors.CommitUnknown.With("the repo holds no such commit"),
+            { Value.Exit: 0 } when IsSha(run.Value.Stdout.Trim()) && run.Value.Stdout.Trim().StartsWith(sha, StringComparison.Ordinal) => run.Value.Stdout.Trim(),
+            { Value.Exit: 0 } => ContextErrors.CommitUnknown.With("that sha is also a ref name here, not a commit (fix: pass the full sha)"),
+            { Value.Exit: 1 } => ContextErrors.CommitUnknown.With("the repo holds no such commit, or the abbreviation is ambiguous (fix: fetch that commit, or pass the full sha)"),
             _ => Failed("rev-parse", run.Value.Exit),
         };
     }

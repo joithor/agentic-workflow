@@ -506,11 +506,11 @@ error (the profile is invalid, the store can't open, every source is down); **75
 | `SND-CONTEXT-046` | `map promote` refused: there is no draft, or the draft still has undecided review items; a skipped item is not decided; or the latest draft is no longer the one you confirmed (exit 1; HTTP 409) | `map propose <file>` or the `context-rebuild` service (`map build` once API P6 lands), or `map review`, then promote; if the draft moved, run promote again |
 | `SND-CONTEXT-047` | A review target is stale: the node or link is not in the latest draft's queue (decided already, or gone), or `--undo` names an override that is unknown or already undone (exit 1; HTTP 409) | `map review` to list the queue, or `--history` for the ids |
 | `SND-CONTEXT-048` | Extraction cannot read the repo from git at the commit (a missing repo or sha; exit 2; HTTP 503) | Fix the repo path in the profile, or fetch the commit |
-| `SND-CONTEXT-110` | A sha of a `diff` range is not a commit in the repo's clone (exit 1; HTTP 404) | Fetch that commit into the profile repo's checkout, or pass shas it holds |
-| `SND-CONTEXT-111` | The two commits of a `diff` range share no merge base (exit 1; HTTP 400) | Pass a base on the head's history |
 | `SND-CONTEXT-049` | Reserved for findings in the S-4 review loop | — |
 | `SND-CONTEXT-050` | A source's token lacks a needed read scope | Recreate the key read-only with the listed scope |
 | `SND-CONTEXT-055` | Onyx not on a loopback address, or its pinned version differs | §8.8 |
+| `SND-CONTEXT-110` | A sha of a `diff` range is not a commit in the repo's clone, is an ambiguous abbreviation, or is spelled like a ref name (exit 1; HTTP 404) | Fetch that commit into the profile repo's checkout, or pass the full sha |
+| `SND-CONTEXT-111` | The two commits of a `diff` range share no merge base (exit 1; HTTP 400) | Pass a base on the head's history |
 
 `lenses` and `filemap` reuse `SND-CONTEXT-003` for an anchor, node or path that is not in the map (UI E-26's "anchor not found"; a second code for the same condition would duplicate it), with `suggestedAnchors` in the problem details.
 
