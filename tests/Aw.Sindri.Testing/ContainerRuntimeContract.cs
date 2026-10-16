@@ -12,7 +12,18 @@ public abstract class ContainerRuntimeContract
     /// <summary>A runtime on a box whose facts are <paramref name="facts"/>.</summary>
     /// <param name="facts">The facts the box has.</param>
     /// <returns>The runtime.</returns>
-    protected abstract IContainerRuntime Create(ContainerRuntimeFacts facts);
+    protected IContainerRuntime Create(ContainerRuntimeFacts facts) => Create(facts, new Dictionary<string, string[]>(StringComparer.Ordinal));
+
+    /// <summary>A runtime on a box whose facts are <paramref name="facts"/> and whose local images are <paramref name="localImages"/>.</summary>
+    /// <param name="facts">The facts the box has.</param>
+    /// <param name="localImages">Each image reference present on the box, with its RepoDigests as Docker spells them.</param>
+    /// <returns>The runtime.</returns>
+    protected abstract IContainerRuntime Create(ContainerRuntimeFacts facts, IReadOnlyDictionary<string, string[]> localImages);
+
+    /// <summary>The project the compose cases run against.</summary>
+    protected static ComposeProject Project { get; } = new("/o/docker-compose.yml", "/o/docker-compose.override.yml", "/o/.env");
+
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     /// <summary>A healthy box reports every fact.</summary>
     [Fact]
@@ -45,4 +56,69 @@ public abstract class ContainerRuntimeContract
 
         Expect.Equal(facts, Create(facts).Inspect(TestContext.Current.CancellationToken));
     }
+
+    /// <summary>The server's platform is a linux platform, in the form the lock uses.</summary>
+    [Fact]
+    public void The_server_platform_is_a_linux_platform_in_the_locks_form()
+        => Expect.Equal("linux/arm64", Create(FakeContainerRuntime.Healthy).ServerPlatform(Token).Value);
+
+    /// <summary>Pull, up and stop are ok on a healthy box.</summary>
+    [Fact]
+    public void Pull_up_stop_are_ok_on_a_healthy_box()
+    {
+        var runtime = Create(FakeContainerRuntime.Healthy);
+
+        Expect.True(runtime.Pull(Project, static _ => { }, Token).IsSuccess);
+        Expect.True(runtime.Up(Project, static _ => { }, Token).IsSuccess);
+        Expect.True(runtime.Stop(Project, Token).IsSuccess);
+    }
+
+    /// <summary>Ps reports what up started, with nginx published on loopback, and stop marks it not running.</summary>
+    [Fact]
+    public void Ps_reports_what_up_started_and_stop_ends_it()
+    {
+        var runtime = Create(FakeContainerRuntime.Healthy);
+        Expect.True(runtime.Ps(Project, Token).Value.Count == 0);
+
+        _ = runtime.Up(Project, static _ => { }, Token);
+        var running = runtime.Ps(Project, Token).Value;
+        var nginx = running.Single(static c => c.Service == "nginx");
+        Expect.Equal("running", nginx.State);
+        Expect.Equal(new ComposePublisher("127.0.0.1", 3000, 80), nginx.Publishers.Single());
+        Expect.True(running.Any(static c => c.Service == "api_server" && c.State == "running"));
+
+        _ = runtime.Stop(Project, Token);
+        Expect.True(runtime.Ps(Project, Token).Value.All(static c => c.State == "exited"));
+    }
+
+    /// <summary>A present image maps to its digests and a missing one to an empty list.</summary>
+    [Fact]
+    public void A_present_image_maps_to_its_digests_and_a_missing_one_to_none()
+    {
+        var runtime = Create(FakeContainerRuntime.Healthy, new Dictionary<string, string[]>(StringComparer.Ordinal) { ["docker.io/library/nginx@sha256:aaa"] = ["nginx@sha256:aaa"] });
+
+        var digests = runtime.RepoDigests(["docker.io/library/nginx@sha256:aaa", "docker.io/x/gone@sha256:bbb"], Token).Value;
+
+        Expect.Sequence(["nginx@sha256:aaa"], digests["docker.io/library/nginx@sha256:aaa"]);
+        Expect.True(digests["docker.io/x/gone@sha256:bbb"].Count == 0);
+    }
+
+    /// <summary>A daemon that isn't answering fails every compose operation with SND-ONYX-001.</summary>
+    [Fact]
+    public void A_down_daemon_fails_every_compose_operation_with_001()
+    {
+        var runtime = Create(FakeContainerRuntime.DaemonDown);
+
+        Expect.Equal("SND-ONYX-001", runtime.ServerPlatform(Token).Error.Code);
+        Expect.Equal("SND-ONYX-001", runtime.Pull(Project, static _ => { }, Token).Error.Code);
+        Expect.Equal("SND-ONYX-001", runtime.Up(Project, static _ => { }, Token).Error.Code);
+        Expect.Equal("SND-ONYX-001", runtime.Stop(Project, Token).Error.Code);
+        Expect.Equal("SND-ONYX-001", runtime.Ps(Project, Token).Error.Code);
+        Expect.Equal("SND-ONYX-001", runtime.RepoDigests(["a@sha256:b"], Token).Error.Code);
+    }
+
+    /// <summary>A missing CLI fails the same way.</summary>
+    [Fact]
+    public void A_missing_cli_fails_compose_operations_with_001()
+        => Expect.Equal("SND-ONYX-001", Create(FakeContainerRuntime.NoCli).Stop(Project, Token).Error.Code);
 }

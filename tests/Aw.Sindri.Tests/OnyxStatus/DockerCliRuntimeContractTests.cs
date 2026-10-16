@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Infrastructure.Onyx;
@@ -6,21 +7,80 @@ using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.OnyxStatus;
 
-// The same contract the fake is held to, with the adapter over a runner scripted from the facts.
+// The same contract the fake is held to, with the adapter over a runner scripted from the facts: what a docker CLI on that box prints.
 [Lane(TestLane.Unit)]
 public sealed class DockerCliRuntimeContractTests : ContainerRuntimeContract
 {
-    protected override IContainerRuntime Create(ContainerRuntimeFacts facts) => new DockerCliRuntime(new FakeToolRunner((_, arguments) => facts switch
+    protected override IContainerRuntime Create(ContainerRuntimeFacts facts, IReadOnlyDictionary<string, string[]> localImages)
     {
-        { CliFound: false } => ToolRun.Missing,
-        _ => arguments[0] switch
+        var box = new Box(facts, localImages);
+        var stderr = facts.DaemonAnswers ? [] : new[] { "Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?" };
+        return new DockerCliRuntime(new FakeToolRunner((_, arguments) => box.Run(arguments), stderr), static _ => null);
+    }
+
+    // A box with the given facts: answers each docker command as its CLI would, and remembers whether the stack was started and stopped.
+    private sealed class Box(ContainerRuntimeFacts facts, IReadOnlyDictionary<string, string[]> localImages)
+    {
+        private const string NginxRow = """{"Service":"nginx","State":"STATE","Health":"","Image":"nginx@sha256:aaa","Publishers":[{"URL":"127.0.0.1","TargetPort":80,"PublishedPort":3000,"Protocol":"tcp"},{"URL":"","TargetPort":8080,"PublishedPort":0,"Protocol":"tcp"}]}""";
+        private const string ApiRow = """{"Service":"api_server","State":"STATE","Health":"healthy","Image":"onyxdotapp/onyx-backend@sha256:bbb","Publishers":[]}""";
+
+        private bool _started;
+        private bool _stopped;
+
+        public ToolRun Run(IReadOnlyList<string> arguments)
         {
-            "version" => facts.DaemonAnswers ? new ToolRun(ToolOutcome.Exited, 0, facts.ServerVersion + "\n") : new ToolRun(ToolOutcome.Exited, 1, ""),
-            "context" => facts.Endpoint is null ? new ToolRun(ToolOutcome.Exited, 1, "") : new ToolRun(ToolOutcome.Exited, 0, facts.Endpoint + "\n"),
-            "compose" => facts.ComposeV2 ? new ToolRun(ToolOutcome.Exited, 0, facts.ComposeVersion + "\n") : new ToolRun(ToolOutcome.Exited, 1, ""),
+            if (!facts.CliFound)
+            {
+                return ToolRun.Missing;
+            }
+
+            return arguments[0] == "compose" ? Compose(arguments) : Other(arguments);
+        }
+
+        private static ToolRun Exited(string output, int code = 0) => new(ToolOutcome.Exited, code, output);
+
+        private ToolRun Compose(IReadOnlyList<string> arguments)
+        {
+            if (arguments[1] == "version")
+            {
+                return facts.ComposeV2 ? Exited(facts.ComposeVersion + "\n") : Exited("", 1);
+            }
+
+            if (arguments.Contains("up", StringComparer.Ordinal))
+            {
+                (_started, _stopped) = (true, false);
+            }
+            else if (arguments.Contains("stop", StringComparer.Ordinal))
+            {
+                _stopped = _started;
+            }
+
+            if (!facts.DaemonAnswers)
+            {
+                return Exited("", 1);
+            }
+
+            return arguments.Contains("ps", StringComparer.Ordinal) ? Exited(Ps()) : Exited("");
+        }
+
+        private string Ps()
+        {
+            var state = _stopped ? "exited" : "running";
+            return _started ? NginxRow.Replace("STATE", state, StringComparison.Ordinal) + "\n" + ApiRow.Replace("STATE", state, StringComparison.Ordinal) + "\n" : "\n";
+        }
+
+        private ToolRun Other(IReadOnlyList<string> arguments) => arguments[0] switch
+        {
+            "version" when arguments.Contains("{{.Server.Os}}/{{.Server.Arch}}", StringComparer.Ordinal) => facts.DaemonAnswers ? Exited("linux/aarch64\n") : Exited("", 1),
+            "version" => facts.DaemonAnswers ? Exited(facts.ServerVersion + "\n") : Exited("", 1),
+            "context" => facts.Endpoint is null ? Exited("", 1) : Exited(facts.Endpoint + "\n"),
+            "image" => facts.DaemonAnswers ? Inspect(arguments[^1]) : Exited("", 1),
             _ => facts.MemoryBytes is null && facts.DataRoot is null
-                ? new ToolRun(ToolOutcome.Exited, 1, "")
-                : new ToolRun(ToolOutcome.Exited, 0, facts.MemoryBytes?.ToString(System.Globalization.CultureInfo.InvariantCulture) + "|" + facts.DataRoot + "\n"),
-        },
-    }), static _ => null);
+                ? Exited("", 1)
+                : Exited(facts.MemoryBytes?.ToString(CultureInfo.InvariantCulture) + "|" + facts.DataRoot + "\n"),
+        };
+
+        private ToolRun Inspect(string image)
+            => localImages.TryGetValue(image, out var digests) ? Exited("[" + string.Join(',', digests.Select(static d => "\"" + d + "\"")) + "]\n") : Exited("", 1);
+    }
 }

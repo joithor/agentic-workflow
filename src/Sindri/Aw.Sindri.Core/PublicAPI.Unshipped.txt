@@ -8062,3 +8062,64 @@ static Aw.Sindri.Core.Onyx.OnyxSteps.Stamp(params string![]! parts) -> string!
 static readonly Aw.Sindri.Core.SindriErrors.OnyxComposeFailed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.OnyxNotReady -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.OnyxRemoteDocker -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Onyx.ComposeContainer
+Aw.Sindri.Core.Onyx.ComposeContainer.<Clone>$() -> Aw.Sindri.Core.Onyx.ComposeContainer!
+Aw.Sindri.Core.Onyx.ComposeContainer.ComposeContainer(string! Service, string! State, string? Health, string! Image, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposePublisher!>! Publishers) -> void
+Aw.Sindri.Core.Onyx.ComposeContainer.Deconstruct(out string! Service, out string! State, out string? Health, out string! Image, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposePublisher!>! Publishers) -> void
+Aw.Sindri.Core.Onyx.ComposeContainer.Equals(Aw.Sindri.Core.Onyx.ComposeContainer? other) -> bool
+Aw.Sindri.Core.Onyx.ComposeContainer.Health.get -> string?
+Aw.Sindri.Core.Onyx.ComposeContainer.Health.init -> void
+Aw.Sindri.Core.Onyx.ComposeContainer.Image.get -> string!
+Aw.Sindri.Core.Onyx.ComposeContainer.Image.init -> void
+Aw.Sindri.Core.Onyx.ComposeContainer.Publishers.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposePublisher!>!
+Aw.Sindri.Core.Onyx.ComposeContainer.Publishers.init -> void
+Aw.Sindri.Core.Onyx.ComposeContainer.Service.get -> string!
+Aw.Sindri.Core.Onyx.ComposeContainer.Service.init -> void
+Aw.Sindri.Core.Onyx.ComposeContainer.State.get -> string!
+Aw.Sindri.Core.Onyx.ComposeContainer.State.init -> void
+Aw.Sindri.Core.Onyx.ComposeProject
+Aw.Sindri.Core.Onyx.ComposeProject.<Clone>$() -> Aw.Sindri.Core.Onyx.ComposeProject!
+Aw.Sindri.Core.Onyx.ComposeProject.ComposeFile.get -> string!
+Aw.Sindri.Core.Onyx.ComposeProject.ComposeFile.init -> void
+Aw.Sindri.Core.Onyx.ComposeProject.ComposeProject(string! ComposeFile, string! OverrideFile, string! EnvFile) -> void
+Aw.Sindri.Core.Onyx.ComposeProject.Deconstruct(out string! ComposeFile, out string! OverrideFile, out string! EnvFile) -> void
+Aw.Sindri.Core.Onyx.ComposeProject.EnvFile.get -> string!
+Aw.Sindri.Core.Onyx.ComposeProject.EnvFile.init -> void
+Aw.Sindri.Core.Onyx.ComposeProject.Equals(Aw.Sindri.Core.Onyx.ComposeProject? other) -> bool
+Aw.Sindri.Core.Onyx.ComposeProject.OverrideFile.get -> string!
+Aw.Sindri.Core.Onyx.ComposeProject.OverrideFile.init -> void
+Aw.Sindri.Core.Onyx.ComposePublisher
+Aw.Sindri.Core.Onyx.ComposePublisher.<Clone>$() -> Aw.Sindri.Core.Onyx.ComposePublisher!
+Aw.Sindri.Core.Onyx.ComposePublisher.Address.get -> string!
+Aw.Sindri.Core.Onyx.ComposePublisher.Address.init -> void
+Aw.Sindri.Core.Onyx.ComposePublisher.ComposePublisher(string! Address, int PublishedPort, int TargetPort) -> void
+Aw.Sindri.Core.Onyx.ComposePublisher.Deconstruct(out string! Address, out int PublishedPort, out int TargetPort) -> void
+Aw.Sindri.Core.Onyx.ComposePublisher.Equals(Aw.Sindri.Core.Onyx.ComposePublisher? other) -> bool
+Aw.Sindri.Core.Onyx.ComposePublisher.PublishedPort.get -> int
+Aw.Sindri.Core.Onyx.ComposePublisher.PublishedPort.init -> void
+Aw.Sindri.Core.Onyx.ComposePublisher.TargetPort.get -> int
+Aw.Sindri.Core.Onyx.ComposePublisher.TargetPort.init -> void
+Aw.Sindri.Core.Onyx.IContainerRuntime.Ps(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeContainer!>!>!
+Aw.Sindri.Core.Onyx.IContainerRuntime.Pull(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Action<string!>! progress, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+Aw.Sindri.Core.Onyx.IContainerRuntime.RepoDigests(System.Collections.Generic.IReadOnlyList<string!>! images, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>!>!
+Aw.Sindri.Core.Onyx.IContainerRuntime.ServerPlatform(System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<string!>!
+Aw.Sindri.Core.Onyx.IContainerRuntime.Stop(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+Aw.Sindri.Core.Onyx.IContainerRuntime.Up(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Action<string!>! progress, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+Aw.Sindri.Core.Onyx.ImageNames
+const Aw.Sindri.Core.Onyx.ComposeProject.Name = "sindri-onyx" -> string!
+override Aw.Sindri.Core.Onyx.ComposeContainer.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.ComposeContainer.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.ComposeContainer.ToString() -> string!
+override Aw.Sindri.Core.Onyx.ComposeProject.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.ComposeProject.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.ComposeProject.ToString() -> string!
+override Aw.Sindri.Core.Onyx.ComposePublisher.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.ComposePublisher.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.ComposePublisher.ToString() -> string!
+static Aw.Sindri.Core.Onyx.ComposeContainer.operator !=(Aw.Sindri.Core.Onyx.ComposeContainer? left, Aw.Sindri.Core.Onyx.ComposeContainer? right) -> bool
+static Aw.Sindri.Core.Onyx.ComposeContainer.operator ==(Aw.Sindri.Core.Onyx.ComposeContainer? left, Aw.Sindri.Core.Onyx.ComposeContainer? right) -> bool
+static Aw.Sindri.Core.Onyx.ComposeProject.operator !=(Aw.Sindri.Core.Onyx.ComposeProject? left, Aw.Sindri.Core.Onyx.ComposeProject? right) -> bool
+static Aw.Sindri.Core.Onyx.ComposeProject.operator ==(Aw.Sindri.Core.Onyx.ComposeProject? left, Aw.Sindri.Core.Onyx.ComposeProject? right) -> bool
+static Aw.Sindri.Core.Onyx.ComposePublisher.operator !=(Aw.Sindri.Core.Onyx.ComposePublisher? left, Aw.Sindri.Core.Onyx.ComposePublisher? right) -> bool
+static Aw.Sindri.Core.Onyx.ComposePublisher.operator ==(Aw.Sindri.Core.Onyx.ComposePublisher? left, Aw.Sindri.Core.Onyx.ComposePublisher? right) -> bool
+static Aw.Sindri.Core.Onyx.ImageNames.WithoutDefaults(string! reference) -> string!

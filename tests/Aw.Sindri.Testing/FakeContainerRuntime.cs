@@ -1,3 +1,5 @@
+using Aw.Kernel;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Onyx;
 
 namespace Aw.Sindri.Testing;
@@ -23,6 +25,116 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
     /// <summary>Gets or sets the facts the fake reports.</summary>
     public ContainerRuntimeFacts Facts { get; set; } = facts;
 
+    /// <summary>Gets the operations called, in order: Inspect, ServerPlatform, Pull, Up, Stop, Ps, RepoDigests.</summary>
+    public IList<string> Calls { get; } = [];
+
+    /// <summary>Gets the containers of the project: <see cref="Up"/> fills them, <see cref="Stop"/> marks them exited.</summary>
+    public IList<ComposeContainer> Containers { get; } = [];
+
+    /// <summary>Gets the services <see cref="Up"/> starts: the eight Onyx runs with no profile.</summary>
+    public IList<string> StartedServices { get; } = ["api_server", "background", "cache", "inference_model_server", "nginx", "opensearch", "relational_db", "web_server"];
+
+    /// <summary>Gets or sets the platform the server reports.</summary>
+    public string Platform { get; set; } = "linux/arm64";
+
+    /// <summary>Gets or sets the host port nginx is published on after <see cref="Up"/>.</summary>
+    public int PublishedPort { get; set; } = 3000;
+
+    /// <summary>Gets the standard error lines <see cref="Pull"/> and <see cref="Up"/> hand to their progress callback.</summary>
+    public IList<string> ProgressLines { get; } = [];
+
+    /// <summary>Gets the images present locally, each reference with its RepoDigests as Docker spells them.</summary>
+    public IDictionary<string, string[]> LocalImages { get; } = new Dictionary<string, string[]>(StringComparer.Ordinal);
+
+    private readonly Dictionary<string, Error> _failures = new(StringComparer.Ordinal);
+
+    /// <summary>Makes the next call of an operation fail with an error (once).</summary>
+    /// <param name="operation">The operation name, as listed in <see cref="Calls"/>.</param>
+    /// <param name="error">The error it returns.</param>
+    public void FailNext(string operation, Error error) => _failures[operation] = error;
+
     /// <inheritdoc />
-    public ContainerRuntimeFacts Inspect(CancellationToken cancellationToken) => Facts;
+    public ContainerRuntimeFacts Inspect(CancellationToken cancellationToken)
+    {
+        Calls.Add("Inspect");
+        return Facts;
+    }
+
+    /// <inheritdoc />
+    public Result<string> ServerPlatform(CancellationToken cancellationToken) => Begin("ServerPlatform") is { } error ? error : Platform;
+
+    /// <inheritdoc />
+    public Result<Unit> Pull(ComposeProject project, Action<string> progress, CancellationToken cancellationToken)
+    {
+        if (Begin("Pull") is { } error)
+        {
+            return error;
+        }
+
+        ProgressLines.ToList().ForEach(progress);
+        return Results.Ok();
+    }
+
+    /// <inheritdoc />
+    public Result<Unit> Up(ComposeProject project, Action<string> progress, CancellationToken cancellationToken)
+    {
+        if (Begin("Up") is { } error)
+        {
+            return error;
+        }
+
+        ProgressLines.ToList().ForEach(progress);
+        Containers.Clear();
+        foreach (var service in StartedServices)
+        {
+            Containers.Add(new ComposeContainer(service, "running", Health: null, $"docker.io/test/{service}@sha256:0", service == "nginx" ? [new ComposePublisher("127.0.0.1", PublishedPort, 80)] : []));
+        }
+
+        return Results.Ok();
+    }
+
+    /// <inheritdoc />
+    public Result<Unit> Stop(ComposeProject project, CancellationToken cancellationToken)
+    {
+        if (Begin("Stop") is { } error)
+        {
+            return error;
+        }
+
+        for (var i = 0; i < Containers.Count; i++)
+        {
+            Containers[i] = Containers[i] with { State = "exited" };
+        }
+
+        return Results.Ok();
+    }
+
+    /// <inheritdoc />
+    public Result<IReadOnlyList<ComposeContainer>> Ps(ComposeProject project, CancellationToken cancellationToken)
+        => Begin("Ps") is { } error ? error : Results.Success<IReadOnlyList<ComposeContainer>>([.. Containers]);
+
+    /// <inheritdoc />
+    public Result<IReadOnlyDictionary<string, IReadOnlyList<string>>> RepoDigests(IReadOnlyList<string> images, CancellationToken cancellationToken)
+    {
+        if (Begin("RepoDigests") is { } error)
+        {
+            return error;
+        }
+
+        IReadOnlyDictionary<string, IReadOnlyList<string>> map = images.Distinct(StringComparer.Ordinal)
+            .ToDictionary(static i => i, i => (IReadOnlyList<string>)(LocalImages.TryGetValue(i, out var digests) ? digests : []), StringComparer.Ordinal);
+        return Results.Success(map);
+    }
+
+    // Records the call, then says why it can't run: a failure queued for it, or a runtime that isn't there.
+    private Error? Begin(string operation)
+    {
+        Calls.Add(operation);
+        if (_failures.Remove(operation, out var queued))
+        {
+            return queued;
+        }
+
+        return Facts is { CliFound: true, DaemonAnswers: true } ? null : SindriErrors.OnyxDockerUnavailable.With("Docker isn't running: start Docker Desktop (or the docker service), then run this again");
+    }
 }

@@ -7,7 +7,7 @@ namespace Aw.Sindri.Infrastructure.Onyx;
 /// <summary>IContainerRuntime over the docker CLI: read-only commands, each with a 5 s timeout, arguments as a list (never a shell string).</summary>
 /// <param name="runner">Runs the docker CLI.</param>
 /// <param name="environment">Reads an environment variable: DOCKER_HOST says where the CLI sends its commands.</param>
-internal sealed class DockerCliRuntime(IToolRunner runner, Func<string, string?> environment) : IContainerRuntime
+internal sealed partial class DockerCliRuntime(IToolRunner runner, Func<string, string?> environment) : IContainerRuntime
 {
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(5);
 

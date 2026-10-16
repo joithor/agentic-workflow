@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Infrastructure.Onyx;
 using Aw.Sindri.Infrastructure.Processes;
 using Aw.Sindri.Testing;
@@ -206,4 +207,163 @@ public sealed class DockerCliRuntimeTests
     [Fact, Trait("Lane", "unit")]
     public void Inspect_reports_no_endpoint_when_the_cli_is_missing()
         => Assert.Null(Cli(new FakeToolRunner(ToolRun.Missing), static _ => "tcp://10.0.0.5:2375").Inspect(Token).Endpoint);
+
+    private static readonly ComposeProject _project = new("/o/docker-compose.yml", "/o/docker-compose.override.yml", "/o/.env");
+
+    private static readonly string[] _composePrefix = ["compose", "-p", "sindri-onyx", "-f", "/o/docker-compose.yml", "-f", "/o/docker-compose.override.yml", "--env-file", "/o/.env"];
+
+    private static ToolRun Exit(int code, string output = "") => new(ToolOutcome.Exited, code, output);
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("linux/aarch64", "linux/arm64")]
+    [InlineData("linux/x86_64", "linux/amd64")]
+    [InlineData("linux/arm64", "linux/arm64")]
+    [InlineData("linux/amd64", "linux/amd64")]
+    public void ServerPlatform_normalizes_aarch64_and_x86_64(string printed, string expected)
+    {
+        var runner = new FakeToolRunner(Exit(0, printed + "\n"));
+
+        Assert.Equal(expected, Cli(runner).ServerPlatform(Token).Value);
+        Assert.Equal(["version", "--format", "{{.Server.Os}}/{{.Server.Arch}}"], Assert.Single(runner.Calls).Arguments);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("")]
+    [InlineData("linux")]
+    [InlineData("linux/arm64\u001b[2J")]
+    public void ServerPlatform_refuses_what_it_cannot_read_as_011(string printed)
+        => Assert.Equal("SND-ONYX-011", Cli(new FakeToolRunner(Exit(0, printed))).ServerPlatform(Token).Error.Code);
+
+    [Fact, Trait("Lane", "unit")]
+    public void Pull_passes_the_exact_argument_list_with_the_45_minute_timeout_and_streams_stderr_to_progress()
+    {
+        var runner = new FakeToolRunner(Exit(0), ["Pulling api_server", "Pulled api_server"]);
+        var progress = new List<string>();
+
+        var result = Cli(runner).Pull(_project, progress.Add, Token);
+
+        Assert.True(result.IsSuccess);
+        var call = Assert.Single(runner.Calls);
+        Assert.Equal("docker", call.FileName);
+        Assert.Equal([.. _composePrefix, "pull"], call.Arguments);
+        Assert.Equal(TimeSpan.FromMinutes(45), call.Timeout);
+        Assert.True(call.HadStderrCallback);
+        Assert.Equal(["Pulling api_server", "Pulled api_server"], progress);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Up_uses_no_build_and_a_5_minute_timeout()
+    {
+        var runner = new FakeToolRunner(Exit(0));
+
+        Assert.True(Cli(runner).Up(_project, static _ => { }, Token).IsSuccess);
+
+        var call = Assert.Single(runner.Calls);
+        Assert.Equal([.. _composePrefix, "up", "-d", "--no-build"], call.Arguments);
+        Assert.Equal(TimeSpan.FromMinutes(5), call.Timeout);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Stop_and_Ps_use_30_second_timeouts_and_stop_removes_nothing()
+    {
+        var runner = new FakeToolRunner(Exit(0, "[]"));
+
+        _ = Cli(runner).Stop(_project, Token);
+        _ = Cli(runner).Ps(_project, Token);
+
+        Assert.Equal([[.. _composePrefix, "stop"], [.. _composePrefix, "ps", "-a", "--format", "json"]], runner.Calls.Select(static c => c.Arguments));
+        Assert.All(runner.Calls, static c => Assert.Equal(TimeSpan.FromSeconds(30), c.Timeout));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_nonzero_compose_exit_is_011_with_the_last_stderr_lines()
+    {
+        var lines = Enumerable.Range(1, 8).Select(static n => $"line {n.ToString(System.Globalization.CultureInfo.InvariantCulture)}").ToArray();
+        var runner = new FakeToolRunner(Exit(1), lines);
+
+        var error = Cli(runner).Pull(_project, static _ => { }, Token).Error;
+
+        Assert.Equal("SND-ONYX-011", error.Code);
+        Assert.Contains("line 8", error.Message, StringComparison.Ordinal);
+        Assert.Contains("line 4", error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("line 3", error.Message, StringComparison.Ordinal);
+        Assert.Contains("docker compose pull", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_compose_command_that_cannot_reach_the_daemon_is_001()
+    {
+        var runner = new FakeToolRunner(Exit(1), ["Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?"]);
+
+        Assert.Equal("SND-ONYX-001", Cli(runner).Ps(_project, Token).Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_missing_cli_is_001_and_a_timed_out_ps_is_001_but_a_timed_out_pull_is_011()
+    {
+        Assert.Equal("SND-ONYX-001", Cli(new FakeToolRunner(ToolRun.Missing)).Stop(_project, Token).Error.Code);
+        Assert.Equal("SND-ONYX-001", Cli(new FakeToolRunner(ToolRun.TimedOut)).Ps(_project, Token).Error.Code);
+        Assert.Equal("SND-ONYX-011", Cli(new FakeToolRunner(ToolRun.TimedOut)).Pull(_project, static _ => { }, Token).Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_cancelled_command_throws_after_the_tool_was_killed()
+        => Assert.Throws<OperationCanceledException>(() => Cli(new FakeToolRunner(ToolRun.Cancelled)).Pull(_project, static _ => { }, Token));
+
+    private const string NginxJson = "{\"Service\":\"nginx\",\"State\":\"running\",\"Health\":\"\",\"Image\":\"nginx@sha256:aaa\",\"Publishers\":[{\"URL\":\"127.0.0.1\",\"TargetPort\":80,\"PublishedPort\":3000,\"Protocol\":\"tcp\"}]}";
+    private const string CacheJson = "{\"Service\":\"cache\",\"State\":\"exited\",\"Health\":\"\",\"Image\":\"redis:7.4-alpine\",\"Publishers\":null}";
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(NginxJson + "\n" + CacheJson + "\n")]
+    [InlineData("[" + NginxJson + "," + CacheJson + "]")]
+    public void Ps_parses_one_json_object_per_line_and_a_json_array(string printed)
+    {
+        var containers = Cli(new FakeToolRunner(Exit(0, printed))).Ps(_project, Token).Value;
+
+        Assert.Equal(["nginx", "cache"], containers.Select(static c => c.Service), StringComparer.Ordinal);
+        Assert.Equal(("running", null, "nginx@sha256:aaa"), (containers[0].State, containers[0].Health, containers[0].Image));
+        Assert.Equal([new ComposePublisher("127.0.0.1", 3000, 80)], containers[0].Publishers);
+        Assert.Equal(("exited", null, "redis:7.4-alpine"), (containers[1].State, containers[1].Health, containers[1].Image));
+        Assert.Empty(containers[1].Publishers);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Ps_keeps_a_wildcard_publisher_and_drops_one_that_is_not_published()
+    {
+        var printed = """{"Service":"nginx","State":"running","Health":"healthy","Image":"x","Publishers":[{"URL":"0.0.0.0","TargetPort":80,"PublishedPort":80,"Protocol":"tcp"},{"URL":"::","TargetPort":80,"PublishedPort":80,"Protocol":"tcp"},{"URL":"","TargetPort":9000,"PublishedPort":0,"Protocol":"tcp"}]}""";
+
+        var container = Assert.Single(Cli(new FakeToolRunner(Exit(0, printed))).Ps(_project, Token).Value);
+
+        Assert.Equal("healthy", container.Health);
+        Assert.Equal([new ComposePublisher("0.0.0.0", 80, 80), new ComposePublisher("::", 80, 80)], container.Publishers);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("not json")]
+    [InlineData("{\"Service\":")]
+    public void Ps_reads_output_it_cannot_parse_as_011(string printed)
+        => Assert.Equal("SND-ONYX-011", Cli(new FakeToolRunner(Exit(0, printed))).Ps(_project, Token).Error.Code);
+
+    [Fact, Trait("Lane", "unit")]
+    public void RepoDigests_normalizes_and_maps_a_missing_image_to_empty()
+    {
+        var runner = new FakeToolRunner((_, arguments) => arguments[^1] switch
+        {
+            "docker.io/library/nginx@sha256:aaa" => Exit(0, "[\"docker.io/library/nginx@sha256:aaa\"]\n"),
+            "docker.io/onyxdotapp/onyx-backend@sha256:bbb" => Exit(0, "[\"onyxdotapp/onyx-backend@sha256:bbb\",\"docker.io/onyxdotapp/onyx-backend@sha256:ccc\"]\n"),
+            _ => Exit(1),
+        });
+
+        var digests = Cli(runner).RepoDigests(["docker.io/library/nginx@sha256:aaa", "docker.io/onyxdotapp/onyx-backend@sha256:bbb", "docker.io/x/gone@sha256:ddd"], Token).Value;
+
+        Assert.Equal(["nginx@sha256:aaa"], digests["docker.io/library/nginx@sha256:aaa"]);
+        Assert.Equal(["onyxdotapp/onyx-backend@sha256:bbb", "onyxdotapp/onyx-backend@sha256:ccc"], digests["docker.io/onyxdotapp/onyx-backend@sha256:bbb"]);
+        Assert.Empty(digests["docker.io/x/gone@sha256:ddd"]);
+        Assert.All(runner.Calls, static c => Assert.Equal(["image", "inspect", "--format", "{{json .RepoDigests}}"], c.Arguments.Take(4), StringComparer.Ordinal));
+        Assert.All(runner.Calls, static c => Assert.Equal(TimeSpan.FromSeconds(30), c.Timeout));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void RepoDigests_is_001_when_the_daemon_is_gone()
+        => Assert.Equal("SND-ONYX-001", Cli(new FakeToolRunner(ToolRun.Missing)).RepoDigests(["a@sha256:b"], Token).Error.Code);
 }
