@@ -118,6 +118,22 @@ public sealed class StripRequeryTests
         Assert.False(shell.Strip.IsNotServed);
     }, Token);
 
+    // review run 1, corr-13: the "can't be read" sentence is for a body this build can't read, not for a server error with no problem body.
+    [Fact]
+    public Task A_plain_500_keeps_the_rows_and_does_not_say_the_list_cant_be_read() => UiThread.Run(async () =>
+    {
+        var shell = await Connected();
+        var shown = shell.Strip.Rows.Select(r => r.Address).ToList();
+        var reads = shell.Health.ViewReads;
+
+        _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.InternalServerError, "oops");
+        _server.Push(A.Event(74, "workflow.started"));
+        await ShellWait.Until(shell, () => shell.Health.ViewReads > reads, Token);
+
+        Expect.Sequence(shown, shell.Strip.Rows.Select(r => r.Address));
+        Assert.False(shell.Strip.IsUnreadable);
+    }, Token);
+
     // Proof B6: main's list still serves P4's shape (no counts): the strip says so in a sentence, never an empty box.
     [Fact]
     public Task A_list_in_a_shape_this_build_cant_read_shows_the_unreadable_sentence_and_no_rows() => UiThread.Run(async () =>
