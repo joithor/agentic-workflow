@@ -217,21 +217,6 @@ public sealed class QueueViewModelTests
         Assert.Equal((false, Labels.Sindri), (queue.IsAnnouncing, queue.Announcement));
     }
 
-    // testing-5: G W shows the With you group alone.
-    [Fact]
-    public async Task The_with_you_filter_shows_only_that_group()
-    {
-        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
-        var queue = await Queue();
-        await queue.Refresh(_api, Token);
-
-        queue.Filter(QueueFilter.WithYou);
-
-        Assert.Equal([false, true, false, false], queue.Groups.Select(g => g.IsVisible));
-        Assert.Equal(1, queue.Groups[1].Count);
-        Assert.False(queue.IsEmpty);
-    }
-
     // testing-5, Keep: a cleared row's group has emptied, so the selection falls to the first visible row.
     [Fact]
     public async Task A_cleared_row_whose_group_emptied_moves_the_selection_to_the_first_visible_row()

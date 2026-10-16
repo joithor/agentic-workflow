@@ -159,8 +159,8 @@ the page the tab hides as the sheet opens), as opening a covering sheet does. Cl
 tab when the tab reopened it, otherwise (a deep link) to the page region. Narrowing the window below 1100 px with the
 sheet open moves focus on the page (now disabled under the sheet) to the sheet's heading. A state change that hides the focused control moves focus to its region's neighbour: the pill in
 the top bar, the page region in the page (`ShellWindow.KeepFocus`, `TopBar.KeepRefreshFocus`).
-The mechanics: the regions (Page, Sheet, the top bar, the shortcuts card) are Borders with `AccessibilityView=Control` and
-`ControlTypeOverride=Group` (the `focus-region` style) so they have a named peer; `SheetTitle` is a Border typed Text that wraps
+The mechanics: the three regions (Page, Sheet, the top bar) are Borders with `AccessibilityView=Control` and
+`ControlTypeOverride=Group` (the `focus-region` style) so they have a named peer; the modal cards (shortcuts, palette, create) are Window-typed; `SheetTitle` is a Border typed Text that wraps
 the raw `SheetSubjectText`, so its name is the kind noun and the subject. **A page change by a navigation command** (a G-chord,
 the palette's Go to, a pointer click on a nav tab) always lands focus on the new page's region wherever focus was (the pill, a nav item, a sheet
 beside the page), and `ShellWindow.KeepFocusOrReannounce` does it: Avalonia 12.1.3 has no `ClearFocus`, so when the region
@@ -301,7 +301,7 @@ then text. E-15's `invalidates` waits for P5.
 or Enter or Space on it opens it with focus in its field. Sections: **Actions**, every catalog row not in Sindri,
 ready first, then pending (shown with "arrives in <phase>", never run), then cli-only ("Copy: sindri …"; Enter copies,
 "Copied" for 1.5 s, the palette stays open); U1 has no selected row, so Actions lists the whole catalog (Q3). **Go to**:
-Home G H, Queue G Q, Decisions G D, Services G S, Health G ., Settings ⌘,. **Sindri**: Rebuild views, Stop Sindri
+Home G H, Workflows G W, Work G Q, Recipes G R, Context G C, Agents G A, System G ., Settings ⌘, (G D is a Home filter, so the palette has no entry for it). **Sindri**: Rebuild views, Stop Sindri
 (Enter goes to Health, where it lives; never sent from the palette, its confirm is U4: Q4) and Health. Every catalog row
 appears once. Typing filters by a fuzzy match (the query's letters in order, spaces ignored) on labels and ids; ↑/↓
 move between entries that do something, Enter runs one, Esc or a click on the scrim closes it, and focus returns to

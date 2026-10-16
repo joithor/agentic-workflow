@@ -8,7 +8,4 @@ internal enum QueueFilter
 
     /// <summary>Only the API's 'running' group.</summary>
     Running,
-
-    /// <summary>Only the API's 'withYou' group.</summary>
-    WithYou,
 }

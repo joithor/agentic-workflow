@@ -187,6 +187,16 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <param name="filter">The Home filter.</param>
     internal void GoTo(PageId page, HomeFilter filter)
     {
+        if (page == PageId.Work)
+        {
+            Queue.Filter(QueueFilter.All);   // G Q, the palette and the tab show the whole queue; only GoToQueue narrows it
+        }
+
+        ShowPage(page, filter);
+    }
+
+    internal void ShowPage(PageId page, HomeFilter filter)
+    {
         SetHomeFilter(filter);
         if (page == CurrentPage)
         {

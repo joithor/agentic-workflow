@@ -20,12 +20,12 @@ internal sealed partial class ShellViewModel
     /// <summary>True when the sheet's subject is an item (its own view in the sheet's content).</summary>
     public bool IsItemSheet => SheetLink?.Kind == DeepLinkKind.Item;
 
-    /// <summary>Opens the Queue page on one filter (G Q, G R, G W; Home's "Show all N in Queue").</summary>
+    /// <summary>Opens the Queue page on one filter (Home's "Show all N in Queue" on Running); every other way to Work shows the whole queue.</summary>
     /// <param name="filter">The filter.</param>
     internal void GoToQueue(QueueFilter filter)
     {
         Queue.Filter(filter);
-        GoTo(PageId.Work);
+        ShowPage(PageId.Work, HomeFilter.All);
     }
 
     /// <summary>Opens an item's sheet (a row's Enter or title click, §3.2).</summary>

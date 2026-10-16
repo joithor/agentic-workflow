@@ -346,21 +346,6 @@ public sealed class QueueKeysTests
         Assert.Equal([Q(3)], asked);
     }
 
-    // corr-3 (G W left on, Home): the same, with the With you filter still on.
-    [Fact]
-    public async Task A_queued_row_cleared_on_home_with_the_with_you_filter_left_on_selects_the_next_queued_row()
-    {
-        var queue = await Queue();
-        queue.Filter(QueueFilter.WithYou);
-        queue.Move(1, QueueScope.Home);
-        Assert.Equal(Q(1), queue.SelectedId);
-
-        _server.QueueView = Without("extra-p4-waiting", Q(1));
-        await queue.Refresh(_api, Token);
-
-        Assert.Equal(Q(2), queue.SelectedId);
-    }
-
     // corr-3 (FilterText set, Home): Home's panels ignore the Queue page's text filter; so does the highlight and Y.
     [Fact]
     public async Task A_row_the_queue_pages_text_filter_hides_is_still_selected_and_copyable_on_home()

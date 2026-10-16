@@ -97,7 +97,7 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
     /// </summary>
     internal event EventHandler<FocusRequestedEventArgs>? FocusRequested;
 
-    /// <summary>The filter the page shows (G Q, G R, G W).</summary>
+    /// <summary>The filter the page shows (all of it, or Running from Home's "Show all N in Queue").</summary>
     public QueueFilter Showing { get; private set; }
 
     /// <summary>Re-reads the view (on connect and on every event, §9.2) and shows it; a failure keeps the last rows, stale.</summary>
@@ -126,7 +126,7 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
         IsLoading = false;   // after the rows are there: a waiter on the end of loading finds them
     }
 
-    /// <summary>Shows one group (G R, G W) or all of them (G Q); a selection the filter hides is cleared, silently.</summary>
+    /// <summary>Shows the running group (Home's "Show all N in Queue") or all of them (G Q, the Work tab); a selection the filter hides is cleared, silently.</summary>
     /// <param name="filter">The filter.</param>
     internal void Filter(QueueFilter filter)
     {
@@ -188,11 +188,10 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
         return row;
     }
 
-    // The filter lets a group through (G R, G W; all of them on G Q).
+    // The filter lets a group through (Running from Home's link; all of them otherwise).
     private bool Picked(string group) => Showing switch
     {
         QueueFilter.Running => group == "running",
-        QueueFilter.WithYou => group == "withYou",
         QueueFilter.All => true,
         _ => true,
     };

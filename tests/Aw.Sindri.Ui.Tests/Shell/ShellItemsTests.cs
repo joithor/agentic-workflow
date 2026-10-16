@@ -122,6 +122,25 @@ public sealed class ShellItemsTests
         Assert.Equal(PageId.Work, shell.CurrentPage);
     }
 
+    // Only Home's "Show all N in Queue" narrows the queue; G Q, the palette's Work and a Work tab show all of it.
+    [Fact]
+    public async Task G_q_and_the_work_tab_show_the_whole_queue_after_a_running_only_visit()
+    {
+        var shell = await Connected();
+
+        shell.GoToQueue(QueueFilter.Running);
+        Assert.Equal(QueueFilter.Running, shell.Queue.Showing);
+        shell.GoTo(PageId.Home);
+        Assert.True(shell.Press("G"));
+        Assert.True(shell.Press("Q"));
+        Assert.Equal((PageId.Work, QueueFilter.All), (shell.CurrentPage, shell.Queue.Showing));
+
+        shell.GoToQueue(QueueFilter.Running);
+        shell.GoTo(PageId.Recipes);
+        shell.SelectedNav = shell.Navigation.Single(n => n.Page == PageId.Work);
+        Assert.Equal(QueueFilter.All, shell.Queue.Showing);
+    }
+
     // §8: J moves to the next row of the page it is pressed on; Enter opens its sheet; C opens the create form.
     [Fact]
     public async Task J_and_enter_open_the_selected_rows_sheet_and_c_opens_create()
