@@ -564,7 +564,10 @@ moves to B without changing `workflow.phase`.
    stackParent }`. None ready: `full`.
 
 `start → starting` carries `effect.line.start-phase`, which starts `workflow.phase` as a linked instance with id
-`{line}/phase.<id>` (idempotent by that id). `starting` waits for its `started` event, then `dispatch` runs again, so
+`{line}/phase.<id>` (idempotent by that id). Effects already exist: engine P6 (#232, merged) records each in the
+outbox and its dispatcher sends it after the commit, refusing one that isn't on the profile's `workflow.effects`
+allowlist (`RCP-EFFECT-001`, a `spec-conflict` park). The line adds only effect kinds: `effect.line.start-phase` and
+`effect.line.report` (W15) and `effect.pr.open` (BD1). `starting` waits for its `started` event, then `dispatch` runs again, so
 the line starts phases one at a time until it reports `full`, then waits in `building` for any phase event.
 
 ### 8.3 Readiness and stacking
@@ -623,3 +626,227 @@ set's hash and the plan packet's). Packets hold ids, evidence kinds, counts and 
   `PRV-HOLD-003`, and the owner desk offers a fresh set.
 - When too many are spent, `prove` fails `PRV-HOLD-002` and the phase's owner desk offers `sindri line holdout add
   <phase>` (protected), which re-runs the author for that phase and re-seals it (Q4).
+
+## 10. Seeds, prompt evals and the fixture
+
+### 10.1 Seeds
+
+Every agent Step on the line has a seed written new (LN12) in DT §7's template (Goal, Reads, Do, Report, Never, Done
+when) under #258 §10.1's rules, which this station adopts unchanged: success first, reasons not shouting, an output
+contract with a JSON Schema in `schemas/line/`, a check the agent runs on its own output (`sindri design|plan check
+--facts "$AW_SINDRI_RUN_DIR"`, the repo's test command for builders), the data-never-instructions line, the scope
+line, at most ten MCP calls a round, no spec references (lists in `<block id>.reference.md`), three examples one of them
+hard, results per model. Each must score at least 2 on PR-R's gating criteria R1, R2, R6, R9 and R13 before its recipe
+is approved. Appendix A has the v0 texts for the nine agent Steps the line owns. #240's blocks the line runs
+(`step.handtest.run`, `step.verify.*`, `step.evidence.*-plan`, `step.review.run`, `step.review.fix`) get written-new
+seeds under the same rules (DTC7). Injected pack text (§5) fills a named section of a fixed seed; it never replaces
+the frame.
+
+### 10.2 The evidence loop
+
+PR-R Part 4's loop, as #258 §10.2 runs it: (1) error analysis first: the owner open-codes about 30 traces per Step from
+LN-W's desk walk and v0 runs on the fixture into `failure-modes.md`; (2) a plain-prompt baseline each seed must beat;
+(3) at least 20 cases per Step with should and should-not sides, tuned on the fixture's `expiry` change and reported
+on the held-out `archive` change; (4) deterministic `check:` graders first, binary judges on one fixed grader model,
+calibrated on held-out labels (TPR and TNR at least 0.8 for gating judges); (5) pass^3 on regression cases; (6) SC-E's
+`sindri recipe prompt-eval` as the runner. Work-derived traces stay under `$AW_STATE_DIR`, never committed. Graders and
+gating judges per Step are Appendix B.2.
+
+### 10.3 The fixture
+
+`tests/fixtures/line/` extends #258's `tests/fixtures/scoping/` (the team notes app): it adds the frozen gold scope
+packet for `expiry` and `archive`, a gold design (sections, coverage, three open decisions, one of them the D3 above,
+signals), a gold plan (four phases: the expiry field and migration; the public route's expired page, stacked on it;
+the expiry picker in the web screens, parallel to the route; regression coverage for export and the digest, after
+both), hidden-scenario sets with canaries, two style packs (`plain` and a deliberately different `formal` one, so
+`DSN-STYLE-001` is tested both ways), a two-lens and a five-lens pack, and scripted owner answers (one decision picked
+against the recommendation, forcing one redesign). **Planted:** a design lens finding that only a non-default lens pack
+raises; a builder change outside `allowedFiles`; a red test that passes on the red commit; a hidden scenario's text in a
+commit message (the canary); an evaluator report that quotes its scenario.
+
+## 11. Data and privacy
+
+#258 §11 applies to every station: trust labels, the pack fence, scrub at entry (W7), path bounds, profile egress,
+read-only agent Steps, logs with codes and hashes only. The line adds:
+
+| Concern | Rule |
+|---|---|
+| **Packs are instructions** | Style and lens packs steer models, so they are pinned by hash in the approved profile (§5.1) and change only through a profile approval; a repo pack is read from the repo at its base sha, never from a builder's worktree |
+| **Builders write, nothing else** | Capability `build` (W20): the phase worktree and the Step directory are the only writable paths; no push, no `gh`, no forge credential in the environment (PB10); network only to the model provider, and to the package registry when the phase may change dependencies (FA §17.5). The scope gate is checked by code after the fact as well (`BLD-SCOPE-001`) |
+| **Hidden scenarios** | §9: outside every builder-readable path, denied by policy, never in a packet, a fact or a log; results carry no scenario text; a canary detects leaks |
+| **Forge writes** | Only effects push or open PRs (`effect.pr.open`, PB's effects), with Sindri's credential and a lease on the frozen head (FA §17.23.11) |
+| **The PR body** | Generated by code from packets; untrusted text in it (model-written summaries) is labelled, and holdout text never appears; it passes `Aw.Redaction` before the effect sends it |
+| **Ledger rows** | `design.approved`, `plan.approved`, `line.escape`, `phase.*`: ids, counts and hashes, never text |
+
+## 12. Requests to other lanes
+
+Every ask is a row here; this doc edits no other spec. Ids continue #258's (W1–W14, C1–C14, U1–U6, API1–API8, P1,
+L-17). #258's rows are cited by id, never re-filed.
+
+### 12.1 Engine (W-rows)
+
+| # | Request | Needed by |
+|---|---|---|
+| W15 | **Linked instances.** An effect kind `effect.line.start-phase` (over P6's outbox) that starts an approved recipe as a linked instance `{parent}/phase.<id>`, idempotent by that id, pinned and approved like a child (`SND-RECIPE-003`); the parent link in the instance views; cancel cascades from parent to linked instances; the event `line.phase-changed` (`started`, `shipped`, `merged`, `ended` with the outcome) delivered to the parent by causation, as `claim.created` is; and `effect.line.report` for the `shipped` and `merged` milestones. A linked instance is a root for `RCP-CHILD-003` | LN-L |
+| W16 | **A phase workspace.** A worktree and branch per instance (`sindri/<line>/<phase>`), reused by every Step run of that instance and of its children (review-loop, babysitter), instead of WF §6.5's per-run worktree; its path on `StepContext` and as `AW_SINDRI_WORKTREE` through L-17; removed when the phase ends, kept while its PR is open | LN-B |
+| W17 | **The heavy resource.** `waitFor: { resource: heavy }` allocates one of the box's heavy-job slots (the shared lock, its cap and its memory guard), held until the instance leaves the holding child, ends or parks; `RCP-RES-001` stops being information-only for `heavy` | LN-B |
+| W18 | **Holdout capabilities.** `Capability: holdout-author` (Step directory inside the holdout store, report schema with ids and hashes only) and `Capability: evaluator` (its phase's set mounted read-only, the worktree read-only, the app runnable through the evidence CLIs); the store is kept until the line ends and purged with it (LC-8 keeps sealed sets' hashes) | LN-H |
+| W19 | **Pack bundles in the Step directory.** A Step's `with` may name `bundle: { pack: <kind> }`; the runtime copies the resolved, pin-checked pack into the Step directory and records `{ id, hash }` on the run record (W8) | LN-PK |
+| W20 | **Capability `build`.** Writable: the phase worktree and the Step directory; no push, no `gh`, no forge credential, network per FA §17.5; turned into L-17's policy (L-18) | LN-B |
+| W21 | **Long block Steps.** A block-runtime Step may declare a long `MaxDuration` (up to 60 minutes) and run on the heartbeating activity shape (DT §8.2 keeps the short form for judge calls), for `red-check`, `checks`, `before-after` and `green` | LN-B, LN-PV |
+| W22 | **Fallback only:** `RCP-CHILD-003` at 5, if W15 slips and the line ships with sequential children first (§8.1) | — |
+
+### 12.2 Context (C-rows)
+
+| # | Request | Needed by |
+|---|---|---|
+| C15 | **Design surfaces and decisions into the map.** `step.design.evidence` proposes the surfaces the design adds (C9's port, run = the design instance), and `step.plan.freeze` stores stop 2's answers as owner decision records (C14's ingest, `answerId` from the plan's answer log) | LN-K |
+| C16 | **The code lens for the planner.** `input.context.code` (C3) as an input to `step.plan.graph` and `step.plan.exec-review`, anchored on the design's covered surfaces, so allowed files and read seeds start from the map | LN-Y |
+
+### 12.3 UI (U-rows) and API (API-rows)
+
+| # | Request | Needed by |
+|---|---|---|
+| U7 | **The line board:** the stations with their packets as a chain (LC-3), the phase graph with stacks as columns and waves as rows, each phase's state, PR, base and NOW cell (DT-UI-5's deepest descendant) | LN-U |
+| U8 | **Stop 2's view:** `DesignStopView` in §6.4's order, the decisions as U1's interview cards, then the fixed form | LN-U |
+| U9 | **Stop 3's view:** `ReadyView`: the PR, its evidence pack, the docs PR, CI on the head, the stack base; merge and rework (human only) | LN-U |
+| U10 | **Packet viewers** for the six new kinds (files as tabs, no freeze control); the proof pack shows each item's evidence with its commit | LN-U |
+| U11 | **Packs in Settings:** the style and lens packs in use per repo, their hashes and pin status (read-only); the lens-round timeline in the design viewer | LN-PK |
+| API9 | `GET /sindri/workflow/instances/{id}/line` (`query`): `LineView` (stations, packet chain, board); `sindri line show <address>`. Catalog row, golden; the gate runs `Aw.Sindri.Ui.Tests` | LN-L |
+| API10 | `GET …/{id}/design-stop` on a `workflow.plan` instance: `DesignStopView`, live before `evidence`, untrusted text fenced for sessions | LN-K |
+| API11 | `GET …/{id}/ready` on a babysitter instance: `ReadyView` (BD6) | LN-U |
+| API12 | API §2's `local` list gains `design check|show --facts`, `plan check|show --facts`, `prove check --facts`, `pack check`, `line desk` (the desk helper for the line's block Steps, as `scoping desk`); `<address>` forms are `query` clients, exit 2 on `SND-API-001` as API3 | LN-K |
+| API13 | `sindri line holdout show <phase>` and `add <phase>` (`protected`, typed confirm; `show` marks what it shows `spent`) | LN-H |
+| API14 | `RecipeStats` for `workflow.line` and `workflow.design`: PRs per scope packet (fills API7's `prsPerPacket`), escapes by station, lens rounds to clean per design (the measure for LN3's "/autoplan about five times"), review iterations per phase, spent hidden scenarios | LN-P |
+
+### 12.4 Packets (P-rows)
+
+| # | Request | Needed by |
+|---|---|---|
+| P2 | Kinds `design`, `plan`, `phase`, `proof`, `review` and `handoff` in P1's registry: a JSON Schema each, schema-only `validate` under `PKT-DSN-…`, `PKT-PLN-…` and so on, and `index.json`'s parent chain. `plan` reuses `links.tasks` (LN10) | LN-K |
+| P3 | `aw-packets verify <dir> --hash <h> [--json]`: recompute and find the freeze record; exit 0 match, 1 mismatch or not frozen | LN-K |
+| P4 | **Answers PKT's size question:** `PKT-SIZE-001` checks each task against the profile's `workflow.plan.sizes` (files, items, budget per size) | LN-K |
+| P5 | **Answers PKT's holdout-store question:** the store's path and format (§9.1), `seal.json`, the canary per set; `PKT-HOLD-003`: a phase packet's set hash matches a seal; and `aw-packets amend <dir> --parent <hash>` for scope grants (§7.2) | LN-H |
+
+### 12.5 Launcher (L-rows)
+
+| # | Request | Needed by |
+|---|---|---|
+| L-18 | L-17's policy file gains, per capability (W18, W20): writable paths (the phase worktree), denied paths (the holdout store, other phases' worktrees), and the environment scrub (no forge credential) | LN-B |
+| L-19 | The evaluator's launch: the worktree read-only, the holdout set mounted read-only, the evidence CLIs on the command allowlist | LN-H |
+
+### 12.6 The scoping station (#258)
+
+No new rows. The line consumes #258's scope packet as specced, uses its interview (`step.interview.*`), its findings
+shape and `--facts` desk mode, and fills its `scoping.escape` writer (SC §3; LC-7), which takes API7's escape count off
+`NOT MEASURED`. #258's W12 already names `workflow.line` as its parent.
+
+### 12.7 #240, the decision-tree recipes (DTC-rows)
+
+| # | Change in #240 |
+|---|---|
+| DTC1 | `workflow.spec-to-proven-pr` (DT §6.2) is **replaced** by `workflow.line` and `workflow.phase`. DT-M builds `workflow.bugfix` only; `GateDominanceTests` walk `workflow.phase`; DT-P's spec-to-proven-pr proof moves to LN-P |
+| DTC2 | `workflow.plan` (DT §4) is **replaced** by the plan station; `step.plan.write`, `step.plan.verification` and its judge check retire. The verification plan is the phase packet's `signals.json`, frozen before code |
+| DTC3 | `workflow.implement` stays, for `workflow.bugfix` only; the line builds with `workflow.build` (red check, scope gate) |
+| DTC4 | `workflow.review-loop`: input `fact:change` `{ repo, branch, base, head }`, with `fact:pr` optional; lenses from the repo's injectable review lens pack (§5.2): states `round` (loop `rounds`, cap 5) → `lens` → `lens-log` → `clean` or `findings`, one lens per run; the narrow re-check kept; `clean` ends through `step.review.record`, which writes and machine-freezes the review result packet; `step.review.fix` commits in the phase worktree under capability `build` and the scope gate, given `fact:phasePacket` when present |
+| DTC5 | `workflow.ready` is split: the local GREEN gate is `workflow.ship`'s `green`; CI green is the babysitter's `ready`; the body is generated by code in `step.ship.pack`; `step.pr.open-draft` (desk) is retired by `effect.pr.open` (BD1) |
+| DTC6 | `workflow.hand-test` and `workflow.verify` take the phase packet's signals as their journey (`fact:phasePacket`), in place of `fact:verificationPlan` |
+| DTC7 | DT7 and §7: for every block the line runs, seeds are written new against PR-R (IDEA-098), not ported with /enhancePrompt |
+| DTC8 | Fact keys are camelCase (DT-V1): `fact:evidenceSummary`, `fact:manualTest`, `fact:evidencePack`, `fact:evidenceUi`/`Api`/`Db`; `fact:verificationPlan` retires (DTC6) |
+| DTC9 | Every evidence `summary.json` and the verify pack record, per artifact, the `commit` it ran on and `at` (`base` or `head`) |
+| DTC10 | DT Q8 (the epic layer) is answered by `workflow.line`; DT Q5's adoption bar ("two real stages") applies to `workflow.line` |
+
+### 12.8 The PR babysitter and docs sync draft (BD-rows)
+
+| # | Change in the PB draft |
+|---|---|
+| BD1 | `IForge` gains `effect.pr.open`: push the head branch with a lease on a given sha, then open a PR (or update the open one for that branch) with a given base, title, body and labels. PB-F (the forge port) is needed before LN-S |
+| BD2 | Inputs from the line: `fact:handoff`, `fact:phasePacket`, `fact:lineContext` beside `fact:pr`; fact keys camelCase (`fact:prState`, `fact:docsPr`, `fact:docsResult`); `gate.pr.diff-scope` gains `scope: phase` (the phase's allowed files and amendments) |
+| BD3 | **Ready-to-merge is the line's stop 3.** `snapshot → ready` requires CI green on the head **and** `fact:docsResult` present (docs sync ended `opened` or `not-needed`); `ready`'s needs-you row is the stop |
+| BD4 | **Stacks and stale proof.** `command.merge` refused while the PR's base isn't the default branch (`gate.pr.base-is-default`); `effect.pr.restack` covers stacked phase PRs when their base merges or moves; a babysitter fix touching non-test source runs the child `workflow.prove-recheck` before `ready` |
+| BD5 | Docs sync takes an optional `fact:designPacket`, runs once at the first CI-green snapshot (PB5), and its end is a precondition of `ready` (BD3), so stop 3 sees the docs PR complete |
+| BD6 | `ReadyView` (API11) shows the hand-off's not-proven count, hidden-scenario verdicts, the docs PR and CI on the head sha |
+| BD7 | The babysitter appends the merge record (`babysit.jsonl`) in the phase's run area, emits `merged` through `effect.line.report`, and outputs `fact:mergedSha` |
+| BD8 | `command.rework` (human only, notes required) from `ready` ends the babysitter in a new terminal `rework` (`failed`) with `fact:reworkNotes`; the phase rebuilds and `effect.pr.open` updates the same PR. PB-A's human-trigger flag covers the command |
+
+## 13. Phases
+
+Nothing is built until #258, this doc and the PB draft are all approved (LN1). Then the build goes front to back. Each
+phase is one PR through /specToProvenPR. **(owner)** steps run through `scripts/sindri-prove.sh human`.
+
+### 13.1 Build order across the three specs
+
+| Step | Phases | Lanes |
+|---|---|---|
+| 1. Foundations | DT-V, DT-C, DT-R (with DTC2–DTC9), DT-J; #258's W2, W6–W14 and this doc's W15–W21; P1–P5; L-17–L-19 | engine, packets, launcher, API |
+| 2. Scoping | #258 SC-F … SC-P | ideas, context, engine, API, UI |
+| 3. Design and plan | LN-F, LN-Y1, LN-K, LN-PK, LN-S1, LN-W | ideas, packets |
+| 4. The phase child | LN-Y2, LN-B, LN-H, LN-PV, LN-R, then PB-F, LN-SH | ideas, engine, launcher |
+| 5. Babysit and docs sync | the PB draft's phases, with BD1–BD8 | ideas, API, engine, UI |
+| 6. The line | LN-L, LN-U, LN-P | ideas, engine, API, UI |
+
+### 13.2 This doc's phases
+
+| Phase | What | Size | Needs | Proof | Lane |
+|---|---|---|---|---|---|
+| **LN-F** (owner) | The fixture (§10.3) | M | SC-F | Gold self-checks: the gold design passes `design check --facts`, the gold plan passes `plan check --facts` and `aw-packets validate`; each planted fault fails its rule | ideas |
+| **LN-Y1** | `workflow.design` and `workflow.plan` (Appendix C.1–C.2), descriptors (descriptor-only, `deskCapable`), `schemas/line/`, engine evals | M | DT-V, DT-C, DT-R; SC-Y | `recipe validate` exits 0 on both; `recipe eval` passes B.1's design and plan cases | ideas |
+| **LN-K** | `DesignPacketChecks`, `PlanChecks`, the packet assemblers, `design|plan check|show`, `line desk`, `DesignStopView` (API10), C15 | M | LN-F, LN-Y1, P2–P4 | Every DSN and PLN rule fails its planted fixture and passes the gold; API10 matches its golden; the gate runs `Aw.Sindri.Ui.Tests` | ideas |
+| **LN-PK** | Packs: schemas, resolution, pins, `pack check`, built-in `plain`, `design-five`, `code-review`; W19; U11 | M | LN-Y1 | A repo pack wins over the profile's; a pin mismatch parks `SND-PACK-002`; `formal` makes `DSN-STYLE-001` fail a `plain` draft; an 11-lens pack is refused | ideas, engine |
+| **LN-S1** (owner) | Seeds A.1–A.6 and the lens frame, error analysis, cases, graders, baselines | M | SC-E, LN-F; LN-W traces | Every seed scores ≥ 2 on R1, R2, R6, R9, R13 and beats its baseline on `archive`; gating judges TPR and TNR ≥ 0.8 | ideas |
+| **LN-W** (owner) | Desk walk: SC-W's real scope packet through design and plan to stop 2, at the desk | S | LN-K, LN-PK | Stop 2 shows §6.4's seven sections; one decision answered against the recommendation sends the line back to design in revise mode; approve freezes three packet kinds | ideas |
+| **LN-Y2** | `workflow.build`, `workflow.prove`, `workflow.ship`, `workflow.phase` (C.3–C.6), descriptors, evals; DTC4's review-loop change | M | LN-Y1, DT-M's tree tests | `recipe validate` on the tree; `GateDominanceTests` on `workflow.phase`; B.1's phase cases | ideas |
+| **LN-B** | Build runtime: W16, W17, W20, W21, L-18; the build rules | L | LN-Y2, engine P8 | On the fixture's P1: red tests fail on the red commit, pass on the head; the planted out-of-scope change reaches `scope-desk`; two builders never hold more than the heavy cap | engine, ideas, launcher |
+| **LN-H** | Hidden scenarios: W18, L-19, P5, API13, the author and evaluator Steps | M | LN-B | The builder's attempt to read the store is refused; the evaluator's quoting report parks; the canary in a commit fails `PRV-HOLD-003` | ideas, engine, launcher |
+| **LN-PV** | Prove: before/after, holdout-log, `ProofChecks`, the proof pack | M | LN-H, DT-B, DTC9 | A fix phase shows fail at base and pass at head by the same script; an artifact from an older head is `superseded`; the pack freezes | ideas |
+| **LN-SH** | Ship: green, pack, freeze, `effect.pr.open` (BD1) | S | LN-PV, PB-F | **(owner)** a fixture phase opens a PR whose body is the evidence pack, with no stop; a moved head returns to build | ideas |
+| **LN-L** | Line: dispatcher, W15, `LineView` (API9) | M | LN-SH, PB phases | `recipe eval` walks four phases at parallel 2 with one stack; a cancelled line cancels its phases | engine, ideas, API |
+| **LN-U** | U7–U10, API11 | M | LN-L, BD6 | **(owner)** the board, stop 2 and stop 3 render from fixture packets; merge is refused to a session | UI, API |
+| **LN-P** (owner) | End to end on a real serve | S | all above | **(owner)** the fixture's `expiry` goes scope → design → plan → four phases (two in parallel, one stacked) → four PRs opened with their evidence packs and docs PRs → CI green → stop 3 → merged in stack order; `line show` prints the chain; API14's stats read | ideas |
+
+### 13.3 Parallelization plan
+
+```
+step 1 foundations (engine, packets, launcher) ─────────────────────────────────────────────┐
+#258 SC-* ──► LN-F ─┬─► LN-Y1 ─┬─► LN-K ──┬─► LN-W ─► LN-S1                                  │
+                    │          └─► LN-PK ─┘                                                  │
+                    └─► LN-Y2 ─► LN-B ─► LN-H ─► LN-PV ─► LN-SH ─► LN-L ─► LN-U ─► LN-P ◄─────┤
+                                         PB-F ──────────────┘   PB phases ─┘                 │
+```
+
+| Wave | Runs in parallel | Starts when |
+|---|---|---|
+| 0 | Step 1 foundations across lanes ∥ #258's SC-F, SC-Y | All three specs approved |
+| 1 | LN-F ∥ #258 SC-K, SC-E ∥ PB-F (the forge port) | SC-F |
+| 2 | LN-Y1 ∥ LN-Y2 ∥ #258 SC-T, SC-I | LN-F; DT-R, DT-C |
+| 3 | LN-K ∥ LN-PK ∥ LN-B (engine P8) ∥ PB recipe phases | LN-Y1, LN-Y2, P2–P4 |
+| 4 | LN-W then LN-S1 ∥ LN-H then LN-PV ∥ #258 SC-P | LN-K, LN-PK; LN-B |
+| 5 | LN-SH ∥ LN-U's views on fixture packets | LN-PV, PB-F |
+| 6 | LN-L, then LN-P | LN-SH, the PB phases, W15 |
+
+The ideas lane keeps one builder busy from wave 1 (LN-F, LN-Y1/Y2 are recipe, schema and check work with no model
+calls); the engine lane's W15–W21 run in wave 0–3 beside it; the UI lane starts on fixture packets in wave 5 without
+waiting for a live line. Hotspots: `recipes/sindri/` and the block registrations are shared with DT-R and #258's SC-Y;
+units append, never reorder. Phases that add catalog rows or goldens (LN-K, LN-L, LN-U) run `Aw.Sindri.Ui.Tests` in
+their gate.
+
+## 14. Open questions
+
+All reversible unless marked.
+
+| # | Question | Provisional answer |
+|---|---|---|
+| Q1 | Should the after-design stop live in `workflow.line` instead of the plan station? | No (LN9): one recipe owns both packets at the stop, freezes them together and routes a revision. The line stays a chain of children |
+| Q2 | Parallel phases: linked instances (B), sequential children (A), or wait for schema v2 (C)? | B (LN11), with A as the fallback if W15 slips. *Owner should confirm*: B is an engine feature, smaller than IDEA-054 |
+| Q3 | Default `workflow.line.parallel`? | 2, matching the box's heavy-slot cap; heavy slots bound real load anyway (§8.4) |
+| Q4 | Hidden scenarios fed back to the builder become `spent`; what when too many are spent? | `PRV-HOLD-002` fails and the owner adds a fresh set (`line holdout add`, protected). Default minimum 2 unspent per phase |
+| Q5 | The phase cap "at most M": what are M's numbers? | Profile `workflow.plan.sizes`: XS ≤ 3 files and 2 items, S ≤ 8 and 4, M ≤ 20 and 8; tuned after LN-P from the merge records |
+| Q6 | Are style and lens packs approved with the profile, or separately? | With the profile, by hash pin (§5.1); a pack edit re-approves the profile, as a seed edit re-approves a recipe |
+| Q7 | Should a lens pack's own prompts have to pass prompt evals before use? | Warn until the pack ships eval cases; then the frame graders block a lens that breaks the output contract. Content quality stays the pack owner's |
+| Q8 | Review before a PR exists: does the review loop need a draft PR? | No: it reviews the local change (DTC4). Bots and human reviewers see the PR after it opens, and the babysitter handles their comments |
+| Q9 | Should a PR open as draft until CI is green? | No by default (`workflow.ship.draft: false`): the PR is proven when it opens. A repo whose CI needs a draft flips it |
+| Q10 | How deep may a stack go? | 4 (`workflow.line.maxStack`, `PLN-STACK-001`); deeper chains wait for merges instead of stacking |
+| Q11 | A scope change found during the build (an escape the owner wants in)? | The phase's owner desk records it (`line.escape`); the owner either grants it inside the phase (an amendment) or adds it as a new item for a later line. Re-scoping a running line is out of v1 |
+| Q12 | Mutation testing (FA §17.23.2)? | Not in v1; a `mutation` evidence kind joins the prove route when the consequence tiers land |
+| Q13 | Does `workflow.phase` run outside a line? | Yes, with a frozen phase packet and an empty `fact:lineContext`; `effect.line.report` records nothing then |
+| Q14 | The owner's rework at stop 3 rebuilds from scratch? | No: the same worktree and branch, notes as `fact:buildNotes`, and the same PR updated (BD8); prove, review and the GREEN gate run again on the new head |
