@@ -1,18 +1,35 @@
 using Aw.Kernel;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Views;
 
 namespace Aw.Sindri.Features.ListJobs;
 
-/// <summary>ListJobs (API P6 unit E): scoped like P3 and P4 (a session sees its repo's and repo-less jobs). Red until then.</summary>
-internal sealed class ListJobsService : IService<ListJobsRequest, JobList>
+/// <summary>Lists jobs (API P6 unit E; provisional owner default): by state and kind, newest first, a session only those of its repo or none. Stale views replace the empty sentence and keep the rows.</summary>
+/// <param name="jobs">The 'jobs' view.</param>
+/// <param name="status">How fresh the views are.</param>
+/// <param name="callers">The caller, whose repo scope applies.</param>
+internal sealed class ListJobsService(IJobViews jobs, IProjectorStatus status, ICallerContextAccessor callers) : IService<ListJobsRequest, JobList>
 {
-    public ListJobsService(IJobViews jobs, IProjectorStatus status, ICallerContextAccessor callers)
+    public async ValueTask<Result<JobList>> Handle(ListJobsRequest request, CancellationToken cancellationToken)
     {
-        _ = (jobs, status, callers);
-    }
+        ArgumentNullException.ThrowIfNull(request);
+        if (callers.Current is not { } caller)
+        {
+            return SindriErrors.AuthRefused.With("the job list needs a caller");
+        }
 
-    public ValueTask<Result<JobList>> Handle(ListJobsRequest request, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("red until API P6 unit E");
+        var current = status.Current;
+        var rows = await jobs.List(request.State, request.Kind, cancellationToken).ConfigureAwait(false);
+        if (rows.IsError)
+        {
+            return rows.Error;
+        }
+
+        IReadOnlyList<JobSummary> shown = [.. rows.Value.Where(r => ItemScope.VisibleOrRepoless(caller, r.Repo)).OrderByDescending(static r => r.Sequence)
+            .Select(static r => new JobSummary(r.Id, r.Kind, r.Key, r.Item, r.Repo, r.Service, r.State, r.StartedBy, r.StartedAt, r.EndedAt, r.Rounds, r.Summary, r.Code))];
+        return new JobList(shown, EmptyText.For(current, shown.Count == 0, EmptyText.Jobs), current.AsOf);
+    }
 }

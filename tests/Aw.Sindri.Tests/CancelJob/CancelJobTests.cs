@@ -48,7 +48,7 @@ public sealed class CancelJobTests
         Assert.True(cancelled.IsSuccess, cancelled.IsError ? cancelled.Error.ToString() : null);
         Expect.Equal(1, runtime.Probe.Cancelled);   // the work saw its token trip
         var row = Assert.Single(runtime.Events, e => string.Equals(e.Envelope.Type, EventTypes.JobCancelled, StringComparison.Ordinal));
-        Expect.Equal(($"job.cancelled:{started.Value.JobId.Value}", "human:cli", cancelled.Value.Sequence), (row.IdempotencyKey, row.Envelope.Actor, row.Sequence));
+        Expect.Equal(($"job.cancelled:{started.Value.JobId.Value}", "human:http", cancelled.Value.Sequence), (row.IdempotencyKey, row.Envelope.Actor, row.Sequence));
         Assert.DoesNotContain(runtime.Events, e => string.Equals(e.Envelope.Type, EventTypes.JobFinished, StringComparison.Ordinal));
     }
 
