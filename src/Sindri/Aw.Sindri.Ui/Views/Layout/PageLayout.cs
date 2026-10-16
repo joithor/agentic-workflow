@@ -1,7 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 
-namespace Aw.Sindri.Ui.Views.Shell;
+namespace Aw.Sindri.Ui.Views.Layout;
 
 /// <summary>
 /// The page region's width class, an inherited attached property the shell sets on the page region from its bounds: the

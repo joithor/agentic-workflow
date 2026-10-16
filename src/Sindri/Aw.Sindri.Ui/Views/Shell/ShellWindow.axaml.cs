@@ -6,6 +6,7 @@ using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Shell;
+using Aw.Sindri.Ui.Views.Layout;
 
 namespace Aw.Sindri.Ui.Views.Shell;
 

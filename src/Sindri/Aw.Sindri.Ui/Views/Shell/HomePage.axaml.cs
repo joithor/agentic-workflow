@@ -4,6 +4,7 @@ using Avalonia.Interactivity;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.ViewModels.Queue;
 using Aw.Sindri.Ui.ViewModels.Shell;
+using Aw.Sindri.Ui.Views.Layout;
 using Aw.Sindri.Ui.Views.Queue;
 
 namespace Aw.Sindri.Ui.Views.Shell;

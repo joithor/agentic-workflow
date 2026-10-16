@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Ui.Views.Shell;
+namespace Aw.Sindri.Ui.Views.Layout;
 
 /// <summary>How wide the page region is (proof B8): the rows and Home choose their columns from it.</summary>
 internal enum PageTier
