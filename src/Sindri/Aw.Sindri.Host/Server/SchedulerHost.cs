@@ -5,7 +5,6 @@ using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Lease;
-using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features.RecordServiceRun;
@@ -24,7 +23,7 @@ namespace Aw.Sindri.Host.Server;
 /// nothing. Each service's last recorded outcome is kept in memory and, after a restart, read from its latest row.
 /// </summary>
 internal sealed partial class SchedulerHost(
-    IServiceScopeFactory scopes, IApprovals approvals, HeldLease held, ICallerContextAccessor callers, IEnumerable<BuiltInService> builtIns, TimeProvider clock, ILogger<SchedulerHost> log)
+    IServiceScopeFactory scopes, ScheduleInputs inputs, ServiceRunGuard guard, HeldLease held, ICallerContextAccessor callers, TimeProvider clock, ILogger<SchedulerHost> log)
     : BackgroundService
 {
     private static readonly TimeSpan _tick = TimeSpan.FromSeconds(1);
@@ -37,6 +36,7 @@ internal sealed partial class SchedulerHost(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _ = guard;   // red until API P6 unit D wires pauses and the guard
         while (!stoppingToken.IsCancellationRequested)
         {
             await Refresh(stoppingToken).ConfigureAwait(false);
@@ -71,7 +71,7 @@ internal sealed partial class SchedulerHost(
         Result<LoadedProfile?> approved;
         try
         {
-            approved = await approvals.Latest(ct).ConfigureAwait(false);
+            approved = await inputs.Approvals.Latest(ct).ConfigureAwait(false);
         }
         catch (Exception e) when (!ct.IsCancellationRequested)   // boundary: a broken read (its own timeout too) must not stop the schedule
         {
@@ -95,7 +95,7 @@ internal sealed partial class SchedulerHost(
         {
             _loaded = true;   // the first read loads the built-ins even with no approved profile (S1-D8)
             _profile = profile?.Hash;
-            _schedules = ServiceSchedule.From(profile?.Profile, builtIns, clock.GetUtcNow());
+            _schedules = ServiceSchedule.From(profile?.Profile, inputs.BuiltIns, clock.GetUtcNow());
             LogSchedule(log, _profile?.Abbreviated ?? "none", _schedules.Count);
         }
     }
@@ -228,46 +228,6 @@ internal sealed partial class SchedulerHost(
         return last == ServiceOutcome.Ok;
     }
 
-    /// <summary>The outcome of <paramref name="name"/>'s latest 'service.ran' in the ledger, or null when it has none or the ledger can't be read (then the run is recorded).</summary>
-    private async Task<ServiceOutcome?> Restore(IServiceProvider services, ServiceName name, CancellationToken ct)
-    {
-        var reader = services.GetService<ILedgerReader>();
-        var events = services.GetService<EventFactory>();
-        if (reader is null || events is null)
-        {
-            return null;
-        }
-
-        ServiceOutcome? latest = null;
-        try
-        {
-            for (var after = 0L; ;)
-            {
-                var page = await reader.ReadAfter(after, 500, ct).ConfigureAwait(false);
-                if (page.IsError || page.Value.Count == 0)
-                {
-                    return page.IsError ? null : latest;
-                }
-
-                foreach (var e in page.Value.Where(e => string.Equals(e.Envelope.Type, EventTypes.ServiceRan, StringComparison.Ordinal)))
-                {
-                    var ran = events.Payload<ServiceRan>(e);
-                    if (ran.IsSuccess && ran.Value.Service == name)
-                    {
-                        latest = ran.Value.Outcome;
-                    }
-                }
-
-                after = page.Value[^1].Sequence;
-            }
-        }
-        catch (Exception e) when (!ct.IsCancellationRequested)   // boundary: an unreadable ledger must not stop the schedule; the run is recorded instead
-        {
-            LogRestoreFailed(log, name.Value, e.Message);
-            return null;
-        }
-    }
-
     private async Task Delay(TimeSpan delay, CancellationToken ct)
     {
         try
@@ -291,9 +251,6 @@ internal sealed partial class SchedulerHost(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "SND-SCHED-001 service '{Service}' ran but its service.ran wasn't recorded: {Code} {Detail}")]
     private static partial void LogRecordFailed(ILogger logger, string service, string code, string detail);
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "SND-SCHED-001 service '{Service}': its last recorded run couldn't be read back ({Detail}); recording this run")]
-    private static partial void LogRestoreFailed(ILogger logger, string service, string detail);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "SND-SCHED-001 service '{Service}' failed: {Code} {Detail}")]
     private static partial void LogServiceFailed(ILogger logger, string service, string code, string detail);

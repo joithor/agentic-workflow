@@ -27,6 +27,7 @@ internal static class SindriHostServiceCollectionExtensions
     internal static IServiceCollection AddSindriServe(this IServiceCollection services) => services
         .AddSingleton<ServePort>()
         .AddHostedService<ServeListenerCheck>()
+        .AddSingleton<ScheduleInputs>()
         .AddHostedService<SchedulerHost>()
         .AddHostedService<ProjectorHost>()
         .AddHostedService<ProfileWatch>()
