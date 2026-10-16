@@ -7,6 +7,7 @@ using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.NeedsYou;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views;
 using Aw.Sindri.Ui.Views.Shell;
@@ -19,6 +20,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 public sealed class AppLifetimeTests
 {
     private readonly FakeTray _tray = new();
+    private readonly FakeDockBadge _badge = new();
     private readonly FakeInstanceChannel _channel = new();
     private readonly List<DeepLink> _navigated = [];
     private readonly FakeTimeProvider _clock = new(A.Noon);
@@ -45,7 +47,7 @@ public sealed class AppLifetimeTests
         var window = new Window();
         window.Show();
         var instance = new FakeSingleInstance(_channel);
-        return (window, new AppLifetime(window, _tray, _navigated.Add, () => _shutdowns++, Settle, _clock), instance);
+        return (window, new AppLifetime(window, _tray, _navigated.Add, () => _shutdowns++, Settle, _clock, _badge), instance);
     }
 
     private Task Settle()
@@ -388,9 +390,68 @@ public sealed class AppLifetimeTests
         var (_, lifetime, _) = Start();
         using (lifetime)
         {
-            lifetime.ShowState(ShellState.NotRunning);
+            var summary = AttentionSummary.For(feed: null, ShellState.NotRunning, default);
+            lifetime.ShowAttention(summary);
 
-            Assert.Equal(AppLifetime.TrayViewFor(ShellState.NotRunning), _tray.Shown);
+            Assert.Equal(summary.Tray, _tray.Shown);
         }
     });
+
+    [Fact]
+    public Task Tray_row_click_opens_needs_you_rowId_and_runs_no_action() => OnUi(() =>
+    {
+        var (window, lifetime, _) = Start();
+        using (lifetime)
+        {
+            lifetime.ShowAttention(AttentionSummary.For(Feed(NeedsYouRows.Park(), NeedsYouRows.Decision()), ShellState.Normal, A.Noon));
+            window.Hide();
+
+            _tray.PickRow(1);
+
+            Assert.Equal([new DeepLink(DeepLinkKind.NeedsYou, "decision:DEC-1")], _navigated);
+            Assert.True(window.IsVisible);   // opening the row brings the window forward; the row's actions stay untouched
+        }
+    });
+
+    [Fact]
+    public Task Badge_and_tray_update_while_the_window_is_closed() => OnUi(() =>
+    {
+        var (window, lifetime, _) = Start();
+        using (lifetime)
+        {
+            window.Close();
+            Assert.False(window.IsVisible);
+
+            lifetime.ShowAttention(AttentionSummary.For(Feed(NeedsYouRows.Park(), NeedsYouRows.Failure(), NeedsYouRows.Profile()), ShellState.Normal, A.Noon));
+
+            Assert.Equal((TrayState.Attention, 3, 3), (_tray.Shown!.State, _tray.Shown.Count, _badge.Shown));
+            Assert.False(window.IsVisible);
+        }
+    });
+
+    [Fact]
+    public Task Following_the_shell_pushes_every_change_of_its_summary_to_the_tray_and_the_badge() => OnUi(async () =>
+    {
+        var records = new InMemoryEndpointRecords();
+        records.Write(A.Record());
+        var shell = new ShellViewModel(records, new FakeSindriApi(), _clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
+        var (window, lifetime, _) = Start();
+        using (lifetime)
+        using (var stop = new CancellationTokenSource())
+        {
+            lifetime.Follow(shell);
+            Assert.Equal(TrayState.Stale, _tray.Shown!.State);   // connecting: hollow until Sindri answers
+
+            var running = shell.Run(stop.Token);
+            await Until(() => shell.State == ShellState.Normal);
+            window.Close();
+            shell.ShowNeedsYou(Feed(NeedsYouRows.Park(), NeedsYouRows.Failure()));
+
+            Assert.Equal((TrayState.Attention, 2), (_tray.Shown.State, _badge.Shown));
+            await stop.CancelAsync();
+            await running;
+        }
+    });
+
+    private static NeedsYouFeed Feed(params NeedsYouEntry[] rows) => new(rows, "") { Counts = new HomeCounts(Running: 2, WithYou: 0, Queued: 1) };
 }

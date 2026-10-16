@@ -23,6 +23,7 @@ public sealed partial class FreshnessTests : IDisposable
     private readonly FakeTimeProvider _clock = new(A.Noon);
     private readonly CancellationTokenSource _stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
     private readonly HealthViewModel _vm;
+    private readonly InlineUiContext _ui = new();
     private Task _run = Task.CompletedTask;
 
     public FreshnessTests()
@@ -36,6 +37,7 @@ public sealed partial class FreshnessTests : IDisposable
         _stop.Cancel();
         Assert.True(_run.Wait(TimeSpan.FromSeconds(2), CancellationToken.None), "Run ended when cancelled");
         _stop.Dispose();
+        _ui.Dispose();
     }
 
     private async Task Connected(Func<bool>? also = null)

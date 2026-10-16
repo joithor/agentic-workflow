@@ -27,7 +27,22 @@ internal static class Composition
             new FilePreferencesStore(ui.Preferences),
             new PolledMotionPreference(MotionReader(), clock, MotionPoll),
             new SocketSingleInstance(ui, clock),
-            new AvaloniaTray());
+            new AvaloniaTray())
+        {
+            DockBadge = DockBadge(),
+        };
+    }
+
+    /// <summary>This OS's dock badge: macOS NSDockTile, the Windows taskbar overlay on the main window; elsewhere none (Linux has no common one).</summary>
+    /// <returns>The badge.</returns>
+    internal static IDockBadge DockBadge()
+    {
+        if (OperatingSystem.IsMacOS())
+        {
+            return new MacDockBadge();
+        }
+
+        return OperatingSystem.IsWindows() ? new WindowsDockBadge(Aw.Sindri.Ui.Views.MainWindowHandle.Current) : new NullDockBadge();
     }
 
     /// <summary>The app over <paramref name="platform"/>.</summary>

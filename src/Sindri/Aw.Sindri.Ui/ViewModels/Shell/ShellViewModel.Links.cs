@@ -15,13 +15,25 @@ internal sealed partial class ShellViewModel
             return;
         }
 
+        link = Canonical(link);
         if (PageOf(link.Kind) is { } page)
         {
             GoTo(page);
         }
 
         OpenSheet(link);
+        if (link.Kind is DeepLinkKind.NeedsYou or DeepLinkKind.Decision)
+        {
+            SelectRowOf(link);
+        }
     }
+
+    // One rule for a row's link (the tray, a deep link, a click): a needs-you link whose row is a decision is the decision's own link.
+    private DeepLink Canonical(DeepLink link) =>
+        link.Kind == DeepLinkKind.NeedsYou && link.Subject is { } rowId
+        && NeedsYou.Row(rowId) is { Entry.DecisionId: { } decisionId }
+            ? new DeepLink(DeepLinkKind.Decision, decisionId)
+            : link;
 
     // The rev 8 links name a page (screens spec §3); the older ones open their sheet over the page shown.
     private static PageId? PageOf(DeepLinkKind kind) => kind switch

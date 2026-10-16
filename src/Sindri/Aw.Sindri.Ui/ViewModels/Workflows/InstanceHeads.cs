@@ -3,7 +3,6 @@ using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.ViewModels.Workflows;
 
-#pragma warning disable MA0182 // until the U8 pages (T1, T4) place it
 /// <summary>
 /// The one place the open figure is read (rev 8, critique run 5 P1: "open counts from one source"). The nav tab, the Home
 /// strip head and the Workflows head all print the list's "counts.open", which the API computes over the root rows
@@ -34,4 +33,3 @@ internal static class InstanceHeads
 
     private static string Number(int value) => value.ToString(CultureInfo.InvariantCulture);
 }
-#pragma warning restore MA0182

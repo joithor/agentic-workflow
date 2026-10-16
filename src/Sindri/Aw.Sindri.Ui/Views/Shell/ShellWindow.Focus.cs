@@ -63,6 +63,8 @@ internal sealed partial class ShellWindow
             return;
         }
 
+        ListenNeedsYou(shell, on);
+        ListenStrip(shell, on);
         if (on)
         {
             shell.Queue.FocusRequested += OnFocusRow;
@@ -183,7 +185,7 @@ internal sealed partial class ShellWindow
         var page = Usable(this.Get<Control>("Page")) ?? (Covering ? Usable(this.Get<Border>("SheetTitle")) : null);
         if (SheetPanel == last || SheetPanel.IsVisualAncestorOf(last))
         {
-            return OpenerRowFrame() ?? Usable(_sheetOpener) ?? SelectedRowFrame() ?? page;
+            return OpenerStripFrame() ?? OpenerRowFrame() ?? Usable(_sheetOpener) ?? SelectedRowFrame() ?? page;
         }
 
         return TopBar.IsVisualAncestorOf(last) ? Usable(TopBar.Get<Control>("HealthPill")) : page;

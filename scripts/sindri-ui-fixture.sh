@@ -17,6 +17,21 @@
 #                                  close an item at the CLI (sindri item close, as the owner): with the app open on
 #                                  the same item, the app's own Close then sends a stale version (SND-ITEM-409)
 #
+#   sindri-ui-fixture.sh request [--item ID] [--repo R] <text>
+#                                  file a request as a session (a POST to /sindri/requests with no caller header, so the
+#                                  API reads a session; --repo sends X-Sindri-Repo): a decision lands in Needs you (U3')
+#   sindri-ui-fixture.sh decide <DEC-id> <choice>
+#                                  decide at the CLI (sindri decide, as the owner): with the app open on the same
+#                                  decision, the app's own Decide is then refused (SND-ITEM-409)
+#   sindri-ui-fixture.sh fail      add a service the build cannot run to the live profile and approve it (a failure row)
+#   sindri-ui-fixture.sh unfail    remove it again and approve (the row clears)
+#                                  (items --large also files 12 requests, in FIXTURE_REPO when set, else with no repo)
+#   sindri-ui-fixture.sh workflows [--large]
+#                                  start the strip's instances through the CLI (sindri workflow start, as the owner, each on a
+#                                  new item): one triage and two work instances; --large starts twelve roots across three recipes
+#   sindri-ui-fixture.sh incident start|stop
+#                                  start an incident-urgency instance (recipes/dev/incident-hold.yaml; it tops the strip) or cancel it
+#
 # FIXTURE_REPO names the items' repo (default: none, so the API's default applies).
 # Environment: AW_SINDRI_HOME (required: sindri-prove.sh's guard, a temp or proof folder), SINDRI (the built C# CLI,
 # as sindri-prove.sh reads it), STALL_TYPE (the stalled row's type; default service.ran, a type the projector reads),
@@ -33,7 +48,7 @@ STALL_ID="7f3c1a52-0b6e-4d1e-9a55-3c2f6d8e1b04"
 STALL_CORRELATION="7f3c1a52-0b6e-4d1e-9a55-3c2f6d8e1b05"
 
 die() { echo "sindri-ui-fixture: $*" >&2; exit 2; }
-usage() { sed -n '5,21p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '5,36p' "$0" | sed 's/^# \{0,1\}//'; }
 
 # sindri-prove.sh's guard alone: it runs before any verb, and SINDRI=true makes the verb a no-op.
 guard() { SINDRI=true "$PROVE" guard >/dev/null || exit 2; }
@@ -80,10 +95,66 @@ services:
   heartbeat: { every: 5s }
 api: { port: 0 }
 YAML
+  approve || return
+  "$PROVE" human --headless
+}
+
+# Validates the live profile and approves its hash as the owner, typing the first six characters.
+approve() {
+  local hash
   hash="$("$PROVE" profile validate --json | jq -r '.hash // empty')"
   [ -n "$hash" ] || die "profile validate gave no hash"
-  printf 'approve profile %s\n' "${hash:0:6}" | "$PROVE" human profile approve "$hash" || return
-  "$PROVE" human --headless
+  printf 'approve profile %s\n' "${hash:0:6}" | "$PROVE" human profile approve "$hash"
+}
+
+# A service the build has no code for: the scheduler reports its failure, and Needs you shows a failure row.
+fail() {
+  need jq
+  local profile
+  profile="$(profile_path)"
+  [ -f "$profile" ] || die "no live profile at $profile: run 'up' first"
+  if ! grep -q 'broken:' "$profile"; then
+    awk '{print} /^  heartbeat:/ {print "  broken: { every: 5s }"}' "$profile" > "$profile.new" && mv "$profile.new" "$profile"
+  fi
+  approve
+}
+
+unfail() {
+  need jq
+  local profile
+  profile="$(profile_path)"
+  [ -f "$profile" ] || die "no live profile at $profile: run 'up' first"
+  grep -v '^  broken:' "$profile" > "$profile.new"; mv "$profile.new" "$profile"
+  approve
+}
+
+# A session's request: no X-Sindri-Caller, so the API reads a session.
+request() {
+  need jq
+  local item="" repo="" url body
+  while [ $# -gt 1 ]; do
+    case "$1" in
+      --item) item="$2"; shift 2 ;;
+      --repo) repo="$2"; shift 2 ;;
+      *) break ;;
+    esac
+  done
+  [ $# -eq 1 ] && [ -n "$1" ] || die "usage: request [--item ID] [--repo R] <text>"
+  if [ -n "$item" ] && ! [[ "$item" =~ ^[A-Za-z]+-[A-Za-z0-9]+$ ]]; then die "request: '$item' is not an item id"; fi
+  if [ -n "$repo" ] && ! [[ "$repo" =~ ^[A-Za-z0-9._-]+$ ]]; then die "request: '$repo' is not a repo name"; fi
+  url="$("$PROVE" url)" || return
+  body="$(jq -nc --arg text "$1" --arg item "$item" '{kind: "rescope", text: $text} + (if $item == "" then {} else {item: $item} end)')"
+  if [ -n "$repo" ]; then
+    curl -sS --fail-with-body -X POST -H 'Content-Type: application/json' -H "X-Sindri-Repo: $repo" -d "$body" "$url/sindri/requests"
+  else
+    curl -sS --fail-with-body -X POST -H 'Content-Type: application/json' -d "$body" "$url/sindri/requests"
+  fi
+}
+
+decide() {
+  [[ "$1" =~ ^[A-Za-z]+-[A-Za-z0-9]+$ ]] || die "decide: '$1' is not a decision id"
+  [[ "$2" =~ ^[A-Za-z0-9._-]+$ ]] || die "decide: '$2' is not a choice"
+  "$PROVE" human decide "$1" "$2"
 }
 
 # One row, the same one every time (INSERT OR IGNORE on its idempotency key), at the ledger's current epoch. The ledger's
@@ -132,6 +203,15 @@ items() {
   for title in "${ITEMS[@]}"; do add "$title" || return; done
   [ "${1:-}" = "--large" ] || return 0
   for n in $(seq 1 30); do add "Large fixture item $n" || return; done
+  # 12 requests (U3's large Needs-you list), filed as a session. The API refuses a repo the approved profile lacks and the
+  # fixture's profile has none, so they name FIXTURE_REPO when it is set (a repo the profile has) and no repo otherwise.
+  for n in $(seq 1 12); do
+    if [ -n "${FIXTURE_REPO:-}" ]; then
+      request --repo "$FIXTURE_REPO" "Large fixture request $n" || return
+    else
+      request "Large fixture request $n" || return
+    fi
+  done
 }
 
 close() {
@@ -139,14 +219,89 @@ close() {
   if [ "${2:-}" = "--cancelled" ]; then "$PROVE" human item close "$1" --cancelled; else "$PROVE" human item close "$1"; fi
 }
 
+# A new item, its id printed (the id is the first ITM- token sindri item add prints).
+new_item() {
+  local out id
+  out="$(add "$1")" || return
+  id="$(printf '%s\n' "$out" | grep -o 'ITM-[A-Za-z0-9]*' | head -1)"
+  [ -n "$id" ] || die "item add printed no item id: $out"
+  printf '%s\n' "$id"
+}
+
+# The inputs the dev recipes declare: triage-three-state takes fact:item (JSON naming the item) and fact:scope (text, its name), desk-round-trip takes
+# fact:request (text). The files live in the guarded home, one folder for all of them.
+fact_args() { # $1 recipe, $2 item, $3 title; prints the --fact arguments, one for each line
+  local dir="$AW_SINDRI_HOME/ui-fixture-facts"
+  mkdir -p "$dir" || return
+  case "$1" in
+    *triage-three-state)
+      jq -nc --arg id "$2" '{id: $id}' > "$dir/$2.item.json" || return
+      printf 'Fixture scope for %s\n' "$3" > "$dir/$2.scope.txt" || return
+      printf '%s\n%s\n%s\n%s\n' --fact "fact:item=$dir/$2.item.json" --fact "fact:scope=$dir/$2.scope.txt" ;;
+    *desk-round-trip)
+      printf 'Fixture request for %s\n' "$3" > "$dir/$2.request.txt" || return
+      printf '%s\n%s\n' --fact "fact:request=$dir/$2.request.txt" ;;
+  esac
+}
+
+start_on_new_item() { # $1 recipe, $2 item title; prints the item
+  local item facts=() line out
+  need jq
+  item="$(new_item "$2")" || return
+  while IFS= read -r line; do facts+=("$line"); done < <(fact_args "$1" "$item" "$2")
+  # The pty the owner's verbs run under joins stderr into stdout, so the output is kept to show on a refusal.
+  if ! out="$("$PROVE" human workflow start "$1" --item "$item" "${facts[@]}" 2>&1)"; then
+    die "workflow start $1 on $item was refused: $out"
+  fi
+  printf 'started %s on %s\n' "$1" "$item" >&2
+  printf '%s\n' "$item"
+}
+
+# One triage and two work instances (screens §8.2); --large: twelve roots, four on each of three recipes.
+workflows() {
+  local n r
+  if [ "${1:-}" = "--large" ]; then
+    for n in 1 2 3 4; do
+      for r in workflow.dev-triage-three-state workflow.dev-desk-round-trip workflow.dev-notify; do
+        start_on_new_item "$r" "Large fixture workflow $r $n" >/dev/null || return
+      done
+    done
+    return 0
+  fi
+  start_on_new_item workflow.dev-triage-three-state "Fixture triage" >/dev/null || return
+  start_on_new_item workflow.dev-desk-round-trip "Fixture work one" >/dev/null || return
+  start_on_new_item workflow.dev-desk-round-trip "Fixture work two" >/dev/null
+}
+
+incident_file() { printf '%s\n' "$AW_SINDRI_HOME/ui-fixture-incident-item"; }
+
+incident() {
+  local item file
+  file="$(incident_file)"
+  case "$1" in
+    start)
+      item="$(start_on_new_item workflow.dev-incident-hold "Fixture incident")" || return
+      printf '%s\n' "$item" > "$file"
+      printf '%s\n' "$item" ;;
+    stop)
+      [ -f "$file" ] || die "no incident started by this fixture: run 'incident start' first"
+      item="$(cat "$file")"
+      "$PROVE" human workflow cancel "$item" && rm -f -- "$file" && printf 'cancelled %s\n' "$item" ;;
+  esac
+}
+
 verb="${1:-}"
 case "$verb" in
   -h | --help) usage; exit 0 ;;
   "") usage >&2; exit 2 ;;
   --large) die "--large belongs to 'items': sindri-ui-fixture.sh items --large" ;;
-  up | stall | unstall | drift | down) [ "$#" -eq 1 ] || die "'$verb' takes no arguments" ;;
+  up | stall | unstall | drift | down | fail | unfail) [ "$#" -eq 1 ] || die "'$verb' takes no arguments" ;;
   items) [ "$#" -eq 1 ] || { [ "$#" -eq 2 ] && [ "$2" = "--large" ]; } || die "usage: items [--large]" ;;
   close) [ "$#" -eq 2 ] || { [ "$#" -eq 3 ] && [ "$3" = "--cancelled" ]; } || die "usage: close <item> [--cancelled]" ;;
+  workflows) [ "$#" -eq 1 ] || { [ "$#" -eq 2 ] && [ "$2" = "--large" ]; } || die "usage: workflows [--large]" ;;
+  incident) { [ "$#" -eq 2 ] && { [ "$2" = start ] || [ "$2" = stop ]; }; } || die "usage: incident start|stop" ;;
+  request) [ "$#" -ge 2 ] || die "usage: request [--item ID] [--repo R] <text>" ;;
+  decide) [ "$#" -eq 3 ] || die "usage: decide <DEC-id> <choice>" ;;
   *) usage >&2; die "unknown verb: $verb" ;;
 esac
 

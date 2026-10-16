@@ -102,6 +102,7 @@ internal sealed partial class ShellViewModel
 
         HomeFilter = filter;
         OnChanged(nameof(HomeFilter));
+        UpdateNeedsYou();
     }
 
     private static (PageId Page, HomeFilter Filter)? SecondKey(string key) => key.ToUpperInvariant() switch

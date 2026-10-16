@@ -5,7 +5,6 @@ using Aw.Sindri.Ui.ViewModels.Controls;
 
 namespace Aw.Sindri.Ui.Views.Controls;
 
-#pragma warning disable MA0182 // until the U8 pages place the chip
 /// <summary>
 /// The state chip: a small bordered word, coloured by its tone. The word is drawn as served; the tone picks the class
 /// (attn, fail, ok, or none for neutral). The served chip wins; a chip the client draws itself is the fallback.
@@ -61,10 +60,10 @@ internal sealed class StateChipView : Border
 
         IsVisible = view is not null;
         _word.Text = view?.Word;
+        Avalonia.Automation.AutomationProperties.SetName(_word, view?.Word);
         if (view?.ToneClass is { } toneClass)
         {
             Classes.Add(toneClass);
         }
     }
 }
-#pragma warning restore MA0182

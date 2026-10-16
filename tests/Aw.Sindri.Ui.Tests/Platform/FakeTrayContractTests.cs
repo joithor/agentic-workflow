@@ -8,4 +8,8 @@ namespace Aw.Sindri.Ui.Tests.Platform;
 public sealed class FakeTrayContractTests : TrayContract
 {
     protected override ITray Create() => new FakeTray();
+
+    protected override IReadOnlyList<string> MenuLabels(ITray tray) => ((FakeTray)tray).MenuLabels;
+
+    protected override void Pick(ITray tray, int index) => ((FakeTray)tray).PickRow(index);
 }
