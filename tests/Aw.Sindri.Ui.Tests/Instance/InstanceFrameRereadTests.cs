@@ -131,4 +131,23 @@ public sealed class InstanceFrameRereadTests
         Assert.Equal(Labels.RowAge(TimeSpan.FromSeconds(served.AgeSeconds)), row.Age);
         Assert.Contains(row.Age, row.Meta, StringComparison.Ordinal);
     }
+
+    private static void ChildIs(JsonNode node, string state) =>
+        node["current"]!["status"]!["child"] = new JsonObject { ["id"] = "WFI-child", ["address"] = "ITM-01/item/1/step.4", ["state"] = state, ["reason"] = null };
+
+    [Fact]
+    public async Task A_reread_where_only_the_childs_state_changes_updates_the_pointer()
+    {
+        var golden = GoldenFiles.Node("workflow-instance", "incident-loop");
+        ChildIs(golden, "running");
+        _server.WorkflowAnswer = new RouteAnswer(System.Net.HttpStatusCode.OK, golden.ToJsonString());
+        var frame = new InstanceFrameViewModel(_server, _clipboard, _clock);
+        await frame.Open(_api, (string)golden["address"]!, (string)golden["id"]!, Token);
+        Assert.Contains("running", frame.Expanded!.Child!.Text, StringComparison.Ordinal);
+
+        _ = await Later(frame, "incident-loop", node => ChildIs(node, "parked"));
+
+        Assert.Contains("parked", frame.Expanded!.Child!.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain("running", frame.Expanded.Child.Text, StringComparison.Ordinal);
+    }
 }
