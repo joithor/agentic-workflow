@@ -39,6 +39,7 @@ internal sealed partial class ShellViewModel
     {
         Health.Follow((url, token) => IsInstanceSheet ? Instance.Refresh(url, token) : Task.CompletedTask);
         Instance.OpenRequested += (_, e) => OpenInstance(e.Address, e.Id);
+        Instance.ItemRequested += (_, e) => Navigate(new DeepLink(DeepLinkKind.Item, e.ItemId));
     }
 
     // The instance part of opening the sheet (OnSheetOpened): the frame names its instance at once and reads it; the id is the one a row or

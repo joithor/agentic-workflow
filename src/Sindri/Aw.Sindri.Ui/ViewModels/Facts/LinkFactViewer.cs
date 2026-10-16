@@ -1,32 +1,45 @@
-#pragma warning disable CA1822, MA0041, IDE0021, MA0182, IDE0060, CA1801, CA1812, IDE0051, CA1823 // red stub: removed in the green commit
 using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.ViewModels.Facts;
 
-/// <summary>A link fact: its host and title, and Open, which hands an http or https link to the platform.</summary>
+/// <summary>A link fact: its host and title as served, and Open, which hands an http or https link to the platform (no other scheme is opened).</summary>
 internal sealed class LinkFactViewer : ObservableObject, IFactViewer
 {
-    internal LinkFactViewer(FactRow row) => throw new NotSupportedException();
+    internal LinkFactViewer(FactRow row)
+    {
+        Row = row;
+        var link = row.Ref;
+        Url = link?.Url ?? string.Empty;
+        CanOpen = Uri.TryCreate(Url, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp);
+        Host = FactText.Scrub(link?.Host ?? (CanOpen ? new Uri(Url).Host : string.Empty));
+        Title = FactText.Scrub(link?.Title ?? row.Summary);
+        OpenText = Labels.OpenIn(Host);
+        OpenName = Labels.OpenLinkName(Title, Host);
+    }
 
-    public FactRow Row => throw new NotSupportedException();
+    /// <summary>The fact row the viewer shows.</summary>
+    public FactRow Row { get; }
 
     /// <summary>The link's host as served.</summary>
-    public string Host => throw new NotSupportedException();
+    public string Host { get; }
 
     /// <summary>The link's title as served.</summary>
-    public string Title => throw new NotSupportedException();
+    public string Title { get; }
 
     /// <summary>The link as served.</summary>
-    public string Url => throw new NotSupportedException();
+    public string Url { get; }
 
-    /// <summary>True for an http or https link; no other scheme is opened.</summary>
-    public bool CanOpen => throw new NotSupportedException();
+    /// <summary>True for an http or https link.</summary>
+    public bool CanOpen { get; }
 
     /// <summary>Open's words ("Open in linear.app ↗").</summary>
-    public string OpenText => throw new NotSupportedException();
+    public string OpenText { get; }
 
     /// <summary>Open's accessible name.</summary>
-    public string OpenName => throw new NotSupportedException();
+    public string OpenName { get; }
 
-    public Task Load(CancellationToken cancellationToken) => throw new NotSupportedException();
+    /// <summary>A link viewer needs nothing beyond the row.</summary>
+    /// <param name="cancellationToken">Cancels nothing.</param>
+    /// <returns>A completed task.</returns>
+    public Task Load(CancellationToken cancellationToken) => Task.CompletedTask;
 }

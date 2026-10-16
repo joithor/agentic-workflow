@@ -1,39 +1,62 @@
-#pragma warning disable CA1822, MA0041, IDE0021, MA0182, IDE0060, CA1801, CA1812, IDE0051, CA1823 // red stub: removed in the green commit
 using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.ViewModels.Facts;
 
-/// <summary>A file fact: its name, size and hash, and Open.</summary>
+/// <summary>A file fact: its name, size and hash as served, and Open, which the platform answers (a path the app can't resolve says so).</summary>
 internal sealed class FileFactViewer : ObservableObject, IFactViewer
 {
-    internal FileFactViewer(FactRow row) => throw new NotSupportedException();
+    private const int HashChars = 12;
 
-    public FactRow Row => throw new NotSupportedException();
+    internal FileFactViewer(FactRow row)
+    {
+        Row = row;
+        var file = row.Ref;
+        Name = FactText.Scrub(file?.Name ?? row.Summary);
+        SizeText = file?.Size is { } size ? Labels.FileSize(size) : string.Empty;
+        HashText = file?.Hash is { } hash ? Short(hash) : string.Empty;
+        Path = FactText.Scrub(file?.Path ?? string.Empty);
+        OpenName = Labels.OpenFileName(Path.Length > 0 ? Path : Name);
+    }
+
+    /// <summary>The fact row the viewer shows.</summary>
+    public FactRow Row { get; }
 
     /// <summary>The file's name as served.</summary>
-    public string Name => throw new NotSupportedException();
+    public string Name { get; }
 
     /// <summary>The size in words ("18 KB").</summary>
-    public string SizeText => throw new NotSupportedException();
+    public string SizeText { get; }
 
     /// <summary>The hash: its algorithm and the first twelve characters.</summary>
-    public string HashText => throw new NotSupportedException();
+    public string HashText { get; }
 
     /// <summary>The path as served.</summary>
-    public string Path => throw new NotSupportedException();
+    public string Path { get; }
 
     /// <summary>True when a path is served, so there is something to open.</summary>
-    public bool CanOpen => throw new NotSupportedException();
+    public bool CanOpen => Path.Length > 0;
 
     /// <summary>Open's accessible name.</summary>
-    public string OpenName => throw new NotSupportedException();
+    public string OpenName { get; }
 
     /// <summary>What Open found, in words; empty before it was pressed.</summary>
-    public string OpenNote => throw new NotSupportedException();
+    public string OpenNote { get; private set { Set(ref field, value); OnChanged(nameof(HasOpenNote)); } } = string.Empty;
 
-    public Task Load(CancellationToken cancellationToken) => throw new NotSupportedException();
+    /// <summary>True when Open has something to say.</summary>
+    public bool HasOpenNote => OpenNote.Length > 0;
+
+    /// <summary>A file viewer needs nothing beyond the row.</summary>
+    /// <param name="cancellationToken">Cancels nothing.</param>
+    /// <returns>A completed task.</returns>
+    public Task Load(CancellationToken cancellationToken) => Task.CompletedTask;
 
     /// <summary>Records what Open found.</summary>
     /// <param name="opened">True when the platform opened the file.</param>
-    public void ReportOpened(bool opened) => throw new NotSupportedException();
+    public void ReportOpened(bool opened) => OpenNote = opened ? string.Empty : Labels.FileNotOpened(Path);
+
+    private static string Short(string hash)
+    {
+        var colon = hash.IndexOf(':', StringComparison.Ordinal);
+        return FactText.Scrub(hash.Length > colon + 1 + HashChars ? hash[..(colon + 1 + HashChars)] : hash);
+    }
 }

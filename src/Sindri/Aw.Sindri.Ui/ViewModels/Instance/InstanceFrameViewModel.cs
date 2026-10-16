@@ -3,6 +3,7 @@ using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Facts;
 
 namespace Aw.Sindri.Ui.ViewModels.Instance;
 
@@ -13,7 +14,7 @@ namespace Aw.Sindri.Ui.ViewModels.Instance;
 /// instance's served fields; a not-found or unreadable answer shows its sentence with Back. A re-read keeps what is
 /// shown when the answer fails or the instance has ended, and the newest read wins.
 /// </summary>
-internal sealed class InstanceFrameViewModel(ISindriApi api, IClipboard clipboard, TimeProvider clock) : ObservableObject
+internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard clipboard, TimeProvider clock, FactViewerRegistry? viewers = null) : ObservableObject
 {
     private Uri? _url;
     private string? _id;
@@ -236,6 +237,7 @@ internal sealed class InstanceFrameViewModel(ISindriApi api, IClipboard clipboar
             Band = band;
         }
 
+        ShowPanels(detail);
         var expanded = new ExpandedStateViewModel(detail.Current, detail.Address, clipboard, clock);
         if (Expanded is null || !string.Equals(Expanded.Signature, expanded.Signature, StringComparison.Ordinal))
         {
@@ -278,6 +280,7 @@ internal sealed class InstanceFrameViewModel(ISindriApi api, IClipboard clipboar
         _generation++;
         (Title, Recipe, Hash12, Version, StateText, Detail, SinceText, Identity, ProblemText, Note) = (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
         (Subject, Band, Expanded) = (null, null, null);
+        ClearPanels();
         Phase = FramePhase.Empty;
     }
 }

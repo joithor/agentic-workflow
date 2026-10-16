@@ -1,4 +1,3 @@
-#pragma warning disable CA1822, MA0041, IDE0021, MA0182, IDE0060, CA1801, CA1812, IDE0051, CA1823 // red stub: removed in the green commit
 using System.ComponentModel;
 using Aw.Sindri.Ui.Api.Workflow;
 

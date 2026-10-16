@@ -99,6 +99,12 @@ internal static partial class Labels
     /// <returns>The words.</returns>
     internal static string OpenItemName(string itemId) => $"Open item {itemId}";
 
+    /// <summary>Open on a link's accessible name.</summary>
+    /// <param name="title">The link's title.</param>
+    /// <param name="host">The link's host.</param>
+    /// <returns>The words.</returns>
+    internal static string OpenLinkName(string title, string host) => $"Open {(title.Length > 0 ? title : "link")} in {host}";
+
     /// <summary>Copy on a text fact's accessible name.</summary>
     /// <param name="line">The line.</param>
     /// <returns>The words.</returns>
