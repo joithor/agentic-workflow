@@ -40,8 +40,26 @@ public sealed class FakeRepoReader(ContextRepo known, string head, IReadOnlyDict
     }
 
     /// <inheritdoc/>
-    public ValueTask<Result<RepoChanges>> Changes(ContextRepo repo, DiffRange range, CancellationToken cancellationToken) =>
-        throw new NotSupportedException();
+    public ValueTask<Result<RepoChanges>> Changes(ContextRepo repo, DiffRange range, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(range);
+        if (!Knows(repo))
+        {
+            return ValueTask.FromResult<Result<RepoChanges>>(Unreadable);
+        }
+
+        var first = Expand(range.Base);
+        var second = Expand(range.Head);
+        if (first is null || second is null)
+        {
+            return ValueTask.FromResult<Result<RepoChanges>>(ContextErrors.CommitUnknown.With("the fake holds no such commit"));
+        }
+
+        var answer = _answers.Find(a => a.Base == first && a.Head == second);
+        return ValueTask.FromResult<Result<RepoChanges>>(answer is not null ? answer : ContextErrors.NoMergeBase.With("the fake has no merge base for those commits"));
+    }
+
+    private string? Expand(string sha) => _commits.Find(c => c.StartsWith(sha, StringComparison.Ordinal));
 
     private readonly List<string> _commits = [];
     private readonly List<RepoChanges> _answers = [];
