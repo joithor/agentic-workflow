@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Views;
 
@@ -33,9 +34,21 @@ internal static class Composition
         };
     }
 
-    /// <summary>This OS's dock badge: macOS NSDockTile; elsewhere none yet (Windows and Linux arrive with their adapters).</summary>
+    /// <summary>This OS's dock badge: macOS NSDockTile, the Windows taskbar overlay on the main window; elsewhere none (Linux has no common one).</summary>
     /// <returns>The badge.</returns>
-    internal static IDockBadge DockBadge() => OperatingSystem.IsMacOS() ? new MacDockBadge() : new NullDockBadge();
+    internal static IDockBadge DockBadge()
+    {
+        if (OperatingSystem.IsMacOS())
+        {
+            return new MacDockBadge();
+        }
+
+        return OperatingSystem.IsWindows() ? new WindowsDockBadge(MainWindowHandle) : new NullDockBadge();
+    }
+
+    // The main window's native handle, once it exists; 0 before.
+    private static nint MainWindowHandle() =>
+        (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow?.TryGetPlatformHandle()?.Handle ?? 0;
 
     /// <summary>The app over <paramref name="platform"/>.</summary>
     /// <param name="platform">The head's adapters.</param>
