@@ -55,14 +55,14 @@ internal sealed class JobStartService<TRequest, TResult>(JobAdmitter<TRequest> a
             return Conflict(kind, key, running);
         }
 
-        var recorded = await recorder.Record(new JobTicket(job, kind, key), caller, admitted.Value.Service, cancellationToken).ConfigureAwait(false);
+        var recorded = await recorder.Record(new JobTicket(job, kind, key), caller, admitted.Value.Service, caller.Repo, cancellationToken).ConfigureAwait(false);
         if (recorded.IsError)
         {
             registry.Release(job);
             return recorded.Error;
         }
 
-        await runner.Start(new JobStart(job, kind, key, definition, request, caller, recorded.Value.Grant, admitted.Value.Service, recorded.Value.Cause), cancellationToken).ConfigureAwait(false);
+        await runner.Start(new JobStart(job, kind, key, definition, request, caller, recorded.Value.Grant, admitted.Value.Service, recorded.Value.Cause, caller.Repo), cancellationToken).ConfigureAwait(false);
         return Response(caller, job, recorded.Value.Sequence);
     }
 

@@ -34,7 +34,7 @@ internal sealed class JobEventWriter(ILedgerStore ledger, HeldLease held, EventF
     {
         ArgumentNullException.ThrowIfNull(start);
         ArgumentNullException.ThrowIfNull(line);
-        var payload = new JobProgress(start.Caller.CommandId, start.Job, round, JobLines.Clean(scrubber, line));
+        var payload = new JobProgress(start.Caller.CommandId, start.Job, round, JobLines.Clean(scrubber, line), Item: null, start.Repo);
         return Append(start, EventTypes.JobProgress, payload, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{EventTypes.JobProgress}:{start.Job.Value}:{round}"), cancellationToken);
     }
 
@@ -48,7 +48,7 @@ internal sealed class JobEventWriter(ILedgerStore ledger, HeldLease held, EventF
         ArgumentNullException.ThrowIfNull(start);
         ArgumentNullException.ThrowIfNull(work);
         var payload = work.Error is { } error
-            ? new JobFinished(start.Caller.CommandId, start.Job, JobOutcome.Failed, JobLines.Clean(scrubber, error.Message), error.Code, Result: null)
+            ? new JobFinished(start.Caller.CommandId, start.Job, JobOutcome.Failed, JobLines.Clean(scrubber, error.Message), error.Code, Result: null, Item: null, start.Repo)
             : Succeeded(start, work);
         return Append(start, EventTypes.JobFinished, payload, $"{EventTypes.JobFinished}:{start.Job.Value}", cancellationToken);
     }
@@ -71,7 +71,7 @@ internal sealed class JobEventWriter(ILedgerStore ledger, HeldLease held, EventF
             return SindriErrors.NotRunning.With("no caller to record the end under");
         }
 
-        var payload = new JobFinished(caller.CommandId, job.Id, JobOutcome.Failed, InterruptedSummary, SindriErrors.JobInterrupted.Code, Result: null);
+        var payload = new JobFinished(caller.CommandId, job.Id, JobOutcome.Failed, InterruptedSummary, SindriErrors.JobInterrupted.Code, Result: null, job.Item, job.Repo);
         var appended = await ledger.Append(events.Entry(EventTypes.JobFinished, payload, $"{EventTypes.JobFinished}:{job.Id.Value}"), grant, cancellationToken).ConfigureAwait(false);
         return appended.IsError ? appended.Error : Unit.Value;
     }
@@ -80,7 +80,7 @@ internal sealed class JobEventWriter(ILedgerStore ledger, HeldLease held, EventF
     {
         var summary = JobLines.Clean(scrubber, work.Summary);
         var result = Kept(work.Result);
-        return new JobFinished(start.Caller.CommandId, start.Job, JobOutcome.Succeeded, work.Result is not null && result is null ? summary + ResultTooLarge : summary, Code: null, result);
+        return new JobFinished(start.Caller.CommandId, start.Job, JobOutcome.Succeeded, work.Result is not null && result is null ? summary + ResultTooLarge : summary, Code: null, result, Item: null, start.Repo);
     }
 
     /// <summary>The result scrubbed and bounded: null when there is none, it is over <see cref="JobLimits.ResultBytes"/>, or scrubbing left text that is no longer JSON.</summary>
