@@ -8,6 +8,7 @@
         xmlns:root="using:Aw.Sindri.Ui.Views.Palette"
         xmlns:queue="using:Aw.Sindri.Ui.Views.Queue"
         xmlns:item="using:Aw.Sindri.Ui.Views.Item"
+        xmlns:ny="using:Aw.Sindri.Ui.Views.NeedsYou"
         x:Class="Aw.Sindri.Ui.Views.Shell.ShellWindow"
         x:DataType="shell:ShellViewModel"
         Title="{Binding WindowTitle}"
@@ -254,6 +255,12 @@
                 <ScrollViewer x:Name="ItemSheetScroll" IsVisible="{Binding IsItemSheet}">
                   <item:ItemSheet x:Name="ItemSheet" DataContext="{Binding Item}" />
                 </ScrollViewer>
+                <!-- U3' T9: a Needs-you row's sheet (kind: NeedsYou); the decision sheet (kind: Decision) is T6's and says "not served yet" until then. -->
+                <ScrollViewer x:Name="NeedsYouSheetScroll" IsVisible="{Binding IsNeedsYouSheet}">
+                  <ny:NeedsYouSheet x:Name="NeedsYouSheet" DataContext="{Binding NeedsYou.SheetRow}" />
+                </ScrollViewer>
+                <TextBlock x:Name="DecisionSheetBody" Classes="body muted" Text="{Binding Text.NotServedYet}" IsVisible="{Binding IsDecisionSheet}"
+                           AutomationProperties.Name="{Binding Text.NotServedYet}" />
                 <!-- LANE ANCHOR U3': the sheet content for the kinds U3' claims (kinds: NeedsYou, Decision). Insert immediately above this marker, never between the markers. -->
                 <!-- LANE ANCHOR U8: the sheet content for the kinds U8 claims (kinds: Workflow); the item sheet's re-base is content only. Recipe, Node, Session, System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers. -->
               </Panel>
@@ -287,6 +294,9 @@
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
     <!-- The queue's polite region (§3.3): "ITM-… cleared" and "N new", live only while it speaks (the view model changes the flag first). -->
     <TextBlock x:Name="QueueLive" Classes="live-region" Classes.live="{Binding Queue.IsAnnouncing}" Text="{Binding Queue.Announcement}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <!-- Needs you (§5): "N now need you", once for each rise; the flag changes before the text. -->
+    <TextBlock x:Name="NeedsYouLive" Classes="live-region" Classes.live="{Binding IsNeedsYouAnnouncing}" Text="{Binding NeedsYouAnnouncement}"
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
     <!-- The item sheet's polite region (L8): the refusal a gone control leaves behind, spoken once; the flag changes before the text. -->
     <TextBlock x:Name="ItemLive" Classes="live-region" Classes.live="{Binding Item.IsAnnouncing}" Text="{Binding Item.Announcement}"

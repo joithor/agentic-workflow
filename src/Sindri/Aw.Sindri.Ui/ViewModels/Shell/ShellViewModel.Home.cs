@@ -58,6 +58,18 @@ internal sealed partial class ShellViewModel
         }
     }
 
+    /// <summary>Focus or a click reached a Needs-you row: it is the one selection on Home.</summary>
+    /// <param name="rowId">The row's id.</param>
+    internal void SelectNeedsYouRow(string rowId)
+    {
+        Queue.ClearSelection();
+        NeedsYou.Select(rowId);
+    }
+
+    /// <summary>Opens a row's sheet (a click on its title, Enter).</summary>
+    /// <param name="rowId">The row's id.</param>
+    internal void OpenNeedsYouRow(string rowId) => Navigate(LinkOf(rowId));
+
     // A, X, Y and Enter act on the Needs-you row the selection is on (Home, focus not in the sheet).
     private bool NeedsYouKeyPressed(string key, bool inSheet)
     {

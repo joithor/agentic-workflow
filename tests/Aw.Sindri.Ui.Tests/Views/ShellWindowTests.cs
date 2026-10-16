@@ -259,7 +259,7 @@ public sealed class ShellWindowTests : IDisposable
             Assert.Contains(head.GetVisualDescendants().OfType<TextBlock>(), t => t.Classes.Contains("eyebrow"));
         }
 
-        foreach (var (name, text) in (ReadOnlySpan<(string, string)>)[("NeedsYouPanel", Labels.NotServedYet), ("RunningPanel", "Nothing running.")])
+        foreach (var (name, text) in (ReadOnlySpan<(string, string)>)[("RunningPanel", "Nothing running.")])
         {
             var panel = Named<Border>(window, name);
             var head = panel.GetVisualDescendants().OfType<Border>().Single(b => b.Classes.Contains("phead"));

@@ -32,6 +32,18 @@ internal sealed partial class NeedsYouViewModel
     {
         Select(id);
         SheetRowId = id;
+        OnChanged(nameof(SheetRow));
+    }
+
+    /// <summary>A control of a row was pressed: the same request a key makes.</summary>
+    /// <param name="rowId">The row's id.</param>
+    /// <param name="action">The control's action.</param>
+    internal void Press(string rowId, NeedsYouAction action)
+    {
+        if (Seen.Rows.FirstOrDefault(r => string.Equals(r.Id, rowId, StringComparison.Ordinal)) is { } row && action.IsReady)
+        {
+            _ = Act(row, action);
+        }
     }
 
     /// <summary>Handles a key.</summary>
@@ -129,6 +141,7 @@ internal sealed partial class NeedsYouViewModel
         }
 
         SheetRowId = null;
+        OnChanged(nameof(SheetRow));
         FocusRequested?.Invoke(this, new NeedsYouRowEventArgs(open));
         return true;
     }

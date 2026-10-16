@@ -63,6 +63,7 @@ internal sealed partial class ShellWindow
             return;
         }
 
+        ListenNeedsYou(shell, on);
         if (on)
         {
             shell.Queue.FocusRequested += OnFocusRow;

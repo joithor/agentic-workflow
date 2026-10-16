@@ -61,6 +61,7 @@ internal sealed class StateChipView : Border
 
         IsVisible = view is not null;
         _word.Text = view?.Word;
+        Avalonia.Automation.AutomationProperties.SetName(_word, view?.Word);
         if (view?.ToneClass is { } toneClass)
         {
             Classes.Add(toneClass);

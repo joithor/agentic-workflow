@@ -13,7 +13,19 @@ internal sealed partial class ShellWindow
     // §8: single keys never fire while typing in a field, over a layer, or with a modifier other than Shift ('.').
     private bool PageKey(KeyEventArgs e)
     {
-        if (Shell is not { } shell || KeysBlocked(shell, e) || KeyName(e) is not { } key)
+        if (Shell is not { } shell || KeysBlocked(shell, e))
+        {
+            return false;
+        }
+
+        // Shift+A marks every Needs-you row seen, from any page.
+        if (e is { Key: Key.A, KeyModifiers: KeyModifiers.Shift })
+        {
+            shell.MarkAllSeen();
+            return true;
+        }
+
+        if (KeyName(e) is not { } key)
         {
             return false;
         }

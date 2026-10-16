@@ -1,10 +1,12 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.ViewModels.Queue;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Layout;
+using Aw.Sindri.Ui.Views.NeedsYou;
 using Aw.Sindri.Ui.Views.Queue;
 
 namespace Aw.Sindri.Ui.Views.Shell;
@@ -17,6 +19,9 @@ internal sealed partial class HomePage : UserControl
         InitializeComponent();
         AddHandler(ItemRow.OpenEvent, OnOpen);
         AddHandler(ItemRow.SelectEvent, OnSelect);
+        AddHandler(NeedsYouRow.OpenEvent, OnNeedsYouOpen);
+        AddHandler(NeedsYouRow.SelectEvent, OnNeedsYouSelect);
+        AddHandler(NeedsYouRow.ActionEvent, OnNeedsYouAction);
     }
 
     /// <inheritdoc />
@@ -53,6 +58,38 @@ internal sealed partial class HomePage : UserControl
         if (DataContext is ShellViewModel shell && sender is Button { Tag: string tag })
         {
             shell.GoToQueue(tag == "Running" ? QueueFilter.Running : QueueFilter.All);
+        }
+    }
+
+    private void OnMarkAllSeen(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.MarkAllSeen();
+
+    private void OnShowAllNeedsYou(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.NeedsYou.ShowAll();
+
+    private void OnShowNeedsYouHeld(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.NeedsYou.ShowHeld();
+
+    // Focus arriving on a Needs-you row selects it, and the Queue's selection gives way: one selection on Home.
+    private void OnNeedsYouSelect(object? sender, RoutedEventArgs e)
+    {
+        if (e.Source is NeedsYouRow { RowId.Length: > 0 } row && DataContext is ShellViewModel shell)
+        {
+            shell.SelectNeedsYouRow(row.RowId);
+        }
+    }
+
+    private void OnNeedsYouOpen(object? sender, RoutedEventArgs e)
+    {
+        if (e.Source is NeedsYouRow { RowId.Length: > 0 } row && DataContext is ShellViewModel shell)
+        {
+            shell.SelectNeedsYouRow(row.RowId);
+            shell.OpenNeedsYouRow(row.RowId);
+        }
+    }
+
+    private void OnNeedsYouAction(object? sender, RoutedEventArgs e)
+    {
+        if (NeedsYouRow.ActionOf(e) is { } action && (e.Source as Control)?.FindAncestorOfType<NeedsYouRow>() is { RowId.Length: > 0 } row && DataContext is ShellViewModel shell)
+        {
+            shell.NeedsYou.Press(row.RowId, action);
         }
     }
 

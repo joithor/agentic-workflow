@@ -14,6 +14,9 @@ internal sealed partial class ShellViewModel
     /// <summary>The summary the title, the dock badge and the tray follow; it changes with the list and with the shell's state.</summary>
     internal AttentionSummary Attention { get; private set; }
 
+    /// <summary>True once the polite live region has something to say (the flag changes before the text).</summary>
+    public bool IsNeedsYouAnnouncing => _announcer.Line.Length > 0;
+
     /// <summary>The polite live region's line: "N now need you" once for each rise, else its resting text.</summary>
     public string NeedsYouAnnouncement => _announcer.Line.Length > 0 ? _announcer.Line : Labels.Sindri;
 
@@ -35,6 +38,7 @@ internal sealed partial class ShellViewModel
         Changed(nameof(Attention), nameof(WindowTitle));
         if (!string.Equals(before, _announcer.Line, StringComparison.Ordinal) || _announcer.Announcements > 0)
         {
+            OnChanged(nameof(IsNeedsYouAnnouncing));
             OnChanged(nameof(NeedsYouAnnouncement));
         }
     }

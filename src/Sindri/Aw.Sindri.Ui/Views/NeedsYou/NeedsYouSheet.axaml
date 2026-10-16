@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ny="using:Aw.Sindri.Ui.ViewModels.NeedsYou"
+             xmlns:ctl="using:Aw.Sindri.Ui.Views.Controls"
+             x:Class="Aw.Sindri.Ui.Views.NeedsYou.NeedsYouSheet"
+             x:DataType="ny:NeedsYouRowViewModel">
+  <!-- The sheet of a Needs-you row that is not a decision (a failure, a profile change, a parked item): what the API served
+       about it. Its controls are the row's; this sheet shows the command to copy (Y on the row copies it too). -->
+  <StackPanel Spacing="8">
+    <StackPanel Orientation="Horizontal" Spacing="8">
+      <ctl:StateChipView Chip="{Binding StateChip}" VerticalAlignment="Center" />
+      <TextBlock Classes="mono subtle" Text="{Binding ShownId}" VerticalAlignment="Center" AutomationProperties.Name="{Binding ShownId}" />
+    </StackPanel>
+    <TextBlock x:Name="SheetRowTitle" Classes="body-strong" Text="{Binding Title}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Title}" />
+    <TextBlock Classes="body muted" Text="{Binding Reason}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Reason}" />
+    <TextBlock Classes="caption subtle" Text="{Binding Notice}" IsVisible="{Binding HasNotice}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Notice}" />
+    <TextBlock x:Name="SheetRowCli" Classes="mono" Text="{Binding Cli}" IsVisible="{Binding Cli, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Cli}" />
+  </StackPanel>
+</UserControl>

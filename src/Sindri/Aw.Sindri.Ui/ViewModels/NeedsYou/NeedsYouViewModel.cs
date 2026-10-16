@@ -23,7 +23,7 @@ internal sealed partial class NeedsYouViewModel : ObservableObject
     private static readonly string[] _listProperties =
     [
         nameof(Rows), nameof(Count), nameof(HasOverflow), nameof(OverflowText), nameof(IsExpanded), nameof(IsEmpty), nameof(EmptyText),
-        nameof(HasBanner), nameof(Banner), nameof(HeldCount), nameof(HeldText), nameof(HasHeld),
+        nameof(HasBanner), nameof(Banner), nameof(HeldCount), nameof(HeldText), nameof(HasHeld), nameof(SheetRow),
     ];
 
     private NeedsYouFeed _feed = new([], "");
@@ -86,6 +86,9 @@ internal sealed partial class NeedsYouViewModel : ObservableObject
 
     /// <summary>The banner's served sentence; empty without a banner.</summary>
     internal string Banner => HasBanner ? _feed.Sentence : "";
+
+    /// <summary>The row whose sheet is open; null for none.</summary>
+    internal NeedsYouRowViewModel? SheetRow => SheetRowId is { } id ? Seen.Rows.FirstOrDefault(r => string.Equals(r.Id, id, StringComparison.Ordinal)) : null;
 
     /// <summary>The selected row's id; null for none.</summary>
     internal string? SelectedId { get; private set; }

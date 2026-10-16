@@ -24,6 +24,7 @@
     <StyleInclude Source="avares://Aw.Sindri.Ui/Theme/Typography.axaml" />
     <StyleInclude Source="avares://Aw.Sindri.Ui/Views/Controls/ControlStyles.axaml" />
     <StyleInclude Source="avares://Aw.Sindri.Ui/Views/Queue/QueueStyles.axaml" />
+    <StyleInclude Source="avares://Aw.Sindri.Ui/Views/NeedsYou/NeedsYouStyles.axaml" />
     <Style Selector="Window">
       <Setter Property="Background" Value="{DynamicResource Brush.Canvas}" />
       <Setter Property="FontFamily" Value="{DynamicResource Font.Text}" />
