@@ -22,6 +22,7 @@ namespace Aw.Sindri.Features.Jobs;
 internal sealed class JobEventWriter(ILedgerStore ledger, HeldLease held, EventFactory events, ITextScrubber scrubber, ICallerContextAccessor callers)
 {
     private const string ResultTooLarge = " (result too large)";
+    private const string InterruptedSummary = "interrupted: the process stopped while it ran";
 
     /// <summary>Records one progress line (cleaned here) as round <paramref name="round"/>.</summary>
     /// <param name="start">The job.</param>
@@ -50,6 +51,29 @@ internal sealed class JobEventWriter(ILedgerStore ledger, HeldLease held, EventF
             ? new JobFinished(start.Caller.CommandId, start.Job, JobOutcome.Failed, JobLines.Clean(scrubber, error.Message), error.Code, Result: null)
             : Succeeded(start, work);
         return Append(start, EventTypes.JobFinished, payload, $"{EventTypes.JobFinished}:{start.Job.Value}", cancellationToken);
+    }
+
+    /// <summary>Records that a job the previous process left running was interrupted by that process's end (recovery, API P6 unit F). The key is the job's end key, so a replay writes nothing.</summary>
+    /// <param name="job">The row of the job that was running.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    /// <returns>Success, or why the end was not recorded (no lease, or a lost one).</returns>
+    public async ValueTask<Result<Unit>> Interrupted(JobRow job, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(job);
+        if (held.Current is not { } grant)
+        {
+            return SindriErrors.NotRunning.With("the control plane doesn't hold the lease");
+        }
+
+        using var entered = callers.EnterService("jobs");
+        if (callers.Current is not { } caller)
+        {
+            return SindriErrors.NotRunning.With("no caller to record the end under");
+        }
+
+        var payload = new JobFinished(caller.CommandId, job.Id, JobOutcome.Failed, InterruptedSummary, SindriErrors.JobInterrupted.Code, Result: null);
+        var appended = await ledger.Append(events.Entry(EventTypes.JobFinished, payload, $"{EventTypes.JobFinished}:{job.Id.Value}"), grant, cancellationToken).ConfigureAwait(false);
+        return appended.IsError ? appended.Error : Unit.Value;
     }
 
     private JobFinished Succeeded(JobStart start, JobWorkResult work)

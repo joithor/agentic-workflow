@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 
@@ -17,11 +18,12 @@ namespace Aw.Sindri.Features.Jobs;
 /// <param name="callers">The starting caller is re-entered for the work.</param>
 /// <param name="writer">Appends the job's own events.</param>
 /// <param name="registry">Releases a job's (kind, key) claim when it ends.</param>
-internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jobs, ICallerContextAccessor callers, JobEventWriter writer, JobRegistry registry)
+/// <param name="shutdown">A stop, or a lost lease, cancels every running job (unit F).</param>
+internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jobs, ICallerContextAccessor callers, JobEventWriter writer, JobRegistry registry, IShutdown shutdown)
     : IJobRunner, IAsyncDisposable, IDisposable
 {
     private readonly ConcurrentDictionary<string, Run> _runs = new(StringComparer.Ordinal);
-    private readonly CancellationTokenSource _stopping = new();
+    private readonly CancellationTokenSource _stopping = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Stopping);   // a stop request or a lost lease trips every job's token at once
     private int _disposed;
 
     /// <inheritdoc />

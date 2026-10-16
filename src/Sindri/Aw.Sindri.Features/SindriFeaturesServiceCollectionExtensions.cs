@@ -17,6 +17,7 @@ using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Locks;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Text;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.ApproveRecipe;
@@ -106,7 +107,9 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddSingleton(static sp => new JobEventWriter(sp.GetRequiredService<ILedgerStore>(), sp.GetRequiredService<HeldLease>(), sp.GetRequiredService<EventFactory>(),
                 sp.GetRequiredService<ITextScrubber>(), sp.GetRequiredService<ICallerContextAccessor>()))   // API P6 unit C: the job runtime, outside the command gate
             .AddSingleton(static sp => new JobRunner(() => { var scope = sp.GetRequiredService<IServiceScopeFactory>().CreateAsyncScope(); return new JobScope(scope.ServiceProvider.GetRequiredService, scope); }, sp.GetRequiredService<IJobContextAccessor>(),
-                sp.GetRequiredService<ICallerContextAccessor>(), sp.GetRequiredService<JobEventWriter>(), sp.GetRequiredService<JobRegistry>()))
+                sp.GetRequiredService<ICallerContextAccessor>(), sp.GetRequiredService<JobEventWriter>(), sp.GetRequiredService<JobRegistry>(), sp.GetRequiredService<IShutdown>()))
+            .AddSingleton(static sp => new JobRecovery(sp.GetRequiredService<IJobViews>(), sp.GetRequiredService<ILedgerReader>(), sp.GetRequiredService<IProjectorStatus>(),
+                sp.GetRequiredService<HeldLease>(), sp.GetRequiredService<JobEventWriter>(), sp.GetRequiredService<JobRegistry>()))
             .AddSingleton<IJobRunner>(static sp => sp.GetRequiredService<JobRunner>()).AddSingleton<IJobCancellation>(static sp => sp.GetRequiredService<JobRunner>())
             .AddScoped<IService<ValidateRecipeRequest, ValidateRecipeResponse>, ValidateRecipeService>()
             .AddScoped<IService<EvalRecipeRequest, EvalRecipeResponse>, EvalRecipeService>()

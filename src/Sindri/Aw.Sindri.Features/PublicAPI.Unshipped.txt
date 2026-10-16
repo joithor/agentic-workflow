@@ -2280,5 +2280,7 @@ Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Deconstruct(out Aw.S
 Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Job.get -> Aw.Sindri.Core.Ids.JobId?
 Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.Job.init -> void
 Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.RecordServiceRunRequest(Aw.Sindri.Core.Ids.ServiceName Service, Aw.Sindri.Core.Scheduling.ScheduledRun! Run, Aw.Kernel.Result<Aw.Kernel.Unit>! Outcome, Aw.Sindri.Core.Ids.JobId? Job = null) -> void
-
 Aw.Sindri.Features.Jobs.JobDefinition.Precheck(object! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Features.Jobs.JobRecovery
+Aw.Sindri.Features.Jobs.JobRecovery.Run(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int>!>
+Aw.Sindri.Features.Jobs.JobRegistry.Holds(Aw.Sindri.Core.Ids.JobId job) -> bool

@@ -4,6 +4,7 @@ using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
@@ -65,13 +66,14 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
             .AddSingleton<IJobContextAccessor>(new FakeJobContextAccessor())
             .AddSingleton<EchoJobProbe>()
             .AddSingleton(Latch)
+            .AddSingleton<IShutdown>(Shutdown)
             .AddSingleton<Microsoft.Extensions.Logging.ILogger<AuditTrail>>(new ListLogger<AuditTrail>())
             .AddSingleton<JobRegistry>()
             .AddSingleton(static sp => new JobStartRecorder(sp.GetRequiredService<HeldLease>(), sp.GetRequiredService<ILedgerStore>(), sp.GetRequiredService<EventFactory>()))
             .AddSingleton(static sp => new JobEventWriter(sp.GetRequiredService<ILedgerStore>(), sp.GetRequiredService<HeldLease>(), sp.GetRequiredService<EventFactory>(),
                 sp.GetRequiredService<ITextScrubber>(), sp.GetRequiredService<ICallerContextAccessor>()))
             .AddSingleton(static sp => new JobRunner(() => { var scope = sp.GetRequiredService<IServiceScopeFactory>().CreateAsyncScope(); return new JobScope(scope.ServiceProvider.GetRequiredService, scope); }, sp.GetRequiredService<IJobContextAccessor>(),
-                sp.GetRequiredService<ICallerContextAccessor>(), sp.GetRequiredService<JobEventWriter>(), sp.GetRequiredService<JobRegistry>()))
+                sp.GetRequiredService<ICallerContextAccessor>(), sp.GetRequiredService<JobEventWriter>(), sp.GetRequiredService<JobRegistry>(), sp.GetRequiredService<IShutdown>()))
             .AddSingleton<IJobRunner>(static sp => sp.GetRequiredService<JobRunner>())
             .AddJob<EchoJobRequest, EchoReport, EchoJobService>(static _ => JobKey.From("echo"), static r => string.Create(CultureInfo.InvariantCulture, $"echoed {r.Lines}"))
             .AddJob<ProbeJobRequest, ProbeReport, ProbeJobService>(static r => JobKey.From(r.Mode), static r => string.Create(CultureInfo.InvariantCulture, $"probed {r.Text.Length}"))
@@ -80,6 +82,9 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
     }
 
     public SliceHarness H { get; } = new();
+
+    /// <summary>The process shutdown the runner watches; a test trips it with Request.</summary>
+    public FakeShutdown Shutdown { get; } = new();
 
     public FixtureLatch Latch { get; } = new();
 
@@ -166,7 +171,11 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
         }
     }
 
-    public ValueTask DisposeAsync() => _provider.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        await _provider.DisposeAsync();
+        Shutdown.Dispose();
+    }
 
     private sealed class HeavyTakes : IHeavySlots
     {

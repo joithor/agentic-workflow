@@ -23,6 +23,17 @@ public sealed class JobRegistry
         }
     }
 
+    /// <summary>Whether <paramref name="job"/> holds a claim: this process is running it.</summary>
+    /// <param name="job">The job.</param>
+    /// <returns>True when it holds one.</returns>
+    public bool Holds(JobId job)
+    {
+        lock (_gate)
+        {
+            return _byJob.ContainsKey(job.Value);
+        }
+    }
+
     /// <summary>Claims (<paramref name="kind"/>, <paramref name="key"/>) for <paramref name="job"/>.</summary>
     /// <param name="kind">The kind.</param>
     /// <param name="key">The key.</param>
