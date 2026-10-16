@@ -128,7 +128,9 @@ public sealed class EvidenceSchemaTests
             (nameof(DbSummary), "kind") => new JsonObject { ["const"] = DbSummary.KindName },
             (nameof(DbSummary), "provenance") => new JsonObject { ["enum"] = new JsonArray(DbSummary.Unseeded, DbSummary.Seeded) },
             (nameof(DbSummary), "headline") => Capped(rules, 200),
+            (nameof(DbSummary), "engine") => new JsonObject { ["enum"] = new JsonArray("sqlite", "postgres", null) },
             (nameof(DbStep), "output") => Capped(rules, 2000),
+            (nameof(DbStep), "target") => Capped(rules, 200),
             (nameof(DbStep), "action") => new JsonObject { ["const"] = "query" },
             _ => node,
         };

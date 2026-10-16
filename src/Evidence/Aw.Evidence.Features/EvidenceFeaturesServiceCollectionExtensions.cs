@@ -1,4 +1,3 @@
-using Aw.Evidence.Core.Data;
 using Aw.Evidence.Features.ApiRun;
 using Aw.Evidence.Features.CheckProvenance;
 using Aw.Evidence.Features.DbRun;
@@ -104,7 +103,6 @@ public static class EvidenceFeaturesServiceCollectionExtensions
 
     private static IServiceCollection AddApiSlices(this IServiceCollection services) =>
         services
-            .AddScoped<DataRunFiles>()
             .AddScoped<ApiVetting>()
             .AddScoped<RequestRunner>()
             .AddScoped<CallRunner>()
