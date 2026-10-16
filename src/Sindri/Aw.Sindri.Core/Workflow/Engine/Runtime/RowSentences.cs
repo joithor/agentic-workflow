@@ -12,11 +12,11 @@ internal static class RowSentences
     /// <summary>The sentence of <paramref name="view"/> under <paramref name="chip"/>, before the row cuts it to its limit.</summary>
     public static string Now(InstanceView view, StateChip chip) => chip.Word switch
     {
-        "QUEUED" => "queued",
-        "DONE" => view.Outcome?.Value ?? "done",
-        "WITH YOU" => $"with you: {view.Activity ?? view.State}",
-        "DECISION" => $"needs your {Answer(view)} (desk answer)",
-        "PARKED" or "ESCALATED" => view.AnswerLine is not null ? "needs your answer" : $"{chip.Word.ToLowerInvariant()}{(view.Detail is { } detail ? $" ({detail})" : string.Empty)}",
+        StateChip.Queued => "queued",
+        StateChip.Done => view.Outcome?.Value ?? "done",
+        StateChip.WithYou => $"with you: {view.Activity ?? view.State}",
+        StateChip.Decision => $"needs your {Answer(view)} (desk answer)",
+        StateChip.Parked or StateChip.Escalated => view.AnswerLine is not null ? "needs your answer" : $"{chip.Word.ToLowerInvariant()}{(view.Detail is { } detail ? $" ({detail})" : string.Empty)}",
         _ => Running(view),
     };
 

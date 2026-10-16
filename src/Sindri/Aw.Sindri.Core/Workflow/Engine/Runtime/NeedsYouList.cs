@@ -1,31 +1,26 @@
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 
 /// <summary>
-/// What needs you, as 'workflow list --needs-me' shows it (engine spec §6.3, README X5): <b>Decisions</b> (parks,
-/// escalations, takeovers) and then <b>Tasks</b> (open desk tasks), each ordered by address. A parent whose open
-/// question mirrors a child that is also listed appears once, under the child.
+/// What needs you, as 'workflow list --needs-me' shows it (engine spec section 6.3, README X5): the rows the NeedsYou search attribute found, a
+/// parent whose open question mirrors a child that is also listed appearing once, under the child. The list route applies <see cref="Shown"/>
+/// and orders the rows as every list is ordered; the CLI groups them into Decisions and Tasks from the served chips.
 /// </summary>
-/// <param name="Decisions">Parked, escalated and taken-over instances.</param>
-/// <param name="Tasks">Instances holding an open desk task.</param>
-public sealed record NeedsYouList(IReadOnlyList<InstanceView> Decisions, IReadOnlyList<InstanceView> Tasks)
+public static class NeedsYouList
 {
     /// <summary>The empty state's words.</summary>
     public const string Nothing = "nothing needs you";
 
-    /// <summary>Whether nothing needs you.</summary>
-    public bool IsEmpty => Decisions.Count == 0 && Tasks.Count == 0;
-
-    /// <summary>Sorts <paramref name="views"/> into the two sections; a view that needs nobody is left out.</summary>
+    /// <summary>
+    /// The views that stay when a parent whose open question mirrors a child that is also listed is dropped (engine spec section 6.3: once, under the
+    /// child). The order of <paramref name="views"/> is kept.
+    /// </summary>
     /// <param name="views">The instances the NeedsYou search attribute found.</param>
-    /// <returns>The list.</returns>
-    public static NeedsYouList Of(IEnumerable<InstanceView> views)
+    /// <returns>The views, each question once.</returns>
+    public static IEnumerable<InstanceView> Shown(IEnumerable<InstanceView> views)
     {
         ArgumentNullException.ThrowIfNull(views);
-        var all = views.OrderBy(static v => v.Address.Value, StringComparer.Ordinal).ToList();
+        var all = views.ToList();
         var listed = all.Select(static v => v.Address.Value).ToHashSet(StringComparer.Ordinal);
-        var shown = all.Where(v => !(v.Question is not null && v.Children.Any(c => listed.Contains(c.Address.Value)))).ToList();
-        return new NeedsYouList(
-            [.. shown.Where(static v => v.Outcome is null && v.Question is not null)],
-            [.. shown.Where(static v => v.Outcome is null && v.Question is null && v.Task is not null)]);
+        return all.Where(v => !(v.Question is not null && v.Children.Any(c => listed.Contains(c.Address.Value))));
     }
 }

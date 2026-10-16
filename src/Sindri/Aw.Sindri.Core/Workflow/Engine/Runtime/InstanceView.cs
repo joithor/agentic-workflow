@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Views;
@@ -73,6 +74,14 @@ public sealed record InstanceView(
 
     /// <summary>The item's id ('ITM-...') when the instance is an item's; null otherwise (UI screens E-20).</summary>
     public ItemKey? ItemId { get; init; }
+
+    /// <summary>The parent instance's id; null for a root. The detail view resolves it to a parent reference.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public WorkflowInstanceId? ParentId { get; init; }
+
+    /// <summary>The SHA-256 of each stored fact, by fact key ('fact:spec'); what the facts route reads the content by. Null when the instance holds none.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyDictionary<string, string>? FactShas { get; init; }
 
     /// <summary>How soon the recipe's instances need a human (E-21); work unless the recipe says so.</summary>
     public RecipeUrgency Urgency { get; init; } = RecipeUrgency.Work;

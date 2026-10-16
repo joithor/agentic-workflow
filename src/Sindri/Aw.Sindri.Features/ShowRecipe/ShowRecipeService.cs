@@ -1,28 +1,38 @@
+using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Registry;
+using Aw.Sindri.Core.Workflow.Views;
 
 namespace Aw.Sindri.Features.ShowRecipe;
 
 /// <summary>
-/// A registered recipe's line and the preview approving it would show (engine spec §4.2, §6.3 'recipe show &lt;id@hash&gt;'),
-/// by the full hash or a prefix of 8 or more digits, whether it is unapproved, approved or revoked.
+/// The recipe as <see cref="RecipeView"/> (API spec §3.8, E-22). With a hash it is the registered version that hash (or a prefix of 8 or
+/// more digits) names, approved or not, and SND-RECIPE-002 when none does; without one it is the approved version of the id (SND-RECIPE-002
+/// when the id is unknown, SND-RECIPE-003 when none is approved).
 /// </summary>
-/// <param name="planner">Finds the recipe and builds the approval preview.</param>
-/// <param name="registry">Reads where the recipe stands.</param>
-internal sealed class ShowRecipeService(RecipeApprovalPlanner planner, RecipeRegistryReader registry) : IService<ShowRecipeRequest, ShowRecipeResponse>
+/// <param name="planner">Finds the registered version a hash names.</param>
+/// <param name="approved">Resolves an id to its approved version.</param>
+/// <param name="json">Reads the stored recipe.</param>
+internal sealed class ShowRecipeService(RecipeApprovalPlanner planner, IApprovedRecipes approved, JsonSerializerOptions json) : IService<ShowRecipeRequest, RecipeView>
 {
-    public async ValueTask<Result<ShowRecipeResponse>> Handle(ShowRecipeRequest request, CancellationToken cancellationToken)
+    public async ValueTask<Result<RecipeView>> Handle(ShowRecipeRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        if (request.Hash is null)
+        {
+            var latest = await approved.Latest(request.Id, cancellationToken).ConfigureAwait(false);
+            return latest.IsError ? latest.Error : RecipeViews.Of(latest.Value.Recipe, latest.Value.Version);
+        }
+
         var found = await planner.Find(request.Id, request.Hash, cancellationToken).ConfigureAwait(false);
         if (found.IsError)
         {
             return found.Error;
         }
 
-        var line = await registry.Summary(found.Value, cancellationToken).ConfigureAwait(false);
-        var preview = line.IsError ? line.Error : await planner.Preview(found.Value, cancellationToken).ConfigureAwait(false);
-        return preview.IsError ? preview.Error : new ShowRecipeResponse(line.Value, preview.Value);
+        var recipe = found.Value.Read(json);
+        return recipe.IsError ? recipe.Error : RecipeViews.Of(recipe.Value, new RecipeVersion(found.Value.Id, found.Value.Version, found.Value.Hash));
     }
 }

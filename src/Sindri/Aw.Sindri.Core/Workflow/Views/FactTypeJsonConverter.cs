@@ -13,6 +13,11 @@ public sealed class FactTypeJsonConverter : JsonConverter<FactType>
         (FactType.Decision, "decision"), (FactType.Payload, "payload"),
     ];
 
+    /// <summary>The word the wire and the CLI use for <paramref name="type"/> ('scope-map', 'text', ...).</summary>
+    /// <param name="type">The fact type.</param>
+    /// <returns>Its word.</returns>
+    public static string Word(FactType type) => Array.Find(_names, n => n.Value == type).Name ?? "payload";
+
     /// <inheritdoc />
     public override FactType Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
