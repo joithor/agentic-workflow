@@ -32,9 +32,9 @@ check "the socket name is unique per run (t1-<pid>-<random>)" "$(grep -cE '^name
 check "the EXIT trap removed the temp dir" "$(test -e "$(cat "$W/dir")" && echo present || echo gone)" "gone"
 
 # 2. The shim refuses when TMUX is set again, or TMUX_TMPDIR leaves the mktemp dir.
-OUT="$(bash -c '. "'"$HELPER"'" || exit 2; TMUX=x tmux list-sessions; echo "rc=$?"' 2>&1)"
+OUT="$(bash -c '. "'"$HELPER"'" || exit 2; TMUX=x tmux list-sessions; echo "rc=$?"' 2>&1)"  # tmux-isolation: ok (the helper shim refuses this call; that refusal is what the case tests)
 check "the shim refuses to run tmux with TMUX set" "$(grep -c 'TMUX is set: refusing' <<< "$OUT"):$(grep -c '^rc=2$' <<< "$OUT")" "1:1"
-OUT="$(bash -c '. "'"$HELPER"'" || exit 2; TMUX_TMPDIR=/tmp tmux list-sessions; echo "rc=$?"' 2>&1)"
+OUT="$(bash -c '. "'"$HELPER"'" || exit 2; TMUX_TMPDIR=/tmp tmux list-sessions; echo "rc=$?"' 2>&1)"  # tmux-isolation: ok (the helper shim refuses this call; that refusal is what the case tests)
 check "the shim refuses a TMUX_TMPDIR outside a mktemp dir" "$(grep -c 'not this run' <<< "$OUT"):$(grep -c '^rc=2$' <<< "$OUT")" "1:1"
 OUT="$(bash -c '. "'"$HELPER"'" || exit 2; TMUX_TMPDIR="$(mktemp -d)" tmux list-sessions; echo "rc=$?"' 2>&1)"
 check "the shim refuses another mktemp dir (only its own is accepted)" "$(grep -c 'not this run' <<< "$OUT"):$(grep -c '^rc=2$' <<< "$OUT")" "1:1"

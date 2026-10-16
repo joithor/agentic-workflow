@@ -7,7 +7,7 @@
 #
 # Scanned: shell tests (scripts/tests, config/**/tests, providers/tests, skills/**/tests, any *.test.sh) and C# tests under tests/.
 #   shell: a `tmux` word at command position (line start, or after ; && || | ( $( ` env command exec sudo xargs time) is a violation
-#          unless the line has `-L `, `-S `, `AW_TMUX`, or the waiver comment `# tmux-isolation: ok`, or the file sources
+#          (also after if/while/until/then/do/else/!/{ and after timeout, env, nohup and VAR=value prefixes) unless the line has `-L `, `-S `, `AW_TMUX`, or the waiver comment `# tmux-isolation: ok`, or the file sources
 #          scripts/test-tmux.sh (`. ".../test-tmux.sh"` or `source ...test-tmux.sh`): its shim then makes plain tmux private.
 #          Comment lines are skipped. A tmux-isolation waiver needs a reason on the same line.
 #   C#:    a Process start of the program "tmux" (FileName = "tmux", ProcessStartInfo("tmux"), Process.Start("tmux", CommandRequest(["tmux")
@@ -32,7 +32,9 @@ cs_files="$( { git ls-files -- 'tests/*.cs' 2> /dev/null; find tests -name '*.cs
 violations=0
 report() { printf '%s:%s: %s\n' "$1" "$2" "$3"; violations=$((violations + 1)); }
 
-CMDPOS='(^|[;&|(`]|\$\()[[:space:]]*((env|command|exec|sudo|xargs|time)[[:space:]]+([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*)?tmux([[:space:]]|$)'
+# A command position: line start or after ; & | ( ` $( or { ; then an optional keyword (if while until ! then do else elif time), wrappers
+# (env command exec sudo xargs nohup, timeout with its duration), and VAR=value prefixes; then tmux itself.
+CMDPOS='(^|[;&|(`{]|\$\()[[:space:]]*((if|while|until|elif|then|do|else|!|time)[[:space:]]+)*((env|command|exec|sudo|xargs|nohup|timeout([[:space:]]+(-[A-Za-z-]+|[0-9][0-9a-z.]*))*)[[:space:]]+)*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*tmux([[:space:]]|$)'
 
 while IFS= read -r f; do
   [ -n "$f" ] && [ -f "$f" ] && [ "$f" != "$SELF" ] && [ "$f" != "$SELF_TEST" ] || continue
