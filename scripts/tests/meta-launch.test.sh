@@ -348,6 +348,7 @@ if command -v script > /dev/null 2>&1; then
   kill -KILL "$sp" 2> /dev/null; wait "$sp" 2> /dev/null
   waitfor '! pgrep -f "^bash $DIR/meta-lane.sh t1 api$" > /dev/null && ! kill -0 "$agent_pid" 2> /dev/null'
   check "after the pty closes the agent, the lane script and the id watcher are all gone" "$(pgrep -f "^bash $DIR/meta-lane.sh t1 api$" | wc -l | tr -d ' '):$(kill -0 "$agent_pid" 2> /dev/null && echo alive || echo gone)" "0:gone"
+check "no snapshot file is left behind by the watcher" "$(ls -A "$AW_STATE_DIR/meta/lane-sessions" | grep -c '\.snap\.')" "0"
 else
   echo "ok - skipped: script(1) is not installed (the pty hangup case)"
 fi

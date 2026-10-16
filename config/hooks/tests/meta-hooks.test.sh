@@ -16,7 +16,7 @@ trap 'rm -rf "$WORK"' EXIT
 for v in $(compgen -e | grep '^AW_META_'); do unset "$v"; done   # the caller may be a meta session: its team config, bin and claude must not reach the stubs
 export HOME="$WORK/home"; mkdir -p "$HOME"
 export AW_STATE_DIR="$WORK/state"
-unset AW_JUDGE_CHILD
+unset AW_JUDGE_CHILD AW_SINDRI_HOME CLAUDE_LOCAL_BIN   # a caller's Sindri home must not receive the session-id-report cases' launch files
 export CALLS="$WORK/calls" STDIN_SEEN="$WORK/stdin"
 STUB="$WORK/aw-meta"
 cat > "$STUB" <<'EOF'

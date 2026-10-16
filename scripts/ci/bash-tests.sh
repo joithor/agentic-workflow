@@ -46,7 +46,7 @@ if [ "${1:-}" = "--run-one" ]; then
   export NUGET_PACKAGES="${NUGET_PACKAGES:-$real_home/.nuget/packages}" npm_config_cache="${npm_config_cache:-$real_home/.npm}"
   # The hook and provider overrides the install helpers honour are scrubbed too: a caller's must not steer a suite at real files.
   env -u CLAUDE_SETTINGS_FILE -u CLAUDE_HOOKS_DIR -u CLAUDE_DIR -u CODEX_HOOKS_FILE -u CODEX_HOME -u CURSOR_HOOKS_FILE -u AW_HOOKS_DIR \
-    -u AW_HOOK_ADAPTER_FLAGS -u AW_META_CONFIG -u TMUX HOME="$sandbox/home" AW_STATE_DIR="$sandbox/state" bash "$suite" >"$out/$idx.log" 2>&1 </dev/null
+    -u AW_HOOK_ADAPTER_FLAGS -u AW_META_CONFIG -u AW_SINDRI_HOME -u CLAUDE_LOCAL_BIN -u TMUX HOME="$sandbox/home" AW_STATE_DIR="$sandbox/state" bash "$suite" >"$out/$idx.log" 2>&1 </dev/null
   rc=$?
   find "$sandbox" -delete 2>/dev/null
   secs=$((SECONDS - start))

@@ -219,7 +219,14 @@ if [ "$id_mode" = reported ] && [ "$mode" = fresh ]; then
   [ "$have_lock" = 0 ] || exec {lock_fd}>&-   # the watcher subshell keeps the lock; this shell, and so the agent, must not
 fi
 watcher="${watcher:-}"
-stop_watcher() { [ -z "$watcher" ] || kill "$watcher" 2> /dev/null; watcher=""; }
+recorder=""
+# Ends the id watcher and the pane-name recorder, and removes the watcher's snapshot (it unlinks it itself only when it finishes).
+stop_watcher() {
+  [ -z "$watcher" ] || kill "$watcher" 2> /dev/null
+  [ -z "$recorder" ] || kill "$recorder" 2> /dev/null
+  [ -z "${snapfile:-}" ] || unlink "$snapfile" 2> /dev/null
+  watcher=""; recorder=""
+}
 if [ "$agent" = claude-code ]; then
   "${args[@]}"
 else
@@ -237,7 +244,7 @@ else
       fg="$(ps -o tpgid= -p "$lane_pid" 2> /dev/null | tr -d ' ')"
       [ -n "$fg" ] && [ "$fg" -gt 0 ] 2> /dev/null && [ "$fg" != "$own_pg" ] || continue
       shown="$(ps -o args= -p "$fg" 2> /dev/null)"; shown="${shown%% *}"; shown="${shown##*/}"
-      case "$shown" in ''|bash|sh|dash|zsh|ksh|fish) continue ;; esac   # a shell stands for "the agent is down" (the pane's fallback): never record it
+      case "$shown" in ''|bash|sh|dash|zsh|ksh|fish|env) continue ;; esac   # a shell (or env) stands for "the agent is down" (the pane's fallback): never record it
       if [ "$shown" != "$(jq -r .processName "$ids/$lane.agent" 2> /dev/null)" ]; then
         tmpf="$ids/$lane.agent.tmp.$BASHPID"
         jq -c --arg n "$shown" '.processName = $n' "$ids/$lane.agent" > "$tmpf" && mv "$tmpf" "$ids/$lane.agent"
@@ -245,6 +252,7 @@ else
       exit 0
     done
   ) > /dev/null 2>&1 &
+  recorder=$!
   set -m
   "${args[@]}"
   set +m
