@@ -73,6 +73,10 @@ d="$(copy proc-unlisted)"
 cp -R "$d/tests/fixtures/sessions/proc/211" "$d/tests/fixtures/sessions/proc/4242"
 run "$d"; expect_rc "a process directory missing from the manifest fails" 1; expect_out "names it" "proc/4242: not listed in manifest.json"
 
+d="$(copy proc-link)"
+ln -sfn / "$d/tests/fixtures/sessions/proc/211/cwd"
+run "$d"; expect_rc "a cwd symlink to a real directory fails (tools that glob the repo follow it)" 1; expect_out "names the link" "proc/211/cwd: symlink target / is a directory"
+
 d="$(copy proc-incomplete)"
 rm "$d/tests/fixtures/sessions/proc/311/environ"
 run "$d"; expect_rc "a process directory without environ fails" 1; expect_out "names the file" "proc/311: no environ file"

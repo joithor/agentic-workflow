@@ -94,6 +94,21 @@ try {
   }
   if (!sm.processes?.length) fail(`${sdir}/manifest.json`, "lists no processes");
 
+  // No symlink in the tree may point at a directory that exists on the box: tools that glob the repo (actions/setup-dotnet's
+  // hash of global.json files, find) follow it into the real file system and fail on the first unreadable directory (CI did, on cwd -> /).
+  const walkLinks = (rel) => {
+    for (const e of fs.readdirSync(path.join(ROOT, sdir, rel), { withFileTypes: true })) {
+      const r = `${rel}/${e.name}`;
+      if (e.isSymbolicLink()) {
+        const target = fs.readlinkSync(path.join(ROOT, sdir, r));
+        let dir = false;
+        try { dir = fs.statSync(path.resolve(path.dirname(path.join(ROOT, sdir, r)), target)).isDirectory(); } catch { /* dangling is the point */ }
+        if (dir) fail(`${sdir}/${r}`, `symlink target ${target} is a directory that exists here; point it at a path that does not exist (e.g. /srv/fixture-root)`);
+      } else if (e.isDirectory()) walkLinks(r);
+    }
+  };
+  walkLinks("proc");
+
   // Claude records: the manifest lists the directory; a .json record's procStart is the start ticks (stat field 22) of its pid's
   // process, except a record the manifest calls stale (no such process, or a recycled pid whose ticks differ).
   const cdir = `${sdir}/claude-sessions`;
