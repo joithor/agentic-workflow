@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-16 — Named meta teams
+
+### Added
+
+- `aw-meta` supports several named teams, each with its own config and state under `$AW_STATE_DIR/meta/teams/<team>/`
+  (`team.json`, `meta.db`, `gates/`, `lane-sessions/`, the default `log.md`), so one meta session per team can run at
+  once without sharing messages, obligations, role, gates or lane sessions. A team is selected with the global
+  `--team <name>` option or `AW_META_TEAM`; `team-init --team X` writes only `teams/X/`.
+- `aw-meta team-list` (teams, layout, repo, lanes, registered meta session and whether it runs) and the opt-in
+  `aw-meta team-migrate [--dry-run]`, which moves the legacy flat layout into `teams/<its team>/`.
+- `AW-META-019` (several teams exist and none is selected: exit 2, the teams listed) and `AW-META-020` (the legacy team
+  can't be migrated).
+- `aw-meta-launch --team <name>`; the launcher exports `AW_META_TEAM` and `AW_META_DIR` into every lane. The Claude
+  meta hooks also take the team from the tmux socket they run on.
+
+### Changed
+
+- The flat layout (`$AW_STATE_DIR/meta/team.json`) keeps working unchanged while no team is selected; nothing migrates
+  it automatically. `AW_META_CONFIG` still overrides the config path. `team-init` for a name with no legacy config now
+  writes `teams/<name>/team.json` (it used to write the flat file).
+
 ## [Unreleased] - 2026-10-10 — MCP bridge retired
 
 ### Removed

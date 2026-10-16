@@ -1,4 +1,5 @@
 using Aw.Meta.Core;
+using Aw.Meta.Infrastructure.Files;
 
 namespace Aw.Meta.Infrastructure;
 
@@ -9,7 +10,8 @@ internal static class SettingsFromEnvironment
     {
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var root = environment("AW_STATE_DIR") is { Length: > 0 } configured ? configured : Path.Combine(home, ".agentic-workflow");
-        var state = Path.Combine(root, "meta");
+        var metaRoot = Path.Combine(root, "meta");
+        var (state, layout) = TeamResolver.Resolve(metaRoot, environment("AW_META_TEAM"));
         var heavy = environment("AW_HEAVY") is { Length: > 0 } wrapper ? wrapper : Path.Combine(root, "bin-r1b", "heavy");
         return new MetaSettings(
             state,
@@ -19,6 +21,7 @@ internal static class SettingsFromEnvironment
             Path.Combine(state, "lane-sessions"),
             environment("AW_TMUX") is { Length: > 0 } tmux ? tmux : "tmux",
             environment("AW_META_TMUX_SOCKET") is { Length: > 0 } socket ? socket : null,
-            new MetaPaths(state, Path.Combine(state, "gates"), File.Exists(heavy) ? heavy : null, environment("AW_GH") is { Length: > 0 } gh ? gh : "gh", home));
+            new MetaPaths(state, Path.Combine(state, "gates"), File.Exists(heavy) ? heavy : null, environment("AW_GH") is { Length: > 0 } gh ? gh : "gh", home),
+            layout);
     }
 }

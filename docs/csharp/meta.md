@@ -8,7 +8,7 @@ not habits.
 
 It is a portable harness for any project. Everything team-specific (lanes, repo, gate scopes, merge order, known
 flakes, kickoff prompts, log file) lives in a team config. It runs before the C# switch as an opt-in standalone
-NativeAOT CLI (`./setup.sh --with-meta`; the meta itself is Claude Code only, lanes can run other agent CLIs and take part in its obligations, see [Launcher](#launcher) and [Non-Claude lanes](#non-claude-lanes); Linux only for now, aw-meta reads /proc, so on macOS setup skips it) that keeps its state under `$AW_STATE_DIR/meta/` and
+NativeAOT CLI (`./setup.sh --with-meta`; the meta itself is Claude Code only, lanes can run other agent CLIs and take part in its obligations, see [Launcher](#launcher) and [Non-Claude lanes](#non-claude-lanes); Linux only for now, aw-meta reads /proc, so on macOS setup skips it) that keeps its state under `$AW_STATE_DIR/meta/` (per team: `teams/<team>/`, see [Named teams](#named-teams)) and
 appends to the configured running log. Its gate and merge commands act on the team's checkout and PRs: `git fetch`, a
 gate worktree registered in the repo, the configured gate steps, `gh pr merge`, and the removal of finished worktrees (`git worktree remove`, never forced; see "Worktree cleanup"). Sindri absorbs it later (see the
 last section).
@@ -22,7 +22,7 @@ AOT smoke: `bash src/Meta/aot-smoke/run.sh`. Shell side: `config/hooks/meta-stop
 
 | Piece | What it does |
 |-------|--------------|
-| `aw-meta` | State in `$AW_STATE_DIR/meta/meta.db` (SQLite, WAL): messages, sends, lane map versions, gates, merges, owner questions |
+| `aw-meta` | State in `$AW_STATE_DIR/meta/teams/<team>/meta.db` (or the legacy flat `$AW_STATE_DIR/meta/meta.db`; SQLite, WAL): messages, sends, lane map versions, gates, merges, owner questions |
 | Stop hook `aw:meta-stop-gate` | Runs `aw-meta stop-check` with the session id and transcript path; exit 1 from it blocks the stop (hook exit 2, the list on stderr) |
 | PostToolUse hook `aw:meta-outbox` (matcher `SendMessage`) | Pipes the hook payload to `aw-meta outbox-record`, which records the send and closes what it settles |
 | `aw-meta-launch` (`scripts/meta-launch.sh`) | By default one Warp window, a pane per lane, each attached to tmux session `<team>-<lane>` (on the team's own socket, `tmux -L <team>`) running `scripts/meta-lane.sh`; `launcher.json` can pick another viewer and other lane agents ([Launcher](#launcher)) |
@@ -70,14 +70,16 @@ A lane queues a pull request for merge by sending a message whose **first line**
 ## Commands
 
 Every command takes `--json`. Exit 0 ok, 1 attention (read the output and act), 2 usage or tool error; an error is one
-stderr line `AW-META-NNN: <reason>`. Every command but `team-init`, `role-*`, `health`, `stop-check`, `outbox-record` and the lane-side `lane-inbox`, `lane-stop-check` and `lane-reply` needs
+stderr line `AW-META-NNN: <reason>`. Every command but `team-init`, `team-list`, `team-migrate`, `role-*`, `health`, `stop-check`, `outbox-record` and the lane-side `lane-inbox`, `lane-stop-check` and `lane-reply` needs
 the team config (`AW-META-002` otherwise); the hook commands must let any session through when no team is set up.
 `stop-check` prints what is owed on stdout (the hook moves it to stderr for Claude Code).
 
 | Command | What it does |
 |---------|--------------|
-| `team-init --team <t> --repo <abs dir> --lanes a,b [--meta-lane meta] [--log <file>] [--force]` | Writes a starter team config (`--force` to overwrite one) |
+| `team-init --team <t> --repo <abs dir> --lanes a,b [--meta-lane meta] [--log <file>] [--force]` | Writes a starter team config to `teams/<t>/team.json` (`--force` to overwrite that team's; no other team is touched). A name that is the legacy config's own team resolves to the flat layout, as before |
 | `team-show` | Prints the team config |
+| `team-list` | Every team: name, layout (`named` or `legacy`), repo, lanes, the registered meta session and whether it runs; `*` marks the selected one. Works with no team selected |
+| `team-migrate [--dry-run]` | Opt-in, never automatic: moves the legacy flat layout (everything directly under `meta/` but `teams/` and `gates/`) into `teams/<its team name>/`, putting entries back if a move fails. `gates/` stays (gate trees are registered with git by absolute path). Exit 2 with `AW-META-002` when there is no legacy config, `AW-META-020` when the team name is unusable as a directory or `teams/<name>` exists. Stop the team's sessions first |
 | `role-set --session <id> [--name <n>]` / `role-show` | Registers the meta session (the launcher does this for the meta pane) |
 | `inbox-sync --session <id> --transcript <path>` | Records new peer messages from the transcript |
 | `inbox [--all]` | Open reply obligations (or every message) |
@@ -142,9 +144,39 @@ A **gate tree** (`gates/<pr>/tree`, `gates/<pr>/main-tree`) is aw-meta's own thr
 remove it: ...`, exit 1 for an explicit sweep). `git worktree prune` runs after any removal. **Branches are never deleted.**
 A worktree git cannot read is kept with the reason.
 
+## Named teams
+
+Every team has its own config and state, so several meta sessions (one per team) run at once and never see each
+other's messages, obligations, role, gates or lane sessions. A team name is `[a-z0-9][a-z0-9-]*` (it is a directory
+name, a tmux socket name and the prefix of the session names).
+
+**Selecting a team**, for every command: the global `--team <name>` option (it wins), else `AW_META_TEAM`. The
+launcher exports `AW_META_TEAM` and `AW_META_DIR` (the team's state directory) into every lane it starts, the meta pane
+included, so lane commands, the lane hooks and the Claude Stop and outbox hooks need nothing more; the two Claude hooks
+also fall back to the tmux socket name (the launcher runs the team on `tmux -L <team>`) when the variable is unset,
+and only for a team that exists on disk. `aw-meta-launch --team <name>` takes the same option.
+
+**Resolution** (`TeamResolver`, mirrored by `scripts/meta-team-lib.sh`):
+
+| Selected | On disk | Acts on |
+|----------|---------|---------|
+| `X` | `teams/X/` | `teams/X` |
+| `X` | no `teams/X`, legacy `team.json` whose `team` is `X` | the legacy flat layout |
+| `X` | neither | `teams/X` (`team-init` creates it; others report `AW-META-002`) |
+| none | a legacy `team.json` | the legacy flat layout, exactly as before |
+| none | one `teams/<t>/team.json` | `teams/<t>` |
+| none | several | error: `AW-META-019`, exit 2, the teams listed; `stop-check` and `outbox-record` pass through (exit 0) so a hook never blocks an unrelated session; `team-list` and `team-migrate` need no team |
+| none | none | the flat paths (no config: `AW-META-002`) |
+
+A name that is not `[a-z0-9][a-z0-9-]*` is a usage error before anything is read or created. `AW_META_CONFIG` still
+overrides the config file path (the state directory is still the team's).
+
+**Legacy layout.** `$AW_STATE_DIR/meta/team.json` with `meta.db`, `lane-sessions/` and `gates/` beside it keeps
+working untouched. `team-migrate` moves it into `teams/<its team name>/` on request only.
+
 ## Team config
 
-`$AW_STATE_DIR/meta/team.json` (or `AW_META_CONFIG`). Unknown fields are ignored. Example:
+`$AW_STATE_DIR/meta/teams/<team>/team.json` (the legacy flat `$AW_STATE_DIR/meta/team.json`, or `AW_META_CONFIG`). Unknown fields are ignored. Example:
 `skills/meta/examples/agentic-workflow.team.json` (its `repo`, `prompts` and `log` are placeholders: set absolute paths, since they are not expanded).
 
 | Field | Meaning |
@@ -152,7 +184,7 @@ A worktree git cannot read is kept with the reason.
 | `team`, `metaLane`, `lanes` | Session and tmux names are `<team>-<lane>` |
 | `repo` | Absolute path of the shared checkout (Warp needs an absolute cwd) |
 | `prompts` | Directory of `<lane>.md` kickoff prompts for fresh lane sessions |
-| `log` | The running log (default `$AW_STATE_DIR/meta/log.md`) |
+| `log` | The running log (default `$AW_STATE_DIR/meta/teams/<team>/log.md`) |
 | `gate.always`, `gate.docsOnly`, `gate.scopes.<name>.{paths,steps}` | The merge gate. A step is `{name, run: argv, heavy, rerun?}`; `heavy` runs it through the heavy-job wrapper (`AW_HEAVY`, used when the file exists); a `run[0]` with a `/` that is not absolute (`scripts/check.sh`) is resolved against the gate tree, not aw-meta's own directory (a bare name goes through PATH); `rerun` is the argv `gate-rerun` uses, with a `{test}` placeholder (default for a `dotnet test` step: its argv plus `--filter-method *<test>*`). Step names are unique across scopes |
 | `mergeOrder` | `[{before, after}]`: `after` can't merge while `before` is open |
 | `worktrees` | `{roots?, buildOutputs?, enabled?}` for the worktree cleanup (see that section): the directories whose worktrees may be removed (`~` is the home directory), the directory names of untracked build output that don't keep a worktree, and `enabled` (default true; false makes the merge-run and watch triggers only report) |
@@ -162,19 +194,20 @@ A worktree git cannot read is kept with the reason.
 
 | Path | Written by |
 |------|-----------|
-| `$AW_STATE_DIR/meta/meta.db` | `aw-meta` |
-| `$AW_STATE_DIR/meta/team.json` | `team-init` (then the owner) |
-| `$AW_STATE_DIR/meta/gates/<pr>/` | `gate-run`, `gate-rerun`: `tree` (the gate tree, reused per PR), `main-tree` (plain main for reruns), `<run>/<step>.log` |
-| `$AW_STATE_DIR/meta/lane-sessions/<lane>` | `scripts/meta-lane.sh` (the lane's Claude session id), or `config/hooks/session-id-report.sh` at the SessionStart of a Codex or Cursor lane (its own session id, atomic, 0600) |
-| `$AW_STATE_DIR/meta/lane-sessions/<lane>.replied`, `.owed` | `config/hooks/meta-lane-gate.sh`: the checksum of the last reply it recorded and of the owed list the last block showed (cleared by a new delivery, a relaunch, a new session) |
-| `$AW_STATE_DIR/meta/lane-sessions/<lane>.agent` | `scripts/meta-lane.sh` (JSON: `agent`, `processName`, `hooks`, `transcripts`) for a lane whose agent isn't Claude Code; read by the lane commands and the lane source |
-| `$AW_STATE_DIR/meta/lane-sessions/<lane>.exited` | `scripts/meta-lane.sh` when the lane's claude exited and the pane fell back to its shell; `meta-launch.sh` restarts such a pane unless a claude runs in it again |
+| `$AW_STATE_DIR/meta/teams/<team>/meta.db` | `aw-meta` |
+| `$AW_STATE_DIR/meta/teams/<team>/team.json` | `team-init` (then the owner) |
+| `$AW_STATE_DIR/meta/meta.db`, `team.json` | the legacy flat layout of a team set up before named teams (still read when no team is selected; `team-migrate` moves it) |
+| `$AW_STATE_DIR/meta/teams/<team>/gates/<pr>/` | `gate-run`, `gate-rerun`: `tree` (the gate tree, reused per PR), `main-tree` (plain main for reruns), `<run>/<step>.log` |
+| `$AW_STATE_DIR/meta/teams/<team>/lane-sessions/<lane>` | `scripts/meta-lane.sh` (the lane's Claude session id), or `config/hooks/session-id-report.sh` at the SessionStart of a Codex or Cursor lane (its own session id, atomic, 0600) |
+| `$AW_STATE_DIR/meta/teams/<team>/lane-sessions/<lane>.replied`, `.owed` | `config/hooks/meta-lane-gate.sh`: the checksum of the last reply it recorded and of the owed list the last block showed (cleared by a new delivery, a relaunch, a new session) |
+| `$AW_STATE_DIR/meta/teams/<team>/lane-sessions/<lane>.agent` | `scripts/meta-lane.sh` (JSON: `agent`, `processName`, `hooks`, `transcripts`) for a lane whose agent isn't Claude Code; read by the lane commands and the lane source |
+| `$AW_STATE_DIR/meta/teams/<team>/lane-sessions/<lane>.exited` | `scripts/meta-lane.sh` when the lane's claude exited and the pane fell back to its shell; `meta-launch.sh` restarts such a pane unless a claude runs in it again |
 | the running log | `aw-meta` (merges, owner decisions, lane maps, kills, worktree sweeps, `log-append`) |
 | `$XDG_DATA_HOME/warp-terminal/launch_configurations/<team>-team.yaml` | `scripts/meta-launch.sh` (the `warp` viewer only) |
 | `$AW_STATE_DIR/launcher.json` | the owner, or `aw-meta-launch --init-launcher` (read by `scripts/launcher-lib.sh`) |
-| `$AW_STATE_DIR/meta/lane-sessions/<lane>.ambiguous` | `scripts/meta-lane.sh` when an agent that reports its own session id left more than one candidate session file |
-| `$AW_STATE_DIR/meta/lane-sessions/<lane>.settled` | `scripts/meta-lane.sh` for a lane whose agent reports its own session id: left once the id is recorded or refused; `meta-launch.sh` waits for it before starting the next lane |
-| `$AW_STATE_DIR/meta/lane-sessions/.reported.flock` | `scripts/meta-lane.sh`: the team start lock (`flock`; the kernel drops it when the holder dies) that serialises the start of lanes whose agent reports its own session id |
+| `$AW_STATE_DIR/meta/teams/<team>/lane-sessions/<lane>.ambiguous` | `scripts/meta-lane.sh` when an agent that reports its own session id left more than one candidate session file |
+| `$AW_STATE_DIR/meta/teams/<team>/lane-sessions/<lane>.settled` | `scripts/meta-lane.sh` for a lane whose agent reports its own session id: left once the id is recorded or refused; `meta-launch.sh` waits for it before starting the next lane |
+| `$AW_STATE_DIR/meta/teams/<team>/lane-sessions/.reported.flock` | `scripts/meta-lane.sh`: the team start lock (`flock`; the kernel drops it when the holder dies) that serialises the start of lanes whose agent reports its own session id |
 
 ## Launcher
 

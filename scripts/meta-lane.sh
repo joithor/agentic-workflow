@@ -15,7 +15,7 @@
 # for its hooks (config/hooks/session-id-report.sh, meta-lane-gate.sh). Every lane also gets AW_SINDRI_CHILD=1, AW_META_TEAM and
 # AW_META_LANE in its environment, exported here: tmux's global environment stays untouched and the launcher's tmux
 # commands stay as they were.
-#   AW_META_CONFIG       team config (default $AW_STATE_DIR/meta/team.json): repo, prompts, metaLane
+#   AW_META_CONFIG       team config (default $AW_STATE_DIR/meta/teams/<team>/team.json, or the legacy $AW_STATE_DIR/meta/team.json): repo, prompts, metaLane
 #   AW_LAUNCHER_CONFIG   the launcher file (default $AW_STATE_DIR/launcher.json)
 #   AW_META_CLAUDE       the claude command (default claude; tests): replaces the claude-code entry's bin
 #   AW_META_CLAUDE_ARGS  extra claude-code arguments, inserted after {bin} (default none: setup.sh sets
@@ -32,7 +32,10 @@ for n in "$team" "$lane"; do
   case "$n" in *[!a-z0-9-]*|"") echo "meta-lane: bad name '$n' (lowercase letters, digits, dashes)" >&2; exit 2 ;; esac
 done
 state_dir="${AW_STATE_DIR:-$HOME/.agentic-workflow}"
-config="${AW_META_CONFIG:-$state_dir/meta/team.json}"
+# shellcheck source=meta-team-lib.sh
+. "$here/meta-team-lib.sh"
+meta_resolve "$state_dir" "$team" || exit 2
+config="${AW_META_CONFIG:-$META_CONFIG}"
 cfg() { [ -f "$config" ] && jq -r "$1 // empty" "$config" 2> /dev/null; }
 repo="$(cfg .repo)"; repo="${repo:-$PWD}"
 prompts="$(cfg .prompts)"
@@ -45,7 +48,7 @@ launcher_load "$state_dir" || exit 1
 agent="$(launcher_lane_agent "$lane" "$meta_lane")"
 launcher_agent_ok "$agent" || exit 1
 field() { launcher_agent_field "$agent" "$1"; }
-ids="$state_dir/meta/lane-sessions"
+ids="$META_DIR/lane-sessions"
 lane_pid="$$"   # the id watcher polls it: it ends with this script
 mkdir -p "$ids"
 cd "$repo" || exit 1
@@ -192,7 +195,7 @@ fi
 unset CLAUDECODE CLAUDE_PID CLAUDE_CODE_SESSION_ID CLAUDE_CODE_CHILD_SESSION CLAUDE_CODE_MESSAGING_SOCKET \
   CLAUDE_CODE_MESSAGING_TOKEN CLAUDE_CODE_BRIDGE_SESSION_ID CLAUDE_CODE_ENTRYPOINT CLAUDE_CODE_SESSION_ATTENDED \
   CLAUDE_CODE_EXECPATH
-export AW_SINDRI_CHILD=1 AW_META_TEAM="$team" AW_META_LANE="$lane"
+export AW_SINDRI_CHILD=1 AW_META_TEAM="$team" AW_META_LANE="$lane" AW_META_DIR="$META_DIR"
 # A non-Claude lane's hooks and its lane-* commands run in the agent's process: they find the state directory and the team
 # config from here, not from a Claude-style settings file. A Claude lane's environment stays as it was.
 # AW_META_LANE_PID (this script, the agent's parent), AW_META_LANE_AGENT (the catalog id) and AW_META_LANE_PROC (the agent's process

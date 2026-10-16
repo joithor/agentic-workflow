@@ -56,7 +56,10 @@ fi
 # script must run from it; from any other tree (a worktree, a second clone) it refuses. With no team repo, a linked git worktree
 # is refused. --allow-worktree is the explicit override, and then aw-meta-launch is linked into this tree.
 LAUNCH_DIR="$SCRIPT_DIR"
-team_json="${AW_META_CONFIG:-$STATE/meta/team.json}"
+# shellcheck source=meta-team-lib.sh
+. "$SCRIPT_DIR/scripts/meta-team-lib.sh"
+meta_resolve "$STATE" "${AW_META_TEAM:-}" 2> /dev/null || true   # several teams and none selected: no team repo to check
+team_json="${AW_META_CONFIG:-$META_CONFIG}"
 team_repo="$(jq -r '.repo // empty' "$team_json" 2>/dev/null || true)"
 if [ "$allow_worktree" != 1 ]; then
   if [ -n "$team_repo" ] && [ -f "$team_repo/scripts/meta-launch.sh" ]; then
@@ -160,5 +163,5 @@ else
   ln -sfn "$BIN/aw-meta" "$LOCAL_BIN/aw-meta"
   ln -sfn "$LAUNCH_DIR/scripts/meta-launch.sh" "$LOCAL_BIN/aw-meta-launch"
   echo "  meta: aw-meta and aw-meta-launch in $LOCAL_BIN"
-  [ -f "$STATE/meta/team.json" ] || echo "  meta: next, write a team config: aw-meta team-init --team <t> --repo <dir> --lanes a,b,c (example: skills/meta/examples/agentic-workflow.team.json)"
+  [ -f "$META_CONFIG" ] || echo "  meta: next, write a team config: aw-meta team-init --team <t> --repo <dir> --lanes a,b,c (example: skills/meta/examples/agentic-workflow.team.json)"
 fi

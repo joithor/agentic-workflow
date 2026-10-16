@@ -77,9 +77,9 @@ if [ "$lane_mode" = 1 ] && ! own_agent; then lane_mode=0; fi
 STATE="${AW_STATE_DIR:-$HOME/.agentic-workflow}"
 if [ "$lane_mode" = 1 ]; then
   safe_name "$AW_META_LANE" || { failopen lane-name-invalid; exit 0; }
-  write_id "$STATE/meta/lane-sessions" "$AW_META_LANE" || failopen write-failed
+  write_id "${AW_META_DIR:-$STATE/meta}/lane-sessions" "$AW_META_LANE" || failopen write-failed
   # a new session starts with no reply marker or owed checksum (meta-lane-gate.sh)
-  unlink "$STATE/meta/lane-sessions/$AW_META_LANE.replied" 2> /dev/null; unlink "$STATE/meta/lane-sessions/$AW_META_LANE.owed" 2> /dev/null
+  unlink "${AW_META_DIR:-$STATE/meta}/lane-sessions/$AW_META_LANE.replied" 2> /dev/null; unlink "${AW_META_DIR:-$STATE/meta}/lane-sessions/$AW_META_LANE.owed" 2> /dev/null
 fi
 if [ -n "${AW_SINDRI_LAUNCH:-}" ]; then
   if safe_name "$AW_SINDRI_LAUNCH"; then

@@ -102,7 +102,7 @@ check "Darwin, another provider: refused too, exit 1" "$RC:$(printf '%s' "$OUT" 
 # tree it runs from; a linked worktree of it is the throwaway one.
 TOP="$DIR/.."
 mkdir -p "$WORK/tree/scripts" "$WORK/tree/config/hooks/adapters" "$WORK/tree/config/lib"
-cp "$DIR/install-meta.sh" "$DIR/meta-launch.sh" "$WORK/tree/scripts/"
+cp "$DIR/install-meta.sh" "$DIR/meta-launch.sh" "$DIR/meta-team-lib.sh" "$WORK/tree/scripts/"
 cp "$TOP/config/hooks/adapters/"* "$WORK/tree/config/hooks/adapters/" 2>/dev/null
 cp -r "$TOP/config/lib/." "$WORK/tree/config/lib/"
 cp "$TOP/config/hooks/meta-stop-gate.sh" "$TOP/config/hooks/meta-outbox.sh" "$WORK/tree/config/hooks/"
@@ -129,7 +129,7 @@ check "a team repo set, run from a second plain clone: refused too" "$RC:$(link)
 OUT="$(bash "$WORK/wt/scripts/install-meta.sh" --provider claude --allow-worktree 2>&1)"; RC=$?
 check "a team repo set, --allow-worktree: installs from this tree and links it" "$RC:$(link)" "0:$WORK/wt/scripts/meta-launch.sh"
 rm -f "$CLAUDE_LOCAL_BIN/aw-meta-launch"
-cp "$WORK/tree/scripts/install-meta.sh" "$WORK/canon2/scripts/"
+cp "$WORK/tree/scripts/install-meta.sh" "$WORK/tree/scripts/meta-team-lib.sh" "$WORK/canon2/scripts/"
 cp -r "$WORK/tree/config" "$WORK/tree/global.json" "$WORK/canon2/"
 OUT="$(bash "$WORK/canon2/scripts/install-meta.sh" --provider claude 2>&1)"; RC=$?
 check "a team repo set, run from it: linked into it, no flag needed" "$RC:$(link)" "0:$WORK/canon2/scripts/meta-launch.sh"
