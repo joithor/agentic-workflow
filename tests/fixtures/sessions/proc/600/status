@@ -1,0 +1,7 @@
+Name:	codex
+Umask:	0022
+State:	S (sleeping)
+Pid:	600
+PPid:	210
+Uid:	1000	1000	1000	1000
+Gid:	1000	1000	1000	1000
