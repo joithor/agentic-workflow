@@ -163,7 +163,7 @@ A worktree git cannot read is kept with the reason.
 | `$AW_STATE_DIR/launcher.json` | the owner, or `aw-meta-launch --init-launcher` (read by `scripts/launcher-lib.sh`) |
 | `$AW_STATE_DIR/meta/lane-sessions/<lane>.ambiguous` | `scripts/meta-lane.sh` when an agent that reports its own session id left more than one candidate session file |
 | `$AW_STATE_DIR/meta/lane-sessions/<lane>.settled` | `scripts/meta-lane.sh` for a lane whose agent reports its own session id: left once the id is recorded or refused; `meta-launch.sh` waits for it before starting the next lane |
-| `$AW_STATE_DIR/meta/lane-sessions/.reported.lock/` | `scripts/meta-lane.sh`: the team start lock that serialises the start of lanes whose agent reports its own session id (`pid` names the holder) |
+| `$AW_STATE_DIR/meta/lane-sessions/.reported.flock` | `scripts/meta-lane.sh`: the team start lock (`flock`; the kernel drops it when the holder dies) that serialises the start of lanes whose agent reports its own session id |
 
 ## Launcher
 
@@ -188,7 +188,7 @@ chooses its own id: lanes of that kind start one at a time, each waiting up to `
 (the `lane-sessions/<lane>` file a hook writes, else the single new file the catalog's `newestFile` glob finds that no other
 lane has recorded; two candidates are refused and leave `<lane>.ambiguous`). "New" means a path that did not exist when
 the lane started (a snapshot taken before the agent runs), not a recently modified one. The one-at-a-time start is the
-lane's own: `meta-lane.sh` takes a team start lock (`lane-sessions/.reported.lock`) before the agent runs and releases it
+lane's own: `meta-lane.sh` takes a team start lock (`flock` on `lane-sessions/.reported.flock`) before the agent runs and releases it
 when the id is recorded or refused, or after a timeout plus a grace window (`AW_META_ID_GRACE` seconds, default 10, during which the lane still watches for its late file and keeps it if it arrives, so the next lane cannot take it), so lanes created together (a Warp pane that creates its session, a
 reboot, `--lanes`) are safe too. A lane that cannot start leaves `<lane>.failed` (the reason, the line the launcher prints as `lane <l> failed to start: ...`) and `<lane>.settled`, so the launcher reports it at once instead of waiting out the timeout. A lane refused by the launcher reader (a kickoff prompt starting with `-` once a
 `launcher.json` exists) starts no agent and records no id. Obligations for them arrive with SL-1b.

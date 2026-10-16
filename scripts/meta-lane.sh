@@ -106,33 +106,15 @@ watch_reported_id() { # [seconds]: the wait (default AW_META_ID_WAIT); a second 
 
 # Lanes whose agent reports its own id start one at a time, whoever starts them (aw-meta-launch, a Warp pane that creates
 # its session, a reboot, --lanes): the newest-file fallback cannot tell two new session files apart. A lane takes the
-# team's start lock (a directory under lane-sessions; its pid file names the process holding it, so a dead holder's lock is
-# cleared) before its agent runs, and the watcher releases it once the id is recorded, refused or timed out.
-start_lock="$ids/.reported.lock"
-acquire_start_lock() {
-  local deadline=$((SECONDS + ${AW_META_ID_WAIT:-30} * 10)) holder nopid=0 mine stale
-  mine="$start_lock.new.$$"
-  while :; do
-    # The lock never exists without its pid: build the directory (pid inside) under a private name, then rename it into
-    # place. rename(2) fails while the target is a non-empty directory, so only one starter wins.
-    rm -f "$mine/pid" 2> /dev/null; rmdir "$mine" 2> /dev/null
-    mkdir "$mine" && echo "$$" > "$mine/pid"
-    if mv -T "$mine" "$start_lock" 2> /dev/null; then return 0; fi
-    holder="$(cat "$start_lock/pid" 2> /dev/null)"
-    if [ -z "$holder" ]; then nopid=$((nopid + 1)); else nopid=0; fi   # a lock from an older build can lack its pid: stale after 2 s
-    if { [ -n "$holder" ] && ! kill -0 "$holder" 2> /dev/null; } || [ "$nopid" -ge 20 ]; then
-      # Break a stale lock by renaming it away first: only one waiter's mv succeeds, so nobody removes a lock that a
-      # faster waiter has just re-created. If what was renamed is not the dead holder's lock, put it back.
-      stale="$start_lock.stale.$$"
-      if mv -T "$start_lock" "$stale" 2> /dev/null; then
-        if [ "$(cat "$stale/pid" 2> /dev/null)" = "$holder" ]; then rm -f "$stale/pid"; rmdir "$stale" 2> /dev/null
-        else mv -T "$stale" "$start_lock" 2> /dev/null || { rm -f "$stale/pid"; rmdir "$stale" 2> /dev/null; }; fi
-      fi
-      nopid=0; continue
-    fi
-    if [ "$SECONDS" -ge "$deadline" ]; then echo "meta-lane: another lane's start did not finish; starting $lane anyway" >&2; rm -f "$mine/pid"; rmdir "$mine" 2> /dev/null; return 1; fi
-    sleep 0.1
-  done
+# team's start lock (flock on lane-sessions/.reported.flock) before its agent runs; the watcher subshell holds it and
+# releases it by exiting, once the id is recorded, refused or timed out. The kernel drops the lock when its holder dies,
+# so a crashed start never leaves a stale one. Linux (flock from util-linux).
+start_lock="$ids/.reported.flock"
+acquire_start_lock() { # opens lock_fd and takes the lock; returns 1 (fd closed) if the holder did not finish in time
+  exec {lock_fd}> "$start_lock" || return 1
+  if flock -w $(( ${AW_META_ID_WAIT:-30} * 10 )) "$lock_fd"; then return 0; fi
+  echo "meta-lane: another lane's start did not finish; starting $lane anyway" >&2
+  exec {lock_fd}>&-; return 1
 }
 
 id=""; mode=fresh; write_id=0
@@ -196,12 +178,11 @@ if [ "$id_mode" = reported ] && [ "$mode" = fresh ]; then
   snapfile="$ids/$lane.snap.$$"; : > "$snapfile"
   [ -z "$snap_glob" ] || compgen -G "${snap_glob/#\~/$HOME}" > "$snapfile" 2> /dev/null
   (
-    if [ "$have_lock" = 1 ]; then echo "$BASHPID" > "$start_lock/pid"; fi
     # A timed-out lane keeps the lock through the grace period unless its late file turns up (or it was refused).
     watch_reported_id || [ -e "$ids/$lane.settled" ] || watch_reported_id "${AW_META_ID_GRACE:-10}"
     unlink "$snapfile" 2> /dev/null
-    if [ "$have_lock" = 1 ]; then rm -f "$start_lock/pid"; rmdir "$start_lock" 2> /dev/null; fi
   ) > /dev/null 2>&1 &
+  [ "$have_lock" = 0 ] || exec {lock_fd}>&-   # the watcher subshell keeps the lock; this shell, and so the agent, must not
 fi
 "${args[@]}"
 [ "${AW_META_NO_SHELL:-0}" = 1 ] && exit 0
