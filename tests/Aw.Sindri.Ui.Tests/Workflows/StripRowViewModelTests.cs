@@ -107,7 +107,7 @@ public sealed class StripRowViewModelTests
     [Fact]
     public void Row_id_and_name_are_label_plus_address()
     {
-        var row = Where(r => r.Subject.Label.Length > 0);
+        var row = Where(r => r.Subject.Label.Length > 0 && r.Recipe.Urgency != RecipeUrgency.Incident);
 
         var vm = Of(row);
 

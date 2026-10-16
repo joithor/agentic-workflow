@@ -11,26 +11,24 @@ internal static partial class Labels
     /// <summary>A strip row that is an incident, in its accessible name (the glyph is not spoken).</summary>
     internal const string Incident = "incident";
 
-    /// <summary>The urgency as a word in a row's accessible name (UI spec §11.3).</summary>
-    /// <param name="urgency">The row's urgency.</param>
-    /// <returns>The word.</returns>
-    internal static string UrgencyWord(NeedsYou.NeedsYouUrgency urgency) => urgency switch
-    {
-        NeedsYou.NeedsYouUrgency.Pulse => "needs you now",
-        NeedsYou.NeedsYouUrgency.Colour => "failed",
-        NeedsYou.NeedsYouUrgency.Calm => "to look at",
-        _ => throw new ArgumentOutOfRangeException(nameof(urgency), urgency, message: null),
-    };
+    /// <summary>The urgency word of a pulse row in its accessible name (UI spec §11.3).</summary>
+    internal const string UrgencyPulse = "needs you now";
+
+    /// <summary>The urgency word of a colour (failure) row.</summary>
+    internal const string UrgencyColour = "failed";
+
+    /// <summary>The urgency word of a calm row.</summary>
+    internal const string UrgencyCalm = "to look at";
 
     /// <summary>The accessible name of a Needs-you row: the urgency word, the chip, the title and the id, and "new" while it is unseen.</summary>
-    /// <param name="urgency">The row's urgency.</param>
+    /// <param name="urgency">The row's urgency word.</param>
     /// <param name="chip">The chip's word; empty for none.</param>
     /// <param name="title">The row's title.</param>
     /// <param name="id">The id the row shows.</param>
     /// <param name="isNew">True while the row is unseen.</param>
     /// <returns>The name.</returns>
-    internal static string NeedsYouRowName(NeedsYou.NeedsYouUrgency urgency, string chip, string title, string id, bool isNew) =>
-        string.Join(", ", new[] { UrgencyWord(urgency), chip, title, id, isNew ? New : "" }.Where(part => part.Length > 0));
+    internal static string NeedsYouRowName(string urgency, string chip, string title, string id, bool isNew) =>
+        string.Join(", ", new[] { urgency, chip, title, id, isNew ? New : "" }.Where(part => part.Length > 0));
 
     /// <summary>The Needs-you row's title button: opens the row's sheet.</summary>
     /// <param name="title">The row's title.</param>

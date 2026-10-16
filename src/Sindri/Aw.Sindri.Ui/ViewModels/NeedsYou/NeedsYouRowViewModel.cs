@@ -61,7 +61,15 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
     public string Age => Entry.Since == default ? "" : Labels.RowAge(_clock.GetUtcNow() - Entry.Since);
 
     /// <summary>The name screen readers hear: the urgency word, the chip, the title and the id, and "new" while the row is unseen (§11.3).</summary>
-    public string AccessibleName => Labels.NeedsYouRowName(Entry.Urgency, Entry.Chip.Word, Entry.Title, IdShown, Entry.Urgency == NeedsYouUrgency.Pulse && !_seen);
+    public string AccessibleName => Labels.NeedsYouRowName(UrgencyWord, Entry.Chip.Word, Entry.Title, IdShown, Entry.Urgency == NeedsYouUrgency.Pulse && !_seen);
+
+    private string UrgencyWord => Entry.Urgency switch
+    {
+        NeedsYouUrgency.Pulse => Labels.UrgencyPulse,
+        NeedsYouUrgency.Colour => Labels.UrgencyColour,
+        NeedsYouUrgency.Calm => Labels.UrgencyCalm,
+        _ => throw new InvalidOperationException("an urgency the app doesn't know"),
+    };
 
     private string IdShown => Entry.ShownId.Length > 0 ? Entry.ShownId : Entry.Id;
 
