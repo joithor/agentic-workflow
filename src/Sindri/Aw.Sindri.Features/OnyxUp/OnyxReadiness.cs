@@ -25,9 +25,11 @@ internal sealed class OnyxReadiness(IOnyxHealth health, IContainerRuntime runtim
     /// <param name="context">The run's shared facts (port, pinned version, project).</param>
     /// <param name="progress">Told one dot per poll.</param>
     /// <param name="cancellationToken">Cancels the wait.</param>
+    /// <param name="limit">How long to wait; the full <see cref="Deadline"/> when null (a start that already spent some of it passes the rest).</param>
     /// <returns>The version it reported, or SND-ONYX-005.</returns>
-    internal async ValueTask<Result<string>> Wait(OnyxUpContext context, IOnyxProgress progress, CancellationToken cancellationToken)
+    internal async ValueTask<Result<string>> Wait(OnyxUpContext context, IOnyxProgress progress, CancellationToken cancellationToken, TimeSpan? limit = null)
     {
+        var allowed = limit ?? Deadline;
         var start = clock.GetUtcNow();
         while (true)
         {
@@ -40,14 +42,21 @@ internal sealed class OnyxReadiness(IOnyxHealth health, IContainerRuntime runtim
                     : SindriErrors.OnyxNotReady.With($"Onyx answered with version {version} but this Sindri is pinned to {context.Pins.Version}; run `sindri onyx down`, remove Sindri's Onyx files under the Sindri home, and run `sindri onyx up` again");
             }
 
-            if (clock.GetUtcNow() - start >= Deadline)
+            if (clock.GetUtcNow() - start >= allowed)
             {
-                return SindriErrors.OnyxNotReady.With(string.Create(CultureInfo.InvariantCulture, $"Onyx didn't answer within {Deadline.TotalMinutes:0} minutes ({Summary(context, cancellationToken)}); check `docker compose -p sindri-onyx logs`, give Docker more memory or disk if a service keeps restarting, then run `sindri onyx up` again"));
+                return TimedOut(context, cancellationToken);
             }
 
             await Task.Delay(Interval, clock, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    /// <summary>The SND-ONYX-005 for a stack that didn't come up within the deadline.</summary>
+    /// <param name="context">The run's shared facts.</param>
+    /// <param name="cancellationToken">Cancels the container listing.</param>
+    /// <returns>The error naming each container's state.</returns>
+    internal Error TimedOut(OnyxUpContext context, CancellationToken cancellationToken)
+        => SindriErrors.OnyxNotReady.With(string.Create(CultureInfo.InvariantCulture, $"Onyx didn't answer within {Deadline.TotalMinutes:0} minutes ({Summary(context, cancellationToken)}); check `docker compose -p sindri-onyx logs`, give Docker more memory or disk if a service keeps restarting, then run `sindri onyx up` again"));
 
     // The containers as `service: state (health)` joined by `; `, so the message says which one never came up.
     private string Summary(OnyxUpContext context, CancellationToken cancellationToken)

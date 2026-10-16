@@ -79,7 +79,7 @@ public sealed class OnyxUpRig
             new OnyxFetchStep(Files, Workspace, Progress),
             new OnyxConfigStep(Workspace, compose, Random),
             new OnyxPullStep(Runtime, Workspace, compose, Progress),
-            new OnyxStartStep(Runtime, Health, readiness, Progress),
+            new OnyxStartStep(Runtime, Health, readiness, Progress, Clock),
         ];
         return new OnyxUpService(Workspace, new OnyxFacts(Runtime, Probes, new FakeSindriHome(Home)), Pins, Progress, steps);
     }
