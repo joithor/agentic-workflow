@@ -109,7 +109,7 @@ public sealed class ContextJobsApiTests : IDisposable
         await JobHost.Settle(host, Token);
 
         var finished = Of(await Ledger(host), EventTypes.JobFinished).Select(e => Json(e.Envelope.Payload)).ToList();
-        Assert.Equal(["failed", "succeeded"], finished.Select(f => f.GetProperty("outcome").GetString()!).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal(["failed", "succeeded"], finished.Select(f => f.GetProperty("outcome").GetString()).Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.Contains(finished, f => f.TryGetProperty("code", out var code) && code.GetString() == "SND-CONTEXT-058");
     }
 
@@ -139,8 +139,8 @@ public sealed class ContextJobsApiTests : IDisposable
 
         Assert.Equal((HttpStatusCode.Conflict, "SND-JOB-409"), (second.Status, second.Code));
         Assert.Equal(first, Json(second.Body).GetProperty("runningJob").GetString());
-        Assert.Equal(("SND-JOB-409", 409), (Aw.Sindri.Core.SindriErrors.JobConflict.Code, (int)HttpStatusCode.Conflict));
-        Assert.Equal(Aw.Kernel.ErrorKind.Conflict, Aw.Context.Core.ContextErrors.SyncRunning.Kind);   // 056 stays the in-run code of a sync that meets a running one (the scheduled service's); both are 409
+        Assert.Equal(("SND-JOB-409", 409), (Core.SindriErrors.JobConflict.Code, (int)HttpStatusCode.Conflict));
+        Assert.Equal(Kernel.ErrorKind.Conflict, Context.Core.ContextErrors.SyncRunning.Kind);   // 056 stays the in-run code of a sync that meets a running one (the scheduled service's); both are 409
         _ = Assert.Single(Of(await Ledger(host), EventTypes.JobStarted));
     }
 

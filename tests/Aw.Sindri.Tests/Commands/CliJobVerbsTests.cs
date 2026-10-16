@@ -54,7 +54,7 @@ public sealed class CliJobVerbsTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Jobs_cancel_prints_the_sequence()
     {
-        var api = new JobApi().Ok("POST", "/sindri/jobs/" + Id + "/cancel", Body(new Aw.Sindri.Core.Commands.CommandAccepted(CommandId.From(new Guid(8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)), 12)));
+        var api = new JobApi().Ok("POST", "/sindri/jobs/" + Id + "/cancel", Body(new Core.Commands.CommandAccepted(CommandId.From(new Guid(8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)), 12)));
 
         var code = await Finished(_rig.RunJobs(api, "cancel", Id));
 

@@ -43,7 +43,7 @@ public sealed class CliServiceVerbsTests : IDisposable
     {
         var list = List();
         var api = new JobApi().Ok("GET", "/sindri/services", list).Ok("POST", "/sindri/services/heartbeat/run", Body(Started))
-            .Ok("GET", "/sindri/jobs/" + Id, View(Aw.Sindri.Core.Jobs.JobState.Succeeded, rounds: 1, summary: "ok"));
+            .Ok("GET", "/sindri/jobs/" + Id, View(Core.Jobs.JobState.Succeeded, rounds: 1, summary: "ok"));
 
         var listed = await Finished(_rig.RunServices(api, "--json"));
         var listText = _rig.Out.ToString();
@@ -54,7 +54,7 @@ public sealed class CliServiceVerbsTests : IDisposable
 
         Assert.Equal((0, 0), (listed, ran));
         Assert.Equal(list + "\n", listText);
-        Assert.Equal(list + "\n" + Body(Started) + "\n" + View(Aw.Sindri.Core.Jobs.JobState.Succeeded, rounds: 1, summary: "ok") + "\n", _rig.Out.ToString().ReplaceLineEndings("\n"));
+        Assert.Equal(list + "\n" + Body(Started) + "\n" + View(Core.Jobs.JobState.Succeeded, rounds: 1, summary: "ok") + "\n", _rig.Out.ToString().ReplaceLineEndings("\n"));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -84,7 +84,7 @@ public sealed class CliServiceVerbsTests : IDisposable
     [InlineData("resume", "heartbeat resumed (sequence 12)")]
     public async Task Pause_and_resume_print_the_sequence(string verb, string expected)
     {
-        var api = new JobApi().Ok("POST", "/sindri/services/heartbeat/" + verb, Body(new Aw.Sindri.Core.Commands.CommandAccepted(CommandId.From(new Guid(8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)), 12)));
+        var api = new JobApi().Ok("POST", "/sindri/services/heartbeat/" + verb, Body(new Core.Commands.CommandAccepted(CommandId.From(new Guid(8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)), 12)));
 
         var code = await Finished(_rig.RunServices(api, verb, "heartbeat"));
 

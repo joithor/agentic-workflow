@@ -3,9 +3,10 @@ using Aw.Context.Core;
 using Aw.Context.Core.Sources;
 using Aw.Kernel;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Features.ContextCalls;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Aw.Sindri.Features.ContextCalls;
+namespace Aw.Sindri.Features;
 
 /// <summary>Registers the context engine's two jobs on the P6 job runtime: 'SyncSources' and 'BuildContextMap'.</summary>
 internal static class ContextJobServiceCollectionExtensions
