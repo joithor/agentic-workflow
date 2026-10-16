@@ -118,8 +118,8 @@ instances first, then by age.
 ### 4.2 Workflows
 
 **List.** Root instances grouped by recipe. Each group's columns are its recipe's states in path order (§5.1), so the
-groups differ on purpose. The drawings in this section are illustrative; states come from the recipe (the recipe files and goldens, not these pictures, say which states a recipe has and what they are called). The Linear group sorts first; groups with a running incident or triage instance sort above
-it while one runs.
+groups differ on purpose. The drawings in this section are illustrative; states come from the recipe (the recipe files and goldens, not these pictures, say which states a recipe has and what they are called). The groups follow the order the list serves: the engine puts the groups with a running incident or triage instance first,
+and the app keeps that order.
 
 ```
 Workflows    8 open · 2 need you · 1 with you                                     [Recipe ▾] [Subject ▾]      [Start… ⌘N]
