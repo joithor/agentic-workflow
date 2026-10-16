@@ -16,6 +16,15 @@
     <Setter Property="Background" Value="{DynamicResource Brush.AttentionSoft}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Attention}" />
     <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="Padding" Value="14,7,14,6" />
+  </Style>
+  <!-- Avalonia picks between matching styles by the order they are declared, and this file is included after the queue's: the focus
+       ring and the selection bar are restated after the outline so they win over it. A selected row shows its Primary bar all round. -->
+  <Style Selector="Border.needs-you-row.outlined.selected">
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Primary}" />
+  </Style>
+  <Style Selector="Border.needs-you-row.outlined:focus-visible">
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.PrimaryHover}" />
   </Style>
   <Style Selector="Border.needs-you-row.stale">
     <Setter Property="Opacity" Value="0.7" />

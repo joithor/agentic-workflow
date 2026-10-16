@@ -19,6 +19,8 @@ public sealed class NeedsYouOutlineTests : FrameHost
     private static List<NeedsYouRow> Rows(Window window) =>
         [.. Named<Control>(window, "NeedsYouPanel").GetVisualDescendants().OfType<NeedsYouRow>().Where(r => r.IsEffectivelyVisible)];
 
+    private static Color Brush(string key) => Application.Current!.FindResource(key) is ISolidColorBrush b ? b.Color : default;
+
     private static Color BrushOf(Border border) => (border.BorderBrush as ISolidColorBrush)?.Color ?? Colors.Transparent;
 
     // Where the row's content starts inside the frame: border plus padding, per side.
@@ -57,7 +59,7 @@ public sealed class NeedsYouOutlineTests : FrameHost
         Settle(window);
 
         Assert.Contains("selected", frame.Classes, StringComparer.Ordinal);
-        Assert.NotEqual(Colors.Transparent, BrushOf(frame));
-        Assert.Equal(Application.Current!.FindResource("Brush.Primary") is ISolidColorBrush p ? p.Color : default, BrushOf(frame));
+        // Focus may have followed the selection (the ring) or not (the bar): either way the attention outline is not what shows.
+        Assert.Contains(BrushOf(frame), new[] { Brush("Brush.Primary"), Brush("Brush.PrimaryHover") });
     });
 }
