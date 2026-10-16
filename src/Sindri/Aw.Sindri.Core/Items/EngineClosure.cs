@@ -12,13 +12,22 @@ namespace Aw.Sindri.Core.Items;
 /// </summary>
 internal static class EngineClosure
 {
-    /// <summary>True when the item row, as the items projection wrote it, is closed.</summary>
+    /// <summary>True when the item row, as the items projection wrote it, is closed with no live root left.</summary>
     /// <param name="row">The item row after the event.</param>
     /// <returns>True when closed.</returns>
     public static bool IsEnded(ItemRow row)
     {
         ArgumentNullException.ThrowIfNull(row);
-        return ItemStates.IsClosed(row.State);
+        return ItemStates.IsClosed(row.State) && LiveRoot(row) is null;
+    }
+
+    /// <summary>The earlier root instance of the item that is still live, if any (the latest may have ended and closed the item): the one condition 'close' refuses on and the item isn't ended by its workflow on.</summary>
+    /// <param name="row">The item row.</param>
+    /// <returns>The address of a live earlier root, or null when none is.</returns>
+    public static string? LiveRoot(ItemRow row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        return row.Engine?.Earlier is { Count: > 0 } earlier ? earlier[0].Address : null;
     }
 
     /// <summary>True when the item row, once the items projection folds this 'workflow.*' row into it, is closed.</summary>

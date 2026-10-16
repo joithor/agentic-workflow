@@ -24,9 +24,9 @@ public static class ItemDecisions
             return SindriErrors.InvalidInput.With(string.Create(CultureInfo.InvariantCulture, $"{(int)reason} isn't a close reason (fix: done or cancelled)"));
         }
 
-        if (item.Engine?.Earlier is { Count: > 0 } earlier)
+        if (EngineClosure.LiveRoot(item) is { } live)
         {
-            return SindriErrors.ItemConflict.With($"{item.Id.Value} has an active instance {earlier[0].Address} (fix: sindri workflow cancel {earlier[0].Address})");   // the latest root may have ended and closed the item; an earlier one is still live
+            return SindriErrors.ItemConflict.With($"{item.Id.Value} has an active instance {live} (fix: sindri workflow cancel {live})");   // the latest root may have ended and closed the item; an earlier one is still live
         }
 
         if (ItemStates.IsClosed(item.State))
