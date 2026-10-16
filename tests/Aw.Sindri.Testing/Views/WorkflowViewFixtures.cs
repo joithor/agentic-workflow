@@ -100,7 +100,7 @@ public static class WorkflowViewFixtures
 
     // Instances only the status layouts name: none of them is a row of the root list, so the layouts don't contradict it.
     private static readonly InstanceSummary _itemParked = Row("ITM-01JC8/item/1", _item, "running", Today(11, 54), new EngineOwnedBadge(EngineOwnedKind.Parked, "no-progress (child)"),
-        Subject("text", "Retry storm in outbox dispatcher", "Retry storm in outbox dispatcher"),
+        Subject("item", "ITM-01JC8", "Retry storm in outbox dispatcher"),
         _item.Cells("running", change: Shape(("running", c => c with { Children = new Progress(0, 1) }))),
         "parked child", "ApplyCommand:answer-grant", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
@@ -127,7 +127,7 @@ public static class WorkflowViewFixtures
 
     // A wait park of its own: dev-triage-three-state at its 'answer' wait, the reply couldn't be read. Not a root row.
     private static readonly InstanceSummary _triageAnswer = Row("ITM-01JL4/dev-triage-three-state/1", _devTriage, "answer", Today(12, 3), new EngineOwnedBadge(EngineOwnedKind.Parked, "needs-answer"),
-        Subject("item", "ITM-01JL4", "Three-state triage"), _devTriage.Cells("answer"), "needs your answer",
+        Subject("text", "Crash on launch", "Crash on launch - 2026-10-12"), _devTriage.Cells("answer"), "needs your answer",
         "ApplyCommand:answer-resume", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
     private static readonly InstanceSummary _prjCache = Row("ITM-01JKF/project/1", _project, "scoping", Today(11, 50), new EngineOwnedBadge(EngineOwnedKind.Parked, "spec-conflict (drift)"),
@@ -204,7 +204,8 @@ public static class WorkflowViewFixtures
         var header = new StatusHeader(row.Address, recipe.Id, recipe.Hash.Display, recipe.Version, HeaderState(row), detail, row.Since, (long)(Now - row.Since).TotalSeconds);
         var fields = new StatusFields(header, next, lines.Answer, lines.Child, lines.Drift, lines.Inputs, lines.Timeout, lines.Budget, lines.Paused,
             Commands(row, lines.Answer, open), string.Empty);
-        return fields with { Text = StatusText.Render(fields, Now) };
+        var name = FixtureRecipes.All.SingleOrDefault(r => r.Id == recipe.Id.Value)?.Name is null ? null : row.Subject.Label;
+        return fields with { Text = StatusText.Render(fields, Now, name) };
     }
 
     /// <summary>WF section 6.4's state slot: the reserved engine word while the engine owns the instance, else the recipe state.</summary>
@@ -551,13 +552,14 @@ public static class WorkflowViewFixtures
     /// <summary>The three-state triage dev recipe, at its desk.</summary>
     public static InstanceDetail TriageThreeState()
     {
-        var row = Row("ITM-01JL2/dev-triage-three-state/1", _devTriage, "desk", Today(12, 0), null, Subject("item", "ITM-01JL2", "Three-state triage"),
+        var row = Row("ITM-01JL2/dev-triage-three-state/1", _devTriage, "desk", Today(12, 0), null, Subject("text", "Crash on launch", "Crash on launch - 2026-10-12"),
             _devTriage.Cells("desk"), "next step", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
         return Detail(row, "Three-state triage", PathOrdering.Path,
             new CurrentState("desk", new StepDeclaration("active", "step.produce", "a person writes the draft"),
                 [], new DeskForm(RunToken.From("1.1"), [new DeskOutput("fact:output", FactType.File, true)], ["output.file"], Act("CompleteStep")),
-                DeskStatus(row, "Write the draft for ITM-01JL2", "1.1", ("fact:output", "<file>"), lineBreak: true, lines: DeskLines(new StatusInput("fact:item", "item.json", "sha256:b6c9cf9454914db27a93569f823751647192bdf84677126620b7f62b45e063fb"), 171_240, "desk"))),
+                DeskStatus(row, "Write the draft for ITM-01JL2", "1.1", ("fact:output", "<file>"), lineBreak: true, lines: DeskLines(new StatusInput("fact:scope", "scope.txt", "sha256:2e04b3fa448da3f273578bebd2c8eca04b716240a009837e1d22735e7873c58f"), 171_240, "desk") with { Inputs = [new StatusInput("fact:scope", "scope.txt", "sha256:2e04b3fa448da3f273578bebd2c8eca04b716240a009837e1d22735e7873c58f"), new StatusInput("fact:item", "item.json", "sha256:b6c9cf9454914db27a93569f823751647192bdf84677126620b7f62b45e063fb")] })),
             _devTriage.Facts(
+                Produced(_devTriage, "fact:scope", "Crash on launch", At(10, 12, 12, 0), "human:cli"),
                 Produced(_devTriage, "fact:item", "ITM-01JL2 Crash on launch", At(10, 12, 12, 0), "human:cli", Ref(item: "ITM-01JL2")),
                 Fake(_devTriage, "fact:output", FactStatus.Pending, "awaiting your file", pending: new FactPending(true, ["output.file"], Act("CompleteStep")))),
             [], Counts(2, 0, 0));
@@ -594,10 +596,10 @@ public static class WorkflowViewFixtures
     /// <summary>workflow.incident-response: urgency incident and the mitigate and verify loop.</summary>
     public static RecipeView IncidentRecipe() => _incident.View();
 
-    /// <summary>workflow.no-outputs, a fixture-only preview: no instance names it, and its optional input is a future schema (v1 serves every input required). 'outputs: []', and a kind on the first input only.</summary>
+    /// <summary>workflow.no-outputs, a fixture-only recipe: no instance names it, and its second input is a real generate input (served required: false). 'outputs: []'.</summary>
     public static RecipeView NoOutputsRecipe() => new(
-        RecipeId.From("workflow.no-outputs"), RecipeHash.From("sha256:" + "3c9d51e2".PadRight(64, '0')), 1,
-        [new RecipeInputView("fact:request", "Request", FactType.Text, "text", true), new RecipeInputView("fact:context", null, FactType.File, null, false)],
+        RecipeId.From("workflow.no-outputs"), RecipeHash.From("sha256:" + "3c9d51e2".PadRight(64, '0')), 1, Name: null,
+        [new RecipeInputView("fact:request", "Request", FactType.Text, "text", true, Generate: null), new RecipeInputView("fact:context", null, FactType.Text, "text", false, "context {start:date}")],
         [], RecipeUrgency.Work, PathOrdering.Path, [new RecipeStateView("intake", 1, null), new RecipeStateView("classify", 2, null), new RecipeStateView("done", 3, null)], []);
 
     /// <summary>The recipe view of one fixture recipe, by recipe id ('workflow.step'): the same declaration its instances and list rows are built from.</summary>

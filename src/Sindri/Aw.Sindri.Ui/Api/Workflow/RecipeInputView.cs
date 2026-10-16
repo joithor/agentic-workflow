@@ -6,9 +6,11 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="Type">Type, as served.</param>
 /// <param name="Kind">Kind, as served.</param>
 /// <param name="Required">Required, as served.</param>
+/// <param name="Generate">The generate template as written, or null.</param>
 internal sealed record RecipeInputView(
     string Key,
     string? Label,
     FactType Type,
-    string? Kind,
-    bool Required);
+    string Kind,
+    bool Required,
+    string? Generate);

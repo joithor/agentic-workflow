@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Tests.GetInstance;
 using Aw.Sindri.Tests.Workflow.Engine;
 using ActionClass = Aw.Sindri.Core.Commands.ActionClass;
+using FactTypes = Aw.Sindri.Core.Workflow.Engine.Runtime.FactTypes;
 
 namespace Aw.Sindri.Tests.Layout;
 
@@ -27,7 +28,7 @@ public sealed class InstanceViewProducerTests
         Recipe = StatusCases.Recipe.Recipe with
         {
             Urgency = "incident",
-            Inputs = [new RecipeInput(_spec, "Spec", "file", "file")],
+            Inputs = [new RecipeInput(_spec, "Spec", "file", "file", Generate: null)],
             Outputs = [new RecipeOutput(_output, "Output", "text", "produce"), new RecipeOutput(_findings, "Findings", Type: "mystery", "checks")],
         },
     };
@@ -46,6 +47,20 @@ public sealed class InstanceViewProducerTests
     }
 
     [Fact]
+    public void A_link_facts_ref_carries_its_url_host_and_title_as_the_subject_does()
+    {
+        var pr = FactKey.From("fact:pr");
+        var recipe = _incident with { Recipe = _incident.Recipe with { Inputs = [new RecipeInput(pr, "PR", "link", "link", Generate: null)] } };
+        var instance = EngineFixture.At(recipe.Recipe, "produce") with { Facts = new Dictionary<FactKey, FactValue> { [pr] = EngineFixture.Fact("link") } };
+        var contents = new Dictionary<FactKey, string> { [pr] = "{\"url\":\"https://github.com/o/r/pull/9\",\"title\":\"Fix it\"}" };
+
+        var view = InstanceViews.Of(instance, recipe, StatusCases.Now, timeoutAt: null, new InstanceViewContext(Contents: contents));
+
+        var link = Assert.Single(view.Facts, static f => f.Key == "fact:pr").Ref!;
+        Assert.Equal(("https://github.com/o/r/pull/9", "github.com", "Fix it", "fact:pr"), (link.Url, link.Host, link.Title, link.FactKey));
+    }
+
+    [Fact]
     public void The_identity_members_come_from_the_instance_and_the_recipe()
     {
         var view = Produce();
@@ -58,20 +73,14 @@ public sealed class InstanceViewProducerTests
     }
 
     [Fact]
-    public void An_input_the_instance_does_not_hold_is_not_present_and_a_recipe_without_inputs_has_no_subject()
+    public void An_input_the_instance_does_not_hold_is_not_present()
     {
         var absent = InstanceViews.Of(
             EngineFixture.At(_incident.Recipe, "produce"), _incident with { Inputs = new Dictionary<FactKey, InputFact>() }, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
-        var none = InstanceViews.Of(
-            EngineFixture.At(EngineFixture.Step with { Inputs = [] }, "produce"),
-            StatusCases.Recipe with { Recipe = EngineFixture.Step with { Inputs = [] }, Inputs = new Dictionary<FactKey, InputFact>() },
-            StatusCases.Now, timeoutAt: null, new InstanceViewContext());
 
         Assert.False(Assert.Single(absent.Inputs).Present);
         Assert.Equal("Spec", absent.Subject?.Label);   // the declared label, as no file name was given
         Assert.Equal("Spec", absent.Subject?.Key);
-        Assert.Null(none.Subject);
-        Assert.Empty(none.Inputs);
     }
 
     [Fact]
@@ -361,19 +370,63 @@ public sealed class InstanceViewProducerTests
     }
 
     [Fact]
-    public void Only_the_first_input_has_a_kind_the_subject_adapter_as_the_recipe_view_serves_it()
+    public void Every_input_has_its_kind_the_subject_adapter_as_the_recipe_view_serves_it()
     {
         var slots = Slots(
-            new RecipeInput(FactKey.From("fact:project"), "Project", "payload", "linear-project"),
-            new RecipeInput(FactKey.From("fact:notes"), "Notes", "file", "file"));
+            new RecipeInput(FactKey.From("fact:project"), "Project", "payload", "linear-project", Generate: null),
+            new RecipeInput(FactKey.From("fact:notes"), "Notes", "file", "file", Generate: null));
 
-        Assert.Equal((string?[])["linear-project", null], slots.Select(static s => s.Kind), StringComparer.Ordinal);
+        Assert.Equal((string[])["linear-project", "file"], slots.Select(static s => s.Kind), StringComparer.Ordinal);
     }
 
     [Fact]
-    public void A_first_input_typed_link_with_no_declared_kind_has_no_kind_and_a_text_one_is_a_text_subject()
+    public void A_slot_is_required_unless_its_input_generates_and_carries_its_declared_kind()
     {
-        Assert.Null(Assert.Single(Slots(new RecipeInput(FactKey.From("fact:url"), "Url", "link", Kind: null))).Kind);
-        Assert.Equal("text", Assert.Single(Slots(new RecipeInput(FactKey.From("fact:note"), "Note", Type: null, Kind: null))).Kind);
+        var slots = Slots(
+            new RecipeInput(FactKey.From("fact:url"), "Url", "link", "link", Generate: null),
+            new RecipeInput(FactKey.From("fact:note"), "Note", Type: null, "text", Generate: "note {start:date}"));
+
+        Assert.Equal([("link", true), ("text", false)], slots.Select(static s => (s.Kind, s.Required)));
+    }
+
+    [Fact]
+    public void A_recipe_registered_before_input_kinds_builds_a_view_that_names_the_fix_instead_of_throwing()
+    {
+        var legacy = _incident with { Recipe = _incident.Recipe with { Inputs = [new RecipeInput(_spec, "Spec", Type: null, Kind: null, Generate: null)] } };
+        var instance = EngineFixture.At(legacy.Recipe, "produce");
+
+        var view = InstanceViews.Of(instance, legacy, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
+
+        Assert.Equal("item", view.Subject?.Kind);   // never null on the wire: the list row's fallback, the item itself
+        Assert.Equal(instance.Item.Value, view.Subject?.Key);
+        Assert.Empty(view.Inputs);
+        Assert.Contains("RCP-INPUT-001", view.Detail, StringComparison.Ordinal);
+        Assert.Contains("register the current file at a new version and approve it", view.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_recipe_with_no_inputs_builds_a_view_too()
+    {
+        var legacy = _incident with { Recipe = _incident.Recipe with { Inputs = [] } };
+
+        var view = InstanceViews.Of(EngineFixture.At(legacy.Recipe, "produce"), legacy, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
+
+        Assert.Contains("RCP-INPUT-002", view.Detail, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("link", "link")]
+    [InlineData("item", "item")]
+    [InlineData("file", "file")]
+    [InlineData("webhook", "payload")]
+    [InlineData("linear-project", "payload")]
+    [InlineData("text", "text")]
+    public void An_input_with_no_declared_type_has_the_type_its_kind_pairs_with_in_its_fact_row(string kind, string expected)
+    {
+        var recipe = _incident with { Recipe = _incident.Recipe with { Inputs = [new RecipeInput(_spec, "Spec", Type: null, kind, Generate: null)] } };
+
+        var view = InstanceViews.Of(EngineFixture.At(recipe.Recipe, "produce"), recipe, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
+
+        Assert.Equal(FactTypes.Parse(expected), Assert.Single(view.Facts, static f => f.Key == "fact:spec").Type);
     }
 }

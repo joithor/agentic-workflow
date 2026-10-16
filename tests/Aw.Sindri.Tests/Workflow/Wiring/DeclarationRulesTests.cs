@@ -13,17 +13,18 @@ public sealed class DeclarationRulesTests
 {
     private static readonly (string, RecipeState)[] _produceThenDone = [("produce", Active("step.produce")), ("done", Terminal())];
 
-    private static Recipe Base(IReadOnlyList<RecipeOutput>? outputs = null, IReadOnlyList<RecipeInput>? inputs = null, string urgency = "work") =>
+    private static Recipe Base(IReadOnlyList<RecipeOutput>? outputs = null, IReadOnlyList<RecipeInput>? inputs = null, string urgency = "work", string? name = null) =>
         Of("produce", _produceThenDone, [Go("produce", "done", when: Outcome("done"))]) with
         {
             Urgency = urgency,
+            Name = name,
             Outputs = outputs ?? [],
-            Inputs = inputs ?? [],
+            Inputs = inputs ?? [In("fact:item", "item", "item")],
         };
 
     private static RecipeOutput Out(string key, string from, string? type = "file") => new(FactKey.From(key), Label: null, type, from);
 
-    private static RecipeInput In(string key, string? type = null, string? kind = null) => new(FactKey.From(key), Label: null, type, kind);
+    private static RecipeInput In(string key, string? type = null, string? kind = "text", string? generate = null) => new(FactKey.From(key), Label: null, type, kind, generate);
 
     private static Located At(params (string Path, int Line, int Column)[] positions) => new("r.yaml", positions);
 
@@ -33,7 +34,8 @@ public sealed class DeclarationRulesTests
         Assert.Empty(CheckDeclarations(Base()));
         Assert.Empty(CheckDeclarations(Base(
             outputs: [Out("fact:output", "produce")],
-            inputs: [In("fact:item", "item", "item"), In("fact:note", type: null, kind: "text"), In("fact:p", "payload", "webhook")],
+            inputs: [In("fact:item", "item", "item"), In("fact:note", type: null, kind: "text", generate: "note {start:date} {start:time}"), In("fact:p", "payload", "webhook"), In("fact:l", type: null, kind: "link")],
+            name: "{fact:item} {fact:note} {start:date} {{x}}",
             urgency: "incident")));
     }
 
@@ -188,13 +190,13 @@ public sealed class DeclarationRulesTests
     public void A_kind_that_isnt_a_subject_kind_is_reported()
     {
         Assert.Equal(
-            ["RCP-TYPE-002: input 'fact:item' has kind 'ticket', which isn't one of item, linear-project, webhook, file, text at r.yaml:4:40 (inputs[0].kind); use one of them"],
+            ["RCP-TYPE-002: input 'fact:item' has kind 'ticket', which isn't one of item, linear-project, webhook, file, text, link at r.yaml:4:40 (inputs[0].kind); use one of them"],
             CheckDeclarations(Base(inputs: [In("fact:item", "item", "ticket")]), At(("inputs[0].kind", 4, 40))).Lines());
     }
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("file", "item", "RCP-TYPE-003: input 'fact:item' has kind 'item' but type 'file'; kind item pairs with type item at r.yaml:4:40 (inputs[0].kind); set type to item, or change kind")]
-    [InlineData(null, "item", "RCP-TYPE-003: input 'fact:item' has kind 'item' but type 'text' (the default); kind item pairs with type item at r.yaml:4:40 (inputs[0].kind); set type to item, or change kind")]
+    [InlineData("text", "item", "RCP-TYPE-003: input 'fact:item' has kind 'item' but type 'text'; kind item pairs with type item at r.yaml:4:40 (inputs[0].kind); set type to item, or change kind")]
     [InlineData("text", "webhook", "RCP-TYPE-003: input 'fact:item' has kind 'webhook' but type 'text'; kind webhook pairs with type payload at r.yaml:4:40 (inputs[0].kind); set type to payload, or change kind")]
     public void A_kind_and_type_that_dont_pair_are_reported(string? type, string kind, string expected) =>
         Assert.Equal([expected], CheckDeclarations(Base(inputs: [In("fact:item", type, kind)]), At(("inputs[0].kind", 4, 40))).Lines());
@@ -206,4 +208,92 @@ public sealed class DeclarationRulesTests
 
         Assert.True(CheckDeclarations(recipe).Select(f => f.Rule).SequenceEqual(["RCP-TYPE-001", "RCP-TYPE-002"], StringComparer.Ordinal));
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_input_that_declares_no_kind_is_reported_and_the_type_is_not_enough()
+    {
+        Assert.Equal(
+            ["RCP-INPUT-001: input 'fact:item' declares no kind at r.yaml:5:9 (inputs[0]); add kind: item | link | linear-project | webhook | file | text, paired with its type (item/item, file/file, text/text, link/link, linear-project and webhook/payload)"],
+            CheckDeclarations(Base(inputs: [In("fact:item", "item", kind: null)]), At(("inputs[0]", 5, 9))).Lines());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_recipe_with_no_input_is_reported()
+    {
+        Assert.Equal(
+            ["RCP-INPUT-002: the recipe declares no input at r.yaml:1:1 (inputs); declare at least one input; a scheduled recipe gives it generate: \"<template>\""],
+            CheckDeclarations(Base(inputs: []), At(("inputs", 1, 1))).Lines());
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void An_empty_name_is_reported(string name) =>
+        Assert.Equal(
+            ["RCP-NAME-002: the name template is empty or longer than 200 characters at r.yaml:4:1 (name); write literal text with {fact:<input>} or {start:date|time}"],
+            CheckDeclarations(Base(name: name), At(("name", 4, 1))).Lines());
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_name_or_generate_template_over_200_characters_is_reported_and_200_passes()
+    {
+        Assert.Empty(CheckDeclarations(Base(name: new string('a', 200))));
+        Assert.Equal(
+            ["RCP-NAME-002: the name template is empty or longer than 200 characters at r.yaml:4:1 (name); write literal text with {fact:<input>} or {start:date|time}"],
+            CheckDeclarations(Base(name: new string('a', 201)), At(("name", 4, 1))).Lines());
+        Assert.Equal(
+            ["RCP-NAME-002: the generate template is empty or longer than 200 characters at r.yaml:5:30 (inputs[0].generate); write literal text with {start:date} or {start:time}"],
+            CheckDeclarations(Base(inputs: [In("fact:note", generate: new string('a', 201))]), At(("inputs[0].generate", 5, 30))).Lines());
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("{owner} sweep", "unknown placeholder '{owner}'")]
+    [InlineData("{fact:} sweep", "unknown placeholder '{fact:}'")]
+    [InlineData("{start:zone}", "unknown placeholder '{start:zone}'")]
+    [InlineData("{start:date", "unbalanced '{' or '}'")]
+    [InlineData("done}", "unbalanced '{' or '}'")]
+    [InlineData("{{x}", "unbalanced '{' or '}'")]
+    public void An_unknown_placeholder_or_an_unbalanced_brace_is_reported_once_per_template(string name, string what) =>
+        Assert.Equal(
+            [$"RCP-NAME-003: {what} at r.yaml:4:1 (name); use {{fact:<input>}}, {{start:date}} or {{start:time}}, and write {{{{ or }}}} for a literal brace"],
+            CheckDeclarations(Base(name: name), At(("name", 4, 1))).Lines());
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("line one\nline two")]
+    [InlineData("tab\there")]
+    public void A_control_character_in_a_name_or_generate_template_is_RCP_NAME_003(string text)
+    {
+        Assert.Equal(
+            ["RCP-NAME-003: a control character (a line break or tab) in the template at r.yaml:4:1 (name); keep the template on one line, without control characters"],
+            CheckDeclarations(Base(name: text), At(("name", 4, 1))).Lines());
+        Assert.Equal(
+            ["RCP-NAME-003: a control character (a line break or tab) in the template at r.yaml:5:30 (inputs[0].generate); keep the template on one line, without control characters"],
+            CheckDeclarations(Base(inputs: [In("fact:note", generate: text)]), At(("inputs[0].generate", 5, 30))).Lines());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_name_placeholder_that_names_no_declared_input_is_reported_once_per_input()
+    {
+        Assert.Equal(
+            ["RCP-NAME-004: '{fact:scope}' names no declared input at r.yaml:4:1 (name); declare fact:scope under inputs or remove the placeholder"],
+            CheckDeclarations(Base(name: "{fact:scope} {fact:scope} {fact:item}"), At(("name", 4, 1))).Lines());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_generate_template_may_not_read_inputs()
+    {
+        Assert.Equal(
+            ["RCP-NAME-005: generate may not read inputs ('{fact:item}') at r.yaml:5:47 (inputs[0].generate); use only literals, {start:date} and {start:time}"],
+            CheckDeclarations(Base(inputs: [In("fact:note", generate: "{fact:item} run")]), At(("inputs[0].generate", 5, 47))).Lines());
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("item", "item")]
+    [InlineData("file", "file")]
+    [InlineData("link", "link")]
+    [InlineData("webhook", "payload")]
+    [InlineData("linear-project", "payload")]
+    public void Generate_on_an_input_whose_kind_is_not_text_is_reported(string kind, string type) =>
+        Assert.Equal(
+            [$"RCP-NAME-006: generate on an input of kind '{kind}' at r.yaml:5:47 (inputs[0].generate); only a text input can be generated; supply this input at start"],
+            CheckDeclarations(Base(inputs: [In("fact:item", type, kind, generate: "run")]), At(("inputs[0].generate", 5, 47))).Lines());
 }

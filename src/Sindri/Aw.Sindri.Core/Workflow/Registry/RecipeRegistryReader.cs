@@ -166,7 +166,7 @@ public sealed class RecipeRegistryReader(IRecipeStore store, IRecipeApprovals ap
 
         var (standing, stale) = Stand(parsed.Value, latest.Value, revoked.Value, current);
         var order = StatePathOrder.Of(parsed.Value);
-        return new RecipeSummary(recipe.Id, recipe.Version, recipe.Hash, standing, latest.Value?.Via, stale, parsed.Value.Inputs, parsed.Value.Urgency, parsed.Value.Outputs, order.OrderedBy, order.States, order.Loops);
+        return new RecipeSummary(recipe.Id, recipe.Version, recipe.Hash, standing, latest.Value?.Via, stale, parsed.Value.Inputs, parsed.Value.Urgency, parsed.Value.Outputs, order.OrderedBy, order.States, order.Loops, parsed.Value.Name);
     }
 
     /// <summary>
@@ -177,7 +177,8 @@ public sealed class RecipeRegistryReader(IRecipeStore store, IRecipeApprovals ap
     {
         if (revoked is not null || latest is null)
         {
-            return (revoked is null ? RecipeStanding.Unapproved : RecipeStanding.Revoked, []);
+            // An unapproved legacy-shape row is marked too: it can't be approved as it stands, and the fix is the same.
+            return (revoked is null ? RecipeStanding.Unapproved : RecipeStanding.Revoked, revoked is null && SubjectKinds.Legacy(parsed) is not null ? [StaleReason.LegacyShape] : []);
         }
 
         var stale = new List<StaleReason>();
@@ -189,6 +190,11 @@ public sealed class RecipeRegistryReader(IRecipeStore store, IRecipeApprovals ap
         if (latest.Pins.Children.Any(pin => current.Where(a => a.Id == pin.Recipe).MaxBy(static a => a.Version)?.Hash != pin.Hash))
         {
             stale.Add(StaleReason.ChildStale);
+        }
+
+        if (SubjectKinds.Legacy(parsed) is not null)
+        {
+            stale.Add(StaleReason.LegacyShape);
         }
 
         return (RecipeStanding.Approved, stale);

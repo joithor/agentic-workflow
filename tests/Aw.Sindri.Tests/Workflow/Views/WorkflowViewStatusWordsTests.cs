@@ -85,7 +85,8 @@ public sealed class WorkflowViewStatusWordsTests
     {
         foreach (var status in WorkflowViewFixtures.AllStatuses())
         {
-            foreach (var text in new[] { status.Text, status.Next ?? string.Empty, status.Header.Detail ?? string.Empty, status.Answer?.Cli ?? string.Empty })
+            // the instance's name is the recipe author's template over the user's own values (WF 3.11), so its line is the one place user text passes through
+            foreach (var text in new[] { string.Join('\n', status.Text.Split('\n').Where(static l => !l.StartsWith("  name ", StringComparison.Ordinal))), status.Next ?? string.Empty, status.Header.Detail ?? string.Empty, status.Answer?.Cli ?? string.Empty })
             {
                 Assert.True(text.All(char.IsAscii), $"{status.Header.Address.Value}: {text}");
             }

@@ -4,8 +4,8 @@
   "itemId": "T-3",
   "recipe": {
     "id": "workflow.step",
-    "hash": "sha256:1b13bd920351e56227141fe24e59f2f90cb46bc3549e1e90f2da2af1c3be9f5c",
-    "version": 1,
+    "hash": "sha256:1c1173a162a77736c33620e985d6d75473cf3755963adc5c46eb9049434f5276",
+    "version": 2,
     "urgency": "work"
   },
   "state": "produce",
@@ -24,7 +24,7 @@
   "inputs": [
     {
       "key": "fact:spec",
-      "label": "spec",
+      "label": "Spec",
       "kind": "text",
       "required": true,
       "present": true

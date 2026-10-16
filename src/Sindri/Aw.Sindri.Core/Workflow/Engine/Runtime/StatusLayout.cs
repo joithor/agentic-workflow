@@ -20,9 +20,10 @@ public static class StatusLayout
     {
         ArgumentNullException.ThrowIfNull(view);
         var text = new StringBuilder().Append(InstanceHeader.Line(view, now)).Append('\n');
+        Labelled(text, "name", NameLines(view));
         Labelled(text, "next", Wrap(view.Next));
         Labelled(text, "child", [.. view.Children.Select(static c => $"{c.Address.Value}  {c.State}")]);
-        Labelled(text, "inputs", view.Task is { } task ? [.. task.Inputs.Select(static i => $"{i.Key.Value}  {i.Value.Name}  sha256:{StatusText.Digest(i.Value.Value.Sha256)}")] : []);
+        Labelled(text, "inputs", InputLines(view));
         Labelled(text, "drift", view.Drift is { } drift ? [drift] : []);
         Labelled(text, "timeout", view.Task?.TimeoutAt is { } at ? [$"parks in {StatusText.Duration(at - now)} (desk)"] : []);
         Labelled(text, "paused", view.Paused is { } left ? [$"timeout {StatusText.Duration(left)} left"] : []);
@@ -50,6 +51,12 @@ public static class StatusLayout
         "CompleteStep" => "complete",
         _ => action[(action.IndexOf(':', StringComparison.Ordinal) + 1)..],
     };
+
+    private static List<string> NameLines(InstanceView view) =>
+        view.Name is { } name ? [name.Length > 0 ? name : view.Address.Value] : [];
+
+    private static List<string> InputLines(InstanceView view) =>
+        view.Task is { } task ? [.. task.Inputs.Select(static i => $"{i.Key.Value}  {i.Value.Name}  sha256:{StatusText.Digest(i.Value.Value.Sha256)}{(i.Value.Generated ? " (generated)" : string.Empty)}")] : [];
 
     private static void Labelled(StringBuilder text, string label, List<string> lines)
     {

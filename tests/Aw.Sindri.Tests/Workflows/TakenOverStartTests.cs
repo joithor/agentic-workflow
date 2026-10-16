@@ -12,7 +12,7 @@ namespace Aw.Sindri.Tests.Workflows;
 [Lane(TestLane.Integration)]
 public sealed class TakenOverStartTests(SindriTimeSkippingServer server) : IClassFixture<SindriTimeSkippingServer>, IDisposable
 {
-    private const string Recipe = "schema: 1\nid: workflow.no-runtime\nversion: 1\ninitial: hold\n"
+    private const string Recipe = "schema: 1\nid: workflow.no-runtime\nversion: 1\ninputs: [{ key: fact:item, type: item, kind: item }]\ninitial: hold\n"
         + "states:\n"
         + "  hold: { kind: active, step: step.nowhere, timeout: { after: 1h, then: park }, next: \"No runtime here.\" }\n"
         + "  done: { kind: terminal, outcome: resolved }\n"

@@ -45,6 +45,12 @@
     "urgency": {
       "type": "string"
     },
+    "name": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "inputs": {
       "type": "array",
       "items": {
@@ -71,13 +77,20 @@
               "string",
               "null"
             ]
+          },
+          "generate": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
           "key",
           "label",
           "type",
-          "kind"
+          "kind",
+          "generate"
         ],
         "additionalProperties": false
       }
@@ -702,6 +715,7 @@
     "description",
     "base",
     "urgency",
+    "name",
     "inputs",
     "outputs",
     "initial",

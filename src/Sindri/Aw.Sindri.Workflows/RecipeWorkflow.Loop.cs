@@ -225,7 +225,7 @@ internal sealed partial class RecipeWorkflow
         Workflow.UpsertTypedSearchAttributes([.. updates]);
     }
 
-    /// <summary>The first input's stored content as text ('ReadSubject', a local activity on start); none when it can't be read.</summary>
+    /// <summary>A stored input's content as text ('ReadSubject', a local activity on start: one call per fact the name reads, the first input, and each link input); none when it can't be read.</summary>
     private static async Task<string?> SubjectTextOf(FactValue fact)
     {
         try
