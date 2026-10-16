@@ -123,17 +123,17 @@ public sealed class NamedTeamsCommandTests : IDisposable
     public async Task A_legacy_flat_config_keeps_working_with_no_team_or_its_own_team_selected()
     {
         Directory.CreateDirectory(Meta());
-        await File.WriteAllTextAsync(Meta("team.json"), """{"team":"vz","repo":"/r","lanes":["meta","api"]}""", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Meta("team.json"), """{"team":"t2","repo":"/r","lanes":["meta","api"]}""", TestContext.Current.CancellationToken);
 
         var bare = await _cli.Run("team-show");
-        _ = await _cli.Run("role-set", "--session", "s-vz", "--name", "vz-meta");
-        var named = await _cli.Run("--team", "vz", "role-show");
-        _cli.SetEnv("AW_META_TEAM", "vz");
+        _ = await _cli.Run("role-set", "--session", "s-t2", "--name", "t2-meta");
+        var named = await _cli.Run("--team", "t2", "role-show");
+        _cli.SetEnv("AW_META_TEAM", "t2");
         var fromEnv = await _cli.Run("team-show");
 
-        Assert.Contains("vz:", bare.Out, StringComparison.Ordinal);
-        Assert.Contains("vz-meta", named.Out, StringComparison.Ordinal);
-        Assert.Contains("vz:", fromEnv.Out, StringComparison.Ordinal);
+        Assert.Contains("t2:", bare.Out, StringComparison.Ordinal);
+        Assert.Contains("t2-meta", named.Out, StringComparison.Ordinal);
+        Assert.Contains("t2:", fromEnv.Out, StringComparison.Ordinal);
         Assert.True(File.Exists(Meta("meta.db")));
         Assert.False(Directory.Exists(Meta("teams")));
     }
@@ -142,35 +142,37 @@ public sealed class NamedTeamsCommandTests : IDisposable
     public async Task A_legacy_config_wins_over_named_teams_and_a_second_team_gets_its_own_directory()
     {
         Directory.CreateDirectory(Meta());
-        await File.WriteAllTextAsync(Meta("team.json"), """{"team":"vz","repo":"/r","lanes":["api"]}""", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Meta("team.json"), """{"team":"t2","repo":"/r","lanes":["api"]}""", TestContext.Current.CancellationToken);
         await Init("other");
 
         var bare = await _cli.Run("team-show");
         var other = await _cli.Run("--team", "other", "team-show");
 
-        Assert.Contains("vz:", bare.Out, StringComparison.Ordinal);
+        Assert.Contains("t2:", bare.Out, StringComparison.Ordinal);
         Assert.Contains("other:", other.Out, StringComparison.Ordinal);
-        _ = await _cli.Run("role-set", "--session", "s-1", "--name", "vz-meta");
+        _ = await _cli.Run("role-set", "--session", "s-1", "--name", "t2-meta");
         _ = await _cli.Run("--team", "other", "role-set", "--session", "s-2", "--name", "other-meta");
         Assert.True(File.Exists(Meta("meta.db")));
         Assert.True(File.Exists(Meta("teams", "other", "meta.db")));
-        Assert.False(File.Exists(Meta("teams", "vz", "meta.db")));
+        Assert.False(File.Exists(Meta("teams", "t2", "meta.db")));
     }
 
     [Fact, Trait("Lane", "integration")]
-    public async Task AW_META_CONFIG_still_overrides_the_config_path()
+    public async Task AW_META_CONFIG_still_overrides_the_config_path_for_its_own_team_and_is_ignored_for_another()
     {
-        var elsewhere = _cli.File("elsewhere.json");
-        await File.WriteAllTextAsync(elsewhere, """{"team":"custom","repo":"/r","lanes":["api"]}""", TestContext.Current.CancellationToken);
         await Init("alpha");
         await Init("beta");
+        var elsewhere = _cli.File("elsewhere.json");
+        await File.WriteAllTextAsync(elsewhere, """{"team":"alpha","repo":"/elsewhere","lanes":["api"]}""", TestContext.Current.CancellationToken);
         _cli.SetEnv("AW_META_CONFIG", elsewhere);
 
-        var shown = await _cli.Run("--team", "alpha", "team-show");
+        var own = await _cli.Run("--team", "alpha", "team-show");
+        var other = await _cli.Run("--team", "beta", "team-show");
+        _ = await _cli.Run("--team", "alpha", "role-set", "--session", "s-1", "--name", "alpha-meta");
 
-        _ = await _cli.Run("--team", "alpha", "role-set", "--session", "s-1", "--name", "custom-meta");
-
-        Assert.Contains("custom:", shown.Out, StringComparison.Ordinal);
+        Assert.Contains("repo /elsewhere", own.Out, StringComparison.Ordinal);
+        Assert.Contains("beta:", other.Out, StringComparison.Ordinal);
+        Assert.Contains("repo /r-beta", other.Out, StringComparison.Ordinal);
         Assert.True(File.Exists(Meta("teams", "alpha", "meta.db")), "the state directory is still the selected team's");
         Assert.False(File.Exists(Meta("meta.db")));
     }
@@ -179,7 +181,7 @@ public sealed class NamedTeamsCommandTests : IDisposable
     public async Task Team_list_names_every_team_with_its_repo_lanes_and_role_and_marks_the_selected_one()
     {
         Directory.CreateDirectory(Meta());
-        await File.WriteAllTextAsync(Meta("team.json"), """{"team":"vz","repo":"/r-vz","lanes":["meta","api"]}""", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Meta("team.json"), """{"team":"t2","repo":"/r-t2","lanes":["meta","api"]}""", TestContext.Current.CancellationToken);
         await Init("alpha", "ui");
         _ = await _cli.Run("--team", "alpha", "role-set", "--session", "s-a", "--name", "alpha-meta");
 
@@ -188,8 +190,8 @@ public sealed class NamedTeamsCommandTests : IDisposable
 
         Assert.Equal(0, all.Exit);
         Assert.Contains("* alpha [named]: repo /r-alpha, lanes meta, ui, meta alpha-meta (not running)", all.Out, StringComparison.Ordinal);
-        Assert.Contains("  vz [legacy]: repo /r-vz, lanes meta, api, no meta role", all.Out, StringComparison.Ordinal);
-        Assert.Contains("\"name\":\"vz\"", json.Out.Replace(" ", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
+        Assert.Contains("  t2 [legacy]: repo /r-t2, lanes meta, api, no meta role", all.Out, StringComparison.Ordinal);
+        Assert.Contains("\"name\":\"t2\"", json.Out.Replace(" ", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -197,10 +199,10 @@ public sealed class NamedTeamsCommandTests : IDisposable
     {
         Directory.CreateDirectory(Meta("lane-sessions"));
         Directory.CreateDirectory(Meta("gates", "7"));
-        await File.WriteAllTextAsync(Meta("team.json"), """{"team":"vz","repo":"/r","lanes":["api"]}""", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Meta("team.json"), """{"team":"t2","repo":"/r","lanes":["api"]}""", TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(Meta("team.json.init.bak"), "{}", TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(Meta("lane-sessions", "api"), "abc", TestContext.Current.CancellationToken);
-        _ = await _cli.Run("role-set", "--session", "s-vz", "--name", "vz-meta");
+        _ = await _cli.Run("role-set", "--session", "s-t2", "--name", "t2-meta");
 
         var dry = await _cli.Run("team-migrate", "--dry-run");
         var dryMoved = File.Exists(Meta("team.json"));
@@ -208,25 +210,25 @@ public sealed class NamedTeamsCommandTests : IDisposable
         var shown = await _cli.Run("team-show");
         var role = await _cli.Run("role-show");
 
-        Assert.Contains("would move vz", dry.Out, StringComparison.Ordinal);
+        Assert.Contains("would move t2", dry.Out, StringComparison.Ordinal);
         Assert.True(dryMoved);
         Assert.Equal(0, done.Exit);
         Assert.False(File.Exists(Meta("team.json")));
         Assert.False(File.Exists(Meta("meta.db")));
-        Assert.True(File.Exists(Meta("teams", "vz", "team.json")));
-        Assert.True(File.Exists(Meta("teams", "vz", "team.json.init.bak")));
-        Assert.Equal("abc", await File.ReadAllTextAsync(Meta("teams", "vz", "lane-sessions", "api"), TestContext.Current.CancellationToken));
+        Assert.True(File.Exists(Meta("teams", "t2", "team.json")));
+        Assert.True(File.Exists(Meta("teams", "t2", "team.json.init.bak")));
+        Assert.Equal("abc", await File.ReadAllTextAsync(Meta("teams", "t2", "lane-sessions", "api"), TestContext.Current.CancellationToken));
         Assert.True(Directory.Exists(Meta("gates", "7")));
-        Assert.Contains("vz:", shown.Out, StringComparison.Ordinal);
-        Assert.Contains("vz-meta", role.Out, StringComparison.Ordinal);
+        Assert.Contains("t2:", shown.Out, StringComparison.Ordinal);
+        Assert.Contains("t2-meta", role.Out, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "integration")]
     public async Task Team_migrate_refuses_when_there_is_nothing_to_migrate_or_the_target_exists()
     {
         var none = await _cli.Run("team-migrate");
-        Directory.CreateDirectory(Meta("teams", "vz"));
-        await File.WriteAllTextAsync(Meta("team.json"), """{"team":"vz","repo":"/r","lanes":["api"]}""", TestContext.Current.CancellationToken);
+        Directory.CreateDirectory(Meta("teams", "t2"));
+        await File.WriteAllTextAsync(Meta("team.json"), """{"team":"t2","repo":"/r","lanes":["api"]}""", TestContext.Current.CancellationToken);
         var exists = await _cli.Run("team-migrate");
 
         Assert.Equal((2, "AW-META-002"), (none.Exit, none.Err[..11]));
@@ -276,14 +278,14 @@ public sealed class NamedTeamsCommandTests : IDisposable
     public async Task Team_list_shows_a_legacy_team_and_a_named_team_of_the_same_name_as_two_rows()
     {
         Directory.CreateDirectory(Meta());
-        await File.WriteAllTextAsync(Meta("team.json"), """{"team":"vz","repo":"/r","lanes":["api"]}""", TestContext.Current.CancellationToken);
-        _ = Directory.CreateDirectory(Meta("teams", "vz"));
-        await File.WriteAllTextAsync(Meta("teams", "vz", "team.json"), """{"team":"vz","repo":"/r2","lanes":["api"]}""", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Meta("team.json"), """{"team":"t2","repo":"/r","lanes":["api"]}""", TestContext.Current.CancellationToken);
+        _ = Directory.CreateDirectory(Meta("teams", "t2"));
+        await File.WriteAllTextAsync(Meta("teams", "t2", "team.json"), """{"team":"t2","repo":"/r2","lanes":["api"]}""", TestContext.Current.CancellationToken);
 
         var list = await _cli.Run("team-list");
 
-        Assert.Contains("* vz [legacy]", list.Out, StringComparison.Ordinal);
-        Assert.Contains("  vz [named]", list.Out, StringComparison.Ordinal);
+        Assert.Contains("* t2 [legacy]", list.Out, StringComparison.Ordinal);
+        Assert.Contains("  t2 [named]", list.Out, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -297,6 +299,32 @@ public sealed class NamedTeamsCommandTests : IDisposable
         Assert.Equal((2, "AW-META-020"), (refused.Exit, refused.Err[..11]));
         Assert.True(File.Exists(Meta("team.json")));
         Assert.False(Directory.Exists(Meta("teams")));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Team_migrate_refuses_while_a_lane_session_of_the_team_is_running()
+    {
+        Assert.SkipUnless(OperatingSystem.IsLinux(), "session liveness reads /proc");
+        Directory.CreateDirectory(Meta("lane-sessions"));
+        await File.WriteAllTextAsync(Meta("team.json"), """{"team":"t2","repo":"/r","lanes":["api"]}""", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Path.Combine(_cli.SessionsDirectory, "1.json"), "{\"pid\":" + Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture) + ",\"sessionId\":\"s-api\",\"name\":\"t2-api\",\"status\":\"idle\",\"cwd\":\"/w\"}", TestContext.Current.CancellationToken);
+
+        var refused = await _cli.Run("team-migrate");
+
+        Assert.Equal((2, "AW-META-020"), (refused.Exit, refused.Err[..11]));
+        Assert.True(File.Exists(Meta("team.json")));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_named_team_directory_without_a_config_does_not_hide_the_legacy_team()
+    {
+        Directory.CreateDirectory(Meta());
+        await File.WriteAllTextAsync(Meta("team.json"), """{"team":"t2","repo":"/r","lanes":["api"]}""", TestContext.Current.CancellationToken);
+        _ = Directory.CreateDirectory(Meta("teams", "t2"));
+
+        var shown = await _cli.Run("--team", "t2", "team-show");
+
+        Assert.Contains("t2:", shown.Out, StringComparison.Ordinal);
     }
 
     public void Dispose() => _cli.Dispose();

@@ -29,11 +29,11 @@ public sealed class TeamResolverTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public void A_legacy_config_is_used_unless_another_team_is_selected_and_its_own_name_selects_it()
     {
-        Legacy("vz");
+        Legacy("t2");
         Named("other");
 
         Assert.Equal(Meta, TeamResolver.Resolve(Meta, selected: null).StateDirectory);
-        Assert.Equal(Meta, TeamResolver.Resolve(Meta, "vz").StateDirectory);
+        Assert.Equal(Meta, TeamResolver.Resolve(Meta, "t2").StateDirectory);
         Assert.Equal(Path.Combine(Meta, "teams", "other"), TeamResolver.Resolve(Meta, "other").StateDirectory);
         Assert.Equal(Path.Combine(Meta, "teams", "fresh"), TeamResolver.Resolve(Meta, "fresh").StateDirectory);
     }
@@ -41,11 +41,20 @@ public sealed class TeamResolverTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public void A_named_team_beats_a_legacy_config_of_the_same_name_only_when_selected()
     {
-        Legacy("vz");
-        Named("vz");
+        Legacy("t2");
+        Named("t2");
 
         Assert.Equal(Meta, TeamResolver.Resolve(Meta, selected: null).StateDirectory);
-        Assert.Equal(Path.Combine(Meta, "teams", "vz"), TeamResolver.Resolve(Meta, "vz").StateDirectory);
+        Assert.Equal(Path.Combine(Meta, "teams", "t2"), TeamResolver.Resolve(Meta, "t2").StateDirectory);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_empty_team_directory_without_a_config_does_not_hide_the_legacy_team()
+    {
+        Legacy("t2");
+        _ = Directory.CreateDirectory(Path.Combine(Meta, "teams", "t2"));
+
+        Assert.Equal(Meta, TeamResolver.Resolve(Meta, "t2").StateDirectory);
     }
 
     [Fact, Trait("Lane", "unit")]

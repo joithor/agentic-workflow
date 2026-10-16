@@ -83,7 +83,7 @@ internal static class TeamResolver
         }
 
         var named = Path.Combine(metaRoot, Teams, selected);
-        return !Directory.Exists(named) && File.Exists(legacyConfig) && LegacyTeam(legacyConfig) == selected
+        return !File.Exists(Path.Combine(named, ConfigFile)) && File.Exists(legacyConfig) && LegacyTeam(legacyConfig) == selected
             ? (metaRoot, new TeamLayout(metaRoot, selected, Legacy: true, Ambiguous: []))
             : (named, new TeamLayout(metaRoot, selected, Legacy: false, Ambiguous: []));
     }

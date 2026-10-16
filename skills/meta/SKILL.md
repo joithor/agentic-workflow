@@ -83,9 +83,14 @@ the registered meta session and whether it is running). Which team a command act
 
 An older install has the flat layout (`$AW_STATE_DIR/meta/team.json` and `meta.db` directly under `meta/`). It keeps
 working unchanged while no team is selected (or when the selected name is that config's own team). Moving it into
-`teams/<its team>/` is opt-in: stop the team's sessions, run `aw-meta team-migrate --dry-run`, then `aw-meta team-migrate`
-(`gates/` stays where it is; sweep it with `worktree-sweep`), then relaunch with `aw-meta-launch`. Never run it
-from the meta session of a live team.
+`teams/<its team>/` is opt-in: first run `worktree-sweep` for the old `meta/gates` trees (after the migration the sweep
+roots are `teams/<team>/gates`, so the old directory is never swept again), stop every session of the team (the meta and
+the lanes: `team-migrate` refuses while one runs), run `aw-meta team-migrate --dry-run`, then `aw-meta team-migrate`, then
+relaunch with `aw-meta-launch`. `gates/` stays where it is. Never run it from the meta session of a live team.
+
+Teams on the same repo share the default worktree roots (`~/repos/aw-wt`, `<repo>/.claude/worktrees`), so one team's
+`worktree-sweep` or merge trigger may remove another team's finished worktrees (the other rules still apply: an ended pull
+request, nothing unpushed, no process inside). Give each team its own `worktrees.roots` in its `team.json` to keep them apart.
 
 ## Start (or after any restart)
 

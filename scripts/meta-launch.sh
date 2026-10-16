@@ -103,7 +103,7 @@ if [ -n "${AW_META_CONFIG:-}" ] && [ -z "$team_sel" ]; then   # an explicit conf
   team_sel="$(jq -r 'if (.team | type) == "string" then .team else empty end' "$AW_META_CONFIG" 2> /dev/null || true)"
 fi
 meta_resolve "$state_dir" "$team_sel" || exit 2
-config="${AW_META_CONFIG:-$META_CONFIG}"
+config="$(meta_pick_config "$team_sel")"   # a lane's AW_META_CONFIG is ignored when --team names another team
 meta_dir="$META_DIR"
 [ -f "$config" ] || { echo "meta-launch: no team config at $config (run: aw-meta team-init --team <t> --repo <dir> --lanes a,b)" >&2; exit 1; }
 team="$(jq -r '.team // empty' "$config")"

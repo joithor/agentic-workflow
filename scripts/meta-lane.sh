@@ -35,7 +35,7 @@ state_dir="${AW_STATE_DIR:-$HOME/.agentic-workflow}"
 # shellcheck source=meta-team-lib.sh
 . "$here/meta-team-lib.sh"
 meta_resolve "$state_dir" "$team" || exit 2
-config="${AW_META_CONFIG:-$META_CONFIG}"
+config="$(meta_pick_config "$team")"
 cfg() { [ -f "$config" ] && jq -r "$1 // empty" "$config" 2> /dev/null; }
 repo="$(cfg .repo)"; repo="${repo:-$PWD}"
 prompts="$(cfg .prompts)"
@@ -179,7 +179,7 @@ unlink "$argv_file"
 if [ "$write_id" = 1 ]; then printf '%s\n' "$id" > "$ids/$lane.tmp" && mv "$ids/$lane.tmp" "$ids/$lane"; fi
 if [ "$id_mode" = reported ] && [ "$mode" = resume ]; then : > "$ids/$lane.settled"; fi
 if [ "$lane" = "$meta_lane" ] && [ -x "$meta_bin" ] && [ -n "$id" ]; then
-  AW_LOG_LEVEL=none "$meta_bin" role-set --session "$id" --name "$team-$lane" > /dev/null 2>&1 \
+  AW_META_TEAM="$team" AW_LOG_LEVEL=none "$meta_bin" role-set --session "$id" --name "$team-$lane" > /dev/null 2>&1 \
     || echo "meta-lane: aw-meta role-set failed; run it by hand in the meta session" >&2
 fi
 # AW_META_CLAUDE_ARGS go right after {bin}, before the session flags and the prompt, for the claude-code agent only. The

@@ -5,6 +5,7 @@ using Aw.Meta.Core;
 using Aw.Meta.Core.Config;
 using Aw.Meta.Core.Ports;
 using Aw.Meta.Infrastructure.Sqlite;
+using Microsoft.Data.Sqlite;
 
 namespace Aw.Meta.Infrastructure.Files;
 
@@ -52,12 +53,62 @@ internal sealed class FileTeamCatalog(TeamLayout layout, ISessionDirectory sessi
             return plan;
         }
 
-        // The hooks write to meta.db all the time: a team whose meta session still runs is not moved.
+        // The hooks write to meta.db all the time: a team with a running meta or lane session is not moved.
         var live = await sessions.Live(cancellationToken).ConfigureAwait(false);
-        var role = await Role(layout.MetaRoot, cancellationToken).ConfigureAwait(false);
-        return role is not null && live.IsSuccess && live.Value.Any(s => s.Session == role.Session || (role.Name.Length > 0 && s.Name == role.Name))
-            ? MetaErrors.TeamMigrationRefused.With($"the meta session {(role.Name.Length > 0 ? role.Name : role.Session.Value)} is running; stop the team's sessions first")
-            : Move(plan.Value);
+        var running = RunningSession(plan.Value.Team, live.IsSuccess ? live.Value : []);
+        if (running is not null)
+        {
+            return MetaErrors.TeamMigrationRefused.With($"the session {running} is running; stop the team's sessions first");
+        }
+
+        Checkpoint(Path.Combine(layout.MetaRoot, MetaDatabase.FileName));
+        return Move(plan.Value);
+    }
+
+    // A live session named <team>-<lane>, or one whose id a lane-sessions record holds.
+    private string? RunningSession(string team, IReadOnlyList<Core.Lanes.LiveSession> live)
+    {
+        var lanes = Path.Combine(layout.MetaRoot, "lane-sessions");
+        var recorded = new HashSet<string>(StringComparer.Ordinal);
+        if (Directory.Exists(lanes))
+        {
+            foreach (var file in Directory.EnumerateFiles(lanes).Where(f => !Path.GetFileName(f).Contains('.', StringComparison.Ordinal)))
+            {
+                try
+                {
+                    _ = recorded.Add(File.ReadAllText(file).Trim());
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+                {
+                    // An unreadable record can't name a session.
+                }
+            }
+        }
+
+        var found = live.FirstOrDefault(s => s.Name.StartsWith(team + "-", StringComparison.Ordinal) || recorded.Contains(s.Session.Value));
+        return found is null ? null : found.Name.Length > 0 ? found.Name : found.Session.Value;
+    }
+
+    // Folds the WAL into meta.db and releases it, so the three files move as one consistent database.
+    private static void Checkpoint(string database)
+    {
+        if (!File.Exists(database))
+        {
+            return;
+        }
+
+        try
+        {
+            using var connection = new SqliteConnection($"Data Source={database};Mode=ReadWrite;Pooling=False");
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "PRAGMA wal_checkpoint(TRUNCATE)";
+            _ = command.ExecuteNonQuery();
+        }
+        catch (SqliteException)
+        {
+            // A database that can't be checkpointed is moved as it is: its WAL moves with it.
+        }
     }
 
     private Result<TeamMigration> Plan(bool dryRun)
@@ -80,8 +131,9 @@ internal sealed class FileTeamCatalog(TeamLayout layout, ISessionDirectory sessi
         }
 
         var entries = Directory.EnumerateFileSystemEntries(layout.MetaRoot).Select(Path.GetFileName).OfType<string>().Order(StringComparer.Ordinal).ToList();
-        var moved = entries.Where(e => e is not ("teams" or GatesDirectory)).ToList();
-        var left = entries.Where(e => e == GatesDirectory).Select(e => e + " (gate trees are registered with git by absolute path; sweep them with worktree-sweep, they are throwaway)").ToList();
+        // The database first and team.json last: until the last move the legacy config still names the flat layout.
+        var moved = entries.Where(e => e is not ("teams" or GatesDirectory)).OrderBy(e => e.StartsWith(MetaDatabase.FileName, StringComparison.Ordinal) ? 0 : e == "team.json" ? 2 : 1).ThenBy(e => e, StringComparer.Ordinal).ToList();
+        var left = entries.Where(e => e == GatesDirectory).Select(e => e + " (not moved: after the migration the sweep roots are teams/<team>/gates, so sweep these gate trees with worktree-sweep before migrating; they are throwaway)").ToList();
         return new TeamMigration(name, layout.MetaRoot, target, moved, left, dryRun);
     }
 
