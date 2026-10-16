@@ -196,7 +196,7 @@ $OUT"
 test_sindri_ui_integration_budget_is_90_s() {
   local d="$WORK/sindriui"; make_fixture "$d"
   mkdir -p "$d/tests/Aw.Sindri.Ui.Tests"; echo '<Project />' > "$d/tests/Aw.Sindri.Ui.Tests/Aw.Sindri.Ui.Tests.csproj"
-  sed -i 's#  </Folder>#    <Project Path="tests/Aw.Sindri.Ui.Tests/Aw.Sindri.Ui.Tests.csproj" />\n  </Folder>#' "$d/AgenticWorkflow.slnx"
+  perl -pi -e 's#^(\s*)</Folder>#$1  <Project Path="tests/Aw.Sindri.Ui.Tests/Aw.Sindri.Ui.Tests.csproj" />\n$1</Folder>#' "$d/AgenticWorkflow.slnx"
   printf '  - id: SindriUi\n    kind: package\n    tier: 4\n    projectPrefix: Aw.Sindri.Ui\n' >> "$d/deps.yaml"
   run_check "$d"
   printf '%s\n' "$OUT" | grep -qE 'SindriUi +integration +[0-9.]+ s +limit 90 s' || fail "SindriUi's integration limit is 90 s (owner, 2026-10-16):
