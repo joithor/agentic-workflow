@@ -45,6 +45,7 @@ internal static class EndpointTable
         _ = queries.MapListCommands();
         _ = queries.MapListItems();
         _ = queries.MapListInstances();
+        _ = queries.MapListOutbox();
         _ = queries.MapListServices();
         _ = queries.MapListRecipes();
         _ = queries.MapPingProcess();
