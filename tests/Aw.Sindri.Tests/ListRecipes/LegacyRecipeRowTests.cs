@@ -33,7 +33,7 @@ public sealed class LegacyRecipeRowTests
     }
 
     /// <summary>workflow.step as it was registered before P2b: the file with its inputs in the bare-key short form it had then.</summary>
-    private static string LegacyStep() => ShippedRecipes.Read("sindri/workflow.step.yaml")
+    internal static string LegacyStep() => ShippedRecipes.Read("sindri/workflow.step.yaml")
         .Replace("version: 2\n", "version: 1\n", StringComparison.Ordinal)
         .Replace("inputs:\n  - { key: fact:spec, label: \"Spec\", type: text, kind: text }\n", "inputs: [fact:spec]\n", StringComparison.Ordinal);
 

@@ -7856,3 +7856,4 @@ static Aw.Sindri.Core.Items.InstanceScope.Visible(Aw.Sindri.Core.Commands.Caller
 Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeViews
 static Aw.Sindri.Core.Workflow.Views.FactTypeJsonConverter.Word(Aw.Sindri.Core.Workflow.Views.FactType type) -> string!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeViews.Of(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeVersion! stamp) -> Aw.Sindri.Core.Workflow.Views.RecipeView!
+const Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.NoKind = "-" -> string!

@@ -1,5 +1,9 @@
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Registry;
+using Aw.Sindri.Tests.ListRecipes;
+using Aw.Sindri.Tests.Workflow;
 using Aw.Sindri.Tests.ApproveRecipe;
 
 namespace Aw.Sindri.Tests.ShowRecipe;
@@ -23,6 +27,27 @@ public sealed class ShowRecipeTests
         Assert.True(shown.IsSuccess, shown.IsError ? shown.Error.ToString() : null);
         Assert.Equal((step.Id, 2, step.Hash), (shown.Value.Id, shown.Value.Version, shown.Value.Hash));
         Assert.Equal("fact:spec", Assert.Single(shown.Value.Inputs).Key);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Show_serves_a_legacy_shape_row_by_hash_and_by_bare_id_with_the_documented_no_kind_placeholder()
+    {
+        await using var r = new RegistryHarness();
+        _ = await r.H.HoldLease();
+        var source = LegacyRecipeRowTests.LegacyStep();
+        var row = new RegisteredRecipe(RecipeId.From("workflow.step"), 1, RecipeDeclarationsTests.LegacyHash(source),
+            RecipeDeclarationsTests.LegacyJson(source).ToJsonString(), Base: null, r.H.Clock.GetUtcNow());
+        _ = await r.Recipes.Add(row, TestContext.Current.CancellationToken);
+        await r.ApproveAsInThePast(row);
+
+        var byHash = await r.Show(row.Id, row.Hash.Display);
+        var byId = await r.Show(row.Id);
+
+        Assert.True(byHash.IsSuccess, byHash.IsError ? byHash.Error.ToString() : null);
+        Assert.True(byId.IsSuccess, byId.IsError ? byId.Error.ToString() : null);
+        var input = Assert.Single(byHash.Value.Inputs);
+        Assert.Equal(("fact:spec", SubjectKinds.NoKind), (input.Key, input.Kind));
+        Assert.Equal(row.Hash, byId.Value.Hash);
     }
 
     [Fact, Trait("Lane", "unit")]
