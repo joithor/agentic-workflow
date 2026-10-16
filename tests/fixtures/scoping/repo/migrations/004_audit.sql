@@ -1,0 +1,1 @@
+CREATE TABLE audit_entries (id INTEGER PRIMARY KEY, at TEXT NOT NULL, actor TEXT NOT NULL, action TEXT NOT NULL, target TEXT NOT NULL);
