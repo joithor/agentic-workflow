@@ -51,6 +51,7 @@ internal sealed partial class ControlPlaneFollower
             health.ShowViews(view: null);   // before P2 there's no such route: no banner
         }
 
+        await health.RefreshViews(url, cancellationToken).ConfigureAwait(true);   // the queue and the open item (U2)
         return Refreshed.Shown;
     }
 

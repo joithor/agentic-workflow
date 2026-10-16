@@ -30,8 +30,10 @@ contains "no verb prints usage" "$out" "sindri-ui-fixture.sh stall"
 bash "$FIXTURE" --help >/dev/null 2>&1; check "--help exits 0" "$?" "0"
 out="$(AW_SINDRI_HOME="$H" bash "$FIXTURE" sideways 2>&1)"; check "an unknown verb exits 2" "$?" "2"
 contains "an unknown verb is named" "$out" "unknown verb: sideways"
-out="$(AW_SINDRI_HOME="$H" bash "$FIXTURE" --large 2>&1)"; check "--large is reserved (exit 2)" "$?" "2"
-contains "--large says it is reserved" "$out" "reserved for U2/U3"
+out="$(AW_SINDRI_HOME="$H" bash "$FIXTURE" --large 2>&1)"; check "--large alone is a usage error (exit 2)" "$?" "2"
+contains "--large points at items" "$out" "items --large"
+AW_SINDRI_HOME="$H" bash "$FIXTURE" items --big >/dev/null 2>&1; check "items takes only --large (exit 2)" "$?" "2"
+AW_SINDRI_HOME="$H" bash "$FIXTURE" close >/dev/null 2>&1; check "close needs an item (exit 2)" "$?" "2"
 out="$(AW_SINDRI_HOME="$H" bash "$FIXTURE" stall extra 2>&1)"; check "extra arguments exit 2" "$?" "2"
 
 # --- the guard (sindri-prove.sh's): nothing is written outside a temp or proof home ---
@@ -124,5 +126,19 @@ contains "drift again changes it back" "$(cat "$U/profile/profile.yaml")" "every
 : > "$STUB_LOG"
 AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" down >/dev/null 2>&1; check "down exits 0" "$?" "0"
 check "down stops it" "$(cat "$STUB_LOG")" "stop"
+
+# --- items and close (U2): human item add / item close through sindri-prove.sh ---
+: > "$STUB_LOG"
+AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" items >/dev/null 2>&1; check "items exits 0" "$?" "0"
+check "items adds the fixture's four items, oldest first" "$(tr '\n' ';' < "$STUB_LOG")" \
+  "item add Stream limits 429 fallback;item add Retry storm in outbox dispatcher;item add Context map review for tabs.layout;item add Try the queue;"
+: > "$STUB_LOG"
+AW_SINDRI_HOME="$U" SINDRI="$STUB" FIXTURE_REPO=demo bash "$FIXTURE" items --large >/dev/null 2>&1; check "items --large exits 0" "$?" "0"
+check "items --large adds 34 items" "$(wc -l < "$STUB_LOG" | tr -d ' ')" "34"
+contains "FIXTURE_REPO names the repo" "$(head -1 "$STUB_LOG")" "--repo demo"
+: > "$STUB_LOG"
+AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" close ITM-0192a1b2 --cancelled >/dev/null 2>&1; check "close exits 0" "$?" "0"
+check "close sends item close --cancelled" "$(cat "$STUB_LOG")" "item close ITM-0192a1b2 --cancelled"
+AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" close 'ITM-1;rm' >/dev/null 2>&1; check "close refuses a bad id (exit 2)" "$?" "2"
 
 exit "$fail"

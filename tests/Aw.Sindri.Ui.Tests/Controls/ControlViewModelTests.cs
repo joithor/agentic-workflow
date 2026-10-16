@@ -92,8 +92,8 @@ public sealed class ControlViewModelTests
         _server.RebuildGate = new TaskCompletionSource();
         var control = Control(Row("RebuildViews", "ready"));
 
-        var first = control.Run(Token);
-        var second = control.Run(Token);
+        var first = control.Press(Token);
+        var second = control.Press(Token);
         await second;
 
         Assert.Equal((CommandPhase.Sending, false, "Rebuild views", 1), (control.Phase, control.CanRun, control.Label, _server.RebuildCalls));
@@ -112,7 +112,7 @@ public sealed class ControlViewModelTests
     {
         var control = Control(Row("RebuildViews", "ready"));
 
-        await control.Run(Token);
+        await control.Press(Token);
 
         Assert.Equal((CommandPhase.Accepted, "Rebuild views: done", "Rebuild views: done"), (control.Phase, control.Outcome, control.Announcement));
         _clock.Advance(TimeSpan.FromSeconds(2));
@@ -126,7 +126,7 @@ public sealed class ControlViewModelTests
         _server.Rebuild = RouteAnswer.Problem(HttpStatusCode.ServiceUnavailable, "SND-API-010", "Views are rebuilding (fix: retry after the rebuild)");
         var control = Control(Row("RebuildViews", "ready"));
 
-        await control.Run(Token);
+        await control.Press(Token);
 
         Assert.Equal((CommandPhase.Failed, "SND-API-010", "Views are rebuilding (fix: retry after the rebuild)"), (control.Phase, control.ErrorCode, control.ErrorDetail));
         Assert.True(control.CanRun);
@@ -140,7 +140,7 @@ public sealed class ControlViewModelTests
     {
         var control = new ControlViewModel(Row("StopProcess", "ready", "sindri stop", destructive: true), send: null, _clipboard, _clock);
 
-        await control.Run(Token);
+        await control.Press(Token);
 
         Assert.Equal((ControlKind.Ready, false, CommandPhase.Idle), (control.Kind, control.CanRun, control.Phase));
     }
@@ -160,7 +160,7 @@ public sealed class ControlViewModelTests
         _server.Rebuild = RouteAnswer.Problem(HttpStatusCode.Conflict, "SND-API-010", "Views are rebuilding (fix: retry after the rebuild)");
         var control = Control(Row("RebuildViews", "ready"));
 
-        await control.Run(Token);
+        await control.Press(Token);
 
         Assert.Equal("SND-API-010: Views are rebuilding (fix: retry after the rebuild)", control.Announcement);
     }
@@ -181,7 +181,7 @@ public sealed class ControlViewModelTests
         };
         Assert.False(control.IsAnnouncing);
 
-        await control.Run(Token);
+        await control.Press(Token);
         Assert.True(control.IsAnnouncing);
         _clock.Advance(ControlViewModel.AcceptedFor);
 
@@ -215,9 +215,9 @@ public sealed class ControlViewModelTests
             }
         };
 
-        await control.Run(Token);
+        await control.Press(Token);
         _clock.Advance(ControlViewModel.AcceptedFor);
-        await control.Run(Token);
+        await control.Press(Token);
 
         Assert.Equal(2, heard.Count(text => text == "Rebuild views: done"));
         Assert.All(heard, Assert.NotEmpty);
@@ -230,7 +230,7 @@ public sealed class ControlViewModelTests
         _server.RebuildGate = new TaskCompletionSource();
         var control = Control(Row("RebuildViews", "ready"));
 
-        var first = control.Run(Token);
+        var first = control.Press(Token);
 
         Assert.Equal((true, false), (control.IsSendable, control.CanRun));
         _server.RebuildGate.SetResult();
@@ -255,5 +255,64 @@ public sealed class ControlViewModelTests
         Assert.Contains(nameof(ControlViewModel.CopyName), heard, StringComparer.Ordinal);
         _clock.Advance(ControlViewModel.CopiedFor);
         Assert.Equal("Copy: Run doctor", cliOnly.CopyName);
+    }
+
+    // §8 (E-8): a destructive row confirms in-app first; Confirm sends once, Keep sends nothing.
+    [Fact]
+    public async Task A_destructive_control_asks_before_it_sends()
+    {
+        var control = Control(Row("RebuildViews", "ready", destructive: true));
+
+        await control.Press(Token);
+        Assert.Equal((true, 0), (control.IsConfirming, _server.RebuildCalls));
+
+        control.Keep();
+        Assert.Equal((false, 0), (control.IsConfirming, _server.RebuildCalls));
+
+        await control.Press(Token);
+        await control.Confirm(Token);
+        Assert.Equal((false, 1, CommandPhase.Accepted), (control.IsConfirming, _server.RebuildCalls, control.Phase));
+    }
+
+    // L11: Confirm and Keep are named for what they answer, and the question is spoken once when the row appears.
+    [Fact]
+    public async Task The_confirm_row_names_its_buttons_and_speaks_its_question_once()
+    {
+        var control = new ControlViewModel(Row("CloseItem:cancelled", "ready", destructive: true), ct => _server.RebuildViews(_api, ct), _clipboard, _clock, "ITM-1");
+        var spoken = new List<string>();
+        control.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ControlViewModel.Announcement) && control.IsAnnouncing)
+            {
+                spoken.Add(control.Announcement);
+            }
+        };
+        Assert.Equal(("Confirm: Close as cancelled ITM-1?", "Keep ITM-1"), (control.ConfirmName, control.KeepName));
+
+        await control.Press(Token);
+        Assert.Equal(["Close as cancelled ITM-1?"], spoken);
+
+        control.Keep();
+        Assert.False(control.IsAnnouncing);
+    }
+
+    [Fact]
+    public async Task A_control_that_isnt_destructive_sends_on_the_first_press()
+    {
+        var control = Control(Row("RebuildViews", "ready"));
+
+        await control.Press(Token);
+
+        Assert.Equal((false, 1), (control.IsConfirming, _server.RebuildCalls));
+    }
+
+    // §11.2: a control on a subject is named with it ("Hand back ITM-01JA1").
+    [Fact]
+    public void A_control_on_a_subject_is_named_with_it()
+    {
+        var control = new ControlViewModel(Row("RebuildViews", "ready"), send: null, _clipboard, _clock, subject: "ITM-01JA1");
+
+        Assert.Equal("Rebuild views ITM-01JA1", control.Name);
+        Assert.Equal("Rebuild views ITM-01JA1?", control.ConfirmQuestion);
     }
 }
