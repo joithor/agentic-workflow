@@ -11,6 +11,11 @@ internal sealed partial class ShellViewModel
     /// <summary>Home's Needs-you list.</summary>
     public NeedsYouViewModel NeedsYou { get; }
 
+#pragma warning disable MA0041, CA1822 // red stub
+    /// <summary>The decision sheet.</summary>
+    public DecisionSheetViewModel Decision => throw new NotSupportedException();
+#pragma warning restore MA0041, CA1822
+
     /// <summary>True when the sheet's subject is a Needs-you row.</summary>
     public bool IsNeedsYouSheet => SheetLink?.Kind == DeepLinkKind.NeedsYou;
 
