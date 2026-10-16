@@ -62,7 +62,7 @@ public sealed class ActionCommandTests
     {
         var (cli, hint) = For("ApproveProfile", new NeedsYouSubject(NeedsYouKinds.Profile, "932d"), item: null);
 
-        Assert.Equal("sindri profile approve 932d", cli);
+        Assert.Equal(CatalogCli("ApproveProfile").Replace("[<hash>]", "932d", StringComparison.Ordinal), cli);
         Assert.Empty(hint);
     }
 

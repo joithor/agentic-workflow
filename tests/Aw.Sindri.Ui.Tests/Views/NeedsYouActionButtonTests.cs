@@ -9,6 +9,7 @@ using Avalonia.VisualTree;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
@@ -172,6 +173,7 @@ public sealed class NeedsYouActionButtonTests : IDisposable
         Assert.Equal(pause, ToolTip.GetTip(button));
         Assert.Equal(pause, AutomationProperties.GetHelpText(button));
         Assert.Equal(Labels.NotInTheAppYet(pause), PauseLine(row).Value);
+        Assert.Equal(pause, PauseLine(row).Command);
     });
 
     [Fact]
@@ -188,6 +190,40 @@ public sealed class NeedsYouActionButtonTests : IDisposable
         Assert.Equal(Labels.WithHint(Unfillable, hint), AutomationProperties.GetHelpText(PauseButton(row)));
         Assert.Equal(Labels.NotInTheAppYet(Unfillable), line.Value);
         Assert.Equal(hint, line.Hint);
+        Assert.Equal(Unfillable, line.Command);
+    });
+
+    // The sheet's hint caption: a visible TextBlock whose own text and screen-reader name are the hint; none when there is no hint.
+    private static List<TextBlock> SheetHintCaptions(ShellWindow window, string hint) =>
+        [.. window.GetVisualDescendants().OfType<NeedsYouSheet>().Single().GetVisualDescendants().OfType<TextBlock>()
+            .Where(t => t.IsEffectivelyVisible && string.Equals(t.Text, hint, StringComparison.Ordinal))];
+
+    [Fact]
+    public Task The_failure_sheet_draws_the_hint_as_a_caption_a_screen_reader_names() => OnUi(async () =>
+    {
+        var (feed, _) = FailureFeed(r => r with { Ui = "pending:P9", Cli = Unfillable });
+        var (window, shell) = await WithFeed(feed);
+        var hint = Labels.FillInHint(["itemId"]);
+
+        shell.Navigate(new DeepLink(DeepLinkKind.NeedsYou, feed.Rows[0].Id));
+        Settle(window);
+
+        var caption = Assert.Single(SheetHintCaptions(window, hint));
+        Assert.Equal(hint, Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(caption).GetName());
+    });
+
+    [Fact]
+    public Task The_failure_sheet_draws_no_hint_caption_when_the_command_is_complete() => OnUi(async () =>
+    {
+        var (feed, _) = FailureFeed(r => r with { Ui = "pending:P9" });
+        var (window, shell) = await WithFeed(feed);
+
+        shell.Navigate(new DeepLink(DeepLinkKind.NeedsYou, feed.Rows[0].Id));
+        Settle(window);
+
+        var sheet = window.GetVisualDescendants().OfType<NeedsYouSheet>().Single();
+        Assert.True(sheet.IsEffectivelyVisible);
+        Assert.DoesNotContain(sheet.GetVisualDescendants().OfType<TextBlock>(), t => t.IsEffectivelyVisible && t.Text?.StartsWith("fill in", StringComparison.Ordinal) == true);
     });
 
     [Fact]
@@ -200,5 +236,7 @@ public sealed class NeedsYouActionButtonTests : IDisposable
 
         Assert.Contains(texts, t => string.Equals(t, Unfillable, StringComparison.Ordinal));
         Assert.Contains(texts, t => string.Equals(t, Labels.FillInHint(["itemId"]), StringComparison.Ordinal));
+        var button = PauseButton(Rows(window).Single());
+        Assert.Equal(Labels.WithHint(Labels.ProtectedTooltip, Labels.FillInHint(["itemId"])), AutomationProperties.GetHelpText(button));
     });
 }
