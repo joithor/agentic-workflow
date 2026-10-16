@@ -43,8 +43,10 @@ internal sealed partial class ShellViewModel
 
     private static bool IsDecisionRow(NeedsYouEntry row) => string.Equals(row.Subject?.Kind, NeedsYouKinds.Decision, StringComparison.Ordinal);
 
-    private void HookNeedsYou(IClipboard clipboard)
+    // Everything the Needs-you list needs once it and the decision sheet exist (ShellViewModel's constructor calls this one line).
+    private void InitNeedsYou(IClipboard clipboard)
     {
+        Health.Follow(ReadNeedsYou);
         NeedsYou.SheetRequested += (_, e) => Navigate(LinkOf(e.RowId));
         NeedsYou.ActionRequested += (_, e) => Decide(e);
         Decision.Refused += (_, _) => Navigate(new DeepLink(DeepLinkKind.Decision, Decision.DecisionId));

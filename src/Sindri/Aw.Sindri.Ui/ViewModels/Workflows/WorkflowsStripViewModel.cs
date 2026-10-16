@@ -12,15 +12,7 @@ namespace Aw.Sindri.Ui.ViewModels.Workflows;
 internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider clock) : ObservableObject
 {
     /// <summary>The most rows the strip shows (screens §4.1).</summary>
-    internal const int Cap = 5;
-
-    // Rows that fit above the fold at 1280 × 800: Needs-you rows plus strip rows (5 + 3 at scale 1.0; 4 + 2 at 1.3).
-    private const int FoldBudget = 8;
-    private const int LargeFoldBudget = 6;
-    private const int LargeCap = 2;
-
-    /// <summary>The text scale from which the cap drops to two.</summary>
-    internal const double LargeTextScale = 1.3;
+    internal const int Cap = HomeFold.StripCap;
 
     private static readonly string[] _listProperties =
     [
@@ -186,9 +178,10 @@ internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider
     /// <summary>Asks to open the Workflows page.</summary>
     internal void OpenWorkflows() => WorkflowsRequested?.Invoke(this, EventArgs.Empty);
 
-    private int CurrentCap => TextScale >= LargeTextScale
-        ? Math.Clamp(LargeFoldBudget - NeedsYouShown, 0, LargeCap)
-        : Math.Clamp(FoldBudget - NeedsYouShown, 0, Cap);
+    // What is left of the fold's row budget after the Needs-you rows shown (HomeFold), at most the strip's own cap.
+    private int CurrentCap => HomeFold.IsLarge(TextScale)
+        ? Math.Clamp(HomeFold.LargeBudget - NeedsYouShown, 0, HomeFold.StripLargeCap)
+        : Math.Clamp(HomeFold.Budget - NeedsYouShown, 0, Cap);
 
     // An instance is open unless its current state's cell is terminal (the one rule counts.open is computed by).
     private static bool IsOpen(InstanceSummary row) => !row.States.Any(s => s.Terminal && string.Equals(s.State, row.State, StringComparison.Ordinal));

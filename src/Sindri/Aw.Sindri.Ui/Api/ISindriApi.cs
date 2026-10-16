@@ -145,6 +145,6 @@ internal interface ISindriApi
     /// <returns>The new ids with the accepted command, SND-REQ-001/002 or an item refusal as served, or SND-UI-002/003.</returns>
     public Task<Result<RequestFiledView>> FileRequest(Uri api, FileRequestRequest request, CancellationToken cancellationToken);
 
-    // LANE ANCHOR U3': the Needs you, decision and request reads, one method each. Insert immediately above this marker, never between the markers.
+    // LANE ANCHOR U3': the Needs you, decision and request reads and the Decide and FileRequest sends, one method each (the client's are in SindriApiClient.NeedsYou.cs). Insert immediately above this marker, never between the markers.
     // LANE ANCHOR U8: the command sends (nonce, commands, complete), once API P11 serves their shapes (Q-API-7/8); none is declared before. Insert immediately below this marker, never between the markers.
 }

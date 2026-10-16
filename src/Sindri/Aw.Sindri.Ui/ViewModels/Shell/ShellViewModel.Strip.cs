@@ -34,8 +34,10 @@ internal sealed partial class ShellViewModel
     }
 
     // The strip gives rows back to Needs you first and marks its rows stale with the views; "… N more" opens Workflows.
-    private void HookStrip()
+    // Everything the strip needs once it exists (ShellViewModel's constructor calls this one line).
+    private void InitStrip()
     {
+        Health.Follow(ReadStrip);
         Strip.WorkflowsRequested += (_, _) => GoTo(PageId.Workflows);
         NeedsYou.PropertyChanged += (_, e) =>
         {

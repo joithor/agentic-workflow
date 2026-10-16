@@ -11,13 +11,10 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 internal sealed partial class NeedsYouViewModel : ObservableObject
 {
     /// <summary>The most rows Home shows before the overflow control (UI spec §3.2).</summary>
-    internal const int Cap = 5;
+    internal const int Cap = HomeFold.NeedsYouCap;
 
-    /// <summary>The cap at a text scale of <see cref="LargeTextScale"/> and over.</summary>
-    internal const int LargeTextCap = 4;
-
-    /// <summary>The text scale from which the cap drops.</summary>
-    internal const double LargeTextScale = 1.3;
+    /// <summary>The cap at a text scale of <see cref="HomeFold.LargeTextScale"/> and over.</summary>
+    internal const int LargeTextCap = HomeFold.NeedsYouLargeCap;
 
     private static readonly string[] _listProperties =
     [
@@ -125,7 +122,7 @@ internal sealed partial class NeedsYouViewModel : ObservableObject
     /// <summary>True when rows are held back.</summary>
     internal bool HasHeld => HeldCount > 0;
 
-    private int CurrentCap => TextScale >= LargeTextScale ? LargeTextCap : Cap;
+    private int CurrentCap => HomeFold.IsLarge(TextScale) ? LargeTextCap : Cap;
 
     /// <summary>Reads the seen ids and the reduce-motion switch.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
