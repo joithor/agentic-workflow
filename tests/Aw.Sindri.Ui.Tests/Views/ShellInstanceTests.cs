@@ -37,7 +37,7 @@ public sealed class ShellInstanceTests : FrameHost
         Assert.Equal((true, false, "Workflow " + Address()), (shell.IsInstanceSheet, shell.IsSheetPlaceholderShown, shell.SheetName));
         Assert.Equal((true, false), (Visible(window, "InstanceFrame"), Visible(window, "SheetBody")));
         var title = Named<TextBlock>(window, "SheetSubjectText");   // a long address in the 760 px sheet is trimmed, never cut off unseen: the whole address is the tooltip
-        Assert.Equal((Avalonia.Media.TextTrimming.CharacterEllipsis, Address()), (title.TextTrimming, Avalonia.Controls.ToolTip.GetTip(title)));
+        Assert.Equal((Avalonia.Media.TextTrimming.CharacterEllipsis, Address()), (title.TextTrimming, ToolTip.GetTip(title)));
         Assert.Equal((string)GoldenFiles.Node("workflow-instance", "project-build")["title"]!, Named<TextBlock>(window, "InstanceTitle").Text);
     });
 
@@ -65,7 +65,7 @@ public sealed class ShellInstanceTests : FrameHost
         shell.Navigate(new DeepLink(DeepLinkKind.Workflow, Address()));
         await Until(window, () => shell.Instance.Phase == FramePhase.Shown);
         var instance = Named<Border>(window, "Sheet").Width;
-        shell.Navigate(new DeepLink(DeepLinkKind.Item, FixtureInstances.Detail("done").Facts.First(f => f.Type == Aw.Sindri.Ui.Api.Workflow.FactType.Item).Ref!.ItemId!));
+        shell.Navigate(new DeepLink(DeepLinkKind.Item, FixtureInstances.Detail("done").Facts.First(f => f.Type == Ui.Api.Workflow.FactType.Item).Ref!.ItemId!));
         Settle(window);
 
         Assert.Equal((UiPreferences.MaxSheetWidth, kept, kept), (instance, Named<Border>(window, "Sheet").Width, shell.SheetWidth));

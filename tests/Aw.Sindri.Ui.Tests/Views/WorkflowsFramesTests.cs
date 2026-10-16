@@ -38,9 +38,9 @@ public sealed class WorkflowsFramesTests : FrameHost
 
         Expect.Sequence(shell.Workflows.Groups.SelectMany(g => g.Rows).Select(r => r.Address), Rows(window).Select(Address));
         Assert.Equal(shell.Workflows.Head, Named<TextBlock>(window, "WorkflowsHead").Text);
-        var locks = window.GetVisualDescendants().OfType<Aw.Sindri.Ui.Views.Components.ProtectedActionButton>().Where(b => b.Name == "WorkflowProtected" && b.IsEffectivelyVisible).ToList();
+        var locks = window.GetVisualDescendants().OfType<Ui.Views.Components.ProtectedActionButton>().Where(b => b.Name == "WorkflowProtected" && b.IsEffectivelyVisible).ToList();
         var locked = FixtureInstances.List("open").Instances.Single(r => r.Answer is not null && string.Equals(r.Answer.Class, "protected", StringComparison.Ordinal));
-        Assert.Equal(locked.Answer!.Cli, ((Aw.Sindri.Ui.ViewModels.Components.ProtectedActionViewModel)Assert.Single(locks).DataContext!).Cli);   // the one lock sits on the Locked row
+        Assert.Equal(locked.Answer!.Cli, ((ViewModels.Components.ProtectedActionViewModel)Assert.Single(locks).DataContext!).Cli);   // the one lock sits on the Locked row
         Assert.Equal((true, shell.Workflows.LegendText), (Visible(window, "WorkflowsLegend"), Named<TextBlock>(window, "WorkflowsLegend").Text));
         Assert.Equal(shell.Workflows.Groups.Count, window.GetVisualDescendants().OfType<Button>().Count(t => t.Name == "WorkflowGroupToggle"));
         Frame(window, "u8-workflows-open", Prefix);

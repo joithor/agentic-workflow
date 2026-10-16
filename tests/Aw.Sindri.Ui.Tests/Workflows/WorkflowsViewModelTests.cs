@@ -269,7 +269,7 @@ public sealed class WorkflowsViewModelTests
     public void The_legend_names_every_mark_the_rows_draw_and_the_keys_in_words()
     {
         var list = new WorkflowsViewModel(_server, new FakeClipboard(), new FakeTimeProvider(A.Noon));
-        var marks = new[] { StageCellViewModel.Mark(Aw.Sindri.Ui.Api.Workflow.StateGlyph.Done), StageCellViewModel.Mark(Aw.Sindri.Ui.Api.Workflow.StateGlyph.Active), StageCellViewModel.Mark(Aw.Sindri.Ui.Api.Workflow.StateGlyph.Pending), Labels.LoopMark };
+        var marks = new[] { StageCellViewModel.Mark(Ui.Api.Workflow.StateGlyph.Done), StageCellViewModel.Mark(Ui.Api.Workflow.StateGlyph.Active), StageCellViewModel.Mark(Ui.Api.Workflow.StateGlyph.Pending), Labels.LoopMark };
         var words = new[] { Labels.StageDone, Labels.StageActive, Labels.StagePending, Labels.LegendLoop, Labels.LegendEscalated, Labels.LegendTakenOver };
 
         Assert.All(marks, m => Assert.Contains(m, list.LegendText, StringComparison.Ordinal));
