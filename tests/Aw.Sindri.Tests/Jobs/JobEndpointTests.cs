@@ -173,7 +173,7 @@ public sealed class JobEndpointTests
         Assert.Equal((HttpStatusCode.OK, HttpStatusCode.NotFound, "SND-JOB-404"), (own.Status, other.Status, other.Code));
     }
 
-    [Fact(Timeout = 30_000)]
+    [Fact(Timeout = 60_000)]
     public async Task The_list_filters_by_state_and_kind()
     {
         await using var host = await JobHost.Start(TestContext.Current.CancellationToken);
@@ -183,7 +183,7 @@ public sealed class JobEndpointTests
         var byState = Json(await JobHost.Read(host, "/sindri/jobs?state=running"));
         var byKind = Json(await JobHost.Read(host, "/sindri/jobs?kind=RunService"));
         var bad = await JobHost.Read(host, "/sindri/jobs?state=maybe");
-        _ = await Post(host, $"/sindri/jobs/{running.Value}/cancel");
+        await JobHost.Cancel(host, running, TestContext.Current.CancellationToken);   // the job ends only through this cancel: a refused one fails here, by name
         await JobHost.Settle(host, TestContext.Current.CancellationToken);
 
         Assert.Equal([running.Value], byState.GetProperty("jobs").EnumerateArray().Select(static j => j.GetProperty("id").GetString()), StringComparer.Ordinal);

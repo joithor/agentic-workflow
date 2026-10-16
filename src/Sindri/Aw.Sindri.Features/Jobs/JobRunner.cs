@@ -30,6 +30,9 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
     /// <inheritdoc />
     public int Running => _runs.Count;
 
+    /// <summary>The ids of the jobs running now (a test names the ones that did not end).</summary>
+    public IReadOnlyList<string> Active => [.. _runs.Keys];
+
     /// <inheritdoc />
     public ValueTask Start(JobStart start, CancellationToken cancellationToken)
     {

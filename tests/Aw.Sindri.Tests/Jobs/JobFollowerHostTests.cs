@@ -20,7 +20,7 @@ public sealed class JobFollowerHostTests
         var host = await JobHost.Start(ct);
         try
         {
-            var (job, sequence) = await JobHost.StartEcho(host, lines: 1_000, delayMs: 20);
+            var (job, sequence) = await JobHost.StartEcho(host, lines: 1_000, delayMs: JobHost.LongDelayMs);   // one line, then it waits on the host's fake clock: the follower is on a stream that stays open
             var started = new JobStartedResponse(new Core.Commands.CommandAccepted(CommandId.From(Guid.CreateVersion7()), sequence), job,
                 new JobLinks($"/sindri/jobs/{job.Value}", $"/sindri/jobs/{job.Value}/cancel", "/sindri/events?after=" + sequence.ToString(System.Globalization.CultureInfo.InvariantCulture) + "&types=job.*"));
             var probe = FakeControlPlaneProbe.For(new ControlEndpoint(new Uri(host.App.Urls.First()), 42, 3), new Ping(42, 3));

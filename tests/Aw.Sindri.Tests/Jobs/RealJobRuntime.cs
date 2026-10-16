@@ -85,7 +85,14 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
     private static void AddProbeJob(IServiceCollection services) =>
         services.AddJob<ProbeJobRequest, ProbeReport, ProbeJobService>(static r => JobKey.From(r.Mode), static r => string.Create(CultureInfo.InvariantCulture, $"probed {r.Text.Length}"),
             precheck: static (r, _) => ValueTask.FromResult<Result<Unit>>(string.Equals(r.Mode, "refused", StringComparison.Ordinal) ? SindriErrors.ServiceNotFound.With("the precheck said no") : Unit.Value),
-            repo: static r => string.Equals(r.Mode, "repo", StringComparison.Ordinal) ? Aw.Sindri.Core.Ids.RepoName.From("demo") : null);
+            repo: static r => RepoOf(r.Mode));
+
+    private static Aw.Sindri.Core.Ids.RepoName? RepoOf(string mode) => mode switch
+    {
+        "repo" => Aw.Sindri.Core.Ids.RepoName.From("demo"),
+        "repo-throws" => throw new InvalidOperationException("the repo lambda broke"),
+        _ => null,
+    };
 
     public SliceHarness H { get; } = new();
 
@@ -180,7 +187,17 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
         }
     }
 
-    public Task Quiesce() => Runner.Idle();
+    public async Task Quiesce()
+    {
+        try
+        {
+            await Runner.Idle().WaitAsync(JobHost.Hang, TimeProvider.System, TestContext.Current.CancellationToken);   // a hang guard on the real clock: the harness clock is fake and would never fire
+        }
+        catch (TimeoutException e)
+        {
+            throw new TimeoutException($"jobs still running {JobHost.Hang.TotalSeconds.ToString("0", System.Globalization.CultureInfo.InvariantCulture)} s after the test asked them to end: {string.Join(", ", Runner.Active)}", e);
+        }
+    }
 
     public async Task<bool> CommandGateIsFree()
     {
@@ -193,7 +210,7 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
         });
         try
         {
-            return (await run.WaitAsync(TimeSpan.FromSeconds(2), TimeProvider.System, TestContext.Current.CancellationToken)).IsSuccess;   // a hang guard on the real clock, not a wait: the harness clock is fake and would never fire
+            return (await run.WaitAsync(JobHost.Hang, TimeProvider.System, TestContext.Current.CancellationToken)).IsSuccess;   // a hang guard on the real clock, not a wait: the harness clock is fake and would never fire
         }
         catch (TimeoutException)
         {

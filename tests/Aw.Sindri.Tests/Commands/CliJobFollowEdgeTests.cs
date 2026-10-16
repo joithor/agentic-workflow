@@ -90,7 +90,7 @@ public sealed class CliJobFollowEdgeTests : IDisposable
 
         var code = await Finished(run);
 
-        Assert.NotEqual(0, code);
+        Assert.Equal(2, code);
         Assert.Contains("SND-AUTH-001", _rig.Error.ToString(), StringComparison.Ordinal);
         Assert.Equal(0, api.Count("GET " + JobRoute));
     }

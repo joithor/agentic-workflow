@@ -143,7 +143,7 @@ internal static class JobScenarios
     private static async Task<string> UnknownService(GoldenHost host, CancellationToken ct)
     {
         await ViewScenarios.Append(host, EventTypes.ServiceRan,
-            new ServiceRan(Command(4), ServiceName.From("heartbeat"), host.Now().AddMinutes(-1), ServiceOutcome.Failed, SindriErrors.ServiceNotFound.Code), "service.ran:golden-unknown", ct);
+            new ServiceRan(Command(4), ServiceName.From("phantom"), host.Now().AddMinutes(-1), ServiceOutcome.Failed, SindriErrors.ServiceNotFound.Code), "service.ran:golden-unknown", ct);
         await ViewScenarios.CatchUp(host, ct);
         return await ViewScenarios.Read(host, "/sindri/needs-you");
     }
