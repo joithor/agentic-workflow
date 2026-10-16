@@ -281,16 +281,16 @@ A step's `broken` is a request that failed or a program that would not start (ex
 A run that is refused, or errored before it starts (an unreadable golden file, a lock that failed), ran nothing: its `steps` is `[]`,
 and `refusal` or `error` names what stopped it. An assertion that does not hold marks its step `failed`, and the
 remaining steps still run (a request or call is an action that already happened or never will). Recorded text — each step's
-output and each failure's `pointer`, `expected` and `actual`, and from them the `headline` — goes through the run's scrubber and
+output, each failure's `pointer`, `expected` and `actual`, and the `headline` (built from them, or from the refusal or error message) — goes through the run's scrubber and
 `Aw.Redaction` as it is recorded: the run's own values are replaced by value (each resolved header value with
 `[REDACTED:header-value]`, and for a `<scheme> <credential>` value such as `Bearer <token>` the credential alone too; each
 pass-through variable value with `[REDACTED:env-value]`; wherever an app echoes them, including their JSON-escaped forms; a value
 under 6 characters is left to the patterns) together with the pattern scrub, then the value of every secret-named JSON member is
-hidden, the value and pattern scrub runs again, and the text is capped. The refusal and error messages are the tool's own text, not
+hidden, the value and pattern scrub runs again, and the text is capped. A failure whose `pointer` runs through a secret-named member has its `expected` and `actual` replaced whole by `[REDACTED:secret-field]`. The refusal and error messages are the tool's own text, not
 a response body: they get the value and pattern scrub, not member hiding or the cap. Every other field is written as it is: it comes
-from the command line, the repo or the script (`schema`, `kind`, `at`, `host`, `appBuild`, `runId`, `runInstance`, timestamps,
+from the command line, the repo, the script or the tool itself (`schema`, `kind`, `at`, `host`, `appBuild`, `runId`, `runInstance`, timestamps,
 `scriptSha256`, `seedSha256`, `declaredWrites`, `passedEnv` names, `provenance`, step `index`, `action`, `target`, `headerNames`,
-`failures[].step`, a refusal's or error's `code`), or it is a number or enum value that can't carry text (a step's HTTP status or exit
+`failures[].step`, a refusal's or error's `code`, the always-empty `invocations`), or it is a number or enum value that can't carry text (a step's HTTP status or exit
 `code`, its `status`, the run's `outcome`). stdout is exactly the file's content (no trailing newline) and logs go to stderr. The JSON Schemas of the script and the summary are generated from the records and committed as
 `schemas/evidence/api-script.schema.json` and `schemas/evidence/api-summary.schema.json`; a test validates a produced summary against its schema.
 
