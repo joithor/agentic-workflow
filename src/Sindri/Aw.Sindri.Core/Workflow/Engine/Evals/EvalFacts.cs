@@ -22,7 +22,7 @@ internal static class EvalFacts
     /// <summary>The stored reference for an engine-filled decision: its fields, one per line, give the digest.</summary>
     /// <param name="decision">The decision the engine wrote.</param>
     /// <returns>The fact value.</returns>
-    public static FactValue Value(Aw.Sindri.Core.Workflow.Blocks.DecisionFact decision)
+    public static FactValue Value(Blocks.DecisionFact decision)
     {
         var digest = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes($"{decision.Choice}\n{decision.Provider}\n{decision.Actor}")));
         return new FactValue("blob:" + digest, digest, HeadSha: null);

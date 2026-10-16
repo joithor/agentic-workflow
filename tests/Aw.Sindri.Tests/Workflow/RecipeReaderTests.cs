@@ -325,7 +325,7 @@ public sealed class RecipeReaderTests
     [Fact, Trait("Lane", "unit")]
     public void A_one_key_mapping_in_a_child_input_list_is_still_a_wrong_type()
     {
-        var yaml = RecipeReaderTests.Minimal.Replace(
+        var yaml = Minimal.Replace(
             "    step: step.produce\n",
             "    waitFor: { child: { recipe: workflow.step, inputs: { \"fact:x\": [ok: yes] }, onParked: propagate } }\n",
             StringComparison.Ordinal);

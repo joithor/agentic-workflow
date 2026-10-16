@@ -162,7 +162,7 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
         var written = request.Outputs.Keys.Where(filled.ContainsKey).ToList();
         return written.Count > 0
             ? SindriErrors.InvalidInput.With($"{written[0].Value} is written by the engine on '{task.Step.Value}' (fix: drop --output {written[0].Value})")
-            : Results.Success<IReadOnlyDictionary<FactKey, DecisionFact>>(filled);
+            : Results.Success(filled);
     }
 
     private Dictionary<FactKey, ReadOnlyMemory<byte>> Merge(IReadOnlyDictionary<FactKey, ReadOnlyMemory<byte>> given, IReadOnlyDictionary<FactKey, DecisionFact> filled)
