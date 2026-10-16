@@ -119,6 +119,10 @@ public sealed class InstanceFramesTests : FrameHost
         var served = Detail("triage-desk").Current.Status.Commands;
         Expect.Sequence(served.Select(c => c.Cli), Texts(window, "CommandCli").Select(t => t.Text));
         Assert.Equal(served.Count, Texts(window, "CommandPending").Count);
+        var command = window.GetVisualDescendants().OfType<Border>().First(b => b.Name == "CommandLabelName" && b.IsEffectivelyVisible);   // the peer's name, not the view model's (a TextBlock's peer ignores one)
+        var heard = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(command).GetName();
+        Assert.Equal(((ExpandedCommandViewModel)command.DataContext!).Name, heard);
+        Assert.Contains(Labels.AvailableWithU8b, heard, StringComparison.Ordinal);
         Frame(window, "triage-desk");
     });
 

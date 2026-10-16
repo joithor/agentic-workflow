@@ -43,8 +43,27 @@ public sealed class WorkflowsFramesTests : FrameHost
         Assert.Equal(locked.Answer!.Cli, ((ViewModels.Components.ProtectedActionViewModel)Assert.Single(locks).DataContext!).Cli);   // the one lock sits on the Locked row
         Assert.Equal((true, shell.Workflows.LegendText), (Visible(window, "WorkflowsLegend"), Named<TextBlock>(window, "WorkflowsLegend").Text));
         Assert.Equal(shell.Workflows.Groups.Count, window.GetVisualDescendants().OfType<Button>().Count(t => t.Name == "WorkflowGroupToggle"));
+        AssistiveNames(window, shell);
         Frame(window, "u8-workflows-open", Prefix);
     });
+
+    // What assistive tech hears, from each control's automation peer (a TextBlock's peer ignores a Name, so these sit on wrappers): review run 2, W5 and W6.
+    private static void AssistiveNames(Window window, ShellViewModel shell)
+    {
+        static string Heard(Control control) => Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(control).GetName();
+        List<Border> Wrappers(string name) => [.. window.GetVisualDescendants().OfType<Border>().Where(b => b.Name == name && b.IsEffectivelyVisible)];
+
+        Assert.Equal(WorkflowsLegend.Name, Heard(Assert.Single(Wrappers("WorkflowsLegendName"))));
+        var current = Wrappers("WorkflowStageCell").First(b => ((StageCellViewModel)b.DataContext!).IsCurrent);
+        Assert.Equal(((StageCellViewModel)current.DataContext!).Name, Heard(current));
+        Assert.Contains(Labels.StageCurrent, Heard(current), StringComparison.Ordinal);
+        var input = Wrappers("WorkflowInputCell")[0];
+        Assert.Equal(((InputCellViewModel)input.DataContext!).Name, Heard(input));
+        var row = shell.Workflows.Groups[0].Rows[0];
+        var title = window.GetVisualDescendants().OfType<Button>().First(b => b.Name == "WorkflowRowOpen" && b.IsEffectivelyVisible && ReferenceEquals(b.DataContext, row));
+        Assert.Equal(Labels.OpenInstanceName(row.Subject, row.Address), Heard(title));
+        Assert.Contains(row.Subject, Heard(title), StringComparison.Ordinal);
+    }
 
     [Fact]
     public Task u8_workflows_recipe_filter() => OnUi(async () =>

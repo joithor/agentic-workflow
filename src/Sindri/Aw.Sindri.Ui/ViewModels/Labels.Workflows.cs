@@ -63,6 +63,12 @@ internal static partial class Labels
     /// <summary>The page's heading while it has no counts yet.</summary>
     internal const string WorkflowsHeading = "Workflows";
 
+    /// <summary>The Workflows key-note live region while it says nothing (never empty, and not a word that repeats the heading).</summary>
+    internal const string KeyNotesResting = "Key notes";
+
+    /// <summary>The Cancel-note live region while it says nothing (never empty, and not a lone word that reads like a control).</summary>
+    internal const string PendingNotesResting = "Cancel notes";
+
     /// <summary>The word a screen reader hears after the cell of the state the instance is in.</summary>
     internal const string StageCurrent = "current";
 
