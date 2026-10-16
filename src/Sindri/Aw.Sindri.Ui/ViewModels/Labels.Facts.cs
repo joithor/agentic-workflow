@@ -1,0 +1,106 @@
+using System.Globalization;
+using Aw.Sindri.Ui.Api.Workflow;
+
+namespace Aw.Sindri.Ui.ViewModels;
+
+/// <summary>The app's own copy (<see cref="Labels"/>, continued): the facts panel and its viewers (screens §4.2, §5.2). Never a served sentence.</summary>
+internal static partial class Labels
+{
+    /// <summary>The panel's heading.</summary>
+    internal const string FactsHeading = "FACTS";
+
+    /// <summary>The words of a recipe that declares no facts.</summary>
+    internal const string NoFacts = "This recipe declares no facts.";
+
+    /// <summary>What a human actor reads as.</summary>
+    internal const string ByYou = "you";
+
+    /// <summary>The View button, closed.</summary>
+    internal const string ViewFact = "View";
+
+    /// <summary>The View button, open.</summary>
+    internal const string HideFact = "Hide";
+
+    /// <summary>The words of a body the engine cut short.</summary>
+    internal const string PayloadTruncated = "The engine cut this body short.";
+
+    /// <summary>The words while a body is read.</summary>
+    internal const string ReadingFact = "Reading the fact…";
+
+    /// <summary>Open on a file or an item.</summary>
+    internal const string OpenFact = "Open";
+
+    /// <summary>The mark of a fact by how far it is.</summary>
+    /// <param name="status">The fact's status.</param>
+    /// <returns>● produced, ◐ in progress, ○ pending.</returns>
+    internal static string FactMark(FactStatus status) => status switch
+    {
+        FactStatus.Produced => "●",
+        FactStatus.InProgress => "◐",
+        FactStatus.Pending => "○",
+        _ => "○",
+    };
+
+    /// <summary>The status in words (a glyph is never the only sign).</summary>
+    /// <param name="status">The fact's status.</param>
+    /// <returns>The words.</returns>
+    internal static string FactStatusWords(FactStatus status) => status switch
+    {
+        FactStatus.Produced => "produced",
+        FactStatus.InProgress => "in progress",
+        FactStatus.Pending => "pending",
+        _ => "pending",
+    };
+
+    /// <summary>The state a fact came from.</summary>
+    /// <param name="state">The state.</param>
+    /// <returns>"from scoping".</returns>
+    internal static string FromState(string state) => $"from {state}";
+
+    /// <summary>A progress figure.</summary>
+    /// <param name="progress">The served progress.</param>
+    /// <returns>"4 of 9".</returns>
+    internal static string ProgressOf(Progress progress) => string.Create(CultureInfo.InvariantCulture, $"{progress.Done} of {progress.Total}");
+
+    /// <summary>The accessible name of a fact row's View button.</summary>
+    /// <param name="open">True when the viewer is open.</param>
+    /// <param name="label">The fact's label.</param>
+    /// <param name="address">The instance.</param>
+    /// <returns>The words.</returns>
+    internal static string ViewFactName(bool open, string label, string address) => $"{(open ? HideFact : ViewFact)} {label} of {address}";
+
+    /// <summary>The facts panel's accessible name.</summary>
+    /// <param name="address">The instance.</param>
+    /// <returns>The words.</returns>
+    internal static string FactsName(string address) => $"Facts of {address}";
+
+    /// <summary>A file's size in words.</summary>
+    /// <param name="bytes">The size.</param>
+    /// <returns>"900 B", "18 KB", "1.5 MB".</returns>
+    internal static string FileSize(long bytes) => bytes switch
+    {
+        < 1024 => string.Create(CultureInfo.InvariantCulture, $"{bytes} B"),
+        < 1024 * 1024 => string.Create(CultureInfo.InvariantCulture, $"{bytes / 1024d:0.#} KB"),
+        _ => string.Create(CultureInfo.InvariantCulture, $"{bytes / (1024d * 1024d):0.#} MB"),
+    };
+
+    /// <summary>Open on a file's accessible name.</summary>
+    /// <param name="path">The file.</param>
+    /// <returns>The words.</returns>
+    internal static string OpenFileName(string path) => $"Open {path}";
+
+    /// <summary>What Open found when it could not open a file.</summary>
+    /// <param name="path">The file.</param>
+    /// <returns>The words.</returns>
+    internal static string FileNotOpened(string path) => $"{path} can't be opened from here. Open it from the repository.";
+
+    /// <summary>Open on an item's accessible name.</summary>
+    /// <param name="itemId">The item.</param>
+    /// <returns>The words.</returns>
+    internal static string OpenItemName(string itemId) => $"Open item {itemId}";
+
+    /// <summary>Copy on a text fact's accessible name.</summary>
+    /// <param name="line">The line.</param>
+    /// <returns>The words.</returns>
+    internal static string CopyLineName(string line) => $"{Copy}: {line}";
+}
