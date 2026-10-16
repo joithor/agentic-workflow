@@ -149,6 +149,11 @@ internal static partial class Labels
     /// <summary>A profile sheet's line for the command that approves it.</summary>
     internal static string SheetApprove => "Approve with";
 
+    /// <summary>A command as served, with a placeholder the row could not fill.</summary>
+    /// <param name="cli">The command, placeholder and all.</param>
+    /// <returns>The command and the words that say to fill it in.</returns>
+    internal static string FillIn(string cli) => cli + " · fill in";
+
     /// <summary>An action's value on a sheet while the app cannot run it yet.</summary>
     /// <param name="cli">The command that does it.</param>
     /// <returns>The words.</returns>

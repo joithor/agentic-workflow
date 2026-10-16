@@ -19,7 +19,13 @@ internal static class FailureDetails
             new(Labels.SheetService, entry.Subject?.Id ?? entry.ShownId),
             new(Labels.SheetFailed, age),
             new(Labels.SheetWhy, entry.Reason),
-            .. entry.Actions.Select(a => new SheetDetail(a.Label, a.IsReady ? a.Cli : Labels.NotInTheAppYet(a.Cli))),
+            .. entry.Actions.Select(a => new SheetDetail(a.Label, Value(a))),
         ];
+    }
+
+    private static string Value(NeedsYouAction a)
+    {
+        var cli = a.FillIn ? Labels.FillIn(a.Cli) : a.Cli;
+        return a.IsReady ? cli : Labels.NotInTheAppYet(cli);
     }
 }

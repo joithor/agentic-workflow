@@ -136,11 +136,11 @@ public sealed class NeedsYouActionButtonTests : IDisposable
         var (window, _) = await WithFeed(feed);
 
         var row = Rows(window).Single();
-        var button = row.GetVisualDescendants().OfType<Button>().First(b => string.Equals(b.Content as string, "Pause", StringComparison.Ordinal));
+        var button = row.GetVisualDescendants().OfType<Button>().First(b => string.Equals(b.Content as string, Labels.Action("PauseService"), StringComparison.Ordinal));
 
         Assert.Equal(pause, ToolTip.GetTip(button));
         Assert.Equal(pause, AutomationProperties.GetHelpText(button));
-        var line = ((NeedsYouRowViewModel)row.DataContext!).Details.Single(d => d.Label == "Pause");
+        var line = ((NeedsYouRowViewModel)row.DataContext!).Details.Single(d => d.Label == Labels.Action("PauseService"));
         Assert.Contains(pause, line.Value, StringComparison.Ordinal);
     });
 }
