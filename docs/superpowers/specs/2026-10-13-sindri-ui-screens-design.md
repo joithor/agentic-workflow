@@ -94,13 +94,13 @@ Needs you and the two columns: the **Workflows strip**, one line per root instan
 instances first, then by age.
 
 ```
-┌ WORKFLOWS 7 open ──────────────────────────────────────────────────────────────────────────────────────── Open Workflows ▸ ┐
+┌ WORKFLOWS 8 open ──────────────────────────────────────────────────────────────────────────────────────── Open Workflows ▸ ┐
 │ ▲ INC-14 Outbox retry storm         incident.response   mitigate r1/3 ⇄ verify   1h 24m   agent rolling back · comms posting │
 │ ◐ sentry #8812 TypeError            triage.alert        classify · desk          4m       needs your class            [Answer]│
 │ ◐ APP · Offline sync                workflow.project    build 4/9                3h       ITM-01JE7 produce 2/3               │
 │ ◐ ENG · Billing exports             workflow.project    design · desk            2h       with you: import the design output │
 │ ◐ ENG · Tab manager v2              workflow.project    scoping r2/3             46m      challenger round 2                  │
-│ … 2 more                                                                                                                     │
+│ … 3 more                                                                                                                     │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
