@@ -78,12 +78,15 @@ internal sealed class SourcesStatusService(IDocIndex index, ISourceCatalog catal
         return rows;
     }
 
-    /// <summary>Unavailable after a failed run; labeling being off (042) only queues the extraction, so the links synced and it stays ok.</summary>
+    /// <summary>
+    /// Unavailable after a failed run; labeling being off (042) only queues the extraction, so the links synced and it stays ok. While records
+    /// are queued the code stays 042, run after run (a run that fetches nothing records no failure of its own).
+    /// </summary>
     private static SourceSyncStatus SyncStatus(IntentSourceState state)
     {
         var failed = state.LastError is { } code && code != ContextErrors.LabelingUnavailable.Code;
         var health = failed ? SourceState.Unavailable : state.LastSync is null ? SourceState.Degraded : SourceState.Ok;
-        return new SourceSyncStatus(state.LastSync, health, state.Records, state.Links, state.Decisions, state.Queued, state.LastError);
+        return new SourceSyncStatus(state.LastSync, health, state.Records, state.Links, state.Decisions, state.Queued, state.LastError ?? (state.Queued > 0 ? ContextErrors.LabelingUnavailable.Code : null));
     }
 
     private static SourceStatusRow Row(ContextRepoName repo, DocIndexStatus status)

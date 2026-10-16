@@ -66,7 +66,7 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFacto
         var fetched = await Fetch(fused, (sources, scrubbers.Value.Ingest), deadline, degraded, cancellationToken).ConfigureAwait(false);
         if (miss is not null && !Answers(fetched, miss.Item.Trim()))
         {
-            return Unknown(miss);   // not linked by any sync, and no live record carries that tracker key
+            return Unknown(miss, request.Scope);   // not linked by any sync, and no live record carries that tracker key
         }
 
         var versions = await Versions(fetched, sources, deadline, cancellationToken).ConfigureAwait(false);
@@ -146,7 +146,7 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFacto
         if (record is null)
         {
             var miss = new ItemMiss(item, map.IsError ? [] : ItemAnchors.Suggest(map.Value.Graph, item.Trim()));
-            return request.Scope.Caller.Kind == ContextCallerKind.Session ? Unknown(miss) : (GraphPart.None, QueryRules.Terms(item), miss);
+            return request.Scope.Caller.Kind == ContextCallerKind.Session ? Unknown(miss, request.Scope) : (GraphPart.None, QueryRules.Terms(item), miss);
         }
 
         return FoundItem(request, (map.Value, record), item, context);
@@ -161,7 +161,7 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFacto
         return (GraphAnswer.Build(found.Map, touched, [], request.Query.Depth ?? context.Settings.CascadeDepth, text), terms, null);
     }
 
-    private static Error Unknown(ItemMiss miss) => QueryRules.UnknownItem(miss.Item, miss.Suggested);
+    private static Error Unknown(ItemMiss miss, ContextScope scope) => QueryRules.UnknownItem(miss.Item, miss.Suggested, scope.SyncConfigured);
 
     private static Result<(GraphPart Graph, IReadOnlyList<string> Terms)> Symbolic(Result<VisibleMap> map, string symbol, int depth, MapText text)
     {

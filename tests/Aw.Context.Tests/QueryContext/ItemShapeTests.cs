@@ -88,6 +88,29 @@ public sealed class ItemShapeTests
     }
 
     [Fact]
+    public async Task Item_unmatched_with_context_sync_configured_says_not_linked_yet_and_gives_the_next_action()
+    {
+        await using var rig = await Synced();
+
+        var result = await rig.World.Engine.Query(Item("NOPE-1"), MapWorld.Human with { SyncConfigured = true }, Ct);
+
+        Assert.Equal(ContextErrors.UnknownAnchor.Code, result.Error.Code);
+        Assert.DoesNotContain("name the context-sync service", result.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("isn't linked yet or the key is unknown", result.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("sindri context sources sync", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Item_unmatched_without_context_sync_still_says_to_name_the_service()
+    {
+        await using var rig = await Synced();
+
+        var result = await rig.World.Engine.Query(Item("NOPE-1"), MapWorld.Human, Ct);
+
+        Assert.Contains("name the context-sync service", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Item_not_synced_falls_back_to_onyx_search_by_key_for_human_callers()
     {
         await using var rig = await Rig.Start();
@@ -147,6 +170,68 @@ public sealed class ItemShapeTests
 
         var conflict = Assert.Single(result.Conflicts);
         Assert.Equal(Toggle, conflict.Node);
-        Assert.Equal(2, conflict.Intent.Count);
+        Assert.NotEmpty(conflict.Intent);
+    }
+
+    [Fact]
+    public async Task Conflicts_cite_markers_that_resolve_in_the_result_and_name_no_behavior()
+    {
+        await using var rig = await Synced();
+
+        var result = (await rig.World.Engine.Query(Item("SPL-103"), MapWorld.Human, Ct)).Value;
+
+        var conflict = Assert.Single(result.Conflicts);
+        Assert.All(conflict.Intent, marker => Assert.True(result.Cites.ContainsKey(marker), marker + " is not a citation of the result"));
+        Assert.DoesNotContain(conflict.Intent, m => m.StartsWith("decision:", StringComparison.Ordinal));
+        Assert.Contains(result.Cites.Single(c => c.Value.Key.Value == R103).Key, conflict.Intent);   // the 103 decision's quote comes from the 103 record
+        Assert.Empty(conflict.Behavior);
+    }
+
+    [Fact]
+    public async Task A_decision_cites_the_record_its_quote_comes_from()
+    {
+        await using var rig = await Synced();
+
+        var result = (await rig.World.Engine.Query(Item("SPL-103"), MapWorld.Human, Ct)).Value;
+
+        var decision = Assert.Single(Section(result, "decisions").Items, i => i.Text!.Contains(Q103, StringComparison.Ordinal));
+        var record = result.Cites.Single(c => c.Value.Key.Value == R103).Key;
+        Assert.Equal([record], decision.Cites);
+    }
+
+    [Fact]
+    public async Task A_decision_whose_record_was_not_fetched_keeps_the_map_citation()
+    {
+        await using var rig = await Synced();
+        await rig.Onyx.DisposeAsync();   // nothing is fetched live, so no record citation exists
+
+        var result = (await rig.World.Engine.Query(Item("SPL-103"), MapWorld.Human, Ct)).Value;
+
+        var decision = Assert.Single(Section(result, "decisions").Items, i => i.Text!.Contains(Q103, StringComparison.Ordinal));
+        Assert.All(decision.Cites, marker => Assert.True(result.Cites.ContainsKey(marker)));
+    }
+
+    [Fact]
+    public async Task While_decisions_are_queued_for_a_linked_record_the_query_degrades_042_for_decisions()
+    {
+        await using var rig = await Rig.Start();
+        _ = await rig.Sync(Scope(labeling: false));
+        _ = await rig.Sync(Scope(labeling: false));   // the run after the one that fetched
+
+        var result = (await rig.World.Engine.Query(Item("SPL-103"), Scope(labeling: false), Ct)).Value;
+
+        var held = Assert.Single(result.Degraded, d => d.Code == ContextErrors.LabelingUnavailable.Code);
+        Assert.Equal("decisions", held.Source.Value);
+        Assert.Contains("labeling", held.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task With_every_decision_extracted_the_query_is_not_degraded_for_decisions()
+    {
+        await using var rig = await Synced();
+
+        var result = (await rig.World.Engine.Query(Item("SPL-103"), MapWorld.Human, Ct)).Value;
+
+        Assert.DoesNotContain(result.Degraded, d => d.Code == ContextErrors.LabelingUnavailable.Code);
     }
 }

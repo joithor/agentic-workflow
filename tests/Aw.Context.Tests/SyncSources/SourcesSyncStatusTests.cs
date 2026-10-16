@@ -33,6 +33,33 @@ public sealed class SourcesSyncStatusTests
     }
 
     [Fact]
+    public async Task While_labeling_is_off_and_records_are_queued_status_shows_042_after_every_run_and_the_source_stays_ok()
+    {
+        await using var rig = await Rig.Start();
+        _ = await rig.Sync(Scope(labeling: false));
+        var replay = await rig.Sync(Scope(labeling: false));   // fetches nothing, so its own event carries no 042
+
+        var sync = (await Onyx(rig)).Sync;
+
+        Assert.True(replay.Queued > 0);
+        Assert.NotNull(sync);
+        Assert.Equal((SourceState.Ok, ContextErrors.LabelingUnavailable.Code), (sync.State, sync.Code));
+        Assert.True(sync.Queued > 0);
+    }
+
+    [Fact]
+    public async Task Status_drops_042_once_the_queue_is_extracted()
+    {
+        await using var rig = await Rig.Start();
+        _ = await rig.Sync(Scope(labeling: false));
+        _ = await rig.Sync(Scope());
+
+        var sync = (await Onyx(rig)).Sync;
+
+        Assert.Equal((0, null), (sync?.Queued, sync?.Code));
+    }
+
+    [Fact]
     public async Task A_failed_last_sync_is_unavailable_with_its_code_and_a_docs_row_has_no_sync()
     {
         var rig = await Rig.Start();

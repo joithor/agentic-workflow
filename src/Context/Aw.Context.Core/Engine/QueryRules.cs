@@ -150,14 +150,23 @@ public static class QueryRules
     /// <summary>SND-CONTEXT-003 for an item no stored record answers to, with the tracker keys of linked records to ask for instead.</summary>
     /// <param name="item">The item as asked.</param>
     /// <param name="suggested">Tracker keys of linked records.</param>
+    /// <param name="syncConfigured">True when an intent sync runs: the fix then says the record isn't linked yet or the key is unknown, instead of asking for the service.</param>
     /// <returns>The error, with a suggestedAnchors member when there is something to suggest.</returns>
-    public static Error UnknownItem(string item, IReadOnlyList<string> suggested)
+    public static Error UnknownItem(string item, IReadOnlyList<string> suggested, bool syncConfigured = false)
     {
         ArgumentNullException.ThrowIfNull(item);
         ArgumentNullException.ThrowIfNull(suggested);
         var shown = item.Length <= 80 && !item.Any(char.IsControl) ? item.Trim() : "(a long or unusual item)";
-        var error = ContextErrors.UnknownAnchor.With($"no synced record is linked to the item '{shown}' (fix: {(suggested.Count == 0 ? "name the context-sync service under services: in the profile" : "try " + string.Join(", ", suggested))})");
+        var error = ContextErrors.UnknownAnchor.With($"no synced record is linked to the item '{shown}' (fix: {Fix(suggested, syncConfigured)})");
         return suggested.Count == 0 ? error : error.WithExtension("suggestedAnchors", [.. suggested], SettingsJsonContext.Default.ListString);
+    }
+
+    private static string Fix(IReadOnlyList<string> suggested, bool syncConfigured)
+    {
+        var next = syncConfigured
+            ? "the record isn't linked yet or the key is unknown: check the key, or run sindri context sources sync and ask again"
+            : "name the context-sync service under services: in the profile";
+        return suggested.Count == 0 ? next : syncConfigured ? $"try {string.Join(", ", suggested)}; {next}" : "try " + string.Join(", ", suggested);
     }
 
     private static Result<ValidQuery> Item(string item, int budget) =>
