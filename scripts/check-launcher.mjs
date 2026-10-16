@@ -47,7 +47,7 @@ export function jcs(v) {
   throw new Error(`jcs: unsupported value ${typeof v}`);
 }
 
-/** The argvHash input (spec §2) of a merged entry: bin basename, open, resume (null included), sessionId, mcp. */
+/** The argvHash input (spec §2) of a merged entry: bin basename, open, resume (null included), sessionId, mcp, and the model and policy form names. */
 export function hashInput(entry) {
   return {
     bin: path.posix.basename(entry.bin),
@@ -55,6 +55,8 @@ export function hashInput(entry) {
     resume: entry.resume ?? null,
     sessionId: entry.sessionId,
     mcp: entry.mcp ?? "none",
+    model: entry.model ?? "none",
+    policy: entry.policy ?? "none",
   };
 }
 export const argvHash = (entry) => `sha256:${crypto.createHash("sha256").update(jcs(hashInput(entry)), "utf8").digest("hex")}`;
@@ -166,6 +168,8 @@ try {
     sameSet("sessionIdModes", keys.sessionIdModes, schema.$defs.agent.properties.sessionId.enum);
     sameSet("usageReaders", keys.usageReaders, schema.$defs.agent.properties.usage.enum);
     sameSet("mcpForms", keys.mcpForms, schema.$defs.agent.properties.mcp.enum);
+    sameSet("modelForms", keys.modelForms, schema.$defs.agent.properties.model.enum);
+    sameSet("policyForms", keys.policyForms, schema.$defs.agent.properties.policy.enum);
     sameSet("viewer", keys.viewer, ["kind", "name", "argv"]);
     const pat = schema.$defs.argvElement.anyOf[1].pattern;
     const inPattern = [...pat.match(/\\\{\(\?:([A-Za-z|]+)\)\\\}/)[1].split("|")].map((p) => `{${p}}`);

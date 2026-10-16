@@ -1,6 +1,6 @@
 {
   "note": "built-in codex",
   "builtin": "codex",
-  "canonical": "{\"bin\":\"codex\",\"mcp\":\"codex-overrides\",\"open\":[\"{bin}\",\"-C\",\"{cwd}\",\"{seed}\"],\"resume\":[\"{bin}\",\"resume\",\"{sessionId}\"],\"sessionId\":\"reported\"}",
-  "argvHash": "sha256:f888f0b3b16a994d6409b9a411555f274720f5feb9087cbbdc37337af0e3f424"
+  "canonical": "{\"bin\":\"codex\",\"mcp\":\"codex-overrides\",\"model\":\"codex-flag\",\"open\":[\"{bin}\",\"-C\",\"{cwd}\",\"{seed}\"],\"policy\":\"codex-overrides\",\"resume\":[\"{bin}\",\"resume\",\"{sessionId}\"],\"sessionId\":\"reported\"}",
+  "argvHash": "sha256:3a5a363aa8ff15e19659deddd374cd595193c312cfcd310b2fd7c2cd67fc9e7f"
 }

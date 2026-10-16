@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "agents": {
+    "codex": { "override": true, "model": "gemini-flag" }
+  }
+}
