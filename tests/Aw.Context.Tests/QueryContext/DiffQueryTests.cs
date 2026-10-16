@@ -4,9 +4,9 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Extract;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
+using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Extract;
 using Aw.Context.Testing.Map;
-using Aw.Context.Tests.Infrastructure;
 using Aw.Context.Tests.Map;
 
 namespace Aw.Context.Tests.QueryContext;
@@ -40,7 +40,9 @@ public sealed class DiffQueryTests : IDisposable
         return world;
     }
 
-    private static ContextQuery Ask(ContextRepoName? repo = null, bool draft = false) => new(Text: null, Diff: _range, Repo: repo, Draft: draft);
+    private static ContextQuery Ask(ContextRepoName? repo = null, bool draft = false) => new(Text: null, Diff: _range, Repo: repo ?? ContextRepoName.From(FixtureMap.Repo), Draft: draft);
+
+    private static ContextQuery AskWithoutRepo() => new(Text: null, Diff: _range);
 
     private static ContextScope SessionDenying(params string[] globs) =>
         new(Settings: System.Text.Json.JsonDocument.Parse("""{"sessions":{"enabled":true}}""").RootElement.Clone(),
@@ -77,7 +79,7 @@ public sealed class DiffQueryTests : IDisposable
         var result = (await world.Engine.Query(Ask(), MapWorld.Human, MapWorld.None)).Value;
 
         Assert.Equal(["action:tab-manager.restore-layout", "feature:layout.split-pane", "feature:layout.split-pane.orientation", "feature:tabs.tab-manager"], result.Anchors, StringComparer.Ordinal);
-        Assert.Contains(result.Sections, s => string.Equals(s.Name, "affects", StringComparison.Ordinal) && s.Items.Count > 0);
+        Assert.Contains(result.Sections, s => string.Equals(s.Name, "graph", StringComparison.Ordinal) && s.Items.Count >= 4);
         Assert.Contains(result.Sections, s => string.Equals(s.Name, "code", StringComparison.Ordinal));
         Assert.All(result.Sections.SelectMany(s => s.Items), i => Assert.NotEmpty(i.Cites));
         Assert.True(result.Cites.ContainsKey("C1"));
@@ -107,7 +109,7 @@ public sealed class DiffQueryTests : IDisposable
         _ = await world.ImportFixture();
         var only = MapWorld.HumanWith(MapWorld.OnlyFixtureRepo);
 
-        var result = await world.Engine.Query(Ask(), only, MapWorld.None);
+        var result = await world.Engine.Query(AskWithoutRepo(), only, MapWorld.None);
 
         Assert.Equal(FixtureMap.Repo, result.Value.Diff!.Repo.Value);
     }
@@ -118,7 +120,7 @@ public sealed class DiffQueryTests : IDisposable
         var world = World();
         _ = await world.ImportFixture();
 
-        var result = await world.Engine.Query(Ask(), MapWorld.Human, MapWorld.None);
+        var result = await world.Engine.Query(AskWithoutRepo(), MapWorld.Human, MapWorld.None);
 
         Assert.Equal(ContextErrors.QueryInvalid.Code, result.Error.Code);
         Assert.Contains("name the repo", result.Error.Message, StringComparison.Ordinal);
@@ -183,7 +185,7 @@ public sealed class DiffQueryTests : IDisposable
         _ = await world.ImportFixture();
 
         var missing = await world.Engine.Query(Ask(), MapWorld.Human, MapWorld.None);
-        var unrelated = await world.Engine.Query(new ContextQuery(Text: null, Diff: new DiffRange(Base, MergeBase)), MapWorld.Human, MapWorld.None);
+        var unrelated = await world.Engine.Query(new ContextQuery(Text: null, Diff: new DiffRange(Base, MergeBase), Repo: ContextRepoName.From(FixtureMap.Repo)), MapWorld.Human, MapWorld.None);
 
         Assert.Equal(ContextErrors.CommitUnknown.Code, missing.Error.Code);
         Assert.Equal(ContextErrors.NoMergeBase.Code, unrelated.Error.Code);
@@ -208,15 +210,15 @@ public sealed class DiffQueryTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task A_sessions_changed_path_is_scrubbed_like_node_text_while_a_humans_is_raw()
     {
-        var planted = $"src/{Planted.Secret}.ts";
+        var planted = $"src/{FakeScrubber.Secret}.ts";
         var world = World(Reader((planted, ChangeKind.Added)));
         _ = await world.ImportFixture();
 
         var session = (await world.Engine.Query(Ask(), SessionDenying(), MapWorld.None)).Value.Diff!;
         var human = (await world.Engine.Query(Ask(ContextRepoName.From(FixtureMap.Repo)), MapWorld.Human, MapWorld.None)).Value.Diff!;
 
-        Assert.DoesNotContain(Planted.Secret, session.Files[0].Path, StringComparison.Ordinal);
-        Assert.DoesNotContain(Planted.Secret, session.Unmapped[0], StringComparison.Ordinal);
+        Assert.DoesNotContain(FakeScrubber.Secret, session.Files[0].Path, StringComparison.Ordinal);
+        Assert.DoesNotContain(FakeScrubber.Secret, session.Unmapped[0], StringComparison.Ordinal);
         Assert.Equal(planted, human.Files[0].Path);
     }
 
