@@ -170,4 +170,30 @@ public sealed class JobRuntimeTests
         Assert.StartsWith($"/sindri/events?after={(started.Value.Accepted.Sequence - 1).ToString(CultureInfo.InvariantCulture)}&types=job.", started.Value.Links.Events, StringComparison.Ordinal);
         Expect.Equal(EventTypes.JobStarted, runtime.Events.Single(e => e.Sequence == started.Value.Accepted.Sequence).Envelope.Type);
     }
+
+    [Fact]
+    public async Task A_cancelled_job_holds_its_claim_until_its_work_has_returned()
+    {
+        await using var runtime = await Open();
+        var first = await runtime.Start(new ProbeJobRequest("stubborn"), Human());
+        try
+        {
+            await runtime.Latch.Entered.Task.WaitAsync(TestContext.Current.CancellationToken);
+            _ = await runtime.Cancel(first.Value.JobId);
+
+            var during = await runtime.Start(new ProbeJobRequest("stubborn"), Human());   // the old work is still winding down
+
+            Assert.True(during.IsError);
+            Expect.Equal(SindriErrors.JobConflict.Code, during.Error.Code);
+            Expect.Equal(first.Value.JobId.Value, during.Error.Extensions!.First(static e => string.Equals(e.Key, "runningJob", StringComparison.Ordinal)).Value.GetString());
+        }
+        finally
+        {
+            _ = runtime.Latch.Release.TrySetResult();   // the stubborn work returns now
+        }
+
+        await runtime.Quiesce();
+        Assert.True((await runtime.Start(new ProbeJobRequest("stubborn"), Human())).IsSuccess);
+        await runtime.Quiesce();
+    }
 }
