@@ -28,10 +28,18 @@ internal sealed class ContextScopes(IApprovedProfile approvals, ICallerContextAc
             return approved.IsError ? approved.Error : SindriErrors.ProfileNotApproved.With("no profile is approved, so no repo is mapped (fix: sindri profile approve)");
         }
 
-        return Scope(loaded.Profile, Caller(callers.Current));
+        return For(loaded.Profile, Caller(callers.Current));
     }
 
-    private static ContextScope Scope(SindriProfile profile, ContextCaller caller) => new(profile.Context, ScopeRules.Usable(Entries(profile)), caller);
+    /// <summary>The scope a profile and a caller make; SyncConfigured is whether the profile names the context-sync service.</summary>
+    /// <param name="profile">The approved profile.</param>
+    /// <param name="caller">The engine's caller.</param>
+    /// <returns>The scope.</returns>
+    internal static ContextScope For(SindriProfile profile, ContextCaller caller)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        return new(profile.Context, ScopeRules.Usable(Entries(profile)), caller, profile.Services?.ContainsKey(ContextSyncService.ServiceId.Value) == true);
+    }
 
     /// <summary>
     /// The profile's repos as the engine takes them: each with the globs of the profile's 'index.denyPaths' and its own (extraction

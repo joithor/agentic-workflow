@@ -14,8 +14,9 @@ public static class LensesBuilder
     /// <param name="graph">The graph a caller may see: overrides applied, a session's scope already cut.</param>
     /// <param name="anchor">The anchor (a key or an alias).</param>
     /// <param name="depth">How far the neighbors reach and the cascade runs, 0 to 4.</param>
+    /// <param name="checkedPairs">The model-checked decision pairs; a 'contradicts' pair shows as a conflict (intent against intent).</param>
     /// <returns>The view, or SND-CONTEXT-003 when the graph has no such node.</returns>
-    public static Result<LensesView> Build(LensBasis basis, GraphSnapshot graph, NodeKey anchor, int depth)
+    public static Result<LensesView> Build(LensBasis basis, GraphSnapshot graph, NodeKey anchor, int depth, IReadOnlyList<Linking.DecisionConflict>? checkedPairs = null)
     {
         ArgumentNullException.ThrowIfNull(basis);
         ArgumentNullException.ThrowIfNull(graph);
@@ -31,6 +32,6 @@ public static class LensesBuilder
         var items = productKeys.Concat(codeKeys).Concat(scope.IntoScope(EdgeType.Mentions, EdgeType.Decides).Select(e => e.From.Value)).ToHashSet(StringComparer.Ordinal);
         var anchorTrust = TrustPolicy.ForNode(scope.Anchor, LensScope.Confirmed(scope.Anchor.Provenance));
         return new LensesView(1, new LensAnchor(scope.Anchor.Key, scope.Anchor.Label, scope.Anchor.Key.Kind, anchorTrust), basis.Map, basis.Draft, clamped, basis.AsOf,
-            new LensBands(intent, product, code), LensEdges.Across(graph, items), LensConflicts.Of(scope), LensCoverageBuilder.Of(scope), [], new Dictionary<string, Results.Citation>(StringComparer.Ordinal));
+            new LensBands(intent, product, code), LensEdges.Across(graph, items), LensConflicts.Of(scope, checkedPairs ?? []), LensCoverageBuilder.Of(scope), [], new Dictionary<string, Results.Citation>(StringComparer.Ordinal));
     }
 }

@@ -807,7 +807,7 @@
       "method": "POST",
       "route": "/sindri/context/sources/sync",
       "cli": "sindri context sources sync",
-      "ui": "pending:S-5B",
+      "ui": "pending:API-P6",
       "destructive": false,
       "readsViews": false,
       "shortcut": null

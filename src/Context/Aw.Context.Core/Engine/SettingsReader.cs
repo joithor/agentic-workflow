@@ -84,7 +84,12 @@ public static partial class SettingsReader
     }
 
     private static LabelingSettings Labeling(LabelingSection? section) =>
-        new() { Enabled = section?.Enabled ?? false, MaxTokens = section?.MaxTokens ?? new LabelingSettings().MaxTokens };
+        new()
+        {
+            Enabled = section?.Enabled ?? false,
+            MaxTokens = section?.MaxTokens ?? new LabelingSettings().MaxTokens,
+            MaxTokensPerSync = section?.MaxTokensPerSync ?? new LabelingSettings().MaxTokensPerSync,
+        };
 
     /// <summary>The extra patterns as written (a null entry was refused by <see cref="Problem"/>).</summary>
     private static IReadOnlyList<ScrubPattern> Patterns(ScrubSection? scrub) =>
@@ -121,6 +126,7 @@ public static partial class SettingsReader
             { MinHits: < 0 or > 50 } => Invalid("context.minHits", "is 0 to 50"),
             { CascadeDepth: < 0 or > QueryRules.MaxDepth } => Invalid("context.cascadeDepth", "is 0 to 4 steps"),
             { Labeling.MaxTokens: < 1_000 or > 20_000_000 } => Invalid("context.labeling.maxTokens", "is 1000 to 20000000 tokens"),
+            { Labeling.MaxTokensPerSync: < 1 or > 20_000_000 } => Invalid("context.labeling.maxTokensPerSync", "is 1 to 20000000 tokens"),
             _ => null,
         };
     }

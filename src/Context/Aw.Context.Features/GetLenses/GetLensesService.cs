@@ -38,7 +38,7 @@ internal sealed class GetLensesService(MapReader reader, IScrubberFactory scrubb
         }
 
         var basis = new LensBasis(read.Value.Snapshot.Label, request.Draft, clock.GetUtcNow());
-        var view = LensesBuilder.Build(basis, read.Value.Graph, anchor.Value.Key, depth);
+        var view = LensesBuilder.Build(basis, read.Value.Graph, anchor.Value.Key, depth, read.Value.Conflicts);
         return view.Map(v => LensTexts.Clean(v, new MapText(built.Value, FencePolicies.For(request.Scope.Caller))));
     }
 }

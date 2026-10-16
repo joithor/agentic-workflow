@@ -1,5 +1,6 @@
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Linking;
 using Aw.Context.Core.Overrides;
 using Aw.Kernel;
 
@@ -27,8 +28,22 @@ public static class MapAccess
     /// <param name="pending">True when a 'propose' row's node is part of the map (a draft); a current map never holds a pending proposal.</param>
     /// <param name="callerScope">False to apply the deny globs only, for a decision the engine doesn't scope to the caller's repo (a review, a proposal's status).</param>
     /// <returns>The visible view, or SND-CONTEXT-001 for an invalid section, or SND-CONTEXT-003 when a session's repo implements nothing in the map.</returns>
-    public static Result<MapView> View(GraphSnapshot graph, IReadOnlyList<MapOverride> overrides, ContextScope scope, bool pending, bool callerScope = true)
+    public static Result<MapView> View(GraphSnapshot graph, IReadOnlyList<MapOverride> overrides, ContextScope scope, bool pending, bool callerScope = true) =>
+        Merged(graph, overrides, scope, (pending, callerScope), intent: null);
+
+    /// <summary>The view with the synced intent layer merged into the graph before the cut (spec §3 Repo scope, §6.2): its records, decisions and links meet the deny globs and a session's scope like any node.</summary>
+    /// <param name="intent">The synced layer.</param>
+    /// <param name="graph">The stored graph of the version.</param>
+    /// <param name="overrides">The version's overrides.</param>
+    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <param name="pending">True when a 'propose' row's node is part of the map (a draft).</param>
+    /// <returns>The visible view, or SND-CONTEXT-001/003.</returns>
+    public static Result<MapView> ViewWithIntent(IntentLayer intent, GraphSnapshot graph, IReadOnlyList<MapOverride> overrides, ContextScope scope, bool pending) =>
+        Merged(graph, overrides, scope, (pending, CallerScope: true), intent);
+
+    private static Result<MapView> Merged(GraphSnapshot graph, IReadOnlyList<MapOverride> overrides, ContextScope scope, (bool Pending, bool CallerScope) mode, IntentLayer? intent)
     {
+        var (pending, callerScope) = mode;
         ArgumentNullException.ThrowIfNull(graph);
         ArgumentNullException.ThrowIfNull(overrides);
         ArgumentNullException.ThrowIfNull(scope);
@@ -44,10 +59,13 @@ public static class MapAccess
             return repos.Error;
         }
 
+        // The synced intent layer joins the stored graph before the cut, so the deny globs and a session's scope judge its records, decisions and links like any node.
+        var merged = intent is null ? graph : IntentOverlay.Apply(graph, intent).Graph;
+
         // Whoever asks, every profile repo's deny globs judge record keys and evidence refs (they name their repo), not just the ones context.repos maps; a code: key names no repo, so only the mapped repos' globs judge it: the snapshot is global, so a session in repo A must not reach a document repo B denies (review #234 runs 1 and 2).
         // The resolved repos are for the gate and the session's scope step only.
-        var cut = DenyCut.Of(graph, overrides, scope.Repos, ScopeRules.Mapped(settings.Value, scope.Repos));   // every override, pending or not: what is hidden doesn't depend on which reader asks
-        var (cutGraph, cutOverrides) = (cut.Apply(graph), cut.Apply(overrides));
+        var cut = DenyCut.Of(merged, overrides, scope.Repos, ScopeRules.Mapped(settings.Value, scope.Repos));   // every override, pending or not: what is hidden doesn't depend on which reader asks
+        var (cutGraph, cutOverrides) = (cut.Apply(merged), cut.Apply(overrides));
         var applied = OverrideApplier.Apply(cutGraph, pending ? cutOverrides : [.. cutOverrides.Where(o => o.Action != OverrideAction.Propose)]).Graph;
         var view = new MapView(cutGraph, applied, cutOverrides, cut);
         if (!callerScope || scope.Caller.Kind != ContextCallerKind.Session)

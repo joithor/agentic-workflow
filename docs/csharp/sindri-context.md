@@ -44,7 +44,7 @@ context use case: `ContextScopes` is shared, it can't move to Sindri Core (only 
 package's Core, DEPS-PROJ-008), and ARCH-SLICE-001 forbids sharing it across slice folders. Later stages add their
 context services here. The routes are `GET /sindri/context/query` and
 `GET /sindri/context/sources`. The CLI verbs are `Host/Commands/ContextVerbs`, with text output in `ContextText`.
-`Host/Catalog/ContextRows` holds `SyncSources` (`job`, `pending:S-5B`, no route mapped until S-5B, after API P6).
+`Host/Catalog/ContextRows` holds `SyncSources` (`job`, `pending:API-P6`, no `CommandType` and no route until API P6's job runtime; the S-5B part is in as the `context-sync` service below).
 
 ### Query pipeline (Phase 1, text shape)
 
@@ -575,3 +575,69 @@ the row, and a reply the pinned shape can't read degrades onyx (`010` with cause
 - `tests/Aw.Sindri.Tests/ContextCalls/OnyxContextTests` (integration, the real host with `env:` fixture pointers):
   fused query with `unchecked` onyx citations, the status row, doctor ok / warn / fail, Onyx down degrading only
   itself; `OnyxProfileTests` (validate and doctor without Onyx); `Secrets/*` for the pointers.
+
+## S-5B: the intent layer
+
+### Shape
+
+- `Aw.Context.Core/Linking`: `RulesLinker` (rules `issue-key`, `url`, `path`, `identifier`, `quoted-title`; one `LinkRule` per link; an issue key whose record is not fetched yet links by the key, `record:SPL-104`, and the overlay resolves it through the record's aliases, so the links never depend on fetch order), `IntentOverlay` (a record that is only the target of a link is a node too, and a link to a record not synced yet waits instead of counting as orphaned; merges
+  `IntentLayer` into the visible map before the deny cut, so a deny path hides intent records too), `DecisionExtractor` and
+  `ConflictChecker` (quotes must be verbatim in the scrubbed text; an answer outside the record's linked nodes is refused, `057`),
+  `IIntentStore` (records, links, decisions, edges, conflicts, per-source cursor, last sync and last error).
+- `Aw.Context.Infrastructure/Intent/SqliteIntentStore` and migration `0006_s5b_intent_links.sql` (outside the map versions, so a build or
+  promote never drops it). `FakeIntentStore` and `IntentStoreContract` in `Aw.Context.Testing`.
+- `Aw.Context.Features/SyncSources`: `SyncSourcesService` walks each live intent source against the current map (`IntentSyncRun`: search a node,
+  then for each new hit fetch, link, commit the record with its links and run `DecisionPass` on it under `context.labeling.maxTokensPerSync`, before
+  the next fetch; the node's cursor commits when the node is through), one run per source at a time (`056`). A 2-minute cap (`059`) is checked before
+  each node and before each fetch after the run's first, so every run completes at least one record and a slow source can't starve: a record in
+  hand is always extracted (the cap never cuts a model call), so no record waits queued because of the cap. A node the cap cuts short keeps its
+  cursor at the node and is walked again, its stored hits skipped as unchanged. A capped run records `059` as the source's last code without
+  failing it (status: `ok`/`degraded` with code `059`; the next run continues and clears it). A failure of the decision pass in the same run (the model down, a store write failing) wins over `059`: the recorded code is the failure and the source shows `unavailable`. A finished walk commits the end cursor so trailing
+  nodes without search terms don't stall the next run. A map version change re-links every record a node's search still returns, across runs (a record no node finds any more is not reached, and keeps its old links until its upstream version moves): a hit is skipped as unchanged only when its upstream version is the stored one and its links were
+  computed against the current map version (`intent_record.linked_map`, set by each record's page; `IIntentStore.LinkedUnder`), so a run that stops early (the cap, the source
+  down) leaves nothing with old-map links, and each record is re-fetched once per map version, not on every run. The page that moves a done record to a new map version queues it in the same statement (`MarkLinked`), so only a finished extraction marks it done again: a stop, a cancel or a failed save between the commit and the extraction leaves it queued with its old decisions. A failed `LinkedUnder` read fails the run with the store's code (it is never read as "nothing linked", which would re-fetch and re-extract every record). A record stays queued until its conflict checks are through too (a stopped check, the token cap
+  or a model failure leaves the pair to the next time the walk reaches the record; a save with the checks pending queues a done record again, so a map
+  change that re-extracts it is retried too; a done record whose re-extraction is held back (the token cap, labeling off, a model failure) is queued again by
+  `IIntentStore.Requeue` and keeps its old decisions until then); a re-extraction keeps the verdicts of pairs whose decision keys survive and never replaces a human
+  decision (`DecisionBatch.Pending`). A verdict answer that can't be read leaves the pair unanswered (`unread`, `tries` 1-2, the record stays queued,
+  `057` counted); the third unreadable answer marks it `refused` and it is not asked again. A record whose extraction prompt alone exceeds `maxTokensPerSync` could never be made in any run: it is skipped (`057` counted in `refused`, no decisions, not queued)
+  and the pass goes on with the records after it, instead of holding it back forever and stopping the run's extraction. Raise `maxTokensPerSync` to extract it; it is retried when its version changes. A record whose own extraction, as the run's first model call, leaves no room under the cap for even one conflict check has its pairs refused (`057` counted, verdict `refused`) and is done, so it cannot hold back the records after it every run; a refused pair is permanent and is not retried on a version change unless the decision's quote changes, so raise `maxTokensPerSync` before that happens. A first record that got at least one pair answered stays queued and the next run continues. `IContextEngine.Sync(source?, scope)` returns a `SyncReport` of counts and codes only.
+- Reads: `MapReader` merges the layer for every graph read; the `item` shape (`context query --item <KEY>`) anchors on the record a tracker
+  key names (`ItemAnchors`) and answers `003` with suggestions when none is linked. The fix line follows the state: with `context-sync`
+  named in the profile (`ContextScope.SyncConfigured`) it says the record isn't linked yet or the key is unknown and to check the key, wait for
+  the next context-sync slot or watch `sindri context sources status` (not `sources sync` until API P6 wires it); without it, to name the service. Sindri resolves a Sindri item id (`ITM-…`) before the engine (`ItemKeys`): a linked item
+  asks for its record; one with no record yet answers `003` "has no tracker record linked yet"; an id no item has, or a session may not
+  see, goes on unchanged and answers the same `003` as any unknown key.
+- Decisions and conflicts cite the record their quote comes from (`C<n>` of that record when the answer fetched it, else the map's `C1`);
+  `conflicts[].intent` holds those citation markers (never decision keys) and `behavior` stays empty. A feature the record's text does not
+  name is not an anchor (the rules link only what the text names), and the feature lens's intent band lists records with a `mentions` edge
+  to its own scope, so a record that only reaches it through an `issue-key` link to another record shows on that record's lens.
+- `SourcesStatusService` fills `SourceStatusRow.Sync` (`lastSync`, `state`, `records`, `linked`, `decisions`, `queued`, `code`) for each
+  intent source; labeling off or over its token cap (`042`) only queues extraction and stays `ok`. While any record is queued and no other code is
+  recorded, `code` stays `042` after every run (derived from the queue, so a run that fetches nothing does not clear it). A run the time cap stopped
+  shows `059` (state unchanged, `ok` or `degraded`; the fix is to wait, the next run continues), and `042` only when labeling is off or over its cap. A query whose answer reaches a queued record carries
+  `degraded` `042` for source `decisions` (`QueryContextService.NoteQueuedDecisions`); nothing is asked of the model.
+
+### Sindri: the `context-sync` service (slice 6)
+
+`ContextSyncService` (`context-sync`, `services: { context-sync: { every: 15m } }`, runs only when named, outside the command gate like
+`context-rebuild`) syncs each intent source and records `context.sources.synced` with an additive optional `Links` payload
+(`ContextLinksSynced`: counts and the code, never record text). The event key now names its source:
+`context.sources.synced:<epoch>:<source>:<slot>` (the docs refresh's key changed the same way). Doctor row `context:sync` warns when an
+intent source never synced or its last run failed. The `SyncSources` catalog row (`job`) is `pending:API-P6` with no route and no
+`CommandType`; `sindri context sources sync` answers `SND-CLI-001` naming `pending:API-P6` and the `context-sync` service.
+
+### Errors (056-059)
+
+| Code | Kind (HTTP) | Exit | Meaning |
+|---|---|---|---|
+| `SND-CONTEXT-056` | Conflict (409) | 1 | A sync of that source is already running |
+| `SND-CONTEXT-057` | Invalid | - | A model answer the engine refused, or a record skipped because its extraction prompt alone is over `maxTokensPerSync` (or whose conflict checks can't fit even one pair under the cap as the run's first call: the pairs are refused, for good unless the decision's quote changes); counted in `refused`, never fails the sync. A verdict that can't be read is retried (3 tries per pair), then the pair is `refused` |
+| `SND-CONTEXT-058` | NotFound (404) | 1 | `--source X` isn't a configured source with a sync |
+| `SND-CONTEXT-059` | Unavailable | 0 | A sync stopped at its time cap; partial, resumes from the cursor; shown in `sources status` without failing the source |
+
+### Tests
+
+`tests/Aw.Context.Tests/{Linking,SyncSources,QueryContext}` (rules, overlay, store contracts, sync, decisions, conflicts, item shape,
+sources status); `tests/Aw.Sindri.Tests/ContextCalls/ContextSyncTests` (integration: service named or not, event with counts, event key,
+sources status, doctor row, item query), `ContextCliTests` and `ContextReviewRowsTests` (the pending form and the catalog row).
