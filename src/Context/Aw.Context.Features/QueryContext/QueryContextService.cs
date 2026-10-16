@@ -45,13 +45,13 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFacto
             return valid.Error;
         }
 
-        var anchored = await Anchored(request, valid.Value, settings.Value, scrubbers.Value, cancellationToken).ConfigureAwait(false);
+        var anchored = await AnchorFor(request, valid.Value, (settings.Value, scrubbers.Value), cancellationToken).ConfigureAwait(false);
         if (anchored.IsError)
         {
             return anchored.Error;
         }
 
-        var (graph, terms) = anchored.Value;
+        var (graph, terms, miss) = anchored.Value;
         var deadline = clock.GetUtcNow() + settings.Value.Deadline;
         var sources = terms.Count == 0 ? [] : catalog.For(settings.Value, repos.Value, scrubbers.Value).Where(s => ScopeRules.MayRead(request.Scope.Caller, s.Describe())).ToList();
         var searched = await Search(sources, terms, deadline, cancellationToken).ConfigureAwait(false);
@@ -64,6 +64,11 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFacto
         var degraded = searched.Degraded.ToList();
         var fused = RankFusion.Fuse(searched.Answers).Take(MaxItems).ToList();
         var fetched = await Fetch(fused, (sources, scrubbers.Value.Ingest), deadline, degraded, cancellationToken).ConfigureAwait(false);
+        if (miss is not null && !Answers(fetched, miss.Item.Trim()))
+        {
+            return Unknown(miss);   // not linked by any sync, and no live record carries that tracker key
+        }
+
         var versions = await Versions(fetched, sources, deadline, cancellationToken).ConfigureAwait(false);
         var assembly = new ResultAssembly(scrubbers.Value.Egress, QueryId.From("q_" + ids.NewId().ToString("N", CultureInfo.InvariantCulture)), clock.GetUtcNow());
         return assembly.Build(request.Query, valid.Value.Budget, new RecordPart(fetched, versions, degraded), graph);
@@ -107,6 +112,56 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFacto
         var anchors = found.Anchors.Select(map.Value.Graph.Resolve).OfType<GraphNode>().ToList();
         return (GraphAnswer.Build(map.Value, anchors, found.Suggested, depth, new MapText(scrubbers)), valid.Terms);
     }
+
+    private async ValueTask<Result<(GraphPart Graph, IReadOnlyList<string> Terms, ItemMiss? Miss)>> AnchorFor(QueryContextRequest request, ValidQuery valid,
+        (ContextSettings Settings, Scrubbers Scrubbers) context, CancellationToken cancellationToken)
+    {
+        if (request.Query.Item is { } item)
+        {
+            return await ItemAnchored(request, item, context, cancellationToken).ConfigureAwait(false);
+        }
+
+        var anchored = await Anchored(request, valid, context.Settings, context.Scrubbers, cancellationToken).ConfigureAwait(false);
+        return anchored.Map(a => (a.Graph, a.Terms, (ItemMiss?)null));
+    }
+
+    private static bool Answers(IReadOnlyList<FetchedRecord> fetched, string item) =>
+        fetched.Any(f => string.Equals(f.Item.Key.Value, item, StringComparison.Ordinal) || f.Aliases.Any(a => string.Equals(a.Text, item, StringComparison.Ordinal)));
+
+    /// <summary>
+    /// The item shape: the record the key names in the map the caller may read (its mentions and its decisions' targets are the anchors), searched
+    /// on its alias and those nodes' names. A key no sync linked is looked up live for a human or a service, and is unknown for a session (spec §3 source rule).
+    /// </summary>
+    private async ValueTask<Result<(GraphPart Graph, IReadOnlyList<string> Terms, ItemMiss? Miss)>> ItemAnchored(QueryContextRequest request, string item,
+        (ContextSettings Settings, Scrubbers Scrubbers) context, CancellationToken cancellationToken)
+    {
+        var map = await graphs.Read(request.Scope, request.Query.Draft, cancellationToken).ConfigureAwait(false);
+        var unmapped = map.IsError && !request.Query.Draft && (string.Equals(map.Error.Code, ContextErrors.NoMap.Code, StringComparison.Ordinal) || string.Equals(map.Error.Code, ContextErrors.UnknownAnchor.Code, StringComparison.Ordinal));   // no map, or nothing of it this session's repo implements
+        if (map.IsError && !unmapped)
+        {
+            return map.Error;
+        }
+
+        var record = map.IsError ? null : ItemAnchors.Record(map.Value.Graph, item);
+        if (record is null)
+        {
+            var miss = new ItemMiss(item, map.IsError ? [] : ItemAnchors.Suggest(map.Value.Graph, item.Trim()));
+            return request.Scope.Caller.Kind == ContextCallerKind.Session ? Unknown(miss) : (GraphPart.None, QueryRules.Terms(item), miss);
+        }
+
+        return FoundItem(request, (map.Value, record), item, context);
+    }
+
+    private static (GraphPart Graph, IReadOnlyList<string> Terms, ItemMiss? Miss) FoundItem(QueryContextRequest request, (VisibleMap Map, GraphNode Record) found, string item,
+        (ContextSettings Settings, Scrubbers Scrubbers) context)
+    {
+        var text = new MapText(context.Scrubbers);
+        var touched = ItemAnchors.Touched(found.Map.Graph, found.Record);
+        var terms = QueryRules.Terms(found.Record.Key.Name).Concat(QueryRules.Terms(item)).Concat(touched.Skip(1).SelectMany(n => text.SearchTerms(n.Label))).Distinct(StringComparer.Ordinal).Take(QueryRules.MaxTerms).ToList();
+        return (GraphAnswer.Build(found.Map, touched, [], request.Query.Depth ?? context.Settings.CascadeDepth, text), terms, null);
+    }
+
+    private static Error Unknown(ItemMiss miss) => QueryRules.UnknownItem(miss.Item, miss.Suggested);
 
     private static Result<(GraphPart Graph, IReadOnlyList<string> Terms)> Symbolic(Result<VisibleMap> map, string symbol, int depth, MapText text)
     {

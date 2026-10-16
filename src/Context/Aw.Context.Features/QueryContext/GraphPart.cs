@@ -12,5 +12,8 @@ namespace Aw.Context.Features.QueryContext;
 internal sealed record GraphPart(IReadOnlyList<PackCandidate> Candidates, IReadOnlyDictionary<string, Citation> Cites, IReadOnlyList<string> Anchors,
     string? MapVersion, IReadOnlyList<string> Suggested)
 {
+    /// <summary>Intent against intent: checked decision pairs that contradict on a reached node (spec §8.4).</summary>
+    internal IReadOnlyList<ResultConflict> Conflicts { get; init; } = [];
+
     internal static GraphPart None { get; } = new([], new Dictionary<string, Citation>(StringComparer.Ordinal), [], MapVersion: null, []);
 }

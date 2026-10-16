@@ -31,14 +31,20 @@ public static class IntentOverlay
         private readonly List<GraphNode> _nodes = [.. graph.Nodes];
         private readonly List<GraphEdge> _edges = [.. graph.Edges];
         private readonly List<IntentLink> _orphaned = [];
+        private readonly List<NodeAlias> _newAliases = [];
         private readonly HashSet<string> _present = graph.Nodes.Select(n => n.Key.Value).ToHashSet(StringComparer.Ordinal);
         private readonly Dictionary<string, NodeKey> _aliases = graph.Aliases.ToDictionary(a => a.Alias.Value, a => a.Target, StringComparer.Ordinal);
 
         public void AddNodes()
         {
-            foreach (var record in layer.Records)
+            var linked = layer.Links.Select(l => l.Record.Value).Concat(layer.Decisions.Select(d => d.Record.Value)).ToHashSet(StringComparer.Ordinal);
+            foreach (var record in layer.Records.Where(r => linked.Contains(r.Key.Value)))   // a record no rule linked is stored (so it isn't fetched again) but is not part of the graph
             {
                 AddNode(new GraphNode(RecordNode(record.Key), record.Title, Provenance.Deterministic));
+                foreach (var alias in record.Aliases.Where(a => NodeKey.TryFrom("record:" + a, out _)))
+                {
+                    _newAliases.Add(new NodeAlias(NodeKey.From("record:" + alias), RecordNode(record.Key)));
+                }
             }
 
             foreach (var decision in layer.Decisions)
@@ -89,7 +95,8 @@ public static class IntentOverlay
         {
             var known = graph.Decisions.Select(d => d.ToKey().Value).ToHashSet(StringComparer.Ordinal);
             var decisions = graph.Decisions.Concat(layer.Decisions.Where(d => known.Add(d.ToKey().Value))).ToList();
-            return new IntentOverlayResult(new GraphSnapshot(_nodes, _edges, graph.Aliases, decisions), _orphaned);
+            var taken = graph.Aliases.Select(a => a.Alias.Value).ToHashSet(StringComparer.Ordinal);
+            return new IntentOverlayResult(new GraphSnapshot(_nodes, _edges, [.. graph.Aliases, .. _newAliases.Where(a => taken.Add(a.Alias.Value))], decisions), _orphaned);
         }
 
         private void AddNode(GraphNode node)

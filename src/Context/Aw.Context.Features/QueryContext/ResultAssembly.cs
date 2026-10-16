@@ -31,7 +31,7 @@ internal sealed class ResultAssembly(IEgressScrubber egress, QueryId queryId, Da
 
         var packed = Packer.Pack(candidates, budget);
         return new ContextResult(ContextResult.CurrentSchemaVersion, queryId, query, graph.Anchors, graph.MapVersion, asOf, packed.Sections,
-            Conflicts: [], graph.Suggested, [.. records.Degraded.Select(d => d with { Message = egress.Scrub(d.Message).Text })], packed.Truncated,
+            graph.Conflicts, graph.Suggested, [.. records.Degraded.Select(d => d with { Message = egress.Scrub(d.Message).Text })], packed.Truncated,
             new BudgetUse(budget, packed.Used, Estimate: true), cites);
     }
 

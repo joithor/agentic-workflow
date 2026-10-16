@@ -1,4 +1,5 @@
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Graph;
 using Aw.Context.Core.Linking;
 using Aw.Context.Core.Trust;
 using Aw.Kernel;
@@ -20,9 +21,10 @@ public sealed class MapReader(IGraphStore store, IIntentStore intents)
     /// <param name="draft">True for the newest draft instead of the current version.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The visible map, or SND-CONTEXT-001/003/004/020/030.</returns>
-    public async ValueTask<Result<VisibleMap>> Read(ContextScope scope, bool draft, CancellationToken cancellationToken)
+    public ValueTask<Result<VisibleMap>> Read(ContextScope scope, bool draft, CancellationToken cancellationToken) => ReadMap(scope, draft, withIntent: true, cancellationToken);
+
+    private async ValueTask<Result<VisibleMap>> ReadMap(ContextScope scope, bool draft, bool withIntent, CancellationToken cancellationToken)
     {
-        _ = intents;   // S-5B slice 5 stub
         if (MapAccess.Gate(scope) is { } refused)
         {
             return refused;
@@ -38,8 +40,14 @@ public sealed class MapReader(IGraphStore store, IIntentStore intents)
 
         // A 'propose' row only adds its node to a draft: a pending proposal is never part of the current map (a promote makes an accepted one a node of the version).
         // A deny glob added after the map was built hides its paths now, before any rebuild: the one view every reader uses (review #220 run 3).
-        var visible = MapAccess.View(map.Graph, map.Overrides, scope, pending: draft);
-        return visible.IsError ? visible.Error : new VisibleMap(map, visible.Value.Applied);
+        var layer = withIntent ? await intents.Layer(cancellationToken).ConfigureAwait(false) : Kernel.Results.Success(IntentLayer.Empty);
+        if (layer.IsError)
+        {
+            return layer.Error;
+        }
+
+        var visible = withIntent ? MapAccess.ViewWithIntent(layer.Value, map.Graph, map.Overrides, scope, pending: draft) : MapAccess.View(map.Graph, map.Overrides, scope, pending: draft);
+        return visible.IsError ? visible.Error : new VisibleMap(map, visible.Value.Applied) { Conflicts = Seen(layer.Value.Conflicts, visible.Value.Applied) };
     }
 
     /// <summary>Reads the map as the structure alone: no synced records, decisions or links. The sync walks this, so a record never links to a record's own node.</summary>
@@ -47,7 +55,14 @@ public sealed class MapReader(IGraphStore store, IIntentStore intents)
     /// <param name="draft">Whether to read the draft.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The visible map, or the reason there is none.</returns>
-    public ValueTask<Result<VisibleMap>> ReadWithoutIntent(ContextScope scope, bool draft, CancellationToken cancellationToken) => Read(scope, draft, cancellationToken);
+    public ValueTask<Result<VisibleMap>> ReadWithoutIntent(ContextScope scope, bool draft, CancellationToken cancellationToken) =>
+        ReadMap(scope, draft, withIntent: false, cancellationToken);
+
+    private static IReadOnlyList<DecisionConflict> Seen(IReadOnlyList<DecisionConflict> pairs, GraphSnapshot graph)
+    {
+        var present = graph.Decisions.Select(d => d.ToKey().Value).ToHashSet(StringComparer.Ordinal);
+        return [.. pairs.Where(c => present.Contains(c.A.Value) && present.Contains(c.B.Value))];
+    }
 
     /// <summary>The map the app's lenses and file-map reads start from: <see cref="Read"/>, but a draft that doesn't exist is SND-CONTEXT-044 (a missing map stays 030).</summary>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>

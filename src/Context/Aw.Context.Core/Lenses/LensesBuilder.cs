@@ -20,7 +20,6 @@ public static class LensesBuilder
     {
         ArgumentNullException.ThrowIfNull(basis);
         ArgumentNullException.ThrowIfNull(graph);
-        _ = checkedPairs;   // S-5B slice 5 stub
         var clamped = Math.Clamp(depth, 0, GraphWalk.MaxDepth);
         if (LensScope.Of(graph, anchor, clamped) is not { } scope)
         {
@@ -33,6 +32,6 @@ public static class LensesBuilder
         var items = productKeys.Concat(codeKeys).Concat(scope.IntoScope(EdgeType.Mentions, EdgeType.Decides).Select(e => e.From.Value)).ToHashSet(StringComparer.Ordinal);
         var anchorTrust = TrustPolicy.ForNode(scope.Anchor, LensScope.Confirmed(scope.Anchor.Provenance));
         return new LensesView(1, new LensAnchor(scope.Anchor.Key, scope.Anchor.Label, scope.Anchor.Key.Kind, anchorTrust), basis.Map, basis.Draft, clamped, basis.AsOf,
-            new LensBands(intent, product, code), LensEdges.Across(graph, items), LensConflicts.Of(scope), LensCoverageBuilder.Of(scope), [], new Dictionary<string, Results.Citation>(StringComparer.Ordinal));
+            new LensBands(intent, product, code), LensEdges.Across(graph, items), LensConflicts.Of(scope, checkedPairs ?? []), LensCoverageBuilder.Of(scope), [], new Dictionary<string, Results.Citation>(StringComparer.Ordinal));
     }
 }
