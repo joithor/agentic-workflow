@@ -1,6 +1,6 @@
-using Aw.Kernel.Testing;
 using System.Net;
 using System.Text.Json;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.GetInstanceFact;
 using Aw.Sindri.Tests.ApplyCommand;
@@ -158,7 +158,7 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
 
     private static string[] FactStatuses(JsonElement e) => [.. e.GetProperty("facts").EnumerateArray().Select(static f => $"{f.GetProperty("key")}={f.GetProperty("status")}")];
 
-    private static string Token(Served served) => served.Sindri.GetRequiredService<Aw.Sindri.Core.Auth.HeldHumanToken>().Current!.Value;
+    private static string Token(Served served) => served.Sindri.GetRequiredService<Core.Auth.HeldHumanToken>().Current!.Value;
 
     private async Task<string> Started(Served served, string item)
     {

@@ -26,7 +26,7 @@ public sealed class CloseItemActiveInstanceTests
     public async Task CloseItem_is_refused_while_an_instance_is_active()
     {
         await Seed();
-        await Fold(EventTypes.WorkflowStarted, Row("produce", new FrameSummary("produce", 1, "1.1", Child: null, Aw.Sindri.Core.Workflow.Engine.StepRuntime.Desk), outcome: null));
+        await Fold(EventTypes.WorkflowStarted, Row("produce", new FrameSummary("produce", 1, "1.1", Child: null, Core.Workflow.Engine.StepRuntime.Desk), outcome: null));
         using var entered = _h.Slice.Callers.Enter(A.Caller().Human().Build());
 
         var result = await Service().Handle(A.CloseItemRequest().Build(), Token);
@@ -41,7 +41,7 @@ public sealed class CloseItemActiveInstanceTests
     public async Task CloseItem_once_the_instance_ended_is_the_ordinary_already_closed_refusal()
     {
         await Seed();
-        await Fold(EventTypes.WorkflowStarted, Row("produce", new FrameSummary("produce", 1, "1.1", Child: null, Aw.Sindri.Core.Workflow.Engine.StepRuntime.Desk), outcome: null));
+        await Fold(EventTypes.WorkflowStarted, Row("produce", new FrameSummary("produce", 1, "1.1", Child: null, Core.Workflow.Engine.StepRuntime.Desk), outcome: null));
         await Fold(EventTypes.WorkflowTransition, Row("done", new FrameSummary("done", 2, Run: null, Child: null), outcome: "resolved", trigger: "cancel"));
         using var entered = _h.Slice.Callers.Enter(A.Caller().Human().Build());
 
@@ -63,7 +63,7 @@ public sealed class CloseItemActiveInstanceTests
     private static WorkflowEventPayload Row(string to, FrameSummary frame, string? outcome, string trigger = "step.completed")
     {
         var delta = new WorkflowEventDelta(frame, Suspension: null, PendingPark: null, Loops: null, TokensSpent: null, TokensGranted: null, Facts: null, outcome);
-        var detail = new WorkflowEventDetail(Aw.Sindri.Core.Workflow.Engine.TriggerKey.For(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId.From("WFI-" + new string('a', 32)), "t"), "human:cli",
+        var detail = new WorkflowEventDetail(Core.Workflow.Engine.TriggerKey.For(Core.Workflow.Engine.WorkflowInstanceId.From("WFI-" + new string('a', 32)), "t"), "human:cli",
             SourceSequence: null, ArgumentsSha256: null, ReportSha256: null, Answer: null, Amount: null, Reason: null, [], [], Grant: null, Override: null, Refusal: null, [], delta);
         return new WorkflowEventPayload(Address, "from", to, trigger, Outcome: null, Run: null, detail);
     }
