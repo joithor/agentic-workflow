@@ -99,4 +99,23 @@ public sealed class ItemDecideRetryTests
         Assert.Empty(sheet.Needs.Decisions);
         Assert.Equal(string.Empty, sheet.Needs.Refusal);
     }, Token);
+
+    [Fact]
+    public Task Choose_sets_a_refusal_only_if_the_sheet_is_still_on_the_pressed_item() => UiThread.Run(async () =>
+    {
+        var sheet = await SheetRefusedOnDecisionItem();
+        sheet.Show(A.NewItem);
+        await sheet.Open(_api, DecisionItem, Token);
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _server.CommandGate = gate;
+        _server.Decided = RouteAnswer.Problem("decisions-id", "while-stalled");
+
+        var pressed = sheet.Needs.Choose(sheet.Needs.Decisions[0].Id, "accept");
+        sheet.Show(A.NewItem);
+        gate.SetResult();
+        await pressed;
+
+        Assert.Equal(string.Empty, sheet.Needs.Refusal);
+        Assert.Empty(sheet.Needs.Decisions);
+    }, Token);
 }
