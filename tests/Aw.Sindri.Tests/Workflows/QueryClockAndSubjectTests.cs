@@ -1,10 +1,10 @@
-using Microsoft.Extensions.DependencyInjection;
 using System.Runtime.Versioning;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Infrastructure.Workflows;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Tests.Workflows;
 
@@ -174,7 +174,7 @@ public sealed class QueryClockAndSubjectTests : IDisposable
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
         while (true)
         {
-            var row = (await sindri.GetRequiredService<Aw.Sindri.Core.Ledger.ILedgerStore>().ReadAfter(0, 100, ct)).Value.FirstOrDefault(static e => e.Envelope.Type == "workflow.started");
+            var row = (await sindri.GetRequiredService<Core.Ledger.ILedgerStore>().ReadAfter(0, 100, ct)).Value.FirstOrDefault(static e => e.Envelope.Type == "workflow.started");
             if (row is not null)
             {
                 return System.Text.Json.JsonDocument.Parse(row.Envelope.Payload).RootElement.GetProperty("detail").GetProperty("delta").Clone();
