@@ -9,15 +9,42 @@ internal sealed partial class ChoiceRules
 {
     private static readonly OutcomeName _uncertain = OutcomeName.From("uncertain");
 
-    /// <summary>The state a desk twin state names in 'from', or null when it names none or isn't a twin.</summary>
+    /// <summary>The state a desk twin state names in its state parameter, or null when it names none or isn't a twin.</summary>
     private static string? TwinOf(RecipeState state, BlockCatalog catalog) =>
         state.Step is { } step && catalog.Find(step.Use) is { OutcomesFrom: { } from } && ParameterLists.IsTwin(from)
-        && step.With.TryGetValue("from", out var named) && named.Literal is { ValueKind: System.Text.Json.JsonValueKind.String } text
-            ? text.GetString()
+            ? ParameterLists.NamedState(from, step.With)
             : null;
+
+    /// <summary>The twin states whose state parameter is a { fact } or { profile } value: they twin no route that validation can name.</summary>
+    private static IEnumerable<RecipeFinding> Unresolved(Recipe recipe, BlockCatalog catalog, RecipeSource source)
+    {
+        foreach (var (name, state) in recipe.States)
+        {
+            if (state.Step is { } step && catalog.Find(step.Use) is { OutcomesFrom: { } from } && ParameterLists.IsTwin(from)
+                && step.With.TryGetValue(ParameterLists.StateParameter(from), out var named) && Computed(named) is { } computed)
+            {
+                var parameter = ParameterLists.StateParameter(from);
+                yield return source.Finding(
+                    "RCP-CHOICE-005", $"states.{name}.step.with.{parameter}", $"{parameter} of state '{name}' is a {computed} value",
+                    $"name the route state it twins as a literal: {parameter}: <state>");
+            }
+        }
+    }
 
     private static IEnumerable<RecipeFinding> Twins(Recipe recipe, List<Route> routes, BlockCatalog catalog, RecipeSource source)
     {
+        var unresolved = Unresolved(recipe, catalog, source).ToList();
+        if (unresolved.Count > 0)
+        {
+            // why: the route each such twin belongs to can't be told, so the uncertain and step.failed checks below would only echo this finding
+            foreach (var finding in unresolved)
+            {
+                yield return finding;
+            }
+
+            yield break;
+        }
+
         foreach (var (name, state) in recipe.States)
         {
             if (TwinOf(state, catalog) is { } from && !routes.Exists(r => string.Equals(r.State, from, StringComparison.Ordinal)))

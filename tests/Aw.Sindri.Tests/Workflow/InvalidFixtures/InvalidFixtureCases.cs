@@ -284,7 +284,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-CHOICE-005-computed"] = new(
             FixtureSetup.Shipped,
-            "RCP-CHOICE-005: from of state 'route-desk' is a { profile } value at RCP-CHOICE-005-computed.yaml:0:0 (states.route-desk.step.with.from); name the route state it twins as a literal: from: <state>",
+            "RCP-CHOICE-005: from of state 'route-desk' is a { profile } value at RCP-CHOICE-005-computed.yaml:20:44 (states.route-desk.step.with.from); name the route state it twins as a literal: from: <state>",
             []),
         ["RCP-CHOICE-006"] = new(
             FixtureSetup.Shipped,
