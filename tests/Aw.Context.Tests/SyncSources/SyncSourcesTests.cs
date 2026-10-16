@@ -92,6 +92,31 @@ public sealed class SyncSourcesTests
     }
 
     [Fact]
+    public async Task SyncSources_stops_between_fetches_when_the_time_cap_passes_and_the_next_run_finishes_the_node()
+    {
+        await using var onyx = await FakeOnyxServer.Start();
+        using var harness = new OnyxSourceHarness(onyx.Url, onyx.Token);
+        using var whole = new MapWorld(intent: harness.Source);
+        _ = await whole.ImportFixture();
+        var all = (await whole.Engine.Sync("onyx", _scope, Ct)).Value.Sources[0].Fetched;
+        var source = new ScriptedSource(harness.Source);
+        using var world = new MapWorld(intent: source);
+        _ = await world.ImportFixture();
+        source.AfterFetch = () => world.Clock.Advance(SyncSourcesService.RunCap + TimeSpan.FromSeconds(1));   // the first fetch takes longer than the whole run may
+
+        var capped = (await world.Engine.Sync("onyx", _scope, Ct)).Value.Sources[0];
+
+        Assert.Equal(ContextErrors.SyncCapped.Code, capped.Code);
+        Assert.Equal(1, capped.Fetched);   // the node's other hits waited for the next run
+        source.AfterFetch = null;
+        var resumed = (await world.Engine.Sync("onyx", _scope, Ct)).Value.Sources[0];
+
+        Assert.Null(resumed.Code);
+        Assert.Equal(all, capped.Fetched + resumed.Fetched);   // nothing fetched twice, nothing lost
+        Assert.Equal(all, (await world.Intents.Layer(Ct)).Value.Records.Count);
+    }
+
+    [Fact]
     public async Task SyncSources_after_a_finished_run_whose_last_nodes_have_no_terms_the_next_run_walks_the_whole_map_again()
     {
         await using var onyx = await FakeOnyxServer.Start();

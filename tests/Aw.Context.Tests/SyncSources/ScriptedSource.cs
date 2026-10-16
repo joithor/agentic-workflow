@@ -15,6 +15,9 @@ internal sealed class ScriptedSource(IContextSource inner) : IContextSource
     /// <summary>Runs after the inner search answered, so a clock it advances can't cancel that search.</summary>
     public Action? AfterSearch { get; set; }
 
+    /// <summary>Runs after the inner fetch answered, so a clock it advances can't cancel that fetch.</summary>
+    public Action? AfterFetch { get; set; }
+
     public SourceDescriptor Describe() => inner.Describe();
 
     public async ValueTask<Result<IReadOnlyList<SourceHit>>> Search(SourceQuery query, CancellationToken cancellationToken)
@@ -30,7 +33,12 @@ internal sealed class ScriptedSource(IContextSource inner) : IContextSource
         return hits;
     }
 
-    public ValueTask<Result<SourceRecord>> Fetch(SourceRef reference, CancellationToken cancellationToken) => inner.Fetch(reference, cancellationToken);
+    public async ValueTask<Result<SourceRecord>> Fetch(SourceRef reference, CancellationToken cancellationToken)
+    {
+        var fetched = await inner.Fetch(reference, cancellationToken).ConfigureAwait(false);
+        AfterFetch?.Invoke();
+        return fetched;
+    }
 
     public ValueTask<Result<IReadOnlyList<SourceVersion?>>> Versions(IReadOnlyList<SourceRef> refs, CancellationToken cancellationToken) => inner.Versions(refs, cancellationToken);
 
