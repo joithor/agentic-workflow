@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.Views.NeedsYou;
 
@@ -75,7 +76,7 @@ public sealed class NeedsYouFramesTests : FrameHost
     {
         var (window, shell) = await Connected(s => s.NeedsYou.Count > 0);
         var failure = shell.NeedsYou.Rows.First(r => r.Details.Count > 0);
-        shell.Navigate(new Aw.Sindri.Ui.Navigation.DeepLink(Aw.Sindri.Ui.Navigation.DeepLinkKind.NeedsYou, failure.Id));
+        shell.Navigate(new DeepLink(DeepLinkKind.NeedsYou, failure.Id));
         Settle(window);
 
         var details = Named<ItemsControl>(window, "SheetRowDetails").GetVisualDescendants().OfType<StackPanel>().Where(p => p.DataContext is ViewModels.NeedsYou.SheetDetail).ToList();

@@ -62,7 +62,7 @@ internal sealed class SeenTracker : ObservableObject
         IReadOnlyList<string> stored;
         try
         {
-            stored = (await _preferences.Load(cancellationToken).ConfigureAwait(false)).SeenIds;
+            stored = (await _preferences.Load(cancellationToken).ConfigureAwait(true)).SeenIds;   // back on the caller (the UI thread): the change below is bound
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
