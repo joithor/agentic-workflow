@@ -72,6 +72,15 @@ public sealed class ContextReviewRowsTests
         Assert.Equal("sindri context map build", build.Cli.Text);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void Sync_sources_is_a_job_row_that_waits_for_API_P6_with_no_command_type()
+    {
+        var sync = Row("SyncSources");
+
+        Assert.Equal((ActionClass.Job, "pending:API-P6", "POST", "/sindri/context/sources/sync"), (sync.Class, sync.Ui, sync.Method, sync.Route));
+        Assert.Null(sync.CommandType);   // the S-5B part is in (the context-sync service); only the job runtime is missing
+    }
+
     [Theory, Trait("Lane", "unit")]
     [InlineData("accept")]
     [InlineData("reject")]

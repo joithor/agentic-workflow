@@ -1,4 +1,5 @@
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Linking;
 
 namespace Aw.Context.Core.Lenses;
 
@@ -8,7 +9,23 @@ internal static class LensConflicts
     private const int ShortKey = 17;
 
     /// <summary>The conflicts of the scope, ordered by node, decision and the one it supersedes.</summary>
-    internal static List<LensConflict> Of(LensScope scope)
+    internal static List<LensConflict> Of(LensScope scope, IReadOnlyList<DecisionConflict> checkedPairs)
+    {
+        var supersedes = Supersedes(scope);
+        var contradicts = Contradicts(scope, checkedPairs);
+        return [.. supersedes, .. contradicts];
+    }
+
+    private static List<LensConflict> Contradicts(LensScope scope, IReadOnlyList<DecisionConflict> checkedPairs)
+    {
+        var decides = scope.IntoScope(EdgeType.Decides).ToLookup(e => e.From.Value, e => e.To, StringComparer.Ordinal);
+        return [.. checkedPairs.Where(c => c.Verdict == ConflictVerdict.Contradicts)
+            .SelectMany(c => decides[c.A.Value].Where(n => decides[c.B.Value].Any(m => m.Value == n.Value)).Select(n => (Node: n, Pair: c)))
+            .OrderBy(x => x.Node.Value, StringComparer.Ordinal).ThenBy(x => x.Pair.A.Value, StringComparer.Ordinal).ThenBy(x => x.Pair.B.Value, StringComparer.Ordinal)
+            .Select(x => new LensConflict(ConflictKind.Contradicts, x.Node, x.Pair.A, x.Pair.B.Value, $"{Short(x.Pair.A)} contradicts {Short(x.Pair.B)}", [], []))];
+    }
+
+    private static List<LensConflict> Supersedes(LensScope scope)
     {
         var supersedes = scope.Graph.Edges.Where(e => e.Type == EdgeType.Supersedes).ToList();
         return [.. scope.IntoScope(EdgeType.Decides)

@@ -1,5 +1,6 @@
 using System.Globalization;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Linking;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Packing;
 using Aw.Context.Core.Results;
@@ -50,7 +51,29 @@ internal static class GraphAnswer
             cites[MapMarker] = Cite(map, candidates);
         }
 
-        return new GraphPart(candidates, cites, [.. anchors.Select(a => a.Key.Value)], map.Snapshot.Label, [.. suggested.Select(k => k.Value)]);
+        return new GraphPart(candidates, cites, [.. anchors.Select(a => a.Key.Value)], map.Snapshot.Label, [.. suggested.Select(k => k.Value)]) { Conflicts = Conflicts(map, reached, text), DecisionRecords = DecisionRecords(graph, reached), LinkedRecords = LinkedRecords(graph, anchors, reached) };
+    }
+
+    private static Dictionary<string, string> DecisionRecords(GraphSnapshot graph, HashSet<string> reached)
+    {
+        var deciding = graph.Edges.Where(e => e.Type == EdgeType.Decides && reached.Contains(e.To.Value)).Select(e => e.From.Value).ToHashSet(StringComparer.Ordinal);
+        return graph.Decisions.Select(d => (Key: d.ToKey().Value, Record: d.Record.Value)).Where(d => deciding.Contains(d.Key)).ToDictionary(d => d.Key, d => d.Record, StringComparer.Ordinal);
+    }
+
+    private const string RecordPrefix = "record:";
+
+    private static List<string> LinkedRecords(GraphSnapshot graph, IReadOnlyList<GraphNode> anchors, HashSet<string> reached) =>
+        [.. anchors.Select(a => a.Key.Value).Concat(graph.Edges.Where(e => e.Type == EdgeType.Mentions && reached.Contains(e.To.Value)).Select(e => e.From.Value))
+            .Where(k => k.StartsWith(RecordPrefix, StringComparison.Ordinal)).Select(k => k[RecordPrefix.Length..]).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+
+    // Two decisions on a reached node that a model check found contradicting: the answer lists them by the decisions' item ids (spec §8.4, A-F13).
+    private static List<ResultConflict> Conflicts(VisibleMap map, HashSet<string> reached, MapText text)
+    {
+        var decides = map.Graph.Edges.Where(e => e.Type == EdgeType.Decides && reached.Contains(e.To.Value)).ToLookup(e => e.From.Value, e => e.To.Value, StringComparer.Ordinal);
+        return [.. map.Conflicts.Where(c => c.Verdict == ConflictVerdict.Contradicts)
+            .SelectMany(c => decides[c.A.Value].Intersect(decides[c.B.Value], StringComparer.Ordinal).Select(node => (Node: node, Pair: c)))
+            .OrderBy(x => x.Node, StringComparer.Ordinal).ThenBy(x => x.Pair.A.Value, StringComparer.Ordinal).ThenBy(x => x.Pair.B.Value, StringComparer.Ordinal)
+            .Select(x => new ResultConflict(x.Node, [x.Pair.A.Value, x.Pair.B.Value], [], text.Line($"{x.Pair.A.Value[..Math.Min(17, x.Pair.A.Value.Length)]} contradicts {x.Pair.B.Value[..Math.Min(17, x.Pair.B.Value.Length)]}")))];
     }
 
     // Between anchors the shallower path wins; at equal depth the one with fewer owns hops (as Cascade orders one anchor's), then the key the path starts from.

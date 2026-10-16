@@ -118,4 +118,23 @@ public sealed class SettingsReaderTests
     [InlineData("""{"labeling":true}""")]
     public void A_labeling_section_that_is_not_enabled_and_maxTokens_is_SND_CONTEXT_001(string json) =>
         Assert.Equal("SND-CONTEXT-001", Read(json).Error.Code);
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_per_sync_labeling_cap_defaults_to_50000_and_is_read()
+    {
+        Assert.Equal(50_000, Read("{}").Value.Labeling.MaxTokensPerSync);
+        Assert.Equal(20_000, Read("""{"labeling":{"maxTokensPerSync":20000}}""").Value.Labeling.MaxTokensPerSync);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("""{"labeling":{"maxTokensPerSync":0}}""")]
+    [InlineData("""{"labeling":{"maxTokensPerSync":-5}}""")]
+    [InlineData("""{"labeling":{"maxTokensPerSync":20000001}}""")]
+    public void A_per_sync_cap_outside_1_to_20000000_is_SND_CONTEXT_001_at_its_key(string json)
+    {
+        var settings = Read(json);
+
+        Assert.Equal("SND-CONTEXT-001", settings.Error.Code);
+        Assert.StartsWith("context.labeling.maxTokensPerSync:", settings.Error.Message, StringComparison.Ordinal);
+    }
 }

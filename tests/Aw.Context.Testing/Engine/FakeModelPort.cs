@@ -9,7 +9,13 @@ public sealed class FakeModelPort : IModelPort
     /// <summary>The text every request is answered with.</summary>
     public string Answer { get; set; } = "fake answer";
 
-    /// <summary>The requests asked so far.</summary>
+    /// <summary>When set, answers each request itself (the tests route on the purpose and the prompt) instead of <see cref="Answer"/>.</summary>
+    public Func<ModelRequest, string>? Responder { get; set; }
+
+    /// <summary>When it returns an error for a request, the call fails with it (a model that is down for some purposes). The failed request is still recorded in <see cref="Requests"/>.</summary>
+    public Func<ModelRequest, Error?>? Fail { get; set; }
+
+    /// <summary>The requests asked so far, failed ones included.</summary>
     public IList<ModelRequest> Requests { get; } = [];
 
     /// <inheritdoc />
@@ -18,7 +24,13 @@ public sealed class FakeModelPort : IModelPort
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
         Requests.Add(request);
-        var text = Answer.Length / 4 > request.MaxTokens ? Answer[..(request.MaxTokens * 4)] : Answer;
+        if (Fail?.Invoke(request) is { } failure)
+        {
+            return ValueTask.FromResult<Result<ModelAnswer>>(failure);
+        }
+
+        var answer = Responder?.Invoke(request) ?? Answer;
+        var text = answer.Length / 4 > request.MaxTokens ? answer[..(request.MaxTokens * 4)] : answer;
         return ValueTask.FromResult<Result<ModelAnswer>>(new ModelAnswer(text, (request.Prompt.Length + 3) / 4, (text.Length + 3) / 4));
     }
 }
