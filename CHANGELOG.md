@@ -23,8 +23,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The flat layout (`$AW_STATE_DIR/meta/team.json`) keeps working unchanged while no team is selected; nothing migrates
-  it automatically. `AW_META_CONFIG` still overrides the config path. `team-init` for a name with no legacy config now
-  writes `teams/<name>/team.json` (it used to write the flat file).
+  it automatically. `team-init` for a name with no legacy config now writes `teams/<name>/team.json` (it used to write
+  the flat file).
+- `AW_META_CONFIG` still overrides the config path, except when a team is selected and the file's `team` names another
+  one (a lane's own variable in `aw-meta --team B ...`): the override is then ignored, in aw-meta and in the launcher
+  scripts.
+- `team-migrate` refuses (`AW-META-020`) while the team's meta or a lane session runs, when the name can't be a directory,
+  or when `teams/<name>` exists; it checkpoints the WAL, moves `meta.db*` first and `team.json` last, and leaves `gates/`.
+- A bad `--team`/`AW_META_TEAM` name, like several teams with none selected, lets `stop-check` and `outbox-record` through
+  (exit 0) and is an error for every other command. `role-*` and `health` need a selected team when several exist.
+- `meta-lane.sh` registers the meta role with `AW_META_TEAM` set to the launched team; `meta-lane-gate.sh` and
+  `session-id-report.sh` write under `AW_META_DIR` when it is set; `install-meta.sh` refuses to guess the team repo when
+  several teams exist and none is selected.
 
 ## [Unreleased] - 2026-10-10 — MCP bridge retired
 

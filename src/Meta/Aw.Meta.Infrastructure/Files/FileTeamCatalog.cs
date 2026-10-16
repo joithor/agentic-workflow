@@ -65,9 +65,10 @@ internal sealed class FileTeamCatalog(TeamLayout layout, ISessionDirectory sessi
         return Move(plan.Value);
     }
 
-    // A live session named <team>-<lane>, or one whose id a lane-sessions record holds.
+    // A live session named <team>-<lane> for a lane of the legacy config, or one whose id a lane-sessions record holds.
     private string? RunningSession(string team, IReadOnlyList<Core.Lanes.LiveSession> live)
     {
+        var names = new HashSet<string>(Read(_legacyConfig)?.Lanes.Select(lane => team + "-" + lane) ?? [], StringComparer.Ordinal);
         var lanes = Path.Combine(layout.MetaRoot, "lane-sessions");
         var recorded = new HashSet<string>(StringComparer.Ordinal);
         if (Directory.Exists(lanes))
@@ -85,7 +86,7 @@ internal sealed class FileTeamCatalog(TeamLayout layout, ISessionDirectory sessi
             }
         }
 
-        var found = live.FirstOrDefault(s => s.Name.StartsWith(team + "-", StringComparison.Ordinal) || recorded.Contains(s.Session.Value));
+        var found = live.FirstOrDefault(s => names.Contains(s.Name) || recorded.Contains(s.Session.Value));
         return found is null ? null : found.Name.Length > 0 ? found.Name : found.Session.Value;
     }
 

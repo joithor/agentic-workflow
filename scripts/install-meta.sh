@@ -58,7 +58,13 @@ fi
 LAUNCH_DIR="$SCRIPT_DIR"
 # shellcheck source=meta-team-lib.sh
 . "$SCRIPT_DIR/scripts/meta-team-lib.sh"
-meta_resolve "$STATE" "${AW_META_TEAM:-}" 2> /dev/null || true   # several teams and none selected: no team repo to check
+meta_amb=0
+meta_resolve "$STATE" "${AW_META_TEAM:-}" 2> /dev/null || meta_amb=1   # several teams and none selected: which team's repo to check is unknown
+if [ "$meta_amb" = 1 ] && [ "$allow_worktree" != 1 ]; then
+  echo "install-meta: several teams exist and none is selected, so the team's repo to install from is unknown." >&2
+  echo "  Set AW_META_TEAM=<name> (aw-meta team-list shows them), or pass --allow-worktree to install from this tree on purpose." >&2
+  exit 3
+fi
 team_json="${AW_META_CONFIG:-$META_CONFIG}"
 team_repo="$(jq -r '.repo // empty' "$team_json" 2>/dev/null || true)"
 if [ "$allow_worktree" != 1 ]; then
@@ -163,5 +169,5 @@ else
   ln -sfn "$BIN/aw-meta" "$LOCAL_BIN/aw-meta"
   ln -sfn "$LAUNCH_DIR/scripts/meta-launch.sh" "$LOCAL_BIN/aw-meta-launch"
   echo "  meta: aw-meta and aw-meta-launch in $LOCAL_BIN"
-  [ -f "$META_CONFIG" ] || echo "  meta: next, write a team config: aw-meta team-init --team <t> --repo <dir> --lanes a,b,c (example: skills/meta/examples/agentic-workflow.team.json)"
+  [ -f "$META_CONFIG" ] || [ "$meta_amb" = 1 ] || echo "  meta: next, write a team config: aw-meta team-init --team <t> --repo <dir> --lanes a,b,c (example: skills/meta/examples/agentic-workflow.team.json)"
 fi

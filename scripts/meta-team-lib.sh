@@ -20,10 +20,12 @@ meta_resolve() {
     META_DIR="$named"; META_CONFIG="$named/team.json"; return 0
   fi
   [ -f "$root/team.json" ] && return 0
-  # only valid names count, in byte order, as TeamResolver.Named does
-  for d in $(LC_ALL=C ls -1 "$root/teams" 2> /dev/null); do
+  # only valid names count, in byte order (the glob is sorted by the C locale), as TeamResolver.Named does
+  local p LC_COLLATE=C
+  for p in "$root"/teams/*/; do
+    d="${p%/}"; d="${d##*/}"
     case "$d" in *[!a-z0-9-]*|-*|"") continue ;; esac
-    [ -f "$root/teams/$d/team.json" ] && found+=("$d")
+    [ -f "$p/team.json" ] && found+=("$d")
   done
   case "${#found[@]}" in
     0) return 0 ;;

@@ -107,6 +107,9 @@ config="$(meta_pick_config "$team_sel")"   # a lane's AW_META_CONFIG is ignored 
 meta_dir="$META_DIR"
 [ -f "$config" ] || { echo "meta-launch: no team config at $config (run: aw-meta team-init --team <t> --repo <dir> --lanes a,b)" >&2; exit 1; }
 team="$(jq -r '.team // empty' "$config")"
+if [ -n "$team_sel" ] && [ "$team" != "$team_sel" ]; then
+  echo "meta-launch: $config names team '$team', not the selected '$team_sel' (its directory and the team field must agree)" >&2; exit 2
+fi
 repo="$(jq -r '.repo // empty' "$config")"
 all="$(jq -r '[(.metaLane // "meta")] + (.lanes // []) | reduce .[] as $l ([]; if index([$l]) then . else . + [$l] end) | join(",")' "$config")"
 tmux_t=(tmux -L "$team")            # every tmux call of this launcher: the team's own socket

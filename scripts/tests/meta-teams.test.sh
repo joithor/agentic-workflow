@@ -67,6 +67,20 @@ env -i PATH="$PATH" HOME="$W/home" AW_STATE_DIR="$S" AW_META_BIN="$S/bin/aw-meta
 check "meta-lane.sh: role-set runs for the launched team (AW_META_TEAM)" "$(sed -n 's/^team=\([^ ]*\) args=role-set.*/\1/p' "$W/roles" | head -1)" "foo"
 check "meta-lane.sh: the lane's session id lands in that team's lane-sessions" "$([ -s "$S/meta/teams/foo/lane-sessions/meta" ] && echo yes):$([ -e "$S/meta/lane-sessions/meta" ] && echo flat)" "yes:"
 
+# install-meta.sh and meta-launch.sh refuse to guess with several teams and none selected (before building or touching tmux sessions).
+S="$W/amb"; mk_named "$S" alpha; mk_named "$S" beta; mkdir -p "$W/home"
+if [ "$(uname)" != Darwin ]; then   # install-meta.sh stops earlier on macOS (aw-meta is Linux-only)
+  OUT="$(env -i PATH="$PATH" HOME="$W/home" AW_STATE_DIR="$S" bash "$DIR/install-meta.sh" 2>&1)"; RC=$?
+  check "install-meta.sh: several teams, none selected: refused (rc 3), naming the way out" "$RC:$(grep -c 'AW_META_TEAM' <<< "$OUT")" "3:1"
+fi
+if command -v tmux > /dev/null; then
+  OUT="$(env -i PATH="$PATH" HOME="$W/home" AW_STATE_DIR="$S" bash "$DIR/meta-launch.sh" --dry-run 2>&1)"; RC=$?
+  check "meta-launch.sh: several teams, none selected: refused (rc 2) listing them" "$RC:$(grep -c 'alpha beta' <<< "$OUT")" "2:1"
+  mkdir -p "$S/meta/teams/gamma"; jq -n '{team:"other",repo:"/r",lanes:["a"]}' > "$S/meta/teams/gamma/team.json"
+  OUT="$(env -i PATH="$PATH" HOME="$W/home" AW_STATE_DIR="$S" bash "$DIR/meta-launch.sh" --team gamma --dry-run 2>&1)"; RC=$?
+  check "meta-launch.sh: a team.json whose team differs from its directory is refused (rc 2)" "$RC:$(grep -c "not the selected 'gamma'" <<< "$OUT")" "2:1"
+fi
+
 # The Claude hooks: AW_META_TEAM wins; else the tmux socket's name, only for a team that exists on disk.
 stub() { # state: an aw-meta stub that records the team it ran with and the arguments
   mkdir -p "$1/bin"

@@ -215,6 +215,7 @@ public sealed class NamedTeamsCommandTests : IDisposable
         Assert.Equal(0, done.Exit);
         Assert.False(File.Exists(Meta("team.json")));
         Assert.False(File.Exists(Meta("meta.db")));
+        Assert.Empty(Directory.GetFiles(Meta(), "meta.db*"));
         Assert.True(File.Exists(Meta("teams", "t2", "team.json")));
         Assert.True(File.Exists(Meta("teams", "t2", "team.json.init.bak")));
         Assert.Equal("abc", await File.ReadAllTextAsync(Meta("teams", "t2", "lane-sessions", "api"), TestContext.Current.CancellationToken));
@@ -325,6 +326,32 @@ public sealed class NamedTeamsCommandTests : IDisposable
         var shown = await _cli.Run("--team", "t2", "team-show");
 
         Assert.Contains("t2:", shown.Out, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Role_and_health_need_a_selected_team_when_several_exist()
+    {
+        await Init("alpha");
+        await Init("beta");
+
+        var role = await _cli.Run("role-show");
+        var health = await _cli.Run("health");
+
+        Assert.Equal((2, "AW-META-019"), (role.Exit, role.Err[..11]));
+        Assert.Equal((2, "AW-META-019"), (health.Exit, health.Err[..11]));
+        Assert.False(File.Exists(Meta("meta.db")));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Team_init_for_the_legacy_teams_own_name_is_refused_and_creates_no_team_directory()
+    {
+        Directory.CreateDirectory(Meta());
+        await File.WriteAllTextAsync(Meta("team.json"), """{"team":"t2","repo":"/r","lanes":["api"]}""", TestContext.Current.CancellationToken);
+
+        var refused = await _cli.Run("team-init", "--team", "t2", "--repo", "/r", "--lanes", "api");
+
+        Assert.Equal((2, "AW-META-011"), (refused.Exit, refused.Err[..11]));
+        Assert.False(Directory.Exists(Meta("teams")));
     }
 
     public void Dispose() => _cli.Dispose();

@@ -71,7 +71,7 @@ A lane queues a pull request for merge by sending a message whose **first line**
 
 Every command takes `--json`. Exit 0 ok, 1 attention (read the output and act), 2 usage or tool error; an error is one
 stderr line `AW-META-NNN: <reason>`. Every command but `team-init`, `team-list`, `team-migrate`, `role-*`, `health`, `stop-check`, `outbox-record` and the lane-side `lane-inbox`, `lane-stop-check` and `lane-reply` needs
-the team config (`AW-META-002` otherwise); the hook commands must let any session through when no team is set up.
+the team config (`AW-META-002` otherwise); the hook commands must let any session through when no team is set up. Those that need no config still need a *selected* team when several exist (`role-*`, `health`: `AW-META-019`), because they read or write the team's `meta.db`; only `team-list` and `team-migrate` work with none, and the hooks pass through.
 `stop-check` prints what is owed on stdout (the hook moves it to stderr for Claude Code).
 
 | Command | What it does |
@@ -168,7 +168,7 @@ and only for a team that exists on disk. `aw-meta-launch --team <name>` takes th
 | none | several | error: `AW-META-019`, exit 2, the teams listed; `stop-check` and `outbox-record` pass through (exit 0) so a hook never blocks an unrelated session; `team-list` and `team-migrate` need no team |
 | none | none | the flat paths (no config: `AW-META-002`) |
 
-A name that is not `[a-z0-9][a-z0-9-]*` is a usage error before anything is read or created. `AW_META_CONFIG` still
+A name that is not `[a-z0-9][a-z0-9-]*` is a usage error before anything is read or created (except `stop-check` and `outbox-record`, which pass through with exit 0 like they do on ambiguity). `AW_META_CONFIG` still
 overrides the config file path (the state directory is still the team's), unless a team is selected and the file's `team` names another one: a lane's own `AW_META_CONFIG` is then ignored, so `aw-meta --team B` in team A's pane acts on B.
 
 **Legacy layout.** `$AW_STATE_DIR/meta/team.json` with `meta.db`, `lane-sessions/` and `gates/` beside it keeps
