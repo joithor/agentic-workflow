@@ -189,6 +189,19 @@ public sealed class NeedsYouHomeTests : IDisposable
         Assert.Equal("Re-scope: drop the iOS head from this item", Named<TextBlock>(sheet, "DecisionQuestion").Text);
     });
 
+    // Proof B4: the sheet asks the served question, not only the row's title.
+    [Fact]
+    public Task The_decision_sheet_shows_the_served_question() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        shell.ShowNeedsYou(new ViewModels.NeedsYou.NeedsYouFeed([NeedsYouRows.Decision() with { Question = "Accept this re-scope request?\nDrop the iOS head" }], ""));
+
+        shell.Navigate(new DeepLink(DeepLinkKind.Decision, "DEC-1"));
+        Settle(window);
+
+        Assert.Equal("Accept this re-scope request?\nDrop the iOS head", Named<TextBlock>(Named<Control>(window, "DecisionSheet"), "DecisionQuestion").Text);
+    });
+
     [Fact]
     public Task Pressing_an_option_sends_Decide_and_the_outcome_shows() => OnUi(async () =>
     {

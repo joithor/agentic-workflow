@@ -43,6 +43,9 @@ internal sealed record NeedsYouEntry(string Id, NeedsYouUrgency Urgency)
     /// <summary>The one served command to copy; empty for none.</summary>
     internal string Cli { get; init; } = "";
 
+    /// <summary>What a decision row's decision asks, as the pending list serves it; empty for any other row.</summary>
+    internal string Question { get; init; } = "";
+
     /// <summary>True when the decision is only recorded now and acted on later.</summary>
     internal bool RecordedOnly { get; init; }
 

@@ -73,6 +73,19 @@ public sealed class NeedsYouMapperTests
         Assert.All(actions, a => Assert.True(a.IsReady));
     }
 
+    // Proof B4: the decision sheet shows what the decision asks, as served ("Accept this re-scope request?" and the text).
+    [Fact]
+    public void A_decision_row_carries_the_served_question()
+    {
+        var row = Feed().Rows[0];
+
+        Assert.Equal(Pending().Decisions[0].Question, row.Question);
+        Assert.Contains("?", row.Question, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_row_without_a_decision_has_no_question() => Assert.Equal("", Feed(withDecisions: false).Rows[0].Question);
+
     [Fact]
     public void Without_the_decisions_list_a_decision_row_keeps_its_one_served_action()
     {
