@@ -176,8 +176,8 @@ expect "BannedSymbols.txt that no build file wires fails" 1 "RULE-CHECK-001" "RS
 
 d="$(fixture banned-ref)"; f="$(rec "$d" core-no-io)"
 printf 'M:System.Guid.NewGuid;no\n' > "$d/BannedSymbols.All.txt"
-sub "$f" 'entries: ["T:System.Console"]' 'entries: ["M:System.Guid.NewGuid"]
-    ref: "BannedSymbols.All.txt"'; run "$d"
+sub "$f" 'entries: ["T:System.Console"]' 'entries: ["M:System.Guid.NewGuid"]'
+awk '{print} /entries: \["M:System.Guid.NewGuid"\]/ {print "    ref: \"BannedSymbols.All.txt\""}' "$f" > "$f.new" && mv "$f.new" "$f"; run "$d"
 expect "a banned-symbols check with a ref the build files don't wire fails" 1 "RULE-CHECK-001" "BannedSymbols.All.txt" "no AdditionalFiles item wires"
 printf '<Project>\n  <ItemGroup><AdditionalFiles Include="BannedSymbols.txt" /></ItemGroup>\n  <ItemGroup><AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.All.txt" /></ItemGroup>\n</Project>\n' > "$d/Directory.Build.props"; run "$d"
 expect "a banned-symbols check with a wired ref file and listed entries passes" 0 "rules: ok"
