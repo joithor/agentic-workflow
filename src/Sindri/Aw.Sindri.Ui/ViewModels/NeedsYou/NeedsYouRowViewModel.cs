@@ -208,6 +208,12 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
         _ => throw new InvalidOperationException("an urgency the app doesn't know"),
     };
 
+    /// <summary>True for a steady tint (a failure; an unseen pulse row under reduced motion).</summary>
+    public bool IsSteady => Tint == RowTint.Steady;
+
+    /// <summary>True for the subtle tint of a calm row.</summary>
+    public bool IsSubtle => Tint == RowTint.Subtle;
+
     /// <summary>True when the tint pulses (an unseen pulse row, motion allowed).</summary>
     public bool IsPulsing => Tint == RowTint.Pulsing;
 
@@ -233,6 +239,8 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
             OnChanged(nameof(AccessibleName));
             OnChanged(nameof(Tint));
             OnChanged(nameof(IsPulsing));
+            OnChanged(nameof(IsSteady));
+            OnChanged(nameof(IsSubtle));
         }
 
         if (before.HasOutline != HasOutline)

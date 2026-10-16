@@ -12,6 +12,23 @@
       </Animation>
     </Style.Animations>
   </Style>
+  <!-- A failure keeps a steady attention tint, a calm row a subtle one (R8-13); the same tokens as the pulse, no motion. -->
+  <Style Selector="Border.needs-you-row.steady">
+    <Setter Property="Background" Value="{DynamicResource Brush.AttentionSoft}" />
+  </Style>
+  <Style Selector="Border.needs-you-row.subtle">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+  </Style>
+  <!-- A row that arrives after the first list slides in over Motion.Base (180 ms); never under reduced motion (SlidesIn is false then). -->
+  <Style Selector="Border.needs-you-row.slides-in">
+    <Setter Property="RenderTransform"><TranslateTransform /></Setter>
+    <Style.Animations>
+      <Animation Duration="0:0:0.18" Easing="CubicEaseOut">
+        <KeyFrame Cue="0%"><Setter Property="TranslateTransform.Y" Value="-12" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="TranslateTransform.Y" Value="0" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
   <Style Selector="Border.needs-you-row.outlined">
     <Setter Property="Background" Value="{DynamicResource Brush.AttentionSoft}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Attention}" />
