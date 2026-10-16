@@ -5,6 +5,7 @@ using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
 using Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -80,5 +81,19 @@ public sealed class DecisionFocusTests : FrameHost
 
         var focused = Assert.IsType<Button>(Focused(window));
         Assert.Contains(":focus-visible", focused.Classes, StringComparer.Ordinal);
+    });
+
+    // review run 1, a11y-11: the note box has a visible caption that says it is sent with the choice, and a name from the app's copy.
+    [Fact]
+    public Task The_note_box_has_a_visible_caption_and_the_apps_name() => OnUi(async () =>
+    {
+        var (window, _) = await WithDecisionOpen();
+
+        var note = Named<TextBox>(window, "DecisionNote");
+        var caption = Named<TextBlock>(window, "DecisionNoteCaption");
+
+        Assert.Equal(Labels.DecisionNoteLabel, caption.Text);
+        Assert.True(caption.IsEffectivelyVisible);
+        Assert.Equal(Labels.DecisionNoteLabel, Avalonia.Automation.AutomationProperties.GetName(note));
     });
 }

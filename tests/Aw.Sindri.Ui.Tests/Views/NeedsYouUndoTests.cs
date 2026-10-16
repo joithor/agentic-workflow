@@ -96,7 +96,7 @@ public sealed class NeedsYouUndoTests : IDisposable
         Assert.Equal(Labels.MarkedSeen(3), Named<TextBlock>(window, "NeedsYouUndoText").Text);
         var undo = Named<Button>(window, "NeedsYouUndoButton");
         Assert.True(undo.Focusable && undo.IsTabStop && undo.IsEffectivelyEnabled);
-        Assert.Equal(Labels.Undo, Avalonia.Automation.AutomationProperties.GetName(undo));
+        Assert.Equal(Labels.UndoMarkAllSeen, Avalonia.Automation.AutomationProperties.GetName(undo));
 
         undo.RaiseEvent(_click);
         Settle(window);

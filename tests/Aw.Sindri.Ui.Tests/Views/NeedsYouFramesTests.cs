@@ -69,6 +69,21 @@ public sealed class NeedsYouFramesTests : FrameHost
         });
     });
 
+    // review run 1, a11y-14: a sheet detail's panel carries no name of its own (its two texts are read as they are).
+    [Fact]
+    public Task A_sheet_detail_panel_is_not_named_without_being_a_control() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected(s => s.NeedsYou.Count > 0);
+        var failure = shell.NeedsYou.Rows.First(r => r.Details.Count > 0);
+        shell.Navigate(new Aw.Sindri.Ui.Navigation.DeepLink(Aw.Sindri.Ui.Navigation.DeepLinkKind.NeedsYou, failure.Id));
+        Settle(window);
+
+        var details = Named<ItemsControl>(window, "SheetRowDetails").GetVisualDescendants().OfType<StackPanel>().Where(p => p.DataContext is ViewModels.NeedsYou.SheetDetail).ToList();
+
+        Assert.NotEmpty(details);
+        Assert.All(details, p => Assert.Empty(Avalonia.Automation.AutomationProperties.GetName(p) ?? ""));
+    });
+
     [Fact]
     public Task An_empty_list_shows_the_served_sentence() => OnUi(async () =>
     {

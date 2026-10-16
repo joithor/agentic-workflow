@@ -47,6 +47,12 @@ internal static partial class Labels
     /// <summary>The Undo button after Mark all seen.</summary>
     internal const string Undo = "Undo";
 
+    /// <summary>The Undo button's accessible name: what it undoes (a list of buttons has several "Undo").</summary>
+    internal const string UndoMarkAllSeen = "Undo mark all seen";
+
+    /// <summary>The decision sheet's note field: the caption, its accessible name, and what it does.</summary>
+    internal const string DecisionNoteLabel = "Note, sent with your choice";
+
     /// <summary>What Mark all seen did, before its Undo button (mockup comment, provisional owner default 2026-10-14 night).</summary>
     /// <param name="count">How many rows it marked.</param>
     /// <returns>The line.</returns>
