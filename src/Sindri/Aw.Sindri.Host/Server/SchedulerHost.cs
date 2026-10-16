@@ -96,7 +96,7 @@ internal sealed partial class SchedulerHost(
         {
             _loaded = true;   // the first read loads the built-ins even with no approved profile (S1-D8)
             _profile = profile?.Hash;
-            _schedules = ServiceSchedule.From(profile?.Profile, inputs.BuiltIns, clock.GetUtcNow());
+            _schedules = ServiceSchedule.From(profile?.Profile, inputs.BuiltIns, clock.GetUtcNow(), await LastRuns(ct).ConfigureAwait(false));
             LogSchedule(log, _profile?.Abbreviated ?? "none", _schedules.Count);
         }
     }
