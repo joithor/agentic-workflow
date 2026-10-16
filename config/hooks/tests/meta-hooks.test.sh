@@ -28,7 +28,9 @@ exit "${STUB_RC:-0}"
 EOF
 chmod +x "$STUB"
 export AW_META_BIN="$STUB"
-stop() { printf '%s' "$1" | bash "$HOOKS/meta-stop-gate.sh" 2> "$WORK/err"; }
+# The payload comes from a file, not a pipe: a hook that exits before reading stdin (aw-meta not installed, a judge child) would
+# otherwise make printf die of SIGPIPE and the pipeline report 141 whenever the hook is faster than printf.
+stop() { printf '%s' "$1" > "$WORK/in"; bash "$HOOKS/meta-stop-gate.sh" 2> "$WORK/err" < "$WORK/in"; }
 P='{"session_id":"s-1","transcript_path":"/t/s-1.jsonl","stop_hook_active":false}'
 
 : > "$CALLS"
