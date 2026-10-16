@@ -15,6 +15,7 @@ internal sealed class ChildRowViewModel : ObservableObject
     private const string OpenItemAction = "OpenItem";
 
     private readonly ChildRow _row;
+    private readonly string _still;
 
     internal ChildRowViewModel(ChildRow row, IClipboard clipboard, TimeProvider clock)
     {
@@ -24,8 +25,9 @@ internal sealed class ChildRowViewModel : ObservableObject
         Glyph = StageCellViewModel.Mark(row.Glyph);
         RoundText = row.Round is { } round ? Labels.RoundOf(round) : string.Empty;
         Agent = FactText.Scrub(row.Agent ?? string.Empty);
-        Age = Labels.RowAge(TimeSpan.FromSeconds(row.AgeSeconds));
-        Meta = string.Join(" · ", new[] { row.State, RoundText, Agent, Age }.Where(p => p.Length > 0));
+        _still = string.Join(" · ", new[] { row.State, RoundText, Agent }.Where(p => p.Length > 0));
+        (Age, Meta) = (string.Empty, string.Empty);
+        Update(row);
         (MirroredText, BadgeText) = Park(row);
         IsDone = row.Glyph == Api.Workflow.StateGlyph.Done;
         CanOpenItem = ItemId.Length > 0 && row.Actions.Contains(OpenItemAction, StringComparer.Ordinal);
@@ -69,10 +71,10 @@ internal sealed class ChildRowViewModel : ObservableObject
     public string Agent { get; }
 
     /// <summary>"6m".</summary>
-    public string Age { get; }
+    public string Age { get; private set => Set(ref field, value); }
 
     /// <summary>The state, round, agent and age.</summary>
-    public string Meta { get; }
+    public string Meta { get; private set => Set(ref field, value); }
 
     /// <summary>The park the engine mirrors here, in words; empty when none.</summary>
     public string MirroredText { get; }
@@ -111,7 +113,15 @@ internal sealed class ChildRowViewModel : ObservableObject
     public string OpenFrameName { get; }
 
     /// <summary>What the row draws, so a re-read of the same keeps it.</summary>
-    internal string Signature => string.Join('|', Id, Address, Title, Chip, Glyph, Meta, MirroredText, BadgeText, ItemId, string.Join(',', Actions.Select(a => a.Label)));
+    internal string Signature => string.Join('|', Id, Address, Title, Chip, Glyph, _still, MirroredText, BadgeText, ItemId, string.Join(',', Actions.Select(a => a.Label)));
+
+    /// <summary>Takes a re-read of the same row: only the age moves, and the row (with the control that has focus) stays.</summary>
+    /// <param name="row">The row as served now; its <see cref="Signature"/> equals this one's.</param>
+    internal void Update(ChildRow row)
+    {
+        Age = Labels.RowAge(TimeSpan.FromSeconds(row.AgeSeconds));
+        Meta = string.Join(" · ", new[] { _still, Age }.Where(p => p.Length > 0));
+    }
 
     /// <summary>Opens the child's frame by its id.</summary>
     public void OpenFrame() => Opened?.Invoke(this, new FrameOpenEventArgs(Address, Id));

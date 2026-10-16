@@ -41,6 +41,10 @@ internal sealed partial class InstanceFrameViewModel
             children.WorkRequested += (_, _) => WorkRequested?.Invoke(this, EventArgs.Empty);
             Children = children;
         }
+        else
+        {
+            Children.Update(detail);
+        }
     }
 
     /// <summary>Raised when the frame asks the view to put focus on one of its parts.</summary>

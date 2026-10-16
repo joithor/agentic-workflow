@@ -11,7 +11,7 @@ namespace Aw.Sindri.Ui.ViewModels.Instance;
 /// </summary>
 internal sealed class ExpandedStateViewModel : ObservableObject
 {
-    private readonly CurrentState _current;
+    private CurrentState _current;
     private readonly string _address;
     private readonly IClipboard _clipboard;
     private readonly TimeProvider _clock;
@@ -26,10 +26,7 @@ internal sealed class ExpandedStateViewModel : ObservableObject
         _cancel = Commands.FirstOrDefault(c => c.Verb == StatusVerb.Cancel);
         Gates = [.. current.Gates.Select(Labels.GateText)];
         StepLine = Line(current.Step, Labels.StepLine);
-        BudgetLine = Line(status.Budget, Labels.BudgetLine);
-        TimeoutLine = Line(status.Timeout, Labels.TimeoutLine);
-        PausedLine = Line(status.Paused, p => Labels.PausedLine(p.TimeoutLeftSeconds));
-        DriftLine = Line(status.Drift, Labels.DriftLine);
+        (BudgetLine, TimeoutLine, PausedLine, DriftLine, Next) = Moving(current);
         if (status.Child is { } child)
         {
             Child = new ChildPointerViewModel(child);
@@ -39,6 +36,13 @@ internal sealed class ExpandedStateViewModel : ObservableObject
         HasAttach = current.Step is { } step && string.Equals(step.Ref, "step.agent", StringComparison.Ordinal) && status.Paused is null;
         Name = Labels.ExpandedName(current.State, address);
         CopyStatusName = Labels.CopyStatusName(address);
+    }
+
+    // The lines that move with time or with the engine's counters: a re-read changes their words in place and keeps the controls.
+    private static (string Budget, string Timeout, string Paused, string Drift, string Next) Moving(CurrentState current)
+    {
+        var status = current.Status;
+        return (Line(status.Budget, Labels.BudgetLine), Line(status.Timeout, Labels.TimeoutLine), Line(status.Paused, p => Labels.PausedLine(p.TimeoutLeftSeconds)), Line(status.Drift, Labels.DriftLine), status.Next ?? string.Empty);
     }
 
     private static string Line<T>(T? served, Func<T, string> words)
@@ -63,31 +67,31 @@ internal sealed class ExpandedStateViewModel : ObservableObject
     public bool HasGates => Gates.Count > 0;
 
     /// <summary>The served next sentence, whole; empty when none.</summary>
-    public string Next => _current.Status.Next ?? string.Empty;
+    public string Next { get; private set => Set(ref field, value); }
 
     /// <summary>True when a next sentence is served.</summary>
     public bool HasNext => Next.Length > 0;
 
     /// <summary>The budget line, or empty.</summary>
-    public string BudgetLine { get; }
+    public string BudgetLine { get; private set => Set(ref field, value); }
 
     /// <summary>True when a budget is served.</summary>
     public bool HasBudget => BudgetLine.Length > 0;
 
     /// <summary>The timeout line, or empty.</summary>
-    public string TimeoutLine { get; }
+    public string TimeoutLine { get; private set => Set(ref field, value); }
 
     /// <summary>True when a timeout is served.</summary>
     public bool HasTimeout => TimeoutLine.Length > 0;
 
     /// <summary>The paused line, or empty.</summary>
-    public string PausedLine { get; }
+    public string PausedLine { get; private set => Set(ref field, value); }
 
     /// <summary>True while the instance is taken over.</summary>
     public bool IsPaused => PausedLine.Length > 0;
 
     /// <summary>The drift line, or empty.</summary>
-    public string DriftLine { get; }
+    public string DriftLine { get; private set => Set(ref field, value); }
 
     /// <summary>True when the recipe drifted.</summary>
     public bool HasDrift => DriftLine.Length > 0;
@@ -148,8 +152,19 @@ internal sealed class ExpandedStateViewModel : ObservableObject
     /// <summary>The expanded state's accessible name.</summary>
     public string Name { get; }
 
-    /// <summary>What the state draws, so a re-read of the same keeps its controls (and the focus on them).</summary>
-    internal string Signature => string.Join('|', _current.Status.Text, StepLine, string.Join(',', Gates), string.Join(',', Commands.Select(c => c.Signature)), _current.Status.Child?.Id);
+    /// <summary>
+    /// What the state draws as controls and structure, so a re-read of the same keeps them (and the focus, the open confirm and a Copied label).
+    /// The words that move with time (the status text, the timeout, the budget, the next sentence) are not in it: <see cref="Update"/> changes them in place.
+    /// </summary>
+    internal string Signature => string.Join('|', _current.State, StepLine, string.Join(',', Gates), string.Join(',', Commands.Select(c => c.Signature)), _current.Status.Child?.Id, HasNext, HasBudget, HasTimeout, IsPaused, HasDrift);
+
+    /// <summary>Takes a re-read of the same state: the moving words change, the controls stay.</summary>
+    /// <param name="current">The state as served now; its <see cref="Signature"/> equals this one's.</param>
+    internal void Update(CurrentState current)
+    {
+        _current = current;
+        (BudgetLine, TimeoutLine, PausedLine, DriftLine, Next) = Moving(current);
+    }
 
     /// <summary>Asks to cancel: shows the confirm. Without a Cancel command there is nothing to ask.</summary>
     public void AskCancel()

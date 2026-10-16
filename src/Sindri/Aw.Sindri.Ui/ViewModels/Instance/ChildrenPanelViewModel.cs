@@ -55,6 +55,25 @@ internal sealed class ChildrenPanelViewModel : ObservableObject
     /// <summary>The panel's accessible name.</summary>
     public string Name { get; }
 
+    /// <summary>Takes a re-read of the same panel: the ages move in place, the rows stay.</summary>
+    /// <param name="detail">The instance as served now; its children's <see cref="Signature"/> equals this panel's.</param>
+    internal void Update(InstanceDetail detail)
+    {
+        var rows = new Dictionary<string, ChildRowViewModel>(StringComparer.Ordinal);
+        foreach (var row in Groups.SelectMany(g => g.AllRows))
+        {
+            _ = rows.TryAdd(row.Id, row);
+        }
+
+        foreach (var served in detail.Children.SelectMany(g => g.Workstreams.SelectMany(w => w.Rows).Concat(g.Rows)))
+        {
+            if (rows.TryGetValue(served.Id, out var row))
+            {
+                row.Update(served);
+            }
+        }
+    }
+
     /// <summary>What the panel draws, so a re-read of the same keeps it.</summary>
     internal string Signature => string.Join('\n', Groups.Select(g => g.Signature));
 }

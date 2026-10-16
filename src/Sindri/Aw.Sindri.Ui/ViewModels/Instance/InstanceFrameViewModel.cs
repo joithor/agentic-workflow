@@ -247,6 +247,10 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
             expanded.ChildRequested += (_, e) => OpenRequested?.Invoke(this, e);
             Expanded = expanded;
         }
+        else
+        {
+            Expanded.Update(detail.Current);
+        }
     }
 
     private void Failed(Error error)
