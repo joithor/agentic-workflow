@@ -16,7 +16,7 @@ public sealed class ScaffoldRouteTests
         var cases = EvalScaffold.GenerateAll(recipe, EvalComposition.Catalog, NoChildren);
 
         Assert.Equal(
-            ["scaffold-ui", "scaffold-api", "scaffold-db", "scaffold-all", "scaffold-none", "scaffold-other", "scaffold-uncertain", "scaffold-failed"],
+            ["scaffold-ui", "scaffold-api", "scaffold-db", "scaffold-all", "scaffold-none", "scaffold-other", "scaffold-uncertain", "scaffold-step-failed"],
             cases.Select(c => c.Name), StringComparer.Ordinal);
         foreach (var evalCase in cases)
         {
@@ -27,6 +27,17 @@ public sealed class ScaffoldRouteTests
         Assert.Equal("evidence-other", cases[5].Steps[0].Expect.State);
         Assert.Equal("route-evidence-desk", cases[6].Steps[0].Expect.State);
         Assert.Equal("route-evidence-desk", cases[7].Steps[0].Expect.State);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_choice_named_failed_and_the_step_failed_path_get_different_case_names()
+    {
+        var yaml = RouteRecipes.Edit(RouteRecipes.Edit(RouteRecipes.Compact, "\"api: a contract changed\"", "\"failed: a contract failed\""), "outcome: api }", "outcome: failed }");
+        var document = RecipeComposition.ReadClean(yaml, "route.yaml");
+
+        var cases = EvalScaffold.GenerateAll(document.Recipe with { Hash = document.Hash }, EvalComposition.Catalog, NoChildren);
+
+        Assert.Equal(["scaffold-ui", "scaffold-failed", "scaffold-uncertain", "scaffold-step-failed"], cases.Select(c => c.Name), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
