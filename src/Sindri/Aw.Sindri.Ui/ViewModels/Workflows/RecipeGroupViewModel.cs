@@ -26,11 +26,15 @@ internal sealed class RecipeGroupViewModel(string recipe) : ObservableObject
     /// <summary>The group's header words: the recipe and its row count.</summary>
     public string Header => $"{Recipe} {Count}";
 
+    /// <summary>The toggle's name for screen readers: the recipe, its count and whether the rows show.</summary>
+    public string ToggleName => $"{Header}, {(IsExpanded ? Labels.GroupExpanded : Labels.GroupCollapsed)}";
+
     /// <summary>Collapses the group to its count, or shows its rows again.</summary>
     internal void Toggle()
     {
         IsExpanded = !IsExpanded;
         OnChanged(nameof(ShowAllText));
+        OnChanged(nameof(ToggleName));
     }
 
     /// <summary>Takes the rows as served.</summary>
@@ -41,5 +45,6 @@ internal sealed class RecipeGroupViewModel(string recipe) : ObservableObject
         Columns = [.. rows.SelectMany(r => r.Stages.Select(s => s.State)).Distinct(StringComparer.Ordinal)];
         OnChanged(nameof(Count));
         OnChanged(nameof(Header));
+        OnChanged(nameof(ToggleName));
     }
 }

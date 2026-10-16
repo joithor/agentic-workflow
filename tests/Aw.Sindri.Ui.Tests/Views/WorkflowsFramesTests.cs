@@ -1,7 +1,6 @@
 using System.Net;
 using System.Text.Json.Nodes;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
@@ -39,7 +38,7 @@ public sealed class WorkflowsFramesTests : FrameHost
 
         Expect.Sequence(shell.Workflows.Groups.SelectMany(g => g.Rows).Select(r => r.Address), Rows(window).Select(Address));
         Assert.Equal(shell.Workflows.Head, Named<TextBlock>(window, "WorkflowsHead").Text);
-        Assert.Equal(shell.Workflows.Groups.Count, window.GetVisualDescendants().OfType<ToggleButton>().Count(t => t.Name == "WorkflowGroupToggle"));
+        Assert.Equal(shell.Workflows.Groups.Count, window.GetVisualDescendants().OfType<Button>().Count(t => t.Name == "WorkflowGroupToggle"));
         Frame(window, "u8-workflows-open", Prefix);
     });
 
@@ -62,7 +61,7 @@ public sealed class WorkflowsFramesTests : FrameHost
         Server.WorkflowAnswer = RouteAnswer.Api("workflow-instances", "empty");
         var (window, shell) = await OnWorkflows(s => s.Workflows.IsEmpty);
 
-        Assert.Equal((true, (string)GoldenFiles.Node("workflow-instances", "empty")["empty"]!), (Visible(window, "WorkflowsEmpty"), Named<TextBlock>(window, "WorkflowsEmpty").Text));
+        Assert.Equal((true, (string)GoldenFiles.Node("workflow-instances", "empty")["empty"]!), (Visible(window, "WorkflowsPageEmpty"), Named<TextBlock>(window, "WorkflowsPageEmpty").Text));
         Assert.Empty(Rows(window));
         Assert.False(Visible(window, "WorkflowsDoneToggle"));
         Frame(window, "u8-workflows-empty", Prefix);
@@ -74,7 +73,7 @@ public sealed class WorkflowsFramesTests : FrameHost
         Server.ServiceView = RouteAnswer.SpecShaped("services", "stalled");
         var (window, shell) = await OnWorkflows(s => s.Health.Banner.IsStalled && s.Workflows.Groups.Count > 0);
 
-        Assert.True(Visible(window, "WorkflowsStale"));
+        Assert.True(Visible(window, "WorkflowsPageStale"));
         Assert.NotEmpty(Rows(window));
         Assert.All(shell.Workflows.Groups.SelectMany(g => g.Rows), r => Assert.True(r.IsStale));
         Frame(window, "u8-workflows-stalled", Prefix);
@@ -88,7 +87,7 @@ public sealed class WorkflowsFramesTests : FrameHost
         Server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, body.ToJsonString());
         var (window, _) = await OnWorkflows(s => s.Workflows.IsUnreadable);
 
-        Assert.Equal((true, Labels.StripUnreadable), (Visible(window, "WorkflowsUnreadable"), Named<TextBlock>(window, "WorkflowsUnreadable").Text));
+        Assert.Equal((true, Labels.StripUnreadable), (Visible(window, "WorkflowsPageUnreadable"), Named<TextBlock>(window, "WorkflowsPageUnreadable").Text));
         Assert.Empty(Rows(window));
         Frame(window, "u8-workflows-unreadable", Prefix);
     });

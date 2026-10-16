@@ -1,0 +1,43 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:wf="using:Aw.Sindri.Ui.ViewModels.Workflows"
+             xmlns:ctl="using:Aw.Sindri.Ui.Views.Controls"
+             x:Class="Aw.Sindri.Ui.Views.Workflows.InstanceRow"
+             x:DataType="wf:InstanceRowViewModel">
+  <!-- One row of the Workflows list (screens spec §4.2): the subject (a button: it opens the instance) with its served chip, the declared
+       inputs with a check or a cross, a cell per state of the group's recipe, and the served now sentence. The name is the subject and
+       the address. The row draws its own focus border (item-row), not the adorner. -->
+  <Border x:Name="WorkflowRowFrame" Classes="item-row workflow-row" Classes.stale="{Binding IsStale}" Focusable="True"
+          AutomationProperties.Name="{Binding AccessibleName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
+    <Grid ColumnDefinitions="220,150,*,180" VerticalAlignment="Top">
+      <StackPanel Spacing="4" Margin="0,0,8,0">
+        <Button x:Name="WorkflowRowOpen" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding AccessibleName}">
+          <TextBlock Classes="body-strong" Text="{Binding Subject}" TextTrimming="CharacterEllipsis" AutomationProperties.AccessibilityView="Raw" />
+        </Button>
+        <ctl:StateChipView x:Name="WorkflowRowChip" Chip="{Binding Chip}" HorizontalAlignment="Left" />
+      </StackPanel>
+      <ItemsControl x:Name="WorkflowRowInputs" Grid.Column="1" ItemsSource="{Binding Inputs}" Margin="0,0,8,0">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="wf:InputCellViewModel">
+            <TextBlock Classes="caption mono" TextTrimming="CharacterEllipsis" AutomationProperties.Name="{Binding Name}">
+              <Run Text="{Binding Label}" /><Run Text=" " /><Run Text="{Binding Mark}" />
+            </TextBlock>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <ItemsControl x:Name="WorkflowRowStages" Grid.Column="2" ItemsSource="{Binding Stages}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="wf:StageCellViewModel">
+            <TextBlock Classes="caption mono" Classes.current="{Binding IsCurrent}" Text="{Binding Text}" TextWrapping="Wrap" Margin="0,0,6,0"
+                       AutomationProperties.Name="{Binding Name}" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <TextBlock x:Name="WorkflowRowNow" Grid.Column="3" Classes="caption subtle" Text="{Binding Now}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
+                 AutomationProperties.Name="{Binding Now}" />
+    </Grid>
+  </Border>
+</UserControl>

@@ -7,6 +7,7 @@
         xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
         xmlns:root="using:Aw.Sindri.Ui.Views.Palette"
         xmlns:queue="using:Aw.Sindri.Ui.Views.Queue"
+        xmlns:wfv="using:Aw.Sindri.Ui.Views.Workflows"
         xmlns:item="using:Aw.Sindri.Ui.Views.Item"
         xmlns:ny="using:Aw.Sindri.Ui.Views.NeedsYou"
         x:Class="Aw.Sindri.Ui.Views.Shell.ShellWindow"
@@ -190,7 +191,7 @@
             <ScrollViewer x:Name="Pages" IsVisible="{Binding IsPageVisible}">
               <Panel x:Name="PageContent" Classes="page-content" Classes.edge="{Binding IsEdgeTabShown}">
                 <views:HomePage x:Name="HomePage" IsVisible="{Binding IsHome}" />
-                <views:PlaceholderPage x:Name="WorkflowsPage" Title="{Binding Text.Workflows}" Note="{Binding Text.ArrivesWorkflows}" IsVisible="{Binding IsWorkflows}" />
+                <Panel IsVisible="{Binding IsWorkflows}"><wfv:WorkflowsPage x:Name="WorkflowsPage" DataContext="{Binding Workflows}" /></Panel>
                 <queue:QueuePage x:Name="QueuePage" IsVisible="{Binding IsWork}" />
                 <views:PlaceholderPage x:Name="RecipesPage" Title="{Binding Text.Recipes}" Note="{Binding Text.ArrivesRecipes}" IsVisible="{Binding IsRecipes}" />
                 <views:PlaceholderPage x:Name="ContextPage" Title="{Binding Text.Context}" Note="{Binding Text.ArrivesContext}" IsVisible="{Binding IsContext}" />

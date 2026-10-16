@@ -8,7 +8,6 @@ namespace Aw.Sindri.Ui.ViewModels.Workflows;
 /// The Workflows page (screens §4.2): the open root instances grouped by recipe, as the API serves them. Group order, row order, the counts
 /// and the empty sentence are the API's; the app groups the rows by their recipe id, keeps what the human collapsed, and maps fields to words.
 /// </summary>
-#pragma warning disable MA0182 // the shell holds it from T2
 internal sealed class WorkflowsViewModel(ISindriApi api) : ObservableObject
 {
     private readonly Dictionary<string, RecipeGroupViewModel> _groups = new(StringComparer.Ordinal);
@@ -24,6 +23,14 @@ internal sealed class WorkflowsViewModel(ISindriApi api) : ObservableObject
     /// <summary>The recipes the list has shown, kept while one is chosen so the filter can go back.</summary>
     public ObservableCollection<string> KnownRecipes { get; } = [];
 
+    /// <summary>The recipe filter's choices: all recipes, then each known recipe.</summary>
+    public ObservableCollection<string> RecipeChoices { get; } = [];
+
+#pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
+    /// <summary>The stale note's words.</summary>
+    public string StaleText => Labels.Stale;
+#pragma warning restore CA1822, MA0041
+
     /// <summary>"8 open · 2 need you · 1 with you", root-wide whatever the filters; empty before the first list.</summary>
     public string Head { get; private set => Set(ref field, value); } = string.Empty;
 
@@ -34,10 +41,13 @@ internal sealed class WorkflowsViewModel(ISindriApi api) : ObservableObject
     public bool HasDone { get; private set => Set(ref field, value); }
 
     /// <summary>"4 done today", from the served finished count (provisional until the API serves a per-day figure, Q-API-3).</summary>
-    public string DoneText { get; private set => Set(ref field, value); } = string.Empty;
+    public string DoneText { get; private set { Set(ref field, value); OnChanged(nameof(DoneToggleName)); } } = string.Empty;
+
+    /// <summary>The finished line's name for screen readers: the figure and whether the rows show.</summary>
+    public string DoneToggleName => $"{DoneText}, {(IsDoneExpanded ? Labels.GroupExpanded : Labels.GroupCollapsed)}";
 
     /// <summary>True while the finished rows show.</summary>
-    public bool IsDoneExpanded { get; private set => Set(ref field, value); }
+    public bool IsDoneExpanded { get; private set { Set(ref field, value); OnChanged(nameof(DoneToggleName)); } }
 
     /// <summary>The finished root rows, once the line is expanded.</summary>
     public ObservableCollection<InstanceRowViewModel> DoneRows { get; } = [];
@@ -157,11 +167,27 @@ internal sealed class WorkflowsViewModel(ISindriApi api) : ObservableObject
         Patch.To(Groups, shown);
         if (RecipeFilter is null && SubjectFilter is null)
         {
-            Patch.To(KnownRecipes, [.. shown.Select(g => g.Recipe)]);
+            ReplaceIfChanged(KnownRecipes, [.. shown.Select(g => g.Recipe)]);
+            ReplaceIfChanged(RecipeChoices, [Labels.AllRecipes, .. KnownRecipes]);
         }
 
         IsEmpty = rows.Count == 0;
         EmptyText = IsEmpty ? list.Empty ?? Labels.NoWorkflowsMatch : string.Empty;
+    }
+
+    // A choice list the human is picking from keeps its items (and the control its selection) unless the recipes themselves changed.
+    private static void ReplaceIfChanged(ObservableCollection<string> list, IReadOnlyList<string> target)
+    {
+        if (list.SequenceEqual(target, StringComparer.Ordinal))
+        {
+            return;
+        }
+
+        list.Clear();
+        foreach (var item in target)
+        {
+            list.Add(item);
+        }
     }
 
     private RecipeGroupViewModel Group(string recipe, List<InstanceRowViewModel> rows)

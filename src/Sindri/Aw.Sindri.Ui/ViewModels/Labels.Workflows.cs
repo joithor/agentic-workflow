@@ -53,6 +53,12 @@ internal static partial class Labels
     /// <summary>The column that carries the served now sentence.</summary>
     internal const string ColumnNow = "NOW";
 
+    /// <summary>A group whose rows show, in words.</summary>
+    internal const string GroupExpanded = "expanded";
+
+    /// <summary>A group collapsed to its count, in words.</summary>
+    internal const string GroupCollapsed = "collapsed";
+
     /// <summary>The page's heading while it has no counts yet.</summary>
     internal const string WorkflowsHeading = "Workflows";
 
