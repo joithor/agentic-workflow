@@ -5,6 +5,7 @@ using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Components;
 using Aw.Sindri.Ui.ViewModels.Instance;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Microsoft.Extensions.Time.Testing;
@@ -263,5 +264,75 @@ public sealed class WorkflowsKeysTests
         _ = shell.Press("Enter");
 
         Assert.False(shell.IsInstanceSheet);
+    }, Token);
+
+    private static List<(bool Live, string Text)> Heard(LiveAnnouncer voice)
+    {
+        var heard = new List<(bool Live, string Text)>();
+        voice.PropertyChanged += (_, e) =>
+        {
+            if (string.Equals(e.PropertyName, nameof(voice.Announcement), StringComparison.Ordinal) || string.Equals(e.PropertyName, nameof(voice.IsAnnouncing), StringComparison.Ordinal))
+            {
+                heard.Add((voice.IsAnnouncing, voice.Announcement));
+            }
+        };
+        return heard;
+    }
+
+    [Fact]
+    public Task B_then_B_announces_twice_and_J_never_writes_an_empty_text() => UiThread.Run(async () =>
+    {
+        var shell = await OnWorkflows();
+        Assert.True(shell.Workflows.Select(Plain.Address));
+        var heard = Heard(shell.Workflows.KeyNoteVoice);
+
+        Assert.True(shell.Press("B"));
+        Assert.True(shell.Press("B"));
+        Assert.Equal(2, heard.Count(h => h.Live && string.Equals(h.Text, Labels.HandBackArrives, StringComparison.Ordinal)));
+        Assert.True(shell.Press("J"));
+
+        Assert.DoesNotContain(heard, h => h.Text.Length == 0);
+        Assert.Equal((false, string.Empty), (shell.Workflows.KeyNoteVoice.IsAnnouncing, shell.Workflows.KeyNote));
+    }, Token);
+
+    [Fact]
+    public Task B_with_no_row_selected_still_shows_its_note() => UiThread.Run(async () =>
+    {
+        var shell = await OnWorkflows();
+        Assert.Null(shell.Workflows.SelectedAddress);
+
+        Assert.True(shell.Press("B"));
+
+        Assert.Equal(Labels.HandBackArrives, shell.Workflows.KeyNote);
+    }, Token);
+
+    [Fact]
+    public Task A_note_goes_when_the_selection_changes_but_stays_when_focus_arrives_on_the_selected_row() => UiThread.Run(async () =>
+    {
+        var shell = await OnWorkflows();
+        var flat = Flat(shell);
+        Assert.True(shell.Workflows.Select(flat[0]));
+        Assert.True(shell.Press("B"));
+
+        Assert.True(shell.Workflows.Select(flat[0]));
+        Assert.Equal(Labels.HandBackArrives, shell.Workflows.KeyNote);
+        Assert.True(shell.Workflows.Select(flat[1]));
+
+        Assert.Equal((string.Empty, false), (shell.Workflows.KeyNote, shell.Workflows.KeyNoteVoice.IsAnnouncing));
+    }, Token);
+
+    [Fact]
+    public Task A_note_goes_when_the_page_changes_or_a_sheet_opens() => UiThread.Run(async () =>
+    {
+        var shell = await OnWorkflows();
+        Assert.True(shell.Press("B"));
+        shell.GoTo(PageId.Home);
+        Assert.Equal(string.Empty, shell.Workflows.KeyNote);
+
+        shell.GoTo(PageId.Workflows);
+        Assert.True(shell.Press("N"));
+        shell.OpenInstance(Detail(Plain).Address, Detail(Plain).Id);
+
+        Assert.Equal((string.Empty, false), (shell.Workflows.KeyNote, shell.Workflows.KeyNoteVoice.IsAnnouncing));
     }, Token);
 }

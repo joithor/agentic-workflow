@@ -251,14 +251,18 @@ public sealed class ExpandedStateViewModelTests
     }
 
     // What a screen reader gets from the live region: the flag goes on before the text changes, the text is "Copied" once, and never "".
-    private static List<(bool Live, string Text)> Heard(CopyAction copy)
+    private static List<(bool Live, string Text)> Heard(CopyAction copy) => Listen(copy, () => (copy.IsAnnouncing, copy.Announcement));
+
+    private static List<(bool Live, string Text)> Heard(LiveAnnouncer voice) => Listen(voice, () => (voice.IsAnnouncing, voice.Announcement));
+
+    private static List<(bool Live, string Text)> Listen(System.ComponentModel.INotifyPropertyChanged source, Func<(bool Live, string Text)> read)
     {
         var heard = new List<(bool Live, string Text)>();
-        copy.PropertyChanged += (_, e) =>
+        source.PropertyChanged += (_, e) =>
         {
-            if (string.Equals(e.PropertyName, nameof(CopyAction.Announcement), StringComparison.Ordinal) || string.Equals(e.PropertyName, nameof(CopyAction.IsAnnouncing), StringComparison.Ordinal))
+            if (string.Equals(e.PropertyName, "Announcement", StringComparison.Ordinal) || string.Equals(e.PropertyName, "IsAnnouncing", StringComparison.Ordinal))
             {
-                heard.Add((copy.IsAnnouncing, copy.Announcement));
+                heard.Add(read());
             }
         };
         return heard;
@@ -292,5 +296,20 @@ public sealed class ExpandedStateViewModelTests
         Assert.Equal(1, heard.Count(h => h.Live && string.Equals(h.Text, Labels.Copied, StringComparison.Ordinal)));
         Assert.DoesNotContain(heard, h => h.Text.Length == 0);
         Assert.Equal(Labels.Copied, command.CliCopy.Label);
+    }
+
+    [Fact]
+    public void Confirming_the_cancel_says_the_pending_note_once_and_asking_again_quiets_it()
+    {
+        var expanded = Expanded("project-build");
+        var heard = Heard(expanded.PendingVoice);
+        expanded.AskCancel();
+
+        expanded.ConfirmCancel();
+
+        Assert.Equal(1, heard.Count(h => h.Live && string.Equals(h.Text, Labels.SendingArrivesNote, StringComparison.Ordinal)));
+        expanded.AskCancel();
+        Assert.Equal((false, string.Empty), (expanded.PendingVoice.IsAnnouncing, expanded.PendingNote));
+        Assert.DoesNotContain(heard, h => h.Text.Length == 0);
     }
 }

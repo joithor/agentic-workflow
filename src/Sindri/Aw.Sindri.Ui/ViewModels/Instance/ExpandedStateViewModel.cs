@@ -141,6 +141,9 @@ internal sealed class ExpandedStateViewModel : ObservableObject
     /// <summary>What the frame says after a confirmed cancel, which the app does not send yet; empty otherwise.</summary>
     public string PendingNote { get; private set => Set(ref field, value); } = string.Empty;
 
+    /// <summary>The live region that says the pending note: flag first, text second, never empty.</summary>
+    public LiveAnnouncer PendingVoice { get; } = new(Labels.PendingNoteResting);
+
     /// <summary>The Copy status control: its words and the live region that says "Copied".</summary>
     public CopyAction StatusCopy { get; }
 

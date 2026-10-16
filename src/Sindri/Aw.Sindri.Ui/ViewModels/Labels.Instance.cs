@@ -25,6 +25,9 @@ internal static partial class Labels
     /// <summary>A command the app does not send yet.</summary>
     internal const string AvailableWithU8b = "Available with U8b";
 
+    /// <summary>The note's live region while it says nothing (never empty).</summary>
+    internal const string PendingNoteResting = "Cancel";
+
     /// <summary>What the frame says after Cancel was confirmed: nothing was sent.</summary>
     internal const string SendingArrivesNote = "Sending from the app arrives with U8b. Copy the command and run it at a terminal.";
 

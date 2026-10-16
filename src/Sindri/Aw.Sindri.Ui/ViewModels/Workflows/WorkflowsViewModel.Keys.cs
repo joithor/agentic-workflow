@@ -1,4 +1,5 @@
 using Aw.Sindri.Ui.Navigation;
+using Aw.Sindri.Ui.ViewModels.Components;
 
 namespace Aw.Sindri.Ui.ViewModels.Workflows;
 
@@ -20,6 +21,9 @@ internal sealed partial class WorkflowsViewModel
 
     /// <summary>The words a key said when it only names a later phase; empty otherwise.</summary>
     public string KeyNote { get; private set { Set(ref field, value); OnChanged(nameof(HasKeyNote)); } } = string.Empty;
+
+    /// <summary>The live region that says the note: flag first, text second, never empty.</summary>
+    public LiveAnnouncer KeyNoteVoice { get; } = new(Labels.WorkflowsHeading);
 
     /// <summary>True when a key left a note.</summary>
     public bool HasKeyNote => KeyNote.Length > 0;
