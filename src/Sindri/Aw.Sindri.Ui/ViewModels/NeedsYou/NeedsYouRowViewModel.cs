@@ -179,12 +179,28 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
     };
 
     /// <summary>The labelled lines of the row's sheet beyond its title and reason: a failure's service and actions, a profile's changes.</summary>
-    public IReadOnlyList<SheetDetail> Details => Entry.Subject?.Kind switch
+    public IReadOnlyList<SheetDetail> Details
     {
-        NeedsYouKinds.Service => new FailureSheetViewModel(Entry, Age).Details,
-        NeedsYouKinds.Profile => new ProfileSheetViewModel(Entry).Details,
-        _ => [],
-    };
+        get
+        {
+            var key = (Entry, Age);
+            if (_detailsFor != key)
+            {
+                field = Entry.Subject?.Kind switch
+                {
+                    NeedsYouKinds.Service => FailureDetails.Build(Entry, Age),
+                    NeedsYouKinds.Profile => ProfileDetails.Build(Entry),
+                    _ => [],
+                };
+                _detailsFor = key;
+            }
+
+            return field;
+        }
+    } = [];
+
+    // Built when the row or its age changes, not on every read.
+    private (NeedsYouEntry? Entry, string Age) _detailsFor;
 
     /// <summary>The row's id.</summary>
     public string Id => Entry.Id;

@@ -167,8 +167,8 @@ public sealed class NeedsYouMapperTests
         var servedFailure = (string)_served.First(r => (string)r!["id"]! == failure.Id)!["reason"]!;
         var servedProfile = (string)_served.First(r => (string)r!["id"]! == profile.Id)!["reason"]!;
 
-        Assert.Contains(new SheetDetail("Why", servedFailure), new FailureSheetViewModel(failure, "1h").Details);
-        Assert.Contains(new SheetDetail("Changed", servedProfile), new ProfileSheetViewModel(profile).Details);
+        Assert.Contains(new SheetDetail("Why", servedFailure), FailureDetails.Build(failure, "1h"));
+        Assert.Contains(new SheetDetail("Changed", servedProfile), ProfileDetails.Build(profile));
     }
 
     // review run 1, K16: a catalog word this build doesn't know cannot run, in the list as in the palette.
