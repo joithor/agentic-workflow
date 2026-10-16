@@ -45,6 +45,7 @@ using Aw.Sindri.Features.ListOutbox;
 using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.ListRequests;
 using Aw.Sindri.Features.ListServices;
+using Aw.Sindri.Features.OnyxDown;
 using Aw.Sindri.Features.OnyxStatus;
 using Aw.Sindri.Features.OnyxUp;
 using Aw.Sindri.Features.PingProcess;
@@ -198,7 +199,8 @@ public static class SindriFeaturesServiceCollectionExtensions
         .AddSingleton<IOnyxUpStep, OnyxConfigStep>()
         .AddSingleton<IOnyxUpStep, OnyxPullStep>()
         .AddSingleton<IOnyxUpStep, OnyxStartStep>()
-        .AddScoped<IService<OnyxUpRequest, OnyxUpResponse>, OnyxUpService>();
+        .AddScoped<IService<OnyxUpRequest, OnyxUpResponse>, OnyxUpService>()
+        .AddScoped<IService<OnyxDownRequest, OnyxDownResponse>, OnyxDownService>();
 
     /// <summary>The registry's slices (engine P2): register, approve and revoke (commands), the challenge (an issue), list and show (queries).</summary>
     private static IServiceCollection AddRegistrySlices(this IServiceCollection services)

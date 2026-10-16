@@ -8183,3 +8183,5 @@ Aw.Sindri.Core.Onyx.OnyxFacts.Platform(System.Threading.CancellationToken cancel
 Aw.Sindri.Core.Onyx.OnyxFacts.Read(System.Threading.CancellationToken cancellationToken) -> (Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! Docker, Aw.Sindri.Core.Onyx.HostFacts! Host)
 Aw.Sindri.Core.Onyx.OnyxPaths.EnvTemplate.get -> string!
 Aw.Sindri.Core.Onyx.OnyxPaths.Project.get -> Aw.Sindri.Core.Onyx.ComposeProject!
+static Aw.Sindri.Core.Onyx.OnyxPreflight.IsLocalEndpoint(string? endpoint) -> bool
+static Aw.Sindri.Core.Onyx.OnyxPreflight.RemoteDocker(string? endpoint) -> Aw.Kernel.Error!

@@ -10,28 +10,39 @@ public sealed class OnyxStatusTests
 {
     private const long Gib = 1L << 30;
 
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
+    private static OnyxStatusService Service(OnyxUpRig rig)
+        => new(rig.Pins, new OnyxFacts(rig.Runtime, rig.Probes, new FakeSindriHome(OnyxUpRig.Home)), rig.Health, rig.Workspace);
+
+    private static async Task<OnyxStatusResponse> Status(OnyxUpRig rig)
+        => (await Service(rig).Handle(new OnyxStatusRequest(), Token)).Value;
+
     private static async Task<OnyxStatusResponse> Status(long freeBytes)
     {
-        var probes = new FakeHostProbes { FreeBytes = freeBytes };
-        _ = probes.Directories.Add("/sindri-home");
-        var service = new OnyxStatusService(new EmbeddedOnyxPins(), new FakeContainerRuntime(FakeContainerRuntime.Healthy), probes, new FakeSindriHome("/sindri-home"));
-
-        return (await service.Handle(new OnyxStatusRequest(), TestContext.Current.CancellationToken)).Value;
+        var rig = new OnyxUpRig();
+        rig.Probes.FreeBytes = freeBytes;
+        return await Status(rig);
     }
 
     private static async Task<OnyxStatusResponse> StatusWithDataRoot(bool onThisHost)
     {
-        var probes = new FakeHostProbes { FreeBytes = 100 * Gib };
-        _ = probes.Directories.Add("/sindri-home");
+        var rig = new OnyxUpRig();
+        rig.Probes.FreeBytes = 100 * Gib;
         if (onThisHost)
         {
-            _ = probes.Directories.Add("/var/lib/docker");
-            probes.VolumeFreeBytes["/var/lib/docker"] = 12 * Gib;
+            _ = rig.Probes.Directories.Add("/var/lib/docker");
+            rig.Probes.VolumeFreeBytes["/var/lib/docker"] = 12 * Gib;
         }
 
-        var service = new OnyxStatusService(new EmbeddedOnyxPins(), new FakeContainerRuntime(FakeContainerRuntime.Healthy), probes, new FakeSindriHome("/sindri-home"));
+        return await Status(rig);
+    }
 
-        return (await service.Handle(new OnyxStatusRequest(), TestContext.Current.CancellationToken)).Value;
+    private static async Task<OnyxUpRig> RunningRig()
+    {
+        var rig = new OnyxUpRig();
+        _ = (await rig.Up(Token)).Value;
+        return rig;
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -67,6 +78,9 @@ public sealed class OnyxStatusTests
         Assert.Equal(3000, status.Port);
         Assert.Equal(["docker", "compose", "memory", "disk", "port"], status.Checks.Select(static c => c.Name), StringComparer.Ordinal);
         Assert.All(status.Checks, static c => Assert.Equal(CheckState.Ok, c.State));
+        Assert.Null(status.Url);
+        Assert.Null(status.RunningVersion);
+        Assert.Contains("sindri onyx up", status.Detail, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -77,4 +91,106 @@ public sealed class OnyxStatusTests
         Assert.Equal(1, status.ExitCode);
         Assert.Equal("SND-ONYX-003", status.Checks.Single(static c => c.Name == "disk").Problem?.Code);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Status_is_running_with_url_and_version_when_nginx_and_api_server_run()
+    {
+        var rig = await RunningRig();
+
+        var status = await Status(rig);
+
+        Assert.Equal(OnyxState.Running, status.State);
+        Assert.Equal("http://127.0.0.1:3000", status.Url);
+        Assert.Equal("v4.9.0", status.RunningVersion);
+        Assert.Equal(3000, status.Port);
+        Assert.Equal(0, status.ExitCode);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Status_says_unreachable_when_the_running_stack_does_not_answer()
+    {
+        var rig = await RunningRig();
+        rig.Health.Default = new OnyxProbe(Healthy: false, BackendVersion: null);
+
+        var status = await Status(rig);
+
+        Assert.Equal(OnyxState.Running, status.State);
+        Assert.Equal("unreachable", status.RunningVersion);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Status_is_stopped_after_down()
+    {
+        var rig = await RunningRig();
+        _ = rig.Runtime.Stop(rig.Paths.Project, Token);
+
+        var status = await Status(rig);
+
+        Assert.Equal(OnyxState.Stopped, status.State);
+        Assert.Null(status.Url);
+        Assert.Contains("sindri onyx up", status.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Status_is_not_set_up_without_a_done_start_step()
+    {
+        var rig = await RunningRig();
+        rig.Workspace.WriteState(new OnyxSetupState(3000, new Dictionary<string, string>(StringComparer.Ordinal) { [OnyxSteps.Fetch] = "x" }));
+
+        Assert.Equal(OnyxState.NotSetUp, (await Status(rig)).State);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Status_is_not_set_up_when_the_compose_file_is_gone()
+    {
+        var rig = await RunningRig();
+        _ = rig.Workspace.Files.Remove(rig.Paths.Compose);
+
+        Assert.Equal(OnyxState.NotSetUp, (await Status(rig)).State);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Status_shows_the_own_port_not_taken_while_running()
+    {
+        var rig = await RunningRig();
+        _ = rig.Probes.TakenPorts.Add(3000);
+
+        var status = await Status(rig);
+
+        var port = Assert.Single(status.Checks, static c => c.Name == "port");
+        Assert.Equal(CheckState.Ok, port.State);
+        Assert.Equal("3000 (Onyx's own)", port.Detail);
+        Assert.Equal(0, status.ExitCode);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Status_is_stopped_when_docker_is_down_and_the_docker_row_fails()
+    {
+        var rig = await RunningRig();
+        rig.Runtime.Facts = FakeContainerRuntime.DaemonDown;
+
+        var status = await Status(rig);
+
+        Assert.Equal(OnyxState.Stopped, status.State);
+        var docker = Assert.Single(status.Checks, static c => c.Name == "docker");
+        Assert.Equal("SND-ONYX-001", docker.Problem?.Code);
+        Assert.Equal(1, status.ExitCode);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Status_writes_nothing_and_starts_nothing()
+    {
+        var rig = await RunningRig();
+        var (writes, stateWrites, calls) = (rig.Workspace.Writes.Count, rig.Workspace.StateWrites, rig.Runtime.Calls.Count);
+
+        _ = await Status(rig);
+
+        Assert.Equal(writes, rig.Workspace.Writes.Count);
+        Assert.Equal(stateWrites, rig.Workspace.StateWrites);
+        Assert.DoesNotContain(rig.Runtime.Calls.Skip(calls), static c => c.Equals("Pull", StringComparison.Ordinal) || c.Equals("Up", StringComparison.Ordinal) || c.Equals("Stop", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_real_pins_are_what_status_reports()
+        => Assert.Equal(new EmbeddedOnyxPins().Pins.Version, new OnyxUpRig().Pins.Pins.Version);
 }
