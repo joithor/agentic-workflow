@@ -55,7 +55,7 @@ internal sealed class SqliteReadSession(SqliteConnection connection) : IReadSess
 
     private static string? Refusal(string sql)
     {
-        var statements = SqlText.Statements(sql);
+        var statements = SqlText.Statements(sql, nestedComments: false);
         if (statements.Count != 1)
         {
             return "exactly one statement runs at a time";

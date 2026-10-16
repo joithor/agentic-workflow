@@ -15,10 +15,11 @@ public sealed record Rows(IReadOnlyList<string> Columns, IReadOnlyList<IReadOnly
     /// <summary>The number of rows kept.</summary>
     public int Count => Values.Count;
 
-    /// <summary>The rows as a JSON array of objects keyed by column name.</summary>
+    /// <summary>The rows as a JSON array of objects keyed by column name. A name a result repeats (a join's two id, Postgres's ?column?) keeps its first place and the later ones become name_2, name_3, skipping any name the result really has, so every key is unique and a pointer can reach every column.</summary>
     /// <returns>The JSON text.</returns>
     public string ToJson()
     {
+        var keys = UniqueKeys(Columns);
         var buffer = new ArrayBufferWriter<byte>();
         using (var writer = new Utf8JsonWriter(buffer))
         {
@@ -28,7 +29,7 @@ public sealed record Rows(IReadOnlyList<string> Columns, IReadOnlyList<IReadOnly
                 writer.WriteStartObject();
                 for (var i = 0; i < Columns.Count; i++)
                 {
-                    writer.WritePropertyName(Columns[i]);
+                    writer.WritePropertyName(keys[i]);
                     WriteValue(writer, i < row.Count ? row[i] : null);
                 }
 
@@ -39,6 +40,29 @@ public sealed record Rows(IReadOnlyList<string> Columns, IReadOnlyList<IReadOnly
         }
 
         return Encoding.UTF8.GetString(buffer.WrittenSpan);
+    }
+
+    private static string[] UniqueKeys(IReadOnlyList<string> columns)
+    {
+        var taken = new HashSet<string>(columns, StringComparer.Ordinal);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var keys = new string[columns.Count];
+        for (var i = 0; i < keys.Length; i++)
+        {
+            var key = columns[i];
+            for (var n = 2; !seen.Add(key); n++)
+            {
+                key = columns[i] + "_" + n.ToString(CultureInfo.InvariantCulture);
+                if (taken.Contains(key))
+                {
+                    key = columns[i];
+                }
+            }
+
+            keys[i] = key;
+        }
+
+        return keys;
     }
 
     private static void WriteValue(Utf8JsonWriter writer, object? value)
@@ -88,10 +112,16 @@ public sealed record Rows(IReadOnlyList<string> Columns, IReadOnlyList<IReadOnly
                 WriteFloating(writer, Convert.ToDouble(value, CultureInfo.InvariantCulture));
                 break;
             case DateTime moment:
-                writer.WriteStringValue(moment.ToString("O", CultureInfo.InvariantCulture));
+                writer.WriteStringValue(ValueText.Moment(moment));
                 break;
             case DateTimeOffset moment:
-                writer.WriteStringValue(moment.ToString("O", CultureInfo.InvariantCulture));
+                writer.WriteStringValue(ValueText.Moment(moment));
+                break;
+            case DateOnly day:
+                writer.WriteStringValue(ValueText.Day(day));
+                break;
+            case TimeOnly time:
+                writer.WriteStringValue(ValueText.Time(time));
                 break;
             default:
                 writer.WriteStringValue(Convert.ToString(value, CultureInfo.InvariantCulture));

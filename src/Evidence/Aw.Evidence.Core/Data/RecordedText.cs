@@ -60,7 +60,7 @@ public static class RecordedText
             var node = JsonNode.Parse(text);
             return node is not null && Hide(scrubber, node) ? node.ToJsonString() : text;
         }
-        catch (JsonException)
+        catch (Exception exception) when (exception is JsonException or ArgumentException)
         {
             return text;
         }

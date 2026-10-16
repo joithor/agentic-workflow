@@ -28,15 +28,15 @@ public static class DbScriptReader
         problems.AddIf(script.QueryList.Count == 0, "$.queries: needs at least one query");
         for (var i = 0; i < script.QueryList.Count; i++)
         {
-            CheckQuery(script.QueryList[i], ApiScriptReader.Item("$.queries", i), problems);
+            CheckQuery(script.QueryList[i], ApiScriptReader.Item("$.queries", i), script.Sqlite is null, problems);
         }
 
         return problems.Into(script, EvidenceErrors.DbScriptInvalid);
     }
 
-    private static void CheckQuery(DbQuery query, string at, Problems problems)
+    private static void CheckQuery(DbQuery query, string at, bool nestedComments, Problems problems)
     {
-        var statements = SqlText.Statements(query.Sql ?? string.Empty);
+        var statements = SqlText.Statements(query.Sql ?? string.Empty, nestedComments);
         problems.AddIf(statements.Count != 1, $"{at}.sql: must be exactly one statement");
         var expect = query.Expect;
         var pointers = expect?.Pointers ?? [];

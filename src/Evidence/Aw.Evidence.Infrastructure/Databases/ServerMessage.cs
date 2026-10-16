@@ -8,7 +8,7 @@ internal static partial class ServerMessage
 {
     private const string Placeholder = "\"…\"";
 
-    /// <summary>The SQLSTATE and the message text. Outside class 42 (syntax errors and missing names, which quote the script's own identifiers) every double-quoted literal becomes a placeholder: a data error such as invalid input syntax for type uuid quotes the offending value, which may be a secret.</summary>
+    /// <summary>The SQLSTATE and the message text. Outside class 42 (syntax errors and missing names, which quote the script's own identifiers) everything from the first quote character to the last (a double quote or a localized quote pair) becomes a placeholder, because the server does not escape a quote inside the value it quotes, so any shorter match would leak the tail: a data error such as invalid input syntax for type uuid quotes the offending value, which may be a secret.</summary>
     /// <param name="exception">The server's error.</param>
     /// <returns>The text.</returns>
     internal static string Of(PostgresException exception)
@@ -17,6 +17,6 @@ internal static partial class ServerMessage
         return exception.SqlState + " " + text;
     }
 
-    [GeneratedRegex("\"(?:[^\"]|\"\")*\"", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 100)]
+    [GeneratedRegex("[\"\u00ab\u00bb\u201c\u201d\u201e][\\s\\S]*[\"\u00ab\u00bb\u201c\u201d\u201e]", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 100)]
     private static partial Regex Quoted { get; }
 }

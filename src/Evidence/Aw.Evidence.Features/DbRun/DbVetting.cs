@@ -56,7 +56,7 @@ internal sealed class DbVetting(DataRunFiles files, IEvidenceTargets targets, IE
     {
         for (var i = 0; i < script.QueryList.Count; i++)
         {
-            var allowed = WriteStatements.Check(script.QueryList[i].Sql);
+            var allowed = WriteStatements.Check(script.QueryList[i].Sql, nestedComments: script.Sqlite is null);
             if (allowed.IsError)
             {
                 return allowed.Error with { Message = $"query {(i + 1).ToString(System.Globalization.CultureInfo.InvariantCulture)}: {allowed.Error.Message}" };
@@ -90,7 +90,7 @@ internal sealed class DbVetting(DataRunFiles files, IEvidenceTargets targets, IE
         var real = locator.RealFile(path);
         if (real is null)
         {
-            return EvidenceErrors.DatabaseUnavailable.With($"{path} is not a file");
+            return EvidenceErrors.FileNotFound.With($"{path} is not a file");
         }
 
         var roots = new[] { locator.RealDirectory(request.Repo), locator.RealDirectory(request.RunDirectory) };
@@ -99,7 +99,7 @@ internal sealed class DbVetting(DataRunFiles files, IEvidenceTargets targets, IE
             return EvidenceErrors.DatabaseRefused.With($"the SQLite file {real} is outside the repo {request.Repo} and the run directory; db-run reads files inside those only");
         }
 
-        return new SqliteTarget(real, RunPath.Combine(request.RunDirectory, WorkFolder), seedSql);
+        return new SqliteTarget(real, RunPath.Combine(locator.RealDirectory(request.RunDirectory) ?? request.RunDirectory, WorkFolder), seedSql);
     }
 
     private Result<DbTarget> Postgres(ResolvedTargets loaded, string name)

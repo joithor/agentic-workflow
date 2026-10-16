@@ -88,7 +88,7 @@ public sealed class PostgresDatabaseReaderTests(PostgresContainer container) : R
 
         Assert.True(rows.IsSuccess, rows.IsError ? rows.Error.Message : "");
         Assert.StartsWith("""[{"id":1,"id_2":1,"?column?":1,"?column?_2":2}""", rows.Value.ToJson(), StringComparison.Ordinal);
-        Assert.NotEmpty(Core.Data.RecordedText.Of(new Aw.Evidence.Infrastructure.Redaction.RedactionScrubber(Aw.Redaction.Redactor.Default), rows.Value.ToJson(), 2000));
+        Assert.NotEmpty(RecordedText.Of(new Evidence.Infrastructure.Redaction.RedactionScrubber(Redaction.Redactor.Default), rows.Value.ToJson(), 2000));
     }
 
     [Fact]
@@ -111,6 +111,7 @@ public sealed class PostgresDatabaseReaderTests(PostgresContainer container) : R
 
         Assert.True(rows.IsSuccess, rows.IsError ? rows.Error.Message : "");
         Assert.Contains("numeric: not representable", rows.Value.ToJson(), StringComparison.Ordinal);
+        Assert.Contains("\"d\":\"\\u003Cdate: not representable\\u003E\"", rows.Value.ToJson(), StringComparison.Ordinal);
         Assert.Contains("\"seven\":7", rows.Value.ToJson(), StringComparison.Ordinal);
         Assert.Equal(3, after.Value.Count);
     }

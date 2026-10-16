@@ -15,7 +15,7 @@ public static class SeedStatements
     /// <returns>Success, or AW-EVIDENCE-020 naming the word that would reach beyond the copy.</returns>
     public static Result<Unit> Check(string sql)
     {
-        foreach (var statement in SqlText.Statements(sql))
+        foreach (var statement in SqlText.Statements(sql, nestedComments: false))
         {
             if (SqlText.Words(statement).FirstOrDefault(word => _reachingWords.Contains(word, StringComparer.Ordinal)) is { } word)
             {

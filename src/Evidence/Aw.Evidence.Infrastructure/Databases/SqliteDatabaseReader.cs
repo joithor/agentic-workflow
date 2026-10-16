@@ -7,8 +7,8 @@ using Microsoft.Data.Sqlite;
 namespace Aw.Evidence.Infrastructure.Databases;
 
 /// <summary>
-/// Reads a SQLite file through a copy of it. The source is only ever read as a file (File.Copy of the database and its -wal file into the work
-/// directory); no SQLite connection opens it. The session then queries the copy opened read-only with query_only (Aw.Kernel.Data's OpenReadOnly).
+/// Reads a SQLite file through a copy of it. The source is only ever read as a file (File.Copy of the database, its -wal and its -journal into the work
+/// directory, verified by stat before and after, retried if it changed, then opened once read-write on the copy so a hot journal rolls back there); no SQLite connection opens it. The session then queries the copy opened read-only with query_only (Aw.Kernel.Data's OpenReadOnly).
 /// </summary>
 internal sealed class SqliteDatabaseReader : IDatabaseReader
 {
@@ -27,6 +27,11 @@ internal sealed class SqliteDatabaseReader : IDatabaseReader
     internal const string CopyName = "evidence-copy.sqlite";
 
     private const int NoAttachedDatabases = 7;   // SQLITE_LIMIT_ATTACHED
+    private const int CopyAttempts = 3;
+    private const int MaxLinks = 40;
+
+    // The main file and the sidecars the copy carries; -shm is never copied (SQLite rebuilds it).
+    private static readonly string[] _sidecars = ["", "-wal", "-journal", "-shm"];
 
     /// <inheritdoc/>
     public async ValueTask<Result<IReadSession>> OpenAsync(DbTarget target, CancellationToken cancellationToken)
@@ -41,12 +46,17 @@ internal sealed class SqliteDatabaseReader : IDatabaseReader
             return EvidenceErrors.DatabaseUnavailable.With($"{sqlite.SourcePath} is not a file");
         }
 
-        _ = _afterCopy;
         var copy = Path.Combine(sqlite.WorkDirectory, CopyName);
         var copied = await CopyAsync(sqlite, copy, cancellationToken).ConfigureAwait(false);
         if (copied.IsError)
         {
             return copied.Error;
+        }
+
+        var stable = await StabilizeAsync(copy, sqlite.SourcePath, cancellationToken).ConfigureAwait(false);
+        if (stable.IsError)
+        {
+            return stable.Error;
         }
 
         var seeded = await SeedAsync(sqlite.SeedSql, copy, cancellationToken).ConfigureAwait(false);
@@ -101,7 +111,7 @@ internal sealed class SqliteDatabaseReader : IDatabaseReader
     }
 
     // Read-write on the copy with no attached database allowed (SQLITE_LIMIT_ATTACHED = 0).
-    internal static async ValueTask<Result<Microsoft.Data.Sqlite.SqliteConnection>> OpenSeedConnectionAsync(string copy, CancellationToken cancellationToken)
+    internal static async ValueTask<Result<SqliteConnection>> OpenSeedConnectionAsync(string copy, CancellationToken cancellationToken)
     {
         var opened = await new SqliteConnectionFactory(new SqliteOptions(copy)).Open(cancellationToken).ConfigureAwait(false);
         if (opened.IsSuccess)
@@ -112,14 +122,16 @@ internal sealed class SqliteDatabaseReader : IDatabaseReader
         return opened;
     }
 
-    // A plain file copy of the main file and its -wal (never -shm), so no SQLite connection ever opens the source: even a read-only connection
-    // creates -shm and -wal beside a WAL-mode database. The copy is the only file any connection opens.
-    private static ValueTask<Result<Unit>> CopyAsync(SqliteTarget target, string copy, CancellationToken cancellationToken)
+    // A plain file copy of the main file, its -wal and its -journal (never -shm), so no SQLite connection ever opens the source: even a read-only
+    // connection creates -shm and -wal beside a WAL-mode database. The copy takes none of SQLite's locks, so it is verified instead: the three source
+    // files are stat'ed (length and modification time) before and after, and a change means the copy may pair files of different moments, so it is
+    // made again (CopyAttempts times). Stabilize then rolls a hot journal back on the copy and checks it.
+    private ValueTask<Result<Unit>> CopyAsync(SqliteTarget target, string copy, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var work = Path.GetFullPath(target.WorkDirectory);
-        var source = Path.GetFullPath(target.SourcePath);
-        if (IsInside(work, source) || (new FileInfo(source).ResolveLinkTarget(returnFinalTarget: true)?.FullName is { } linked && IsInside(work, linked)))
+        var work = RealPath(Path.GetFullPath(target.WorkDirectory));
+        var source = RealPath(Path.GetFullPath(target.SourcePath));
+        if (IsInside(work, source))
         {
             return ValueTask.FromResult<Result<Unit>>(EvidenceErrors.DatabaseRefused.With($"{target.SourcePath} is inside the run's own database directory"));
         }
@@ -127,15 +139,17 @@ internal sealed class SqliteDatabaseReader : IDatabaseReader
         try
         {
             _ = Directory.CreateDirectory(work);
-            foreach (var leftover in new[] { copy, copy + "-wal", copy + "-shm" })
+            copy = Path.Combine(work, Path.GetFileName(copy));
+            for (var attempt = 1; attempt <= CopyAttempts; attempt++)
             {
-                File.Delete(leftover);
-            }
-
-            File.Copy(source, copy);
-            if (File.Exists(source + "-wal"))
-            {
-                File.Copy(source + "-wal", copy + "-wal");
+                cancellationToken.ThrowIfCancellationRequested();
+                var before = Stat(source);
+                var complete = CopyOnce(source, copy);
+                _afterCopy?.Invoke(attempt);
+                if (complete && before == Stat(source))
+                {
+                    return ValueTask.FromResult<Result<Unit>>(Unit.Value);
+                }
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -143,7 +157,85 @@ internal sealed class SqliteDatabaseReader : IDatabaseReader
             return ValueTask.FromResult<Result<Unit>>(EvidenceErrors.DatabaseUnavailable.With($"can't copy {target.SourcePath}: {exception.Message}"));
         }
 
-        return ValueTask.FromResult<Result<Unit>>(Unit.Value);
+        return ValueTask.FromResult<Result<Unit>>(EvidenceErrors.DatabaseUnavailable.With($"{target.SourcePath} changed while it was copied ({CopyAttempts.ToString(System.Globalization.CultureInfo.InvariantCulture)} tries); stop the app's writes to it, or retry"));
+    }
+
+    // False when a sidecar vanished between the existence check and the copy (a commit finished): the caller counts that as a change.
+    private static bool CopyOnce(string source, string copy)
+    {
+        foreach (var suffix in _sidecars)
+        {
+            File.Delete(copy + suffix);
+        }
+
+        File.Copy(source, copy, overwrite: true);
+        foreach (var suffix in _sidecars.Where(static s => s.Length > 0 && s != "-shm"))
+        {
+            try
+            {
+                if (File.Exists(source + suffix))
+                {
+                    File.Copy(source + suffix, copy + suffix);
+                }
+            }
+            catch (FileNotFoundException)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // Length and last write time of the main file, -wal and -journal, as one comparable text.
+    private static string Stat(string source) => string.Join(
+        '|',
+        _sidecars.Where(static s => s != "-shm").Select(suffix => new FileInfo(source + suffix) is { Exists: true } info ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{info.Length}:{info.LastWriteTimeUtc.Ticks}") : "-"));
+
+    // The copy opened read-write once: SQLite rolls a hot journal back (or recovers a -wal) on the copy, and quick_check proves the result is a database.
+    private static async ValueTask<Result<Unit>> StabilizeAsync(string copy, string sourcePath, CancellationToken cancellationToken)
+    {
+        var unstable = EvidenceErrors.DatabaseUnavailable;
+        var opened = await OpenSeedConnectionAsync(copy, cancellationToken).ConfigureAwait(false);
+        if (opened.IsError)
+        {
+            return unstable.With($"the copy of {sourcePath} can't be opened ({opened.Error.Message}); stop the app's writes to it, or retry");
+        }
+
+        await using (opened.Value.ConfigureAwait(false))
+        {
+            try
+            {
+                var command = opened.Value.CreateCommand();
+                await using (command.ConfigureAwait(false))
+                {
+                    command.CommandText = "PRAGMA quick_check";
+                    var verdict = Convert.ToString(await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false), System.Globalization.CultureInfo.InvariantCulture);
+                    return verdict == "ok" ? Unit.Value : unstable.With($"the copy of {sourcePath} is not a consistent database (quick_check: {verdict}); stop the app's writes to it, or retry");
+                }
+            }
+            catch (SqliteException exception)
+            {
+                return unstable.With($"the copy of {sourcePath} is not a consistent database ({exception.Message}); stop the app's writes to it, or retry");
+            }
+        }
+    }
+
+    // The path with every symbolic link in it resolved (a missing part stays as written), so two spellings of one place compare equal.
+    private static string RealPath(string path)
+    {
+        var resolved = Path.GetPathRoot(path) ?? string.Empty;
+        var links = 0;
+        foreach (var part in path[resolved.Length..].Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
+        {
+            resolved = Path.Combine(resolved, part);
+            while (links++ < MaxLinks && new FileInfo(resolved).LinkTarget is { } target)
+            {
+                resolved = Path.GetFullPath(target, Path.GetDirectoryName(resolved) ?? resolved);
+            }
+        }
+
+        return resolved;
     }
 
     private static bool IsInside(string directory, string path) =>

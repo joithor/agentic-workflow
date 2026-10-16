@@ -99,7 +99,7 @@ internal sealed class DbCollected
         return Scrubber.IsSecretName(rows.Columns[column]) || (source is not null && Scrubber.IsSecretName(source));
     }
 
-    // Every scalar in the cell, as the JSON text of the rows writes it: bytes as \x-hex, arrays element by element, dates in the round-trip format.
+    // Every scalar in the cell, as the JSON text of the rows writes it: bytes as \x-hex, arrays element by element, dates and times in ISO.
     private bool Remember(object? value)
     {
         var added = false;
@@ -130,8 +130,10 @@ internal sealed class DbCollected
 
     private static string Text(object value) => value switch
     {
-        DateTime moment => moment.ToString("O", System.Globalization.CultureInfo.InvariantCulture),
-        DateTimeOffset moment => moment.ToString("O", System.Globalization.CultureInfo.InvariantCulture),
+        DateTime moment => ValueText.Moment(moment),
+        DateTimeOffset moment => ValueText.Moment(moment),
+        DateOnly day => ValueText.Day(day),
+        TimeOnly time => ValueText.Time(time),
         _ => Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty,
     };
 }

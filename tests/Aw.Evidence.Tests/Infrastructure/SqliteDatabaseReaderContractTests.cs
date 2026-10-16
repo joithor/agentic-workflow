@@ -160,8 +160,9 @@ public sealed class SqliteDatabaseReaderContractTests : ReadOnlyDatabaseContract
         await MakeNotesAsync(source);
         await using (var writer = await OpenWriterAsync(source))
         {
-            await ExecuteAsync(writer, "PRAGMA cache_size = 10; BEGIN; INSERT INTO notes(text) WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c WHERE x < 600) SELECT hex(randomblob(2000)) FROM c");
-            // The writer is still mid-transaction: what is on disk now is a crashed commit (spilled pages plus a hot journal).
+            await ExecuteAsync(writer, "PRAGMA journal_mode = DELETE; INSERT INTO notes(text) WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c WHERE x < 500) SELECT 'committed-' || x || hex(randomblob(150)) FROM c");
+            // A transaction that spills dirty pages into the file and is still open: what is on disk is a crashed commit (changed pages plus a hot journal).
+            await ExecuteAsync(writer, "PRAGMA cache_size = 2; PRAGMA cache_spill = 1; BEGIN; UPDATE notes SET text = 'uncommitted' || id || hex(randomblob(150))");
             File.Copy(source, source + ".crash");
             File.Copy(source + "-journal", source + ".crash-journal");
             await ExecuteAsync(writer, "ROLLBACK");
@@ -172,9 +173,9 @@ public sealed class SqliteDatabaseReaderContractTests : ReadOnlyDatabaseContract
         var before = Listing(Path.GetDirectoryName(source)!);
 
         await using var session = (await new SqliteDatabaseReader().OpenAsync(new SqliteTarget(source, _root.Combine("run/db")), TestContext.Current.CancellationToken)).Value;
-        var rows = await session.QueryAsync(ReadAll, 1000, TestContext.Current.CancellationToken);
+        var rows = await session.QueryAsync("SELECT count(*) AS n, sum(text LIKE 'uncommitted%') AS u FROM notes", 5, TestContext.Current.CancellationToken);
 
-        Assert.Equal(3, rows.Value.Count);
+        Assert.Equal("""[{"n":503,"u":0}]""", rows.Value.ToJson());
         Assert.Equal(before, Listing(Path.GetDirectoryName(source)!));
     }
 

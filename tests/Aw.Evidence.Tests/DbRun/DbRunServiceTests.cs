@@ -508,7 +508,7 @@ public sealed class DbRunServiceTests
     [Fact, Trait("Lane", "unit")]
     public async Task DbRun_a_result_with_the_same_column_name_twice_is_recorded_with_unique_keys_on_both_engines()
     {
-        foreach (var harness in new[] { Sqlite("""{"rowCount":1,"pointers":[{"pointer":"/0/id_2","equals":"2"}]}"""), Postgres(expect: """{"rowCount":1,"pointers":[{"pointer":"/0/id_2","equals":"2"}]}""") })
+        foreach (var harness in new[] { Sqlite("""{"rowCount":1,"pointers":[{"pointer":"/0/id_2","equals":2}]}"""), Postgres(expect: """{"rowCount":1,"pointers":[{"pointer":"/0/id_2","equals":2}]}""") })
         {
             _ = harness.Scrubber.HidesName("password");
             _ = harness.Reader.Answer(ReadNotes, new Rows(["id", "id", "password"], [[1L, 2L, "pw-value-123456"]], Truncated: false));
@@ -541,7 +541,7 @@ public sealed class DbRunServiceTests
     public async Task DbRun_with_the_real_name_rule_hides_a_hashed_password_column_and_a_plural_token_array()
     {
         var harness = Postgres(expect: """{"rowCount":1}""");
-        harness.RealScrubber = new Aw.Evidence.Infrastructure.Redaction.RedactionScrubber(Aw.Redaction.Redactor.Default);
+        harness.RealScrubber = new Evidence.Infrastructure.Redaction.RedactionScrubber(Redaction.Redactor.Default);
         _ = harness.Reader.Answer(ReadNotes, new Rows(["password_hash", "api_tokens", "plain"], [[Convert.FromHexString("DEADBEEF1234"), _tokens, "visible"]], Truncated: false));
 
         var response = (await harness.Run()).Value;

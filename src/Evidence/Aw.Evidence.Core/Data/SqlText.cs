@@ -15,7 +15,7 @@ public static class SqlText
     /// <param name="sql">The SQL text.</param>
     /// <param name="nestedComments">True when block comments nest (PostgreSQL); false when the first closing marker ends one (SQLite).</param>
     /// <returns>The non-empty statements, comments removed and trimmed, without their semicolons.</returns>
-    public static IReadOnlyList<string> Statements(string sql, bool nestedComments = true) => Unused(nestedComments) ? [] : Scan(sql, split: true, maskQuoted: false);
+    public static IReadOnlyList<string> Statements(string sql, bool nestedComments = true) => Scan(sql, split: true, maskQuoted: false, nestedComments);
 
     /// <summary>The words (letters, digits, underscores) of a statement outside quotes and comments, upper-cased.</summary>
     /// <param name="statement">One statement.</param>
@@ -57,11 +57,9 @@ public static class SqlText
     /// <returns>The masked text.</returns>
     internal static string Masked(string statement) => Scan(statement, split: false, maskQuoted: true) is { Count: > 0 } one ? one[0] : string.Empty;
 
-    private static bool Unused(bool value) => value && false;
-
     private static bool IsWordChar(char c) => char.IsAsciiLetterOrDigit(c) || c == '_';
 
-    private static List<string> Scan(string sql, bool split, bool maskQuoted)
+    private static List<string> Scan(string sql, bool split, bool maskQuoted, bool nestedComments = true)
     {
         var statements = new List<string>();
         var current = new StringBuilder();
@@ -69,7 +67,7 @@ public static class SqlText
         while (i < sql.Length)
         {
             var c = sql[i];
-            if (CommentEnd(sql, i) is var after and >= 0)
+            if (CommentEnd(sql, i, nestedComments) is var after and >= 0)
             {
                 i = after;
                 _ = current.Append(' ');
@@ -109,10 +107,10 @@ public static class SqlText
     }
 
     // Where the comment starting at i ends; -1 when none starts there.
-    private static int CommentEnd(string sql, int i) => sql[i] switch
+    private static int CommentEnd(string sql, int i, bool nested) => sql[i] switch
     {
         '-' when Next(sql, i) == '-' => SkipLine(sql, i),
-        '/' when Next(sql, i) == '*' => SkipBlock(sql, i),
+        '/' when Next(sql, i) == '*' => SkipBlock(sql, i, nested),
         _ => -1,
     };
 
@@ -124,14 +122,14 @@ public static class SqlText
         return end < 0 ? sql.Length : end + 1;
     }
 
-    // PostgreSQL nests block comments.
-    private static int SkipBlock(string sql, int from)
+    // PostgreSQL nests block comments; SQLite ends one at the first closing marker.
+    private static int SkipBlock(string sql, int from, bool nested)
     {
         var depth = 0;
         var i = from;
         while (i < sql.Length)
         {
-            if (sql[i] == '/' && Next(sql, i) == '*')
+            if (sql[i] == '/' && Next(sql, i) == '*' && (nested || depth == 0))
             {
                 depth++;
                 i += 2;

@@ -2347,3 +2347,8 @@ Aw.Evidence.Core.Data.FieldValueScrubber
 Aw.Evidence.Core.Data.FieldValueScrubber.FieldValueScrubber(Aw.Evidence.Core.Data.ITextScrubber! inner, System.Collections.Generic.IEnumerable<string!>! values) -> void
 Aw.Evidence.Core.Data.FieldValueScrubber.IsSecretName(string! name) -> bool
 Aw.Evidence.Core.Data.FieldValueScrubber.Scrub(string! text) -> string!
+Aw.Evidence.Core.Data.ValueText
+static Aw.Evidence.Core.Data.ValueText.Day(System.DateOnly day) -> string!
+static Aw.Evidence.Core.Data.ValueText.Time(System.TimeOnly time) -> string!
+static Aw.Evidence.Core.Data.ValueText.Moment(System.DateTime moment) -> string!
+static Aw.Evidence.Core.Data.ValueText.Moment(System.DateTimeOffset moment) -> string!
