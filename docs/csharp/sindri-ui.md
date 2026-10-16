@@ -513,15 +513,6 @@ U3' and U8.
   (`IsNavigationEnabled` and `IsChromeVisible`, in `PressKey`), never fires while a text field has focus or an overlay
   is open, and any other unmodified key (Esc included) cancels a waiting chord. Any navigation but G D clears the Home
   filter. The top bar shows `G …` while one waits, in a keycap inside the bar over the ⌘K field's right end (drawn in the bar, not below it, where the page region would paint over it).
-- **What the Needs-you live region says** (`NeedsYouLive`, one polite region; the flag goes off, the text to its resting word, the flag on, then the
-  sentence, so a repeat is spoken again): "N now need you" for each rise in the count (a second rise to the same N speaks again; rows that were
-  there before a reconnect do not; the first list at startup does, since its rows are new to the user), "<id> cleared" when the selected row leaves
-  and "<address> done" when the selected strip instance finishes. Row names say the urgency, the chip, the title and the id ("needs you now, PARKED,
-  Retry storm, ITM-01JC8, new"), controls and options say which row they act on ("Accept DEC-…"), and an incident strip row says "incident".
-- **Client presentation rules** (the only decisions the app makes; everything else is as served): `G D` shows the rows whose served subject kind is
-  `decision` (the summary and the badge still count them all, and the seen state is kept against the whole feed); the strip drops terminal instances;
-  a row the API serves without a `chip` gets the word for its kind (`NeedsYouMapper.Derived`, a fallback tied to U3'-API-9); the strip's park lookup keys
-  on the served kind `park`, never on a chip word.
 - **Deep links.** `workflow/<address>` (an address, which may contain `/`), `recipe/<id>`, `node/<key>`, `session/<id>`
   and `system/<dependency>` go to Workflows, Recipes, Context, Agents and System; `item/`, `decision/`, `service/` and
   `job/` open their sheet over the page shown; `needs-you/<row>` (the row's item, decision, service or job) opens that row's sheet;
@@ -676,7 +667,7 @@ bash src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh [<dir>]   # NativeAOT sindri-ui on 
 ## U3': Needs you, decisions and requests (UI spec rev 7 §18 U3, screens spec §8)
 
 What needs the human, drawn from API P4's routes (`GET /sindri/needs-you`, `/decisions`, `/requests`, `POST /sindri/decisions/{id}`
-and `/sindri/requests`). The app holds no logic of its own beyond the presentation rules listed below: every row, label, option, refusal and "cleared" line is as the API served it,
+and `/sindri/requests`). The app holds no logic of its own beyond the presentation rules listed below (the "Client presentation rules" bullet, with the live-region sentences): every row, label, option, refusal and "cleared" line is as the API served it,
 and the tests read their expected values from the recorded goldens under `tests/Aw.Sindri.Tests/Golden/Api/`.
 
 - **Needs you (Home).** Rows in the API's order, at most five (`NeedsYouViewModel.Cap`, four at large text), then "all N →" expands them in
@@ -703,7 +694,7 @@ and the tests read their expected values from the recorded goldens under `tests/
   arrives after the first list slides in over 180 ms (never under reduced motion). Mark all seen marks every row and offers Undo for 10 s (it waits while the
   Undo button has focus or the pointer): the panel header shows "N marked seen · Undo" (the button is named "Undo mark all seen", a plain
   tab stop; a polite live region, `NeedsYouSeenLive`, speaks the line once when it is offered; focus on Undo moves on when the offer goes).
-  Reduced motion (the OS setting or the in-app switch) replaces the pulse with a steady tint and an outline plus the word "new"; Settings'
+  The word "new" shows on any unseen pulse row, with motion or without (reduced motion replaces the pulse with a steady tint and an outline, and the word stays); Settings'
   switch reaches the rows through `ShellViewModel.ApplyAppearance` like the text scale.
 - **A refresh never moves focus.** The Needs-you list and the Workflows strip each hold one `ObservableCollection` that every re-read patches
   in place (`Patch.To`, as U2's queue): a row that stays keeps its view model, so the control with focus is not rebuilt; a row's buttons
@@ -711,12 +702,22 @@ and the tests read their expected values from the recorded goldens under `tests/
   clears hands the selection to the next row, and focus follows only when it was in the cleared row or is lost: a refresh never takes focus from the
   search field, the top bar or Mark all seen. There is one selection on Home: choosing a queue row (click, focus, `J`/`K`) clears the Needs-you and
   strip selections, and the open-sheet marker (`SheetRowId`) goes when another sheet replaces the row's.
+- **What the Needs-you live region says** (`NeedsYouLive`, one polite region; the flag goes off, the text to its resting word, the flag on, then the
+  sentence, so a repeat is spoken again): "N now need you" for each rise in the count (a second rise to the same N speaks again; rows that were
+  there before a reconnect do not; the first list at startup does, since its rows are new to the user), "<id> cleared" when the selected row leaves
+  and "<address> done" when the selected strip instance finishes. Row names say the urgency, the chip, the title and the id ("needs you now, PARKED,
+  Retry storm, ITM-01JC8, new"), controls and options say which row they act on ("Accept DEC-…"), and an incident strip row says "incident".
+- **Client presentation rules** (the only decisions the app makes; everything else is as served): `G D` shows the rows whose served subject kind is
+  `decision` (the summary and the badge still count them all, and the seen state is kept against the whole feed); the strip drops terminal instances;
+  a row the API serves without a `chip` gets the word for its kind (`NeedsYouMapper.Derived`, a fallback tied to U3'-API-9); the strip's park lookup keys
+  on the served kind `park`, never on a chip word.
 - **Dock badge and tray.** The count of rows that need you goes to the badge through `IDockBadge`: `MacDockBadge` (NSDockTile),
   `WindowsDockBadge` (ITaskbarList3 overlay on the main window), `NullDockBadge` elsewhere. The tray menu lists at most five rows, then Open,
   the disabled Running line and Quit; picking a row only raises `RowRequested`, which opens that row's sheet. The Desktop head composes
   the adapters (`Composition.DockBadge`); it holds no views or view models (ARCH-UI-001).
 - **Keys** (Home is shown and focus is not in the sheet; `Esc` is never held back, the other keys wait 500 ms after a refresh moved the selection on its own): `J`/`K` next and previous row, `A` primary action when the app may, `X` the option that turns a decision
   down, `Y` copy the row's command, `Enter` opens the sheet (again: moves into it; so does `Tab` from the row's last stop), `Esc` closes it and returns to the row (to the strip row when `Answer` opened it from there).
+- **The item sheet's decisions.** Its option buttons follow the catalog's Decide readiness, read again when the catalog arrives or changes: a pending or cli-only Decide leaves them disabled with the reason as tooltip and help text, and one focusable line under the decision names the phase and the command (UI spec §7).
 - **Deep links.** `needs-you/<row id>` and `decision/<DEC id>` open the sheet; the tray, the palette and the item sheet use them.
 - **Focus is never lost**: closing a sheet returns to the row; a refused control keeps focus or, if its action is gone, moves to the sheet title.
 
@@ -729,7 +730,7 @@ caller header), `decide <DEC> <choice>` (as the owner), `fail` / `unfail` (add o
 `items --large` (34 items and 12 requests, all in `FIXTURE_REPO` when it is set and with no repo otherwise: the fixture profile has none, and the API refuses a repo the profile lacks), `workflows` (starts each recipe with the inputs it declares, `fact:item` as JSON and `fact:request` as text, prints what it started and exits non-zero with the CLI's message when a start is refused). A request names its item with `item`. `decide` and `request` need #253's routes; `fail` assumes
 `profile validate` accepts a profile naming a service the build lacks. Not yet run against a live P4 server.
 
-Left: the CliText control/bidi backstop (`CliText` does not exist in this tree). `PublicAPI.Unshipped.txt` lists the public members U3' adds to the platform seam (`IDockBadge`, `NullDockBadge`, `TrayRow`, `TrayRowEventArgs`, `TrayView.Count`/`Rows`/`MenuRows`/`RunningLabel`, `ITray.RowRequested`, `TrayState.Attention`/`Calm`, `MainWindowHandle`); the view models are internal.
+Left: the CliText control/bidi backstop (`CliText` does not exist in this tree). `PublicAPI.Unshipped.txt` lists the public members U3' adds to the platform seam (`IDockBadge`, `NullDockBadge`, `SindriPlatform.DockBadge`, `TrayRow`, `TrayRowEventArgs`, `TrayView.Count`/`Rows`/`MenuRows`/`MaxRows`/`RunningLabel`, `ITray.RowRequested`, `TrayState.Attention`/`Calm`, `MainWindowHandle`); the view models are internal.
 
 ### The Workflows strip (U3' T15-T20, screens spec §4.1)
 
