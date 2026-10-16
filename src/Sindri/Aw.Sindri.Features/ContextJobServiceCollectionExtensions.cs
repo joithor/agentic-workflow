@@ -3,6 +3,7 @@ using Aw.Context.Core;
 using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Core.Sources;
 using Aw.Kernel;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Features.ContextCalls;
 using Microsoft.Extensions.DependencyInjection;
@@ -43,11 +44,15 @@ internal static class ContextJobServiceCollectionExtensions
         return string.Create(CultureInfo.InvariantCulture, $"{result.Samples} samples, {(ran.Length == 0 ? "no arm" : ran)}, {result.PassLine ?? "no pass line"}");
     }
 
-    /// <summary>An unknown arm is SND-CONTEXT-082 before any job exists.</summary>
+    /// <summary>An unknown arm is SND-CONTEXT-082, a limit of zero or less or a window that ends before it starts is SND-CLI-003, each before any job exists.</summary>
     private static ValueTask<Result<Unit>> PrecheckBacktest(RunContextBacktestRequest request, CancellationToken cancellationToken)
     {
         var arms = Arms.Parse(request.Arms ?? "all");
-        return ValueTask.FromResult<Result<Unit>>(arms.IsError ? arms.Error : Unit.Value);
+        Result<Unit> verdict = arms.IsError ? arms.Error
+            : request.Limit is <= 0 ? SindriErrors.InvalidInput.With("limit: must be at least 1 (fix: leave it out for every sample)")
+            : request.Since > request.Until ? SindriErrors.InvalidInput.With("since is after until: the window is empty (fix: swap them)")
+            : Unit.Value;
+        return ValueTask.FromResult(verdict);
     }
 
     /// <summary>A named source that can't be a source id is unknown (SND-CONTEXT-058) before any job exists.</summary>

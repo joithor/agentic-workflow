@@ -38,7 +38,7 @@ internal sealed record BacktestLine(RunContextBacktestRequest Request, bool Deta
 
     // Each given option must parse: a date that isn't one, or a limit that isn't a positive number, makes the whole line invalid.
     private static RunContextBacktestRequest? Build(Dictionary<string, string> values) =>
-        Option(values, "--since", Date, out var since) && Option(values, "--until", Date, out var until) && Option(values, "--limit", Limit, out var limit)
+        Option(values, "--since", Date, out var since) && Option(values, "--until", Until, out var until) && Option(values, "--limit", Limit, out var limit)
             ? new RunContextBacktestRequest(values.GetValueOrDefault("--arms"), since, until, limit)
             : null;
 
@@ -53,4 +53,10 @@ internal sealed record BacktestLine(RunContextBacktestRequest Request, bool Deta
 
     private static DateTimeOffset? Date(string text) =>
         DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var date) ? date : null;
+
+    // A date alone ('2026-09-30') names the whole day: the window ends at its last tick, so the issues created that day are in. A full timestamp is the instant it says.
+    private static DateTimeOffset? Until(string text) =>
+        DateOnly.TryParseExact(text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var day)
+            ? new DateTimeOffset(day.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).AddTicks(-1)
+            : Date(text);
 }

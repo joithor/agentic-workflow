@@ -58,7 +58,7 @@ internal sealed class ContextJobVerbs(ControlPlaneClient client, Output output, 
 
         var started = await client.Post<RunContextBacktestRequest, JobStartedResponse>("/sindri/context/eval/backtest", line.Request, interrupt).ConfigureAwait(false);
         return started.IsError
-            ? await output.Error(started.Error).ConfigureAwait(false)
+            ? ContextExit.For(started.Error, await output.Error(started.Error).ConfigureAwait(false))   // 082 (an unknown arm) is attention: exit 1, as the context error table says
             : await Followed(started.Value, (line.Detach, line.Json), interrupt, again, Table).ConfigureAwait(false);
     }
 
