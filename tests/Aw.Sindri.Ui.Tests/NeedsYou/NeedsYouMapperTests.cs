@@ -170,4 +170,16 @@ public sealed class NeedsYouMapperTests
         Assert.Contains(new SheetDetail("Why", servedFailure), new FailureSheetViewModel(failure, "1h").Details);
         Assert.Contains(new SheetDetail("Changed", servedProfile), new ProfileSheetViewModel(profile).Details);
     }
+
+    // review run 1, K16: a catalog word this build doesn't know cannot run, in the list as in the palette.
+    [Fact]
+    public void An_unknown_catalog_word_is_cli_only_on_a_row_and_on_a_control()
+    {
+        var catalog = Catalog() with { Rows = [.. Catalog().Rows.Select(r => r.Action == "Decide" ? r with { Ui = "from-the-future" } : r)] };
+        var feed = NeedsYouMapper.Map(Golden<NeedsYouList>("needs-you", "fixture"), catalog, Pending(), _counts);
+        var control = new Aw.Sindri.Ui.ViewModels.Controls.ControlViewModel(catalog.Rows.First(r => r.Action == "Decide"), send: null, new FakeClipboard(), new Microsoft.Extensions.Time.Testing.FakeTimeProvider(A.Noon));
+
+        Assert.All(feed.Rows[0].Actions, a => Assert.Equal(ActionReadiness.CliOnly, a.Readiness));
+        Assert.Equal(Aw.Sindri.Ui.ViewModels.Controls.ControlKind.CliOnly, control.Kind);
+    }
 }
