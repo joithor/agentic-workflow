@@ -1,5 +1,5 @@
 {
-  "comment": "Every file in this directory except manifest.json is a launcher.json fixture. schema: the expected verdict against schemas/launcher.schema.json (Ajv2020, strict false) and the C# reader. bash: whether the SL-1 bash reader accepts or refuses it (it refuses unknown keys, unknown placeholders and wrong JSON types for the fields it uses, spec section 4; the rest it leaves to sindri launch show). A file that does not parse is invalid and refused.",
+  "comment": "Every file in this directory except manifest.json is a launcher.json fixture. schema: the expected verdict against schemas/launcher.schema.json (Ajv2020, strict false) and the C# reader. bash: whether the SL-1 bash reader accepts or refuses it (it refuses unknown keys, unknown placeholders and wrong JSON types for the fields it uses, spec section 4; the rest it leaves to sindri launch show). A file that does not parse is invalid and refused. Tag choice: bash: refuse is used where the reader must refuse because the failing field is one SL-1 uses or a rule it enforces while building argv (unknown viewer or host kind, {cmd...} inside an argument, an unsupported schema version); each such row carries tagWhy. Other schema-invalid rows are bash: accept because the bash reader leaves entry-shape rules to sindri launch show.",
   "fixtures": [
     {
       "file": "minimal.json",
@@ -160,8 +160,9 @@
     {
       "file": "cmd-inside-argument.json",
       "schema": "invalid",
-      "bash": "accept",
-      "note": "{cmd...} is spliced as separate arguments, so it must be a whole element"
+      "bash": "refuse",
+      "note": "{cmd...} is spliced as separate arguments, so it must be a whole element",
+      "tagWhy": "section 4/5 allow {cmd...} only as a whole element (spliced), and the bash reader splices, so it cannot run this"
     },
     {
       "file": "reported-without-pattern.json",
@@ -196,14 +197,16 @@
     {
       "file": "unknown-viewer-kind.json",
       "schema": "invalid",
-      "bash": "accept",
-      "note": "iterm is a later adapter (spec section 9)"
+      "bash": "refuse",
+      "note": "iterm is a later adapter (spec section 9)",
+      "tagWhy": "the viewer kind is a field SL-1 uses, and x-aw-keys.viewerKinds is its closed list"
     },
     {
       "file": "unknown-host-kind.json",
       "schema": "invalid",
-      "bash": "accept",
-      "note": "zellij is a later adapter (spec section 9)"
+      "bash": "refuse",
+      "note": "zellij is a later adapter (spec section 9)",
+      "tagWhy": "the host kind is a field SL-1 uses, and x-aw-keys.hostKinds is its closed list"
     },
     {
       "file": "unknown-usage-reader.json",
@@ -214,14 +217,27 @@
     {
       "file": "schema-version-2.json",
       "schema": "invalid",
-      "bash": "accept",
-      "note": "this build reads schema 1"
+      "bash": "refuse",
+      "note": "this build reads schema 1",
+      "tagWhy": "section 4 reads schema 1 only, and the bash reader checks the version first"
     },
     {
       "file": "not-json.json",
       "schema": "invalid",
       "bash": "refuse",
       "note": "the JSON itself does not parse"
+    },
+    {
+      "file": "override-on-added-agent.json",
+      "schema": "invalid",
+      "bash": "accept",
+      "note": "override: true on an id that is not built in has nothing to merge over, and the entry lacks bin, open and sessionId (the bash reader leaves entry shape to sindri launch show)"
+    },
+    {
+      "file": "override-null-pattern.json",
+      "schema": "invalid",
+      "bash": "accept",
+      "note": "a built-in override that nulls sessionIdPattern without sessionId: none leaves a reported/pre-chosen-uuid agent with no pattern (section 4); not a field the bash reader checks"
     }
   ]
 }
