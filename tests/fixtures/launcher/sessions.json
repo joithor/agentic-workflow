@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "sessions": {
+    "enabled": true,
+    "pollSeconds": 5,
+    "providers": ["claude-code", "codex"],
+    "tmuxSockets": ["/tmp/tmux-1000/default"],
+    "claudeSessionsDir": "/home/dev/.config/claude/sessions"
+  }
+}
