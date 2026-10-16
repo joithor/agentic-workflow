@@ -1,5 +1,6 @@
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.Facts;
 using Aw.Sindri.Ui.ViewModels.Workflows;
 
@@ -17,9 +18,10 @@ internal sealed class ChildRowViewModel : ObservableObject
     private readonly ChildRow _row;
     private readonly string _still;
 
-    internal ChildRowViewModel(ChildRow row, IClipboard clipboard, TimeProvider clock)
+    internal ChildRowViewModel(ChildRow row, IClipboard clipboard, TimeProvider clock, CatalogViewModel? catalog = null)
     {
         _row = row;
+        _ = catalog;   // read by the fix that follows this test commit
         ItemId = row.ItemId ?? string.Empty;
         Title = FactText.Scrub(row.Title);
         Glyph = StageCellViewModel.Mark(row.Glyph);

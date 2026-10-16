@@ -4,6 +4,7 @@ using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.Instance;
 using Microsoft.Extensions.Time.Testing;
 using ApiGlyph = Aw.Sindri.Ui.Api.Workflow.StateGlyph;
@@ -203,5 +204,42 @@ public sealed class ChildrenPanelViewModelTests
         Assert.Contains(served.Recipe, group.Header, StringComparison.Ordinal);
         Assert.Contains(served.Done.ToString(System.Globalization.CultureInfo.InvariantCulture), group.Counts, StringComparison.Ordinal);
         Assert.Contains(served.Total.ToString(System.Globalization.CultureInfo.InvariantCulture), group.Counts, StringComparison.Ordinal);
+    }
+
+    // The catalog the API serves, with the rows a test reclassifies.
+    private CatalogViewModel Catalog(Action<JsonArray> edit)
+    {
+        var node = GoldenFiles.Node("commands", "catalog");
+        edit(node["rows"]!.AsArray());
+        var catalog = new CatalogViewModel(_clipboard, _clock);
+        catalog.Show(new Uri("http://127.0.0.1:7410/"), new FakeSindriApi(), FixtureInstances.Parse<CommandList>(node));
+        return catalog;
+    }
+
+    private static void Edit(JsonArray rows, string action, string member, string value) =>
+        rows.First(r => string.Equals((string)r!["action"]!, action, StringComparison.Ordinal))![member] = value;
+
+    [Fact]
+    public void The_catalog_decides_which_child_actions_are_protected_and_what_their_chip_says()
+    {
+        var parked = Rows("project-build").Single(r => r.MirroredPark is not null);
+        var served = Catalog(_ => { });
+        var reclassified = Catalog(rows =>
+        {
+            Edit(rows, "ApplyCommand:answer-grant", "class", "desk");
+            Edit(rows, "ApplyCommand:takeover", "ui", "pending:U9");
+        });
+
+        var before = new ChildRowViewModel(parked, _clipboard, _clock, served);
+        var after = new ChildRowViewModel(parked, _clipboard, _clock, reclassified);
+
+        Assert.Equal(parked.Actions.Count - 1, before.Actions.Count);
+        var grant = Labels.Action("ApplyCommand:answer-grant");
+        var takeover = Labels.Action("ApplyCommand:takeover");
+        Assert.NotNull(before.Actions.Single(a => a.Label == grant).Protected);
+        Assert.Null(before.Actions.Single(a => a.Label == takeover).Protected);
+        Assert.Null(after.Actions.Single(a => a.Label == grant).Protected);
+        Assert.Equal(Labels.Arrives("U8b"), before.Actions.Single(a => a.Label == takeover).PendingChip);
+        Assert.Equal(Labels.Arrives("U9"), after.Actions.Single(a => a.Label == takeover).PendingChip);
     }
 }
