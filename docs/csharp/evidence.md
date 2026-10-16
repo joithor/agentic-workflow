@@ -280,11 +280,15 @@ and the box-wide locks, except that each CLI call runs in a fresh temp directory
 A step's `broken` is a request that failed or a program that would not start (exit 4); `skipped` is a step after it.
 A run that is refused, or errored before it starts (an unreadable golden file, a lock that failed), ran nothing: its `steps` is `[]`,
 and `refusal` or `error` names what stopped it. An assertion that does not hold marks its step `failed`, and the
-remaining steps still run (a request or call is an action that already happened or never will). The whole document, and so
-every value in it, goes through `Aw.Redaction` before it is written, after the run has replaced, by value, each header value and
-pass-through variable value it resolved with `[REDACTED:header-value]` (wherever an app echoes it, including in its JSON-escaped
-form; a value under 6 characters is left to the patterns); stdout is exactly the file's content (no trailing newline) and logs go to
-stderr. The JSON Schemas of the script and the summary are generated from the records and committed as
+remaining steps still run (a request or call is an action that already happened or never will). Every free-text field (the
+`headline`, each step's recorded output, each failure's `expected` and `actual`, the refusal and error messages) goes through
+`Aw.Redaction` as it is recorded: first the run's own values are replaced by value — each resolved header value with
+`[REDACTED:header-value]` (and, for a `<scheme> <credential>` value such as `Bearer <token>`, the credential alone too) and each
+pass-through variable value with `[REDACTED:env-value]`, wherever an app echoes them, including their JSON-escaped forms (a value
+under 6 characters is left to the patterns) — then the value of every secret-named JSON member is hidden and the pattern scrub runs.
+Fixed fields (`schema`, `kind`, `at`, `outcome`, `host`, `appBuild`, `provenance`, step `target`s, statuses, codes) are written as
+they are: they come from the command line, the repo and the script, never from a response. stdout is exactly the file's content (no
+trailing newline) and logs go to stderr. The JSON Schemas of the script and the summary are generated from the records and committed as
 `schemas/evidence/api-script.schema.json` and `schemas/evidence/api-summary.schema.json`; a test validates a produced summary against its schema.
 
 ### `parity.json` (`schema: "ui-evidence.parity/1"`)
@@ -328,11 +332,11 @@ something), not a determined agent.
 | Host | requests go only to `--host`, which is required and has no default (a script with `requests` and no `--host` is refused). The host guard above decides it: a bare loopback origin, or a preview host with `--allow-preview-host` | AW-EVIDENCE-004 |
 | Redirects | a redirect to the same origin is followed (up to five hops) unless the expectation's `status` is itself a 3xx; a redirect to any other origin is never followed, and ends the run (exit 4) naming the origin it refused | AW-EVIDENCE-023 |
 | Writes | none refused: API evidence allows any HTTP method on the host the script names (owner decision, 2026-10-15). There is no `--allow-writes` for `api-run` | |
-| Header secrets | values come only from named environment variables; only the names are recorded, and the values are scrubbed by value from everything the run records | AW-EVIDENCE-017 (a literal), AW-EVIDENCE-006 (unset) |
+| Header secrets | values come only from named environment variables; only the names are recorded, and the values (and a scheme value's credential alone) are scrubbed by value from every free-text field the run records | AW-EVIDENCE-017 (a literal), AW-EVIDENCE-006 (unset) |
 | CLI target | `argv[0]` contains a `/`: it resolves, against `--repo` (default: the working directory) and after following every symlink, to an executable file inside a build output directory or equal to a `cli.allow` path. A bare name is never looked up on `PATH`. With nothing configured, every CLI call is refused, and the message names the files to write | AW-EVIDENCE-019 |
 | CLI writes | an argument that reads as a write verb (the UI guard's list, plus `push`, `drop`, `rm`, `truncate`, `destroy`, `purge`, `wipe`, `kill`, `commit`, `put`, `patch`, `write`, `rollback`, `revert`, `uninstall`) is refused unless the script's `declaredWrites` names it | AW-EVIDENCE-019 |
 | CLI environment | each call runs in a fresh temporary directory (its `HOME` and `TMPDIR`) with an empty environment plus `PATH`, `LANG` and the declared pass-through names. A pass-through name that reads as a secret (it contains `TOKEN`, `SECRET`, `PASSWORD`, `CREDENTIAL`, `API_KEY` or `PRIVATE_KEY`, starts with `AWS_`, `AZURE_`, `GCP_`, `GOOGLE_`, `SSH_` or `GITHUB_`, or is `DATABASE_URL`) is refused | AW-EVIDENCE-019 |
-| Redaction | every recorded body, stdout, expected and actual value, and the whole summary, go through `Aw.Redaction`; recorded text is capped | |
+| Redaction | every free-text field (recorded bodies and stdout, failures' expected and actual, the headline, refusal and error messages) is scrubbed by the run's own values, secret-named JSON members and `Aw.Redaction`'s patterns, then capped; fixed fields are written as they are (see the summary section) | |
 
 ### Targets config
 
