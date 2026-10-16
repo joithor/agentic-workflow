@@ -103,6 +103,19 @@ public sealed class CliServiceVerbsTests : IDisposable
         Assert.Equal(0, api.Streams);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_run_refused_because_the_service_is_running_names_the_running_job()
+    {
+        var conflict = new Reply(HttpStatusCode.Conflict,
+            $$"""{"title":"SND-JOB-409","status":409,"detail":"A RunService job is already running for heartbeat","runningJob":"{{Id}}"}""");
+        var api = new JobApi().On("POST", "/sindri/services/heartbeat/run", conflict);
+
+        var code = await Finished(_rig.RunServices(api, "run", "heartbeat"));
+
+        Assert.Equal(2, code);
+        Assert.Equal($"SND-JOB-409 A RunService job is already running for heartbeat (fix: sindri jobs show {Id})\n", _rig.Error.ToString().ReplaceLineEndings("\n"));
+    }
+
     [Theory, Trait("Lane", "unit")]
     [InlineData("run")]
     [InlineData("pause")]

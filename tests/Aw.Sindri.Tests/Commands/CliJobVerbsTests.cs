@@ -30,6 +30,19 @@ public sealed class CliJobVerbsTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Jobs_list_says_1_line_for_a_single_line()
+    {
+        var list = Body(new JobList([new JobSummary(JobId.From(Id), JobKind.From("RunService"), JobKey.From("heartbeat"), Item: null, Repo: null, ServiceName.From("heartbeat"),
+            JobState.Succeeded, "human:local", KnownInstants.Epoch, KnownInstants.Epoch, Rounds: 1, "ok: worked", Code: null)], Empty: null,
+            new AsOf(10, 10, KnownInstants.Epoch, Rebuilding: false, Stalled: false)));
+        var api = new JobApi().Ok("GET", "/sindri/jobs", list);
+
+        _ = await Finished(_rig.RunJobs(api));
+
+        Assert.Equal($"{Id}  succeeded  RunService  heartbeat  2026-01-01T00:00:00Z  1 line  ok: worked\n", _rig.Out.ToString().ReplaceLineEndings("\n"));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Jobs_show_prints_the_job_and_its_lines()
     {
         var api = new JobApi().Ok("GET", "/sindri/jobs/" + Id, View(JobState.Running, rounds: 2));
