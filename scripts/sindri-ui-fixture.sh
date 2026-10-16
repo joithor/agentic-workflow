@@ -17,6 +17,16 @@
 #                                  close an item at the CLI (sindri item close, as the owner): with the app open on
 #                                  the same item, the app's own Close then sends a stale version (SND-ITEM-409)
 #
+#   sindri-ui-fixture.sh request [--item ID] [--repo R] <text>
+#                                  file a request as a session (a POST to /sindri/requests with no caller header, so the
+#                                  API reads a session; --repo sends X-Sindri-Repo): a decision lands in Needs you (U3')
+#   sindri-ui-fixture.sh decide <DEC-id> <choice>
+#                                  decide at the CLI (sindri decide, as the owner): with the app open on the same
+#                                  decision, the app's own Decide is then refused (SND-ITEM-409)
+#   sindri-ui-fixture.sh fail      add a service the build cannot run to the live profile and approve it (a failure row)
+#   sindri-ui-fixture.sh unfail    remove it again and approve (the row clears)
+#                                  (items --large also files 12 requests, 6 in FIXTURE_REPO and 6 in <FIXTURE_REPO>-two)
+#
 # FIXTURE_REPO names the items' repo (default: none, so the API's default applies).
 # Environment: AW_SINDRI_HOME (required: sindri-prove.sh's guard, a temp or proof folder), SINDRI (the built C# CLI,
 # as sindri-prove.sh reads it), STALL_TYPE (the stalled row's type; default service.ran, a type the projector reads),
@@ -33,7 +43,7 @@ STALL_ID="7f3c1a52-0b6e-4d1e-9a55-3c2f6d8e1b04"
 STALL_CORRELATION="7f3c1a52-0b6e-4d1e-9a55-3c2f6d8e1b05"
 
 die() { echo "sindri-ui-fixture: $*" >&2; exit 2; }
-usage() { sed -n '5,21p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '5,31p' "$0" | sed 's/^# \{0,1\}//'; }
 
 # sindri-prove.sh's guard alone: it runs before any verb, and SINDRI=true makes the verb a no-op.
 guard() { SINDRI=true "$PROVE" guard >/dev/null || exit 2; }
@@ -80,10 +90,66 @@ services:
   heartbeat: { every: 5s }
 api: { port: 0 }
 YAML
+  approve || return
+  "$PROVE" human --headless
+}
+
+# Validates the live profile and approves its hash as the owner, typing the first six characters.
+approve() {
+  local hash
   hash="$("$PROVE" profile validate --json | jq -r '.hash // empty')"
   [ -n "$hash" ] || die "profile validate gave no hash"
-  printf 'approve profile %s\n' "${hash:0:6}" | "$PROVE" human profile approve "$hash" || return
-  "$PROVE" human --headless
+  printf 'approve profile %s\n' "${hash:0:6}" | "$PROVE" human profile approve "$hash"
+}
+
+# A service the build has no code for: the scheduler reports its failure, and Needs you shows a failure row.
+fail() {
+  need jq
+  local profile
+  profile="$(profile_path)"
+  [ -f "$profile" ] || die "no live profile at $profile: run 'up' first"
+  if ! grep -q 'broken:' "$profile"; then
+    awk '{print} /^  heartbeat:/ {print "  broken: { every: 5s }"}' "$profile" > "$profile.new" && mv "$profile.new" "$profile"
+  fi
+  approve
+}
+
+unfail() {
+  need jq
+  local profile
+  profile="$(profile_path)"
+  [ -f "$profile" ] || die "no live profile at $profile: run 'up' first"
+  grep -v '^  broken:' "$profile" > "$profile.new"; mv "$profile.new" "$profile"
+  approve
+}
+
+# A session's request: no X-Sindri-Caller, so the API reads a session.
+request() {
+  need jq
+  local item="" repo="" url body
+  while [ $# -gt 1 ]; do
+    case "$1" in
+      --item) item="$2"; shift 2 ;;
+      --repo) repo="$2"; shift 2 ;;
+      *) break ;;
+    esac
+  done
+  [ $# -eq 1 ] && [ -n "$1" ] || die "usage: request [--item ID] [--repo R] <text>"
+  if [ -n "$item" ] && ! [[ "$item" =~ ^[A-Za-z]+-[A-Za-z0-9]+$ ]]; then die "request: '$item' is not an item id"; fi
+  if [ -n "$repo" ] && ! [[ "$repo" =~ ^[A-Za-z0-9._-]+$ ]]; then die "request: '$repo' is not a repo name"; fi
+  url="$("$PROVE" url)" || return
+  body="$(jq -nc --arg text "$1" --arg item "$item" '{kind: "rescope", text: $text} + (if $item == "" then {} else {itemId: $item} end)')"
+  if [ -n "$repo" ]; then
+    curl -sS -X POST -H 'Content-Type: application/json' -H "X-Sindri-Repo: $repo" -d "$body" "$url/sindri/requests"
+  else
+    curl -sS -X POST -H 'Content-Type: application/json' -d "$body" "$url/sindri/requests"
+  fi
+}
+
+decide() {
+  [[ "$1" =~ ^[A-Za-z]+-[A-Za-z0-9]+$ ]] || die "decide: '$1' is not a decision id"
+  [[ "$2" =~ ^[A-Za-z0-9._-]+$ ]] || die "decide: '$2' is not a choice"
+  "$PROVE" human decide "$1" "$2"
 }
 
 # One row, the same one every time (INSERT OR IGNORE on its idempotency key), at the ledger's current epoch. The ledger's
@@ -132,6 +198,12 @@ items() {
   for title in "${ITEMS[@]}"; do add "$title" || return; done
   [ "${1:-}" = "--large" ] || return 0
   for n in $(seq 1 30); do add "Large fixture item $n" || return; done
+  # 12 requests across two repos (U3's large Needs-you list): six each, filed as a session.
+  local repo="${FIXTURE_REPO:-demo}"
+  for n in $(seq 1 6); do
+    request --repo "$repo" "Large fixture request $n for $repo" || return
+    request --repo "$repo-two" "Large fixture request $n for $repo-two" || return
+  done
 }
 
 close() {
@@ -144,9 +216,11 @@ case "$verb" in
   -h | --help) usage; exit 0 ;;
   "") usage >&2; exit 2 ;;
   --large) die "--large belongs to 'items': sindri-ui-fixture.sh items --large" ;;
-  up | stall | unstall | drift | down) [ "$#" -eq 1 ] || die "'$verb' takes no arguments" ;;
+  up | stall | unstall | drift | down | fail | unfail) [ "$#" -eq 1 ] || die "'$verb' takes no arguments" ;;
   items) [ "$#" -eq 1 ] || { [ "$#" -eq 2 ] && [ "$2" = "--large" ]; } || die "usage: items [--large]" ;;
   close) [ "$#" -eq 2 ] || { [ "$#" -eq 3 ] && [ "$3" = "--cancelled" ]; } || die "usage: close <item> [--cancelled]" ;;
+  request) [ "$#" -ge 2 ] || die "usage: request [--item ID] [--repo R] <text>" ;;
+  decide) [ "$#" -eq 3 ] || die "usage: decide <DEC-id> <choice>" ;;
   *) usage >&2; die "unknown verb: $verb" ;;
 esac
 

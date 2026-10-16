@@ -133,6 +133,7 @@ AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" items >/dev/null 2>&1; check 
 check "items adds the fixture's four items, oldest first" "$(tr '\n' ';' < "$STUB_LOG")" \
   "item add Stream limits 429 fallback;item add Retry storm in outbox dispatcher;item add Context map review for tabs.layout;item add Try the queue;"
 : > "$STUB_LOG"
+printf '{"url":"http://127.0.0.1:7999"}\n' > "$U/control.json"
 mkdir -p "$WORK/nocurl"; printf '#!/bin/sh\nexit 0\n' > "$WORK/nocurl/curl"; chmod +x "$WORK/nocurl/curl"
 PATH="$WORK/nocurl:$PATH" AW_SINDRI_HOME="$U" SINDRI="$STUB" FIXTURE_REPO=demo bash "$FIXTURE" items --large >/dev/null 2>&1; check "items --large exits 0" "$?" "0"
 check "items --large adds 34 items" "$(grep -c '^item add' "$STUB_LOG")" "34"
