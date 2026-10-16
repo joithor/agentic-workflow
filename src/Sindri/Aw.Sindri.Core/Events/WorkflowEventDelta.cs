@@ -7,8 +7,9 @@ namespace Aw.Sindri.Core.Events;
 /// <summary>
 /// An event's post-state delta as the ledger row shows it (spec §5.6): each part the decision changed, as state names,
 /// reasons, counters and digests. A null part didn't change, except <see cref="Suspension"/> and <see cref="PendingPark"/>,
-/// which are always their post-state values. No question text and no actor's words; only <c>workflow.started</c>'s
-/// subject (the first input's and the name's facts, cut to 40/80) carries text taken from facts.
+/// which are always their post-state values. No question text and no actor's words; only the started row's subject
+/// (the subject as named at start: a text subject or a rendered name cut to 40/80, a link or payload subject's key and label
+/// as stored) carries text taken from facts.
 /// </summary>
 /// <param name="Frame">The frame after it.</param>
 /// <param name="Suspension">The suspension after it; none when there is none.</param>
