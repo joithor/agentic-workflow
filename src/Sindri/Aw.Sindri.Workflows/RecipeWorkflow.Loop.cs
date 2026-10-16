@@ -7,7 +7,9 @@ using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Views;
 using Temporalio.Common;
 using Temporalio.Exceptions;
 using Temporalio.Workflows;
@@ -221,6 +223,35 @@ internal sealed partial class RecipeWorkflow
         }
 
         Workflow.UpsertTypedSearchAttributes([.. updates]);
+    }
+
+    /// <summary>The producer of an input the start generated from its template.</summary>
+    private const string GenerateActor = "engine:generate";
+
+    /// <summary>
+    /// The instance's subject (spec section 3.11): the first input names it, and the recipe's name, rendered once from the facts it
+    /// reads at the start time, is its label. Each fact is read by the 'ReadSubject' local activity; one that can't be read is its bare key.
+    /// </summary>
+    private static async Task<SubjectRef> NamedSubject(InterpretedRecipe recipe, InstanceStart start)
+    {
+        var inputs = recipe.Recipe.Inputs;
+        List<FactKey> keys = [.. InstanceNames.FactsRead(recipe.Recipe)];
+        if (SubjectRefs.NeedsContent(recipe))
+        {
+            keys.Add(inputs[0].Key);
+        }
+
+        var contents = new Dictionary<FactKey, string?>();
+        foreach (var key in keys.Distinct())
+        {
+            if (inputs.Any(i => i.Key == key && i.Kind is not ("item" or "file")) && start.Inputs.TryGetValue(key, out var fact))
+            {
+                contents[key] = await SubjectTextOf(fact.Value).ConfigureAwait(true);
+            }
+        }
+
+        var name = InstanceNames.Render(recipe, start.Item, contents, Now);
+        return SubjectRefs.Of(recipe, start.Item, contents.GetValueOrDefault(inputs[0].Key), name);
     }
 
     /// <summary>The first input's stored content as text ('ReadSubject', a local activity on start); none when it can't be read.</summary>

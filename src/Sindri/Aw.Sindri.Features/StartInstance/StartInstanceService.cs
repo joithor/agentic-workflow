@@ -6,6 +6,7 @@ using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Features.StartInstance;
 
@@ -24,7 +25,8 @@ namespace Aw.Sindri.Features.StartInstance;
 /// <param name="facts">Where the input facts are stored.</param>
 /// <param name="runtime">The instances on Temporal.</param>
 /// <param name="launches">The item's launches (UI spec E-19): one still requested starts the instance taken over.</param>
-internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipes, IInstanceDirectory directory, IFactStore facts, IInstanceRuntime runtime, ILaunchRequests launches)
+/// <param name="clock">The start time that an input's generate template reads (spec section 3.11).</param>
+internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipes, IInstanceDirectory directory, IFactStore facts, IInstanceRuntime runtime, ILaunchRequests launches, TimeProvider clock)
     : IService<StartInstanceRequest, StartInstanceResponse>
 {
     /// <summary>The tenant and ring every start runs under until the profile names them (S1-D11).</summary>
@@ -60,11 +62,11 @@ internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipe
             return view.IsError ? view.Error : new StartInstanceResponse(view.Value, Existing: true, Finished: true);
         }
 
-        return await Begin(request, item, recipe.Version, plan.Value, cancellationToken).ConfigureAwait(false);
+        return await Begin(request, item, recipe, plan.Value, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Starts the instance: the launches are read before any write, so a read error leaves no facts behind (UI spec E-19).</summary>
-    private async ValueTask<Result<StartInstanceResponse>> Begin(StartInstanceRequest request, ResolvedItem item, RecipeVersion recipe, AttemptPlan plan, CancellationToken cancellationToken)
+    private async ValueTask<Result<StartInstanceResponse>> Begin(StartInstanceRequest request, ResolvedItem item, ApprovedRecipe recipe, AttemptPlan plan, CancellationToken cancellationToken)
     {
         var launch = await launches.Requested(item.Id, cancellationToken).ConfigureAwait(false);
         if (launch.IsError)
@@ -72,14 +74,14 @@ internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipe
             return launch.Error;
         }
 
-        var inputs = await Store(request, cancellationToken).ConfigureAwait(false);
+        var inputs = await Store(request, recipe.Recipe, cancellationToken).ConfigureAwait(false);
         if (inputs.IsError)
         {
             return inputs.Error;
         }
 
         var started = await runtime.Start(
-            new InstanceStart(recipe, item.Id, plan.Attempt, inputs.Value, Tenant, Ring: 0) { OpenLaunch = launch.Value?.Value },
+            new InstanceStart(recipe.Version, item.Id, plan.Attempt, inputs.Value, Tenant, Ring: 0) { OpenLaunch = launch.Value?.Value },
             cancellationToken).ConfigureAwait(false);
         return started.IsError ? started.Error : new StartInstanceResponse(started.Value, plan.Existing, Finished: false);
     }
@@ -129,7 +131,7 @@ internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipe
             return refused;
         }
 
-        return recipe.Value.Recipe.Inputs.FirstOrDefault(i => !request.Facts.ContainsKey(i.Key)) is { } missing
+        return recipe.Value.Recipe.Inputs.FirstOrDefault(i => i.Generate is null && !request.Facts.ContainsKey(i.Key)) is { } missing
             ? SindriErrors.InvalidInput.With($"{recipe.Value.Version.Id.Value} needs input {missing.Key.Value} (fix: --fact {missing.Key.Value}=<file>)")
             : (item.Value, recipe.Value);
     }
@@ -199,9 +201,27 @@ internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipe
             : WorkflowErrors.RecipeNotFound.With($"no approved {id.Value}@{hash} (fix: sindri recipe list)");
     }
 
-    private async ValueTask<Result<IReadOnlyDictionary<FactKey, InputFact>>> Store(StartInstanceRequest request, CancellationToken cancellationToken)
+    /// <summary>Stores the supplied facts and, for each input with a generate template the start gave no value for, the rendered text (spec section 3.11): a supplied value always wins.</summary>
+    private async ValueTask<Result<IReadOnlyDictionary<FactKey, InputFact>>> Store(StartInstanceRequest request, Recipe recipe, CancellationToken cancellationToken)
     {
         var stored = new Dictionary<FactKey, InputFact>();
+        var now = clock.GetUtcNow();
+        foreach (var input in recipe.Inputs.Where(static i => i.Generate is not null))
+        {
+            if (request.Facts.ContainsKey(input.Key) || InstanceNames.Generate(input.Generate!, now) is not { } text) // why: GeneratedInputs lists only inputs with a template
+            {
+                continue;
+            }
+
+            var made = await facts.Put(System.Text.Encoding.UTF8.GetBytes(text), cancellationToken).ConfigureAwait(false);
+            if (made.IsError)
+            {
+                return made.Error;
+            }
+
+            stored[input.Key] = new InputFact("generated", made.Value, Generated: true);
+        }
+
         foreach (var (key, fact) in request.Facts)
         {
             var put = await facts.Put(fact.Content, cancellationToken).ConfigureAwait(false);

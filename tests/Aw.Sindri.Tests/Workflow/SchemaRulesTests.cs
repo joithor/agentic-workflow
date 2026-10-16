@@ -41,7 +41,7 @@ public sealed class SchemaRulesTests
         },
         {
             "RCP-HASH-001",
-            "RCP-HASH-001: hash 000000000000 doesn't match the recipe's content, whose hash is e69eeb6a8547 at RCP-HASH-001.yaml:16:1 (hash); set hash to sha256:e69eeb6a8547f69896a6b6b63f18a392b5b999cd22705e9286e461c2f7071b2c, or remove it"
+            "RCP-HASH-001: hash 000000000000 doesn't match the recipe's content, whose hash is b2371052fdcf at RCP-HASH-001.yaml:16:1 (hash); set hash to sha256:b2371052fdcf9ed4a8dd9019036d5f3725abf3e5ec115746d3d47591cc72706e, or remove it"
         },
     };
 
@@ -152,7 +152,7 @@ public sealed class SchemaRulesTests
     [Fact, Trait("Lane", "unit")]
     public void A_terminal_outcome_outside_the_closed_set_is_RCP_OUTCOME_001_alone()
     {
-        var yaml = RecipeReaderTests.Minimal.Replace("outcome: resolved", "outcome: cancelled", StringComparison.Ordinal);
+        var yaml = RecipeReaderTests.Minimal.Replace("outcome: resolved", "outcome: cancelled", StringComparison.Ordinal) + "inputs: [{ key: fact:item, type: item, kind: item }]\n";
         var document = RecipeReaderTests.Reader.Read(yaml, "test.yaml").Document!;
         var context = new ValidationContext(
             new BlockCatalog([TestBlocks.Step("step.produce")], []), RecipeProfileFacts.None, InMemoryChildRecipes.None, BaseRecipe: null);

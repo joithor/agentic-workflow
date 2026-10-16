@@ -97,9 +97,14 @@ internal sealed partial class RecipeWorkflow
         var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, new HashSet<BlockId>(), NoChildRecipes.Instance) { DeskTimeout = loaded.DeskTimeout };
         _context = new Interpreting(loaded.Recipe, decisions);
         _repo = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : null;
-        _subject = SubjectRefs.Of(_recipe, start.Item, SubjectRefs.NeedsContent(_recipe) && start.Inputs.TryGetValue(loaded.Recipe.Inputs[0].Key, out var first) ? await SubjectTextOf(first.Value).ConfigureAwait(true) : null);
+        _subject = await NamedSubject(_recipe, start).ConfigureAwait(true);
         var change = Started(TransitionDecision.Start(StartOf(start, loaded), loaded.Recipe, decisions));
         var instance = Enter(change.After, Desk);
+        foreach (var key in start.Inputs.Where(static i => i.Value.Generated).Select(static i => i.Key))
+        {
+            _provenance[key] = new FactProvenance(GenerateActor, Now);   // a generated input was made by the engine, not supplied (spec section 3.11)
+        }
+
         await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null, Detail: WorkflowEventDetail.Of(change.Event, trigger: null), Causation: start.OpenLaunch), NeedsYou(instance)).ConfigureAwait(true);
         return (instance, _context);
     }

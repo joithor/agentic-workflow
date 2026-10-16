@@ -29,12 +29,13 @@ public static class SubjectKinds
         return input.Type ?? (input.Kind is { } kind ? PairedType(kind) : null) ?? FactTypes.Default;
     }
 
-    /// <summary>The kind an input has: the declared one (RCP-INPUT-001 makes it required), or null in a recipe that fails that rule.</summary>
+    /// <summary>The kind an input has: the declared one. RCP-INPUT-001 makes it required, so a recipe that runs always has it.</summary>
     /// <param name="input">A recipe input.</param>
-    /// <returns>The kind, or null when the recipe doesn't declare one.</returns>
-    public static string? Effective(RecipeInput input)
+    /// <returns>The kind.</returns>
+    /// <exception cref="InvalidOperationException">The recipe declares no kind (it fails RCP-INPUT-001, so it can't have been approved).</exception>
+    public static string Effective(RecipeInput input)
     {
         ArgumentNullException.ThrowIfNull(input);
-        return input.Kind;
+        return input.Kind ?? throw new InvalidOperationException($"input {input.Key.Value} declares no kind (RCP-INPUT-001)");
     }
 }

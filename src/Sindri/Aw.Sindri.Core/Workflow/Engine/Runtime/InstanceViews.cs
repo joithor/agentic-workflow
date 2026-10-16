@@ -126,12 +126,14 @@ public static class InstanceViews
     private static InstanceView WithLayout(InstanceView view, Layout from, InstanceViewContext context)
     {
         var badge = from.Words.EngineBadge();
+        var subject = context.Subject ?? SubjectRefs.Of(from.Recipe, from.Instance.Item);
         var complete = view with
         {
             ItemId = from.Instance.Item,
             Urgency = RecipeUrgencies.UrgencyOf(from.Recipe),
             EngineOwned = badge,
-            Subject = context.Subject ?? SubjectRefs.Of(from.Recipe, from.Instance.Item),
+            Subject = subject,
+            Name = from.Recipe.Recipe.Name is null ? null : subject.Label,
             Inputs = InputSlots.Of(from.Instance, from.Recipe),
             OrderedBy = StatePathOrder.Of(from.Recipe.Recipe).OrderedBy == "transition-list" ? PathOrdering.TransitionList : PathOrdering.Path,
             States = StateCells.Of(from.Instance, from.Recipe, badge),

@@ -594,10 +594,10 @@ public static class WorkflowViewFixtures
     /// <summary>workflow.incident-response: urgency incident and the mitigate and verify loop.</summary>
     public static RecipeView IncidentRecipe() => _incident.View();
 
-    /// <summary>workflow.no-outputs, a fixture-only preview: no instance names it, and its optional input is a future schema (v1 serves every input required). 'outputs: []', and a kind on the first input only.</summary>
+    /// <summary>workflow.no-outputs, a fixture-only recipe: no instance names it, and its second input is a real generate input (served required: false). 'outputs: []'.</summary>
     public static RecipeView NoOutputsRecipe() => new(
-        RecipeId.From("workflow.no-outputs"), RecipeHash.From("sha256:" + "3c9d51e2".PadRight(64, '0')), 1,
-        [new RecipeInputView("fact:request", "Request", FactType.Text, "text", true), new RecipeInputView("fact:context", null, FactType.File, null, false)],
+        RecipeId.From("workflow.no-outputs"), RecipeHash.From("sha256:" + "3c9d51e2".PadRight(64, '0')), 1, Name: null,
+        [new RecipeInputView("fact:request", "Request", FactType.Text, "text", true, Generate: null), new RecipeInputView("fact:context", null, FactType.Text, "text", false, "context {start:date}")],
         [], RecipeUrgency.Work, PathOrdering.Path, [new RecipeStateView("intake", 1, null), new RecipeStateView("classify", 2, null), new RecipeStateView("done", 3, null)], []);
 
     /// <summary>The recipe view of one fixture recipe, by recipe id ('workflow.step'): the same declaration its instances and list rows are built from.</summary>
