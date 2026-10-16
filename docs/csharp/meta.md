@@ -25,7 +25,7 @@ AOT smoke: `bash src/Meta/aot-smoke/run.sh`. Shell side: `config/hooks/meta-stop
 | `aw-meta` | State in `$AW_STATE_DIR/meta/meta.db` (SQLite, WAL): messages, sends, lane map versions, gates, merges, owner questions |
 | Stop hook `aw:meta-stop-gate` | Runs `aw-meta stop-check` with the session id and transcript path; exit 1 from it blocks the stop (hook exit 2, the list on stderr) |
 | PostToolUse hook `aw:meta-outbox` (matcher `SendMessage`) | Pipes the hook payload to `aw-meta outbox-record`, which records the send and closes what it settles |
-| `aw-meta-launch` (`scripts/meta-launch.sh`) | By default one Warp window, a pane per lane, each attached to tmux session `<team>-<lane>` running `scripts/meta-lane.sh`; `launcher.json` can pick another viewer and other lane agents ([Launcher](#launcher)) |
+| `aw-meta-launch` (`scripts/meta-launch.sh`) | By default one Warp window, a pane per lane, each attached to tmux session `<team>-<lane>` (on the team's own socket, `tmux -L <team>`) running `scripts/meta-lane.sh`; `launcher.json` can pick another viewer and other lane agents ([Launcher](#launcher)) |
 | `scripts/meta-lane.sh` | Runs the lane's agent (Claude Code unless `launcher.json` says otherwise) as `claude -n <team>-<lane>`, resumed by its recorded session id, or fresh with `<prompts>/<lane>.md` |
 
 ## Why the transcript
@@ -163,20 +163,20 @@ A worktree git cannot read is kept with the reason.
 | `$AW_STATE_DIR/launcher.json` | the owner, or `aw-meta-launch --init-launcher` (read by `scripts/launcher-lib.sh`) |
 | `$AW_STATE_DIR/meta/lane-sessions/<lane>.ambiguous` | `scripts/meta-lane.sh` when an agent that reports its own session id left more than one candidate session file |
 | `$AW_STATE_DIR/meta/lane-sessions/<lane>.settled` | `scripts/meta-lane.sh` for a lane whose agent reports its own session id: left once the id is recorded or refused; `meta-launch.sh` waits for it before starting the next lane |
-| `$AW_STATE_DIR/meta/lane-sessions/.reported.lock/` | `scripts/meta-lane.sh`: the team start lock that serialises the start of lanes whose agent reports its own session id (`pid` names the holder) |
+| `$AW_STATE_DIR/meta/lane-sessions/.reported.flock` | `scripts/meta-lane.sh`: the team start lock (`flock`; the kernel drops it when the holder dies) that serialises the start of lanes whose agent reports its own session id |
 
 ## Launcher
 
 `aw-meta-launch` reads `launcher.json` (`$AW_LAUNCHER_CONFIG`, else `$AW_STATE_DIR/launcher.json`; the contract is
 `docs/csharp/sindri-launcher.md`, the design `docs/superpowers/specs/2026-10-15-sindri-session-launcher-design.md`, phase
-SL-1). With no file the launcher is exactly what it was: the Warp layout, Claude Code in every lane (a golden in
+SL-1). With no file the launcher is what it was apart from the team's own tmux socket (`-L <team>`, below): the Warp layout, Claude Code in every lane (a golden in
 `scripts/tests/meta-launch.test.sh` pins the Warp YAML, every tmux command and every claude command line).
 
 | Setting | Effect on `aw-meta-launch` |
 |---|---|
 | `viewer.kind: warp` (the default with no file) | The multi-pane Warp layout, written to `AW_WARP_LAUNCH_DIR` and opened |
-| `viewer.kind: exec-template` | One window per lane (the lanes of this run, so `--lanes` opens only those) running `viewer.argv` with `{title}` and `{name}` = `<team>-<lane>`, `{cwd}` = the repo, `{cmd...}` = `tmux attach -t =<team>-<lane>`; `--no-open` opens none, `--dry-run` prints each argv. A terminal that is not installed never stops the sessions: the attach command is printed |
-| `viewer.kind: print` | Prints `tmux attach -t =<team>-<lane>` per lane |
+| `viewer.kind: exec-template` | One window per lane (the lanes of this run, so `--lanes` opens only those) running `viewer.argv` with `{title}` and `{name}` = `<team>-<lane>`, `{cwd}` = the repo, `{cmd...}` = `tmux -L <team> attach -t =<team>-<lane>`; `--no-open` opens none, `--dry-run` prints each argv. A terminal that is not installed never stops the sessions: the attach command is printed |
+| `viewer.kind: print` | Prints `tmux -L <team> attach -t =<team>-<lane>` per lane |
 | `host` | Checked, not used: lanes always run in tmux |
 | `meta.lanesAgent`, `meta.lanes.<lane>` | The catalog agent that runs the lane (the meta lane is always Claude Code). The catalog is `config/launcher/builtins.json` plus the file's `agents` |
 | `agents.<id>` | `open`/`resume` argv templates (`{bin}`, `{cwd}`, `{name}`, `{seed}`, `{sessionId}`), `processName` (the pane check that restarts a lane whose agent exited) and `transcripts` (the glob that decides resume) |
@@ -188,10 +188,12 @@ chooses its own id: lanes of that kind start one at a time, each waiting up to `
 (the `lane-sessions/<lane>` file a hook writes, else the single new file the catalog's `newestFile` glob finds that no other
 lane has recorded; two candidates are refused and leave `<lane>.ambiguous`). "New" means a path that did not exist when
 the lane started (a snapshot taken before the agent runs), not a recently modified one. The one-at-a-time start is the
-lane's own: `meta-lane.sh` takes a team start lock (`lane-sessions/.reported.lock`) before the agent runs and releases it
+lane's own: `meta-lane.sh` takes a team start lock (`flock` on `lane-sessions/.reported.flock`) before the agent runs and releases it
 when the id is recorded or refused, or after a timeout plus a grace window (`AW_META_ID_GRACE` seconds, default 10, during which the lane still watches for its late file and keeps it if it arrives, so the next lane cannot take it), so lanes created together (a Warp pane that creates its session, a
 reboot, `--lanes`) are safe too. A lane that cannot start leaves `<lane>.failed` (the reason, the line the launcher prints as `lane <l> failed to start: ...`) and `<lane>.settled`, so the launcher reports it at once instead of waiting out the timeout. A lane refused by the launcher reader (a kickoff prompt starting with `-` once a
 `launcher.json` exists) starts no agent and records no id. Obligations for them arrive with SL-1b.
+
+**The team's own tmux socket.** `aw-meta-launch` runs every tmux call as `tmux -L <team>`, where `<team>` is `team.json`'s `team` (for example `-L sindri`): the has-session, new-session, respawn-pane and display-message calls, the `tmux -L <team> new -A` lines of the Warp layout, the printed attach lines and the exec-template viewer's attach argv. The team's server is therefore no longer tmux's default one, and a bare `tmux ls` or `tmux kill-server` in another terminal doesn't touch it. Attach by hand with `tmux -L sindri attach -t sindri-ideas`. The switch takes effect when the team is next relaunched: a server already running on the default socket is left alone (no migration, nothing kills it), but `aw-meta-launch` looks, read-only, for the lanes' `<team>-<lane>` sessions there before it creates anything and refuses (exit 1, naming them) while any exist, because starting them again would run a second agent on the same transcripts: stop the old team, then relaunch. `--allow-legacy` (or `AW_META_ALLOW_LEGACY=1`) skips the check; it is for the owner only, and the meta session never passes it; `AW_META_LEGACY_TMUX_SOCKET` names a `-L` socket to check instead of the default one (tests). Tests never run tmux directly: they source `scripts/test-tmux.sh`, which unsets `TMUX`, uses a temp `TMUX_TMPDIR` and a `-L` socket of its own (`ttmux`), and refuses a socket outside its temp dir.
 
 **Precedence** (environment, then the file, then the defaults): `AW_META_CLAUDE` replaces the `claude-code` entry's `bin`
 and `AW_META_CLAUDE_ARGS` is inserted after `{bin}`; both stay for tests and are deprecated for users in favour of an
@@ -200,7 +202,7 @@ such field). `AW_LAUNCHER_CONFIG` is passed on to every lane's tmux session.
 
 **Lane variables.** Every lane's environment has `AW_SINDRI_CHILD=1`, `AW_META_TEAM` and `AW_META_LANE`. `meta-lane.sh`
 exports them (L-12, SL-1 section 10.2) instead of passing `-e` to `new-session`, so tmux's global environment, the Warp
-layout and every tmux command stay byte-identical with no file (the owner's condition). The effect is the
+layout and every tmux command stay as they are with no file, `-L <team>` aside (the owner's condition). The effect is the
 same: a `sindri` run inside the lane is a session caller, whatever the agent. A shell left in the pane after the agent
 exits still carries them, so run the human's `sindri` approvals from another terminal.
 
