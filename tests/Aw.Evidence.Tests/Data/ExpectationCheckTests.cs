@@ -90,4 +90,16 @@ public sealed class ExpectationCheckTests
         Assert.Equal(holds, result.Failures.Count == 0);
         Assert.Equal(2, result.Count);
     }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("""{"pointer":"/error","exists":false}""", "absent")]
+    [InlineData("""{"pointer":"/error","exists":true}""", "exists")]
+    [InlineData("""{"pointer":"/error","equals":1}""", "1")]
+    [InlineData("""{"pointer":"/error","matches":"^x$"}""", "matches ^x$")]
+    public void Every_pointer_assertion_fails_with_not_JSON_when_the_body_is_not_JSON(string assertion, string expected)
+    {
+        var failure = Assert.Single(Check($$"""{"status":200,"pointers":[{{assertion}}]}""", 200, "<html>oops</html>").Failures);
+
+        Assert.Equal(("/error", expected, "not JSON"), (failure.Location, failure.Expected, failure.Actual));
+    }
 }

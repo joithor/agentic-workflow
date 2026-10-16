@@ -78,5 +78,45 @@ public sealed class ProcessCliRunnerTests : IDisposable
         Assert.Contains("did not finish", outcome.Error.Message, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task A_temp_directory_that_cannot_be_made_is_a_run_failure_not_an_exception()
+    {
+        var notADirectory = _root.Combine("file");
+        await File.WriteAllTextAsync(notADirectory, "x", TestContext.Current.CancellationToken);
+        var tool = StubCommand.Write(_root, "ok", "printf ok");
+
+        var outcome = await new ProcessCliRunner(TimeSpan.FromSeconds(20), tempRoot: notADirectory).RunAsync(Invoke(tool), TestContext.Current.CancellationToken);
+
+        Assert.Equal(EvidenceErrors.RunFailed.Code, outcome.Error.Code);
+    }
+
+    [Fact]
+    public async Task A_read_only_directory_a_program_leaves_behind_does_not_fail_the_call()
+    {
+        if (Environment.IsPrivilegedProcess || OperatingSystem.IsWindows())
+        {
+            return;   // root deletes read-only directories, so there is nothing to observe
+        }
+
+        var scratch = _root.Combine("scratch");
+        _ = Directory.CreateDirectory(scratch);
+        var marker = _root.Combine("home.txt");
+        var tool = StubCommand.Write(_root, "leaves", $"mkdir \"$HOME/ro\" && echo x > \"$HOME/ro/f\" && chmod 555 \"$HOME/ro\" && printf '%s' \"$HOME\" > '{marker}' && printf done");
+        try
+        {
+            var outcome = await new ProcessCliRunner(TimeSpan.FromSeconds(20), scratch).RunAsync(Invoke(tool), TestContext.Current.CancellationToken);
+
+            Assert.Equal("done", outcome.Value.Stdout);
+        }
+        finally
+        {
+            var home = File.Exists(marker) ? await File.ReadAllTextAsync(marker, TestContext.Current.CancellationToken) : null;
+            if (home is not null && Directory.Exists(Path.Combine(home, "ro")) && !OperatingSystem.IsWindows())
+            {
+                File.SetUnixFileMode(Path.Combine(home, "ro"), UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            }
+        }
+    }
+
     public void Dispose() => _root.Dispose();
 }

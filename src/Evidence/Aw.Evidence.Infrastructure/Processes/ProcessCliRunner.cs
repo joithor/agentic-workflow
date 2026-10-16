@@ -8,8 +8,10 @@ namespace Aw.Evidence.Infrastructure.Processes;
 /// Runs a program in a fresh temporary directory (its working directory, HOME and TMPDIR) with a cleared environment: a fixed
 /// PATH plus the given variables. The program is an absolute path, never looked up on PATH.
 /// </summary>
-internal sealed class ProcessCliRunner(TimeSpan timeout) : ICliRunner
+internal sealed class ProcessCliRunner(TimeSpan timeout, string? tempRoot = null) : ICliRunner
 {
+    internal string? TempRoot { get; } = tempRoot;
+
     private const string FixedPath = "/usr/local/bin:/usr/bin:/bin";
 
     /// <inheritdoc/>

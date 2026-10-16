@@ -35,4 +35,28 @@ public abstract class TextScrubberContract
 
         Expect.That(Create().Scrub(text) == text, "nothing in it is a secret");
     }
+
+    /// <summary>JSON member names the scrubber must treat as holding a secret whatever their value looks like.</summary>
+    protected static IReadOnlyList<string> SecretNames { get; } = ["password", "client_secret", "accessToken", "apiKey"];
+
+    /// <summary>JSON member names an ordinary document uses, which stay visible.</summary>
+    protected static IReadOnlyList<string> OrdinaryNames { get; } = ["name", "id", "title", "items"];
+
+    /// <summary>A name that holds a secret is a secret name.</summary>
+    [Fact]
+    public void A_secret_looking_member_name_is_a_secret_name()
+    {
+        var scrubber = Create();
+
+        Expect.That(SecretNames.All(scrubber.IsSecretName), "password, client_secret, accessToken and apiKey are secret names");
+    }
+
+    /// <summary>An ordinary name is not.</summary>
+    [Fact]
+    public void An_ordinary_member_name_is_not_a_secret_name()
+    {
+        var scrubber = Create();
+
+        Expect.That(!OrdinaryNames.Any(scrubber.IsSecretName), "name, id, title and items are not secret names");
+    }
 }
