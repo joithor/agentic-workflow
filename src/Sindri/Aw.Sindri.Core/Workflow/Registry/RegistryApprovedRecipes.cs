@@ -103,7 +103,7 @@ internal sealed class RegistryApprovedRecipes(IRecipeStore store, IRecipeApprova
     /// <summary>The registered text read back, carrying its hash.</summary>
     private Result<ApprovedRecipe> Parse(RegisteredRecipe registered)
     {
-        var recipe = AwJson.Deserialize<Recipe>(Encoding.UTF8.GetBytes(registered.Text), json);
+        var recipe = registered.Read(json);   // a row from before input kinds keeps its stored text: Read fills what it lacks
         return recipe.IsError
             ? recipe.Error
             : new ApprovedRecipe(new RecipeVersion(registered.Id, registered.Version, registered.Hash), recipe.Value with { Hash = registered.Hash });
