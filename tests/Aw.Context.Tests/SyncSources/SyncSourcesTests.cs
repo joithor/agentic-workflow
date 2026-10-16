@@ -119,6 +119,30 @@ public sealed class SyncSourcesTests
     }
 
     [Fact]
+    public async Task SyncSources_a_map_change_relinks_every_record_across_runs_even_when_the_first_run_stops_early()
+    {
+        await using var onyx = await FakeOnyxServer.Start();
+        using var harness = new OnyxSourceHarness(onyx.Url, onyx.Token);
+        var source = new ScriptedSource(harness.Source);
+        using var world = new MapWorld(intent: source);
+        _ = await world.ImportFixture();
+        _ = await world.Engine.Sync("onyx", _scope, Ct);
+        var stored = (await world.Intents.Layer(Ct)).Value.Records.Count;
+        _ = await world.ImportYaml(FixtureMap.Yaml.Replace("edges:", "  - key: thing:zzz-added\n    label: \"Added by the new map\"\nedges:", StringComparison.Ordinal));   // a new map version
+        source.AfterFetch = () => world.Clock.Advance(SyncSourcesService.RunCap + TimeSpan.FromSeconds(1));   // the first run stops after its first record
+
+        var first = (await world.Engine.Sync("onyx", _scope, Ct)).Value.Sources[0];
+        source.AfterFetch = null;
+        var second = (await world.Engine.Sync("onyx", _scope, Ct)).Value.Sources[0];
+        var third = (await world.Engine.Sync("onyx", _scope, Ct)).Value.Sources[0];
+
+        Assert.Equal(ContextErrors.SyncCapped.Code, first.Code);
+        Assert.Null(second.Code);
+        Assert.True(first.Fetched + second.Fetched >= stored, "the run that stopped early and the next one must together re-link every stored record; the rest kept their old-map links");
+        Assert.Equal((0, null), (third.Fetched, third.Code));   // the relink is done: a later run skips unchanged records again
+    }
+
+    [Fact]
     public async Task SyncSources_after_a_finished_run_whose_last_nodes_have_no_terms_the_next_run_walks_the_whole_map_again()
     {
         await using var onyx = await FakeOnyxServer.Start();
