@@ -17,4 +17,7 @@ internal enum FramePhase
 
     /// <summary>The API's answer is in a shape this build can't read.</summary>
     Unreadable,
+
+    /// <summary>Sindri refused the read, or could not answer it (a rebuild, a rotated token, a timeout): its code and detail are shown.</summary>
+    Refused,
 }

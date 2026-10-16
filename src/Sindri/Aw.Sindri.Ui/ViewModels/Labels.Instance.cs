@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Kernel;
 using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.ViewModels;
@@ -52,6 +53,11 @@ internal static partial class Labels
     /// <param name="address">The address asked for.</param>
     /// <returns>The sentence.</returns>
     internal static string InstanceNotFound(string address) => $"No workflow instance {address}.";
+
+    /// <summary>What the frame says when Sindri refuses or can't answer its read.</summary>
+    /// <param name="error">The failure as served (a refusal's code and detail, or the client's own).</param>
+    /// <returns>The code and the detail.</returns>
+    internal static string InstanceRefused(Error error) => $"{error.Code}: {error.Message}";
 
     /// <summary>The link to a subject outside the app.</summary>
     /// <param name="host">The link's host.</param>

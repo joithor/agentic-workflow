@@ -46,7 +46,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
     public bool IsShown => Phase == FramePhase.Shown;
 
     /// <summary>True while a refusal or an unreadable answer is shown.</summary>
-    public bool IsProblem => Phase is FramePhase.NotFound or FramePhase.Unreadable;
+    public bool IsProblem => Phase is FramePhase.NotFound or FramePhase.Unreadable or FramePhase.Refused;
 
     /// <summary>The instance's address.</summary>
     public string Address { get; private set => Set(ref field, value); } = string.Empty;
@@ -267,6 +267,10 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         else if (string.Equals(error.Code, SindriUiErrors.BadAnswer.Code, StringComparison.Ordinal))
         {
             Problem(FramePhase.Unreadable, Labels.StripUnreadable);
+        }
+        else
+        {
+            Problem(FramePhase.Refused, Labels.InstanceRefused(error));   // a refusal, a rebuild, a timeout: never a skeleton that never ends
         }
     }
 
