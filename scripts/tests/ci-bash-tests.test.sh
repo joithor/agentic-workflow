@@ -177,6 +177,16 @@ $out"
   echo "PASS: test_every_suite_gets_its_own_fresh_home_and_state_dir_whatever_the_caller_exported"
 }
 
+test_a_suite_whose_sandbox_cannot_be_made_fails_instead_of_running() {
+  local o out
+  o="$(mktemp -d)"; : > "$o/x.test.sh"
+  out="$(TMPDIR=/nonexistent bash "$RUNNER" --run-one par "$o/x.test.sh" "$o" p001 2>&1)"
+  [ "$(cat "$o/p001.rc")" = 2 ] || fail "a missing sandbox must fail the suite (rc file: $(cat "$o/p001.rc" 2>/dev/null)): $out"
+  printf '%s\n' "$out" | grep -q 'FAIL  par' || fail "the failure is not reported: $out"
+  rm -r "$o"
+  echo "PASS: test_a_suite_whose_sandbox_cannot_be_made_fails_instead_of_running"
+}
+
 test_bad_configuration_is_a_tool_error() {
   local d m rc
   d="$(mktemp -d)"; m="$(mktemp -d)"
@@ -203,4 +213,5 @@ test_no_pool_suite_builds_judge
 test_pool_runs_in_parallel_and_serial_suites_run_alone
 test_a_failing_suite_fails_the_run_and_shows_its_log
 test_every_suite_gets_its_own_fresh_home_and_state_dir_whatever_the_caller_exported
+test_a_suite_whose_sandbox_cannot_be_made_fails_instead_of_running
 test_bad_configuration_is_a_tool_error

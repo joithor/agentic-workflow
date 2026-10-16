@@ -36,12 +36,17 @@ if [ "${1:-}" = "--run-one" ]; then
   # Fail closed on state: every suite gets its own fresh HOME and AW_STATE_DIR (a temp dir, removed afterwards), whatever the caller
   # exported, so no suite can read or write the real ~/.agentic-workflow or a state dir a caller pointed at. What the real HOME
   # holds for tools stays reachable by explicit pointers (git identity and config, the .NET SDK, the NuGet and npm caches).
-  sandbox="$(mktemp -d)"; mkdir -p "$sandbox/home" "$sandbox/state"
+  sandbox="$(mktemp -d)" && mkdir -p "$sandbox/home" "$sandbox/state" || {
+    echo "bash-tests: could not make a sandbox for $suite" > "$out/$idx.log"; echo 2 > "$out/$idx.rc"; echo 0 > "$out/$idx.secs"
+    printf 'FAIL  %s  %s  0s  exit 2 (no sandbox)\n' "$mode" "$suite"; exit 0
+  }
   real_home="$HOME"
   [ ! -f "$real_home/.gitconfig" ] || export GIT_CONFIG_GLOBAL="${GIT_CONFIG_GLOBAL:-$real_home/.gitconfig}"
   [ ! -d "$real_home/.dotnet" ] || export DOTNET_ROOT="${DOTNET_ROOT:-$real_home/.dotnet}" PATH="$real_home/.dotnet:$PATH"
   export NUGET_PACKAGES="${NUGET_PACKAGES:-$real_home/.nuget/packages}" npm_config_cache="${npm_config_cache:-$real_home/.npm}"
-  HOME="$sandbox/home" AW_STATE_DIR="$sandbox/state" bash "$suite" >"$out/$idx.log" 2>&1 </dev/null
+  # The hook and provider overrides the install helpers honour are scrubbed too: a caller's must not steer a suite at real files.
+  env -u CLAUDE_SETTINGS_FILE -u CLAUDE_HOOKS_DIR -u CLAUDE_DIR -u CODEX_HOOKS_FILE -u CODEX_HOME -u CURSOR_HOOKS_FILE -u AW_HOOKS_DIR \
+    -u AW_HOOK_ADAPTER_FLAGS -u AW_META_CONFIG -u TMUX HOME="$sandbox/home" AW_STATE_DIR="$sandbox/state" bash "$suite" >"$out/$idx.log" 2>&1 </dev/null
   rc=$?
   find "$sandbox" -delete 2>/dev/null
   secs=$((SECONDS - start))
