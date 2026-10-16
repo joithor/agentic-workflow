@@ -19,6 +19,9 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
 {
     private readonly WorkflowsHarness _harness = new();
 
+    /// <summary>The goldens this class records from the served routes (the rest of 'Golden/Api/workflow-*' is the fixtures' in <see cref="WorkflowViewGoldenTests"/>).</summary>
+    public static IReadOnlyList<(string Slug, string Scenario)> Goldens { get; } = [("workflow-instance", "not-found"), ("workflow-instance-fact", "not-found")];
+
     public void Dispose() => _harness.Dispose();
 
     [Fact(Timeout = 120_000)]
@@ -82,6 +85,31 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
         var view = JsonSerializer.Deserialize<FactView>(fact, served.Sindri.GetRequiredService<JsonSerializerOptions>())!;
         Assert.Equal(("fact:spec", FactType.Text, "the spec", false), (view.Key, view.Type, view.Body.GetString(), view.Truncated));
         Assert.Equal((HttpStatusCode.NotFound, "SND-ITEM-404"), (missing.Status, missing.Code));
+    }
+
+    [Fact(Timeout = 120_000)]
+    public async Task An_unknown_instance_answers_the_pinned_not_found_body()
+    {
+        await using var env = await WorkflowsHarness.StartDevServer(ct: TestContext.Current.CancellationToken);
+        await using var served = await Served.Start(_harness.Home, env, TestContext.Current.CancellationToken);
+
+        var unknown = await served.Http.Ask(Get("/sindri/workflow/instances/WFI-" + new string('a', 32), Human(Token(served))));
+
+        Assert.Equal((HttpStatusCode.NotFound, "SND-ITEM-404"), (unknown.Status, unknown.Code));
+        ApiGolden.Match(unknown.Body, _harness.Home, "workflow-instance", "not-found");
+    }
+
+    [Fact(Timeout = 120_000)]
+    public async Task An_undeclared_fact_answers_the_pinned_not_found_body()
+    {
+        await using var env = await WorkflowsHarness.StartDevServer(ct: TestContext.Current.CancellationToken);
+        await using var served = await Served.Start(_harness.Home, env, TestContext.Current.CancellationToken);
+        var id = await Started(served, "T-1");
+
+        var undeclared = await served.Http.Ask(Get($"/sindri/workflow/instances/{id}/facts/{Uri.EscapeDataString("fact:unknown")}", Human(Token(served))));
+
+        Assert.Equal((HttpStatusCode.NotFound, "SND-ITEM-404"), (undeclared.Status, undeclared.Code));
+        ApiGolden.Match(undeclared.Body, _harness.Home, "workflow-instance-fact", "not-found");
     }
 
     [Fact(Timeout = 120_000)]

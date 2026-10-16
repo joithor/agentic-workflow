@@ -23,7 +23,7 @@ public static partial class NeedsYouRows
     /// <summary>The 'park' row of a root instance's park or escalation.</summary>
     /// <param name="item">The item's row, for its title, repo and id.</param>
     /// <param name="address">The instance's address.</param>
-    /// <param name="suspension">The suspension the ledger row shows.</param>
+    /// <param name="suspension">The suspension the ledger row shows. A budget park's grant is a placeholder (the ledger row has no recipe in the fold to halve the state's budget from), so its row carries the answer kind and action, and the status line has the real amount.</param>
     /// <param name="since">When the row appeared.</param>
     /// <param name="scrubber">Scrubs the text the row stores.</param>
     /// <returns>The row.</returns>

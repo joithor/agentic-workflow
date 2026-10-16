@@ -1,4 +1,9 @@
+using Aw.Kernel;
+using Aw.Kernel.Services;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Views;
+using Aw.Sindri.Features.ListInstances;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing.Workflow;
 using Microsoft.Extensions.DependencyInjection;
@@ -114,6 +119,46 @@ public sealed class ReadVerbsClientTests
 
         Assert.Equal(2, exit);
         Assert.Contains("usage: sindri workflow list", stderr, StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task List_needs_me_prints_decisions_then_tasks_each_by_address_and_the_line_is_the_pinned_text()
+    {
+        var task = StatusCases.View("desk-task") with { Address = Core.Workflow.Engine.InstanceAddress.From("T-1/step/1") };
+        var parked = StatusCases.View("parked-rounds") with { Address = Core.Workflow.Engine.InstanceAddress.From("T-9/step/1") };
+        var escalated = StatusCases.View("escalated-gate") with { Address = Core.Workflow.Engine.InstanceAddress.From("T-2/step/1") };
+        using var api = ReadApi.Over(new OneInstance(task), services => services.AddSingleton<IService<ListInstancesRequest, InstanceList>>(new FixedList(Listed(task, parked, escalated))));
+
+        var (exit, stdout, _) = await Run(api, TestContext.Current.CancellationToken, "list", "--needs-me");
+
+        Assert.Equal(0, exit);
+        var lines = stdout.TrimEnd('\n').Split('\n');
+        Assert.Equal(["Decisions", "Tasks"], lines.Where(static l => !l.StartsWith(' ')), StringComparer.Ordinal);
+        Assert.Matches(@"^  T-2/step/1  workflow\.step@[0-9a-f]{12}  (escalated|parked): .+  since .+ \(.+\)$", lines[1]);
+        Assert.Matches(@"^  T-9/step/1  workflow\.step@[0-9a-f]{12}  parked: .+  since .+ \(.+\)$", lines[2]);
+        Assert.Matches(@"^  T-1/step/1  workflow\.step@[0-9a-f]{12}  produce: .+  since .+ \(.+\)$", lines[4]);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task List_needs_me_with_only_a_finished_row_says_nothing_needs_you()
+    {
+        var running = StatusCases.View("done");
+        using var api = ReadApi.Over(new OneInstance(running), services => services.AddSingleton<IService<ListInstancesRequest, InstanceList>>(new FixedList(Listed(running))));
+
+        var (exit, stdout, _) = await Run(api, TestContext.Current.CancellationToken, "list", "--needs-me");
+
+        Assert.Equal((0, "nothing needs you\n"), (exit, stdout));
+    }
+
+    private static InstanceList Listed(params InstanceView[] views)
+    {
+        var rows = views.Select(static v => InstanceSummaries.Of(v, new InstanceSummaryContext(StatusCases.Now, ItemTitle: null))).ToList();
+        return new InstanceList(rows, InstanceCounts.Of(views), Empty: null, StatusCases.Now);
+    }
+
+    private sealed class FixedList(InstanceList list) : IService<ListInstancesRequest, InstanceList>
+    {
+        public ValueTask<Result<InstanceList>> Handle(ListInstancesRequest request, CancellationToken cancellationToken) => ValueTask.FromResult(Results.Success(list));
     }
 
     private static async Task<(int Exit, string Stdout, string Stderr)> Run(ReadApi api, CancellationToken ct, params string[] args)

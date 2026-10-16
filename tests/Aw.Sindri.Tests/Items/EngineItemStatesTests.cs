@@ -126,6 +126,34 @@ public sealed class EngineItemStatesTests
         Assert.Equal(ItemState.Cancelled, EngineItemStates.StateOf(cancelled!));
     }
 
+    private const string Attempt2 = "ITM-11111111111111111111111111111111/step/2";
+
+    [Fact]
+    public void A_straggler_row_of_an_earlier_attempt_and_a_row_after_the_end_leave_the_item_alone()
+    {
+        var first = EngineItemStates.Next(prior: null, EventTypes.WorkflowStarted, Row("produce", frame: new FrameSummary("produce", 1, "1.1", Child: null, StepRuntime.Desk)));
+        var ended = EngineItemStates.Next(first, EventTypes.WorkflowTransition, Row("done", frame: new FrameSummary("done", 2, Run: null, Child: null), outcome: "resolved"));
+        var second = EngineItemStates.Next(ended, EventTypes.WorkflowStarted, Row("triaged", address: Attempt2, frame: new FrameSummary("triaged", 1, Run: null, Child: null)));
+        var park = new SuspensionSummary(SuspensionKind.Park, ParkReason.Rounds, ParkKind.Loop, Escalation: null, Mirrors: null);
+
+        var late = EngineItemStates.Next(second, EventTypes.WorkflowTransition, Row("produce", suspension: park));   // attempt 1's row, after attempt 2 started
+        var afterEnd = EngineItemStates.Next(ended, EventTypes.WorkflowTransition, Row("produce", suspension: park));   // a row after the instance ended
+
+        Assert.Null(late);
+        Assert.Null(afterEnd);
+        Assert.Null(second!.Earlier);   // the ended first attempt isn't kept
+    }
+
+    [Fact]
+    public void A_start_after_the_end_reopens_the_item_with_the_new_attempt()
+    {
+        var first = EngineItemStates.Next(prior: null, EventTypes.WorkflowStarted, Row("done", frame: new FrameSummary("done", 1, Run: null, Child: null), outcome: "resolved"));
+
+        var reopened = EngineItemStates.Next(first, EventTypes.WorkflowStarted, Row("produce", address: Attempt2, frame: new FrameSummary("produce", 1, "1.1", Child: null, StepRuntime.Desk)));
+
+        Assert.Equal((ItemState.Done, Attempt2, ItemState.NeedsAnswer), (EngineItemStates.StateOf(first!), reopened!.Address, EngineItemStates.StateOf(reopened)));
+    }
+
     private static WorkflowEventPayload Bare(string to, string trigger) => new(Address, "from", to, trigger, Outcome: null, Run: null, Detail: null);
 
     private static WorkflowEventPayload Row(string to, string? address = null, string trigger = "step.completed", FrameSummary? frame = null, SuspensionSummary? suspension = null, string? outcome = null)

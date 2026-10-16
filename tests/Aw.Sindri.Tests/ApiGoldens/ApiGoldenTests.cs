@@ -38,7 +38,7 @@ public sealed class ApiGoldenTests
         var files = Directory.EnumerateFiles(root, "*.json", SearchOption.AllDirectories)
             .Select(f => Path.GetRelativePath(root, f).Replace(Path.DirectorySeparatorChar, '/'))
             .Order(StringComparer.Ordinal);
-        var expected = ApiScenarios.All.Concat(WorkflowViewGoldenTests.All).Select(r => $"{r.Slug}/{r.Scenario}.json").Order(StringComparer.Ordinal);
+        var expected = ApiScenarios.All.Concat(WorkflowViewGoldenTests.All).Concat(ServedWorkflowRoutesTests.Goldens).Select(r => $"{r.Slug}/{r.Scenario}.json").Order(StringComparer.Ordinal);
 
         Assert.Equal(expected, files);
     }

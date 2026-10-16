@@ -7,7 +7,8 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 
 /// <summary>
 /// The answer an open park or escalation takes (engine spec section 5.8, API spec section 3.8): one rule, shared by the status
-/// layout (<see cref="InstanceWords"/>) and the needs-you rows, so a row's control is the one the status prints.
+/// layout (<see cref="InstanceWords"/>) and the needs-you rows, so a row's control is the one the status prints. The needs-you fold has no
+/// recipe, so for a budget park it passes a placeholder token grant: the row's kind and action id are right, its amount is not the half-budget the status shows.
 /// </summary>
 public static class ParkAnswers
 {
