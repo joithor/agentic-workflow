@@ -46,7 +46,7 @@ public abstract class DeployFilesContract
         return files;
     }
 
-    private static async Task<Aw.Kernel.Result<DeployFetch>> Run(DeployFilesRig rig)
+    private static async Task<Kernel.Result<DeployFetch>> Run(DeployFilesRig rig)
         => await rig.Files.Fetch(Pins(), rig.DeployDir, static _ => { }, TestContext.Current.CancellationToken);
 
     /// <summary>Every pinned file is written under its relative layout.</summary>

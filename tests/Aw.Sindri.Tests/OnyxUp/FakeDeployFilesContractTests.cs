@@ -11,7 +11,7 @@ public sealed class FakeDeployFilesContractTests : DeployFilesContract
 
     private sealed class FakeRig(FakeDeployFiles fake) : DeployFilesRig
     {
-        public override Aw.Sindri.Core.Onyx.IDeployFiles Files => fake;
+        public override Core.Onyx.IDeployFiles Files => fake;
 
         public override string DeployDir => "/deploy";
 

@@ -2,7 +2,7 @@ using Xunit;
 
 namespace Aw.Sindri.Testing;
 
-/// <summary>The contract every <see cref="Aw.Sindri.Core.Onyx.IOnyxHealth"/> honours: it never throws for a server that isn't there or answers badly, and reports the version only once health answers.</summary>
+/// <summary>The contract every <see cref="Core.Onyx.IOnyxHealth"/> honours: it never throws for a server that isn't there or answers badly, and reports the version only once health answers.</summary>
 public abstract class OnyxHealthContract
 {
     /// <summary>A rig over a server that behaves as <paramref name="script"/> says.</summary>

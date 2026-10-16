@@ -31,7 +31,7 @@ public sealed class OnyxUpRig
         Clock = new FakeTimeProvider();
         foreach (var pin in Pins.Pins.Images.Where(static i => i.Platform == "linux/arm64"))
         {
-            Runtime.LocalImages[pin.Repository + "@" + pin.Digest] = [Aw.Sindri.Core.Onyx.ImageNames.WithoutDefaults(pin.Repository + "@" + pin.Digest)];
+            Runtime.LocalImages[pin.Repository + "@" + pin.Digest] = [ImageNames.WithoutDefaults(pin.Repository + "@" + pin.Digest)];
         }
     }
 
@@ -87,7 +87,7 @@ public sealed class OnyxUpRig
     /// <summary>Runs the service once.</summary>
     /// <param name="cancellationToken">Cancels the run.</param>
     /// <returns>The result.</returns>
-    public async Task<Aw.Kernel.Result<OnyxUpResponse>> Up(CancellationToken cancellationToken)
+    public async Task<Kernel.Result<OnyxUpResponse>> Up(CancellationToken cancellationToken)
         => await Service().Handle(new OnyxUpRequest(), cancellationToken);
 
     // A file the fake fetch "wrote" is on disk for the workspace too.

@@ -31,7 +31,7 @@ public sealed class OnyxUpCommandTests : IDisposable
         _services = new ServiceCollection()
             .AddSingleton(_rig.Service())
             .AddSingleton<IService<OnyxDownRequest, OnyxDownResponse>>(
-                new OnyxDownService(_rig.Workspace, new Aw.Sindri.Core.Onyx.OnyxFacts(_rig.Runtime, _rig.Probes, new FakeSindriHome(OnyxUpRig.Home)), _rig.Runtime))
+                new OnyxDownService(_rig.Workspace, new Core.Onyx.OnyxFacts(_rig.Runtime, _rig.Probes, new FakeSindriHome(OnyxUpRig.Home)), _rig.Runtime))
             .BuildServiceProvider();
     }
 

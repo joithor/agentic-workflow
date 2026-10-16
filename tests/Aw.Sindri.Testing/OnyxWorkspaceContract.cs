@@ -67,7 +67,7 @@ public abstract class OnyxWorkspaceContract
 
         rig.Workspace.WriteState(state);
 
-        var read = rig.Workspace.ReadState() ?? throw new Aw.Kernel.Testing.ContractViolationException("contract: the state written reads back as null");
+        var read = rig.Workspace.ReadState() ?? throw new Kernel.Testing.ContractViolationException("contract: the state written reads back as null");
         Expect.Equal(3002, read.Port);
         Expect.Equal("aa", read.Steps[OnyxSteps.Fetch]);
         Expect.Equal("bb", read.Steps[OnyxSteps.Config]);

@@ -10,7 +10,7 @@ public sealed class OnyxReadinessTests
 
     private static OnyxUpContext Context(OnyxUpRig rig) => new(rig.Pins.Pins, rig.Paths, 3000, "linux/arm64");
 
-    private static Task<Aw.Kernel.Result<string>> Wait(OnyxUpRig rig)
+    private static Task<Kernel.Result<string>> Wait(OnyxUpRig rig)
         => new OnyxReadiness(rig.Health, rig.Runtime, rig.Clock).Wait(Context(rig), rig.Progress, Token).AsTask();
 
     // Lets the wait's pending delay fire, two seconds at a time, until it finishes.

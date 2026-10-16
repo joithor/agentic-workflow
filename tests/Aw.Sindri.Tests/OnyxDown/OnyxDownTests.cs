@@ -12,7 +12,7 @@ public sealed class OnyxDownTests
     private static OnyxDownService Service(OnyxUpRig rig)
         => new(rig.Workspace, new OnyxFacts(rig.Runtime, rig.Probes, new FakeSindriHome(OnyxUpRig.Home)), rig.Runtime);
 
-    private static async Task<Aw.Kernel.Result<OnyxDownResponse>> Down(OnyxUpRig rig)
+    private static async Task<Kernel.Result<OnyxDownResponse>> Down(OnyxUpRig rig)
         => await Service(rig).Handle(new OnyxDownRequest(), Token);
 
     private static async Task<OnyxUpRig> RunningRig()

@@ -19,7 +19,7 @@ public sealed class HttpDeployFilesTests : IDisposable
     private static OnyxPins Pins(byte[] content) => new(
         "v4.9.0", new string('a', 40), [new OnyxFilePin("docker_compose/docker-compose.yml", OnyxFilePin.Sha256Of(content))], [], DiskBytes: 1, DockerMemoryBytes: 1);
 
-    private async Task<Aw.Kernel.Result<DeployFetch>> Fetch(HttpDeployFiles files, byte[]? pinned = null)
+    private async Task<Kernel.Result<DeployFetch>> Fetch(HttpDeployFiles files, byte[]? pinned = null)
         => await files.Fetch(Pins(pinned ?? _good), _dir, static _ => { }, TestContext.Current.CancellationToken);
 
     private bool Written => File.Exists(Path.Combine(_dir, "docker_compose/docker-compose.yml"));
