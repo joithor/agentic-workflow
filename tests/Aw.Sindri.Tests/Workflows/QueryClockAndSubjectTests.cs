@@ -100,4 +100,42 @@ public sealed class QueryClockAndSubjectTests : IDisposable
         Assert.Equal("fact:spec", (await handle.DescribeAsync()).TypedSearchAttributes.Get(SindriTemporal.SubjectKey));
         await handle.TerminateAsync("test over");
     }
+
+    private const string Named = "schema: 1\nid: workflow.named\nversion: 1\nname: \"{fact:scope} \u00b7 {start:date}\"\n"
+        + "inputs:\n"
+        + "  - { key: fact:scope, label: Scope, type: text, kind: text }\n"
+        + "  - { key: fact:run, type: text, kind: text, generate: \"run {start:date}\" }\n"
+        + "initial: produce\nstates:\n"
+        + "  produce: { kind: active, step: step.produce, timeout: { after: 4h, then: park }, next: \"Produce the output.\" }\n"
+        + "  done: { kind: terminal, outcome: resolved }\n"
+        + "transitions:\n"
+        + "  - { from: produce, to: done, on: step.completed, when: { outcome: done } }\n";
+
+    [Fact(Timeout = 120_000)]
+    public async Task A_recipe_name_is_rendered_once_at_start_as_the_subject_label_and_a_generated_input_is_produced_by_the_engine()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _harness.Recipe("workflow.named", Named);
+        await using var env = await WorkflowsHarness.StartDevServer(ct: ct);
+        await using var served = await ApplyCommand.Served.Start(_harness.Home, env, ct);
+        var start = await WorkflowsHarness.RecipeStart(served.Sindri, "workflow.named", "T-1", ct);
+        var handle = await WorkflowsHarness.Start(env.Client, start with
+        {
+            Inputs = new Dictionary<FactKey, InputFact>
+            {
+                [FactKey.From("fact:scope")] = new("scope.txt", _harness.Fact("Crash on launch\nsecond line")),
+                [FactKey.From("fact:run")] = new("generated", _harness.Fact("run 2026-10-15"), Generated: true),
+            },
+        });
+
+        var view = await WorkflowsHarness.Until(handle, static v => v.Task is not null);
+
+        Assert.Equal("text", view.Subject!.Kind);
+        Assert.Equal("Crash on launch", view.Subject.Key);
+        Assert.Matches(@"^Crash on launch \u00b7 \d{4}-\d\d-\d\d$", view.Subject.Label);
+        Assert.Equal(view.Subject.Label, view.Name);
+        Assert.Equal("engine:generate", view.Facts.Single(static f => f.Key == "fact:run").By);
+        Assert.Equal([("fact:scope", true), ("fact:run", false)], view.Inputs.Select(static i => (i.Key, i.Required)));
+        await handle.TerminateAsync("test over");
+    }
 }
