@@ -62,4 +62,24 @@ public sealed class NeedsYouOutlineTests : FrameHost
         // Focus may have followed the selection (the ring) or not (the bar): either way the attention outline is not what shows.
         Assert.Contains(BrushOf(frame), new[] { Brush("Brush.Primary"), Brush("Brush.PrimaryHover") });
     });
+
+    [Fact]
+    public Task A_selected_outlined_row_differs_from_the_focus_ring_by_shape_and_its_content_does_not_move() => OnUi(async () =>
+    {
+        Motion.Set(reduce: true);
+        var (window, shell) = await Connected(s => s.NeedsYou.Count > 0);
+        var row = Rows(window).First(r => r.DataContext is ViewModels.NeedsYou.NeedsYouRowViewModel { HasOutline: true });
+        var frame = Frame(row);
+        var before = Inset(frame);
+
+        shell.SelectNeedsYouRow(((ViewModels.NeedsYou.NeedsYouRowViewModel)row.DataContext!).Id);
+        _ = window.Focus();
+        Settle(window);
+
+        Assert.Contains("selected", frame.Classes, StringComparer.Ordinal);
+        Assert.False(frame.IsKeyboardFocusWithin);
+        Assert.True(frame.BorderThickness.Left > frame.BorderThickness.Right, "the selection is a thicker left edge, not a ring of another shade");
+        Assert.Equal(before, Inset(frame));
+        Frame(window, "needs-you-outlined-selected");
+    });
 }
