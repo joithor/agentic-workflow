@@ -1,0 +1,64 @@
+{
+  "id": "JOB-00000000000000000000000000000001",
+  "kind": "RunContextBacktest",
+  "key": "backtest",
+  "item": null,
+  "repo": null,
+  "service": null,
+  "state": "succeeded",
+  "startedBy": "service:host",
+  "startedAt": "2026-01-01T00:00:00.0000000Z",
+  "endedAt": "2026-01-01T00:00:00.0000000Z",
+  "progress": [
+    {
+      "round": 1,
+      "line": "corpus: 5 samples",
+      "at": "2026-01-01T00:00:00.0000000Z"
+    },
+    {
+      "round": 2,
+      "line": "arm graph 5/5",
+      "at": "2026-01-01T00:00:00.0000000Z"
+    }
+  ],
+  "rounds": 2,
+  "summary": "5 samples, brief and graph, owner decision needed (small sample)",
+  "code": null,
+  "result": {
+    "samples": 5,
+    "smallSample": true,
+    "leftOut": 1,
+    "arms": [
+      {
+        "arm": "brief",
+        "notAvailable": null,
+        "overall": "owner decision needed (small sample)"
+      },
+      {
+        "arm": "graph",
+        "notAvailable": null,
+        "overall": "owner decision needed (small sample)"
+      },
+      {
+        "arm": "linear",
+        "notAvailable": "S-6",
+        "overall": null
+      }
+    ],
+    "passLine": "owner decision needed (small sample)",
+    "report": "<home>/context/eval/backtest/20260101T000000Z.json",
+    "degraded": [
+      "clusters unavailable"
+    ]
+  },
+  "cancelledBy": null,
+  "actions": [],
+  "cli": null,
+  "asOf": {
+    "cursor": 8,
+    "ledgerHead": 8,
+    "projectedAt": "2026-01-01T00:00:00.0000000Z",
+    "rebuilding": false,
+    "stalled": false
+  }
+}

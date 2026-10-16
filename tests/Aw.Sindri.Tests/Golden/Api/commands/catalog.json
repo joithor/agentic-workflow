@@ -744,7 +744,7 @@
       "method": "POST",
       "route": "/sindri/context/eval/backtest",
       "cli": "sindri context eval backtest",
-      "ui": "pending:API-P6",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
