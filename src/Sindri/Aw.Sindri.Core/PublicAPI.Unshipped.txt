@@ -7377,6 +7377,7 @@ static Aw.Sindri.Core.Views.EmptyText.For(Aw.Sindri.Core.Views.ViewsStatus! view
 static Aw.Sindri.Core.Views.EmptyText.Group(Aw.Sindri.Core.Items.Vocabulary.QueueGroup group) -> string!
 static Aw.Sindri.Core.Views.EmptyText.Items(Aw.Sindri.Core.Items.Vocabulary.ItemState? state, Aw.Sindri.Core.Ids.RepoName? repo) -> string!
 static Aw.Sindri.Core.Views.EmptyText.Jobs() -> string!
+static Aw.Sindri.Core.Views.EmptyText.Jobs(Aw.Sindri.Core.Jobs.JobState? state, Aw.Sindri.Core.Ids.JobKind? kind) -> string!
 static Aw.Sindri.Core.Views.EmptyText.NeedsYou(int running, int queued) -> string!
 static Aw.Sindri.Core.Views.EmptyText.Queue() -> string!
 static Aw.Sindri.Core.Views.EmptyText.Rebuilding(long cursor, long head) -> string!
@@ -8130,3 +8131,5 @@ virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.PrintMembers(System.T
 ~Aw.Sindri.Core.Ids.CorrelationId.ToString(string format, System.IFormatProvider provider) -> string
 ~Aw.Sindri.Core.Ids.EventId.ToString(string format, System.IFormatProvider provider) -> string
 ~override Aw.Sindri.Core.Ids.ItemRef.Equals(object obj) -> bool
+Aw.Sindri.Core.Jobs.IJobKinds
+Aw.Sindri.Core.Jobs.IJobKinds.Known.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.JobKind>!

@@ -16,6 +16,15 @@ public static class EmptyText
     /// <returns>The sentence.</returns>
     public static string Jobs() => "No jobs have run yet. Start one with `sindri services run <name>`.";
 
+    /// <summary>The sentence for a jobs list a filter left empty ('No running RunService jobs.'); the unfiltered sentence when neither filter is set.</summary>
+    /// <param name="state">The state filter, or null.</param>
+    /// <param name="kind">The kind filter, or null.</param>
+    /// <returns>The sentence.</returns>
+    public static string Jobs(Jobs.JobState? state, JobKind? kind) =>
+        state is null && kind is null
+            ? Jobs()
+            : string.Join(' ', new[] { "No", state?.ToString().ToLowerInvariant(), kind?.Value, "jobs." }.Where(static w => w is { Length: > 0 }));
+
     /// <summary>The queue has no open item in any group.</summary>
     /// <returns>The sentence.</returns>
     public static string Queue() => "Nothing in the queue. Add one with `sindri item add`.";
