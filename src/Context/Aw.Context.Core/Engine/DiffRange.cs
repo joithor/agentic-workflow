@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using Aw.Kernel;
 
 namespace Aw.Context.Core.Engine;
@@ -11,7 +12,7 @@ namespace Aw.Context.Core.Engine;
 /// <param name="Base">The first commit's sha.</param>
 /// <param name="Head">The second commit's sha.</param>
 [JsonConverter(typeof(DiffRangeJsonConverter))]
-public sealed record DiffRange(string Base, string Head)
+public sealed partial record DiffRange(string Base, string Head)
 {
     /// <summary>What the 006 for a malformed range says.</summary>
     public const string Message = "a diff names two commit shas joined by '..' (base..head, 7 to 64 lower-case hex characters each); resolve the refs to shas first: branch names, tags, HEAD, '~', '^' and '...' are not accepted";
@@ -20,12 +21,23 @@ public sealed record DiffRange(string Base, string Head)
     /// <param name="text">The range as a transport carries it.</param>
     /// <returns>The range, or SND-CONTEXT-006.</returns>
     public static Result<DiffRange> Parse(string? text)
-        => ContextErrors.QueryInvalid.With(text is null ? "missing" : "not implemented yet");
+    {
+        var match = text is null ? null : Shape.Match(text);
+        return match is { Success: true }
+            ? new DiffRange(match.Groups["base"].Value, match.Groups["head"].Value)
+            : ContextErrors.QueryInvalid.With(Message);
+    }
 
     /// <summary>Whether both sides are shas.</summary>
     /// <returns>True when this range would parse.</returns>
-    public bool IsValid() => Base.Length > Head.Length + 1_000;
+    public bool IsValid() => Sha.IsMatch(Base) && Sha.IsMatch(Head);
 
     /// <inheritdoc/>
     public override string ToString() => Base + ".." + Head;
+
+    [GeneratedRegex("^(?<base>[0-9a-f]{7,64})\\.\\.(?<head>[0-9a-f]{7,64})\\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex Shape { get; }
+
+    [GeneratedRegex("^[0-9a-f]{7,64}\\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex Sha { get; }
 }

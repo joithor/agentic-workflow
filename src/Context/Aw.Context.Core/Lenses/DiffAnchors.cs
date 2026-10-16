@@ -19,6 +19,33 @@ public static class DiffAnchors
     /// <param name="repo">The repo, with its deny globs.</param>
     /// <param name="graph">The map the caller may read.</param>
     /// <returns>The diff facts and the anchors (at most <see cref="MaxAnchors"/>, confirmed nodes before suggested, then by key).</returns>
-    public static (DiffPart Part, IReadOnlyList<GraphNode> Anchors) Build(RepoChanges changes, ContextRepo repo, GraphSnapshot graph) =>
-        throw new NotSupportedException();
+    public static (DiffPart Part, IReadOnlyList<GraphNode> Anchors) Build(RepoChanges changes, ContextRepo repo, GraphSnapshot graph)
+    {
+        ArgumentNullException.ThrowIfNull(changes);
+        ArgumentNullException.ThrowIfNull(repo);
+        ArgumentNullException.ThrowIfNull(graph);
+        var links = new FileLinks(graph);
+        var ordered = changes.Files.OrderBy(f => f.Path, StringComparer.Ordinal).ToList();
+        var visible = ordered.Where(f => !repo.Denies(f.Path)).Select(f => Read(f, links)).ToList();
+        var counts = new DiffCounts(ordered.Count, visible.Count(f => f.Status == FileMapStatus.Mapped), visible.Count(f => f.Status == FileMapStatus.Suggested),
+            visible.Count(f => f.Status == FileMapStatus.Unmapped), ordered.Count - visible.Count);
+        var claimed = visible.SelectMany(f => f.Nodes).GroupBy(n => n.Key.Value, StringComparer.Ordinal)
+            .Select(g => (g.Key, Confirmed: g.Any(n => n.Confirmed)))
+            .OrderByDescending(c => c.Confirmed).ThenBy(c => c.Key, StringComparer.Ordinal).ToList();
+        var anchors = claimed.Select(c => graph.Resolve(NodeKey.From(c.Key))).OfType<GraphNode>().Take(MaxAnchors).ToList();
+        var kept = visible.Take(MaxFiles).ToList();
+        var part = new DiffPart(repo.Name, changes.Base, changes.Head, changes.MergeBase, kept,
+            [.. kept.Where(f => f.Status == FileMapStatus.Unmapped).Select(f => f.Path)], counts, Truncated: visible.Count > MaxFiles,
+            claimed.Count, AnchorsTruncated: claimed.Count > MaxAnchors);
+        return (part, anchors);
+    }
+
+    private static DiffFile Read(RepoChange change, FileLinks links)
+    {
+        var nodes = links.FeaturesOf(change.Path, confirmedOnly: false).Where(f => f.Edge == EdgeType.Implements)
+            .GroupBy(f => f.Key.Value, StringComparer.Ordinal)
+            .Select(g => new DiffNode(NodeKey.From(g.Key), g.Any(f => f.Confirmed)))
+            .OrderByDescending(n => n.Confirmed).ThenBy(n => n.Key.Value, StringComparer.Ordinal).ToList();
+        return new DiffFile(change.Path, change.Change, links.StatusOf(change.Path), nodes);
+    }
 }

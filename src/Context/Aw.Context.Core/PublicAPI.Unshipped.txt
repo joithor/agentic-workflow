@@ -4055,3 +4055,4 @@ Aw.Context.Core.Engine.DiffRangeJsonConverter
 Aw.Context.Core.Engine.DiffRangeJsonConverter.DiffRangeJsonConverter() -> void
 override Aw.Context.Core.Engine.DiffRangeJsonConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Aw.Context.Core.Engine.DiffRange!
 override Aw.Context.Core.Engine.DiffRangeJsonConverter.Write(System.Text.Json.Utf8JsonWriter! writer, Aw.Context.Core.Engine.DiffRange! value, System.Text.Json.JsonSerializerOptions! options) -> void
+const Aw.Context.Core.Engine.QueryRules.RepoMessage = "a repo goes with a diff only (it names the repo whose commits the range is read in)" -> string!
