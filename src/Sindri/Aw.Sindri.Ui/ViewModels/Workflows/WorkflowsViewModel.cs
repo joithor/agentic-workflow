@@ -15,6 +15,8 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
     private readonly Dictionary<string, RecipeGroupViewModel> _groups = new(StringComparer.Ordinal);
     private readonly Dictionary<string, InstanceRowViewModel> _rows = new(StringComparer.Ordinal);
     private Uri? Url { get; set; }
+    private int _reads;
+    private int _doneReads;
 
     /// <summary>Raised when a row asks to open its instance.</summary>
     internal event EventHandler<OpenRequestedEventArgs>? OpenRequested;
@@ -82,7 +84,13 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
     internal async Task Refresh(Uri url, CancellationToken cancellationToken)
     {
         Url = url;
+        var read = ++_reads;
         var list = await api.Instances(url, new InstanceQuery(Root: true, Open: true, Recipe: RecipeFilter, Subject: SubjectFilter), cancellationToken).ConfigureAwait(true);
+        if (read != _reads)
+        {
+            return;   // a newer read (a filter, an event) was asked for since: its answer is the one to show
+        }
+
         if (list.IsSuccess)
         {
             Show(list.Value);
@@ -129,6 +137,7 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
         }
         else
         {
+            _doneReads++;   // a read on its way is no longer wanted
             DoneRows.Clear();
         }
     }
@@ -223,7 +232,13 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
             return;
         }
 
+        var read = ++_doneReads;
         var all = await api.Instances(url, new InstanceQuery(Root: true, Recipe: RecipeFilter, Subject: SubjectFilter), cancellationToken).ConfigureAwait(true);
+        if (read != _doneReads || !IsDoneExpanded)
+        {
+            return;   // newer, or the line was collapsed while this was on its way
+        }
+
         if (all.IsSuccess)
         {
             var before = WalkAddresses();
