@@ -320,6 +320,33 @@ Aw.Sindri.Core.Events.CommandHandled.Deconstruct(out Aw.Sindri.Core.Ids.CommandI
 Aw.Sindri.Core.Events.CommandHandled.Equals(Aw.Sindri.Core.Events.CommandHandled? other) -> bool
 Aw.Sindri.Core.Events.CommandHandled.Outcome.get -> Aw.Sindri.Core.Commands.CommandOutcome
 Aw.Sindri.Core.Events.CommandHandled.Outcome.init -> void
+Aw.Sindri.Core.Events.ContextLinksSynced
+Aw.Sindri.Core.Events.ContextLinksSynced.<Clone>$() -> Aw.Sindri.Core.Events.ContextLinksSynced!
+Aw.Sindri.Core.Events.ContextLinksSynced.Code.get -> string?
+Aw.Sindri.Core.Events.ContextLinksSynced.Code.init -> void
+Aw.Sindri.Core.Events.ContextLinksSynced.ContextLinksSynced(int Records, int Fetched, int Unchanged, int Linked, int Unlinked, int Orphaned, int Decisions, int Queued, int Refused, int Tokens, string? Code) -> void
+Aw.Sindri.Core.Events.ContextLinksSynced.Decisions.get -> int
+Aw.Sindri.Core.Events.ContextLinksSynced.Decisions.init -> void
+Aw.Sindri.Core.Events.ContextLinksSynced.Deconstruct(out int Records, out int Fetched, out int Unchanged, out int Linked, out int Unlinked, out int Orphaned, out int Decisions, out int Queued, out int Refused, out int Tokens, out string? Code) -> void
+Aw.Sindri.Core.Events.ContextLinksSynced.Equals(Aw.Sindri.Core.Events.ContextLinksSynced? other) -> bool
+Aw.Sindri.Core.Events.ContextLinksSynced.Fetched.get -> int
+Aw.Sindri.Core.Events.ContextLinksSynced.Fetched.init -> void
+Aw.Sindri.Core.Events.ContextLinksSynced.Linked.get -> int
+Aw.Sindri.Core.Events.ContextLinksSynced.Linked.init -> void
+Aw.Sindri.Core.Events.ContextLinksSynced.Orphaned.get -> int
+Aw.Sindri.Core.Events.ContextLinksSynced.Orphaned.init -> void
+Aw.Sindri.Core.Events.ContextLinksSynced.Queued.get -> int
+Aw.Sindri.Core.Events.ContextLinksSynced.Queued.init -> void
+Aw.Sindri.Core.Events.ContextLinksSynced.Records.get -> int
+Aw.Sindri.Core.Events.ContextLinksSynced.Records.init -> void
+Aw.Sindri.Core.Events.ContextLinksSynced.Refused.get -> int
+Aw.Sindri.Core.Events.ContextLinksSynced.Refused.init -> void
+Aw.Sindri.Core.Events.ContextLinksSynced.Tokens.get -> int
+Aw.Sindri.Core.Events.ContextLinksSynced.Tokens.init -> void
+Aw.Sindri.Core.Events.ContextLinksSynced.Unchanged.get -> int
+Aw.Sindri.Core.Events.ContextLinksSynced.Unchanged.init -> void
+Aw.Sindri.Core.Events.ContextLinksSynced.Unlinked.get -> int
+Aw.Sindri.Core.Events.ContextLinksSynced.Unlinked.init -> void
 Aw.Sindri.Core.Events.ContextMapBuilt
 Aw.Sindri.Core.Events.ContextMapBuilt.<Clone>$() -> Aw.Sindri.Core.Events.ContextMapBuilt!
 Aw.Sindri.Core.Events.ContextMapBuilt.ContextMapBuilt(string! Repo, int Draft, int Proposed, System.Collections.Generic.IReadOnlyList<string!>! Degraded) -> void
@@ -414,9 +441,11 @@ Aw.Sindri.Core.Events.ContextRepoSynced.Skipped.get -> int
 Aw.Sindri.Core.Events.ContextRepoSynced.Skipped.init -> void
 Aw.Sindri.Core.Events.ContextSourcesSynced
 Aw.Sindri.Core.Events.ContextSourcesSynced.<Clone>$() -> Aw.Sindri.Core.Events.ContextSourcesSynced!
-Aw.Sindri.Core.Events.ContextSourcesSynced.ContextSourcesSynced(string! Source, System.DateTimeOffset Slot, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.ContextRepoSynced!>! Repos) -> void
-Aw.Sindri.Core.Events.ContextSourcesSynced.Deconstruct(out string! Source, out System.DateTimeOffset Slot, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.ContextRepoSynced!>! Repos) -> void
+Aw.Sindri.Core.Events.ContextSourcesSynced.ContextSourcesSynced(string! Source, System.DateTimeOffset Slot, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.ContextRepoSynced!>! Repos, Aw.Sindri.Core.Events.ContextLinksSynced? Links = null) -> void
+Aw.Sindri.Core.Events.ContextSourcesSynced.Deconstruct(out string! Source, out System.DateTimeOffset Slot, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.ContextRepoSynced!>! Repos, out Aw.Sindri.Core.Events.ContextLinksSynced? Links) -> void
 Aw.Sindri.Core.Events.ContextSourcesSynced.Equals(Aw.Sindri.Core.Events.ContextSourcesSynced? other) -> bool
+Aw.Sindri.Core.Events.ContextSourcesSynced.Links.get -> Aw.Sindri.Core.Events.ContextLinksSynced?
+Aw.Sindri.Core.Events.ContextSourcesSynced.Links.init -> void
 Aw.Sindri.Core.Events.ContextSourcesSynced.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.ContextRepoSynced!>!
 Aw.Sindri.Core.Events.ContextSourcesSynced.Repos.init -> void
 Aw.Sindri.Core.Events.ContextSourcesSynced.Slot.get -> System.DateTimeOffset
@@ -4615,6 +4644,9 @@ override Aw.Sindri.Core.Doctor.DoctorCheck.ToString() -> string!
 override Aw.Sindri.Core.Events.CommandHandled.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Events.CommandHandled.GetHashCode() -> int
 override Aw.Sindri.Core.Events.CommandHandled.ToString() -> string!
+override Aw.Sindri.Core.Events.ContextLinksSynced.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ContextLinksSynced.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ContextLinksSynced.ToString() -> string!
 override Aw.Sindri.Core.Events.ContextMapBuilt.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Events.ContextMapBuilt.GetHashCode() -> int
 override Aw.Sindri.Core.Events.ContextMapBuilt.ToString() -> string!
@@ -5608,6 +5640,8 @@ static Aw.Sindri.Core.Doctor.DoctorRules.Profile(Aw.Kernel.Result<Aw.Sindri.Core
 static Aw.Sindri.Core.Doctor.DoctorRules.Temporal(Aw.Sindri.Core.Control.TemporalFacts! facts) -> Aw.Sindri.Core.Doctor.DoctorCheck!
 static Aw.Sindri.Core.Events.CommandHandled.operator !=(Aw.Sindri.Core.Events.CommandHandled? left, Aw.Sindri.Core.Events.CommandHandled? right) -> bool
 static Aw.Sindri.Core.Events.CommandHandled.operator ==(Aw.Sindri.Core.Events.CommandHandled? left, Aw.Sindri.Core.Events.CommandHandled? right) -> bool
+static Aw.Sindri.Core.Events.ContextLinksSynced.operator !=(Aw.Sindri.Core.Events.ContextLinksSynced? left, Aw.Sindri.Core.Events.ContextLinksSynced? right) -> bool
+static Aw.Sindri.Core.Events.ContextLinksSynced.operator ==(Aw.Sindri.Core.Events.ContextLinksSynced? left, Aw.Sindri.Core.Events.ContextLinksSynced? right) -> bool
 static Aw.Sindri.Core.Events.ContextMapBuilt.operator !=(Aw.Sindri.Core.Events.ContextMapBuilt? left, Aw.Sindri.Core.Events.ContextMapBuilt? right) -> bool
 static Aw.Sindri.Core.Events.ContextMapBuilt.operator ==(Aw.Sindri.Core.Events.ContextMapBuilt? left, Aw.Sindri.Core.Events.ContextMapBuilt? right) -> bool
 static Aw.Sindri.Core.Events.ContextMapImported.operator !=(Aw.Sindri.Core.Events.ContextMapImported? left, Aw.Sindri.Core.Events.ContextMapImported? right) -> bool

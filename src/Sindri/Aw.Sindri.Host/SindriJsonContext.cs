@@ -208,6 +208,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(McpSourcesAnswer))]
 [JsonSerializable(typeof(RegisterMcpResponse))]
 [JsonSerializable(typeof(ContextSourcesSynced))]
+[JsonSerializable(typeof(ContextLinksSynced))]
 [JsonSerializable(typeof(ContextMapImported))]
 [JsonSerializable(typeof(MapDocument))]
 [JsonSerializable(typeof(ReviewFile))]

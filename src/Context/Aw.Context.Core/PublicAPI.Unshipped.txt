@@ -2186,6 +2186,8 @@ Aw.Context.Core.Results.SourceStatusRow.Source.init -> void
 Aw.Context.Core.Results.SourceStatusRow.SourceStatusRow(Aw.Context.Core.Sources.SourceId Source, Aw.Context.Core.Sources.SourceKind Kind, Aw.Context.Core.Engine.ContextRepoName? Repo, Aw.Context.Core.Sources.SourceState State, string! Detail, string? Code, System.DateTimeOffset? LastSync, int Records) -> void
 Aw.Context.Core.Results.SourceStatusRow.State.get -> Aw.Context.Core.Sources.SourceState
 Aw.Context.Core.Results.SourceStatusRow.State.init -> void
+Aw.Context.Core.Results.SourceStatusRow.Sync.get -> Aw.Context.Core.Results.SourceSyncStatus?
+Aw.Context.Core.Results.SourceStatusRow.Sync.init -> void
 Aw.Context.Core.Results.SourceSync
 Aw.Context.Core.Results.SourceSync.<Clone>$() -> Aw.Context.Core.Results.SourceSync!
 Aw.Context.Core.Results.SourceSync.Code.get -> string?
@@ -2215,6 +2217,25 @@ Aw.Context.Core.Results.SourceSync.Unchanged.get -> int
 Aw.Context.Core.Results.SourceSync.Unchanged.init -> void
 Aw.Context.Core.Results.SourceSync.Unlinked.get -> int
 Aw.Context.Core.Results.SourceSync.Unlinked.init -> void
+Aw.Context.Core.Results.SourceSyncStatus
+Aw.Context.Core.Results.SourceSyncStatus.<Clone>$() -> Aw.Context.Core.Results.SourceSyncStatus!
+Aw.Context.Core.Results.SourceSyncStatus.Code.get -> string?
+Aw.Context.Core.Results.SourceSyncStatus.Code.init -> void
+Aw.Context.Core.Results.SourceSyncStatus.Decisions.get -> int
+Aw.Context.Core.Results.SourceSyncStatus.Decisions.init -> void
+Aw.Context.Core.Results.SourceSyncStatus.Deconstruct(out System.DateTimeOffset? LastSync, out Aw.Context.Core.Sources.SourceState State, out int Records, out int Linked, out int Decisions, out int Queued, out string? Code) -> void
+Aw.Context.Core.Results.SourceSyncStatus.Equals(Aw.Context.Core.Results.SourceSyncStatus? other) -> bool
+Aw.Context.Core.Results.SourceSyncStatus.LastSync.get -> System.DateTimeOffset?
+Aw.Context.Core.Results.SourceSyncStatus.LastSync.init -> void
+Aw.Context.Core.Results.SourceSyncStatus.Linked.get -> int
+Aw.Context.Core.Results.SourceSyncStatus.Linked.init -> void
+Aw.Context.Core.Results.SourceSyncStatus.Queued.get -> int
+Aw.Context.Core.Results.SourceSyncStatus.Queued.init -> void
+Aw.Context.Core.Results.SourceSyncStatus.Records.get -> int
+Aw.Context.Core.Results.SourceSyncStatus.Records.init -> void
+Aw.Context.Core.Results.SourceSyncStatus.SourceSyncStatus(System.DateTimeOffset? LastSync, Aw.Context.Core.Sources.SourceState State, int Records, int Linked, int Decisions, int Queued, string? Code) -> void
+Aw.Context.Core.Results.SourceSyncStatus.State.get -> Aw.Context.Core.Sources.SourceState
+Aw.Context.Core.Results.SourceSyncStatus.State.init -> void
 Aw.Context.Core.Results.SourcesView
 Aw.Context.Core.Results.SourcesView.<Clone>$() -> Aw.Context.Core.Results.SourcesView!
 Aw.Context.Core.Results.SourcesView.AsOf.get -> System.DateTimeOffset
@@ -3148,6 +3169,9 @@ override Aw.Context.Core.Results.SourceStatusRow.ToString() -> string!
 override Aw.Context.Core.Results.SourceSync.Equals(object? obj) -> bool
 override Aw.Context.Core.Results.SourceSync.GetHashCode() -> int
 override Aw.Context.Core.Results.SourceSync.ToString() -> string!
+override Aw.Context.Core.Results.SourceSyncStatus.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.SourceSyncStatus.GetHashCode() -> int
+override Aw.Context.Core.Results.SourceSyncStatus.ToString() -> string!
 override Aw.Context.Core.Results.SourcesView.Equals(object? obj) -> bool
 override Aw.Context.Core.Results.SourcesView.GetHashCode() -> int
 override Aw.Context.Core.Results.SourcesView.ToString() -> string!
@@ -3659,6 +3683,8 @@ static Aw.Context.Core.Results.SourceStatusRow.operator !=(Aw.Context.Core.Resul
 static Aw.Context.Core.Results.SourceStatusRow.operator ==(Aw.Context.Core.Results.SourceStatusRow? left, Aw.Context.Core.Results.SourceStatusRow? right) -> bool
 static Aw.Context.Core.Results.SourceSync.operator !=(Aw.Context.Core.Results.SourceSync? left, Aw.Context.Core.Results.SourceSync? right) -> bool
 static Aw.Context.Core.Results.SourceSync.operator ==(Aw.Context.Core.Results.SourceSync? left, Aw.Context.Core.Results.SourceSync? right) -> bool
+static Aw.Context.Core.Results.SourceSyncStatus.operator !=(Aw.Context.Core.Results.SourceSyncStatus? left, Aw.Context.Core.Results.SourceSyncStatus? right) -> bool
+static Aw.Context.Core.Results.SourceSyncStatus.operator ==(Aw.Context.Core.Results.SourceSyncStatus? left, Aw.Context.Core.Results.SourceSyncStatus? right) -> bool
 static Aw.Context.Core.Results.SourcesView.operator !=(Aw.Context.Core.Results.SourcesView? left, Aw.Context.Core.Results.SourcesView? right) -> bool
 static Aw.Context.Core.Results.SourcesView.operator ==(Aw.Context.Core.Results.SourcesView? left, Aw.Context.Core.Results.SourcesView? right) -> bool
 static Aw.Context.Core.Results.SyncReport.operator !=(Aw.Context.Core.Results.SyncReport? left, Aw.Context.Core.Results.SyncReport? right) -> bool
