@@ -20,6 +20,7 @@
 #                        permissions.defaultMode to bypassPermissions, so every lane runs in the same mode and messages
 #                        are never held)
 #   AW_META_ID_WAIT      seconds a reported session id may take to appear (default 30; tests)
+#   AW_META_UUID_SOURCE  file holding a fresh uuid (default /proc/sys/kernel/random/uuid; tests simulate a box without it)
 #   AW_META_NO_SHELL     1: exit when the agent exits instead of dropping to a shell (tests)
 set -u
 here="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
@@ -122,7 +123,7 @@ case "$id_mode" in
     if [ -n "$id" ] && id_ok "$id" && [ -n "$(field resume)" ] && has_transcript "$id"; then
       mode=resume
     elif [ "$id_mode" = pre-chosen-uuid ]; then
-      id="$(cat /proc/sys/kernel/random/uuid 2> /dev/null || uuidgen)"
+      id="$(cat "${AW_META_UUID_SOURCE:-/proc/sys/kernel/random/uuid}" 2> /dev/null || uuidgen)"
     else
       id=""; rm -f "$ids/$lane" "$ids/$lane.ambiguous" "$ids/$lane.settled"
     fi

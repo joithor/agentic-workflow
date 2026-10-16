@@ -134,9 +134,9 @@ tmux new-session -d -s demo-api "bash -c 'sleep 60; true'" 2> /dev/null
 OUT="$(bash "$DIR/meta-launch.sh" --no-open --lanes api)"
 check "rerun: live session kept" "$OUT" "$(printf 'tmux demo-api: running\nwarp: %s' "$yaml")"
 check "rerun with --lanes: the layout still has every lane" "$(grep -c 'exec: tmux new -A -s demo-' "$yaml")" "3"
-mkdir -p "$WORK/path"; printf '#!/usr/bin/env bash\necho "$1" > "%s"\n' "$WORK/opened" > "$WORK/path/xdg-open"; chmod +x "$WORK/path/xdg-open"
+mkdir -p "$WORK/path"; printf '#!/usr/bin/env bash\necho "$1" > "%s"\n' "$WORK/opened" > "$WORK/path/xdg-open"; cp "$WORK/path/xdg-open" "$WORK/path/open"; chmod +x "$WORK/path/xdg-open" "$WORK/path/open"   # macOS runs open, Linux xdg-open: neither may reach the real thing
 OUT="$(PATH="$WORK/path:$PATH" bash "$DIR/meta-launch.sh" --lanes api)"
-for _ in $(seq 50); do [ -s "$WORK/opened" ] && break; sleep 0.1; done   # xdg-open runs in the background
+for _ in $(seq 50); do [ -s "$WORK/opened" ] && break; sleep 0.1; done   # open and xdg-open run in the background
 check "open: by the config's name, URI-encoded" "$(tail -1 <<< "$OUT"):$(cat "$WORK/opened" 2> /dev/null)" "warp: opening warp://launch/demo%20team:warp://launch/demo%20team"
 # claude restarted by hand in the fallback shell: the marker is still there, but a claude runs in the pane.
 mkdir -p "$WORK/fakebin"; cp "$(command -v sleep)" "$WORK/fakebin/claude"
@@ -237,7 +237,7 @@ jq -n --arg v "$WORK/viewer" '{schema:1, viewer:{kind:"exec-template", name:"rec
 reset; : > "$VIEWER_CALLS"
 OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" 2>&1)"; RC=$?
 waitfor '[ "$(wc -l < "$VIEWER_CALLS")" -ge 3 ]'
-check "exec-template: exit 0, one window per lane" "$RC:$(wc -l < "$VIEWER_CALLS")" "0:3"
+check "exec-template: exit 0, one window per lane" "$RC:$(wc -l < "$VIEWER_CALLS" | tr -d ' ')" "0:3"
 check "exec-template: title, cwd and the attach argv as separate arguments" "$(grep -- '-demo-api\|demo-api' "$VIEWER_CALLS")" "--title|demo-api|--directory|$WORK/repo|--|tmux|attach|-t|=demo-api|"
 check "exec-template: no Warp YAML written" "$(test -e "$yaml" && echo yes || echo no)" "no"
 : > "$VIEWER_CALLS"
@@ -269,7 +269,7 @@ chmod +x "$WORK/codex"
 jq -n --arg c "$WORK/codex" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex"}}' > "$LCFG"
 reset; : > "$CALLS.events"; : > "$CALLS.codex"
 OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open 2>&1)"; RC=$?
-check "codex lanes: the launch notes that they are launch-only" "$RC:$(grep -x 'lane api: codex, launch-only for now: no obligations' <<< "$OUT" | wc -l):$(grep -c '^lane meta' <<< "$OUT")" "0:1:0"
+check "codex lanes: the launch notes that they are launch-only" "$RC:$(grep -x 'lane api: codex, launch-only for now: no obligations' <<< "$OUT" | wc -l | tr -d ' '):$(grep -c '^lane meta' <<< "$OUT")" "0:1:0"
 ids="$AW_STATE_DIR/meta/lane-sessions"
 waitfor '[ -s "$ids/api" ] && [ -s "$ids/ui" ] && [ "$(wc -l < "$CALLS.codex")" -ge 2 ]'
 check "codex lanes: started one at a time (each id is reported before the next lane starts)" "$(awk '{print $1" "$2}' "$CALLS.events" | tr '\n' ';')" "start api;wrote api;start ui;wrote ui;"
@@ -427,5 +427,64 @@ unlink "$WORK/warpbin/uname"; printf '#!/bin/sh\necho Linux\n' > "$WORK/warpbin/
 printf '#!/bin/sh\nexit 0\n' > "$WORK/warpbin/warp-terminal"; chmod +x "$WORK/warpbin/warp-terminal"
 OUT="$(env -i HOME="$HOME" PATH="$WORK/warpbin" DISPLAY=:0 AW_LAUNCHER_CONFIG="$INIT" bash "$DIR/meta-launch.sh" --init-launcher --stdout 2>&1)"
 check "init-launcher picks Warp when it is installed" "$(jq -c .viewer <<< "$OUT")" '{"kind":"warp"}'
+
+# ---- run-2 fixes (PR 261) ----
+# 1. A box with no /proc uuid and an uppercasing uuidgen (macOS): the id is lowercase, so the lane resumes.
+mkdir -p "$WORK/uubin"; printf '#!/bin/sh\necho ABCDEF01-2345-6789-ABCD-EF0123456789\n' > "$WORK/uubin/uuidgen"; chmod +x "$WORK/uubin/uuidgen"
+: > "$CALLS"; rm -f "$ids/uu"
+PATH="$WORK/uubin:$PATH" AW_META_UUID_SOURCE="$WORK/no-such-uuid" bash "$DIR/meta-lane.sh" demo uu
+check "no /proc uuid, uppercasing uuidgen: the recorded id is lowercase" "$(tr -d '[:space:]' < "$ids/uu")" "abcdef01-2345-6789-abcd-ef0123456789"
+: > "$CALLS"; touch "$HOME/.claude/projects/p/abcdef01-2345-6789-abcd-ef0123456789.jsonl"
+PATH="$WORK/uubin:$PATH" AW_META_UUID_SOURCE="$WORK/no-such-uuid" bash "$DIR/meta-lane.sh" demo uu
+check "no /proc uuid, uppercasing uuidgen: the lane resumes its id" "$(cut -d'|' -f1,2 "$CALLS")" "--resume|abcdef01-2345-6789-abcd-ef0123456789"
+rm -f "$HOME/.claude/projects/p/abcdef01-2345-6789-abcd-ef0123456789.jsonl"
+
+# 3. Thousands of old session files do not make the snapshot check slow.
+many="$HOME/.codex/sessions/2026/09/01"; mkdir -p "$many"
+( cd "$many" && seq 1 2000 | awk '{ printf "rollout-2026-09-01T00-00-00-%08d-0000-0000-0000-000000000000.jsonl\n", $1 }' | xargs touch )
+cat > "$WORK/codex-new" <<'EOF2'
+#!/usr/bin/env bash
+sleep 1
+mkdir -p "$HOME/.codex/sessions/2026/10/17"
+: > "$HOME/.codex/sessions/2026/10/17/rollout-2026-10-17T00-00-00-55555555-5555-5555-5555-555555555555.jsonl"
+sleep 600
+EOF2
+chmod +x "$WORK/codex-new"
+jq -n --arg c "$WORK/codex-new" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex"}}' > "$WORK/new.json"
+rm -f "$ids/many" "$ids/many.settled"; rm -rf "$HOME/.codex/sessions/2026/10/17"
+t0=$SECONDS
+AW_LAUNCHER_CONFIG="$WORK/new.json" AW_META_ID_WAIT=25 bash "$DIR/meta-lane.sh" demo many > /dev/null 2>&1 &
+rp=$!; waitfor '[ -e "$ids/many.settled" ]'
+check "2000 old session files: the new one is recorded, well inside the wait" "$(tr -d '[:space:]' < "$ids/many" 2> /dev/null):$([ $((SECONDS - t0)) -lt 6 ] && echo fast || echo "slow $((SECONDS - t0))s")" "55555555-5555-5555-5555-555555555555:fast"
+kill "$rp" 2> /dev/null; killstubs; wait "$rp" 2> /dev/null
+rm -rf "$HOME/.codex/sessions/2026/09" "$HOME/.codex/sessions/2026/10/17"
+
+# 4. A lane whose file shows up after the timeout keeps its id: the next lane does not take it.
+cat > "$WORK/codex-late" <<'EOF2'
+#!/usr/bin/env bash
+case "$AW_META_LANE" in la) sleep 3.5 ;; *) sleep 1.8 ;; esac
+id="$(cat /proc/sys/kernel/random/uuid 2> /dev/null || uuidgen | tr '[:upper:]' '[:lower:]')"
+mkdir -p "$HOME/.codex/sessions/2026/10/18"
+: > "$HOME/.codex/sessions/2026/10/18/rollout-2026-10-18T00-00-00-$id.jsonl"
+echo "$AW_META_LANE $id" >> "$CALLS.late"
+sleep 600
+EOF2
+chmod +x "$WORK/codex-late"
+jq -n --arg c "$WORK/codex-late" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex"}}' > "$WORK/late.json"
+jq -n --arg r "$WORK/repo" '{team:"demo", repo:$r, metaLane:"meta", lanes:["la","lb"]}' > "$WORK/team3.json"
+reset; : > "$CALLS.late"; rm -f "$ids"/la* "$ids"/lb*; rm -rf "$HOME/.codex/sessions/2026/10/18"
+OUT="$(AW_META_CONFIG="$WORK/team3.json" AW_LAUNCHER_CONFIG="$WORK/late.json" AW_META_ID_WAIT=2 AW_META_ID_GRACE=6 bash "$DIR/meta-launch.sh" --no-open --lanes la,lb 2>&1)"
+waitfor '[ -s "$ids/la" ] && [ -s "$ids/lb" ]'
+la="$(tr -d '[:space:]' < "$ids/la" 2> /dev/null)"; lb="$(tr -d '[:space:]' < "$ids/lb" 2> /dev/null)"
+check "lane la's file arrives after the timeout: la records it, lb records its own" "$(grep -c "^la $la\$" "$CALLS.late"):$(grep -c "^lb $lb\$" "$CALLS.late"):$([ -n "$la" ] && [ "$la" != "$lb" ] && echo distinct)" "1:1:distinct"
+killstubs; tmux kill-server 2> /dev/null; rm -rf "$HOME/.codex/sessions/2026/10/18"
+
+# 5. A reported lane that exits before its watcher starts: the launcher shows the real error at once.
+printf -- '- First: read the spec\nbody\n' > "$WORK/prompts/rf.md"
+jq -n --arg r "$WORK/repo" --arg p "$WORK/prompts" '{team:"demo", repo:$r, prompts:$p, metaLane:"meta", lanes:["rf"]}' > "$WORK/team4.json"
+reset; rm -f "$ids"/rf*; t0=$SECONDS
+OUT="$(AW_META_CONFIG="$WORK/team4.json" AW_LAUNCHER_CONFIG="$WORK/new.json" AW_META_ID_WAIT=8 bash "$DIR/meta-launch.sh" --no-open --lanes rf 2>&1)"; RC=$?
+check "a refused reported lane: the launcher prints SND-LAUNCH-011 at once, not the timeout" "$RC:$(grep -c 'lane rf failed to start: SND-LAUNCH-011' <<< "$OUT"):$(grep -c 'has not reported' <<< "$OUT"):$([ $((SECONDS - t0)) -lt 5 ] && echo fast || echo slow)" "0:1:0:fast"
+tmux kill-server 2> /dev/null; rm -f "$WORK/prompts/rf.md"
 tmux kill-server 2> /dev/null
 exit $fail
