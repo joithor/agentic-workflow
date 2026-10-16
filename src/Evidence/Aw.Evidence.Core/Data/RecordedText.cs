@@ -20,7 +20,7 @@ public static class RecordedText
 
     private const int ReaderDepth = 1000;
 
-    /// <summary>Text on its way into a summary: scrubbed, secret-named JSON members hidden, then capped.</summary>
+    /// <summary>Text on its way into a summary: secret-named JSON members hidden, then scrubbed, then capped.</summary>
     /// <param name="scrubber">The run's scrubber.</param>
     /// <param name="text">The text.</param>
     /// <param name="limit">The most characters kept.</param>

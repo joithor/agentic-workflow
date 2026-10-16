@@ -54,7 +54,7 @@ The mapping is by error kind: `timeout` → 75, `unavailable` → 4, anything el
 or a failure outside a result) is `ui-evidence: AW-EVIDENCE-015 the run failed unexpectedly: <first line>` and exit 4,
 never the runtime's crash exit.
 
-`db-run` returns AW-EVIDENCE-006 (a `passwordEnv` variable that is unset), 010 (a SQLite source or a seed or golden file that isn't there), 018 (database script, a SQLite source that isn't a database, or a seed that fails on the run's copy), 020 (database refused: outside the repo, not disposable, a role that can write, a write statement before connecting, or a write the server refused), 021 (server identity mismatch), 024
+`db-run` returns AW-EVIDENCE-001 (bad arguments), 006 (a `passwordEnv` variable that is unset), 010 (a SQLite source, a seed or golden file, or a `--config` file that isn't there), 022 (an invalid targets config: the repo's `evidence.json` or `--config`), 018 (database script, a SQLite source that isn't a database, or a seed that fails on the run's copy), 020 (database refused: outside the repo, not disposable, a role that can write, a write statement before connecting, or a write the server refused), 021 (server identity mismatch), 024
 (database cannot be reached or copied), 011 (a script, seed or golden file that exists but can't be read, or a file that can't be written), 015 (an unexpected exception or a query that fails for a reason other than a refused write) and 009 (a lock that stayed busy, exit 75).
 
 ### stdout and stderr
