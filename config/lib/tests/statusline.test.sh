@@ -273,6 +273,14 @@ echo 90 >"$HOME/.claude/terminal_width"
 empty="$(echo '' | AW_STATUSLINE_TTY= PATH="$TMP/bin:$STRICT_PATH" bash "$SCRIPT")"
 assert_not_contains "$empty" "Live" "fallback NARROW: no Live"
 
+# --- the 5h and 7d reset times render (GNU date on Linux, BSD date on macOS) ---
+echo 200 >"$HOME/.claude/terminal_width"
+reset_out="$(jq -n '{session_id:"sess-reset", model:{display_name:"M"}, workspace:{current_dir:"/tmp"},
+  rate_limits:{five_hour:{used_percentage:40, resets_at:1700000000}, seven_day:{used_percentage:20, resets_at:1700000000}}}' \
+  | TZ=UTC LC_ALL=C AW_STATUSLINE_TTY= PATH="$TMP/bin:$STRICT_PATH" bash "$SCRIPT")"
+assert_contains "$reset_out" "40% 10pm" "5h reset time shows as a 12-hour clock"
+assert_contains "$reset_out" "20% Tue" "7d reset time shows as a weekday"
+
 echo ""
 echo "statusline: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
