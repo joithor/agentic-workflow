@@ -13,4 +13,8 @@ namespace Aw.Context.Core.Results;
 /// <param name="LastSync">When it was last brought up to date, or null when never.</param>
 /// <param name="Records">How many records (repo-docs: chunks) it holds or reaches.</param>
 public sealed record SourceStatusRow(SourceId Source, SourceKind Kind, ContextRepoName? Repo, SourceState State, string Detail, string? Code,
-    DateTimeOffset? LastSync, int Records);
+    DateTimeOffset? LastSync, int Records)
+{
+    /// <summary>The last sync of an intent source (null for a source that doesn't sync).</summary>
+    public SourceSyncStatus? Sync { get; init; }
+}

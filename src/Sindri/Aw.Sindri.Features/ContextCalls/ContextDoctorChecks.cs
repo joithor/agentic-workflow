@@ -13,11 +13,9 @@ internal sealed class ContextDoctorChecks(ContextScopes scopes, IContextEngine e
     public async ValueTask<IReadOnlyList<DoctorCheck>> Run(CancellationToken cancellationToken)
     {
         var scope = await scopes.Current(cancellationToken).ConfigureAwait(false);
-        var sources = scope.IsError
-            ? ContextChecks.NoProfile(scope.Error)
-            : scope.Value.Settings is null
-                ? ContextChecks.NoSection()
-                : ContextChecks.Sources(await engine.Sources(scope.Value, cancellationToken).ConfigureAwait(false));
+        var view = scope.IsError || scope.Value.Settings is null ? null : await engine.Sources(scope.Value, cancellationToken).ConfigureAwait(false);
+        var sources = scope.IsError ? ContextChecks.NoProfile(scope.Error) : view is null ? ContextChecks.NoSection() : ContextChecks.Sources(view);
+        var sync = view is null ? new DoctorCheck(ContextChecks.SyncName, CheckState.Ok, "no context sources, so nothing syncs", Fix: null) : ContextChecks.Sync(view, scope.Value.SyncConfigured);
         var findings = new List<McpScopeFinding>();
         foreach (var file in Enum.GetValues<ProviderFile>())
         {
@@ -27,6 +25,6 @@ internal sealed class ContextDoctorChecks(ContextScopes scopes, IContextEngine e
             }
         }
 
-        return [sources, ContextChecks.McpScope(findings)];
+        return [sources, sync, ContextChecks.McpScope(findings)];
     }
 }

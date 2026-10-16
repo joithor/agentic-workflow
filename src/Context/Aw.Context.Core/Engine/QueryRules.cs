@@ -34,6 +34,9 @@ public static class QueryRules
     /// <summary>What the 006 for a bad node anchor says (2000 is <see cref="MaxTextLength"/>; a transport adds its own spelling after it).</summary>
     public const string NodeMessage = "a node anchor names a node key, alias or name of 1 to 2000 characters";
 
+    /// <summary>The 006 message for an empty or overlong item anchor.</summary>
+    public const string ItemMessage = "an item anchor names a tracker key or record key of 1 to 2000 characters";
+
     /// <summary>The 006 message for an empty or overlong symbol anchor.</summary>
     public const string SymbolMessage = "a symbol anchor is a file path of 1 to 2000 characters";
 
@@ -141,13 +144,40 @@ public static class QueryRules
             return FilePath(symbol, budget);
         }
 
-        if (query.Text is null)
-        {
-            return ContextErrors.UnknownAnchor.With("item anchors arrive in a later phase; ask by --node, --symbol <file> or a text question");
-        }
+        return query.Item is { } item ? Item(item, budget) : Question(query.Text ?? string.Empty, budget);
+    }
 
-        var terms = Terms(query.Text);
-        if (query.Text.Length > MaxTextLength || terms.Count == 0)
+    /// <summary>SND-CONTEXT-003 for an item no stored record answers to, with the tracker keys of linked records to ask for instead.</summary>
+    /// <param name="item">The item as asked.</param>
+    /// <param name="suggested">Tracker keys of linked records.</param>
+    /// <param name="syncConfigured">True when an intent sync runs: the fix then says the record isn't linked yet or the key is unknown, instead of asking for the service.</param>
+    /// <returns>The error, with a suggestedAnchors member when there is something to suggest.</returns>
+    public static Error UnknownItem(string item, IReadOnlyList<string> suggested, bool syncConfigured = false)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        ArgumentNullException.ThrowIfNull(suggested);
+        var shown = item.Length <= 80 && !item.Any(char.IsControl) ? item.Trim() : "(a long or unusual item)";
+        var error = ContextErrors.UnknownAnchor.With($"no synced record is linked to the item '{shown}' (fix: {Fix(suggested, syncConfigured)})");
+        return suggested.Count == 0 ? error : error.WithExtension("suggestedAnchors", [.. suggested], SettingsJsonContext.Default.ListString);
+    }
+
+    private static string Fix(IReadOnlyList<string> suggested, bool syncConfigured)
+    {
+        var next = syncConfigured
+            ? "the record isn't linked yet or the key is unknown: check the key, wait for the next context-sync slot, or watch sindri context sources status"
+            : "name the context-sync service under services: in the profile";
+        return suggested.Count == 0 ? next : syncConfigured ? $"try {string.Join(", ", suggested)}; {next}" : "try " + string.Join(", ", suggested);
+    }
+
+    private static Result<ValidQuery> Item(string item, int budget) =>
+        string.IsNullOrWhiteSpace(item) || item.Length > MaxTextLength || item.Any(char.IsControl)
+            ? ContextErrors.QueryInvalid.With(ItemMessage)
+            : new ValidQuery([], budget);
+
+    private static Result<ValidQuery> Question(string text, int budget)
+    {
+        var terms = Terms(text);
+        if (text.Length > MaxTextLength || terms.Count == 0)
         {
             return ContextErrors.QueryInvalid.With(string.Create(CultureInfo.InvariantCulture,
                 $"the question needs at least one word and at most {MaxTextLength} characters"));
