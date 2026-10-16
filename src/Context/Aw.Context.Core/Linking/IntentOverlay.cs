@@ -1,4 +1,5 @@
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Results;
 
 namespace Aw.Context.Core.Linking;
 
@@ -9,6 +10,99 @@ public static class IntentOverlay
     /// <param name="graph">The graph (a map version's, or an applied one).</param>
     /// <param name="layer">What syncs wrote.</param>
     /// <returns>The merged graph and the orphaned links; the same graph when the layer is empty.</returns>
-    public static IntentOverlayResult Apply(GraphSnapshot graph, IntentLayer layer) =>
-        throw new NotSupportedException("S-5B slice 1: the overlay is not written yet");
+    public static IntentOverlayResult Apply(GraphSnapshot graph, IntentLayer layer)
+    {
+        ArgumentNullException.ThrowIfNull(graph);
+        ArgumentNullException.ThrowIfNull(layer);
+        if (layer.Records.Count == 0 && layer.Links.Count == 0 && layer.Decisions.Count == 0 && layer.DecisionEdges.Count == 0)
+        {
+            return new IntentOverlayResult(graph, []);
+        }
+
+        var merge = new Merge(graph, layer);
+        merge.AddNodes();
+        merge.AddMentions();
+        merge.AddDecisionEdges();
+        return merge.Result();
+    }
+
+    private sealed class Merge(GraphSnapshot graph, IntentLayer layer)
+    {
+        private readonly List<GraphNode> _nodes = [.. graph.Nodes];
+        private readonly List<GraphEdge> _edges = [.. graph.Edges];
+        private readonly List<IntentLink> _orphaned = [];
+        private readonly HashSet<string> _present = graph.Nodes.Select(n => n.Key.Value).ToHashSet(StringComparer.Ordinal);
+        private readonly Dictionary<string, NodeKey> _aliases = graph.Aliases.ToDictionary(a => a.Alias.Value, a => a.Target, StringComparer.Ordinal);
+
+        public void AddNodes()
+        {
+            foreach (var record in layer.Records)
+            {
+                AddNode(new GraphNode(RecordNode(record.Key), record.Title, Provenance.Deterministic));
+            }
+
+            foreach (var decision in layer.Decisions)
+            {
+                AddNode(new GraphNode(decision.ToKey(), decision.Wording, decision.Provenance, At: decision.At));
+            }
+        }
+
+        public void AddMentions()
+        {
+            var mentions = new Dictionary<(string From, string To), (double Confidence, List<EvidenceRef> Evidence)>();
+            foreach (var link in layer.Links.Where(l => _present.Contains(RecordNode(l.Record).Value)))
+            {
+                if (Resolve(link.Target) is not { } target)
+                {
+                    _orphaned.Add(link);
+                    continue;
+                }
+
+                var pair = (RecordNode(link.Record).Value, target.Value);
+                var evidence = new EvidenceRef(link.Record, link.SpanHash);
+                mentions[pair] = mentions.TryGetValue(pair, out var seen)
+                    ? (Math.Max(seen.Confidence, link.Confidence), [.. seen.Evidence, evidence])
+                    : (link.Confidence, [evidence]);
+            }
+
+            _edges.AddRange(mentions.OrderBy(m => m.Key.From, StringComparer.Ordinal).ThenBy(m => m.Key.To, StringComparer.Ordinal)
+                .Select(m => new GraphEdge(NodeKey.From(m.Key.From), NodeKey.From(m.Key.To), EdgeType.Mentions, Provenance.Deterministic, m.Value.Confidence, m.Value.Evidence)));
+        }
+
+        public void AddDecisionEdges()
+        {
+            foreach (var decision in layer.Decisions.Where(d => _present.Contains(RecordNode(d.Record).Value)))
+            {
+                _edges.Add(new GraphEdge(decision.ToKey(), RecordNode(decision.Record), EdgeType.Quotes, decision.Provenance, At: decision.At));
+            }
+
+            foreach (var edge in layer.DecisionEdges.Where(e => _present.Contains(e.From.Value)))
+            {
+                if (Resolve(edge.To) is { } to)
+                {
+                    _edges.Add(edge with { To = to });
+                }
+            }
+        }
+
+        public IntentOverlayResult Result()
+        {
+            var known = graph.Decisions.Select(d => d.ToKey().Value).ToHashSet(StringComparer.Ordinal);
+            var decisions = graph.Decisions.Concat(layer.Decisions.Where(d => known.Add(d.ToKey().Value))).ToList();
+            return new IntentOverlayResult(new GraphSnapshot(_nodes, _edges, graph.Aliases, decisions), _orphaned);
+        }
+
+        private void AddNode(GraphNode node)
+        {
+            if (_present.Add(node.Key.Value))
+            {
+                _nodes.Add(node);
+            }
+        }
+
+        private NodeKey? Resolve(NodeKey key) =>
+            _present.Contains(key.Value) ? key : _aliases.TryGetValue(key.Value, out var target) && _present.Contains(target.Value) ? target : null;
+    }
+
+    private static NodeKey RecordNode(Sources.RecordKey key) => NodeKey.From("record:" + key.Value);
 }
