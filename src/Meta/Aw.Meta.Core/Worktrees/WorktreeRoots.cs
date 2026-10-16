@@ -1,3 +1,5 @@
+using Aw.Meta.Core.Config;
+
 namespace Aw.Meta.Core.Worktrees;
 
 /// <summary>The allowed roots: only a worktree strictly inside one of them may be removed.</summary>
@@ -18,30 +20,5 @@ internal static class WorktreeRoots
     /// <summary>Resolves "." and ".." segments and drops trailing slashes of an absolute path; any other text comes back trimmed.</summary>
     /// <param name="path">The path.</param>
     /// <returns>The normalized path.</returns>
-    internal static string Normalize(string path)
-    {
-        ArgumentNullException.ThrowIfNull(path);
-        if (!path.StartsWith('/'))
-        {
-            return path.Trim();
-        }
-
-        List<string> kept = [];
-        foreach (var segment in path.Split('/', StringSplitOptions.RemoveEmptyEntries))
-        {
-            if (segment == "..")
-            {
-                if (kept.Count > 0)
-                {
-                    kept.RemoveAt(kept.Count - 1);
-                }
-            }
-            else if (segment != ".")
-            {
-                kept.Add(segment);
-            }
-        }
-
-        return "/" + string.Join('/', kept);
-    }
+    internal static string Normalize(string path) => WorktreeConfig.NormalizePath(path);
 }

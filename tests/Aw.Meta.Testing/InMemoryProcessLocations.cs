@@ -1,6 +1,5 @@
 using Aw.Kernel;
 using Aw.Meta.Core.Ports;
-using Aw.Meta.Core.Worktrees;
 
 namespace Aw.Meta.Testing;
 

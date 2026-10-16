@@ -2,7 +2,6 @@ using System.Globalization;
 using Aw.Kernel;
 using Aw.Meta.Core;
 using Aw.Meta.Core.Ports;
-using Aw.Meta.Core.Worktrees;
 
 namespace Aw.Meta.Infrastructure.Files;
 

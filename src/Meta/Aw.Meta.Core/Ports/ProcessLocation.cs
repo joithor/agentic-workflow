@@ -1,4 +1,4 @@
-namespace Aw.Meta.Core.Worktrees;
+namespace Aw.Meta.Core.Ports;
 
 /// <summary>A live process and the places it holds: its working directory and the files it has open.</summary>
 /// <param name="Pid">The process id.</param>

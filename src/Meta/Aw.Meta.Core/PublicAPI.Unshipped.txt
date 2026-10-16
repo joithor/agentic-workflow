@@ -747,7 +747,7 @@ Aw.Meta.Core.Ports.IOwnerStore.Answers(System.Threading.CancellationToken cancel
 Aw.Meta.Core.Ports.IOwnerStore.Ask(string! askedBy, string! text, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int>!>
 Aw.Meta.Core.Ports.IOwnerStore.List(bool includeAnswered, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Owner.OwnerQuestion!>!>!>
 Aw.Meta.Core.Ports.IProcessLocations
-Aw.Meta.Core.Ports.IProcessLocations.Locations(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Worktrees.ProcessLocation!>!>!>
+Aw.Meta.Core.Ports.IProcessLocations.Locations(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Ports.ProcessLocation!>!>!>
 Aw.Meta.Core.Ports.IProcessTable
 Aw.Meta.Core.Ports.IProcessTable.Snapshot(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Health.HostSnapshot!>!>
 Aw.Meta.Core.Ports.IProcessTable.Terminate(int pid, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
@@ -757,6 +757,19 @@ Aw.Meta.Core.Ports.ISessionDirectory
 Aw.Meta.Core.Ports.ISessionDirectory.Live(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LiveSession!>!>!>
 Aw.Meta.Core.Ports.ITranscriptReader
 Aw.Meta.Core.Ports.ITranscriptReader.ReadFrom(string! path, long offset, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Messages.TranscriptChunk!>!>
+Aw.Meta.Core.Ports.ProcessLocation
+Aw.Meta.Core.Ports.ProcessLocation.<Clone>$() -> Aw.Meta.Core.Ports.ProcessLocation!
+Aw.Meta.Core.Ports.ProcessLocation.Command.get -> string!
+Aw.Meta.Core.Ports.ProcessLocation.Command.init -> void
+Aw.Meta.Core.Ports.ProcessLocation.Deconstruct(out int Pid, out string! Command, out System.Collections.Generic.IReadOnlyList<string!>! Paths, out bool IsInvoker) -> void
+Aw.Meta.Core.Ports.ProcessLocation.Equals(Aw.Meta.Core.Ports.ProcessLocation? other) -> bool
+Aw.Meta.Core.Ports.ProcessLocation.IsInvoker.get -> bool
+Aw.Meta.Core.Ports.ProcessLocation.IsInvoker.init -> void
+Aw.Meta.Core.Ports.ProcessLocation.Paths.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Ports.ProcessLocation.Paths.init -> void
+Aw.Meta.Core.Ports.ProcessLocation.Pid.get -> int
+Aw.Meta.Core.Ports.ProcessLocation.Pid.init -> void
+Aw.Meta.Core.Ports.ProcessLocation.ProcessLocation(int Pid, string! Command, System.Collections.Generic.IReadOnlyList<string!>! Paths, bool IsInvoker = false) -> void
 Aw.Meta.Core.Registration.MetaCoreServiceCollectionExtensions
 Aw.Meta.Core.Watch.EndedPrs
 Aw.Meta.Core.Watch.PrState
@@ -830,19 +843,6 @@ Aw.Meta.Core.Watch.WatchedPr.PendingPolls.init -> void
 Aw.Meta.Core.Watch.WatchedPr.State.get -> Aw.Meta.Core.Watch.PrState
 Aw.Meta.Core.Watch.WatchedPr.State.init -> void
 Aw.Meta.Core.Watch.WatchedPr.WatchedPr(Aw.Meta.Core.Watch.PrState State, bool IsDraft, string! Head, string? Mergeable, string? Pending, int PendingPolls) -> void
-Aw.Meta.Core.Worktrees.ProcessLocation
-Aw.Meta.Core.Worktrees.ProcessLocation.<Clone>$() -> Aw.Meta.Core.Worktrees.ProcessLocation!
-Aw.Meta.Core.Worktrees.ProcessLocation.Command.get -> string!
-Aw.Meta.Core.Worktrees.ProcessLocation.Command.init -> void
-Aw.Meta.Core.Worktrees.ProcessLocation.Deconstruct(out int Pid, out string! Command, out System.Collections.Generic.IReadOnlyList<string!>! Paths, out bool IsInvoker) -> void
-Aw.Meta.Core.Worktrees.ProcessLocation.Equals(Aw.Meta.Core.Worktrees.ProcessLocation? other) -> bool
-Aw.Meta.Core.Worktrees.ProcessLocation.IsInvoker.get -> bool
-Aw.Meta.Core.Worktrees.ProcessLocation.IsInvoker.init -> void
-Aw.Meta.Core.Worktrees.ProcessLocation.Paths.get -> System.Collections.Generic.IReadOnlyList<string!>!
-Aw.Meta.Core.Worktrees.ProcessLocation.Paths.init -> void
-Aw.Meta.Core.Worktrees.ProcessLocation.Pid.get -> int
-Aw.Meta.Core.Worktrees.ProcessLocation.Pid.init -> void
-Aw.Meta.Core.Worktrees.ProcessLocation.ProcessLocation(int Pid, string! Command, System.Collections.Generic.IReadOnlyList<string!>! Paths, bool IsInvoker = false) -> void
 Aw.Meta.Core.Worktrees.SweepMode
 Aw.Meta.Core.Worktrees.SweepMode.DryRun = 2 -> Aw.Meta.Core.Worktrees.SweepMode
 Aw.Meta.Core.Worktrees.SweepMode.Remove = 1 -> Aw.Meta.Core.Worktrees.SweepMode
@@ -1045,6 +1045,9 @@ override Aw.Meta.Core.Obligations.OwnerAnswer.ToString() -> string!
 override Aw.Meta.Core.Owner.OwnerQuestion.Equals(object? obj) -> bool
 override Aw.Meta.Core.Owner.OwnerQuestion.GetHashCode() -> int
 override Aw.Meta.Core.Owner.OwnerQuestion.ToString() -> string!
+override Aw.Meta.Core.Ports.ProcessLocation.Equals(object? obj) -> bool
+override Aw.Meta.Core.Ports.ProcessLocation.GetHashCode() -> int
+override Aw.Meta.Core.Ports.ProcessLocation.ToString() -> string!
 override Aw.Meta.Core.Watch.PrView.Equals(object? obj) -> bool
 override Aw.Meta.Core.Watch.PrView.GetHashCode() -> int
 override Aw.Meta.Core.Watch.PrView.ToString() -> string!
@@ -1060,9 +1063,6 @@ override Aw.Meta.Core.Watch.WatchStep.ToString() -> string!
 override Aw.Meta.Core.Watch.WatchedPr.Equals(object? obj) -> bool
 override Aw.Meta.Core.Watch.WatchedPr.GetHashCode() -> int
 override Aw.Meta.Core.Watch.WatchedPr.ToString() -> string!
-override Aw.Meta.Core.Worktrees.ProcessLocation.Equals(object? obj) -> bool
-override Aw.Meta.Core.Worktrees.ProcessLocation.GetHashCode() -> int
-override Aw.Meta.Core.Worktrees.ProcessLocation.ToString() -> string!
 override Aw.Meta.Core.Worktrees.SweepOutcome.Equals(object? obj) -> bool
 override Aw.Meta.Core.Worktrees.SweepOutcome.GetHashCode() -> int
 override Aw.Meta.Core.Worktrees.SweepOutcome.ToString() -> string!
@@ -1214,6 +1214,8 @@ static Aw.Meta.Core.Obligations.OwnerAnswer.operator ==(Aw.Meta.Core.Obligations
 static Aw.Meta.Core.Owner.OwnerQuestion.operator !=(Aw.Meta.Core.Owner.OwnerQuestion? left, Aw.Meta.Core.Owner.OwnerQuestion? right) -> bool
 static Aw.Meta.Core.Owner.OwnerQuestion.operator ==(Aw.Meta.Core.Owner.OwnerQuestion? left, Aw.Meta.Core.Owner.OwnerQuestion? right) -> bool
 static Aw.Meta.Core.Owner.OwnerQuestionText.From(string! body) -> string!
+static Aw.Meta.Core.Ports.ProcessLocation.operator !=(Aw.Meta.Core.Ports.ProcessLocation? left, Aw.Meta.Core.Ports.ProcessLocation? right) -> bool
+static Aw.Meta.Core.Ports.ProcessLocation.operator ==(Aw.Meta.Core.Ports.ProcessLocation? left, Aw.Meta.Core.Ports.ProcessLocation? right) -> bool
 static Aw.Meta.Core.Registration.MetaCoreServiceCollectionExtensions.AddMetaCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Meta.Core.Watch.EndedPrs.Added(string? stored, System.Collections.Generic.IEnumerable<Aw.Meta.Core.Watch.PrView!>! prs) -> System.Collections.Generic.IReadOnlyList<int>!
 static Aw.Meta.Core.Watch.EndedPrs.Merge(string? stored, System.Collections.Generic.IEnumerable<Aw.Meta.Core.Watch.PrView!>! prs) -> string?
@@ -1231,8 +1233,6 @@ static Aw.Meta.Core.Watch.WatchStep.operator !=(Aw.Meta.Core.Watch.WatchStep? le
 static Aw.Meta.Core.Watch.WatchStep.operator ==(Aw.Meta.Core.Watch.WatchStep? left, Aw.Meta.Core.Watch.WatchStep? right) -> bool
 static Aw.Meta.Core.Watch.WatchedPr.operator !=(Aw.Meta.Core.Watch.WatchedPr? left, Aw.Meta.Core.Watch.WatchedPr? right) -> bool
 static Aw.Meta.Core.Watch.WatchedPr.operator ==(Aw.Meta.Core.Watch.WatchedPr? left, Aw.Meta.Core.Watch.WatchedPr? right) -> bool
-static Aw.Meta.Core.Worktrees.ProcessLocation.operator !=(Aw.Meta.Core.Worktrees.ProcessLocation? left, Aw.Meta.Core.Worktrees.ProcessLocation? right) -> bool
-static Aw.Meta.Core.Worktrees.ProcessLocation.operator ==(Aw.Meta.Core.Worktrees.ProcessLocation? left, Aw.Meta.Core.Worktrees.ProcessLocation? right) -> bool
 static Aw.Meta.Core.Worktrees.SweepOutcome.operator !=(Aw.Meta.Core.Worktrees.SweepOutcome? left, Aw.Meta.Core.Worktrees.SweepOutcome? right) -> bool
 static Aw.Meta.Core.Worktrees.SweepOutcome.operator ==(Aw.Meta.Core.Worktrees.SweepOutcome? left, Aw.Meta.Core.Worktrees.SweepOutcome? right) -> bool
 static Aw.Meta.Core.Worktrees.WorktreeReport.operator !=(Aw.Meta.Core.Worktrees.WorktreeReport? left, Aw.Meta.Core.Worktrees.WorktreeReport? right) -> bool
