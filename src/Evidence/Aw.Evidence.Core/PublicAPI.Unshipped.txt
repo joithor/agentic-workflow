@@ -2063,3 +2063,52 @@ static Aw.Evidence.Core.Data.DbScriptReader.Read(System.ReadOnlySpan<byte> utf8J
 static Aw.Evidence.Core.Data.SqlText.Statements(string! sql) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Evidence.Core.Data.SqlText.Words(string! statement) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Evidence.Core.Data.WriteStatements.Check(string! sql) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+Aw.Evidence.Core.Data.DbTarget
+Aw.Evidence.Core.Data.DbTarget.DbTarget() -> void
+Aw.Evidence.Core.Data.DbTarget.DbTarget(Aw.Evidence.Core.Data.DbTarget! original) -> void
+Aw.Evidence.Core.Data.IDatabaseReader
+Aw.Evidence.Core.Data.IDatabaseReader.OpenAsync(Aw.Evidence.Core.Data.DbTarget! target, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Evidence.Core.Data.IReadSession!>!>
+Aw.Evidence.Core.Data.IReadSession
+Aw.Evidence.Core.Data.IReadSession.QueryAsync(string! sql, int rowLimit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Evidence.Core.Data.Rows!>!>
+Aw.Evidence.Core.Data.Rows
+Aw.Evidence.Core.Data.Rows.<Clone>$() -> Aw.Evidence.Core.Data.Rows!
+Aw.Evidence.Core.Data.Rows.Columns.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Core.Data.Rows.Columns.init -> void
+Aw.Evidence.Core.Data.Rows.Count.get -> int
+Aw.Evidence.Core.Data.Rows.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Columns, out System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<object?>!>! Values, out bool Truncated) -> void
+Aw.Evidence.Core.Data.Rows.Equals(Aw.Evidence.Core.Data.Rows? other) -> bool
+Aw.Evidence.Core.Data.Rows.Rows(System.Collections.Generic.IReadOnlyList<string!>! Columns, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<object?>!>! Values, bool Truncated) -> void
+Aw.Evidence.Core.Data.Rows.ToJson() -> string!
+Aw.Evidence.Core.Data.Rows.Truncated.get -> bool
+Aw.Evidence.Core.Data.Rows.Truncated.init -> void
+Aw.Evidence.Core.Data.Rows.Values.get -> System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<object?>!>!
+Aw.Evidence.Core.Data.Rows.Values.init -> void
+Aw.Evidence.Core.Data.SqliteTarget
+Aw.Evidence.Core.Data.SqliteTarget.Deconstruct(out string! SourcePath, out string! WorkDirectory) -> void
+Aw.Evidence.Core.Data.SqliteTarget.Equals(Aw.Evidence.Core.Data.SqliteTarget? other) -> bool
+Aw.Evidence.Core.Data.SqliteTarget.SourcePath.get -> string!
+Aw.Evidence.Core.Data.SqliteTarget.SourcePath.init -> void
+Aw.Evidence.Core.Data.SqliteTarget.SqliteTarget(string! SourcePath, string! WorkDirectory) -> void
+Aw.Evidence.Core.Data.SqliteTarget.WorkDirectory.get -> string!
+Aw.Evidence.Core.Data.SqliteTarget.WorkDirectory.init -> void
+abstract Aw.Evidence.Core.Data.DbTarget.<Clone>$() -> Aw.Evidence.Core.Data.DbTarget!
+override Aw.Evidence.Core.Data.DbTarget.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.DbTarget.GetHashCode() -> int
+override Aw.Evidence.Core.Data.DbTarget.ToString() -> string!
+override Aw.Evidence.Core.Data.Rows.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.Rows.GetHashCode() -> int
+override Aw.Evidence.Core.Data.Rows.ToString() -> string!
+override Aw.Evidence.Core.Data.SqliteTarget.<Clone>$() -> Aw.Evidence.Core.Data.SqliteTarget!
+override Aw.Evidence.Core.Data.SqliteTarget.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.SqliteTarget.GetHashCode() -> int
+override Aw.Evidence.Core.Data.SqliteTarget.ToString() -> string!
+override sealed Aw.Evidence.Core.Data.SqliteTarget.Equals(Aw.Evidence.Core.Data.DbTarget? other) -> bool
+static Aw.Evidence.Core.Data.DbTarget.operator !=(Aw.Evidence.Core.Data.DbTarget? left, Aw.Evidence.Core.Data.DbTarget? right) -> bool
+static Aw.Evidence.Core.Data.DbTarget.operator ==(Aw.Evidence.Core.Data.DbTarget? left, Aw.Evidence.Core.Data.DbTarget? right) -> bool
+static Aw.Evidence.Core.Data.Rows.operator !=(Aw.Evidence.Core.Data.Rows? left, Aw.Evidence.Core.Data.Rows? right) -> bool
+static Aw.Evidence.Core.Data.Rows.operator ==(Aw.Evidence.Core.Data.Rows? left, Aw.Evidence.Core.Data.Rows? right) -> bool
+static Aw.Evidence.Core.Data.SqliteTarget.operator !=(Aw.Evidence.Core.Data.SqliteTarget? left, Aw.Evidence.Core.Data.SqliteTarget? right) -> bool
+static Aw.Evidence.Core.Data.SqliteTarget.operator ==(Aw.Evidence.Core.Data.SqliteTarget? left, Aw.Evidence.Core.Data.SqliteTarget? right) -> bool
+virtual Aw.Evidence.Core.Data.DbTarget.EqualityContract.get -> System.Type!
+virtual Aw.Evidence.Core.Data.DbTarget.Equals(Aw.Evidence.Core.Data.DbTarget? other) -> bool
+virtual Aw.Evidence.Core.Data.DbTarget.PrintMembers(System.Text.StringBuilder! builder) -> bool

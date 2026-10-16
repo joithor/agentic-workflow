@@ -9,6 +9,7 @@ using Aw.Evidence.Core.Settings;
 using Aw.Evidence.Core.Stack;
 using Aw.Evidence.Core.Visual;
 using Aw.Evidence.Infrastructure.Browser;
+using Aw.Evidence.Infrastructure.Databases;
 using Aw.Evidence.Infrastructure.Files;
 using Aw.Evidence.Infrastructure.Guard;
 using Aw.Evidence.Infrastructure.Http;
@@ -61,6 +62,7 @@ public static class EvidenceInfrastructureServiceCollectionExtensions
             .AddSingleton<ICliRunner>(new ProcessCliRunner(TimeSpan.FromMinutes(2)))
             .AddSingleton<IExecutableLocator, FileExecutableLocator>()
             .AddSingleton<IEvidenceTargets, FileEvidenceTargets>()
+            .AddSingleton<IDatabaseReader, SqliteDatabaseReader>()
             .AddSingleton<ITextScrubber>(new RedactionScrubber(Redactor.Default))
             .AddSingleton<IIdGenerator, RandomIds>();
     }
