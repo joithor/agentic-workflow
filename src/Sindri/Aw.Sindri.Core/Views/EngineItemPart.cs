@@ -1,0 +1,17 @@
+using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Instances;
+
+namespace Aw.Sindri.Core.Views;
+
+/// <summary>
+/// What an item row keeps of its root instance, folded from the 'workflow.*' ledger rows (API P11), so a row whose delta leaves
+/// the frame out still knows the frame that came before.
+/// </summary>
+/// <param name="Address">The root instance's address.</param>
+/// <param name="State">The instance's state.</param>
+/// <param name="RunOpen">Whether a run is open in the state.</param>
+/// <param name="Runtime">Who runs the open run; null when none is open.</param>
+/// <param name="Suspension">The suspension the instance is under, or none.</param>
+/// <param name="Ended">Whether the instance ended.</param>
+/// <param name="Cancelled">Whether it ended by a cancel.</param>
+public sealed record EngineItemPart(string Address, string State, bool RunOpen, StepRuntime? Runtime, SuspensionKind? Suspension, bool Ended, bool Cancelled);

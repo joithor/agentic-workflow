@@ -7745,3 +7745,32 @@ static Aw.Sindri.Core.Workflow.Blocks.DecisionFact.operator !=(Aw.Sindri.Core.Wo
 static Aw.Sindri.Core.Workflow.Blocks.DecisionFact.operator ==(Aw.Sindri.Core.Workflow.Blocks.DecisionFact? left, Aw.Sindri.Core.Workflow.Blocks.DecisionFact? right) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.EngineFilledOutputs.For(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.OutputSpec!>! outputs, Aw.Sindri.Core.Workflow.Ids.OutcomeName outcome, string! provider, string? actor) -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Blocks.DecisionFact!>!
 static Aw.Sindri.Core.Workflow.Blocks.EngineFilledOutputs.Refusal(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor!>! steps, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Ids.FactKey>! written) -> string?
+Aw.Sindri.Core.Items.EngineItemStates
+Aw.Sindri.Core.Views.EngineItemPart
+Aw.Sindri.Core.Views.EngineItemPart.<Clone>$() -> Aw.Sindri.Core.Views.EngineItemPart!
+Aw.Sindri.Core.Views.EngineItemPart.Address.get -> string!
+Aw.Sindri.Core.Views.EngineItemPart.Address.init -> void
+Aw.Sindri.Core.Views.EngineItemPart.Cancelled.get -> bool
+Aw.Sindri.Core.Views.EngineItemPart.Cancelled.init -> void
+Aw.Sindri.Core.Views.EngineItemPart.Deconstruct(out string! Address, out string! State, out bool RunOpen, out Aw.Sindri.Core.Workflow.Engine.StepRuntime? Runtime, out Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind? Suspension, out bool Ended, out bool Cancelled) -> void
+Aw.Sindri.Core.Views.EngineItemPart.Ended.get -> bool
+Aw.Sindri.Core.Views.EngineItemPart.Ended.init -> void
+Aw.Sindri.Core.Views.EngineItemPart.EngineItemPart(string! Address, string! State, bool RunOpen, Aw.Sindri.Core.Workflow.Engine.StepRuntime? Runtime, Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind? Suspension, bool Ended, bool Cancelled) -> void
+Aw.Sindri.Core.Views.EngineItemPart.Equals(Aw.Sindri.Core.Views.EngineItemPart? other) -> bool
+Aw.Sindri.Core.Views.EngineItemPart.RunOpen.get -> bool
+Aw.Sindri.Core.Views.EngineItemPart.RunOpen.init -> void
+Aw.Sindri.Core.Views.EngineItemPart.Runtime.get -> Aw.Sindri.Core.Workflow.Engine.StepRuntime?
+Aw.Sindri.Core.Views.EngineItemPart.Runtime.init -> void
+Aw.Sindri.Core.Views.EngineItemPart.State.get -> string!
+Aw.Sindri.Core.Views.EngineItemPart.State.init -> void
+Aw.Sindri.Core.Views.EngineItemPart.Suspension.get -> Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind?
+Aw.Sindri.Core.Views.EngineItemPart.Suspension.init -> void
+Aw.Sindri.Core.Views.ItemRow.Engine.get -> Aw.Sindri.Core.Views.EngineItemPart?
+Aw.Sindri.Core.Views.ItemRow.Engine.init -> void
+override Aw.Sindri.Core.Views.EngineItemPart.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Views.EngineItemPart.GetHashCode() -> int
+override Aw.Sindri.Core.Views.EngineItemPart.ToString() -> string!
+static Aw.Sindri.Core.Items.EngineItemStates.Next(Aw.Sindri.Core.Views.EngineItemPart? prior, string! eventType, Aw.Sindri.Core.Events.WorkflowEventPayload! payload) -> Aw.Sindri.Core.Views.EngineItemPart?
+static Aw.Sindri.Core.Items.EngineItemStates.StateOf(Aw.Sindri.Core.Views.EngineItemPart! part) -> Aw.Sindri.Core.Items.Vocabulary.ItemState
+static Aw.Sindri.Core.Views.EngineItemPart.operator !=(Aw.Sindri.Core.Views.EngineItemPart? left, Aw.Sindri.Core.Views.EngineItemPart? right) -> bool
+static Aw.Sindri.Core.Views.EngineItemPart.operator ==(Aw.Sindri.Core.Views.EngineItemPart? left, Aw.Sindri.Core.Views.EngineItemPart? right) -> bool
