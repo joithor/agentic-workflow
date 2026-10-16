@@ -106,8 +106,6 @@ public abstract class FrameHost : IDisposable
     private protected static void Frame(Window window, string name, string prefix = "u3-")
     {
         Settle(window);
-        var dir = Path.Combine(AppContext.BaseDirectory, "frames");
-        _ = Directory.CreateDirectory(dir);
-        window.CaptureRenderedFrame()?.Save(Path.Combine(dir, prefix + name + ".png"), new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+        FrameFile.Save(window, prefix + name);
     }
 }
