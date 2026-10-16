@@ -3,8 +3,10 @@ using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Item;
+using Aw.Sindri.Ui.ViewModels.NeedsYou;
 using Aw.Sindri.Ui.ViewModels.Palette;
 using Aw.Sindri.Ui.ViewModels.Queue;
+using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -44,7 +46,8 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <param name="clock">The clock for every timing rule.</param>
     /// <param name="preferences">The app's local preferences, shared with Settings (the shell keeps its window, sheet width and last page there).</param>
     /// <param name="clipboard">Where Copy puts a CLI (the window's clipboard).</param>
-    internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, Preferences preferences, IClipboard clipboard)
+    /// <param name="motion">The OS reduce-motion setting; none means motion is allowed.</param>
+    internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, Preferences preferences, IClipboard clipboard, IMotionPreference? motion = null)
     {
         _store = preferences;
         _clock = clock;
@@ -57,10 +60,19 @@ internal sealed partial class ShellViewModel : ObservableObject
         Shortcuts = new ShortcutsViewModel(Health.Catalog);
         Queue = new QueueViewModel(api, Health.Catalog, clock);
         Queue.PageShown(RowScopeOf(CurrentPage));
-        Item = new ItemSheetViewModel(api, Health.Catalog, clock);
+        var decisions = new DecisionSender(api);
+        Item = new ItemSheetViewModel(api, Health.Catalog, clock, decisions);
         Health.Follow(Queue.Refresh);
         Health.Follow(Item.Refresh);
+        _api = api;
+        NeedsYou = new NeedsYouViewModel(preferences, motion ?? new StillMotion(), clock);
+        Decision = new DecisionSheetViewModel(api, () => Health.ApiUrl(), clock, decisions, clipboard);
+        InitNeedsYou(clipboard);
+        Strip = new WorkflowsStripViewModel(clipboard, clock);
+        InitStrip();
         Queue.PropertyChanged += OnQueueChanged;
+        InitAnnouncements();
+        Attention = AttentionSummary.For(feed: null, State, _clock.GetUtcNow());
     }
 
     /// <summary>The app's copy, for the view.</summary>
@@ -169,9 +181,6 @@ internal sealed partial class ShellViewModel : ObservableObject
     // Connected: the API's pages (and the sheet over them) have something to show.
     private bool IsConnected => State is ShellState.Normal or ShellState.Stale or ShellState.Unreadable;
 
-    /// <summary>The attention band under the top bar (§3.2): always false in U0, since needs-you arrives in U3.</summary>
-    public bool IsAttentionBandVisible { get; }
-
     /// <summary>The window's remembered bounds, or null to let the platform place it.</summary>
     public WindowBounds? Window => _preferences.Window;
 
@@ -244,6 +253,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         {
             case nameof(HealthViewModel.State):
                 Changed(_stateProperties);
+                Reattend();
                 Announce();
                 break;
             case nameof(HealthViewModel.Reason):

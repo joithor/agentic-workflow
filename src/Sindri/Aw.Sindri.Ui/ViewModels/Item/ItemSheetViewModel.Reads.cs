@@ -60,6 +60,10 @@ internal sealed partial class ItemSheetViewModel
         if (await Read(cancellationToken).ConfigureAwait(true))
         {
             IsLoading = false;
+            if (_url is { } url && HasItem)
+            {
+                await Needs.Read(url, ItemId, cancellationToken).ConfigureAwait(true);
+            }
         }
     }
 

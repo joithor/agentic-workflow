@@ -20,4 +20,7 @@ public sealed record SindriPlatform(
 {
     /// <summary>The app's log (the desktop head's writes JSON lines on standard error through Aw.Kernel.Telemetry); none by default.</summary>
     public ILogger Log { get; init; } = NullLogger.Instance;
+
+    /// <summary>The dock or taskbar badge (U3'); a platform without one keeps the <see cref="NullDockBadge"/>.</summary>
+    public IDockBadge DockBadge { get; init; } = new NullDockBadge();
 }

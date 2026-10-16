@@ -10,12 +10,15 @@ namespace Aw.Sindri.Ui.Tests.Shell;
 
 /// <summary>What each pre-API state shows (UI spec §4.1): the panels' visibility, the pill's words, and the sheet over the page.</summary>
 [Lane(TestLane.Unit)]
-public sealed class ShellStateTests
+public sealed class ShellStateTests : IDisposable
 {
+    private readonly InlineUiContext _ui = new();
     private readonly InMemoryEndpointRecords _records = new();
     private readonly FakeSindriApi _server = new();
     private readonly FakeTimeProvider _clock = new(A.Noon);
     private readonly InMemoryPreferencesStore _preferences = new();
+
+    public void Dispose() => _ui.Dispose();
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 

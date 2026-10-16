@@ -2,7 +2,6 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Shell;
-using Aw.Sindri.Ui.Views;
 
 namespace Aw.Sindri.Ui.Tests.Views;
 
@@ -18,5 +17,5 @@ public sealed class TrayViewsTests
     [InlineData(ShellState.Connecting, TrayState.Stale, Labels.TrayNotResponding)]
     [InlineData(ShellState.VersionMismatch, TrayState.Stale, Labels.TrayNotResponding)]
     internal void Each_state_maps_to_its_icon_and_tooltip(ShellState state, TrayState icon, string tooltip) =>
-        Assert.Equal(new TrayView(icon, tooltip, Labels.TrayOpen, Labels.TrayQuit), AppLifetime.TrayViewFor(state));
+        Assert.Equal(new TrayView(icon, tooltip, Labels.TrayOpen, Labels.TrayQuit), AttentionSummary.For(feed: null, state, default).Tray);
 }

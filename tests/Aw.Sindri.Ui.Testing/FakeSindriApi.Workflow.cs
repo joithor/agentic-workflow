@@ -9,8 +9,16 @@ internal sealed partial class FakeSindriApi
     /// <summary>When set, every workflow read answers this instead of the golden (a refusal, an odd body).</summary>
     public RouteAnswer? WorkflowAnswer { get; set; }
 
-    public Task<Result<InstanceList>> Instances(Uri api, InstanceQuery query, CancellationToken cancellationToken) =>
-        Task.FromResult(Answer<InstanceList>(api, WorkflowRoutes.Instances(query), InstancesAnswer(query)));
+    private int _instancesCalls;
+
+    /// <summary>How many times the instance list was read.</summary>
+    public int InstancesCalls => Volatile.Read(ref _instancesCalls);
+
+    public Task<Result<InstanceList>> Instances(Uri api, InstanceQuery query, CancellationToken cancellationToken)
+    {
+        _ = Interlocked.Increment(ref _instancesCalls);
+        return Task.FromResult(Answer<InstanceList>(api, WorkflowRoutes.Instances(query), InstancesAnswer(query)));
+    }
 
     public Task<Result<InstanceDetail>> Instance(Uri api, string id, CancellationToken cancellationToken) =>
         Task.FromResult(Answer<InstanceDetail>(api, WorkflowRoutes.Instance(id), InstanceAnswer(id)));

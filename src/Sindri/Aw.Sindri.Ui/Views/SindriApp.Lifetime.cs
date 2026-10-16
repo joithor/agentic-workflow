@@ -15,7 +15,7 @@ public sealed partial class SindriApp
             return;
         }
 
-        var lifetime = new AppLifetime(window, platform.Tray, shell.Navigate, () => End(desktop, 0), () => Settle(window, preferences), clock);
+        var lifetime = new AppLifetime(window, platform.Tray, shell.Navigate, () => End(desktop, 0), () => Settle(window, preferences), clock, platform.DockBadge);
         lifetime.Quitting += (_, _) => platform.Instance.Retire();
         lifetime.Start(desktop, shell);
         _listener?.Deliver(lifetime.Receive);

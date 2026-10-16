@@ -108,6 +108,10 @@ echo "$*" >> "$STUB_LOG"
 case "$*" in
   "profile validate --json") echo '{"valid":true,"hash":"abcdef0123456789","approved":false}' ;;
   "profile approve abcdef0123456789") IFS= read -r line; echo "typed=$line" >> "$STUB_LOG" ;;
+  "item add "*) n=$(($(cat "$STUB_LOG.n" 2>/dev/null || echo 0) + 1)); echo "$n" > "$STUB_LOG.n"; echo "added ITM-0$n" ;;
+  "workflow start "*)
+    for a in "$@"; do case "$a" in fact:*=*) echo "fact ${a%%=*} $(cat "${a#*=}")" >> "$STUB_LOG" ;; esac; done
+    if [ -n "${STUB_FAIL_START:-}" ]; then echo "SND-CLI-003 refused" >&2; exit 2; fi ;;
 esac
 exit 0
 EOF
@@ -133,12 +137,135 @@ AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" items >/dev/null 2>&1; check 
 check "items adds the fixture's four items, oldest first" "$(tr '\n' ';' < "$STUB_LOG")" \
   "item add Stream limits 429 fallback;item add Retry storm in outbox dispatcher;item add Context map review for tabs.layout;item add Try the queue;"
 : > "$STUB_LOG"
-AW_SINDRI_HOME="$U" SINDRI="$STUB" FIXTURE_REPO=demo bash "$FIXTURE" items --large >/dev/null 2>&1; check "items --large exits 0" "$?" "0"
-check "items --large adds 34 items" "$(wc -l < "$STUB_LOG" | tr -d ' ')" "34"
+printf '{"url":"http://127.0.0.1:7999"}\n' > "$U/control.json"
+mkdir -p "$WORK/nocurl"; printf '#!/bin/sh\nexit 0\n' > "$WORK/nocurl/curl"; chmod +x "$WORK/nocurl/curl"
+PATH="$WORK/nocurl:$PATH" AW_SINDRI_HOME="$U" SINDRI="$STUB" FIXTURE_REPO=demo bash "$FIXTURE" items --large >/dev/null 2>&1; check "items --large exits 0" "$?" "0"
+check "items --large adds 34 items" "$(grep -c '^item add' "$STUB_LOG")" "34"
 contains "FIXTURE_REPO names the repo" "$(head -1 "$STUB_LOG")" "--repo demo"
 : > "$STUB_LOG"
 AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" close ITM-0192a1b2 --cancelled >/dev/null 2>&1; check "close exits 0" "$?" "0"
 check "close sends item close --cancelled" "$(cat "$STUB_LOG")" "item close ITM-0192a1b2 --cancelled"
 AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" close 'ITM-1;rm' >/dev/null 2>&1; check "close refuses a bad id (exit 2)" "$?" "2"
+
+# --- U3': request, decide, fail / unfail, items --large's requests ---
+# A fake curl records its arguments; control.json gives the prover's `url` a base.
+cat > "$WORK/bin/curl" <<'EOF'
+#!/usr/bin/env bash
+echo "curl $*" >> "$STUB_LOG"
+exit 0
+EOF
+chmod +x "$WORK/bin/curl"
+printf '{"url":"http://127.0.0.1:7999"}\n' > "$U/control.json"
+absent() { case "$2" in *"$3"*) check "$1" "present" "absent" ;; *) check "$1" "absent" "absent" ;; esac; }
+: > "$STUB_LOG"
+PATH="$WORK/bin:$PATH" AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" request --item ITM-01 --repo demo "Split it" >/dev/null 2>&1; check "request exits 0" "$?" "0"
+call="$(cat "$STUB_LOG")"
+contains "request_sends_a_session_curl: a POST to /sindri/requests" "$call" "http://127.0.0.1:7999/sindri/requests"
+contains "request names the repo scope" "$call" "X-Sindri-Repo: demo"
+contains "request sends the item as the API's member, item" "$call" '"item":"ITM-01"'
+absent "request does not send itemId" "$call" "itemId"
+contains "request sends the text" "$call" '"text":"Split it"'
+absent "request_sends_no_caller_header" "$call" "X-Sindri-Caller"
+absent "request sends no token" "$call" "X-Sindri-Token"
+: > "$STUB_LOG"
+PATH="$WORK/bin:$PATH" AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" request "Plain" >/dev/null 2>&1
+absent "request without flags sends no repo" "$(cat "$STUB_LOG")" "X-Sindri-Repo"
+absent "request without flags sends no item" "$(cat "$STUB_LOG")" '"item"'
+AW_SINDRI_HOME="$U" bash "$FIXTURE" request >/dev/null 2>&1; check "request needs text (exit 2)" "$?" "2"
+AW_SINDRI_HOME="$U" bash "$FIXTURE" request --item 'x;y' hi >/dev/null 2>&1; check "request refuses a bad item id (exit 2)" "$?" "2"
+AW_SINDRI_HOME="$WORK/elsewhere" bash "$FIXTURE" request hi >/dev/null 2>&1; check "every_verb_refuses_an_unguarded_home: request" "$?" "2"
+
+: > "$STUB_LOG"
+AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" decide DEC-0192a1 accept >/dev/null 2>&1; check "decide exits 0" "$?" "0"
+check "decide_runs_sindri_decide_as_the_owner" "$(cat "$STUB_LOG")" "decide DEC-0192a1 accept"
+AW_SINDRI_HOME="$U" bash "$FIXTURE" decide 'DEC-1;rm' accept >/dev/null 2>&1; check "decide refuses a bad id (exit 2)" "$?" "2"
+AW_SINDRI_HOME="$U" bash "$FIXTURE" decide DEC-1 >/dev/null 2>&1; check "decide needs a choice (exit 2)" "$?" "2"
+AW_SINDRI_HOME="$WORK/elsewhere" bash "$FIXTURE" decide DEC-1 accept >/dev/null 2>&1; check "every_verb_refuses_an_unguarded_home: decide" "$?" "2"
+
+: > "$STUB_LOG"
+AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" fail >/dev/null 2>&1; check "fail exits 0" "$?" "0"
+contains "fail_adds_a_service_the_build_cannot_run" "$(cat "$U/profile/profile.yaml")" "broken: { every: 5s }"
+contains "fail approves the changed profile" "$(tr '\n' ';' < "$STUB_LOG")" "profile approve abcdef0123456789;typed=approve profile abcdef;"
+: > "$STUB_LOG"
+AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" unfail >/dev/null 2>&1; check "unfail exits 0" "$?" "0"
+absent "unfail_removes_it" "$(cat "$U/profile/profile.yaml")" "broken"
+contains "unfail approves the profile again" "$(tr '\n' ';' < "$STUB_LOG")" "typed=approve profile abcdef;"
+AW_SINDRI_HOME="$WORK/elsewhere" bash "$FIXTURE" fail >/dev/null 2>&1; check "every_verb_refuses_an_unguarded_home: fail" "$?" "2"
+AW_SINDRI_HOME="$WORK/elsewhere" bash "$FIXTURE" unfail >/dev/null 2>&1; check "every_verb_refuses_an_unguarded_home: unfail" "$?" "2"
+
+: > "$STUB_LOG"
+PATH="$WORK/bin:$PATH" AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" items --large >/dev/null 2>&1; check "items --large exits 0" "$?" "0"
+check "items_large_adds_30_items_and_12_requests: 34 items" "$(grep -c '^item add' "$STUB_LOG")" "34"
+check "items --large files 12 requests" "$(grep -c '^curl .*sindri/requests' "$STUB_LOG")" "12"
+# F1: the fixture profile has no repos, so a request names none unless FIXTURE_REPO names one the profile has.
+absent "items --large without FIXTURE_REPO names no repo (the API refuses one the profile lacks)" "$(cat "$STUB_LOG")" "X-Sindri-Repo"
+: > "$STUB_LOG"
+PATH="$WORK/bin:$PATH" AW_SINDRI_HOME="$U" SINDRI="$STUB" FIXTURE_REPO=agentic-fixture bash "$FIXTURE" items --large >/dev/null 2>&1
+check "items --large with FIXTURE_REPO files its 12 requests in that repo only" "$(grep '^curl .*sindri/requests' "$STUB_LOG" | grep -c 'X-Sindri-Repo: agentic-fixture -d')" "12"
+absent "no request names a repo of its own invention" "$(cat "$STUB_LOG")" "demo"
+
+# A refused request (review run 1, test-4): a curl that behaves as curl does answers a 4xx problem body with exit 22 only when told
+# to fail on HTTP errors (--fail or --fail-with-body), else prints it and exits 0. The fixture must ask, or a refusal looks like success.
+mkdir -p "$WORK/refuse"
+cat > "$WORK/refuse/curl" <<'EOF'
+#!/usr/bin/env bash
+echo "curl $*" >> "$STUB_LOG"
+case "$*" in
+  *--fail-with-body*|*--fail\ *) echo '{"code":"SND-API-409","detail":"repo demo is not in the approved profile"}'; exit 22 ;;
+  *) echo '{"code":"SND-API-409","detail":"repo demo is not in the approved profile"}'; exit 0 ;;
+esac
+EOF
+chmod +x "$WORK/refuse/curl"
+: > "$STUB_LOG"
+out="$(PATH="$WORK/refuse:$PATH" AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" request --repo demo "Refused" 2>&1)"; rc=$?
+check "a refused request exits non-zero" "$([ "$rc" -ne 0 ] && echo yes || echo no)" "yes"
+contains "a refused request shows the problem detail" "$out" "repo demo is not in the approved profile"
+: > "$STUB_LOG"
+out="$(PATH="$WORK/refuse:$PATH" AW_SINDRI_HOME="$U" SINDRI="$STUB" FIXTURE_REPO=demo bash "$FIXTURE" items --large 2>&1)"; rc=$?
+check "items --large with every request refused exits non-zero" "$([ "$rc" -ne 0 ] && echo yes || echo no)" "yes"
+contains "items --large shows the problem detail" "$out" "repo demo is not in the approved profile"
+check "items --large stops at the first refused request" "$(grep -c '^curl .*sindri/requests' "$STUB_LOG")" "1"
+
+# --- U3' T20: the Workflows strip's instances (sindri workflow start / cancel as the owner) ---
+: > "$STUB_LOG"; echo 0 > "$STUB_LOG.n"
+AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" workflows >/dev/null 2>&1; check "workflows exits 0" "$?" "0"
+starts="$(grep '^workflow start' "$STUB_LOG")"
+check "workflows_starts_one_triage_and_two_work_instances_through_the_cli: three starts" "$(printf '%s\n' "$starts" | grep -c .)" "3"
+check "one triage" "$(printf '%s\n' "$starts" | grep -c 'workflow start workflow.dev-triage-three-state --item ITM-')" "1"
+check "two work" "$(printf '%s\n' "$starts" | grep -c 'workflow start workflow.dev-desk-round-trip --item ITM-')" "2"
+check "each start has an item of its own" "$(printf '%s\n' "$starts" | grep -o 'ITM-[A-Za-z0-9]*' | sort -u | wc -l | tr -d ' ')" "3"
+# F3: the recipes' required inputs go with the start: fact:item as JSON naming the item, fact:request as text.
+check "the triage start passes fact:item" "$(printf '%s\n' "$starts" | grep 'dev-triage-three-state' | grep -c -- '--fact fact:item=')" "1"
+check "each work start passes fact:request" "$(printf '%s\n' "$starts" | grep 'dev-desk-round-trip' | grep -c -- '--fact fact:request=')" "2"
+facts="$(grep '^fact ' "$STUB_LOG")"
+check "fact:item is JSON with the item's id" "$(printf '%s\n' "$facts" | grep '^fact fact:item ' | sed 's/^fact fact:item //' | jq -r '.id')" "ITM-01"
+check "the triage start passes fact:scope" "$(printf '%s\n' "$starts" | grep 'dev-triage-three-state' | grep -c -- '--fact fact:scope=')" "1"
+check "fact:scope is text" "$(printf '%s\n' "$facts" | grep -c '^fact fact:scope Fixture')" "1"
+check "fact:request is text" "$(printf '%s\n' "$facts" | grep -c '^fact fact:request Fixture')" "2"
+out="$(AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" workflows 2>&1)"
+contains "workflows prints what it started" "$out" "started workflow.dev-triage-three-state on ITM-"
+check "workflows prints a line for each start" "$(printf '%s\n' "$out" | grep -c '^started ')" "3"
+out="$(STUB_FAIL_START=1 AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" workflows 2>&1)"; rc=$?
+check "a refused start exits non-zero" "$([ "$rc" -ne 0 ] && echo yes || echo no)" "yes"
+contains "a refused start says which one and why" "$out" "workflow.dev-triage-three-state"
+contains "a refused start carries the CLI's refusal" "$out" "SND-CLI-003 refused"
+: > "$STUB_LOG"; echo 0 > "$STUB_LOG.n"
+AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" workflows --large >/dev/null 2>&1; check "workflows --large exits 0" "$?" "0"
+starts="$(grep '^workflow start' "$STUB_LOG")"
+check "workflows_large_starts_twelve_roots_across_three_recipes: twelve starts" "$(printf '%s\n' "$starts" | grep -c .)" "12"
+check "three recipes" "$(printf '%s\n' "$starts" | awk '{print $3}' | sort -u | wc -l | tr -d ' ')" "3"
+: > "$STUB_LOG"; echo 0 > "$STUB_LOG.n"
+AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" incident start >/dev/null 2>&1; check "incident start exits 0" "$?" "0"
+contains "incident_start_starts_an_incident_urgency_instance: the incident recipe" "$(grep '^workflow start' "$STUB_LOG")" "workflow start workflow.dev-incident-hold --item ITM-01"
+: > "$STUB_LOG"
+AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" incident stop >/dev/null 2>&1; check "incident stop exits 0" "$?" "0"
+check "incident_stop_cancels_it" "$(cat "$STUB_LOG")" "workflow cancel ITM-01"
+AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" incident stop >/dev/null 2>&1; check "incident stop with none started exits 2" "$?" "2"
+AW_SINDRI_HOME="$U" bash "$FIXTURE" incident sideways >/dev/null 2>&1; check "incident takes start or stop (exit 2)" "$?" "2"
+AW_SINDRI_HOME="$U" bash "$FIXTURE" workflows --big >/dev/null 2>&1; check "workflows takes only --large (exit 2)" "$?" "2"
+for v in "workflows" "workflows --large" "incident start" "incident stop"; do
+  # shellcheck disable=SC2086
+  AW_SINDRI_HOME="$WORK/elsewhere" bash "$FIXTURE" $v >/dev/null 2>&1; check "every_workflow_verb_refuses_an_unguarded_home: $v" "$?" "2"
+done
 
 exit "$fail"

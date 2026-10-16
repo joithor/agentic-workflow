@@ -19,10 +19,10 @@ internal sealed record RouteAnswer(HttpStatusCode Status, string Body)
             $$"""{"type":"about:blank","title":"{{code}}","status":{{(int)status}},"detail":"{{detail}}","traceId":"<trace>"}"""));
 
     /// <summary>True for a 2xx answer.</summary>
-    // A spec-shaped ProblemDetails golden, served with the status it names.
+    // A ProblemDetails golden (a spec-shaped stand-in where one is kept, else the API's own), served with the status it names.
     internal static RouteAnswer Problem(string slug, string scenario)
     {
-        var body = GoldenFiles.SpecShaped(slug, scenario);
+        var body = File.Exists(Path.Combine(GoldenFiles.Root, "SpecShaped", slug, scenario + ".json")) ? GoldenFiles.SpecShaped(slug, scenario) : GoldenFiles.Api(slug, scenario);
         var status = System.Text.Json.JsonDocument.Parse(body).RootElement.GetProperty("status").GetInt32();
         return new((HttpStatusCode)status, body);
     }
