@@ -206,7 +206,7 @@ public sealed class LegacyRecipeRowTests
         await using var r = new RegistryHarness();
         _ = await r.H.HoldLease();
         var node = RecipeDeclarationsTests.LegacyJson(LegacyStep());
-        _ = node.Remove("evals");
+        node["evals"] = new System.Text.Json.Nodes.JsonArray();
         var row = new RegisteredRecipe(RecipeId.From("workflow.step"), 1, Core.Workflow.Ids.RecipeHash.Of(CanonicalJson.Of(node)), node.ToJsonString(), Base: null, r.H.Clock.GetUtcNow());
         _ = await r.Recipes.Add(row, TestContext.Current.CancellationToken);
 

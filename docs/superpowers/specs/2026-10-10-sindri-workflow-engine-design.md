@@ -442,8 +442,8 @@ commands it made before P4c (a replay must match the history it recorded, so it 
 drops the text). That instance is not named: it has no `name` and its `subject` is the item itself, `kind: item`,
 `key` the item id, `label` the item's title, else the instance address, which is what the list row shows too (the
 detail and the list agree). It has no `inputs[]`, and its `detail` names `RCP-INPUT-001` or `-002` and the fix. A new
-start on such a recipe is refused (`SND-RECIPE-001`, before a pin-drift refusal: re-approving can't fix it), and so is
-approving it. `recipe list` marks the row `legacy-shape`, approved or not.
+start on such a recipe is refused (`SND-RECIPE-001`, before a pin-drift refusal: re-approving can't fix it), and so is a first
+approval of it (before the no-evals check). A row already approved can still be re-approved or woken, so an instance parked on it can resume. `recipe list` marks the row `legacy-shape`, approved or not.
 
 ## 4. Approval and invariant 13
 

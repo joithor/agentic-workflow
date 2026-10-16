@@ -181,25 +181,37 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
             return revoked.IsError ? revoked.Error : WorkflowErrors.RecipeRevoked.With($"{Name(recipe)} was revoked and can't be approved again; raise its version and approve that");
         }
 
-        if (await RevokedBase(recipe, cancellationToken).ConfigureAwait(false) is { } refused)
+        if (await RevokedBase(recipe, cancellationToken).ConfigureAwait(false) is { } revokedBase)
+        {
+            return revokedBase;
+        }
+
+        var parsed = recipe.Read(json);
+        if ((parsed.IsError ? parsed.Error : await Shape(recipe, parsed.Value, cancellationToken).ConfigureAwait(false)) is { } refused)
         {
             return refused;
         }
 
-        var parsed = recipe.Read(json);
-        if (parsed.IsError || parsed.Value.Evals.Count == 0)
-        {
-            return parsed.IsError ? parsed.Error : WorkflowErrors.RecipeEvalsFailing.With(
-                $"{Name(recipe)} declares no evals; approving needs them (fix: write one with sindri recipe eval --scaffold <file>, list it under evals:, register again)");
-        }
-
-        if (SubjectKinds.Legacy(parsed.Value) is { } legacy)
-        {
-            return WorkflowErrors.RecipeInvalid.With($"{Name(recipe)} was registered before input kinds ({legacy}) and can't be approved (fix: {SubjectKinds.LegacyFix})");
-        }
-
         var current = await approvals.Current(cancellationToken).ConfigureAwait(false);
         return current.IsError ? current.Error : (parsed.Value, current.Value);
+    }
+
+    /// <summary>SND-RECIPE-001 for a legacy-shape row not yet approved, SND-RECIPE-008 for a recipe without evals, else null.</summary>
+    private async ValueTask<Error?> Shape(RegisteredRecipe recipe, Recipe parsed, CancellationToken cancellationToken)
+    {
+        // The legacy check comes before the evals one, whose fix (write evals, register again) can't help a legacy row. Only a first approval is
+        // refused: a row already approved can still be re-approved (drift) or woken, so an instance parked on it isn't left with only cancel.
+        if (SubjectKinds.Legacy(parsed) is { } legacy)
+        {
+            var approved = await approvals.Latest(recipe.Id, recipe.Version, recipe.Hash, cancellationToken).ConfigureAwait(false);
+            return approved.IsError ? approved.Error
+                : approved.Value is null ? WorkflowErrors.RecipeInvalid.With($"{Name(recipe)} was registered before input kinds ({legacy}) and can't be approved (fix: {SubjectKinds.LegacyFix})")
+                : null;
+        }
+
+        return parsed.Evals.Count == 0
+            ? WorkflowErrors.RecipeEvalsFailing.With($"{Name(recipe)} declares no evals; approving needs them (fix: write one with sindri recipe eval --scaffold <file>, list it under evals:, register again)")
+            : null;
     }
 
     /// <summary>SND-RECIPE-005 when <paramref name="recipe"/> was generated from a base that has been revoked since it was registered.</summary>
