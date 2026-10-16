@@ -135,6 +135,57 @@ public sealed class OnyxUpCommandTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Up_interrupted_mid_pull_exits_130_with_the_resume_line_and_releases_the_lock()
+    {
+        using var source = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        _rig.Runtime.OnCall = operation =>
+        {
+            if (operation == "Pull")
+            {
+                source.Cancel();
+            }
+        };
+
+        var code = await Verbs(Human).Up(json: false, source.Token);
+
+        Assert.Equal(130, code);
+        Assert.Contains("interrupted; run `sindri onyx up` again to resume", _error.ToString(), StringComparison.Ordinal);
+        Assert.Equal(string.Empty, _out.ToString());
+        Assert.False(_rig.Workspace.LockHeld);
+        Assert.DoesNotContain("Up", _rig.Runtime.Calls, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Down_interrupted_exits_130_and_releases_the_lock()
+    {
+        _ = await Verbs(Human).Up(json: false, TestContext.Current.CancellationToken);
+        using var source = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        _rig.Runtime.OnCall = operation =>
+        {
+            if (operation == "Stop")
+            {
+                source.Cancel();
+            }
+        };
+
+        var code = await Verbs(Human).Down(json: true, source.Token);
+
+        Assert.Equal(130, code);
+        Assert.Contains("interrupted", _error.ToString(), StringComparison.Ordinal);
+        Assert.False(_rig.Workspace.LockHeld);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Ctrl_C_and_SIGTERM_are_listened_for_during_onyx_up_and_down_only()
+    {
+        Assert.True(Interrupt.Streams(["onyx", "up"]));
+        Assert.True(Interrupt.Streams(["onyx", "up", "--json"]));
+        Assert.True(Interrupt.Streams(["onyx", "down"]));
+        Assert.False(Interrupt.Streams(["onyx", "status"]));
+        Assert.False(Interrupt.Streams(["onyx"]));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Down_as_a_session_is_refused()
     {
         var code = await Verbs(new AgentSession("CLAUDECODE is set", Terminal: true, Prover: false)).Down(json: false, TestContext.Current.CancellationToken);

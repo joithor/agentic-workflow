@@ -108,6 +108,7 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
             return error;
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         for (var i = 0; i < Containers.Count; i++)
         {
             Containers[i] = Containers[i] with { State = "exited" };

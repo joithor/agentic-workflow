@@ -38,6 +38,7 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
         List<string> skipped = [];
         foreach (var step in steps)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var outcome = await RunStep(step, context, recorded, cancellationToken).ConfigureAwait(false);
             if (outcome.IsError)
             {

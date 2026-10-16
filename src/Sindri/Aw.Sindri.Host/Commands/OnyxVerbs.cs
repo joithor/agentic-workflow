@@ -25,7 +25,17 @@ internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentS
             return await Refused("up", "runs Docker and writes Onyx's files").ConfigureAwait(false);
         }
 
-        var answer = await services.GetRequiredService<IService<OnyxUpRequest, OnyxUpResponse>>().Handle(new OnyxUpRequest(), ct).ConfigureAwait(false);
+        Result<OnyxUpResponse> answer;
+        try
+        {
+            answer = await services.GetRequiredService<IService<OnyxUpRequest, OnyxUpResponse>>().Handle(new OnyxUpRequest(), ct).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // The runner killed the docker child, the services released the lock and removed their temporary files on the way out; each step is recorded only once done.
+            return await output.Interrupted("interrupted; run `sindri onyx up` again to resume").ConfigureAwait(false);
+        }
+
         if (answer.IsError)
         {
             return await Fail(output, answer.Error).ConfigureAwait(false);
@@ -44,7 +54,16 @@ internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentS
             return await Refused("down", "stops Docker containers").ConfigureAwait(false);
         }
 
-        var answer = await services.GetRequiredService<IService<OnyxDownRequest, OnyxDownResponse>>().Handle(new OnyxDownRequest(), ct).ConfigureAwait(false);
+        Result<OnyxDownResponse> answer;
+        try
+        {
+            answer = await services.GetRequiredService<IService<OnyxDownRequest, OnyxDownResponse>>().Handle(new OnyxDownRequest(), ct).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            return await output.Interrupted("interrupted; run `sindri onyx down` again to finish stopping Onyx").ConfigureAwait(false);
+        }
+
         if (answer.IsError)
         {
             return await Fail(output, answer.Error).ConfigureAwait(false);
