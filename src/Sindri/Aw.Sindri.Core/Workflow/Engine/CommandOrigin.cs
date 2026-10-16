@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Aw.Sindri.Core.Workflow.Engine.Decisions;
+namespace Aw.Sindri.Core.Workflow.Engine;
 
 /// <summary>Who an effect comes from (spec §5.7): the origin decides the exemption, not the kind.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<CommandOrigin>))]
