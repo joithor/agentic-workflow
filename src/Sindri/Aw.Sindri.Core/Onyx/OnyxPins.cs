@@ -5,7 +5,7 @@ namespace Aw.Sindri.Core.Onyx;
 
 /// <summary>
 /// The pins of Sindri-managed Onyx: the release, the commit its tag points to, the deployment files and images with
-/// their hashes, and what the box needs (context/onyx.lock; spec §6). scripts/onyx-lock.sh check is the same check in bash: the two are held to the same malformed fixtures listed in scripts/tests/onyx-lock.test.sh and OnyxPinsParseTests (both split fields on space and tab only), which says nothing about input outside them, and the C# parser reports each refusal as SND-ONYX-004.
+/// their hashes, and what the box needs (context/onyx.lock; spec §6). scripts/onyx-lock.sh check is the same check in bash: the two are held to the same malformed fixtures listed in scripts/tests/onyx-lock.test.sh and OnyxPinsParseTests (both split fields on space and tab only, allow a file path of [A-Za-z0-9._/-] only and refuse a line holding CR, VT or FF), which says nothing about input outside them, and the C# parser reports each refusal as SND-ONYX-004.
 /// </summary>
 /// <param name="Version">The release tag, vX.Y.Z.</param>
 /// <param name="Commit">The commit the tag points to, 40 lowercase hex digits.</param>
@@ -17,6 +17,7 @@ public sealed record OnyxPins(
     string Version, string Commit, IReadOnlyList<OnyxFilePin> Files, IReadOnlyList<OnyxImagePin> Images, long DiskBytes, long DockerMemoryBytes)
 {
     private static readonly char[] _separators = [' ', '\t'];
+    private static readonly char[] _controls = ['\r', '\v', '\f'];
     private static readonly string[] _platforms = ["linux/arm64", "linux/amd64"];
 
     /// <summary>Reads the text of a lock file.</summary>
@@ -36,6 +37,11 @@ public sealed record OnyxPins(
         foreach (var line in text.Split('\n'))
         {
             number++;
+            if (line.AsSpan().IndexOfAny(_controls) >= 0)
+            {
+                return SindriErrors.OnyxPinsMalformed.With($"the Onyx pins are malformed: line {number.ToString(CultureInfo.InvariantCulture)}: the line contains a CR, VT or FF control character");
+            }
+
             var fields = line.Split(_separators, StringSplitOptions.RemoveEmptyEntries);   // space and tab only, as awk splits: a CR or a no-break space stays in its field
             if (fields.Length == 0 || fields[0].StartsWith('#'))
             {
@@ -116,7 +122,7 @@ public sealed record OnyxPins(
         {
             if (fields.Length != 3 || !IsRelativePath(fields[1]) || !IsHex(fields[2], 64))
             {
-                return "file wants a relative path of non-empty segments (no .. or backslash) and a 64-digit lowercase hex sha256";
+                return "file wants a relative path of [A-Za-z0-9._/-] with non-empty segments (no ..) and a 64-digit lowercase hex sha256";
             }
 
             if (_files.Exists(f => f.Path == fields[1]))
@@ -165,7 +171,8 @@ public sealed record OnyxPins(
                 && fields[4].StartsWith("sha256:", StringComparison.Ordinal) && IsHex(fields[4][7..], 64);
 
         private static bool IsRelativePath(string path)
-            => !path.StartsWith('/') && !path.Contains('\\', StringComparison.Ordinal) && path.Split('/').All(static s => s.Length > 0 && s != "..");
+            => path.All(static c => char.IsAsciiLetterOrDigit(c) || c is '.' or '_' or '/' or '-')
+                && !path.StartsWith('/') && path.Split('/').All(static s => s.Length > 0 && s != "..");
 
         private static bool IsRepository(string name)
             => name.Length > 0 && (char.IsAsciiLetterLower(name[0]) || char.IsAsciiDigit(name[0]))

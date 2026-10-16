@@ -83,6 +83,17 @@ public sealed class OnyxPinsParseTests
     [InlineData("", "file /x " + Sha64)]
     [InlineData("", "file a\0b " + Sha64)]
     [InlineData("need disk-bytes", "need disk-bytes\u00a0100")]
+    [InlineData("", "file a[1] " + Sha64)]
+    [InlineData("", "file a?b " + Sha64)]
+    [InlineData("", "file a%2e " + Sha64)]
+    [InlineData("", "file a#b " + Sha64)]
+    [InlineData("", "file a:b " + Sha64)]
+    [InlineData("", "file a* " + Sha64)]
+    [InlineData("", "\r")]
+    [InlineData("", "# note\r")]
+    [InlineData("", "need disk-bytes 100\r # c")]
+    [InlineData("", "# a\vb")]
+    [InlineData("", "# a\fb")]
     public void Parse_refuses_the_malformed_fixtures_the_bash_check_refuses(string dropPrefix, string rows)
     {
         var kept = Fixture().Split('\n').Where(l => dropPrefix.Length == 0 || !l.StartsWith(dropPrefix, StringComparison.Ordinal));
