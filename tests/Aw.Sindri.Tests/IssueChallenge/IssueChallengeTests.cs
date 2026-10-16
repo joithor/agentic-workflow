@@ -57,7 +57,7 @@ public sealed class IssueChallengeTests
         var refused = await r.Issue("approve workflow.step 1", caller);
 
         Assert.Equal(SindriErrors.AuthRefused.Code, refused.Error.Code);
-        Assert.Equal("IssueChallenge is a human decision. Ask the human to run it in a terminal: sindri recipe approve <recipe>", refused.Error.Message);
+        Assert.Equal("IssueChallenge is a human decision. Ask the human to run it in a terminal: sindri recipe approve <recipe> or sindri recipe revoke <recipe>", refused.Error.Message);
     }
 
     [Fact, Trait("Lane", "unit")]

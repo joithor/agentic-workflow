@@ -345,7 +345,7 @@
       "terminal": true,
       "method": "POST",
       "route": "/sindri/workflow/challenges",
-      "cli": "sindri recipe approve <recipe>",
+      "cli": "sindri recipe approve <recipe> or sindri recipe revoke <recipe>",
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
