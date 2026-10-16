@@ -3,7 +3,7 @@ using System.Text;
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>The query string a verb sends: the pairs it has a value for, each value percent-encoded.</summary>
-internal static class QueryString
+internal static class UrlQuery
 {
     /// <summary>'?a=1&amp;b=2' for the pairs whose value isn't null, in order; empty when none is.</summary>
     /// <param name="pairs">The names and values; a null value leaves its pair out.</param>

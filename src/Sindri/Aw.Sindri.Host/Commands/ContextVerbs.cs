@@ -116,7 +116,7 @@ internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
                 }
             }
 
-            return global::Aw.Sindri.Host.Commands.QueryString.Of(pairs.Select(static p => (p.Key, (string?)p.Value)));
+            return UrlQuery.Of(pairs.Select(static p => (p.Key, (string?)p.Value)));
         }
     }
 }

@@ -1,5 +1,4 @@
 using Aw.Kernel.Ids;
-using Aw.Sindri.Core.Requests;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
@@ -7,6 +6,7 @@ using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Items.Vocabulary;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Requests;
 using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.StreamEvents;
