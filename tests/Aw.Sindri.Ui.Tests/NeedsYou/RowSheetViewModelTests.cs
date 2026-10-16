@@ -14,7 +14,7 @@ public sealed class RowSheetViewModelTests
         var sheet = new FailureSheetViewModel(NeedsYouRows.Failure(), "9h");
 
         Assert.Equal(
-            [("Service", "index"), ("Failed", "9h"), ("Why", "failure · index"), ("Run again", "Not in the app yet · sindri services run index"), ("Pause", "Not in the app yet · sindri services pause index")],
+            [("Service", "index"), ("Failed", "9h"), ("Why", "SND-SCHED-001: A background service failed"), ("Run again", "Not in the app yet · sindri services run index"), ("Pause", "Not in the app yet · sindri services pause index")],
             sheet.Details.Select(d => (d.Label, d.Value)));
     }
 
@@ -24,7 +24,7 @@ public sealed class RowSheetViewModelTests
         var sheet = new ProfileSheetViewModel(NeedsYouRows.Profile(new NeedsYouSubject("profile", "3f1c09")));
 
         Assert.Equal(
-            [("Changed", "profile · drifted"), ("Profile hash", "3f1c09"), ("Approve with", "sindri profile approve 3f1c09")],
+            [("Changed", "1 key path changed: services.scorer.every"), ("Profile hash", "3f1c09"), ("Approve with", "sindri profile approve 3f1c09")],
             sheet.Details.Select(d => (d.Label, d.Value)));
         Assert.Equal("sindri profile approve 3f1c09", sheet.ApproveCli);
     }

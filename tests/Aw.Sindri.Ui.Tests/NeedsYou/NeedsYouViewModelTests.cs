@@ -47,7 +47,7 @@ public sealed class NeedsYouViewModelTests
         var park = list.Rows[0];
         Assert.Equal(("PARKED", NeedsYouChipTone.Attn, "ITM-01JC8", "Retry storm in outbox dispatcher", "agentic-workflow"),
             (park.Chip.Word, park.Chip.Tone, park.ShownId, park.Title, park.Repo));
-        Assert.Equal(("checks failed twice with the same findings", "12m"), (park.Reason, park.Age));
+        Assert.Equal(("checks failed twice with the same findings", "12m"), (park.Label, park.Age));
         Assert.Equal(["12m", "2h", "9h"], [.. list.Rows.Select(r => r.Age)]);
     }
 

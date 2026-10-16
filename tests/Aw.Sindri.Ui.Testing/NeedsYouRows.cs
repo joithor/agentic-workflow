@@ -15,6 +15,7 @@ internal static class NeedsYouRows
         ShownId = "ITM-01JC8",
         Title = "Retry storm in outbox dispatcher",
         Repo = "agentic-workflow",
+        Label = "checks failed twice with the same findings",
         Reason = "checks failed twice with the same findings",
         Since = A.Noon.AddMinutes(-minutes),
         PrimaryAction = "GrantRounds",
@@ -31,7 +32,8 @@ internal static class NeedsYouRows
         ShownId = "REQ-01JD4",
         Title = "Re-scope: drop the iOS head from this item",
         Repo = "sindri-app",
-        Reason = "decision · re-scope",
+        Label = "decision · re-scope",
+        Reason = "re-scope request from session:cli",
         Since = A.Noon.AddMinutes(-26),
         PrimaryAction = "Decide",
         Actions =
@@ -49,7 +51,8 @@ internal static class NeedsYouRows
     {
         Chip = new NeedsYouChip("FAILED", NeedsYouChipTone.Fail),
         Title = "Nightly index build",
-        Reason = "failure · index",
+        Label = "failure · index",
+        Reason = "SND-SCHED-001: A background service failed",
         Since = A.Noon.AddHours(-9),
         PrimaryAction = "RunService",
         Actions =
@@ -66,7 +69,8 @@ internal static class NeedsYouRows
     {
         Chip = new NeedsYouChip("PROFILE", NeedsYouChipTone.Attn),
         Title = "Profile changed since approval · 2 keys",
-        Reason = "profile · drifted",
+        Label = "profile · drifted",
+        Reason = "1 key path changed: services.scorer.every",
         Since = A.Noon.AddHours(-2),
         PrimaryAction = "ApproveProfile",
         Actions = [new NeedsYouAction("ApproveProfile", "Approve", ActionReadiness.CliOnly, "sindri profile approve 3f1c09", RejectLike: false)],

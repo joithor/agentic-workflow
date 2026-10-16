@@ -44,7 +44,7 @@ public sealed class NeedsYouMapperTests
 
         Assert.Equal((NeedsYouUrgency.Pulse, new NeedsYouChip("DECISION", NeedsYouChipTone.Attn)), (row.Urgency, row.Chip));
         var served = _served[0]!;
-        Assert.Equal(((string)served["title"]!, (string)served["repo"]!, (string)served["label"]!), (row.Title, row.Repo, row.Reason));
+        Assert.Equal(((string)served["title"]!, (string)served["repo"]!, (string)served["label"]!), (row.Title, row.Repo, row.Label));
         Assert.Equal(((string?)served["item"], _dec, "Decide"), (row.ItemId, row.ShownId, row.PrimaryAction));
         Assert.Equal(new NeedsYouSubject("decision", _dec), row.Subject);
         Assert.Equal(((string)served["cli"]!, true, (string)served["notice"]!), (row.Cli, row.RecordedOnly, row.Notice));

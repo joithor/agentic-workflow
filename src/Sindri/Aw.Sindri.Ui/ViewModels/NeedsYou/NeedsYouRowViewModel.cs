@@ -46,7 +46,13 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
     public string Repo => Entry.Repo;
 
     /// <summary>The served label, the secondary line.</summary>
+    public string Label => Entry.Label;
+
+    /// <summary>The served reason sentence (the sheet shows it).</summary>
     public string Reason => Entry.Reason;
+
+    /// <summary>True when the sheet shows the reason as its own line: a row with no details of its own (a park, a decision) has nowhere else for it.</summary>
+    public bool HasReasonLine => Entry.Reason.Length > 0 && Details.Count == 0;
 
     /// <summary>The one served command to copy; empty for none.</summary>
     public string Cli => Entry.Cli;
@@ -138,7 +144,7 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
 
     private static readonly string[] _content =
     [
-        nameof(Chip), nameof(ShownId), nameof(Title), nameof(Repo), nameof(Reason), nameof(Cli), nameof(Age), nameof(AccessibleName),
+        nameof(Chip), nameof(ShownId), nameof(Title), nameof(Repo), nameof(Label), nameof(Reason), nameof(HasReasonLine), nameof(Cli), nameof(Age), nameof(AccessibleName),
         nameof(CanOpenItem), nameof(ItemLink), nameof(Notice), nameof(HasNotice),
     ];
 

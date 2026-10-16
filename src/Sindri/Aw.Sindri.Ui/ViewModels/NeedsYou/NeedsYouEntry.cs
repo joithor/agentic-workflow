@@ -22,7 +22,10 @@ internal sealed record NeedsYouEntry(string Id, NeedsYouUrgency Urgency)
     /// <summary>The repo tag; empty for none.</summary>
     internal string Repo { get; init; } = "";
 
-    /// <summary>The served label, the row's secondary line (the reason).</summary>
+    /// <summary>The served label, the row's secondary line ("failure · heartbeat").</summary>
+    internal string Label { get; init; } = "";
+
+    /// <summary>The served reason sentence (why a failure failed, what a profile row changed); the sheets show it.</summary>
     internal string Reason { get; init; } = "";
 
     /// <summary>When the row began waiting; the age is read from it. Default for unknown.</summary>

@@ -12,7 +12,8 @@
       <TextBlock Classes="mono subtle" Text="{Binding ShownId}" VerticalAlignment="Center" AutomationProperties.Name="{Binding ShownId}" />
     </StackPanel>
     <TextBlock x:Name="SheetRowTitle" Classes="body-strong" Text="{Binding Title}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Title}" />
-    <TextBlock Classes="body muted" Text="{Binding Reason}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Reason}" />
+    <TextBlock Classes="body muted" Text="{Binding Label}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Label}" />
+    <TextBlock x:Name="SheetRowReason" Classes="body" Text="{Binding Reason}" IsVisible="{Binding HasReasonLine}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Reason}" />
     <TextBlock Classes="caption subtle" Text="{Binding Notice}" IsVisible="{Binding HasNotice}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Notice}" />
     <ItemsControl x:Name="SheetRowDetails" ItemsSource="{Binding Details}" IsVisible="{Binding Details.Count}">
       <ItemsControl.ItemTemplate>
