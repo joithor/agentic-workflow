@@ -2,7 +2,7 @@
 # aw:session-id-report — SessionStart hook for Codex and Cursor (installed user-wide by scripts/install-meta.sh, through the
 # provider adapters). Reports the session's own id to the host that launched it, so lanes started together each record their
 # own id instead of guessing from file timing (launcher spec section 4):
-#   AW_META_TEAM + AW_META_LANE  ->  $AW_STATE_DIR/meta/lane-sessions/<lane>          (scripts/meta-lane.sh waits for it)
+#   AW_META_TEAM + AW_META_LANE  ->  ${AW_META_DIR:-$AW_STATE_DIR/meta}/lane-sessions/<lane>          (scripts/meta-lane.sh waits for it)
 #   AW_SINDRI_LAUNCH             ->  $AW_SINDRI_HOME/launches/<launchId>.session-id    (Sindri's launcher)
 # The key is a variable the host set on that one session, so two sessions started together can't swap ids. Outside a lane or a
 # Sindri launch it exits 0 at once, writing nothing. The id is written atomically and 0600. Reads the id from `session_id`

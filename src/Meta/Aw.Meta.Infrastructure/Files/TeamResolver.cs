@@ -41,13 +41,20 @@ internal static class TeamResolver
     internal static IReadOnlyList<string> Named(string metaRoot)
     {
         var directory = Path.Combine(metaRoot, Teams);
-        return Directory.Exists(directory)
-            ? [.. Directory.EnumerateDirectories(directory)
-                .Where(d => File.Exists(Path.Combine(d, ConfigFile)) && TeamLayout.IsValidName(Path.GetFileName(d)))
-                .Select(Path.GetFileName)
-                .OfType<string>()
-                .Order(StringComparer.Ordinal)]
-            : [];
+        try
+        {
+            return Directory.Exists(directory)
+                ? [.. Directory.EnumerateDirectories(directory)
+                    .Where(d => File.Exists(Path.Combine(d, ConfigFile)) && TeamLayout.IsValidName(Path.GetFileName(d)))
+                    .Select(Path.GetFileName)
+                    .OfType<string>()
+                    .Order(StringComparer.Ordinal)]
+                : [];
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
     }
 
     /// <summary>The team name the legacy flat config carries, or null when it can't be read.</summary>

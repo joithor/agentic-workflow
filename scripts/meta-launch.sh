@@ -99,6 +99,9 @@ init_launcher() {
 if [ "$init" = 1 ]; then init_launcher; exit $?; fi
 
 command -v tmux > /dev/null || { echo "meta-launch: tmux is not installed" >&2; exit 1; }
+if [ -n "${AW_META_CONFIG:-}" ] && [ -z "$team_sel" ]; then   # an explicit config names its team: the state directory follows it
+  team_sel="$(jq -r 'if (.team | type) == "string" then .team else empty end' "$AW_META_CONFIG" 2> /dev/null || true)"
+fi
 meta_resolve "$state_dir" "$team_sel" || exit 2
 config="${AW_META_CONFIG:-$META_CONFIG}"
 meta_dir="$META_DIR"

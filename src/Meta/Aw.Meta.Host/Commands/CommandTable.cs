@@ -61,6 +61,12 @@ internal static class CommandTable
     // The team checks before a command runs: an unusable --team name is a usage error; several teams with none selected refuses (a hook passes).
     private static int? TeamGate(CommandEntry entry, TeamLayout layout, ConsoleIo io)
     {
+        // A hook runs for every session, so a bad name or no way to tell the team lets it through, as with no team set up.
+        if (_hooks.Contains(entry.Name) && (layout.Problem is not null || layout.Ambiguous.Count > 0))
+        {
+            return CommandOutput.Ok;
+        }
+
         if (layout.Problem is { } bad)
         {
             return CommandOutput.Usage(io, bad, entry.Spec.Usage);
@@ -69,11 +75,6 @@ internal static class CommandTable
         if (layout.Ambiguous.Count == 0 || _teamFree.Contains(entry.Name))
         {
             return null;
-        }
-
-        if (_hooks.Contains(entry.Name))
-        {
-            return CommandOutput.Ok;
         }
 
         io.Err.WriteLine($"{MetaErrors.TeamAmbiguous.Code}: {Ambiguity(layout)}");

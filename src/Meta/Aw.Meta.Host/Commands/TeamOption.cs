@@ -27,8 +27,15 @@ internal static class TeamOption
             return (args, environment, "--team needs one non-empty value");
         }
 
+        if (Array.IndexOf(args, Name, at + 1) >= 0)
+        {
+            return (args, environment, "--team may be given once");
+        }
+
+        // team-init keeps its own --team (it names the team it writes), so it gets the option back after the global one is taken out.
         var team = args[at + 1];
-        var rest = args[0] == "team-init" ? args : [.. args[..at], .. args[(at + 2)..]];
+        string[] stripped = [.. args[..at], .. args[(at + 2)..]];
+        var rest = stripped.FirstOrDefault() == "team-init" ? [.. stripped, Name, team] : stripped;
         return (rest, name => name == "AW_META_TEAM" ? team : environment(name), string.Empty);
     }
 }

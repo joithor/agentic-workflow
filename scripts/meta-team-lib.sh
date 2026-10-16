@@ -14,13 +14,17 @@ meta_resolve() {
     case "$team" in *[!a-z0-9-]*|-*) echo "meta: bad team name '$team' (lowercase letters, digits, dashes)" >&2; return 2 ;; esac
     named="$root/teams/$team"
     if [ ! -d "$named" ] && [ -f "$root/team.json" ]; then
-      legacy_team="$(jq -r '.team // empty' "$root/team.json" 2> /dev/null || true)"
+      legacy_team="$(jq -r 'if (.team | type) == "string" then .team else empty end' "$root/team.json" 2> /dev/null || true)"
       [ "$legacy_team" = "$team" ] && return 0
     fi
     META_DIR="$named"; META_CONFIG="$named/team.json"; return 0
   fi
   [ -f "$root/team.json" ] && return 0
-  for d in "$root"/teams/*/; do [ -f "${d}team.json" ] && found+=("$(basename "$d")"); done
+  # only valid names count, in byte order, as TeamResolver.Named does
+  for d in $(LC_ALL=C ls -1 "$root/teams" 2> /dev/null); do
+    case "$d" in *[!a-z0-9-]*|-*|"") continue ;; esac
+    [ -f "$root/teams/$d/team.json" ] && found+=("$d")
+  done
   case "${#found[@]}" in
     0) return 0 ;;
     1) META_DIR="$root/teams/${found[0]}"; META_CONFIG="$META_DIR/team.json"; return 0 ;;

@@ -48,7 +48,9 @@ it prints what you owe and the command that settles it. Settle it, don't argue w
    writes `$AW_STATE_DIR/meta/teams/<name>/team.json` (the team's own state directory: `meta.db`, `gates/`, `lane-sessions/`,
    `log.md`; another team is never touched). Then edit its `gate.scopes` (the merge gate, step by step), `mergeOrder`,
    `knownFlakes` and `prompts` (a directory of `<lane>.md` kickoff prompts). Example:
-   `$HOME/.agentic-workflow/toolkit/skills/meta/examples/agentic-workflow.team.json`.
+   `$HOME/.agentic-workflow/toolkit/skills/meta/examples/agentic-workflow.team.json` (to use it, copy it to
+   `$AW_STATE_DIR/meta/teams/<team>/team.json`; the directory name must equal the file's `team`, since selection uses the
+   directory and the session and tmux names use the file).
 2. `aw-meta-launch` opens one Warp window with a pane per lane, each attached to tmux session `<team>-<lane>` running
    that lane's Claude session, named `<team>-<lane>` so its name never changes. Rerun it after a crash: it recreates
    the dead tmux sessions, restarts a lane whose Claude exited, and resumes each lane by its session id. From the

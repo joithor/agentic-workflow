@@ -38,44 +38,58 @@ internal sealed class FileTeamCatalog(TeamLayout layout, ISessionDirectory sessi
         if (File.Exists(_legacyConfig))
         {
             var name = TeamResolver.LegacyTeam(_legacyConfig) ?? "(unnamed)";
-            if (teams.TrueForAll(t => t.Name != name))
-            {
-                teams.Add(await Summarize(new TeamSource(name, "legacy", layout.MetaRoot, layout.Legacy), running, cancellationToken).ConfigureAwait(false));
-            }
+            teams.Add(await Summarize(new TeamSource(name, "legacy", layout.MetaRoot, layout.Legacy), running, cancellationToken).ConfigureAwait(false));
         }
 
-        return teams.OrderBy(t => t.Name, StringComparer.Ordinal).ToList();
+        return teams.OrderBy(t => t.Name, StringComparer.Ordinal).ThenBy(t => t.Layout, StringComparer.Ordinal).ToList();
     }
 
-    public ValueTask<Result<TeamMigration>> Migrate(bool dryRun, CancellationToken cancellationToken)
+    public async ValueTask<Result<TeamMigration>> Migrate(bool dryRun, CancellationToken cancellationToken)
+    {
+        var plan = Plan(dryRun);
+        if (plan.IsError || dryRun)
+        {
+            return plan;
+        }
+
+        // The hooks write to meta.db all the time: a team whose meta session still runs is not moved.
+        var live = await sessions.Live(cancellationToken).ConfigureAwait(false);
+        var role = await Role(layout.MetaRoot, cancellationToken).ConfigureAwait(false);
+        return role is not null && live.IsSuccess && live.Value.Any(s => s.Session == role.Session || (role.Name.Length > 0 && s.Name == role.Name))
+            ? MetaErrors.TeamMigrationRefused.With($"the meta session {(role.Name.Length > 0 ? role.Name : role.Session.Value)} is running; stop the team's sessions first")
+            : Move(plan.Value);
+    }
+
+    private Result<TeamMigration> Plan(bool dryRun)
     {
         if (!File.Exists(_legacyConfig))
         {
-            return ValueTask.FromResult<Result<TeamMigration>>(MetaErrors.NoTeamConfig.With($"no legacy team config at {_legacyConfig}; nothing to migrate"));
+            return MetaErrors.NoTeamConfig.With($"no legacy team config at {_legacyConfig}; nothing to migrate");
         }
 
         var name = TeamResolver.LegacyTeam(_legacyConfig);
         if (name is null || !TeamLayout.IsValidName(name))
         {
-            return ValueTask.FromResult<Result<TeamMigration>>(MetaErrors.TeamMigrationRefused.With($"{_legacyConfig} has no team name usable as a directory (lowercase letters, digits and '-')"));
+            return MetaErrors.TeamMigrationRefused.With($"{_legacyConfig} has no team name usable as a directory (lowercase letters, digits and '-')");
         }
 
         var target = Path.Combine(_teamsDirectory, name);
         if (Directory.Exists(target) || File.Exists(target))
         {
-            return ValueTask.FromResult<Result<TeamMigration>>(MetaErrors.TeamMigrationRefused.With($"{target} already exists; move or remove it first"));
+            return MetaErrors.TeamMigrationRefused.With($"{target} already exists; move or remove it first");
         }
 
         var entries = Directory.EnumerateFileSystemEntries(layout.MetaRoot).Select(Path.GetFileName).OfType<string>().Order(StringComparer.Ordinal).ToList();
         var moved = entries.Where(e => e is not ("teams" or GatesDirectory)).ToList();
         var left = entries.Where(e => e == GatesDirectory).Select(e => e + " (gate trees are registered with git by absolute path; sweep them with worktree-sweep, they are throwaway)").ToList();
-        var plan = new TeamMigration(name, layout.MetaRoot, target, moved, left, dryRun);
-        return ValueTask.FromResult(dryRun ? plan : Move(plan));
+        return new TeamMigration(name, layout.MetaRoot, target, moved, left, dryRun);
     }
 
+    // Moves the entries one by one; on a failure puts back what moved (reporting anything it cannot restore) and removes the empty target.
     private static Result<TeamMigration> Move(TeamMigration plan)
     {
         var done = new List<string>();
+        var teamsExisted = Directory.Exists(Path.GetDirectoryName(plan.To));
         try
         {
             _ = Directory.CreateDirectory(plan.To);
@@ -89,12 +103,49 @@ internal sealed class FileTeamCatalog(TeamLayout layout, ISessionDirectory sessi
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            foreach (var entry in done)
+            var stuck = RestoreAll(plan, done);
+            TryDeleteEmpty(plan.To);
+            if (!teamsExisted)
+            {
+                TryDeleteEmpty(Path.GetDirectoryName(plan.To));
+            }
+
+            return MetaErrors.TeamMigrationRefused.With(
+                $"moving into {plan.To} failed ({exception.Message}); "
+                + (stuck.Count == 0 ? "the entries already moved were put back" : $"could not put back: {string.Join(", ", stuck)} (they are in {plan.To})"));
+        }
+    }
+
+    private static List<string> RestoreAll(TeamMigration plan, List<string> done)
+    {
+        var stuck = new List<string>();
+        foreach (var entry in done)
+        {
+            try
             {
                 Relocate(Path.Combine(plan.To, entry), Path.Combine(plan.From, entry));
             }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                stuck.Add(entry);
+            }
+        }
 
-            return MetaErrors.TeamMigrationRefused.With($"moving into {plan.To} failed ({exception.Message}); the entries already moved were put back");
+        return stuck;
+    }
+
+    private static void TryDeleteEmpty(string? directory)
+    {
+        try
+        {
+            if (directory is not null && Directory.Exists(directory) && !Directory.EnumerateFileSystemEntries(directory).Any())
+            {
+                Directory.Delete(directory);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // Leaving an empty directory behind is harmless to the files; the next migrate reports it.
         }
     }
 

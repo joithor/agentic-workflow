@@ -39,6 +39,16 @@ public sealed class TeamResolverTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_named_team_beats_a_legacy_config_of_the_same_name_only_when_selected()
+    {
+        Legacy("vz");
+        Named("vz");
+
+        Assert.Equal(Meta, TeamResolver.Resolve(Meta, selected: null).StateDirectory);
+        Assert.Equal(Path.Combine(Meta, "teams", "vz"), TeamResolver.Resolve(Meta, "vz").StateDirectory);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void One_named_team_is_found_and_several_are_ambiguous_until_one_is_selected()
     {
         Named("beta");
@@ -74,7 +84,9 @@ public sealed class TeamResolverTests : IDisposable
 
         Assert.Equal(["inbox", "--json"], args);
         Assert.Equal(("beta", string.Empty), (env("AW_META_TEAM"), problem));
-        Assert.Equal(["team-init", "--team", "x", "--repo", "/r"], initArgs);
+        Assert.Equal(["team-init", "--repo", "/r", "--team", "x"], initArgs);
+        Assert.Equal(["team-init", "--repo", "/r", "--team", "y"], TeamOption.Apply(["--team", "y", "team-init", "--repo", "/r"], _ => null).Args);
+        Assert.NotEmpty(TeamOption.Apply(["--team", "a", "inbox", "--team", "b"], _ => null).Problem);
         Assert.Equal("x", initEnv("AW_META_TEAM"));
         Assert.NotEmpty(missing);
     }

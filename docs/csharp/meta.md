@@ -132,7 +132,7 @@ With `worktrees.enabled: false` the two automatic triggers only report ("would r
 3. Nothing unpushed: every commit of its HEAD is reachable from a remote branch (`git rev-list HEAD --not --remotes` is empty).
 4. Idle: no live process has its working directory or an open file inside it (`/proc/<pid>/cwd` and `fd` on Linux, `lsof` where there is no `/proc`). This covers a lane or builder still sitting in it. A scan that cannot run fails the sweep: nothing is removed.
 5. Not protected: not the main worktree, not the team's shared checkout (`repo`), not locked (`git worktree lock`), its directory not missing.
-6. Under an allowed root: `worktrees.roots` (default `~/repos/aw-wt`, `<repo>/.claude/worktrees`), plus the gate directory `$AW_STATE_DIR/meta/gates` always. A path outside every root, a root itself, or a sibling that shares a root's name prefix is kept.
+6. Under an allowed root: `worktrees.roots` (default `~/repos/aw-wt`, `<repo>/.claude/worktrees`), plus the selected team's gate directory (`$AW_STATE_DIR/meta/teams/<team>/gates`, or the flat `meta/gates` on the legacy layout) always. After `team-migrate` the old flat `meta/gates` is no longer a root: sweep it first (`worktree-sweep` with the legacy layout) or remove those throwaway gate trees by hand. A path outside every root, a root itself, or a sibling that shares a root's name prefix is kept.
 
 7. Not changed since the last sweep: the directory, or any file in its top two levels (build output and `.git` left out), has a modification time later than the start of the previous removing sweep (`worktrees.sweep-start` in aw-meta state; a sweep records its start after it removes, and `--dry-run` and `worktree-list` record nothing). This is a change trigger, not an age timer: it protects only trees that changed after the previous sweep, so a tree untouched since then is judged by rules 1 to 6. With no recorded sweep it has nothing to compare with. A tree whose files can't be read is kept. Gate trees are exempt (they are aw-meta's own and rule 1 for them already needs an ended pull request).
 
@@ -246,7 +246,7 @@ and `AW_META_CLAUDE_ARGS` is inserted after `{bin}`; both stay for tests and are
 `"override": true` entry for `claude-code`. `AW_WARP_LAUNCH_DIR` is where the `warp` viewer writes its YAML (the file has no
 such field). `AW_LAUNCHER_CONFIG` is passed on to every lane's tmux session.
 
-**Lane variables.** Every lane's environment has `AW_SINDRI_CHILD=1`, `AW_META_TEAM` and `AW_META_LANE`. `meta-lane.sh`
+**Lane variables.** Every lane's environment has `AW_SINDRI_CHILD=1`, `AW_META_TEAM`, `AW_META_LANE` and `AW_META_DIR` (the team's state directory, which the lane hooks write `lane-sessions/` under). `meta-lane.sh`
 exports them (L-12, SL-1 section 10.2) instead of passing `-e` to `new-session`, so tmux's global environment, the Warp
 layout and every tmux command stay as they are with no file, `-L <team>` aside (the owner's condition). The effect is the
 same: a `sindri` run inside the lane is a session caller, whatever the agent. A shell left in the pane after the agent
