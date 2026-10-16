@@ -147,6 +147,7 @@ STUB="$TMPROOT/stub"; mkdir -p "$STUB/bin"
 cat >"$STUB/bin/curl" <<'EOS'
 #!/usr/bin/env bash
 out=""; url=""
+echo "$*" >>"$STUB/curl.log"
 while [ $# -gt 0 ]; do case "$1" in -o) out="$2"; shift 2 ;; -*) shift ;; *) url="$1"; shift ;; esac; done
 [ -f "$STUB/$(basename "$url")" ] || exit 22
 cp "$STUB/$(basename "$url")" "$out"
@@ -157,7 +158,14 @@ cat >"$STUB/bin/docker" <<'EOS'
 cat "$STUB/index.json"
 EOS
 chmod +x "$STUB/bin/curl" "$STUB/bin/docker"
-printf 'services:\n  a:\n    image: ${A_IMAGE:-o/app:${IMAGE_TAG:-latest}}\n  b:\n    image: ${REG:-docker.io}/library/redis:7.4-alpine@sha256:abc\n  # image: unused/thing:1\n' >"$STUB/docker-compose.yml"
+cat >"$STUB/docker-compose.yml" <<'EOS'
+services:
+  a:
+    image: '${A_IMAGE:-o/app:${IMAGE_TAG:-latest}}'
+  b:
+    image: "${REG:-docker.io}/library/redis:7.4-alpine@sha256:abc"
+  # image: unused/thing:1
+EOS
 DEV="sha256:1111111111111111111111111111111111111111111111111111111111111111"
 ARM="sha256:2222222222222222222222222222222222222222222222222222222222222222"
 cat >"$STUB/index.json" <<EOS
@@ -173,7 +181,9 @@ vlock() {   # <name> [<image digest for arm64>] — a lock the stubs satisfy
 vrun() { set +e; OUT="$(STUB="$STUB" PATH="$STUB/bin:$PATH" bash "$SCRIPT" verify "$@" 2>&1)"; RC=$?; set -e; }
 
 vrun --file "$(vlock vgood)"
-expect "verify passes when the files, images and compose all match" 0 'verify: ok \(1 files, 4 image rows, 2 compose image lines\)'
+expect "verify passes when the files, images and compose all match (the compose image lines are single- and double-quoted)" 0 'verify: ok \(1 files, 4 image rows, 2 compose image lines\)'
+
+grep -q -- "--proto =https --proto-redir =https" "$STUB/curl.log" && ok "verify downloads over https only (--proto and --proto-redir)" || fail "verify's curl lacks --proto =https --proto-redir =https"
 
 vrun --file "$(vlock vbadimage "$DEV")"
 expect "verify reports an image digest that differs" 1 'ONYX-LOCK-011 docker.io/o/app:v4.9.0 linux/arm64: expected sha256:1111.*got sha256:2222'

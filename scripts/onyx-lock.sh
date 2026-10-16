@@ -141,7 +141,7 @@ do_verify() {
 
   local _kind path want got
   while read -r _kind path want; do
-    curl -fsSL --retry 2 --max-time 60 -o "$tmp/download" "$base/$path" \
+    curl -fsSL --proto '=https' --proto-redir '=https' --retry 2 --max-time 60 -o "$tmp/download" "$base/$path" \
       || { echo "onyx-lock verify: cannot download $base/$path" >&2; exit 2; }
     got="$(sha256_of "$tmp/download")"
     files=$((files + 1))
@@ -170,6 +170,7 @@ do_verify() {
   if [ -r "$tmp/compose" ]; then
     local value ref first
     while IFS= read -r value; do
+      value="${value#[\"\']}"; value="${value%[\"\']}"   # YAML allows the value quoted
       ref="$(resolve "$value")"
       refs=$((refs + 1))
       if [[ "$ref" == *'${'* ]]; then
