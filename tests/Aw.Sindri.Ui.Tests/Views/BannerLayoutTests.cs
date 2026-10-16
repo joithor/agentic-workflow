@@ -99,10 +99,7 @@ public sealed class BannerLayoutTests : IDisposable
     private static void Frame(Window window, string name)
     {
         Settle(window);
-        var frame = window.CaptureRenderedFrame();
-        var dir = Path.Combine(AppContext.BaseDirectory, "frames");
-        _ = Directory.CreateDirectory(dir);
-        frame?.Save(Path.Combine(dir, "shell-" + name + ".png"), new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+        FrameFile.Save(window, "shell-" + name);
     }
 
     [Theory]

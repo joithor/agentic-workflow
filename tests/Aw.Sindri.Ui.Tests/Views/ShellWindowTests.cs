@@ -109,10 +109,7 @@ public sealed class ShellWindowTests : IDisposable
     private static void Frame(Window window, string name)
     {
         Settle(window);
-        var frame = window.CaptureRenderedFrame();
-        var dir = Path.Combine(AppContext.BaseDirectory, "frames");
-        _ = Directory.CreateDirectory(dir);
-        frame?.Save(Path.Combine(dir, "shell-" + name + ".png"), new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+        FrameFile.Save(window, "shell-" + name);
     }
 
     // Every visible control in the window carries an accessible name (§11.2). A live region's text is its name (it carries

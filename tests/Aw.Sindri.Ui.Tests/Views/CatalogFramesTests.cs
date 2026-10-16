@@ -88,9 +88,7 @@ public sealed class CatalogFramesTests : IDisposable
     private static void Frame(Window window, string name)
     {
         Settle(window);
-        var dir = Path.Combine(AppContext.BaseDirectory, "frames");
-        _ = Directory.CreateDirectory(dir);
-        window.CaptureRenderedFrame()?.Save(Path.Combine(dir, "u1-" + name + ".png"), new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+        FrameFile.Save(window, "u1-" + name);
     }
 
     // §4.1 Stalled: the views' own sentence, the ✕ glyph in Error, and Rebuild views (ready) under the top bar.
