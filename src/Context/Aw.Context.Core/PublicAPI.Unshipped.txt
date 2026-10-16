@@ -1601,10 +1601,11 @@ Aw.Context.Core.Map.MapPromoted.Retained.init -> void
 Aw.Context.Core.Map.MapPromoted.Version.get -> Aw.Context.Core.Map.MapVersion!
 Aw.Context.Core.Map.MapPromoted.Version.init -> void
 Aw.Context.Core.Map.MapReader
-Aw.Context.Core.Map.MapReader.MapReader(Aw.Context.Core.Map.IGraphStore! store) -> void
+Aw.Context.Core.Map.MapReader.MapReader(Aw.Context.Core.Map.IGraphStore! store, Aw.Context.Core.Linking.IIntentStore! intents) -> void
 Aw.Context.Core.Map.MapReader.Open(Aw.Context.Core.Engine.ContextScope! scope, Aw.Context.Core.Trust.IScrubberFactory! scrubbers, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<(Aw.Context.Core.Map.VisibleMap! Map, Aw.Context.Core.Map.MapText! Text)>!>
 Aw.Context.Core.Map.MapReader.Read(Aw.Context.Core.Engine.ContextScope! scope, bool draft, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.VisibleMap!>!>
 Aw.Context.Core.Map.MapReader.ReadView(Aw.Context.Core.Engine.ContextScope! scope, bool draft, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.VisibleMap!>!>
+Aw.Context.Core.Map.MapReader.ReadWithoutIntent(Aw.Context.Core.Engine.ContextScope! scope, bool draft, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.VisibleMap!>!>
 Aw.Context.Core.Map.MapRetention
 Aw.Context.Core.Map.MapSnapshot
 Aw.Context.Core.Map.MapSnapshot.<Clone>$() -> Aw.Context.Core.Map.MapSnapshot!
@@ -1690,6 +1691,8 @@ Aw.Context.Core.Map.PurgeReport.Versions.get -> int
 Aw.Context.Core.Map.PurgeReport.Versions.init -> void
 Aw.Context.Core.Map.VisibleMap
 Aw.Context.Core.Map.VisibleMap.<Clone>$() -> Aw.Context.Core.Map.VisibleMap!
+Aw.Context.Core.Map.VisibleMap.Conflicts.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.DecisionConflict!>!
+Aw.Context.Core.Map.VisibleMap.Conflicts.init -> void
 Aw.Context.Core.Map.VisibleMap.Deconstruct(out Aw.Context.Core.Map.MapSnapshot! Snapshot, out Aw.Context.Core.Graph.GraphSnapshot! Graph) -> void
 Aw.Context.Core.Map.VisibleMap.Equals(Aw.Context.Core.Map.VisibleMap? other) -> bool
 Aw.Context.Core.Map.VisibleMap.Graph.get -> Aw.Context.Core.Graph.GraphSnapshot!
@@ -3479,7 +3482,7 @@ static Aw.Context.Core.Lenses.LensRecord.operator ==(Aw.Context.Core.Lenses.Lens
 static Aw.Context.Core.Lenses.LensSymbols.Unavailable.get -> Aw.Context.Core.Lenses.LensSymbols!
 static Aw.Context.Core.Lenses.LensSymbols.operator !=(Aw.Context.Core.Lenses.LensSymbols? left, Aw.Context.Core.Lenses.LensSymbols? right) -> bool
 static Aw.Context.Core.Lenses.LensSymbols.operator ==(Aw.Context.Core.Lenses.LensSymbols? left, Aw.Context.Core.Lenses.LensSymbols? right) -> bool
-static Aw.Context.Core.Lenses.LensesBuilder.Build(Aw.Context.Core.Lenses.LensBasis! basis, Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Graph.NodeKey anchor, int depth) -> Aw.Kernel.Result<Aw.Context.Core.Lenses.LensesView!>!
+static Aw.Context.Core.Lenses.LensesBuilder.Build(Aw.Context.Core.Lenses.LensBasis! basis, Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Graph.NodeKey anchor, int depth, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.DecisionConflict!>? checkedPairs = null) -> Aw.Kernel.Result<Aw.Context.Core.Lenses.LensesView!>!
 static Aw.Context.Core.Lenses.LensesView.operator !=(Aw.Context.Core.Lenses.LensesView? left, Aw.Context.Core.Lenses.LensesView? right) -> bool
 static Aw.Context.Core.Lenses.LensesView.operator ==(Aw.Context.Core.Lenses.LensesView? left, Aw.Context.Core.Lenses.LensesView? right) -> bool
 static Aw.Context.Core.Lenses.ProductBand.operator !=(Aw.Context.Core.Lenses.ProductBand? left, Aw.Context.Core.Lenses.ProductBand? right) -> bool

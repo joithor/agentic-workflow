@@ -19,26 +19,27 @@ namespace Aw.Context.Tests.SyncSources;
 [Trait("Lane", "integration")]
 public sealed class ExtractDecisionsTests
 {
-    private const string R103 = "linear:issue/0e5a1b00-0000-4000-8000-000000000103";
-    private const string R104 = "linear:issue/0e5a1b00-0000-4000-8000-000000000104";
-    private const string R105 = "linear:issue/0e5a1b00-0000-4000-8000-000000000105";
-    private const string Toggle = "surface:command/toggle-orientation";
-    private const string Resize = "feature:layout.pane-resize";
-    private const string Q103 = "toggling orientation keeps the focused pane first";
-    private const string Q104 = "toggle-orientation always resets focus to the first pane";
-    private const string QOld = "the minimum pane width is 10 columns";
-    private const string QNew = "the minimum pane width is 20 columns";
+    internal const string R103 = "linear:issue/0e5a1b00-0000-4000-8000-000000000103";
+    internal const string R104 = "linear:issue/0e5a1b00-0000-4000-8000-000000000104";
+    internal const string R105 = "linear:issue/0e5a1b00-0000-4000-8000-000000000105";
+    internal const string Toggle = "surface:command/toggle-orientation";
+    internal const string Resize = "feature:layout.pane-resize";
+    internal const string Q103 = "toggling orientation keeps the focused pane first";
+    internal const string Q104 = "toggle-orientation always resets focus to the first pane";
+    internal const string QOld = "the minimum pane width is 10 columns";
+    internal const string QNew = "the minimum pane width is 20 columns";
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    private static ContextScope Scope(bool labeling = true, int? perSync = null)
+    internal static ContextScope Scope(bool labeling = true, int? perSync = null)
     {
         var cap = perSync is { } n ? ",\"maxTokensPerSync\":" + n.ToString(CultureInfo.InvariantCulture) : string.Empty;
         var section = labeling ? ",\"labeling\":{\"enabled\":true" + cap + "}" : string.Empty;
         return MapWorld.HumanWith("{\"sources\":{\"linear\":{\"teams\":[\"SPL\"]}}" + section + "}");
     }
 
-    private static string Plant(string json) => json
+    internal static string Plant(string json) => json
+        .Replace("Implemented as setOrientation in SplitPane.ts", "Implemented as setOrientation in SplitPane.ts (layout.split-pane.orientation)", StringComparison.Ordinal)
         .Replace("Resize step defaults to 2 columns", "Resize step (layout.pane-resize) defaults to 2 columns", StringComparison.Ordinal)
         .Replace("Restoring a tab brings back orientation and focus", "Restoring a tab brings back orientation and focus; " + Q104, StringComparison.Ordinal);
 
@@ -56,7 +57,7 @@ public sealed class ExtractDecisionsTests
         _ => "{\"decisions\":[]}",
     };
 
-    private sealed class Rig : IAsyncDisposable
+    internal sealed class Rig : IAsyncDisposable
     {
         private Rig(FakeOnyxServer onyx, OnyxSourceHarness harness, MapWorld world)
         {

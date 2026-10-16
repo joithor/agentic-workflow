@@ -14,11 +14,13 @@ public static class LensesBuilder
     /// <param name="graph">The graph a caller may see: overrides applied, a session's scope already cut.</param>
     /// <param name="anchor">The anchor (a key or an alias).</param>
     /// <param name="depth">How far the neighbors reach and the cascade runs, 0 to 4.</param>
+    /// <param name="checkedPairs">The model-checked decision pairs; a 'contradicts' pair shows as a conflict (intent against intent).</param>
     /// <returns>The view, or SND-CONTEXT-003 when the graph has no such node.</returns>
-    public static Result<LensesView> Build(LensBasis basis, GraphSnapshot graph, NodeKey anchor, int depth)
+    public static Result<LensesView> Build(LensBasis basis, GraphSnapshot graph, NodeKey anchor, int depth, IReadOnlyList<Linking.DecisionConflict>? checkedPairs = null)
     {
         ArgumentNullException.ThrowIfNull(basis);
         ArgumentNullException.ThrowIfNull(graph);
+        _ = checkedPairs;   // S-5B slice 5 stub
         var clamped = Math.Clamp(depth, 0, GraphWalk.MaxDepth);
         if (LensScope.Of(graph, anchor, clamped) is not { } scope)
         {

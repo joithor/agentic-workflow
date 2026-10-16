@@ -73,7 +73,7 @@ public sealed class SyncSourcesTests
         using var world = new MapWorld(intent: source);
         _ = await world.ImportFixture();
         var text = new MapText(new FakeScrubberFactory().For([]).Value);
-        var total = (await new MapReader(world.Store).Read(_scope, draft: false, Ct)).Value.Graph.Nodes.Count(n => n.Key.Kind is not (NodeKind.Record or NodeKind.Decision) && text.SearchTerms(n.Label).Count > 0);   // a label with no search terms is never searched
+        var total = (await new MapReader(world.Store, world.Intents).ReadWithoutIntent(_scope, draft: false, Ct)).Value.Graph.Nodes.Count(n => n.Key.Kind is not (NodeKind.Record or NodeKind.Decision) && text.SearchTerms(n.Label).Count > 0);   // a label with no search terms is never searched
         source.AfterSearch = () => world.Clock.Advance(SyncSourcesService.RunCap + TimeSpan.FromSeconds(1));   // every search takes longer than the whole run may
 
         var capped = (await world.Engine.Sync("onyx", _scope, Ct)).Value.Sources[0];

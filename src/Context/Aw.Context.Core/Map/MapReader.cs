@@ -1,4 +1,5 @@
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Linking;
 using Aw.Context.Core.Trust;
 using Aw.Kernel;
 
@@ -11,7 +12,8 @@ namespace Aw.Context.Core.Map;
 /// (owner decision 2026-10-15, B) and what lies between them, else 003). Every walk runs on this graph, so a session's cascade, neighbors and paths can't leave its scope.
 /// </summary>
 /// <param name="store">The graph store.</param>
-public sealed class MapReader(IGraphStore store)
+/// <param name="intents">The intent store whose synced records, decisions and links every read merges in.</param>
+public sealed class MapReader(IGraphStore store, IIntentStore intents)
 {
     /// <summary>The map <paramref name="scope"/>'s caller may read.</summary>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>
@@ -20,6 +22,7 @@ public sealed class MapReader(IGraphStore store)
     /// <returns>The visible map, or SND-CONTEXT-001/003/004/020/030.</returns>
     public async ValueTask<Result<VisibleMap>> Read(ContextScope scope, bool draft, CancellationToken cancellationToken)
     {
+        _ = intents;   // S-5B slice 5 stub
         if (MapAccess.Gate(scope) is { } refused)
         {
             return refused;
@@ -38,6 +41,13 @@ public sealed class MapReader(IGraphStore store)
         var visible = MapAccess.View(map.Graph, map.Overrides, scope, pending: draft);
         return visible.IsError ? visible.Error : new VisibleMap(map, visible.Value.Applied);
     }
+
+    /// <summary>Reads the map as the structure alone: no synced records, decisions or links. The sync walks this, so a record never links to a record's own node.</summary>
+    /// <param name="scope">The caller's scope.</param>
+    /// <param name="draft">Whether to read the draft.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The visible map, or the reason there is none.</returns>
+    public ValueTask<Result<VisibleMap>> ReadWithoutIntent(ContextScope scope, bool draft, CancellationToken cancellationToken) => Read(scope, draft, cancellationToken);
 
     /// <summary>The map the app's lenses and file-map reads start from: <see cref="Read"/>, but a draft that doesn't exist is SND-CONTEXT-044 (a missing map stays 030).</summary>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>

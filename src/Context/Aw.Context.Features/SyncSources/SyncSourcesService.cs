@@ -40,7 +40,7 @@ internal sealed class SyncSourcesService(ISourceCatalog catalog, IScrubberFactor
             return new SyncReport([]);
         }
 
-        var map = await graphs.Read(request.Scope, draft: false, cancellationToken).ConfigureAwait(false);
+        var map = await graphs.ReadWithoutIntent(request.Scope, draft: false, cancellationToken).ConfigureAwait(false);
         if (map.IsError)
         {
             return map.Error;
