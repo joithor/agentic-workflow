@@ -6,6 +6,7 @@ using Aw.Sindri.Ui.ViewModels.Item;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
 using Aw.Sindri.Ui.ViewModels.Palette;
 using Aw.Sindri.Ui.ViewModels.Queue;
+using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -66,6 +67,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         NeedsYou = new NeedsYouViewModel(preferences, motion ?? new StillMotion(), clock);
         Decision = new DecisionSheetViewModel(api, () => Health.ApiUrl(), clock);
         HookNeedsYou(clipboard);
+        Strip = new WorkflowsStripViewModel(clipboard, clock);
         Health.Follow(ReadNeedsYou);
         Queue.PropertyChanged += OnQueueChanged;
         Attention = AttentionSummary.For(feed: null, State, _clock.GetUtcNow());

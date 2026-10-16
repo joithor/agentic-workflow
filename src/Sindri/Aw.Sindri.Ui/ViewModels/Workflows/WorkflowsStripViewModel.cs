@@ -120,6 +120,22 @@ internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider
         }
     }
 
+    /// <summary>What a screen reader hears when the selected row finished ("ITM-01JC8 done"); empty until then.</summary>
+    internal string Announcement { get; private set; } = string.Empty;
+
+    /// <summary>Selects the shown row with this address.</summary>
+    /// <param name="address">The address.</param>
+    /// <returns>True when a shown row has it.</returns>
+    internal bool Select(string address) => throw new NotSupportedException();
+
+    /// <summary>Selects no row.</summary>
+    internal void Deselect() => throw new NotSupportedException();
+
+    /// <summary>Moves the selection by one shown row.</summary>
+    /// <param name="step">1 for down, -1 for up.</param>
+    /// <returns>False when the move would leave the strip (the shell moves on to the next panel).</returns>
+    internal bool Move(int step) => throw new NotSupportedException();
+
     /// <summary>Asks to open the Workflows page.</summary>
     internal void OpenWorkflows() => WorkflowsRequested?.Invoke(this, EventArgs.Empty);
 
