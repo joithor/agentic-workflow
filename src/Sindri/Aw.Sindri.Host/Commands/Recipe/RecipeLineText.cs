@@ -1,10 +1,11 @@
 using System.Globalization;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Registry;
+using Aw.Sindri.Core.Workflow.Views;
 
 namespace Aw.Sindri.Host.Commands.Recipe;
 
-/// <summary>A recipe's line as 'recipe list', 'recipe show' and 'recipe register' print it (engine spec §6.3). Pure.</summary>
+/// <summary>A recipe's line as 'recipe list' and 'recipe register' print it (engine spec §6.3). Pure.</summary>
 internal static class RecipeLineText
 {
     /// <summary>
@@ -24,19 +25,20 @@ internal static class RecipeLineText
     }
 
     /// <summary>
-    /// What 'recipe show' adds under the line: 'urgency: &lt;urgency&gt;', 'name: &lt;template&gt;' when the recipe has one, then one 'input: &lt;key&gt; type=&lt;type&gt; kind=&lt;kind&gt;' line per input
-    /// (the type is the declared one, else the one the kind pairs with; a generate template is added as generate="...") and one 'output: &lt;key&gt; type=&lt;type&gt; from=&lt;state&gt;' line per output, then the path order (spec §3.10): 'order: &lt;path|transition-list&gt;', one 'state: &lt;name&gt; order=&lt;n&gt;' (or 'branch-of=&lt;state&gt;', or 'order=-' for a state the walk never reaches) line per state and one 'loop: &lt;name|-&gt; &lt;from&gt; -&gt; &lt;to&gt;' line per loop edge.
+    /// 'recipe show' as the served <see cref="RecipeView"/> reads: '&lt;id&gt;@&lt;hash12&gt;', 'urgency: &lt;urgency&gt;', 'name: &lt;template&gt;' when the recipe has one, one 'input: &lt;key&gt; type=&lt;type&gt; kind=&lt;kind&gt;' line per input
+    /// (a generate template is added as generate="...") and one 'output: &lt;key&gt; type=&lt;type&gt; from=&lt;state&gt;' line per output, then the path order (spec §3.10): 'order: &lt;path|transition-list&gt;', one 'state: &lt;name&gt; order=&lt;n&gt;' (or 'branch-of=&lt;state&gt;', or 'order=-' for a state the walk never reaches) line per state and one 'loop: &lt;name&gt; &lt;from&gt; -&gt; &lt;to&gt; cap=&lt;n&gt;' line per loop.
     /// </summary>
-    /// <param name="s">The recipe's line.</param>
+    /// <param name="v">The served recipe view.</param>
     /// <returns>The lines, each with its newline.</returns>
-    internal static string Detail(RecipeSummary s) =>
-        $"urgency: {s.Urgency}\n"
-        + (s.Name is { } name ? $"name: {name}\n" : string.Empty)
-        + string.Concat(s.Inputs.Select(static i => $"input: {i.Key.Value} type={i.Type ?? SubjectKinds.TypeOf(i)} kind={i.Kind ?? "-"}{(i.Generate is { } generate ? $" generate=\"{generate.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal)}\"" : string.Empty)}\n"))
-        + string.Concat(s.Outputs.Select(static o => $"output: {o.Key.Value} type={o.Type ?? FactTypes.Default} from={o.From}\n"))
-        + $"order: {s.OrderedBy}\n"
-        + string.Concat(s.States.Select(static p => $"state: {p.State} {(p.BranchOf is { } b ? $"branch-of={b}" : $"order={p.Order?.ToString(CultureInfo.InvariantCulture) ?? "-"}")}\n"))
-        + string.Concat(s.Loops.Select(static l => $"loop: {l.Name ?? "-"} {l.From} -> {l.To}\n"));
+    internal static string Show(RecipeView v) =>
+        $"{v.Id.Value}@{v.Hash.Display}\n"
+        + $"urgency: {v.Urgency.ToString().ToLowerInvariant()}\n"
+        + (v.Name is { } name ? $"name: {name}\n" : string.Empty)
+        + string.Concat(v.Inputs.Select(static i => $"input: {i.Key} type={FactTypeJsonConverter.Word(i.Type)} kind={i.Kind}{(i.Generate is { } generate ? $" generate=\"{generate.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal)}\"" : string.Empty)}\n"))
+        + string.Concat(v.Outputs.Select(static o => $"output: {o.Key} type={FactTypeJsonConverter.Word(o.Type)} from={o.From}\n"))
+        + $"order: {(v.OrderedBy == PathOrdering.TransitionList ? "transition-list" : "path")}\n"
+        + string.Concat(v.States.Select(static p => $"state: {p.State} {(p.BranchOf is { } b ? $"branch-of={b}" : $"order={p.Order?.ToString(CultureInfo.InvariantCulture) ?? "-"}")}\n"))
+        + string.Concat(v.Loops.Select(static l => string.Create(CultureInfo.InvariantCulture, $"loop: {l.Name ?? "-"} {l.From} -> {l.To} cap={l.Cap}\n")));
 
     /// <summary>One line per recipe, or the empty state: 'no recipes registered', or 'no stale recipes' for '--stale'.</summary>
     /// <param name="lines">The recipes.</param>

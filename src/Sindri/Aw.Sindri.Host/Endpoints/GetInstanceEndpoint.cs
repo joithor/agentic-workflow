@@ -1,4 +1,5 @@
 using Aw.Kernel.Services;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.GetInstance;
 
 namespace Aw.Sindri.Host.Endpoints;
@@ -11,7 +12,7 @@ internal static class GetInstanceEndpoint
 {
     internal static RouteGroupBuilder MapGetInstance(this RouteGroupBuilder group)
     {
-        _ = group.MapGet("/workflow/instances/{instanceId}", static async (string instanceId, IService<GetInstanceRequest, GetInstanceResponse> service, CancellationToken ct)
+        _ = group.MapGet("/workflow/instances/{instanceId}", static async (string instanceId, IService<GetInstanceRequest, InstanceDetail> service, CancellationToken ct)
             => (await service.Handle(new GetInstanceRequest(InstanceRoute.Id(instanceId)), ct).ConfigureAwait(false)).ToHttpResult());
         return group;
     }

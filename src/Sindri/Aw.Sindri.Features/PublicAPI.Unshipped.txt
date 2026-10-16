@@ -426,13 +426,6 @@ Aw.Sindri.Features.GetInstance.GetInstanceRequest.Equals(Aw.Sindri.Features.GetI
 Aw.Sindri.Features.GetInstance.GetInstanceRequest.GetInstanceRequest(string! Instance) -> void
 Aw.Sindri.Features.GetInstance.GetInstanceRequest.Instance.get -> string!
 Aw.Sindri.Features.GetInstance.GetInstanceRequest.Instance.init -> void
-Aw.Sindri.Features.GetInstance.GetInstanceResponse
-Aw.Sindri.Features.GetInstance.GetInstanceResponse.<Clone>$() -> Aw.Sindri.Features.GetInstance.GetInstanceResponse!
-Aw.Sindri.Features.GetInstance.GetInstanceResponse.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! Instance) -> void
-Aw.Sindri.Features.GetInstance.GetInstanceResponse.Equals(Aw.Sindri.Features.GetInstance.GetInstanceResponse? other) -> bool
-Aw.Sindri.Features.GetInstance.GetInstanceResponse.GetInstanceResponse(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! Instance) -> void
-Aw.Sindri.Features.GetInstance.GetInstanceResponse.Instance.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!
-Aw.Sindri.Features.GetInstance.GetInstanceResponse.Instance.init -> void
 Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest
 Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest.<Clone>$() -> Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest!
 Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest.After.get -> long
@@ -671,17 +664,6 @@ Aw.Sindri.Features.ListInstances.ListInstancesRequest.Query.get -> string?
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Query.init -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.State.get -> string?
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.State.init -> void
-Aw.Sindri.Features.ListInstances.ListInstancesResponse
-Aw.Sindri.Features.ListInstances.ListInstancesResponse.<Clone>$() -> Aw.Sindri.Features.ListInstances.ListInstancesResponse!
-Aw.Sindri.Features.ListInstances.ListInstancesResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>! Instances, out Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList? NeedsYou, out string? Empty) -> void
-Aw.Sindri.Features.ListInstances.ListInstancesResponse.Empty.get -> string?
-Aw.Sindri.Features.ListInstances.ListInstancesResponse.Empty.init -> void
-Aw.Sindri.Features.ListInstances.ListInstancesResponse.Equals(Aw.Sindri.Features.ListInstances.ListInstancesResponse? other) -> bool
-Aw.Sindri.Features.ListInstances.ListInstancesResponse.Instances.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>!
-Aw.Sindri.Features.ListInstances.ListInstancesResponse.Instances.init -> void
-Aw.Sindri.Features.ListInstances.ListInstancesResponse.ListInstancesResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>! Instances, Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList? NeedsYou, string? Empty) -> void
-Aw.Sindri.Features.ListInstances.ListInstancesResponse.NeedsYou.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList?
-Aw.Sindri.Features.ListInstances.ListInstancesResponse.NeedsYou.init -> void
 Aw.Sindri.Features.ListOutbox.ListOutboxRequest
 Aw.Sindri.Features.ListOutbox.ListOutboxRequest.<Clone>$() -> Aw.Sindri.Features.ListOutbox.ListOutboxRequest!
 Aw.Sindri.Features.ListOutbox.ListOutboxRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Effects.EffectState? State) -> void
@@ -894,22 +876,10 @@ Aw.Sindri.Features.RunDoctor.RunDoctorResponse.ExitCode.init -> void
 Aw.Sindri.Features.RunDoctor.RunDoctorResponse.RunDoctorResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Doctor.DoctorCheck!>! Checks, int ExitCode) -> void
 Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest
 Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest.<Clone>$() -> Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest!
-Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out string! Hash) -> void
 Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest.Equals(Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest? other) -> bool
-Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest.Hash.get -> string!
 Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest.Hash.init -> void
 Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest.Id.get -> Aw.Sindri.Core.Workflow.Ids.RecipeId
 Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest.Id.init -> void
-Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest.ShowRecipeRequest(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, string! Hash) -> void
-Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse
-Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse.<Clone>$() -> Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse!
-Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse.Deconstruct(out Aw.Sindri.Core.Workflow.Registry.RecipeSummary! Recipe, out Aw.Sindri.Core.Workflow.Registry.ApprovalPreview! Preview) -> void
-Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse.Equals(Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse? other) -> bool
-Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse.Preview.get -> Aw.Sindri.Core.Workflow.Registry.ApprovalPreview!
-Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse.Preview.init -> void
-Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse.Recipe.get -> Aw.Sindri.Core.Workflow.Registry.RecipeSummary!
-Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse.Recipe.init -> void
-Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse.ShowRecipeResponse(Aw.Sindri.Core.Workflow.Registry.RecipeSummary! Recipe, Aw.Sindri.Core.Workflow.Registry.ApprovalPreview! Preview) -> void
 Aw.Sindri.Features.SindriFeaturesServiceCollectionExtensions
 Aw.Sindri.Features.StartInstance.StartFact
 Aw.Sindri.Features.StartInstance.StartFact.<Clone>$() -> Aw.Sindri.Features.StartInstance.StartFact!
@@ -1219,9 +1189,6 @@ override Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.ToString() -> string!
 override Aw.Sindri.Features.GetInstance.GetInstanceRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Features.GetInstance.GetInstanceRequest.GetHashCode() -> int
 override Aw.Sindri.Features.GetInstance.GetInstanceRequest.ToString() -> string!
-override Aw.Sindri.Features.GetInstance.GetInstanceResponse.Equals(object? obj) -> bool
-override Aw.Sindri.Features.GetInstance.GetInstanceResponse.GetHashCode() -> int
-override Aw.Sindri.Features.GetInstance.GetInstanceResponse.ToString() -> string!
 override Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest.GetHashCode() -> int
 override Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest.ToString() -> string!
@@ -1282,9 +1249,6 @@ override Aw.Sindri.Features.ListCommands.ListCommandsResponse.ToString() -> stri
 override Aw.Sindri.Features.ListInstances.ListInstancesRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Features.ListInstances.ListInstancesRequest.GetHashCode() -> int
 override Aw.Sindri.Features.ListInstances.ListInstancesRequest.ToString() -> string!
-override Aw.Sindri.Features.ListInstances.ListInstancesResponse.Equals(object? obj) -> bool
-override Aw.Sindri.Features.ListInstances.ListInstancesResponse.GetHashCode() -> int
-override Aw.Sindri.Features.ListInstances.ListInstancesResponse.ToString() -> string!
 override Aw.Sindri.Features.ListOutbox.ListOutboxRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Features.ListOutbox.ListOutboxRequest.GetHashCode() -> int
 override Aw.Sindri.Features.ListOutbox.ListOutboxRequest.ToString() -> string!
@@ -1354,9 +1318,6 @@ override Aw.Sindri.Features.RunDoctor.RunDoctorResponse.ToString() -> string!
 override Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest.GetHashCode() -> int
 override Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest.ToString() -> string!
-override Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse.Equals(object? obj) -> bool
-override Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse.GetHashCode() -> int
-override Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse.ToString() -> string!
 override Aw.Sindri.Features.StartInstance.StartFact.Equals(object? obj) -> bool
 override Aw.Sindri.Features.StartInstance.StartFact.GetHashCode() -> int
 override Aw.Sindri.Features.StartInstance.StartFact.ToString() -> string!
@@ -1476,8 +1437,6 @@ static Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.operator !=(Aw.Sindri.Fe
 static Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.operator ==(Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse? left, Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse? right) -> bool
 static Aw.Sindri.Features.GetInstance.GetInstanceRequest.operator !=(Aw.Sindri.Features.GetInstance.GetInstanceRequest? left, Aw.Sindri.Features.GetInstance.GetInstanceRequest? right) -> bool
 static Aw.Sindri.Features.GetInstance.GetInstanceRequest.operator ==(Aw.Sindri.Features.GetInstance.GetInstanceRequest? left, Aw.Sindri.Features.GetInstance.GetInstanceRequest? right) -> bool
-static Aw.Sindri.Features.GetInstance.GetInstanceResponse.operator !=(Aw.Sindri.Features.GetInstance.GetInstanceResponse? left, Aw.Sindri.Features.GetInstance.GetInstanceResponse? right) -> bool
-static Aw.Sindri.Features.GetInstance.GetInstanceResponse.operator ==(Aw.Sindri.Features.GetInstance.GetInstanceResponse? left, Aw.Sindri.Features.GetInstance.GetInstanceResponse? right) -> bool
 static Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest.operator !=(Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest? left, Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest? right) -> bool
 static Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest.operator ==(Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest? left, Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest? right) -> bool
 static Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsResponse.operator !=(Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsResponse? left, Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsResponse? right) -> bool
@@ -1519,8 +1478,6 @@ static Aw.Sindri.Features.ListCommands.ListCommandsResponse.operator !=(Aw.Sindr
 static Aw.Sindri.Features.ListCommands.ListCommandsResponse.operator ==(Aw.Sindri.Features.ListCommands.ListCommandsResponse? left, Aw.Sindri.Features.ListCommands.ListCommandsResponse? right) -> bool
 static Aw.Sindri.Features.ListInstances.ListInstancesRequest.operator !=(Aw.Sindri.Features.ListInstances.ListInstancesRequest? left, Aw.Sindri.Features.ListInstances.ListInstancesRequest? right) -> bool
 static Aw.Sindri.Features.ListInstances.ListInstancesRequest.operator ==(Aw.Sindri.Features.ListInstances.ListInstancesRequest? left, Aw.Sindri.Features.ListInstances.ListInstancesRequest? right) -> bool
-static Aw.Sindri.Features.ListInstances.ListInstancesResponse.operator !=(Aw.Sindri.Features.ListInstances.ListInstancesResponse? left, Aw.Sindri.Features.ListInstances.ListInstancesResponse? right) -> bool
-static Aw.Sindri.Features.ListInstances.ListInstancesResponse.operator ==(Aw.Sindri.Features.ListInstances.ListInstancesResponse? left, Aw.Sindri.Features.ListInstances.ListInstancesResponse? right) -> bool
 static Aw.Sindri.Features.ListOutbox.ListOutboxRequest.operator !=(Aw.Sindri.Features.ListOutbox.ListOutboxRequest? left, Aw.Sindri.Features.ListOutbox.ListOutboxRequest? right) -> bool
 static Aw.Sindri.Features.ListOutbox.ListOutboxRequest.operator ==(Aw.Sindri.Features.ListOutbox.ListOutboxRequest? left, Aw.Sindri.Features.ListOutbox.ListOutboxRequest? right) -> bool
 static Aw.Sindri.Features.ListOutbox.ListOutboxResponse.operator !=(Aw.Sindri.Features.ListOutbox.ListOutboxResponse? left, Aw.Sindri.Features.ListOutbox.ListOutboxResponse? right) -> bool
@@ -1567,8 +1524,6 @@ static Aw.Sindri.Features.RunDoctor.RunDoctorResponse.operator !=(Aw.Sindri.Feat
 static Aw.Sindri.Features.RunDoctor.RunDoctorResponse.operator ==(Aw.Sindri.Features.RunDoctor.RunDoctorResponse? left, Aw.Sindri.Features.RunDoctor.RunDoctorResponse? right) -> bool
 static Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest.operator !=(Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest? left, Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest? right) -> bool
 static Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest.operator ==(Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest? left, Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest? right) -> bool
-static Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse.operator !=(Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse? left, Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse? right) -> bool
-static Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse.operator ==(Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse? left, Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse? right) -> bool
 static Aw.Sindri.Features.SindriFeaturesServiceCollectionExtensions.AddSindriFeatures(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Sindri.Features.StartInstance.StartFact.operator !=(Aw.Sindri.Features.StartInstance.StartFact? left, Aw.Sindri.Features.StartInstance.StartFact? right) -> bool
 static Aw.Sindri.Features.StartInstance.StartFact.operator ==(Aw.Sindri.Features.StartInstance.StartFact? left, Aw.Sindri.Features.StartInstance.StartFact? right) -> bool
@@ -1803,12 +1758,8 @@ Aw.Sindri.Features.ListInstances.ListInstancesRequest.Subject.get -> string?
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Subject.init -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Urgency.get -> string?
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Urgency.init -> void
-Aw.Sindri.Features.ListInstances.ListInstancesRequest.Deconstruct(out string? NeedsMe, out Aw.Sindri.Core.Workflow.Engine.ItemKey? Item, out string? State, out string? Query, out string? Address, out string? Recipe, out string? Urgency, out string? Subject, out string? Root) -> void
-Aw.Sindri.Features.ListInstances.ListInstancesRequest.ListInstancesRequest(string? NeedsMe = null, Aw.Sindri.Core.Workflow.Engine.ItemKey? Item = null, string? State = null, string? Query = null, string? Address = null, string? Recipe = null, string? Urgency = null, string? Subject = null, string? Root = null) -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.NeedsMe.get -> string?
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Root.get -> string?
-Aw.Sindri.Features.ListInstances.ListInstancesResponse.Rows.init -> void
-Aw.Sindri.Features.ListInstances.ListInstancesResponse.Rows.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InstanceSummary!>!
 Aw.Sindri.Features.Decide.DecideRequest
 Aw.Sindri.Features.Decide.DecideRequest.<Clone>$() -> Aw.Sindri.Features.Decide.DecideRequest!
 Aw.Sindri.Features.Decide.DecideRequest.Choice.get -> Aw.Sindri.Core.Ids.DecisionOption
@@ -2060,15 +2011,10 @@ override Aw.Sindri.Features.EvalRecipe.ScaffoldFile.GetHashCode() -> int
 override Aw.Sindri.Features.EvalRecipe.ScaffoldFile.ToString() -> string!
 static Aw.Sindri.Features.EvalRecipe.ScaffoldFile.operator !=(Aw.Sindri.Features.EvalRecipe.ScaffoldFile? left, Aw.Sindri.Features.EvalRecipe.ScaffoldFile? right) -> bool
 static Aw.Sindri.Features.EvalRecipe.ScaffoldFile.operator ==(Aw.Sindri.Features.EvalRecipe.ScaffoldFile? left, Aw.Sindri.Features.EvalRecipe.ScaffoldFile? right) -> bool
-Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest
-Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.<Clone>$() -> Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest!
-Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id) -> void
-Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.Equals(Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest? other) -> bool
-Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.Id.get -> Aw.Sindri.Core.Workflow.Ids.RecipeId
-Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.Id.init -> void
-Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.ShowRecipeByIdRequest(Aw.Sindri.Core.Workflow.Ids.RecipeId Id) -> void
-override Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.Equals(object? obj) -> bool
-override Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.GetHashCode() -> int
-override Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.ToString() -> string!
-static Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.operator !=(Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest? left, Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest? right) -> bool
-static Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest.operator ==(Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest? left, Aw.Sindri.Features.ShowRecipe.ShowRecipeByIdRequest? right) -> bool
+Aw.Sindri.Features.ListInstances.ListInstancesRequest.Deconstruct(out string? NeedsMe, out Aw.Sindri.Core.Workflow.Engine.ItemKey? Item, out string? State, out string? Query, out string? Address, out string? Recipe, out string? Urgency, out string? Subject, out string? Root, out string? Open) -> void
+Aw.Sindri.Features.ListInstances.ListInstancesRequest.ListInstancesRequest(string? NeedsMe = null, Aw.Sindri.Core.Workflow.Engine.ItemKey? Item = null, string? State = null, string? Query = null, string? Address = null, string? Recipe = null, string? Urgency = null, string? Subject = null, string? Root = null, string? Open = null) -> void
+Aw.Sindri.Features.ListInstances.ListInstancesRequest.Open.get -> string?
+Aw.Sindri.Features.ListInstances.ListInstancesRequest.Open.init -> void
+Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out string? Hash) -> void
+Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest.Hash.get -> string?
+Aw.Sindri.Features.ShowRecipe.ShowRecipeRequest.ShowRecipeRequest(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, string? Hash = null) -> void

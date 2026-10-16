@@ -32,7 +32,7 @@ internal static class WorkflowCommandTable
     internal static Task<int> Run(string[] args, IServiceProvider services, Output output, RecipeDesk desk, CancellationToken ct) => args switch
     {
         ["start", .. var rest] => WorkflowStartCommand.Run(rest, desk, services, output, ct),
-        ["status", .. var rest] => StatusCommand.Run(rest, desk, services, output, ct),
+        ["status", .. var rest] => StatusCommand.Run(rest, desk, output, ct),
         ["list", .. var rest] => ListCommand.Run(rest, desk, services, output, ct),
         ["events", .. var rest] => EventsCommand.Run(rest, desk, services, output, ct),
         ["answer", .. var rest] => new ApplyCommandVerbs(desk, services, output).Answer(rest, ct),

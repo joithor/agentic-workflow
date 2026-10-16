@@ -35,7 +35,6 @@ using Aw.Sindri.Features.Decide;
 using Aw.Sindri.Features.EvalRecipe;
 using Aw.Sindri.Features.FileRequest;
 using Aw.Sindri.Features.GetEventCatalog;
-using Aw.Sindri.Features.GetInstance;
 using Aw.Sindri.Features.GetInstanceEvents;
 using Aw.Sindri.Features.GetInstanceFact;
 using Aw.Sindri.Features.GetItem;
@@ -48,7 +47,6 @@ using Aw.Sindri.Features.IssueChallenge;
 using Aw.Sindri.Features.IssueNonce;
 using Aw.Sindri.Features.ListCommands;
 using Aw.Sindri.Features.ListDecisions;
-using Aw.Sindri.Features.ListInstances;
 using Aw.Sindri.Features.ListItems;
 using Aw.Sindri.Features.ListOutbox;
 using Aw.Sindri.Features.ListRecipes;
@@ -60,7 +58,6 @@ using Aw.Sindri.Features.RegisterMcp;
 using Aw.Sindri.Features.RegisterRecipe;
 using Aw.Sindri.Features.RevokeRecipe;
 using Aw.Sindri.Features.RunDoctor;
-using Aw.Sindri.Features.ShowRecipe;
 using Aw.Sindri.Features.StartInstance;
 using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Features.ValidateProfile;
@@ -167,8 +164,6 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(RecipeValidationView))]
 [JsonSerializable(typeof(CompleteStepResponse))]
 [JsonSerializable(typeof(InstanceView))]
-[JsonSerializable(typeof(GetInstanceResponse))]
-[JsonSerializable(typeof(ListInstancesResponse))]
 [JsonSerializable(typeof(ListOutboxResponse))]   // engine P6 unit (c): outbox list
 [JsonSerializable(typeof(DeskNotice))]   // engine P6 unit (c): a line of notifications.jsonl
 [JsonSerializable(typeof(EffectRow))]            // engine P6: an effect's ledger row (§5.7)
@@ -188,7 +183,6 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(RegisterRecipeRequest))]
 [JsonSerializable(typeof(RegisterRecipeResponse))]
 [JsonSerializable(typeof(ListRecipesResponse))]
-[JsonSerializable(typeof(ShowRecipeResponse))]
 [JsonSerializable(typeof(ApproveRecipeRequest))]
 [JsonSerializable(typeof(ApproveRecipeResponse))]
 [JsonSerializable(typeof(RevokeRecipeRequest))]

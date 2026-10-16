@@ -10,6 +10,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Views;
 
 namespace Aw.Sindri.Features.ListInstances;
 
@@ -27,9 +28,9 @@ namespace Aw.Sindri.Features.ListInstances;
 /// <param name="itemViews">The 'items' view, read by key for the titles of the items the instances are on.</param>
 /// <param name="callers">The caller, whose repo scope decides which item titles it may see.</param>
 /// <param name="clock">The time the rows are read at: their ages and timeouts are worked out from it, not from when the workflow last ran.</param>
-internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, IInstanceReader runtime, IViewReader itemViews, ICallerContextAccessor callers, TimeProvider clock) : IService<ListInstancesRequest, ListInstancesResponse>
+internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, IInstanceReader runtime, IViewReader itemViews, ICallerContextAccessor callers, TimeProvider clock) : IService<ListInstancesRequest, InstanceList>
 {
-    public async ValueTask<Result<ListInstancesResponse>> Handle(ListInstancesRequest request, CancellationToken cancellationToken)
+    public async ValueTask<Result<InstanceList>> Handle(ListInstancesRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         if (request.Address is { } reference)
@@ -42,29 +43,49 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             return refused;
         }
 
-        var needsMe = Flag(request.NeedsMe) == true;
+        var open = Flag(request.Open) == true;
         var filter = Filter(request);
-        var ended = request.Item is not null || request.State is not null;
         var rows = request.Query is { Length: > 0 } query
-            ? await instances.List(Joined(InstanceFilters.ToQuery(filter), query), ended, cancellationToken).ConfigureAwait(false)
-            : await instances.List(filter, ended, cancellationToken).ConfigureAwait(false);
+            ? await instances.List(Joined(InstanceFilters.ToQuery(filter), query), ended: !open, cancellationToken).ConfigureAwait(false)
+            : await instances.List(filter, ended: !open, cancellationToken).ConfigureAwait(false);
         if (rows.IsError)
         {
             return rows.Error;
         }
 
-        var views = await Views(rows.Value, cancellationToken).ConfigureAwait(false);
+        var known = new Dictionary<string, InstanceView>(StringComparer.Ordinal);
+        var views = await Views(rows.Value, known, cancellationToken).ConfigureAwait(false);
         if (views.IsError)
         {
             return views.Error;
         }
 
-        var titles = await Titles(views.Value, cancellationToken).ConfigureAwait(false);
-        return Listed(needsMe, Matching(views.Value, request.Subject, titles), titles);
+        var counts = await RootCounts(known, cancellationToken).ConfigureAwait(false);   // over the root set, before 'recipe' or 'open' narrows the rows
+        if (counts.IsError)
+        {
+            return counts.Error;
+        }
+
+        var kept = open ? views.Value.FindAll(static v => v.Outcome is null) : views.Value;
+        var titles = await Titles(kept, cancellationToken).ConfigureAwait(false);
+        return Listed(Matching(kept, request.Subject, titles), counts.Value, titles);
     }
 
-    /// <summary>Each row's 'GetInstance' view; one that ended between the list and its query is left out.</summary>
-    private async ValueTask<Result<List<InstanceView>>> Views(IReadOnlyList<InstanceRow> rows, CancellationToken cancellationToken)
+    /// <summary>The counts of every root instance, ended ones included: a second list call, reusing the views the first one read.</summary>
+    private async ValueTask<Result<ListCounts>> RootCounts(Dictionary<string, InstanceView> known, CancellationToken cancellationToken)
+    {
+        var roots = await instances.List(new InstanceFilter(Root: true), ended: true, cancellationToken).ConfigureAwait(false);
+        if (roots.IsError)
+        {
+            return roots.Error;
+        }
+
+        var views = await Views(roots.Value, known, cancellationToken).ConfigureAwait(false);
+        return views.IsError ? views.Error : InstanceCounts.Of(views.Value);
+    }
+
+    /// <summary>Each row's 'GetInstance' view (read once per address through <paramref name="known"/>); one that ended between the list and its query is left out.</summary>
+    private async ValueTask<Result<List<InstanceView>>> Views(IReadOnlyList<InstanceRow> rows, Dictionary<string, InstanceView> known, CancellationToken cancellationToken)
     {
         var views = new List<InstanceView>();
         foreach (var row in rows)
@@ -74,9 +95,16 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
                 continue;   // not an instance address: no RecipeWorkflow of this build started it
             }
 
+            if (known.TryGetValue(address.Value, out var cached))
+            {
+                views.Add(cached);
+                continue;
+            }
+
             var view = await runtime.Get(address, cancellationToken).ConfigureAwait(false);
             if (view.IsSuccess)
             {
+                known[address.Value] = view.Value;
                 views.Add(view.Value);
             }
             else if (view.Error.Code != WorkflowErrors.InstanceNotFound.Code)
@@ -101,11 +129,16 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             return SindriErrors.InvalidInput.With($"'{urgency}' isn't an urgency (fix: urgency incident, triage or work)");
         }
 
-        return NotTrueOrFalse(request.NeedsMe, "needsMe", "true for what needs you") ?? NotTrueOrFalse(request.Root, "root", "true for top-level instances, false for children");
+        return NotTrueOrFalse(request.NeedsMe, "needsMe", "true for what needs you")
+            ?? NotTrueOrFalse(request.Root, "root", "true for top-level instances, false for children")
+            ?? NotTrueOrFalse(request.Open, "open", "true for the unfinished instances only");
     }
 
-    /// <summary>The one instance an address or bare item names, as 'GetInstance' shows it (its id included).</summary>
-    private async ValueTask<Result<ListInstancesResponse>> One(string reference, CancellationToken cancellationToken)
+    /// <summary>
+    /// The one instance an address or bare item names, as a one-row list (its id included). An id lookup is not a list, so its counts cover
+    /// the row alone, not the root set.
+    /// </summary>
+    private async ValueTask<Result<InstanceList>> One(string reference, CancellationToken cancellationToken)
     {
         var address = await directory.Resolve(reference, cancellationToken).ConfigureAwait(false);
         if (address.IsError)
@@ -114,7 +147,7 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
         }
 
         var view = await runtime.Get(address.Value, cancellationToken).ConfigureAwait(false);
-        return view.IsError ? view.Error : Rows(new ListInstancesResponse([view.Value], NeedsYou: null, Empty: null), await Titles([view.Value], cancellationToken).ConfigureAwait(false));
+        return view.IsError ? view.Error : Listed([view.Value], InstanceCounts.Of([view.Value]), await Titles([view.Value], cancellationToken).ConfigureAwait(false));
     }
 
     /// <summary>
@@ -127,23 +160,12 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             ? views
             : [.. views.Where(v => InstanceSummaries.SubjectOf(v, titles.For(v)) is var s && (string.Equals(s.Key, subject, StringComparison.Ordinal) || s.Label.Contains(subject, StringComparison.OrdinalIgnoreCase)))];
 
-    private ListInstancesResponse Listed(bool needsMe, List<InstanceView> views, ItemTitles titles)
-    {
-        if (needsMe)
-        {
-            var sections = NeedsYouList.Of(views);
-            return Rows(new([.. sections.Decisions, .. sections.Tasks], sections, sections.IsEmpty ? NeedsYouList.Nothing : null), titles);
-        }
-
-        var sorted = views.Order(new InstanceOrder(titles)).ToList();   // API spec §3.8: one order on every list path
-        return Rows(new(sorted, NeedsYou: null, sorted.Count == 0 ? "no instances match" : null), titles);
-    }
-
-    /// <summary>The response with a list row per instance, each built by <see cref="InstanceSummaries.Of"/>.</summary>
-    private ListInstancesResponse Rows(ListInstancesResponse listed, ItemTitles titles)
+    /// <summary>The list: the rows in the API order (§3.8: one order on every list path), each built by <see cref="InstanceSummaries.Of"/>.</summary>
+    private InstanceList Listed(List<InstanceView> views, ListCounts counts, ItemTitles titles)
     {
         var now = clock.GetUtcNow();
-        return listed with { Rows = [.. listed.Instances.Select(v => InstanceSummaries.Of(v, new InstanceSummaryContext(now, ItemTitle: titles.For(v))))] };
+        var rows = views.Order(new InstanceOrder(titles)).Select(v => InstanceSummaries.Of(v, new InstanceSummaryContext(now, ItemTitle: titles.For(v)))).ToList();
+        return new InstanceList(rows, counts, rows.Count == 0 ? InstanceList.EmptyText : null, now);
     }
 
     /// <summary>

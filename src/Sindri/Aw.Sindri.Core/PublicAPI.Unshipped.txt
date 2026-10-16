@@ -7831,3 +7831,14 @@ override Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.ToString() -> string!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.ParkAnswers.For(Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape! shape, Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, string! grantTokens = "<n>") -> Aw.Sindri.Core.Workflow.Views.StatusAnswer?
 static Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape? left, Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape? left, Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape? right) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceCounts
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.ParentId.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.ParentId.init -> void
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceCounts.Of(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>! views) -> Aw.Sindri.Core.Workflow.Views.ListCounts!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.FactShas.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.FactShas.init -> void
+Aw.Sindri.Core.Items.InstanceScope
+static Aw.Sindri.Core.Items.InstanceScope.Refusal(Aw.Sindri.Core.Commands.CallerContext! caller, Aw.Sindri.Core.Workflow.Engine.ItemKey? item, Aw.Sindri.Core.Items.IItemRepos! repos, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Error?>
+Aw.Sindri.Core.Workflow.Views.RecipeViews
+static Aw.Sindri.Core.Workflow.Views.FactTypeJsonConverter.Word(Aw.Sindri.Core.Workflow.Views.FactType type) -> string!
+static Aw.Sindri.Core.Workflow.Views.RecipeViews.Of(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeVersion! stamp) -> Aw.Sindri.Core.Workflow.Views.RecipeView!

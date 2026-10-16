@@ -26,6 +26,7 @@ using Aw.Sindri.Features.Decide;
 using Aw.Sindri.Features.EvalRecipe;
 using Aw.Sindri.Features.FileRequest;
 using Aw.Sindri.Features.GetEventCatalog;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.GetInstance;
 using Aw.Sindri.Features.GetInstanceEvents;
 using Aw.Sindri.Features.GetInstanceFact;
@@ -175,8 +176,8 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<ApplyCommandRequest>, AcceptAllValidator<ApplyCommandRequest>>().AddCommand<ApplyCommandRequest, ApplyCommandResponse, ApplyCommandService>();
         _ = services.AddScoped<IValidator<CompleteStepRequest>, AcceptAllValidator<CompleteStepRequest>>().AddCommand<CompleteStepRequest, CompleteStepResponse, CompleteStepService>();
         _ = services.AddScoped<IValidator<IssueNonceRequest>, AcceptAllValidator<IssueNonceRequest>>().AddIssue<IssueNonceRequest, IssueNonceResponse, IssueNonceService>();
-        _ = services.AddScoped<IValidator<GetInstanceRequest>, AcceptAllValidator<GetInstanceRequest>>().AddQuery<GetInstanceRequest, GetInstanceResponse, GetInstanceService>();
-        _ = services.AddScoped<IValidator<ListInstancesRequest>, AcceptAllValidator<ListInstancesRequest>>().AddQuery<ListInstancesRequest, ListInstancesResponse, ListInstancesService>();
+        _ = services.AddScoped<IValidator<GetInstanceRequest>, AcceptAllValidator<GetInstanceRequest>>().AddQuery<GetInstanceRequest, InstanceDetail, GetInstanceService>();
+        _ = services.AddScoped<IValidator<ListInstancesRequest>, AcceptAllValidator<ListInstancesRequest>>().AddQuery<ListInstancesRequest, InstanceList, ListInstancesService>();
         _ = services.AddScoped<IValidator<GetInstanceEventsRequest>, AcceptAllValidator<GetInstanceEventsRequest>>().AddQuery<GetInstanceEventsRequest, GetInstanceEventsResponse, GetInstanceEventsService>();
         return services;
     }
@@ -200,7 +201,7 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<RevokeRecipeRequest>, AcceptAllValidator<RevokeRecipeRequest>>().AddCommand<RevokeRecipeRequest, RevokeRecipeResponse, RevokeRecipeService>();
         _ = services.AddScoped<IValidator<IssueChallengeRequest>, AcceptAllValidator<IssueChallengeRequest>>().AddIssue<IssueChallengeRequest, IssueChallengeResponse, IssueChallengeService>();
         _ = services.AddScoped<IValidator<ListRecipesRequest>, AcceptAllValidator<ListRecipesRequest>>().AddQuery<ListRecipesRequest, ListRecipesResponse, ListRecipesService>();
-        _ = services.AddScoped<IValidator<ShowRecipeRequest>, AcceptAllValidator<ShowRecipeRequest>>().AddQuery<ShowRecipeRequest, ShowRecipeResponse, ShowRecipeService>();
+        _ = services.AddScoped<IValidator<ShowRecipeRequest>, AcceptAllValidator<ShowRecipeRequest>>().AddQuery<ShowRecipeRequest, RecipeView, ShowRecipeService>();
         _ = services.AddScoped<IValidator<GetInstanceFactRequest>, AcceptAllValidator<GetInstanceFactRequest>>().AddQuery<GetInstanceFactRequest, FactView, GetInstanceFactService>();
         _ = services.AddScoped<IValidator<ListOutboxRequest>, AcceptAllValidator<ListOutboxRequest>>().AddQuery<ListOutboxRequest, ListOutboxResponse, ListOutboxService>();   // engine P6 unit (c)
         return services;
