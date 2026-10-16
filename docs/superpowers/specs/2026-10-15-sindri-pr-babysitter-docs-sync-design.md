@@ -153,9 +153,9 @@ synced then are synced against a settled head; a later fix that moves the head s
 |---|---|---|---|
 | `intake` | active | `step.pr.intake` | §4.2 |
 | `snapshot` | active, loop `cycles` | `step.pr.snapshot` | §4.3 |
-| `restacking` | wait | `pr.restacked` | Entered with `effect.pr.restack` on the PR itself (§4.6) |
+| `restacking` | wait | `pr.restacked` | Entered with `effect.pr.restack` `target: self` (§4.6) |
 | `ci-fix` | active, agent, loop `ci` | `step.pr.ci-fix` | Capability `build`; inputs `input.pr.context`, `input.handoff-note` |
-| `next-comment` | active, loop `comments` | `step.pr.comments.next` | §5.2 |
+| `next-comment` | active, loop `comments` | `step.pr.next-comment` | §5.2 |
 | `classify` | active | `step.judge.choose` | Nine types (§5.1); `uncertain` is held, not desked (PB4) |
 | `fix`, `fix-nit`, `fix-bot` | active, agent | `step.pr.fix-comment` (`effort: full`, `cheap`, `bot`) | Capability `build` |
 | `reply` | active, agent | `step.pr.reply-draft` | Read-only (SC W9); Sindri posts |
@@ -166,10 +166,10 @@ synced then are synced against a settled head; a later fix that moves the head s
 | `docs` | wait, loop `docs` | child `workflow.docs-sync` | Inputs `fact:pr`, `fact:designPacket` (BD5) |
 | `docs-owner` | active, exception desk | `step.pr.docs-decide` | Docs sync ended `unresolved` or `failed`: retry, skip (records `fact:docsResult` as skipped by the owner), stop |
 | `ready` | wait | `pr.changed` | **Stop 3** (§4.5) |
-| `held-next` | active, loop `held` | `step.pr.comments.held` | The held queue, entered from `ready` by `command.comments` |
+| `held-next` | active, loop `held` | `step.pr.held-comment` | The held queue, entered from `ready` by `command.comments` |
 | `owner-comment` | active, human-only | `step.pr.owner-comment` | Fix (with a note), reply (typed), skip, later |
 | `rework-notes` | active, human-only | `step.pr.rework-notes` | SC W2's fixed form, notes required (BD8) |
-| `merging` | wait | `pr.merge-result` | Back to `snapshot`, which sees the merge (PB9) |
+| `merging` | wait | `pr.mergeResult` | Back to `snapshot`, which sees the merge (PB9) |
 | `owner` | active, exception desk | `step.owner.decide` | Retry (back to `intake`) or stop |
 | `merged` · `closed`, `stopped` · `rework` | terminals | — | `resolved` · `unresolved` · `failed` (LN §7.6) |
 
@@ -214,8 +214,9 @@ A held comment doesn't block `ready`: merging with held comments is the owner's 
   dropping commits the base already has (squash merges leave them behind), then pushes with a lease. Outcomes
   `restacked`, `nothing`, `conflict` (`owner`: the PR is left as it was). A rework of a phase this PR is stacked on moves
   that base; the `pr.changed` event brings the snapshot, which restacks (LN §8.3).
-- **Restacking the docs PR.** On `merged`, `effect.pr.restack` on `fact:docsPr` does the same for the docs PR, so it
-  becomes a PR against the default branch. A conflict raises a needs-you row on the docs PR (Q4).
+- **Restacking the docs PR.** On `merged`, `effect.pr.restack` with `target: docs` finds the open docs PR stacked on
+  this PR's head branch (`FindPull(docs/<head>)`) and does the same for it, so it becomes a PR against the default
+  branch; with none open it does nothing. A conflict raises a needs-you row on the docs PR (Q4).
 - **Stale proof.** A push whose commits touch any non-test source path (the phase packet's test-path convention, or the
   repo's when it is empty) confirms `pushedSource`, and the babysitter runs `workflow.prove-recheck` before it reads the
   PR again (§8). A restack moves the head without changing the change; CI runs again on it, and `ReadyView` shows the
@@ -246,8 +247,8 @@ The `merged` transition also carries `effect.line.report` with `status: merged` 
 
 - **Caps.** `ci` 3 per instance; `gate.pr.autofix-cap` bounds CI fixes per PR across instances (IDEA-016; profile
   `workflow.pr.autofixCap`, default 3, at most 5) and parks `needs-answer` (WF §5.8) with the failing check's log.
-  `comments` 60, `rounds` 6 pushes, `rechecks` 4, `docs` 3, `held` 40, `cycles` 150 snapshots (it stops a snapshot and a
-  queue that disagree from looping). Each cap is an engine park, answered with `--grant` or `--resume` (WF §3.8). `ci`
+  `comments` 60, `rounds` 6 pushes, `rechecks` 4, `docs` 3, `held` 40, `retries` 5 at the `owner` desk, `cycles` 150
+  snapshots (it stops a snapshot and a queue that disagree from looping). Each cap is an engine park, answered with `--grant` or `--resume` (WF §3.8). `ci`
   keeps the default `noProgress`, so the same failure twice parks early.
 - **Timeouts.** Block Steps and exception desks: 2 days, as DT §3.3, because before DT-J they run at the desk. Agent
   states park after 1–4 hours. `await` parks after 3 days without PR activity; `ready` escalates after 14. No state uses
@@ -281,7 +282,7 @@ and any agent Step's `step.failed` go.
 
 ### 5.2 The queue: one thread per round
 
-`step.pr.comments.next` returns the oldest unhandled **thread** (inline thread, review body or top-level comment) as
+`step.pr.next-comment` returns the oldest unhandled **thread** (inline thread, review body or top-level comment) as
 `fact:comment`, with the thread's earlier comments as context. Outcomes: `comment`, `bot`, `untrusted`,
 `drainedUnpushed` (empty, with workspace commits ahead of the PR head), `drained`. The snapshot's `comments` and this
 block share one type, `PrCommentQueue`, so they can't disagree.
@@ -297,7 +298,7 @@ pushed sha.
 
 A held comment gets a mark with outcome `held` and the reason (its type, or the failed branch), through
 `effect.pr.reply` with `form: hold`, which posts nothing. The queue moves on. `ReadyView` lists held comments, and
-`command.comments` walks them through `step.pr.comments.held` (outcomes `comment`, `drained`) and the human-only
+`command.comments` walks them through `step.pr.held-comment` (outcomes `comment`, `drained`) and the human-only
 `step.pr.owner-comment`. A fix the owner asks for goes through the normal `fix` state with `fact:ownerNote`, then the
 queue, the push, the recheck and CI, and the PR comes back to `ready`.
 
@@ -329,7 +330,7 @@ deletes `sindri/pr/<instance>` for a hand-started babysitter; the phase workspac
 | `pr.changed` | `service:pr-watch` | `item` until E3, then `match: fact:pr` | `merged`, `closed`, `updated` (head moved), `review` (review submitted, comment added or edited), `ci` (a check changed state) | `fact:prEvent` `{ subject, headSha, changes[], at }` |
 | `pr.pushed` | `effect.pr.push` | causation | `pushed`, `pushedSource`, `nothing`, `headMoved`, `rejected` | `fact:push` `{ sha, commits[], comments[], source }` |
 | `pr.restacked` | `effect.pr.restack` | causation | `restacked`, `nothing`, `conflict` | `fact:restack` |
-| `pr.merge-result` | `effect.pr.merge` | causation | `merged`, `blocked`, `headMoved` | `fact:merge` |
+| `pr.mergeResult` | `effect.pr.merge` | causation | `merged`, `blocked`, `headMoved` | `fact:merge` |
 | `pr.stacked` | `effect.pr.create-stacked` | causation | `opened`, `updated`, `rejected` | `fact:docsPr` |
 | `pr.opened` | `effect.pr.open` (BD1; `workflow.ship` waits on it) | causation | `opened`, `updated`, `refused` | `fact:pr` |
 
@@ -486,11 +487,11 @@ and run at the desk before DT-J and P8.
 | `step.judge.choose` · `step.owner.decide` | Step | DT | DT §3.1 · outcomes `retry`, `stop`, human-only |
 | `effect.notify.desk` | Effect | exists | WF §5.7 |
 | `effect.line.report` | Effect | LN (W15) | `status: merged` on the `merged` transition |
-| `step.pr.intake` | Step, block, `Network` | new | §4.2. Params `pr`, `handoff`, `phasePacket`, `lineContext`. Outcome `seeded`; outputs `fact:designPacket`, seeds |
+| `step.pr.intake` | Step, block, `Network` | new | §4.2. Params `pr`, `handoff`, `phase-packet`, `line-context`. Outcome `seeded`; outputs `fact:designPacket`, seeds |
 | `step.pr.snapshot` | Step, block, `Network` | new | §4.3. Output `fact:prState` `{ ref, url, state, draft, base{ref, sha, isDefault, stackParent}, head{ref, sha, fork}, mergeable, reviewDecision, checks{state, sha, failing[]}, queue{unhandled, held, untrusted, bots}, provenSha, at }`; `fact:mergedSha` on `merged` |
 | `input.pr.context` | StepInput | new | Title, body, diff summary, failing check log excerpts (capped, scrubbed), the comment thread (fenced). Needs the StepInput runtime (SC W6) |
 | `input.handoff-note` | StepInput | new (W24) | Injects the latest `fact:handoffNote` |
-| `step.pr.comments.next` · `step.pr.comments.held` | Step, block, `Network` | new | §5.2 · §5.3 |
+| `step.pr.next-comment` · `step.pr.held-comment` | Step, block, `Network` | new | §5.2 · §5.3 |
 | `step.pr.ci-fix` · `step.pr.fix-comment` · `step.pr.reply-draft` | Step, agent | new | §9.1; `fix-comment` param `effort: full \| cheap \| bot` (literal) |
 | `step.pr.owner-comment` | Step, desk, human-only | new | Outcomes `fix` (`fact:ownerNote`), `reply` (`fact:reply`, typed), `skip`, `later`. Shows the comment as quoted plain text, author, association, the lean and the reason held |
 | `step.pr.rework-notes` | Step, desk, human-only | new | SC W2 fixed form: notes (required, scrubbed at entry). `noted` (`fact:reworkNotes`), `back` |
@@ -504,8 +505,8 @@ and run at the desk before DT-J and P8.
 | `effect.pr.open` | Effect, `Effects` | new (BD1) | Pushes the head branch with a lease on a given sha, then opens a PR with a base, title, body and labels, or updates the open one for that branch. Confirms `pr.opened`. Used by `workflow.ship` |
 | `effect.pr.push` | Effect, `Effects` | new | Pushes the workspace branch to the PR head with a lease on `lease.head.sha`; if the head moved and a rebase applies cleanly, rebases and pushes with a lease on the new head. Reports `pushedSource` when any commit touches non-test source |
 | `effect.pr.reply` | Effect, `Effects` | new | Forms `thread`, `reaction`, `fixedReplies`, `none`, `hold`. Writes the mark on delivery. Idempotent by effect identity and mark; a failure shows in `outbox list` and the mark stays absent |
-| `effect.pr.rerun-checks` · `effect.pr.restack` · `effect.pr.create-stacked` | Effect | new | §4.6, §7.2 |
-| `effect.pr.merge` | Effect, `Effects`, **human trigger** (W23) | new | Params `pr`, `at`, `method`. Merges with the forge's expected-head check. Confirms `pr.merge-result` |
+| `effect.pr.rerun-checks` · `effect.pr.restack` · `effect.pr.create-stacked` | Effect | new | §4.6, §7.2. `effect.pr.restack` param `target: self \| docs` (literal): this PR, or the docs PR stacked on its head |
+| `effect.pr.merge` | Effect, `Effects`, **human trigger** (W23) | new | Params `pr`, `at`, `method`. Merges with the forge's expected-head check. Confirms `pr.mergeResult` |
 | `pr.*` event descriptors | Event | new (W25) | §6.1 |
 | `IForge` | Port (`Aw.Forge`) | new | §10.2 |
 
@@ -660,6 +661,16 @@ Rev 2 fits rev 1 (parked) to the line contract, #262.
 | Engine asks moved from phases PB-A and PB-H into rows W23 and W24; new W25, W26, API15, U12 | — | §12 |
 | Seeds scored against PR-R; texts and long YAML moved to appendices | PB7 | §9, Appendices |
 
+**Validation (2026-10-15, `recipe validate --json` on `main` at `e79bfc2d`).** It caught three grammar errors, now fixed:
+block ids take one area (`step.pr.comments.next` became `step.pr.next-comment`), event names are camelCase
+(`pr.merge-result` became `pr.mergeResult`), and `with:` keys are kebab-case (`phase-packet`, `line-context`). It also
+required a loop on an `owner` desk whose `retry` re-enters the graph (`retries`), and refused an effect parameter fed by
+a fact that only a `when` guard proves present (`effect.pr.restack` now takes `target: docs` and finds the docs PR
+itself). What remains is expected until other phases land: unregistered blocks (`RCP-BLOCK-001`, PB-R), unregistered
+`pr.*` events (`RCP-EVENT-001`, W25), facts produced from a child's outputs (`RCP-WIRE-002`, DT-C), the `workflow.verify`
+child (`RCP-CHILD-001`, DT-R), and the heavy resource (`RCP-RES-001`, LN W17). For #262: `line.phase-changed` fails
+the same event-name rule; `line.phaseChanged` passes.
+
 ## Appendix A. The seeds (v0)
 
 DT §7's template. Every seed also carries #258 §10.1's shared lines: the scope line ("write only the named outputs, and
@@ -798,7 +809,7 @@ initial: intake
 states:
   intake:
     kind: active
-    step: { use: step.pr.intake, with: { pr: { fact: fact:pr }, handoff: { fact: fact:handoff }, phasePacket: { fact: fact:phasePacket }, lineContext: { fact: fact:lineContext } } }
+    step: { use: step.pr.intake, with: { pr: { fact: fact:pr }, handoff: { fact: fact:handoff }, phase-packet: { fact: fact:phasePacket }, line-context: { fact: fact:lineContext } } }
     timeout: { after: 2d, then: park }
     next: "Verify the hand-off for {item}'s pull request and seed the babysitter."
   snapshot:
@@ -821,7 +832,7 @@ states:
     next: "Fix the failing checks on {item}'s pull request, attempt {loop.ci}/{loop.ci.cap}. Commit in the workspace; Sindri pushes."
   next-comment:
     kind: active
-    step: { use: step.pr.comments.next, with: { pr: { fact: fact:pr }, bots: { profile: workflow.pr.bots } } }
+    step: { use: step.pr.next-comment, with: { pr: { fact: fact:pr }, bots: { profile: workflow.pr.bots } } }
     loop: comments
     timeout: { after: 2d, then: park }
     next: "Take the oldest unhandled comment thread on {item}'s pull request."
@@ -908,7 +919,7 @@ states:
     next: "Ready to merge {item}'s pull request: CI green on the head, docs synced. Merge it, or send it back with rework notes, in the app or with `sindri workflow command {instance} merge`."
   held-next:
     kind: active
-    step: { use: step.pr.comments.held, with: { pr: { fact: fact:pr } } }
+    step: { use: step.pr.held-comment, with: { pr: { fact: fact:pr } } }
     loop: held
     timeout: { after: 2d, then: park }
     next: "Take the oldest held comment on {item}'s pull request."
@@ -924,12 +935,13 @@ states:
     next: "Write what {item}'s phase must change; its builder reworks the same pull request."
   merging:
     kind: wait
-    waitFor: { event: pr.merge-result }
+    waitFor: { event: pr.mergeResult }
     timeout: { after: 30m, then: park }
     next: "Waiting for the forge to merge {item}'s pull request."
   owner:
     kind: active
     step: step.owner.decide
+    loop: retries
     timeout: { after: 7d, then: escalate }
     next: "{item}'s pull request needs you: run `sindri workflow status {instance}` for the reason, then retry or stop."
   merged:  { kind: terminal, outcome: resolved }
@@ -941,15 +953,12 @@ transitions:
   - { from: intake, to: owner,    on: step.failed }
 
   # snapshot: the first row whose `when` holds is taken, so row order is §4.3's priority
-  - { from: snapshot, to: merged, on: step.completed, produces: [fact:prState, fact:mergedSha],
-      when: { all: [ { outcome: merged }, { fact: fact:docsPr, is: present } ] },
-      effects: [{ use: effect.line.report, with: { status: merged, line: { fact: fact:lineContext } } },
-                { use: effect.pr.restack, with: { pr: { fact: fact:docsPr } } }] }
   - { from: snapshot, to: merged,     on: step.completed, when: { outcome: merged },   produces: [fact:prState, fact:mergedSha],
-      effects: [{ use: effect.line.report, with: { status: merged, line: { fact: fact:lineContext } } }] }
+      effects: [{ use: effect.line.report, with: { status: merged, line: { fact: fact:lineContext } } },
+                { use: effect.pr.restack, with: { pr: { fact: fact:pr }, target: docs } }] }
   - { from: snapshot, to: closed,     on: step.completed, when: { outcome: closed },   produces: [fact:prState] }
   - { from: snapshot, to: restacking, on: step.completed, when: { outcome: restack },  produces: [fact:prState],
-      effects: [{ use: effect.pr.restack, with: { pr: { fact: fact:pr } } }] }
+      effects: [{ use: effect.pr.restack, with: { pr: { fact: fact:pr }, target: self } }] }
   - { from: snapshot, to: owner,      on: step.completed, when: { outcome: conflict }, produces: [fact:prState] }
   - { from: snapshot, to: ci-fix,     on: step.completed, when: { outcome: ciRed },    produces: [fact:prState],
       gates: [{ use: gate.pr.autofix-cap, with: { pr: { fact: fact:pr }, cap: { profile: workflow.pr.autofixCap } } }] }
@@ -1076,6 +1085,7 @@ loops:
   rechecks: { cap: 4 }
   docs:     { cap: 3 }
   held:     { cap: 40 }
+  retries:  { cap: 5 }
 budget: { tokens: 3M }
 evals:
   - evals/workflow.pr-babysitter/every-comment-type.jsonl
@@ -1147,6 +1157,7 @@ states:
   owner:
     kind: active
     step: step.owner.decide
+    loop: retries
     timeout: { after: 7d, then: escalate }
     next: "Docs sync for {item} couldn't read the pull request: run `sindri workflow status {instance}`, then retry or stop."
   opened:     { kind: terminal, outcome: resolved }
@@ -1176,7 +1187,8 @@ transitions:
   - { from: owner, to: scope,     on: step.completed, when: { outcome: retry } }
   - { from: owner, to: abandoned, on: step.completed, when: { outcome: stop } }
 loops:
-  edits: { cap: 2 }
+  edits:   { cap: 2 }
+  retries: { cap: 3 }
 budget: { tokens: 400k }
 evals:
   - evals/workflow.docs-sync/opened.jsonl
