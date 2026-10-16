@@ -10,7 +10,9 @@
 # transcripts glob replace the Claude-only commands. An agent that reports its own session id (sessionId: reported) is
 # started fresh, and a background watcher records the id it reports (the lane-sessions/<lane> file its hook writes, else
 # the single new session file the catalog's newestFile glob finds that no other lane has claimed; more than one is
-# refused and leaves lane-sessions/<lane>.ambiguous). Every lane also gets AW_SINDRI_CHILD=1, AW_META_TEAM and
+# refused and leaves lane-sessions/<lane>.ambiguous). A non-Claude lane also gets lane-sessions/<lane>.agent (the catalog
+# facts aw-meta needs), a kickoff note about ending a turn with REPLY TO META:, and AW_STATE_DIR and AW_META_CONFIG exported
+# for its hooks (config/hooks/session-id-report.sh, meta-lane-gate.sh). Every lane also gets AW_SINDRI_CHILD=1, AW_META_TEAM and
 # AW_META_LANE in its environment, exported here: tmux's global environment stays untouched and the launcher's tmux
 # commands stay as they were.
 #   AW_META_CONFIG       team config (default $AW_STATE_DIR/meta/team.json): repo, prompts, metaLane
@@ -50,6 +52,15 @@ cd "$repo" || exit 1
 # those. (tmux names a pane after this script, not the agent, so the pane's command can't tell.)
 exited="$ids/$lane.exited"
 rm -f "$exited" "$ids/$lane.failed"
+# <lane>.agent tells aw-meta what runs in a non-Claude lane (agent, processName, hooks, transcripts: the catalog entry's facts;
+# hooks is the entry's reportedId.hook, the CLI having a hook system the lane hooks can use). A Claude Code lane has none, and a
+# stale one from an earlier agent is removed, so the lane map reads the lane as it now runs.
+if [ "$agent" = claude-code ]; then
+  unlink "$ids/$lane.agent" 2> /dev/null
+else
+  jq -c --arg id "$agent" '.[$id] | {agent: $id, processName: (.processName // $id), hooks: ((.reportedId.hook // false) == true), transcripts: (.transcripts // null)}' \
+    <<< "$LAUNCHER_CAT" > "$ids/$lane.agent.tmp" && mv "$ids/$lane.agent.tmp" "$ids/$lane.agent"
+fi
 
 id_mode="$(field sessionId)"; id_mode="${id_mode:-none}"
 id_pattern="$(field sessionIdPattern)"
@@ -90,7 +101,7 @@ watch_reported_id() { # [seconds]: the wait (default AW_META_ID_WAIT); a second 
         [ -n "$f" ] && id_ok "$f" || continue
         claimed=0
         for other in "$ids"/*; do
-          case "$other" in *.exited|*.start|*.tmp|*.ambiguous|*.settled|*.failed|*.snap.*|*.argv.*|"$ids/$lane") continue ;; esac
+          case "$other" in *.exited|*.start|*.tmp|*.agent|*.ambiguous|*.settled|*.failed|*.snap.*|*.argv.*|"$ids/$lane") continue ;; esac
           [ -f "$other" ] && [ "$(tr -d '[:space:]' < "$other")" = "$f" ] && claimed=1
         done
         [ "$claimed" = 0 ] || continue
@@ -137,6 +148,15 @@ seed=""; LAUNCHER_KEEP_EMPTY_SEED=0
 if [ "$mode" = fresh ] && [ -n "$prompts" ] && [ -f "$prompts/$lane.md" ]; then
   seed="$(cat "$prompts/$lane.md")"; LAUNCHER_KEEP_EMPTY_SEED=1   # an empty prompt file still passes "", as before
 fi
+# A non-Claude lane with hooks answers the meta by ending a turn with a REPLY TO META: line, which its stop hook records (a
+# Claude lane uses SendMessage). A fresh session's kickoff prompt says so; a lane with no prompt file gets none (the message
+# itself, shown by lane-inbox, ends with the same instruction).
+if [ "$mode" = fresh ] && [ -n "$seed" ] && [ "$agent" != claude-code ] && [ "$lane" != "$meta_lane" ] \
+  && [ "$(jq -r --arg id "$agent" '(.[$id].reportedId.hook // false) == true' <<< "$LAUNCHER_CAT")" = true ]; then
+  seed="$seed
+
+When you answer a message from the meta (aw-meta lane-inbox shows it), end your turn with a line starting REPLY TO META: followed by your reply."
+fi
 if [ "$mode" = resume ]; then tpl="$(field resume)"; else tpl="$(field open)"; fi
 # Expand once into a file: its status (a refused element, spec section 4) is checked before anything else happens, so a
 # refused lane starts no agent and records no id.
@@ -171,6 +191,12 @@ unset CLAUDECODE CLAUDE_PID CLAUDE_CODE_SESSION_ID CLAUDE_CODE_CHILD_SESSION CLA
   CLAUDE_CODE_MESSAGING_TOKEN CLAUDE_CODE_BRIDGE_SESSION_ID CLAUDE_CODE_ENTRYPOINT CLAUDE_CODE_SESSION_ATTENDED \
   CLAUDE_CODE_EXECPATH
 export AW_SINDRI_CHILD=1 AW_META_TEAM="$team" AW_META_LANE="$lane"
+# A non-Claude lane's hooks and its lane-* commands run in the agent's process: they find the state directory and the team
+# config from here, not from a Claude-style settings file. A Claude lane's environment stays as it was.
+if [ "$agent" != claude-code ]; then
+  export AW_STATE_DIR="$state_dir"
+  [ ! -f "$config" ] || export AW_META_CONFIG="$config"
+fi
 if [ "$id_mode" = reported ] && [ "$mode" = fresh ]; then
   have_lock=0; acquire_start_lock && have_lock=1
   # The session files that exist now are not this lane's: the watcher counts only paths that appear after this point.
