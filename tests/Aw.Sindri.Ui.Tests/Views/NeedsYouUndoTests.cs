@@ -15,7 +15,6 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>Mark all seen offers Undo for 10 s on Home (proof B2): a visible "N marked seen · Undo", reachable by keyboard, announced once.</summary>
 [Lane(TestLane.Integration)]
-[Collection(HeadlessWindows.Name)]
 public sealed class NeedsYouUndoTests : IDisposable
 {
     private readonly List<Window> _windows = [];

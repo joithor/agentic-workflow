@@ -16,7 +16,6 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>The lock button under the headless platform: its label and title, the popover it opens, Esc, and Copy.</summary>
 [Lane(TestLane.Integration)]
-[Collection(HeadlessWindows.Name)]
 public sealed class ProtectedActionButtonTests
 {
     private const string Subject = "REQ-01JD4";

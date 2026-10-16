@@ -9,7 +9,6 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>The app's Avalonia clipboard over a headless window's clipboard, each call on the UI thread as the app makes it.</summary>
 [Lane(TestLane.Integration)]
-[Collection(HeadlessWindows.Name)]
 public sealed class AvaloniaClipboardContractTests : ClipboardContract
 {
     // Avalonia's headless platform accepts a write and keeps nothing, so the write's acknowledgement and the refusal are what it can check.

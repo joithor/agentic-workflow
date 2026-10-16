@@ -23,7 +23,6 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// palette-filtered.png and shortcuts.png go under the test output's frames/.
 /// </summary>
 [Lane(TestLane.Integration)]
-[Collection(HeadlessWindows.Name)]
 public sealed class CommandPaletteTests : IDisposable
 {
     private static readonly RawInputModifiers _command = OperatingSystem.IsMacOS() ? RawInputModifiers.Meta : RawInputModifiers.Control;

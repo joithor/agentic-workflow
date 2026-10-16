@@ -23,7 +23,6 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// focus returns to the opener, the title says it is required and a blank submit says so under the field.
 /// </summary>
 [Lane(TestLane.Integration)]
-[Collection(HeadlessWindows.Name)]
 public sealed class CreateItemDialogTests : IDisposable
 {
     private static readonly RawInputModifiers _command = OperatingSystem.IsMacOS() ? RawInputModifiers.Meta : RawInputModifiers.Control;

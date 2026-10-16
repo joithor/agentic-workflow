@@ -9,7 +9,6 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>A pulse or a stale mark never fades the row's text (review run 1, K11 / a11y-6; WCAG 1.4.3): the tint moves, the text does not.</summary>
 [Lane(TestLane.Integration)]
-[Collection(HeadlessWindows.Name)]
 public sealed class RowContrastTests : FrameHost
 {
     private static IEnumerable<IStyle> All(IStyle style) => new[] { style }.Concat(style.Children.SelectMany(All));

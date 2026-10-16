@@ -19,7 +19,6 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// control elements with the type a screen reader announces them as.
 /// </summary>
 [Lane(TestLane.Integration)]
-[Collection(HeadlessWindows.Name)]
 public sealed class AutomationPeerTests : IDisposable
 {
     private readonly List<Window> _windows = [];

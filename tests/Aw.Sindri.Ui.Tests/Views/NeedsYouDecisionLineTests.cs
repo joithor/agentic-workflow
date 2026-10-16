@@ -16,7 +16,6 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>The decision sheet is bound once, before any decision shows: its Copy button and its line's name follow the decision shown (review run 5, r5-0).</summary>
 [Lane(TestLane.Integration)]
-[Collection(HeadlessWindows.Name)]
 public sealed class NeedsYouDecisionLineTests : IDisposable
 {
     private readonly List<Window> _windows = [];

@@ -17,7 +17,6 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>Close-to-tray, the tray's menu, and a later launch's messages, on a real window under the headless platform.</summary>
 [Lane(TestLane.Integration)]
-[Collection(HeadlessWindows.Name)]
 public sealed class AppLifetimeTests
 {
     private readonly FakeTray _tray = new();

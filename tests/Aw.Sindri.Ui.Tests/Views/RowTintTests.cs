@@ -11,7 +11,6 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>The tints the view model computes are drawn (review run 1, K15 / arch-1): a failure keeps a steady tint, a calm row a subtle one, a new row slides in (180 ms) unless motion is reduced.</summary>
 [Lane(TestLane.Integration)]
-[Collection(HeadlessWindows.Name)]
 public sealed class RowTintTests : FrameHost
 {
     private static Border FrameOf(Window window, string id) =>

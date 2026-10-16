@@ -20,7 +20,6 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>The Create dialog's layout and the sheet's dismiss name (proof B5, N1, N2, N7).</summary>
 [Lane(TestLane.Integration)]
-[Collection(HeadlessWindows.Name)]
 public sealed class CreateDialogLayoutTests : IDisposable
 {
     private readonly List<Window> _windows = [];

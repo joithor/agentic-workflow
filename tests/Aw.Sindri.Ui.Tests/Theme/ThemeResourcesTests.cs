@@ -3,14 +3,12 @@ using Avalonia.Headless;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Ui.Tests.Views;
 using Aw.Sindri.Ui.Theme;
 
 namespace Aw.Sindri.Ui.Tests.Theme;
 
 /// <summary>The theme as the running app resolves it (SindriApp under the headless platform): tokens, the Fluent palette, the overrides, the embedded mono font and the text scale.</summary>
 [Lane(TestLane.Integration)]
-[Collection(HeadlessWindows.Name)]
 public sealed class ThemeResourcesTests
 {
     private static readonly TokenFile _tokens = TokenFile.Load();

@@ -8,7 +8,6 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Desktop;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Tests.Theme;
-using Aw.Sindri.Ui.Tests.Views;
 
 namespace Aw.Sindri.Ui.Tests.Desktop;
 
@@ -17,7 +16,6 @@ namespace Aw.Sindri.Ui.Tests.Desktop;
 /// the icon registered with the app (Avalonia realises a TrayIcon only once it is in the Application's TrayIcon.Icons).
 /// </summary>
 [Lane(TestLane.Integration)]
-[Collection(HeadlessWindows.Name)]
 public sealed class AvaloniaTrayTests
 {
     private static readonly TrayView _neutral = new(TrayState.Neutral, "Sindri · running", "Open Sindri", "Quit");

@@ -23,7 +23,6 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// as u1-*.png.
 /// </summary>
 [Lane(TestLane.Integration)]
-[Collection(HeadlessWindows.Name)]
 public sealed class CatalogFramesTests : IDisposable
 {
     private readonly List<Window> _windows = [];

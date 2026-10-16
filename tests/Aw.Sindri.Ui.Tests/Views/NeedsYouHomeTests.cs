@@ -18,7 +18,6 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>Home's Needs you panel under the headless platform (U3' T9): rows with the one chip, the summary line, the overflow, the sheets.</summary>
 [Lane(TestLane.Integration)]
-[Collection(HeadlessWindows.Name)]
 public sealed class NeedsYouHomeTests : IDisposable
 {
     private readonly List<Window> _windows = [];

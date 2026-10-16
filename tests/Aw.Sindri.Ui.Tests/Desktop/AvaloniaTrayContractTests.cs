@@ -4,13 +4,11 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Desktop;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Testing;
-using Aw.Sindri.Ui.Tests.Views;
 
 namespace Aw.Sindri.Ui.Tests.Desktop;
 
 /// <summary>The head's tray on the UI thread of the headless app: each call is dispatched there, as the app calls it.</summary>
 [Lane(TestLane.Integration)]
-[Collection(HeadlessWindows.Name)]
 public sealed class AvaloniaTrayContractTests : TrayContract
 {
     protected override ITray Create() => new OnUiThread(OnUi(() => new AvaloniaTray()));

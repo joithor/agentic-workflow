@@ -2,7 +2,6 @@ using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Ui.Tests.Views;
 using Aw.Sindri.Ui.Theme;
 
 namespace Aw.Sindri.Ui.Tests.Theme;
@@ -13,7 +12,6 @@ namespace Aw.Sindri.Ui.Tests.Theme;
 /// Avalonia's dispatcher to that thread and breaks the headless tests that run after it.
 /// </summary>
 [Lane(TestLane.Integration)]
-[Collection(HeadlessWindows.Name)]
 public sealed class MotionTests
 {
     private static readonly string[] _keys = ["Motion.Instant", "Motion.Fast", "Motion.Base", "Motion.Pulse", "Motion.Spin"];

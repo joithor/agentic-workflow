@@ -21,7 +21,6 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// all stay inside the window.
 /// </summary>
 [Lane(TestLane.Integration)]
-[Collection(HeadlessWindows.Name)]
 public sealed class BannerLayoutTests : IDisposable
 {
     private const string LongReason = "/sindri/status answered with something this build can't read, and this sentence runs on "

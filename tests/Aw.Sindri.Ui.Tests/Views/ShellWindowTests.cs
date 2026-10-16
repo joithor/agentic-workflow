@@ -31,7 +31,6 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// discovery under the repo's 4.0 (docs/csharp/sindri-ui.md "Tests").
 /// </summary>
 [Lane(TestLane.Integration)]
-[Collection(HeadlessWindows.Name)]
 public sealed class ShellWindowTests : IDisposable
 {
     private readonly List<Window> _windows = [];

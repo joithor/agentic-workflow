@@ -9,7 +9,6 @@ namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>The app's reader of a later launch's messages over the desktop adapter, on the headless UI thread.</summary>
 [Lane(TestLane.Integration)]
-[Collection(HeadlessWindows.Name)]
 public sealed class InstanceListenerTests : IDisposable
 {
     private readonly string _dir = Directory.CreateTempSubdirectory("sindri-ui-").FullName;
