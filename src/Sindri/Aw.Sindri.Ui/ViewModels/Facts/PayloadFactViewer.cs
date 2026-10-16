@@ -62,6 +62,7 @@ internal sealed class PayloadFactViewer : ObservableObject, IFactViewer
         if (_context.ApiUrl() is not { } url)
         {
             ProblemText = Labels.PayloadNotRunning;   // not an empty body that reads as loaded
+            await Task.Yield();   // the live region is created with the viewer: its first words are said a turn later, so the change is spoken
             Voice.Say(ProblemText);
             IsLoading = false;
             return;
