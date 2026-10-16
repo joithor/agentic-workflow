@@ -50,7 +50,7 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
         }
 
         run.Cancelled = true;
-        registry.Release(job);   // a new start of the same kind and key needs no wait for this one's work to wind down
+        // the (kind, key) claim stays until the work has returned (Execute releases it): a service whose old run is still winding down must never overlap a new one
         try
         {
             run.Source.Cancel();
