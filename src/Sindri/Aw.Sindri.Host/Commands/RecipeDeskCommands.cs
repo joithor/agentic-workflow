@@ -128,16 +128,8 @@ internal sealed class RecipeDeskCommands(RecipeDesk desk, IServiceProvider servi
     private async Task<Result<IssueChallengeResponse>> Issue(string action, CancellationToken ct)
     {
         var answer = await desk.Client.Post<IssueChallengeRequest, IssueChallengeResponse>(Challenges, new IssueChallengeRequest(action), ct).ConfigureAwait(false);
-        return answer.IsError ? ForVerb(answer.Error, action) : answer.Value.Value;
+        return answer.IsError ? answer.Error : answer.Value.Value;
     }
-
-    /// <summary>
-    /// The challenge row is shared by approve and revoke and names both commands; a refused revoke names itself.
-    /// </summary>
-    private static Error ForVerb(Error error, string action) =>
-        error.Code == SindriErrors.AuthRefused.Code && action.StartsWith("revoke ", StringComparison.Ordinal)
-            ? error with { Message = error.Message.Replace("IssueChallenge", "Revoking a recipe", StringComparison.Ordinal) }
-            : error;
 
     private async Task<string> Prompt(string action)
     {

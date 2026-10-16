@@ -87,15 +87,12 @@ internal sealed partial record InstanceWords(WorkflowInstance Instance, Interpre
         };
     }
 
-    /// <summary>The words a dispatch park's question has when the effect couldn't run (SND-WF-010, -015); the allowlist refusal (SND-WF-011) has none.</summary>
-    private const string CantRun = " can't run: ";
-
     private string SpecConflictAnswer(Suspension park) => park.ParkKind switch
     {
         ParkKind.Revoked => $"none (revoked): sindri workflow cancel {Address}, then start a new attempt with --attempt next",
         ParkKind.ChildRevoked => $"none (child revoked): sindri recipe approve {Recipe.Version.Id.Value}{Gap}(at a terminal; the approval resumes it)",
         ParkKind.Drift => $"none (drift): sindri recipe approve {Pinned}{Gap}(at a terminal; the approval resumes it)",
-        ParkKind.Dispatch => $"{Answering} --resume{Gap}(dispatch: once {(park.Question.Contains(CantRun, StringComparison.Ordinal) ? "the cause is fixed" : "the profile allows the effect")})",
+        ParkKind.Dispatch => $"{Answering} --resume{Gap}(dispatch: once {(park.Question.Contains(DispatchWords.CantRun, StringComparison.Ordinal) ? "the cause is fixed" : "the profile allows the effect")})",
         ParkKind.Loop or ParkKind.Refusal or ParkKind.Step or ParkKind.Wait or null or _ => $"{Answering} --resume",
     };
 

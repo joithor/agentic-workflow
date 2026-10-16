@@ -155,6 +155,7 @@ internal sealed partial class RecipeWorkflow
     }
 
     /// <summary>The code and message an ended 'RunEffect' is refused with: its own SND code, else SND-WF-015.</summary>
+    // Deterministic in practice: the scrub's rules are linear and its result only feeds activity inputs, never a value compared on replay.
     private static (string Code, string Reason) FailureOf(ActivityFailureException failure) => failure.InnerException switch
     {
         ApplicationFailureException { ErrorType: { } type } app when type.StartsWith("SND-", StringComparison.Ordinal) => (type, Scrubbed(app.Message)),
