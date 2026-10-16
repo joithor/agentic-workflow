@@ -296,3 +296,45 @@ static Aw.Evidence.Features.RunScript.RunScriptRequest.operator !=(Aw.Evidence.F
 static Aw.Evidence.Features.RunScript.RunScriptRequest.operator ==(Aw.Evidence.Features.RunScript.RunScriptRequest? left, Aw.Evidence.Features.RunScript.RunScriptRequest? right) -> bool
 static Aw.Evidence.Features.RunScript.RunScriptResponse.operator !=(Aw.Evidence.Features.RunScript.RunScriptResponse? left, Aw.Evidence.Features.RunScript.RunScriptResponse? right) -> bool
 static Aw.Evidence.Features.RunScript.RunScriptResponse.operator ==(Aw.Evidence.Features.RunScript.RunScriptResponse? left, Aw.Evidence.Features.RunScript.RunScriptResponse? right) -> bool
+Aw.Evidence.Features.ApiRun.ApiRunRequest
+Aw.Evidence.Features.ApiRun.ApiRunRequest.<Clone>$() -> Aw.Evidence.Features.ApiRun.ApiRunRequest!
+Aw.Evidence.Features.ApiRun.ApiRunRequest.AllowPreviewHost.get -> bool
+Aw.Evidence.Features.ApiRun.ApiRunRequest.AllowPreviewHost.init -> void
+Aw.Evidence.Features.ApiRun.ApiRunRequest.ApiRunRequest(string! ScriptPath, string! RunDirectory, Aw.Evidence.Core.Data.DataRunAt At, System.TimeSpan LockTimeout, string! Repo, string? Host = null, string? AppBuild = null, bool AllowPreviewHost = false, string? ConfigPath = null) -> void
+Aw.Evidence.Features.ApiRun.ApiRunRequest.AppBuild.get -> string?
+Aw.Evidence.Features.ApiRun.ApiRunRequest.AppBuild.init -> void
+Aw.Evidence.Features.ApiRun.ApiRunRequest.At.get -> Aw.Evidence.Core.Data.DataRunAt
+Aw.Evidence.Features.ApiRun.ApiRunRequest.At.init -> void
+Aw.Evidence.Features.ApiRun.ApiRunRequest.ConfigPath.get -> string?
+Aw.Evidence.Features.ApiRun.ApiRunRequest.ConfigPath.init -> void
+Aw.Evidence.Features.ApiRun.ApiRunRequest.Deconstruct(out string! ScriptPath, out string! RunDirectory, out Aw.Evidence.Core.Data.DataRunAt At, out System.TimeSpan LockTimeout, out string! Repo, out string? Host, out string? AppBuild, out bool AllowPreviewHost, out string? ConfigPath) -> void
+Aw.Evidence.Features.ApiRun.ApiRunRequest.Equals(Aw.Evidence.Features.ApiRun.ApiRunRequest? other) -> bool
+Aw.Evidence.Features.ApiRun.ApiRunRequest.Host.get -> string?
+Aw.Evidence.Features.ApiRun.ApiRunRequest.Host.init -> void
+Aw.Evidence.Features.ApiRun.ApiRunRequest.LockTimeout.get -> System.TimeSpan
+Aw.Evidence.Features.ApiRun.ApiRunRequest.LockTimeout.init -> void
+Aw.Evidence.Features.ApiRun.ApiRunRequest.Repo.get -> string!
+Aw.Evidence.Features.ApiRun.ApiRunRequest.Repo.init -> void
+Aw.Evidence.Features.ApiRun.ApiRunRequest.RunDirectory.get -> string!
+Aw.Evidence.Features.ApiRun.ApiRunRequest.RunDirectory.init -> void
+Aw.Evidence.Features.ApiRun.ApiRunRequest.ScriptPath.get -> string!
+Aw.Evidence.Features.ApiRun.ApiRunRequest.ScriptPath.init -> void
+Aw.Evidence.Features.ApiRun.ApiRunResponse
+Aw.Evidence.Features.ApiRun.ApiRunResponse.<Clone>$() -> Aw.Evidence.Features.ApiRun.ApiRunResponse!
+Aw.Evidence.Features.ApiRun.ApiRunResponse.ApiRunResponse(Aw.Evidence.Core.Data.ApiSummary! Summary, string! Document) -> void
+Aw.Evidence.Features.ApiRun.ApiRunResponse.Deconstruct(out Aw.Evidence.Core.Data.ApiSummary! Summary, out string! Document) -> void
+Aw.Evidence.Features.ApiRun.ApiRunResponse.Document.get -> string!
+Aw.Evidence.Features.ApiRun.ApiRunResponse.Document.init -> void
+Aw.Evidence.Features.ApiRun.ApiRunResponse.Equals(Aw.Evidence.Features.ApiRun.ApiRunResponse? other) -> bool
+Aw.Evidence.Features.ApiRun.ApiRunResponse.Summary.get -> Aw.Evidence.Core.Data.ApiSummary!
+Aw.Evidence.Features.ApiRun.ApiRunResponse.Summary.init -> void
+override Aw.Evidence.Features.ApiRun.ApiRunRequest.Equals(object? obj) -> bool
+override Aw.Evidence.Features.ApiRun.ApiRunRequest.GetHashCode() -> int
+override Aw.Evidence.Features.ApiRun.ApiRunRequest.ToString() -> string!
+override Aw.Evidence.Features.ApiRun.ApiRunResponse.Equals(object? obj) -> bool
+override Aw.Evidence.Features.ApiRun.ApiRunResponse.GetHashCode() -> int
+override Aw.Evidence.Features.ApiRun.ApiRunResponse.ToString() -> string!
+static Aw.Evidence.Features.ApiRun.ApiRunRequest.operator !=(Aw.Evidence.Features.ApiRun.ApiRunRequest? left, Aw.Evidence.Features.ApiRun.ApiRunRequest? right) -> bool
+static Aw.Evidence.Features.ApiRun.ApiRunRequest.operator ==(Aw.Evidence.Features.ApiRun.ApiRunRequest? left, Aw.Evidence.Features.ApiRun.ApiRunRequest? right) -> bool
+static Aw.Evidence.Features.ApiRun.ApiRunResponse.operator !=(Aw.Evidence.Features.ApiRun.ApiRunResponse? left, Aw.Evidence.Features.ApiRun.ApiRunResponse? right) -> bool
+static Aw.Evidence.Features.ApiRun.ApiRunResponse.operator ==(Aw.Evidence.Features.ApiRun.ApiRunResponse? left, Aw.Evidence.Features.ApiRun.ApiRunResponse? right) -> bool
