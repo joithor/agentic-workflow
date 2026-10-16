@@ -22,7 +22,7 @@
     }
   ],
   "rounds": 2,
-  "summary": "5 samples, brief and graph, owner decision needed (small sample)",
+  "summary": "5 samples, brief+graph, owner decision needed (small sample)",
   "code": null,
   "result": {
     "samples": 5,

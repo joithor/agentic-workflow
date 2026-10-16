@@ -215,7 +215,7 @@ internal static class JobScenarios
                  new BacktestArmLine("linear", "S-6", Overall: null, Leaky: false, Score: null)],
                 Verdicts.OwnerDecision, "<home>/context/eval/backtest/20260101T000000Z.json", ["clusters unavailable"]);
             var element = JsonSerializer.SerializeToElement(result, h.App.Services.GetRequiredService<JsonSerializerOptions>());
-            await Finished(h, j, JobOutcome.Succeeded, "5 samples, brief and graph, " + Verdicts.OwnerDecision, code: null, element, ct);
+            await Finished(h, j, JobOutcome.Succeeded, "5 samples, brief+graph, " + Verdicts.OwnerDecision, code: null, element, ct);
         },
         ["ansi-escaped"] = static (h, j, ct) => Progress(h, j, 1, JobLines.Clean(h.App.Services.GetRequiredService<ITextScrubber>(), "\u001b[31mred\u001b[0m \u001b]0;title\u0007done"), ct),   // the line the real writer records
         ["stalled"] = static (h, _, ct) => ViewScenarios.Stall(h, ct),

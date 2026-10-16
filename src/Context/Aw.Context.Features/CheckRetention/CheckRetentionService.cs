@@ -27,7 +27,7 @@ internal sealed class CheckRetentionService(IGraphStore store, IExportStore expo
         var evalFiles = old.IsSuccess ? old.Value.Total : 0;
         if (expired + excess + evalFiles == 0)
         {
-            return new MapHealth(Name, MapHealthState.Ok, "no expired exports; at most 20 retained map versions", Fix: null);
+            return new MapHealth(Name, MapHealthState.Ok, "no expired exports; retained map versions are within the newest 20 and the 90-day eval window", Fix: null);
         }
 
         var detail = string.Create(CultureInfo.InvariantCulture,

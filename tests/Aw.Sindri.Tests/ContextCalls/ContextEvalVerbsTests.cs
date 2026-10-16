@@ -1,38 +1,12 @@
 using Aw.Context.Core;
-using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Testing.Engine;
 using Aw.Sindri.Host.Commands;
-using Aw.Sindri.Host.Text;
 using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.ContextCalls;
 
 public sealed class ContextEvalVerbsTests
 {
-    private static BacktestReport Report() => new(1, new DateTimeOffset(2026, 10, 16, 9, 0, 0, TimeSpan.Zero), "all", 5, SmallSample: true, 1.0, new LeftOut(1, 0, 0, ["SPL-106"]),
-        [], [Row("brief", leaky: false), Row("graph+reviewed", leaky: true), Pending("linear", "S-6"), Pending("onyx", "S-7B"), Pending("code", "S-9")],
-        Verdicts.OwnerDecision, []);
-
-    private static ArmReport Pending(string arm, string stage) => new(arm, "source", Leaky: false, stage, Score: null, PassLine: null, []);
-
-    private static ArmReport Row(string arm, bool leaky) =>
-        new(arm, "source", leaky, NotAvailable: null, new ArmScore(5, 5, 0.5, 0.4, 0.3, 1.0, 0), new ArmPassLine("not met", "not met", "not met", "met", Verdicts.OwnerDecision), []);
-
-    [Fact, Trait("Lane", "unit")]
-    public void Eval_cli_backtest_text_lists_arms_in_order_with_not_available_rows()
-    {
-        var text = ContextEvalText.Backtest(Report(), "/home/x/backtest.json");
-
-        Assert.StartsWith("5 samples", text, StringComparison.Ordinal);
-        Assert.Contains("left out: SPL-106 (1 with no merged PR)", text, StringComparison.Ordinal);
-        Assert.Contains("small sample", text, StringComparison.Ordinal);
-        string[] order = ["  brief ", "  graph+reviewed (leaky)", "  linear ", "  onyx ", "  code "];
-        Assert.Equal(order, order.OrderBy(o => text.IndexOf(o, StringComparison.Ordinal)), StringComparer.Ordinal);
-        Assert.Contains("linear          not available (S-6)", text, StringComparison.Ordinal);
-        Assert.Contains("pass line: " + Verdicts.OwnerDecision, text, StringComparison.Ordinal);
-        Assert.Contains("report /home/x/backtest.json", text, StringComparison.Ordinal);
-    }
-
     private static Task<(int Code, string Out)> Verb(params string[] args) => VerbAs(session: null, args);
 
     private static async Task<(int Code, string Out)> VerbAs(AgentSession? session, params string[] args)

@@ -44,37 +44,6 @@ internal static class ContextEvalText
         return text.AppendLine("report not saved").ToString();
     }
 
-    /// <summary>The backtest as text: the sample count first, one row per arm in report order, then the pass line (verdicts are words, never colors).</summary>
-    /// <param name="report">The report.</param>
-    /// <param name="path">Where it was written.</param>
-    /// <returns>The text.</returns>
-    internal static string Backtest(BacktestReport report, string? path)
-    {
-        var text = new StringBuilder(Invariant($"{report.SampleCount} samples ({string.Join(", ", report.Samples.Select(s => s.IssueKey))})"));
-        _ = text.Append(report.LeftOut.Total == 0 ? string.Empty : Invariant($"; left out: {string.Join(", ", report.LeftOut.Keys)} ({LeftOut(report.LeftOut)})"));
-        _ = text.AppendLine(report.SmallSample ? " · small sample" : string.Empty);
-        _ = text.AppendLine(Invariant($"window {report.Window} · leaky share {report.LeakyShare:0.00}"));
-        foreach (var arm in report.Arms)
-        {
-            _ = text.AppendLine(arm.NotAvailable is { } stage ? Invariant($"  {arm.Arm,-15} not available ({stage})") : Row(arm));
-        }
-
-        var judged = report.Arms.Where(a => a.PassLine is not null).ToList();
-        foreach (var arm in judged)
-        {
-            var line = arm.PassLine!;   // why: the filter above keeps the arms with a pass line
-            _ = text.AppendLine(Invariant($"  pass {arm.Arm,-15} recall {line.NodeRecall} · precision {line.NodePrecision} · files@20 {line.FileRecallAt20} · tokens {line.Tokens} => {line.Overall}"));
-        }
-
-        _ = text.AppendLine(Invariant($"pass line: {report.Overall ?? "not measured"}"));
-        foreach (var note in report.Degraded)
-        {
-            _ = text.Append("degraded: ").AppendLine(note);
-        }
-
-        return text.Append("report ").AppendLine(path ?? "not written").ToString();
-    }
-
     /// <summary>The map's quality as text.</summary>
     /// <param name="run">The run.</param>
     /// <returns>The text.</returns>
@@ -99,17 +68,6 @@ internal static class ContextEvalText
     /// <returns>The text.</returns>
     internal static string Purge(EvalPurgeReport report, bool all) =>
         Invariant($"removed {report.Reports} report(s) and {report.CacheFiles} cache file(s){(all ? Invariant($" and {report.ProbeReports} probe report(s): the probe baselines are cleared too, so the next 'eval probes' says no baseline") : string.Empty)}\n");
-
-    private static string Row(ArmReport arm)
-    {
-        var s = arm.Score!;   // why: an arm without a score is printed as not available
-        return Invariant($"  {arm.Arm + (arm.Leaky ? " (leaky)" : string.Empty),-15} samples {s.Samples} · node recall {Show(s.NodeRecall)} · node precision {Show(s.NodePrecision)} · file recall@20 {Show(s.FileRecallAt20)} · leaky {s.LeakyShare:0.00} · tokens {s.Tokens}");
-    }
-
-    private static string LeftOut(LeftOut left) => string.Join(", ", new[] { left.NoMerge > 0 ? Invariant($"{left.NoMerge} with no merged PR") : null, left.OutsideTeams > 0 ? Invariant($"{left.OutsideTeams} outside the profile's teams") : null,
-        left.ExtractFailed > 0 ? Invariant($"{left.ExtractFailed} unreadable at the cut") : null, left.NoBrief > 0 ? Invariant($"{left.NoBrief} with no brief") : null, }.OfType<string>());
-
-    private static string Show(double? value) => value is { } v ? v.ToString("0.00", CultureInfo.InvariantCulture) : "not measured";
 
     private static string Show(Ratio ratio) => ratio.Value is { } v ? Invariant($"{v:0.00} ({ratio.Hits}/{ratio.Total})") : "not measured";
 

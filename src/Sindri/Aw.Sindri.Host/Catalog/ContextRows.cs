@@ -9,7 +9,7 @@ namespace Aw.Sindri.Host.Catalog;
 /// README X63 sets the classes of the map review: a single decision (accept, reject, rename, move), the bulk deterministic accept,
 /// undo and the orphan repoint and drop are desk (one reversible override row, with Undo; the terminal and the app may run them);
 /// applying a review file, merge, add, delete and promote are protected (the terminal and the typed confirmation of X30, like import).
-/// Proposing is a job run synchronously (it only writes draft rows). BuildContextMap and SyncSources are jobs on API P6's runtime (JobRows.Job,
+/// Proposing is a job run synchronously (it only writes draft rows). BuildContextMap, SyncSources and RunContextBacktest are jobs on API P6's runtime (JobRows.Job,
 /// AddContextJobs, MapContextJobs): they start a job and answer its links, and the 'context-rebuild' and 'context-sync' scheduled services
 /// run the same work on a cadence.
 /// </summary>
