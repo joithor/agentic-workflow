@@ -24,6 +24,16 @@ public sealed class DecisionRulesTests
     }
 
     [Fact]
+    public void Decide_copies_the_decisions_repo_into_the_payload()
+    {
+        var decision = A.Decision().About(item: null, version: 0, RepoName.From("demo")).Build();
+
+        var recorded = DecisionRules.Decide(decision, _accept, note: null, "human:ui", _command).Value;
+
+        Expect.Equal(RepoName.From("demo"), recorded.Repo);
+    }
+
+    [Fact]
     public void Decide_takes_the_second_option_and_no_note()
     {
         var recorded = DecisionRules.Decide(A.Decision().Build(), DecisionOption.From("decline"), note: null, "human:prover", _command).Value;

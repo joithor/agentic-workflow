@@ -94,6 +94,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(RequestFiled))]
 [JsonSerializable(typeof(RequestFiledPublic))]
 [JsonSerializable(typeof(DecisionRecorded))]
+[JsonSerializable(typeof(DecisionRecordedPublic))]
 [JsonSerializable(typeof(AsOf))]
 [JsonSerializable(typeof(ViewsStatus))]
 [JsonSerializable(typeof(ServiceRow))]

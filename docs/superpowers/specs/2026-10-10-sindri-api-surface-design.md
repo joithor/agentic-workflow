@@ -418,7 +418,7 @@ catalog itself lands in P1. Every domain payload carries `commandId` (or the `se
 | `item.created` | item, title, repo, link?, body? (never public), owner? (reserved, README X61) | `item.created:<itemId>` | yes | P3 |
 | `item.state-changed` | item, from, to, version (the new one), reason? | `item.state-changed:<itemId>:v<version>` | yes | P3 |
 | `request.filed` | request, decision, kind, item?, repo? (the item's repo, else the session's `X-Sindri-Repo`), text (scrubbed, at most 2,000 characters) | `request.filed:<requestId>` | yes (text left out) | P4 |
-| `decision.recorded` | decision, choice, note?, by | `decision.recorded:<decisionId>` | yes | P4 |
+| `decision.recorded` | decision, choice, note?, by, repo? (the decision's repo, copied from its row) | `decision.recorded:<decisionId>` | yes (note left out; a human's ledger read keeps it) | P4 |
 | `job.started` | job, kind, item? | `job.started:<jobId>` | yes | P6 |
 | `service.ran` (manual) | as above; `slot` is the run's start time, and the key carries the job instead | `service.ran:<name>:manual:<jobId>` | yes | P6: a `RunService` job appends it when it ends, so a manual run updates `lastRun` and clears a failure row |
 | `job.progress` | job, round, line | `job.progress:<jobId>:<n>` | yes | P6 |
@@ -930,7 +930,7 @@ The endpoint is `GET /events?after=<sequence>&item=<itemId>&types=<glob,glob>`, 
 - On a reconnect, `Last-Event-ID` wins over `after` (conflict C4).
 - A read error ends the stream with `event: error` and the SND code, instead of being swallowed.
 - A `session` caller's stream is filtered to its repo (§3.1). That filter, and the one on `ReadLedger`, also drop any
-  event whose payload `repo` names another repo, such as a request filed elsewhere without an item.
+  event whose payload `repo` names another repo, such as a request filed elsewhere without an item, or its decision (`decision.recorded` carries the decision's `repo` for this).
 - Not WebSocket: the stream is one-way, SSE resumes natively, it works with `curl -N`, and the Avalonia client reads it
   with a streaming `HttpClient`.
 

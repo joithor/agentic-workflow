@@ -7308,8 +7308,6 @@ Aw.Sindri.Core.Events.DecisionRecorded.CommandId.get -> Aw.Sindri.Core.Ids.Comma
 Aw.Sindri.Core.Events.DecisionRecorded.CommandId.init -> void
 Aw.Sindri.Core.Events.DecisionRecorded.Decision.get -> Aw.Sindri.Core.Ids.DecisionId
 Aw.Sindri.Core.Events.DecisionRecorded.Decision.init -> void
-Aw.Sindri.Core.Events.DecisionRecorded.DecisionRecorded(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.DecisionId Decision, Aw.Sindri.Core.Ids.DecisionOption Choice, string? Note, string! By) -> void
-Aw.Sindri.Core.Events.DecisionRecorded.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.DecisionId Decision, out Aw.Sindri.Core.Ids.DecisionOption Choice, out string? Note, out string! By) -> void
 Aw.Sindri.Core.Events.DecisionRecorded.Equals(Aw.Sindri.Core.Events.DecisionRecorded? other) -> bool
 Aw.Sindri.Core.Events.DecisionRecorded.Note.get -> string?
 Aw.Sindri.Core.Events.DecisionRecorded.Note.init -> void
@@ -7642,3 +7640,27 @@ static Aw.Sindri.Core.Items.TimelineLine.DecisionLine(Aw.Sindri.Core.Events.Deci
 Aw.Sindri.Core.Events.RecipeEvents.LatestApproval(Aw.Sindri.Core.Workflow.Ids.RecipeHash hash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<long>!>
 Aw.Sindri.Core.Commands.IRefusalCli
 Aw.Sindri.Core.Commands.IRefusalCli.RefusalCli.get -> string?
+Aw.Sindri.Core.Events.DecisionRecorded.DecisionRecorded(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.DecisionId Decision, Aw.Sindri.Core.Ids.DecisionOption Choice, string? Note, string! By, Aw.Sindri.Core.Ids.RepoName? Repo = null) -> void
+Aw.Sindri.Core.Events.DecisionRecorded.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.DecisionId Decision, out Aw.Sindri.Core.Ids.DecisionOption Choice, out string? Note, out string! By, out Aw.Sindri.Core.Ids.RepoName? Repo) -> void
+Aw.Sindri.Core.Events.DecisionRecorded.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Core.Events.DecisionRecorded.Repo.init -> void
+Aw.Sindri.Core.Events.DecisionRecordedPublic
+Aw.Sindri.Core.Events.DecisionRecordedPublic.<Clone>$() -> Aw.Sindri.Core.Events.DecisionRecordedPublic!
+Aw.Sindri.Core.Events.DecisionRecordedPublic.By.get -> string!
+Aw.Sindri.Core.Events.DecisionRecordedPublic.By.init -> void
+Aw.Sindri.Core.Events.DecisionRecordedPublic.Choice.get -> Aw.Sindri.Core.Ids.DecisionOption
+Aw.Sindri.Core.Events.DecisionRecordedPublic.Choice.init -> void
+Aw.Sindri.Core.Events.DecisionRecordedPublic.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.DecisionRecordedPublic.CommandId.init -> void
+Aw.Sindri.Core.Events.DecisionRecordedPublic.Decision.get -> Aw.Sindri.Core.Ids.DecisionId
+Aw.Sindri.Core.Events.DecisionRecordedPublic.Decision.init -> void
+Aw.Sindri.Core.Events.DecisionRecordedPublic.DecisionRecordedPublic(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.DecisionId Decision, Aw.Sindri.Core.Ids.DecisionOption Choice, string! By, Aw.Sindri.Core.Ids.RepoName? Repo) -> void
+Aw.Sindri.Core.Events.DecisionRecordedPublic.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.DecisionId Decision, out Aw.Sindri.Core.Ids.DecisionOption Choice, out string! By, out Aw.Sindri.Core.Ids.RepoName? Repo) -> void
+Aw.Sindri.Core.Events.DecisionRecordedPublic.Equals(Aw.Sindri.Core.Events.DecisionRecordedPublic? other) -> bool
+Aw.Sindri.Core.Events.DecisionRecordedPublic.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Core.Events.DecisionRecordedPublic.Repo.init -> void
+static Aw.Sindri.Core.Events.DecisionRecordedPublic.operator ==(Aw.Sindri.Core.Events.DecisionRecordedPublic? left, Aw.Sindri.Core.Events.DecisionRecordedPublic? right) -> bool
+static Aw.Sindri.Core.Events.DecisionRecordedPublic.operator !=(Aw.Sindri.Core.Events.DecisionRecordedPublic? left, Aw.Sindri.Core.Events.DecisionRecordedPublic? right) -> bool
+override Aw.Sindri.Core.Events.DecisionRecordedPublic.ToString() -> string!
+override Aw.Sindri.Core.Events.DecisionRecordedPublic.GetHashCode() -> int
+override Aw.Sindri.Core.Events.DecisionRecordedPublic.Equals(object? obj) -> bool

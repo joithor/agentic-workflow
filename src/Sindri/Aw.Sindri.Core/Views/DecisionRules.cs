@@ -48,6 +48,6 @@ public static class DecisionRules
             return SindriErrors.DecisionInvalid.With(string.Create(CultureInfo.InvariantCulture, $"The note is longer than {NoteMax} characters (fix: shorten it)"));
         }
 
-        return new DecisionRecorded(command, decision.Id, choice, note, actor);
+        return new DecisionRecorded(command, decision.Id, choice, note, actor, decision.Repo);
     }
 }
