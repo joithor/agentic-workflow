@@ -29,10 +29,12 @@ internal sealed class Interrupt : IDisposable
     /// <summary>Cancelled by Ctrl-C or SIGTERM; never cancelled for a verb that doesn't stream.</summary>
     public CancellationToken Token => _source.Token;
 
-    /// <summary>Whether <paramref name="args"/> is a verb that runs until interrupted: 'workflow events … --follow'.</summary>
+    /// <summary>Whether <paramref name="args"/> is a verb that runs until interrupted: 'workflow events … --follow' or 'status --follow'.</summary>
     /// <param name="args">The command line.</param>
     /// <returns>True for a following verb.</returns>
-    public static bool Streams(string[] args) => args is ["workflow", "events", .. var rest] && rest.Contains("--follow", StringComparer.Ordinal);
+    public static bool Streams(string[] args) =>
+        (args is ["workflow", "events", .. var rest] && rest.Contains("--follow", StringComparer.Ordinal))
+        || (args is ["status", .. var follow] && follow.Contains("--follow", StringComparer.Ordinal));
 
     /// <summary>Starts listening when <paramref name="args"/> <see cref="Streams"/>.</summary>
     /// <param name="args">The command line.</param>

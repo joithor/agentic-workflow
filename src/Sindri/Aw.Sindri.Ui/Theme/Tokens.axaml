@@ -73,6 +73,12 @@
   <!-- derived: Attention at 14 % over Canvas, the needs-you chip background -->
   <Color x:Key="Color.AttentionSoft">#23160c</Color>
   <SolidColorBrush x:Key="Brush.AttentionSoft" Color="{StaticResource Color.AttentionSoft}" />
+  <!-- derived: Error at 14 % over Canvas, the fail chip background -->
+  <Color x:Key="Color.ErrorSoft">#220d0e</Color>
+  <SolidColorBrush x:Key="Brush.ErrorSoft" Color="{StaticResource Color.ErrorSoft}" />
+  <!-- derived: Success at 14 % over Canvas, the ok chip background -->
+  <Color x:Key="Color.SuccessSoft">#06180b</Color>
+  <SolidColorBrush x:Key="Brush.SuccessSoft" Color="{StaticResource Color.SuccessSoft}" />
   <!-- derived (S1b): the selected nav background, the running pill -->
   <Color x:Key="Color.PrimarySoft">#1d2036</Color>
   <SolidColorBrush x:Key="Brush.PrimarySoft" Color="{StaticResource Color.PrimarySoft}" />

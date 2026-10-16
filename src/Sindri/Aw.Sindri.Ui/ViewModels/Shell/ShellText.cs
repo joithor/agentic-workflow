@@ -27,9 +27,6 @@ internal sealed class ShellText
     /// <summary><see cref="Labels.ControlPlaneCard"/>.</summary>
     public string ControlPlaneCard { get; } = Labels.ControlPlaneCard;
 
-    /// <summary><see cref="Labels.Decisions"/>.</summary>
-    public string Decisions { get; } = Labels.Decisions;
-
     /// <summary><see cref="Labels.DoctorFix"/>.</summary>
     public string DoctorFix { get; } = Labels.DoctorFix;
 
@@ -45,14 +42,44 @@ internal sealed class ShellText
     /// <summary><see cref="Labels.HealthPanel"/>.</summary>
     public string HealthPanel { get; } = Labels.HealthPanel;
 
+    /// <summary><see cref="Labels.Workflows"/>.</summary>
+    public string Workflows { get; } = Labels.Workflows;
+
+    /// <summary><see cref="Labels.Work"/>.</summary>
+    public string Work { get; } = Labels.Work;
+
+    /// <summary><see cref="Labels.Recipes"/>.</summary>
+    public string Recipes { get; } = Labels.Recipes;
+
+    /// <summary><see cref="Labels.Context"/>.</summary>
+    public string Context { get; } = Labels.Context;
+
+    /// <summary><see cref="Labels.Agents"/>.</summary>
+    public string Agents { get; } = Labels.Agents;
+
+    /// <summary><see cref="Labels.System"/>.</summary>
+    public string System { get; } = Labels.System;
+
+    /// <summary>What the Workflows page waits for (<see cref="Labels.ArrivesWith"/>).</summary>
+    public string ArrivesWorkflows { get; } = Labels.ArrivesWorkflows;
+
+    /// <summary>What the Work page waits for (<see cref="Labels.ArrivesWith"/>).</summary>
+    public string ArrivesWork { get; } = Labels.ArrivesWork;
+
+    /// <summary>What the Recipes page waits for (<see cref="Labels.ArrivesWith"/>).</summary>
+    public string ArrivesRecipes { get; } = Labels.ArrivesRecipes;
+
+    /// <summary>What the Context page waits for (<see cref="Labels.ArrivesWith"/>).</summary>
+    public string ArrivesContext { get; } = Labels.ArrivesContext;
+
+    /// <summary>What the Agents page waits for (<see cref="Labels.ArrivesWith"/>).</summary>
+    public string ArrivesAgents { get; } = Labels.ArrivesAgents;
+
     /// <summary><see cref="Labels.Home"/>.</summary>
     public string Home { get; } = Labels.Home;
 
     /// <summary><see cref="Labels.LastEventCard"/>.</summary>
     public string LastEventCard { get; } = Labels.LastEventCard;
-
-    /// <summary><see cref="Labels.Later"/>.</summary>
-    public string Later { get; } = Labels.Later;
 
     /// <summary><see cref="Labels.LeaseCard"/>.</summary>
     public string LeaseCard { get; } = Labels.LeaseCard;
@@ -83,9 +110,6 @@ internal sealed class ShellText
 
     /// <summary><see cref="Labels.ProfileCard"/>.</summary>
     public string ProfileCard { get; } = Labels.ProfileCard;
-
-    /// <summary><see cref="Labels.Queue"/>.</summary>
-    public string Queue { get; } = Labels.Queue;
 
     /// <summary><see cref="Labels.QueuedPanel"/>.</summary>
     public string QueuedPanel { get; } = Labels.QueuedPanel;

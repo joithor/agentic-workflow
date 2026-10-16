@@ -36,6 +36,39 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
     /// <returns>The answer, or the API's error.</returns>
     public Task<Result<ApiAnswer<T>>> Get<T>(string route, CancellationToken ct) => Send<T>(HttpMethod.Get, route, content: null, after: null, ct);
 
+    /// <summary>GET a route so it reflects every write up to <paramref name="after"/> (X-Sindri-After, API spec §2.4).</summary>
+    /// <param name="route">The route under the base URL.</param>
+    /// <param name="after">The ledger sequence the read must reflect.</param>
+    /// <param name="ct">Cancels the call.</param>
+    /// <typeparam name="T">The response record (in the package's JSON context).</typeparam>
+    /// <returns>The answer, or the API's error.</returns>
+    public Task<Result<ApiAnswer<T>>> GetAfter<T>(string route, long after, CancellationToken ct) => Send<T>(HttpMethod.Get, route, content: null, after, ct);
+
+    /// <summary>
+    /// GET an event stream route (API spec §5) and read its frames as they arrive: the frames' id, event and data, with the ': ping' comments dropped.
+    /// A refusal before the stream opens (SND-API-012 for a 429, not running) arrives as one error, then the sequence ends; so does the sequence
+    /// when the server closes the stream or the connection breaks. No call timeout applies once the headers are in. Cancelling <paramref name="ct"/> ends it with the cancellation.
+    /// </summary>
+    /// <param name="route">The route under the base URL, e.g. '/sindri/events?after=12'.</param>
+    /// <param name="ct">Ends the stream.</param>
+    /// <returns>The frames, or the refusal.</returns>
+    public async IAsyncEnumerable<Result<StreamFrame>> Stream(string route, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+    {
+        var opened = await Open(route, ct).ConfigureAwait(false);
+        if (opened.IsError)
+        {
+            yield return opened.Error;
+            yield break;
+        }
+
+        using var response = opened.Value;
+        using var reader = new StreamReader(await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false));
+        await foreach (var frame in SseFrames.Read(reader, ct).ConfigureAwait(false))
+        {
+            yield return frame;
+        }
+    }
+
     /// <summary>
     /// GET a view route so it reflects every write made so far (API spec §2.4): reads the ledger head from GET /sindri/status, then sends it as
     /// X-Sindri-After, so a read right after a write never lags the projector. Views still behind after 2 s are the server's SND-API-011.
@@ -108,6 +141,36 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
         {
             return SindriErrors.ApiTimeout.With(string.Create(System.Globalization.CultureInfo.InvariantCulture,
                 $"{found.Value.Endpoint.Url.Authority} didn't answer {route} within {_http.Timeout.TotalSeconds:0} s"));
+        }
+    }
+
+    private async Task<Result<HttpResponseMessage>> Open(string route, CancellationToken ct)
+    {
+        var found = await probe.Check(ct).ConfigureAwait(false);
+        if (found.IsError)
+        {
+            return found.Error;
+        }
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(found.Value.Endpoint.Url, route));
+        await _headers.Apply(request, ct).ConfigureAwait(false);
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
+        try
+        {
+            var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                return response;
+            }
+
+            using (response)
+            {
+                return Problem(await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false), (int)response.StatusCode);
+            }
+        }
+        catch (HttpRequestException e)
+        {
+            return SindriErrors.NotRunning.With($"the control plane went away: {e.Message}");
         }
     }
 

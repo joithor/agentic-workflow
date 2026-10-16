@@ -38,6 +38,7 @@ internal sealed partial class ShellWindow : Window
     {
         InitializeComponent();
         AddHandler(GotFocusEvent, OnGotFocus, handledEventsToo: true);
+        WatchNavigationKeys();
     }
 
     private ShellViewModel? Shell => DataContext as ShellViewModel;
@@ -88,11 +89,27 @@ internal sealed partial class ShellWindow : Window
     /// <inheritdoc />
     protected override void OnKeyDown(KeyEventArgs e)
     {
+        var chordWaiting = Shell?.IsChordPending == true;
+        if (!IsChordStep(e))
+        {
+            Shell?.CancelChord();
+        }
+
+        // Esc with a chord waiting is spent on cancelling it: whatever Esc would close stays open.
         e.Handled = RegionStep(e.Key, e.KeyModifiers, OperatingSystem.IsMacOS()) is { } step ? CycleRegion(back: step < 0)
-            : e.Key == Key.Escape ? Escape()
-            : OpenByKey(e);
+            : e.Key == Key.Escape ? chordWaiting || Escape()
+            : OpenByKey(e) || (!OverlayOpen && Chord(e));
         base.OnKeyDown(e);
     }
+
+    // A chord's keys are the plain letters and '.'; a modifier pressed alone is part of typing a key, not another key.
+    private static bool IsChordStep(KeyEventArgs e) =>
+        (e.KeyModifiers == KeyModifiers.None && ChordKey(e.Key) is not null)
+        || e.Key is Key.LeftShift or Key.RightShift or Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt or Key.LWin or Key.RWin;
+
+    // Single keys never fire while typing in a text field (rev 7 §8).
+    private bool Chord(KeyEventArgs e) =>
+        e.KeyModifiers == KeyModifiers.None && e.Source is not TextBox && ChordKey(e.Key) is { } chord && Shell is { } shell && shell.PressKey(chord);
 
     // Esc closes the sheet when it shows, or Settings over the Not running card (focus then goes from its hidden control
     // to the page region); otherwise it does nothing here. A sheet hidden while Sindri isn't running stays open, so the
@@ -148,6 +165,12 @@ internal sealed partial class ShellWindow : Window
         return target.Focus(NavigationMethod.Tab);
     }
 
+    /// <summary>The text a plain key feeds the G-chord: a letter or '.', else null.</summary>
+    /// <param name="key">The key.</param>
+    /// <returns>Its text, or null.</returns>
+    internal static string? ChordKey(Key key) =>
+        key is >= Key.A and <= Key.Z ? key.ToString() : key is Key.OemPeriod or Key.Decimal ? "." : null;
+
     /// <summary>The step a key takes through the regions (§8, §11.2): 1 forward, -1 back, null when it isn't a region key.</summary>
     /// <param name="key">The key.</param>
     /// <param name="modifiers">Its modifiers.</param>
@@ -185,6 +208,8 @@ internal sealed partial class ShellWindow : Window
     // While the sheet covers the page, the page and its controls leave the tab order, F6's cycle and hit-testing, so focus
     // never lands where it can't be seen (WCAG 2.4.3, 2.4.7). The sheet hides the page's disabled look. The page is
     // enabled again as soon as the sheet closes or stops covering, before focus returns to it (KeepFocus runs later).
+    // KeepFocusOrReannounce (ShellWindow.Focus.cs) also pulses Page.IsEnabled to drop and retake focus, but that is on the Page
+    // border; this is PagePanel, the page's container, so the two don't fight.
     private void CoverPage() => PagePanel.IsEnabled = !(Covering && Shell is { IsSheetShown: true });
 
     private bool Covering => SheetPanel.Classes.Contains("covers");
@@ -199,6 +224,16 @@ internal sealed partial class ShellWindow : Window
             case nameof(ShellViewModel.State):
                 CoverPage();
                 Dispatcher.UIThread.Post(Shell is { IsVersionMismatch: true } ? FocusMismatchCard : KeepFocus, DispatcherPriority.Loaded);
+                break;
+            case nameof(ShellViewModel.CurrentPage):
+                // A page switch (a G-chord) hides the page the focused control was on: focus goes to the page region, which is named, so the new page is spoken.
+                // Arrowing along the nav tabs keeps focus on the tab (Y1); every other page change lands on the region.
+                if (!_openingSettings)
+                {
+                    Dispatcher.UIThread.Post(_navArrowing ? KeepFocus : KeepFocusOrReannounce, DispatcherPriority.Loaded);
+                    _navArrowing = false;
+                }
+
                 break;
             case nameof(ShellViewModel.IsSheetShown):
                 CoverPage();
@@ -216,7 +251,7 @@ internal sealed partial class ShellWindow : Window
     {
         if (Shell is { IsSheetShown: true } && (Covering || !HasUsableFocus))
         {
-            _ = this.Get<TextBlock>("SheetTitle").Focus(Method());
+            _ = this.Get<Border>("SheetTitle").Focus(Method());
         }
     }
 

@@ -20,6 +20,7 @@ internal static class EndpointTable
     private static RouteGroupBuilder MapQueries(RouteGroupBuilder queries)
     {
         // ---- queries: one line per slice, sorted ----
+        _ = queries.MapGetEventCatalog();
         _ = queries.MapGetItem();
         _ = queries.MapGetItemTimeline();
         _ = queries.MapGetQueue();
@@ -45,6 +46,7 @@ internal static class EndpointTable
         _ = queries.MapListRecipes();
         _ = queries.MapPingProcess();
         _ = queries.MapQueryContext();
+        _ = queries.MapReadLedger();
         _ = queries.MapShowContextNode();
         _ = queries.MapShowRecipe();
         _ = queries.MapStreamEvents();

@@ -236,7 +236,7 @@ packages:
     files: [sindri-app/control.json, sindri-app/auth/human.token]
     namespace: sindri
     routes: [/sindri/]
-    note: "built new in C# as an application (control plane, workflow engine, context retrieval; addendum §17.29, Q7), not ported; ts: sindri (profile, ledger, scrub, observe, index, scope, evolve) is the reference and runs until the switch; S1 (app shell: CLI and control plane, host lease, ledger, profile, API, scheduler, doctor) and workflow engine P1 (the recipe model and validator, `sindri recipe validate`) are in src/Sindri; API P2 adds the projector and its views (views.db: services, profile; read-your-writes, health, `sindri views rebuild`); API P3 adds items and the queue (views.db: items, item-aliases, item-timeline; `sindri queue`, `items`, `item add`, `item close`); Aw.Sindri.Workflows is the Temporal adapter (Infrastructure layer, namespace Aw.Sindri.Infrastructure.Workflows, AwAotCompatible=false for temporalio/sdk-dotnet#286; engine rev 8 §0); reaches lower tiers only through Core contracts, CLIs and the compose edges to Context and Judge (registration only), plus the tier-0 Redaction edge (RecordEvent's ledger scrub)"
+    note: "built new in C# as an application (control plane, workflow engine, context retrieval; addendum §17.29, Q7), not ported; ts: sindri (profile, ledger, scrub, observe, index, scope, evolve) is the reference and runs until the switch; S1 (app shell: CLI and control plane, host lease, ledger, profile, API, scheduler, doctor) and workflow engine P1 (the recipe model and validator, `sindri recipe validate`) are in src/Sindri; API P2 adds the projector and its views (views.db: services, profile; read-your-writes, health, `sindri views rebuild`); API P3 adds items and the queue (views.db: items, item-aliases, item-timeline; `sindri queue`, `items`, `item add`, `item close`); API P5 adds the event stream, the ledger read and the events catalog (`GET /events`, `/ledger`, `/events/catalog`; `sindri ledger`, `status --follow`); Aw.Sindri.Workflows is the Temporal adapter (Infrastructure layer, namespace Aw.Sindri.Infrastructure.Workflows, AwAotCompatible=false for temporalio/sdk-dotnet#286; engine rev 8 §0); reaches lower tiers only through Core contracts, CLIs and the compose edges to Context and Judge (registration only), plus the tier-0 Redaction edge (RecordEvent's ledger scrub)"
 
   # ---- tier 4 ----
   - id: SindriUi
@@ -559,7 +559,7 @@ edges:
     to: Sindri
     kind: http
     status: current
-    note: "the app's API edge to Sindri (the file edge covers the endpoint record and the human token): GET /sindri/ping, /sindri/status, /sindri/commands, /sindri/services, the /sindri/events stream, and POST /sindri/views/rebuild (docs/csharp/sindri.md, docs/csharp/sindri-ui.md U1); it finds the endpoint in control.json under AW_SINDRI_HOME"
+    note: "the app's API edge to Sindri (the file edge covers the endpoint record and the human token): GET /sindri/ping, /sindri/status, /sindri/commands, /sindri/services, the /sindri/events stream, POST /sindri/views/rebuild (docs/csharp/sindri.md, docs/csharp/sindri-ui.md U1), and the four workflow reads (rev 8, API §3.8): GET /sindri/workflow/instances, /sindri/workflow/instances/{id}, /sindri/workflow/instances/{id}/facts/{key} and /sindri/workflow/recipes/{id}[@{hash}]; it finds the endpoint in control.json under AW_SINDRI_HOME"
 
 # Sindri -> SindriUi (cli) closes a cycle with SindriUi -> Sindri (http): bare `sindri` only spawns the app's process.
 # Renewed on review like every exception.
