@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Platform;
 
@@ -25,7 +26,7 @@ internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider
 
     private static readonly string[] _listProperties =
     [
-        nameof(Rows), nameof(HasMore), nameof(MoreText), nameof(IsEmpty), nameof(EmptyText), nameof(IsNotServed), nameof(NotServedText), nameof(OpenText),
+        nameof(HasMore), nameof(MoreText), nameof(IsEmpty), nameof(EmptyText), nameof(IsNotServed), nameof(NotServedText), nameof(OpenText),
     ];
 
     private List<InstanceSummary> _open = [];
@@ -47,7 +48,7 @@ internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider
     public string OpenText => Counts is { } counts ? InstanceHeads.Strip(counts) : string.Empty;
 
     /// <summary>The rows shown, in the API's order.</summary>
-    public IReadOnlyList<StripRowViewModel> Rows => _shown;
+    public ObservableCollection<StripRowViewModel> Rows { get; } = [];
 
     /// <summary>True when the cap leaves open rows out.</summary>
     public bool HasMore => !IsNotServed && _open.Count > _shown.Count;
@@ -188,9 +189,24 @@ internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider
         }
     }
 
+    // A re-read serves the same instance again: its row stays (so does the control with focus); only its age is read anew.
+    private StripRowViewModel Row(InstanceSummary summary, Dictionary<string, StripRowViewModel> kept)
+    {
+        var row = new StripRowViewModel(summary, clipboard, clock);
+        if (kept.TryGetValue(row.Address, out var old) && string.Equals(old.Signature, row.Signature, StringComparison.Ordinal))
+        {
+            old.Refresh();
+            return old;
+        }
+
+        return row;
+    }
+
     private void Reshow()
     {
-        _shown = [.. _open.Take(CurrentCap).Select(r => new StripRowViewModel(r, clipboard, clock))];
+        var kept = _shown.ToDictionary(r => r.Address, StringComparer.Ordinal);
+        _shown = [.. _open.Take(CurrentCap).Select(r => Row(r, kept))];
+        Patch.To(Rows, _shown);
         foreach (var row in _shown)
         {
             row.SetContext(Stale, IsSelectedRow(row));

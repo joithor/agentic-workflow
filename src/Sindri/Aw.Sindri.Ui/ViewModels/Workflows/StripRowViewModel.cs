@@ -93,6 +93,12 @@ internal sealed class StripRowViewModel : ObservableObject
     /// <summary>True for the row the keys act on.</summary>
     public bool IsSelected { get; private set => Set(ref field, value); }
 
+    /// <summary>Everything the row draws except its age: two rows with the same signature look the same.</summary>
+    internal string Signature => string.Join('|', Address, Chip, Subject, Recipe, Stage, Now, Badge, Glyph, CanAnswer, Protected?.Cli, ItemId);
+
+    /// <summary>Reads the age anew.</summary>
+    internal void Refresh() => OnChanged(nameof(Age));
+
     /// <summary>Sets what the strip knows of the row.</summary>
     /// <param name="stale">The views are stalled.</param>
     /// <param name="selected">The keys act on this row.</param>

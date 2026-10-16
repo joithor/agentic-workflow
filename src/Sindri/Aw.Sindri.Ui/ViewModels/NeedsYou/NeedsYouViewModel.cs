@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Aw.Sindri.Ui.Platform;
 
 namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
@@ -49,8 +50,8 @@ internal sealed partial class NeedsYouViewModel : ObservableObject
     /// <summary>The pulse and seen state of the rows.</summary>
     internal NeedsYouSeenViewModel Seen { get; }
 
-    /// <summary>The rows shown: the held-back ones left out, capped unless expanded.</summary>
-    internal IReadOnlyList<NeedsYouRowViewModel> Rows => IsExpanded ? Seen.Rows : [.. Seen.Rows.Take(CurrentCap)];
+    /// <summary>The rows shown: the held-back ones left out, capped unless expanded. One list, patched in place on every re-read, so the controls of a row that stays are not rebuilt and keep focus (§3.3).</summary>
+    internal ObservableCollection<NeedsYouRowViewModel> Rows { get; } = [];
 
     /// <summary>How many rows the list has (the header's count), shown or not; the held-back ones are not counted.</summary>
     internal int Count => Seen.Rows.Count;
@@ -231,6 +232,7 @@ internal sealed partial class NeedsYouViewModel : ObservableObject
 
     private void Changed(string[] names)
     {
+        Patch.To(Rows, [.. IsExpanded ? Seen.Rows : Seen.Rows.Take(CurrentCap)]);
         foreach (var name in names)
         {
             OnChanged(name);

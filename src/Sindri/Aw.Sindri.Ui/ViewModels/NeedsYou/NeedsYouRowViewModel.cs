@@ -20,6 +20,7 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
         Entry = entry;
         _clock = clock;
         (_seen, _reduced, _arrived) = (seen, reducedMotion, arrived);
+        Controls = BuildControls();
     }
 
     /// <summary>The row's chip (D5: the chip, not the label, names its state).</summary>
@@ -64,20 +65,7 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
     }
 
     /// <summary>The row's controls, the primary first, then the others as served.</summary>
-    public IReadOnlyList<NeedsYouActionControl> Controls
-    {
-        get
-        {
-            var primary = Entry.PrimaryAction;
-            var first = Entry.Actions.Where(a => string.Equals(a.CatalogId, primary, StringComparison.Ordinal));
-            var rest = Entry.Actions.Where(a => !string.Equals(a.CatalogId, primary, StringComparison.Ordinal));
-            return
-            [
-                .. first.Select(a => new NeedsYouActionControl(a, IsPrimary: true, a.IsReady && !_rebuilding, Tooltip(a, _rebuilding))),
-                .. rest.Select(a => new NeedsYouActionControl(a, IsPrimary: false, a.IsReady && !_rebuilding, Tooltip(a, _rebuilding))),
-            ];
-        }
-    }
+    public IReadOnlyList<NeedsYouActionControl> Controls { get; private set; }
 
     /// <summary>Where Enter and a click on the title go: the row's own sheet, keyed on the row id (never the subject).</summary>
     public DeepLink SheetLink => new(DeepLinkKind.NeedsYou, Entry.Id);
@@ -114,6 +102,8 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
             {
                 OnChanged(name);
             }
+
+            RebuildControls();
         }
         else
         {
@@ -136,7 +126,7 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
         if (rebuilding != _rebuilding)
         {
             _rebuilding = rebuilding;
-            OnChanged(nameof(Controls));
+            RebuildControls();
         }
 
         if (selected != IsSelected)
@@ -149,10 +139,34 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
     private static readonly string[] _content =
     [
         nameof(Chip), nameof(ShownId), nameof(Title), nameof(Repo), nameof(Reason), nameof(Cli), nameof(Age), nameof(AccessibleName),
-        nameof(Controls), nameof(CanOpenItem), nameof(ItemLink), nameof(Notice), nameof(HasNotice),
+        nameof(CanOpenItem), nameof(ItemLink), nameof(Notice), nameof(HasNotice),
     ];
 
     private bool _rebuilding;
+
+    // The buttons are kept when the served actions are the same ones (a re-read serves equal rows again): a button with
+    // focus is not rebuilt under the user (§3.3).
+    private void RebuildControls()
+    {
+        var built = BuildControls();
+        if (!built.SequenceEqual(Controls))
+        {
+            Controls = built;
+            OnChanged(nameof(Controls));
+        }
+    }
+
+    private NeedsYouActionControl[] BuildControls()
+    {
+        var primary = Entry.PrimaryAction;
+        var first = Entry.Actions.Where(a => string.Equals(a.CatalogId, primary, StringComparison.Ordinal));
+        var rest = Entry.Actions.Where(a => !string.Equals(a.CatalogId, primary, StringComparison.Ordinal));
+        return
+        [
+            .. first.Select(a => new NeedsYouActionControl(a, IsPrimary: true, a.IsReady && !_rebuilding, Tooltip(a, _rebuilding))),
+            .. rest.Select(a => new NeedsYouActionControl(a, IsPrimary: false, a.IsReady && !_rebuilding, Tooltip(a, _rebuilding))),
+        ];
+    }
 
     private static string Tooltip(NeedsYouAction action, bool rebuilding) => action.Readiness switch
     {
