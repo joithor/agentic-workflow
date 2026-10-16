@@ -38,7 +38,8 @@ internal sealed class EvalRecipeService(IRecipeReader reader, IRecipeFiles files
         var children = await SameDirectoryChildren.Load(request.Path, recipe, reader, files, cancellationToken).ConfigureAwait(false);
         if (request.Mode == EvalMode.Scaffold)
         {
-            return new EvalRecipeResponse([], EvalLines.Write(EvalScaffold.Generate(recipe, catalog, children), options));
+            var all = EvalScaffold.GenerateAll(recipe, catalog, children);
+            return new EvalRecipeResponse([], EvalLines.Write(EvalScaffold.Generate(recipe, catalog, children), options), [.. all.Select(c => new ScaffoldFile(c.Name, EvalLines.Write(c, options)))]);
         }
 
         var cases = new List<EvalCaseResult>(recipe.Evals.Count);

@@ -16,7 +16,7 @@ namespace Aw.Sindri.Host.Commands;
 internal static partial class RecipeCommandTable
 {
     private const string ValidateUsage = "usage: sindri recipe validate <file> [--json]";
-    private const string EvalUsage = "usage: sindri recipe eval <file> [--json] | --scaffold <file> | --record <address> --out <file>";
+    private const string EvalUsage = "usage: sindri recipe eval <file> [--json] | --scaffold <file> [--out <dir>] | --record <address> --out <file>";
     private const string ApproveUsage = "usage: sindri recipe approve <file|id@hash>";
     private const string RevokeUsage = "usage: sindri recipe revoke <id@hash>";
     private const string RegisterUsage = "usage: sindri recipe register <file>";
@@ -56,6 +56,7 @@ internal static partial class RecipeCommandTable
             "recipe eval --record needs the server (P4): it reads a live instance's history from serve, which arrives with P4 (fix: write the case by hand, or start from sindri recipe eval --scaffold <file>)")),
         ["--record", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe eval --record needs an address and --out <file> ({EvalUsage})")),
         [] or ["--json"] or ["--scaffold"] => output.Error(SindriErrors.InvalidInput.With($"recipe eval needs a recipe file ({EvalUsage})")),
+        ["--scaffold", var file, "--out", var directory] when !IsFlag(file) && !IsFlag(directory) => ScaffoldOut(file, directory, services, output, ct),
         ["--scaffold", var file] when !IsFlag(file) => Eval(new EvalRecipeRequest(file, EvalMode.Scaffold), json: false, services, output, ct),
         ["--json", var file] when !IsFlag(file) => Eval(new EvalRecipeRequest(file, EvalMode.Run), json: true, services, output, ct),
         [var file, "--json"] when !IsFlag(file) => Eval(new EvalRecipeRequest(file, EvalMode.Run), json: true, services, output, ct),

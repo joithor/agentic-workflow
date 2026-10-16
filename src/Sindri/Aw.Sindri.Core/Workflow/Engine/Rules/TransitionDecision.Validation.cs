@@ -1,5 +1,6 @@
 using System.Globalization;
 using Aw.Kernel;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
@@ -28,19 +29,25 @@ public static partial class TransitionDecision
     /// <summary>A report with an undeclared outcome, a missing required output or an undeclared fact (§5.3): rejected before any decision, so no round is used.</summary>
     private static Error? Malformed(Deciding d, WorkflowInstance instance, StepCompleted report)
     {
-        var use = d.Recipe.States[instance.State].Step?.Use;
-        if (use is not { } step || d.Context.Catalog.Find(step) is not { } descriptor)
+        var use = d.Recipe.States[instance.State].Step;
+        if (use is null || d.Context.Catalog.Find(use.Use) is not { } descriptor)
         {
             return WorkflowErrors.MalformedReport.With($"the Step of '{instance.State}' isn't in this build's catalog (fix: run it in a build that has it)");
         }
 
-        if (!descriptor.Outcomes.Contains(report.Outcome))
+        var step = use.Use;
+        if (StepOutcomes.Of(descriptor, use, d.Recipe) is not { } outcomes)
         {
-            return WorkflowErrors.MalformedReport.With(
-                $"{step.Value} reported outcome '{report.Outcome.Value}', which it doesn't declare (fix: use one of {Names(descriptor.Outcomes.Select(o => o.Value))})");
+            return WorkflowErrors.MalformedReport.With($"the choices of '{instance.State}' don't resolve to outcomes (fix: sindri recipe validate the recipe)");
         }
 
-        var missing = descriptor.Outputs.FirstOrDefault(o => o.RequiredOn.Contains(report.Outcome) && !report.Outputs.ContainsKey(o.Fact));
+        if (!outcomes.Contains(report.Outcome))
+        {
+            return WorkflowErrors.MalformedReport.With(
+                $"{step.Value} reported outcome '{report.Outcome.Value}', which it doesn't declare (fix: use one of {Names(outcomes.Select(o => o.Value))})");
+        }
+
+        var missing = descriptor.Outputs.FirstOrDefault(o => StepOutputs.RequiredOn(o, report.Outcome) && !report.Outputs.ContainsKey(o.Fact));
         if (missing is not null)
         {
             return WorkflowErrors.MalformedReport.With(

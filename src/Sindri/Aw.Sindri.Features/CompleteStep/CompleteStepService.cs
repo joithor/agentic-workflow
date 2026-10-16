@@ -5,6 +5,7 @@ using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -34,9 +35,9 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
     public async ValueTask<Result<CompleteStepResponse>> Handle(CompleteStepRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        if (request.Outputs.Where(static o => o.Value.Length > IFactStore.MaxBytes).Select(static o => o.Key.Value).FirstOrDefault() is { } large)
+        if (Refused(request) is { } refusal)
         {
-            return SindriErrors.InvalidInput.With($"{large} is larger than 1 MiB (fix: report a smaller file; outputs travel as content, at most 1 MiB each)");
+            return refusal;
         }
 
         if (callers.Current is not { } caller)
@@ -44,15 +45,15 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
             return SindriErrors.AuthRefused.With("CompleteStep needs a caller");
         }
 
-        var resolved = await directory.Resolve(request.Instance, cancellationToken).ConfigureAwait(false);
-        if (resolved.IsError)
+        var prepared = await Prepare(request, caller.Actor, cancellationToken).ConfigureAwait(false);
+        if (prepared.IsError)
         {
-            return resolved.Error;
+            return prepared.Error;
         }
 
-        var address = resolved.Value;
+        var (address, outputs) = prepared.Value;
         var nonce = request.Nonce ?? nonces.Issue();
-        var reportSha = ReportSha(request, request.Outputs.ToDictionary(static o => o.Key, static o => Convert.ToHexStringLower(SHA256.HashData(o.Value.Span))));
+        var reportSha = ReportSha(request, outputs.ToDictionary(static o => o.Key, static o => Convert.ToHexStringLower(SHA256.HashData(o.Value.Span))));
         var subject = address.Value + "\n" + reportSha;
         var claim = await nonces.Claim(nonce, subject, cancellationToken).ConfigureAwait(false);
         if (claim.IsError)
@@ -62,7 +63,7 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
 
         var stored = claim.Value == NonceClaim.Fresh && await Approved(address, cancellationToken).ConfigureAwait(false) is { IsError: true } refused   // only a fresh claim is checked, as ApplyCommand does
             ? refused.Error
-            : await Store(request, cancellationToken).ConfigureAwait(false);
+            : await Store(outputs, cancellationToken).ConfigureAwait(false);
         if (stored.IsError)
         {
             return await GiveBack(nonce, claim.Value, stored.Error, cancellationToken).ConfigureAwait(false);
@@ -71,6 +72,24 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
         var report = new StepCompleted(caller.Actor, request.Run, request.Outcome, stored.Value, Tokens: 0, StepRuntime.Desk, reportSha);
         return await Send(address, new SentReport(nonce, subject, claim.Value), report, cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>The instance the request names and the outputs to report: the request's plus the engine-filled ones.</summary>
+    private async ValueTask<Result<(InstanceAddress Address, IReadOnlyDictionary<FactKey, ReadOnlyMemory<byte>> Outputs)>> Prepare(CompleteStepRequest request, string actor, CancellationToken cancellationToken)
+    {
+        var resolved = await directory.Resolve(request.Instance, cancellationToken).ConfigureAwait(false);
+        if (resolved.IsError)
+        {
+            return resolved.Error;
+        }
+
+        var outputs = await WithEngineFilled(resolved.Value, request, actor, cancellationToken).ConfigureAwait(false);
+        return outputs.IsError ? outputs.Error : (resolved.Value, outputs.Value);
+    }
+
+    private static Error? Refused(CompleteStepRequest request) =>
+        request.Outputs.Where(static o => o.Value.Length > IFactStore.MaxBytes).Select(static o => o.Key.Value).FirstOrDefault() is { } large
+            ? SindriErrors.InvalidInput.With($"{large} is larger than 1 MiB (fix: report a smaller file; outputs travel as content, at most 1 MiB each)")
+            : null;
 
     /// <summary>A report is not exempt from the approval check (spec §5.2): the instance's recipe must still hold, else nothing is stored or sent.</summary>
     private async ValueTask<Result<Unit>> Approved(InstanceAddress address, CancellationToken cancellationToken)
@@ -114,10 +133,39 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
     /// <summary>The nonce a report went out with, the subject it claimed it for and what the claim found.</summary>
     private readonly record struct SentReport(CommandNonce Nonce, string Subject, NonceClaim Claim);
 
-    private async ValueTask<Result<IReadOnlyDictionary<FactKey, FactValue>>> Store(CompleteStepRequest request, CancellationToken cancellationToken)
+    /// <summary>
+    /// The report's outputs with the ones the engine writes (DT spec §8.1: 'fact:decision' of the choice Steps, from --outcome
+    /// and the caller's actor, provider "desk"). A report that gives one itself is refused before anything is claimed. When
+    /// the instance can't be read, or its open task isn't the one reported on, the outputs are the request's: the send answers.
+    /// </summary>
+    private async ValueTask<Result<IReadOnlyDictionary<FactKey, ReadOnlyMemory<byte>>>> WithEngineFilled(InstanceAddress address, CompleteStepRequest request, string actor, CancellationToken cancellationToken)
+    {
+        var view = await runtime.Get(address, cancellationToken).ConfigureAwait(false);
+        if (view.IsError || view.Value.Task is not { } task || task.Run != request.Run)
+        {
+            return Results.Success(request.Outputs);
+        }
+
+        var filled = EngineFilledOutputs.For(task.Outputs, request.Outcome, "desk", actor);
+        var written = request.Outputs.Keys.Where(filled.ContainsKey).ToList();
+        if (written.Count > 0)
+        {
+            return SindriErrors.InvalidInput.With($"{written[0].Value} is written by the engine on '{task.Step.Value}' (fix: drop --output {written[0].Value})");
+        }
+
+        var merged = new Dictionary<FactKey, ReadOnlyMemory<byte>>(request.Outputs);
+        foreach (var (fact, text) in filled)
+        {
+            merged[fact] = Encoding.UTF8.GetBytes(text);
+        }
+
+        return merged;
+    }
+
+    private async ValueTask<Result<IReadOnlyDictionary<FactKey, FactValue>>> Store(IReadOnlyDictionary<FactKey, ReadOnlyMemory<byte>> outputs, CancellationToken cancellationToken)
     {
         var stored = new Dictionary<FactKey, FactValue>();
-        foreach (var (key, content) in request.Outputs)
+        foreach (var (key, content) in outputs)
         {
             var put = await facts.Put(content, cancellationToken).ConfigureAwait(false);
             if (put.IsError)

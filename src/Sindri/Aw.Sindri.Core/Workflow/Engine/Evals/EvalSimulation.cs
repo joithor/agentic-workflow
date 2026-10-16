@@ -154,6 +154,11 @@ internal sealed record EvalSimulation(
 
         var stamp = new CommandStamp(CommandNonce.From(Hex("nonce:" + Text(number))[..32]), Hex("line:" + Text(number)));
         var outputs = (line.Outputs ?? new Dictionary<FactKey, JsonElement>()).ToDictionary(static o => o.Key, static o => EvalFacts.Value(o.Value));
+        if (line.Kind == TriggerNames.StepCompleted && line.Outcome is { } reported)
+        {
+            outputs = EvalFilledOutputs.Add(outputs, Recipe, Catalog, (Instance.State, reported));
+        }
+
         var report = Hex($"report:{Text(number)}:{line.Kind}:{line.Outcome?.Value}");
         return line.Kind switch
         {
