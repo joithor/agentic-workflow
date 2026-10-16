@@ -56,7 +56,7 @@ public abstract class FrameHost : IDisposable
                 return true;
             }, Token);
 
-    private protected async Task<(ShellWindow Window, ShellViewModel Shell)> Connected(Func<ShellViewModel, bool>? ready = null, double? width = null)
+    private protected async Task<(ShellWindow Window, ShellViewModel Shell)> Connected(Func<ShellViewModel, bool>? ready = null, double? width = null, double? height = null)
     {
         _records.Write(A.Record());
         var shell = new ShellViewModel(_records, Server, Clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard(), Motion);
@@ -65,6 +65,11 @@ public abstract class FrameHost : IDisposable
         if (width is { } w)
         {
             window.Width = w;
+        }
+
+        if (height is { } h)
+        {
+            window.Height = h;
         }
 
         _windows.Add(window);
