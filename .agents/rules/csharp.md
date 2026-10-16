@@ -10,7 +10,7 @@ globs:
   - "Directory.Build.targets"
   - "Directory.Packages.props"
   - "nuget.config"
-  - "BannedSymbols.txt"
+  - "BannedSymbols*.txt"
   - "deps.yaml"
   - "schemas/deps.schema.json"
   - "**/.editorconfig"
@@ -27,7 +27,7 @@ paths:
   - "Directory.Build.targets"
   - "Directory.Packages.props"
   - "nuget.config"
-  - "BannedSymbols.txt"
+  - "BannedSymbols*.txt"
   - "deps.yaml"
   - "schemas/deps.schema.json"
   - "**/.editorconfig"
@@ -166,7 +166,7 @@ One record each in `rules/engineering/csharp/`; `.editorconfig` holds the severi
 - **SQL:** command text is a constant or reviewed literal, never concatenated; values go in parameters (`CA2100`, cleanup; tests are off).
 - **Bug classes:** `RCS1210`, `RCS1202`, `RCS1256`, `RCS1234`, `RCS1257`, `RCS1096`, `RCS1252`; no dead conditions (`CA1508`, cleanup); one enumeration of an `IEnumerable` (`CA1851`); no dead statics (`CA1823`, `CA1810`, `CA2207`, and `CA1802`, cleanup).
 - **API shape (Framework Design Guidelines):** `CA2227`, `CA1065`, `CA1066`, `CA1815`, `CA1052`, `CA2214`, `CA1033`, `CA1044`, `CA1813`, `CA1027`, and `CA1819`, `CA1034`, `CA1063` (cleanup). `CA1062` stays off.
-- **Banned symbols:** the Core list is `BannedSymbols.txt`; `BannedSymbols.All.txt` goes to every production project, `BannedSymbols.NonHost.txt` (`Environment.Exit`, `GC.Collect`) to every production project but a Host; `BannedSymbols.Tests.txt` to test projects (cleanup). All three are wired in `Directory.Build.props`; a record's `banned-symbols` check names its file in `ref`.
+- **Banned symbols:** the Core list is `BannedSymbols.txt`; `BannedSymbols.All.txt` goes to every production project, `BannedSymbols.NonHost.txt` (`Environment.Exit`, `GC.Collect`) to every production project but a Host; `BannedSymbols.Tests.txt` (no clock, `Guid.NewGuid` or `Thread.Sleep`) is not wired yet: it lands with the cleanup PR. The first two are wired in `Directory.Build.props` (a project named `*.Desktop` or `*.AotSmoke` counts as non-Host); a record's `banned-symbols` check names its file in `ref`.
 - Transitional: the rule above that every agent-obeyed rule has an explicit severity "never `suggestion`" holds again once the cleanup PR lands; until then the *cleanup* rules are the exception.
 
 ## AOT scope (§4b.6)
