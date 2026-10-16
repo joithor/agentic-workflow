@@ -69,6 +69,18 @@ public sealed class PublicEventsTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_payload_with_an_array_of_objects_arrives_scrubbed_not_thrown_on()
+    {
+        var row = Row(EventTypes.ContextSourcesSynced,
+            """{"source":"repo-docs","slot":"2026-10-15T00:00:00+00:00","repos":[{"repo":"aSECRETb","head":null,"added":1,"removed":0,"kept":2,"blocked":0,"code":null}]}""");
+
+        var shown = PublicEvents.For(row, SliceHarness.Json, new MaskingScrubber(), includeNonPublic: false).Value!;
+
+        Assert.Equal("a[masked]b", shown.Payload.GetProperty("repos")[0].GetProperty("repo").GetString());
+        Assert.Equal(1, shown.Payload.GetProperty("repos")[0].GetProperty("added").GetInt32());
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Unparseable_payload_is_sent_with_a_null_payload()
     {
         var row = Row(EventTypes.ProcessStarted, "{not json");
