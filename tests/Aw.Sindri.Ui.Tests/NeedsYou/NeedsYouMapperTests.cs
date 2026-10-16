@@ -52,6 +52,17 @@ public sealed class NeedsYouMapperTests
     }
 
     [Fact]
+    public void A_row_is_a_decision_row_by_its_subject_alone()
+    {
+        var list = Golden<NeedsYouList>("needs-you", "fixture");
+        var odd = list with { Rows = [list.Rows[0] with { Subject = list.Rows[0].Subject! with { Kind = "service" } }] };
+
+        var row = NeedsYouMapper.Map(odd, Catalog(), Pending(), _counts).Rows[0];
+
+        Assert.Equal((list.Rows[0].Item, string.Empty), (row.ShownId, row.Question));   // the kind word alone does not make it one
+    }
+
+    [Fact]
     public void A_decision_rows_Decide_becomes_one_action_per_option_with_the_catalogs_readiness()
     {
         var actions = Feed().Rows[0].Actions;
