@@ -138,6 +138,8 @@ public sealed class ShippedBlocksTests
         Assert.DoesNotContain("inputsFrom", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("every", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("engineFilled", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("humanOnly", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("runtime", json, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact, Trait("Lane", "unit")]
