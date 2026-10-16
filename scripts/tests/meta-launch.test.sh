@@ -11,6 +11,63 @@ check() {
   fi
 }
 command -v tmux > /dev/null || { echo "ok - skipped: tmux not installed"; exit 0; }
+# golden_transcript <scripts-dir>: what scripts/meta-launch.sh and scripts/meta-lane.sh do with NO launcher.json, as one
+# normalized transcript: the dry-run, the Warp YAML, every tmux command the launcher issues (a recording shim in front of
+# tmux), and the claude command lines meta-lane.sh runs (fresh with a multi-line prompt, resumed, no prompt, with
+# AW_META_CLAUDE_ARGS, the meta lane's role-set). The committed golden was made by the scripts as they were before
+# SL-1 (`bash meta-launch.test.sh --print-golden <dir of the old scripts>`); the test compares the current scripts to it.
+golden_transcript() {
+  local S="$1" G; G="$(mktemp -d)"
+  (
+    export TMUX_TMPDIR="$G/tmux" HOME="$G/home" AW_STATE_DIR="$G/state" AW_WARP_LAUNCH_DIR="$G/warp" CALLS="$G/calls"
+    unset TMUX AW_LAUNCHER_CONFIG
+    for v in $(compgen -e | grep '^AW_META_'); do unset "$v"; done
+    mkdir -p "$TMUX_TMPDIR" "$HOME/.claude/projects/p" "$G/repo" "$G/prompts" "$AW_STATE_DIR/meta" "$G/shim"
+    printf 'API kickoff\nline two $HOME "quoted" '"'"'single'"'"'\n' > "$G/prompts/api.md"
+    local real; real="$(command -v tmux)"
+    printf '#!/usr/bin/env bash\nprintf "tmux" >> "%s"; printf " %%q" "$@" >> "%s"; echo >> "%s"\nexec "%s" "$@"\n' "$G/tmux-calls" "$G/tmux-calls" "$G/tmux-calls" "$real" > "$G/shim/tmux"
+    printf '#!/usr/bin/env bash\nprintf "%%s|" "$@" >> "$CALLS"; echo >> "$CALLS"\n' > "$G/claude"
+    printf '#!/usr/bin/env bash\nexec sleep 600\n' > "$G/claude-noop"
+    printf '#!/usr/bin/env bash\necho "$*" >> "$CALLS.meta"\n' > "$G/aw-meta"
+    chmod +x "$G/shim/tmux" "$G/claude" "$G/claude-noop" "$G/aw-meta"
+    export PATH="$G/shim:$PATH" AW_META_BIN="$G/aw-meta" AW_META_NO_SHELL=1 AW_META_CLAUDE="$G/claude-noop"
+    local cfg="$AW_STATE_DIR/meta/team.json"
+    jq -n --arg r "$G/repo" --arg p "$G/prompts" '{team:"demo", repo:$r, prompts:$p, metaLane:"meta", lanes:["api","ui"]}' > "$cfg"
+    echo "== dry-run, no sessions"; bash "$S/meta-launch.sh" --dry-run; echo "rc=$?"
+    tmux new-session -d -s keepalive "sleep 600"
+    echo "== launch"; bash "$S/meta-launch.sh" --no-open; echo "rc=$?"
+    echo "== yaml"; cat "$AW_WARP_LAUNCH_DIR/demo-team.yaml"
+    for _ in $(seq 100); do [ "$(ls "$AW_STATE_DIR/meta/lane-sessions" 2> /dev/null | grep -vc exited)" -ge 3 ] && break; sleep 0.1; done
+    echo "== rerun with --lanes"; bash "$S/meta-launch.sh" --no-open --lanes api; echo "rc=$?"
+    tmux kill-session -t demo-api 2> /dev/null; tmux new-session -d -s demo-api bash; : > "$AW_STATE_DIR/meta/lane-sessions/api.exited"
+    echo "== dry-run, exited lane"; bash "$S/meta-launch.sh" --dry-run --lanes api; echo "rc=$?"
+    echo "== tmux calls"; cat "$G/tmux-calls"
+    tmux kill-server 2> /dev/null; sleep 0.3
+    find "$AW_STATE_DIR/meta/lane-sessions" -type f -delete
+    rm -f "$CALLS.meta"; export AW_META_CLAUDE="$G/claude"
+    echo "== lane api, fresh"; bash "$S/meta-lane.sh" demo api; cat "$CALLS"; : > "$CALLS"
+    touch "$HOME/.claude/projects/p/$(cat "$AW_STATE_DIR/meta/lane-sessions/api").jsonl"
+    echo "== lane api, resumed"; bash "$S/meta-lane.sh" demo api; cat "$CALLS"; : > "$CALLS"
+    echo "== lane api, resumed, AW_META_CLAUDE_ARGS"; AW_META_CLAUDE_ARGS="--model x --verbose" bash "$S/meta-lane.sh" demo api; cat "$CALLS"; : > "$CALLS"
+    echo "== lane ui, no prompt"; bash "$S/meta-lane.sh" demo ui; cat "$CALLS"; : > "$CALLS"
+    echo "== lane ui, fresh, AW_META_CLAUDE_ARGS"; rm "$AW_STATE_DIR/meta/lane-sessions/ui"; AW_META_CLAUDE_ARGS="--model x" bash "$S/meta-lane.sh" demo ui; cat "$CALLS"; : > "$CALLS"
+    echo "== lane meta"; bash "$S/meta-lane.sh" demo meta; cat "$CALLS.meta"
+    echo "== bad lane"; bash "$S/meta-lane.sh" demo 'Bad Lane' 2>&1; echo "rc=$?"
+  ) 2>&1 | sed -E -e "s#$G#@WORK@#g" -e "s#$S#@SCRIPTS@#g" -e 's/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/@ID@/g'
+  rm -r "$G"
+}
+if [ "${1:-}" = "--print-golden" ]; then golden_transcript "${2:?--print-golden <scripts dir>}"; exit 0; fi
+
+# The golden: with no launcher.json the Warp layout, every tmux command and every claude command line are unchanged.
+GOLDEN="$DIR/tests/fixtures/meta-launch/no-launcher.golden.txt"
+golden_transcript "$DIR" > "${TMPDIR:-/tmp}/meta-launch-golden.$$"
+if diff -u "$GOLDEN" "${TMPDIR:-/tmp}/meta-launch-golden.$$" > "${TMPDIR:-/tmp}/meta-launch-golden.diff.$$"; then
+  echo "ok - no launcher.json: dry-run, Warp YAML, tmux commands and claude command lines match the pre-SL-1 golden"
+else
+  echo "not ok - no launcher.json: output differs from the pre-SL-1 golden"; sed 's/^/  /' "${TMPDIR:-/tmp}/meta-launch-golden.diff.$$"; fail=1
+fi
+unlink "${TMPDIR:-/tmp}/meta-launch-golden.$$"; unlink "${TMPDIR:-/tmp}/meta-launch-golden.diff.$$"
+
 WORK="$(mktemp -d)"
 export TMUX_TMPDIR="$WORK/tmux"; mkdir -p "$TMUX_TMPDIR"; unset TMUX
 trap 'tmux kill-server 2> /dev/null; rm -rf "$WORK"' EXIT
