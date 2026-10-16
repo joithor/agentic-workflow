@@ -2,8 +2,8 @@
 
 The launcher puts a Sindri session in any terminal and any agent CLI. This page is the file contract and its worked
 examples (phase SL-0 of `docs/superpowers/specs/2026-10-15-sindri-session-launcher-design.md`, "the spec" below). The
-code that reads the file lands in SL-1 (the bash reader in `aw-meta-launch`) and SL-2 (the C# ports inside API P10a);
-until then nothing reads it.
+bash reader is in `aw-meta-launch` (SL-1, `scripts/launcher-lib.sh`; `docs/csharp/meta.md` "Launcher"); the C# ports
+inside API P10a (SL-2) are still to come.
 
 ## The file
 
@@ -79,6 +79,18 @@ is the file's argv and validates against the schema.
 GNOME Terminal and `kitty --single-instance` exit 0 through a server even when no window appears; the launcher's client
 check (spec §3), not the exit code, decides whether the outcome is `opened`. WezTerm's `start` has no title flag, so its
 template omits `{title}`.
+
+## The bash reader
+
+`scripts/launcher-lib.sh` (sourced by `scripts/meta-launch.sh` and `scripts/meta-lane.sh`) reads the file with `jq`. It
+promises less than the C# reader (spec section 4): it refuses unknown keys, unknown placeholders, `{cmd...}` inside an
+argument, a viewer kind or host kind outside the closed lists, a `print` or `warp` viewer with a name or argv, a lane agent
+id that is not an agent id, an unsupported `schema`, and wrong JSON types for the fields it uses; each as
+`SND-LAUNCH-011: <reason>`. Everything else (an added entry without `label`, a built-in id without `"override": true` that no
+lane uses, an unknown `usage` reader) is `sindri launch show`'s. Its key lists and placeholder set are the schema's `x-aw-keys`
+block, read at run time. `scripts/tests/meta-launch.test.sh` runs every fixture below against its `bash:` tag. With no
+file, `aw-meta-launch` keeps the Warp viewer it always had (the spec's in-memory detection is Sindri's; the Meta launcher
+must not change what a box without a file gets).
 
 ## Fixtures and checks
 
