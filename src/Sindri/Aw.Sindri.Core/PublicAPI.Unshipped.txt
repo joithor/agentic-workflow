@@ -1312,10 +1312,8 @@ Aw.Sindri.Core.Workflow.Blocks.BlockCatalog.Find(Aw.Sindri.Core.Workflow.Ids.Blo
 Aw.Sindri.Core.Workflow.Blocks.BlockCatalog.FindEvent(Aw.Sindri.Core.Workflow.Ids.EventKind kind) -> Aw.Sindri.Core.Workflow.Blocks.EventDescriptor?
 Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor
 Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.<Clone>$() -> Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor!
-Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.BlockDescriptor(Aw.Sindri.Core.Workflow.Ids.BlockId Id, Aw.Sindri.Core.Workflow.Blocks.BlockKind Kind, int Version, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>! Inputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.OutputSpec!>! Outputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>! Outcomes, Aw.Sindri.Core.Workflow.Blocks.Capability Capabilities, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.ParameterSpec!>! Parameters, Aw.Sindri.Core.Workflow.Blocks.Rung? Rung, bool DeskCapable) -> void
 Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.Capabilities.get -> Aw.Sindri.Core.Workflow.Blocks.Capability
 Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.Capabilities.init -> void
-Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Id, out Aw.Sindri.Core.Workflow.Blocks.BlockKind Kind, out int Version, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>! Inputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.OutputSpec!>! Outputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>! Outcomes, out Aw.Sindri.Core.Workflow.Blocks.Capability Capabilities, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.ParameterSpec!>! Parameters, out Aw.Sindri.Core.Workflow.Blocks.Rung? Rung, out bool DeskCapable) -> void
 Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.DeskCapable.get -> bool
 Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.DeskCapable.init -> void
 Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.Equals(Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? other) -> bool
@@ -1477,11 +1475,9 @@ Aw.Sindri.Core.Workflow.Blocks.InjectionSections.Sections.get -> System.Collecti
 Aw.Sindri.Core.Workflow.Blocks.InjectionSections.Sections.init -> void
 Aw.Sindri.Core.Workflow.Blocks.OutputSpec
 Aw.Sindri.Core.Workflow.Blocks.OutputSpec.<Clone>$() -> Aw.Sindri.Core.Workflow.Blocks.OutputSpec!
-Aw.Sindri.Core.Workflow.Blocks.OutputSpec.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.FactKey Fact, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>! RequiredOn) -> void
 Aw.Sindri.Core.Workflow.Blocks.OutputSpec.Equals(Aw.Sindri.Core.Workflow.Blocks.OutputSpec? other) -> bool
 Aw.Sindri.Core.Workflow.Blocks.OutputSpec.Fact.get -> Aw.Sindri.Core.Workflow.Ids.FactKey
 Aw.Sindri.Core.Workflow.Blocks.OutputSpec.Fact.init -> void
-Aw.Sindri.Core.Workflow.Blocks.OutputSpec.OutputSpec(Aw.Sindri.Core.Workflow.Ids.FactKey Fact, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>! RequiredOn) -> void
 Aw.Sindri.Core.Workflow.Blocks.OutputSpec.RequiredOn.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>!
 Aw.Sindri.Core.Workflow.Blocks.OutputSpec.RequiredOn.init -> void
 Aw.Sindri.Core.Workflow.Blocks.ParameterSpec
@@ -7747,3 +7743,37 @@ static Aw.Sindri.Core.Events.DecisionRecordedPublic.operator !=(Aw.Sindri.Core.E
 override Aw.Sindri.Core.Events.DecisionRecordedPublic.ToString() -> string!
 override Aw.Sindri.Core.Events.DecisionRecordedPublic.GetHashCode() -> int
 override Aw.Sindri.Core.Events.DecisionRecordedPublic.Equals(object? obj) -> bool
+Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Id, out Aw.Sindri.Core.Workflow.Blocks.BlockKind Kind, out int Version, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>! Inputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.OutputSpec!>! Outputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>! Outcomes, out Aw.Sindri.Core.Workflow.Blocks.Capability Capabilities, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.ParameterSpec!>! Parameters, out Aw.Sindri.Core.Workflow.Blocks.Rung? Rung, out bool DeskCapable, out string? OutcomesFrom, out string? InputsFrom) -> void
+Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.InputsFrom.get -> string?
+Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.InputsFrom.init -> void
+Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.OutcomesFrom.get -> string?
+Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.OutcomesFrom.init -> void
+Aw.Sindri.Core.Workflow.Blocks.EngineFilledOutputs
+Aw.Sindri.Core.Workflow.Blocks.OutputSpec.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.FactKey Fact, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>! RequiredOn, out bool? Every, out bool? EngineFilled) -> void
+Aw.Sindri.Core.Workflow.Blocks.OutputSpec.EngineFilled.get -> bool?
+Aw.Sindri.Core.Workflow.Blocks.OutputSpec.EngineFilled.init -> void
+Aw.Sindri.Core.Workflow.Blocks.OutputSpec.Every.get -> bool?
+Aw.Sindri.Core.Workflow.Blocks.OutputSpec.Every.init -> void
+Aw.Sindri.Core.Workflow.Ids.FactKeyHint
+static Aw.Sindri.Core.Workflow.Engine.Evals.EvalScaffold.GenerateAll(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! catalog, Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver! children) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Evals.EvalCase!>!
+static Aw.Sindri.Core.Workflow.Ids.FactKeyHint.Fix(string! text) -> string!
+Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.BlockDescriptor(Aw.Sindri.Core.Workflow.Ids.BlockId Id, Aw.Sindri.Core.Workflow.Blocks.BlockKind Kind, int Version, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>! Inputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.OutputSpec!>! Outputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>! Outcomes, Aw.Sindri.Core.Workflow.Blocks.Capability Capabilities, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.ParameterSpec!>! Parameters, Aw.Sindri.Core.Workflow.Blocks.Rung? Rung, bool DeskCapable, string? OutcomesFrom = null, string? InputsFrom = null) -> void
+Aw.Sindri.Core.Workflow.Blocks.OutputSpec.OutputSpec(Aw.Sindri.Core.Workflow.Ids.FactKey Fact, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>! RequiredOn, bool? Every = null, bool? EngineFilled = null) -> void
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact.Actor.get -> string?
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact.Actor.init -> void
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact.Choice.get -> string!
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact.Choice.init -> void
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact.<Clone>$() -> Aw.Sindri.Core.Workflow.Blocks.DecisionFact!
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact.DecisionFact(string! Choice, string! Provider, string? Actor = null) -> void
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact.Deconstruct(out string! Choice, out string! Provider, out string? Actor) -> void
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact.Equals(Aw.Sindri.Core.Workflow.Blocks.DecisionFact? other) -> bool
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact.Provider.get -> string!
+Aw.Sindri.Core.Workflow.Blocks.DecisionFact.Provider.init -> void
+override Aw.Sindri.Core.Workflow.Blocks.DecisionFact.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Blocks.DecisionFact.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Blocks.DecisionFact.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Blocks.DecisionFact.operator !=(Aw.Sindri.Core.Workflow.Blocks.DecisionFact? left, Aw.Sindri.Core.Workflow.Blocks.DecisionFact? right) -> bool
+static Aw.Sindri.Core.Workflow.Blocks.DecisionFact.operator ==(Aw.Sindri.Core.Workflow.Blocks.DecisionFact? left, Aw.Sindri.Core.Workflow.Blocks.DecisionFact? right) -> bool
+static Aw.Sindri.Core.Workflow.Blocks.EngineFilledOutputs.For(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.OutputSpec!>! outputs, Aw.Sindri.Core.Workflow.Ids.OutcomeName outcome, string! provider, string? actor) -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Blocks.DecisionFact!>!
+static Aw.Sindri.Core.Workflow.Blocks.EngineFilledOutputs.Refusal(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor!>! steps, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Ids.FactKey>! written) -> string?
