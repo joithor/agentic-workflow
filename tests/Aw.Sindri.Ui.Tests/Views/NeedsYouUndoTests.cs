@@ -89,9 +89,13 @@ public sealed class NeedsYouUndoTests : IDisposable
         var offer = Named<Control>(window, "NeedsYouUndo");
         Assert.False(offer.IsEffectivelyVisible);
 
+        Assert.Equal(3, shell.NeedsYou.Rows.Count);
+        Assert.All(shell.NeedsYou.Rows, r => Assert.True(r.IsPulsing));
+
         Named<Button>(window, "MarkAllSeen").RaiseEvent(_click);
         Settle(window);
 
+        Assert.All(shell.NeedsYou.Rows, r => Assert.False(r.IsPulsing));   // Mark all seen did stop them
         Assert.True(offer.IsEffectivelyVisible);
         Assert.Equal(Labels.MarkedSeen(3), Named<TextBlock>(window, "NeedsYouUndoText").Text);
         var undo = Named<Button>(window, "NeedsYouUndoButton");

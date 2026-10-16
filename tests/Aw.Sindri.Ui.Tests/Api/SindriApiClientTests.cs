@@ -76,6 +76,25 @@ public sealed class SindriApiClientTests
         Assert.Equal(2, log.Entries.Count);
     }
 
+    // review run 1, test-9: the key is the route as well as the message; two routes failing in turn log once each.
+    [Fact]
+    public async Task Two_routes_that_both_fail_are_logged_once_each_not_on_every_turn()
+    {
+        var handler = new FakeSindriHandler(new FakeSindriApi()) { Override = (HttpStatusCode.OK, """{"pid":"not-a-number","version":7}""") };
+        var log = new RecordingLogger();
+        var client = new SindriApiClient(new HttpClient(handler), _token, TimeProvider.System, log);
+
+        for (var i = 0; i < 3; i++)
+        {
+            _ = await client.Status(_api, Token);
+            _ = await client.Instances(_api, new Aw.Sindri.Ui.Api.Workflow.InstanceQuery(Root: true), Token);
+        }
+
+        Assert.Equal(2, log.Entries.Count);
+        Assert.Contains(log.Entries, e => e.Message.Contains("/sindri/status", StringComparison.Ordinal));
+        Assert.Contains(log.Entries, e => e.Message.Contains("/sindri/workflow/instances", StringComparison.Ordinal));
+    }
+
     // The line comes back when the route has been readable in between: a recurrence is news.
     [Fact]
     public async Task A_recurrence_after_a_good_answer_is_logged_again()
