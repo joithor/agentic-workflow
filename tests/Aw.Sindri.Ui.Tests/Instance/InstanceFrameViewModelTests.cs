@@ -137,9 +137,11 @@ public sealed class InstanceFrameViewModelTests
     {
         var frame = Frame();
 
-        await frame.Open(_api, "ITM-01JZZ/project/1", id: null, Token);
+        var absent = Text(Golden("project-build")["address"]) + "/absent";   // an address the list does not serve
 
-        Assert.Equal((FramePhase.NotFound, Labels.InstanceNotFound("ITM-01JZZ/project/1")), (frame.Phase, frame.ProblemText));
+        await frame.Open(_api, absent, id: null, Token);
+
+        Assert.Equal((FramePhase.NotFound, Labels.InstanceNotFound(absent)), (frame.Phase, frame.ProblemText));
     }
 
     [Fact]

@@ -89,7 +89,7 @@ public sealed class StatesBandViewModelTests
 
         var badge = Labels.CellBadge(cell.Badge!.Kind, cell.Badge.Reason);
         Assert.StartsWith($"{cell.State} {badge}", node.Text, StringComparison.Ordinal);
-        Assert.DoesNotContain("◐", node.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain(Labels.MarkActive, node.Text, StringComparison.Ordinal);
         Assert.True(node.IsCurrent);
     }
 

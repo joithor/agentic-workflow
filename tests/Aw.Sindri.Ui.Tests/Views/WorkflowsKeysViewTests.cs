@@ -11,7 +11,6 @@ using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Facts;
-using Aw.Sindri.Ui.ViewModels.Instance;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.ViewModels.Workflows;
 using Aw.Sindri.Ui.Views.Components;
@@ -187,16 +186,6 @@ public sealed class WorkflowsKeysViewTests : FrameHost
     });
 
     [Fact]
-    public Task The_lock_button_shows_only_on_a_row_with_a_protected_answer() => OnUi(async () =>
-    {
-        var (window, _) = await OnWorkflows();
-
-        var shown = window.GetVisualDescendants().OfType<ProtectedActionButton>().Where(b => b.Name == "WorkflowProtected" && b.IsEffectivelyVisible).ToList();
-
-        _ = Assert.Single(shown);
-    });
-
-    [Fact]
     public Task B_and_N_say_their_phase_on_the_page() => OnUi(async () =>
     {
         var (window, shell) = await OnWorkflows();
@@ -213,21 +202,5 @@ public sealed class WorkflowsKeysViewTests : FrameHost
         Assert.Equal(Labels.StartArrives, Named<TextBlock>(window, "WorkflowsKeyNote").Text);
         Assert.Same(RowFrame(window, Plain.Address), Focused(window));
         Frame(window, "u8-keys-phase-note", "");
-    });
-
-    [Fact]
-    public Task u8_frame_tabs() => OnUi(async () =>
-    {
-        var (window, shell) = await Connected();
-        var scenario = "project-build";
-        shell.Navigate(new DeepLink(DeepLinkKind.Workflow, (string)GoldenFiles.Node("workflow-instance", scenario)["address"]!));
-        await Until(window, () => shell.Instance.Phase == FramePhase.Shown);
-
-        var texts = window.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == "FrameTabText" && t.IsEffectivelyVisible).Select(t => t.Text).ToList();
-        var phases = window.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == "FrameTabPhase" && t.IsEffectivelyVisible).Select(t => t.Text).ToList();
-
-        Expect.Sequence(shell.Instance.Tabs!.Tabs.Select(t => t.Text), texts);
-        Expect.Sequence(shell.Instance.Tabs.Tabs.Select(t => t.Phase), phases);
-        Frame(window, "u8-frame-tabs", "");
     });
 }

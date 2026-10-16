@@ -1,11 +1,7 @@
 using Avalonia.Controls;
-using Avalonia.Headless;
-using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Instance;
@@ -37,12 +33,6 @@ public sealed class ChildrenFramesTests : FrameHost
         [.. window.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == name && t.IsEffectivelyVisible)];
 
     private static void Click(Button button) => button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-
-    private static void Press(Window window, Key key)
-    {
-        window.KeyPress(key, RawInputModifiers.None, PhysicalKey.None, keySymbol: null);
-        Dispatcher.UIThread.RunJobs();
-    }
 
     [Fact]
     public Task u8_frame_children_workstreams() => OnUi(async () =>
@@ -85,36 +75,5 @@ public sealed class ChildrenFramesTests : FrameHost
 
         Assert.True(shell.IsSheetOpen);
         Assert.NotNull(window.FocusManager?.GetFocusedElement());
-    });
-
-    [Fact]
-    public Task Esc_closes_the_whole_stack_and_leaves_no_trail() => OnUi(async () =>
-    {
-        var (window, shell) = await Opened("project-build");
-        Click(Buttons(window, "ChildRowOpen")[0]);
-        await Until(window, () => shell.Instance.Address != FixtureInstances.Detail("project-build").Address);
-
-        Press(window, Key.Escape);
-        Assert.False(shell.IsSheetOpen);
-        shell.Navigate(new DeepLink(DeepLinkKind.Workflow, FixtureInstances.Detail("project-build").Address));
-        await Until(window, () => shell.Instance.Phase == FramePhase.Shown);
-        shell.Back();
-
-        Assert.False(shell.IsSheetOpen);
-    });
-
-    [Fact]
-    public Task An_items_Open_opens_its_sheet_stacked_and_Back_returns_to_the_frame() => OnUi(async () =>
-    {
-        var (window, shell) = await Opened("project-build");
-        var parent = shell.Instance.Address;
-        var row = shell.Instance.Children!.Groups.Single().Streams[0].Rows[0];
-
-        Click(Buttons(window, "ChildRowItemOpen")[0]);
-        Settle(window);
-        Assert.Equal((DeepLinkKind.Item, row.ItemId), (shell.SheetLink!.Kind, shell.SheetSubject));
-
-        shell.Back();
-        await Until(window, () => shell.IsInstanceSheet && shell.Instance.Address == parent && shell.Instance.Phase == FramePhase.Shown);
     });
 }

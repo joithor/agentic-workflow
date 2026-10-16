@@ -39,16 +39,6 @@ public sealed class ShellWorkflowsTests : FrameHost
     });
 
     [Fact]
-    public Task Workflows_nav_count_is_counts_open() => OnUi(async () =>
-    {
-        var (_, shell) = await Connected(s => s.Workflows.NavCount.Length > 0);
-
-        var open = GoldenFiles.Node("workflow-instances", "open")["counts"]!["open"]!.ToJsonString();
-        var entry = shell.Navigation.First(n => n.Page == PageId.Workflows);
-        Assert.Equal((open, true), (entry.Count, entry.HasCount));
-    });
-
-    [Fact]
     public Task Workflow_events_reread_the_list() => OnUi(async () =>
     {
         var (window, shell) = await Connected(s => s.Workflows.Groups.Count > 0);

@@ -4,6 +4,7 @@ using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Workflows;
+using Microsoft.Extensions.Time.Testing;
 using StateGlyph = Aw.Sindri.Ui.Api.Workflow.StateGlyph;
 
 namespace Aw.Sindri.Ui.Tests.Workflows;
@@ -12,7 +13,7 @@ namespace Aw.Sindri.Ui.Tests.Workflows;
 [Lane(TestLane.Unit)]
 public sealed class InstanceRowViewModelTests
 {
-    private static InstanceRowViewModel Row(InstanceSummary row) => new(row, new FakeClipboard(), TimeProvider.System);
+    private static InstanceRowViewModel Row(InstanceSummary row) => new(row, new FakeClipboard(), new FakeTimeProvider(A.Noon));
 
     private static IReadOnlyList<InstanceSummary> Open => FixtureInstances.List("open").Instances;
 
@@ -20,10 +21,10 @@ public sealed class InstanceRowViewModelTests
 
     private static string Mark(StateGlyph glyph) => glyph switch
     {
-        StateGlyph.Done => "●",
-        StateGlyph.Active => "◐",
-        StateGlyph.Pending => "○",
-        _ => "○",
+        StateGlyph.Done => Labels.MarkDone,
+        StateGlyph.Active => Labels.MarkActive,
+        StateGlyph.Pending => Labels.MarkPending,
+        _ => throw new ArgumentOutOfRangeException(nameof(glyph), glyph, message: null),
     };
 
     [Fact]
@@ -36,11 +37,11 @@ public sealed class InstanceRowViewModelTests
         {
             var cells = Row(served).Inputs;
             Expect.Sequence(served.Inputs.Select(i => i.Label), cells.Select(c => c.Label));
-            Expect.Sequence(served.Inputs.Select(i => i.Present ? "✓" : "✕"), cells.Select(c => c.Mark));
+            Expect.Sequence(served.Inputs.Select(i => i.Present ? Labels.MarkInputPresent : Labels.MarkInputMissing), cells.Select(c => c.Mark));
             Assert.All(cells.Zip(served.Inputs), p => Assert.Contains(p.Second.Present ? "present" : "missing", p.First.Name, StringComparison.Ordinal));
         });
         var missing = FixtureInstances.List("preview-missing-input").Instances[0];
-        Assert.Contains(Row(missing).Inputs, c => !c.Present && c.Mark == "✕");
+        Assert.Contains(Row(missing).Inputs, c => !c.Present && c.Mark == Labels.MarkInputMissing);
     }
 
     [Fact]
@@ -52,8 +53,8 @@ public sealed class InstanceRowViewModelTests
         var stages = Row(served).Stages;
 
         var blocked = Assert.Single(stages, s => s.IsBlocked);
-        Assert.Equal((served.State, "—", true), (blocked.State, blocked.Glyph, blocked.IsCurrent));
-        Assert.StartsWith("—", blocked.Text, StringComparison.Ordinal);
+        Assert.Equal((served.State, Labels.BlockedMark, true), (blocked.State, blocked.Glyph, blocked.IsCurrent));
+        Assert.StartsWith(Labels.BlockedMark, blocked.Text, StringComparison.Ordinal);
         Assert.Contains(Labels.EngineBadge(served.EngineOwned!.Kind, served.EngineOwned.Reason), blocked.Text, StringComparison.Ordinal);
         Assert.All(Open, other => Assert.DoesNotContain(Row(other).Stages, s => s.IsBlocked));
     }

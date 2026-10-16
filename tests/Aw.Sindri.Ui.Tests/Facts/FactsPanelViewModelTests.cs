@@ -38,7 +38,7 @@ public sealed class FactsPanelViewModelTests
     public void Status_maps_to_produced_in_progress_pending_glyphs()
     {
         var facts = FixtureInstances.Detail("project-build").Facts.Concat(FixtureInstances.Detail("incident-loop").Facts).ToList();
-        var glyphs = new Dictionary<FactStatus, string> { [FactStatus.Produced] = "●", [FactStatus.InProgress] = "◐", [FactStatus.Pending] = "○" };
+        var glyphs = new Dictionary<FactStatus, string> { [FactStatus.Produced] = Labels.MarkDone, [FactStatus.InProgress] = Labels.MarkActive, [FactStatus.Pending] = Labels.MarkPending };
 
         Assert.Equal([FactStatus.Produced, FactStatus.InProgress, FactStatus.Pending], facts.Select(f => f.Status).Distinct().Order());
         foreach (var fact in facts)
@@ -53,7 +53,7 @@ public sealed class FactsPanelViewModelTests
     {
         var human = FixtureInstances.Detail("project-build").Facts.First(f => f.By?.StartsWith("human:", StringComparison.Ordinal) == true);
 
-        Assert.Equal("you", Row("project-build", human.Key).By);
+        Assert.Equal(Labels.ByYou, Row("project-build", human.Key).By);
         Assert.Equal(string.Empty, Row("project-build", "fact:evidence").By);
     }
 

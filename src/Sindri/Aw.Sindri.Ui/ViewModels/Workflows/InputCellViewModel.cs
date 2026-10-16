@@ -19,7 +19,7 @@ internal sealed class InputCellViewModel
     public bool Present => _input.Present;
 
     /// <summary>The check or the cross (never the only sign: <see cref="Name"/> says it in words).</summary>
-    public string Mark => _input.Present ? "✓" : "✕";
+    public string Mark => _input.Present ? Labels.MarkInputPresent : Labels.MarkInputMissing;
 
     /// <summary>The name screen readers hear: the label and whether it is present.</summary>
     public string Name => $"{_input.Label} {(_input.Present ? Labels.InputPresent : Labels.InputMissing)}";

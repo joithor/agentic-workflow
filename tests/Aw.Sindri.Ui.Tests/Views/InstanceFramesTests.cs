@@ -1,7 +1,9 @@
 using System.Net;
 using System.Text.Json.Nodes;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Input;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api.Workflow;
@@ -49,6 +51,11 @@ public sealed class InstanceFramesTests : FrameHost
         Assert.Equal(shell.Instance.Identity, Named<TextBlock>(window, "InstanceIdentity").Text);
         Assert.Equal(shell.Instance.Subject!.OpenInText, Named<Button>(window, "InstanceOpenIn").Content?.ToString());
         Assert.True(Visible(window, "ExpandedBudget"));
+
+        var texts = Texts(window, "FrameTabText").Select(t => t.Text).ToList();
+        var phases = Texts(window, "FrameTabPhase").Select(t => t.Text).ToList();
+        Expect.Sequence(shell.Instance.Tabs!.Tabs.Select(t => t.Text), texts);
+        Expect.Sequence(shell.Instance.Tabs.Tabs.Select(t => t.Phase), phases);
         Frame(window, "project-build");
     });
 
@@ -198,12 +205,19 @@ public sealed class InstanceFramesTests : FrameHost
     public Task Focus_order_reads_before_it_acts() => OnUi(async () =>
     {
         var (window, _) = await Opened("project-build");
-        var frame = Named<Control>(window, "InstanceFrame");
+        Assert.True(Named<Button>(window, "InstanceOpenIn").Focus(NavigationMethod.Tab));
 
-        var stops = frame.GetVisualDescendants().OfType<Control>().Where(c => c is Button or TextBox && c.Focusable && c.IsEffectivelyVisible && c.IsEffectivelyEnabled).Select(c => c.Name ?? string.Empty).ToList();
+        var walked = new List<string>();
+        for (var i = 0; i < 40 && !walked.Contains("CommandAsk"); i++)
+        {
+            window.KeyPress(Key.Tab, RawInputModifiers.None, PhysicalKey.None, keySymbol: null);
+            Dispatcher.UIThread.RunJobs();
+            walked.Add((window.FocusManager?.GetFocusedElement() as Control)?.Name ?? string.Empty);
+        }
 
-        Assert.Equal("InstanceOpenIn", stops[0]);
-        Assert.True(stops.IndexOf("ExpandedCopyStatus") < stops.IndexOf("CommandAsk"));
-        Assert.Equal(-1, stops.IndexOf("ExpandedKeep"));
+        var (copy, ask) = (walked.IndexOf("ExpandedCopyStatus"), walked.IndexOf("CommandAsk"));
+        Assert.True(copy >= 0 && ask >= 0, "the walk reached " + string.Join(", ", walked));
+        Assert.True(copy < ask);
+        Assert.DoesNotContain("ExpandedKeep", walked, StringComparer.Ordinal);
     });
 }

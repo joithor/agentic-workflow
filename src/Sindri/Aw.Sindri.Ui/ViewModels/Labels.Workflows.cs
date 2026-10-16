@@ -75,6 +75,28 @@ internal static partial class Labels
     /// <summary>The legend's word for the mark of a taken-over stage.</summary>
     internal const string LegendTakenOver = "taken over";
 
+    /// <summary>The mark of a finished stage (and a produced fact).</summary>
+    internal const string MarkDone = "●";
+
+    /// <summary>The mark of the stage in progress (and a fact in progress).</summary>
+    internal const string MarkActive = "◐";
+
+    /// <summary>The mark of a stage not started (and a pending fact).</summary>
+    internal const string MarkPending = "○";
+
+    /// <summary>The mark of a declared input that is present.</summary>
+    internal const string MarkInputPresent = "✓";
+
+    /// <summary>The mark of a declared input that is missing.</summary>
+    internal const string MarkInputMissing = "✕";
+
+    /// <summary>The Workflows head: the root-wide counts.</summary>
+    /// <param name="open">How many are open.</param>
+    /// <param name="needsYou">How many need the human.</param>
+    /// <param name="withYou">How many are with the human.</param>
+    /// <returns>"8 open · 2 need you · 1 with you".</returns>
+    internal static string WorkflowsHead(string open, string needsYou, string withYou) => $"{open} open · {needsYou} need you · {withYou} with you";
+
     /// <summary>The mark of an escalated or parked stage.</summary>
     internal const string MarkEscalated = "▲";
 

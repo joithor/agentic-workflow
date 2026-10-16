@@ -55,10 +55,10 @@ internal sealed class StageCellViewModel
 
     internal static string Mark(Api.Workflow.StateGlyph glyph) => glyph switch
     {
-        Api.Workflow.StateGlyph.Done => "●",
-        Api.Workflow.StateGlyph.Active => "◐",
-        Api.Workflow.StateGlyph.Pending => "○",
-        _ => "○",
+        Api.Workflow.StateGlyph.Done => Labels.MarkDone,
+        Api.Workflow.StateGlyph.Active => Labels.MarkActive,
+        Api.Workflow.StateGlyph.Pending => Labels.MarkPending,
+        _ => throw new ArgumentOutOfRangeException(nameof(glyph), glyph, message: null),
     };
 
     private static string Parts(StateCell cell) => string.Join(

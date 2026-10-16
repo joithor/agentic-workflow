@@ -5,6 +5,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
+using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Instance;
@@ -62,10 +63,10 @@ public sealed class ShellInstanceTests : FrameHost
         shell.Navigate(new DeepLink(DeepLinkKind.Workflow, Address()));
         await Until(window, () => shell.Instance.Phase == FramePhase.Shown);
         var instance = Named<Border>(window, "Sheet").Width;
-        shell.Navigate(new DeepLink(DeepLinkKind.Item, "ITM-01JA1"));
+        shell.Navigate(new DeepLink(DeepLinkKind.Item, FixtureInstances.Detail("done").Facts.First(f => f.Type == Aw.Sindri.Ui.Api.Workflow.FactType.Item).Ref!.ItemId!));
         Settle(window);
 
-        Assert.Equal((760d, kept, kept), (instance, Named<Border>(window, "Sheet").Width, shell.SheetWidth));
+        Assert.Equal((UiPreferences.MaxSheetWidth, kept, kept), (instance, Named<Border>(window, "Sheet").Width, shell.SheetWidth));
     });
 
     [Fact]

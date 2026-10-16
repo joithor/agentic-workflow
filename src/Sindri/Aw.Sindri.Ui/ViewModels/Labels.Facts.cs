@@ -43,10 +43,10 @@ internal static partial class Labels
     /// <returns>● produced, ◐ in progress, ○ pending.</returns>
     internal static string FactMark(FactStatus status) => status switch
     {
-        FactStatus.Produced => "●",
-        FactStatus.InProgress => "◐",
-        FactStatus.Pending => "○",
-        _ => "○",
+        FactStatus.Produced => MarkDone,
+        FactStatus.InProgress => MarkActive,
+        FactStatus.Pending => MarkPending,
+        _ => MarkPending,
     };
 
     /// <summary>The status in words (a glyph is never the only sign).</summary>

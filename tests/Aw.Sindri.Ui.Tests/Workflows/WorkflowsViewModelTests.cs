@@ -5,6 +5,7 @@ using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Workflows;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Ui.Tests.Workflows;
 
@@ -29,7 +30,7 @@ public sealed class WorkflowsViewModelTests
 
     private async Task<WorkflowsViewModel> Shown()
     {
-        var list = new WorkflowsViewModel(_server, new FakeClipboard(), TimeProvider.System);
+        var list = new WorkflowsViewModel(_server, new FakeClipboard(), new FakeTimeProvider(A.Noon));
         await list.Refresh(_api, Token);
         return list;
     }
@@ -78,7 +79,7 @@ public sealed class WorkflowsViewModelTests
         var list = await Shown();
 
         var counts = GoldenFiles.Node("workflow-instances", "open")["counts"]!;
-        Assert.Equal($"{counts["open"]} open · {counts["needsYou"]} need you · {counts["withYou"]} with you", list.Head);
+        Assert.Equal(Labels.WorkflowsHead(counts["open"]!.ToJsonString(), counts["needsYou"]!.ToJsonString(), counts["withYou"]!.ToJsonString()), list.Head);
         Assert.Equal(counts["open"]!.ToJsonString(), list.NavCount);
     }
 
@@ -130,7 +131,7 @@ public sealed class WorkflowsViewModelTests
         Assert.True(list.Groups.Count < Expected("open").Count);
         Assert.Equal(head, list.Head);
         var counts = GoldenFiles.Node("workflow-instances", "recipe-filter")["counts"]!;
-        Assert.Equal($"{counts["open"]} open · {counts["needsYou"]} need you · {counts["withYou"]} with you", list.Head);
+        Assert.Equal(Labels.WorkflowsHead(counts["open"]!.ToJsonString(), counts["needsYou"]!.ToJsonString(), counts["withYou"]!.ToJsonString()), list.Head);
     }
 
     [Fact]
@@ -267,7 +268,7 @@ public sealed class WorkflowsViewModelTests
     [Fact]
     public void The_legend_names_every_mark_the_rows_draw_and_the_keys_in_words()
     {
-        var list = new WorkflowsViewModel(_server, new FakeClipboard(), TimeProvider.System);
+        var list = new WorkflowsViewModel(_server, new FakeClipboard(), new FakeTimeProvider(A.Noon));
         var marks = new[] { StageCellViewModel.Mark(Aw.Sindri.Ui.Api.Workflow.StateGlyph.Done), StageCellViewModel.Mark(Aw.Sindri.Ui.Api.Workflow.StateGlyph.Active), StageCellViewModel.Mark(Aw.Sindri.Ui.Api.Workflow.StateGlyph.Pending), Labels.LoopMark };
         var words = new[] { Labels.StageDone, Labels.StageActive, Labels.StagePending, Labels.LegendLoop, Labels.LegendEscalated, Labels.LegendTakenOver };
 
