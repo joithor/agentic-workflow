@@ -28,6 +28,11 @@ internal static class FixtureInstances
     /// <summary>The root list as served: every root row and the root-wide counts.</summary>
     internal static InstanceList Root => _root.Value;
 
+    /// <summary>One list golden of the instance list route, read through the app's records.</summary>
+    /// <param name="scenario">The scenario ('open', 'recipe-filter', 'preview-missing-input').</param>
+    /// <returns>The list as served.</returns>
+    internal static InstanceList List(string scenario) => Read<InstanceList>(GoldenFiles.Api("workflow-instances", scenario));
+
     /// <summary>The root rows.</summary>
     internal static IReadOnlyList<InstanceSummary> Rows => Root.Instances;
 

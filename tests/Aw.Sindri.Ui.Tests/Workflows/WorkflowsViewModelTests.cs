@@ -1,0 +1,196 @@
+using System.Net;
+using System.Text.Json.Nodes;
+using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Api.Workflow;
+using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Workflows;
+
+namespace Aw.Sindri.Ui.Tests.Workflows;
+
+/// <summary>The Workflows page's list (screens §4.2, U8 T1): the open root rows grouped by recipe in the order the API serves them, the root-wide head, the finished line, the filters and the banners.</summary>
+[Lane(TestLane.Unit)]
+public sealed class WorkflowsViewModelTests
+{
+    private static readonly Uri _api = new("http://127.0.0.1:7410/");
+    private readonly FakeSindriApi _server = new();
+
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
+    private static JsonArray Served(string scenario) => GoldenFiles.Node("workflow-instances", scenario)["instances"]!.AsArray();
+
+    private static string Text(JsonNode? node) => (string)node!;
+
+    private static string Recipe(JsonNode row) => Text(row["recipe"]!["id"]);
+
+    // The recipes in the order the golden first names them, each with the rows it holds, in the golden's order.
+    private static List<(string Recipe, string[] Addresses)> Expected(string scenario) =>
+        [.. Served(scenario).GroupBy(r => Recipe(r!), StringComparer.Ordinal).Select(g => (g.Key, g.Select(r => Text(r!["address"])).ToArray()))];
+
+    private async Task<WorkflowsViewModel> Shown()
+    {
+        var list = new WorkflowsViewModel(_server);
+        await list.Refresh(_api, Token);
+        return list;
+    }
+
+    private static string[] Addresses(RecipeGroupViewModel group) => [.. group.Rows.Select(r => r.Address)];
+
+    [Fact]
+    public async Task Default_reads_root_open()
+    {
+        var list = await Shown();
+
+        Assert.Equal(new InstanceQuery(Root: true, Open: true), _server.LastInstancesQuery);
+        Expect.Sequence(Served("open").Select(r => Text(r!["address"])).Order(StringComparer.Ordinal), list.Groups.SelectMany(Addresses).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task Groups_appear_in_first_served_order_and_keep_row_order()
+    {
+        var list = await Shown();
+
+        var expected = Expected("open");
+        Expect.Sequence(expected.Select(g => g.Recipe), list.Groups.Select(g => g.Recipe));
+        Assert.All(expected.Zip(list.Groups), pair => Expect.Sequence(pair.First.Addresses, Addresses(pair.Second)));
+
+        // A group holds its rows even when the API served other recipes between them (the triage rows are not adjacent).
+        var served = Served("open").Select(r => Recipe(r!)).ToList();
+        var split = expected.First(g => g.Addresses.Length > 1).Recipe;
+        Assert.True(served.LastIndexOf(split) - served.IndexOf(split) >= expected.First(g => g.Recipe == split).Addresses.Length);
+    }
+
+    [Fact]
+    public async Task Each_groups_columns_are_its_rows_states_in_order()
+    {
+        var list = await Shown();
+
+        foreach (var group in list.Groups)
+        {
+            var first = Served("open").First(r => Recipe(r!) == group.Recipe)!;
+            Expect.Sequence(first["states"]!.AsArray().Select(s => Text(s!["id"])), group.Columns);
+        }
+    }
+
+    [Fact]
+    public async Task Head_reads_open_need_you_with_you_from_counts()
+    {
+        var list = await Shown();
+
+        var counts = GoldenFiles.Node("workflow-instances", "open")["counts"]!;
+        Assert.Equal($"{counts["open"]} open · {counts["needsYou"]} need you · {counts["withYou"]} with you", list.Head);
+        Assert.Equal(Text(counts["open"]), list.NavCount);
+    }
+
+    [Fact]
+    public async Task Done_line_reads_counts_done_and_expands_to_the_root_done_rows()
+    {
+        var list = await Shown();
+
+        var done = GoldenFiles.Node("workflow-instances", "root")["counts"]!["done"];
+        Assert.Equal((true, $"{done} done today", false, 0), (list.HasDone, list.DoneText, list.IsDoneExpanded, list.DoneRows.Count));
+
+        await list.ToggleDone(Token);
+
+        var finished = Served("root").Where(r => r!["states"]!.AsArray().Any(s => Text(s!["id"]) == Text(r["state"]) && (bool)s["terminal"]!)).Select(r => Text(r!["address"]));
+        Assert.True(list.IsDoneExpanded);
+        Expect.Sequence(finished, list.DoneRows.Select(r => r.Address));
+        Assert.Equal(new InstanceQuery(Root: true), _server.LastInstancesQuery);
+
+        await list.ToggleDone(Token);
+        Assert.Equal((false, 0), (list.IsDoneExpanded, list.DoneRows.Count));
+    }
+
+    [Fact]
+    public async Task Recipe_and_Subject_filters_send_recipe_and_subject()
+    {
+        var list = await Shown();
+        var row = Served("recipe-filter")[0]!;
+
+        await list.FilterRecipe(Recipe(row), Token);
+        Assert.Equal(new InstanceQuery(Root: true, Open: true, Recipe: Recipe(row)), _server.LastInstancesQuery);
+
+        await list.FilterSubject(Text(row["subject"]!["key"]), Token);
+        Assert.Equal(new InstanceQuery(Root: true, Open: true, Recipe: Recipe(row), Subject: Text(row["subject"]!["key"])), _server.LastInstancesQuery);
+
+        await list.FilterRecipe(recipe: null, Token);
+        Assert.Equal(new InstanceQuery(Root: true, Open: true, Subject: Text(row["subject"]!["key"])), _server.LastInstancesQuery);
+    }
+
+    [Fact]
+    public async Task Counts_stay_root_wide_under_a_filter()
+    {
+        var list = await Shown();
+        var head = list.Head;
+        var recipe = Recipe(Served("recipe-filter")[0]!);
+
+        await list.FilterRecipe(recipe, Token);
+
+        Assert.All(list.Groups, g => Assert.Equal(recipe, g.Recipe));
+        Assert.True(list.Groups.Count < Expected("open").Count);
+        Assert.Equal(head, list.Head);
+        var counts = GoldenFiles.Node("workflow-instances", "recipe-filter")["counts"]!;
+        Assert.Equal($"{counts["open"]} open · {counts["needsYou"]} need you · {counts["withYou"]} with you", list.Head);
+    }
+
+    [Fact]
+    public async Task Collapsed_groups_show_count_and_show_all()
+    {
+        var list = await Shown();
+        var group = list.Groups[0];
+        var rows = group.Rows.Count;
+        Assert.Equal((true, string.Empty, rows), (group.IsExpanded, group.ShowAllText, group.Count));
+
+        group.Toggle();
+
+        Assert.Equal((false, Labels.ShowAll, rows), (group.IsExpanded, group.ShowAllText, group.Count));
+        await list.Refresh(_api, Token);
+        Assert.Equal((false, rows), (list.Groups[0].IsExpanded, list.Groups[0].Count));
+        list.Groups[0].Toggle();
+        Assert.True(list.Groups[0].IsExpanded);
+    }
+
+    [Fact]
+    public async Task Empty_shows_the_served_sentence()
+    {
+        _server.WorkflowAnswer = RouteAnswer.Api("workflow-instances", "empty");
+
+        var list = await Shown();
+
+        Assert.Equal((true, Text(GoldenFiles.Node("workflow-instances", "empty")["empty"]), 0, false), (list.IsEmpty, list.EmptyText, list.Groups.Count, list.HasDone));
+    }
+
+    [Fact]
+    public async Task Stalled_and_rebuilding_keep_rows_marked_stale()
+    {
+        var list = await Shown();
+        Assert.All(list.Groups.SelectMany(g => g.Rows), r => Assert.False(r.IsStale));
+
+        list.SetStale(stale: true);
+        Assert.All(list.Groups.SelectMany(g => g.Rows), r => Assert.True(r.IsStale));
+
+        await list.Refresh(_api, Token);
+        Assert.All(list.Groups.SelectMany(g => g.Rows), r => Assert.True(r.IsStale));
+
+        list.SetStale(stale: false);
+        Assert.All(list.Groups.SelectMany(g => g.Rows), r => Assert.False(r.IsStale));
+    }
+
+    [Fact]
+    public async Task An_unreadable_list_shows_the_shared_unreadable_state()
+    {
+        var body = (JsonObject)GoldenFiles.Node("workflow-instances", "open");
+        _ = body.Remove("counts");   // the engine's shape before API P11 has no counts (N1)
+        var list = await Shown();
+        Assert.False(list.IsUnreadable);
+
+        _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, body.ToJsonString());
+        await list.Refresh(_api, Token);
+
+        Assert.Equal((true, Labels.StripUnreadable, 0, string.Empty), (list.IsUnreadable, list.UnreadableText, list.Groups.Count, list.Head));
+
+        _server.WorkflowAnswer = null;
+        await list.Refresh(_api, Token);
+        Assert.Equal((false, true), (list.IsUnreadable, list.Groups.Count > 0));
+    }
+}

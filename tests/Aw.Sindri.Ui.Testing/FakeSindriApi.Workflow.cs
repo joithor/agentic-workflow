@@ -17,6 +17,7 @@ internal sealed partial class FakeSindriApi
     public Task<Result<InstanceList>> Instances(Uri api, InstanceQuery query, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _instancesCalls);
+        LastInstancesQuery = query;
         return Task.FromResult(Answer<InstanceList>(api, WorkflowRoutes.Instances(query), InstancesAnswer(query)));
     }
 
@@ -53,4 +54,7 @@ internal sealed partial class FakeSindriApi
 
     // LANE ANCHOR U3': U3' keeps its own fake in FakeSindriApi.Routes.cs; it adds nothing here. Insert immediately above this marker, never between the markers.
     // LANE ANCHOR U8: new workflow answers (commands, complete) and their gates, answered from WorkflowAnswers. Insert immediately below this marker, never between the markers.
+
+    /// <summary>The query of the latest instance-list read; null before the first.</summary>
+    public InstanceQuery? LastInstancesQuery { get; private set; }
 }
