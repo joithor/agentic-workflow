@@ -46,8 +46,9 @@ public static class RecordedText
         };
     }
 
-    // Scrubbed before the members are hidden too: re-serializing a body can change how a value is written (escapes), which a value scrub afterwards would not find.
-    private static string Scrubbed(ITextScrubber scrubber, string text) => scrubber.Scrub(HideSecretMembers(scrubber, scrubber.Scrub(text)));
+    // Members are hidden first, on the text as written: a value scrub may put an unquoted placeholder where a learned numeric secret was, which makes the JSON invalid and would switch member hiding off.
+    // The streaming pass keeps every other byte as written, so the value scrub afterwards still finds what it knows.
+    private static string Scrubbed(ITextScrubber scrubber, string text) => scrubber.Scrub(HideSecretMembers(scrubber, text));
 
     // A streaming pass over the bytes, not a parsed tree: a tree cannot hold a repeated key (a body or stdout may repeat one).
     // The value of every secret-named property, wherever it occurs and however deep (a nested object or array too), is replaced in place by the placeholder; the rest of the text is kept as written.

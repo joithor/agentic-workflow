@@ -46,7 +46,7 @@ One scheme for every command:
 | 1 | Usage error, invalid input, or a guard refused | `ui-evidence: usage: ui-evidence <shape>`; AW-EVIDENCE-001…006, 010, 012, 016, 017, 018, 019, 020, 021, 022 |
 | 2 | A check failed: a step failed or broke (`run`), an expectation did not hold (`api-run`, `db-run`), a box check failed (`parity`), the stack is unhealthy (`doctor`) | the document is still written and printed |
 | 3 | Blocked on review (`parity-plan`) | the plan is still printed |
-| 4 | The run itself errored, or the environment's I/O failed: the browser failed to start or crashed, a frame's anchor is missing, a region runs past the viewport, a file couldn't be read or written (the script included), a lock directory couldn't be made; `api-run`: a request failed, timed out or was redirected off its origin (AW-EVIDENCE-023), a golden file could not be read (011), a CLI call would not start or ran past its limit, or its temporary directory could not be made (AW-EVIDENCE-015, the same code the unexpected-exception line uses); `db-run`: the database cannot be reached or copied (AW-EVIDENCE-024) or a query fails for a reason other than a refused write (AW-EVIDENCE-015) | AW-EVIDENCE-011, 013, 015, 023, 024 (a stack probe failure, AW-EVIDENCE-014, is never an exit: `doctor` and `provenance` report it in their document) |
+| 4 | The run itself errored, or the environment's I/O failed: the browser failed to start or crashed, a frame's anchor is missing, a region runs past the viewport, a file couldn't be read or written (the script included), a lock directory couldn't be made; `api-run`: a request failed, timed out or was redirected off its origin (AW-EVIDENCE-023), a golden file could not be read (011), a CLI call would not start or ran past its limit, or its temporary directory could not be made (AW-EVIDENCE-015, the same code the unexpected-exception line uses); `db-run`: the database cannot be reached or copied (AW-EVIDENCE-024), a script, seed or golden file could not be read (011) or a query fails for a reason other than a refused write (AW-EVIDENCE-015) | AW-EVIDENCE-011, 013, 015, 023, 024 (a stack probe failure, AW-EVIDENCE-014, is never an exit: `doctor` and `provenance` report it in their document) |
 | 75 | A machine lock stayed busy past `--lock-timeout` | AW-EVIDENCE-009 |
 | 130 | Interrupted (SIGINT, SIGTERM, SIGHUP, SIGQUIT): a browser call in flight is abandoned at once and the locks are released on the way out. A second signal terminates the process without waiting (a lock it held is then left for a person to remove) | `ui-evidence: interrupted` |
 
@@ -54,8 +54,8 @@ The mapping is by error kind: `timeout` → 75, `unavailable` → 4, anything el
 or a failure outside a result) is `ui-evidence: AW-EVIDENCE-015 the run failed unexpectedly: <first line>` and exit 4,
 never the runtime's crash exit.
 
-`db-run` returns AW-EVIDENCE-006 (a `passwordEnv` variable that is unset), 010 (a SQLite source or a seed or golden file that isn't there), 018 (database script, a SQLite source that isn't a database, or a seed that fails on the run's copy), 020 (database refused: outside the repo, not disposable, a role that can write, a write statement before connecting, or a write the server refused), 021 (server identity mismatch) and 024
-(database cannot be reached or copied).
+`db-run` returns AW-EVIDENCE-006 (a `passwordEnv` variable that is unset), 010 (a SQLite source or a seed or golden file that isn't there), 018 (database script, a SQLite source that isn't a database, or a seed that fails on the run's copy), 020 (database refused: outside the repo, not disposable, a role that can write, a write statement before connecting, or a write the server refused), 021 (server identity mismatch), 024
+(database cannot be reached or copied), 011 (a script, seed or golden file that exists but can't be read, or a file that can't be written), 015 (an unexpected exception or a query that fails for a reason other than a refused write) and 009 (a lock that stayed busy, exit 75).
 
 ### stdout and stderr
 
@@ -312,8 +312,8 @@ output, each failure's `pointer`, `expected` and `actual`, and the `headline` (b
 `Aw.Redaction` as it is recorded: the run's own values are replaced by value (each resolved header value with
 `[REDACTED:header-value]`, and for a `<scheme> <credential>` value such as `Bearer <token>` the credential alone too; each
 pass-through variable value with `[REDACTED:env-value]`; wherever an app echoes them, including their JSON-escaped forms; a value
-under 6 characters is left to the patterns) together with the pattern scrub, then the value of every secret-named JSON member is
-hidden, the value and pattern scrub runs again, and the text is capped. A failure whose `pointer` runs through a secret-named member has its `expected` and `actual` replaced whole by `[REDACTED:secret-field]`. The refusal and error messages are the tool's own text, not
+under 6 characters is left to the patterns) together with the pattern scrub, after the value of every secret-named JSON member is
+hidden (first, on the text as written, so a learned numeric value replaced by an unquoted placeholder cannot make the JSON invalid and switch member hiding off), and the text is capped. A failure whose `pointer` runs through a secret-named member has its `expected` and `actual` replaced whole by `[REDACTED:secret-field]`. The refusal and error messages are the tool's own text, not
 a response body: they get the value and pattern scrub, not member hiding or the cap. Every other field is written as it is: it comes
 from the command line, the repo, the script or the tool itself (`schema`, `kind`, `at`, `host`, `appBuild`, `runId`, `runInstance`, timestamps,
 `scriptSha256`, `seedSha256`, `declaredWrites`, `passedEnv` names, `provenance`, step `index`, `action`, `target`, `headerNames`,
@@ -331,12 +331,11 @@ run directory that cannot be made, an unexpected exception and 130; stdout exact
 nothing written outside the absolute `<run-dir>` and the box-wide locks; the exit code alone decides the outcome (a test
 pins that they agree). Recorded text — each step's `output` (the rows as JSON), each step's `target` (the SQL), each failure's
 `pointer`, `expected` and `actual`, and the `headline` (built from them, or from the refusal or error message) — goes through the run's
-scrubber and `Aw.Redaction` as it is recorded, in this order: (1) the run's own values are replaced by value, together with the pattern scrub:
+scrubber and `Aw.Redaction` as it is recorded, in this order: (1) the value of every secret-named JSON member is hidden first, on the text as written (so a learned numeric value, replaced by an unquoted placeholder, cannot make the JSON invalid and switch member hiding off); (2) the run's own values are replaced by value, together with the pattern scrub:
 the role's password, resolved from the entry's `passwordEnv`, with `[REDACTED:env-value]` (including its JSON-escaped forms), and every value
 read from a secret-named column (below) with `[REDACTED:secret-field]`; a value under 6 characters is left to the patterns (a header-value
-placeholder, `[REDACTED:header-value]`, exists in the shared scrubber but a db-run has no headers); (2) the value of every secret-named
-JSON member, wherever it occurs and whatever the document repeats (a streaming pass over the text, not a parsed tree, so a body or stdout that repeats a key still has every secret-named member hidden; text that isn't JSON keeps only the value and pattern scrub) (a result column called `password`, `api_key`, `accessToken`, …) is hidden with `[REDACTED:secret-field]`; (3) the value and
-pattern scrub runs again; (4) the text is capped. A failure whose `pointer` runs through a secret-named column has its `expected` and `actual`
+placeholder, `[REDACTED:header-value]`, exists in the shared scrubber but a db-run has no headers); step (1) is the hiding of the value of every secret-named
+JSON member, wherever it occurs and whatever the document repeats (a streaming pass over the text, not a parsed tree, so a body or stdout that repeats a key still has every secret-named member hidden; text that isn't JSON keeps only the value and pattern scrub) (a result column called `password`, `api_key`, `accessToken`, …) is hidden with `[REDACTED:secret-field]`; (3) the text is capped. A failure whose `pointer` runs through a secret-named column has its `expected` and `actual`
 replaced whole by `[REDACTED:secret-field]`. The refusal and error messages are the tool's own text, not rows: they get the value and
 pattern scrub, not member hiding or the cap.
 
