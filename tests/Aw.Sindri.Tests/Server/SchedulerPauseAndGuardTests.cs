@@ -18,6 +18,7 @@ public sealed class SchedulerPauseAndGuardTests
         var counted = new CountingService();
         await using var rig = await SchedulerRig.Start([tidy, counted], ("tidy", "5s"), ("counted", "5s"));
         await rig.Pause("tidy");
+        await rig.Begin();
 
         await rig.Step(17);
 
@@ -31,6 +32,7 @@ public sealed class SchedulerPauseAndGuardTests
         var tidy = new ScriptedService(ScriptedService.Worked);
         await using var rig = await SchedulerRig.Start([tidy], ("tidy", "5s"));
         await rig.Pause("tidy");
+        await rig.Begin();
         await rig.Step(17);
 
         await rig.Resume("tidy");
@@ -49,6 +51,7 @@ public sealed class SchedulerPauseAndGuardTests
         var tidy = new ScriptedService(ScriptedService.Worked);
         await using var rig = await SchedulerRig.Start([tidy], ("tidy", "5s"));
         Assert.True(rig.Guard.TryClaim(_tidy, out var manual));   // a manual run holds the service
+        await rig.Begin();
 
         await rig.Step(12);
         var during = tidy.Runs;
@@ -64,6 +67,7 @@ public sealed class SchedulerPauseAndGuardTests
     {
         var tidy = new ScriptedService(ScriptedService.Worked, ScriptedService.Quiet, ScriptedService.Quiet);
         await using var rig = await SchedulerRig.Start([tidy], ("tidy", "5s"));
+        await rig.Begin();
         await rig.Step(2);
         Expect.Equal(1, tidy.Runs);
         rig.Guard.Record(_tidy, ServiceOutcome.Failed);   // a manual run failed in between (its own service.ran is in the ledger)

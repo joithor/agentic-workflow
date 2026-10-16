@@ -47,7 +47,7 @@ internal sealed class SchedulerRig : IAsyncDisposable
 
     public ServiceRunGuard Guard { get; } = new();
 
-    /// <summary>Approves a profile naming <paramref name="every"/> for each service, takes the lease and starts the scheduler.</summary>
+    /// <summary>Approves a profile naming <paramref name="every"/> for each service, takes the lease and leaves the scheduler to <see cref="Begin"/>.</summary>
     /// <param name="services">The services this build has.</param>
     /// <param name="every">The services the profile names, each with its cadence.</param>
     /// <returns>The running rig.</returns>
@@ -56,9 +56,12 @@ internal sealed class SchedulerRig : IAsyncDisposable
         var rig = new SchedulerRig(services);
         _ = await rig.H.Profiles.Save(SliceHarness.ProfileOf("thor", every), TestContext.Current.CancellationToken);
         _ = await rig.H.HoldLease();
-        await rig._scheduler.StartAsync(TestContext.Current.CancellationToken);
         return rig;
     }
+
+    /// <summary>Starts the scheduler (its first slot is due at once).</summary>
+    /// <returns>A task that completes then.</returns>
+    public Task Begin() => _scheduler.StartAsync(TestContext.Current.CancellationToken);
 
     /// <summary>Advances the fake clock <paramref name="seconds"/> one second at a time, letting the loop finish each step.</summary>
     /// <param name="seconds">How many.</param>

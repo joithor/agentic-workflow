@@ -32,11 +32,10 @@ internal sealed partial class SchedulerHost(
     private ProfileHash? _profile;
     private bool _loaded;
     private string? _problem;
-    private readonly Dictionary<string, ServiceOutcome> _last = new(StringComparer.Ordinal);   // the last recorded outcome per service; absent = not known yet
+    private IReadOnlySet<ServiceName> _paused = new HashSet<ServiceName>();   // read once per tick; a failed read keeps the last known set
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _ = guard;   // red until API P6 unit D wires pauses and the guard
         while (!stoppingToken.IsCancellationRequested)
         {
             await Refresh(stoppingToken).ConfigureAwait(false);
@@ -102,6 +101,7 @@ internal sealed partial class SchedulerHost(
 
     private async Task RunDue(LeaseGrant grant, CancellationToken ct)
     {
+        await ReadPauses(ct).ConfigureAwait(false);
         var now = clock.GetUtcNow();
         var advanced = new List<ServiceSchedule>(_schedules.Count);
         foreach (var schedule in _schedules)
@@ -112,9 +112,10 @@ internal sealed partial class SchedulerHost(
                 continue;
             }
 
-            if (!_running.TryGetValue(schedule.Name, out var inFlight) || inFlight.IsCompleted)
+            // a paused service's slot passes unrun (so a resume doesn't burst); a service with a run in flight, scheduled or manual, skips this slot (S1-D10)
+            if (!_paused.Contains(schedule.Name) && guard.TryClaim(schedule.Name, out var claim))
             {
-                var run = RunOne(schedule, new ScheduledRun(grant, schedule.NextSlot), ct);   // its own loop: not awaited here (S1-D10)
+                var run = RunOne(schedule, new ScheduledRun(grant, schedule.NextSlot), claim, ct);   // its own loop: not awaited here
                 if (run.IsCompleted)
                 {
                     await run.ConfigureAwait(false);
@@ -132,8 +133,25 @@ internal sealed partial class SchedulerHost(
         _schedules = advanced;
     }
 
-    private async Task RunOne(ServiceSchedule schedule, ScheduledRun run, CancellationToken ct)
+    private async Task ReadPauses(CancellationToken ct)
     {
+        try
+        {
+            var paused = await inputs.Pauses.Paused(ct).ConfigureAwait(false);
+            if (paused.IsSuccess)
+            {
+                _paused = paused.Value;
+            }
+        }
+        catch (Exception e) when (!ct.IsCancellationRequested)   // boundary: an unreadable view must not stop the schedule; the last known pauses stand
+        {
+            LogPausesFailed(log, e.Message);
+        }
+    }
+
+    private async Task RunOne(ServiceSchedule schedule, ScheduledRun run, IDisposable claim, CancellationToken ct)
+    {
+        using var release = claim;
         using var caller = callers.EnterService(schedule.Name.Value);
         var scope = scopes.CreateAsyncScope();
         await using (scope.ConfigureAwait(false))
@@ -147,11 +165,11 @@ internal sealed partial class SchedulerHost(
             var recorded = await Record(scope.ServiceProvider, new RecordServiceRunRequest(schedule.Name, run, outcome.Map(_ => Unit.Value)), ct).ConfigureAwait(false);
             if (recorded)
             {
-                _last[schedule.Name.Value] = outcome.IsError ? ServiceOutcome.Failed : ServiceOutcome.Ok;
+                guard.Record(schedule.Name, outcome.IsError ? ServiceOutcome.Failed : ServiceOutcome.Ok);
             }
             else
             {
-                _ = _last.Remove(schedule.Name.Value);   // what the ledger holds is unknown now; read it back if the next run is idle
+                guard.Forget(schedule.Name);   // what the ledger holds is unknown now; read it back if the next run is idle
             }
         }
     }
@@ -213,7 +231,7 @@ internal sealed partial class SchedulerHost(
             return false;
         }
 
-        if (!_last.TryGetValue(name.Value, out var last))
+        if (guard.LastOutcome(name) is not { } last)
         {
             var restored = await Restore(services, name, ct).ConfigureAwait(false);
             if (restored is null)
@@ -222,7 +240,7 @@ internal sealed partial class SchedulerHost(
             }
 
             last = restored.Value;
-            _last[name.Value] = last;
+            guard.Record(name, last);
         }
 
         return last == ServiceOutcome.Ok;
@@ -245,6 +263,9 @@ internal sealed partial class SchedulerHost(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "SND-SCHED-001 the approved profile couldn't be read: {Code} {Detail}; keeping the current schedule")]
     private static partial void LogRefreshFailed(ILogger logger, string code, string detail);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "SND-SCHED-001 the paused services couldn't be read ({Detail}); keeping the last known set")]
+    private static partial void LogPausesFailed(ILogger logger, string detail);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "SND-SCHED-001 the profile names service '{Service}', which this build doesn't have")]
     private static partial void LogUnknownService(ILogger logger, string service);
