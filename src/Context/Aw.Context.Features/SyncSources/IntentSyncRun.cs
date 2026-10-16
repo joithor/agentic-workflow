@@ -50,7 +50,8 @@ internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (Cont
         var known = layer.Value.Records.Where(r => r.Source == _id).ToDictionary(r => r.Key.Value, StringComparer.Ordinal);
         var stored = await StoredVersions(known, version, cancellationToken).ConfigureAwait(false);
         var code = await Walk(nodes, offset, (version, stored, known), cancellationToken).ConfigureAwait(false);
-        code ??= Decisions.Failure ?? (Decisions.HeldBack ? ContextErrors.LabelingUnavailable.Code : null);
+        // A real failure of the decision pass wins over 059 (the time cap is only partial, and would hide an outage as "ok, the next run continues"); 042 does not.
+        code = code == ContextErrors.SyncCapped.Code ? Decisions.Failure ?? code : code ?? Decisions.Failure ?? (Decisions.HeldBack ? ContextErrors.LabelingUnavailable.Code : null);
         if (code is not null)
         {
             _ = await ports.Store.RecordFailure(_id, code, cancellationToken).ConfigureAwait(false);

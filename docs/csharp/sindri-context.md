@@ -592,7 +592,7 @@ the row, and a reply the pinned shape can't read degrades onyx (`010` with cause
   each node and before each fetch after the run's first, so every run completes at least one record and a slow source can't starve: a record in
   hand is always extracted (the cap never cuts a model call), so no record waits queued because of the cap. A node the cap cuts short keeps its
   cursor at the node and is walked again, its stored hits skipped as unchanged. A capped run records `059` as the source's last code without
-  failing it (status: `ok`/`degraded` with code `059`; the next run continues and clears it). A finished walk commits the end cursor so trailing
+  failing it (status: `ok`/`degraded` with code `059`; the next run continues and clears it). A failure of the decision pass in the same run (the model down, a store write failing) wins over `059`: the recorded code is the failure and the source shows `unavailable`. A finished walk commits the end cursor so trailing
   nodes without search terms don't stall the next run. A map version change re-links every record, across runs: a hit is skipped as unchanged only when its upstream version is the stored one and its links were
   computed against the current map version (`intent_record.linked_map`, set by each record's page; `IIntentStore.LinkedUnder`), so a run that stops early (the cap, the source
   down) leaves nothing with old-map links, and each record is re-fetched once per map version, not on every run. A record stays queued until its conflict checks are through too (a stopped check, the token cap

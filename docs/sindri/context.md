@@ -685,7 +685,7 @@ the store, a usage error · `75` the heavy-job lock stayed busy (`040`).
 | `SND-CONTEXT-056` | A sync of that source is already running (409; one at a time per source) | Wait; `context sources status` shows it |
 | `SND-CONTEXT-057` | A model answer the engine refused (quote not verbatim, target outside the record's links, malformed); counted in `refused`, never fails the sync. A conflict verdict that can't be read keeps the pair pending (the record stays queued) and is asked at most 3 times, then the pair is marked refused | None; persistent counts mean prompt drift |
 | `SND-CONTEXT-058` | `sources sync --source X` names a source that isn't configured or has nothing to sync (404) | `context sources status` for the names |
-| `SND-CONTEXT-059` | A sync stopped at its time cap: partial, it resumes from its cursor (`sources status` shows `059`, the source stays `ok` or `degraded`, exit 0). Every run completes at least one record, so a slow source still finishes across runs | None; the next run continues. Raise the cadence if persistent |
+| `SND-CONTEXT-059` | A sync stopped at its time cap: partial, it resumes from its cursor (`sources status` shows `059`, the source stays `ok` or `degraded`, exit 0). Every run completes at least one record, so a slow source still finishes across runs. A model or store failure in the same run shows instead of `059` | None; the next run continues. Raise the cadence if persistent |
 
 ## S-5A: the onyx source, secret pointers, doctor `context:onyx`
 
