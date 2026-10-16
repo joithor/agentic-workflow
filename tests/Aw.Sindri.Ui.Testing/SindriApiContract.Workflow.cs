@@ -68,6 +68,30 @@ public abstract partial class SindriApiContract
     }
 
     [Fact]
+    public async Task Instances_root_empty_returns_the_served_sentence()
+    {
+        var api = new FakeSindriApi { WorkflowAnswer = RouteAnswer.Api("workflow-instances", "empty") };
+        var served = Golden("workflow-instances", "empty");
+
+        var list = (await Reach(api).Instances(_api, new InstanceQuery(Root: true), Token)).Value;
+
+        Expect.Equal(((string?)served["empty"], 0), (list.Empty, list.Instances.Count));
+        Expect.True(!string.IsNullOrEmpty(list.Empty));
+    }
+
+    [Fact]
+    public async Task Instances_root_serves_the_incident_first()
+    {
+        var served = Golden("workflow-instances", "root")["instances"]!.AsArray(); // why: the golden has rows
+        var incident = served.First(r => (string)r!["recipe"]!["urgency"]! == "incident")!; // why: the golden holds an incident
+
+        var list = (await Reach(new FakeSindriApi()).Instances(_api, new InstanceQuery(Root: true), Token)).Value;
+
+        Expect.Equal((string)incident["id"]!, list.Instances[0].Id);
+        Expect.Equal(RecipeUrgency.Incident, list.Instances[0].Recipe.Urgency);
+    }
+
+    [Fact]
     public async Task Instances_recipe_keeps_that_recipe_in_the_order_of_the_golden()
     {
         var golden = Golden("workflow-instances", "recipe-filter");

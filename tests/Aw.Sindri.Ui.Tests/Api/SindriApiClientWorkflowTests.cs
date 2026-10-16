@@ -44,6 +44,45 @@ public sealed class SindriApiClientWorkflowTests
     }
 
     [Fact]
+    public async Task Instances_sends_root_true_and_no_other_filter_for_the_strip()
+    {
+        var canned = Serving("workflow-instances", "root");
+
+        _ = await Client(canned).Instances(_api, new InstanceQuery(Root: true), Token);
+
+        var query = HttpUtility.ParseQueryString(Assert.Single(canned.Seen).Uri.Query);
+        Assert.Equal("root", Assert.Single(query.AllKeys));
+        Assert.Equal("true", query["root"]);
+    }
+
+    [Fact]
+    public async Task Instances_reads_rows_in_the_apis_order_with_recipe_urgency_and_the_current_state_cell()
+    {
+        var served = Golden("workflow-instances", "root");
+
+        var list = (await Client(Serving("workflow-instances", "root")).Instances(_api, new InstanceQuery(Root: true), Token)).Value;
+
+        Expect.Sequence(served["instances"]!.AsArray().Select(r => (string)r!["address"]!), list.Instances.Select(i => i.Address));
+        foreach (var (row, json) in list.Instances.Zip(served["instances"]!.AsArray()))
+        {
+            Assert.Equal(((string)json!["recipe"]!["urgency"]!, (string)json["state"]!), (row.Recipe.Urgency.ToString().ToLowerInvariant(), row.State));
+            Assert.Contains(row.States, c => string.Equals(c.State, row.State, StringComparison.Ordinal));
+        }
+    }
+
+    [Theory]
+    [InlineData("while-stalled", ErrorKind.Unavailable)]
+    public async Task Instances_maps_SND_VIEW_001_like_every_list(string scenario, ErrorKind kind)
+    {
+        var refusal = RouteAnswer.Problem("decisions-id", scenario);
+        var code = (string)JsonNode.Parse(refusal.Body)!["title"]!; // why: a refusal carries its code
+
+        var list = await Client(new Canned(refusal.Status, refusal.Body)).Instances(_api, new InstanceQuery(Root: true), Token);
+
+        Assert.Equal((code, kind), (list.Error.Code, list.Error.Kind));
+    }
+
+    [Fact]
     public async Task Instances_sends_only_the_members_that_narrow()
     {
         var canned = Serving("workflow-instances", "root");
