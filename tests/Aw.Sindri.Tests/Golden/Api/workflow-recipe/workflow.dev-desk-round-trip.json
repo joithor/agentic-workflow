@@ -1,14 +1,16 @@
 {
   "id": "workflow.dev-desk-round-trip",
-  "hash": "sha256:42e9e8ab897f90e38c74f9a3a5aa499f9a56475b4c1a416c0ad5b01a79bb2346",
-  "version": 1,
+  "hash": "sha256:459f0bb87b5ab29e00fe744561f13e95e8a5819debcd065a1c52b0ad3aba27ac",
+  "version": 2,
+  "name": null,
   "inputs": [
     {
       "key": "fact:request",
       "label": "Request",
       "type": "text",
       "kind": "text",
-      "required": true
+      "required": true,
+      "generate": null
     }
   ],
   "outputs": [

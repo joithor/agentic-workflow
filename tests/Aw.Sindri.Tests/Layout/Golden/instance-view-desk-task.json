@@ -2,8 +2,8 @@
   "address": "T-3/step/1",
   "recipe": {
     "id": "workflow.step",
-    "version": 1,
-    "hash": "sha256:1b13bd920351e56227141fe24e59f2f90cb46bc3549e1e90f2da2af1c3be9f5c"
+    "version": 2,
+    "hash": "sha256:1c1173a162a77736c33620e985d6d75473cf3755963adc5c46eb9049434f5276"
   },
   "state": "produce",
   "detail": "desk task",
@@ -46,7 +46,8 @@
           "ref": "blob:688b9329eddb9906e3a69a6f19f534c57619ee19b01ad476763cdd1975b9892a",
           "sha256": "688b9329eddb9906e3a69a6f19f534c57619ee19b01ad476763cdd1975b9892a",
           "headSha": null
-        }
+        },
+        "generated": false
       }
     },
     "timeoutAt": "2026-10-13T10:48:00.0000000Z"
@@ -95,10 +96,11 @@
     "label": "spec.md",
     "href": null
   },
+  "name": null,
   "inputs": [
     {
       "key": "fact:spec",
-      "label": "spec",
+      "label": "Spec",
       "kind": "text",
       "required": true,
       "present": true
@@ -197,7 +199,7 @@
   "facts": [
     {
       "key": "fact:spec",
-      "label": "spec",
+      "label": "Spec",
       "type": "text",
       "direction": "input",
       "from": null,

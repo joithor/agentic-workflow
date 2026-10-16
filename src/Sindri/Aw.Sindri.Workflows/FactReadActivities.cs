@@ -7,7 +7,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <summary>
 /// The local activities that read a stored fact for the interpreter, so workflow code does no I/O. Each runs once, on start:
 /// 'ReadItemRepo' (engine spec rev 8 §5.1 'Repo', §12 'fact:item') returns the repo a 'fact:item' names, only when the input
-/// has one; 'ReadSubject' returns the first input's content as text, for the 'Subject' attribute and the view's subject.
+/// has one; 'ReadSubject' returns a stored input's content as text (one call per fact the name template reads, the first input, and each link input), for the 'Subject' attribute and the view's subject.
 /// </summary>
 /// <param name="home">Where the facts are.</param>
 internal sealed class FactReadActivities(WorkflowsHome home)
@@ -30,10 +30,10 @@ internal sealed class FactReadActivities(WorkflowsHome home)
     }
 
     /// <summary>
-    /// 'ReadSubject': the first input's stored content, at most 64 KiB as text, so the interpreter names the subject (a text's
+    /// 'ReadSubject': a stored input's content (called once for each fact the name template reads, the first input, and each link input), at most 64 KiB as text, so the interpreter names the subject (a text's
     /// first line, a link's tracker key, a payload's id) without I/O in workflow code.
     /// </summary>
-    /// <param name="fact">The stored first input.</param>
+    /// <param name="fact">The stored input.</param>
     /// <returns>Its text; null when it is not stored.</returns>
     [Activity("ReadSubject")]
     public async Task<string?> ReadSubjectAsync(FactValue fact)

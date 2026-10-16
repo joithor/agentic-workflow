@@ -19,8 +19,9 @@ namespace Aw.Sindri.Testing.Views;
 /// <param name="Inputs">The inputs.</param>
 /// <param name="Outputs">The outputs.</param>
 /// <param name="BudgetTokens">The recipe-wide token budget, where declared.</param>
+/// <param name="Name">The name template, where declared (spec section 3.11).</param>
 public sealed record RecipeShape(string Id, int Version, string HashPrefix, RecipeUrgency Urgency, IReadOnlyList<ShapeState> States,
-    IReadOnlyList<ShapeLoop> Loops, IReadOnlyList<ShapeInput> Inputs, IReadOnlyList<ShapeOutput> Outputs, int? BudgetTokens = null)
+    IReadOnlyList<ShapeLoop> Loops, IReadOnlyList<ShapeInput> Inputs, IReadOnlyList<ShapeOutput> Outputs, int? BudgetTokens = null, string? Name = null)
 {
     /// <summary>The declaration of one state.</summary>
     /// <param name="id">The state id.</param>
@@ -56,7 +57,7 @@ public sealed record RecipeShape(string Id, int Version, string HashPrefix, Reci
     /// <param name="missing">The keys of required inputs not yet given.</param>
     /// <returns>One slot per declared input.</returns>
     public IReadOnlyList<InputPresence> InputRows(params string[] missing) =>
-        [.. Inputs.Select(i => new InputPresence(i.Key, i.Label ?? Plain(i.Key), i.Kind, true, !missing.Contains(i.Key, StringComparer.Ordinal)))];
+        [.. Inputs.Select(i => new InputPresence(i.Key, i.Label ?? Plain(i.Key), i.Kind, i.Generate is null, !missing.Contains(i.Key, StringComparer.Ordinal)))];
 
     /// <summary>One fact row: label, type, direction and producing state come from the declaration.</summary>
     /// <param name="key">A declared input or output key.</param>
@@ -95,8 +96,8 @@ public sealed record RecipeShape(string Id, int Version, string HashPrefix, Reci
     /// <summary>The recipe's view (E-22).</summary>
     /// <returns>The view.</returns>
     public RecipeView View() => new(
-        Stamp.Id, Stamp.Hash, Version,
-        [.. Inputs.Select(i => new RecipeInputView(i.Key, i.Label, i.Type, i.Kind, true))],
+        Stamp.Id, Stamp.Hash, Version, Name,
+        [.. Inputs.Select(i => new RecipeInputView(i.Key, i.Label, i.Type, i.Kind, i.Generate is null, i.Generate))],
         [.. Outputs.Select(o => new RecipeOutputView(o.Key, o.Label, o.Type, o.From))],
         Urgency, States.Any(s => s.BranchOf is not null) ? PathOrdering.TransitionList : PathOrdering.Path, [.. States.Select(s => new RecipeStateView(s.Id, s.Order, s.BranchOf))], [.. Loops.Select(l => new RecipeLoopView(l.Name, l.From, l.To, l.Max))]);
 

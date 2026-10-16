@@ -28,6 +28,12 @@ public sealed record InstanceStart(
     /// </summary>
     public string? OpenLaunch { get; init; }
 
+    /// <summary>
+    /// The start time (spec section 3.11): stamped once by the start from its clock, so a generated input and the instance's name read the
+    /// same instant (the workflow renders the name from it, never from its own clock).
+    /// </summary>
+    public DateTimeOffset StartedAt { get; init; }
+
     /// <summary>The workflow id: the instance's address, '{item}/{recipe name}/{attempt}'.</summary>
     /// <returns>The address.</returns>
     public InstanceAddress WorkflowId() => InstanceAddress.Root(Item, Recipe.Id, Attempt);

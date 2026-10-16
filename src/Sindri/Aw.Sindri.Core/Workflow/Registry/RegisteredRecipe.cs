@@ -18,7 +18,7 @@ namespace Aw.Sindri.Core.Workflow.Registry;
 public sealed record RegisteredRecipe(RecipeId Id, int Version, RecipeHash Hash, string Text, RecipeRef? Base, DateTimeOffset RegisteredAt)
 {
     /// <summary>
-    /// The recipe this row's text reads back as. A row registered before urgency, outputs and an input's kind existed
+    /// The recipe this row's text reads back as. A row registered before urgency, outputs, a name and an input's kind and generate existed
     /// keeps its text (and its hash) as written; the reader fills what such text leaves out, and nothing rehashes it.
     /// </summary>
     /// <param name="json">The JSON options with the recipe records' context.</param>
@@ -44,10 +44,12 @@ public sealed record RegisteredRecipe(RecipeId Id, int Version, RecipeHash Hash,
 
         _ = recipe.TryAdd("urgency", Urgencies.Default);
         _ = recipe.TryAdd("outputs", new JsonArray());
+        _ = recipe.TryAdd("name", value: null);
         _ = recipe.TryAdd("hash", value: null);
         foreach (var input in recipe["inputs"] is JsonArray inputs ? inputs.OfType<JsonObject>() : [])
         {
             _ = input.TryAdd("kind", value: null);
+            _ = input.TryAdd("generate", value: null);
         }
 
         return AwJson.Deserialize<Recipe>(Encoding.UTF8.GetBytes(recipe.ToJsonString()), json);

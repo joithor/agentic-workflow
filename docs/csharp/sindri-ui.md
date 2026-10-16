@@ -516,8 +516,8 @@ U3' and U8.
 - **Deep links.** `workflow/<address>` (an address, which may contain `/`), `recipe/<id>`, `node/<key>`, `session/<id>`
   and `system/<dependency>` go to Workflows, Recipes, Context, Agents and System; `item/`, `decision/`, `service/` and
   `job/` open their sheet over the page shown; `needs-you/<row>` (the row's item, decision, service or job) opens that row's sheet;
-  `home/needs-you` is Home. A workflow instance's `subject.kind` is nullable (engine #227: null when the first input is a link
-  or payload with no declared kind); U8 shows the input's key then (API spec §3.8). `ShellViewModel.Navigate` routes them and the
+  `home/needs-you` is Home. A workflow instance's `subject.kind` is never null (P4c, RCP-INPUT-001): it is the first input's declared kind;
+  a pre-P4c instance's subject is the item fallback `{kind: item, key: item id, label: title or address}` (engine spec §3.11, API spec §3.8). `ShellViewModel.Navigate` routes them and the
   sheet and its subject live in `ShellViewModel.Sheet.cs`.
 - **Workflow reads** (`ISindriApi`, API §3.8; the client's routes are in `Api/Workflow/WorkflowRoutes`):
   `GET /sindri/workflow/instances` (the root rows and the root-wide counts; `root`, `open`, `recipe`, `subject`, `address`

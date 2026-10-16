@@ -21,6 +21,7 @@ public sealed class InvalidFixturesTests
         "RCP-TRIG-001", "RCP-WHEN-002", "RCP-THRESH-001", "RCP-THRESH-002", "RCP-NEXT-001", "RCP-NEXT-002", "RCP-CHILD-002",
         "RCP-CHILD-003", "RCP-VERSION-001", "RCP-VERSION-002", "RCP-TRIG-002", "RCP-TIME-002", "RCP-RES-001",
         "RCP-URG-001", "RCP-OUT-001", "RCP-OUT-002", "RCP-OUT-003", "RCP-TYPE-001", "RCP-TYPE-002", "RCP-TYPE-003",
+        "RCP-INPUT-001", "RCP-INPUT-002", "RCP-NAME-002", "RCP-NAME-003", "RCP-NAME-004", "RCP-NAME-005", "RCP-NAME-006",
     ];
 
     public static TheoryData<string> Rules => [.. InvalidFixtureCases.All.Keys.Order(StringComparer.Ordinal)];

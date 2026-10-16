@@ -7,5 +7,6 @@ namespace Aw.Sindri.Testing.Views;
 /// <param name="Key">The fact key.</param>
 /// <param name="Label">The label, null when the recipe declares none.</param>
 /// <param name="Type">The fact type.</param>
-/// <param name="Kind">The subject kind, if declared.</param>
-public sealed record ShapeInput(string Key, string? Label, FactType Type, string? Kind);
+/// <param name="Kind">The subject kind.</param>
+/// <param name="Generate">The generate template, if declared.</param>
+public sealed record ShapeInput(string Key, string? Label, FactType Type, string Kind, string? Generate = null);
