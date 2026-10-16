@@ -31,7 +31,7 @@ public abstract class LaneFilesContract
     public async Task A_recorded_lane_reads_back_with_its_session_and_agent()
     {
         var (files, put) = await Create();
-        await put(new LaneRecord("api", Aw.Meta.Core.Ids.SessionId.From("s-1"), new LaneAgent("codex", "codex", Hooks: true, "~/.codex/{sessionId}.jsonl")));
+        await put(new LaneRecord("api", Core.Ids.SessionId.From("s-1"), new LaneAgent("codex", "codex", Hooks: true, "~/.codex/{sessionId}.jsonl")));
         await put(new LaneRecord("ui", Session: null, new LaneAgent("aider", "aider", Hooks: false), RecordedAt: null, Ambiguous: true));
 
         var api = await files.Record("api", _none);

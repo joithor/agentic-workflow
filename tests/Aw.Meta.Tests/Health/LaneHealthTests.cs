@@ -14,7 +14,7 @@ public sealed class LaneHealthTests
     public async Task A_team_of_Claude_lanes_has_no_rows()
     {
         await _world.Ready();
-        _world.LaneFiles.Put(new LaneRecord("api", Aw.Meta.Core.Ids.SessionId.From("s"), new LaneAgent(LaneAgent.ClaudeCode, "claude", Hooks: true)));
+        _world.LaneFiles.Put(new LaneRecord("api", Core.Ids.SessionId.From("s"), new LaneAgent(LaneAgent.ClaudeCode, "claude", Hooks: true)));
 
         Assert.Empty(await Read());
     }
@@ -77,5 +77,5 @@ public sealed class LaneHealthTests
         Assert.Equal("obligation not delivered (Cursor loop_limit)", Assert.Single(await Read()).State);
     }
 
-    private const int LaneHealthReader_LoopLimit = Aw.Meta.Core.Coordination.LaneHealthReader.CursorLoopLimit;
+    private const int LaneHealthReader_LoopLimit = Core.Coordination.LaneHealthReader.CursorLoopLimit;
 }

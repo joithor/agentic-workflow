@@ -25,7 +25,7 @@ internal sealed class LaneCheck(IMetaConfig config, ISessionDirectory sessions, 
         }
 
         var rows = await standing.Read(team.Value, cancellationToken).ConfigureAwait(false);
-        return rows.IsError ? rows.Error : Results.Success<IReadOnlyList<LaneHealth>?>(rows.Value.Count == 0 ? null : rows.Value);
+        return rows.IsError ? rows.Error : Results.Success(rows.Value.Count == 0 ? null : rows.Value);
     }
 
     /// <summary>The lanes with no live session; null when there is no team config to check against.</summary>

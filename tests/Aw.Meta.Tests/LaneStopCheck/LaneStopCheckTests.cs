@@ -9,7 +9,7 @@ public sealed class LaneStopCheckTests
 
     private LaneStopCheckService Service() => new(_world.Config, _world.LaneMail, _world.Beats, _world.LaneGuard, _world.Clock);
 
-    private async Task<LaneStopCheckResponse> Check(Aw.Meta.Core.Lanes.LaneIdentity lane, bool active = false, int max = 3)
+    private async Task<LaneStopCheckResponse> Check(Core.Lanes.LaneIdentity lane, bool active = false, int max = 3)
     {
         var result = await Service().Handle(new LaneStopCheckRequest(lane, active, max), CancellationToken.None);
         Assert.True(result.IsSuccess, result.IsError ? result.Error.Message : string.Empty);
@@ -97,7 +97,7 @@ public sealed class LaneStopCheckTests
     [Fact, Trait("Lane", "unit")]
     public async Task With_no_team_config_it_lets_the_stop_through_silently()
     {
-        var response = await Check(new Aw.Meta.Core.Lanes.LaneIdentity("sindri", "api"));
+        var response = await Check(new Core.Lanes.LaneIdentity("sindri", "api"));
 
         Assert.False(response.Blocked);
         Assert.Null((await _world.Beats.Last("api", CancellationToken.None)).Value);

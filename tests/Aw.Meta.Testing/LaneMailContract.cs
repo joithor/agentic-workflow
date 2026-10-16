@@ -47,7 +47,7 @@ public abstract class LaneMailContract
         Expect.That(first.Value.Value == "lane:api:1" && second.Value.Value == "lane:api:2", "ids count per lane");
         Expect.That(inbox.Value.Count == 2, "both replies are inbound messages");
         Expect.That(inbox.Value[0].From == "sindri-api" && inbox.Value[0].FromName == "sindri-api", "from is team-lane");
-        Expect.That(inbox.Value[0].Body == "ready #12" && inbox.Value[0].Class.Kind == Aw.Meta.Core.Messages.MessageKind.Ready && inbox.Value[0].Class.Pr == 12, "classified like any inbound message");
+        Expect.That(inbox.Value[0].Body == "ready #12" && inbox.Value[0].Class.Kind == Core.Messages.MessageKind.Ready && inbox.Value[0].Class.Pr == 12, "classified like any inbound message");
         Expect.That(owed.Value.Count == 0, "nothing owed after a reply");
     }
 }
