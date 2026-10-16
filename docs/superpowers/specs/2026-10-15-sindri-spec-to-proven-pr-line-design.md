@@ -1,8 +1,8 @@
 # Sindri spec-to-proven-PR line: the line contract, design, plan and the per-phase child
 
-**Status:** design, revision 2.2 (after /autoplan pass 1, a narrow re-check and #263's asks, §14) (draft; not built until every station is specced, LN1) · **Date:** 2026-10-15 ·
-**Owner decisions:** 2026-10-15 (§1) · **Builds on:** the scoping station spec
-`2026-10-15-sindri-scoping-station-design.md` (SC, #258), rev 3.1, branch `docs/sindri-scoping-station`; the
+**Status:** design, revision 2.3 (after /autoplan pass 1, a narrow re-check, #263's asks and #258 rev 3.2's scope graphs, §14) (draft; not built until every station is specced, LN1) · **Date:** 2026-10-15 ·
+**Owner decisions:** 2026-10-15 and 2026-10-16 (§1) · **Builds on:** the scoping station spec
+`2026-10-15-sindri-scoping-station-design.md` (SC, #258), rev 3.2, branch `docs/sindri-scoping-station`; the
 decision-tree recipes spec `2026-10-15-sindri-decision-tree-recipes-design.md` (DT, #240), rev 4; the parked PR
 babysitter and docs sync draft `2026-10-15-sindri-pr-babysitter-docs-sync-design.md` (PB), branch
 `docs/sindri-pr-babysitter-docs-sync`; the workflow engine spec `2026-10-10-sindri-workflow-engine-design.md` (WF), rev
@@ -48,6 +48,7 @@ value form: a pack is named by a plain string parameter (LN-WF5). Every request 
 | LN11 | **Parallel phases run as linked instances started one at a time by a dispatcher, up to a cap** (this doc, §8; recommended over a schema-v2 request and over sequential children). `workflow.line` has a pure dispatch Step that starts at most one ready phase per transition through an effect, then waits for phase events; at most `workflow.line.parallel` phases (default 2, never above the box's heavy-slot cap) **build** at once, and phases whose PR is open and waiting for the owner's merge don't count against it (rev 2) | Schema 1 keeps one current state per instance and no fan-out (WF §3.9). A start effect plus an event gives a capped fan-out without a schema change, keeps the child depth inside `RCP-CHILD-003`, and degrades to sequential at cap 1. IDEA-054's schema-v2 fan-out is engine-LATER and would block the line |
 | LN12 | **No seed reuses a prompt as-is** (owner, IDEA-098; carried from SC10). Every agent Step's seed on the line, including the #240 blocks the line uses, is written new against PR-R's rubric and evidence loop | §10. It amends DT7's /enhancePrompt porting (DTC7) |
 | LN13 | **Packets, not facts, cross stations; facts never do** (carried from SC §3) | A station reads its input packet by hash and verifies it against the freeze record; it never reads another instance's facts |
+| LN15 | **The scope opens in Context** (owner, 2026-10-16; the five pieces confirmed: "yes add those"; #258 SC11). The scope packet freezes `lenses.json` (per lens: found nodes and edges, anchors, depth, map version); the context lane extends C1 and C10 and adds C15 (`subgraph`); #258 API9 reads a packet's file by hash, after a purge too; #258 U7 opens U9 from the stop and the scope viewers, pinned as of the stop with a live toggle, per lens, with empty states (UI R8-14); W13's `scope-packet` type is what the viewer switches on. For the line: stop 1 carries the action, and every packet viewer reads its files through API9 (LN-UI4) | The owner reads a scope's blast radius as a graph, as it stood at the stop. One file route serves every packet kind, so the line's viewers don't need a second one |
 
 ## 2. Terms
 
@@ -96,7 +97,7 @@ parents' hashes, and the hash of the acceptance chain it extends. A reader verif
 
 | # | Packet (kind) | Made by | Files | Frozen fields | Hash and freeze | Evidence it adds |
 |---|---|---|---|---|---|---|
-| 1 | **Scope packet** (`scoping`) | `workflow.scoping` (#258 §8.3) | #258 §8.3 | All files | Owner-frozen at stop 1 by `step.scope.freeze` | #258 SC7: citations, four lens coverage rows, an all-failing acceptance list, a clean challenge |
+| 1 | **Scope packet** (`scoping`) | `workflow.scoping` (#258 §8.3) | #258 §8.3 | All files | Owner-frozen at stop 1 by `step.scope.freeze` | #258 SC7: citations, four lens coverage rows, an all-failing acceptance list, a clean challenge; the lens graphs as of stop 1 (`lenses.json`, #258 SC11) |
 | 2 | **Design packet** (`design`) | `workflow.design` (§4) | `spec.md`, `sections.json`, `coverage.json`, `decisions.json`, `acceptance.json`, `signals.json`, `contracts.json`, `lens-rounds.jsonl`, `style.json`, `escapes.json`, `runs.json` | All; `decisions.json`'s chosen options are filled at stop 2 | Candidate at `step.design.evidence`; **owner-frozen at stop 2** by `step.plan.freeze`, with the plan | Surface coverage, a proof signal per acceptance item, every lens round, contract-edit checks, style conformance, escapes (§4.5) |
 | 3 | **Plan graph** (`plan`) | `workflow.plan` (§6) | `packet.json` with `links.tasks` (PKT's task plan: one task per phase), `graph.json` (stacks, waves, bases), `exec-review.json`, `holdout.json` (set hashes and counts, no text), `answers.jsonl` | All | Candidate at `step.plan.evidence`; owner-frozen at stop 2 by `step.plan.freeze` | Every acceptance item in exactly one phase, PKT's rules, the executability review, sizes within the cap (§6.3) |
 | 4 | **Phase packet** (`phase`), one per phase | `step.plan.freeze`, by code from the plan and design; an **amended** phase packet by `step.build.amend` | `phase.json` (goal, kind, deps, size, base rule, `allowedFiles`, `testChange`, read seeds, budget; an amended one adds `amends: { parent, paths, reason, at }`), `acceptance.json` (its items), `signals.json` (its verification plan), `holdout.json` (set hash and count), `design.md` (the sections covering its items) | All | Owner-frozen at stop 2 with the plan. A scope grant (§7.2) never edits it: `step.build.amend` writes a **new child packet** whose `index.json` parent is the old hash, owner-frozen on `scope-desk`'s human-only `allow`, and every later station gets the new hash | Nothing new: it is the build's contract; an amendment adds the grant and its reason |
@@ -125,7 +126,7 @@ no stop before a PR opens (LN2, corrected): a phase's PR opens as soon as its re
 
 | Stop | Recipe and state | Shows | Form |
 |---|---|---|---|
-| **1. After scoping** | `workflow.scoping` · `stop` (#258 §6.1) | #258 §8.4 | approve, revise (notes), drop |
+| **1. After scoping** | `workflow.scoping` · `stop` (#258 §6.1) | #258 §8.4, with #258 U7's Open in Context ▸ (the scope's graphs as of the stop, LN15) | approve, revise (notes), drop |
 | **2. After design** | `workflow.plan` · `decide` then `stop` (§6.4) | `DesignStopView` (LN-API2): lens findings left, the decisions with options, the spec, the plan graph with stacks and waves, coverage and trace tables, escapes | First the decisions interview (#258 §7's form, FormFrom `fact:questions`); then approve, revise design (notes), revise plan (notes), drop |
 | **3. Ready-to-merge**, per phase | `workflow.pr-babysitter` · `ready` + `command.merge` (PB3), entered only when CI is green on the head **and** docs sync has ended (its stacked docs PR open with CI green, or nothing to sync) (BD3, BD5). `ready` stays a wait; it reaches Home as a `ready-to-merge` Needs-you row (LN-UI6) | `ReadyView` (LN-API3), whose one list of contents is BD6 | **merge**: one click merges the phase PR, then its stacked docs PR, in that order (BD9); or **rework** with notes: the babysitter ends in `rework` (`failed`) and the phase rebuilds, updating the same PR (BD8). Both are `ApplyCommand` actions of class `desk`, human caller only (LN-API7): buttons in the UI, `SND-AUTH-002` to a session |
 
@@ -726,7 +727,7 @@ read-only agent Steps, logs with codes and hashes only. The line adds:
 
 Every ask is a row; this doc edits no other spec. Rows are `LN-` plus a lane (`WF`, `CTX`, `UI`, `API`, `PKT`, `LCH`,
 `SC`), so none collides with WF, UI or LCH ids or #258's W1–W14, C1–C14, U1–U6, API1–API8, P1 and L-17, which are
-cited, never re-filed. DTC and BD rows keep their names; Appendix E maps the rev 1 ids.
+cited, never re-filed (rev 2.3: #258 rev 3.2 adds C15, U7, API9 and API10, cited the same way). DTC and BD rows keep their names; Appendix E maps the rev 1 ids.
 
 ### 12.1 Engine (LN-WF)
 
@@ -756,10 +757,10 @@ cited, never re-filed. DTC and BD rows keep their names; Appendix E maps the rev
 | LN-UI1 | **The line board** is a `plan-graph` fact-type viewer (UI §5.2) in the line instance's frame plus its CHILDREN panel, which lists the linked phases grouped by stack; no new page (R8-1, R8-3). It shows the packet chain (LC-3); the graph (stacks as columns, waves as rows) with a table alternative in keyboard order (wave, then stack); each phase's state, park reason, PR, base, worktree path, NOW cell (DT-UI-5's deepest descendant), tokens and wall clock. Before `dispatch`: "no phases yet"; a failed phase links the line's owner desk | LN-U |
 | LN-UI2 | **Stop 2's view:** `DesignStopView` in §6.4's order, the decisions as U1's interview cards (the recommended option named in text, not by colour only), then the fixed form; U2's "not yet" and empty lines; the graph's table alternative; a "freeze refused" banner naming the rule when `freeze` reports `mismatch` after an approve | LN-U |
 | LN-UI3 | **Stop 3's view:** `ReadyView` (BD6's list) with **merge** and **rework** (notes) as buttons (LN-API7), merge behind R8-13's one-line confirm; its states: merge refused while the base isn't the default branch ("merges after #n"), head moved since `ready`, CI regressed, docs `not-needed`, review required (`reviewRequired`), proven sha ≠ head (`staleProof`), held comments blocking (`heldComments`), docs `skippedByOwner`, "merging…" and "phase merged, docs PR merging" (`inFlight`) | LN-R |
-| LN-UI4 | **Packet viewers:** the six kinds filed as UI §5.2 fact-type rows (summary line, controls), switched on `index.json`'s kind: files as tabs, no freeze control, "candidate, not frozen" when it isn't; the proof pack shows each item's evidence with its commit; the design packet's viewer holds the lens-round timeline | LN-U |
+| LN-UI4 | **Packet viewers:** the six kinds filed as UI §5.2 fact-type rows (summary line, controls), switched on `index.json`'s kind: files as tabs, each read by hash through #258's API9 (which serves a frozen packet after a purge, LC-8), no freeze control, "candidate, not frozen" when it isn't; the proof pack shows each item's evidence with its commit; the design packet's viewer holds the lens-round timeline | LN-U |
 | LN-UI5 | **Packs outside Settings,** which stay local preferences that work while Sindri is down: System's profile strip lists the packs in use per repo (id, source, hash, pin status, read-only, from LN-API8), and the Recipes inspector shows the packs a recipe's Steps resolve; a pin mismatch shows `SND-PACK-002` with its fix | LN-PK |
 | LN-UI6 | **The `ready-to-merge` Needs-you row.** R8-13's union gains one kind: an instance whose current wait accepts `ApplyCommand:merge` (LN-API7). Home renders "Ready to merge: <item> · PR #n", grouped by line in stack order; `G D` includes it; it opens `ReadyView` (§7.6 says why `ready` stays a wait) | LN-U |
-| LN-API1 | `GET /sindri/workflow/instances/{id}/line` (`query`): `LineView` `{ stations[{ station, instance, packet{ kind, hash, frozen } }], phases[{ id, attempt, address, state, parkReason?, pr?, base, worktree, now, tokens, wallMinutes }], parallel, maxOpenPrs }`; `sindri line show <address> [--json]`. Another recipe's instance is `SND-LINE-003`; a purged run area shows its frozen packets only (LC-8). Catalog row, golden; the gate runs `Aw.Sindri.Ui.Tests` | LN-L |
+| LN-API1 | `GET /sindri/workflow/instances/{id}/line` (`query`): `LineView` `{ stations[{ station, instance, packet{ kind, hash, frozen } }], phases[{ id, attempt, address, state, parkReason?, pr?, base, worktree, now, tokens, wallMinutes }], parallel, maxOpenPrs }`; `sindri line show <address> [--json]`. Another recipe's instance is `SND-LINE-003`; a purged run area shows its frozen packets only (LC-8), their files through #258's API9. Catalog row, golden; the gate runs `Aw.Sindri.Ui.Tests` | LN-L |
 | LN-API2 | `GET …/{id}/design-stop` on a `workflow.plan` instance: `DesignStopView` `{ accepted[], models, decisions[], acceptance{ added[], superseded[] }, escapes[], graph, trace[], coverage[], spec, contracts[], lensRounds[], freezeRefused? }`, live before `evidence` (`notYet` per section), untrusted text fenced for sessions; another recipe's instance is `SND-LINE-003` | LN-K |
 | LN-API3 | `GET …/{id}/ready` on a babysitter instance: `ReadyView` `{ pr{ number, url, title, body, head, base }, notProven, holdout{ verdicts[{ scenario, verdict }] }, reviewRounds{ rounds, cap, findingsBySeverity, recheck }, docsPr?{ number, url, ci }, ci{ head, state, checks[] }, heldComments[{ author, url, reason, lean }], stackBase, mergeRecord?, rechecks[{ head, verdict }], provenSha, comments{ byType, byOutcome }, mergeMethod, reviewDecision, inFlight? (`merging`, `docsMerging`) }` with `docsPr` also carrying `syncedHead` and `result` (`opened`, `notNeeded`, `skippedByOwner`) (BD6's list, field by field: the review-rounds row, the not-proven count, the hidden-scenario verdicts, the docs PR and its CI, and the comments the babysitter holds back for the owner, each with the model's lean and the reason held; then PB §4.5's additions: the rechecks with their head sha and verdict, the proven sha beside the head sha, comment counts by type and outcome, the docs PR's synced head and result, the merge method, the review decision and the in-flight state) plus `mergeBlockedBy?` (`baseNotDefault`, `headMoved`, `ciRed`, `reviewRequired`, `staleProof`, `heldComments` (only with `workflow.pr.heldBlocksMerge`)); `SND-LINE-003` otherwise. Catalog row, golden | LN-R |
 | LN-API4 | API §3.1/§4.1's `local` class gains `design check\|show --facts`, `plan check\|show --facts`, `prove check --facts`, `pack check`, `line desk` and `line doctor` (Appendix D); `<address>` forms are `query` clients, exit 2 on `SND-API-001` as API3 | LN-K |
@@ -835,7 +836,7 @@ phase is one PR through /specToProvenPR. **(owner)** steps run through `scripts/
 | Step | Phases | Lanes |
 |---|---|---|
 | 1. Foundations | DT-V, DT-C, DT-R (with DTC2–DTC9, DTC11), DT-J, engine P7 (DT §8.4's interpreter half); #258's W2, W6–W14 (and LN-SC1, before approval); P1, LN-PKT1–LN-PKT3, LN-PKT5; L-17; LN-WF9. Every other LN- row is built inside the phase its last column names | engine, packets, launcher, API |
-| 2. Scoping | #258 SC-F … SC-P | ideas, context, engine, API, UI |
+| 2. Scoping | #258 SC-F … SC-P, and SC-V (Open in Context, beside SC-P; LN-U's packet viewers use its API9) | ideas, context, engine, API, UI |
 | 3. Design and plan | LN-F, LN-Y1, LN-K, LN-PK, LN-S1, LN-W | ideas, packets |
 | 4. The phase child | LN-Y2, LN-B1, LN-B2, LN-H, LN-PV (with DTC4 in LN-Y2), then PB-F, PB-O, LN-SH; LN-R (stop 3's desk, before the PB phases that use it) | ideas, engine, launcher, API, UI |
 | 5. Babysit and docs sync | the PB draft's phases, with BD1–BD9 | ideas, API, engine, UI |
@@ -859,7 +860,7 @@ phase is one PR through /specToProvenPR. **(owner)** steps run through `scripts/
 | **LN-SH** | Ship: green, pack, freeze, `effect.pr.open` (BD1) | S | LN-PV, PB-F, PB-O | **(owner)** a fixture phase opens a PR whose body is the evidence pack, with no stop; a moved head returns to build; a planted token fails `SHIP-SECRET-001` before any push | `sindri-line.md` (ship) | ideas |
 | **LN-L** | Line: dispatcher, LN-WF1, `LineView` (LN-API1), `line show`, `line doctor` | M | LN-SH, PB phases | `recipe eval` walks four phases at parallel 2 with one stack, and a phase waiting on its merge doesn't count against `parallel`; a parked phase reaches the board; a cancelled line cancels its phases | `sindri-line.md` (line) | engine, ideas, API |
 | **LN-R** | Stop 3's desk, early: LN-API3 (`ReadyView`), LN-API7 (merge and rework actions), LN-UI3 (its view and buttons) | S | LN-F, BD6 | `ReadyView` matches its golden for a fixture babysitter instance, with every BD6 field; merge and rework are buttons, refused to a session (`SND-AUTH-002`); each `mergeBlockedBy` state renders; the gate runs `Aw.Sindri.Ui.Tests` | `docs/csharp/sindri-ui.md` (stop 3) | API, UI |
-| **LN-U** | LN-UI1, LN-UI2, LN-UI4, LN-UI6 | M | LN-L, LN-R | **(owner)** the board, stop 2 and stop 3 render from fixture packets; stop 3 shows as a `ready-to-merge` row on Home | `docs/csharp/sindri-ui.md` rows | UI, API |
+| **LN-U** | LN-UI1, LN-UI2, LN-UI4, LN-UI6 | M | LN-L, LN-R; #258 SC-V (API9) | **(owner)** the board, stop 2 and stop 3 render from fixture packets; stop 3 shows as a `ready-to-merge` row on Home | `docs/csharp/sindri-ui.md` rows | UI, API |
 | **LN-P** (owner) | End to end on a real serve | S | all above | **(owner)** the fixture's `expiry` goes scope → design → plan → four phases (two in parallel, one stacked) → four PRs opened with their evidence packs and docs PRs → CI green → stop 3 → merged in stack order; `line show` prints the chain; LN-API6's stats read | — | ideas |
 
 ### 13.3 Parallelization plan
@@ -943,6 +944,18 @@ The narrow re-check of rev 2 (`plans/sindri-line/recheck-rev2.md`) found 0 HIGH,
 
 Conflicts: §7.1 cites no "(PB10)", so only §7.2 and §11 changed; LN-UI3's docs state stays spelled `not-needed` beside
 #263's `notNeeded` value (the view's label vs the field value).
+
+### 14.3 Rev 2.3, #258 rev 3.2's scope graphs (owner, 2026-10-16)
+
+The owner asked for a finished scope's graphs in the Context screen; #258 rev 3.2 specs it (SC11). This doc changes
+only where packets and stops are touched.
+
+| Where | What changed |
+|---|---|
+| §1 | LN15 records the owner's decision |
+| §3.2, §3.4 | The scope packet's evidence adds `lenses.json`; stop 1 shows #258 U7's Open in Context ▸ |
+| §12 | The cited #258 ids gain C15, U7, API9, API10; LN-UI4 and LN-API1 read packet files through #258's API9 |
+| §13.1, §13.2 | Step 2 places #258 SC-V beside SC-P; LN-U needs SC-V for API9 |
 
 ## 15. Open questions
 
