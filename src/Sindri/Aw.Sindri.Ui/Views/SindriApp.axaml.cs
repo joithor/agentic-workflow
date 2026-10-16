@@ -52,7 +52,7 @@ public sealed partial class SindriApp : Application
         var preferences = new Preferences(platform.Preferences);
         var clipboard = new AvaloniaClipboard(static () => (Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow);
         var api = new SindriApiClient(Loopback(), platform.Token, clock, platform.Log);
-        return new(new ShellViewModel(platform.Records, api, clock, preferences, clipboard), preferences, platform, clock);
+        return new(new ShellViewModel(platform.Records, api, clock, preferences, clipboard, platform.Motion), preferences, platform, clock);
     }
 
     /// <summary>The head's adapters, or null for the theme-only app.</summary>

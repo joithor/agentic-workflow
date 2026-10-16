@@ -30,7 +30,7 @@ public sealed class ShellNeedsYouTests
         var shell = new ShellViewModel(_records, _server, _clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
         await shell.Restore(Token);
         _ = shell.Run(Token);
-        for (var i = 0; i < 400 && !(shell.State == ShellState.Normal && shell.Queue.Total > 0 && shell.Queue.RunningRows.Count > 0); i++)
+        for (var i = 0; i < 400 && !(shell.State == ShellState.Normal && shell.Queue.Total > 0 && shell.Queue.RunningRows.Count + shell.Queue.QueuedRows.Count > 0); i++)
         {
             await Task.Delay(5, Token);
         }
@@ -106,7 +106,7 @@ public sealed class ShellNeedsYouTests
     {
         var shell = await Connected();
         shell.ShowNeedsYou(Feed(NeedsYouRows.Park(), NeedsYouRows.Failure()));
-        var running = shell.Queue.RunningRows[0].Id;
+        var running = shell.Queue.RunningRows.Concat(shell.Queue.QueuedRows).First().Id;
 
         Assert.True(shell.Press("J"));
         Assert.Equal("park:ITM-01JC8", shell.NeedsYou.SelectedId);

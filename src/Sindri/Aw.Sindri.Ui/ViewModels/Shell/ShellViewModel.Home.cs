@@ -1,20 +1,113 @@
-#pragma warning disable MA0041, CA1822 // red stubs
+using Aw.Sindri.Ui.Navigation;
+using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
+using Aw.Sindri.Ui.ViewModels.Queue;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
-/// <summary>Home's Needs-you list in the shell (<see cref="ShellViewModel"/>, continued; U3' T9).</summary>
+/// <summary>Home's Needs-you list in the shell (<see cref="ShellViewModel"/>, continued; U3' T9): the filter, the sheets, and J / K across the panels.</summary>
 internal sealed partial class ShellViewModel
 {
     /// <summary>Home's Needs-you list.</summary>
-    public NeedsYouViewModel NeedsYou => throw new NotSupportedException();
+    public NeedsYouViewModel NeedsYou { get; }
 
     /// <summary>True when the sheet's subject is a Needs-you row.</summary>
-    public bool IsNeedsYouSheet => throw new NotSupportedException();
+    public bool IsNeedsYouSheet => SheetLink?.Kind == DeepLinkKind.NeedsYou;
 
     /// <summary>True when the sheet's subject is a decision.</summary>
-    public bool IsDecisionSheet => throw new NotSupportedException();
+    public bool IsDecisionSheet => SheetLink?.Kind == DeepLinkKind.Decision;
 
     /// <summary>Marks every current row seen (Shift+A from anywhere but a text field).</summary>
-    internal void MarkAllSeen() => throw new NotSupportedException();
+    internal void MarkAllSeen() => NeedsYou.MarkAllSeen();
+
+    // The list shows the rows the Home filter lets through (G D: the decisions); the attention summary always counts them all.
+    private void UpdateNeedsYou()
+    {
+        if (_needsYou is not { } feed)
+        {
+            return;
+        }
+
+        NeedsYou.Update(HomeFilter == HomeFilter.Decisions ? feed with { Rows = [.. feed.Rows.Where(IsDecisionRow)] } : feed);
+    }
+
+    private static bool IsDecisionRow(NeedsYouEntry row) => string.Equals(row.Subject?.Kind, "decision", StringComparison.Ordinal);
+
+    private void HookNeedsYou(IClipboard clipboard)
+    {
+        NeedsYou.SheetRequested += (_, e) => Navigate(LinkOf(e.RowId));
+        NeedsYou.CopyRequested += (_, e) => _ = clipboard.SetText(e.Text, CancellationToken.None);
+    }
+
+    // A decision row opens the decision sheet (by the decision's id); every other row opens its own, keyed on the row id.
+    private DeepLink LinkOf(string rowId) =>
+        NeedsYou.Rows.FirstOrDefault(r => string.Equals(r.Id, rowId, StringComparison.Ordinal)) is { } row && IsDecisionRow(row.Entry)
+            ? new DeepLink(DeepLinkKind.Decision, row.Entry.Subject?.Id ?? row.Id)
+            : new DeepLink(DeepLinkKind.NeedsYou, rowId);
+
+    // A deep link to a row or a decision selects its row on Home (the sheet shows beside it).
+    private void SelectRowOf(DeepLink link)
+    {
+        var row = link.Kind == DeepLinkKind.Decision
+            ? NeedsYou.Seen.Rows.FirstOrDefault(r => IsDecisionRow(r.Entry) && string.Equals(r.Entry.Subject?.Id, link.Subject, StringComparison.Ordinal))
+            : NeedsYou.Seen.Rows.FirstOrDefault(r => string.Equals(r.Id, link.Subject, StringComparison.Ordinal));
+        if (row is not null)
+        {
+            Queue.ClearSelection();
+            NeedsYou.OpenSheetOn(row.Id);
+        }
+    }
+
+    // A, X, Y and Enter act on the Needs-you row the selection is on (Home, focus not in the sheet).
+    private bool NeedsYouKeyPressed(string key, bool inSheet)
+    {
+        NeedsYouKey? named = key switch
+        {
+            "A" => NeedsYouKey.A,
+            "X" => NeedsYouKey.X,
+            "Y" => NeedsYouKey.Y,
+            "Enter" => NeedsYouKey.Enter,
+            _ => null,
+        };
+        if (inSheet || !IsHome)
+        {
+            return false;
+        }
+
+        return string.Equals(key, "J", StringComparison.Ordinal) || string.Equals(key, "K", StringComparison.Ordinal) ? MoveOnHome(string.Equals(key, "J", StringComparison.Ordinal) ? 1 : -1) : named is { } k && NeedsYou.SelectedId is not null && NeedsYou.Press(k);
+    }
+
+    // From the queue's first row (K) or with nothing selected, the keys go to Needs you when it has rows.
+    private bool EntersNeedsYou(int step) =>
+        NeedsYou.Rows.Count > 0 && (!Queue.HasSelectionOn(QueueScope.Home) || (step < 0 && Queue.IsFirstOnHome));
+
+    private int IndexOfSelected()
+    {
+        var id = NeedsYou.SelectedId;
+        var rows = NeedsYou.Rows;
+        return id is null ? -1 : rows.ToList().FindIndex(r => string.Equals(r.Id, id, StringComparison.Ordinal));
+    }
+
+    // J / K on Home walk Needs you, then Running, then Queued (and back); true when the key was used.
+    private bool MoveOnHome(int step)
+    {
+        var rows = NeedsYou.Rows;
+        var at = IndexOfSelected();
+        if (at >= 0 && (step < 0 || at < rows.Count - 1))
+        {
+            _ = NeedsYou.Press(step > 0 ? NeedsYouKey.J : NeedsYouKey.K);
+        }
+        else if (at < 0 && EntersNeedsYou(step))
+        {
+            Queue.ClearSelection();
+            NeedsYou.Select(rows[step < 0 ? rows.Count - 1 : 0].Id);
+        }
+        else
+        {
+            NeedsYou.Deselect();
+            Queue.Move(step, QueueScope.Home);
+        }
+
+        return true;
+    }
 }

@@ -21,6 +21,10 @@ internal sealed partial class ShellViewModel
         }
 
         OpenSheet(link);
+        if (link.Kind is DeepLinkKind.NeedsYou or DeepLinkKind.Decision)
+        {
+            SelectRowOf(link);
+        }
     }
 
     // The rev 8 links name a page (screens spec §3); the older ones open their sheet over the page shown.

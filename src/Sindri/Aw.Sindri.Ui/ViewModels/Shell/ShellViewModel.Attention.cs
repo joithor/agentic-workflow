@@ -22,6 +22,7 @@ internal sealed partial class ShellViewModel
     internal void ShowNeedsYou(NeedsYouFeed feed)
     {
         _needsYou = feed;
+        UpdateNeedsYou();
         Reattend();
     }
 

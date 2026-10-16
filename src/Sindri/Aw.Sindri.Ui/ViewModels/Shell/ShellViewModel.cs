@@ -3,6 +3,7 @@ using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Item;
+using Aw.Sindri.Ui.ViewModels.NeedsYou;
 using Aw.Sindri.Ui.ViewModels.Palette;
 using Aw.Sindri.Ui.ViewModels.Queue;
 
@@ -44,7 +45,8 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <param name="clock">The clock for every timing rule.</param>
     /// <param name="preferences">The app's local preferences, shared with Settings (the shell keeps its window, sheet width and last page there).</param>
     /// <param name="clipboard">Where Copy puts a CLI (the window's clipboard).</param>
-    internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, Preferences preferences, IClipboard clipboard)
+    /// <param name="motion">The OS reduce-motion setting; none means motion is allowed.</param>
+    internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, Preferences preferences, IClipboard clipboard, IMotionPreference? motion = null)
     {
         _store = preferences;
         _clock = clock;
@@ -61,6 +63,8 @@ internal sealed partial class ShellViewModel : ObservableObject
         Health.Follow(Queue.Refresh);
         Health.Follow(Item.Refresh);
         _api = api;
+        NeedsYou = new NeedsYouViewModel(preferences, motion ?? new StillMotion(), clock);
+        HookNeedsYou(clipboard);
         Health.Follow(ReadNeedsYou);
         Queue.PropertyChanged += OnQueueChanged;
         Attention = AttentionSummary.For(feed: null, State, _clock.GetUtcNow());

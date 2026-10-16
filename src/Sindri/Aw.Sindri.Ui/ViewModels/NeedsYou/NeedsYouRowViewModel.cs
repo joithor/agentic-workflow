@@ -26,9 +26,14 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
     public NeedsYouChip Chip => Entry.Chip;
 
     /// <summary>The row's chip as the one chip control draws it.</summary>
-#pragma warning disable MA0041, CA1822 // red stub
-    public StateChip? StateChip => throw new NotSupportedException();
-#pragma warning restore MA0041, CA1822
+    public StateChip? StateChip => Entry.Chip.Word.Length == 0 ? null : new StateChip(Entry.Chip.Word, Entry.Chip.Tone switch
+    {
+        NeedsYouChipTone.Attn => ChipTone.Attn,
+        NeedsYouChipTone.Fail => ChipTone.Fail,
+        NeedsYouChipTone.Ok => ChipTone.Ok,
+        NeedsYouChipTone.Neutral => ChipTone.Neutral,
+        _ => ChipTone.Neutral,
+    });
 
     /// <summary>The id shown at rest; empty when the row shows none.</summary>
     public string ShownId => Entry.ShownId;

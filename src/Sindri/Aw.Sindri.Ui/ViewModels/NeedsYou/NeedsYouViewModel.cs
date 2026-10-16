@@ -160,6 +160,12 @@ internal sealed partial class NeedsYouViewModel : ObservableObject
         }
     }
 
+    /// <summary>Selects no row (the keys moved on to another list).</summary>
+    internal void Deselect() => SetSelected(id: null);
+
+    /// <summary>Marks every current row seen.</summary>
+    internal void MarkAllSeen() => Seen.MarkAllSeen();
+
     private void Apply()
     {
         var before = Rows.Select(r => r.Entry).ToList();

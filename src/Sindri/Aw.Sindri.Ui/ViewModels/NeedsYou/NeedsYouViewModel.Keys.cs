@@ -26,6 +26,14 @@ internal sealed partial class NeedsYouViewModel
     /// <summary>The row whose sheet is open; null for none.</summary>
     internal string? SheetRowId { get; private set; }
 
+    /// <summary>Selects a row and notes its sheet is open (a deep link opened it).</summary>
+    /// <param name="id">The row's id.</param>
+    internal void OpenSheetOn(string id)
+    {
+        Select(id);
+        SheetRowId = id;
+    }
+
     /// <summary>Handles a key.</summary>
     /// <param name="key">The key.</param>
     /// <returns>True when the list used it.</returns>
