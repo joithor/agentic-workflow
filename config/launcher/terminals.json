@@ -5,6 +5,7 @@
       "id": "kitty",
       "name": "kitty",
       "bin": "kitty",
+      "processNames": ["kitty"],
       "termProgram": ["kitty"],
       "argv": ["kitty", "--title", "{title}", "--directory", "{cwd}", "--", "{cmd...}"]
     },
@@ -12,6 +13,7 @@
       "id": "wezterm",
       "name": "WezTerm",
       "bin": "wezterm",
+      "processNames": ["wezterm-gui"],
       "termProgram": ["WezTerm"],
       "titleless": true,
       "argv": ["wezterm", "start", "--cwd", "{cwd}", "--", "{cmd...}"]
@@ -20,6 +22,7 @@
       "id": "gnome-terminal",
       "name": "GNOME Terminal",
       "bin": "gnome-terminal",
+      "processNames": ["gnome-terminal-server"],
       "termProgram": ["gnome-terminal"],
       "argv": ["gnome-terminal", "--title={title}", "--working-directory={cwd}", "--", "{cmd...}"]
     },
@@ -27,6 +30,7 @@
       "id": "alacritty",
       "name": "Alacritty",
       "bin": "alacritty",
+      "processNames": ["alacritty"],
       "termProgram": ["alacritty"],
       "argv": ["alacritty", "--title", "{title}", "--working-directory", "{cwd}", "-e", "{cmd...}"]
     },
@@ -34,6 +38,7 @@
       "id": "konsole",
       "name": "Konsole",
       "bin": "konsole",
+      "processNames": ["konsole"],
       "termProgram": ["konsole"],
       "argv": ["konsole", "--workdir", "{cwd}", "-p", "tabtitle={title}", "-e", "{cmd...}"]
     },
@@ -41,6 +46,7 @@
       "id": "foot",
       "name": "foot",
       "bin": "foot",
+      "processNames": ["foot"],
       "termProgram": ["foot"],
       "argv": ["foot", "--title", "{title}", "--working-directory", "{cwd}", "{cmd...}"]
     },
@@ -48,6 +54,7 @@
       "id": "xterm",
       "name": "xterm",
       "bin": "xterm",
+      "processNames": ["xterm"],
       "termProgram": ["xterm"],
       "argv": ["xterm", "-T", "{title}", "-e", "{cmd...}"]
     }

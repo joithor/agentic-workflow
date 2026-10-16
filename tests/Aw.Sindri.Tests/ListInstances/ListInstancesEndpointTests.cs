@@ -4,8 +4,11 @@ using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ListInstances;
 using Aw.Sindri.Host.Endpoints;
+using Aw.Sindri.Tests.GetInstance;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,7 +25,7 @@ public sealed class ListInstancesEndpointTests
         ListInstancesRequest? seen = null;
         var builder = WebApplication.CreateSlimBuilder();
         _ = builder.WebHost.UseTestServer();
-        _ = builder.Services.AddSingleton<IService<ListInstancesRequest, ListInstancesResponse>>(new Recording(r => seen = r));
+        _ = builder.Services.AddSingleton<IService<ListInstancesRequest, InstanceList>>(new Recording(r => seen = r));
         await using var app = builder.Build();
         _ = app.MapGroup("/sindri").MapListInstances();
         await app.StartAsync(TestContext.Current.CancellationToken);
@@ -35,11 +38,11 @@ public sealed class ListInstancesEndpointTests
     [Fact]
     public async Task Every_filter_is_bound_by_name_as_text()
     {
-        var (response, _, seen) = await Get("?needsMe=true&item=ITM-1&state=parked&recipe=workflow.step&urgency=incident&subject=fact%3Aspec&root=false&query=Q&address=T-1");
+        var (response, _, seen) = await Get("?needsMe=true&item=ITM-1&state=parked&recipe=workflow.step&urgency=incident&subject=fact%3Aspec&root=false&open=true&query=Q&address=T-1");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(
-            new ListInstancesRequest("true", ItemKey.From("ITM-1"), "parked", "Q", "T-1", "workflow.step", "incident", "fact:spec", "false"),
+            new ListInstancesRequest("true", ItemKey.From("ITM-1"), "parked", "Q", "T-1", "workflow.step", "incident", "fact:spec", "false", "true"),
             seen);
     }
 
@@ -54,12 +57,13 @@ public sealed class ListInstancesEndpointTests
     [Theory]
     [InlineData("?root=maybe", "root='maybe' isn't true or false")]
     [InlineData("?needsMe=1", "needsMe='1' isn't true or false")]
+    [InlineData("?open=maybe", "open='maybe' isn't true or false")]
     public async Task A_value_that_is_not_true_or_false_reaches_the_service_so_the_answer_is_its_error(string query, string message)
     {
-        var service = new ListInstancesService(new NoDirectory(), new RecordingInstances([]), new FixedReader([]), new FixedItemViews(), new FixedCaller(current: null), clock: new FakeTimeProvider());
+        var service = new ListInstancesService(new NoDirectory(), new RecordingInstances([]), new EndedInstanceViews(new FixedReader([])), new FixedItemViews(), new FixedRepos(), new FixedCaller(current: null), clock: new FakeTimeProvider());
         var builder = WebApplication.CreateSlimBuilder();
         _ = builder.WebHost.UseTestServer();
-        _ = builder.Services.AddSingleton<IService<ListInstancesRequest, ListInstancesResponse>>(service);
+        _ = builder.Services.AddSingleton<IService<ListInstancesRequest, InstanceList>>(service);
         await using var app = builder.Build();
         _ = app.MapGroup("/sindri").MapListInstances();
         await app.StartAsync(TestContext.Current.CancellationToken);
@@ -73,12 +77,12 @@ public sealed class ListInstancesEndpointTests
         Assert.Contains(message, problem.RootElement.GetProperty("detail").GetString(), StringComparison.Ordinal);
     }
 
-    private sealed class Recording(Action<ListInstancesRequest> seen) : IService<ListInstancesRequest, ListInstancesResponse>
+    private sealed class Recording(Action<ListInstancesRequest> seen) : IService<ListInstancesRequest, InstanceList>
     {
-        public ValueTask<Result<ListInstancesResponse>> Handle(ListInstancesRequest request, CancellationToken cancellationToken)
+        public ValueTask<Result<InstanceList>> Handle(ListInstancesRequest request, CancellationToken cancellationToken)
         {
             seen(request);
-            return ValueTask.FromResult(Results.Success(new ListInstancesResponse([], NeedsYou: null, Empty: "no instances match")));
+            return ValueTask.FromResult(Results.Success(new InstanceList([], new ListCounts(0, 0, 0, 0, 0), InstanceList.EmptyText, DateTimeOffset.UnixEpoch)));
         }
     }
 }

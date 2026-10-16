@@ -15,7 +15,7 @@ namespace Aw.Sindri.Core.NeedsYou;
 /// </summary>
 /// <param name="events">Reads the payloads through the package's AwJson options.</param>
 /// <param name="scrubber">Scrubs secrets out of the text a row stores.</param>
-internal sealed class NeedsYouProjection(EventFactory events, ITextScrubber scrubber) : IProjection
+internal sealed partial class NeedsYouProjection(EventFactory events, ITextScrubber scrubber) : IProjection
 {
     private const string DriftKey = "profile:drift";
 
@@ -27,7 +27,11 @@ internal sealed class NeedsYouProjection(EventFactory events, ITextScrubber scru
         || string.Equals(eventType, EventTypes.ItemStateChanged, StringComparison.Ordinal)
         || string.Equals(eventType, EventTypes.ServiceRan, StringComparison.Ordinal)
         || string.Equals(eventType, EventTypes.ProfileChecked, StringComparison.Ordinal)
-        || string.Equals(eventType, EventTypes.ProfileApproved, StringComparison.Ordinal);
+        || string.Equals(eventType, EventTypes.ProfileApproved, StringComparison.Ordinal)
+        || string.Equals(eventType, EventTypes.WorkflowStarted, StringComparison.Ordinal)
+        || string.Equals(eventType, EventTypes.WorkflowTransition, StringComparison.Ordinal)
+        || string.Equals(eventType, EventTypes.WorkflowRefused, StringComparison.Ordinal)
+        || string.Equals(eventType, EventTypes.WorkflowNotified, StringComparison.Ordinal);
 
     public async ValueTask<Result<Unit>> Apply(LedgerEvent recorded, IViewRows rows, CancellationToken cancellationToken)
     {
@@ -40,7 +44,8 @@ internal sealed class NeedsYouProjection(EventFactory events, ITextScrubber scru
             EventTypes.ItemStateChanged => await Closed(recorded, rows, cancellationToken).ConfigureAwait(false),
             EventTypes.ServiceRan => await Ran(recorded, rows, cancellationToken).ConfigureAwait(false),
             EventTypes.ProfileChecked => await Checked(recorded, rows, cancellationToken).ConfigureAwait(false),
-            _ => await Approved(recorded, rows, cancellationToken).ConfigureAwait(false),
+            EventTypes.ProfileApproved => await Approved(recorded, rows, cancellationToken).ConfigureAwait(false),
+            _ => await Engine(recorded, rows, cancellationToken).ConfigureAwait(false),
         };
     }
 
@@ -75,7 +80,12 @@ internal sealed class NeedsYouProjection(EventFactory events, ITextScrubber scru
             return Unit.Value;
         }
 
-        var concerned = await rows.Where<NeedsYouRowRecord>(ViewNames.NeedsYou, ViewColumn.Item, changed.Value.Item.Value, cancellationToken).ConfigureAwait(false);
+        return await ClearDecisions(rows, changed.Value.Item.Value, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<Result<Unit>> ClearDecisions(IViewRows rows, string item, CancellationToken cancellationToken)
+    {
+        var concerned = await rows.Where<NeedsYouRowRecord>(ViewNames.NeedsYou, ViewColumn.Item, item, cancellationToken).ConfigureAwait(false);
         return concerned.IsError
             ? concerned.Error
             : await DeleteAll(rows, concerned.Value.Where(static r => r.Row.Kind == NeedsYouKind.Decision), cancellationToken).ConfigureAwait(false);

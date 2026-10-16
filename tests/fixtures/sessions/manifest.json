@@ -1,0 +1,162 @@
+{
+  "comment": "A /proc-shaped tree for the C# process-table adapter (AW_SESSIONS_PROC_ROOT=tests/fixtures/sessions/proc) and a claude-sessions/ directory for the record reader (AW_SESSIONS_CLAUDE_DIR). ownUid is the uid the adapter treats as its own. proc/<pid>/ holds stat, cmdline (NUL-separated), environ (NUL-separated), status, and exe, cwd and fd/<n> as symlinks (targets need not exist). proc/net/unix lists the tmux server's socket. Each process carries a role and, where it matters, what the collector must conclude (expect). ANTHROPIC_API_KEY in the Claude environ files is a planted fake: it must reach no snapshot, log or response. Checked by scripts/check-fleet.mjs. Spec 2026-10-16-sindri-session-collector-design.md section 4.1.",
+  "ownUid": 1000,
+  "processes": [
+    {
+      "pid": 1,
+      "role": "init"
+    },
+    {
+      "pid": 200,
+      "role": "warp-terminal"
+    },
+    {
+      "pid": 210,
+      "role": "warp-shell"
+    },
+    {
+      "pid": 211,
+      "role": "claude under Warp (record 211.json matches)",
+      "expect": {
+        "provider": "claude-code",
+        "host": "warp",
+        "sessionId": "aaaaaaaa-0000-4000-8000-000000000211"
+      }
+    },
+    {
+      "pid": 212,
+      "role": "claude -p under judge (ancestor claude, AW_JUDGE_CHILD, no tty)",
+      "expect": {
+        "session": false
+      }
+    },
+    {
+      "pid": 300,
+      "role": "kitty"
+    },
+    {
+      "pid": 310,
+      "role": "kitty-shell"
+    },
+    {
+      "pid": 311,
+      "role": "claude under kitty (record 311.json matches)",
+      "expect": {
+        "provider": "claude-code",
+        "host": "terminal:kitty",
+        "sessionId": "bbbbbbbb-0000-4000-8000-000000000311"
+      }
+    },
+    {
+      "pid": 400,
+      "role": "tmux server (socket /tmp/tmux-1000/t1)"
+    },
+    {
+      "pid": 410,
+      "role": "tmux pane shell"
+    },
+    {
+      "pid": 411,
+      "role": "claude in a tmux lane, no record (pid-... ref)",
+      "expect": {
+        "provider": "claude-code",
+        "host": "tmux",
+        "ref": "claude-code/pid-411-3100"
+      }
+    },
+    {
+      "pid": 500,
+      "role": "sshd"
+    },
+    {
+      "pid": 510,
+      "role": "sshd session"
+    },
+    {
+      "pid": 520,
+      "role": "ssh shell"
+    },
+    {
+      "pid": 521,
+      "role": "claude over ssh (no record)",
+      "expect": {
+        "provider": "claude-code",
+        "host": "ssh"
+      }
+    },
+    {
+      "pid": 600,
+      "role": "Codex (session id from the rollout fd)",
+      "expect": {
+        "provider": "codex",
+        "sessionId": "0199a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b"
+      }
+    },
+    {
+      "pid": 700,
+      "role": "Cursor CLI (exe path contains cursor)",
+      "expect": {
+        "provider": "cursor"
+      }
+    },
+    {
+      "pid": 701,
+      "role": "another program named agent: not Cursor (exe path has no cursor)",
+      "expect": {
+        "session": false
+      }
+    },
+    {
+      "pid": 800,
+      "role": "aider, an added catalog entry (matched by processName; state unknown)",
+      "expect": {
+        "provider": "aider",
+        "state": "unknown"
+      }
+    },
+    {
+      "pid": 1100,
+      "role": "recycled pid: record 1100.json has an older procStart",
+      "expect": {
+        "sessionId": null,
+        "ref": "claude-code/pid-1100-9000"
+      }
+    },
+    {
+      "pid": 1200,
+      "role": "zombie: skipped",
+      "expect": {
+        "session": false
+      }
+    },
+    {
+      "pid": 1300,
+      "role": "another user's claude (status Uid: 1001): skipped",
+      "expect": {
+        "session": false
+      }
+    }
+  ],
+  "claudeSessions": [
+    {
+      "file": "211.json",
+      "kind": "matches process 211 (live)"
+    },
+    {
+      "file": "311.json",
+      "kind": "matches process 311 (live)"
+    },
+    {
+      "file": "1100.json",
+      "kind": "stale: pid 1100 was recycled (procStart differs from the process's start ticks)"
+    },
+    {
+      "file": "9999.json",
+      "kind": "stale: no such process"
+    },
+    {
+      "file": "211.0123abcd.key",
+      "kind": "a .key file: never opened"
+    }
+  ]
+}

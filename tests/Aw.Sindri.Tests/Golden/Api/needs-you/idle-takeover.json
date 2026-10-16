@@ -1,0 +1,36 @@
+{
+  "rows": [
+    {
+      "id": "takeover:WFI-4b2ce3bc02838fa3b234ec373586a772",
+      "kind": "park",
+      "label": "taken over",
+      "subject": {
+        "kind": "instance",
+        "id": "WFI-4b2ce3bc02838fa3b234ec373586a772"
+      },
+      "item": "ITM-0000000000000000000000000000000e",
+      "title": "Try the engine",
+      "reason": "a takeover is idle (ITM-0000000000000000000000000000000e/step/1)",
+      "repo": "demo",
+      "urgency": "calm",
+      "since": "2026-01-01T00:00:00.0000000Z",
+      "recordedOnly": false,
+      "notice": null,
+      "answerKind": null,
+      "primaryAction": "ApplyCommand:handback",
+      "actions": [
+        "ApplyCommand:handback",
+        "ApplyCommand:cancel"
+      ],
+      "cli": "sindri handback ITM-0000000000000000000000000000000e/step/1"
+    }
+  ],
+  "empty": null,
+  "asOf": {
+    "cursor": 9,
+    "ledgerHead": 9,
+    "projectedAt": "2026-01-01T00:00:00.0000000Z",
+    "rebuilding": false,
+    "stalled": false
+  }
+}
