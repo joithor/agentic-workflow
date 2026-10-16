@@ -98,7 +98,7 @@ case "$repo" in /*) [ -d "$repo" ] || { echo "meta-launch: repo $repo not found"
 meta_lane="$(jq -r '.metaLane // "meta"' "$config")"
 launcher_load "$state_dir" || exit 1
 if [ -n "${AW_LAUNCHER_CONFIG:-}" ]; then   # lanes read the same file: pass it on, as an absolute path (their cwd is the repo)
-  AW_LAUNCHER_CONFIG="$(cd "$(dirname "$LAUNCHER_FILE")" && pwd)/$(basename "$LAUNCHER_FILE")"; export AW_LAUNCHER_CONFIG
+  AW_LAUNCHER_CONFIG="$(cd "$(dirname "$launcher_file")" && pwd)/$(basename "$launcher_file")"; export AW_LAUNCHER_CONFIG
 fi
 viewer="$(launcher_viewer_kind)"
 lc_env=(); lc_str=""
@@ -111,7 +111,7 @@ proc_of() { # lane: the process name a pane runs while the lane's agent is up
 }
 for l in "${A[@]}" "${L[@]}"; do launcher_agent_ok "$(agent_of "$l")" || exit 1; done
 if [ "$viewer" = exec-template ] && [ "$(jq -r '.viewer.argv | type' <<< "$LAUNCHER_DOC")" != array ]; then
-  echo "meta-launch: SND-LAUNCH-011: viewer.argv is required for an exec-template viewer (in ${LAUNCHER_FILE:-launcher.json})" >&2; exit 1
+  echo "meta-launch: SND-LAUNCH-011: viewer.argv is required for an exec-template viewer (in ${launcher_file:-launcher.json})" >&2; exit 1
 fi
 # viewer_argv <lane> <name>: the exec-template argv for one lane, NUL-separated (the attach command is {cmd...})
 viewer_argv() {

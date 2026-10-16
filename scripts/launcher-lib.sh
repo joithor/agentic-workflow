@@ -9,7 +9,7 @@
 # x-aw-keys block. Every other rule is `sindri launch show`'s. A refusal is "SND-LAUNCH-011: <reason>" on stdout of
 # launcher_validate; launcher_load prints it with the file name on stderr.
 #
-# Public functions (all read the globals LAUNCHER_FILE, LAUNCHER_DOC, LAUNCHER_CAT that launcher_load sets):
+# Public functions (all read the globals launcher_file, LAUNCHER_DOC, LAUNCHER_CAT that launcher_load sets):
 #   launcher_load <state_dir>       resolve and validate the file, build the merged catalog; 1 on a refusal
 #   launcher_validate <file>        print the first refusal, return 1; return 0 when the reader accepts the file
 #   launcher_viewer_kind            warp | exec-template | print (warp with no file)
@@ -24,7 +24,7 @@ LAUNCHER_ROOT="$(cd "$LAUNCHER_LIB_DIR/.." && pwd)"
 LAUNCHER_SCHEMA="$LAUNCHER_ROOT/schemas/launcher.schema.json"
 LAUNCHER_BUILTINS="$LAUNCHER_ROOT/config/launcher/builtins.json"
 LAUNCHER_TERMINALS="$LAUNCHER_ROOT/config/launcher/terminals.json"
-LAUNCHER_FILE=""; LAUNCHER_DOC='{"schema":1}'; LAUNCHER_CAT='{}'; LAUNCHER_STRICT=0
+launcher_file=""; LAUNCHER_DOC='{"schema":1}'; LAUNCHER_CAT='{}'; LAUNCHER_STRICT=0
 
 # The checks, as one jq program over the file; prints one refusal per line.
 # shellcheck disable=SC2016
@@ -116,19 +116,19 @@ launcher_validate() {
   printf 'SND-LAUNCH-011: %s\n' "$out"; return 1
 }
 
-# launcher_load <state_dir>: sets LAUNCHER_FILE ("" when there is none), LAUNCHER_DOC, LAUNCHER_CAT, LAUNCHER_STRICT.
+# launcher_load <state_dir>: sets launcher_file ("" when there is none), LAUNCHER_DOC, LAUNCHER_CAT, LAUNCHER_STRICT.
 launcher_load() {
   local state_dir="$1" f msg claude="${AW_META_CLAUDE:-}"
   command -v jq > /dev/null || { echo "launcher: jq is not installed" >&2; return 1; }
   [ -f "$LAUNCHER_SCHEMA" ] && [ -f "$LAUNCHER_BUILTINS" ] || { echo "launcher: schemas/launcher.schema.json or config/launcher/builtins.json is missing beside $LAUNCHER_LIB_DIR" >&2; return 1; }
-  LAUNCHER_FILE=""; LAUNCHER_DOC='{"schema":1}'; LAUNCHER_STRICT=0
+  launcher_file=""; LAUNCHER_DOC='{"schema":1}'; LAUNCHER_STRICT=0
   if [ -n "${AW_LAUNCHER_CONFIG:-}" ]; then
     f="$AW_LAUNCHER_CONFIG"
     [ -f "$f" ] || { echo "launcher: AW_LAUNCHER_CONFIG names $f, which does not exist" >&2; return 1; }
   else f="$state_dir/launcher.json"; fi
   if [ -f "$f" ]; then
     if ! msg="$(launcher_validate "$f")"; then echo "launcher: $f: $msg" >&2; return 1; fi
-    LAUNCHER_FILE="$f"; LAUNCHER_DOC="$(cat "$f")"; LAUNCHER_STRICT=1
+    launcher_file="$f"; LAUNCHER_DOC="$(cat "$f")"; LAUNCHER_STRICT=1
   fi
   # The merged catalog: the built-ins, an override replacing the fields it names (AW_META_CLAUDE, set, replaces the
   # claude-code entry's bin and ranks above the file), an added entry as it is. A built-in id without "override": true

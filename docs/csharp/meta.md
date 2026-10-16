@@ -8,7 +8,7 @@ not habits.
 
 It is a portable harness for any project. Everything team-specific (lanes, repo, gate scopes, merge order, known
 flakes, kickoff prompts, log file) lives in a team config. It runs before the C# switch as an opt-in standalone
-NativeAOT CLI (`./setup.sh --with-meta`, Claude Code only; Linux only for now, aw-meta reads /proc, so on macOS setup skips it) that keeps its state under `$AW_STATE_DIR/meta/` and
+NativeAOT CLI (`./setup.sh --with-meta`; the meta and its obligations are Claude Code only, lanes can launch on other agent CLIs, see [Launcher](#launcher); Linux only for now, aw-meta reads /proc, so on macOS setup skips it) that keeps its state under `$AW_STATE_DIR/meta/` and
 appends to the configured running log. Its gate and merge commands act on the team's checkout and PRs: `git fetch`, a
 gate worktree registered in the repo, the configured gate steps, `gh pr merge`, and the removal of finished worktrees (`git worktree remove`, never forced; see "Worktree cleanup"). Sindri absorbs it later (see the
 last section).
@@ -25,8 +25,8 @@ AOT smoke: `bash src/Meta/aot-smoke/run.sh`. Shell side: `config/hooks/meta-stop
 | `aw-meta` | State in `$AW_STATE_DIR/meta/meta.db` (SQLite, WAL): messages, sends, lane map versions, gates, merges, owner questions |
 | Stop hook `aw:meta-stop-gate` | Runs `aw-meta stop-check` with the session id and transcript path; exit 1 from it blocks the stop (hook exit 2, the list on stderr) |
 | PostToolUse hook `aw:meta-outbox` (matcher `SendMessage`) | Pipes the hook payload to `aw-meta outbox-record`, which records the send and closes what it settles |
-| `aw-meta-launch` (`scripts/meta-launch.sh`) | One Warp window, a pane per lane, each attached to tmux session `<team>-<lane>` running `scripts/meta-lane.sh` |
-| `scripts/meta-lane.sh` | Runs the lane's Claude session as `claude -n <team>-<lane>`, resumed by its recorded session id, or fresh with `<prompts>/<lane>.md` |
+| `aw-meta-launch` (`scripts/meta-launch.sh`) | By default one Warp window, a pane per lane, each attached to tmux session `<team>-<lane>` running `scripts/meta-lane.sh`; `launcher.json` can pick another viewer and other lane agents ([Launcher](#launcher)) |
+| `scripts/meta-lane.sh` | Runs the lane's agent (Claude Code unless `launcher.json` says otherwise) as `claude -n <team>-<lane>`, resumed by its recorded session id, or fresh with `<prompts>/<lane>.md` |
 
 ## Why the transcript
 
@@ -159,7 +159,49 @@ A worktree git cannot read is kept with the reason.
 | `$AW_STATE_DIR/meta/lane-sessions/<lane>` | `scripts/meta-lane.sh` (the lane's Claude session id) |
 | `$AW_STATE_DIR/meta/lane-sessions/<lane>.exited` | `scripts/meta-lane.sh` when the lane's claude exited and the pane fell back to its shell; `meta-launch.sh` restarts such a pane unless a claude runs in it again |
 | the running log | `aw-meta` (merges, owner decisions, lane maps, kills, worktree sweeps, `log-append`) |
-| `$XDG_DATA_HOME/warp-terminal/launch_configurations/<team>-team.yaml` | `scripts/meta-launch.sh` |
+| `$XDG_DATA_HOME/warp-terminal/launch_configurations/<team>-team.yaml` | `scripts/meta-launch.sh` (the `warp` viewer only) |
+| `$AW_STATE_DIR/launcher.json` | the owner, or `aw-meta-launch --init-launcher` (read by `scripts/launcher-lib.sh`) |
+| `$AW_STATE_DIR/meta/lane-sessions/<lane>.ambiguous` | `scripts/meta-lane.sh` when an agent that reports its own session id left more than one candidate session file |
+
+## Launcher
+
+`aw-meta-launch` reads `launcher.json` (`$AW_LAUNCHER_CONFIG`, else `$AW_STATE_DIR/launcher.json`; the contract is
+`docs/csharp/sindri-launcher.md`, the design `docs/superpowers/specs/2026-10-15-sindri-session-launcher-design.md`, phase
+SL-1). With no file the launcher is exactly what it was: the Warp layout, Claude Code in every lane (a golden in
+`scripts/tests/meta-launch.test.sh` pins the Warp YAML, every tmux command and every claude command line).
+
+| Setting | Effect on `aw-meta-launch` |
+|---|---|
+| `viewer.kind: warp` (the default with no file) | The multi-pane Warp layout, written to `AW_WARP_LAUNCH_DIR` and opened |
+| `viewer.kind: exec-template` | One window per lane (the lanes of this run, so `--lanes` opens only those) running `viewer.argv` with `{title}` and `{name}` = `<team>-<lane>`, `{cwd}` = the repo, `{cmd...}` = `tmux attach -t =<team>-<lane>`; `--no-open` opens none, `--dry-run` prints each argv. A terminal that is not installed never stops the sessions: the attach command is printed |
+| `viewer.kind: print` | Prints `tmux attach -t =<team>-<lane>` per lane |
+| `host` | Checked, not used: lanes always run in tmux |
+| `meta.lanesAgent`, `meta.lanes.<lane>` | The catalog agent that runs the lane (the meta lane is always Claude Code). The catalog is `config/launcher/builtins.json` plus the file's `agents` |
+| `agents.<id>` | `open`/`resume` argv templates (`{bin}`, `{cwd}`, `{name}`, `{seed}`, `{sessionId}`), `processName` (the pane check that restarts a lane whose agent exited) and `transcripts` (the glob that decides resume) |
+
+**Non-Claude lanes launch only.** A lane on `codex`, `cursor` or an added agent starts and resumes, and `aw-meta-launch`
+prints `lane <l>: <agent>, launch-only for now: no obligations`. The lane map and `aw-meta health` show such a lane as
+they show any lane with no Claude session; do not message a lane marked launch-only. An agent with `sessionId: reported`
+chooses its own id: lanes of that kind start one at a time, each waiting up to `AW_META_ID_WAIT` seconds (30) for its id
+(the `lane-sessions/<lane>` file a hook writes, else the single new file the catalog's `newestFile` glob finds that no other
+lane has recorded; two candidates are refused and leave `<lane>.ambiguous`). Obligations for them arrive with SL-1b.
+
+**Precedence** (environment, then the file, then the defaults): `AW_META_CLAUDE` replaces the `claude-code` entry's `bin`
+and `AW_META_CLAUDE_ARGS` is inserted after `{bin}`; both stay for tests and are deprecated for users in favour of an
+`"override": true` entry for `claude-code`. `AW_WARP_LAUNCH_DIR` is where the `warp` viewer writes its YAML (the file has no
+such field). `AW_LAUNCHER_CONFIG` is passed on to every lane's tmux session.
+
+**Lane variables.** Every lane's environment has `AW_SINDRI_CHILD=1`, `AW_META_TEAM` and `AW_META_LANE`. `meta-lane.sh`
+exports them, so tmux's global environment is untouched; the spec's wording is `new-session -e`, which would have changed
+the Warp layout and every tmux command that must stay byte-identical with no file (the owner's condition). The effect is the
+same: a `sindri` run inside the lane is a session caller, whatever the agent. A shell left in the pane after the agent
+exits still carries them, so run the human's `sindri` approvals from another terminal.
+
+**Writing the file.** `aw-meta-launch --init-launcher [--viewer warp|print|<terminal id>] [--force] [--stdout]` detects the
+terminal (no GUI session: `print`; Warp installed: `warp`; `$TERM_PROGRAM` naming a terminal in
+`config/launcher/terminals.json`; else the first of those on PATH; else `print`) and writes `launcher.json` (0600, never over
+an existing file without `--force`; exit 0 ok, 1 refused, 2 usage). The reader refuses unknown keys, unknown placeholders
+and wrong JSON types with `SND-LAUNCH-011` before any session is created; `sindri launch show` is the full check.
 
 ## Threat model
 
