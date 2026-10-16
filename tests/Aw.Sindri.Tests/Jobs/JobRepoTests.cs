@@ -23,6 +23,9 @@ public sealed class JobRepoTests
         await runtime.Quiesce();
 
         Expect.Equal(RepoName.From("demo"), Started(runtime).Repo);
+        var progress = runtime.Events.Where(e => e.Envelope.Type == EventTypes.JobProgress).Select(e => runtime.H.Events.Payload<JobProgress>(e).Value).ToList();
+        Assert.NotEmpty(progress);   // the probe reports a line: an empty list would make the check below pass for nothing
+        Assert.All(progress, p => Expect.Equal(RepoName.From("demo"), p.Repo));
         var finished = runtime.Events.Where(e => e.Envelope.Type == EventTypes.JobFinished).Select(e => runtime.H.Events.Payload<JobFinishedPublic>(e).Value).ToList();
         Expect.Equal(RepoName.From("demo"), Assert.Single(finished).Repo);
     }

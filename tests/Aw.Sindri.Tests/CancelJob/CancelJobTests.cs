@@ -53,6 +53,22 @@ public sealed class CancelJobTests
     }
 
     [Fact]
+    public async Task The_cancelled_event_carries_the_repo_of_the_job()
+    {
+        var views = new InMemoryJobViews();
+        await using var runtime = Runtime(views);
+        await runtime.Open();
+        views.Put(A.Job().InRepo(Core.Ids.RepoName.From("demo")).Build());
+        using var entered = runtime.H.Callers.Enter(Human());
+
+        var cancelled = await Service(runtime, views).Handle(new CancelJobRequest(A.FirstJobId), Token);
+
+        Assert.True(cancelled.IsSuccess);
+        var row = Assert.Single(runtime.Events, e => string.Equals(e.Envelope.Type, EventTypes.JobCancelled, StringComparison.Ordinal));
+        Expect.Equal(Core.Ids.RepoName.From("demo"), runtime.H.Events.Payload<JobCancelled>(row).Value.Repo);
+    }
+
+    [Fact]
     public async Task Cancel_from_a_session_is_403()
     {
         await using var runtime = Runtime(new InMemoryJobViews());
