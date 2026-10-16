@@ -27,7 +27,7 @@ public sealed class MergeRunTests
     }
 
     private async Task AssignApiLane() =>
-        _ = await _world.Lanes.Save(new LaneMapState(1, [A.Assigned("api", "sindri-api")]), A.At(1), CancellationToken.None);
+        _ = await _world.Lanes.Save(new LaneMapState(1, [A.Assigned("api", "t1-api")]), A.At(1), CancellationToken.None);
 
     private async Task SaveGate()
     {

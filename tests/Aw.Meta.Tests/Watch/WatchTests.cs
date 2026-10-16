@@ -157,7 +157,7 @@ public sealed class WatchTests
         {
             if (poll == 1)
             {
-                _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "sindri-api", "ready #190") + MetaWorld.PeerLine("m2", "sindri-ui", "hello"));
+                _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "t1-api", "ready #190") + MetaWorld.PeerLine("m2", "t1-ui", "hello"));
                 _ = _world.Sync.Run(MetaWorld.Transcript, CancellationToken.None).AsTask().GetAwaiter().GetResult();
             }
         });

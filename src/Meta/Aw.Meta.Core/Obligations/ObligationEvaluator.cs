@@ -42,11 +42,20 @@ public static class ObligationEvaluator
         var who = message.FromName.Length > 0 ? message.FromName : message.From;
         var body = message.Body.Length > BodyPreview ? message.Body[..BodyPreview] + "..." : message.Body;
         var id = message.Id.Value;
+        var send = LaneSendCommand(id) is { } lane ? $"aw-meta lane-send --lane {lane} --text \"<reply>\"" : $"SendMessage to {who}";
         return new Obligation(
             ObligationKind.Reply,
             id,
             $"reply to {who} ({id}): {body}",
-            $"SendMessage to {who}; or aw-meta inbox-dismiss {id} --reason \"<why>\"; or aw-meta inbox-defer {id} --reason \"<why>\" --until +30m");
+            $"{send}; or aw-meta inbox-dismiss {id} --reason \"<why>\"; or aw-meta inbox-defer {id} --reason \"<why>\" --until +30m");
+    }
+
+    // A reply a non-Claude lane left through lane-reply has the id "lane:<lane>:<n>"; it is answered with lane-send, not SendMessage.
+    private static string? LaneSendCommand(string id)
+    {
+        const string prefix = "lane:";
+        var end = id.LastIndexOf(':');
+        return id.StartsWith(prefix, StringComparison.Ordinal) && end > prefix.Length ? id[prefix.Length..end] : null;
     }
 
     private static IEnumerable<LaneAssignment> Targets(ObligationFacts facts) =>

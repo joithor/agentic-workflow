@@ -12,7 +12,7 @@ public sealed class TeamTests
 
     private TeamShowService Show() => new(_config);
 
-    private static TeamInitRequest Request(string team = "sindri", string[]? lanes = null, bool force = false) =>
+    private static TeamInitRequest Request(string team = "t1", string[]? lanes = null, bool force = false) =>
         new(team, "/work/repo", lanes ?? ["api", "ui"], "meta", Log: null, force);
 
     [Fact, Trait("Lane", "unit")]
@@ -23,7 +23,7 @@ public sealed class TeamTests
 
         Assert.True(made.IsSuccess);
         Assert.Equal(["meta", "api", "ui"], loaded.Value.Lanes);
-        Assert.Equal(("sindri", "/work/repo", "meta"), (loaded.Value.Team, loaded.Value.Repo, loaded.Value.MetaLane));
+        Assert.Equal(("t1", "/work/repo", "meta"), (loaded.Value.Team, loaded.Value.Repo, loaded.Value.MetaLane));
         Assert.Equal(["repo"], loaded.Value.Gate.Always);
         Assert.Equal(["**"], loaded.Value.Gate.Scopes["repo"].Paths);
     }
@@ -50,9 +50,9 @@ public sealed class TeamTests
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("", "api")]
-    [InlineData("sindri", "")]
-    [InlineData("sindri", "api,api")]
-    [InlineData("sindri", "a b")]
+    [InlineData("t1", "")]
+    [InlineData("t1", "api,api")]
+    [InlineData("t1", "a b")]
     public void TeamInit_input_that_cannot_name_sessions_is_refused(string team, string lanes)
     {
         var lane = lanes.Length == 0 ? [] : lanes.Split(',');
@@ -70,6 +70,6 @@ public sealed class TeamTests
         var some = await Show().Handle(new TeamShowRequest(), CancellationToken.None);
 
         Assert.Equal(MetaErrors.NoTeamConfig.Code, none.Error.Code);
-        Assert.Equal("sindri", some.Value.Team);
+        Assert.Equal("t1", some.Value.Team);
     }
 }

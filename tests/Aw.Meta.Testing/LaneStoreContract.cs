@@ -32,8 +32,8 @@ public abstract class LaneStoreContract
     public async Task A_saved_map_reads_back_and_a_later_save_replaces_it()
     {
         var store = await Create();
-        var first = new LaneMapState(1, [A.Assigned("api", "sindri-api"), new LaneAssignment("ui", "agentic-9a", SessionId.From("s-9"), LaneSource.Announcement)]);
-        var second = new LaneMapState(2, [A.Assigned("engine", "sindri-engine")]);
+        var first = new LaneMapState(1, [A.Assigned("api", "t1-api"), new LaneAssignment("ui", "agentic-9a", SessionId.From("s-9"), LaneSource.Announcement)]);
+        var second = new LaneMapState(2, [A.Assigned("engine", "t1-engine")]);
 
         _ = await store.Save(first, A.At(1), _none);
         var one = await store.Current(_none);

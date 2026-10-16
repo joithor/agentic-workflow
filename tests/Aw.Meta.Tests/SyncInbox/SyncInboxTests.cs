@@ -43,11 +43,11 @@ public sealed class SyncInboxTests
     [Fact, Trait("Lane", "unit")]
     public async Task SyncInbox_records_each_peer_message_once()
     {
-        _reader.Write(Transcript, Noise + UserPeer("m1", "sindri-api", "ready #190") + Noise + Queued("m2", "sindri-ui", "hello"));
+        _reader.Write(Transcript, Noise + UserPeer("m1", "t1-api", "ready #190") + Noise + Queued("m2", "t1-ui", "hello"));
 
         var first = await Sync();
         var again = await Sync();
-        _reader.Append(Transcript, UserPeer("m1", "sindri-api", "ready #190") + Queued("m3", "sindri-api", "more"));
+        _reader.Append(Transcript, UserPeer("m1", "t1-api", "ready #190") + Queued("m3", "t1-api", "more"));
         var later = await Sync();
 
         Assert.Equal(["m1", "m2"], first, StringComparer.Ordinal);
@@ -59,11 +59,11 @@ public sealed class SyncInboxTests
     [Fact, Trait("Lane", "unit")]
     public async Task A_recorded_peer_message_opens_a_reply_obligation_until_it_is_answered()
     {
-        _reader.Write(Transcript, UserPeer("m1", "sindri-api", "please rebase"));
+        _reader.Write(Transcript, UserPeer("m1", "t1-api", "please rebase"));
         _ = await Sync();
 
         var open = await Open();
-        _ = await _store.RecordOutbound(A.Sent("sindri-api", "done", 99), CancellationToken.None);
+        _ = await _store.RecordOutbound(A.Sent("t1-api", "done", 99), CancellationToken.None);
         var answered = ObligationEvaluator.Evaluate(A.Facts() with { Messages = (await _store.Messages(CancellationToken.None)).Value, Outbound = (await _store.Sent(CancellationToken.None)).Value });
 
         Assert.Equal([(ObligationKind.Reply, "m1")], open.Select(o => (o.Kind, o.Key)));
@@ -73,12 +73,12 @@ public sealed class SyncInboxTests
     [Fact, Trait("Lane", "unit")]
     public async Task The_message_is_stored_with_its_sender_time_and_classification()
     {
-        _reader.Write(Transcript, UserPeer("m1", "sindri-api", "ready #190"));
+        _reader.Write(Transcript, UserPeer("m1", "t1-api", "ready #190"));
         _ = await Sync();
 
         var stored = Assert.Single((await _store.Messages(CancellationToken.None)).Value);
 
-        Assert.Equal(("uds:/run/sindri-api.sock", "sindri-api", "ready #190"), (stored.From, stored.FromName, stored.Body));
+        Assert.Equal(("uds:/run/t1-api.sock", "t1-api", "ready #190"), (stored.From, stored.FromName, stored.Body));
         Assert.Equal(new DateTimeOffset(2026, 10, 15, 4, 5, 0, TimeSpan.Zero), stored.At);
         Assert.Equal(190, stored.Class.Pr);
     }
@@ -86,8 +86,8 @@ public sealed class SyncInboxTests
     [Fact, Trait("Lane", "unit")]
     public async Task A_partial_trailing_line_waits_for_the_rest()
     {
-        var whole = UserPeer("m2", "sindri-ui", "second");
-        _reader.Write(Transcript, UserPeer("m1", "sindri-api", "first") + whole[..40]);
+        var whole = UserPeer("m2", "t1-ui", "second");
+        _reader.Write(Transcript, UserPeer("m1", "t1-api", "first") + whole[..40]);
 
         var first = await Sync();
         _reader.Append(Transcript, whole[40..]);
@@ -122,13 +122,13 @@ public sealed class SyncInboxTests
     [Fact, Trait("Lane", "unit")]
     public async Task An_owner_question_is_queued_once_with_its_lead_in_stripped()
     {
-        _reader.Write(Transcript, UserPeer("m1", "sindri-api", "OWNER QUESTION: postgres or sqlite?") + UserPeer("m2", "sindri-ui", "hello"));
+        _reader.Write(Transcript, UserPeer("m1", "t1-api", "OWNER QUESTION: postgres or sqlite?") + UserPeer("m2", "t1-ui", "hello"));
 
         _ = await Sync();
         _ = await Sync();
 
         var queued = Assert.Single((await _owner.List(includeAnswered: true, CancellationToken.None)).Value);
-        Assert.Equal(("sindri-api", "postgres or sqlite?"), (queued.AskedBy, queued.Text));
+        Assert.Equal(("t1-api", "postgres or sqlite?"), (queued.AskedBy, queued.Text));
         Assert.Contains("m1", (await Open()).Select(o => o.Key), StringComparer.Ordinal);
     }
 }

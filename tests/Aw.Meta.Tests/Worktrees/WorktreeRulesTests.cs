@@ -49,7 +49,7 @@ public sealed class WorktreeRulesTests
     [Fact, Trait("Lane", "unit")]
     public void A_merged_worktree_with_a_process_inside_is_kept()
     {
-        var verdict = Judge(Merged() with { Occupants = [new ProcessLocation(4242, "claude -n sindri-api", ["/wt/feat-x"])] });
+        var verdict = Judge(Merged() with { Occupants = [new ProcessLocation(4242, "claude -n t1-api", ["/wt/feat-x"])] });
 
         AssertKept(verdict, "4242");
     }

@@ -92,8 +92,8 @@ public abstract class MessageStoreContract
     public async Task Sent_messages_read_back_in_order()
     {
         var store = await Create(_none);
-        var first = A.Sent("sindri-api", "ack", 1);
-        var second = A.Sent("sindri-ui", "LANE MAP v2", 2) with { Id = MessageId.From("out-1") };
+        var first = A.Sent("t1-api", "ack", 1);
+        var second = A.Sent("t1-ui", "LANE MAP v2", 2) with { Id = MessageId.From("out-1") };
 
         _ = await store.RecordOutbound(first, _none);
         _ = await store.RecordOutbound(second, _none);
@@ -109,7 +109,7 @@ public abstract class MessageStoreContract
     {
         var store = await Create(_none);
         var none = await store.Role(_none);
-        _ = await store.SetRole(new MetaRole(SessionId.From("s-1"), "sindri-meta"), _none);
+        _ = await store.SetRole(new MetaRole(SessionId.From("s-1"), "t1-meta"), _none);
         _ = await store.SetRole(new MetaRole(SessionId.From("s-2"), string.Empty), _none);
         var role = await store.Role(_none);
 
