@@ -8,4 +8,5 @@ namespace Aw.Context.Tests.Eval;
 [JsonSerializable(typeof(ProbeReport))]
 [JsonSerializable(typeof(Aw.Context.Core.Extract.ExtractedMap))]
 [JsonSerializable(typeof(Aw.Context.Core.Eval.Backtest.BacktestReport))]
+[JsonSerializable(typeof(Aw.Context.Core.Eval.MapQuality.MapQualityReport))]
 internal sealed partial class EvalJsonContext : JsonSerializerContext;
