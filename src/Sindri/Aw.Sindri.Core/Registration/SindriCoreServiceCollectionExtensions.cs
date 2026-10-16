@@ -33,6 +33,7 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<EventFactory>()
             .AddSingleton<ICallerContextAccessor, AsyncLocalCallerContextAccessor>()
             .AddSingleton<HeldLease>()
+            .AddSingleton<EndedInstanceViews>()
             .AddSingleton<TemporalRuntime>()
             .AddSingleton<HeldHumanToken>()
             .AddSingleton<BlockCatalog>()

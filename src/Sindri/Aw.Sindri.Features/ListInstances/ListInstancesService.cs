@@ -24,12 +24,12 @@ namespace Aw.Sindri.Features.ListInstances;
 /// </summary>
 /// <param name="directory">Resolves an address or a bare item ('address').</param>
 /// <param name="instances">The visibility query.</param>
-/// <param name="runtime">Each instance's 'GetInstance' Query; one that ended between the list and its query (SND-WF-001) is left out.</param>
+/// <param name="runtime">Each instance's 'GetInstance' view (a Query for a running one, remembered for an ended one); one that ended between the list and its query (SND-WF-001) is left out.</param>
 /// <param name="itemViews">The 'items' view, read by key for the titles of the items the instances are on.</param>
 /// <param name="repos">Where each item belongs, from the ledger: a session lists only its own repo's instances.</param>
 /// <param name="callers">The caller, whose repo scope decides which instances and item titles it may see.</param>
 /// <param name="clock">The time the rows are read at: their ages and timeouts are worked out from it, not from when the workflow last ran.</param>
-internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, IInstanceReader runtime, IViewReader itemViews, IItemRepos repos, ICallerContextAccessor callers, TimeProvider clock) : IService<ListInstancesRequest, InstanceList>
+internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, EndedInstanceViews runtime, IViewReader itemViews, IItemRepos repos, ICallerContextAccessor callers, TimeProvider clock) : IService<ListInstancesRequest, InstanceList>
 {
     public async ValueTask<Result<InstanceList>> Handle(ListInstancesRequest request, CancellationToken cancellationToken)
     {
@@ -116,7 +116,7 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
                 continue;
             }
 
-            var view = await runtime.Get(address, cancellationToken).ConfigureAwait(false);
+            var view = await runtime.Get(row, address, cancellationToken).ConfigureAwait(false);
             if (view.IsSuccess)
             {
                 known[address.Value] = view.Value;

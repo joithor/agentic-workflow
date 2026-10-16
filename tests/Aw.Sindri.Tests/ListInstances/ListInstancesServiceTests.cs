@@ -34,7 +34,7 @@ public sealed class ListInstancesServiceTests
     private static async Task<(Result<InstanceList> Result, RecordingInstances Port)> Run(ListInstancesRequest request, params InstanceView[] views)
     {
         var port = new RecordingInstances([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]);
-        var service = new ListInstancesService(new NoDirectory(), port, new FixedReader(views), new FixedItemViews(), new FixedRepos(), new FixedCaller(current: null), clock: new FakeTimeProvider());
+        var service = new ListInstancesService(new NoDirectory(), port, new EndedInstanceViews(new FixedReader(views)), new FixedItemViews(), new FixedRepos(), new FixedCaller(current: null), clock: new FakeTimeProvider());
         return (await service.Handle(request, CancellationToken.None), port);
     }
 
@@ -157,7 +157,7 @@ public sealed class ListInstancesServiceTests
         var service = new ListInstancesService(
             new NoDirectory(),
             new RecordingInstances([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]),
-            new FixedReader(views),
+            new EndedInstanceViews(new FixedReader(views)),
             titles,
             new FixedRepos(),
             new FixedCaller(new CallerContextBuilder().Human().Build()),
@@ -296,7 +296,7 @@ public sealed class ListInstancesServiceTests
         new(
             directoryAddress is null ? new NoDirectory() : new FixedDirectory(directoryAddress),
             port ?? new RecordingInstances([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]),
-            reader ?? new FixedReader(views),
+            new EndedInstanceViews(reader ?? new FixedReader(views)),
             items,
             repos ?? new FixedRepos(),
             new FixedCaller(caller),
@@ -461,5 +461,25 @@ public sealed class ListInstancesServiceTests
         Assert.True(withItems.IsSuccess && withoutItems.IsSuccess);
         Assert.Equal([ItemA, ItemB], items.Reads);
         Assert.Empty(none.Reads);
+    }
+
+    [Fact]
+    public async Task An_ended_instance_is_read_once_across_lists_and_a_running_one_every_time()
+    {
+        var started = new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero);
+        var ended = View("done", "T-1/step/1");
+        var running = View("desk-task", "T-2/step/1");
+        Assert.True(ended.Outcome is not null && running.Outcome is null);
+        var views = new[] { ended, running };
+        var rows = views.Select(v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false, StartedAt: started)).ToList();
+        var reader = new FixedReader(views);
+        var service = Service(views, new FixedItemViews(), caller: null, port: new RecordingInstances(rows), reader: reader);
+
+        _ = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
+        reader.Reads.Clear();
+        var again = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
+
+        Assert.Equal(["T-2/step/1"], reader.Reads, StringComparer.Ordinal);
+        Assert.Equal(["T-1/step/1", "T-2/step/1"], again.Value.Instances.Select(static r => r.Address.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 }

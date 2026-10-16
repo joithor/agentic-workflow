@@ -4,6 +4,7 @@ using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ListInstances;
 using Aw.Sindri.Host.Endpoints;
@@ -59,7 +60,7 @@ public sealed class ListInstancesEndpointTests
     [InlineData("?open=maybe", "open='maybe' isn't true or false")]
     public async Task A_value_that_is_not_true_or_false_reaches_the_service_so_the_answer_is_its_error(string query, string message)
     {
-        var service = new ListInstancesService(new NoDirectory(), new RecordingInstances([]), new FixedReader([]), new FixedItemViews(), new FixedRepos(), new FixedCaller(current: null), clock: new FakeTimeProvider());
+        var service = new ListInstancesService(new NoDirectory(), new RecordingInstances([]), new EndedInstanceViews(new FixedReader([])), new FixedItemViews(), new FixedRepos(), new FixedCaller(current: null), clock: new FakeTimeProvider());
         var builder = WebApplication.CreateSlimBuilder();
         _ = builder.WebHost.UseTestServer();
         _ = builder.Services.AddSingleton<IService<ListInstancesRequest, InstanceList>>(service);

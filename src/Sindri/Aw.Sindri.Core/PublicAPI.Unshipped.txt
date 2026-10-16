@@ -7857,3 +7857,8 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeViews
 static Aw.Sindri.Core.Workflow.Views.FactTypeJsonConverter.Word(Aw.Sindri.Core.Workflow.Views.FactType type) -> string!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeViews.Of(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeVersion! stamp) -> Aw.Sindri.Core.Workflow.Views.RecipeView!
 const Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.NoKind = "-" -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.EndedInstanceViews
+Aw.Sindri.Core.Workflow.Engine.Runtime.EndedInstanceViews.EndedInstanceViews(Aw.Sindri.Core.Workflow.Engine.Runtime.IInstanceReader! reader) -> void
+const Aw.Sindri.Core.Workflow.Engine.Runtime.EndedInstanceViews.Capacity = 512 -> int
+Aw.Sindri.Core.Workflow.Engine.Runtime.EndedInstanceViews.Get(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>!>
+Aw.Sindri.Core.Workflow.Engine.Runtime.EndedInstanceViews.Get(Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow! row, Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>!>
