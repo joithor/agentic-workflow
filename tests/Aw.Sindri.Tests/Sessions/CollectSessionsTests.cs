@@ -1,3 +1,4 @@
+using Aw.Sindri.Features.Sessions;
 using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Testing;
 using static Aw.Sindri.Tests.Sessions.SessionData;
@@ -29,6 +30,21 @@ public sealed class CollectSessionsTests
         var session = Assert.Single(_c.Snapshot.Current!.Sessions);
         Assert.True(response.Good);
         Assert.Equal(($"claude-code/{Id}", SessionState.Running, StateSource.Record, true, "api work", "/w/api"), (session.Ref.ToString(), session.State, session.Source, session.IdKnown, session.Title, session.Cwd));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Pass_turns_a_throwing_source_into_one_problem_row_and_keeps_the_other_sources()
+    {
+        ClaudeRuns();
+        _ = _c.Records.With(LiveRecord());
+        var guarded = new SessionDiscovery(new ThrowingEnvironmentTable(_c.Fake), _c.Records, _c.Fleet, new Aw.Sindri.Infrastructure.Launch.AgentCatalog(SessionData.Agents), _c.Settings);
+
+        var found = await Task.Run(() => guarded.Discover(TestContext.Current.CancellationToken), TestContext.Current.CancellationToken);
+
+        Assert.True(found.Good);
+        Assert.Equal("claude-code/" + Id, Assert.Single(found.Candidates).Ref.ToString());
+        var problem = Assert.Single(found.Problems);
+        Assert.Equal(("environment", "SND-SESSION-001"), (problem.Source, problem.Code));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -116,12 +132,12 @@ public sealed class CollectSessionsTests
     [Fact, Trait("Lane", "unit")]
     public async Task Pass_takes_launch_and_lane_from_the_allowlisted_environment_only()
     {
-        _ = _c.Fake.With(Proc(10, 1, "claude", argv0: "claude"), Env(("AW_SINDRI_LAUNCH", "L-0001"), ("AW_META_TEAM", "t1"), ("AW_META_LANE", "api"), ("ANTHROPIC_API_KEY", ProcessTableContract.PlantedToken)));
+        _ = _c.Fake.With(Proc(10, 1, "claude", argv0: "claude"), Env(("AW_SINDRI_LAUNCH", "LCH-00000000000000000000000000000001"), ("AW_META_TEAM", "t1"), ("AW_META_LANE", "api"), ("ANTHROPIC_API_KEY", ProcessTableContract.PlantedToken)));
 
         _ = await _c.Pass();
 
         var session = Assert.Single(_c.Snapshot.Current!.Sessions);
-        Assert.Equal(("L-0001", "t1", "api"), (session.LaunchId!.Value.Value, session.Team, session.Lane));
+        Assert.Equal(("LCH-00000000000000000000000000000001", "t1", "api"), (session.LaunchId!.Value.Value, session.Team, session.Lane));
         Assert.DoesNotContain(ProcessTableContract.PlantedToken, System.Text.Json.JsonSerializer.Serialize(session.Host) + session.Cwd + session.Title + session.Team + session.Lane, StringComparison.Ordinal);
     }
 

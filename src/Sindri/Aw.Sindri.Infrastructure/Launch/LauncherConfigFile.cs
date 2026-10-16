@@ -10,7 +10,7 @@ namespace Aw.Sindri.Infrastructure.Launch;
 /// Reads launcher.json (launcher spec §4, schemas/launcher.schema.json) over the built-in entries. This build reads 'agents' and 'sessions';
 /// 'viewer', 'host' and 'meta' are checked (unknown keys and kinds are errors) and not read, until SL-2 reads them.
 /// </summary>
-internal static class LauncherFile
+internal static class LauncherConfigFile
 {
     internal static readonly System.Text.Json.JsonSerializerOptions Json = AwJson.CreateOptions(LauncherJsonContext.Default);
 

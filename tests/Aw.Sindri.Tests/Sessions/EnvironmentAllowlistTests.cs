@@ -11,7 +11,7 @@ public sealed class EnvironmentAllowlistTests
         const string Planted = "sk-ant-FAKE-must-never-appear";
         KeyValuePair<string, string>[] all =
         [
-            new("ANTHROPIC_API_KEY", Planted), new("HOME", "/h"), new("PATH", "/usr/bin"), new("AW_SINDRI_LAUNCH", "L-1"), new("TMUX", "/tmp/tmux-1000/t1,400,0"),
+            new("ANTHROPIC_API_KEY", Planted), new("HOME", "/h"), new("PATH", "/usr/bin"), new("AW_SINDRI_LAUNCH", "LCH-00000000000000000000000000000001"), new("TMUX", "/tmp/tmux-1000/t1,400,0"),
             new("WARP_FOCUS_URL", "warp://session/0123456789abcdef0123456789abcdef"), new("DISPLAY", ":0"), new("GITHUB_TOKEN", Planted),
         ];
 

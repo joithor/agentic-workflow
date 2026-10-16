@@ -19,9 +19,14 @@ describe("claudeArgs", () => {
 });
 
 describe("childEnv", () => {
-  it("passes only PATH, HOME, USER and the auth variables claude needs", () => {
+  it("passes only PATH, HOME, USER, the auth variables claude needs and the harness-child mark", () => {
     const env = childEnv({ PATH: "/bin", HOME: "/h", USER: "u", ANTHROPIC_API_KEY: "k", CLAUDE_CODE_OAUTH_TOKEN: "o", CLAUDE_CONFIG_DIR: "/c", AWS_SECRET_ACCESS_KEY: "s", GITHUB_TOKEN: "g" });
-    expect(env).toEqual({ PATH: "/bin", HOME: "/h", USER: "u", ANTHROPIC_API_KEY: "k", CLAUDE_CODE_OAUTH_TOKEN: "o", CLAUDE_CONFIG_DIR: "/c" });
+    expect(env).toEqual({ PATH: "/bin", HOME: "/h", USER: "u", ANTHROPIC_API_KEY: "k", CLAUDE_CODE_OAUTH_TOKEN: "o", CLAUDE_CONFIG_DIR: "/c", AW_JUDGE_CHILD: "1" });
+  });
+
+  it("marks the child as a harness child so the session collector doesn't list it as a session", () => {
+    expect(childEnv({ PATH: "/bin" }).AW_JUDGE_CHILD).toBe("1");
+    expect(childEnv({ PATH: "/bin", AW_JUDGE_CHILD: "0" }).AW_JUDGE_CHILD).toBe("1");
   });
 });
 

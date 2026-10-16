@@ -10,7 +10,7 @@ namespace Aw.Sindri.Features.Sessions;
 /// Appends 'fleet.changed' (collector spec CO3). Called by the collector host with the lease grant; it has no command gate, audit row or catalog row (the
 /// CheckProfileService pattern). The payload holds no text: no cwd, title or socket.
 /// </summary>
-internal sealed class RecordFleetChangesService(ILedgerStore ledger, EventFactory events) : IService<RecordFleetChangesRequest, RecordFleetChangesResponse>
+internal sealed class RecordFleetChangesService(ILedgerStore ledger, EventFactory events, CollectorMemory memory) : IService<RecordFleetChangesRequest, RecordFleetChangesResponse>
 {
     public async ValueTask<Result<RecordFleetChangesResponse>> Handle(RecordFleetChangesRequest request, CancellationToken cancellationToken)
     {
@@ -29,6 +29,7 @@ internal sealed class RecordFleetChangesService(ILedgerStore ledger, EventFactor
             recorded += appended.Value.AlreadyRecorded ? 0 : 1;
         }
 
+        memory.Pending = [.. memory.Pending.Skip(request.Changes.Count)];   // the loop is the only writer, so what it passed in is the head of the queue
         return new RecordFleetChangesResponse(recorded);
     }
 

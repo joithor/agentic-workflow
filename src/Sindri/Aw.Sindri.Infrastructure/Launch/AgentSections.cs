@@ -77,7 +77,7 @@ internal static partial class AgentSections
         }
 
         return s.ReportedId.ValueKind == JsonValueKind.Object && AwJson.Deserialize<ReportedIdSection>(
-            System.Text.Encoding.UTF8.GetBytes(s.ReportedId.GetRawText()), LauncherFile.Json).IsError ? "reportedId has an unknown key" : null;
+            System.Text.Encoding.UTF8.GetBytes(s.ReportedId.GetRawText()), LauncherConfigFile.Json).IsError ? "reportedId has an unknown key" : null;
     }
 
     private static string? OneOf(string? value, string[] allowed, string field) =>

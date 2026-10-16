@@ -16,9 +16,9 @@ internal static class LauncherStartup
         var builtins = Builtins();
         var path = NonEmpty(environment("AW_LAUNCHER_CONFIG")) ?? Path.Combine(settings.StateDirectory, "launcher.json");
         var (bytes, unreadable) = ReadFile(path);
-        var read = LauncherFile.Read(builtins, bytes);
+        var read = LauncherConfigFile.Read(builtins, bytes);
         var problem = unreadable ?? (read.IsError ? read.Error.Message : null);
-        var config = read.IsError ? LauncherFile.Read(builtins, user: null).Value : read.Value;
+        var config = read.IsError ? LauncherConfigFile.Read(builtins, user: null).Value : read.Value;
         var section = problem is null ? config.Sessions : null;
         return new LauncherLoad(new AgentCatalog(config.Agents), Sessions(section, problem, TestOverride(environment)), ClaudeDirectory(environment, section?.ClaudeSessionsDir));
     }

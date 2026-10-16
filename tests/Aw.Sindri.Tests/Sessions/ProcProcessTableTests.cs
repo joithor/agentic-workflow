@@ -12,6 +12,16 @@ public sealed class ProcProcessTableTests
     private static IReadOnlyList<ProcessEntry> Table(int uid = SessionFixtures.OwnUid) => Fixture(uid).Read(TestContext.Current.CancellationToken).Value;
 
     [Fact, Trait("Lane", "integration")]
+    public void A_system_without_a_proc_directory_is_unsupported_not_unreadable()
+    {
+        var missing = Path.Combine(Path.GetTempPath(), "aw-no-proc-" + Guid.NewGuid().ToString("N"));
+
+        var result = new ProcProcessTable(missing, SessionFixtures.OwnUid).Read(TestContext.Current.CancellationToken);
+
+        Assert.Equal("unsupported-platform", result.Error.Message);
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public void The_table_holds_the_fixture_users_live_processes_and_skips_zombies_and_other_users()
     {
         var pids = Table().Select(static p => p.Pid).ToList();
@@ -61,7 +71,7 @@ public sealed class ProcProcessTableTests
         Assert.Equal(["TERM_PROGRAM", "WARP_FOCUS_URL"], environment.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.DoesNotContain(ProcessTableContract.PlantedToken, environment.Values, StringComparer.Ordinal);
         Assert.Contains("AW_JUDGE_CHILD", Fixture().Environment(212).Keys, StringComparer.Ordinal);
-        Assert.Equal("L-0001", Fixture().Environment(411)["AW_SINDRI_LAUNCH"]);
+        Assert.Equal("LCH-00000000000000000000000000000001", Fixture().Environment(411)["AW_SINDRI_LAUNCH"]);
     }
 
     [Fact, Trait("Lane", "integration")]

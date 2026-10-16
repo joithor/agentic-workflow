@@ -5,7 +5,7 @@ using Aw.Sindri.Core.Sessions;
 
 namespace Aw.Sindri.Infrastructure.Sessions;
 
-/// <summary>Claude Code's session records over a directory (collector spec §4.1 step 3): '*.json' only (a '.key' file is never opened), at most 256 files of 64 KB.</summary>
+/// <summary>Claude Code's session records over a directory (collector spec §4.1 step 3): '*.json' only (a '.key' file is never opened), at most 256 files (the most recently written) of 64 KB.</summary>
 /// <param name="directory">The sessions directory (~/.claude/sessions, or AW_SESSIONS_CLAUDE_DIR).</param>
 internal sealed class ClaudeSessionRecords(string directory) : IClaudeSessionRecords
 {
@@ -24,7 +24,7 @@ internal sealed class ClaudeSessionRecords(string directory) : IClaudeSessionRec
         string[] files;
         try
         {
-            files = [.. Directory.EnumerateFiles(directory, "*.json").Order(StringComparer.Ordinal).Take(MaxFiles)];
+            files = [.. Directory.EnumerateFiles(directory, "*.json").OrderByDescending(static f => LastWrite(f)).ThenBy(static f => f, StringComparer.Ordinal).Take(MaxFiles)];
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
@@ -46,6 +46,18 @@ internal sealed class ClaudeSessionRecords(string directory) : IClaudeSessionRec
         }
 
         return records;
+    }
+
+    private static DateTime LastWrite(string file)
+    {
+        try
+        {
+            return File.GetLastWriteTimeUtc(file);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return DateTime.MinValue;   // gone while we listed
+        }
     }
 
     private static ClaudeRecord? One(string file)

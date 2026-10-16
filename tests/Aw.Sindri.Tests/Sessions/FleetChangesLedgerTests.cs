@@ -14,7 +14,7 @@ public sealed class FleetChangesLedgerTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private RecordFleetChangesService Recorder => new(_h.Store, _h.Events);
+    private RecordFleetChangesService Recorder => new(_h.Store, _h.Events, new CollectorMemory());
 
     private static FleetChange Change(string id, FleetChangeKind kind, DateTimeOffset at) =>
         new(Session("claude-code", id).Ref, kind, SessionState.Running, at) { HostKind = "tmux" };
@@ -23,7 +23,7 @@ public sealed class FleetChangesLedgerTests
     public async Task Fleet_changes_are_recorded_with_a_key_that_names_the_change_and_a_payload_without_text()
     {
         var grant = await _h.HoldLease();
-        var change = Change("a1", FleetChangeKind.Appeared, T0) with { Reason = null, LaunchId = Core.Launch.LaunchId.From("L-1") };
+        var change = Change("a1", FleetChangeKind.Appeared, T0) with { Reason = null, LaunchId = Core.Workflow.Engine.LaunchId.From("LCH-00000000000000000000000000000001") };
 
         var result = await Recorder.Handle(new RecordFleetChangesRequest(grant, [change]), Token);
 
@@ -32,7 +32,7 @@ public sealed class FleetChangesLedgerTests
         Assert.Equal(string.Create(CultureInfo.InvariantCulture, $"fleet.changed:claude-code:a1:appeared:{T0.ToUnixTimeMilliseconds()}"), recorded.IdempotencyKey);
         using var payload = JsonDocument.Parse(recorded.Envelope.Payload);
         Assert.Equal(["provider", "sessionId", "change", "state", "reason", "repo", "host", "launchId"], payload.RootElement.EnumerateObject().Select(static p => p.Name), StringComparer.Ordinal);
-        Assert.Equal(("claude-code", "a1", "appeared", "running", "tmux", "L-1"), (Str(payload, "provider"), Str(payload, "sessionId"), Str(payload, "change"), Str(payload, "state"), Str(payload, "host"), Str(payload, "launchId")));
+        Assert.Equal(("claude-code", "a1", "appeared", "running", "tmux", "LCH-00000000000000000000000000000001"), (Str(payload, "provider"), Str(payload, "sessionId"), Str(payload, "change"), Str(payload, "state"), Str(payload, "host"), Str(payload, "launchId")));
     }
 
     [Fact, Trait("Lane", "unit")]

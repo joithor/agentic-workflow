@@ -17,6 +17,11 @@ internal sealed class ProcProcessTable(string root, int ownUid) : IProcessTable
 
     public Result<IReadOnlyList<ProcessEntry>> Read(CancellationToken cancellationToken)
     {
+        if (!Directory.Exists(root))
+        {
+            return SindriErrors.SessionsUnavailable.With("unsupported-platform");   // no /proc here (macOS, Windows)
+        }
+
         IEnumerable<string> directories;
         try
         {

@@ -22,6 +22,32 @@ public sealed class ClaudeSessionRecordsTests
     }
 
     [Fact, Trait("Lane", "integration")]
+    public void More_than_the_cap_keeps_the_most_recently_written_files()
+    {
+        var directory = Directory.CreateTempSubdirectory("aw-records-cap").FullName;
+        try
+        {
+            var epoch = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            for (var i = 1; i <= ClaudeSessionRecords.MaxFiles + 1; i++)
+            {
+                var file = Path.Combine(directory, string.Create(CultureInfo.InvariantCulture, $"{i}.json"));
+                File.WriteAllText(file, string.Create(CultureInfo.InvariantCulture, $"{{ \"pid\": {i}, \"sessionId\": \"s{i}\", \"procStart\": \"1\", \"kind\": \"interactive\" }}"));
+                File.SetLastWriteTimeUtc(file, epoch.AddMinutes(-i));   // 1.json is the newest, 257.json the oldest
+            }
+
+            var pids = Read(directory).Select(static r => r.Pid).ToList();
+
+            Assert.Equal(ClaudeSessionRecords.MaxFiles, pids.Count);
+            Assert.Contains(1, pids);
+            Assert.DoesNotContain(ClaudeSessionRecords.MaxFiles + 1, pids);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact, Trait("Lane", "integration")]
     [UnsupportedOSPlatform("windows")]
     public void Key_files_are_never_opened()
     {

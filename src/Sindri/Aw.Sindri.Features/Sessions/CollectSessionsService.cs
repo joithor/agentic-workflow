@@ -18,27 +18,26 @@ internal sealed class CollectSessionsService(SessionDiscovery discovery, Session
         if (!discovery.IsEnabled())
         {
             Publish([], [], [SessionProblems.Disabled], now);
-            return Bad();
+            return new CollectSessionsResponse(memory.Pending, Good: false, Sessions: 0, Pruned: 0);
         }
 
         var found = await Discover(request.Budget, cancellationToken).ConfigureAwait(false);
         if (found is null || !found.Good)
         {
             KeepPrevious([.. found?.Problems ?? [SessionProblems.Overrun]], now);
-            return new CollectSessionsResponse([], Good: false, Sessions: 0, Pruned: 0) { Overran = found is null };
+            return new CollectSessionsResponse(memory.Pending, Good: false, Sessions: 0, Pruned: 0) { Overran = found is null };
         }
 
         var sessions = Observe(found.Candidates, now);
         var diff = FleetChangeRules.Diff(memory.Tracker, sessions, now, goodPass: true);
         var ended = memory.Ending(sessions, now);
         memory.Tracker = diff.State;
+        memory.Pending = [.. memory.Pending, .. diff.Changes];   // kept until the ledger has them (RecordFleetChangesService clears what it appended)
         memory.Previous = sessions.ToDictionary(static s => s.Ref);
         memory.Ended = ended;
         Publish(sessions, ended, found.Problems, now);
-        return new CollectSessionsResponse(diff.Changes, Good: true, sessions.Count, discovery.Prune([.. sessions.Select(static s => s.Ref)], now));
+        return new CollectSessionsResponse(memory.Pending, Good: true, sessions.Count, discovery.Prune([.. sessions.Select(static s => s.Ref)], now));
     }
-
-    private static Result<CollectSessionsResponse> Bad() => new CollectSessionsResponse([], Good: false, Sessions: 0, Pruned: 0);
 
     private async Task<Discovered?> Discover(TimeSpan budget, CancellationToken cancellationToken)
     {
