@@ -672,3 +672,5 @@ dotnet test --project tests/Aw.Sindri.Tests --filter-trait "Lane=integration"   
 scripts/binaries-lock.sh fetch temporal && scripts/binaries-lock.sh fetch temporal-test-server   # the Temporal tests and the smoke run these pins
 bash src/Sindri/aot-smoke/run.sh                                                # publish framework-dependent and drive the published apphost (expected.txt)
 ```
+
+The session launcher (`launcher.json`, the agent catalog, terminal templates and the T3 Code fallback) is in `docs/csharp/sindri-launcher.md`; the profile reference is in `docs/csharp/sindri-profile.md`.
