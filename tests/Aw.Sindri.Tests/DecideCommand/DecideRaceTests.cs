@@ -26,7 +26,7 @@ public sealed class DecideRaceTests : IDisposable
     {
         var ct = TestContext.Current.CancellationToken;
         var stores = SqliteStores.Create(_home.Path, _slice.Clock, _slice.Probe);
-        var held = new Aw.Sindri.Core.Lease.HeldLease();
+        var held = new Core.Lease.HeldLease();
         held.Hold((await stores.Lease.Acquire(_slice.Probe.Self(), ct)).Value);
         var decisions = new List<DecisionId>();
         for (var n = 0; n < Rounds; n++)

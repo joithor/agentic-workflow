@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Text.Json;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Views;
 using Microsoft.Extensions.DependencyInjection;
 using static Aw.Sindri.Tests.Callers.CallerRequests;
 
