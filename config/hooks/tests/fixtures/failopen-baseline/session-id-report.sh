@@ -43,25 +43,32 @@ write_id() {
 # started by an older meta-lane.sh) every session in the lane counts as the lane's; if ps can't tell, the hook acts.
 named_like_agent() { # <pid>: its command name or its argv[0] is the agent's process name
   local c a
-  c="$(ps -o comm= -p "$1" 2>/dev/null)"; a="$(ps -o args= -p "$1" 2>/dev/null)"; a="${a%% *}"; a="${a##*/}"
+  c="$(ps -o comm= -p "$1" 2>/dev/null)"; a="$(ps -o args= -p "$1" 2>/dev/null)"; AGENT_ARGS="$a"; a="${a%% *}"; a="${a##*/}"
   [ "$c" = "$AW_META_LANE_PROC" ] || [ "$a" = "$AW_META_LANE_PROC" ]
 }
 own_agent() {
   [ -n "${AW_META_LANE_PID:-}" ] && [ -n "${AW_META_LANE_PROC:-}" ] || return 0
-  local cur=$$ par matches=0 root_named=0 i=0
+  # runs counts separate stretches of agent-named ancestors: forks of one instance (a subshell, a worker) share their parent's
+  # command line and are one stretch; a nested instance sits behind a tool shell or has its own command line, so it is another.
+  local cur=$$ par runs=0 root_named=0 i=0 prev_named=0 prev_args=""
   while [ "$i" -lt 50 ]; do
     i=$((i + 1))
     par="$(ps -o ppid= -p "$cur" 2>/dev/null | tr -d '[:space:]')"
     case "$par" in ''|*[!0-9]*) return 0 ;; esac
     if [ "$par" = "$AW_META_LANE_PID" ]; then
       [ "$cur" != "$$" ] || return 0
-      named_like_agent "$cur" && root_named=1
-      [ $((matches - root_named)) -le 0 ]
+      [ "$prev_named" = 1 ] && root_named=1   # the last ancestor visited is the agent's root
+      [ $((runs - root_named)) -le 0 ]
       return
     fi
     [ "$par" -gt 1 ] || return 1
     cur="$par"
-    if named_like_agent "$cur"; then matches=$((matches + 1)); fi
+    if named_like_agent "$cur"; then
+      if [ "$prev_named" = 0 ] || [ "$AGENT_ARGS" != "$prev_args" ]; then runs=$((runs + 1)); fi
+      prev_named=1; prev_args="$AGENT_ARGS"
+    else
+      prev_named=0
+    fi
   done
   return 1
 }

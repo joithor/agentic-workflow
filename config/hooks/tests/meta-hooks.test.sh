@@ -180,7 +180,7 @@ exec -a codex bash "${0%/*}/agent-body.sh" "$@"
 EOF
 cat > "$WORK/agent-body.sh" <<'EOF'
 #!/usr/bin/env bash
-if [ -n "${NESTED:-}" ]; then NESTED= bash "${0%/*}/agent.sh" "$1" "$2"; true; else bash "$1" < "$2"; true; fi
+if [ -n "${NESTED:-}" ]; then bash -c 'NESTED= bash "$0" "$1" "$2"; true' "${0%/*}/agent.sh" "$1" "$2"; true; else bash "$1" < "$2"; true; fi
 EOF
 cat > "$WORK/lane-script.sh" <<'EOF'
 #!/usr/bin/env bash
