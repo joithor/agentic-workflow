@@ -70,7 +70,7 @@ public sealed class DecisionsFramesTests : FrameHost
 
         Assert.Equal("SND-ITEM-409", shell.Decision.RefusalCode);
         Assert.Equal((string)GoldenFiles.Node("decisions-id", "decided-elsewhere")["detail"]!, Named<TextBlock>(window, "DecisionRefusal").Text);
-        Assert.Same(accept, window.FocusManager?.GetFocusedElement());
+        Assert.Equal("accept", window.FocusManager?.GetFocusedElement() is Button { DataContext: ViewModels.NeedsYou.DecisionOption focused } ? focused.Id : "", StringComparer.Ordinal); // why: the buttons are rebuilt, so the same option's new button
         Frame(window, "decision-409");
     });
 
