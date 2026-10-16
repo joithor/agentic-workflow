@@ -1,6 +1,7 @@
 using System.Text;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -59,6 +60,45 @@ public sealed class ChoiceReportTests
         Assert.Equal(NonceClaim.Fresh, (await nonces.Claim(_nonce, "another command", TestContext.Current.CancellationToken)).Value);
     }
 
+    [Fact(Timeout = 30_000)]
+    public async Task A_choice_report_retried_with_its_nonce_after_the_instance_moved_on_is_already_applied()
+    {
+        var service = new CompleteStepService(_desk, _desk, _like, _facts, new InMemoryCommandNonces(new FakeTimeProvider()), _like);
+        var first = await service.Handle(Request(), TestContext.Current.CancellationToken);
+        _desk.MoveOn();
+
+        var retry = await service.Handle(Request(), TestContext.Current.CancellationToken);
+
+        Assert.False(first.IsError, first.IsError ? first.Error.Message : null);
+        Assert.False(retry.IsError, retry.IsError ? retry.Error.Message : null);
+        Assert.True(retry.Value.AlreadyApplied);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task A_choice_report_for_a_stale_run_is_the_stale_run_error_and_sends_no_engine_filled_output()
+    {
+        var service = new CompleteStepService(_desk, _desk, _like, _facts, new InMemoryCommandNonces(new FakeTimeProvider()), _like);
+        var stale = new CompleteStepRequest(_address.Value, RunToken.For(2, 1), OutcomeName.From("api"), new Dictionary<FactKey, ReadOnlyMemory<byte>> { [FactKey.From("fact:decision")] = """{"choice":"db"}"""u8.ToArray() }, _nonce);
+
+        var refused = await service.Handle(stale, TestContext.Current.CancellationToken);
+
+        Assert.Equal("SND-WF-005", refused.Error.Code);
+        Assert.Empty(_desk.Sent);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task A_report_on_an_instance_that_cant_be_read_is_that_error_and_passes_nothing_through()
+    {
+        var service = new CompleteStepService(_desk, _desk, _like, _facts, new InMemoryCommandNonces(new FakeTimeProvider()), _like);
+        var written = new Dictionary<FactKey, ReadOnlyMemory<byte>> { [FactKey.From("fact:decision")] = """{"choice":"db"}"""u8.ToArray() };
+        _desk.Unreadable = true;
+
+        var refused = await service.Handle(Request(written), TestContext.Current.CancellationToken);
+
+        Assert.Equal("SND-WF-010", refused.Error.Code);
+        Assert.Empty(_desk.Sent);
+    }
+
     private static CompleteStepRequest Request(Dictionary<FactKey, ReadOnlyMemory<byte>>? outputs = null) =>
         new(_address.Value, RunToken.For(1, 1), OutcomeName.From("api"), outputs ?? [], _nonce);
 
@@ -67,6 +107,10 @@ public sealed class ChoiceReportTests
     {
         private static readonly BlockDescriptor _descriptor = FixtureCatalog.Shipped().Find(BlockId.From("step.desk.choose"))!;
         private readonly List<Trigger> _sent = [];
+        private readonly HashSet<CommandNonce> _seen = [];
+        private bool _movedOn;
+
+        public bool Unreadable { get; set; }
 
         public IReadOnlyList<Trigger> Sent => _sent;
 
@@ -77,10 +121,21 @@ public sealed class ChoiceReportTests
 
         public ValueTask<Result<InstanceView>> Start(InstanceStart start, CancellationToken cancellationToken) => throw new NotSupportedException("not started here");
 
-        public ValueTask<Result<InstanceView>> Get(InstanceAddress at, CancellationToken cancellationToken) => ValueTask.FromResult<Result<InstanceView>>(View());
+        /// <summary>The open task is gone: the instance moved to its next state.</summary>
+        public void MoveOn() => _movedOn = true;
+
+        public ValueTask<Result<InstanceView>> Get(InstanceAddress at, CancellationToken cancellationToken) =>
+            Unreadable ? ValueTask.FromResult<Result<InstanceView>>(WorkflowErrors.NoRuntime.With("down")) : ValueTask.FromResult<Result<InstanceView>>(View());
 
         public ValueTask<Result<CommandResult>> Send(InstanceAddress at, CommandNonce nonce, Trigger command, CancellationToken cancellationToken)
         {
+            // Temporal answers an Update id it has seen with the first result; otherwise the workflow's validator checks the run.
+            if (!_seen.Contains(nonce) && (_movedOn || command is not StepCompleted done || done.Run != RunToken.For(1, 1)))
+            {
+                return ValueTask.FromResult<Result<CommandResult>>(WorkflowErrors.StaleRunToken.With("stale"));
+            }
+
+            _ = _seen.Add(nonce);
             _sent.Add(command);
             return ValueTask.FromResult<Result<CommandResult>>(new CommandResult(View(), "-> evidence-api"));
         }
@@ -92,7 +147,7 @@ public sealed class ChoiceReportTests
         private InstanceView View() => new(
             address, new RecipeVersion(RecipeId.From("workflow.dev-evidence-route"), 1, RecipeHash.From("sha256:" + new string('a', 64))), "route-evidence-desk", Detail: null,
             DateTimeOffset.FromUnixTimeMilliseconds(1_000), string.Empty, [], Question: null,
-            new DeskTask(RunToken.For(1, 1), "route-evidence-desk", _descriptor.Id, _descriptor.Outcomes, _descriptor.Outputs, new Dictionary<FactKey, InputFact>(), TimeoutAt: null),
+            _movedOn ? null : new DeskTask(RunToken.For(1, 1), "route-evidence-desk", _descriptor.Id, _descriptor.Outcomes, _descriptor.Outputs, new Dictionary<FactKey, InputFact>(), TimeoutAt: null),
             RunToken.For(1, 1), Children: [], Outcome: null)
         { Id = WorkflowInstanceId.Of(address), Version = 3 };
     }
