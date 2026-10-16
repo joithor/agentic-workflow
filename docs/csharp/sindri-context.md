@@ -600,7 +600,8 @@ the row, and a reply the pinned shape can't read degrades onyx (`010` with cause
   change that re-extracts it is retried too; a done record whose re-extraction is held back (the token cap, labeling off, a model failure) is queued again by
   `IIntentStore.Requeue` and keeps its old decisions until then); a re-extraction keeps the verdicts of pairs whose decision keys survive and never replaces a human
   decision (`DecisionBatch.Pending`). A verdict answer that can't be read leaves the pair unanswered (`unread`, `tries` 1-2, the record stays queued,
-  `057` counted); the third unreadable answer marks it `refused` and it is not asked again. `IContextEngine.Sync(source?, scope)` returns a `SyncReport` of counts and codes only.
+  `057` counted); the third unreadable answer marks it `refused` and it is not asked again. A record whose extraction prompt alone exceeds `maxTokensPerSync` could never be made in any run: it is skipped (`057` counted in `refused`, no decisions, not queued)
+  and the pass goes on with the records after it, instead of holding it back forever and stopping the run's extraction. `IContextEngine.Sync(source?, scope)` returns a `SyncReport` of counts and codes only.
 - Reads: `MapReader` merges the layer for every graph read; the `item` shape (`context query --item <KEY>`) anchors on the record a tracker
   key names (`ItemAnchors`) and answers `003` with suggestions when none is linked. The fix line follows the state: with `context-sync`
   named in the profile (`ContextScope.SyncConfigured`) it says the record isn't linked yet or the key is unknown and to check the key, wait for

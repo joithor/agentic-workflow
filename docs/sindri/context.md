@@ -544,7 +544,7 @@ index:
 repos:
   - { name: work-app, path: /path/to/work-app, index: { denyPaths: ["private/**"] } }   # this repo's own, added to the above
 context:
-  labeling: { enabled: false, maxTokens: 400000, maxTokensPerSync: 50000 }  # name clusters with a model; over the cap is SND-CONTEXT-042; maxTokensPerSync caps decision extraction in one sync (the rest stays queued)
+  labeling: { enabled: false, maxTokens: 400000, maxTokensPerSync: 50000 }  # name clusters with a model; over the cap is SND-CONTEXT-042; maxTokensPerSync caps decision extraction in one sync (the rest stays queued); a record whose extraction prompt alone is over it can never be extracted, so it is skipped: counted in `refused`, no decisions, not queued (raise the cap to extract it when its version next changes)
 services:
   context-rebuild: { every: 24h }                  # proposes the map on a cadence; runs only when named here
 ```

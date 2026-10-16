@@ -9,7 +9,7 @@ namespace Aw.Context.Features.SyncSources;
 /// <summary>
 /// Decision extraction and conflict checks for the records one sync page committed (spec §6.1, §8.8, §8.9; S-5B). The model sees only the scrubbed,
 /// fenced record text and the node keys its rules linked, and its answer is validated by <see cref="DecisionExtractor"/>. Everything it asks is counted
-/// against 'maxTokensPerSync': a call that would go over the cap is not made, and the record stays queued for the next sync, until its conflict checks are through too.
+/// against 'maxTokensPerSync': a call that would go over the cap is not made, and the record stays queued for the next sync, until its conflict checks are through too. A record whose extraction prompt alone is over the cap can never be made, so it is refused (counted, no decisions, not queued) rather than held back forever.
 /// </summary>
 internal sealed class DecisionPass(IIntentStore store, IModelPort model, LabelingSettings labeling, (IIngestFilter Ingest, TimeProvider Clock) support)
 {
@@ -50,7 +50,14 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
 
     private async ValueTask Extract(PendingRecord record, List<NodeKey> linked, CancellationToken cancellationToken)
     {
-        var asked = await Ask(ModelPurpose.DecisionExtraction, DecisionExtractor.Prompt(record.Record.Key, record.Text, linked), ExtractAnswerTokens, cancellationToken).ConfigureAwait(false);
+        var prompt = DecisionExtractor.Prompt(record.Record.Key, record.Text, linked);
+        if (Cost(prompt, ExtractAnswerTokens) > labeling.MaxTokensPerSync)
+        {
+            await GiveUp(record, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        var asked = await Ask(ModelPurpose.DecisionExtraction, prompt, ExtractAnswerTokens, cancellationToken).ConfigureAwait(false);
         if (asked is null)
         {
             await HoldBack(record, cancellationToken).ConfigureAwait(false);
@@ -138,9 +145,23 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
         return complete;
     }
 
+    /// <summary>The record's prompt could never fit, in any run: counted refused, no decisions, not queued, instead of held back forever while it stops the pass for the records after it.</summary>
+    private async ValueTask GiveUp(PendingRecord record, CancellationToken cancellationToken)
+    {
+        Refused++;
+        var skipped = await store.SaveDecisions(new DecisionBatch(record.Record.Key, record.Record.Version, [], []), cancellationToken).ConfigureAwait(false);
+        if (skipped.IsError)
+        {
+            Failure = skipped.Error.Code;
+            _stopped = true;
+        }
+    }
+
+    private static int Cost(string prompt, int answerTokens) => ((prompt.Length + 3) / 4) + answerTokens;
+
     private async ValueTask<string?> Ask(ModelPurpose purpose, string prompt, int answerTokens, CancellationToken cancellationToken)
     {
-        if (_stopped || Tokens + ((prompt.Length + 3) / 4) + answerTokens > labeling.MaxTokensPerSync)
+        if (_stopped || Tokens + Cost(prompt, answerTokens) > labeling.MaxTokensPerSync)
         {
             HeldBack = true;
             _stopped = true;
