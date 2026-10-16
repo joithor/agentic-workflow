@@ -45,6 +45,8 @@ CREATE TABLE intent_edge (
     PRIMARY KEY (from_key, to_key, type)
 ) STRICT;
 
+CREATE INDEX intent_edge_by_to ON intent_edge (to_key);
+
 CREATE TABLE intent_conflict (
     a       TEXT NOT NULL,
     b       TEXT NOT NULL,
@@ -53,3 +55,5 @@ CREATE TABLE intent_conflict (
     PRIMARY KEY (a, b),
     CHECK (a < b)
 ) STRICT;
+
+CREATE INDEX intent_conflict_by_b ON intent_conflict (b);

@@ -580,7 +580,7 @@ the row, and a reply the pinned shape can't read degrades onyx (`010` with cause
 
 ### Shape
 
-- `Aw.Context.Core/Linking`: `RulesLinker` (rules: key mention, alias, path, ...; one `LinkRule` per link), `IntentOverlay` (merges
+- `Aw.Context.Core/Linking`: `RulesLinker` (rules `issue-key`, `url`, `path`, `identifier`, `quoted-title`; one `LinkRule` per link; an issue key whose record is not fetched yet links by the key, `record:SPL-104`, and the overlay resolves it through the record's aliases, so the links never depend on fetch order), `IntentOverlay` (a record that is only the target of a link is a node too, and a link to a record not synced yet waits instead of counting as orphaned; merges
   `IntentLayer` into the visible map before the deny cut, so a deny path hides intent records too), `DecisionExtractor` and
   `ConflictChecker` (quotes must be verbatim in the scrubbed text; an answer outside the record's linked nodes is refused, `057`),
   `IIntentStore` (records, links, decisions, edges, conflicts, per-source cursor, last sync and last error).
@@ -588,7 +588,11 @@ the row, and a reply the pinned shape can't read degrades onyx (`010` with cause
   promote never drops it). `FakeIntentStore` and `IntentStoreContract` in `Aw.Context.Testing`.
 - `Aw.Context.Features/SyncSources`: `SyncSourcesService` walks each live intent source against the current map (`IntentSyncRun`: page,
   link, commit with its cursor, then `DecisionPass` under `context.labeling.maxTokensPerSync`), one run per source at a time (`056`), a
-  2-minute cap (`059`). `IContextEngine.Sync(source?, scope)` returns a `SyncReport` of counts and codes only.
+  2-minute cap (`059`) checked before each node, before each fetch after the run's first (so every run makes progress) and before each model call: the
+  page fetched so far is committed with its cursor at the node (walked again, its stored hits skipped), the records not yet extracted stay queued, and a finished
+  walk commits the end cursor so trailing nodes without search terms don't stall the next run. A record stays queued until its conflict checks are
+  through too (a stopped check, the cap or a model failure, leaves the pair to the next sync); a re-extraction keeps the verdicts of pairs whose
+  decision keys survive and never replaces a human decision (`DecisionBatch.Pending`). `IContextEngine.Sync(source?, scope)` returns a `SyncReport` of counts and codes only.
 - Reads: `MapReader` merges the layer for every graph read; the `item` shape (`context query --item <KEY>`) anchors on the record a tracker
   key names (`ItemAnchors`) and answers `003` with suggestions when none is linked. The fix line follows the state: with `context-sync`
   named in the profile (`ContextScope.SyncConfigured`) it says the record isn't linked yet or the key is unknown and to check the key, wait for
