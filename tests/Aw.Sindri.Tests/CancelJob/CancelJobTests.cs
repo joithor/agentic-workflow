@@ -24,12 +24,12 @@ public sealed class CancelJobTests
 
     private static CallerContext Human() => A.Caller().Human().Build();
 
-    private static RealJobRuntime Runtime(InMemoryJobViews views) => new(scrubber: null, rows: ServiceRows.All, configure: (services, h) =>
+    internal static RealJobRuntime Runtime(InMemoryJobViews views) => new(scrubber: null, rows: ServiceRows.All, configure: (services, h) =>
         _ = services.AddSingleton<IJobViews>(views).AddSingleton<IJobCancellation>(sp => sp.GetRequiredService<IJobRunner>())
             .AddScoped<IValidator<CancelJobRequest>, AcceptAllValidator<CancelJobRequest>>()
             .AddCommand<CancelJobRequest, CommandAccepted, CancelJobService>());
 
-    private static CancelJobService Service(RealJobRuntime runtime, InMemoryJobViews views) =>
+    internal static CancelJobService Service(RealJobRuntime runtime, InMemoryJobViews views) =>
         new(views, runtime.H.Store, runtime.H.Held, runtime.H.Events, runtime.H.Callers, runtime.Runner);
 
     [Fact]
