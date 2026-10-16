@@ -8,4 +8,5 @@ namespace Aw.Meta.Features.MergeRun;
 /// <param name="Checks">The merge checks.</param>
 /// <param name="Sha">The sha main moved to, when merged.</param>
 /// <param name="Announce">The text to send every lane (opens the announce-main obligation), when merged.</param>
-public sealed record MergeRunResponse(int Pr, bool Merged, IReadOnlyList<MergeCheck> Checks, string? Sha, string? Announce);
+/// <param name="Worktrees">The worktree sweep's summary line after a merge: what was removed (or would be) and what was kept and why; null when no worktree belongs to the pull request or the sweep could not run.</param>
+public sealed record MergeRunResponse(int Pr, bool Merged, IReadOnlyList<MergeCheck> Checks, string? Sha, string? Announce, string? Worktrees = null);

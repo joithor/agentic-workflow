@@ -15,7 +15,7 @@ public sealed class WatchTests
 
     private WatchService Service() => new(
         _world.Config,
-        new WatchPoller(_world.Repo, _world.Resources, _world.Messages, _world.Values),
+        new WatchPoller(_world.Repo, _world.Resources, _world.Messages, _world.Values, new WatchSweeper(_world.Config, _world.Sweeper, _world.Values)),
         _world.Values,
         _world.Delay,
         _world.Clock);

@@ -35,6 +35,8 @@ internal static class CommandTable
         MergeRunCommand.Entry,
         HealthCommand.Entry,
         WatchCommand.Entry,
+        WorktreeListCommand.Entry,
+        WorktreeSweepCommand.Entry,
     ];
 
     internal static IReadOnlyList<CommandEntry> Entries => _entries;
