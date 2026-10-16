@@ -21,14 +21,7 @@ internal sealed partial class RecipeWorkflow
     {
         if (SubjectKinds.Legacy(recipe.Recipe) is not null)
         {
-            // A pre-P4c instance replayed: no kind to name it by (the start refuses such a recipe now), so it runs unnamed. It still makes
-            // the one 'ReadSubject' call the pre-P4c start made, because a history recorded then holds that marker and a replay must match it.
-            if (SubjectRefs.NeedsContent(recipe) && start.Inputs.TryGetValue(recipe.Recipe.Inputs[0].Key, out var first))
-            {
-                _ = await SubjectTextOf(first.Value).ConfigureAwait(true);
-            }
-
-            return (null, new Dictionary<FactKey, string>());
+            return (null, await LegacyRun(recipe, start).ConfigureAwait(true));
         }
 
         var inputs = recipe.Recipe.Inputs;
@@ -56,6 +49,20 @@ internal sealed partial class RecipeWorkflow
 
         var name = InstanceNames.Render(recipe, start.Item, contents, start.StartedAt);
         return (SubjectRefs.Of(recipe, start.Item, contents.GetValueOrDefault(inputs[0].Key), name), links);
+    }
+
+    /// <summary>
+    /// A pre-P4c instance replayed: no kind to name it by (the start refuses such a recipe now), so it runs unnamed. It still makes the one
+    /// 'ReadSubject' call the pre-P4c start made, because a history recorded then holds that marker and a replay must match it.
+    /// </summary>
+    private static async Task<IReadOnlyDictionary<FactKey, string>> LegacyRun(InterpretedRecipe recipe, InstanceStart start)
+    {
+        if (SubjectRefs.NeedsContent(recipe) && start.Inputs.TryGetValue(recipe.Recipe.Inputs[0].Key, out var first))
+        {
+            _ = await SubjectTextOf(first.Value).ConfigureAwait(true);
+        }
+
+        return new Dictionary<FactKey, string>();
     }
 
     /// <summary>

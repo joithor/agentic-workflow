@@ -258,7 +258,11 @@ public sealed class QueryClockAndSubjectTests : IDisposable
         var read = history.Events.Count(static e => e.MarkerRecordedEventAttributes is { } marker
             && marker.Details.Values.Any(static v => v.Payloads_.Any(static p => p.Data.ToStringUtf8().Contains("ReadSubject", StringComparison.Ordinal))));
 
+        var replayed = await new WorkflowReplayer(new WorkflowReplayerOptions().AddWorkflow<RecipeWorkflow>())
+            .ReplayWorkflowAsync(history, throwOnReplayFailure: false, ct);
+
         Assert.Equal(1, read);   // a history recorded before P4c has this marker: skipping the call would fail its replay
+        Assert.Null(replayed.ReplayFailure);
         await handle.TerminateAsync("test over");
     }
 

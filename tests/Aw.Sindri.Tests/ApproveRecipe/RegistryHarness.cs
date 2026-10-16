@@ -152,6 +152,18 @@ internal sealed class RegistryHarness : IAsyncDisposable
             new ApproveRecipeRequest(recipe.Id, recipe.Hash, new ChallengeAnswer(issued.Challenge, issued.Action)), Human);
     }
 
+    /// <summary>
+    /// Records the approval <paramref name="recipe"/> was given in the past, with the pins this build computes, without the planner's checks:
+    /// for a row the planner now refuses (a legacy-shape one approved before it did).
+    /// </summary>
+    public async Task ApproveAsInThePast(RegisteredRecipe recipe)
+    {
+        var parsed = recipe.Read(SliceHarness.Json).Value;
+        var current = (await Approvals.Current(TestContext.Current.CancellationToken)).Value;
+        var pins = PinRules.Pins(parsed, _provider.GetRequiredService<BlockCatalog>(), current, SliceHarness.Json);
+        _ = await Approvals.Approve(RegistryData.Approval(recipe, pins), TestContext.Current.CancellationToken);
+    }
+
     /// <summary>Registers <paramref name="text"/> through RegisterRecipe as <paramref name="caller"/> (a human at a terminal by default).</summary>
     public Task<Result<RegisterRecipeResponse>> RegisterText(string text, string file, CallerContext? caller = null) =>
         Run<RegisterRecipeRequest, RegisterRecipeResponse>(new RegisterRecipeRequest(text, file), caller ?? Human);

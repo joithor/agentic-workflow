@@ -138,12 +138,7 @@ internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipe
             return approval.Error;
         }
 
-        if (approval.Value != ApprovalCheck.Revoked && SubjectKinds.Legacy(recipe.Value.Recipe) is { } legacy)
-        {
-            return WorkflowErrors.RecipeInvalid.With($"{recipe.Value.Version.Id.Value}@{recipe.Value.Version.Hash.Display} was registered before input kinds ({legacy}); nothing was started (fix: {SubjectKinds.LegacyFix})");   // before drift: re-approving a legacy row can't fix it
-        }
-
-        if (Refusal(recipe.Value.Version, approval.Value) is { } refused)
+        if (Refusal(recipe.Value, approval.Value) is { } refused)
         {
             return refused;
         }
@@ -153,13 +148,21 @@ internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipe
             : (item.Value, recipe.Value);
     }
 
-    /// <summary>RCP-CAP-003 at start: a pinned hash that was revoked is SND-RECIPE-005, pins that drifted from this build SND-RECIPE-006.</summary>
-    private static Error? Refusal(RecipeVersion recipe, ApprovalCheck check) => check switch
+    /// <summary>
+    /// RCP-CAP-003 at start: a pinned hash that was revoked is SND-RECIPE-005, a recipe registered before input kinds SND-RECIPE-001
+    /// (before drift: re-approving it can't fix it), pins that drifted from this build SND-RECIPE-006.
+    /// </summary>
+    private static Error? Refusal(ApprovedRecipe approved, ApprovalCheck check)
     {
-        ApprovalCheck.Revoked => WorkflowErrors.RecipeRevoked.With($"{recipe.Id.Value}@{recipe.Hash.Display} was revoked; nothing was started (fix: start the approved version: sindri recipe list)"),
-        ApprovalCheck.Drifted => WorkflowErrors.RecipePinDrift.With($"a block {recipe.Id.Value}@{recipe.Hash.Display} pins changed since approval; nothing was started (fix: re-approve it, see sindri recipe list --stale)"),
-        ApprovalCheck.Holds or _ => null,
-    };
+        var recipe = approved.Version;
+        return check switch
+        {
+            ApprovalCheck.Revoked => WorkflowErrors.RecipeRevoked.With($"{recipe.Id.Value}@{recipe.Hash.Display} was revoked; nothing was started (fix: start the approved version: sindri recipe list)"),
+            _ when SubjectKinds.Legacy(approved.Recipe) is { } legacy => WorkflowErrors.RecipeInvalid.With($"{recipe.Id.Value}@{recipe.Hash.Display} was registered before input kinds ({legacy}); nothing was started (fix: {SubjectKinds.LegacyFix})"),
+            ApprovalCheck.Drifted => WorkflowErrors.RecipePinDrift.With($"a block {recipe.Id.Value}@{recipe.Hash.Display} pins changed since approval; nothing was started (fix: re-approve it, see sindri recipe list --stale)"),
+            ApprovalCheck.Holds or _ => null,
+        };
+    }
 
     /// <summary>'fact:item' is '{ id, repo, spec }' (spec §12); its 'id' must be the item '--item' named (SND-WF-014).</summary>
     private static Error? SameItem(StartInstanceRequest request, ResolvedItem item)

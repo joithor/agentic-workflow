@@ -28,14 +28,6 @@ public sealed class LegacyRecipeRowTests
         return (registry, row);
     }
 
-    /// <summary>The approval such a row was given before P4c: recorded directly, since approving a legacy-shape row is refused now.</summary>
-    private static async Task<RecipeApproval> ApprovedBefore(RegistryHarness r, RegisteredRecipe row)
-    {
-        var approval = RegistryData.Approval(row);
-        _ = await r.Approvals.Approve(approval, TestContext.Current.CancellationToken);
-        return approval;
-    }
-
     /// <summary>workflow.step as it was registered before P2b: the file with its inputs in the bare-key short form it had then.</summary>
     private static string LegacyStep() => ShippedRecipes.Read("sindri/workflow.step.yaml")
         .Replace("version: 2\n", "version: 1\n", StringComparison.Ordinal)
@@ -73,7 +65,7 @@ public sealed class LegacyRecipeRowTests
     {
         var (r, row) = await Seeded();
         await using var _ = r;
-        _ = await ApprovedBefore(r, row);
+        await r.ApproveAsInThePast(row);
 
         var stale = Assert.Single(await r.List(stale: true));
 
@@ -137,14 +129,13 @@ public sealed class LegacyRecipeRowTests
         var (r, row) = await Seeded();
         await using var _ = r;
 
-        var approved = await ApprovedBefore(r, row);
+        await r.ApproveAsInThePast(row);
         var line = await r.Line(row);
         var shown = await r.Show(row.Id, row.Hash.Display);
         var issued = (await r.Issue($"revoke workflow.step@{row.Hash.Display}")).Value;
         var revoked = await r.Run<RevokeRecipeRequest, RevokeRecipeResponse>(
             new RevokeRecipeRequest(row.Id, row.Hash, new ChallengeAnswer(issued.Challenge, issued.Action)), RegistryHarness.Human);
 
-        Assert.Equal(row.Hash, approved.Hash);
         Assert.Equal(RecipeStanding.Approved, line.Standing);
         Assert.Equal([StaleReason.LegacyShape], line.Stale);
         Assert.True(shown.IsSuccess, shown.IsError ? shown.Error.ToString() : null);
@@ -159,7 +150,7 @@ public sealed class LegacyRecipeRowTests
     {
         var (r, row) = await Seeded();
         await using var _ = r;
-        _ = await ApprovedBefore(r, row);
+        await r.ApproveAsInThePast(row);
         var next = await r.Register(RecipeReaderTests.Bind(LegacyStep()) with { Version = 2, Description = "A reworded step." });
 
         var shown = await r.Show(next.Id, next.Hash.Display);
@@ -176,7 +167,7 @@ public sealed class LegacyRecipeRowTests
         var (r, row) = await Seeded();
         await using var _ = r;
 
-        var approved = await r.Approve(row);
+        var approved = await r.Issue(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"approve workflow.step {row.Version}"));   // the challenge's preview is the planner's, so it refuses first
 
         Assert.True(approved.IsError);
         Assert.Equal(WorkflowErrors.RecipeInvalid.Code, approved.Error.Code);
