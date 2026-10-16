@@ -1,3 +1,4 @@
+using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Navigation;
 
 namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
@@ -23,6 +24,11 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
 
     /// <summary>The row's chip (D5: the chip, not the label, names its state).</summary>
     public NeedsYouChip Chip => Entry.Chip;
+
+    /// <summary>The row's chip as the one chip control draws it.</summary>
+#pragma warning disable MA0041, CA1822 // red stub
+    public StateChip? StateChip => throw new NotSupportedException();
+#pragma warning restore MA0041, CA1822
 
     /// <summary>The id shown at rest; empty when the row shows none.</summary>
     public string ShownId => Entry.ShownId;
