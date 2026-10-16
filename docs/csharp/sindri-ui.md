@@ -707,5 +707,9 @@ caller header), `decide <DEC> <choice>` (as the owner), `fail` / `unfail` (add o
 
 Left: the CliText control/bidi backstop (`CliText` does not exist in this tree), `PublicAPI.Unshipped.txt` needs no entries (the new types are internal).
 
+### The Workflows strip (U3' T15-T20, screens spec §4.1)
+
+Home draws the open root instances between Needs you and the two columns (`WorkflowsStripViewModel`, `StripRowViewModel`, `Views/Workflows/StripRow`). Every event re-reads `GET /workflow/instances?root=true` (`ShellViewModel.ReadStrip`) whatever page is visible, a 404 marks only the strip "arrives with API P11", and any other failure keeps the rows. The app never sorts: rows come in the API's order (incident, triage, work, oldest). The cap is what is left of eight rows after the Needs-you rows shown, at most five (six and two at text scale 1.3 or more), and "... N more" opens Workflows. Each row is one line (chip, subject, recipe, stage tag, age, the served "now" sentence) with at most one control: the desk Answer, or for a protected answer the lock button and its popover; on a narrow page the detail drops to a second line. J / K walk Needs you, the strip, Running and Queued in that order; Enter opens `workflow/<address>`; A answers a desk row (never a protected one): it opens the Needs-you park row for the same instance (a PARKED or ESCALATED row whose subject is the instance's address or id, else the row of the same item), and when there is none the instance itself. The selection is kept by address across refreshes; a row that turns terminal leaves and is announced as "<address> done". Fixture verbs: `sindri-ui-fixture.sh workflows [--large]` and `incident start|stop`.
+
 <!-- LANE ANCHOR U3': document the Needs you screens. Insert immediately above this marker, never between the markers. -->
 <!-- LANE ANCHOR U8: document the instance screens. Insert immediately below this marker, never between the markers. -->
