@@ -86,7 +86,7 @@ internal sealed partial class SindriApiClient
         }
 
         // An accepted command (CreateItem nests it) is waited for by the next query.
-        if ((object?)value.Value switch { CommandAcceptedView a => a.Sequence, ItemCreatedView c => c.Accepted.Sequence, _ => (long?)null } is { } sequence)
+        if ((object?)value.Value switch { CommandAcceptedView a => a.Sequence, ItemCreatedView c => c.Accepted.Sequence, RequestFiledView f => f.Accepted.Sequence, _ => (long?)null } is { } sequence)
         {
             _ = Interlocked.Exchange(ref _after, sequence);
         }
