@@ -26,8 +26,14 @@ git() { command git -C "$DEST" -c core.hooksPath=/dev/null -c commit.gpgsign=fal
 FAKE_CRED="$(printf '%s%s' 'ghp_' 'FIXTURE0FAKE0TOKEN0NOT0REAL0DONTUSE0')"
 [ "${#FAKE_CRED}" -eq 40 ] || { echo "build.sh: fake token has the wrong length" >&2; exit 1; }
 
-AVERY=("Avery Fixture" "avery@fixture.invalid")
-ROWAN=("Rowan Sample" "rowan@fixture.invalid")
+# who <AVERY|ROWAN>: sets WHO_NAME and WHO_EMAIL (no namerefs: this runs on bash 3.2 too).
+who() {
+  case "$1" in
+    AVERY) WHO_NAME="Avery Fixture"; WHO_EMAIL="avery@fixture.invalid" ;;
+    ROWAN) WHO_NAME="Rowan Sample"; WHO_EMAIL="rowan@fixture.invalid" ;;
+    *) echo "build.sh: unknown author $1" >&2; exit 1 ;;
+  esac
+}
 
 # put <set> <path>: copy repo/<path> (set "final") or overlays/<set>/<path> into the working tree.
 put() {
@@ -38,16 +44,16 @@ put() {
 }
 # commit <who> <iso-date> <message>: commits everything in the working tree.
 commit() {
-  local -n w="$1"
+  who "$1"
   git add -A
-  GIT_AUTHOR_NAME="${w[0]}" GIT_AUTHOR_EMAIL="${w[1]}" GIT_COMMITTER_NAME="${w[0]}" GIT_COMMITTER_EMAIL="${w[1]}" \
+  GIT_AUTHOR_NAME="$WHO_NAME" GIT_AUTHOR_EMAIL="$WHO_EMAIL" GIT_COMMITTER_NAME="$WHO_NAME" GIT_COMMITTER_EMAIL="$WHO_EMAIL" \
     GIT_AUTHOR_DATE="$2" GIT_COMMITTER_DATE="$2" git commit -q -m "$3"
 }
 # merge <who> <iso-date> <number> <branch>: a --no-ff merge of the branch into main, in GitHub's wording.
 merge() {
-  local -n w="$1"
+  who "$1"
   git checkout -q main
-  GIT_AUTHOR_NAME="${w[0]}" GIT_AUTHOR_EMAIL="${w[1]}" GIT_COMMITTER_NAME="${w[0]}" GIT_COMMITTER_EMAIL="${w[1]}" \
+  GIT_AUTHOR_NAME="$WHO_NAME" GIT_AUTHOR_EMAIL="$WHO_EMAIL" GIT_COMMITTER_NAME="$WHO_NAME" GIT_COMMITTER_EMAIL="$WHO_EMAIL" \
     GIT_AUTHOR_DATE="$2" GIT_COMMITTER_DATE="$2" git merge -q --no-ff -m "Merge pull request #$3 from fixture-labs/$4" "$4"
 }
 branch() { git checkout -q -b "$1"; }
