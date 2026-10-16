@@ -11,6 +11,21 @@ public static class StepOutcomes
     /// <param name="step">The Step as the recipe uses it.</param>
     /// <param name="recipe">The recipe, for a twin that reads another state's parameters.</param>
     /// <returns>The choice names in order, then the descriptor's fixed outcomes; the fixed ones alone without OutcomesFrom; null when the list is missing, not literal or doesn't parse.</returns>
-    public static IReadOnlyList<OutcomeName>? Of(BlockDescriptor descriptor, StepUse step, Recipe recipe) =>
-        throw new NotSupportedException("StepOutcomes.Of is not implemented yet");
+    public static IReadOnlyList<OutcomeName>? Of(BlockDescriptor descriptor, StepUse step, Recipe recipe)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        ArgumentNullException.ThrowIfNull(step);
+        ArgumentNullException.ThrowIfNull(recipe);
+        if (descriptor.OutcomesFrom is not { } from)
+        {
+            return descriptor.Outcomes;
+        }
+
+        if (ParameterLists.Literal(from, step.With, recipe) is not { } list || ChoiceList.Parse(list) is not { Faults.Count: 0 } parsed)
+        {
+            return null;
+        }
+
+        return [.. parsed.Entries.Select(static c => c.Outcome).Concat(descriptor.Outcomes).Distinct()];
+    }
 }
