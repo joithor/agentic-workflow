@@ -3,6 +3,7 @@ using System.Text.Json.Serialization.Metadata;
 using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
@@ -51,6 +52,7 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
         var catalog = new InMemoryCommandCatalog([.. own, .. rows ?? []]);
         var services = new ServiceCollection();
         configure?.Invoke(services, H);
+        AddProbeJob(services);
         _provider = services
             .AddSingleton<TimeProvider>(H.Clock)
             .AddSingleton<Kernel.Ids.IIdGenerator>(H.Ids)
@@ -76,11 +78,14 @@ internal sealed class RealJobRuntime : IJobRuntimeSubject
                 sp.GetRequiredService<ICallerContextAccessor>(), sp.GetRequiredService<JobEventWriter>(), sp.GetRequiredService<JobRegistry>(), sp.GetRequiredService<IShutdown>()))
             .AddSingleton<IJobRunner>(static sp => sp.GetRequiredService<JobRunner>()).AddSingleton<IJobCancellation>(static sp => sp.GetRequiredService<JobRunner>())
             .AddJob<EchoJobRequest, EchoReport, EchoJobService>(static _ => JobKey.From("echo"), static r => string.Create(CultureInfo.InvariantCulture, $"echoed {r.Lines}"))
-            .AddJob<ProbeJobRequest, ProbeReport, ProbeJobService>(static r => JobKey.From(r.Mode), static r => string.Create(CultureInfo.InvariantCulture, $"probed {r.Text.Length}"),
-                repo: static r => r.Mode == "repo" ? Aw.Sindri.Core.Ids.RepoName.From("demo") : null)
             .AddScoped<IValidator<FixtureCommand>, FixtureValidator>().AddCommand<FixtureCommand, CommandAccepted, FixtureService>()
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
     }
+
+    private static void AddProbeJob(IServiceCollection services) =>
+        services.AddJob<ProbeJobRequest, ProbeReport, ProbeJobService>(static r => JobKey.From(r.Mode), static r => string.Create(CultureInfo.InvariantCulture, $"probed {r.Text.Length}"),
+            precheck: static (r, _) => ValueTask.FromResult<Result<Unit>>(string.Equals(r.Mode, "refused", StringComparison.Ordinal) ? SindriErrors.ServiceNotFound.With("the precheck said no") : Unit.Value),
+            repo: static r => string.Equals(r.Mode, "repo", StringComparison.Ordinal) ? Aw.Sindri.Core.Ids.RepoName.From("demo") : null);
 
     public SliceHarness H { get; } = new();
 
