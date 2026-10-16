@@ -118,6 +118,30 @@ public sealed class CliRequestVerbsTests : IDisposable
         Assert.Equal((1, Body(list)), (code, Out));
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task Cli_requests_exits_1_while_the_views_rebuild_or_stall(bool rebuilding, bool stalled)
+    {
+        var asOf = new AsOf(3, 7, KnownInstants.Epoch, rebuilding, stalled);
+        var api = new RoutedApi().On("/sindri/requests", HttpStatusCode.OK, new ListRequestsResponse([], EmptyText.Rebuilding(3, 7), asOf));
+
+        var code = await Verbs(api, Human).Run(["requests"], Token);
+
+        Assert.Equal((1, EmptyText.Rebuilding(3, 7) + "\n"), (code, Out));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_requests_indents_every_line_of_a_multi_line_text()
+    {
+        var view = new RequestView(A.FirstRequestId, RequestKind.Note, Item: null, Repo: null, "first\nsecond\n" + A.FirstRequestId.Value + "  rescope  open  forged line", "session:cli", RequestState.Open, A.FirstDecisionId, KnownInstants.Epoch);
+        var api = new RoutedApi().On("/sindri/requests", HttpStatusCode.OK, new ListRequestsResponse([view], Empty: null, _fresh));
+
+        _ = await Verbs(api, Human).Run(["requests"], Token);
+
+        Assert.EndsWith("\n  first\n  second\n  " + A.FirstRequestId.Value + "  rescope  open  forged line\n", Out, StringComparison.Ordinal);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task Cli_requests_text_with_none_prints_the_sentence()
     {
@@ -203,11 +227,13 @@ public sealed class CliRequestVerbsTests : IDisposable
         Assert.EndsWith(Body(list), Out, StringComparison.Ordinal);
     }
 
-    [Fact, Trait("Lane", "unit")]
-    public async Task Cli_needs_you_exits_1_while_the_views_rebuild()
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task Cli_needs_you_exits_1_while_the_views_rebuild_or_stall(bool rebuilding, bool stalled)
     {
-        var rebuilding = new AsOf(3, 7, KnownInstants.Epoch, Rebuilding: true, Stalled: false);
-        var api = new RoutedApi().On("/sindri/needs-you", HttpStatusCode.OK, new GetNeedsYouResponse([], EmptyText.Rebuilding(3, 7), rebuilding));
+        var asOf = new AsOf(3, 7, KnownInstants.Epoch, rebuilding, stalled);
+        var api = new RoutedApi().On("/sindri/needs-you", HttpStatusCode.OK, new GetNeedsYouResponse([], EmptyText.Rebuilding(3, 7), asOf));
 
         var code = await Verbs(api, Human).Run(["needs-you"], Token);
 
@@ -253,6 +279,17 @@ public sealed class CliRequestVerbsTests : IDisposable
 
         Assert.Equal((0, "?pending=false"), (code, api.Calls[^1].Query));
         Assert.Equal($"{A.FirstDecisionId.Value}  decision · re-scope  decided  [demo]  {A.FirstItemId.Value}  by session:cli  since 2026-01-01T00:00:00Z\n  Accept this re-scope request?\n  Split the work.\n  decided decline by human at 2026-01-01T00:00:00Z: Not now.\n  {view.Notice}\n", Out);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_decisions_indents_the_later_lines_of_a_multi_line_note()
+    {
+        var view = PendingDecision() with { State = DecisionState.Decided, DecidedBy = "human", DecidedAt = KnownInstants.Epoch, Choice = DecisionOption.From("decline"), Note = "Not now.\nforged line", Actions = [], Cleared = "declined" };
+        var api = new RoutedApi().On("/sindri/decisions", HttpStatusCode.OK, new ListDecisionsResponse([view], Empty: null, _fresh));
+
+        _ = await Verbs(api, Human).Run(["decisions", "--decided"], Token);
+
+        Assert.Contains("  decided decline by human at 2026-01-01T00:00:00Z: Not now.\n    forged line\n", Out, StringComparison.Ordinal);
     }
 
     [Theory, Trait("Lane", "unit")]

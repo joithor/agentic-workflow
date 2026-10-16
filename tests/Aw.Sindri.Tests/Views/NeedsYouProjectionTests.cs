@@ -77,7 +77,7 @@ public sealed class NeedsYouProjectionTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Failure_row_keeps_first_since()
+    public async Task Failure_row_keeps_first_since_in_the_view()
     {
         await Ran(_heartbeat, ServiceOutcome.Failed, "SND-SCHED-001");
         var first = H.Clock.GetUtcNow();
@@ -91,7 +91,7 @@ public sealed class NeedsYouProjectionTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Ok_run_clears_failure()
+    public async Task Ok_run_clears_failure_in_the_view()
     {
         await Ran(_heartbeat, ServiceOutcome.Failed, "SND-SCHED-001");
         await Ran(_index, ServiceOutcome.Failed, "SND-SCHED-001");
@@ -110,7 +110,7 @@ public sealed class NeedsYouProjectionTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Drift_adds_profile_row_and_revert_clears_it()
+    public async Task Drift_adds_profile_row_and_revert_clears_it_in_the_view()
     {
         await Check(drifted: true, "services.heartbeat.every");
         var first = H.Clock.GetUtcNow();
@@ -150,7 +150,7 @@ public sealed class NeedsYouProjectionTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Approved_profile_without_the_service_clears_failure()
+    public async Task Approved_profile_without_the_service_clears_failure_in_the_view()
     {
         await Ran(_heartbeat, ServiceOutcome.Failed, "SND-SCHED-001");
         await Ran(_index, ServiceOutcome.Failed, "SND-SCHED-001");
