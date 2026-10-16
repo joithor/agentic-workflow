@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.ViewModels.Controls;
+using Aw.Sindri.Ui.ViewModels.Item;
 
 namespace Aw.Sindri.Ui.ViewModels.Palette;
 
@@ -33,11 +34,15 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
     /// <param name="goTo">Shows a page.</param>
     /// <param name="remember">Records an entry run (the paletteHistory preference).</param>
     /// <param name="outcomes">The shell's region for a run whose palette closed before its outcome; null hands such a run back to its control.</param>
-    internal CommandPaletteViewModel(CatalogViewModel catalog, Action<PageId> goTo, Action<string> remember, CommandOutcomeRegion? outcomes = null)
+    /// <param name="createItem">Opens the Create item form (the CreateItem entry runs it); null leaves that entry unrunnable.</param>
+    internal CommandPaletteViewModel(CatalogViewModel catalog, Action<PageId> goTo, Action<string> remember, CommandOutcomeRegion? outcomes = null, Action? createItem = null)
     {
-        (_catalog, _goTo, _remember, Outcomes) = (catalog, goTo, remember, outcomes);
+        (_catalog, _goTo, _remember, Outcomes, CreateItem) = (catalog, goTo, remember, outcomes, createItem);
         _catalog.PropertyChanged += OnCatalogChanged;
     }
+
+    /// <summary>Opens the Create item form, or null.</summary>
+    internal Action? CreateItem { get; }
 
     /// <summary>The shell's region for a run whose palette closed before its outcome, or null.</summary>
     internal CommandOutcomeRegion? Outcomes { get; }
@@ -164,6 +169,10 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
                 Close();
                 _goTo(PageId.System);
                 break;
+            case { Control.Action: "CreateItem" }:
+                CreateItem?.Invoke();   // the form's own control sends it; it opens first, so the window hands the palette's opener on to it
+                Close();
+                break;
             default:
                 // why: an enabled entry without a page has a control
                 await Send(entry, entry.Control!, cancellationToken).ConfigureAwait(true);
@@ -174,8 +183,8 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
     private List<PaletteSection> Build()
     {
         var actions = _catalog.Controls.Where(c => !_sindri.Contains(c.Action, StringComparer.Ordinal)).OrderBy(c => c.Kind)
-            .Select(c => PaletteEntry.For(c, Runs(c)));
-        var sindri = _sindri.Select(_catalog.For).OfType<ControlViewModel>().Select(c => PaletteEntry.For(c, Runs(c)))
+            .Select(c => PaletteEntry.For(c, Runs(c), NotRun(c)));
+        var sindri = _sindri.Select(_catalog.For).OfType<ControlViewModel>().Select(c => PaletteEntry.For(c, Runs(c), NotRun(c)))
             .Append(PaletteEntry.For(PageId.System, "G ."));
         return
         [
@@ -186,8 +195,15 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
     }
 
     // Enter does something with a ready row that has a sender, with Stop Sindri (it goes to Health) and with a cli-only row it can copy.
-    private static bool Runs(ControlViewModel control) =>
-        control.IsSendable || (control.IsReady && control.Action == "StopProcess") || (control.IsCliOnly && control.CanCopy);
+    // Never sends a destructive one: its in-app confirm is on its own control (Stop Sindri's is on Health, where Enter goes).
+    // Create item opens its form (when the shell has one); the item sheet's close actions need the version the sheet shows.
+    private bool Runs(ControlViewModel control) =>
+        (control.IsSendable && !control.IsDestructive) || (control.IsReady && control.Action == "StopProcess")
+        || (control.IsReady && control.Action == "CreateItem" && CreateItem is not null) || (control.IsCliOnly && control.CanCopy);
+
+    // What a ready row that Enter skips says instead of "ready": where it lives, or that the app has no sender for it.
+    private static string NotRun(ControlViewModel control) =>
+        ItemSheetViewModel.IsSheetAction(control.Action) ? Labels.OnItemSheet : Labels.NotInApp;
 
     // The entries ↑/↓ stop at: those that run now, and the selection even while it sends (it is disabled then, but it is
     // where the user is: arrowing off it goes to its neighbour).

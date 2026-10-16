@@ -93,10 +93,7 @@ public sealed class ProcessCliRunnerTests : IDisposable
     [Fact]
     public async Task A_read_only_directory_a_program_leaves_behind_does_not_fail_the_call()
     {
-        if (Environment.IsPrivilegedProcess || OperatingSystem.IsWindows())
-        {
-            return;   // root deletes read-only directories, so there is nothing to observe
-        }
+        Assert.SkipWhen(Environment.IsPrivilegedProcess || OperatingSystem.IsWindows(), "root deletes read-only directories, so there is nothing to observe");
 
         var scratch = _root.Combine("scratch");
         _ = Directory.CreateDirectory(scratch);
@@ -116,6 +113,17 @@ public sealed class ProcessCliRunnerTests : IDisposable
                 File.SetUnixFileMode(Path.Combine(home, "ro"), UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
             }
         }
+    }
+
+    [Fact]
+    public async Task A_program_that_exits_without_reading_a_large_input_still_reports_its_exit_code()
+    {
+        var tool = StubCommand.Write(_root, "quits", "printf bye; exit 3");
+
+        var outcome = await Runner().RunAsync(Invoke(tool, stdin: new string('x', 8 * 1024 * 1024)), TestContext.Current.CancellationToken);
+
+        Assert.Equal(3, outcome.Value.ExitCode);
+        Assert.Equal("bye", outcome.Value.Stdout);
     }
 
     public void Dispose() => _root.Dispose();

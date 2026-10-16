@@ -32,7 +32,7 @@ internal sealed class DbRunService(DataRunFiles files, DbVetting vetting, DbQuer
             return bytes.Error;
         }
 
-        var run = new RunFacts(request, ContentHash.Sha256Hex(bytes.Value), RunInstanceId.From(ids.NewId().ToString("D")), clock.GetUtcNow(), files.ScrubberFor([]));
+        var run = new RunFacts(request, ContentHash.Sha256Hex(bytes.Value), RunInstanceId.From(ids.NewId().ToString("D")), clock.GetUtcNow(), files.ScrubberFor([], []));
         var script = files.ParseDb(request.ScriptPath, bytes.Value);
         if (script.IsError)
         {
@@ -42,7 +42,7 @@ internal sealed class DbRunService(DataRunFiles files, DbVetting vetting, DbQuer
         var vetted = await vetting.VetAsync(request, script.Value, cancellationToken).ConfigureAwait(false);
         return vetted.IsError
             ? await StopAsync(run, script.Value, vetted.Error, cancellationToken).ConfigureAwait(false)
-            : await RunLockedAsync(run with { Scrubber = files.ScrubberFor(vetted.Value.SecretValues) }, vetted.Value, cancellationToken).ConfigureAwait(false);
+            : await RunLockedAsync(run with { Scrubber = files.ScrubberFor([], vetted.Value.SecretValues) }, vetted.Value, cancellationToken).ConfigureAwait(false);
     }
 
     private async ValueTask<Result<DbRunResponse>> RunLockedAsync(RunFacts run, VettedDb vetted, CancellationToken cancellationToken)
@@ -88,7 +88,7 @@ internal sealed class DbRunService(DataRunFiles files, DbVetting vetting, DbQuer
 
     private async ValueTask<Result<DbRunResponse>> WriteAsync(RunFacts run, DbSummary summary, CancellationToken cancellationToken)
     {
-        var written = await files.WriteDocumentAsync(run.Request.RunDirectory, summary, run.Scrubber, cancellationToken).ConfigureAwait(false);
+        var written = await files.WriteDocumentAsync(run.Request.RunDirectory, summary with { Refusal = DataRunFiles.Messaged(summary.Refusal, run.Scrubber), Error = DataRunFiles.Messaged(summary.Error, run.Scrubber) }, cancellationToken).ConfigureAwait(false);
         return written.Map(static pair => new DbRunResponse(pair.Summary, pair.Document));
     }
 

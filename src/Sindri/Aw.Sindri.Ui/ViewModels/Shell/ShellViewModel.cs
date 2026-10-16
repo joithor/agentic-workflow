@@ -2,7 +2,9 @@ using System.ComponentModel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Item;
 using Aw.Sindri.Ui.ViewModels.Palette;
+using Aw.Sindri.Ui.ViewModels.Queue;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -50,8 +52,15 @@ internal sealed partial class ShellViewModel : ObservableObject
         Health.PropertyChanged += OnHealthChanged;
         Health.Pill.PropertyChanged += OnPillChanged;
         CommandOutcome = new CommandOutcomeRegion(control => Health.Banner.HasRebuild && ReferenceEquals(Health.Banner.Rebuild, control));
-        Palette = new CommandPaletteViewModel(Health.Catalog, GoTo, RememberRun, CommandOutcome);
+        Create = new CreateItemViewModel(Health.Catalog, () => Health.ApiUrl(), api);
+        Palette = new CommandPaletteViewModel(Health.Catalog, GoTo, RememberRun, CommandOutcome, () => Create.Open());
         Shortcuts = new ShortcutsViewModel(Health.Catalog);
+        Queue = new QueueViewModel(api, Health.Catalog, clock);
+        Queue.PageShown(RowScopeOf(CurrentPage));
+        Item = new ItemSheetViewModel(api, Health.Catalog, clock);
+        Health.Follow(Queue.Refresh);
+        Health.Follow(Item.Refresh);
+        Queue.PropertyChanged += OnQueueChanged;
     }
 
     /// <summary>The app's copy, for the view.</summary>
@@ -178,6 +187,16 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <param name="filter">The Home filter.</param>
     internal void GoTo(PageId page, HomeFilter filter)
     {
+        if (page == PageId.Work)
+        {
+            Queue.Filter(QueueFilter.All);   // G Q, the palette and the tab show the whole queue; only GoToQueue narrows it
+        }
+
+        ShowPage(page, filter);
+    }
+
+    internal void ShowPage(PageId page, HomeFilter filter)
+    {
         SetHomeFilter(filter);
         if (page == CurrentPage)
         {
@@ -190,6 +209,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         }
 
         CurrentPage = page;
+        Queue.PageShown(RowScopeOf(page));
         Changed(_pageProperties);
         Remember(p => p with { LastPage = page.ToString() });
     }

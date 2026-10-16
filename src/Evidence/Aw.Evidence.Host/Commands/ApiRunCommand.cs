@@ -8,7 +8,8 @@ namespace Aw.Evidence.Host.Commands;
 /// <summary>
 /// The 'api-run' command: binds its arguments, calls ApiRun and prints the summary exactly as it was written to summary.json (and nothing else)
 /// on stdout. The exit code is the summary's outcome: 0 passed, 2 failed, 1 refused, 4 errored; 75 when a lock stayed busy (no summary then).
-/// A refusal or an error also puts its AW-EVIDENCE line on stderr.
+/// A refusal or an error also puts its AW-EVIDENCE line on stderr. Without a summary: a usage mistake exits 1 with the usage line; a failure before the
+/// script is read (the run directory, the script file) is an error line and exit 1 (input) or 4 (the environment's I/O); a busy lock exits 75.
 /// </summary>
 internal static class ApiRunCommand
 {

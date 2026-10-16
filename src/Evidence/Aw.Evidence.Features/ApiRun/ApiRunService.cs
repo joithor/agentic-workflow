@@ -33,7 +33,7 @@ internal sealed class ApiRunService(DataRunFiles files, ApiVetting vetting, Requ
             return bytes.Error;
         }
 
-        var run = new RunFacts(request, ContentHash.Sha256Hex(bytes.Value), RunInstanceId.From(ids.NewId().ToString("D")), clock.GetUtcNow(), files.ScrubberFor([]));
+        var run = new RunFacts(request, ContentHash.Sha256Hex(bytes.Value), RunInstanceId.From(ids.NewId().ToString("D")), clock.GetUtcNow(), files.ScrubberFor([], []));
         var script = files.Parse(request.ScriptPath, bytes.Value);
         if (script.IsError)
         {
@@ -46,7 +46,7 @@ internal sealed class ApiRunService(DataRunFiles files, ApiVetting vetting, Requ
             return await StopAsync(run, new Stopped(script.Value, Host: null, vetted.Error), cancellationToken).ConfigureAwait(false);
         }
 
-        return await RunLockedAsync(run with { Scrubber = files.ScrubberFor(vetted.Value.SecretValues) }, vetted.Value, cancellationToken).ConfigureAwait(false);
+        return await RunLockedAsync(run with { Scrubber = files.ScrubberFor(vetted.Value.HeaderValues, vetted.Value.EnvValues) }, vetted.Value, cancellationToken).ConfigureAwait(false);
     }
 
     private async ValueTask<Result<ApiRunResponse>> RunLockedAsync(RunFacts run, VettedRun vetted, CancellationToken cancellationToken)
@@ -82,7 +82,7 @@ internal sealed class ApiRunService(DataRunFiles files, ApiVetting vetting, Requ
 
     private async ValueTask<Result<ApiRunResponse>> WriteAsync(RunFacts run, ApiSummary summary, CancellationToken cancellationToken)
     {
-        var written = await files.WriteDocumentAsync(run.Request.RunDirectory, summary, run.Scrubber, cancellationToken).ConfigureAwait(false);
+        var written = await files.WriteDocumentAsync(run.Request.RunDirectory, summary with { Refusal = DataRunFiles.Messaged(summary.Refusal, run.Scrubber), Error = DataRunFiles.Messaged(summary.Error, run.Scrubber) }, cancellationToken).ConfigureAwait(false);
         return written.Map(static pair => new ApiRunResponse(pair.Summary, pair.Document));
     }
 

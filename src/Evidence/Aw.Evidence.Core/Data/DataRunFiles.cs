@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using Aw.Evidence.Core.Files;
 using Aw.Kernel;
 using Aw.Kernel.Json;
@@ -36,10 +35,17 @@ public sealed class DataRunFiles(IRunFiles files, ITextScrubber scrubber, JsonSe
     public Result<ApiScript> Parse(string path, ReadOnlySpan<byte> bytes) =>
         ApiScriptReader.Read(bytes, json).Match<Result<ApiScript>>(script => script, error => error with { Message = $"script {path}: {error.Message}" });
 
-    /// <summary>The scrubber for one run: the pattern scrubber, and each of <paramref name="secretValues"/> replaced by value first.</summary>
-    /// <param name="secretValues">Values the run resolved that must never be recorded.</param>
+    /// <summary>The scrubber for one run: the pattern scrubber, and each header value and passed-through value replaced by value first.</summary>
+    /// <param name="headerValues">Header values the run resolved that must never be recorded.</param>
+    /// <param name="envValues">Passed-through variable values (and other resolved secrets) that must never be recorded.</param>
     /// <returns>The scrubber.</returns>
-    public ITextScrubber ScrubberFor(IEnumerable<string> secretValues) => new ValueScrubber(scrubber, secretValues);
+    public ITextScrubber ScrubberFor(IEnumerable<string> headerValues, IEnumerable<string> envValues) => new ValueScrubber(scrubber, headerValues, envValues);
+
+    /// <summary>A refusal or error message with its text scrubbed (the message is free text; its code is not).</summary>
+    /// <param name="message">The message, or null.</param>
+    /// <param name="runScrubber">The run's scrubber.</param>
+    /// <returns>The message scrubbed, or null.</returns>
+    public static CodedMessage? Messaged(CodedMessage? message, ITextScrubber runScrubber) => message is null ? null : message with { Message = runScrubber.Scrub(message.Message) };
 
     /// <summary>Makes the run directory and deletes an earlier summary in it, so a run that stops early never leaves a stale one.</summary>
     /// <param name="runDirectory">The run directory (absolute).</param>
@@ -51,18 +57,19 @@ public sealed class DataRunFiles(IRunFiles files, ITextScrubber scrubber, JsonSe
         return created.IsError ? created : await files.DeleteAsync(RunPath.Combine(runDirectory, SummaryFile), cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Writes a run summary as &lt;run-dir&gt;/summary.json through the scrubber (every string in the document), then reads it back.</summary>
+    /// <summary>
+    /// Writes a run summary as &lt;run-dir&gt;/summary.json, then reads it back. The free-text fields were scrubbed as they were recorded and the refusal and error messages
+    /// are scrubbed by the caller (<see cref="Messaged"/>). Fixed fields (host, outcome, names, ids) are never value-scrubbed: a secret that happens to equal one would corrupt the file.
+    /// </summary>
     /// <param name="runDirectory">The run directory (absolute).</param>
     /// <param name="summary">The summary.</param>
-    /// <param name="runScrubber">The run's scrubber.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
     /// <typeparam name="TSummary">The summary type, known to the package's JSON context.</typeparam>
     /// <returns>The summary as read back and the exact document written, or an error.</returns>
-    public async ValueTask<Result<(TSummary Summary, string Document)>> WriteDocumentAsync<TSummary>(string runDirectory, TSummary summary, ITextScrubber runScrubber, CancellationToken cancellationToken)
+    public async ValueTask<Result<(TSummary Summary, string Document)>> WriteDocumentAsync<TSummary>(string runDirectory, TSummary summary, CancellationToken cancellationToken)
         where TSummary : notnull
     {
-        var node = JsonNode.Parse(AwJson.Serialize(summary, json)) ?? throw new InvalidOperationException("a summary serializes to a JSON object");
-        var document = Scrub(node, runScrubber).ToJsonString(json);
+        var document = Encoding.UTF8.GetString(AwJson.Serialize(summary, json));
         var written = await files.WriteAsync(RunPath.Combine(runDirectory, SummaryFile), Encoding.UTF8.GetBytes(document), cancellationToken).ConfigureAwait(false);
         if (written.IsError)
         {
@@ -71,12 +78,4 @@ public sealed class DataRunFiles(IRunFiles files, ITextScrubber scrubber, JsonSe
 
         return AwJson.Deserialize<TSummary>(Encoding.UTF8.GetBytes(document), json).Map(read => (read, document));
     }
-
-    private static JsonNode Scrub(JsonNode node, ITextScrubber runScrubber) => node switch
-    {
-        JsonObject obj => new JsonObject(obj.Select(entry => KeyValuePair.Create(entry.Key, entry.Value is null ? null : Scrub(entry.Value, runScrubber)))),
-        JsonArray array => new JsonArray([.. array.Select(item => item is null ? null : Scrub(item, runScrubber))]),
-        JsonValue value when value.TryGetValue<string>(out var text) => JsonValue.Create(runScrubber.Scrub(text)),
-        _ => node.DeepClone(),
-    };
 }
