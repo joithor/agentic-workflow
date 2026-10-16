@@ -40,11 +40,12 @@ public sealed class FrameTabsViewModelTests
     [Fact]
     public void A_served_context_count_shows()
     {
-        var served = Counts.Decisions;   // a figure the golden serves, standing in for a served context count
+        var served = Counts.Timeline + Counts.Decisions + Counts.Requests + 1;   // a figure no other count serves, so a tab wired to another count fails
 
         var context = new FrameTabsViewModel(Counts with { Context = served }).Tabs[3];
 
         Assert.Equal(Labels.TabText(Labels.TabContext, served), context.Text);
+        Assert.True(context.Text.StartsWith(Labels.TabContext, StringComparison.Ordinal) && context.Text.EndsWith(" " + served.ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal));   // the drawn shape, apart from Labels.TabText
     }
 
     [Fact]

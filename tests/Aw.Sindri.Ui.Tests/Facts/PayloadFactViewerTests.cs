@@ -93,6 +93,20 @@ public sealed class PayloadFactViewerTests
     }
 
     [Fact]
+    public async Task The_not_running_message_is_said_a_turn_after_the_viewer_is_shown()
+    {
+        var context = new FactViewerContext(_server, new FakeClipboard(), _clock, () => null, FixtureInstances.Detail("incident-loop").Id, _ => { });
+        var viewer = new PayloadFactViewer(FactFixtures.Row("incident-loop", "fact:alert"), context);
+
+        var loading = viewer.Load(Token);
+
+        // the live region is born with the viewer: its text must change after that to be spoken, so the first Say waits a turn
+        Assert.Equal((false, Labels.PayloadNotRunning), (viewer.Voice.IsAnnouncing, viewer.ProblemText));
+        await loading;
+        Assert.Equal((true, Labels.PayloadNotRunning), (viewer.Voice.IsAnnouncing, viewer.Voice.Announcement));
+    }
+
+    [Fact]
     public async Task The_outcome_of_the_read_is_said_once_by_a_polite_line()
     {
         var viewer = Viewer("incident-loop", "fact:alert");
