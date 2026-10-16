@@ -9248,3 +9248,21 @@ Aw.Sindri.Core.Launch.TerminalFacts.Deconstruct(out string! Kind, out string! La
 Aw.Sindri.Core.Launch.TerminalFacts.Kind.get -> string!
 Aw.Sindri.Core.Launch.TerminalFacts.Kind.init -> void
 Aw.Sindri.Core.Launch.TerminalFacts.TerminalFacts(string! Kind, string! Label, bool Present, string! Source, string? ConfigPath, string? Problem, string? Detail) -> void
+Aw.Sindri.Core.Launch.AgentEntry.ArgvHash.get -> string?
+Aw.Sindri.Core.Launch.AgentEntry.ArgvHash.init -> void
+Aw.Sindri.Core.Launch.AgentEntry.ModelForm.get -> Aw.Sindri.Core.Launch.ModelForm
+Aw.Sindri.Core.Launch.AgentEntry.ModelForm.init -> void
+Aw.Sindri.Core.Launch.AgentEntry.PolicyForm.get -> Aw.Sindri.Core.Launch.PolicyForm
+Aw.Sindri.Core.Launch.AgentEntry.PolicyForm.init -> void
+Aw.Sindri.Core.Launch.AgentEntry.Source.get -> Aw.Sindri.Core.Launch.CatalogSource
+Aw.Sindri.Core.Launch.AgentEntry.Source.init -> void
+Aw.Sindri.Core.Launch.ModelForm
+Aw.Sindri.Core.Launch.ModelForm.ClaudeFlag = 1 -> Aw.Sindri.Core.Launch.ModelForm
+Aw.Sindri.Core.Launch.ModelForm.CodexFlag = 2 -> Aw.Sindri.Core.Launch.ModelForm
+Aw.Sindri.Core.Launch.ModelForm.CursorFlag = 3 -> Aw.Sindri.Core.Launch.ModelForm
+Aw.Sindri.Core.Launch.ModelForm.None = 0 -> Aw.Sindri.Core.Launch.ModelForm
+Aw.Sindri.Core.Launch.PolicyForm
+Aw.Sindri.Core.Launch.PolicyForm.ClaudeSettingsFile = 1 -> Aw.Sindri.Core.Launch.PolicyForm
+Aw.Sindri.Core.Launch.PolicyForm.CodexOverrides = 2 -> Aw.Sindri.Core.Launch.PolicyForm
+Aw.Sindri.Core.Launch.PolicyForm.CursorConfig = 3 -> Aw.Sindri.Core.Launch.PolicyForm
+Aw.Sindri.Core.Launch.PolicyForm.None = 0 -> Aw.Sindri.Core.Launch.PolicyForm

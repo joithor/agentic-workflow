@@ -12,6 +12,18 @@ public sealed record AgentEntry(AgentId Id, string Label, string Bin, string? Pr
     /// <summary>The regex whose first group is the session id in a transcript path (the entry's reportedId.capture), or null.</summary>
     public string? IdCapture { get; init; }
 
+    /// <summary>How the entry takes a Step's model id (launcher L-17); none by default, as for a user-added entry. P10a's addition.</summary>
+    public ModelForm ModelForm { get; init; } = ModelForm.None;
+
+    /// <summary>How the entry takes a Step's policy (launcher L-17); none by default. P10a's addition.</summary>
+    public PolicyForm PolicyForm { get; init; } = PolicyForm.None;
+
+    /// <summary>Where the entry came from (launcher L-10); a built-in by default. P10a's addition.</summary>
+    public CatalogSource Source { get; init; } = CatalogSource.Builtin;
+
+    /// <summary>The hash of the entry's argv template (launcher SL8, L-11), or null until the catalog computes it. P10a's addition.</summary>
+    public string? ArgvHash { get; init; }
+
     /// <summary>The name the entry's processes are matched by: <see cref="ProcessName"/>, else the basename of <see cref="Bin"/>.</summary>
     public string MatchName => ProcessName is { Length: > 0 } name ? name : BaseName(Bin);
 

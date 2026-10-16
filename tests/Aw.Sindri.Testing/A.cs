@@ -139,4 +139,28 @@ public static class A
     /// <summary>A ListJobsRequest builder with deterministic defaults.</summary>
     /// <returns>A new builder.</returns>
     public static ListJobsRequestBuilder ListJobsRequest() => new();
+
+    /// <summary>A GetLaunchRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static GetLaunchRequestBuilder GetLaunchRequest() => new();
+
+    /// <summary>A OpenItemRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static OpenItemRequestBuilder OpenItemRequest() => new();
+
+    /// <summary>A GetLaunchTargetsRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static GetLaunchTargetsRequestBuilder GetLaunchTargetsRequest() => new();
+
+    /// <summary>A ProbeLaunchTargetsRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static ProbeLaunchTargetsRequestBuilder ProbeLaunchTargetsRequest() => new();
+
+    /// <summary>A SessionHeartbeatRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static SessionHeartbeatRequestBuilder SessionHeartbeatRequest() => new();
+
+    /// <summary>A SessionExitRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static SessionExitRequestBuilder SessionExitRequest() => new();
 }
