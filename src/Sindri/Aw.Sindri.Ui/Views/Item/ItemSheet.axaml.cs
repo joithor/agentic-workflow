@@ -61,7 +61,7 @@ internal sealed partial class ItemSheet : UserControl
     // goes to the sheet's title when the pressed one is gone (focus is never lost).
     private async void OnDecisionOption(object? sender, RoutedEventArgs e)
     {
-        if (sender is not Button { DataContext: Aw.Sindri.Ui.ViewModels.NeedsYou.DecisionOption option } button || _sheet is not { } sheet
+        if (sender is not Button { DataContext: ViewModels.NeedsYou.DecisionOption option } button || _sheet is not { } sheet
             || button.FindAncestorOfType<ItemsControl>()?.FindAncestorOfType<StackPanel>()?.DataContext is not ItemDecisionRow row)
         {
             return;
