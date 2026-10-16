@@ -9,7 +9,11 @@ using Aw.Meta.Features.Health;
 using Aw.Meta.Features.Inbox;
 using Aw.Meta.Features.InboxDefer;
 using Aw.Meta.Features.InboxDismiss;
+using Aw.Meta.Features.LaneInbox;
+using Aw.Meta.Features.LaneReply;
 using Aw.Meta.Features.Lanes;
+using Aw.Meta.Features.LaneSend;
+using Aw.Meta.Features.LaneStopCheck;
 using Aw.Meta.Features.LogAppend;
 using Aw.Meta.Features.MergeRun;
 using Aw.Meta.Features.OutboxRecord;
@@ -51,6 +55,10 @@ namespace Aw.Meta.Host;
 [JsonSerializable(typeof(WatchResponse))]
 [JsonSerializable(typeof(ListWorktreesResponse))]
 [JsonSerializable(typeof(SweepWorktreesResponse))]
+[JsonSerializable(typeof(LaneSendResponse))]
+[JsonSerializable(typeof(LaneInboxResponse))]
+[JsonSerializable(typeof(LaneStopCheckResponse))]
+[JsonSerializable(typeof(LaneReplyResponse))]
 [JsonSerializable(typeof(SyncInboxRequest))]
 [JsonSerializable(typeof(SyncInboxResponse))]
 internal sealed partial class MetaJsonContext : JsonSerializerContext;

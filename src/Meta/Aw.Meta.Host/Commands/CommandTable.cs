@@ -37,6 +37,10 @@ internal static class CommandTable
         WatchCommand.Entry,
         WorktreeListCommand.Entry,
         WorktreeSweepCommand.Entry,
+        LaneSendCommand.Entry,
+        LaneInboxCommand.Entry,
+        LaneStopCheckCommand.Entry,
+        LaneReplyCommand.Entry,
     ];
 
     internal static IReadOnlyList<CommandEntry> Entries => _entries;

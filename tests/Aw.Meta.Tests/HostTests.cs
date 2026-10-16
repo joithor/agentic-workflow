@@ -59,6 +59,6 @@ public sealed class HostTests
     private static IServiceCollection Compose(string? logLevel = null)
         => Composition.Compose(
             new ServiceCollection(),
-            name => name switch { "AW_STATE_DIR" => _stateRoot, "AW_LOG_LEVEL" => logLevel, _ => null },
+            name => name switch { "AW_STATE_DIR" => _stateRoot, "AW_LOG_LEVEL" => logLevel, "AW_TMUX" => Path.Combine(_stateRoot, "no-tmux-here"), _ => null },
             new FakeTimeProvider());
 }

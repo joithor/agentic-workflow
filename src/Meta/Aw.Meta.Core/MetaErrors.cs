@@ -44,7 +44,19 @@ public static class MetaErrors
     /// <summary>AW-META-013.</summary>
     public static readonly ErrorDefinition LogUnreadable = new("AW-META-013", ErrorKind.Unavailable, "A step log can't be read");
 
+    /// <summary>AW-META-014.</summary>
+    public static readonly ErrorDefinition LaneVariablesUnset = new("AW-META-014", ErrorKind.Invalid, "AW_META_TEAM and AW_META_LANE are not both set: this is not a lane session");
+
+    /// <summary>AW-META-015.</summary>
+    public static readonly ErrorDefinition LaneNotRecorded = new("AW-META-015", ErrorKind.NotFound, "The lane has no recorded session");
+
+    /// <summary>AW-META-016.</summary>
+    public static readonly ErrorDefinition UnknownLane = new("AW-META-016", ErrorKind.NotFound, "No such lane");
+
+    /// <summary>AW-META-017.</summary>
+    public static readonly ErrorDefinition ClaudeLane = new("AW-META-017", ErrorKind.Invalid, "A Claude lane: send with SendMessage");
+
     /// <summary>Every Meta error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
-        [Invalid, NoTeamConfig, ConfigInvalid, TranscriptUnreadable, MessageNotFound, QuestionNotFound, GateStepNotFound, LogUnwritable, CommandNotStarted, HostUnreadable, ConfigExists, CommandFailed, LogUnreadable];
+        [Invalid, NoTeamConfig, ConfigInvalid, TranscriptUnreadable, MessageNotFound, QuestionNotFound, GateStepNotFound, LogUnwritable, CommandNotStarted, HostUnreadable, ConfigExists, CommandFailed, LogUnreadable, LaneVariablesUnset, LaneNotRecorded, UnknownLane, ClaudeLane];
 }
