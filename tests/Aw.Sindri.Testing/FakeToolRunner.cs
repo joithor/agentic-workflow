@@ -8,6 +8,7 @@ namespace Aw.Sindri.Testing;
 internal sealed class FakeToolRunner : IToolRunner
 {
     private readonly Func<string, IReadOnlyList<string>, ToolRun> _answer;
+    private readonly IReadOnlyList<string> _standardErrorLines = [];
 
     /// <summary>Answers every call with <paramref name="answer"/>.</summary>
     /// <param name="answer">The run.</param>
@@ -16,18 +17,42 @@ internal sealed class FakeToolRunner : IToolRunner
         _answer = (_, _) => answer;
     }
 
-    /// <summary>Answers each call with what <paramref name="script"/> returns for that command and its arguments.</summary>
-    /// <param name="script">The script.</param>
-    public FakeToolRunner(Func<string, IReadOnlyList<string>, ToolRun> script)
+    /// <summary>Answers every call with <paramref name="answer"/>, after handing <paramref name="standardErrorLines"/> to the call's standard error callback.</summary>
+    /// <param name="answer">The run.</param>
+    /// <param name="standardErrorLines">The lines the tool "printed" on standard error.</param>
+    public FakeToolRunner(ToolRun answer, IReadOnlyList<string> standardErrorLines)
     {
-        _answer = script;
+        _answer = (_, _) => answer;
+        _standardErrorLines = standardErrorLines;
     }
 
-    public List<(string FileName, IReadOnlyList<string> Arguments, TimeSpan Timeout)> Calls { get; } = [];
-
-    public ToolRun Run(string fileName, IReadOnlyList<string> arguments, TimeSpan timeout)
+    /// <summary>Answers each call with what <paramref name="script"/> returns for that command and its arguments, and feeds the call's standard error callback <paramref name="standardErrorLines"/> when they are given.</summary>
+    /// <param name="script">The script.</param>
+    /// <param name="standardErrorLines">The lines every scripted tool "prints" on standard error.</param>
+    public FakeToolRunner(Func<string, IReadOnlyList<string>, ToolRun> script, IReadOnlyList<string>? standardErrorLines = null)
     {
-        Calls.Add((fileName, [.. arguments], timeout));
+        _answer = script;
+        _standardErrorLines = standardErrorLines ?? [];
+    }
+
+    public List<(string FileName, IReadOnlyList<string> Arguments, TimeSpan Timeout, bool HadStderrCallback)> Calls { get; } = [];
+
+    public ToolRun Run(string fileName, IReadOnlyList<string> arguments, TimeSpan timeout, Action<string>? standardErrorLine = null, CancellationToken cancellationToken = default)
+    {
+        Calls.Add((fileName, [.. arguments], timeout, standardErrorLine is not null));
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return ToolRun.Cancelled;
+        }
+
+        if (standardErrorLine is not null)
+        {
+            foreach (var line in _standardErrorLines)
+            {
+                standardErrorLine(line);
+            }
+        }
+
         return _answer(fileName, arguments);
     }
 }

@@ -11,4 +11,7 @@ internal enum ToolOutcome
 
     /// <summary>It ran past its timeout and was killed.</summary>
     TimedOut = 3,
+
+    /// <summary>The caller cancelled the run and the tool was killed.</summary>
+    Cancelled = 4,
 }

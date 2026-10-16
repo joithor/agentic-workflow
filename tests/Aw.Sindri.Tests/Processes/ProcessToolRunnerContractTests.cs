@@ -8,5 +8,5 @@ namespace Aw.Sindri.Tests.Processes;
 [Lane(TestLane.Integration)]
 public sealed class ProcessToolRunnerContractTests : ToolRunnerContract
 {
-    internal override IToolRunner Create(ToolRun scripted) => new ProcessToolRunner();
+    internal override IToolRunner Create(ToolRun scripted, IReadOnlyList<string> standardErrorLines) => new ProcessToolRunner();
 }

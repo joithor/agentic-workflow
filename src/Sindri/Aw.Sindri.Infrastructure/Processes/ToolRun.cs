@@ -11,4 +11,7 @@ internal sealed record ToolRun(ToolOutcome Outcome, int ExitCode, string Output)
 
     /// <summary>The tool ran past its timeout.</summary>
     internal static ToolRun TimedOut { get; } = new(ToolOutcome.TimedOut, -1, "");
+
+    /// <summary>The caller cancelled the run.</summary>
+    internal static ToolRun Cancelled { get; } = new(ToolOutcome.Cancelled, -1, "");
 }
