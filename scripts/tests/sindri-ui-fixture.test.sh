@@ -109,6 +109,9 @@ case "$*" in
   "profile validate --json") echo '{"valid":true,"hash":"abcdef0123456789","approved":false}' ;;
   "profile approve abcdef0123456789") IFS= read -r line; echo "typed=$line" >> "$STUB_LOG" ;;
   "item add "*) n=$(($(cat "$STUB_LOG.n" 2>/dev/null || echo 0) + 1)); echo "$n" > "$STUB_LOG.n"; echo "added ITM-0$n" ;;
+  "workflow start "*)
+    for a in "$@"; do case "$a" in fact:*=*) echo "fact ${a%%=*} $(cat "${a#*=}")" >> "$STUB_LOG" ;; esac; done
+    if [ -n "${STUB_FAIL_START:-}" ]; then echo "SND-CLI-003 refused" >&2; exit 2; fi ;;
 esac
 exit 0
 EOF
@@ -159,14 +162,15 @@ PATH="$WORK/bin:$PATH" AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" reques
 call="$(cat "$STUB_LOG")"
 contains "request_sends_a_session_curl: a POST to /sindri/requests" "$call" "http://127.0.0.1:7999/sindri/requests"
 contains "request names the repo scope" "$call" "X-Sindri-Repo: demo"
-contains "request sends the item" "$call" '"itemId":"ITM-01"'
+contains "request sends the item as the API's member, item" "$call" '"item":"ITM-01"'
+absent "request does not send itemId" "$call" "itemId"
 contains "request sends the text" "$call" '"text":"Split it"'
 absent "request_sends_no_caller_header" "$call" "X-Sindri-Caller"
 absent "request sends no token" "$call" "X-Sindri-Token"
 : > "$STUB_LOG"
 PATH="$WORK/bin:$PATH" AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" request "Plain" >/dev/null 2>&1
 absent "request without flags sends no repo" "$(cat "$STUB_LOG")" "X-Sindri-Repo"
-absent "request without flags sends no item" "$(cat "$STUB_LOG")" "itemId"
+absent "request without flags sends no item" "$(cat "$STUB_LOG")" '"item"'
 AW_SINDRI_HOME="$U" bash "$FIXTURE" request >/dev/null 2>&1; check "request needs text (exit 2)" "$?" "2"
 AW_SINDRI_HOME="$U" bash "$FIXTURE" request --item 'x;y' hi >/dev/null 2>&1; check "request refuses a bad item id (exit 2)" "$?" "2"
 AW_SINDRI_HOME="$WORK/elsewhere" bash "$FIXTURE" request hi >/dev/null 2>&1; check "every_verb_refuses_an_unguarded_home: request" "$?" "2"
@@ -191,9 +195,14 @@ AW_SINDRI_HOME="$WORK/elsewhere" bash "$FIXTURE" unfail >/dev/null 2>&1; check "
 
 : > "$STUB_LOG"
 PATH="$WORK/bin:$PATH" AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" items --large >/dev/null 2>&1; check "items --large exits 0" "$?" "0"
-check "items_large_adds_30_items_and_12_requests_across_two_repos: 34 items" "$(grep -c '^item add' "$STUB_LOG")" "34"
+check "items_large_adds_30_items_and_12_requests: 34 items" "$(grep -c '^item add' "$STUB_LOG")" "34"
 check "items --large files 12 requests" "$(grep -c '^curl .*sindri/requests' "$STUB_LOG")" "12"
-check "the requests span two repos" "$(grep -o 'X-Sindri-Repo: [a-z-]*' "$STUB_LOG" | sort -u | wc -l | tr -d ' ')" "2"
+# F1: the fixture profile has no repos, so a request names none unless FIXTURE_REPO names one the profile has.
+absent "items --large without FIXTURE_REPO names no repo (the API refuses one the profile lacks)" "$(cat "$STUB_LOG")" "X-Sindri-Repo"
+: > "$STUB_LOG"
+PATH="$WORK/bin:$PATH" AW_SINDRI_HOME="$U" SINDRI="$STUB" FIXTURE_REPO=agentic-fixture bash "$FIXTURE" items --large >/dev/null 2>&1
+check "items --large with FIXTURE_REPO files its 12 requests in that repo only" "$(grep '^curl .*sindri/requests' "$STUB_LOG" | grep -c 'X-Sindri-Repo: agentic-fixture -d')" "12"
+absent "no request names a repo of its own invention" "$(cat "$STUB_LOG")" "demo"
 
 # --- U3' T20: the Workflows strip's instances (sindri workflow start / cancel as the owner) ---
 : > "$STUB_LOG"; echo 0 > "$STUB_LOG.n"
@@ -203,6 +212,20 @@ check "workflows_starts_one_triage_and_two_work_instances_through_the_cli: three
 check "one triage" "$(printf '%s\n' "$starts" | grep -c 'workflow start workflow.dev-triage-three-state --item ITM-')" "1"
 check "two work" "$(printf '%s\n' "$starts" | grep -c 'workflow start workflow.dev-desk-round-trip --item ITM-')" "2"
 check "each start has an item of its own" "$(printf '%s\n' "$starts" | grep -o 'ITM-[A-Za-z0-9]*' | sort -u | wc -l | tr -d ' ')" "3"
+# F3: the recipes' required inputs go with the start: fact:item as JSON naming the item, fact:request as text.
+check "the triage start passes fact:item" "$(printf '%s\n' "$starts" | grep 'dev-triage-three-state' | grep -c -- '--fact fact:item=')" "1"
+check "each work start passes fact:request" "$(printf '%s\n' "$starts" | grep 'dev-desk-round-trip' | grep -c -- '--fact fact:request=')" "2"
+facts="$(grep '^fact ' "$STUB_LOG")"
+check "fact:item is JSON with the item's id" "$(printf '%s\n' "$facts" | grep '^fact fact:item ' | sed 's/^fact fact:item //' | jq -r '.id')" "ITM-01"
+check "fact:request is text" "$(printf '%s\n' "$facts" | grep -c '^fact fact:request Fixture')" "2"
+out="$(AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" workflows 2>&1)"
+contains "workflows prints what it started" "$out" "started workflow.dev-triage-three-state on ITM-"
+check "workflows prints a line for each start" "$(printf '%s\n' "$out" | grep -c '^started ')" "3"
+out="$(STUB_FAIL_START=1 AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" workflows 2>&1)"; rc=$?
+check "a refused start exits non-zero" "$([ "$rc" -ne 0 ] && echo yes || echo no)" "yes"
+contains "a refused start says which one and why" "$out" "workflow.dev-triage-three-state"
+contains "a refused start carries the CLI's refusal" "$out" "SND-CLI-003 refused"
+: > "$STUB_LOG"; echo 0 > "$STUB_LOG.n"
 : > "$STUB_LOG"; echo 0 > "$STUB_LOG.n"
 AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" workflows --large >/dev/null 2>&1; check "workflows --large exits 0" "$?" "0"
 starts="$(grep '^workflow start' "$STUB_LOG")"
