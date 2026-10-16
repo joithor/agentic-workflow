@@ -76,9 +76,32 @@ public sealed class ContextJobVerbsTests : IDisposable
         Assert.Equal(("POST", "/sindri/context/eval/backtest"), (method, route));
         Assert.Contains("\"arms\":\"brief,graph\"", body, StringComparison.Ordinal);
         Assert.Contains("\"since\":\"2026-07-01T00:00:00", body, StringComparison.Ordinal);
-        Assert.Contains("\"until\":\"2026-09-30T00:00:00", body, StringComparison.Ordinal);
+        Assert.Contains("\"until\":\"2026-09-30T23:59:59.9999999", body, StringComparison.Ordinal);   // a date-only --until is the whole day
         Assert.Contains("\"limit\":10", body, StringComparison.Ordinal);
         Assert.Equal("job JOB-0000000000000000000000000000000e started\n", _out.ToString().Replace("\r\n", "\n", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Eval_backtest_keeps_a_since_date_at_midnight_and_an_until_instant_as_given()
+    {
+        var api = new ScriptedApi((HttpStatusCode.OK, Started));
+
+        _ = await Run(api, "eval", "backtest", "--since", "2026-07-01", "--until", "2026-09-30T10:00:00Z", "--detach");
+
+        var body = Assert.Single(api.Calls).Body;
+        Assert.Contains("\"since\":\"2026-07-01T00:00:00", body, StringComparison.Ordinal);
+        Assert.Contains("\"until\":\"2026-09-30T10:00:00", body, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Eval_backtest_unknown_arm_082_is_attention_and_exits_1_as_the_error_table_says()
+    {
+        var api = new ScriptedApi((HttpStatusCode.BadRequest, """{"type":"x","title":"SND-CONTEXT-082","status":400,"detail":"unknown arm 'bogus'"}"""));
+
+        var exit = await Run(api, "eval", "backtest", "--arms", "bogus", "--detach");
+
+        Assert.Equal(1, exit);
+        Assert.Contains("SND-CONTEXT-082", _error.ToString(), StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

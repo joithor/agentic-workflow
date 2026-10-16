@@ -135,4 +135,20 @@ public sealed class ContextBacktestJobApiTests : IDisposable
         Assert.Empty(_requests);
         Assert.DoesNotContain(await Ledger(host), e => e.Envelope.Type == EventTypes.JobStarted);
     }
+
+    [Theory(Timeout = 90_000), Trait("Lane", "integration")]
+    [InlineData("""{"limit":0}""")]
+    [InlineData("""{"limit":-3}""")]
+    [InlineData("""{"since":"2026-09-30T00:00:00Z","until":"2026-07-01T00:00:00Z"}""")]
+    public async Task RunBacktest_a_non_positive_limit_or_a_window_that_ends_before_it_starts_is_refused_at_the_start(string body)
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+
+        var refused = await host.Http.Ask(Post(Route, body, Human(host.Token.Value)));
+
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CLI-003"), (refused.Status, refused.Code));
+        Assert.Empty(_requests);
+        Assert.DoesNotContain(await Ledger(host), e => e.Envelope.Type == EventTypes.JobStarted);
+    }
 }
