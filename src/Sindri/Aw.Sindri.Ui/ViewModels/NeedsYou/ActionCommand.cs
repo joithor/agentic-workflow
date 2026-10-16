@@ -10,28 +10,43 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 internal static partial class ActionCommand
 {
     /// <summary>The command to show for an action.</summary>
-    /// <param name="catalogCli">The action's command in the catalog; null when the catalog has no row for it.</param>
+    /// <param name="catalogCli">The action's command in the catalog; empty when the catalog has no row for it.</param>
     /// <param name="isPrimary">True for the row's primary action, whose command the server already wrote for this row.</param>
     /// <param name="rowCli">The row's served command.</param>
     /// <param name="subject">The row's subject, or null.</param>
     /// <param name="itemId">The row's item, or null.</param>
     /// <returns>The command, and whether a required placeholder is still open.</returns>
-    internal static (string Cli, bool FillIn) For(string? catalogCli, bool isPrimary, string rowCli, NeedsYouSubject? subject, string? itemId)
+    internal static (string Cli, bool FillIn) For(string catalogCli, bool isPrimary, string rowCli, NeedsYouSubject? subject, string? itemId)
     {
         if (isPrimary || string.IsNullOrEmpty(catalogCli))
         {
             return (rowCli, false);
         }
 
-        var filled = Placeholder.Replace(catalogCli, m => Value(m.Groups["word"].Value, subject, itemId) ?? m.Value);
-        return (filled, Open.IsMatch(Optional.Replace(filled, "")));
+        // An optional [group] is filled whole or shown as served (never half-filled); it never asks for a fill-in.
+        var filled = Token.Replace(catalogCli, m => m.Groups["body"].Success ? FillGroup(m, subject, itemId) : Value(m.Groups["word"].Value, subject, itemId) ?? m.Value);
+        return (filled, Open.IsMatch(OptionalGroup.Replace(filled, "")));
     }
 
-    // <name> is the service's name, <item>, <itemId> and <id> the row's item, <decisionId> a decision's id, <hash> a profile's.
+    // A group whose placeholders all resolve loses its brackets; any other group is left exactly as served.
+    private static string FillGroup(Match group, NeedsYouSubject? subject, string? itemId)
+    {
+        var open = false;
+        var filled = Placeholder.Replace(group.Groups["body"].Value, m =>
+        {
+            var value = Value(m.Groups["word"].Value, subject, itemId);
+            open |= value is null;
+            return value ?? m.Value;
+        });
+        return open || !Placeholder.IsMatch(group.Groups["body"].Value) ? group.Value : filled;
+    }
+
+    // <name> is the service's name, <itemId> the row's item, <decisionId> a decision's id, <hash> a profile's. The catalog's
+    // <id> means a context-map review operation and <item> is not a catalog word, so neither is the row's item.
     private static string? Value(string placeholder, NeedsYouSubject? subject, string? itemId) => placeholder switch
     {
         "name" when subject?.Kind == NeedsYouKinds.Service => subject.Id,
-        "item" or "itemId" or "id" when !string.IsNullOrEmpty(itemId) => itemId,
+        "itemId" when !string.IsNullOrEmpty(itemId) => itemId,
         "decisionId" when subject?.DecisionId is { } decision => decision,
         "hash" when subject?.Kind == NeedsYouKinds.Profile => subject.Id,
         _ => null,
@@ -40,8 +55,11 @@ internal static partial class ActionCommand
     [GeneratedRegex("<(?<word>[A-Za-z]+)>", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Placeholder { get; }
 
+    [GeneratedRegex(@"\[(?<body>[^\]]*)\]|<(?<word>[A-Za-z]+)>", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex Token { get; }
+
     [GeneratedRegex(@"\[[^\]]*\]", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex Optional { get; }
+    private static partial Regex OptionalGroup { get; }
 
     [GeneratedRegex("<[A-Za-z]+>", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Open { get; }
