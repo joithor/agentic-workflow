@@ -11,6 +11,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.CompleteStep;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.ApplyCommand;
+using Aw.Sindri.Tests.Workflow.Choice;
 using Aw.Sindri.Tests.Workflow.Engine;
 using Microsoft.Extensions.Time.Testing;
 
@@ -182,7 +183,7 @@ public sealed class ChoiceReportTests
             if (!_seen.Contains(nonce) && command is StepCompleted { Outputs.Count: 0 })
             {
                 // The engine decides on what arrived: a choice report without fact:decision is malformed (its own fix text).
-                var route = EvalComposition.Recipe(Aw.Sindri.Tests.Workflow.Choice.RouteRecipes.Dev);
+                var route = EvalComposition.Recipe(RouteRecipes.Dev);
                 if (EngineFixture.Decide(EngineFixture.At(route, "route-evidence-desk"), route, command) is Rejected rejected)
                 {
                     return ValueTask.FromResult<Result<CommandResult>>(rejected.Error);
