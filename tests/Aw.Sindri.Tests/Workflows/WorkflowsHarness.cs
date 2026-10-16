@@ -170,6 +170,23 @@ internal sealed class WorkflowsHarness : IDisposable
         Assert.False(revoked.IsError, revoked.IsError ? revoked.Error.Message : null);
     }
 
+    /// <summary>Registers <paramref name="yaml"/> as a row from before input kinds: its stored text without kind, name, urgency or outputs, under its old hash.</summary>
+    public RegisteredRecipe RegisterLegacy(string yaml)
+    {
+        using var sindri = Sindri();
+        var document = sindri.GetRequiredService<IRecipeReader>().Read(yaml, "recipe.yaml").Document;
+        Assert.NotNull(document);
+        var row = new RegisteredRecipe(document.Recipe.Id, document.Recipe.Version, Aw.Sindri.Tests.Workflow.RecipeDeclarationsTests.LegacyHash(yaml),
+            Aw.Sindri.Tests.Workflow.RecipeDeclarationsTests.LegacyJson(yaml).ToJsonString(), Base: null, DateTimeOffset.UtcNow);
+        var added = sindri.GetRequiredService<IRecipeStore>().Add(row, TestContext.Current.CancellationToken).AsTask().GetAwaiter().GetResult();
+        Assert.False(added.IsError, added.IsError ? added.Error.Message : null);
+        var approvals = sindri.GetRequiredService<IRecipeApprovals>();
+        var pins = PinRules.Pins(document.Recipe, sindri.GetRequiredService<BlockCatalog>(), approvals.Current(TestContext.Current.CancellationToken).AsTask().GetAwaiter().GetResult().Value, sindri.GetRequiredService<JsonSerializerOptions>());
+        var approved = approvals.Approve(new RecipeApproval(row.Id, row.Version, row.Hash, "human:test", DateTimeOffset.UtcNow, ApprovalVia.Desk, Base: null, pins), TestContext.Current.CancellationToken).AsTask().GetAwaiter().GetResult();
+        Assert.False(approved.IsError, approved.IsError ? approved.Error.Message : null);
+        return added.Value.Recipe;
+    }
+
     private RegisteredRecipe Registry(string yaml, bool approve)
     {
         var ct = TestContext.Current.CancellationToken;

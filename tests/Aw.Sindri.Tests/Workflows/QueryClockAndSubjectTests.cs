@@ -3,7 +3,9 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Views;
+using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Infrastructure.Workflows;
+using Aw.Sindri.Testing.Workflow;
 using Microsoft.Extensions.DependencyInjection;
 using Temporalio.Worker;
 
@@ -221,6 +223,41 @@ public sealed class QueryClockAndSubjectTests : IDisposable
         Assert.Equal("Crash on launch \u00b7 2026-10-15", named);
         Assert.Equal(named, later.Subject!.Label);
         Assert.Null(replayed.ReplayFailure);
+        await handle.TerminateAsync("test over");
+    }
+
+    private RegisteredRecipe RegisterLegacyStep() => _harness.RegisterLegacy(ShippedRecipes.Read("sindri/workflow.step.yaml")
+        .Replace("id: workflow.step\n", "id: workflow.legacy\n", StringComparison.Ordinal)
+        .Replace("inputs:\n  - { key: fact:spec, label: \"Spec\", type: text, kind: text }\n", "inputs: [fact:spec]\n", StringComparison.Ordinal));
+
+    [Fact(Timeout = 120_000)]
+    public async Task An_approved_row_from_before_input_kinds_loads_for_the_engine_with_the_defaults()
+    {
+        var legacy = RegisterLegacyStep();
+        await using var sindri = _harness.Sindri();
+
+        var found = await sindri.GetRequiredService<IApprovedRecipes>().Find(legacy.Id, legacy.Hash, TestContext.Current.CancellationToken);
+
+        Assert.True(found.IsSuccess, found.IsError ? found.Error.ToString() : null);
+        Assert.Null(found.Value.Recipe.Inputs[0].Kind);
+    }
+
+    [Fact(Timeout = 120_000)]
+    public async Task A_legacy_instance_keeps_the_pre_P4c_command_sequence_so_its_history_still_replays()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var legacy = RegisterLegacyStep();
+        await using var env = await WorkflowsHarness.StartDevServer(ct: ct);
+        await using var served = await ApplyCommand.Served.Start(_harness.Home, env, ct);
+        var start = new InstanceStart(new RecipeVersion(legacy.Id, legacy.Version, legacy.Hash), Core.Workflow.Engine.ItemKey.From("T-1"), Attempt: 1, new Dictionary<FactKey, InputFact> { [FactKey.From("fact:spec")] = new("notes.txt", _harness.Fact("Fix it")) }, Tenant: "local", Ring: 0) { StartedAt = DateTimeOffset.UtcNow };
+        var handle = await WorkflowsHarness.Start(env.Client, start);
+        _ = await WorkflowsHarness.Until(handle, static v => v.Task is not null);
+
+        var history = await handle.FetchHistoryAsync();
+        var read = history.Events.Count(static e => e.MarkerRecordedEventAttributes is { } marker
+            && marker.Details.Values.Any(static v => v.Payloads_.Any(static p => p.Data.ToStringUtf8().Contains("ReadSubject", StringComparison.Ordinal))));
+
+        Assert.Equal(1, read);   // a history recorded before P4c has this marker: skipping the call would fail its replay
         await handle.TerminateAsync("test over");
     }
 
