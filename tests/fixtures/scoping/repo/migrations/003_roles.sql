@@ -1,0 +1,1 @@
+CREATE TABLE members (team_id TEXT NOT NULL, user_id TEXT NOT NULL, role TEXT NOT NULL, digest INTEGER NOT NULL DEFAULT 1);
