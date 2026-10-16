@@ -173,9 +173,9 @@ public sealed class WorkflowViewRecipeShapeTests
 
             foreach (var input in group.SelectMany(i => i.Inputs).Where(i => i.Kind is not null))
             {
-                Assert.True(SubjectKinds.IsKnown(input.Kind!), $"{group.Key}: kind {input.Kind} (RCP-TYPE-002)");
+                Assert.True(SubjectKinds.IsKnown(input.Kind), $"{group.Key}: kind {input.Kind} (RCP-TYPE-002)");
                 var fact = group.SelectMany(i => i.Facts).FirstOrDefault(f => f.Key == input.Key);
-                if (fact is not null && SubjectKinds.PairedType(input.Kind!) is { } paired)
+                if (fact is not null && SubjectKinds.PairedType(input.Kind) is { } paired)
                 {
                     Assert.Equal(paired, FactTypeWord(fact.Type));
                 }
