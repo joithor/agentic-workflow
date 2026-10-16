@@ -63,6 +63,12 @@ public sealed class ShellInstanceFocusTests : FrameHost
 
         await Until(window, () => OnNamed(window, "InstanceOpenIn"), $"focus is on {FocusedButton(window)?.Name}");
         Assert.Same(expanded, shell.Instance.Expanded);
+
+        // a re-read of the list while the control the human is on in the sheet goes away must not pull focus out to the page (§3.3, a11y-r2-6)
+        FocusedButton(window)!.IsVisible = false;
+        await shell.Workflows.Refresh(shell.Health.ApiUrl()!, Token);
+        Settle(window);
+        Assert.False(window.FocusManager?.GetFocusedElement() is Avalonia.Visual focused && Named<Control>(window, "Page").IsVisualAncestorOf(focused), "a background re-read moved focus to the page");
     });
 
     [Fact]
