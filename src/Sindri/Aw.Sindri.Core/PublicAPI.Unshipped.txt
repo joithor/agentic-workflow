@@ -8150,3 +8150,22 @@ Aw.Sindri.Core.Onyx.IOnyxWorkspace.Read(string! path) -> string?
 Aw.Sindri.Core.Onyx.IOnyxWorkspace.ReadState() -> Aw.Sindri.Core.Onyx.OnyxSetupState?
 Aw.Sindri.Core.Onyx.IOnyxWorkspace.WriteIfChanged(string! path, string! content, bool secret) -> bool
 Aw.Sindri.Core.Onyx.IOnyxWorkspace.WriteState(Aw.Sindri.Core.Onyx.OnyxSetupState! state) -> void
+Aw.Sindri.Core.Onyx.IOnyxHealth
+Aw.Sindri.Core.Onyx.IOnyxHealth.Probe(int port, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Onyx.OnyxProbe!>
+Aw.Sindri.Core.Onyx.OnyxProbe
+Aw.Sindri.Core.Onyx.OnyxProbe.<Clone>$() -> Aw.Sindri.Core.Onyx.OnyxProbe!
+Aw.Sindri.Core.Onyx.OnyxProbe.BackendVersion.get -> string?
+Aw.Sindri.Core.Onyx.OnyxProbe.BackendVersion.init -> void
+Aw.Sindri.Core.Onyx.OnyxProbe.Deconstruct(out bool Healthy, out string? BackendVersion) -> void
+Aw.Sindri.Core.Onyx.OnyxProbe.Equals(Aw.Sindri.Core.Onyx.OnyxProbe? other) -> bool
+Aw.Sindri.Core.Onyx.OnyxProbe.Healthy.get -> bool
+Aw.Sindri.Core.Onyx.OnyxProbe.Healthy.init -> void
+Aw.Sindri.Core.Onyx.OnyxProbe.OnyxProbe(bool Healthy, string? BackendVersion) -> void
+Aw.Sindri.Core.Onyx.OnyxRoutes
+const Aw.Sindri.Core.Onyx.OnyxRoutes.Health = "/api/health" -> string!
+const Aw.Sindri.Core.Onyx.OnyxRoutes.Version = "/api/version" -> string!
+override Aw.Sindri.Core.Onyx.OnyxProbe.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.OnyxProbe.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.OnyxProbe.ToString() -> string!
+static Aw.Sindri.Core.Onyx.OnyxProbe.operator !=(Aw.Sindri.Core.Onyx.OnyxProbe? left, Aw.Sindri.Core.Onyx.OnyxProbe? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxProbe.operator ==(Aw.Sindri.Core.Onyx.OnyxProbe? left, Aw.Sindri.Core.Onyx.OnyxProbe? right) -> bool

@@ -35,6 +35,9 @@ public sealed class LoopbackFileServer : IDisposable
     /// <summary>Gets the redirects by absolute request path to the Location they answer with (302).</summary>
     public IDictionary<string, string> Redirects { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
+    /// <summary>Gets the status codes to answer with instead of serving the file, by absolute request path (an empty body).</summary>
+    public IDictionary<string, int> Statuses { get; } = new Dictionary<string, int>(StringComparer.Ordinal);
+
     /// <summary>Gets or sets how long every answer waits before it is sent.</summary>
     public TimeSpan Delay { get; set; }
 
@@ -67,7 +70,9 @@ public sealed class LoopbackFileServer : IDisposable
         _stop.Dispose();
     }
 
-    private static int FreePort()
+    /// <summary>Finds a loopback port nothing listens on right now.</summary>
+    /// <returns>The port.</returns>
+    public static int FreePort()
     {
         using var probe = new TcpListener(IPAddress.Loopback, 0);
         probe.Start();
@@ -107,20 +112,7 @@ public sealed class LoopbackFileServer : IDisposable
                 await Task.Delay(Delay, _stop.Token).ConfigureAwait(false);
             }
 
-            if (Redirects.TryGetValue(path, out var location))
-            {
-                context.Response.StatusCode = 302;
-                context.Response.RedirectLocation = location;
-            }
-            else if (Files.TryGetValue(path, out var bytes))
-            {
-                context.Response.ContentLength64 = bytes.Length;
-                await context.Response.OutputStream.WriteAsync(bytes, _stop.Token).ConfigureAwait(false);
-            }
-            else
-            {
-                context.Response.StatusCode = 404;
-            }
+            await Reply(context.Response, path).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is OperationCanceledException or HttpListenerException or IOException or ObjectDisposedException)
         {
@@ -129,6 +121,28 @@ public sealed class LoopbackFileServer : IDisposable
         finally
         {
             context.Response.Close();
+        }
+    }
+
+    private async Task Reply(HttpListenerResponse response, string path)
+    {
+        if (Redirects.TryGetValue(path, out var location))
+        {
+            response.StatusCode = 302;
+            response.RedirectLocation = location;
+        }
+        else if (Statuses.TryGetValue(path, out var status))
+        {
+            response.StatusCode = status;
+        }
+        else if (Files.TryGetValue(path, out var bytes))
+        {
+            response.ContentLength64 = bytes.Length;
+            await response.OutputStream.WriteAsync(bytes, _stop.Token).ConfigureAwait(false);
+        }
+        else
+        {
+            response.StatusCode = 404;
         }
     }
 }
