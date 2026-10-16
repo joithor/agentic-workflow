@@ -5,8 +5,12 @@ using Aw.Sindri.Core.Onyx;
 namespace Aw.Sindri.Infrastructure.Onyx;
 
 /// <summary>IHostProbes over the file system and loopback sockets: DriveInfo of the nearest existing ancestor, and a connect and a brief bind per loopback port.</summary>
-internal sealed class HostProbes : IHostProbes
+internal sealed class HostProbes(bool ipv6Available) : IHostProbes
 {
+    public HostProbes() : this(Socket.OSSupportsIPv6)
+    {
+    }
+
     /// <inheritdoc />
     public DiskFacts FreeDisk(string path)
     {
@@ -42,11 +46,11 @@ internal sealed class HostProbes : IHostProbes
     // Free means nothing answers on 127.0.0.1:<port> or [::1]:<port> and 127.0.0.1:<port> can be bound. The connects matter:
     // on BSD and macOS a bind to 127.0.0.1 can succeed beside another process listening on 0.0.0.0 (what Docker publishes) or
     // on ::1 only, so a bind alone would call that port free. A probe that can't tell counts as taken: the conservative answer.
-    private static bool IsFree(int port)
+    private bool IsFree(int port)
     {
         try
         {
-            return !Answers(IPAddress.Loopback, port) && !Answers(IPAddress.IPv6Loopback, port) && CanBind(port);
+            return !Answers(IPAddress.Loopback, port) && !(ipv6Available && Answers(IPAddress.IPv6Loopback, port)) && CanBind(port);
         }
         catch (Exception exception) when (exception is SocketException or ObjectDisposedException or InvalidOperationException or AggregateException)
         {
@@ -56,10 +60,14 @@ internal sealed class HostProbes : IHostProbes
 
     private static bool Answers(IPAddress address, int port)
     {
-        using var client = new TcpClient(address.AddressFamily);
         try
         {
+            using var client = new TcpClient(address.AddressFamily);
             return client.ConnectAsync(address, port).Wait(TimeSpan.FromMilliseconds(500)) && client.Connected;
+        }
+        catch (SocketException exception) when (exception.SocketErrorCode is SocketError.AddressFamilyNotSupported)
+        {
+            return false;   // this box has no such loopback: nothing listens there
         }
         catch (AggregateException exception) when (exception.InnerException is SocketException { SocketErrorCode: SocketError.ConnectionRefused or SocketError.AddressNotAvailable or SocketError.AddressFamilyNotSupported or SocketError.NetworkUnreachable or SocketError.HostUnreachable })
         {

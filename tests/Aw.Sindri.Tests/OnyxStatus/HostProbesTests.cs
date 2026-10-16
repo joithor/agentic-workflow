@@ -98,6 +98,25 @@ public sealed class HostProbesTests
     }
 
     [Fact, Trait("Lane", "integration")]
+    public void Ports_on_a_host_without_ipv6_reads_a_free_port_free_and_a_held_port_taken()
+    {
+        var holder = new TcpListener(IPAddress.Loopback, 0);
+        holder.Start();
+        var held = ((IPEndPoint)holder.LocalEndpoint).Port;
+        var probes = new HostProbes(ipv6Available: false);
+        try
+        {
+            Assert.False(probes.Ports(held, held, held).PreferredFree);
+        }
+        finally
+        {
+            holder.Stop();
+        }
+
+        Assert.True(probes.Ports(held, held, held).PreferredFree);
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public void FreeDisk_measures_the_nearest_existing_ancestor()
     {
         var directory = Directory.CreateTempSubdirectory("aw-free-disk-");
