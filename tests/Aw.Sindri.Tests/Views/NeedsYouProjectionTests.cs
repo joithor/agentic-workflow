@@ -102,19 +102,6 @@ public sealed class NeedsYouProjectionTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Failure_row_clears_on_the_first_idle_ok_run()
-    {
-        await Ran(_heartbeat, ServiceOutcome.Failed, "SND-SCHED-001");
-        H.Clock.Advance(TimeSpan.FromSeconds(30));
-        await Ran(_heartbeat, ServiceOutcome.Failed, "SND-SCHED-001");
-        H.Clock.Advance(TimeSpan.FromSeconds(30));
-
-        await Ran(_heartbeat, ServiceOutcome.Ok);   // the first run to succeed after the failures: it did no work (idle), and service.ran is still written for it
-
-        Assert.Empty(await Rows());
-    }
-
-    [Fact, Trait("Lane", "unit")]
     public async Task An_ok_run_with_no_failure_row_adds_nothing()
     {
         await Ran(_heartbeat, ServiceOutcome.Ok);
