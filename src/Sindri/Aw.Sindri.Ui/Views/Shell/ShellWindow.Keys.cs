@@ -84,9 +84,13 @@ internal sealed partial class ShellWindow
             return false;
         }
 
-        var next = FocusManager.FindNextElement(NavigationDirection.Next) as Visual;
-        return (next is null || !frame.IsVisualAncestorOf(next)) && EnterIntoSheet(shell);
+        // The last tab stop of the row, found by the row's own order: the focus manager's next element is the nearest one on screen, which
+        // can be outside the row while the row's Decline is still ahead.
+        return IsLastStopOf(frame, focused) && EnterIntoSheet(shell);
     }
+
+    private static bool IsLastStopOf(Border frame, Visual focused) =>
+        frame.GetVisualDescendants().OfType<InputElement>().LastOrDefault(c => c.Focusable && c.IsTabStop && c.IsEffectivelyVisible && c.IsEffectivelyEnabled) is not { } last || ReferenceEquals(last, focused);
 
     private static bool AnyLayerOpen(ViewModels.Shell.ShellViewModel shell) => shell.Palette.IsOpen || shell.Shortcuts.IsOpen || shell.Create.IsOpen;
 
