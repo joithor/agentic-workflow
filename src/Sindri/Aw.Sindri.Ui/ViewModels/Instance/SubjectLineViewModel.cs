@@ -1,28 +1,46 @@
-#pragma warning disable CA1822, MA0041, IDE0021, MA0003, CS0067, CS9113, IDE0060, CA1801 // red stub: the members throw until the green commit
 using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.ViewModels.Instance;
 
-/// <summary>The frame's subject line: the served label, and Open in when the subject has a web link.</summary>
+/// <summary>
+/// The frame's subject line: the served label, and Open in when the subject has a web link. The app opens only an
+/// http or https link, with no control character in it; a link of any other kind is not offered.
+/// </summary>
 internal sealed class SubjectLineViewModel
 {
-    internal SubjectLineViewModel(SubjectRef subject, string address) => throw new NotSupportedException();
+    private readonly string _host = string.Empty;
 
-    /// <summary>The served label.</summary>
-    public string Label => throw new NotSupportedException();
+    internal SubjectLineViewModel(SubjectRef subject, string address)
+    {
+        Label = subject.Label.Length > 0 ? subject.Label : subject.Key;
+        Kind = subject.Kind;
+        if (subject.Href is { Length: > 0 } href && Controls.ControlViewModel.Safe(href)
+            && Uri.TryCreate(href, UriKind.Absolute, out var uri) && (string.Equals(uri.Scheme, "http", StringComparison.Ordinal) || string.Equals(uri.Scheme, "https", StringComparison.Ordinal)))
+        {
+            (Href, _host) = (href, uri.Host);
+        }
+
+        OpenInName = HasHref ? Labels.OpenInName(_host, address) : string.Empty;
+    }
+
+    /// <summary>The served label (its key when it has none).</summary>
+    public string Label { get; }
 
     /// <summary>The subject's kind as served.</summary>
-    public string Kind => throw new NotSupportedException();
+    public string Kind { get; }
 
     /// <summary>The web link, or empty.</summary>
-    public string Href => throw new NotSupportedException();
+    public string Href { get; } = string.Empty;
 
     /// <summary>True when the subject has a link the app may open.</summary>
-    public bool HasHref => throw new NotSupportedException();
+    public bool HasHref => Href.Length > 0;
 
-    /// <summary>The link's words.</summary>
-    public string OpenInText => throw new NotSupportedException();
+    /// <summary>The link's words ("Open in linear.app ↗"); empty without a link.</summary>
+    public string OpenInText => HasHref ? Labels.OpenIn(_host) : string.Empty;
 
-    /// <summary>The link's accessible name.</summary>
-    public string OpenInName => throw new NotSupportedException();
+    /// <summary>The link's accessible name; it carries the instance.</summary>
+    public string OpenInName { get; }
+
+    /// <summary>What the line is made of, to keep the control when a re-read serves the same.</summary>
+    internal string Signature => string.Join('|', Label, Kind, Href);
 }

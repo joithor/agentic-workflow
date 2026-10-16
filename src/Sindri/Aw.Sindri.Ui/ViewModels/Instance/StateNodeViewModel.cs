@@ -1,32 +1,50 @@
-#pragma warning disable CA1822, MA0041, IDE0021, MA0003, CS0067, CS9113, IDE0060, CA1801 // red stub: the members throw until the green commit
+using Aw.Sindri.Ui.Api.Workflow;
+using Aw.Sindri.Ui.ViewModels.Workflows;
+
 namespace Aw.Sindri.Ui.ViewModels.Instance;
 
-/// <summary>One state of the band.</summary>
+/// <summary>One state of the band: its name, the mark or engine badge, and what the cell serves (round, desk, child, progress, outcome).</summary>
 internal sealed class StateNodeViewModel
 {
-    internal StateNodeViewModel() => throw new NotSupportedException();
+    private readonly StageCellViewModel _cell;
+
+    internal StateNodeViewModel(StateCell cell, bool isCurrent, string link, IReadOnlyList<StateNodeViewModel> branches)
+    {
+        _cell = new StageCellViewModel(cell, isCurrent, isBlocked: false);
+        IsCurrent = isCurrent;
+        IsTerminal = cell.Terminal;
+        Outcome = cell.Outcome ?? string.Empty;
+        Link = link;
+        Branches = branches;
+    }
 
     /// <summary>The state.</summary>
-    public string State => throw new NotSupportedException();
+    public string State => _cell.State;
 
-    /// <summary>The state, its mark and what it serves.</summary>
-    public string Text => throw new NotSupportedException();
+    /// <summary>The state, its mark and what it serves, then its outcome.</summary>
+    public string Text => $"{State} {_cell.Text}{(Outcome.Length > 0 ? " " + Outcome : string.Empty)}";
 
-    /// <summary>The words screen readers hear.</summary>
-    public string Name => throw new NotSupportedException();
+    /// <summary>The words screen readers hear: the state in words, then the outcome.</summary>
+    public string Name => $"{_cell.Name}{(Outcome.Length > 0 ? ", " + Outcome : string.Empty)}";
 
     /// <summary>True for the state the instance is in.</summary>
-    public bool IsCurrent => throw new NotSupportedException();
+    public bool IsCurrent { get; }
 
     /// <summary>True for a terminal state.</summary>
-    public bool IsTerminal => throw new NotSupportedException();
+    public bool IsTerminal { get; }
 
     /// <summary>The state's served outcome, or empty.</summary>
-    public string Outcome => throw new NotSupportedException();
+    public string Outcome { get; }
 
-    /// <summary>What joins this state to the next: the step link, or the loop mark; empty on the last.</summary>
-    public string Link => throw new NotSupportedException();
+    /// <summary>What joins this state to the next: the step link, or the loop mark when the two loop into each other; empty on the last.</summary>
+    public string Link { get; }
 
     /// <summary>The states that branch off this one.</summary>
-    public IReadOnlyList<StateNodeViewModel> Branches => throw new NotSupportedException();
+    public IReadOnlyList<StateNodeViewModel> Branches { get; }
+
+    /// <summary>True when states branch off this one.</summary>
+    public bool HasBranches => Branches.Count > 0;
+
+    /// <summary>What the node draws, so a re-read of the same keeps it.</summary>
+    internal string Signature => string.Join('|', Name, Text, Link, string.Join(',', Branches.Select(b => b.Signature)));
 }

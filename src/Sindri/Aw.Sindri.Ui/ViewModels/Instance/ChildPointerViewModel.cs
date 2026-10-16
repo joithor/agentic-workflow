@@ -1,22 +1,28 @@
-#pragma warning disable CA1822, MA0041, IDE0021, MA0003, CS0067, CS9113, IDE0060, CA1801 // red stub: the members throw until the green commit
 using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.ViewModels.Instance;
 
-/// <summary>The pointer from a parked parent to the child it waits on.</summary>
+/// <summary>The pointer from a parked parent to the child it waits on: it opens the child by its id.</summary>
 internal sealed class ChildPointerViewModel
 {
-    internal ChildPointerViewModel(StatusChild child) => throw new NotSupportedException();
+    private readonly StatusChild _child;
+
+    internal ChildPointerViewModel(StatusChild child)
+    {
+        _child = child;
+        Text = Labels.ChildLine(child);
+        Name = Labels.OpenInstanceName(child.Address);
+    }
 
     /// <summary>Raised when the pointer is followed.</summary>
     internal event EventHandler<FrameOpenEventArgs>? Opened;
 
     /// <summary>The child's words.</summary>
-    public string Text => throw new NotSupportedException();
+    public string Text { get; }
 
-    /// <summary>The control's accessible name.</summary>
-    public string Name => throw new NotSupportedException();
+    /// <summary>The control's accessible name: it carries the child's address.</summary>
+    public string Name { get; }
 
     /// <summary>Follows the pointer.</summary>
-    public void Open() => Opened?.Invoke(this, new FrameOpenEventArgs(string.Empty, null));
+    public void Open() => Opened?.Invoke(this, new FrameOpenEventArgs(_child.Address, _child.Id));
 }

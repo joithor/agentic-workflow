@@ -1,115 +1,201 @@
-#pragma warning disable CA1822, MA0041, IDE0021, MA0003, CS0067, CS9113, IDE0060, CA1801 // red stub: the members throw until the green commit
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Components;
 
 namespace Aw.Sindri.Ui.ViewModels.Instance;
 
-/// <summary>The state the instance is in, expanded: the engine's status layout as controls.</summary>
+/// <summary>
+/// The state the instance is in, expanded: the engine's status layout (WF §6.4) as controls (screens §4.2). Every line is a
+/// served field mapped to words, and the next sentence is shown whole. Nothing is sent from here yet (U8b): each command
+/// shows its CLI with a Copy, a protected one is the lock button, and Cancel asks first with Keep focused.
+/// </summary>
 internal sealed class ExpandedStateViewModel : ObservableObject
 {
-    internal ExpandedStateViewModel(CurrentState current, string address, IClipboard clipboard, TimeProvider clock) => throw new NotSupportedException();
+    private readonly CurrentState _current;
+    private readonly string _address;
+    private readonly IClipboard _clipboard;
+    private readonly TimeProvider _clock;
+    private readonly ExpandedCommandViewModel? _cancel;
+    private int _copies;
+
+    internal ExpandedStateViewModel(CurrentState current, string address, IClipboard clipboard, TimeProvider clock)
+    {
+        (_current, _address, _clipboard, _clock) = (current, address, clipboard, clock);
+        var status = current.Status;
+        Commands = [.. status.Commands.Select(c => new ExpandedCommandViewModel(c, status.Answer?.Kind, address, clipboard, clock))];
+        _cancel = Commands.FirstOrDefault(c => c.Verb == StatusVerb.Cancel);
+        Gates = [.. current.Gates.Select(Labels.GateText)];
+        StepLine = Line(current.Step, Labels.StepLine);
+        BudgetLine = Line(status.Budget, Labels.BudgetLine);
+        TimeoutLine = Line(status.Timeout, Labels.TimeoutLine);
+        PausedLine = Line(status.Paused, p => Labels.PausedLine(p.TimeoutLeftSeconds));
+        DriftLine = Line(status.Drift, Labels.DriftLine);
+        if (status.Child is { } child)
+        {
+            Child = new ChildPointerViewModel(child);
+            Child.Opened += (_, e) => ChildRequested?.Invoke(this, e);
+        }
+
+        HasAttach = current.Step is { } step && string.Equals(step.Ref, "step.agent", StringComparison.Ordinal) && status.Paused is null;
+        Name = Labels.ExpandedName(current.State, address);
+        CopyStatusName = Labels.CopyStatusName(address);
+    }
+
+    private static string Line<T>(T? served, Func<T, string> words)
+        where T : class => served is null ? string.Empty : words(served);
 
     /// <summary>Raised when the child pointer is followed.</summary>
     internal event EventHandler<FrameOpenEventArgs>? ChildRequested;
 
     /// <summary>The state.</summary>
-    public string State => throw new NotSupportedException();
+    public string State => _current.State;
 
-    /// <summary>The step line, or empty.</summary>
-    public string StepLine => throw new NotSupportedException();
+    /// <summary>The step line ("kind · ref · declaration"), or empty.</summary>
+    public string StepLine { get; }
 
     /// <summary>True when the state has a step.</summary>
-    public bool HasStep => throw new NotSupportedException();
+    public bool HasStep => StepLine.Length > 0;
 
-    /// <summary>The exit gates.</summary>
-    public IReadOnlyList<string> Gates => throw new NotSupportedException();
+    /// <summary>The exit gates, in served order.</summary>
+    public IReadOnlyList<string> Gates { get; }
 
     /// <summary>True when there are gates.</summary>
-    public bool HasGates => throw new NotSupportedException();
+    public bool HasGates => Gates.Count > 0;
 
     /// <summary>The served next sentence, whole; empty when none.</summary>
-    public string Next => throw new NotSupportedException();
+    public string Next => _current.Status.Next ?? string.Empty;
 
     /// <summary>True when a next sentence is served.</summary>
-    public bool HasNext => throw new NotSupportedException();
+    public bool HasNext => Next.Length > 0;
 
     /// <summary>The budget line, or empty.</summary>
-    public string BudgetLine => throw new NotSupportedException();
+    public string BudgetLine { get; }
 
     /// <summary>True when a budget is served.</summary>
-    public bool HasBudget => throw new NotSupportedException();
+    public bool HasBudget => BudgetLine.Length > 0;
 
     /// <summary>The timeout line, or empty.</summary>
-    public string TimeoutLine => throw new NotSupportedException();
+    public string TimeoutLine { get; }
 
     /// <summary>True when a timeout is served.</summary>
-    public bool HasTimeout => throw new NotSupportedException();
+    public bool HasTimeout => TimeoutLine.Length > 0;
 
     /// <summary>The paused line, or empty.</summary>
-    public string PausedLine => throw new NotSupportedException();
+    public string PausedLine { get; }
 
     /// <summary>True while the instance is taken over.</summary>
-    public bool IsPaused => throw new NotSupportedException();
+    public bool IsPaused => PausedLine.Length > 0;
 
     /// <summary>The drift line, or empty.</summary>
-    public string DriftLine => throw new NotSupportedException();
+    public string DriftLine { get; }
 
     /// <summary>True when the recipe drifted.</summary>
-    public bool HasDrift => throw new NotSupportedException();
+    public bool HasDrift => DriftLine.Length > 0;
 
     /// <summary>The pointer to the child the instance waits on, or null.</summary>
-    public ChildPointerViewModel? Child => throw new NotSupportedException();
+    public ChildPointerViewModel? Child { get; }
 
     /// <summary>The commands in served order.</summary>
-    public IReadOnlyList<ExpandedCommandViewModel> Commands => throw new NotSupportedException();
+    public IReadOnlyList<ExpandedCommandViewModel> Commands { get; }
 
     /// <summary>True when there are commands.</summary>
-    public bool HasCommands => throw new NotSupportedException();
+    public bool HasCommands => Commands.Count > 0;
 
     /// <summary>True when one of the commands is an answer.</summary>
-    public bool HasAnswer => throw new NotSupportedException();
+    public bool HasAnswer => Commands.Any(c => c.Verb == StatusVerb.Answer);
 
-    /// <summary>The chip that stands for Attach on a live agent step; empty otherwise.</summary>
-    public string AttachChip => throw new NotSupportedException();
+    /// <summary>True on a live agent step, which Attach joins once API P10a serves it.</summary>
+    public bool HasAttach { get; }
 
-    /// <summary>True on a live agent step.</summary>
-    public bool HasAttach => throw new NotSupportedException();
+    /// <summary>The chip that stands for Attach; empty without one.</summary>
+    public string AttachChip => HasAttach ? Labels.AvailableWithP10a : string.Empty;
 
     /// <summary>The Attach chip's accessible name.</summary>
-    public string AttachName => throw new NotSupportedException();
+    public string AttachName => HasAttach ? Labels.AttachPendingName(_address) : string.Empty;
 
     /// <summary>True while the Cancel confirm shows.</summary>
-    public bool IsConfirmingCancel => throw new NotSupportedException();
+    public bool IsConfirmingCancel { get; private set => Set(ref field, value); }
 
     /// <summary>The confirm line: the served sentence, else "Cancel &lt;address&gt;?".</summary>
-    public string ConfirmLine => throw new NotSupportedException();
+    public string ConfirmLine => _cancel?.Confirm is { Length: > 0 } served ? served : Labels.CancelAsk(_address);
 
-    /// <summary>Where focus lands in the confirm: Keep.</summary>
-    public ConfirmChoice ConfirmFocus => throw new NotSupportedException();
+    /// <summary>Where focus lands in the confirm: Keep, the safe answer.</summary>
+#pragma warning disable CA1822, MA0041 // a fixed answer is a property because the view reads it
+    public ConfirmChoice ConfirmFocus => ConfirmChoice.Keep;
+#pragma warning restore CA1822, MA0041
 
-    /// <summary>What the frame says after a confirmed send, which the app does not make yet; empty otherwise.</summary>
-    public string PendingNote => throw new NotSupportedException();
+    /// <summary>The confirm's accessible name for going ahead.</summary>
+    public string ConfirmCancelName => Labels.ConfirmCancelName(_address);
+
+    /// <summary>The confirm's accessible name for keeping.</summary>
+    public string KeepName => Labels.KeepName(_address);
+
+    /// <summary>What the frame says after a confirmed cancel, which the app does not send yet; empty otherwise.</summary>
+    public string PendingNote { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>The Copy status button's words.</summary>
-    public string CopyStatusLabel => throw new NotSupportedException();
+    public string CopyStatusLabel { get; private set => Set(ref field, value); } = Labels.CopyStatus;
 
     /// <summary>The Copy status button's accessible name.</summary>
-    public string CopyStatusName => throw new NotSupportedException();
+    public string CopyStatusName { get; }
 
     /// <summary>The expanded state's accessible name.</summary>
-    public string Name => throw new NotSupportedException();
+    public string Name { get; }
 
-    /// <summary>Asks to cancel: shows the confirm.</summary>
-    public void AskCancel() => throw new NotSupportedException();
+    /// <summary>What the state draws, so a re-read of the same keeps its controls (and the focus on them).</summary>
+    internal string Signature => string.Join('|', _current.Status.Text, StepLine, string.Join(',', Gates), string.Join(',', Commands.Select(c => c.Signature)), _current.Status.Child?.Id);
+
+    /// <summary>Asks to cancel: shows the confirm. Without a Cancel command there is nothing to ask.</summary>
+    public void AskCancel()
+    {
+        if (_cancel is not null)
+        {
+            PendingNote = string.Empty;
+            IsConfirmingCancel = true;
+        }
+    }
 
     /// <summary>Keeps the instance: closes the confirm.</summary>
-    public void Keep() => throw new NotSupportedException();
+    public void Keep() => IsConfirmingCancel = false;
 
-    /// <summary>Goes ahead with the cancel the confirm asked about; the app sends nothing yet.</summary>
-    public void ConfirmCancel() => throw new NotSupportedException();
+    /// <summary>Goes ahead with the cancel the confirm asked about. The app sends nothing yet: it says so, and the Cancel command's CLI is above to copy.</summary>
+    public void ConfirmCancel()
+    {
+        if (IsConfirmingCancel)
+        {
+            IsConfirmingCancel = false;
+            PendingNote = Labels.SendingArrivesNote;
+        }
+    }
 
     /// <summary>Copies the engine's status text, whole.</summary>
     /// <param name="cancellationToken">Cancels the write.</param>
     /// <returns>A task that completes once the clipboard answered.</returns>
-    public Task CopyStatus(CancellationToken cancellationToken) => throw new NotSupportedException();
+    public async Task CopyStatus(CancellationToken cancellationToken)
+    {
+        if (!await _clipboard.SetText(_current.Status.Text, cancellationToken).ConfigureAwait(true))
+        {
+            return;
+        }
+
+        CopyStatusLabel = Labels.Copied;
+        _ = Uncopy(++_copies, cancellationToken);
+    }
+
+    private async Task Uncopy(int copy, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(ProtectedActionViewModel.CopiedFor, _clock, cancellationToken).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        if (copy == _copies)
+        {
+            CopyStatusLabel = Labels.CopyStatus;
+        }
+    }
 }
