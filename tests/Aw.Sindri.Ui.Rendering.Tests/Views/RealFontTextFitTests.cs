@@ -139,6 +139,9 @@ public sealed class RealFontTextFitTests : IDisposable
         {
             Settle(window);
             var path = Named<TextBlock>(window, "ReasonDetailText");
+            Assert.True(path.IsEffectivelyVisible, "the path is hidden");
+            Assert.EndsWith("/sindri/ui/control.json", path.Text, StringComparison.Ordinal);
+            Assert.False(path.TextLayout.TextLines.Any(l => l.HasCollapsed), "the path is trimmed by layout: " + path.Text);
             Assert.True(path.TextLayout.WidthIncludingTrailingWhitespace <= path.Bounds.Width + 0.5, "the path is clipped");
             Assert.True(path.Bounds.Height < path.LineHeight * 1.5, string.Create(CultureInfo.InvariantCulture, $"the path takes {path.Bounds.Height} px"));
         });
@@ -154,6 +157,8 @@ public sealed class RealFontTextFitTests : IDisposable
         {
             Settle(window);
             var detail = Named<TextBlock>(window, "ReasonDetailText");
+            Assert.True(detail.IsEffectivelyVisible && !string.IsNullOrWhiteSpace(detail.Text), "the detail is empty or hidden");
+            Assert.False(detail.TextLayout.TextLines.Any(l => l.HasCollapsed), "the detail is trimmed by layout: " + detail.Text);
             Assert.True(detail.TextLayout.WidthIncludingTrailingWhitespace <= detail.Bounds.Width + 0.5, "the detail is clipped");
         });
     });
