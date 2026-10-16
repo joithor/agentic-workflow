@@ -13,10 +13,10 @@ trap 'rm -rf "$TMPROOT"' EXIT
 ok()   { PASS=$((PASS + 1)); echo "  ok   $1"; }
 fail() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
 
-# Ajv is a dev dependency of scripts/ (scripts/package.json); install it when missing.
-if [ ! -d "$REPO/scripts/node_modules/ajv" ]; then
-  (cd "$REPO/scripts" && npm ci --ignore-scripts --no-audit --no-fund >/dev/null 2>&1) || { echo "cannot install Ajv (npm ci --prefix scripts)"; exit 1; }
-fi
+# Ajv is a dev dependency of scripts/ (scripts/package.json); installed once under a lock, since suites run in parallel.
+# shellcheck source=scripts/lib/ensure-scripts-deps.sh
+. "$REPO/scripts/lib/ensure-scripts-deps.sh"
+ensure_scripts_deps "$REPO/scripts" || exit 1
 
 run() { set +e; OUT="$(node "$CHECK" --root "$1" 2>&1)"; RC=$?; set -e; }
 expect_rc() { if [ "$RC" -eq "$2" ]; then ok "$1 (exit $RC)"; else fail "$1: exit $RC, want $2"; printf '%s\n' "$OUT" | sed 's/^/      | /'; fi; }
@@ -84,6 +84,24 @@ run "$d"; expect_rc "a process directory without environ fails" 1; expect_out "n
 d="$(copy proc-link-outside)"
 ln -sfn /nonexistent-elsewhere/repo "$d/tests/fixtures/sessions/proc/211/cwd"
 run "$d"; expect_rc "a cwd symlink outside the fixture root fails (it may exist on another box)" 1; expect_out "names the link" "proc/211/cwd: symlink target /nonexistent-elsewhere/repo is outside /nonexistent-fixture-root"
+
+echo "shared Ajv install (scripts/lib/ensure-scripts-deps.sh)"
+# Two suites that need Ajv at once: a stub npm (slow, counting its calls) in a scratch package dir.
+dep="$TMPROOT/deps" && mkdir -p "$dep/bin" "$dep/pkg"
+cat > "$dep/bin/npm" <<'STUB'
+#!/usr/bin/env bash
+echo call >> "$NPM_CALLS"
+sleep 1
+mkdir -p node_modules/ajv && echo '{"name":"ajv"}' > node_modules/ajv/package.json
+STUB
+chmod +x "$dep/bin/npm"
+( export PATH="$dep/bin:$PATH" NPM_CALLS="$dep/calls"
+  ensure_scripts_deps "$dep/pkg" > "$dep/a.out" 2>&1 & a=$!
+  ensure_scripts_deps "$dep/pkg" > "$dep/b.out" 2>&1 & b=$!
+  wait "$a" && wait "$b" && echo both-ok > "$dep/result" ) || true
+if [ "$(cat "$dep/result" 2>/dev/null)" = both-ok ]; then ok "two concurrent callers both succeed"; else fail "two concurrent callers: $(cat "$dep/a.out" "$dep/b.out")"; fi
+if [ "$(wc -l < "$dep/calls" | tr -d ' ')" = 1 ]; then ok "npm ci runs once"; else fail "npm ci ran $(wc -l < "$dep/calls" | tr -d ' ') times"; fi
+if [ ! -e "$dep/pkg/.npm-ci.lock" ]; then ok "the lock is released"; else fail "the lock is left behind"; fi
 
 echo
 echo "check-fleet.test.sh: $PASS passed, $FAIL failed"
