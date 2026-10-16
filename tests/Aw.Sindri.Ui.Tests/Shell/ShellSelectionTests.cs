@@ -118,6 +118,7 @@ public sealed class ShellSelectionTests
 
         Assert.Null(shell.NeedsYou.SheetRowId);
         Assert.False(shell.IsSheetOpen);
-        _ = Assert.Single(focused);
+        Assert.NotNull(shell.NeedsYou.SelectedId);
+        Assert.Equal(shell.NeedsYou.SelectedId, Assert.Single(focused));
     }, Token);
 }
