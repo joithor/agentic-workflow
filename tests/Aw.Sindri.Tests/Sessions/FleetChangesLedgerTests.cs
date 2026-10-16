@@ -23,7 +23,7 @@ public sealed class FleetChangesLedgerTests
     public async Task Fleet_changes_are_recorded_with_a_key_that_names_the_change_and_a_payload_without_text()
     {
         var grant = await _h.HoldLease();
-        var change = Change("a1", FleetChangeKind.Appeared, T0) with { Reason = null, LaunchId = Aw.Sindri.Core.Launch.LaunchId.From("L-1") };
+        var change = Change("a1", FleetChangeKind.Appeared, T0) with { Reason = null, LaunchId = Core.Launch.LaunchId.From("L-1") };
 
         var result = await Recorder.Handle(new RecordFleetChangesRequest(grant, [change]), Token);
 

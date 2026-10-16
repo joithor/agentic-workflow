@@ -19,7 +19,7 @@ public sealed class FleetStateFilesTests
         var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(SessionFixtures.Fleet, "manifest.json")));
         var valid = manifest.RootElement.GetProperty("fixtures").EnumerateArray()
             .Where(static f => f.GetProperty("schema").GetString() == "valid")
-            .Select(static f => f.GetProperty("file").GetString()!).ToList();
+            .Select(static f => f.GetProperty("file").GetString()).ToList();
 
         var read = new FleetStateFiles(SessionFixtures.Fleet, _providers, pruning: false).Read(TestContext.Current.CancellationToken).Value;
 

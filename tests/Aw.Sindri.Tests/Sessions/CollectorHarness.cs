@@ -1,8 +1,8 @@
 using Aw.Sindri.Core.Sessions;
+using Aw.Sindri.Core.Text;
 using Aw.Sindri.Features.Sessions;
 using Aw.Sindri.Infrastructure.Launch;
 using Aw.Sindri.Testing;
-using Aw.Sindri.Core.Text;
 
 namespace Aw.Sindri.Tests.Sessions;
 

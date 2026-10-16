@@ -4,7 +4,7 @@ using Aw.Architecture.Tests.TypedIds;
 namespace Aw.Architecture.Tests;
 
 /// <summary>Every §4b.1 rule over every registered production assembly (Packages.cs).</summary>
-[Trait("Lane", "unit")]
+[Trait("Lane", "integration")]
 public sealed class ArchitectureTests
 {
     [Fact]

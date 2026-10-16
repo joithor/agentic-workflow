@@ -5,6 +5,7 @@ using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Ui.Tests.NeedsYou;
 
@@ -107,12 +108,12 @@ public sealed class NeedsYouMapperTests
     }
 
     [Fact]
-    public void Failure_actions_are_pending_and_a_profile_approve_is_cli_only_from_the_catalog()
+    public void Failure_actions_are_ready_and_a_profile_approve_is_cli_only_from_the_catalog()
     {
         var rows = Feed().Rows;
 
         Assert.Equal(["RunService", "PauseService"], rows[1].Actions.Select(a => a.CatalogId), StringComparer.Ordinal);
-        Assert.All(rows[1].Actions, a => Assert.Equal(ActionReadiness.Pending, a.Readiness));
+        Assert.All(rows[1].Actions, a => Assert.Equal(ActionReadiness.Ready, a.Readiness));
         Assert.Equal((NeedsYouUrgency.Colour, new StateChip("FAILED", ChipTone.Fail), (string)_served[1]!["cli"]!), (rows[1].Urgency, rows[1].Chip, rows[1].Cli));
         Assert.Equal((NeedsYouUrgency.Calm, ActionReadiness.CliOnly, "ApproveProfile"), (rows[2].Urgency, rows[2].Actions[0].Readiness, rows[2].PrimaryAction));
     }
@@ -122,6 +123,18 @@ public sealed class NeedsYouMapperTests
     {
         Assert.Equal(new NeedsYouSubject("profile", (string)_served[2]!["subject"]!["id"]!), Feed().Rows[2].Subject);
         Assert.Null(Feed("extra-profile-null-subject").Rows[2].Subject);
+    }
+
+    [Fact]
+    public void A_row_with_a_null_primary_action_has_no_primary_control()
+    {
+        var row = Feed("unknown-service").Rows[0];   // the API's own golden: a profile service this build lacks, served with a null primaryAction
+
+        Assert.Equal("", row.PrimaryAction);
+        Assert.NotEmpty(row.Actions);
+        var vm = new NeedsYouRowViewModel(row, seen: true, reducedMotion: false, arrived: false, new FakeTimeProvider(A.Noon));
+        Assert.NotEmpty(vm.Controls);
+        Assert.DoesNotContain(vm.Controls, c => c.IsPrimary);
     }
 
     [Fact]
@@ -189,7 +202,7 @@ public sealed class NeedsYouMapperTests
     {
         var catalog = Catalog() with { Rows = [.. Catalog().Rows.Select(r => r.Action == "Decide" ? r with { Ui = "from-the-future" } : r)] };
         var feed = NeedsYouMapper.Map(Golden<NeedsYouList>("needs-you", "fixture"), catalog, Pending(), _counts);
-        var control = new ViewModels.Controls.ControlViewModel(catalog.Rows.First(r => r.Action == "Decide"), send: null, new FakeClipboard(), new Microsoft.Extensions.Time.Testing.FakeTimeProvider(A.Noon));
+        var control = new ViewModels.Controls.ControlViewModel(catalog.Rows.First(r => r.Action == "Decide"), send: null, new FakeClipboard(), new FakeTimeProvider(A.Noon));
 
         Assert.All(feed.Rows[0].Actions, a => Assert.Equal(ActionReadiness.CliOnly, a.Readiness));
         Assert.Equal(ViewModels.Controls.ControlKind.CliOnly, control.Kind);

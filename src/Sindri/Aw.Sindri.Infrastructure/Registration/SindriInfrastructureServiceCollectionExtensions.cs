@@ -8,6 +8,7 @@ using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Locks;
 using Aw.Sindri.Core.Mcp;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Secrets;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
@@ -45,8 +46,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
         => services
             .AddSingleton(SettingsFromEnvironment.Read(environment))
             .AddSindriSessions(environment, SettingsFromEnvironment.Read(environment))
-            .AddSingleton<IIdGenerator, GuidV7Ids>()
-            .AddSingleton<IProcessProbe, PosixProcessProbe>()
+            .AddSingleton<IIdGenerator, GuidV7Ids>().AddSingleton<IProcessProbe, PosixProcessProbe>()
             .AddSingleton<LedgerDatabase>()
             .AddSingleton<ILedgerStore, SqliteLedger>()
             .AddSingleton<ILedgerReader, SqliteLedgerReader>()
@@ -54,6 +54,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<ViewsDatabase>()
             .AddSingleton<IViewStore, SqliteViewStore>()
             .AddSingleton<IViewReader, SqliteViewReader>()
+            .AddSingleton<IJobViews, SqliteJobViews>().AddSingleton<IServicePauses, ViewServicePauses>()
             .AddSingleton<IProfileSource, YamlProfileSource>()
             .AddSingleton<IApprovals, FileApprovals>()
             .AddSingleton<IApprovedProfile>(static sp => sp.GetRequiredService<IApprovals>())

@@ -21,7 +21,7 @@ public sealed class AgentProcessRulesTests
     [Fact, Trait("Lane", "unit")]
     public void AgentProcess_matches_comm_only_for_names_the_kernel_did_not_cut()
     {
-        var long_ = new Aw.Sindri.Core.Launch.AgentEntry(Aw.Sindri.Core.Launch.AgentId.From("longname"), "Long", "a-very-long-agent-name", ProcessName: null, Transcripts: null, Resume: null);
+        var long_ = new Core.Launch.AgentEntry(Core.Launch.AgentId.From("longname"), "Long", "a-very-long-agent-name", ProcessName: null, Transcripts: null, Resume: null);
         Assert.Null(AgentProcessRules.Match(Proc(5, 0, "a-very-long-age"), [long_]));
         Assert.Same(long_, AgentProcessRules.Match(Proc(5, 0, "x", argv0: "/opt/a-very-long-agent-name"), [long_]));
     }

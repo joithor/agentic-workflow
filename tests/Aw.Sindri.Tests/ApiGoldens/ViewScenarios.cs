@@ -146,7 +146,7 @@ internal static class ViewScenarios
         return await pending;
     }
 
-    private static async Task Stall(GoldenHost host, CancellationToken ct)
+    internal static async Task Stall(GoldenHost host, CancellationToken ct)
     {
         await CatchUp(host, ct);   // the first build finishes, so the stall is one of a running projector
         await Append(host, EventTypes.ServiceRan, "not a service run", "service.ran:unreadable", ct);

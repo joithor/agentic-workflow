@@ -7,7 +7,7 @@ namespace Aw.Sindri.Tests.Sessions;
 /// <summary>Claude's session records (collector spec §4.1 step 3): '*.json' only, bounded, defensive.</summary>
 public sealed class ClaudeSessionRecordsTests
 {
-    private static IReadOnlyList<Aw.Sindri.Core.Sessions.ClaudeRecord> Read(string directory) =>
+    private static IReadOnlyList<Core.Sessions.ClaudeRecord> Read(string directory) =>
         new ClaudeSessionRecords(directory).Read(TestContext.Current.CancellationToken).Value;
 
     [Fact, Trait("Lane", "integration")]
