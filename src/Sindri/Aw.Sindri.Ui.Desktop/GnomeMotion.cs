@@ -40,7 +40,7 @@ internal static class GnomeMotion
                 return false;
             }
 
-#pragma warning disable RS0030 // the process exited and WaitForExit flushed the stream, so the read is finished and GetResult doesn't block
+#pragma warning disable RS0030 // the child has exited, so its stream reaches end of file at once; this short-lived tool leaves no grandchild holding the pipe
             return process.ExitCode == 0 && string.Equals(output.GetAwaiter().GetResult().Trim(), "false", StringComparison.Ordinal);
 #pragma warning restore RS0030
         }

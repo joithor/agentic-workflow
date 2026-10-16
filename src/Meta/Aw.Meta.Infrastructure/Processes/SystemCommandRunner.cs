@@ -91,9 +91,10 @@ internal sealed class SystemCommandRunner : ICommandRunner
             {
                 await reading.ConfigureAwait(false);
             }
-            catch (OperationCanceledException)
+            catch (Exception exception) when (exception is OperationCanceledException or IOException or ObjectDisposedException)
             {
-                // The output a grandchild produced after the grace is dropped.
+                // The output a grandchild produced after the grace is dropped, and a pump that failed (a log that can't
+                // be written, a pipe that closed) loses output only: the command's own result stands.
             }
         }
     }

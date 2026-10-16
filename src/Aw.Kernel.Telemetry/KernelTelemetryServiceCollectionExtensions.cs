@@ -24,7 +24,7 @@ public static class KernelTelemetryServiceCollectionExtensions
             throw new InvalidOperationException("AddKernelTelemetry was already called: a process runs one TelemetryRuntime.");
         }
 
-#pragma warning disable CA2000 // the runtime is registered as a singleton instance: the container disposes it
+#pragma warning disable CA2000 // the runtime is registered as a singleton: the container disposes it once resolved (Program.cs resolves it)
         var runtime = TelemetryRuntime.Start(options);
 #pragma warning restore CA2000
         _ = services.AddSingleton(_ => runtime);

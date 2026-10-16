@@ -13,7 +13,7 @@ checks:
     status: active
     note: "checked in review"
 gap: open
-gapNote: "BannedSymbols.Tests.txt (engineering.csharp.tests-use-fake-time) bans the wall clock, Guid.NewGuid and Thread.Sleep in tests; builders, shared fixtures and the rest of this rule are followed in review."
+gapNote: "The wall clock, Guid.NewGuid and Thread.Sleep in tests are checked by the tests-use-fake-time record; builders, shared fixtures and the rest of this rule are followed in review."
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b5"

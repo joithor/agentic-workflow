@@ -71,7 +71,10 @@ public sealed class SystemCommandRunnerTests : IDisposable
         {
             lock (unobserved)
             {
-                unobserved.Add(e.Exception);
+                if (e.Exception.ToString().Contains(nameof(SystemCommandRunner), StringComparison.Ordinal))
+                {
+                    unobserved.Add(e.Exception);   // only this runner's: the handler is process-wide and other tests run beside this one
+                }
             }
         }
 

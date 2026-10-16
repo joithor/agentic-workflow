@@ -49,8 +49,8 @@ internal sealed class ProcessToolRunner : IToolRunner
             return ToolRun.TimedOut;
         }
 
-        process.WaitForExit();   // flushes the redirected streams
-#pragma warning disable RS0030 // both reads are finished: WaitForExit above flushed the redirected streams, so GetResult doesn't block
+        process.WaitForExit();   // the tool has exited; its streams reach end of file
+#pragma warning disable RS0030 // the child has exited, so its stream reaches end of file at once; this short-lived tool leaves no grandchild holding the pipe
         _ = error.GetAwaiter().GetResult();
         return new ToolRun(ToolOutcome.Exited, process.ExitCode, output.GetAwaiter().GetResult());
 #pragma warning restore RS0030
