@@ -116,6 +116,25 @@ public sealed class LaneSendTests
         Assert.Contains("aw-meta", line, StringComparison.Ordinal);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_failed_wake_is_reported_keeps_the_message_and_is_retried_by_the_next_send()
+    {
+        await _world.Ready();
+        _ = _world.PutLane("api");
+        await Heartbeat("api", stopped: true);
+        _world.Panes.WakeFailure = "tmux send-keys exited 1: can't find pane";
+
+        var failed = await Send("api");
+        _world.Panes.WakeFailure = null;
+        var retried = await Send("api", "again");
+
+        Assert.False(failed.Woken);
+        Assert.StartsWith("the wake failed: tmux send-keys exited 1", failed.WakeSkipped, StringComparison.Ordinal);
+        Assert.Equal(2, (await _world.LaneMail.Owed("api", CancellationToken.None)).Value.Count);
+        Assert.True(retried.Woken);
+        _ = Assert.Single(_world.Panes.Woken);
+    }
+
     [Theory, Trait("Lane", "unit")]
     [InlineData("busy", "the lane is not idle")]
     [InlineData("down", "lane down")]

@@ -41,7 +41,7 @@ public sealed class DirectoryLaneFilesContractTests : LaneFilesContract, IDispos
         }
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact]
     public async Task A_lane_name_that_could_escape_the_directory_is_never_read()
     {
         await File.WriteAllTextAsync(Path.Combine(_dir.Path, "secret"), "x", TestContext.Current.CancellationToken);
@@ -52,7 +52,20 @@ public sealed class DirectoryLaneFilesContractTests : LaneFilesContract, IDispos
         Assert.Null(record.Value);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact]
+    public async Task A_lane_name_with_a_dot_or_an_underscore_reads_as_team_init_allows_but_only_dots_never_does()
+    {
+        await File.WriteAllTextAsync(Path.Combine(_dir.Path, "a_b.c"), "sess-1\n", TestContext.Current.CancellationToken);
+        var files = new DirectoryLaneFiles(_dir.Path);
+
+        var named = await files.Record("a_b.c", CancellationToken.None);
+        var dots = await files.Record("..", CancellationToken.None);
+
+        Assert.Equal("sess-1", named.Value!.Session!.Value.Value);
+        Assert.Null(dots.Value);
+    }
+
+    [Fact]
     public async Task A_broken_agent_file_counts_as_absent()
     {
         await File.WriteAllTextAsync(Path.Combine(_dir.Path, "api.agent"), "{ not json", TestContext.Current.CancellationToken);

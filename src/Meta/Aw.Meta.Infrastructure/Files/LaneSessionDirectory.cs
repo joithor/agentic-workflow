@@ -7,7 +7,7 @@ namespace Aw.Meta.Infrastructure.Files;
 /// <summary>
 /// The live sessions: Claude Code's own, plus the non-Claude lanes the launcher recorded whose agent is up in its tmux pane. A lane source
 /// beside the sessions directory, so the lane map and health see a Codex or Cursor lane as "team-lane". With no non-Claude lane recorded
-/// it is exactly the sessions directory (no tmux call, no team-config read).
+/// it is exactly the sessions directory: it reads the team config and the lane records, but makes no tmux call.
 /// </summary>
 /// <param name="claude">Claude Code's sessions directory.</param>
 /// <param name="config">The team config, for the team name and the lanes.</param>

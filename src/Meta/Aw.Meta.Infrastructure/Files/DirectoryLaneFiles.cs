@@ -30,9 +30,10 @@ internal sealed class DirectoryLaneFiles(string directory) : ILaneFiles
             : Results.Success<LaneRecord?>(new LaneRecord(lane, session?.Id, agent, session?.At, ambiguous));
     }
 
-    // Lane names are lowercase letters, digits and dashes (meta-lane.sh enforces it); anything else never names a file here.
+    // The characters team-init accepts for a lane: letters, digits, '.', '_' and '-'. A name of only dots would name the directory
+    // itself or its parent, so it never names a file here.
     private static bool IsLaneName(string lane) =>
-        lane.Length > 0 && lane.All(static c => char.IsAsciiLetterOrDigit(c) || c == '-');
+        lane.Length > 0 && lane.Any(static c => c != '.') && lane.All(static c => char.IsAsciiLetterOrDigit(c) || c is '.' or '_' or '-');
 
     private static async ValueTask<(SessionId Id, DateTimeOffset At)?> ReadSession(string path, CancellationToken cancellationToken)
     {

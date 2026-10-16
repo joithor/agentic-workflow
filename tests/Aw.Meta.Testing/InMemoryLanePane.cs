@@ -1,4 +1,5 @@
 using Aw.Kernel;
+using Aw.Meta.Core;
 using Aw.Meta.Core.Lanes;
 using Aw.Meta.Core.Ports;
 
@@ -12,6 +13,9 @@ public sealed class InMemoryLanePane : ILanePane
 
     /// <summary>Every (session, line) typed, in order.</summary>
     public IReadOnlyList<(string Session, string Line)> Woken => _woken;
+
+    /// <summary>When set, every wake fails with this message and types nothing.</summary>
+    public string? WakeFailure { get; set; }
 
     /// <summary>Makes a session exist.</summary>
     /// <param name="session">The session name.</param>
@@ -30,6 +34,12 @@ public sealed class InMemoryLanePane : ILanePane
     /// <inheritdoc />
     public ValueTask<Result<Unit>> Wake(string session, string line, CancellationToken cancellationToken)
     {
+        if (WakeFailure is not null || !_panes.ContainsKey(session))
+        {
+            var reason = WakeFailure ?? $"no such session: {session}";
+            return Done.Failed<Unit>(MetaErrors.CommandFailed.With(reason));
+        }
+
         _woken.Add((session, line));
         return Done.Unit();
     }
