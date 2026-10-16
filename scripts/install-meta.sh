@@ -35,6 +35,12 @@ if [ "$AW_PROVIDER" != claude ]; then
   exit 0
 fi
 
+# aw-meta reads Linux /proc (memory, uptime, the process table), so it does not run on macOS yet.
+if [ "$(uname)" = Darwin ]; then
+  echo "install-meta: aw-meta is Linux-only for now (it reads /proc); not installing on macOS" >&2
+  exit 1
+fi
+
 # 1. Build.
 if [ "${AW_SKIP_BUILD:-0}" = 1 ]; then
   [ -x "$BIN/aw-meta" ] || { echo "install-meta: AW_SKIP_BUILD=1 but $BIN/aw-meta is missing" >&2; exit 1; }
