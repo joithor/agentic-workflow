@@ -68,7 +68,7 @@ internal sealed partial class ShellViewModel
             return;
         }
 
-        (IsSheetOpen, OpenerRow) = (true, null);
+        (IsSheetOpen, OpenerRow, OpenerStrip) = (true, null, null);
         Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
     }
 }

@@ -120,7 +120,11 @@ internal sealed partial class ShellViewModel
     {
         Strip.Deselect();
         Navigate(ParkRowFor(row) is { } park ? LinkOf(park.Id) : row.Link);
+        OpenerStrip = row.Address;
     }
+
+    /// <summary>The strip row the sheet was opened from (its address), where Esc returns focus; null when the sheet came from elsewhere.</summary>
+    internal string? OpenerStrip { get; private set; }
 
     // J / K on Home walk Needs you, then the strip, then Running, then Queued (and back); true when the key was used.
     private bool MoveOnHome(int step)

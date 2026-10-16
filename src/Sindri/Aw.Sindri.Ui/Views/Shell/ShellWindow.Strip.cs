@@ -36,6 +36,12 @@ internal sealed partial class ShellWindow
         Dispatcher.UIThread.Post(() => FocusStripRow(address), DispatcherPriority.Loaded);
     }
 
+    private Control? OpenerStripFrame() => Shell?.OpenerStrip is { } address ? StripFrame(address) : null;
+
+    private Control? StripFrame(string address) => Usable(this.Get<Border>("Page").GetVisualDescendants().OfType<StripRow>()
+        .FirstOrDefault(r => r.IsEffectivelyVisible && string.Equals(r.Address, address, StringComparison.Ordinal))
+        ?.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => string.Equals(b.Name, "StripRowFrame", StringComparison.Ordinal)));
+
     private void FocusStripRow(string address)
     {
         var row = this.Get<Border>("Page").GetVisualDescendants().OfType<StripRow>()
