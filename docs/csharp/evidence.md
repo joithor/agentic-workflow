@@ -20,6 +20,7 @@ every path it writes into a run file is absolute.
 | Command | Does | Exit |
 |---|---|---|
 | `run <script.json> <run-dir> [--baseline png] [--app-build sha] [--fixtures id] [--cache verdict-cache.json] [--host url] [--allow-preview-host] [--allow-writes] [--lock-timeout s]` | Once both locks are held, deletes `<run-dir>/summary.json`; runs every step of a UI script in each of its viewports, writes `summary.json` and prints it | 0 every step passed · 2 a step failed or broke · 1 · 4 · 75 |
+| `api-run <script.json> <run-dir> --at base\|head [--repo dir] [--app-build sha] [--host url] [--allow-preview-host] [--config file] [--lock-timeout s]` | Deletes `<run-dir>/summary.json`; vets the script (host, redirects, CLI targets, write verbs, environment) before any lock; once both locks are held, runs the HTTP requests, then the CLI calls, in order; writes `summary.json` (`evidence.api.summary/1`) and prints it | 0 every expectation held · 2 one did not · 1 · 4 · 75 |
 | `parity <manifest.json> <run-dir> [--host url] [--allow-preview-host] [--allow-writes] [--app-build sha] [--db-provenance seeded\|unknown] [--lock-timeout s]` | Once both locks are held, deletes `<run-dir>/parity.json`; measures each design frame, writes `parity.json` and prints it; each failed box check is also a stderr line `ui-evidence: geometry: <frame> <target>: <failure>` | 0 every geometry check passed · 2 one failed · 1 · 4 · 75 |
 | `parity-plan <run-dir> [--reviewed file,file]` | Prints the Linear attachment plan (one side-by-side image per frame) | 0 every image reviewed · 3 an image is unreviewed · 1 provenance unknown (AW-EVIDENCE-016: the evidence stays local) |
 | `parity-comment <run-dir> --for linear\|github` | Prints the comment as markdown (Linear: a table with geometry; GitHub: a table, images stay on Linear) | 0 · 1 |
@@ -32,7 +33,7 @@ every path it writes into a run file is absolute.
 
 `--lock-timeout` is whole seconds, 0 to 86400 (default 120; 0 tries once), and applies to each lock in turn, so exit 75 can come after up to twice the value; anything else is a usage error. A `--baseline` that doesn't exist is AW-EVIDENCE-010 (exit 1) before any lock is taken; one that exists but doesn't decode as a PNG leaves the verdict `unchecked` (never `unchanged`). `--host` takes a bare origin: `http://localhost:<port>`
 or `http://127.0.0.1:<port>` (local: no extra flag), or an https preview host matching `UI_EVIDENCE_PREVIEW_HOST_PATTERN`
-with `--allow-preview-host` (the host guard below). Without `--host` the binary drives `http://localhost:3000`.
+with `--allow-preview-host` (the host guard below). Without `--host`, `run` and `parity` drive `http://localhost:3000`; `api-run` has no default host and refuses a script with requests (AW-EVIDENCE-004) unless `--host` names one.
 
 ### Exit codes
 
@@ -41,16 +42,19 @@ One scheme for every command:
 | Exit | Meaning | Errors |
 |---|---|---|
 | 0 | Done; every check passed | — |
-| 1 | Usage error, invalid input, or a guard refused | `ui-evidence: usage: ui-evidence <shape>`; AW-EVIDENCE-001…006, 010, 012, 016 |
-| 2 | A check failed: a step failed or broke (`run`), a box check failed (`parity`), the stack is unhealthy (`doctor`) | the document is still written and printed |
+| 1 | Usage error, invalid input, or a guard refused | `ui-evidence: usage: ui-evidence <shape>`; AW-EVIDENCE-001…006, 010, 012, 016, 017, 019, 022 |
+| 2 | A check failed: a step failed or broke (`run`), an expectation did not hold (`api-run`), a box check failed (`parity`), the stack is unhealthy (`doctor`) | the document is still written and printed |
 | 3 | Blocked on review (`parity-plan`) | the plan is still printed |
-| 4 | The run itself errored, or the environment's I/O failed: the browser failed to start or crashed, a frame's anchor is missing, a region runs past the viewport, a file couldn't be read or written (the script included), a lock directory couldn't be made | AW-EVIDENCE-011, 013, 015 (a stack probe failure, AW-EVIDENCE-014, is never an exit: `doctor` and `provenance` report it in their document) |
+| 4 | The run itself errored, or the environment's I/O failed: the browser failed to start or crashed, a frame's anchor is missing, a region runs past the viewport, a file couldn't be read or written (the script included), a lock directory couldn't be made; `api-run`: a request failed, timed out or was redirected off its origin (AW-EVIDENCE-023), a golden file could not be read (011), a CLI call would not start or ran past its limit, or its temporary directory could not be made (AW-EVIDENCE-015, the same code the unexpected-exception line uses) | AW-EVIDENCE-011, 013, 015, 023 (a stack probe failure, AW-EVIDENCE-014, is never an exit: `doctor` and `provenance` report it in their document) |
 | 75 | A machine lock stayed busy past `--lock-timeout` | AW-EVIDENCE-009 |
 | 130 | Interrupted (SIGINT, SIGTERM, SIGHUP, SIGQUIT): a browser call in flight is abandoned at once and the locks are released on the way out. A second signal terminates the process without waiting (a lock it held is then left for a person to remove) | `ui-evidence: interrupted` |
 
 The mapping is by error kind: `timeout` → 75, `unavailable` → 4, anything else → 1. An unexpected exception (a bug,
 or a failure outside a result) is `ui-evidence: AW-EVIDENCE-015 the run failed unexpectedly: <first line>` and exit 4,
 never the runtime's crash exit.
+
+Codes AW-EVIDENCE-018 (database script), 020 (database refused), 021 (server identity mismatch) and 024 are reserved for
+`db-run` and the identity check (DT-E2) and are returned by nothing yet.
 
 ### stdout and stderr
 
@@ -159,6 +163,54 @@ A frame:
 | `knownDifferences` | string[] | no | [] | intentional differences that explain a non-zero diff; no empty entry |
 | `designNode` | string \| null | no | null | the design node (id or URL) this frame was exported from |
 
+### API script (`api-run <script.json>`)
+
+Schema `evidence.api.run/1`, read like the UI script (camelCase, unknown keys refused at every level, enum-like values
+matched by name), under AW-EVIDENCE-017 (exit 1) and checked before any lock. The message names the file, the JSON
+location and the problem (`script <path>: $.requests[0].expect.pointers[0].pointr: unknown property`). The script's
+SHA-256 is the summary's `scriptSha256`. Writing the script is the plan Step's job; `api-run` only reads and checks it.
+
+| Key | Type | Required | Holds and rules |
+|---|---|---|---|
+| `schema` | string | no | `evidence.api.run/1` when given |
+| `requests` | request[] | no | HTTP requests, run first, in order |
+| `cli` | call[] | no | CLI calls, run after the requests, in order. `requests` and `cli` together hold at least one entry |
+| `declaredWrites` | string[] | no | words (`add`, `delete`) the script declares as its writes; a CLI argument that reads as a write verb is refused unless it is declared here. Shown in the summary |
+| `passEnv` | string[] | no | UPPER_SNAKE names of environment variables a CLI call may inherit, on top of the targets file's `cli.passEnv`. A name that reads as a secret is refused |
+
+A request:
+
+| Key | Type | Required | Holds and rules |
+|---|---|---|---|
+| `method` | `GET` \| `HEAD` \| `POST` \| `PUT` \| `PATCH` \| `DELETE` \| `OPTIONS` | yes | upper case |
+| `path` | string | yes | a path on the host: one leading `/`, not `//`, no backslash, no space, no `?` or `#`; it can never name another host |
+| `headers` | `{ <name>: { "env": "<VAR>" } }` | no | a header's value comes only from the named environment variable (UPPER_SNAKE). A literal string is refused (AW-EVIDENCE-017) so no secret sits in a script. A variable that is unset is AW-EVIDENCE-006, naming the variable, never a value |
+| `body` | any JSON value | no | sent as `application/json`; not on `GET` or `HEAD` |
+| `expect` | expectation | yes | below; `status` is required |
+
+A CLI call:
+
+| Key | Type | Required | Holds and rules |
+|---|---|---|---|
+| `argv` | string[] | yes | the program, then its arguments; no shell. `argv[0]` is a path under a build output (below), never a bare name |
+| `stdin` | string \| null | no | text written to its standard input |
+| `expect` | expectation | yes | `exitCode` is required |
+
+An expectation (`status` on a request, `exitCode` on a CLI call; the other is refused):
+
+| Key | Type | Holds and rules |
+|---|---|---|
+| `status` | integer 100 to 599 | the final response's status |
+| `exitCode` | integer 0 to 255 | the process's exit code |
+| `pointers` | assertion[] | JSON Pointer (RFC 6901) assertions over the response body, or over the CLI's stdout, read as JSON |
+| `golden` | string | a file the body or stdout must equal (as canonical JSON when both are JSON, else as text); a relative path resolves against the script's directory. A missing file is AW-EVIDENCE-010 before any lock |
+
+An assertion is `{ "pointer": "/items/0/title", ... }` with exactly one of `equals` (any JSON value), `exists` (`true`
+or `false`) and `matches` (a .NET regular expression, matched against a string value, or the JSON text of another
+scalar, within 100 ms). A pointer is `""` or starts with `/`; `~0` is `~` and `~1` is `/`; any other `~` escape is
+refused. An array index is digits without a leading zero; `-` never resolves. A document that does not parse as JSON
+fails its pointer assertions (`actual: "not JSON"`).
+
 ## Run files
 
 Scorer and bugfix-state read these files after their own ports; the fields they read are marked †.
@@ -197,6 +249,51 @@ an app build is trusted only inside the run invocation that wrote it, its `runIn
 never reuses it), then one critique of the changed region. No passed step, no
 judge wired, or no answer from the judge, is `unchecked`.
 
+### `summary.json` for `api-run` (`schema: "evidence.api.summary/1"`)
+
+The UI run's shape for the fields the readers share, so one reader and one judge input serve both. Every key is always
+written (`null` or `[]`, never missing), in this order. The run directory is made and an earlier `summary.json` in it
+deleted first, before the script is read, so no exit leaves a stale one. A summary is then written on every exit except these, which
+write none: 75 (a lock stayed busy), a script that cannot be read, a run directory that cannot be made, an unexpected exception
+(AW-EVIDENCE-015, exit 4) and 130 (interrupted). Any other failure is in the summary: an error of the input (a script, host, header,
+CLI target or a golden file that is missing) is `refused` (exit 1); a failure of the environment's I/O (an unreadable golden file, a
+lock directory that cannot be made) is `errored` with `error` set (exit 4). Nothing is written outside the absolute `<run-dir>`
+and the box-wide locks, except that each CLI call runs in a fresh temp directory under the system temp dir, removed when the call ends.
+
+| Field | Type | Holds |
+|---|---|---|
+| `schema`, `kind` | string | `evidence.api.summary/1`; `api` |
+| `runId`, `runInstance`, `startedAt`, `finishedAt`, `appBuild`, `scriptSha256` | | as in `ui-evidence.run/1` |
+| `at` | `base` \| `head` | the side `--at` named; the caller checks out and starts the app (Sindri's recipes do); `api-run` only records it |
+| `host` | string \| null | the origin the requests went to; null when the script has no requests |
+| `outcome` | `passed` \| `failed` \| `refused` \| `errored` | exit 0 · 2 · 1 · 4. A test pins that exit and `outcome` agree: the exit code alone decides |
+| `headline` | string | one line, 200 characters at most, scrubbed: `passed: 7 assertions`, `GET /api/items: status 500, expected 201 (assertion 3 of 7)` |
+| `steps[]` | object[] | one per request, then per CLI call: `index` (1-based), `action` (`request` \| `cli`), `target` (`GET /path`, or the argv without the program's arguments' values: `out/tool` and its words), `status` (`passed` \| `failed` \| `broken` \| `skipped`), `code` (the HTTP status or exit code, or null), `output` (the body or stdout, scrubbed and capped at 2,000 characters, or null), `headerNames` (names only) |
+| `failures[]` | object[] | one per assertion that did not hold: `step`, `pointer` (string \| null), `expected`, `actual` (text, scrubbed, capped at 200 characters; `missing` for an absent pointer) |
+| `declaredWrites[]` | string[] | the script's declaration, so a report shows it |
+| `passedEnv[]` | string[] | names only, of the variables beyond `PATH`, `HOME`, `TMPDIR` and `LANG` a CLI call received |
+| `provenance`, `seedSha256` | `unseeded`; null | the run seeds nothing |
+| `refusal` | `{code, message}` \| null | set on exit 1: the AW-EVIDENCE code and the message of the stderr line |
+| `error` | `{code, message}` \| null | set on exit 4 |
+| `invocations[]` | | always `[]`: no model runs |
+
+A step's `broken` is a request that failed or a program that would not start (exit 4); `skipped` is a step after it.
+A run that is refused, or errored before it starts (an unreadable golden file, a lock that failed), ran nothing: its `steps` is `[]`,
+and `refusal` or `error` names what stopped it. An assertion that does not hold marks its step `failed`, and the
+remaining steps still run (a request or call is an action that already happened or never will). Recorded text — each step's
+output, each failure's `pointer`, `expected` and `actual`, and the `headline` (built from them, or from the refusal or error message) — goes through the run's scrubber and
+`Aw.Redaction` as it is recorded: the run's own values are replaced by value (each resolved header value with
+`[REDACTED:header-value]`, and for a `<scheme> <credential>` value such as `Bearer <token>` the credential alone too; each
+pass-through variable value with `[REDACTED:env-value]`; wherever an app echoes them, including their JSON-escaped forms; a value
+under 6 characters is left to the patterns) together with the pattern scrub, then the value of every secret-named JSON member is
+hidden, the value and pattern scrub runs again, and the text is capped. A failure whose `pointer` runs through a secret-named member has its `expected` and `actual` replaced whole by `[REDACTED:secret-field]`. The refusal and error messages are the tool's own text, not
+a response body: they get the value and pattern scrub, not member hiding or the cap. Every other field is written as it is: it comes
+from the command line, the repo, the script or the tool itself (`schema`, `kind`, `at`, `host`, `appBuild`, `runId`, `runInstance`, timestamps,
+`scriptSha256`, `seedSha256`, `declaredWrites`, `passedEnv` names, `provenance`, step `index`, `action`, `target`, `headerNames`,
+`failures[].step`, a refusal's or error's `code`, the always-empty `invocations`), or it is a number or enum value that can't carry text (a step's HTTP status or exit
+`code`, its `status`, the run's `outcome`). stdout is exactly the file's content (no trailing newline) and logs go to stderr. The JSON Schemas of the script and the summary are generated from the records and committed as
+`schemas/evidence/api-script.schema.json` and `schemas/evidence/api-summary.schema.json`; a test validates a produced summary against its schema.
+
 ### `parity.json` (`schema: "ui-evidence.parity/1"`)
 
 | Field | Type | Holds |
@@ -227,9 +324,50 @@ ask-first question; it states what will happen: a Linear upload only when seeded
 there is none), `linearUploadAllowed` (seeded and an issue given), `files` (the step screenshots), `note`, and
 `prComment` (the markdown body).
 
+## Data evidence guards
+
+`api-run` is held to these, in this order, before it takes a lock; each refusal is exit 1 with its code, and the
+summary says `refused`. Honest mistakes are what they stop (a request sent to the wrong host, a program that deletes
+something), not a determined agent.
+
+| Guard | Rule | Code |
+|---|---|---|
+| Host | requests go only to `--host`, which is required and has no default (a script with `requests` and no `--host` is refused). The host guard above decides it: a bare loopback origin, or a preview host with `--allow-preview-host` | AW-EVIDENCE-004 |
+| Redirects | a redirect to the same origin is followed (up to five hops) unless the expectation's `status` is itself a 3xx; a redirect to any other origin is never followed, and ends the run (exit 4) naming the origin it refused | AW-EVIDENCE-023 |
+| Writes | none refused: API evidence allows any HTTP method on the host the script names (owner decision, 2026-10-15). There is no `--allow-writes` for `api-run` | |
+| Header secrets | values come only from named environment variables; only the names are recorded, and the values (and a scheme value's credential alone) are scrubbed by value from every free-text field the run records | AW-EVIDENCE-017 (a literal), AW-EVIDENCE-006 (unset) |
+| CLI target | `argv[0]` contains a `/`: it resolves, against `--repo` (default: the working directory) and after following every symlink, to an executable file inside a build output directory or equal to a `cli.allow` path. A bare name is never looked up on `PATH`. With nothing configured, every CLI call is refused, and the message names the files to write | AW-EVIDENCE-019 |
+| CLI writes | an argument that reads as a write verb (the UI guard's list, plus `push`, `drop`, `rm`, `truncate`, `destroy`, `purge`, `wipe`, `kill`, `commit`, `put`, `patch`, `write`, `rollback`, `revert`, `uninstall`) is refused unless the script's `declaredWrites` names it | AW-EVIDENCE-019 |
+| CLI environment | each call runs in a fresh temporary directory (its `HOME` and `TMPDIR`) with an empty environment plus `PATH`, `LANG` and the declared pass-through names. A pass-through name that reads as a secret (it contains `TOKEN`, `SECRET`, `PASSWORD`, `CREDENTIAL`, `API_KEY` or `PRIVATE_KEY`, starts with `AWS_`, `AZURE_`, `GCP_`, `GOOGLE_`, `SSH_` or `GITHUB_`, or is `DATABASE_URL`) is refused | AW-EVIDENCE-019 |
+| Redaction | recorded text (step output, failures' pointer, expected and actual, and the headline) is scrubbed by the run's own values and `Aw.Redaction`'s patterns, has secret-named JSON members hidden, and is capped; refusal and error messages get the value and pattern scrub; every other field is written as it is (see the summary section) | |
+
+### Targets config
+
+What a script may reach comes from configuration beside the repo under test, not from the script; there is no built-in default (no
+`bin/Release`, `dist` or `target`).
+
+- **Per repo**: `<repo>/.agentic-workflow/evidence.json` (`--repo`, default the working directory), or the file `--config <file>`
+  names instead (an explicit override; a missing file is AW-EVIDENCE-010). There is no machine-wide default file. A missing
+  repo file is an empty config.
+  ```json
+  {
+    "schema": "evidence.targets/1",
+    "cli": { "buildOutputs": ["out", "build/bin"], "allow": ["/abs/path/to/tool"], "passEnv": ["LANG"] },
+    "databases": { "<name>": { "engine": "postgres", "host": "127.0.0.1", "port": 55432, "database": "fixture",
+                               "user": "evidence_ro", "passwordEnv": "EVIDENCE_PG_PASSWORD", "disposable": true,
+                               "identity": { "serverAddress": "172.17.0.2", "database": "fixture" } } }
+  }
+  ```
+  `schema` is `evidence.targets/1` or `evidence.repo/1`. `cli.buildOutputs` are relative directories that, after symlinks, stay
+  inside the repo; `cli.allow` holds absolute paths; `cli.passEnv` names variables every CLI call may inherit. `databases`
+  belongs to `db-run` (a later stage); `api-run` reads and validates the file whole. Unknown keys, an absolute or escaping
+  build output, a relative allow path, and invalid JSON are AW-EVIDENCE-022 (the message names the file and the JSON location).
+
+The use cases see only the Core port `IEvidenceTargets`; the file names and the state directory are the adapter's.
+
 ## Locks
 
-`run` and `parity` hold two box-wide locks for the whole browser run, through Evidence's own Core port
+`run`, `parity` and `api-run` hold two box-wide locks for the whole browser run, through Evidence's own Core port
 `IMachineLocks` (`AcquireAsync(LockKind, timeout) → Result<ILockLease>`), in a fixed order: the QA-stack lock (the wider
 one) first, then the heavy-job lock; failing to take the second releases the first. A guard refusal or a bad input is
 reported before any lock is taken. The leases are released on every path: success, failure, exception and
@@ -308,6 +446,7 @@ These are read by Infrastructure's `EnvironmentEvidenceSettings` and lock settin
 | `UI_EVIDENCE_SEED_TABLE` | `provenance`: the `[schema.]table` whose `email` column is read (a plain identifier only, since it is spliced into the SQL; anything else counts as unset). Unset: `unknown` |
 | `UI_EVIDENCE_SEED_DOMAINS`, `UI_EVIDENCE_SEED_EMAIL_PATTERN` | `provenance`: the seed policy (defaults match only `example.com`, so an unconfigured install stays `unknown`) |
 | `AW_QA_STACK_LOCK`, `AW_HEAVY_JOB_LOCK`, `AW_HEAVY_SLOTS`, `AW_HEAVY_LOCK_HELD`, `AW_STATE_DIR` | the lock adapter |
+| the script's `headers.*.env` and `passEnv`, the targets file's `cli.passEnv` | `api-run`: values by the name the script or file gives, never recorded |
 | the manifest's `login.emailEnv` / `login.passwordEnv` | `parity` sign-in |
 
 `doctor` checks `http://localhost:3000/login`'s title, `docker exec <container> pg_isready -U <user>` when a container is
@@ -339,14 +478,19 @@ move behind an AOT host if the browser adapter ever allowed it.
 | `IStackProbe`, `IProvenanceQuery` | `ProcessStackProbe`, `DockerPsqlProvenance` | `FakeStackProbe`, `FakeProvenanceQuery` |
 | `ISecretsSource` (credentials by the name the manifest gives) | `EnvironmentSecrets` | `FakeSecrets` |
 | `IEvidenceSettings` (user agent, visual model, preview host pattern, API port, seed policy, app title) | `EnvironmentEvidenceSettings` | `FakeEvidenceSettings` |
+| `IApiTransport` (one HTTP request, never following a redirect) | `HttpApiTransport` | `FakeApiTransport` |
+| `ICliRunner` (one program, a fresh temporary directory, an exact environment) | `ProcessCliRunner` | `FakeCliRunner` |
+| `IExecutableLocator` (the real path of an executable file or a directory, symlinks followed) | `FileExecutableLocator` | `FakeExecutableLocator` |
+| `IEvidenceTargets` (the merged targets config) | `FileEvidenceTargets` | `FakeEvidenceTargets` |
+| `ITextScrubber` | `RedactionScrubber` (`Aw.Redaction`) | `FakeTextScrubber` |
 | `IIdGenerator` (Kernel; the run instance) | `RandomIds` | `SequentialIds` |
 
 Each port with behaviour to pin has a contract suite in `tests/Aw.Evidence.Testing` that the fake and the adapter both
 run: `BrowserSessionContract` (fake: unit; Playwright on the fixture site: heavy), `BrowserInstallerContract` (fake: unit;
 Playwright: heavy), `RunFilesContract`, `ImageCodecContract`, `VerdictCacheStoreContract`, `MachineLocksContract`,
 `JudgeContract`, `StackProbeContract` (the adapter over a local HTTP server, a stub `docker` and a loopback listener),
-`ProvenanceQueryContract` (the adapter over a stub `docker` playing `psql -At`), `SecretsSourceContract` and
-`IdGeneratorContract`. `IEvidenceSettings` has none: its fake is a set of plain values with no behaviour that could
+`ProvenanceQueryContract` (the adapter over a stub `docker` playing `psql -At`), `SecretsSourceContract`, `IdGeneratorContract`, `ApiTransportContract` (the adapter over a loopback server), `CliRunnerContract` (over stub programs),
+`ExecutableLocatorContract`, `EvidenceTargetsContract` and `TextScrubberContract`. `IEvidenceSettings` has none: its fake is a set of plain values with no behaviour that could
 drift; the adapter's names, defaults, blank-as-unset and env-file fallback are pinned by `EnvironmentEvidenceSettingsTests`.
 
 ## At the switch

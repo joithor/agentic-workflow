@@ -467,6 +467,11 @@ edges:
     kind: project
     status: current
     note: "logging"
+  - from: Evidence
+    to: Redaction
+    kind: project
+    status: current
+    note: "api-run summaries (bodies, stdout, expected and actual values, the whole document) are scrubbed before they are written (RedactionScrubber behind ITextScrubber; spec DT-E1, section 5.2 Secrets)"
   - from: BugFix
     to: Kernel
     kind: project

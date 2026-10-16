@@ -34,6 +34,9 @@ internal sealed class LocalHttpServer : IDisposable
     /// <summary>Every request as '&lt;method&gt; &lt;path and query&gt; &lt;body&gt;', in arrival order.</summary>
     internal ConcurrentQueue<string> Received { get; } = new();
 
+    /// <summary>Each request's X-Probe header as 'X-Probe=&lt;value&gt;' (absent headers are skipped), in arrival order.</summary>
+    internal ConcurrentQueue<string> Probes { get; } = new();
+
     internal string Origin => "http://127.0.0.1:" + Port.ToString(CultureInfo.InvariantCulture);
 
     public void Dispose() => _listener.Close();
@@ -67,6 +70,11 @@ internal sealed class LocalHttpServer : IDisposable
     {
         var path = context.Request.Url?.AbsolutePath ?? "/";
         Requests.Enqueue(path);
+        if (context.Request.Headers["X-Probe"] is { } probe)
+        {
+            Probes.Enqueue("X-Probe=" + probe);
+        }
+
         using (var reader = new StreamReader(context.Request.InputStream, Encoding.UTF8))
         {
             Received.Enqueue($"{context.Request.HttpMethod} {context.Request.RawUrl} {reader.ReadToEnd()}");
