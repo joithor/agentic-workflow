@@ -68,9 +68,8 @@ public sealed class SchedulerReanchorTests
         await using var rig = await SchedulerRig.Start([tidy], ("tidy", "5m"));
         await rig.Begin();
         await rig.Step(2);
-        rig.H.Clock.Advance(TimeSpan.FromMinutes(40));   // the box slept: eight periods passed
 
-        await rig.Restart();
+        await rig.Restart(down: TimeSpan.FromMinutes(40));   // the box slept: eight periods passed
         await rig.Step(5);
         Expect.Equal(2, tidy.Runs);   // one catch-up run, not eight
 

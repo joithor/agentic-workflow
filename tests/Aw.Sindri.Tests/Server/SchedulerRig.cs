@@ -95,11 +95,13 @@ internal sealed class SchedulerRig : IAsyncDisposable
     }
 
     /// <summary>Stops the process's scheduler and starts a new one on the same ledger, as a restart does (the run guard is in memory, so it starts empty).</summary>
+    /// <param name="down">How long the process stays down before the new one starts.</param>
     /// <returns>A task that completes when the new scheduler runs.</returns>
-    public async Task Restart()
+    public async Task Restart(TimeSpan down = default)
     {
         await _scheduler.StopAsync(TestContext.Current.CancellationToken);
         _scheduler.Dispose();
+        H.Clock.Advance(down);
         Guard = new ServiceRunGuard();
         _scheduler = NewScheduler();
         await Begin();
