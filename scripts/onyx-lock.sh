@@ -11,6 +11,12 @@
 #   image <repository> <platform> <sha256:digest>    every image, for linux/arm64 and linux/amd64
 #   need disk-bytes <n>                              exactly one
 #   need docker-memory-bytes <n>                     exactly one
+#   A repository matches ^[a-z0-9][a-z0-9._/-]*$; a file path is relative, with no backslash, empty or .. segment and no NUL;
+#   no file path is listed twice; a need is 1 to 18 digits and positive (it fits a long).
+# Parity: OnyxPins.Parse (src/Sindri/Aw.Sindri.Core/Onyx/OnyxPins.cs) refuses exactly the files this check refuses, as far as the
+#   fixtures of scripts/tests/onyx-lock.test.sh and tests/Aw.Sindri.Tests/OnyxPinsTests/OnyxPinsParseTests.cs go: both suites
+#   run the same malformed cases (need of 19 digits, duplicate file or image row, bad repository name, bad file paths, NUL).
+#   The C# parser reports every refusal as SND-ONYX-004 where this script uses the codes below.
 # Codes: 001 version row (missing, repeated, bad tag), 002 a malformed value, 003 image platforms (missing or repeated),
 #        004 need rows (missing, repeated, not a number), 005 unknown row kind or need name.
 # Exit: 0 ok, 1 a check failed, 2 usage or I/O error.
@@ -31,6 +37,12 @@ while [ $# -gt 0 ]; do
 done
 [ -r "$file" ] || { echo "onyx-lock: cannot read $file" >&2; exit 2; }
 
+# A NUL byte anywhere is refused here, before awk (which would truncate at it); OnyxPins.Parse refuses it the same way.
+if [ "$(LC_ALL=C tr -d '\000' <"$file" | wc -c)" -ne "$(LC_ALL=C wc -c <"$file")" ]; then
+  echo "ONYX-LOCK-002 0: the file contains a NUL byte"
+  exit 1
+fi
+
 awk '
   function bad(code, msg) { printf "%s %d: %s\n", code, NR, msg; failed = 1 }
   function hex(s, n) { return s ~ /^[0-9a-f]+$/ && length(s) == n }
@@ -44,12 +56,15 @@ awk '
   }
   $1 == "file" {
     if (NF != 3) { bad("ONYX-LOCK-002", "file wants 2 fields (path sha256), got " (NF - 1)); next }
-    if ($2 ~ /^\// || $2 ~ /(^|\/)\.\.(\/|$)/) bad("ONYX-LOCK-002", "path \"" $2 "\" is not relative inside deployment/")
+    if ($2 ~ /^\// || $2 ~ /\\/ || $2 ~ /\/\// || $2 ~ /\/$/ || $2 ~ /(^|\/)\.\.(\/|$)/) bad("ONYX-LOCK-002", "path \"" $2 "\" is not a relative path of non-empty segments without .. or backslash inside deployment/")
+    if ($2 in files) bad("ONYX-LOCK-002", "path " $2 " is listed twice")
+    files[$2] = 1
     if (!hex($3, 64)) bad("ONYX-LOCK-002", "sha256 is not 64 lowercase hex digits")
     next
   }
   $1 == "image" {
     if (NF != 4) { bad("ONYX-LOCK-002", "image wants 3 fields (repository platform digest), got " (NF - 1)); next }
+    if ($2 !~ /^[a-z0-9][a-z0-9._\/-]*$/) bad("ONYX-LOCK-002", "repository \"" $2 "\" does not match ^[a-z0-9][a-z0-9._/-]*$")
     if ($3 != "linux/arm64" && $3 != "linux/amd64") { bad("ONYX-LOCK-002", "platform \"" $3 "\" is not linux/arm64 or linux/amd64"); next }
     if ($4 !~ /^sha256:[0-9a-f]+$/ || length($4) != 71) bad("ONYX-LOCK-002", "digest is not sha256: and 64 lowercase hex digits")
     if (($2 SUBSEP $3) in seen) bad("ONYX-LOCK-003", $2 " " $3 " is listed twice")
@@ -59,7 +74,7 @@ awk '
   $1 == "need" {
     if (NF != 3) { bad("ONYX-LOCK-004", "need wants 2 fields (name number), got " (NF - 1)); next }
     if ($2 != "disk-bytes" && $2 != "docker-memory-bytes") { bad("ONYX-LOCK-005", "need \"" $2 "\" is not disk-bytes or docker-memory-bytes"); next }
-    if ($3 !~ /^[0-9]+$/ || $3 + 0 == 0) bad("ONYX-LOCK-004", $2 " \"" $3 "\" is not a positive integer")
+    if ($3 !~ /^[0-9]+$/ || length($3) > 18 || $3 + 0 == 0) bad("ONYX-LOCK-004", $2 " \"" $3 "\" is not a positive integer of at most 18 digits")
     if ($2 in needs) bad("ONYX-LOCK-004", $2 " is listed twice")
     needs[$2] = 1
     next

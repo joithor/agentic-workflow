@@ -91,6 +91,44 @@ f="$( { good_body; echo "need cpu-cores 4"; } | lock unknownneed)"
 run check --file "$f"
 expect "an unknown need name fails" 1 'ONYX-LOCK-005 .*cpu-cores'
 
+# Parity cases: the same malformed fixtures as OnyxPinsParseTests.Parse_refuses_the_malformed_fixtures_the_bash_check_refuses
+# (the C# parser refuses each with SND-ONYX-004), and the same accepted rows.
+f="$(good_body | sed 's/^need disk-bytes 100/need disk-bytes 1234567890123456789/' | lock need19)"
+run check --file "$f"
+expect "a need of 19 digits fails" 1 'ONYX-LOCK-004 .*disk-bytes'
+
+f="$(good_body | sed 's/^need disk-bytes 100/need disk-bytes 123456789012345678/' | lock need18)"
+run check --file "$f"
+expect "a need of 18 digits passes" 0
+
+f="$( { good_body; echo "file docker_compose/docker-compose.yml $SHA"; } | lock dupfile)"
+run check --file "$f"
+expect "a file path listed twice fails" 1 'ONYX-LOCK-002 .*listed twice'
+
+f="$( { good_body; echo "image docker.io/o/app linux/arm64 $DIGEST"; } | lock dupimage)"
+run check --file "$f"
+expect "a (repository, platform) listed twice fails" 1 'ONYX-LOCK-003 .*listed twice'
+
+for repo in Bad_Repo -lead; do
+  f="$( { good_body; echo "image $repo linux/arm64 $DIGEST"; echo "image $repo linux/amd64 $DIGEST"; } | lock badrepo)"
+  run check --file "$f"
+  expect "repository name $repo fails" 1 'ONYX-LOCK-002 .*repository'
+done
+
+for path in 'a\b' 'a//b' 'a/' '../x' 'a/../x' '/x'; do
+  f="$( { good_body; printf 'file %s %s\n' "$path" "$SHA"; } | lock badpath)"
+  run check --file "$f"
+  expect "file path $path fails" 1 'ONYX-LOCK-002 .*path'
+done
+
+f="$( { good_body; printf 'file a\0b %s\n' "$SHA"; } | lock nulpath)"
+run check --file "$f"
+expect "a NUL byte fails" 1 'ONYX-LOCK-002 .*NUL'
+
+f="$( { good_body; echo "image docker.io/library/postgres linux/arm64 $DIGEST"; echo "image docker.io/library/postgres linux/amd64 $DIGEST"; echo "image ghcr.io/o/a_b-c.d/e linux/arm64 $DIGEST"; echo "image ghcr.io/o/a_b-c.d/e linux/amd64 $DIGEST"; echo "file data/nginx/app.conf.template $SHA"; } | lock accepted)"
+run check --file "$f"
+expect "dotted, nested repositories and nested file paths pass" 0
+
 echo
 echo "$PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

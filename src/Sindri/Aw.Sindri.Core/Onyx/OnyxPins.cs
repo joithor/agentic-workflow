@@ -5,7 +5,7 @@ namespace Aw.Sindri.Core.Onyx;
 
 /// <summary>
 /// The pins of Sindri-managed Onyx: the release, the commit its tag points to, the deployment files and images with
-/// their hashes, and what the box needs (context/onyx.lock; spec §6). Parse accepts exactly what scripts/onyx-lock.sh check accepts.
+/// their hashes, and what the box needs (context/onyx.lock; spec §6). scripts/onyx-lock.sh check is the same check in bash: the two refuse the same malformed fixtures (scripts/tests/onyx-lock.test.sh and OnyxPinsParseTests run them side by side), and the C# parser reports each refusal as SND-ONYX-004.
 /// </summary>
 /// <param name="Version">The release tag, vX.Y.Z.</param>
 /// <param name="Commit">The commit the tag points to, 40 lowercase hex digits.</param>
@@ -24,6 +24,12 @@ public sealed record OnyxPins(
     public static Result<OnyxPins> Parse(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
+        if (text.IndexOf('\0', StringComparison.Ordinal) is var nul and >= 0)
+        {
+            var at = text.AsSpan(0, nul).Count('\n') + 1;
+            return SindriErrors.OnyxPinsMalformed.With($"the Onyx pins are malformed: line {at.ToString(CultureInfo.InvariantCulture)}: the file contains a NUL byte");
+        }
+
         var reader = new PinsReader();
         var number = 0;
         foreach (var line in text.Split('\n'))
@@ -107,9 +113,14 @@ public sealed record OnyxPins(
 
         private string? ReadFile(string[] fields)
         {
-            if (fields.Length != 3 || fields[1].StartsWith('/') || fields[1].Split('/').Contains("..") || !IsHex(fields[2], 64))
+            if (fields.Length != 3 || !IsRelativePath(fields[1]) || !IsHex(fields[2], 64))
             {
-                return "file wants a relative path and a 64-digit lowercase hex sha256";
+                return "file wants a relative path of non-empty segments (no .. or backslash) and a 64-digit lowercase hex sha256";
+            }
+
+            if (_files.Exists(f => f.Path == fields[1]))
+            {
+                return $"{fields[1]} is listed twice";
             }
 
             _files.Add(new OnyxFilePin(fields[1], fields[2]));
@@ -118,10 +129,10 @@ public sealed record OnyxPins(
 
         private string? ReadImage(string[] fields)
         {
-            if (fields.Length != 4 || !_platforms.Contains(fields[2], StringComparer.Ordinal)
+            if (fields.Length != 4 || !IsRepository(fields[1]) || !_platforms.Contains(fields[2], StringComparer.Ordinal)
                 || !fields[3].StartsWith("sha256:", StringComparison.Ordinal) || !IsHex(fields[3][7..], 64))
             {
-                return "image wants a repository, linux/arm64 or linux/amd64, and a sha256: digest";
+                return "image wants a repository (^[a-z0-9][a-z0-9._/-]*$), linux/arm64 or linux/amd64, and a sha256: digest";
             }
 
             if (_images.Exists(i => i.Repository == fields[1] && i.Platform == fields[2]))
@@ -136,13 +147,20 @@ public sealed record OnyxPins(
         private string? ReadNeed(string[] fields)
         {
             if (fields.Length != 3 || fields[1] is not ("disk-bytes" or "docker-memory-bytes")
-                || !long.TryParse(fields[2], NumberStyles.None, CultureInfo.InvariantCulture, out var bytes) || bytes == 0)
+                || fields[2].Length > 18 || !long.TryParse(fields[2], NumberStyles.None, CultureInfo.InvariantCulture, out var bytes) || bytes == 0)
             {
-                return "need wants disk-bytes or docker-memory-bytes and a positive integer";
+                return "need wants disk-bytes or docker-memory-bytes and a positive integer of at most 18 digits";
             }
 
             return _needs.TryAdd(fields[1], bytes) ? null : $"{fields[1]} is listed twice";
         }
+
+        private static bool IsRelativePath(string path)
+            => !path.StartsWith('/') && !path.Contains('\\', StringComparison.Ordinal) && path.Split('/').All(static s => s.Length > 0 && s != "..");
+
+        private static bool IsRepository(string name)
+            => name.Length > 0 && (char.IsAsciiLetterLower(name[0]) || char.IsAsciiDigit(name[0]))
+                && name.All(static c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c is '.' or '_' or '/' or '-');
 
         private static bool IsTag(string tag)
         {

@@ -61,6 +61,42 @@ public sealed class OnyxPinsParseTests
         Assert.StartsWith("the Onyx pins are malformed: ", result.Error.Message, StringComparison.Ordinal);
     }
 
+    // The same malformed fixtures as scripts/tests/onyx-lock.test.sh (its "parity" cases): each is the valid file with one row
+    // dropped (by prefix) and one or more rows added, and both parsers refuse it for that row.
+    private const string Sha64 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    private const string Digest = "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("need disk-bytes", "need disk-bytes 1234567890123456789")]
+    [InlineData("", "file docker_compose/docker-compose.yml " + Sha64)]
+    [InlineData("", "image docker.io/o/app linux/arm64 " + Digest)]
+    [InlineData("", "image Bad_Repo linux/arm64 " + Digest + "\nimage Bad_Repo linux/amd64 " + Digest)]
+    [InlineData("", "image -lead linux/arm64 " + Digest + "\nimage -lead linux/amd64 " + Digest)]
+    [InlineData("", "file a\\b " + Sha64)]
+    [InlineData("", "file a//b " + Sha64)]
+    [InlineData("", "file a/ " + Sha64)]
+    [InlineData("", "file ../x " + Sha64)]
+    [InlineData("", "file a/../x " + Sha64)]
+    [InlineData("", "file /x " + Sha64)]
+    [InlineData("", "file a\0b " + Sha64)]
+    public void Parse_refuses_the_malformed_fixtures_the_bash_check_refuses(string dropPrefix, string rows)
+    {
+        var kept = Fixture().Split('\n').Where(l => dropPrefix.Length == 0 || !l.StartsWith(dropPrefix, StringComparison.Ordinal));
+        var text = string.Join('\n', kept.Append(rows));
+
+        var result = OnyxPins.Parse(text);
+
+        Assert.Equal(SindriErrors.OnyxPinsMalformed.Code, result.Error.Code);
+        Assert.Contains("line ", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("image docker.io/library/postgres linux/arm64 " + Digest + "\nimage docker.io/library/postgres linux/amd64 " + Digest)]
+    [InlineData("image ghcr.io/o/a_b-c.d/e linux/arm64 " + Digest + "\nimage ghcr.io/o/a_b-c.d/e linux/amd64 " + Digest)]
+    [InlineData("file data/nginx/app.conf.template " + Sha64)]
+    public void Parse_accepts_what_the_bash_check_accepts(string rows)
+        => Assert.True(OnyxPins.Parse(Fixture(rows)).IsSuccess);
+
     [Fact, Trait("Lane", "unit")]
     public void Parse_refuses_an_image_missing_a_platform()
     {
