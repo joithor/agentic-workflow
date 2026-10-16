@@ -156,4 +156,18 @@ public sealed class NeedsYouMapperTests
         Assert.Equal((false, true), (rebuilding.Stalled, rebuilding.Rebuilding));
         Assert.Equal(_counts, stalled.Counts);
     }
+
+    // review run 1, K5: the served reason sentence reaches the sheets (the label is the row's secondary line).
+    [Fact]
+    public void The_failure_and_profile_sheets_show_the_served_reason_from_the_golden()
+    {
+        var rows = Feed().Rows;
+        var failure = rows.First(r => r.Subject?.Kind == "service");
+        var profile = rows.First(r => r.Id == "profile:drift");
+        var servedFailure = (string)_served.First(r => (string)r!["id"]! == failure.Id)!["reason"]!;
+        var servedProfile = (string)_served.First(r => (string)r!["id"]! == profile.Id)!["reason"]!;
+
+        Assert.Contains(new SheetDetail("Why", servedFailure), new FailureSheetViewModel(failure, "1h").Details);
+        Assert.Contains(new SheetDetail("Changed", servedProfile), new ProfileSheetViewModel(profile).Details);
+    }
 }
