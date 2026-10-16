@@ -39,4 +39,37 @@ public sealed class RecordedTextTests
 
         Assert.DoesNotContain("pw-1234567", recorded, StringComparison.Ordinal);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Hiding_replaces_exactly_the_secret_values_and_keeps_the_rest_as_written()
+    {
+        var recorded = RecordedText.Of(Scrubber(), """[{"id": 1, "password": "pw-1", "o": {"x":2}}]""", RecordedText.OutputLimit);
+
+        Assert.Equal("""[{"id": 1, "password": "[REDACTED:secret-field]", "o": {"x":2}}]""", recorded);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_secret_member_written_with_an_escape_in_its_key_is_hidden()
+    {
+        var recorded = RecordedText.Of(Scrubber(), """{"passw\u006frd":"pw-ESC-1","ok":1}""", RecordedText.OutputLimit);
+
+        Assert.Equal("""{"passw\u006frd":"[REDACTED:secret-field]","ok":1}""", recorded);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_object_valued_secret_member_is_hidden_whole()
+    {
+        var recorded = RecordedText.Of(Scrubber(), """{"password":{"a":"pw-OBJ-1","b":[1,2]},"ok":1}""", RecordedText.OutputLimit);
+
+        Assert.Equal("""{"password":"[REDACTED:secret-field]","ok":1}""", recorded);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Members_are_hidden_before_the_value_scrub_so_a_numeric_secret_cannot_break_the_json_first()
+    {
+        var recorded = RecordedText.Of(new FakeTextScrubber().Hides("123456").HidesName("password"), """[{"pin":123456,"password":"abc"}]""", RecordedText.OutputLimit);
+
+        Assert.DoesNotContain("abc", recorded, StringComparison.Ordinal);
+        Assert.DoesNotContain("123456", recorded, StringComparison.Ordinal);
+    }
 }

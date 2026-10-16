@@ -565,6 +565,35 @@ public sealed class DbRunServiceTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task DbRun_a_numeric_secret_value_does_not_stop_a_short_secret_named_string_being_hidden()
+    {
+        var harness = Postgres(expect: """{"rowCount":1}""");
+        harness.RealScrubber = new Evidence.Infrastructure.Redaction.RedactionScrubber(Redaction.Redactor.Default);
+        _ = harness.Reader.Answer(ReadNotes, new Rows(["reset_token", "password", "n"], [[123456L, "abc", 1234567L]], Truncated: false));
+
+        var output = (await harness.Run()).Value.Summary.Steps[0].Output!;
+
+        Assert.DoesNotContain("abc", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("123456", output, StringComparison.Ordinal);
+        Assert.Contains("\"password\":\"[REDACTED:secret-field]\"", output, StringComparison.Ordinal);
+        Assert.Contains("\"reset_token\":\"[REDACTED:secret-field]\"", output, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task DbRun_a_failed_pointer_into_a_renamed_repeated_secret_column_hides_both_values()
+    {
+        var harness = Sqlite();
+        _ = harness.Scrubber.HidesName("cookie");
+        _ = harness.WithScript("""{"sqlite":"data/notes.db","queries":[{"sql":"SELECT 1","expect":{"pointers":[{"pointer":"/0/cookie_2","equals":"expected-PLANTED-9"}]}}]}""");
+        _ = harness.Reader.Answer("SELECT 1", new Rows(["cookie", "cookie"], [["c-one-111", "actual-PLANTED-8"]], Truncated: false));
+
+        var response = (await harness.Run()).Value;
+
+        Assert.DoesNotContain("expected-PLANTED-9", response.Document, StringComparison.Ordinal);
+        Assert.DoesNotContain("actual-PLANTED-8", response.Document, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task DbRun_gives_the_reader_a_work_directory_under_the_run_directory_s_real_path()
     {
         var harness = Sqlite();
