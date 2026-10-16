@@ -38,7 +38,7 @@ internal sealed partial class ItemSheet : UserControl
             && TopLevel.GetTopLevel(this) is Window window && window.FocusManager?.GetFocusedElement() is Visual focused
             && this.FindControl<Control>("ItemBody") is { } body && body.IsVisualAncestorOf(focused))
         {
-            _ = window.FindControl<TextBlock>("SheetTitle")?.Focus(NavigationMethod.Tab);
+            _ = window.FindControl<Control>("SheetTitle")?.Focus(NavigationMethod.Tab);
         }
     }
 
@@ -53,7 +53,7 @@ internal sealed partial class ItemSheet : UserControl
 
         if (focused.FindAncestorOfType<CommandControl>(includeSelf: true)?.DataContext is ControlViewModel owner && leaving.Controls.Contains(owner))
         {
-            _ = window.FindControl<TextBlock>("SheetTitle")?.Focus(NavigationMethod.Tab);
+            _ = window.FindControl<Control>("SheetTitle")?.Focus(NavigationMethod.Tab);
         }
     }
 

@@ -49,7 +49,7 @@ internal sealed partial class ShellWindow
         var action = SheetPanel.GetVisualDescendants().OfType<Controls.CommandControl>().FirstOrDefault(c => c.IsEffectivelyVisible);
         if (action?.FocusRun() != true)
         {
-            _ = this.Get<TextBlock>("SheetTitle").Focus(NavigationMethod.Tab);   // no action, or none takes focus (pending): the heading
+            _ = this.Get<Control>("SheetTitle").Focus(NavigationMethod.Tab);   // no action, or none takes focus (pending): the heading
         }
 
         return true;

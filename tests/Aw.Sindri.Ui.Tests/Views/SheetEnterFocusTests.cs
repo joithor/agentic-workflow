@@ -150,7 +150,22 @@ public sealed class SheetEnterFocusTests : IDisposable
         window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
         Settle(window);
 
-        Assert.Same(window.Get<TextBlock>("SheetTitle"), window.FocusManager?.GetFocusedElement());
+        Assert.Same(window.Get<Control>("SheetTitle"), window.FocusManager?.GetFocusedElement());
+    });
+
+    // The item sheet is the content of the shell's sheet layer: the placeholder is hidden, the heading peer is the bare item id.
+    [Fact]
+    public Task An_item_link_shows_the_item_sheet_in_the_shells_sheet_content() => OnUi(async () =>
+    {
+        var (window, shell) = await OpenSheet(width: 1400);
+        var content = window.Get<Panel>("SheetContent");
+        var body = window.Get<TextBlock>("SheetBody");
+
+        Assert.Contains(content.GetVisualDescendants(), v => v is Aw.Sindri.Ui.Views.Item.ItemSheet);
+        Assert.False(body.IsEffectivelyVisible);
+        Assert.True(window.Get<Control>("ItemSheet").IsEffectivelyVisible);
+        var peer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(window.Get<Control>("SheetTitle"));
+        Assert.Equal(shell.Item.ItemId, peer.GetName());
     });
 
     [Fact]

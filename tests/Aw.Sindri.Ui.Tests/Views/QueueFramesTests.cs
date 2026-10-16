@@ -331,7 +331,7 @@ public sealed class QueueFramesTests : IDisposable
         close.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         await Until(window, () => shell.Item.HasProblem && shell.Item.Actions.Count == 0);
 
-        Assert.Same(Named<TextBlock>(window, "SheetTitle"), Focused(window));
+        Assert.Same(Named<Control>(window, "SheetTitle"), Focused(window));
     });
 
     // L8: the accepted control stays while it shows its outcome, with focus; when it settles, focus moves to the title.
@@ -353,7 +353,7 @@ public sealed class QueueFramesTests : IDisposable
         _clock.Advance(ControlViewModel.AcceptedFor);
         Settle(window);
 
-        Assert.Same(Named<TextBlock>(window, "SheetTitle"), Focused(window));
+        Assert.Same(Named<Control>(window, "SheetTitle"), Focused(window));
     });
 
     [Fact]

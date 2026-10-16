@@ -105,25 +105,21 @@ public sealed class ShellItemsTests
         Assert.Equal("Try the queue", shell.Item.Title);
     }
 
-    // §8: G then Q / R / W within 1 s; the chord shows "G …" while it waits and lapses after 1 s.
+    // §8, rev 8: G then Q within 1 s opens the Work page (the queue); the chord shows "G …" while it waits and lapses after 1 s.
     [Fact]
-    public async Task The_g_chord_goes_to_the_queue_and_its_filters()
+    public async Task The_g_chord_goes_to_the_work_page_through_the_single_key_route()
     {
         var shell = await Connected();
 
         Assert.True(shell.Press("G"));
         Assert.Equal("G …", shell.ChordHint);
-        Assert.True(shell.Press("R"));
-        Assert.Equal((PageId.Work, QueueFilter.Running, string.Empty), (shell.CurrentPage, shell.Queue.Showing, shell.ChordHint));
+        Assert.True(shell.Press("Q"));
+        Assert.Equal((PageId.Work, string.Empty), (shell.CurrentPage, shell.ChordHint));
 
         _ = shell.Press("G");
         _clock.Advance(ShellViewModel.ChordWait + TimeSpan.FromMilliseconds(1));
         Assert.False(shell.Press("H"));
         Assert.Equal(PageId.Work, shell.CurrentPage);
-
-        _ = shell.Press("G");
-        _ = shell.Press("Q");
-        Assert.Equal(QueueFilter.All, shell.Queue.Showing);
     }
 
     // §8: J moves to the next row of the page it is pressed on; Enter opens its sheet; C opens the create form.
