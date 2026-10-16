@@ -70,10 +70,10 @@ internal static class ContextChecks
     }
 
     private static string SyncFix(bool serviceNamed, bool failed) => !serviceNamed
-        ? "name the context-sync service under services: in the profile, then sindri context sources status"
+        ? "run sindri context sources sync (or name the context-sync service under services: in the profile to sync on a schedule), then sindri context sources status"
         : failed
-            ? "sindri context sources status shows the code; the next context-sync slot retries"
-            : "wait for the next context-sync slot, then sindri context sources status";
+            ? "sindri context sources status shows the code; run sindri context sources sync to retry now, or the next context-sync slot retries"
+            : "run sindri context sources sync, or wait for the next context-sync slot, then sindri context sources status";
 
     /// <summary>Warn on any user-wide sindri entry (026) or a provider file that couldn't be checked.</summary>
     internal static DoctorCheck McpScope(IReadOnlyList<McpScopeFinding> findings)

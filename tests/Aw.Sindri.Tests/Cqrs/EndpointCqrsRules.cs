@@ -45,6 +45,11 @@ internal static partial class EndpointCqrsRules
     /// <summary>The request type of the IService&lt;TRequest, _&gt; the endpoint's handler takes, or null.</summary>
     public static Type? Request(RouteEndpoint endpoint)
     {
+        if (endpoint.Metadata.GetMetadata<Host.Endpoints.JobRouteMetadata>() is { } job)
+        {
+            return job.Request;   // MapJob's request delegate: the route takes the job request's chained start service
+        }
+
         var parameters = endpoint.Metadata.OfType<IParameterBindingMetadata>().Select(p => p.ParameterInfo.ParameterType)
             .Concat(endpoint.Metadata.OfType<MethodInfo>().SelectMany(m => m.GetParameters()).Select(p => p.ParameterType));
         return parameters.FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IService<,>))?.GenericTypeArguments[0];

@@ -7,4 +7,5 @@ namespace Aw.Sindri.Core.Views;
 /// <param name="LastRun">Its last run, or null before the first.</param>
 /// <param name="Paused">True when paused (P6).</param>
 /// <param name="Sequence">The ledger sequence that last changed the row.</param>
-public sealed record ServiceRow(ServiceName Name, LastRun? LastRun, bool Paused, long Sequence);
+/// <param name="ScheduledSlot">The slot of the last scheduled run (a manual run moves <paramref name="LastRun"/> but not this, so the next slot stays the scheduler's), or null before one.</param>
+public sealed record ServiceRow(ServiceName Name, LastRun? LastRun, bool Paused, long Sequence, DateTimeOffset? ScheduledSlot = null);

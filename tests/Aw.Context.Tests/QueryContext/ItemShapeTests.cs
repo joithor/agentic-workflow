@@ -97,8 +97,8 @@ public sealed class ItemShapeTests
         Assert.Equal(ContextErrors.UnknownAnchor.Code, result.Error.Code);
         Assert.DoesNotContain("name the context-sync service", result.Error.Message, StringComparison.Ordinal);
         Assert.Contains("isn't linked yet or the key is unknown", result.Error.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain("sources sync", result.Error.Message, StringComparison.Ordinal);   // that command is pending API P6 and answers SND-CLI-001
         Assert.Contains("next context-sync slot", result.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("sindri context sources sync", result.Error.Message, StringComparison.Ordinal);
         Assert.Contains("sindri context sources status", result.Error.Message, StringComparison.Ordinal);
     }
 

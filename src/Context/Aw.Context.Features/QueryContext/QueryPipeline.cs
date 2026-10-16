@@ -251,7 +251,7 @@ internal sealed partial class QueryPipeline(IScrubberFactory scrubberFactory, II
         if (graph.LinkedRecords.Any(waiting.Contains))
         {
             degraded.Add(new DegradedSource(SourceId.From("decisions"), ContextErrors.LabelingUnavailable.Code,
-                "decisions of a linked record are not extracted yet: labeling is off or over its token cap (fix: turn on 'context.labeling.enabled' or raise 'maxTokensPerSync', then wait for the next context-sync slot)", clock.GetUtcNow()));
+                "decisions of a linked record are not extracted yet: labeling is off or over its token cap (fix: turn on 'context.labeling.enabled' or raise 'maxTokensPerSync', then run sindri context sources sync, or wait for the next context-sync slot)", clock.GetUtcNow()));
         }
     }
 

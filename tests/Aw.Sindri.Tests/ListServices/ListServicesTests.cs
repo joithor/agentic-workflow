@@ -12,6 +12,7 @@ namespace Aw.Sindri.Tests.ListServices;
 public sealed class ListServicesTests
 {
     private readonly ViewsHarness _v = new();
+    private readonly InMemoryJobViews _jobs = new();
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -97,7 +98,48 @@ public sealed class ListServicesTests
         Assert.Contains("can't be updated (SND-VIEW-001: views.db can't be opened)", list.Empty, StringComparison.Ordinal);
     }
 
-    private ListServicesService Service() => new(_v.Slice.Profiles, _v.Views, _v.Progress);
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_paused_service_is_served_paused_with_no_next_slot()
+    {
+        await Approve(("heartbeat", "30s"));
+        var slot = _v.Slice.Clock.GetUtcNow();
+        await Ran("heartbeat", slot, ServiceOutcome.Ok, code: null);
+        await _v.Fold(EventTypes.ServicePaused, new ServicePaused(_v.Slice.Ids.New<CommandId>(), ServiceName.From("heartbeat")));
+
+        var heartbeat = Assert.Single((await Service().Handle(new ListServicesRequest(), Token)).Value.Services);
+
+        Assert.True(heartbeat.Paused);
+        Assert.Null(heartbeat.NextSlot);
+        Assert.Equal(slot, heartbeat.LastRun!.Slot);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Next_slot_ignores_a_manual_run()
+    {
+        await Approve(("heartbeat", "30s"));
+        var slot = _v.Slice.Clock.GetUtcNow();
+        await Ran("heartbeat", slot, ServiceOutcome.Ok, code: null);
+        await _v.Fold(EventTypes.ServiceRan, new ServiceRan(_v.Slice.Ids.New<CommandId>(), ServiceName.From("heartbeat"), slot.AddSeconds(7), ServiceOutcome.Ok, Code: null, A.FirstJobId));
+
+        var heartbeat = Assert.Single((await Service().Handle(new ListServicesRequest(), Token)).Value.Services);
+
+        Assert.Equal(slot.AddSeconds(30), heartbeat.NextSlot);   // the scheduler's cadence, not the manual start
+        Assert.Equal(slot.AddSeconds(7), heartbeat.LastRun!.Slot);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_running_job_of_a_service_is_served_on_the_service()
+    {
+        await Approve(("heartbeat", "30s"), ("digest", "5m"));
+        _jobs.Put(A.Job().Build());   // a running RunService job for heartbeat
+
+        var list = (await Service().Handle(new ListServicesRequest(), Token)).Value;
+
+        Assert.Equal(A.FirstJobId, list.Services.Single(s => s.Name.Value == "heartbeat").Job);
+        Assert.Null(list.Services.Single(s => s.Name.Value == "digest").Job);
+    }
+
+    private ListServicesService Service() => new(_v.Slice.Profiles, _v.Views, _v.Progress, _jobs);
 
     private async Task Approve(params (string Name, string Every)[] services) =>
         _ = (await _v.Slice.Profiles.Save(SliceHarness.ProfileOf("thor", services), Token)).Value;

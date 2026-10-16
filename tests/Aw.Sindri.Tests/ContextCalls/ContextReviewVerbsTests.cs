@@ -92,18 +92,6 @@ public sealed class ContextReviewVerbsTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Map_build_is_pending_API_P6_and_exits_2_like_a_pending_form()
-    {
-        var api = new ScriptedApi(Ok("{}"));
-
-        var exit = await Run(api, interactive: true, string.Empty, "build");
-
-        Assert.Equal(2, exit);
-        Assert.Empty(api.Calls);
-        Assert.Contains("pending:API-P6", _error.ToString(), StringComparison.Ordinal);
-    }
-
-    [Fact, Trait("Lane", "unit")]
     public async Task A_single_decision_is_sent_at_once_and_prints_the_rows_and_what_is_left()
     {
         var api = new ScriptedApi(Ok("""{"result":{"written":["ovr_0123456789abcdef"],"skipped":[],"undecided":4},"sequence":9,"challenge":null,"summary":null}"""));

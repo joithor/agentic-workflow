@@ -298,7 +298,7 @@
         "RunService",
         "PauseService"
       ],
-      "cli": "sindri status"
+      "cli": "sindri services run heartbeat"
     },
     {
       "id": "profile:drift",
