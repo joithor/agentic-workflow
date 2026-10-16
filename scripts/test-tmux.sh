@@ -10,7 +10,7 @@
 #     since the private TMUX_TMPDIR already makes it unique to this run) and defines
 #         ttmux() { command tmux -L "$AW_TEST_TMUX" "$@"; }
 #   * it puts a `tmux` shim first on PATH, so a script under test that calls plain `tmux` reaches the same private server and
-#     the shim refuses (exit 2) if TMUX is set or TMUX_TMPDIR is not under a mktemp dir;
+#     the shim refuses (exit 2) if TMUX is set, TMUX_TMPDIR is not exactly this run's own temp dir, or an argument is -S;
 #   * it checks, with `ttmux`, that the socket resolves inside its temp dir; if it resolves to /tmp/tmux-<uid>/default or anywhere
 #     else, it kills only its own marker session and returns 2 (a sourced script should `|| exit 2`).
 # ttmux_cleanup stops the private server and deletes the temp dir; it is installed as the EXIT trap when none is set.
@@ -24,7 +24,7 @@ if ! command -v tmux > /dev/null 2>&1; then
 fi
 unset TMUX
 _tt_real="$(type -P tmux)"
-AW_TEST_TMUX_DIR="$(mktemp -d)"
+AW_TEST_TMUX_DIR="$(cd "$(mktemp -d)" && pwd -P)"   # physical path: tmux resolves its socket dir through symlinks
 export TMUX_TMPDIR="$AW_TEST_TMUX_DIR/tmux"
 mkdir -p "$TMUX_TMPDIR" "$AW_TEST_TMUX_DIR/bin"
 case "${AW_TEST_TMUX:-}" in
@@ -36,8 +36,9 @@ export AW_TEST_TMUX AW_TEST_TMUX_DIR
 
 printf '%s\n' '#!/usr/bin/env bash' \
   '[ -z "${TMUX:-}" ] || { echo "test-tmux shim: TMUX is set: refusing to run tmux" >&2; exit 2; }' \
-  'case "${TMUX_TMPDIR:-}" in */tmp.*/*) ;; *) echo "test-tmux shim: TMUX_TMPDIR is not under a mktemp dir: refusing to run tmux" >&2; exit 2 ;; esac' \
-  "case \"\${1:-}\" in -L|-S) exec \"$_tt_real\" \"\$@\" ;; esac" \
+  "case \"\${TMUX_TMPDIR:-}\" in \"$AW_TEST_TMUX_DIR/tmux\"|\"$AW_TEST_TMUX_DIR/tmux/\") ;; *) echo \"test-tmux shim: TMUX_TMPDIR is not this run's own temp dir: refusing to run tmux\" >&2; exit 2 ;; esac" \
+  'for a in "$@"; do case "$a" in -S|-S*) echo "test-tmux shim: -S (an explicit socket path) is refused: use -L <name>" >&2; exit 2 ;; esac; done' \
+  "case \"\${1:-}\" in -L) exec \"$_tt_real\" \"\$@\" ;; esac" \
   "exec \"$_tt_real\" -L \"$AW_TEST_TMUX\" \"\$@\"" > "$AW_TEST_TMUX_DIR/bin/tmux"
 chmod +x "$AW_TEST_TMUX_DIR/bin/tmux"
 export PATH="$AW_TEST_TMUX_DIR/bin:$PATH"

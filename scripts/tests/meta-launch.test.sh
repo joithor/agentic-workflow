@@ -26,10 +26,11 @@ AW_TEST_TMUX=t1
 golden_transcript() {
   local S="$1" G; G="$(mktemp -d)"
   (
-    export TMUX_TMPDIR="$G/tmux" HOME="$G/home" AW_STATE_DIR="$G/state" AW_WARP_LAUNCH_DIR="$G/warp" CALLS="$G/calls"
+    export HOME="$G/home" AW_STATE_DIR="$G/state" AW_WARP_LAUNCH_DIR="$G/warp" CALLS="$G/calls"
     unset TMUX AW_LAUNCHER_CONFIG
     for v in $(compgen -e | grep '^AW_META_'); do unset "$v"; done
-    mkdir -p "$TMUX_TMPDIR" "$HOME/.claude/projects/p" "$G/repo" "$G/prompts" "$AW_STATE_DIR/meta" "$G/shim"
+    export AW_META_LEGACY_TMUX_SOCKET=legacy-golden   # the launcher's legacy-socket check looks here (a private socket, empty), never at tmux's default
+    mkdir -p "$HOME/.claude/projects/p" "$G/repo" "$G/prompts" "$AW_STATE_DIR/meta" "$G/shim"
     printf 'API kickoff\nline two $HOME "quoted" '"'"'single'"'"'\n' > "$G/prompts/api.md"
     local real; real="$(type -P tmux)"
     printf '#!/usr/bin/env bash\nprintf "tmux" >> "%s"; printf " %%q" "$@" >> "%s"; echo >> "%s"\nexec "%s" "$@"\n' "$G/tmux-calls" "$G/tmux-calls" "$G/tmux-calls" "$real" > "$G/shim/tmux"
@@ -76,7 +77,7 @@ fi
 unlink "${TMPDIR:-/tmp}/meta-launch-golden.$$"; unlink "${TMPDIR:-/tmp}/meta-launch-golden.diff.$$"
 
 WORK="$(mktemp -d)"
-trap 'ttmux_cleanup; rm -r "$WORK"' EXIT
+trap 'tmux -L t1-legacy kill-server 2> /dev/null; ttmux_cleanup; rm -r "$WORK"' EXIT
 for v in $(compgen -e | grep '^AW_META_'); do unset "$v"; done   # the caller may be a meta session: its team config, bin and claude must not reach the stubs
 export HOME="$WORK/home" AW_STATE_DIR="$WORK/state" AW_WARP_LAUNCH_DIR="$WORK/warp"
 mkdir -p "$HOME/.claude/projects/p" "$WORK/repo" "$WORK/prompts" "$AW_STATE_DIR/meta"
@@ -92,6 +93,7 @@ echo "$*" >> "$CALLS.meta"
 EOF
 chmod +x "$WORK/claude" "$WORK/aw-meta"
 export AW_META_CLAUDE="$WORK/claude" AW_META_BIN="$WORK/aw-meta" AW_META_NO_SHELL=1
+export AW_META_LEGACY_TMUX_SOCKET=t1-legacy   # the launcher's legacy (default-socket) check goes to this private socket, never the real default
 cfg="$AW_STATE_DIR/meta/team.json"
 jq -n --arg r "$WORK/repo" --arg p "$WORK/prompts" '{team:"t1", repo:$r, prompts:$p, metaLane:"meta", lanes:["api","ui"]}' > "$cfg"
 
@@ -171,12 +173,33 @@ jq '.lanes = ["meta", "api"]' "$cfg" > "$WORK/dup.json"   # team-init lists the 
 OUT="$(AW_META_CONFIG="$WORK/dup.json" bash "$DIR/meta-launch.sh" --no-open --dry-run)"
 check "meta lane listed in lanes: one pane, not two" "$(printf '%s\n' "$OUT" | grep -c 'exec: tmux -L t1 new -A -s t1-meta')" "1"
 
+# The switch to the team's own socket: lanes still running on the legacy (default) socket stop a launch.
+tmux kill-server 2> /dev/null; tmux -L t1-legacy kill-server 2> /dev/null; sleep 0.3
+tmux -L t1-legacy new-session -d -s t1-api "sleep 600"
+OUT="$(bash "$DIR/meta-launch.sh" --no-open 2>&1)"; RC=$?
+check "legacy-socket session present: refused, naming it, exit 1" "$RC:$(grep -c 't1-api' <<< "$OUT"):$(grep -c 'still runs on tmux' <<< "$OUT")" "1:1:1"
+check "legacy-socket session present: nothing was created" "$(tmux list-sessions -F '#S' 2> /dev/null | grep -c '^t1-')" "0"
+OUT="$(bash "$DIR/meta-launch.sh" --no-open --dry-run 2>&1)"; RC=$?
+check "legacy-socket session present: --dry-run prints the check and refuses too" "$RC:$(grep -c '^\[dry-run\] legacy-socket check: tmux -L t1-legacy has-session' <<< "$OUT")" "1:1"
+OUT="$(bash "$DIR/meta-launch.sh" --no-open --lanes ui 2>&1)"; RC=$?
+check "legacy session of another lane: a --lanes run for ui proceeds" "$RC:$(grep -c 'tmux t1-ui: started' <<< "$OUT")" "0:1"
+tmux kill-server 2> /dev/null; sleep 0.3
+OUT="$(bash "$DIR/meta-launch.sh" --no-open --allow-legacy 2>&1)"; RC=$?
+check "legacy-socket session present, --allow-legacy: proceeds" "$RC:$(grep -c 'tmux t1-api: started' <<< "$OUT")" "0:1"
+tmux kill-server 2> /dev/null; sleep 0.3
+OUT="$(AW_META_ALLOW_LEGACY=1 bash "$DIR/meta-launch.sh" --no-open 2>&1)"; RC=$?
+check "legacy-socket session present, AW_META_ALLOW_LEGACY=1: proceeds" "$RC:$(grep -c 'tmux t1-api: started' <<< "$OUT")" "0:1"
+tmux kill-server 2> /dev/null; tmux -L t1-legacy kill-server 2> /dev/null; sleep 0.3
+OUT="$(bash "$DIR/meta-launch.sh" --no-open 2>&1)"; RC=$?
+check "no legacy-socket session: proceeds" "$RC:$(grep -c 'tmux t1-api: started' <<< "$OUT")" "0:1"
+tmux kill-server 2> /dev/null; sleep 0.3
+
 # ---- launcher.json (SL-1; docs/csharp/sindri-launcher.md) ----
 FIX="$DIR/../tests/fixtures/launcher"
 LCFG="$WORK/launcher.json"
 reset() { # a fresh tmux server and lane state
   tmux kill-server 2> /dev/null; sleep 0.3
-  find "$AW_STATE_DIR/meta/lane-sessions" -type f -delete 2> /dev/null
+  find "$AW_STATE_DIR/meta/lane-sessions" -mindepth 1 -delete 2> /dev/null   # files and the start-lock directory alike
   tmux new-session -d -s keepalive "sleep 600"
 }
 waitfor() { for _ in $(seq 100); do eval "$1" && return 0; sleep 0.1; done; return 1; }
@@ -383,6 +406,7 @@ tmux kill-server 2> /dev/null; killstubs
 # Two reported lanes started at the same moment (as Warp's panes do) still start one at a time.
 reset; : > "$CALLS.events"; : > "$CALLS.codex"; rm -f "$ids/p1" "$ids/p2" "$ids/p1.settled" "$ids/p2.settled"
 export -n OLD_ROLLOUT
+( : ) & deadpid=$!; wait "$deadpid"; mkdir "$ids/.reported.lock"; echo "$deadpid" > "$ids/.reported.lock/pid"   # a crashed holder's stale lock: both starters try to break it at once
 AW_LAUNCHER_CONFIG="$LCFG" AW_META_ID_WAIT=10 bash "$DIR/meta-lane.sh" t1 p1 > /dev/null 2>&1 & p1=$!
 AW_LAUNCHER_CONFIG="$LCFG" AW_META_ID_WAIT=10 bash "$DIR/meta-lane.sh" t1 p2 > /dev/null 2>&1 & p2=$!
 waitfor '[ -s "$ids/p1" ] && [ -s "$ids/p2" ]'

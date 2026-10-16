@@ -1,4 +1,5 @@
 == dry-run, no sessions
+[dry-run] legacy-socket check: tmux -L legacy-golden has-session -t =t1-<lane> for each lane (refuses if any exists)
 [dry-run] tmux -L t1 new-session -d -s t1-meta -c @WORK@/repo @SCRIPTS@/meta-lane.sh t1 meta
 [dry-run] tmux -L t1 new-session -d -s t1-api -c @WORK@/repo @SCRIPTS@/meta-lane.sh t1 api
 [dry-run] tmux -L t1 new-session -d -s t1-ui -c @WORK@/repo @SCRIPTS@/meta-lane.sh t1 ui
@@ -54,6 +55,7 @@ tmux t1-api: running
 warp: @WORK@/warp/t1-team.yaml
 rc=0
 == dry-run, exited lane
+[dry-run] legacy-socket check: tmux -L legacy-golden has-session -t =t1-<lane> for each lane (refuses if any exists)
 [dry-run] tmux -L t1 respawn-pane -k -t t1-api @SCRIPTS@/meta-lane.sh t1 api
 [dry-run] would write @WORK@/warp/t1-team.yaml:
 # Written by scripts/meta-launch.sh from @WORK@/state/meta/team.json; rerun it rather than editing.
@@ -77,19 +79,27 @@ windows:
                     - exec: tmux -L t1 new -A -s t1-ui -c @WORK@/repo -e AW_META_CONFIG=@WORK@/state/meta/team.json '@SCRIPTS@/meta-lane.sh t1 ui'
 rc=0
 == tmux calls
+tmux -L legacy-golden has-session -t =t1-meta
+tmux -L legacy-golden has-session -t =t1-api
+tmux -L legacy-golden has-session -t =t1-ui
 tmux -L t1 has-session -t =t1-meta
 tmux -L t1 has-session -t =t1-api
 tmux -L t1 has-session -t =t1-ui
 tmux new-session -d -s keepalive sleep\ 600
+tmux -L legacy-golden has-session -t =t1-meta
+tmux -L legacy-golden has-session -t =t1-api
+tmux -L legacy-golden has-session -t =t1-ui
 tmux -L t1 has-session -t =t1-meta
 tmux -L t1 new-session -d -s t1-meta -c @WORK@/repo -e AW_META_CONFIG=@WORK@/state/meta/team.json @SCRIPTS@/meta-lane.sh\ t1\ meta
 tmux -L t1 has-session -t =t1-api
 tmux -L t1 new-session -d -s t1-api -c @WORK@/repo -e AW_META_CONFIG=@WORK@/state/meta/team.json @SCRIPTS@/meta-lane.sh\ t1\ api
 tmux -L t1 has-session -t =t1-ui
 tmux -L t1 new-session -d -s t1-ui -c @WORK@/repo -e AW_META_CONFIG=@WORK@/state/meta/team.json @SCRIPTS@/meta-lane.sh\ t1\ ui
+tmux -L legacy-golden has-session -t =t1-api
 tmux -L t1 has-session -t =t1-api
 tmux kill-session -t t1-api
 tmux new-session -d -s t1-api bash
+tmux -L legacy-golden has-session -t =t1-api
 tmux -L t1 has-session -t =t1-api
 tmux -L t1 display-message -p -t =t1-api: \#\{pane_pid\}
 == lane api, fresh
