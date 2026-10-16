@@ -2058,7 +2058,9 @@ Aw.Sindri.Features.Jobs.JobStart
 Aw.Sindri.Features.Jobs.JobStart.<Clone>$() -> Aw.Sindri.Features.Jobs.JobStart!
 Aw.Sindri.Features.Jobs.JobStart.Caller.get -> Aw.Sindri.Core.Commands.CallerContext!
 Aw.Sindri.Features.Jobs.JobStart.Caller.init -> void
-Aw.Sindri.Features.Jobs.JobStart.Deconstruct(out Aw.Sindri.Core.Ids.JobId Job, out Aw.Sindri.Core.Ids.JobKind Kind, out Aw.Sindri.Core.Ids.JobKey Key, out Aw.Sindri.Features.Jobs.JobDefinition! Definition, out object! Request, out Aw.Sindri.Core.Commands.CallerContext! Caller, out Aw.Sindri.Core.Lease.LeaseGrant! Grant, out Aw.Sindri.Core.Ids.ServiceName? Service) -> void
+Aw.Sindri.Features.Jobs.JobStart.Cause.get -> Aw.Sindri.Core.Ids.EventId?
+Aw.Sindri.Features.Jobs.JobStart.Cause.init -> void
+Aw.Sindri.Features.Jobs.JobStart.Deconstruct(out Aw.Sindri.Core.Ids.JobId Job, out Aw.Sindri.Core.Ids.JobKind Kind, out Aw.Sindri.Core.Ids.JobKey Key, out Aw.Sindri.Features.Jobs.JobDefinition! Definition, out object! Request, out Aw.Sindri.Core.Commands.CallerContext! Caller, out Aw.Sindri.Core.Lease.LeaseGrant! Grant, out Aw.Sindri.Core.Ids.ServiceName? Service, out Aw.Sindri.Core.Ids.EventId? Cause) -> void
 Aw.Sindri.Features.Jobs.JobStart.Definition.get -> Aw.Sindri.Features.Jobs.JobDefinition!
 Aw.Sindri.Features.Jobs.JobStart.Definition.init -> void
 Aw.Sindri.Features.Jobs.JobStart.Equals(Aw.Sindri.Features.Jobs.JobStart? other) -> bool
@@ -2066,7 +2068,7 @@ Aw.Sindri.Features.Jobs.JobStart.Grant.get -> Aw.Sindri.Core.Lease.LeaseGrant!
 Aw.Sindri.Features.Jobs.JobStart.Grant.init -> void
 Aw.Sindri.Features.Jobs.JobStart.Job.get -> Aw.Sindri.Core.Ids.JobId
 Aw.Sindri.Features.Jobs.JobStart.Job.init -> void
-Aw.Sindri.Features.Jobs.JobStart.JobStart(Aw.Sindri.Core.Ids.JobId Job, Aw.Sindri.Core.Ids.JobKind Kind, Aw.Sindri.Core.Ids.JobKey Key, Aw.Sindri.Features.Jobs.JobDefinition! Definition, object! Request, Aw.Sindri.Core.Commands.CallerContext! Caller, Aw.Sindri.Core.Lease.LeaseGrant! Grant, Aw.Sindri.Core.Ids.ServiceName? Service) -> void
+Aw.Sindri.Features.Jobs.JobStart.JobStart(Aw.Sindri.Core.Ids.JobId Job, Aw.Sindri.Core.Ids.JobKind Kind, Aw.Sindri.Core.Ids.JobKey Key, Aw.Sindri.Features.Jobs.JobDefinition! Definition, object! Request, Aw.Sindri.Core.Commands.CallerContext! Caller, Aw.Sindri.Core.Lease.LeaseGrant! Grant, Aw.Sindri.Core.Ids.ServiceName? Service, Aw.Sindri.Core.Ids.EventId? Cause = null) -> void
 Aw.Sindri.Features.Jobs.JobStart.Key.get -> Aw.Sindri.Core.Ids.JobKey
 Aw.Sindri.Features.Jobs.JobStart.Key.init -> void
 Aw.Sindri.Features.Jobs.JobStart.Kind.get -> Aw.Sindri.Core.Ids.JobKind

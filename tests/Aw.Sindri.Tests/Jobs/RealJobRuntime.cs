@@ -1,0 +1,157 @@
+using System.Globalization;
+using System.Text.Json.Serialization.Metadata;
+using Aw.Kernel;
+using Aw.Kernel.Json;
+using Aw.Kernel.Services;
+using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Jobs;
+using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Locks;
+using Aw.Sindri.Core.Text;
+using Aw.Sindri.Core.Views;
+using Aw.Sindri.Features;
+using Aw.Sindri.Features.Commands;
+using Aw.Sindri.Features.Jobs;
+using Aw.Sindri.Host;
+using Aw.Sindri.Testing;
+using Aw.Sindri.Testing.Jobs;
+using Aw.Sindri.Tests.Commands.Chain;
+using Aw.Sindri.Tests.Server;
+using Aw.Sindri.Tests.Commands.Authorization;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Aw.Sindri.Tests.Jobs;
+
+/// <summary>
+/// The real job runtime over in-memory ports (API P6 unit C): the chained start of the echo and probe jobs (AddJob), the real <see cref="JobRunner"/>
+/// behind it, the in-memory ledger and a fixture command for the gate check. Time is the harness's FakeTimeProvider.
+/// </summary>
+internal sealed class RealJobRuntime : IJobRuntimeSubject
+{
+    private readonly ServiceProvider _provider;
+    private readonly HeavyTakes _heavy = new();
+
+    public RealJobRuntime(ITextScrubber? scrubber = null)
+    {
+        var options = AwJson.CreateOptions(JsonTypeInfoResolver.Combine(SindriJsonContext.Default, EchoJsonContext.Default));
+        var catalog = new InMemoryCommandCatalog(
+            Rows.Of(ActionClass.Job, "EchoJob", typeof(EchoJobRequest)),
+            Rows.Of(ActionClass.Job, "ProbeJob", typeof(ProbeJobRequest)),
+            Rows.Of(ActionClass.Desk, "FixtureCommand", typeof(FixtureCommand)));
+        _provider = new ServiceCollection()
+            .AddSingleton<TimeProvider>(H.Clock)
+            .AddSingleton<Kernel.Ids.IIdGenerator>(H.Ids)
+            .AddSingleton<ILedgerStore>(H.Store)
+            .AddSingleton(H.Held)
+            .AddSingleton(H.Events)
+            .AddSingleton(H.Callers)
+            .AddSingleton(options)
+            .AddSingleton<ICommandCatalog>(catalog)
+            .AddSingleton<IProjectorStatus>(new ProjectorProgress(H.Clock))
+            .AddSingleton<IHeavySlots>(_heavy)
+            .AddSingleton<ITextScrubber>(scrubber ?? new PassThroughScrubber())
+            .AddSingleton<IJobContextAccessor>(new FakeJobContextAccessor())
+            .AddSingleton<EchoJobProbe>()
+            .AddSingleton(Latch)
+            .AddSingleton<Microsoft.Extensions.Logging.ILogger<AuditTrail>>(new ListLogger<AuditTrail>())
+            .AddSingleton<JobRegistry>()
+            .AddSingleton(static sp => new JobEventWriter(sp.GetRequiredService<ILedgerStore>(), sp.GetRequiredService<HeldLease>(), sp.GetRequiredService<EventFactory>(),
+                sp.GetRequiredService<ITextScrubber>(), sp.GetRequiredService<ICallerContextAccessor>()))
+            .AddSingleton(static sp => new JobRunner(sp.GetRequiredService<IServiceScopeFactory>(), sp.GetRequiredService<IJobContextAccessor>(),
+                sp.GetRequiredService<ICallerContextAccessor>(), sp.GetRequiredService<JobEventWriter>(), sp.GetRequiredService<JobRegistry>()))
+            .AddSingleton<IJobRunner>(static sp => sp.GetRequiredService<JobRunner>())
+            .AddJob<EchoJobRequest, EchoReport, EchoJobService>(static _ => JobKey.From("echo"), static r => string.Create(CultureInfo.InvariantCulture, $"echoed {r.Lines}"))
+            .AddJob<ProbeJobRequest, ProbeReport, ProbeJobService>(static r => JobKey.From(r.Mode), static r => string.Create(CultureInfo.InvariantCulture, $"probed {r.Text.Length}"))
+            .AddScoped<IValidator<FixtureCommand>, FixtureValidator>().AddCommand<FixtureCommand, CommandAccepted, FixtureService>()
+            .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+    }
+
+    public SliceHarness H { get; } = new();
+
+    public FixtureLatch Latch { get; } = new();
+
+    public JobRunner Runner => _provider.GetRequiredService<JobRunner>();
+
+    public EchoJobProbe Probe => _provider.GetRequiredService<EchoJobProbe>();
+
+    public IReadOnlyList<LedgerEvent> Events => H.Store.Events;
+
+    public int HeavySlotsHeld => _heavy.Takes;
+
+    /// <summary>Takes the lease the runtime writes under.</summary>
+    /// <returns>A task that completes then.</returns>
+    public async Task Open() => _ = await H.HoldLease();
+
+    public Task<Result<JobStartedResponse>> Start(EchoJobRequest request, CallerContext caller) => Start<EchoJobRequest>(request, caller);
+
+    /// <summary>Starts any registered job request through its chain as <paramref name="caller"/>.</summary>
+    /// <typeparam name="TRequest">The job request.</typeparam>
+    /// <param name="request">The request.</param>
+    /// <param name="caller">The starting caller.</param>
+    /// <returns>The answer.</returns>
+    public async Task<Result<JobStartedResponse>> Start<TRequest>(TRequest request, CallerContext caller)
+        where TRequest : notnull
+    {
+        using var entered = H.Callers.Enter(caller);
+        await using var scope = _provider.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<IService<TRequest, JobStartedResponse>>().Handle(request, TestContext.Current.CancellationToken);
+    }
+
+    public async Task<Result<CommandAccepted>> Cancel(JobId job)
+    {
+        var caller = A.Caller().Human().Build();
+        using var entered = H.Callers.Enter(caller);
+        var entry = H.Events.Entry(EventTypes.JobCancelled, new JobCancelled(caller.CommandId, job, caller.Actor), $"{EventTypes.JobCancelled}:{job.Value}");
+        var appended = await H.Store.Append(entry, H.Held.Current!, TestContext.Current.CancellationToken);
+        if (appended.IsError)
+        {
+            return appended.Error;
+        }
+
+        _ = Runner.Cancel(job);
+        return new CommandAccepted(caller.CommandId, appended.Value.Sequence);
+    }
+
+    public Task Quiesce() => Runner.Idle();
+
+    public async Task<bool> CommandGateIsFree()
+    {
+        var caller = A.Caller().Human().Build();
+        using var entered = H.Callers.Enter(caller);
+        var run = Task.Run(async () =>
+        {
+            await using var scope = _provider.CreateAsyncScope();
+            return await scope.ServiceProvider.GetRequiredService<IService<FixtureCommand, CommandAccepted>>().Handle(new FixtureCommand("accept"), TestContext.Current.CancellationToken);
+        });
+        try
+        {
+            return (await run.WaitAsync(TimeSpan.FromSeconds(2), TimeProvider.System, TestContext.Current.CancellationToken)).IsSuccess;   // real time: the harness clock is fake and would never fire
+        }
+        catch (TimeoutException)
+        {
+            return false;
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await Runner.DisposeAsync();
+        await _provider.DisposeAsync();
+    }
+
+    private sealed class HeavyTakes : IHeavySlots
+    {
+        private int _takes;
+
+        public int Takes => Volatile.Read(ref _takes);
+
+        public ValueTask<Result<HeavySlotTaken>> Take(string holder, TimeSpan timeout, IProgress<string>? waiting, CancellationToken cancellationToken)
+        {
+            _ = Interlocked.Increment(ref _takes);
+            throw new NotSupportedException("the job runtime must not take a heavy slot");
+        }
+    }
+}

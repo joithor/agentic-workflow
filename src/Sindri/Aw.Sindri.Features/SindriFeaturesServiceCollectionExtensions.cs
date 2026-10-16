@@ -9,6 +9,11 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Doctor;
+using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Jobs;
+using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Locks;
@@ -44,6 +49,7 @@ using Aw.Sindri.Features.ListCommands;
 using Aw.Sindri.Features.ListDecisions;
 using Aw.Sindri.Features.ListInstances;
 using Aw.Sindri.Features.ListItems;
+using Aw.Sindri.Features.Jobs;
 using Aw.Sindri.Features.ListJobs;
 using Aw.Sindri.Features.ListOutbox;
 using Aw.Sindri.Features.ListRecipes;
@@ -99,6 +105,11 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<ServeRecords>()
             .AddScoped<IService<RegisterMcpRequest, RegisterMcpResponse>, RegisterMcpService>()
             .AddScoped<IScheduledService, HeartbeatService>()
+            .AddSingleton(static sp => new JobEventWriter(sp.GetRequiredService<ILedgerStore>(), sp.GetRequiredService<HeldLease>(), sp.GetRequiredService<EventFactory>(),
+                sp.GetRequiredService<ITextScrubber>(), sp.GetRequiredService<ICallerContextAccessor>()))   // API P6 unit C: the job runtime, outside the command gate
+            .AddSingleton(static sp => new JobRunner(sp.GetRequiredService<IServiceScopeFactory>(), sp.GetRequiredService<IJobContextAccessor>(),
+                sp.GetRequiredService<ICallerContextAccessor>(), sp.GetRequiredService<JobEventWriter>(), sp.GetRequiredService<JobRegistry>()))
+            .AddSingleton<IJobRunner>(static sp => sp.GetRequiredService<JobRunner>())
             .AddScoped<IService<ValidateRecipeRequest, ValidateRecipeResponse>, ValidateRecipeService>()
             .AddScoped<IService<EvalRecipeRequest, EvalRecipeResponse>, EvalRecipeService>()
             .AddRecipeBlocks()

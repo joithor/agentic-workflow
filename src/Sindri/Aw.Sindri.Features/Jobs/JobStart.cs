@@ -13,4 +13,5 @@ namespace Aw.Sindri.Features.Jobs;
 /// <param name="Caller">The starting caller; the work re-enters it (RunService re-enters 'service:&lt;name&gt;' instead).</param>
 /// <param name="Grant">The lease grant every write is fenced by.</param>
 /// <param name="Service">The service the job runs, or null.</param>
-public sealed record JobStart(JobId Job, JobKind Kind, JobKey Key, JobDefinition Definition, object Request, CallerContext Caller, LeaseGrant Grant, ServiceName? Service);
+/// <param name="Cause">The envelope id of the 'job.started' event, which the job's later events carry as their causation (the engine bridge routes by it), or null.</param>
+public sealed record JobStart(JobId Job, JobKind Kind, JobKey Key, JobDefinition Definition, object Request, CallerContext Caller, LeaseGrant Grant, ServiceName? Service, EventId? Cause = null);
