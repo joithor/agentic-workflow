@@ -26,8 +26,8 @@ internal static class RequestText
             var repo = request.Repo is { } r ? $"  [{r.Value}]" : string.Empty;
             var item = request.Item is { } i ? $"  {i.Value}" : string.Empty;
             _ = text.AppendLine(string.Create(CultureInfo.InvariantCulture,
-                $"{request.Id.Value}  {RequestVerbArguments.KindName(request.Kind)}  {RequestVerbArguments.StateName(request.State)}{repo}{item}  by {request.Actor}  since {request.FiledAt.UtcDateTime:yyyy-MM-ddTHH:mm:ssZ}  decision {request.DecisionId.Value}"))
-                .Append("  ").AppendLine(request.Text);
+                $"{request.Id.Value}  {RequestVerbArguments.KindName(request.Kind)}  {RequestVerbArguments.StateName(request.State)}{repo}{item}  by {request.Actor}  since {request.FiledAt.UtcDateTime:yyyy-MM-ddTHH:mm:ssZ}  decision {request.DecisionId.Value}"));
+            Indented(text, request.Text);
         }
 
         return text.ToString();
@@ -50,14 +50,11 @@ internal static class RequestText
             var item = decision.Item is { } i ? $"  {i.Value}" : string.Empty;
             _ = text.AppendLine(string.Create(CultureInfo.InvariantCulture,
                 $"{decision.Id.Value}  {decision.Label}  {StateName(decision.State)}{repo}{item}  by {decision.FiledBy}  since {decision.FiledAt.UtcDateTime:yyyy-MM-ddTHH:mm:ssZ}"));
-            foreach (var line in decision.Question.Split('\n'))
-            {
-                _ = text.Append("  ").AppendLine(line);
-            }
+            Indented(text, decision.Question);
 
             if (decision.Choice is { } choice)
             {
-                var note = decision.Note is { } n ? $": {n}" : string.Empty;
+                var note = decision.Note is { } n ? $": {n.ReplaceLineEndings("\n").Replace("\n", "\n    ", StringComparison.Ordinal)}" : string.Empty;   // a note's later lines are indented under the line they belong to
                 _ = text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"  decided {choice.Value} by {decision.DecidedBy} at {decision.DecidedAt:yyyy-MM-ddTHH:mm:ssZ}{note}"));
             }
 
@@ -73,6 +70,15 @@ internal static class RequestText
         }
 
         return text.ToString();
+    }
+
+    /// <summary>The text with every line indented, so a multi-line text can't pass for a line of the list.</summary>
+    private static void Indented(StringBuilder text, string value)
+    {
+        foreach (var line in value.Split('\n'))
+        {
+            _ = text.Append("  ").AppendLine(line);
+        }
     }
 
     private static string StateName(DecisionState state) => state switch
