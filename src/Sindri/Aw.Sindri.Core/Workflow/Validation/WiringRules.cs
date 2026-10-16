@@ -6,7 +6,7 @@ using Aw.Sindri.Core.Workflow.Recipes;
 namespace Aw.Sindri.Core.Workflow.Validation;
 
 /// <summary>
-/// The wiring rules (spec §9.1 "Inputs upstream", W2: checked on every path): RCP-WIRE-001/002, RCP-WHEN-001/002, RCP-OUTCOME-001 and RCP-CHILD-001.
+/// The wiring rules (spec §9.1 "Inputs upstream", W2: checked on every path): RCP-WIRE-001/002/003, RCP-WHEN-001/002, RCP-OUTCOME-001 and RCP-CHILD-001.
 /// Pure: they read the bound recipe, the catalog and the child resolver. A block, event or child that isn't found is
 /// the block rules' (or RCP-CHILD-001's) to report, so these rules skip what they can't resolve; a state name the
 /// recipe doesn't declare is the schema rules' to report. The findings come back ordered by where their node starts
@@ -27,6 +27,7 @@ internal sealed partial class WiringRules : IRecipeRules
         [
             .. Upstream(recipe, context.Catalog, source),
             .. Produced(recipe, context, source),
+            .. ChildOutputsProduced(recipe, context, source),
             .. Conditions(recipe, context, source),
             .. Unhandled(recipe, context, source),
             .. Terminals(recipe, source),

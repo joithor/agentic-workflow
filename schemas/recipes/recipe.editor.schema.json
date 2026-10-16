@@ -193,7 +193,20 @@
         "gates": { "type": "array", "items": { "oneOf": [{ "$ref": "#/$defs/BlockId" }, { "$ref": "#/$defs/GateUse" }] } },
         "evidence": { "type": "array", "items": { "$ref": "#/$defs/EvidenceCheck" } },
         "effects": { "type": "array", "items": { "oneOf": [{ "$ref": "#/$defs/BlockId" }, { "$ref": "#/$defs/BlockUse" }] } },
-        "produces": { "type": "array", "items": { "$ref": "#/$defs/FactKey" } }
+        "produces": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "$ref": "#/$defs/FactKey" },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["fact", "from"],
+                "properties": { "fact": { "$ref": "#/$defs/FactKey" }, "from": { "$ref": "#/$defs/FactKey" } }
+              }
+            ]
+          }
+        }
       }
     },
     "WhenClause": {

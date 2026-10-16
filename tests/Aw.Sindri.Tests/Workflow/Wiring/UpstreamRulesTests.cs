@@ -238,11 +238,11 @@ public sealed class UpstreamRulesTests
     [Fact, Trait("Lane", "unit")]
     public void A_fact_written_twice_on_one_transition_is_RCP_WIRE_002()
     {
-        var recipe = Parent(Rename("fact:exported", "fact:output"), Rename("fact:exported", "fact:other"));
+        var recipe = Parent(Rename("fact:exported", "fact:output"), Rename("fact:exported", "fact:output"));
 
         Assert.Equal(
             ["RCP-WIRE-002: transition from 'running' writes 'fact:exported' twice (produces[0] and produces[1]) at r.yaml:1:1 (transitions[0].produces[1]); write each fact once; rename one of them"],
-            CheckWiring(recipe, WithKid(Kid("fact:output", "fact:other"))).Lines());
+            CheckWiring(recipe, WithKid(Kid("fact:output"))).Lines());
     }
 
     [Fact, Trait("Lane", "unit")]

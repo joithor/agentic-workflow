@@ -123,6 +123,11 @@ public sealed class RecipeSchemaTests
             return IdSchema(type);
         }
 
+        if (TransformProduced(type, node) is { } produced)
+        {
+            return produced;
+        }
+
         if (Nullable.GetUnderlyingType(type) is { } underlying && IsTypedId(underlying))
         {
             var nullable = IdSchema(underlying);
@@ -138,6 +143,36 @@ public sealed class RecipeSchemaTests
 
         return node;
     }
+
+    /// <summary>A produces entry has a user-code converter too: a fact key, or the rename { fact, from } (DT spec §8.4).</summary>
+    private static JsonObject? TransformProduced(Type type, JsonNode node)
+    {
+        if (type == typeof(ProducedFact))
+        {
+            return Produced();
+        }
+
+        if (node is JsonObject list && type == typeof(IReadOnlyList<ProducedFact>))
+        {
+            list["items"] = Produced();
+            return list;
+        }
+
+        return null;
+    }
+
+    private static JsonObject Produced() => new()
+    {
+        ["oneOf"] = new JsonArray(
+            IdSchema(typeof(FactKey)),
+            new JsonObject
+            {
+                ["type"] = "object",
+                ["properties"] = new JsonObject { ["fact"] = IdSchema(typeof(FactKey)), ["from"] = IdSchema(typeof(FactKey)) },
+                ["required"] = new JsonArray("fact", "from"),
+                ["additionalProperties"] = false,
+            }),
+    };
 
     private static bool IsTypedId(Type type) =>
         type.GetInterfaces().Any(static i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ITypedId<,>));
