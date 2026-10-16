@@ -4,6 +4,7 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Items.Vocabulary;
+using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Requests;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Features.FileRequest;
@@ -22,8 +23,16 @@ public sealed class FileRequestTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
+    public FileRequestTests()
+    {
+        _ = _h.Slice.Profiles.Save(ProfileOfRepos("web", "api", "a", "b", "c", "d"), CancellationToken.None).AsTask().Result;
+    }
+
+    private static LoadedProfile ProfileOfRepos(params string[] repos) =>
+        SliceHarness.Profile() with { Profile = SliceHarness.Profile().Profile with { Repos = [.. repos.Select(r => new RepoEntry(r, "/work/" + r))] } };
+
     private FileRequestService Service(ITextScrubber? scrubber = null) =>
-        new(new RequestTarget(new ViewItemResolver(_h.Views), _h.Views), _h.Slice.Store, _h.Slice.Held, _h.Slice.Events, _h.Slice.Ids, scrubber ?? new PassThroughScrubber(), _h.Slice.Callers);
+        new(new RequestTarget(new ViewItemResolver(_h.Views), _h.Views, _h.Slice.Profiles), _h.Slice.Store, _h.Slice.Held, _h.Slice.Events, _h.Slice.Ids, scrubber ?? new PassThroughScrubber(), _h.Slice.Callers);
 
     private IDisposable Session(string repo = "web") => _h.Slice.Callers.Enter(A.Caller().Session().InRepo(repo).Build());
 
@@ -64,6 +73,19 @@ public sealed class FileRequestTests
         Expect.Equal((RepoName.From("web"), "Heads up."), (payload.Repo!.Value, payload.Text));
         Expect.Equal(payload.CommandId, result.Value.Accepted.CommandId);
         Assert.Null(payload.Item);
+    }
+
+    [Fact]
+    public async Task A_session_in_a_repo_outside_the_profile_is_refused_and_records_nothing()
+    {
+        _ = await _h.Slice.HoldLease();
+        using var entered = Session("gamma");
+
+        var result = await Service().Handle(A.FileRequestRequest().Build(), Token);
+
+        Expect.Equal(SindriErrors.InvalidInput.Code, result.Error.Code);
+        Assert.Contains("'gamma' isn't a repo of the approved profile", result.Error.Message, StringComparison.Ordinal);
+        Assert.Empty(_h.Slice.Store.Events);
     }
 
     [Fact]

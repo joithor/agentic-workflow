@@ -53,7 +53,7 @@ internal sealed class RequestVerbs(ControlPlaneClient client, Output output, Fun
     private async Task<int> File(RequestVerbArguments.Parsed command, CancellationToken ct)
     {
         _ = ItemRef.TryParse(command.Item, out var item);   // the arguments already checked it
-        var body = new FileRequestRequest(command.Kind, command.Item is null ? null : item, command.Text);
+        var body = new FileRequestRequest(command.Kind, command.Text, command.Item is null ? null : item);
         var filed = await client.Post<FileRequestRequest, RequestFiledResponse>("/sindri/requests", body, ct).ConfigureAwait(false);
         if (filed.IsError)
         {

@@ -1770,9 +1770,9 @@ Aw.Sindri.Features.Decide.DecideRequest.Note.get -> string?
 Aw.Sindri.Features.Decide.DecideRequest.Note.init -> void
 Aw.Sindri.Features.FileRequest.FileRequestRequest
 Aw.Sindri.Features.FileRequest.FileRequestRequest.<Clone>$() -> Aw.Sindri.Features.FileRequest.FileRequestRequest!
-Aw.Sindri.Features.FileRequest.FileRequestRequest.Deconstruct(out Aw.Sindri.Core.Requests.RequestKind Kind, out Aw.Sindri.Core.Ids.ItemRef? Item, out string! Text) -> void
+Aw.Sindri.Features.FileRequest.FileRequestRequest.Deconstruct(out Aw.Sindri.Core.Requests.RequestKind Kind, out string! Text, out Aw.Sindri.Core.Ids.ItemRef? Item) -> void
 Aw.Sindri.Features.FileRequest.FileRequestRequest.Equals(Aw.Sindri.Features.FileRequest.FileRequestRequest? other) -> bool
-Aw.Sindri.Features.FileRequest.FileRequestRequest.FileRequestRequest(Aw.Sindri.Core.Requests.RequestKind Kind, Aw.Sindri.Core.Ids.ItemRef? Item, string! Text) -> void
+Aw.Sindri.Features.FileRequest.FileRequestRequest.FileRequestRequest(Aw.Sindri.Core.Requests.RequestKind Kind, string! Text, Aw.Sindri.Core.Ids.ItemRef? Item = null) -> void
 Aw.Sindri.Features.FileRequest.FileRequestRequest.Item.get -> Aw.Sindri.Core.Ids.ItemRef?
 Aw.Sindri.Features.FileRequest.FileRequestRequest.Item.init -> void
 Aw.Sindri.Features.FileRequest.FileRequestRequest.Kind.get -> Aw.Sindri.Core.Requests.RequestKind

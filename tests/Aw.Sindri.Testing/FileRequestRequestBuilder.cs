@@ -40,5 +40,5 @@ public sealed class FileRequestRequestBuilder
 
     /// <summary>Builds the request.</summary>
     /// <returns>The request.</returns>
-    public FileRequestRequest Build() => new(_kind, _item, _text);
+    public FileRequestRequest Build() => new(_kind, _text, _item);
 }
