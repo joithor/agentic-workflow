@@ -17,7 +17,7 @@ namespace Aw.Context.Features.SyncSources;
 /// version is new are fetched, cleaned at the ingest boundary and linked by <see cref="RulesLinker"/>. Each record is committed with its links and its
 /// decisions are extracted before the next one is fetched, so a run that the time cap stops has finished every record it fetched, and the next run skips them
 /// as unchanged (a slow source can't starve: every run completes at least one record). A node's cursor 'mapVersion:nodesDone' moves when the node is through,
-/// so a stopped run (the source down, the time cap) resumes where it was and a replay writes nothing new. A map version change re-links every record,
+/// so a stopped run (the source down, the time cap) resumes where it was and a replay writes nothing new. A map version change re-links every record a node's search still returns (one no node finds any more keeps its old links),
 /// across runs: a record is skipped as unchanged only when its upstream version is the stored one and its links were computed against this map version
 /// (<see cref="IntentPage.MapVersion"/>), so a run that stops early doesn't leave the records it never reached with their old-map links, and no record is re-fetched twice for one map.
 /// </summary>
@@ -49,9 +49,13 @@ internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (Cont
         var offset = Resume(state.Value.Cursor, version, nodes.Count);
         var known = layer.Value.Records.Where(r => r.Source == _id).ToDictionary(r => r.Key.Value, StringComparer.Ordinal);
         var stored = await StoredVersions(known, version, cancellationToken).ConfigureAwait(false);
-        var code = await Walk(nodes, offset, (version, stored, known), cancellationToken).ConfigureAwait(false);
-        // A real failure of the decision pass wins over 059 (the time cap is only partial, and would hide an outage as "ok, the next run continues"); 042 does not.
-        code = code == ContextErrors.SyncCapped.Code ? Decisions.Failure ?? code : code ?? Decisions.Failure ?? (Decisions.HeldBack ? ContextErrors.LabelingUnavailable.Code : null);
+        if (stored.IsError)
+        {
+            return Row(0, stored.Error.Code);   // as for Layer and State above; reading it as "nothing linked" would fetch and re-extract every record
+        }
+
+        var code = await Walk(nodes, offset, (version, stored.Value, known), cancellationToken).ConfigureAwait(false);
+        code = Outcome(code);
         if (code is not null)
         {
             _ = await ports.Store.RecordFailure(_id, code, cancellationToken).ConfigureAwait(false);
@@ -60,17 +64,26 @@ internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (Cont
         return await Summary(code, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>The run's code: a real failure of the decision pass wins over 059 (the time cap is only partial, and would hide an outage as "ok, the next run continues"); 042 does not.</summary>
+    private string? Outcome(string? code) =>
+        code == ContextErrors.SyncCapped.Code ? Decisions.Failure ?? code : code ?? Decisions.Failure ?? (Decisions.HeldBack ? ContextErrors.LabelingUnavailable.Code : null);
+
     /// <summary>
     /// The versions already linked under this map version; records linked under an older map are left out, so they are fetched and linked again, and so are records still
     /// waiting for extraction (their text isn't stored).
     /// </summary>
-    private async ValueTask<Dictionary<string, string>> StoredVersions(Dictionary<string, IntentRecord> known, int mapVersion, CancellationToken cancellationToken)
+    private async ValueTask<Result<Dictionary<string, string>>> StoredVersions(Dictionary<string, IntentRecord> known, int mapVersion, CancellationToken cancellationToken)
     {
         var current = await ports.Store.LinkedUnder(_id, mapVersion, cancellationToken).ConfigureAwait(false);
-        var linkedNow = current.IsError ? [] : current.Value.Select(k => k.Value).ToHashSet(StringComparer.Ordinal);
+        if (current.IsError)
+        {
+            return current.Error;
+        }
+
+        var linkedNow = current.Value.Select(k => k.Value).ToHashSet(StringComparer.Ordinal);
         var queued = context.Settings.Labeling.Enabled ? await ports.Store.Queued(_id, cancellationToken).ConfigureAwait(false) : Results.Success<IReadOnlyList<RecordKey>>([]);
         var waiting = queued.IsError ? [] : queued.Value.Select(k => k.Value).ToHashSet(StringComparer.Ordinal);
-        return new Dictionary<string, string>(known.Where(p => linkedNow.Contains(p.Key) && !waiting.Contains(p.Key)).Select(p => KeyValuePair.Create(p.Key, p.Value.Version)), StringComparer.Ordinal);
+        return Results.Success(new Dictionary<string, string>(known.Where(p => linkedNow.Contains(p.Key) && !waiting.Contains(p.Key)).Select(p => KeyValuePair.Create(p.Key, p.Value.Version)), StringComparer.Ordinal));
     }
 
     private static int Resume(string? cursor, int version, int total)

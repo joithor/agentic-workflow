@@ -71,6 +71,11 @@ public sealed class FakeIntentStore : IIntentStore
                 _records[record.Key.Value] = isNew ? record : stored!;
                 if (page.MapVersion > 0)
                 {
+                    if (_linkedMap.GetValueOrDefault(record.Key.Value) != page.MapVersion)
+                    {
+                        _ = _extracted.Remove(record.Key.Value);   // SQLite: queued in the same statement as the move
+                    }
+
                     _linkedMap[record.Key.Value] = page.MapVersion;
                 }
 

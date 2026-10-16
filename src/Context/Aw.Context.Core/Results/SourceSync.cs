@@ -14,7 +14,7 @@ namespace Aw.Context.Core.Results;
 /// <param name="Orphaned">Stored links whose target no longer resolves in the map.</param>
 /// <param name="Decisions">Decisions stored for the source after this run (a total, not this run's count).</param>
 /// <param name="Queued">Records waiting for decision extraction (labeling off or over its cap).</param>
-/// <param name="Refused">Model answers the engine refused (SND-CONTEXT-057).</param>
+/// <param name="Refused">Model answers the engine refused, and records skipped because their extraction prompt (or their conflict checks, as a run's first call) can never fit 'maxTokensPerSync' (SND-CONTEXT-057); raise the cap, and a skipped record is retried when its version changes.</param>
 /// <param name="Tokens">Model tokens spent this run.</param>
 /// <param name="Code">The code the run ended with: null when it completed, SND-CONTEXT-010 when the source was down, SND-CONTEXT-059 at its time cap, SND-CONTEXT-042 when extraction was held back.</param>
 public sealed record SourceSync(SourceId Source, int Records, int Fetched, int Unchanged, int Linked, int Unlinked, int Orphaned, int Decisions, int Queued, int Refused, int Tokens, string? Code);

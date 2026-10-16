@@ -544,7 +544,7 @@ index:
 repos:
   - { name: work-app, path: /path/to/work-app, index: { denyPaths: ["private/**"] } }   # this repo's own, added to the above
 context:
-  labeling: { enabled: false, maxTokens: 400000, maxTokensPerSync: 50000 }  # name clusters with a model; over the cap is SND-CONTEXT-042; maxTokensPerSync caps decision extraction in one sync (the rest stays queued); a record whose extraction prompt alone is over it can never be extracted, so it is skipped: counted in `refused`, no decisions, not queued (raise the cap to extract it when its version next changes)
+  labeling: { enabled: false, maxTokens: 400000, maxTokensPerSync: 50000 }  # name clusters with a model; over the cap is SND-CONTEXT-042; maxTokensPerSync caps decision extraction in one sync (the rest stays queued); a record whose extraction prompt alone is over it can never be extracted, so it is skipped: counted in `refused`, no decisions, not queued (raise the cap to extract it; it is retried when its version changes)
 services:
   context-rebuild: { every: 24h }                  # proposes the map on a cadence; runs only when named here
 ```
@@ -683,7 +683,7 @@ the store, a usage error · `75` the heavy-job lock stayed busy (`040`).
 | `SND-CONTEXT-047` | The node or link was decided already or is gone, or `--undo` names an unknown or undone override | `map review` lists the queue; `--history` the ids |
 | `SND-CONTEXT-048` | Git can't read the repo at the commit | Fix the repo path or fetch the commit |
 | `SND-CONTEXT-056` | A sync of that source is already running (409; one at a time per source) | Wait; `context sources status` shows it |
-| `SND-CONTEXT-057` | A model answer the engine refused (quote not verbatim, target outside the record's links, malformed); counted in `refused`, never fails the sync. A conflict verdict that can't be read keeps the pair pending (the record stays queued) and is asked at most 3 times, then the pair is marked refused | None; persistent counts mean prompt drift |
+| `SND-CONTEXT-057` | A model answer the engine refused (quote not verbatim, target outside the record's links, malformed), or a record skipped because its extraction prompt alone is over `maxTokensPerSync` (no decisions, not queued; the same when its conflict checks can't fit the cap even as the run's first call: the pairs are refused); counted in `refused`, never fails the sync. A conflict verdict that can't be read keeps the pair pending (the record stays queued) and is asked at most 3 times, then the pair is marked refused | None for answers (persistent counts mean prompt drift); for a skipped record raise `maxTokensPerSync`: it is retried when its version changes |
 | `SND-CONTEXT-058` | `sources sync --source X` names a source that isn't configured or has nothing to sync (404) | `context sources status` for the names |
 | `SND-CONTEXT-059` | A sync stopped at its time cap: partial, it resumes from its cursor (`sources status` shows `059`, the source stays `ok` or `degraded`, exit 0). Every run completes at least one record, so a slow source still finishes across runs. A model or store failure in the same run shows instead of `059` | None; the next run continues. Raise the cadence if persistent |
 

@@ -593,15 +593,15 @@ the row, and a reply the pinned shape can't read degrades onyx (`010` with cause
   hand is always extracted (the cap never cuts a model call), so no record waits queued because of the cap. A node the cap cuts short keeps its
   cursor at the node and is walked again, its stored hits skipped as unchanged. A capped run records `059` as the source's last code without
   failing it (status: `ok`/`degraded` with code `059`; the next run continues and clears it). A failure of the decision pass in the same run (the model down, a store write failing) wins over `059`: the recorded code is the failure and the source shows `unavailable`. A finished walk commits the end cursor so trailing
-  nodes without search terms don't stall the next run. A map version change re-links every record, across runs: a hit is skipped as unchanged only when its upstream version is the stored one and its links were
+  nodes without search terms don't stall the next run. A map version change re-links every record a node's search still returns, across runs (a record no node finds any more is not reached, and keeps its old links until its upstream version moves): a hit is skipped as unchanged only when its upstream version is the stored one and its links were
   computed against the current map version (`intent_record.linked_map`, set by each record's page; `IIntentStore.LinkedUnder`), so a run that stops early (the cap, the source
-  down) leaves nothing with old-map links, and each record is re-fetched once per map version, not on every run. A record stays queued until its conflict checks are through too (a stopped check, the token cap
+  down) leaves nothing with old-map links, and each record is re-fetched once per map version, not on every run. The page that moves a done record to a new map version queues it in the same statement (`MarkLinked`), so only a finished extraction marks it done again: a stop, a cancel or a failed save between the commit and the extraction leaves it queued with its old decisions. A failed `LinkedUnder` read fails the run with the store's code (it is never read as "nothing linked", which would re-fetch and re-extract every record). A record stays queued until its conflict checks are through too (a stopped check, the token cap
   or a model failure leaves the pair to the next time the walk reaches the record; a save with the checks pending queues a done record again, so a map
   change that re-extracts it is retried too; a done record whose re-extraction is held back (the token cap, labeling off, a model failure) is queued again by
   `IIntentStore.Requeue` and keeps its old decisions until then); a re-extraction keeps the verdicts of pairs whose decision keys survive and never replaces a human
   decision (`DecisionBatch.Pending`). A verdict answer that can't be read leaves the pair unanswered (`unread`, `tries` 1-2, the record stays queued,
   `057` counted); the third unreadable answer marks it `refused` and it is not asked again. A record whose extraction prompt alone exceeds `maxTokensPerSync` could never be made in any run: it is skipped (`057` counted in `refused`, no decisions, not queued)
-  and the pass goes on with the records after it, instead of holding it back forever and stopping the run's extraction. `IContextEngine.Sync(source?, scope)` returns a `SyncReport` of counts and codes only.
+  and the pass goes on with the records after it, instead of holding it back forever and stopping the run's extraction. Raise `maxTokensPerSync` to extract it; it is retried when its version changes. The same rule covers a record whose own extraction, as the run's first model call, leaves no room under the cap for its conflict checks: its remaining pairs are refused (`057` counted, verdict `refused`) and the record is done, so it cannot hold back the records after it every run. `IContextEngine.Sync(source?, scope)` returns a `SyncReport` of counts and codes only.
 - Reads: `MapReader` merges the layer for every graph read; the `item` shape (`context query --item <KEY>`) anchors on the record a tracker
   key names (`ItemAnchors`) and answers `003` with suggestions when none is linked. The fix line follows the state: with `context-sync`
   named in the profile (`ContextScope.SyncConfigured`) it says the record isn't linked yet or the key is unknown and to check the key, wait for
@@ -632,7 +632,7 @@ intent source never synced or its last run failed. The `SyncSources` catalog row
 | Code | Kind (HTTP) | Exit | Meaning |
 |---|---|---|---|
 | `SND-CONTEXT-056` | Conflict (409) | 1 | A sync of that source is already running |
-| `SND-CONTEXT-057` | Invalid | - | A model answer the engine refused; counted in `refused`, never fails the sync. A verdict that can't be read is retried (3 tries per pair), then the pair is `refused` |
+| `SND-CONTEXT-057` | Invalid | - | A model answer the engine refused, or a record skipped because its extraction prompt alone is over `maxTokensPerSync` (or whose conflict checks can't fit the cap even as the run's first call: the pairs are refused); counted in `refused`, never fails the sync. A verdict that can't be read is retried (3 tries per pair), then the pair is `refused` |
 | `SND-CONTEXT-058` | NotFound (404) | 1 | `--source X` isn't a configured source with a sync |
 | `SND-CONTEXT-059` | Unavailable | 0 | A sync stopped at its time cap; partial, resumes from the cursor; shown in `sources status` without failing the source |
 

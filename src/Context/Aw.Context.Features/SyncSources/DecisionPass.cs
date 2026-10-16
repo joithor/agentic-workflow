@@ -9,7 +9,7 @@ namespace Aw.Context.Features.SyncSources;
 /// <summary>
 /// Decision extraction and conflict checks for the records one sync page committed (spec §6.1, §8.8, §8.9; S-5B). The model sees only the scrubbed,
 /// fenced record text and the node keys its rules linked, and its answer is validated by <see cref="DecisionExtractor"/>. Everything it asks is counted
-/// against 'maxTokensPerSync': a call that would go over the cap is not made, and the record stays queued for the next sync, until its conflict checks are through too. A record whose extraction prompt alone is over the cap can never be made, so it is refused (counted, no decisions, not queued) rather than held back forever.
+/// against 'maxTokensPerSync': a call that would go over the cap is not made, and the record stays queued for the next sync, until its conflict checks are through too. A record whose extraction prompt alone is over the cap can never be made, so it is refused (counted, no decisions, not queued) rather than held back forever; so is a record that, as the run's first model call, leaves no room under the cap for its conflict checks (its pairs are refused).
 /// </summary>
 internal sealed class DecisionPass(IIntentStore store, IModelPort model, LabelingSettings labeling, (IIngestFilter Ingest, TimeProvider Clock) support)
 {
@@ -19,6 +19,7 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
     private static readonly TimeSpan _askBudget = TimeSpan.FromSeconds(60);
 
     private bool _stopped;
+    private bool _capped;
 
     public int Tokens { get; private set; }
 
@@ -57,6 +58,7 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
             return;
         }
 
+        var first = Tokens == 0;   // the run's first model call: nothing earlier in the run took any of the cap
         var asked = await Ask(ModelPurpose.DecisionExtraction, prompt, ExtractAnswerTokens, cancellationToken).ConfigureAwait(false);
         if (asked is null)
         {
@@ -77,9 +79,22 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
             return;
         }
 
-        if (decisions.Count > 0 && await CheckConflicts(decisions, cancellationToken).ConfigureAwait(false))
+        await Finish(batch, first, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>The conflict checks of a saved pending batch; the batch is saved done once they are through (or given up).</summary>
+    private async ValueTask Finish(DecisionBatch batch, bool first, CancellationToken cancellationToken)
+    {
+        var decisions = batch.Decisions;
+        var finished = decisions.Count > 0 && await CheckConflicts(decisions, cancellationToken).ConfigureAwait(false);
+        if (!finished && decisions.Count > 0 && first && _capped && Failure is null)
         {
-            saved = await store.SaveDecisions(batch, cancellationToken).ConfigureAwait(false);
+            finished = await GiveUpPairs(decisions, cancellationToken).ConfigureAwait(false);   // its own extraction left no room for its checks, and a retry would again
+        }
+
+        if (finished)
+        {
+            var saved = await store.SaveDecisions(batch, cancellationToken).ConfigureAwait(false);
             if (saved.IsError)
             {
                 Failure = saved.Error.Code;
@@ -104,7 +119,7 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
     }
 
     /// <summary>Asks about each unanswered pair the added decisions make; false when the checks stopped before the last pair or an answer could not be read yet.</summary>
-    private async ValueTask<bool> CheckConflicts(List<DecisionRow> added, CancellationToken cancellationToken)
+    private async ValueTask<bool> CheckConflicts(IReadOnlyList<DecisionRow> added, CancellationToken cancellationToken)
     {
         var layer = await store.Layer(cancellationToken).ConfigureAwait(false);
         if (layer.IsError)
@@ -157,6 +172,33 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
         }
     }
 
+    /// <summary>
+    /// A record that was the run's first model call and still could not fit its conflict checks under the cap never will (a retry re-extracts it first): the pairs left are
+    /// refused (counted, 057) so the record is done and the records after it get their turn. False when a save failed.
+    /// </summary>
+    private async ValueTask<bool> GiveUpPairs(IReadOnlyList<DecisionRow> added, CancellationToken cancellationToken)
+    {
+        var layer = await store.Layer(cancellationToken).ConfigureAwait(false);
+        if (layer.IsError)
+        {
+            return false;
+        }
+
+        foreach (var (first, second, _) in ConflictChecker.Pairs(layer.Value, added))
+        {
+            Refused++;
+            var stored = await store.SaveConflict(DecisionConflict.Of(first.ToKey(), second.ToKey(), ConflictVerdict.Refused, support.Clock.GetUtcNow()), cancellationToken).ConfigureAwait(false);
+            if (stored.IsError)
+            {
+                Failure = stored.Error.Code;
+                _stopped = true;
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private static int Cost(string prompt, int answerTokens) => ((prompt.Length + 3) / 4) + answerTokens;
 
     private async ValueTask<string?> Ask(ModelPurpose purpose, string prompt, int answerTokens, CancellationToken cancellationToken)
@@ -164,6 +206,7 @@ internal sealed class DecisionPass(IIntentStore store, IModelPort model, Labelin
         if (_stopped || Tokens + Cost(prompt, answerTokens) > labeling.MaxTokensPerSync)
         {
             HeldBack = true;
+            _capped |= !_stopped;   // the cap stopped it, not an earlier failure
             _stopped = true;
             return null;
         }

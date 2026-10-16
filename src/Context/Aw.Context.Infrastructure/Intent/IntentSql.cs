@@ -12,7 +12,11 @@ internal static class IntentSql
         "ON CONFLICT (key) DO UPDATE SET source = excluded.source, title = excluded.title, aliases = excluded.aliases, fetched_at = excluded.fetched_at, " +
         "extracted_version = NULL, extraction_state = 'queued', version = excluded.version WHERE intent_record.version <> excluded.version";
 
-    internal const string MarkLinked = "UPDATE intent_record SET linked_map = @map WHERE key = @record";
+    // A record moving to another map version is queued in the same statement (a done one included; its decisions stay until the extraction replaces them): only a finished extraction marks it done again,
+    // so a run that stops or fails between this commit and the extraction cannot leave it done with the old map's decisions. SQLite evaluates every right-hand side against the old row.
+    internal const string MarkLinked =
+        "UPDATE intent_record SET extracted_version = CASE WHEN linked_map <> @map THEN NULL ELSE extracted_version END, " +
+        "extraction_state = CASE WHEN linked_map <> @map THEN 'queued' ELSE extraction_state END, linked_map = @map WHERE key = @record";
 
     internal const string LinkedKeys = "SELECT key FROM intent_record WHERE source = @source AND linked_map = @map ORDER BY key";
 
