@@ -47,6 +47,21 @@ public sealed class LaneStopCheckTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_blocked_stop_leaves_the_lane_marked_busy_so_a_send_does_not_wake_it_mid_turn()
+    {
+        await _world.Ready();
+        var lane = _world.PutLane("api");
+        _ = await _world.LaneMail.Send("api", "rebase please", A.At(5), CancellationToken.None);
+        _ = await _world.LaneMail.Deliver([1], A.At(6), CancellationToken.None);
+
+        var blocked = await Check(lane);
+
+        Assert.True(blocked.Blocked);
+        Assert.False((await _world.Beats.Last("api", CancellationToken.None)).Value!.Stopped);
+        Assert.False((await _world.Beats.IsIdle("api", CancellationToken.None)).Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task An_undelivered_message_is_shown_by_the_block_and_marked_delivered()
     {
         await _world.Ready();

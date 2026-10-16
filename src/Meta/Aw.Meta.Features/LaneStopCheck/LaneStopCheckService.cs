@@ -30,12 +30,6 @@ internal sealed class LaneStopCheckService(IMetaConfig config, ILaneMail mail, L
         }
 
         var now = clock.GetUtcNow();
-        var beat = await beats.Record(request.Identity.Lane, stopped: true, now, cancellationToken).ConfigureAwait(false);
-        if (beat.IsError)
-        {
-            return beat.Error;
-        }
-
         var owed = await mail.Owed(request.Identity.Lane, cancellationToken).ConfigureAwait(false);
         if (owed.IsError)
         {
@@ -46,6 +40,13 @@ internal sealed class LaneStopCheckService(IMetaConfig config, ILaneMail mail, L
         if (outcome.IsError)
         {
             return outcome.Error;
+        }
+
+        // The lane counts as stopped (idle, wakeable) only when this check lets it stop; a blocked agent keeps working.
+        var beat = await beats.Record(request.Identity.Lane, stopped: !outcome.Value.Block, now, cancellationToken).ConfigureAwait(false);
+        if (beat.IsError)
+        {
+            return beat.Error;
         }
 
         var shown = outcome.Value.Block ? await Show(owed.Value, now, cancellationToken).ConfigureAwait(false) : Results.Ok();
