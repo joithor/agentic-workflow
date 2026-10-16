@@ -10,10 +10,33 @@ namespace Aw.Sindri.Infrastructure.Views;
 internal sealed class SqliteJobViews(IViewReader reader) : IJobViews
 {
     public ValueTask<Result<JobRow?>> Get(JobId job, CancellationToken cancellationToken) =>
-        throw new NotSupportedException($"red until API P6 unit B {reader}");
+        reader.Get<JobRow>(ViewNames.Jobs, job.Value, cancellationToken);
 
-    public ValueTask<Result<IReadOnlyList<JobRow>>> Running(CancellationToken cancellationToken) => throw new NotSupportedException("red until API P6 unit B");
+    public async ValueTask<Result<IReadOnlyList<JobRow>>> Running(CancellationToken cancellationToken)
+    {
+        var rows = await reader.Where<JobRow>(ViewNames.Jobs, ViewColumn.State, Wire(JobState.Running), cancellationToken).ConfigureAwait(false);
+        return rows.IsError ? rows.Error : Results.Success<IReadOnlyList<JobRow>>([.. rows.Value.OrderBy(static r => r.Sequence)]);
+    }
 
-    public ValueTask<Result<IReadOnlyList<JobRow>>> List(JobState? state, JobKind? kind, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("red until API P6 unit B");
+    public async ValueTask<Result<IReadOnlyList<JobRow>>> List(JobState? state, JobKind? kind, CancellationToken cancellationToken)
+    {
+        var rows = state is { } wanted
+            ? await reader.Where<JobRow>(ViewNames.Jobs, ViewColumn.State, Wire(wanted), cancellationToken).ConfigureAwait(false)
+            : kind is { } of
+                ? await reader.Where<JobRow>(ViewNames.Jobs, ViewColumn.Kind, of.Value, cancellationToken).ConfigureAwait(false)
+                : await reader.List<JobRow>(ViewNames.Jobs, cancellationToken).ConfigureAwait(false);
+        return rows.IsError
+            ? rows.Error
+            : Results.Success<IReadOnlyList<JobRow>>([.. rows.Value.Where(r => kind is null || r.Kind == kind).OrderByDescending(static r => r.Sequence)]);
+    }
+
+    /// <summary>The state as the row's JSON writes it (the 'state' column is generated from that text).</summary>
+    private static string Wire(JobState state) => state switch
+    {
+        JobState.Running => "running",
+        JobState.Succeeded => "succeeded",
+        JobState.Failed => "failed",
+        JobState.Cancelled => "cancelled",
+        _ => throw new ArgumentOutOfRangeException(nameof(state), state, "unknown job state"),
+    };
 }

@@ -23,6 +23,7 @@ public static class ViewColumns
             : view switch
             {
                 ViewNames.Requests or ViewNames.Decisions when column != ViewColumn.Kind => [name],
+                ViewNames.Jobs when column != ViewColumn.Item => [name],
                 ViewNames.NeedsYou when column != ViewColumn.State => ["row", name],
                 _ => null,
             };
