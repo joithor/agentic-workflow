@@ -497,7 +497,7 @@ new project is refused by design, so `scripts/scaffold/e2e.sh` runs the generato
 
 1. The commands above produce exactly: both restores succeed; build 0 warnings; one failing test (the slice's, failing
    with the stub's `NotSupportedException`), every other test green; format clean; deps check green.
-2. `tests/Aw.Architecture.Tests` passes with the new assemblies registered (the unit-lane run above includes it).
+2. `tests/Aw.Architecture.Tests` passes with the new assemblies registered (it runs in the integration lane since 2026-10-16, owner: `dotnet test --project tests/Aw.Architecture.Tests`, or the integration-lane solution run; the unit-lane run above no longer includes it).
 3. `git status` shows only the files listed above (including each new project's `packages.lock.json`); the generator
    fails with `SCAFFOLD-STRAY` otherwise.
 4. The generator prints the next step: "Make `<FirstSlice>Tests` pass: replace the `Assert.Fail` with the real
