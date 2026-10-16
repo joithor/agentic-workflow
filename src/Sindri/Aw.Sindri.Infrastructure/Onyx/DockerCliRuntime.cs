@@ -4,7 +4,7 @@ using Aw.Sindri.Infrastructure.Secrets;
 
 namespace Aw.Sindri.Infrastructure.Onyx;
 
-/// <summary>IContainerRuntime over the docker CLI: four read-only commands, each with a 5 s timeout, arguments as a list (never a shell string).</summary>
+/// <summary>IContainerRuntime over the docker CLI: three read-only commands, each with a 5 s timeout, arguments as a list (never a shell string).</summary>
 internal sealed class DockerCliRuntime(IToolRunner runner) : IContainerRuntime
 {
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(5);
@@ -23,17 +23,25 @@ internal sealed class DockerCliRuntime(IToolRunner runner) : IContainerRuntime
         var compose = Docker(["compose", "version", "--short"]);
         var composeText = Text(compose);
         cancellationToken.ThrowIfCancellationRequested();
-        long? memory = null;
-        string? dataRoot = null;
-        if (serverText is not null)
-        {
-            var info = Text(Docker(["info", "--format", "{{.MemTotal}}"]));
-            memory = long.TryParse(info, NumberStyles.None, CultureInfo.InvariantCulture, out var bytes) ? bytes : null;
-            dataRoot = Text(Docker(["info", "--format", "{{.DockerRootDir}}"])) is { } root && Path.IsPathRooted(root) && !root.Any(char.IsControl) ? root : null;
-        }
+        var (memory, dataRoot) = serverText is null ? (null, null) : Info(Text(Docker(["info", "--format", "{{.MemTotal}}|{{.DockerRootDir}}"])));
 
         return new ContainerRuntimeFacts(
             CliFound: true, DaemonAnswers: serverText is not null, ServerVersion: Version(serverText), ComposeV2: composeText is not null, ComposeVersion: Version(composeText), MemoryBytes: memory, DataRoot: dataRoot);
+    }
+
+    // One `docker info` line, MemTotal|DockerRootDir, split at the first '|' (a path may hold one, a byte count never does). Each half is guarded
+    // on its own: memory is a plain non-negative number, the data root an absolute path with no control character; anything else reads as unknown.
+    private static (long? Memory, string? DataRoot) Info(string? line)
+    {
+        var bar = line?.IndexOf('|', StringComparison.Ordinal) ?? -1;
+        if (line is null || bar < 0)
+        {
+            return (null, null);
+        }
+
+        var memory = long.TryParse(line.AsSpan(0, bar), NumberStyles.None, CultureInfo.InvariantCulture, out var bytes) ? bytes : (long?)null;
+        var root = line[(bar + 1)..];
+        return (memory, Path.IsPathRooted(root) && !root.Any(char.IsControl) ? root : null);
     }
 
     private ToolRun Docker(string[] arguments) => runner.Run("docker", arguments, _timeout);

@@ -1,6 +1,10 @@
 namespace Aw.Sindri.Core.Onyx;
 
 /// <summary>What the box's container runtime reports (Docker today), as the Onyx preflight needs it.</summary>
+/// <remarks>
+/// A null <see cref="ServerVersion"/> or <see cref="ComposeVersion"/> beside a true <see cref="DaemonAnswers"/> or <see cref="ComposeV2"/> means
+/// "not reported, or rejected as unsafe to print"; it does not say the version is old or new. P2 must add a distinct state for it before it compares versions.
+/// </remarks>
 /// <param name="CliFound">The docker CLI is on PATH.</param>
 /// <param name="DaemonAnswers">The daemon answered `docker version` in time (false when it is down, still starting or hangs).</param>
 /// <param name="ServerVersion">The daemon's version when it answers.</param>
