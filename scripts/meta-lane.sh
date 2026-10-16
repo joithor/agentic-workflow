@@ -210,7 +210,16 @@ if [ "$id_mode" = reported ] && [ "$mode" = fresh ]; then
   ) > /dev/null 2>&1 &
   [ "$have_lock" = 0 ] || exec {lock_fd}>&-   # the watcher subshell keeps the lock; this shell, and so the agent, must not
 fi
-"${args[@]}"
+if [ "$agent" = claude-code ]; then
+  "${args[@]}"
+else
+  # tmux names a pane after the foreground process group's leader. A script's children share its group, so the pane would read
+  # "bash" and aw-meta's wake guard ("the pane runs the agent's processName") would call every non-Claude lane down. Job control
+  # gives the agent its own group and the terminal, so the pane reads "codex" or "agent". Claude lanes run as before.
+  set -m
+  "${args[@]}"
+  set +m
+fi
 [ "${AW_META_NO_SHELL:-0}" = 1 ] && exit 0
 : > "$exited"
 exec bash -i

@@ -323,6 +323,15 @@ tmux kill-server 2> /dev/null; : > "$CALLS.codex"
 AW_LAUNCHER_CONFIG="$LCFG" AW_META_NO_SHELL=1 bash "$DIR/meta-lane.sh" t1 api > /dev/null 2>&1 &
 rp=$!; waitfor '[ -s "$CALLS.codex" ]'; kill "$rp" 2> /dev/null; pkill -f "$WORK/codex" 2> /dev/null; wait "$rp" 2> /dev/null
 check "codex lane with a recorded id and its rollout: resumes it" "$(head -1 "$CALLS.codex" | cut -d'|' -f1-2)" "resume|$a"
+# A non-Claude lane's pane is named after its agent: tmux reads the foreground process group's leader, and aw-meta's wake guard
+# compares it with the catalog's processName. meta-lane.sh gives the agent its own group (job control); a Claude lane is untouched.
+printf '#!/usr/bin/env bash\nexec -a codex sleep 60\n' > "$WORK/codex-named"; chmod +x "$WORK/codex-named"
+jq --arg c "$WORK/codex-named" '.agents.codex.bin = $c' "$LCFG" > "$WORK/l4.json"
+tmux kill-server 2> /dev/null; tmux new-session -d -s keepalive "sleep 600"
+tmux new-session -d -s t1-api "env AW_LAUNCHER_CONFIG=$WORK/l4.json AW_META_NO_SHELL=1 AW_META_ID_WAIT=1 AW_META_ID_GRACE=1 bash $DIR/meta-lane.sh t1 api"
+waitfor '[ "$(tmux display-message -p -t =t1-api: "#{pane_current_command}")" = codex ]'
+check "a non-Claude lane's pane is named after the agent (processName)" "$(tmux display-message -p -t =t1-api: '#{pane_current_command}')" "codex"
+tmux kill-session -t =t1-api 2> /dev/null
 # no processName/transcripts surprises: the pane check uses the catalog's processName.
 mkdir -p "$WORK/fakebin2"; cp "$(command -v sleep)" "$WORK/fakebin2/codex"
 : > "$ids/api.exited"
