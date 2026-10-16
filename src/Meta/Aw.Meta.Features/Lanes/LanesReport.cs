@@ -1,12 +1,13 @@
 using System.Globalization;
 using Aw.Meta.Core.Config;
 using Aw.Meta.Core.Coordination;
+using Aw.Meta.Core.Lanes;
 
 namespace Aw.Meta.Features.Lanes;
 
 internal static class LanesReport
 {
-    internal static LanesResponse Of(TeamConfig config, LaneRefresh refresh)
+    internal static LanesResponse Of(TeamConfig config, LaneRefresh refresh, IReadOnlyList<LaneHealth>? standing = null)
     {
         var entries = refresh.Map.Entries;
         var unmapped = config.Lanes.Where(lane => !entries.Any(e => string.Equals(e.Lane, lane, StringComparison.OrdinalIgnoreCase))).ToList();
@@ -24,6 +25,6 @@ internal static class LanesReport
             parts.Add($"(unmapped: {string.Join(", ", unmapped)})");
         }
 
-        return new LanesResponse(refresh.Map.Version, refresh.Changed, entries, unmapped, string.Join(' ', parts));
+        return new LanesResponse(refresh.Map.Version, refresh.Changed, entries, unmapped, string.Join(' ', parts), standing);
     }
 }

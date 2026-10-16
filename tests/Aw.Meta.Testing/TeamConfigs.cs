@@ -7,7 +7,7 @@ public static class TeamConfigs
 {
     /// <summary>A config that uses every field.</summary>
     /// <returns>The config.</returns>
-    public static TeamConfig Full() => new("sindri", "/work/repo", ["meta", "api", "ui"])
+    public static TeamConfig Full() => new("t1", "/work/repo", ["meta", "api", "ui"])
     {
         MetaLane = "meta",
         Log = "/work/log.md",

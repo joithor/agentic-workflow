@@ -20,5 +20,13 @@ internal static class LanesCommand
     private static string Table(LanesResponse map) =>
         string.Join(
             Environment.NewLine,
-            [map.Announcement.Split(':')[0], .. map.Entries.Select(e => $"{e.Lane,-12} {e.SessionName} ({e.Source})"), .. map.Unmapped.Select(lane => $"{lane,-12} (no session)")]);
+            [
+                map.Announcement.Split(':')[0],
+                .. map.Entries.Select(e => $"{e.Lane,-12} {e.SessionName} ({e.Source}){Standing(map, e.Lane)}"),
+                .. map.Unmapped.Select(lane => $"{lane,-12} (no session){Standing(map, lane)}"),
+            ]);
+
+    // A non-Claude lane's standing for the meta's obligations ("taking part", "launch-only: no obligations", ...); nothing for a Claude lane.
+    private static string Standing(LanesResponse map, string lane) =>
+        map.Standing?.FirstOrDefault(s => string.Equals(s.Lane, lane, StringComparison.OrdinalIgnoreCase)) is { } found ? $" [{found.Agent}: {found.State}]" : string.Empty;
 }

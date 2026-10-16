@@ -29,8 +29,8 @@ public abstract class SessionDirectoryContract
     [Fact]
     public async Task Only_live_sessions_are_listed()
     {
-        var live = Session("sindri-api", "s-1", AlivePid);
-        var directory = Create([live], [Session("sindri-ui", "s-2", DeadPid)]);
+        var live = Session("t1-api", "s-1", AlivePid);
+        var directory = Create([live], [Session("t1-ui", "s-2", DeadPid)]);
 
         var sessions = await directory.Live(_none);
 

@@ -1,4 +1,6 @@
+using System.Text.Json.Serialization;
 using Aw.Meta.Core.Health;
+using Aw.Meta.Core.Lanes;
 
 namespace Aw.Meta.Features.Health;
 
@@ -12,6 +14,7 @@ namespace Aw.Meta.Features.Health;
 /// <param name="MissingLanes">Configured lanes with no live session; null when there is no team config to check against.</param>
 /// <param name="HeavyLocks">The taken heavy-job lock slots.</param>
 /// <param name="MemoryLow">Whether available memory is under a tenth of the total.</param>
+/// <param name="Lanes">How each non-Claude lane stands; absent (null) for a team of Claude lanes.</param>
 /// <param name="Attention">Whether something needs acting on: an orphan still running, a missing lane or low memory.</param>
 public sealed record HealthResponse(
     IReadOnlyList<ProcessGroup> Groups,
@@ -23,4 +26,5 @@ public sealed record HealthResponse(
     IReadOnlyList<string>? MissingLanes,
     IReadOnlyList<HeavyLock> HeavyLocks,
     bool MemoryLow,
-    bool Attention);
+    bool Attention,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<LaneHealth>? Lanes = null);
