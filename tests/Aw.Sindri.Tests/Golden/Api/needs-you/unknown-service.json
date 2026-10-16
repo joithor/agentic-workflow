@@ -1,0 +1,35 @@
+{
+  "rows": [
+    {
+      "id": "failure:service:heartbeat",
+      "kind": "failure",
+      "label": "failure · heartbeat",
+      "subject": {
+        "kind": "service",
+        "id": "heartbeat"
+      },
+      "item": null,
+      "title": "heartbeat failed",
+      "reason": "SND-SVC-404: this build has no service 'heartbeat'; remove or rename it in the profile",
+      "repo": null,
+      "urgency": "colour",
+      "since": "2026-01-01T00:00:00.0000000Z",
+      "recordedOnly": false,
+      "notice": null,
+      "answerKind": null,
+      "primaryAction": null,
+      "actions": [
+        "PauseService"
+      ],
+      "cli": "sindri profile validate"
+    }
+  ],
+  "empty": null,
+  "asOf": {
+    "cursor": 5,
+    "ledgerHead": 5,
+    "projectedAt": "2026-01-01T00:00:00.0000000Z",
+    "rebuilding": false,
+    "stalled": false
+  }
+}

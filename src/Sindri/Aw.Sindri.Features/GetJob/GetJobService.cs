@@ -37,7 +37,7 @@ internal sealed class GetJobService(IJobViews jobs, IProjectorStatus status, ICa
 
         if (found.Value is not { } row || !ItemScope.VisibleOrRepoless(caller, row.Repo))
         {
-            return SindriErrors.JobNotFound.With("no such job");
+            return SindriErrors.JobNotFound.With(JobRules.NoSuchJob);
         }
 
         var running = row.State == JobState.Running;

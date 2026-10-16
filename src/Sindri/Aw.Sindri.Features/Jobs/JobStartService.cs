@@ -94,6 +94,6 @@ internal sealed class JobStartService<TRequest, TResult>(JobAdmitter<TRequest> a
     private static Error Conflict(JobKind kind, JobKey key, JobId running)
     {
         using var id = JsonDocument.Parse($"\"{running.Value}\"");   // a job id is 'JOB-' and hex digits: nothing to escape
-        return SindriErrors.JobConflict.With($"A {kind.Value} job is already running for {key.Value}").WithExtension("runningJob", id.RootElement.Clone());
+        return SindriErrors.JobConflict.With($"A {kind.Value} job is already running for {key.Value} (fix: run `sindri jobs show {running.Value}`, or wait for it to end)").WithExtension("runningJob", id.RootElement.Clone());
     }
 }

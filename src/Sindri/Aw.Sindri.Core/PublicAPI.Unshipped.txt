@@ -8160,3 +8160,4 @@ static Aw.Sindri.Core.Jobs.JobOrder.NewestFirst(System.Collections.Generic.IEnum
 static Aw.Sindri.Core.Jobs.JobOrder.OldestFirst(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Jobs.JobRow!>! rows) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Jobs.JobRow!>!
 Aw.Sindri.Core.Jobs.JobStateNames
 static Aw.Sindri.Core.Jobs.JobStateNames.Of(Aw.Sindri.Core.Jobs.JobState state) -> string!
+const Aw.Sindri.Core.Jobs.JobRules.NoSuchJob = "No such job (fix: run `sindri jobs` to list them)" -> string!
