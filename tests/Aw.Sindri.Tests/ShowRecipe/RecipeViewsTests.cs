@@ -1,8 +1,8 @@
 using System.Globalization;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
-using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Validation;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Testing.Workflow;
@@ -81,6 +81,6 @@ public sealed class RecipeViewsTests
 
         var view = RecipeViews.Of(recipe, new RecipeVersion(recipe.Id, recipe.Version, RecipeHash.From("sha256:" + new string('a', 64))));
 
-        Assert.Equal([.. recipe.Inputs.Select(static i => Aw.Sindri.Core.Workflow.Engine.Runtime.FactTypes.Parse(SubjectKinds.TypeOf(i)))], [.. view.Inputs.Select(static i => i.Type)]);
+        Assert.Equal([.. recipe.Inputs.Select(static i => Core.Workflow.Engine.Runtime.FactTypes.Parse(SubjectKinds.TypeOf(i)))], [.. view.Inputs.Select(static i => i.Type)]);
     }
 }
