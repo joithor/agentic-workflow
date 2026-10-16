@@ -54,7 +54,7 @@ public sealed class CliRequestVerbsTests : IDisposable
 
         Assert.Equal((0, $"{A.FirstRequestId.Value} filed; {A.FirstDecisionId.Value} waits for a human (sequence 6)\n"), (code, Out));
         var call = Assert.Single(api.Calls);
-        Assert.Equal(("POST", "session", $$"""{"kind":"rescope","item":"{{A.FirstItemId.Value}}","text":"Split the work."}"""), (call.Method, call.Headers[SindriHeaders.Caller], call.Body));
+        Assert.Equal(("POST", "session", $$"""{"kind":"rescope","text":"Split the work.","item":"{{A.FirstItemId.Value}}"}"""), (call.Method, call.Headers[SindriHeaders.Caller], call.Body));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -66,7 +66,7 @@ public sealed class CliRequestVerbsTests : IDisposable
         var code = await Verbs(api, InAgent).Run(["request", "note", "All", "done.", "--json"], Token);
 
         Assert.Equal((0, Body(filed)), (code, Out));
-        Assert.Equal("""{"kind":"note","item":null,"text":"All done."}""", Assert.Single(api.Calls).Body);
+        Assert.Equal("""{"kind":"note","text":"All done.","item":null}""", Assert.Single(api.Calls).Body);
     }
 
     [Theory, Trait("Lane", "unit")]
