@@ -17,6 +17,13 @@ public static class A
     /// <summary>The id the job builders default to.</summary>
     public static JobId FirstJobId { get; } = JobId.From("JOB-00000000000000000000000000000001");
 
+    /// <summary>The launch id the launch builders default to.</summary>
+    public static Aw.Sindri.Core.Workflow.Engine.LaunchId FirstLaunchId { get; } = Aw.Sindri.Core.Workflow.Engine.LaunchId.From("LCH-00000000000000000000000000000001");
+
+    /// <summary>A LaunchRequest builder: the first launch of the first item, an attended open of claude-code.</summary>
+    /// <returns>A new builder.</returns>
+    public static Launch.LaunchRequestBuilder LaunchRequest() => new();
+
     /// <summary>An items-view row builder: a new item at version 1.</summary>
     /// <returns>A new builder.</returns>
     public static ItemRowBuilder Item() => new();
