@@ -59,6 +59,7 @@ using Aw.Sindri.Features.PauseService;
 using Aw.Sindri.Features.PingProcess;
 using Aw.Sindri.Features.ReadLedger;
 using Aw.Sindri.Features.RebuildViews;
+using Aw.Sindri.Features.JobProbe;
 using Aw.Sindri.Features.RecordHeartbeat;
 using Aw.Sindri.Features.RegisterMcp;
 using Aw.Sindri.Features.RegisterRecipe;
@@ -103,6 +104,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<ServeRecords>()
             .AddScoped<IService<RegisterMcpRequest, RegisterMcpResponse>, RegisterMcpService>()
             .AddScoped<IScheduledService, HeartbeatService>()
+            .AddScoped<IScheduledService, JobProbeService>()   // opt-in: not a BuiltInService, so only a profile that names it schedules it
             .AddSingleton(static sp => new JobStartRecorder(sp.GetRequiredService<HeldLease>(), sp.GetRequiredService<ILedgerStore>(), sp.GetRequiredService<EventFactory>()))
             .AddSingleton(static sp => new JobEventWriter(sp.GetRequiredService<ILedgerStore>(), sp.GetRequiredService<HeldLease>(), sp.GetRequiredService<EventFactory>(),
                 sp.GetRequiredService<ITextScrubber>(), sp.GetRequiredService<ICallerContextAccessor>()))   // API P6 unit C: the job runtime, outside the command gate
