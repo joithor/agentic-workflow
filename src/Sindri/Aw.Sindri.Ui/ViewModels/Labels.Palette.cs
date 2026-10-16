@@ -18,6 +18,9 @@ internal static partial class Labels
     /// <summary>A ready row the app has no sender for: shown, never run (K8).</summary>
     internal const string NotInApp = "not in the app yet";
 
+    /// <summary>A ready item action that lives on the item's sheet (it needs the version the sheet shows): shown, never run from the palette.</summary>
+    internal const string OnItemSheet = "on the item's sheet";
+
     /// <summary>The palette's line when nothing matches.</summary>
     internal const string NoMatches = "Nothing matches";
 
@@ -42,7 +45,7 @@ internal static partial class Labels
     internal static IReadOnlyList<(string Keys, string Action)> FixedKeys { get; } =
     [
         ("⌘K / Ctrl+K", Palette),
-        ("G then N H Q R W D S .", "Go to Needs you, Home, Queue, Running, With you, Decisions, Services, Health"),
+        ("G then H N D W Q R C A . S", "Go to Home (H, N), Home's Decisions (D), Workflows, Work (the queue), Recipes, Context, Agents, System (., S)"),
         ("J / K", "Next / previous row"),
         ("Enter / Esc", "Open the detail sheet / close the topmost layer"),
         ("O", "Open with the resolved target; Shift+O opens the target menu"),

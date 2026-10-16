@@ -39,6 +39,7 @@ internal sealed partial class ShellViewModel
         }
 
         CurrentPage = Enum.TryParse<PageId>(_preferences.LastPage, out var page) ? page : PageId.Home;
+        Queue.PageShown(RowScopeOf(CurrentPage));
         Changed(_pageProperties);
         Changed(nameof(Window), nameof(SheetWidth));
     }

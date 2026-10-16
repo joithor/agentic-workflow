@@ -76,6 +76,10 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
             "/sindri/commands" => Answer(Counted(await server.Commands(uri, cancellationToken), server.Catalog)),
             "/sindri/services" => Answer(Counted(await server.Services(uri, after), server.ServiceView)),
             "/sindri/views/rebuild" when request.Method == HttpMethod.Post => Answer(Counted(await server.RebuildViews(uri, cancellationToken), server.Rebuild)),
+            "/sindri/queue" => Answer(Counted(await server.Queue(uri, after, cancellationToken), server.QueueView)),
+            "/sindri/items" when request.Method == HttpMethod.Post =>
+                Answer(Counted(await server.CreateItem(uri, await Body<CreateItemRequest>(request, cancellationToken), cancellationToken), server.Create)),
+            var path when path.StartsWith("/sindri/items/", StringComparison.Ordinal) => await Item(request, path["/sindri/items/".Length..], after, cancellationToken),
             // LANE ANCHOR U3': add the Needs you routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately above this marker, never between the markers.
             // LANE ANCHOR U8: add the workflow command routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately below this marker, never between the markers.
             { } path when request.Method == HttpMethod.Get && path.StartsWith("/sindri/workflow/", StringComparison.Ordinal) => await Workflow(uri, cancellationToken),
@@ -139,6 +143,27 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
             : status.IsError
                 ? Answer(RouteAnswer.Problem(HttpStatusCode.ServiceUnavailable, status.Error.Code, status.Error.Message))
                 : Text(HttpStatusCode.OK, Status(status.Value), "application/json");
+    }
+
+    // /sindri/items/{id}, /sindri/items/{id}/timeline and POST /sindri/items/{id}/close (API P3).
+    private async Task<HttpResponseMessage> Item(HttpRequestMessage request, string rest, long sequence, CancellationToken cancellationToken)
+    {
+        var uri = request.RequestUri!; // why: HttpClient always sets it on a sent request
+        var parts = rest.Split('/');
+        return parts switch
+        {
+            [var id] => Answer(Counted(await server.Item(uri, id, sequence, cancellationToken), server.ItemAnswer(id))),
+            [var id, "timeline"] => Answer(Counted(await server.Timeline(uri, id, After(uri), sequence, cancellationToken), server.TimelineAnswer(id, After(uri)))),
+            [var id, "close"] when request.Method == HttpMethod.Post =>
+                Answer(Counted(await server.CloseItem(uri, id, await Body<CloseItemRequest>(request, cancellationToken), cancellationToken), server.Close)),
+            _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
+        };
+    }
+
+    private static async Task<T> Body<T>(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var bytes = await request.Content!.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false); // why: the client always sends a body on these POSTs
+        return Kernel.Json.AwJson.Deserialize<T>(bytes, SindriApiClient.Json).Value;
     }
 
     // Sindri's caller check (API P1 §6: a human without this start's token, ping, status and the stream included), then the model's own refusal: 403 with ProblemDetails.

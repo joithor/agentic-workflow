@@ -1,0 +1,56 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:item="using:Aw.Sindri.Ui.ViewModels.Item"
+             xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
+             x:Class="Aw.Sindri.Ui.Views.Item.CreateItemDialog"
+             x:DataType="item:CreateItemViewModel">
+  <!-- Create item (UI spec §4.5, §7; `C`): a small form over a scrim, title, repo and body, sent by the catalog's
+       CreateItem control (drawn pending with its phase until P3 ships). It traps focus and returns it to the opener
+       (§11.2); Esc or Cancel closes it with nothing sent; Enter in the title sends. It is a modal dialog (L10): the window
+       counts it as an overlay, Tab cycles inside the card, and a blank title is answered under the field. -->
+  <UserControl.Styles>
+    <Style Selector="Border.scrim">
+      <Setter Property="Background" Value="{DynamicResource Brush.Overlay}" />
+      <Setter Property="Opacity" Value="0.6" />
+    </Style>
+    <Style Selector="Border.dialog">
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface3}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{StaticResource Radius.LG}" />
+      <Setter Property="Padding" Value="{StaticResource Space.LG.Thickness}" />
+    </Style>
+  </UserControl.Styles>
+  <Panel>
+    <Border Classes="scrim" PointerPressed="OnScrim" />
+    <Border x:Name="CreateCard" Classes="dialog" Width="520" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,96,0,0"
+            KeyboardNavigation.TabNavigation="Cycle" AutomationProperties.ControlTypeOverride="Window" AutomationProperties.AccessibilityView="Control"
+            AutomationProperties.Name="{Binding Text.CreateItem}">
+      <StackPanel Spacing="10">
+        <TextBlock Classes="detail-title" Text="{Binding Text.CreateItem}" />
+        <TextBlock Classes="caption subtle" Text="{Binding Text.TitleRequired}" AutomationProperties.AccessibilityView="Raw" />
+        <TextBox x:Name="TitleField" Text="{Binding Title}" AutomationProperties.Name="{Binding Text.TitleRequired}" AutomationProperties.HelpText="{Binding TitleError}" />
+        <!-- A blank submit: said under the field, and spoken once through the gated region (live only while it speaks; never empty). -->
+        <TextBlock x:Name="TitleError" Classes="caption error" Text="{Binding TitleError}" IsVisible="{Binding HasTitleError}"
+                   AutomationProperties.AccessibilityView="Raw" />
+        <!-- In the tree whenever the title is blank (before any submit), so the one announcement lands in a region that exists. -->
+        <TextBlock x:Name="TitleLive" Classes="caption live-region" Classes.live="{Binding IsAnnouncing}" Text="{Binding Announcement}"
+                   Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left"
+                   IsVisible="{Binding IsTitleBlank}" />
+        <TextBlock Classes="caption subtle" Text="{Binding Text.Repo}" />
+        <TextBox x:Name="RepoField" Text="{Binding Repo}" AutomationProperties.Name="{Binding Text.Repo}" />
+        <TextBlock Classes="caption subtle" Text="{Binding Text.Body}" />
+        <TextBox x:Name="BodyField" Text="{Binding Body}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72"
+                 AutomationProperties.Name="{Binding Text.Body}" />
+        <Grid ColumnDefinitions="*,Auto">
+          <!-- Always enabled (a blank title is answered under the field); the control keeps its own lifecycle and pending state. -->
+          <controls:CommandControl x:Name="CreateControl" DataContext="{Binding Control}" />
+          <Button x:Name="CancelCreate" Grid.Column="1" Classes="command-control" Click="OnCancel" VerticalAlignment="Top"
+                  AutomationProperties.Name="{Binding Text.Cancel}">
+            <TextBlock Classes="button" Text="{Binding Text.Cancel}" />
+          </Button>
+        </Grid>
+      </StackPanel>
+    </Border>
+  </Panel>
+</UserControl>
