@@ -230,15 +230,16 @@ UI's Health page shows both rows as it shows every doctor row; nothing UI-specif
 ## 9. Architecture (where the code goes)
 
 Inside the Sindri package, by the C# rules (`.agents/rules/csharp.md`): slices `OnyxUp`, `OnyxStatus`, `OnyxDown`,
-`OnyxLogin` in `Aw.Sindri.Features`; ports `IContainerRuntime` (compose project up, stop, pull, ps, version),
+`OnyxLogin` in `Aw.Sindri.Features`; ports `IContainerRuntime` (P1 has `Inspect`, the read-only facts; P2 adds the compose operations pull, up, stop and ps),
 `IOnyxProvisioning` (§5.2), `ISecretWriter` (§5.3), `IDeployFiles` (fetch and verify against the pins) in Core, with
 fakes and contract tests in `Aw.Sindri.Testing`; the Docker CLI, HTTP and keychain adapters in Infrastructure; CLI
 commands in Host. The first-run offer (O6) lives in the C# bare start (`StartCommand`, before it launches `serve`),
 not in `scripts/sindri-app.sh`: the launcher stays a thin build-and-exec wrapper, and a published `sindri` started any
 other way behaves the same. The launcher's only change is its header and `docs/csharp/sindri-ui.md`'s paragraph
 naming Onyx among what bare `sindri-app` brings up. The serve and stop hooks sit beside the Temporal ones (`TemporalDevServer` is the model for detach,
-readiness, bounded stop). `deps.yaml` declares the new `cli` edges (`docker`, `security`, `secret-tool`, `pbcopy` and
-the Linux clipboards) and the `file` edge to `context/onyx.lock`.
+readiness, bounded stop). `deps.yaml` models edges between this repo's packages only, so the external executables
+(`docker`, `security`, `secret-tool`, `pbcopy` and the Linux clipboards) are not declared there: `docs/csharp/sindri.md`
+lists them instead.
 
 ## 10. Proof
 

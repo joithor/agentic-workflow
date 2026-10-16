@@ -58,6 +58,8 @@ calling process, read-only, because they must work while the control plane is do
 the approval is a ledger event fenced by the lease, so from a human at a terminal it starts it first (`--no-start` opts
 out); no verb starts it from an agent session (Callers and auth below).
 
+**External executables.** `deps.yaml` models edges between this repo's packages only, so the programs Sindri runs on the host are listed here instead. Managed Onyx (spec `docs/superpowers/specs/2026-10-16-sindri-onyx-managed-design.md` §9) runs `docker` (`version`, `compose version --short`, `info`; P2 adds the compose operations) and, in later phases, the secret stores and clipboards: `security` (macOS Keychain), `secret-tool` (Linux Secret Service), `pbcopy`, `wl-copy`, `xclip` and `xsel`. `sindri onyx status` runs only `docker`; the pins it reads are `context/onyx.lock`, embedded into the build.
+
 ## Files
 
 `AW_SINDRI_HOME`, default `$AW_STATE_DIR/sindri-app` (`$AW_STATE_DIR` defaults to `~/.agentic-workflow`). It is apart from

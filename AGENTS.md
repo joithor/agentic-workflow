@@ -56,6 +56,7 @@ agentic-workflow/
 ├── scorer/        # Daily cost/involvement report from provider session transcripts
 ├── judge/         # Cheap-agent-harness judge CLI (decisions, config, health)
 ├── sindri/        # Sindri in TypeScript (runs until the switch; reference for the C# app): profile, ledger, lock, scrubber, observe, index, scope, evolve, doctor (CLI)
+├── context/       # Pinned external deployments: onyx.lock (Onyx v4.9.0 pins)
 ├── mods/          # Claude Code mods (in-process function hooks): aw-live /live pane. Claude-only
 ├── planning/      # Project documentation
 ├── src/           # C# build (in progress): Aw.Kernel (+ .Data, .Telemetry), Redaction, Aw.Analyzers, the tool ports (Packets, Readiness, BugFix; Judge, Evidence), Meta (aw-meta, the /meta harness) and later the new Sindri app — each Core · Features · Infrastructure · Host
