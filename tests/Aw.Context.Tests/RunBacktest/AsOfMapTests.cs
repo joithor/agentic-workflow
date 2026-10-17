@@ -148,7 +148,7 @@ public sealed class AsOfMapTests
     }
 
     // Catastrophic on any text without the tail: every character can be matched two ways, so the one-second match timeout fires.
-    private const string TimeoutSection = "\"extract\":{\"recognizers\":[{\"kind\":\"flag\",\"glob\":\"src/**/*.ts\",\"pattern\":\"(?<n>(?:[^!]|[^!])+)+!!!QQ\",\"keyFrom\":\"n\"}]}";
+    private const string TimeoutSection = "\"extract\":{\"recognizers\":[{\"kind\":\"flag\",\"glob\":\"src/app.ts\",\"pattern\":\"(?<n>(?:[^!]|[^!])+)+!!!QQ\",\"keyFrom\":\"n\"}]}";
 
     [Fact, Trait("Lane", "integration")]
     public async Task Backtest_as_of_map_whose_recognizer_timed_out_is_not_cached_and_the_report_says_so()
@@ -165,7 +165,10 @@ public sealed class AsOfMapTests
 
         Assert.True(first.RecognizersTimedOut);
         Assert.False(second.Cached);   // the partial map was never written, so a later build extracts again
-        Assert.Contains(report.Degraded, d => d.StartsWith("recognizers timed out:", StringComparison.Ordinal));
+        Assert.Contains(report.Degraded, d => d.StartsWith($"recognizers timed out: {report.Samples.Count} of {report.Samples.Count} sample maps", StringComparison.Ordinal));   // every kept sample's cut has src/app.ts
+
+        var clean = (await world.Run("graph")).Value.Report;
+        Assert.DoesNotContain(clean.Degraded, d => d.StartsWith("recognizers timed out", StringComparison.Ordinal));
     }
 
     private sealed class WriteFailingCache(IEvalStore inner) : IEvalStore
