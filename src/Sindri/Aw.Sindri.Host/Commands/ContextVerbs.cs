@@ -83,11 +83,11 @@ internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
                     case "--draft":
                         pairs.Add(("draft", "true"));
                         break;
-                    case "--node" or "--item" or "--symbol" or "--depth" or "--budget" or "--diff" or "--repo" when i + 1 < args.Length:
-                        pairs.Add((args[i][2..], args[++i]));
+                    case "--node" or "--item" or "--symbol" or "--depth" or "--budget" or "--diff" or "--repo" or "--map-version" when i + 1 < args.Length:
+                        pairs.Add((args[i] == "--map-version" ? "mapVersion" : args[i][2..], args[++i]));
                         break;
                     case var flag when flag.StartsWith("--", StringComparison.Ordinal):
-                        return SindriErrors.InvalidInput.With($"'{flag}' isn't a context query flag (or it needs a value): --node K | --item I | --symbol S | --diff BASE..HEAD [--repo R] | --depth N | --budget N | --draft | --json");
+                        return SindriErrors.InvalidInput.With($"'{flag}' isn't a context query flag (or it needs a value): --node K | --item I | --symbol S | --diff BASE..HEAD [--repo R] | --depth N | --budget N | --map-version V | --draft | --json");
                     default:
                         words.Add(args[i]);
                         break;

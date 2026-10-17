@@ -5,7 +5,7 @@ using Aw.Sindri.Host.Text;
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
-/// 'sindri context lenses &lt;anchor&gt; [--draft] [--json]' and 'sindri context filemap --repo R [--path P] [--unmapped] [--draft] [--json]'
+/// 'sindri context lenses &lt;anchor&gt;... [--depth N] [--draft | --map-version V] [--json]' and 'sindri context filemap --repo R [--path P] [--unmapped] [--draft] [--json]'
 /// (context spec §8.5, §8.9): clients of GET /sindri/context/lenses and /filemap. Exit 0 with an answer; 1 for attention (not running,
 /// unknown anchor, no draft, a repo outside the scope, sessions off); 2 for a tool error.
 /// </summary>
@@ -13,7 +13,7 @@ namespace Aw.Sindri.Host.Commands;
 /// <param name="output">Where the verbs write.</param>
 internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
 {
-    private const string Forms = "context lenses <anchor> [--depth <0-4>] [--draft] [--json] | context filemap --repo <repo> [--path <dir>] [--unmapped] [--draft] [--json] | context filemap accept|reject <link-id>";
+    private const string Forms = "context lenses <anchor>... [--depth <0-4>] [--draft | --map-version <v>] [--json] | context filemap --repo <repo> [--path <dir>] [--unmapped] [--draft] [--json] | context filemap accept|reject <link-id>";
 
     internal Task<int> Run(string[] args, CancellationToken ct) => args switch
     {
@@ -22,13 +22,23 @@ internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
         _ => output.Error(SindriErrors.UnknownVerb.With($"'context {string.Join(' ', args)}' is not a lenses or filemap command: {Forms}")),
     };
 
-    private async Task<int> Lenses((string Anchor, string? Depth, bool Draft, bool Json) o, CancellationToken ct)
+    private async Task<int> Lenses((string[] Anchors, string? Depth, bool Draft, string? MapVersion, bool Json) o, CancellationToken ct)
     {
-        var query = "?anchor=" + Uri.EscapeDataString(o.Anchor) + (o.Depth is null ? string.Empty : "&depth=" + Uri.EscapeDataString(o.Depth)) + (o.Draft ? "&draft=true" : string.Empty);
+        var query = "?" + string.Join('&', o.Anchors.Select(static a => "anchor=" + Uri.EscapeDataString(a))) + (o.Depth is null ? string.Empty : "&depth=" + Uri.EscapeDataString(o.Depth))
+            + (o.Draft ? "&draft=true" : string.Empty) + (o.MapVersion is null ? string.Empty : "&mapVersion=" + Uri.EscapeDataString(o.MapVersion));
+        var fence = client.SessionReason is null;
+        if (o.Anchors.Distinct(StringComparer.Ordinal).Count() > 1)
+        {
+            var set = await client.Get<LensesSetView>("/sindri/context/lenses" + query, ct).ConfigureAwait(false);
+            return set.IsError ? await Failed(set.Error).ConfigureAwait(false)
+                : o.Json ? await output.Raw(set.Value.Body, 0).ConfigureAwait(false)
+                : await output.Text(ContextLensText.LensesSet(set.Value.Value, fence), 0).ConfigureAwait(false);
+        }
+
         var answer = await client.Get<LensesView>("/sindri/context/lenses" + query, ct).ConfigureAwait(false);
         return answer.IsError ? await Failed(answer.Error).ConfigureAwait(false)
             : o.Json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
-            : await output.Text(ContextLensText.Lenses(answer.Value.Value, fence: client.SessionReason is null), 0).ConfigureAwait(false);
+            : await output.Text(ContextLensText.Lenses(answer.Value.Value, fence), 0).ConfigureAwait(false);
     }
 
     private async Task<int> FileMap((string Repo, string? Path, bool Unmapped, bool Draft, bool Json) o, CancellationToken ct)
@@ -43,11 +53,14 @@ internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
 
     private async Task<int> Failed(Kernel.Error error) => ContextExit.For(error, await output.Error(error).ConfigureAwait(false));
 
-    /// <summary>'&lt;anchor&gt;' with [--depth N], [--draft] and [--json] in any order.</summary>
-    private static (string Anchor, string? Depth, bool Draft, bool Json)? Lenses(string[] rest)
+    /// <summary>One or more anchors with [--depth N], [--draft or --map-version V] and [--json] in any order; null for none, or a draft with a version.</summary>
+    private static (string[] Anchors, string? Depth, bool Draft, string? MapVersion, bool Json)? Lenses(string[] rest)
     {
-        var flags = Flags(rest, valued: ["--depth"], bare: ["--draft", "--json"]);
-        return flags is { Words: [var anchor] } ? (anchor, flags.Values.GetValueOrDefault("--depth"), flags.Bare.Contains("--draft"), flags.Bare.Contains("--json")) : null;
+        var flags = Flags(rest, valued: ["--depth", "--map-version"], bare: ["--draft", "--json"]);
+        var version = flags?.Values.GetValueOrDefault("--map-version");
+        return flags is { Words.Length: > 0 } && !(version is not null && flags.Bare.Contains("--draft"))
+            ? (flags.Words, flags.Values.GetValueOrDefault("--depth"), flags.Bare.Contains("--draft"), version, flags.Bare.Contains("--json"))
+            : null;
     }
 
     /// <summary>'--repo R' with [--path P] [--unmapped] [--draft] [--json] in any order.</summary>
