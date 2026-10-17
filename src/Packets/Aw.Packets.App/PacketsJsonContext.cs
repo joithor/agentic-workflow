@@ -20,6 +20,7 @@ namespace Aw.Packets.App;
 [JsonSerializable(typeof(OutOfScope))]
 [JsonSerializable(typeof(TaskPlan))]
 [JsonSerializable(typeof(FreezeRecord))]
+[JsonSerializable(typeof(SizesFile))]
 [JsonSerializable(typeof(ValidatePacketRequest))]
 [JsonSerializable(typeof(ValidatePacketResponse))]
 [JsonSerializable(typeof(FreezePacketRequest))]

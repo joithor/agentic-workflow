@@ -7,23 +7,29 @@ namespace Aw.Packets.App.Commands;
 /// <param name="RepoDirectory">The repository directory, when given.</param>
 /// <param name="Json">True for '--json'.</param>
 /// <param name="By">Who freezes it ('--by', 'freeze' only): the machine unless the owner asked.</param>
-internal sealed record PacketArguments(string PacketDirectory, string? RepoDirectory, bool Json, FreezeBy By = FreezeBy.Machine)
+/// <param name="SizesFile">The sizes file ('--sizes', 'validate' only), when given.</param>
+internal sealed record PacketArguments(string PacketDirectory, string? RepoDirectory, bool Json, FreezeBy By = FreezeBy.Machine, string? SizesFile = null)
 {
     internal const string Shape = "<packet-dir> [--repo <dir>] [--json]";
+    internal const string ValidateShape = "<packet-dir> [--repo <dir>] [--sizes <file>] [--json]";
     internal const string FreezeShape = "<packet-dir> [--repo <dir>] [--by owner|machine] [--json]";
 
     /// <summary>Binds the arguments.</summary>
     /// <param name="args">The arguments after the command name and '--kind'.</param>
     /// <param name="takesBy">True for 'freeze', which takes '--by owner|machine'.</param>
+    /// <param name="takesSizes">True for 'validate', which takes '--sizes &lt;file&gt;'.</param>
     /// <returns>The arguments; null for an unknown, repeated or valueless flag, or no (or a second) packet directory.</returns>
-    internal static PacketArguments? Parse(IReadOnlyList<string> args, bool takesBy = false)
+    internal static PacketArguments? Parse(IReadOnlyList<string> args, bool takesBy = false, bool takesSizes = false)
     {
-        if ((takesBy ? SimpleArguments.Parse(args, "--repo", "--by") : SimpleArguments.Parse(args, "--repo")) is not { } parsed)
+        string[] flags = takesBy ? ["--repo", "--by"] : takesSizes ? ["--repo", "--sizes"] : ["--repo"];
+        if (SimpleArguments.Parse(args, flags) is not { } parsed)
         {
             return null;
         }
 
         var by = parsed.Values.TryGetValue("--by", out var given) ? FreezeByArgument.Parse(given) : FreezeBy.Machine;
-        return by is { } who ? new PacketArguments(parsed.PacketDirectory, parsed.Values.GetValueOrDefault("--repo"), parsed.Json, who) : null;
+        return by is { } who
+            ? new PacketArguments(parsed.PacketDirectory, parsed.Values.GetValueOrDefault("--repo"), parsed.Json, who, parsed.Values.GetValueOrDefault("--sizes"))
+            : null;
     }
 }

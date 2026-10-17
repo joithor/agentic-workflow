@@ -30,6 +30,8 @@ Aw.Packets.Core.IPacketSource
 Aw.Packets.Core.IPacketSource.Load(string! packetDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Model.LoadedPacket!>!>
 Aw.Packets.Core.IRepoSnapshot
 Aw.Packets.Core.IRepoSnapshot.Files(string! repoDirectory, Aw.Packets.Core.Values.CommitSha commitSha, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlySet<string!>!>!>
+Aw.Packets.Core.ISizesSource
+Aw.Packets.Core.ISizesSource.Read(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Model.SizesFile!>!>
 Aw.Packets.Core.Ids.ExampleId
 Aw.Packets.Core.Ids.ExampleId.Equals(Aw.Packets.Core.Ids.ExampleId other) -> bool
 Aw.Packets.Core.Ids.ExampleId.Equals(Aw.Packets.Core.Ids.ExampleId other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Ids.ExampleId>! comparer) -> bool
@@ -234,7 +236,7 @@ Aw.Packets.Core.Kinds.Line.LinePacketFiles.Present.init -> void
 Aw.Packets.Core.Kinds.Line.LinePacketFiles.Unlisted.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Packets.Core.Kinds.Line.LinePacketFiles.Unlisted.init -> void
 Aw.Packets.Core.Kinds.Line.LinePacketInspector
-Aw.Packets.Core.Kinds.Line.LinePacketInspector.Inspect(Aw.Packets.Core.Kinds.PacketKind! kind, string! packetDirectory, string! repoDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Kinds.Line.LineInspection!>!>
+Aw.Packets.Core.Kinds.Line.LinePacketInspector.Inspect(Aw.Packets.Core.Kinds.PacketKind! kind, string! packetDirectory, string! repoDirectory, Aw.Packets.Core.Model.SizesFile? sizes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Kinds.Line.LineInspection!>!>
 Aw.Packets.Core.Kinds.Line.LinePacketInspector.LinePacketInspector(Aw.Packets.Core.Kinds.Line.ILinePacketSource! source, Aw.Packets.Core.IRepoSnapshot! repo, System.Text.Json.JsonSerializerOptions! json) -> void
 Aw.Packets.Core.Kinds.Line.LinePacketManifest<TLinks>
 Aw.Packets.Core.Kinds.Line.LinePacketManifest<TLinks>.<Clone>$() -> Aw.Packets.Core.Kinds.Line.LinePacketManifest<TLinks>!
@@ -784,6 +786,41 @@ Aw.Packets.Core.Model.SizeClass.ExtraSmall = 1 -> Aw.Packets.Core.Model.SizeClas
 Aw.Packets.Core.Model.SizeClass.Large = 4 -> Aw.Packets.Core.Model.SizeClass
 Aw.Packets.Core.Model.SizeClass.Medium = 3 -> Aw.Packets.Core.Model.SizeClass
 Aw.Packets.Core.Model.SizeClass.Small = 2 -> Aw.Packets.Core.Model.SizeClass
+Aw.Packets.Core.Model.SizeLimit
+Aw.Packets.Core.Model.SizeLimit.<Clone>$() -> Aw.Packets.Core.Model.SizeLimit!
+Aw.Packets.Core.Model.SizeLimit.Budget.get -> Aw.Packets.Core.Model.TaskBudget!
+Aw.Packets.Core.Model.SizeLimit.Budget.init -> void
+Aw.Packets.Core.Model.SizeLimit.Equals(Aw.Packets.Core.Model.SizeLimit? other) -> bool
+Aw.Packets.Core.Model.SizeLimit.Files.get -> int
+Aw.Packets.Core.Model.SizeLimit.Files.init -> void
+Aw.Packets.Core.Model.SizeLimit.Items.get -> int
+Aw.Packets.Core.Model.SizeLimit.Items.init -> void
+Aw.Packets.Core.Model.SizeLimit.SizeLimit() -> void
+Aw.Packets.Core.Model.SizeLimits
+Aw.Packets.Core.Model.SizeLimits.<Clone>$() -> Aw.Packets.Core.Model.SizeLimits!
+Aw.Packets.Core.Model.SizeLimits.Equals(Aw.Packets.Core.Model.SizeLimits? other) -> bool
+Aw.Packets.Core.Model.SizeLimits.ExtraLarge.get -> Aw.Packets.Core.Model.SizeLimit!
+Aw.Packets.Core.Model.SizeLimits.ExtraLarge.init -> void
+Aw.Packets.Core.Model.SizeLimits.ExtraSmall.get -> Aw.Packets.Core.Model.SizeLimit!
+Aw.Packets.Core.Model.SizeLimits.ExtraSmall.init -> void
+Aw.Packets.Core.Model.SizeLimits.Large.get -> Aw.Packets.Core.Model.SizeLimit!
+Aw.Packets.Core.Model.SizeLimits.Large.init -> void
+Aw.Packets.Core.Model.SizeLimits.Medium.get -> Aw.Packets.Core.Model.SizeLimit!
+Aw.Packets.Core.Model.SizeLimits.Medium.init -> void
+Aw.Packets.Core.Model.SizeLimits.Of(Aw.Packets.Core.Model.SizeClass size) -> Aw.Packets.Core.Model.SizeLimit!
+Aw.Packets.Core.Model.SizeLimits.SizeLimits() -> void
+Aw.Packets.Core.Model.SizeLimits.Small.get -> Aw.Packets.Core.Model.SizeLimit!
+Aw.Packets.Core.Model.SizeLimits.Small.init -> void
+Aw.Packets.Core.Model.SizesFile
+Aw.Packets.Core.Model.SizesFile.<Clone>$() -> Aw.Packets.Core.Model.SizesFile!
+Aw.Packets.Core.Model.SizesFile.Equals(Aw.Packets.Core.Model.SizesFile? other) -> bool
+Aw.Packets.Core.Model.SizesFile.Schema.get -> string?
+Aw.Packets.Core.Model.SizesFile.Schema.init -> void
+Aw.Packets.Core.Model.SizesFile.SchemaVersion.get -> int
+Aw.Packets.Core.Model.SizesFile.SchemaVersion.init -> void
+Aw.Packets.Core.Model.SizesFile.Sizes.get -> Aw.Packets.Core.Model.SizeLimits!
+Aw.Packets.Core.Model.SizesFile.Sizes.init -> void
+Aw.Packets.Core.Model.SizesFile.SizesFile() -> void
 Aw.Packets.Core.Model.TaskBudget
 Aw.Packets.Core.Model.TaskBudget.<Clone>$() -> Aw.Packets.Core.Model.TaskBudget!
 Aw.Packets.Core.Model.TaskBudget.Equals(Aw.Packets.Core.Model.TaskBudget? other) -> bool
@@ -817,12 +854,13 @@ Aw.Packets.Core.Model.Workstream.Title.get -> string!
 Aw.Packets.Core.Model.Workstream.Title.init -> void
 Aw.Packets.Core.Model.Workstream.Workstream(Aw.Packets.Core.Ids.WorkstreamId Id, string! Title) -> void
 Aw.Packets.Core.PacketInspector
-Aw.Packets.Core.PacketInspector.Inspect(string! packetDirectory, string! repoDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Inspection!>!>
+Aw.Packets.Core.PacketInspector.Inspect(string! packetDirectory, string! repoDirectory, Aw.Packets.Core.Model.SizesFile? sizes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Inspection!>!>
 Aw.Packets.Core.PacketInspector.PacketInspector(Aw.Packets.Core.IPacketSource! source, Aw.Packets.Core.IRepoSnapshot! repo) -> void
 Aw.Packets.Core.PacketReader
 Aw.Packets.Core.PacketReader.FileReader
 Aw.Packets.Core.PacketsCoreServiceCollectionExtensions
 Aw.Packets.Core.PacketsErrors
+Aw.Packets.Core.SizesReader
 Aw.Packets.Core.Values.CommitSha
 Aw.Packets.Core.Values.CommitSha.CommitSha() -> void
 Aw.Packets.Core.Values.CommitSha.Equals(Aw.Packets.Core.Values.CommitSha other) -> bool
@@ -1035,6 +1073,15 @@ override Aw.Packets.Core.Model.PacketTask.ToString() -> string!
 override Aw.Packets.Core.Model.Question.Equals(object? obj) -> bool
 override Aw.Packets.Core.Model.Question.GetHashCode() -> int
 override Aw.Packets.Core.Model.Question.ToString() -> string!
+override Aw.Packets.Core.Model.SizeLimit.Equals(object? obj) -> bool
+override Aw.Packets.Core.Model.SizeLimit.GetHashCode() -> int
+override Aw.Packets.Core.Model.SizeLimit.ToString() -> string!
+override Aw.Packets.Core.Model.SizeLimits.Equals(object? obj) -> bool
+override Aw.Packets.Core.Model.SizeLimits.GetHashCode() -> int
+override Aw.Packets.Core.Model.SizeLimits.ToString() -> string!
+override Aw.Packets.Core.Model.SizesFile.Equals(object? obj) -> bool
+override Aw.Packets.Core.Model.SizesFile.GetHashCode() -> int
+override Aw.Packets.Core.Model.SizesFile.ToString() -> string!
 override Aw.Packets.Core.Model.TaskBudget.Equals(object? obj) -> bool
 override Aw.Packets.Core.Model.TaskBudget.GetHashCode() -> int
 override Aw.Packets.Core.Model.TaskBudget.ToString() -> string!
@@ -1204,6 +1251,12 @@ static Aw.Packets.Core.Model.PacketTask.operator ==(Aw.Packets.Core.Model.Packet
 static Aw.Packets.Core.Model.Question.operator !=(Aw.Packets.Core.Model.Question? left, Aw.Packets.Core.Model.Question? right) -> bool
 static Aw.Packets.Core.Model.Question.operator ==(Aw.Packets.Core.Model.Question? left, Aw.Packets.Core.Model.Question? right) -> bool
 static Aw.Packets.Core.Model.RelativePath.IsSafe(string! path) -> bool
+static Aw.Packets.Core.Model.SizeLimit.operator !=(Aw.Packets.Core.Model.SizeLimit? left, Aw.Packets.Core.Model.SizeLimit? right) -> bool
+static Aw.Packets.Core.Model.SizeLimit.operator ==(Aw.Packets.Core.Model.SizeLimit? left, Aw.Packets.Core.Model.SizeLimit? right) -> bool
+static Aw.Packets.Core.Model.SizeLimits.operator !=(Aw.Packets.Core.Model.SizeLimits? left, Aw.Packets.Core.Model.SizeLimits? right) -> bool
+static Aw.Packets.Core.Model.SizeLimits.operator ==(Aw.Packets.Core.Model.SizeLimits? left, Aw.Packets.Core.Model.SizeLimits? right) -> bool
+static Aw.Packets.Core.Model.SizesFile.operator !=(Aw.Packets.Core.Model.SizesFile? left, Aw.Packets.Core.Model.SizesFile? right) -> bool
+static Aw.Packets.Core.Model.SizesFile.operator ==(Aw.Packets.Core.Model.SizesFile? left, Aw.Packets.Core.Model.SizesFile? right) -> bool
 static Aw.Packets.Core.Model.TaskBudget.operator !=(Aw.Packets.Core.Model.TaskBudget? left, Aw.Packets.Core.Model.TaskBudget? right) -> bool
 static Aw.Packets.Core.Model.TaskBudget.operator ==(Aw.Packets.Core.Model.TaskBudget? left, Aw.Packets.Core.Model.TaskBudget? right) -> bool
 static Aw.Packets.Core.Model.TaskPlan.operator !=(Aw.Packets.Core.Model.TaskPlan? left, Aw.Packets.Core.Model.TaskPlan? right) -> bool
@@ -1213,6 +1266,7 @@ static Aw.Packets.Core.Model.Workstream.operator ==(Aw.Packets.Core.Model.Workst
 static Aw.Packets.Core.PacketReader.Load(Aw.Packets.Core.PacketReader.FileReader! read, System.Text.Json.JsonSerializerOptions! json) -> Aw.Kernel.Result<Aw.Packets.Core.Model.LoadedPacket!>!
 static Aw.Packets.Core.PacketsCoreServiceCollectionExtensions.AddPacketsCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Packets.Core.PacketsErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static Aw.Packets.Core.SizesReader.Parse(string! name, System.ReadOnlyMemory<byte> bytes, System.Text.Json.JsonSerializerOptions! json) -> Aw.Kernel.Result<Aw.Packets.Core.Model.SizesFile!>!
 static Aw.Packets.Core.Values.CommitSha.From(string! value) -> Aw.Packets.Core.Values.CommitSha
 static Aw.Packets.Core.Values.CommitSha.Parse(string! s, System.IFormatProvider? provider) -> Aw.Packets.Core.Values.CommitSha
 static Aw.Packets.Core.Values.CommitSha.TryFrom(string? value, out Aw.Packets.Core.Values.CommitSha vo) -> bool
@@ -1237,6 +1291,7 @@ static readonly Aw.Packets.Core.PacketsErrors.Invalid -> Aw.Kernel.ErrorDefiniti
 static readonly Aw.Packets.Core.PacketsErrors.Malformed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Packets.Core.PacketsErrors.NotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Packets.Core.PacketsErrors.RepoUnavailable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Packets.Core.PacketsErrors.SizesUnusable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Packets.Core.PacketsErrors.Unreadable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Packets.Core.PacketsErrors.UnsupportedSchema -> Aw.Kernel.ErrorDefinition!
 virtual Aw.Packets.Core.PacketReader.FileReader.Invoke(string! relativePath) -> Aw.Kernel.Result<System.ReadOnlyMemory<byte>?>!

@@ -12,7 +12,7 @@ internal sealed class FreezePacketService(PacketInspector inspector, IFreezeLog 
 {
     public async ValueTask<Result<FreezePacketResponse>> Handle(FreezePacketRequest request, CancellationToken cancellationToken)
     {
-        var inspection = await inspector.Inspect(request.PacketDirectory, request.RepoDirectory ?? request.PacketDirectory, cancellationToken)
+        var inspection = await inspector.Inspect(request.PacketDirectory, request.RepoDirectory ?? request.PacketDirectory, sizes: null, cancellationToken)
             .ConfigureAwait(false);
         if (inspection.IsError)
         {

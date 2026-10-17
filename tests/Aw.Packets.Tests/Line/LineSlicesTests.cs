@@ -28,7 +28,7 @@ public sealed class LineSlicesTests
     {
         var kind = PacketKinds.Find(name)!;
 
-        var result = await new ValidateLinePacketService(Inspector(A.LinePacket(kind).Build()))
+        var result = await new ValidateLinePacketService(Inspector(A.LinePacket(kind).Build()), new InMemorySizesSource())
             .Handle(new ValidateLinePacketRequest(name, "pkt"), CancellationToken.None);
 
         Assert.True(result.Value.Passed);
@@ -39,9 +39,9 @@ public sealed class LineSlicesTests
     [Fact, Trait("Lane", "unit")]
     public async Task ValidateLinePacket_fails_without_a_packet_json_and_a_missing_directory_is_AW_PACKETS_002()
     {
-        var failing = await new ValidateLinePacketService(Inspector(A.LinePacket(PacketKinds.Review).Without("packet.json").Build()))
+        var failing = await new ValidateLinePacketService(Inspector(A.LinePacket(PacketKinds.Review).Without("packet.json").Build()), new InMemorySizesSource())
             .Handle(new ValidateLinePacketRequest("review", "pkt"), CancellationToken.None);
-        var missing = await new ValidateLinePacketService(Inspector(A.LinePacket(PacketKinds.Review).Build()))
+        var missing = await new ValidateLinePacketService(Inspector(A.LinePacket(PacketKinds.Review).Build()), new InMemorySizesSource())
             .Handle(new ValidateLinePacketRequest("review", "elsewhere"), CancellationToken.None);
 
         Assert.False(failing.Value.Passed);
