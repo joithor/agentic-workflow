@@ -174,6 +174,14 @@ expect "a banned-symbols check needs its entries" 1 "RULE-SCHEMA-001" "entries"
 d="$(fixture banned-unwired)"; printf '<Project />\n' > "$d/Directory.Build.props"; run "$d"
 expect "BannedSymbols.txt that no build file wires fails" 1 "RULE-CHECK-001" "RS0030" "Directory.Build.props"
 
+d="$(fixture banned-ref)"; f="$(rec "$d" core-no-io)"
+printf 'M:System.Guid.NewGuid;no\n' > "$d/BannedSymbols.All.txt"
+sub "$f" 'entries: ["T:System.Console"]' 'entries: ["M:System.Guid.NewGuid"]'
+awk '{print} /entries: \["M:System.Guid.NewGuid"\]/ {print "    ref: \"BannedSymbols.All.txt\""}' "$f" > "$f.new" && mv "$f.new" "$f"; run "$d"
+expect "a banned-symbols check with a ref the build files don't wire fails" 1 "RULE-CHECK-001" "BannedSymbols.All.txt" "no AdditionalFiles item wires"
+printf '<Project>\n  <ItemGroup><AdditionalFiles Include="BannedSymbols.txt" /></ItemGroup>\n  <ItemGroup><AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.All.txt" /></ItemGroup>\n</Project>\n' > "$d/Directory.Build.props"; run "$d"
+expect "a banned-symbols check with a wired ref file and listed entries passes" 0 "rules: ok"
+
 # ---- gap consistency ----
 d="$(fixture partial-nonote)"; sub "$(rec "$d" no-catch-exception)" "gap: closed" "gap: partial"; run "$d"
 expect "partial without a gapNote fails" 1 "RULE-GAP-001" "no-catch-exception"

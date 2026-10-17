@@ -8240,7 +8240,7 @@ Aw.Sindri.Core.Events.JobProgress.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
 Aw.Sindri.Core.Jobs.IJobCancellation.Withdraw(Aw.Sindri.Core.Ids.JobId job) -> void
 Aw.Sindri.Core.Jobs.IJobCancellation.Cancelling(Aw.Sindri.Core.Ids.JobId job) -> void
 Aw.Sindri.Core.Jobs.IJobCancellation.IsCancelling(Aw.Sindri.Core.Ids.JobId job) -> bool
-Aw.Sindri.Core.Jobs.IJobCancellation.CancelRecorded(Aw.Sindri.Core.Ids.JobId job) -> System.Threading.Tasks.ValueTask<bool>
+Aw.Sindri.Core.Jobs.IJobCancellation.CancelRecorded(Aw.Sindri.Core.Ids.JobId job, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
 Aw.Sindri.Core.Scheduling.ServiceRunGuard.Unreserve(Aw.Sindri.Core.Ids.ServiceName service) -> void
 Aw.Sindri.Core.Scheduling.ServiceRunGuard.TryClaimReserved(Aw.Sindri.Core.Ids.ServiceName service, out System.IDisposable! claim) -> bool
 Aw.Sindri.Core.Scheduling.ServiceRunGuard.TryReserveManual(Aw.Sindri.Core.Ids.ServiceName service) -> bool

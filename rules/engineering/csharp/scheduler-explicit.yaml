@@ -1,0 +1,18 @@
+schemaVersion: 1
+id: engineering.csharp.scheduler-explicit
+kind: engineering
+section: "4b.3"
+text: "Don't call Task.Factory.StartNew or ContinueWith without a TaskScheduler argument."
+why: "The default scheduler is the ambient one, which is the thread pool or a UI context by accident."
+select:
+  languages: [csharp]
+  paths: ["src/**", "tests/**"]
+checks:
+  - type: analyzer
+    id: "CA2008"
+    status: active
+gap: closed
+source:
+  type: desk
+  ref: "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca2008"
+status: active
