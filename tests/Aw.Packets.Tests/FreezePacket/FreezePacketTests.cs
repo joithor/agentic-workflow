@@ -47,7 +47,7 @@ public sealed class FreezePacketTests
         var hash = Assert.NotNull(frozen.Hash);
         Assert.Equal($"example/repo/demo-packet/frozen/{hash.Hex}.json", frozen.Location);
         var record = Assert.Single(log.Records).Value;
-        Assert.Equal((hash, _now, PacketBuilder.BaseSha, 1), (record.Hash, record.FrozenAt, record.BaseSha.Value, record.DigestVersion));
+        Assert.Equal((hash, _now, PacketBuilder.BaseSha, 1), (record.Hash, record.FrozenAt, record.BaseSha?.Value, record.DigestVersion));
         Assert.Equal(["decisions.json", "design/design.md", "out-of-scope.json", "packet.json", "tasks.json"], record.Files);
     }
 
