@@ -26,6 +26,9 @@ internal static class McpGolden
             ApiGolden.Reindent(json.ToJsonString()),
             typeof(McpGolden).Assembly,
             $"Golden/Mcp/{tool}/{scenario}.json",
-            new Normalization(new NormalizationRule("home", System.Text.RegularExpressions.Regex.Escape(home), "<home>")));
+            new Normalization(
+                new NormalizationRule("home", System.Text.RegularExpressions.Regex.Escape(home), "<home>"),
+                new NormalizationRule("port", "port [0-9]+", "port <port>"),
+                new NormalizationRule("build", "sindri [^,\"]+, port", "sindri <build>, port")));
     }
 }

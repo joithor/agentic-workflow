@@ -1,5 +1,16 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Aw.Kernel;
+using Aw.Kernel.Services;
+using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Features.GetItem;
+using Aw.Sindri.Features.GetItemTimeline;
+using Aw.Sindri.Features.GetJob;
+using Aw.Sindri.Features.GetQueue;
+using Aw.Sindri.Features.GetStatus;
+using Aw.Sindri.Features.ListDecisions;
+using Aw.Sindri.Host.Endpoints;
 using ModelContextProtocol.Protocol;
 
 namespace Aw.Sindri.Host.Mcp;
@@ -114,47 +125,109 @@ internal static class SindriTools
         Annotations = new ToolAnnotations { ReadOnlyHint = false, DestructiveHint = false, IdempotentHint = false, OpenWorldHint = false },
     };
 
-    /// <summary>Runs Status (contract stub).</summary>
+    /// <summary>Runs sindri_status.</summary>
     /// <param name="services">The request's services.</param>
-    /// <param name="arguments">The call's arguments.</param>
+    /// <param name="arguments">The call's arguments (none are allowed).</param>
     /// <param name="ct">Cancels the call.</param>
     /// <returns>The tool result.</returns>
-    internal static ValueTask<CallToolResult> CallStatus(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct) => NotYet(Status, services, arguments, ct);
+    internal static async ValueTask<CallToolResult> CallStatus(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
+    {
+        if (McpArguments.None(Status, arguments) is { } refused)
+        {
+            return McpResults.Failure(services, refused);
+        }
 
-    /// <summary>Runs Queue (contract stub).</summary>
-    /// <param name="services">The request's services.</param>
-    /// <param name="arguments">The call's arguments.</param>
-    /// <param name="ct">Cancels the call.</param>
-    /// <returns>The tool result.</returns>
-    internal static ValueTask<CallToolResult> CallQueue(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct) => NotYet(Queue, services, arguments, ct);
+        var port = services.GetRequiredService<IHttpContextAccessor>().HttpContext?.Connection.LocalPort ?? 0;
+        var answer = await services.GetRequiredService<IService<GetStatusRequest, GetStatusResponse>>().Handle(new GetStatusRequest(), ct).ConfigureAwait(false);
+        return McpResults.From(services, answer, status => McpSummaries.Status(status, McpEndpoint.Build, port));
+    }
 
-    /// <summary>Runs Item (contract stub).</summary>
+    /// <summary>Runs sindri_queue.</summary>
     /// <param name="services">The request's services.</param>
-    /// <param name="arguments">The call's arguments.</param>
+    /// <param name="arguments">The call's arguments (none are allowed).</param>
     /// <param name="ct">Cancels the call.</param>
     /// <returns>The tool result.</returns>
-    internal static ValueTask<CallToolResult> CallItem(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct) => NotYet(Item, services, arguments, ct);
+    internal static async ValueTask<CallToolResult> CallQueue(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
+    {
+        if (McpArguments.None(Queue, arguments) is { } refused)
+        {
+            return McpResults.Failure(services, refused);
+        }
 
-    /// <summary>Runs Timeline (contract stub).</summary>
-    /// <param name="services">The request's services.</param>
-    /// <param name="arguments">The call's arguments.</param>
-    /// <param name="ct">Cancels the call.</param>
-    /// <returns>The tool result.</returns>
-    internal static ValueTask<CallToolResult> CallTimeline(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct) => NotYet(Timeline, services, arguments, ct);
+        var repo = services.GetRequiredService<ICallerContextAccessor>().Current?.Repo?.Value ?? string.Empty;
+        var answer = await services.GetRequiredService<IService<GetQueueRequest, QueueResponse>>().Handle(new GetQueueRequest(), ct).ConfigureAwait(false);
+        return McpResults.From(services, answer, queue => McpSummaries.Queue(queue, repo), FencePlan.Queue);
+    }
 
-    /// <summary>Runs PendingDecisions (contract stub).</summary>
+    /// <summary>Runs sindri_item.</summary>
     /// <param name="services">The request's services.</param>
     /// <param name="arguments">The call's arguments.</param>
     /// <param name="ct">Cancels the call.</param>
     /// <returns>The tool result.</returns>
-    internal static ValueTask<CallToolResult> CallPendingDecisions(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct) => NotYet(PendingDecisions, services, arguments, ct);
+    internal static async ValueTask<CallToolResult> CallItem(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
+    {
+        var item = BindItem(Item, arguments);
+        if (item.IsError)
+        {
+            return McpResults.Failure(services, item.Error);
+        }
 
-    /// <summary>Runs Job (contract stub).</summary>
+        var answer = await services.GetRequiredService<IService<GetItemRequest, ItemView>>().Handle(new GetItemRequest(item.Value), ct).ConfigureAwait(false);
+        return McpResults.From(services, answer, McpSummaries.Item, FencePlan.Item);
+    }
+
+    /// <summary>Runs sindri_item_timeline.</summary>
     /// <param name="services">The request's services.</param>
     /// <param name="arguments">The call's arguments.</param>
     /// <param name="ct">Cancels the call.</param>
     /// <returns>The tool result.</returns>
-    internal static ValueTask<CallToolResult> CallJob(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct) => NotYet(Job, services, arguments, ct);
+    internal static async ValueTask<CallToolResult> CallTimeline(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
+    {
+        var bound = BindItem(Timeline, arguments, "after").Bind(item => McpArguments.OptionalLong(Timeline, arguments, "after").Map(after => new GetItemTimelineRequest(item, after)));
+        if (bound.IsError)
+        {
+            return McpResults.Failure(services, bound.Error);
+        }
+
+        var answer = await services.GetRequiredService<IService<GetItemTimelineRequest, TimelineResponse>>().Handle(bound.Value, ct).ConfigureAwait(false);
+        return McpResults.From(services, answer, McpSummaries.Timeline, FencePlan.Timeline);
+    }
+
+    /// <summary>Runs sindri_pending_decisions.</summary>
+    /// <param name="services">The request's services.</param>
+    /// <param name="arguments">The call's arguments.</param>
+    /// <param name="ct">Cancels the call.</param>
+    /// <returns>The tool result.</returns>
+    internal static async ValueTask<CallToolResult> CallPendingDecisions(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
+    {
+        var bound = BindOptionalItem(PendingDecisions, arguments);
+        if (bound.IsError)
+        {
+            return McpResults.Failure(services, bound.Error);
+        }
+
+        var answer = await services.GetRequiredService<IService<ListDecisionsRequest, ListDecisionsResponse>>().Handle(new ListDecisionsRequest(Pending: true, bound.Value), ct).ConfigureAwait(false);
+        return McpResults.From(services, answer, McpSummaries.Decisions, FencePlan.Decisions);
+    }
+
+    /// <summary>Runs sindri_job.</summary>
+    /// <param name="services">The request's services.</param>
+    /// <param name="arguments">The call's arguments.</param>
+    /// <param name="ct">Cancels the call.</param>
+    /// <returns>The tool result.</returns>
+    internal static async ValueTask<CallToolResult> CallJob(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
+    {
+        var job = McpArguments.Only(Job, arguments, "jobId") is { } refused
+            ? refused
+            : McpArguments.RequiredString(Job, arguments, "jobId", "JOB-...").Bind(JobRoute.Job);
+        if (job.IsError)
+        {
+            return McpResults.Failure(services, job.Error);
+        }
+
+        var answer = await services.GetRequiredService<IService<GetJobRequest, JobView>>().Handle(new GetJobRequest(job.Value), ct).ConfigureAwait(false);
+        return McpResults.From(services, answer, McpSummaries.Job, FencePlan.Job);
+    }
 
     /// <summary>Runs Request (contract stub).</summary>
     /// <param name="services">The request's services.</param>
@@ -162,6 +235,22 @@ internal static class SindriTools
     /// <param name="ct">Cancels the call.</param>
     /// <returns>The tool result.</returns>
     internal static ValueTask<CallToolResult> CallRequest(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct) => NotYet(Request, services, arguments, ct);
+
+    private static Result<ItemRef> BindItem(string tool, IDictionary<string, JsonElement>? arguments, params string[] more) =>
+        McpArguments.Only(tool, arguments, ["itemId", .. more]) is { } refused
+            ? refused
+            : McpArguments.RequiredString(tool, arguments, "itemId", "ITM-...").Bind(ItemRoute.Item);
+
+    private static Result<ItemRef?> BindOptionalItem(string tool, IDictionary<string, JsonElement>? arguments)
+    {
+        if (McpArguments.Only(tool, arguments, "itemId") is { } refused)
+        {
+            return refused;
+        }
+
+        var text = McpArguments.OptionalString(tool, arguments, "itemId");
+        return text.IsError ? text.Error : ItemRoute.ItemFilter(text.Value);
+    }
 
     private static ValueTask<CallToolResult> NotYet(string tool, IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
     {

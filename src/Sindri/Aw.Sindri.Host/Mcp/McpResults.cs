@@ -40,9 +40,10 @@ internal static class McpResults
     /// <param name="services">The request's services.</param>
     /// <param name="result">The service's result.</param>
     /// <param name="summary">Summarises a successful answer.</param>
+    /// <param name="fence">The free-text fields to fence in the answer, or null when it carries none.</param>
     /// <returns>The tool result.</returns>
-    internal static CallToolResult From<T>(IServiceProvider services, Result<T> result, Func<T, string> summary) =>
-        result.IsError ? Failure(services, result.Error) : Success(services, result.Value, summary(result.Value));
+    internal static CallToolResult From<T>(IServiceProvider services, Result<T> result, Func<T, string> summary, FencePlan? fence = null) =>
+        result.IsError ? Failure(services, result.Error) : Success(services, result.Value, summary(result.Value), fence);
 
     private static JsonElement Element<T>(IServiceProvider services, T value)
     {
