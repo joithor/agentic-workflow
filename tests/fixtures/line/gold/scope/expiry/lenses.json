@@ -9,7 +9,7 @@
     ],
     "depth": 0,
     "hops": [],
-    "mapVersion": 1,
+    "mapVersion": "v1",
     "foundCount": 13,
     "nodes": [
       {
@@ -251,7 +251,7 @@
     ],
     "depth": 0,
     "hops": [],
-    "mapVersion": 1,
+    "mapVersion": "v1",
     "foundCount": 8,
     "nodes": [
       {
@@ -394,7 +394,7 @@
       "flow",
       "component"
     ],
-    "mapVersion": 1,
+    "mapVersion": "v1",
     "foundCount": 5,
     "nodes": [
       {
@@ -488,7 +488,7 @@
     ],
     "depth": 0,
     "hops": [],
-    "mapVersion": 1,
+    "mapVersion": "v1",
     "foundCount": 3,
     "nodes": [],
     "edges": [
