@@ -27,7 +27,7 @@ internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
         var query = "?" + string.Join('&', o.Anchors.Select(static a => "anchor=" + Uri.EscapeDataString(a))) + (o.Depth is null ? string.Empty : "&depth=" + Uri.EscapeDataString(o.Depth))
             + (o.Draft ? "&draft=true" : string.Empty) + (o.MapVersion is null ? string.Empty : "&mapVersion=" + Uri.EscapeDataString(o.MapVersion));
         var fence = client.SessionReason is null;
-        if (o.Anchors.Distinct(StringComparer.Ordinal).Count() > 1)
+        if (o.Anchors.Distinct(StringComparer.Ordinal).Skip(1).Any())
         {
             var set = await client.Get<LensesSetView>("/sindri/context/lenses" + query, ct).ConfigureAwait(false);
             return set.IsError ? await Failed(set.Error).ConfigureAwait(false)

@@ -19,7 +19,7 @@ internal static class ContextLensText
     internal static string Lenses(LensesView view, bool fence)
     {
         var text = new StringBuilder(Invariant($"lenses of {view.Anchor.Key.Value} ({Fenced(view.Anchor.Label, view.Anchor.Trust, fence)}) · map {MapName(view.MapVersion, view.MapCommit)}{(view.Draft ? " (draft)" : string.Empty)} · depth {view.Depth}\n"));
-        return Body(text, view.Bands, view.Edges, view.Conflicts, view.Coverage, view.Searched, fence);
+        return Body(text, new LensParts(view.Bands, view.Edges, view.Conflicts, view.Coverage, view.Searched), fence);
     }
 
     internal static string LensesSet(LensesSetView view, bool fence)
@@ -31,13 +31,16 @@ internal static class ContextLensText
             _ = text.AppendLine($"missing anchor: {missing}");
         }
 
-        return Body(text, view.Bands, view.Edges, view.Conflicts, view.Coverage, view.Searched, fence);
+        return Body(text, new LensParts(view.Bands, view.Edges, view.Conflicts, view.Coverage, view.Searched), fence);
     }
+
+    private readonly record struct LensParts(LensBands Bands, IReadOnlyList<LensEdge> Edges, IReadOnlyList<LensConflict> Conflicts, LensCoverage Coverage, LensSearched Searched);
 
     private static string MapName(string version, string? commit) => commit is null ? version : version + "@" + commit;
 
-    private static string Body(StringBuilder text, LensBands bands, IReadOnlyList<LensEdge> edges, IReadOnlyList<LensConflict> conflicts, LensCoverage coverage, LensSearched searched, bool fence)
+    private static string Body(StringBuilder text, LensParts parts, bool fence)
     {
+        var (bands, edges, conflicts, coverage, searched) = parts;
         Intent(text, bands.Intent, fence);
         Product(text, bands.Product, fence);
         Code(text, bands.Code);
@@ -87,6 +90,9 @@ internal static class ContextLensText
     private static string StateWord(SearchedState state) => state switch
     {
         SearchedState.NotConfigured => "not-configured",
+        SearchedState.Ok => "ok",
+        SearchedState.Unavailable => "unavailable",
+        SearchedState.Degraded => "degraded",
         _ => state.ToString().ToLowerInvariant(),
     };
 

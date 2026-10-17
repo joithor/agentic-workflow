@@ -2445,3 +2445,35 @@ override Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.GetHashCode(
 override Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.ToString() -> string!
 static Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest? left, Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest? right) -> bool
 static Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest? left, Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest? right) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest!
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Anchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Anchors.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out bool Draft, out int? Depth, out string? MapVersion) -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Depth.get -> int?
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Depth.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Draft.get -> bool
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Draft.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.GetContextLensesAnswerRequest(System.Collections.Generic.IReadOnlyList<string!>! Anchors, bool Draft = false, int? Depth = null, string? MapVersion = null) -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.MapVersion.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.MapVersion.init -> void
+Aw.Sindri.Features.ContextCalls.LensesAnswer
+Aw.Sindri.Features.ContextCalls.LensesAnswer.<Clone>$() -> Aw.Sindri.Features.ContextCalls.LensesAnswer!
+Aw.Sindri.Features.ContextCalls.LensesAnswer.Equals(Aw.Sindri.Features.ContextCalls.LensesAnswer? other) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.ToString() -> string!
+override Aw.Sindri.Features.ContextCalls.LensesAnswer.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.LensesAnswer.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.LensesAnswer.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest? left, Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest? left, Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.LensesAnswer.operator !=(Aw.Sindri.Features.ContextCalls.LensesAnswer? left, Aw.Sindri.Features.ContextCalls.LensesAnswer? right) -> bool
+static Aw.Sindri.Features.ContextCalls.LensesAnswer.operator ==(Aw.Sindri.Features.ContextCalls.LensesAnswer? left, Aw.Sindri.Features.ContextCalls.LensesAnswer? right) -> bool
+Aw.Sindri.Features.ContextCalls.LensesAnswer.Deconstruct(out Aw.Context.Core.Lenses.LensesView? One, out Aw.Context.Core.Lenses.LensesSetView? Many) -> void
+Aw.Sindri.Features.ContextCalls.LensesAnswer.LensesAnswer(Aw.Context.Core.Lenses.LensesView? One, Aw.Context.Core.Lenses.LensesSetView? Many) -> void
+Aw.Sindri.Features.ContextCalls.LensesAnswer.Many.get -> Aw.Context.Core.Lenses.LensesSetView?
+Aw.Sindri.Features.ContextCalls.LensesAnswer.Many.init -> void
+Aw.Sindri.Features.ContextCalls.LensesAnswer.One.get -> Aw.Context.Core.Lenses.LensesView?
+Aw.Sindri.Features.ContextCalls.LensesAnswer.One.init -> void

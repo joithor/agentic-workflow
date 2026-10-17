@@ -1,4 +1,3 @@
-using Aw.Context.Core.Lenses;
 using Aw.Kernel.Services;
 using Aw.Sindri.Features.ContextCalls;
 
@@ -9,13 +8,10 @@ internal static class GetContextLensesEndpoint
 {
     internal static RouteGroupBuilder MapGetContextLenses(this RouteGroupBuilder group)
     {
-        _ = group.MapGet("/context/lenses", static async (string[]? anchor, int? depth, bool? draft, string? mapVersion, IService<GetContextLensesRequest, LensesView> single,
-                IService<GetContextLensesSetRequest, LensesSetView> set, CancellationToken ct) =>
+        _ = group.MapGet("/context/lenses", static async (string[]? anchor, int? depth, bool? draft, string? mapVersion, IService<GetContextLensesAnswerRequest, LensesAnswer> lenses, CancellationToken ct) =>
         {
-            var anchors = (anchor ?? []).Distinct(StringComparer.Ordinal).ToArray();
-            return anchors.Length <= 1
-                ? (await single.Handle(new GetContextLensesRequest(anchors.Length == 0 ? string.Empty : anchors[0], draft ?? false, depth, mapVersion), ct).ConfigureAwait(false)).ToHttpResult()
-                : (await set.Handle(new GetContextLensesSetRequest(anchors, draft ?? false, depth, mapVersion), ct).ConfigureAwait(false)).ToHttpResult();
+            var answer = await lenses.Handle(new GetContextLensesAnswerRequest(anchor ?? [], draft ?? false, depth, mapVersion), ct).ConfigureAwait(false);
+            return answer.IsError ? HttpResults.Problem(answer.Error) : answer.Value.Many is { } many ? TypedResults.Ok(many) : TypedResults.Ok(answer.Value.One);
         });
         return group;
     }
