@@ -107,6 +107,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IService<CheckProfileRequest, CheckProfileResponse>, CheckProfileService>()
             .AddScoped<IService<ValidateProfileRequest, ValidateProfileResponse>, ValidateProfileService>()
             .AddDoctor()
+            .AddOnyxStatus()
             .AddScoped<ServeRecords>()
             .AddScoped<IService<RegisterMcpRequest, RegisterMcpResponse>, RegisterMcpService>()
             .AddScoped<IScheduledService, HeartbeatService>()
@@ -226,7 +227,6 @@ public static class SindriFeaturesServiceCollectionExtensions
             new WithMoreChecks(sp.GetRequiredService<RunDoctorService>(), sp.GetServices<IDoctorChecks>()))
         .AddScoped<IDoctorChecks, ContextDoctorChecks>()
         .AddScoped<IDoctorChecks, OnyxStackDoctor>()                                       // Onyx P2: `onyx:stack`, after the context rows, only once `onyx up` has run
-        .AddScoped<IService<OnyxStatusRequest, OnyxStatusResponse>, OnyxStatusService>()   // Onyx P1: read-only, in process, like the doctor
         .AddSingleton<OnyxReadiness>()
         .AddSingleton<IOnyxUpStep, OnyxFetchStep>()                                         // Onyx P2: the steps of `onyx up`, in this order
         .AddSingleton<IOnyxUpStep, OnyxConfigStep>()
@@ -234,6 +234,10 @@ public static class SindriFeaturesServiceCollectionExtensions
         .AddSingleton<IOnyxUpStep, OnyxStartStep>()
         .AddScoped<IService<OnyxUpRequest, OnyxUpResponse>, OnyxUpService>()
         .AddScoped<IService<OnyxDownRequest, OnyxDownResponse>, OnyxDownService>();
+
+    /// <summary>Onyx's status (P1): read-only and in process, like the doctor, but its own slice.</summary>
+    private static IServiceCollection AddOnyxStatus(this IServiceCollection services) => services
+        .AddScoped<IService<OnyxStatusRequest, OnyxStatusResponse>, OnyxStatusService>();
 
     /// <summary>The registry's slices (engine P2): register, approve and revoke (commands), the challenge (an issue), list and show (queries).</summary>
     private static IServiceCollection AddRegistrySlices(this IServiceCollection services)

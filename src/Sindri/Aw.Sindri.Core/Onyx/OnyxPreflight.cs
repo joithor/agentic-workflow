@@ -74,11 +74,21 @@ public static class OnyxPreflight
 
         if (!docker.DaemonAnswers)
         {
-            return ("docker CLI found, daemon not answering", SindriErrors.OnyxDockerUnavailable.With("Docker isn't running: start Docker Desktop (or the docker service) and wait until it is ready, then run this again"));
+            return DaemonNotAnswering(docker);
         }
 
         return docker.Endpoint is null ? ("docker endpoint unreadable", RemoteDocker(endpoint: null)) : (docker.ServerVersion ?? "unreadable version", null);
     }
+
+    // Why the daemon didn't answer, as far as the CLI's own message says: the row's detail and the one fix that applies.
+    private static (string Detail, Error Problem) DaemonNotAnswering(ContainerRuntimeFacts docker) => docker.DaemonProblem switch
+    {
+        DaemonProblem.PermissionDenied => ("docker CLI found, permission denied on the daemon socket", SindriErrors.OnyxDockerUnavailable.With("Docker is running but this user can't open its socket: add your user to the docker group (`sudo usermod -aG docker $USER`, then log out and in), or use Docker Desktop, then run this again")),
+        DaemonProblem.Starting => ($"Docker didn't answer within {(docker.WaitedSeconds ?? 0).ToString(CultureInfo.InvariantCulture)} s; it may be starting (Docker Desktop's Resource Saver)", SindriErrors.OnyxDockerUnavailable.With("Docker is slow to answer and may still be starting: wait a moment until it is ready, then run this again")),
+        DaemonProblem.ContextMissing => ("docker CLI found, the selected docker context doesn't exist", SindriErrors.OnyxDockerUnavailable.With("The selected docker context doesn't exist: run `docker context use default` (`docker context ls` lists the others), then run this again")),
+        DaemonProblem.None or DaemonProblem.NotRunning => ("docker CLI found, daemon not answering", SindriErrors.OnyxDockerUnavailable.With("Docker isn't running: start Docker Desktop (or the docker service) and wait until it is ready, then run this again")),
+        _ => throw new ArgumentOutOfRangeException(nameof(docker), docker.DaemonProblem, "unknown daemon problem"),
+    };
 
     /// <summary>Tells whether a Docker endpoint is on this machine: a unix socket, or a named pipe on Windows. An endpoint nobody could read (null) isn't, since it may be anywhere.</summary>
     /// <param name="endpoint">The endpoint from <see cref="ContainerRuntimeFacts.Endpoint"/>.</param>
@@ -171,13 +181,15 @@ public static class OnyxPreflight
             : Fail("memory", withOthers, SindriErrors.OnyxNotEnoughResources, $"Docker has {Gib(have)} GiB and other containers already use {Gib(used)} GiB, leaving {Gib(Math.Max(0, have - used))} GiB for Onyx, which needs {Gib(pins.DockerMemoryBytes)} GiB: stop the other containers (`docker ps`), or raise Docker's memory to at least {Gib(used + pins.DockerMemoryBytes)} GiB in Docker Desktop → Settings → Resources");
     }
 
-    // Spec §4.1 step 1: free disk at the Sindri home and, when Docker's data root is a directory on this host, there too; the
-    // smaller one counts. When the data root is known but isn't a host directory it is inside a VM, whose disk
-    // image sits on the host volume and has a cap of its own, which no host probe can read: the row says so.
+    // Spec §4.1 step 1: free disk at the Sindri home and, when Docker's data root is a directory on this host (a native engine), there too;
+    // the smaller one counts. Whether the data lives in a VM comes from what `docker info` reports (Docker Desktop, OrbStack), never from
+    // whether a directory of that name exists here. A VM's disk image sits on the host volume and has a cap of its own, which no host probe
+    // can read: the row says so, and a same-named host directory is not measured.
     private static PreflightCheck Disk(ContainerRuntimeFacts docker, DiskFacts home, DiskFacts? dataRoot, OnyxPins pins)
     {
-        var measured = dataRoot is not null && dataRoot.FreeBytes < home.FreeBytes ? dataRoot : home;
-        var note = docker.DataRoot is not null && dataRoot is null ? "; Docker's data lives in a VM here; its disk image size is capped separately (Docker Desktop: Settings → Resources)" : "";
+        var hostRoot = docker.DataInVm ? null : dataRoot;
+        var measured = hostRoot is not null && hostRoot.FreeBytes < home.FreeBytes ? hostRoot : home;
+        var note = docker.DataInVm ? "; Docker's data lives in a VM here; its disk image size is capped separately (Docker Desktop: Settings → Resources)" : "";
         var detail = $"{Gib(measured.FreeBytes)} GiB free at {measured.MeasuredPath}, needs {Gib(pins.DiskBytes)} GiB{note}";
         return measured.FreeBytes >= pins.DiskBytes
             ? Ok("disk", detail)

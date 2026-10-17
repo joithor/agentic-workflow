@@ -13,4 +13,14 @@ namespace Aw.Sindri.Core.Onyx;
 /// <param name="MemoryBytes">The memory Docker has (Docker Desktop's VM limit) when the daemon answers `docker info`.</param>
 /// <param name="DataRoot">Docker's data root (`docker info` DockerRootDir) when the daemon answers: a host directory on a Linux engine, a path inside the VM on Docker Desktop.</param>
 /// <param name="Endpoint">Where the CLI would send commands: DOCKER_HOST when set, else the current docker context's endpoint; null when the CLI is missing or the endpoint can't be read. Only a local one (unix:// or npipe://) is accepted.</param>
-public sealed record ContainerRuntimeFacts(bool CliFound, bool DaemonAnswers, string? ServerVersion, bool ComposeV2, string? ComposeVersion, long? MemoryBytes, string? DataRoot, string? Endpoint);
+/// <param name="OperatingSystem">The engine's operating system (`docker info` OperatingSystem) when the daemon answers: "Docker Desktop" or "OrbStack" for a VM runtime, the distribution's name for a Linux engine.</param>
+/// <param name="DaemonProblem">Why the daemon didn't answer, from the CLI's stderr, when <paramref name="DaemonAnswers"/> is false and the CLI is found; <see cref="DaemonProblem.None"/> when it answers.</param>
+/// <param name="WaitedSeconds">How long the CLI waited in all for a daemon that timed out (<see cref="DaemonProblem.Starting"/>); null otherwise.</param>
+public sealed record ContainerRuntimeFacts(
+    bool CliFound, bool DaemonAnswers, string? ServerVersion, bool ComposeV2, string? ComposeVersion, long? MemoryBytes, string? DataRoot, string? Endpoint, string? OperatingSystem = null,
+    DaemonProblem DaemonProblem = DaemonProblem.None, int? WaitedSeconds = null)
+{
+    /// <summary>Gets a value indicating whether Docker's data lives in a VM (Docker Desktop, OrbStack), so the data root is not a directory on this host even if a directory of that name exists here.</summary>
+    public bool DataInVm => OperatingSystem is { } os
+        && (os.Contains("Desktop", StringComparison.OrdinalIgnoreCase) || os.Contains("OrbStack", StringComparison.OrdinalIgnoreCase));
+}

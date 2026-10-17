@@ -48,6 +48,33 @@ public abstract class ContainerRuntimeContract
         Expect.Equal(facts, Create(facts).Inspect(TestContext.Current.CancellationToken));
     }
 
+    /// <summary>A socket this user may not open is told apart from a stopped daemon.</summary>
+    [Fact]
+    public void A_socket_permission_problem_is_reported_as_such()
+    {
+        var facts = FakeContainerRuntime.PermissionDenied;
+
+        Expect.Equal(facts, Create(facts).Inspect(TestContext.Current.CancellationToken));
+    }
+
+    /// <summary>A daemon that stays silent past the retry is told apart from a stopped one.</summary>
+    [Fact]
+    public void A_daemon_that_does_not_answer_in_time_is_reported_as_starting()
+    {
+        var facts = FakeContainerRuntime.Starting;
+
+        Expect.Equal(facts, Create(facts).Inspect(TestContext.Current.CancellationToken));
+    }
+
+    /// <summary>A missing docker context is told apart from a stopped daemon.</summary>
+    [Fact]
+    public void A_missing_docker_context_is_reported_as_such()
+    {
+        var facts = FakeContainerRuntime.ContextMissing;
+
+        Expect.Equal(facts, Create(facts).Inspect(TestContext.Current.CancellationToken));
+    }
+
     /// <summary>Only legacy docker-compose: Compose v2 isn't there.</summary>
     [Fact]
     public void A_box_with_only_compose_v1_reports_no_compose_v2()

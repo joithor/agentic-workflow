@@ -25,7 +25,7 @@ public sealed class OnyxStatusTests
         return await Status(rig);
     }
 
-    private static async Task<OnyxStatusResponse> StatusWithDataRoot(bool onThisHost)
+    private static async Task<OnyxStatusResponse> StatusWithDataRoot(bool onThisHost, ContainerRuntimeFacts? docker = null)
     {
         var rig = new OnyxUpRig();
         rig.Probes.FreeBytes = 100 * Gib;
@@ -35,6 +35,7 @@ public sealed class OnyxStatusTests
             rig.Probes.VolumeFreeBytes["/var/lib/docker"] = 8 * Gib;
         }
 
+        rig.Runtime.Facts = docker ?? FakeContainerRuntime.Healthy;
         return await Status(rig);
     }
 
@@ -69,9 +70,19 @@ public sealed class OnyxStatusTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Status_measures_a_data_root_that_is_a_directory_on_this_host()
+    public async Task Status_ignores_a_host_directory_of_the_data_root_name_when_docker_runs_in_a_vm()
     {
-        var status = await StatusWithDataRoot(onThisHost: true);
+        var status = await StatusWithDataRoot(onThisHost: true, FakeContainerRuntime.Healthy);   // Docker Desktop, and a /var/lib/docker with 8 GiB on this host
+
+        var disk = Assert.Single(status.Checks, static c => c.Name == "disk");
+        Assert.Equal(CheckState.Ok, disk.State);
+        Assert.Equal("100.0 GiB free at /sindri-home, needs 10.5 GiB; Docker's data lives in a VM here; its disk image size is capped separately (Docker Desktop: Settings → Resources)", disk.Detail);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Status_measures_a_native_engines_data_root()
+    {
+        var status = await StatusWithDataRoot(onThisHost: true, FakeContainerRuntime.NativeEngine);
 
         var disk = Assert.Single(status.Checks, static c => c.Name == "disk");
         Assert.Equal(CheckState.Fail, disk.State);
@@ -215,6 +226,20 @@ public sealed class OnyxStatusTests
         var docker = Assert.Single(status.Checks, static c => c.Name == "docker");
         Assert.Equal("SND-ONYX-001", docker.Problem?.Code);
         Assert.Equal(1, status.ExitCode);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Status_is_unknown_with_the_docker_group_fix_when_the_socket_is_permission_denied()
+    {
+        var rig = await RunningRig();
+        rig.Runtime.Facts = FakeContainerRuntime.PermissionDenied;
+
+        var status = await Status(rig);
+
+        Assert.Equal(OnyxState.Unknown, status.State);
+        var docker = Assert.Single(status.Checks, static c => c.Name == "docker");
+        Assert.Contains("permission denied", docker.Detail, StringComparison.Ordinal);
+        Assert.Contains("add your user to the docker group", docker.Problem?.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -33,7 +33,7 @@ public sealed class OnyxFacts(IContainerRuntime runtime, IHostProbes probes, ISi
             : probes.Ports(OnyxPreflight.PreferredPort, OnyxPreflight.FallbackFirst, OnyxPreflight.FallbackLast);
         var host = new HostFacts(
             probes.FreeDisk(home.Path),
-            docker.DataRoot is { } dataRoot ? probes.FreeDiskIfExists(dataRoot) : null,
+            docker is { DataInVm: false, DataRoot: { } dataRoot } ? probes.FreeDiskIfExists(dataRoot) : null,
             ports);
         return (docker, host);
     }

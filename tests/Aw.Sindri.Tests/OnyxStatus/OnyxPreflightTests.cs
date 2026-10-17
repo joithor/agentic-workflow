@@ -61,6 +61,45 @@ public sealed class OnyxPreflightTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Evaluate_fails_001_with_a_group_fix_when_the_socket_is_permission_denied()
+    {
+        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.PermissionDenied, new HostFacts(_roomy, DataRoot: null, _free), _pins);
+
+        var docker = Check(report, "docker");
+        Assert.Equal(CheckState.Fail, docker.State);
+        Assert.Equal("SND-ONYX-001", docker.Problem?.Code);
+        Assert.Equal("docker CLI found, permission denied on the daemon socket", docker.Detail);
+        Assert.Contains("add your user to the docker group (`sudo usermod -aG docker $USER`, then log out and in), or use Docker Desktop", docker.Problem?.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("isn't running", docker.Problem?.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Evaluate_fails_001_with_a_wait_fix_when_the_daemon_did_not_answer_in_time()
+    {
+        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.Starting, new HostFacts(_roomy, DataRoot: null, _free), _pins);
+
+        var docker = Check(report, "docker");
+        Assert.Equal(CheckState.Fail, docker.State);
+        Assert.Equal("SND-ONYX-001", docker.Problem?.Code);
+        Assert.Equal("Docker didn't answer within 25 s; it may be starting (Docker Desktop's Resource Saver)", docker.Detail);
+        Assert.Contains("wait", docker.Problem?.Message, StringComparison.Ordinal);
+        Assert.Contains("run this again", docker.Problem?.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("isn't running", docker.Problem?.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Evaluate_fails_001_with_a_context_fix_when_the_docker_context_does_not_exist()
+    {
+        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.ContextMissing, new HostFacts(_roomy, DataRoot: null, _free), _pins);
+
+        var docker = Check(report, "docker");
+        Assert.Equal("SND-ONYX-001", docker.Problem?.Code);
+        Assert.Equal("docker CLI found, the selected docker context doesn't exist", docker.Detail);
+        Assert.Contains("docker context use default", docker.Problem?.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("isn't running", docker.Problem?.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Evaluate_fails_002_when_only_compose_v1_is_present()
     {
         var report = OnyxPreflight.Evaluate(FakeContainerRuntime.ComposeV1Only, new HostFacts(_roomy, DataRoot: null, _free), _pins);
@@ -200,7 +239,7 @@ public sealed class OnyxPreflightTests
     [Fact, Trait("Lane", "unit")]
     public void Evaluate_reports_the_smaller_of_the_sindri_home_and_a_data_root_on_this_host()
     {
-        var disk = Check(OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new HostFacts(_roomy, new DiskFacts("/var/lib/docker", 11 * Gib), _free), _pins), "disk");
+        var disk = Check(OnyxPreflight.Evaluate(FakeContainerRuntime.NativeEngine, new HostFacts(_roomy, new DiskFacts("/var/lib/docker", 11 * Gib), _free), _pins), "disk");
 
         Assert.Equal(CheckState.Fail, disk.State);
         Assert.Equal("11.0 GiB free at /var/lib/docker, needs 30.0 GiB", disk.Detail);
@@ -210,7 +249,7 @@ public sealed class OnyxPreflightTests
     [Fact, Trait("Lane", "unit")]
     public void Evaluate_keeps_the_sindri_home_when_it_is_the_smaller()
     {
-        var disk = Check(OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new HostFacts(new DiskFacts("/h", 40 * Gib), new DiskFacts("/var/lib/docker", 90 * Gib), _free), _pins), "disk");
+        var disk = Check(OnyxPreflight.Evaluate(FakeContainerRuntime.NativeEngine, new HostFacts(new DiskFacts("/h", 40 * Gib), new DiskFacts("/var/lib/docker", 90 * Gib), _free), _pins), "disk");
 
         Assert.Equal(CheckState.Ok, disk.State);
         Assert.Equal("40.0 GiB free at /h, needs 30.0 GiB", disk.Detail);
@@ -228,13 +267,31 @@ public sealed class OnyxPreflightTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Evaluate_adds_no_note_when_the_data_root_is_unknown()
+    public void Evaluate_notes_the_vm_even_when_the_data_root_is_unknown()
     {
         var docker = FakeContainerRuntime.Healthy with { DataRoot = null };
 
         var disk = Check(OnyxPreflight.Evaluate(docker, new HostFacts(_roomy, DataRoot: null, _free), _pins), "disk");
 
+        Assert.Equal("80.0 GiB free at /h, needs 30.0 GiB" + VmNote, disk.Detail);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Evaluate_adds_no_note_for_a_native_engine()
+    {
+        var disk = Check(OnyxPreflight.Evaluate(FakeContainerRuntime.NativeEngine, new HostFacts(_roomy, DataRoot: null, _free), _pins), "disk");
+
         Assert.Equal("80.0 GiB free at /h, needs 30.0 GiB", disk.Detail);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Evaluate_ignores_a_host_directory_of_the_data_root_name_when_docker_runs_in_a_vm()
+    {
+        // Docker Desktop's DockerRootDir is /var/lib/docker inside its VM; a /var/lib/docker on this host (an old install) is not that disk.
+        var disk = Check(OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new HostFacts(_roomy, new DiskFacts("/var/lib/docker", 11 * Gib), _free), _pins), "disk");
+
+        Assert.Equal(CheckState.Ok, disk.State);
+        Assert.Equal("80.0 GiB free at /h, needs 30.0 GiB" + VmNote, disk.Detail);
     }
 
     [Fact, Trait("Lane", "unit")]

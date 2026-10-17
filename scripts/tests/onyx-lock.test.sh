@@ -75,6 +75,15 @@ f="$( { good_body; echo "image docker.io/o/app v1 linux/arm64 $DIGEST"; } | lock
 run check --file "$f"
 expect "an image platform listed twice fails" 1 'ONYX-LOCK-003 .*listed twice'
 
+# Shared with OnyxPinsParseTests (Parse_refuses_a_lock_with_no_image_rows, ..._no_compose_file_row): the same two fixtures.
+f="$(good_body | grep -v '^image' | lock noimages)"
+run check --file "$f"
+expect "a lock with no image rows fails" 1 'ONYX-LOCK-003 .*no image rows'
+
+f="$(good_body | grep -v '^file' | lock nocomposefile)"
+run check --file "$f"
+expect "a lock with no compose file row fails" 1 'ONYX-LOCK-002 .*no file row for docker_compose/docker-compose.yml'
+
 f="$(good_body | grep -v 'docker-memory-bytes' | lock noneed)"
 run check --file "$f"
 expect "a missing need row fails" 1 'ONYX-LOCK-004 .*docker-memory-bytes'

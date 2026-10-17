@@ -42,7 +42,7 @@ public sealed class DockerCliRuntimeContractTests : ContainerRuntimeContract
             return arguments[0] == "compose" ? Compose(arguments) : Other(arguments);
         }
 
-        private static ToolRun Exited(string output, int code = 0) => new(ToolOutcome.Exited, code, output);
+        private static ToolRun Exited(string output, int code = 0, string error = "") => new(ToolOutcome.Exited, code, output, error);
 
         private ToolRun Compose(IReadOnlyList<string> arguments)
         {
@@ -82,17 +82,26 @@ public sealed class DockerCliRuntimeContractTests : ContainerRuntimeContract
         private ToolRun Other(IReadOnlyList<string> arguments) => arguments[0] switch
         {
             "version" when arguments.Contains("{{.Server.Os}}/{{.Server.Arch}}", StringComparer.Ordinal) => facts.DaemonAnswers ? Exited("linux/aarch64\n") : Exited("", 1),
-            "version" => facts.DaemonAnswers ? Exited(facts.ServerVersion + "\n") : Exited("", 1),
+            "version" => facts.DaemonProblem == DaemonProblem.Starting ? ToolRun.TimedOut : facts.DaemonAnswers ? Exited(facts.ServerVersion + "\n") : Exited("", 1, Stderr(facts.DaemonProblem)),
             "context" => facts.Endpoint is null ? Exited("", 1) : Exited(facts.Endpoint + "\n"),
             "ps" => facts.DaemonAnswers ? Exited("") : Exited("", 1),
             "stats" => facts.DaemonAnswers ? Exited("abc123def456|1.5GiB / 15.66GiB\n") : Exited("", 1),
             "image" => facts.DaemonAnswers ? Inspect(arguments[^1]) : Exited("", 1),
-            _ => facts.MemoryBytes is null && facts.DataRoot is null
+            _ => facts is { MemoryBytes: null, DataRoot: null, OperatingSystem: null }
                 ? Exited("", 1)
-                : Exited(facts.MemoryBytes?.ToString(CultureInfo.InvariantCulture) + "|" + facts.DataRoot + "\n"),
+                : Exited(facts.MemoryBytes?.ToString(CultureInfo.InvariantCulture) + "|" + facts.OperatingSystem + "|" + facts.DataRoot + "\n"),
         };
 
         private ToolRun Inspect(string image)
             => localImages.TryGetValue(image, out var digests) ? Exited("[" + string.Join(',', digests.Select(static d => "\"" + d + "\"")) + "]\n") : Exited("", 1);
+
+        // What the real docker CLI prints on stderr for each problem.
+        private static string Stderr(DaemonProblem problem) => problem switch
+        {
+            DaemonProblem.PermissionDenied => "permission denied while trying to connect to the docker API at unix:///var/run/docker.sock\n",
+            DaemonProblem.ContextMissing => "Failed to initialize: unable to resolve docker endpoint: context \"nope\": context not found: open /home/u/.docker/contexts/meta/x/meta.json: no such file or directory\n",
+            DaemonProblem.None or DaemonProblem.NotRunning or DaemonProblem.Starting => "failed to connect to the docker API at unix:///var/run/docker.sock; check if the path is correct and if the daemon is running: dial unix /var/run/docker.sock: connect: no such file or directory\n",
+            _ => throw new ArgumentOutOfRangeException(nameof(problem)),
+        };
     }
 }

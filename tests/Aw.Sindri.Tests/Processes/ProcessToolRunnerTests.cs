@@ -85,7 +85,7 @@ public sealed class ProcessToolRunnerTests
 
         var run = _runner.Run("sh", ["-c", "echo done >&2; printf out; exit 7"], TimeSpan.FromSeconds(10), options: options, cancellationToken: cancel.Token);
 
-        Assert.Equal(new ToolRun(ToolOutcome.Exited, 7, "out"), run);
+        Assert.Equal(new ToolRun(ToolOutcome.Exited, 7, "out", "done\n"), run);
     }
 
     [Fact, Trait("Lane", "integration")]

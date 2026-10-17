@@ -16,6 +16,7 @@ namespace Aw.Sindri.Core.Onyx;
 public sealed record OnyxPins(
     string Version, string Commit, IReadOnlyList<OnyxFilePin> Files, IReadOnlyList<OnyxImagePin> Images, long DiskBytes, long DockerMemoryBytes)
 {
+    private const string ComposeFile = "docker_compose/docker-compose.yml";
     private static readonly char[] _separators = [' ', '\t'];
     private static readonly char[] _controls = ['\r', '\v', '\f'];
     private static readonly string[] _platforms = ["linux/arm64", "linux/amd64"];
@@ -91,6 +92,16 @@ public sealed record OnyxPins(
                 return "no version row";
             }
 
+            if (_images.Count == 0)
+            {
+                return "no image rows";
+            }
+
+            if (!_files.Exists(static f => f.Path == ComposeFile))
+            {
+                return $"no file row for {ComposeFile}";
+            }
+
             foreach (var repository in _images.Select(static i => i.Repository).Distinct(StringComparer.Ordinal))
             {
                 foreach (var platform in _platforms.Where(p => !_images.Exists(i => i.Repository == repository && i.Platform == p)))
@@ -109,9 +120,19 @@ public sealed record OnyxPins(
                 return "a second version row";
             }
 
-            if (fields.Length != 3 || !IsTag(fields[1]) || !IsHex(fields[2], 40))
+            if (fields.Length != 3)
             {
-                return "version wants a vX.Y.Z tag and a 40-digit lowercase hex commit";
+                return $"version wants 2 fields (tag commit), got {(fields.Length - 1).ToString(CultureInfo.InvariantCulture)}";
+            }
+
+            if (!IsTag(fields[1]))
+            {
+                return $"version tag \"{fields[1]}\" is not vX.Y.Z";
+            }
+
+            if (!IsHex(fields[2], 40))
+            {
+                return "version commit is not 40 lowercase hex digits";
             }
 
             (_version, _commit) = (fields[1], fields[2]);

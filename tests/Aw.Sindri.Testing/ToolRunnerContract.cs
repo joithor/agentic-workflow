@@ -44,6 +44,17 @@ public abstract class ToolRunnerContract
         Expect.Equal(expected, run);
     }
 
+    /// <summary>Standard error is kept beside standard output, for a caller that classifies a failure by it.</summary>
+    [Fact]
+    public void An_exit_returns_standard_error_apart_from_standard_output()
+    {
+        var expected = new ToolRun(ToolOutcome.Exited, 1, "out\n", "permission denied\n");
+
+        var run = Create(expected).Run("sh", ["-c", "echo out; echo 'permission denied' >&2; exit 1"], TimeSpan.FromSeconds(30), cancellationToken: TestContext.Current.CancellationToken);
+
+        Expect.Equal(expected, run);
+    }
+
     /// <summary>A tool not on PATH is Missing.</summary>
     [Fact]
     public void A_tool_not_on_path_is_missing()
@@ -54,12 +65,12 @@ public abstract class ToolRunnerContract
     public void A_tool_past_its_timeout_is_timed_out()
         => Expect.Equal(ToolRun.TimedOut, Create(ToolRun.TimedOut).Run("sleep", ["30"], TimeSpan.FromMilliseconds(200), cancellationToken: TestContext.Current.CancellationToken));
 
-    /// <summary>The callback sees each standard error line while the tool runs; standard output stays whole.</summary>
+    /// <summary>The callback sees each standard error line while the tool runs; standard output stays whole and the same lines are kept as the run's standard error.</summary>
     [Fact]
     public void Standard_error_lines_reach_the_callback_while_the_tool_runs()
     {
         var seen = new List<string>();
-        var expected = new ToolRun(ToolOutcome.Exited, 0, "");
+        var expected = new ToolRun(ToolOutcome.Exited, 0, "", "a\nb\n");
 
         var run = Create(expected, ["a", "b"]).Run("sh", ["-c", "echo a >&2; echo b >&2"], TimeSpan.FromSeconds(30), new ToolRunOptions(seen.Add), TestContext.Current.CancellationToken);
 

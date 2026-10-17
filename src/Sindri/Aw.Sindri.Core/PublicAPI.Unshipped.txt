@@ -8311,6 +8311,12 @@ static Aw.Sindri.Core.Onyx.OnyxPins.Parse(string! text) -> Aw.Kernel.Result<Aw.S
 static Aw.Sindri.Core.Onyx.OnyxPins.operator !=(Aw.Sindri.Core.Onyx.OnyxPins? left, Aw.Sindri.Core.Onyx.OnyxPins? right) -> bool
 static Aw.Sindri.Core.Onyx.OnyxPins.operator ==(Aw.Sindri.Core.Onyx.OnyxPins? left, Aw.Sindri.Core.Onyx.OnyxPins? right) -> bool
 static readonly Aw.Sindri.Core.SindriErrors.OnyxPinsMalformed -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Onyx.DaemonProblem
+Aw.Sindri.Core.Onyx.DaemonProblem.ContextMissing = 3 -> Aw.Sindri.Core.Onyx.DaemonProblem
+Aw.Sindri.Core.Onyx.DaemonProblem.None = 0 -> Aw.Sindri.Core.Onyx.DaemonProblem
+Aw.Sindri.Core.Onyx.DaemonProblem.NotRunning = 1 -> Aw.Sindri.Core.Onyx.DaemonProblem
+Aw.Sindri.Core.Onyx.DaemonProblem.PermissionDenied = 2 -> Aw.Sindri.Core.Onyx.DaemonProblem
+Aw.Sindri.Core.Onyx.DaemonProblem.Starting = 4 -> Aw.Sindri.Core.Onyx.DaemonProblem
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.<Clone>$() -> Aw.Sindri.Core.Onyx.ContainerRuntimeFacts!
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.CliFound.get -> bool
@@ -8319,15 +8325,24 @@ Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeV2.get -> bool
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeV2.init -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeVersion.get -> string?
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeVersion.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ContainerRuntimeFacts(bool CliFound, bool DaemonAnswers, string? ServerVersion, bool ComposeV2, string? ComposeVersion, long? MemoryBytes, string? DataRoot, string? Endpoint, string? OperatingSystem = null, Aw.Sindri.Core.Onyx.DaemonProblem DaemonProblem = Aw.Sindri.Core.Onyx.DaemonProblem.None, int? WaitedSeconds = null) -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DaemonAnswers.get -> bool
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DaemonAnswers.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DaemonProblem.get -> Aw.Sindri.Core.Onyx.DaemonProblem
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DaemonProblem.init -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DataRoot.get -> string?
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DataRoot.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DataInVm.get -> bool
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Deconstruct(out bool CliFound, out bool DaemonAnswers, out string? ServerVersion, out bool ComposeV2, out string? ComposeVersion, out long? MemoryBytes, out string? DataRoot, out string? Endpoint, out string? OperatingSystem, out Aw.Sindri.Core.Onyx.DaemonProblem DaemonProblem, out int? WaitedSeconds) -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Equals(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts? other) -> bool
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.MemoryBytes.get -> long?
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.MemoryBytes.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.OperatingSystem.get -> string?
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.OperatingSystem.init -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ServerVersion.get -> string?
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ServerVersion.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.WaitedSeconds.get -> int?
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.WaitedSeconds.init -> void
 Aw.Sindri.Core.Onyx.IContainerRuntime
 Aw.Sindri.Core.Onyx.IContainerRuntime.Inspect(System.Threading.CancellationToken cancellationToken) -> Aw.Sindri.Core.Onyx.ContainerRuntimeFacts!
 override Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Equals(object? obj) -> bool
@@ -8443,8 +8458,6 @@ Aw.Sindri.Core.Onyx.ComposeService.ComposeService(string! Name, string? Image, S
 Aw.Sindri.Core.Onyx.ComposeService.Deconstruct(out string! Name, out string? Image, out System.Collections.Generic.IReadOnlyList<string!>! Profiles) -> void
 Aw.Sindri.Core.Onyx.ComposeService.Profiles.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Onyx.ComposeService.Profiles.init -> void
-Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ContainerRuntimeFacts(bool CliFound, bool DaemonAnswers, string? ServerVersion, bool ComposeV2, string? ComposeVersion, long? MemoryBytes, string? DataRoot, string? Endpoint) -> void
-Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Deconstruct(out bool CliFound, out bool DaemonAnswers, out string? ServerVersion, out bool ComposeV2, out string? ComposeVersion, out long? MemoryBytes, out string? DataRoot, out string? Endpoint) -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Endpoint.get -> string?
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Endpoint.init -> void
 Aw.Sindri.Core.Onyx.EnvSettings

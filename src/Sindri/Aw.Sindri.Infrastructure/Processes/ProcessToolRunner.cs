@@ -1,11 +1,14 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Text;
 
 namespace Aw.Sindri.Infrastructure.Processes;
 
-/// <summary>IToolRunner over System.Diagnostics.Process: no shell, standard output captured, standard error read line by line (handed to the caller's callback, or dropped).</summary>
+/// <summary>IToolRunner over System.Diagnostics.Process: no shell, standard output captured, standard error read line by line (handed to the caller's callback, and kept, up to a cap, for a caller that classifies a failure by it).</summary>
 internal sealed class ProcessToolRunner : IToolRunner
 {
+    private const int ErrorCap = 16 * 1024;
+
     /// <inheritdoc />
     public ToolRun Run(string fileName, IReadOnlyList<string> arguments, TimeSpan timeout, ToolRunOptions? options = null, CancellationToken cancellationToken = default)
     {
@@ -87,17 +90,24 @@ internal sealed class ProcessToolRunner : IToolRunner
         }
 
         process.WaitForExit();   // flushes the redirected streams
-        error.GetAwaiter().GetResult();
+        var errorText = error.GetAwaiter().GetResult();
         var text = output.GetAwaiter().GetResult();
-        return Volatile.Read(ref killedByCancel) ? ToolRun.Cancelled : new ToolRun(ToolOutcome.Exited, process.ExitCode, text);
+        return Volatile.Read(ref killedByCancel) ? ToolRun.Cancelled : new ToolRun(ToolOutcome.Exited, process.ExitCode, text, errorText);
     }
 
-    private static async Task DrainLines(StreamReader reader, Action<string>? onLine)
+    private static async Task<string> DrainLines(StreamReader reader, Action<string>? onLine)
     {
+        var kept = new StringBuilder();
         while (await reader.ReadLineAsync().ConfigureAwait(false) is { } line)
         {
             onLine?.Invoke(line);
+            if (kept.Length < ErrorCap)
+            {
+                _ = kept.Append(line).Append('\n');   // the rest is still drained so the tool never blocks on a full pipe
+            }
         }
+
+        return kept.ToString();
     }
 
     private static void Kill(Process process)

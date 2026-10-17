@@ -263,7 +263,7 @@ lists them instead.
 ## 11. Phases (for /specToProvenPR)
 
 1. **P1 — pins and preflight:** `context/onyx.lock` with the measured numbers, its check and test; `IContainerRuntime`
-   and the preflight; `sindri onyx status`; `SND-ONYX-001..003, 006`.
+   and the preflight (its memory check is the `MemTotal` floor only); `sindri onyx status`; `SND-ONYX-001..003, 006`.
 2. **P2 — files, config, start:** fetch and verify, `.env` and the override, pull, start, readiness, `sindri onyx down`,
    doctor `onyx:stack`; `SND-ONYX-004, 005`. The memory check that counts what other containers already use (Docker's
    `MemTotal` minus their use must cover the need) moved from P1 into P2 by owner decision, 2026-10-17.

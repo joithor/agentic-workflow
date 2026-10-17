@@ -11,8 +11,11 @@ public sealed class FakeHostProbesContractTests : HostProbesContract
         var probes = new FakeHostProbes();
         _ = probes.Directories.Add("/work");
         _ = probes.TakenPorts.Add(4100);
+        _ = probes.TakenPorts.Add(4201);
+        _ = probes.TakenPorts.Add(4202);
+        _ = probes.TakenPorts.Add(4203);
         holder = new NothingToRelease();
-        return new Scene(TakenPort: 4100, FreePort: 4101, Directory: "/work", probes);
+        return new Scene(TakenPort: 4100, FreePort: 4101, Directory: "/work", probes, TakenRangeFirst: 4201, TakenRangeLast: 4203, ReleaseFreePort: static () => { });
     }
 
     private sealed class NothingToRelease : IDisposable
