@@ -15,6 +15,7 @@
 # AW_JUDGE_CS_BIN  a built C# judge (the NativeAOT publish or the JIT apphost). Unset: the test builds
 #                  src/Judge/Aw.Judge.Host in Release into a temp dir first (needs dotnet 10).
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../../scripts/lib/test-grep.sh"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 HOOKS="$ROOT/config/hooks"
 WORK="$(mktemp -d)"
@@ -119,12 +120,12 @@ out_of send-ack | jq -e '.hookSpecificOutput.permissionDecision == "deny"' > /de
 # rules-only chain: no pre-rule settles it and no model is allowed, so wake-gate escalates (exit 2) and
 # send-gate takes its fail-open path: allow, logging judge-exit-2 (not some other exit: the judge ran).
 out_of send-undecided | jq -e '.hookSpecificOutput.permissionDecision == "allow"' > /dev/null || fail "send-undecided: expected allow, got $(out_of send-undecided)"
-failopen_log send-undecided | grep -q 'judge-exit-2' || fail "send-undecided: expected the escalation's judge-exit-2 fail-open, got '$(failopen_log send-undecided)'"
+failopen_log send-undecided | has 'judge-exit-2' || fail "send-undecided: expected the escalation's judge-exit-2 fail-open, got '$(failopen_log send-undecided)'"
 out_of send-batch | jq -e '.hookSpecificOutput.permissionDecision == "deny"' > /dev/null || fail "send-batch: expected deny (queued), got $(out_of send-batch)"
 [ "$(wc -l < "$WORK/send-batch.cs.outbox" | tr -d ' ')" = 1 ] || fail "send-batch: expected one outbox line, got '$(cat "$WORK/send-batch.cs.outbox")'"
 jq -e '.text == "still working through the second task now" and .agentType == "builder-a"' "$WORK/send-batch.cs.outbox" > /dev/null || fail "send-batch: outbox line $(cat "$WORK/send-batch.cs.outbox")"
 out_of send-flush | jq -e '.hookSpecificOutput.permissionDecision == "allow"' > /dev/null || fail "send-flush: expected allow, got $(out_of send-flush)"
-out_of send-flush | grep -q 'queued progress, now attached' || fail "send-flush: expected the queued message attached, got $(out_of send-flush)"
+out_of send-flush | has 'queued progress, now attached' || fail "send-flush: expected the queued message attached, got $(out_of send-flush)"
 [ ! -s "$WORK/state-cs-send-batch/judge/outbox/s1.jsonl" ] || fail "send-flush: the outbox wasn't emptied"
 no_failopen send-urgent send-ack send-batch
 for c in send-urgent send-ack send-undecided send-batch send-flush; do [ "$(rc_of $c)" = 0 ] || fail "$c: exit $(rc_of $c)"; done
@@ -211,7 +212,7 @@ jq -e '.auto_continued_at | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T")' "$WORK/state-c
   || fail "done-continue: expected judge/sessions/s1.json with auto_continued_at"
 [ "$(rc_of done-brief)" = 0 ] || fail "done-brief: a claim meeting the brief must pass, got $(rc_of done-brief)"
 [ "$(rc_of done-brief-miss)" = 2 ] || fail "done-brief-miss: a claim missing the brief's criteria must block (exit 2), got $(rc_of done-brief-miss)"
-err_of done-brief-miss | grep -q 'acceptance criteria ("all tests pass")' || fail "done-brief-miss: stderr must name the criteria, got $(err_of done-brief-miss)"
+err_of done-brief-miss | has 'acceptance criteria ("all tests pass")' || fail "done-brief-miss: stderr must name the criteria, got $(err_of done-brief-miss)"
 [ "$(rc_of done-nobrief)" = 0 ] || fail "done-nobrief: a claim with evidence and no brief must pass, got $(rc_of done-nobrief)"
 no_failopen done-ask done-escalated done-continue done-brief done-brief-miss done-nobrief
 for c in done-ask done-escalated done-continue done-brief done-brief-miss done-nobrief; do same $c; done
@@ -237,7 +238,7 @@ for side in $SIDES; do
 done
 [ -z "$(out_of health)" ] || fail "health: a fresh judge is ok and the hook prints nothing, got $(out_of health)"
 [ "$(cat "$WORK/health.cs.statusline")" = "ok 0" ] || fail "health: the statusline reads 'ok 0', got '$(cat "$WORK/health.cs.statusline")'"
-out_of health-degraded | grep -q '^judge: degraded — 1 failures in the last 24h' || fail "health-degraded: expected the degraded warning, got '$(out_of health-degraded)'"
+out_of health-degraded | has '^judge: degraded — 1 failures in the last 24h' || fail "health-degraded: expected the degraded warning, got '$(out_of health-degraded)'"
 [ "$(cat "$WORK/health-degraded.cs.statusline")" = "degraded 1" ] || fail "health-degraded: the statusline reads 'degraded 1', got '$(cat "$WORK/health-degraded.cs.statusline")'"
 [ "$(out_of health-down)" = "judge: health check failed" ] || fail "health-down: expected 'judge: health check failed', got '$(out_of health-down)'"
 [ "$(cat "$WORK/health-down.cs.statusline")" = "down 0" ] || fail "health-down: the statusline reads 'down 0', got '$(cat "$WORK/health-down.cs.statusline")'"
